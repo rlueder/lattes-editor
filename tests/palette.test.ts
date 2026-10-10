@@ -31,6 +31,19 @@ describe('seções', () => {
   });
 });
 
+describe('Outros dados', () => {
+  it('só recolhe o que nenhuma seção mostra', async () => {
+    const sections = buildSections(await fixture('synthetic_full.xml'));
+    const outros = sections.find((s) => s.id === 'outros')!;
+    expect(outros.groups.map((g) => g.elements[0]!.name)).toEqual([
+      'INFORMACOES-ADICIONAIS-INSTITUICOES',
+      'INFORMACOES-ADICIONAIS-CURSOS',
+    ]);
+    const producoes = sections.find((s) => s.id === 'producoes')!;
+    expect(producoes.groups.map((g) => g.label)).toContain('Capítulos de livros publicados');
+  });
+});
+
 describe('⌘K', () => {
   it('lista seções e grupos, e acha sem acento', async () => {
     const entries = paletteEntries(buildSections(await fixture('synthetic_minimal.xml')));

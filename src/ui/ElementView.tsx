@@ -8,6 +8,8 @@ import { attributeLabel, elementLabel, enumLabel } from '../labels/labels.ts';
 import { childElements, getAttr, setAttr, type XElement, type XText } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 import type { AttributeSpec } from '../schema/types.ts';
+import { isListItem } from './item-meta.ts';
+import { ItemList } from './ItemList.tsx';
 import { summarize } from './summary.ts';
 
 export type EditFn = (note: string) => void;
@@ -135,16 +137,20 @@ function TextField({ el, node, onEdit }: { el: XElement; node?: XText; onEdit: E
   );
 }
 
-/** Elemento com atributos e filhos; itens repetidos viram cartões recolhíveis. */
+/**
+ * Elemento com atributos e filhos. Um contêiner puro (sem atributos) cujos
+ * filhos são itens vira linha do tempo; o resto vira blocos recolhíveis.
+ */
 export function ElementView({ depth = 0, el, onEdit, showEmpty }: ViewProps & { depth?: number }) {
-  const children = childElements(el);
+  const children = childElements(el).filter((c) => c.attrs.length > 0 || c.children.length > 0);
+  if (el.attrs.length === 0 && children.length > 0 && children.every(isListItem)) {
+    return <ItemList depth={depth} items={children} showEmpty={showEmpty} onEdit={onEdit} />;
+  }
   return (
     <div className={`element depth-${Math.min(depth, 3)}`}>
       <Attributes el={el} showEmpty={showEmpty} onEdit={onEdit} />
       {children.map((child, i) => {
         const summary = summarize(child);
-        const hasContent = child.attrs.length > 0 || child.children.length > 0;
-        if (!hasContent) return null;
         const repeated = children.filter((c) => c.name === child.name).length > 1 || summary !== '';
         return (
           <details key={i} className={repeated ? 'item' : 'sub'} open={!repeated && depth < 1}>

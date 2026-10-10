@@ -141,7 +141,8 @@ export function buildSections(root: XElement): Section[] {
           'PRODUCAO-BIBLIOGRAFICA/TRABALHOS-EM-EVENTOS',
           'PRODUCAO-BIBLIOGRAFICA/ARTIGOS-PUBLICADOS',
           'PRODUCAO-BIBLIOGRAFICA/ARTIGOS-ACEITOS-PARA-PUBLICACAO',
-          'PRODUCAO-BIBLIOGRAFICA/LIVROS-E-CAPITULOS',
+          'PRODUCAO-BIBLIOGRAFICA/LIVROS-E-CAPITULOS/LIVROS-PUBLICADOS-OU-ORGANIZADOS',
+          'PRODUCAO-BIBLIOGRAFICA/LIVROS-E-CAPITULOS/CAPITULOS-DE-LIVROS-PUBLICADOS',
           'PRODUCAO-BIBLIOGRAFICA/TEXTOS-EM-JORNAIS-OU-REVISTAS',
           'PRODUCAO-BIBLIOGRAFICA/DEMAIS-TIPOS-DE-PRODUCAO-BIBLIOGRAFICA',
           'PRODUCAO-TECNICA/SOFTWARE',
@@ -235,6 +236,9 @@ export function buildSections(root: XElement): Section[] {
       if (claimed.has(el)) continue;
       if (el === dg || el.name === 'PRODUCAO-BIBLIOGRAFICA' || el.name === 'DADOS-COMPLEMENTARES')
         continue;
+      // Contêiner puro cujos filhos já estão em seções (LIVROS-E-CAPITULOS) não sobra.
+      const kids = childElements(el);
+      if (el.attrs.length === 0 && kids.length > 0 && kids.every((k) => claimed.has(k))) continue;
       leftovers.push(el);
     }
   };

@@ -14,6 +14,8 @@ import { firstChild, getAttr, parseXml, serializeXml, type XDocument } from '../
 import { CommandPalette } from './CommandPalette.tsx';
 import { DropZone } from './DropZone.tsx';
 import { ElementView } from './ElementView.tsx';
+import { ItemList } from './ItemList.tsx';
+import { JumpBar } from './JumpBar.tsx';
 import { Modal } from './Modal.tsx';
 import { paletteEntries, type PaletteEntry } from './palette-search.ts';
 import { buildSections, countItems } from './sections.ts';
@@ -47,6 +49,18 @@ export function App() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const pendingNotes = useRef<string[]>([]);
   const pendingAnchor = useRef<string | null>(null);
+  const topbarRef = useRef<HTMLElement>(null);
+
+  // Publica a altura do cabeçalho em --topbar-h; o que gruda embaixo dele usa a variável.
+  useEffect(() => {
+    const bar = topbarRef.current;
+    if (!bar) return;
+    const observer = new ResizeObserver(() => {
+      document.documentElement.style.setProperty('--topbar-h', `${bar.offsetHeight}px`);
+    });
+    observer.observe(bar);
+    return () => observer.disconnect();
+  }, [session]);
 
   // Restaura a cópia de trabalho da última sessão.
   useEffect(() => {
@@ -194,7 +208,7 @@ export function App() {
 
   return (
     <div className="shell">
-      <header className="topbar">
+      <header ref={topbarRef} className="topbar">
         <div className="topbar-title">
           <strong>{ownerName(session.doc)}</strong>
           <span className="file-name">{session.meta.fileName}</span>
@@ -271,19 +285,41 @@ export function App() {
               )}
             </div>
             {section.groups.length === 0 && <p className="muted">Nada nesta seção.</p>}
-            {section.groups.map((g) => (
-              <section key={g.id} className="group" id={g.id}>
-                <h2>{g.label}</h2>
-                {g.elements.map((el, i) => (
-                  <ElementView
-                    key={`${version}-${i}`}
-                    el={el}
-                    showEmpty={showEmpty}
-                    onEdit={onEdit}
-                  />
-                ))}
-              </section>
-            ))}
+            <div key={section.id} className="section-body">
+              {section.groups.length > 1 && (
+                <JumpBar
+                  entries={section.groups.map((g) => ({
+                    count: countItems(g),
+                    id: g.id,
+                    label: g.label,
+                  }))}
+                  label="Grupos da seção"
+                  level="section"
+                />
+              )}
+              {section.groups.map((g) => (
+                <section key={g.id} className="group" id={g.id}>
+                  <h2>{g.label}</h2>
+                  {g.elements.length > 1 ? (
+                    <ItemList
+                      key={version}
+                      items={g.elements}
+                      showEmpty={showEmpty}
+                      onEdit={onEdit}
+                    />
+                  ) : (
+                    g.elements.map((el, i) => (
+                      <ElementView
+                        key={`${version}-${i}`}
+                        el={el}
+                        showEmpty={showEmpty}
+                        onEdit={onEdit}
+                      />
+                    ))
+                  )}
+                </section>
+              ))}
+            </div>
           </>
         )}
       </main>
