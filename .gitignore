@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.log
+.DS_Store
+
+# Dados pessoais: nunca versionar exportações reais nem análises derivadas delas
+private/
+CV_*.zip
+CV_*.xml
+fixtures/real/

@@ -1,0 +1,64 @@
+{
+  "name": "lattes-editor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Editor local do Currículo Lattes: carrega a exportação XML, edita e gera XML para o Importar do Lattes.",
+  "license": "MIT",
+  "author": "Rafael Lüder",
+  "type": "module",
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "gen:fixtures": "node scripts/gen-fixtures.ts",
+    "gen:schema": "node scripts/gen-schema.ts",
+    "lint": "eslint . --max-warnings 0",
+    "prepare": "husky",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "typecheck": "tsc",
+    "validate:fixtures": "node scripts/validate-fixtures.ts"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix --max-warnings 0 --no-warn-ignored"
+    ],
+    "*.{js,cjs,mjs,json,md,css,yml,yaml,html}": [
+      "prettier --write"
+    ]
+  },
+  "dependencies": {
+    "dexie": "^4.4.6",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.5.3",
+    "@precisa-saude/commitlint-config": "^3.0.1",
+    "@precisa-saude/eslint-config": "^3.0.1",
+    "@precisa-saude/prettier-config": "^3.0.1",
+    "@precisa-saude/tsconfig": "^3.0.1",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "@vitest/coverage-v8": "^5.0.3",
+    "eslint": "^9.39.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.9.10",
+    "prettier-plugin-packagejson": "^3.0.2",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.3"
+  },
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=22.18",
+    "pnpm": ">=9"
+  }
+}
