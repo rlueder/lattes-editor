@@ -2,6 +2,7 @@
 
 import type { PendingSummary } from '../import-export/ExportPanel.tsx';
 import type { HistoryEntry } from '../model/store.ts';
+import { AlertIcon } from './icons.tsx';
 import { Modal } from './Modal.tsx';
 
 export function HistoryDialog({
@@ -111,14 +112,14 @@ export function CloseConfirm({
       className="confirm"
       footer={
         <>
-          <button className="ghost" type="button" onClick={onCancel}>
+          <button className="text-btn" type="button" onClick={onCancel}>
             Cancelar
           </button>
           <button className="ghost" type="button" onClick={onSave}>
-            Salvar arquivo antes
+            Salvar XML
           </button>
           <button className="primary danger-fill" type="button" onClick={onConfirm}>
-            Fechar o currículo
+            Descartar
           </button>
         </>
       }
@@ -133,9 +134,12 @@ export function CloseConfirm({
       </p>
       {pending > 0 && (
         <p className="confirm-warning">
-          {pending === 1
-            ? '1 alteração ou item novo ainda não está no Lattes e se perde ao fechar.'
-            : `${pending} alterações ou itens novos ainda não estão no Lattes e se perdem ao fechar.`}
+          <AlertIcon />
+          <span>
+            {pending === 1
+              ? '1 alteração ou item novo ainda não está no Lattes e se perde ao fechar.'
+              : `${pending} alterações ou itens novos ainda não estão no Lattes e se perdem ao fechar.`}
+          </span>
         </p>
       )}
       <p className="muted">

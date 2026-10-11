@@ -667,7 +667,7 @@ details.sub > summary .item-kind {
   padding: 4px 0;
   background: var(--bg);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 550;
   letter-spacing: 0.02em;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
@@ -720,7 +720,7 @@ details.card > summary {
 
 .period.current {
   color: var(--accent-text);
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .duration {
@@ -749,7 +749,7 @@ details.card > summary {
 .usages h4 {
   margin: 0 0 4px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 550;
   color: var(--muted);
 }
 
@@ -811,7 +811,7 @@ button.danger {
   margin-right: 6px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 550;
   line-height: 18px;
   vertical-align: 1px;
   white-space: nowrap;
@@ -890,7 +890,7 @@ details.card.is-new {
 .form-fieldset legend {
   padding: 0 8px 0 0;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 550;
   color: var(--muted);
 }
 
@@ -1109,7 +1109,7 @@ details.card.is-new {
 
 .doi-lookup label {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 550;
   color: var(--muted);
 }
 
@@ -1183,7 +1183,7 @@ details.card.is-new {
 .menu-seg.active {
   background: var(--surface);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .topbar-actions .menu-item,
@@ -1540,7 +1540,7 @@ details.card.is-new {
   background: var(--accent-soft);
   color: var(--accent-text);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .panel-section .pending-list,
@@ -1587,7 +1587,7 @@ details.card.is-new {
 .picker-section h3 {
   margin: 16px 0 6px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 550;
   color: var(--muted);
 }
 
@@ -1788,7 +1788,7 @@ details.card.is-new {
   padding-top: 8px;
   border-top: 1px solid var(--border);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 550;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted);
@@ -1880,7 +1880,7 @@ details.card.is-new {
 }
 
 .select-item[data-selected] {
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .select-indicator {
@@ -1959,7 +1959,7 @@ details.card.is-new {
 .menu-seg[data-checked] {
   background: var(--surface);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .menu-check {
@@ -1980,7 +1980,7 @@ details.card.is-new {
   gap: 6px;
   margin: 0 0 6px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 550;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted);
@@ -2038,7 +2038,7 @@ details.card.is-new {
 .picker-module h4 {
   margin: 12px 0 4px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 550;
   color: var(--muted);
 }
 
@@ -2191,7 +2191,7 @@ button.primary:hover {
 
 .empty-section .empty-title {
   margin: 0 0 4px;
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .empty-section > p.muted {
@@ -2329,7 +2329,7 @@ button.primary:hover {
   border: 0;
   background: transparent;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 550;
   line-height: 1.35;
   resize: none;
   field-sizing: content;
@@ -2447,7 +2447,7 @@ button.primary:hover {
 .panel-heading {
   margin: 0 0 6px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 550;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted);
@@ -2609,7 +2609,7 @@ details > .element {
   border-radius: 8px;
   background: var(--accent-soft);
   color: var(--accent-text);
-  font-weight: 600;
+  font-weight: 550;
   font-size: 14px;
   letter-spacing: 0.02em;
 }
@@ -2679,7 +2679,7 @@ details > .element {
 /* Marca provisória no cabeçalho. */
 .brand {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
 }
@@ -2713,7 +2713,7 @@ details > .element {
    títulos. Seção, grupo e subgrupo em três degraus distintos. */
 .section-head h1 {
   font-size: 26px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.015em;
   line-height: 1.2;
 }
@@ -2721,7 +2721,7 @@ details > .element {
 .group h2 {
   margin: 0 0 12px;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 550;
   letter-spacing: -0.01em;
 }
 
@@ -2763,7 +2763,7 @@ details > .element {
   margin: 0 0 14px;
   color: var(--text);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 550;
   letter-spacing: 0;
   text-transform: none;
 }
@@ -2798,7 +2798,7 @@ details > .element {
 .empty-section .empty-title {
   margin: 0 0 8px;
   font-size: 17px;
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .empty-text {
@@ -3234,7 +3234,7 @@ details > summary::-webkit-details-marker {
   background: var(--surface-2);
   color: var(--muted);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 550;
   line-height: 1;
 }
 
@@ -3344,7 +3344,7 @@ details > summary::-webkit-details-marker {
   background: var(--accent-soft);
   color: var(--accent-text);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 550;
   line-height: 1;
 }
 
@@ -3523,7 +3523,7 @@ details > summary::-webkit-details-marker {
   margin-top: 4px;
   padding: 10px 12px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .palette-item.section ~ .palette-item.section {
@@ -3549,7 +3549,7 @@ details > summary::-webkit-details-marker {
   background: var(--accent-soft);
   color: var(--accent-text);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 550;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -3581,7 +3581,7 @@ details > summary::-webkit-details-marker {
   border-color: color-mix(in srgb, var(--warn-text) 45%, transparent);
   background: transparent;
   color: var(--warn-text);
-  font-weight: 600;
+  font-weight: 550;
   white-space: nowrap;
 }
 
@@ -4329,7 +4329,7 @@ button.primary:hover:not(:disabled) {
 .menu .menu-heading {
   padding: 4px 8px 6px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 550;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -4358,7 +4358,7 @@ button.primary:hover:not(:disabled) {
   background: var(--accent-soft);
   color: var(--accent-text);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 550;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -4421,7 +4421,7 @@ button.primary:hover:not(:disabled) {
   margin: 4px 0 10px;
   color: var(--text);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .picker-section + .picker-section {
@@ -4433,7 +4433,7 @@ button.primary:hover:not(:disabled) {
 .picker-more {
   color: var(--text);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .picker-more .icon-svg {
@@ -4444,7 +4444,7 @@ button.primary:hover:not(:disabled) {
   margin: 16px 0 8px;
   color: var(--muted);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .picker-grid .picker-item {
@@ -4652,8 +4652,220 @@ button.primary:hover:not(:disabled) {
   background: var(--accent);
   color: var(--accent-contrast);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   pointer-events: none;
+}
+
+/* Histórico salvo na mesma cor dos outros ícones do cabeçalho; só o erro
+   ganha cor (e o "salvando" fica apagado). */
+.topbar .save-state.salvo {
+  color: var(--text);
+}
+
+/* "Onde aparece" dentro do item aberto: um bloco como os grupos de campos,
+   com o mesmo fundo, o mesmo recuo e o rótulo em caixa alta; um fio o
+   separa dos campos abaixo. */
+.group details.item > .usages {
+  margin: 0;
+  padding-top: 20px;
+  padding-bottom: 0;
+  border-radius: 0;
+}
+
+.group details.item > .usages h4 {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.group details.item > .usages::after {
+  content: '';
+  display: block;
+  margin-top: 20px;
+  border-top: 1px solid var(--divider);
+}
+
+/* Sem fio entre o perfil e as seções no menu lateral; o respiro separa. */
+.sidebar .profile {
+  border-bottom: 0;
+}
+
+/* Busca com criar e levar ao Lattes logo à direita, juntos no centro. */
+.topbar-center {
+  align-items: center;
+  gap: 6px;
+}
+
+/* Ícones do cabeçalho, no centro ou à direita: sem contorno, quadrados e
+   centralizados na altura da busca. */
+.topbar .icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  border-color: transparent;
+}
+
+.topbar .icon-btn.ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+/* Painel da direita sem caixa: sem recuo, contorno nem fundo; filtro e
+   índice ocupam a largura toda da coluna. */
+.section-panel {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+/* Índice da seção com a mesma altura e o mesmo recuo dos itens do menu
+   lateral. */
+.jump-bar.vertical a {
+  height: auto;
+  min-height: 36px;
+  padding: 7px 12px;
+}
+
+.jump-bar.vertical {
+  gap: 2px;
+}
+
+/* Painel do conteúdo sem contorno: o fundo diferente do menu já separa. */
+.content {
+  border: 0;
+}
+
+/* Caixas dos grupos (Identificação, Resumo…) sem contorno: o fundo da
+   superfície já as separa do conteúdo. */
+.group {
+  border: 0;
+}
+
+/* Ação secundária só em texto (Cancelar): sem caixa, sublinha no hover. */
+.modal-foot button.text-btn,
+button.text-btn {
+  padding-inline: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.modal-foot button.text-btn:hover,
+button.text-btn:hover {
+  background: transparent;
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Faixa de aviso com o ícone de alerta à esquerda, na cor do texto. */
+.confirm-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.confirm-warning > .icon-svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+/* Hierarquia do texto em três tons e pesos leves, nos tons do sand (não os
+   do Linear): títulos e valores no tom principal; descrições e explicações
+   num tom intermediário próprio; metadados (datas, períodos, tipo, "usada
+   em") no tom apagado. Pesos: 450 no corpo, 500 para ênfase, 550 nos
+   títulos (a IBM Plex é variável). Fios decorativos mais perto do fundo; o
+   contorno dos campos (--border-strong) não muda. */
+:root {
+  --text-2: #3f3e39; /* entre sand-12 e sand-11 */
+  --muted: #686762; /* entre sand-11 e sand-10, AA também sobre o hover */
+  --border: #e2e1de; /* sand-5 */
+  --divider: #e2e1de;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --text-2: #d2d0ca; /* entre sand-12 e sand-11 */
+    --muted: #a09e97; /* entre sand-11 e sand-10 */
+    --border: #31312e; /* sand-5 */
+    --divider: #31312e;
+  }
+}
+
+:root[data-theme='dark'] {
+  --text-2: #d2d0ca;
+  --muted: #a09e97;
+  --border: #31312e;
+  --divider: #31312e;
+}
+
+body {
+  font-weight: 450;
+}
+
+strong,
+b {
+  font-weight: 550;
+}
+
+.brand {
+  font-weight: 700;
+}
+
+/* Descrições e explicações: tom intermediário. */
+.card-subtitle,
+.modal-subtitle,
+.modal-body p:not(.confirm-warning):not(.empty-caption),
+.section-note,
+.field-note,
+.changes-note,
+.bridge-note,
+.doi-hint,
+.print-hint,
+.print-note,
+.empty-text,
+.mark-text {
+  color: var(--text-2);
+}
+
+/* Metadados: tom apagado. */
+.card-period,
+.card-period .period:not(.current),
+.duration,
+.usage-period,
+.item-kind,
+.contact-kind,
+.palette-context,
+.profile-line {
+  color: var(--muted);
+}
+
+/* Olho de privacidade: sem contorno, quadrado, ícone centralizado, na
+   altura do título (e no cabeçalho fixo). */
+.section-head {
+  align-items: center;
+}
+
+.privacy-toggle.icon-btn,
+.sticky-title-actions .icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  border-color: transparent;
+}
+
+.privacy-toggle.icon-btn:hover:not([aria-pressed='true']) {
+  background: var(--surface-2);
 }

@@ -6,7 +6,7 @@ import { type DragEvent, useRef, useState } from 'react';
 
 import { isDesktop, pickFileNative } from '../desktop/native.ts';
 import { parseXml } from '../model/xml.ts';
-import { HistoryIcon, PlusIcon, SearchIcon, UploadIcon } from './icons.tsx';
+import { PlusIcon, SearchIcon, UploadIcon } from './icons.tsx';
 import { buildSections } from './sections.ts';
 import { SettingsMenu } from './SettingsMenu.tsx';
 import { Sidebar } from './Sidebar.tsx';
@@ -88,24 +88,14 @@ export function Welcome({ error, onFile, onTheme, theme }: Props) {
             <kbd>{IS_MAC ? '⌘' : 'Ctrl'}</kbd>
             <kbd>K</kbd>
           </button>
-        </div>
-        <div data-tauri-drag-region className="topbar-actions">
-          <span aria-hidden="true" className="topbar-divider" />
           <button disabled aria-label="Novo item" className="ghost icon-btn" type="button">
             <PlusIcon />
           </button>
           <button disabled aria-label="Levar ao Lattes" className="ghost icon-btn" type="button">
             <UploadIcon />
           </button>
-          <button
-            disabled
-            aria-label="Histórico de alterações"
-            className="ghost icon-btn"
-            type="button"
-          >
-            <HistoryIcon />
-          </button>
-          <span aria-hidden="true" className="topbar-divider" />
+        </div>
+        <div data-tauri-drag-region className="topbar-actions">
           <SettingsMenu theme={theme} onTheme={onTheme} />
         </div>
       </header>

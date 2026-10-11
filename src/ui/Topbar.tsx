@@ -6,7 +6,7 @@ import { type Ref, useRef, useState } from 'react';
 
 import { isDesktop, pickFileNative } from '../desktop/native.ts';
 import { CloseConfirm } from './dialogs.tsx';
-import { AlertIcon, HistoryIcon, PlusIcon, SearchIcon, SpinnerIcon, UploadIcon } from './icons.tsx';
+import { AlertIcon, PlusIcon, SearchIcon, UploadIcon } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { SettingsMenu } from './SettingsMenu.tsx';
 import type { ThemePref } from './theme.ts';
@@ -73,7 +73,7 @@ export function Topbar({
           (e, no app de macOS, os botões da janela). */}
       <div data-tauri-drag-region className="topbar-identity" />
 
-      {/* Encontrar: centralizado na página */}
+      {/* Encontrar, criar e levar ao Lattes: centralizados na página. */}
       <div data-tauri-drag-region className="topbar-center">
         <button className="ghost search-btn" type="button" onClick={onPalette}>
           <SearchIcon />
@@ -81,11 +81,7 @@ export function Topbar({
           <kbd>{IS_MAC ? '⌘' : 'Ctrl'}</kbd>
           <kbd>K</kbd>
         </button>
-      </div>
-
-      <div data-tauri-drag-region className="topbar-actions">
-        <span aria-hidden="true" className="topbar-divider" />
-        {/* Editar, levar ao Lattes e o estado da cópia: só ícones, com dica. */}
+        {/* Criar e levar ao Lattes, ao lado da busca: só ícones, com dica. */}
         <Tip label="Novo item">
           <button
             aria-label="Novo item"
@@ -119,25 +115,23 @@ export function Topbar({
             )}
           </button>
         </Tip>
+      </div>
 
-        <Tip label={`${SAVE_TIP[saveState]}. Histórico de alterações`}>
-          <button
-            aria-label={`${SAVE_LABEL[saveState]}. Abrir histórico de alterações`}
-            className={`ghost icon-btn save-state ${saveState}`}
-            type="button"
-            onClick={onHistory}
-          >
-            {saveState === 'salvando' ? (
-              <SpinnerIcon />
-            ) : saveState === 'erro' ? (
+      <div data-tauri-drag-region className="topbar-actions">
+        {/* O histórico fica no menu de configurações; aqui só aparece o aviso
+            quando a cópia no navegador não salvou. */}
+        {saveState === 'erro' && (
+          <Tip label={`${SAVE_TIP.erro}. Histórico de alterações`}>
+            <button
+              aria-label={`${SAVE_LABEL.erro}. Abrir histórico de alterações`}
+              className="ghost icon-btn save-state erro"
+              type="button"
+              onClick={onHistory}
+            >
               <AlertIcon />
-            ) : (
-              <HistoryIcon />
-            )}
-          </button>
-        </Tip>
-
-        <span aria-hidden="true" className="topbar-divider" />
+            </button>
+          </Tip>
+        )}
 
         {/* Exibição e arquivo: o que se usa menos fica no menu. */}
         <SettingsMenu

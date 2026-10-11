@@ -18,11 +18,13 @@ import {
   NO_FILTER,
 } from './facets.ts';
 import { FilterBar } from './FilterBar.tsx';
+import { EyeIcon, EyeOffIcon } from './icons.tsx';
 import { isListItem } from './item-meta.ts';
 import { ItemList } from './ItemList.tsx';
 import { JumpBar } from './JumpBar.tsx';
 import { type ListView, yearView } from './list-view.ts';
 import { MarkDialog } from './MarkDialog.tsx';
+import { Tip } from './primitives/Tip.tsx';
 import { PrivacyContext, usePrivacyMode } from './privacy.ts';
 import { useReferenceIndex } from './reference-context.ts';
 import { type ReferenceIndex, viewForContainer } from './reference-tables.ts';
@@ -62,7 +64,7 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
   const [state, setState] = useState<FilterState>(NO_FILTER);
   const rootRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const [hideSensitive] = usePrivacyMode();
+  const [hideSensitive, setHideSensitive] = usePrivacyMode();
   const [marking, setMarking] = useState(false);
   const mark = section.mark;
   const markButton = mark && mark.items.length > 0 && (
@@ -111,10 +113,27 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
   const showFilter = section.id !== 'dados-gerais';
   const hasPanel = section.groups.length > 0;
 
+  // Olho de privacidade em Dados gerais: na linha do título, à direita da
+  // coluna do conteúdo, e repetido no cabeçalho fixo ao rolar.
+  const privacyToggle = privacy ? (
+    <Tip label={hideSensitive ? 'Mostrar dados pessoais' : 'Esconder dados pessoais'}>
+      <button
+        aria-label="Esconder dados pessoais"
+        aria-pressed={hideSensitive}
+        className="ghost icon-btn privacy-toggle"
+        type="button"
+        onClick={() => setHideSensitive(!hideSensitive)}
+      >
+        {hideSensitive ? <EyeOffIcon /> : <EyeIcon />}
+      </button>
+    </Tip>
+  ) : null;
+
   const head = (
     <>
       <div className="section-head">
         <h1 ref={titleRef}>{section.label}</h1>
+        {privacyToggle}
         {section.groups.length > 0 && markButton && (
           <span className="section-head-actions">{markButton}</span>
         )}
@@ -147,6 +166,7 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
     <PrivacyContext.Provider value={privacy && hideSensitive}>
       <div ref={rootRef} className="section-layout">
         <StickyTitle
+          actions={privacyToggle}
           groups={visibleGroups.map((g) => ({ id: g.id, label: g.label }))}
           host={rootRef}
           label={section.label}

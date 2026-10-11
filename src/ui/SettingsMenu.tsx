@@ -10,7 +10,6 @@ import {
   CloseIcon,
   DownloadIcon,
   EyeIcon,
-  EyeOffIcon,
   HistoryIcon,
   MonitorIcon,
   MoonIcon,
@@ -19,7 +18,6 @@ import {
   SunIcon,
 } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
-import { usePrivacyMode } from './privacy.ts';
 import type { ThemePref } from './theme.ts';
 
 /** Ações que pedem um currículo aberto; sem elas, aparecem desabilitadas. */
@@ -49,8 +47,6 @@ const THEMES: { icon: ReactNode; label: string; value: ThemePref }[] = [
 ];
 
 export function SettingsMenu({ file, onTheme, theme }: Props) {
-  // Esconde dados pessoais em Dados gerais e põe a foto em mosaico.
-  const [hidePersonal, setHidePersonal] = usePrivacyMode();
   return (
     <Menu.Root>
       <Tip label="Configurações e arquivo">
@@ -87,21 +83,6 @@ export function SettingsMenu({ file, onTheme, theme }: Props) {
 
             <Menu.Group>
               <Menu.GroupLabel className="menu-heading">Exibição</Menu.GroupLabel>
-              <Menu.CheckboxItem
-                checked={hidePersonal}
-                className="menu-item"
-                closeOnClick={false}
-                disabled={!file}
-                onCheckedChange={setHidePersonal}
-              >
-                <span className="menu-icon">
-                  <EyeOffIcon />
-                </span>
-                <span className="menu-label">Modo de privacidade</span>
-                <Menu.CheckboxItemIndicator className="menu-check">
-                  <CheckIcon />
-                </Menu.CheckboxItemIndicator>
-              </Menu.CheckboxItem>
 
               <Menu.CheckboxItem
                 checked={file?.showEmpty ?? false}
