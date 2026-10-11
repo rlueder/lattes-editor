@@ -11,7 +11,9 @@ import { useEffect, useId, useState } from 'react';
 import { CopyButton } from './CopyButton.tsx';
 import { formatLattesDate } from './format.ts';
 import { Modal } from './Modal.tsx';
+import { PixelPhoto } from './PixelPhoto.tsx';
 import { Tip } from './primitives/Tip.tsx';
+import { PRIVACY_EVENT, readHideSensitive } from './privacy.ts';
 import {
   initials,
   parseCvCode,
@@ -29,6 +31,13 @@ export function ProfileCard({ profile }: { profile: Profile }) {
     profile.lattesId ? readCvCode(profile.lattesId) : undefined,
   );
   const [failed, setFailed] = useState(false);
+  // Com a privacidade ligada, a foto vira mosaico.
+  const [hidden, setHidden] = useState(readHideSensitive);
+  useEffect(() => {
+    const onChange = (e: Event) => setHidden((e as CustomEvent<boolean>).detail);
+    window.addEventListener(PRIVACY_EVENT, onChange);
+    return () => window.removeEventListener(PRIVACY_EVENT, onChange);
+  }, []);
   const [asking, setAsking] = useState(false);
   useEffect(() => setFailed(false), [code]);
   // A extensão da ponte entrega o código lido no Lattes.
@@ -48,7 +57,9 @@ export function ProfileCard({ profile }: { profile: Profile }) {
   return (
     <section aria-label="Currículo aberto" className="profile">
       <div aria-hidden="true" className="avatar">
-        {showPhoto ? (
+        {showPhoto && hidden ? (
+          <PixelPhoto src={photoUrl(code)} />
+        ) : showPhoto ? (
           <img alt="" src={photoUrl(code)} onError={() => setFailed(true)} />
         ) : (
           initials(profile.name)

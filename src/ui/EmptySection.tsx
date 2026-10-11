@@ -53,15 +53,9 @@ export function EmptySection({ onNewItem, onOpenPicker, section }: Props) {
       <h2 className="empty-title">{section.label}</h2>
       {description && <p className="empty-text">{description}</p>}
       {types.length === 0 ? (
-        <>
-          <p className="empty-text">Nada nesta seção na exportação carregada.</p>
-          {note && <p className="empty-text">{note}</p>}
-        </>
+        note && <p className="empty-caption">{note}</p>
       ) : (
         <>
-          <p className="empty-text">
-            O item novo entra no próximo arquivo para o Importar do Lattes.
-          </p>
           <div className="empty-actions">
             <button className="primary" type="button" onClick={onOpenPicker}>
               <PlusIcon /> Novo item
@@ -78,6 +72,9 @@ export function EmptySection({ onNewItem, onOpenPicker, section }: Props) {
               </button>
             ))}
           </div>
+          <p className="empty-caption">
+            O item novo entra no próximo arquivo para o Importar do Lattes.
+          </p>
         </>
       )}
     </div>

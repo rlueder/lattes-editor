@@ -9,7 +9,7 @@ import { getAttr, setAttr, type XElement } from '../model/xml.ts';
 import type { AttributeSpec } from '../schema/types.ts';
 import { parseEmails, parseSocial } from './contacts.ts';
 import { CopyButton } from './CopyButton.tsx';
-import { codeAttrFor, isBooleanAttr, isSystemAttr } from './field-kind.ts';
+import { codeAttrFor, codeValueLabel, isBooleanAttr, isSystemAttr } from './field-kind.ts';
 import { Select } from './primitives/Select.tsx';
 import { Switch } from './primitives/Switch.tsx';
 import { Tip } from './primitives/Tip.tsx';
@@ -139,7 +139,9 @@ export function AttributeField({
       <div className="field field-readonly" title="Gerado pelo Lattes; não se edita aqui">
         <span className="field-label">{text}</span>
         <span className="field-copy-row">
-          <span className="readonly-value">{value || '(vazio)'}</span>
+          <span className="readonly-value">
+            {value ? codeValueLabel(el.name, name, value) : '(vazio)'}
+          </span>
           {copyable && <CopyButton label={text} value={value} />}
         </span>
       </div>
@@ -147,6 +149,8 @@ export function AttributeField({
   }
 
   const boolean = isBooleanAttr(name, spec, value);
+  // Texto longo vira área de texto e ocupa a linha inteira, empilhado.
+  const textarea = !boolean && !spec?.enum && !prominent && (multiline || value.length > 90);
   let control;
   if (boolean) {
     control = (
@@ -196,7 +200,7 @@ export function AttributeField({
         }}
       />
     );
-  } else if (multiline || value.length > 90) {
+  } else if (textarea) {
     control = (
       <textarea
         {...common}
@@ -221,7 +225,7 @@ export function AttributeField({
 
   return (
     <div
-      className={`field${wide || prominent ? ' field-wide' : ''}${prominent ? ' field-prominent' : ''}${error ? ' has-error' : ''}`}
+      className={`field${wide || prominent || textarea ? ' field-wide' : ''}${prominent ? ' field-prominent' : ''}${error ? ' has-error' : ''}`}
     >
       <label
         className={prominent ? 'sr-only' : undefined}

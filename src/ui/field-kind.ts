@@ -17,7 +17,25 @@ const SYSTEM =
   /^(SEQUENCIA-|CODIGO-|COD-|ID-|NUMERO-IDENTIFICADOR$|NRO-ID-CNPQ$|FORMATO-|STATUS-OASISBR$|SIGLA-PAIS-|SIGLA-INSTITUICAO$|SIGLA-UF-INSTITUICAO$|DATA-ATUALIZACAO$|HORA-ATUALIZACAO$|ORCID-ID$)/;
 
 /** CPF do dono do currículo vem do cadastro; o CPF de autor é digitado. */
-const OWNER_ONLY: Record<string, string> = { CPF: 'DADOS-GERAIS', IDIOMA: 'IDIOMA' };
+const OWNER_ONLY: Record<string, string> = {
+  CPF: 'DADOS-GERAIS',
+  IDIOMA: 'IDIOMA',
+  // B ou E, posto pelo próprio formulário do Lattes conforme o país de nacionalidade.
+  NACIONALIDADE: 'DADOS-GERAIS',
+};
+
+/**
+ * Códigos de uma letra que o Lattes grava e mostra por extenso. NACIONALIDADE:
+ * o formulário de identificação põe "B" (exige CPF e RG) ou "E" (estrangeira),
+ * visto no JavaScript de prc_ident em 11/10/2026.
+ */
+const CODE_VALUES: Record<string, Record<string, string>> = {
+  'DADOS-GERAIS NACIONALIDADE': { B: 'Brasileira', E: 'Estrangeira' },
+};
+
+export function codeValueLabel(element: string, attr: string, value: string): string {
+  return CODE_VALUES[`${element} ${attr}`]?.[value] ?? value;
+}
 
 /**
  * Nome que acompanha um código escolhido numa lista do Lattes (instituição,

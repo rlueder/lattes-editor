@@ -16,7 +16,13 @@ import {
 import { lattesSchema } from '../src/schema/lattes.ts';
 import { parseEmails, parseSocial } from '../src/ui/contacts.ts';
 import { displayValue } from '../src/ui/display.ts';
-import { codeAttrFor, groupFields, isBooleanAttr, isSystemAttr } from '../src/ui/field-kind.ts';
+import {
+  codeAttrFor,
+  codeValueLabel,
+  groupFields,
+  isBooleanAttr,
+  isSystemAttr,
+} from '../src/ui/field-kind.ts';
 import { formatLattesDate } from '../src/ui/format.ts';
 import { parseHash } from '../src/ui/hash-route.ts';
 import { pendingMessage } from '../src/ui/pending.ts';
@@ -428,5 +434,16 @@ describe('aviso de pendências', () => {
     expect(pendingMessage(1, 0)).toBe('1 alteração ainda não está no Lattes.');
     expect(pendingMessage(3, 1)).toBe('3 alterações e 1 item novo ainda não estão no Lattes.');
     expect(pendingMessage(0, 2)).toBe('2 itens novos ainda não estão no Lattes.');
+  });
+});
+
+describe('nacionalidade', () => {
+  it('mostra o código por extenso, só leitura e privado', () => {
+    expect(codeValueLabel('DADOS-GERAIS', 'NACIONALIDADE', 'B')).toBe('Brasileira');
+    expect(codeValueLabel('DADOS-GERAIS', 'NACIONALIDADE', 'E')).toBe('Estrangeira');
+    expect(codeValueLabel('DADOS-GERAIS', 'NACIONALIDADE', 'X')).toBe('X');
+    expect(isSystemAttr('DADOS-GERAIS', 'NACIONALIDADE')).toBe(true);
+    expect(isSensitiveAttr('DADOS-GERAIS', 'NACIONALIDADE')).toBe(true);
+    expect(isSensitiveAttr('DADOS-GERAIS', 'PAIS-DE-NACIONALIDADE')).toBe(true);
   });
 });

@@ -63,7 +63,6 @@ function FieldsBlock({
               return (
                 <AttributeField
                   key={e.key}
-                  copyable
                   el={sources[i]!}
                   name={e.attr}
                   spec={specs[i]!.get(e.attr)}

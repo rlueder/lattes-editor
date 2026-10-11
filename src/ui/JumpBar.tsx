@@ -80,7 +80,11 @@ export function JumpBar({
       // Ativa é a última divisão cujo título já passou da borda de baixo da barra.
       // A folga cobre o arredondamento de scroll-margin, que põe o título na borda.
       // Na lista vertical, a borda é o cabeçalho da página.
-      const edgeEl = vertical ? document.querySelector('.topbar') : barRef.current;
+      // Com a barra do título visível, a borda é ela; senão, o cabeçalho.
+      const edgeEl = vertical
+        ? (document.querySelector('.sticky-title.visible .sticky-title-bar') ??
+          document.querySelector('.topbar'))
+        : barRef.current;
       const edge = (edgeEl?.getBoundingClientRect().bottom ?? 0) + 24;
       let current = headIds[0];
       for (const id of headIds) {

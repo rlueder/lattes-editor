@@ -3614,3 +3614,226 @@ details > summary::-webkit-details-marker {
 .pending-close {
   color: var(--warn-text);
 }
+
+/* Confirmação de ação que apaga: botão principal em vermelho. */
+button.primary.danger-fill {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: var(--surface);
+}
+
+button.primary.danger-fill:hover {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 85%, black);
+}
+
+.confirm-warning {
+  padding: 8px 12px;
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+
+/* Botões do rodapé dos modais: mesma altura e o mesmo respiro. */
+.modal-foot button,
+.form-foot button {
+  height: 32px;
+  padding: 0 14px;
+  line-height: 1;
+}
+
+.modal-head .modal-close {
+  width: 30px;
+  height: 30px;
+}
+
+/* Vermelho de ação que apaga: forte nos dois temas, texto branco. */
+:root {
+  --danger-strong: #a3261b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --danger-strong: #b8382c;
+  }
+}
+
+:root[data-theme='dark'] {
+  --danger-strong: #b8382c;
+}
+
+button.primary.danger-fill,
+button.primary.danger-fill:hover {
+  border-color: var(--danger-strong);
+  background: var(--danger-strong);
+  color: #fff;
+}
+
+button.primary.danger-fill:hover {
+  filter: brightness(1.08);
+}
+
+/* Menu lateral sem calha à esquerda: o atalho aparece no lugar do selo da
+   contagem, num selo neutro, enquanto o modificador está seguro. */
+.sidebar li > button {
+  padding-left: 12px;
+}
+
+.sidebar .nav-counts .count.nav-key {
+  position: static;
+  transform: none;
+  background: var(--surface-2);
+  color: var(--muted);
+  font: 600 11px/1 var(--font);
+  opacity: 1;
+}
+
+/* Áreas de texto: largura toda, altura que acompanha o conteúdo. */
+.field textarea:not(.title-input) {
+  min-height: 96px;
+  field-sizing: content;
+  max-height: 420px;
+}
+
+/* Itens do menu lateral mais altos: alvo maior e lista mais arejada. */
+.sidebar li > button {
+  min-height: 36px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+.sidebar li + li {
+  margin-top: 2px;
+}
+
+/* Valor novo na lista de alterações: copiar dentro do valor, à direita,
+   alinhado ao topo quando o texto ocupa várias linhas. */
+.change-fields .after-value {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 4px 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.change-fields .after-text {
+  flex: 1;
+  min-width: 0;
+  padding-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+.change-fields .after-value .copy-btn {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.change-fields .after-value .copy-btn:hover {
+  color: var(--accent);
+}
+
+.change-fields .copy {
+  width: 40px;
+}
+
+/* Texto longo para ler e editar: corpo um pouco maior, entrelinha folgada,
+   respiro interno e linha limitada a uma medida confortável. */
+.field textarea:not(.title-input) {
+  padding: 14px 16px;
+  font-size: 15px;
+  line-height: 1.65;
+  max-width: 78ch;
+  max-height: 560px;
+}
+
+.field-wide > label {
+  margin-bottom: 2px;
+}
+
+.field-wide + .field-wide {
+  margin-top: 10px;
+}
+
+/* Coluna do selo com largura fixa: trocar contagem por atalho não mexe no
+   rótulo. */
+.sidebar .nav-counts {
+  flex: none;
+  min-width: 34px;
+  justify-content: flex-end;
+}
+
+/* Estado vazio: texto em linhas equilibradas; a última nota vira legenda. */
+.empty-section .empty-text,
+.empty-section .empty-caption {
+  text-wrap: balance;
+}
+
+.empty-section .empty-text {
+  max-width: 40ch;
+  margin-inline: auto;
+}
+
+.empty-caption {
+  max-width: 44ch;
+  margin: 16px auto 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+/* Campo mascarado pela privacidade: a mesma caixa de um campo de verdade,
+   só que sem edição, para a grade não mudar quando o olho alterna. */
+.field-hidden .readonly-value {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--muted);
+  font: 14px/1 var(--font);
+  letter-spacing: 0.18em;
+  cursor: not-allowed;
+}
+
+/* Mesma conta de altura do campo de texto: 14 px × 1,5 + 6 + 6 + bordas. */
+.field-hidden .readonly-value {
+  font: 14px/1.5 var(--font);
+}
+
+.profile .avatar .pixel-photo {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+/* Fio entre os grupos de campos (Instituição, Período, Local…), com
+   respiro em cima e embaixo. */
+.fields-block > .fields-group:not(:first-child) {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--divider);
+}
+
+/* Respiro entre rótulo e campo, entre título do grupo de campos e a
+   primeira linha, e entre as linhas. */
+.field {
+  gap: 7px;
+}
+
+.fields-block > .fields-group {
+  margin-bottom: 14px;
+}
+
+.fields.cols-2,
+.fields.cols-3 {
+  row-gap: 18px;
+}

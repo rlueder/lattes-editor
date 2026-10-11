@@ -22,6 +22,10 @@ const SENSITIVE_PERSONAL = new Set([
   'RACA-OU-COR',
   'PCD',
   'DATA-FALECIMENTO',
+  // O próprio Lattes deixa a nacionalidade privada (f_priv_nacionalidade).
+  'NACIONALIDADE',
+  'PAIS-DE-NACIONALIDADE',
+  'SIGLA-PAIS-NACIONALIDADE',
 ]);
 
 /** O endereço residencial inteiro é sensível; o profissional aparece no currículo público. */
@@ -48,10 +52,16 @@ export function readHideSensitive(): boolean {
   }
 }
 
+/** Evento da janela avisando que o modo de privacidade mudou. */
+export const PRIVACY_EVENT = 'lattes-editor:privacidade';
+
 export function writeHideSensitive(hide: boolean): void {
   try {
     localStorage.setItem(KEY, hide ? '1' : '0');
   } catch {
     // Sem armazenamento: vale até recarregar a página.
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(PRIVACY_EVENT, { detail: hide }));
   }
 }

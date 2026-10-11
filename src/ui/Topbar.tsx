@@ -2,8 +2,9 @@
 // trabalho; à direita encontrar, editar, levar ao Lattes e, no menu
 // de configurações, o que se usa menos.
 
-import { type Ref, useRef } from 'react';
+import { type Ref, useRef, useState } from 'react';
 
+import { CloseConfirm } from './dialogs.tsx';
 import { AlertIcon, HistoryIcon, PlusIcon, SearchIcon, SpinnerIcon, UploadIcon } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { SettingsMenu } from './SettingsMenu.tsx';
@@ -64,6 +65,7 @@ export function Topbar({
   theme,
 }: Props) {
   const reloadInput = useRef<HTMLInputElement>(null);
+  const [closing, setClosing] = useState(false);
   return (
     <header ref={ref} className="topbar">
       {/* Marca; quem é o currículo fica no menu lateral. */}
@@ -145,13 +147,23 @@ export function Topbar({
           modified={modified}
           showEmpty={showEmpty}
           theme={theme}
-          onClose={onClose}
+          onClose={() => setClosing(true)}
           onHistory={onHistory}
           onPrint={onPrint}
           onReload={() => reloadInput.current?.click()}
           onSave={onSave}
           onShowEmpty={onShowEmpty}
           onTheme={onTheme}
+        />
+        <CloseConfirm
+          open={closing}
+          pending={pendingCount}
+          onCancel={() => setClosing(false)}
+          onConfirm={() => {
+            setClosing(false);
+            onClose();
+          }}
+          onSave={onSave}
         />
         <input
           ref={reloadInput}

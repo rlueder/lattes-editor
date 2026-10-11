@@ -54,14 +54,10 @@ export const SECTION_DESCRIPTIONS: Record<string, string> = {
 export const EMPTY_NOTES: Record<string, string> = {
   atuacao:
     'Atuações não entram pelo Importar do Lattes; cadastre no próprio Lattes e recarregue a exportação.',
-  'dados-gerais': 'A exportação não trouxe dados gerais.',
-  educacao:
-    'Aparecem aqui os itens marcados como divulgação científica. Ao editar um item, ligue "Divulgação científica".',
+  educacao: 'Para um item aparecer aqui, ligue "Divulgação científica" ao editá-lo.',
   formacao:
     'Formações não entram pelo Importar do Lattes; cadastre no próprio Lattes e recarregue a exportação.',
-  inovacao:
-    'Aparecem aqui os itens marcados com potencial de inovação. Ao editar um item, ligue "Potencial inovação".',
-  outros: 'Nada fora das outras seções nesta exportação.',
+  inovacao: 'Para um item aparecer aqui, ligue "Potencial inovação" ao editá-lo.',
   patentes:
     'Patentes e registros não entram pelo Importar do Lattes; cadastre no próprio Lattes e recarregue a exportação.',
   projetos:

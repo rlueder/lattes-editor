@@ -72,8 +72,11 @@ export function App() {
   useEffect(() => {
     const bar = topbarRef.current;
     if (!bar) return;
+    // Cabeçalho desmontado (troca de tela, recarga do código) mede 0; não publica.
     const observer = new ResizeObserver(() => {
-      document.documentElement.style.setProperty('--topbar-h', `${bar.offsetHeight}px`);
+      if (bar.offsetHeight > 0) {
+        document.documentElement.style.setProperty('--topbar-h', `${bar.offsetHeight}px`);
+      }
     });
     observer.observe(bar);
     return () => observer.disconnect();

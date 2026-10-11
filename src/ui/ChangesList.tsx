@@ -76,15 +76,20 @@ export function ChangesList({ groups, onDiscard, onDiscardField }: Props) {
                                 </td>
                               )}
                               <td className="after">
-                                {change.kind === 'removido'
-                                  ? show(f.before)
-                                  : show(f.after) || <span className="muted">(vazio)</span>}
+                                {/* Copiar fica dentro do valor, à direita; em texto longo, no alto. */}
+                                <span className="after-value">
+                                  <span className="after-text">
+                                    {change.kind === 'removido'
+                                      ? show(f.before)
+                                      : show(f.after) || <span className="muted">(vazio)</span>}
+                                  </span>
+                                  {change.kind !== 'removido' && show(f.after) && (
+                                    <CopyButton label={f.label} value={show(f.after)} />
+                                  )}
+                                </span>
                               </td>
                               <td className="copy">
                                 <span className="field-actions">
-                                  {change.kind !== 'removido' && (
-                                    <CopyButton label={f.label} value={show(f.after)} />
-                                  )}
                                   {change.kind === 'alterado' && (
                                     <DiscardButton
                                       label={`Descartar ${f.label}`}
