@@ -38,8 +38,8 @@
           <h1 id="titulo">Seu Currículo Lattes num editor que não atrapalha</h1>
           <p class="lede">
             Abra a exportação do Lattes, ache qualquer item por seção ou por ano, cadastre produções
-            a partir do DOI e revise o que mudou antes de levar ao Lattes. O arquivo fica no seu
-            navegador.
+            a partir do DOI, revise o que mudou e leve de volta ao Lattes, pelo Importar ou pela
+            extensão. O arquivo fica no seu navegador.
           </p>
           <div class="hero-actions">
             <a class="btn" href="app/">Abrir o editor</a>
@@ -55,7 +55,7 @@
               <img
                 src="img/editor-claro.jpg"
                 width="1352"
-                height="711"
+                height="767"
                 alt="O editor aberto na seção Produções: menu de seções à esquerda, itens agrupados por ano no centro e, à direita, o painel com o filtro e o índice da seção."
               />
             </picture>
@@ -87,9 +87,7 @@
               <p>
                 As listas longas se dividem por ano.
                 <span class="combo"><kbd>⌘</kbd><kbd>K</kbd></span> leva a qualquer seção ou grupo,
-                e <span class="combo"><kbd>⌃</kbd><kbd>1</kbd></span> a
-                <span class="combo"><kbd>⌃</kbd><kbd>9</kbd></span> trocam de seção (<kbd>Alt</kbd>
-                fora do Mac).
+                e <span class="combo"><kbd>G</kbd> e uma letra</span> abre cada uma das doze seções.
               </p>
             </li>
             <li class="card">
@@ -137,6 +135,73 @@
                 próprio Lattes, com os passos e os módulos que você precisa marcar lá.
               </p>
             </li>
+            <li class="card">
+              <span class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M4 12h6M14 12h6M10 9l4 3-4 3M4 6v12M20 6v12" />
+                </svg>
+              </span>
+              <h3>Ponte com o Lattes <span class="pill">em teste</span></h3>
+              <p>
+                Uma extensão para Chrome e Brave grava as alterações no Lattes a partir da sua
+                própria sessão, uma de cada vez, e lê de volta para conferir. Hoje leva os vínculos
+                da atuação e o resumo; nenhuma senha passa por ela.
+              </p>
+            </li>
+            <li class="card">
+              <span class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M7 8V4h10v4M7 16H5v-6h14v6h-2M7 14h10v6H7z" />
+                </svg>
+              </span>
+              <h3>Imprimir ou salvar em PDF</h3>
+              <p>
+                Escolha as seções ou um modelo e veja a página antes de imprimir. Sai nas regras da
+                NBR 14724, em preto, com as referências na NBR 6023 e, se quiser, o código QR do
+                currículo no cabeçalho.
+              </p>
+            </li>
+            <li class="card">
+              <span class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"
+                  />
+                </svg>
+              </span>
+              <h3>Compartilhar com QR</h3>
+              <p>
+                Um código QR do seu currículo público no Lattes, para baixar em SVG ou PNG e pôr em
+                pôster, slide ou crachá. Gerado no navegador.
+              </p>
+            </li>
+            <li class="card">
+              <span class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M3 3l18 18M10.6 5.1A9.5 9.5 0 0 1 12 5c6 0 9.5 7 9.5 7a16 16 0 0 1-2.4 3.3M6.6 6.6C3.9 8.3 2.5 12 2.5 12S6 19 12 19a9.4 9.4 0 0 0 5.4-1.6"
+                  />
+                </svg>
+              </span>
+              <h3>Modo de privacidade</h3>
+              <p>
+                Para mostrar a tela a alguém: documentos, nascimento, filiação, nacionalidade e
+                endereço residencial ficam mascarados, e a foto vira um mosaico. Vem ligado.
+              </p>
+            </li>
+            <li class="card">
+              <span class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 3l8 4v5c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V7z" />
+                </svg>
+              </span>
+              <h3>Campos que não se estragam</h3>
+              <p>
+                Códigos e nomes que vêm de listas do Lattes (instituição, curso, idioma, país) ficam
+                só leitura, lado a lado. Um aviso mostra o que ainda não está no Lattes, e fechar o
+                currículo pede confirmação.
+              </p>
+            </li>
           </ul>
         </div>
       </section>
@@ -159,8 +224,8 @@
             <li>
               <h3>Leve ao Lattes</h3>
               <p>
-                Produções novas entram pelo Importar do Lattes. O resto você copia campo a campo,
-                guiado pela lista de alterações.
+                Produções novas entram pelo Importar do Lattes. O resto vai pela extensão da ponte
+                ou, sem ela, campo a campo, guiado pela lista de alterações.
               </p>
             </li>
           </ol>
@@ -169,7 +234,7 @@
               ><span class="combo"><kbd>⌘</kbd><kbd>K</kbd></span> ir para</span
             >
             <span
-              ><span class="combo"><kbd>⌃</kbd><kbd>1</kbd>–<kbd>9</kbd></span> seções</span
+              ><span class="combo"><kbd>G</kbd> + letra</span> seções</span
             >
             <span
               ><span class="combo"><kbd>⌘</kbd><kbd>Enter</kbd></span> salvar o item</span
@@ -192,10 +257,14 @@
             <li>
               Cópia de trabalho no armazenamento do navegador, com histórico das últimas edições.
             </li>
-            <li>Nenhum dado do currículo é enviado a lugar nenhum.</li>
+            <li>Nenhum dado do currículo vai para servidor nosso: não há servidor.</li>
             <li>
-              A única chamada de rede é a busca do DOI no Crossref, quando você pede, levando só o
-              DOI.
+              Saem do computador só a busca do DOI no Crossref, quando você pede, e a foto do
+              perfil, buscada no CNPq pelo código do currículo.
+            </li>
+            <li>
+              Com a extensão, as alterações vão direto para o Lattes, na sua sessão, só quando você
+              clica em aplicar.
             </li>
           </ul>
         </div>
@@ -212,10 +281,10 @@
             </li>
             <li class="card card-soon">
               <span class="pill">em breve</span>
-              <h3>Ponte com o Lattes</h3>
+              <h3>BibTeX, RIS e Word</h3>
               <p>
-                Uma extensão para Chrome e Brave que leva as alterações para o Lattes na sua sessão,
-                sem copiar campo a campo.
+                A produção para Zotero, Mendeley, EndNote e ORCID, e o currículo em DOCX para
+                editais que pedem arquivo editável.
               </p>
             </li>
           </ul>
