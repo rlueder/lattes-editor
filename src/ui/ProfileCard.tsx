@@ -22,6 +22,7 @@ import {
   readCvCode,
   writeCvCode,
 } from './profile.ts';
+import { QrCode } from './QrCode.tsx';
 import { ShareDialog } from './ShareDialog.tsx';
 import { CV_CODE_EVENT } from './use-bridge.ts';
 
@@ -53,25 +54,39 @@ export function ProfileCard({ profile }: { profile: Profile }) {
   const showPhoto = code && !failed;
   return (
     <section aria-label="Currículo aberto" className="profile">
-      <div className="avatar-wrap">
-        <div aria-hidden="true" className="avatar">
-          {showPhoto && hidden ? (
-            <PixelPhoto src={photoUrl(code)} />
-          ) : showPhoto ? (
-            <img alt="" src={photoUrl(code)} onError={() => setFailed(true)} />
-          ) : (
-            initials(profile.name)
+      <div className="profile-top">
+        <div className="avatar-wrap">
+          <div aria-hidden="true" className="avatar">
+            {showPhoto && hidden ? (
+              <PixelPhoto src={photoUrl(code)} />
+            ) : showPhoto ? (
+              <img alt="" src={photoUrl(code)} onError={() => setFailed(true)} />
+            ) : (
+              initials(profile.name)
+            )}
+          </div>
+          {url && (
+            <Tip label="Foto do perfil">
+              <button
+                aria-label="Editar a foto do perfil"
+                className="avatar-edit"
+                type="button"
+                onClick={() => setAsking(true)}
+              >
+                <PencilIcon />
+              </button>
+            </Tip>
           )}
         </div>
         {url && (
-          <Tip label="Foto do perfil">
+          <Tip label="Compartilhar o currículo">
             <button
-              aria-label="Editar a foto do perfil"
-              className="avatar-edit"
+              aria-label="Compartilhar o currículo"
+              className="profile-qr"
               type="button"
-              onClick={() => setAsking(true)}
+              onClick={() => setSharing(true)}
             >
-              <PencilIcon />
+              <QrCode label="" text={url} />
             </button>
           </Tip>
         )}
@@ -82,11 +97,6 @@ export function ProfileCard({ profile }: { profile: Profile }) {
           <Tip label="Data registrada no arquivo exportado do Lattes">
             <span className="profile-line muted">Arquivo de {date}</span>
           </Tip>
-        )}
-        {url && (
-          <button className="ghost profile-share" type="button" onClick={() => setSharing(true)}>
-            Compartilhar
-          </button>
         )}
       </div>
       {url && <ShareDialog open={sharing} url={url} onClose={() => setSharing(false)} />}

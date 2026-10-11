@@ -4042,14 +4042,31 @@ button.primary:hover:not(:disabled) {
   }
 }
 
-/* Compartilhar o currículo. */
-.profile-share {
+/* Compartilhar o currículo: miniatura do QR, que abre o modal com o QR
+   grande, o link e o download. */
+.profile-qr {
   align-self: flex-start;
-  height: 28px;
-  margin-top: 6px;
-  padding: 0 10px;
+  display: block;
+  width: 56px;
+  height: 56px;
+  margin-top: 8px;
+  padding: 3px;
   border: 1px solid var(--border-strong);
-  font-size: 12px;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+
+.profile-qr svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.profile-qr:hover,
+.profile-qr:focus-visible {
+  border-color: var(--accent);
 }
 
 .modal.share-dialog {
@@ -4275,7 +4292,6 @@ button.primary:hover:not(:disabled) {
 .bridge-btn,
 .change-actions button,
 .pending-open,
-.profile-share,
 .share-actions button {
   height: var(--btn-h);
   padding-block: 0;
@@ -4381,9 +4397,20 @@ button.primary:hover:not(:disabled) {
   transform: rotate(90deg);
 }
 
-/* O fundo do hover passa um pouco da seta, para ela não encostar na borda. */
-.group details.item > summary:hover {
-  box-shadow: -10px 0 0 var(--surface-2);
+/* O item inteiro (fio, hover e fundo do aberto) passa 10px para cada lado
+   da coluna; o recuo interno devolve esses 10px, e assim a seta continua
+   alinhada ao ano e todos os fundos começam e terminam no mesmo lugar. */
+.group details.item {
+  margin-inline: -10px;
+}
+
+.group details.item > summary {
+  padding-left: 36px;
+  padding-right: 24px;
+}
+
+.group details.item > :not(summary) {
+  padding-inline: 24px;
 }
 
 /* Escolha do tipo com a mesma hierarquia do ⌘K: seção (Mais usados, Todos
@@ -4517,4 +4544,116 @@ button.primary:hover:not(:disabled) {
 
 .picker-module + .picker-module h4 {
   margin-top: 24px;
+}
+
+/* Topo do menu lateral: a marca, depois avatar e QR lado a lado (o QR
+   alinhado à base do avatar). */
+.sidebar-brand {
+  padding: 4px 8px 18px;
+  /* Marca não é texto para selecionar nem link: cursor normal. */
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.profile-top {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.profile-top .profile-qr {
+  margin-top: 0;
+}
+
+/* QR atrás do avatar, do mesmo tamanho e redondo, aparecendo um pouco à
+   direita. No hover vem para a frente (e anda um pouco) e aceita o clique.
+   O QR inteiro cabe no círculo (quadrado inscrito), então ainda dá para ler. */
+.profile-top {
+  gap: 0;
+}
+
+.profile-top .avatar-wrap {
+  z-index: 2;
+}
+
+.profile-top .profile-qr {
+  position: relative;
+  z-index: 1;
+  width: 88px;
+  height: 88px;
+  margin-left: -58px;
+  padding: 12px;
+  border: 3px solid var(--divider);
+  border-radius: 50%;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.profile-top .profile-qr:hover,
+.profile-top .profile-qr:focus-visible {
+  z-index: 3;
+  border-color: var(--accent);
+  transform: translateX(10px);
+}
+
+/* O lápis da foto vai para a esquerda do avatar, longe do QR. */
+.profile-top .avatar-edit {
+  right: auto;
+  left: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-top .profile-qr {
+    transition: none;
+  }
+  .profile-top .profile-qr:hover,
+  .profile-top .profile-qr:focus-visible {
+    transform: none;
+  }
+}
+
+/* Hover dos itens mais discreto: metade do tom de superfície. */
+.group details > summary:hover {
+  background: color-mix(in srgb, var(--surface-2) 50%, transparent);
+}
+
+/* Marca no topo do menu lateral, maior que a do antigo cabeçalho. */
+.sidebar-brand .brand {
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
+/* Linha de base da marca na mesma altura da do caminho (Dados gerais ›
+   Identificação) no cabeçalho fixo da seção. */
+.sidebar-brand {
+  margin-top: -8px;
+}
+
+/* Selo de contagem no canto de um botão de ícone (Levar ao Lattes): azul
+   sólido, com um anel na cor do cabeçalho para destacar do ícone. Cresce
+   para os lados com dois dígitos; acima de 99 vira "99+". */
+.icon-btn.has-badge {
+  position: relative;
+}
+
+.icon-badge {
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border: 2px solid var(--chrome);
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
 }

@@ -24,6 +24,12 @@ export function Sidebar({ activeId, disabled, onSelect, pendingIn, profile, sect
 
   return (
     <nav aria-label="Seções" className="sidebar">
+      {/* Marca provisória, até existir um logo. */}
+      <div className="sidebar-brand">
+        <span aria-label="LattesEditor" className="brand">
+          Lattes<span className="brand-accent">Editor</span>
+        </span>
+      </div>
       {profile ? (
         <ProfileCard profile={profile} />
       ) : (

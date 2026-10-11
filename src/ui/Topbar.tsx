@@ -69,13 +69,9 @@ export function Topbar({
   const [closing, setClosing] = useState(false);
   return (
     <header ref={ref} data-tauri-drag-region className="topbar">
-      {/* Marca; quem é o currículo fica no menu lateral. */}
-      <div data-tauri-drag-region className="topbar-identity">
-        {/* Marca provisória, até existir um logo. */}
-        <span aria-label="LattesEditor" className="brand">
-          Lattes<span className="brand-accent">Editor</span>
-        </span>
-      </div>
+      {/* A marca e quem é o currículo ficam no menu lateral; aqui, só espaço
+          (e, no app de macOS, os botões da janela). */}
+      <div data-tauri-drag-region className="topbar-identity" />
 
       {/* Encontrar: centralizado na página */}
       <div data-tauri-drag-region className="topbar-center">
@@ -101,7 +97,7 @@ export function Topbar({
           </button>
         </Tip>
 
-        {/* Levar ao Lattes: vira o botão principal quando há algo pendente. */}
+        {/* Levar ao Lattes: só o ícone; o selo no canto conta o que falta levar. */}
         <Tip
           label={
             pendingCount > 0 ? `Levar ao Lattes (${pendingCount} pendências)` : 'Levar ao Lattes'
@@ -111,14 +107,14 @@ export function Topbar({
             aria-label={
               pendingCount > 0 ? `Levar ao Lattes, ${pendingCount} pendências` : 'Levar ao Lattes'
             }
-            className={`icon-btn ${pendingCount > 0 ? 'primary' : 'ghost'}`}
+            className="ghost icon-btn has-badge"
             type="button"
             onClick={onExport}
           >
             <UploadIcon />
             {pendingCount > 0 && (
-              <span aria-hidden="true" className="tag count-tag">
-                {pendingCount}
+              <span aria-hidden="true" className="icon-badge">
+                {pendingCount > 99 ? '99+' : pendingCount}
               </span>
             )}
           </button>

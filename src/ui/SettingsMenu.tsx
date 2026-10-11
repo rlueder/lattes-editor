@@ -163,9 +163,7 @@ export function SettingsMenu({ file, onTheme, theme }: Props) {
             </Menu.Item>
 
             <Menu.Separator className="menu-sep" />
-            <div className="menu-version">
-              Editor do Currículo Lattes · versão {__APP_VERSION__}
-            </div>
+            <div className="menu-version">v{__APP_VERSION__}</div>
           </Menu.Popup>
         </Menu.Positioner>
       </Menu.Portal>

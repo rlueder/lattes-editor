@@ -80,11 +80,7 @@ export function Welcome({ error, onFile, onTheme, theme }: Props) {
       onDrop={onDrop}
     >
       <header data-tauri-drag-region className="topbar">
-        <div data-tauri-drag-region className="topbar-identity">
-          <span aria-label="LattesEditor" className="brand">
-            Lattes<span className="brand-accent">Editor</span>
-          </span>
-        </div>
+        <div data-tauri-drag-region className="topbar-identity" />
         <div data-tauri-drag-region className="topbar-center">
           <button disabled className="ghost search-btn" type="button">
             <SearchIcon />
