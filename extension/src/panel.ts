@@ -2,6 +2,7 @@
 // para todas, o resultado de cada uma e o botão de parar.
 
 import type { OpResult } from '../../src/bridge/apply.ts';
+import { opRows } from '../../src/bridge/field-labels.ts';
 import type { PanelCommand, QueueState } from './state.ts';
 import { readState } from './state.ts';
 
@@ -11,26 +12,6 @@ const STATUS: Record<OpResult['status'], string> = {
   erro: 'Erro',
   sessao: 'Sessão caiu',
 };
-
-/** Nomes dos campos dos formulários do Lattes, como a pessoa os conhece. */
-const FIELD_LABELS: Record<string, string> = {
-  f_ano_fim: 'Ano de fim',
-  f_ano_ini: 'Ano de início',
-  f_carga: 'Carga horária',
-  f_enqua: 'Enquadramento',
-  f_enqua_en: 'Enquadramento (inglês)',
-  f_mes_fim: 'Mês de fim',
-  f_mes_ini: 'Mês de início',
-  f_outras_inf: 'Outras informações',
-  f_outras_inf_en: 'Outras informações (inglês)',
-  f_regime: 'Dedicação exclusiva',
-  f_status: 'Situação',
-  f_stavinc: 'Vínculo empregatício',
-  F_TEXTO: 'Resumo',
-  F_TEXTO_EN: 'Resumo (inglês)',
-};
-
-const shown = (v: string | null | undefined) => (v ? v : '(vazio)');
 
 const send = (cmd: PanelCommand) => void chrome.runtime.sendMessage(cmd);
 
@@ -100,12 +81,12 @@ function render(state: QueueState): void {
     const fields = el(
       'dl',
       { className: 'campos' },
-      Object.entries(op.set).flatMap(([name, value]) => [
-        el('dt', { textContent: FIELD_LABELS[name] ?? name }),
+      opRows(op).flatMap((row) => [
+        el('dt', { textContent: row.label }),
         el('dd', {}, [
-          el('span', { className: 'antes', textContent: shown(op.expect[name]) }),
+          el('span', { className: 'antes', textContent: row.before }),
           ' → ',
-          el('span', { textContent: shown(value) }),
+          el('span', { textContent: row.after }),
         ]),
       ]),
     );

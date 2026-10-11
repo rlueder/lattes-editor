@@ -4130,3 +4130,53 @@ button.primary:hover:not(:disabled) {
 .empty-caption {
   opacity: 1;
 }
+
+/* Confirmação do envio ao Lattes. */
+.modal.send-confirm {
+  width: min(620px, calc(100% - 32px));
+}
+
+.send-list {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.send-list > li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.send-list dl {
+  margin: 6px 0 0;
+}
+
+.send-field {
+  display: grid;
+  grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
+  gap: 10px;
+  font-size: 13px;
+}
+
+.send-field dt {
+  color: var(--muted);
+}
+
+.send-field dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.send-before {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.send-backup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}

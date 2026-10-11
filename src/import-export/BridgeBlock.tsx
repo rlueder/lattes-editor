@@ -3,9 +3,12 @@
 // visto) quando tudo foi gravado e lido de volta. O que foi conferido sai da
 // lista de alterações, porque o Lattes já está igual à cópia de trabalho.
 
+import { useState } from 'react';
+
 import type { ResultStatus } from '../bridge/apply.ts';
 import { CheckIcon, UploadIcon } from '../ui/icons.tsx';
 import type { BridgeState } from '../ui/use-bridge.ts';
+import { SendConfirm } from './SendConfirm.tsx';
 
 const STATUS: Record<Exclude<ResultStatus, 'conferido'>, string> = {
   divergente: 'o Lattes está diferente do esperado',
@@ -15,6 +18,8 @@ const STATUS: Record<Exclude<ResultStatus, 'conferido'>, string> = {
 
 export function BridgeBlock({ bridge }: { bridge: BridgeState }) {
   const { ops, unsupported } = bridge.plan;
+  // Nada vai ao Lattes sem a pessoa ver a fila inteira e confirmar.
+  const [confirming, setConfirming] = useState(false);
   const failed = Object.values(bridge.results).filter((r) => r.status !== 'conferido');
   const allDone = ops.length === 0 && bridge.confirmed > 0 && failed.length === 0;
   if (!bridge.available || (ops.length === 0 && bridge.confirmed === 0)) return null;
@@ -40,7 +45,7 @@ export function BridgeBlock({ bridge }: { bridge: BridgeState }) {
             Parar
           </button>
         ) : (
-          <button className="bridge-btn primary" type="button" onClick={bridge.send}>
+          <button className="bridge-btn primary" type="button" onClick={() => setConfirming(true)}>
             <UploadIcon /> Enviar pela extensão
           </button>
         )}
@@ -62,6 +67,15 @@ export function BridgeBlock({ bridge }: { bridge: BridgeState }) {
           ))}
         </ul>
       )}
+      <SendConfirm
+        open={confirming}
+        ops={ops}
+        onCancel={() => setConfirming(false)}
+        onSend={(backup) => {
+          setConfirming(false);
+          bridge.send({ backup });
+        }}
+      />
     </div>
   );
 }

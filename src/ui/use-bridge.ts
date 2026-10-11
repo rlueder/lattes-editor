@@ -15,7 +15,9 @@ import {
   isBridgeMessage,
 } from '../bridge/protocol.ts';
 import type { Session } from '../forms/use-production.ts';
-import { getAttr } from '../model/xml.ts';
+import { encodeCv } from '../model/document.ts';
+import { getAttr, parseXml } from '../model/xml.ts';
+import { backupFileName, downloadBytes } from './backup.ts';
 import type { ChangeGroup } from './changes-view.ts';
 import { writeCvCode } from './profile.ts';
 
@@ -32,7 +34,8 @@ export interface BridgeState {
   plan: ReturnType<typeof planChanges>;
   results: Record<string, OpResult>;
   running: boolean;
-  send: () => void;
+  /** backup: baixa antes uma cópia do currículo como está no Lattes. */
+  send: (options?: { backup?: boolean }) => void;
   stop: () => void;
 }
 
@@ -91,7 +94,14 @@ export function useBridge(
     plan,
     results,
     running,
-    send: () => {
+    send: ({ backup = false } = {}) => {
+      if (backup && session) {
+        const original = parseXml(session.meta.originalXml);
+        downloadBytes(
+          encodeCv(original, session.meta.encoding),
+          backupFileName(session.meta.fileName, new Date()),
+        );
+      }
       setResults({});
       setConfirmed(0);
       setRunning(true);
