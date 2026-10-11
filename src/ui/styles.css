@@ -2818,3 +2818,137 @@ details > .element {
   height: 88px;
   font-size: 26px;
 }
+
+/* Estado vazio de seção: bloco centrado, desenho em traço, texto e ações. */
+.empty-section {
+  max-width: 440px;
+  margin: 12vh auto 0;
+  padding: 0;
+  border: 0;
+  text-align: left;
+}
+
+.empty-art {
+  display: block;
+  margin: 0 0 18px;
+  color: var(--muted);
+}
+
+.empty-section .empty-title {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.empty-text {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.empty-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+}
+
+.empty-actions .empty-type {
+  max-width: 100%;
+  overflow: hidden;
+  border-color: var(--border);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-actions .empty-type:hover {
+  background: var(--surface-2);
+}
+
+/* Camadas de fundo, como no Linear: a moldura (cabeçalho e menu lateral) é
+   o tom mais fundo; o conteúdo é um painel inset um degrau acima; cartões,
+   campos e o painel lateral, mais um degrau. */
+:root {
+  --chrome: #efede8;
+  --bg: #fbfaf8;
+  --surface: #ffffff;
+  --surface-2: #f3f1ed;
+  --border: #e3e0da;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --chrome: #0f0e0d;
+    --bg: #181716;
+    --surface: #211f1d;
+    --surface-2: #2a2826;
+    --border: #312e2b;
+  }
+}
+
+:root[data-theme='dark'] {
+  --chrome: #0f0e0d;
+  --bg: #181716;
+  --surface: #211f1d;
+  --surface-2: #2a2826;
+  --border: #312e2b;
+}
+
+body {
+  background: var(--chrome);
+}
+
+.topbar {
+  background: var(--chrome);
+  border-bottom-color: transparent;
+}
+
+.sidebar {
+  border-right: 0;
+  background: var(--chrome);
+}
+
+.content {
+  min-height: calc(100vh - var(--topbar-h) - 8px);
+  margin: 0 8px 8px 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.sidebar li > button.active {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+@media (max-width: 760px) {
+  .content {
+    margin: 0;
+    border-width: 1px 0 0;
+    border-radius: 0;
+  }
+}
+
+/* Seção vazia: sem painel lateral, o bloco fica no centro do painel de
+   conteúdo inteiro, na horizontal e na vertical. */
+.section-main-empty {
+  display: flex;
+  flex-direction: column;
+  max-width: none;
+  min-height: calc(100vh - var(--topbar-h) - 120px);
+}
+
+.section-main-empty .empty-section {
+  margin: auto;
+  padding-bottom: 8vh;
+}

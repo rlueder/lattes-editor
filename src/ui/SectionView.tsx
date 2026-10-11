@@ -122,7 +122,7 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
 
   if (!hasPanel) {
     return (
-      <div className="section-main">
+      <div className="section-main section-main-empty">
         {head}
         <EmptySection section={section} onNewItem={onNewItem} onOpenPicker={onOpenPicker} />
       </div>
