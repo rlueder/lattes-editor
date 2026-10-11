@@ -19,6 +19,7 @@ import { displayValue } from '../src/ui/display.ts';
 import { codeAttrFor, groupFields, isBooleanAttr, isSystemAttr } from '../src/ui/field-kind.ts';
 import { formatLattesDate } from '../src/ui/format.ts';
 import { parseHash } from '../src/ui/hash-route.ts';
+import { pendingMessage } from '../src/ui/pending.ts';
 import { isSensitiveAttr, readHideSensitive, writeHideSensitive } from '../src/ui/privacy.ts';
 import { initials, parseCvCode, photoUrl, readCvCode, writeCvCode } from '../src/ui/profile.ts';
 import { digitOf, isSectionShortcut } from '../src/ui/use-section-shortcuts.ts';
@@ -419,5 +420,13 @@ describe('nome escolhido junto com o código', () => {
       ['Idioma', ['DESCRICAO-DO-IDIOMA', 'IDIOMA']],
       ['Proficiência', ['PROFICIENCIA-DE-LEITURA', 'PROFICIENCIA-DE-FALA']],
     ]);
+  });
+});
+
+describe('aviso de pendências', () => {
+  it('conta alterações e itens novos no singular e no plural', () => {
+    expect(pendingMessage(1, 0)).toBe('1 alteração ainda não está no Lattes.');
+    expect(pendingMessage(3, 1)).toBe('3 alterações e 1 item novo ainda não estão no Lattes.');
+    expect(pendingMessage(0, 2)).toBe('2 itens novos ainda não estão no Lattes.');
   });
 });

@@ -3575,3 +3575,42 @@ details > summary::-webkit-details-marker {
   color: var(--muted);
   font-size: 12px;
 }
+
+/* Aviso de pendências: faixa âmbar no topo do conteúdo. */
+.pending-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 20px;
+  padding: 10px 10px 10px 16px;
+  border: 1px solid color-mix(in srgb, var(--warn-text) 35%, transparent);
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+
+.pending-text {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+}
+
+.pending-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-color: color-mix(in srgb, var(--warn-text) 45%, transparent);
+  background: transparent;
+  color: var(--warn-text);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pending-open:hover {
+  background: color-mix(in srgb, var(--warn-text) 12%, transparent);
+}
+
+.pending-close {
+  color: var(--warn-text);
+}

@@ -14,7 +14,7 @@ import {
   replaceWorkingCopy,
   saveWorkingCopy,
 } from '../model/store.ts';
-import { getAttr, parseXml, serializeXml, walk, type XDocument } from '../model/xml.ts';
+import { getAttr, parseXml, serializeXml, walk, type XElement } from '../model/xml.ts';
 import { PrintDialog } from '../print/PrintDialog.tsx';
 import { usePrint } from '../print/use-print.ts';
 import { lattesSchema } from '../schema/lattes.ts';
@@ -24,6 +24,7 @@ import { DropZone } from './DropZone.tsx';
 import { EditorContext } from './editor-context.ts';
 import { type HashRoute, parseHash, writeHash } from './hash-route.ts';
 import { paletteActions, paletteEntries, type PaletteEntry } from './palette-search.ts';
+import { PendingBanner } from './PendingBanner.tsx';
 import { profileOf } from './profile.ts';
 import { ReferenceContext } from './reference-context.ts';
 import { buildReferenceIndex, type ReferenceIndex } from './reference-tables.ts';
@@ -157,8 +158,7 @@ export function App() {
     if (write) writeHash(route);
   }, []);
 
-  // Abrir um link "#atuacao/atuacao-profissional/2020" leva direto lá; idem ao
-  // editar a URL à mão.
+  // Um link "#atuacao/atuacao-profissional/2020", aberto ou editado à mão, leva direto lá.
   const hasSections = sections.length > 0;
   useEffect(() => {
     if (!hasSections) return;
@@ -270,13 +270,9 @@ export function App() {
   }
 
   const modified = serializeXml(session.doc) !== session.meta.originalXml;
-  const pendingSet = new Set(production.pending);
-  const pendingIn = (els: XDocument['root'][]) => {
-    let n = 0;
-    for (const el of els) walk(el, (node) => void (pendingSet.has(node) && n++));
-    return n;
-  };
+  const pendingIn = countPendingIn(production.pending);
   const exportFile = exportOpen ? production.buildFile() : undefined;
+  const openExport = () => setExportOpen(true);
   const profile = profileOf(session.doc, session.meta.fileName, exportedOn);
 
   return (
@@ -289,7 +285,7 @@ export function App() {
         showEmpty={showEmpty}
         theme={theme}
         onClose={closeFile}
-        onExport={() => setExportOpen(true)}
+        onExport={openExport}
         onHistory={openHistory}
         onNewItem={() => setPickerOpen(true)}
         onPalette={togglePalette}
@@ -313,6 +309,11 @@ export function App() {
           value={{ loadedMax: production.loadedMax, openItem: production.openItem }}
         >
           <ReferenceContext.Provider value={referenceIndex ?? EMPTY_INDEX}>
+            <PendingBanner
+              changes={changes.open}
+              news={production.pending.length}
+              onOpen={openExport}
+            />
             {error && <p className="error">{error}</p>}
             {section && (
               <SectionView
@@ -388,4 +389,14 @@ export function App() {
       />
     </div>
   );
+}
+
+/** Conta, dentro de alguns elementos, quantos dos itens pendentes aparecem. */
+function countPendingIn(pending: XElement[]): (els: XElement[]) => number {
+  const set = new Set(pending);
+  return (els) => {
+    let n = 0;
+    for (const el of els) walk(el, (node) => void (set.has(node) && n++));
+    return n;
+  };
 }
