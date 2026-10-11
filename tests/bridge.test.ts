@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { applyAll, applyOp, type LattesPort, sameInstitution } from '../src/bridge/apply.ts';
+import { fieldLabel, opRows } from '../src/bridge/field-labels.ts';
 import {
   encodeLatin1Form,
   type FormControl,
@@ -25,10 +26,13 @@ import {
   isEditorMessage,
 } from '../src/bridge/protocol.ts';
 import { diffDocuments, resolvePath } from '../src/model/changes.ts';
-import { parseXml, setAttr, type XElement } from '../src/model/xml.ts';
+import { getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
+import { backupFileName } from '../src/ui/backup.ts';
 
 const XML = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS>
 <RESUMO-CV TEXTO-RESUMO-CV-RH="Resumo" TEXTO-RESUMO-CV-RH-EN="Summary"/>
+<IDIOMAS><IDIOMA IDIOMA="EN" DESCRICAO-DO-IDIOMA="Inglês" PROFICIENCIA-DE-LEITURA="BEM" PROFICIENCIA-DE-FALA="BEM" PROFICIENCIA-DE-ESCRITA="BEM" PROFICIENCIA-DE-COMPREENSAO="BEM"/>
+<IDIOMA IDIOMA="ES" DESCRICAO-DO-IDIOMA="Espanhol" PROFICIENCIA-DE-LEITURA="POUCO" PROFICIENCIA-DE-FALA="" PROFICIENCIA-DE-ESCRITA="" PROFICIENCIA-DE-COMPREENSAO=""/></IDIOMAS>
 <ATUACOES-PROFISSIONAIS><ATUACAO-PROFISSIONAL CODIGO-INSTITUICAO="D001" NOME-INSTITUICAO="X" SEQUENCIA-ATIVIDADE="5">
 <VINCULOS SEQUENCIA-HISTORICO="1" TIPO-DE-VINCULO="CELETISTA" MES-INICIO="01" ANO-INICIO="2011" MES-FIM="12" ANO-FIM="2012" OUTRAS-INFORMACOES="" OUTRAS-INFORMACOES-INGLES="" FLAG-DEDICACAO-EXCLUSIVA="NAO" FLAG-VINCULO-EMPREGATICIO="SIM" CARGA-HORARIA-SEMANAL="40"/>
 </ATUACAO-PROFISSIONAL></ATUACOES-PROFISSIONAIS></DADOS-GERAIS></CURRICULO-VITAE>`;
@@ -96,6 +100,20 @@ function fakeLattes(opts: FakeOptions = {}) {
     f_vinculo: '',
   };
   const resumo: Record<string, string> = { F_TEXTO: 'Resumo', F_TEXTO_EN: 'Summary', f_ctr: 'U' };
+  // Idiomas por f_seq; caixa marcada = 'on', rádio = P/R/B, vazio = sem valor.
+  const skills = ['LE', 'CONVERSA', 'ESCREVE', 'COMPR'];
+  const idioma = (code: string, levels: string[]): Record<string, string> => {
+    const state: Record<string, string> = { F_COD_IDIOMA: code, f_ctr: 'U' };
+    skills.forEach((s, i) => {
+      state[`F_${s}`] = levels[i] ?? '';
+      state[`FC_${s}`] = levels[i] ? 'on' : '';
+    });
+    return state;
+  };
+  const idiomas: Record<string, Record<string, string>> = {
+    '1': idioma('EN', ['B', 'B', 'B', 'B']),
+    '2': idioma('ES', ['P']),
+  };
   const posts: { body: string; path: string }[] = [];
   let gets = 0;
 
@@ -130,6 +148,38 @@ function fakeLattes(opts: FakeOptions = {}) {
     );
   };
 
+  const idiomaControls = (seq: string): FormControl[] => {
+    const state = idiomas[seq]!;
+    const list: FormControl[] = [
+      { name: 'f_cod', type: 'hidden', value: 'K000000000' },
+      { name: 'f_seq', type: 'hidden', value: seq },
+      { name: 'f_ctr', type: 'hidden', value: state.f_ctr! },
+      {
+        name: 'F_COD_IDIOMA',
+        selected: [state.F_COD_IDIOMA!],
+        type: 'select-one',
+        value: state.F_COD_IDIOMA!,
+      },
+    ];
+    for (const s of skills) {
+      list.push({
+        checked: state[`FC_${s}`] === 'on',
+        name: `FC_${s}`,
+        type: 'checkbox',
+        value: 'on',
+      });
+      for (const level of ['P', 'R', 'B']) {
+        list.push({
+          checked: state[`F_${s}`] === level,
+          name: `F_${s}`,
+          type: 'radio',
+          value: level,
+        });
+      }
+    }
+    return list;
+  };
+
   const port: LattesPort = {
     async get(path) {
       gets += 1;
@@ -143,19 +193,35 @@ function fakeLattes(opts: FakeOptions = {}) {
       }
       if (path.startsWith('PKG_ATIV.vinculos')) return 'FORM:GN_ATIV_VINC';
       if (path.startsWith('pkg_resume.')) return 'FORM:RES';
+      if (path.startsWith('pkg_idioma.lista')) {
+        return `<a href="pkg_idioma.form?f_cod=K000000000&amp;f_seq=1">Inglês</a>
+                <a href="pkg_idioma.form?f_cod=K000000000&amp;f_seq=2">Espanhol</a>
+                <a href="pkg_idioma.form?f_cod=K000000000">Novo</a>`;
+      }
+      if (path.startsWith('pkg_idioma.form')) {
+        return `FORM:GN_IDIOMA:${/f_seq=(\d+)/.exec(path)?.[1] ?? ''}`;
+      }
       return '';
     },
     menuHtml: () =>
       `<a onclick="modalCV1.setarUrl(&quot;pkg_ativ.lista?f_cod=K000000000&quot;, true)">Atuação</a>
-       <a onclick="modalCV1.setarUrl(&quot;pkg_resume.prc_resume?f_cod=K000000000&quot;, true)">Resumo</a>`,
+       <a onclick="modalCV1.setarUrl(&quot;pkg_resume.prc_resume?f_cod=K000000000&quot;, true)">Resumo</a>
+       <a onclick="modalCV1.setarUrl(&quot;pkg_idioma.lista?f_cod=K000000000&quot;, true)">Idiomas</a>`,
     async post(path, body) {
       posts.push({ body, path });
-      const state = path === 'PKG_ATIV.VINCULOS' ? vinculo : resumo;
       const pairs = decodeForm(body);
+      const seq = pairs.find(([k]) => k === 'f_seq')?.[1] ?? '';
+      const state =
+        path === 'PKG_ATIV.VINCULOS'
+          ? vinculo
+          : path === 'PKG_IDIOMA.FORM'
+            ? idiomas[seq]!
+            : resumo;
       for (const key of Object.keys(state)) {
         if (key === opts.dropField) continue;
         const v = pairs.find(([k]) => k === key)?.[1];
-        state[key] = v ?? (key === 'f_regime' ? '' : state[key]!);
+        const unchecked = key === 'f_regime' || /^FC?_/.test(key);
+        state[key] = v ?? (unchecked ? '' : state[key]!);
       }
       // A página volta com f_vinculo vazio, como no Lattes.
       vinculo.f_vinculo = '';
@@ -165,10 +231,27 @@ function fakeLattes(opts: FakeOptions = {}) {
     readForm(html, form) {
       if (html === 'FORM:GN_ATIV_VINC' && form === 'GN_ATIV_VINC') return controls(vinculo, form);
       if (html === 'FORM:RES' && form === 'RES') return controls(resumo, form);
+      const seq = /^FORM:GN_IDIOMA:(\d+)$/.exec(html)?.[1];
+      if (seq && form === 'GN_IDIOMA') return idiomaControls(seq);
       return undefined;
     },
   };
-  return { port, posts, resumo, vinculo };
+  return { idiomas, port, posts, resumo, vinculo };
+}
+
+function idiomaOp(code: string, edit: (el: XElement) => void) {
+  const { changes, working } = changesAfter((root) => {
+    const stack = [root];
+    while (stack.length) {
+      const el = stack.pop()!;
+      if (el.name === 'IDIOMA' && getAttr(el, 'IDIOMA') === code) return edit(el);
+      for (const c of el.children) if (c.kind === 'element') stack.push(c);
+    }
+  });
+  return planChanges(
+    changes.map((change) => ({ change, itemTitle: code })),
+    working,
+  );
 }
 
 function vinculoOp(edit: (v: XElement) => void): BridgeOp {
@@ -489,6 +572,68 @@ describe('ponte: aplicar no Lattes (falso)', () => {
   });
 });
 
+describe('ponte: idioma', () => {
+  it('mapeia proficiência para caixa e rádio, e NAO_INFORMADO para vazio', () => {
+    const { ops } = idiomaOp('EN', (el) => {
+      setAttr(el, 'PROFICIENCIA-DE-ESCRITA', 'RAZOAVELMENTE');
+      setAttr(el, 'PROFICIENCIA-DE-FALA', 'NAO_INFORMADO');
+    });
+    expect(ops[0]).toMatchObject({ code: 'EN', kind: 'idioma' });
+    expect(ops[0]!.set).toEqual({
+      FC_CONVERSA: null,
+      FC_ESCREVE: 'on',
+      F_CONVERSA: null,
+      F_ESCREVE: 'R',
+    });
+    expect(ops[0]!.expect).toEqual({
+      FC_CONVERSA: 'on',
+      FC_ESCREVE: 'on',
+      F_CONVERSA: 'B',
+      F_ESCREVE: 'B',
+    });
+  });
+
+  it('recusa tirar a última proficiência e campo que não é proficiência', () => {
+    const last = idiomaOp('ES', (el) => setAttr(el, 'PROFICIENCIA-DE-LEITURA', ''));
+    expect(last.unsupported[0]!.reason).toMatch(/ao menos uma/);
+    const other = idiomaOp('ES', (el) => setAttr(el, 'DESCRICAO-DO-IDIOMA', 'Castelhano'));
+    expect(other.unsupported[0]!.reason).toMatch(/Campos não suportados/);
+    const { changes, working } = changesAfter((root) =>
+      setAttr(find(root, 'IDIOMA'), 'PROFICIENCIA-DE-FALA', 'POUCO'),
+    );
+    const chain = resolvePath(working, changes[0]!.path);
+    setAttr(chain.at(-1)!, 'IDIOMA', '');
+    expect(planChange(changes[0]!, chain, 'L')).toMatchObject({ reason: /sem código/ });
+  });
+
+  it('acha o idioma pelo código, grava e confere', async () => {
+    const fake = fakeLattes();
+    const { ops } = idiomaOp('ES', (el) => {
+      setAttr(el, 'PROFICIENCIA-DE-LEITURA', 'BEM');
+      setAttr(el, 'PROFICIENCIA-DE-FALA', 'POUCO');
+    });
+    expect(await applyOp(ops[0]!, fake.port)).toMatchObject({ status: 'conferido' });
+    expect(fake.idiomas['2']).toMatchObject({ FC_CONVERSA: 'on', F_CONVERSA: 'P', F_LE: 'B' });
+    expect(fake.idiomas['1']!.F_LE).toBe('B');
+    expect(fake.posts[0]!.path).toBe('PKG_IDIOMA.FORM');
+  });
+
+  it('não envia quando o idioma não está no Lattes ou difere do esperado', async () => {
+    const { ops } = idiomaOp('EN', (el) => setAttr(el, 'PROFICIENCIA-DE-ESCRITA', 'POUCO'));
+    const op = ops[0]!;
+    const fake = fakeLattes();
+    expect(await applyOp({ ...op, code: 'FR' } as BridgeOp, fake.port)).toMatchObject({
+      detail: /Idioma FR não encontrado/,
+      status: 'erro',
+    });
+    fake.idiomas['1']!.F_ESCREVE = 'R';
+    expect(await applyOp(op, fake.port)).toMatchObject({ status: 'divergente' });
+    expect(fake.posts).toHaveLength(0);
+    const empty = { ...fake.port, menuHtml: () => '' };
+    expect(await applyOp(op, empty)).toMatchObject({ detail: /Idiomas/, status: 'erro' });
+  });
+});
+
 describe('instituição no link do Lattes', () => {
   it('aceita a letra que o Lattes põe na frente do código do XML', () => {
     expect(sameInstitution('D001000000998', '001000000998')).toBe(true);
@@ -509,5 +654,28 @@ describe('de quem é o currículo da sessão', () => {
     expect(sameCv('1234567890123456', '0000000000000001')).toBe(false);
     expect(sameCv(undefined, '1234567890123456')).toBe(false);
     expect(sameCv('1234567890123456', undefined)).toBe(false);
+  });
+});
+
+describe('cópia de segurança antes do envio', () => {
+  it('nomeia o arquivo com a data e a hora', () => {
+    expect(backupFileName('CV_123.xml', new Date(2026, 9, 11, 15, 7))).toBe(
+      'CV_123-antes-do-envio-2026-10-11-1507.xml',
+    );
+    expect(backupFileName('CV_123.zip', new Date(2026, 0, 2, 3, 4))).toBe(
+      'CV_123-antes-do-envio-2026-01-02-0304.xml',
+    );
+    expect(fieldLabel('f_outras_inf_en')).toBe('Outras informações (inglês)');
+    expect(fieldLabel('f_desconhecido')).toBe('f_desconhecido');
+    const rows = opRows({
+      expect: { FC_LE: 'on', F_LE: 'B', f_regime: null, f_status: 'N', f_x: '' },
+      set: { FC_LE: null, F_LE: null, f_regime: '3', f_status: 'S', f_x: 'y' },
+    });
+    expect(rows.map((r) => `${r.label}: ${r.before} → ${r.after}`)).toEqual([
+      'Leitura: Bem → Não informado',
+      'Dedicação exclusiva: Não → Sim',
+      'Situação: Anterior → Atual',
+      'f_x: (vazio) → y',
+    ]);
   });
 });

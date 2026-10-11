@@ -37,6 +37,7 @@ export interface OpResult {
 }
 
 const FORMS: Record<BridgeOp['kind'], { action: string; name: string }> = {
+  idioma: { action: 'PKG_IDIOMA.FORM', name: 'GN_IDIOMA' },
   resumo: { action: 'PKG_RESUME.FORM', name: 'RES' },
   vinculo: { action: 'PKG_ATIV.VINCULOS', name: 'GN_ATIV_VINC' },
 };
@@ -76,6 +77,22 @@ async function locate(op: BridgeOp, port: LattesPort, menu: string): Promise<str
     const link = findLinks(menu, 'pkg_resume.')[0];
     if (!link) throw new Stop('erro', 'Resumo não encontrado no menu do Lattes');
     return link.path;
+  }
+  if (op.kind === 'idioma') {
+    // Cada linha da lista abre um formulário; o certo é o que traz o mesmo código.
+    const lista = findLinks(menu, 'pkg_idioma.lista')[0];
+    if (!lista) throw new Stop('erro', 'Idiomas não encontrados no menu do Lattes');
+    const listaHtml = await getChecked(port, lista.path);
+    const forms = findLinks(listaHtml, 'pkg_idioma.form').filter((l) => l.params.f_seq);
+    const hits: string[] = [];
+    for (const f of forms) {
+      const { pairs } = await readPairs(port, f.path, 'GN_IDIOMA');
+      if (pairValue(pairs, 'F_COD_IDIOMA') === op.code) hits.push(f.path);
+    }
+    if (hits.length !== 1) {
+      throw new Stop('erro', `Idioma ${op.code} não encontrado no Lattes (${hits.length} achados)`);
+    }
+    return hits[0]!;
   }
   const lista = findLinks(menu, 'pkg_ativ.lista')[0];
   if (!lista) throw new Stop('erro', 'Atuação profissional não encontrada no menu do Lattes');

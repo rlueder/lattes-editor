@@ -174,9 +174,14 @@ incompleto (rótulos lidos em 10/10/2026), que correspondem a
 | ------------------------------------------------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | `F_COD_IDIOMA`                                   | lista de idiomas                            | `IDIOMA`                                                                                         |
 | `F_LE`, `F_CONVERSA`, `F_ESCREVE`, `F_COMPR`     | rádio `P` pouco, `R` razoavelmente, `B` bem | `PROFICIENCIA-DE-LEITURA`, `-FALA`, `-ESCRITA`, `-COMPREENSAO` (`POUCO`, `RAZOAVELMENTE`, `BEM`) |
-| `FC_LE`, `FC_CONVERSA`, `FC_ESCREVE`, `FC_COMPR` | caixas                                      | habilitam cada proficiência (**inferido**)                                                       |
+| `FC_LE`, `FC_CONVERSA`, `FC_ESCREVE`, `FC_COMPR` | caixas, valor `on`                          | habilitam cada proficiência; `check()` exige ao menos uma marcada                                |
 | `f_tipo_privacidade`                             | lista `1`/`2`                               |                                                                                                  |
 | `f_ctr` (`U`), `f_cod`, `f_seq`                  | ocultos                                     |                                                                                                  |
+
+A exportação não traz número de sequência do idioma. A ponte abre cada link
+`pkg_idioma.form` da lista que tem `f_seq` (o que não tem é o de idioma novo)
+e escolhe o único cujo `F_COD_IDIOMA` é o código do XML. `NAO_INFORMADO` no
+XML corresponde à caixa desmarcada e nenhum rádio.
 
 ### Resumo: `RES`, POST `PKG_RESUME.FORM`
 

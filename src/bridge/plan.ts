@@ -33,7 +33,13 @@ export interface ResumoOp extends OpBase {
   kind: 'resumo';
 }
 
-export type BridgeOp = ResumoOp | VinculoOp;
+/** Idioma: a exportação não traz número de sequência; a linha se acha pelo código (EN, ES…). */
+export interface IdiomaOp extends OpBase {
+  code: string;
+  kind: 'idioma';
+}
+
+export type BridgeOp = IdiomaOp | ResumoOp | VinculoOp;
 
 export interface Unsupported {
   key: string;
@@ -59,6 +65,43 @@ const VINCULO_FIELDS: Record<string, [string, Mapper]> = {
   'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO': ['f_enqua', same],
   'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO-INGLES': ['f_enqua_en', same],
 };
+
+/**
+ * Proficiência do IDIOMA → par de campos do GN_IDIOMA: a caixa FC_* diz que a
+ * habilidade foi informada, o rádio F_* diz o nível (P, R, B). NAO_INFORMADO
+ * é a caixa desmarcada e nenhum rádio. Lido no formulário em 11/10/2026.
+ */
+const IDIOMA_SKILLS: Record<string, string> = {
+  'PROFICIENCIA-DE-COMPREENSAO': 'COMPR',
+  'PROFICIENCIA-DE-ESCRITA': 'ESCREVE',
+  'PROFICIENCIA-DE-FALA': 'CONVERSA',
+  'PROFICIENCIA-DE-LEITURA': 'LE',
+};
+const LEVEL: Record<string, string> = { BEM: 'B', POUCO: 'P', RAZOAVELMENTE: 'R' };
+
+function idiomaFields(change: Change): {
+  expect: FieldValues;
+  missing: string[];
+  set: FieldValues;
+} {
+  const set: FieldValues = {};
+  const expect: FieldValues = {};
+  const missing: string[] = [];
+  for (const f of change.fields) {
+    const skill = IDIOMA_SKILLS[f.attr];
+    if (!skill) {
+      missing.push(f.label);
+      continue;
+    }
+    const after = LEVEL[f.after] ?? null;
+    const before = LEVEL[f.before] ?? null;
+    set[`FC_${skill}`] = after ? 'on' : null;
+    set[`F_${skill}`] = after;
+    expect[`FC_${skill}`] = before ? 'on' : null;
+    expect[`F_${skill}`] = before;
+  }
+  return { expect, missing, set };
+}
 
 const RESUMO_FIELDS: Record<string, [string, Mapper]> = {
   'TEXTO-RESUMO-CV-RH': ['F_TEXTO', same],
@@ -135,6 +178,21 @@ export function planChange(
       seqHist,
       set,
     };
+  }
+
+  if (change.element === 'IDIOMA') {
+    const code = getAttr(el, 'IDIOMA');
+    if (!code) return unsupported(change, label, 'Idioma sem código');
+    const { expect, missing, set } = idiomaFields(change);
+    if (missing.length > 0) {
+      return unsupported(change, label, `Campos não suportados ainda: ${missing.join(', ')}`);
+    }
+    // O Lattes exige ao menos uma habilidade informada.
+    const anyLeft = Object.keys(IDIOMA_SKILLS).some((a) => LEVEL[getAttr(el, a) ?? '']);
+    if (!anyLeft) {
+      return unsupported(change, label, 'O Lattes exige ao menos uma proficiência informada');
+    }
+    return { code, expect, key: change.key, kind: 'idioma', label, set };
   }
 
   if (change.element === 'RESUMO-CV') {

@@ -14,17 +14,21 @@ arquivo quando muda de fato; o detalhe técnico está em
   confirmados antes de escrever os links.
 - **Travas de segurança da escrita no Lattes.** Protegem o currículo de quem
   usa a ponte. Situação de cada uma:
-  - cópia local do XML antes de enviar: falta (baixar ou guardar a versão
-    anterior antes do primeiro envio da fila);
-  - diferença antes de enviar: existe no painel da extensão (valor antigo e
-    novo de cada campo), falta pedir confirmação explícita da fila inteira;
+  - cópia local do XML antes de enviar: existe (ligada por padrão na
+    confirmação, baixa o currículo como ele veio do Lattes);
+  - diferença antes de enviar: existe, no painel da extensão e na
+    confirmação da fila inteira no editor (valor antigo e novo de cada
+    campo);
+  - mesmo currículo: existe (a ponte recusa enviar se a sessão do Lattes é
+    de outro currículo);
   - ler de volta depois de cada gravação: existe;
   - recusar quando o formulário mudou: existe (o valor antigo e o início do
     vínculo precisam bater antes de gravar).
-- **Ponte com o Lattes, além do vínculo e do resumo.** Formação, idiomas,
-  endereço e identificação já têm o formulário mapeado em
+- **Ponte com o Lattes, além do vínculo, do resumo e dos idiomas.**
+  Formação, endereço e identificação já têm o formulário mapeado em
   `docs/lattes_internals.md`; falta escrever a operação de cada um e testar
-  com restauração, como foi feito com o vínculo.
+  com restauração, como foi feito com o vínculo. O idioma tem a operação
+  escrita e testada contra o Lattes falso, falta o teste no Lattes real.
 - **Criar itens pela ponte.** O Lattes inclui com `f_ctr=I` (visto no
   formulário de atividade nova). Mapeada a inclusão, Formação, Atuação,
   Projetos e Patentes, que o Importar não aceita, ganham "Novo item" no
