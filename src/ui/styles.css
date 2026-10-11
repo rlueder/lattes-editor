@@ -97,7 +97,7 @@ button {
 
 button.primary {
   background: var(--accent);
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   color: var(--accent-contrast);
 }
 
@@ -161,7 +161,7 @@ code {
 }
 
 .dropzone.over {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   background: var(--accent-soft);
 }
 
@@ -233,7 +233,7 @@ code {
 
 .count-tag {
   background: var(--accent-contrast);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .ghost .count-tag {
@@ -302,7 +302,7 @@ code {
 
 .icon-btn[aria-pressed='true'] {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 /* Dica curta abaixo dos botões só de ícone. */
@@ -383,7 +383,7 @@ code {
 
 .sidebar li > button.active {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 500;
 }
 
@@ -661,13 +661,13 @@ details.sub > summary .item-kind {
 }
 
 .jump-bar a:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent-text);
+  color: var(--accent-text);
 }
 
 .jump-bar a.active {
   background: var(--accent);
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   color: var(--accent-contrast);
 }
 
@@ -740,7 +740,7 @@ details.card > summary {
 }
 
 .period.current {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
 }
 
@@ -870,7 +870,7 @@ button.danger {
 /* Cartões de itens novos */
 
 details.card.is-new {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
 }
 
 .card-actions {
@@ -934,7 +934,7 @@ details.card.is-new {
 
 .form-more > summary {
   padding: 6px 0;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .form-foot {
@@ -1240,7 +1240,7 @@ details.card.is-new {
 
 .menu-check,
 .menu-hint {
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 12px;
 }
 
@@ -1355,7 +1355,7 @@ details.card.is-new {
 
 .tag.kind-alterado {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .tag.kind-novo {
@@ -1417,8 +1417,8 @@ details.card.is-new {
 }
 
 .area-chip:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent-text);
+  color: var(--accent-text);
 }
 
 .area-row {
@@ -1440,7 +1440,7 @@ details.card.is-new {
 
 .area-add {
   margin-top: 4px;
-  color: var(--accent);
+  color: var(--accent-text);
   border-color: transparent;
 }
 
@@ -1462,7 +1462,7 @@ details.card.is-new {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: underline;
   font-size: inherit;
 }
@@ -1559,7 +1559,7 @@ details.card.is-new {
   height: 22px;
   border-radius: 50%;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 12px;
   font-weight: 700;
 }
@@ -1639,7 +1639,7 @@ details.card.is-new {
 
 .picker-grid .picker-item:hover,
 .picker-grid .picker-item:focus-visible {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   background: var(--accent-soft);
 }
 
@@ -1719,9 +1719,9 @@ details.card.is-new {
 }
 
 .filter-facet.active select {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .filter-status {
@@ -1849,7 +1849,7 @@ details.card.is-new {
 }
 
 .select-trigger[data-popup-open] {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
 }
 
 .select-trigger[aria-invalid='true'] {
@@ -1907,7 +1907,7 @@ details.card.is-new {
 .select-indicator {
   display: inline-flex;
   grid-column: 1;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .select-item > :last-child {
@@ -1925,9 +1925,9 @@ details.card.is-new {
 }
 
 .filter-facet.active {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 /* Caixa de marcação */
@@ -1945,7 +1945,7 @@ details.card.is-new {
 }
 
 .checkbox[data-checked] {
-  border-color: var(--accent);
+  border-color: var(--accent-text);
   background: var(--accent);
   color: var(--accent-contrast);
 }
@@ -2043,7 +2043,7 @@ details.card.is-new {
   padding: 4px 0;
   border: 0;
   background: none;
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 13px;
 }
 
@@ -2500,7 +2500,7 @@ button.primary:hover {
 
 .jump-bar.vertical a.active {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .jump-bar.vertical .jump-label {
@@ -2580,7 +2580,7 @@ details > .element {
 
 .section-head .privacy-toggle[aria-pressed='true'] {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .field-hidden .readonly-value {
@@ -2629,7 +2629,7 @@ details > .element {
   height: 40px;
   border-radius: 8px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
   font-size: 14px;
   letter-spacing: 0.02em;
@@ -2654,7 +2654,7 @@ details > .element {
 
 .profile-line a {
   overflow: hidden;
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2706,7 +2706,7 @@ details > .element {
 }
 
 .brand-accent {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .topbar-identity .topbar-divider:first-of-type {
@@ -2804,7 +2804,7 @@ details > .element {
 }
 
 .profile-photo-link:hover {
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: underline;
 }
 
@@ -3052,7 +3052,7 @@ body {
 
 .sidebar li > button.active {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3278,7 +3278,7 @@ details > summary::-webkit-details-marker {
 
 .year-head .count {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 /* Item aberto: mantém a linha de baixo e ganha um fundo bem leve em tudo o
@@ -3376,7 +3376,7 @@ details > summary::-webkit-details-marker {
   padding: 0 6px;
   border-radius: 999px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 11px;
   font-weight: 600;
   line-height: 1;
@@ -3415,7 +3415,7 @@ details > summary::-webkit-details-marker {
 }
 
 .profile .copy-btn:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .profile-line.field-copy-row {
@@ -3735,7 +3735,7 @@ button.primary.danger-fill:hover {
 }
 
 .change-fields .after-value .copy-btn:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .change-fields .copy {
@@ -3836,4 +3836,230 @@ button.primary.danger-fill:hover {
 .fields.cols-2,
 .fields.cols-3 {
   row-gap: 18px;
+}
+
+/* Todas as linhas que abrem e fecham com a mesma altura, a de duas linhas. */
+.group details > summary {
+  min-height: 58px;
+  align-items: center;
+}
+
+/* Marcar itens (Inovação, Educação). */
+.section-head-actions {
+  margin-left: auto;
+}
+
+.mark-open {
+  border-color: var(--border);
+}
+
+.modal.mark-dialog {
+  width: min(640px, calc(100% - 32px));
+}
+
+.mark-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mark-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.mark-row:last-child {
+  border-bottom: 0;
+}
+
+.mark-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mark-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mark-year {
+  font-size: 12px;
+}
+
+/* ===== Cores: escalas do Radix Colors =====
+ * Neutros da escala "sand" (cinza quente) do Radix Colors 3.0.0, valores do
+ * pacote @radix-ui/colors (sand.css e sand-dark.css), e os tons claros do
+ * destaque da escala "blue". Cada passo tem um papel definido na
+ * documentação ("Understanding the scale", radix-ui.com/colors, acesso em
+ * 11/10/2026): 1 fundo do app, 2 superfície sutil, 3–5 fundo de componente
+ * (normal, hover, ativo), 6 borda sutil, 7 borda de controle, 8 borda forte e
+ * foco, 9–10 sólido, 11 texto secundário, 12 texto principal.
+ * O sólido do destaque continua o azul do CNPq (#326c99), com texto branco
+ * nos dois temas. */
+:root {
+  --chrome: #f1f0ef; /* sand-3 */
+  --bg: #f9f9f8; /* sand-2 */
+  --surface: #fdfdfc; /* sand-1 */
+  --surface-2: #e9e8e6; /* sand-4 */
+  --surface-3: #e2e1de; /* sand-5 */
+  --border: #dad9d6; /* sand-6 */
+  --divider: #dad9d6; /* sand-6 */
+  --border-strong: #cfceca; /* sand-7 */
+  --border-focus: #bcbbb5; /* sand-8 */
+  --text: #21201c; /* sand-12 */
+  --muted: #63635e; /* sand-11 */
+  --accent: #326c99;
+  --accent-strong: #2e5469;
+  --accent-contrast: #ffffff;
+  --accent-soft: #e6f4fe; /* blue-3 */
+  --accent-soft-strong: #d5efff; /* blue-4 */
+  --accent-text: #326c99;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --chrome: #111110; /* sand-1 */
+    --bg: #191918; /* sand-2 */
+    --surface: #222221; /* sand-3 */
+    --surface-2: #2a2a28; /* sand-4 */
+    --surface-3: #31312e; /* sand-5 */
+    --border: #3b3a37; /* sand-6 */
+    --divider: #3b3a37; /* sand-6 */
+    --border-strong: #494844; /* sand-7 */
+    --border-focus: #62605b; /* sand-8 */
+    --text: #eeeeec; /* sand-12 */
+    --muted: #b5b3ad; /* sand-11 */
+    --accent: #326c99;
+    --accent-strong: #3b77a6;
+    --accent-contrast: #ffffff;
+    --accent-soft: #0d2847; /* blue-dark-3 */
+    --accent-soft-strong: #003362; /* blue-dark-4 */
+    --accent-text: #70b8ff; /* blue-dark-11 */
+  }
+}
+
+:root[data-theme='dark'] {
+  --chrome: #111110;
+  --bg: #191918;
+  --surface: #222221;
+  --surface-2: #2a2a28;
+  --surface-3: #31312e;
+  --border: #3b3a37;
+  --divider: #3b3a37;
+  --border-strong: #494844;
+  --border-focus: #62605b;
+  --text: #eeeeec;
+  --muted: #b5b3ad;
+  --accent: #326c99;
+  --accent-strong: #3b77a6;
+  --accent-contrast: #ffffff;
+  --accent-soft: #0d2847;
+  --accent-soft-strong: #003362;
+  --accent-text: #70b8ff;
+}
+
+/* Controles com a borda de controle (passo 7) e foco na borda forte. */
+.field input,
+.field select,
+.field textarea:not(.title-input),
+.select-trigger,
+.filter-search,
+button:not(.ghost):not(.primary):not(.link-btn),
+.field-hidden .readonly-value {
+  border-color: var(--border-strong);
+}
+
+.field input:focus,
+.field textarea:focus,
+.select-trigger:focus-visible {
+  border-color: var(--border-focus);
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+/* Interruptor desligado: trilho no passo 9 do sand (sólido), com contraste
+   de 3:1 contra o painel nos dois temas (WCAG 1.4.11). */
+:root {
+  --control-off: #8d8d86; /* sand-9 */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --control-off: #7c7b74; /* sand-10 */
+  }
+}
+
+:root[data-theme='dark'] {
+  --control-off: #7c7b74;
+}
+
+.switch {
+  background: var(--control-off);
+}
+
+.switch-thumb {
+  background: #fff;
+}
+
+/* Texto em azul (links, item ativo, selos) usa o passo de texto do azul. */
+.sidebar li > button.active,
+.jump-bar.vertical a.active,
+.sidebar .nav-counts .count,
+.year-head .count,
+.profile-line a,
+.period.current,
+.picker-more,
+.link-btn {
+  color: var(--accent-text);
+}
+
+.sidebar li > button.active,
+.jump-bar.vertical a.active {
+  background: var(--accent-soft-strong);
+}
+
+.sidebar li > button:hover:not(.active),
+.jump-bar.vertical a:hover:not(.active),
+.group details > summary:hover {
+  background: var(--surface-2);
+}
+
+/* Botão principal: sólido do CNPq com texto branco nos dois temas. */
+button.primary {
+  border-color: var(--accent-text);
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+button.primary:hover:not(:disabled) {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+}
+
+/* Aviso de pendências encostado nas bordas do painel e no cabeçalho, só com
+   a linha de baixo; ação principal mais alta. */
+.pending-banner {
+  margin: -28px -40px 28px;
+  padding: 10px 28px 10px 40px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--warn-text) 35%, transparent);
+  border-radius: 0;
+}
+
+.pending-open {
+  height: 38px;
+  padding: 0 16px;
+}
+
+@media (max-width: 760px) {
+  .pending-banner {
+    margin: -16px -16px 20px;
+    padding: 10px 12px 10px 16px;
+  }
 }

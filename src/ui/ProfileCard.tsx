@@ -13,7 +13,7 @@ import { formatLattesDate } from './format.ts';
 import { Modal } from './Modal.tsx';
 import { PixelPhoto } from './PixelPhoto.tsx';
 import { Tip } from './primitives/Tip.tsx';
-import { PRIVACY_EVENT, readHideSensitive } from './privacy.ts';
+import { usePrivacyMode } from './privacy.ts';
 import {
   initials,
   parseCvCode,
@@ -32,12 +32,7 @@ export function ProfileCard({ profile }: { profile: Profile }) {
   );
   const [failed, setFailed] = useState(false);
   // Com a privacidade ligada, a foto vira mosaico.
-  const [hidden, setHidden] = useState(readHideSensitive);
-  useEffect(() => {
-    const onChange = (e: Event) => setHidden((e as CustomEvent<boolean>).detail);
-    window.addEventListener(PRIVACY_EVENT, onChange);
-    return () => window.removeEventListener(PRIVACY_EVENT, onChange);
-  }, []);
+  const [hidden] = usePrivacyMode();
   const [asking, setAsking] = useState(false);
   useEffect(() => setFailed(false), [code]);
   // A extensão da ponte entrega o código lido no Lattes.

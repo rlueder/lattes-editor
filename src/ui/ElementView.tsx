@@ -39,6 +39,8 @@ function FieldsBlock({
   );
   const entries = sources.flatMap((src, i) =>
     src.attrs
+      // Números de sequência do Lattes identificam a linha por dentro; não se mostram.
+      .filter((a) => !a.name.startsWith('SEQUENCIA-'))
       .filter((a) => showEmpty || a.value !== '')
       .map((a) => ({ attr: a.name, element: src.name, key: `${i}:${a.name}`, source: i })),
   );

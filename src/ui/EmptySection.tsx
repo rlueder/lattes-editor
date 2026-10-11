@@ -1,6 +1,8 @@
 // Seção sem itens: no centro da coluna, um desenho em traço, o que a seção
 // guarda e o caminho para começar (como os estados vazios do Linear).
 
+import type { ReactNode } from 'react';
+
 import { FORM_SPECS } from '../forms/specs.ts';
 import { elementLabel } from '../labels/labels.ts';
 import type { ProductionType } from '../model/production.ts';
@@ -12,6 +14,8 @@ import type { Section } from './sections.ts';
 const MAX_SHORTCUTS = 2;
 
 interface Props {
+  /** Ação própria da seção (Marcar itens, nas seções-filtro). */
+  action?: ReactNode;
   section: Section;
   onNewItem: (type: ProductionType) => void;
   onOpenPicker: () => void;
@@ -40,7 +44,7 @@ function SheetsArt() {
   );
 }
 
-export function EmptySection({ onNewItem, onOpenPicker, section }: Props) {
+export function EmptySection({ action, onNewItem, onOpenPicker, section }: Props) {
   const types = typesForSection(lattesSchema, section.id);
   const labelOf = (t: ProductionType) =>
     FORM_SPECS.find((s) => s.itemName === t.itemName)?.title ?? elementLabel(t.itemName);
@@ -53,7 +57,10 @@ export function EmptySection({ onNewItem, onOpenPicker, section }: Props) {
       <h2 className="empty-title">{section.label}</h2>
       {description && <p className="empty-text">{description}</p>}
       {types.length === 0 ? (
-        note && <p className="empty-caption">{note}</p>
+        <>
+          {action && <div className="empty-actions">{action}</div>}
+          {note && <p className="empty-caption">{note}</p>}
+        </>
       ) : (
         <>
           <div className="empty-actions">

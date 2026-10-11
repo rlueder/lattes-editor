@@ -28,7 +28,13 @@ import { parseHash } from '../src/ui/hash-route.ts';
 import { pendingMessage } from '../src/ui/pending.ts';
 import { isSensitiveAttr, readHideSensitive, writeHideSensitive } from '../src/ui/privacy.ts';
 import { initials, parseCvCode, photoUrl, readCvCode, writeCvCode } from '../src/ui/profile.ts';
-import { digitOf, isSectionShortcut } from '../src/ui/use-section-shortcuts.ts';
+import {
+  digitOf,
+  GO_KEYS,
+  isSectionShortcut,
+  isTyping,
+  sectionForKey,
+} from '../src/ui/use-section-shortcuts.ts';
 
 describe('rótulos', () => {
   it('usa o rótulo escrito à mão quando existe', () => {
@@ -445,5 +451,22 @@ describe('nacionalidade', () => {
     expect(isSystemAttr('DADOS-GERAIS', 'NACIONALIDADE')).toBe(true);
     expect(isSensitiveAttr('DADOS-GERAIS', 'NACIONALIDADE')).toBe(true);
     expect(isSensitiveAttr('DADOS-GERAIS', 'PAIS-DE-NACIONALIDADE')).toBe(true);
+  });
+});
+
+describe('atalhos G + letra', () => {
+  it('acha a seção pela letra e ignora quem está digitando', () => {
+    const ids = ['dados-gerais', 'producoes', 'bancas'];
+    expect(sectionForKey('p', ids)).toBe('producoes');
+    expect(sectionForKey('B', ids)).toBe('bancas');
+    expect(sectionForKey('z', ids)).toBeUndefined();
+    expect(new Set(Object.values(GO_KEYS)).size).toBe(Object.keys(GO_KEYS).length);
+    expect(
+      isTyping({ getAttribute: () => null, isContentEditable: false, tagName: 'INPUT' } as never),
+    ).toBe(true);
+    expect(
+      isTyping({ getAttribute: () => null, isContentEditable: false, tagName: 'DIV' } as never),
+    ).toBe(false);
+    expect(isTyping(null)).toBe(false);
   });
 });

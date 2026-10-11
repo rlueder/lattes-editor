@@ -1,10 +1,16 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import type { XElement } from '../model/xml.ts';
 import type { Profile } from './profile.ts';
 import { ProfileCard } from './ProfileCard.tsx';
 import { countItems, type Section } from './sections.ts';
-import { IS_MAC, SECTION_MODIFIER_LABEL, useSectionShortcuts } from './use-section-shortcuts.ts';
+import {
+  GO_KEYS,
+  IS_MAC,
+  SECTION_MODIFIER_LABEL,
+  useGoShortcuts,
+  useSectionShortcuts,
+} from './use-section-shortcuts.ts';
 
 interface Props {
   activeId?: string;
@@ -25,6 +31,8 @@ export function Sidebar({ activeId, onSelect, pendingIn, profile, sections }: Pr
     [sections, onSelect],
   );
   const showHints = useSectionShortcuts(Math.min(sections.length, 9), select);
+  const ids = useMemo(() => sections.map((s) => s.id), [sections]);
+  const goArmed = useGoShortcuts(ids, onSelect);
 
   return (
     <nav aria-label="Seções" className="sidebar">
@@ -42,13 +50,16 @@ export function Sidebar({ activeId, onSelect, pendingIn, profile, sections }: Pr
           return (
             <li key={s.id}>
               <button
-                aria-keyshortcuts={
+                aria-keyshortcuts={[
                   shortcut
                     ? IS_MAC
                       ? `Control+${shortcut} Meta+${shortcut}`
                       : `Alt+${shortcut}`
-                    : undefined
-                }
+                    : '',
+                  GO_KEYS[s.id] ? `G ${GO_KEYS[s.id]}` : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
                 className={[s.id === activeId ? 'active' : '', s.groups.length === 0 ? 'empty' : '']
                   .filter(Boolean)
                   .join(' ')}
@@ -58,17 +69,23 @@ export function Sidebar({ activeId, onSelect, pendingIn, profile, sections }: Pr
                 <span className="nav-label">{navLabel(s)}</span>
                 <span className="nav-counts">
                   {/* Com o modificador seguro, o selo da contagem mostra o atalho. */}
-                  {showHints && shortcut !== undefined ? (
+                  {goArmed && GO_KEYS[s.id] ? (
+                    <span aria-hidden="true" className="count nav-key">
+                      {GO_KEYS[s.id]}
+                    </span>
+                  ) : showHints && shortcut !== undefined ? (
                     <span aria-hidden="true" className="count nav-key">
                       {`${SECTION_MODIFIER_LABEL}${shortcut}`}
                     </span>
                   ) : null}
-                  {!showHints && fresh > 0 && (
+                  {!showHints && !goArmed && fresh > 0 && (
                     <span className="tag new" title="Itens novos para a próxima importação">
                       {fresh} novo{fresh > 1 ? 's' : ''}
                     </span>
                   )}
-                  {!showHints && shownTotal > 0 && <span className="count">{shownTotal}</span>}
+                  {!showHints && !goArmed && shownTotal > 0 && (
+                    <span className="count">{shownTotal}</span>
+                  )}
                 </span>
               </button>
             </li>

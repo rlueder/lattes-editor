@@ -10,6 +10,7 @@ import {
   CloseIcon,
   DownloadIcon,
   EyeIcon,
+  EyeOffIcon,
   HistoryIcon,
   MonitorIcon,
   MoonIcon,
@@ -18,6 +19,7 @@ import {
   SunIcon,
 } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
+import { usePrivacyMode } from './privacy.ts';
 import type { ThemePref } from './theme.ts';
 
 interface Props {
@@ -53,6 +55,8 @@ export function SettingsMenu({
   showEmpty,
   theme,
 }: Props) {
+  // Esconde dados pessoais em Dados gerais e põe a foto em mosaico.
+  const [hidePersonal, setHidePersonal] = usePrivacyMode();
   return (
     <Menu.Root>
       <Tip label="Configurações e arquivo">
@@ -84,6 +88,21 @@ export function SettingsMenu({
                 ))}
               </Menu.RadioGroup>
             </Menu.Group>
+
+            <Menu.CheckboxItem
+              checked={hidePersonal}
+              className="menu-item"
+              closeOnClick={false}
+              onCheckedChange={setHidePersonal}
+            >
+              <span className="menu-icon">
+                <EyeOffIcon />
+              </span>
+              <span className="menu-label">Modo de privacidade</span>
+              <Menu.CheckboxItemIndicator className="menu-check">
+                <CheckIcon />
+              </Menu.CheckboxItemIndicator>
+            </Menu.CheckboxItem>
 
             <Menu.CheckboxItem
               checked={showEmpty}

@@ -23,6 +23,11 @@ export interface Section {
    */
   importable: boolean | 'filtro';
   label: string;
+  /**
+   * Seções-filtro: a marca que reúne os itens e todos os itens que podem
+   * recebê-la (onde o atributo existe), para marcar daqui mesmo.
+   */
+  mark?: { attr: string; items: XElement[]; label: string };
 }
 
 const PATENT_FAMILY = [
@@ -38,6 +43,19 @@ function at(root: XElement, path: string): XElement[] {
   let current: XElement[] = [root];
   for (const seg of path.split('/')) current = current.flatMap((el) => childElements(el, seg));
   return current;
+}
+
+/** Itens de produção que têm a marca (no item ou nos DADOS-BASICOS-*), qualquer valor. */
+function markable(root: XElement, flag: string): XElement[] {
+  const items: XElement[] = [];
+  walk(root, (el) => {
+    if (getAttr(el, 'SEQUENCIA-PRODUCAO') === undefined) return;
+    const basics = childElements(el).find((c) => c.name.startsWith('DADOS-BASICOS'));
+    if (getAttr(el, flag) !== undefined || (basics && getAttr(basics, flag) !== undefined)) {
+      items.push(el);
+    }
+  });
+  return items;
 }
 
 /** Itens de produção com um FLAG-* = SIM no próprio item ou nos DADOS-BASICOS-*. */
@@ -182,6 +200,11 @@ export function buildSections(root: XElement): Section[] {
       id: 'inovacao',
       importable: 'filtro',
       label: 'Inovação',
+      mark: {
+        attr: 'FLAG-POTENCIAL-INOVACAO',
+        items: markable(root, 'FLAG-POTENCIAL-INOVACAO'),
+        label: 'Potencial de inovação',
+      },
     },
     {
       groups: [
@@ -194,6 +217,11 @@ export function buildSections(root: XElement): Section[] {
       id: 'educacao',
       importable: 'filtro',
       label: 'Educação e Popularização de C&T',
+      mark: {
+        attr: 'FLAG-DIVULGACAO-CIENTIFICA',
+        items: markable(root, 'FLAG-DIVULGACAO-CIENTIFICA'),
+        label: 'Divulgação científica',
+      },
     },
     {
       groups: claim(

@@ -2,7 +2,7 @@
 // sensíveis (documentos, nascimento, filiação, endereço residencial) para
 // mostrar a tela a alguém ou compartilhá-la sem expor o currículo inteiro.
 
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 /** Atributos sensíveis de DADOS-GERAIS (LGPD: documentos, filiação, raça, deficiência). */
 const SENSITIVE_PERSONAL = new Set([
@@ -64,4 +64,15 @@ export function writeHideSensitive(hide: boolean): void {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(PRIVACY_EVENT, { detail: hide }));
   }
+}
+
+/** Estado do modo de privacidade, compartilhado entre menu, seções e foto. */
+export function usePrivacyMode(): [boolean, (hide: boolean) => void] {
+  const [hide, setHide] = useState(readHideSensitive);
+  useEffect(() => {
+    const onChange = (e: Event) => setHide((e as CustomEvent<boolean>).detail);
+    window.addEventListener(PRIVACY_EVENT, onChange);
+    return () => window.removeEventListener(PRIVACY_EVENT, onChange);
+  }, []);
+  return [hide, writeHideSensitive];
 }

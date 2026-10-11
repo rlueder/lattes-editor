@@ -17,13 +17,12 @@ import {
   NO_FILTER,
 } from './facets.ts';
 import { FilterBar } from './FilterBar.tsx';
-import { EyeIcon, EyeOffIcon } from './icons.tsx';
 import { isListItem } from './item-meta.ts';
 import { ItemList } from './ItemList.tsx';
 import { JumpBar } from './JumpBar.tsx';
 import { type ListView, yearView } from './list-view.ts';
-import { Tip } from './primitives/Tip.tsx';
-import { PrivacyContext, readHideSensitive, writeHideSensitive } from './privacy.ts';
+import { MarkDialog } from './MarkDialog.tsx';
+import { PrivacyContext, usePrivacyMode } from './privacy.ts';
 import { useReferenceIndex } from './reference-context.ts';
 import { type ReferenceIndex, viewForContainer } from './reference-tables.ts';
 import { countItems, type Section, type SectionGroup } from './sections.ts';
@@ -62,7 +61,24 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
   const [state, setState] = useState<FilterState>(NO_FILTER);
   const rootRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const [hideSensitive, setHideSensitive] = useState(readHideSensitive);
+  const [hideSensitive] = usePrivacyMode();
+  const [marking, setMarking] = useState(false);
+  const mark = section.mark;
+  const markButton = mark && mark.items.length > 0 && (
+    <button className="ghost mark-open" type="button" onClick={() => setMarking(true)}>
+      Marcar itens
+    </button>
+  );
+  const markDialog = mark && (
+    <MarkDialog
+      attr={mark.attr}
+      items={mark.items}
+      label={mark.label}
+      open={marking}
+      onClose={() => setMarking(false)}
+      onEdit={onEdit}
+    />
+  );
   const privacy = section.id === 'dados-gerais';
   const lists = section.groups.map((g) => groupList(g, index));
   const allItems = lists.flatMap((l) => l?.items ?? []);
@@ -91,30 +107,14 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
   // mesmo quando os grupos vêm embrulhados num elemento só (Projetos, Patentes).
   const showFilter = section.id !== 'dados-gerais';
   const hasPanel = section.groups.length > 0;
-  const privacyToggle = privacy ? (
-    <Tip label={hideSensitive ? 'Mostrar dados pessoais' : 'Esconder dados pessoais'}>
-      <button
-        aria-label="Esconder dados pessoais"
-        aria-pressed={hideSensitive}
-        className="ghost icon-btn privacy-toggle"
-        type="button"
-        onClick={() => {
-          setHideSensitive((v) => {
-            writeHideSensitive(!v);
-            return !v;
-          });
-        }}
-      >
-        {hideSensitive ? <EyeOffIcon /> : <EyeIcon />}
-      </button>
-    </Tip>
-  ) : null;
 
   const head = (
     <>
       <div className="section-head">
         <h1 ref={titleRef}>{section.label}</h1>
-        {privacyToggle}
+        {section.groups.length > 0 && markButton && (
+          <span className="section-head-actions">{markButton}</span>
+        )}
       </div>
       {section.importable === 'filtro' && (
         <p className="muted section-note">
@@ -129,7 +129,13 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
     return (
       <div className="section-main section-main-empty">
         {head}
-        <EmptySection section={section} onNewItem={onNewItem} onOpenPicker={onOpenPicker} />
+        <EmptySection
+          action={markButton}
+          section={section}
+          onNewItem={onNewItem}
+          onOpenPicker={onOpenPicker}
+        />
+        {markDialog}
       </div>
     );
   }
@@ -138,7 +144,6 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
     <PrivacyContext.Provider value={privacy && hideSensitive}>
       <div ref={rootRef} className="section-layout">
         <StickyTitle
-          actions={privacyToggle}
           groups={visibleGroups.map((g) => ({ id: g.id, label: g.label }))}
           host={rootRef}
           label={section.label}
@@ -208,6 +213,7 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
           )}
         </aside>
       </div>
+      {markDialog}
     </PrivacyContext.Provider>
   );
 }
