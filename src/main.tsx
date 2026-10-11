@@ -3,12 +3,19 @@ import './ui/styles.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
+import { isDesktop } from './desktop/native.ts';
 import { App } from './ui/App.tsx';
 import { TipProvider } from './ui/primitives/Tip.tsx';
 import { applyTheme, readTheme } from './ui/theme.ts';
 
 // Antes do primeiro render, para não piscar o tema do sistema.
 applyTheme(readTheme());
+
+// No app de macOS, o cabeçalho faz as vezes da barra de título (botões da
+// janela dentro dele): o CSS abre espaço para eles.
+if (isDesktop() && /Mac/.test(navigator.platform)) {
+  document.documentElement.classList.add('desktop-mac');
+}
 
 // Âncoras de versões antigas (ids internos do React) não apontam para nada.
 if (/^#_r_/.test(location.hash)) {

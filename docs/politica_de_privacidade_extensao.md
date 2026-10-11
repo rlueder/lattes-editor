@@ -22,7 +22,8 @@ Lattes que você mesmo abriu no navegador.
 
 - Para o Lattes (`wwws.cnpq.br`), quando você clica em "Aplicar". É o mesmo
   envio que o formulário do Lattes faria.
-- Para o editor aberto no seu navegador.
+- Para o app LattesEditor no seu computador, por mensagens nativas do
+  navegador: a conversa fica entre o navegador e o app, na própria máquina.
 - Para nenhum outro lugar. A extensão não tem servidor, não coleta
   estatísticas de uso e não compartilha dados com ninguém.
 

@@ -17,6 +17,16 @@ declare namespace chrome {
       ): void;
     };
     const onInstalled: { addListener(cb: () => void): void };
+    const onStartup: { addListener(cb: () => void): void };
+    const lastError: { message?: string } | undefined;
+    interface Port {
+      disconnect(): void;
+      postMessage(message: unknown): void;
+      onDisconnect: { addListener(cb: () => void): void };
+      onMessage: { addListener(cb: (message: unknown) => void): void };
+    }
+    /** Mensagens nativas: inicia o host registrado no sistema (o app de desktop). */
+    function connectNative(application: string): Port;
     function getManifest(): { version: string };
     function getURL(path: string): string;
   }
@@ -54,6 +64,11 @@ declare namespace chrome {
 
   namespace sidePanel {
     function setPanelBehavior(behavior: { openPanelOnActionClick: boolean }): Promise<void>;
+  }
+
+  namespace alarms {
+    function create(name: string, info: { periodInMinutes: number }): Promise<void>;
+    const onAlarm: { addListener(cb: (alarm: { name: string }) => void): void };
   }
 
   namespace action {

@@ -1,19 +1,64 @@
 // Service worker da ponte: guarda a fila que o editor mandou, roda cada
 // operação na aba do Lattes (uma por vez, conferindo) e devolve o resultado
 // ao editor. O envio só começa por um clique no painel da extensão.
+//
+// O editor é o app de desktop, alcançado por mensagens nativas (o host é o
+// próprio app, ver src-tauri/src/ponte.rs). Em desenvolvimento, o editor
+// também roda numa aba em localhost e fala pelo script de conteúdo.
 
 import type { OpResult } from '../../src/bridge/apply.ts';
 import { sameCv } from '../../src/bridge/lattes-html.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
-import type { BridgeMessage, EditorMessage } from '../../src/bridge/protocol.ts';
-import { LATTES_MENU, type PanelCommand, readState, writeState } from './state.ts';
+import {
+  type BridgeMessage,
+  bridgeMessage,
+  type EditorMessage,
+  isEditorMessage,
+} from '../../src/bridge/protocol.ts';
+import {
+  type EditorEndpoint,
+  LATTES_MENU,
+  type PanelCommand,
+  readState,
+  writeState,
+} from './state.ts';
+
+/** Nome do host nativo registrado pelo app (ponte::HOST_NAME). */
+const NATIVE_HOST = 'lattes_editor.ponte';
 
 let stopRequested = false;
+let appPort: chrome.runtime.Port | undefined;
 
-async function toEditor(tabId: number | undefined, msg: BridgeMessage): Promise<void> {
-  if (tabId === undefined) return;
+/**
+ * Liga ao app de desktop. O host fica de pé enquanto a porta existir e espera
+ * o app abrir; sem app instalado, a conexão cai na hora e tenta de novo no
+ * próximo alarme.
+ */
+function connectApp(): void {
+  if (appPort) return;
   try {
-    await chrome.tabs.sendMessage(tabId, { msg, to: 'editor' });
+    appPort = chrome.runtime.connectNative(NATIVE_HOST);
+  } catch {
+    return;
+  }
+  appPort.onMessage.addListener((data) => {
+    if (isEditorMessage(data)) void onEditor(data, 'app');
+  });
+  appPort.onDisconnect.addListener(() => {
+    // Ler lastError evita o aviso de erro não tratado no console.
+    void chrome.runtime.lastError;
+    appPort = undefined;
+  });
+}
+
+async function toEditor(editor: EditorEndpoint | undefined, msg: BridgeMessage): Promise<void> {
+  if (editor === undefined) return;
+  if (editor === 'app') {
+    appPort?.postMessage(bridgeMessage(msg));
+    return;
+  }
+  try {
+    await chrome.tabs.sendMessage(editor, { msg, to: 'editor' });
   } catch {
     // A aba do editor foi fechada; o painel continua com o resultado.
   }
@@ -44,23 +89,23 @@ async function sessionIdentity(tabId: number): Promise<Identity> {
 }
 
 /** O código de 10 caracteres do currículo, para a foto, junto com de quem ele é. */
-async function sendCvCode(editorTabId: number): Promise<void> {
+async function sendCvCode(editor: EditorEndpoint): Promise<void> {
   const tabId = await lattesTab();
   if (tabId === undefined) return;
   try {
     const id = await sessionIdentity(tabId);
     if (id.code) {
-      await toEditor(editorTabId, { code: id.code, lattesId: id.lattesId, type: 'codigo-cv' });
+      await toEditor(editor, { code: id.code, lattesId: id.lattesId, type: 'codigo-cv' });
     }
   } catch {
     // Sem permissão na aba ou aba recarregando: sem foto, sem erro.
   }
 }
 
-async function onEditor(msg: EditorMessage, tabId: number): Promise<void> {
+async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<void> {
   if (msg.type === 'ola') {
-    await toEditor(tabId, { type: 'ola', version: chrome.runtime.getManifest().version });
-    await sendCvCode(tabId);
+    await toEditor(editor, { type: 'ola', version: chrome.runtime.getManifest().version });
+    await sendCvCode(editor);
     return;
   }
   if (msg.type === 'parar') {
@@ -70,7 +115,7 @@ async function onEditor(msg: EditorMessage, tabId: number): Promise<void> {
   const state = await readState();
   if (state.running) return;
   await writeState({
-    editorTabId: tabId,
+    editor,
     lattesId: msg.lattesId,
     ops: msg.ops,
     results: {},
@@ -91,7 +136,7 @@ async function run(keys?: string[]): Promise<void> {
   const record = async (r: OpResult) => {
     results[r.key] = r;
     await writeState({ ...(await readState()), results, running: true });
-    await toEditor(state.editorTabId, { result: r, type: 'resultado' });
+    await toEditor(state.editor, { result: r, type: 'resultado' });
   };
 
   const tabId = await lattesTab();
@@ -142,7 +187,7 @@ async function run(keys?: string[]): Promise<void> {
   await writeState({ ...(await readState()), results, running: false });
   const left = state.ops.filter((op) => results[op.key]?.status !== 'conferido').length;
   await chrome.action.setBadgeText({ text: left ? String(left) : '' });
-  await toEditor(state.editorTabId, { type: 'fim' });
+  await toEditor(state.editor, { type: 'fim' });
 }
 
 chrome.runtime.onMessage.addListener((message, sender) => {
@@ -158,6 +203,12 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     void chrome.action.setBadgeText({ text: '' });
   }
 });
+
+// O service worker acorda por vários motivos; em todos, tenta ligar ao app.
+connectApp();
+void chrome.alarms.create('ponte', { periodInMinutes: 1 });
+chrome.alarms.onAlarm.addListener(() => connectApp());
+chrome.runtime.onStartup.addListener(() => connectApp());
 
 chrome.runtime.onInstalled.addListener(() => {
   // Painel lateral onde existir (Chrome, Brave recente); senão o clique abre o painel numa aba.

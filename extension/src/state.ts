@@ -4,8 +4,11 @@
 import type { OpResult } from '../../src/bridge/apply.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
 
+/** Onde está o editor que mandou a fila: o app de desktop ou uma aba (desenvolvimento). */
+export type EditorEndpoint = 'app' | number;
+
 export interface QueueState {
-  editorTabId?: number;
+  editor?: EditorEndpoint;
   /** Currículo aberto no editor quando a fila foi enviada. */
   lattesId?: string;
   ops: BridgeOp[];
