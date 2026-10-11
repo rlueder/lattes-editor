@@ -238,7 +238,7 @@ describe('ponte: HTML do Lattes', () => {
     expect(isLogonPage('<p>ok</p>', 'https://wwws.cnpq.br/cvlattesweb/pkg_sec.logon')).toBe(true);
     expect(isLogonPage('<a href="x">pkg_sec.logon</a>')).toBe(false);
     expect(cvCodeFrom('PKG_MENU.menu?f_cod=FE387C4DFE584C19BD79D189C7A9DF99')).toBeUndefined();
-    expect(cvCodeFrom('pkg_ativ.lista?f_cod=K4746321J8&quot;')).toBe('K4746321J8');
+    expect(cvCodeFrom('pkg_ativ.lista?f_cod=K1234567A8&quot;')).toBe('K1234567A8');
   });
 });
 
