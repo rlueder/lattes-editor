@@ -137,6 +137,12 @@ gravar. Nenhuma senha passa por nós. O primeiro envio de teste funcionou
 arquivo de importação do Modelo B continua existindo como caminho sem
 extensão.
 
+O aplicativo de desktop não abre o Lattes dentro dele: um CNPq rodando numa
+janela nossa levantaria dúvidas sobre quem vê a senha. Ele entrega as
+alterações à mesma extensão, que envia a partir do navegador da pessoa, já
+autenticado. O núcleo da ponte (enviar uma alteração, conferir, parar se a
+sessão cair) é escrito uma vez e serve ao editor na web e ao de desktop.
+
 **O Modelo B foi a abordagem inicial.** Ele nunca toca no Lattes diretamente: os usuários exportam o XML do Lattes, editam na nossa ferramenta e importam o XML de volta no Lattes pelo próprio diálogo de importação do Lattes. Sem delegação de credenciais, sem scraping, sem abuso de API.
 
 ---
