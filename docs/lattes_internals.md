@@ -205,6 +205,13 @@ edita), sexo, raça ou cor, nascimento (país, UF, cidade, data), RG, passaporte
 nomes dos pais (ocultos), pessoa com deficiência (`f_pcd_r` e caixas
 `f_pcd`), e uma lista de privacidade por grupo de dados.
 
+A nacionalidade não se escolhe: o oculto `f_nacionalidade` recebe `B` ou `E`
+pelo JavaScript da página, e as validações tratam `B` como brasileira (exige
+CPF e RG) e `E` como estrangeira. É o `NACIONALIDADE` do XML. Os grupos de
+privacidade são foto, nacionalidade, raça ou cor, nascimento, identidade,
+passaporte e deficiência (`f_priv_*`, `1` público, `2` privado).
+**Observado** (11/10/2026).
+
 ## 6. Primeiro envio (11/10/2026)
 
 Um POST montado fora do formulário, com a autorização do dono do

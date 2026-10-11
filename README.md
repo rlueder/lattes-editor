@@ -1,9 +1,9 @@
 # Editor do Currículo Lattes
 
 Editor local para o Currículo Lattes. Você exporta o currículo no Lattes,
-abre o arquivo aqui, edita e salva. A partir do marco 2, o editor também
-gera o XML que o Importar do próprio Lattes aceita, para cadastrar
-produções novas sem passar pelos formulários.
+abre o arquivo aqui, edita e leva as mudanças de volta: produções novas pelo
+Importar do próprio Lattes, e o resto pela extensão da ponte ou copiando
+campo a campo.
 
 O arquivo nunca sai do seu computador. Não há servidor nem conta: a cópia
 de trabalho fica no IndexedDB do navegador.
@@ -31,6 +31,15 @@ uma com o valor antigo e o novo, um botão para copiar cada campo e a opção
 de descartar a mudança. Depois de copiar tudo no Lattes, exporte de novo e
 use "Recarregar do Lattes": o que já estiver lá some da lista.
 
+Outras funções:
+
+- **Imprimir ou salvar em PDF** (⚙ › Imprimir, ou <kbd>⌘P</kbd>): escolha de
+  seções e modelos, página nas regras da NBR 14724 e referências na NBR 6023.
+- **Privacidade em Dados gerais:** documentos, nascimento, filiação e
+  endereço residencial ficam mascarados até você clicar no olho.
+- **Aviso de pendências** no topo enquanto alguma alteração ou item novo
+  ainda não está no Lattes.
+
 ## Ponte com o Lattes (extensão, em teste)
 
 A extensão envia ao Lattes, a partir da sua própria sessão no navegador, as
@@ -54,6 +63,10 @@ Para instalar a versão de desenvolvimento no Brave ou no Chrome:
 
 Depois de mudar o código da extensão, rode `pnpm build:extension` de novo e
 clique em "Recarregar" no cartão dela em `brave://extensions`.
+
+A extensão só pede acesso a `wwws.cnpq.br`. O que ela lê, para onde envia e
+o que falta para publicá-la na Chrome Web Store estão em
+`docs/extensao_chrome_web_store.md` e `docs/politica_de_privacidade_extensao.md`.
 
 ## Desenvolvimento
 
@@ -85,10 +98,20 @@ passa a cobrir o arquivo.
 
 ## Documentação
 
+- `CHANGELOG.md`: o que mudou
+- `ROADMAP.md`: o que vem a seguir
+- `docs/lattes_internals.md`: **como o editor do Lattes funciona por
+  dentro**: a aplicação em PL/SQL, o campo `f_ctr`, os códigos de sessão e de
+  currículo, os formulários de edição campo a campo e o primeiro envio direto
+  ao Lattes. É a base da ponte.
 - `docs/lattes_implementation_guide.md`: plano, decisões e marcos
-- `docs/lattes_editor_reconnaissance.md`: primeiro reconhecimento do editor do Lattes (menus, inclusão, Importar)
-- `docs/lattes_internals.md`: como o editor do Lattes funciona por dentro (PL/SQL, `f_ctr`, formulários de edição)
 - `docs/lattes_product_requirements.md`: pesquisa e estratégia de produto
+- `docs/lattes_editor_reconnaissance.md`: primeiro reconhecimento do editor
+  do Lattes (menus, inclusão, Importar)
+- `docs/estilo_da_interface.md`: referência visual e regras de interface
+- `docs/pesquisa_recursos_de_ia.md`: pesquisa sobre recursos de IA no editor
+- `docs/extensao_chrome_web_store.md` e
+  `docs/politica_de_privacidade_extensao.md`: publicação da extensão
 - `AGENTS.md`: regras para quem contribui (pessoas e agentes)
 
 ## Licença
