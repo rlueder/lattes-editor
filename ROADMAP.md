@@ -7,6 +7,20 @@ arquivo quando muda de fato; o detalhe técnico está em
 
 ## Agora
 
+- **Crédito e projetos irmãos.** Uma linha de crédito no README e numa tela
+  "Sobre" do editor ("Feito por Rafael Lüder, fundador da Precisa Saúde"),
+  com links marcados para o Umami para o medbench, o datasus-viz e o
+  fhir-brasil. Os endereços e o padrão de marcação ainda precisam ser
+  confirmados antes de escrever os links.
+- **Travas de segurança da escrita no Lattes.** Protegem o currículo de quem
+  usa a ponte. Situação de cada uma:
+  - cópia local do XML antes de enviar: falta (baixar ou guardar a versão
+    anterior antes do primeiro envio da fila);
+  - diferença antes de enviar: existe no painel da extensão (valor antigo e
+    novo de cada campo), falta pedir confirmação explícita da fila inteira;
+  - ler de volta depois de cada gravação: existe;
+  - recusar quando o formulário mudou: existe (o valor antigo e o início do
+    vínculo precisam bater antes de gravar).
 - **Ponte com o Lattes, além do vínculo e do resumo.** Formação, idiomas,
   endereço e identificação já têm o formulário mapeado em
   `docs/lattes_internals.md`; falta escrever a operação de cada um e testar
