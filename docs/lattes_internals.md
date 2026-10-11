@@ -14,6 +14,68 @@ Cada afirmação vem marcada como **observado** (visto no HTML, nos scripts ou
 no comportamento do servidor) ou **inferido** (conclusão a partir do que foi
 observado, ainda não confirmada).
 
+## Visão geral: os componentes
+
+O caminho de uma alteração, do Lattes ao editor e de volta. Há dois retornos:
+itens novos vão pelo Importar do próprio Lattes, num arquivo que o editor gera
+(3a); o resto vai pela extensão, que grava nos formulários do Lattes na sessão
+do próprio usuário (3b). O app nunca fala com o Lattes direto.
+
+```mermaid
+flowchart LR
+  subgraph PC["Computador de quem usa"]
+    direction LR
+    Arquivos[("CV_id.zip ou .xml exportado<br/>id-importacao.xml")]
+    subgraph App["App LattesEditor (Tauri)"]
+      UI["Editor<br/>(página no webview)"]
+      Porta["Porta local 127.0.0.1<br/>com segredo em ponte.txt"]
+    end
+    Host["Host nativo<br/>(o mesmo executável, sem janela)"]
+    subgraph Nav["Navegador: Chrome, Brave, Edge"]
+      Painel["Painel lateral<br/>da extensão"]
+      SW["Service worker<br/>da extensão"]
+      subgraph Aba["Aba do Lattes, na sessão do usuário"]
+        Runner["lattes-runner<br/>(script injetado)"]
+      end
+    end
+  end
+  subgraph CNPq["CNPq"]
+    Gateway["cvlattesweb: aplicação PL/SQL<br/>PKG_MENU, PKG_ATIV, PKG_RESUME, PKG_IDIOMA"]
+    ImpExp["Ferramentas: Exportar e Importar"]
+    Foto["servicosweb: foto do currículo"]
+  end
+  Crossref["api.crossref.org (DOI)"]
+
+  ImpExp -- "1. exportação" --> Arquivos
+  Arquivos -- "2. abre" --> UI
+  UI -- "3a. itens novos" --> Arquivos
+  Arquivos -- "Importar" --> ImpExp
+  UI <-- "3b. fila e resultados" --> Porta
+  Porta <-- "TCP, JSON por linha" --> Host
+  Host <-- "mensagens nativas, stdin e stdout" --> SW
+  Painel -- "Aplicar" --> SW
+  SW -- "executeScript" --> Runner
+  Runner -- "GET do formulário, POST em Latin-1, GET de conferência" --> Gateway
+  UI -.-> Foto
+  UI -.-> Crossref
+```
+
+- **Editor** (`src/`): lê a exportação, guarda a cópia de trabalho e planeja
+  as operações que a extensão sabe levar (`src/bridge/plan.ts`).
+- **Porta local e host nativo** (`src-tauri/src/ponte.rs`): o navegador só
+  inicia programas registrados, então o próprio executável do app, chamado
+  com a origem da extensão, faz o papel de host e repassa as mensagens ao app
+  aberto. O segredo impede que outro usuário da máquina se ligue à porta.
+- **Extensão** (`extension/`): o service worker guarda a fila; o envio só
+  começa por um clique no painel. O `lattes-runner` roda dentro da aba do
+  Lattes e faz, para cada operação, o que a seção 6 descreve: acha o
+  formulário pelos links do próprio Lattes, confere que ele está como o
+  editor espera, envia e lê de volta (`src/bridge/apply.ts`).
+- **Lattes** (seções 1 a 5): a aplicação PL/SQL que recebe os formulários.
+  Exportar e Importar são as únicas portas oficiais para arquivos.
+- Em linha tracejada, o que sai do app sem passar pela extensão: a foto do
+  perfil e a busca do DOI, só quando pedidas.
+
 ## 1. Uma aplicação PL/SQL servida pela web
 
 Toda URL do editor tem a forma
