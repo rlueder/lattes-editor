@@ -9,6 +9,7 @@
       content="Edite o Currículo Lattes no seu computador: abra a exportação, cadastre produções pelo DOI e revise cada alteração antes de levar ao Lattes."
     />
     <meta name="color-scheme" content="light dark" />
+    <link rel="stylesheet" href="fonts/fonts.css" />
     <link rel="stylesheet" href="site.css" />
   </head>
   <body>
@@ -23,11 +24,12 @@
         <nav aria-label="Seções da página">
           <ul class="nav-links">
             <li><a href="#recursos">Recursos</a></li>
+            <li><a href="#baixar">Baixar</a></li>
             <li><a href="#privacidade">Privacidade</a></li>
             <li><a href="#em-breve">Em breve</a></li>
           </ul>
         </nav>
-        <a class="btn btn-small" href="app/">Abrir o editor</a>
+        <a class="btn btn-small" href="#baixar">Baixar o app</a>
       </div>
     </header>
 
@@ -39,13 +41,13 @@
           <p class="lede">
             Abra a exportação do Lattes, ache qualquer item por seção ou por ano, cadastre produções
             a partir do DOI, revise o que mudou e leve de volta ao Lattes, pelo Importar ou pela
-            extensão. O arquivo fica no seu navegador.
+            extensão. O arquivo fica no seu computador.
           </p>
           <div class="hero-actions">
-            <a class="btn" href="app/">Abrir o editor</a>
+            <a class="btn" href="#baixar">Baixar o app</a>
             <a class="btn btn-ghost" href="#como-funciona">Como funciona</a>
           </div>
-          <p class="hero-note">Sem conta, sem instalação, sem servidor.</p>
+          <p class="hero-note">Sem conta e sem servidor. Gratuito, para macOS, Windows e Linux.</p>
         </div>
 
         <figure class="shot wrap-wide">
@@ -161,8 +163,8 @@
               </span>
               <h3>Compartilhar com QR</h3>
               <p>
-                Um código QR do seu currículo público no Lattes, para baixar em SVG ou PNG e pôr em
-                pôster, slide ou crachá. Gerado no navegador.
+                Um código QR do seu currículo público no Lattes, para baixar em PNG e pôr em pôster,
+                slide ou crachá. Gerado no próprio app.
               </p>
             </li>
             <li class="card">
@@ -194,8 +196,8 @@
             <li>
               <h3>Edite aqui</h3>
               <p>
-                Cada edição fica salva no navegador. Itens novos ganham formulário próprio, com
-                autores, áreas do conhecimento e palavras-chave.
+                Cada edição fica salva no app. Itens novos ganham formulário próprio, com autores,
+                áreas do conhecimento e palavras-chave.
               </p>
             </li>
             <li>
@@ -220,20 +222,77 @@
         </div>
       </section>
 
+      <section id="baixar" class="section" aria-labelledby="baixar-titulo">
+        <div class="wrap">
+          <h2 id="baixar-titulo">Baixe o app</h2>
+          <p class="section-lede">
+            O editor é um aplicativo para o computador: abre e salva o arquivo direto no disco, com
+            as janelas do sistema. Gratuito e de código aberto.
+          </p>
+          <ul class="grid downloads">
+            <li class="card" data-os="mac">
+              <h3>macOS</h3>
+              <p class="download-meta">Apple Silicon e Intel · .dmg</p>
+              <a
+                class="btn btn-ghost"
+                href="https://github.com/rlueder/lattes-editor/releases/latest/download/LattesEditor-macOS.dmg"
+                >Baixar para macOS</a
+              >
+              <p class="download-note">
+                O app ainda não tem assinatura da Apple. Na primeira vez, o macOS bloqueia a
+                abertura; libere em Ajustes do Sistema › Privacidade e Segurança.
+              </p>
+            </li>
+            <li class="card" data-os="windows">
+              <h3>Windows</h3>
+              <p class="download-meta">Windows 10 e 11 · instalador .exe</p>
+              <a
+                class="btn btn-ghost"
+                href="https://github.com/rlueder/lattes-editor/releases/latest/download/LattesEditor-Windows-setup.exe"
+                >Baixar para Windows</a
+              >
+              <p class="download-note">
+                Sem assinatura digital ainda: o SmartScreen avisa na primeira vez. Abra os detalhes
+                do aviso e escolha executar.
+              </p>
+            </li>
+            <li class="card" data-os="linux">
+              <h3>Linux</h3>
+              <p class="download-meta">AppImage ou pacote .deb</p>
+              <a
+                class="btn btn-ghost"
+                href="https://github.com/rlueder/lattes-editor/releases/latest/download/LattesEditor-Linux.AppImage"
+                >Baixar AppImage</a
+              >
+              <p class="download-note">
+                Dê permissão de execução ao AppImage antes de abrir. Para Debian e Ubuntu, há o
+                <a
+                  href="https://github.com/rlueder/lattes-editor/releases/latest/download/LattesEditor-Linux.deb"
+                  >pacote .deb</a
+                >.
+              </p>
+            </li>
+          </ul>
+          <p class="download-all">
+            <a href="https://github.com/rlueder/lattes-editor/releases"
+              >Todas as versões e o que mudou em cada uma</a
+            >
+          </p>
+        </div>
+      </section>
+
       <section id="privacidade" class="section" aria-labelledby="privacidade-titulo">
         <div class="wrap split">
           <div>
             <h2 id="privacidade-titulo">Seus dados ficam com você</h2>
             <p>
               A exportação do Lattes traz CPF, data de nascimento e endereço. Por isso o editor não
-              tem servidor nem conta: o arquivo é lido e guardado no próprio navegador, e o arquivo
+              tem servidor nem conta: o arquivo é lido e guardado no próprio computador, e o arquivo
               salvo vai para o seu disco.
             </p>
           </div>
           <ul class="facts">
-            <li>
-              Cópia de trabalho no armazenamento do navegador, com histórico das últimas edições.
-            </li>
+            <li>Cópia de trabalho guardada no app, com histórico das últimas edições.</li>
             <li>Nenhum dado do currículo vai para servidor nosso: não há servidor.</li>
             <li>
               Saem do computador só a busca do DOI no Crossref, quando você pede, e a foto do
@@ -253,11 +312,6 @@
           <ul class="grid grid-2">
             <li class="card card-soon">
               <span class="pill">em breve</span>
-              <h3>App para macOS, Windows e Linux</h3>
-              <p>O mesmo editor como aplicativo instalado, com o arquivo aberto direto do disco.</p>
-            </li>
-            <li class="card card-soon">
-              <span class="pill">em breve</span>
               <h3>BibTeX, RIS e Word</h3>
               <p>
                 A produção para Zotero, Mendeley, EndNote e ORCID, e o currículo em DOCX para
@@ -275,8 +329,25 @@
           Editor do Currículo Lattes. Projeto independente, sem vínculo com o CNPq. O Lattes
           continua sendo o registro oficial do seu currículo.
         </p>
-        <a href="app/">Abrir o editor</a>
+        <a href="#baixar">Baixar o app</a>
       </div>
     </footer>
+    <script>
+      // Destaca o download do sistema de quem visita; sem script, os três ficam iguais.
+      (() => {
+        const ua = navigator.userAgent;
+        const os = /Mac/.test(ua)
+          ? 'mac'
+          : /Windows/.test(ua)
+            ? 'windows'
+            : /Linux/.test(ua) && !/Android/.test(ua)
+              ? 'linux'
+              : '';
+        const card = os && document.querySelector(`.downloads [data-os="${os}"]`);
+        if (!card) return;
+        card.classList.add('download-mine');
+        card.querySelector('.btn')?.classList.remove('btn-ghost');
+      })();
+    </script>
   </body>
 </html>

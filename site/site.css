@@ -14,8 +14,8 @@
   --accent-soft: #e4edf5;
   --glow: rgb(50 108 153 / 0.18);
   --shadow: 0 24px 60px rgb(0 0 0 / 0.12);
-  --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  --font: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
   color-scheme: light;
 }
 
@@ -478,6 +478,52 @@ h3 {
 }
 
 /* Telas menores */
+
+/* Baixar o app: um cartão por sistema; o do sistema de quem visita vem
+   em destaque (script no fim da página). */
+.section-lede {
+  max-width: 62ch;
+  margin: -8px 0 28px;
+  color: var(--muted);
+  font-size: 17px;
+}
+
+.downloads .card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.downloads h3 {
+  margin: 0;
+}
+
+.downloads .btn {
+  align-self: flex-start;
+}
+
+.card .download-meta {
+  margin-top: -6px;
+  font-size: 14px;
+}
+
+.card .download-note {
+  font-size: 13px;
+}
+
+.download-note a,
+.download-all a {
+  color: var(--accent);
+}
+
+.download-mine {
+  border-color: var(--accent);
+}
+
+.download-all {
+  margin: 20px 0 0;
+  font-size: 15px;
+}
 
 @media (max-width: 880px) {
   .grid,

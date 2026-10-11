@@ -1,0 +1,81 @@
+name: App de desktop
+
+# Monta o app de desktop (Tauri) para macOS, Windows e Linux. Chamado pelo
+# Release com a tag recém-criada: os instaladores vão para a página daquele
+# lançamento com nomes fixos, para a página do projeto apontar sempre para
+# releases/latest/download/<nome>. Em PR que mexe no app, só monta, sem enviar.
+#
+# Os instaladores não são assinados: o macOS e o Windows avisam na primeira
+# abertura (a página do projeto explica como abrir).
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Tag do lançamento que recebe os instaladores.
+        required: true
+        type: string
+  pull_request:
+    paths:
+      - 'src-tauri/**'
+      - 'src/desktop/**'
+      - '.github/workflows/desktop-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS
+            os: macos-latest
+            # Um app só para Apple Silicon e Intel.
+            args: --target universal-apple-darwin --bundles app,dmg
+            rust-targets: aarch64-apple-darwin x86_64-apple-darwin
+            asset: LattesEditor-macOS[ext]
+          - name: Windows
+            os: windows-latest
+            args: --bundles nsis
+            asset: LattesEditor-Windows[setup][ext]
+          - name: Linux
+            # 22.04: glibc mais antiga, o AppImage abre em mais distribuições.
+            os: ubuntu-22.04
+            args: --bundles appimage,deb
+            asset: LattesEditor-Linux[ext]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ inputs.tag || github.sha }}
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Alvos do Rust (macOS universal)
+        if: matrix.rust-targets
+        run: rustup target add ${{ matrix.rust-targets }}
+      - name: Bibliotecas do WebView (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: src-tauri
+      - run: pnpm install --frozen-lockfile
+      - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # action-v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Sem tag (PR, disparo manual), só monta e guarda como artefato do workflow.
+          tagName: ${{ inputs.tag }}
+          releaseAssetNamePattern: ${{ matrix.asset }}
+          uploadWorkflowArtifacts: ${{ inputs.tag == '' }}
+          uploadUpdaterSignatures: false
+          args: ${{ matrix.args }}
