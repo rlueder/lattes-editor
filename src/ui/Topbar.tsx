@@ -4,15 +4,7 @@
 
 import { type Ref, useRef } from 'react';
 
-import {
-  AlertIcon,
-  CheckIcon,
-  HistoryIcon,
-  PlusIcon,
-  SearchIcon,
-  SpinnerIcon,
-  UploadIcon,
-} from './icons.tsx';
+import { AlertIcon, CheckIcon, PlusIcon, SearchIcon, SpinnerIcon, UploadIcon } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { SettingsMenu } from './SettingsMenu.tsx';
 import type { ThemePref } from './theme.ts';
@@ -40,6 +32,12 @@ interface Props {
   onTheme: (theme: ThemePref) => void;
 }
 
+const SAVE_TIP: Record<SaveState, string> = {
+  erro: 'Erro ao salvar no navegador',
+  salvando: 'Salvando no navegador',
+  salvo: 'Salvo no navegador',
+};
+
 const SAVE_LABEL: Record<SaveState, string> = {
   erro: 'erro ao salvar',
   salvando: 'salvando',
@@ -66,27 +64,12 @@ export function Topbar({
   const reloadInput = useRef<HTMLInputElement>(null);
   return (
     <header ref={ref} className="topbar">
-      {/* Estado da cópia de trabalho (abre o histórico); quem é o currículo fica no menu lateral. */}
+      {/* Marca; quem é o currículo fica no menu lateral. */}
       <div className="topbar-identity">
-        <Tip label="Histórico de alterações">
-          <button
-            aria-label={`${SAVE_LABEL[saveState]}. Abrir histórico de alterações`}
-            className={`ghost save-state ${saveState}`}
-            type="button"
-            onClick={onHistory}
-          >
-            {saveState === 'salvando' ? (
-              <SpinnerIcon />
-            ) : saveState === 'erro' ? (
-              <AlertIcon />
-            ) : (
-              <CheckIcon />
-            )}
-            <span>{SAVE_LABEL[saveState]}</span>
-            <HistoryIcon />
-          </button>
-        </Tip>
-        <span aria-hidden="true" className="topbar-divider" />
+        {/* Marca provisória, até existir um logo. */}
+        <span aria-label="LattesEditor" className="brand">
+          Lattes<span className="brand-accent">Editor</span>
+        </span>
       </div>
 
       {/* Encontrar: centralizado na página */}
@@ -101,22 +84,57 @@ export function Topbar({
 
       <div className="topbar-actions">
         <span aria-hidden="true" className="topbar-divider" />
-        {/* Editar */}
-        <button className="ghost" type="button" onClick={onNewItem}>
-          <PlusIcon />
-          <span>Novo item</span>
-        </button>
+        {/* Editar, levar ao Lattes e o estado da cópia: só ícones, com dica. */}
+        <Tip label="Novo item">
+          <button
+            aria-label="Novo item"
+            className="ghost icon-btn"
+            type="button"
+            onClick={onNewItem}
+          >
+            <PlusIcon />
+          </button>
+        </Tip>
 
         {/* Levar ao Lattes: vira o botão principal quando há algo pendente. */}
-        <button className={pendingCount > 0 ? 'primary' : 'ghost'} type="button" onClick={onExport}>
-          <UploadIcon />
-          <span>Levar ao Lattes</span>
-          {pendingCount > 0 && (
-            <span aria-label={`${pendingCount} pendências`} className="tag count-tag">
-              {pendingCount}
-            </span>
-          )}
-        </button>
+        <Tip
+          label={
+            pendingCount > 0 ? `Levar ao Lattes (${pendingCount} pendências)` : 'Levar ao Lattes'
+          }
+        >
+          <button
+            aria-label={
+              pendingCount > 0 ? `Levar ao Lattes, ${pendingCount} pendências` : 'Levar ao Lattes'
+            }
+            className={`icon-btn ${pendingCount > 0 ? 'primary' : 'ghost'}`}
+            type="button"
+            onClick={onExport}
+          >
+            <UploadIcon />
+            {pendingCount > 0 && (
+              <span aria-hidden="true" className="tag count-tag">
+                {pendingCount}
+              </span>
+            )}
+          </button>
+        </Tip>
+
+        <Tip label={`${SAVE_TIP[saveState]}. Histórico de alterações`}>
+          <button
+            aria-label={`${SAVE_LABEL[saveState]}. Abrir histórico de alterações`}
+            className={`ghost icon-btn save-state ${saveState}`}
+            type="button"
+            onClick={onHistory}
+          >
+            {saveState === 'salvando' ? (
+              <SpinnerIcon />
+            ) : saveState === 'erro' ? (
+              <AlertIcon />
+            ) : (
+              <CheckIcon />
+            )}
+          </button>
+        </Tip>
 
         <span aria-hidden="true" className="topbar-divider" />
 

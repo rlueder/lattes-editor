@@ -231,19 +231,6 @@ code {
   background: var(--surface-2);
 }
 
-.topbar .save-state .icon-svg:last-child {
-  width: 13px;
-  height: 13px;
-  color: var(--muted);
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.topbar .save-state:hover .icon-svg:last-child,
-.topbar .save-state:focus-visible .icon-svg:last-child {
-  opacity: 1;
-}
-
 .count-tag {
   background: var(--accent-contrast);
   color: var(--accent);
@@ -383,7 +370,7 @@ code {
   padding: 0;
 }
 
-.sidebar button {
+.sidebar li > button {
   width: 100%;
   display: flex;
   justify-content: space-between;
@@ -394,7 +381,7 @@ code {
   padding: 5px 8px;
 }
 
-.sidebar button.active {
+.sidebar li > button.active {
   background: var(--accent-soft);
   color: var(--accent);
   font-weight: 500;
@@ -2195,12 +2182,12 @@ button.primary:hover {
 
 /* Número do atalho de seção, à esquerda e discreto, enquanto o modificador está pressionado */
 /* Calha fixa à esquerda: o número aparece nela sem empurrar o rótulo. */
-.sidebar button {
+.sidebar li > button {
   position: relative;
   padding-left: 30px;
 }
 
-.sidebar button .nav-key {
+.sidebar li > button .nav-key {
   position: absolute;
   left: 6px;
   top: 50%;
@@ -2211,12 +2198,12 @@ button.primary:hover {
   opacity: 0.8;
 }
 
-.sidebar button .nav-label {
+.sidebar li > button .nav-label {
   flex: 1;
   min-width: 0;
 }
 
-.sidebar button.empty {
+.sidebar li > button.empty {
   color: var(--muted);
 }
 
@@ -2690,4 +2677,144 @@ details > .element {
 .profile:hover .copy-btn,
 .profile .copy-btn:focus-visible {
   opacity: 1;
+}
+
+/* Foto do perfil: o avatar é um botão (trocar ou buscar a foto). */
+.profile .avatar {
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+}
+
+.profile .avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.modal.photo-dialog {
+  width: min(520px, calc(100% - 32px));
+}
+
+.photo-steps {
+  margin: 0 0 14px;
+  padding-left: 20px;
+  line-height: 1.6;
+}
+
+/* Marca provisória no cabeçalho. */
+.brand {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.brand-accent {
+  color: var(--accent);
+}
+
+.topbar-identity .topbar-divider:first-of-type {
+  margin: 0 4px 0 10px;
+}
+
+/* Ações do cabeçalho só com ícone: quadradas, mesma altura da busca. */
+.topbar-actions .icon-btn {
+  justify-content: center;
+  min-width: var(--pill-h);
+  height: var(--pill-h);
+  padding: 0 6px;
+}
+
+.topbar-actions .icon-btn .count-tag {
+  margin-left: 4px;
+}
+
+.topbar .save-state.icon-btn {
+  padding: 0 6px;
+  border-radius: var(--radius);
+}
+
+/* Hierarquia de títulos: a escala densa vale para controles, não para os
+   títulos. Seção, grupo e subgrupo em três degraus distintos. */
+.section-head h1 {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.group h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.group {
+  margin-top: 32px;
+}
+
+.fields-group,
+.subsection-head {
+  font-size: 11px;
+}
+
+.year-head {
+  font-size: 13px;
+}
+
+/* Perfil empilhado: foto redonda em linha própria, texto abaixo. */
+.profile {
+  flex-direction: column;
+  gap: 10px;
+}
+
+.profile .avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  font-size: 18px;
+}
+
+/* Subseção de um item (Endereço profissional, Endereço residencial) é um
+   título de verdade; o rótulo pequeno em caixa alta fica para os grupos de
+   campos dentro dela. */
+.subsection {
+  margin-top: 28px;
+  padding-top: 18px;
+}
+
+.subsection-head {
+  margin: 0 0 14px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.fields-group {
+  margin-top: 14px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.profile-photo-link {
+  align-self: flex-start;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.profile-photo-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.profile .avatar {
+  width: 88px;
+  height: 88px;
+  font-size: 26px;
 }

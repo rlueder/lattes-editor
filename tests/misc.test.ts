@@ -20,7 +20,7 @@ import { groupFields, isBooleanAttr, isSystemAttr } from '../src/ui/field-kind.t
 import { formatLattesDate } from '../src/ui/format.ts';
 import { parseHash } from '../src/ui/hash-route.ts';
 import { isSensitiveAttr, readHideSensitive, writeHideSensitive } from '../src/ui/privacy.ts';
-import { initials } from '../src/ui/profile.ts';
+import { initials, parseCvCode, photoUrl, readCvCode, writeCvCode } from '../src/ui/profile.ts';
 import { digitOf, isSectionShortcut } from '../src/ui/use-section-shortcuts.ts';
 
 describe('rótulos', () => {
@@ -305,13 +305,13 @@ describe('privacidade', () => {
     expect(isSensitiveAttr('AUTORES', 'CPF')).toBe(false);
   });
 
-  it('lembra a escolha no navegador e começa mostrando sem armazenamento', () => {
+  it('lembra a escolha no navegador e começa escondendo', () => {
     const store = new Map<string, string>();
     const storage = {
       getItem: (k: string) => store.get(k) ?? null,
       setItem: (k: string, v: string) => void store.set(k, v),
     };
-    expect(readHideSensitive()).toBe(false);
+    expect(readHideSensitive()).toBe(true);
     expect(() => writeHideSensitive(true)).not.toThrow();
     vi.stubGlobal('localStorage', storage);
     writeHideSensitive(true);
@@ -332,7 +332,7 @@ describe('ordem do endereço', () => {
     );
     expect(groups.map((g) => g.label)).toEqual([
       'Instituição',
-      'Endereço',
+      'Localização',
       'Contato',
       'Códigos do Lattes',
     ]);
@@ -363,5 +363,34 @@ describe('perfil', () => {
     expect(initials('Rafael Monteiro Lüder')).toBe('RL');
     expect(initials('Maria da Silva')).toBe('MS');
     expect(initials('Ana')).toBe('A');
+  });
+});
+
+describe('foto do currículo', () => {
+  it('acha o código de 10 caracteres no endereço colado ou sozinho', () => {
+    expect(
+      parseCvCode(
+        'http://buscatextual.cnpq.br/buscatextual/visualizacv.do?metodo=apresentar&id=K1234567A8',
+      ),
+    ).toBe('K1234567A8');
+    expect(parseCvCode(' k1234567a8 ')).toBe('K1234567A8');
+    expect(parseCvCode('https://lattes.cnpq.br/1234567890123456')).toBeUndefined();
+    expect(parseCvCode('qualquer coisa')).toBeUndefined();
+  });
+
+  it('monta o endereço da foto e lembra o código por currículo', () => {
+    expect(photoUrl('K1234567A8')).toContain('servletrecuperafoto?tipo=1&id=K1234567A8');
+    expect(readCvCode('1')).toBeUndefined();
+    const store = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      removeItem: (k: string) => void store.delete(k),
+      setItem: (k: string, v: string) => void store.set(k, v),
+    });
+    writeCvCode('1', 'K1234567A8');
+    expect(readCvCode('1')).toBe('K1234567A8');
+    writeCvCode('1', undefined);
+    expect(readCvCode('1')).toBeUndefined();
+    vi.unstubAllGlobals();
   });
 });

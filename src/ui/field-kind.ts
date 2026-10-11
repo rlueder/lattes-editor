@@ -82,7 +82,7 @@ const ADDRESS_LAYOUT: { attrs: string[]; label: string }[] = [
       'PAIS',
       'CAIXA-POSTAL',
     ],
-    label: 'Endereço',
+    label: 'Localização',
   },
   { attrs: ['DDD', 'TELEFONE', 'RAMAL', 'FAX', 'E-MAIL', 'HOME-PAGE'], label: 'Contato' },
 ];
