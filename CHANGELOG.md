@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.1](https://github.com/rlueder/lattes-editor/compare/v0.1.0...v0.1.1) (2026-10-11)
+
+### Correções
+
+* **ui:** ponte e foto só valem para o mesmo currículo ([1acb28a](https://github.com/rlueder/lattes-editor/commit/1acb28afb101ccbb6c29b1d187c2b911d6f481f2))
+
 Mudanças do Editor do Currículo Lattes. O formato segue o
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), e as versões
 seguem o [Versionamento Semântico](https://semver.org/lang/pt-BR/). Ainda não
