@@ -22,40 +22,42 @@ itens novos vão pelo Importar do próprio Lattes, num arquivo que o editor gera
 do próprio usuário (3b). O app nunca fala com o Lattes direto.
 
 ```mermaid
-flowchart LR
-  subgraph PC["Computador de quem usa"]
-    direction LR
-    Arquivos[("CV_id.zip ou .xml exportado<br/>id-importacao.xml")]
-    subgraph App["App LattesEditor (Tauri)"]
-      UI["Editor<br/>(página no webview)"]
-      Porta["Porta local 127.0.0.1<br/>com segredo em ponte.txt"]
-    end
-    Host["Host nativo<br/>(o mesmo executável, sem janela)"]
-    subgraph Nav["Navegador: Chrome, Brave, Edge"]
-      Painel["Painel lateral<br/>da extensão"]
-      SW["Service worker<br/>da extensão"]
-      subgraph Aba["Aba do Lattes, na sessão do usuário"]
-        Runner["lattes-runner<br/>(script injetado)"]
-      end
-    end
-  end
+flowchart TB
   subgraph CNPq["CNPq"]
-    Gateway["cvlattesweb: aplicação PL/SQL<br/>PKG_MENU, PKG_ATIV, PKG_RESUME, PKG_IDIOMA"]
-    ImpExp["Ferramentas: Exportar e Importar"]
-    Foto["servicosweb: foto do currículo"]
+    direction TB
+    Gateway["cvlattesweb: aplicação PL/SQL<br/>PKG_MENU, PKG_ATIV,<br/>PKG_RESUME, PKG_IDIOMA"]
+    ImpExp["Ferramentas:<br/>Exportar e Importar"]
+    Foto["servicosweb:<br/>foto do currículo"]
   end
-  Crossref["api.crossref.org (DOI)"]
+  Crossref["api.crossref.org<br/>(DOI)"]
 
-  ImpExp -- "1. exportação" --> Arquivos
-  Arquivos -- "2. abre" --> UI
-  UI -- "3a. itens novos" --> Arquivos
-  Arquivos -- "Importar" --> ImpExp
+  subgraph Nav["Navegador: Chrome, Brave, Edge"]
+    direction TB
+    subgraph Aba["Aba do Lattes, na sessão do usuário"]
+      Runner["lattes-runner<br/>(script injetado)"]
+    end
+    SW["Service worker<br/>da extensão"]
+    Painel["Painel lateral<br/>da extensão"]
+  end
+
+  Host["Host nativo<br/>(o mesmo executável, sem janela)"]
+
+  subgraph App["App LattesEditor (Tauri)"]
+    direction TB
+    Porta["Porta local 127.0.0.1<br/>com segredo em ponte.txt"]
+    UI["Editor<br/>(página no webview)"]
+  end
+
+  Arquivos[("CV_id.zip ou .xml exportado<br/>id-importacao.xml")]
+
+  Arquivos <-- "1. exportação<br/>4. Importar (itens novos)" --> ImpExp
+  Arquivos <-- "2. abre<br/>3a. gera os itens novos" --> UI
   UI <-- "3b. fila e resultados" --> Porta
   Porta <-- "TCP, JSON por linha" --> Host
-  Host <-- "mensagens nativas, stdin e stdout" --> SW
+  Host <-- "mensagens nativas,<br/>stdin e stdout" --> SW
   Painel -- "Aplicar" --> SW
   SW -- "executeScript" --> Runner
-  Runner -- "GET do formulário, POST em Latin-1, GET de conferência" --> Gateway
+  Runner -- "GET do formulário,<br/>POST em Latin-1,<br/>GET de conferência" --> Gateway
   UI -.-> Foto
   UI -.-> Crossref
 ```
