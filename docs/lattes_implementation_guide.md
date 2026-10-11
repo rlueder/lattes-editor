@@ -200,11 +200,11 @@ Done when Rafael can load his export, browse every section, save, and diff the o
 - [x] Generic schema-driven form for every other importable section
 - [x] Sequence-number assignment per 3.2
 - [x] Author management: a per-document list of co-authors (name, citation name, `NRO-ID-CNPQ`) reused across items; the owner is author 1 by default
-- [ ] DOI lookup against Crossref (`api.crossref.org/works/{doi}`, CORS enabled, send a `mailto` parameter) mapping title, authors, year, journal, volume, issue, pages, ISSN, DOI, language into the article form; the user reviews before saving
+- [x] DOI lookup against Crossref (`api.crossref.org/works/{doi}`, CORS enabled, send a `mailto` parameter) mapping title, authors, year, journal, volume, issue, pages, ISSN, DOI, language into the article form; the user reviews before saving
 - [x] "Gerar XML para importação" producing the file described in 3.3, plus an on-screen checklist of the Lattes steps: Importar, escolher o arquivo, marcar só os módulos listados aqui, conferir os itens verdes, Confirmar, e nunca marcar itens vermelhos
 - [x] A "novos itens" badge per section so the user knows what the next import will carry
 - [x] After the user re-imports and exports from Lattes, "Recarregar do Lattes" replaces the working copy and clears the new-item markers
-- [ ] Manual path for the non-importable sections (Dados gerais, Formação, Atuação, Projetos, Patentes e Registros), added 2026-10-10:
+- [x] Manual path for the non-importable sections (Dados gerais, Formação, Atuação, Projetos, Patentes e Registros), added 2026-10-10:
   - A per-field "copiar" button, so the user can paste a value into the matching Lattes form.
   - A "Alterações a levar ao Lattes" list: every field and item that differs from the loaded export, grouped by Lattes section and form, with old and new values. It is computed from `originalXml` against the working copy, items are matched by their `SEQUENCIA-*` key, and the user marks entries as done.
   - The list is a data structure first and a screen second. It is the input the phase 3 browser bridge will consume, so the bridge only automates what this list already describes.
@@ -216,6 +216,8 @@ Status on 2026-10-11, with the milestone 0 tests skipped on purpose:
 - New items mirror the structure Lattes exports: basic data and detail with every attribute, authors without CPF, and optional extras (keywords, knowledge areas, sectors, additional info) only when filled. Knowledge areas cannot be edited in the forms yet.
 - `FLAG-*` attributes start as `NAO`, like an unchecked box in the Lattes form. Other enumerated attributes start empty and block the export until chosen, because Lattes drops invalid items without a message. Part of the milestone 3 validation panel exists for this reason (`src/model/validate.ts`).
 - Labels in the forms are still generated from the XML names, not taken from the Lattes forms.
+- The Crossref request carries only the DOI. The `mailto` parameter suggested above was left out because section 8 allows nothing else on the network. Country is not filled from Crossref (English names; Lattes stores Portuguese). ISSN keeps the hyphen as Crossref returns it; whether Lattes stores it with or without is unverified.
+- "Alterações a levar ao Lattes" lives in the "Levar ao Lattes" panel next to the import file. Items are matched by their `SEQUENCIA-*` key (not `SEQUENCIA-IMPORTANCIA`, which is display order), by a natural key for the few repeated elements without one, and by position as a last resort. Edits to production items that are already in Lattes also land here, because the import never updates existing items. A change marked as done stays done while its new values stay the same (`src/model/changes.ts`).
 
 Done when Rafael adds a conference paper in the app, imports it into Lattes, re-exports, reloads, and the app shows no pending items. For the manual path, done when an edit to an Atuação row shows up in the list with its old and new values, can be copied field by field, and drops off the list after "Recarregar do Lattes" brings back an export that matches.
 

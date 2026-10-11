@@ -28,6 +28,7 @@ import { SectionView } from './SectionView.tsx';
 import { Sidebar } from './Sidebar.tsx';
 import { useTheme } from './theme.ts';
 import { type SaveState, Topbar } from './Topbar.tsx';
+import { useChanges } from './use-changes.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
 
 const AUTOSAVE_MS = 400;
@@ -139,6 +140,7 @@ export function App() {
     [session, version],
   );
   const section = sections.find((s) => s.id === sectionId) ?? sections[0];
+  const changes = useChanges(session, sections, version, setSession, onEdit);
 
   const togglePalette = useCallback(() => {
     if (session) setPaletteOpen((o) => !o);
@@ -265,7 +267,7 @@ export function App() {
         fileName={session.meta.fileName}
         modified={modified}
         ownerName={ownerName(session.doc)}
-        pendingCount={production.pending.length}
+        pendingCount={production.pending.length + changes.open}
         saveState={saveState}
         showEmpty={showEmpty}
         theme={theme}
@@ -333,6 +335,7 @@ export function App() {
       />
 
       <ExportPanel
+        changes={changes.groups}
         file={exportFile}
         open={exportOpen}
         pending={production.summaries}
@@ -342,6 +345,7 @@ export function App() {
           setExportOpen(false);
           production.openItem(seq);
         }}
+        onToggleDone={changes.toggleDone}
       />
 
       <ReloadConfirm

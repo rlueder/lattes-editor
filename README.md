@@ -19,14 +19,16 @@ de trabalho fica no IndexedDB do navegador.
 
 Para cadastrar produção nova, use "+ Novo item" (ou <kbd>⌘K</kbd> e
 "Novo"). Os itens novos ficam marcados até a próxima importação. Em
-"Importar no Lattes", o editor gera o `<id>-importacao.xml` e mostra os passos no
+"Levar ao Lattes", o editor gera o `<id>-importacao.xml` e mostra os passos no
 Lattes: enviar o arquivo, marcar só os módulos listados e desmarcar os itens
 vermelhos no Passo 3, que já estão no currículo e seriam duplicados. Depois
 de importar, exporte de novo no Lattes e use "Recarregar do Lattes".
 
 As seções Dados gerais, Formação, Atuação e Projetos não passam pelo
-Importar do Lattes. Elas aparecem marcadas como "não importável no
-Lattes"; mudanças nelas precisam ser copiadas à mão nos formulários.
+Importar do Lattes, e o Importar também não altera itens que já estão lá.
+Essas mudanças aparecem em "Levar ao Lattes", na lista de alterações: cada
+uma com o valor antigo e o novo, um botão para copiar cada campo e uma
+caixa para marcar quando já foi feita no formulário do Lattes.
 
 ## Desenvolvimento
 

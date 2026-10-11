@@ -27,6 +27,7 @@ interface Props {
   fileName: string;
   modified: boolean;
   ownerName: string;
+  /** Itens novos mais alterações ainda não feitas no Lattes. */
   pendingCount: number;
   ref: Ref<HTMLElement>;
   saveState: SaveState;
@@ -117,12 +118,12 @@ export function Topbar({
           <span>Novo item</span>
         </button>
 
-        {/* Levar ao Lattes: vira o botão principal quando há itens novos. */}
+        {/* Levar ao Lattes: vira o botão principal quando há algo pendente. */}
         <button className={pendingCount > 0 ? 'primary' : 'ghost'} type="button" onClick={onExport}>
           <UploadIcon />
-          <span>Importar no Lattes</span>
+          <span>Levar ao Lattes</span>
           {pendingCount > 0 && (
-            <span aria-label={`${pendingCount} itens novos`} className="tag count-tag">
+            <span aria-label={`${pendingCount} pendências`} className="tag count-tag">
               {pendingCount}
             </span>
           )}

@@ -1375,3 +1375,165 @@ details.card.is-new {
   font-size: 12px;
   color: var(--muted);
 }
+
+/* Copiar valor */
+
+.field-copy-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.field-copy-row > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.copy-btn {
+  padding: 4px 6px;
+  color: var(--muted);
+}
+
+.field .copy-btn {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.field:hover .copy-btn,
+.field:focus-within .copy-btn,
+.field .copy-btn:focus-visible {
+  opacity: 1;
+}
+
+.copy-btn:disabled {
+  visibility: hidden;
+}
+
+/* Levar ao Lattes */
+
+.modal.export {
+  width: min(820px, calc(100% - 32px));
+  max-height: 88vh;
+  margin-top: 6vh;
+}
+
+.export[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.export-body {
+  overflow: auto;
+  padding-bottom: 8px;
+}
+
+.export-part {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 8px 16px 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 15px;
+}
+
+.export-part:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.changes {
+  margin: 0 16px;
+}
+
+.changes-group h3 {
+  margin: 12px 0 6px;
+  font-size: 13px;
+}
+
+.changes-note {
+  font-weight: 400;
+}
+
+.changes-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.change {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.change.done {
+  opacity: 0.6;
+}
+
+.change.done .change-where {
+  text-decoration: line-through;
+}
+
+.change-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.change-where {
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag.kind-alterado {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.tag.kind-novo {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.tag.kind-removido {
+  background: var(--warn-bg);
+  color: var(--danger);
+}
+
+.change-fields {
+  width: 100%;
+  margin-top: 6px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.change-fields th {
+  width: 28%;
+  padding: 3px 8px 3px 26px;
+  text-align: left;
+  font-weight: 400;
+  color: var(--muted);
+  vertical-align: top;
+}
+
+.change-fields td {
+  padding: 3px 6px;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.change-fields .before {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.change-fields .copy {
+  width: 32px;
+  text-align: right;
+}

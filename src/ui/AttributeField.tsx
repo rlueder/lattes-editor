@@ -6,10 +6,13 @@ import { useEffect, useId, useState } from 'react';
 import { attributeLabel, elementLabel, enumLabel } from '../labels/labels.ts';
 import { getAttr, setAttr, type XElement } from '../model/xml.ts';
 import type { AttributeSpec } from '../schema/types.ts';
+import { CopyButton } from './CopyButton.tsx';
 
 export type EditFn = (note: string) => void;
 
 interface Props {
+  /** Mostra o botão "copiar" do valor, para colar no formulário do Lattes. */
+  copyable?: boolean;
   el: XElement;
   /** Mensagem de validação mostrada sob o campo. */
   error?: string;
@@ -26,6 +29,7 @@ interface Props {
 }
 
 export function AttributeField({
+  copyable,
   el,
   error,
   label,
@@ -101,7 +105,14 @@ export function AttributeField({
           </span>
         )}
       </label>
-      {control}
+      {copyable ? (
+        <span className="field-copy-row">
+          {control}
+          <CopyButton label={text} value={value} />
+        </span>
+      ) : (
+        control
+      )}
       {error && (
         <span className="field-error" id={errorId}>
           {error}

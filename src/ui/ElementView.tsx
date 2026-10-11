@@ -34,7 +34,7 @@ export function Attributes({ el, onEdit, showEmpty }: ViewProps) {
   return (
     <div className="fields">
       {names.map((n) => (
-        <AttributeField key={n} el={el} name={n} spec={known.get(n)} onEdit={onEdit} />
+        <AttributeField key={n} copyable el={el} name={n} spec={known.get(n)} onEdit={onEdit} />
       ))}
       {spec?.mixed && <TextField el={el} node={text} onEdit={onEdit} />}
     </div>
