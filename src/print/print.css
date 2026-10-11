@@ -1,0 +1,401 @@
+/* Página impressa do currículo.
+ *
+ * Margens da ABNT NBR 14724 para o anverso (3 cm em cima e à esquerda,
+ * 2 cm embaixo e à direita, papel A4), conferidas no guia do Sistema de
+ * Bibliotecas da UEL, "Regras gerais de apresentação gráfica – NBR 14724":
+ * https://sites.uel.br/bibliotecas/wp-content/uploads/2025/02/ABNT-fev.-2025.pdf
+ * (acesso em 11/10/2026). O mesmo guia pede referências em espaço simples,
+ * alinhadas à esquerda e separadas por uma linha em branco.
+ *
+ * A NBR 14724 trata de trabalhos acadêmicos (corpo 12, entrelinha 1,5) e não
+ * de currículos; o corpo aqui é menor (10,5 pt, entrelinha 1,4) para caber
+ * uma lista longa de produção sem perder a leitura. Só as margens e a forma
+ * das referências seguem a norma.
+ */
+
+@page {
+  size: A4;
+  margin: 3cm 2cm 2cm 3cm;
+
+  @bottom-right {
+    content: counter(page) ' / ' counter(pages);
+    font:
+      8pt/1 Charter,
+      Georgia,
+      serif;
+    color: #555;
+  }
+
+  @bottom-left {
+    font:
+      8pt/1 Charter,
+      Georgia,
+      serif;
+    color: #555;
+  }
+}
+
+.print-doc {
+  --pd-serif:
+    Charter, 'Bitstream Charter', 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua',
+    Georgia, serif;
+  --pd-ink: #111;
+  --pd-muted: #555;
+  --pd-rule: #bbb;
+  --pd-accent: var(--pd-ink);
+
+  color: var(--pd-ink);
+  font: 10.5pt/1.4 var(--pd-serif);
+  font-variant-numeric: oldstyle-nums proportional-nums;
+  hyphens: auto;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+  orphans: 3;
+  widows: 3;
+}
+
+.print-doc.pd-color {
+  /* Azul do Lattes (o mesmo --accent claro do editor). */
+  --pd-accent: #326c99;
+  --pd-rule: #b9cde0;
+}
+
+.print-doc * {
+  box-sizing: border-box;
+}
+
+/* Cabeçalho: nome grande, dados de referência em versalete pequeno. */
+.pd-header {
+  margin: 0 0 18pt;
+  padding-bottom: 10pt;
+  border-bottom: 0.75pt solid var(--pd-accent);
+}
+
+.pd-header h1 {
+  margin: 0 0 4pt;
+  color: var(--pd-accent);
+  font-size: 20pt;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.pd-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2pt 14pt;
+  margin: 0;
+  color: var(--pd-muted);
+  font-size: 9pt;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* Seção: versalete espaçado com fio; grupo: itálico, um degrau acima do corpo. */
+.pd-section {
+  margin: 0 0 14pt;
+}
+
+.pd-section h2 {
+  margin: 0 0 8pt;
+  padding-bottom: 2pt;
+  border-bottom: 0.5pt solid var(--pd-rule);
+  color: var(--pd-accent);
+  font-size: 11.5pt;
+  font-variant: small-caps;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+  break-after: avoid;
+}
+
+.pd-group + .pd-group {
+  margin-top: 10pt;
+}
+
+.pd-group h3 {
+  margin: 0 0 5pt;
+  font-size: 10.5pt;
+  font-style: italic;
+  font-weight: 400;
+  break-after: avoid;
+}
+
+.pd-text {
+  margin: 0 0 6pt;
+  text-align: justify;
+}
+
+.pd-address {
+  display: flex;
+  flex-direction: column;
+  font-style: normal;
+}
+
+/* Listas com período: coluna estreita de datas e o conteúdo ao lado. */
+.pd-list,
+.pd-short,
+.pd-references {
+  margin: 0;
+  padding: 0;
+}
+
+.pd-list {
+  list-style: none;
+}
+
+.pd-list li {
+  display: grid;
+  grid-template-columns: 7.5em 1fr;
+  gap: 0 10pt;
+  margin: 0 0 5pt;
+  break-inside: avoid;
+}
+
+.pd-period {
+  color: var(--pd-muted);
+  font-size: 9pt;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1.55;
+}
+
+.pd-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.pd-term {
+  font-weight: 600;
+}
+
+.pd-sub {
+  color: var(--pd-muted);
+}
+
+/* Listas curtas (idiomas, áreas, prêmios) em duas colunas. */
+.pd-short {
+  list-style: none;
+  columns: 2;
+  column-gap: 1cm;
+}
+
+.pd-short li {
+  margin: 0 0 4pt;
+  break-inside: avoid;
+}
+
+.pd-short .pd-sub {
+  display: block;
+}
+
+/* Referências (NBR 6023): espaço simples, à esquerda, uma linha em branco entre elas. */
+.pd-references {
+  padding-left: 1.6em;
+  line-height: 1.2;
+}
+
+.pd-references li {
+  margin: 0 0 1lh;
+  padding-left: 0.3em;
+  text-align: left;
+  hyphens: manual;
+  break-inside: avoid;
+}
+
+.pd-references li::marker {
+  color: var(--pd-muted);
+  font-size: 9pt;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.pd-references strong {
+  font-weight: 700;
+}
+
+/* Diálogo de impressão: opções à esquerda, folha A4 em miniatura à direita. */
+.modal.print-modal {
+  top: 4vh;
+  width: min(1120px, calc(100% - 32px));
+  max-height: 92vh;
+}
+
+.print-modal .modal-body {
+  padding: 0;
+  overflow: hidden;
+}
+
+.print-layout {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  height: min(72vh, 820px);
+}
+
+.print-options {
+  overflow: auto;
+  padding: 16px 20px 20px;
+  border-right: 1px solid var(--border);
+}
+
+.print-fieldset {
+  min-width: 0;
+  margin: 0 0 18px;
+  padding: 0;
+  border: 0;
+}
+
+.print-fieldset legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.print-segment {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.print-segment label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.print-segment label.active {
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+  font-weight: 600;
+}
+
+.print-segment input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.print-segment label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.print-sections,
+.print-sections ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.print-sections ul {
+  margin: 0 0 4px 24px;
+}
+
+.print-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.print-row input {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.print-section-row {
+  font-weight: 500;
+}
+
+.print-row-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.print-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 30px;
+  font-size: 13px;
+}
+
+.print-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+.print-hint {
+  margin-right: auto;
+  font-size: 12px;
+}
+
+/* A folha: largura de A4 com as margens da página, reduzida para caber. */
+.print-preview {
+  overflow: auto;
+  padding: 24px;
+  background: var(--surface-2);
+}
+
+.print-sheet {
+  width: 21cm;
+  min-height: 29.7cm;
+  margin: 0 auto;
+  padding: 3cm 2cm 2cm 3cm;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+  zoom: 0.62;
+}
+
+@media (max-width: 860px) {
+  .print-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .print-options {
+    border-right: 0;
+  }
+  .print-preview {
+    display: none;
+  }
+}
+
+/* Fora da impressão, a raiz da página impressa não aparece. */
+#print-root {
+  display: none;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  body > :not(#print-root) {
+    display: none !important;
+  }
+
+  #print-root {
+    display: block;
+  }
+
+  .print-doc {
+    print-color-adjust: exact;
+  }
+}

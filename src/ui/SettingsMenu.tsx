@@ -4,6 +4,7 @@
 import { Menu } from '@base-ui/react/menu';
 import type { ReactNode } from 'react';
 
+import { PrinterIcon } from '../print/PrinterIcon.tsx';
 import {
   CheckIcon,
   CloseIcon,
@@ -25,11 +26,14 @@ interface Props {
   theme: ThemePref;
   onClose: () => void;
   onHistory: () => void;
+  onPrint: () => void;
   onReload: () => void;
   onSave: () => void;
   onShowEmpty: (show: boolean) => void;
   onTheme: (theme: ThemePref) => void;
 }
+
+const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
 const THEMES: { icon: ReactNode; label: string; value: ThemePref }[] = [
   { icon: <MonitorIcon />, label: 'Sistema', value: 'sistema' },
@@ -41,6 +45,7 @@ export function SettingsMenu({
   modified,
   onClose,
   onHistory,
+  onPrint,
   onReload,
   onSave,
   onShowEmpty,
@@ -103,6 +108,13 @@ export function SettingsMenu({
               </span>
               <span className="menu-label">Salvar arquivo (.xml)</span>
               {modified && <span className="menu-hint">alterado</span>}
+            </Menu.Item>
+            <Menu.Item className="menu-item" onClick={onPrint}>
+              <span className="menu-icon">
+                <PrinterIcon />
+              </span>
+              <span className="menu-label">Imprimir ou salvar PDF…</span>
+              <span className="menu-hint">{IS_MAC ? '⌘P' : 'Ctrl+P'}</span>
             </Menu.Item>
             <Menu.Item className="menu-item" onClick={onReload}>
               <span className="menu-icon">

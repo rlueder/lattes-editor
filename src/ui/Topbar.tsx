@@ -26,6 +26,7 @@ interface Props {
   onHistory: () => void;
   onNewItem: () => void;
   onPalette: () => void;
+  onPrint: () => void;
   onReload: (file: File) => void;
   onSave: () => void;
   onShowEmpty: (show: boolean) => void;
@@ -51,6 +52,7 @@ export function Topbar({
   onHistory,
   onNewItem,
   onPalette,
+  onPrint,
   onReload,
   onSave,
   onShowEmpty,
@@ -145,6 +147,7 @@ export function Topbar({
           theme={theme}
           onClose={onClose}
           onHistory={onHistory}
+          onPrint={onPrint}
           onReload={() => reloadInput.current?.click()}
           onSave={onSave}
           onShowEmpty={onShowEmpty}

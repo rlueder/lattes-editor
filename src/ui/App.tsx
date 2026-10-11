@@ -15,6 +15,8 @@ import {
   saveWorkingCopy,
 } from '../model/store.ts';
 import { getAttr, parseXml, serializeXml, walk, type XDocument } from '../model/xml.ts';
+import { PrintDialog } from '../print/PrintDialog.tsx';
+import { usePrint } from '../print/use-print.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 import { CommandPalette } from './CommandPalette.tsx';
 import { HistoryDialog, ReloadConfirm } from './dialogs.tsx';
@@ -145,6 +147,7 @@ export function App() {
     if (session) setPaletteOpen((o) => !o);
   }, [session]);
   usePaletteShortcut(togglePalette);
+  const print = usePrint(session !== null);
 
   /** Vai para a seção (e o grupo ou ano) e mantém a URL legível em sincronia. */
   const navigate = useCallback((route: HashRoute, write = true) => {
@@ -278,6 +281,7 @@ export function App() {
     return n;
   };
   const exportFile = exportOpen ? production.buildFile() : undefined;
+  const profile = profileOf(session.doc, session.meta.fileName, exportedOn);
 
   return (
     <div className="shell">
@@ -293,6 +297,7 @@ export function App() {
         onHistory={openHistory}
         onNewItem={() => setPickerOpen(true)}
         onPalette={togglePalette}
+        onPrint={print.show}
         onReload={reload}
         onSave={saveFile}
         onShowEmpty={setShowEmpty}
@@ -302,7 +307,7 @@ export function App() {
       <Sidebar
         activeId={section?.id}
         pendingIn={pendingIn}
-        profile={profileOf(session.doc, session.meta.fileName, exportedOn)}
+        profile={profile}
         sections={sections}
         onSelect={(id) => navigate({ sectionId: id })}
       />
@@ -375,6 +380,8 @@ export function App() {
           void openFile(file);
         }}
       />
+
+      <PrintDialog control={print} doc={session.doc} profile={profile} sections={sections} />
 
       <HistoryDialog
         entries={history}
