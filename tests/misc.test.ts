@@ -13,6 +13,7 @@ import {
   XmlParseError,
 } from '../src/model/xml.ts';
 import { lattesSchema } from '../src/schema/lattes.ts';
+import { formatLattesDate } from '../src/ui/format.ts';
 import { summarize } from '../src/ui/summary.ts';
 
 describe('rótulos', () => {
@@ -129,5 +130,13 @@ describe('XML, casos de borda', () => {
   ])('rejeita %j', (src, message) => {
     expect(() => parseXml(src)).toThrow(XmlParseError);
     expect(() => parseXml(src)).toThrow(message);
+  });
+});
+
+describe('formatLattesDate', () => {
+  it('DDMMAAAA vira DD/MM/AAAA; o resto fica de fora', () => {
+    expect(formatLattesDate('17082026')).toBe('17/08/2026');
+    expect(formatLattesDate('2026-08-17')).toBeUndefined();
+    expect(formatLattesDate(undefined)).toBeUndefined();
   });
 });

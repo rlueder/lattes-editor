@@ -1,10 +1,31 @@
+// Cabeçalho: quem é o currículo à esquerda; à direita, ações em grupos
+// separados por divisórias (navegar, produção, exibição, arquivo).
+
 import { type Ref, useRef } from 'react';
+
+import { formatLattesDate } from './format.ts';
+import {
+  AlertIcon,
+  CheckIcon,
+  CloseIcon,
+  DownloadIcon,
+  EyeIcon,
+  EyeOffIcon,
+  HistoryIcon,
+  PlusIcon,
+  RefreshIcon,
+  SearchIcon,
+  SpinnerIcon,
+  UploadIcon,
+} from './icons.tsx';
 
 export type SaveState = 'salvo' | 'salvando' | 'erro';
 
 const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
 interface Props {
+  /** DATA-ATUALIZACAO da exportação (DDMMAAAA), quando houver. */
+  exportedOn?: string;
   fileName: string;
   modified: boolean;
   ownerName: string;
@@ -22,7 +43,14 @@ interface Props {
   onShowEmpty: (show: boolean) => void;
 }
 
+const SAVE_LABEL: Record<SaveState, string> = {
+  erro: 'erro ao salvar no navegador',
+  salvando: 'salvando',
+  salvo: 'salvo no navegador',
+};
+
 export function Topbar({
+  exportedOn,
   fileName,
   modified,
   onClose,
@@ -40,44 +68,80 @@ export function Topbar({
   showEmpty,
 }: Props) {
   const reloadInput = useRef<HTMLInputElement>(null);
+  const date = formatLattesDate(exportedOn);
   return (
     <header ref={ref} className="topbar">
-      <div className="topbar-title">
+      <div className="topbar-title" title={`Arquivo: ${fileName}`}>
         <strong>{ownerName}</strong>
-        <span className="file-name">{fileName}</span>
-        <span className={`save-state ${saveState}`} role="status">
-          {saveState === 'salvando'
-            ? 'salvando…'
-            : saveState === 'erro'
-              ? 'erro ao salvar no navegador'
-              : 'salvo'}
-        </span>
+        <span className="topbar-sub">Currículo Lattes{date ? ` · exportado em ${date}` : ''}</span>
       </div>
+
       <div className="topbar-actions">
-        <button className="ghost kbd-hint" type="button" onClick={onPalette}>
-          Ir para… <kbd>{IS_MAC ? '⌘' : 'Ctrl'}</kbd>
+        <button className="ghost search-btn" type="button" onClick={onPalette}>
+          <SearchIcon />
+          <span>Ir para</span>
+          <kbd>{IS_MAC ? '⌘' : 'Ctrl'}</kbd>
           <kbd>K</kbd>
         </button>
+
+        <span aria-hidden="true" className="topbar-divider" />
+
         <button className="ghost" type="button" onClick={onNewItem}>
-          + Novo item
+          <PlusIcon />
+          <span>Novo item</span>
         </button>
         <button className="ghost" type="button" onClick={onExport}>
-          Importação
-          {pendingCount > 0 && <span className="tag new">{pendingCount}</span>}
+          <UploadIcon />
+          <span>Importação</span>
+          {pendingCount > 0 && (
+            <span aria-label={`${pendingCount} itens novos`} className="tag new">
+              {pendingCount}
+            </span>
+          )}
         </button>
-        <label className="toggle">
-          <input
-            checked={showEmpty}
-            type="checkbox"
-            onChange={(e) => onShowEmpty(e.target.checked)}
-          />
-          campos vazios
-        </label>
-        <button className="ghost" type="button" onClick={onHistory}>
-          Histórico
+
+        <span aria-hidden="true" className="topbar-divider" />
+
+        <button
+          aria-label={showEmpty ? 'Esconder campos vazios' : 'Mostrar campos vazios'}
+          aria-pressed={showEmpty}
+          className="ghost icon-btn"
+          data-tip={showEmpty ? 'Esconder campos vazios' : 'Mostrar campos vazios'}
+          type="button"
+          onClick={() => onShowEmpty(!showEmpty)}
+        >
+          {showEmpty ? <EyeIcon /> : <EyeOffIcon />}
         </button>
-        <button className="ghost" type="button" onClick={() => reloadInput.current?.click()}>
-          Recarregar do Lattes
+
+        <span aria-hidden="true" className="topbar-divider" />
+
+        <span className={`save-state ${saveState}`} role="status">
+          {saveState === 'salvando' ? (
+            <SpinnerIcon />
+          ) : saveState === 'erro' ? (
+            <AlertIcon />
+          ) : (
+            <CheckIcon />
+          )}
+          <span>{SAVE_LABEL[saveState]}</span>
+        </span>
+        <button
+          aria-label="Histórico de alterações"
+          className="ghost icon-btn"
+          data-tip="Histórico de alterações"
+          type="button"
+          onClick={onHistory}
+        >
+          <HistoryIcon />
+        </button>
+        <button
+          aria-label="Recarregar do Lattes (nova exportação)"
+          className="ghost icon-btn"
+          data-tip="Recarregar do Lattes"
+          type="button"
+          onClick={() => reloadInput.current?.click()}
+        >
+          <RefreshIcon />
         </button>
         <input
           ref={reloadInput}
@@ -90,11 +154,24 @@ export function Topbar({
             e.target.value = '';
           }}
         />
-        <button className="ghost" type="button" onClick={onClose}>
-          Fechar
+        <button
+          aria-label="Fechar o currículo"
+          className="ghost icon-btn"
+          data-tip="Fechar o currículo"
+          type="button"
+          onClick={onClose}
+        >
+          <CloseIcon />
         </button>
-        <button className="primary" type="button" onClick={onSave}>
-          Salvar arquivo{modified ? ' •' : ''}
+        <button
+          className="primary"
+          title={`Baixa ${fileName} com as alterações`}
+          type="button"
+          onClick={onSave}
+        >
+          <DownloadIcon />
+          <span>Salvar</span>
+          {modified && <span aria-label="com alterações" className="dot" />}
         </button>
       </div>
     </header>

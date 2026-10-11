@@ -169,14 +169,24 @@ code {
   min-width: 0;
 }
 
-.file-name {
+.topbar-title {
+  flex-direction: column;
+  gap: 0;
+  line-height: 1.25;
+}
+
+.topbar-sub {
   color: var(--muted);
-  font: 13px var(--mono);
+  font-size: 12px;
 }
 
 .save-state {
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
   color: var(--ok);
+  margin-right: 2px;
 }
 
 .save-state.salvando {
@@ -190,8 +200,103 @@ code {
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   flex-wrap: wrap;
+}
+
+.topbar-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-color: transparent;
+}
+
+.topbar-actions button.ghost:hover {
+  background: var(--surface-2);
+}
+
+.topbar-actions .search-btn {
+  border-color: var(--border);
+  color: var(--muted);
+  min-width: 170px;
+}
+
+.topbar-actions .search-btn kbd:first-of-type {
+  margin-left: auto;
+}
+
+.topbar-divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 6px;
+  background: var(--border);
+}
+
+.icon-btn {
+  position: relative;
+  padding: 6px 8px;
+}
+
+.icon-btn[aria-pressed='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Dica curta abaixo dos botões só de ícone. */
+.icon-btn[data-tip]:hover::after,
+.icon-btn[data-tip]:focus-visible::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.icon-svg {
+  flex-shrink: 0;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.spin {
+  transform-origin: 12px 12px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .search-btn span,
+  .search-btn kbd,
+  .save-state span {
+    display: none;
+  }
+  .topbar-actions .search-btn {
+    min-width: 0;
+  }
 }
 
 .toggle {
@@ -726,7 +831,7 @@ button.danger {
 }
 
 .topbar-actions .tag {
-  margin: 0 0 0 6px;
+  margin: 0;
 }
 
 .nav-counts {
@@ -1036,4 +1141,51 @@ details.card.is-new {
   .author-actions {
     grid-column: 2;
   }
+}
+
+/* Busca por DOI */
+
+.doi-lookup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0 4px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.doi-lookup label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.doi-row {
+  display: flex;
+  gap: 8px;
+}
+
+.doi-row input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  background: var(--surface);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.doi-lookup p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.doi-done {
+  color: var(--ok);
+}
+
+.picker-doi {
+  padding: 4px 12px 0;
 }

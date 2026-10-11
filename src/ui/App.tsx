@@ -117,6 +117,12 @@ export function App() {
   }, []);
 
   const production = useProduction(session, setSession, version, onEdit);
+  // Data da exportação carregada, lida uma vez por arquivo.
+  const originalXml = session?.meta.originalXml;
+  const exportedOn = useMemo(
+    () => (originalXml ? getAttr(parseXml(originalXml).root, 'DATA-ATUALIZACAO') : undefined),
+    [originalXml],
+  );
 
   // O documento é mutado no lugar; `version` é o que avisa que ele mudou.
   const sections = useMemo(
@@ -253,6 +259,7 @@ export function App() {
     <div className="shell">
       <Topbar
         ref={topbarRef}
+        exportedOn={exportedOn}
         fileName={session.meta.fileName}
         modified={modified}
         ownerName={ownerName(session.doc)}
@@ -315,9 +322,9 @@ export function App() {
       <NewItemPicker
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
-        onPick={(type) => {
+        onPick={(type, work) => {
           setPickerOpen(false);
-          production.startNew(type);
+          production.startNew(type, work);
         }}
       />
 
