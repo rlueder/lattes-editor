@@ -17,10 +17,13 @@ import {
   NO_FILTER,
 } from './facets.ts';
 import { FilterBar } from './FilterBar.tsx';
+import { EyeIcon, EyeOffIcon } from './icons.tsx';
 import { isListItem } from './item-meta.ts';
 import { ItemList } from './ItemList.tsx';
 import { JumpBar } from './JumpBar.tsx';
 import { type ListView, yearView } from './list-view.ts';
+import { Tip } from './primitives/Tip.tsx';
+import { PrivacyContext, readHideSensitive, writeHideSensitive } from './privacy.ts';
 import { useReferenceIndex } from './reference-context.ts';
 import { type ReferenceIndex, viewForContainer } from './reference-tables.ts';
 import { countItems, type Section, type SectionGroup } from './sections.ts';
@@ -56,6 +59,8 @@ export function SectionView(props: Props) {
 function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Props) {
   const index = useReferenceIndex();
   const [state, setState] = useState<FilterState>(NO_FILTER);
+  const [hideSensitive, setHideSensitive] = useState(readHideSensitive);
+  const privacy = section.id === 'dados-gerais';
   const lists = section.groups.map((g) => groupList(g, index));
   const allItems = lists.flatMap((l) => l?.items ?? []);
   // Recalcula só quando os itens da seção mudam de identidade.
@@ -95,6 +100,24 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
             não importável no Lattes
           </span>
         )}
+        {privacy && (
+          <Tip label={hideSensitive ? 'Mostrar dados pessoais' : 'Esconder dados pessoais'}>
+            <button
+              aria-label="Esconder dados pessoais"
+              aria-pressed={hideSensitive}
+              className="ghost icon-btn privacy-toggle"
+              type="button"
+              onClick={() => {
+                setHideSensitive((v) => {
+                  writeHideSensitive(!v);
+                  return !v;
+                });
+              }}
+            >
+              {hideSensitive ? <EyeOffIcon /> : <EyeIcon />}
+            </button>
+          </Tip>
+        )}
       </div>
       {section.importable === 'filtro' && (
         <p className="muted section-note">
@@ -115,69 +138,71 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
   }
 
   return (
-    <div className="section-layout">
-      <div className="section-main">
-        {head}
-        <div className="section-body">
-          {filtering && visibleGroups.length === 0 && (
-            <p className="empty">Nada nesta seção com esses filtros.</p>
-          )}
-          {section.groups.map((g, i) =>
-            counts[i]! > 0 ? (
-              <section key={g.id} className="group" id={g.id}>
-                <h2>{g.label}</h2>
-                {g.elements.length > 1 ? (
-                  <ItemList
-                    anchorBase={g.id}
-                    filter={filter}
-                    items={g.elements}
-                    showEmpty={showEmpty}
-                    onEdit={onEdit}
-                  />
-                ) : (
-                  g.elements.map((el, j) => (
-                    <ElementView
-                      key={j}
+    <PrivacyContext.Provider value={privacy && hideSensitive}>
+      <div className="section-layout">
+        <div className="section-main">
+          {head}
+          <div className="section-body">
+            {filtering && visibleGroups.length === 0 && (
+              <p className="empty">Nada nesta seção com esses filtros.</p>
+            )}
+            {section.groups.map((g, i) =>
+              counts[i]! > 0 ? (
+                <section key={g.id} className="group" id={g.id}>
+                  <h2>{g.label}</h2>
+                  {g.elements.length > 1 ? (
+                    <ItemList
                       anchorBase={g.id}
-                      el={el}
                       filter={filter}
+                      items={g.elements}
                       showEmpty={showEmpty}
                       onEdit={onEdit}
                     />
-                  ))
-                )}
-              </section>
-            ) : null,
-          )}
-        </div>
-      </div>
-
-      {/* Painel à direita: filtro e índice da seção, fora da coluna de leitura. */}
-      <aside aria-label="Filtro e índice da seção" className="section-panel">
-        {showFilter && (
-          <FilterBar
-            facets={facets}
-            shown={shownTotal}
-            state={state}
-            total={allItems.length}
-            onChange={setState}
-          />
-        )}
-        {visibleGroups.length > 1 && (
-          <div className="panel-block">
-            <h2 className="panel-heading">Nesta seção</h2>
-            <JumpBar
-              linkable
-              vertical
-              entries={section.groups
-                .filter((_, i) => counts[i]! > 0)
-                .map((g) => ({ id: g.id, label: g.label }))}
-              label="Grupos da seção"
-              level="section"
-            />
+                  ) : (
+                    g.elements.map((el, j) => (
+                      <ElementView
+                        key={j}
+                        anchorBase={g.id}
+                        el={el}
+                        filter={filter}
+                        showEmpty={showEmpty}
+                        onEdit={onEdit}
+                      />
+                    ))
+                  )}
+                </section>
+              ) : null,
+            )}
           </div>
-        )}
-      </aside>
-    </div>
+        </div>
+
+        {/* Painel à direita: filtro e índice da seção, fora da coluna de leitura. */}
+        <aside aria-label="Filtro e índice da seção" className="section-panel">
+          {showFilter && (
+            <FilterBar
+              facets={facets}
+              shown={shownTotal}
+              state={state}
+              total={allItems.length}
+              onChange={setState}
+            />
+          )}
+          {visibleGroups.length > 1 && (
+            <div className="panel-block">
+              <h2 className="panel-heading">Nesta seção</h2>
+              <JumpBar
+                linkable
+                vertical
+                entries={section.groups
+                  .filter((_, i) => counts[i]! > 0)
+                  .map((g) => ({ id: g.id, label: g.label }))}
+                label="Grupos da seção"
+                level="section"
+              />
+            </div>
+          )}
+        </aside>
+      </div>
+    </PrivacyContext.Provider>
   );
 }

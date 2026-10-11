@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { attributeLabel, elementLabel, enumLabel, fold, slugify } from '../src/labels/labels.ts';
 import { repairMojibake } from '../src/model/mojibake.ts';
@@ -19,6 +19,7 @@ import { displayValue } from '../src/ui/display.ts';
 import { groupFields, isBooleanAttr, isSystemAttr } from '../src/ui/field-kind.ts';
 import { formatLattesDate } from '../src/ui/format.ts';
 import { parseHash } from '../src/ui/hash-route.ts';
+import { isSensitiveAttr, readHideSensitive, writeHideSensitive } from '../src/ui/privacy.ts';
 import { digitOf, isSectionShortcut } from '../src/ui/use-section-shortcuts.ts';
 
 describe('rótulos', () => {
@@ -289,6 +290,34 @@ describe('displayValue', () => {
     );
     expect(displayValue('DADOS-BASICOS-DO-TRABALHO', 'TITULO-DO-TRABALHO', 'A_B')).toBe('A_B');
     expect(displayValue('X', 'Y', '')).toBe('');
+  });
+});
+
+describe('privacidade', () => {
+  it('marca documentos, filiação e endereço residencial como sensíveis', () => {
+    expect(isSensitiveAttr('DADOS-GERAIS', 'CPF')).toBe(true);
+    expect(isSensitiveAttr('DADOS-GERAIS', 'NOME-DA-MAE')).toBe(true);
+    expect(isSensitiveAttr('DADOS-GERAIS', 'RACA-OU-COR')).toBe(true);
+    expect(isSensitiveAttr('ENDERECO-RESIDENCIAL', 'CEP')).toBe(true);
+    expect(isSensitiveAttr('DADOS-GERAIS', 'NOME-COMPLETO')).toBe(false);
+    expect(isSensitiveAttr('ENDERECO-PROFISSIONAL', 'CEP')).toBe(false);
+    expect(isSensitiveAttr('AUTORES', 'CPF')).toBe(false);
+  });
+
+  it('lembra a escolha no navegador e começa mostrando sem armazenamento', () => {
+    const store = new Map<string, string>();
+    const storage = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+    };
+    expect(readHideSensitive()).toBe(false);
+    expect(() => writeHideSensitive(true)).not.toThrow();
+    vi.stubGlobal('localStorage', storage);
+    writeHideSensitive(true);
+    expect(readHideSensitive()).toBe(true);
+    writeHideSensitive(false);
+    expect(readHideSensitive()).toBe(false);
+    vi.unstubAllGlobals();
   });
 });
 

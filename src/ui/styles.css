@@ -2599,6 +2599,20 @@ details > .element {
   }
 }
 
+/* Olho de privacidade, na ponta direita da linha do título. */
+.section-head .privacy-toggle {
+  margin-left: auto;
+}
+
+.section-head .privacy-toggle[aria-pressed='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.field-hidden .readonly-value {
+  letter-spacing: 0.1em;
+}
+
 /* Contatos lidos da exportação (e-mails, redes sociais). */
 .contact-list {
   list-style: none;

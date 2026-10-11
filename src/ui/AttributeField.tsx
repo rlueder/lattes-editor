@@ -12,6 +12,7 @@ import { CopyButton } from './CopyButton.tsx';
 import { isBooleanAttr, isSystemAttr } from './field-kind.ts';
 import { Select } from './primitives/Select.tsx';
 import { Switch } from './primitives/Switch.tsx';
+import { isSensitiveAttr, useHideSensitive } from './privacy.ts';
 
 export type EditFn = (note: string) => void;
 
@@ -48,6 +49,7 @@ export function AttributeField({
   spec,
   wide,
 }: Props) {
+  const hideSensitive = useHideSensitive();
   const value = getAttr(el, name) ?? '';
   const [draft, setDraft] = useState(value);
   // Valor mudou por fora (busca por DOI, restauração do histórico).
@@ -68,6 +70,16 @@ export function AttributeField({
     'aria-invalid': error ? true : undefined,
     id,
   };
+
+  if (hideSensitive && isSensitiveAttr(el.name, name)) {
+    // Modo de privacidade: o valor some da tela (e do DOM); só se sabe se está preenchido.
+    return (
+      <div className="field field-readonly field-hidden">
+        <span className="field-label">{text}</span>
+        <span className="readonly-value">{value ? '••••••' : '(vazio)'}</span>
+      </div>
+    );
+  }
 
   if (el.name === 'ENDERECO' && (name === 'ELETRONICO' || name === 'REDE-SOCIAL') && value) {
     // Serializado pelo Lattes num texto só: mostrado lido, editado no próprio Lattes.
