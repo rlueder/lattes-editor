@@ -2,6 +2,7 @@
 // ações de arquivo menos usadas, com a versão no fim.
 
 import { Menu } from '@base-ui/react/menu';
+import type { ReactNode } from 'react';
 
 import {
   CheckIcon,
@@ -9,8 +10,11 @@ import {
   DownloadIcon,
   EyeIcon,
   HistoryIcon,
+  MonitorIcon,
+  MoonIcon,
   RefreshIcon,
   SettingsIcon,
+  SunIcon,
 } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import type { ThemePref } from './theme.ts';
@@ -27,10 +31,10 @@ interface Props {
   onTheme: (theme: ThemePref) => void;
 }
 
-const THEMES: { label: string; value: ThemePref }[] = [
-  { label: 'Sistema', value: 'sistema' },
-  { label: 'Claro', value: 'claro' },
-  { label: 'Escuro', value: 'escuro' },
+const THEMES: { icon: ReactNode; label: string; value: ThemePref }[] = [
+  { icon: <MonitorIcon />, label: 'Sistema', value: 'sistema' },
+  { icon: <SunIcon />, label: 'Claro', value: 'claro' },
+  { icon: <MoonIcon />, label: 'Escuro', value: 'escuro' },
 ];
 
 export function SettingsMenu({
@@ -69,6 +73,7 @@ export function SettingsMenu({
                     closeOnClick={false}
                     value={t.value}
                   >
+                    {t.icon}
                     {t.label}
                   </Menu.RadioItem>
                 ))}

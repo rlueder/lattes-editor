@@ -101,19 +101,21 @@ export function Topbar({
             <HistoryIcon />
           </button>
         </Tip>
+        <span aria-hidden="true" className="topbar-divider" />
       </div>
 
-      <div className="topbar-actions">
-        {/* Encontrar */}
+      {/* Encontrar: centralizado na página */}
+      <div className="topbar-center">
         <button className="ghost search-btn" type="button" onClick={onPalette}>
           <SearchIcon />
           <span>Ir para</span>
           <kbd>{IS_MAC ? '⌘' : 'Ctrl'}</kbd>
           <kbd>K</kbd>
         </button>
+      </div>
 
+      <div className="topbar-actions">
         <span aria-hidden="true" className="topbar-divider" />
-
         {/* Editar */}
         <button className="ghost" type="button" onClick={onNewItem}>
           <PlusIcon />

@@ -16,6 +16,7 @@ import { importableTypes, type ProductionType } from '../model/production.ts';
 import { lattesSchema as schema } from '../schema/lattes.ts';
 import { ChevronIcon, SearchIcon } from '../ui/icons.tsx';
 import { Modal } from '../ui/Modal.tsx';
+import { Tip } from '../ui/primitives/Tip.tsx';
 import { FORM_SPECS } from './specs.ts';
 
 interface Props {
@@ -87,13 +88,20 @@ export function NewItemPicker({ onClose, onPick, open }: Props) {
     }
   };
 
-  const item = (t: ProductionType) => (
-    <li key={`${t.module.id}-${t.itemName}`}>
-      <button className="picker-item" title={labelOf(t)} type="button" onClick={() => pick(t)}>
-        {labelOf(t)}
+  const item = (t: ProductionType) => {
+    const label = labelOf(t);
+    const button = (
+      <button className="picker-item" type="button" onClick={() => pick(t)}>
+        {label}
       </button>
-    </li>
-  );
+    );
+    // Nome que não cabe na linha (meia largura do modal) ganha dica com o nome inteiro.
+    return (
+      <li key={`${t.module.id}-${t.itemName}`}>
+        {label.length > 30 ? <Tip label={label}>{button}</Tip> : button}
+      </li>
+    );
+  };
 
   return (
     <Modal

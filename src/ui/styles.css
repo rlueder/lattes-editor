@@ -5,9 +5,12 @@
   --border: #e3dfd8;
   --text: #1f1d1a;
   --muted: #6b665e;
-  --accent: #1d5c63;
+  /* Azul do tema da Plataforma Lattes (buscatextual.cnpq.br, theme.css: títulos e
+     botões #326C99, hover #2E5469), conferido em 11/10/2026. */
+  --accent: #326c99;
+  --accent-strong: #2e5469;
   --accent-contrast: #ffffff;
-  --accent-soft: #e2eeef;
+  --accent-soft: #e4edf5;
   --warn-bg: #fbf0dc;
   --warn-text: #7a4b00;
   --danger: #a3261b;
@@ -33,9 +36,10 @@
     --border: #3a3733;
     --text: #ece8e1;
     --muted: #a19b91;
-    --accent: #6fb3ba;
-    --accent-contrast: #0e1f21;
-    --accent-soft: #203436;
+    --accent: #8ab4d6;
+    --accent-strong: #a9c9e3;
+    --accent-contrast: #0f1e2b;
+    --accent-soft: #1f3142;
     --warn-bg: #3a2c12;
     --warn-text: #f0c776;
     --danger: #f08a7e;
@@ -52,9 +56,10 @@
   --border: #3a3733;
   --text: #ece8e1;
   --muted: #a19b91;
-  --accent: #6fb3ba;
-  --accent-contrast: #0e1f21;
-  --accent-soft: #203436;
+  --accent: #8ab4d6;
+  --accent-strong: #a9c9e3;
+  --accent-contrast: #0f1e2b;
+  --accent-soft: #1f3142;
   --warn-bg: #3a2c12;
   --warn-text: #f0c776;
   --danger: #f08a7e;
@@ -282,13 +287,17 @@ code {
   background: var(--surface-2);
 }
 
-.topbar-actions .search-btn {
+.topbar .search-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: clamp(240px, 30vw, 420px);
+  height: 38px;
   border-color: var(--border);
   color: var(--muted);
-  min-width: 170px;
 }
 
-.topbar-actions .search-btn kbd:first-of-type {
+.topbar .search-btn kbd:first-of-type {
   margin-left: auto;
 }
 
@@ -345,8 +354,8 @@ code {
   .save-state span {
     display: none;
   }
-  .topbar-actions .search-btn {
-    min-width: 0;
+  .topbar .search-btn {
+    width: auto;
   }
 }
 
@@ -2132,4 +2141,70 @@ details.card.is-new {
   width: var(--pill-h);
   height: var(--pill-h);
   justify-content: center;
+}
+
+button.primary:hover {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+/* Itens de lista e menu: cursor de clique */
+.select-item,
+.menu-item,
+.menu-seg,
+.picker-item,
+.select-trigger {
+  cursor: pointer;
+}
+
+/* Botão de fechar do modal: quadrado */
+.modal-close {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+
+/* Rótulo longo de atalho: reticências, nome inteiro na dica */
+.jump-label {
+  max-width: 14ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Cabeçalho em três zonas: identidade, busca centralizada entre divisórias, ações */
+.topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.topbar-center {
+  display: flex;
+  align-items: center;
+}
+
+.topbar-actions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+}
+
+/* Divisórias do cabeçalho junto aos grupos vizinhos, com respiro dos dois lados. */
+.topbar-identity .topbar-divider,
+.topbar-actions > .topbar-divider:first-child {
+  margin: 0 14px;
+}
+
+.menu-seg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
 }

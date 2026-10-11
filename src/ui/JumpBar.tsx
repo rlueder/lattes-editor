@@ -8,6 +8,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { Tip } from './primitives/Tip.tsx';
+
+/** Igual ao max-width de .jump-label (14ch). */
+const MAX_LABEL = 14;
+
 export interface JumpEntry {
   count?: number;
   /** id do título da divisão, no DOM. */
@@ -113,24 +118,34 @@ export function JumpBar({
 
   return (
     <nav ref={barRef} aria-label={label} className={`jump-bar ${level}`}>
-      {entries.map((e) => (
-        <a
-          key={e.id}
-          aria-current={e.id === active ? 'location' : undefined}
-          className={e.id === active ? 'active' : undefined}
-          href={`#${e.id}`}
-          onClick={(ev) => {
-            ev.preventDefault();
-            if (linkable) setHash(e.id);
-            setActive(e.id);
-            lockedTo.current = e.id;
-            document.getElementById(e.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }}
-        >
-          {e.label}
-          {e.count !== undefined && <span className="count">{e.count}</span>}
-        </a>
-      ))}
+      {entries.map((e) => {
+        const chip = (
+          <a
+            key={e.id}
+            aria-current={e.id === active ? 'location' : undefined}
+            className={e.id === active ? 'active' : undefined}
+            href={`#${e.id}`}
+            onClick={(ev) => {
+              ev.preventDefault();
+              if (linkable) setHash(e.id);
+              setActive(e.id);
+              lockedTo.current = e.id;
+              document.getElementById(e.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
+          >
+            <span className="jump-label">{e.label}</span>
+            {e.count !== undefined && <span className="count">{e.count}</span>}
+          </a>
+        );
+        // Rótulo cortado (14ch no CSS) mostra o nome inteiro na dica.
+        return e.label.length > MAX_LABEL ? (
+          <Tip key={e.id} label={e.label}>
+            {chip}
+          </Tip>
+        ) : (
+          chip
+        );
+      })}
     </nav>
   );
 }
