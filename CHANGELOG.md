@@ -4,7 +4,8 @@ Mudanças do Editor do Currículo Lattes. O formato segue o
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), e as versões
 seguem o [Versionamento Semântico](https://semver.org/lang/pt-BR/). Ainda não
 houve lançamento: tudo abaixo está em "Não lançado", na versão 0.1.0 do
-`package.json`.
+`package.json`. Daqui em diante, cada lançamento acrescenta a própria seção no
+topo, gerada pelo semantic-release a partir dos commits.
 
 ## [Não lançado]
 

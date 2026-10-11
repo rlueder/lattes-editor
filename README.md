@@ -96,6 +96,18 @@ Para testar com uma exportação real, coloque o `CV_<id>.zip` em
 `fixtures/real/`. A pasta está no `.gitignore` e o teste de ida e volta
 passa a cobrir o arquivo.
 
+## Lançamentos
+
+Cada push na `main` passa pelo CI (lint, tipos, testes com cobertura e
+build). Com o CI verde, o semantic-release lê os commits desde o último
+lançamento e decide a versão: `feat` sobe a versão menor, `fix`, `perf` e
+`refactor` sobem a correção, e um rodapé `BREAKING CHANGE` sobe a maior.
+`docs`, `chore`, `ci`, `test`, `style` e `build` não geram lançamento.
+
+O lançamento atualiza o `CHANGELOG.md` e a versão do `package.json`, cria a
+tag e publica no GitHub o editor num arquivo HTML só e a extensão da ponte
+em `.zip`, já com a versão nova. A configuração está em `.releaserc.cjs`.
+
 ## Documentação
 
 - `CHANGELOG.md`: o que mudou
