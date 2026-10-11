@@ -1,16 +1,20 @@
-/* Página impressa do currículo.
- *
- * Margens da ABNT NBR 14724 para o anverso (3 cm em cima e à esquerda,
- * 2 cm embaixo e à direita, papel A4), conferidas no guia do Sistema de
- * Bibliotecas da UEL, "Regras gerais de apresentação gráfica – NBR 14724":
+/* Página impressa do currículo, nas regras de apresentação gráfica da
+ * ABNT NBR 14724, conferidas no guia do Sistema de Bibliotecas da UEL,
+ * "Regras gerais de apresentação gráfica – NBR 14724", seções 1.2 a 1.7:
  * https://sites.uel.br/bibliotecas/wp-content/uploads/2025/02/ABNT-fev.-2025.pdf
- * (acesso em 11/10/2026). O mesmo guia pede referências em espaço simples,
- * alinhadas à esquerda e separadas por uma linha em branco.
+ * (acesso em 11/10/2026).
  *
- * A NBR 14724 trata de trabalhos acadêmicos (corpo 12, entrelinha 1,5) e não
- * de currículos; o corpo aqui é menor (10,5 pt, entrelinha 1,4) para caber
- * uma lista longa de produção sem perder a leitura. Só as margens e a forma
- * das referências seguem a norma.
+ * - Papel A4; margens de 3 cm em cima e à esquerda, 2 cm embaixo e à direita.
+ * - Fonte Times New Roman ou Arial, tamanho 12; notas e legendas em 10.
+ * - Texto todo em preto.
+ * - Texto justificado; referências alinhadas à esquerda.
+ * - Entrelinha 1,5; referências em espaço simples, separadas por uma linha
+ *   em branco.
+ * - Seção primária em negrito (maiúsculas, como nos exemplos do guia);
+ *   secundária em versalete com iniciais maiúsculas.
+ *
+ * Fica de fora, de propósito: "cada seção deve iniciar em uma nova página".
+ * Num currículo isso espalharia seções de duas linhas por folhas inteiras.
  */
 
 @page {
@@ -20,18 +24,10 @@
   @bottom-right {
     content: counter(page) ' / ' counter(pages);
     font:
-      8pt/1 Charter,
-      Georgia,
+      10pt/1 'Times New Roman',
+      Times,
       serif;
-    color: #555;
-  }
-
-  @bottom-left {
-    font:
-      8pt/1 Charter,
-      Georgia,
-      serif;
-    color: #555;
+    color: #000;
   }
 }
 
@@ -52,12 +48,6 @@
   font-kerning: normal;
   orphans: 3;
   widows: 3;
-}
-
-.print-doc.pd-color {
-  /* Azul do Lattes (o mesmo --accent claro do editor). */
-  --pd-accent: #326c99;
-  --pd-rule: #b9cde0;
 }
 
 .print-doc * {
@@ -398,4 +388,53 @@
   .print-doc {
     print-color-adjust: exact;
   }
+}
+
+/* NBR 14724 (ver o cabeçalho deste arquivo): corpo 12 pt, entrelinha 1,5,
+   tudo em preto, títulos por peso e caixa, não por cor. */
+.print-doc {
+  --pd-serif: 'Times New Roman', Times, 'Liberation Serif', serif;
+  --pd-ink: #000;
+  --pd-muted: #000;
+  --pd-rule: #000;
+  --pd-accent: #000;
+
+  font: 12pt/1.5 var(--pd-serif);
+  font-variant-numeric: lining-nums;
+}
+
+.pd-header h1 {
+  font-size: 16pt;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.pd-meta,
+.pd-period,
+.pd-references li::marker {
+  font-size: 10pt;
+}
+
+.pd-section h2 {
+  border-bottom-width: 0.5pt;
+  font-size: 12pt;
+  font-variant: normal;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.pd-group h3 {
+  font-size: 12pt;
+  font-style: normal;
+  font-variant: small-caps;
+  font-weight: 400;
+}
+
+.pd-text {
+  text-align: justify;
+}
+
+.pd-references {
+  line-height: 1;
 }

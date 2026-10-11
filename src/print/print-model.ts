@@ -38,8 +38,6 @@ export interface PrintSection {
 }
 
 export interface PrintOptions {
-  /** Títulos e realces na cor do Lattes; sem cor, tudo em preto. */
-  color: boolean;
   /** Títulos das seções em inglês e, quando existir, o título em inglês dos itens. */
   english: boolean;
   /** De quatro autores em diante, só o primeiro e "et al.". */

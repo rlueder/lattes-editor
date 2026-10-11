@@ -114,10 +114,7 @@ export function PrintDocument({ citationNames, options, outline, profile }: Prop
     .map((s) => ({ ...s, groups: s.groups.filter((g) => options.selected.has(g.id)) }))
     .filter((s) => s.groups.length > 0);
   return (
-    <article
-      className={`print-doc${options.color ? ' pd-color' : ''}`}
-      lang={english ? 'en' : 'pt-BR'}
-    >
+    <article className="print-doc" lang={english ? 'en' : 'pt-BR'}>
       <style>{pageFooterCss(profile.name)}</style>
       <header className="pd-header">
         <h1>{profile.name}</h1>

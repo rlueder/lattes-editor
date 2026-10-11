@@ -81,7 +81,6 @@ export function PrintDialog({ control, doc, profile, sections }: Props) {
   const outline = useMemo(() => printOutline(sections), [sections]);
   const [template, setTemplate] = useState<Template>('resumido');
   const [options, setOptions] = useState<PrintOptions>(() => ({
-    color: true,
     english: false,
     etAl: false,
     selected: templateSelection(outline, 'resumido'),
@@ -210,11 +209,6 @@ export function PrintDialog({ control, doc, profile, sections }: Props) {
 
             <fieldset className="print-fieldset">
               <legend>Estilo</legend>
-              <OptionSwitch
-                checked={options.color}
-                label="Títulos na cor do Lattes"
-                onChange={(color) => setOptions((o) => ({ ...o, color }))}
-              />
               <OptionSwitch
                 checked={options.english}
                 label="Títulos em inglês"
