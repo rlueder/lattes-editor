@@ -342,6 +342,25 @@ Chicago autor-data). O editor oferece o mesmo, com outro arranjo:
 As regras da ABNT usadas precisam ser conferidas na norma ou em guia de
 biblioteca universitária que a cite; o que não for confirmado fica marcado.
 
+### Outros formatos de exportação
+
+O XML do Lattes só serve ao Lattes, mas os dados cabem em formatos que o
+resto da vida acadêmica já usa. Os dois primeiros a fazer:
+
+- **BibTeX e RIS da produção.** Exportar artigos, livros, capítulos e
+  trabalhos em evento para gerenciadores de referências (Zotero, Mendeley,
+  EndNote). O ORCID importa obras em BibTeX, então o mesmo arquivo serve
+  para preencher o perfil ORCID sem digitar de novo. Escolha por seção e
+  por ano, como na impressão.
+- **DOCX (Word).** Muitos editais e processos seletivos pedem o currículo
+  num arquivo editável. Mesmo conteúdo e mesma ordem da impressão, com
+  estilos de título do Word (para o sumário e a navegação funcionarem) e as
+  referências no formato da NBR 6023. Gerar DOCX no navegador pede uma
+  biblioteca ou um gerador próprio; a escolha precisa de aprovação antes.
+
+Ficam para depois: CSL-JSON (para qualquer estilo de citação), Europass,
+HTML ou Markdown para página pessoal e CSV para relatórios de departamento.
+
 ### Recursos em estudo
 
 **Sincronização cifrada opcional.** Hoje o currículo fica só no navegador de quem usa. A sincronização deixaria a mesma cópia de trabalho em vários aparelhos, com histórico de versões, sem que a gente consiga ler o conteúdo: a cifra acontece no aparelho, com chave que só o usuário tem, e o servidor guarda blocos cifrados. Fica desligada por padrão. O Lattes continua sendo o registro oficial (é ele que CAPES, agências e bancas leem); a nossa cópia é onde se trabalha, e a ponte com o Lattes é o que mantém os dois iguais. Guardar os dados em claro num banco nosso foi descartado: a exportação traz CPF, RG, data de nascimento e nome dos pais, e isso nos faria controladores desses dados para todos os usuários, contra a proposta local do produto. Antes de construir, falta definir recuperação de chave perdida, custo de hospedagem e o que a LGPD ainda exige de quem guarda dado cifrado sem acesso a ele.
