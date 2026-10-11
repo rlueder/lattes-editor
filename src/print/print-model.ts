@@ -42,6 +42,8 @@ export interface PrintOptions {
   english: boolean;
   /** De quatro autores em diante, só o primeiro e "et al.". */
   etAl: boolean;
+  /** Código QR do endereço público do currículo no cabeçalho. */
+  qr: boolean;
   /** Ids dos grupos marcados. */
   selected: Set<string>;
 }

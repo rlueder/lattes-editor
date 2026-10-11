@@ -4063,3 +4063,70 @@ button.primary:hover:not(:disabled) {
     padding: 10px 12px 10px 16px;
   }
 }
+
+/* Compartilhar o currículo. */
+.profile-share {
+  align-self: flex-start;
+  height: 28px;
+  margin-top: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  font-size: 12px;
+}
+
+.modal.share-dialog {
+  width: min(400px, calc(100% - 32px));
+}
+
+.share-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.share-qr {
+  width: 220px;
+  height: 220px;
+  border-radius: 8px;
+}
+
+.share-url {
+  color: var(--accent-text);
+}
+
+.share-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.share-actions button {
+  height: 34px;
+  padding: 0 14px;
+}
+
+/* Botões secundários dos rodapés de modal: fundo de componente (passo 4) e
+   borda de controle (passo 7), para não sumirem no escuro. */
+.modal-foot button:not(.primary),
+.form-foot button:not(.primary):not(.danger) {
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.modal-foot button:not(.primary):hover,
+.form-foot button:not(.primary):not(.danger):hover {
+  background: var(--surface-3);
+  border-color: var(--border-focus);
+}
+
+/* Selo de pendências dentro do botão azul: fundo branco, texto no azul sólido. */
+.count-tag {
+  background: #fff;
+  color: #326c99;
+}
+
+.empty-caption {
+  opacity: 1;
+}

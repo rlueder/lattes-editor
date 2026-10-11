@@ -1,16 +1,10 @@
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import type { XElement } from '../model/xml.ts';
 import type { Profile } from './profile.ts';
 import { ProfileCard } from './ProfileCard.tsx';
 import { countItems, type Section } from './sections.ts';
-import {
-  GO_KEYS,
-  IS_MAC,
-  SECTION_MODIFIER_LABEL,
-  useGoShortcuts,
-  useSectionShortcuts,
-} from './use-section-shortcuts.ts';
+import { GO_KEYS, useGoShortcuts } from './use-section-shortcuts.ts';
 
 interface Props {
   activeId?: string;
@@ -22,15 +16,6 @@ interface Props {
 }
 
 export function Sidebar({ activeId, onSelect, pendingIn, profile, sections }: Props) {
-  // Toda seção tem número, na ordem do menu; os nove primeiros têm atalho.
-  const select = useCallback(
-    (index: number) => {
-      const target = sections[index];
-      if (target) onSelect(target.id);
-    },
-    [sections, onSelect],
-  );
-  const showHints = useSectionShortcuts(Math.min(sections.length, 9), select);
   const ids = useMemo(() => sections.map((s) => s.id), [sections]);
   const goArmed = useGoShortcuts(ids, onSelect);
 
@@ -45,21 +30,10 @@ export function Sidebar({ activeId, onSelect, pendingIn, profile, sections }: Pr
           // Inovação e Educação repetem itens de outras seções; contar de novo confundiria.
           const fresh =
             s.importable === 'filtro' ? 0 : pendingIn(s.groups.flatMap((g) => g.elements));
-          const position = sections.indexOf(s) + 1;
-          const shortcut = position >= 1 && position <= 9 ? position : undefined;
           return (
             <li key={s.id}>
               <button
-                aria-keyshortcuts={[
-                  shortcut
-                    ? IS_MAC
-                      ? `Control+${shortcut} Meta+${shortcut}`
-                      : `Alt+${shortcut}`
-                    : '',
-                  GO_KEYS[s.id] ? `G ${GO_KEYS[s.id]}` : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
+                aria-keyshortcuts={GO_KEYS[s.id] ? `G ${GO_KEYS[s.id]}` : undefined}
                 className={[s.id === activeId ? 'active' : '', s.groups.length === 0 ? 'empty' : '']
                   .filter(Boolean)
                   .join(' ')}
@@ -69,23 +43,17 @@ export function Sidebar({ activeId, onSelect, pendingIn, profile, sections }: Pr
                 <span className="nav-label">{navLabel(s)}</span>
                 <span className="nav-counts">
                   {/* Com o modificador seguro, o selo da contagem mostra o atalho. */}
-                  {goArmed && GO_KEYS[s.id] ? (
+                  {goArmed && GO_KEYS[s.id] && (
                     <span aria-hidden="true" className="count nav-key">
                       {GO_KEYS[s.id]}
                     </span>
-                  ) : showHints && shortcut !== undefined ? (
-                    <span aria-hidden="true" className="count nav-key">
-                      {`${SECTION_MODIFIER_LABEL}${shortcut}`}
-                    </span>
-                  ) : null}
-                  {!showHints && !goArmed && fresh > 0 && (
+                  )}
+                  {!goArmed && fresh > 0 && (
                     <span className="tag new" title="Itens novos para a próxima importação">
                       {fresh} novo{fresh > 1 ? 's' : ''}
                     </span>
                   )}
-                  {!showHints && !goArmed && shownTotal > 0 && (
-                    <span className="count">{shownTotal}</span>
-                  )}
+                  {!goArmed && shownTotal > 0 && <span className="count">{shownTotal}</span>}
                 </span>
               </button>
             </li>

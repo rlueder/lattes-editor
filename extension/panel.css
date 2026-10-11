@@ -305,3 +305,50 @@ button.principal:disabled {
 .vazio-arte {
   margin: 0 auto 16px;
 }
+
+/* Mesmas escalas do editor (Radix Colors: neutros "sand", azul do CNPq como
+   sólido, azul do Radix para texto e fundos de destaque). Ver
+   src/ui/styles.css, bloco "Cores: escalas do Radix Colors". */
+:root {
+  --chrome: #f1f0ef;
+  --bg: #f9f9f8;
+  --surface: #fdfdfc;
+  --surface-2: #e9e8e6;
+  --border: #dad9d6;
+  --text: #21201c;
+  --muted: #63635e;
+  --accent: #326c99;
+  --accent-strong: #2e5469;
+  --accent-contrast: #ffffff;
+  --accent-soft: #e6f4fe;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --chrome: #111110;
+    --bg: #191918;
+    --surface: #222221;
+    --surface-2: #2a2a28;
+    --border: #3b3a37;
+    --text: #eeeeec;
+    --muted: #b5b3ad;
+    --accent: #326c99;
+    --accent-strong: #3b77a6;
+    --accent-contrast: #ffffff;
+    --accent-soft: #0d2847;
+  }
+}
+
+button:not(.principal):not(.fantasma):not(.conferido) {
+  border-color: #cfceca;
+}
+
+@media (prefers-color-scheme: dark) {
+  button:not(.principal):not(.fantasma):not(.conferido) {
+    border-color: #494844;
+  }
+
+  .marca-destaque {
+    color: #70b8ff;
+  }
+}

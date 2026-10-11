@@ -22,6 +22,7 @@ import {
   readCvCode,
   writeCvCode,
 } from './profile.ts';
+import { ShareDialog } from './ShareDialog.tsx';
 import { CV_CODE_EVENT } from './use-bridge.ts';
 
 export function ProfileCard({ profile }: { profile: Profile }) {
@@ -34,6 +35,7 @@ export function ProfileCard({ profile }: { profile: Profile }) {
   // Com a privacidade ligada, a foto vira mosaico.
   const [hidden] = usePrivacyMode();
   const [asking, setAsking] = useState(false);
+  const [sharing, setSharing] = useState(false);
   useEffect(() => setFailed(false), [code]);
   // A extensão da ponte entrega o código lido no Lattes.
   useEffect(() => {
@@ -77,6 +79,11 @@ export function ProfileCard({ profile }: { profile: Profile }) {
             <span className="profile-line muted">Arquivo de {date}</span>
           </Tip>
         )}
+        {url && (
+          <button className="ghost profile-share" type="button" onClick={() => setSharing(true)}>
+            Compartilhar
+          </button>
+        )}
         {url && !showPhoto && (
           <button
             className="link-btn profile-photo-link"
@@ -87,6 +94,7 @@ export function ProfileCard({ profile }: { profile: Profile }) {
           </button>
         )}
       </div>
+      {url && <ShareDialog open={sharing} url={url} onClose={() => setSharing(false)} />}
       {url && (
         <PhotoDialog
           current={code}

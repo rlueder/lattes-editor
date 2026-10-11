@@ -4,6 +4,7 @@
 
 import { formatLattesDate } from '../ui/format.ts';
 import type { Profile } from '../ui/profile.ts';
+import { QrCode } from '../ui/QrCode.tsx';
 import type { Segment } from './abnt.ts';
 import {
   languageLine,
@@ -117,6 +118,13 @@ export function PrintDocument({ citationNames, options, outline, profile }: Prop
     <article className="print-doc" lang={english ? 'en' : 'pt-BR'}>
       <style>{pageFooterCss(profile.name)}</style>
       <header className="pd-header">
+        {options.qr && profile.lattesId && (
+          <QrCode
+            className="pd-qr"
+            label={english ? 'QR code of the Lattes CV' : 'Código QR do Currículo Lattes'}
+            text={`https://lattes.cnpq.br/${profile.lattesId}`}
+          />
+        )}
         <h1>{profile.name}</h1>
         {citationNames && (
           <p className="pd-meta">

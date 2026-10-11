@@ -59,8 +59,8 @@ O modal "New issue" do Linear é o modelo para "Novo item":
 ## Teclado
 
 O Linear trata o teclado como caminho principal, e vale estudar o
-conjunto inteiro antes de inventar atalhos nossos. Já temos ⌘K, ⌃1–⌃9
-para as seções e ⌘Enter para salvar o formulário. Falta levantar o que
+conjunto inteiro antes de inventar atalhos nossos. Já temos ⌘K, G e uma letra para cada seção e
+⌘Enter para salvar o formulário. Falta levantar o que
 o Linear faz para criar item (tecla única), navegar em lista (setas, J/K),
 abrir e fechar detalhes, e como ele mostra o atalho junto de cada ação
 (na dica e no menu), e decidir quais fazem sentido aqui.

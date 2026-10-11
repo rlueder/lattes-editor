@@ -83,6 +83,7 @@ export function PrintDialog({ control, doc, profile, sections }: Props) {
   const [options, setOptions] = useState<PrintOptions>(() => ({
     english: false,
     etAl: false,
+    qr: true,
     selected: templateSelection(outline, 'resumido'),
   }));
   const dg = firstChild(doc.root, 'DADOS-GERAIS');
@@ -209,6 +210,11 @@ export function PrintDialog({ control, doc, profile, sections }: Props) {
 
             <fieldset className="print-fieldset">
               <legend>Estilo</legend>
+              <OptionSwitch
+                checked={options.qr}
+                label="Código QR do currículo no cabeçalho"
+                onChange={(qr) => setOptions((o) => ({ ...o, qr }))}
+              />
               <OptionSwitch
                 checked={options.english}
                 label="Títulos em inglês"

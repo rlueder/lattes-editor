@@ -20,8 +20,8 @@ topo, gerada pelo semantic-release a partir dos commits.
 
 ### Navegação
 
-- Paleta ⌘K para ir a qualquer seção ou grupo; atalhos ⌃1 a ⌃9 no Mac (Alt
-  fora dele) para as seções.
+- Paleta ⌘K para ir a qualquer seção ou grupo; G e uma letra para cada uma
+  das doze seções.
 - Linha do tempo por ano nas listas, índice "Nesta seção" com o grupo
   visível, filtros por seção (busca e facetas) e barra do título que aparece
   ao rolar.

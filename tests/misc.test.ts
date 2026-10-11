@@ -28,13 +28,8 @@ import { parseHash } from '../src/ui/hash-route.ts';
 import { pendingMessage } from '../src/ui/pending.ts';
 import { isSensitiveAttr, readHideSensitive, writeHideSensitive } from '../src/ui/privacy.ts';
 import { initials, parseCvCode, photoUrl, readCvCode, writeCvCode } from '../src/ui/profile.ts';
-import {
-  digitOf,
-  GO_KEYS,
-  isSectionShortcut,
-  isTyping,
-  sectionForKey,
-} from '../src/ui/use-section-shortcuts.ts';
+import { qrMatrix, qrPath, qrSvg } from '../src/ui/qr.ts';
+import { GO_KEYS, isTyping, sectionForKey } from '../src/ui/use-section-shortcuts.ts';
 
 describe('rótulos', () => {
   it('usa o rótulo escrito à mão quando existe', () => {
@@ -267,32 +262,6 @@ describe('acentos por sufixo', () => {
   });
 });
 
-describe('atalhos de seção', () => {
-  it('lê o dígito pelo código da tecla', () => {
-    expect(digitOf({ code: 'Digit3' })).toBe(3);
-    expect(digitOf({ code: 'Numpad9' })).toBe(9);
-    expect(digitOf({ code: 'Digit0' })).toBeUndefined();
-    expect(digitOf({ code: 'KeyK' })).toBeUndefined();
-  });
-
-  it('Mac: ⌃ ou ⌘; fora do Mac: Alt; Shift e combinações mistas não contam', () => {
-    const k = (mods: Partial<Record<'altKey' | 'ctrlKey' | 'metaKey' | 'shiftKey', boolean>>) => ({
-      altKey: false,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false,
-      ...mods,
-    });
-    expect(isSectionShortcut(k({ ctrlKey: true }), true)).toBe(true);
-    expect(isSectionShortcut(k({ metaKey: true }), true)).toBe(true);
-    expect(isSectionShortcut(k({ altKey: true }), true)).toBe(false);
-    expect(isSectionShortcut(k({ ctrlKey: true, shiftKey: true }), true)).toBe(false);
-    expect(isSectionShortcut(k({ altKey: true }), false)).toBe(true);
-    expect(isSectionShortcut(k({ ctrlKey: true }), false)).toBe(false);
-    expect(isSectionShortcut(k({ altKey: true, ctrlKey: true }), false)).toBe(false);
-  });
-});
-
 describe('displayValue', () => {
   it('código de enum vira rótulo; texto livre fica como está', () => {
     expect(displayValue('DADOS-BASICOS-DO-TRABALHO', 'MEIO-DE-DIVULGACAO', 'MEIO_DIGITAL')).toBe(
@@ -468,5 +437,22 @@ describe('atalhos G + letra', () => {
       isTyping({ getAttribute: () => null, isContentEditable: false, tagName: 'DIV' } as never),
     ).toBe(false);
     expect(isTyping(null)).toBe(false);
+  });
+});
+
+describe('código QR', () => {
+  it('gera uma matriz quadrada e o SVG com margem', () => {
+    const m = qrMatrix('https://lattes.cnpq.br/1234567890123456');
+    expect(m.length).toBeGreaterThanOrEqual(21);
+    expect(m.every((row) => row.length === m.length)).toBe(true);
+    // Padrão de localização no canto: borda escura de 7 módulos.
+    expect(m[0]!.slice(0, 7).every(Boolean)).toBe(true);
+    expect(
+      qrPath([
+        [true, false],
+        [false, true],
+      ]),
+    ).toBe('M0 0h1v1h-1zM1 1h1v1h-1z');
+    expect(qrSvg('x')).toContain('<svg');
   });
 });
