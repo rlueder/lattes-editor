@@ -18,6 +18,8 @@ import { ItemList } from './ItemList.tsx';
 import { JumpBar } from './JumpBar.tsx';
 import { Modal } from './Modal.tsx';
 import { paletteEntries, type PaletteEntry } from './palette-search.ts';
+import { ReferenceContext } from './reference-context.ts';
+import { buildReferenceIndex, type ReferenceIndex } from './reference-tables.ts';
 import { buildSections, countItems } from './sections.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
 
@@ -29,6 +31,7 @@ interface Session {
 }
 
 const AUTOSAVE_MS = 400;
+const EMPTY_INDEX: ReferenceIndex = { courses: new Map(), institutions: new Map() };
 
 function ownerName(doc: XDocument): string {
   const dg = firstChild(doc.root, 'DADOS-GERAIS');
@@ -107,6 +110,11 @@ export function App() {
     [session, version],
   );
   const entries = useMemo(() => paletteEntries(sections), [sections]);
+  const referenceIndex = useMemo(
+    () => (session ? buildReferenceIndex(session.doc.root) : undefined),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [session, version],
+  );
   const section = sections.find((s) => s.id === sectionId) ?? sections[0];
 
   const togglePalette = useCallback(() => {
@@ -270,58 +278,60 @@ export function App() {
       </nav>
 
       <main className="content">
-        {error && <p className="error">{error}</p>}
-        {section && (
-          <>
-            <div className="section-head">
-              <h1>{section.label}</h1>
-              {!section.importable && (
-                <span
-                  className="badge"
-                  title="O Importar do Lattes ignora esta seção; copie as mudanças à mão no Lattes."
-                >
-                  não importável no Lattes
-                </span>
-              )}
-            </div>
-            {section.groups.length === 0 && <p className="muted">Nada nesta seção.</p>}
-            <div key={section.id} className="section-body">
-              {section.groups.length > 1 && (
-                <JumpBar
-                  entries={section.groups.map((g) => ({
-                    count: countItems(g),
-                    id: g.id,
-                    label: g.label,
-                  }))}
-                  label="Grupos da seção"
-                  level="section"
-                />
-              )}
-              {section.groups.map((g) => (
-                <section key={g.id} className="group" id={g.id}>
-                  <h2>{g.label}</h2>
-                  {g.elements.length > 1 ? (
-                    <ItemList
-                      key={version}
-                      items={g.elements}
-                      showEmpty={showEmpty}
-                      onEdit={onEdit}
-                    />
-                  ) : (
-                    g.elements.map((el, i) => (
-                      <ElementView
-                        key={`${version}-${i}`}
-                        el={el}
+        <ReferenceContext.Provider value={referenceIndex ?? EMPTY_INDEX}>
+          {error && <p className="error">{error}</p>}
+          {section && (
+            <>
+              <div className="section-head">
+                <h1>{section.label}</h1>
+                {!section.importable && (
+                  <span
+                    className="badge"
+                    title="O Importar do Lattes ignora esta seção; copie as mudanças à mão no Lattes."
+                  >
+                    não importável no Lattes
+                  </span>
+                )}
+              </div>
+              {section.groups.length === 0 && <p className="muted">Nada nesta seção.</p>}
+              <div key={section.id} className="section-body">
+                {section.groups.length > 1 && (
+                  <JumpBar
+                    entries={section.groups.map((g) => ({
+                      count: countItems(g),
+                      id: g.id,
+                      label: g.label,
+                    }))}
+                    label="Grupos da seção"
+                    level="section"
+                  />
+                )}
+                {section.groups.map((g) => (
+                  <section key={g.id} className="group" id={g.id}>
+                    <h2>{g.label}</h2>
+                    {g.elements.length > 1 ? (
+                      <ItemList
+                        key={version}
+                        items={g.elements}
                         showEmpty={showEmpty}
                         onEdit={onEdit}
                       />
-                    ))
-                  )}
-                </section>
-              ))}
-            </div>
-          </>
-        )}
+                    ) : (
+                      g.elements.map((el, i) => (
+                        <ElementView
+                          key={`${version}-${i}`}
+                          el={el}
+                          showEmpty={showEmpty}
+                          onEdit={onEdit}
+                        />
+                      ))
+                    )}
+                  </section>
+                ))}
+              </div>
+            </>
+          )}
+        </ReferenceContext.Provider>
       </main>
 
       <CommandPalette entries={entries} open={paletteOpen} onClose={closePalette} onSelect={jump} />

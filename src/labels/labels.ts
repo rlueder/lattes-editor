@@ -175,6 +175,9 @@ export function attributeLabel(name: string): string {
 }
 
 export function enumLabel(value: string): string {
+  // Código curto sem rótulo conhecido (NIVEL-CURSO="OT") fica cru: humanizar
+  // daria "Ot", que parece palavra e não diz nada.
+  if (!ENUMS[value] && /^[A-Z]{1,3}$/.test(value) && !ACRONYMS[value.toLowerCase()]) return value;
   return ENUMS[value] ?? humanize(value);
 }
 

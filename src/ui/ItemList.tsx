@@ -1,43 +1,46 @@
-// Lista de itens repetidos (atuações, formações, produções, eventos…) em
-// linha do tempo: mais recente primeiro, separada por ano, com a barra de anos
-// (JumpBar) quando há mais de um ano.
+// Lista de itens repetidos agrupada por uma ListView: por ano (atuações,
+// formações, produções, eventos…) ou por outra chave (país das instituições,
+// área dos cursos). Com mais de um grupo, a barra de atalhos (JumpBar) aparece.
 
 import { useId } from 'react';
 
 import { elementLabel } from '../labels/labels.ts';
 import type { XElement } from '../model/xml.ts';
 import { type EditFn, ElementView } from './ElementView.tsx';
-import { formatDuration, formatPeriod, groupByYear, type ItemMeta } from './item-meta.ts';
 import { JumpBar } from './JumpBar.tsx';
+import { type CardInfo, type ListView, yearView } from './list-view.ts';
 
 interface Props {
   depth?: number;
   items: XElement[];
   showEmpty: boolean;
+  view?: ListView;
   onEdit: EditFn;
 }
 
-export function ItemList({ depth = 0, items, onEdit, showEmpty }: Props) {
+export function ItemList({ depth = 0, items, onEdit, showEmpty, view = yearView }: Props) {
   const listId = useId();
-  const groups = groupByYear(items);
-  const dated = groups.some((g) => g.key !== 'sem-ano');
+  const groups = view.groups(items);
   const mixedKinds = new Set(items.map((el) => el.name)).size > 1;
   const anchor = (key: string) => `${listId}-${key}`;
 
-  const cards = (entries: { el: XElement; meta: ItemMeta }[]) =>
-    entries.map(({ el, meta }, i) => (
+  const cards = (els: XElement[]) =>
+    els.map((el, i) => (
       <ItemCard
         key={i}
         depth={depth}
         el={el}
-        meta={meta}
+        info={view.card(el)}
         showEmpty={showEmpty}
         showKind={mixedKinds}
         onEdit={onEdit}
       />
     ));
 
-  if (!dated) return <div className="item-list">{cards(groups.flatMap((g) => g.items))}</div>;
+  // Nada para dividir: só o grupo "sem ano/país/área".
+  if (groups.length === 1 && groups[0]!.key === view.ungroupedKey) {
+    return <div className="item-list">{cards(groups[0]!.items)}</div>;
+  }
 
   return (
     <div className="item-list">
@@ -48,7 +51,7 @@ export function ItemList({ depth = 0, items, onEdit, showEmpty }: Props) {
             id: anchor(g.key),
             label: g.label,
           }))}
-          label="Anos"
+          label="Divisões da lista"
           level="year"
         />
       )}
@@ -68,35 +71,47 @@ export function ItemList({ depth = 0, items, onEdit, showEmpty }: Props) {
 function ItemCard({
   depth,
   el,
-  meta,
+  info,
   onEdit,
   showEmpty,
   showKind,
 }: {
   depth: number;
   el: XElement;
-  meta: ItemMeta;
+  info: CardInfo;
   onEdit: EditFn;
   showEmpty: boolean;
   showKind: boolean;
 }) {
-  const period = formatPeriod(meta);
-  const duration = formatDuration(meta);
   return (
     <details className="item card">
       <summary>
         <span className="card-main">
           {showKind && <span className="item-kind">{elementLabel(el.name)}</span>}
-          <span className="card-title">{meta.title || elementLabel(el.name)}</span>
-          {meta.subtitle && <span className="card-subtitle">{meta.subtitle}</span>}
+          <span className="card-title">{info.title || elementLabel(el.name)}</span>
+          {info.subtitle && <span className="card-subtitle">{info.subtitle}</span>}
         </span>
-        {period && (
+        {info.aside && (
           <span className="card-period">
-            <span className={meta.current ? 'period current' : 'period'}>{period}</span>
-            {duration && <span className="duration">{duration}</span>}
+            <span className={info.asideStrong ? 'period current' : 'period'}>{info.aside}</span>
+            {info.asideSub && <span className="duration">{info.asideSub}</span>}
           </span>
         )}
       </summary>
+      {info.usages && info.usages.length > 0 && (
+        <div className="usages">
+          <h4>Onde aparece</h4>
+          <ul>
+            {info.usages.map((u, i) => (
+              <li key={i}>
+                <span className="item-kind">{u.kind}</span>
+                <span className="usage-title">{u.title || '(sem título)'}</span>
+                {u.period && <span className="usage-period">{u.period}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <ElementView depth={depth + 1} el={el} showEmpty={showEmpty} onEdit={onEdit} />
     </details>
   );

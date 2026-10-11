@@ -51,6 +51,15 @@
   "enums": {
     "SIM": "Sim",
     "NAO": "Não",
-    "NAO_INFORMADO": "Não informado"
+    "NAO_INFORMADO": "Não informado",
+    "CIENCIAS_AGRARIAS": "Ciências Agrárias",
+    "CIENCIAS_BIOLOGICAS": "Ciências Biológicas",
+    "CIENCIAS_DA_SAUDE": "Ciências da Saúde",
+    "CIENCIAS_EXATAS_E_DA_TERRA": "Ciências Exatas e da Terra",
+    "CIENCIAS_HUMANAS": "Ciências Humanas",
+    "CIENCIAS_SOCIAIS_APLICADAS": "Ciências Sociais Aplicadas",
+    "ENGENHARIAS": "Engenharias",
+    "LINGUISTICA_LETRAS_E_ARTES": "Linguística, Letras e Artes",
+    "OUTROS": "Outros"
   }
 }

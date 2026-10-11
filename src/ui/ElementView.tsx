@@ -10,6 +10,8 @@ import { lattesSchema } from '../schema/lattes.ts';
 import type { AttributeSpec } from '../schema/types.ts';
 import { isListItem } from './item-meta.ts';
 import { ItemList } from './ItemList.tsx';
+import { useReferenceIndex } from './reference-context.ts';
+import { viewForContainer } from './reference-tables.ts';
 import { summarize } from './summary.ts';
 
 export type EditFn = (note: string) => void;
@@ -143,8 +145,17 @@ function TextField({ el, node, onEdit }: { el: XElement; node?: XText; onEdit: E
  */
 export function ElementView({ depth = 0, el, onEdit, showEmpty }: ViewProps & { depth?: number }) {
   const children = childElements(el).filter((c) => c.attrs.length > 0 || c.children.length > 0);
+  const index = useReferenceIndex();
   if (el.attrs.length === 0 && children.length > 0 && children.every(isListItem)) {
-    return <ItemList depth={depth} items={children} showEmpty={showEmpty} onEdit={onEdit} />;
+    return (
+      <ItemList
+        depth={depth}
+        items={children}
+        showEmpty={showEmpty}
+        view={viewForContainer(el.name, index)}
+        onEdit={onEdit}
+      />
+    );
   }
   return (
     <div className={`element depth-${Math.min(depth, 3)}`}>
