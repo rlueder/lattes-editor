@@ -1,146 +1,146 @@
-# Lattes CV Editor — Product Requirements & Research Summary
+# Editor de Currículo Lattes: requisitos de produto e resumo da pesquisa
 
-## What This Document Is
+## O que é este documento
 
-This is a summary of extensive UX research, competitive analysis, legal analysis, and technical schema analysis conducted across multiple research sessions about Brazil's Plataforma Lattes. The goal is to inform the development of a product (working name: "Model B") — a modern CV editor that exports valid Lattes XML, allowing researchers to manage their academic production outside of Lattes and import it via Lattes' built-in XML import feature.
+Este é um resumo de uma pesquisa extensa de UX, análise competitiva, análise jurídica e análise técnica do schema, conduzida ao longo de várias sessões de pesquisa sobre a Plataforma Lattes. O objetivo é orientar o desenvolvimento de um produto (nome provisório: "Modelo B"): um editor de currículo moderno que exporta XML Lattes válido e permite aos pesquisadores gerenciar sua produção acadêmica fora do Lattes e importá-la depois pelo recurso de importação XML que o próprio Lattes oferece.
 
-Two files accompany this document and should be referenced throughout:
+Dois arquivos acompanham este documento e devem ser consultados ao longo dele:
 
-- `lattes_schema_analysis.xlsx` — Four-sheet workbook: Schema Comparison (DTD vs XSD vs XML), Full Element Inventory (324 elements), Full Attribute Inventory (1,927 attribute slots with types/enums/required flags), and Post-2022 Ghost Fields analysis
-- `lattes_maximal_skeleton.xml` — A 4,495-line XML file containing every possible element and attribute from the Lattes schema, annotated with `[REQUIRED]` markers and enum values in comments. This is the UI specification — every element maps to a form section, every attribute to a form field, every enum to a dropdown.
-
----
-
-## 1. Platform Background
-
-### What Lattes Is
-
-Plataforma Lattes is Brazil's national academic CV system, operated by CNPq (Conselho Nacional de Desenvolvimento Científico e Tecnológico). It was launched in 1999 and has over 6.5 million registered CVs. It is mandatory for virtually all academic activity in Brazil: grant applications, graduate program enrollment, faculty hiring, research group registration, and institutional evaluation all require a Lattes CV.
-
-The platform has no real competitor in Brazil because it is government-mandated. Researchers cannot choose an alternative — they must use Lattes regardless of its quality.
-
-### Why It Matters
-
-Because Lattes is mandatory, its UX problems don't cause users to leave (they can't), but instead create massive frustration, wasted time, lost data, and administrative burden across the entire Brazilian research ecosystem. This is a captive audience of millions of highly educated users with no alternatives.
+- `lattes_schema_analysis.xlsx`: planilha com quatro abas. Comparação de Schemas (DTD vs XSD vs XML), Inventário Completo de Elementos (324 elementos), Inventário Completo de Atributos (1.927 posições de atributo com tipos, enums e marcação de obrigatório) e a análise dos Campos Fantasma pós-2022
+- `lattes_maximal_skeleton.xml`: um arquivo XML de 4.495 linhas com todos os elementos e atributos possíveis do schema Lattes, anotado com marcadores `[REQUIRED]` e os valores de enum em comentários. Esta é a especificação da interface: cada elemento corresponde a uma seção de formulário, cada atributo a um campo e cada enum a um menu suspenso.
 
 ---
 
-## 2. UX Problems — What We Found
+## 1. Contexto da plataforma
 
-### Academic Usability Study
+### O que é o Lattes
 
-A formal usability study (academic paper) tested Lattes with real users and found a **0% success rate** on the task of recording a published article. No participant was able to complete this core task without errors or getting stuck. Key issues identified:
+A Plataforma Lattes é o sistema nacional de currículos acadêmicos do Brasil, operado pelo CNPq (Conselho Nacional de Desenvolvimento Científico e Tecnológico). Foi lançada em 1999 e tem mais de 6,5 milhões de currículos cadastrados. É obrigatória para praticamente toda atividade acadêmica no país: pedidos de bolsa e financiamento, ingresso em programas de pós-graduação, contratação de docentes, cadastro de grupos de pesquisa e avaliação institucional, tudo isso exige um currículo Lattes.
 
-- False completion signals — the system appears to save when it hasn't
-- Confusing form hierarchy with deeply nested, non-obvious navigation
-- No auto-save — data loss on timeout, accidental navigation, or session expiry
-- No inline validation or progress indicators
-- Ambiguous field labels and inconsistent terminology
-- No undo/redo capability
+A plataforma não tem concorrente real no Brasil porque é exigida pelo governo. Os pesquisadores não podem escolher uma alternativa e precisam usar o Lattes seja qual for a qualidade dele.
 
-### Reclame Aqui Complaint Analysis (551 complaints)
+### Por que isso importa
 
-We analyzed 551 pages of complaints on Reclame Aqui (Brazil's main consumer complaint platform). The complaints break down into these categories:
-
-| Category                                              | % of Complaints | Description                                                                                                                                     |
-| ----------------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Registration / RFB Validation                         | ~30%            | Users blocked after 3 failed CPF validation attempts with no self-service unblock. Must email CNPq and wait days/weeks.                         |
-| Authentication                                        | ~25%            | Password recovery failures, email not recognized, locked accounts, broken CAPTCHA.                                                              |
-| Publishing Delay                                      | ~15%            | After submitting CV changes, they take days to weeks to appear on the public profile. Users describe this as "aguardando publicação" purgatory. |
-| Performance / Instability                             | ~12%            | Timeouts, blank screens, server errors. A 2+ week full outage occurred in 2021. SSL certificate errors.                                         |
-| Data Loss                                             | ~8%             | Users report hours of work lost due to session timeouts, failed saves, or unexplained data disappearance.                                       |
-| Other (UI confusion, missing features, accessibility) | ~10%            | Various UX issues, lack of mobile support, no accessibility compliance.                                                                         |
-
-### Developer Ecosystem (Workaround Tools)
-
-The frustration has spawned an ecosystem of 20+ third-party tools that researchers and institutions have built to work around Lattes' limitations. These include:
-
-- **scriptLattes** — Python tool that scrapes Lattes HTML to generate research group reports, citation analysis, collaboration networks. Used by major Brazilian universities.
-- **SLattes** — Converts Lattes XML exports to other formats (BibTeX, MODS) using XSLT. Maintains an updated version of the DTD that CNPq stopped updating.
-- **Escavador.com** — Commercial platform that scrapes and indexes public Lattes profiles, providing a modern search interface over Lattes data.
-- **getLattes** — R package for extracting and analyzing Lattes XML data.
-- **Lattes Extractor** — Various tools for bulk data extraction.
-- Multiple institutional tools built by individual universities for internal reporting.
-
-The existence of this ecosystem confirms the market need — people are already building around Lattes' deficiencies.
+Como o Lattes é obrigatório, seus problemas de UX não fazem os usuários irem embora (eles não podem). O que eles geram é frustração em massa, tempo perdido, dados perdidos e carga administrativa em todo o ecossistema de pesquisa brasileiro. É um público cativo de milhões de usuários com alta escolaridade e sem alternativas.
 
 ---
 
-## 3. Competitive Analysis
+## 2. Problemas de UX: o que encontramos
 
-### Platforms Analyzed
+### Estudo acadêmico de usabilidade
 
-We compared Lattes against four international academic profile platforms across 30+ dimensions. A detailed spreadsheet was produced in a prior session (`lattes_competitive_analysis.xlsx` — not attached here but findings are summarized).
+Um estudo formal de usabilidade (artigo acadêmico) testou o Lattes com usuários reais e encontrou **taxa de sucesso de 0%** na tarefa de registrar um artigo publicado. Nenhum participante conseguiu concluir essa tarefa central sem erros ou sem empacar. Principais problemas identificados:
 
-**ORCID** — Open, nonprofit. Full REST API with 1,800+ member organizations. "Search & Link" publication import from Crossref, Scopus, Web of Science. Per-field privacy controls (Everyone / Trusted Organizations / Only Me). Trusted Organizations model for institutional data management. 2-minute signup with standard OAuth2.
+- Falsos sinais de conclusão: o sistema parece salvar quando não salvou
+- Hierarquia de formulários confusa, com navegação profundamente aninhada e pouco óbvia
+- Sem salvamento automático: perda de dados por timeout, navegação acidental ou expiração da sessão
+- Sem validação em linha nem indicadores de progresso
+- Rótulos de campo ambíguos e terminologia inconsistente
+- Sem desfazer/refazer
 
-**Ciência Vitae** — Portugal's national academic CV platform, the most directly relevant comparator. It replaced DeGóis, which was itself derived from Lattes. Their redesign was driven by a government mandate of "More Science, Less Bureaucracy." Key features: Import Wizard that pulls publications from 5+ external sources, customizable CV export templates, modern responsive UI. They prove a government-mandated platform CAN have good UX.
+### Análise das reclamações no Reclame Aqui (551 reclamações)
 
-**Academia.edu** — Best-in-class visual design among academic platforms. Inline editing with instant auto-save. Profile analytics dashboard (views, downloads, geographic data). Native mobile apps. Freemium model.
+Analisamos 551 páginas de reclamações no Reclame Aqui (a principal plataforma de reclamações de consumidores do Brasil). As reclamações se dividem nestas categorias:
 
-**ResearchGate** — Co-author network visualization, metrics dashboard, DOI-based publication import pipeline, Q&A forum for researchers.
+| Categoria                                                         | % das reclamações | Descrição                                                                                                                                                                        |
+| ----------------------------------------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cadastro / Validação na RFB                                       | ~30%              | Usuários bloqueados depois de 3 tentativas de validação de CPF sem sucesso, sem desbloqueio por conta própria. Precisam mandar e-mail ao CNPq e esperar dias ou semanas.         |
+| Autenticação                                                      | ~25%              | Falhas na recuperação de senha, e-mail não reconhecido, contas bloqueadas, CAPTCHA quebrado.                                                                                     |
+| Atraso na publicação                                              | ~15%              | Depois de enviar alterações no currículo, elas levam de dias a semanas para aparecer no perfil público. Os usuários descrevem isso como o purgatório do "aguardando publicação". |
+| Desempenho / Instabilidade                                        | ~12%              | Timeouts, telas em branco, erros de servidor. Houve uma indisponibilidade total de mais de 2 semanas em 2021. Erros de certificado SSL.                                          |
+| Perda de dados                                                    | ~8%               | Usuários relatam horas de trabalho perdidas por expiração de sessão, gravações que falharam ou dados que sumiram sem explicação.                                                 |
+| Outros (confusão na interface, recursos ausentes, acessibilidade) | ~10%              | Problemas variados de UX, falta de suporte a celular, nenhuma conformidade de acessibilidade.                                                                                    |
 
-### Lattes Scorecard
+### Ecossistema de desenvolvedores (ferramentas de contorno)
 
-Across 18 rated dimensions on a 1-5 scale:
+A frustração deu origem a um ecossistema de mais de 20 ferramentas de terceiros que pesquisadores e instituições criaram para contornar as limitações do Lattes. Entre elas:
 
-- Lattes average: **1.1**
-- Competitors cluster: **3.5–4.5**
+- **scriptLattes**: ferramenta em Python que faz scraping do HTML do Lattes para gerar relatórios de grupos de pesquisa, análise de citações e redes de colaboração. Usada por grandes universidades brasileiras.
+- **SLattes**: converte exportações XML do Lattes para outros formatos (BibTeX, MODS) usando XSLT. Mantém uma versão atualizada do DTD, que o CNPq deixou de atualizar.
+- **Escavador.com**: plataforma comercial que faz scraping e indexa perfis públicos do Lattes, oferecendo uma interface de busca moderna sobre esses dados.
+- **getLattes**: pacote em R para extrair e analisar dados XML do Lattes.
+- **Lattes Extractor**: ferramentas diversas para extração de dados em massa.
+- Várias ferramentas institucionais criadas por universidades para relatórios internos.
 
-Lattes scored 1 (lowest) on nearly every dimension except "data completeness" where its mandatory nature ensures comprehensive coverage.
-
-### Key Lessons to Steal
-
-- From ORCID: "Search & Link" import workflow, per-field privacy controls, Trusted Organizations model
-- From Ciência Vitae: Import Wizard from multiple sources, customizable export templates, the political framing of "less bureaucracy"
-- From Academia.edu: Inline editing with instant save, profile analytics, mobile-first design
-- From ResearchGate: DOI-based import pipeline, co-author network visualization
-
----
-
-## 4. Legal Analysis
-
-### How Escavador.com Operates
-
-Escavador is a commercial platform that displays Lattes data. Their legal strategy rests on three pillars:
-
-1. **Public data doctrine** — They frame themselves as an indexer of publicly available data, citing Brazil's LGPD, Lei de Acesso à Informação, and Código de Processo Civil. Researchers voluntarily made their profiles public.
-2. **Scrapes public HTML, not the official API** — CNPq has two data channels with different rules. The "Extrator Lattes" (official bulk API) requires institutional accreditation, a signed Termo de Responsabilidade, and explicitly forbids commercial use. Public HTML profiles, however, are accessible by design — Escavador crawls these like a search engine would.
-3. **Read-only, no modification** — They position as a search/viewing tool, never modifying Lattes data.
-
-CNPq's 2022 Terms of Use (Portaria 976) added an anti-scraping clause prohibiting "robôs, spiders, scrapers" without express written permission, but enforceability against a third-party indexer who never agreed to these ToS is legally dubious under Brazilian law when the data is genuinely public.
-
-### Legal Constraints for Our Product (Model B)
-
-Building a tool that directly interacts with Lattes on behalf of users faces significant legal barriers:
-
-- **ToS prohibition on commercial use**: "vedada a utilização do serviço para finalidades comerciais"
-- **No OAuth / credential delegation**: Lattes has no OAuth. Passwords are "pessoal e intransferível" — accepting user credentials to act on their behalf would violate ToS.
-- **Anti-automation clause**: The 2022 Portaria gives CNPq legal grounds to block automated access.
-- **Active enforcement**: CNPq has added CAPTCHAs and other measures to block automated access.
-
-### Product Model Options
-
-| Model       | Description                                                           | Legal Risk                  | Viability               |
-| ----------- | --------------------------------------------------------------------- | --------------------------- | ----------------------- |
-| Model A     | Escavador-style read-only viewer of public profiles                   | Low                         | Proven by Escavador     |
-| **Model B** | **CV editor that exports valid Lattes XML for manual import by user** | **Medium-Low**              | **Our chosen approach** |
-| Model C     | Browser extension that enhances the Lattes web UI                     | Gray area                   | Technically fragile     |
-| Model D     | Official CNPq partnership                                             | Lowest risk, highest effort | Long-term goal          |
-
-**Model B is our chosen approach.** It never touches Lattes directly — users export XML from Lattes, edit in our tool, and import XML back into Lattes via Lattes' own import dialog. No credential delegation, no scraping, no API abuse.
+A existência desse ecossistema confirma a necessidade de mercado: as pessoas já estão construindo coisas em volta das deficiências do Lattes.
 
 ---
 
-## 5. The XML Import/Export System — Our Technical Foundation
+## 3. Análise competitiva
 
-### How Import Works
+### Plataformas analisadas
 
-Lattes has a built-in XML import feature accessible from within a user's CV editing interface. The workflow is:
+Comparamos o Lattes com quatro plataformas internacionais de perfil acadêmico em mais de 30 dimensões. Uma planilha detalhada foi produzida numa sessão anterior (`lattes_competitive_analysis.xlsx`, não anexada aqui, mas as conclusões estão resumidas abaixo).
 
-**Step 1 (Passo 1)**: Upload an XML file. The dialog states the file must conform to the DTD.
+**ORCID**: aberto, sem fins lucrativos. API REST completa, com mais de 1.800 organizações-membro. Importação de publicações via "Search & Link" a partir de Crossref, Scopus e Web of Science. Controle de privacidade por campo (Everyone / Trusted Organizations / Only Me). Modelo de Trusted Organizations para a gestão de dados institucionais. Cadastro em 2 minutos com OAuth2 padrão.
 
-**Step 2 (Passo 2)**: Select which modules to import via checkboxes:
+**Ciência Vitae**: a plataforma nacional de currículos acadêmicos de Portugal e a comparação mais diretamente relevante. Substituiu o DeGóis, que por sua vez era derivado do Lattes. A reformulação foi motivada por uma diretriz do governo chamada "Mais Ciência, Menos Burocracia". Principais recursos: um Assistente de Importação que traz publicações de mais de 5 fontes externas, modelos personalizáveis de exportação do currículo e uma interface moderna e responsiva. Ela mostra que uma plataforma exigida pelo governo PODE ter boa UX.
+
+**Academia.edu**: o melhor design visual entre as plataformas acadêmicas. Edição em linha com salvamento automático instantâneo. Painel de análise do perfil (visualizações, downloads, dados geográficos). Apps nativos para celular. Modelo freemium.
+
+**ResearchGate**: visualização da rede de coautores, painel de métricas, fluxo de importação de publicações por DOI, fórum de perguntas e respostas para pesquisadores.
+
+### Placar do Lattes
+
+Em 18 dimensões avaliadas numa escala de 1 a 5:
+
+- Média do Lattes: **1,1**
+- Concorrentes concentrados entre: **3,5–4,5**
+
+O Lattes tirou 1 (a nota mais baixa) em quase todas as dimensões, exceto "completude dos dados", em que o caráter obrigatório garante uma cobertura ampla.
+
+### Lições a copiar
+
+- Do ORCID: o fluxo de importação "Search & Link", o controle de privacidade por campo, o modelo de Trusted Organizations
+- Do Ciência Vitae: o Assistente de Importação de várias fontes, os modelos de exportação personalizáveis, o enquadramento político de "menos burocracia"
+- Do Academia.edu: edição em linha com salvamento instantâneo, análise do perfil, design pensado primeiro para o celular
+- Do ResearchGate: fluxo de importação por DOI, visualização da rede de coautores
+
+---
+
+## 4. Análise jurídica
+
+### Como o Escavador.com opera
+
+O Escavador é uma plataforma comercial que exibe dados do Lattes. Sua estratégia jurídica se apoia em três pilares:
+
+1. **Doutrina dos dados públicos**: a empresa se apresenta como indexadora de dados disponíveis publicamente, citando a LGPD, a Lei de Acesso à Informação e o Código de Processo Civil. Os pesquisadores tornaram seus perfis públicos por vontade própria.
+2. **Faz scraping do HTML público, e não da API oficial**: o CNPq tem dois canais de dados com regras diferentes. O "Extrator Lattes" (a API oficial de dados em massa) exige credenciamento institucional e a assinatura de um Termo de Responsabilidade, e proíbe expressamente o uso comercial. Os perfis públicos em HTML, por outro lado, são acessíveis por definição, e o Escavador os percorre como faria um buscador.
+3. **Somente leitura, sem modificação**: a empresa se posiciona como ferramenta de busca e visualização, que nunca altera dados do Lattes.
+
+Os Termos de Uso de 2022 do CNPq (Portaria 976) acrescentaram uma cláusula antiscraping que proíbe "robôs, spiders, scrapers" sem permissão expressa por escrito, mas a aplicabilidade disso contra um indexador terceiro que nunca aceitou esses termos é juridicamente duvidosa no direito brasileiro quando os dados são de fato públicos.
+
+### Restrições jurídicas para o nosso produto (Modelo B)
+
+Construir uma ferramenta que interaja diretamente com o Lattes em nome dos usuários esbarra em barreiras jurídicas importantes:
+
+- **Proibição de uso comercial nos Termos de Uso**: "vedada a utilização do serviço para finalidades comerciais"
+- **Sem OAuth nem delegação de credenciais**: o Lattes não tem OAuth. As senhas são "pessoal e intransferível", e aceitar credenciais do usuário para agir em nome dele violaria os Termos de Uso.
+- **Cláusula antiautomação**: a Portaria de 2022 dá ao CNPq base jurídica para bloquear acessos automatizados.
+- **Fiscalização ativa**: o CNPq acrescentou CAPTCHAs e outras medidas para bloquear acessos automatizados.
+
+### Opções de modelo de produto
+
+| Modelo       | Descrição                                                                                 | Risco jurídico             | Viabilidade               |
+| ------------ | ----------------------------------------------------------------------------------------- | -------------------------- | ------------------------- |
+| Modelo A     | Visualizador somente leitura de perfis públicos, no estilo do Escavador                   | Baixo                      | Comprovada pelo Escavador |
+| **Modelo B** | **Editor de currículo que exporta XML Lattes válido para importação manual pelo usuário** | **Médio-baixo**            | **A abordagem escolhida** |
+| Modelo C     | Extensão de navegador que melhora a interface web do Lattes                               | Zona cinzenta              | Tecnicamente frágil       |
+| Modelo D     | Parceria oficial com o CNPq                                                               | Menor risco, maior esforço | Objetivo de longo prazo   |
+
+**O Modelo B é a abordagem escolhida.** Ele nunca toca no Lattes diretamente: os usuários exportam o XML do Lattes, editam na nossa ferramenta e importam o XML de volta no Lattes pelo próprio diálogo de importação do Lattes. Sem delegação de credenciais, sem scraping, sem abuso de API.
+
+---
+
+## 5. O sistema de importação/exportação XML: nossa base técnica
+
+### Como funciona a importação
+
+O Lattes tem um recurso nativo de importação XML, acessível dentro da interface de edição do currículo do usuário. O fluxo é este:
+
+**Passo 1**: enviar um arquivo XML. O diálogo informa que o arquivo precisa estar de acordo com o DTD.
+
+**Passo 2**: escolher, por meio de caixas de seleção, quais módulos importar:
 
 - Artigos completos publicados
 - Artigos aceitos para publicação
@@ -158,227 +158,227 @@ Lattes has a built-in XML import feature accessible from within a user's CV edit
 - Eventos
 - Bancas
 
-There is also a year filter ("Produção C&T a partir de" defaulting to 2007) for incremental updates.
+Há também um filtro de ano ("Produção C&T a partir de", com 2007 como padrão) para atualizações incrementais.
 
-Then the system shows: "Aguarde, o XML está sendo transferido..."
+Em seguida o sistema mostra: "Aguarde, o XML está sendo transferido..."
 
-### Critical Import Characteristics
+### Características críticas da importação
 
-- **Import is APPEND, not replace** — The checkbox language "Selecione os ítens que deseja importar" and the category-level selection confirm it adds items rather than overwriting the entire CV.
-- **Only covers production/activity data** — No checkboxes exist for DADOS-GERAIS (personal info), FORMACAO-ACADEMICA (education), ATUACOES-PROFISSIONAIS (employment), AREAS-DE-ATUACAO, or IDIOMAS. Import is designed for production sections only.
-- **Year filter enables incremental updates** — Users can import only production from a specific year onward.
-- **Covers the most painful sections** — The importable sections (publications, orientations, bancas, events) are exactly where Lattes UX is worst and where the usability study found 0% success rate.
+- **A importação ACRESCENTA, não substitui**: o texto das caixas de seleção, "Selecione os ítens que deseja importar", e a seleção por categoria confirmam que ela adiciona itens em vez de sobrescrever o currículo inteiro.
+- **Cobre só dados de produção e atividades**: não há caixas de seleção para DADOS-GERAIS (dados pessoais), FORMACAO-ACADEMICA (formação), ATUACOES-PROFISSIONAIS (vínculos profissionais), AREAS-DE-ATUACAO ou IDIOMAS. A importação foi pensada apenas para as seções de produção.
+- **O filtro de ano permite atualizações incrementais**: os usuários podem importar só a produção a partir de um determinado ano.
+- **Cobre as seções mais penosas**: as seções importáveis (publicações, orientações, bancas, eventos) são justamente onde a UX do Lattes é pior e onde o estudo de usabilidade encontrou taxa de sucesso de 0%.
 
-### How Export Works
+### Como funciona a exportação
 
-Users can export their complete CV as XML. The exported file contains everything — personal data, education, professional history, languages, awards, and all production. It is a full snapshot of the profile, not limited to the import-eligible sections.
+Os usuários podem exportar o currículo completo em XML. O arquivo exportado contém tudo: dados pessoais, formação, histórico profissional, idiomas, prêmios e toda a produção. É um retrato completo do perfil, sem se limitar às seções que podem ser importadas.
 
-The exported XML uses an attribute-heavy style where data lives in XML attributes rather than element text content. For example:
+O XML exportado usa um estilo carregado de atributos, em que os dados ficam nos atributos XML e não no conteúdo de texto dos elementos. Por exemplo:
 `<GRADUACAO NOME-CURSO="Design Gráfico" ANO-DE-CONCLUSAO="2004" STATUS-DO-CURSO="CONCLUIDO"/>`
 
-### Product Implications
+### Implicações para o produto
 
-Our product handles the most painful, most voluminous sections (publications, presentations, technical production, bancas, orientations) with a beautiful editing UI, DOI auto-population, and ORCID import. We export valid XML that users import directly into Lattes via the Step 2 checkbox selection.
+Nosso produto cuida das seções mais penosas e mais volumosas (publicações, apresentações, produção técnica, bancas, orientações) com uma interface de edição bonita, preenchimento automático por DOI e importação do ORCID. Exportamos um XML válido que os usuários importam direto no Lattes pela seleção de caixas do Passo 2.
 
-For biographical sections (personal data, education, professional history) not covered by import: we can offer a nice viewing/editing experience with a "copy to Lattes manually" workflow, but the real value proposition is in the importable production sections.
-
----
-
-## 6. Schema Analysis — Three Sources, One Truth
-
-### The Three Schema Sources
-
-We discovered that three different schema sources exist for Lattes XML, each from a different era:
-
-| Source                         | Format       | Last Updated                   | Where Found                                           |
-| ------------------------------ | ------------ | ------------------------------ | ----------------------------------------------------- |
-| LMPLCurriculo.DTD              | DTD          | Version 4.0, February 21, 2014 | Link in the XML Import dialog                         |
-| CurriculoLattes_12_09_2022.xsd | XSD          | September 12, 2022             | Link on the "Extração de Dados" page of Portal Lattes |
-| Actual XML export              | XML instance | ~2025 (whenever you export)    | Export button in CV editor                            |
-
-### Key Comparison Findings
-
-**Element-level**: DTD defines 323 elements. XSD defines 324 (added 3: LICENCA, LICENCAS, HISTORICO-SITUACOES-PATENTE for patent licensing; 2 removed). Structurally nearly identical across 10+ years.
-
-**Attribute-level**: This is where the XSD shines. The XSD defines 1,927 attribute slots across all elements vs the DTD's ~386. The XSD has 251 typed enumerations with 1,086 valid values (things like STATUS-DO-CURSO can only be EM_ANDAMENTO, CONCLUIDO, or INCOMPLETO). The DTD has inline pipe-separated value lists but far fewer constrained fields.
-
-**Elements with most attributes** (complexity indicators for UI form design):
-
-- DOUTORADO: 35 attributes
-- MESTRADO: 29 attributes
-- GRADUACAO: 28 attributes
-- DADOS-GERAIS: 27 attributes
-- MESTRADO-PROFISSIONALIZANTE: 23 attributes
-- PROJETO-DE-PESQUISA: 20 attributes
-
-**Coverage gap**: A real user's XML export typically uses about 60 of 324 elements (depending on their career). The other 263 elements represent sections of academic life they haven't used (e.g., patents, artistic production, doctoral supervision, professional boards).
-
-### Ghost Fields — Post-2022 Additions
-
-Four attributes appear in a 2025 XML export that exist in NEITHER the DTD (2014) NOR the XSD (2022):
-
-| Attribute              | Element      | Interpretation                                                                   |
-| ---------------------- | ------------ | -------------------------------------------------------------------------------- |
-| PCD                    | DADOS-GERAIS | Pessoa com Deficiência (disability field) — likely LGPD/accessibility compliance |
-| REDE-SOCIAL            | ENDERECO     | Social media links                                                               |
-| ELETRONICO             | ENDERECO     | Electronic contact info                                                          |
-| OUTRA-FORMA-DE-CONTATO | ENDERECO     | Other contact methods                                                            |
-
-One attribute (ORCID-ID on DADOS-GERAIS) is in the XSD but not the DTD, placing its addition between 2014 and 2022.
-
-This confirms: CNPq's internal data model keeps evolving, the export keeps up, but the published schemas lag behind. The import validator must use an internal, unpublished schema that is newer than any public document.
-
-### Which Schema to Use for Development
-
-**Use the XSD (2022) as the primary specification.** It is typed, richer, 8 years newer than the DTD, and defines proper enumerations. Patch in the 4 ghost fields from the XML export. The maximal skeleton XML file (attached) was generated from this combined source.
-
-The DTD remains useful as a secondary reference — its version history comments document the evolution of the schema from 2003 to 2014, and it defines the format that the import dialog explicitly references.
-
-### DTD Version History
-
-The DTD contains an extensive changelog in its XML comments:
-
-- v1.1 (Mar 2003) through v1.4.2 (Apr 2004): Initial versions, basic structure
-- v1.4.3 (Apr 2006): All fields outside DADOS-GERAIS made optional
-- v1.4.4 (Jul 2006): Added TEXTO-RESUMO-CV-RH
-- v1.5–2.0 (undated): DOI support, doctoral cotutela/sandwich, CAPES course codes
-- v2.1–2.4.1 (undated): English translations of fields, patent module expansion, co-author IDs
-- v3.0 (Dec 2011): Web as publication medium, social media types, science dissemination flags, innovation flags
-- v4.0 (Feb 2014): Race/color field, ORCID groundwork, olimpíada/exposição/feira events
-
-The SLattes project (third-party tool) maintains a reverse-engineered version of the DTD that patches some gaps, but our XSD from CNPq's own website is more authoritative and more current.
+Para as seções biográficas (dados pessoais, formação, histórico profissional) que a importação não cobre, podemos oferecer uma boa experiência de visualização e edição com um fluxo de "copiar para o Lattes manualmente", mas a proposta de valor real está nas seções de produção importáveis.
 
 ---
 
-## 7. Product Strategy
+## 6. Análise do schema: três fontes, uma verdade
 
-### Core Value Proposition
+### As três fontes de schema
 
-A modern, beautiful CV editor for Brazilian researchers that eliminates the pain of managing academic production in Lattes. Users edit in our tool with a modern UI (auto-save, DOI auto-population, ORCID import, inline validation, progress indicators), then import the resulting XML into Lattes with a few clicks.
+Descobrimos que existem três fontes diferentes de schema para o XML Lattes, cada uma de uma época:
 
-### What We Build (MVP Scope)
+| Fonte                          | Formato       | Última atualização                  | Onde foi encontrada                                 |
+| ------------------------------ | ------------- | ----------------------------------- | --------------------------------------------------- |
+| LMPLCurriculo.DTD              | DTD           | Versão 4.0, 21 de fevereiro de 2014 | Link no diálogo de Importação XML                   |
+| CurriculoLattes_12_09_2022.xsd | XSD           | 12 de setembro de 2022              | Link na página "Extração de Dados" do Portal Lattes |
+| Exportação XML real            | Instância XML | ~2025 (sempre que você exporta)     | Botão Exportar no editor de currículo               |
 
-The import-eligible sections should be the MVP focus. These are:
+### Principais conclusões da comparação
 
-1. **Bibliographic Production** (PRODUCAO-BIBLIOGRAFICA)
-   - Published journal articles (ARTIGOS-PUBLICADOS)
-   - Accepted articles (ARTIGOS-ACEITOS-PARA-PUBLICACAO)
-   - Books and chapters (LIVROS-E-CAPITULOS)
-   - Conference papers (TRABALHOS-EM-EVENTOS)
-   - Newspaper/magazine texts (TEXTOS-EM-JORNAIS-OU-REVISTAS)
-   - Other bibliographic production (DEMAIS-TIPOS-DE-PRODUCAO-BIBLIOGRAFICA)
+**No nível dos elementos**: o DTD define 323 elementos. O XSD define 324 (acrescentou 3, LICENCA, LICENCAS e HISTORICO-SITUACOES-PATENTE, para o licenciamento de patentes, e removeu 2). A estrutura ficou quase idêntica ao longo de mais de 10 anos.
 
-2. **Technical Production** (PRODUCAO-TECNICA)
+**No nível dos atributos**: é aqui que o XSD se destaca. O XSD define 1.927 posições de atributo em todos os elementos, contra cerca de 386 do DTD. O XSD tem 251 enumerações tipadas com 1.086 valores válidos (por exemplo, STATUS-DO-CURSO só pode ser EM_ANDAMENTO, CONCLUIDO ou INCOMPLETO). O DTD tem listas de valores separadas por barra vertical no próprio texto, mas muito menos campos restritos.
+
+**Elementos com mais atributos** (indicadores de complexidade para o desenho dos formulários):
+
+- DOUTORADO: 35 atributos
+- MESTRADO: 29 atributos
+- GRADUACAO: 28 atributos
+- DADOS-GERAIS: 27 atributos
+- MESTRADO-PROFISSIONALIZANTE: 23 atributos
+- PROJETO-DE-PESQUISA: 20 atributos
+
+**Lacuna de cobertura**: a exportação XML de um usuário real costuma usar uns 60 dos 324 elementos (dependendo da carreira). Os outros 263 elementos representam áreas da vida acadêmica que a pessoa não usou (por exemplo, patentes, produção artística, orientação de doutorado, conselhos profissionais).
+
+### Campos fantasma: acréscimos pós-2022
+
+Quatro atributos aparecem numa exportação XML de 2025 sem existir NEM no DTD (2014) NEM no XSD (2022):
+
+| Atributo               | Elemento     | Interpretação                                                                                                               |
+| ---------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| PCD                    | DADOS-GERAIS | Pessoa com Deficiência (campo sobre deficiência), provavelmente por conformidade com a LGPD ou com normas de acessibilidade |
+| REDE-SOCIAL            | ENDERECO     | Links de redes sociais                                                                                                      |
+| ELETRONICO             | ENDERECO     | Informações de contato eletrônico                                                                                           |
+| OUTRA-FORMA-DE-CONTATO | ENDERECO     | Outras formas de contato                                                                                                    |
+
+Um atributo (ORCID-ID em DADOS-GERAIS) está no XSD mas não no DTD, o que situa seu acréscimo entre 2014 e 2022.
+
+Isso confirma que o modelo de dados interno do CNPq continua evoluindo e que a exportação acompanha essa evolução, enquanto os schemas publicados ficam para trás. O validador da importação deve usar um schema interno, não publicado, mais novo que qualquer documento público.
+
+### Qual schema usar no desenvolvimento
+
+**Use o XSD (2022) como especificação principal.** Ele é tipado, mais rico, 8 anos mais novo que o DTD e define enumerações de verdade. Acrescente nele os 4 campos fantasma vindos da exportação XML. O arquivo XML com o esqueleto máximo (anexo) foi gerado a partir dessa fonte combinada.
+
+O DTD continua útil como referência secundária. Os comentários com o histórico de versões documentam a evolução do schema de 2003 a 2014, e ele define o formato que o diálogo de importação cita explicitamente.
+
+### Histórico de versões do DTD
+
+O DTD traz um changelog extenso nos seus comentários XML:
+
+- v1.1 (mar. 2003) a v1.4.2 (abr. 2004): versões iniciais, estrutura básica
+- v1.4.3 (abr. 2006): todos os campos fora de DADOS-GERAIS passaram a ser opcionais
+- v1.4.4 (jul. 2006): acrescentado TEXTO-RESUMO-CV-RH
+- v1.5–2.0 (sem data): suporte a DOI, cotutela e sanduíche no doutorado, códigos de curso da CAPES
+- v2.1–2.4.1 (sem data): traduções dos campos para o inglês, ampliação do módulo de patentes, IDs de coautor
+- v3.0 (dez. 2011): web como meio de publicação, tipos de redes sociais, marcações de divulgação científica, marcações de inovação
+- v4.0 (fev. 2014): campo de raça/cor, preparação para o ORCID, eventos do tipo olimpíada/exposição/feira
+
+O projeto SLattes (ferramenta de terceiros) mantém uma versão do DTD obtida por engenharia reversa que corrige algumas lacunas, mas o nosso XSD, tirado do próprio site do CNPq, tem mais autoridade e é mais atual.
+
+---
+
+## 7. Estratégia de produto
+
+### Proposta de valor central
+
+Um editor de currículo moderno e bonito para pesquisadores brasileiros, que acaba com o sofrimento de gerenciar a produção acadêmica no Lattes. Os usuários editam na nossa ferramenta com uma interface moderna (salvamento automático, preenchimento automático por DOI, importação do ORCID, validação em linha, indicadores de progresso) e depois importam o XML resultante no Lattes com poucos cliques.
+
+### O que construímos (escopo do MVP)
+
+O foco do MVP devem ser as seções que podem ser importadas. São elas:
+
+1. **Produção bibliográfica** (PRODUCAO-BIBLIOGRAFICA)
+   - Artigos publicados em periódicos (ARTIGOS-PUBLICADOS)
+   - Artigos aceitos (ARTIGOS-ACEITOS-PARA-PUBLICACAO)
+   - Livros e capítulos (LIVROS-E-CAPITULOS)
+   - Trabalhos em eventos (TRABALHOS-EM-EVENTOS)
+   - Textos em jornais ou revistas (TEXTOS-EM-JORNAIS-OU-REVISTAS)
+   - Outras produções bibliográficas (DEMAIS-TIPOS-DE-PRODUCAO-BIBLIOGRAFICA)
+
+2. **Produção técnica** (PRODUCAO-TECNICA)
    - Software (SOFTWARE)
-   - Patents and related IP (PATENTE, CULTIVAR, DESENHO-INDUSTRIAL, MARCA, TOPOGRAFIA)
-   - Technological products (PRODUTO-TECNOLOGICO)
-   - Processes/techniques (PROCESSOS-OU-TECNICAS)
-   - Technical work (TRABALHO-TECNICO)
-   - Other technical production
+   - Patentes e propriedade intelectual relacionada (PATENTE, CULTIVAR, DESENHO-INDUSTRIAL, MARCA, TOPOGRAFIA)
+   - Produtos tecnológicos (PRODUTO-TECNOLOGICO)
+   - Processos ou técnicas (PROCESSOS-OU-TECNICAS)
+   - Trabalhos técnicos (TRABALHO-TECNICO)
+   - Outras produções técnicas
 
-3. **Other Production** (OUTRA-PRODUCAO)
-   - Artistic/cultural production (PRODUCAO-ARTISTICA-CULTURAL)
-   - Completed orientations/supervisions (ORIENTACOES-CONCLUIDAS)
-   - Other works (DEMAIS-TRABALHOS)
+3. **Outra produção** (OUTRA-PRODUCAO)
+   - Produção artística/cultural (PRODUCAO-ARTISTICA-CULTURAL)
+   - Orientações e supervisões concluídas (ORIENTACOES-CONCLUIDAS)
+   - Demais trabalhos (DEMAIS-TRABALHOS)
 
-4. **Complementary Data** (DADOS-COMPLEMENTARES)
-   - Participation in examination boards / bancas (PARTICIPACAO-EM-BANCA)
-   - Event participation (PARTICIPACAO-EM-EVENTOS-CONGRESSOS)
-   - Ongoing orientations (ORIENTACOES-EM-ANDAMENTO)
+4. **Dados complementares** (DADOS-COMPLEMENTARES)
+   - Participação em bancas examinadoras (PARTICIPACAO-EM-BANCA)
+   - Participação em eventos (PARTICIPACAO-EM-EVENTOS-CONGRESSOS)
+   - Orientações em andamento (ORIENTACOES-EM-ANDAMENTO)
 
-### What We Show But Don't Import
+### O que mostramos mas não importamos
 
-For sections not covered by import (personal data, education, professional history, languages, areas of expertise, awards), we can:
+Para as seções que a importação não cobre (dados pessoais, formação, histórico profissional, idiomas, áreas de atuação, prêmios), podemos:
 
-- Display them beautifully from an imported XML export
-- Allow editing with a "copy these changes to Lattes manually" workflow
-- Use them for generating formatted CVs in PDF/DOCX (a secondary feature)
+- Exibi-las de forma caprichada a partir de uma exportação XML importada
+- Permitir a edição com um fluxo de "copiar estas alterações para o Lattes manualmente"
+- Usá-las para gerar currículos formatados em PDF/DOCX (um recurso secundário)
 
-### Key Features to Prioritize
+### Recursos prioritários
 
-Based on the competitive analysis and complaint data:
+Com base na análise competitiva e nos dados de reclamações:
 
-- **DOI-based import**: Enter a DOI, auto-populate all publication fields from Crossref/DataCite
-- **ORCID import**: Pull publications from user's ORCID profile
-- **Auto-save with draft state**: Never lose work. Save continuously.
-- **Inline validation against schema**: Show errors before export, not after a failed Lattes import
-- **Progress indicators**: Show completion percentage per section
-- **Batch operations**: Add multiple publications at once (e.g., paste a list of DOIs)
-- **Formatted CV export**: Generate PDF/DOCX from the same data in standard academic CV formats (ABNT, international)
-- **Co-author management**: Maintain a list of frequent co-authors with their NRO-ID-CNPQ for reuse
+- **Importação por DOI**: digitar um DOI e preencher automaticamente todos os campos da publicação a partir do Crossref/DataCite
+- **Importação do ORCID**: trazer as publicações do perfil ORCID do usuário
+- **Salvamento automático com estado de rascunho**: nunca perder trabalho. Salvar continuamente.
+- **Validação em linha contra o schema**: mostrar os erros antes da exportação, e não depois de uma importação que falhou no Lattes
+- **Indicadores de progresso**: mostrar o percentual de preenchimento por seção
+- **Operações em lote**: adicionar várias publicações de uma vez (por exemplo, colando uma lista de DOIs)
+- **Exportação de currículo formatado**: gerar PDF/DOCX a partir dos mesmos dados, nos formatos de currículo acadêmico usuais (ABNT, internacional)
+- **Gestão de coautores**: manter uma lista de coautores frequentes com o NRO-ID-CNPQ de cada um, para reaproveitar
 
-### Workflow
+### Fluxo
 
-1. User exports XML from Lattes (full CV export)
-2. User uploads XML to our tool
-3. Our tool parses and displays all CV data in a modern interface
-4. User edits/adds production items using our UI
-5. Our tool exports valid Lattes-compatible XML
-6. User imports XML into Lattes via Import dialog, selecting relevant checkboxes
-7. Lattes appends the new items to their CV
+1. O usuário exporta o XML do Lattes (exportação completa do currículo)
+2. O usuário envia o XML para a nossa ferramenta
+3. A ferramenta interpreta e exibe todos os dados do currículo numa interface moderna
+4. O usuário edita ou acrescenta itens de produção na nossa interface
+5. A ferramenta exporta um XML válido e compatível com o Lattes
+6. O usuário importa o XML no Lattes pelo diálogo de importação, marcando as caixas pertinentes
+7. O Lattes acrescenta os itens novos ao currículo
 
-### Revenue Model Considerations
+### Considerações sobre modelo de receita
 
-The tool cannot interact with Lattes programmatically (legal constraints), so the value proposition must be strong enough that researchers pay for the editing experience itself. Potential angles:
+A ferramenta não pode interagir com o Lattes de forma programática (por restrições jurídicas), então a proposta de valor precisa ser forte o bastante para que os pesquisadores paguem pela experiência de edição em si. Ângulos possíveis:
 
-- Freemium: Free for viewing/basic editing, paid for DOI auto-import, ORCID sync, batch operations, formatted CV export
-- Institutional licensing: Universities pay for department-wide access
-- The formatted CV export feature (generating ABN-standard CVs from Lattes data) may be a strong independent value proposition
-
----
-
-## 8. Validation Steps Before Building
-
-These tests should be performed manually before committing to development:
-
-1. **Round-trip test**: Export CV XML from Lattes, make zero changes, import it back. Verify nothing breaks, no duplicates, no data loss.
-
-2. **Modification test**: Export, change a single field (e.g., add a word to RESUMO-CV or add a dummy publication), import, verify the change appears correctly.
-
-3. **Minimal XML test**: Create a tiny XML file with just one ARTIGO-PUBLICADO element and the minimum required wrapper structure. Import it. See if Lattes accepts it or requires the full CV structure.
-
-4. **Schema validation test**: Does Lattes reject XML that contains the post-2022 ghost fields (PCD, REDE-SOCIAL, etc.)? If the round-trip test passes, this is answered — those fields are in the export, so they should survive import.
-
-5. **Duplicate handling test**: Import the same publication twice. Does Lattes create duplicates, or does it detect and skip existing items? This determines whether our tool needs deduplication logic.
+- Freemium: grátis para visualização e edição básica, pago para importação automática por DOI, sincronização com o ORCID, operações em lote e exportação de currículo formatado
+- Licenciamento institucional: universidades pagam pelo acesso de departamentos inteiros
+- O recurso de exportação de currículo formatado (gerar currículos no padrão ABN a partir dos dados do Lattes) pode ser uma proposta de valor forte por si só
 
 ---
 
-## 9. Open Questions
+## 8. Etapas de validação antes de construir
 
-- What exactly does the import validator check? Does it validate against the DTD, the XSD, an internal schema, or is it permissive?
-- How does Lattes handle duplicate detection on import? By title? By DOI? By some internal sequence number?
-- What is the maximum XML file size the import accepts?
-- Can the import dialog handle XML generated from scratch (not derived from an export), or does it expect certain internal IDs (like NUMERO-IDENTIFICADOR, SEQUENCIA-PRODUCAO) that only Lattes generates?
-- Is the import feature available to all users, or only certain institutional roles?
-- How frequently do users actually use the import feature today? (This tells us if the workflow is familiar or novel.)
+Estes testes devem ser feitos manualmente antes de se comprometer com o desenvolvimento:
+
+1. **Teste de ida e volta**: exportar o XML do currículo no Lattes, não mudar nada e importá-lo de volta. Verificar que nada quebra, que não surgem duplicatas e que não há perda de dados.
+
+2. **Teste de modificação**: exportar, mudar um único campo (por exemplo, acrescentar uma palavra em RESUMO-CV ou adicionar uma publicação fictícia), importar e verificar se a alteração aparece corretamente.
+
+3. **Teste de XML mínimo**: criar um arquivo XML pequeno com apenas um elemento ARTIGO-PUBLICADO e a estrutura mínima obrigatória em volta. Importá-lo. Ver se o Lattes o aceita ou se exige a estrutura completa do currículo.
+
+4. **Teste de validação de schema**: o Lattes rejeita XML que contém os campos fantasma pós-2022 (PCD, REDE-SOCIAL etc.)? Se o teste de ida e volta passar, isso está respondido: esses campos estão na exportação, então devem sobreviver à importação.
+
+5. **Teste de tratamento de duplicatas**: importar a mesma publicação duas vezes. O Lattes cria duplicatas ou detecta e ignora os itens existentes? Isso define se a nossa ferramenta precisa de lógica de eliminação de duplicatas.
 
 ---
 
-## 10. Attached File Reference
+## 9. Questões em aberto
+
+- O que exatamente o validador da importação verifica? Ele valida contra o DTD, o XSD, um schema interno, ou é permissivo?
+- Como o Lattes detecta duplicatas na importação? Pelo título? Pelo DOI? Por algum número de sequência interno?
+- Qual o tamanho máximo de arquivo XML que a importação aceita?
+- O diálogo de importação consegue lidar com XML gerado do zero (e não derivado de uma exportação), ou espera certos IDs internos (como NUMERO-IDENTIFICADOR e SEQUENCIA-PRODUCAO) que só o Lattes gera?
+- O recurso de importação está disponível para todos os usuários ou só para certos perfis institucionais?
+- Com que frequência os usuários usam o recurso de importação hoje? (Isso indica se o fluxo é familiar ou novo para eles.)
+
+---
+
+## 10. Referência dos arquivos anexos
 
 ### lattes_schema_analysis.xlsx
 
-Four sheets:
+Quatro abas:
 
-**Sheet 1 — Schema Comparison**: Side-by-side comparison of DTD (2014) vs XSD (2022) vs your XML export (2025). Shows what each source defines, where they agree, and where they diverge.
+**Aba 1, Comparação de Schemas**: comparação lado a lado do DTD (2014), do XSD (2022) e da sua exportação XML (2025). Mostra o que cada fonte define, onde concordam e onde divergem.
 
-**Sheet 2 — Element Inventory**: All 324+ elements with hierarchy paths, presence in each schema source, attribute counts, child elements, and category groupings. Filterable. Yellow highlights = elements not in your XML (sections you haven't used). Green = elements your profile uses.
+**Aba 2, Inventário de Elementos**: todos os mais de 324 elementos, com caminhos na hierarquia, presença em cada fonte de schema, contagem de atributos, elementos filhos e agrupamento por categoria. Filtrável. Destaque amarelo indica elementos que não estão no seu XML (seções que você não usou). Verde indica elementos que o seu perfil usa.
 
-**Sheet 3 — Attribute Inventory**: Every attribute across all elements with: required/optional status, data type or enum values, presence in DTD, presence in your XML, and a sample value from your export where available. This is the field-level specification for building forms.
+**Aba 3, Inventário de Atributos**: todos os atributos de todos os elementos, com situação de obrigatório ou opcional, tipo de dado ou valores de enum, presença no DTD, presença no seu XML e um valor de exemplo da sua exportação, quando houver. É a especificação no nível de campo para construir os formulários.
 
-**Sheet 4 — Post-2022 Ghost Fields**: The 4-6 attributes that exist in recent XML exports but not in any published schema. Includes risk assessment for each.
+**Aba 4, Campos Fantasma pós-2022**: os 4 a 6 atributos que existem nas exportações XML recentes mas em nenhum schema publicado. Inclui uma avaliação de risco para cada um.
 
 ### lattes_maximal_skeleton.xml
 
-A 4,495-line XML file that includes every element and attribute defined across all three schema sources. Annotated with:
+Um arquivo XML de 4.495 linhas que inclui todos os elementos e atributos definidos nas três fontes de schema. Anotado com:
 
-- `[REQUIRED]` markers on mandatory attributes
-- Enum values in XML comments (e.g., `<!-- SIM|NAO -->`)
-- `<!-- optional -->` and `<!-- repeatable -->` markers on child elements
-- Placeholder empty values for all attributes
+- Marcadores `[REQUIRED]` nos atributos obrigatórios
+- Valores de enum em comentários XML (por exemplo, `<!-- SIM|NAO -->`)
+- Marcadores `<!-- optional -->` e `<!-- repeatable -->` nos elementos filhos
+- Valores vazios de preenchimento em todos os atributos
 
-This file serves as:
+Este arquivo serve como:
 
-- A complete UI specification (every element = a form section, every attribute = a form field)
-- A starting point for generating test XML files
-- A reference for understanding the complete data model including sections no single profile would use
+- Especificação completa da interface (cada elemento é uma seção de formulário, cada atributo é um campo)
+- Ponto de partida para gerar arquivos XML de teste
+- Referência para entender o modelo de dados completo, inclusive as seções que nenhum perfil isolado usaria

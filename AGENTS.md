@@ -91,9 +91,11 @@ Repo-specific:
 
 ## Language and writing
 
-- Identifiers in English. UI text, code comments, docs, commit messages
-  and PR text in pt-BR with full accents. Agent-facing files (this one,
-  `CLAUDE.md`) in en-US.
+- Identifiers in English. UI text, code comments, commit messages and PR
+  text in pt-BR with full accents.
+- Every document in the repository that a person reads (README, everything
+  in `docs/`, issue and PR templates) is pt-BR, for the general Brazilian
+  public. Only the agent-facing files (this one, `CLAUDE.md`) stay en-US.
 - Commit messages: Conventional Commits, type in English, description in
   pt-BR. No AI attribution lines (the commit-msg hook blocks them).
 - Prose for humans avoids machine cadence (matched pairs, tricolons,
