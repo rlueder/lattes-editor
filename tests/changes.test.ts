@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { changeSignature, diffDocuments, resolvePath } from '../src/model/changes.ts';
-import { getAttr, parseXml } from '../src/model/xml.ts';
+import { diffDocuments, resolvePath, revertChange, revertField } from '../src/model/changes.ts';
+import { parseXml } from '../src/model/xml.ts';
 
 const doc = (xml: string) => parseXml(xml).root;
 
@@ -108,17 +108,6 @@ describe('diffDocuments', () => {
   });
 });
 
-describe('changeSignature', () => {
-  it('muda quando o valor novo muda', () => {
-    const before = doc(ORIGINAL);
-    const a = diffDocuments(before, doc(ORIGINAL.replace('Resumo antigo', 'Resumo novo')))[0]!;
-    const b = diffDocuments(before, doc(ORIGINAL.replace('Resumo antigo', 'Outro resumo')))[0]!;
-    expect(a.key).toBe(b.key);
-    expect(changeSignature(a)).not.toBe(changeSignature(b));
-    expect(getAttr(before, 'X')).toBeUndefined();
-  });
-});
-
 describe('resolvePath', () => {
   it('segue o caminho pelas chaves; para onde o elemento some', () => {
     const working = doc(ORIGINAL.replace('ANO-FIM=""', 'ANO-FIM="2020"'));
@@ -135,5 +124,82 @@ describe('resolvePath', () => {
     expect(resolvePath(working, ['CURRICULO-VITAE', 'X[#0]']).map((e) => e.name)).toEqual([
       'CURRICULO-VITAE',
     ]);
+  });
+});
+
+describe('revertChange', () => {
+  const insert = (parent: ReturnType<typeof doc>, child: ReturnType<typeof doc>) => {
+    parent.children.push(child);
+  };
+
+  it('alterado: volta os atributos da exportação', () => {
+    const original = doc(ORIGINAL);
+    const working = doc(ORIGINAL.replace('ANO-FIM=""', 'ANO-FIM="2020"'));
+    const [change] = diffDocuments(original, working);
+    expect(revertChange(original, working, change!, insert)).toBe(true);
+    expect(diffDocuments(original, working)).toEqual([]);
+  });
+
+  it('novo sai; removido volta', () => {
+    const original = doc(ORIGINAL);
+    const working = doc(
+      ORIGINAL.replace(
+        '<IDIOMA IDIOMA="EN" PROFICIENCIA-DE-LEITURA="BEM"/>',
+        '<IDIOMA IDIOMA="ES" PROFICIENCIA-DE-LEITURA="POUCO"/>',
+      ),
+    );
+    const changes = diffDocuments(original, working);
+    for (const c of changes) expect(revertChange(original, working, c, insert)).toBe(true);
+    expect(diffDocuments(original, working)).toEqual([]);
+  });
+
+  it('texto e caminho que sumiu', () => {
+    const original = doc('<A><DISCIPLINA SEQUENCIA-ESPECIFICACAO="1">Velha</DISCIPLINA></A>');
+    const working = doc('<A><DISCIPLINA SEQUENCIA-ESPECIFICACAO="1">Nova</DISCIPLINA></A>');
+    const [change] = diffDocuments(original, working);
+    expect(revertChange(original, working, change!, insert)).toBe(true);
+    expect(diffDocuments(original, working)).toEqual([]);
+    expect(revertChange(original, doc('<A/>'), change!, insert)).toBe(false);
+    expect(revertChange(original, doc('<A/>'), { ...change!, kind: 'novo' }, insert)).toBe(false);
+    expect(
+      revertChange(
+        original,
+        doc('<B/>'),
+        { ...change!, kind: 'removido', path: ['A', 'X[#0]'] },
+        insert,
+      ),
+    ).toBe(false);
+  });
+});
+
+describe('revertField', () => {
+  it('volta só o campo; atributo que não existia sai; texto volta', () => {
+    const original = doc(ORIGINAL);
+    const working = doc(
+      ORIGINAL.replace('ANO-FIM=""', 'ANO-FIM="2020" NOVO="x"').replace(
+        'ANO-INICIO="2010"',
+        'ANO-INICIO="2011"',
+      ),
+    );
+    const [change] = diffDocuments(original, working);
+    expect(revertField(original, working, change!, 'ANO-FIM')).toBe(true);
+    expect(revertField(original, working, change!, 'NOVO')).toBe(true);
+    expect(diffDocuments(original, working)[0]!.fields.map((f) => f.attr)).toEqual(['ANO-INICIO']);
+    expect(revertField(original, working, { ...change!, kind: 'novo' }, 'ANO-INICIO')).toBe(false);
+    expect(revertField(original, doc('<CURRICULO-VITAE/>'), change!, 'ANO-INICIO')).toBe(false);
+
+    const o = doc('<A><DISCIPLINA SEQUENCIA-ESPECIFICACAO="1">Velha</DISCIPLINA></A>');
+    const w = doc('<A><DISCIPLINA SEQUENCIA-ESPECIFICACAO="1">Nova</DISCIPLINA></A>');
+    const [t] = diffDocuments(o, w);
+    expect(revertField(o, w, t!, '#texto')).toBe(true);
+    expect(diffDocuments(o, w)).toEqual([]);
+    const removed = doc('<A><DISCIPLINA SEQUENCIA-ESPECIFICACAO="1" X="1">Velha</DISCIPLINA></A>');
+    const [r] = diffDocuments(
+      removed,
+      doc('<A><DISCIPLINA SEQUENCIA-ESPECIFICACAO="1">Velha</DISCIPLINA></A>'),
+    );
+    const target = doc('<A><DISCIPLINA SEQUENCIA-ESPECIFICACAO="1">Velha</DISCIPLINA></A>');
+    expect(revertField(removed, target, r!, 'X')).toBe(true);
+    expect(diffDocuments(removed, target)).toEqual([]);
   });
 });

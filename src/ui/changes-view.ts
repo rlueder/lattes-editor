@@ -1,17 +1,15 @@
 // Agrupa as mudanças por seção do Lattes e dá a cada uma o item a que
 // pertence, para a lista "Alterações a levar ao Lattes".
 
-import { type Change, changeSignature, resolvePath } from '../model/changes.ts';
+import { type Change, resolvePath } from '../model/changes.ts';
 import type { XElement } from '../model/xml.ts';
 import { itemMeta } from './item-meta.ts';
 import type { Section } from './sections.ts';
 
 export interface ChangeEntry {
   change: Change;
-  done: boolean;
   /** Título do item que contém a mudança (a atuação, a formação…). */
   itemTitle: string;
-  signature: string;
 }
 
 export interface ChangeGroup {
@@ -58,7 +56,6 @@ export function groupChanges(
   original: XElement,
   working: XElement,
   sections: Section[],
-  done: Record<string, string>,
 ): ChangeGroup[] {
   const groups = new Map<string, ChangeGroup>();
   for (const change of changes) {
@@ -70,12 +67,9 @@ export function groupChanges(
     if (!groups.has(label)) {
       groups.set(label, { entries: [], importable: section?.importable === true, label });
     }
-    const signature = changeSignature(change);
     groups.get(label)!.entries.push({
       change,
-      done: done[change.key] === signature,
       itemTitle: itemTitle(chain),
-      signature,
     });
   }
   // Ordem do menu do Lattes, como na barra lateral.
@@ -87,6 +81,6 @@ export function groupChanges(
   });
 }
 
-export function openCount(groups: ChangeGroup[]): number {
-  return groups.reduce((n, g) => n + g.entries.filter((e) => !e.done).length, 0);
+export function changeCount(groups: ChangeGroup[]): number {
+  return groups.reduce((n, g) => n + g.entries.length, 0);
 }

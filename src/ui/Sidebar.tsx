@@ -1,5 +1,8 @@
+import { useCallback } from 'react';
+
 import type { XElement } from '../model/xml.ts';
 import { countItems, type Section } from './sections.ts';
+import { IS_MAC, SECTION_MODIFIER_LABEL, useSectionShortcuts } from './use-section-shortcuts.ts';
 
 interface Props {
   activeId?: string;
@@ -10,6 +13,16 @@ interface Props {
 }
 
 export function Sidebar({ activeId, onSelect, pendingIn, sections }: Props) {
+  // Toda seção tem número, na ordem do menu; os nove primeiros têm atalho.
+  const select = useCallback(
+    (index: number) => {
+      const target = sections[index];
+      if (target) onSelect(target.id);
+    },
+    [sections, onSelect],
+  );
+  const showHints = useSectionShortcuts(Math.min(sections.length, 9), select);
+
   return (
     <nav aria-label="Seções" className="sidebar">
       <ul>
@@ -18,15 +31,30 @@ export function Sidebar({ activeId, onSelect, pendingIn, sections }: Props) {
           // Inovação e Educação repetem itens de outras seções; contar de novo confundiria.
           const fresh =
             s.importable === 'filtro' ? 0 : pendingIn(s.groups.flatMap((g) => g.elements));
+          const position = sections.indexOf(s) + 1;
+          const shortcut = position >= 1 && position <= 9 ? position : undefined;
           return (
             <li key={s.id}>
               <button
-                className={s.id === activeId ? 'active' : ''}
-                disabled={s.groups.length === 0}
+                aria-keyshortcuts={
+                  shortcut
+                    ? IS_MAC
+                      ? `Control+${shortcut} Meta+${shortcut}`
+                      : `Alt+${shortcut}`
+                    : undefined
+                }
+                className={[s.id === activeId ? 'active' : '', s.groups.length === 0 ? 'empty' : '']
+                  .filter(Boolean)
+                  .join(' ')}
                 type="button"
                 onClick={() => onSelect(s.id)}
               >
-                <span>{s.label}</span>
+                {showHints && (
+                  <span aria-hidden="true" className="nav-key">
+                    {shortcut !== undefined ? `${SECTION_MODIFIER_LABEL}${shortcut}` : ''}
+                  </span>
+                )}
+                <span className="nav-label">{s.label}</span>
                 <span className="nav-counts">
                   {fresh > 0 && (
                     <span className="tag new" title="Itens novos para a próxima importação">

@@ -134,11 +134,6 @@ export function diffDocuments(
   return changes;
 }
 
-/** Assinatura dos valores novos: uma mudança marcada como feita volta se mudar de novo. */
-export function changeSignature(change: Change): string {
-  return `${change.kind}|${change.fields.map((f) => `${f.attr}=${f.after}`).join('|')}`;
-}
-
 /** Cadeia de elementos (da raiz ao alvo) que um caminho de mudança aponta, ou o quanto existir. */
 export function resolvePath(root: XElement, path: string[]): XElement[] {
   const chain: XElement[] = [];
@@ -152,4 +147,72 @@ export function resolvePath(root: XElement, path: string[]): XElement[] {
     current = next;
   }
   return chain;
+}
+
+/**
+ * Descarta uma mudança na cópia de trabalho, voltando ao que a exportação
+ * tinha: atributos e texto restaurados, elemento novo removido, elemento
+ * removido devolvido ao pai na ordem do schema. Devolve false se o caminho
+ * não existe mais (a cópia mudou depois do cálculo da lista).
+ */
+export function revertChange(
+  original: XElement,
+  working: XElement,
+  change: Change,
+  insert: (parent: XElement, child: XElement) => void,
+): boolean {
+  const workChain = resolvePath(working, change.path);
+  const origChain = resolvePath(original, change.path);
+  const complete = (chain: XElement[]) => chain.length === change.path.length;
+
+  if (change.kind === 'alterado') {
+    if (!complete(workChain) || !complete(origChain)) return false;
+    const el = workChain.at(-1)!;
+    const before = origChain.at(-1)!;
+    el.attrs = structuredClone(before.attrs);
+    // Texto (DISCIPLINA, INTEGRANTES-DO-PROJETO): troca os nós de texto, mantém os filhos.
+    el.children = [
+      ...before.children.filter((c) => c.kind === 'text').map((c) => structuredClone(c)),
+      ...el.children.filter((c) => c.kind !== 'text'),
+    ];
+    return true;
+  }
+  if (change.kind === 'novo') {
+    if (!complete(workChain) || workChain.length < 2) return false;
+    const el = workChain.at(-1)!;
+    const parent = workChain.at(-2)!;
+    parent.children = parent.children.filter((c) => c !== el);
+    return true;
+  }
+  // removido: o pai precisa existir na cópia de trabalho.
+  const parentChain = resolvePath(working, change.path.slice(0, -1));
+  if (parentChain.length !== change.path.length - 1 || !complete(origChain)) return false;
+  insert(parentChain.at(-1)!, structuredClone(origChain.at(-1)!));
+  return true;
+}
+
+/** Descarta um campo de uma mudança "alterado": volta ao valor (ou ausência) da exportação. */
+export function revertField(
+  original: XElement,
+  working: XElement,
+  change: Change,
+  attr: string,
+): boolean {
+  if (change.kind !== 'alterado') return false;
+  const el = resolvePath(working, change.path).at(-1);
+  const before = resolvePath(original, change.path).at(-1);
+  if (!el || !before || el.name !== change.element || before.name !== change.element) return false;
+  if (attr === '#texto') {
+    el.children = [
+      ...before.children.filter((c) => c.kind === 'text').map((c) => structuredClone(c)),
+      ...el.children.filter((c) => c.kind !== 'text'),
+    ];
+    return true;
+  }
+  const orig = before.attrs.find((a) => a.name === attr);
+  const i = el.attrs.findIndex((a) => a.name === attr);
+  if (orig && i >= 0) el.attrs[i] = { ...orig };
+  else if (orig) el.attrs.push({ ...orig });
+  else if (i >= 0) el.attrs.splice(i, 1);
+  return true;
 }

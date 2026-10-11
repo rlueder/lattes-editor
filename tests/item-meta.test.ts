@@ -137,3 +137,25 @@ describe('isListItem', () => {
     expect(isListItem(el('<A><B X="1"/></A>'))).toBe(false);
   });
 });
+
+describe('áreas e códigos de enum', () => {
+  it('área: caminho como título, grande área legível no subtítulo', () => {
+    const meta = itemMeta(
+      el(
+        '<AREA-DE-ATUACAO SEQUENCIA-AREA-DE-ATUACAO="1" NOME-GRANDE-AREA-DO-CONHECIMENTO="CIENCIAS_EXATAS_E_DA_TERRA" NOME-DA-AREA-DO-CONHECIMENTO="Ciência da Computação" NOME-DA-SUB-AREA-DO-CONHECIMENTO="Metodologia" NOME-DA-ESPECIALIDADE=""/>',
+      ),
+    );
+    expect(meta.title).toBe('Ciência da Computação › Metodologia');
+    expect(meta.subtitle).toBe('Ciências Exatas e da Terra');
+  });
+
+  it('só a grande área: ela vira o título; código de enum nunca é título', () => {
+    expect(
+      itemMeta(el('<AREA-DO-CONHECIMENTO-1 NOME-GRANDE-AREA-DO-CONHECIMENTO="CIENCIAS_HUMANAS"/>'))
+        .title,
+    ).toBe('Ciências Humanas');
+    expect(itemMeta(el('<IDIOMA NIVEL="X" IDIOMA="EN" DESCRICAO-DO-IDIOMA="Inglês"/>')).title).toBe(
+      'Inglês',
+    );
+  });
+});

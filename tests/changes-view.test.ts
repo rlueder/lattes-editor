@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { diffDocuments } from '../src/model/changes.ts';
 import { parseXml } from '../src/model/xml.ts';
-import { groupChanges, openCount } from '../src/ui/changes-view.ts';
+import { changeCount, groupChanges } from '../src/ui/changes-view.ts';
 import { copyText } from '../src/ui/clipboard.ts';
 import { buildSections } from '../src/ui/sections.ts';
 
@@ -20,11 +20,11 @@ const ORIGINAL = `<CURRICULO-VITAE>
   </ARTIGOS-PUBLICADOS></PRODUCAO-BIBLIOGRAFICA>
 </CURRICULO-VITAE>`;
 
-function setup(edit: (xml: string) => string, done: Record<string, string> = {}) {
+function setup(edit: (xml: string) => string) {
   const original = parseXml(ORIGINAL).root;
   const working = parseXml(edit(ORIGINAL)).root;
   const sections = buildSections(working);
-  return groupChanges(diffDocuments(original, working), original, working, sections, done);
+  return groupChanges(diffDocuments(original, working), original, working, sections);
 }
 
 describe('groupChanges', () => {
@@ -40,7 +40,7 @@ describe('groupChanges', () => {
       ['Dados gerais', [['', 'Identificação']]],
       ['Atuação', [['Empresa A', 'Vínculos']]],
     ]);
-    expect(openCount(groups)).toBe(2);
+    expect(changeCount(groups)).toBe(2);
   });
 
   it('item existente de produção editado: seção importável, com aviso', () => {
@@ -55,19 +55,6 @@ describe('groupChanges', () => {
     );
     expect(group!.label).toBe('Dados gerais');
     expect(group!.entries[0]).toMatchObject({ itemTitle: 'Inglês' });
-  });
-
-  it('feito vale enquanto a assinatura bate', () => {
-    const first = setup((x) => x.replace('ANO-FIM=""', 'ANO-FIM="2020"'));
-    const entry = first[0]!.entries[0]!;
-    const done = { [entry.change.key]: entry.signature };
-    expect(setup((x) => x.replace('ANO-FIM=""', 'ANO-FIM="2020"'), done)[0]!.entries[0]!.done).toBe(
-      true,
-    );
-    expect(setup((x) => x.replace('ANO-FIM=""', 'ANO-FIM="2021"'), done)[0]!.entries[0]!.done).toBe(
-      false,
-    );
-    expect(openCount(setup((x) => x.replace('ANO-FIM=""', 'ANO-FIM="2020"'), done))).toBe(0);
   });
 
   it('sem seção conhecida cai em "Outros dados", no fim', () => {

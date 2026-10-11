@@ -27,8 +27,9 @@ de importar, exporte de novo no Lattes e use "Recarregar do Lattes".
 As seções Dados gerais, Formação, Atuação e Projetos não passam pelo
 Importar do Lattes, e o Importar também não altera itens que já estão lá.
 Essas mudanças aparecem em "Levar ao Lattes", na lista de alterações: cada
-uma com o valor antigo e o novo, um botão para copiar cada campo e uma
-caixa para marcar quando já foi feita no formulário do Lattes.
+uma com o valor antigo e o novo, um botão para copiar cada campo e a opção
+de descartar a mudança. Depois de copiar tudo no Lattes, exporte de novo e
+use "Recarregar do Lattes": o que já estiver lá some da lista.
 
 ## Desenvolvimento
 

@@ -14,9 +14,11 @@ import {
   XmlParseError,
 } from '../src/model/xml.ts';
 import { lattesSchema } from '../src/schema/lattes.ts';
+import { displayValue } from '../src/ui/display.ts';
 import { groupFields, isBooleanAttr, isSystemAttr } from '../src/ui/field-kind.ts';
 import { formatLattesDate } from '../src/ui/format.ts';
 import { parseHash } from '../src/ui/hash-route.ts';
+import { digitOf, isSectionShortcut } from '../src/ui/use-section-shortcuts.ts';
 
 describe('rótulos', () => {
   it('usa o rótulo escrito à mão quando existe', () => {
@@ -242,5 +244,41 @@ describe('acentos por sufixo', () => {
     expect(attributeLabel('FREQUENCIA-DE-SESSOES')).toBe('Frequência de sessões');
     expect(elementLabel('MANUTENCAO-DE-OBRA-ARTISTICA')).toBe('Manutenção de obra artística');
     expect(attributeLabel('CASA')).toBe('Casa');
+  });
+});
+
+describe('atalhos de seção', () => {
+  it('lê o dígito pelo código da tecla', () => {
+    expect(digitOf({ code: 'Digit3' })).toBe(3);
+    expect(digitOf({ code: 'Numpad9' })).toBe(9);
+    expect(digitOf({ code: 'Digit0' })).toBeUndefined();
+    expect(digitOf({ code: 'KeyK' })).toBeUndefined();
+  });
+
+  it('Mac: ⌃ ou ⌘; fora do Mac: Alt; Shift e combinações mistas não contam', () => {
+    const k = (mods: Partial<Record<'altKey' | 'ctrlKey' | 'metaKey' | 'shiftKey', boolean>>) => ({
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      ...mods,
+    });
+    expect(isSectionShortcut(k({ ctrlKey: true }), true)).toBe(true);
+    expect(isSectionShortcut(k({ metaKey: true }), true)).toBe(true);
+    expect(isSectionShortcut(k({ altKey: true }), true)).toBe(false);
+    expect(isSectionShortcut(k({ ctrlKey: true, shiftKey: true }), true)).toBe(false);
+    expect(isSectionShortcut(k({ altKey: true }), false)).toBe(true);
+    expect(isSectionShortcut(k({ ctrlKey: true }), false)).toBe(false);
+    expect(isSectionShortcut(k({ altKey: true, ctrlKey: true }), false)).toBe(false);
+  });
+});
+
+describe('displayValue', () => {
+  it('código de enum vira rótulo; texto livre fica como está', () => {
+    expect(displayValue('DADOS-BASICOS-DO-TRABALHO', 'MEIO-DE-DIVULGACAO', 'MEIO_DIGITAL')).toBe(
+      'Meio digital',
+    );
+    expect(displayValue('DADOS-BASICOS-DO-TRABALHO', 'TITULO-DO-TRABALHO', 'A_B')).toBe('A_B');
+    expect(displayValue('X', 'Y', '')).toBe('');
   });
 });

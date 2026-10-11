@@ -3,8 +3,10 @@
 
 import { useMemo, useState } from 'react';
 
+import type { ProductionType } from '../model/production.ts';
 import { childElements, type XElement } from '../model/xml.ts';
 import { type EditFn, ElementView } from './ElementView.tsx';
+import { EmptySection } from './EmptySection.tsx';
 import {
   applyFilter,
   buildFacets,
@@ -27,6 +29,8 @@ interface Props {
   section: Section;
   showEmpty: boolean;
   onEdit: EditFn;
+  onNewItem: (type: ProductionType) => void;
+  onOpenPicker: () => void;
 }
 
 interface GroupList {
@@ -49,7 +53,7 @@ export function SectionView(props: Props) {
   return <SectionBody key={props.section.id} {...props} />;
 }
 
-function SectionBody({ onEdit, section, showEmpty }: Props) {
+function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Props) {
   const index = useReferenceIndex();
   const [state, setState] = useState<FilterState>(NO_FILTER);
   const lists = section.groups.map((g) => groupList(g, index));
@@ -93,7 +97,9 @@ function SectionBody({ onEdit, section, showEmpty }: Props) {
           a seção de origem.
         </p>
       )}
-      {section.groups.length === 0 && <p className="muted">Nada nesta seção.</p>}
+      {section.groups.length === 0 && (
+        <EmptySection section={section} onNewItem={onNewItem} onOpenPicker={onOpenPicker} />
+      )}
 
       {section.groups.length > 0 && (
         <FilterBar

@@ -143,7 +143,7 @@ export function App() {
   const section = sections.find((s) => s.id === sectionId) ?? sections[0];
   const sectionsRef = useRef(sections);
   sectionsRef.current = sections;
-  const changes = useChanges(session, sections, version, setSession, onEdit);
+  const changes = useChanges(session, sections, version, onEdit);
 
   const togglePalette = useCallback(() => {
     if (session) setPaletteOpen((o) => !o);
@@ -319,7 +319,15 @@ export function App() {
         >
           <ReferenceContext.Provider value={referenceIndex ?? EMPTY_INDEX}>
             {error && <p className="error">{error}</p>}
-            {section && <SectionView section={section} showEmpty={showEmpty} onEdit={onEdit} />}
+            {section && (
+              <SectionView
+                section={section}
+                showEmpty={showEmpty}
+                onEdit={onEdit}
+                onNewItem={production.startNew}
+                onOpenPicker={() => setPickerOpen(true)}
+              />
+            )}
           </ReferenceContext.Provider>
         </EditorContext.Provider>
       </main>
@@ -355,12 +363,13 @@ export function App() {
         open={exportOpen}
         pending={production.summaries}
         onClose={() => setExportOpen(false)}
+        onDiscard={changes.discard}
+        onDiscardField={changes.discardField}
         onDownload={() => exportFile && download(exportFile.bytes, exportFile.fileName)}
         onOpenItem={(seq) => {
           setExportOpen(false);
           production.openItem(seq);
         }}
-        onToggleDone={changes.toggleDone}
       />
 
       <ReloadConfirm

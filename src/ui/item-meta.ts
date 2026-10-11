@@ -4,6 +4,7 @@
 
 import { enumLabel } from '../labels/labels.ts';
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
+import { lattesSchema } from '../schema/lattes.ts';
 
 export interface ItemMeta {
   /** Sem ANO-FIM, FLAG-PERIODO=ATUAL ou curso em andamento. */
@@ -80,12 +81,36 @@ function firstValue(sources: XElement[], names: string[]): string | undefined {
   return undefined;
 }
 
+/** Atributo enumerado no schema: guarda um código (CIENCIAS_SOCIAIS_APLICADAS), não um nome. */
+function isEnum(element: string, attr: string): boolean {
+  return Boolean(lattesSchema.elements[element]?.attributes.find((a) => a.name === attr)?.enum);
+}
+
+/** Primeiro valor de texto que passa no teste; códigos de enum nunca viram título. */
 function pick(sources: XElement[], test: (name: string) => boolean): string | undefined {
   for (const s of sources) {
-    const hit = s.attrs.find((a) => test(a.name) && a.value.trim() !== '');
+    const hit = s.attrs.find(
+      (a) => test(a.name) && a.value.trim() !== '' && !isEnum(s.name, a.name),
+    );
     if (hit) return hit.value.trim();
   }
   return undefined;
+}
+
+/** Área do conhecimento (AREA-DO-CONHECIMENTO-n, AREA-DE-ATUACAO): caminho e grande área. */
+function knowledgeArea(el: XElement): { subtitle: string; title: string } | undefined {
+  const big = getAttr(el, 'NOME-GRANDE-AREA-DO-CONHECIMENTO');
+  if (big === undefined) return undefined;
+  const path = [
+    getAttr(el, 'NOME-DA-AREA-DO-CONHECIMENTO'),
+    getAttr(el, 'NOME-DA-SUB-AREA-DO-CONHECIMENTO'),
+    getAttr(el, 'NOME-DA-ESPECIALIDADE'),
+  ]
+    .map((v) => v?.trim())
+    .filter(Boolean)
+    .join(' › ');
+  const bigLabel = big ? enumLabel(big) : '';
+  return path ? { subtitle: bigLabel, title: path } : { subtitle: '', title: bigLabel };
 }
 
 /** Período de quem tem início e fim, juntando vários VINCULOS de uma atuação. */
@@ -138,6 +163,7 @@ export function itemMeta(el: XElement): ItemMeta {
     title = pick(sources, test) ?? '';
     if (title) break;
   }
+  const area = knowledgeArea(el);
 
   const venues = SUBTITLE_ATTRS.map((n) => firstValue([...details, ...sources], [n])).filter(
     (v): v is string => v !== undefined && v !== title,
@@ -145,7 +171,11 @@ export function itemMeta(el: XElement): ItemMeta {
   // Participação em evento costuma ter TITULO vazio; o nome do evento vira o título.
   if (!title && venues.length) title = venues.shift()!;
   const kind = firstValue(sources, KIND_ATTRS);
-  const subtitle = [role(el), venues[0], kind && enumLabel(kind)].filter(Boolean).join(' · ');
+  let subtitle = [role(el), venues[0], kind && enumLabel(kind)].filter(Boolean).join(' · ');
+  if (area) {
+    title = area.title;
+    subtitle = area.subtitle;
+  }
 
   const { current, end, start } = period(el, sources);
   const year = start ? undefined : int(firstValue(sources, POINT_ATTRS));

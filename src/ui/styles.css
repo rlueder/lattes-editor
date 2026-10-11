@@ -1365,14 +1365,6 @@ details.card.is-new {
   background: var(--surface);
 }
 
-.change.done {
-  opacity: 0.6;
-}
-
-.change.done .change-where {
-  text-decoration: line-through;
-}
-
 .change-head {
   display: flex;
   align-items: center;
@@ -2207,4 +2199,107 @@ button.primary:hover {
   align-items: center;
   justify-content: center;
   gap: 5px;
+}
+
+/* Número do atalho de seção, à esquerda e discreto, enquanto o modificador está pressionado */
+/* Calha fixa à esquerda: o número aparece nela sem empurrar o rótulo. */
+.sidebar button {
+  position: relative;
+  padding-left: 30px;
+}
+
+.sidebar button .nav-key {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font: 11px var(--mono);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+.sidebar button .nav-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar button.empty {
+  color: var(--muted);
+}
+
+/* Seção vazia */
+.empty-section {
+  margin-top: 16px;
+  padding: 20px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.empty-section .empty-title {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.empty-section > p.muted {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+
+.empty-types .picker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Ação de cada alteração: descartar */
+.change-head {
+  flex-wrap: wrap;
+}
+
+.change-where {
+  flex: 1;
+}
+
+.change-actions {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.change-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.change-fields th {
+  padding-left: 0;
+}
+
+.changes-how {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+
+.field-actions {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.change-fields .copy {
+  width: 72px;
+}
+
+.discard-btn {
+  padding: 4px 6px;
+  color: var(--muted);
+}
+
+.discard-btn:hover {
+  color: var(--danger);
 }

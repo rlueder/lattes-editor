@@ -7,7 +7,7 @@
 import { elementLabel } from '../labels/labels.ts';
 import type { Problem } from '../model/validate.ts';
 import type { ChangeEntry, ChangeGroup } from '../ui/changes-view.ts';
-import { openCount } from '../ui/changes-view.ts';
+import { changeCount } from '../ui/changes-view.ts';
 import { ChangesList } from '../ui/ChangesList.tsx';
 import { DownloadIcon } from '../ui/icons.tsx';
 import { Modal } from '../ui/Modal.tsx';
@@ -27,22 +27,24 @@ interface Props {
   open: boolean;
   pending: PendingSummary[];
   onClose: () => void;
+  onDiscard: (entry: ChangeEntry) => void;
+  onDiscardField: (entry: ChangeEntry, attr: string) => void;
   onDownload: () => void;
   onOpenItem: (sequencia: number) => void;
-  onToggleDone: (entry: ChangeEntry) => void;
 }
 
 export function ExportPanel({
   changes,
   file,
   onClose,
+  onDiscard,
+  onDiscardField,
   onDownload,
   onOpenItem,
-  onToggleDone,
   open,
   pending,
 }: Props) {
-  const open_ = openCount(changes);
+  const open_ = changeCount(changes);
   const blocked = pending.filter((p) => p.problems.length > 0);
   const years = pending.map((p) => p.year).filter((y): y is number => y !== undefined);
   const minYear = years.length ? Math.min(...years) : undefined;
@@ -165,7 +167,13 @@ export function ExportPanel({
           Alterações, à mão nos formulários
           <span className="count">{open_}</span>
         </h3>
-        <ChangesList groups={changes} onToggleDone={onToggleDone} />
+        {changes.length > 0 && (
+          <p className="muted changes-how">
+            Copie cada valor no formulário do Lattes; depois exporte o currículo de novo e use
+            &quot;Recarregar do Lattes&quot;. O que já estiver lá some desta lista.
+          </p>
+        )}
+        <ChangesList groups={changes} onDiscard={onDiscard} onDiscardField={onDiscardField} />
       </section>
     </Modal>
   );

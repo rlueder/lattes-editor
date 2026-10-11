@@ -4,11 +4,6 @@
 import Dexie, { type EntityTable } from 'dexie';
 
 export interface WorkingCopy {
-  /**
-   * Mudanças já feitas à mão no Lattes: chave da mudança → assinatura dos
-   * valores. Se o valor mudar de novo, a assinatura não bate e ela volta.
-   */
-  doneChanges?: Record<string, string>;
   encoding: string;
   fileName: string;
   id: 'current';
