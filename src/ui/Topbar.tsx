@@ -73,7 +73,7 @@ export function Topbar({
           (e, no app de macOS, os botões da janela). */}
       <div data-tauri-drag-region className="topbar-identity" />
 
-      {/* Encontrar, criar e levar ao Lattes: centralizados na página. */}
+      {/* Encontrar: centralizado na página. */}
       <div data-tauri-drag-region className="topbar-center">
         <button className="ghost search-btn" type="button" onClick={onPalette}>
           <SearchIcon />
@@ -81,7 +81,25 @@ export function Topbar({
           <kbd>{IS_MAC ? '⌘' : 'Ctrl'}</kbd>
           <kbd>K</kbd>
         </button>
-        {/* Criar e levar ao Lattes, ao lado da busca: só ícones, com dica. */}
+      </div>
+
+      <div data-tauri-drag-region className="topbar-actions">
+        {/* O histórico fica no menu de configurações; aqui só aparece o aviso
+            quando a cópia no navegador não salvou. */}
+        {saveState === 'erro' && (
+          <Tip label={`${SAVE_TIP.erro}. Histórico de alterações`}>
+            <button
+              aria-label={`${SAVE_LABEL.erro}. Abrir histórico de alterações`}
+              className="ghost icon-btn save-state erro"
+              type="button"
+              onClick={onHistory}
+            >
+              <AlertIcon />
+            </button>
+          </Tip>
+        )}
+
+        {/* Criar e levar ao Lattes: só ícones, com dica, junto das configurações. */}
         <Tip label="Novo item">
           <button
             aria-label="Novo item"
@@ -115,23 +133,6 @@ export function Topbar({
             )}
           </button>
         </Tip>
-      </div>
-
-      <div data-tauri-drag-region className="topbar-actions">
-        {/* O histórico fica no menu de configurações; aqui só aparece o aviso
-            quando a cópia no navegador não salvou. */}
-        {saveState === 'erro' && (
-          <Tip label={`${SAVE_TIP.erro}. Histórico de alterações`}>
-            <button
-              aria-label={`${SAVE_LABEL.erro}. Abrir histórico de alterações`}
-              className="ghost icon-btn save-state erro"
-              type="button"
-              onClick={onHistory}
-            >
-              <AlertIcon />
-            </button>
-          </Tip>
-        )}
 
         {/* Exibição e arquivo: o que se usa menos fica no menu. */}
         <SettingsMenu

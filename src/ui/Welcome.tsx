@@ -88,14 +88,14 @@ export function Welcome({ error, onFile, onTheme, theme }: Props) {
             <kbd>{IS_MAC ? '⌘' : 'Ctrl'}</kbd>
             <kbd>K</kbd>
           </button>
+        </div>
+        <div data-tauri-drag-region className="topbar-actions">
           <button disabled aria-label="Novo item" className="ghost icon-btn" type="button">
             <PlusIcon />
           </button>
           <button disabled aria-label="Levar ao Lattes" className="ghost icon-btn" type="button">
             <UploadIcon />
           </button>
-        </div>
-        <div data-tauri-drag-region className="topbar-actions">
           <SettingsMenu theme={theme} onTheme={onTheme} />
         </div>
       </header>
