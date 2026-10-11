@@ -4,7 +4,7 @@
 
 import { applyOp, type LattesPort } from '../../src/bridge/apply.ts';
 import type { FormControl } from '../../src/bridge/form.ts';
-import { cvCodeFrom } from '../../src/bridge/lattes-html.ts';
+import { cvCodeFrom, lattesIdFrom } from '../../src/bridge/lattes-html.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
 import { decodeLatin1 } from '../../src/model/latin1.ts';
 
@@ -51,5 +51,8 @@ const port: LattesPort = {
 
 (globalThis as unknown as { __ponte: unknown }).__ponte = {
   apply: (op: BridgeOp) => applyOp(op, port),
-  cvCode: () => cvCodeFrom(document.documentElement.outerHTML),
+  identity: () => ({
+    code: cvCodeFrom(document.documentElement.outerHTML),
+    lattesId: lattesIdFrom(document.documentElement.outerHTML),
+  }),
 };

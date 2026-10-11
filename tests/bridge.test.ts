@@ -9,7 +9,13 @@ import {
   successfulPairs,
   withCheckRules,
 } from '../src/bridge/form.ts';
-import { cvCodeFrom, findLinks, isLogonPage } from '../src/bridge/lattes-html.ts';
+import {
+  cvCodeFrom,
+  findLinks,
+  isLogonPage,
+  lattesIdFrom,
+  sameCv,
+} from '../src/bridge/lattes-html.ts';
 import { type BridgeOp, planChange, planChanges } from '../src/bridge/plan.ts';
 import {
   bridgeMessage,
@@ -490,5 +496,18 @@ describe('instituição no link do Lattes', () => {
     expect(sameInstitution('D001000000999', '001000000998')).toBe(false);
     expect(sameInstitution(undefined, '001')).toBe(false);
     expect(sameInstitution('D001', undefined)).toBe(true);
+  });
+});
+
+describe('de quem é o currículo da sessão', () => {
+  it('lê o identificador público no menu e só aceita o mesmo currículo', () => {
+    expect(lattesIdFrom('<a href="http://lattes.cnpq.br/1234567890123456">CV</a>')).toBe(
+      '1234567890123456',
+    );
+    expect(lattesIdFrom('sem link')).toBeUndefined();
+    expect(sameCv('1234567890123456', '1234567890123456')).toBe(true);
+    expect(sameCv('1234567890123456', '0000000000000001')).toBe(false);
+    expect(sameCv(undefined, '1234567890123456')).toBe(false);
+    expect(sameCv('1234567890123456', undefined)).toBe(false);
   });
 });

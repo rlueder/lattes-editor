@@ -6,6 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { OpResult } from '../bridge/apply.ts';
+import { sameCv } from '../bridge/lattes-html.ts';
 import { planChanges } from '../bridge/plan.ts';
 import {
   type EditorMessage,
@@ -62,7 +63,8 @@ export function useBridge(
         }
       }
       if (msg.type === 'fim') setRunning(false);
-      if (msg.type === 'codigo-cv' && lattesId) {
+      // Só guarda o código se ele for deste currículo (a sessão do Lattes pode ser de outro).
+      if (msg.type === 'codigo-cv' && lattesId && sameCv(lattesId, msg.lattesId)) {
         writeCvCode(lattesId, msg.code);
         window.dispatchEvent(new Event(CV_CODE_EVENT));
       }
@@ -93,7 +95,7 @@ export function useBridge(
       setResults({});
       setConfirmed(0);
       setRunning(true);
-      post({ ops: plan.ops, type: 'enviar' });
+      post({ lattesId, ops: plan.ops, type: 'enviar' });
     },
     stop: () => post({ type: 'parar' }),
   };

@@ -10,10 +10,12 @@ export const EDITOR_SOURCE = 'lattes-editor';
 export const BRIDGE_SOURCE = 'lattes-ponte';
 
 export type EditorMessage =
-  { ops: BridgeOp[]; type: 'enviar' } | { type: 'ola' } | { type: 'parar' };
+  /** lattesId: o currículo aberto no editor; a ponte só grava se a sessão do Lattes for dele. */
+  { lattesId?: string; ops: BridgeOp[]; type: 'enviar' } | { type: 'ola' } | { type: 'parar' };
 
 export type BridgeMessage =
-  | { code: string; type: 'codigo-cv' }
+  /** lattesId: de qual currículo é o código, para o editor não guardar o de outro. */
+  | { code: string; lattesId?: string; type: 'codigo-cv' }
   | { result: OpResult; type: 'resultado' }
   | { type: 'fim' }
   | { type: 'ola'; version: string };

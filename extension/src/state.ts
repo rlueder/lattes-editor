@@ -6,6 +6,8 @@ import type { BridgeOp } from '../../src/bridge/plan.ts';
 
 export interface QueueState {
   editorTabId?: number;
+  /** Currículo aberto no editor quando a fila foi enviada. */
+  lattesId?: string;
   ops: BridgeOp[];
   results: Record<string, OpResult>;
   running: boolean;

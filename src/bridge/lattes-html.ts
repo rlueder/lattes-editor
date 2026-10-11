@@ -45,3 +45,17 @@ export function isLogonPage(html: string, url = ''): boolean {
 export function cvCodeFrom(html: string): string | undefined {
   return /f_cod=([A-Z][0-9A-Z]{9})(?![0-9A-Z])/.exec(html)?.[1];
 }
+
+/**
+ * O identificador público de 16 dígitos do currículo aberto na sessão, que a
+ * página do menu do Lattes mostra no link lattes.cnpq.br/<16 dígitos>
+ * (observado em 11/10/2026). É o mesmo NUMERO-IDENTIFICADOR da exportação.
+ */
+export function lattesIdFrom(html: string): string | undefined {
+  return /lattes\.cnpq\.br\/(\d{16})(?!\d)/.exec(html)?.[1];
+}
+
+/** A sessão do Lattes é do mesmo currículo que está aberto no editor? */
+export function sameCv(editorId: string | undefined, sessionId: string | undefined): boolean {
+  return Boolean(editorId && sessionId && editorId === sessionId);
+}

@@ -3,6 +3,7 @@
 // ao editor. O envio só começa por um clique no painel da extensão.
 
 import type { OpResult } from '../../src/bridge/apply.ts';
+import { sameCv } from '../../src/bridge/lattes-html.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
 import type { BridgeMessage, EditorMessage } from '../../src/bridge/protocol.ts';
 import { LATTES_MENU, type PanelCommand, readState, writeState } from './state.ts';
@@ -27,18 +28,30 @@ async function injectRunner(tabId: number): Promise<void> {
   await chrome.scripting.executeScript({ files: ['lattes-runner.js'], target: { tabId } });
 }
 
-/** O código de 10 caracteres do currículo, lido na aba do Lattes, para a foto. */
+interface Identity {
+  code?: string;
+  lattesId?: string;
+}
+
+/** Quem é o currículo aberto na sessão do Lattes: código interno e identificador público. */
+async function sessionIdentity(tabId: number): Promise<Identity> {
+  await injectRunner(tabId);
+  const [res] = await chrome.scripting.executeScript({
+    func: () => (globalThis as unknown as { __ponte: { identity(): Identity } }).__ponte.identity(),
+    target: { tabId },
+  });
+  return res?.result ?? {};
+}
+
+/** O código de 10 caracteres do currículo, para a foto, junto com de quem ele é. */
 async function sendCvCode(editorTabId: number): Promise<void> {
   const tabId = await lattesTab();
   if (tabId === undefined) return;
   try {
-    await injectRunner(tabId);
-    const [res] = await chrome.scripting.executeScript({
-      func: () =>
-        (globalThis as unknown as { __ponte: { cvCode(): string | undefined } }).__ponte.cvCode(),
-      target: { tabId },
-    });
-    if (res?.result) await toEditor(editorTabId, { code: res.result, type: 'codigo-cv' });
+    const id = await sessionIdentity(tabId);
+    if (id.code) {
+      await toEditor(editorTabId, { code: id.code, lattesId: id.lattesId, type: 'codigo-cv' });
+    }
   } catch {
     // Sem permissão na aba ou aba recarregando: sem foto, sem erro.
   }
@@ -56,7 +69,13 @@ async function onEditor(msg: EditorMessage, tabId: number): Promise<void> {
   }
   const state = await readState();
   if (state.running) return;
-  await writeState({ editorTabId: tabId, ops: msg.ops, results: {}, running: false });
+  await writeState({
+    editorTabId: tabId,
+    lattesId: msg.lattesId,
+    ops: msg.ops,
+    results: {},
+    running: false,
+  });
   await chrome.action.setBadgeText({ text: msg.ops.length ? String(msg.ops.length) : '' });
 }
 
@@ -86,7 +105,21 @@ async function run(keys?: string[]): Promise<void> {
       });
     }
   } else {
-    await injectRunner(tabId);
+    // Trava: só grava se a sessão do Lattes for do mesmo currículo aberto no editor.
+    const session = await sessionIdentity(tabId).catch((): Identity => ({}));
+    const first = queue[0];
+    if (!sameCv(state.lattesId, session.lattesId)) {
+      if (first) {
+        await record({
+          detail: session.lattesId
+            ? `O Lattes aberto é de outro currículo (${session.lattesId}); nada foi enviado`
+            : 'Não deu para saber de quem é o currículo aberto no Lattes; nada foi enviado',
+          key: first.key,
+          status: 'erro',
+        });
+      }
+      queue.length = 0;
+    }
     for (const op of queue) {
       if (stopRequested) break;
       const [res] = await chrome.scripting.executeScript({
