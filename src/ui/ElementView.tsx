@@ -164,9 +164,12 @@ export function ElementView({
       children.filter((x) => x.name === c.name).length === 1,
   );
   const rest = children.filter((c) => !parts.includes(c));
+  const fields = <FieldsBlock showEmpty={showEmpty} sources={[el, ...parts]} onEdit={onEdit} />;
+  // No endereço, os endereços vêm primeiro; preferência e contatos depois.
+  const fieldsLast = FIELDS_AFTER_PARTS.has(el.name);
   return (
     <div className={`element depth-${Math.min(depth, 3)}`}>
-      <FieldsBlock showEmpty={showEmpty} sources={[el, ...parts]} onEdit={onEdit} />
+      {!fieldsLast && fields}
       {byName(rest).map(([name, els]) => (
         <section key={name} className="subsection">
           <h4 className="subsection-head">
@@ -180,9 +183,17 @@ export function ElementView({
           )}
         </section>
       ))}
+      {fieldsLast && (
+        <section className="subsection">
+          <h4 className="subsection-head">Contatos e preferência</h4>
+          {fields}
+        </section>
+      )}
     </div>
   );
 }
+
+const FIELDS_AFTER_PARTS = new Set(['ENDERECO']);
 
 function Rows({ els, onEdit, showEmpty }: { els: XElement[]; showEmpty: boolean; onEdit: EditFn }) {
   return (

@@ -54,7 +54,18 @@
     "NIVEL-CURSO": "Nível",
     "TIPO-DE-VINCULO": "Vínculo",
     "FORMA-PARTICIPACAO": "Forma de participação",
-    "TIPO-PARTICIPACAO": "Tipo de participação"
+    "TIPO-PARTICIPACAO": "Tipo de participação",
+    "DDD": "DDD",
+    "E-MAIL": "E-mail",
+    "LOGRADOURO-COMPLEMENTO": "Logradouro e complemento",
+    "ELETRONICO": "E-mails",
+    "REDE-SOCIAL": "Redes sociais",
+    "OUTRA-FORMA-DE-CONTATO": "Outra forma de contato",
+    "FLAG-DE-PREFERENCIA": "Endereço preferido",
+    "NOME-INSTITUICAO-EMPRESA": "Instituição ou empresa",
+    "NOME-ORGAO": "Órgão",
+    "NOME-UNIDADE": "Unidade",
+    "HOME-PAGE": "Página na web"
   },
   "enums": {
     "SIM": "Sim",

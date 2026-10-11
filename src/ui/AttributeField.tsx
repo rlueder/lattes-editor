@@ -7,6 +7,7 @@ import { attributeLabel, elementLabel, enumLabel } from '../labels/labels.ts';
 import { repairMojibake } from '../model/mojibake.ts';
 import { getAttr, setAttr, type XElement } from '../model/xml.ts';
 import type { AttributeSpec } from '../schema/types.ts';
+import { parseEmails, parseSocial } from './contacts.ts';
 import { CopyButton } from './CopyButton.tsx';
 import { isBooleanAttr, isSystemAttr } from './field-kind.ts';
 import { Select } from './primitives/Select.tsx';
@@ -67,6 +68,41 @@ export function AttributeField({
     'aria-invalid': error ? true : undefined,
     id,
   };
+
+  if (el.name === 'ENDERECO' && (name === 'ELETRONICO' || name === 'REDE-SOCIAL') && value) {
+    // Serializado pelo Lattes num texto só: mostrado lido, editado no próprio Lattes.
+    const emails = name === 'ELETRONICO' ? parseEmails(value) : [];
+    const social = name === 'REDE-SOCIAL' ? parseSocial(value) : [];
+    if (emails.length > 0 || social.length > 0) {
+      return (
+        <div className="field field-readonly" title="Vem da exportação; edite no Lattes">
+          <span className="field-label">{text}</span>
+          <ul className="contact-list">
+            {emails.map((c) => (
+              <li key={c.email}>
+                <span className="field-copy-row">
+                  <span className="contact-value">{c.email}</span>
+                  {c.address && <span className="muted contact-kind">{c.address}</span>}
+                  <CopyButton label={text} value={c.email} />
+                </span>
+              </li>
+            ))}
+            {social.map((c) => (
+              <li key={c.url}>
+                <span className="field-copy-row">
+                  <a className="contact-value" href={c.url} rel="noreferrer" target="_blank">
+                    {c.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
+                  </a>
+                  <span className="muted contact-kind">{c.name}</span>
+                  <CopyButton label={c.name} value={c.url} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
+  }
 
   if (isSystemAttr(el.name, name)) {
     // Código ou sequência gerado pelo Lattes: texto, não campo.

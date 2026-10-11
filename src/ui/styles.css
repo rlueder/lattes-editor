@@ -2598,3 +2598,27 @@ details > .element {
     padding: 16px;
   }
 }
+
+/* Contatos lidos da exportação (e-mails, redes sociais). */
+.contact-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.contact-list li {
+  padding: 4px 0;
+}
+
+.contact-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contact-kind {
+  flex: 0 0 auto;
+  margin-left: 8px;
+  font-size: 12px;
+}

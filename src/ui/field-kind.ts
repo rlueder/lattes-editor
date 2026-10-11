@@ -7,16 +7,28 @@ import type { AttributeSpec } from '../schema/types.ts';
  * códigos de instituição, curso, área e CAPES, nível da formação (código),
  * identificadores e formatos. Mudar um deles quebra referências (a tabela de
  * instituições, por exemplo) ou o casamento com a exportação.
+ *
+ * Também os derivados de outra escolha: a sigla do país sai do país
+ * escolhido, a sigla e a UF da instituição saem da tabela de instituições, a
+ * data e a hora de atualização são carimbadas pelo Lattes ao salvar, e o
+ * ORCID entra pela vinculação com o próprio ORCID, não digitado.
  */
 const SYSTEM =
-  /^(SEQUENCIA-|CODIGO-|COD-|ID-|NUMERO-IDENTIFICADOR$|NRO-ID-CNPQ$|FORMATO-|STATUS-OASISBR$)/;
+  /^(SEQUENCIA-|CODIGO-|COD-|ID-|NUMERO-IDENTIFICADOR$|NRO-ID-CNPQ$|FORMATO-|STATUS-OASISBR$|SIGLA-PAIS-|SIGLA-INSTITUICAO$|SIGLA-UF-INSTITUICAO$|DATA-ATUALIZACAO$|HORA-ATUALIZACAO$|ORCID-ID$)/;
+
+/** CPF do dono do currículo vem do cadastro; o CPF de autor é digitado. */
+const OWNER_ONLY: Record<string, string> = { CPF: 'DADOS-GERAIS' };
 
 /** Elementos de formação em que NIVEL é o código do nível (3 = mestrado…), dado pelo tipo. */
 const LEVEL_CODED =
   /^(GRADUACAO|ESPECIALIZACAO|MESTRADO|DOUTORADO|POS-DOUTORADO|LIVRE-DOCENCIA|CURSO-TECNICO-PROFISSIONALIZANTE|MESTRADO-PROFISSIONALIZANTE|ENSINO-FUNDAMENTAL-PRIMEIRO-GRAU|ENSINO-MEDIO-SEGUNDO-GRAU|RESIDENCIA-MEDICA|APERFEICOAMENTO)$/;
 
 export function isSystemAttr(element: string, attr: string): boolean {
-  return SYSTEM.test(attr) || (attr === 'NIVEL' && LEVEL_CODED.test(element));
+  return (
+    SYSTEM.test(attr) ||
+    OWNER_ONLY[attr] === element ||
+    (attr === 'NIVEL' && LEVEL_CODED.test(element))
+  );
 }
 
 /**
@@ -53,6 +65,48 @@ const GROUPS: { label: string; test: RegExp }[] = [
   { label: 'Palavras-chave e setores', test: /^(PALAVRA-CHAVE|SETOR-DE-ATIVIDADE)/ },
 ];
 
+/**
+ * Blocos com ordem fixa, na ordem em que se preenche um endereço: quem, onde,
+ * como falar. DDD fica antes do telefone, na mesma linha.
+ */
+const ADDRESS_LAYOUT: { attrs: string[]; label: string }[] = [
+  { attrs: ['NOME-INSTITUICAO-EMPRESA', 'NOME-ORGAO', 'NOME-UNIDADE'], label: 'Instituição' },
+  {
+    attrs: [
+      'LOGRADOURO-COMPLEMENTO',
+      'LOGRADOURO',
+      'BAIRRO',
+      'CEP',
+      'CIDADE',
+      'UF',
+      'PAIS',
+      'CAIXA-POSTAL',
+    ],
+    label: 'Endereço',
+  },
+  { attrs: ['DDD', 'TELEFONE', 'RAMAL', 'FAX', 'E-MAIL', 'HOME-PAGE'], label: 'Contato' },
+];
+
+const FIXED_LAYOUT: Record<string, { attrs: string[]; label: string }[]> = {
+  ENDERECO: [
+    { attrs: ['FLAG-DE-PREFERENCIA'], label: 'Preferência' },
+    { attrs: ['ELETRONICO', 'REDE-SOCIAL', 'OUTRA-FORMA-DE-CONTATO'], label: 'Contatos' },
+  ],
+  'ENDERECO-PROFISSIONAL': ADDRESS_LAYOUT,
+  'ENDERECO-RESIDENCIAL': ADDRESS_LAYOUT,
+};
+
+/** Grupo e posição de um campo num bloco de ordem fixa. */
+function fixedSlot(element: string, attr: string): { label: string; rank: number } | undefined {
+  const layout = FIXED_LAYOUT[element];
+  if (!layout) return undefined;
+  for (const group of layout) {
+    const rank = group.attrs.indexOf(attr);
+    if (rank >= 0) return { label: group.label, rank };
+  }
+  return undefined;
+}
+
 /** Um campo de um bloco: o atributo e o elemento onde ele mora. */
 export interface FieldEntry {
   attr: string;
@@ -87,13 +141,27 @@ export function groupFields(
   isBoolean: (entry: FieldEntry) => boolean,
 ): FieldGroup[] {
   const buckets = new Map<string, FieldEntry[]>();
-  const order = [...GROUPS.map((g) => g.label), 'Marcações', 'Outros', 'Códigos do Lattes'];
+  const fixedLabels = [
+    ...new Set(entries.flatMap((e) => FIXED_LAYOUT[e.element]?.map((g) => g.label) ?? [])),
+  ];
+  // Rótulo repetido (Instituição existe nos dois) aparece uma vez só, na posição fixa.
+  const order = [
+    ...new Set([
+      ...fixedLabels,
+      ...GROUPS.map((g) => g.label),
+      'Marcações',
+      'Outros',
+      'Códigos do Lattes',
+    ]),
+  ];
+  const rankOf = (e: FieldEntry) => fixedSlot(e.element, e.attr)?.rank;
   for (const entry of entries) {
     const label = isSystemAttr(entry.element, entry.attr)
       ? 'Códigos do Lattes'
-      : isBoolean(entry)
-        ? 'Marcações'
-        : (GROUPS.find((g) => g.test.test(entry.attr))?.label ?? 'Outros');
+      : (fixedSlot(entry.element, entry.attr)?.label ??
+        (isBoolean(entry)
+          ? 'Marcações'
+          : (GROUPS.find((g) => g.test.test(entry.attr))?.label ?? 'Outros')));
     buckets.set(label, [...(buckets.get(label) ?? []), entry]);
   }
   return order
@@ -103,6 +171,7 @@ export function groupFields(
         .get(label)!
         .sort(
           (a, b) =>
+            (rankOf(a) ?? 99) - (rankOf(b) ?? 99) ||
             (label === 'Período' ? periodRank(a.attr) - periodRank(b.attr) : 0) ||
             labelOf(a.attr).localeCompare(labelOf(b.attr), 'pt-BR'),
         ),

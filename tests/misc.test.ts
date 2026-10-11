@@ -14,6 +14,7 @@ import {
   XmlParseError,
 } from '../src/model/xml.ts';
 import { lattesSchema } from '../src/schema/lattes.ts';
+import { parseEmails, parseSocial } from '../src/ui/contacts.ts';
 import { displayValue } from '../src/ui/display.ts';
 import { groupFields, isBooleanAttr, isSystemAttr } from '../src/ui/field-kind.ts';
 import { formatLattesDate } from '../src/ui/format.ts';
@@ -174,6 +175,14 @@ describe('tipo de campo', () => {
     expect(isSystemAttr('MESTRADO', 'NIVEL')).toBe(true);
     expect(isSystemAttr('IDIOMA', 'NIVEL')).toBe(false);
     expect(isSystemAttr('MESTRADO', 'NOME-INSTITUICAO')).toBe(false);
+    expect(isSystemAttr('DADOS-GERAIS', 'SIGLA-PAIS-NACIONALIDADE')).toBe(true);
+    expect(isSystemAttr('INFORMACAO-ADICIONAL-INSTITUICAO', 'SIGLA-PAIS-INSTITUICAO')).toBe(true);
+    expect(isSystemAttr('INFORMACAO-ADICIONAL-INSTITUICAO', 'SIGLA-INSTITUICAO')).toBe(true);
+    expect(isSystemAttr('CURRICULO-VITAE', 'DATA-ATUALIZACAO')).toBe(true);
+    expect(isSystemAttr('DADOS-GERAIS', 'ORCID-ID')).toBe(true);
+    expect(isSystemAttr('DADOS-GERAIS', 'CPF')).toBe(true);
+    expect(isSystemAttr('AUTORES', 'CPF')).toBe(false);
+    expect(isSystemAttr('DADOS-GERAIS', 'UF-NASCIMENTO')).toBe(false);
   });
 
   it('sim/não: enum SIM/NAO ou FLAG-* em texto com SIM/NAO', () => {
@@ -280,5 +289,41 @@ describe('displayValue', () => {
     );
     expect(displayValue('DADOS-BASICOS-DO-TRABALHO', 'TITULO-DO-TRABALHO', 'A_B')).toBe('A_B');
     expect(displayValue('X', 'Y', '')).toBe('');
+  });
+});
+
+describe('ordem do endereço', () => {
+  it('agrupa instituição, endereço e contato uma vez cada, com DDD antes do telefone', () => {
+    const attrs = ['TELEFONE', 'CEP', 'NOME-ORGAO', 'DDD', 'CIDADE', 'E-MAIL', 'CODIGO-ORGAO'];
+    const groups = groupFields(
+      attrs.map((attr) => ({ attr, element: 'ENDERECO-PROFISSIONAL', key: attr })),
+      (a) => a,
+      () => false,
+    );
+    expect(groups.map((g) => g.label)).toEqual([
+      'Instituição',
+      'Endereço',
+      'Contato',
+      'Códigos do Lattes',
+    ]);
+    expect(groups[2]!.entries.map((e) => e.attr)).toEqual(['DDD', 'TELEFONE', 'E-MAIL']);
+    expect(groups[1]!.entries.map((e) => e.attr)).toEqual(['CEP', 'CIDADE']);
+  });
+});
+
+describe('contatos do endereço', () => {
+  it('lê o e-mail com o código do endereço', () => {
+    expect(parseEmails('I: nome@inst.br')).toEqual([
+      { address: 'Institucional', email: 'nome@inst.br' },
+    ]);
+    expect(parseEmails('nome@inst.br')).toEqual([{ address: undefined, email: 'nome@inst.br' }]);
+    expect(parseEmails('sem e-mail')).toEqual([]);
+  });
+
+  it('lê redes sociais, consertando o texto estragado', () => {
+    expect(
+      parseSocial('ID Rede Social: 7, Nome Rede Social: Linkedin, EndereÃ§o: https://x.org/a/'),
+    ).toEqual([{ name: 'Linkedin', url: 'https://x.org/a/' }]);
+    expect(parseSocial('qualquer coisa')).toEqual([]);
   });
 });
