@@ -307,6 +307,12 @@ Com base na análise competitiva e nos dados de reclamações:
 - **Exportação de currículo formatado**: gerar PDF/DOCX a partir dos mesmos dados, nos formatos de currículo acadêmico usuais (ABNT, internacional)
 - **Gestão de coautores**: manter uma lista de coautores frequentes com o NRO-ID-CNPQ de cada um, para reaproveitar
 
+### Recursos em estudo
+
+**Sincronização cifrada opcional.** Hoje o currículo fica só no navegador de quem usa. A sincronização deixaria a mesma cópia de trabalho em vários aparelhos, com histórico de versões, sem que a gente consiga ler o conteúdo: a cifra acontece no aparelho, com chave que só o usuário tem, e o servidor guarda blocos cifrados. Fica desligada por padrão. O Lattes continua sendo o registro oficial (é ele que CAPES, agências e bancas leem); a nossa cópia é onde se trabalha, e a ponte com o Lattes é o que mantém os dois iguais. Guardar os dados em claro num banco nosso foi descartado: a exportação traz CPF, RG, data de nascimento e nome dos pais, e isso nos faria controladores desses dados para todos os usuários, contra a proposta local do produto. Antes de construir, falta definir recuperação de chave perdida, custo de hospedagem e o que a LGPD ainda exige de quem guarda dado cifrado sem acesso a ele.
+
+**Busca de outros currículos.** Achar coautores, orientadores e bancas pelo nome ou pelo tema, e trazer o identificador certo para o item. A busca pública do CNPq (buscatextual) usa CAPTCHA e os Termos de Uso de 2022 vedam robôs (seção 4), então contornar isso está fora de cogitação. O Extrator Lattes exige credenciamento institucional e proíbe uso comercial. O caminho a pesquisar primeiro são as bases abertas: OpenAlex para autores e publicações, ORCID para identificar pessoas. Se houver um canal oficial do CNPq para isso, ele entra depois de confirmado.
+
 ### Fluxo
 
 1. O usuário exporta o XML do Lattes (exportação completa do currículo)
