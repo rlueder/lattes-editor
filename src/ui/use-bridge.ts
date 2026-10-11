@@ -19,11 +19,11 @@ import {
   fromSamePage,
   isBridgeMessage,
 } from '../bridge/protocol.ts';
-import { isDesktop } from '../desktop/native.ts';
+import { isDesktop, saveBytes } from '../desktop/native.ts';
 import type { Session } from '../forms/use-production.ts';
 import { encodeCv } from '../model/document.ts';
 import { getAttr, parseXml } from '../model/xml.ts';
-import { backupFileName, downloadBytes } from './backup.ts';
+import { backupFileName } from './backup.ts';
 import type { ChangeGroup } from './changes-view.ts';
 import { writeCvCode } from './profile.ts';
 
@@ -87,8 +87,11 @@ export interface BridgeState {
   plan: ReturnType<typeof planChanges>;
   results: Record<string, OpResult>;
   running: boolean;
-  /** backup: baixa antes uma cópia do currículo como está no Lattes. */
-  send: (options?: { backup?: boolean }) => void;
+  /**
+   * backup: salva antes uma cópia do currículo como está no Lattes (no app,
+   * pelo diálogo de salvar). Se a pessoa cancelar a cópia, nada é enviado.
+   */
+  send: (options?: { backup?: boolean }) => Promise<void>;
   stop: () => void;
 }
 
@@ -147,13 +150,14 @@ export function useBridge(
     plan,
     results,
     running,
-    send: ({ backup = false } = {}) => {
+    send: async ({ backup = false } = {}) => {
       if (backup && session) {
         const original = parseXml(session.meta.originalXml);
-        downloadBytes(
+        const saved = await saveBytes(
           encodeCv(original, session.meta.encoding),
           backupFileName(session.meta.fileName, new Date()),
         );
+        if (!saved) return;
       }
       setResults({});
       setConfirmed(0);
