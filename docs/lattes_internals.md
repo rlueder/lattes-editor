@@ -98,8 +98,15 @@ vazia. **Observado.**
 Cada linha de uma lista é identificada por números de sequência que batem
 com os do XML exportado: `f_seq_ativ` com `SEQUENCIA-ATIVIDADE`,
 `f_seq_hist` com `SEQUENCIA-HISTORICO`, `f_seq` da formação com
-`SEQUENCIA-FORMACAO`. **Inferido** pela coincidência de nomes; falta
-conferir um valor dos dois lados.
+`SEQUENCIA-FORMACAO`. Conferido na atuação em 11/10/2026: a atividade com
+`SEQUENCIA-ATIVIDADE="5"` no XML é a única linha com `f_seq_ativ=5` na lista
+do Lattes, na mesma instituição. **Observado** para a atuação; nas outras
+telas continua inferido.
+
+O código da instituição não é igual dos dois lados: o XML traz
+`CODIGO-INSTITUICAO="001000000998"` e o link do Lattes traz
+`f_codinst=D001000000998`, com uma letra na frente. **Observado**; o que a
+letra significa não se sabe.
 
 ## 4. Telas
 

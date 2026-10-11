@@ -1,6 +1,7 @@
 node_modules
 dist
 dist-site
+dist-extension
 coverage
 pnpm-lock.yaml
 private

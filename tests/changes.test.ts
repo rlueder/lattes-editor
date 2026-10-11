@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { diffDocuments, resolvePath, revertChange, revertField } from '../src/model/changes.ts';
+import {
+  acceptChange,
+  diffDocuments,
+  resolvePath,
+  revertChange,
+  revertField,
+} from '../src/model/changes.ts';
 import { parseXml } from '../src/model/xml.ts';
 
 const doc = (xml: string) => parseXml(xml).root;
@@ -201,5 +207,27 @@ describe('revertField', () => {
     const target = doc('<A><DISCIPLINA SEQUENCIA-ESPECIFICACAO="1">Velha</DISCIPLINA></A>');
     expect(revertField(removed, target, r!, 'X')).toBe(true);
     expect(diffDocuments(removed, target)).toEqual([]);
+  });
+});
+
+describe('aceitar mudança conferida no Lattes', () => {
+  it('leva o valor novo ao original e a mudança some da lista', () => {
+    const original = parseXml(
+      '<CURRICULO-VITAE><DADOS-GERAIS NOME-COMPLETO="Ana" CPF="1"/></CURRICULO-VITAE>',
+    ).root;
+    const working = parseXml(
+      '<CURRICULO-VITAE><DADOS-GERAIS NOME-COMPLETO="Ana Maria" CPF="1"/></CURRICULO-VITAE>',
+    ).root;
+    const [change] = diffDocuments(original, working);
+    expect(change).toBeDefined();
+    expect(acceptChange(original, working, change!)).toBe(true);
+    expect(diffDocuments(original, working)).toEqual([]);
+  });
+
+  it('não aceita inclusões nem exclusões', () => {
+    const original = parseXml('<CURRICULO-VITAE/>').root;
+    const working = parseXml('<CURRICULO-VITAE><IDIOMA IDIOMA="Inglês"/></CURRICULO-VITAE>').root;
+    const [change] = diffDocuments(original, working);
+    expect(acceptChange(original, working, change!)).toBe(false);
   });
 });

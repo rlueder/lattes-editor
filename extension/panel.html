@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ponte com o Lattes</title>
+    <link rel="stylesheet" href="panel.css" />
+  </head>
+  <body>
+    <header class="topo">
+      <span class="marca">Lattes<span class="marca-destaque">Editor</span></span>
+      <span class="topo-sub">Ponte com o Lattes</span>
+    </header>
+    <main class="painel">
+      <p class="ajuda">
+        Cada alteração é gravada no Lattes, lida de volta e conferida. A fila para no primeiro
+        problema. Deixe o currículo aberto numa aba.
+      </p>
+      <div class="acoes">
+        <button id="acao" type="button" class="principal">Aplicar todas</button>
+        <button id="limpar" type="button" class="fantasma discreto">Limpar fila</button>
+      </div>
+      <ul id="fila"></ul>
+    </main>
+    <script src="panel.js"></script>
+  </body>
+</html>

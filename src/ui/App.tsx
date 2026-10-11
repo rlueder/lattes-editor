@@ -32,6 +32,7 @@ import { SectionView } from './SectionView.tsx';
 import { Sidebar } from './Sidebar.tsx';
 import { useTheme } from './theme.ts';
 import { type SaveState, Topbar } from './Topbar.tsx';
+import { useBridge } from './use-bridge.ts';
 import { useChanges } from './use-changes.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
 
@@ -141,11 +142,10 @@ export function App() {
   const section = sections.find((s) => s.id === sectionId) ?? sections[0];
   const sectionsRef = useRef(sections);
   sectionsRef.current = sections;
-  const changes = useChanges(session, sections, version, onEdit);
+  const changes = useChanges(session, sections, version, onEdit, setSession);
+  const bridge = useBridge(session, changes.groups, changes.accept);
 
-  const togglePalette = useCallback(() => {
-    if (session) setPaletteOpen((o) => !o);
-  }, [session]);
+  const togglePalette = useCallback(() => session && setPaletteOpen((o) => !o), [session]);
   usePaletteShortcut(togglePalette);
   const print = usePrint(session !== null);
 
@@ -192,11 +192,7 @@ export function App() {
     if (!anchor) return;
     pendingAnchor.current = null;
     const el = document.getElementById(anchor);
-    if (el) {
-      el.scrollIntoView({ block: 'start' });
-      el.classList.add('flash');
-      setTimeout(() => el.classList.remove('flash'), 900);
-    }
+    el?.scrollIntoView({ block: 'start' });
   });
 
   const openFile = async (file: File) => {
@@ -357,6 +353,7 @@ export function App() {
       />
 
       <ExportPanel
+        bridge={bridge}
         changes={changes.groups}
         file={exportFile}
         open={exportOpen}

@@ -11,6 +11,8 @@ import { changeCount } from '../ui/changes-view.ts';
 import { ChangesList } from '../ui/ChangesList.tsx';
 import { DownloadIcon } from '../ui/icons.tsx';
 import { Modal } from '../ui/Modal.tsx';
+import type { BridgeState } from '../ui/use-bridge.ts';
+import { BridgeBlock } from './BridgeBlock.tsx';
 import type { ImportFile } from './import-file.ts';
 
 export interface PendingSummary {
@@ -22,6 +24,8 @@ export interface PendingSummary {
 }
 
 interface Props {
+  /** Extensão da ponte, quando instalada: envia o que ela sabe levar. */
+  bridge?: BridgeState;
   changes: ChangeGroup[];
   file?: ImportFile;
   open: boolean;
@@ -34,6 +38,7 @@ interface Props {
 }
 
 export function ExportPanel({
+  bridge,
   changes,
   file,
   onClose,
@@ -173,6 +178,7 @@ export function ExportPanel({
             &quot;Recarregar do Lattes&quot;. O que já estiver lá some desta lista.
           </p>
         )}
+        {bridge && <BridgeBlock bridge={bridge} />}
         <ChangesList groups={changes} onDiscard={onDiscard} onDiscardField={onDiscardField} />
       </section>
     </Modal>

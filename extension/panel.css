@@ -1,0 +1,307 @@
+/* Mesmos tons e escala do editor: moldura mais funda, painel um degrau
+   acima, cartões mais um. Azul do CNPq como destaque. */
+:root {
+  --chrome: #efede8;
+  --bg: #fbfaf8;
+  --surface: #ffffff;
+  --surface-2: #f3f1ed;
+  --border: #e3e0da;
+  --text: #1f1d1a;
+  --muted: #6b665e;
+  --accent: #326c99;
+  --accent-strong: #2e5469;
+  --accent-contrast: #ffffff;
+  --accent-soft: #e4edf5;
+  --ok: #2f6b3a;
+  --ok-soft: #e3f0e5;
+  --warn: #7a4b00;
+  --warn-soft: #fbf0dc;
+  --danger: #a3261b;
+  --danger-soft: #f8e1de;
+  --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --chrome: #0f0e0d;
+    --bg: #181716;
+    --surface: #211f1d;
+    --surface-2: #2a2826;
+    --border: #312e2b;
+    --text: #ece8e1;
+    --muted: #a19b91;
+    --accent: #8ab4d6;
+    --accent-strong: #a9c9e3;
+    --accent-contrast: #0f1e2b;
+    --accent-soft: #1f3142;
+    --ok: #8fcf98;
+    --ok-soft: #1c2e20;
+    --warn: #f0c776;
+    --warn-soft: #3a2c12;
+    --danger: #f08a7e;
+    --danger-soft: #3a1c18;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--chrome);
+  color: var(--text);
+  font: 13px/1.5 var(--font);
+}
+
+.topo {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 14px 16px 12px;
+}
+
+.marca {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.marca-destaque {
+  color: var(--accent);
+}
+
+.topo-sub {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.painel {
+  min-height: calc(100vh - 52px);
+  margin: 0 8px 8px;
+  padding: 18px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.ajuda {
+  margin: 0 0 16px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.acoes {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+button {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+button.principal {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 500;
+}
+
+button.principal:hover:not(:disabled) {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+}
+
+button.fantasma {
+  border-color: transparent;
+  background: transparent;
+}
+
+button.discreto {
+  margin-left: auto;
+  color: var(--muted);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+#fila {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.item-topo {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.titulo {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.selo {
+  flex: 0 0 auto;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.conferido .selo {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.divergente .selo,
+.sessao .selo {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.erro .selo {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.campos {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+.campos dt {
+  color: var(--muted);
+}
+
+.campos dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.antes {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.detalhe {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.erro .detalhe {
+  color: var(--danger);
+}
+
+.item-acoes {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.item-acoes button {
+  height: 28px;
+}
+
+/* Fila vazia: como os estados vazios do editor, desenho, título e texto. */
+.vazio {
+  max-width: 300px;
+  margin: 12vh auto 0;
+}
+
+.vazio-arte {
+  display: block;
+  margin: 0 0 16px;
+  color: var(--muted);
+}
+
+.vazio-titulo {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.vazio-texto {
+  margin: 0 0 10px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+/* Estados do botão principal. */
+button.parar {
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+
+button.conferido,
+button.conferido:disabled {
+  border-color: transparent;
+  background: var(--ok-soft);
+  color: var(--ok);
+  font-weight: 600;
+  opacity: 1;
+}
+
+button.principal:disabled {
+  border-color: var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  opacity: 1;
+}
+
+/* Superfícies com cantos retos, como no editor; botões e selos arredondados. */
+.painel,
+.item {
+  border-radius: 0;
+}
+
+.vazio {
+  text-align: center;
+}
+
+.vazio-arte {
+  margin: 0 auto 16px;
+}

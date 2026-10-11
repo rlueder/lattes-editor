@@ -11,6 +11,7 @@ import { useEffect, useId, useState } from 'react';
 import { CopyButton } from './CopyButton.tsx';
 import { formatLattesDate } from './format.ts';
 import { Modal } from './Modal.tsx';
+import { Tip } from './primitives/Tip.tsx';
 import {
   initials,
   parseCvCode,
@@ -19,6 +20,7 @@ import {
   readCvCode,
   writeCvCode,
 } from './profile.ts';
+import { CV_CODE_EVENT } from './use-bridge.ts';
 
 export function ProfileCard({ profile }: { profile: Profile }) {
   const date = formatLattesDate(profile.date);
@@ -29,6 +31,12 @@ export function ProfileCard({ profile }: { profile: Profile }) {
   const [failed, setFailed] = useState(false);
   const [asking, setAsking] = useState(false);
   useEffect(() => setFailed(false), [code]);
+  // A extensão da ponte entrega o código lido no Lattes.
+  useEffect(() => {
+    const reload = () => setCode(profile.lattesId ? readCvCode(profile.lattesId) : undefined);
+    window.addEventListener(CV_CODE_EVENT, reload);
+    return () => window.removeEventListener(CV_CODE_EVENT, reload);
+  }, [profile.lattesId]);
 
   const save = (next: string | undefined) => {
     if (profile.lattesId) writeCvCode(profile.lattesId, next);
@@ -38,11 +46,7 @@ export function ProfileCard({ profile }: { profile: Profile }) {
 
   const showPhoto = code && !failed;
   return (
-    <section
-      aria-label="Currículo aberto"
-      className="profile"
-      title={`Arquivo: ${profile.fileName}`}
-    >
+    <section aria-label="Currículo aberto" className="profile">
       <div aria-hidden="true" className="avatar">
         {showPhoto ? (
           <img alt="" src={photoUrl(code)} onError={() => setFailed(true)} />
@@ -54,16 +58,18 @@ export function ProfileCard({ profile }: { profile: Profile }) {
         <strong className="profile-name">{profile.name}</strong>
         {url && (
           <span className="field-copy-row profile-line">
-            <a href={url} rel="noreferrer" target="_blank" title={url}>
-              lattes.cnpq.br/{profile.lattesId}
-            </a>
+            <Tip label={url}>
+              <a href={url} rel="noreferrer" target="_blank">
+                lattes.cnpq.br/{profile.lattesId}
+              </a>
+            </Tip>
             <CopyButton label="endereço do currículo" value={url} />
           </span>
         )}
         {date && (
-          <span className="profile-line muted" title="DATA-ATUALIZACAO do arquivo exportado">
-            Arquivo de {date}
-          </span>
+          <Tip label="Data registrada no arquivo exportado do Lattes">
+            <span className="profile-line muted">Arquivo de {date}</span>
+          </Tip>
         )}
         {url && !showPhoto && (
           <button

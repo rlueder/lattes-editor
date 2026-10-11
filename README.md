@@ -31,6 +31,30 @@ uma com o valor antigo e o novo, um botão para copiar cada campo e a opção
 de descartar a mudança. Depois de copiar tudo no Lattes, exporte de novo e
 use "Recarregar do Lattes": o que já estiver lá some da lista.
 
+## Ponte com o Lattes (extensão, em teste)
+
+A extensão envia ao Lattes, a partir da sua própria sessão no navegador, as
+alterações que hoje se copiam à mão. Cada uma é gravada, lida de volta e
+conferida; a fila para no primeiro problema. Nenhuma senha passa pela
+extensão nem pelo editor. Por enquanto ela leva campos do vínculo de uma
+atuação (datas, carga horária, enquadramento, outras informações) e o resumo;
+o resto continua na lista de copiar à mão.
+
+Para instalar a versão de desenvolvimento no Brave ou no Chrome:
+
+1. `pnpm build:extension`, que gera a pasta `dist-extension/`.
+2. Abra `brave://extensions` (ou `chrome://extensions`) e ligue o "Modo do
+   desenvolvedor".
+3. Clique em "Carregar sem compactação" e escolha a pasta `dist-extension/`.
+4. Abra o editor (`pnpm dev`, em `localhost`) e, em outra aba, o seu
+   currículo no Lattes, na página do menu.
+5. No editor, "Levar ao Lattes" mostra "Enviar pela extensão" quando há
+   alterações que ela sabe levar. Clique, depois no ícone da extensão, e use
+   "Aplicar" numa alteração ou "Aplicar todas".
+
+Depois de mudar o código da extensão, rode `pnpm build:extension` de novo e
+clique em "Recarregar" no cartão dela em `brave://extensions`.
+
 ## Desenvolvimento
 
 ```bash
@@ -40,6 +64,7 @@ pnpm test                # testes
 pnpm test:coverage       # testes com limite de 80% de cobertura
 pnpm build               # gera dist/index.html, que abre direto por file://
 pnpm build:site          # página inicial em dist-site/, com o editor em dist-site/app/
+pnpm build:extension     # gera a extensão da ponte em dist-extension/
 ```
 
 A página inicial fica em `site/` (HTML e CSS estáticos, sem build próprio).

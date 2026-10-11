@@ -216,3 +216,13 @@ export function revertField(
   else if (i >= 0) el.attrs.splice(i, 1);
   return true;
 }
+
+/**
+ * Leva os valores novos de uma mudança "alterado" para o original: depois que
+ * a ponte grava e confere no Lattes, o Lattes é o novo "antes", e a mudança
+ * sai da lista. É `revertField` no sentido contrário.
+ */
+export function acceptChange(original: XElement, working: XElement, change: Change): boolean {
+  if (change.kind !== 'alterado') return false;
+  return change.fields.every((f) => revertField(working, original, change, f.attr));
+}
