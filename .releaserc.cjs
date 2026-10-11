@@ -46,6 +46,8 @@ const releaseRules = [
 ];
 
 const BUILD = [
+  // O CHANGELOG gerado sai no formato do Prettier, senão o format:check reprova o push seguinte.
+  'pnpm exec prettier --write CHANGELOG.md',
   'pnpm build',
   'pnpm build:extension',
   'mkdir -p release',
