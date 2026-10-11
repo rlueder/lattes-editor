@@ -155,6 +155,7 @@ const ACRONYMS: Record<string, string> = {
   pcd: 'PcD',
   uf: 'UF',
   url: 'URL',
+  xml: 'XML',
 };
 
 function humanize(xmlName: string): string {

@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { NewItemPicker } from '../forms/NewItemPicker.tsx';
+import { ProductionForm } from '../forms/ProductionForm.tsx';
+import { type Session, useProduction } from '../forms/use-production.ts';
+import { ExportPanel } from '../import-export/ExportPanel.tsx';
 import { encodeCv, loadCv, maxSequenciaProducao } from '../model/document.ts';
+import { importableTypes } from '../model/production.ts';
 import {
   clearAll,
   type HistoryEntry,
@@ -8,36 +13,38 @@ import {
   loadWorkingCopy,
   replaceWorkingCopy,
   saveWorkingCopy,
-  type WorkingCopy,
 } from '../model/store.ts';
-import { firstChild, getAttr, parseXml, serializeXml, type XDocument } from '../model/xml.ts';
+import { firstChild, getAttr, parseXml, serializeXml, walk, type XDocument } from '../model/xml.ts';
+import { lattesSchema } from '../schema/lattes.ts';
 import { CommandPalette } from './CommandPalette.tsx';
+import { HistoryDialog, ReloadConfirm } from './dialogs.tsx';
 import { DropZone } from './DropZone.tsx';
-import { ElementView } from './ElementView.tsx';
-import { ItemList } from './ItemList.tsx';
-import { JumpBar } from './JumpBar.tsx';
-import { Modal } from './Modal.tsx';
-import { paletteEntries, type PaletteEntry } from './palette-search.ts';
+import { EditorContext } from './editor-context.ts';
+import { paletteActions, paletteEntries, type PaletteEntry } from './palette-search.ts';
 import { ReferenceContext } from './reference-context.ts';
 import { buildReferenceIndex, type ReferenceIndex } from './reference-tables.ts';
-import { buildSections, countItems } from './sections.ts';
+import { buildSections } from './sections.ts';
+import { SectionView } from './SectionView.tsx';
+import { Sidebar } from './Sidebar.tsx';
+import { type SaveState, Topbar } from './Topbar.tsx';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
-
-type SaveState = 'salvo' | 'salvando' | 'erro';
-
-interface Session {
-  doc: XDocument;
-  meta: Omit<WorkingCopy, 'xml' | 'savedAt'>;
-}
 
 const AUTOSAVE_MS = 400;
 const EMPTY_INDEX: ReferenceIndex = { courses: new Map(), institutions: new Map() };
+
+function download(bytes: Uint8Array, fileName: string): void {
+  const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/xml' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 function ownerName(doc: XDocument): string {
   const dg = firstChild(doc.root, 'DADOS-GERAIS');
   return (dg && getAttr(dg, 'NOME-COMPLETO')) || 'Currículo Lattes';
 }
-const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
 export function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -50,6 +57,9 @@ export function App() {
   const [showEmpty, setShowEmpty] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [reloadFile, setReloadFile] = useState<File | null>(null);
   const pendingNotes = useRef<string[]>([]);
   const pendingAnchor = useRef<string | null>(null);
   const topbarRef = useRef<HTMLElement>(null);
@@ -71,7 +81,10 @@ export function App() {
       .then((copy) => {
         if (copy) {
           const { savedAt: _savedAt, xml, ...meta } = copy;
-          setSession({ doc: parseXml(xml), meta });
+          // Cópias salvas antes do marco 2 não tinham o máximo da exportação.
+          const loadedMaxSequencia =
+            meta.loadedMaxSequencia ?? maxSequenciaProducao(parseXml(meta.originalXml));
+          setSession({ doc: parseXml(xml), meta: { ...meta, loadedMaxSequencia } });
         }
       })
       .catch((err: unknown) =>
@@ -103,13 +116,15 @@ export function App() {
     setVersion((v) => v + 1);
   }, []);
 
+  const production = useProduction(session, setSession, version, onEdit);
+
   // O documento é mutado no lugar; `version` é o que avisa que ele mudou.
   const sections = useMemo(
     () => (session ? buildSections(session.doc.root) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [session, version],
   );
-  const entries = useMemo(() => paletteEntries(sections), [sections]);
+  const entries = useMemo(() => [...paletteEntries(sections), ...paletteActions()], [sections]);
   const referenceIndex = useMemo(
     () => (session ? buildReferenceIndex(session.doc.root) : undefined),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -123,6 +138,16 @@ export function App() {
   usePaletteShortcut(togglePalette);
 
   const jump = (entry: PaletteEntry) => {
+    if (entry.action) {
+      if (entry.action === 'exportar') setExportOpen(true);
+      else if (entry.action === 'novo') setPickerOpen(true);
+      else {
+        const itemName = entry.action.slice('novo:'.length);
+        const type = importableTypes(lattesSchema).find((t) => t.itemName === itemName);
+        if (type) production.startNew(type);
+      }
+      return;
+    }
     setSectionId(entry.sectionId);
     pendingAnchor.current = entry.anchorId ?? null;
     if (!entry.anchorId) window.scrollTo({ top: 0 });
@@ -146,12 +171,15 @@ export function App() {
     try {
       const cv = await loadCv(new Uint8Array(await file.arrayBuffer()), file.name);
       const xml = serializeXml(cv.doc);
+      // A numeração do servidor vale a partir daqui (guia, 3.2).
+      const max = maxSequenciaProducao(cv.doc);
       const meta = {
         encoding: cv.encoding,
         fileName: cv.fileName,
         id: 'current' as const,
         loadedAt: Date.now(),
-        nextSequencia: maxSequenciaProducao(cv.doc) + 1,
+        loadedMaxSequencia: max,
+        nextSequencia: max + 1,
         originalXml: xml,
       };
       await replaceWorkingCopy({ ...meta, savedAt: meta.loadedAt, xml });
@@ -165,13 +193,13 @@ export function App() {
 
   const saveFile = () => {
     if (!session) return;
-    const bytes = encodeCv(session.doc, session.meta.encoding);
-    const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/xml' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = session.meta.fileName;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    download(encodeCv(session.doc, session.meta.encoding), session.meta.fileName);
+  };
+
+  /** Nova exportação do Lattes: itens novos que ainda não foram importados se perdem. */
+  const reload = (file: File) => {
+    if (production.pending.length > 0) setReloadFile(file);
+    else void openFile(file);
   };
 
   const closeHistory = useCallback(() => setHistoryOpen(false), []);
@@ -213,150 +241,114 @@ export function App() {
   }
 
   const modified = serializeXml(session.doc) !== session.meta.originalXml;
+  const pendingSet = new Set(production.pending);
+  const pendingIn = (els: XDocument['root'][]) => {
+    let n = 0;
+    for (const el of els) walk(el, (node) => void (pendingSet.has(node) && n++));
+    return n;
+  };
+  const exportFile = exportOpen ? production.buildFile() : undefined;
 
   return (
     <div className="shell">
-      <header ref={topbarRef} className="topbar">
-        <div className="topbar-title">
-          <strong>{ownerName(session.doc)}</strong>
-          <span className="file-name">{session.meta.fileName}</span>
-          <span className={`save-state ${saveState}`} role="status">
-            {saveState === 'salvando'
-              ? 'salvando…'
-              : saveState === 'erro'
-                ? 'erro ao salvar no navegador'
-                : 'salvo'}
-          </span>
-        </div>
-        <div className="topbar-actions">
-          <button className="ghost kbd-hint" type="button" onClick={togglePalette}>
-            Ir para… <kbd>{IS_MAC ? '⌘' : 'Ctrl'}</kbd>
-            <kbd>K</kbd>
-          </button>
-          <label className="toggle">
-            <input
-              checked={showEmpty}
-              type="checkbox"
-              onChange={(e) => setShowEmpty(e.target.checked)}
-            />
-            campos vazios
-          </label>
-          <button className="ghost" type="button" onClick={openHistory}>
-            Histórico
-          </button>
-          <button className="ghost" type="button" onClick={closeFile}>
-            Fechar
-          </button>
-          <button className="primary" type="button" onClick={saveFile}>
-            Salvar arquivo{modified ? ' •' : ''}
-          </button>
-        </div>
-      </header>
+      <Topbar
+        ref={topbarRef}
+        fileName={session.meta.fileName}
+        modified={modified}
+        ownerName={ownerName(session.doc)}
+        pendingCount={production.pending.length}
+        saveState={saveState}
+        showEmpty={showEmpty}
+        onClose={closeFile}
+        onExport={() => setExportOpen(true)}
+        onHistory={openHistory}
+        onNewItem={() => setPickerOpen(true)}
+        onPalette={togglePalette}
+        onReload={reload}
+        onSave={saveFile}
+        onShowEmpty={setShowEmpty}
+      />
 
-      <nav aria-label="Seções" className="sidebar">
-        <ul>
-          {sections.map((s) => {
-            const total = s.groups.reduce((n, g) => n + countItems(g), 0);
-            return (
-              <li key={s.id}>
-                <button
-                  className={s.id === section?.id ? 'active' : ''}
-                  disabled={s.groups.length === 0}
-                  type="button"
-                  onClick={() => {
-                    setSectionId(s.id);
-                    window.scrollTo({ top: 0 });
-                  }}
-                >
-                  <span>{s.label}</span>
-                  {total > 0 && <span className="count">{total}</span>}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+      <Sidebar
+        activeId={section?.id}
+        pendingIn={pendingIn}
+        sections={sections}
+        onSelect={(id) => {
+          setSectionId(id);
+          window.scrollTo({ top: 0 });
+        }}
+      />
 
       <main className="content">
-        <ReferenceContext.Provider value={referenceIndex ?? EMPTY_INDEX}>
-          {error && <p className="error">{error}</p>}
-          {section && (
-            <>
-              <div className="section-head">
-                <h1>{section.label}</h1>
-                {section.importable === false && (
-                  <span
-                    className="badge"
-                    title="O Importar do Lattes ignora esta seção; copie as mudanças à mão no Lattes."
-                  >
-                    não importável no Lattes
-                  </span>
-                )}
-              </div>
-              {section.importable === 'filtro' && (
-                <p className="muted section-note">
-                  Itens de outras seções reunidos pela marca do Lattes. Cada um é importável ou não
-                  conforme a seção de origem.
-                </p>
-              )}
-              {section.groups.length === 0 && <p className="muted">Nada nesta seção.</p>}
-              <div key={section.id} className="section-body">
-                {section.groups.length > 1 && (
-                  <JumpBar
-                    entries={section.groups.map((g) => ({
-                      count: countItems(g),
-                      id: g.id,
-                      label: g.label,
-                    }))}
-                    label="Grupos da seção"
-                    level="section"
-                  />
-                )}
-                {section.groups.map((g) => (
-                  <section key={g.id} className="group" id={g.id}>
-                    <h2>{g.label}</h2>
-                    {g.elements.length > 1 ? (
-                      <ItemList
-                        key={version}
-                        items={g.elements}
-                        showEmpty={showEmpty}
-                        onEdit={onEdit}
-                      />
-                    ) : (
-                      g.elements.map((el, i) => (
-                        <ElementView
-                          key={`${version}-${i}`}
-                          el={el}
-                          showEmpty={showEmpty}
-                          onEdit={onEdit}
-                        />
-                      ))
-                    )}
-                  </section>
-                ))}
-              </div>
-            </>
-          )}
-        </ReferenceContext.Provider>
+        <EditorContext.Provider
+          value={{ loadedMax: production.loadedMax, openItem: production.openItem }}
+        >
+          <ReferenceContext.Provider value={referenceIndex ?? EMPTY_INDEX}>
+            {error && <p className="error">{error}</p>}
+            {section && (
+              <SectionView
+                section={section}
+                showEmpty={showEmpty}
+                version={version}
+                onEdit={onEdit}
+              />
+            )}
+          </ReferenceContext.Provider>
+        </EditorContext.Provider>
       </main>
 
       <CommandPalette entries={entries} open={paletteOpen} onClose={closePalette} onSelect={jump} />
 
-      <Modal className="history" label="Histórico" open={historyOpen} onClose={closeHistory}>
-        <h2>Histórico (últimos 50)</h2>
-        <ul>
-          {history.map((h) => (
-            <li key={h.id}>
-              <span>
-                <time>{new Date(h.savedAt).toLocaleString('pt-BR')}</time> {h.note}
-              </span>
-              <button className="ghost" type="button" onClick={() => restore(h)}>
-                Restaurar
-              </button>
-            </li>
-          ))}
-        </ul>
-      </Modal>
+      {production.form && (
+        <ProductionForm
+          key={`${production.form.sequencia}-${production.form.isNew}`}
+          isNew={production.form.isNew}
+          item={production.form.item}
+          knownAuthors={production.authors}
+          sequencia={production.form.sequencia}
+          onCancel={production.cancel}
+          onRemove={production.form.isNew ? undefined : production.remove}
+          onSave={production.save}
+        />
+      )}
+
+      <NewItemPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onPick={(type) => {
+          setPickerOpen(false);
+          production.startNew(type);
+        }}
+      />
+
+      <ExportPanel
+        file={exportFile}
+        open={exportOpen}
+        pending={production.summaries}
+        onClose={() => setExportOpen(false)}
+        onDownload={() => exportFile && download(exportFile.bytes, exportFile.fileName)}
+        onOpenItem={(seq) => {
+          setExportOpen(false);
+          production.openItem(seq);
+        }}
+      />
+
+      <ReloadConfirm
+        file={reloadFile}
+        pending={production.summaries}
+        onCancel={() => setReloadFile(null)}
+        onConfirm={(file) => {
+          setReloadFile(null);
+          void openFile(file);
+        }}
+      />
+
+      <HistoryDialog
+        entries={history}
+        open={historyOpen}
+        onClose={closeHistory}
+        onRestore={restore}
+      />
     </div>
   );
 }

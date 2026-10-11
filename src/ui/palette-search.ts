@@ -1,9 +1,12 @@
 // Busca do ⌘K: ignora acentos e caixa, e ordena por qualidade do casamento.
 
+import { FORM_SPECS } from '../forms/specs.ts';
 import { fold } from '../labels/labels.ts';
 import { countItems, type Section } from './sections.ts';
 
 export interface PaletteEntry {
+  /** Ação em vez de navegação (novo item, gerar importação). */
+  action?: string;
   /** Âncora do grupo dentro da seção; undefined leva ao topo da seção. */
   anchorId?: string;
   /** Seção a que o grupo pertence; vazio para a própria seção. */
@@ -57,4 +60,22 @@ export function searchPalette(entries: PaletteEntry[], query: string): PaletteEn
     .filter((r) => r.s > 0)
     .sort((a, b) => b.s - a.s || a.index - b.index)
     .map((r) => r.e);
+}
+
+const action = (id: string, label: string, context: string): PaletteEntry => ({
+  action: id,
+  context,
+  importable: true,
+  key: `acao-${id}`,
+  label,
+  sectionId: '',
+});
+
+/** Ações do ⌘K: criar itens dos tipos mais usados e gerar a importação. */
+export function paletteActions(): PaletteEntry[] {
+  return [
+    ...FORM_SPECS.map((f) => action(`novo:${f.itemName}`, f.title, 'Novo')),
+    action('novo', 'Outro tipo de item…', 'Novo'),
+    action('exportar', 'Gerar XML para importação', ''),
+  ];
 }

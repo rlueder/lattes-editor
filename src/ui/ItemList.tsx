@@ -5,7 +5,9 @@
 import { useId } from 'react';
 
 import { elementLabel } from '../labels/labels.ts';
-import type { XElement } from '../model/xml.ts';
+import { SEQ_ATTR } from '../model/production.ts';
+import { getAttr, type XElement } from '../model/xml.ts';
+import { useEditor } from './editor-context.ts';
 import { type EditFn, ElementView } from './ElementView.tsx';
 import { JumpBar } from './JumpBar.tsx';
 import { type CardInfo, type ListView, yearView } from './list-view.ts';
@@ -83,12 +85,18 @@ function ItemCard({
   showEmpty: boolean;
   showKind: boolean;
 }) {
+  const { loadedMax, openItem } = useEditor();
+  const seq = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
+  const isNew = Number.isFinite(seq) && seq > loadedMax;
   return (
-    <details className="item card">
+    <details className={isNew ? 'item card is-new' : 'item card'}>
       <summary>
         <span className="card-main">
           {showKind && <span className="item-kind">{elementLabel(el.name)}</span>}
-          <span className="card-title">{info.title || elementLabel(el.name)}</span>
+          <span className="card-title">
+            {isNew && <span className="tag new">novo</span>}
+            {info.title || elementLabel(el.name)}
+          </span>
           {info.subtitle && <span className="card-subtitle">{info.subtitle}</span>}
         </span>
         {info.aside && (
@@ -98,6 +106,16 @@ function ItemCard({
           </span>
         )}
       </summary>
+      {isNew && (
+        <div className="card-actions">
+          <span className="muted">
+            Ainda não está no Lattes: entra no próximo arquivo de importação.
+          </span>
+          <button className="ghost" type="button" onClick={() => openItem(seq)}>
+            Editar no formulário
+          </button>
+        </div>
+      )}
       {info.usages && info.usages.length > 0 && (
         <div className="usages">
           <h4>Onde aparece</h4>

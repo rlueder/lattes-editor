@@ -196,18 +196,26 @@ Done when Rafael can load his export, browse every section, save, and diff the o
 
 ### Milestone 2: add production items (the write path)
 
-- [ ] Hand-designed forms for: Trabalhos publicados em anais de eventos, Artigos completos publicados, Apresentação de trabalho, Participação em eventos, Livros e capítulos. These are the five a master's student touches.
-- [ ] Generic schema-driven form for every other importable section
-- [ ] Sequence-number assignment per 3.2
-- [ ] Author management: a per-document list of co-authors (name, citation name, `NRO-ID-CNPQ`) reused across items; the owner is author 1 by default
+- [x] Hand-designed forms for: Trabalhos publicados em anais de eventos, Artigos completos publicados, Apresentação de trabalho, Participação em eventos, Livros e capítulos. These are the five a master's student touches.
+- [x] Generic schema-driven form for every other importable section
+- [x] Sequence-number assignment per 3.2
+- [x] Author management: a per-document list of co-authors (name, citation name, `NRO-ID-CNPQ`) reused across items; the owner is author 1 by default
 - [ ] DOI lookup against Crossref (`api.crossref.org/works/{doi}`, CORS enabled, send a `mailto` parameter) mapping title, authors, year, journal, volume, issue, pages, ISSN, DOI, language into the article form; the user reviews before saving
-- [ ] "Gerar XML para importação" producing the file described in 3.3, plus an on-screen checklist of the Lattes steps: Importar, escolher o arquivo, marcar só os módulos listados aqui, conferir os itens verdes, Confirmar, e nunca marcar itens vermelhos
-- [ ] A "novos itens" badge per section so the user knows what the next import will carry
-- [ ] After the user re-imports and exports from Lattes, "Recarregar do Lattes" replaces the working copy and clears the new-item markers
+- [x] "Gerar XML para importação" producing the file described in 3.3, plus an on-screen checklist of the Lattes steps: Importar, escolher o arquivo, marcar só os módulos listados aqui, conferir os itens verdes, Confirmar, e nunca marcar itens vermelhos
+- [x] A "novos itens" badge per section so the user knows what the next import will carry
+- [x] After the user re-imports and exports from Lattes, "Recarregar do Lattes" replaces the working copy and clears the new-item markers
 - [ ] Manual path for the non-importable sections (Dados gerais, Formação, Atuação, Projetos, Patentes e Registros), added 2026-10-10:
   - A per-field "copiar" button, so the user can paste a value into the matching Lattes form.
   - A "Alterações a levar ao Lattes" list: every field and item that differs from the loaded export, grouped by Lattes section and form, with old and new values. It is computed from `originalXml` against the working copy, items are matched by their `SEQUENCIA-*` key, and the user marks entries as done.
   - The list is a data structure first and a screen second. It is the input the phase 3 browser bridge will consume, so the bridge only automates what this list already describes.
+
+Status on 2026-10-11, with the milestone 0 tests skipped on purpose:
+
+- The import file is option 2 of 3.3 (whole CV plus new items), the only verified shape. The on-screen steps tell the user to uncheck the red items in Passo 3. Switch to option 1 only after the minimal-file test passes.
+- Sequence numbers are spent on save, never on opening a form, so a cancelled draft leaves no gap. Removing a saved new item before import does leave a gap between new numbers (for example 33 removed, 34 kept). Whether Lattes accepts 34 when its own maximum is 32 is the same open question as the max + 1000 test.
+- New items mirror the structure Lattes exports: basic data and detail with every attribute, authors without CPF, and optional extras (keywords, knowledge areas, sectors, additional info) only when filled. Knowledge areas cannot be edited in the forms yet.
+- `FLAG-*` attributes start as `NAO`, like an unchecked box in the Lattes form. Other enumerated attributes start empty and block the export until chosen, because Lattes drops invalid items without a message. Part of the milestone 3 validation panel exists for this reason (`src/model/validate.ts`).
+- Labels in the forms are still generated from the XML names, not taken from the Lattes forms.
 
 Done when Rafael adds a conference paper in the app, imports it into Lattes, re-exports, reloads, and the app shows no pending items. For the manual path, done when an edit to an Atuação row shows up in the list with its old and new values, can be copied field by field, and drops off the list after "Recarregar do Lattes" brings back an export that matches.
 

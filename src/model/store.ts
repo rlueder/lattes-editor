@@ -8,6 +8,8 @@ export interface WorkingCopy {
   fileName: string;
   id: 'current';
   loadedAt: number;
+  /** Maior SEQUENCIA-PRODUCAO da exportação carregada; acima dele, item novo. */
+  loadedMaxSequencia: number;
   /** Próximo SEQUENCIA-PRODUCAO livre: começa em max + 1 e só cresce (guia, 3.2). */
   nextSequencia: number;
   /** XML como foi carregado, para comparar e para "descartar alterações". */

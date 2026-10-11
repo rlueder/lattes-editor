@@ -4,95 +4,22 @@
 
 import { useId, useState } from 'react';
 
-import { attributeLabel, elementLabel, enumLabel } from '../labels/labels.ts';
-import { childElements, getAttr, setAttr, type XElement, type XText } from '../model/xml.ts';
+import { elementLabel } from '../labels/labels.ts';
+import { childElements, getAttr, type XElement, type XText } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
-import type { AttributeSpec } from '../schema/types.ts';
+import { AttributeField, type EditFn } from './AttributeField.tsx';
 import { isListItem } from './item-meta.ts';
 import { ItemList } from './ItemList.tsx';
 import { useReferenceIndex } from './reference-context.ts';
 import { viewForContainer } from './reference-tables.ts';
 import { summarize } from './summary.ts';
 
-export type EditFn = (note: string) => void;
+export type { EditFn } from './AttributeField.tsx';
 
 interface ViewProps {
   el: XElement;
   showEmpty: boolean;
   onEdit: EditFn;
-}
-
-function AttributeField({
-  el,
-  name,
-  onEdit,
-  spec,
-}: {
-  el: XElement;
-  spec?: AttributeSpec;
-  name: string;
-  onEdit: EditFn;
-}) {
-  const value = getAttr(el, name) ?? '';
-  const [draft, setDraft] = useState(value);
-  const label = attributeLabel(name);
-  const commit = (next: string) => {
-    if (next === (getAttr(el, name) ?? '')) return;
-    setAttr(el, name, next);
-    onEdit(`${elementLabel(el.name)} · ${label}`);
-  };
-  const id = useId();
-
-  let control;
-  if (spec?.enum) {
-    const options = spec.enum.includes(value) || value === '' ? spec.enum : [value, ...spec.enum];
-    control = (
-      <select id={id} value={value} onChange={(e) => commit(e.target.value)}>
-        <option value="">(vazio)</option>
-        {options.map((v) => (
-          <option key={v} value={v}>
-            {enumLabel(v)}
-          </option>
-        ))}
-      </select>
-    );
-  } else if (value.length > 90) {
-    control = (
-      <textarea
-        id={id}
-        rows={4}
-        value={draft}
-        onBlur={() => commit(draft)}
-        onChange={(e) => setDraft(e.target.value)}
-      />
-    );
-  } else {
-    control = (
-      <input
-        id={id}
-        type="text"
-        value={draft}
-        onBlur={() => commit(draft)}
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-      />
-    );
-  }
-
-  return (
-    <div className="field">
-      <label htmlFor={id} title={spec?.patched ? `${name} (fora do XSD publicado)` : name}>
-        {label}
-        {spec?.required && (
-          <span aria-label="obrigatório" className="required">
-            {' '}
-            *
-          </span>
-        )}
-      </label>
-      {control}
-    </div>
-  );
 }
 
 export function Attributes({ el, onEdit, showEmpty }: ViewProps) {
