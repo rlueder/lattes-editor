@@ -307,3 +307,75 @@ export function nextSequencia(doc: XDocument, counter: number): number {
   });
   return Math.max(counter, max + 1);
 }
+
+// Áreas do conhecimento -----------------------------------------------------------
+
+/** Uma área do conhecimento: grande área (enum do CNPq) e níveis em texto livre. */
+export interface KnowledgeArea {
+  area: string;
+  /** Enum NOME-GRANDE-AREA-DO-CONHECIMENTO (CIENCIAS_SOCIAIS_APLICADAS…). */
+  bigArea: string;
+  specialty: string;
+  subArea: string;
+}
+
+export const MAX_AREAS = 3;
+
+const AREA_ATTRS: Record<keyof KnowledgeArea, string> = {
+  area: 'NOME-DA-AREA-DO-CONHECIMENTO',
+  bigArea: 'NOME-GRANDE-AREA-DO-CONHECIMENTO',
+  specialty: 'NOME-DA-ESPECIALIDADE',
+  subArea: 'NOME-DA-SUB-AREA-DO-CONHECIMENTO',
+};
+
+function readArea(el: XElement): KnowledgeArea {
+  return {
+    area: getAttr(el, AREA_ATTRS.area) ?? '',
+    bigArea: getAttr(el, AREA_ATTRS.bigArea) ?? '',
+    specialty: getAttr(el, AREA_ATTRS.specialty) ?? '',
+    subArea: getAttr(el, AREA_ATTRS.subArea) ?? '',
+  };
+}
+
+const isEmptyArea = (a: KnowledgeArea) => !a.bigArea && !a.area && !a.subArea && !a.specialty;
+
+export function readAreas(item: XElement): KnowledgeArea[] {
+  const areas = firstChild(item, 'AREAS-DO-CONHECIMENTO');
+  return areas ? childElements(areas).map(readArea) : [];
+}
+
+/** Até 3 áreas, em AREA-DO-CONHECIMENTO-1..3; sem nenhuma, o bloco sai, como o Lattes faz. */
+export function setAreas(schema: LattesSchema, item: XElement, areas: KnowledgeArea[]): void {
+  item.children = item.children.filter(
+    (c) => c.kind !== 'element' || c.name !== 'AREAS-DO-CONHECIMENTO',
+  );
+  const filled = areas.filter((a) => !isEmptyArea(a)).slice(0, MAX_AREAS);
+  if (filled.length === 0) return;
+  const container = element('AREAS-DO-CONHECIMENTO');
+  filled.forEach((area, i) => {
+    const name = `AREA-DO-CONHECIMENTO-${i + 1}`;
+    const attrs = emptyAttrs(schema, name).map((a) => {
+      const key = (Object.keys(AREA_ATTRS) as (keyof KnowledgeArea)[]).find(
+        (k) => AREA_ATTRS[k] === a.name,
+      );
+      return key ? { name: a.name, value: area[key] } : a;
+    });
+    insertInSchemaOrder(schema, container, element(name, attrs));
+  });
+  insertInSchemaOrder(schema, item, container);
+}
+
+/** Áreas já usadas no currículo (itens e áreas de atuação), sem repetir, das mais usadas. */
+export function knownAreas(doc: XDocument): KnowledgeArea[] {
+  const counts = new Map<string, { area: KnowledgeArea; n: number }>();
+  walk(doc.root, (el) => {
+    if (!/^AREA-DO-CONHECIMENTO-\d$/.test(el.name) && el.name !== 'AREA-DE-ATUACAO') return;
+    const area = readArea(el);
+    if (isEmptyArea(area)) return;
+    const key = [area.bigArea, area.area, area.subArea, area.specialty].join('|');
+    const entry = counts.get(key) ?? { area, n: 0 };
+    entry.n++;
+    counts.set(key, entry);
+  });
+  return [...counts.values()].sort((a, b) => b.n - a.n).map((e) => e.area);
+}

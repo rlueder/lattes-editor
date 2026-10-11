@@ -2,7 +2,7 @@
 // contêineres do XML; "Outros dados" recolhe o que nenhuma seção reivindicou,
 // para que todo elemento do arquivo apareça em algum lugar.
 
-import { elementLabel } from '../labels/labels.ts';
+import { elementLabel, slugify } from '../labels/labels.ts';
 import { childElements, firstChild, getAttr, walk, type XElement } from '../model/xml.ts';
 
 export interface SectionGroup {
@@ -59,14 +59,9 @@ function descendants(root: XElement, name: string): XElement[] {
   return found;
 }
 
-function group(sectionId: string, label: string, elements: XElement[], key = label): SectionGroup {
-  const slug = key
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
-  return { elements, id: `${sectionId}--${slug}`, label };
+/** Id do grupo = âncora legível na URL: "producoes/artigos-completos-publicados". */
+function group(sectionId: string, label: string, elements: XElement[]): SectionGroup {
+  return { elements, id: `${sectionId}/${slugify(label)}`, label };
 }
 
 /** Um grupo por contêiner encontrado, rotulado pelo nome do contêiner. */
@@ -74,7 +69,7 @@ function containers(sectionId: string, root: XElement, paths: string[]): Section
   return paths.flatMap((path) => {
     const els = at(root, path);
     const name = path.split('/').pop()!;
-    return els.length ? [group(sectionId, elementLabel(name), els, path)] : [];
+    return els.length ? [group(sectionId, elementLabel(name), els)] : [];
   });
 }
 
@@ -257,12 +252,21 @@ export function buildSections(root: XElement): Section[] {
     scan(parent);
   }
   sections.push({
-    groups: leftovers.map((el) => group('outros', elementLabel(el.name), [el], el.name)),
+    groups: leftovers.map((el) => group('outros', elementLabel(el.name), [el])),
     id: 'outros',
     importable: false,
     label: 'Outros dados',
   });
 
+  // Dois grupos de mesmo rótulo numa seção (raro, em "Outros dados") ganham sufixo.
+  for (const section of sections) {
+    const seen = new Map<string, number>();
+    for (const g of section.groups) {
+      const n = (seen.get(g.id) ?? 0) + 1;
+      seen.set(g.id, n);
+      if (n > 1) g.id = `${g.id}-${n}`;
+    }
+  }
   return sections;
 }
 

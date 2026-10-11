@@ -1,8 +1,7 @@
-// Menu de configurações (⚙): opções de exibição e ações de arquivo menos
-// usadas, com a versão no fim. Padrão de menu do ARIA APG: setas navegam,
-// Esc fecha e devolve o foco ao botão, clique fora fecha.
+// Menu de configurações (⚙) sobre o Menu do Base UI: opções de exibição e
+// ações de arquivo menos usadas, com a versão no fim.
 
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { Menu } from '@base-ui/react/menu';
 
 import {
   CheckIcon,
@@ -13,6 +12,7 @@ import {
   RefreshIcon,
   SettingsIcon,
 } from './icons.tsx';
+import { Tip } from './primitives/Tip.tsx';
 import type { ThemePref } from './theme.ts';
 
 interface Props {
@@ -44,145 +44,90 @@ export function SettingsMenu({
   showEmpty,
   theme,
 }: Props) {
-  const [open, setOpen] = useState(false);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  const items = () =>
-    Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role^="menuitem"]') ?? []);
-
-  useEffect(() => {
-    if (!open) return;
-    items()[0]?.focus();
-    const onPointer = (e: PointerEvent) => {
-      const target = e.target as Node;
-      if (!menuRef.current?.contains(target) && !buttonRef.current?.contains(target))
-        setOpen(false);
-    };
-    document.addEventListener('pointerdown', onPointer);
-    return () => document.removeEventListener('pointerdown', onPointer);
-  }, [open]);
-
-  const close = (refocus = true) => {
-    setOpen(false);
-    if (refocus) buttonRef.current?.focus();
-  };
-
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    const list = items();
-    const i = list.indexOf(document.activeElement as HTMLElement);
-    const go = (n: number) => {
-      e.preventDefault();
-      list[(n + list.length) % list.length]?.focus();
-    };
-    if (e.key === 'ArrowDown') go(i + 1);
-    else if (e.key === 'ArrowUp') go(i - 1);
-    else if (e.key === 'Home') go(0);
-    else if (e.key === 'End') go(list.length - 1);
-    else if (e.key === 'Escape') {
-      e.preventDefault();
-      close();
-    } else if (e.key === 'Tab') close(false);
-  };
-
-  /** Ação que fecha o menu depois de rodar. */
-  const run = (fn: () => void) => () => {
-    close(false);
-    fn();
-  };
-
-  const item = (icon: ReactNode, label: ReactNode, onClick: () => void, extra?: ReactNode) => (
-    <button className="menu-item" role="menuitem" tabIndex={-1} type="button" onClick={onClick}>
-      <span className="menu-icon">{icon}</span>
-      <span className="menu-label">{label}</span>
-      {extra}
-    </button>
-  );
-
   return (
-    <div className="settings">
-      <button
-        ref={buttonRef}
-        aria-controls="menu-configuracoes"
-        aria-expanded={open}
-        aria-haspopup="menu"
-        aria-label="Configurações e arquivo"
-        className="ghost icon-btn"
-        data-tip={open ? undefined : 'Configurações e arquivo'}
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-      >
-        <SettingsIcon />
-        {modified && <span aria-hidden="true" className="dot badge-dot" />}
-      </button>
-
-      {open && (
-        <div
-          ref={menuRef}
-          aria-label="Configurações e arquivo"
-          className="menu"
-          id="menu-configuracoes"
-          role="menu"
-          tabIndex={-1}
-          onKeyDown={onKeyDown}
-        >
-          <div className="menu-heading" role="presentation">
-            Tema
-          </div>
-          <div aria-label="Tema" className="menu-segment" role="group">
-            {THEMES.map((t) => (
-              <button
-                key={t.value}
-                aria-checked={theme === t.value}
-                className={theme === t.value ? 'menu-seg active' : 'menu-seg'}
-                role="menuitemradio"
-                tabIndex={-1}
-                type="button"
-                onClick={() => onTheme(t.value)}
+    <Menu.Root>
+      <Tip label="Configurações e arquivo">
+        <Menu.Trigger aria-label="Configurações e arquivo" className="ghost icon-btn">
+          <SettingsIcon />
+          {modified && <span aria-hidden="true" className="dot badge-dot" />}
+        </Menu.Trigger>
+      </Tip>
+      <Menu.Portal>
+        <Menu.Positioner align="end" className="popup-positioner" sideOffset={6}>
+          <Menu.Popup className="menu">
+            <Menu.Group>
+              <Menu.GroupLabel className="menu-heading">Tema</Menu.GroupLabel>
+              <Menu.RadioGroup
+                className="menu-segment"
+                value={theme}
+                onValueChange={(v) => onTheme(v as ThemePref)}
               >
-                {t.label}
-              </button>
-            ))}
-          </div>
+                {THEMES.map((t) => (
+                  <Menu.RadioItem
+                    key={t.value}
+                    className="menu-seg"
+                    closeOnClick={false}
+                    value={t.value}
+                  >
+                    {t.label}
+                  </Menu.RadioItem>
+                ))}
+              </Menu.RadioGroup>
+            </Menu.Group>
 
-          <button
-            aria-checked={showEmpty}
-            className="menu-item"
-            role="menuitemcheckbox"
-            tabIndex={-1}
-            type="button"
-            onClick={() => onShowEmpty(!showEmpty)}
-          >
-            <span className="menu-icon">
-              <EyeIcon />
-            </span>
-            <span className="menu-label">Mostrar campos vazios</span>
-            <span aria-hidden="true" className="menu-check">
-              {showEmpty && <CheckIcon />}
-            </span>
-          </button>
+            <Menu.CheckboxItem
+              checked={showEmpty}
+              className="menu-item"
+              closeOnClick={false}
+              onCheckedChange={onShowEmpty}
+            >
+              <span className="menu-icon">
+                <EyeIcon />
+              </span>
+              <span className="menu-label">Mostrar campos vazios</span>
+              <Menu.CheckboxItemIndicator className="menu-check">
+                <CheckIcon />
+              </Menu.CheckboxItemIndicator>
+            </Menu.CheckboxItem>
 
-          <div className="menu-sep" role="separator" />
+            <Menu.Separator className="menu-sep" />
 
-          {item(
-            <DownloadIcon />,
-            'Salvar arquivo (.xml)',
-            run(onSave),
-            modified && <span className="menu-hint">alterado</span>,
-          )}
-          {item(<RefreshIcon />, 'Recarregar do Lattes…', run(onReload))}
-          {item(<HistoryIcon />, 'Histórico de alterações', run(onHistory))}
+            <Menu.Item className="menu-item" onClick={onSave}>
+              <span className="menu-icon">
+                <DownloadIcon />
+              </span>
+              <span className="menu-label">Salvar arquivo (.xml)</span>
+              {modified && <span className="menu-hint">alterado</span>}
+            </Menu.Item>
+            <Menu.Item className="menu-item" onClick={onReload}>
+              <span className="menu-icon">
+                <RefreshIcon />
+              </span>
+              <span className="menu-label">Recarregar do Lattes…</span>
+            </Menu.Item>
+            <Menu.Item className="menu-item" onClick={onHistory}>
+              <span className="menu-icon">
+                <HistoryIcon />
+              </span>
+              <span className="menu-label">Histórico de alterações</span>
+            </Menu.Item>
 
-          <div className="menu-sep" role="separator" />
+            <Menu.Separator className="menu-sep" />
 
-          {item(<CloseIcon />, 'Fechar o currículo', run(onClose))}
+            <Menu.Item className="menu-item" onClick={onClose}>
+              <span className="menu-icon">
+                <CloseIcon />
+              </span>
+              <span className="menu-label">Fechar o currículo</span>
+            </Menu.Item>
 
-          <div className="menu-sep" role="separator" />
-          <div className="menu-version" role="presentation">
-            Editor do Currículo Lattes · versão {__APP_VERSION__}
-          </div>
-        </div>
-      )}
-    </div>
+            <Menu.Separator className="menu-sep" />
+            <div className="menu-version">
+              Editor do Currículo Lattes · versão {__APP_VERSION__}
+            </div>
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }

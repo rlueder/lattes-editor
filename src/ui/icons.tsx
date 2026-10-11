@@ -119,3 +119,9 @@ export const CopyIcon = () => (
     <path d="M15.5 8.5V5.5a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3" />
   </Icon>
 );
+
+export const ChevronIcon = () => (
+  <Icon size={14}>
+    <path d="m6 9 6 6 6-6" />
+  </Icon>
+);

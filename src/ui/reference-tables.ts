@@ -127,9 +127,13 @@ export function institutionView(index: ReferenceIndex): ListView {
   const card = (el: XElement): CardInfo => {
     const sigla = attr(el, 'SIGLA-INSTITUICAO');
     const name = ref(el)?.name;
-    const title = sigla ?? name ?? attr(el, 'CODIGO-INSTITUICAO') ?? '';
+    const code = attr(el, 'CODIGO-INSTITUICAO');
+    // Entrada só com código, sem sigla nem item que a cite: o arquivo não tem o nome.
+    const title = sigla ?? name ?? 'Instituição sem nome no arquivo';
     const tags = [
       name && name !== title ? name : undefined,
+      !sigla && !name && code ? `código ${code}` : undefined,
+      !sigla && !name && uses(el) === 0 ? 'não aparece em nenhum item' : undefined,
       attr(el, 'SIGLA-UF-INSTITUICAO'),
       getAttr(el, 'FLAG-INSTITUICAO-DE-ENSINO') === 'SIM' ? 'instituição de ensino' : undefined,
       getAttr(el, 'FLAG-AGENCIA-FOMENTO') === 'SIM' ? 'agência de fomento' : undefined,

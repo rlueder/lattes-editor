@@ -10,8 +10,11 @@ import {
   type Author,
   authorElementName,
   itemPart,
+  type KnowledgeArea,
+  readAreas,
   readAuthors,
   readKeywords,
+  setAreas,
   setAuthors,
   setKeywords,
 } from '../model/production.ts';
@@ -20,7 +23,9 @@ import type { XElement } from '../model/xml.ts';
 import { lattesSchema as schema } from '../schema/lattes.ts';
 import { AttributeField } from '../ui/AttributeField.tsx';
 import { Attributes } from '../ui/ElementView.tsx';
+import { CloseIcon } from '../ui/icons.tsx';
 import { Modal } from '../ui/Modal.tsx';
+import { AreasEditor } from './AreasEditor.tsx';
 import { AuthorsEditor } from './AuthorsEditor.tsx';
 import { formSpec, missingRequired } from './specs.ts';
 
@@ -35,6 +40,7 @@ const DOI_TYPES = new Set([
 interface Props {
   isNew: boolean;
   item: XElement;
+  knownAreas: KnowledgeArea[];
   knownAuthors: Author[];
   /** Número que o item vai receber (novo) ou tem (existente). */
   sequencia: number;
@@ -46,6 +52,7 @@ interface Props {
 export function ProductionForm({
   isNew,
   item,
+  knownAreas,
   knownAuthors,
   onCancel,
   onRemove,
@@ -102,7 +109,14 @@ export function ProductionForm({
   };
 
   return (
-    <Modal open className="form-modal" focusFirstField={isNew} label={title} onClose={onCancel}>
+    <Modal
+      bare
+      open
+      className="form-modal"
+      focusFirstField={isNew}
+      label={title}
+      onClose={onCancel}
+    >
       <form
         className="production-form"
         onSubmit={(e) => {
@@ -110,14 +124,28 @@ export function ProductionForm({
           save();
         }}
       >
-        <header className="form-head">
-          <h2>{isNew ? `Novo: ${title}` : title}</h2>
-          <span className="muted seq" title="SEQUENCIA-PRODUCAO">
-            nº {sequencia}
-          </span>
+        <header className="modal-head">
+          <div className="modal-titles">
+            <h2>{isNew ? `Novo: ${title}` : title}</h2>
+            <p className="modal-subtitle">
+              {isNew ? 'Entra no próximo arquivo de importação' : 'Ainda não está no Lattes'}
+              <span className="seq" title="SEQUENCIA-PRODUCAO">
+                {' '}
+                · nº {sequencia}
+              </span>
+            </p>
+          </div>
+          <button
+            aria-label="Fechar"
+            className="ghost icon-btn modal-close"
+            type="button"
+            onClick={onCancel}
+          >
+            <CloseIcon />
+          </button>
         </header>
 
-        <div className="form-body">
+        <div className="modal-body">
           {DOI_TYPES.has(item.name) && (
             <DoiLookup
               hint="Preenche título, ano, autores, periódico ou evento e páginas. Confira antes de salvar."
@@ -184,6 +212,17 @@ export function ProductionForm({
             />
           )}
 
+          {schema.elements[item.name]?.children.some((c) => c.name === 'AREAS-DO-CONHECIMENTO') && (
+            <AreasEditor
+              areas={readAreas(item)}
+              known={knownAreas}
+              onChange={(next) => {
+                setAreas(schema, item, next);
+                touch();
+              }}
+            />
+          )}
+
           <KeywordsField
             words={readKeywords(item)}
             onChange={(words) => {
@@ -224,7 +263,7 @@ export function ProductionForm({
           )}
         </div>
 
-        <footer className="form-foot">
+        <footer className="modal-foot form-foot">
           {problems.length > 0 ? (
             <details className="form-problems">
               <summary>

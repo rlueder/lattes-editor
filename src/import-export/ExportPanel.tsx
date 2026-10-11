@@ -9,6 +9,7 @@ import type { Problem } from '../model/validate.ts';
 import type { ChangeEntry, ChangeGroup } from '../ui/changes-view.ts';
 import { openCount } from '../ui/changes-view.ts';
 import { ChangesList } from '../ui/ChangesList.tsx';
+import { DownloadIcon } from '../ui/icons.tsx';
 import { Modal } from '../ui/Modal.tsx';
 import type { ImportFile } from './import-file.ts';
 
@@ -47,18 +48,38 @@ export function ExportPanel({
   const minYear = years.length ? Math.min(...years) : undefined;
 
   return (
-    <Modal className="export" label="Levar ao Lattes" open={open} onClose={onClose}>
-      <h2>Levar ao Lattes</h2>
-      <div className="export-body">
-        <h3 className="export-part">
-          1. Itens novos, pelo Importar
+    <Modal
+      className="export"
+      footer={
+        <>
+          {file && blocked.length === 0 && (
+            <button className="primary" type="button" onClick={onDownload}>
+              <DownloadIcon />
+              Baixar arquivo de importação
+            </button>
+          )}
+          <button className="ghost" type="button" onClick={onClose}>
+            Fechar
+          </button>
+        </>
+      }
+      label="Levar ao Lattes"
+      open={open}
+      subtitle="Itens novos entram pelo Importar do Lattes; o resto, à mão nos formulários."
+      title="Levar ao Lattes"
+      onClose={onClose}
+    >
+      <section className="panel-section">
+        <h3 className="panel-section-head">
+          <span className="step">1</span>
+          Itens novos, pelo Importar
           <span className="count">{pending.length}</span>
         </h3>
 
         {pending.length === 0 ? (
-          <p className="muted">
-            Nenhum item novo. Itens criados aqui aparecem nesta lista até você importar no Lattes e
-            recarregar a exportação.
+          <p className="empty">
+            Nenhum item novo. Os itens criados em &quot;Novo item&quot; aparecem aqui até você
+            importar no Lattes e recarregar a exportação.
           </p>
         ) : (
           <>
@@ -94,15 +115,11 @@ export function ExportPanel({
             ) : (
               file && (
                 <>
-                  <div className="export-download">
-                    <button className="primary" type="button" onClick={onDownload}>
-                      Baixar {file.fileName}
-                    </button>
-                    <span className="muted">
-                      {file.newItems === 1 ? '1 item novo' : `${file.newItems} itens novos`}
-                    </span>
-                  </div>
-
+                  <p className="muted">
+                    Arquivo <code>{file.fileName}</code> com{' '}
+                    {file.newItems === 1 ? '1 item novo' : `${file.newItems} itens novos`}. Depois
+                    de baixar, no Lattes:
+                  </p>
                   <ol className="lattes-steps">
                     <li>No Lattes, abra a opção Importar do currículo.</li>
                     <li>
@@ -140,17 +157,16 @@ export function ExportPanel({
             )}
           </>
         )}
-        <h3 className="export-part">
-          2. Alterações, à mão nos formulários
+      </section>
+
+      <section className="panel-section">
+        <h3 className="panel-section-head">
+          <span className="step">2</span>
+          Alterações, à mão nos formulários
           <span className="count">{open_}</span>
         </h3>
         <ChangesList groups={changes} onToggleDone={onToggleDone} />
-      </div>
-      <div className="export-foot">
-        <button className="ghost" type="button" onClick={onClose}>
-          Fechar
-        </button>
-      </div>
+      </section>
     </Modal>
   );
 }

@@ -13,16 +13,19 @@ import {
   findBySequencia,
   importableTypes,
   itemPart,
+  knownAreas,
   knownAuthors,
   newItem,
   nextSequencia,
   pendingItems,
   productionType,
   pruneEmptyExtras,
+  readAreas,
   readAuthors,
   readKeywords,
   removeProduction,
   replaceProduction,
+  setAreas,
   setAuthors,
   setKeywords,
 } from '../src/model/production.ts';
@@ -225,5 +228,43 @@ describe('arquivo de importação', () => {
       date: '02012026',
       time: '030405',
     });
+  });
+});
+
+describe('áreas do conhecimento', () => {
+  const DESIGN = {
+    area: 'Desenho Industrial',
+    bigArea: 'CIENCIAS_SOCIAIS_APLICADAS',
+    specialty: '',
+    subArea: 'Programação Visual',
+  };
+
+  it('grava até 3 áreas no formato do item aceito em 10/10/2026; sem áreas, o bloco sai', () => {
+    const item = newItem(schema, 'TRABALHO-EM-EVENTOS', 33);
+    const empty = { area: '', bigArea: '', specialty: '', subArea: '' };
+    setAreas(schema, item, [DESIGN, empty, DESIGN, DESIGN, DESIGN]);
+    expect(readAreas(item)).toEqual([DESIGN, DESIGN, DESIGN]);
+    const xml = serializeXml({ epilog: '', prolog: '', root: item });
+    expect(xml).toContain(
+      '<AREAS-DO-CONHECIMENTO><AREA-DO-CONHECIMENTO-1 NOME-GRANDE-AREA-DO-CONHECIMENTO="CIENCIAS_SOCIAIS_APLICADAS" NOME-DA-AREA-DO-CONHECIMENTO="Desenho Industrial" NOME-DA-SUB-AREA-DO-CONHECIMENTO="Programação Visual" NOME-DA-ESPECIALIDADE=""/>',
+    );
+    expect(findOrderViolations(schema, item)).toEqual([]);
+    setAreas(schema, item, [empty]);
+    expect(readAreas(item)).toEqual([]);
+    expect(serializeXml({ epilog: '', prolog: '', root: item })).not.toContain(
+      'AREAS-DO-CONHECIMENTO',
+    );
+  });
+
+  it('lista as áreas já usadas, das mais frequentes', () => {
+    const doc = parseXml(`<CURRICULO-VITAE>
+      <DADOS-GERAIS><AREAS-DE-ATUACAO><AREA-DE-ATUACAO SEQUENCIA-AREA-DE-ATUACAO="1" NOME-GRANDE-AREA-DO-CONHECIMENTO="CIENCIAS_EXATAS_E_DA_TERRA" NOME-DA-AREA-DO-CONHECIMENTO="Ciência da Computação" NOME-DA-SUB-AREA-DO-CONHECIMENTO="" NOME-DA-ESPECIALIDADE=""/></AREAS-DE-ATUACAO></DADOS-GERAIS>
+      <X><AREAS-DO-CONHECIMENTO><AREA-DO-CONHECIMENTO-1 NOME-GRANDE-AREA-DO-CONHECIMENTO="CIENCIAS_SOCIAIS_APLICADAS" NOME-DA-AREA-DO-CONHECIMENTO="Desenho Industrial" NOME-DA-SUB-AREA-DO-CONHECIMENTO="Programação Visual" NOME-DA-ESPECIALIDADE=""/></AREAS-DO-CONHECIMENTO></X>
+      <Y><AREAS-DO-CONHECIMENTO><AREA-DO-CONHECIMENTO-1 NOME-GRANDE-AREA-DO-CONHECIMENTO="CIENCIAS_SOCIAIS_APLICADAS" NOME-DA-AREA-DO-CONHECIMENTO="Desenho Industrial" NOME-DA-SUB-AREA-DO-CONHECIMENTO="Programação Visual" NOME-DA-ESPECIALIDADE=""/><AREA-DO-CONHECIMENTO-2 NOME-GRANDE-AREA-DO-CONHECIMENTO="" NOME-DA-AREA-DO-CONHECIMENTO="" NOME-DA-SUB-AREA-DO-CONHECIMENTO="" NOME-DA-ESPECIALIDADE=""/></AREAS-DO-CONHECIMENTO></Y>
+    </CURRICULO-VITAE>`);
+    expect(knownAreas(doc).map((a) => a.area)).toEqual([
+      'Desenho Industrial',
+      'Ciência da Computação',
+    ]);
   });
 });

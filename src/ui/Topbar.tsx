@@ -14,6 +14,7 @@ import {
   SpinnerIcon,
   UploadIcon,
 } from './icons.tsx';
+import { Tip } from './primitives/Tip.tsx';
 import { SettingsMenu } from './SettingsMenu.tsx';
 import type { ThemePref } from './theme.ts';
 
@@ -82,23 +83,24 @@ export function Topbar({
             Currículo Lattes{date ? ` · exportado em ${date}` : ''}
           </span>
         </div>
-        <button
-          aria-label={`${SAVE_LABEL[saveState]}. Abrir histórico de alterações`}
-          className={`ghost save-state ${saveState}`}
-          data-tip="Histórico de alterações"
-          type="button"
-          onClick={onHistory}
-        >
-          {saveState === 'salvando' ? (
-            <SpinnerIcon />
-          ) : saveState === 'erro' ? (
-            <AlertIcon />
-          ) : (
-            <CheckIcon />
-          )}
-          <span>{SAVE_LABEL[saveState]}</span>
-          <HistoryIcon />
-        </button>
+        <Tip label="Histórico de alterações">
+          <button
+            aria-label={`${SAVE_LABEL[saveState]}. Abrir histórico de alterações`}
+            className={`ghost save-state ${saveState}`}
+            type="button"
+            onClick={onHistory}
+          >
+            {saveState === 'salvando' ? (
+              <SpinnerIcon />
+            ) : saveState === 'erro' ? (
+              <AlertIcon />
+            ) : (
+              <CheckIcon />
+            )}
+            <span>{SAVE_LABEL[saveState]}</span>
+            <HistoryIcon />
+          </button>
+        </Tip>
       </div>
 
       <div className="topbar-actions">

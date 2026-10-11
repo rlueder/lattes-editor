@@ -20,6 +20,7 @@ import { CommandPalette } from './CommandPalette.tsx';
 import { HistoryDialog, ReloadConfirm } from './dialogs.tsx';
 import { DropZone } from './DropZone.tsx';
 import { EditorContext } from './editor-context.ts';
+import { type HashRoute, parseHash, writeHash } from './hash-route.ts';
 import { paletteActions, paletteEntries, type PaletteEntry } from './palette-search.ts';
 import { ReferenceContext } from './reference-context.ts';
 import { buildReferenceIndex, type ReferenceIndex } from './reference-tables.ts';
@@ -140,12 +141,37 @@ export function App() {
     [session, version],
   );
   const section = sections.find((s) => s.id === sectionId) ?? sections[0];
+  const sectionsRef = useRef(sections);
+  sectionsRef.current = sections;
   const changes = useChanges(session, sections, version, setSession, onEdit);
 
   const togglePalette = useCallback(() => {
     if (session) setPaletteOpen((o) => !o);
   }, [session]);
   usePaletteShortcut(togglePalette);
+
+  /** Vai para a seção (e o grupo ou ano) e mantém a URL legível em sincronia. */
+  const navigate = useCallback((route: HashRoute, write = true) => {
+    setSectionId(route.sectionId);
+    pendingAnchor.current = route.anchor ?? null;
+    if (!route.anchor) window.scrollTo({ top: 0 });
+    if (write) writeHash(route);
+  }, []);
+
+  // Abrir um link "#atuacao/atuacao-profissional/2020" leva direto lá; idem ao
+  // editar a URL à mão.
+  const hasSections = sections.length > 0;
+  useEffect(() => {
+    if (!hasSections) return;
+    const follow = () => {
+      const route = parseHash(location.hash);
+      if (route && sectionsRef.current.some((s) => s.id === route.sectionId))
+        navigate(route, false);
+    };
+    follow();
+    window.addEventListener('hashchange', follow);
+    return () => window.removeEventListener('hashchange', follow);
+  }, [hasSections, navigate]);
 
   const jump = (entry: PaletteEntry) => {
     if (entry.action) {
@@ -158,9 +184,7 @@ export function App() {
       }
       return;
     }
-    setSectionId(entry.sectionId);
-    pendingAnchor.current = entry.anchorId ?? null;
-    if (!entry.anchorId) window.scrollTo({ top: 0 });
+    navigate({ anchor: entry.anchorId, sectionId: entry.sectionId });
   };
 
   // Rola até o grupo escolhido no ⌘K depois que a seção renderiza.
@@ -286,10 +310,7 @@ export function App() {
         activeId={section?.id}
         pendingIn={pendingIn}
         sections={sections}
-        onSelect={(id) => {
-          setSectionId(id);
-          window.scrollTo({ top: 0 });
-        }}
+        onSelect={(id) => navigate({ sectionId: id })}
       />
 
       <main className="content">
@@ -298,14 +319,7 @@ export function App() {
         >
           <ReferenceContext.Provider value={referenceIndex ?? EMPTY_INDEX}>
             {error && <p className="error">{error}</p>}
-            {section && (
-              <SectionView
-                section={section}
-                showEmpty={showEmpty}
-                version={version}
-                onEdit={onEdit}
-              />
-            )}
+            {section && <SectionView section={section} showEmpty={showEmpty} onEdit={onEdit} />}
           </ReferenceContext.Provider>
         </EditorContext.Provider>
       </main>
@@ -317,6 +331,7 @@ export function App() {
           key={`${production.form.sequencia}-${production.form.isNew}`}
           isNew={production.form.isNew}
           item={production.form.item}
+          knownAreas={production.areas}
           knownAuthors={production.authors}
           sequencia={production.form.sequencia}
           onCancel={production.cancel}

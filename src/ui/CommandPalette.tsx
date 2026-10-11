@@ -59,7 +59,7 @@ export function CommandPalette({ entries, onClose, onSelect, open }: Props) {
   };
 
   return (
-    <Modal className="palette" label="Ir para seção" open={open} onClose={onClose}>
+    <Modal bare className="palette" label="Ir para seção" open={open} onClose={onClose}>
       <input
         ref={inputRef}
         aria-activedescendant={results[active] ? `palette-${results[active].key}` : undefined}

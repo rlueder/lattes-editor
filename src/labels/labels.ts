@@ -172,7 +172,8 @@ export function elementLabel(name: string): string {
 }
 
 export function attributeLabel(name: string): string {
-  return ATTRIBUTES[name] ?? humanize(name);
+  // "Flag bolsa" diz menos que "Bolsa"; o campo já aparece como sim/não.
+  return ATTRIBUTES[name] ?? humanize(name.replace(/^FLAG-/, ''));
 }
 
 export function enumLabel(value: string): string {
@@ -188,4 +189,11 @@ export function fold(text: string): string {
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
     .toLowerCase();
+}
+
+/** Trecho de URL legível: "Artigos completos publicados" → "artigos-completos-publicados". */
+export function slugify(text: string): string {
+  return fold(text)
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 }

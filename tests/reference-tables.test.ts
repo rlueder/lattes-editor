@@ -85,6 +85,13 @@ describe('institutionView', () => {
       title: 'Empresa Ltda',
     });
     expect(view.card(institutions[2]!)).toMatchObject({ aside: undefined, title: 'ZZ' });
+    const orphan = parseXml(
+      '<INFORMACAO-ADICIONAL-INSTITUICAO CODIGO-INSTITUICAO="000700000992" SIGLA-INSTITUICAO=""/>',
+    ).root;
+    expect(view.card(orphan)).toMatchObject({
+      subtitle: 'código 000700000992 · não aparece em nenhum item',
+      title: 'Instituição sem nome no arquivo',
+    });
   });
 });
 

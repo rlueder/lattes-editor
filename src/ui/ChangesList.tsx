@@ -5,6 +5,7 @@
 import { elementLabel } from '../labels/labels.ts';
 import type { ChangeEntry, ChangeGroup } from './changes-view.ts';
 import { CopyButton } from './CopyButton.tsx';
+import { Checkbox } from './primitives/Checkbox.tsx';
 
 const KIND_LABEL = { alterado: 'alterado', novo: 'incluir', removido: 'excluir' } as const;
 
@@ -16,7 +17,7 @@ interface Props {
 export function ChangesList({ groups, onToggleDone }: Props) {
   if (groups.length === 0) {
     return (
-      <p className="muted">
+      <p className="empty">
         Nada a copiar à mão. Mudanças em Dados gerais, Formação, Atuação e em itens que já estão no
         Lattes aparecem aqui.
       </p>
@@ -42,14 +43,11 @@ export function ChangesList({ groups, onToggleDone }: Props) {
               return (
                 <li key={change.key} className={entry.done ? 'change done' : 'change'}>
                   <div className="change-head">
-                    <label className="change-done">
-                      <input
-                        checked={entry.done}
-                        type="checkbox"
-                        onChange={() => onToggleDone(entry)}
-                      />
-                      <span className="sr-only">Feito no Lattes</span>
-                    </label>
+                    <Checkbox
+                      aria-label="Feito no Lattes"
+                      checked={entry.done}
+                      onChange={() => onToggleDone(entry)}
+                    />
                     <span className={`tag kind-${change.kind}`}>{KIND_LABEL[change.kind]}</span>
                     <span className="change-where">
                       {context.length ? context.join(' › ') : elementLabel(change.element)}

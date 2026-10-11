@@ -46,7 +46,15 @@
     "SEQUENCIA-PRODUCAO": "Sequência da produção",
     "DOI": "DOI",
     "ISSN": "ISSN",
-    "ISBN": "ISBN"
+    "ISBN": "ISBN",
+    "NOME-PAIS-INSTITUICAO": "País",
+    "SIGLA-UF-INSTITUICAO": "UF",
+    "SIGLA-PAIS-INSTITUICAO": "Sigla do país",
+    "NOME-GRANDE-AREA-DO-CONHECIMENTO": "Grande área",
+    "NIVEL-CURSO": "Nível",
+    "TIPO-DE-VINCULO": "Vínculo",
+    "FORMA-PARTICIPACAO": "Forma de participação",
+    "TIPO-PARTICIPACAO": "Tipo de participação"
   },
   "enums": {
     "SIM": "Sim",

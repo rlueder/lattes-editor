@@ -4,27 +4,45 @@
 
 import { useId } from 'react';
 
-import { elementLabel } from '../labels/labels.ts';
+import { elementLabel, slugify } from '../labels/labels.ts';
 import { SEQ_ATTR } from '../model/production.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import { useEditor } from './editor-context.ts';
 import { type EditFn, ElementView } from './ElementView.tsx';
+import { applyFilter, cardText, type SectionFilter } from './facets.ts';
 import { JumpBar } from './JumpBar.tsx';
 import { type CardInfo, type ListView, yearView } from './list-view.ts';
 
 interface Props {
+  /** Âncora do grupo da seção; com ela, os anos viram links legíveis ("…/2020"). */
+  anchorBase?: string;
   depth?: number;
+  filter?: SectionFilter;
   items: XElement[];
   showEmpty: boolean;
   view?: ListView;
   onEdit: EditFn;
 }
 
-export function ItemList({ depth = 0, items, onEdit, showEmpty, view = yearView }: Props) {
+export function ItemList({
+  anchorBase,
+  depth = 0,
+  filter,
+  items,
+  onEdit,
+  showEmpty,
+  view = yearView,
+}: Props) {
   const listId = useId();
-  const groups = view.groups(items);
+  // O filtro mora na seção (barra única no topo); a lista só aplica.
+  const visible = filter
+    ? applyFilter(items, filter.facets, filter.state, (el) => cardText(view.card(el)))
+    : items;
+  const groups = view.groups(visible);
   const mixedKinds = new Set(items.map((el) => el.name)).size > 1;
-  const anchor = (key: string) => `${listId}-${key}`;
+  // Listas aninhadas (dentro de um cartão) não entram na URL; usam ids internos.
+  const anchor = (key: string, label: string) =>
+    anchorBase ? `${anchorBase}/${slugify(label)}` : `${listId}-${key}`;
 
   const cards = (els: XElement[]) =>
     els.map((el, i) => (
@@ -39,6 +57,9 @@ export function ItemList({ depth = 0, items, onEdit, showEmpty, view = yearView 
       />
     ));
 
+  // Sem resultado, a seção esconde o grupo inteiro.
+  if (visible.length === 0) return null;
+
   // Nada para dividir: só o grupo "sem ano/país/área".
   if (groups.length === 1 && groups[0]!.key === view.ungroupedKey) {
     return <div className="item-list">{cards(groups[0]!.items)}</div>;
@@ -50,16 +71,17 @@ export function ItemList({ depth = 0, items, onEdit, showEmpty, view = yearView 
         <JumpBar
           entries={groups.map((g) => ({
             count: g.items.length,
-            id: anchor(g.key),
+            id: anchor(g.key, g.label),
             label: g.label,
           }))}
           label="Divisões da lista"
           level="year"
+          linkable={anchorBase !== undefined}
         />
       )}
       {groups.map((g) => (
-        <section key={g.key} aria-labelledby={anchor(g.key)} className="year-group">
-          <h3 className="year-head" id={anchor(g.key)}>
+        <section key={g.key} aria-labelledby={anchor(g.key, g.label)} className="year-group">
+          <h3 className="year-head" id={anchor(g.key, g.label)}>
             {g.label}
             <span className="count">{g.items.length}</span>
           </h3>

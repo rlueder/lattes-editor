@@ -1,17 +1,79 @@
+// Uma seção do menu: título, barra de filtro (a primeira coisa, valendo para
+// todas as listas da seção), atalhos dos grupos e os grupos.
+
+import { useMemo, useState } from 'react';
+
+import { childElements, type XElement } from '../model/xml.ts';
 import { type EditFn, ElementView } from './ElementView.tsx';
+import {
+  applyFilter,
+  buildFacets,
+  cardText,
+  elementMatchesText,
+  type FilterState,
+  isFiltering,
+  NO_FILTER,
+} from './facets.ts';
+import { FilterBar } from './FilterBar.tsx';
+import { isListItem } from './item-meta.ts';
 import { ItemList } from './ItemList.tsx';
 import { JumpBar } from './JumpBar.tsx';
-import { countItems, type Section } from './sections.ts';
+import { type ListView, yearView } from './list-view.ts';
+import { useReferenceIndex } from './reference-context.ts';
+import { type ReferenceIndex, viewForContainer } from './reference-tables.ts';
+import { countItems, type Section, type SectionGroup } from './sections.ts';
 
 interface Props {
   section: Section;
   showEmpty: boolean;
-  /** Muda a cada edição; remonta as listas para refletir o documento mutado. */
-  version: number;
   onEdit: EditFn;
 }
 
-export function SectionView({ onEdit, section, showEmpty, version }: Props) {
+interface GroupList {
+  items: XElement[];
+  view: ListView;
+}
+
+/** Os itens de lista de um grupo e a visão que os agrupa; null se o grupo não é lista. */
+function groupList(g: SectionGroup, index: ReferenceIndex): GroupList | null {
+  if (g.elements.length > 1) return { items: g.elements, view: yearView };
+  const el = g.elements[0];
+  if (!el || el.attrs.length > 0) return null;
+  const children = childElements(el).filter((c) => c.attrs.length > 0 || c.children.length > 0);
+  if (children.length === 0 || !children.every(isListItem)) return null;
+  return { items: children, view: viewForContainer(el.name, index) ?? yearView };
+}
+
+export function SectionView(props: Props) {
+  // A chave zera o filtro ao trocar de seção.
+  return <SectionBody key={props.section.id} {...props} />;
+}
+
+function SectionBody({ onEdit, section, showEmpty }: Props) {
+  const index = useReferenceIndex();
+  const [state, setState] = useState<FilterState>(NO_FILTER);
+  const lists = section.groups.map((g) => groupList(g, index));
+  const allItems = lists.flatMap((l) => l?.items ?? []);
+  // Recalcula só quando os itens da seção mudam de identidade.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const facets = useMemo(() => buildFacets(allItems), [section, allItems.length]);
+  const filtering = isFiltering(state);
+  const filter = filtering ? { facets, state } : undefined;
+
+  /** Quantos itens do grupo passam pelo filtro; grupos que não são lista contam 0 ou 1. */
+  const shownIn = (g: SectionGroup, i: number): number => {
+    const list = lists[i];
+    if (!filtering) return countItems(g);
+    if (list)
+      return applyFilter(list.items, facets, state, (el) => cardText(list.view.card(el))).length;
+    // Grupo de campos (Identificação, Resumo): só a busca de texto vale, sem facetas.
+    if (Object.keys(state.selected).length > 0) return 0;
+    return g.elements.some((el) => elementMatchesText(el, state.query)) ? 1 : 0;
+  };
+  const counts = section.groups.map(shownIn);
+  const visibleGroups = section.groups.filter((_, i) => counts[i]! > 0);
+  const shownTotal = lists.reduce((n, l, i) => n + (l ? counts[i]! : 0), 0);
+
   return (
     <>
       <div className="section-head">
@@ -32,35 +94,58 @@ export function SectionView({ onEdit, section, showEmpty, version }: Props) {
         </p>
       )}
       {section.groups.length === 0 && <p className="muted">Nada nesta seção.</p>}
-      <div key={section.id} className="section-body">
-        {section.groups.length > 1 && (
+
+      {section.groups.length > 0 && (
+        <FilterBar
+          facets={facets}
+          shown={shownTotal}
+          state={state}
+          total={allItems.length}
+          onChange={setState}
+        />
+      )}
+
+      <div className="section-body">
+        {visibleGroups.length > 1 && (
           <JumpBar
-            entries={section.groups.map((g) => ({
-              count: countItems(g),
-              id: g.id,
-              label: g.label,
-            }))}
+            linkable
+            entries={section.groups
+              .map((g, i) => ({ count: counts[i]!, id: g.id, label: g.label }))
+              .filter((e) => e.count > 0)}
             label="Grupos da seção"
             level="section"
           />
         )}
-        {section.groups.map((g) => (
-          <section key={g.id} className="group" id={g.id}>
-            <h2>{g.label}</h2>
-            {g.elements.length > 1 ? (
-              <ItemList key={version} items={g.elements} showEmpty={showEmpty} onEdit={onEdit} />
-            ) : (
-              g.elements.map((el, i) => (
-                <ElementView
-                  key={`${version}-${i}`}
-                  el={el}
+        {filtering && visibleGroups.length === 0 && (
+          <p className="empty">Nada nesta seção com esses filtros.</p>
+        )}
+        {section.groups.map((g, i) =>
+          counts[i]! > 0 ? (
+            <section key={g.id} className="group" id={g.id}>
+              <h2>{g.label}</h2>
+              {g.elements.length > 1 ? (
+                <ItemList
+                  anchorBase={g.id}
+                  filter={filter}
+                  items={g.elements}
                   showEmpty={showEmpty}
                   onEdit={onEdit}
                 />
-              ))
-            )}
-          </section>
-        ))}
+              ) : (
+                g.elements.map((el, j) => (
+                  <ElementView
+                    key={j}
+                    anchorBase={g.id}
+                    el={el}
+                    filter={filter}
+                    showEmpty={showEmpty}
+                    onEdit={onEdit}
+                  />
+                ))
+              )}
+            </section>
+          ) : null,
+        )}
       </div>
     </>
   );

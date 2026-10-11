@@ -10,6 +10,7 @@ import {
   addProduction,
   authorElementName,
   findBySequencia,
+  knownAreas,
   knownAuthors,
   newItem,
   nextSequencia,
@@ -79,6 +80,12 @@ export function useProduction(
     [session, version],
   );
 
+  const areas = useMemo(
+    () => (session ? knownAreas(session.doc) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [session, version],
+  );
+
   const startNew = (type: ProductionType, work?: CrossrefWork) => {
     if (!session) return;
     const sequencia = nextSequencia(session.doc, session.meta.nextSequencia);
@@ -131,6 +138,7 @@ export function useProduction(
       : undefined;
 
   return {
+    areas,
     authors,
     buildFile,
     cancel: () => setForm(null),

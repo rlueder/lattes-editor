@@ -22,14 +22,22 @@ const HEIGHT_VAR: Record<JumpLevel, string> = {
   year: '--year-bar-h',
 };
 
+/** Atualiza a URL sem criar entrada no histórico do navegador. */
+function setHash(id: string): void {
+  history.replaceState(null, '', `#${id}`);
+}
+
 export function JumpBar({
   entries,
   label,
   level,
+  linkable = false,
 }: {
   entries: JumpEntry[];
   label: string;
   level: JumpLevel;
+  /** Ids legíveis: o clique também atualiza a URL. */
+  linkable?: boolean;
 }) {
   const barRef = useRef<HTMLElement>(null);
   const [active, setActive] = useState(entries[0]?.id);
@@ -51,21 +59,45 @@ export function JumpBar({
     };
   }, [level]);
 
+  // Depois de um clique, a rolagem suave passa por outras divisões; o chip
+  // clicado fica ativo até a rolagem parar.
+  const lockedTo = useRef<string | null>(null);
+
   useEffect(() => {
     const headIds = ids.split('|');
     let frame = 0;
+    let settle = 0;
     const update = () => {
       frame = 0;
+      if (lockedTo.current) return;
       // Ativa é a última divisão cujo título já passou da borda de baixo da barra.
-      const edge = (barRef.current?.getBoundingClientRect().bottom ?? 0) + 8;
+      // A folga cobre o arredondamento de scroll-margin, que põe o título na borda.
+      const edge = (barRef.current?.getBoundingClientRect().bottom ?? 0) + 24;
       let current = headIds[0];
       for (const id of headIds) {
         const head = document.getElementById(id);
         if (head && head.getBoundingClientRect().top <= edge) current = id;
       }
+      // No fim da página, as últimas divisões não sobem até a barra: vale a última visível.
+      const atBottom =
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+      if (atBottom) {
+        for (const id of headIds) {
+          const head = document.getElementById(id);
+          if (head && head.getBoundingClientRect().top < window.innerHeight) current = id;
+        }
+      }
       setActive(current);
     };
     const schedule = () => {
+      if (lockedTo.current) {
+        // Fim da rolagem: sem eventos por um instante (scrollend não existe em todo navegador).
+        clearTimeout(settle);
+        settle = window.setTimeout(() => {
+          lockedTo.current = null;
+        }, 150);
+        return;
+      }
       if (!frame) frame = requestAnimationFrame(update);
     };
     update();
@@ -75,6 +107,7 @@ export function JumpBar({
       window.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);
       if (frame) cancelAnimationFrame(frame);
+      clearTimeout(settle);
     };
   }, [ids]);
 
@@ -87,8 +120,10 @@ export function JumpBar({
           className={e.id === active ? 'active' : undefined}
           href={`#${e.id}`}
           onClick={(ev) => {
-            // Ids do useId têm ":"; o hash na URL também não acrescenta nada aqui.
             ev.preventDefault();
+            if (linkable) setHash(e.id);
+            setActive(e.id);
+            lockedTo.current = e.id;
             document.getElementById(e.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }}
         >
