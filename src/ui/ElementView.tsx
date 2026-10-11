@@ -53,28 +53,41 @@ function FieldsBlock({
   // Com poucos campos, os títulos de grupo pesam mais do que ajudam.
   const titled = entries.length >= 6 && groups.length > 1;
   return (
-    <div className="fields">
+    <div className="fields-block">
       {groups.map((g) => (
         <Fragment key={g.label}>
           {titled && <div className="fields-group">{g.label}</div>}
-          {g.entries.map((e) => {
-            const i = sourceOf(e.key);
-            return (
-              <AttributeField
-                key={e.key}
-                copyable
-                el={sources[i]!}
-                name={e.attr}
-                spec={specs[i]!.get(e.attr)}
-                onEdit={onEdit}
-              />
-            );
-          })}
+          <div className={`fields cols-${columnsFor(g.label)}`}>
+            {g.entries.map((e) => {
+              const i = sourceOf(e.key);
+              return (
+                <AttributeField
+                  key={e.key}
+                  copyable
+                  el={sources[i]!}
+                  name={e.attr}
+                  spec={specs[i]!.get(e.attr)}
+                  onEdit={onEdit}
+                />
+              );
+            })}
+          </div>
         </Fragment>
       ))}
-      {mixed && <TextField el={main} node={text} onEdit={onEdit} />}
+      {mixed && (
+        <div className="fields cols-2">
+          <TextField el={main} node={text} onEdit={onEdit} />
+        </div>
+      )}
     </div>
   );
+}
+
+/** Grupos de campos curtos (datas, local, telefone) cabem em três colunas; o resto em duas. */
+const THREE_COLUMNS = new Set(['Período', 'Localização', 'Contato', 'Local e idioma']);
+
+function columnsFor(group: string): 2 | 3 {
+  return THREE_COLUMNS.has(group) ? 3 : 2;
 }
 
 export function Attributes({ el, onEdit, showEmpty }: ViewProps) {

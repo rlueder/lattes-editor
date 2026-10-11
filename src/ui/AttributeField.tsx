@@ -3,15 +3,16 @@
 
 import { useEffect, useId, useState } from 'react';
 
-import { attributeLabel, elementLabel, enumLabel } from '../labels/labels.ts';
+import { attributeLabelIn, elementLabel, enumLabel } from '../labels/labels.ts';
 import { repairMojibake } from '../model/mojibake.ts';
 import { getAttr, setAttr, type XElement } from '../model/xml.ts';
 import type { AttributeSpec } from '../schema/types.ts';
 import { parseEmails, parseSocial } from './contacts.ts';
 import { CopyButton } from './CopyButton.tsx';
-import { isBooleanAttr, isSystemAttr } from './field-kind.ts';
+import { codeAttrFor, isBooleanAttr, isSystemAttr } from './field-kind.ts';
 import { Select } from './primitives/Select.tsx';
 import { Switch } from './primitives/Switch.tsx';
+import { Tip } from './primitives/Tip.tsx';
 import { isSensitiveAttr, useHideSensitive } from './privacy.ts';
 
 export type EditFn = (note: string) => void;
@@ -54,7 +55,7 @@ export function AttributeField({
   const [draft, setDraft] = useState(value);
   // Valor mudou por fora (busca por DOI, restauração do histórico).
   useEffect(() => setDraft(value), [value]);
-  const text = label ?? attributeLabel(name);
+  const text = label ?? attributeLabelIn(el.name, name);
   // Só sugere; o valor fica como veio até a pessoa clicar em "Corrigir".
   const repaired = repairMojibake(value);
   const commit = (next: string) => {
@@ -114,6 +115,22 @@ export function AttributeField({
         </div>
       );
     }
+  }
+
+  const lockedBy = codeAttrFor(el.name, name);
+  if (lockedBy && getAttr(el, lockedBy)) {
+    // Escolhido numa lista do Lattes junto com o código ao lado: lido, não editado.
+    return (
+      <div className="field field-readonly field-locked">
+        <span className="field-label">{text}</span>
+        <span className="field-copy-row">
+          <Tip label="Escolhido numa lista do Lattes; muda junto com o código">
+            <span className="locked-value">{value || '(vazio)'}</span>
+          </Tip>
+          {copyable && <CopyButton label={text} value={value} />}
+        </span>
+      </div>
+    );
   }
 
   if (isSystemAttr(el.name, name)) {

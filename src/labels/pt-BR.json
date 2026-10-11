@@ -65,7 +65,8 @@
     "NOME-INSTITUICAO-EMPRESA": "Instituição ou empresa",
     "NOME-ORGAO": "Órgão",
     "NOME-UNIDADE": "Unidade",
-    "HOME-PAGE": "Página na web"
+    "HOME-PAGE": "Página na web",
+    "DESCRICAO-DO-IDIOMA": "Idioma"
   },
   "enums": {
     "SIM": "Sim",
@@ -79,6 +80,9 @@
     "CIENCIAS_SOCIAIS_APLICADAS": "Ciências Sociais Aplicadas",
     "ENGENHARIAS": "Engenharias",
     "LINGUISTICA_LETRAS_E_ARTES": "Linguística, Letras e Artes",
-    "OUTROS": "Outros"
+    "OUTROS": "Outros",
+    "POUCO": "Pouco",
+    "RAZOAVELMENTE": "Razoavelmente",
+    "BEM": "Bem"
   }
 }

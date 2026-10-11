@@ -44,13 +44,20 @@ export function ItemList({
   const anchor = (key: string, label: string) =>
     anchorBase ? `${anchorBase}/${slugify(label)}` : `${listId}-${key}`;
 
-  const cards = (els: XElement[]) =>
+  // O ano à direita repete o cabeçalho do grupo; some quando é só ele.
+  // Períodos (jan 2011 – dez 2012) e durações continuam.
+  const withoutRepeatedYear = (info: CardInfo, groupLabel?: string): CardInfo =>
+    groupLabel && info.aside === groupLabel && !info.asideSub
+      ? { ...info, aside: undefined }
+      : info;
+
+  const cards = (els: XElement[], groupLabel?: string) =>
     els.map((el, i) => (
       <ItemCard
         key={i}
         depth={depth}
         el={el}
-        info={view.card(el)}
+        info={withoutRepeatedYear(view.card(el), groupLabel)}
         showEmpty={showEmpty}
         showKind={mixedKinds}
         onEdit={onEdit}
@@ -81,7 +88,7 @@ export function ItemList({
             {g.label}
             <span className="count">{g.items.length}</span>
           </h3>
-          {cards(g.items)}
+          {cards(g.items, g.label)}
         </section>
       ))}
     </div>

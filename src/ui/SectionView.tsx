@@ -1,7 +1,7 @@
 // Uma seção do menu: título e grupos numa coluna de leitura, e à direita um
 // painel com o filtro (vale para todas as listas da seção) e o índice dos grupos.
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import type { ProductionType } from '../model/production.ts';
 import { childElements, type XElement } from '../model/xml.ts';
@@ -27,6 +27,7 @@ import { PrivacyContext, readHideSensitive, writeHideSensitive } from './privacy
 import { useReferenceIndex } from './reference-context.ts';
 import { type ReferenceIndex, viewForContainer } from './reference-tables.ts';
 import { countItems, type Section, type SectionGroup } from './sections.ts';
+import { StickyTitle } from './StickyTitle.tsx';
 
 interface Props {
   section: Section;
@@ -59,6 +60,8 @@ export function SectionView(props: Props) {
 function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Props) {
   const index = useReferenceIndex();
   const [state, setState] = useState<FilterState>(NO_FILTER);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const [hideSensitive, setHideSensitive] = useState(readHideSensitive);
   const privacy = section.id === 'dados-gerais';
   const lists = section.groups.map((g) => groupList(g, index));
@@ -88,28 +91,30 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
   // mesmo quando os grupos vêm embrulhados num elemento só (Projetos, Patentes).
   const showFilter = section.id !== 'dados-gerais';
   const hasPanel = section.groups.length > 0;
+  const privacyToggle = privacy ? (
+    <Tip label={hideSensitive ? 'Mostrar dados pessoais' : 'Esconder dados pessoais'}>
+      <button
+        aria-label="Esconder dados pessoais"
+        aria-pressed={hideSensitive}
+        className="ghost icon-btn privacy-toggle"
+        type="button"
+        onClick={() => {
+          setHideSensitive((v) => {
+            writeHideSensitive(!v);
+            return !v;
+          });
+        }}
+      >
+        {hideSensitive ? <EyeOffIcon /> : <EyeIcon />}
+      </button>
+    </Tip>
+  ) : null;
+
   const head = (
     <>
       <div className="section-head">
-        <h1>{section.label}</h1>
-        {privacy && (
-          <Tip label={hideSensitive ? 'Mostrar dados pessoais' : 'Esconder dados pessoais'}>
-            <button
-              aria-label="Esconder dados pessoais"
-              aria-pressed={hideSensitive}
-              className="ghost icon-btn privacy-toggle"
-              type="button"
-              onClick={() => {
-                setHideSensitive((v) => {
-                  writeHideSensitive(!v);
-                  return !v;
-                });
-              }}
-            >
-              {hideSensitive ? <EyeOffIcon /> : <EyeIcon />}
-            </button>
-          </Tip>
-        )}
+        <h1 ref={titleRef}>{section.label}</h1>
+        {privacyToggle}
       </div>
       {section.importable === 'filtro' && (
         <p className="muted section-note">
@@ -131,9 +136,17 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
 
   return (
     <PrivacyContext.Provider value={privacy && hideSensitive}>
-      <div className="section-layout">
+      <div ref={rootRef} className="section-layout">
+        <StickyTitle
+          actions={privacyToggle}
+          groups={visibleGroups.map((g) => ({ id: g.id, label: g.label }))}
+          host={rootRef}
+          label={section.label}
+          title={titleRef}
+        />
+        {/* Título na largura toda: o primeiro grupo e o painel lateral começam na mesma linha. */}
+        <div className="section-title">{head}</div>
         <div className="section-main">
-          {head}
           <div className="section-body">
             {filtering && visibleGroups.length === 0 && (
               <p className="empty">Nada nesta seção com esses filtros.</p>

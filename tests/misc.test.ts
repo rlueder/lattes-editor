@@ -16,7 +16,7 @@ import {
 import { lattesSchema } from '../src/schema/lattes.ts';
 import { parseEmails, parseSocial } from '../src/ui/contacts.ts';
 import { displayValue } from '../src/ui/display.ts';
-import { groupFields, isBooleanAttr, isSystemAttr } from '../src/ui/field-kind.ts';
+import { codeAttrFor, groupFields, isBooleanAttr, isSystemAttr } from '../src/ui/field-kind.ts';
 import { formatLattesDate } from '../src/ui/format.ts';
 import { parseHash } from '../src/ui/hash-route.ts';
 import { isSensitiveAttr, readHideSensitive, writeHideSensitive } from '../src/ui/privacy.ts';
@@ -205,7 +205,7 @@ describe('tipo de campo', () => {
 });
 
 describe('groupFields', () => {
-  it('assunto primeiro, depois rótulo; início antes de fim; sim/não e códigos no fim', () => {
+  it('assunto primeiro, depois rótulo; código ao lado do nome; o resto dos códigos no fim', () => {
     const names = [
       'SEQUENCIA-FORMACAO',
       'NIVEL',
@@ -226,21 +226,17 @@ describe('groupFields', () => {
     const entries = names.map((attr) => ({ attr, element: 'MESTRADO', key: attr }));
     const groups = groupFields(entries, attributeLabel, (e) => e.attr === 'FLAG-BOLSA');
     expect(groups.map((g) => [g.label, g.entries.map((e) => e.attr)])).toEqual([
-      ['Principal', ['NOME-CURSO', 'NOME-CURSO-INGLES', 'STATUS-DO-CURSO', 'TIPO-MESTRADO']],
-      ['Instituição', ['NOME-INSTITUICAO']],
+      [
+        'Principal',
+        ['NOME-CURSO', 'CODIGO-CURSO', 'NOME-CURSO-INGLES', 'STATUS-DO-CURSO', 'TIPO-MESTRADO'],
+      ],
+      ['Instituição', ['NOME-INSTITUICAO', 'CODIGO-INSTITUICAO']],
       ['Período', ['ANO-DE-INICIO', 'ANO-DE-CONCLUSAO']],
       ['Pessoas', ['NOME-COMPLETO-DO-ORIENTADOR']],
       ['Marcações', ['FLAG-BOLSA']],
       [
         'Códigos do Lattes',
-        [
-          'CODIGO-AREA-CURSO',
-          'CODIGO-CURSO',
-          'CODIGO-CURSO-CAPES',
-          'CODIGO-INSTITUICAO',
-          'NIVEL',
-          'SEQUENCIA-FORMACAO',
-        ],
+        ['CODIGO-AREA-CURSO', 'CODIGO-CURSO-CAPES', 'NIVEL', 'SEQUENCIA-FORMACAO'],
       ],
     ]);
     expect(groups.at(-1)!.system).toBe(true);
@@ -330,12 +326,8 @@ describe('ordem do endereço', () => {
       (a) => a,
       () => false,
     );
-    expect(groups.map((g) => g.label)).toEqual([
-      'Instituição',
-      'Localização',
-      'Contato',
-      'Códigos do Lattes',
-    ]);
+    expect(groups.map((g) => g.label)).toEqual(['Instituição', 'Localização', 'Contato']);
+    expect(groups[0]!.entries.map((e) => e.attr)).toEqual(['NOME-ORGAO', 'CODIGO-ORGAO']);
     expect(groups[2]!.entries.map((e) => e.attr)).toEqual(['DDD', 'TELEFONE', 'E-MAIL']);
     expect(groups[1]!.entries.map((e) => e.attr)).toEqual(['CEP', 'CIDADE']);
   });
@@ -392,5 +384,40 @@ describe('foto do currículo', () => {
     writeCvCode('1', undefined);
     expect(readCvCode('1')).toBeUndefined();
     vi.unstubAllGlobals();
+  });
+});
+
+describe('nome escolhido junto com o código', () => {
+  it('liga o nome ao código da mesma lista do Lattes', () => {
+    expect(codeAttrFor('IDIOMA', 'DESCRICAO-DO-IDIOMA')).toBe('IDIOMA');
+    expect(codeAttrFor('MESTRADO', 'NOME-INSTITUICAO')).toBe('CODIGO-INSTITUICAO');
+    expect(codeAttrFor('DOUTORADO', 'NOME-INSTITUICAO-OUTRA-DOUT')).toBe(
+      'CODIGO-INSTITUICAO-OUTRA-DOUT',
+    );
+    expect(codeAttrFor('X', 'NOME-DA-INSTITUICAO')).toBe('CODIGO-INSTITUICAO');
+    expect(codeAttrFor('MESTRADO', 'NOME-AGENCIA')).toBe('CODIGO-AGENCIA-FINANCIADORA');
+    expect(codeAttrFor('DADOS-GERAIS', 'PAIS-DE-NACIONALIDADE')).toBe('SIGLA-PAIS-NACIONALIDADE');
+    expect(codeAttrFor('MESTRADO', 'NOME-CURSO-INGLES')).toBeUndefined();
+    expect(codeAttrFor('MESTRADO', 'TITULO-DA-DISSERTACAO-TESE')).toBeUndefined();
+    expect(isSystemAttr('IDIOMA', 'IDIOMA')).toBe(true);
+    expect(isSystemAttr('DADOS-BASICOS-DO-ARTIGO', 'IDIOMA')).toBe(false);
+  });
+
+  it('põe o idioma e o código lado a lado, com a proficiência depois', () => {
+    const attrs = [
+      'PROFICIENCIA-DE-FALA',
+      'IDIOMA',
+      'DESCRICAO-DO-IDIOMA',
+      'PROFICIENCIA-DE-LEITURA',
+    ];
+    const groups = groupFields(
+      attrs.map((attr) => ({ attr, element: 'IDIOMA', key: attr })),
+      (a) => a,
+      () => false,
+    );
+    expect(groups.map((g) => [g.label, g.entries.map((e) => e.attr)])).toEqual([
+      ['Idioma', ['DESCRICAO-DO-IDIOMA', 'IDIOMA']],
+      ['Proficiência', ['PROFICIENCIA-DE-LEITURA', 'PROFICIENCIA-DE-FALA']],
+    ]);
   });
 });

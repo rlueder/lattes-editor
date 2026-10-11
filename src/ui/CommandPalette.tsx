@@ -18,6 +18,7 @@ export function CommandPalette({ entries, onClose, onSelect, open }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const results = useMemo(() => searchPalette(entries, query), [entries, query]);
+  const searching = query.trim() !== '';
 
   useEffect(() => {
     if (!open) return;
@@ -83,7 +84,13 @@ export function CommandPalette({ entries, onClose, onSelect, open }: Props) {
           <li
             key={entry.key}
             aria-selected={i === active}
-            className={i === active ? 'palette-item active' : 'palette-item'}
+            className={[
+              'palette-item',
+              entry.context ? 'child' : 'section',
+              i === active ? 'active' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
             data-index={i}
             id={`palette-${entry.key}`}
             role="option"
@@ -91,7 +98,10 @@ export function CommandPalette({ entries, onClose, onSelect, open }: Props) {
             onMouseMove={() => setActive(i)}
           >
             <span className="palette-label">
-              {entry.context && <span className="palette-context">{entry.context} › </span>}
+              {/* Sem busca, a lista já está agrupada por seção; o contexto só aparece filtrando. */}
+              {entry.context && searching && (
+                <span className="palette-context">{entry.context} › </span>
+              )}
               {entry.label}
             </span>
             {entry.count !== undefined && <span className="palette-count">{entry.count}</span>}

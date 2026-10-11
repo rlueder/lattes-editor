@@ -17,7 +17,24 @@ const SYSTEM =
   /^(SEQUENCIA-|CODIGO-|COD-|ID-|NUMERO-IDENTIFICADOR$|NRO-ID-CNPQ$|FORMATO-|STATUS-OASISBR$|SIGLA-PAIS-|SIGLA-INSTITUICAO$|SIGLA-UF-INSTITUICAO$|DATA-ATUALIZACAO$|HORA-ATUALIZACAO$|ORCID-ID$)/;
 
 /** CPF do dono do currículo vem do cadastro; o CPF de autor é digitado. */
-const OWNER_ONLY: Record<string, string> = { CPF: 'DADOS-GERAIS' };
+const OWNER_ONLY: Record<string, string> = { CPF: 'DADOS-GERAIS', IDIOMA: 'IDIOMA' };
+
+/**
+ * Nome que acompanha um código escolhido numa lista do Lattes (instituição,
+ * órgão, curso, agência, idioma, país). Com o código preenchido, o nome não
+ * se edita aqui: mudar só o nome deixaria os dois discordando ("Inglês" com
+ * código ES). Devolve o atributo do código, ou undefined se o campo é livre.
+ */
+export function codeAttrFor(element: string, attr: string): string | undefined {
+  if (element === 'IDIOMA' && attr === 'DESCRICAO-DO-IDIOMA') return 'IDIOMA';
+  if (element === 'DADOS-GERAIS' && attr === 'PAIS-DE-NACIONALIDADE') {
+    return 'SIGLA-PAIS-NACIONALIDADE';
+  }
+  if (attr === 'NOME-AGENCIA') return 'CODIGO-AGENCIA-FINANCIADORA';
+  const m = /^NOME-(?:DA-|DO-)?(INSTITUICAO|ORGAO|UNIDADE|CURSO)(-.+)?$/.exec(attr);
+  if (!m || attr.endsWith('-INGLES')) return undefined;
+  return `CODIGO-${m[1]}${m[2] ?? ''}`;
+}
 
 /** Elementos de formação em que NIVEL é o código do nível (3 = mestrado…), dado pelo tipo. */
 const LEVEL_CODED =
@@ -94,6 +111,18 @@ const FIXED_LAYOUT: Record<string, { attrs: string[]; label: string }[]> = {
   ],
   'ENDERECO-PROFISSIONAL': ADDRESS_LAYOUT,
   'ENDERECO-RESIDENCIAL': ADDRESS_LAYOUT,
+  IDIOMA: [
+    { attrs: ['DESCRICAO-DO-IDIOMA', 'IDIOMA'], label: 'Idioma' },
+    {
+      attrs: [
+        'PROFICIENCIA-DE-LEITURA',
+        'PROFICIENCIA-DE-FALA',
+        'PROFICIENCIA-DE-ESCRITA',
+        'PROFICIENCIA-DE-COMPREENSAO',
+      ],
+      label: 'Proficiência',
+    },
+  ],
 };
 
 /** Grupo e posição de um campo num bloco de ordem fixa. */
@@ -155,13 +184,26 @@ export function groupFields(
     ]),
   ];
   const rankOf = (e: FieldEntry) => fixedSlot(e.element, e.attr)?.rank;
+  // Código com o nome dele no bloco vai logo depois do nome, lado a lado.
+  const pairedCodes = new Map<string, FieldEntry>();
   for (const entry of entries) {
-    const label = isSystemAttr(entry.element, entry.attr)
-      ? 'Códigos do Lattes'
-      : (fixedSlot(entry.element, entry.attr)?.label ??
-        (isBoolean(entry)
+    const code = codeAttrFor(entry.element, entry.attr);
+    const codeEntry = code && entries.find((e) => e.attr === code && e.element === entry.element);
+    if (codeEntry && !fixedSlot(codeEntry.element, codeEntry.attr)) {
+      pairedCodes.set(entry.key, codeEntry);
+    }
+  }
+  const paired = new Set([...pairedCodes.values()].map((e) => e.key));
+  for (const entry of entries) {
+    if (paired.has(entry.key)) continue;
+    const fixed = fixedSlot(entry.element, entry.attr)?.label;
+    const label =
+      fixed ??
+      (isSystemAttr(entry.element, entry.attr)
+        ? 'Códigos do Lattes'
+        : isBoolean(entry)
           ? 'Marcações'
-          : (GROUPS.find((g) => g.test.test(entry.attr))?.label ?? 'Outros')));
+          : (GROUPS.find((g) => g.test.test(entry.attr))?.label ?? 'Outros'));
     buckets.set(label, [...(buckets.get(label) ?? []), entry]);
   }
   return order
@@ -174,7 +216,11 @@ export function groupFields(
             (rankOf(a) ?? 99) - (rankOf(b) ?? 99) ||
             (label === 'Período' ? periodRank(a.attr) - periodRank(b.attr) : 0) ||
             labelOf(a.attr).localeCompare(labelOf(b.attr), 'pt-BR'),
-        ),
+        )
+        .flatMap((e) => {
+          const code = pairedCodes.get(e.key);
+          return code ? [e, code] : [e];
+        }),
       label,
       system: label === 'Códigos do Lattes',
     }));

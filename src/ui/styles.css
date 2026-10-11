@@ -414,11 +414,6 @@ code {
   margin-top: 24px;
   scroll-margin-top: calc(var(--topbar-h) + var(--section-bar-h, 0px) + 8px);
   border-radius: var(--radius);
-  transition: background-color 0.6s;
-}
-
-.group.flash {
-  background: var(--accent-soft);
 }
 
 .group h2 {
@@ -2951,4 +2946,632 @@ body {
 .section-main-empty .empty-section {
   margin: auto;
   padding-bottom: 8vh;
+}
+
+/* Envio pela extensão da ponte, em "Levar ao Lattes". */
+.bridge-block {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+}
+
+.bridge-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bridge-head p,
+.bridge-note {
+  margin: 0;
+}
+
+.bridge-note {
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.bridge-results {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  font-size: 12px;
+}
+
+.bridge-result {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+}
+
+.bridge-result.conferido {
+  color: var(--ok);
+}
+
+.bridge-result.erro,
+.bridge-result.sessao,
+.bridge-result.divergente {
+  color: var(--danger);
+}
+
+/* O menu lateral nunca rola na horizontal: o endereço longo do currículo
+   corta com reticências dentro da largura do perfil. */
+.sidebar {
+  overflow-x: hidden;
+}
+
+.profile-text,
+.profile-line {
+  width: 100%;
+  max-width: 100%;
+}
+
+.profile-line a {
+  min-width: 0;
+  flex: 1;
+}
+
+/* O botão da ponte carrega o estado: enviar, parar, conferido. */
+.bridge-btn {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.bridge-btn.ok,
+.bridge-btn.ok:disabled {
+  border-color: var(--ok);
+  background: var(--ok);
+  color: var(--surface);
+  opacity: 1;
+}
+
+.bridge-block.done {
+  border-color: var(--ok);
+}
+
+/* Menu lateral: item ativo no azul do CNPq, nos dois temas; passar o mouse
+   clareia o fundo. */
+.sidebar li > button {
+  border-radius: 6px;
+  transition: background-color 0.12s;
+}
+
+.sidebar li > button:hover:not(.active) {
+  background: var(--surface-2);
+}
+
+.sidebar li > button.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar li > button {
+    transition: none;
+  }
+}
+
+/* Cada grupo da seção (os itens do "Nesta seção") é um painel próprio,
+   um degrau acima do fundo do conteúdo. Dentro dele, campos e cartões
+   descem um degrau para não sumirem no painel. */
+.group {
+  margin-top: 20px;
+  padding: 20px 24px 22px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.group h2 {
+  margin-bottom: 16px;
+}
+
+.group .field input,
+.group .field select,
+.group .field textarea:not(.title-input),
+.group .select-trigger,
+.group details,
+.group .jump-bar.year,
+.group .year-head {
+  background: var(--bg);
+}
+
+.group .jump-bar.year {
+  margin-left: -24px;
+  margin-right: -24px;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+@media (max-width: 760px) {
+  .group {
+    padding: 16px;
+  }
+  .group .jump-bar.year {
+    margin-left: -16px;
+    margin-right: -16px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+.section-title {
+  grid-column: 1 / -1;
+  margin-bottom: 4px;
+}
+
+.section-body > .group:first-of-type {
+  margin-top: 0;
+}
+
+@media (max-width: 1180px) {
+  .section-title {
+    order: -2;
+  }
+}
+
+.section-layout {
+  row-gap: 20px;
+}
+
+/* A linha do título usa as colunas do layout: título e olho de privacidade
+   ficam na coluna principal, alinhados à borda dela. */
+.section-title {
+  display: grid;
+  grid-template-columns: subgrid;
+}
+
+.section-title > * {
+  grid-column: 1;
+}
+
+/* Barra do título que desliza quando o título da seção sai da tela. Fica
+   com altura zero no fluxo e desenha a barra por cima, na largura toda do
+   painel de conteúdo. */
+.sticky-title {
+  position: sticky;
+  top: var(--topbar-h);
+  z-index: 6;
+  grid-column: 1 / -1;
+  height: 0;
+  margin: -20px 0 0;
+  pointer-events: none;
+}
+
+.sticky-title-bar {
+  position: absolute;
+  top: 0;
+  left: -40px;
+  right: -40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 40px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 14px;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+}
+
+.sticky-title.visible .sticky-title-bar {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.sticky-title-sep {
+  color: var(--muted);
+}
+
+.sticky-title-group {
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sticky-title-bar {
+    transition: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .sticky-title-bar {
+    left: -16px;
+    right: -16px;
+    padding: 0 16px;
+  }
+}
+
+/* Dentro do painel do grupo, nada de painel com fundo: cartões e faixas de
+   ano ficam transparentes; a barra de anos, que gruda e precisa cobrir o que
+   rola por baixo, usa o mesmo fundo do grupo. */
+.group details,
+.group .year-head {
+  background: transparent;
+}
+
+.group .jump-bar.year {
+  background: var(--surface);
+}
+
+.group details {
+  border-color: var(--border);
+}
+
+/* Itens que abrem e fecham dentro do grupo: linhas, não caixas. Só a borda
+   de baixo, cantos retos, e um fundo leve ao passar o mouse no resumo. */
+.group details {
+  margin: 0;
+  border-width: 0 0 1px;
+  border-radius: 0;
+}
+
+.group details > summary {
+  border-radius: 6px;
+  transition: background-color 0.12s;
+}
+
+.group details > summary:hover {
+  background: var(--surface-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .group details > summary {
+    transition: none;
+  }
+}
+
+/* Seta de abrir e fechar: chevron em traço, no tamanho dos outros ícones. */
+details > summary::before {
+  content: '';
+  flex: 0 0 auto;
+  align-self: center;
+  width: 16px;
+  height: 16px;
+  background: var(--muted);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 6 6 6-6 6'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 6 6 6-6 6'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.group details > summary {
+  border-radius: 0;
+}
+
+/* Contagem no cabeçalho do ano como selo, para não parecer parte do ano. */
+.year-head .count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.year-head {
+  align-items: center;
+}
+
+.year-head .count {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Item aberto: mantém a linha de baixo e ganha um fundo bem leve em tudo o
+   que expandiu, para se ler como um bloco só. */
+.group details[open] {
+  background: color-mix(in srgb, var(--surface-2) 45%, transparent);
+}
+
+.group details[open] > summary:not(:hover) {
+  background: transparent;
+}
+
+/* Só o conteúdo que expandiu leva o fundo; o cabeçalho do item fica limpo. */
+.group details[open] {
+  background: transparent;
+}
+
+.group details[open] > :not(summary) {
+  background: color-mix(in srgb, var(--surface-2) 45%, transparent);
+}
+
+.group details[open] > .element {
+  padding-top: 12px;
+}
+
+/* Linha entre itens: um tom mais firme que a borda dos painéis, para não se
+   perder no fundo do grupo nem no do conteúdo aberto. */
+:root {
+  --divider: #d4cfc6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --divider: #423e3a;
+  }
+}
+
+:root[data-theme='dark'] {
+  --divider: #423e3a;
+}
+
+.group details {
+  border-bottom-color: var(--divider);
+}
+
+/* O vão entre a coluna principal e o painel lateral é igual à margem do
+   painel de conteúdo dos dois lados (40px): a coluna principal ocupa o que
+   sobra, em vez de parar em 820px e abrir um vão maior no meio. */
+.section-layout {
+  grid-template-columns: minmax(0, 1fr) 260px;
+  column-gap: 40px;
+}
+
+.section-main {
+  max-width: none;
+}
+
+@media (max-width: 1180px) {
+  .section-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Cantos retos nas superfícies (painel de conteúdo, grupos, painel lateral,
+   modais, menus, listas de opções, dicas); botões, pílulas, selos e campos
+   mantêm o arredondado de cada um. */
+.content,
+.group,
+.section-panel,
+.modal,
+.menu,
+.select-popup,
+.tip,
+.empty,
+.change,
+.bridge-block,
+.confirm-list,
+.doi-lookup,
+.usages,
+.card-actions,
+.lattes-steps .danger-step {
+  border-radius: 0;
+}
+
+.profile .avatar {
+  border: 3px solid var(--divider);
+}
+
+/* Contagem do menu lateral no mesmo selo azul-claro do cabeçalho do ano. */
+.sidebar .nav-counts .count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.sidebar li > button {
+  align-items: center;
+}
+
+/* Copiar o endereço do currículo: ícone pequeno e sem caixa, colado ao
+   link, que só aparece ao passar o mouse na linha do link. */
+.profile .copy-btn {
+  width: 22px;
+  height: 22px;
+  margin-left: 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.profile .copy-btn .icon-svg {
+  width: 14px;
+  height: 14px;
+}
+
+.profile:hover .copy-btn {
+  opacity: 0;
+}
+
+.profile-line:hover .copy-btn,
+.profile .copy-btn:focus-visible {
+  opacity: 1;
+}
+
+.profile .copy-btn:hover {
+  color: var(--accent);
+}
+
+.profile-line.field-copy-row {
+  align-items: center;
+}
+
+.profile-line a {
+  flex: 0 1 auto;
+}
+
+/* Cabeçalho mais alto: a busca fica com folga igual em cima e embaixo. */
+.topbar {
+  min-height: 60px;
+  padding: 14px 20px;
+}
+
+.topbar .search-btn {
+  height: 32px;
+}
+
+/* A barra repete as colunas do layout, para as ações ficarem na borda da
+   coluna principal, onde estão sob o título. */
+.sticky-title-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  column-gap: 40px;
+}
+
+.sticky-title-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sticky-title-actions {
+  margin-left: auto;
+}
+
+.sticky-title-actions .icon-btn {
+  padding: 3px 6px;
+}
+
+@media (max-width: 1180px) {
+  .sticky-title-bar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Estado vazio centrado: desenho no meio, acima do texto; ações empilhadas
+   e centradas, mais altas e largas. */
+.empty-section {
+  text-align: center;
+}
+
+.empty-art {
+  margin: 0 auto 18px;
+}
+
+.empty-actions {
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.empty-actions button {
+  justify-content: center;
+  width: min(320px, 100%);
+  height: 40px;
+  padding: 0 18px;
+  font-size: 14px;
+}
+
+/* O painel lateral desce junto quando a barra do título aparece. */
+.section-panel {
+  top: calc(var(--topbar-h) + var(--section-bar-h, 0px) + 20px);
+  max-height: calc(100vh - var(--topbar-h) - var(--section-bar-h, 0px) - 40px);
+  transition: top 0.15s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-panel {
+    transition: none;
+  }
+}
+
+/* Campos em colunas fixas por grupo: duas por padrão, três para os grupos
+   de campos curtos. Campo largo (texto longo) ocupa a linha inteira. */
+.fields.cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.fields.cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.fields-block > .fields-group {
+  margin: 14px 0 6px;
+}
+
+.fields-block > .fields-group:first-child {
+  margin-top: 0;
+}
+
+@media (max-width: 640px) {
+  .fields.cols-2,
+  .fields.cols-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Nome escolhido numa lista do Lattes: lido, em texto normal. */
+.field-locked .locked-value {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 0;
+  overflow-wrap: anywhere;
+}
+
+/* Realces de passar o mouse e de item ativo com cantos retos: menu lateral,
+   índice da seção, menus, listas de opções e a paleta. */
+.sidebar li > button,
+.jump-bar.vertical a,
+.menu-item,
+.menu-seg,
+.select-item,
+.palette-item {
+  border-radius: 0;
+}
+
+/* Paleta: seções como títulos, grupos recuados abaixo; linha fina e respiro
+   entre uma seção e a seguinte. */
+.palette-results {
+  padding: 8px;
+}
+
+.palette-item.section {
+  margin-top: 4px;
+  padding: 10px 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.palette-item.section ~ .palette-item.section {
+  margin-top: 10px;
+  border-top: 1px solid var(--divider);
+  padding-top: 14px;
+}
+
+.palette-item.child {
+  padding: 7px 12px 7px 26px;
+  color: var(--text);
+}
+
+.palette-item .palette-count {
+  color: var(--muted);
+  font-size: 12px;
 }

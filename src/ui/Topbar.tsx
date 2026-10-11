@@ -4,7 +4,7 @@
 
 import { type Ref, useRef } from 'react';
 
-import { AlertIcon, CheckIcon, PlusIcon, SearchIcon, SpinnerIcon, UploadIcon } from './icons.tsx';
+import { AlertIcon, HistoryIcon, PlusIcon, SearchIcon, SpinnerIcon, UploadIcon } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { SettingsMenu } from './SettingsMenu.tsx';
 import type { ThemePref } from './theme.ts';
@@ -133,7 +133,7 @@ export function Topbar({
             ) : saveState === 'erro' ? (
               <AlertIcon />
             ) : (
-              <CheckIcon />
+              <HistoryIcon />
             )}
           </button>
         </Tip>

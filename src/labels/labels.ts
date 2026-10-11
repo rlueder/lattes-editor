@@ -214,3 +214,16 @@ export function slugify(text: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 }
+
+/**
+ * Rótulo de um atributo dentro de um elemento, para os nomes que mudam de
+ * sentido conforme o lugar: IDIOMA é o código no bloco de idiomas e o nome
+ * do idioma numa produção.
+ */
+const IN_ELEMENT: Record<string, string> = {
+  'IDIOMA IDIOMA': 'Código do idioma',
+};
+
+export function attributeLabelIn(element: string, name: string): string {
+  return IN_ELEMENT[`${element} ${name}`] ?? attributeLabel(name);
+}
