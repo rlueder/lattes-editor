@@ -37,3 +37,5 @@ jobs:
       - run: pnpm release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # O commit de lançamento não passa pelos hooks do Husky: o CI já rodou tudo.
+          HUSKY: '0'
