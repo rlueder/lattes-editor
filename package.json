@@ -10,6 +10,7 @@
     "build": "tsc && vite build",
     "build:extension": "node scripts/build-extension.ts",
     "build:site": "pnpm build && node scripts/build-site.ts",
+    "capture:screenshots": "node scripts/capture-screenshots.ts",
     "desktop:build": "tauri build --bundles app",
     "desktop:dev": "tauri dev",
     "dev": "vite",
