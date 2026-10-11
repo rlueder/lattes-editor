@@ -1,6 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { attributeLabel, elementLabel, enumLabel, fold, slugify } from '../src/labels/labels.ts';
+import {
+  attributeLabel,
+  elementLabel,
+  enumLabel,
+  fold,
+  isOpaqueCode,
+  slugify,
+} from '../src/labels/labels.ts';
 import { repairMojibake } from '../src/model/mojibake.ts';
 import { findOrderViolations, insertInSchemaOrder } from '../src/model/schema-order.ts';
 import {
@@ -18,6 +25,7 @@ import { parseEmails, parseSocial } from '../src/ui/contacts.ts';
 import { displayValue } from '../src/ui/display.ts';
 import {
   codeAttrFor,
+  codeChoices,
   codeValueLabel,
   groupFields,
   isBooleanAttr,
@@ -178,12 +186,15 @@ describe('slugify', () => {
 });
 
 describe('tipo de campo', () => {
-  it('códigos e sequências do Lattes são só leitura; NIVEL só na formação', () => {
+  it('códigos, sequências e níveis do Lattes são só leitura', () => {
     expect(isSystemAttr('MESTRADO', 'CODIGO-INSTITUICAO')).toBe(true);
     expect(isSystemAttr('MESTRADO', 'SEQUENCIA-FORMACAO')).toBe(true);
     expect(isSystemAttr('MESTRADO', 'CODIGO-CURSO-CAPES')).toBe(true);
     expect(isSystemAttr('MESTRADO', 'NIVEL')).toBe(true);
-    expect(isSystemAttr('IDIOMA', 'NIVEL')).toBe(false);
+    expect(isSystemAttr('OUTROS', 'NIVEL')).toBe(true);
+    expect(isSystemAttr('FORMACAO-COMPLEMENTAR-CURSO-DE-CURTA-DURACAO', 'NIVEL')).toBe(true);
+    expect(isSystemAttr('MESTRADO', 'TIPO-MESTRADO')).toBe(false);
+    expect(isSystemAttr('INFORMACAO-ADICIONAL-CURSO', 'NIVEL-CURSO')).toBe(true);
     expect(isSystemAttr('MESTRADO', 'NOME-INSTITUICAO')).toBe(false);
     expect(isSystemAttr('DADOS-GERAIS', 'SIGLA-PAIS-NACIONALIDADE')).toBe(true);
     expect(isSystemAttr('INFORMACAO-ADICIONAL-INSTITUICAO', 'SIGLA-PAIS-INSTITUICAO')).toBe(true);
@@ -193,6 +204,39 @@ describe('tipo de campo', () => {
     expect(isSystemAttr('DADOS-GERAIS', 'CPF')).toBe(true);
     expect(isSystemAttr('AUTORES', 'CPF')).toBe(false);
     expect(isSystemAttr('DADOS-GERAIS', 'UF-NASCIMENTO')).toBe(false);
+  });
+
+  it('nível e tipo de mestrado aparecem pelo nome, como no formulário do Lattes', () => {
+    expect(codeValueLabel('OUTROS', 'NIVEL', 'Y')).toBe('Outros');
+    expect(codeValueLabel('FORMACAO-COMPLEMENTAR-CURSO-DE-CURTA-DURACAO', 'NIVEL', 'F')).toBe(
+      'Curso de curta duração',
+    );
+    expect(codeValueLabel('MESTRADO', 'NIVEL', '3')).toBe(elementLabel('MESTRADO'));
+    expect(codeValueLabel('MESTRADO', 'TIPO-MESTRADO', 'S')).toBe('Sanduíche');
+    expect(codeValueLabel('X', 'NIVEL', 'Q')).toBe('Q');
+    expect(codeChoices('MESTRADO', 'TIPO-MESTRADO')).toEqual([
+      { label: 'Normal', value: 'N' },
+      { label: 'Sanduíche', value: 'S' },
+    ]);
+    expect(codeChoices('DADOS-GERAIS', 'NACIONALIDADE')).toBeUndefined();
+    expect(codeChoices('MESTRADO', 'NOME-CURSO')).toBeUndefined();
+  });
+
+  it('nenhuma lista mostra código sem rótulo num campo editável', () => {
+    const leaks: string[] = [];
+    for (const [element, spec] of Object.entries(lattesSchema.elements)) {
+      for (const a of spec.attributes) {
+        for (const v of a.enum ?? []) {
+          if (isOpaqueCode(v) && !isSystemAttr(element, a.name)) {
+            leaks.push(`${element} ${a.name}=${v}`);
+          }
+        }
+      }
+    }
+    expect(leaks).toEqual([]);
+    expect(isOpaqueCode('OT')).toBe(true);
+    expect(isOpaqueCode('SIM')).toBe(false);
+    expect(isOpaqueCode('OUTRO')).toBe(false);
   });
 
   it('sim/não: enum SIM/NAO ou FLAG-* em texto com SIM/NAO', () => {

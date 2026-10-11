@@ -116,6 +116,7 @@ const ACCENTED: Record<string, string> = {
   raca: 'raça',
   radio: 'rádio',
   realizacao: 'realização',
+  relatorio: 'relatório',
   relevancia: 'relevância',
   responsavel: 'responsável',
   sanduiche: 'sanduíche',
@@ -153,6 +154,7 @@ const ACRONYMS: Record<string, string> = {
   oasisbr: 'OasisBR',
   orcid: 'ORCID',
   pcd: 'PcD',
+  tv: 'TV',
   uf: 'UF',
   url: 'URL',
   xml: 'XML',
@@ -193,10 +195,17 @@ export function attributeLabel(name: string): string {
   return ATTRIBUTES[name] ?? humanize(name.replace(/^FLAG-/, ''));
 }
 
+/**
+ * Código curto do Lattes sem rótulo conhecido (NIVEL-CURSO="OT", NIVEL="Y"):
+ * não diz nada a quem lê, e o sentido não está publicado.
+ */
+export function isOpaqueCode(value: string): boolean {
+  return !ENUMS[value] && /^[A-Z]{1,3}$/.test(value) && !ACRONYMS[value.toLowerCase()];
+}
+
 export function enumLabel(value: string): string {
-  // Código curto sem rótulo conhecido (NIVEL-CURSO="OT") fica cru: humanizar
-  // daria "Ot", que parece palavra e não diz nada.
-  if (!ENUMS[value] && /^[A-Z]{1,3}$/.test(value) && !ACRONYMS[value.toLowerCase()]) return value;
+  // Humanizar daria "Ot", que parece palavra; o código fica cru.
+  if (isOpaqueCode(value)) return value;
   return ENUMS[value] ?? humanize(value);
 }
 

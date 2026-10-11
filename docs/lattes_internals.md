@@ -183,6 +183,21 @@ A exportação não traz número de sequência do idioma. A ponte abre cada link
 e escolhe o único cujo `F_COD_IDIOMA` é o código do XML. `NAO_INFORMADO` no
 XML corresponde à caixa desmarcada e nenhum rádio.
 
+### Códigos de nível (11/10/2026)
+
+Lidos nos formulários, sem gravar nada:
+
+- Formação complementar (`pkg_formacao_compl.form`), lista `f_nivel`: `F`
+  curso de curta duração, `8` extensão universitária, `E` MBA, `Y` outros.
+  É o `NIVEL` do XML nesses itens.
+- Mestrado (`pkg_formacao.form`, `f_nivel` 3): rádio `f_tpo_doutorado`, `N`
+  normal e `S` sanduíche. É o `TIPO-MESTRADO` do XML.
+- Formação acadêmica: `f_nivel` vem oculto no formulário (3 no mestrado, 1 na
+  graduação, 7 no curso técnico, conforme a exportação); o nível é o próprio
+  tipo do item.
+- `NIVEL-CURSO="OT"` da tabela de cursos: sentido não encontrado. O XSD tem
+  `OT` e `OUTRO` como valores distintos.
+
 ### Resumo: `RES`, POST `PKG_RESUME.FORM`
 
 `F_TEXTO` (4000) e `F_TEXTO_EN` (4000), correspondentes a
