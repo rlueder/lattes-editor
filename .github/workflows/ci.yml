@@ -20,6 +20,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Os testes validam o XML gerado contra o XSD com o xmllint.
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq libxml2-utils
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test:coverage
