@@ -1,5 +1,5 @@
 // Barra de atalhos grudada no topo: um chip por divisão (grupo da seção ou ano
-// da lista), com contagem, marcando a divisão visível e pulando para as outras.
+// da lista), sem contagem (o título da divisão já mostra), marcando a divisão visível e pulando para as outras.
 //
 // Dois níveis empilham: a barra da seção gruda sob o cabeçalho, e a de anos
 // gruda sob a da seção. Cada barra publica a própria altura numa variável CSS
@@ -14,7 +14,6 @@ import { Tip } from './primitives/Tip.tsx';
 const MAX_LABEL = 14;
 
 export interface JumpEntry {
-  count?: number;
   /** id do título da divisão, no DOM. */
   id: string;
   label: string;
@@ -143,7 +142,6 @@ export function JumpBar({
             }}
           >
             <span className="jump-label">{e.label}</span>
-            {e.count !== undefined && <span className="count">{e.count}</span>}
           </a>
         );
         // Rótulo cortado (14ch no CSS) mostra o nome inteiro na dica.

@@ -28,6 +28,8 @@ export function Sidebar({ activeId, onSelect, pendingIn, sections }: Props) {
       <ul>
         {sections.map((s) => {
           const total = s.groups.reduce((n, g) => n + countItems(g), 0);
+          // Dados gerais é o perfil: somar Identificação, Resumo e endereços não é contagem de nada.
+          const shownTotal = s.id === 'dados-gerais' ? 0 : total;
           // Inovação e Educação repetem itens de outras seções; contar de novo confundiria.
           const fresh =
             s.importable === 'filtro' ? 0 : pendingIn(s.groups.flatMap((g) => g.elements));
@@ -61,7 +63,7 @@ export function Sidebar({ activeId, onSelect, pendingIn, sections }: Props) {
                       {fresh} novo{fresh > 1 ? 's' : ''}
                     </span>
                   )}
-                  {total > 0 && <span className="count">{total}</span>}
+                  {shownTotal > 0 && <span className="count">{shownTotal}</span>}
                 </span>
               </button>
             </li>

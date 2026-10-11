@@ -69,11 +69,7 @@ export function ItemList({
     <div className="item-list">
       {groups.length > 1 && (
         <JumpBar
-          entries={groups.map((g) => ({
-            count: g.items.length,
-            id: anchor(g.key, g.label),
-            label: g.label,
-          }))}
+          entries={groups.map((g) => ({ id: anchor(g.key, g.label), label: g.label }))}
           label="Divisões da lista"
           level="year"
           linkable={anchorBase !== undefined}

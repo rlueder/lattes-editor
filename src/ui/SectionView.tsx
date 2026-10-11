@@ -170,8 +170,8 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
               linkable
               vertical
               entries={section.groups
-                .map((g, i) => ({ count: counts[i]!, id: g.id, label: g.label }))
-                .filter((e) => e.count > 0)}
+                .filter((_, i) => counts[i]! > 0)
+                .map((g) => ({ id: g.id, label: g.label }))}
               label="Grupos da seção"
               level="section"
             />
