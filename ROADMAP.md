@@ -11,6 +11,10 @@ arquivo quando muda de fato; o detalhe técnico está em
   endereço e identificação já têm o formulário mapeado em
   `docs/lattes_internals.md`; falta escrever a operação de cada um e testar
   com restauração, como foi feito com o vínculo.
+- **Criar itens pela ponte.** O Lattes inclui com `f_ctr=I` (visto no
+  formulário de atividade nova). Mapeada a inclusão, Formação, Atuação,
+  Projetos e Patentes, que o Importar não aceita, ganham "Novo item" no
+  editor, enviado pela extensão.
 - **Extensão pronta para a Chrome Web Store.** O que falta está em
   `docs/extensao_chrome_web_store.md`: página da política de privacidade,
   capturas e imagem promocional, e o domínio do editor publicado.
