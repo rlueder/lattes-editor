@@ -26,6 +26,7 @@ import { buildReferenceIndex, type ReferenceIndex } from './reference-tables.ts'
 import { buildSections } from './sections.ts';
 import { SectionView } from './SectionView.tsx';
 import { Sidebar } from './Sidebar.tsx';
+import { useTheme } from './theme.ts';
 import { type SaveState, Topbar } from './Topbar.tsx';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
 
@@ -55,6 +56,7 @@ export function App() {
   const [sectionId, setSectionId] = useState('dados-gerais');
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [showEmpty, setShowEmpty] = useState(false);
+  const [theme, setTheme] = useTheme();
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -266,6 +268,7 @@ export function App() {
         pendingCount={production.pending.length}
         saveState={saveState}
         showEmpty={showEmpty}
+        theme={theme}
         onClose={closeFile}
         onExport={() => setExportOpen(true)}
         onHistory={openHistory}
@@ -274,6 +277,7 @@ export function App() {
         onReload={reload}
         onSave={saveFile}
         onShowEmpty={setShowEmpty}
+        onTheme={setTheme}
       />
 
       <Sidebar

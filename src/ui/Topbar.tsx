@@ -1,5 +1,6 @@
-// Cabeçalho: quem é o currículo à esquerda; à direita, ações em grupos
-// separados por divisórias (navegar, produção, exibição, arquivo).
+// Cabeçalho, na ordem do ciclo de uso: à esquerda o currículo e o estado da
+// cópia de trabalho; à direita encontrar, editar, levar ao Lattes e, no menu
+// de configurações, o que se usa menos.
 
 import { type Ref, useRef } from 'react';
 
@@ -7,17 +8,14 @@ import { formatLattesDate } from './format.ts';
 import {
   AlertIcon,
   CheckIcon,
-  CloseIcon,
-  DownloadIcon,
-  EyeIcon,
-  EyeOffIcon,
   HistoryIcon,
   PlusIcon,
-  RefreshIcon,
   SearchIcon,
   SpinnerIcon,
   UploadIcon,
 } from './icons.tsx';
+import { SettingsMenu } from './SettingsMenu.tsx';
+import type { ThemePref } from './theme.ts';
 
 export type SaveState = 'salvo' | 'salvando' | 'erro';
 
@@ -33,6 +31,7 @@ interface Props {
   ref: Ref<HTMLElement>;
   saveState: SaveState;
   showEmpty: boolean;
+  theme: ThemePref;
   onClose: () => void;
   onExport: () => void;
   onHistory: () => void;
@@ -41,12 +40,13 @@ interface Props {
   onReload: (file: File) => void;
   onSave: () => void;
   onShowEmpty: (show: boolean) => void;
+  onTheme: (theme: ThemePref) => void;
 }
 
 const SAVE_LABEL: Record<SaveState, string> = {
-  erro: 'erro ao salvar no navegador',
+  erro: 'erro ao salvar',
   salvando: 'salvando',
-  salvo: 'salvo no navegador',
+  salvo: 'salvo',
 };
 
 export function Topbar({
@@ -61,22 +61,47 @@ export function Topbar({
   onReload,
   onSave,
   onShowEmpty,
+  onTheme,
   ownerName,
   pendingCount,
   ref,
   saveState,
   showEmpty,
+  theme,
 }: Props) {
   const reloadInput = useRef<HTMLInputElement>(null);
   const date = formatLattesDate(exportedOn);
   return (
     <header ref={ref} className="topbar">
-      <div className="topbar-title" title={`Arquivo: ${fileName}`}>
-        <strong>{ownerName}</strong>
-        <span className="topbar-sub">Currículo Lattes{date ? ` · exportado em ${date}` : ''}</span>
+      {/* Quem é o currículo e o estado da cópia de trabalho (que abre o histórico). */}
+      <div className="topbar-identity">
+        <div className="topbar-title" title={`Arquivo: ${fileName}`}>
+          <strong>{ownerName}</strong>
+          <span className="topbar-sub">
+            Currículo Lattes{date ? ` · exportado em ${date}` : ''}
+          </span>
+        </div>
+        <button
+          aria-label={`${SAVE_LABEL[saveState]}. Abrir histórico de alterações`}
+          className={`ghost save-state ${saveState}`}
+          data-tip="Histórico de alterações"
+          type="button"
+          onClick={onHistory}
+        >
+          {saveState === 'salvando' ? (
+            <SpinnerIcon />
+          ) : saveState === 'erro' ? (
+            <AlertIcon />
+          ) : (
+            <CheckIcon />
+          )}
+          <span>{SAVE_LABEL[saveState]}</span>
+          <HistoryIcon />
+        </button>
       </div>
 
       <div className="topbar-actions">
+        {/* Encontrar */}
         <button className="ghost search-btn" type="button" onClick={onPalette}>
           <SearchIcon />
           <span>Ir para</span>
@@ -86,15 +111,18 @@ export function Topbar({
 
         <span aria-hidden="true" className="topbar-divider" />
 
+        {/* Editar */}
         <button className="ghost" type="button" onClick={onNewItem}>
           <PlusIcon />
           <span>Novo item</span>
         </button>
-        <button className="ghost" type="button" onClick={onExport}>
+
+        {/* Levar ao Lattes: vira o botão principal quando há itens novos. */}
+        <button className={pendingCount > 0 ? 'primary' : 'ghost'} type="button" onClick={onExport}>
           <UploadIcon />
-          <span>Importação</span>
+          <span>Importar no Lattes</span>
           {pendingCount > 0 && (
-            <span aria-label={`${pendingCount} itens novos`} className="tag new">
+            <span aria-label={`${pendingCount} itens novos`} className="tag count-tag">
               {pendingCount}
             </span>
           )}
@@ -102,47 +130,18 @@ export function Topbar({
 
         <span aria-hidden="true" className="topbar-divider" />
 
-        <button
-          aria-label={showEmpty ? 'Esconder campos vazios' : 'Mostrar campos vazios'}
-          aria-pressed={showEmpty}
-          className="ghost icon-btn"
-          data-tip={showEmpty ? 'Esconder campos vazios' : 'Mostrar campos vazios'}
-          type="button"
-          onClick={() => onShowEmpty(!showEmpty)}
-        >
-          {showEmpty ? <EyeIcon /> : <EyeOffIcon />}
-        </button>
-
-        <span aria-hidden="true" className="topbar-divider" />
-
-        <span className={`save-state ${saveState}`} role="status">
-          {saveState === 'salvando' ? (
-            <SpinnerIcon />
-          ) : saveState === 'erro' ? (
-            <AlertIcon />
-          ) : (
-            <CheckIcon />
-          )}
-          <span>{SAVE_LABEL[saveState]}</span>
-        </span>
-        <button
-          aria-label="Histórico de alterações"
-          className="ghost icon-btn"
-          data-tip="Histórico de alterações"
-          type="button"
-          onClick={onHistory}
-        >
-          <HistoryIcon />
-        </button>
-        <button
-          aria-label="Recarregar do Lattes (nova exportação)"
-          className="ghost icon-btn"
-          data-tip="Recarregar do Lattes"
-          type="button"
-          onClick={() => reloadInput.current?.click()}
-        >
-          <RefreshIcon />
-        </button>
+        {/* Exibição e arquivo: o que se usa menos fica no menu. */}
+        <SettingsMenu
+          modified={modified}
+          showEmpty={showEmpty}
+          theme={theme}
+          onClose={onClose}
+          onHistory={onHistory}
+          onReload={() => reloadInput.current?.click()}
+          onSave={onSave}
+          onShowEmpty={onShowEmpty}
+          onTheme={onTheme}
+        />
         <input
           ref={reloadInput}
           hidden
@@ -154,25 +153,6 @@ export function Topbar({
             e.target.value = '';
           }}
         />
-        <button
-          aria-label="Fechar o currículo"
-          className="ghost icon-btn"
-          data-tip="Fechar o currículo"
-          type="button"
-          onClick={onClose}
-        >
-          <CloseIcon />
-        </button>
-        <button
-          className="primary"
-          title={`Baixa ${fileName} com as alterações`}
-          type="button"
-          onClick={onSave}
-        >
-          <DownloadIcon />
-          <span>Salvar</span>
-          {modified && <span aria-label="com alterações" className="dot" />}
-        </button>
       </div>
     </header>
   );

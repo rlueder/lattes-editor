@@ -21,8 +21,10 @@
   color-scheme: light;
 }
 
+/* Tema: "sistema" segue o sistema operacional; data-theme no <html> força claro
+   ou escuro (preferência guardada no navegador, ver theme.ts). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --bg: #161514;
     --surface: #1e1d1b;
     --surface-2: #272522;
@@ -39,6 +41,24 @@
     --shadow: 0 12px 40px rgb(0 0 0 / 0.5);
     color-scheme: dark;
   }
+}
+
+:root[data-theme='dark'] {
+  --bg: #161514;
+  --surface: #1e1d1b;
+  --surface-2: #272522;
+  --border: #3a3733;
+  --text: #ece8e1;
+  --muted: #a19b91;
+  --accent: #6fb3ba;
+  --accent-contrast: #0e1f21;
+  --accent-soft: #203436;
+  --warn-bg: #3a2c12;
+  --warn-text: #f0c776;
+  --danger: #f08a7e;
+  --ok: #8fcf98;
+  --shadow: 0 12px 40px rgb(0 0 0 / 0.5);
+  color-scheme: dark;
 }
 
 * {
@@ -169,6 +189,13 @@ code {
   min-width: 0;
 }
 
+.topbar-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
 .topbar-title {
   flex-direction: column;
   gap: 0;
@@ -180,20 +207,75 @@ code {
   font-size: 12px;
 }
 
-.save-state {
+.topbar .save-state {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
   font-size: 12px;
   color: var(--ok);
-  margin-right: 2px;
 }
 
-.save-state.salvando {
+.topbar .save-state:hover {
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+
+.topbar .save-state .icon-svg:last-child {
+  width: 13px;
+  height: 13px;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.topbar .save-state:hover .icon-svg:last-child,
+.topbar .save-state:focus-visible .icon-svg:last-child {
+  opacity: 1;
+}
+
+.topbar .save-state[data-tip]:hover::after,
+.topbar .save-state[data-tip]:focus-visible::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.count-tag {
+  background: var(--accent-contrast);
+  color: var(--accent);
+}
+
+.ghost .count-tag {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.badge-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: var(--accent);
+}
+
+.topbar .save-state.salvando {
   color: var(--muted);
 }
 
-.save-state.erro {
+.topbar .save-state.erro {
   color: var(--danger);
 }
 
@@ -1188,4 +1270,108 @@ details.card.is-new {
 
 .picker-doi {
   padding: 4px 12px 0;
+}
+
+/* Menu de configurações */
+
+.settings {
+  position: relative;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  min-width: 260px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.menu:focus {
+  outline: none;
+}
+
+.menu-heading {
+  padding: 4px 8px 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.menu-segment {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  margin: 2px 4px 6px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.topbar-actions .menu-seg,
+.menu-seg {
+  justify-content: center;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 13px;
+}
+
+.menu-seg.active {
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+  font-weight: 600;
+}
+
+.topbar-actions .menu-item,
+.menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  text-align: left;
+  font-size: 14px;
+}
+
+.menu-item:hover,
+.menu-item:focus-visible,
+.menu-seg:hover,
+.menu-seg:focus-visible {
+  background: var(--accent-soft);
+  outline: none;
+}
+
+.menu-icon {
+  display: inline-flex;
+  color: var(--muted);
+}
+
+.menu-label {
+  flex: 1;
+}
+
+.menu-check,
+.menu-hint {
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.menu-sep {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--border);
+}
+
+.menu-version {
+  padding: 2px 8px 4px;
+  font-size: 12px;
+  color: var(--muted);
 }

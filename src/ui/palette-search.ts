@@ -76,6 +76,6 @@ export function paletteActions(): PaletteEntry[] {
   return [
     ...FORM_SPECS.map((f) => action(`novo:${f.itemName}`, f.title, 'Novo')),
     action('novo', 'Outro tipo de item…', 'Novo'),
-    action('exportar', 'Gerar XML para importação', ''),
+    action('exportar', 'Importar no Lattes (gerar o XML)', ''),
   ];
 }

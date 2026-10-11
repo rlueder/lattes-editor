@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import react from '@vitejs/plugin-react';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
@@ -40,6 +42,10 @@ function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
+  version: string;
+};
+
 export default defineConfig({
   base: './',
   build: {
@@ -47,6 +53,8 @@ export default defineConfig({
     cssCodeSplit: false,
     rollupOptions: { output: { inlineDynamicImports: true } },
   },
+  // Versão mostrada no menu de configurações.
+  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   plugins: [react(), inlineBundle()],
   test: {
     coverage: {

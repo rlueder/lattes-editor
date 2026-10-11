@@ -30,8 +30,8 @@ export function ExportPanel({ file, onClose, onDownload, onOpenItem, open, pendi
   const minYear = years.length ? Math.min(...years) : undefined;
 
   return (
-    <Modal className="export" label="Gerar XML para importação" open={open} onClose={onClose}>
-      <h2>Gerar XML para importação</h2>
+    <Modal className="export" label="Importar no Lattes" open={open} onClose={onClose}>
+      <h2>Importar no Lattes</h2>
 
       {pending.length === 0 ? (
         <p className="muted">
