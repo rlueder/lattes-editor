@@ -128,7 +128,16 @@ Construir uma ferramenta que interaja diretamente com o Lattes em nome dos usuá
 | Modelo C     | Extensão de navegador que melhora a interface web do Lattes                               | Zona cinzenta              | Tecnicamente frágil       |
 | Modelo D     | Parceria oficial com o CNPq                                                               | Menor risco, maior esforço | Objetivo de longo prazo   |
 
-**O Modelo B é a abordagem escolhida.** Ele nunca toca no Lattes diretamente: os usuários exportam o XML do Lattes, editam na nossa ferramenta e importam o XML de volta no Lattes pelo próprio diálogo de importação do Lattes. Sem delegação de credenciais, sem scraping, sem abuso de API.
+**Atualização de 11/10/2026:** a ponte com o Lattes segue o Modelo C. É uma
+extensão de navegador que envia as alterações a partir da sessão do próprio
+usuário, já autenticada, uma de cada vez e conferindo cada uma depois de
+gravar. Nenhuma senha passa por nós. O primeiro envio de teste funcionou
+(ver `docs/lattes_internals.md`, seção 6). O risco jurídico descrito acima
+(cláusula antiautomação dos Termos de Uso) foi aceito conscientemente; o
+arquivo de importação do Modelo B continua existindo como caminho sem
+extensão.
+
+**O Modelo B foi a abordagem inicial.** Ele nunca toca no Lattes diretamente: os usuários exportam o XML do Lattes, editam na nossa ferramenta e importam o XML de volta no Lattes pelo próprio diálogo de importação do Lattes. Sem delegação de credenciais, sem scraping, sem abuso de API.
 
 ---
 
@@ -306,6 +315,26 @@ Com base na análise competitiva e nos dados de reclamações:
 - **Operações em lote**: adicionar várias publicações de uma vez (por exemplo, colando uma lista de DOIs)
 - **Exportação de currículo formatado**: gerar PDF/DOCX a partir dos mesmos dados, nos formatos de currículo acadêmico usuais (ABNT, internacional)
 - **Gestão de coautores**: manter uma lista de coautores frequentes com o NRO-ID-CNPQ de cada um, para reaproveitar
+
+### Impressão e PDF
+
+O Lattes tem um diálogo "Gerar página para a impressão" com modelo
+(resumido, ampliado, completo ou personalizado), escolha de seções por
+caixa, estilo com ou sem cores, idioma e padrão de referência (ABNT ou
+Chicago autor-data). O editor oferece o mesmo, com outro arranjo:
+
+- Os modelos como ponto de partida, e as seções agrupadas como no menu
+  lateral, com contagem de itens e marcar ou desmarcar o grupo inteiro.
+- Pré-visualização ao lado, atualizada a cada escolha, em vez de confirmar
+  às cegas.
+- Saída em PDF pela impressão do navegador (sem biblioteca nova), com
+  tipografia cuidada: tamanho de corpo e entrelinha legíveis, margens da
+  NBR 14724, hierarquia clara de títulos, colunas onde a lista é curta
+  (idiomas, áreas) e referências da produção no formato da NBR 6023.
+- Tudo local: nada do currículo sai da máquina para gerar o PDF.
+
+As regras da ABNT usadas precisam ser conferidas na norma ou em guia de
+biblioteca universitária que a cite; o que não for confirmado fica marcado.
 
 ### Recursos em estudo
 

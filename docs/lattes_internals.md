@@ -62,13 +62,13 @@ O formulário de vínculo, por exemplo, é aberto por GET em
 O que diz ao procedimento o que fazer é um campo oculto, `f_ctr` (de
 "controle", **inferido**), com uma letra:
 
-| `f_ctr`   | Onde apareceu                                                                            | Significado                                                                                  |
-| --------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `I`       | formulário de item novo (atividade em `pkg_ativ.cargo`, 10/10/2026)                      | incluir, **observado**                                                                       |
-| `U`       | formulário de item existente: vínculo, formação, idioma, resumo, endereço, identificação | atualizar, **inferido** (é o valor que o formulário traz preenchido; nenhum envio foi feito) |
-| `A`       | código da tela de Formação (10/10/2026)                                                  | alterar, **inferido**                                                                        |
-| `E`, `E2` | função `dele` da lista de atuações; código da Formação                                   | excluir, **inferido**                                                                        |
-| `V`       | botão de voltar/cancelar (10/10/2026)                                                    | voltar sem salvar, **observado**                                                             |
+| `f_ctr`   | Onde apareceu                                                                            | Significado                                             |
+| --------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `I`       | formulário de item novo (atividade em `pkg_ativ.cargo`, 10/10/2026)                      | incluir, **observado**                                  |
+| `U`       | formulário de item existente: vínculo, formação, idioma, resumo, endereço, identificação | atualizar, **observado** (envio de 11/10/2026, seção 6) |
+| `A`       | código da tela de Formação (10/10/2026)                                                  | alterar, **inferido**                                   |
+| `E`, `E2` | função `dele` da lista de atuações; código da Formação                                   | excluir, **inferido**                                   |
+| `V`       | botão de voltar/cancelar (10/10/2026)                                                    | voltar sem salvar, **observado**                        |
 
 É o padrão de "despachante" de aplicações CRUD feitas sobre procedimentos:
 em vez de uma URL por operação, um procedimento por tela, com um `if` no
@@ -84,6 +84,16 @@ Dois códigos circulam, e os dois devem ser tratados como segredo em logs:
   Muda a cada login. **Observado.**
 - **O do currículo**: 10 caracteres, usado em `f_cod` por todas as chamadas
   internas. **Observado.**
+
+A exportação XML não traz o código de 10 caracteres, só o identificador
+público de 16 dígitos (`NUMERO-IDENTIFICADOR`). Os dois se ligam por
+redirecionamento: `lattes.cnpq.br/<16 dígitos>` responde 302 para
+`buscatextual.cnpq.br/buscatextual/cv?id=<16 dígitos>`, que responde 302
+para `visualizacv.do?metodo=apresentar&id=<10 caracteres>`. **Observado**
+(11/10/2026). A foto do currículo sai de
+`servicosweb.cnpq.br/wspessoa/servletrecuperafoto?tipo=1&id=<10 caracteres>`;
+com o identificador de 16 dígitos o mesmo endereço responde uma imagem
+vazia. **Observado.**
 
 Cada linha de uma lista é identificada por números de sequência que batem
 com os do XML exportado: `f_seq_ativ` com `SEQUENCIA-ATIVIDADE`,
@@ -103,8 +113,7 @@ O editor é uma página só (`PKG_MENU.menu`) com camadas modais em `iframe`
   clássico, que recarrega o `iframe`;
 - não tem token CSRF; o que amarra o envio à sessão é o cookie e o `f_cod`.
 
-**Observado.** Se o servidor repete as validações de `check()`, não se sabe:
-nenhum envio foi testado.
+**Observado.** Se o servidor repete as validações de `check()`, não se sabe.
 
 ## 5. Formulários de edição (11/10/2026)
 
@@ -189,7 +198,27 @@ edita), sexo, raça ou cor, nascimento (país, UF, cidade, data), RG, passaporte
 nomes dos pais (ocultos), pessoa com deficiência (`f_pcd_r` e caixas
 `f_pcd`), e uma lista de privacidade por grupo de dados.
 
-## 6. Sessão
+## 6. Primeiro envio (11/10/2026)
+
+Um POST montado fora do formulário, com a autorização do dono do
+currículo, para ver se o caminho direto funciona:
+
+1. GET do formulário do vínculo e leitura de todos os campos que o
+   navegador enviaria (os desabilitados não vão; `f_vinc` está desabilitado,
+   então `f_vinculo` recebe o texto dele, como faz `check()`).
+2. POST para `PKG_ATIV.VINCULOS` com os mesmos campos e só
+   `f_outras_inf_en` trocado por um marcador, corpo codificado em Latin-1.
+3. Novo GET do formulário: só `f_outras_inf_en` mudou.
+4. Segundo POST devolvendo o valor original (vazio) e novo GET: formulário
+   idêntico ao de antes.
+
+A resposta do POST não é uma página: é um trecho de JavaScript que manda o
+`iframe` pai (`modalCV2`) voltar para a grade da atuação e abre
+`pkg_aviso_pendencia.inicio`, o aviso de pendências do currículo.
+**Observado.** Os dois envios contam como atualização do currículo, então a
+data de "última atualização" no Lattes passa a ser a do teste.
+
+## 7. Sessão
 
 A sessão do editor cai em poucos minutos (3 a 12 nos testes de 10/10/2026)
 e passa a responder com a página de `pkg_sec.logon`. Em 11/10/2026, com a
@@ -197,9 +226,8 @@ aba aberta pelo próprio usuário, a sessão aguentou todas as leituras deste
 documento. **Observado.** Abrir um segundo editor do mesmo currículo parece
 derrubar o primeiro. **Inferido.**
 
-## 7. O que ainda não se sabe
+## 8. O que ainda não se sabe
 
-- Se `f_ctr=U` grava de fato a alteração (nenhum POST foi feito).
 - Se o servidor revalida o que `check()` valida.
 - Como `f_vinc` vira `TIPO-DE-VINCULO`, e o formato das grades de contato
   do endereço.
