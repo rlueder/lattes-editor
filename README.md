@@ -56,7 +56,8 @@ passa a cobrir o arquivo.
 ## Documentação
 
 - `docs/lattes_implementation_guide.md`: plano, decisões e marcos
-- `docs/lattes_editor_reconnaissance.md`: como o editor do Lattes funciona por dentro
+- `docs/lattes_editor_reconnaissance.md`: primeiro reconhecimento do editor do Lattes (menus, inclusão, Importar)
+- `docs/lattes_internals.md`: como o editor do Lattes funciona por dentro (PL/SQL, `f_ctr`, formulários de edição)
 - `docs/lattes_product_requirements.md`: pesquisa e estratégia de produto
 - `AGENTS.md`: regras para quem contribui (pessoas e agentes)
 
