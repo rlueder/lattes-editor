@@ -37,12 +37,15 @@ export function JumpBar({
   label,
   level,
   linkable = false,
+  vertical = false,
 }: {
   entries: JumpEntry[];
   label: string;
   level: JumpLevel;
   /** Ids legíveis: o clique também atualiza a URL. */
   linkable?: boolean;
+  /** Lista vertical no painel lateral: não gruda nem publica altura. */
+  vertical?: boolean;
 }) {
   const barRef = useRef<HTMLElement>(null);
   const [active, setActive] = useState(entries[0]?.id);
@@ -52,7 +55,7 @@ export function JumpBar({
   useEffect(() => {
     const bar = barRef.current;
     const host = bar?.parentElement;
-    if (!bar || !host) return;
+    if (!bar || !host || vertical) return;
     const name = HEIGHT_VAR[level];
     const observer = new ResizeObserver(() =>
       host.style.setProperty(name, `${bar.offsetHeight}px`),
@@ -62,7 +65,7 @@ export function JumpBar({
       observer.disconnect();
       host.style.removeProperty(name);
     };
-  }, [level]);
+  }, [level, vertical]);
 
   // Depois de um clique, a rolagem suave passa por outras divisões; o chip
   // clicado fica ativo até a rolagem parar.
@@ -77,7 +80,9 @@ export function JumpBar({
       if (lockedTo.current) return;
       // Ativa é a última divisão cujo título já passou da borda de baixo da barra.
       // A folga cobre o arredondamento de scroll-margin, que põe o título na borda.
-      const edge = (barRef.current?.getBoundingClientRect().bottom ?? 0) + 24;
+      // Na lista vertical, a borda é o cabeçalho da página.
+      const edgeEl = vertical ? document.querySelector('.topbar') : barRef.current;
+      const edge = (edgeEl?.getBoundingClientRect().bottom ?? 0) + 24;
       let current = headIds[0];
       for (const id of headIds) {
         const head = document.getElementById(id);
@@ -114,10 +119,14 @@ export function JumpBar({
       if (frame) cancelAnimationFrame(frame);
       clearTimeout(settle);
     };
-  }, [ids]);
+  }, [ids, vertical]);
 
   return (
-    <nav ref={barRef} aria-label={label} className={`jump-bar ${level}`}>
+    <nav
+      ref={barRef}
+      aria-label={label}
+      className={`jump-bar ${level}${vertical ? ' vertical' : ''}`}
+    >
       {entries.map((e) => {
         const chip = (
           <a
@@ -138,7 +147,7 @@ export function JumpBar({
           </a>
         );
         // Rótulo cortado (14ch no CSS) mostra o nome inteiro na dica.
-        return e.label.length > MAX_LABEL ? (
+        return e.label.length > (vertical ? 26 : MAX_LABEL) ? (
           <Tip key={e.id} label={e.label}>
             {chip}
           </Tip>

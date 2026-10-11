@@ -1,7 +1,7 @@
 // Formulário de um item de produção, novo ou ainda não importado. Trabalha
 // sobre uma cópia; nada entra no documento até "Salvar".
 
-import { useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { attributeLabel, elementLabel } from '../labels/labels.ts';
 import { applyCrossref, crossrefAuthors, itemNameFor } from '../lookups/crossref.ts';
@@ -23,8 +23,10 @@ import type { XElement } from '../model/xml.ts';
 import { lattesSchema as schema } from '../schema/lattes.ts';
 import { AttributeField } from '../ui/AttributeField.tsx';
 import { Attributes } from '../ui/ElementView.tsx';
-import { CloseIcon } from '../ui/icons.tsx';
+import { ChevronIcon, CloseIcon, CollapseIcon, ExpandIcon } from '../ui/icons.tsx';
 import { Modal } from '../ui/Modal.tsx';
+import { Switch } from '../ui/primitives/Switch.tsx';
+import { Tip } from '../ui/primitives/Tip.tsx';
 import { AreasEditor } from './AreasEditor.tsx';
 import { AuthorsEditor } from './AuthorsEditor.tsx';
 import { formSpec, missingRequired } from './specs.ts';
@@ -46,7 +48,7 @@ interface Props {
   sequencia: number;
   onCancel: () => void;
   onRemove?: () => void;
-  onSave: (item: XElement) => void;
+  onSave: (item: XElement, another?: boolean) => void;
 }
 
 export function ProductionForm({
@@ -60,6 +62,25 @@ export function ProductionForm({
   sequencia,
 }: Props) {
   const [version, setVersion] = useState(0);
+  const [expanded, setExpanded] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const createMoreId = useId();
+
+  // ⌘Enter (Ctrl+Enter fora do Mac) salva de qualquer campo, como no Linear.
+  // O blur antes grava o campo em edição.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' || !(e.metaKey || e.ctrlKey)) return;
+      const form = formRef.current;
+      if (!form) return;
+      e.preventDefault();
+      (document.activeElement as HTMLElement | null)?.blur();
+      setTimeout(() => form.requestSubmit(), 0);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  const [createMore, setCreateMore] = useState(() => isNew && readCreateMore());
   const [showAll, setShowAll] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const touch = () => setVersion((v) => v + 1);
@@ -97,6 +118,10 @@ export function ProductionForm({
 
   const listed = new Set(spec?.fieldsets.flatMap((s) => s.fields.map((f) => f.attr)));
   const title = spec?.title ?? elementLabel(item.name);
+  // O primeiro campo do formulário, quando é o título, vira o cabeçalho do item.
+  const firstSet = spec?.fieldsets[0];
+  const headline = firstSet?.fields[0]?.attr.startsWith('TITULO') ? firstSet.fields[0] : undefined;
+  const headlinePart = firstSet && partOf(firstSet.part);
 
   // Primeiro clique com pendências mostra os erros nos campos; o segundo salva
   // assim mesmo (o item fica marcado e a exportação espera a correção).
@@ -105,36 +130,45 @@ export function ProductionForm({
       setAttempted(true);
       return;
     }
-    onSave(item);
+    onSave(item, isNew && createMore);
   };
 
   return (
     <Modal
       bare
       open
-      className="form-modal"
+      className={`form-modal${expanded ? ' expanded' : ''}`}
       focusFirstField={isNew}
       label={title}
       onClose={onCancel}
     >
       <form
+        ref={formRef}
         className="production-form"
         onSubmit={(e) => {
           e.preventDefault();
           save();
         }}
       >
-        <header className="modal-head">
-          <div className="modal-titles">
-            <h2>{isNew ? `Novo: ${title}` : title}</h2>
-            <p className="modal-subtitle">
-              {isNew ? 'Entra no próximo arquivo de importação' : 'Ainda não está no Lattes'}
-              <span className="seq" title="SEQUENCIA-PRODUCAO">
-                {' '}
-                · nº {sequencia}
-              </span>
-            </p>
-          </div>
+        <header className="modal-head modal-crumbs">
+          <nav aria-label="Onde este item fica" className="crumbs">
+            <span className="crumb">{isNew ? 'Novo item' : 'Item a enviar'}</span>
+            <ChevronIcon />
+            <h2 className="crumb-current">{title}</h2>
+          </nav>
+          <span className="seq muted" title="SEQUENCIA-PRODUCAO">
+            nº {sequencia}
+          </span>
+          <Tip label={expanded ? 'Reduzir' : 'Expandir'}>
+            <button
+              aria-label={expanded ? 'Reduzir' : 'Expandir'}
+              className="ghost icon-btn modal-close"
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+            >
+              {expanded ? <CollapseIcon /> : <ExpandIcon />}
+            </button>
+          </Tip>
           <button
             aria-label="Fechar"
             className="ghost icon-btn modal-close"
@@ -146,6 +180,19 @@ export function ProductionForm({
         </header>
 
         <div className="modal-body">
+          {headline && headlinePart && (
+            <AttributeField
+              prominent
+              el={headlinePart}
+              error={errorFor(headlinePart, headline.attr)}
+              name={headline.attr}
+              required={headline.required}
+              spec={schema.elements[headlinePart.name]?.attributes.find(
+                (a) => a.name === headline.attr,
+              )}
+              onEdit={touch}
+            />
+          )}
           {DOI_TYPES.has(item.name) && (
             <DoiLookup
               hint="Preenche título, ano, autores, periódico ou evento e páginas. Confira antes de salvar."
@@ -172,19 +219,21 @@ export function ProductionForm({
                   <fieldset key={set.legend} className="form-fieldset">
                     <legend>{set.legend}</legend>
                     <div className="fields">
-                      {set.fields.map((field) => (
-                        <AttributeField
-                          key={field.attr}
-                          el={part}
-                          error={errorFor(part, field.attr)}
-                          multiline={field.multiline}
-                          name={field.attr}
-                          required={field.required}
-                          spec={attrSpecs.find((a) => a.name === field.attr)}
-                          wide={field.wide}
-                          onEdit={touch}
-                        />
-                      ))}
+                      {set.fields
+                        .filter((field) => field !== headline)
+                        .map((field) => (
+                          <AttributeField
+                            key={field.attr}
+                            el={part}
+                            error={errorFor(part, field.attr)}
+                            multiline={field.multiline}
+                            name={field.attr}
+                            required={field.required}
+                            spec={attrSpecs.find((a) => a.name === field.attr)}
+                            wide={field.wide}
+                            onEdit={touch}
+                          />
+                        ))}
                     </div>
                   </fieldset>
                 );
@@ -280,17 +329,29 @@ export function ProductionForm({
             <span className="form-ok">Pronto para importar</span>
           )}
           <span className="form-actions">
+            {isNew && (
+              <span className="create-more">
+                <Switch
+                  aria-labelledby={createMoreId}
+                  checked={createMore}
+                  onChange={(on) => {
+                    setCreateMore(on);
+                    writeCreateMore(on);
+                  }}
+                />
+                <span id={createMoreId}>Criar outro</span>
+              </span>
+            )}
             {onRemove && (
               <button className="ghost danger" type="button" onClick={onRemove}>
                 Remover item
               </button>
             )}
-            <button className="ghost" type="button" onClick={onCancel}>
-              Cancelar
-            </button>
-            <button className="primary" type="submit">
-              {attempted && problems.length > 0 ? 'Salvar com pendências' : 'Salvar'}
-            </button>
+            <Tip label="⌘Enter">
+              <button className="primary" type="submit">
+                {attempted && problems.length > 0 ? 'Salvar com pendências' : 'Salvar'}
+              </button>
+            </Tip>
           </span>
         </footer>
       </form>
@@ -314,4 +375,23 @@ function KeywordsField({ onChange, words }: { words: string[]; onChange: (w: str
       </div>
     </fieldset>
   );
+}
+
+// "Criar outro" fica lembrado neste navegador; sem armazenamento, começa desligado.
+const CREATE_MORE_KEY = 'lattes-editor:criar-outro';
+
+function readCreateMore(): boolean {
+  try {
+    return localStorage.getItem(CREATE_MORE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeCreateMore(on: boolean) {
+  try {
+    localStorage.setItem(CREATE_MORE_KEY, on ? '1' : '0');
+  } catch {
+    // Sem armazenamento: vale só nesta abertura.
+  }
 }

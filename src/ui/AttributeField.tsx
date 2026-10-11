@@ -25,6 +25,8 @@ interface Props {
   /** Texto longo: força área de texto. */
   multiline?: boolean;
   name: string;
+  /** Título do item: campo grande e sem borda no topo do formulário, rótulo só para leitores de tela. */
+  prominent?: boolean;
   /** Marca de obrigatório além da que o schema já declara. */
   required?: boolean;
   spec?: AttributeSpec;
@@ -40,6 +42,7 @@ export function AttributeField({
   multiline,
   name,
   onEdit,
+  prominent,
   required,
   spec,
   wide,
@@ -109,6 +112,25 @@ export function AttributeField({
         onChange={commit}
       />
     );
+  } else if (prominent) {
+    control = (
+      <textarea
+        {...common}
+        className="title-input"
+        placeholder={text}
+        rows={1}
+        value={draft}
+        onBlur={() => commit(draft)}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          // Título é uma linha só: Enter confirma em vez de quebrar.
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            (e.target as HTMLTextAreaElement).blur();
+          }
+        }}
+      />
+    );
   } else if (multiline || value.length > 90) {
     control = (
       <textarea
@@ -133,8 +155,11 @@ export function AttributeField({
   }
 
   return (
-    <div className={`field${wide ? ' field-wide' : ''}${error ? ' has-error' : ''}`}>
+    <div
+      className={`field${wide || prominent ? ' field-wide' : ''}${prominent ? ' field-prominent' : ''}${error ? ' has-error' : ''}`}
+    >
       <label
+        className={prominent ? 'sr-only' : undefined}
         htmlFor={id}
         id={labelId}
         title={spec?.patched ? `${name} (fora do XSD publicado)` : name}

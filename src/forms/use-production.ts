@@ -108,7 +108,8 @@ export function useProduction(
     setForm({ isNew: false, item: structuredClone(el), sequencia, type });
   };
 
-  const save = (item: XElement) => {
+  /** `another`: depois de salvar um item novo, abre outro em branco do mesmo tipo. */
+  const save = (item: XElement, another = false) => {
     if (!session || !form) return;
     pruneEmptyExtras(item);
     if (form.isNew) {
@@ -118,6 +119,15 @@ export function useProduction(
       addProduction(schema, session.doc, form.type, item);
       setSession({ doc: session.doc, meta: { ...session.meta, nextSequencia: sequencia + 1 } });
       onEdit(`Novo item: ${itemMeta(item).title || form.type.itemName}`);
+      if (another) {
+        const next = nextSequencia(session.doc, sequencia + 1);
+        const blank = newItem(schema, form.type.itemName, next);
+        if (authorElementName(schema, form.type.itemName) && authors.length > 0) {
+          setAuthors(schema, blank, authors.slice(0, 1));
+        }
+        setForm({ isNew: true, item: blank, sequencia: next, type: form.type });
+        return;
+      }
     } else {
       replaceProduction(session.doc, form.sequencia, item);
       onEdit(`Item editado: ${itemMeta(item).title || item.name}`);

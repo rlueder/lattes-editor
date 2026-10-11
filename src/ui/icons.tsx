@@ -1,4 +1,4 @@
-// Ícones em SVG inline, traço de 1,75 px em grade de 24, herdando a cor do
+// Ícones em SVG inline, traço de 1,5 px em grade de 24, herdando a cor do
 // texto. Desenhados aqui para não trazer biblioteca de ícones.
 
 import type { ReactNode } from 'react';
@@ -13,7 +13,7 @@ function Icon({ children, size = 16 }: { children: ReactNode; size?: number }) {
       stroke="currentColor"
       strokeLinecap="round"
       strokeLinejoin="round"
-      strokeWidth={1.75}
+      strokeWidth={1.5}
       viewBox="0 0 24 24"
       width={size}
     >
@@ -150,5 +150,19 @@ export const TrashIcon = () => (
   <Icon size={14}>
     <path d="M4 7h16M10 11v6M14 11v6" />
     <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
+  </Icon>
+);
+
+/** Expandir o modal: setas para os cantos. */
+export const ExpandIcon = () => (
+  <Icon>
+    <path d="M15 4h5v5M9 20H4v-5M20 4l-6 6M4 20l6-6" />
+  </Icon>
+);
+
+/** Reduzir o modal: setas para o centro. */
+export const CollapseIcon = () => (
+  <Icon>
+    <path d="M14 10h5M14 10V5M10 14H5M10 14v5M14 10l6-6M10 14l-6 6" />
   </Icon>
 );

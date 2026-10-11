@@ -1,5 +1,5 @@
-// Uma seção do menu: título, barra de filtro (a primeira coisa, valendo para
-// todas as listas da seção), atalhos dos grupos e os grupos.
+// Uma seção do menu: título e grupos numa coluna de leitura, e à direita um
+// painel com o filtro (vale para todas as listas da seção) e o índice dos grupos.
 
 import { useMemo, useState } from 'react';
 
@@ -78,7 +78,12 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
   const visibleGroups = section.groups.filter((_, i) => counts[i]! > 0);
   const shownTotal = lists.reduce((n, l, i) => n + (l ? counts[i]! : 0), 0);
 
-  return (
+  // O filtro serve a listas de itens. Dados gerais é o perfil (identificação,
+  // resumo, endereço) e fica só com o índice; as outras seções são listas,
+  // mesmo quando os grupos vêm embrulhados num elemento só (Projetos, Patentes).
+  const showFilter = section.id !== 'dados-gerais';
+  const hasPanel = section.groups.length > 0;
+  const head = (
     <>
       <div className="section-head">
         <h1>{section.label}</h1>
@@ -97,62 +102,82 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
           a seção de origem.
         </p>
       )}
-      {section.groups.length === 0 && (
+    </>
+  );
+
+  if (!hasPanel) {
+    return (
+      <div className="section-main">
+        {head}
         <EmptySection section={section} onNewItem={onNewItem} onOpenPicker={onOpenPicker} />
-      )}
+      </div>
+    );
+  }
 
-      {section.groups.length > 0 && (
-        <FilterBar
-          facets={facets}
-          shown={shownTotal}
-          state={state}
-          total={allItems.length}
-          onChange={setState}
-        />
-      )}
-
-      <div className="section-body">
-        {visibleGroups.length > 1 && (
-          <JumpBar
-            linkable
-            entries={section.groups
-              .map((g, i) => ({ count: counts[i]!, id: g.id, label: g.label }))
-              .filter((e) => e.count > 0)}
-            label="Grupos da seção"
-            level="section"
-          />
-        )}
-        {filtering && visibleGroups.length === 0 && (
-          <p className="empty">Nada nesta seção com esses filtros.</p>
-        )}
-        {section.groups.map((g, i) =>
-          counts[i]! > 0 ? (
-            <section key={g.id} className="group" id={g.id}>
-              <h2>{g.label}</h2>
-              {g.elements.length > 1 ? (
-                <ItemList
-                  anchorBase={g.id}
-                  filter={filter}
-                  items={g.elements}
-                  showEmpty={showEmpty}
-                  onEdit={onEdit}
-                />
-              ) : (
-                g.elements.map((el, j) => (
-                  <ElementView
-                    key={j}
+  return (
+    <div className="section-layout">
+      <div className="section-main">
+        {head}
+        <div className="section-body">
+          {filtering && visibleGroups.length === 0 && (
+            <p className="empty">Nada nesta seção com esses filtros.</p>
+          )}
+          {section.groups.map((g, i) =>
+            counts[i]! > 0 ? (
+              <section key={g.id} className="group" id={g.id}>
+                <h2>{g.label}</h2>
+                {g.elements.length > 1 ? (
+                  <ItemList
                     anchorBase={g.id}
-                    el={el}
                     filter={filter}
+                    items={g.elements}
                     showEmpty={showEmpty}
                     onEdit={onEdit}
                   />
-                ))
-              )}
-            </section>
-          ) : null,
-        )}
+                ) : (
+                  g.elements.map((el, j) => (
+                    <ElementView
+                      key={j}
+                      anchorBase={g.id}
+                      el={el}
+                      filter={filter}
+                      showEmpty={showEmpty}
+                      onEdit={onEdit}
+                    />
+                  ))
+                )}
+              </section>
+            ) : null,
+          )}
+        </div>
       </div>
-    </>
+
+      {/* Painel à direita: filtro e índice da seção, fora da coluna de leitura. */}
+      <aside aria-label="Filtro e índice da seção" className="section-panel">
+        {showFilter && (
+          <FilterBar
+            facets={facets}
+            shown={shownTotal}
+            state={state}
+            total={allItems.length}
+            onChange={setState}
+          />
+        )}
+        {visibleGroups.length > 1 && (
+          <div className="panel-block">
+            <h2 className="panel-heading">Nesta seção</h2>
+            <JumpBar
+              linkable
+              vertical
+              entries={section.groups
+                .map((g, i) => ({ count: counts[i]!, id: g.id, label: g.label }))
+                .filter((e) => e.count > 0)}
+              label="Grupos da seção"
+              level="section"
+            />
+          </div>
+        )}
+      </aside>
+    </div>
   );
 }
