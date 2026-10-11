@@ -672,3 +672,8 @@ details.card > summary {
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
+
+.section-note {
+  margin: 6px 0 0;
+  font-size: 13px;
+}

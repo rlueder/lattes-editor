@@ -9,7 +9,7 @@ export interface PaletteEntry {
   /** Seção a que o grupo pertence; vazio para a própria seção. */
   context: string;
   count?: number;
-  importable: boolean;
+  importable: Section['importable'];
   key: string;
   label: string;
   sectionId: string;

@@ -284,7 +284,7 @@ export function App() {
             <>
               <div className="section-head">
                 <h1>{section.label}</h1>
-                {!section.importable && (
+                {section.importable === false && (
                   <span
                     className="badge"
                     title="O Importar do Lattes ignora esta seção; copie as mudanças à mão no Lattes."
@@ -293,6 +293,12 @@ export function App() {
                   </span>
                 )}
               </div>
+              {section.importable === 'filtro' && (
+                <p className="muted section-note">
+                  Itens de outras seções reunidos pela marca do Lattes. Cada um é importável ou não
+                  conforme a seção de origem.
+                </p>
+              )}
               {section.groups.length === 0 && <p className="muted">Nada nesta seção.</p>}
               <div key={section.id} className="section-body">
                 {section.groups.length > 1 && (

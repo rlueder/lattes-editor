@@ -16,8 +16,12 @@ export interface SectionGroup {
 export interface Section {
   groups: SectionGroup[];
   id: string;
-  /** O Importar do Lattes lê esta seção (Passo 2). */
-  importable: boolean;
+  /**
+   * O Importar do Lattes lê esta seção (Passo 2). "filtro" marca as visões
+   * que só reúnem itens de outras seções (Inovação, Educação): cada item segue
+   * a regra da seção de origem.
+   */
+  importable: boolean | 'filtro';
   label: string;
 }
 
@@ -181,7 +185,7 @@ export function buildSections(root: XElement): Section[] {
         ),
       ].filter((g) => g.elements.length),
       id: 'inovacao',
-      importable: false,
+      importable: 'filtro',
       label: 'Inovação',
     },
     {
@@ -193,7 +197,7 @@ export function buildSections(root: XElement): Section[] {
         ),
       ].filter((g) => g.elements.length),
       id: 'educacao',
-      importable: false,
+      importable: 'filtro',
       label: 'Educação e Popularização de C&T',
     },
     {
