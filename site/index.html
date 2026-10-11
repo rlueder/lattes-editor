@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Editor do Currículo Lattes</title>
+    <meta
+      name="description"
+      content="Edite o Currículo Lattes no seu computador: abra a exportação, cadastre produções pelo DOI e revise cada alteração antes de levar ao Lattes."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="stylesheet" href="site.css" />
+  </head>
+  <body>
+    <a class="skip" href="#conteudo">Pular para o conteúdo</a>
+
+    <header class="nav">
+      <div class="wrap nav-inner">
+        <a class="brand" href="./">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-name">Editor do Currículo Lattes</span>
+        </a>
+        <nav aria-label="Seções da página">
+          <ul class="nav-links">
+            <li><a href="#recursos">Recursos</a></li>
+            <li><a href="#privacidade">Privacidade</a></li>
+            <li><a href="#em-breve">Em breve</a></li>
+          </ul>
+        </nav>
+        <a class="btn btn-small" href="app/">Abrir o editor</a>
+      </div>
+    </header>
+
+    <main id="conteudo">
+      <section class="hero" aria-labelledby="titulo">
+        <div class="wrap">
+          <p class="eyebrow">Para quem mantém o Lattes em dia</p>
+          <h1 id="titulo">Seu Currículo Lattes num editor que não atrapalha</h1>
+          <p class="lede">
+            Abra a exportação do Lattes, ache qualquer item por seção ou por ano, cadastre produções
+            a partir do DOI e revise o que mudou antes de levar ao Lattes. O arquivo fica no seu
+            navegador.
+          </p>
+          <div class="hero-actions">
+            <a class="btn" href="app/">Abrir o editor</a>
+            <a class="btn btn-ghost" href="#como-funciona">Como funciona</a>
+          </div>
+          <p class="hero-note">Sem conta, sem instalação, sem servidor.</p>
+        </div>
+
+        <figure class="shot wrap-wide">
+          <div class="shot-frame">
+            <picture>
+              <source srcset="img/editor-escuro.jpg" media="(prefers-color-scheme: dark)" />
+              <img
+                src="img/editor-claro.jpg"
+                width="1352"
+                height="711"
+                alt="O editor aberto na seção Produções: menu de seções à esquerda, itens agrupados por ano no centro e, à direita, o painel com o filtro e o índice da seção."
+              />
+            </picture>
+          </div>
+          <figcaption>Currículo de teste, gerado a partir do schema do Lattes.</figcaption>
+        </figure>
+      </section>
+
+      <section id="recursos" class="section" aria-labelledby="recursos-titulo">
+        <div class="wrap">
+          <h2 id="recursos-titulo">O que já funciona</h2>
+          <ul class="grid">
+            <li class="card">
+              <span class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 4h10l6 6v10H4zM14 4v6h6" /></svg>
+              </span>
+              <h3>Abre a exportação do Lattes</h3>
+              <p>
+                Solte o <code>CV_&lt;id&gt;.zip</code> ou o <code>.xml</code> que o Lattes gera em
+                Ferramentas › Exportar. Se nada mudar, o arquivo salvo sai idêntico ao original,
+                byte a byte.
+              </p>
+            </li>
+            <li class="card">
+              <span class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h6" /></svg>
+              </span>
+              <h3>Seções, anos e atalhos</h3>
+              <p>
+                As listas longas se dividem por ano.
+                <span class="combo"><kbd>⌘</kbd><kbd>K</kbd></span> leva a qualquer seção ou grupo,
+                e <span class="combo"><kbd>⌃</kbd><kbd>1</kbd></span> a
+                <span class="combo"><kbd>⌃</kbd><kbd>9</kbd></span> trocam de seção (<kbd>Alt</kbd>
+                fora do Mac).
+              </p>
+            </li>
+            <li class="card">
+              <span class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 5h16l-6 8v6l-4-2v-4z" /></svg>
+              </span>
+              <h3>Filtros em cada seção</h3>
+              <p>
+                Uma busca que casa pelo começo das palavras e filtros tirados da própria lista, como
+                tipo e meio de divulgação, num painel ao lado do conteúdo.
+              </p>
+            </li>
+            <li class="card">
+              <span class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1" />
+                  <path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1" />
+                </svg>
+              </span>
+              <h3>Produção nova pelo DOI</h3>
+              <p>
+                Cole o DOI e o Crossref preenche título, ano, autores, periódico ou evento e
+                páginas. Você confere antes de salvar. Só o DOI sai do seu computador.
+              </p>
+            </li>
+            <li class="card">
+              <span class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2" />
+                </svg>
+              </span>
+              <h3>Revise antes de levar</h3>
+              <p>
+                A lista de alterações compara a sua cópia com a exportação original. Cada campo
+                mostra o valor antigo e o novo, com botão de copiar e de descartar.
+              </p>
+            </li>
+            <li class="card">
+              <span class="card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16" /></svg>
+              </span>
+              <h3>Arquivo para o Importar</h3>
+              <p>
+                Os itens novos viram um <code>&lt;id&gt;-importacao.xml</code> para o Importar do
+                próprio Lattes, com os passos e os módulos que você precisa marcar lá.
+              </p>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="como-funciona" class="section" aria-labelledby="como-titulo">
+        <div class="wrap">
+          <h2 id="como-titulo">Como funciona</h2>
+          <ol class="steps">
+            <li>
+              <h3>Exporte do Lattes</h3>
+              <p>No Lattes, Ferramentas › Exportar baixa o currículo inteiro em XML.</p>
+            </li>
+            <li>
+              <h3>Edite aqui</h3>
+              <p>
+                Cada edição fica salva no navegador. Itens novos ganham formulário próprio, com
+                autores, áreas do conhecimento e palavras-chave.
+              </p>
+            </li>
+            <li>
+              <h3>Leve ao Lattes</h3>
+              <p>
+                Produções novas entram pelo Importar do Lattes. O resto você copia campo a campo,
+                guiado pela lista de alterações.
+              </p>
+            </li>
+          </ol>
+          <div class="keys" aria-label="Atalhos de teclado">
+            <span
+              ><span class="combo"><kbd>⌘</kbd><kbd>K</kbd></span> ir para</span
+            >
+            <span
+              ><span class="combo"><kbd>⌃</kbd><kbd>1</kbd>–<kbd>9</kbd></span> seções</span
+            >
+            <span
+              ><span class="combo"><kbd>⌘</kbd><kbd>Enter</kbd></span> salvar o item</span
+            >
+          </div>
+        </div>
+      </section>
+
+      <section id="privacidade" class="section" aria-labelledby="privacidade-titulo">
+        <div class="wrap split">
+          <div>
+            <h2 id="privacidade-titulo">Seus dados ficam com você</h2>
+            <p>
+              A exportação do Lattes traz CPF, data de nascimento e endereço. Por isso o editor não
+              tem servidor nem conta: o arquivo é lido e guardado no próprio navegador, e o arquivo
+              salvo vai para o seu disco.
+            </p>
+          </div>
+          <ul class="facts">
+            <li>
+              Cópia de trabalho no armazenamento do navegador, com histórico das últimas edições.
+            </li>
+            <li>Nenhum dado do currículo é enviado a lugar nenhum.</li>
+            <li>
+              A única chamada de rede é a busca do DOI no Crossref, quando você pede, levando só o
+              DOI.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="em-breve" class="section" aria-labelledby="em-breve-titulo">
+        <div class="wrap">
+          <h2 id="em-breve-titulo">Em breve</h2>
+          <ul class="grid grid-2">
+            <li class="card card-soon">
+              <span class="pill">em breve</span>
+              <h3>App para macOS, Windows e Linux</h3>
+              <p>O mesmo editor como aplicativo instalado, com o arquivo aberto direto do disco.</p>
+            </li>
+            <li class="card card-soon">
+              <span class="pill">em breve</span>
+              <h3>Ponte com o Lattes</h3>
+              <p>
+                Uma extensão para Chrome e Brave que leva as alterações para o Lattes na sua sessão,
+                sem copiar campo a campo.
+              </p>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap footer-inner">
+        <p>
+          Editor do Currículo Lattes. Projeto independente, sem vínculo com o CNPq. O Lattes
+          continua sendo o registro oficial do seu currículo.
+        </p>
+        <a href="app/">Abrir o editor</a>
+      </div>
+    </footer>
+  </body>
+</html>

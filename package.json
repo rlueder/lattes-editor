@@ -8,6 +8,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc && vite build",
+    "build:site": "pnpm build && node scripts/build-site.ts",
     "dev": "vite",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

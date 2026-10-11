@@ -39,7 +39,12 @@ pnpm dev                 # servidor local
 pnpm test                # testes
 pnpm test:coverage       # testes com limite de 80% de cobertura
 pnpm build               # gera dist/index.html, que abre direto por file://
+pnpm build:site          # página inicial em dist-site/, com o editor em dist-site/app/
 ```
+
+A página inicial fica em `site/` (HTML e CSS estáticos, sem build próprio).
+Com `pnpm dev`, ela abre em `/site/`. As imagens em `site/img/` são capturas
+do editor com a fixture sintética, nunca de um currículo real.
 
 Scripts de geração:
 
