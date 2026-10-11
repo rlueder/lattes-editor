@@ -1,15 +1,15 @@
 // Quem é o currículo, no topo do menu lateral, como no cabeçalho do currículo
-// no Lattes: foto, nome, endereço público do CV e a data do arquivo.
+// no Lattes: foto, nome e a data do arquivo; o endereço público fica em Compartilhar.
 //
 // A foto vem do CNPq, para ser sempre a mesma do Lattes. O endereço dela pede
 // o código de 10 caracteres do currículo, que a exportação não traz. Quem o
 // fornece é a extensão (ponte), que o lê da sessão do Lattes; sem ela, ficam
-// as iniciais, e um link discreto deixa colar o endereço da página uma vez.
+// as iniciais, e o lápis sobre o avatar deixa colar o endereço da página uma vez.
 
 import { useEffect, useId, useState } from 'react';
 
-import { CopyButton } from './CopyButton.tsx';
 import { formatLattesDate } from './format.ts';
+import { PencilIcon } from './icons.tsx';
 import { Modal } from './Modal.tsx';
 import { PixelPhoto } from './PixelPhoto.tsx';
 import { Tip } from './primitives/Tip.tsx';
@@ -53,27 +53,31 @@ export function ProfileCard({ profile }: { profile: Profile }) {
   const showPhoto = code && !failed;
   return (
     <section aria-label="Currículo aberto" className="profile">
-      <div aria-hidden="true" className="avatar">
-        {showPhoto && hidden ? (
-          <PixelPhoto src={photoUrl(code)} />
-        ) : showPhoto ? (
-          <img alt="" src={photoUrl(code)} onError={() => setFailed(true)} />
-        ) : (
-          initials(profile.name)
+      <div className="avatar-wrap">
+        <div aria-hidden="true" className="avatar">
+          {showPhoto && hidden ? (
+            <PixelPhoto src={photoUrl(code)} />
+          ) : showPhoto ? (
+            <img alt="" src={photoUrl(code)} onError={() => setFailed(true)} />
+          ) : (
+            initials(profile.name)
+          )}
+        </div>
+        {url && (
+          <Tip label="Foto do perfil">
+            <button
+              aria-label="Editar a foto do perfil"
+              className="avatar-edit"
+              type="button"
+              onClick={() => setAsking(true)}
+            >
+              <PencilIcon />
+            </button>
+          </Tip>
         )}
       </div>
       <div className="profile-text">
         <strong className="profile-name">{profile.name}</strong>
-        {url && (
-          <span className="field-copy-row profile-line">
-            <Tip label={url}>
-              <a href={url} rel="noreferrer" target="_blank">
-                lattes.cnpq.br/{profile.lattesId}
-              </a>
-            </Tip>
-            <CopyButton label="endereço do currículo" value={url} />
-          </span>
-        )}
         {date && (
           <Tip label="Data registrada no arquivo exportado do Lattes">
             <span className="profile-line muted">Arquivo de {date}</span>
@@ -82,15 +86,6 @@ export function ProfileCard({ profile }: { profile: Profile }) {
         {url && (
           <button className="ghost profile-share" type="button" onClick={() => setSharing(true)}>
             Compartilhar
-          </button>
-        )}
-        {url && !showPhoto && (
-          <button
-            className="link-btn profile-photo-link"
-            type="button"
-            onClick={() => setAsking(true)}
-          >
-            Usar a foto do Lattes
           </button>
         )}
       </div>

@@ -3,6 +3,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 
+import { isBlank } from '../model/changes.ts';
 import type { ProductionType } from '../model/production.ts';
 import { childElements, type XElement } from '../model/xml.ts';
 import { type EditFn, ElementView } from './ElementView.tsx';
@@ -91,6 +92,8 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
   /** Quantos itens do grupo passam pelo filtro; grupos que não são lista contam 0 ou 1. */
   const shownIn = (g: SectionGroup, i: number): number => {
     const list = lists[i];
+    // Bloco só com campos vazios (Outras informações relevantes sem texto) não aparece.
+    if (!showEmpty && g.elements.every(isBlank)) return 0;
     if (!filtering) return countItems(g);
     if (list)
       return applyFilter(list.items, facets, state, (el) => cardText(list.view.card(el))).length;

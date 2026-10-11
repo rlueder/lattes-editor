@@ -96,6 +96,24 @@ Para testar com uma exportação real, coloque o `CV_<id>.zip` em
 `fixtures/real/`. A pasta está no `.gitignore` e o teste de ida e volta
 passa a cobrir o arquivo.
 
+## App de desktop (em construção)
+
+O mesmo editor como aplicativo, feito com Tauri 2: a página roda no webview do
+sistema, e abrir e salvar usam os diálogos nativos, gravando os bytes do XML
+como o navegador grava (Latin-1). O app não abre o Lattes por conta própria; as
+alterações continuam indo pela extensão do navegador.
+
+Precisa do Rust (`rustc` e `cargo`) e, no macOS, das ferramentas de linha de
+comando do Xcode.
+
+```bash
+pnpm desktop:dev         # janela do app com o servidor do Vite e recarga ao vivo
+pnpm desktop:build       # gera src-tauri/target/release/bundle/macos/LattesEditor.app
+```
+
+Ainda falta: assinatura e notarização no macOS, Windows e Linux na CI,
+atualização automática e a entrega das alterações à extensão.
+
 ## Lançamentos
 
 Cada push na `main` passa pelo CI (lint, tipos, testes com cobertura e

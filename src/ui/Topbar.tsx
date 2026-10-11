@@ -4,6 +4,7 @@
 
 import { type Ref, useRef, useState } from 'react';
 
+import { isDesktop, pickFileNative } from '../desktop/native.ts';
 import { CloseConfirm } from './dialogs.tsx';
 import { AlertIcon, HistoryIcon, PlusIcon, SearchIcon, SpinnerIcon, UploadIcon } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
@@ -67,9 +68,9 @@ export function Topbar({
   const reloadInput = useRef<HTMLInputElement>(null);
   const [closing, setClosing] = useState(false);
   return (
-    <header ref={ref} className="topbar">
+    <header ref={ref} data-tauri-drag-region className="topbar">
       {/* Marca; quem é o currículo fica no menu lateral. */}
-      <div className="topbar-identity">
+      <div data-tauri-drag-region className="topbar-identity">
         {/* Marca provisória, até existir um logo. */}
         <span aria-label="LattesEditor" className="brand">
           Lattes<span className="brand-accent">Editor</span>
@@ -77,7 +78,7 @@ export function Topbar({
       </div>
 
       {/* Encontrar: centralizado na página */}
-      <div className="topbar-center">
+      <div data-tauri-drag-region className="topbar-center">
         <button className="ghost search-btn" type="button" onClick={onPalette}>
           <SearchIcon />
           <span>Ir para</span>
@@ -86,7 +87,7 @@ export function Topbar({
         </button>
       </div>
 
-      <div className="topbar-actions">
+      <div data-tauri-drag-region className="topbar-actions">
         <span aria-hidden="true" className="topbar-divider" />
         {/* Editar, levar ao Lattes e o estado da cópia: só ícones, com dica. */}
         <Tip label="Novo item">
@@ -144,15 +145,20 @@ export function Topbar({
 
         {/* Exibição e arquivo: o que se usa menos fica no menu. */}
         <SettingsMenu
-          modified={modified}
-          showEmpty={showEmpty}
+          file={{
+            modified,
+            onClose: () => setClosing(true),
+            onHistory,
+            onPrint,
+            onReload: () => {
+              if (isDesktop()) void pickFileNative().then((file) => file && onReload(file));
+              else reloadInput.current?.click();
+            },
+            onSave,
+            onShowEmpty,
+            showEmpty,
+          }}
           theme={theme}
-          onClose={() => setClosing(true)}
-          onHistory={onHistory}
-          onPrint={onPrint}
-          onReload={() => reloadInput.current?.click()}
-          onSave={onSave}
-          onShowEmpty={onShowEmpty}
           onTheme={onTheme}
         />
         <CloseConfirm

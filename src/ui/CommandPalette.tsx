@@ -104,7 +104,9 @@ export function CommandPalette({ entries, onClose, onSelect, open }: Props) {
               )}
               {entry.label}
             </span>
-            {entry.count !== undefined && <span className="palette-count">{entry.count}</span>}
+            {entry.count !== undefined && entry.count > 1 && (
+              <span className="palette-count">{entry.count}</span>
+            )}
           </li>
         ))}
       </ul>

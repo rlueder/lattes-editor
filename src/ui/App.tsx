@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { saveBytes } from '../desktop/native.ts';
 import { NewItemPicker } from '../forms/NewItemPicker.tsx';
 import { ProductionForm } from '../forms/ProductionForm.tsx';
 import { type Session, useProduction } from '../forms/use-production.ts';
@@ -20,7 +21,6 @@ import { usePrint } from '../print/use-print.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 import { CommandPalette } from './CommandPalette.tsx';
 import { HistoryDialog, ReloadConfirm } from './dialogs.tsx';
-import { DropZone } from './DropZone.tsx';
 import { EditorContext } from './editor-context.ts';
 import { type HashRoute, parseHash, writeHash } from './hash-route.ts';
 import { paletteActions, paletteEntries, type PaletteEntry } from './palette-search.ts';
@@ -36,18 +36,10 @@ import { type SaveState, Topbar } from './Topbar.tsx';
 import { useBridge } from './use-bridge.ts';
 import { useChanges } from './use-changes.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
+import { Welcome } from './Welcome.tsx';
 
 const AUTOSAVE_MS = 400;
 const EMPTY_INDEX: ReferenceIndex = { courses: new Map(), institutions: new Map() };
-
-function download(bytes: Uint8Array, fileName: string): void {
-  const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/xml' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 
 export function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -225,7 +217,7 @@ export function App() {
 
   const saveFile = () => {
     if (!session) return;
-    download(encodeCv(session.doc, session.meta.encoding), session.meta.fileName);
+    void saveBytes(encodeCv(session.doc, session.meta.encoding), session.meta.fileName);
   };
 
   /** Nova exportação do Lattes: itens novos que ainda não foram importados se perdem. */
@@ -259,17 +251,7 @@ export function App() {
   if (booting) return null;
 
   if (!session) {
-    return (
-      <main className="welcome">
-        <h1>Editor do Currículo Lattes</h1>
-        <p>
-          Exporte o currículo no Lattes (menu Ferramentas › Exportar), solte o arquivo aqui e edite.
-          O arquivo não sai do seu computador.
-        </p>
-        <DropZone onFile={openFile} />
-        {error && <p className="error">{error}</p>}
-      </main>
-    );
+    return <Welcome error={error} theme={theme} onFile={openFile} onTheme={setTheme} />;
   }
 
   const modified = serializeXml(session.doc) !== session.meta.originalXml;
@@ -365,7 +347,7 @@ export function App() {
         onClose={() => setExportOpen(false)}
         onDiscard={changes.discard}
         onDiscardField={changes.discardField}
-        onDownload={() => exportFile && download(exportFile.bytes, exportFile.fileName)}
+        onDownload={() => exportFile && void saveBytes(exportFile.bytes, exportFile.fileName)}
         onOpenItem={(seq) => {
           setExportOpen(false);
           production.openItem(seq);

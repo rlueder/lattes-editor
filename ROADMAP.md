@@ -35,9 +35,12 @@ arquivo quando muda de fato; o detalhe técnico está em
   editor, enviado pela extensão.
 - **Extensão pronta para a Chrome Web Store.** O que falta está em
   `docs/extensao_chrome_web_store.md`: página da política de privacidade,
-  capturas e imagem promocional, e o domínio do editor publicado.
-- **Publicação.** Repositório no GitHub, CI, GitHub Pages com a página
-  inicial e o editor, e lançamentos automáticos (semantic-release).
+  capturas e imagem promocional, e o ID da loja no host nativo do app.
+- **Publicação.** O editor só se distribui como app para baixar (macOS,
+  Windows e Linux, nas páginas de lançamento do GitHub); nada dele fica
+  hospedado. O site é só a página do projeto. Feito: repositório, CI e
+  lançamentos automáticos (semantic-release) com os instaladores. Falta:
+  publicar o site e definir o identificador do app.
 
 ## Marco 3: acabamento para a turma
 
@@ -62,8 +65,12 @@ arquivo quando muda de fato; o detalhe técnico está em
   de nome de autor, ISSN, períodos que se cruzam), sem IA; ver
   `docs/pesquisa_recursos_de_ia.md`.
 - **Achar o DOI** de produções que não têm, pelo Crossref.
-- **App de desktop** com Tauri para macOS, Windows e Linux, entregando as
-  alterações à mesma extensão.
+- **App de desktop** com Tauri para macOS, Windows e Linux. Feito: diálogos
+  nativos de abrir e salvar, builds dos três sistemas na CI com os
+  instaladores na página do lançamento, e a ligação com a extensão por
+  mensagens nativas (o app é o host; ver `src-tauri/src/ponte.rs`). Falta
+  assinar e notarizar no macOS, assinar no Windows, atualizar sozinho e
+  testar a ponte no Windows e no Linux.
 
 ## Em estudo
 
