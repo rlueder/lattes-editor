@@ -6,7 +6,7 @@
 // conteúdo montar a própria estrutura (⌘K, formulário de item).
 
 import { Dialog } from '@base-ui/react/dialog';
-import type { ReactNode } from 'react';
+import { type ReactNode, useRef } from 'react';
 
 import { CloseIcon } from './icons.tsx';
 
@@ -27,6 +27,7 @@ interface Props {
   onClose: () => void;
 }
 
+/** Campos que recebem o foco ao abrir; procurados só dentro do próprio modal. */
 const FIELD =
   'input:not([type="hidden"]):not(:disabled), textarea:not(:disabled), [role="combobox"]';
 
@@ -42,16 +43,18 @@ export function Modal({
   subtitle,
   title,
 }: Props) {
+  const popup = useRef<HTMLDivElement>(null);
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
       <Dialog.Portal>
         <Dialog.Backdrop className="modal-backdrop" />
         <Dialog.Popup
+          ref={popup}
           aria-label={title ? undefined : label}
           className={`modal ${className ?? ''}`}
           initialFocus={
             focusFirstField
-              ? () => document.querySelector<HTMLElement>(`.modal ${FIELD}`) ?? true
+              ? () => popup.current?.querySelector<HTMLElement>(FIELD) ?? true
               : undefined
           }
         >
