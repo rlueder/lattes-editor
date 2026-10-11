@@ -234,3 +234,13 @@ describe('groupFields', () => {
     expect(attributeLabel('FLAG-BOLSA')).toBe('Bolsa');
   });
 });
+
+describe('acentos por sufixo', () => {
+  it('corrige terminações regulares fora do dicionário', () => {
+    expect(enumLabel('ORGANIZACAO_DE_EVENTO')).toBe('Organização de evento');
+    expect(enumLabel('ELABORACAO_DE_PROJETO')).toBe('Elaboração de projeto');
+    expect(attributeLabel('FREQUENCIA-DE-SESSOES')).toBe('Frequência de sessões');
+    expect(elementLabel('MANUTENCAO-DE-OBRA-ARTISTICA')).toBe('Manutenção de obra artística');
+    expect(attributeLabel('CASA')).toBe('Casa');
+  });
+});

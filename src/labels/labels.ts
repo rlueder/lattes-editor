@@ -158,9 +158,26 @@ const ACRONYMS: Record<string, string> = {
   xml: 'XML',
 };
 
+/**
+ * Sufixos regulares do português, para palavras fora do dicionário:
+ * organizacao → organização, sessoes → sessões, extensao → extensão,
+ * frequencia → frequência, relevancia → relevância.
+ */
+function accentSuffix(word: string): string {
+  return word
+    .replace(/cao$/, 'ção')
+    .replace(/coes$/, 'ções')
+    .replace(/sao$/, 'são')
+    .replace(/soes$/, 'sões')
+    .replace(/encia$/, 'ência')
+    .replace(/encias$/, 'ências')
+    .replace(/ancia$/, 'ância')
+    .replace(/ancias$/, 'âncias');
+}
+
 function humanize(xmlName: string): string {
   const words = xmlName.toLowerCase().split(/[-_]/).filter(Boolean);
-  const out = words.map((w) => ACRONYMS[w] ?? ACCENTED[w] ?? w);
+  const out = words.map((w) => ACRONYMS[w] ?? ACCENTED[w] ?? accentSuffix(w));
   if (out.length === 0) return xmlName;
   const first = out[0]!;
   out[0] = ACRONYMS[words[0]!] ? first : first.charAt(0).toUpperCase() + first.slice(1);
