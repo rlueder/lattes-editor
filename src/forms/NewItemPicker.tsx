@@ -4,6 +4,8 @@
 import { useId, useMemo, useState } from 'react';
 
 import { elementLabel, fold } from '../labels/labels.ts';
+import { type CrossrefWork, itemNameFor } from '../lookups/crossref.ts';
+import { DoiLookup } from '../lookups/DoiLookup.tsx';
 import { importableTypes, type ProductionType } from '../model/production.ts';
 import { lattesSchema as schema } from '../schema/lattes.ts';
 import { Modal } from '../ui/Modal.tsx';
@@ -12,7 +14,7 @@ import { FORM_SPECS } from './specs.ts';
 interface Props {
   open: boolean;
   onClose: () => void;
-  onPick: (type: ProductionType) => void;
+  onPick: (type: ProductionType, work?: CrossrefWork) => void;
 }
 
 export function NewItemPicker({ onClose, onPick, open }: Props) {
@@ -60,6 +62,21 @@ export function NewItemPicker({ onClose, onPick, open }: Props) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
+      <div className="picker-doi">
+        <DoiLookup
+          action="Começar"
+          hint="Começar por um DOI escolhe o tipo e preenche o formulário."
+          onFound={(work) => {
+            const itemName = itemNameFor(work);
+            const type = itemName && types.find((t) => t.itemName === itemName);
+            if (!type)
+              return `O Crossref classifica esse DOI como "${work.type}", que não tem tipo correspondente no Lattes. Escolha o tipo abaixo.`;
+            setQuery('');
+            onPick(type, work);
+            return undefined;
+          }}
+        />
+      </div>
       <div className="picker-body">
         {common.length > 0 && (
           <section>

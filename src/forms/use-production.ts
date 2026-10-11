@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 
 import type { PendingSummary } from '../import-export/ExportPanel.tsx';
 import { buildImportFile, type ImportFile } from '../import-export/import-file.ts';
+import { applyCrossref, crossrefAuthors, type CrossrefWork } from '../lookups/crossref.ts';
 import {
   addProduction,
   authorElementName,
@@ -78,13 +79,17 @@ export function useProduction(
     [session, version],
   );
 
-  const startNew = (type: ProductionType) => {
+  const startNew = (type: ProductionType, work?: CrossrefWork) => {
     if (!session) return;
     const sequencia = nextSequencia(session.doc, session.meta.nextSequencia);
     const item = newItem(schema, type.itemName, sequencia);
-    // O dono do currículo é o autor 1 por padrão (guia, marco 2).
-    if (authorElementName(schema, type.itemName) && authors[0])
-      setAuthors(schema, item, [authors[0]]);
+    if (work) applyCrossref(item, work);
+    // O dono do currículo é o autor 1 por padrão (guia, marco 2); com DOI, vale a lista do Crossref.
+    if (authorElementName(schema, type.itemName)) {
+      const fromDoi = work ? crossrefAuthors(work, authors) : [];
+      const list = fromDoi.length > 0 ? fromDoi : authors.slice(0, 1);
+      if (list.length > 0) setAuthors(schema, item, list);
+    }
     setForm({ isNew: true, item, sequencia, type });
   };
 

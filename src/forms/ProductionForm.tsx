@@ -4,6 +4,8 @@
 import { useMemo, useState } from 'react';
 
 import { attributeLabel, elementLabel } from '../labels/labels.ts';
+import { applyCrossref, crossrefAuthors, itemNameFor } from '../lookups/crossref.ts';
+import { DoiLookup } from '../lookups/DoiLookup.tsx';
 import {
   type Author,
   authorElementName,
@@ -21,6 +23,14 @@ import { Attributes } from '../ui/ElementView.tsx';
 import { Modal } from '../ui/Modal.tsx';
 import { AuthorsEditor } from './AuthorsEditor.tsx';
 import { formSpec, missingRequired } from './specs.ts';
+
+/** Tipos que o mapeamento do Crossref sabe preencher. */
+const DOI_TYPES = new Set([
+  'ARTIGO-PUBLICADO',
+  'TRABALHO-EM-EVENTOS',
+  'CAPITULO-DE-LIVRO-PUBLICADO',
+  'LIVRO-PUBLICADO-OU-ORGANIZADO',
+]);
 
 interface Props {
   isNew: boolean;
@@ -108,6 +118,23 @@ export function ProductionForm({
         </header>
 
         <div className="form-body">
+          {DOI_TYPES.has(item.name) && (
+            <DoiLookup
+              hint="Preenche título, ano, autores, periódico ou evento e páginas. Confira antes de salvar."
+              onFound={(work) => {
+                const filled = applyCrossref(item, work);
+                const fromDoi = crossrefAuthors(work, knownAuthors);
+                if (authorEl && fromDoi.length > 0) setAuthors(schema, item, fromDoi);
+                touch();
+                const other = itemNameFor(work);
+                const mismatch =
+                  other && other !== item.name
+                    ? ` Esse DOI é de outro tipo (${elementLabel(other)}); confira os campos.`
+                    : '';
+                return `Preenchidos ${filled.length} campos e ${fromDoi.length} autores. Confira antes de salvar.${mismatch}`;
+              }}
+            />
+          )}
           {spec
             ? spec.fieldsets.map((set) => {
                 const part = partOf(set.part);
