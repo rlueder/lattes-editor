@@ -1,10 +1,9 @@
-// Cabeçalho, na ordem do ciclo de uso: à esquerda o currículo e o estado da
-// cópia de trabalho; à direita encontrar, editar, levar ao Lattes e, no menu
+// Cabeçalho, na ordem do ciclo de uso: à esquerda o estado da cópia de
+// trabalho; à direita encontrar, editar, levar ao Lattes e, no menu
 // de configurações, o que se usa menos.
 
 import { type Ref, useRef } from 'react';
 
-import { formatLattesDate } from './format.ts';
 import {
   AlertIcon,
   CheckIcon,
@@ -23,11 +22,7 @@ export type SaveState = 'salvo' | 'salvando' | 'erro';
 const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
 interface Props {
-  /** DATA-ATUALIZACAO da exportação (DDMMAAAA), quando houver. */
-  exportedOn?: string;
-  fileName: string;
   modified: boolean;
-  ownerName: string;
   /** Itens novos mais alterações ainda não feitas no Lattes. */
   pendingCount: number;
   ref: Ref<HTMLElement>;
@@ -52,8 +47,6 @@ const SAVE_LABEL: Record<SaveState, string> = {
 };
 
 export function Topbar({
-  exportedOn,
-  fileName,
   modified,
   onClose,
   onExport,
@@ -64,7 +57,6 @@ export function Topbar({
   onSave,
   onShowEmpty,
   onTheme,
-  ownerName,
   pendingCount,
   ref,
   saveState,
@@ -72,17 +64,10 @@ export function Topbar({
   theme,
 }: Props) {
   const reloadInput = useRef<HTMLInputElement>(null);
-  const date = formatLattesDate(exportedOn);
   return (
     <header ref={ref} className="topbar">
-      {/* Quem é o currículo e o estado da cópia de trabalho (que abre o histórico). */}
+      {/* Estado da cópia de trabalho (abre o histórico); quem é o currículo fica no menu lateral. */}
       <div className="topbar-identity">
-        <div className="topbar-title" title={`Arquivo: ${fileName}`}>
-          <strong>{ownerName}</strong>
-          <span className="topbar-sub">
-            Currículo Lattes{date ? ` · exportado em ${date}` : ''}
-          </span>
-        </div>
         <Tip label="Histórico de alterações">
           <button
             aria-label={`${SAVE_LABEL[saveState]}. Abrir histórico de alterações`}

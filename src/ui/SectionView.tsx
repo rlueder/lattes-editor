@@ -92,14 +92,6 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
     <>
       <div className="section-head">
         <h1>{section.label}</h1>
-        {section.importable === false && (
-          <span
-            className="badge"
-            title="O Importar do Lattes ignora esta seção; copie as mudanças à mão no Lattes."
-          >
-            não importável no Lattes
-          </span>
-        )}
         {privacy && (
           <Tip label={hideSensitive ? 'Mostrar dados pessoais' : 'Esconder dados pessoais'}>
             <button

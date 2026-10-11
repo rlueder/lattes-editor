@@ -14,7 +14,7 @@ import {
   replaceWorkingCopy,
   saveWorkingCopy,
 } from '../model/store.ts';
-import { firstChild, getAttr, parseXml, serializeXml, walk, type XDocument } from '../model/xml.ts';
+import { getAttr, parseXml, serializeXml, walk, type XDocument } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 import { CommandPalette } from './CommandPalette.tsx';
 import { HistoryDialog, ReloadConfirm } from './dialogs.tsx';
@@ -22,6 +22,7 @@ import { DropZone } from './DropZone.tsx';
 import { EditorContext } from './editor-context.ts';
 import { type HashRoute, parseHash, writeHash } from './hash-route.ts';
 import { paletteActions, paletteEntries, type PaletteEntry } from './palette-search.ts';
+import { profileOf } from './profile.ts';
 import { ReferenceContext } from './reference-context.ts';
 import { buildReferenceIndex, type ReferenceIndex } from './reference-tables.ts';
 import { buildSections } from './sections.ts';
@@ -42,11 +43,6 @@ function download(bytes: Uint8Array, fileName: string): void {
   a.download = fileName;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-function ownerName(doc: XDocument): string {
-  const dg = firstChild(doc.root, 'DADOS-GERAIS');
-  return (dg && getAttr(dg, 'NOME-COMPLETO')) || 'Currículo Lattes';
 }
 
 export function App() {
@@ -287,10 +283,7 @@ export function App() {
     <div className="shell">
       <Topbar
         ref={topbarRef}
-        exportedOn={exportedOn}
-        fileName={session.meta.fileName}
         modified={modified}
-        ownerName={ownerName(session.doc)}
         pendingCount={production.pending.length + changes.open}
         saveState={saveState}
         showEmpty={showEmpty}
@@ -309,6 +302,7 @@ export function App() {
       <Sidebar
         activeId={section?.id}
         pendingIn={pendingIn}
+        profile={profileOf(session.doc, session.meta.fileName, exportedOn)}
         sections={sections}
         onSelect={(id) => navigate({ sectionId: id })}
       />

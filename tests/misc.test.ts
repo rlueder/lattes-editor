@@ -20,6 +20,7 @@ import { groupFields, isBooleanAttr, isSystemAttr } from '../src/ui/field-kind.t
 import { formatLattesDate } from '../src/ui/format.ts';
 import { parseHash } from '../src/ui/hash-route.ts';
 import { isSensitiveAttr, readHideSensitive, writeHideSensitive } from '../src/ui/privacy.ts';
+import { initials } from '../src/ui/profile.ts';
 import { digitOf, isSectionShortcut } from '../src/ui/use-section-shortcuts.ts';
 
 describe('rótulos', () => {
@@ -354,5 +355,13 @@ describe('contatos do endereço', () => {
       parseSocial('ID Rede Social: 7, Nome Rede Social: Linkedin, EndereÃ§o: https://x.org/a/'),
     ).toEqual([{ name: 'Linkedin', url: 'https://x.org/a/' }]);
     expect(parseSocial('qualquer coisa')).toEqual([]);
+  });
+});
+
+describe('perfil', () => {
+  it('tira as iniciais do primeiro e do último nome', () => {
+    expect(initials('Rafael Monteiro Lüder')).toBe('RL');
+    expect(initials('Maria da Silva')).toBe('MS');
+    expect(initials('Ana')).toBe('A');
   });
 });

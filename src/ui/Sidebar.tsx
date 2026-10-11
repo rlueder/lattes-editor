@@ -1,6 +1,8 @@
 import { useCallback } from 'react';
 
 import type { XElement } from '../model/xml.ts';
+import type { Profile } from './profile.ts';
+import { ProfileCard } from './ProfileCard.tsx';
 import { countItems, type Section } from './sections.ts';
 import { IS_MAC, SECTION_MODIFIER_LABEL, useSectionShortcuts } from './use-section-shortcuts.ts';
 
@@ -8,11 +10,12 @@ interface Props {
   activeId?: string;
   /** Quantos itens novos (ainda não importados) há dentro destes elementos. */
   pendingIn: (els: XElement[]) => number;
+  profile: Profile;
   sections: Section[];
   onSelect: (id: string) => void;
 }
 
-export function Sidebar({ activeId, onSelect, pendingIn, sections }: Props) {
+export function Sidebar({ activeId, onSelect, pendingIn, profile, sections }: Props) {
   // Toda seção tem número, na ordem do menu; os nove primeiros têm atalho.
   const select = useCallback(
     (index: number) => {
@@ -25,6 +28,7 @@ export function Sidebar({ activeId, onSelect, pendingIn, sections }: Props) {
 
   return (
     <nav aria-label="Seções" className="sidebar">
+      <ProfileCard profile={profile} />
       <ul>
         {sections.map((s) => {
           const total = s.groups.reduce((n, g) => n + countItems(g), 0);

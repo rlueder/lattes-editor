@@ -423,14 +423,6 @@ code {
   margin: 0;
 }
 
-.badge {
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--warn-bg);
-  color: var(--warn-text);
-}
-
 .group {
   margin-top: 24px;
   scroll-margin-top: calc(var(--topbar-h) + var(--section-bar-h, 0px) + 8px);
@@ -2635,4 +2627,67 @@ details > .element {
   flex: 0 0 auto;
   margin-left: 8px;
   font-size: 12px;
+}
+
+/* Quem é o currículo, no topo do menu lateral. */
+.profile {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0 0 14px;
+  padding: 4px 8px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+.profile-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.profile-name {
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.profile-line {
+  font-size: 12px;
+  min-width: 0;
+}
+
+.profile-line a {
+  overflow: hidden;
+  color: var(--accent);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-line a:hover {
+  text-decoration: underline;
+}
+
+.profile .copy-btn {
+  padding: 2px 4px;
+  opacity: 0;
+}
+
+.profile:hover .copy-btn,
+.profile .copy-btn:focus-visible {
+  opacity: 1;
 }
