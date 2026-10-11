@@ -453,28 +453,106 @@ h3 {
 
 /* Rodapé */
 
+/* Rodapé como o dos sites abertos da Precisa: fundo areia, marca e GitHub
+   numa linha, fio fino e o aviso em letra pequena. A marca usa o violeta
+   da Precisa (@precisa-saude/themes). */
 .footer {
+  --ps-violet: oklch(0.67 0.113 285);
   margin-top: 112px;
-  padding: 32px 0 48px;
+  padding: 40px 0 48px;
   border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-2) 50%, transparent);
   color: var(--muted);
   font-size: 14px;
 }
 
-.footer-inner {
+@media (prefers-color-scheme: dark) {
+  .footer {
+    --ps-violet: oklch(0.72 0.1 285);
+  }
+}
+
+.footer-top {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 24px;
 }
 
-.footer p {
-  margin: 0;
-  max-width: 560px;
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.footer a {
+.footer-label {
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.footer-brand a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ps-violet);
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.footer-brand a:hover {
+  opacity: 0.8;
+}
+
+.footer-logo {
+  width: 32px;
+  height: 32px;
+}
+
+.footer-name {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.footer-social a {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--muted);
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+
+.footer-social a:hover {
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  color: var(--text);
+}
+
+.footer-social svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.footer-projects {
+  margin: 24px 0 0;
+}
+
+.footer-projects a,
+.footer-note a {
   color: var(--accent);
+}
+
+.footer-note {
+  margin: 24px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 /* Telas menores */
