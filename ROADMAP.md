@@ -33,6 +33,16 @@ arquivo quando muda de fato; o detalhe técnico está em
   formulário de atividade nova). Mapeada a inclusão, Formação, Atuação,
   Projetos e Patentes, que o Importar não aceita, ganham "Novo item" no
   editor, enviado pela extensão.
+- **Abrir do Lattes pela ponte.** Com a extensão instalada e uma sessão
+  aberta no Lattes, o editor pede a exportação e carrega o currículo sem o
+  usuário baixar e soltar o `CV_<id>.zip`. A extensão já tem permissão em
+  `wwws.cnpq.br` e faz requisições de dentro da aba do Lattes; o Exportar
+  (`pkg_impcv.get_arquivo?f_cod=…`) devolve o mesmo ZIP que o editor já
+  abre. O primeiro passo é registrar em `docs/lattes_internals.md` a
+  requisição real do Exportar, que o reconhecimento não capturou, e ver se a
+  sessão cai depois dele (uma caiu cerca de 3 minutos depois de abrir o
+  Exportar, sem causa conhecida). O currículo vai da aba do Lattes à
+  extensão e dela ao editor, sem passar por servidor.
 - **Extensão pronta para a Chrome Web Store.** O que falta está em
   `docs/extensao_chrome_web_store.md`: página da política de privacidade,
   capturas e imagem promocional, e o ID da loja no host nativo do app.
