@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.0](https://github.com/rlueder/lattes-editor/compare/v0.4.0...v0.5.0) (2026-10-12)
+
+### Novidades
+
+- **ui:** ícones e marca, com a grade de construção e os geradores ([#8](https://github.com/rlueder/lattes-editor/issues/8)) ([a7517d8](https://github.com/rlueder/lattes-editor/commit/a7517d8f9ccf74b79fd32bde994a53e9d177929b)), closes [#463C6D](https://github.com/rlueder/lattes-editor/issues/463C6D)
+
 ## [0.4.0](https://github.com/rlueder/lattes-editor/compare/v0.3.0...v0.4.0) (2026-10-12)
 
 ### Novidades
