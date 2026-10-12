@@ -10,6 +10,12 @@ edition = "2021"
 name = "lattes_editor_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+# O executável leva o nome do app: o macOS mostra esse nome no Dock quando
+# o app roda sem o pacote .app (pnpm desktop:dev).
+[[bin]]
+name = "LattesEditor"
+path = "src/main.rs"
+
 [build-dependencies]
 tauri-build = { version = "=2.7.0", features = [] }
 

@@ -12,7 +12,7 @@
     "build:site": "pnpm build && node scripts/build-site.ts",
     "capture:screenshots": "node scripts/capture-screenshots.ts",
     "desktop:build": "tauri build --bundles app",
-    "desktop:dev": "tauri dev",
+    "desktop:dev": "tauri dev --config src-tauri/tauri.dev.conf.json",
     "dev": "vite",
     "dev:exemplo": "vite --port 5199 --strictPort --open /?exemplo",
     "format": "prettier --write .",

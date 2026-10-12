@@ -108,4 +108,8 @@ body+=text('Violeta e menta: marca  ·  azul: malha  ·  cobre: eixos e cotas',8
 body+=text('Os elementos auxiliares seguem a malha; a proporção original do L permanece preservada.',85,1548,18)
 (out/'construction-grid.svg').write_text(svg(1800,1580,body,'Grade de construção do logo LattesEditor com elementos aplicados'))
 (out/'proportions.json').write_text(json.dumps({'module_font_units':u,'subgrid':'x/8','L_weight':600,'L_height_x':h/u,'L_foot_x':foot/u,'circle_outer_diameter_x':1.75,'circle_inner_diameter_x':.75,'document_stroke_x':.25,'fold_x':.75,'text_line_pitch_x':.625,'diagonal_gap_perpendicular_x':.25,'document_top_inset_after_stem_x':.375,'wordmark_weights':[700,400],'wordmark_ink_width_x':7,'wordmark_gap_x':.5},indent=2))
+# Selo DEV do ícone de desenvolvimento: as letras em IBM Plex Sans 700,
+# recortadas na tinta para o build-icons.cjs centralizar no selo.
+dp,db=outline([('DEV',700)])
+(out/'dev-label.svg').write_text(svg(round(db[2]-db[0]),round(db[3]-db[1]),f'<path fill="#FFFFFF" d="{dp}"/>','LattesEditor · selo DEV',f'{db[0]} {db[1]} {db[2]-db[0]} {db[3]-db[1]}'))
 print('Construction sheet and normalized logo generated.')
