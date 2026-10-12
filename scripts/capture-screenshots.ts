@@ -191,17 +191,21 @@ async function captureOgImage(): Promise<void> {
     width: 1200,
   });
   await cdp.send('Page.navigate', { url: new URL('/scripts/og-card.html', url).href });
-  await sleep(500);
-  // Espera a fonte e as imagens em vez de um tempo fixo, e confere que a página
-  // renderizou de fato: um cartão quebrado falha o script em vez de ser gravado.
+  // Espera o documento, a fonte e as imagens em vez de um tempo fixo, e confere
+  // que a página renderizou de fato: um cartão quebrado falha o script em vez
+  // de ser gravado. document.fonts.check() daria verdadeiro sem fonte nenhuma
+  // declarada; fonts.load() só devolve faces que a página carregou.
   const { result } = await cdp.send<{ result: { value?: string } }>('Runtime.evaluate', {
     awaitPromise: true,
     expression: `(async () => {
-      await document.fonts.ready;
+      for (let i = 0; i < 100 && document.readyState !== 'complete'; i++) {
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      const faces = await document.fonts.load('600 50px "IBM Plex Sans"');
       const imgs = [...document.images];
       await Promise.all(imgs.map((i) => i.decode().catch(() => {})));
       return JSON.stringify({
-        font: document.fonts.check('600 50px "IBM Plex Sans"'),
+        font: faces.some((f) => f.family.includes('IBM Plex Sans') && f.status === 'loaded'),
         images: imgs.length > 0 && imgs.every((i) => i.complete && i.naturalWidth > 0),
         title: Boolean(document.querySelector('h1')?.textContent),
       });
