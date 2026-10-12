@@ -3789,9 +3789,11 @@ button.primary.danger-fill:hover {
   font: 14px/1.5 var(--font);
 }
 
+/* No modo de privacidade, a foto vira mosaico e perde a cor. */
 .profile .avatar .pixel-photo {
   width: 100%;
   height: 100%;
+  filter: grayscale(1);
   image-rendering: pixelated;
 }
 
