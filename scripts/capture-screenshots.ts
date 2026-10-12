@@ -4,7 +4,9 @@
 // Usa um Brave ou Chrome sem janela, com perfil temporário, falando pelo
 // protocolo de depuração (sem Playwright nem outra dependência). Cada tela
 // sai nos temas claro e escuro, em docs/img/<nome>-<tema>.jpg. A de Produções
-// também vai para a página do projeto, em site/img/editor-<tema>.jpg.
+// também vai para a página do projeto, em site/img/editor-<tema>.jpg. Por fim,
+// a imagem de prévia da página (site/img/og.png, 1200 × 630) sai de
+// scripts/og-card.html, servido pelo mesmo Vite.
 //
 //   pnpm dev                       # o editor em http://localhost:5173 (ou outra porta)
 //   pnpm capture:screenshots [url] # padrão: http://localhost:5173/
@@ -173,6 +175,55 @@ async function capture(theme: 'claro' | 'escuro'): Promise<void> {
   ws.close();
 }
 
+/** Imagem de prévia ao compartilhar a página do projeto (Open Graph). */
+async function captureOgImage(): Promise<void> {
+  const target = (await (
+    await fetch(`http://127.0.0.1:${PORT}/json/new?about:blank`, { method: 'PUT' })
+  ).json()) as { webSocketDebuggerUrl: string };
+  const ws = new WebSocket(target.webSocketDebuggerUrl);
+  await new Promise((r) => ws.addEventListener('open', r));
+  const cdp = new Cdp(ws);
+  await cdp.send('Page.enable');
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    deviceScaleFactor: 1,
+    height: 630,
+    mobile: false,
+    width: 1200,
+  });
+  await cdp.send('Page.navigate', { url: new URL('/scripts/og-card.html', url).href });
+  // Espera o documento, a fonte e as imagens em vez de um tempo fixo, e confere
+  // que a página renderizou de fato: um cartão quebrado falha o script em vez
+  // de ser gravado. document.fonts.check() daria verdadeiro sem fonte nenhuma
+  // declarada; fonts.load() só devolve faces que a página carregou.
+  const { result } = await cdp.send<{ result: { value?: string } }>('Runtime.evaluate', {
+    awaitPromise: true,
+    expression: `(async () => {
+      for (let i = 0; i < 100 && document.readyState !== 'complete'; i++) {
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      const faces = await document.fonts.load('600 50px "IBM Plex Sans"');
+      const imgs = [...document.images];
+      await Promise.all(imgs.map((i) => i.decode().catch(() => {})));
+      return JSON.stringify({
+        font: faces.some((f) => f.family.includes('IBM Plex Sans') && f.status === 'loaded'),
+        images: imgs.length > 0 && imgs.every((i) => i.complete && i.naturalWidth > 0),
+        title: Boolean(document.querySelector('h1')?.textContent),
+      });
+    })()`,
+    returnByValue: true,
+  });
+  const ready = JSON.parse(result.value ?? '{}') as Record<string, boolean>;
+  const missing = ['font', 'images', 'title'].filter((k) => !ready[k]);
+  if (missing.length) {
+    throw new Error(`Prévia (og-card.html) não renderizou: ${missing.join(', ')}`);
+  }
+  const { data } = await cdp.send<{ data: string }>('Page.captureScreenshot', { format: 'png' });
+  const file = join(root, 'site/img/og.png');
+  writeFileSync(file, Buffer.from(data, 'base64'));
+  console.log(file.replace(root, ''));
+  ws.close();
+}
+
 const profile = mkdtempSync(join(tmpdir(), 'lattes-capturas-'));
 const exe = BROWSERS.find((b) => {
   try {
@@ -199,6 +250,7 @@ try {
   await waitForBrowser();
   await capture('claro');
   await capture('escuro');
+  await captureOgImage();
 } finally {
   const exited = new Promise((r) => browser.once('exit', r));
   browser.kill();

@@ -3,12 +3,58 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Editor do Currículo Lattes</title>
+    <title>LattesEditor: edite o Currículo Lattes no seu computador</title>
     <meta
       name="description"
       content="Edite o Currículo Lattes no seu computador: abra a exportação, cadastre produções pelo DOI e revise cada alteração antes de levar ao Lattes."
     />
     <meta name="color-scheme" content="light dark" />
+    <link rel="canonical" href="https://rlueder.github.io/lattes-editor/" />
+    <meta name="author" content="Rafael Lüder" />
+    <meta name="theme-color" content="#f9f9f8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#191918" media="(prefers-color-scheme: dark)" />
+
+    <!-- Prévia ao compartilhar (Open Graph e cartão do X/Twitter). -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="LattesEditor" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:url" content="https://rlueder.github.io/lattes-editor/" />
+    <meta property="og:title" content="LattesEditor: edite o Currículo Lattes no seu computador" />
+    <meta
+      property="og:description"
+      content="Abra a exportação do Lattes, cadastre produções pelo DOI e revise cada alteração antes de levar ao Lattes. Gratuito e de código aberto, para macOS, Windows e Linux."
+    />
+    <meta property="og:image" content="https://rlueder.github.io/lattes-editor/img/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="LattesEditor: o editor aberto na seção Produções, ao lado do nome e da frase do projeto."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Dados estruturados para buscadores (schema.org). -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "LattesEditor",
+        "alternateName": "Editor do Currículo Lattes",
+        "description": "Editor local do Currículo Lattes: abre a exportação XML, edita e leva as mudanças de volta ao Lattes, pelo Importar ou pela extensão.",
+        "url": "https://rlueder.github.io/lattes-editor/",
+        "image": "https://rlueder.github.io/lattes-editor/img/og.png",
+        "screenshot": "https://rlueder.github.io/lattes-editor/img/editor-claro.jpg",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "macOS, Windows, Linux",
+        "inLanguage": "pt-BR",
+        "isAccessibleForFree": true,
+        "license": "https://github.com/rlueder/lattes-editor/blob/main/LICENSE",
+        "downloadUrl": "https://github.com/rlueder/lattes-editor/releases/latest",
+        "codeRepository": "https://github.com/rlueder/lattes-editor",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" },
+        "author": { "@type": "Person", "name": "Rafael Lüder" }
+      }
+    </script>
     <link rel="icon" href="favicon.ico" sizes="32x32" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
