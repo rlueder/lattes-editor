@@ -708,3 +708,43 @@ h3 {
     transition: none;
   }
 }
+
+/* Página de texto (política de privacidade) */
+
+.prose {
+  max-width: 720px;
+  padding-bottom: 88px;
+}
+
+.prose h1 {
+  font-size: clamp(32px, 5vw, 44px);
+}
+
+.prose-date {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.prose h2 {
+  margin: 48px 0 12px;
+  font-size: 22px;
+}
+
+.prose p,
+.prose li {
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.prose ul {
+  padding-left: 20px;
+}
+
+.prose li + li {
+  margin-top: 8px;
+}
+
+.prose a {
+  color: var(--accent);
+}
