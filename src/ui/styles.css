@@ -737,7 +737,8 @@ details.card > summary {
   }
 }
 
-/* Usos de uma entrada das tabelas de apoio */
+/* Usos de uma entrada das tabelas de apoio: um botão com a contagem abre os
+   grupos (um por contêiner, com a sua contagem), e cada grupo abre os itens. */
 
 .usages {
   margin: 0 12px 10px;
@@ -746,38 +747,143 @@ details.card > summary {
   background: var(--surface-2);
 }
 
-.usages h4 {
-  margin: 0 0 4px;
-  font-size: 12px;
-  font-weight: 550;
-  color: var(--muted);
+.usage-group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
 }
 
-.usages ul {
+.usage-group-toggle {
+  min-height: 40px;
+}
+
+/* Título dos usos: só rótulo e contagem, sem abrir nem fechar. */
+.usages-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-weight: inherit;
+}
+
+.usage-group-toggle:hover {
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+}
+
+.usage-group-toggle .icon-svg {
+  flex: 0 0 auto;
+  color: var(--muted);
+  transform: rotate(-90deg);
+  transition: transform 0.12s;
+}
+
+.usage-group-toggle[aria-expanded='true'] .icon-svg {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .usage-group-toggle .icon-svg {
+    transition: none;
+  }
+}
+
+.usages-label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.usages-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.usage-groups,
+.usage-items {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.usages li {
+.usage-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.usage-group-label {
+  min-width: 0;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Itens recuados até o texto do grupo (8px de recuo, 14px de seta, 8px de vão). */
+.usage-items {
+  padding: 2px 8px 10px 30px;
+}
+
+.usage-items li {
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  padding: 3px 0;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+/* Fio entre os itens, como entre os cartões da lista. */
+.usage-items li + li {
+  border-top: 1px solid var(--divider);
+}
+
+.usage-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Mesma tipografia dos cartões de cima: tipo 13px, título 15px, período 13px. */
+.usage-items .item-kind {
+  font-size: 13px;
 }
 
 .usage-title {
-  flex: 1;
   min-width: 0;
+  font-size: 15px;
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .usage-period {
+  flex-shrink: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* No celular, alvos de toque de 44px. */
+@media (max-width: 760px) {
+  .usage-group-toggle {
+    min-height: 44px;
+  }
 }
 
 .section-note {
@@ -4354,7 +4460,8 @@ button.primary:hover:not(:disabled) {
 /* Contagem ao lado de um título ou botão (Todos os tipos, seções do painel
    Levar ao Lattes): o mesmo selo do menu lateral. */
 .picker-more .count,
-.panel-section-head .count {
+.panel-section-head .count,
+.usage-group-toggle .count {
   display: inline-grid;
   place-items: center;
   min-width: 20px;
@@ -4671,28 +4778,18 @@ button.primary:hover:not(:disabled) {
 }
 
 /* "Onde aparece" dentro do item aberto: um bloco como os grupos de campos,
-   com o mesmo fundo, o mesmo recuo e o rótulo em caixa alta; um fio o
-   separa dos campos abaixo. */
+   com o mesmo fundo e o mesmo recuo; um fio o separa dos campos abaixo. */
 .group details.item > .usages {
   margin: 0;
-  padding-top: 20px;
+  padding-top: 12px;
   padding-bottom: 0;
   border-radius: 0;
-}
-
-.group details.item > .usages h4 {
-  margin: 0 0 10px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 550;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .group details.item > .usages::after {
   content: '';
   display: block;
-  margin-top: 20px;
+  margin-top: 12px;
   border-top: 1px solid var(--divider);
 }
 

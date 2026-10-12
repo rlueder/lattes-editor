@@ -6,8 +6,13 @@ import type { XElement } from '../model/xml.ts';
 import { formatDuration, formatPeriod, groupByYear, itemMeta } from './item-meta.ts';
 
 export interface Usage {
+  /** Rótulo do contêiner do item (Orientações concluídas), que agrupa os usos. */
+  group: string;
+  /** Tipo do item (Orientações concluídas para mestrado). */
   kind: string;
   period: string;
+  /** Chave de ordenação decrescente do período (ItemMeta.sortKey). */
+  sortKey: number;
   title: string;
 }
 

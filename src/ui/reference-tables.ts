@@ -25,11 +25,19 @@ const COURSE_TABLE_ITEM = 'INFORMACAO-ADICIONAL-CURSO';
 const INSTITUTION_CODE = /^CODIGO-INSTITUICAO(-|$)/;
 const COURSE_CODE = /^CODIGO-CURSO(-|$)/;
 
-/** Partes de um item (DADOS-BASICOS-*, DETALHAMENTO-*, VINCULOS) contam como o item. */
-function owningItem(el: XElement, ancestors: readonly XElement[]): XElement {
+/**
+ * Partes de um item (DADOS-BASICOS-*, DETALHAMENTO-*, VINCULOS) contam como o
+ * item. Junto vem o contêiner do item, que dá o nome do grupo na lista de usos.
+ */
+function owningItem(
+  el: XElement,
+  ancestors: readonly XElement[],
+): { item: XElement; parent?: XElement } {
   const isPart = (n: string) =>
     n.startsWith('DADOS-BASICOS') || n.startsWith('DETALHAMENTO') || n === 'VINCULOS';
-  return isPart(el.name) && ancestors.length > 0 ? ancestors[ancestors.length - 1]! : el;
+  const chain = [...ancestors, el];
+  const at = isPart(el.name) && ancestors.length > 0 ? chain.length - 2 : chain.length - 1;
+  return { item: chain[at]!, parent: chain[at - 1] };
 }
 
 const attr = (el: XElement, name: string) => getAttr(el, name)?.trim() || undefined;
@@ -58,7 +66,12 @@ export function buildReferenceIndex(root: XElement): ReferenceIndex {
   };
 
   // Primeira passada: nomes. CODIGO-X aponta para NOME-X no mesmo elemento.
-  const refs: { code: string; item: XElement; map: Map<string, RefEntry> }[] = [];
+  const refs: {
+    code: string;
+    item: XElement;
+    map: Map<string, RefEntry>;
+    parent?: XElement;
+  }[] = [];
   walk(root, (el, ancestors) => {
     for (const a of el.attrs) {
       const value = a.value.trim();
@@ -70,27 +83,61 @@ export function buildReferenceIndex(root: XElement): ReferenceIndex {
       const e = entry(map, value);
       const name = getAttr(el, a.name.replace(/^CODIGO/, 'NOME'))?.trim();
       if (name && !e.name) e.name = name;
-      refs.push({ code: value, item: owningItem(el, ancestors), map });
+      refs.push({ code: value, map, ...owningItem(el, ancestors) });
     }
   });
 
   // Segunda passada: usos, um por item, já com os nomes de curso resolvidos.
   const seen = new Set<string>();
   const ids = new Map<XElement, number>();
-  for (const { code, item, map } of refs) {
+  for (const { code, item, map, parent } of refs) {
     if (!ids.has(item)) ids.set(item, ids.size);
     const key = `${map === institutions ? 'i' : 'c'}:${code}:${ids.get(item)}`;
     if (seen.has(key)) continue;
     seen.add(key);
     const meta = itemMeta(item);
     const title = item.name === COURSE_TABLE_ITEM ? courseTitle(item, courses) : meta.title;
+    const kind = elementLabel(item.name);
     entry(map, code).usages.push({
-      kind: elementLabel(item.name),
+      group: parent ? elementLabel(parent.name) : kind,
+      kind,
       period: formatPeriod(meta),
+      sortKey: meta.sortKey,
       title,
     });
   }
   return { courses, institutions };
+}
+
+export interface UsageGroup {
+  label: string;
+  /** Tipos diferentes no mesmo grupo: cada linha mostra o seu. */
+  mixedKinds: boolean;
+  usages: Usage[];
+}
+
+/**
+ * Usos de uma entrada agrupados pelo contêiner do item (Orientações
+ * concluídas, Formação acadêmica…), em ordem alfabética. Dentro do grupo, o
+ * período mais recente primeiro (os atuais no topo, sem período no fim) e,
+ * no empate, o título.
+ */
+export function groupUsages(usages: readonly Usage[]): UsageGroup[] {
+  const groups = new Map<string, Usage[]>();
+  for (const u of usages) {
+    const list = groups.get(u.group);
+    if (list) list.push(u);
+    else groups.set(u.group, [u]);
+  }
+  return [...groups]
+    .map(([label, list]) => ({
+      label,
+      mixedKinds: new Set(list.map((u) => u.kind)).size > 1,
+      usages: [...list].sort(
+        (a, b) => b.sortKey - a.sortKey || a.title.localeCompare(b.title, 'pt-BR'),
+      ),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
 }
 
 function usageCount(n: number): string | undefined {
