@@ -31,7 +31,37 @@ describe('buildFacets', () => {
       { count: 3, label: 'Participação em congresso', value: 'PARTICIPACAO-EM-CONGRESSO' },
       { count: 1, label: 'Participação em encontro', value: 'PARTICIPACAO-EM-ENCONTRO' },
     ]);
-    expect(facets[2]!.options.map((o) => o.label)).toEqual(['Ouvinte', 'Apresentação oral']);
+    expect(facets[2]!.options.map((o) => o.label)).toEqual(['Apresentação oral', 'Ouvinte']);
+  });
+
+  it('lista as opções em ordem alfabética, sem a contagem mudar a posição', () => {
+    const items = ['Zâmbia', 'Zâmbia', 'Zâmbia', 'Brasil', 'Áustria'].map((pais, i) =>
+      el(
+        `<PARTICIPACAO-EM-CONGRESSO><DADOS-BASICOS-DA-PARTICIPACAO-EM-CONGRESSO NATUREZA="" ANO="200${i}" PAIS="${pais}"/></PARTICIPACAO-EM-CONGRESSO>`,
+      ),
+    );
+    const pais = buildFacets(items).find((f) => f.label === 'País');
+    expect(pais?.options.map((o) => `${o.label} (${o.count})`)).toEqual([
+      'Áustria (1)',
+      'Brasil (1)',
+      'Zâmbia (3)',
+    ]);
+  });
+
+  it('na ordem da página, o tipo fica onde aparece primeiro', () => {
+    const items = ['IDIOMA', 'PREMIO-TITULO', 'IDIOMA', 'AREA-DE-ATUACAO'].map((n) =>
+      el(`<${n}/>`),
+    );
+    const kinds = (opts?: { typesInPageOrder: boolean }) =>
+      buildFacets(items, opts)
+        .find((f) => f.id === 'tipo')
+        ?.options.map((o) => o.value);
+    expect(kinds({ typesInPageOrder: true })).toEqual([
+      'IDIOMA',
+      'PREMIO-TITULO',
+      'AREA-DE-ATUACAO',
+    ]);
+    expect(kinds()).not.toEqual(['IDIOMA', 'PREMIO-TITULO', 'AREA-DE-ATUACAO']);
   });
 
   it('campo com um valor só, ou presente em poucos itens, não vira filtro', () => {

@@ -66,21 +66,29 @@ function options(
   items: XElement[],
   valueOf: (el: XElement) => string | undefined,
   label: (v: string) => string,
+  pageOrder = false,
 ): FacetOption[] {
   const counts = new Map<string, number>();
   for (const el of items) {
     const v = valueOf(el);
     if (v) counts.set(v, (counts.get(v) ?? 0) + 1);
   }
-  return [...counts]
-    .map(([value, count]) => ({ count, label: label(value), value }))
-    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'pt-BR'));
+  // Ordem alfabética pelo rótulo, que é o que se lê na lista; a contagem
+  // fica entre parênteses e não muda a posição. Na ordem da página, cada
+  // valor fica onde aparece primeiro (o Map guarda a ordem de inserção).
+  const list = [...counts].map(([value, count]) => ({ count, label: label(value), value }));
+  return pageOrder ? list : list.sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
 }
 
-export function buildFacets(items: XElement[]): Facet[] {
+/**
+ * Facetas da seção. Com `typesInPageOrder`, o filtro de tipo segue a ordem em
+ * que os tipos aparecem na página (Dados gerais, que começa pela
+ * identificação); nas outras seções, a ordem é alfabética.
+ */
+export function buildFacets(items: XElement[], { typesInPageOrder = false } = {}): Facet[] {
   const facets: Facet[] = [];
 
-  const kinds = options(items, (el) => el.name, elementLabel);
+  const kinds = options(items, (el) => el.name, elementLabel, typesInPageOrder);
   if (kinds.length > 1) {
     facets.push({ id: 'tipo', label: 'Tipo', options: kinds, valueOf: (el) => el.name });
   }

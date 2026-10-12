@@ -38,7 +38,7 @@ export function FilterBar({ facets, onChange, shown, state, total }: Props) {
             aria-label={f.label}
             className={value ? 'filter-facet active' : 'filter-facet'}
             options={[
-              { label: `${f.label}: todos`, value: '' },
+              { label: 'Todos', selectedLabel: `${f.label}: todos`, value: '' },
               ...f.options.map((o) => ({ label: `${o.label} (${o.count})`, value: o.value })),
             ]}
             value={value}
