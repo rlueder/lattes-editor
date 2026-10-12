@@ -105,20 +105,30 @@ jobs:
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
           APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
         run: |
-          if [ -z "$APPLE_CERTIFICATE" ] || [ -z "$APPLE_API_KEY_P8" ]; then
+          names="APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_API_ISSUER APPLE_API_KEY APPLE_API_KEY_P8"
+          missing=""
+          for name in $names; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ "$missing" = " $names" ]; then
             echo "::warning::Sem os segredos da Apple: o app de macOS sai sem assinatura."
             exit 0
           fi
+          # Configuração pela metade é erro, para não descobrir só na notarização.
+          if [ -n "$missing" ]; then
+            echo "::error::Faltam segredos da Apple:$missing"
+            exit 1
+          fi
           key="$RUNNER_TEMP/AuthKey_$APPLE_API_KEY.p8"
-          printf '%s' "$APPLE_API_KEY_P8" > "$key"
-          {
-            echo "APPLE_CERTIFICATE=$APPLE_CERTIFICATE"
-            echo "APPLE_CERTIFICATE_PASSWORD=$APPLE_CERTIFICATE_PASSWORD"
-            echo "APPLE_SIGNING_IDENTITY=$APPLE_SIGNING_IDENTITY"
-            echo "APPLE_API_ISSUER=$APPLE_API_ISSUER"
-            echo "APPLE_API_KEY=$APPLE_API_KEY"
-            echo "APPLE_API_KEY_PATH=$key"
-          } >> "$GITHUB_ENV"
+          printf '%s\n' "$APPLE_API_KEY_P8" > "$key"
+          # O base64 do certificado pode vir quebrado em linhas; o resto vai com
+          # delimitador, que aceita qualquer conteúdo.
+          APPLE_CERTIFICATE=$(printf '%s' "$APPLE_CERTIFICATE" | tr -d ' \r\n')
+          APPLE_API_KEY_PATH="$key"
+          delim="APPLE_$(openssl rand -hex 16)"
+          for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_API_ISSUER APPLE_API_KEY APPLE_API_KEY_PATH; do
+            printf '%s<<%s\n%s\n%s\n' "$name" "$delim" "${!name}" "$delim" >> "$GITHUB_ENV"
+          done
       - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # action-v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
