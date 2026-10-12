@@ -53,6 +53,9 @@ const BUILD = [
   'mkdir -p release',
   'cp dist/index.html release/lattes-editor.html',
   '(cd dist-extension && zip -qr ../release/lattes-editor-extensao.zip .)',
+  // O mesmo pacote sem a chave do manifest, para enviar à Chrome Web Store.
+  'pnpm build:extension:loja',
+  '(cd dist-extension-loja && zip -qr ../release/lattes-editor-extensao-loja.zip .)',
 ].join(' && ');
 
 module.exports = {
@@ -81,6 +84,10 @@ module.exports = {
         assets: [
           { label: 'Editor (um arquivo HTML)', path: 'release/lattes-editor.html' },
           { label: 'Extensão da ponte (.zip)', path: 'release/lattes-editor-extensao.zip' },
+          {
+            label: 'Extensão da ponte para a Chrome Web Store (.zip)',
+            path: 'release/lattes-editor-extensao-loja.zip',
+          },
         ],
         failComment: false,
         releasedLabels: false,

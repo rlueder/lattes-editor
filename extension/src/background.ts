@@ -21,6 +21,7 @@ import {
   type EditorMessage,
   isEditorMessage,
 } from '../../src/bridge/protocol.ts';
+import { CONSENT_KEY, hasConsent, isConsentCurrent } from './consent.ts';
 import {
   type EditorEndpoint,
   LATTES_MENU,
@@ -102,6 +103,7 @@ async function sessionIdentity(tabId: number): Promise<Identity> {
 
 /** O código de 10 caracteres do currículo, para a foto, junto com de quem ele é. */
 async function sendCvCode(editor: EditorEndpoint): Promise<void> {
+  if (!(await hasConsent())) return;
   const tabId = await lattesTab();
   if (tabId === undefined) return;
   try {
@@ -163,6 +165,8 @@ async function verifyOn(tabId: number): Promise<ContractReport> {
 
 /** "Verificar o Lattes" no painel: guarda o relatório no estado, sem tocar na fila. */
 async function verify(): Promise<void> {
+  // Sem o "ok" do aviso, nada é lido do Lattes; o painel mostra o aviso no lugar do botão.
+  if (!(await hasConsent())) return;
   const state = await readState();
   if (state.running || state.verificando) return;
   await writeState({ ...state, verificando: true });
@@ -183,6 +187,7 @@ async function verify(): Promise<void> {
 }
 
 async function run(keys?: string[]): Promise<void> {
+  if (!(await hasConsent())) return;
   const state = await readState();
   if (state.running || state.verificando) return;
   const queue = state.ops.filter(
@@ -337,6 +342,15 @@ async function watchToolbarTheme(): Promise<void> {
   }
 }
 
+// Com o "ok" dado agora, o app já ligado recebe o código do currículo que
+// ficou retido, sem esperar a próxima reconexão.
+chrome.storage.onChanged.addListener((changes, area) => {
+  const change = (changes as Record<string, { newValue?: unknown }>)[CONSENT_KEY];
+  if (area === 'local' && change && isConsentCurrent(change.newValue) && appPort) {
+    void sendCvCode('app');
+  }
+});
+
 // O service worker acorda por vários motivos; em todos, tenta ligar ao app.
 connectApp();
 // Se o worker morreu no meio de uma verificação, o "verificando" ficou gravado
@@ -348,7 +362,19 @@ void chrome.alarms.create('ponte', { periodInMinutes: 1 });
 chrome.alarms.onAlarm.addListener(() => connectApp());
 chrome.runtime.onStartup.addListener(() => connectApp());
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener((details) => {
+  // O aviso de uso abre numa aba (o painel lateral só abre com um clique) na
+  // instalação e na atualização de quem ainda não aceitou esta versão dele.
+  // Falha aqui não pode impedir o painel lateral, configurado logo abaixo.
+  void (async () => {
+    try {
+      const pending =
+        details.reason === 'install' || (details.reason === 'update' && !(await hasConsent()));
+      if (pending) await chrome.tabs.create({ url: chrome.runtime.getURL('panel.html') });
+    } catch {
+      // Sem a aba, o aviso aparece quando o painel for aberto.
+    }
+  })();
   // Painel lateral onde existir (Chrome, Brave recente); senão o clique abre o painel numa aba.
   if (chrome.sidePanel?.setPanelBehavior) {
     void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });

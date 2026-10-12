@@ -18,6 +18,7 @@ export default [
       'private/**',
       'fixtures/**',
       'dist-extension/**',
+      'dist-extension-loja/**',
     ],
   },
   {

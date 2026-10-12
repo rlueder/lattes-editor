@@ -12,7 +12,35 @@
       <span class="marca">Lattes<span class="marca-destaque">Editor</span></span>
       <span class="topo-sub">Ponte com o Lattes</span>
     </header>
-    <main class="painel">
+    <main id="aviso" class="painel aviso" hidden>
+      <h1 class="aviso-titulo">Antes de usar a ponte</h1>
+      <p>
+        A extensão leva ao Lattes as alterações que você fez no LattesEditor, na sessão do Lattes
+        que você abriu neste navegador. Para isso:
+      </p>
+      <ul class="aviso-lista">
+        <li>
+          lê os formulários do seu currículo no Lattes (<code>wwws.cnpq.br</code>), para conferir o
+          item antes de gravar e a gravação depois;
+        </li>
+        <li>grava no Lattes só as alterações que você mandar, quando você clicar em “Aplicar”;</li>
+        <li>lê o código do seu currículo, para o editor mostrar a sua foto.</li>
+      </ul>
+      <p>
+        Esses dados vão só para o Lattes e para o app LattesEditor no seu computador. Não há
+        servidor, estatística de uso nem compartilhamento com ninguém.
+      </p>
+      <p>
+        <a id="aviso-politica" target="_blank" rel="noopener noreferrer"
+          >Política de privacidade da extensão</a
+        >
+      </p>
+      <div class="aviso-acoes">
+        <button id="aceitar" type="button" class="principal">Concordo, usar a ponte</button>
+      </div>
+      <p class="aviso-nota">Sem o seu “ok”, a extensão não lê nem grava nada no Lattes.</p>
+    </main>
+    <main id="ponte" class="painel" hidden>
       <p class="ajuda">
         Cada alteração é gravada no Lattes, lida de volta e conferida. A fila para no primeiro
         problema. Deixe o currículo aberto numa aba.

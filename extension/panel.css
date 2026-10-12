@@ -433,3 +433,50 @@ button:not(.principal):not(.fantasma):not(.conferido) {
     color: #70b8ff;
   }
 }
+
+/* Aviso de uso antes do primeiro envio (ver src/consent.ts). */
+.aviso {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.aviso-titulo {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.aviso p {
+  margin: 0 0 12px;
+}
+
+.aviso-lista {
+  margin: 0 0 12px;
+  padding-left: 18px;
+}
+
+.aviso-lista li + li {
+  margin-top: 6px;
+}
+
+.aviso code {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.aviso a {
+  color: var(--accent);
+}
+
+.aviso-acoes {
+  margin: 20px 0 10px;
+}
+
+.aviso-acoes button {
+  height: 34px;
+}
+
+.aviso-nota {
+  color: var(--muted);
+  font-size: 12px;
+}

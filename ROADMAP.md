@@ -42,9 +42,11 @@ arquivo quando muda de fato; o detalhe técnico está em
   sessão cai depois dele (uma caiu cerca de 3 minutos depois de abrir o
   Exportar, sem causa conhecida). O currículo vai da aba do Lattes à
   extensão e dela ao editor, sem passar por servidor.
-- **Extensão pronta para a Chrome Web Store.** O que falta está em
-  `docs/extensao_chrome_web_store.md`: página da política de privacidade,
-  capturas e imagem promocional, e o ID da loja no host nativo do app.
+- **Extensão pronta para a Chrome Web Store.** Feito: política de
+  privacidade publicada, aviso e consentimento antes do primeiro uso, pacote
+  sem a chave do manifest e imagens da loja. Falta, no painel do
+  desenvolvedor: a conta, o primeiro envio e o ID da loja no host nativo do
+  app (ver `docs/extensao_chrome_web_store.md`).
 - **Publicação.** O editor só se distribui como app para baixar (macOS,
   Windows e Linux, nas páginas de lançamento do GitHub); nada dele fica
   hospedado. O site é só a página do projeto, publicada no GitHub Pages

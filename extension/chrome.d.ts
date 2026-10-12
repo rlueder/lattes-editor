@@ -16,7 +16,7 @@ declare namespace chrome {
         ) => boolean | void,
       ): void;
     };
-    const onInstalled: { addListener(cb: () => void): void };
+    const onInstalled: { addListener(cb: (details: { reason: string }) => void): void };
     const onStartup: { addListener(cb: () => void): void };
     const lastError: { message?: string } | undefined;
     interface Port {
