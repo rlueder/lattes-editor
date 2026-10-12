@@ -104,6 +104,11 @@ body {
   margin-bottom: 18px;
 }
 
+/* O display: flex acima venceria o atributo hidden; sem fila, sem botões. */
+.acoes[hidden] {
+  display: none;
+}
+
 button {
   height: 30px;
   padding: 0 12px;
@@ -286,19 +291,13 @@ button:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  margin-bottom: 10px;
 }
 
 .vigia-titulo {
   margin: 0;
   font-size: 13px;
   font-weight: 600;
-}
-
-.vigia-ajuda {
-  margin: 6px 0 10px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
 }
 
 .vigia-resumo {

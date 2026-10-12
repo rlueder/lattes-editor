@@ -47,10 +47,6 @@ function emptyState(): HTMLElement {
       textContent:
         'As alterações chegam aqui pelo editor. Abra "Levar ao Lattes" e use "Enviar pela extensão".',
     }),
-    el('p', {
-      className: 'vazio-texto',
-      textContent: 'Cada uma é gravada no Lattes, lida de volta e conferida antes da próxima.',
-    }),
   ]);
 }
 
