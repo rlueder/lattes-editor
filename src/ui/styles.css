@@ -1986,6 +1986,14 @@ details.card.is-new {
   color: var(--muted);
 }
 
+/* Título de subseção que o índice do item ("Neste item") alcança: para sob o
+   cabeçalho, a barra do título e a barra de anos. */
+.subsection-head[data-outline-head] {
+  scroll-margin-top: calc(
+    var(--topbar-h) + var(--section-bar-h, 0px) + var(--year-bar-h, 0px) + 8px
+  );
+}
+
 .rows .row + .row {
   margin-top: 6px;
   padding-top: 6px;

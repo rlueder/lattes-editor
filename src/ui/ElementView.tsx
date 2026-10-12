@@ -11,6 +11,7 @@ import { AttributeField, type EditFn } from './AttributeField.tsx';
 import type { SectionFilter } from './facets.ts';
 import { groupFields, isBooleanAttr } from './field-kind.ts';
 import { isListItem } from './item-meta.ts';
+import { OUTLINE_HEAD_ATTR, outlineId } from './item-outline.ts';
 import { ItemList } from './ItemList.tsx';
 import { useReferenceIndex } from './reference-context.ts';
 import { viewForContainer } from './reference-tables.ts';
@@ -136,6 +137,13 @@ function byName(els: XElement[]): [string, XElement[]][] {
   return [...map];
 }
 
+/** Atributos do título de subseção que entra no índice do item ("Neste item"). */
+function outlineHead(base: string | undefined, index: number, label: string) {
+  if (base === undefined) return {};
+  // tabIndex -1: o índice leva o foco ao título, sem pôr o título na ordem do Tab.
+  return { id: outlineId(base, index), [OUTLINE_HEAD_ATTR]: label, tabIndex: -1 };
+}
+
 /**
  * Elemento com atributos e filhos. Um contêiner de itens vira linha do tempo;
  * dentro de um item, as partes viram um formulário só, e os demais filhos,
@@ -147,8 +155,15 @@ export function ElementView({
   el,
   filter,
   onEdit,
+  outlineBase,
   showEmpty,
-}: ViewProps & { anchorBase?: string; depth?: number; filter?: SectionFilter }) {
+}: ViewProps & {
+  anchorBase?: string;
+  depth?: number;
+  filter?: SectionFilter;
+  /** No conteúdo de um cartão: ids dos títulos para o índice do item. */
+  outlineBase?: string;
+}) {
   const children = childElements(el).filter((c) => c.attrs.length > 0 || c.children.length > 0);
   const index = useReferenceIndex();
   const container = el.attrs.length === 0 && children.length > 0;
@@ -184,9 +199,9 @@ export function ElementView({
   return (
     <div className={`element depth-${Math.min(depth, 3)}`}>
       {!fieldsLast && fields}
-      {byName(rest).map(([name, els]) => (
+      {byName(rest).map(([name, els], i) => (
         <section key={name} className="subsection">
-          <h4 className="subsection-head">
+          <h4 className="subsection-head" {...outlineHead(outlineBase, i, elementLabel(name))}>
             {elementLabel(name)}
             {els.length > 1 && <span className="count">{els.length}</span>}
           </h4>
@@ -199,7 +214,12 @@ export function ElementView({
       ))}
       {fieldsLast && (
         <section className="subsection">
-          <h4 className="subsection-head">Contatos e preferência</h4>
+          <h4
+            className="subsection-head"
+            {...outlineHead(outlineBase, byName(rest).length, 'Contatos e preferência')}
+          >
+            Contatos e preferência
+          </h4>
           {fields}
         </section>
       )}

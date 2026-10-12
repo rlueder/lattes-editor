@@ -26,6 +26,11 @@ const HEIGHT_VAR: Record<JumpLevel, string> = {
   year: '--year-bar-h',
 };
 
+/** Margem de rolagem do título (scroll-margin-top), onde ele para depois do salto. */
+function scrollMargin(head: HTMLElement): number {
+  return Number.parseFloat(getComputedStyle(head).scrollMarginTop) || 0;
+}
+
 /** Atualiza a URL sem criar entrada no histórico do navegador. */
 function setHash(id: string): void {
   history.replaceState(null, '', `#${id}`);
@@ -33,12 +38,15 @@ function setHash(id: string): void {
 
 export function JumpBar({
   entries,
+  focusTarget = false,
   label,
   level,
   linkable = false,
   vertical = false,
 }: {
   entries: JumpEntry[];
+  /** O clique também leva o foco ao título (que precisa de tabIndex -1). */
+  focusTarget?: boolean;
   label: string;
   level: JumpLevel;
   /** Ids legíveis: o clique também atualiza a URL. */
@@ -89,7 +97,11 @@ export function JumpBar({
       let current = headIds[0];
       for (const id of headIds) {
         const head = document.getElementById(id);
-        if (head && head.getBoundingClientRect().top <= edge) current = id;
+        if (!head) continue;
+        // Título que para mais abaixo (subseção de um cartão, sob a barra de
+        // anos) usa a própria margem de rolagem como borda.
+        if (head.getBoundingClientRect().top <= Math.max(edge, scrollMargin(head) + 16))
+          current = id;
       }
       // No fim da página, as últimas divisões não sobem até a barra: vale a última visível.
       const atBottom =
@@ -107,7 +119,13 @@ export function JumpBar({
         // Fim da rolagem: sem eventos por um instante (scrollend não existe em todo navegador).
         clearTimeout(settle);
         settle = window.setTimeout(() => {
+          const head = document.getElementById(lockedTo.current ?? '');
           lockedTo.current = null;
+          // A barra do título aparece no meio da rolagem e a margem cresce
+          // depois de o destino estar calculado: o título fica sob a barra.
+          // Um ajuste sem animação o põe no lugar.
+          if (head && head.getBoundingClientRect().top < scrollMargin(head) - 2)
+            head.scrollIntoView({ block: 'start' });
         }, 150);
         return;
       }
@@ -142,7 +160,9 @@ export function JumpBar({
               if (linkable) setHash(e.id);
               setActive(e.id);
               lockedTo.current = e.id;
-              document.getElementById(e.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              const target = document.getElementById(e.id);
+              target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              if (focusTarget) target?.focus({ preventScroll: true });
             }}
           >
             <span className="jump-label">{e.label}</span>

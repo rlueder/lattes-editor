@@ -111,6 +111,8 @@ function ItemCard({
   showKind: boolean;
 }) {
   const { loadedMax, openItem } = useEditor();
+  // Ids dos títulos de subseção, para o índice do item no painel lateral.
+  const outlineBase = useId();
   const seq = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
   const isNew = Number.isFinite(seq) && seq > loadedMax;
   return (
@@ -155,7 +157,13 @@ function ItemCard({
           </ul>
         </div>
       )}
-      <ElementView depth={depth + 1} el={el} showEmpty={showEmpty} onEdit={onEdit} />
+      <ElementView
+        depth={depth + 1}
+        el={el}
+        outlineBase={outlineBase}
+        showEmpty={showEmpty}
+        onEdit={onEdit}
+      />
     </details>
   );
 }
