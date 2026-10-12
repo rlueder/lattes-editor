@@ -134,6 +134,13 @@ export const ChevronIcon = () => (
   </Icon>
 );
 
+export const LockIcon = () => (
+  <Icon size={13}>
+    <rect height="10" rx="2" width="14" x="5" y="11" />
+    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+  </Icon>
+);
+
 export const MonitorIcon = () => (
   <Icon size={14}>
     <rect height="12" rx="2" width="18" x="3" y="4" />

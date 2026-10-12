@@ -16,6 +16,7 @@ import {
   isBooleanAttr,
   isSystemAttr,
 } from './field-kind.ts';
+import { LockIcon } from './icons.tsx';
 import { Select } from './primitives/Select.tsx';
 import { Switch } from './primitives/Switch.tsx';
 import { Tip } from './primitives/Tip.tsx';
@@ -128,11 +129,9 @@ export function AttributeField({
     // Escolhido numa lista do Lattes junto com o código ao lado: lido, não editado.
     return (
       <div className="field field-readonly field-locked">
-        <span className="field-label">{text}</span>
+        <ReadonlyLabel text={text} why="Escolhido numa lista do Lattes; muda junto com o código" />
         <span className="field-copy-row">
-          <Tip label="Escolhido numa lista do Lattes; muda junto com o código">
-            <span className="locked-value">{value || '(vazio)'}</span>
-          </Tip>
+          <span className="locked-value">{value || '(vazio)'}</span>
           {copyable && <CopyButton label={text} value={value} />}
         </span>
       </div>
@@ -142,8 +141,8 @@ export function AttributeField({
   if (isSystemAttr(el.name, name)) {
     // Código ou sequência gerado pelo Lattes: texto, não campo.
     return (
-      <div className="field field-readonly" title="Gerado pelo Lattes; não se edita aqui">
-        <span className="field-label">{text}</span>
+      <div className="field field-readonly">
+        <ReadonlyLabel text={text} why="Gerado pelo Lattes; não se edita aqui" />
         <span className="field-copy-row">
           <span className="readonly-value">
             {value ? codeValueLabel(el.name, name, value) : '(vazio)'}
@@ -291,5 +290,23 @@ export function AttributeField({
         </span>
       )}
     </div>
+  );
+}
+
+/**
+ * Rótulo de campo só de leitura: o cadeado com a dica do app explica por que
+ * não se edita (as duas espécies de campo travado usam o mesmo sinal). O
+ * cadeado é um botão sem ação, para a dica valer também no teclado.
+ */
+function ReadonlyLabel({ text, why }: { text: string; why: string }) {
+  return (
+    <span className="field-label">
+      {text}
+      <Tip label={why}>
+        <button aria-label={why} className="field-lock" type="button">
+          <LockIcon />
+        </button>
+      </Tip>
+    </span>
   );
 }
