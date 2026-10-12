@@ -16,4 +16,5 @@ for source, target in [
 subprocess.run(['node', str(construction / 'render-previews.cjs')], check=True)
 subprocess.run(['node', str(root / 'build-icons.cjs')], check=True)
 subprocess.run(['node', str(root / 'extension-toolbar' / 'build-toolbar.cjs')], check=True)
+subprocess.run(['node', str(root / 'build-transparent.cjs')], check=True)
 print('Grade, marca, prévias e ícones regenerados.')

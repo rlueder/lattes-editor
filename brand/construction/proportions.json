@@ -6,11 +6,17 @@
   "L_foot_x": 0.8868046984721454,
   "circle_outer_diameter_x": 1.75,
   "circle_inner_diameter_x": 0.75,
-  "document_stroke_x": 0.25,
-  "fold_x": 0.75,
-  "text_line_pitch_x": 0.625,
+  "text_stroke_x": 0.5456977856562633,
+  "text_line_pitch_x": 1.1368703867838819,
+  "text_widths_x": [
+    2.2737407735677637,
+    1.6674099006163599
+  ],
+  "text_origin_font_units": [
+    230,
+    345
+  ],
   "diagonal_gap_perpendicular_x": 0.25,
-  "document_top_inset_after_stem_x": 0.375,
   "wordmark_weights": [
     700,
     400

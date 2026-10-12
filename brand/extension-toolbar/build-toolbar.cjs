@@ -2,12 +2,8 @@ const fs=require('fs'),path=require('path'),sharp=require('sharp');
 const root=__dirname;
 const original=fs.readFileSync(path.join(root,'../source/symbol-original.svg'),'utf8');
 let shape=original.replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'').replace(/<title>.*?<\/title>/,'');
-// Remove a moldura fina e as três linhas pequenas. Duas linhas espessas mantêm a ideia de documento.
-shape=shape.replace(/<path fill="#463C6D" d="M181\.41909790039062 230\.89703369140625[^>]*\/>/,'').replace(/<rect[^>]*\/>/g,'');
-shape+='<path fill="#463C6D" d="M230 345H530V417H230Z M230 495H450V567H230Z"/>';
 function svg(color,small=false){
  let s=shape.replaceAll('#463C6D',color).replaceAll('#9EF2E2',color);
- if(small)s=s.replace('H395.823486328125V696.4424743652344L278.81744384765625 813.4485168457031','H372.499363716832V696.4424743652344L255.4933212363633 813.4485168457031');
  return `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><title>LattesEditor · ícone de barra</title><g transform="translate(179.4258 37.6353) scale(1.09)">${s}</g></svg>`;
 }
 function write(file,data){const p=path.join(root,file);fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,data);}

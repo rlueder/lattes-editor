@@ -8,7 +8,7 @@ function svg(content){return `<svg xmlns="http://www.w3.org/2000/svg" width="102
 function artwork({mac=false,mask=false,mono=false,small=false,dev=false}={}){
  let b=body;
  if(mono)b=b.replaceAll('#9EF2E2','#463C6D');
- // Usa o símbolo aprovado, incluindo o vão diagonal de x/4 e as três linhas do documento.
+ // Usa o símbolo aprovado, incluindo o vão diagonal de x/4 e as duas barras espessas.
  const scale=mask?.65:mac?.76:.91;
  const cx=305.1139373779297;const cy=435.19700622558594;
  const tx=512-cx*scale; const ty=512-cy*scale;

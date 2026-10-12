@@ -78,8 +78,45 @@
     <header class="nav">
       <div class="wrap nav-inner">
         <a class="brand" href="./">
-          <span class="brand-mark" aria-hidden="true"></span>
-          <span class="brand-name">Editor do Currículo Lattes</span>
+          <svg
+            class="brand-mark"
+            aria-hidden="true"
+            viewBox="189 116 646 792"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <g transform="translate(234.346316986084 115.9707243347168) scale(0.91)">
+              <defs>
+                <clipPath id="l-cut">
+                  <path
+                    d="M-200 164.92645263671875H395.823486328125V696.4424743652344L278.81744384765625 813.4485168457031H-200Z"
+                  />
+                </clipPath>
+              </defs>
+              <g clip-path="url(#l-cut)">
+                <path
+                  fill="currentColor"
+                  d="M488.80535888671875 0H81.7197265625V698H213.660888671875V117.00604248046875H488.80535888671875Z"
+                  transform="translate(-81.7197265625 813.4485168457031) scale(1 -1)"
+                />
+              </g>
+              <path
+                fill="currentColor"
+                fill-rule="evenodd"
+                d="M181.41909790039062 115.44851684570312a115.44851684570312 115.44851684570312 0 1 0 -230.89703369140625 0a115.44851684570312 115.44851684570312 0 1 0 230.89703369140625 0M115.44851684570312 115.44851684570312a49.477935791015625 49.477935791015625 0 1 0 -98.95587158203125 0a49.477935791015625 49.477935791015625 0 1 0 98.95587158203125 0"
+              />
+              <path
+                fill="#9EF2E2"
+                d="M442.4717315507113 696.4424743652344H493.77935791015625V813.4485168457031H325.46568907024255Z"
+              />
+              <path
+                fill="#9EF2E2"
+                fill-rule="evenodd"
+                d="M659.705810546875 754.9454956054688a115.44851684570312 115.44851684570312 0 1 0 -230.89703369140625 0a115.44851684570312 115.44851684570312 0 1 0 230.89703369140625 0M593.7352294921875 754.9454956054688a49.477935791015625 49.477935791015625 0 1 0 -98.95587158203125 0a49.477935791015625 49.477935791015625 0 1 0 98.95587158203125 0"
+              />
+              <path fill="currentColor" d="M230 345H530V417H230Z M230 495H450V567H230Z" />
+            </g>
+          </svg>
+          <span class="brand-name">Lattes<span class="brand-accent">Editor</span></span>
         </a>
         <nav aria-label="Seções da página">
           <ul class="nav-links">
@@ -117,7 +154,7 @@
     <main id="conteudo">
       <section class="hero" aria-labelledby="titulo">
         <div class="wrap">
-          <p class="eyebrow">Para quem mantém o Lattes em dia</p>
+          <p class="eyebrow">Para quem faz ciência no Brasil</p>
           <h1 id="titulo">Seu Currículo Lattes num editor que não atrapalha</h1>
           <p class="lede">
             Abra a exportação do Lattes, ache qualquer item por seção ou por ano, cadastre produções
@@ -411,35 +448,21 @@
       </section>
     </main>
 
-    <!-- Rodapé no formato dos sites abertos da Precisa (OpenFooter de
-         @precisa-saude/ui): quem mantém à esquerda, GitHub à direita, fio e
-         aviso embaixo. -->
+    <!-- Rodapé: autoria à esquerda, GitHub à direita, fio e aviso embaixo. -->
     <footer class="footer">
       <div class="wrap">
         <div class="footer-top">
           <div class="footer-brand">
-            <span class="footer-label">© 2026 Rafael Lüder, fundador da</span>
-            <a href="https://precisa-saude.com.br" target="_blank" rel="noopener noreferrer">
-              <svg
-                class="footer-logo"
-                aria-hidden="true"
-                fill="currentColor"
-                fill-rule="evenodd"
-                viewBox="-46 267 969 969"
-              >
-                <g transform="matrix(4.166667,0,0,4.166667,-1513.302,-909)">
-                  <path
-                    d="M460.411 435.128c-21.211-8.385-44.654-20.828-52.035-44.37-1.49-4.832-2.32-2.728-3.237 1.026-12.309 43.08.491 101.357 50.583 106.243 11.43.984 24.006-4.632 28.734-15.457 9.12-20.011-4.005-41.99-23.808-48.347l-.237-.095z"
-                    fill-rule="nonzero"
-                  />
-                  <path
-                    d="M479.026 299.26c-2.207-.327-4.42-.529-6.618-.598-15.131-.468-58.156-.074-64.872-.008-.496.004-.886.408-.886.905v60.679c0 .499.404.904.903.905l62.037.117c.499.001.903.405.903.905l.005 60.938c0 .519.44.94.957.914 4.34-.219 8.544-.879 12.587-1.908 27.979-6.146 48.924-31.066 48.924-60.891 0-18.962-8.854-37.194-23.733-48.944-8.5-6.712-19.298-11.395-30.208-13.014"
-                    fill-rule="nonzero"
-                  />
-                </g>
-              </svg>
-              <span class="footer-name">Precisa Saúde</span>
-            </a>
+            <p>© 2026 Rafael Lüder</p>
+            <p class="footer-license">
+              Código aberto sob a
+              <a
+                href="https://github.com/rlueder/lattes-editor/blob/main/LICENSE"
+                target="_blank"
+                rel="noopener noreferrer"
+                >licença MIT</a
+              >.
+            </p>
           </div>
           <nav class="footer-social" aria-label="Redes">
             <a
@@ -456,28 +479,9 @@
             </a>
           </nav>
         </div>
-        <p class="footer-projects">
-          Outros projetos abertos da Precisa:
-          <a href="https://medbench-brasil.ia.br" target="_blank" rel="noopener noreferrer"
-            >medbench-brasil</a
-          >,
-          <a href="https://datasus-viz.pages.dev" target="_blank" rel="noopener noreferrer"
-            >datasus-viz</a
-          >
-          e
-          <a href="https://fhir-brasil.dev.br" target="_blank" rel="noopener noreferrer"
-            >fhir-brasil</a
-          >.
-        </p>
         <p class="footer-note">
           Projeto independente, sem vínculo com o CNPq. O Lattes continua sendo o registro oficial
-          do seu currículo; o editor só prepara o que você leva até lá. Código aberto sob a
-          <a
-            href="https://github.com/rlueder/lattes-editor/blob/main/LICENSE"
-            target="_blank"
-            rel="noopener noreferrer"
-            >licença MIT</a
-          >.
+          do seu currículo; o editor só prepara o que você leva até lá.
         </p>
       </div>
     </footer>

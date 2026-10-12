@@ -12,6 +12,7 @@
   --accent-strong: #2e5469;
   --accent-contrast: #ffffff;
   --accent-soft: #e4edf5;
+  --brand: #463c6d;
   --glow: rgb(50 108 153 / 0.18);
   --shadow: 0 24px 60px rgb(0 0 0 / 0.12);
   --font: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -33,6 +34,8 @@
     --accent-strong: #a9c9e3;
     --accent-contrast: #0f1e2b;
     --accent-soft: #1f3142;
+    --brand: #ffffff;
+    --brand: #ffffff;
     --glow: rgb(138 180 214 / 0.16);
     --shadow: 0 24px 60px rgb(0 0 0 / 0.5);
     color-scheme: dark;
@@ -149,28 +152,36 @@ section[id] {
   height: 56px;
 }
 
+/* Marca como no app: o ícone e a assinatura de brand/construction/logo.svg,
+   Lattes em 700 e Editor em 400, no violeta da marca (branca no escuro). */
 .brand {
   min-width: 0;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 18px;
   text-decoration: none;
 }
 
 .brand-name {
   overflow: hidden;
+  color: var(--brand);
+  font-weight: 700;
   text-overflow: ellipsis;
 }
 
+.brand-accent {
+  font-weight: 400;
+}
+
+/* Símbolo sem fundo (brand/transparent/symbol.svg) embutido no HTML: o violeta
+   vira currentColor e segue --brand (branco no escuro); a menta fica. */
 .brand-mark {
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  width: auto;
+  height: 30px;
+  color: var(--brand);
 }
 
 .nav-links {
@@ -530,27 +541,15 @@ h3 {
 
 /* Rodapé */
 
-/* Rodapé como o dos sites abertos da Precisa: fundo areia, marca e GitHub
-   numa linha, fio fino e o aviso em letra pequena. A marca usa o violeta
-   da Precisa (@precisa-saude/themes). */
+/* Fundo areia, autoria e GitHub numa linha, fio fino e o aviso em letra
+   pequena. */
 .footer {
-  --ps-violet: oklch(0.67 0.113 285);
   margin-top: 112px;
   padding: 40px 0 48px;
   border-top: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface-2) 50%, transparent);
   color: var(--muted);
   font-size: 14px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .footer {
-    --ps-violet: oklch(0.72 0.1 285);
-  }
-}
-
-:root[data-theme='dark'] .footer {
-  --ps-violet: oklch(0.72 0.1 285);
 }
 
 .footer-top {
@@ -561,38 +560,18 @@ h3 {
   gap: 24px;
 }
 
-.footer-brand {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.footer-brand p {
+  margin: 0;
 }
 
-.footer-label {
+/* Licença logo abaixo do copyright, em letra menor. */
+.footer-brand .footer-license {
+  margin-top: 4px;
   font-size: 12px;
-  letter-spacing: 0.02em;
 }
 
-.footer-brand a {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--ps-violet);
-  text-decoration: none;
-  transition: opacity 0.15s;
-}
-
-.footer-brand a:hover {
-  opacity: 0.8;
-}
-
-.footer-logo {
-  width: 32px;
-  height: 32px;
-}
-
-.footer-name {
-  font-size: 20px;
-  font-weight: 600;
+.footer-license a {
+  color: var(--accent);
 }
 
 .footer-social a {
@@ -619,11 +598,6 @@ h3 {
   fill: currentColor;
 }
 
-.footer-projects {
-  margin: 24px 0 0;
-}
-
-.footer-projects a,
 .footer-note a {
   color: var(--accent);
 }
