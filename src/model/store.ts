@@ -3,6 +3,9 @@
 
 import Dexie, { type EntityTable } from 'dexie';
 
+import { type LoadedCv, maxSequenciaProducao } from './document.ts';
+import { serializeXml } from './xml.ts';
+
 export interface WorkingCopy {
   encoding: string;
   fileName: string;
@@ -25,6 +28,23 @@ export interface HistoryEntry {
   note: string;
   savedAt: number;
   xml: string;
+}
+
+/** Cópia de trabalho de um arquivo recém-carregado: a numeração do servidor vale a partir daqui (guia, 3.2). */
+export function newWorkingCopy(cv: LoadedCv, now: number): WorkingCopy {
+  const xml = serializeXml(cv.doc);
+  const max = maxSequenciaProducao(cv.doc);
+  return {
+    encoding: cv.encoding,
+    fileName: cv.fileName,
+    id: 'current',
+    loadedAt: now,
+    loadedMaxSequencia: max,
+    nextSequencia: max + 1,
+    originalXml: xml,
+    savedAt: now,
+    xml,
+  };
 }
 
 export const HISTORY_LIMIT = 50;

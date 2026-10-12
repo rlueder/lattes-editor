@@ -15,6 +15,7 @@ import { PixelPhoto } from './PixelPhoto.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { usePrivacyMode } from './privacy.ts';
 import {
+  examplePhotoUrl,
   initials,
   parseCvCode,
   photoUrl,
@@ -51,16 +52,18 @@ export function ProfileCard({ profile }: { profile: Profile }) {
     setAsking(false);
   };
 
-  const showPhoto = code && !failed;
+  // O currículo de exemplo do dev usa uma foto de mentira; os outros, a do CNPq.
+  const src = examplePhotoUrl(profile.lattesId) ?? (code ? photoUrl(code) : undefined);
+  const showPhoto = src && !failed;
   return (
     <section aria-label="Currículo aberto" className="profile">
       <div className="profile-top">
         <div className="avatar-wrap">
           <div aria-hidden="true" className="avatar">
             {showPhoto && hidden ? (
-              <PixelPhoto src={photoUrl(code)} />
+              <PixelPhoto src={src} />
             ) : showPhoto ? (
-              <img alt="" src={photoUrl(code)} onError={() => setFailed(true)} />
+              <img alt="" src={src} onError={() => setFailed(true)} />
             ) : (
               initials(profile.name)
             )}
