@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.9.1](https://github.com/rlueder/lattes-editor/compare/v0.9.0...v0.9.1) (2026-10-12)
+
+### Correções
+
+- **ui:** app de desktop abria em branco por marcador do Vite no HTML ([#26](https://github.com/rlueder/lattes-editor/issues/26)) ([cd50ca8](https://github.com/rlueder/lattes-editor/commit/cd50ca8aa29a95992613920065ae9c68b7496fa5))
+
 ## [0.9.0](https://github.com/rlueder/lattes-editor/compare/v0.8.0...v0.9.0) (2026-10-12)
 
 ### Novidades
