@@ -113,9 +113,15 @@ function renderReport(report: ContractReport | undefined): void {
     type: 'button',
   });
   copy.addEventListener('click', () => {
-    void navigator.clipboard.writeText(reportText(report, VERSION)).then(() => {
-      copy.textContent = 'Copiado';
-    });
+    navigator.clipboard.writeText(reportText(report, VERSION)).then(
+      () => {
+        copy.textContent = 'Copiado';
+      },
+      () => {
+        // Sem permissão ou sem foco: o botão avisa, e o texto segue no painel.
+        copy.textContent = 'Não deu para copiar';
+      },
+    );
   });
   const issue = el('a', {
     href: issueUrl(report, VERSION),

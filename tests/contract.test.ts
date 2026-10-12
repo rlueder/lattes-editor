@@ -13,6 +13,7 @@ import {
   fingerprint,
   isBreaking,
   issueUrl,
+  lacksSample,
   LATTES_CONTRACT,
   reportText,
 } from '../src/bridge/contract.ts';
@@ -46,6 +47,8 @@ interface FakeOptions {
   noIdioma?: boolean;
   noVinculo?: boolean;
   throwAt?: string;
+  /** A primeira atuação não tem vínculo; a segunda tem. */
+  vinculoNaSegunda?: boolean;
 }
 
 const MENU = `<a onclick="modalCV1.setarUrl(&quot;pkg_ativ.lista?f_cod=K000000000&quot;, true)">Atuação</a>
@@ -66,14 +69,16 @@ function fakeLattes(opts: FakeOptions = {}): { gets: string[]; port: LattesPort 
       if (opts.throwAt && path.startsWith(opts.throwAt)) throw new Error('rede caiu');
       if (opts.logonAt && path.startsWith(opts.logonAt)) return '<form action="pkg_sec.logon">';
       if (path.startsWith('pkg_ativ.lista')) {
-        return opts.noAtuacao
-          ? '<p>Nenhuma</p>'
-          : `<a href="PKG_ATIV.cargos_vinculos?f_cod=K000000000&amp;f_codinst=D001&amp;f_seq_ativ=5">x</a>`;
+        if (opts.noAtuacao) return '<p>Nenhuma</p>';
+        const grid = (seq: number) =>
+          `<a href="PKG_ATIV.cargos_vinculos?f_cod=K000000000&amp;f_codinst=D001&amp;f_seq_ativ=${seq}">x</a>`;
+        return opts.vinculoNaSegunda ? grid(5) + grid(6) : grid(5);
       }
       if (path.startsWith('PKG_ATIV.cargos_vinculos')) {
-        return opts.noVinculo
+        const empty = opts.noVinculo || (opts.vinculoNaSegunda && !path.includes('f_seq_ativ=6'));
+        return empty
           ? `<a href='PKG_ATIV.vinculos?f_cod=K000000000&f_codinst=D001&f_seq_ativ=5'>novo</a>`
-          : `<a href='PKG_ATIV.vinculos?f_cod=K000000000&f_codinst=D001&f_seq_ativ=5&f_seq_hist=1'>v</a>`;
+          : `<a href='PKG_ATIV.vinculos?f_cod=K000000000&f_codinst=D001&f_seq_ativ=6&f_seq_hist=1'>v</a>`;
       }
       if (path.startsWith('PKG_ATIV.vinculos')) return 'FORM:GN_ATIV_VINC';
       if (path.startsWith('pkg_resume.')) return 'FORM:RES';
@@ -222,6 +227,22 @@ describe('checkContract', () => {
     expect(report.forms.map((f) => f.status)).toEqual(['sem-amostra', 'ok', 'sem-amostra']);
     const semAtuacao = await checkContract(fakeLattes({ noAtuacao: true }).port);
     expect(semAtuacao.forms.find((f) => f.kind === 'vinculo')!.detail).toContain('atuação');
+  });
+
+  it('procura o vínculo em todas as atuações, não só na primeira', async () => {
+    const { gets, port } = fakeLattes({ vinculoNaSegunda: true });
+    const report = await checkContract(port);
+    expect(report.forms.find((f) => f.kind === 'vinculo')!.status).toBe('ok');
+    expect(gets.filter((g) => g.startsWith('PKG_ATIV.cargos_vinculos'))).toHaveLength(2);
+  });
+
+  it('lacksSample aponta o formulário sem exemplar, e só ele', async () => {
+    const report = await checkContract(fakeLattes({ noVinculo: true }).port);
+    expect(lacksSample(report, 'vinculo')?.form).toBe('GN_ATIV_VINC');
+    expect(lacksSample(report, 'idioma')).toBeUndefined();
+    expect(lacksSample(undefined, 'vinculo')).toBeUndefined();
+    const erro = await checkContract(fakeLattes({ throwAt: 'pkg_idioma.lista' }).port);
+    expect(lacksSample(erro, 'vinculo')).toBeUndefined();
   });
 
   it('para quando a sessão caiu, no menu ou numa página', async () => {

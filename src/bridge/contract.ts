@@ -294,12 +294,16 @@ async function locateAndCheck(
   const lista = findLinks(menu, 'pkg_ativ.lista')[0];
   if (!lista) return noLink(kind, spec.name, 'pkg_ativ.lista');
   const listaHtml = await getChecked(port, lista.path);
-  const grid = findLinks(listaHtml, 'pkg_ativ.cargos_vinculos')[0];
-  if (!grid) return noSample(kind, spec.name, 'O currículo não tem atuação profissional');
-  const gridHtml = await getChecked(port, grid.path);
-  const vinculo = findLinks(gridHtml, 'pkg_ativ.vinculos').find((l) => l.params.f_seq_hist);
-  if (!vinculo) return noSample(kind, spec.name, 'A primeira atuação não tem vínculo');
-  return checkForm(port, kind, spec, vinculo.path);
+  const grids = findLinks(listaHtml, 'pkg_ativ.cargos_vinculos');
+  if (grids.length === 0)
+    return noSample(kind, spec.name, 'O currículo não tem atuação profissional');
+  // Nem toda atuação tem vínculo; a amostra é o primeiro que existir.
+  for (const grid of grids) {
+    const gridHtml = await getChecked(port, grid.path);
+    const vinculo = findLinks(gridHtml, 'pkg_ativ.vinculos').find((l) => l.params.f_seq_hist);
+    if (vinculo) return checkForm(port, kind, spec, vinculo.path);
+  }
+  return noSample(kind, spec.name, 'Nenhuma atuação tem vínculo');
 }
 
 /**
@@ -343,6 +347,20 @@ export function blocksKind(report: ContractReport | undefined, kind: BridgeOp['k
   if (!report || report.status !== 'mudou') return [];
   const form = report.forms.find((f) => f.kind === kind);
   return form ? form.drifts.filter(isBreaking) : [];
+}
+
+/**
+ * O relatório não conferiu esse formulário por falta de exemplar? A ponte só
+ * altera registros que já existem, então uma fila com esse tipo de operação e
+ * um Lattes sem exemplar dele é contradição: ou o currículo aberto é outro,
+ * ou o caminho até o formulário mudou. Sem conferir, não se grava.
+ */
+export function lacksSample(
+  report: ContractReport | undefined,
+  kind: BridgeOp['kind'],
+): FormCheck | undefined {
+  if (!report || (report.status !== 'ok' && report.status !== 'mudou')) return undefined;
+  return report.forms.find((f) => f.kind === kind && f.status === 'sem-amostra');
 }
 
 const DRIFT_TEXT: Record<DriftKind, (d: Drift) => string> = {

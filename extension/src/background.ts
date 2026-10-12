@@ -7,7 +7,12 @@
 // também roda numa aba em localhost e fala pelo script de conteúdo.
 
 import type { OpResult } from '../../src/bridge/apply.ts';
-import { blocksKind, type ContractReport, driftText } from '../../src/bridge/contract.ts';
+import {
+  blocksKind,
+  type ContractReport,
+  driftText,
+  lacksSample,
+} from '../../src/bridge/contract.ts';
 import { sameCv } from '../../src/bridge/lattes-html.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
 import {
@@ -226,6 +231,7 @@ async function run(keys?: string[]): Promise<void> {
       await writeState({ ...(await readState()), verificacao: report });
       const kinds = [...new Set(queue.map((op) => op.kind))];
       const blocking = kinds.flatMap((kind) => blocksKind(report, kind));
+      const unsampled = kinds.map((kind) => lacksSample(report, kind)).find(Boolean);
       const stop =
         report.status === 'sessao'
           ? {
@@ -242,7 +248,12 @@ async function run(keys?: string[]): Promise<void> {
                   detail: `O Lattes mudou (${blocking.map(driftText).join('; ')}); nada foi enviado. Veja a verificação no painel`,
                   status: 'erro' as const,
                 }
-              : undefined;
+              : unsampled
+                ? {
+                    detail: `Não achei no Lattes um exemplar de ${unsampled.form} para conferir (${unsampled.detail ?? 'sem amostra'}); nada foi enviado`,
+                    status: 'erro' as const,
+                  }
+                : undefined;
       if (stop && first) {
         await record({ ...stop, key: first.key });
         queue.length = 0;

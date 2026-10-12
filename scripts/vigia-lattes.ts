@@ -11,8 +11,10 @@
 
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = new URL('../', import.meta.url).pathname;
+const root = fileURLToPath(new URL('../', import.meta.url));
 
 /** Página do Extrator Lattes, onde o CNPq publica o XSD e diz quando o atualizou. */
 const EXTRACAO_URL = 'https://memoria.cnpq.br/web/portal-lattes/extracoes-de-dados';
@@ -20,7 +22,7 @@ const EXTRACAO_URL = 'https://memoria.cnpq.br/web/portal-lattes/extracoes-de-dad
 const XSD_URL = 'https://memoria.cnpq.br/documents/313759/1ee5aab5-84eb-4551-8dc2-c99764423c33';
 /** O que a página diz hoje sobre o XSD; se o texto mudar, o CNPq mexeu no schema. */
 const XSD_DATE_MARKER = 'atualizado em 12/09/2022';
-const XSD_LOCAL = `${root}schema/CurriculoLattes_12_09_2022.xsd`;
+const XSD_LOCAL = join(root, 'schema', 'CurriculoLattes_12_09_2022.xsd');
 /** A foto do perfil, que o editor carrega com o código do currículo (src/ui/profile.ts). */
 const FOTO_URL = 'https://servicosweb.cnpq.br/wspessoa/servletrecuperafoto?tipo=1&id=K4000000A0';
 /** Entrada do Lattes e menu do editor (sem sessão, o menu manda para a entrada). */
@@ -70,7 +72,7 @@ async function checkXsd(saveTo?: string): Promise<Check> {
   const same = sha256(bytes) === sha256(local);
   if (!same && saveTo) {
     mkdirSync(saveTo, { recursive: true });
-    writeFileSync(`${saveTo}/CurriculoLattes_remoto.xsd`, bytes);
+    writeFileSync(join(saveTo, 'CurriculoLattes_remoto.xsd'), bytes);
   }
   return {
     detail: same
