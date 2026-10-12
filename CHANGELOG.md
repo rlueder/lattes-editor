@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.0](https://github.com/rlueder/lattes-editor/compare/v0.7.0...v0.8.0) (2026-10-12)
+
+### Novidades
+
+- **ui:** símbolo simplificado da marca em todo lugar e versão sem fundo no cabeçalho do site ([#23](https://github.com/rlueder/lattes-editor/issues/23)) ([a9e7409](https://github.com/rlueder/lattes-editor/commit/a9e74090137b1bc4ee1bb762f0d3a0022d9df700))
+
 ## [0.7.0](https://github.com/rlueder/lattes-editor/compare/v0.6.0...v0.7.0) (2026-10-12)
 
 ### Novidades
