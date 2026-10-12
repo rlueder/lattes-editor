@@ -362,10 +362,10 @@ Duas vigias, uma para cada lado do login:
   ponte reenvia o formulário inteiro como o leu.
 
 O contrato foi escrito a partir das tabelas da seção 5 (11/10/2026), não de
-uma captura automática: a primeira verificação num Lattes real ainda pode
-apontar diferenças de tipo ou limite que são erro de transcrição, e não
-mudança do CNPq. **Não testado no Lattes real.** Quando isso acontecer, o
-contrato é corrigido junto com a tabela desta seção.
+uma captura automática. A primeira verificação num Lattes real, em
+12/10/2026, voltou "como o esperado" para o menu e os três formulários, ou
+seja, as tabelas estavam certas em nome, tipo e limite. Quando o relatório
+apontar diferença, o contrato é corrigido junto com a tabela desta seção.
 
 O relatório da verificação só tem nomes de campos e de procedimentos, a data
 e a versão da extensão. Nenhum valor do currículo entra nele, para que possa

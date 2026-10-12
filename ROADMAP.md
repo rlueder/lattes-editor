@@ -21,8 +21,8 @@ arquivo quando muda de fato; o detalhe técnico está em
     vínculo precisam bater antes de gravar);
   - saber quando o CNPq mudou o Lattes: existe ("Verificar o Lattes" no
     painel e antes de cada fila, mais o vigia semanal do que é público, em
-    `docs/lattes_internals.md`, seção 9). Falta rodar a primeira verificação
-    num Lattes real e acertar o contrato onde a transcrição errou.
+    `docs/lattes_internals.md`, seção 9). Conferido num Lattes real em
+    12/10/2026: o contrato bateu de primeira.
 - **Ponte com o Lattes, além do vínculo, do resumo e dos idiomas.**
   Formação, endereço e identificação já têm o formulário mapeado em
   `docs/lattes_internals.md`; falta escrever a operação de cada um e testar
