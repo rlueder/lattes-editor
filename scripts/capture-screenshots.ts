@@ -191,7 +191,28 @@ async function captureOgImage(): Promise<void> {
     width: 1200,
   });
   await cdp.send('Page.navigate', { url: new URL('/scripts/og-card.html', url).href });
-  await sleep(2000);
+  await sleep(500);
+  // Espera a fonte e as imagens em vez de um tempo fixo, e confere que a página
+  // renderizou de fato: um cartão quebrado falha o script em vez de ser gravado.
+  const { result } = await cdp.send<{ result: { value?: string } }>('Runtime.evaluate', {
+    awaitPromise: true,
+    expression: `(async () => {
+      await document.fonts.ready;
+      const imgs = [...document.images];
+      await Promise.all(imgs.map((i) => i.decode().catch(() => {})));
+      return JSON.stringify({
+        font: document.fonts.check('600 50px "IBM Plex Sans"'),
+        images: imgs.length > 0 && imgs.every((i) => i.complete && i.naturalWidth > 0),
+        title: Boolean(document.querySelector('h1')?.textContent),
+      });
+    })()`,
+    returnByValue: true,
+  });
+  const ready = JSON.parse(result.value ?? '{}') as Record<string, boolean>;
+  const missing = ['font', 'images', 'title'].filter((k) => !ready[k]);
+  if (missing.length) {
+    throw new Error(`Prévia (og-card.html) não renderizou: ${missing.join(', ')}`);
+  }
   const { data } = await cdp.send<{ data: string }>('Page.captureScreenshot', { format: 'png' });
   const file = join(root, 'site/img/og.png');
   writeFileSync(file, Buffer.from(data, 'base64'));
