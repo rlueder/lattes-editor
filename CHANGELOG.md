@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.0](https://github.com/rlueder/lattes-editor/compare/v0.3.0...v0.4.0) (2026-10-12)
+
+### Novidades
+
+- **ui:** seletor de tema na página do projeto, com a captura acompanhando ([#4](https://github.com/rlueder/lattes-editor/issues/4)) ([e71137b](https://github.com/rlueder/lattes-editor/commit/e71137b3869dc785ba3861bf42999f217079843b))
+
 ## [0.3.0](https://github.com/rlueder/lattes-editor/compare/v0.2.0...v0.3.0) (2026-10-12)
 
 ### Novidades
