@@ -3,7 +3,8 @@
 //
 // Usa um Brave ou Chrome sem janela, com perfil temporário, falando pelo
 // protocolo de depuração (sem Playwright nem outra dependência). Cada tela
-// sai nos temas claro e escuro, em docs/img/<nome>-<tema>.jpg.
+// sai nos temas claro e escuro, em docs/img/<nome>-<tema>.jpg. A de Produções
+// também vai para a página do projeto, em site/img/editor-<tema>.jpg.
 //
 //   pnpm dev                       # o editor em http://localhost:5173 (ou outra porta)
 //   pnpm capture:screenshots [url] # padrão: http://localhost:5173/
@@ -30,17 +31,24 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Uma tela: como chegar nela a partir do editor aberto. */
 interface Shot {
+  /** Outra cópia, sem o "-<tema>.jpg" (caminho a partir da raiz do repositório). */
+  alsoTo?: string;
   name: string;
   /** Roda na página antes da captura. */
   prepare?: string;
+  /**
+   * Modo de privacidade (dados pessoais e foto mascarados). Só Dados gerais o
+   * mostra ligado; nas outras telas a foto de exemplo aparece.
+   */
+  privacy?: boolean;
   /** Antes de abrir o currículo (a tela inicial). */
   welcome?: boolean;
 }
 
 const SHOTS: Shot[] = [
   { name: 'inicio', welcome: true },
-  { name: 'producoes', prepare: `location.hash = 'producoes'` },
-  { name: 'dados-gerais', prepare: `location.hash = 'dados-gerais'` },
+  { alsoTo: 'site/img/editor', name: 'producoes', prepare: `location.hash = 'producoes'` },
+  { name: 'dados-gerais', prepare: `location.hash = 'dados-gerais'`, privacy: true },
   {
     name: 'ir-para',
     prepare: `location.hash = 'producoes';
@@ -110,14 +118,17 @@ async function capture(theme: 'claro' | 'escuro'): Promise<void> {
     features: [{ name: 'prefers-color-scheme', value: theme === 'claro' ? 'light' : 'dark' }],
   });
 
-  const shoot = async (name: string) => {
+  const shoot = async (shot: Shot) => {
     const { data } = await cdp.send<{ data: string }>('Page.captureScreenshot', {
       format: 'jpeg',
       quality: 80,
     });
-    const file = join(outDir, `${name}-${theme}.jpg`);
-    writeFileSync(file, Buffer.from(data, 'base64'));
-    console.log(file.replace(root, ''));
+    const files = [join(outDir, `${shot.name}-${theme}.jpg`)];
+    if (shot.alsoTo) files.push(join(root, `${shot.alsoTo}-${theme}.jpg`));
+    for (const file of files) {
+      writeFileSync(file, Buffer.from(data, 'base64'));
+      console.log(file.replace(root, ''));
+    }
   };
   const evaluate = (expression: string) => cdp.send('Runtime.evaluate', { expression });
 
@@ -128,7 +139,7 @@ async function capture(theme: 'claro' | 'escuro'): Promise<void> {
   });
   await cdp.send('Page.navigate', { url });
   await sleep(1500);
-  for (const shot of SHOTS.filter((s) => s.welcome)) await shoot(shot.name);
+  for (const shot of SHOTS.filter((s) => s.welcome)) await shoot(shot);
 
   const { root: doc } = await cdp.send<{ root: { nodeId: number } }>('DOM.getDocument');
   const { nodeId } = await cdp.send<{ nodeId: number }>('DOM.querySelector', {
@@ -138,7 +149,18 @@ async function capture(theme: 'claro' | 'escuro'): Promise<void> {
   await cdp.send('DOM.setFileInputFiles', { files: [fixture], nodeId });
   await sleep(2000);
 
+  // O modo de privacidade vem ligado; cada tela pede o seu. A troca recarrega
+  // a página (o currículo fica no IndexedDB e volta aberto).
+  let privacy: boolean | undefined;
   for (const shot of SHOTS.filter((s) => !s.welcome)) {
+    const want = shot.privacy ?? false;
+    if (want !== privacy) {
+      await evaluate(
+        `localStorage.setItem('lattes-editor:privacidade', '${want ? '1' : '0'}'); location.reload()`,
+      );
+      await sleep(2500);
+      privacy = want;
+    }
     // Fecha o que a captura anterior abriu (⌘K, modal) e volta ao topo.
     await evaluate(
       `document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); scrollTo(0, 0)`,
@@ -146,7 +168,7 @@ async function capture(theme: 'claro' | 'escuro'): Promise<void> {
     await sleep(300);
     if (shot.prepare) await evaluate(shot.prepare);
     await sleep(1500);
-    await shoot(shot.name);
+    await shoot(shot);
   }
   ws.close();
 }
