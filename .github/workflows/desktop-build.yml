@@ -6,7 +6,7 @@ name: App de desktop
 # releases/latest/download/<nome>. Em PR que mexe no app, só monta, sem enviar.
 #
 # No lançamento, o app de macOS sai assinado com o Developer ID e notarizado
-# pela Apple, e abre sem aviso; sem os segredos, sai sem assinatura. O
+# pela Apple, e abre sem aviso; sem os segredos, o lançamento falha. O
 # instalador do Windows ainda não é assinado: o SmartScreen avisa na primeira
 # abertura.
 
@@ -93,8 +93,9 @@ jobs:
           workspaces: src-tauri
       - run: pnpm install --frozen-lockfile
       # Só no lançamento do macOS: certificado Developer ID e chave da App Store
-      # Connect para notarizar. Sem os segredos, avisa e monta sem assinar, como
-      # antes; o tauri-action lê as variáveis APPLE_* do ambiente.
+      # Connect para notarizar; o tauri-action lê as variáveis APPLE_* do
+      # ambiente. Faltando segredo, o lançamento falha: um app sem assinatura
+      # substituiria o assinado nos links fixos de download.
       - name: Assinatura e notarização (macOS)
         if: runner.os == 'macOS' && inputs.tag != ''
         env:
@@ -110,20 +111,17 @@ jobs:
           for name in $names; do
             [ -n "${!name}" ] || missing="$missing $name"
           done
-          if [ "$missing" = " $names" ]; then
-            echo "::warning::Sem os segredos da Apple: o app de macOS sai sem assinatura."
-            exit 0
-          fi
-          # Configuração pela metade é erro, para não descobrir só na notarização.
           if [ -n "$missing" ]; then
             echo "::error::Faltam segredos da Apple:$missing"
             exit 1
           fi
           key="$RUNNER_TEMP/AuthKey_$APPLE_API_KEY.p8"
-          printf '%s\n' "$APPLE_API_KEY_P8" > "$key"
+          (umask 077 && printf '%s\n' "$APPLE_API_KEY_P8" > "$key")
           # O base64 do certificado pode vir quebrado em linhas; o resto vai com
-          # delimitador, que aceita qualquer conteúdo.
+          # delimitador, que aceita qualquer conteúdo. Sem as quebras, o valor
+          # muda e precisa de máscara própria nos logs.
           APPLE_CERTIFICATE=$(printf '%s' "$APPLE_CERTIFICATE" | tr -d ' \r\n')
+          echo "::add-mask::$APPLE_CERTIFICATE"
           APPLE_API_KEY_PATH="$key"
           delim="APPLE_$(openssl rand -hex 16)"
           for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_API_ISSUER APPLE_API_KEY APPLE_API_KEY_PATH; do
