@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.0](https://github.com/rlueder/lattes-editor/compare/v0.2.0...v0.3.0) (2026-10-12)
+
+### Novidades
+
+- **ui:** app de desktop com Tauri e ponte por mensagens nativas ([583caff](https://github.com/rlueder/lattes-editor/commit/583caff462dfb8c987c8cd2db58163cca4a83ebd))
+- **ui:** hierarquia do texto em três tons e cabeçalho mais limpo ([50fc0a9](https://github.com/rlueder/lattes-editor/commit/50fc0a961aece0fb86dcba60cb2e2baaf9bed411))
+- **ui:** marca no menu lateral, QR atrás do avatar e selo no Levar ao Lattes ([687e676](https://github.com/rlueder/lattes-editor/commit/687e676c5f639870107752eaf3f2a041b39e6db6))
+- **ui:** Novo item e Levar ao Lattes de volta junto das configurações ([69f54a4](https://github.com/rlueder/lattes-editor/commit/69f54a4d0f2cfb46ae84ae78b7f571ddf1a428ef))
+- **ui:** tela inicial como o editor vazio, IBM Plex e acertos visuais ([b6fbc11](https://github.com/rlueder/lattes-editor/commit/b6fbc112446708085e803396db84328901ad95b1))
+
+### Correções
+
+- **import-export:** cópia antes do envio pelo diálogo de salvar do app ([702b17b](https://github.com/rlueder/lattes-editor/commit/702b17b4db952f11dc9e672779f71a3a559a78ee))
+- **ui:** códigos do Lattes aparecem pelo nome ([fdd86bc](https://github.com/rlueder/lattes-editor/commit/fdd86bce0d8877d3cf5a5096a55dfef5a5d21435))
+- **ui:** foco inicial do modal procura só dentro do modal ([0cb4246](https://github.com/rlueder/lattes-editor/commit/0cb42463b8a95e5c2879539fe56b32756758dea9))
+
 ## [0.2.0](https://github.com/rlueder/lattes-editor/compare/v0.1.1...v0.2.0) (2026-10-12)
 
 ### Novidades
