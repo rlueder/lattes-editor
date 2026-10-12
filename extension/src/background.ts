@@ -354,9 +354,13 @@ chrome.alarms.onAlarm.addListener(() => connectApp());
 chrome.runtime.onStartup.addListener(() => connectApp());
 
 chrome.runtime.onInstalled.addListener((details) => {
-  // Na instalação, o aviso de uso abre numa aba: o painel lateral só abre com um clique.
-  if (details.reason === 'install')
-    void chrome.tabs.create({ url: chrome.runtime.getURL('panel.html') });
+  // O aviso de uso abre numa aba (o painel lateral só abre com um clique) na
+  // instalação e na atualização de quem ainda não aceitou esta versão dele.
+  void (async () => {
+    const pending =
+      details.reason === 'install' || (details.reason === 'update' && !(await hasConsent()));
+    if (pending) await chrome.tabs.create({ url: chrome.runtime.getURL('panel.html') });
+  })();
   // Painel lateral onde existir (Chrome, Brave recente); senão o clique abre o painel numa aba.
   if (chrome.sidePanel?.setPanelBehavior) {
     void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
