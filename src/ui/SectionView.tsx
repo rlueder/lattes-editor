@@ -1,5 +1,6 @@
 // Uma seção do menu: título e grupos numa coluna de leitura, e à direita um
-// painel com o filtro (vale para todas as listas da seção) e o índice dos grupos.
+// painel com o filtro (vale para todas as listas da seção), o índice dos grupos
+// e o índice do item aberto.
 
 import { useMemo, useRef, useState } from 'react';
 
@@ -29,6 +30,7 @@ import { useReferenceIndex } from './reference-context.ts';
 import { type ReferenceIndex, viewForContainer } from './reference-tables.ts';
 import { countItems, groupItemList, type Section, type SectionGroup } from './sections.ts';
 import { StickyTitle } from './StickyTitle.tsx';
+import { useOpenItem } from './use-open-item.ts';
 
 interface Props {
   section: Section;
@@ -63,6 +65,7 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
   const [state, setState] = useState<FilterState>(NO_FILTER);
   const rootRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const itemOutline = useOpenItem(rootRef);
   const [hideSensitive, setHideSensitive] = usePrivacyMode();
   const [marking, setMarking] = useState(false);
   const mark = section.mark;
@@ -213,8 +216,8 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
           </div>
         </div>
 
-        {/* Painel à direita: filtro e índice da seção, fora da coluna de leitura. */}
-        <aside aria-label="Filtro e índice da seção" className="section-panel">
+        {/* Painel à direita: filtro e índices da seção e do item, fora da coluna de leitura. */}
+        <aside aria-label="Filtro e índices da seção" className="section-panel">
           {showFilter && (
             <FilterBar
               facets={facets}
@@ -234,6 +237,18 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
                   .filter((_, i) => counts[i]! > 0)
                   .map((g) => ({ id: g.id, label: g.label }))}
                 label="Grupos da seção"
+                level="section"
+              />
+            </div>
+          )}
+          {itemOutline.length > 0 && (
+            <div className="panel-block">
+              <h2 className="panel-heading">Neste item</h2>
+              <JumpBar
+                focusTarget
+                vertical
+                entries={itemOutline}
+                label="Partes do item aberto"
                 level="section"
               />
             </div>
