@@ -14,16 +14,22 @@ perdem, e leva as mudanças de volta ao Lattes.
 O editor é um app para macOS, Windows e Linux. Os instaladores ficam na
 [página do último lançamento](https://github.com/rlueder/lattes-editor/releases/latest):
 
-| Sistema | Arquivo                                                   |
-| ------- | --------------------------------------------------------- |
-| macOS   | `LattesEditor-macOS.dmg` (Apple Silicon e Intel)          |
-| Windows | `LattesEditor-Windows-setup.exe`                          |
-| Linux   | `LattesEditor-Linux.deb` ou `LattesEditor-Linux.AppImage` |
+| Sistema     | Arquivo                                          |
+| ----------- | ------------------------------------------------ |
+| macOS       | `LattesEditor-macOS.dmg` (Apple Silicon e Intel) |
+| Windows     | `LattesEditor-Windows-setup.exe`                 |
+| Linux       | `LattesEditor-Linux.deb` (Debian, Ubuntu, Mint)  |
+| Outro Linux | `LattesEditor-Linux.AppImage`                    |
 
 O app ainda não tem assinatura da Apple nem da Microsoft, então os dois
 sistemas avisam na primeira abertura. No macOS, libere a abertura em Ajustes do Sistema › Privacidade e
 Segurança. No Windows, abra os detalhes
 do aviso do SmartScreen e escolha executar.
+
+No Linux, o `.deb` é pequeno porque usa o WebKitGTK do sistema, que o
+gerenciador de pacotes instala junto. O AppImage roda em qualquer
+distribuição sem instalar nada e por isso leva o WebKitGTK dentro, o que o
+deixa dezenas de vezes maior.
 
 ## Como funciona
 
