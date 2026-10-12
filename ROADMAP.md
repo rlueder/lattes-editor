@@ -74,8 +74,8 @@ arquivo quando muda de fato; o detalhe técnico está em
 - **App de desktop** com Tauri para macOS, Windows e Linux. Feito: diálogos
   nativos de abrir e salvar, builds dos três sistemas na CI com os
   instaladores na página do lançamento, e a ligação com a extensão por
-  mensagens nativas (o app é o host; ver `src-tauri/src/ponte.rs`). Falta
-  assinar e notarizar no macOS, assinar no Windows, atualizar sozinho e
+  mensagens nativas (o app é o host; ver `src-tauri/src/ponte.rs`). Assinado e
+  notarizado no macOS. Falta assinar no Windows, atualizar sozinho e
   testar a ponte no Windows e no Linux.
 
 ## Em estudo

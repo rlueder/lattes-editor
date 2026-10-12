@@ -22,10 +22,9 @@ O editor é um app para macOS, Windows e Linux. Os instaladores ficam na
 | Linux       | `LattesEditor-Linux.deb` (Debian, Ubuntu, Mint)  |
 | Outro Linux | `LattesEditor-Linux.AppImage`                    |
 
-O app ainda não tem assinatura da Apple nem da Microsoft, então os dois
-sistemas avisam na primeira abertura. No macOS, libere a abertura em Ajustes do Sistema › Privacidade e
-Segurança. No Windows, abra os detalhes
-do aviso do SmartScreen e escolha executar.
+No macOS, o app é assinado e notarizado pela Apple e abre sem aviso. O
+instalador do Windows ainda não tem assinatura: o SmartScreen avisa na
+primeira abertura; abra os detalhes do aviso e escolha executar.
 
 No Linux, o `.deb` é pequeno porque usa o WebKitGTK do sistema, que o
 gerenciador de pacotes instala junto. O AppImage roda em qualquer
