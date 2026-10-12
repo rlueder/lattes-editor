@@ -1,0 +1,10 @@
+Versões coloridas sem fundo
+
+symbol.svg e icon-*.png: mesmo símbolo violeta e menta, com canal alfa transparente.
+logo-variation-a.svg e .png: símbolo e assinatura IBM Plex Sans 700/400, sem fundo.
+LattesEditor.ico e LattesEditor.icns: contêineres de múltiplas resoluções com fundo transparente.
+favicon.ico: 16, 32 e 48 px.
+preview.png: simulação sobre quadriculado, apenas para visualizar a transparência.
+
+Para regenerar: node build-transparent.cjs na raiz do pacote após npm install.
+As versões brancas e grafite para barras de extensões estão em extension-toolbar.

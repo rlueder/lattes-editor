@@ -7,11 +7,6 @@ arquivo quando muda de fato; o detalhe técnico está em
 
 ## Agora
 
-- **Crédito e projetos irmãos.** Uma linha de crédito no README e numa tela
-  "Sobre" do editor ("Feito por Rafael Lüder, fundador da Precisa Saúde"),
-  com links marcados para o Umami para o medbench, o datasus-viz e o
-  fhir-brasil. Os endereços e o padrão de marcação ainda precisam ser
-  confirmados antes de escrever os links.
 - **Travas de segurança da escrita no Lattes.** Protegem o currículo de quem
   usa a ponte. Situação de cada uma:
   - cópia local do XML antes de enviar: existe (ligada por padrão na

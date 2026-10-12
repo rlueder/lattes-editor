@@ -63,11 +63,11 @@ authoritative source. In this repo that means:
 
 ## Generated files
 
-| Source                    | Command             | Output                                                                                                                                                                 |
-| ------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| XSD + `schema/patch.json` | `pnpm gen:schema`   | `schema/CurriculoLattes_2022_patched.xsd`, `src/schema/lattes.{json,ts}`                                                                                               |
-| `src/schema/lattes.json`  | `pnpm gen:fixtures` | `fixtures/synthetic_{full,minimal}.xml`, `fixtures/synthetic_minimal.zip`                                                                                              |
-| `brand/construction/`     | `brand/rebuild.py`  | everything else in `brand/`; copy the outputs to `src-tauri/icons/` (and `brand/dev/` to `src-tauri/icons/dev/`), `extension/icons/`, `site/` and `src/ui/favicon.svg` |
+| Source                    | Command             | Output                                                                                                                                                                                                                         |
+| ------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| XSD + `schema/patch.json` | `pnpm gen:schema`   | `schema/CurriculoLattes_2022_patched.xsd`, `src/schema/lattes.{json,ts}`                                                                                                                                                       |
+| `src/schema/lattes.json`  | `pnpm gen:fixtures` | `fixtures/synthetic_{full,minimal}.xml`, `fixtures/synthetic_minimal.zip`                                                                                                                                                      |
+| `brand/construction/`     | `brand/rebuild.py`  | everything else in `brand/`; copy the outputs to `src-tauri/icons/` (and `brand/dev/` to `src-tauri/icons/dev/`), `extension/icons/`, `site/` and `src/ui/favicon.svg`; the site header inlines `brand/transparent/symbol.svg` |
 
 Regenerate and commit the outputs in the same commit as the source change.
 

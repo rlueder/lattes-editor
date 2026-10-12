@@ -38,14 +38,10 @@ l=f'<g clip-path="url(#l-cut)"><path fill="{V}" d="{p.getCommands()}" transform=
 def ring(x,y,color):
  return f'<path fill="{color}" fill-rule="evenodd" d="M{x+r} {y}a{r} {r} 0 1 0 {-2*r} 0a{r} {r} 0 1 0 {2*r} 0M{x+hole} {y}a{hole} {hole} 0 1 0 {-2*hole} 0a{hole} {hole} 0 1 0 {2*hole} 0"/>'
 connector=f'<path fill="{M}" d="M{cut+shift} {ftop}H{rx-hole-1}V{baseline}H{cut-foot+shift}Z"/>'
-# Documento assentado na subgrade de x/4; altura e espaçamento do texto derivados de x.
-x0=1.75*u;yt=1.75*u;xf=3.375*u;xr=4.125*u;fold=.75*u;t=.25*u;bottom=4.5*u
-top_left=1.375*u
-page=f'<path fill="{V}" d="M{top_left} {yt}H{xf}L{xr} {yt+fold}V{bottom}H{xr-t}V{yt+fold}H{xf}V{yt+t}H{top_left}Z"/>'
-lines=''
-for y,width in [(3*u,1.75*u),(3.625*u,1.375*u),(4.25*u,u)]:
- lines+=f'<rect x="{x0}" y="{y}" width="{width}" height="{t}" fill="{V}"/>'
-symbol=clip+l+ring(cx,cy,V)+connector+ring(rx,ry,M)+page+lines
+# Duas barras espessas compartilhadas por todas as aplicações da marca.
+x0=230;yt=345;t=72;bottom=567
+lines=f'<path fill="{V}" d="M230 345H530V417H230Z M230 495H450V567H230Z"/>'
+symbol=clip+l+ring(cx,cy,V)+connector+ring(rx,ry,M)+lines
 left=cx-r;right=rx+r;center=(left+right)/2;symbolbottom=ry+r
 wp,wb=outline([('Lattes',700),('Editor',400)])
 wordscale=7*u/(wb[2]-wb[0]);wordx=center-3.5*u-wb[0]*wordscale
@@ -98,7 +94,7 @@ dx=160;y1=Y+cy*S;y2=Y+baseline*S
 body+=f'<path d="M{dx-8} {y1}h16M{dx} {y1}V{y2}M{dx-8} {y2}h16" fill="none" stroke="{G}" stroke-width="1.5"/>'
 body+=f'<g transform="translate(143 {(y1+y2)/2+70}) rotate(-90)">'+text('H = 5,290x',0,0,18,500,G)+'</g>'
 # Coluna de especificações com valores derivados, não arredondados para deformar a fonte.
-notes=[('UNIDADE E FONTE',['x = haste do Plex L 600','x = 131,941 unidades da fonte','Altura do L: 698 = 5,290x','Pé do L: 117,006 = 0,887x']),('CÍRCULOS IGUAIS',['Diâmetro externo: 1,75x','Diâmetro interno: 0,75x','Anel: 0,50x']),('DOCUMENTO',['Traço e linhas: 0,25x','Dobra a 45°: 0,75x','Recuo superior: 0,375x','Recuo do texto: 0,75x','Entrelinhas: 0,625x','Comprimentos: 1,75 / 1,375 / 1x']),('CONEXÃO',['Cortes paralelos a 45°','Vão perpendicular: 0,25x','Espessura = pé original do L']),('ASSINATURA A',['IBM Plex Sans 700 / 400','Largura visível: 7x','Distância do símbolo: 0,50x','Centralização pelo contorno'])]
+notes=[('UNIDADE E FONTE',['x = haste do Plex L 600','x = 131,941 unidades da fonte','Altura do L: 698 = 5,290x','Pé do L: 117,006 = 0,887x']),('CÍRCULOS IGUAIS',['Diâmetro externo: 1,75x','Diâmetro interno: 0,75x','Anel: 0,50x']),('DUAS LINHAS',['Espessura: 72 = 0,546x','Origem horizontal: 230','Topo: 345 unidades','Passo: 150 = 1,137x','Comprimentos: 300 / 220','Mesmo símbolo em todas as escalas']),('CONEXÃO',['Cortes paralelos a 45°','Vão perpendicular: 0,25x','Espessura = pé original do L']),('ASSINATURA A',['IBM Plex Sans 700 / 400','Largura visível: 7x','Distância do símbolo: 0,50x','Centralização pelo contorno'])]
 y=245
 for title,rows in notes:
  body+=text(title,1260,y,20,600,V);y+=35
@@ -107,7 +103,7 @@ for title,rows in notes:
 body+=text('Violeta e menta: marca  ·  azul: malha  ·  cobre: eixos e cotas',85,1516,18)
 body+=text('Os elementos auxiliares seguem a malha; a proporção original do L permanece preservada.',85,1548,18)
 (out/'construction-grid.svg').write_text(svg(1800,1580,body,'Grade de construção do logo LattesEditor com elementos aplicados'))
-(out/'proportions.json').write_text(json.dumps({'module_font_units':u,'subgrid':'x/8','L_weight':600,'L_height_x':h/u,'L_foot_x':foot/u,'circle_outer_diameter_x':1.75,'circle_inner_diameter_x':.75,'document_stroke_x':.25,'fold_x':.75,'text_line_pitch_x':.625,'diagonal_gap_perpendicular_x':.25,'document_top_inset_after_stem_x':.375,'wordmark_weights':[700,400],'wordmark_ink_width_x':7,'wordmark_gap_x':.5},indent=2))
+(out/'proportions.json').write_text(json.dumps({'module_font_units':u,'subgrid':'x/8','L_weight':600,'L_height_x':h/u,'L_foot_x':foot/u,'circle_outer_diameter_x':1.75,'circle_inner_diameter_x':.75,'text_stroke_x':72/u,'text_line_pitch_x':150/u,'text_widths_x':[300/u,220/u],'text_origin_font_units':[230,345],'diagonal_gap_perpendicular_x':.25,'wordmark_weights':[700,400],'wordmark_ink_width_x':7,'wordmark_gap_x':.5},indent=2))
 # Selo DEV do ícone de desenvolvimento: as letras em IBM Plex Sans 700,
 # recortadas na tinta para o build-icons.cjs centralizar no selo.
 dp,db=outline([('DEV',700)])

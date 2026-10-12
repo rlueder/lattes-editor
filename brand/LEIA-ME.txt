@@ -1,6 +1,6 @@
 LattesEditor: pacote de ícones
 
-O símbolo usa o contorno real do L em IBM Plex Sans 600, com círculos e corte diagonal. Os ícones têm fundo branco, L violeta (#463C6D) e peça direita menta (#9EF2E2). As margens externas dos ícones arredondados continuam transparentes. Todas as versões usam o símbolo mais recente: documento de três linhas, linha superior alongada e vão diagonal de x/4.
+O símbolo usa o contorno real do L em IBM Plex Sans 600, com círculos e corte diagonal. Os ícones têm fundo branco, L violeta (#463C6D) e peça direita menta (#9EF2E2). As margens externas dos ícones arredondados continuam transparentes. Todas as versões usam o símbolo mais recente: duas barras espessas, sem moldura de documento, e vão diagonal de x/4.
 
 macos/LattesEditor.icns: dez representações, de 16 a 1024 pixels, incluindo Retina. A pasta .iconset mantém os PNGs. Fundo arredondado com margem transparente.
 windows/LattesEditor.ico: imagens de 16, 20, 24, 32, 40, 48, 64, 128 e 256 pixels. ICO de 32 bits com imagens PNG embutidas para Windows moderno.
@@ -11,7 +11,7 @@ Copie o conteúdo de browser para a raiz pública do aplicativo e use head-snipp
 
 As imagens maskable têm fundo opaco e o símbolo dentro do círculo seguro central. O sistema aplica sua própria máscara. O apple-touch-icon também tem fundo opaco e deixa os cantos para o sistema.
 
-source/logo-variation-a.svg contém a assinatura aprovada: Lattes 700 e Editor 400 em IBM Plex Sans, como uma só palavra. source/symbol-original.svg é uma cópia exata do símbolo aprovado da versão construction-grid-v2. A grade e as proporções acompanham o pacote. As fontes foram convertidas em contornos.
+source/logo-variation-a.svg contém a assinatura aprovada: Lattes 700 e Editor 400 em IBM Plex Sans, como uma só palavra. source/symbol-original.svg é o símbolo simplificado compartilhado por web, apps e extensão. A grade e as proporções acompanham o pacote. As fontes foram convertidas em contornos.
 
 Verificação: dimensões dos PNGs, entradas e tamanhos dos contêineres ICO/ICNS, manifesto e visualização do conjunto. ICNS lido por sips no macOS. Não houve instalação nem teste de empacotamento em Windows ou Linux. Nenhum arquivo do aplicativo foi alterado.
 
@@ -35,3 +35,5 @@ https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Refer
 https://specifications.freedesktop.org/icon-theme/0.11/
 
 extension-toolbar: variante óptica exclusiva para barras de extensões, transparente e monocromática. Branco para barras escuras; grafite para claras. Inclui prévia, PNGs, SVGs, exemplos de configuração e script de geração.
+
+transparent: símbolo colorido e assinatura sem fundo, SVG/PNG, ICO e ICNS. build-transparent.cjs gera estas variantes e verifica dimensões e transparência.
