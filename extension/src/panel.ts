@@ -211,7 +211,12 @@ async function showConsentOrBridge(): Promise<void> {
   document.getElementById('ponte')!.hidden = !ok;
 }
 (document.getElementById('aviso-politica') as HTMLAnchorElement).href = PRIVACY_URL;
-document.getElementById('aceitar')!.addEventListener('click', () => void giveConsent());
+document.getElementById('aceitar')!.addEventListener('click', () => {
+  giveConsent().catch(() => {
+    document.querySelector('.aviso-nota')!.textContent =
+      'Não deu para guardar o "ok". Feche e abra o painel e tente de novo.';
+  });
+});
 chrome.storage.onChanged.addListener((_changes, area) => {
   if (area === 'local') void showConsentOrBridge();
   else void readState().then(render);
