@@ -12,3 +12,6 @@ src/schema/lattes.json
 src/schema/lattes.ts
 src-tauri/target
 src-tauri/gen
+
+# Marca: pacote próprio (Python + sharp); os arquivos saem como o gerador escreve.
+brand

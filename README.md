@@ -136,9 +136,11 @@ entram na mesma página.
   decisões e pesquisa de produto
 - [`docs/extensao_chrome_web_store.md`](docs/extensao_chrome_web_store.md):
   o que falta para publicar a extensão
+- [`brand/`](brand/): o símbolo, a assinatura e os ícones de cada sistema,
+  com a grade de construção e os scripts que os geram (`brand/LEIA-ME.txt`)
 - [`AGENTS.md`](AGENTS.md): regras para quem contribui
 
 ## Licença
 
 MIT. A fonte IBM Plex vem sob a SIL Open Font License, em
-`src/ui/fonts/LICENSE.txt`.
+`src/ui/fonts/LICENSE.txt` e `brand/construction/fonts/LICENSE.txt`.

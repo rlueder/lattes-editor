@@ -2676,16 +2676,18 @@ details > .element {
   line-height: 1.6;
 }
 
-/* Marca provisória no cabeçalho. */
+/* Assinatura da marca (brand/construction/logo.svg): Lattes em 700 e Editor
+   em 400, IBM Plex Sans sem ajuste de espaçamento, as duas palavras no
+   violeta da marca. No escuro, a assinatura fica branca. */
 .brand {
+  color: var(--brand);
   font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: 700;
   white-space: nowrap;
 }
 
 .brand-accent {
-  color: var(--accent-text);
+  font-weight: 400;
 }
 
 .topbar-identity .topbar-divider:first-of-type {
@@ -3898,6 +3900,7 @@ button.primary.danger-fill:hover {
   --accent-soft: #e6f4fe; /* blue-3 */
   --accent-soft-strong: #d5efff; /* blue-4 */
   --accent-text: #326c99;
+  --brand: #463c6d;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -3919,6 +3922,7 @@ button.primary.danger-fill:hover {
     --accent-soft: #0d2847; /* blue-dark-3 */
     --accent-soft-strong: #003362; /* blue-dark-4 */
     --accent-text: #70b8ff; /* blue-dark-11 */
+    --brand: #ffffff;
   }
 }
 
@@ -3940,6 +3944,7 @@ button.primary.danger-fill:hover {
   --accent-soft: #0d2847;
   --accent-soft-strong: #003362;
   --accent-text: #70b8ff;
+  --brand: #ffffff;
 }
 
 /* Controles com a borda de controle (passo 7) e foco na borda forte. */
@@ -4622,7 +4627,6 @@ button.primary:hover:not(:disabled) {
 /* Marca no topo do menu lateral, maior que a do antigo cabeçalho. */
 .sidebar-brand .brand {
   font-size: 20px;
-  letter-spacing: -0.01em;
 }
 
 /* Linha de base da marca na mesma altura da do caminho (Dados gerais ›

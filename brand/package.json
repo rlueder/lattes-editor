@@ -1,0 +1,7 @@
+{
+  "name": "latteseditor-brand-assets",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fontes de construção e exportação da marca LattesEditor",
+  "dependencies": { "sharp": "0.35.5" }
+}

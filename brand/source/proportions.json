@@ -1,0 +1,20 @@
+{
+  "module_font_units": 131.941162109375,
+  "subgrid": "x/8",
+  "L_weight": 600,
+  "L_height_x": 5.2902368665009964,
+  "L_foot_x": 0.8868046984721454,
+  "circle_outer_diameter_x": 1.75,
+  "circle_inner_diameter_x": 0.75,
+  "document_stroke_x": 0.25,
+  "fold_x": 0.75,
+  "text_line_pitch_x": 0.625,
+  "diagonal_gap_perpendicular_x": 0.25,
+  "document_top_inset_after_stem_x": 0.375,
+  "wordmark_weights": [
+    700,
+    400
+  ],
+  "wordmark_ink_width_x": 7,
+  "wordmark_gap_x": 0.5
+}
