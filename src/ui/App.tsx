@@ -12,6 +12,7 @@ import {
   type HistoryEntry,
   listHistory,
   loadWorkingCopy,
+  newWorkingCopy,
   replaceWorkingCopy,
   saveWorkingCopy,
 } from '../model/store.ts';
@@ -194,19 +195,9 @@ export function App() {
     setError(null);
     try {
       const cv = await loadCv(new Uint8Array(await file.arrayBuffer()), file.name);
-      const xml = serializeXml(cv.doc);
-      // A numeração do servidor vale a partir daqui (guia, 3.2).
-      const max = maxSequenciaProducao(cv.doc);
-      const meta = {
-        encoding: cv.encoding,
-        fileName: cv.fileName,
-        id: 'current' as const,
-        loadedAt: Date.now(),
-        loadedMaxSequencia: max,
-        nextSequencia: max + 1,
-        originalXml: xml,
-      };
-      await replaceWorkingCopy({ ...meta, savedAt: meta.loadedAt, xml });
+      const copy = newWorkingCopy(cv, Date.now());
+      await replaceWorkingCopy(copy);
+      const { savedAt: _savedAt, xml: _xml, ...meta } = copy;
       setSession({ doc: cv.doc, meta });
       setSectionId('dados-gerais');
       setSaveState('salvo');

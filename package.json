@@ -14,6 +14,7 @@
     "desktop:build": "tauri build --bundles app",
     "desktop:dev": "tauri dev",
     "dev": "vite",
+    "dev:exemplo": "vite --port 5199 --strictPort --open /?exemplo",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "gen:fixtures": "node scripts/gen-fixtures.ts",

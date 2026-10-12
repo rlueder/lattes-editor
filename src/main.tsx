@@ -22,10 +22,23 @@ if (/^#_r_/.test(location.hash)) {
   history.replaceState(null, '', location.pathname + location.search);
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <TipProvider delay={350}>
-      <App />
-    </TipProvider>
-  </StrictMode>,
-);
+function render() {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <TipProvider delay={350}>
+        <App />
+      </TipProvider>
+    </StrictMode>,
+  );
+}
+
+// No `pnpm dev`, ?exemplo abre o currículo sintético (src/dev/example.ts).
+// No build, import.meta.env.DEV é false e o import some do bundle.
+if (import.meta.env.DEV) {
+  void import('./dev/example.ts')
+    .then((m) => m.openExampleIfAsked(location.search))
+    .catch((err: unknown) => console.error('Currículo de exemplo não carregou:', err))
+    .finally(render);
+} else {
+  render();
+}

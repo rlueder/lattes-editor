@@ -95,6 +95,7 @@ O que a extensão lê e envia está em
 pnpm install
 pnpm desktop:dev          # o app, com recarga ao vivo (precisa de Rust)
 pnpm dev                  # só a página do editor, no navegador
+pnpm dev:exemplo          # o editor já aberto com o currículo sintético completo
 pnpm test                 # testes (pnpm test:coverage com o limite de 80%)
 pnpm build:extension      # a extensão em dist-extension/
 pnpm capture:screenshots  # refaz as imagens deste README
@@ -105,6 +106,11 @@ comando do Xcode. As imagens em `docs/img/` e `site/img/` saem sempre do
 currículo sintético em `fixtures/`, nunca de um real. Para testar com uma
 exportação sua, ponha o `CV_<id>.zip` em `fixtures/real/`, que está no
 `.gitignore`.
+
+`pnpm dev:exemplo` abre o editor na porta 5199 com `fixtures/synthetic_full.xml`,
+que preenche todas as seções. Cada porta tem o próprio armazenamento no
+navegador, então o currículo aberto no `pnpm dev` (porta 5173) não é tocado.
+Para recomeçar do exemplo, feche o arquivo no editor e recarregue a página.
 
 Os scripts `pnpm gen:schema`, `pnpm gen:fixtures` e `pnpm validate:fixtures`
 geram o modelo a partir do XSD do Lattes e validam as fixtures.
