@@ -93,3 +93,9 @@ for (const theme of ['clara', 'escura'] as const) {
   }
 }
 console.log(`Extensão em ${out}`);
+if (forStore) {
+  console.warn(
+    'Pacote da loja: o ID da extensão será o da Chrome Web Store, e o app só fala com os IDs de ' +
+      'EXTENSION_IDS (src-tauri/src/ponte.rs). Confira que o ID da loja está lá antes de publicar.',
+  );
+}

@@ -136,7 +136,7 @@ async function captureOgImage(): Promise<void> {
     width: 1200,
   });
   await cdp.send('Page.navigate', { url: new URL('/scripts/og-card.html', url).href });
-  await assertRendered(cdp, 'Prévia (og-card.html)', 'body');
+  await assertRendered(cdp, 'Prévia (og-card.html)', 'body', { textSelector: 'h1' });
   const { data } = await cdp.send<{ data: string }>('Page.captureScreenshot', { format: 'png' });
   const file = join(root, 'site/img/og.png');
   writeFileSync(file, Buffer.from(data, 'base64'));

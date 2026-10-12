@@ -110,7 +110,7 @@ export async function assertRendered(
   cdp: Cdp,
   what: string,
   selector: string,
-  { needsImages = true } = {},
+  { needsImages = true, textSelector = selector } = {},
 ): Promise<void> {
   const { result } = await cdp.send<{ result: { value?: string } }>('Runtime.evaluate', {
     awaitPromise: true,
@@ -124,7 +124,7 @@ export async function assertRendered(
       return JSON.stringify({
         font: faces.some((f) => f.family.includes('IBM Plex Sans') && f.status === 'loaded'),
         images: (imgs.length > 0 || !${needsImages}) && imgs.every((i) => i.complete && i.naturalWidth > 0),
-        content: Boolean(document.querySelector(${JSON.stringify(selector)})?.textContent?.trim()),
+        content: Boolean(document.querySelector(${JSON.stringify(textSelector)})?.textContent?.trim()),
       });
     })()`,
     returnByValue: true,
