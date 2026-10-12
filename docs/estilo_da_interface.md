@@ -11,7 +11,9 @@ medidas oficiais dele.
 
 ## Escala
 
-- Texto base em 13px, títulos de seção em 15 a 16px. O título de página
+- Texto base em 13px, títulos de seção em 15 a 16px. Nas linhas de lista
+  (cartões), o título sobe para 15px e o subtítulo para 14px; tipo e
+  período ficam em 13px. O título de página
   hoje tem 28px e os campos parecem formulário de cadastro, não editor.
 - Linhas de lista e itens do menu lateral com cerca de 28 a 32px de
   altura. Os chips de filtro (hoje `--pill-h: 36px`) descem para 24 a

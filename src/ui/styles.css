@@ -474,7 +474,7 @@ details > .element {
 }
 
 .item-kind {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
   white-space: nowrap;
 }
@@ -693,7 +693,11 @@ details.card > summary {
   flex: 1;
 }
 
+/* Linha do cartão um degrau acima do texto base (13px), para a lista se ler
+   como conteúdo e não como menu: título 15px, subtítulo 14px, tipo e
+   período 13px. */
 .card-title {
+  font-size: 15px;
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -702,7 +706,7 @@ details.card > summary {
 
 .card-subtitle {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -713,7 +717,7 @@ details.card > summary {
   flex-direction: column;
   align-items: flex-end;
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -725,7 +729,7 @@ details.card > summary {
 
 .duration {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 @media (max-width: 760px) {
@@ -1719,12 +1723,14 @@ details.card.is-new {
   color: var(--muted);
 }
 
+/* Valor só de leitura (códigos do Lattes, nível): um degrau acima do rótulo
+   e no tom do texto, para não se confundir com ele (rótulo 12px apagado). */
 .field-readonly .readonly-value {
   flex: 1;
   min-width: 0;
   padding: 5px 0;
-  font: 12px var(--mono);
-  color: var(--muted);
+  font: 13px var(--mono);
+  color: var(--text-2);
   overflow-wrap: anywhere;
 }
 
@@ -3501,7 +3507,31 @@ details > summary::-webkit-details-marker {
   flex: 1;
   min-width: 0;
   padding: 6px 0;
+  color: var(--text-2);
+  font-size: 14px;
   overflow-wrap: anywhere;
+}
+
+/* Cadeado depois do rótulo dos campos só de leitura, com a dica do app. */
+.field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.field-lock {
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--muted);
+  cursor: help;
+}
+
+.field-lock:hover {
+  color: var(--text-2);
 }
 
 /* Realces de passar o mouse e de item ativo com cantos retos: menu lateral,
