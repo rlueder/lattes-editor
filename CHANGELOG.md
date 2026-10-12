@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.0](https://github.com/rlueder/lattes-editor/compare/v0.6.0...v0.7.0) (2026-10-12)
+
+### Novidades
+
+- **ui:** campos de data e de ano com calendário próprio em pt-BR ([#19](https://github.com/rlueder/lattes-editor/issues/19)) ([10e8159](https://github.com/rlueder/lattes-editor/commit/10e81591ab11adf6dbf804192ba597e14faed40c))
+
+### Correções
+
+- **ui:** filtros na altura dos campos e passar o mouse em todo campo ([#18](https://github.com/rlueder/lattes-editor/issues/18)) ([cc9d589](https://github.com/rlueder/lattes-editor/commit/cc9d5890e4dec604608d822d212659c4f85faaa6))
+
 ## [0.6.0](https://github.com/rlueder/lattes-editor/compare/v0.5.0...v0.6.0) (2026-10-12)
 
 ### Novidades
