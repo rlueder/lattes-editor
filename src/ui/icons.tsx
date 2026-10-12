@@ -141,6 +141,14 @@ export const LockIcon = () => (
   </Icon>
 );
 
+/** Calendário: folha com a linha do cabeçalho e as duas argolas. */
+export const CalendarIcon = () => (
+  <Icon>
+    <rect height="15" rx="2" width="16" x="4" y="5.5" />
+    <path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" />
+  </Icon>
+);
+
 export const MonitorIcon = () => (
   <Icon size={14}>
     <rect height="12" rx="2" width="18" x="3" y="4" />

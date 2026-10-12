@@ -24,6 +24,7 @@ import { lattesSchema as schema } from '../schema/lattes.ts';
 import { AttributeField } from '../ui/AttributeField.tsx';
 import { Attributes } from '../ui/ElementView.tsx';
 import { ChevronIcon, CloseIcon, CollapseIcon, ExpandIcon } from '../ui/icons.tsx';
+import { isRedundantDateFormat } from '../ui/lattes-date.ts';
 import { Modal } from '../ui/Modal.tsx';
 import { Switch } from '../ui/primitives/Switch.tsx';
 import { Tip } from '../ui/primitives/Tip.tsx';
@@ -291,7 +292,9 @@ export function ProductionForm({
                 [basics, detail].map((part) => {
                   if (!part) return null;
                   const attrSpecs = schema.elements[part.name]?.attributes ?? [];
-                  const rest = part.attrs.filter((a) => !listed.has(a.name));
+                  const rest = part.attrs.filter(
+                    (a) => !listed.has(a.name) && !isRedundantDateFormat(a.name, a.value),
+                  );
                   if (rest.length === 0) return null;
                   return (
                     <div key={part.name} className="fields">

@@ -61,3 +61,21 @@ export const yearView: ListView = {
     })),
   ungroupedKey: 'sem-ano',
 };
+
+const elementKeys = new WeakMap<XElement, number>();
+let nextElementKey = 0;
+
+/**
+ * Chave do cartão que acompanha o elemento, e não a posição na lista. Mudar o
+ * ano de um item o leva a outro grupo; com a posição como chave, o cartão
+ * seguinte herdaria o rascunho do campo editado e, ao sair dele, gravaria o
+ * valor no item errado.
+ */
+export function elementKey(el: XElement): number {
+  let key = elementKeys.get(el);
+  if (key === undefined) {
+    key = nextElementKey++;
+    elementKeys.set(el, key);
+  }
+  return key;
+}

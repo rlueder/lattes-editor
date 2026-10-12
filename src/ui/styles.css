@@ -5018,3 +5018,216 @@ b {
 .subsection .item-list > .year-group:last-child > details:last-child {
   border-bottom-width: 0;
 }
+
+/* Campo de data: texto em dd/mm/aaaa com o botão do calendário dentro, à
+   direita. */
+.date-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.field .date-field input {
+  padding-right: 38px;
+  font-variant-numeric: tabular-nums;
+}
+
+.date-field .date-field-button {
+  position: absolute;
+  top: 50%;
+  right: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-color: transparent;
+  color: var(--muted);
+  transform: translateY(-50%);
+}
+
+.date-field .date-field-button:hover,
+.date-field .date-field-button[data-popup-open] {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* Calendário: mesma caixa dos menus e das listas de opções. A largura é a de
+   sete células mais o recuo. */
+.calendar {
+  --cell: 32px;
+  width: calc(7 * var(--cell) + 18px);
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  outline: none;
+}
+
+.calendar-head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.calendar .calendar-nav,
+.calendar .calendar-title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0;
+  border-color: transparent;
+  border-radius: var(--radius);
+}
+
+.calendar .calendar-nav {
+  width: 28px;
+  color: var(--muted);
+}
+
+.calendar .calendar-title {
+  flex: 1;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.calendar .calendar-nav:hover:not(:disabled),
+.calendar .calendar-title:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.calendar-prev .icon-svg {
+  transform: rotate(90deg);
+}
+
+.calendar-next .icon-svg {
+  transform: rotate(-90deg);
+}
+
+.calendar-title-icon {
+  display: inline-flex;
+  color: var(--muted);
+}
+
+.calendar-title-icon.open .icon-svg {
+  transform: rotate(180deg);
+}
+
+.calendar-grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.calendar-grid th {
+  height: 24px;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.calendar-cell {
+  height: var(--cell);
+  padding: 0;
+  text-align: center;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.calendar-cell:hover {
+  background: var(--accent-soft);
+}
+
+.calendar-cell.outside {
+  color: var(--muted);
+}
+
+.calendar-cell.today {
+  box-shadow: inset 0 0 0 1px var(--accent-text);
+  font-weight: 600;
+}
+
+.calendar-cell[aria-selected='true'] {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
+
+.calendar-cell:focus-visible {
+  position: relative;
+  outline: 2px solid var(--accent-text);
+  outline-offset: -2px;
+}
+
+/* No dia escolhido o contorno fica por fora: por dentro sumiria no azul. */
+.calendar-cell[aria-selected='true']:focus-visible {
+  z-index: 1;
+  outline-offset: 2px;
+}
+
+/* Quatro linhas de anos na mesma altura das seis semanas e do cabeçalho dos
+   dias: o calendário não muda de tamanho ao trocar de grade. */
+.calendar-years .calendar-cell {
+  height: calc((6 * var(--cell) + 24px) / 4);
+}
+
+/* Seletor do campo de ano: o intervalo da página no lugar do título, sem
+   botão (não há grade de dias para onde voltar), e linhas mais baixas, já que
+   não há grade de dias para igualar a altura. */
+.calendar-range {
+  flex: 1;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: center;
+}
+
+.calendar-year-picker .calendar-years .calendar-cell {
+  height: calc(var(--cell) + 8px);
+}
+
+/* "Fechar" existe para quem usa leitor de tela no toque; aparece no foco do
+   teclado. */
+.calendar-close:not(:focus-visible) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.calendar-close:focus-visible {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+}
+
+/* Celular: alvos de toque de 44px. */
+@media (max-width: 760px) {
+  .calendar {
+    --cell: 44px;
+  }
+  .calendar .calendar-nav,
+  .calendar .calendar-title {
+    height: 44px;
+  }
+  .calendar .calendar-nav {
+    width: 44px;
+  }
+  .date-field .date-field-button {
+    width: 32px;
+    height: 32px;
+  }
+}
