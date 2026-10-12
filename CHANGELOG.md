@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.10.0](https://github.com/rlueder/lattes-editor/compare/v0.9.1...v0.10.0) (2026-10-12)
+
+### Novidades
+
+- **ui:** extensão pronta para a Chrome Web Store ([#29](https://github.com/rlueder/lattes-editor/issues/29)) ([39c76c2](https://github.com/rlueder/lattes-editor/commit/39c76c26f09ee0981e64b1679a224ee25dc6d99b))
+
+### Correções
+
+- **ui:** painel da ponte sem botões soltos nem texto de ajuda ([#27](https://github.com/rlueder/lattes-editor/issues/27)) ([af7ad38](https://github.com/rlueder/lattes-editor/commit/af7ad387fe0464c88dd5a485e41c185718e68675))
+
 ## [0.9.1](https://github.com/rlueder/lattes-editor/compare/v0.9.0...v0.9.1) (2026-10-12)
 
 ### Correções
