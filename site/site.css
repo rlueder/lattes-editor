@@ -594,6 +594,11 @@ h3 {
   color: var(--accent);
 }
 
+/* O comando do apt é mais largo que o cartão no celular. */
+.download-note code {
+  overflow-wrap: anywhere;
+}
+
 .download-mine {
   border-color: var(--accent);
 }
