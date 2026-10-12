@@ -5231,3 +5231,31 @@ b {
     height: 32px;
   }
 }
+
+/* Filtros do painel lateral na altura e no corpo dos campos do conteúdo
+   (35px de altura, texto de 14px), em vez da altura das pílulas. */
+.filter-search,
+.filter-facet.select-trigger {
+  height: auto;
+  min-height: 35px;
+  font-size: 14px;
+}
+
+.filter-search input {
+  font-size: 14px;
+}
+
+/* Passar o mouse em qualquer campo: a borda sobe um passo (sand-8). O foco
+   continua mais forte (borda e contorno do destaque), e o seletor aberto
+   mantém a borda do destaque. */
+.field input:hover:not(:focus):not(:disabled),
+.field select:hover:not(:focus):not(:disabled),
+.field textarea:not(.title-input):hover:not(:focus),
+.author-row input:hover:not(:focus),
+.author-add input:hover:not(:focus),
+.area-row input:hover:not(:focus),
+.doi-row input:hover:not(:focus),
+.select-trigger:hover:not([data-popup-open]):not(:focus-visible),
+.filter-search:hover:not(:focus-within) {
+  border-color: var(--border-focus);
+}
