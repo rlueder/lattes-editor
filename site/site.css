@@ -19,8 +19,10 @@
   color-scheme: light;
 }
 
+/* Escuro pelo sistema, a não ser que o seletor fixe o claro; ou fixado no
+   seletor (data-theme no <html>, ver o script do index.html). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --bg: #121110;
     --surface: #1b1a18;
     --surface-2: #24221f;
@@ -35,6 +37,22 @@
     --shadow: 0 24px 60px rgb(0 0 0 / 0.5);
     color-scheme: dark;
   }
+}
+
+:root[data-theme='dark'] {
+  --bg: #121110;
+  --surface: #1b1a18;
+  --surface-2: #24221f;
+  --border: #302e2b;
+  --text: #ece8e1;
+  --muted: #a8a297;
+  --accent: #8ab4d6;
+  --accent-strong: #a9c9e3;
+  --accent-contrast: #0f1e2b;
+  --accent-soft: #1f3142;
+  --glow: rgb(138 180 214 / 0.16);
+  --shadow: 0 24px 60px rgb(0 0 0 / 0.5);
+  color-scheme: dark;
 }
 
 * {
@@ -174,7 +192,66 @@ section[id] {
 }
 
 .nav .btn {
+  flex-shrink: 0;
+}
+
+/* Seletor de tema: Sistema, Claro e Escuro, como no menu do editor. Sem
+   script ele fica escondido (atributo hidden), porque não faria nada. */
+.theme-switch {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 2px;
   margin-left: auto;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.theme-switch[hidden] {
+  display: none;
+}
+
+.theme-switch[hidden] + .btn {
+  margin-left: auto;
+}
+
+.theme-switch button {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.theme-switch button:hover {
+  color: var(--text);
+}
+
+.theme-switch button[aria-pressed='true'] {
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+  color: var(--text);
+}
+
+.theme-switch button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.theme-switch svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* Botões */
@@ -467,9 +544,13 @@ h3 {
 }
 
 @media (prefers-color-scheme: dark) {
-  .footer {
+  :root:not([data-theme='light']) .footer {
     --ps-violet: oklch(0.72 0.1 285);
   }
+}
+
+:root[data-theme='dark'] .footer {
+  --ps-violet: oklch(0.72 0.1 285);
 }
 
 .footer-top {
