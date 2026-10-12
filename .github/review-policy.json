@@ -1,6 +1,6 @@
 {
   "enabled": true,
-  "provider": "anthropic",
+  "provider": "openrouter",
   "fallbackProviders": [],
   "includePaths": [
     "src/**",
