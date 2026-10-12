@@ -18,6 +18,7 @@ jobs:
   vigia:
     name: conferir o que o CNPq expõe
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       issues: write
@@ -30,7 +31,18 @@ jobs:
       - id: vigia
         continue-on-error: true
         run: node scripts/vigia-lattes.ts --saida vigia.md --guardar vigia-out
-      - run: cat vigia.md >> "$GITHUB_STEP_SUMMARY"
+      # O script sempre escreve o relatório, mas se cair antes disso (Node
+      # ausente, erro de sintaxe) ainda precisamos de resumo e de issue.
+      - if: always()
+        run: |
+          if [ -f vigia.md ]; then
+            cat vigia.md
+          else
+            echo '## Vigia do Lattes: o script falhou antes de escrever o relatório'
+            echo
+            echo 'Veja o log da execução.'
+          fi > corpo.md
+          cat corpo.md >> "$GITHUB_STEP_SUMMARY"
       - if: steps.vigia.outcome == 'failure'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -47,7 +59,7 @@ jobs:
         run: |
           gh label create vigia-lattes --force --color B60205 \
             --description 'O CNPq mudou algo no Lattes de que o editor depende'
-          { cat vigia.md; echo; echo "Execução: $RUN_URL"; } > corpo.md
+          { echo; echo "Execução: $RUN_URL"; } >> corpo.md
           existente="$(gh issue list --label vigia-lattes --state open --json number --jq '.[0].number')"
           if [ -n "$existente" ]; then
             gh issue comment "$existente" --body-file corpo.md

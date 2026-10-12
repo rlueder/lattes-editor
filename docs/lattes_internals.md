@@ -355,8 +355,9 @@ Duas vigias, uma para cada lado do login:
   gravação percorre, só com GET, lê um exemplar de cada formulário e compara.
   A mesma verificação roda antes de cada fila; campo sumido, tipo trocado,
   formulário ou link que não existe mais e `f_ctr` fora de `U` param a fila
-  antes do primeiro POST. Campo novo e limite diferente só avisam, porque a
-  ponte reenvia o formulário inteiro como o leu.
+  antes do primeiro POST. Se a conferência nem chega a ler (aba que não
+  responde, erro de rede), a fila também para. Campo novo e limite diferente
+  só avisam, porque a ponte reenvia o formulário inteiro como o leu.
 
 O contrato foi escrito a partir das tabelas da seção 5 (11/10/2026), não de
 uma captura automática: a primeira verificação num Lattes real ainda pode

@@ -161,17 +161,25 @@ async function verify(): Promise<void> {
   const state = await readState();
   if (state.running || state.verificando) return;
   await writeState({ ...state, verificando: true });
-  const tabId = await lattesTab();
-  const report =
-    tabId === undefined
-      ? failedReport('Abra o currículo no Lattes (a página do menu) numa aba e tente de novo')
-      : await verifyOn(tabId);
-  await writeState({ ...(await readState()), verificacao: report, verificando: false });
+  // O "verificando" fica gravado; se algo estourar aqui, precisa ser desfeito
+  // mesmo assim, senão o botão do painel fica preso.
+  let report = failedReport('Falha inesperada');
+  try {
+    const tabId = await lattesTab();
+    report =
+      tabId === undefined
+        ? failedReport('Abra o currículo no Lattes (a página do menu) numa aba e tente de novo')
+        : await verifyOn(tabId);
+  } catch (err) {
+    if (err instanceof Error) report = failedReport(err.message);
+  } finally {
+    await writeState({ ...(await readState()), verificacao: report, verificando: false });
+  }
 }
 
 async function run(keys?: string[]): Promise<void> {
   const state = await readState();
-  if (state.running) return;
+  if (state.running || state.verificando) return;
   const queue = state.ops.filter(
     (op) => state.results[op.key]?.status !== 'conferido' && (!keys || keys.includes(op.key)),
   );
@@ -212,6 +220,7 @@ async function run(keys?: string[]): Promise<void> {
     }
     // Trava: antes de gravar, o Lattes precisa estar como a ponte espera. Uma
     // mudança do CNPq num formulário da fila para tudo, com o campo apontado.
+    // Se nem deu para conferir, também para: sem leitura, não há garantia.
     if (queue.length > 0) {
       const report = await verifyOn(tabId);
       await writeState({ ...(await readState()), verificacao: report });
@@ -223,12 +232,17 @@ async function run(keys?: string[]): Promise<void> {
               detail: report.detail ?? 'A sessão do Lattes caiu; entre de novo',
               status: 'sessao' as const,
             }
-          : blocking.length > 0
+          : report.status === 'erro'
             ? {
-                detail: `O Lattes mudou (${blocking.map(driftText).join('; ')}); nada foi enviado. Veja a verificação no painel`,
+                detail: `Não deu para conferir o Lattes (${report.detail ?? 'sem detalhe'}); nada foi enviado`,
                 status: 'erro' as const,
               }
-            : undefined;
+            : blocking.length > 0
+              ? {
+                  detail: `O Lattes mudou (${blocking.map(driftText).join('; ')}); nada foi enviado. Veja a verificação no painel`,
+                  status: 'erro' as const,
+                }
+              : undefined;
       if (stop && first) {
         await record({ ...stop, key: first.key });
         queue.length = 0;
@@ -273,7 +287,9 @@ chrome.runtime.onMessage.addListener((message, sender) => {
   if (m.cmd === 'parar') stopRequested = true;
   if (m.cmd === 'verificar') void verify();
   if (m.cmd === 'limpar') {
-    void readState().then((s) => writeState({ ...s, ops: [], results: {}, running: false }));
+    void readState().then((s) =>
+      writeState({ ...s, ops: [], results: {}, running: false, verificando: false }),
+    );
     void chrome.action.setBadgeText({ text: '' });
   }
 });
@@ -312,6 +328,11 @@ async function watchToolbarTheme(): Promise<void> {
 
 // O service worker acorda por vários motivos; em todos, tenta ligar ao app.
 connectApp();
+// Se o worker morreu no meio de uma verificação, o "verificando" ficou gravado
+// e travaria o botão do painel para sempre. Ao acordar, nada está verificando.
+void readState().then((s) => {
+  if (s.verificando) void writeState({ ...s, verificando: false });
+});
 void chrome.alarms.create('ponte', { periodInMinutes: 1 });
 chrome.alarms.onAlarm.addListener(() => connectApp());
 chrome.runtime.onStartup.addListener(() => connectApp());

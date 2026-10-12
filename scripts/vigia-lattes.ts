@@ -34,10 +34,30 @@ interface Check {
 }
 
 const UA = 'lattes-editor vigia (https://github.com/rlueder/lattes-editor)';
+/** O CNPq às vezes demora; mais que isso é conexão pendurada, e conta como falha. */
+const TIMEOUT_MS = 60_000;
 
 async function fetchBytes(url: string): Promise<{ bytes: Uint8Array; res: Response }> {
-  const res = await fetch(url, { headers: { 'user-agent': UA }, redirect: 'follow' });
+  const res = await fetch(url, {
+    headers: { 'user-agent': UA },
+    redirect: 'follow',
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
   return { bytes: new Uint8Array(await res.arrayBuffer()), res };
+}
+
+/**
+ * Uma conferência que estoura (DNS, TLS, timeout, arquivo local faltando)
+ * vira linha de "mudou" no relatório, em vez de derrubar o script sem
+ * relatório nenhum, que é justamente quando o vigia mais precisa falar.
+ */
+async function guarded(name: string, check: () => Promise<Check>): Promise<Check> {
+  try {
+    return await check();
+  } catch (err) {
+    const why = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    return { detail: `não deu para conferir (${why})`, name, ok: false };
+  }
 }
 
 const sha256 = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
@@ -123,11 +143,13 @@ function arg(name: string): string | undefined {
 
 const saveTo = arg('--guardar');
 const results = await Promise.all([
-  checkXsd(saveTo),
-  checkXsdPage(),
-  checkFoto(),
-  checkPage('Entrada do Lattes', LATTES_URL, 'Lattes'),
-  checkPage('Menu do editor (sem sessão)', MENU_URL, 'lattes.cnpq.br'),
+  guarded('XSD publicado', () => checkXsd(saveTo)),
+  guarded('Página do Extrator', checkXsdPage),
+  guarded('Foto do perfil', checkFoto),
+  guarded('Entrada do Lattes', () => checkPage('Entrada do Lattes', LATTES_URL, 'Lattes')),
+  guarded('Menu do editor (sem sessão)', () =>
+    checkPage('Menu do editor (sem sessão)', MENU_URL, 'lattes.cnpq.br'),
+  ),
 ]);
 const md = report(results);
 const out = arg('--saida');
