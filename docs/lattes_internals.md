@@ -331,3 +331,39 @@ derrubar o primeiro. **Inferido.**
   do endereço.
 - O formulário de edição de uma atividade existente (`pkg_ativ.cargo` com
   `f_seq_funcao`, montado por JavaScript na grade da atuação).
+
+## 9. Vigia: saber quando o CNPq mudou algo
+
+O CNPq não publica roadmap, changelog nem notas de versão da Plataforma
+Lattes (procurado em 12/10/2026: o portal gov.br do CNPq, o Portal Memória e
+a página do Extrator só trazem notícias gerais e o aviso de que o XSD foi
+"atualizado em 12/09/2022"; o feed de notícias do Portal Memória parou em
+2015). A única maneira de saber que algo mudou é olhar.
+
+Duas vigias, uma para cada lado do login:
+
+- **Público, no CI.** `scripts/vigia-lattes.ts` roda toda segunda-feira
+  (`.github/workflows/vigia-lattes.yml`) e confere o XSD byte a byte contra
+  `schema/CurriculoLattes_12_09_2022.xsd`, o texto "atualizado em" e o link
+  na página do Extrator, a foto do perfil (`servletrecuperafoto`) e a
+  entrada do Lattes. Falhou, abre ou comenta uma issue `vigia-lattes`.
+- **Atrás do login, na extensão.** `src/bridge/contract.ts` guarda o que a
+  ponte espera encontrar: os procedimentos linkados no menu
+  (`pkg_ativ.lista`, `pkg_idioma.lista`, `pkg_resume.`) e, para cada
+  formulário que ela grava (seção 5), o nome, o POST e os campos com tipo e
+  limite. "Verificar o Lattes" no painel percorre os mesmos links que a
+  gravação percorre, só com GET, lê um exemplar de cada formulário e compara.
+  A mesma verificação roda antes de cada fila; campo sumido, tipo trocado,
+  formulário ou link que não existe mais e `f_ctr` fora de `U` param a fila
+  antes do primeiro POST. Campo novo e limite diferente só avisam, porque a
+  ponte reenvia o formulário inteiro como o leu.
+
+O contrato foi escrito a partir das tabelas da seção 5 (11/10/2026), não de
+uma captura automática: a primeira verificação num Lattes real ainda pode
+apontar diferenças de tipo ou limite que são erro de transcrição, e não
+mudança do CNPq. **Não testado no Lattes real.** Quando isso acontecer, o
+contrato é corrigido junto com a tabela desta seção.
+
+O relatório da verificação só tem nomes de campos e de procedimentos, a data
+e a versão da extensão. Nenhum valor do currículo entra nele, para que possa
+ser colado numa issue pública.

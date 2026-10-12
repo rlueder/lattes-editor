@@ -23,7 +23,11 @@ arquivo quando muda de fato; o detalhe técnico está em
     de outro currículo);
   - ler de volta depois de cada gravação: existe;
   - recusar quando o formulário mudou: existe (o valor antigo e o início do
-    vínculo precisam bater antes de gravar).
+    vínculo precisam bater antes de gravar);
+  - saber quando o CNPq mudou o Lattes: existe ("Verificar o Lattes" no
+    painel e antes de cada fila, mais o vigia semanal do que é público, em
+    `docs/lattes_internals.md`, seção 9). Falta rodar a primeira verificação
+    num Lattes real e acertar o contrato onde a transcrição errou.
 - **Ponte com o Lattes, além do vínculo, do resumo e dos idiomas.**
   Formação, endereço e identificação já têm o formulário mapeado em
   `docs/lattes_internals.md`; falta escrever a operação de cada um e testar

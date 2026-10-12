@@ -1,0 +1,404 @@
+// O contrato da ponte com o Lattes: os links do menu, os formulários e os
+// campos que a ponte espera encontrar, como foram lidos no Lattes
+// (docs/lattes_internals.md, seção 5). O CNPq não publica roadmap nem
+// changelog, então a única maneira de saber que algo mudou é olhar.
+//
+// A verificação só lê (GET), nunca grava, e a impressão digital de um
+// formulário guarda nomes, tipos e limites dos campos, nunca valores: o
+// relatório pode ser colado numa issue pública sem expor o currículo.
+
+import type { LattesPort } from './apply.ts';
+import type { FormControl } from './form.ts';
+import { findLinks, isLogonPage } from './lattes-html.ts';
+import type { BridgeOp } from './plan.ts';
+
+export interface FieldSpec {
+  /** Limite do campo (maxlength) quando o HTML declara. */
+  maxLength?: number;
+  /** Tipo como o navegador o vê: text, textarea, checkbox, radio, select-one, hidden. */
+  type: string;
+}
+
+export interface FormSpec {
+  /** Procedimento do POST. */
+  action: string;
+  fields: Record<string, FieldSpec>;
+  /** Atributo name do <form>. */
+  name: string;
+}
+
+export interface Contract {
+  forms: Record<BridgeOp['kind'], FormSpec>;
+  /** Procedimentos que precisam estar linkados no menu do currículo. */
+  menu: string[];
+}
+
+const text = (maxLength: number): FieldSpec => ({ maxLength, type: 'text' });
+const textarea = (maxLength: number): FieldSpec => ({ maxLength, type: 'textarea' });
+const hidden: FieldSpec = { type: 'hidden' };
+const select: FieldSpec = { type: 'select-one' };
+const checkbox: FieldSpec = { type: 'checkbox' };
+const radio: FieldSpec = { type: 'radio' };
+
+/**
+ * O que a ponte viu no Lattes em 11/10/2026. Os limites vêm das tabelas de
+ * docs/lattes_internals.md; um campo sem limite ali fica sem limite aqui.
+ * Quando o Lattes mudar, a verificação aponta o campo e este contrato é
+ * atualizado junto com o código que depende dele.
+ */
+export const LATTES_CONTRACT: Contract = {
+  forms: {
+    idioma: {
+      action: 'PKG_IDIOMA.FORM',
+      fields: {
+        f_cod: hidden,
+        F_COD_IDIOMA: select,
+        F_COMPR: radio,
+        F_CONVERSA: radio,
+        f_ctr: hidden,
+        F_ESCREVE: radio,
+        F_LE: radio,
+        f_seq: hidden,
+        f_tipo_privacidade: select,
+        FC_COMPR: checkbox,
+        FC_CONVERSA: checkbox,
+        FC_ESCREVE: checkbox,
+        FC_LE: checkbox,
+      },
+      name: 'GN_IDIOMA',
+    },
+    resumo: {
+      action: 'PKG_RESUME.FORM',
+      fields: {
+        f_cod: hidden,
+        f_ctr: hidden,
+        f_resume_auto: hidden,
+        f_resume_auto_en: hidden,
+        f_ret: hidden,
+        F_TEXTO: textarea(4000),
+        F_TEXTO_EN: textarea(4000),
+      },
+      name: 'RES',
+    },
+    vinculo: {
+      action: 'PKG_ATIV.VINCULOS',
+      fields: {
+        f_ano_fim: text(4),
+        f_ano_ini: text(4),
+        f_carga: text(3),
+        f_cod: hidden,
+        f_codinst: hidden,
+        f_ctr: hidden,
+        f_enqua: text(45),
+        f_enqua_en: text(45),
+        f_mes_fim: text(2),
+        f_mes_ini: text(2),
+        f_outras_inf: textarea(3950),
+        f_outras_inf_en: textarea(2000),
+        f_regime: checkbox,
+        f_seq_ativ: hidden,
+        f_seq_hist: hidden,
+        f_status: radio,
+        f_stavinc: select,
+        f_tipo_privacidade: select,
+        f_vinc: text(30),
+        f_vinculo: hidden,
+      },
+      name: 'GN_ATIV_VINC',
+    },
+  },
+  menu: ['pkg_ativ.lista', 'pkg_idioma.lista', 'pkg_resume.'],
+};
+
+export type Fingerprint = Record<string, FieldSpec>;
+
+/**
+ * Impressão digital de um formulário: nome, tipo e limite de cada campo. Os
+ * rádios de um mesmo nome viram uma entrada só. Botões não contam. Nenhum
+ * valor entra aqui.
+ */
+export function fingerprint(controls: FormControl[]): Fingerprint {
+  const out: Fingerprint = {};
+  for (const c of controls) {
+    if (!c.name || c.type === 'button' || c.type === 'submit' || c.type === 'reset') continue;
+    if (c.name in out) continue;
+    out[c.name] = c.maxLength ? { maxLength: c.maxLength, type: c.type } : { type: c.type };
+  }
+  return out;
+}
+
+export type DriftKind =
+  | 'campo-novo'
+  | 'campo-sumiu'
+  | 'formulario-sumiu'
+  | 'limite-mudou'
+  | 'link-sumiu'
+  | 'modo-mudou'
+  | 'tipo-mudou';
+
+export interface Drift {
+  expected?: string;
+  field: string;
+  form: string;
+  kind: DriftKind;
+  observed?: string;
+}
+
+/** Mudanças que quebram a ponte; as outras só avisam. */
+const BREAKING: ReadonlySet<DriftKind> = new Set([
+  'campo-sumiu',
+  'formulario-sumiu',
+  'link-sumiu',
+  'modo-mudou',
+  'tipo-mudou',
+]);
+
+export function isBreaking(drift: Drift): boolean {
+  return BREAKING.has(drift.kind);
+}
+
+/** Compara a impressão digital lida com a esperada; um Drift por diferença. */
+export function compareForm(
+  form: string,
+  expected: Record<string, FieldSpec>,
+  observed: Fingerprint,
+): Drift[] {
+  const drifts: Drift[] = [];
+  for (const [field, spec] of Object.entries(expected)) {
+    const seen = observed[field];
+    if (!seen) {
+      drifts.push({ field, form, kind: 'campo-sumiu' });
+      continue;
+    }
+    if (seen.type !== spec.type) {
+      drifts.push({ expected: spec.type, field, form, kind: 'tipo-mudou', observed: seen.type });
+    }
+    if (spec.maxLength && seen.maxLength && seen.maxLength !== spec.maxLength) {
+      drifts.push({
+        expected: String(spec.maxLength),
+        field,
+        form,
+        kind: 'limite-mudou',
+        observed: String(seen.maxLength),
+      });
+    }
+  }
+  for (const field of Object.keys(observed)) {
+    if (!(field in expected)) drifts.push({ field, form, kind: 'campo-novo' });
+  }
+  return drifts;
+}
+
+export type FormStatus = 'mudou' | 'nao-encontrado' | 'ok' | 'sem-amostra';
+
+export interface FormCheck {
+  /** Por que não deu para conferir, quando não deu. */
+  detail?: string;
+  drifts: Drift[];
+  form: string;
+  kind: BridgeOp['kind'];
+  status: FormStatus;
+}
+
+export type ReportStatus = 'erro' | 'mudou' | 'ok' | 'sessao';
+
+export interface ContractReport {
+  /** ISO 8601, no momento da verificação. */
+  checkedAt: string;
+  detail?: string;
+  forms: FormCheck[];
+  menu: { found: boolean; proc: string }[];
+  status: ReportStatus;
+}
+
+class Stop extends Error {
+  status: ReportStatus;
+  constructor(status: ReportStatus, detail: string) {
+    super(detail);
+    this.status = status;
+  }
+}
+
+async function getChecked(port: LattesPort, path: string): Promise<string> {
+  const html = await port.get(path);
+  if (isLogonPage(html, path)) throw new Stop('sessao', 'A sessão do Lattes caiu; entre de novo');
+  return html;
+}
+
+/** Lê o formulário no caminho e o compara com a especificação. */
+async function checkForm(
+  port: LattesPort,
+  kind: BridgeOp['kind'],
+  spec: FormSpec,
+  path: string,
+): Promise<FormCheck> {
+  const html = await getChecked(port, path);
+  const controls = port.readForm(html, spec.name);
+  if (!controls) {
+    return {
+      drifts: [{ field: '', form: spec.name, kind: 'formulario-sumiu' }],
+      form: spec.name,
+      kind,
+      status: 'mudou',
+    };
+  }
+  const drifts = compareForm(spec.name, spec.fields, fingerprint(controls));
+  // A ponte só grava em modo de alteração; o valor de controle não é pessoal.
+  const ctr = controls.find((c) => c.name === 'f_ctr')?.value;
+  if (ctr !== undefined && ctr !== 'U') {
+    drifts.push({
+      expected: 'U',
+      field: 'f_ctr',
+      form: spec.name,
+      kind: 'modo-mudou',
+      observed: ctr,
+    });
+  }
+  return { drifts, form: spec.name, kind, status: drifts.length ? 'mudou' : 'ok' };
+}
+
+const noSample = (kind: BridgeOp['kind'], form: string, detail: string): FormCheck => ({
+  detail,
+  drifts: [],
+  form,
+  kind,
+  status: 'sem-amostra',
+});
+
+const noLink = (kind: BridgeOp['kind'], form: string, proc: string): FormCheck => ({
+  drifts: [{ field: proc, form, kind: 'link-sumiu' }],
+  form,
+  kind,
+  status: 'nao-encontrado',
+});
+
+/** Mesmos caminhos que apply.ts percorre para achar cada formulário, só lendo. */
+async function locateAndCheck(
+  port: LattesPort,
+  kind: BridgeOp['kind'],
+  spec: FormSpec,
+  menu: string,
+): Promise<FormCheck> {
+  if (kind === 'resumo') {
+    const link = findLinks(menu, 'pkg_resume.')[0];
+    return link ? checkForm(port, kind, spec, link.path) : noLink(kind, spec.name, 'pkg_resume.');
+  }
+  if (kind === 'idioma') {
+    const lista = findLinks(menu, 'pkg_idioma.lista')[0];
+    if (!lista) return noLink(kind, spec.name, 'pkg_idioma.lista');
+    const listaHtml = await getChecked(port, lista.path);
+    const form = findLinks(listaHtml, 'pkg_idioma.form').find((l) => l.params.f_seq);
+    if (!form) return noSample(kind, spec.name, 'O currículo não tem idioma cadastrado');
+    return checkForm(port, kind, spec, form.path);
+  }
+  const lista = findLinks(menu, 'pkg_ativ.lista')[0];
+  if (!lista) return noLink(kind, spec.name, 'pkg_ativ.lista');
+  const listaHtml = await getChecked(port, lista.path);
+  const grid = findLinks(listaHtml, 'pkg_ativ.cargos_vinculos')[0];
+  if (!grid) return noSample(kind, spec.name, 'O currículo não tem atuação profissional');
+  const gridHtml = await getChecked(port, grid.path);
+  const vinculo = findLinks(gridHtml, 'pkg_ativ.vinculos').find((l) => l.params.f_seq_hist);
+  if (!vinculo) return noSample(kind, spec.name, 'A primeira atuação não tem vínculo');
+  return checkForm(port, kind, spec, vinculo.path);
+}
+
+/**
+ * Confere o Lattes contra o contrato, só com leituras: os links do menu e um
+ * exemplar de cada formulário que a ponte grava. Sem exemplar (currículo sem
+ * idioma, sem atuação), o formulário fica "sem amostra", que não é erro.
+ */
+export async function checkContract(
+  port: LattesPort,
+  contract: Contract = LATTES_CONTRACT,
+): Promise<ContractReport> {
+  const checkedAt = new Date().toISOString();
+  try {
+    const menu = await port.menuHtml();
+    if (isLogonPage(menu)) throw new Stop('sessao', 'A sessão do Lattes caiu; entre de novo');
+    const menuChecks = contract.menu.map((proc) => ({
+      found: findLinks(menu, proc).length > 0,
+      proc,
+    }));
+    const forms: FormCheck[] = [];
+    for (const [kind, spec] of Object.entries(contract.forms) as [BridgeOp['kind'], FormSpec][]) {
+      forms.push(await locateAndCheck(port, kind, spec, menu));
+    }
+    const changed = forms.some((f) => f.drifts.length > 0) || menuChecks.some((m) => !m.found);
+    return { checkedAt, forms, menu: menuChecks, status: changed ? 'mudou' : 'ok' };
+  } catch (err) {
+    if (err instanceof Stop)
+      return { checkedAt, detail: err.message, forms: [], menu: [], status: err.status };
+    return {
+      checkedAt,
+      detail: err instanceof Error ? err.message : 'Falha inesperada',
+      forms: [],
+      menu: [],
+      status: 'erro',
+    };
+  }
+}
+
+/** O relatório impede gravar nesse formulário? Só as mudanças que quebram a ponte. */
+export function blocksKind(report: ContractReport | undefined, kind: BridgeOp['kind']): Drift[] {
+  if (!report || report.status !== 'mudou') return [];
+  const form = report.forms.find((f) => f.kind === kind);
+  return form ? form.drifts.filter(isBreaking) : [];
+}
+
+const DRIFT_TEXT: Record<DriftKind, (d: Drift) => string> = {
+  'campo-novo': (d) => `${d.form}: campo novo ${d.field}`,
+  'campo-sumiu': (d) => `${d.form}: campo ${d.field} sumiu`,
+  'formulario-sumiu': (d) => `${d.form}: formulário não encontrado na página`,
+  'limite-mudou': (d) => `${d.form}: limite de ${d.field} era ${d.expected}, agora ${d.observed}`,
+  'link-sumiu': (d) => `${d.form}: link ${d.field} sumiu`,
+  'modo-mudou': (d) => `${d.form}: ${d.field} era ${d.expected}, agora ${d.observed}`,
+  'tipo-mudou': (d) => `${d.form}: ${d.field} era ${d.expected}, agora ${d.observed}`,
+};
+
+export function driftText(drift: Drift): string {
+  return DRIFT_TEXT[drift.kind](drift);
+}
+
+const FORM_STATUS: Record<FormStatus, string> = {
+  mudou: 'mudou',
+  'nao-encontrado': 'não encontrado',
+  ok: 'como o esperado',
+  'sem-amostra': 'sem amostra',
+};
+
+/**
+ * Relatório em texto, para colar numa issue: data, versão da extensão, menu
+ * e formulários. Só nomes de campos e procedimentos; nenhum valor.
+ */
+export function reportText(report: ContractReport, version: string): string {
+  const lines = [
+    `Verificação do Lattes em ${report.checkedAt}`,
+    `Extensão ${version}`,
+    `Resultado: ${report.status}${report.detail ? ` (${report.detail})` : ''}`,
+  ];
+  if (report.menu.length) {
+    lines.push('', 'Menu:');
+    for (const m of report.menu) lines.push(`- ${m.proc}: ${m.found ? 'ok' : 'sumiu'}`);
+  }
+  for (const f of report.forms) {
+    lines.push('', `${f.form}: ${FORM_STATUS[f.status]}${f.detail ? ` (${f.detail})` : ''}`);
+    for (const d of f.drifts) lines.push(`- ${driftText(d)}`);
+  }
+  return lines.join('\n');
+}
+
+export const ISSUES_URL = 'https://github.com/rlueder/lattes-editor/issues/new';
+
+/** Link que abre uma issue já preenchida com o relatório. */
+export function issueUrl(report: ContractReport, version: string): string {
+  const title = `O Lattes mudou: ${report.forms
+    .filter((f) => f.drifts.length)
+    .map((f) => f.form)
+    .join(', ')}`.replace(/: $/, '');
+  const params = new URLSearchParams({
+    body: `\`\`\`\n${reportText(report, version)}\n\`\`\``,
+    labels: 'vigia-lattes',
+    title,
+  });
+  return `${ISSUES_URL}?${params.toString()}`;
+}

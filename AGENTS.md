@@ -44,6 +44,10 @@ authoritative source. In this repo that means:
 - Import behavior (sequence numbers, duplicates, accepted file shapes) is
   what was observed on the live platform and recorded in the docs. An
   untested assumption is marked as untested, never presented as fact.
+- `src/bridge/contract.ts` mirrors section 5 of `docs/lattes_internals.md`.
+  When a field, form or menu link changes in one, change the other in the
+  same commit. CNPq publishes no changelog; the contract plus
+  `scripts/vigia-lattes.ts` are how drift gets noticed (section 9).
 - pt-BR labels for Lattes concepts should match the Lattes forms. Until a
   label has been checked against the form, it comes from the generated
   humanizer, not from a guess written by hand.
@@ -120,5 +124,5 @@ Repo-specific:
 ## Git
 
 - Commits only with explicit approval from the user.
-- No GitHub remote yet. Once there is one, work on branches and open PRs
-  against `main`.
+- Work on branches and open PRs against `main` (remote:
+  `github.com/rlueder/lattes-editor`).

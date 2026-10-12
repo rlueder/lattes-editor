@@ -3,6 +3,7 @@
 // os formulários. Nada de senha passa por aqui.
 
 import { applyOp, type LattesPort } from '../../src/bridge/apply.ts';
+import { checkContract } from '../../src/bridge/contract.ts';
 import type { FormControl } from '../../src/bridge/form.ts';
 import { cvCodeFrom, lattesIdFrom } from '../../src/bridge/lattes-html.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
@@ -55,4 +56,6 @@ const port: LattesPort = {
     code: cvCodeFrom(document.documentElement.outerHTML),
     lattesId: lattesIdFrom(document.documentElement.outerHTML),
   }),
+  // Só leituras: o menu e um exemplar de cada formulário, comparados ao contrato.
+  verificar: () => checkContract(port),
 };

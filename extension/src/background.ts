@@ -7,6 +7,7 @@
 // também roda numa aba em localhost e fala pelo script de conteúdo.
 
 import type { OpResult } from '../../src/bridge/apply.ts';
+import { blocksKind, type ContractReport, driftText } from '../../src/bridge/contract.ts';
 import { sameCv } from '../../src/bridge/lattes-html.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
 import {
@@ -130,6 +131,44 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
   await chrome.action.setBadgeText({ text: msg.ops.length ? String(msg.ops.length) : '' });
 }
 
+const failedReport = (detail: string): ContractReport => ({
+  checkedAt: new Date().toISOString(),
+  detail,
+  forms: [],
+  menu: [],
+  status: 'erro',
+});
+
+/** Confere o Lattes contra o contrato da ponte, só lendo, na aba do menu. */
+async function verifyOn(tabId: number): Promise<ContractReport> {
+  try {
+    await injectRunner(tabId);
+    const [res] = await chrome.scripting.executeScript({
+      func: () =>
+        (
+          globalThis as unknown as { __ponte: { verificar(): Promise<ContractReport> } }
+        ).__ponte.verificar(),
+      target: { tabId },
+    });
+    return res?.result ?? failedReport('A aba do Lattes não respondeu');
+  } catch (err) {
+    return failedReport(err instanceof Error ? err.message : 'Falha inesperada');
+  }
+}
+
+/** "Verificar o Lattes" no painel: guarda o relatório no estado, sem tocar na fila. */
+async function verify(): Promise<void> {
+  const state = await readState();
+  if (state.running || state.verificando) return;
+  await writeState({ ...state, verificando: true });
+  const tabId = await lattesTab();
+  const report =
+    tabId === undefined
+      ? failedReport('Abra o currículo no Lattes (a página do menu) numa aba e tente de novo')
+      : await verifyOn(tabId);
+  await writeState({ ...(await readState()), verificacao: report, verificando: false });
+}
+
 async function run(keys?: string[]): Promise<void> {
   const state = await readState();
   if (state.running) return;
@@ -171,6 +210,30 @@ async function run(keys?: string[]): Promise<void> {
       }
       queue.length = 0;
     }
+    // Trava: antes de gravar, o Lattes precisa estar como a ponte espera. Uma
+    // mudança do CNPq num formulário da fila para tudo, com o campo apontado.
+    if (queue.length > 0) {
+      const report = await verifyOn(tabId);
+      await writeState({ ...(await readState()), verificacao: report });
+      const kinds = [...new Set(queue.map((op) => op.kind))];
+      const blocking = kinds.flatMap((kind) => blocksKind(report, kind));
+      const stop =
+        report.status === 'sessao'
+          ? {
+              detail: report.detail ?? 'A sessão do Lattes caiu; entre de novo',
+              status: 'sessao' as const,
+            }
+          : blocking.length > 0
+            ? {
+                detail: `O Lattes mudou (${blocking.map(driftText).join('; ')}); nada foi enviado. Veja a verificação no painel`,
+                status: 'erro' as const,
+              }
+            : undefined;
+      if (stop && first) {
+        await record({ ...stop, key: first.key });
+        queue.length = 0;
+      }
+    }
     for (const op of queue) {
       if (stopRequested) break;
       const [res] = await chrome.scripting.executeScript({
@@ -208,8 +271,9 @@ chrome.runtime.onMessage.addListener((message, sender) => {
   }
   if (m.cmd === 'aplicar') void run(m.keys);
   if (m.cmd === 'parar') stopRequested = true;
+  if (m.cmd === 'verificar') void verify();
   if (m.cmd === 'limpar') {
-    void writeState({ ops: [], results: {}, running: false });
+    void readState().then((s) => writeState({ ...s, ops: [], results: {}, running: false }));
     void chrome.action.setBadgeText({ text: '' });
   }
 });
