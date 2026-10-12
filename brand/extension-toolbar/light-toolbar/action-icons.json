@@ -1,0 +1,10 @@
+{
+  "action": {
+    "default_icon": {
+      "16": "icons/toolbar/light-toolbar/icon-16.png",
+      "20": "icons/toolbar/light-toolbar/icon-20.png",
+      "24": "icons/toolbar/light-toolbar/icon-24.png",
+      "32": "icons/toolbar/light-toolbar/icon-32.png"
+    }
+  }
+}

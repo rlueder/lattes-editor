@@ -33,3 +33,5 @@ Referências:
 https://v2.tauri.app/develop/icons/
 https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/icons
 https://specifications.freedesktop.org/icon-theme/0.11/
+
+extension-toolbar: variante óptica exclusiva para barras de extensões, transparente e monocromática. Branco para barras escuras; grafite para claras. Inclui prévia, PNGs, SVGs, exemplos de configuração e script de geração.

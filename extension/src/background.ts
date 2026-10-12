@@ -22,6 +22,12 @@ import {
   readState,
   writeState,
 } from './state.ts';
+import {
+  DEFAULT_TOOLBAR_THEME,
+  isToolbarThemeMessage,
+  toolbarIconPaths,
+  type ToolbarTheme,
+} from './toolbar-icon.ts';
 
 /** Nome do host nativo registrado pelo app (ponte::HOST_NAME). */
 const NATIVE_HOST = 'lattes_editor.ponte';
@@ -192,6 +198,10 @@ async function run(keys?: string[]): Promise<void> {
 
 chrome.runtime.onMessage.addListener((message, sender) => {
   const m = message as { from?: string; msg?: EditorMessage } & Partial<PanelCommand>;
+  if (isToolbarThemeMessage(message)) {
+    void setToolbarTheme(message.toolbar);
+    return;
+  }
   if (m.from === 'editor' && m.msg && sender.tab?.id !== undefined) {
     void onEditor(m.msg, sender.tab.id);
     return;
@@ -203,6 +213,38 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     void chrome.action.setBadgeText({ text: '' });
   }
 });
+
+const TOOLBAR_KEY = 'temaDaBarra';
+
+/** Troca o ícone da barra pela variante do tema e guarda a escolha. */
+async function setToolbarTheme(theme: ToolbarTheme): Promise<void> {
+  await chrome.action.setIcon({ path: toolbarIconPaths(theme) });
+  await chrome.storage.local.set({ [TOOLBAR_KEY]: theme });
+}
+
+// Ao acordar, volta ao último tema conhecido e abre o documento fora da tela,
+// que lê o tema atual e avisa a cada troca. O painel e a página do editor
+// também avisam, caso o documento não abra.
+void chrome.storage.local.get(TOOLBAR_KEY).then((stored) => {
+  const theme = stored[TOOLBAR_KEY] as ToolbarTheme | undefined;
+  if (theme && theme !== DEFAULT_TOOLBAR_THEME) {
+    void chrome.action.setIcon({ path: toolbarIconPaths(theme) });
+  }
+});
+void watchToolbarTheme();
+
+async function watchToolbarTheme(): Promise<void> {
+  try {
+    if (await chrome.offscreen.hasDocument()) return;
+    await chrome.offscreen.createDocument({
+      justification: 'Ler o tema do navegador para escolher o ícone da barra.',
+      reasons: ['MATCH_MEDIA'],
+      url: 'offscreen.html',
+    });
+  } catch {
+    // Sem a API (ou com o documento já aberto por outra chamada): fica o painel.
+  }
+}
 
 // O service worker acorda por vários motivos; em todos, tenta ligar ao app.
 connectApp();

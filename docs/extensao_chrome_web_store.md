@@ -10,14 +10,14 @@ Store. Fontes, conferidas em 11/10/2026:
 
 ## Já atende
 
-| Regra                                                     | Como                                                                                                                                                                                                         |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Manifest V3, sem código remoto                            | Todo o código vai no pacote; nada é baixado e executado.                                                                                                                                                     |
-| Permissões no mínimo necessário                           | Só `https://wwws.cnpq.br/*` como host; `scripting`, `sidePanel`, `storage`, `nativeMessaging` (falar com o app de desktop) e `alarms` (refazer essa ligação). Saíram `tabs`, `buscatextual` e `servicosweb`. |
-| Propósito único e fácil de entender                       | Enviar ao Lattes, da sessão da própria pessoa, as alterações feitas no editor.                                                                                                                               |
-| Ícone 128 × 128 PNG no pacote, arte em 96 × 96 com margem | `extension/icons/` (provisório, até existir o logo), também 16, 32 e 48.                                                                                                                                     |
-| Enviar só com confirmação de quem usa                     | Cada envio parte de um clique em "Aplicar"; a fila para no primeiro problema.                                                                                                                                |
-| Credenciais protegidas                                    | Nenhuma senha passa pela extensão; ela usa a sessão já aberta no navegador.                                                                                                                                  |
+| Regra                                                     | Como                                                                                                                                                                                                                                                                      |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Manifest V3, sem código remoto                            | Todo o código vai no pacote; nada é baixado e executado.                                                                                                                                                                                                                  |
+| Permissões no mínimo necessário                           | Só `https://wwws.cnpq.br/*` como host; `scripting`, `sidePanel`, `storage`, `nativeMessaging` (falar com o app de desktop), `alarms` (refazer essa ligação) e `offscreen` (ler o tema do navegador para o ícone da barra). Saíram `tabs`, `buscatextual` e `servicosweb`. |
+| Propósito único e fácil de entender                       | Enviar ao Lattes, da sessão da própria pessoa, as alterações feitas no editor.                                                                                                                                                                                            |
+| Ícone 128 × 128 PNG no pacote, arte em 96 × 96 com margem | `extension/icons/` (provisório, até existir o logo), também 16, 32 e 48.                                                                                                                                                                                                  |
+| Enviar só com confirmação de quem usa                     | Cada envio parte de um clique em "Aplicar"; a fila para no primeiro problema.                                                                                                                                                                                             |
+| Credenciais protegidas                                    | Nenhuma senha passa pela extensão; ela usa a sessão já aberta no navegador.                                                                                                                                                                                               |
 
 ## Falta antes de publicar
 
@@ -39,7 +39,9 @@ Store. Fontes, conferidas em 11/10/2026:
   do app que acompanha a extensão publicada.
 - **Justificativa das permissões novas** no painel: `nativeMessaging` leva a
   fila do app de desktop à extensão e os resultados de volta; `alarms` refaz
-  essa ligação quando o app é aberto depois do navegador.
+  essa ligação quando o app é aberto depois do navegador; `offscreen` abre um
+  documento sem janela que só lê o tema do navegador (`matchMedia`), para o
+  ícone da barra ser branco nas barras escuras e grafite nas claras.
 - **Formulário de práticas de dados** no painel do desenvolvedor, coerente
   com a política de privacidade.
 

@@ -1,0 +1,13 @@
+LattesEditor — ícones para a barra de extensões
+
+Fundo completamente transparente e símbolo monocromático com detalhes reforçados.
+Use dark-toolbar (branco #FFFFFF) em barras escuras, como na captura do Brave.
+Use light-toolbar (grafite #202124) em barras claras.
+As variantes não alternam automaticamente com o tema do navegador.
+
+Cada pasta inclui PNGs de 16, 20, 24, 32, 48, 64 e 128 px, SVG e um exemplo action-icons.json.
+Copie os PNGs para os caminhos correspondentes da extensão e integre somente default_icon dentro de action no manifesto existente. Preserve default_popup e os demais campos. Recarregue a extensão para ver a alteração.
+
+A versão óptica da barra preserva o L e os círculos, simplifica o documento para duas linhas mais espessas e amplia o vão nos menores tamanhos. O símbolo completo continua nas demais aplicações.
+
+Para regenerar, execute node extension-toolbar/build-toolbar.cjs na raiz do pacote, após npm install. O script usa source/symbol-original.svg. rebuild.py também executa esta etapa.

@@ -3,8 +3,11 @@
 // manifest e os arquivos estáticos do painel.
 
 import { copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 
 import { build } from 'vite';
+
+import { DEFAULT_TOOLBAR_THEME, toolbarIconPaths } from '../extension/src/toolbar-icon.ts';
 
 const root = new URL('../', import.meta.url).pathname;
 const out = `${root}dist-extension`;
@@ -17,7 +20,7 @@ const pkg = JSON.parse(readFileSync(`${root}package.json`, 'utf8')) as { version
  */
 const EDITOR_MATCHES = ['http://localhost/*', 'http://127.0.0.1/*'];
 
-const ENTRIES = ['background', 'content', 'panel', 'lattes-runner'];
+const ENTRIES = ['background', 'content', 'panel', 'lattes-runner', 'offscreen'];
 
 /** Chave pública (DER em base64) que fixa o ID da extensão. A privada não é usada nem guardada. */
 const EXTENSION_KEY =
@@ -43,12 +46,15 @@ for (const name of ENTRIES) {
 }
 
 const ICONS = Object.fromEntries([16, 32, 48, 128].map((n) => [n, `icons/icon-${n}.png`]));
+// Na barra, a variante monocromática (brand/extension-toolbar); o service worker troca
+// para a branca quando o tema é escuro (extension/src/toolbar-icon.ts).
+const TOOLBAR_ICONS = toolbarIconPaths(DEFAULT_TOOLBAR_THEME);
 
 // Permissões no mínimo que a ponte usa (política da Chrome Web Store: "the
 // narrowest permissions necessary"): só o domínio do editor do Lattes. A foto
 // do perfil é carregada pela página do editor, não pela extensão.
 const manifest = {
-  action: { default_icon: ICONS, default_title: 'Ponte com o Lattes' },
+  action: { default_icon: TOOLBAR_ICONS, default_title: 'Ponte com o Lattes' },
   background: { service_worker: 'background.js' },
   content_scripts: [{ js: ['content.js'], matches: EDITOR_MATCHES, run_at: 'document_start' }],
   description:
@@ -62,13 +68,14 @@ const manifest = {
   manifest_version: 3,
   name: 'LattesEditor: ponte com o Lattes',
   // Sem "tabs": achar a aba do Lattes pela URL basta com a permissão de host.
-  // nativeMessaging fala com o app de desktop; alarms refaz a ligação.
-  permissions: ['alarms', 'nativeMessaging', 'scripting', 'sidePanel', 'storage'],
+  // nativeMessaging fala com o app de desktop; alarms refaz a ligação; offscreen
+  // lê o tema do navegador para o ícone da barra (o service worker não tem matchMedia).
+  permissions: ['alarms', 'nativeMessaging', 'offscreen', 'scripting', 'sidePanel', 'storage'],
   side_panel: { default_path: 'panel.html' },
   version: pkg.version,
 };
 writeFileSync(`${out}/manifest.json`, `${JSON.stringify(manifest, null, 2)}\n`);
-for (const file of ['panel.html', 'panel.css'])
+for (const file of ['panel.html', 'panel.css', 'offscreen.html'])
   copyFileSync(`${root}extension/${file}`, `${out}/${file}`);
 // A mesma IBM Plex do editor, com a licença.
 mkdirSync(`${out}/fonts`, { recursive: true });
@@ -76,4 +83,10 @@ for (const file of readdirSync(`${root}src/ui/fonts`))
   copyFileSync(`${root}src/ui/fonts/${file}`, `${out}/fonts/${file}`);
 mkdirSync(`${out}/icons`, { recursive: true });
 for (const icon of Object.values(ICONS)) copyFileSync(`${root}extension/${icon}`, `${out}/${icon}`);
+for (const theme of ['clara', 'escura'] as const) {
+  for (const icon of Object.values(toolbarIconPaths(theme))) {
+    mkdirSync(dirname(`${out}/${icon}`), { recursive: true });
+    copyFileSync(`${root}extension/${icon}`, `${out}/${icon}`);
+  }
+}
 console.log(`Extensão em ${out}`);
