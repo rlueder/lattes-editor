@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/rlueder/lattes-editor/compare/v0.1.1...v0.2.0) (2026-10-12)
+
+### Novidades
+
+- **forms:** ponte grava a proficiência dos idiomas ([0ba9dd0](https://github.com/rlueder/lattes-editor/commit/0ba9dd09df058c0963540df2b7855bca55134687))
+- **import-export:** confirmar a fila e baixar cópia antes do envio ([4230ce3](https://github.com/rlueder/lattes-editor/commit/4230ce3470ec45058631948e8c30af79edc0725a))
+
 ## [0.1.1](https://github.com/rlueder/lattes-editor/compare/v0.1.0...v0.1.1) (2026-10-11)
 
 ### Correções
