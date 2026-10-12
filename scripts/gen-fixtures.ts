@@ -1,5 +1,6 @@
 // Gera as fixtures sintéticas a partir de src/schema/lattes.json:
-//   fixtures/synthetic_full.xml     todo elemento e todo atributo do schema, uma vez
+//   fixtures/synthetic_full.xml     todo elemento e todo atributo do schema, uma vez,
+//                                   com anos, lugares e enumerados variando entre os itens
 //   fixtures/synthetic_minimal.xml  DADOS-GERAIS mínimo e um item por módulo do Passo 2
 //
 // O guia sugeria partir de docs/lattes_maximal_skeleton.xml, mas aquele arquivo
@@ -16,7 +17,14 @@ import { fileURLToPath } from 'node:url';
 import { IMPORT_MODULES } from '../src/import-export/importable.ts';
 import { encodeLatin1 } from '../src/model/latin1.ts';
 import { insertInSchemaOrder } from '../src/model/schema-order.ts';
-import { element, firstChild, serializeXml, type XElement, type XNode } from '../src/model/xml.ts';
+import {
+  element,
+  firstChild,
+  serializeXml,
+  type XAttr,
+  type XElement,
+  type XNode,
+} from '../src/model/xml.ts';
 import schemaJson from '../src/schema/lattes.json' with { type: 'json' };
 import type { AttributeSpec, LattesSchema } from '../src/schema/types.ts';
 
@@ -31,14 +39,126 @@ function token(name: string, t: string): boolean {
   );
 }
 
+/** Ano, mês ou data de calendário (os FORMATO-DATA-* são enumerados e ficam de fora). */
+function isTemporal(name: string): boolean {
+  return (
+    !name.startsWith('FORMATO') && (token(name, 'ANO') || token(name, 'MES') || token(name, 'DATA'))
+  );
+}
+
+/** Partes de um item que compartilham o ano dele, em vez de abrir um item novo. */
+function isItemPart(name: string): boolean {
+  return name.startsWith('DADOS-BASICOS') || name.startsWith('DETALHAMENTO');
+}
+
+/**
+ * Um item é o que o editor lista com ano próprio: elemento com datas nos
+ * atributos ou com DADOS-BASICOS-* entre os filhos. Dentro de um
+ * DETALHAMENTO-* (registro de patente, histórico) tudo herda o ano do item.
+ */
+function isItem(name: string, stack: string[]): boolean {
+  if (isItemPart(name) || stack.some((s) => s.startsWith('DETALHAMENTO'))) return false;
+  const spec = schema.elements[name]!;
+  return (
+    spec.attributes.some((a) => isTemporal(a.name)) ||
+    spec.children.some((c) => c.name.startsWith('DADOS-BASICOS'))
+  );
+}
+
+// Anos e datas variam por item, sem sorteio: o n-ésimo item cai no ano
+// FIRST_YEAR + (n * YEAR_STRIDE) % YEAR_SPAN. O passo 5 é primo com 13, então
+// itens vizinhos nunca repetem o ano e 13 itens seguidos cobrem 2012 a 2024.
+const FIRST_YEAR = 2012;
+const YEAR_SPAN = 13;
+const YEAR_STRIDE = 5;
+/** Data de nascimento fixa: a pessoa do currículo não nasce no meio da produção. */
+const BIRTH_DATE = '14071984';
+
+/**
+ * Lugares em rodízio para os campos de país, UF e cidade. Elemento com UF
+ * só recebe lugar no Brasil, para país e UF nunca se contradizerem.
+ */
+interface Place {
+  city: string;
+  country: string;
+  countryCode: string;
+  uf?: string;
+}
+const PLACES: Place[] = [
+  { city: 'Porto Alegre', country: 'Brasil', countryCode: 'BRA', uf: 'RS' },
+  { city: 'Lisboa', country: 'Portugal', countryCode: 'PRT' },
+  { city: 'Recife', country: 'Brasil', countryCode: 'BRA', uf: 'PE' },
+  { city: 'Buenos Aires', country: 'Argentina', countryCode: 'ARG' },
+  { city: 'São Paulo', country: 'Brasil', countryCode: 'BRA', uf: 'SP' },
+];
+const BRAZIL = PLACES.filter((p) => p.uf);
+
+/**
+ * Campos que o Lattes preenche com códigos, mas que o XSD deixa como texto
+ * livre (FORMA-PARTICIPACAO, TIPO-PARTICIPACAO). Sem uma lista observada
+ * numa exportação real, os valores ficam visivelmente de teste, em rodízio.
+ */
+const FREE_CATEGORICAL = new Set(['FORMA-PARTICIPACAO', 'TIPO-PARTICIPACAO']);
+const VARIANTS = ['A', 'B', 'C'];
+/**
+ * Enumerados que viram filtro na lista: o rodízio usa só os três primeiros
+ * valores, para o filtro ter poucas opções com mais de um item cada, como num
+ * currículo real. Os demais enumerados percorrem a lista inteira.
+ */
+const FACET_ENUMS = new Set(['MEIO-DE-DIVULGACAO', 'NATUREZA', 'TIPO']);
+
+function pad(n: number, width = 2): string {
+  return String(n).padStart(width, '0');
+}
+
+/** Ano de fim (ou ano pontual) e ano de início do n-ésimo item; início sempre antes do fim. */
+function itemYears(item: number): { end: number; start: number } {
+  const end = FIRST_YEAR + ((item * YEAR_STRIDE) % YEAR_SPAN);
+  return { end, start: end - 1 - (item % 4) };
+}
+
 class Faker {
   private seqProducao = 0;
   private seqOther = new Map<string, number>();
-  private enumTurn = 0;
+  private items = 0;
+  /** Rodízio por nome de atributo: itens seguidos com o mesmo campo recebem valores diferentes. */
+  private turns = new Map<string, number>();
 
-  value(owner: string, attr: AttributeSpec): string {
+  nextItem(): number {
+    return this.items++;
+  }
+
+  private turn(key: string): number {
+    const n = this.turns.get(key) ?? 0;
+    this.turns.set(key, n + 1);
+    return n;
+  }
+
+  attributes(owner: string, item: number): XAttr[] {
+    const specs = schema.elements[owner]!.attributes;
+    const places = specs.some((a) => token(a.name, 'UF')) ? BRAZIL : PLACES;
+    const place = places[item % places.length]!;
+    let dates = 0;
+    return specs.map((a) => {
+      const order = isTemporal(a.name) && token(a.name, 'DATA') ? dates++ : 0;
+      return { name: a.name, value: this.value(owner, a, item, place, order) };
+    });
+  }
+
+  private value(
+    owner: string,
+    attr: AttributeSpec,
+    item: number,
+    place: Place,
+    dateOrder: number,
+  ): string {
     const n = attr.name;
-    if (attr.enum) return attr.enum[this.enumTurn++ % attr.enum.length]!;
+    if (attr.enum) {
+      const size = FACET_ENUMS.has(n)
+        ? Math.min(attr.enum.length, VARIANTS.length)
+        : attr.enum.length;
+      return attr.enum[this.turn(n) % size]!;
+    }
     if (attr.default !== undefined) return attr.default;
     if (n === 'SEQUENCIA-PRODUCAO') return String(++this.seqProducao);
     if (n.startsWith('SEQUENCIA')) {
@@ -54,9 +174,24 @@ class Faker {
     if (n === 'ISSN') return '00000000';
     if (n === 'ISBN') return '0000000000';
     if (token(n, 'HORA')) return '101500';
-    if (token(n, 'DATA')) return '15032024';
-    if (token(n, 'ANO')) return '2024';
-    if (token(n, 'MES')) return '03';
+    const years = itemYears(item);
+    const starts = n.includes('INICIO');
+    const year = starts ? years.start : years.end;
+    if (n === 'DATA-NASCIMENTO') return BIRTH_DATE;
+    if (token(n, 'DATA')) {
+      // Datas do mesmo elemento em ordem: pedido antes da concessão, estreia antes do encerramento.
+      const month = 1 + ((item * 7) % 6) + dateOrder * 2;
+      const day = 1 + ((item * 11) % 28);
+      return `${pad(day)}${pad(month)}${year}`;
+    }
+    if (token(n, 'ANO')) return String(year);
+    if (token(n, 'MES')) return pad(1 + ((item * (starts ? 7 : 5)) % 12));
+    if (/^(PAIS|NOME-PAIS)(-|$)/.test(n)) return place.country;
+    if (n.startsWith('SIGLA-PAIS')) return place.countryCode;
+    if (token(n, 'UF')) return place.uf ?? '';
+    if (n.startsWith('CIDADE')) return place.city;
+    if (FREE_CATEGORICAL.has(n))
+      return `Valor de teste ${VARIANTS[this.turn(n) % VARIANTS.length]} (${n.toLowerCase()})`;
     if (n.startsWith('PAGINA')) return n.endsWith('FINAL') ? '12' : '1';
     if (n.includes('HOME-PAGE') || n.includes('URL') || n === 'REDE-SOCIAL')
       return 'http://example.org/teste';
@@ -70,17 +205,21 @@ class Faker {
 }
 
 /** Instancia um elemento com todos os atributos; em modo "full", todos os filhos. */
-function build(name: string, faker: Faker, full: boolean, stack: string[] = []): XElement {
+function build(
+  name: string,
+  faker: Faker,
+  full: boolean,
+  stack: string[] = [],
+  item = 0,
+): XElement {
   const spec = schema.elements[name];
   if (!spec) throw new Error(`gen-fixtures: elemento ${name} fora do schema`);
   if (stack.includes(name)) throw new Error(`gen-fixtures: ciclo em ${[...stack, name].join('/')}`);
-  const el = element(
-    name,
-    spec.attributes.map((a) => ({ name: a.name, value: faker.value(name, a) })),
-  );
+  const own = isItem(name, stack) ? faker.nextItem() : item;
+  const el = element(name, faker.attributes(name, own));
   const children: XNode[] = [];
   for (const c of spec.children) {
-    if (full || c.min > 0) children.push(build(c.name, faker, full, [...stack, name]));
+    if (full || c.min > 0) children.push(build(c.name, faker, full, [...stack, name], own));
   }
   if (spec.mixed)
     children.push({ kind: 'text', value: `Conteúdo de teste de ${name.toLowerCase()}` });
