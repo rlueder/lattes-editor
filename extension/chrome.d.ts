@@ -58,6 +58,7 @@ declare namespace chrome {
       get(keys?: string | string[] | null): Promise<Record<string, unknown>>;
       set(items: Record<string, unknown>): Promise<void>;
     }
+    const local: Area;
     const session: Area;
     const onChanged: { addListener(cb: (changes: object, area: string) => void): void };
   }
@@ -71,8 +72,18 @@ declare namespace chrome {
     const onAlarm: { addListener(cb: (alarm: { name: string }) => void): void };
   }
 
+  namespace offscreen {
+    function createDocument(params: {
+      justification: string;
+      reasons: string[];
+      url: string;
+    }): Promise<void>;
+    function hasDocument(): Promise<boolean>;
+  }
+
   namespace action {
     function setBadgeText(details: { text: string }): Promise<void>;
+    function setIcon(details: { path: Record<string, string> }): Promise<void>;
     const onClicked: { addListener(cb: () => void): void };
   }
 }

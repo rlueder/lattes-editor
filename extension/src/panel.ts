@@ -5,6 +5,7 @@ import type { OpResult } from '../../src/bridge/apply.ts';
 import { opRows } from '../../src/bridge/field-labels.ts';
 import type { PanelCommand, QueueState } from './state.ts';
 import { readState } from './state.ts';
+import { toolbarTheme } from './toolbar-icon.ts';
 
 const STATUS: Record<OpResult['status'], string> = {
   conferido: 'Conferido',
@@ -113,3 +114,10 @@ document.getElementById('acao')!.addEventListener('click', (e) => {
 document.getElementById('limpar')!.addEventListener('click', () => send({ cmd: 'limpar' }));
 chrome.storage.onChanged.addListener(() => void readState().then(render));
 void readState().then(render);
+
+// Avisa o service worker do tema da barra (ver toolbar-icon.ts), agora e a cada troca.
+const darkScheme = matchMedia('(prefers-color-scheme: dark)');
+const reportToolbarTheme = () =>
+  void chrome.runtime.sendMessage({ toolbar: toolbarTheme(darkScheme.matches) });
+reportToolbarTheme();
+darkScheme.addEventListener('change', reportToolbarTheme);
