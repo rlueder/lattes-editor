@@ -4903,3 +4903,11 @@ b {
 .privacy-toggle.icon-btn:hover:not([aria-pressed='true']) {
   background: var(--surface-2);
 }
+
+/* Último cartão de uma lista dentro de uma subseção: sem o fio de baixo. O
+   fio da subseção seguinte (ou a borda do item que a contém) já fecha a
+   lista, e os dois juntos viravam linha dupla. */
+.subsection .item-list > details:last-child,
+.subsection .item-list > .year-group:last-child > details:last-child {
+  border-bottom-width: 0;
+}
