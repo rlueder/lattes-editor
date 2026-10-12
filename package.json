@@ -9,8 +9,10 @@
   "scripts": {
     "build": "tsc && vite build",
     "build:extension": "node scripts/build-extension.ts",
+    "build:extension:loja": "node scripts/build-extension.ts --loja",
     "build:site": "pnpm build && node scripts/build-site.ts",
     "capture:screenshots": "node scripts/capture-screenshots.ts",
+    "capture:store": "node scripts/capture-store.ts",
     "desktop:build": "tauri build --bundles app",
     "desktop:dev": "tauri dev --config src-tauri/tauri.dev.conf.json",
     "dev": "vite",

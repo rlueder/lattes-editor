@@ -1,6 +1,7 @@
 // Monta a extensão da ponte em dist-extension/: um IIFE por ponto de entrada
 // (service worker, script do editor, painel, script injetado no Lattes), o
-// manifest e os arquivos estáticos do painel.
+// manifest e os arquivos estáticos do painel. Com --loja, monta em
+// dist-extension-loja/ o pacote para a Chrome Web Store, sem a chave do manifest.
 
 import { copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -10,7 +11,9 @@ import { build } from 'vite';
 import { DEFAULT_TOOLBAR_THEME, toolbarIconPaths } from '../extension/src/toolbar-icon.ts';
 
 const root = new URL('../', import.meta.url).pathname;
-const out = `${root}dist-extension`;
+// A loja recusa o pacote com "key" e dá o próprio ID na primeira publicação.
+const forStore = process.argv.includes('--loja');
+const out = `${root}${forStore ? 'dist-extension-loja' : 'dist-extension'}`;
 const pkg = JSON.parse(readFileSync(`${root}package.json`, 'utf8')) as { version: string };
 
 /**
@@ -64,7 +67,7 @@ const manifest = {
   // Chave pública fixa: o ID da extensão fica o mesmo em qualquer pasta
   // (elkaiefkldcngjdgelfjhjbljefbemac), e é esse ID que o app autoriza no
   // host de mensagens nativas (src-tauri/src/ponte.rs).
-  key: EXTENSION_KEY,
+  ...(forStore ? {} : { key: EXTENSION_KEY }),
   manifest_version: 3,
   name: 'LattesEditor: ponte com o Lattes',
   // Sem "tabs": achar a aba do Lattes pela URL basta com a permissão de host.
