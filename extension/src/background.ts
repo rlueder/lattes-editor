@@ -21,6 +21,7 @@ import {
   type EditorMessage,
   isEditorMessage,
 } from '../../src/bridge/protocol.ts';
+import { hasConsent } from './consent.ts';
 import {
   type EditorEndpoint,
   LATTES_MENU,
@@ -102,6 +103,7 @@ async function sessionIdentity(tabId: number): Promise<Identity> {
 
 /** O código de 10 caracteres do currículo, para a foto, junto com de quem ele é. */
 async function sendCvCode(editor: EditorEndpoint): Promise<void> {
+  if (!(await hasConsent())) return;
   const tabId = await lattesTab();
   if (tabId === undefined) return;
   try {
@@ -163,6 +165,8 @@ async function verifyOn(tabId: number): Promise<ContractReport> {
 
 /** "Verificar o Lattes" no painel: guarda o relatório no estado, sem tocar na fila. */
 async function verify(): Promise<void> {
+  // Sem o "ok" do aviso, nada é lido do Lattes; o painel mostra o aviso no lugar do botão.
+  if (!(await hasConsent())) return;
   const state = await readState();
   if (state.running || state.verificando) return;
   await writeState({ ...state, verificando: true });
@@ -183,6 +187,7 @@ async function verify(): Promise<void> {
 }
 
 async function run(keys?: string[]): Promise<void> {
+  if (!(await hasConsent())) return;
   const state = await readState();
   if (state.running || state.verificando) return;
   const queue = state.ops.filter(
@@ -348,7 +353,10 @@ void chrome.alarms.create('ponte', { periodInMinutes: 1 });
 chrome.alarms.onAlarm.addListener(() => connectApp());
 chrome.runtime.onStartup.addListener(() => connectApp());
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener((details) => {
+  // Na instalação, o aviso de uso abre numa aba: o painel lateral só abre com um clique.
+  if (details.reason === 'install')
+    void chrome.tabs.create({ url: chrome.runtime.getURL('panel.html') });
   // Painel lateral onde existir (Chrome, Brave recente); senão o clique abre o painel numa aba.
   if (chrome.sidePanel?.setPanelBehavior) {
     void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });

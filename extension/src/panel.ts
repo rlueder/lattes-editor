@@ -10,6 +10,7 @@ import {
   reportText,
 } from '../../src/bridge/contract.ts';
 import { opRows } from '../../src/bridge/field-labels.ts';
+import { giveConsent, hasConsent, PRIVACY_URL } from './consent.ts';
 import type { PanelCommand, QueueState } from './state.ts';
 import { readState } from './state.ts';
 import { toolbarTheme } from './toolbar-icon.ts';
@@ -202,7 +203,20 @@ document.getElementById('acao')!.addEventListener('click', (e) => {
 });
 document.getElementById('limpar')!.addEventListener('click', () => send({ cmd: 'limpar' }));
 document.getElementById('verificar')!.addEventListener('click', () => send({ cmd: 'verificar' }));
-chrome.storage.onChanged.addListener(() => void readState().then(render));
+
+/** Aviso de uso no lugar da ponte até o "ok" (ver consent.ts). */
+async function showConsentOrBridge(): Promise<void> {
+  const ok = await hasConsent();
+  document.getElementById('aviso')!.hidden = ok;
+  document.getElementById('ponte')!.hidden = !ok;
+}
+(document.getElementById('aviso-politica') as HTMLAnchorElement).href = PRIVACY_URL;
+document.getElementById('aceitar')!.addEventListener('click', () => void giveConsent());
+chrome.storage.onChanged.addListener((_changes, area) => {
+  if (area === 'local') void showConsentOrBridge();
+  else void readState().then(render);
+});
+void showConsentOrBridge();
 void readState().then(render);
 
 // Avisa o service worker do tema da barra (ver toolbar-icon.ts), agora e a cada troca.
