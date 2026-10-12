@@ -13,6 +13,7 @@ vi.mock('../src/model/store.ts', async (importOriginal) => ({
 }));
 
 const { EXAMPLE_URL, openExampleIfAsked } = await import('../src/dev/example.ts');
+const { examplePhotoUrl } = await import('../src/ui/profile.ts');
 
 const fixture = readFileSync(new URL('../fixtures/synthetic_full.xml', import.meta.url));
 
@@ -61,5 +62,14 @@ describe('currículo de exemplo', () => {
     loadWorkingCopy.mockResolvedValue(undefined);
     await expect(openExampleIfAsked('?exemplo')).rejects.toThrow('respondeu 404');
     expect(replaceWorkingCopy).not.toHaveBeenCalled();
+  });
+
+  it('foto de mentira só para o currículo sintético, e só no dev', () => {
+    expect(examplePhotoUrl('0000000000000001')).toBe('https://i.pravatar.cc/300?img=32');
+    expect(examplePhotoUrl('1234567890123456')).toBeUndefined();
+    expect(examplePhotoUrl(undefined)).toBeUndefined();
+    vi.stubEnv('DEV', false);
+    expect(examplePhotoUrl('0000000000000001')).toBeUndefined();
+    vi.unstubAllEnvs();
   });
 });

@@ -50,6 +50,20 @@ export function photoUrl(code: string): string {
   return `https://servicosweb.cnpq.br/wspessoa/servletrecuperafoto?tipo=1&id=${encodeURIComponent(code)}`;
 }
 
+/** Identificador do currículo sintético das fixtures (scripts/gen-fixtures.ts). */
+const EXAMPLE_LATTES_ID = '0000000000000001';
+
+/**
+ * Foto de mentira para o currículo de exemplo (pnpm dev:exemplo), que não tem
+ * código no CNPq: um retrato fixo do i.pravatar.cc (img=32, escolhido a dedo;
+ * o sorteio por identificador pode cair numa foto imprópria). Só no dev; no
+ * build, import.meta.env.DEV é false e a função devolve sempre undefined.
+ */
+export function examplePhotoUrl(lattesId: string | undefined): string | undefined {
+  if (!import.meta.env.DEV || lattesId !== EXAMPLE_LATTES_ID) return undefined;
+  return 'https://i.pravatar.cc/300?img=32';
+}
+
 const CODE_KEY = 'lattes-editor:codigo-cv:';
 
 /** O código fica lembrado no navegador, por identificador de 16 dígitos. */
