@@ -30,6 +30,11 @@ function inlineBundle(): Plugin {
           const tag = new RegExp(`<link[^>]*href="[^"]*${escapeRe(name)}"[^>]*>`);
           source = source.replace(tag, () => `<style>${String(file.source)}</style>`);
           delete bundle[name];
+        } else if (file.type === 'asset' && name.endsWith('.svg') && source.includes(name)) {
+          // O favicon vira data: URI, como o resto do bundle.
+          const uri = `data:image/svg+xml,${encodeURIComponent(String(file.source))}`;
+          source = source.replaceAll(`./${name}`, uri);
+          delete bundle[name];
         }
       }
       html.source = source;

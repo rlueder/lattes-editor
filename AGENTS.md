@@ -63,12 +63,18 @@ authoritative source. In this repo that means:
 
 ## Generated files
 
-| Source                    | Command             | Output                                                                    |
-| ------------------------- | ------------------- | ------------------------------------------------------------------------- |
-| XSD + `schema/patch.json` | `pnpm gen:schema`   | `schema/CurriculoLattes_2022_patched.xsd`, `src/schema/lattes.{json,ts}`  |
-| `src/schema/lattes.json`  | `pnpm gen:fixtures` | `fixtures/synthetic_{full,minimal}.xml`, `fixtures/synthetic_minimal.zip` |
+| Source                    | Command             | Output                                                                                                                    |
+| ------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| XSD + `schema/patch.json` | `pnpm gen:schema`   | `schema/CurriculoLattes_2022_patched.xsd`, `src/schema/lattes.{json,ts}`                                                  |
+| `src/schema/lattes.json`  | `pnpm gen:fixtures` | `fixtures/synthetic_{full,minimal}.xml`, `fixtures/synthetic_minimal.zip`                                                 |
+| `brand/construction/`     | `brand/rebuild.py`  | everything else in `brand/`; copy the outputs to `src-tauri/icons/`, `extension/icons/`, `site/` and `src/ui/favicon.svg` |
 
 Regenerate and commit the outputs in the same commit as the source change.
+
+`brand/` is its own package (Python `fonttools` plus npm `sharp`, steps in
+`brand/LEIA-ME.txt`), outside ESLint and Prettier so its files stay
+exactly as the generator writes them.
+
 `pnpm validate:fixtures` checks every fixture against the patched XSD with
 `xmllint`.
 

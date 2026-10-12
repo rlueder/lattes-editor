@@ -11,7 +11,14 @@ export default [
   ...base,
   ...withFiles(['src/**/*.{ts,tsx}']),
   {
-    ignores: ['src/schema/lattes.ts', 'docs/**', 'private/**', 'fixtures/**', 'dist-extension/**'],
+    ignores: [
+      'src/schema/lattes.ts',
+      'brand/**',
+      'docs/**',
+      'private/**',
+      'fixtures/**',
+      'dist-extension/**',
+    ],
   },
   {
     // Scripts de geração rodam no Node e reportam no console.

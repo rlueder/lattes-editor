@@ -1,0 +1,35 @@
+LattesEditor: pacote de ícones
+
+O símbolo usa o contorno real do L em IBM Plex Sans 600, com círculos e corte diagonal. Os ícones têm fundo branco, L violeta (#463C6D) e peça direita menta (#9EF2E2). As margens externas dos ícones arredondados continuam transparentes. Todas as versões usam o símbolo mais recente: documento de três linhas, linha superior alongada e vão diagonal de x/4.
+
+macos/LattesEditor.icns: dez representações, de 16 a 1024 pixels, incluindo Retina. A pasta .iconset mantém os PNGs. Fundo arredondado com margem transparente.
+windows/LattesEditor.ico: imagens de 16, 20, 24, 32, 40, 48, 64, 128 e 256 pixels. ICO de 32 bits com imagens PNG embutidas para Windows moderno.
+linux/hicolor: PNGs de 16, 24, 32, 48, 64, 128, 256 e 512 pixels, mais SVG escalável. Instalar na árvore hicolor do app. O campo Icon do arquivo .desktop deve ser latteseditor.
+browser: favicon SVG, ICO 16/32/48, PNGs, apple-touch-icon 180, ícones PWA 192/512 e versões maskable 192/512. Inclui SVG monocromático para abas fixadas no Safari, um formato que utiliza uma máscara de uma só cor.
+
+Copie o conteúdo de browser para a raiz pública do aplicativo e use head-snippet.html como referência. Se existir um manifesto, integre as entradas icons ao arquivo existente. Revise id, start_url e scope conforme a URL real do app. O manifesto de exemplo presume implantação na raiz da pasta em que ele é servido. Ícones e manifesto não substituem a configuração necessária para instalação de uma PWA.
+
+As imagens maskable têm fundo opaco e o símbolo dentro do círculo seguro central. O sistema aplica sua própria máscara. O apple-touch-icon também tem fundo opaco e deixa os cantos para o sistema.
+
+source/logo-variation-a.svg contém a assinatura aprovada: Lattes 700 e Editor 400 em IBM Plex Sans, como uma só palavra. source/symbol-original.svg é uma cópia exata do símbolo aprovado da versão construction-grid-v2. A grade e as proporções acompanham o pacote. As fontes foram convertidas em contornos.
+
+Verificação: dimensões dos PNGs, entradas e tamanhos dos contêineres ICO/ICNS, manifesto e visualização do conjunto. ICNS lido por sips no macOS. Não houve instalação nem teste de empacotamento em Windows ou Linux. Nenhum arquivo do aplicativo foi alterado.
+
+Para regenerar o pacote completo, execute na pasta do pacote:
+
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+npm install
+.venv/bin/python rebuild.py
+
+No Windows, use .venv\Scripts\python.exe no lugar de .venv/bin/python.
+É necessário ter Python 3 e uma versão de Node compatível com sharp 0.35.5 (por exemplo, Node 24).
+
+construction/build-grid.py recria os SVGs a partir da fonte incluída. construction/render-previews.cjs renderiza as prévias PNG. rebuild.py também sincroniza os vetores em source e regenera os ícones de todas as plataformas com build-icons.cjs. Os scripts usam caminhos relativos à própria pasta e não dependem da localização do repositório original.
+
+A pasta construction contém a grade em SVG/PNG, prévia limpa em SVG/PNG, símbolo, assinatura, parâmetros em proportions.json e a fonte IBM Plex Sans variável utilizada, acompanhada da licença SIL OFL. A assinatura usa pesos 700/400 e o símbolo usa o L 600.
+
+Referências:
+https://v2.tauri.app/develop/icons/
+https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/icons
+https://specifications.freedesktop.org/icon-theme/0.11/
