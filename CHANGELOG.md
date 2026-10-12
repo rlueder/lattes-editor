@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.6.0](https://github.com/rlueder/lattes-editor/compare/v0.5.0...v0.6.0) (2026-10-12)
+
+### Novidades
+
+- **ui:** currículo de exemplo no pnpm dev:exemplo ([#5](https://github.com/rlueder/lattes-editor/issues/5)) ([972862d](https://github.com/rlueder/lattes-editor/commit/972862d9098e9ea006353161abca2c58a0016396))
+- **ui:** foto do perfil em tons de cinza no modo de privacidade ([#11](https://github.com/rlueder/lattes-editor/issues/11)) ([bd4574f](https://github.com/rlueder/lattes-editor/commit/bd4574f53bd558fb2ad8b81581abc6d9795484fe))
+- **ui:** ícone monocromático na barra de extensões, claro ou escuro conforme o tema ([#17](https://github.com/rlueder/lattes-editor/issues/17)) ([49c93cd](https://github.com/rlueder/lattes-editor/commit/49c93cda9db9dd6584ea37931081d6aa8536da99))
+- **ui:** índice do item aberto no painel lateral ([#16](https://github.com/rlueder/lattes-editor/issues/16)) ([4d058ba](https://github.com/rlueder/lattes-editor/commit/4d058ba34b82d534b10b009bb16d2776957f6414))
+- **ui:** selo DEV no ícone do app de desenvolvimento e executável LattesEditor ([#10](https://github.com/rlueder/lattes-editor/issues/10)) ([e3e8d5d](https://github.com/rlueder/lattes-editor/commit/e3e8d5d213e2596dc0b6471122bfca9503581b54))
+- **ui:** usos das tabelas de apoio agrupados por contêiner ([#12](https://github.com/rlueder/lattes-editor/issues/12)) ([f4a3ce2](https://github.com/rlueder/lattes-editor/commit/f4a3ce2b957c8f55b08a7758c83bd99766abec10))
+
+### Correções
+
+- **ui:** cartões e campos só de leitura mais legíveis ([#15](https://github.com/rlueder/lattes-editor/issues/15)) ([6149dd6](https://github.com/rlueder/lattes-editor/commit/6149dd65f6dd1ff4ed1ae4e76c232df31be62681))
+- **ui:** filtros em ordem alfabética, com "Todos" como primeira opção ([#9](https://github.com/rlueder/lattes-editor/issues/9)) ([cc72467](https://github.com/rlueder/lattes-editor/commit/cc72467030415b1187503b415eafd16399fbd405))
+- **ui:** item único de um grupo aparece como cartão, como numa lista ([#13](https://github.com/rlueder/lattes-editor/issues/13)) ([89bf2a0](https://github.com/rlueder/lattes-editor/commit/89bf2a02e05798faa1b95068d8d7af7c53e092f1))
+
 ## [0.5.0](https://github.com/rlueder/lattes-editor/compare/v0.4.0...v0.5.0) (2026-10-12)
 
 ### Novidades
