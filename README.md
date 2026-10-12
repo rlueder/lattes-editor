@@ -99,7 +99,7 @@ O que a extensão lê e envia está em
 
 ```bash
 pnpm install
-pnpm desktop:dev          # o app, com recarga ao vivo (precisa de Rust)
+pnpm desktop:dev          # o app, com recarga ao vivo e o selo DEV no ícone (precisa de Rust)
 pnpm dev                  # só a página do editor, no navegador
 pnpm test                 # testes (pnpm test:coverage com o limite de 80%)
 pnpm build:extension      # a extensão em dist-extension/
