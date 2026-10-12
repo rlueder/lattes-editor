@@ -2,7 +2,7 @@
 // formações, produções, eventos…) ou por outra chave (país das instituições,
 // área dos cursos). Com mais de um grupo, a barra de atalhos (JumpBar) aparece.
 
-import { useId } from 'react';
+import { useId, useState } from 'react';
 
 import { elementLabel, slugify } from '../labels/labels.ts';
 import { SEQ_ATTR } from '../model/production.ts';
@@ -10,8 +10,10 @@ import { getAttr, type XElement } from '../model/xml.ts';
 import { useEditor } from './editor-context.ts';
 import { type EditFn, ElementView } from './ElementView.tsx';
 import { applyFilter, cardText, type SectionFilter } from './facets.ts';
+import { ChevronIcon } from './icons.tsx';
 import { JumpBar } from './JumpBar.tsx';
-import { type CardInfo, type ListView, yearView } from './list-view.ts';
+import { type CardInfo, type ListView, type Usage, yearView } from './list-view.ts';
+import { groupUsages } from './reference-tables.ts';
 
 interface Props {
   /** Âncora do grupo da seção; com ela, os anos viram links legíveis ("…/2020"). */
@@ -142,20 +144,73 @@ function ItemCard({
         </div>
       )}
       {info.usages && info.usages.length > 0 && (
-        <div className="usages">
-          <h4>Onde aparece</h4>
-          <ul>
-            {info.usages.map((u, i) => (
-              <li key={i}>
-                <span className="item-kind">{u.kind}</span>
-                <span className="usage-title">{u.title || '(sem título)'}</span>
-                {u.period && <span className="usage-period">{u.period}</span>}
-              </li>
-            ))}
-          </ul>
-        </div>
+        <Usages label={info.aside ?? 'Onde aparece'} usages={info.usages} />
       )}
       <ElementView depth={depth + 1} el={el} showEmpty={showEmpty} onEdit={onEdit} />
     </details>
+  );
+}
+
+/**
+ * Itens que usam uma entrada das tabelas de apoio: um título com a contagem
+ * ("usada em 50 itens") e um grupo por contêiner com a sua contagem, cada um
+ * fechado até ser pedido.
+ */
+function Usages({ label, usages }: { label: string; usages: Usage[] }) {
+  const id = useId();
+  return (
+    <div className="usages">
+      <h4 className="usages-head" id={id}>
+        <span className="usages-label">Onde aparece</span>
+        <span className="usages-count">{label}</span>
+      </h4>
+      <ul aria-labelledby={id} className="usage-groups">
+        {groupUsages(usages).map((g) => (
+          <UsageGroupRow key={g.label} {...g} />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function UsageGroupRow({
+  label,
+  mixedKinds,
+  usages,
+}: {
+  label: string;
+  mixedKinds: boolean;
+  usages: Usage[];
+}) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  return (
+    <li className="usage-group">
+      <button
+        aria-controls={id}
+        aria-expanded={open}
+        className="usage-group-toggle"
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <ChevronIcon />
+        <span className="usage-group-label">{label}</span>
+        <span className="count">
+          {usages.length}
+          <span className="sr-only">{usages.length === 1 ? ' item' : ' itens'}</span>
+        </span>
+      </button>
+      <ul className="usage-items" hidden={!open} id={id}>
+        {usages.map((u, i) => (
+          <li key={i}>
+            <span className="usage-main">
+              {mixedKinds && <span className="item-kind">{u.kind}</span>}
+              <span className="usage-title">{u.title || '(sem título)'}</span>
+            </span>
+            {u.period && <span className="usage-period">{u.period}</span>}
+          </li>
+        ))}
+      </ul>
+    </li>
   );
 }
