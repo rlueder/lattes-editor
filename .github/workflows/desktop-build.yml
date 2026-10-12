@@ -20,7 +20,14 @@ on:
       - 'src-tauri/**'
       - 'src/desktop/**'
       - '.github/workflows/desktop-build.yml'
+  # Manual, com uma tag, refaz os instaladores de um lançamento que ficou sem
+  # eles (o Release falhou depois de criar a tag); sem tag, só monta.
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag do lançamento que recebe os instaladores (vazio só monta).
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -73,7 +80,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          # Sem tag (PR, disparo manual), só monta e guarda como artefato do workflow.
+          # Sem tag (PR, disparo manual sem tag), só monta e guarda como artefato do workflow.
           tagName: ${{ inputs.tag }}
           releaseAssetNamePattern: ${{ matrix.asset }}
           uploadWorkflowArtifacts: ${{ inputs.tag == '' }}
