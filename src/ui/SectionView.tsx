@@ -86,8 +86,11 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
   const lists = section.groups.map((g) => groupList(g, index));
   const allItems = lists.flatMap((l) => l?.items ?? []);
   // Recalcula só quando os itens da seção mudam de identidade.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const facets = useMemo(() => buildFacets(allItems), [section, allItems.length]);
+  const facets = useMemo(
+    () => buildFacets(allItems, { typesInPageOrder: section.id === 'dados-gerais' }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [section, allItems.length],
+  );
   const filtering = isFiltering(state);
   const filter = filtering ? { facets, state } : undefined;
 

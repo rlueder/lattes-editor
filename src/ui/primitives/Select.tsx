@@ -7,6 +7,8 @@ import { CheckIcon, ChevronIcon } from '../icons.tsx';
 
 export interface Option {
   label: string;
+  /** O que o botão mostra com esta opção escolhida, quando difere da lista. */
+  selectedLabel?: string;
   value: string;
 }
 
@@ -25,7 +27,7 @@ interface Props {
 export function Select({ className, id, onChange, options, placeholder, value, ...aria }: Props) {
   return (
     <SelectPrimitive.Root
-      items={options}
+      items={options.map((o) => ({ label: o.selectedLabel ?? o.label, value: o.value }))}
       value={value}
       onValueChange={(next) => onChange((next as string | null) ?? '')}
     >
