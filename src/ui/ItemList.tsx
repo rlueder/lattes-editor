@@ -86,7 +86,7 @@ export function ItemList({
         <section key={g.key} aria-labelledby={anchor(g.key, g.label)} className="year-group">
           <h3 className="year-head" id={anchor(g.key, g.label)}>
             {g.label}
-            <span className="count">{g.items.length}</span>
+            {g.items.length > 1 && <span className="count">{g.items.length}</span>}
           </h3>
           {cards(g.items, g.label)}
         </section>

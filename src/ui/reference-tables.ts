@@ -4,7 +4,7 @@
 // apontam para o código (atuações, formações, cursos). Este módulo junta as
 // duas pontas e define como essas listas se agrupam.
 
-import { elementLabel, enumLabel } from '../labels/labels.ts';
+import { elementLabel, enumLabel, isOpaqueCode } from '../labels/labels.ts';
 import { getAttr, walk, type XElement } from '../model/xml.ts';
 import { formatPeriod, itemMeta } from './item-meta.ts';
 import type { CardInfo, ItemGroup, ListView, Usage } from './list-view.ts';
@@ -166,7 +166,11 @@ export function courseView(index: ReferenceIndex): ListView {
     const n = ref(el)?.usages.length ?? 0;
     return {
       aside: n === 0 ? undefined : n === 1 ? 'usado em 1 item' : `usado em ${n} itens`,
-      subtitle: [attr(el, 'NOME-INSTITUICAO'), level && enumLabel(level), area]
+      subtitle: [
+        attr(el, 'NOME-INSTITUICAO'),
+        level && !isOpaqueCode(level) && enumLabel(level),
+        area,
+      ]
         .filter(Boolean)
         .join(' · '),
       title: courseTitle(el, index.courses),

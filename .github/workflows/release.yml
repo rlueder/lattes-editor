@@ -2,7 +2,8 @@ name: Release
 
 # Depois do CI verde na main, o semantic-release decide a versão pelos
 # commits, atualiza o CHANGELOG, cria a tag e publica a página do lançamento
-# com o editor e a extensão (ver .releaserc.cjs).
+# com o editor e a extensão (ver .releaserc.cjs). Havendo lançamento novo, o
+# app de desktop é montado nos três sistemas e entra na mesma página.
 
 on:
   workflow_run:
@@ -23,6 +24,8 @@ jobs:
   release:
     if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -39,3 +42,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # O commit de lançamento não passa pelos hooks do Husky: o CI já rodou tudo.
           HUSKY: '0'
+      # A tag que o semantic-release acabou de criar, ou vazio se não houve lançamento.
+      - id: tag
+        run: echo "tag=$(git tag --points-at HEAD --list 'v*' | head -n 1)" >> "$GITHUB_OUTPUT"
+
+  desktop:
+    needs: release
+    if: needs.release.outputs.tag != ''
+    uses: ./.github/workflows/desktop-build.yml
+    with:
+      tag: ${{ needs.release.outputs.tag }}

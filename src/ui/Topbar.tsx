@@ -4,8 +4,9 @@
 
 import { type Ref, useRef, useState } from 'react';
 
+import { isDesktop, pickFileNative } from '../desktop/native.ts';
 import { CloseConfirm } from './dialogs.tsx';
-import { AlertIcon, HistoryIcon, PlusIcon, SearchIcon, SpinnerIcon, UploadIcon } from './icons.tsx';
+import { AlertIcon, PlusIcon, SearchIcon, UploadIcon } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { SettingsMenu } from './SettingsMenu.tsx';
 import type { ThemePref } from './theme.ts';
@@ -67,17 +68,13 @@ export function Topbar({
   const reloadInput = useRef<HTMLInputElement>(null);
   const [closing, setClosing] = useState(false);
   return (
-    <header ref={ref} className="topbar">
-      {/* Marca; quem é o currículo fica no menu lateral. */}
-      <div className="topbar-identity">
-        {/* Marca provisória, até existir um logo. */}
-        <span aria-label="LattesEditor" className="brand">
-          Lattes<span className="brand-accent">Editor</span>
-        </span>
-      </div>
+    <header ref={ref} data-tauri-drag-region className="topbar">
+      {/* A marca e quem é o currículo ficam no menu lateral; aqui, só espaço
+          (e, no app de macOS, os botões da janela). */}
+      <div data-tauri-drag-region className="topbar-identity" />
 
-      {/* Encontrar: centralizado na página */}
-      <div className="topbar-center">
+      {/* Encontrar: centralizado na página. */}
+      <div data-tauri-drag-region className="topbar-center">
         <button className="ghost search-btn" type="button" onClick={onPalette}>
           <SearchIcon />
           <span>Ir para</span>
@@ -86,9 +83,23 @@ export function Topbar({
         </button>
       </div>
 
-      <div className="topbar-actions">
-        <span aria-hidden="true" className="topbar-divider" />
-        {/* Editar, levar ao Lattes e o estado da cópia: só ícones, com dica. */}
+      <div data-tauri-drag-region className="topbar-actions">
+        {/* O histórico fica no menu de configurações; aqui só aparece o aviso
+            quando a cópia no navegador não salvou. */}
+        {saveState === 'erro' && (
+          <Tip label={`${SAVE_TIP.erro}. Histórico de alterações`}>
+            <button
+              aria-label={`${SAVE_LABEL.erro}. Abrir histórico de alterações`}
+              className="ghost icon-btn save-state erro"
+              type="button"
+              onClick={onHistory}
+            >
+              <AlertIcon />
+            </button>
+          </Tip>
+        )}
+
+        {/* Criar e levar ao Lattes: só ícones, com dica, junto das configurações. */}
         <Tip label="Novo item">
           <button
             aria-label="Novo item"
@@ -100,7 +111,7 @@ export function Topbar({
           </button>
         </Tip>
 
-        {/* Levar ao Lattes: vira o botão principal quando há algo pendente. */}
+        {/* Levar ao Lattes: só o ícone; o selo no canto conta o que falta levar. */}
         <Tip
           label={
             pendingCount > 0 ? `Levar ao Lattes (${pendingCount} pendências)` : 'Levar ao Lattes'
@@ -110,49 +121,35 @@ export function Topbar({
             aria-label={
               pendingCount > 0 ? `Levar ao Lattes, ${pendingCount} pendências` : 'Levar ao Lattes'
             }
-            className={`icon-btn ${pendingCount > 0 ? 'primary' : 'ghost'}`}
+            className="ghost icon-btn has-badge"
             type="button"
             onClick={onExport}
           >
             <UploadIcon />
             {pendingCount > 0 && (
-              <span aria-hidden="true" className="tag count-tag">
-                {pendingCount}
+              <span aria-hidden="true" className="icon-badge">
+                {pendingCount > 99 ? '99+' : pendingCount}
               </span>
             )}
           </button>
         </Tip>
 
-        <Tip label={`${SAVE_TIP[saveState]}. Histórico de alterações`}>
-          <button
-            aria-label={`${SAVE_LABEL[saveState]}. Abrir histórico de alterações`}
-            className={`ghost icon-btn save-state ${saveState}`}
-            type="button"
-            onClick={onHistory}
-          >
-            {saveState === 'salvando' ? (
-              <SpinnerIcon />
-            ) : saveState === 'erro' ? (
-              <AlertIcon />
-            ) : (
-              <HistoryIcon />
-            )}
-          </button>
-        </Tip>
-
-        <span aria-hidden="true" className="topbar-divider" />
-
         {/* Exibição e arquivo: o que se usa menos fica no menu. */}
         <SettingsMenu
-          modified={modified}
-          showEmpty={showEmpty}
+          file={{
+            modified,
+            onClose: () => setClosing(true),
+            onHistory,
+            onPrint,
+            onReload: () => {
+              if (isDesktop()) void pickFileNative().then((file) => file && onReload(file));
+              else reloadInput.current?.click();
+            },
+            onSave,
+            onShowEmpty,
+            showEmpty,
+          }}
           theme={theme}
-          onClose={() => setClosing(true)}
-          onHistory={onHistory}
-          onPrint={onPrint}
-          onReload={() => reloadInput.current?.click()}
-          onSave={onSave}
-          onShowEmpty={onShowEmpty}
           onTheme={onTheme}
         />
         <CloseConfirm

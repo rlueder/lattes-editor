@@ -10,14 +10,14 @@ Store. Fontes, conferidas em 11/10/2026:
 
 ## Já atende
 
-| Regra                                                     | Como                                                                                                                        |
-| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Manifest V3, sem código remoto                            | Todo o código vai no pacote; nada é baixado e executado.                                                                    |
-| Permissões no mínimo necessário                           | Só `https://wwws.cnpq.br/*` como host; `scripting`, `sidePanel` e `storage`. Saíram `tabs`, `buscatextual` e `servicosweb`. |
-| Propósito único e fácil de entender                       | Enviar ao Lattes, da sessão da própria pessoa, as alterações feitas no editor.                                              |
-| Ícone 128 × 128 PNG no pacote, arte em 96 × 96 com margem | `extension/icons/` (provisório, até existir o logo), também 16, 32 e 48.                                                    |
-| Enviar só com confirmação de quem usa                     | Cada envio parte de um clique em "Aplicar"; a fila para no primeiro problema.                                               |
-| Credenciais protegidas                                    | Nenhuma senha passa pela extensão; ela usa a sessão já aberta no navegador.                                                 |
+| Regra                                                     | Como                                                                                                                                                                                                         |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Manifest V3, sem código remoto                            | Todo o código vai no pacote; nada é baixado e executado.                                                                                                                                                     |
+| Permissões no mínimo necessário                           | Só `https://wwws.cnpq.br/*` como host; `scripting`, `sidePanel`, `storage`, `nativeMessaging` (falar com o app de desktop) e `alarms` (refazer essa ligação). Saíram `tabs`, `buscatextual` e `servicosweb`. |
+| Propósito único e fácil de entender                       | Enviar ao Lattes, da sessão da própria pessoa, as alterações feitas no editor.                                                                                                                               |
+| Ícone 128 × 128 PNG no pacote, arte em 96 × 96 com margem | `extension/icons/` (provisório, até existir o logo), também 16, 32 e 48.                                                                                                                                     |
+| Enviar só com confirmação de quem usa                     | Cada envio parte de um clique em "Aplicar"; a fila para no primeiro problema.                                                                                                                                |
+| Credenciais protegidas                                    | Nenhuma senha passa pela extensão; ela usa a sessão já aberta no navegador.                                                                                                                                  |
 
 ## Falta antes de publicar
 
@@ -31,8 +31,15 @@ Store. Fontes, conferidas em 11/10/2026:
 - **Imagens da página na loja:** imagem promocional pequena de 440 × 280
   (obrigatória), de 1 a 5 capturas de 1280 × 800 ou 640 × 400, e, se quiser
   destaque, a de 1400 × 560.
-- **Domínio do editor publicado** nos `matches` do script de conteúdo; hoje só
-  `localhost`.
+- **ID da loja no app.** A extensão fala com o app de desktop por mensagens
+  nativas, e o app só aceita as extensões listadas em `EXTENSION_IDS`
+  (`src-tauri/src/ponte.rs`). Hoje está lá o ID de desenvolvimento, fixado
+  pela chave pública do manifest (`elkaiefkldcngjdgelfjhjbljefbemac`). A loja
+  dá outro ID na primeira publicação; ele entra na lista antes do lançamento
+  do app que acompanha a extensão publicada.
+- **Justificativa das permissões novas** no painel: `nativeMessaging` leva a
+  fila do app de desktop à extensão e os resultados de volta; `alarms` refaz
+  essa ligação quando o app é aberto depois do navegador.
 - **Formulário de práticas de dados** no painel do desenvolvedor, coerente
   com a política de privacidade.
 

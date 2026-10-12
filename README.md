@@ -1,131 +1,138 @@
-# Editor do Currículo Lattes
+# LattesEditor
 
-Editor local para o Currículo Lattes. Você exporta o currículo no Lattes,
-abre o arquivo aqui, edita e leva as mudanças de volta: produções novas pelo
-Importar do próprio Lattes, e o resto pela extensão da ponte ou copiando
-campo a campo.
+Um editor para o Currículo Lattes que roda no seu computador. Você exporta o
+currículo no Lattes, edita aqui com busca, atalhos e formulários que não se
+perdem, e leva as mudanças de volta ao Lattes.
 
-O arquivo nunca sai do seu computador. Não há servidor nem conta: a cópia
-de trabalho fica no IndexedDB do navegador.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/producoes-escuro.jpg" />
+  <img src="docs/img/producoes-claro.jpg" alt="O editor aberto em Produções: menu de seções à esquerda, itens agrupados por tipo e ano no centro e, à direita, o filtro e o índice da seção." />
+</picture>
 
-## Uso
+## Baixar
 
-1. No Lattes, Ferramentas › Exportar, para baixar o `CV_<id>.zip`.
-2. Abra o editor e solte o ZIP (ou o `.xml`) na tela.
-3. Navegue pelas seções do menu lateral ou com <kbd>⌘K</kbd>
-   (<kbd>Ctrl</kbd>+<kbd>K</kbd> fora do Mac).
-4. As alterações são salvas no navegador a cada edição. "Salvar arquivo"
-   grava o `.xml` no disco, com o mesmo nome da exportação.
+O editor é um app para macOS, Windows e Linux. Os instaladores ficam na
+[página do último lançamento](https://github.com/rlueder/lattes-editor/releases/latest):
 
-Para cadastrar produção nova, use "+ Novo item" (ou <kbd>⌘K</kbd> e
-"Novo"). Os itens novos ficam marcados até a próxima importação. Em
-"Levar ao Lattes", o editor gera o `<id>-importacao.xml` e mostra os passos no
-Lattes: enviar o arquivo, marcar só os módulos listados e desmarcar os itens
-vermelhos no Passo 3, que já estão no currículo e seriam duplicados. Depois
-de importar, exporte de novo no Lattes e use "Recarregar do Lattes".
+| Sistema | Arquivo                                                   |
+| ------- | --------------------------------------------------------- |
+| macOS   | `LattesEditor-macOS.dmg` (Apple Silicon e Intel)          |
+| Windows | `LattesEditor-Windows-setup.exe`                          |
+| Linux   | `LattesEditor-Linux.deb` ou `LattesEditor-Linux.AppImage` |
 
-As seções Dados gerais, Formação, Atuação e Projetos não passam pelo
-Importar do Lattes, e o Importar também não altera itens que já estão lá.
-Essas mudanças aparecem em "Levar ao Lattes", na lista de alterações: cada
-uma com o valor antigo e o novo, um botão para copiar cada campo e a opção
-de descartar a mudança. Depois de copiar tudo no Lattes, exporte de novo e
-use "Recarregar do Lattes": o que já estiver lá some da lista.
+O app ainda não tem assinatura da Apple nem da Microsoft, então os dois
+sistemas avisam na primeira abertura. No macOS, libere a abertura em Ajustes do Sistema › Privacidade e
+Segurança. No Windows, abra os detalhes
+do aviso do SmartScreen e escolha executar.
 
-Outras funções:
+## Como funciona
 
-- **Imprimir ou salvar em PDF** (⚙ › Imprimir, ou <kbd>⌘P</kbd>): escolha de
-  seções e modelos, página nas regras da NBR 14724 e referências na NBR 6023.
-- **Privacidade em Dados gerais:** documentos, nascimento, filiação e
-  endereço residencial ficam mascarados até você clicar no olho.
-- **Aviso de pendências** no topo enquanto alguma alteração ou item novo
-  ainda não está no Lattes.
+1. **Exporte do Lattes.** Ferramentas › Exportar baixa o `CV_<id>.zip`.
+2. **Abra no app** e escolha o arquivo, ou solte-o na janela.
+3. **Edite.** O menu lateral leva às seções; <kbd>⌘K</kbd> (<kbd>Ctrl</kbd>+<kbd>K</kbd>
+   fora do Mac) acha qualquer seção, grupo ou tipo de item. Cada edição fica
+   salva no app.
+4. **Leve ao Lattes.** Produções novas entram pelo Importar do próprio
+   Lattes, com o arquivo que o app gera. O resto vai pela extensão da ponte
+   ou, sem ela, campo a campo, com o valor antigo e o novo lado a lado.
+   Depois, exporte de novo e use "Recarregar do Lattes": o que já chegou lá
+   sai da lista.
 
-## Ponte com o Lattes (extensão, em teste)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/ir-para-escuro.jpg" />
+  <img src="docs/img/ir-para-claro.jpg" alt="A busca do ⌘K aberta com o termo artigo, listando seções e tipos de item novo." />
+</picture>
 
-A extensão envia ao Lattes, a partir da sua própria sessão no navegador, as
-alterações que hoje se copiam à mão. Cada uma é gravada, lida de volta e
-conferida; a fila para no primeiro problema. Nenhuma senha passa pela
-extensão nem pelo editor. Por enquanto ela leva campos do vínculo de uma
-atuação (datas, carga horária, enquadramento, outras informações) e o resumo;
-o resto continua na lista de copiar à mão.
+Para cadastrar uma produção, use **+** ao lado da busca. Colar um DOI preenche
+o formulário pelo Crossref.
 
-Para instalar a versão de desenvolvimento no Brave ou no Chrome:
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/novo-item-escuro.jpg" />
+  <img src="docs/img/novo-item-claro.jpg" alt="O modal Novo item de produção com a busca de tipos e os tipos mais usados." />
+</picture>
 
-1. `pnpm build:extension`, que gera a pasta `dist-extension/`.
-2. Abra `brave://extensions` (ou `chrome://extensions`) e ligue o "Modo do
-   desenvolvedor".
-3. Clique em "Carregar sem compactação" e escolha a pasta `dist-extension/`.
-4. Abra o editor (`pnpm dev`, em `localhost`) e, em outra aba, o seu
-   currículo no Lattes, na página do menu.
-5. No editor, "Levar ao Lattes" mostra "Enviar pela extensão" quando há
-   alterações que ela sabe levar. Clique, depois no ícone da extensão, e use
-   "Aplicar" numa alteração ou "Aplicar todas".
+Também dá para imprimir ou salvar em PDF nas regras da NBR 14724, com
+referências na NBR 6023, e compartilhar o currículo por um código QR.
 
-Depois de mudar o código da extensão, rode `pnpm build:extension` de novo e
-clique em "Recarregar" no cartão dela em `brave://extensions`.
+## Privacidade
 
-A extensão só pede acesso a `wwws.cnpq.br`. O que ela lê, para onde envia e
-o que falta para publicá-la na Chrome Web Store estão em
-`docs/extensao_chrome_web_store.md` e `docs/politica_de_privacidade_extensao.md`.
+Não há servidor nem conta. O currículo é lido e guardado no próprio
+computador, e o arquivo salvo vai para o seu disco. Saem dele só a busca do
+DOI no Crossref, quando você pede, e a foto do perfil, buscada no CNPq.
+
+Em Dados gerais, documentos, nascimento, filiação e endereço ficam
+mascarados até você clicar no olho, ao lado do título.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/dados-gerais-escuro.jpg" />
+  <img src="docs/img/dados-gerais-claro.jpg" alt="Dados gerais com os dados pessoais mascarados." />
+</picture>
+
+## Extensão da ponte (em teste)
+
+A extensão para Brave e Chrome envia ao Lattes, na sua própria sessão, as
+alterações que de outro jeito se copiam à mão. Cada uma é gravada, lida de
+volta e conferida, e a fila para no primeiro problema. Nenhuma senha passa
+pela extensão nem pelo app. Hoje ela leva o resumo e campos do vínculo de uma
+atuação; os idiomas ainda estão em teste.
+
+O app e a extensão conversam por mensagens nativas do navegador: ao abrir,
+o app se registra no Chrome, no Brave, no Edge e no Chromium. Enquanto a
+extensão não está na Chrome Web Store, instale assim:
+
+1. Baixe `lattes-editor-extensao.zip` da página do lançamento e descompacte.
+2. Em `brave://extensions` (ou `chrome://extensions`), ligue o "Modo do
+   desenvolvedor" e use "Carregar sem compactação" na pasta.
+3. Com o currículo aberto no Lattes numa aba, "Levar ao Lattes" no app passa
+   a oferecer o envio pela extensão.
+
+O que a extensão lê e envia está em
+[`docs/politica_de_privacidade_extensao.md`](docs/politica_de_privacidade_extensao.md).
 
 ## Desenvolvimento
 
 ```bash
 pnpm install
-pnpm dev                 # servidor local
-pnpm test                # testes
-pnpm test:coverage       # testes com limite de 80% de cobertura
-pnpm build               # gera dist/index.html, que abre direto por file://
-pnpm build:site          # página inicial em dist-site/, com o editor em dist-site/app/
-pnpm build:extension     # gera a extensão da ponte em dist-extension/
+pnpm desktop:dev          # o app, com recarga ao vivo (precisa de Rust)
+pnpm dev                  # só a página do editor, no navegador
+pnpm test                 # testes (pnpm test:coverage com o limite de 80%)
+pnpm build:extension      # a extensão em dist-extension/
+pnpm capture:screenshots  # refaz as imagens deste README
 ```
 
-A página inicial fica em `site/` (HTML e CSS estáticos, sem build próprio).
-Com `pnpm dev`, ela abre em `/site/`. As imagens em `site/img/` são capturas
-do editor com a fixture sintética, nunca de um currículo real.
+O app usa Tauri 2 e precisa do Rust e, no macOS, das ferramentas de linha de
+comando do Xcode. As imagens em `docs/img/` e `site/img/` saem sempre do
+currículo sintético em `fixtures/`, nunca de um real. Para testar com uma
+exportação sua, ponha o `CV_<id>.zip` em `fixtures/real/`, que está no
+`.gitignore`.
 
-Scripts de geração:
-
-```bash
-pnpm gen:schema          # XSD + schema/patch.json -> src/schema/lattes.json
-pnpm gen:fixtures        # lattes.json -> fixtures/synthetic_*.xml
-pnpm validate:fixtures   # valida as fixtures contra o XSD com xmllint
-```
-
-Para testar com uma exportação real, coloque o `CV_<id>.zip` em
-`fixtures/real/`. A pasta está no `.gitignore` e o teste de ida e volta
-passa a cobrir o arquivo.
+Os scripts `pnpm gen:schema`, `pnpm gen:fixtures` e `pnpm validate:fixtures`
+geram o modelo a partir do XSD do Lattes e validam as fixtures.
 
 ## Lançamentos
 
-Cada push na `main` passa pelo CI (lint, tipos, testes com cobertura e
-build). Com o CI verde, o semantic-release lê os commits desde o último
-lançamento e decide a versão: `feat` sobe a versão menor, `fix`, `perf` e
-`refactor` sobem a correção, e um rodapé `BREAKING CHANGE` sobe a maior.
-`docs`, `chore`, `ci`, `test`, `style` e `build` não geram lançamento.
-
-O lançamento atualiza o `CHANGELOG.md` e a versão do `package.json`, cria a
-tag e publica no GitHub o editor num arquivo HTML só e a extensão da ponte
-em `.zip`, já com a versão nova. A configuração está em `.releaserc.cjs`.
+Cada push na `main` passa pelo CI. Com ele verde, o semantic-release decide a
+versão pelos commits (`feat` sobe a menor; `fix`, `perf` e `refactor`, a
+correção), atualiza o `CHANGELOG.md`, cria a tag e publica a página do
+lançamento. Em seguida o app é montado nos três sistemas e os instaladores
+entram na mesma página.
 
 ## Documentação
 
-- `CHANGELOG.md`: o que mudou
-- `ROADMAP.md`: o que vem a seguir
-- `docs/lattes_internals.md`: **como o editor do Lattes funciona por
-  dentro**: a aplicação em PL/SQL, o campo `f_ctr`, os códigos de sessão e de
-  currículo, os formulários de edição campo a campo e o primeiro envio direto
-  ao Lattes. É a base da ponte.
-- `docs/lattes_implementation_guide.md`: plano, decisões e marcos
-- `docs/lattes_product_requirements.md`: pesquisa e estratégia de produto
-- `docs/lattes_editor_reconnaissance.md`: primeiro reconhecimento do editor
-  do Lattes (menus, inclusão, Importar)
-- `docs/estilo_da_interface.md`: referência visual e regras de interface
-- `docs/pesquisa_recursos_de_ia.md`: pesquisa sobre recursos de IA no editor
-- `docs/extensao_chrome_web_store.md` e
-  `docs/politica_de_privacidade_extensao.md`: publicação da extensão
-- `AGENTS.md`: regras para quem contribui (pessoas e agentes)
+- [`ROADMAP.md`](ROADMAP.md): o que vem a seguir
+- [`CHANGELOG.md`](CHANGELOG.md): o que mudou
+- [`docs/lattes_internals.md`](docs/lattes_internals.md): como o editor do
+  Lattes funciona por dentro, base da ponte
+- [`docs/estilo_da_interface.md`](docs/estilo_da_interface.md): referência
+  visual e regras de interface
+- [`docs/lattes_implementation_guide.md`](docs/lattes_implementation_guide.md)
+  e [`docs/lattes_product_requirements.md`](docs/lattes_product_requirements.md):
+  decisões e pesquisa de produto
+- [`docs/extensao_chrome_web_store.md`](docs/extensao_chrome_web_store.md):
+  o que falta para publicar a extensão
+- [`AGENTS.md`](AGENTS.md): regras para quem contribui
 
 ## Licença
 
-MIT
+MIT. A fonte IBM Plex vem sob a SIL Open Font License, em
+`src/ui/fonts/LICENSE.txt`.

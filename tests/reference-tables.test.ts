@@ -106,7 +106,7 @@ describe('courseView', () => {
     ]);
   });
 
-  it('cartão: nome do curso resolvido ou área; nível cru quando não há rótulo', () => {
+  it('cartão: nome do curso resolvido ou área; nível sem rótulo fica de fora', () => {
     expect(view.card(courses[0]!)).toMatchObject({
       aside: 'usado em 1 item',
       subtitle: 'PUC · Mestrado · Desenho Industrial',
@@ -114,7 +114,7 @@ describe('courseView', () => {
     });
     expect(view.card(courses[1]!)).toMatchObject({
       aside: undefined,
-      subtitle: 'OT · Letras › Línguas',
+      subtitle: 'Letras › Línguas',
       title: 'Letras › Línguas',
     });
     expect(view.card(courses[2]!).title).toBe('C3');

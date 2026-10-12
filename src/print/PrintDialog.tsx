@@ -196,7 +196,9 @@ export function PrintDialog({ control, doc, profile, sections }: Props) {
                                   }
                                 />
                                 <span className="print-row-label">{g.label}</span>
-                                <span className="count">{g.items.length}</span>
+                                {g.items.length > 1 && (
+                                  <span className="count">{g.items.length}</span>
+                                )}
                               </label>
                             </li>
                           ))}

@@ -80,7 +80,7 @@ export function ExportPanel({
         <h3 className="panel-section-head">
           <span className="step">1</span>
           Itens novos, pelo Importar
-          <span className="count">{pending.length}</span>
+          {pending.length > 1 && <span className="count">{pending.length}</span>}
         </h3>
 
         {pending.length === 0 ? (
@@ -170,7 +170,7 @@ export function ExportPanel({
         <h3 className="panel-section-head">
           <span className="step">2</span>
           Alterações, à mão nos formulários
-          <span className="count">{open_}</span>
+          {open_ > 1 && <span className="count">{open_}</span>}
         </h3>
         {changes.length > 0 && (
           <p className="muted changes-how">

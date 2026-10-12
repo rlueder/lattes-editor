@@ -88,7 +88,7 @@ function fieldDiff(before: XElement | undefined, after: XElement | undefined): F
 }
 
 /** Elemento sem nenhum valor (atributos vazios, sem texto, sem filhos com valor). */
-function isBlank(el: XElement): boolean {
+export function isBlank(el: XElement): boolean {
   return el.attrs.every((a) => !a.value.trim()) && !text(el) && childElements(el).every(isBlank);
 }
 

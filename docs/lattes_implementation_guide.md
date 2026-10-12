@@ -32,12 +32,12 @@ Leia o relatório de reconhecimento antes de mexer no exportador. A seção 5.1 
 
 Não decidido; use o padrão a menos que Rafael se oponha:
 
-| Tema         | Padrão                                                                                                                                                                                               |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Stack        | Vite, TypeScript, React, nenhum framework de UI além de um pequeno conjunto de componentes, CSS com design tokens. Rafael é engenheiro de front-end e vai revisar a interface pessoalmente.          |
-| Persistência | IndexedDB (Dexie) para a cópia de trabalho e o histórico de salvamento automático, mais um "Salvar arquivo" explícito para o disco. A exportação enviada é a fonte; o app nunca a edita diretamente. |
-| Hospedagem   | Estática, GitHub Pages. O app precisa funcionar a partir de `file://` ou de qualquer host estático, sem configuração.                                                                                |
-| Testes       | Vitest para testes unitários, Playwright para alguns fluxos, `xmllint --schema` na CI para cada fixture XML gerada                                                                                   |
+| Tema         | Padrão                                                                                                                                                                                                   |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stack        | Vite, TypeScript, React, nenhum framework de UI além de um pequeno conjunto de componentes, CSS com design tokens. Rafael é engenheiro de front-end e vai revisar a interface pessoalmente.              |
+| Persistência | IndexedDB (Dexie) para a cópia de trabalho e o histórico de salvamento automático, mais um "Salvar arquivo" explícito para o disco. A exportação enviada é a fonte; o app nunca a edita diretamente.     |
+| Hospedagem   | Nenhuma para o editor: distribuído como app de desktop (Tauri) nas páginas de lançamento do GitHub. Só a página do projeto (`site/`) fica num host estático. O build web continua abrindo por `file://`. |
+| Testes       | Vitest para testes unitários, Playwright para alguns fluxos, `xmllint --schema` na CI para cada fixture XML gerada                                                                                       |
 
 ## 2. O modelo de dados
 

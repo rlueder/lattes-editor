@@ -1,3 +1,5 @@
+@import './fonts/fonts.css';
+
 :root {
   --bg: #fbfaf8;
   --surface: #ffffff;
@@ -21,8 +23,10 @@
   --topbar-h: 57px;
   /* Altura única das pílulas (atalhos, busca, facetas) e dos controles. */
   --pill-h: 28px;
-  --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  /* Altura padrão dos botões com texto. */
+  --btn-h: 32px;
+  --font: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
   color-scheme: light;
 }
 
@@ -139,31 +143,6 @@ code {
 }
 
 /* Boas-vindas */
-
-.welcome {
-  max-width: 640px;
-  margin: 12vh auto 0;
-  padding: 0 16px;
-}
-
-.welcome h1 {
-  font-size: 22px;
-  margin: 0 0 8px;
-}
-
-.dropzone {
-  margin-top: 24px;
-  border: 2px dashed var(--border);
-  border-radius: 12px;
-  padding: 40px 24px;
-  text-align: center;
-  background: var(--surface);
-}
-
-.dropzone.over {
-  border-color: var(--accent-text);
-  background: var(--accent-soft);
-}
 
 /* Estrutura */
 
@@ -688,7 +667,7 @@ details.sub > summary .item-kind {
   padding: 4px 0;
   background: var(--bg);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 550;
   letter-spacing: 0.02em;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
@@ -741,7 +720,7 @@ details.card > summary {
 
 .period.current {
   color: var(--accent-text);
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .duration {
@@ -770,7 +749,7 @@ details.card > summary {
 .usages h4 {
   margin: 0 0 4px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 550;
   color: var(--muted);
 }
 
@@ -832,7 +811,7 @@ button.danger {
   margin-right: 6px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 550;
   line-height: 18px;
   vertical-align: 1px;
   white-space: nowrap;
@@ -911,7 +890,7 @@ details.card.is-new {
 .form-fieldset legend {
   padding: 0 8px 0 0;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 550;
   color: var(--muted);
 }
 
@@ -1130,7 +1109,7 @@ details.card.is-new {
 
 .doi-lookup label {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 550;
   color: var(--muted);
 }
 
@@ -1204,7 +1183,7 @@ details.card.is-new {
 .menu-seg.active {
   background: var(--surface);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .topbar-actions .menu-item,
@@ -1561,7 +1540,7 @@ details.card.is-new {
   background: var(--accent-soft);
   color: var(--accent-text);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .panel-section .pending-list,
@@ -1608,7 +1587,7 @@ details.card.is-new {
 .picker-section h3 {
   margin: 16px 0 6px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 550;
   color: var(--muted);
 }
 
@@ -1809,7 +1788,7 @@ details.card.is-new {
   padding-top: 8px;
   border-top: 1px solid var(--border);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 550;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted);
@@ -1901,7 +1880,7 @@ details.card.is-new {
 }
 
 .select-item[data-selected] {
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .select-indicator {
@@ -1980,7 +1959,7 @@ details.card.is-new {
 .menu-seg[data-checked] {
   background: var(--surface);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .menu-check {
@@ -2001,7 +1980,7 @@ details.card.is-new {
   gap: 6px;
   margin: 0 0 6px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 550;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted);
@@ -2059,7 +2038,7 @@ details.card.is-new {
 .picker-module h4 {
   margin: 12px 0 4px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 550;
   color: var(--muted);
 }
 
@@ -2212,7 +2191,7 @@ button.primary:hover {
 
 .empty-section .empty-title {
   margin: 0 0 4px;
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .empty-section > p.muted {
@@ -2350,7 +2329,7 @@ button.primary:hover {
   border: 0;
   background: transparent;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 550;
   line-height: 1.35;
   resize: none;
   field-sizing: content;
@@ -2418,7 +2397,7 @@ button.primary:hover {
    respiro dentro dos painéis, como no Linear. */
 .content {
   max-width: none;
-  padding: 28px 40px 80px;
+  padding: 16px 40px 80px;
 }
 
 .section-main {
@@ -2435,7 +2414,7 @@ button.primary:hover {
 
 .section-panel {
   position: sticky;
-  top: calc(var(--topbar-h) + 28px);
+  top: calc(var(--topbar-h) + 16px);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -2468,7 +2447,7 @@ button.primary:hover {
 .panel-heading {
   margin: 0 0 6px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 550;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted);
@@ -2630,7 +2609,7 @@ details > .element {
   border-radius: 8px;
   background: var(--accent-soft);
   color: var(--accent-text);
-  font-weight: 600;
+  font-weight: 550;
   font-size: 14px;
   letter-spacing: 0.02em;
 }
@@ -2700,7 +2679,7 @@ details > .element {
 /* Marca provisória no cabeçalho. */
 .brand {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
 }
@@ -2734,7 +2713,7 @@ details > .element {
    títulos. Seção, grupo e subgrupo em três degraus distintos. */
 .section-head h1 {
   font-size: 26px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.015em;
   line-height: 1.2;
 }
@@ -2742,7 +2721,7 @@ details > .element {
 .group h2 {
   margin: 0 0 12px;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 550;
   letter-spacing: -0.01em;
 }
 
@@ -2784,7 +2763,7 @@ details > .element {
   margin: 0 0 14px;
   color: var(--text);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 550;
   letter-spacing: 0;
   text-transform: none;
 }
@@ -2793,19 +2772,6 @@ details > .element {
   margin-top: 14px;
   padding-top: 0;
   border-top: 0;
-}
-
-.profile-photo-link {
-  align-self: flex-start;
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 12px;
-  text-decoration: none;
-}
-
-.profile-photo-link:hover {
-  color: var(--accent-text);
-  text-decoration: underline;
 }
 
 .profile .avatar {
@@ -2832,7 +2798,7 @@ details > .element {
 .empty-section .empty-title {
   margin: 0 0 8px;
   font-size: 17px;
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .empty-text {
@@ -3268,7 +3234,7 @@ details > summary::-webkit-details-marker {
   background: var(--surface-2);
   color: var(--muted);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 550;
   line-height: 1;
 }
 
@@ -3378,7 +3344,7 @@ details > summary::-webkit-details-marker {
   background: var(--accent-soft);
   color: var(--accent-text);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 550;
   line-height: 1;
 }
 
@@ -3557,7 +3523,7 @@ details > summary::-webkit-details-marker {
   margin-top: 4px;
   padding: 10px 12px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .palette-item.section ~ .palette-item.section {
@@ -3571,9 +3537,21 @@ details > summary::-webkit-details-marker {
   color: var(--text);
 }
 
+/* Contagem no ⌘K: o mesmo selo azul do menu lateral. */
 .palette-item .palette-count {
-  color: var(--muted);
-  font-size: 12px;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Aviso de pendências: faixa âmbar no topo do conteúdo. */
@@ -3603,7 +3581,7 @@ details > summary::-webkit-details-marker {
   border-color: color-mix(in srgb, var(--warn-text) 45%, transparent);
   background: transparent;
   color: var(--warn-text);
-  font-weight: 600;
+  font-weight: 550;
   white-space: nowrap;
 }
 
@@ -4045,7 +4023,7 @@ button.primary:hover:not(:disabled) {
 /* Aviso de pendências encostado nas bordas do painel e no cabeçalho, só com
    a linha de baixo; ação principal mais alta. */
 .pending-banner {
-  margin: -28px -40px 28px;
+  margin: -16px -40px 28px;
   padding: 10px 28px 10px 40px;
   border: 0;
   border-bottom: 1px solid color-mix(in srgb, var(--warn-text) 35%, transparent);
@@ -4064,14 +4042,31 @@ button.primary:hover:not(:disabled) {
   }
 }
 
-/* Compartilhar o currículo. */
-.profile-share {
+/* Compartilhar o currículo: miniatura do QR, que abre o modal com o QR
+   grande, o link e o download. */
+.profile-qr {
   align-self: flex-start;
-  height: 28px;
-  margin-top: 6px;
-  padding: 0 10px;
+  display: block;
+  width: 56px;
+  height: 56px;
+  margin-top: 8px;
+  padding: 3px;
   border: 1px solid var(--border-strong);
-  font-size: 12px;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+
+.profile-qr svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.profile-qr:hover,
+.profile-qr:focus-visible {
+  border-color: var(--accent);
 }
 
 .modal.share-dialog {
@@ -4179,4 +4174,698 @@ button.primary:hover:not(:disabled) {
   padding: 10px 12px;
   border: 1px solid var(--border);
   background: var(--bg);
+}
+
+/* Tela inicial: o editor sem currículo. Menu e cabeçalho ficam visíveis e
+   apagados; o painel principal é o passo de abrir o arquivo. */
+.welcome-shell .topbar button:disabled,
+.welcome-shell .sidebar li > button:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.welcome-shell .sidebar li > button:disabled .nav-label {
+  color: var(--muted);
+}
+
+.profile-placeholder .avatar {
+  border: 2px dashed var(--border);
+  background: transparent;
+}
+
+.profile-placeholder .profile-text {
+  gap: 8px;
+  justify-content: center;
+}
+
+.skeleton-line {
+  display: block;
+  width: 120px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+
+.skeleton-line.short {
+  width: 72px;
+}
+
+.welcome-step code {
+  font-size: 0.92em;
+}
+
+.welcome-step .error {
+  margin-top: 12px;
+}
+
+/* Arquivo arrastado sobre a janela: o painel principal acende. */
+.welcome-shell .content {
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.welcome-shell.over .content {
+  border-color: var(--accent-text);
+  border-style: dashed;
+  background: var(--accent-soft);
+}
+
+.welcome-shell.over .empty-art {
+  color: var(--accent-text);
+}
+
+/* Itens do menu que pedem um currículo aberto. */
+.menu-item[data-disabled] {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Lápis sobre o avatar: abre a escolha da foto. Aparece ao passar o mouse
+   ou com o foco; em tela de toque fica sempre visível. */
+.avatar-wrap {
+  position: relative;
+  align-self: flex-start;
+}
+
+.avatar-edit {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.avatar-wrap:hover .avatar-edit,
+.avatar-edit:focus-visible {
+  opacity: 1;
+}
+
+.avatar-edit:hover {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+@media (hover: none) {
+  .avatar-edit {
+    opacity: 1;
+  }
+}
+
+/* Botões com texto têm uma altura só, onde quer que estejam: estado vazio,
+   escolha do tipo, rodapé de modal, aviso de pendências, perfil. Ícones e
+   pílulas seguem com --pill-h. */
+.picker-grid .picker-item,
+.empty-actions button,
+.modal-foot button,
+.form-foot button,
+.bridge-btn,
+.change-actions button,
+.pending-open,
+.share-actions button {
+  height: var(--btn-h);
+  padding-block: 0;
+  font-size: 13px;
+}
+
+/* Na escolha do tipo, o texto corta com reticências: a linha ocupa a altura toda. */
+.picker-grid .picker-item {
+  line-height: calc(var(--btn-h) - 2px);
+}
+
+/* App de macOS: a barra de título é o próprio cabeçalho, opaco, com os
+   botões da janela à esquerda (posição em src-tauri/tauri.conf.json). O
+   WebView do macOS não expõe área segura para eles (env(safe-area-inset-*)
+   vale só no iOS), então a margem é fixa: botões de x=18 a ~78, mais o
+   respiro antes da marca. */
+.desktop-mac {
+  --titlebar-inset: 112px;
+}
+
+.desktop-mac .topbar {
+  padding-left: var(--titlebar-inset);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Menu de configurações em grupos (Tema, Exibição, Arquivo, Fechar): fio
+   entre eles com respiro dos dois lados, título pequeno em cada um. O atalho
+   fica em cinza, como dica, não em azul de link. */
+.menu .menu-sep {
+  margin: 8px -8px;
+  background: var(--divider);
+}
+
+.menu .menu-heading {
+  padding: 4px 8px 6px;
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.menu .menu-hint {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.menu .menu-version {
+  padding: 2px 8px 2px;
+  font-size: 12px;
+}
+
+/* Contagem ao lado de um título ou botão (Todos os tipos, seções do painel
+   Levar ao Lattes): o mesmo selo do menu lateral. */
+.picker-more .count,
+.panel-section-head .count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Seta dos itens da lista alinhada à esquerda do ano (2012) e à primeira
+   linha do item (o tipo, ou o título quando não há tipo); o texto vem logo
+   depois. Fica presa ao bloco de texto, que é centralizado na linha. */
+.group details.item > summary {
+  padding-left: 26px;
+}
+
+.group details.item > summary::before {
+  display: none;
+}
+
+.group details.item > summary .card-main {
+  position: relative;
+}
+
+.group details.item > summary .card-main::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: -26px;
+  width: 16px;
+  height: 16px;
+  background: var(--muted);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 6 6 6-6 6'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 6 6 6-6 6'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  transition: transform 0.12s;
+}
+
+.group details.item[open] > summary .card-main::before {
+  transform: rotate(90deg);
+}
+
+/* O item inteiro (fio, hover e fundo do aberto) passa 10px para cada lado
+   da coluna; o recuo interno devolve esses 10px, e assim a seta continua
+   alinhada ao ano e todos os fundos começam e terminam no mesmo lugar. */
+.group details.item {
+  margin-inline: -10px;
+}
+
+.group details.item > summary {
+  padding-left: 36px;
+  padding-right: 24px;
+}
+
+.group details.item > :not(summary) {
+  padding-inline: 24px;
+}
+
+/* Escolha do tipo com a mesma hierarquia do ⌘K: seção (Mais usados, Todos
+   os tipos) como título de 15px no texto principal, com fio e respiro entre
+   uma e outra; grupo (Artigos, Livros…) como subtítulo pequeno; os tipos no
+   corpo de 13px. */
+.picker-section h3 {
+  margin: 4px 0 10px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 550;
+}
+
+.picker-section + .picker-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--divider);
+}
+
+.picker-more {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 550;
+}
+
+.picker-more .icon-svg {
+  color: var(--muted);
+}
+
+.picker-module h4 {
+  margin: 16px 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.picker-grid .picker-item {
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* Tipos como linhas, como os itens das listas: mais altos, sem caixa, só o
+   fio de baixo; o fundo aparece no hover. */
+.picker-grid {
+  column-gap: 20px;
+  row-gap: 0;
+}
+
+.picker-grid .picker-item {
+  height: 40px;
+  padding: 0 8px;
+  border: 0;
+  border-bottom: 1px solid var(--divider);
+  border-radius: 0;
+  background: transparent;
+  line-height: 39px;
+}
+
+.picker-grid .picker-item:hover,
+.picker-grid .picker-item:focus-visible {
+  background: var(--surface-2);
+}
+
+/* Acerto da escolha do tipo: texto dos tipos alinhado aos títulos (o fundo
+   do hover passa um pouco para os lados), respiro abaixo da busca, um fio só
+   entre as seções (o de baixo da última linha) e a seta de "Todos os tipos"
+   depois do título, para ele alinhar com "Mais usados". */
+.picker-filter {
+  margin-bottom: 22px;
+}
+
+.picker-grid .picker-item {
+  padding: 0;
+}
+
+.picker-grid .picker-item:hover,
+.picker-grid .picker-item:focus-visible {
+  box-shadow:
+    -8px 0 0 var(--surface-2),
+    8px 0 0 var(--surface-2);
+}
+
+.picker-section + .picker-section {
+  margin-top: 28px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.picker-more {
+  margin-top: 0;
+  padding: 0;
+}
+
+/* Nome do grupo (Outras produções bibliográficas…): mais respiro, sobretudo
+   em cima, para separar do grupo anterior; um ponto maior para ler bem. */
+.picker-module h4 {
+  margin: 32px 0 10px;
+  font-size: 13px;
+}
+
+.picker-module:first-of-type h4 {
+  margin-top: 20px;
+}
+
+/* Nome do grupo em caixa alta, como os rótulos dos blocos de campos. */
+.picker-module h4 {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Tipos sem fio; o fio separa as seções (Mais usados, Todos os tipos). */
+.picker-grid .picker-item {
+  border-bottom: 0;
+}
+
+.picker-section:not(:last-of-type) {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.picker-section + .picker-section {
+  margin-top: 20px;
+}
+
+/* Fio entre os grupos de "Todos os tipos" (Eventos, Bancas…). */
+.picker-module + .picker-module {
+  margin-top: 24px;
+  border-top: 1px solid var(--divider);
+}
+
+.picker-module + .picker-module h4 {
+  margin-top: 24px;
+}
+
+/* Topo do menu lateral: a marca, depois avatar e QR lado a lado (o QR
+   alinhado à base do avatar). */
+.sidebar-brand {
+  padding: 4px 8px 18px;
+  /* Marca não é texto para selecionar nem link: cursor normal. */
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.profile-top {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.profile-top .profile-qr {
+  margin-top: 0;
+}
+
+/* QR atrás do avatar, do mesmo tamanho e redondo, aparecendo um pouco à
+   direita. No hover vem para a frente (e anda um pouco) e aceita o clique.
+   O QR inteiro cabe no círculo (quadrado inscrito), então ainda dá para ler. */
+.profile-top {
+  gap: 0;
+}
+
+.profile-top .avatar-wrap {
+  z-index: 2;
+}
+
+.profile-top .profile-qr {
+  position: relative;
+  z-index: 1;
+  width: 88px;
+  height: 88px;
+  margin-left: -58px;
+  padding: 12px;
+  border: 3px solid var(--divider);
+  border-radius: 50%;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.profile-top .profile-qr:hover,
+.profile-top .profile-qr:focus-visible {
+  z-index: 3;
+  border-color: var(--accent);
+  transform: translateX(10px);
+}
+
+/* O lápis da foto vai para a esquerda do avatar, longe do QR. */
+.profile-top .avatar-edit {
+  right: auto;
+  left: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-top .profile-qr {
+    transition: none;
+  }
+  .profile-top .profile-qr:hover,
+  .profile-top .profile-qr:focus-visible {
+    transform: none;
+  }
+}
+
+/* Hover dos itens mais discreto: metade do tom de superfície. */
+.group details > summary:hover {
+  background: color-mix(in srgb, var(--surface-2) 50%, transparent);
+}
+
+/* Marca no topo do menu lateral, maior que a do antigo cabeçalho. */
+.sidebar-brand .brand {
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
+/* Linha de base da marca na mesma altura da do caminho (Dados gerais ›
+   Identificação) no cabeçalho fixo da seção. */
+.sidebar-brand {
+  margin-top: -8px;
+}
+
+/* Selo de contagem no canto de um botão de ícone (Levar ao Lattes): azul
+   sólido, com um anel na cor do cabeçalho para destacar do ícone. Cresce
+   para os lados com dois dígitos; acima de 99 vira "99+". */
+.icon-btn.has-badge {
+  position: relative;
+}
+
+.icon-badge {
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border: 2px solid var(--chrome);
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+/* Histórico salvo na mesma cor dos outros ícones do cabeçalho; só o erro
+   ganha cor (e o "salvando" fica apagado). */
+.topbar .save-state.salvo {
+  color: var(--text);
+}
+
+/* "Onde aparece" dentro do item aberto: um bloco como os grupos de campos,
+   com o mesmo fundo, o mesmo recuo e o rótulo em caixa alta; um fio o
+   separa dos campos abaixo. */
+.group details.item > .usages {
+  margin: 0;
+  padding-top: 20px;
+  padding-bottom: 0;
+  border-radius: 0;
+}
+
+.group details.item > .usages h4 {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.group details.item > .usages::after {
+  content: '';
+  display: block;
+  margin-top: 20px;
+  border-top: 1px solid var(--divider);
+}
+
+/* Sem fio entre o perfil e as seções no menu lateral; o respiro separa. */
+.sidebar .profile {
+  border-bottom: 0;
+}
+
+/* Busca com criar e levar ao Lattes logo à direita, juntos no centro. */
+.topbar-center {
+  align-items: center;
+  gap: 6px;
+}
+
+/* Ícones do cabeçalho, no centro ou à direita: sem contorno, quadrados e
+   centralizados na altura da busca. */
+.topbar .icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  border-color: transparent;
+}
+
+.topbar .icon-btn.ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+/* Painel da direita sem caixa: sem recuo, contorno nem fundo; filtro e
+   índice ocupam a largura toda da coluna. */
+.section-panel {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+/* Índice da seção com a mesma altura e o mesmo recuo dos itens do menu
+   lateral. */
+.jump-bar.vertical a {
+  height: auto;
+  min-height: 36px;
+  padding: 7px 12px;
+}
+
+.jump-bar.vertical {
+  gap: 2px;
+}
+
+/* Painel do conteúdo sem contorno: o fundo diferente do menu já separa. */
+.content {
+  border: 0;
+}
+
+/* Caixas dos grupos (Identificação, Resumo…) sem contorno: o fundo da
+   superfície já as separa do conteúdo. */
+.group {
+  border: 0;
+}
+
+/* Ação secundária só em texto (Cancelar): sem caixa, sublinha no hover. */
+.modal-foot button.text-btn,
+button.text-btn {
+  padding-inline: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.modal-foot button.text-btn:hover,
+button.text-btn:hover {
+  background: transparent;
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Faixa de aviso com o ícone de alerta à esquerda, na cor do texto. */
+.confirm-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.confirm-warning > .icon-svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+/* Hierarquia do texto em três tons e pesos leves, nos tons do sand (não os
+   do Linear): títulos e valores no tom principal; descrições e explicações
+   num tom intermediário próprio; metadados (datas, períodos, tipo, "usada
+   em") no tom apagado. Pesos: 450 no corpo, 500 para ênfase, 550 nos
+   títulos (a IBM Plex é variável). Fios decorativos mais perto do fundo; o
+   contorno dos campos (--border-strong) não muda. */
+:root {
+  --text-2: #3f3e39; /* entre sand-12 e sand-11 */
+  --muted: #686762; /* entre sand-11 e sand-10, AA também sobre o hover */
+  --border: #e2e1de; /* sand-5 */
+  --divider: #e2e1de;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --text-2: #d2d0ca; /* entre sand-12 e sand-11 */
+    --muted: #a09e97; /* entre sand-11 e sand-10 */
+    --border: #31312e; /* sand-5 */
+    --divider: #31312e;
+  }
+}
+
+:root[data-theme='dark'] {
+  --text-2: #d2d0ca;
+  --muted: #a09e97;
+  --border: #31312e;
+  --divider: #31312e;
+}
+
+body {
+  font-weight: 450;
+}
+
+strong,
+b {
+  font-weight: 550;
+}
+
+.brand {
+  font-weight: 700;
+}
+
+/* Descrições e explicações: tom intermediário. */
+.card-subtitle,
+.modal-subtitle,
+.modal-body p:not(.confirm-warning):not(.empty-caption),
+.section-note,
+.field-note,
+.changes-note,
+.bridge-note,
+.doi-hint,
+.print-hint,
+.print-note,
+.empty-text,
+.mark-text {
+  color: var(--text-2);
+}
+
+/* Metadados: tom apagado. */
+.card-period,
+.card-period .period:not(.current),
+.duration,
+.usage-period,
+.item-kind,
+.contact-kind,
+.palette-context,
+.profile-line {
+  color: var(--muted);
+}
+
+/* Olho de privacidade: sem contorno, quadrado, ícone centralizado, na
+   altura do título (e no cabeçalho fixo). */
+.section-head {
+  align-items: center;
+}
+
+.privacy-toggle.icon-btn,
+.sticky-title-actions .icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  border-color: transparent;
+}
+
+.privacy-toggle.icon-btn:hover:not([aria-pressed='true']) {
+  background: var(--surface-2);
 }

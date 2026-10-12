@@ -1,17 +1,14 @@
 // Compartilhar o currículo: o QR do endereço público e o link, com download
-// do QR em SVG ou PNG para pôr em pôster, slide ou crachá.
+// do QR em PNG para pôr em pôster, slide ou crachá.
 
+import { saveBytes } from '../desktop/native.ts';
 import { CopyButton } from './CopyButton.tsx';
 import { Modal } from './Modal.tsx';
 import { qrSvg } from './qr.ts';
 import { QrCode } from './QrCode.tsx';
 
-function download(name: string, blob: Blob) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+async function download(name: string, blob: Blob) {
+  await saveBytes(new Uint8Array(await blob.arrayBuffer()), name, blob.type);
 }
 
 function downloadPng(name: string, svg: string, px = 1024) {
@@ -23,7 +20,7 @@ function downloadPng(name: string, svg: string, px = 1024) {
     if (!ctx) return;
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(img, 0, 0, px, px);
-    canvas.toBlob((blob) => blob && download(name, blob), 'image/png');
+    canvas.toBlob((blob) => blob && void download(name, blob), 'image/png');
   };
   img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
@@ -54,19 +51,10 @@ export function ShareDialog({
           <CopyButton label="endereço do currículo" value={url} />
         </span>
         <div className="share-actions">
-          <button
-            type="button"
-            onClick={() => download(`${base}.svg`, new Blob([svg], { type: 'image/svg+xml' }))}
-          >
-            Baixar SVG
-          </button>
           <button type="button" onClick={() => downloadPng(`${base}.png`, svg)}>
             Baixar PNG
           </button>
         </div>
-        <p className="empty-caption">
-          O código leva ao seu currículo público no Lattes. É gerado aqui, sem enviar nada.
-        </p>
       </div>
     </Modal>
   );

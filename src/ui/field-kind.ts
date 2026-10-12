@@ -1,5 +1,6 @@
 // Que tipo de controle um atributo merece na tela.
 
+import { elementLabel } from '../labels/labels.ts';
 import type { AttributeSpec } from '../schema/types.ts';
 
 /**
@@ -25,16 +26,40 @@ const OWNER_ONLY: Record<string, string> = {
 };
 
 /**
- * Códigos de uma letra que o Lattes grava e mostra por extenso. NACIONALIDADE:
- * o formulário de identificação põe "B" (exige CPF e RG) ou "E" (estrangeira),
- * visto no JavaScript de prc_ident em 11/10/2026.
+ * Códigos que o Lattes grava e mostra por extenso, lidos nos formulários dele.
+ * NACIONALIDADE: o formulário de identificação põe "B" (exige CPF e RG) ou
+ * "E" (estrangeira), visto no JavaScript de prc_ident. TIPO-MESTRADO: o rádio
+ * "normal / sanduíche" do formulário de mestrado (f_tpo_doutorado). NIVEL da
+ * formação complementar: a lista f_nivel do pkg_formacao_compl. Todos vistos
+ * em 11/10/2026.
  */
 const CODE_VALUES: Record<string, Record<string, string>> = {
   'DADOS-GERAIS NACIONALIDADE': { B: 'Brasileira', E: 'Estrangeira' },
+  'MESTRADO TIPO-MESTRADO': { N: 'Normal', S: 'Sanduíche' },
+};
+
+const COMPLEMENTARY_LEVELS: Record<string, string> = {
+  '8': 'Extensão universitária',
+  E: 'MBA',
+  F: 'Curso de curta duração',
+  Y: 'Outros',
 };
 
 export function codeValueLabel(element: string, attr: string, value: string): string {
+  if (attr === 'NIVEL' && COMPLEMENTARY_LEVELS[value]) return COMPLEMENTARY_LEVELS[value];
+  // O nível da formação acadêmica é o próprio tipo do item (3 em MESTRADO).
+  if (attr === 'NIVEL' && LEVEL_FROM_TYPE.test(element)) return elementLabel(element);
   return CODE_VALUES[`${element} ${attr}`]?.[value] ?? value;
+}
+
+/** Opções de um código que a pessoa escolhe (rádio ou lista no Lattes), com o nome de cada uma. */
+export function codeChoices(
+  element: string,
+  attr: string,
+): { label: string; value: string }[] | undefined {
+  const table = CODE_VALUES[`${element} ${attr}`];
+  if (!table || isSystemAttr(element, attr)) return undefined;
+  return Object.entries(table).map(([value, label]) => ({ label, value }));
 }
 
 /**
@@ -54,16 +79,19 @@ export function codeAttrFor(element: string, attr: string): string | undefined {
   return `CODIGO-${m[1]}${m[2] ?? ''}`;
 }
 
-/** Elementos de formação em que NIVEL é o código do nível (3 = mestrado…), dado pelo tipo. */
-const LEVEL_CODED =
-  /^(GRADUACAO|ESPECIALIZACAO|MESTRADO|DOUTORADO|POS-DOUTORADO|LIVRE-DOCENCIA|CURSO-TECNICO-PROFISSIONALIZANTE|MESTRADO-PROFISSIONALIZANTE|ENSINO-FUNDAMENTAL-PRIMEIRO-GRAU|ENSINO-MEDIO-SEGUNDO-GRAU|RESIDENCIA-MEDICA|APERFEICOAMENTO)$/;
+/**
+ * Nível que o Lattes põe conforme o tipo de formação escolhido (NIVEL 3 em
+ * MESTRADO, F e Y na formação complementar) e o nível do curso na tabela de
+ * cursos (NIVEL-CURSO). Ficam entre os códigos do Lattes, sem edição.
+ */
+const LEVEL_CODES = /^(NIVEL|NIVEL-CURSO)$/;
+
+/** Formação acadêmica: um elemento por nível, então o nome do elemento diz o nível. */
+const LEVEL_FROM_TYPE =
+  /^(GRADUACAO|ESPECIALIZACAO|MESTRADO|DOUTORADO|POS-DOUTORADO|LIVRE-DOCENCIA|CURSO-TECNICO-PROFISSIONALIZANTE|MESTRADO-PROFISSIONALIZANTE|ENSINO-FUNDAMENTAL-PRIMEIRO-GRAU|ENSINO-MEDIO-SEGUNDO-GRAU|RESIDENCIA-MEDICA|APERFEICOAMENTO|MBA)$/;
 
 export function isSystemAttr(element: string, attr: string): boolean {
-  return (
-    SYSTEM.test(attr) ||
-    OWNER_ONLY[attr] === element ||
-    (attr === 'NIVEL' && LEVEL_CODED.test(element))
-  );
+  return SYSTEM.test(attr) || OWNER_ONLY[attr] === element || LEVEL_CODES.test(attr);
 }
 
 /**

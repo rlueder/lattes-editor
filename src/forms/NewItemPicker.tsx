@@ -53,6 +53,14 @@ export function NewItemPicker({ onClose, onPick, open }: Props) {
     byModule.set(t.module.label, [...(byModule.get(t.module.label) ?? []), t]);
   }
   const othersCount = [...byModule.values()].reduce((n, l) => n + l.length, 0);
+  // Grupo de um tipo só repetiria o nome no título e no botão (Softwares ›
+  // Softwares); esses tipos vão juntos para um grupo no fim.
+  // Grupos em ordem alfabética; "Outros tipos", que junta os avulsos, fica no fim.
+  const modules = [...byModule]
+    .filter(([, list]) => list.length > 1)
+    .sort(([a], [b]) => a.localeCompare(b, 'pt-BR'));
+  const singles = [...byModule].flatMap(([, list]) => (list.length === 1 ? list : []));
+  if (singles.length > 0) modules.push(['Outros tipos', singles]);
 
   const reset = () => {
     setQuery('');
@@ -164,7 +172,7 @@ export function NewItemPicker({ onClose, onPick, open }: Props) {
 
           {othersCount > 0 &&
             (searching ? (
-              [...byModule].map(([module, list]) => (
+              modules.map(([module, list]) => (
                 <section key={module} className="picker-section">
                   <h3>{module}</h3>
                   <ul className="picker-grid">{list.map(item)}</ul>
@@ -178,11 +186,11 @@ export function NewItemPicker({ onClose, onPick, open }: Props) {
                   type="button"
                   onClick={() => setShowAll((v) => !v)}
                 >
+                  Todos os tipos {othersCount > 1 && <span className="count">{othersCount}</span>}
                   <ChevronIcon />
-                  Todos os tipos <span className="count">{othersCount}</span>
                 </button>
                 {showAll &&
-                  [...byModule].map(([module, list]) => (
+                  modules.map(([module, list]) => (
                     <div key={module} className="picker-module">
                       <h4>{module}</h4>
                       <ul className="picker-grid">{list.map(item)}</ul>

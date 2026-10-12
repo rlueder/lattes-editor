@@ -14,6 +14,70 @@ Cada afirmação vem marcada como **observado** (visto no HTML, nos scripts ou
 no comportamento do servidor) ou **inferido** (conclusão a partir do que foi
 observado, ainda não confirmada).
 
+## Visão geral: os componentes
+
+O caminho de uma alteração, do Lattes ao editor e de volta. Há dois retornos:
+itens novos vão pelo Importar do próprio Lattes, num arquivo que o editor gera
+(3a); o resto vai pela extensão, que grava nos formulários do Lattes na sessão
+do próprio usuário (3b). O app nunca fala com o Lattes direto.
+
+```mermaid
+flowchart TB
+  subgraph CNPq["CNPq"]
+    direction TB
+    Gateway["cvlattesweb: aplicação PL/SQL<br/>PKG_MENU, PKG_ATIV,<br/>PKG_RESUME, PKG_IDIOMA"]
+    ImpExp["Ferramentas:<br/>Exportar e Importar"]
+    Foto["servicosweb:<br/>foto do currículo"]
+  end
+  Crossref["api.crossref.org<br/>(DOI)"]
+
+  subgraph Nav["Navegador: Chrome, Brave, Edge"]
+    direction TB
+    subgraph Aba["Aba do Lattes, na sessão do usuário"]
+      Runner["lattes-runner<br/>(script injetado)"]
+    end
+    SW["Service worker<br/>da extensão"]
+    Painel["Painel lateral<br/>da extensão"]
+  end
+
+  Host["Host nativo<br/>(o mesmo executável, sem janela)"]
+
+  subgraph App["App LattesEditor (Tauri)"]
+    direction TB
+    Porta["Porta local 127.0.0.1<br/>com segredo em ponte.txt"]
+    UI["Editor<br/>(página no webview)"]
+  end
+
+  Arquivos[("CV_id.zip ou .xml exportado<br/>id-importacao.xml")]
+
+  Arquivos <-- "1. exportação<br/>4. Importar (itens novos)" --> ImpExp
+  Arquivos <-- "2. abre<br/>3a. gera os itens novos" --> UI
+  UI <-- "3b. fila e resultados" --> Porta
+  Porta <-- "TCP, JSON por linha" --> Host
+  Host <-- "mensagens nativas,<br/>stdin e stdout" --> SW
+  Painel -- "Aplicar" --> SW
+  SW -- "executeScript" --> Runner
+  Runner -- "GET do formulário,<br/>POST em Latin-1,<br/>GET de conferência" --> Gateway
+  UI -.-> Foto
+  UI -.-> Crossref
+```
+
+- **Editor** (`src/`): lê a exportação, guarda a cópia de trabalho e planeja
+  as operações que a extensão sabe levar (`src/bridge/plan.ts`).
+- **Porta local e host nativo** (`src-tauri/src/ponte.rs`): o navegador só
+  inicia programas registrados, então o próprio executável do app, chamado
+  com a origem da extensão, faz o papel de host e repassa as mensagens ao app
+  aberto. O segredo impede que outro usuário da máquina se ligue à porta.
+- **Extensão** (`extension/`): o service worker guarda a fila; o envio só
+  começa por um clique no painel. O `lattes-runner` roda dentro da aba do
+  Lattes e faz, para cada operação, o que a seção 6 descreve: acha o
+  formulário pelos links do próprio Lattes, confere que ele está como o
+  editor espera, envia e lê de volta (`src/bridge/apply.ts`).
+- **Lattes** (seções 1 a 5): a aplicação PL/SQL que recebe os formulários.
+  Exportar e Importar são as únicas portas oficiais para arquivos.
+- Em linha tracejada, o que sai do app sem passar pela extensão: a foto do
+  perfil e a busca do DOI, só quando pedidas.
+
 ## 1. Uma aplicação PL/SQL servida pela web
 
 Toda URL do editor tem a forma
@@ -182,6 +246,21 @@ A exportação não traz número de sequência do idioma. A ponte abre cada link
 `pkg_idioma.form` da lista que tem `f_seq` (o que não tem é o de idioma novo)
 e escolhe o único cujo `F_COD_IDIOMA` é o código do XML. `NAO_INFORMADO` no
 XML corresponde à caixa desmarcada e nenhum rádio.
+
+### Códigos de nível (11/10/2026)
+
+Lidos nos formulários, sem gravar nada:
+
+- Formação complementar (`pkg_formacao_compl.form`), lista `f_nivel`: `F`
+  curso de curta duração, `8` extensão universitária, `E` MBA, `Y` outros.
+  É o `NIVEL` do XML nesses itens.
+- Mestrado (`pkg_formacao.form`, `f_nivel` 3): rádio `f_tpo_doutorado`, `N`
+  normal e `S` sanduíche. É o `TIPO-MESTRADO` do XML.
+- Formação acadêmica: `f_nivel` vem oculto no formulário (3 no mestrado, 1 na
+  graduação, 7 no curso técnico, conforme a exportação); o nível é o próprio
+  tipo do item.
+- `NIVEL-CURSO="OT"` da tabela de cursos: sentido não encontrado. O XSD tem
+  `OT` e `OUTRO` como valores distintos.
 
 ### Resumo: `RES`, POST `PKG_RESUME.FORM`
 

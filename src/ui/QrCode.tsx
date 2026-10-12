@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 
 import { qrMatrix, qrPath } from './qr.ts';
 
-/** QR em SVG, preto no branco, com margem de 4 módulos. */
+/** QR em SVG, preto no branco, com margem de 4 módulos. Rótulo vazio: decorativo. */
 export function QrCode({
   className,
   label,
@@ -18,9 +18,11 @@ export function QrCode({
   }, [text]);
   return (
     <svg
-      aria-label={label}
+      // Sem rótulo, é decoração de um botão que já se descreve.
+      aria-hidden={label ? undefined : true}
+      aria-label={label || undefined}
       className={className}
-      role="img"
+      role={label ? 'img' : undefined}
       shapeRendering="crispEdges"
       viewBox={`-4 -4 ${size + 8} ${size + 8}`}
     >

@@ -1,7 +1,11 @@
 // Ligação do editor com a extensão da ponte: descobre se ela está instalada
-// (aperto de mão por postMessage), planeja as alterações que ela sabe levar,
-// manda a fila e acompanha os resultados. Também recebe o código do
-// currículo, que a extensão lê no Lattes, para a foto do perfil.
+// (aperto de mão), planeja as alterações que ela sabe levar, manda a fila e
+// acompanha os resultados. Também recebe o código do currículo, que a
+// extensão lê no Lattes, para a foto do perfil.
+//
+// No app de desktop, as mensagens vão e voltam por mensagens nativas (eventos
+// e comando do próprio app, ver src-tauri/src/ponte.rs). No navegador, em
+// desenvolvimento, por postMessage com o script de conteúdo.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -9,22 +13,71 @@ import type { OpResult } from '../bridge/apply.ts';
 import { sameCv } from '../bridge/lattes-html.ts';
 import { planChanges } from '../bridge/plan.ts';
 import {
+  type BridgeMessage,
   type EditorMessage,
   editorMessage,
   fromSamePage,
   isBridgeMessage,
 } from '../bridge/protocol.ts';
+import { isDesktop, saveBytes } from '../desktop/native.ts';
 import type { Session } from '../forms/use-production.ts';
 import { encodeCv } from '../model/document.ts';
 import { getAttr, parseXml } from '../model/xml.ts';
-import { backupFileName, downloadBytes } from './backup.ts';
+import { backupFileName } from './backup.ts';
 import type { ChangeGroup } from './changes-view.ts';
 import { writeCvCode } from './profile.ts';
 
 /** Evento da janela avisando que um novo código do currículo foi guardado. */
 export const CV_CODE_EVENT = 'lattes-editor:codigo-cv';
 
-const post = (msg: EditorMessage) => window.postMessage(editorMessage(msg), location.origin);
+const post = (msg: EditorMessage): void => {
+  if (isDesktop()) {
+    void import('@tauri-apps/api/core')
+      .then(({ invoke }) => invoke('ponte_send', { msg: JSON.stringify(editorMessage(msg)) }))
+      // Extensão não conectada: o editor fica sem a ponte, como no navegador sem extensão.
+      .catch(() => undefined);
+    return;
+  }
+  window.postMessage(editorMessage(msg), location.origin);
+};
+
+/**
+ * Escuta a extensão. No desktop, os eventos do app; "ponte-conectada" pede o
+ * aperto de mão de novo (a extensão pode ter chegado depois do editor) e
+ * "ponte-desconectada" desliga o envio.
+ */
+function listen(onMessage: (msg: BridgeMessage) => void, onLost: () => void): () => void {
+  if (isDesktop()) {
+    let alive = true;
+    const offs: (() => void)[] = [];
+    void import('@tauri-apps/api/event').then(async ({ listen: on }) => {
+      const subs = await Promise.all([
+        on<string>('ponte', (e) => {
+          try {
+            const data: unknown = JSON.parse(e.payload);
+            if (isBridgeMessage(data)) onMessage(data);
+          } catch {
+            // Linha que não é JSON: ignorada.
+          }
+        }),
+        on('ponte-conectada', () => post({ type: 'ola' })),
+        on('ponte-desconectada', onLost),
+      ]);
+      if (alive) offs.push(...subs);
+      else subs.forEach((off) => off());
+    });
+    return () => {
+      alive = false;
+      offs.forEach((off) => off());
+    };
+  }
+  const onWindow = (event: MessageEvent) => {
+    if (!fromSamePage(event, { origin: location.origin, window })) return;
+    if (isBridgeMessage(event.data)) onMessage(event.data);
+  };
+  window.addEventListener('message', onWindow);
+  return () => window.removeEventListener('message', onWindow);
+}
 
 export interface BridgeState {
   available: boolean;
@@ -34,8 +87,11 @@ export interface BridgeState {
   plan: ReturnType<typeof planChanges>;
   results: Record<string, OpResult>;
   running: boolean;
-  /** backup: baixa antes uma cópia do currículo como está no Lattes. */
-  send: (options?: { backup?: boolean }) => void;
+  /**
+   * backup: salva antes uma cópia do currículo como está no Lattes (no app,
+   * pelo diálogo de salvar). Se a pessoa cancelar a cópia, nada é enviado.
+   */
+  send: (options?: { backup?: boolean }) => Promise<void>;
   stop: () => void;
 }
 
@@ -53,10 +109,7 @@ export function useBridge(
   const lattesId = session ? getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR') : undefined;
 
   useEffect(() => {
-    const onMessage = (event: MessageEvent) => {
-      if (!fromSamePage(event, { origin: location.origin, window })) return;
-      if (!isBridgeMessage(event.data)) return;
-      const msg = event.data;
+    const onMessage = (msg: BridgeMessage) => {
       if (msg.type === 'ola') setAvailable(true);
       if (msg.type === 'resultado') {
         setResults((r) => ({ ...r, [msg.result.key]: msg.result }));
@@ -72,9 +125,12 @@ export function useBridge(
         window.dispatchEvent(new Event(CV_CODE_EVENT));
       }
     };
-    window.addEventListener('message', onMessage);
+    const stopListening = listen(onMessage, () => {
+      setAvailable(false);
+      setRunning(false);
+    });
     post({ type: 'ola' });
-    return () => window.removeEventListener('message', onMessage);
+    return stopListening;
   }, [lattesId]);
 
   const plan = useMemo(
@@ -94,13 +150,14 @@ export function useBridge(
     plan,
     results,
     running,
-    send: ({ backup = false } = {}) => {
+    send: async ({ backup = false } = {}) => {
       if (backup && session) {
         const original = parseXml(session.meta.originalXml);
-        downloadBytes(
+        const saved = await saveBytes(
           encodeCv(original, session.meta.encoding),
           backupFileName(session.meta.fileName, new Date()),
         );
+        if (!saved) return;
       }
       setResults({});
       setConfirmed(0);

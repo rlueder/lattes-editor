@@ -8,20 +8,39 @@ import { GO_KEYS, useGoShortcuts } from './use-section-shortcuts.ts';
 
 interface Props {
   activeId?: string;
+  /** Sem currículo aberto: o menu aparece, mas nada responde. */
+  disabled?: boolean;
   /** Quantos itens novos (ainda não importados) há dentro destes elementos. */
   pendingIn: (els: XElement[]) => number;
-  profile: Profile;
+  /** Sem perfil, o topo do menu fica com o lugar da foto vazio. */
+  profile?: Profile;
   sections: Section[];
   onSelect: (id: string) => void;
 }
 
-export function Sidebar({ activeId, onSelect, pendingIn, profile, sections }: Props) {
-  const ids = useMemo(() => sections.map((s) => s.id), [sections]);
+export function Sidebar({ activeId, disabled, onSelect, pendingIn, profile, sections }: Props) {
+  const ids = useMemo(() => (disabled ? [] : sections.map((s) => s.id)), [disabled, sections]);
   const goArmed = useGoShortcuts(ids, onSelect);
 
   return (
     <nav aria-label="Seções" className="sidebar">
-      <ProfileCard profile={profile} />
+      {/* Marca provisória, até existir um logo. */}
+      <div className="sidebar-brand">
+        <span aria-label="LattesEditor" className="brand">
+          Lattes<span className="brand-accent">Editor</span>
+        </span>
+      </div>
+      {profile ? (
+        <ProfileCard profile={profile} />
+      ) : (
+        <section aria-hidden="true" className="profile profile-placeholder">
+          <div className="avatar" />
+          <div className="profile-text">
+            <span className="skeleton-line" />
+            <span className="skeleton-line short" />
+          </div>
+        </section>
+      )}
       <ul>
         {sections.map((s) => {
           const total = s.groups.reduce((n, g) => n + countItems(g), 0);
@@ -37,6 +56,7 @@ export function Sidebar({ activeId, onSelect, pendingIn, profile, sections }: Pr
                 className={[s.id === activeId ? 'active' : '', s.groups.length === 0 ? 'empty' : '']
                   .filter(Boolean)
                   .join(' ')}
+                disabled={disabled}
                 type="button"
                 onClick={() => onSelect(s.id)}
               >
@@ -53,7 +73,7 @@ export function Sidebar({ activeId, onSelect, pendingIn, profile, sections }: Pr
                       {fresh} novo{fresh > 1 ? 's' : ''}
                     </span>
                   )}
-                  {!goArmed && shownTotal > 0 && <span className="count">{shownTotal}</span>}
+                  {!goArmed && shownTotal > 1 && <span className="count">{shownTotal}</span>}
                 </span>
               </button>
             </li>

@@ -9,7 +9,13 @@ import { getAttr, setAttr, type XElement } from '../model/xml.ts';
 import type { AttributeSpec } from '../schema/types.ts';
 import { parseEmails, parseSocial } from './contacts.ts';
 import { CopyButton } from './CopyButton.tsx';
-import { codeAttrFor, codeValueLabel, isBooleanAttr, isSystemAttr } from './field-kind.ts';
+import {
+  codeAttrFor,
+  codeChoices,
+  codeValueLabel,
+  isBooleanAttr,
+  isSystemAttr,
+} from './field-kind.ts';
 import { Select } from './primitives/Select.tsx';
 import { Switch } from './primitives/Switch.tsx';
 import { Tip } from './primitives/Tip.tsx';
@@ -149,8 +155,10 @@ export function AttributeField({
   }
 
   const boolean = isBooleanAttr(name, spec, value);
+  const choices = codeChoices(el.name, name);
   // Texto longo vira área de texto e ocupa a linha inteira, empilhado.
-  const textarea = !boolean && !spec?.enum && !prominent && (multiline || value.length > 90);
+  const textarea =
+    !boolean && !spec?.enum && !choices && !prominent && (multiline || value.length > 90);
   let control;
   if (boolean) {
     control = (
@@ -166,6 +174,21 @@ export function AttributeField({
           {value === 'SIM' ? 'Sim' : value === 'NAO' ? 'Não' : 'Não informado'}
         </span>
       </span>
+    );
+  } else if (choices) {
+    // Código que a pessoa escolhe no Lattes (normal ou sanduíche): lista com os nomes.
+    const known = choices.some((c) => c.value === value) || value === '';
+    control = (
+      <Select
+        {...common}
+        options={[
+          { label: '(escolha)', value: '' },
+          ...(known ? [] : [{ label: value, value }]),
+          ...choices,
+        ]}
+        value={value}
+        onChange={commit}
+      />
     );
   } else if (spec?.enum) {
     // Valor fora da lista (exportação mais nova que o XSD) continua visível.
