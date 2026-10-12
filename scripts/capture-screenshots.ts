@@ -4,7 +4,9 @@
 // Usa um Brave ou Chrome sem janela, com perfil temporário, falando pelo
 // protocolo de depuração (sem Playwright nem outra dependência). Cada tela
 // sai nos temas claro e escuro, em docs/img/<nome>-<tema>.jpg. A de Produções
-// também vai para a página do projeto, em site/img/editor-<tema>.jpg.
+// também vai para a página do projeto, em site/img/editor-<tema>.jpg. Por fim,
+// a imagem de prévia da página (site/img/og.png, 1200 × 630) sai de
+// scripts/og-card.html, servido pelo mesmo Vite.
 //
 //   pnpm dev                       # o editor em http://localhost:5173 (ou outra porta)
 //   pnpm capture:screenshots [url] # padrão: http://localhost:5173/
@@ -173,6 +175,30 @@ async function capture(theme: 'claro' | 'escuro'): Promise<void> {
   ws.close();
 }
 
+/** Imagem de prévia ao compartilhar a página do projeto (Open Graph). */
+async function captureOgImage(): Promise<void> {
+  const target = (await (
+    await fetch(`http://127.0.0.1:${PORT}/json/new?about:blank`, { method: 'PUT' })
+  ).json()) as { webSocketDebuggerUrl: string };
+  const ws = new WebSocket(target.webSocketDebuggerUrl);
+  await new Promise((r) => ws.addEventListener('open', r));
+  const cdp = new Cdp(ws);
+  await cdp.send('Page.enable');
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    deviceScaleFactor: 1,
+    height: 630,
+    mobile: false,
+    width: 1200,
+  });
+  await cdp.send('Page.navigate', { url: new URL('/scripts/og-card.html', url).href });
+  await sleep(2000);
+  const { data } = await cdp.send<{ data: string }>('Page.captureScreenshot', { format: 'png' });
+  const file = join(root, 'site/img/og.png');
+  writeFileSync(file, Buffer.from(data, 'base64'));
+  console.log(file.replace(root, ''));
+  ws.close();
+}
+
 const profile = mkdtempSync(join(tmpdir(), 'lattes-capturas-'));
 const exe = BROWSERS.find((b) => {
   try {
@@ -199,6 +225,7 @@ try {
   await waitForBrowser();
   await capture('claro');
   await capture('escuro');
+  await captureOgImage();
 } finally {
   const exited = new Promise((r) => browser.once('exit', r));
   browser.kill();

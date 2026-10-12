@@ -2,7 +2,8 @@
 
 Um editor para o Currículo Lattes que roda no seu computador. Você exporta o
 currículo no Lattes, edita aqui com busca, atalhos e formulários que não se
-perdem, e leva as mudanças de volta ao Lattes.
+perdem, e leva as mudanças de volta ao Lattes. A página do projeto fica em
+[rlueder.github.io/lattes-editor](https://rlueder.github.io/lattes-editor/).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/producoes-escuro.jpg" />

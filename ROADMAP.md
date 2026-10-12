@@ -48,9 +48,10 @@ arquivo quando muda de fato; o detalhe técnico está em
   capturas e imagem promocional, e o ID da loja no host nativo do app.
 - **Publicação.** O editor só se distribui como app para baixar (macOS,
   Windows e Linux, nas páginas de lançamento do GitHub); nada dele fica
-  hospedado. O site é só a página do projeto. Feito: repositório, CI e
-  lançamentos automáticos (semantic-release) com os instaladores. Falta:
-  publicar o site e definir o identificador do app.
+  hospedado. O site é só a página do projeto, publicada no GitHub Pages
+  (https://rlueder.github.io/lattes-editor/). Feito: repositório, CI,
+  lançamentos automáticos (semantic-release) com os instaladores e a página
+  publicada. Falta: definir o identificador do app.
 
 ## Marco 3: acabamento para a turma
 
