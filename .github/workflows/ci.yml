@@ -47,10 +47,10 @@ jobs:
     if: >-
       github.event_name == 'pull_request' ||
       (github.event_name == 'workflow_dispatch' && inputs.pr_number > 0)
-    uses: Precisa-Saude/tooling/.github/workflows/review.yml@7b42c968c2da27c702d05ae1cd282557581a918d # v3.0.0
+    uses: Precisa-Saude/tooling/.github/workflows/review.yml@106de56ae450bef9dbe7cdb49a7ce919d1d499b9 # v3.1.0
     with:
       # fromJSON porque no workflow_dispatch o pr_number chega como string,
       # mesmo declarado `type: number`, e reprova o input `number` do review.yml.
       pr_number: ${{ fromJSON(github.event.pull_request.number || inputs.pr_number || 0) }}
     secrets:
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
