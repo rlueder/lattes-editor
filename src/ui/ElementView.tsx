@@ -13,6 +13,7 @@ import { groupFields, isBooleanAttr } from './field-kind.ts';
 import { isListItem } from './item-meta.ts';
 import { OUTLINE_HEAD_ATTR, outlineId } from './item-outline.ts';
 import { ItemList } from './ItemList.tsx';
+import { isRedundantDateFormat } from './lattes-date.ts';
 import { useReferenceIndex } from './reference-context.ts';
 import { viewForContainer } from './reference-tables.ts';
 
@@ -42,6 +43,8 @@ function FieldsBlock({
     src.attrs
       // Números de sequência do Lattes identificam a linha por dentro; não se mostram.
       .filter((a) => !a.name.startsWith('SEQUENCIA-'))
+      // O formato da data é sempre DDMMAAAA: o campo de data já diz isso.
+      .filter((a) => !isRedundantDateFormat(a.name, a.value))
       .filter((a) => showEmpty || a.value !== '')
       .map((a) => ({ attr: a.name, element: src.name, key: `${i}:${a.name}`, source: i })),
   );

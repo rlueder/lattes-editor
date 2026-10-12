@@ -12,7 +12,7 @@ import { type EditFn, ElementView } from './ElementView.tsx';
 import { applyFilter, cardText, type SectionFilter } from './facets.ts';
 import { ChevronIcon } from './icons.tsx';
 import { JumpBar } from './JumpBar.tsx';
-import { type CardInfo, type ListView, type Usage, yearView } from './list-view.ts';
+import { type CardInfo, elementKey, type ListView, type Usage, yearView } from './list-view.ts';
 import { groupUsages } from './reference-tables.ts';
 
 interface Props {
@@ -54,9 +54,9 @@ export function ItemList({
       : info;
 
   const cards = (els: XElement[], groupLabel?: string) =>
-    els.map((el, i) => (
+    els.map((el) => (
       <ItemCard
-        key={i}
+        key={elementKey(el)}
         depth={depth}
         el={el}
         info={withoutRepeatedYear(view.card(el), groupLabel)}

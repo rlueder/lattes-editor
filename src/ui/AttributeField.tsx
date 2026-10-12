@@ -1,4 +1,4 @@
-// Campo de um atributo: texto, área de texto ou lista de opções (enum).
+// Campo de um atributo: texto, área de texto, data, ano ou lista de opções (enum).
 // Grava no elemento ao sair do campo; usado na visão genérica e nos formulários.
 
 import { useEffect, useId, useState } from 'react';
@@ -9,6 +9,7 @@ import { getAttr, setAttr, type XElement } from '../model/xml.ts';
 import type { AttributeSpec } from '../schema/types.ts';
 import { parseEmails, parseSocial } from './contacts.ts';
 import { CopyButton } from './CopyButton.tsx';
+import { DateField } from './DateField.tsx';
 import {
   codeAttrFor,
   codeChoices,
@@ -17,10 +18,13 @@ import {
   isSystemAttr,
 } from './field-kind.ts';
 import { LockIcon } from './icons.tsx';
+import { displayLattesDate, isLattesDateAttr, isValidLattesDate } from './lattes-date.ts';
+import { isFourDigitYear, isLattesYearAttr } from './lattes-year.ts';
 import { Select } from './primitives/Select.tsx';
 import { Switch } from './primitives/Switch.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { isSensitiveAttr, useHideSensitive } from './privacy.ts';
+import { YearField } from './YearField.tsx';
 
 export type EditFn = (note: string) => void;
 
@@ -138,6 +142,12 @@ export function AttributeField({
     );
   }
 
+  const dateAttr = isLattesDateAttr(
+    el.name,
+    name,
+    el.attrs.map((a) => a.name),
+  );
+
   if (isSystemAttr(el.name, name)) {
     // Código ou sequência gerado pelo Lattes: texto, não campo.
     return (
@@ -145,7 +155,11 @@ export function AttributeField({
         <ReadonlyLabel text={text} why="Gerado pelo Lattes; não se edita aqui" />
         <span className="field-copy-row">
           <span className="readonly-value">
-            {value ? codeValueLabel(el.name, name, value) : '(vazio)'}
+            {value
+              ? dateAttr
+                ? displayLattesDate(value)
+                : codeValueLabel(el.name, name, value)
+              : '(vazio)'}
           </span>
           {copyable && <CopyButton label={text} value={value} />}
         </span>
@@ -155,9 +169,19 @@ export function AttributeField({
 
   const boolean = isBooleanAttr(name, spec, value);
   const choices = codeChoices(el.name, name);
+  // Data em DDMMAAAA vira campo de data; valor que não é data válida fica texto, intacto.
+  const date = dateAttr && (value === '' || isValidLattesDate(value));
+  // Ano em AAAA vira campo de ano; valor que não tem quatro dígitos fica texto, intacto.
+  const year = isLattesYearAttr(el.name, name) && (value === '' || isFourDigitYear(value));
   // Texto longo vira área de texto e ocupa a linha inteira, empilhado.
   const textarea =
-    !boolean && !spec?.enum && !choices && !prominent && (multiline || value.length > 90);
+    !boolean &&
+    !spec?.enum &&
+    !choices &&
+    !date &&
+    !year &&
+    !prominent &&
+    (multiline || value.length > 90);
   let control;
   if (boolean) {
     control = (
@@ -203,6 +227,10 @@ export function AttributeField({
         onChange={commit}
       />
     );
+  } else if (date) {
+    control = <DateField common={common} label={text} value={value} onCommit={commit} />;
+  } else if (year) {
+    control = <YearField common={common} label={text} value={value} onCommit={commit} />;
   } else if (prominent) {
     control = (
       <textarea
