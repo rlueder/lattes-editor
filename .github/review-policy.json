@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "provider": "anthropic",
+  "fallbackProviders": [],
+  "includePaths": [
+    "src/**",
+    "extension/**",
+    "src-tauri/src/**",
+    "scripts/**",
+    "tests/**",
+    ".github/workflows/**"
+  ],
+  "excludePaths": ["fixtures/**", "private/**"],
+  "scanForSecretsBeforeSending": true,
+  "onSensitiveContent": "block"
+}

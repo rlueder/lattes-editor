@@ -4,6 +4,12 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR para rodar a revisão automática de novo'
+        required: false
+        type: number
 
 permissions:
   contents: read
@@ -27,3 +33,24 @@ jobs:
       - run: pnpm test:coverage
       - run: pnpm build
       - run: pnpm build:extension
+
+  # Revisão automática do tooling da Precisa, em duas rodadas por PR. O que
+  # vai para o provedor está em .github/review-policy.json, lido do commit
+  # base: mudar a política só vale depois do merge.
+  review:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: write
+      models: read
+    needs: checks
+    if: >-
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && inputs.pr_number > 0)
+    uses: Precisa-Saude/tooling/.github/workflows/review.yml@7b42c968c2da27c702d05ae1cd282557581a918d # v3.0.0
+    with:
+      # fromJSON porque no workflow_dispatch o pr_number chega como string,
+      # mesmo declarado `type: number`, e reprova o input `number` do review.yml.
+      pr_number: ${{ fromJSON(github.event.pull_request.number || inputs.pr_number || 0) }}
+    secrets:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
