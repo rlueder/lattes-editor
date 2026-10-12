@@ -1,0 +1,70 @@
+name: Vigia do Lattes
+
+# O CNPq não publica roadmap nem changelog da Plataforma Lattes. Toda
+# segunda-feira, scripts/vigia-lattes.ts confere o que é público e de que o
+# editor depende (o XSD, a página que o publica, a foto do perfil, a entrada
+# do Lattes). Quando algo muda, abre ou atualiza uma issue com o rótulo
+# vigia-lattes. O que fica atrás do login é conferido pela extensão.
+
+on:
+  schedule:
+    - cron: '0 12 * * 1' # segunda-feira, 9h em Brasília
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vigia:
+    name: conferir o que o CNPq expõe
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+      # Sem pnpm install: o script só usa o Node.
+      - id: vigia
+        continue-on-error: true
+        run: node scripts/vigia-lattes.ts --saida vigia.md --guardar vigia-out
+      # O script sempre escreve o relatório, mas se cair antes disso (Node
+      # ausente, erro de sintaxe) ainda precisamos de resumo e de issue.
+      - if: always()
+        run: |
+          if [ -f vigia.md ]; then
+            cat vigia.md
+          else
+            echo '## Vigia do Lattes: o script falhou antes de escrever o relatório'
+            echo
+            echo 'Veja o log da execução.'
+          fi > corpo.md
+          cat corpo.md >> "$GITHUB_STEP_SUMMARY"
+      - if: steps.vigia.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: vigia-lattes
+          path: |
+            vigia.md
+            vigia-out/
+          if-no-files-found: ignore
+      # Uma issue aberta por vez: se já existe, só comenta o relatório novo.
+      - if: steps.vigia.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create vigia-lattes --force --color B60205 \
+            --description 'O CNPq mudou algo no Lattes de que o editor depende'
+          { echo; echo "Execução: $RUN_URL"; } >> corpo.md
+          existente="$(gh issue list --label vigia-lattes --state open --json number --jq '.[0].number')"
+          if [ -n "$existente" ]; then
+            gh issue comment "$existente" --body-file corpo.md
+          else
+            gh issue create --title 'O CNPq mudou algo no Lattes' --label vigia-lattes --body-file corpo.md
+          fi
+      - if: steps.vigia.outcome == 'failure'
+        run: exit 1

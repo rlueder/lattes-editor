@@ -274,6 +274,84 @@ button:focus-visible {
   line-height: 1.55;
 }
 
+/* Verificação do Lattes contra o contrato da ponte, no rodapé do painel. */
+.vigia {
+  margin-top: 24px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.vigia-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.vigia-titulo {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.vigia-ajuda {
+  margin: 6px 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.vigia-resumo {
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.vigia-resumo.ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.vigia-resumo.mudou,
+.vigia-resumo.sessao {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.vigia-resumo.erro {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.vigia-lista {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font: 12px/1.5 var(--mono);
+}
+
+.vigia-acoes {
+  display: flex;
+  gap: 6px;
+}
+
+.vigia-acoes a {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.vigia-acoes a:hover {
+  background: var(--surface-2);
+}
+
 /* Estados do botão principal. */
 button.parar {
   border-color: var(--border);

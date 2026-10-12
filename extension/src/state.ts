@@ -2,6 +2,7 @@
 // navegador) e lido pelo painel.
 
 import type { OpResult } from '../../src/bridge/apply.ts';
+import type { ContractReport } from '../../src/bridge/contract.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
 
 /** Onde está o editor que mandou a fila: o app de desktop ou uma aba (desenvolvimento). */
@@ -14,6 +15,9 @@ export interface QueueState {
   ops: BridgeOp[];
   results: Record<string, OpResult>;
   running: boolean;
+  /** Última verificação do Lattes contra o contrato da ponte (src/bridge/contract.ts). */
+  verificacao?: ContractReport;
+  verificando?: boolean;
 }
 
 export const EMPTY: QueueState = { ops: [], results: {}, running: false };
@@ -29,7 +33,7 @@ export async function writeState(next: QueueState): Promise<void> {
 
 /** Comandos do painel para o service worker. */
 export type PanelCommand =
-  { cmd: 'aplicar'; keys?: string[] } | { cmd: 'limpar' } | { cmd: 'parar' };
+  { cmd: 'aplicar'; keys?: string[] } | { cmd: 'limpar' } | { cmd: 'parar' } | { cmd: 'verificar' };
 
 /** Menu do currículo no Lattes: é nessa aba que as requisições rodam. */
 export const LATTES_MENU = 'https://wwws.cnpq.br/cvlattesweb/PKG_MENU.menu*';

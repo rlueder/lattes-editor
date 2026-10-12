@@ -96,6 +96,14 @@ extensão não está na Chrome Web Store, instale assim:
 O que a extensão lê e envia está em
 [`docs/politica_de_privacidade_extensao.md`](docs/politica_de_privacidade_extensao.md).
 
+O CNPq não avisa quando muda o Lattes. Por isso o painel tem "Verificar o
+Lattes": só com leituras, ele confere o menu e um exemplar de cada
+formulário que a ponte grava contra o que ela espera (nomes, tipos e limites
+dos campos, nunca valores) e aponta o que mudou. A mesma verificação roda
+antes de cada envio, e uma mudança que quebra a ponte para a fila antes de
+gravar. O relatório pode ser copiado ou aberto como issue, sem nada do
+currículo dentro.
+
 ## Desenvolvimento
 
 ```bash
@@ -121,6 +129,13 @@ Para recomeçar do exemplo, feche o arquivo no editor e recarregue a página.
 
 Os scripts `pnpm gen:schema`, `pnpm gen:fixtures` e `pnpm validate:fixtures`
 geram o modelo a partir do XSD do Lattes e validam as fixtures.
+
+`node scripts/vigia-lattes.ts` confere, sem login, o que o CNPq expõe ao
+público e de que o editor depende: o XSD (byte a byte contra o do
+repositório), a página que o publica, a foto do perfil e a entrada do Lattes.
+O workflow "Vigia do Lattes" roda isso toda segunda-feira e abre uma issue
+com o rótulo `vigia-lattes` quando algo muda. O que fica atrás do login é
+conferido pela extensão (ver acima).
 
 ## Lançamentos
 

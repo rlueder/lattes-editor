@@ -2,6 +2,13 @@
 // para todas, o resultado de cada uma e o botão de parar.
 
 import type { OpResult } from '../../src/bridge/apply.ts';
+import {
+  type ContractReport,
+  driftText,
+  isBreaking,
+  issueUrl,
+  reportText,
+} from '../../src/bridge/contract.ts';
 import { opRows } from '../../src/bridge/field-labels.ts';
 import type { PanelCommand, QueueState } from './state.ts';
 import { readState } from './state.ts';
@@ -47,6 +54,84 @@ function emptyState(): HTMLElement {
   ]);
 }
 
+const VERSION = chrome.runtime.getManifest().version;
+
+const REPORT_TITLE: Record<ContractReport['status'], string> = {
+  erro: 'Não deu para verificar',
+  mudou: 'O Lattes mudou',
+  ok: 'Lattes como o esperado',
+  sessao: 'Sessão caiu',
+};
+
+const FORM_TITLE: Record<string, string> = {
+  GN_ATIV_VINC: 'Vínculo',
+  GN_IDIOMA: 'Idioma',
+  RES: 'Resumo',
+};
+
+function renderReport(report: ContractReport | undefined): void {
+  const root = document.getElementById('vigia-resultado')!;
+  root.replaceChildren();
+  if (!report) return;
+  const when = new Date(report.checkedAt).toLocaleString('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  });
+  root.append(
+    el('p', {}, [
+      el('span', {
+        className: `vigia-resumo ${report.status}`,
+        textContent: REPORT_TITLE[report.status],
+      }),
+      ' ',
+      el('span', { className: 'detalhe', textContent: `em ${when}` }),
+    ]),
+  );
+  if (report.detail) root.append(el('p', { className: 'detalhe', textContent: report.detail }));
+  const lines = [
+    ...report.menu.filter((m) => !m.found).map((m) => `Menu: link ${m.proc} sumiu`),
+    ...report.forms.flatMap((f) =>
+      f.status === 'sem-amostra'
+        ? [`${FORM_TITLE[f.form] ?? f.form}: sem amostra (${f.detail ?? ''})`]
+        : f.drifts.map((d) => `${driftText(d)}${isBreaking(d) ? '' : ' (não impede o envio)'}`),
+    ),
+  ];
+  if (lines.length) {
+    root.append(
+      el(
+        'ul',
+        { className: 'vigia-lista' },
+        lines.map((t) => el('li', { textContent: t })),
+      ),
+    );
+  }
+  if (report.status === 'ok') return;
+  // O relatório só tem nomes de campos e procedimentos; pode ir para uma issue pública.
+  const copy = el('button', {
+    className: 'fantasma',
+    textContent: 'Copiar relatório',
+    type: 'button',
+  });
+  copy.addEventListener('click', () => {
+    navigator.clipboard.writeText(reportText(report, VERSION)).then(
+      () => {
+        copy.textContent = 'Copiado';
+      },
+      () => {
+        // Sem permissão ou sem foco: o botão avisa, e o texto segue no painel.
+        copy.textContent = 'Não deu para copiar';
+      },
+    );
+  });
+  const issue = el('a', {
+    href: issueUrl(report, VERSION),
+    rel: 'noreferrer',
+    target: '_blank',
+    textContent: 'Abrir issue no GitHub',
+  });
+  root.append(el('div', { className: 'vigia-acoes' }, [copy, issue]));
+}
+
 function render(state: QueueState): void {
   const root = document.getElementById('fila')!;
   const action = document.getElementById('acao') as HTMLButtonElement;
@@ -63,6 +148,10 @@ function render(state: QueueState): void {
   action.textContent =
     mode === 'parar' ? 'Parar' : mode === 'ok' ? '✓ Tudo conferido' : 'Aplicar todas';
   root.replaceChildren();
+  const verify = document.getElementById('verificar') as HTMLButtonElement;
+  verify.disabled = Boolean(state.running || state.verificando);
+  verify.textContent = state.verificando ? 'Verificando…' : 'Verificar o Lattes';
+  renderReport(state.verificacao);
   // Sem fila, sem botões: o estado vazio fala sozinho.
   document.querySelector<HTMLElement>('.acoes')!.hidden = state.ops.length === 0;
   document.querySelector<HTMLElement>('.ajuda')!.hidden = state.ops.length === 0;
@@ -112,6 +201,7 @@ document.getElementById('acao')!.addEventListener('click', (e) => {
   send(mode === 'parar' ? { cmd: 'parar' } : { cmd: 'aplicar' });
 });
 document.getElementById('limpar')!.addEventListener('click', () => send({ cmd: 'limpar' }));
+document.getElementById('verificar')!.addEventListener('click', () => send({ cmd: 'verificar' }));
 chrome.storage.onChanged.addListener(() => void readState().then(render));
 void readState().then(render);
 
