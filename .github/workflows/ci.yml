@@ -32,6 +32,10 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test:coverage
       - run: pnpm build
+      # Marcador do Vite que escapou do inlineBundle quebra o app ao abrir
+      # (tela em branco no desktop, v0.8.0).
+      - name: HTML sem marcadores do Vite
+        run: "! grep -o '__VITE_[A-Z_]*__' dist/index.html"
       - run: pnpm build:extension
 
   # Revisão automática do tooling da Precisa, em duas rodadas por PR. O que
