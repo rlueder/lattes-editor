@@ -5,8 +5,10 @@ name: App de desktop
 # lançamento com nomes fixos, para a página do projeto apontar sempre para
 # releases/latest/download/<nome>. Em PR que mexe no app, só monta, sem enviar.
 #
-# Os instaladores não são assinados: o macOS e o Windows avisam na primeira
-# abertura (a página do projeto explica como abrir).
+# No lançamento, o app de macOS sai assinado com o Developer ID e notarizado
+# pela Apple, e abre sem aviso; sem os segredos, sai sem assinatura. O
+# instalador do Windows ainda não é assinado: o SmartScreen avisa na primeira
+# abertura.
 
 on:
   workflow_call:
@@ -15,6 +17,20 @@ on:
         description: Tag do lançamento que recebe os instaladores.
         required: true
         type: string
+    # Assinatura Developer ID e notarização do app de macOS (só nos lançamentos).
+    secrets:
+      APPLE_CERTIFICATE:
+        required: false
+      APPLE_CERTIFICATE_PASSWORD:
+        required: false
+      APPLE_SIGNING_IDENTITY:
+        required: false
+      APPLE_API_ISSUER:
+        required: false
+      APPLE_API_KEY:
+        required: false
+      APPLE_API_KEY_P8:
+        required: false
   pull_request:
     paths:
       - 'src-tauri/**'
@@ -76,6 +92,33 @@ jobs:
         with:
           workspaces: src-tauri
       - run: pnpm install --frozen-lockfile
+      # Só no lançamento do macOS: certificado Developer ID e chave da App Store
+      # Connect para notarizar. Sem os segredos, avisa e monta sem assinar, como
+      # antes; o tauri-action lê as variáveis APPLE_* do ambiente.
+      - name: Assinatura e notarização (macOS)
+        if: runner.os == 'macOS' && inputs.tag != ''
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: |
+          if [ -z "$APPLE_CERTIFICATE" ] || [ -z "$APPLE_API_KEY_P8" ]; then
+            echo "::warning::Sem os segredos da Apple: o app de macOS sai sem assinatura."
+            exit 0
+          fi
+          key="$RUNNER_TEMP/AuthKey_$APPLE_API_KEY.p8"
+          printf '%s' "$APPLE_API_KEY_P8" > "$key"
+          {
+            echo "APPLE_CERTIFICATE=$APPLE_CERTIFICATE"
+            echo "APPLE_CERTIFICATE_PASSWORD=$APPLE_CERTIFICATE_PASSWORD"
+            echo "APPLE_SIGNING_IDENTITY=$APPLE_SIGNING_IDENTITY"
+            echo "APPLE_API_ISSUER=$APPLE_API_ISSUER"
+            echo "APPLE_API_KEY=$APPLE_API_KEY"
+            echo "APPLE_API_KEY_PATH=$key"
+          } >> "$GITHUB_ENV"
       - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # action-v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
