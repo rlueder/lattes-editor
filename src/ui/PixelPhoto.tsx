@@ -1,6 +1,7 @@
 // Foto em mosaico para o modo de privacidade: a imagem é reduzida a poucos
-// pixels num canvas e ampliada sem suavizar. Dá para ver que há uma foto,
-// não quem é. O canvas só desenha, nunca lê os pixels de volta.
+// pixels num canvas e ampliada sem suavizar, em tons de cinza (filtro no CSS).
+// Dá para ver que há uma foto, não quem é. O canvas só desenha, nunca lê os
+// pixels de volta.
 
 import { useEffect, useRef } from 'react';
 
