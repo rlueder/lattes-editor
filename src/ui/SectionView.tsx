@@ -5,7 +5,7 @@ import { useMemo, useRef, useState } from 'react';
 
 import { isBlank } from '../model/changes.ts';
 import type { ProductionType } from '../model/production.ts';
-import { childElements, type XElement } from '../model/xml.ts';
+import type { XElement } from '../model/xml.ts';
 import { type EditFn, ElementView } from './ElementView.tsx';
 import { EmptySection } from './EmptySection.tsx';
 import {
@@ -19,7 +19,6 @@ import {
 } from './facets.ts';
 import { FilterBar } from './FilterBar.tsx';
 import { EyeIcon, EyeOffIcon } from './icons.tsx';
-import { isListItem } from './item-meta.ts';
 import { ItemList } from './ItemList.tsx';
 import { JumpBar } from './JumpBar.tsx';
 import { type ListView, yearView } from './list-view.ts';
@@ -28,7 +27,7 @@ import { Tip } from './primitives/Tip.tsx';
 import { PrivacyContext, usePrivacyMode } from './privacy.ts';
 import { useReferenceIndex } from './reference-context.ts';
 import { type ReferenceIndex, viewForContainer } from './reference-tables.ts';
-import { countItems, type Section, type SectionGroup } from './sections.ts';
+import { countItems, groupItemList, type Section, type SectionGroup } from './sections.ts';
 import { StickyTitle } from './StickyTitle.tsx';
 
 interface Props {
@@ -40,18 +39,18 @@ interface Props {
 }
 
 interface GroupList {
+  /** Os itens são os próprios elementos do grupo, sem contêiner que os embrulhe. */
+  direct: boolean;
   items: XElement[];
   view: ListView;
 }
 
 /** Os itens de lista de um grupo e a visão que os agrupa; null se o grupo não é lista. */
 function groupList(g: SectionGroup, index: ReferenceIndex): GroupList | null {
-  if (g.elements.length > 1) return { items: g.elements, view: yearView };
-  const el = g.elements[0];
-  if (!el || el.attrs.length > 0) return null;
-  const children = childElements(el).filter((c) => c.attrs.length > 0 || c.children.length > 0);
-  if (children.length === 0 || !children.every(isListItem)) return null;
-  return { items: children, view: viewForContainer(el.name, index) ?? yearView };
+  const list = groupItemList(g);
+  if (!list) return null;
+  const view = (list.container && viewForContainer(list.container.name, index)) || yearView;
+  return { direct: !list.container, items: list.items, view };
 }
 
 export function SectionView(props: Props) {
@@ -186,11 +185,13 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
               counts[i]! > 0 ? (
                 <section key={g.id} className="group" id={g.id}>
                   <h2>{g.label}</h2>
-                  {g.elements.length > 1 ? (
+                  {/* Itens soltos viram cartões, mesmo um só; o contêiner que embrulha
+                      uma lista (IDIOMAS, ARTIGOS-PUBLICADOS) passa pelo ElementView. */}
+                  {lists[i]?.direct ? (
                     <ItemList
                       anchorBase={g.id}
                       filter={filter}
-                      items={g.elements}
+                      items={lists[i].items}
                       showEmpty={showEmpty}
                       onEdit={onEdit}
                     />

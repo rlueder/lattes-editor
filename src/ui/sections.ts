@@ -4,6 +4,8 @@
 
 import { elementLabel, slugify } from '../labels/labels.ts';
 import { childElements, firstChild, getAttr, walk, type XElement } from '../model/xml.ts';
+import { lattesSchema } from '../schema/lattes.ts';
+import { isListItem } from './item-meta.ts';
 
 export interface SectionGroup {
   /** Elementos a renderizar: contêineres inteiros ou itens soltos (filtros). */
@@ -298,10 +300,49 @@ export function buildSections(root: XElement): Section[] {
   return sections;
 }
 
+/** Elementos que o schema deixa repetir dentro do pai (SOFTWARE, PATENTE, PROJETO-DE-PESQUISA). */
+const REPEATABLE = new Set(
+  Object.values(lattesSchema.elements).flatMap((spec) =>
+    spec.children.filter((c) => c.max !== 1).map((c) => c.name),
+  ),
+);
+
+/**
+ * Item de lista mesmo quando vem sozinho: carrega dados e pode se repetir no
+ * pai. Blocos únicos do perfil (DADOS-GERAIS, RESUMO-CV, ENDERECO) também
+ * carregam dados, mas o schema só admite um de cada.
+ */
+export function isRepeatableItem(el: XElement): boolean {
+  return isListItem(el) && REPEATABLE.has(el.name);
+}
+
+export interface GroupItems {
+  /** Contêiner único que embrulha a lista (IDIOMAS, ARTIGOS-PUBLICADOS), quando há. */
+  container?: XElement;
+  items: XElement[];
+}
+
+/**
+ * Os itens de lista de um grupo, que viram cartões; null quando o grupo é um
+ * bloco de campos (Identificação, Resumo, Endereço). Um item sozinho (uma
+ * única patente) é lista de um, igual a quando há dois.
+ */
+export function groupItemList(g: SectionGroup): GroupItems | null {
+  if (g.elements.length > 1) return { items: g.elements };
+  const el = g.elements[0];
+  if (!el) return null;
+  if (el.attrs.length > 0) return isRepeatableItem(el) ? { items: [el] } : null;
+  const children = childElements(el).filter((c) => c.attrs.length > 0 || c.children.length > 0);
+  if (children.length === 0 || !children.every(isListItem)) return null;
+  return { container: el, items: children };
+}
+
 /** Quantos itens de lista um grupo tem (para o ⌘K e a navegação). */
 export function countItems(g: SectionGroup): number {
   if (g.elements.length !== 1) return g.elements.length;
   const only = g.elements[0]!;
+  // Um item sozinho conta um, não as partes dele (DADOS-BASICOS, AUTORES…).
+  if (isRepeatableItem(only)) return 1;
   const kids = childElements(only);
   return kids.length > 0 ? kids.length : 1;
 }
