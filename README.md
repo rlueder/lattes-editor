@@ -89,11 +89,15 @@ extensão não está na Chrome Web Store, instale assim:
 1. Baixe `lattes-editor-extensao.zip` da página do lançamento e descompacte.
 2. Em `brave://extensions` (ou `chrome://extensions`), ligue o "Modo do
    desenvolvedor" e use "Carregar sem compactação" na pasta.
-3. Com o currículo aberto no Lattes numa aba, "Levar ao Lattes" no app passa
+3. No primeiro uso, o painel mostra o que a extensão lê e envia e pede um
+   "ok"; sem ele, ela não toca no Lattes.
+4. Com o currículo aberto no Lattes numa aba, "Levar ao Lattes" no app passa
    a oferecer o envio pela extensão.
 
-O que a extensão lê e envia está em
-[`docs/politica_de_privacidade_extensao.md`](docs/politica_de_privacidade_extensao.md).
+O que a extensão lê e envia está na
+[política de privacidade da extensão](https://rlueder.github.io/lattes-editor/privacidade.html).
+Para gerar as imagens da página na Chrome Web Store: `pnpm build:extension`,
+`pnpm dev` e `pnpm capture:store` (saem em `docs/img/loja/`).
 
 O CNPq não avisa quando muda o Lattes. Por isso o painel tem "Verificar o
 Lattes": só com leituras, ele confere o menu e um exemplar de cada

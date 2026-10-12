@@ -11,25 +11,15 @@
 //   pnpm dev                       # o editor em http://localhost:5173 (ou outra porta)
 //   pnpm capture:screenshots [url] # padrão: http://localhost:5173/
 
-import { spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+
+import { assertRendered, openTab, sleep, withHeadlessBrowser } from './headless.ts';
 
 const root = new URL('../', import.meta.url).pathname;
 const url = process.argv[2] ?? 'http://localhost:5173/';
 const fixture = join(root, 'fixtures/synthetic_full.xml');
 const outDir = join(root, 'docs/img');
-const PORT = 9333;
-
-const BROWSERS = [
-  '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/usr/bin/google-chrome',
-  '/usr/bin/chromium',
-];
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Uma tela: como chegar nela a partir do editor aberto. */
 interface Shot {
@@ -69,47 +59,8 @@ const SHOTS: Shot[] = [
   },
 ];
 
-class Cdp {
-  private id = 0;
-  private pending = new Map<number, (v: unknown) => void>();
-  private ws: WebSocket;
-  constructor(ws: WebSocket) {
-    this.ws = ws;
-    ws.addEventListener('message', (e) => {
-      const msg = JSON.parse(String(e.data)) as { id?: number; result?: unknown; error?: unknown };
-      if (msg.id && this.pending.has(msg.id)) {
-        this.pending.get(msg.id)!(msg.error ? Promise.reject(msg.error) : msg.result);
-        this.pending.delete(msg.id);
-      }
-    });
-  }
-  send<T = Record<string, unknown>>(method: string, params: object = {}): Promise<T> {
-    const id = ++this.id;
-    this.ws.send(JSON.stringify({ id, method, params }));
-    return new Promise((r) => this.pending.set(id, r as (v: unknown) => void));
-  }
-}
-
-async function waitForBrowser(): Promise<void> {
-  for (let i = 0; i < 50; i++) {
-    try {
-      await fetch(`http://127.0.0.1:${PORT}/json/version`);
-      return;
-    } catch {
-      await sleep(200);
-    }
-  }
-  throw new Error('O navegador não abriu a porta de depuração');
-}
-
 async function capture(theme: 'claro' | 'escuro'): Promise<void> {
-  const target = (await (
-    await fetch(`http://127.0.0.1:${PORT}/json/new?about:blank`, { method: 'PUT' })
-  ).json()) as { webSocketDebuggerUrl: string };
-  const ws = new WebSocket(target.webSocketDebuggerUrl);
-  await new Promise((r) => ws.addEventListener('open', r));
-  const cdp = new Cdp(ws);
-  await cdp.send('Page.enable');
+  const cdp = await openTab();
   await cdp.send('Emulation.setDeviceMetricsOverride', {
     deviceScaleFactor: 2,
     height: 860,
@@ -172,18 +123,12 @@ async function capture(theme: 'claro' | 'escuro'): Promise<void> {
     await sleep(1500);
     await shoot(shot);
   }
-  ws.close();
+  cdp.close();
 }
 
 /** Imagem de prévia ao compartilhar a página do projeto (Open Graph). */
 async function captureOgImage(): Promise<void> {
-  const target = (await (
-    await fetch(`http://127.0.0.1:${PORT}/json/new?about:blank`, { method: 'PUT' })
-  ).json()) as { webSocketDebuggerUrl: string };
-  const ws = new WebSocket(target.webSocketDebuggerUrl);
-  await new Promise((r) => ws.addEventListener('open', r));
-  const cdp = new Cdp(ws);
-  await cdp.send('Page.enable');
+  const cdp = await openTab();
   await cdp.send('Emulation.setDeviceMetricsOverride', {
     deviceScaleFactor: 1,
     height: 630,
@@ -191,69 +136,17 @@ async function captureOgImage(): Promise<void> {
     width: 1200,
   });
   await cdp.send('Page.navigate', { url: new URL('/scripts/og-card.html', url).href });
-  // Espera o documento, a fonte e as imagens em vez de um tempo fixo, e confere
-  // que a página renderizou de fato: um cartão quebrado falha o script em vez
-  // de ser gravado. document.fonts.check() daria verdadeiro sem fonte nenhuma
-  // declarada; fonts.load() só devolve faces que a página carregou.
-  const { result } = await cdp.send<{ result: { value?: string } }>('Runtime.evaluate', {
-    awaitPromise: true,
-    expression: `(async () => {
-      for (let i = 0; i < 100 && document.readyState !== 'complete'; i++) {
-        await new Promise((r) => setTimeout(r, 100));
-      }
-      const faces = await document.fonts.load('600 50px "IBM Plex Sans"');
-      const imgs = [...document.images];
-      await Promise.all(imgs.map((i) => i.decode().catch(() => {})));
-      return JSON.stringify({
-        font: faces.some((f) => f.family.includes('IBM Plex Sans') && f.status === 'loaded'),
-        images: imgs.length > 0 && imgs.every((i) => i.complete && i.naturalWidth > 0),
-        title: Boolean(document.querySelector('h1')?.textContent),
-      });
-    })()`,
-    returnByValue: true,
-  });
-  const ready = JSON.parse(result.value ?? '{}') as Record<string, boolean>;
-  const missing = ['font', 'images', 'title'].filter((k) => !ready[k]);
-  if (missing.length) {
-    throw new Error(`Prévia (og-card.html) não renderizou: ${missing.join(', ')}`);
-  }
+  await assertRendered(cdp, 'Prévia (og-card.html)', 'body');
   const { data } = await cdp.send<{ data: string }>('Page.captureScreenshot', { format: 'png' });
   const file = join(root, 'site/img/og.png');
   writeFileSync(file, Buffer.from(data, 'base64'));
   console.log(file.replace(root, ''));
-  ws.close();
+  cdp.close();
 }
 
-const profile = mkdtempSync(join(tmpdir(), 'lattes-capturas-'));
-const exe = BROWSERS.find((b) => {
-  try {
-    return statSync(b).isFile();
-  } catch {
-    return false;
-  }
-});
-if (!exe) throw new Error('Brave ou Chrome não encontrado');
-const browser = spawn(
-  exe,
-  [
-    '--headless=new',
-    `--remote-debugging-port=${PORT}`,
-    `--user-data-dir=${profile}`,
-    '--hide-scrollbars',
-    '--no-first-run',
-    '--no-default-browser-check',
-  ],
-  { stdio: 'ignore' },
-);
 mkdirSync(outDir, { recursive: true });
-try {
-  await waitForBrowser();
+await withHeadlessBrowser(async () => {
   await capture('claro');
   await capture('escuro');
   await captureOgImage();
-} finally {
-  const exited = new Promise((r) => browser.once('exit', r));
-  browser.kill();
-  await exited;
-  rmSync(profile, { force: true, maxRetries: 5, recursive: true, retryDelay: 200 });
-}
+});

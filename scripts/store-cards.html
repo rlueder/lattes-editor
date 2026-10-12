@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <!-- Imagens da página da extensão na Chrome Web Store, renderizadas por
+         scripts/capture-store.ts pelo servidor do Vite. O hash escolhe a peça:
+         #promo (440 × 280), #fila e #aviso (capturas de 1280 × 800). As capturas
+         do painel (docs/img/loja/painel-*.png) saem da extensão de verdade. -->
+    <link rel="stylesheet" href="/site/fonts/fonts.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      html,
+      body {
+        overflow: hidden;
+      }
+      body {
+        position: relative;
+        background: #f6f4f1;
+        color: #21201c;
+        font-family: 'IBM Plex Sans', sans-serif;
+      }
+      .piece {
+        display: none;
+        position: relative;
+      }
+      .word {
+        color: #463c6d;
+      }
+      .word b {
+        font-weight: 700;
+      }
+      .word span {
+        font-weight: 400;
+      }
+
+      /* Imagem promocional pequena: marca e o que a extensão é, sem frase longa. */
+      #promo {
+        width: 440px;
+        height: 280px;
+        padding: 0 40px;
+        flex-direction: column;
+        justify-content: center;
+        gap: 18px;
+      }
+      #promo .mark {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      #promo .mark img {
+        width: 64px;
+        height: 64px;
+      }
+      #promo .word {
+        font-size: 34px;
+      }
+      #promo p {
+        color: #21201c;
+        font-size: 22px;
+        font-weight: 600;
+        line-height: 1.25;
+      }
+
+      /* Capturas: texto à esquerda, o painel da extensão à direita, sobre o editor. */
+      .shot-card {
+        width: 1280px;
+        height: 800px;
+      }
+      .shot-card .text {
+        position: absolute;
+        top: 120px;
+        left: 80px;
+        width: 470px;
+      }
+      .shot-card .mark {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 40px;
+      }
+      .shot-card .mark img {
+        width: 48px;
+        height: 48px;
+      }
+      .shot-card .word {
+        font-size: 26px;
+      }
+      .shot-card h1 {
+        font-size: 44px;
+        font-weight: 600;
+        line-height: 1.1;
+        letter-spacing: -0.01em;
+      }
+      .shot-card p {
+        margin-top: 24px;
+        color: #63635e;
+        font-size: 21px;
+        line-height: 1.45;
+      }
+      .editor {
+        position: absolute;
+        top: 110px;
+        left: 620px;
+        width: 900px;
+        border: 1px solid #dad9d6;
+        border-radius: 12px;
+        overflow: hidden;
+        opacity: 0.55;
+      }
+      .editor img,
+      .panel img {
+        display: block;
+        width: 100%;
+      }
+      .panel {
+        position: absolute;
+        top: 60px;
+        left: 760px;
+        width: 400px;
+        border: 1px solid #dad9d6;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 30px 70px rgb(0 0 0 / 0.18);
+      }
+
+      :target {
+        display: flex;
+      }
+      .shot-card:target {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <section id="promo" class="piece">
+      <div class="mark">
+        <img src="/site/favicon.svg" alt="" />
+        <div class="word"><b>Lattes</b><span>Editor</span></div>
+      </div>
+      <p>Ponte com o Currículo Lattes</p>
+    </section>
+
+    <section id="fila" class="piece shot-card">
+      <div class="text">
+        <div class="mark">
+          <img src="/site/favicon.svg" alt="" />
+          <div class="word"><b>Lattes</b><span>Editor</span></div>
+        </div>
+        <h1>Leve ao Lattes o que você mudou no editor</h1>
+        <p>
+          Cada alteração é gravada na sua sessão do Lattes, lida de volta e conferida antes da
+          próxima. A fila para no primeiro problema.
+        </p>
+      </div>
+      <div class="editor"><img src="/site/img/editor-claro.jpg" alt="" /></div>
+      <div class="panel"><img src="/docs/img/loja/painel-fila.png" alt="" /></div>
+    </section>
+
+    <section id="aviso" class="piece shot-card">
+      <div class="text">
+        <div class="mark">
+          <img src="/site/favicon.svg" alt="" />
+          <div class="word"><b>Lattes</b><span>Editor</span></div>
+        </div>
+        <h1>Você sabe o que a extensão faz antes de usar</h1>
+        <p>
+          Ela só age na sessão do Lattes que você abriu e manda dados apenas ao Lattes e ao app no
+          seu computador. Sem servidor e sem estatística de uso.
+        </p>
+      </div>
+      <div class="editor"><img src="/site/img/editor-claro.jpg" alt="" /></div>
+      <div class="panel"><img src="/docs/img/loja/painel-aviso.png" alt="" /></div>
+    </section>
+  </body>
+</html>
