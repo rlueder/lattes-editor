@@ -42,7 +42,9 @@ deixa dezenas de vezes maior.
    Lattes, com o arquivo que o app gera. O resto vai pela extensão da ponte
    ou, sem ela, campo a campo, com o valor antigo e o novo lado a lado.
    Depois, exporte de novo e use "Recarregar do Lattes": o que já chegou lá
-   sai da lista.
+   sai da lista. Cada exportação aberta vira uma versão, e o app diz o que
+   mudou desde a anterior ("Versões do Lattes", no ⌘K), inclusive o que foi
+   editado direto no Lattes.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/ir-para-escuro.jpg" />
@@ -66,8 +68,9 @@ Não há servidor nem conta. O currículo é lido e guardado no próprio
 computador, e o arquivo salvo vai para o seu disco. Saem dele só a busca do
 DOI no Crossref, quando você pede, e a foto do perfil, buscada no CNPq.
 
-O que o app guarda entre uma sessão e outra (cópia de trabalho, histórico e
-registro do que foi enviado ao Lattes) fica cifrado com AES-GCM. A chave é
+O que o app guarda entre uma sessão e outra (cópia de trabalho, histórico,
+registro do que foi enviado ao Lattes e versões do Lattes) fica cifrado com
+AES-GCM. A chave é
 gerada no primeiro uso e mora no chaveiro do sistema: Keychain no macOS,
 Gerenciador de Credenciais no Windows, Secret Service (GNOME Keyring ou
 KWallet) no Linux. Sem chaveiro disponível, o app avisa e não guarda nada

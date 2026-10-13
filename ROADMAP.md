@@ -86,6 +86,10 @@ arquivo quando muda de fato; o detalhe técnico está em
   de nome de autor, ISSN, períodos que se cruzam), sem IA; ver
   `docs/pesquisa_recursos_de_ia.md`.
 - **Achar o DOI** de produções que não têm, pelo Crossref.
+- **Linha do tempo de versões.** Feito: cada exportação aberta vira uma
+  versão (até 24 por currículo, cifradas como o resto), e o app mostra o que
+  mudou entre uma e a anterior, por seção, com o caminho até o item no
+  editor. A comparação é a mesma da lista de alterações.
 - **App de desktop** com Tauri para macOS, Windows e Linux. Feito: diálogos
   nativos de abrir e salvar, builds dos três sistemas na CI com os
   instaladores na página do lançamento, e a ligação com a extensão por
