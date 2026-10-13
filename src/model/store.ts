@@ -25,6 +25,11 @@ export interface WorkingCopy {
 
 export interface HistoryEntry {
   id?: number;
+  /**
+   * Ponto de antes de um envio ao Lattes: fica fora da rotação das edições
+   * (KEPT_LIMIT próprio), para não sumir depois de 50 edições.
+   */
+  keep?: boolean;
   /** Descrição curta da alteração, mostrada no painel de histórico. */
   note: string;
   savedAt: number;
@@ -49,6 +54,8 @@ export function newWorkingCopy(cv: LoadedCv, now: number): WorkingCopy {
 }
 
 export const HISTORY_LIMIT = 50;
+/** Quantos pontos de antes do envio ficam, à parte das edições. */
+export const KEPT_LIMIT = 20;
 
 class LattesDb extends Dexie {
   working!: EntityTable<WorkingCopy, 'id'>;
@@ -74,16 +81,24 @@ export async function loadWorkingCopy(): Promise<WorkingCopy | undefined> {
   return db.working.get('current');
 }
 
-/** Apaga os pontos de histórico mais antigos além dos últimos 50. */
+/**
+ * Apaga os pontos mais antigos: das edições, além dos últimos 50; dos de
+ * antes do envio, além dos últimos 20. Uma contagem não come a outra.
+ */
 async function trimHistory(): Promise<void> {
-  const total = await db.history.count();
-  if (total > HISTORY_LIMIT) {
-    const stale = await db.history
-      .orderBy('savedAt')
-      .limit(total - HISTORY_LIMIT)
-      .primaryKeys();
-    await db.history.bulkDelete(stale);
-  }
+  const all = await db.history.orderBy('savedAt').toArray();
+  const stale = (entries: HistoryEntry[], limit: number) =>
+    entries.slice(0, Math.max(0, entries.length - limit)).map((e) => e.id!);
+  await db.history.bulkDelete([
+    ...stale(
+      all.filter((e) => !e.keep),
+      HISTORY_LIMIT,
+    ),
+    ...stale(
+      all.filter((e) => e.keep),
+      KEPT_LIMIT,
+    ),
+  ]);
 }
 
 /** Grava a cópia de trabalho e um ponto de histórico, mantendo os últimos 50. */
@@ -125,6 +140,11 @@ export async function addSent(entry: SentEntry): Promise<number | undefined> {
 export async function listSent(lattesId: string): Promise<SentEntry[]> {
   const entries = await db.sent.where('lattesId').equals(lattesId).toArray();
   return entries.sort((a, b) => b.sentAt - a.sentAt);
+}
+
+/** Apaga o registro do enviado deste currículo. Não muda nada no Lattes. */
+export async function clearSent(lattesId: string): Promise<void> {
+  await db.sent.where('lattesId').equals(lattesId).delete();
 }
 
 /**

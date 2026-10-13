@@ -22,6 +22,7 @@ const timeLabel = (ms: number) =>
 
 export function SentList({ bridge }: { bridge: BridgeState }) {
   const [undoing, setUndoing] = useState<SentEntry | undefined>();
+  const [clearing, setClearing] = useState(false);
   const days = useMemo(() => groupByDay(bridge.sent), [bridge.sent]);
   const undone = useMemo(() => undoneIds(bridge.sent), [bridge.sent]);
   const reverse = undoing && undoOp(undoing);
@@ -97,6 +98,33 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
           if (entry) void bridge.send({ undo: entry });
         }}
       />
+      <div className="sent-clear">
+        {clearing ? (
+          <>
+            <p className="muted">
+              Apagar o registro não muda nada no Lattes, e depois não dá para desfazer daqui o que
+              ainda não foi enviado ao CNPq.
+            </p>
+            <button type="button" onClick={() => setClearing(false)}>
+              Manter
+            </button>
+            <button
+              className="danger"
+              type="button"
+              onClick={() => {
+                setClearing(false);
+                void bridge.clearSent();
+              }}
+            >
+              Apagar registro
+            </button>
+          </>
+        ) : (
+          <button className="ghost" type="button" onClick={() => setClearing(true)}>
+            Apagar este registro do app
+          </button>
+        )}
+      </div>
     </section>
   );
 }

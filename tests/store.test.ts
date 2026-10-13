@@ -82,6 +82,41 @@ describe('banco local (IndexedDB)', () => {
       expect((await store.listSent('0000000000000002')).map((e) => e.op.label)).toEqual(['Resumo']);
     });
 
+    it('os pontos de antes do envio ficam fora da rotação das edições', async () => {
+      await store.addHistoryPoint({
+        keep: true,
+        note: 'Lattes antes do envio',
+        savedAt: 1,
+        xml: '<a/>',
+      });
+      for (let i = 2; i <= store.HISTORY_LIMIT + 5; i++) {
+        await store.saveWorkingCopy(copy(`<v${i}/>`, i), `edição ${i}`);
+      }
+      const notes = (await store.listHistory()).map((h) => h.note);
+      expect(notes).toContain('Lattes antes do envio');
+      expect(notes.filter((n) => n.startsWith('edição'))).toHaveLength(store.HISTORY_LIMIT);
+
+      for (let i = 0; i < store.KEPT_LIMIT + 2; i++) {
+        await store.addHistoryPoint({
+          keep: true,
+          note: `antes ${i}`,
+          savedAt: 1000 + i,
+          xml: '<b/>',
+        });
+      }
+      const kept = (await store.listHistory()).filter((h) => h.keep);
+      expect(kept).toHaveLength(store.KEPT_LIMIT);
+      expect(kept.map((h) => h.note)).not.toContain('Lattes antes do envio');
+    });
+
+    it('apagar o registro do enviado vale só para aquele currículo', async () => {
+      await store.addSent(sentEntry(resumo('um'), '0000000000000001', 100));
+      await store.addSent(sentEntry(resumo('outro'), '0000000000000002', 200));
+      await store.clearSent('0000000000000001');
+      expect(await store.listSent('0000000000000001')).toEqual([]);
+      expect(await store.listSent('0000000000000002')).toHaveLength(1);
+    });
+
     it('abrir outra exportação e fechar o arquivo não apagam o registro do enviado', async () => {
       await store.addSent(sentEntry(resumo('um'), '0000000000000001', 100));
       await store.saveWorkingCopy(copy('<editado/>', 5), 'edição');

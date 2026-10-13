@@ -1683,6 +1683,21 @@ details.card.is-new {
   margin: 0 0 10px;
 }
 
+.sent-clear {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.sent-clear p {
+  flex-basis: 100%;
+  margin: 0;
+  text-align: right;
+}
+
 .sent-day + .sent-day {
   margin-top: 12px;
 }

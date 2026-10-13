@@ -23,7 +23,7 @@ import { type SentEntry, sentEntry, undoOp } from '../bridge/sent-log.ts';
 import { isDesktop } from '../desktop/native.ts';
 import type { Session } from '../forms/use-production.ts';
 import type { Change } from '../model/changes.ts';
-import { addHistoryPoint, addSent, listSent } from '../model/store.ts';
+import { addHistoryPoint, addSent, clearSent, listSent } from '../model/store.ts';
 import { getAttr } from '../model/xml.ts';
 import type { ChangeGroup } from './changes-view.ts';
 import { writeCvCode } from './profile.ts';
@@ -82,6 +82,8 @@ function listen(onMessage: (msg: BridgeMessage) => void, onLost: () => void): ()
 
 export interface BridgeState {
   available: boolean;
+  /** Apaga o registro do enviado deste currículo (nada muda no Lattes). */
+  clearSent: () => Promise<void>;
   /** Quantas alterações foram gravadas e conferidas desde o último envio. */
   confirmed: number;
   /** Alterações que a extensão sabe levar e as que ficam para copiar à mão. */
@@ -195,6 +197,11 @@ export function useBridge(
 
   return {
     available,
+    clearSent: async () => {
+      if (!lattesId) return;
+      await clearSent(lattesId);
+      setSent([]);
+    },
     confirmed,
     plan,
     results,
@@ -209,6 +216,7 @@ export function useBridge(
         // não grava, o envio segue: o registro do enviado guarda o antes de
         // cada campo de qualquer jeito.
         await addHistoryPoint({
+          keep: true,
           note: reverse ? 'Lattes antes de desfazer' : 'Lattes antes do envio',
           savedAt: Date.now(),
           xml: session.meta.originalXml,
