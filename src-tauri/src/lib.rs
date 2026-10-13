@@ -36,6 +36,7 @@ pub fn run() {
     }
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
         .manage(ponte::Ponte::default())
         .setup(|app| {
             debug_assert_eq!(app.config().identifier, ponte::IDENTIFIER);
