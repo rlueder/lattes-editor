@@ -9,6 +9,11 @@ name: App de desktop
 # pela Apple, e abre sem aviso; sem os segredos, o lançamento falha. O
 # instalador do Windows ainda não é assinado: o SmartScreen avisa na primeira
 # abertura.
+#
+# No lançamento, cada sistema também gera o pacote de atualização assinado com
+# a chave de atualização (TAURI_SIGNING_PRIVATE_KEY, separada da Apple), e o
+# tauri-action monta o latest.json que o app confere
+# (releases/latest/download/latest.json). Em PR, sem a chave, não gera.
 
 on:
   workflow_call:
@@ -19,6 +24,10 @@ on:
         type: string
     # Assinatura Developer ID e notarização do app de macOS (só nos lançamentos).
     secrets:
+      TAURI_SIGNING_PRIVATE_KEY:
+        required: false
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD:
+        required: false
       APPLE_CERTIFICATE:
         required: false
       APPLE_CERTIFICATE_PASSWORD:
@@ -127,13 +136,33 @@ jobs:
           for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_API_ISSUER APPLE_API_KEY APPLE_API_KEY_PATH; do
             printf '%s<<%s\n%s\n%s\n' "$name" "$delim" "${!name}" "$delim" >> "$GITHUB_ENV"
           done
+      # Sem a chave de atualização, o lançamento falha: um app sem o pacote de
+      # atualização deixaria quem já tem o app parado na versão anterior.
+      - name: Chave de atualização
+        if: inputs.tag != ''
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "::error::Falta o segredo TAURI_SIGNING_PRIVATE_KEY"
+            exit 1
+          fi
       - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # action-v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           # Sem tag (PR, disparo manual sem tag), só monta e guarda como artefato do workflow.
           tagName: ${{ inputs.tag }}
           releaseAssetNamePattern: ${{ matrix.asset }}
           uploadWorkflowArtifacts: ${{ inputs.tag == '' }}
+          # A assinatura de cada pacote vai dentro do latest.json; os .sig soltos
+          # só encheriam a página do lançamento.
           uploadUpdaterSignatures: false
-          args: ${{ matrix.args }}
+          uploadUpdaterJson: ${{ inputs.tag != '' }}
+          # Pacote de atualização só no lançamento, onde há a chave para assinar
+          # (src-tauri/tauri.release.conf.json liga o createUpdaterArtifacts).
+          args: >-
+            ${{ matrix.args }}
+            ${{ inputs.tag != '' && '--config src-tauri/tauri.release.conf.json' || '' }}

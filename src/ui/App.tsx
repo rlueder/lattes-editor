@@ -4,6 +4,7 @@ import type { LattesStatus } from '../bridge/lattes-status.ts';
 import type { Link } from '../bridge/link.ts';
 import type { SentEntry } from '../bridge/sent-log.ts';
 import { saveBytes } from '../desktop/native.ts';
+import type { UpdateState } from '../desktop/update.ts';
 import { NewItemPicker } from '../forms/NewItemPicker.tsx';
 import { ProductionForm } from '../forms/ProductionForm.tsx';
 import { type Session, useProduction } from '../forms/use-production.ts';
@@ -46,6 +47,7 @@ import { useHistoryDialog } from './use-history-dialog.ts';
 import { useLattesOpen } from './use-lattes-open.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
 import { useTopbarHeight } from './use-topbar-height.ts';
+import { useUpdates } from './use-updates.ts';
 import { useVersions } from './use-versions.ts';
 import { exportDateOf } from './version-diff.ts';
 import { Welcome } from './Welcome.tsx';
@@ -72,6 +74,7 @@ export function App() {
   const topbarRef = useRef<HTMLElement>(null);
 
   useTopbarHeight(topbarRef, session);
+  const update = useUpdates();
 
   // Restaura a cópia de trabalho da última sessão.
   useEffect(() => {
@@ -258,7 +261,7 @@ export function App() {
       <Topbar
         ref={topbarRef}
         modified={modified}
-        notices={noticesOf(bridge)}
+        notices={noticesOf(bridge, update)}
         pendingCount={production.pending.length + changes.open}
         saveState={saveState}
         showEmpty={showEmpty}
@@ -417,11 +420,12 @@ function stripFor(editorChanges: number, bridge: { lattes?: LattesStatus; sent: 
 }
 
 /** O sino: por que o Lattes não foi lido, um lado desatualizado, armazenamento sem chave. */
-function noticesOf(bridge: { lattes?: LattesStatus; link: Link }) {
+function noticesOf(bridge: { lattes?: LattesStatus; link: Link }, update: UpdateState) {
   return noticesFor({
     appVersion: __APP_VERSION__,
     connection: connectionOf(bridge.link, Boolean(bridge.lattes)),
     storage: storageStatus().status,
+    update,
   });
 }
 

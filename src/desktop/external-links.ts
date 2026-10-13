@@ -29,6 +29,20 @@ export function externalLinkOf(
   return typeof href === 'string' && isExternalHref(href, origin) ? href : undefined;
 }
 
+/**
+ * Abre um endereço fora do editor a partir de um botão (sem <a>): no app de
+ * desktop, pelo plugin opener; no navegador, numa aba nova.
+ */
+export function openExternal(url: string): void {
+  if (!('__TAURI_INTERNALS__' in window)) {
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  void import('@tauri-apps/api/core')
+    .then(({ invoke }) => invoke('plugin:opener|open_url', { url }))
+    .catch((err: unknown) => console.error('Link externo não abriu:', err));
+}
+
 /** Liga a interceptação no documento inteiro; devolve como desligar. */
 export function openExternalLinksNatively(): () => void {
   const onClick = (event: MouseEvent) => {

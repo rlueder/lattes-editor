@@ -3,6 +3,7 @@
 // estados fica só com o caminho das alterações.
 
 import type { Link } from '../bridge/link.ts';
+import type { UpdateState } from '../desktop/update.ts';
 import type { StorageStatus } from '../model/store.ts';
 
 /** O que dizer da ligação com o Lattes. */
@@ -65,8 +66,8 @@ export interface NoticeLink {
 }
 
 export interface Notice {
-  /** Abre o aviso do armazenamento, com as opções dele. */
-  action?: 'armazenamento';
+  /** Abre o aviso do armazenamento, ou baixa e instala a versão nova do app. */
+  action?: 'armazenamento' | 'atualizacao';
   id: string;
   /** "aviso" acende o sino; "info" só aparece ao abrir. */
   level: 'aviso' | 'info';
@@ -167,12 +168,24 @@ export function noticesFor({
   appVersion,
   connection,
   storage,
+  update,
 }: {
   appVersion: string;
   connection?: Connection;
   storage: StorageStatus;
+  update?: UpdateState;
 }): Notice[] {
   const notices: Notice[] = [];
+  // A versão nova fica no sino mesmo com o aviso do canto fechado.
+  if (update?.status === 'disponivel') {
+    notices.push({
+      action: 'atualizacao',
+      id: 'atualizacao',
+      level: 'aviso',
+      text: `Versão ${update.version}. O app reinicia ao atualizar.`,
+      title: 'Nova versão disponível',
+    });
+  }
   if (storage !== 'cifrado') {
     notices.push({ id: 'armazenamento', level: 'aviso', ...STORAGE[storage] });
   }

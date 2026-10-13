@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Janela principal: diálogos de abrir e salvar, arrastar a janela pelo cabeçalho e abrir links externos no navegador padrão.",
+  "description": "Janela principal: diálogos de abrir e salvar, arrastar a janela pelo cabeçalho e abrir links externos no navegador padrão, atualizar o app e reiniciar depois.",
   "windows": ["main"],
   "permissions": [
     "core:default",
@@ -9,6 +9,8 @@
     "dialog:allow-open",
     "dialog:allow-save",
     "opener:allow-open-url",
-    "opener:allow-default-urls"
+    "opener:allow-default-urls",
+    "updater:default",
+    "process:allow-restart"
   ]
 }

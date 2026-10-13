@@ -1,5 +1,6 @@
 import './ui/styles.css';
 
+import { Toast } from '@base-ui/react/toast';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -9,6 +10,8 @@ import { initStorage } from './desktop/storage-key.ts';
 import { App } from './ui/App.tsx';
 import { TipProvider } from './ui/primitives/Tip.tsx';
 import { applyTheme, readTheme } from './ui/theme.ts';
+import { Toaster } from './ui/Toaster.tsx';
+import { toasts } from './ui/toasts.ts';
 
 // Antes do primeiro render, para não piscar o tema do sistema.
 applyTheme(readTheme());
@@ -37,7 +40,10 @@ function render() {
   root.render(
     <StrictMode>
       <TipProvider delay={350}>
-        <App />
+        <Toast.Provider toastManager={toasts}>
+          <App />
+          <Toaster />
+        </Toast.Provider>
       </TipProvider>
     </StrictMode>,
   );
