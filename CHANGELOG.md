@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.11.0](https://github.com/rlueder/lattes-editor/compare/v0.10.0...v0.11.0) (2026-10-13)
+
+### Novidades
+
+- **ui:** registro do que foi enviado ao Lattes, com desfazer antes do envio ao CNPq ([#31](https://github.com/rlueder/lattes-editor/issues/31)) ([034da1c](https://github.com/rlueder/lattes-editor/commit/034da1cbbb5d1f7d0e53e219272e71253d336d73))
+
 ## [0.10.0](https://github.com/rlueder/lattes-editor/compare/v0.9.1...v0.10.0) (2026-10-12)
 
 ### Novidades
