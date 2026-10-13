@@ -110,7 +110,9 @@ extensão não está na Chrome Web Store, instale assim:
 
 1. Baixe `lattes-editor-extensao.zip` da página do lançamento e descompacte.
 2. Em `brave://extensions` (ou `chrome://extensions`), ligue o "Modo do
-   desenvolvedor" e use "Carregar sem compactação" na pasta.
+   desenvolvedor" e use "Carregar sem compactação" na pasta. Extensão
+   carregada assim não se atualiza sozinha: a cada versão nova do app, troque
+   a pasta pela do zip novo e clique em recarregar.
 3. No primeiro uso, o painel mostra o que a extensão lê e envia e pede um
    "ok"; sem ele, ela não toca no Lattes.
 4. Com o currículo aberto no Lattes numa aba, "Levar ao Lattes" no app passa
@@ -138,12 +140,25 @@ fechar o arquivo ou abrir outra exportação.
 O cabeçalho resume esse caminho numa faixa: `Original · 3 alterações · 2 no
 Lattes · publicado em 17/08/2026`. Com a extensão e o Lattes aberto, a data
 da última publicação e as pendências vêm do próprio menu do Lattes; o passo
-que pede ação fica em destaque, e cada contagem abre a lista dela.
+que pede ação fica em destaque, e cada contagem abre a lista dela. Sem essa
+leitura, o sino ao lado das configurações diz por quê ("Lattes não
+conectado", "Lattes fechado", "Extensão sem o seu ok", "Lattes aberto em
+outro currículo") e o que fazer; o ponto no sino acende só com o que pede
+ação.
 
-O CNPq não avisa quando muda o Lattes. Por isso o painel tem "Verificar o
-Lattes": só com leituras, ele confere o menu e um exemplar de cada
-formulário que a ponte grava contra o que ela espera (nomes, tipos e limites
-dos campos, nunca valores) e aponta o que mudou. A mesma verificação roda
+App e extensão saem do mesmo lançamento, com o mesmo número de versão, mas
+se atualizam separados: a extensão pela loja (ou à mão, quando carregada sem
+compactação), o app quando você baixa outro instalador. No aperto de mão,
+cada um anuncia o que sabe fazer (`src/bridge/compat.ts`). Quando um dos dois
+está atrás, o sino do app mostra "Extensão desatualizada" ou "App
+desatualizado", e o painel da extensão diz qual atualizar.
+
+O CNPq não avisa quando muda o Lattes. Por isso a extensão confere sozinha,
+só com leituras, o menu e um exemplar de cada formulário que a ponte grava
+contra o que ela espera (nomes, tipos e limites dos campos, nunca valores):
+ao abrir o painel e quando o menu do Lattes carrega, no máximo a cada meia
+hora com tudo certo. O painel só mostra a verificação quando acha um
+problema, com o que mudou e "Verificar de novo". A mesma verificação roda
 antes de cada envio, e uma mudança que quebra a ponte para a fila antes de
 gravar. O relatório pode ser copiado ou aberto como issue, sem nada do
 currículo dentro.

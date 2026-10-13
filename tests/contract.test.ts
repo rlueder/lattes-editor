@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import type { LattesPort } from '../src/bridge/apply.ts';
 import {
+  AUTO_VERIFY_EVERY_MS,
+  AUTO_VERIFY_RETRY_MS,
   blocksKind,
   checkContract,
   compareForm,
@@ -16,6 +18,7 @@ import {
   lacksSample,
   LATTES_CONTRACT,
   reportText,
+  shouldAutoVerify,
 } from '../src/bridge/contract.ts';
 import type { FormControl } from '../src/bridge/form.ts';
 
@@ -355,5 +358,32 @@ describe('relatório', () => {
       'Verificação do Lattes em 2026-10-12T12:00:00.000Z\nExtensão 1.0.0\nResultado: sessao (A sessão do Lattes caiu; entre de novo)',
     );
     expect(new URL(issueUrl(report, '1.0.0')).searchParams.get('title')).toBe('O Lattes mudou');
+  });
+});
+
+describe('vigia: verificação automática', () => {
+  const now = Date.parse('2026-10-13T15:00:00.000Z');
+  const report = (status: 'erro' | 'mudou' | 'ok' | 'sessao', ago: number) => ({
+    checkedAt: new Date(now - ago).toISOString(),
+    forms: [],
+    menu: [],
+    status,
+  });
+
+  it('roda na primeira vez e quando o relatório não tem data legível', () => {
+    expect(shouldAutoVerify(undefined, now)).toBe(true);
+    expect(shouldAutoVerify({ ...report('ok', 0), checkedAt: 'ontem' }, now)).toBe(true);
+  });
+
+  it('com o Lattes como esperado, só depois do intervalo', () => {
+    expect(shouldAutoVerify(report('ok', AUTO_VERIFY_EVERY_MS - 1), now)).toBe(false);
+    expect(shouldAutoVerify(report('ok', AUTO_VERIFY_EVERY_MS), now)).toBe(true);
+  });
+
+  it('com problema, tenta de novo logo, mas não mais que uma vez por minuto', () => {
+    for (const status of ['erro', 'mudou', 'sessao'] as const) {
+      expect(shouldAutoVerify(report(status, AUTO_VERIFY_RETRY_MS - 1), now)).toBe(false);
+      expect(shouldAutoVerify(report(status, AUTO_VERIFY_RETRY_MS), now)).toBe(true);
+    }
   });
 });

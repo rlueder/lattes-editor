@@ -353,8 +353,11 @@ Duas vigias, uma para cada lado do login:
   ponte espera encontrar: os procedimentos linkados no menu
   (`pkg_ativ.lista`, `pkg_idioma.lista`, `pkg_resume.`) e, para cada
   formulário que ela grava (seção 5), o nome, o POST e os campos com tipo e
-  limite. "Verificar o Lattes" no painel percorre os mesmos links que a
-  gravação percorre, só com GET, lê um exemplar de cada formulário e compara.
+  limite. A verificação percorre os mesmos links que a gravação percorre, só
+  com GET, lê um exemplar de cada formulário e compara. Roda sozinha ao abrir
+  o painel e quando o menu do Lattes carrega (a cada meia hora com tudo
+  certo, a cada minuto com problema, `shouldAutoVerify`), e o painel só a
+  mostra quando há problema, com "Verificar de novo".
   A mesma verificação roda antes de cada fila; campo sumido, tipo trocado,
   formulário ou link que não existe mais e `f_ctr` fora de `U` param a fila
   antes do primeiro POST. Se a conferência nem chega a ler (aba que não

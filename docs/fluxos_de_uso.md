@@ -39,6 +39,12 @@ lê o menu do Lattes na sessão aberta. Pendência que o app não gravou (feita
 direto no Lattes, ou por outro aparelho) aparece como "pendências que o
 editor não conhece".
 
+Sem leitura do Lattes, o sino ao lado das configurações diz o motivo
+(extensão ausente ou desatualizada, aviso da extensão não aceito, Lattes
+fechado ou fora do menu, sessão de outro currículo) e o que fazer. O mesmo
+sino avisa quando o app não está guardando o trabalho. A extensão relê o menu quando a aba do Lattes termina de carregar,
+então abrir o Lattes depois do app basta.
+
 ## O que acontece sozinho
 
 Nenhuma destas coisas é pergunta ou chave para a pessoa decidir:

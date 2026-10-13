@@ -2,6 +2,7 @@
 // para todas, o resultado de cada uma e o botão de parar.
 
 import type { OpResult } from '../../src/bridge/apply.ts';
+import { versionNotice } from '../../src/bridge/compat.ts';
 import {
   type ContractReport,
   driftText,
@@ -12,8 +13,8 @@ import {
 import { opRows } from '../../src/bridge/field-labels.ts';
 import { PUBLISH_REMINDER } from '../../src/bridge/lattes-status.ts';
 import { giveConsent, hasConsent, PRIVACY_URL } from './consent.ts';
-import type { PanelCommand, QueueState } from './state.ts';
-import { readState } from './state.ts';
+import type { AppHello, PanelCommand, QueueState } from './state.ts';
+import { APP_KEY, readState } from './state.ts';
 import { toolbarTheme } from './toolbar-icon.ts';
 
 const STATUS: Record<OpResult['status'], string> = {
@@ -59,6 +60,14 @@ const REPORT_TITLE: Record<ContractReport['status'], string> = {
   mudou: 'O Lattes mudou',
   ok: 'Lattes como o esperado',
   sessao: 'Sessão caiu',
+};
+
+/** Título da seção da verificação, que só aparece quando algo não está ok. */
+const VIGIA_HEADING: Record<ContractReport['status'], string> = {
+  erro: 'Não deu para verificar o Lattes',
+  mudou: 'O Lattes mudou desde a última versão da ponte',
+  ok: '',
+  sessao: 'A sessão do Lattes caiu; entre de novo para enviar',
 };
 
 const FORM_TITLE: Record<string, string> = {
@@ -148,7 +157,14 @@ function render(state: QueueState): void {
   root.replaceChildren();
   const verify = document.getElementById('verificar') as HTMLButtonElement;
   verify.disabled = Boolean(state.running || state.verificando);
-  verify.textContent = state.verificando ? 'Verificando…' : 'Verificar o Lattes';
+  verify.textContent = state.verificando ? 'Verificando…' : 'Verificar de novo';
+  // O título diz o que houve: mudança no Lattes, sessão caída ou leitura que falhou.
+  document.getElementById('vigia-titulo')!.textContent = state.verificacao
+    ? VIGIA_HEADING[state.verificacao.status]
+    : '';
+  // A verificação roda sozinha; com o Lattes como o esperado, nada aparece.
+  document.querySelector<HTMLElement>('.vigia')!.hidden =
+    !state.verificacao || state.verificacao.status === 'ok';
   renderReport(state.verificacao);
   // Sem fila, sem botões: o estado vazio fala sozinho.
   document.querySelector<HTMLElement>('.acoes')!.hidden = state.ops.length === 0;
@@ -219,12 +235,28 @@ document.getElementById('aceitar')!.addEventListener('click', () => {
       'Não deu para guardar o "ok". Feche e abra o painel e tente de novo.';
   });
 });
+/** App e extensão de versões que não combinam: diz qual dos dois atualizar. */
+async function renderVersions(): Promise<void> {
+  const stored = await chrome.storage.session.get(APP_KEY);
+  const notice = versionNotice(VERSION, stored[APP_KEY] as AppHello | undefined);
+  const p = document.getElementById('versoes')!;
+  p.textContent = notice ?? '';
+  p.hidden = !notice;
+}
+
 chrome.storage.onChanged.addListener((_changes, area) => {
   if (area === 'local') void showConsentOrBridge();
-  else void readState().then(render);
+  else {
+    void readState().then(render);
+    void renderVersions();
+  }
 });
 void showConsentOrBridge();
 void readState().then(render);
+// Painel aberto: confere o Lattes em segundo plano, se estiver aberto e se já
+// passou o intervalo (background.ts, verify).
+send({ auto: true, cmd: 'verificar' });
+void renderVersions();
 
 // Avisa o service worker do tema da barra (ver toolbar-icon.ts), agora e a cada troca.
 const darkScheme = matchMedia('(prefers-color-scheme: dark)');

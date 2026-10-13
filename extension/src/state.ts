@@ -33,7 +33,22 @@ export async function writeState(next: QueueState): Promise<void> {
 
 /** Comandos do painel para o service worker. */
 export type PanelCommand =
-  { cmd: 'aplicar'; keys?: string[] } | { cmd: 'limpar' } | { cmd: 'parar' } | { cmd: 'verificar' };
+  | { cmd: 'aplicar'; keys?: string[] }
+  | { cmd: 'limpar' }
+  | { cmd: 'parar' }
+  /** auto: a verificação de fundo, que só roda com o Lattes aberto e de tempos em tempos. */
+  | { auto?: boolean; cmd: 'verificar' };
+
+/**
+ * O que o editor anunciou no aperto de mão (versão e capacidades, ver
+ * src/bridge/compat.ts), na sessão da extensão, para o painel comparar.
+ */
+export const APP_KEY = 'app';
+
+export interface AppHello {
+  features?: string[];
+  version?: string;
+}
 
 /** Menu do currículo no Lattes: é nessa aba que as requisições rodam. */
 export const LATTES_MENU = 'https://wwws.cnpq.br/cvlattesweb/PKG_MENU.menu*';

@@ -14,7 +14,8 @@ export const BRIDGE_SOURCE = 'lattes-ponte';
 export type EditorMessage =
   /** lattesId: o currículo aberto no editor; a ponte só grava se a sessão do Lattes for dele. */
   | { lattesId?: string; ops: BridgeOp[]; type: 'enviar' }
-  | { type: 'ola' }
+  /** version e features: do app (src/bridge/compat.ts); versões antigas mandam só o tipo. */
+  | { features?: string[]; type: 'ola'; version?: string }
   | { type: 'parar' }
   /** Pede a versão atual do Lattes (página de conferência), só leitura. */
   | { type: 'pedir-espelho' };
@@ -31,7 +32,16 @@ export type BridgeMessage =
    */
   | { error?: string; items?: EspelhoItem[]; lattesId?: string; type: 'espelho' }
   | { type: 'fim' }
-  | { type: 'ola'; version: string };
+  /** features: o que esta extensão sabe fazer (src/bridge/compat.ts); ausente nas versões de antes do aperto de mão com capacidades. */
+  | { features?: string[]; type: 'ola'; version: string }
+  /** A extensão tentou ler o menu do Lattes e não conseguiu; reason diz por quê. */
+  | { lattesId?: string; reason: NoReadingReason; type: 'sem-leitura' };
+
+/**
+ * Por que não há leitura do Lattes: sem o "ok" do aviso da extensão, sem aba
+ * do Lattes aberta, aba fora do menu (ou sessão caída) e falha ao ler a aba.
+ */
+export type NoReadingReason = 'consentimento' | 'erro' | 'sem-aba' | 'sem-data';
 
 type Envelope<T> = T & { source: string; v: number };
 
@@ -43,6 +53,16 @@ function hasEnvelope(data: unknown, source: string): data is Envelope<{ type: st
 
 export function isEditorMessage(data: unknown): data is Envelope<EditorMessage> {
   return hasEnvelope(data, EDITOR_SOURCE);
+}
+
+/**
+ * O aperto de mão de uma extensão com outra versão do protocolo: o resto das
+ * mensagens dela é ignorado, mas o editor consegue dizer por quê.
+ */
+export function isIncompatibleHello(data: unknown): boolean {
+  if (typeof data !== 'object' || data === null) return false;
+  const d = data as Record<string, unknown>;
+  return d.source === BRIDGE_SOURCE && d.type === 'ola' && d.v !== PROTOCOL_VERSION;
 }
 
 export function isBridgeMessage(data: unknown): data is Envelope<BridgeMessage> {

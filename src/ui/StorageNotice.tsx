@@ -2,47 +2,11 @@
 // chaveiro do sistema não respondeu, ou a chave que cifrava os dados sumiu
 // (src/model/store.ts, StorageStatus).
 
-import { useState, useSyncExternalStore } from 'react';
+import { useState } from 'react';
 
-import { resetStorage, type StorageStatus, storageStatus } from '../model/store.ts';
+import { resetStorage, type StorageStatus } from '../model/store.ts';
 import { Modal } from './Modal.tsx';
-
-/**
- * Aberto ou fechado fica fora do componente: o App o monta em lugares
- * diferentes com e sem currículo aberto, e o estado local voltaria a
- * "aberto" a cada troca. O selo do cabeçalho (StorageBadge) reabre.
- */
-let noticeOpen: boolean | undefined;
-const listeners = new Set<() => void>();
-
-function setNoticeOpen(open: boolean): void {
-  noticeOpen = open;
-  for (const listener of listeners) listener();
-}
-
-function useNoticeOpen(status: StorageStatus): boolean {
-  return useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    () => noticeOpen ?? status !== 'cifrado',
-  );
-}
-
-/**
- * Selo no cabeçalho enquanto nada é guardado: o aviso pode ter sido fechado,
- * mas a pessoa continua sabendo, e reabre com um clique.
- */
-export function StorageBadge() {
-  const { status } = storageStatus();
-  if (status === 'cifrado') return null;
-  return (
-    <button className="storage-badge" type="button" onClick={() => setNoticeOpen(true)}>
-      {status === 'sem-chave' ? 'Nada está sendo guardado' : 'Dados guardados ilegíveis'}
-    </button>
-  );
-}
+import { setNoticeOpen, useNoticeOpen } from './storage-notice-open.ts';
 
 export function StorageNotice({
   onReset,

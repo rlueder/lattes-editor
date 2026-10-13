@@ -3,6 +3,7 @@ import './ui/styles.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
+import { openExternalLinksNatively } from './desktop/external-links.ts';
 import { isDesktop } from './desktop/native.ts';
 import { initStorage } from './desktop/storage-key.ts';
 import { App } from './ui/App.tsx';
@@ -17,6 +18,9 @@ applyTheme(readTheme());
 if (isDesktop() && /Mac/.test(navigator.platform)) {
   document.documentElement.classList.add('desktop-mac');
 }
+
+// Links para fora abrem no navegador padrão, não na janela do app.
+if (isDesktop()) openExternalLinksNatively();
 
 // Âncoras de versões antigas (ids internos do React) não apontam para nada.
 if (/^#_r_/.test(location.hash)) {

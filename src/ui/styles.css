@@ -184,22 +184,6 @@ code {
 
 /* Faixa de estados (LAT-40): discreta, em tom secundário; só o passo que pede
    ação ganha cor. */
-.storage-badge {
-  height: 24px;
-  margin-right: 8px;
-  padding: 0 8px;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  background: var(--warn-bg);
-  color: var(--warn-text);
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.storage-badge:hover {
-  border-color: var(--warn-text);
-}
-
 .status-strip {
   display: flex;
   align-items: center;
@@ -1408,6 +1392,61 @@ details.card.is-new {
   padding: 2px 8px 4px;
   font-size: 12px;
   color: var(--muted);
+}
+
+/* Notificações (sino): título e texto de cada uma, o que pede ação com a
+   cor de aviso. */
+.badge-dot.warn {
+  background: var(--warn-text);
+}
+
+.menu.notices {
+  width: 320px;
+}
+
+.notice,
+.topbar-actions .menu-item.notice,
+a.menu-item.notice {
+  color: inherit;
+  text-decoration: none;
+  display: flex;
+  align-items: flex-start;
+  padding: 8px;
+  border-left: 3px solid transparent;
+  border-radius: 6px;
+}
+
+.notice.aviso {
+  border-left-color: var(--warn-text);
+}
+
+.notice-body {
+  display: grid;
+  gap: 2px;
+}
+
+.notice-title {
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.notice-text {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.notice-link {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.notice-empty {
+  margin: 0;
+  padding: 4px 8px 6px;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 /* Copiar valor */

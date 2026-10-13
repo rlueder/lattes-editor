@@ -217,6 +217,24 @@ export interface ContractReport {
   status: ReportStatus;
 }
 
+/** Com o Lattes como esperado, a verificação automática se repete a cada meia hora. */
+export const AUTO_VERIFY_EVERY_MS = 30 * 60_000;
+
+/** Com problema, de novo a cada vez que o Lattes carrega, no máximo uma vez por minuto. */
+export const AUTO_VERIFY_RETRY_MS = 60_000;
+
+/**
+ * Se a verificação automática (painel aberto, menu do Lattes carregado) deve
+ * rodar agora. Ela lê o menu e um exemplar de cada formulário: com tudo certo,
+ * não precisa repetir a cada página.
+ */
+export function shouldAutoVerify(report: ContractReport | undefined, now: number): boolean {
+  if (!report) return true;
+  const age = now - Date.parse(report.checkedAt);
+  if (!Number.isFinite(age)) return true;
+  return age >= (report.status === 'ok' ? AUTO_VERIFY_EVERY_MS : AUTO_VERIFY_RETRY_MS);
+}
+
 class Stop extends Error {
   status: ReportStatus;
   constructor(status: ReportStatus, detail: string) {

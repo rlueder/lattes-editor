@@ -22,8 +22,8 @@ arquivo quando muda de fato; o detalhe técnico está em
     de "Enviar ao CNPq", então é aqui que se vê e se volta atrás;
   - recusar quando o formulário mudou: existe (o valor antigo e o início do
     vínculo precisam bater antes de gravar);
-  - saber quando o CNPq mudou o Lattes: existe ("Verificar o Lattes" no
-    painel e antes de cada fila, mais o vigia semanal do que é público, em
+  - saber quando o CNPq mudou o Lattes: existe (verificação de fundo na
+    extensão, que só aparece no painel com problema, e antes de cada fila, mais o vigia semanal do que é público, em
     `docs/lattes_internals.md`, seção 9). Conferido num Lattes real em
     12/10/2026: o contrato bateu de primeira.
 - **Ponte com o Lattes, além do vínculo, do resumo e dos idiomas.**
