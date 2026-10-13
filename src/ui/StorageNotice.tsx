@@ -71,24 +71,19 @@ export function StorageNotice({
               );
             }}
           >
-            Apagar e começar de novo
+            Apagar e recomeçar
           </button>
         </>
       }
-      label="Os dados guardados não podem ser lidos"
+      label="Não dá para ler o trabalho guardado"
       open={open}
-      title="Os dados guardados não podem ser lidos"
+      title="Não dá para ler o trabalho guardado"
       onClose={close}
     >
       <p>
-        A chave que cifrava a cópia de trabalho não está mais no chaveiro do sistema: ele foi
-        apagado, ou o app abriu com outro usuário. Sem ela, a cópia de trabalho, o histórico e o
-        registro do que foi enviado ao Lattes não podem ser lidos.
-      </p>
-      <p>
-        Dá para começar de novo a partir de uma exportação do Lattes. O registro do enviado se
-        perde, e com ele o &quot;Desfazer no Lattes&quot; do que ainda não foi enviado ao CNPq. Até
-        lá, nada é guardado. Um currículo aberto depois deste aviso também é fechado.
+        A chave que protegia o trabalho guardado neste computador sumiu do chaveiro do sistema.
+        Apague os dados e abra o currículo de novo. O registro do que foi enviado ao Lattes se
+        perde, e até apagar nada é guardado.
       </p>
       {resetError && (
         <p className="field-error" role="alert">

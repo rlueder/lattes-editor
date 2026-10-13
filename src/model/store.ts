@@ -179,7 +179,7 @@ export function markStorageUnavailable(reason: string): StorageStatus {
 /**
  * A chave abre o banco? Testa algumas linhas de cada tabela e só conclui que
  * a chave é outra se nenhuma abrir: uma linha corrompida sozinha não pode
- * levar a "Apagar e começar de novo" com a chave certa.
+ * levar a "Apagar e recomeçar" com a chave certa.
  */
 async function readable(k: CryptoKey): Promise<boolean> {
   const working = (await db.working.get('current'))?.sealed;
