@@ -18,8 +18,11 @@ export type EditorMessage =
   /** version e features: do app (src/bridge/compat.ts); versões antigas mandam só o tipo. */
   | { features?: string[]; type: 'ola'; version?: string }
   | { type: 'parar' }
-  /** Pede o ZIP do Exportar do currículo da sessão (Abrir do Lattes). */
-  | { type: 'pedir-curriculo' }
+  /**
+   * Pede o ZIP do Exportar do currículo da sessão (Abrir do Lattes); id volta
+   * na resposta, para uma resposta atrasada não valer pelo pedido seguinte.
+   */
+  | { id: string; type: 'pedir-curriculo' }
   /** Pede a versão atual do Lattes (página de conferência), só leitura. */
   | { type: 'pedir-espelho' };
 
@@ -41,6 +44,8 @@ export type BridgeMessage =
   | {
       detail?: string;
       fileName?: string;
+      /** O id do pedido que esta resposta atende. */
+      id?: string;
       lattesId?: string;
       reason?: ExportFailure;
       type: 'curriculo';

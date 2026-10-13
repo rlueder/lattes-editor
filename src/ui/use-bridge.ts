@@ -125,8 +125,8 @@ export interface BridgeState {
   link: Link;
   /** Alterações que a extensão sabe levar e as que ficam para copiar à mão. */
   plan: ReturnType<typeof planChanges>;
-  /** Pede o ZIP do Exportar à extensão (Abrir do Lattes); a resposta chega em curriculo. */
-  requestCv: () => void;
+  /** Pede o ZIP do Exportar à extensão (Abrir do Lattes); a resposta chega em curriculo, com o mesmo id. */
+  requestCv: (id: string) => void;
   /** Pede a versão atual do Lattes à extensão; a resposta chega em espelho. */
   requestEspelho: () => void;
   results: Record<string, OpResult>;
@@ -148,6 +148,8 @@ export interface CurriculoReading {
   at: number;
   detail?: string;
   fileName?: string;
+  /** O id do pedido que a resposta atende. */
+  id?: string;
   reason?: ExportFailure;
   /** O ZIP em base64. */
   zip?: string;
@@ -253,6 +255,7 @@ export function useBridge(
           at: Date.now(),
           detail: msg.detail,
           fileName: msg.fileName,
+          id: msg.id,
           reason: msg.reason,
           zip: msg.zip,
         });
@@ -316,7 +319,7 @@ export function useBridge(
     lattes,
     link,
     plan,
-    requestCv: () => post({ type: 'pedir-curriculo' }),
+    requestCv: (id) => post({ id, type: 'pedir-curriculo' }),
     requestEspelho: () => post({ type: 'pedir-espelho' }),
     results,
     running,

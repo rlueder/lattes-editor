@@ -29,7 +29,8 @@ export function useLattesOpen(
   onFile: (file: File) => void,
 ): LattesOpen {
   const [state, setState] = useState<OpenState>({ kind: 'parado' });
-  const requestedAt = useRef<number | undefined>(undefined);
+  /** O pedido em aberto; só a resposta com este id vale. */
+  const pending = useRef<string | undefined>(undefined);
   const attempted = useRef(false);
   const linkState = useRef(bridge.link.state);
   linkState.current = bridge.link.state;
@@ -43,9 +44,10 @@ export function useLattesOpen(
 
   const open = useCallback(() => {
     attempted.current = true;
-    requestedAt.current = Date.now();
+    const id = crypto.randomUUID();
+    pending.current = id;
     setState({ kind: 'abrindo' });
-    request.current();
+    request.current(id);
   }, []);
 
   // Primeira abertura sem currículo, com a extensão pronta: pede sozinho.
@@ -53,16 +55,20 @@ export function useLattesOpen(
     if (active && available && !attempted.current) open();
   }, [active, available, open]);
 
-  // A resposta do pedido feito agora (uma anterior não conta).
+  // A resposta do pedido em aberto; uma atrasada, de um pedido anterior, não conta.
   const reply = bridge.curriculo;
   useEffect(() => {
-    const since = requestedAt.current;
-    if (!reply || since === undefined || reply.at < since) return;
-    requestedAt.current = undefined;
+    if (!reply || !pending.current || reply.id !== pending.current) return;
+    pending.current = undefined;
     if (reply.zip) {
       setState({ kind: 'parado' });
-      const bytes = fromBase64(reply.zip);
-      fileRef.current(new File([bytes], reply.fileName ?? 'curriculo-lattes.zip'));
+      try {
+        const bytes = fromBase64(reply.zip);
+        fileRef.current(new File([bytes], reply.fileName ?? 'curriculo-lattes.zip'));
+      } catch {
+        // Mensagem corrompida no caminho: a tela inicial mostra a falha.
+        setState({ detail: 'O arquivo chegou corrompido', kind: 'falhou', reason: 'erro' });
+      }
     } else {
       readingAtFailure.current = linkState.current;
       setState({ detail: reply.detail, kind: 'falhou', reason: reply.reason ?? 'erro' });
@@ -73,7 +79,7 @@ export function useLattesOpen(
   useEffect(() => {
     if (state.kind !== 'abrindo') return;
     const timer = setTimeout(() => {
-      requestedAt.current = undefined;
+      pending.current = undefined;
       setState({ kind: 'falhou', reason: 'sem-resposta' });
     }, OPEN_TIMEOUT_MS);
     return () => clearTimeout(timer);

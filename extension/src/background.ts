@@ -55,6 +55,10 @@ let stopRequested = false;
  * de esperas, e dois pedidos o leriam falso.
  */
 let verifyInFlight = false;
+/** Uma automática esperando a aba assentar (antes de pegar a trava). */
+let autoPending = false;
+/** "Verificar de novo" clicado durante outra verificação: roda logo depois dela. */
+let manualQueued = false;
 let appPort: chrome.runtime.Port | undefined;
 
 /**
@@ -143,8 +147,8 @@ async function sendSession(editor: EditorEndpoint, fresh = false): Promise<void>
 }
 
 /** Abrir do Lattes: o ZIP do Exportar (lattes-tab.ts). */
-async function sendCurriculo(editor: EditorEndpoint): Promise<void> {
-  await toEditor(editor, { ...(await readCurriculo()), type: 'curriculo' });
+async function sendCurriculo(editor: EditorEndpoint, id: string): Promise<void> {
+  await toEditor(editor, { ...(await readCurriculo()), id, type: 'curriculo' });
 }
 
 /** A versão atual do Lattes, para o diagnóstico (lattes-tab.ts). */
@@ -180,7 +184,7 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     return;
   }
   if (msg.type === 'pedir-curriculo') {
-    await sendCurriculo(editor);
+    await sendCurriculo(editor, msg.id);
     return;
   }
   const state = await readState();
@@ -229,15 +233,28 @@ async function verifyOn(tabId: number): Promise<ContractReport> {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function verify(auto = false): Promise<void> {
-  if (verifyInFlight) return;
+  if (auto) {
+    // A automática espera a aba assentar, fora da trava; outra automática no
+    // meio da espera é a mesma e fica de fora.
+    if (autoPending) return;
+    autoPending = true;
+    await sleep(AUTO_VERIFY_DELAY_MS);
+    autoPending = false;
+  }
+  if (verifyInFlight) {
+    // O clique da pessoa nunca se perde: roda quando a atual terminar.
+    if (!auto) manualQueued = true;
+    return;
+  }
   verifyInFlight = true;
   try {
-    // A automática espera a aba assentar; outro gatilho no meio da espera é
-    // descartado pela trava. O "Verificar de novo" do painel não espera.
-    if (auto) await sleep(AUTO_VERIFY_DELAY_MS);
     await verifyOnce(auto);
   } finally {
     verifyInFlight = false;
+  }
+  if (manualQueued) {
+    manualQueued = false;
+    await verify(false);
   }
 }
 
