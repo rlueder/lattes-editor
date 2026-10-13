@@ -2,17 +2,47 @@
 // chaveiro do sistema não respondeu, ou a chave que cifrava os dados sumiu
 // (src/model/store.ts, StorageStatus).
 
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 
-import { resetStorage, type StorageStatus } from '../model/store.ts';
+import { resetStorage, type StorageStatus, storageStatus } from '../model/store.ts';
 import { Modal } from './Modal.tsx';
 
 /**
- * Fechado uma vez, não volta na mesma abertura do app. Fica fora do
- * componente porque o App o monta em lugares diferentes com e sem currículo
- * aberto, e o estado local voltaria a "aberto" a cada troca.
+ * Aberto ou fechado fica fora do componente: o App o monta em lugares
+ * diferentes com e sem currículo aberto, e o estado local voltaria a
+ * "aberto" a cada troca. O selo do cabeçalho (StorageBadge) reabre.
  */
-let dismissed = false;
+let noticeOpen: boolean | undefined;
+const listeners = new Set<() => void>();
+
+function setNoticeOpen(open: boolean): void {
+  noticeOpen = open;
+  for (const listener of listeners) listener();
+}
+
+function useNoticeOpen(status: StorageStatus): boolean {
+  return useSyncExternalStore(
+    (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    () => noticeOpen ?? status !== 'cifrado',
+  );
+}
+
+/**
+ * Selo no cabeçalho enquanto nada é guardado: o aviso pode ter sido fechado,
+ * mas a pessoa continua sabendo, e reabre com um clique.
+ */
+export function StorageBadge() {
+  const { status } = storageStatus();
+  if (status === 'cifrado') return null;
+  return (
+    <button className="storage-badge" type="button" onClick={() => setNoticeOpen(true)}>
+      {status === 'sem-chave' ? 'Nada está sendo guardado' : 'Dados guardados ilegíveis'}
+    </button>
+  );
+}
 
 export function StorageNotice({
   onReset,
@@ -24,12 +54,10 @@ export function StorageNotice({
   /** Depois de apagar os dados ilegíveis: o editor volta à tela inicial. */
   onReset: () => void;
 }) {
-  const [open, setOpen] = useState(status !== 'cifrado' && !dismissed);
+  const open = useNoticeOpen(status);
+  const [resetError, setResetError] = useState<string | undefined>();
   if (status === 'cifrado') return null;
-  const close = () => {
-    dismissed = true;
-    setOpen(false);
-  };
+  const close = () => setNoticeOpen(false);
 
   if (status === 'sem-chave') {
     return (
@@ -70,10 +98,13 @@ export function StorageNotice({
             className="danger"
             type="button"
             onClick={() => {
-              void resetStorage().then(() => {
-                close();
-                onReset();
-              });
+              resetStorage().then(
+                () => {
+                  close();
+                  onReset();
+                },
+                (err: unknown) => setResetError(err instanceof Error ? err.message : String(err)),
+              );
             }}
           >
             Apagar e começar de novo
@@ -93,8 +124,13 @@ export function StorageNotice({
       <p>
         Dá para começar de novo a partir de uma exportação do Lattes. O registro do enviado se
         perde, e com ele o &quot;Desfazer no Lattes&quot; do que ainda não foi enviado ao CNPq. Até
-        lá, nada é guardado.
+        lá, nada é guardado. Um currículo aberto depois deste aviso também é fechado.
       </p>
+      {resetError && (
+        <p className="field-error" role="alert">
+          Não deu para apagar os dados guardados: {resetError}
+        </p>
+      )}
     </Modal>
   );
 }

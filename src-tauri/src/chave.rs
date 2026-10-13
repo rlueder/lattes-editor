@@ -48,17 +48,20 @@ async fn blocking<T: Send + 'static>(
 /// apagado). Erro quando o chaveiro não está disponível.
 #[tauri::command]
 pub async fn storage_key_get(app: AppHandle) -> Result<Option<String>, String> {
+    // Entrada num formato que não é o deste app conta como ausente: o editor
+    // gera uma chave nova e storage_key_set substitui a entrada. Nenhum dado
+    // pode ter sido cifrado com ela.
     blocking(move || match entry(&app)?.get_password() {
         Ok(key) if is_valid_key(&key) => Ok(Some(key)),
-        Ok(_) => Err("A chave guardada no chaveiro está num formato inesperado.".into()),
-        Err(keyring::Error::NoEntry) => Ok(None),
+        Ok(_) | Err(keyring::Error::NoEntry) => Ok(None),
         Err(e) => Err(unavailable(&e)),
     })
     .await
 }
 
-/// Grava a chave gerada pelo editor. Recusa se já existir uma, para que uma
-/// chamada repetida nunca troque a chave dos dados já cifrados.
+/// Grava a chave gerada pelo editor. Recusa se já existir uma válida, para que
+/// uma chamada repetida nunca troque a chave dos dados já cifrados; uma
+/// entrada em outro formato é substituída.
 #[tauri::command]
 pub async fn storage_key_set(app: AppHandle, key: String) -> Result<(), String> {
     if !is_valid_key(&key) {
@@ -67,7 +70,10 @@ pub async fn storage_key_set(app: AppHandle, key: String) -> Result<(), String> 
     blocking(move || {
         let entry = entry(&app)?;
         match entry.get_password() {
-            Ok(_) => Err("Já existe uma chave no chaveiro.".into()),
+            Ok(existing) if is_valid_key(&existing) => {
+                Err("Já existe uma chave no chaveiro.".into())
+            }
+            Ok(_) => entry.set_password(&key).map_err(|e| unavailable(&e)),
             Err(keyring::Error::NoEntry) => entry.set_password(&key).map_err(|e| unavailable(&e)),
             Err(e) => Err(unavailable(&e)),
         }

@@ -184,6 +184,22 @@ code {
 
 /* Faixa de estados (LAT-40): discreta, em tom secundário; só o passo que pede
    ação ganha cor. */
+.storage-badge {
+  height: 24px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.storage-badge:hover {
+  border-color: var(--warn-text);
+}
+
 .status-strip {
   display: flex;
   align-items: center;
