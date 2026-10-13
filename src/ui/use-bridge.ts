@@ -10,9 +10,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { OpResult } from '../bridge/apply.ts';
+import { BRIDGE_FEATURES } from '../bridge/compat.ts';
 import type { EspelhoItem } from '../bridge/espelho.ts';
 import { sameCv } from '../bridge/lattes-html.ts';
 import type { LattesStatus } from '../bridge/lattes-status.ts';
+import { INITIAL_LINK, type Link, nextLink } from '../bridge/link.ts';
 import { type BridgeOp, planChanges } from '../bridge/plan.ts';
 import {
   type BridgeMessage,
@@ -20,6 +22,7 @@ import {
   editorMessage,
   fromSamePage,
   isBridgeMessage,
+  isIncompatibleHello,
 } from '../bridge/protocol.ts';
 import { type SentEntry, sentEntry, undoOp } from '../bridge/sent-log.ts';
 import { isDesktop } from '../desktop/native.ts';
@@ -32,6 +35,16 @@ import { writeCvCode } from './profile.ts';
 
 /** Evento da janela avisando que um novo código do currículo foi guardado. */
 export const CV_CODE_EVENT = 'lattes-editor:codigo-cv';
+
+/** Quanto esperar a resposta da extensão antes de dizer que ela não está ligada. */
+export const HELLO_TIMEOUT_MS = 3000;
+
+/** O aperto de mão leva a versão e as capacidades do app (src/bridge/compat.ts). */
+const HELLO: EditorMessage = {
+  features: [...BRIDGE_FEATURES],
+  type: 'ola',
+  version: __APP_VERSION__,
+};
 
 const post = (msg: EditorMessage): void => {
   if (isDesktop()) {
@@ -49,7 +62,15 @@ const post = (msg: EditorMessage): void => {
  * aperto de mão de novo (a extensão pode ter chegado depois do editor) e
  * "ponte-desconectada" desliga o envio.
  */
-function listen(onMessage: (msg: BridgeMessage) => void, onLost: () => void): () => void {
+function listen(
+  onMessage: (msg: BridgeMessage) => void,
+  onLost: () => void,
+  onIncompatible: () => void,
+): () => void {
+  const receive = (data: unknown) => {
+    if (isBridgeMessage(data)) onMessage(data);
+    else if (isIncompatibleHello(data)) onIncompatible();
+  };
   if (isDesktop()) {
     let alive = true;
     const offs: (() => void)[] = [];
@@ -57,13 +78,12 @@ function listen(onMessage: (msg: BridgeMessage) => void, onLost: () => void): ()
       const subs = await Promise.all([
         on<string>('ponte', (e) => {
           try {
-            const data: unknown = JSON.parse(e.payload);
-            if (isBridgeMessage(data)) onMessage(data);
+            receive(JSON.parse(e.payload));
           } catch {
             // Linha que não é JSON: ignorada.
           }
         }),
-        on('ponte-conectada', () => post({ type: 'ola' })),
+        on('ponte-conectada', () => post(HELLO)),
         on('ponte-desconectada', onLost),
       ]);
       if (alive) offs.push(...subs);
@@ -76,7 +96,7 @@ function listen(onMessage: (msg: BridgeMessage) => void, onLost: () => void): ()
   }
   const onWindow = (event: MessageEvent) => {
     if (!fromSamePage(event, { origin: location.origin, window })) return;
-    if (isBridgeMessage(event.data)) onMessage(event.data);
+    receive(event.data);
   };
   window.addEventListener('message', onWindow);
   return () => window.removeEventListener('message', onWindow);
@@ -98,6 +118,8 @@ export interface BridgeState {
    * só quando a sessão é deste currículo; undefined sem extensão ou sem leitura.
    */
   lattes?: LattesStatus;
+  /** Em que pé está a ligação com o Lattes, para o cabeçalho explicar a falta de leitura. */
+  link: Link;
   /** Alterações que a extensão sabe levar e as que ficam para copiar à mão. */
   plan: ReturnType<typeof planChanges>;
   /** Pede a versão atual do Lattes à extensão; a resposta chega em espelho. */
@@ -149,6 +171,7 @@ export function useBridge(
   const [sent, setSent] = useState<SentEntry[]>([]);
   const [lattes, setLattes] = useState<LattesStatus | undefined>();
   const [espelho, setEspelho] = useState<EspelhoReading | undefined>();
+  const [link, setLink] = useState<Link>(INITIAL_LINK);
 
   const reloadSent = useCallback(() => {
     if (!lattesId) {
@@ -186,6 +209,7 @@ export function useBridge(
 
   useEffect(() => {
     const onMessage = (msg: BridgeMessage) => {
+      setLink((l) => nextLink(l, msg, lattesId));
       if (msg.type === 'ola') setAvailable(true);
       if (msg.type === 'resultado') {
         setResults((r) => ({ ...r, [msg.result.key]: msg.result }));
@@ -220,13 +244,27 @@ export function useBridge(
     };
     setLattes(undefined);
     setEspelho(undefined);
-    const stopListening = listen(onMessage, () => {
-      setAvailable(false);
-      setRunning(false);
-      setLattes(undefined);
-    });
-    post({ type: 'ola' });
-    return stopListening;
+    setLink(INITIAL_LINK);
+    const stopListening = listen(
+      onMessage,
+      () => {
+        setAvailable(false);
+        setRunning(false);
+        setLattes(undefined);
+        setLink({ state: { kind: 'sem-extensao' } });
+      },
+      () => setLink({ state: { kind: 'incompativel' } }),
+    );
+    const timer = setTimeout(
+      () =>
+        setLink((l) => (l.state.kind === 'procurando' ? { state: { kind: 'sem-extensao' } } : l)),
+      HELLO_TIMEOUT_MS,
+    );
+    post(HELLO);
+    return () => {
+      clearTimeout(timer);
+      stopListening();
+    };
   }, [lattesId]);
 
   const plan = useMemo(
@@ -250,6 +288,7 @@ export function useBridge(
     confirmed,
     espelho,
     lattes,
+    link,
     plan,
     requestEspelho: () => post({ type: 'pedir-espelho' }),
     results,

@@ -7,6 +7,8 @@ import { type Ref, useRef, useState } from 'react';
 import { isDesktop, pickFileNative } from '../desktop/native.ts';
 import { CloseConfirm } from './dialogs.tsx';
 import { AlertIcon, PlusIcon, SearchIcon, UploadIcon } from './icons.tsx';
+import type { Notice } from './notifications.ts';
+import { NotificationsMenu } from './NotificationsMenu.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { SettingsMenu } from './SettingsMenu.tsx';
 import type { StripState } from './status-strip.ts';
@@ -19,6 +21,8 @@ const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(naviga
 
 interface Props {
   modified: boolean;
+  /** Notificações do sino: ligação com o Lattes e armazenamento. */
+  notices: Notice[];
   /** Itens novos mais alterações ainda não feitas no Lattes. */
   pendingCount: number;
   ref: Ref<HTMLElement>;
@@ -54,6 +58,7 @@ const SAVE_LABEL: Record<SaveState, string> = {
 
 export function Topbar({
   modified,
+  notices,
   onClose,
   onExport,
   onHistory,
@@ -142,6 +147,8 @@ export function Topbar({
             )}
           </button>
         </Tip>
+
+        <NotificationsMenu notices={notices} />
 
         {/* Exibição e arquivo: o que se usa menos fica no menu. */}
         <SettingsMenu

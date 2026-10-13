@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { LattesStatus } from '../bridge/lattes-status.ts';
+import type { Link } from '../bridge/link.ts';
 import type { SentEntry } from '../bridge/sent-log.ts';
 import { saveBytes } from '../desktop/native.ts';
 import { NewItemPicker } from '../forms/NewItemPicker.tsx';
@@ -26,6 +27,7 @@ import { CommandPalette } from './CommandPalette.tsx';
 import { HistoryDialog, ReloadConfirm } from './dialogs.tsx';
 import { EditorContext } from './editor-context.ts';
 import { type HashRoute, parseHash, writeHash } from './hash-route.ts';
+import { connectionOf, noticesFor } from './notifications.ts';
 import { paletteActions, paletteEntries, type PaletteEntry } from './palette-search.ts';
 import { PendingBanner } from './PendingBanner.tsx';
 import { profileOf } from './profile.ts';
@@ -258,6 +260,7 @@ export function App() {
       <Topbar
         ref={topbarRef}
         modified={modified}
+        notices={noticesOf(bridge)}
         pendingCount={production.pending.length + changes.open}
         saveState={saveState}
         showEmpty={showEmpty}
@@ -413,6 +416,15 @@ function countPendingIn(pending: XElement[]): (els: XElement[]) => number {
 /** A faixa do cabeçalho: alterações do editor, mais o que a ponte sabe do Lattes. */
 function stripFor(editorChanges: number, bridge: { lattes?: LattesStatus; sent: SentEntry[] }) {
   return statusStrip({ editorChanges, lattes: bridge.lattes, sent: bridge.sent });
+}
+
+/** O sino: por que o Lattes não foi lido, um lado desatualizado, armazenamento sem chave. */
+function noticesOf(bridge: { lattes?: LattesStatus; link: Link }) {
+  return noticesFor({
+    appVersion: __APP_VERSION__,
+    connection: connectionOf(bridge.link, Boolean(bridge.lattes)),
+    storage: storageStatus().status,
+  });
 }
 
 /** Ação "novo:<item>" do ⌘K: abre o formulário daquele tipo de item. */

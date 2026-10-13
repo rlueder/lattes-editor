@@ -133,7 +133,7 @@ function report(checks: Check[]): string {
     '| --- | --- | --- |',
     ...checks.map((c) => `| ${c.name} | ${c.ok ? 'ok' : '**mudou**'} | ${c.detail} |`),
     '',
-    'O que fica atrás do login (menu, formulários, campos) só a extensão confere: "Verificar o Lattes" no painel da ponte.',
+    'O que fica atrás do login (menu, formulários, campos) só a extensão confere, sozinha, com o Lattes aberto; o painel da ponte mostra quando há problema.',
   ];
   return lines.join('\n');
 }

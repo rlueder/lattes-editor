@@ -7,11 +7,13 @@
 // também roda numa aba em localhost e fala pelo script de conteúdo.
 
 import type { OpResult } from '../../src/bridge/apply.ts';
+import { BRIDGE_FEATURES } from '../../src/bridge/compat.ts';
 import {
   blocksKind,
   type ContractReport,
   driftText,
   lacksSample,
+  shouldAutoVerify,
 } from '../../src/bridge/contract.ts';
 import { sameCv } from '../../src/bridge/lattes-html.ts';
 import type { LattesStatus } from '../../src/bridge/lattes-status.ts';
@@ -21,9 +23,11 @@ import {
   bridgeMessage,
   type EditorMessage,
   isEditorMessage,
+  type NoReadingReason,
 } from '../../src/bridge/protocol.ts';
 import { CONSENT_KEY, hasConsent, isConsentCurrent } from './consent.ts';
 import {
+  APP_KEY,
   type EditorEndpoint,
   LATTES_MENU,
   type PanelCommand,
@@ -113,9 +117,12 @@ async function sessionIdentity(tabId: number, fresh = false): Promise<Identity> 
  * pendência), sempre junto com de quem ele é.
  */
 async function sendSession(editor: EditorEndpoint, fresh = false): Promise<void> {
-  if (!(await hasConsent())) return;
+  // Sem leitura, o editor recebe o porquê, para o cabeçalho explicar.
+  const none = (reason: NoReadingReason, lattesId?: string) =>
+    toEditor(editor, { lattesId, reason, type: 'sem-leitura' });
+  if (!(await hasConsent())) return none('consentimento');
   const tabId = await lattesTab();
-  if (tabId === undefined) return;
+  if (tabId === undefined) return none('sem-aba');
   try {
     const id = await sessionIdentity(tabId, fresh);
     if (id.code) {
@@ -123,9 +130,12 @@ async function sendSession(editor: EditorEndpoint, fresh = false): Promise<void>
     }
     if (id.status) {
       await toEditor(editor, { lattesId: id.lattesId, status: id.status, type: 'estado-lattes' });
+    } else {
+      await none('sem-data', id.lattesId);
     }
   } catch {
-    // Sem permissão na aba ou aba recarregando: sem foto nem estado, sem erro.
+    // Sem permissão na aba ou aba recarregando: sem foto nem estado.
+    await none('erro');
   }
 }
 
@@ -163,7 +173,15 @@ async function sendEspelho(editor: EditorEndpoint): Promise<void> {
 
 async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<void> {
   if (msg.type === 'ola') {
-    await toEditor(editor, { type: 'ola', version: chrome.runtime.getManifest().version });
+    // O que o app anunciou fica para o painel comparar com a extensão.
+    await chrome.storage.session.set({
+      [APP_KEY]: { features: msg.features, version: msg.version },
+    });
+    await toEditor(editor, {
+      features: [...BRIDGE_FEATURES],
+      type: 'ola',
+      version: chrome.runtime.getManifest().version,
+    });
     await sendSession(editor);
     return;
   }
@@ -212,12 +230,21 @@ async function verifyOn(tabId: number): Promise<ContractReport> {
   }
 }
 
-/** "Verificar o Lattes" no painel: guarda o relatório no estado, sem tocar na fila. */
-async function verify(): Promise<void> {
+/**
+ * Confere o Lattes e guarda o relatório no estado, sem tocar na fila. Roda
+ * sozinha (auto) ao abrir o painel e quando o menu do Lattes carrega, só com
+ * o Lattes aberto e de tempos em tempos (shouldAutoVerify); o painel só mostra
+ * o resultado quando há problema. O "Verificar de novo" do painel força.
+ */
+async function verify(auto = false): Promise<void> {
   // Sem o "ok" do aviso, nada é lido do Lattes; o painel mostra o aviso no lugar do botão.
   if (!(await hasConsent())) return;
   const state = await readState();
   if (state.running || state.verificando) return;
+  if (auto) {
+    if (!shouldAutoVerify(state.verificacao, Date.now())) return;
+    if ((await lattesTab()) === undefined) return;
+  }
   await writeState({ ...state, verificando: true });
   // O "verificando" fica gravado; se algo estourar aqui, precisa ser desfeito
   // mesmo assim, senão o botão do painel fica preso.
@@ -352,7 +379,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
   }
   if (m.cmd === 'aplicar') void run(m.keys);
   if (m.cmd === 'parar') stopRequested = true;
-  if (m.cmd === 'verificar') void verify();
+  if (m.cmd === 'verificar') void verify(m.auto);
   if (m.cmd === 'limpar') {
     void readState().then((s) =>
       writeState({ ...s, ops: [], results: {}, running: false, verificando: false }),
@@ -400,6 +427,16 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && change && isConsentCurrent(change.newValue) && appPort) {
     void sendSession('app');
   }
+});
+
+// O menu do Lattes acabou de carregar (aberto depois do app, sessão nova,
+// volta ao menu): o app ligado recebe a leitura sem precisar reabrir nada.
+// A verificação de fundo também roda aqui.
+chrome.tabs.onUpdated.addListener((_tabId, info, tab) => {
+  if (info.status !== 'complete') return;
+  if (!tab.url?.startsWith(LATTES_MENU.replace(/\*$/, ''))) return;
+  void verify(true);
+  if (appPort) void sendSession('app');
 });
 
 // O service worker acorda por vários motivos; em todos, tenta ligar ao app.

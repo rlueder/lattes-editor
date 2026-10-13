@@ -39,6 +39,9 @@ declare namespace chrome {
     function query(q: { url?: string | string[] }): Promise<Tab[]>;
     function sendMessage(tabId: number, message: unknown): Promise<unknown>;
     function create(props: { url: string }): Promise<Tab>;
+    const onUpdated: {
+      addListener(cb: (tabId: number, info: { status?: string }, tab: Tab) => void): void;
+    };
   }
 
   namespace scripting {
