@@ -225,6 +225,41 @@ describe('o que mudou no Lattes desde a exportação', () => {
     expect(diff.onlyInExport).toEqual([]);
   });
 
+  it('ponto simples depois de inicial não decide o fim dos autores; título curto de evento casa', () => {
+    expect(titlePart('TESTE, P. Outro Trabalho. Anais, 2005')).toBeUndefined();
+    const xml = (titles: string[]) =>
+      parseXml(
+        `<CURRICULO-VITAE><PRODUCAO-TECNICA>${titles
+          .map(
+            (t, i) => `<TRABALHO-TECNICO SEQUENCIA-PRODUCAO="${i + 1}">
+          <DADOS-BASICOS-DO-TRABALHO-TECNICO TITULO-DO-TRABALHO-TECNICO="${t}" ANO="2005"/>
+        </TRABALHO-TECNICO>`,
+          )
+          .join('')}</PRODUCAO-TECNICA></CURRICULO-VITAE>`,
+      ).root;
+    // O título real casa depois dos autores, mesmo com ponto no meio.
+    expect(
+      diffEspelho(
+        [{ section: 'Produção', text: 'TESTE, P. Outro Trabalho. Anais, 2005' }],
+        xml(['Outro Trabalho']),
+      ),
+    ).toEqual({ onlyInExport: [], onlyInLattes: [], skipped: 0 });
+    // O sobrenome do segundo autor não casa com o título.
+    expect(
+      diffEspelho(
+        [
+          { section: 'Produção', text: 'ANAIS, B.; ANAIS DE EXEMPLO, D. Titulo Qualquer' },
+          { section: 'Produção', text: 'TESTE, P.. Anais de Exemplo, 2005' },
+        ],
+        xml(['Anais de Exemplo', 'Titulo Qualquer']),
+      ),
+    ).toEqual({ onlyInExport: [], onlyInLattes: [], skipped: 0 });
+    // Sem autores (evento), um título curto casa.
+    expect(
+      diffEspelho([{ section: 'Eventos', text: 'Fórum, 2007. (Congresso) .' }], xml(['Fórum'])),
+    ).toEqual({ onlyInExport: [], onlyInLattes: [], skipped: 0 });
+  });
+
   it('nada mudou quando cada linha tem o seu item', () => {
     const diff = diffEspelho(
       [{ section: 'Produção', text: 'TESTE, P.. Relatório Anual 2004 (hotsite), 2005' }],
