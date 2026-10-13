@@ -8,7 +8,7 @@
 // valores antes e depois.
 
 import { attributeLabel, elementLabel } from '../labels/labels.ts';
-import { childElements, type XElement, type XText } from './xml.ts';
+import { childElements, setAttr, type XElement, type XText } from './xml.ts';
 
 export type ChangeKind = 'alterado' | 'novo' | 'removido';
 
@@ -225,4 +225,21 @@ export function revertField(
 export function acceptChange(original: XElement, working: XElement, change: Change): boolean {
   if (change.kind !== 'alterado') return false;
   return change.fields.every((f) => revertField(working, original, change, f.attr));
+}
+
+/**
+ * O contrário de `acceptChange`: depois que a ponte desfaz uma gravação no
+ * Lattes, o original volta aos valores de antes, e a mudança reaparece na
+ * lista de alterações (a cópia de trabalho continua com os valores novos).
+ * Só atributos; um campo de texto devolve false sem mexer em nada.
+ */
+export function reopenChange(original: XElement, change: Change): boolean {
+  if (change.kind !== 'alterado' || change.fields.some((f) => f.attr === '#texto')) return false;
+  const el = resolvePath(original, change.path).at(-1);
+  if (!el || el.name !== change.element) return false;
+  for (const f of change.fields) {
+    if (f.before === '') el.attrs = el.attrs.filter((a) => a.name !== f.attr);
+    else setAttr(el, f.attr, f.before);
+  }
+  return true;
 }

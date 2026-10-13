@@ -9,19 +9,22 @@ export function HistoryDialog({
   entries,
   onClose,
   onRestore,
+  onSave,
   open,
 }: {
   entries: HistoryEntry[];
   open: boolean;
   onClose: () => void;
   onRestore: (entry: HistoryEntry) => void;
+  /** Salva aquele ponto num arquivo XML, sem mudar a cópia de trabalho. */
+  onSave: (entry: HistoryEntry) => void;
 }) {
   return (
     <Modal
       className="history"
       label="Histórico de alterações"
       open={open}
-      subtitle="Os últimos 50 estados salvos no navegador. Restaurar volta o currículo àquele ponto."
+      subtitle="Os últimos 50 estados, guardados no app, inclusive um antes de cada envio ao Lattes. Restaurar volta o currículo àquele ponto; Salvar cópia grava aquele ponto num arquivo."
       title="Histórico de alterações"
       onClose={onClose}
     >
@@ -31,9 +34,14 @@ export function HistoryDialog({
             <span>
               <time>{new Date(h.savedAt).toLocaleString('pt-BR')}</time> {h.note}
             </span>
-            <button className="ghost" type="button" onClick={() => onRestore(h)}>
-              Restaurar
-            </button>
+            <span className="history-actions">
+              <button className="ghost" type="button" onClick={() => onSave(h)}>
+                Salvar cópia
+              </button>
+              <button className="ghost" type="button" onClick={() => onRestore(h)}>
+                Restaurar
+              </button>
+            </span>
           </li>
         ))}
       </ul>

@@ -99,6 +99,15 @@ O que a extensão lê e envia está na
 Para gerar as imagens da página na Chrome Web Store: `pnpm build:extension`,
 `pnpm dev` e `pnpm capture:store` (saem em `docs/img/loja/`).
 
+O que a ponte grava fica pendente no Lattes até você clicar em "Enviar ao
+CNPq", e o Lattes não mostra nem descarta essas pendências. Por isso o app
+guarda, no próprio computador, o registro do que foi gravado e conferido:
+"Enviado ao Lattes", dentro de "Levar ao Lattes", lista cada alteração por
+dia, com o valor de antes e o de depois. "Desfazer no Lattes" manda de volta
+o valor de antes, com a mesma confirmação de qualquer envio, e a alteração
+volta para a lista do que falta levar. O registro continua lá depois de
+fechar o arquivo ou abrir outra exportação.
+
 O CNPq não avisa quando muda o Lattes. Por isso o painel tem "Verificar o
 Lattes": só com leituras, ele confere o menu e um exemplar de cada
 formulário que a ponte grava contra o que ela espera (nomes, tipos e limites
