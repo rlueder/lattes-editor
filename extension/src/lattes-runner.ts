@@ -59,9 +59,13 @@ const port: LattesPort = {
   identity: async (fresh = false) => {
     let html = document.documentElement.outerHTML;
     if (fresh) {
-      const res = await fetch('PKG_MENU.menu', { credentials: 'include' });
-      const menu = await text(res);
-      if (res.ok && !isLogonPage(menu, res.url)) html = menu;
+      try {
+        const res = await fetch('PKG_MENU.menu', { credentials: 'include' });
+        const menu = await text(res);
+        if (res.ok && !isLogonPage(menu, res.url)) html = menu;
+      } catch {
+        // Rede ou aba navegando: fica o menu da aba, como quando a sessão cai.
+      }
     }
     return { code: cvCodeFrom(html), lattesId: lattesIdFrom(html), status: lattesStatusFrom(html) };
   },

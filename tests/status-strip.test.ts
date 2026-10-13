@@ -37,10 +37,15 @@ describe('estado do Lattes no menu', () => {
       pending: false,
     });
     // Texto só dentro de script não conta como aviso.
-    expect(lattesStatusFrom('<script>"ainda não foram enviadas ao CNPq"</script>')).toEqual({
-      lastPublished: undefined,
-      pending: false,
-    });
+    expect(
+      lattesStatusFrom(
+        '<p>Última publicação: 01/02/2025</p><script>"ainda não foram enviadas ao CNPq"</script>',
+      ),
+    ).toEqual({ lastPublished: '2025-02-01', pending: false });
+    // Página que não é o menu (formulário, login): nenhuma leitura.
+    expect(lattesStatusFrom('<form name="RES"><textarea name="F_TEXTO"></textarea></form>')).toBe(
+      undefined,
+    );
   });
 });
 

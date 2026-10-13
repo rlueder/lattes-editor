@@ -40,11 +40,17 @@ function plainText(html: string): string {
     .replace(/\s+/g, ' ');
 }
 
-export function lattesStatusFrom(html: string): LattesStatus {
+/**
+ * O estado do Lattes lido do menu, ou undefined se a página não é o menu
+ * (um formulário, a tela de login): sem a data de publicação, um "sem
+ * pendência" seria só a ausência do aviso numa página que nunca o mostra.
+ */
+export function lattesStatusFrom(html: string): LattesStatus | undefined {
   const text = plainText(html);
   const date = /Última publicação:?\s*(\d{2})\/(\d{2})\/(\d{4})/i.exec(text);
+  if (!date) return undefined;
   return {
-    lastPublished: date ? `${date[3]}-${date[2]}-${date[1]}` : undefined,
+    lastPublished: `${date[3]}-${date[2]}-${date[1]}`,
     pending: /ainda não foram enviadas ao CNPq/i.test(text),
   };
 }

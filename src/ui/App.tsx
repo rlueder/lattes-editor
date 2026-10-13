@@ -388,10 +388,11 @@ export function App() {
 }
 
 /** O registro do enviado fica no fim de "Levar ao Lattes"; espera o painel abrir. */
-function scrollToSent(): void {
-  requestAnimationFrame(() =>
-    document.getElementById('enviado-ao-lattes')?.scrollIntoView({ block: 'start' }),
-  );
+/** Rola até "Enviado ao Lattes" quando ele aparecer: o painel abre e a lista carrega depois. */
+function scrollToSent(frames = 30): void {
+  const el = document.getElementById('enviado-ao-lattes');
+  if (el) el.scrollIntoView({ block: 'start' });
+  else if (frames > 0) requestAnimationFrame(() => scrollToSent(frames - 1));
 }
 
 /** Conta, dentro de alguns elementos, quantos dos itens pendentes aparecem. */
