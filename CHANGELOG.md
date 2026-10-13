@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.20.0](https://github.com/rlueder/lattes-editor/compare/v0.19.1...v0.20.0) (2026-10-13)
+
+### Novidades
+
+- tela de primeiro uso (LAT-21) e "ponte" vira "conector" ([#45](https://github.com/rlueder/lattes-editor/issues/45)) ([4d1a7f8](https://github.com/rlueder/lattes-editor/commit/4d1a7f80f7af12e41ddd0b57335bd2edb6e2db3f))
+
 ## [0.19.1](https://github.com/rlueder/lattes-editor/compare/v0.19.0...v0.19.1) (2026-10-13)
 
 ### Correções
