@@ -62,6 +62,14 @@ const REPORT_TITLE: Record<ContractReport['status'], string> = {
   sessao: 'Sessão caiu',
 };
 
+/** Título da seção da verificação, que só aparece quando algo não está ok. */
+const VIGIA_HEADING: Record<ContractReport['status'], string> = {
+  erro: 'Não deu para verificar o Lattes',
+  mudou: 'O Lattes mudou desde a última versão da ponte',
+  ok: '',
+  sessao: 'A sessão do Lattes caiu; entre de novo para enviar',
+};
+
 const FORM_TITLE: Record<string, string> = {
   GN_ATIV_VINC: 'Vínculo',
   GN_IDIOMA: 'Idioma',
@@ -150,6 +158,10 @@ function render(state: QueueState): void {
   const verify = document.getElementById('verificar') as HTMLButtonElement;
   verify.disabled = Boolean(state.running || state.verificando);
   verify.textContent = state.verificando ? 'Verificando…' : 'Verificar de novo';
+  // O título diz o que houve: mudança no Lattes, sessão caída ou leitura que falhou.
+  document.getElementById('vigia-titulo')!.textContent = state.verificacao
+    ? VIGIA_HEADING[state.verificacao.status]
+    : '';
   // A verificação roda sozinha; com o Lattes como o esperado, nada aparece.
   document.querySelector<HTMLElement>('.vigia')!.hidden =
     !state.verificacao || state.verificacao.status === 'ok';

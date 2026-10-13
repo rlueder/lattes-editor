@@ -35,6 +35,17 @@ export function NotificationsMenu({ notices }: { notices: Notice[] }) {
                   >
                     <NoticeBody notice={n} />
                   </Menu.Item>
+                ) : n.link ? (
+                  // O link é o que fazer: um item do menu, alcançável pelo teclado.
+                  <Menu.LinkItem
+                    key={n.id}
+                    className={`menu-item notice ${n.level}`}
+                    href={n.link.href}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <NoticeBody notice={n} />
+                  </Menu.LinkItem>
                 ) : (
                   <div key={n.id} className={`notice ${n.level}`}>
                     <NoticeBody notice={n} />
@@ -58,9 +69,7 @@ function NoticeBody({ notice }: { notice: Notice }) {
         {notice.link && (
           <>
             {' '}
-            <a href={notice.link.href} rel="noreferrer" target="_blank">
-              {notice.link.label}
-            </a>
+            <span className="notice-link">{notice.link.label}</span>
           </>
         )}
       </span>

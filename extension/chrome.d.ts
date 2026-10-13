@@ -59,6 +59,7 @@ declare namespace chrome {
   namespace storage {
     interface Area {
       get(keys?: string | string[] | null): Promise<Record<string, unknown>>;
+      remove(keys: string | string[]): Promise<void>;
       set(items: Record<string, unknown>): Promise<void>;
     }
     const local: Area;

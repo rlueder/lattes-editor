@@ -66,6 +66,8 @@ function connectApp(): void {
     // Ler lastError evita o aviso de erro não tratado no console.
     void chrome.runtime.lastError;
     appPort = undefined;
+    // Sem app ligado, o painel não compara versões com um app que já fechou.
+    void chrome.storage.session.remove(APP_KEY).catch(() => undefined);
   });
 }
 
@@ -173,10 +175,11 @@ async function sendEspelho(editor: EditorEndpoint): Promise<void> {
 
 async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<void> {
   if (msg.type === 'ola') {
-    // O que o app anunciou fica para o painel comparar com a extensão.
-    await chrome.storage.session.set({
-      [APP_KEY]: { features: msg.features, version: msg.version },
-    });
+    // O que o app anunciou fica para o painel comparar com a extensão. É
+    // secundário: se não gravar, o aperto de mão segue.
+    await chrome.storage.session
+      .set({ [APP_KEY]: { features: msg.features, version: msg.version } })
+      .catch(() => undefined);
     await toEditor(editor, {
       features: [...BRIDGE_FEATURES],
       type: 'ola',
