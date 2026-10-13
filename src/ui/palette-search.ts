@@ -78,5 +78,6 @@ export function paletteActions(): PaletteEntry[] {
     action('novo', 'Outro tipo de item…', 'Novo'),
     action('exportar', 'Levar ao Lattes (importar e alterações)', ''),
     action('diagnostico', 'Diagnóstico do currículo', ''),
+    action('versoes', 'Versões do Lattes (o que mudou entre exportações)', ''),
   ];
 }

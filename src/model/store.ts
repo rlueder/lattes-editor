@@ -2,7 +2,8 @@
 // IndexedDB. Nada sai da máquina, e nada fica legível no disco: o conteúdo de
 // cada registro vai cifrado (seal.ts), com a chave do chaveiro do sistema.
 // Ficam em claro só o que os índices e a rotação usam: ids, datas, a marca
-// `keep` do histórico, o NUMERO-IDENTIFICADOR (público) e o `undoOf`.
+// `keep` do histórico, o NUMERO-IDENTIFICADOR (público), o `undoOf` e a data e
+// a hora da exportação de cada versão (DATA-ATUALIZACAO, HORA-ATUALIZACAO).
 //
 // Sem chave, o editor não grava nada (modo "só nesta sessão"): guardar o
 // currículo em claro seria pior que perder o trabalho não enviado.
@@ -60,6 +61,30 @@ export function newWorkingCopy(cv: LoadedCv, now: number): WorkingCopy {
   };
 }
 
+/**
+ * Uma exportação do Lattes como foi aberta: a linha do tempo de versões
+ * (LAT-12). Cada abertura ou "Recarregar do Lattes" guarda uma, para mostrar
+ * o que mudou de uma exportação para a outra.
+ */
+export interface LattesVersion {
+  /** DATA-ATUALIZACAO + HORA-ATUALIZACAO da exportação (DDMMAAAA HHMMSS), quando há. */
+  exportedAt?: string;
+  id?: number;
+  /** NUMERO-IDENTIFICADOR do currículo. */
+  lattesId: string;
+  loadedAt: number;
+  /** XML da exportação, como foi carregado. */
+  xml: string;
+}
+
+/**
+ * Quantas versões ficam por currículo. Para quem exporta uma vez por mês, dois
+ * anos; as mais antigas saem primeiro.
+ */
+export const VERSION_LIMIT = 24;
+/** Teto de versões somando todos os currículos, para o banco não crescer sem fim. */
+export const VERSION_TOTAL_LIMIT = 72;
+
 export const HISTORY_LIMIT = 50;
 /** Quantos pontos de antes do envio ficam, à parte das edições. */
 export const KEPT_LIMIT = 20;
@@ -75,6 +100,19 @@ interface HistoryRow extends Partial<Pick<HistoryEntry, 'note' | 'xml'>> {
   savedAt: number;
   sealed?: Sealed;
 }
+interface VersionRow {
+  /**
+   * SHA-256 do XML, em claro: compara a exportação nova com a última sem
+   * decifrar nada, dentro da transação. Só confirma um XML exato que alguém
+   * já tenha; não revela o conteúdo.
+   */
+  digest?: string;
+  exportedAt?: string;
+  id?: number;
+  lattesId: string;
+  loadedAt: number;
+  sealed: Sealed;
+}
 interface SentRow extends Partial<Pick<SentEntry, 'change' | 'op' | 'rows'>> {
   id?: number;
   lattesId: string;
@@ -87,6 +125,7 @@ class LattesDb extends Dexie {
   working!: Table<WorkingRow, 'current'>;
   history!: Table<HistoryRow, number>;
   sent!: Table<SentRow, number>;
+  versions!: Table<VersionRow, number>;
 
   constructor() {
     super('lattes-editor');
@@ -96,6 +135,14 @@ class LattesDb extends Dexie {
     this.version(2).stores({
       history: '++id, savedAt',
       sent: '++id, lattesId, sentAt',
+      working: 'id',
+    });
+    // Versão 3 só acrescenta as versões do Lattes (linha do tempo); nasce
+    // cifrada, então não há o que migrar.
+    this.version(3).stores({
+      history: '++id, savedAt',
+      sent: '++id, lattesId, sentAt',
+      versions: '++id, lattesId, loadedAt',
       working: 'id',
     });
   }
@@ -150,6 +197,7 @@ async function readable(k: CryptoKey): Promise<boolean> {
         .limit(3)
         .toArray()
     ).map((r) => r.sealed!),
+    ...(await db.versions.limit(3).toArray()).map((r) => r.sealed),
   ];
   if (samples.length === 0) return true;
   for (const sample of samples) {
@@ -219,10 +267,11 @@ export async function openStorage(k: CryptoKey): Promise<StorageStatus> {
 /** Chave perdida: apaga tudo o que não dá mais para ler e segue com a chave nova. */
 export async function resetStorage(): Promise<void> {
   if (!pendingKey) return;
-  await db.transaction('rw', db.working, db.history, db.sent, async () => {
+  await db.transaction('rw', [db.working, db.history, db.sent, db.versions], async () => {
     await db.working.clear();
     await db.history.clear();
     await db.sent.clear();
+    await db.versions.clear();
   });
   key = pendingKey;
   pendingKey = undefined;
@@ -365,6 +414,104 @@ export async function listSent(lattesId: string): Promise<SentEntry[]> {
   return entries.filter((e) => e !== undefined).sort((a, b) => b.sentAt - a.sentAt);
 }
 
+/**
+ * Guarda uma exportação na linha do tempo do currículo. Uma exportação igual
+ * à última guardada (o mesmo arquivo aberto de novo) não vira versão nova.
+ * Mantém as últimas VERSION_LIMIT. Devolve se gravou.
+ */
+async function sha256(text: string): Promise<string> {
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Grava a exportação como versão, se não for igual à última deste currículo,
+ * e mantém as últimas VERSION_LIMIT (e VERSION_TOTAL_LIMIT somando todos).
+ * Devolve se gravou e o id da versão anterior, para quem quiser comparar
+ * decifrar só ela.
+ */
+export async function addVersion(
+  version: Omit<LattesVersion, 'id'>,
+): Promise<{ added: boolean; previousId?: number }> {
+  const k = key;
+  if (!k) return { added: false };
+  const { exportedAt, lattesId, loadedAt, xml } = version;
+  const digest = await sha256(xml);
+  const row: VersionRow = {
+    digest,
+    exportedAt,
+    lattesId,
+    loadedAt,
+    sealed: await seal(k, { xml }),
+  };
+  try {
+    return await db.transaction('rw', db.versions, async () => {
+      const mine = await db.versions.where('lattesId').equals(lattesId).sortBy('loadedAt');
+      const latest = mine.at(-1);
+      if (latest?.digest === digest) return { added: false };
+      const newId = await db.versions.add(row);
+      const ids = [...mine.map((r) => r.id!), newId];
+      await db.versions.bulkDelete(ids.slice(0, Math.max(0, ids.length - VERSION_LIMIT)));
+      // Somando todos os currículos, saem as mais antigas além do teto, mas
+      // nunca a recém-gravada nem a anterior a ela, que o resumo vai ler.
+      const total = await db.versions.count();
+      if (total > VERSION_TOTAL_LIMIT) {
+        const keep = new Set([newId, latest?.id]);
+        const oldest = (await db.versions.orderBy('loadedAt').primaryKeys())
+          .filter((id) => !keep.has(id))
+          .slice(0, total - VERSION_TOTAL_LIMIT);
+        await db.versions.bulkDelete(oldest);
+      }
+      return { added: true, previousId: latest?.id };
+    });
+  } catch (err) {
+    // Sem espaço (quota) ou falha do banco: a linha do tempo fica sem esta
+    // versão, mas abrir o currículo não pode depender dela.
+    console.warn('Versão do Lattes não gravou:', err);
+    return { added: false };
+  }
+}
+
+/** Uma versão pelo id, decifrada. */
+export async function getVersion(id: number): Promise<LattesVersion | undefined> {
+  const k = key;
+  const row = k ? await db.versions.get(id) : undefined;
+  if (!k || !row) return undefined;
+  const open = await unsealRow<Pick<LattesVersion, 'xml'>>(k, row.sealed, 'versões do Lattes');
+  const { exportedAt, lattesId, loadedAt } = row;
+  return open && { ...open, exportedAt, id, lattesId, loadedAt };
+}
+
+/** As versões do currículo, da mais recente à mais antiga; `limit` lê só as primeiras. */
+/** As versões do currículo, sem o XML (nada é decifrado), da mais recente à mais antiga. */
+export async function listVersionInfo(lattesId: string): Promise<Omit<LattesVersion, 'xml'>[]> {
+  if (!key) return [];
+  const rows = await db.versions.where('lattesId').equals(lattesId).sortBy('loadedAt');
+  return rows
+    .reverse()
+    .map(({ exportedAt, id, loadedAt }) => ({ exportedAt, id, lattesId, loadedAt }));
+}
+
+export async function listVersions(lattesId: string, limit?: number): Promise<LattesVersion[]> {
+  const k = key;
+  if (!k) return [];
+  const rows = (await db.versions.where('lattesId').equals(lattesId).sortBy('loadedAt'))
+    .reverse()
+    .slice(0, limit);
+  const versions = await Promise.all(
+    rows.map(async ({ exportedAt, id, loadedAt, sealed }) => {
+      const open = await unsealRow<Pick<LattesVersion, 'xml'>>(k, sealed, 'versões do Lattes');
+      return open && { ...open, exportedAt, id, lattesId, loadedAt };
+    }),
+  );
+  return versions.filter((v) => v !== undefined);
+}
+
+/** Apaga a linha do tempo deste currículo. A cópia de trabalho fica como está. */
+export async function clearVersions(lattesId: string): Promise<void> {
+  await db.versions.where('lattesId').equals(lattesId).delete();
+}
+
 /** Apaga o registro do enviado deste currículo. Não muda nada no Lattes. */
 export async function clearSent(lattesId: string): Promise<void> {
   await db.sent.where('lattesId').equals(lattesId).delete();
@@ -374,7 +521,8 @@ export async function clearSent(lattesId: string): Promise<void> {
  * Fecha o arquivo: apaga a cópia de trabalho e o histórico de edição. O
  * registro do que foi enviado fica: as gravações continuam pendentes no
  * Lattes até "Enviar ao CNPq", e o registro é o único jeito de vê-las e
- * desfazê-las, inclusive depois de abrir outra exportação.
+ * desfazê-las, inclusive depois de abrir outra exportação. As versões do
+ * Lattes também ficam: a linha do tempo é justamente entre aberturas.
  */
 export async function clearAll(): Promise<void> {
   await db.transaction('rw', db.working, db.history, async () => {

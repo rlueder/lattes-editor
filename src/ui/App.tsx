@@ -17,7 +17,7 @@ import {
   saveWorkingCopy,
   storageStatus,
 } from '../model/store.ts';
-import { getAttr, parseXml, serializeXml, walk, type XElement } from '../model/xml.ts';
+import { parseXml, serializeXml, walk, type XElement } from '../model/xml.ts';
 import { PrintDialog } from '../print/PrintDialog.tsx';
 import { usePrint } from '../print/use-print.ts';
 import { DiagnosisPanel } from '../review/DiagnosisPanel.tsx';
@@ -42,6 +42,8 @@ import { useBridge } from './use-bridge.ts';
 import { useChanges } from './use-changes.ts';
 import { useHistoryDialog } from './use-history-dialog.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
+import { useVersions } from './use-versions.ts';
+import { exportDateOf } from './version-diff.ts';
 import { Welcome } from './Welcome.tsx';
 
 const AUTOSAVE_MS = 400;
@@ -123,10 +125,7 @@ export function App() {
   const production = useProduction(session, setSession, version, onEdit);
   // Data da exportação carregada, lida uma vez por arquivo.
   const originalXml = session?.meta.originalXml;
-  const exportedOn = useMemo(
-    () => (originalXml ? getAttr(parseXml(originalXml).root, 'DATA-ATUALIZACAO') : undefined),
-    [originalXml],
-  );
+  const exportedOn = useMemo(() => exportDateOf(originalXml), [originalXml]);
 
   // O documento é mutado no lugar; `version` é o que avisa que ele mudou.
   const sections = useMemo(
@@ -157,6 +156,7 @@ export function App() {
     if (!route.anchor) window.scrollTo({ top: 0 });
     if (write) writeHash(route);
   }, []);
+  const versions = useVersions(session?.doc.root, navigate);
 
   // Um link "#atuacao/atuacao-profissional/2020", aberto ou editado à mão, leva direto lá.
   const hasSections = sections.length > 0;
@@ -177,11 +177,8 @@ export function App() {
       if (entry.action === 'exportar') setExportOpen(true);
       else if (entry.action === 'diagnostico') setDiagnosisOpen(true);
       else if (entry.action === 'novo') setPickerOpen(true);
-      else {
-        const itemName = entry.action.slice('novo:'.length);
-        const type = importableTypes(lattesSchema).find((t) => t.itemName === itemName);
-        if (type) production.startNew(type);
-      }
+      else if (entry.action === 'versoes') void versions.show();
+      else startNewItem(entry.action, production.startNew);
       return;
     }
     navigate({ anchor: entry.anchorId, sectionId: entry.sectionId });
@@ -202,6 +199,8 @@ export function App() {
       const cv = await loadCv(new Uint8Array(await file.arrayBuffer()), file.name);
       const copy = newWorkingCopy(cv, Date.now());
       await replaceWorkingCopy(copy);
+      // A linha do tempo é auxiliar: se não gravar, o currículo abre igual.
+      void versions.record(cv.doc.root, copy.originalXml).catch((e: unknown) => console.warn(e));
       const { savedAt: _savedAt, xml: _xml, ...meta } = copy;
       setSession({ doc: cv.doc, meta });
       setSectionId('dados-gerais');
@@ -294,6 +293,7 @@ export function App() {
           value={{ loadedMax: production.loadedMax, openItem: production.openItem }}
         >
           <ReferenceContext.Provider value={referenceIndex ?? EMPTY_INDEX}>
+            {versions.banner}
             <PendingBanner
               changes={changes.open}
               news={production.pending.length}
@@ -387,6 +387,7 @@ export function App() {
         onRestore={history.restore}
         onSave={history.saveCopy}
       />
+      {versions.dialog}
       {storageNotice}
     </div>
   );
@@ -412,4 +413,14 @@ function countPendingIn(pending: XElement[]): (els: XElement[]) => number {
 /** A faixa do cabeçalho: alterações do editor, mais o que a ponte sabe do Lattes. */
 function stripFor(editorChanges: number, bridge: { lattes?: LattesStatus; sent: SentEntry[] }) {
   return statusStrip({ editorChanges, lattes: bridge.lattes, sent: bridge.sent });
+}
+
+/** Ação "novo:<item>" do ⌘K: abre o formulário daquele tipo de item. */
+function startNewItem(
+  action: string,
+  start: (type: ReturnType<typeof importableTypes>[number]) => void,
+): void {
+  const itemName = action.slice('novo:'.length);
+  const type = importableTypes(lattesSchema).find((t) => t.itemName === itemName);
+  if (type) start(type);
 }
