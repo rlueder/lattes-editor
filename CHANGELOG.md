@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.15.0](https://github.com/rlueder/lattes-editor/compare/v0.14.0...v0.15.0) (2026-10-13)
+
+### Novidades
+
+- **ui:** linha do tempo de versões do Lattes ([#39](https://github.com/rlueder/lattes-editor/issues/39)) ([ba74c76](https://github.com/rlueder/lattes-editor/commit/ba74c768cb008cc1778236b8502e02e50a1ce637)), closes [#38](https://github.com/rlueder/lattes-editor/issues/38) [#37](https://github.com/rlueder/lattes-editor/issues/37)
+
 ## [0.14.0](https://github.com/rlueder/lattes-editor/compare/v0.13.0...v0.14.0) (2026-10-13)
 
 ### Novidades
