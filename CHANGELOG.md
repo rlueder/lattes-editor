@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.14.0](https://github.com/rlueder/lattes-editor/compare/v0.13.0...v0.14.0) (2026-10-13)
+
+### Novidades
+
+- **ui:** diagnóstico do currículo, com revisão de consistência e o que mudou no Lattes ([#37](https://github.com/rlueder/lattes-editor/issues/37)) ([b195edd](https://github.com/rlueder/lattes-editor/commit/b195edd71da0f9ee5c48bf6e46f185c8f5f07a40)), closes [#36](https://github.com/rlueder/lattes-editor/issues/36) [#35](https://github.com/rlueder/lattes-editor/issues/35)
+
 ## [0.13.0](https://github.com/rlueder/lattes-editor/compare/v0.12.0...v0.13.0) (2026-10-13)
 
 ### Novidades
