@@ -112,6 +112,22 @@ describe('versões do Lattes no banco local', () => {
       expect(await store.listVersions('0000000000000001', 1)).toHaveLength(1);
     });
 
+    it('somando os currículos, as mais antigas saem além do teto', async () => {
+      const perCv = 10;
+      const cvs = Math.ceil(store.VERSION_TOTAL_LIMIT / perCv) + 1;
+      for (let c = 0; c < cvs; c++) {
+        for (let i = 0; i < perCv; i++) {
+          await store.addVersion(
+            version(`<C${c}V${i}/>`, c * 100 + i, String(c).padStart(16, '0')),
+          );
+        }
+      }
+      expect(await store.db.versions.count()).toBe(store.VERSION_TOTAL_LIMIT);
+      // O primeiro currículo, o mais antigo, perdeu versões; o último ficou inteiro.
+      expect((await store.listVersions('0'.padStart(16, '0'))).length).toBeLessThan(perCv);
+      expect(await store.listVersions(String(cvs - 1).padStart(16, '0'))).toHaveLength(perCv);
+    });
+
     it('sobrevive a abrir outro arquivo e a fechar; apagar é por currículo', async () => {
       await store.addVersion(version('<A/>', 1));
       await store.addVersion(version('<B/>', 2, '0000000000000002'));
@@ -190,16 +206,24 @@ describe('o que mudou entre duas exportações', () => {
       (c) => !(c.kind === 'element' && c.name === 'IDIOMA'),
     );
 
+    // Outro artigo com o mesmo título, também alterado: conta à parte.
+    const twin = cloneElement(article);
+    setAttr(twin, 'SEQUENCIA-PRODUCAO', '998');
+    container.children.push(twin);
+    const olderTwin = cloneElement(first(older, 'ARTIGO-PUBLICADO'));
+    setAttr(olderTwin, 'SEQUENCIA-PRODUCAO', '998');
+    first(older, 'ARTIGOS-PUBLICADOS').children.push(olderTwin);
+
     const diff = diffVersions(older, newer, buildSections(newer));
     expect(diff.added).toBe(1);
-    expect(diff.changed).toBe(1);
+    expect(diff.changed).toBe(2);
     expect(diff.removed).toBeGreaterThanOrEqual(1);
     const all = diff.groups.flatMap((g) => g.changes);
     const novo = all.find((c) => c.change.kind === 'novo')!;
     expect(novo.route?.sectionId).toBe('producoes');
     expect(novo.route?.anchor).toBeTruthy();
     expect(diffSummary(diff, '15/03/2024')).toMatch(
-      /^Desde a versão de 15\/03\/2024: 1 item novo, 1 alterado, \d+ removidos?\.$/,
+      /^Desde a versão de 15\/03\/2024: 1 item novo, 2 alterados, \d+ removidos?\.$/,
     );
   });
 

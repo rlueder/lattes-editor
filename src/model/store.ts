@@ -82,6 +82,8 @@ export interface LattesVersion {
  * anos; as mais antigas saem primeiro.
  */
 export const VERSION_LIMIT = 24;
+/** Teto de versões somando todos os currículos, para o banco não crescer sem fim. */
+export const VERSION_TOTAL_LIMIT = 72;
 
 export const HISTORY_LIMIT = 50;
 /** Quantos pontos de antes do envio ficam, à parte das edições. */
@@ -418,13 +420,29 @@ export async function addVersion(version: Omit<LattesVersion, 'id'>): Promise<bo
   if (latest?.xml === version.xml) return false;
   const { exportedAt, lattesId, loadedAt, xml } = version;
   const row: VersionRow = { exportedAt, lattesId, loadedAt, sealed: await seal(k, { xml }) };
-  await db.transaction('rw', db.versions, async () => {
-    await db.versions.add(row);
-    const ids = (await db.versions.where('lattesId').equals(lattesId).sortBy('loadedAt')).map(
-      (r) => r.id!,
-    );
-    await db.versions.bulkDelete(ids.slice(0, Math.max(0, ids.length - VERSION_LIMIT)));
-  });
+  try {
+    await db.transaction('rw', db.versions, async () => {
+      await db.versions.add(row);
+      const ids = (await db.versions.where('lattesId').equals(lattesId).sortBy('loadedAt')).map(
+        (r) => r.id!,
+      );
+      await db.versions.bulkDelete(ids.slice(0, Math.max(0, ids.length - VERSION_LIMIT)));
+      // Somando todos os currículos, saem as mais antigas além do teto.
+      const total = await db.versions.count();
+      if (total > VERSION_TOTAL_LIMIT) {
+        const oldest = await db.versions
+          .orderBy('loadedAt')
+          .limit(total - VERSION_TOTAL_LIMIT)
+          .primaryKeys();
+        await db.versions.bulkDelete(oldest);
+      }
+    });
+  } catch (err) {
+    // Sem espaço (quota) ou falha do banco: a linha do tempo fica sem esta
+    // versão, mas abrir o currículo não pode depender dela.
+    console.warn('Versão do Lattes não gravou:', err);
+    return false;
+  }
   return true;
 }
 

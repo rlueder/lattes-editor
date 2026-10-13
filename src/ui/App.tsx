@@ -202,7 +202,8 @@ export function App() {
       const cv = await loadCv(new Uint8Array(await file.arrayBuffer()), file.name);
       const copy = newWorkingCopy(cv, Date.now());
       await replaceWorkingCopy(copy);
-      await versions.record(copy.originalXml);
+      // A linha do tempo é auxiliar: se não gravar, o currículo abre igual.
+      void versions.record(copy.originalXml).catch((err: unknown) => console.warn(err));
       const { savedAt: _savedAt, xml: _xml, ...meta } = copy;
       setSession({ doc: cv.doc, meta });
       setSectionId('dados-gerais');

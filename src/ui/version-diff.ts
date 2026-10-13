@@ -29,14 +29,24 @@ export interface VersionDiff {
   removed: number;
 }
 
-/** O grupo do editor que contém algum elemento do caminho, do mais fundo ao mais raso. */
-function routeOf(chain: XElement[], sections: Section[]): HashRoute | undefined {
+/**
+ * O item do editor que contém algum elemento do caminho, do mais fundo ao
+ * mais raso, e a rota até o grupo dele.
+ */
+function itemOf(
+  chain: XElement[],
+  sections: Section[],
+): { item: XElement; route: HashRoute } | undefined {
   for (let i = chain.length - 1; i >= 0; i--) {
     const el = chain[i]!;
     for (const section of sections) {
       if (section.importable === 'filtro') continue;
       const group = section.groups.find((g) => g.elements.includes(el));
-      if (group) return { anchor: group.id, sectionId: section.id };
+      // O grupo pode ser o contêiner (ARTIGOS-PUBLICADOS): o item é o filho
+      // dele no caminho.
+      if (group) {
+        return { item: chain[i + 1] ?? el, route: { anchor: group.id, sectionId: section.id } };
+      }
     }
   }
   return undefined;
@@ -49,19 +59,22 @@ function routeOf(chain: XElement[], sections: Section[]): HashRoute | undefined 
  */
 export function diffVersions(older: XElement, newer: XElement, sections: Section[]): VersionDiff {
   const changes = diffDocuments(older, newer);
+  // O item de cada mudança, para contar um item alterado uma vez só, mesmo
+  // com vários campos mudados ou com título igual ao de outro item.
+  const itemByChange = new Map<Change, XElement | undefined>();
   const groups = groupChanges(changes, older, newer, sections).map((g) => ({
-    changes: g.entries.map(({ change, itemTitle }) => ({
-      change,
-      itemTitle,
-      route: routeOf(resolvePath(newer, change.path), sections),
-    })),
+    changes: g.entries.map(({ change, itemTitle }) => {
+      const found = itemOf(resolvePath(newer, change.path), sections);
+      itemByChange.set(change, found?.item);
+      return { change, itemTitle, route: found?.route };
+    }),
     label: g.label,
   }));
-  const all = groups.flatMap((g) => g.changes.map((c) => ({ ...c, label: g.label })));
-  const changedItems = new Set(
+  const all = groups.flatMap((g) => g.changes);
+  const changedItems = new Set<XElement | string>(
     all
       .filter((c) => c.change.kind === 'alterado')
-      .map((c) => (c.itemTitle ? `${c.label}|${c.itemTitle}` : c.change.key)),
+      .map((c) => itemByChange.get(c.change) ?? c.change.key),
   );
   return {
     added: all.filter((c) => c.change.kind === 'novo').length,
