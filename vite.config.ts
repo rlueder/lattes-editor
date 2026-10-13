@@ -5,9 +5,10 @@ import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 
 /**
- * Embute JS e CSS no index.html. Módulos externos não carregam por file://
- * (o navegador bloqueia por CORS), e o app precisa abrir com dois cliques no
- * arquivo, sem servidor. Um script inline funciona.
+ * Embute JS e CSS no index.html. Vem da versão em HTML solto, que abria com
+ * dois cliques por file:// (onde módulos externos não carregam). Os
+ * lançamentos não publicam mais essa versão; o app de desktop não precisa do
+ * arquivo único, e o plugin pode sair num próximo passo.
  */
 function inlineBundle(): Plugin {
   return {

@@ -8,8 +8,10 @@
  *   - docs, style, test, ci, chore, build → sem lançamento
  *
  * Em cada lançamento: notas em pt-BR, CHANGELOG.md atualizado, versão no
- * package.json, tag, e a página do GitHub com o editor num arquivo só e a
- * extensão em .zip, construídos já com a versão nova.
+ * package.json, tag, e a página do GitHub com a extensão em .zip, construída
+ * já com a versão nova. Os instaladores do app vêm depois, pelo
+ * desktop-build.yml. O editor só se distribui como app de desktop, nunca como
+ * um HTML solto.
  */
 
 const presetConfig = {
@@ -48,10 +50,8 @@ const releaseRules = [
 const BUILD = [
   // O CHANGELOG gerado sai no formato do Prettier, senão o format:check reprova o push seguinte.
   'pnpm exec prettier --write CHANGELOG.md',
-  'pnpm build',
   'pnpm build:extension',
   'mkdir -p release',
-  'cp dist/index.html release/lattes-editor.html',
   '(cd dist-extension && zip -qr ../release/lattes-editor-extensao.zip .)',
   // O mesmo pacote sem a chave do manifest, para enviar à Chrome Web Store.
   'pnpm build:extension:loja',
@@ -82,7 +82,6 @@ module.exports = {
       '@semantic-release/github',
       {
         assets: [
-          { label: 'Editor (um arquivo HTML)', path: 'release/lattes-editor.html' },
           { label: 'Extensão da ponte (.zip)', path: 'release/lattes-editor-extensao.zip' },
           {
             label: 'Extensão da ponte para a Chrome Web Store (.zip)',
