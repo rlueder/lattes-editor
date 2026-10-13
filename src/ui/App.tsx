@@ -241,6 +241,7 @@ export function App() {
         <Welcome
           error={error}
           lattes={lattesOpen}
+          link={bridge.link}
           theme={theme}
           onFile={openFile}
           onTheme={setTheme}
