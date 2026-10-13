@@ -89,6 +89,10 @@ arquivo quando muda de fato; o detalhe técnico está em
   mais de 10 anos e curso em andamento há mais de 8. Falta: períodos que se
   cruzam e variações de nome de outros autores.
 - **Achar o DOI** de produções que não têm, pelo Crossref.
+- **Linha do tempo de versões.** Feito: cada exportação aberta vira uma
+  versão (até 24 por currículo, cifradas como o resto), e o app mostra o que
+  mudou entre uma e a anterior, por seção, com o caminho até o item no
+  editor. A comparação é a mesma da lista de alterações.
 - **App de desktop** com Tauri para macOS, Windows e Linux. Feito: diálogos
   nativos de abrir e salvar, builds dos três sistemas na CI com os
   instaladores na página do lançamento, e a ligação com a extensão por

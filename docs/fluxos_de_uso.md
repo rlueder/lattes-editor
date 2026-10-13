@@ -73,9 +73,10 @@ produções.
 
 Já tem um currículo grande; acrescenta poucas produções e corrige detalhes.
 
-1. Abre o app, que já tem a versão do mês passado. "Atualizar do Lattes"
-   traz a de agora e mostra o que mudou entre as duas, inclusive o que foi
-   editado direto no Lattes (linha do tempo de versões, LAT-12).
+1. Abre o app, que já tem a versão do mês passado. "Recarregar do Lattes"
+   traz a de agora e diz, numa faixa, quantos itens são novos, alterados e
+   removidos desde a anterior, inclusive o que foi editado direto no Lattes;
+   "Versões do Lattes" mostra o detalhe de cada exportação (LAT-12, feito).
 2. Acrescenta produções pelo DOI (LAT-30) e ajusta o que precisa.
 3. Manda, confere a faixa e publica.
 
@@ -110,4 +111,5 @@ pede uma vez.
 3. Abrir do Lattes pela ponte (LAT-22), com o caso do Exportar bloqueado.
 4. Diagnóstico para quem volta (comparação e revisão de consistência).
 5. Criar itens pela ponte (LAT-24).
-6. Linha do tempo de versões (LAT-12).
+6. Linha do tempo de versões (LAT-12). Feito: até 24 exportações por
+   currículo, cifradas, com o que mudou entre cada uma e a anterior.
