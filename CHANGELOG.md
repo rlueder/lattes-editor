@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.18.0](https://github.com/rlueder/lattes-editor/compare/v0.17.0...v0.18.0) (2026-10-13)
+
+### Novidades
+
+- abrir do Lattes pela ponte, sem baixar o ZIP (LAT-22) ([#43](https://github.com/rlueder/lattes-editor/issues/43)) ([94ef189](https://github.com/rlueder/lattes-editor/commit/94ef189b8cf65fb5946695ef2996b319e208b4ff))
+
 ## [0.17.0](https://github.com/rlueder/lattes-editor/compare/v0.16.1...v0.17.0) (2026-10-13)
 
 ### Novidades
