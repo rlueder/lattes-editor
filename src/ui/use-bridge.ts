@@ -24,7 +24,7 @@ import { isDesktop } from '../desktop/native.ts';
 import type { Session } from '../forms/use-production.ts';
 import type { Change } from '../model/changes.ts';
 import { addHistoryPoint, addSent, listSent } from '../model/store.ts';
-import { getAttr, serializeXml } from '../model/xml.ts';
+import { getAttr } from '../model/xml.ts';
 import type { ChangeGroup } from './changes-view.ts';
 import { writeCvCode } from './profile.ts';
 
@@ -89,8 +89,8 @@ export interface BridgeState {
   results: Record<string, OpResult>;
   running: boolean;
   /**
-   * Antes de mandar, guarda sozinho um ponto no histórico com a cópia de
-   * trabalho, sem perguntar nada.
+   * Antes de mandar, guarda sozinho um ponto no histórico com o currículo
+   * como está no Lattes, sem perguntar nada.
    * undo: em vez da fila planejada, manda só a operação que desfaz essa
    * entrada do registro.
    */
@@ -203,11 +203,16 @@ export function useBridge(
       const reverse = undo && undoOp(undo);
       if (undo && !reverse) return;
       if (session) {
+        // O currículo como o Lattes está antes deste envio (a exportação com o
+        // que já foi conferido). Restaurar esse ponto põe as alterações de
+        // volta na lista, para desfazê-las pelo caminho de sempre. Se o ponto
+        // não grava, o envio segue: o registro do enviado guarda o antes de
+        // cada campo de qualquer jeito.
         await addHistoryPoint({
-          note: reverse ? 'Antes de desfazer no Lattes' : 'Antes do envio ao Lattes',
+          note: reverse ? 'Lattes antes de desfazer' : 'Lattes antes do envio',
           savedAt: Date.now(),
-          xml: serializeXml(session.doc),
-        });
+          xml: session.meta.originalXml,
+        }).catch((err: unknown) => console.error('Ponto de histórico não gravou:', err));
       }
       const changes = new Map(
         groups.flatMap((g) => g.entries).map((e) => [e.change.key, e.change]),
