@@ -20,6 +20,22 @@ import {
 import { markStorageUnavailable, openStorage, type StorageStatus } from '../model/store.ts';
 import { isDesktop } from './native.ts';
 
+/**
+ * Quanto esperar pelo chaveiro antes de abrir sem gravar. Dá tempo de digitar
+ * a senha que o Secret Service pede no Linux, e o app nunca fica em branco.
+ */
+export const KEYCHAIN_TIMEOUT_MS = 60_000;
+
+function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error('O chaveiro do sistema não respondeu a tempo.')),
+      ms,
+    );
+    work.then(resolve, reject).finally(() => clearTimeout(timer));
+  });
+}
+
 async function keyFromKeychain(): Promise<Uint8Array> {
   const { invoke } = await import('@tauri-apps/api/core');
   const stored = await invoke<string | null>('storage_key_get');
@@ -34,7 +50,11 @@ export async function initStorage({
   dev = import.meta.env.DEV,
 } = {}): Promise<StorageStatus> {
   try {
-    const raw = desktop ? await keyFromKeychain() : dev ? DEVELOPMENT_KEY : undefined;
+    const raw = desktop
+      ? await withTimeout(keyFromKeychain(), KEYCHAIN_TIMEOUT_MS)
+      : dev
+        ? DEVELOPMENT_KEY
+        : undefined;
     if (!raw) return markStorageUnavailable('Fora do app de desktop não há chaveiro.');
     return await openStorage(await importStorageKey(raw));
   } catch (err) {

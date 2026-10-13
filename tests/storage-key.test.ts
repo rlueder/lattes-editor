@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
 vi.mock('@tauri-apps/api/core', () => ({ invoke }));
 
-const { initStorage } = await import('../src/desktop/storage-key.ts');
+const { initStorage, KEYCHAIN_TIMEOUT_MS } = await import('../src/desktop/storage-key.ts');
 const { storageStatus } = await import('../src/model/store.ts');
 
 afterEach(() => {
@@ -33,6 +33,17 @@ describe('chave dos dados locais', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(await initStorage({ desktop: true, dev: false })).toBe('sem-chave');
     expect(storageStatus().reason).toBe('sem Secret Service');
+  });
+
+  it('chaveiro que não responde a tempo abre o editor sem gravar', async () => {
+    vi.useFakeTimers();
+    invoke.mockReturnValueOnce(new Promise(() => {}));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const pending = initStorage({ desktop: true, dev: false });
+    await vi.advanceTimersByTimeAsync(KEYCHAIN_TIMEOUT_MS);
+    expect(await pending).toBe('sem-chave');
+    expect(storageStatus().reason).toMatch(/não respondeu a tempo/);
+    vi.useRealTimers();
   });
 
   it('no pnpm dev usa a chave de desenvolvimento; fora do app e do dev, nenhuma', async () => {

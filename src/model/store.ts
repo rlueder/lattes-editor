@@ -209,11 +209,27 @@ export async function resetStorage(): Promise<void> {
   status = 'cifrado';
 }
 
+/**
+ * Decifra uma linha; se ela não abre (gravação interrompida, registro
+ * corrompido), avisa no console e segue sem ela, em vez de derrubar a lista
+ * inteira. Chave errada para o banco todo é outro caso, tratado em
+ * openStorage.
+ */
+async function unsealRow<T>(k: CryptoKey, sealed: Sealed, what: string): Promise<T | undefined> {
+  try {
+    return await unseal<T>(k, sealed);
+  } catch (err) {
+    console.warn(`Uma linha de ${what} não pôde ser lida e ficou de fora:`, err);
+    return undefined;
+  }
+}
+
 export async function loadWorkingCopy(): Promise<WorkingCopy | undefined> {
   if (!key) return undefined;
   const row = await db.working.get('current');
   if (!row?.sealed) return undefined;
-  return { ...(await unseal<Omit<WorkingCopy, 'id'>>(key, row.sealed)), id: 'current' };
+  const copy = await unsealRow<Omit<WorkingCopy, 'id'>>(key, row.sealed, 'cópia de trabalho');
+  return copy && { ...copy, id: 'current' };
 }
 
 async function workingRow(k: CryptoKey, copy: WorkingCopy): Promise<WorkingRow> {
@@ -291,16 +307,15 @@ export async function listHistory(): Promise<HistoryEntry[]> {
   const k = key;
   if (!k) return [];
   const rows = await db.history.orderBy('savedAt').reverse().toArray();
-  return Promise.all(
+  const entries = await Promise.all(
     rows
       .filter((r) => r.sealed)
-      .map(async ({ id, keep, savedAt, sealed }) => ({
-        ...(await unseal<Pick<HistoryEntry, 'note' | 'xml'>>(k, sealed!)),
-        id,
-        keep,
-        savedAt,
-      })),
+      .map(async ({ id, keep, savedAt, sealed }) => {
+        const open = await unsealRow<Pick<HistoryEntry, 'note' | 'xml'>>(k, sealed!, 'histórico');
+        return open && { ...open, id, keep, savedAt };
+      }),
   );
+  return entries.filter((e) => e !== undefined);
 }
 
 /** Grava no registro do que foi enviado ao Lattes; devolve o id. */
@@ -318,15 +333,16 @@ export async function listSent(lattesId: string): Promise<SentEntry[]> {
   const entries = await Promise.all(
     rows
       .filter((r) => r.sealed)
-      .map(async ({ id, sealed, sentAt, undoOf }) => ({
-        ...(await unseal<Pick<SentEntry, 'change' | 'op' | 'rows'>>(k, sealed!)),
-        id,
-        lattesId,
-        sentAt,
-        undoOf,
-      })),
+      .map(async ({ id, sealed, sentAt, undoOf }) => {
+        const open = await unsealRow<Pick<SentEntry, 'change' | 'op' | 'rows'>>(
+          k,
+          sealed!,
+          'registro do enviado',
+        );
+        return open && { ...open, id, lattesId, sentAt, undoOf };
+      }),
   );
-  return entries.sort((a, b) => b.sentAt - a.sentAt);
+  return entries.filter((e) => e !== undefined).sort((a, b) => b.sentAt - a.sentAt);
 }
 
 /** Apaga o registro do enviado deste currículo. Não muda nada no Lattes. */

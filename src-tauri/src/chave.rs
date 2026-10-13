@@ -34,31 +34,45 @@ fn unavailable(e: &keyring::Error) -> String {
     format!("O chaveiro do sistema não respondeu: {e}")
 }
 
+/// O chaveiro bloqueia (no Linux, o Secret Service pode pedir a senha e
+/// esperar a pessoa): roda fora da thread principal, para a janela não travar.
+async fn blocking<T: Send + 'static>(
+    work: impl FnOnce() -> Result<T, String> + Send + 'static,
+) -> Result<T, String> {
+    tauri::async_runtime::spawn_blocking(work)
+        .await
+        .map_err(|e| format!("O chaveiro do sistema não respondeu: {e}"))?
+}
+
 /// A chave guardada, ou None se ainda não existe (primeiro uso, ou chaveiro
 /// apagado). Erro quando o chaveiro não está disponível.
 #[tauri::command]
-pub fn storage_key_get(app: AppHandle) -> Result<Option<String>, String> {
-    match entry(&app)?.get_password() {
+pub async fn storage_key_get(app: AppHandle) -> Result<Option<String>, String> {
+    blocking(move || match entry(&app)?.get_password() {
         Ok(key) if is_valid_key(&key) => Ok(Some(key)),
         Ok(_) => Err("A chave guardada no chaveiro está num formato inesperado.".into()),
         Err(keyring::Error::NoEntry) => Ok(None),
         Err(e) => Err(unavailable(&e)),
-    }
+    })
+    .await
 }
 
 /// Grava a chave gerada pelo editor. Recusa se já existir uma, para que uma
 /// chamada repetida nunca troque a chave dos dados já cifrados.
 #[tauri::command]
-pub fn storage_key_set(app: AppHandle, key: String) -> Result<(), String> {
+pub async fn storage_key_set(app: AppHandle, key: String) -> Result<(), String> {
     if !is_valid_key(&key) {
         return Err("Chave em formato inválido.".into());
     }
-    let entry = entry(&app)?;
-    match entry.get_password() {
-        Ok(_) => Err("Já existe uma chave no chaveiro.".into()),
-        Err(keyring::Error::NoEntry) => entry.set_password(&key).map_err(|e| unavailable(&e)),
-        Err(e) => Err(unavailable(&e)),
-    }
+    blocking(move || {
+        let entry = entry(&app)?;
+        match entry.get_password() {
+            Ok(_) => Err("Já existe uma chave no chaveiro.".into()),
+            Err(keyring::Error::NoEntry) => entry.set_password(&key).map_err(|e| unavailable(&e)),
+            Err(e) => Err(unavailable(&e)),
+        }
+    })
+    .await
 }
 
 #[cfg(test)]

@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 
 import Dexie from 'dexie';
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { BridgeOp } from '../src/bridge/plan.ts';
 import { sentEntry } from '../src/bridge/sent-log.ts';
@@ -125,6 +125,19 @@ describe('banco local (IndexedDB)', () => {
       const kept = (await store.listHistory()).filter((h) => h.keep);
       expect(kept).toHaveLength(store.KEPT_LIMIT);
       expect(kept.map((h) => h.note)).not.toContain('Lattes antes do envio');
+    });
+
+    it('uma linha que não abre fica de fora, sem derrubar a lista', async () => {
+      await store.addSent(sentEntry(resumo('um'), '0000000000000001', 100));
+      await store.addSent(sentEntry(resumo('dois'), '0000000000000001', 200));
+      const [first] = await store.db.sent.toArray();
+      await store.db.sent.update(first!.id!, {
+        sealed: { data: new ArrayBuffer(8), iv: new Uint8Array(12) },
+      });
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      expect((await store.listSent('0000000000000001')).map((e) => e.sentAt)).toEqual([200]);
+      expect(warn).toHaveBeenCalled();
+      warn.mockRestore();
     });
 
     it('apagar o registro do enviado vale só para aquele currículo', async () => {
