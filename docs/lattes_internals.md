@@ -331,6 +331,8 @@ derrubar o primeiro. **Inferido.**
   do endereço.
 - O formulário de edição de uma atividade existente (`pkg_ativ.cargo` com
   `f_seq_funcao`, montado por JavaScript na grade da atuação).
+- A requisição do Exportar que devolve o ZIP, e se a sessão cai depois
+  dela. Só aparece com o currículo sem alterações pendentes (seção 10).
 
 ## 9. Vigia: saber quando o CNPq mudou algo
 
@@ -370,3 +372,33 @@ apontar diferença, o contrato é corrigido junto com a tabela desta seção.
 O relatório da verificação só tem nomes de campos e de procedimentos, a data
 e a versão da extensão. Nenhum valor do currículo entra nele, para que possa
 ser colado numa issue pública.
+
+## 10. Exportar e alterações pendentes (12/10/2026)
+
+O menu abre só com o cookie: `PKG_MENU.menu` sem `f_cod` mostra o currículo
+de quem está logado, e o login passa pelo Keycloak de `login.cnpq.br`.
+**Observado.**
+
+"Exportar", no menu secundário, chama
+`modalCV1.setarUrl('pkg_impcv.get_arquivo?f_cod=<10 caracteres>', true)`:
+um GET que carrega a tela do Exportar num `iframe` modal. **Observado.**
+
+Com alterações ainda não enviadas ao CNPq, essa tela abre com um `alert()`
+("Existem alterações realizadas no currículo que só serão aceitas quando
+enviadas ao CNPq em definitivo") e não exporta. O `alert()` trava a aba até
+alguém clicar em OK, inclusive para a automação do navegador. **Observado.**
+Um `fetch` da mesma URL não roda o script da página, então não trava; a
+ponte pode ler o HTML e reconhecer o aviso.
+
+Não há como descartar alterações pendentes. A tela de envio
+(`pkg_publicar.mostrar_cv`, aberta pelo "Enviar" e pelo aviso de pendências)
+só tem "Enviar ao CNPq" (formulário `publicar`, POST `pkg_publicar.enviar`,
+com a concordância no `f_chk`) e "Cancelar", que fecha a tela. Nenhuma das
+nove ferramentas do menu secundário desfaz alterações. Os textos com "serão
+descartadas" no código da página são o aviso genérico de sair de um
+formulário sem gravar. **Observado.**
+
+Consequência para a ponte: tudo o que ela grava deixa o currículo com
+pendência até a pessoa enviar ao CNPq, e até lá o Exportar recusa. Abrir do
+Lattes pela ponte precisa reconhecer esse estado e pedir o envio antes; não
+adianta tentar de novo.
