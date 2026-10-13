@@ -29,8 +29,8 @@ primeira abertura; abra os detalhes do aviso e escolha executar.
 Depois de instalado, o app se atualiza sozinho: ao abrir e de hora em hora,
 confere se saiu versão nova e, se saiu, um aviso no canto oferece
 "Atualizar" (o sino guarda a mesma oferta). O app baixa o pacote, confere a
-assinatura e reinicia. No Linux, isso vale para o AppImage; o `.deb` se
-atualiza baixando o novo.
+assinatura e reinicia. No Linux, vale para o AppImage e para o `.deb`; no
+`.deb`, o sistema pede a senha para instalar.
 
 No Linux, o `.deb` é pequeno porque usa o WebKitGTK do sistema, que o
 gerenciador de pacotes instala junto. O AppImage roda em qualquer

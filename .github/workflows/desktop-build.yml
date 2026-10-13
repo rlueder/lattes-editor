@@ -140,6 +140,8 @@ jobs:
       # atualização deixaria quem já tem o app parado na versão anterior.
       - name: Chave de atualização
         if: inputs.tag != ''
+        # O Windows roda PowerShell por padrão; o teste abaixo é de bash.
+        shell: bash
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: |
