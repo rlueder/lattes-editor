@@ -41,6 +41,12 @@ export function titlePart(text: string): string | undefined {
   return end ? rest.slice(end.index + end[0].length) : undefined;
 }
 
+/** O texto depois da primeira inicial de nome ("TESTE, P. Título" → "Título"). */
+function afterFirstInitial(text: string): string {
+  const m = /\b[A-ZÀ-Ý]\.\s/.exec(text);
+  return m ? text.slice(m.index + m[0].length) : '';
+}
+
 /** Título longo o bastante para ser procurado em qualquer ponto da linha. */
 const distinctive = (key: string) => key.length >= 8 || key.includes(' ');
 
@@ -101,11 +107,19 @@ export function diffEspelho(lattes: EspelhoItem[], root: XElement): EspelhoDiff 
     // Com autores, o título tem de abrir o trecho depois deles: um título
     // curto ("Design", "Anais") não casa com um sobrenome nem com o veículo.
     // Sem autores (eventos), vale em qualquer ponto, só para títulos longos.
+    // Linha com cara de autores (sobrenome em maiúsculas e vírgula) mas sem o
+    // fim deles reconhecido: o título tem de estar depois da primeira
+    // inicial, nunca no meio dos nomes. Cada linha é normalizada uma vez.
     const part = titlePart(line.text);
+    const authored = part === undefined && SURNAME.test(line.text);
+    const hay =
+      part !== undefined
+        ? ` ${normalizeTitle(part)} `
+        : ` ${normalizeTitle(authored ? afterFirstInitial(line.text) : line.text)} `;
     const matches = (key: string) =>
       part !== undefined
-        ? ` ${normalizeTitle(part)} `.startsWith(` ${key} `)
-        : distinctive(key) && ` ${normalizeTitle(line.text)} `.includes(` ${key} `);
+        ? hay.startsWith(` ${key} `)
+        : distinctive(key) && hay.includes(` ${key} `);
     // Cada linha casa com um item só, para duplicatas contarem certo.
     const hit = order.find((i) => !matched.has(i) && matches(comparable[i]!.key));
     if (hit !== undefined) matched.add(hit);

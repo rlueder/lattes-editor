@@ -205,6 +205,26 @@ describe('o que mudou no Lattes desde a exportação', () => {
     expect(byVenue.onlyInExport.map((e) => e.title)).toEqual(['Anais']);
   });
 
+  it('autor que não termina como de costume não deixa o sobrenome casar com um título', () => {
+    const one = parseXml(`<CURRICULO-VITAE><PRODUCAO-TECNICA>
+      <TRABALHO-TECNICO SEQUENCIA-PRODUCAO="1">
+        <DADOS-BASICOS-DO-TRABALHO-TECNICO TITULO-DO-TRABALHO-TECNICO="Anais de Exemplo" ANO="2005"/>
+      </TRABALHO-TECNICO></PRODUCAO-TECNICA></CURRICULO-VITAE>`).root;
+    // "P. " é inicial: o fim dos autores não é reconhecido, e o título só
+    // pode estar depois dela.
+    const diff = diffEspelho(
+      [
+        { section: 'Produção', text: 'ANAIS DE EXEMPLO, P. Outro Trabalho, 2005' },
+        { section: 'Produção', text: 'TESTE, P. Anais de Exemplo, 2005' },
+      ],
+      one,
+    );
+    expect(diff.onlyInLattes.map((l) => l.text)).toEqual([
+      'ANAIS DE EXEMPLO, P. Outro Trabalho, 2005',
+    ]);
+    expect(diff.onlyInExport).toEqual([]);
+  });
+
   it('nada mudou quando cada linha tem o seu item', () => {
     const diff = diffEspelho(
       [{ section: 'Produção', text: 'TESTE, P.. Relatório Anual 2004 (hotsite), 2005' }],

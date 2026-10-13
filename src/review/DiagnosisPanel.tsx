@@ -3,7 +3,7 @@
 // mudou lá desde a exportação e o que vale conferir no currículo inteiro.
 // Só leitura: cada achado leva ao item no editor.
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { LattesStatus } from '../bridge/lattes-status.ts';
 import { parseXml, type XElement } from '../model/xml.ts';
@@ -97,10 +97,15 @@ export function DiagnosisPanel(props: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [open, root, places, version],
   );
-  // O painel fica montado o tempo todo: a exportação só é lida quando ele abre.
+  // O painel fica montado o tempo todo: a exportação é lida na primeira
+  // abertura e fica guardada enquanto o arquivo for o mesmo.
+  const [hasOpened, setHasOpened] = useState(false);
+  useEffect(() => {
+    if (open) setHasOpened(true);
+  }, [open]);
   const original = useMemo(
-    () => (open ? parseXml(originalXml).root : undefined),
-    [open, originalXml],
+    () => (hasOpened ? parseXml(originalXml).root : undefined),
+    [hasOpened, originalXml],
   );
   const diff = useMemo(
     () => (original && espelho?.items ? diffEspelho(espelho.items, original) : undefined),

@@ -53,8 +53,10 @@ const SECTIONS = new Set([
  * título assim encerra a seção comparada, para os itens numerados dele não
  * caírem em Produção ou Eventos.
  */
+// Cabeçalhos inteiros (a linha toda, até três palavras a mais): uma linha que
+// só começa com "Projeto" ou "Citações" não encerra a seção.
 const OTHER_SECTION =
-  /^(projetos?\b|patentes\b|inovacao\b|educacao e popularizacao\b|outras informacoes\b|citacoes\b|revisor de\b|membro de corpo editorial\b)/;
+  /^(projetos?|patentes|inovacao|educacao e popularizacao|outras informacoes|citacoes|revisor de|membro de corpo editorial)(\s+[a-z&]+){0,3}$/;
 
 const END = 'totais de producao';
 const ITEM = /^(\d+)\.\s+(.+)$/;
