@@ -4,6 +4,7 @@
 
 import { applyOp, type LattesPort } from '../../src/bridge/apply.ts';
 import { checkContract } from '../../src/bridge/contract.ts';
+import { type EspelhoItem, isEspelhoPage, parseEspelho } from '../../src/bridge/espelho.ts';
 import type { FormControl } from '../../src/bridge/form.ts';
 import { cvCodeFrom, isLogonPage, lattesIdFrom } from '../../src/bridge/lattes-html.ts';
 import { lattesStatusFrom } from '../../src/bridge/lattes-status.ts';
@@ -53,6 +54,28 @@ const port: LattesPort = {
 
 (globalThis as unknown as { __ponte: unknown }).__ponte = {
   apply: (op: BridgeOp) => applyOp(op, port),
+  // Só leitura: a página de conferência, com o que ainda não foi enviado ao
+  // CNPq (docs/lattes_internals.md, seção 10). O código do currículo vem do
+  // menu da aba.
+  espelho: async (): Promise<{ error?: string; items?: EspelhoItem[]; lattesId?: string }> => {
+    const menu = document.documentElement.outerHTML;
+    const code = cvCodeFrom(menu);
+    const lattesId = lattesIdFrom(menu);
+    if (!code) return { error: 'Não achei o código do currículo no menu do Lattes.', lattesId };
+    try {
+      const res = await fetch(`pkg_publicar.cv_espelho?f_cod=${code}&f_idioma=1`, {
+        credentials: 'include',
+      });
+      const html = await text(res);
+      if (isLogonPage(html, res.url)) return { error: 'A sessão do Lattes caiu.', lattesId };
+      if (!res.ok || !isEspelhoPage(html)) {
+        return { error: 'O Lattes não devolveu a página de conferência.', lattesId };
+      }
+      return { items: parseEspelho(html), lattesId };
+    } catch {
+      return { error: 'A aba do Lattes não respondeu.', lattesId };
+    }
+  },
   // Ao conectar, o menu que já está na aba. Depois de uma fila, um GET novo do
   // menu (só o cookie basta, ver docs/lattes_internals.md, seção 10), porque
   // a página aberta não sabe das gravações; se a sessão caiu, fica a da aba.

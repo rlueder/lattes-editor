@@ -9,8 +9,6 @@ import { encodeCv, loadCv, maxSequenciaProducao } from '../model/document.ts';
 import { importableTypes } from '../model/production.ts';
 import {
   clearAll,
-  type HistoryEntry,
-  listHistory,
   loadWorkingCopy,
   newWorkingCopy,
   replaceWorkingCopy,
@@ -19,9 +17,9 @@ import {
 import { getAttr, parseXml, serializeXml, walk, type XElement } from '../model/xml.ts';
 import { PrintDialog } from '../print/PrintDialog.tsx';
 import { usePrint } from '../print/use-print.ts';
+import { DiagnosisPanel } from '../review/DiagnosisPanel.tsx';
 import { lattesSchema } from '../schema/lattes.ts';
 import { CommandPalette } from './CommandPalette.tsx';
-import { copyFileName } from './copy-name.ts';
 import { HistoryDialog, ReloadConfirm } from './dialogs.tsx';
 import { EditorContext } from './editor-context.ts';
 import { type HashRoute, parseHash, writeHash } from './hash-route.ts';
@@ -38,6 +36,7 @@ import { useTheme } from './theme.ts';
 import { type SaveState, Topbar } from './Topbar.tsx';
 import { useBridge } from './use-bridge.ts';
 import { useChanges } from './use-changes.ts';
+import { useHistoryDialog } from './use-history-dialog.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
 import { Welcome } from './Welcome.tsx';
 
@@ -54,10 +53,9 @@ export function App() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [showEmpty, setShowEmpty] = useState(false);
   const [theme, setTheme] = useTheme();
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [diagnosisOpen, setDiagnosisOpen] = useState(false);
   const [reloadFile, setReloadFile] = useState<File | null>(null);
   const pendingNotes = useRef<string[]>([]);
   const pendingAnchor = useRef<string | null>(null);
@@ -173,6 +171,7 @@ export function App() {
   const jump = (entry: PaletteEntry) => {
     if (entry.action) {
       if (entry.action === 'exportar') setExportOpen(true);
+      else if (entry.action === 'diagnostico') setDiagnosisOpen(true);
       else if (entry.action === 'novo') setPickerOpen(true);
       else {
         const itemName = entry.action.slice('novo:'.length);
@@ -219,29 +218,12 @@ export function App() {
     else void openFile(file);
   };
 
-  const closeHistory = useCallback(() => setHistoryOpen(false), []);
   const closePalette = useCallback(() => setPaletteOpen(false), []);
-
-  const openHistory = async () => {
-    setHistory(await listHistory());
-    setHistoryOpen(true);
-  };
-
-  const restore = (entry: HistoryEntry) => {
+  const history = useHistoryDialog(session, (doc, note) => {
     if (!session) return;
-    setSession({ doc: parseXml(entry.xml), meta: session.meta });
-    pendingNotes.current.push(`Restaurado: ${new Date(entry.savedAt).toLocaleString('pt-BR')}`);
-    setVersion((v) => v + 1);
-    setHistoryOpen(false);
-  };
-
-  const saveHistoryCopy = (entry: HistoryEntry) => {
-    if (!session) return;
-    void saveBytes(
-      encodeCv(parseXml(entry.xml), session.meta.encoding),
-      copyFileName(session.meta.fileName, new Date(entry.savedAt)),
-    );
-  };
+    setSession({ doc, meta: session.meta });
+    onEdit(note);
+  });
 
   const closeFile = async () => {
     await clearAll();
@@ -277,7 +259,7 @@ export function App() {
         theme={theme}
         onClose={closeFile}
         onExport={openExport}
-        onHistory={openHistory}
+        onHistory={() => void history.show()}
         onNewItem={() => setPickerOpen(true)}
         onPalette={togglePalette}
         onPrint={print.show}
@@ -285,6 +267,7 @@ export function App() {
         onSave={saveFile}
         onShowEmpty={setShowEmpty}
         onStripOpen={(kind) => {
+          if (kind === 'pendencia-desconhecida') return setDiagnosisOpen(true);
           openExport();
           if (kind === 'no-lattes') scrollToSent();
         }}
@@ -374,20 +357,32 @@ export function App() {
         }}
       />
 
+      <DiagnosisPanel
+        available={bridge.available}
+        espelho={bridge.espelho}
+        lattes={bridge.lattes}
+        open={diagnosisOpen}
+        root={session.doc.root}
+        sections={sections}
+        version={version}
+        onClose={() => setDiagnosisOpen(false)}
+        onGo={navigate}
+        onRequestEspelho={bridge.requestEspelho}
+      />
+
       <PrintDialog control={print} doc={session.doc} profile={profile} sections={sections} />
 
       <HistoryDialog
-        entries={history}
-        open={historyOpen}
-        onClose={closeHistory}
-        onRestore={restore}
-        onSave={saveHistoryCopy}
+        entries={history.entries}
+        open={history.open}
+        onClose={history.close}
+        onRestore={history.restore}
+        onSave={history.saveCopy}
       />
     </div>
   );
 }
 
-/** O registro do enviado fica no fim de "Levar ao Lattes"; espera o painel abrir. */
 /** Rola até "Enviado ao Lattes" quando ele aparecer: o painel abre e a lista carrega depois. */
 function scrollToSent(frames = 30): void {
   const el = document.getElementById('enviado-ao-lattes');

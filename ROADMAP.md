@@ -82,9 +82,12 @@ arquivo quando muda de fato; o detalhe técnico está em
 - **Exportar para gerenciadores de referências:** BibTeX e RIS da produção
   (serve também para importar no ORCID).
 - **Exportar em DOCX** para editais que pedem arquivo editável.
-- **Revisão de consistência** do currículo inteiro (duplicatas, variações
-  de nome de autor, ISSN, períodos que se cruzam), sem IA; ver
-  `docs/pesquisa_recursos_de_ia.md`.
+- **Revisão de consistência** do currículo inteiro, sem IA (LAT-29). Feito,
+  no "Diagnóstico do currículo": produções repetidas, autor repetido no
+  mesmo item, nome de citação fora da sua lista, ISSN com dígito errado,
+  artigo sem DOI, ano no futuro, fim antes do início, vínculo "atual" há
+  mais de 10 anos e curso em andamento há mais de 8. Falta: períodos que se
+  cruzam e variações de nome de outros autores.
 - **Achar o DOI** de produções que não têm, pelo Crossref.
 - **App de desktop** com Tauri para macOS, Windows e Linux. Feito: diálogos
   nativos de abrir e salvar, builds dos três sistemas na CI com os

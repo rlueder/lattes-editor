@@ -410,3 +410,16 @@ Consequência para a ponte: tudo o que ela grava deixa o currículo com
 pendência até a pessoa enviar ao CNPq, e até lá o Exportar recusa. Abrir do
 Lattes pela ponte precisa reconhecer esse estado e pedir o envio antes; não
 adianta tentar de novo.
+
+A versão atual do currículo, com o que ainda não foi enviado, sai de
+`pkg_publicar.cv_espelho?f_cod=<10 caracteres>&f_idioma=1`, o link "Versão em
+Português" da tela de envio (a função `portugues()` monta o endereço com
+`f_idioma=1`). Abre só com o cookie e não pede código de segurança, ao
+contrário do currículo público em `buscatextual.cnpq.br`. O texto segue a
+ordem das seções do currículo; produções e eventos vêm em listas numeradas
+("1. AUTOR; AUTOR. Título, 2005."), com o subtítulo da lista logo antes do
+item 1 e linhas de detalhe depois de cada item; a página termina com "Totais
+de produção" e o aviso "Este arquivo não foi gerado a partir do Currículo
+Lattes validado e disponível publicamente". **Observado** pelo texto da
+página; as tags que formam essas linhas são **inferidas**. O diagnóstico do
+editor lê essa página (`src/bridge/espelho.ts`).

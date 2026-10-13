@@ -5377,3 +5377,35 @@ b {
 .filter-search:hover:not(:focus-within) {
   border-color: var(--border-focus);
 }
+
+/* Diagnóstico do currículo (src/review/DiagnosisPanel.tsx). Reaproveita as
+   seções e listas de "Levar ao Lattes". */
+.diagnosis-facts,
+.diagnosis-lines {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+.diagnosis-facts li + li,
+.diagnosis-lines li + li {
+  margin-top: 4px;
+}
+
+.diagnosis-actions {
+  margin: 8px 0 10px;
+}
+
+.diagnosis-group + .diagnosis-group {
+  margin-top: 10px;
+}
+
+.diagnosis-item {
+  flex-wrap: wrap;
+}
+
+.diagnosis-message {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: 12px;
+}

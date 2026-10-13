@@ -10,7 +10,7 @@ import { AlertIcon, PlusIcon, SearchIcon, UploadIcon } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { SettingsMenu } from './SettingsMenu.tsx';
 import type { StripState } from './status-strip.ts';
-import { StatusStrip } from './StatusStrip.tsx';
+import { StatusStrip, type StripOpenKind } from './StatusStrip.tsx';
 import type { ThemePref } from './theme.ts';
 
 export type SaveState = 'salvo' | 'salvando' | 'erro';
@@ -36,7 +36,7 @@ interface Props {
   onReload: (file: File) => void;
   onSave: () => void;
   onShowEmpty: (show: boolean) => void;
-  onStripOpen: (kind: 'alteracoes' | 'no-lattes') => void;
+  onStripOpen: (kind: StripOpenKind) => void;
   onTheme: (theme: ThemePref) => void;
 }
 

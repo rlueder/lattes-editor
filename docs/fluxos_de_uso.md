@@ -92,7 +92,9 @@ antes (o caso que originou este documento).
    segurança) e compara com a última versão publicada que tiver.
 2. Mostra um diagnóstico antes de tudo: data da última publicação, o que está
    pendente e o que provavelmente envelheceu, como vínculos ainda "Atual" e
-   períodos antigos (revisão de consistência, LAT-29).
+   períodos antigos (revisão de consistência, LAT-29). Feito em 13/10/2026
+   como "Diagnóstico do currículo", com a comparação por títulos das
+   produções e dos eventos (`src/review/espelho-diff.ts`).
 3. A pessoa decide o que mantém e o que desfaz, trabalha em lotes ao longo de
    dias (o app guarda tudo) e publica no fim.
 
