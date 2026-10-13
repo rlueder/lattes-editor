@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.16.1](https://github.com/rlueder/lattes-editor/compare/v0.16.0...v0.16.1) (2026-10-13)
+
+### Correções
+
+- **ui:** diagnóstico com comparação mais estrita e exportação lida só com o painel aberto ([#41](https://github.com/rlueder/lattes-editor/issues/41)) ([d984cf2](https://github.com/rlueder/lattes-editor/commit/d984cf2c1a87d5b10e8f55e21da1d275c5292e31)), closes [#37](https://github.com/rlueder/lattes-editor/issues/37)
+
 ## [0.16.0](https://github.com/rlueder/lattes-editor/compare/v0.15.0...v0.16.0) (2026-10-13)
 
 ### Novidades
