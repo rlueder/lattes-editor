@@ -82,6 +82,10 @@ describe('entidades do HTML', () => {
       '&constructor; &toString; &__proto__;',
     );
     expect(decodeHtmlEntities('&#128512; &#x110000;')).toBe('😀 &#x110000;');
+    // Títulos em maiúsculas do Lattes e pontuação.
+    expect(decodeHtmlEntities('A&Ccedil;&Atilde;O E EDUCA&Ccedil;&Atilde;O &ndash; 1&ordm;')).toBe(
+      'AÇÃO E EDUCAÇÃO – 1º',
+    );
   });
 });
 

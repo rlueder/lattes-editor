@@ -8,7 +8,7 @@ import {
   reviewCv,
   validIssn,
 } from '../src/review/consistency.ts';
-import { locate } from '../src/review/locate.ts';
+import { bySequencia, locate, placeIndex, sequenciaKey } from '../src/review/locate.ts';
 import { buildSections } from '../src/ui/sections.ts';
 
 const TODAY = new Date(2026, 9, 13);
@@ -156,5 +156,14 @@ describe('revisão de consistência (LAT-29)', () => {
     expect(places.map((p) => p?.sectionId)).toEqual(['atuacao', 'producoes']);
     expect(places[1]?.anchor).toMatch(/^producoes\//);
     expect(locate(sections, parseXml('<SOLTO/>').root)).toBeUndefined();
+    // O mesmo item numa cópia do documento (a exportação original) leva ao
+    // item do documento aberto pela SEQUENCIA-PRODUCAO.
+    const copy = cv({
+      producao: artigo(1, 'TITULO-DO-ARTIGO="Sem DOI" ANO-DO-ARTIGO="2019" DOI=""'),
+    });
+    const [fromCopy] = reviewCv(copy, TODAY);
+    const same = bySequencia(root).get(sequenciaKey(fromCopy!.item)!);
+    expect(same).not.toBe(fromCopy!.item);
+    expect(placeIndex(sections).get(same!)?.sectionId).toBe('producoes');
   });
 });

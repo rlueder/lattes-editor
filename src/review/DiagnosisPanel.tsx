@@ -6,7 +6,7 @@
 import { useMemo } from 'react';
 
 import type { LattesStatus } from '../bridge/lattes-status.ts';
-import type { XElement } from '../model/xml.ts';
+import { parseXml, type XElement } from '../model/xml.ts';
 import type { HashRoute } from '../ui/hash-route.ts';
 import { Modal } from '../ui/Modal.tsx';
 import type { Section } from '../ui/sections.ts';
@@ -14,7 +14,7 @@ import { dateLabel } from '../ui/status-strip.ts';
 import type { EspelhoReading } from '../ui/use-bridge.ts';
 import { type Finding, reviewCv } from './consistency.ts';
 import { diffEspelho } from './espelho-diff.ts';
-import { locate, type Place } from './locate.ts';
+import { bySequencia, type Place, placeIndex, sequenciaKey } from './locate.ts';
 
 interface Props {
   /** A extensão está conectada (sem ela não há leitura do Lattes). */
@@ -22,6 +22,12 @@ interface Props {
   espelho?: EspelhoReading;
   lattes?: LattesStatus;
   open: boolean;
+  /**
+   * A exportação como foi carregada: a comparação com o Lattes usa ela, não
+   * o documento editado, para que o que mudou no editor não pareça mudança
+   * feita no Lattes.
+   */
+  originalXml: string;
   root: XElement;
   sections: Section[];
   /** Muda a cada edição; o documento é mutado no lugar. */
@@ -76,24 +82,36 @@ function LattesSummary({ available, lattes }: { available: boolean; lattes?: Lat
 }
 
 export function DiagnosisPanel(props: Props) {
-  const { available, espelho, lattes, open, root, sections, version } = props;
+  const { available, espelho, lattes, open, originalXml, root, sections, version } = props;
 
+  const places = useMemo(
+    () => (open ? placeIndex(sections) : new Map<XElement, Place>()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [open, sections, version],
+  );
   const findings = useMemo(
     () =>
       open
-        ? reviewCv(root).map((f): Located<Finding> => ({
-            entry: f,
-            place: locate(sections, f.item),
-          }))
+        ? reviewCv(root).map((f): Located<Finding> => ({ entry: f, place: places.get(f.item) }))
         : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [open, root, sections, version],
+    [open, root, places, version],
   );
+  const original = useMemo(() => parseXml(originalXml).root, [originalXml]);
   const diff = useMemo(
-    () => (open && espelho?.items ? diffEspelho(espelho.items, root) : undefined),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [open, espelho, root, version],
+    () => (open && espelho?.items ? diffEspelho(espelho.items, original) : undefined),
+    [open, espelho, original],
   );
+  // Os itens da exportação original levam ao mesmo item no documento aberto.
+  const current = useMemo(
+    () => (open ? bySequencia(root) : new Map<string, XElement>()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [open, root, version],
+  );
+  const placeOf = (item: XElement) => {
+    const key = sequenciaKey(item);
+    return places.get((key && current.get(key)) || item);
+  };
 
   const go = (place?: Place) => {
     if (!place) return;
@@ -137,7 +155,7 @@ export function DiagnosisPanel(props: Props) {
           </button>
         </div>
         {espelho?.error && <p className="export-blocked">{espelho.error}</p>}
-        {diff && <EspelhoResult diff={diff} sections={sections} onGo={go} />}
+        {diff && <EspelhoResult diff={diff} placeOf={placeOf} onGo={go} />}
       </section>
 
       <section className="panel-section">
@@ -180,10 +198,10 @@ export function DiagnosisPanel(props: Props) {
 function EspelhoResult({
   diff,
   onGo,
-  sections,
+  placeOf,
 }: {
   diff: ReturnType<typeof diffEspelho>;
-  sections: Section[];
+  placeOf: (item: XElement) => Place | undefined;
   onGo: (place?: Place) => void;
 }) {
   if (diff.unreadable) {
@@ -221,7 +239,7 @@ function EspelhoResult({
           <h4 className="sent-day-head">Só na exportação (tirado ou renomeado no Lattes)</h4>
           <ul className="pending-list">
             {diff.onlyInExport.map(({ item, title }, i) => {
-              const place = locate(sections, item);
+              const place = placeOf(item);
               return (
                 <li key={i}>
                   <button

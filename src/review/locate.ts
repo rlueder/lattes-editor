@@ -1,7 +1,7 @@
 // Onde um item aparece na navegação do editor: a seção e o grupo (a âncora
 // "producoes/artigos-completos-publicados"), para o diagnóstico levar até ele.
 
-import { walk, type XElement } from '../model/xml.ts';
+import { getAttr, walk, type XElement } from '../model/xml.ts';
 import type { Section } from '../ui/sections.ts';
 
 export interface Place {
@@ -12,26 +12,46 @@ export interface Place {
   sectionLabel: string;
 }
 
-function contains(root: XElement, target: XElement): boolean {
-  let hit = false;
-  walk(root, (el) => {
-    if (el === target) hit = true;
-  });
-  return hit;
-}
-
 /**
- * A primeira seção de verdade que mostra o item. As seções-filtro (Inovação,
+ * Cada elemento do documento, até o mais fundo, ligado à primeira seção de
+ * verdade que o mostra. Montado uma vez e consultado por item, em vez de
+ * percorrer o documento para cada achado. As seções-filtro (Inovação,
  * Educação) só reúnem itens de outras e ficam de fora.
  */
-export function locate(sections: Section[], item: XElement): Place | undefined {
+export function placeIndex(sections: Section[]): Map<XElement, Place> {
+  const index = new Map<XElement, Place>();
   for (const s of sections) {
     if (s.importable === 'filtro') continue;
     for (const g of s.groups) {
-      if (g.elements.some((el) => contains(el, item))) {
-        return { anchor: g.id, groupLabel: g.label, sectionId: s.id, sectionLabel: s.label };
+      const place = { anchor: g.id, groupLabel: g.label, sectionId: s.id, sectionLabel: s.label };
+      for (const el of g.elements) {
+        walk(el, (node) => {
+          if (!index.has(node)) index.set(node, place);
+        });
       }
     }
   }
-  return undefined;
+  return index;
+}
+
+export function locate(sections: Section[], item: XElement): Place | undefined {
+  return placeIndex(sections).get(item);
+}
+
+/**
+ * O mesmo item no documento aberto, achado pelo tipo e pela
+ * SEQUENCIA-PRODUCAO: os itens da exportação original são outros objetos.
+ */
+export function bySequencia(root: XElement): Map<string, XElement> {
+  const map = new Map<string, XElement>();
+  walk(root, (el) => {
+    const seq = getAttr(el, 'SEQUENCIA-PRODUCAO');
+    if (seq !== undefined) map.set(`${el.name}:${seq}`, el);
+  });
+  return map;
+}
+
+export function sequenciaKey(el: XElement): string | undefined {
+  const seq = getAttr(el, 'SEQUENCIA-PRODUCAO');
+  return seq === undefined ? undefined : `${el.name}:${seq}`;
 }

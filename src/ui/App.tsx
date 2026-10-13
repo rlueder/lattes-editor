@@ -369,6 +369,7 @@ export function App() {
         espelho={bridge.espelho}
         lattes={bridge.lattes}
         open={diagnosisOpen}
+        originalXml={session.meta.originalXml}
         root={session.doc.root}
         sections={sections}
         version={version}
