@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.17.0](https://github.com/rlueder/lattes-editor/compare/v0.16.1...v0.17.0) (2026-10-13)
+
+### Novidades
+
+- sino de notificações, app e extensão comparam capacidades, verificação de fundo e links externos ([#42](https://github.com/rlueder/lattes-editor/issues/42)) ([dc37705](https://github.com/rlueder/lattes-editor/commit/dc3770503ffc4d46d1fe2f32487f6683140473b3))
+
 ## [0.16.1](https://github.com/rlueder/lattes-editor/compare/v0.16.0...v0.16.1) (2026-10-13)
 
 ### Correções
