@@ -18,6 +18,8 @@ export const BRIDGE_FEATURES = [
   'espelho',
   /** O motivo de não ter lido o Lattes, para o cabeçalho explicar. */
   'sem-leitura',
+  /** O ZIP do Exportar, pedido pelo editor (src/bridge/export.ts). */
+  'curriculo',
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

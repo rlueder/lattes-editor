@@ -114,7 +114,9 @@ pede uma vez.
 1. O que acontece sozinho (já começou: o ponto de histórico substituiu a
    chave da cópia, e o registro do enviado existe).
 2. Faixa de estados no cabeçalho.
-3. Abrir do Lattes pela ponte (LAT-22), com o caso do Exportar bloqueado.
+3. Abrir do Lattes pela ponte (LAT-22). Feito, menos o caso do Exportar
+   bloqueado: hoje a tela inicial pede o envio ao CNPq em vez de abrir a
+   versão atual pela página de conferência.
 4. Diagnóstico para quem volta (comparação e revisão de consistência).
 5. Criar itens pela ponte (LAT-24).
 6. Linha do tempo de versões (LAT-12). Feito: até 24 exportações por

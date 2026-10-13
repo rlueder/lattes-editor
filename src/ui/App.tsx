@@ -43,7 +43,9 @@ import { type SaveState, Topbar } from './Topbar.tsx';
 import { useBridge } from './use-bridge.ts';
 import { useChanges } from './use-changes.ts';
 import { useHistoryDialog } from './use-history-dialog.ts';
+import { useLattesOpen } from './use-lattes-open.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
+import { useTopbarHeight } from './use-topbar-height.ts';
 import { useVersions } from './use-versions.ts';
 import { exportDateOf } from './version-diff.ts';
 import { Welcome } from './Welcome.tsx';
@@ -69,19 +71,7 @@ export function App() {
   const pendingAnchor = useRef<string | null>(null);
   const topbarRef = useRef<HTMLElement>(null);
 
-  // Publica a altura do cabeçalho em --topbar-h; o que gruda embaixo dele usa a variável.
-  useEffect(() => {
-    const bar = topbarRef.current;
-    if (!bar) return;
-    // Cabeçalho desmontado (troca de tela, recarga do código) mede 0; não publica.
-    const observer = new ResizeObserver(() => {
-      if (bar.offsetHeight > 0) {
-        document.documentElement.style.setProperty('--topbar-h', `${bar.offsetHeight}px`);
-      }
-    });
-    observer.observe(bar);
-    return () => observer.disconnect();
-  }, [session]);
+  useTopbarHeight(topbarRef, session);
 
   // Restaura a cópia de trabalho da última sessão.
   useEffect(() => {
@@ -212,6 +202,8 @@ export function App() {
     }
   };
 
+  const lattesOpen = useLattesOpen(!session && !booting, bridge, (file) => void openFile(file));
+
   const saveFile = () => {
     if (!session) return;
     void saveBytes(encodeCv(session.doc, session.meta.encoding), session.meta.fileName);
@@ -243,7 +235,13 @@ export function App() {
   if (!session) {
     return (
       <>
-        <Welcome error={error} theme={theme} onFile={openFile} onTheme={setTheme} />
+        <Welcome
+          error={error}
+          lattes={lattesOpen}
+          theme={theme}
+          onFile={openFile}
+          onTheme={setTheme}
+        />
         {storageNotice}
       </>
     );

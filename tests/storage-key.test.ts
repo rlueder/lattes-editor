@@ -48,6 +48,10 @@ describe('chave dos dados locais', () => {
 
   it('no pnpm dev usa a chave de desenvolvimento; fora do app e do dev, nenhuma', async () => {
     expect(await initStorage({ desktop: false, dev: true })).not.toBe('sem-chave');
+    // O app de desktop em desenvolvimento também: não toca o chaveiro.
+    invoke.mockClear();
+    expect(await initStorage({ desktop: true, dev: true })).not.toBe('sem-chave');
+    expect(invoke).not.toHaveBeenCalled();
     expect(await initStorage({ desktop: false, dev: false })).toBe('sem-chave');
     expect(invoke).not.toHaveBeenCalled();
   });

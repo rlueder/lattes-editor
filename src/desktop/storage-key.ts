@@ -6,9 +6,12 @@
 // com o WebCrypto e pede ao app para guardá-la. Se o chaveiro não responde, o
 // editor segue sem gravar nada, em vez de gravar o currículo em claro.
 //
-// No `pnpm dev` no navegador, sem chaveiro, vale a chave fixa de
-// desenvolvimento. Fora dos dois casos (um build aberto num navegador
-// qualquer), não há chave e nada é gravado.
+// Em desenvolvimento (`pnpm dev` no navegador e `pnpm desktop:dev`), vale a
+// chave fixa de desenvolvimento, sem chaveiro: o binário de debug não é
+// assinado, e o macOS pediria a senha do chaveiro a cada novo build. Os
+// dados do app de desenvolvimento ficam cifrados com uma chave que está no
+// código. Fora dos dois casos (um build aberto num navegador qualquer), não
+// há chave e nada é gravado.
 
 import {
   decodeKey,
@@ -50,10 +53,10 @@ export async function initStorage({
   dev = import.meta.env.DEV,
 } = {}): Promise<StorageStatus> {
   try {
-    const raw = desktop
-      ? await withTimeout(keyFromKeychain(), KEYCHAIN_TIMEOUT_MS)
-      : dev
-        ? DEVELOPMENT_KEY
+    const raw = dev
+      ? DEVELOPMENT_KEY
+      : desktop
+        ? await withTimeout(keyFromKeychain(), KEYCHAIN_TIMEOUT_MS)
         : undefined;
     if (!raw) return markStorageUnavailable('Fora do app de desktop não há chaveiro.');
     return await openStorage(await importStorageKey(raw));

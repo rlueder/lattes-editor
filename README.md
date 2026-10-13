@@ -104,6 +104,13 @@ volta e conferida, e a fila para no primeiro problema. Nenhuma senha passa
 pela extensão nem pelo app. Hoje ela leva o resumo e campos do vínculo de uma
 atuação; os idiomas ainda estão em teste.
 
+Com a extensão ligada e o Lattes aberto no navegador, o app abre o seu
+currículo sozinho quando não há nenhum aberto, sem baixar nem escolher arquivo: a
+extensão pede o mesmo ZIP do "Exportar" na sua sessão e o entrega ao app.
+Se o Lattes tem alterações ainda não enviadas ao CNPq, o Exportar recusa, e
+a tela inicial pede o envio antes. "Abrir do Lattes" na tela inicial faz o
+mesmo a qualquer hora.
+
 O app e a extensão conversam por mensagens nativas do navegador: ao abrir,
 o app se registra no Chrome, no Brave, no Edge e no Chromium. Enquanto a
 extensão não está na Chrome Web Store, instale assim:

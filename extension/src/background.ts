@@ -9,10 +9,13 @@
 import type { OpResult } from '../../src/bridge/apply.ts';
 import { BRIDGE_FEATURES } from '../../src/bridge/compat.ts';
 import {
+  AUTO_VERIFY_DELAY_MS,
+  AUTO_VERIFY_RETRY_DELAY_MS,
   blocksKind,
   type ContractReport,
   driftText,
   lacksSample,
+  retryAutoVerify,
   shouldAutoVerify,
 } from '../../src/bridge/contract.ts';
 import { sameCv } from '../../src/bridge/lattes-html.ts';
@@ -26,7 +29,7 @@ import {
   type NoReadingReason,
 } from '../../src/bridge/protocol.ts';
 import { CONSENT_KEY, hasConsent, isConsentCurrent } from './consent.ts';
-import { injectRunner, lattesTab, readEspelho } from './lattes-tab.ts';
+import { injectRunner, lattesTab, readCurriculo, readEspelho } from './lattes-tab.ts';
 import {
   APP_KEY,
   type EditorEndpoint,
@@ -52,6 +55,10 @@ let stopRequested = false;
  * de esperas, e dois pedidos o leriam falso.
  */
 let verifyInFlight = false;
+/** Uma automática esperando a aba assentar (antes de pegar a trava). */
+let autoPending = false;
+/** "Verificar de novo" clicado durante outra verificação: roda logo depois dela. */
+let manualQueued = false;
 let appPort: chrome.runtime.Port | undefined;
 
 /**
@@ -139,6 +146,11 @@ async function sendSession(editor: EditorEndpoint, fresh = false): Promise<void>
   }
 }
 
+/** Abrir do Lattes: o ZIP do Exportar (lattes-tab.ts). */
+async function sendCurriculo(editor: EditorEndpoint, id: string): Promise<void> {
+  await toEditor(editor, { ...(await readCurriculo()), id, type: 'curriculo' });
+}
+
 /** A versão atual do Lattes, para o diagnóstico (lattes-tab.ts). */
 async function sendEspelho(editor: EditorEndpoint): Promise<void> {
   await toEditor(editor, { ...(await readEspelho()), type: 'espelho' });
@@ -169,6 +181,10 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
   }
   if (msg.type === 'pedir-espelho') {
     await sendEspelho(editor);
+    return;
+  }
+  if (msg.type === 'pedir-curriculo') {
+    await sendCurriculo(editor, msg.id);
     return;
   }
   const state = await readState();
@@ -214,13 +230,31 @@ async function verifyOn(tabId: number): Promise<ContractReport> {
  * o Lattes aberto e de tempos em tempos (shouldAutoVerify); o painel só mostra
  * o resultado quando há problema. O "Verificar de novo" do painel força.
  */
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 async function verify(auto = false): Promise<void> {
-  if (verifyInFlight) return;
+  if (auto) {
+    // A automática espera a aba assentar, fora da trava; outra automática no
+    // meio da espera é a mesma e fica de fora.
+    if (autoPending) return;
+    autoPending = true;
+    await sleep(AUTO_VERIFY_DELAY_MS);
+    autoPending = false;
+  }
+  if (verifyInFlight) {
+    // O clique da pessoa nunca se perde: roda quando a atual terminar.
+    if (!auto) manualQueued = true;
+    return;
+  }
   verifyInFlight = true;
   try {
     await verifyOnce(auto);
   } finally {
     verifyInFlight = false;
+  }
+  if (manualQueued) {
+    manualQueued = false;
+    await verify(false);
   }
 }
 
@@ -244,6 +278,10 @@ async function verifyOnce(auto: boolean): Promise<void> {
       tabId === undefined
         ? failedReport('Abra o currículo no Lattes (a página do menu) numa aba e tente de novo')
         : await verifyOn(tabId);
+    if (auto && tabId !== undefined && retryAutoVerify(report)) {
+      await sleep(AUTO_VERIFY_RETRY_DELAY_MS);
+      report = await verifyOn(tabId);
+    }
   } catch (err) {
     if (err instanceof Error) report = failedReport(err.message);
   } finally {

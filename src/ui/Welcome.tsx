@@ -7,10 +7,12 @@ import { type DragEvent, useRef, useState } from 'react';
 import { isDesktop, pickFileNative } from '../desktop/native.ts';
 import { parseXml } from '../model/xml.ts';
 import { PlusIcon, SearchIcon, UploadIcon } from './icons.tsx';
+import { failureText } from './lattes-open.ts';
 import { buildSections } from './sections.ts';
 import { SettingsMenu } from './SettingsMenu.tsx';
 import { Sidebar } from './Sidebar.tsx';
 import type { ThemePref } from './theme.ts';
+import type { LattesOpen } from './use-lattes-open.ts';
 
 const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
@@ -45,12 +47,14 @@ function OpenArt() {
 
 interface Props {
   error?: string | null;
+  /** Abrir do Lattes pela extensão (use-lattes-open.ts). */
+  lattes: LattesOpen;
   theme: ThemePref;
   onFile: (file: File) => void;
   onTheme: (theme: ThemePref) => void;
 }
 
-export function Welcome({ error, onFile, onTheme, theme }: Props) {
+export function Welcome({ error, lattes, onFile, onTheme, theme }: Props) {
   const [over, setOver] = useState(false);
   const input = useRef<HTMLInputElement>(null);
 
@@ -106,13 +110,45 @@ export function Welcome({ error, onFile, onTheme, theme }: Props) {
         <div className="section-main section-main-empty">
           <div className="empty-section welcome-step">
             <OpenArt />
-            <h1 className="empty-title">Abra seu currículo</h1>
-            <p className="empty-text">
-              No Lattes, exporte o currículo em Ferramentas › Exportar e solte aqui o arquivo{' '}
-              <code>CV_&lt;id&gt;.zip</code> ou o <code>.xml</code>.
-            </p>
+            {lattes.state.kind === 'abrindo' ? (
+              <>
+                <h1 className="empty-title">Abrindo seu currículo do Lattes…</h1>
+                <p className="empty-text">
+                  A extensão está exportando o currículo da sessão aberta no navegador.
+                </p>
+              </>
+            ) : (
+              <>
+                <h1 className="empty-title">Abra seu currículo</h1>
+                <p className="empty-text">
+                  {lattes.available
+                    ? 'Com o Lattes aberto no navegador, a extensão traz o currículo. Ou solte aqui o arquivo exportado, '
+                    : 'No Lattes, exporte o currículo em Ferramentas › Exportar e solte aqui o arquivo '}
+                  <code>CV_&lt;id&gt;.zip</code> ou o <code>.xml</code>.
+                </p>
+              </>
+            )}
+            {lattes.state.kind === 'falhou' && (
+              <p className="welcome-lattes-fail" role="status">
+                {failureText(lattes.state.reason, lattes.state.detail)}
+              </p>
+            )}
             <div className="empty-actions">
-              <button className="primary" type="button" onClick={pick}>
+              {lattes.available && (
+                <button
+                  className="primary"
+                  disabled={lattes.state.kind === 'abrindo'}
+                  type="button"
+                  onClick={lattes.open}
+                >
+                  {lattes.state.kind === 'falhou' ? 'Tentar de novo' : 'Abrir do Lattes'}
+                </button>
+              )}
+              <button
+                className={lattes.available ? undefined : 'primary'}
+                type="button"
+                onClick={pick}
+              >
                 Escolher arquivo
               </button>
             </div>

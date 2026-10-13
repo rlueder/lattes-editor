@@ -18,6 +18,7 @@ import {
   lacksSample,
   LATTES_CONTRACT,
   reportText,
+  retryAutoVerify,
   shouldAutoVerify,
 } from '../src/bridge/contract.ts';
 import type { FormControl } from '../src/bridge/form.ts';
@@ -385,5 +386,12 @@ describe('vigia: verificação automática', () => {
       expect(shouldAutoVerify(report(status, AUTO_VERIFY_RETRY_MS - 1), now)).toBe(false);
       expect(shouldAutoVerify(report(status, AUTO_VERIFY_RETRY_MS), now)).toBe(true);
     }
+  });
+
+  it('tenta de novo, antes de mostrar, só falha de leitura e sessão', () => {
+    expect(retryAutoVerify(report('erro', 0))).toBe(true);
+    expect(retryAutoVerify(report('sessao', 0))).toBe(true);
+    expect(retryAutoVerify(report('mudou', 0))).toBe(false);
+    expect(retryAutoVerify(report('ok', 0))).toBe(false);
   });
 });

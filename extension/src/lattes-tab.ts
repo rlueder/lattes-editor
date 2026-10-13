@@ -15,7 +15,7 @@ export async function injectRunner(tabId: number): Promise<void> {
 }
 
 /** Roda uma função do núcleo da ponte na aba; undefined se a aba não respondeu. */
-async function runInTab<T>(tabId: number, name: 'espelho'): Promise<T | undefined> {
+async function runInTab<T>(tabId: number, name: 'espelho' | 'exportar'): Promise<T | undefined> {
   await injectRunner(tabId);
   const [res] = await chrome.scripting.executeScript({
     args: [name] as [string],
@@ -27,6 +27,22 @@ async function runInTab<T>(tabId: number, name: 'espelho'): Promise<T | undefine
 }
 
 type Reply<K extends BridgeMessage['type']> = Omit<Extract<BridgeMessage, { type: K }>, 'type'>;
+
+/**
+ * Abrir do Lattes: o ZIP do Exportar do currículo da sessão (lattes-runner.ts,
+ * exportar), ou o motivo de não ter vindo.
+ */
+export async function readCurriculo(): Promise<Reply<'curriculo'>> {
+  if (!(await hasConsent())) return { reason: 'consentimento' };
+  const tabId = await lattesTab();
+  if (tabId === undefined) return { reason: 'sem-aba' };
+  const failed: Reply<'curriculo'> = { detail: 'A aba do Lattes não respondeu.', reason: 'erro' };
+  try {
+    return (await runInTab<Reply<'curriculo'>>(tabId, 'exportar')) ?? failed;
+  } catch {
+    return failed;
+  }
+}
 
 /** A versão atual do Lattes, para o diagnóstico do editor; só lê, e só com o "ok" do aviso. */
 export async function readEspelho(): Promise<Reply<'espelho'>> {

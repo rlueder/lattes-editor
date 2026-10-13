@@ -79,7 +79,11 @@ describe('ponte: estado da ligação', () => {
       status: { pending: false },
       type: 'estado-lattes',
     });
-    expect(read).toEqual({ outdated: undefined, state: { kind: 'lido', version: '1.0.0' } });
+    expect(read).toEqual({
+      features: ALL,
+      outdated: undefined,
+      state: { kind: 'lido', version: '1.0.0' },
+    });
     // Um "ola" de reconexão não apaga a leitura.
     expect(nextLink(read, hello(ALL, '1.0.1'), ID).state).toEqual({
       kind: 'lido',
