@@ -1,10 +1,17 @@
-// Cópia de trabalho e histórico no IndexedDB do navegador. Nada sai da máquina.
-// O arquivo carregado é a fonte; aqui fica só o estado editado.
+// Cópia de trabalho, histórico e registro do que foi enviado ao Lattes, no
+// IndexedDB. Nada sai da máquina, e nada fica legível no disco: o conteúdo de
+// cada registro vai cifrado (seal.ts), com a chave do chaveiro do sistema.
+// Ficam em claro só o que os índices e a rotação usam: ids, datas, a marca
+// `keep` do histórico, o NUMERO-IDENTIFICADOR (público) e o `undoOf`.
+//
+// Sem chave, o editor não grava nada (modo "só nesta sessão"): guardar o
+// currículo em claro seria pior que perder o trabalho não enviado.
 
-import Dexie, { type EntityTable } from 'dexie';
+import Dexie, { type Table } from 'dexie';
 
 import type { SentEntry } from '../bridge/sent-log.ts';
 import { type LoadedCv, maxSequenciaProducao } from './document.ts';
+import { isSealed, seal, type Sealed, unseal } from './seal.ts';
 import { serializeXml } from './xml.ts';
 
 export interface WorkingCopy {
@@ -57,10 +64,29 @@ export const HISTORY_LIMIT = 50;
 /** Quantos pontos de antes do envio ficam, à parte das edições. */
 export const KEPT_LIMIT = 20;
 
+/** Linhas como ficam no banco. Sem `sealed`, é uma linha antiga, em claro. */
+interface WorkingRow extends Partial<Omit<WorkingCopy, 'id'>> {
+  id: 'current';
+  sealed?: Sealed;
+}
+interface HistoryRow extends Partial<Pick<HistoryEntry, 'note' | 'xml'>> {
+  id?: number;
+  keep?: boolean;
+  savedAt: number;
+  sealed?: Sealed;
+}
+interface SentRow extends Partial<Pick<SentEntry, 'change' | 'op' | 'rows'>> {
+  id?: number;
+  lattesId: string;
+  sealed?: Sealed;
+  sentAt: number;
+  undoOf?: number;
+}
+
 class LattesDb extends Dexie {
-  working!: EntityTable<WorkingCopy, 'id'>;
-  history!: EntityTable<HistoryEntry, 'id'>;
-  sent!: EntityTable<SentEntry, 'id'>;
+  working!: Table<WorkingRow, 'current'>;
+  history!: Table<HistoryRow, number>;
+  sent!: Table<SentRow, number>;
 
   constructor() {
     super('lattes-editor');
@@ -77,8 +103,127 @@ class LattesDb extends Dexie {
 
 export const db = new LattesDb();
 
+/**
+ * cifrado: chave em mãos, tudo é gravado cifrado.
+ * sem-chave: o chaveiro não respondeu; nada é gravado nesta sessão.
+ * chave-perdida: há dados cifrados com outra chave (o chaveiro foi apagado);
+ * nada é lido nem gravado até a pessoa decidir começar de novo.
+ */
+export type StorageStatus = 'cifrado' | 'chave-perdida' | 'sem-chave';
+
+let key: CryptoKey | undefined;
+let pendingKey: CryptoKey | undefined;
+let status: StorageStatus = 'sem-chave';
+let unavailableReason: string | undefined;
+
+export function storageStatus(): { reason?: string; status: StorageStatus } {
+  return { reason: unavailableReason, status };
+}
+
+/** O chaveiro não respondeu: o editor segue, sem gravar nada. */
+export function markStorageUnavailable(reason: string): StorageStatus {
+  key = undefined;
+  pendingKey = undefined;
+  status = 'sem-chave';
+  unavailableReason = reason;
+  return status;
+}
+
+async function readable(k: CryptoKey): Promise<boolean> {
+  const sample =
+    (await db.working.get('current'))?.sealed ??
+    (await db.history.filter((r) => isSealed(r.sealed)).first())?.sealed ??
+    (await db.sent.filter((r) => isSealed(r.sealed)).first())?.sealed;
+  if (!sample) return true;
+  try {
+    await unseal(k, sample);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Cifra as linhas que ficaram em claro (de antes da cifra) e apaga o texto aberto. */
+async function migratePlaintext(k: CryptoKey): Promise<void> {
+  const working = (await db.working.toArray()).filter((r) => !r.sealed);
+  const history = (await db.history.toArray()).filter((r) => !r.sealed);
+  const sent = (await db.sent.toArray()).filter((r) => !r.sealed);
+  if (working.length + history.length + sent.length === 0) return;
+  const sealedWorking = await Promise.all(
+    working.map(async ({ id, ...rest }) => ({ id, sealed: await seal(k, rest) })),
+  );
+  const sealedHistory = await Promise.all(
+    history.map(async ({ id, keep, note, savedAt, xml }) => ({
+      id,
+      keep,
+      savedAt,
+      sealed: await seal(k, { note, xml }),
+    })),
+  );
+  const sealedSent = await Promise.all(
+    sent.map(async ({ change, id, lattesId, op, rows, sentAt, undoOf }) => ({
+      id,
+      lattesId,
+      sealed: await seal(k, { change, op, rows }),
+      sentAt,
+      undoOf,
+    })),
+  );
+  // put substitui a linha inteira: o texto aberto some junto.
+  await db.transaction('rw', db.working, db.history, db.sent, async () => {
+    await db.working.bulkPut(sealedWorking);
+    await db.history.bulkPut(sealedHistory);
+    await db.sent.bulkPut(sealedSent);
+  });
+}
+
+/**
+ * Abre o banco com a chave: confere que ela lê o que já está cifrado e cifra
+ * o que ainda estiver em claro. Com outra chave, fica em "chave-perdida".
+ */
+export async function openStorage(k: CryptoKey): Promise<StorageStatus> {
+  unavailableReason = undefined;
+  if (!(await readable(k))) {
+    key = undefined;
+    pendingKey = k;
+    status = 'chave-perdida';
+    return status;
+  }
+  await migratePlaintext(k);
+  key = k;
+  pendingKey = undefined;
+  status = 'cifrado';
+  return status;
+}
+
+/** Chave perdida: apaga tudo o que não dá mais para ler e segue com a chave nova. */
+export async function resetStorage(): Promise<void> {
+  if (!pendingKey) return;
+  await db.transaction('rw', db.working, db.history, db.sent, async () => {
+    await db.working.clear();
+    await db.history.clear();
+    await db.sent.clear();
+  });
+  key = pendingKey;
+  pendingKey = undefined;
+  status = 'cifrado';
+}
+
 export async function loadWorkingCopy(): Promise<WorkingCopy | undefined> {
-  return db.working.get('current');
+  if (!key) return undefined;
+  const row = await db.working.get('current');
+  if (!row?.sealed) return undefined;
+  return { ...(await unseal<Omit<WorkingCopy, 'id'>>(key, row.sealed)), id: 'current' };
+}
+
+async function workingRow(k: CryptoKey, copy: WorkingCopy): Promise<WorkingRow> {
+  const { id: _id, ...rest } = copy;
+  return { id: 'current', sealed: await seal(k, rest) };
+}
+
+async function historyRow(k: CryptoKey, entry: Omit<HistoryEntry, 'id'>): Promise<HistoryRow> {
+  const { keep, note, savedAt, xml } = entry;
+  return { keep, savedAt, sealed: await seal(k, { note, xml }) };
 }
 
 /**
@@ -87,7 +232,7 @@ export async function loadWorkingCopy(): Promise<WorkingCopy | undefined> {
  */
 async function trimHistory(): Promise<void> {
   const all = await db.history.orderBy('savedAt').toArray();
-  const stale = (entries: HistoryEntry[], limit: number) =>
+  const stale = (entries: HistoryRow[], limit: number) =>
     entries.slice(0, Math.max(0, entries.length - limit)).map((e) => e.id!);
   await db.history.bulkDelete([
     ...stale(
@@ -101,44 +246,86 @@ async function trimHistory(): Promise<void> {
   ]);
 }
 
+// A cifra roda antes de cada transação: o IndexedDB fecha a transação quando
+// ela espera por algo que não é do próprio banco, como o crypto.subtle.
+
 /** Grava a cópia de trabalho e um ponto de histórico, mantendo os últimos 50. */
 export async function saveWorkingCopy(copy: WorkingCopy, note: string): Promise<void> {
+  if (!key) return;
+  const working = await workingRow(key, copy);
+  const point = await historyRow(key, { note, savedAt: copy.savedAt, xml: copy.xml });
   await db.transaction('rw', db.working, db.history, async () => {
-    await db.working.put(copy);
-    await db.history.add({ note, savedAt: copy.savedAt, xml: copy.xml });
+    await db.working.put(working);
+    await db.history.add(point);
     await trimHistory();
   });
 }
 
 /** Um ponto de histórico sem mexer na cópia de trabalho (o de antes de cada envio). */
 export async function addHistoryPoint(entry: Omit<HistoryEntry, 'id'>): Promise<void> {
+  if (!key) return;
+  const point = await historyRow(key, entry);
   await db.transaction('rw', db.history, async () => {
-    await db.history.add(entry);
+    await db.history.add(point);
     await trimHistory();
   });
 }
 
 /** Novo arquivo carregado: substitui a cópia de trabalho e zera o histórico. */
 export async function replaceWorkingCopy(copy: WorkingCopy): Promise<void> {
+  if (!key) return;
+  const working = await workingRow(key, copy);
+  const point = await historyRow(key, {
+    note: 'Arquivo carregado',
+    savedAt: copy.savedAt,
+    xml: copy.xml,
+  });
   await db.transaction('rw', db.working, db.history, async () => {
     await db.history.clear();
-    await db.working.put(copy);
-    await db.history.add({ note: 'Arquivo carregado', savedAt: copy.savedAt, xml: copy.xml });
+    await db.working.put(working);
+    await db.history.add(point);
   });
 }
 
 export async function listHistory(): Promise<HistoryEntry[]> {
-  return db.history.orderBy('savedAt').reverse().toArray();
+  const k = key;
+  if (!k) return [];
+  const rows = await db.history.orderBy('savedAt').reverse().toArray();
+  return Promise.all(
+    rows
+      .filter((r) => r.sealed)
+      .map(async ({ id, keep, savedAt, sealed }) => ({
+        ...(await unseal<Pick<HistoryEntry, 'note' | 'xml'>>(k, sealed!)),
+        id,
+        keep,
+        savedAt,
+      })),
+  );
 }
 
 /** Grava no registro do que foi enviado ao Lattes; devolve o id. */
 export async function addSent(entry: SentEntry): Promise<number | undefined> {
-  return db.sent.add(entry);
+  if (!key) return undefined;
+  const { change, id: _id, lattesId, op, rows, sentAt, undoOf } = entry;
+  return db.sent.add({ lattesId, sealed: await seal(key, { change, op, rows }), sentAt, undoOf });
 }
 
 /** O que foi gravado no Lattes para este currículo, do mais recente ao mais antigo. */
 export async function listSent(lattesId: string): Promise<SentEntry[]> {
-  const entries = await db.sent.where('lattesId').equals(lattesId).toArray();
+  const k = key;
+  if (!k) return [];
+  const rows = await db.sent.where('lattesId').equals(lattesId).toArray();
+  const entries = await Promise.all(
+    rows
+      .filter((r) => r.sealed)
+      .map(async ({ id, sealed, sentAt, undoOf }) => ({
+        ...(await unseal<Pick<SentEntry, 'change' | 'op' | 'rows'>>(k, sealed!)),
+        id,
+        lattesId,
+        sentAt,
+        undoOf,
+      })),
+  );
   return entries.sort((a, b) => b.sentAt - a.sentAt);
 }
 

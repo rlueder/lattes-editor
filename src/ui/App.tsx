@@ -15,6 +15,7 @@ import {
   newWorkingCopy,
   replaceWorkingCopy,
   saveWorkingCopy,
+  storageStatus,
 } from '../model/store.ts';
 import { getAttr, parseXml, serializeXml, walk, type XElement } from '../model/xml.ts';
 import { PrintDialog } from '../print/PrintDialog.tsx';
@@ -33,6 +34,7 @@ import { buildReferenceIndex, type ReferenceIndex } from './reference-tables.ts'
 import { buildSections } from './sections.ts';
 import { SectionView } from './SectionView.tsx';
 import { Sidebar } from './Sidebar.tsx';
+import { StorageNotice } from './StorageNotice.tsx';
 import { useTheme } from './theme.ts';
 import { type SaveState, Topbar } from './Topbar.tsx';
 import { useBridge } from './use-bridge.ts';
@@ -250,8 +252,15 @@ export function App() {
 
   if (booting) return null;
 
+  const storageNotice = <StorageNotice {...storageStatus()} onReset={closeFile} />;
+
   if (!session) {
-    return <Welcome error={error} theme={theme} onFile={openFile} onTheme={setTheme} />;
+    return (
+      <>
+        <Welcome error={error} theme={theme} onFile={openFile} onTheme={setTheme} />
+        {storageNotice}
+      </>
+    );
   }
 
   const modified = serializeXml(session.doc) !== session.meta.originalXml;
@@ -373,6 +382,7 @@ export function App() {
         onRestore={restore}
         onSave={saveHistoryCopy}
       />
+      {storageNotice}
     </div>
   );
 }

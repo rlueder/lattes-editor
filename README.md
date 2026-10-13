@@ -66,6 +66,17 @@ Não há servidor nem conta. O currículo é lido e guardado no próprio
 computador, e o arquivo salvo vai para o seu disco. Saem dele só a busca do
 DOI no Crossref, quando você pede, e a foto do perfil, buscada no CNPq.
 
+O que o app guarda entre uma sessão e outra (cópia de trabalho, histórico e
+registro do que foi enviado ao Lattes) fica cifrado com AES-GCM. A chave é
+gerada no primeiro uso e mora no chaveiro do sistema: Keychain no macOS,
+Gerenciador de Credenciais no Windows, Secret Service (GNOME Keyring ou
+KWallet) no Linux. Sem chaveiro disponível, o app avisa e não guarda nada
+naquela sessão, em vez de deixar o currículo legível no disco. Se a chave
+some (chaveiro apagado), os dados guardados não podem mais ser lidos; o app
+oferece começar de novo a partir de uma exportação do Lattes, e o registro
+do enviado se perde. No `pnpm dev`, no navegador, vale uma chave fixa de
+desenvolvimento, só para o currículo de exemplo.
+
 Em Dados gerais, documentos, nascimento, filiação e endereço ficam
 mascarados até você clicar no olho, ao lado do título.
 
