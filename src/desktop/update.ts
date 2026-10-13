@@ -128,7 +128,10 @@ export async function installUpdate(): Promise<void> {
       if (e.event === 'Started') total = e.data.contentLength;
       if (e.event === 'Progress') {
         received += e.data.chunkLength;
-        setState({ progress: percent(received, total), status: 'baixando', version });
+        // Um pacote grande chega em milhares de pedaços: só avisa quando o percentual muda.
+        const progress = percent(received, total);
+        if (state.status === 'baixando' && state.progress === progress) return;
+        setState({ progress, status: 'baixando', version });
       }
     });
   } catch (err) {

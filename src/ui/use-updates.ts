@@ -21,18 +21,19 @@ import {
 import { RefreshIcon } from './icons.tsx';
 import { APP_DOWNLOAD_URL } from './notifications.ts';
 import { toasts } from './toasts.ts';
-import { updateToastText } from './update-toast.ts';
+import { updateToastKey, updateToastText } from './update-toast.ts';
 
 const TOAST_ID = 'atualizacao';
 
-/** Versão cujo aviso de "disponível" a pessoa fechou: não volta sozinho (o sino guarda). */
+/** O aviso que a pessoa fechou (updateToastKey): não volta sozinho; o sino guarda a oferta. */
 let dismissed: string | undefined;
 let shown = false;
 
 function syncToast(): void {
   const s = updateState();
   const text = updateToastText(s);
-  if (!text || (s.status === 'disponivel' && dismissed === s.version)) return;
+  const key = updateToastKey(s);
+  if (!text || dismissed === key) return;
   const actionProps =
     text.action === 'atualizar'
       ? {
@@ -47,7 +48,7 @@ function syncToast(): void {
     description: text.description,
     onClose: () => {
       shown = false;
-      if (s.status === 'disponivel') dismissed = s.version;
+      dismissed = key;
     },
     timeout: 0,
     title: text.title,

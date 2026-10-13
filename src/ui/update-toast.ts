@@ -9,6 +9,15 @@ export interface UpdateToastText {
   title: string;
 }
 
+/**
+ * O que identifica um aviso para quem o fecha: o estado e a versão, sem o
+ * percentual. Fechado o "baixando", o progresso não o reabre; um estado novo
+ * ("falhou", "reiniciar") sim.
+ */
+export function updateToastKey(s: UpdateState): string {
+  return s.status === 'nenhuma' ? s.status : `${s.status}:${s.version}`;
+}
+
 export function updateToastText(s: UpdateState): UpdateToastText | undefined {
   switch (s.status) {
     case 'disponivel':

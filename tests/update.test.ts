@@ -14,7 +14,7 @@ import {
   updateState,
 } from '../src/desktop/update.ts';
 import { noticesFor } from '../src/ui/notifications.ts';
-import { updateToastText } from '../src/ui/update-toast.ts';
+import { updateToastKey, updateToastText } from '../src/ui/update-toast.ts';
 
 afterEach(() => resetUpdateForTests());
 
@@ -174,6 +174,37 @@ describe('aviso e sino da atualização', () => {
       'Baixando a versão 1.2.3.',
     );
     expect(updateToastText({ status: 'falhou', version: '1.2.3' })?.action).toBe('baixar');
+  });
+
+  it('fechar o aviso vale para o estado, não para cada percentual', () => {
+    const v = '1.2.3';
+    expect(updateToastKey({ progress: 10, status: 'baixando', version: v })).toBe(
+      updateToastKey({ progress: 90, status: 'baixando', version: v }),
+    );
+    expect(updateToastKey({ status: 'falhou', version: v })).not.toBe(
+      updateToastKey({ status: 'baixando', version: v }),
+    );
+    expect(updateToastKey({ status: 'nenhuma' })).toBe('nenhuma');
+  });
+
+  it('o progresso só avisa quando o percentual muda', async () => {
+    const seen: unknown[] = [];
+    setUpdateDeps({
+      check: () =>
+        Promise.resolve({
+          async downloadAndInstall(onEvent: (e: DownloadEvent) => void) {
+            onEvent({ data: { contentLength: 1000 }, event: 'Started' });
+            for (let i = 0; i < 1000; i++) onEvent({ data: { chunkLength: 1 }, event: 'Progress' });
+          },
+          version: '4.0.0',
+        }),
+      relaunch: vi.fn(() => Promise.resolve()),
+    });
+    await checkForUpdate();
+    subscribeUpdate(() => seen.push(updateState()));
+    await installUpdate();
+    // "baixando" sem percentual, e um aviso por percentual de 0 a 100.
+    expect(seen).toHaveLength(1 + 101);
   });
 
   it('o sino guarda a versão nova, antes das outras notificações', () => {
