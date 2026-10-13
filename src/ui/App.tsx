@@ -33,6 +33,7 @@ import { buildReferenceIndex, type ReferenceIndex } from './reference-tables.ts'
 import { buildSections } from './sections.ts';
 import { SectionView } from './SectionView.tsx';
 import { Sidebar } from './Sidebar.tsx';
+import { statusStrip } from './status-strip.ts';
 import { useTheme } from './theme.ts';
 import { type SaveState, Topbar } from './Topbar.tsx';
 import { useBridge } from './use-bridge.ts';
@@ -268,6 +269,11 @@ export function App() {
         pendingCount={production.pending.length + changes.open}
         saveState={saveState}
         showEmpty={showEmpty}
+        strip={statusStrip({
+          editorChanges: production.pending.length + changes.open,
+          lattes: bridge.lattes,
+          sent: bridge.sent,
+        })}
         theme={theme}
         onClose={closeFile}
         onExport={openExport}
@@ -278,6 +284,10 @@ export function App() {
         onReload={reload}
         onSave={saveFile}
         onShowEmpty={setShowEmpty}
+        onStripOpen={(kind) => {
+          openExport();
+          if (kind === 'no-lattes') scrollToSent();
+        }}
         onTheme={setTheme}
       />
 
@@ -375,6 +385,14 @@ export function App() {
       />
     </div>
   );
+}
+
+/** O registro do enviado fica no fim de "Levar ao Lattes"; espera o painel abrir. */
+/** Rola até "Enviado ao Lattes" quando ele aparecer: o painel abre e a lista carrega depois. */
+function scrollToSent(frames = 30): void {
+  const el = document.getElementById('enviado-ao-lattes');
+  if (el) el.scrollIntoView({ block: 'start' });
+  else if (frames > 0) requestAnimationFrame(() => scrollToSent(frames - 1));
 }
 
 /** Conta, dentro de alguns elementos, quantos dos itens pendentes aparecem. */

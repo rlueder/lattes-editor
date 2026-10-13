@@ -6,6 +6,7 @@
 import { useState } from 'react';
 
 import type { ResultStatus } from '../bridge/apply.ts';
+import { PUBLISH_REMINDER } from '../bridge/lattes-status.ts';
 import { CheckIcon, UploadIcon } from '../ui/icons.tsx';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { SendConfirm } from './SendConfirm.tsx';
@@ -50,6 +51,9 @@ export function BridgeBlock({ bridge }: { bridge: BridgeState }) {
           </button>
         )}
       </div>
+      {!bridge.running && bridge.confirmed > 0 && (
+        <p className="bridge-note bridge-publish">{PUBLISH_REMINDER}</p>
+      )}
       {bridge.running && (
         <p className="muted bridge-note">
           A fila está no painel da extensão: clique no ícone dela e em &quot;Aplicar todas&quot;.

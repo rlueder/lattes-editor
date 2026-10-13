@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { OpResult } from '../bridge/apply.ts';
 import { sameCv } from '../bridge/lattes-html.ts';
+import type { LattesStatus } from '../bridge/lattes-status.ts';
 import { type BridgeOp, planChanges } from '../bridge/plan.ts';
 import {
   type BridgeMessage,
@@ -86,6 +87,11 @@ export interface BridgeState {
   clearSent: () => Promise<void>;
   /** Quantas alterações foram gravadas e conferidas desde o último envio. */
   confirmed: number;
+  /**
+   * O que a extensão leu do menu do Lattes (última publicação e pendência),
+   * só quando a sessão é deste currículo; undefined sem extensão ou sem leitura.
+   */
+  lattes?: LattesStatus;
   /** Alterações que a extensão sabe levar e as que ficam para copiar à mão. */
   plan: ReturnType<typeof planChanges>;
   results: Record<string, OpResult>;
@@ -126,6 +132,7 @@ export function useBridge(
   const [running, setRunning] = useState(false);
   const lattesId = session ? getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR') : undefined;
   const [sent, setSent] = useState<SentEntry[]>([]);
+  const [lattes, setLattes] = useState<LattesStatus | undefined>();
 
   const reloadSent = useCallback(() => {
     if (!lattesId) {
@@ -175,10 +182,15 @@ export function useBridge(
         writeCvCode(lattesId, msg.code);
         window.dispatchEvent(new Event(CV_CODE_EVENT));
       }
+      if (msg.type === 'estado-lattes' && lattesId && sameCv(lattesId, msg.lattesId)) {
+        setLattes({ ...msg.status, readAt: Date.now() });
+      }
     };
+    setLattes(undefined);
     const stopListening = listen(onMessage, () => {
       setAvailable(false);
       setRunning(false);
+      setLattes(undefined);
     });
     post({ type: 'ola' });
     return stopListening;
@@ -203,6 +215,7 @@ export function useBridge(
       setSent([]);
     },
     confirmed,
+    lattes,
     plan,
     results,
     running,

@@ -14,6 +14,7 @@ import {
   lacksSample,
 } from '../../src/bridge/contract.ts';
 import { sameCv } from '../../src/bridge/lattes-html.ts';
+import type { LattesStatus } from '../../src/bridge/lattes-status.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
 import {
   type BridgeMessage,
@@ -89,37 +90,49 @@ async function injectRunner(tabId: number): Promise<void> {
 interface Identity {
   code?: string;
   lattesId?: string;
+  status?: LattesStatus;
 }
 
 /** Quem é o currículo aberto na sessão do Lattes: código interno e identificador público. */
-async function sessionIdentity(tabId: number): Promise<Identity> {
+async function sessionIdentity(tabId: number, fresh = false): Promise<Identity> {
   await injectRunner(tabId);
   const [res] = await chrome.scripting.executeScript({
-    func: () => (globalThis as unknown as { __ponte: { identity(): Identity } }).__ponte.identity(),
+    args: [fresh],
+    func: (f: boolean) =>
+      (
+        globalThis as unknown as { __ponte: { identity(fresh: boolean): Promise<Identity> } }
+      ).__ponte.identity(f),
     target: { tabId },
   });
   return res?.result ?? {};
 }
 
-/** O código de 10 caracteres do currículo, para a foto, junto com de quem ele é. */
-async function sendCvCode(editor: EditorEndpoint): Promise<void> {
+/**
+ * O que o editor sabe da sessão do Lattes: o código de 10 caracteres do
+ * currículo, para a foto, e o estado do menu (última publicação e
+ * pendência), sempre junto com de quem ele é.
+ */
+async function sendSession(editor: EditorEndpoint, fresh = false): Promise<void> {
   if (!(await hasConsent())) return;
   const tabId = await lattesTab();
   if (tabId === undefined) return;
   try {
-    const id = await sessionIdentity(tabId);
+    const id = await sessionIdentity(tabId, fresh);
     if (id.code) {
       await toEditor(editor, { code: id.code, lattesId: id.lattesId, type: 'codigo-cv' });
     }
+    if (id.status) {
+      await toEditor(editor, { lattesId: id.lattesId, status: id.status, type: 'estado-lattes' });
+    }
   } catch {
-    // Sem permissão na aba ou aba recarregando: sem foto, sem erro.
+    // Sem permissão na aba ou aba recarregando: sem foto nem estado, sem erro.
   }
 }
 
 async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<void> {
   if (msg.type === 'ola') {
     await toEditor(editor, { type: 'ola', version: chrome.runtime.getManifest().version });
-    await sendCvCode(editor);
+    await sendSession(editor);
     return;
   }
   if (msg.type === 'parar') {
@@ -287,6 +300,8 @@ async function run(keys?: string[]): Promise<void> {
   const left = state.ops.filter((op) => results[op.key]?.status !== 'conferido').length;
   await chrome.action.setBadgeText({ text: left ? String(left) : '' });
   await toEditor(state.editor, { type: 'fim' });
+  // Menu relido: a aba aberta ainda mostra o estado de antes das gravações.
+  if (state.editor !== undefined) await sendSession(state.editor, true);
 }
 
 chrome.runtime.onMessage.addListener((message, sender) => {
@@ -347,7 +362,7 @@ async function watchToolbarTheme(): Promise<void> {
 chrome.storage.onChanged.addListener((changes, area) => {
   const change = (changes as Record<string, { newValue?: unknown }>)[CONSENT_KEY];
   if (area === 'local' && change && isConsentCurrent(change.newValue) && appPort) {
-    void sendCvCode('app');
+    void sendSession('app');
   }
 });
 

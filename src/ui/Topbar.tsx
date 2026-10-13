@@ -9,6 +9,8 @@ import { CloseConfirm } from './dialogs.tsx';
 import { AlertIcon, PlusIcon, SearchIcon, UploadIcon } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { SettingsMenu } from './SettingsMenu.tsx';
+import type { StripState } from './status-strip.ts';
+import { StatusStrip } from './StatusStrip.tsx';
 import type { ThemePref } from './theme.ts';
 
 export type SaveState = 'salvo' | 'salvando' | 'erro';
@@ -22,6 +24,8 @@ interface Props {
   ref: Ref<HTMLElement>;
   saveState: SaveState;
   showEmpty: boolean;
+  /** Faixa de estados: original, alterações, no Lattes, publicado. */
+  strip: StripState;
   theme: ThemePref;
   onClose: () => void;
   onExport: () => void;
@@ -32,6 +36,7 @@ interface Props {
   onReload: (file: File) => void;
   onSave: () => void;
   onShowEmpty: (show: boolean) => void;
+  onStripOpen: (kind: 'alteracoes' | 'no-lattes') => void;
   onTheme: (theme: ThemePref) => void;
 }
 
@@ -58,20 +63,24 @@ export function Topbar({
   onReload,
   onSave,
   onShowEmpty,
+  onStripOpen,
   onTheme,
   pendingCount,
   ref,
   saveState,
   showEmpty,
+  strip,
   theme,
 }: Props) {
   const reloadInput = useRef<HTMLInputElement>(null);
   const [closing, setClosing] = useState(false);
   return (
     <header ref={ref} data-tauri-drag-region className="topbar">
-      {/* A marca e quem é o currículo ficam no menu lateral; aqui, só espaço
-          (e, no app de macOS, os botões da janela). */}
-      <div data-tauri-drag-region className="topbar-identity" />
+      {/* A marca e quem é o currículo ficam no menu lateral; aqui, a faixa de
+          estados (e, no app de macOS, os botões da janela). */}
+      <div data-tauri-drag-region className="topbar-identity">
+        <StatusStrip state={strip} onOpen={onStripOpen} />
+      </div>
 
       {/* Encontrar: centralizado na página. */}
       <div data-tauri-drag-region className="topbar-center">

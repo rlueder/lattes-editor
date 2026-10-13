@@ -31,10 +31,11 @@ arquivo quando muda de fato; o detalhe técnico está em
   `docs/lattes_internals.md`; falta escrever a operação de cada um e testar
   com restauração, como foi feito com o vínculo. O idioma tem a operação
   escrita e testada contra o Lattes falso, falta o teste no Lattes real.
-- **Lembrar do envio ao CNPq.** O que a ponte grava só vale depois de
-  "Enviar ao CNPq" no Lattes, e até lá o Exportar fica bloqueado. O painel
-  da extensão e o editor dizem isso no fim de cada fila, com o caminho do
-  botão.
+- **Lembrar do envio ao CNPq.** Feito: o painel da extensão e o editor
+  dizem no fim de cada fila que nada está público até "Enviar ao CNPq", com
+  o caminho do botão. A faixa de estados do cabeçalho (LAT-40) mostra
+  original, alterações, o que está no Lattes sem publicar e a data da última
+  publicação, lida do menu do Lattes pela extensão.
 - **Criar itens pela ponte.** O Lattes inclui com `f_ctr=I` (visto no
   formulário de atividade nova). Mapeada a inclusão, Formação, Atuação,
   Projetos e Patentes, que o Importar não aceita, ganham "Novo item" no

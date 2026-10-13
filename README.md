@@ -108,6 +108,11 @@ o valor de antes, com a mesma confirmação de qualquer envio, e a alteração
 volta para a lista do que falta levar. O registro continua lá depois de
 fechar o arquivo ou abrir outra exportação.
 
+O cabeçalho resume esse caminho numa faixa: `Original · 3 alterações · 2 no
+Lattes · publicado em 17/08/2026`. Com a extensão e o Lattes aberto, a data
+da última publicação e as pendências vêm do próprio menu do Lattes; o passo
+que pede ação fica em destaque, e cada contagem abre a lista dela.
+
 O CNPq não avisa quando muda o Lattes. Por isso o painel tem "Verificar o
 Lattes": só com leituras, ele confere o menu e um exemplar de cada
 formulário que a ponte grava contra o que ela espera (nomes, tipos e limites
