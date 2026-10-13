@@ -183,7 +183,7 @@ export function useBridge(
         window.dispatchEvent(new Event(CV_CODE_EVENT));
       }
       if (msg.type === 'estado-lattes' && lattesId && sameCv(lattesId, msg.lattesId)) {
-        setLattes(msg.status);
+        setLattes({ ...msg.status, readAt: Date.now() });
       }
     };
     setLattes(undefined);

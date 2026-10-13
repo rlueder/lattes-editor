@@ -56,14 +56,20 @@ describe('o que espera "Enviar ao CNPq"', () => {
     expect(unpublishedSent(sent, { lastPublished: published, pending: true })).toBe(2);
   });
 
-  it('nada, quando o Lattes diz que não há pendência', () => {
+  it('sem pendência no Lattes, só o gravado depois da leitura, que ela não viu', () => {
+    const readAt = at(2026, 10, 12, 12);
+    const lattes = { lastPublished: published, pending: false, readAt };
+    expect(unpublishedSent([entry(1, at(2026, 10, 12, 9))], lattes)).toBe(0);
+    expect(
+      unpublishedSent([entry(1, at(2026, 10, 12, 9)), entry(2, at(2026, 10, 12, 13))], lattes),
+    ).toBe(1);
     expect(
       unpublishedSent([entry(1, at(2026, 10, 12))], { lastPublished: published, pending: false }),
     ).toBe(0);
   });
 
-  it('sem leitura do Lattes, conta todo o registro', () => {
-    expect(unpublishedSent([entry(1, at(2020, 1, 1)), entry(2, at(2026, 10, 12))])).toBe(2);
+  it('sem leitura do Lattes, não afirma nada', () => {
+    expect(unpublishedSent([entry(1, at(2020, 1, 1)), entry(2, at(2026, 10, 12))])).toBe(0);
   });
 
   it('gravado e desfeito na mesma janela se anulam; desfazer de algo publicado conta', () => {

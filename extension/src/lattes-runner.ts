@@ -5,7 +5,7 @@
 import { applyOp, type LattesPort } from '../../src/bridge/apply.ts';
 import { checkContract } from '../../src/bridge/contract.ts';
 import type { FormControl } from '../../src/bridge/form.ts';
-import { cvCodeFrom, lattesIdFrom } from '../../src/bridge/lattes-html.ts';
+import { cvCodeFrom, isLogonPage, lattesIdFrom } from '../../src/bridge/lattes-html.ts';
 import { lattesStatusFrom } from '../../src/bridge/lattes-status.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
 import { decodeLatin1 } from '../../src/model/latin1.ts';
@@ -53,9 +53,16 @@ const port: LattesPort = {
 
 (globalThis as unknown as { __ponte: unknown }).__ponte = {
   apply: (op: BridgeOp) => applyOp(op, port),
-  // Só o menu que já está na aba, sem requisição nova.
-  identity: () => {
-    const html = document.documentElement.outerHTML;
+  // Ao conectar, o menu que já está na aba. Depois de uma fila, um GET novo do
+  // menu (só o cookie basta, ver docs/lattes_internals.md, seção 10), porque
+  // a página aberta não sabe das gravações; se a sessão caiu, fica a da aba.
+  identity: async (fresh = false) => {
+    let html = document.documentElement.outerHTML;
+    if (fresh) {
+      const res = await fetch('PKG_MENU.menu', { credentials: 'include' });
+      const menu = await text(res);
+      if (res.ok && !isLogonPage(menu, res.url)) html = menu;
+    }
     return { code: cvCodeFrom(html), lattesId: lattesIdFrom(html), status: lattesStatusFrom(html) };
   },
   // Só leituras: o menu e um exemplar de cada formulário, comparados ao contrato.

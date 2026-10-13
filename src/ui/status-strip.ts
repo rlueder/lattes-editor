@@ -35,7 +35,11 @@ function dayStart(date: string): number {
 
 /**
  * Quantas gravações da ponte ainda esperam "Enviar ao CNPq". Regra:
- * - se o Lattes diz que não há pendência, nenhuma;
+ * - sem leitura do Lattes (sem extensão, sessão ou consentimento), nenhuma:
+ *   o registro guarda envios antigos, já publicados, e a faixa não afirma o
+ *   que não sabe;
+ * - se o Lattes diz que não há pendência, só as gravadas depois daquela
+ *   leitura, que ela não podia ver;
  * - senão, as enviadas desde o dia da última publicação (todas, sem data
  *   conhecida), porque a data do Lattes não tem hora;
  * - um par gravado e desfeito dentro dessa janela se anula e não conta. Só o
@@ -43,8 +47,12 @@ function dayStart(date: string): number {
  *   nova no Lattes.
  */
 export function unpublishedSent(sent: SentEntry[], lattes?: LattesStatus): number {
-  if (lattes && !lattes.pending) return 0;
-  const since = lattes?.lastPublished ? dayStart(lattes.lastPublished) : -Infinity;
+  if (!lattes) return 0;
+  const since = lattes.pending
+    ? lattes.lastPublished
+      ? dayStart(lattes.lastPublished)
+      : -Infinity
+    : (lattes.readAt ?? Infinity);
   const window = sent.filter((e) => e.sentAt >= since);
   const ids = new Set(window.map((e) => e.id));
   const cancelled = new Set(

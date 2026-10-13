@@ -13,6 +13,8 @@ export interface LattesStatus {
   lastPublished?: string;
   /** O menu mostra o aviso de alterações não enviadas ao CNPq. */
   pending: boolean;
+  /** Quando o editor recebeu esta leitura (ms); o que foi gravado depois, ela não viu. */
+  readAt?: number;
 }
 
 const ENTITIES: Record<string, string> = {
