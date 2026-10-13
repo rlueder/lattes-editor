@@ -449,16 +449,17 @@ export async function addVersion(
       const mine = await db.versions.where('lattesId').equals(lattesId).sortBy('loadedAt');
       const latest = mine.at(-1);
       if (latest?.digest === digest) return { added: false };
-      await db.versions.add(row);
-      const ids = [...mine.map((r) => r.id!), -1];
+      const newId = await db.versions.add(row);
+      const ids = [...mine.map((r) => r.id!), newId];
       await db.versions.bulkDelete(ids.slice(0, Math.max(0, ids.length - VERSION_LIMIT)));
-      // Somando todos os currículos, saem as mais antigas além do teto.
+      // Somando todos os currículos, saem as mais antigas além do teto, mas
+      // nunca a recém-gravada nem a anterior a ela, que o resumo vai ler.
       const total = await db.versions.count();
       if (total > VERSION_TOTAL_LIMIT) {
-        const oldest = await db.versions
-          .orderBy('loadedAt')
-          .limit(total - VERSION_TOTAL_LIMIT)
-          .primaryKeys();
+        const keep = new Set([newId, latest?.id]);
+        const oldest = (await db.versions.orderBy('loadedAt').primaryKeys())
+          .filter((id) => !keep.has(id))
+          .slice(0, total - VERSION_TOTAL_LIMIT);
         await db.versions.bulkDelete(oldest);
       }
       return { added: true, previousId: latest?.id };
@@ -482,6 +483,15 @@ export async function getVersion(id: number): Promise<LattesVersion | undefined>
 }
 
 /** As versões do currículo, da mais recente à mais antiga; `limit` lê só as primeiras. */
+/** As versões do currículo, sem o XML (nada é decifrado), da mais recente à mais antiga. */
+export async function listVersionInfo(lattesId: string): Promise<Omit<LattesVersion, 'xml'>[]> {
+  if (!key) return [];
+  const rows = await db.versions.where('lattesId').equals(lattesId).sortBy('loadedAt');
+  return rows
+    .reverse()
+    .map(({ exportedAt, id, loadedAt }) => ({ exportedAt, id, lattesId, loadedAt }));
+}
+
 export async function listVersions(lattesId: string, limit?: number): Promise<LattesVersion[]> {
   const k = key;
   if (!k) return [];

@@ -128,6 +128,20 @@ describe('versões do Lattes no banco local', () => {
       expect(await store.listVersions(String(cvs - 1).padStart(16, '0'))).toHaveLength(perCv);
     });
 
+    it('a lista vem sem o XML; o teto geral nunca leva a nova nem a anterior', async () => {
+      await store.addVersion(version('<A/>', 5000));
+      // Uma versão nova com relógio atrasado: seria a mais antiga de todas.
+      for (let i = 0; i < store.VERSION_TOTAL_LIMIT; i++) {
+        await store.addVersion(version(`<X${i}/>`, 6000 + i, '0000000000000009'));
+      }
+      const res = await store.addVersion(version('<B/>', 1));
+      expect(res.added).toBe(true);
+      expect(await store.getVersion(res.previousId!)).toMatchObject({ xml: '<A/>' });
+      const info = await store.listVersionInfo('0000000000000001');
+      expect(info.map((v) => v.loadedAt).sort()).toEqual([1, 5000]);
+      expect(info[0]).not.toHaveProperty('xml');
+    });
+
     it('sobrevive a abrir outro arquivo e a fechar; apagar é por currículo', async () => {
       await store.addVersion(version('<A/>', 1));
       await store.addVersion(version('<B/>', 2, '0000000000000002'));

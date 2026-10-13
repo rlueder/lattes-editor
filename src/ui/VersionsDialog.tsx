@@ -3,10 +3,10 @@
 // anterior. Também a faixa curta que aparece depois de abrir uma exportação
 // nova.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import type { ChangeKind } from '../model/changes.ts';
-import type { LattesVersion } from '../model/store.ts';
+import { getVersion, type LattesVersion } from '../model/store.ts';
 import { parseXml } from '../model/xml.ts';
 import type { HashRoute } from './hash-route.ts';
 import { CloseIcon } from './icons.tsx';
@@ -21,23 +21,36 @@ const KIND: Record<ChangeKind, string> = {
   removido: 'Removido',
 };
 
+type VersionInfo = Omit<LattesVersion, 'xml'>;
+
+/** O que mudou entre duas versões; só estas duas são decifradas, ao escolher. */
 function VersionChanges({
   newer,
   older,
   onGo,
 }: {
-  newer: LattesVersion;
-  older?: LattesVersion;
+  newer: VersionInfo;
+  older?: VersionInfo;
   onGo: (route: HashRoute) => void;
 }) {
-  const diff = useMemo(() => {
-    if (!older) return undefined;
-    const root = parseXml(newer.xml).root;
-    return diffVersions(parseXml(older.xml).root, root, buildSections(root));
+  const [diff, setDiff] = useState<ReturnType<typeof diffVersions>>();
+  useEffect(() => {
+    setDiff(undefined);
+    if (!older || newer.id === undefined || older.id === undefined) return;
+    let current = true;
+    void Promise.all([getVersion(newer.id), getVersion(older.id)]).then(([a, b]) => {
+      if (!current || !a || !b) return;
+      const root = parseXml(a.xml).root;
+      setDiff(diffVersions(parseXml(b.xml).root, root, buildSections(root)));
+    });
+    return () => {
+      current = false;
+    };
   }, [newer, older]);
-  if (!older || !diff) {
+  if (!older) {
     return <p className="muted">É a primeira versão guardada; não há anterior para comparar.</p>;
   }
+  if (!diff) return <p className="muted">Comparando…</p>;
   return (
     <>
       <p className="versions-summary">{diffSummary(diff, versionDate(older))}</p>
@@ -76,8 +89,8 @@ export function VersionsDialog({
   versions,
 }: {
   open: boolean;
-  /** Da mais recente à mais antiga. */
-  versions: LattesVersion[];
+  /** Da mais recente à mais antiga, sem o XML. */
+  versions: VersionInfo[];
   onClear: () => void;
   onClose: () => void;
   onGo: (route: HashRoute) => void;
@@ -87,7 +100,9 @@ export function VersionsDialog({
   const [selectedId, setSelectedId] = useState<number | undefined>();
   const [clearing, setClearing] = useState(false);
   useEffect(() => {
-    if (open) setSelectedId(undefined);
+    if (!open) return;
+    setSelectedId(undefined);
+    setClearing(false);
   }, [open]);
   const found = versions.findIndex((v) => v.id === selectedId);
   const index = found >= 0 ? found : 0;

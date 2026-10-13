@@ -9,7 +9,7 @@ import {
   clearVersions,
   getVersion,
   type LattesVersion,
-  listVersions,
+  listVersionInfo,
 } from '../model/store.ts';
 import { getAttr, parseXml, type XElement } from '../model/xml.ts';
 import type { HashRoute } from './hash-route.ts';
@@ -24,7 +24,7 @@ import { VersionBanner, VersionsDialog } from './VersionsDialog.tsx';
 export function useVersions(root: XElement | undefined, onGo: (route: HashRoute) => void) {
   const lattesId = root && getAttr(root, 'NUMERO-IDENTIFICADOR');
   const [open, setOpen] = useState(false);
-  const [versions, setVersions] = useState<LattesVersion[]>([]);
+  const [versions, setVersions] = useState<Omit<LattesVersion, 'xml'>[]>([]);
   const [summary, setSummary] = useState<string>();
 
   /**
@@ -32,6 +32,8 @@ export function useVersions(root: XElement | undefined, onGo: (route: HashRoute)
    * anterior, gera o resumo. Só a anterior é decifrada, e só quando gravou.
    */
   const record = useCallback(async (root: XElement, xml: string) => {
+    // O aviso de antes era de outro arquivo; some já, mesmo se este não gravar.
+    setSummary(undefined);
     const id = getAttr(root, 'NUMERO-IDENTIFICADOR');
     if (!id) return;
     const { added, previousId } = await addVersion({
@@ -41,16 +43,13 @@ export function useVersions(root: XElement | undefined, onGo: (route: HashRoute)
       xml,
     });
     const previous = added && previousId !== undefined ? await getVersion(previousId) : undefined;
-    if (!previous) {
-      setSummary(undefined);
-      return;
-    }
+    if (!previous) return;
     const diff = diffVersions(parseXml(previous.xml).root, root, buildSections(root));
     setSummary(diffSummary(diff, versionDate(previous)));
   }, []);
 
   const show = useCallback(async () => {
-    setVersions(lattesId ? await listVersions(lattesId) : []);
+    setVersions(lattesId ? await listVersionInfo(lattesId) : []);
     setOpen(true);
   }, [lattesId]);
 
@@ -66,7 +65,14 @@ export function useVersions(root: XElement | undefined, onGo: (route: HashRoute)
   const dialog = createElement(VersionsDialog, {
     onClear: () => {
       if (!lattesId) return;
-      void clearVersions(lattesId).then(() => setVersions([]));
+      clearVersions(lattesId).then(
+        () => setVersions([]),
+        // Falhou: a lista volta a mostrar o que de fato ficou guardado.
+        async (err: unknown) => {
+          console.warn('Versões não foram apagadas:', err);
+          setVersions(await listVersionInfo(lattesId));
+        },
+      );
     },
     onClose: () => setOpen(false),
     onGo: (route: HashRoute) => {
