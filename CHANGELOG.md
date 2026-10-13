@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.19.1](https://github.com/rlueder/lattes-editor/compare/v0.19.0...v0.19.1) (2026-10-13)
+
+### Correções
+
+- **ci:** passo da chave de atualização em bash também no Windows ([#46](https://github.com/rlueder/lattes-editor/issues/46)) ([f702efb](https://github.com/rlueder/lattes-editor/commit/f702efbccfb0bb2b6aa0f28904e6e78065598b37))
+
 ## [0.19.0](https://github.com/rlueder/lattes-editor/compare/v0.18.0...v0.19.0) (2026-10-13)
 
 ### Novidades
