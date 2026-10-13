@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.19.0](https://github.com/rlueder/lattes-editor/compare/v0.18.0...v0.19.0) (2026-10-13)
+
+### Novidades
+
+- app de desktop se atualiza sozinho, com aviso de versão nova (LAT-19) ([#44](https://github.com/rlueder/lattes-editor/issues/44)) ([d33ea30](https://github.com/rlueder/lattes-editor/commit/d33ea30800a7f7219545839cb87e9a0a8951eb0c))
+
 ## [0.18.0](https://github.com/rlueder/lattes-editor/compare/v0.17.0...v0.18.0) (2026-10-13)
 
 ### Novidades
