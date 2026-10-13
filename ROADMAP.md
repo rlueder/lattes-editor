@@ -42,17 +42,12 @@ arquivo quando muda de fato; o detalhe técnico está em
   teste acompanhado no Lattes real: a resposta do POST de inclusão e alguns
   valores da busca de instituição são inferidos. Falta mapear a busca de
   cursos (Formação) e os formulários de Projetos e Patentes.
-- **Abrir do Lattes pela ponte.** Com a extensão instalada e uma sessão
-  aberta no Lattes, o editor pede a exportação e carrega o currículo sem o
-  usuário baixar e soltar o `CV_<id>.zip`. A extensão já tem permissão em
-  `wwws.cnpq.br` e faz requisições de dentro da aba do Lattes; o Exportar
-  (`pkg_impcv.get_arquivo?f_cod=…`) devolve o mesmo ZIP que o editor já
-  abre. Com alteração pendente, o Exportar recusa e o
-  Lattes não tem como descartar a pendência: só enviando ao CNPq
-  (`docs/lattes_internals.md`, seção 10). Falta ver a requisição que devolve
-  o ZIP, com um currículo sem pendências, e se a sessão cai depois dela (uma
-  caiu cerca de 3 minutos depois de abrir o Exportar, sem causa conhecida). O currículo vai da aba do Lattes à
-  extensão e dela ao editor, sem passar por servidor.
+- **Abrir do Lattes pela ponte.** Feito: na primeira abertura sem cópia de
+  trabalho, com a extensão ligada, o editor pede o ZIP do Exportar à aba do
+  Lattes e abre o currículo, sem download (`src/bridge/export.ts`,
+  `docs/lattes_internals.md`, seção 12). Com alteração pendente, o Exportar
+  recusa e a tela inicial pede o envio ao CNPq. Falta abrir a versão atual
+  pela página de conferência nesse caso, como em `docs/fluxos_de_uso.md`.
 - **Extensão pronta para a Chrome Web Store.** Feito: política de
   privacidade publicada, aviso e consentimento antes do primeiro uso, pacote
   sem a chave do manifest e imagens da loja. Falta, no painel do

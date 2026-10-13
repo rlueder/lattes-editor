@@ -4,6 +4,7 @@
 
 import type { OpResult } from './apply.ts';
 import type { EspelhoItem } from './espelho.ts';
+import type { ExportFailure } from './export.ts';
 import type { LattesStatus } from './lattes-status.ts';
 import type { BridgeOp } from './plan.ts';
 
@@ -17,6 +18,8 @@ export type EditorMessage =
   /** version e features: do app (src/bridge/compat.ts); versões antigas mandam só o tipo. */
   | { features?: string[]; type: 'ola'; version?: string }
   | { type: 'parar' }
+  /** Pede o ZIP do Exportar do currículo da sessão (Abrir do Lattes). */
+  | { type: 'pedir-curriculo' }
   /** Pede a versão atual do Lattes (página de conferência), só leitura. */
   | { type: 'pedir-espelho' };
 
@@ -31,6 +34,18 @@ export type BridgeMessage =
    * lido; lattesId diz de qual currículo é a sessão.
    */
   | { error?: string; items?: EspelhoItem[]; lattesId?: string; type: 'espelho' }
+  /**
+   * O ZIP do Exportar em base64, ou o motivo de não ter vindo; lattesId diz
+   * de qual currículo é a sessão.
+   */
+  | {
+      detail?: string;
+      fileName?: string;
+      lattesId?: string;
+      reason?: ExportFailure;
+      type: 'curriculo';
+      zip?: string;
+    }
   | { type: 'fim' }
   /** features: o que esta extensão sabe fazer (src/bridge/compat.ts); ausente nas versões de antes do aperto de mão com capacidades. */
   | { features?: string[]; type: 'ola'; version: string }

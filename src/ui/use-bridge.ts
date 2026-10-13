@@ -12,6 +12,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { OpResult } from '../bridge/apply.ts';
 import { BRIDGE_FEATURES } from '../bridge/compat.ts';
 import type { EspelhoItem } from '../bridge/espelho.ts';
+import type { ExportFailure } from '../bridge/export.ts';
 import { sameCv } from '../bridge/lattes-html.ts';
 import type { LattesStatus } from '../bridge/lattes-status.ts';
 import { INITIAL_LINK, type Link, nextLink } from '../bridge/link.ts';
@@ -108,6 +109,8 @@ export interface BridgeState {
   clearSent: () => Promise<void>;
   /** Quantas alterações foram gravadas e conferidas desde o último envio. */
   confirmed: number;
+  /** O ZIP do Exportar que a extensão trouxe do Lattes, ou o motivo de não ter vindo. */
+  curriculo?: CurriculoReading;
   /**
    * A versão atual do Lattes, lida da página de conferência a pedido do
    * diagnóstico: os itens, ou o motivo de não ter lido.
@@ -122,6 +125,8 @@ export interface BridgeState {
   link: Link;
   /** Alterações que a extensão sabe levar e as que ficam para copiar à mão. */
   plan: ReturnType<typeof planChanges>;
+  /** Pede o ZIP do Exportar à extensão (Abrir do Lattes); a resposta chega em curriculo. */
+  requestCv: () => void;
   /** Pede a versão atual do Lattes à extensão; a resposta chega em espelho. */
   requestEspelho: () => void;
   results: Record<string, OpResult>;
@@ -136,6 +141,16 @@ export interface BridgeState {
   /** O que a ponte gravou e conferiu no Lattes para este currículo, do mais recente. */
   sent: SentEntry[];
   stop: () => void;
+}
+
+export interface CurriculoReading {
+  /** Quando a resposta chegou (ms). */
+  at: number;
+  detail?: string;
+  fileName?: string;
+  reason?: ExportFailure;
+  /** O ZIP em base64. */
+  zip?: string;
 }
 
 export interface EspelhoReading {
@@ -172,6 +187,7 @@ export function useBridge(
   const [lattes, setLattes] = useState<LattesStatus | undefined>();
   const [espelho, setEspelho] = useState<EspelhoReading | undefined>();
   const [link, setLink] = useState<Link>(INITIAL_LINK);
+  const [curriculo, setCurriculo] = useState<CurriculoReading | undefined>();
 
   const reloadSent = useCallback(() => {
     if (!lattesId) {
@@ -232,6 +248,15 @@ export function useBridge(
       if (msg.type === 'estado-lattes' && lattesId && sameCv(lattesId, msg.lattesId)) {
         setLattes({ ...msg.status, readAt: Date.now() });
       }
+      if (msg.type === 'curriculo') {
+        setCurriculo({
+          at: Date.now(),
+          detail: msg.detail,
+          fileName: msg.fileName,
+          reason: msg.reason,
+          zip: msg.zip,
+        });
+      }
       if (msg.type === 'espelho') {
         // Itens de outro currículo nunca entram na comparação.
         const other = msg.items && !(lattesId && sameCv(lattesId, msg.lattesId));
@@ -286,10 +311,12 @@ export function useBridge(
       setSent([]);
     },
     confirmed,
+    curriculo,
     espelho,
     lattes,
     link,
     plan,
+    requestCv: () => post({ type: 'pedir-curriculo' }),
     requestEspelho: () => post({ type: 'pedir-espelho' }),
     results,
     running,

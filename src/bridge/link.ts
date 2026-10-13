@@ -19,6 +19,8 @@ export type LinkState =
   | { kind: 'outro-cv'; version: string };
 
 export interface Link {
+  /** O que a extensão disse saber fazer no último "ola" (src/bridge/compat.ts). */
+  features?: string[];
   /**
    * Comparação das capacidades (src/bridge/compat.ts): a extensão mais antiga
    * que o app, ou o contrário. Vale junto com qualquer estado da leitura.
@@ -47,6 +49,7 @@ export function nextLink(link: Link, msg: BridgeMessage, lattesId: string | unde
       // Um "ola" repetido (reconexão) não apaga uma leitura que já chegou.
       const { kind } = link.state;
       return {
+        features: msg.features ?? [],
         outdated,
         state:
           kind === 'lido' || kind === 'outro-cv'

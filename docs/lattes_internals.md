@@ -331,8 +331,7 @@ derrubar o primeiro. **Inferido.**
   do endereço.
 - O formulário de edição de uma atividade existente (`pkg_ativ.cargo` com
   `f_seq_funcao`, montado por JavaScript na grade da atuação).
-- A requisição do Exportar que devolve o ZIP, e se a sessão cai depois
-  dela. Só aparece com o currículo sem alterações pendentes (seção 10).
+- Se o POST do Exportar funciona sem o GET da tela antes (seção 12).
 
 ## 9. Vigia: saber quando o CNPq mudou algo
 
@@ -355,8 +354,10 @@ Duas vigias, uma para cada lado do login:
   formulário que ela grava (seção 5), o nome, o POST e os campos com tipo e
   limite. A verificação percorre os mesmos links que a gravação percorre, só
   com GET, lê um exemplar de cada formulário e compara. Roda sozinha ao abrir
-  o painel e quando o menu do Lattes carrega (a cada meia hora com tudo
-  certo, a cada minuto com problema, `shouldAutoVerify`), e o painel só a
+  o painel e quando o menu do Lattes carrega, três segundos depois, com uma
+  segunda tentativa cinco segundos depois se a leitura falhar (a primeira,
+  logo no carregamento, falhava em 13/10/2026). Repete a cada meia hora com
+  tudo certo e a cada minuto com problema (`shouldAutoVerify`), e o painel só a
   mostra quando há problema, com "Verificar de novo".
   A mesma verificação roda antes de cada fila; campo sumido, tipo trocado,
   formulário ou link que não existe mais e `f_ctr` fora de `U` param a fila
@@ -460,3 +461,27 @@ vem cada parte. Nada disso foi enviado a um Lattes real; o código está em
   o caminho é recarregar a exportação antes de alterar esse item pela ponte.
 - **Fora por enquanto**: Formação (o curso só entra pela busca de cursos,
   não mapeada), Projetos e Patentes (formulários de inclusão não lidos).
+
+## 12. Exportar pela ponte (LAT-22, 13/10/2026)
+
+Com o currículo sem pendências (publicado no mesmo dia), a exportação em
+XML são duas requisições, as mesmas que a tela faz. **Observado.**
+
+1. `GET pkg_impcv.get_arquivo?f_cod=<10 caracteres>` devolve a tela do
+   Exportar: o formulário `PKG_IMP` (POST para `PKG_IMPCV.get_arquivo`), com
+   o rádio `f_tpo_arq` (`1` RTF, marcado por padrão; `3` XML) e os ocultos
+   `f_cod` e `f_ctr`. O link "Confirmar" chama `check()`, que põe
+   `f_ctr = "G"` e envia o formulário; "Cancelar" usa `f_ctr = "V"`.
+2. `POST PKG_IMPCV.get_arquivo` com `f_tpo_arq=3`, `f_cod` e `f_ctr=G`
+   responde `200`, `application/zip`, `Content-Disposition: attachment;
+filename="CV_<16 dígitos>.zip"`, em menos de meio segundo. O ZIP tem uma
+   única entrada, `<16 dígitos>.xml`, comprimida com deflate. É o mesmo
+   arquivo do download pelo navegador.
+
+A sessão continuou de pé: o menu respondeu logo depois e cinco minutos
+depois do POST. **Observado** uma vez; a queda de 10/10/2026, cerca de três
+minutos depois de abrir o Exportar, segue sem causa conhecida.
+
+Se o POST sem o GET da tela antes também funciona não foi testado. A ponte
+faz os dois, e o GET ainda serve para reconhecer, sem `alert()`, a sessão
+caída e a pendência (seção 10). O caminho está em `src/bridge/export.ts`.

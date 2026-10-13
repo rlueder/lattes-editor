@@ -5,6 +5,7 @@
 import { applyOp, type LattesPort } from '../../src/bridge/apply.ts';
 import { checkContract } from '../../src/bridge/contract.ts';
 import { type EspelhoItem, isEspelhoPage, parseEspelho } from '../../src/bridge/espelho.ts';
+import { exportCv, type ExportPort, toBase64 } from '../../src/bridge/export.ts';
 import type { FormControl } from '../../src/bridge/form.ts';
 import { cvCodeFrom, isLogonPage, lattesIdFrom } from '../../src/bridge/lattes-html.ts';
 import { lattesStatusFrom } from '../../src/bridge/lattes-status.ts';
@@ -52,6 +53,36 @@ const port: LattesPort = {
   },
 };
 
+const exportPort: ExportPort = {
+  async get(path) {
+    const res = await fetch(new URL(path, location.href), { credentials: 'include' });
+    return { html: await text(res), url: res.url };
+  },
+  async postForBytes(path, body) {
+    const res = await fetch(new URL(path, location.href), {
+      body,
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      method: 'POST',
+    });
+    return {
+      bytes: new Uint8Array(await res.arrayBuffer()),
+      contentType: res.headers.get('content-type') ?? '',
+      disposition: res.headers.get('content-disposition') ?? '',
+      url: res.url,
+    };
+  },
+};
+
+/** O que volta ao service worker: o ZIP em base64 (a mensagem é JSON), ou o motivo. */
+interface ExportReply {
+  detail?: string;
+  fileName?: string;
+  lattesId?: string;
+  reason?: 'erro' | 'pendente' | 'sessao';
+  zip?: string;
+}
+
 (globalThis as unknown as { __ponte: unknown }).__ponte = {
   apply: (op: BridgeOp) => applyOp(op, port),
   // Só leitura: a página de conferência, com o que ainda não foi enviado ao
@@ -74,6 +105,19 @@ const port: LattesPort = {
       return { items: parseEspelho(html), lattesId };
     } catch {
       return { error: 'A aba do Lattes não respondeu.', lattesId };
+    }
+  },
+  // Abrir do Lattes: o mesmo ZIP do "Exportar" (src/bridge/export.ts), do
+  // currículo da sessão aberta nesta aba.
+  exportar: async (): Promise<ExportReply> => {
+    const menu = document.documentElement.outerHTML;
+    const lattesId = lattesIdFrom(menu);
+    try {
+      const r = await exportCv(exportPort, cvCodeFrom(menu), lattesId);
+      if (r.ok) return { fileName: r.fileName, lattesId, zip: toBase64(r.bytes) };
+      return { detail: r.detail, lattesId, reason: r.reason as ExportReply['reason'] };
+    } catch {
+      return { detail: 'A aba do Lattes não respondeu.', lattesId, reason: 'erro' };
     }
   },
   // Ao conectar, o menu que já está na aba. Depois de uma fila, um GET novo do
