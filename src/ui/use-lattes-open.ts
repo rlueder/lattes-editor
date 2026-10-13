@@ -55,10 +55,18 @@ export function useLattesOpen(
     if (active && available && !attempted.current) open();
   }, [active, available, open]);
 
+  // Um currículo aberto por outro caminho (arquivo escolhido ou solto) encerra
+  // o pedido: a resposta que chegar depois não substitui o que a pessoa abriu.
+  useEffect(() => {
+    if (active) return;
+    pending.current = undefined;
+    setState({ kind: 'parado' });
+  }, [active]);
+
   // A resposta do pedido em aberto; uma atrasada, de um pedido anterior, não conta.
   const reply = bridge.curriculo;
   useEffect(() => {
-    if (!reply || !pending.current || reply.id !== pending.current) return;
+    if (!active || !reply || !pending.current || reply.id !== pending.current) return;
     pending.current = undefined;
     if (reply.zip) {
       setState({ kind: 'parado' });
@@ -73,7 +81,7 @@ export function useLattesOpen(
       readingAtFailure.current = linkState.current;
       setState({ detail: reply.detail, kind: 'falhou', reason: reply.reason ?? 'erro' });
     }
-  }, [reply]);
+  }, [active, reply]);
 
   // Sem resposta, não fica "abrindo" para sempre.
   useEffect(() => {
