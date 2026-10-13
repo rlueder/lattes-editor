@@ -5,6 +5,7 @@
 
 import { type Change, resolvePath } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
+import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
 
 /** Valor de campo; null tira o campo do envio (caixa desmarcada). */
 export type FieldValues = Record<string, string | null>;
@@ -39,7 +40,7 @@ export interface IdiomaOp extends OpBase {
   kind: 'idioma';
 }
 
-export type BridgeOp = IdiomaOp | ResumoOp | VinculoOp;
+export type BridgeOp = CreateAtuacaoOp | IdiomaOp | ResumoOp | VinculoOp;
 
 export interface Unsupported {
   key: string;
@@ -140,7 +141,17 @@ export function planChange(
   change: Change,
   chain: XElement[],
   label: string,
+  { createItems = CREATE_ITEMS_ENABLED }: { createItems?: boolean } = {},
 ): BridgeOp | Unsupported {
+  // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.
+  if (change.kind === 'novo' && createItems && change.element === 'ATUACAO-PROFISSIONAL') {
+    const el = chain.at(-1);
+    if (!el || el.name !== change.element) {
+      return unsupported(change, label, 'O item não existe mais na cópia de trabalho');
+    }
+    const planned = planCreateAtuacao(change, el, label);
+    return 'reason' in planned ? unsupported(change, label, planned.reason) : planned;
+  }
   if (change.kind !== 'alterado') {
     return unsupported(change, label, 'Incluir ou excluir pela ponte: não suportado ainda');
   }
@@ -214,12 +225,13 @@ export function isOp(p: BridgeOp | Unsupported): p is BridgeOp {
 export function planChanges(
   entries: { change: Change; itemTitle: string }[],
   root: XElement,
+  options: { createItems?: boolean } = {},
 ): { ops: BridgeOp[]; unsupported: Unsupported[] } {
   const ops: BridgeOp[] = [];
   const skipped: Unsupported[] = [];
   for (const { change, itemTitle } of entries) {
     const label = itemTitle ? `${change.form} · ${itemTitle}` : change.form;
-    const planned = planChange(change, resolvePath(root, change.path), label);
+    const planned = planChange(change, resolvePath(root, change.path), label, options);
     if (isOp(planned)) ops.push(planned);
     else skipped.push(planned);
   }

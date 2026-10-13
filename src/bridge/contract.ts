@@ -8,6 +8,7 @@
 // relatório pode ser colado numa issue pública sem expor o currículo.
 
 import type { LattesPort } from './apply.ts';
+import { CREATE_ATUACAO_SPEC, CREATE_ITEMS_ENABLED } from './create.ts';
 import type { FormControl } from './form.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
 import type { BridgeOp } from './plan.ts';
@@ -23,12 +24,16 @@ export interface FormSpec {
   /** Procedimento do POST. */
   action: string;
   fields: Record<string, FieldSpec>;
+  /** Valor de f_ctr esperado: U na alteração (padrão), I na inclusão. */
+  mode?: string;
   /** Atributo name do <form>. */
   name: string;
 }
 
 export interface Contract {
-  forms: Record<BridgeOp['kind'], FormSpec>;
+  /** A inclusão só entra com CREATE_ITEMS_ENABLED (create.ts). */
+  forms: Omit<Record<BridgeOp['kind'], FormSpec>, 'criar-atuacao'> &
+    Partial<Record<'criar-atuacao', FormSpec>>;
   /** Procedimentos que precisam estar linkados no menu do currículo. */
   menu: string[];
 }
@@ -48,6 +53,7 @@ const radio: FieldSpec = { type: 'radio' };
  */
 export const LATTES_CONTRACT: Contract = {
   forms: {
+    ...(CREATE_ITEMS_ENABLED ? { 'criar-atuacao': CREATE_ATUACAO_SPEC } : {}),
     idioma: {
       action: 'PKG_IDIOMA.FORM',
       fields: {
@@ -245,9 +251,10 @@ async function checkForm(
   const drifts = compareForm(spec.name, spec.fields, fingerprint(controls));
   // A ponte só grava em modo de alteração; o valor de controle não é pessoal.
   const ctr = controls.find((c) => c.name === 'f_ctr')?.value;
-  if (ctr !== undefined && ctr !== 'U') {
+  const mode = spec.mode ?? 'U';
+  if (ctr !== undefined && ctr !== mode) {
     drifts.push({
-      expected: 'U',
+      expected: mode,
       field: 'f_ctr',
       form: spec.name,
       kind: 'modo-mudou',
@@ -282,6 +289,15 @@ async function locateAndCheck(
   if (kind === 'resumo') {
     const link = findLinks(menu, 'pkg_resume.')[0];
     return link ? checkForm(port, kind, spec, link.path) : noLink(kind, spec.name, 'pkg_resume.');
+  }
+  if (kind === 'criar-atuacao') {
+    // O formulário de inclusão abre vazio: não precisa de amostra.
+    const lista = findLinks(menu, 'pkg_ativ.lista')[0];
+    if (!lista) return noLink(kind, spec.name, 'pkg_ativ.lista');
+    const inclui = findLinks(await getChecked(port, lista.path), 'pkg_ativ.inclui')[0];
+    return inclui
+      ? checkForm(port, kind, spec, inclui.path)
+      : noLink(kind, spec.name, 'pkg_ativ.inclui');
   }
   if (kind === 'idioma') {
     const lista = findLinks(menu, 'pkg_idioma.lista')[0];

@@ -5,6 +5,7 @@
 // Roda dentro da aba do Lattes (sessão do próprio usuário) ou num teste, com
 // um Lattes falso: o acesso à rede e ao DOM entra pela porta (LattesPort).
 
+import { applyCreateAtuacao } from './create.ts';
 import {
   encodeLatin1Form,
   type FormControl,
@@ -31,12 +32,16 @@ export interface LattesPort {
 export type ResultStatus = 'conferido' | 'divergente' | 'erro' | 'sessao';
 
 export interface OpResult {
+  /** Números que o Lattes deu a um item criado (SEQUENCIA-ATIVIDADE…). */
+  assigned?: Record<string, string>;
   detail: string;
   key: string;
   status: ResultStatus;
 }
 
-const FORMS: Record<BridgeOp['kind'], { action: string; name: string }> = {
+type EditOp = Exclude<BridgeOp, { kind: 'criar-atuacao' }>;
+
+const FORMS: Record<EditOp['kind'], { action: string; name: string }> = {
   idioma: { action: 'PKG_IDIOMA.FORM', name: 'GN_IDIOMA' },
   resumo: { action: 'PKG_RESUME.FORM', name: 'RES' },
   vinculo: { action: 'PKG_ATIV.VINCULOS', name: 'GN_ATIV_VINC' },
@@ -71,7 +76,7 @@ export function sameInstitution(
 }
 
 /** Caminho do formulário da operação, seguindo os links do próprio Lattes. */
-async function locate(op: BridgeOp, port: LattesPort, menu: string): Promise<string> {
+async function locate(op: EditOp, port: LattesPort, menu: string): Promise<string> {
   if (op.kind === 'resumo') {
     // Inferido: o único procedimento pkg_resume linkado no menu abre o resumo.
     const link = findLinks(menu, 'pkg_resume.')[0];
@@ -147,6 +152,7 @@ function changedNames(a: Pairs, b: Pairs): string[] {
 }
 
 export async function applyOp(op: BridgeOp, port: LattesPort): Promise<OpResult> {
+  if (op.kind === 'criar-atuacao') return applyCreateAtuacao(op, port);
   const result = (status: ResultStatus, detail: string): OpResult => ({
     detail,
     key: op.key,
