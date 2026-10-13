@@ -428,8 +428,12 @@ describe('ponte: plano', () => {
       setAttr(find(r, 'RESUMO-CV'), 'TEXTO-RESUMO-CV-RH', 'x'),
     );
     const change = changes[0]!;
-    expect(planChange({ ...change, kind: 'novo' }, [], 'L')).toMatchObject({ reason: /Incluir/ });
-    expect(planChange(change, [], 'L')).toMatchObject({ reason: /não existe mais/ });
+    expect(planChange({ ...change, kind: 'novo' }, [], 'L')).toMatchObject({
+      reason: expect.stringMatching(/Incluir/),
+    });
+    expect(planChange(change, [], 'L')).toMatchObject({
+      reason: expect.stringMatching(/não existe mais/),
+    });
     expect(planChange(change, resolvePath(working, change.path), 'L')).toMatchObject({
       kind: 'resumo',
     });
@@ -464,7 +468,7 @@ describe('ponte: aplicar no Lattes (falso)', () => {
     fake.vinculo.f_ano_ini = '2009';
     const op = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'x'));
     expect(await applyOp(op, fake.port)).toMatchObject({
-      detail: /f_ano_ini/,
+      detail: expect.stringMatching(/f_ano_ini/),
       status: 'divergente',
     });
     expect(fake.posts).toHaveLength(0);
@@ -473,16 +477,25 @@ describe('ponte: aplicar no Lattes (falso)', () => {
   it('recusa valor acima do limite do campo', async () => {
     const fake = fakeLattes();
     const op = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'a'.repeat(2001)));
-    expect(await applyOp(op, fake.port)).toMatchObject({ detail: /limite/, status: 'erro' });
+    expect(await applyOp(op, fake.port)).toMatchObject({
+      detail: expect.stringMatching(/limite/),
+      status: 'erro',
+    });
     expect(fake.posts).toHaveLength(0);
   });
 
   it('acusa campo não gravado e efeito colateral', async () => {
     const op = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'x'));
     const dropped = fakeLattes({ dropField: 'f_outras_inf_en' });
-    expect(await applyOp(op, dropped.port)).toMatchObject({ detail: /não gravou/, status: 'erro' });
+    expect(await applyOp(op, dropped.port)).toMatchObject({
+      detail: expect.stringMatching(/não gravou/),
+      status: 'erro',
+    });
     const side = fakeLattes({ sideEffect: ['f_carga', '20'] });
-    expect(await applyOp(op, side.port)).toMatchObject({ detail: /f_carga/, status: 'erro' });
+    expect(await applyOp(op, side.port)).toMatchObject({
+      detail: expect.stringMatching(/f_carga/),
+      status: 'erro',
+    });
   });
 
   it('para quando a sessão cai, em qualquer passo', async () => {
@@ -497,15 +510,18 @@ describe('ponte: aplicar no Lattes (falso)', () => {
     const op = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'x'));
     const fake = fakeLattes();
     expect(await applyOp({ ...op, seqAtiv: '9' } as BridgeOp, fake.port)).toMatchObject({
-      detail: /Atuação 9/,
+      detail: expect.stringMatching(/Atuação 9/),
       status: 'erro',
     });
     expect(await applyOp({ ...op, seqHist: '7' } as BridgeOp, fake.port)).toMatchObject({
-      detail: /Vínculo 7/,
+      detail: expect.stringMatching(/Vínculo 7/),
       status: 'erro',
     });
     const empty = { ...fake.port, menuHtml: () => '' };
-    expect(await applyOp(op, empty)).toMatchObject({ detail: /menu/, status: 'erro' });
+    expect(await applyOp(op, empty)).toMatchObject({
+      detail: expect.stringMatching(/menu/),
+      status: 'erro',
+    });
     const resumo: BridgeOp = {
       expect: {},
       key: 'r',
@@ -513,7 +529,10 @@ describe('ponte: aplicar no Lattes (falso)', () => {
       label: 'R',
       set: { F_TEXTO: 'n' },
     };
-    expect(await applyOp(resumo, empty)).toMatchObject({ detail: /Resumo/, status: 'erro' });
+    expect(await applyOp(resumo, empty)).toMatchObject({
+      detail: expect.stringMatching(/Resumo/),
+      status: 'erro',
+    });
   });
 
   it('acusa formulário ausente, fora do modo de alteração e falha da rede', async () => {
@@ -530,14 +549,14 @@ describe('ponte: aplicar no Lattes (falso)', () => {
 
     const noForm = { ...fake.port, readForm: () => undefined };
     expect(await applyOp(resumo, noForm)).toMatchObject({
-      detail: /RES não encontrado/,
+      detail: expect.stringMatching(/RES não encontrado/),
       status: 'erro',
     });
 
     const other = fakeLattes();
     other.resumo.f_ctr = 'I';
     expect(await applyOp({ ...resumo, expect: {} }, other.port)).toMatchObject({
-      detail: /alteração/,
+      detail: expect.stringMatching(/alteração/),
       status: 'erro',
     });
 
@@ -603,7 +622,9 @@ describe('ponte: idioma', () => {
     );
     const chain = resolvePath(working, changes[0]!.path);
     setAttr(chain.at(-1)!, 'IDIOMA', '');
-    expect(planChange(changes[0]!, chain, 'L')).toMatchObject({ reason: /sem código/ });
+    expect(planChange(changes[0]!, chain, 'L')).toMatchObject({
+      reason: expect.stringMatching(/sem código/),
+    });
   });
 
   it('acha o idioma pelo código, grava e confere', async () => {
@@ -623,14 +644,17 @@ describe('ponte: idioma', () => {
     const op = ops[0]!;
     const fake = fakeLattes();
     expect(await applyOp({ ...op, code: 'FR' } as BridgeOp, fake.port)).toMatchObject({
-      detail: /Idioma FR não encontrado/,
+      detail: expect.stringMatching(/Idioma FR não encontrado/),
       status: 'erro',
     });
     fake.idiomas['1']!.F_ESCREVE = 'R';
     expect(await applyOp(op, fake.port)).toMatchObject({ status: 'divergente' });
     expect(fake.posts).toHaveLength(0);
     const empty = { ...fake.port, menuHtml: () => '' };
-    expect(await applyOp(op, empty)).toMatchObject({ detail: /Idiomas/, status: 'erro' });
+    expect(await applyOp(op, empty)).toMatchObject({
+      detail: expect.stringMatching(/Idiomas/),
+      status: 'erro',
+    });
   });
 });
 

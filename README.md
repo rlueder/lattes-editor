@@ -121,6 +121,11 @@ O que a extensão lê e envia está na
 Para gerar as imagens da página na Chrome Web Store: `pnpm build:extension`,
 `pnpm dev` e `pnpm capture:store` (saem em `docs/img/loja/`).
 
+A ponte altera itens que já existem no Lattes. Criar itens novos por ela
+(uma atuação com um vínculo, por enquanto) está escrito e testado contra um
+Lattes simulado, mas desligado até um teste acompanhado no Lattes real
+(`docs/lattes_internals.md`, seção 11).
+
 O que a ponte grava fica pendente no Lattes até você clicar em "Enviar ao
 CNPq", e o Lattes não mostra nem descarta essas pendências. Por isso o app
 guarda, no próprio computador, o registro do que foi gravado e conferido:

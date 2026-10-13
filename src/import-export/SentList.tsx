@@ -59,9 +59,11 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
                         title={
                           wasUndone
                             ? 'Já desfeito'
-                            : bridge.available
-                              ? undefined
-                              : 'Precisa da extensão e do Lattes aberto'
+                            : entry.op.kind === 'criar-atuacao'
+                              ? 'Item criado pela ponte: para tirar, exclua no Lattes, à mão'
+                              : bridge.available
+                                ? undefined
+                                : 'Precisa da extensão e do Lattes aberto'
                         }
                         type="button"
                         onClick={() => setUndoing(entry)}

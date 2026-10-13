@@ -36,10 +36,12 @@ arquivo quando muda de fato; o detalhe técnico está em
   o caminho do botão. A faixa de estados do cabeçalho (LAT-40) mostra
   original, alterações, o que está no Lattes sem publicar e a data da última
   publicação, lida do menu do Lattes pela extensão.
-- **Criar itens pela ponte.** O Lattes inclui com `f_ctr=I` (visto no
-  formulário de atividade nova). Mapeada a inclusão, Formação, Atuação,
-  Projetos e Patentes, que o Importar não aceita, ganham "Novo item" no
-  editor, enviado pela extensão.
+- **Criar itens pela ponte (LAT-24).** Escrita e testada contra o Lattes
+  falso a inclusão de uma atuação profissional com um vínculo
+  (`src/bridge/create.ts`), mas desligada (`CREATE_ITEMS_ENABLED`) até um
+  teste acompanhado no Lattes real: a resposta do POST de inclusão e alguns
+  valores da busca de instituição são inferidos. Falta mapear a busca de
+  cursos (Formação) e os formulários de Projetos e Patentes.
 - **Abrir do Lattes pela ponte.** Com a extensão instalada e uma sessão
   aberta no Lattes, o editor pede a exportação e carrega o currículo sem o
   usuário baixar e soltar o `CV_<id>.zip`. A extensão já tem permissão em

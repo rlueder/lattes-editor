@@ -423,3 +423,37 @@ de produção" e o aviso "Este arquivo não foi gerado a partir do Currículo
 Lattes validado e disponível publicamente". **Observado** pelo texto da
 página; as tags que formam essas linhas são **inferidas**. O diagnóstico do
 editor lê essa página (`src/bridge/espelho.ts`).
+
+## 11. Inclusão (LAT-24, 13/10/2026)
+
+O que a ponte usaria para criar uma atuação profissional nova, e de onde
+vem cada parte. Nada disso foi enviado a um Lattes real; o código está em
+`src/bridge/create.ts`, desligado.
+
+- **Observado** (reconhecimento de 10/10/2026, seção 4.1 e 4.3): o
+  formulário `GN_ATIV`, aberto por `PKG_ATIV.inclui` a partir da lista de
+  atuações, com `f_ctr=I` e POST para `PKG_ATIV.INCLUI`; os campos e
+  limites da tabela da seção 4.1; a busca de instituição por POST para
+  `PRC_INST_FORM`, cuja resposta traz `seleciona('<código>','<nome>')`; e a
+  regra de que o código vai em `f_cod_inst` quando começa com V e em
+  `f_cod_inst2` nos outros casos.
+- **Inferido**: os valores de `F_COD` (o `f_cod` do formulário) e
+  `F_NIVEL` (vazio) na busca feita fora do seletor; o texto de `f_vinc` para
+  cada `TIPO-DE-VINCULO` (dos rótulos do combo; com
+  `OUTRO-VINCULO-INFORMADO`, vale o texto livre); `f_vinculo` igual a
+  `f_vinc`, como o `check()` faz na alteração; a resposta do POST de
+  inclusão; e que a atuação nova aparece na lista com um `f_seq_ativ` novo,
+  que a ponte lê de volta e devolve como `SEQUENCIA-ATIVIDADE`.
+- **Travas**: recusa se a lista já tem atuação na mesma instituição (seria
+  duplicata), exige exatamente um resultado da busca com o código do XML,
+  confere os limites, e depois do envio exige exatamente uma atuação nova
+  dessa instituição, com o vínculo lido de volta igual ao enviado.
+- **Desfazer**: excluir pela ponte não está mapeado para a atuação (o
+  `f_ctr=E` só apareceu no código da Formação). Um item criado fica no
+  registro do enviado sem "Desfazer no Lattes", com a orientação de excluir
+  à mão.
+- **Número do item**: a cópia de trabalho guarda o número que o editor deu.
+  Até a ponte reconciliar com o `SEQUENCIA-ATIVIDADE` que o Lattes devolve,
+  o caminho é recarregar a exportação antes de alterar esse item pela ponte.
+- **Fora por enquanto**: Formação (o curso só entra pela busca de cursos,
+  não mapeada), Projetos e Patentes (formulários de inclusão não lidos).

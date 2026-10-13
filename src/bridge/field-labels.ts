@@ -20,6 +20,7 @@ export const FIELD_LABELS: Record<string, string> = {
   f_stavinc: 'Vínculo empregatício',
   F_TEXTO: 'Resumo',
   F_TEXTO_EN: 'Resumo (inglês)',
+  f_vinc: 'Tipo de vínculo',
 };
 
 export function fieldLabel(name: string): string {
@@ -49,12 +50,15 @@ export function opRows(op: {
   expect: Record<string, string | null>;
   set: Record<string, string | null>;
 }): { after: string; before: string; label: string; name: string }[] {
-  return Object.entries(op.set)
-    .filter(([name]) => !name.startsWith('FC_'))
-    .map(([name, value]) => ({
-      after: valueLabel(name, value),
-      before: valueLabel(name, op.expect[name]),
-      label: fieldLabel(name),
-      name,
-    }));
+  return (
+    Object.entries(op.set)
+      // As caixas FC_* acompanham o nível; f_vinculo repete f_vinc.
+      .filter(([name]) => !name.startsWith('FC_') && name !== 'f_vinculo')
+      .map(([name, value]) => ({
+        after: valueLabel(name, value),
+        before: valueLabel(name, op.expect[name]),
+        label: fieldLabel(name),
+        name,
+      }))
+  );
 }

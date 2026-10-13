@@ -161,7 +161,10 @@ export function useBridge(
   }, [lattesId]);
   useEffect(reloadSent, [reloadSent]);
 
-  /** Só o que voltou conferido entra no registro; falhas não gravaram nada. */
+  /**
+   * Entra no registro o que voltou conferido e o que foi criado no Lattes
+   * mesmo com problema na conferência; as outras falhas não gravaram nada.
+   */
   const recordConfirmed = useCallback(
     (key: string) => {
       const item = outgoing.current.get(key);
@@ -190,6 +193,10 @@ export function useBridge(
           setConfirmed((n) => n + 1);
           recordRef.current(msg.result.key);
           confirmedRef.current(msg.result.key);
+        } else if (msg.result.assigned) {
+          // Criado no Lattes, mas a conferência achou problema: entra no
+          // registro (o item existe lá), e a alteração continua no editor.
+          recordRef.current(msg.result.key);
         }
       }
       if (msg.type === 'fim') setRunning(false);
