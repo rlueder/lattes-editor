@@ -288,42 +288,54 @@ export async function applyCreateAtuacao(
       encodeLatin1Form(setPairs(form.pairs, set)),
     );
     if (isLogonPage(response)) return result('sessao', 'A sessão do Lattes caiu; entre de novo');
-
-    const after = atuacoes(await getChecked(port, lista.path));
-    const known = new Set(atuacoes(before).map((a) => a.seqAtiv));
-    const created = after.filter(
-      (a) => !known.has(a.seqAtiv) && sameCode(a.codInst, op.institutionCode),
-    );
-    if (created.length !== 1) {
-      return result('erro', `O Lattes não mostra a atuação nova (${created.length} achadas)`);
-    }
-    const gridHtml = await getChecked(port, created[0]!.path);
-    const vinculo = findLinks(gridHtml, 'pkg_ativ.vinculos').find((l) => l.params.f_seq_hist);
-    // Daqui em diante a atuação existe no Lattes: todo resultado leva a
-    // sequência que ela recebeu, para o registro do enviado saber dela.
-    const seqAtiv = created[0]!.seqAtiv;
-    const assigned = { 'SEQUENCIA-ATIVIDADE': seqAtiv };
-    if (!vinculo) {
+    // Depois do POST aceito, a atuação pode existir no Lattes mesmo quando a
+    // conferência não acha uma só: o aviso diz isso, para ninguém mandar de
+    // novo e criar duplicata.
+    const maybe = (why: string) =>
+      result(
+        'divergente',
+        `O Lattes aceitou o envio, mas ${why}. A atuação pode ter sido criada: confira no Lattes antes de mandar de novo.`,
+      );
+    try {
+      const after = atuacoes(await getChecked(port, lista.path));
+      const known = new Set(atuacoes(before).map((a) => a.seqAtiv));
+      const created = after.filter(
+        (a) => !known.has(a.seqAtiv) && sameCode(a.codInst, op.institutionCode),
+      );
+      if (created.length !== 1) {
+        return maybe(`a lista mostra ${created.length} atuações novas (${created.length} achadas)`);
+      }
+      const gridHtml = await getChecked(port, created[0]!.path);
+      const vinculo = findLinks(gridHtml, 'pkg_ativ.vinculos').find((l) => l.params.f_seq_hist);
+      // Daqui em diante a atuação existe no Lattes: todo resultado leva a
+      // sequência que ela recebeu, para o registro do enviado saber dela.
+      const seqAtiv = created[0]!.seqAtiv;
+      const assigned = { 'SEQUENCIA-ATIVIDADE': seqAtiv };
+      if (!vinculo) {
+        return {
+          ...result('divergente', `Criada no Lattes (atuação ${seqAtiv}), mas sem o vínculo`),
+          assigned,
+        };
+      }
+      const saved = readPairs(port, await getChecked(port, vinculo.path), 'GN_ATIV_VINC').pairs;
+      const wrong = READ_BACK.filter((f) => (pairValue(saved, f) ?? '') !== (set[f] ?? ''));
+      if (wrong.length > 0) {
+        return {
+          ...result(
+            'divergente',
+            `Criada no Lattes (atuação ${seqAtiv}), mas gravada diferente: ${wrong.join(', ')}`,
+          ),
+          assigned,
+        };
+      }
       return {
-        ...result('divergente', `Criada no Lattes (atuação ${seqAtiv}), mas sem o vínculo`),
+        ...result('conferido', `Criado e conferido no Lattes (atuação ${seqAtiv})`),
         assigned,
       };
+    } catch (err) {
+      const why = err instanceof Error ? err.message : 'falha inesperada';
+      return maybe(`a conferência falhou (${why})`);
     }
-    const saved = readPairs(port, await getChecked(port, vinculo.path), 'GN_ATIV_VINC').pairs;
-    const wrong = READ_BACK.filter((f) => (pairValue(saved, f) ?? '') !== (set[f] ?? ''));
-    if (wrong.length > 0) {
-      return {
-        ...result(
-          'divergente',
-          `Criada no Lattes (atuação ${seqAtiv}), mas gravada diferente: ${wrong.join(', ')}`,
-        ),
-        assigned,
-      };
-    }
-    return {
-      ...result('conferido', `Criado e conferido no Lattes (atuação ${seqAtiv})`),
-      assigned,
-    };
   } catch (err) {
     if (err instanceof Stop) return result(err.status, err.message);
     return result('erro', err instanceof Error ? err.message : 'Falha inesperada');

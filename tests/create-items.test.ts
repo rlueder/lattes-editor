@@ -230,36 +230,40 @@ describe('incluir a atuação no Lattes falso', () => {
 
   it('para antes de enviar quando algo não confere', async () => {
     expect(await applyCreateAtuacao(op(), fakeLattes({ already: true }).port)).toMatchObject({
-      detail: /já tem uma atuação/,
+      detail: expect.stringMatching(/já tem uma atuação/),
       status: 'divergente',
     });
     expect(await applyCreateAtuacao(op(), fakeLattes({ ctr: 'U' }).port)).toMatchObject({
-      detail: /modo de inclusão/,
+      detail: expect.stringMatching(/modo de inclusão/),
       status: 'erro',
     });
     const none = fakeLattes({ results: '<p>Nenhuma</p>' });
     expect(await applyCreateAtuacao(op(), none.port)).toMatchObject({
-      detail: /0 resultados/,
+      detail: expect.stringMatching(/0 resultados/),
       status: 'erro',
     });
     expect(none.posts).toEqual(['PRC_INST_FORM']);
     const long = { ...op(), set: { ...op().set, f_carga: '4000' } };
     expect(await applyCreateAtuacao(long, fakeLattes().port)).toMatchObject({
-      detail: /f_carga passa do limite/,
+      detail: expect.stringMatching(/f_carga passa do limite/),
     });
   });
 
   it('depois do envio, confere que existe uma atuação nova e que o vínculo bate', async () => {
+    // Depois do POST aceito, o que não confere avisa que a atuação pode existir.
     expect(await applyCreateAtuacao(op(), fakeLattes({ created: 0 }).port)).toMatchObject({
-      detail: /0 achadas/,
-      status: 'erro',
+      detail: expect.stringMatching(/0 atuações novas.*pode ter sido criada/),
+      status: 'divergente',
     });
     expect(await applyCreateAtuacao(op(), fakeLattes({ created: 2 }).port)).toMatchObject({
-      detail: /2 achadas/,
+      detail: expect.stringMatching(/2 atuações novas.*pode ter sido criada/),
+      status: 'divergente',
     });
     expect(await applyCreateAtuacao(op(), fakeLattes({ savedDifferent: true }).port)).toMatchObject(
       {
-        detail: /gravou diferente: f_ano_ini/,
+        assigned: { 'SEQUENCIA-ATIVIDADE': '7' },
+        detail: expect.stringMatching(/gravada diferente: f_ano_ini/),
+        status: 'divergente',
       },
     );
     expect(await applyCreateAtuacao(op(), fakeLattes({ logonOnPost: true }).port)).toMatchObject({
@@ -271,9 +275,11 @@ describe('incluir a atuação no Lattes falso', () => {
     const fake = fakeLattes();
     expect(
       await applyCreateAtuacao(op(), { ...fake.port, menuHtml: () => '<p>menu</p>' }),
-    ).toMatchObject({ detail: /não encontrada no menu/, status: 'erro' });
+    ).toMatchObject({ detail: expect.stringMatching(/não encontrada no menu/), status: 'erro' });
     const noLink = { ...fake.port, get: async () => '<p>lista vazia</p>' };
-    expect(await applyCreateAtuacao(op(), noLink)).toMatchObject({ detail: /Inclusão de atuação/ });
+    expect(await applyCreateAtuacao(op(), noLink)).toMatchObject({
+      detail: expect.stringMatching(/Inclusão de atuação/),
+    });
     expect(fake.posts).toEqual([]);
   });
 
