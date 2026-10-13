@@ -8,13 +8,13 @@ arquivo quando muda de fato; o detalhe técnico está em
 ## Agora
 
 - **Travas de segurança da escrita no Lattes.** Protegem o currículo de quem
-  usa a ponte. Situação de cada uma:
+  usa o conector. Situação de cada uma:
   - cópia local do XML antes de enviar: existe (ligada por padrão na
     confirmação, baixa o currículo como ele veio do Lattes);
   - diferença antes de enviar: existe, no painel da extensão e na
     confirmação da fila inteira no editor (valor antigo e novo de cada
     campo);
-  - mesmo currículo: existe (a ponte recusa enviar se a sessão do Lattes é
+  - mesmo currículo: existe (o conector recusa enviar se a sessão do Lattes é
     de outro currículo);
   - ler de volta depois de cada gravação: existe;
   - registro do que foi gravado, com desfazer: existe ("Enviado ao Lattes",
@@ -26,7 +26,7 @@ arquivo quando muda de fato; o detalhe técnico está em
     extensão, que só aparece no painel com problema, e antes de cada fila, mais o vigia semanal do que é público, em
     `docs/lattes_internals.md`, seção 9). Conferido num Lattes real em
     12/10/2026: o contrato bateu de primeira.
-- **Ponte com o Lattes, além do vínculo, do resumo e dos idiomas.**
+- **Conector, além do vínculo, do resumo e dos idiomas.**
   Formação, endereço e identificação já têm o formulário mapeado em
   `docs/lattes_internals.md`; falta escrever a operação de cada um e testar
   com restauração, como foi feito com o vínculo. O idioma tem a operação
@@ -36,13 +36,13 @@ arquivo quando muda de fato; o detalhe técnico está em
   o caminho do botão. A faixa de estados do cabeçalho (LAT-40) mostra
   original, alterações, o que está no Lattes sem publicar e a data da última
   publicação, lida do menu do Lattes pela extensão.
-- **Criar itens pela ponte (LAT-24).** Escrita e testada contra o Lattes
+- **Criar itens pelo conector (LAT-24).** Escrita e testada contra o Lattes
   falso a inclusão de uma atuação profissional com um vínculo
   (`src/bridge/create.ts`), mas desligada (`CREATE_ITEMS_ENABLED`) até um
   teste acompanhado no Lattes real: a resposta do POST de inclusão e alguns
   valores da busca de instituição são inferidos. Falta mapear a busca de
   cursos (Formação) e os formulários de Projetos e Patentes.
-- **Abrir do Lattes pela ponte.** Feito: na primeira abertura sem cópia de
+- **Abrir do Lattes pelo conector.** Feito: na primeira abertura sem cópia de
   trabalho, com a extensão ligada, o editor pede o ZIP do Exportar à aba do
   Lattes e abre o currículo, sem download (`src/bridge/export.ts`,
   `docs/lattes_internals.md`, seção 12). Com alteração pendente, o Exportar
@@ -93,9 +93,9 @@ arquivo quando muda de fato; o detalhe técnico está em
 - **App de desktop** com Tauri para macOS, Windows e Linux. Feito: diálogos
   nativos de abrir e salvar, builds dos três sistemas na CI com os
   instaladores na página do lançamento, e a ligação com a extensão por
-  mensagens nativas (o app é o host; ver `src-tauri/src/ponte.rs`). Assinado e
+  mensagens nativas (o app é o host; ver `src-tauri/src/conector.rs`). Assinado e
   notarizado no macOS. Falta assinar no Windows, atualizar sozinho e
-  testar a ponte no Windows e no Linux.
+  testar o conector no Windows e no Linux.
 
 ## Em estudo
 

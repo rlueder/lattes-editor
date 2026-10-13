@@ -1,9 +1,9 @@
-// Service worker da ponte: guarda a fila que o editor mandou, roda cada
+// Service worker do conector: guarda a fila que o editor mandou, roda cada
 // operação na aba do Lattes (uma por vez, conferindo) e devolve o resultado
 // ao editor. O envio só começa por um clique no painel da extensão.
 //
 // O editor é o app de desktop, alcançado por mensagens nativas (o host é o
-// próprio app, ver src-tauri/src/ponte.rs). Em desenvolvimento, o editor
+// próprio app, ver src-tauri/src/conector.rs). Em desenvolvimento, o editor
 // também roda numa aba em localhost e fala pelo script de conteúdo.
 
 import type { OpResult } from '../../src/bridge/apply.ts';
@@ -45,8 +45,8 @@ import {
   type ToolbarTheme,
 } from './toolbar-icon.ts';
 
-/** Nome do host nativo registrado pelo app (ponte::HOST_NAME). */
-const NATIVE_HOST = 'lattes_editor.ponte';
+/** Nome do host nativo registrado pelo app (conector::HOST_NAME). */
+const NATIVE_HOST = 'lattes_editor.conector';
 
 let stopRequested = false;
 /**
@@ -111,8 +111,8 @@ async function sessionIdentity(tabId: number, fresh = false): Promise<Identity> 
     args: [fresh],
     func: (f: boolean) =>
       (
-        globalThis as unknown as { __ponte: { identity(fresh: boolean): Promise<Identity> } }
-      ).__ponte.identity(f),
+        globalThis as unknown as { __conector: { identity(fresh: boolean): Promise<Identity> } }
+      ).__conector.identity(f),
     target: { tabId },
   });
   return res?.result ?? {};
@@ -207,15 +207,15 @@ const failedReport = (detail: string): ContractReport => ({
   status: 'erro',
 });
 
-/** Confere o Lattes contra o contrato da ponte, só lendo, na aba do menu. */
+/** Confere o Lattes contra o contrato do conector, só lendo, na aba do menu. */
 async function verifyOn(tabId: number): Promise<ContractReport> {
   try {
     await injectRunner(tabId);
     const [res] = await chrome.scripting.executeScript({
       func: () =>
         (
-          globalThis as unknown as { __ponte: { verificar(): Promise<ContractReport> } }
-        ).__ponte.verificar(),
+          globalThis as unknown as { __conector: { verificar(): Promise<ContractReport> } }
+        ).__conector.verificar(),
       target: { tabId },
     });
     return res?.result ?? failedReport('A aba do Lattes não respondeu');
@@ -331,7 +331,7 @@ async function run(keys?: string[]): Promise<void> {
       }
       queue.length = 0;
     }
-    // Trava: antes de gravar, o Lattes precisa estar como a ponte espera. Uma
+    // Trava: antes de gravar, o Lattes precisa estar como o conector espera. Uma
     // mudança do CNPq num formulário da fila para tudo, com o campo apontado.
     // Se nem deu para conferir, também para: sem leitura, não há garantia.
     if (queue.length > 0) {
@@ -373,8 +373,8 @@ async function run(keys?: string[]): Promise<void> {
         args: [op] as [BridgeOp],
         func: (o: BridgeOp) =>
           (
-            globalThis as unknown as { __ponte: { apply(op: BridgeOp): Promise<OpResult> } }
-          ).__ponte.apply(o),
+            globalThis as unknown as { __conector: { apply(op: BridgeOp): Promise<OpResult> } }
+          ).__conector.apply(o),
         target: { tabId },
       });
       const r = res?.result ?? {
@@ -473,7 +473,7 @@ connectApp();
 void readState().then((s) => {
   if (s.verificando) void writeState({ ...s, verificando: false });
 });
-void chrome.alarms.create('ponte', { periodInMinutes: 1 });
+void chrome.alarms.create('conector', { periodInMinutes: 1 });
 chrome.alarms.onAlarm.addListener(() => connectApp());
 chrome.runtime.onStartup.addListener(() => connectApp());
 

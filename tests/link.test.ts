@@ -31,7 +31,7 @@ const hello = (features?: string[], version = '1.0.0'): BridgeMessage => ({
 const run = (...msgs: BridgeMessage[]): Link =>
   msgs.reduce((l, m) => nextLink(l, m, ID), INITIAL_LINK);
 
-describe('ponte: capacidades', () => {
+describe('conector: capacidades', () => {
   it('diz qual dos lados está atrás', () => {
     expect(compareFeatures(ALL, ALL)).toEqual({ kind: 'ok' });
     expect(compareFeatures(ALL, undefined)).toEqual({ kind: 'outro-antigo', missing: ALL });
@@ -71,7 +71,7 @@ describe('ponte: capacidades', () => {
   });
 });
 
-describe('ponte: estado da ligação', () => {
+describe('conector: estado da ligação', () => {
   it('do aperto de mão à leitura', () => {
     expect(run(hello(ALL)).state).toEqual({ kind: 'lendo', version: '1.0.0' });
     const read = run(hello(ALL), {

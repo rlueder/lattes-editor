@@ -1,4 +1,4 @@
-// A aba do menu do Lattes: achar, injetar o núcleo da ponte (lattes-runner.ts)
+// A aba do menu do Lattes: achar, injetar o núcleo do conector (lattes-runner.ts)
 // e as leituras que o editor pede, com o motivo quando não dá.
 
 import type { BridgeMessage } from '../../src/bridge/protocol.ts';
@@ -14,13 +14,15 @@ export async function injectRunner(tabId: number): Promise<void> {
   await chrome.scripting.executeScript({ files: ['lattes-runner.js'], target: { tabId } });
 }
 
-/** Roda uma função do núcleo da ponte na aba; undefined se a aba não respondeu. */
+/** Roda uma função do núcleo do conector na aba; undefined se a aba não respondeu. */
 async function runInTab<T>(tabId: number, name: 'espelho' | 'exportar'): Promise<T | undefined> {
   await injectRunner(tabId);
   const [res] = await chrome.scripting.executeScript({
     args: [name] as [string],
     func: (fn: string) =>
-      (globalThis as unknown as { __ponte: Record<string, () => Promise<unknown>> }).__ponte[fn]!(),
+      (globalThis as unknown as { __conector: Record<string, () => Promise<unknown>> }).__conector[
+        fn
+      ]!(),
     target: { tabId },
   });
   return res?.result as T | undefined;

@@ -153,7 +153,7 @@ export function planChange(
     return 'reason' in planned ? unsupported(change, label, planned.reason) : planned;
   }
   if (change.kind !== 'alterado') {
-    return unsupported(change, label, 'Incluir ou excluir pela ponte: não suportado ainda');
+    return unsupported(change, label, 'Incluir ou excluir pelo conector: não suportado ainda');
   }
   const el = chain.at(-1);
   if (!el || el.name !== change.element) {

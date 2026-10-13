@@ -318,7 +318,7 @@ describe('inclusão no contrato e no registro do enviado', () => {
     );
   });
 
-  it('um item criado não se desfaz pela ponte', () => {
+  it('um item criado não se desfaz pelo conector', () => {
     expect(undoOp({ ...sentEntry(op(), '1', 1), id: 1 })).toBeUndefined();
   });
 });

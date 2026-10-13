@@ -1,5 +1,5 @@
-// O contrato da ponte com o Lattes: os links do menu, os formulários e os
-// campos que a ponte espera encontrar, como foram lidos no Lattes
+// O contrato da conector: os links do menu, os formulários e os
+// campos que o conector espera encontrar, como foram lidos no Lattes
 // (docs/lattes_internals.md, seção 5). O CNPq não publica roadmap nem
 // changelog, então a única maneira de saber que algo mudou é olhar.
 //
@@ -46,7 +46,7 @@ const checkbox: FieldSpec = { type: 'checkbox' };
 const radio: FieldSpec = { type: 'radio' };
 
 /**
- * O que a ponte viu no Lattes em 11/10/2026. Os limites vêm das tabelas de
+ * O que o conector viu no Lattes em 11/10/2026. Os limites vêm das tabelas de
  * docs/lattes_internals.md; um campo sem limite ali fica sem limite aqui.
  * Quando o Lattes mudar, a verificação aponta o campo e este contrato é
  * atualizado junto com o código que depende dele.
@@ -150,7 +150,7 @@ export interface Drift {
   observed?: string;
 }
 
-/** Mudanças que quebram a ponte; as outras só avisam. */
+/** Mudanças que quebram o conector; as outras só avisam. */
 const BREAKING: ReadonlySet<DriftKind> = new Set([
   'campo-sumiu',
   'formulario-sumiu',
@@ -286,7 +286,7 @@ async function checkForm(
     };
   }
   const drifts = compareForm(spec.name, spec.fields, fingerprint(controls));
-  // A ponte só grava em modo de alteração; o valor de controle não é pessoal.
+  // O conector só grava em modo de alteração; o valor de controle não é pessoal.
   const ctr = controls.find((c) => c.name === 'f_ctr')?.value;
   const mode = spec.mode ?? 'U';
   if (ctr !== undefined && ctr !== mode) {
@@ -361,7 +361,7 @@ async function locateAndCheck(
 
 /**
  * Confere o Lattes contra o contrato, só com leituras: os links do menu e um
- * exemplar de cada formulário que a ponte grava. Sem exemplar (currículo sem
+ * exemplar de cada formulário que o conector grava. Sem exemplar (currículo sem
  * idioma, sem atuação), o formulário fica "sem amostra", que não é erro.
  */
 export async function checkContract(
@@ -395,7 +395,7 @@ export async function checkContract(
   }
 }
 
-/** O relatório impede gravar nesse formulário? Só as mudanças que quebram a ponte. */
+/** O relatório impede gravar nesse formulário? Só as mudanças que quebram o conector. */
 export function blocksKind(report: ContractReport | undefined, kind: BridgeOp['kind']): Drift[] {
   if (!report || report.status !== 'mudou') return [];
   const form = report.forms.find((f) => f.kind === kind);
@@ -403,7 +403,7 @@ export function blocksKind(report: ContractReport | undefined, kind: BridgeOp['k
 }
 
 /**
- * O relatório não conferiu esse formulário por falta de exemplar? A ponte só
+ * O relatório não conferiu esse formulário por falta de exemplar? O conector só
  * altera registros que já existem, então uma fila com esse tipo de operação e
  * um Lattes sem exemplar dele é contradição: ou o currículo aberto é outro,
  * ou o caminho até o formulário mudou. Sem conferir, não se grava.

@@ -415,7 +415,7 @@ function countPendingIn(pending: XElement[]): (els: XElement[]) => number {
   };
 }
 
-/** A faixa do cabeçalho: alterações do editor, mais o que a ponte sabe do Lattes. */
+/** A faixa do cabeçalho: alterações do editor, mais o que o conector sabe do Lattes. */
 function stripFor(editorChanges: number, bridge: { lattes?: LattesStatus; sent: SentEntry[] }) {
   return statusStrip({ editorChanges, lattes: bridge.lattes, sent: bridge.sent });
 }

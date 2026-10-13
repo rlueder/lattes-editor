@@ -34,7 +34,7 @@ function dayStart(date: string): number {
 }
 
 /**
- * Quantas gravações da ponte ainda esperam "Enviar ao CNPq". Regra:
+ * Quantas gravações do conector ainda esperam "Enviar ao CNPq". Regra:
  * - sem leitura do Lattes (sem extensão, sessão ou consentimento), nenhuma:
  *   o registro guarda envios antigos, já publicados, e a faixa não afirma o
  *   que não sabe;

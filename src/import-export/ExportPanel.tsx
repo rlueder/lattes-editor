@@ -25,7 +25,7 @@ export interface PendingSummary {
 }
 
 interface Props {
-  /** Extensão da ponte, quando instalada: envia o que ela sabe levar. */
+  /** Extensão do conector, quando instalada: envia o que ela sabe levar. */
   bridge?: BridgeState;
   changes: ChangeGroup[];
   file?: ImportFile;

@@ -128,7 +128,7 @@ Construir uma ferramenta que interaja diretamente com o Lattes em nome dos usuá
 | Modelo C     | Extensão de navegador que melhora a interface web do Lattes                               | Zona cinzenta              | Tecnicamente frágil       |
 | Modelo D     | Parceria oficial com o CNPq                                                               | Menor risco, maior esforço | Objetivo de longo prazo   |
 
-**Atualização de 11/10/2026:** a ponte com o Lattes segue o Modelo C. É uma
+**Atualização de 11/10/2026:** a conector segue o Modelo C. É uma
 extensão de navegador que envia as alterações a partir da sessão do próprio
 usuário, já autenticada, uma de cada vez e conferindo cada uma depois de
 gravar. Nenhuma senha passa por nós. O primeiro envio de teste funcionou
@@ -140,7 +140,7 @@ extensão.
 O aplicativo de desktop não abre o Lattes dentro dele: um CNPq rodando numa
 janela nossa levantaria dúvidas sobre quem vê a senha. Ele entrega as
 alterações à mesma extensão, que envia a partir do navegador da pessoa, já
-autenticado. O núcleo da ponte (enviar uma alteração, conferir, parar se a
+autenticado. O núcleo do conector (enviar uma alteração, conferir, parar se a
 sessão cair) é escrito uma vez e serve ao editor na web e ao de desktop.
 
 **O Modelo B foi a abordagem inicial.** Ele nunca toca no Lattes diretamente: os usuários exportam o XML do Lattes, editam na nossa ferramenta e importam o XML de volta no Lattes pelo próprio diálogo de importação do Lattes. Sem delegação de credenciais, sem scraping, sem abuso de API.
@@ -363,7 +363,7 @@ HTML ou Markdown para página pessoal e CSV para relatórios de departamento.
 
 ### Recursos em estudo
 
-**Sincronização cifrada opcional.** Hoje o currículo fica só no navegador de quem usa. A sincronização deixaria a mesma cópia de trabalho em vários aparelhos, com histórico de versões, sem que a gente consiga ler o conteúdo: a cifra acontece no aparelho, com chave que só o usuário tem, e o servidor guarda blocos cifrados. Fica desligada por padrão. O Lattes continua sendo o registro oficial (é ele que CAPES, agências e bancas leem); a nossa cópia é onde se trabalha, e a ponte com o Lattes é o que mantém os dois iguais. Guardar os dados em claro num banco nosso foi descartado: a exportação traz CPF, RG, data de nascimento e nome dos pais, e isso nos faria controladores desses dados para todos os usuários, contra a proposta local do produto. Antes de construir, falta definir recuperação de chave perdida, custo de hospedagem e o que a LGPD ainda exige de quem guarda dado cifrado sem acesso a ele.
+**Sincronização cifrada opcional.** Hoje o currículo fica só no navegador de quem usa. A sincronização deixaria a mesma cópia de trabalho em vários aparelhos, com histórico de versões, sem que a gente consiga ler o conteúdo: a cifra acontece no aparelho, com chave que só o usuário tem, e o servidor guarda blocos cifrados. Fica desligada por padrão. O Lattes continua sendo o registro oficial (é ele que CAPES, agências e bancas leem); a nossa cópia é onde se trabalha, e a conector é o que mantém os dois iguais. Guardar os dados em claro num banco nosso foi descartado: a exportação traz CPF, RG, data de nascimento e nome dos pais, e isso nos faria controladores desses dados para todos os usuários, contra a proposta local do produto. Antes de construir, falta definir recuperação de chave perdida, custo de hospedagem e o que a LGPD ainda exige de quem guarda dado cifrado sem acesso a ele.
 
 **Busca de outros currículos.** Achar coautores, orientadores e bancas pelo nome ou pelo tema, e trazer o identificador certo para o item. A busca pública do CNPq (buscatextual) usa CAPTCHA e os Termos de Uso de 2022 vedam robôs (seção 4), então contornar isso está fora de cogitação. O Extrator Lattes exige credenciamento institucional e proíbe uso comercial. O caminho a pesquisar primeiro são as bases abertas: OpenAlex para autores e publicações, ORCID para identificar pessoas. Se houver um canal oficial do CNPq para isso, ele entra depois de confirmado.
 

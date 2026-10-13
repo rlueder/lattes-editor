@@ -1770,7 +1770,7 @@ a.menu-item.notice {
   margin: 8px 0 0;
 }
 
-/* Enviado ao Lattes: o que a ponte gravou, por dia, com o desfazer. */
+/* Enviado ao Lattes: o que o conector gravou, por dia, com o desfazer. */
 .panel-section.sent .panel-section-head svg {
   width: 16px;
   height: 16px;
@@ -3211,7 +3211,7 @@ body {
   padding-bottom: 8vh;
 }
 
-/* Envio pela extensão da ponte, em "Levar ao Lattes". */
+/* Envio pela extensão do conector, em "Levar ao Lattes". */
 .bridge-block {
   margin: 0 0 14px;
   padding: 12px 14px;
@@ -3285,7 +3285,7 @@ body {
   flex: 1;
 }
 
-/* O botão da ponte carrega o estado: enviar, parar, conferido. */
+/* O botão do conector carrega o estado: enviar, parar, conferido. */
 .bridge-btn {
   display: inline-flex;
   flex: 0 0 auto;

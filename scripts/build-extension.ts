@@ -1,4 +1,4 @@
-// Monta a extensão da ponte em dist-extension/: um IIFE por ponto de entrada
+// Monta a extensão do conector em dist-extension/: um IIFE por ponto de entrada
 // (service worker, script do editor, painel, script injetado no Lattes), o
 // manifest e os arquivos estáticos do painel. Com --loja, monta em
 // dist-extension-loja/ o pacote para a Chrome Web Store, sem a chave do manifest.
@@ -38,7 +38,7 @@ for (const name of ENTRIES) {
         entry: `${root}extension/src/${name}.ts`,
         fileName: () => `${name}.js`,
         formats: ['iife'],
-        name: `ponte_${name.replace('-', '_')}`,
+        name: `conector_${name.replace('-', '_')}`,
       },
       minify: false,
       outDir: out,
@@ -53,11 +53,11 @@ const ICONS = Object.fromEntries([16, 32, 48, 128].map((n) => [n, `icons/icon-${
 // para a branca quando o tema é escuro (extension/src/toolbar-icon.ts).
 const TOOLBAR_ICONS = toolbarIconPaths(DEFAULT_TOOLBAR_THEME);
 
-// Permissões no mínimo que a ponte usa (política da Chrome Web Store: "the
+// Permissões no mínimo que o conector usa (política da Chrome Web Store: "the
 // narrowest permissions necessary"): só o domínio do editor do Lattes. A foto
 // do perfil é carregada pela página do editor, não pela extensão.
 const manifest = {
-  action: { default_icon: TOOLBAR_ICONS, default_title: 'Ponte com o Lattes' },
+  action: { default_icon: TOOLBAR_ICONS, default_title: 'Conector' },
   background: { service_worker: 'background.js' },
   content_scripts: [{ js: ['content.js'], matches: EDITOR_MATCHES, run_at: 'document_start' }],
   description:
@@ -66,10 +66,10 @@ const manifest = {
   icons: ICONS,
   // Chave pública fixa: o ID da extensão fica o mesmo em qualquer pasta
   // (elkaiefkldcngjdgelfjhjbljefbemac), e é esse ID que o app autoriza no
-  // host de mensagens nativas (src-tauri/src/ponte.rs).
+  // host de mensagens nativas (src-tauri/src/conector.rs).
   ...(forStore ? {} : { key: EXTENSION_KEY }),
   manifest_version: 3,
-  name: 'LattesEditor: ponte com o Lattes',
+  name: 'LattesEditor: Conector',
   // Sem "tabs": achar a aba do Lattes pela URL basta com a permissão de host.
   // nativeMessaging fala com o app de desktop; alarms refaz a ligação; offscreen
   // lê o tema do navegador para o ícone da barra (o service worker não tem matchMedia).
@@ -96,6 +96,6 @@ console.log(`Extensão em ${out}`);
 if (forStore) {
   console.warn(
     'Pacote da loja: o ID da extensão será o da Chrome Web Store, e o app só fala com os IDs de ' +
-      'EXTENSION_IDS (src-tauri/src/ponte.rs). Confira que o ID da loja está lá antes de publicar.',
+      'EXTENSION_IDS (src-tauri/src/conector.rs). Confira que o ID da loja está lá antes de publicar.',
   );
 }

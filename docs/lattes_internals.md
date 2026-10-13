@@ -1,7 +1,7 @@
 # Como o editor do Currículo Lattes funciona por dentro
 
 Notas de reconhecimento do editor web do Lattes (`wwws.cnpq.br/cvlattesweb`),
-para quem for escrever a ponte com o navegador ou só tiver curiosidade. Tudo
+para quem for escrever o conector com o navegador ou só tiver curiosidade. Tudo
 aqui foi observado numa sessão logada do próprio dono do currículo, só com
 leitura: as páginas de formulário foram baixadas por GET e analisadas, nenhum
 formulário foi enviado.
@@ -44,7 +44,7 @@ flowchart TB
 
   subgraph App["App LattesEditor (Tauri)"]
     direction TB
-    Porta["Porta local 127.0.0.1<br/>com segredo em ponte.txt"]
+    Porta["Porta local 127.0.0.1<br/>com segredo em conector.txt"]
     UI["Editor<br/>(página no webview)"]
   end
 
@@ -64,7 +64,7 @@ flowchart TB
 
 - **Editor** (`src/`): lê a exportação, guarda a cópia de trabalho e planeja
   as operações que a extensão sabe levar (`src/bridge/plan.ts`).
-- **Porta local e host nativo** (`src-tauri/src/ponte.rs`): o navegador só
+- **Porta local e host nativo** (`src-tauri/src/conector.rs`): o navegador só
   inicia programas registrados, então o próprio executável do app, chamado
   com a origem da extensão, faz o papel de host e repassa as mensagens ao app
   aberto. O segredo impede que outro usuário da máquina se ligue à porta.
@@ -242,7 +242,7 @@ incompleto (rótulos lidos em 10/10/2026), que correspondem a
 | `f_tipo_privacidade`                             | lista `1`/`2`                               |                                                                                                  |
 | `f_ctr` (`U`), `f_cod`, `f_seq`                  | ocultos                                     |                                                                                                  |
 
-A exportação não traz número de sequência do idioma. A ponte abre cada link
+A exportação não traz número de sequência do idioma. O conector abre cada link
 `pkg_idioma.form` da lista que tem `f_seq` (o que não tem é o de idioma novo)
 e escolhe o único cujo `F_COD_IDIOMA` é o código do XML. `NAO_INFORMADO` no
 XML corresponde à caixa desmarcada e nenhum rádio.
@@ -348,8 +348,8 @@ Duas vigias, uma para cada lado do login:
   `schema/CurriculoLattes_12_09_2022.xsd`, o texto "atualizado em" e o link
   na página do Extrator, a foto do perfil (`servletrecuperafoto`) e a
   entrada do Lattes. Falhou, abre ou comenta uma issue `vigia-lattes`.
-- **Atrás do login, na extensão.** `src/bridge/contract.ts` guarda o que a
-  ponte espera encontrar: os procedimentos linkados no menu
+- **Atrás do login, na extensão.** `src/bridge/contract.ts` guarda o que o
+  conector espera encontrar: os procedimentos linkados no menu
   (`pkg_ativ.lista`, `pkg_idioma.lista`, `pkg_resume.`) e, para cada
   formulário que ela grava (seção 5), o nome, o POST e os campos com tipo e
   limite. A verificação percorre os mesmos links que a gravação percorre, só
@@ -363,9 +363,9 @@ Duas vigias, uma para cada lado do login:
   formulário ou link que não existe mais e `f_ctr` fora de `U` param a fila
   antes do primeiro POST. Se a conferência nem chega a ler (aba que não
   responde, erro de rede), a fila também para; e para se a fila tem operação
-  num formulário de que o Lattes não mostrou exemplar, porque a ponte só
-  altera o que já existe. Campo novo e limite diferente só avisam, porque a
-  ponte reenvia o formulário inteiro como o leu.
+  num formulário de que o Lattes não mostrou exemplar, porque o conector só
+  altera o que já existe. Campo novo e limite diferente só avisam, porque o
+  conector reenvia o formulário inteiro como o leu.
 
 O contrato foi escrito a partir das tabelas da seção 5 (11/10/2026), não de
 uma captura automática. A primeira verificação num Lattes real, em
@@ -399,8 +399,8 @@ Com alterações ainda não enviadas ao CNPq, essa tela abre com um `alert()`
 ("Existem alterações realizadas no currículo que só serão aceitas quando
 enviadas ao CNPq em definitivo") e não exporta. O `alert()` trava a aba até
 alguém clicar em OK, inclusive para a automação do navegador. **Observado.**
-Um `fetch` da mesma URL não roda o script da página, então não trava; a
-ponte pode ler o HTML e reconhecer o aviso.
+Um `fetch` da mesma URL não roda o script da página, então não trava; o
+conector pode ler o HTML e reconhecer o aviso.
 
 Não há como descartar alterações pendentes. A tela de envio
 (`pkg_publicar.mostrar_cv`, aberta pelo "Enviar" e pelo aviso de pendências)
@@ -410,9 +410,9 @@ nove ferramentas do menu secundário desfaz alterações. Os textos com "serão
 descartadas" no código da página são o aviso genérico de sair de um
 formulário sem gravar. **Observado.**
 
-Consequência para a ponte: tudo o que ela grava deixa o currículo com
+Consequência para o conector: tudo o que ele grava deixa o currículo com
 pendência até a pessoa enviar ao CNPq, e até lá o Exportar recusa. Abrir do
-Lattes pela ponte precisa reconhecer esse estado e pedir o envio antes; não
+Lattes pelo conector precisa reconhecer esse estado e pedir o envio antes; não
 adianta tentar de novo.
 
 A versão atual do currículo, com o que ainda não foi enviado, sai de
@@ -430,7 +430,7 @@ editor lê essa página (`src/bridge/espelho.ts`).
 
 ## 11. Inclusão (LAT-24, 13/10/2026)
 
-O que a ponte usaria para criar uma atuação profissional nova, e de onde
+O que o conector usaria para criar uma atuação profissional nova, e de onde
 vem cada parte. Nada disso foi enviado a um Lattes real; o código está em
 `src/bridge/create.ts`, desligado.
 
@@ -447,22 +447,22 @@ vem cada parte. Nada disso foi enviado a um Lattes real; o código está em
   `OUTRO-VINCULO-INFORMADO`, vale o texto livre); `f_vinculo` igual a
   `f_vinc`, como o `check()` faz na alteração; a resposta do POST de
   inclusão; e que a atuação nova aparece na lista com um `f_seq_ativ` novo,
-  que a ponte lê de volta e devolve como `SEQUENCIA-ATIVIDADE`.
+  que o conector lê de volta e devolve como `SEQUENCIA-ATIVIDADE`.
 - **Travas**: recusa se a lista já tem atuação na mesma instituição (seria
   duplicata), exige exatamente um resultado da busca com o código do XML,
   confere os limites, e depois do envio exige exatamente uma atuação nova
   dessa instituição, com o vínculo lido de volta igual ao enviado.
-- **Desfazer**: excluir pela ponte não está mapeado para a atuação (o
+- **Desfazer**: excluir pelo conector não está mapeado para a atuação (o
   `f_ctr=E` só apareceu no código da Formação). Um item criado fica no
   registro do enviado sem "Desfazer no Lattes", com a orientação de excluir
   à mão.
 - **Número do item**: a cópia de trabalho guarda o número que o editor deu.
-  Até a ponte reconciliar com o `SEQUENCIA-ATIVIDADE` que o Lattes devolve,
-  o caminho é recarregar a exportação antes de alterar esse item pela ponte.
+  Até o conector reconciliar com o `SEQUENCIA-ATIVIDADE` que o Lattes devolve,
+  o caminho é recarregar a exportação antes de alterar esse item pelo conector.
 - **Fora por enquanto**: Formação (o curso só entra pela busca de cursos,
   não mapeada), Projetos e Patentes (formulários de inclusão não lidos).
 
-## 12. Exportar pela ponte (LAT-22, 13/10/2026)
+## 12. Exportar pelo conector (LAT-22, 13/10/2026)
 
 Com o currículo sem pendências (publicado no mesmo dia), a exportação em
 XML são duas requisições, as mesmas que a tela faz. **Observado.**
@@ -482,6 +482,6 @@ A sessão continuou de pé: o menu respondeu logo depois e cinco minutos
 depois do POST. **Observado** uma vez; a queda de 10/10/2026, cerca de três
 minutos depois de abrir o Exportar, segue sem causa conhecida.
 
-Se o POST sem o GET da tela antes também funciona não foi testado. A ponte
+Se o POST sem o GET da tela antes também funciona não foi testado. O conector
 faz os dois, e o GET ainda serve para reconhecer, sem `alert()`, a sessão
 caída e a pendência (seção 10). O caminho está em `src/bridge/export.ts`.

@@ -116,7 +116,7 @@ export function connectionText(c: Connection, appVersion: string): string {
     case 'extensao-antiga':
       return `A extensão (v${c.version}) é mais antiga do que o editor (v${appVersion}).`;
     case 'incompativel':
-      return 'A extensão instalada fala outra versão da ponte e é ignorada.';
+      return 'A extensão instalada fala outra versão do conector e é ignorada.';
     case 'lendo':
       return 'A extensão está lendo o menu do Lattes.';
     case 'outro-cv':

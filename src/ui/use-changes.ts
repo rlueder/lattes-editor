@@ -26,7 +26,7 @@ export function useChanges(
   onEdit: (note: string) => void,
   setSession: Dispatch<SetStateAction<Session | null>>,
 ): {
-  /** Mudança gravada e conferida no Lattes pela ponte: vira o novo original. */
+  /** Mudança gravada e conferida no Lattes pelo conector: vira o novo original. */
   accept: (key: string) => void;
   /** Uma gravação desfeita no Lattes: a mudança volta para a lista. */
   reopen: (change: Change) => void;

@@ -45,7 +45,7 @@ deixa dezenas de vezes maior.
    fora do Mac) acha qualquer seção, grupo ou tipo de item. Cada edição fica
    salva no app.
 4. **Leve ao Lattes.** Produções novas entram pelo Importar do próprio
-   Lattes, com o arquivo que o app gera. O resto vai pela extensão da ponte
+   Lattes, com o arquivo que o app gera. O resto vai pela extensão do conector
    ou, sem ela, campo a campo, com o valor antigo e o novo lado a lado.
    Depois, exporte de novo e use "Recarregar do Lattes": o que já chegou lá
    sai da lista. Cada exportação aberta vira uma versão, e o app diz o que
@@ -102,7 +102,7 @@ mascarados até você clicar no olho, ao lado do título.
   <img src="docs/img/dados-gerais-claro.jpg" alt="Dados gerais com os dados pessoais mascarados." />
 </picture>
 
-## Extensão da ponte (em teste)
+## Extensão do conector (em teste)
 
 A extensão para Brave e Chrome envia ao Lattes, na sua própria sessão, as
 alterações que de outro jeito se copiam à mão. Cada uma é gravada, lida de
@@ -136,12 +136,12 @@ O que a extensão lê e envia está na
 Para gerar as imagens da página na Chrome Web Store: `pnpm build:extension`,
 `pnpm dev` e `pnpm capture:store` (saem em `docs/img/loja/`).
 
-A ponte altera itens que já existem no Lattes. Criar itens novos por ela
+O conector altera itens que já existem no Lattes. Criar itens novos por ele
 (uma atuação com um vínculo, por enquanto) está escrito e testado contra um
 Lattes simulado, mas desligado até um teste acompanhado no Lattes real
 (`docs/lattes_internals.md`, seção 11).
 
-O que a ponte grava fica pendente no Lattes até você clicar em "Enviar ao
+O que o conector grava fica pendente no Lattes até você clicar em "Enviar ao
 CNPq", e o Lattes não mostra nem descarta essas pendências. Por isso o app
 guarda, no próprio computador, o registro do que foi gravado e conferido:
 "Enviado ao Lattes", dentro de "Levar ao Lattes", lista cada alteração por
@@ -167,12 +167,12 @@ está atrás, o sino do app mostra "Extensão desatualizada" ou "App
 desatualizado", e o painel da extensão diz qual atualizar.
 
 O CNPq não avisa quando muda o Lattes. Por isso a extensão confere sozinha,
-só com leituras, o menu e um exemplar de cada formulário que a ponte grava
+só com leituras, o menu e um exemplar de cada formulário que o conector grava
 contra o que ela espera (nomes, tipos e limites dos campos, nunca valores):
 ao abrir o painel e quando o menu do Lattes carrega, no máximo a cada meia
 hora com tudo certo. O painel só mostra a verificação quando acha um
 problema, com o que mudou e "Verificar de novo". A mesma verificação roda
-antes de cada envio, e uma mudança que quebra a ponte para a fila antes de
+antes de cada envio, e uma mudança que quebra o conector para a fila antes de
 gravar. O relatório pode ser copiado ou aberto como issue, sem nada do
 currículo dentro.
 
@@ -230,7 +230,7 @@ Para revisar o aviso sem lançar nada: `pnpm dev` e
 - [`ROADMAP.md`](ROADMAP.md): o que vem a seguir
 - [`CHANGELOG.md`](CHANGELOG.md): o que mudou
 - [`docs/lattes_internals.md`](docs/lattes_internals.md): como o editor do
-  Lattes funciona por dentro, base da ponte
+  Lattes funciona por dentro, base do conector
 - [`docs/estilo_da_interface.md`](docs/estilo_da_interface.md): referência
   visual e regras de interface
 - [`docs/lattes_implementation_guide.md`](docs/lattes_implementation_guide.md)

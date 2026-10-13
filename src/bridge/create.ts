@@ -1,4 +1,4 @@
-// Criar itens novos no Lattes pela ponte (LAT-24). Hoje só a atuação
+// Criar itens novos no Lattes pelo conector (LAT-24). Hoje só a atuação
 // profissional com um vínculo, pelo formulário de inclusão GN_ATIV
 // (PKG_ATIV.INCLUI, f_ctr=I), cujos campos estão em
 // docs/lattes_editor_reconnaissance.md, seção 4.1.
@@ -76,7 +76,7 @@ export function planCreateAtuacao(change: Change, el: XElement, label: string): 
   }
   const vinculos = childElements(el, 'VINCULOS');
   if (vinculos.length !== 1) {
-    return { reason: 'A inclusão pela ponte cria a atuação com um vínculo só' };
+    return { reason: 'A inclusão pelo conector cria a atuação com um vínculo só' };
   }
   const v = vinculos[0]!;
   const ano = getAttr(v, 'ANO-INICIO');

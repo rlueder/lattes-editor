@@ -1,4 +1,4 @@
-// Estado da fila da ponte, guardado na sessão da extensão (some ao fechar o
+// Estado da fila do conector, guardado na sessão da extensão (some ao fechar o
 // navegador) e lido pelo painel.
 
 import type { OpResult } from '../../src/bridge/apply.ts';
@@ -15,7 +15,7 @@ export interface QueueState {
   ops: BridgeOp[];
   results: Record<string, OpResult>;
   running: boolean;
-  /** Última verificação do Lattes contra o contrato da ponte (src/bridge/contract.ts). */
+  /** Última verificação do Lattes contra o contrato do conector (src/bridge/contract.ts). */
   verificacao?: ContractReport;
   verificando?: boolean;
 }

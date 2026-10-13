@@ -16,7 +16,7 @@ nos dois primeiros sem esforço:
    publicada e limpa.
 2. **Alterado no editor.** Só existe no app. Desfaz-se no próprio editor ou
    restaurando um ponto do histórico.
-3. **Gravado no Lattes.** A ponte gravou e conferiu, mas o CNPq ainda não
+3. **Gravado no Lattes.** O conector gravou e conferiu, mas o CNPq ainda não
    publicou. O Lattes não tem como descartar; o único jeito de voltar é
    gravar o valor anterior de novo ("Desfazer no Lattes", no registro do
    enviado). Enquanto houver algo aqui, o Exportar fica bloqueado.
@@ -65,12 +65,16 @@ Nenhuma destas coisas é pergunta ou chave para a pessoa decidir:
 Currículo quase vazio; precisa cadastrar formação, atuação e as primeiras
 produções.
 
-1. Instala o app e a extensão. A tela de primeiro uso explica o ciclo em uma
-   frase por passo (LAT-21).
-2. "Abrir do Lattes" carrega o currículo pela ponte, sem baixar nem escolher
+1. Instala o app. A tela de primeiro uso mostra três passos que se marcam
+   sozinhos (LAT-21): instalar a extensão e aceitar o aviso dela, entrar no
+   Lattes no mesmo navegador e, com isso, o currículo abre. Quem não quer a
+   extensão tem "Prefiro abrir o arquivo exportado". Sem resposta da
+   extensão, o app não distingue extensão ausente de navegador fechado, e o
+   texto do primeiro passo cobre os dois.
+2. "Abrir do Lattes" carrega o currículo pelo conector, sem baixar nem escolher
    arquivo (LAT-22).
 3. Preenche seção por seção. Produções vão pelo arquivo do Importar; formação
-   e atuação o Importar não aceita, então precisam ser criadas pela ponte
+   e atuação o Importar não aceita, então precisam ser criadas pelo conector
    (LAT-24). Para esta pessoa, criar itens é o recurso que falta.
 4. Manda tudo de uma vez, a faixa do cabeçalho mostra "no Lattes", e o
    lembrete leva ao "Enviar ao CNPq".
@@ -114,10 +118,10 @@ pede uma vez.
 1. O que acontece sozinho (já começou: o ponto de histórico substituiu a
    chave da cópia, e o registro do enviado existe).
 2. Faixa de estados no cabeçalho.
-3. Abrir do Lattes pela ponte (LAT-22). Feito, menos o caso do Exportar
+3. Abrir do Lattes pelo conector (LAT-22). Feito, menos o caso do Exportar
    bloqueado: hoje a tela inicial pede o envio ao CNPq em vez de abrir a
    versão atual pela página de conferência.
 4. Diagnóstico para quem volta (comparação e revisão de consistência).
-5. Criar itens pela ponte (LAT-24).
+5. Criar itens pelo conector (LAT-24).
 6. Linha do tempo de versões (LAT-12). Feito: até 24 exportações por
    currículo, cifradas, com o que mudou entre cada uma e a anterior.

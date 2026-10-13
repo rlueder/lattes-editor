@@ -1,4 +1,4 @@
-// Tipos mínimos das APIs de extensão usadas pela ponte, escritos à mão para
+// Tipos mínimos das APIs de extensão usadas pelo conector, escritos à mão para
 // não trazer @types/chrome. Só o que o código chama.
 
 declare namespace chrome {

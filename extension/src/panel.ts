@@ -1,4 +1,4 @@
-// Painel da ponte: a fila que o editor mandou, um botão por alteração e um
+// Painel do conector: a fila que o editor mandou, um botão por alteração e um
 // para todas, o resultado de cada uma e o botão de parar.
 
 import type { OpResult } from '../../src/bridge/apply.ts';
@@ -65,7 +65,7 @@ const REPORT_TITLE: Record<ContractReport['status'], string> = {
 /** Título da seção da verificação, que só aparece quando algo não está ok. */
 const VIGIA_HEADING: Record<ContractReport['status'], string> = {
   erro: 'Não deu para verificar o Lattes',
-  mudou: 'O Lattes mudou desde a última versão da ponte',
+  mudou: 'O Lattes mudou desde a última versão do conector',
   ok: '',
   sessao: 'A sessão do Lattes caiu; entre de novo para enviar',
 };
@@ -222,11 +222,11 @@ document.getElementById('acao')!.addEventListener('click', (e) => {
 document.getElementById('limpar')!.addEventListener('click', () => send({ cmd: 'limpar' }));
 document.getElementById('verificar')!.addEventListener('click', () => send({ cmd: 'verificar' }));
 
-/** Aviso de uso no lugar da ponte até o "ok" (ver consent.ts). */
+/** Aviso de uso no lugar do conector até o "ok" (ver consent.ts). */
 async function showConsentOrBridge(): Promise<void> {
   const ok = await hasConsent();
   document.getElementById('aviso')!.hidden = ok;
-  document.getElementById('ponte')!.hidden = !ok;
+  document.getElementById('conector')!.hidden = !ok;
 }
 (document.getElementById('aviso-politica') as HTMLAnchorElement).href = PRIVACY_URL;
 document.getElementById('aceitar')!.addEventListener('click', () => {

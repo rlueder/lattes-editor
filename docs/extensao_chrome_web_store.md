@@ -1,6 +1,6 @@
 # Extensão: requisitos da Chrome Web Store
 
-Situação da extensão da ponte frente às regras de publicação da Chrome Web
+Situação da extensão do conector frente às regras de publicação da Chrome Web
 Store. Fontes, conferidas em 11/10/2026:
 
 - Políticas do programa:
@@ -44,7 +44,7 @@ Store. Fontes, conferidas em 11/10/2026:
   loja mostra o ID da extensão logo ao criar o item, antes da revisão.
 - **ID da loja no app.** A extensão fala com o app de desktop por mensagens
   nativas, e o app só aceita as extensões listadas em `EXTENSION_IDS`
-  (`src-tauri/src/ponte.rs`). Hoje está lá o ID de desenvolvimento, fixado
+  (`src-tauri/src/conector.rs`). Hoje está lá o ID de desenvolvimento, fixado
   pela chave pública do manifest (`elkaiefkldcngjdgelfjhjbljefbemac`). O ID
   da loja entra na lista, ao lado dele, e sai num lançamento do app antes de
   a extensão ser publicada.
@@ -53,7 +53,7 @@ Store. Fontes, conferidas em 11/10/2026:
 
 ## Textos para o painel
 
-**Nome:** LattesEditor: ponte com o Lattes (vem do manifest)
+**Nome:** LattesEditor: Conector (vem do manifest)
 
 **Resumo** (vem do manifest, até 132 caracteres): Envia ao Lattes as
 alterações feitas no Editor do Currículo Lattes, a partir da sua própria
@@ -64,14 +64,14 @@ sessão.
 **Descrição:**
 
 ```text
-A ponte leva ao Currículo Lattes as alterações que você fez no LattesEditor, o editor gratuito e de código aberto do Currículo Lattes para macOS, Windows e Linux.
+O conector leva ao Currículo Lattes as alterações que você fez no LattesEditor, o editor gratuito e de código aberto do Currículo Lattes para macOS, Windows e Linux.
 
 Como funciona:
 1. No LattesEditor, abra "Levar ao Lattes" e use "Enviar pela extensão".
 2. Com o seu currículo aberto no Lattes numa aba do navegador, clique em "Aplicar" no painel da extensão.
 3. Cada alteração é gravada na sua sessão, lida de volta e conferida antes da próxima. Se algo não bater, a fila para.
 
-Hoje a ponte grava o resumo, os idiomas e os vínculos de atuação. O resto você leva pelo Importar do próprio Lattes, com o arquivo que o editor gera.
+Hoje o conector grava o resumo, os idiomas e os vínculos de atuação. O resto você leva pelo Importar do próprio Lattes, com o arquivo que o editor gera.
 
 Antes de cada envio, a extensão confere se os formulários do Lattes continuam como ela espera e para se o CNPq mudou alguma coisa. Ela não faz login nem vê a sua senha: só age na sessão que você abriu.
 
@@ -125,8 +125,8 @@ https://rlueder.github.io/lattes-editor/privacidade.html
 
 Os Termos de Uso do Lattes vedam automação sem autorização
 (ver `docs/lattes_product_requirements.md`, seção 4). A decisão de seguir
-com a ponte (Modelo C) está registrada lá. A política da loja também proíbe
-"contornar restrições de login"; a ponte não faz isso, porque só age dentro
+com o conector (Modelo C) está registrada lá. A política da loja também proíbe
+"contornar restrições de login"; o conector não faz isso, porque só age dentro
 de uma sessão que a própria pessoa abriu.
 
 O nome usa "Lattes" para dizer com o que a extensão trabalha. A política da

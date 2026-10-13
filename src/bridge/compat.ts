@@ -1,4 +1,4 @@
-// O que cada lado da ponte sabe fazer, trocado no aperto de mão ("ola"). O
+// O que cada lado do conector sabe fazer, trocado no aperto de mão ("ola"). O
 // app e a extensão saem do mesmo release com o mesmo número de versão, mas
 // cada um se atualiza no seu tempo: a extensão pela loja (ou à mão, quando
 // carregada sem empacotar), o app só quando a pessoa baixa outro instalador.

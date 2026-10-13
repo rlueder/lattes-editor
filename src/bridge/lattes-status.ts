@@ -36,7 +36,7 @@ export function lattesStatusFrom(html: string): LattesStatus | undefined {
 
 /**
  * Dito uma vez no fim de cada fila com algo conferido, no editor e no painel
- * da extensão: o que a ponte grava fica pendente até a pessoa publicar.
+ * da extensão: o que o conector grava fica pendente até a pessoa publicar.
  */
 export const PUBLISH_REMINDER =
   'Ainda não está no currículo público. No Lattes, clique em "Enviar", no canto superior direito, e depois em "Enviar ao CNPq". Até lá, o Lattes não exporta o currículo.';

@@ -299,7 +299,7 @@ describe('relatório', () => {
     { field: '', form: 'RES', kind: 'formulario-sumiu' },
   ];
 
-  it('descreve cada tipo de mudança e sabe quais quebram a ponte', () => {
+  it('descreve cada tipo de mudança e sabe quais quebram o conector', () => {
     expect(drifts.map(driftText)).toEqual([
       'GN_IDIOMA: campo F_COMPR sumiu',
       'GN_IDIOMA: campo novo F_NOVO',
