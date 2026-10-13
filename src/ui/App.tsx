@@ -15,6 +15,7 @@ import {
   newWorkingCopy,
   replaceWorkingCopy,
   saveWorkingCopy,
+  storageStatus,
 } from '../model/store.ts';
 import { getAttr, parseXml, serializeXml, walk, type XElement } from '../model/xml.ts';
 import { PrintDialog } from '../print/PrintDialog.tsx';
@@ -34,6 +35,7 @@ import { buildSections } from './sections.ts';
 import { SectionView } from './SectionView.tsx';
 import { Sidebar } from './Sidebar.tsx';
 import { statusStrip } from './status-strip.ts';
+import { StorageNotice } from './StorageNotice.tsx';
 import { useTheme } from './theme.ts';
 import { type SaveState, Topbar } from './Topbar.tsx';
 import { useBridge } from './use-bridge.ts';
@@ -235,14 +237,6 @@ export function App() {
     setHistoryOpen(false);
   };
 
-  const saveHistoryCopy = (entry: HistoryEntry) => {
-    if (!session) return;
-    void saveBytes(
-      encodeCv(parseXml(entry.xml), session.meta.encoding),
-      copyFileName(session.meta.fileName, new Date(entry.savedAt)),
-    );
-  };
-
   const closeFile = async () => {
     await clearAll();
     setSession(null);
@@ -251,8 +245,15 @@ export function App() {
 
   if (booting) return null;
 
+  const storageNotice = <StorageNotice {...storageStatus()} onReset={closeFile} />;
+
   if (!session) {
-    return <Welcome error={error} theme={theme} onFile={openFile} onTheme={setTheme} />;
+    return (
+      <>
+        <Welcome error={error} theme={theme} onFile={openFile} onTheme={setTheme} />
+        {storageNotice}
+      </>
+    );
   }
 
   const modified = serializeXml(session.doc) !== session.meta.originalXml;
@@ -381,8 +382,9 @@ export function App() {
         open={historyOpen}
         onClose={closeHistory}
         onRestore={restore}
-        onSave={saveHistoryCopy}
+        onSave={(entry) => session && saveHistoryCopy(entry, session.meta)}
       />
+      {storageNotice}
     </div>
   );
 }
@@ -403,4 +405,12 @@ function countPendingIn(pending: XElement[]): (els: XElement[]) => number {
     for (const el of els) walk(el, (node) => void (set.has(node) && n++));
     return n;
   };
+}
+
+/** Salva um ponto do histórico num arquivo, com a data dele no nome. */
+function saveHistoryCopy(entry: HistoryEntry, meta: Session['meta']): void {
+  void saveBytes(
+    encodeCv(parseXml(entry.xml), meta.encoding),
+    copyFileName(meta.fileName, new Date(entry.savedAt)),
+  );
 }

@@ -1,14 +1,16 @@
 import 'fake-indexeddb/auto';
 
 import Dexie from 'dexie';
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { BridgeOp } from '../src/bridge/plan.ts';
 import { sentEntry } from '../src/bridge/sent-log.ts';
+import { importStorageKey, randomKeyBytes } from '../src/model/seal.ts';
 import type { WorkingCopy } from '../src/model/store.ts';
 
 type Store = typeof import('../src/model/store.ts');
 let store: Store;
+let key: CryptoKey;
 
 const copy = (xml: string, savedAt: number): WorkingCopy => ({
   encoding: 'ISO-8859-1',
@@ -31,21 +33,37 @@ const resumo = (texto: string): BridgeOp => ({
 });
 
 beforeAll(async () => {
-  // Um banco da versão 1, como o de quem já usava o editor antes do registro
-  // do que foi enviado, para conferir que a versão 2 não perde nada.
+  // Um banco da versão 1, em claro, como o de quem já usava o editor antes do
+  // registro do enviado e da cifra: a versão 2 não perde nada, e abrir com a
+  // chave cifra o que estava em claro.
   const v1 = new Dexie('lattes-editor');
   v1.version(1).stores({ history: '++id, savedAt', working: 'id' });
   await v1.table('working').put(copy('<v1/>', 10));
   await v1.table('history').add({ note: 'Arquivo carregado', savedAt: 10, xml: '<v1/>' });
   v1.close();
   store = await import('../src/model/store.ts');
+  key = await importStorageKey(randomKeyBytes());
 });
 
 describe('banco local (IndexedDB)', () => {
-  it('a versão 2 mantém a cópia de trabalho e o histórico da versão 1', async () => {
+  it('sem chave, não lê nem grava nada', async () => {
+    expect(store.storageStatus().status).toBe('sem-chave');
+    expect(await store.loadWorkingCopy()).toBeUndefined();
+    await store.saveWorkingCopy(copy('<nao/>', 11), 'não grava');
+    expect(await store.db.history.count()).toBe(1);
+  });
+
+  it('a versão 2 mantém os dados da 1, e abrir com a chave cifra o que estava em claro', async () => {
+    expect(await store.openStorage(key)).toBe('cifrado');
     expect((await store.loadWorkingCopy())?.xml).toBe('<v1/>');
     expect((await store.listHistory()).map((h) => h.xml)).toEqual(['<v1/>']);
     expect(await store.listSent('0000000000000001')).toEqual([]);
+    const raw = [...(await store.db.working.toArray()), ...(await store.db.history.toArray())];
+    for (const row of raw) {
+      expect(row.sealed).toBeDefined();
+      expect(JSON.stringify(row)).not.toContain('<v1/>');
+      expect(row).not.toHaveProperty('xml');
+    }
   });
 
   describe('depois de começar do zero', () => {
@@ -109,6 +127,34 @@ describe('banco local (IndexedDB)', () => {
       expect(kept.map((h) => h.note)).not.toContain('Lattes antes do envio');
     });
 
+    it('uma linha corrompida não faz a chave certa parecer perdida', async () => {
+      await store.saveWorkingCopy(copy('<a/>', 1), 'edição 1');
+      await store.saveWorkingCopy(copy('<b/>', 2), 'edição 2');
+      const [first] = await store.db.history.orderBy('savedAt').toArray();
+      await store.db.history.update(first!.id!, {
+        sealed: { data: new ArrayBuffer(8), iv: new Uint8Array(12) },
+      });
+      await store.db.working.update('current', {
+        sealed: { data: new ArrayBuffer(8), iv: new Uint8Array(12) },
+      });
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      expect(await store.openStorage(key)).toBe('cifrado');
+      expect((await store.listHistory()).map((h) => h.note)).toEqual(['edição 2']);
+    });
+
+    it('uma linha que não abre fica de fora, sem derrubar a lista', async () => {
+      await store.addSent(sentEntry(resumo('um'), '0000000000000001', 100));
+      await store.addSent(sentEntry(resumo('dois'), '0000000000000001', 200));
+      const [first] = await store.db.sent.toArray();
+      await store.db.sent.update(first!.id!, {
+        sealed: { data: new ArrayBuffer(8), iv: new Uint8Array(12) },
+      });
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      expect((await store.listSent('0000000000000001')).map((e) => e.sentAt)).toEqual([200]);
+      expect(warn).toHaveBeenCalled();
+      warn.mockRestore();
+    });
+
     it('apagar o registro do enviado vale só para aquele currículo', async () => {
       await store.addSent(sentEntry(resumo('um'), '0000000000000001', 100));
       await store.addSent(sentEntry(resumo('outro'), '0000000000000002', 200));
@@ -129,6 +175,47 @@ describe('banco local (IndexedDB)', () => {
       expect(await store.loadWorkingCopy()).toBeUndefined();
       expect(await store.listHistory()).toEqual([]);
       expect(await store.listSent('0000000000000001')).toHaveLength(1);
+    });
+  });
+
+  describe('com a chave errada (chaveiro apagado)', () => {
+    beforeEach(async () => {
+      await store.db.transaction('rw', store.db.working, store.db.history, store.db.sent, () =>
+        Promise.all([store.db.working.clear(), store.db.history.clear(), store.db.sent.clear()]),
+      );
+      await store.openStorage(key);
+    });
+
+    it('não lê nem grava, e começar de novo apaga o que não dá para ler', async () => {
+      await store.saveWorkingCopy(copy('<secreto/>', 1), 'edição');
+      await store.addSent(sentEntry(resumo('um'), '0000000000000001', 100));
+
+      const other = await importStorageKey(randomKeyBytes());
+      expect(await store.openStorage(other)).toBe('chave-perdida');
+      expect(await store.loadWorkingCopy()).toBeUndefined();
+      expect(await store.listSent('0000000000000001')).toEqual([]);
+      await store.saveWorkingCopy(copy('<outro/>', 2), 'não grava');
+      expect(await store.db.history.count()).toBe(1);
+
+      await store.resetStorage();
+      expect(store.storageStatus().status).toBe('cifrado');
+      expect(await store.db.sent.count()).toBe(0);
+      await store.saveWorkingCopy(copy('<novo/>', 3), 'edição');
+      expect((await store.loadWorkingCopy())?.xml).toBe('<novo/>');
+      await store.openStorage(other);
+      expect(store.storageStatus().status).toBe('cifrado');
+    });
+
+    it('chaveiro indisponível guarda o motivo e para de gravar', async () => {
+      expect(store.markStorageUnavailable('sem Secret Service')).toBe('sem-chave');
+      expect(store.storageStatus()).toEqual({ reason: 'sem Secret Service', status: 'sem-chave' });
+      expect(await store.addSent(sentEntry(resumo('x'), '1', 1))).toBeUndefined();
+      expect(await store.listHistory()).toEqual([]);
+      await store.addHistoryPoint({ note: 'n', savedAt: 1, xml: '<x/>' });
+      await store.replaceWorkingCopy(copy('<x/>', 1));
+      await store.resetStorage();
+      expect(store.storageStatus().status).toBe('sem-chave');
+      await store.openStorage(key);
     });
   });
 });

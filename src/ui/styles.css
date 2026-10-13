@@ -5377,3 +5377,13 @@ b {
 .filter-search:hover:not(:focus-within) {
   border-color: var(--border-focus);
 }
+
+/* Antes do primeiro render: o editor espera a chave dos dados locais. */
+.boot {
+  display: grid;
+  min-height: 100vh;
+  margin: 0;
+  place-items: center;
+  color: var(--muted);
+  font-size: 14px;
+}
