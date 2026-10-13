@@ -33,6 +33,7 @@ import { buildReferenceIndex, type ReferenceIndex } from './reference-tables.ts'
 import { buildSections } from './sections.ts';
 import { SectionView } from './SectionView.tsx';
 import { Sidebar } from './Sidebar.tsx';
+import { statusStrip } from './status-strip.ts';
 import { useTheme } from './theme.ts';
 import { type SaveState, Topbar } from './Topbar.tsx';
 import { useBridge } from './use-bridge.ts';
@@ -268,6 +269,11 @@ export function App() {
         pendingCount={production.pending.length + changes.open}
         saveState={saveState}
         showEmpty={showEmpty}
+        strip={statusStrip({
+          editorChanges: production.pending.length + changes.open,
+          lattes: bridge.lattes,
+          sent: bridge.sent,
+        })}
         theme={theme}
         onClose={closeFile}
         onExport={openExport}
@@ -278,6 +284,10 @@ export function App() {
         onReload={reload}
         onSave={saveFile}
         onShowEmpty={setShowEmpty}
+        onStripOpen={(kind) => {
+          openExport();
+          if (kind === 'no-lattes') scrollToSent();
+        }}
         onTheme={setTheme}
       />
 
@@ -374,6 +384,13 @@ export function App() {
         onSave={saveHistoryCopy}
       />
     </div>
+  );
+}
+
+/** O registro do enviado fica no fim de "Levar ao Lattes"; espera o painel abrir. */
+function scrollToSent(): void {
+  requestAnimationFrame(() =>
+    document.getElementById('enviado-ao-lattes')?.scrollIntoView({ block: 'start' }),
   );
 }
 

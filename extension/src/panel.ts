@@ -10,6 +10,7 @@ import {
   reportText,
 } from '../../src/bridge/contract.ts';
 import { opRows } from '../../src/bridge/field-labels.ts';
+import { PUBLISH_REMINDER } from '../../src/bridge/lattes-status.ts';
 import { giveConsent, hasConsent, PRIVACY_URL } from './consent.ts';
 import type { PanelCommand, QueueState } from './state.ts';
 import { readState } from './state.ts';
@@ -152,6 +153,11 @@ function render(state: QueueState): void {
   // Sem fila, sem botões: o estado vazio fala sozinho.
   document.querySelector<HTMLElement>('.acoes')!.hidden = state.ops.length === 0;
   document.querySelector<HTMLElement>('.ajuda')!.hidden = state.ops.length === 0;
+  // Fila parada com algo conferido: lembra que nada está público ainda.
+  const reminder = document.querySelector<HTMLElement>('.lembrete')!;
+  reminder.textContent = PUBLISH_REMINDER;
+  reminder.hidden =
+    state.running || !Object.values(state.results).some((r) => r.status === 'conferido');
   if (state.ops.length === 0) {
     root.append(emptyState());
     return;

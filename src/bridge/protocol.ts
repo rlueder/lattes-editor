@@ -3,6 +3,7 @@
 // não conhece a versão do outro ignora a mensagem.
 
 import type { OpResult } from './apply.ts';
+import type { LattesStatus } from './lattes-status.ts';
 import type { BridgeOp } from './plan.ts';
 
 export const PROTOCOL_VERSION = 1;
@@ -16,6 +17,8 @@ export type EditorMessage =
 export type BridgeMessage =
   /** lattesId: de qual currículo é o código, para o editor não guardar o de outro. */
   | { code: string; lattesId?: string; type: 'codigo-cv' }
+  /** O que o menu do Lattes mostra: data da última publicação e pendência. */
+  | { lattesId?: string; status: LattesStatus; type: 'estado-lattes' }
   | { result: OpResult; type: 'resultado' }
   | { type: 'fim' }
   | { type: 'ola'; version: string };

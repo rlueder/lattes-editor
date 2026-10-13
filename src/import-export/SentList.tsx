@@ -29,7 +29,7 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
   if (bridge.sent.length === 0) return null;
 
   return (
-    <section className="panel-section sent">
+    <section className="panel-section sent" id="enviado-ao-lattes">
       <h3 className="panel-section-head">
         <HistoryIcon />
         Enviado ao Lattes

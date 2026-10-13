@@ -6,6 +6,7 @@ import { applyOp, type LattesPort } from '../../src/bridge/apply.ts';
 import { checkContract } from '../../src/bridge/contract.ts';
 import type { FormControl } from '../../src/bridge/form.ts';
 import { cvCodeFrom, lattesIdFrom } from '../../src/bridge/lattes-html.ts';
+import { lattesStatusFrom } from '../../src/bridge/lattes-status.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
 import { decodeLatin1 } from '../../src/model/latin1.ts';
 
@@ -52,10 +53,11 @@ const port: LattesPort = {
 
 (globalThis as unknown as { __ponte: unknown }).__ponte = {
   apply: (op: BridgeOp) => applyOp(op, port),
-  identity: () => ({
-    code: cvCodeFrom(document.documentElement.outerHTML),
-    lattesId: lattesIdFrom(document.documentElement.outerHTML),
-  }),
+  // Só o menu que já está na aba, sem requisição nova.
+  identity: () => {
+    const html = document.documentElement.outerHTML;
+    return { code: cvCodeFrom(html), lattesId: lattesIdFrom(html), status: lattesStatusFrom(html) };
+  },
   // Só leituras: o menu e um exemplar de cada formulário, comparados ao contrato.
   verificar: () => checkContract(port),
 };

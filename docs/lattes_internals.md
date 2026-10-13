@@ -379,6 +379,14 @@ O menu abre só com o cookie: `PKG_MENU.menu` sem `f_cod` mostra o currículo
 de quem está logado, e o login passa pelo Keycloak de `login.cnpq.br`.
 **Observado.**
 
+O topo do menu mostra "Última atualização: <data>" e "Última publicação:
+<data>", e a lista de avisos traz "Existem alterações realizadas em seu
+currículo que ainda não foram enviadas ao CNPq" enquanto houver pendência.
+**Observado.** A extensão lê os dois do menu que já está na aba, sem
+requisição nova (`src/bridge/lattes-status.ts`). Que o aviso some depois de
+"Enviar ao CNPq" é **inferido**; o menu aberto na aba também só muda quando
+é recarregado, então depois de uma fila o estado pode estar defasado.
+
 "Exportar", no menu secundário, chama
 `modalCV1.setarUrl('pkg_impcv.get_arquivo?f_cod=<10 caracteres>', true)`:
 um GET que carrega a tela do Exportar num `iframe` modal. **Observado.**
