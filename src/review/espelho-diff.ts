@@ -15,6 +15,35 @@ import { normalizeTitle } from './consistency.ts';
 /** Títulos mais curtos que isto casariam com qualquer linha; não são comparados. */
 const MIN_TITLE = 4;
 
+/** Sobrenome em maiúsculas seguido de vírgula: o começo de um autor. */
+const SURNAME = /^[A-ZÀ-Ý][A-ZÀ-Ý'’\- ]*,/u;
+/**
+ * Fim da lista de autores: ponto seguido de espaço que não seja de uma
+ * inicial ("J. "), ou ponto duplo ("P.. ", a inicial do último autor).
+ */
+const AUTHOR_END = /(?:\.\.|(?<![\s,][A-ZÀ-Ý])\.)\s+/u;
+
+/**
+ * O trecho do título numa linha da página, depois dos autores: "TESTE, P.;
+ * OUTRA, A.. Título, 2005. (...)" dá "Título, 2005. (...)". Formato observado
+ * em 12/10/2026 (docs/lattes_internals.md, seção 10); a regra de onde os
+ * autores acabam é inferida. Linha sem autores (eventos) devolve undefined.
+ */
+export function titlePart(text: string): string | undefined {
+  if (!SURNAME.test(text)) return undefined;
+  let rest = text;
+  for (;;) {
+    const i = rest.indexOf('; ');
+    if (i < 0 || !SURNAME.test(rest.slice(i + 2))) break;
+    rest = rest.slice(i + 2);
+  }
+  const end = AUTHOR_END.exec(rest);
+  return end ? rest.slice(end.index + end[0].length) : undefined;
+}
+
+/** Título longo o bastante para ser procurado em qualquer ponto da linha. */
+const distinctive = (key: string) => key.length >= 8 || key.includes(' ');
+
 export interface EspelhoDiff {
   /** Itens da exportação com título curto ou vazio demais para comparar. */
   skipped: number;
@@ -69,9 +98,16 @@ export function diffEspelho(lattes: EspelhoItem[], root: XElement): EspelhoDiff 
   const matched = new Set<number>();
   const onlyInLattes: EspelhoItem[] = [];
   for (const line of lattes) {
-    const text = ` ${normalizeTitle(line.text)} `;
+    // Com autores, o título tem de abrir o trecho depois deles: um título
+    // curto ("Design", "Anais") não casa com um sobrenome nem com o veículo.
+    // Sem autores (eventos), vale em qualquer ponto, só para títulos longos.
+    const part = titlePart(line.text);
+    const matches = (key: string) =>
+      part !== undefined
+        ? ` ${normalizeTitle(part)} `.startsWith(` ${key} `)
+        : distinctive(key) && ` ${normalizeTitle(line.text)} `.includes(` ${key} `);
     // Cada linha casa com um item só, para duplicatas contarem certo.
-    const hit = order.find((i) => !matched.has(i) && text.includes(` ${comparable[i]!.key} `));
+    const hit = order.find((i) => !matched.has(i) && matches(comparable[i]!.key));
     if (hit !== undefined) matched.add(hit);
     else onlyInLattes.push(line);
   }

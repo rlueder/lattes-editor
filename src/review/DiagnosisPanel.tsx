@@ -97,10 +97,14 @@ export function DiagnosisPanel(props: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [open, root, places, version],
   );
-  const original = useMemo(() => parseXml(originalXml).root, [originalXml]);
+  // O painel fica montado o tempo todo: a exportação só é lida quando ele abre.
+  const original = useMemo(
+    () => (open ? parseXml(originalXml).root : undefined),
+    [open, originalXml],
+  );
   const diff = useMemo(
-    () => (open && espelho?.items ? diffEspelho(espelho.items, original) : undefined),
-    [open, espelho, original],
+    () => (original && espelho?.items ? diffEspelho(espelho.items, original) : undefined),
+    [espelho, original],
   );
   // Os itens da exportação original levam ao mesmo item no documento aberto.
   const current = useMemo(
