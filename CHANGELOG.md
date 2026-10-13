@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.13.0](https://github.com/rlueder/lattes-editor/compare/v0.12.0...v0.13.0) (2026-10-13)
+
+### Novidades
+
+- **ui:** dados locais cifrados com a chave no chaveiro do sistema ([#35](https://github.com/rlueder/lattes-editor/issues/35)) ([f4b1dce](https://github.com/rlueder/lattes-editor/commit/f4b1dce50db913fa6050f92c7d078e6bc6a106ef)), closes [#34](https://github.com/rlueder/lattes-editor/issues/34)
+
 ## [0.12.0](https://github.com/rlueder/lattes-editor/compare/v0.11.0...v0.12.0) (2026-10-13)
 
 ### Novidades
