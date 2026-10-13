@@ -26,6 +26,7 @@ import {
   type NoReadingReason,
 } from '../../src/bridge/protocol.ts';
 import { CONSENT_KEY, hasConsent, isConsentCurrent } from './consent.ts';
+import { injectRunner, lattesTab, readEspelho } from './lattes-tab.ts';
 import {
   APP_KEY,
   type EditorEndpoint,
@@ -45,6 +46,12 @@ import {
 const NATIVE_HOST = 'lattes_editor.ponte';
 
 let stopRequested = false;
+/**
+ * Uma verificação por vez no service worker. Painel aberto e menu do Lattes
+ * carregado podem chegar juntos; o "verificando" do estado é gravado depois
+ * de esperas, e dois pedidos o leriam falso.
+ */
+let verifyInFlight = false;
 let appPort: chrome.runtime.Port | undefined;
 
 /**
@@ -82,15 +89,6 @@ async function toEditor(editor: EditorEndpoint | undefined, msg: BridgeMessage):
   } catch {
     // A aba do editor foi fechada; o painel continua com o resultado.
   }
-}
-
-async function lattesTab(): Promise<number | undefined> {
-  const [tab] = await chrome.tabs.query({ url: LATTES_MENU });
-  return tab?.id;
-}
-
-async function injectRunner(tabId: number): Promise<void> {
-  await chrome.scripting.executeScript({ files: ['lattes-runner.js'], target: { tabId } });
 }
 
 interface Identity {
@@ -141,45 +139,22 @@ async function sendSession(editor: EditorEndpoint, fresh = false): Promise<void>
   }
 }
 
-type EspelhoReply = Extract<BridgeMessage, { type: 'espelho' }>;
-
-/** A versão atual do Lattes, para o diagnóstico do editor; só lê, e só com o "ok" do aviso. */
+/** A versão atual do Lattes, para o diagnóstico (lattes-tab.ts). */
 async function sendEspelho(editor: EditorEndpoint): Promise<void> {
-  const reply = async (r: Omit<EspelhoReply, 'type'>) =>
-    toEditor(editor, { ...r, type: 'espelho' });
-  if (!(await hasConsent())) {
-    await reply({ error: 'Aceite o aviso da extensão antes de ler o Lattes.' });
-    return;
-  }
-  const tabId = await lattesTab();
-  if (tabId === undefined) {
-    await reply({ error: 'Abra o currículo no Lattes (a página do menu) numa aba.' });
-    return;
-  }
-  try {
-    await injectRunner(tabId);
-    const [res] = await chrome.scripting.executeScript({
-      func: () =>
-        (
-          globalThis as unknown as {
-            __ponte: { espelho(): Promise<Omit<EspelhoReply, 'type'>> };
-          }
-        ).__ponte.espelho(),
-      target: { tabId },
-    });
-    await reply(res?.result ?? { error: 'A aba do Lattes não respondeu.' });
-  } catch {
-    await reply({ error: 'A aba do Lattes não respondeu.' });
-  }
+  await toEditor(editor, { ...(await readEspelho()), type: 'espelho' });
 }
 
 async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<void> {
   if (msg.type === 'ola') {
-    // O que o app anunciou fica para o painel comparar com a extensão. É
-    // secundário: se não gravar, o aperto de mão segue.
-    await chrome.storage.session
-      .set({ [APP_KEY]: { features: msg.features, version: msg.version } })
-      .catch(() => undefined);
+    // O que o app de desktop anunciou fica para o painel comparar com a
+    // extensão, e sai quando a porta dele fecha. Uma aba de editor em
+    // localhost (desenvolvimento) não entra. É secundário: se não gravar, o
+    // aperto de mão segue.
+    if (editor === 'app') {
+      await chrome.storage.session
+        .set({ [APP_KEY]: { features: msg.features, version: msg.version } })
+        .catch(() => undefined);
+    }
     await toEditor(editor, {
       features: [...BRIDGE_FEATURES],
       type: 'ola',
@@ -240,6 +215,16 @@ async function verifyOn(tabId: number): Promise<ContractReport> {
  * o resultado quando há problema. O "Verificar de novo" do painel força.
  */
 async function verify(auto = false): Promise<void> {
+  if (verifyInFlight) return;
+  verifyInFlight = true;
+  try {
+    await verifyOnce(auto);
+  } finally {
+    verifyInFlight = false;
+  }
+}
+
+async function verifyOnce(auto: boolean): Promise<void> {
   // Sem o "ok" do aviso, nada é lido do Lattes; o painel mostra o aviso no lugar do botão.
   if (!(await hasConsent())) return;
   const state = await readState();
@@ -248,7 +233,8 @@ async function verify(auto = false): Promise<void> {
     if (!shouldAutoVerify(state.verificacao, Date.now())) return;
     if ((await lattesTab()) === undefined) return;
   }
-  await writeState({ ...state, verificando: true });
+  // Lido de novo: a fila pode ter mudado durante as esperas acima.
+  await writeState({ ...(await readState()), verificando: true });
   // O "verificando" fica gravado; se algo estourar aqui, precisa ser desfeito
   // mesmo assim, senão o botão do painel fica preso.
   let report = failedReport('Falha inesperada');
