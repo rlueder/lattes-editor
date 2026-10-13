@@ -129,6 +129,38 @@ async function sendSession(editor: EditorEndpoint, fresh = false): Promise<void>
   }
 }
 
+type EspelhoReply = Extract<BridgeMessage, { type: 'espelho' }>;
+
+/** A versão atual do Lattes, para o diagnóstico do editor; só lê, e só com o "ok" do aviso. */
+async function sendEspelho(editor: EditorEndpoint): Promise<void> {
+  const reply = async (r: Omit<EspelhoReply, 'type'>) =>
+    toEditor(editor, { ...r, type: 'espelho' });
+  if (!(await hasConsent())) {
+    await reply({ error: 'Aceite o aviso da extensão antes de ler o Lattes.' });
+    return;
+  }
+  const tabId = await lattesTab();
+  if (tabId === undefined) {
+    await reply({ error: 'Abra o currículo no Lattes (a página do menu) numa aba.' });
+    return;
+  }
+  try {
+    await injectRunner(tabId);
+    const [res] = await chrome.scripting.executeScript({
+      func: () =>
+        (
+          globalThis as unknown as {
+            __ponte: { espelho(): Promise<Omit<EspelhoReply, 'type'>> };
+          }
+        ).__ponte.espelho(),
+      target: { tabId },
+    });
+    await reply(res?.result ?? { error: 'A aba do Lattes não respondeu.' });
+  } catch {
+    await reply({ error: 'A aba do Lattes não respondeu.' });
+  }
+}
+
 async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<void> {
   if (msg.type === 'ola') {
     await toEditor(editor, { type: 'ola', version: chrome.runtime.getManifest().version });
@@ -137,6 +169,10 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
   }
   if (msg.type === 'parar') {
     stopRequested = true;
+    return;
+  }
+  if (msg.type === 'pedir-espelho') {
+    await sendEspelho(editor);
     return;
   }
   const state = await readState();

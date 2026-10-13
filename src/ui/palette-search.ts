@@ -71,11 +71,12 @@ const action = (id: string, label: string, context: string): PaletteEntry => ({
   sectionId: '',
 });
 
-/** Ações do ⌘K: criar itens dos tipos mais usados e gerar a importação. */
+/** Ações do ⌘K: criar itens dos tipos mais usados, gerar a importação e o diagnóstico. */
 export function paletteActions(): PaletteEntry[] {
   return [
     ...FORM_SPECS.map((f) => action(`novo:${f.itemName}`, f.title, 'Novo')),
     action('novo', 'Outro tipo de item…', 'Novo'),
     action('exportar', 'Levar ao Lattes (importar e alterações)', ''),
+    action('diagnostico', 'Diagnóstico do currículo', ''),
   ];
 }

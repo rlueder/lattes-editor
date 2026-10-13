@@ -60,6 +60,14 @@ o formulário pelo Crossref.
 Também dá para imprimir ou salvar em PDF nas regras da NBR 14724, com
 referências na NBR 6023, e compartilhar o currículo por um código QR.
 
+Para quem volta ao Lattes depois de muito tempo, o **Diagnóstico do
+currículo** (no <kbd>⌘K</kbd>, ou pela faixa do cabeçalho quando o Lattes tem
+pendências que o editor não conhece) mostra a data da última publicação, o
+que mudou no Lattes desde a exportação (com a extensão, comparando os
+títulos das produções e dos eventos) e o que vale conferir no currículo
+inteiro: duplicatas, ISSN, DOI, datas e vínculos antigos ainda marcados como
+atuais. Só aponta; nada muda sem você.
+
 ## Privacidade
 
 Não há servidor nem conta. O currículo é lido e guardado no próprio

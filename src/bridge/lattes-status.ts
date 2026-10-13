@@ -8,6 +8,8 @@
 // em seu currículo que ainda não foram enviadas ao CNPq"). Que o aviso some
 // depois de "Enviar ao CNPq" é inferido, não observado.
 
+import { plainText } from './html-text.ts';
+
 export interface LattesStatus {
   /** Data da última publicação, AAAA-MM-DD. */
   lastPublished?: string;
@@ -15,29 +17,6 @@ export interface LattesStatus {
   pending: boolean;
   /** Quando o editor recebeu esta leitura (ms); o que foi gravado depois, ela não viu. */
   readAt?: number;
-}
-
-const ENTITIES: Record<string, string> = {
-  aacute: 'á',
-  atilde: 'ã',
-  ccedil: 'ç',
-  eacute: 'é',
-  iacute: 'í',
-  nbsp: ' ',
-  oacute: 'ó',
-  otilde: 'õ',
-  Uacute: 'Ú',
-  uacute: 'ú',
-};
-
-/** Texto do HTML: sem scripts, estilos e tags, com as entidades do Latin-1 resolvidas. */
-function plainText(html: string): string {
-  return html
-    .replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, ' ')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&(\w+);/g, (m, name: string) => ENTITIES[name] ?? m)
-    .replace(/&#(\d+);/g, (_, code: string) => String.fromCharCode(Number(code)))
-    .replace(/\s+/g, ' ');
 }
 
 /**
