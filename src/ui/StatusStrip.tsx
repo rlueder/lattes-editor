@@ -14,16 +14,19 @@ const TIPS: Partial<Record<StripSegment['kind'], string>> = {
     'Gravadas no Lattes e ainda não publicadas. O Lattes não descarta; para voltar atrás, desfaça antes de "Enviar ao CNPq". Abre o registro do enviado.',
   original: 'O currículo como veio da última exportação do Lattes.',
   'pendencia-desconhecida':
-    'O Lattes tem alterações não enviadas ao CNPq que não passaram por este editor (feitas direto no Lattes ou em outro aparelho).',
+    'O Lattes tem alterações não enviadas ao CNPq que não passaram por este editor (feitas direto no Lattes ou em outro aparelho). Abre o diagnóstico.',
   publicado: 'Data da última publicação, lida do Lattes aberto no navegador.',
 };
+
+/** As contagens que abrem algo: a lista de alterações, o registro do enviado, o diagnóstico. */
+export type StripOpenKind = 'alteracoes' | 'no-lattes' | 'pendencia-desconhecida';
 
 export function StatusStrip({
   onOpen,
   state,
 }: {
   state: StripState;
-  onOpen: (kind: 'alteracoes' | 'no-lattes') => void;
+  onOpen: (kind: StripOpenKind) => void;
 }) {
   if (state.segments.length === 0) return <StorageBadge />;
   return (
@@ -42,7 +45,9 @@ export function StatusStrip({
               </span>
             )}
             <Tip label={tip}>
-              {kind === 'alteracoes' || kind === 'no-lattes' ? (
+              {kind === 'alteracoes' ||
+              kind === 'no-lattes' ||
+              kind === 'pendencia-desconhecida' ? (
                 <button className={className} type="button" onClick={() => onOpen(kind)}>
                   {label}
                 </button>

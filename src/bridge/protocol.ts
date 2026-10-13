@@ -3,6 +3,7 @@
 // não conhece a versão do outro ignora a mensagem.
 
 import type { OpResult } from './apply.ts';
+import type { EspelhoItem } from './espelho.ts';
 import type { LattesStatus } from './lattes-status.ts';
 import type { BridgeOp } from './plan.ts';
 
@@ -12,7 +13,11 @@ export const BRIDGE_SOURCE = 'lattes-ponte';
 
 export type EditorMessage =
   /** lattesId: o currículo aberto no editor; a ponte só grava se a sessão do Lattes for dele. */
-  { lattesId?: string; ops: BridgeOp[]; type: 'enviar' } | { type: 'ola' } | { type: 'parar' };
+  | { lattesId?: string; ops: BridgeOp[]; type: 'enviar' }
+  | { type: 'ola' }
+  | { type: 'parar' }
+  /** Pede a versão atual do Lattes (página de conferência), só leitura. */
+  | { type: 'pedir-espelho' };
 
 export type BridgeMessage =
   /** lattesId: de qual currículo é o código, para o editor não guardar o de outro. */
@@ -20,6 +25,11 @@ export type BridgeMessage =
   /** O que o menu do Lattes mostra: data da última publicação e pendência. */
   | { lattesId?: string; status: LattesStatus; type: 'estado-lattes' }
   | { result: OpResult; type: 'resultado' }
+  /**
+   * Os itens da página de conferência do Lattes, ou o motivo de não ter
+   * lido; lattesId diz de qual currículo é a sessão.
+   */
+  | { error?: string; items?: EspelhoItem[]; lattesId?: string; type: 'espelho' }
   | { type: 'fim' }
   | { type: 'ola'; version: string };
 
