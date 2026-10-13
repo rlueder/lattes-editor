@@ -1,4 +1,4 @@
-// Injetado na aba do menu do Lattes. Roda o núcleo da ponte com a sessão do
+// Injetado na aba do menu do Lattes. Roda o núcleo do conector com a sessão do
 // próprio usuário: fetch na mesma origem (cookies dele), DOMParser para ler
 // os formulários. Nada de senha passa por aqui.
 
@@ -83,7 +83,7 @@ interface ExportReply {
   zip?: string;
 }
 
-(globalThis as unknown as { __ponte: unknown }).__ponte = {
+(globalThis as unknown as { __conector: unknown }).__conector = {
   apply: (op: BridgeOp) => applyOp(op, port),
   // Só leitura: a página de conferência, com o que ainda não foi enviado ao
   // CNPq (docs/lattes_internals.md, seção 10). O código do currículo vem do

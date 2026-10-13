@@ -89,7 +89,7 @@ export async function exportCv(
   return { bytes: res.bytes, fileName: zipFileName(res.disposition, lattesId), ok: true };
 }
 
-/** Bytes em base64, para a mensagem da ponte (JSON). */
+/** Bytes em base64, para a mensagem do conector (JSON). */
 export function toBase64(bytes: Uint8Array): string {
   let binary = '';
   for (let i = 0; i < bytes.length; i += 0x8000) {

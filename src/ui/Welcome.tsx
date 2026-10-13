@@ -4,10 +4,12 @@
 
 import { type DragEvent, useRef, useState } from 'react';
 
+import type { Link } from '../bridge/link.ts';
 import { isDesktop, pickFileNative } from '../desktop/native.ts';
+import { onboardingPreview } from '../dev/onboarding-preview.ts';
 import { parseXml } from '../model/xml.ts';
-import { PlusIcon, SearchIcon, UploadIcon } from './icons.tsx';
-import { failureText } from './lattes-open.ts';
+import { CheckIcon, PlusIcon, SearchIcon, SpinnerIcon, UploadIcon } from './icons.tsx';
+import { onboardingSteps, type Step } from './onboarding.ts';
 import { buildSections } from './sections.ts';
 import { SettingsMenu } from './SettingsMenu.tsx';
 import { Sidebar } from './Sidebar.tsx';
@@ -49,12 +51,44 @@ interface Props {
   error?: string | null;
   /** Abrir do Lattes pela extensão (use-lattes-open.ts). */
   lattes: LattesOpen;
+  /** A ligação com a extensão, que marca os passos do primeiro uso. */
+  link: Link;
   theme: ThemePref;
   onFile: (file: File) => void;
   onTheme: (theme: ThemePref) => void;
 }
 
-export function Welcome({ error, lattes, onFile, onTheme, theme }: Props) {
+/** O botão do passo: um link para fora (abre no navegador) ou pedir o currículo de novo. */
+function StepAction({
+  action,
+  onRetry,
+}: {
+  action: NonNullable<Step['action']>;
+  onRetry: () => void;
+}) {
+  if (action.kind === 'link') {
+    return (
+      <a
+        className="button primary onboarding-action"
+        href={action.href}
+        rel="noreferrer"
+        target="_blank"
+      >
+        {action.label}
+      </a>
+    );
+  }
+  return (
+    <button className="primary onboarding-action" type="button" onClick={onRetry}>
+      {action.label}
+    </button>
+  );
+}
+
+export function Welcome({ error, lattes, link, onFile, onTheme, theme }: Props) {
+  // No `pnpm dev`, ?primeiro-uso=<estado> mostra um estado fixo para revisar.
+  const preview = import.meta.env.DEV ? onboardingPreview(location.search) : undefined;
+  const steps = onboardingSteps(preview?.link ?? link, preview?.open ?? lattes.state);
   const [over, setOver] = useState(false);
   const input = useRef<HTMLInputElement>(null);
 
@@ -108,52 +142,45 @@ export function Welcome({ error, lattes, onFile, onTheme, theme }: Props) {
 
       <main className="content">
         <div className="section-main section-main-empty">
-          <div className="empty-section welcome-step">
-            <OpenArt />
-            {lattes.state.kind === 'abrindo' ? (
-              <>
-                <h1 className="empty-title">Abrindo seu currículo do Lattes…</h1>
-                <p className="empty-text">
-                  A extensão está exportando o currículo da sessão aberta no navegador.
-                </p>
-              </>
-            ) : (
-              <>
-                <h1 className="empty-title">Abra seu currículo</h1>
-                <p className="empty-text">
-                  {lattes.available
-                    ? 'Com o Lattes aberto no navegador, a extensão traz o currículo. Ou solte aqui o arquivo exportado, '
-                    : 'No Lattes, exporte o currículo em Ferramentas › Exportar e solte aqui o arquivo '}
-                  <code>CV_&lt;id&gt;.zip</code> ou o <code>.xml</code>.
-                </p>
-              </>
-            )}
-            {lattes.state.kind === 'falhou' && (
-              <p className="welcome-lattes-fail" role="status">
-                {failureText(lattes.state.reason, lattes.state.detail)}
+          <div className="welcome-step onboarding-layout">
+            <div className="onboarding-intro">
+              <OpenArt />
+              <h1 className="empty-title">Abra seu currículo do Lattes</h1>
+              <p className="onboarding-lead">
+                Depois de três passos na primeira vez, o editor abre o currículo sozinho.
               </p>
-            )}
-            <div className="empty-actions">
-              {lattes.available && (
-                <button
-                  className="primary"
-                  disabled={lattes.state.kind === 'abrindo'}
-                  type="button"
-                  onClick={lattes.open}
-                >
-                  {lattes.state.kind === 'falhou' ? 'Tentar de novo' : 'Abrir do Lattes'}
-                </button>
-              )}
-              <button
-                className={lattes.available ? undefined : 'primary'}
-                type="button"
-                onClick={pick}
-              >
-                Escolher arquivo
-              </button>
             </div>
-            {error && <p className="error">{error}</p>}
-            <p className="empty-caption">O arquivo não sai do seu computador.</p>
+            <ol className="onboarding">
+              {steps.map((step, i) => (
+                <li
+                  key={step.title}
+                  aria-current={step.status === 'agora' ? 'step' : undefined}
+                  className={`onboarding-step ${step.status}`}
+                >
+                  <span aria-hidden="true" className="onboarding-mark">
+                    {step.status === 'feito' ? <CheckIcon /> : step.busy ? <SpinnerIcon /> : i + 1}
+                  </span>
+                  <div className="onboarding-body">
+                    <h2 className="onboarding-title">{step.title}</h2>
+                    <p className="onboarding-text">{step.text}</p>
+                    {step.status === 'agora' && step.action && (
+                      <StepAction action={step.action} onRetry={lattes.open} />
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <div className="onboarding-file">
+              <button className="link-button" type="button" onClick={pick}>
+                Prefiro abrir o arquivo exportado
+              </button>
+              <p className="onboarding-manual">
+                No Lattes, em <span className="pill">Ferramentas › Exportar</span>; depois, solte
+                aqui o <span className="pill mono">CV_&lt;id&gt;.zip</span>. O arquivo não sai do
+                seu computador.
+              </p>
+              {error && <p className="error">{error}</p>}
+            </div>
           </div>
         </div>
         <input

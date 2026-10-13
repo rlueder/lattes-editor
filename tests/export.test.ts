@@ -49,7 +49,7 @@ function fakeLattes(opts: {
   return { calls, port };
 }
 
-describe('Abrir do Lattes: o Exportar pela ponte', () => {
+describe('Abrir do Lattes: o Exportar pelo conector', () => {
   it('a tela, depois o POST do "Confirmar" com XML, e o ZIP', async () => {
     const { calls, port } = fakeLattes({});
     const r = await exportCv(port, CODE, ID);

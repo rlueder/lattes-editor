@@ -1,4 +1,4 @@
-// Registro do que a ponte gravou no Lattes. O Lattes não mostra o que está
+// Registro do que o conector gravou no Lattes. O Lattes não mostra o que está
 // pendente nem deixa descartar antes de "Enviar ao CNPq"
 // (docs/lattes_internals.md, seção 10); este registro é o único lugar onde a
 // pessoa vê o que foi gravado e de onde pode desfazer.

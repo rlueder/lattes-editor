@@ -1,10 +1,10 @@
-// Ligação do editor com a extensão da ponte: descobre se ela está instalada
+// Ligação do editor com a extensão do conector: descobre se ela está instalada
 // (aperto de mão), planeja as alterações que ela sabe levar, manda a fila e
 // acompanha os resultados. Também recebe o código do currículo, que a
 // extensão lê no Lattes, para a foto do perfil.
 //
 // No app de desktop, as mensagens vão e voltam por mensagens nativas (eventos
-// e comando do próprio app, ver src-tauri/src/ponte.rs). No navegador, em
+// e comando do próprio app, ver src-tauri/src/conector.rs). No navegador, em
 // desenvolvimento, por postMessage com o script de conteúdo.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -50,8 +50,8 @@ const HELLO: EditorMessage = {
 const post = (msg: EditorMessage): void => {
   if (isDesktop()) {
     void import('@tauri-apps/api/core')
-      .then(({ invoke }) => invoke('ponte_send', { msg: JSON.stringify(editorMessage(msg)) }))
-      // Extensão não conectada: o editor fica sem a ponte, como no navegador sem extensão.
+      .then(({ invoke }) => invoke('conector_send', { msg: JSON.stringify(editorMessage(msg)) }))
+      // Extensão não conectada: o editor fica sem o conector, como no navegador sem extensão.
       .catch(() => undefined);
     return;
   }
@@ -59,9 +59,9 @@ const post = (msg: EditorMessage): void => {
 };
 
 /**
- * Escuta a extensão. No desktop, os eventos do app; "ponte-conectada" pede o
+ * Escuta a extensão. No desktop, os eventos do app; "conector-ligado" pede o
  * aperto de mão de novo (a extensão pode ter chegado depois do editor) e
- * "ponte-desconectada" desliga o envio.
+ * "conector-desligado" desliga o envio.
  */
 function listen(
   onMessage: (msg: BridgeMessage) => void,
@@ -77,15 +77,15 @@ function listen(
     const offs: (() => void)[] = [];
     void import('@tauri-apps/api/event').then(async ({ listen: on }) => {
       const subs = await Promise.all([
-        on<string>('ponte', (e) => {
+        on<string>('conector', (e) => {
           try {
             receive(JSON.parse(e.payload));
           } catch {
             // Linha que não é JSON: ignorada.
           }
         }),
-        on('ponte-conectada', () => post(HELLO)),
-        on('ponte-desconectada', onLost),
+        on('conector-ligado', () => post(HELLO)),
+        on('conector-desligado', onLost),
       ]);
       if (alive) offs.push(...subs);
       else subs.forEach((off) => off());
@@ -138,7 +138,7 @@ export interface BridgeState {
    * entrada do registro.
    */
   send: (options?: { undo?: SentEntry }) => Promise<void>;
-  /** O que a ponte gravou e conferiu no Lattes para este currículo, do mais recente. */
+  /** O que o conector gravou e conferiu no Lattes para este currículo, do mais recente. */
   sent: SentEntry[];
   stop: () => void;
 }

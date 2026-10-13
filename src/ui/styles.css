@@ -1770,7 +1770,7 @@ a.menu-item.notice {
   margin: 8px 0 0;
 }
 
-/* Enviado ao Lattes: o que a ponte gravou, por dia, com o desfazer. */
+/* Enviado ao Lattes: o que o conector gravou, por dia, com o desfazer. */
 .panel-section.sent .panel-section-head svg {
   width: 16px;
   height: 16px;
@@ -3211,7 +3211,7 @@ body {
   padding-bottom: 8vh;
 }
 
-/* Envio pela extensão da ponte, em "Levar ao Lattes". */
+/* Envio pela extensão do conector, em "Levar ao Lattes". */
 .bridge-block {
   margin: 0 0 14px;
   padding: 12px 14px;
@@ -3285,7 +3285,7 @@ body {
   flex: 1;
 }
 
-/* O botão da ponte carrega o estado: enviar, parar, conferido. */
+/* O botão do conector carrega o estado: enviar, parar, conferido. */
 .bridge-btn {
   display: inline-flex;
   flex: 0 0 auto;
@@ -4538,15 +4538,163 @@ button.primary:hover:not(:disabled) {
   font-size: 0.92em;
 }
 
-.welcome-lattes-fail {
-  max-width: 440px;
-  margin: 0 auto 12px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--warn-bg);
-  color: var(--warn-text);
+/* Primeiro uso (onboarding.ts): três passos numerados, que se marcam
+   sozinhos. O passo da vez fica em destaque, com o botão do que fazer; os
+   seguintes, apagados até chegar a vez. */
+/* Três faixas: o desenho e o título; os três passos lado a lado; o caminho
+   pelo arquivo. Em janela estreita, os passos se empilham. */
+.onboarding-layout {
+  display: grid;
+  justify-items: center;
+  gap: 28px;
+  width: min(880px, 100%);
+  margin: auto;
+  padding-bottom: 8vh;
+  text-align: center;
+}
+
+.onboarding-intro .empty-art {
+  margin: 0 auto 14px;
+}
+
+.onboarding-intro .empty-title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.onboarding-lead {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.onboarding-manual {
+  margin: 14px 0 0;
+  color: var(--muted);
   font-size: 13px;
-  line-height: 1.45;
+  line-height: 1.9;
+}
+
+.pill {
+  display: inline-block;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.pill.mono {
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+.onboarding {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+@media (max-width: 1000px) {
+  .onboarding {
+    grid-template-columns: minmax(0, 1fr);
+    width: min(440px, 100%);
+  }
+}
+
+.onboarding-step {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-content: start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.onboarding-step.agora {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.onboarding-step.depois {
+  opacity: 0.5;
+}
+
+.onboarding-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.onboarding-step.agora .onboarding-mark {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.onboarding-step.feito .onboarding-mark {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.onboarding-title {
+  margin: 4px 0 2px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.onboarding-text {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.onboarding-action {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  margin-top: 10px;
+  padding: 0 14px;
+  border: 1px solid var(--accent-text);
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.onboarding-file {
+  max-width: 52ch;
+}
+
+.onboarding-file .link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .welcome-step .error {

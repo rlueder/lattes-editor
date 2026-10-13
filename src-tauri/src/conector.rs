@@ -1,4 +1,4 @@
-//! Ponte entre o app e a extensão do navegador, por mensagens nativas.
+//! Conector entre o app e a extensão do navegador, por mensagens nativas.
 //!
 //! O navegador não fala com um app que já está aberto: ele inicia um programa
 //! (o "host nativo") e conversa com ele por stdin/stdout. O host é este mesmo
@@ -16,7 +16,7 @@
 //! descarta conexão sem ele (outro usuário da mesma máquina, por exemplo).
 //!
 //! As mensagens passam sem ser interpretadas aqui: são as mesmas do protocolo
-//! da ponte (src/bridge/protocol.ts), que o editor e a extensão conferem.
+//! do conector (src/bridge/protocol.ts), que o editor e a extensão conferem.
 
 use std::collections::hash_map::RandomState;
 use std::fs;
@@ -31,7 +31,7 @@ use std::time::Duration;
 use tauri::{AppHandle, Emitter, State};
 
 /// Nome do host nativo, o mesmo que a extensão passa a `connectNative`.
-pub const HOST_NAME: &str = "lattes_editor.ponte";
+pub const HOST_NAME: &str = "lattes_editor.conector";
 
 /// Identificador do app (tauri.conf.json), que dá nome à pasta de dados.
 pub const IDENTIFIER: &str = "dev.lattes-editor.app";
@@ -68,7 +68,7 @@ fn data_dir() -> Option<PathBuf> {
 }
 
 fn port_file() -> Option<PathBuf> {
-    Some(data_dir()?.join("ponte.txt"))
+    Some(data_dir()?.join("conector.txt"))
 }
 
 /// 128 bits a partir das chaves do RandomState, que a biblioteca padrão tira
@@ -87,14 +87,14 @@ fn secret() -> String {
 
 /// Conexão do host com o app aberto (uma por vez: a mais recente vale).
 #[derive(Default)]
-pub struct Ponte {
+pub struct Conector {
     conn: Arc<Mutex<Option<TcpStream>>>,
 }
 
 /// Escuta numa porta local e repassa ao editor o que vier da extensão.
-/// Eventos para a página: "ponte" (mensagem), "ponte-conectada" e
-/// "ponte-desconectada".
-pub fn start(app: &AppHandle, ponte: &Ponte) -> io::Result<()> {
+/// Eventos para a página: "conector" (mensagem), "conector-ligado" e
+/// "conector-desligado".
+pub fn start(app: &AppHandle, conector: &Conector) -> io::Result<()> {
     let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0))?;
     let port = listener.local_addr()?.port();
     let token = secret();
@@ -102,7 +102,7 @@ pub fn start(app: &AppHandle, ponte: &Ponte) -> io::Result<()> {
     fs::create_dir_all(file.parent().unwrap_or(&file))?;
     write_private(&file, &format!("{port} {token}\n"))?;
 
-    let conn = Arc::clone(&ponte.conn);
+    let conn = Arc::clone(&conector.conn);
     let app = app.clone();
     thread::spawn(move || {
         for stream in listener.incoming().flatten() {
@@ -115,20 +115,20 @@ pub fn start(app: &AppHandle, ponte: &Ponte) -> io::Result<()> {
                 continue;
             }
             *conn.lock().unwrap() = Some(stream);
-            let _ = app.emit("ponte-conectada", ());
+            let _ = app.emit("conector-ligado", ());
             let (app2, conn2) = (app.clone(), Arc::clone(&conn));
             thread::spawn(move || {
                 for line in reader.lines() {
                     match line {
                         Ok(l) if !l.is_empty() => {
-                            let _ = app2.emit("ponte", l);
+                            let _ = app2.emit("conector", l);
                         }
                         Ok(_) => {}
                         Err(_) => break,
                     }
                 }
                 *conn2.lock().unwrap() = None;
-                let _ = app2.emit("ponte-desconectada", ());
+                let _ = app2.emit("conector-desligado", ());
             });
         }
     });
@@ -137,8 +137,8 @@ pub fn start(app: &AppHandle, ponte: &Ponte) -> io::Result<()> {
 
 /// Manda uma mensagem do editor para a extensão (JSON numa linha).
 #[tauri::command]
-pub fn ponte_send(ponte: State<'_, Ponte>, msg: String) -> Result<(), String> {
-    let mut guard = ponte.conn.lock().unwrap();
+pub fn conector_send(conector: State<'_, Conector>, msg: String) -> Result<(), String> {
+    let mut guard = conector.conn.lock().unwrap();
     let stream = guard.as_mut().ok_or("A extensão não está conectada")?;
     let line = msg.replace('\n', " ");
     stream
@@ -176,7 +176,7 @@ fn manifest(exe: &str) -> String {
         .map(|id| json_string(&format!("chrome-extension://{id}/")))
         .collect();
     format!(
-        "{{\n  \"name\": {},\n  \"description\": \"LattesEditor: ponte com a extensão\",\n  \"path\": {},\n  \"type\": \"stdio\",\n  \"allowed_origins\": [{}]\n}}\n",
+        "{{\n  \"name\": {},\n  \"description\": \"LattesEditor: conector com a extensão\",\n  \"path\": {},\n  \"type\": \"stdio\",\n  \"allowed_origins\": [{}]\n}}\n",
         json_string(HOST_NAME),
         json_string(exe),
         origins.join(", ")
@@ -236,7 +236,14 @@ pub fn register() -> io::Result<()> {
             "Software\\Microsoft\\Edge\\NativeMessagingHosts",
         ] {
             let _ = std::process::Command::new("reg")
-                .args(["add", &format!("HKCU\\{key}\\{HOST_NAME}"), "/ve", "/t", "REG_SZ", "/d"])
+                .args([
+                    "add",
+                    &format!("HKCU\\{key}\\{HOST_NAME}"),
+                    "/ve",
+                    "/t",
+                    "REG_SZ",
+                    "/d",
+                ])
                 .arg(&path)
                 .arg("/f")
                 .output();
@@ -294,7 +301,9 @@ pub fn run_host() {
                 thread::sleep(Duration::from_secs(2));
                 continue;
             };
-            let Ok(reader) = stream.try_clone() else { continue };
+            let Ok(reader) = stream.try_clone() else {
+                continue;
+            };
             *current.lock().unwrap() = Some(stream);
             for line in BufReader::new(reader).lines() {
                 let Ok(line) = line else { break };
@@ -332,7 +341,10 @@ mod tests {
         write_message(&mut buf, br#"{"type":"ola"}"#).unwrap();
         assert_eq!(&buf[..4], &14u32.to_ne_bytes());
         let mut cursor = io::Cursor::new(buf);
-        assert_eq!(read_message(&mut cursor).unwrap().unwrap(), br#"{"type":"ola"}"#);
+        assert_eq!(
+            read_message(&mut cursor).unwrap().unwrap(),
+            br#"{"type":"ola"}"#
+        );
         assert!(read_message(&mut cursor).unwrap().is_none());
     }
 
@@ -341,7 +353,7 @@ mod tests {
         let m = manifest(r#"C:\Program Files\LattesEditor\app.exe"#);
         assert!(m.contains(r#""path": "C:\\Program Files\\LattesEditor\\app.exe""#));
         assert!(m.contains("chrome-extension://elkaiefkldcngjdgelfjhjbljefbemac/"));
-        assert!(m.contains(r#""name": "lattes_editor.ponte""#));
+        assert!(m.contains(r#""name": "lattes_editor.conector""#));
     }
 
     #[test]

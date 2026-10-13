@@ -5,10 +5,10 @@
 //! O app nunca abre o Lattes por conta própria: as alterações vão para o
 //! Lattes pela extensão do navegador (ver docs/lattes_product_requirements.md,
 //! "Atualização de 11/10/2026"). A fila vai à extensão por mensagens nativas
-//! (ver ponte.rs).
+//! (ver conector.rs).
 
 mod chave;
-mod ponte;
+mod conector;
 
 use std::fs;
 
@@ -30,8 +30,8 @@ fn write_file(path: String, bytes: Vec<u8>) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Chamado pelo navegador como host nativo: só repassa mensagens, sem janela.
-    if ponte::is_host_invocation() {
-        ponte::run_host();
+    if conector::is_host_invocation() {
+        conector::run_host();
         return;
     }
     tauri::Builder::default()
@@ -39,22 +39,22 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
-        .manage(ponte::Ponte::default())
+        .manage(conector::Conector::default())
         .setup(|app| {
-            debug_assert_eq!(app.config().identifier, ponte::IDENTIFIER);
-            // Falha aqui não impede o editor: só fica sem ponte, e o painel avisa.
-            if let Err(e) = ponte::register() {
-                eprintln!("ponte: registro do host falhou: {e}");
+            debug_assert_eq!(app.config().identifier, conector::IDENTIFIER);
+            // Falha aqui não impede o editor: só fica sem conector, e o painel avisa.
+            if let Err(e) = conector::register() {
+                eprintln!("conector: registro do host falhou: {e}");
             }
-            if let Err(e) = ponte::start(app.handle(), &app.state::<ponte::Ponte>()) {
-                eprintln!("ponte: porta local falhou: {e}");
+            if let Err(e) = conector::start(app.handle(), &app.state::<conector::Conector>()) {
+                eprintln!("conector: porta local falhou: {e}");
             }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             read_file,
             write_file,
-            ponte::ponte_send,
+            conector::conector_send,
             chave::storage_key_get,
             chave::storage_key_set
         ])

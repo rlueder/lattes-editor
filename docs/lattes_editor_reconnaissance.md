@@ -49,7 +49,7 @@ Dicionários (compartilhados): `pkg_dic_autor.lista`, `pkg_identificacao_coautor
 
 Ferramentas: `pkg_impcv.form` (Imprimir), `pkg_impcv.get_arquivo` (Exportar XML), `pkg_importa_xml.inicio` (Importar XML), `pkg_import_cv.lista` (Importação de produção), `PKG_IMPORT_ASSISTENTE.lista` (Assistente de importação), `pkg_publicar.mostrar_cv` (Enviar ao CNPq).
 
-## 3. Mecânica de gravação (a parte que define a ponte)
+## 3. Mecânica de gravação (a parte que define o conector)
 
 Os dois formulários capturados seguem o mesmo padrão:
 
@@ -134,7 +134,7 @@ Nota sobre o que está visível: o currículo atual do Rafael tem 3 linhas de Fo
 
 A busca é um POST para `PRC_INST_FORM` com `f_nome`, `F_CTR=C`, `F_COD`, `F_NIVEL`, `F_STA_OUTRA=N`. A resposta é HTML; cada resultado é um link `javascript:seleciona('<code>','<name>')`. `seleciona` escreve o código e o nome no formulário pai e chama `cancelar()` para fechar o modal. Existe um caminho "Cadastrar nova instituição" (`prc_inst_outra`). O mesmo mecanismo atende cursos (`curso()`) e agências de fomento.
 
-Consequência: uma ponte não precisa conduzir a interface de busca. Ela pode fazer o POST da busca, interpretar os links e escrever `f_inst`, `f_inst_old` e `f_cod_inst` diretamente.
+Consequência: um conector não precisa conduzir a interface de busca. Ele pode fazer o POST da busca, interpretar os links e escrever `f_inst`, `f_inst_old` e `f_cod_inst` diretamente.
 
 ## 5. Superfícies de importação e exportação
 
@@ -193,11 +193,11 @@ Interpretação: as lacunas na sequência exportada (1, 3, 7, 14, 19, 23, 24, 28
 | 3      | URL direta numa nova aba, com a aba do usuário fechada                              | ~3 min                                                           | Abrir o Exportar                                                 |
 | 4      | Por `pkg_login.prc_form` (login automático via SSO), editor aberto como nova janela | A aba saiu do grupo da extensão antes de qualquer chamada        | n/a                                                              |
 
-Isso não prova uma causa. Sugere que uma sessão nascida de uma URL direta é tratada de forma diferente de uma nascida pela janela de login, ou que duas instâncias do editor para o mesmo currículo invalidam uma à outra. Em qualquer caso, o desenho da ponte deve partir do princípio de que a sessão no servidor dura pouco e admite uma instância só, e deve trabalhar na aba que o usuário já tem aberta, em rajadas curtas, verificando a presença do stub `pkg_sec.logon` em cada resposta.
+Isso não prova uma causa. Sugere que uma sessão nascida de uma URL direta é tratada de forma diferente de uma nascida pela janela de login, ou que duas instâncias do editor para o mesmo currículo invalidam uma à outra. Em qualquer caso, o desenho do conector deve partir do princípio de que a sessão no servidor dura pouco e admite uma instância só, e deve trabalhar na aba que o usuário já tem aberta, em rajadas curtas, verificando a presença do stub `pkg_sec.logon` em cada resposta.
 
-## 8. Veredito para a ponte (formatos B, C e D do brainstorm)
+## 8. Veredito para o conector (formatos B, C e D do brainstorm)
 
-- O caminho de escrita é mais simples do que se temia: POST simples, sem CSRF, um único `f_cod`, nomes de campo conhecidos. Uma ponte pode preencher o formulário real e chamar `enviar()`, ou reproduzir o POST a partir do contexto da página com `fetch`, usando a mesma sessão. A segunda opção é mais enxuta e evita por completo os diálogos nativos, ao custo de ser claramente "automação" segundo a redação da Portaria de 2022.
+- O caminho de escrita é mais simples do que se temia: POST simples, sem CSRF, um único `f_cod`, nomes de campo conhecidos. Um conector pode preencher o formulário real e chamar `enviar()`, ou reproduzir o POST a partir do contexto da página com `fetch`, usando a mesma sessão. A segunda opção é mais enxuta e evita por completo os diálogos nativos, ao custo de ser claramente "automação" segundo a redação da Portaria de 2022.
 - O dicionário de instituições é a única dependência real além dos nomes de campo, e é um POST que devolve HTML fácil de interpretar.
 - Os diálogos nativos são a principal fragilidade da abordagem de preencher o formulário real; a abordagem por POST passa ao largo deles.
 - A instabilidade de sessão observada é o principal risco operacional. Ela favorece operações pequenas e retomáveis, executadas dentro da aba do editor que o usuário já tem, em vez de abrir uma segunda.

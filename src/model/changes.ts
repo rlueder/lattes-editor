@@ -3,7 +3,7 @@
 //
 // O Importar só insere itens de produção novos. Mudanças em seções
 // biográficas e em itens que já estão no Lattes precisam ser feitas à mão nos
-// formulários. Esta lista é a entrada da futura ponte com o navegador (fase 3),
+// formulários. Esta lista é a entrada do futuro conector com o navegador (fase 3),
 // então é dado antes de ser tela: cada mudança tem chave estável, caminho e
 // valores antes e depois.
 
@@ -219,7 +219,7 @@ export function revertField(
 
 /**
  * Leva os valores novos de uma mudança "alterado" para o original: depois que
- * a ponte grava e confere no Lattes, o Lattes é o novo "antes", e a mudança
+ * o conector grava e confere no Lattes, o Lattes é o novo "antes", e a mudança
  * sai da lista. É `revertField` no sentido contrário.
  */
 export function acceptChange(original: XElement, working: XElement, change: Change): boolean {
@@ -228,7 +228,7 @@ export function acceptChange(original: XElement, working: XElement, change: Chan
 }
 
 /**
- * O contrário de `acceptChange`: depois que a ponte desfaz uma gravação no
+ * O contrário de `acceptChange`: depois que o conector desfaz uma gravação no
  * Lattes, o original volta aos valores de antes, e a mudança reaparece na
  * lista de alterações (a cópia de trabalho continua com os valores novos).
  * Só atributos; um campo de texto devolve false sem mexer em nada.

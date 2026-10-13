@@ -3,7 +3,7 @@
 //
 // A foto vem do CNPq, para ser sempre a mesma do Lattes. O endereço dela pede
 // o código de 10 caracteres do currículo, que a exportação não traz. Quem o
-// fornece é a extensão (ponte), que o lê da sessão do Lattes; sem ela, ficam
+// fornece é a extensão (conector), que o lê da sessão do Lattes; sem ela, ficam
 // as iniciais, e o lápis sobre o avatar deixa colar o endereço da página uma vez.
 
 import { useEffect, useId, useState } from 'react';
@@ -39,7 +39,7 @@ export function ProfileCard({ profile }: { profile: Profile }) {
   const [asking, setAsking] = useState(false);
   const [sharing, setSharing] = useState(false);
   useEffect(() => setFailed(false), [code]);
-  // A extensão da ponte entrega o código lido no Lattes.
+  // A extensão do conector entrega o código lido no Lattes.
   useEffect(() => {
     const reload = () => setCode(profile.lattesId ? readCvCode(profile.lattesId) : undefined);
     window.addEventListener(CV_CODE_EVENT, reload);

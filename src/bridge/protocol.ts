@@ -1,4 +1,4 @@
-// Mensagens entre o editor (página) e a extensão da ponte, por
+// Mensagens entre o editor (página) e a extensão do conector, por
 // window.postMessage na própria página do editor. Versionadas: um lado que
 // não conhece a versão do outro ignora a mensagem.
 
@@ -10,10 +10,10 @@ import type { BridgeOp } from './plan.ts';
 
 export const PROTOCOL_VERSION = 1;
 export const EDITOR_SOURCE = 'lattes-editor';
-export const BRIDGE_SOURCE = 'lattes-ponte';
+export const BRIDGE_SOURCE = 'lattes-conector';
 
 export type EditorMessage =
-  /** lattesId: o currículo aberto no editor; a ponte só grava se a sessão do Lattes for dele. */
+  /** lattesId: o currículo aberto no editor; o conector só grava se a sessão do Lattes for dele. */
   | { lattesId?: string; ops: BridgeOp[]; type: 'enviar' }
   /** version e features: do app (src/bridge/compat.ts); versões antigas mandam só o tipo. */
   | { features?: string[]; type: 'ola'; version?: string }
@@ -99,7 +99,7 @@ export function bridgeMessage(msg: BridgeMessage): Envelope<BridgeMessage> {
 
 /**
  * Mensagem da própria página: mesma janela e mesma origem. Outra aba, iframe
- * ou site não conversa com a ponte.
+ * ou site não conversa com o conector.
  */
 export function fromSamePage(
   event: { origin: string; source: unknown },

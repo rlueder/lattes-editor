@@ -82,9 +82,9 @@ module.exports = {
       '@semantic-release/github',
       {
         assets: [
-          { label: 'Extensão da ponte (.zip)', path: 'release/lattes-editor-extensao.zip' },
+          { label: 'Extensão do conector (.zip)', path: 'release/lattes-editor-extensao.zip' },
           {
-            label: 'Extensão da ponte para a Chrome Web Store (.zip)',
+            label: 'Extensão do conector para a Chrome Web Store (.zip)',
             path: 'release/lattes-editor-extensao-loja.zip',
           },
         ],

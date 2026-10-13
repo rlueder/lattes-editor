@@ -266,7 +266,7 @@ function vinculoOp(edit: (v: XElement) => void): BridgeOp {
 
 // ---------------------------------------------------------------- testes
 
-describe('ponte: formulário', () => {
+describe('conector: formulário', () => {
   it('envia só controles bem-sucedidos e copia f_vinc para f_vinculo', () => {
     const controls: FormControl[] = [
       { name: 'a', type: 'text', value: '1' },
@@ -311,7 +311,7 @@ describe('ponte: formulário', () => {
   });
 });
 
-describe('ponte: HTML do Lattes', () => {
+describe('conector: HTML do Lattes', () => {
   it('acha links com parâmetros em onclick, href e &amp;', () => {
     const links = findLinks(
       `x("PKG_ATIV.cargos_vinculos?f_cod=K1&amp;F_SEQ_ATIV=5&quot;, true)
@@ -331,7 +331,7 @@ describe('ponte: HTML do Lattes', () => {
   });
 });
 
-describe('ponte: protocolo', () => {
+describe('conector: protocolo', () => {
   it('só aceita mensagens da versão e da origem certas', () => {
     expect(isEditorMessage(editorMessage({ type: 'ola' }))).toBe(true);
     expect(isBridgeMessage(bridgeMessage({ type: 'fim' }))).toBe(true);
@@ -360,7 +360,7 @@ describe('ponte: protocolo', () => {
   });
 });
 
-describe('ponte: plano', () => {
+describe('conector: plano', () => {
   it('mapeia campos do vínculo, situação e conferência do início', () => {
     const op = vinculoOp((v) => {
       setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'More');
@@ -440,13 +440,13 @@ describe('ponte: plano', () => {
   });
 });
 
-describe('ponte: aplicar no Lattes (falso)', () => {
+describe('conector: aplicar no Lattes (falso)', () => {
   it('grava, relê e confere só os campos da operação', async () => {
     const fake = fakeLattes();
-    const op = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'teste — ponte'));
+    const op = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'teste — conector'));
     const r = await applyOp(op, fake.port);
     expect(r).toMatchObject({ key: op.key, status: 'conferido' });
-    expect(fake.vinculo.f_outras_inf_en).toBe('teste — ponte');
+    expect(fake.vinculo.f_outras_inf_en).toBe('teste — conector');
     expect(fake.posts[0]!.path).toBe('PKG_ATIV.VINCULOS');
     expect(fake.posts[0]!.body).toContain('f_vinculo=Celetista');
     expect(fake.posts[0]!.body).not.toContain('salvar');
@@ -591,7 +591,7 @@ describe('ponte: aplicar no Lattes (falso)', () => {
   });
 });
 
-describe('ponte: idioma', () => {
+describe('conector: idioma', () => {
   it('mapeia proficiência para caixa e rádio, e NAO_INFORMADO para vazio', () => {
     const { ops } = idiomaOp('EN', (el) => {
       setAttr(el, 'PROFICIENCIA-DE-ESCRITA', 'RAZOAVELMENTE');

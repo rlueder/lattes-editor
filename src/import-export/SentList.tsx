@@ -1,4 +1,4 @@
-// "Enviado ao Lattes", dentro de "Levar ao Lattes": o que a ponte gravou e
+// "Enviado ao Lattes", dentro de "Levar ao Lattes": o que o conector gravou e
 // conferiu, por dia. O Lattes guarda essas gravações como pendentes até
 // "Enviar ao CNPq" e não tem como descartá-las; desfazer daqui manda de
 // volta o valor de antes, pela mesma confirmação de qualquer envio.
@@ -60,7 +60,7 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
                           wasUndone
                             ? 'Já desfeito'
                             : entry.op.kind === 'criar-atuacao'
-                              ? 'Item criado pela ponte: para tirar, exclua no Lattes, à mão'
+                              ? 'Item criado pelo conector: para tirar, exclua no Lattes, à mão'
                               : bridge.available
                                 ? undefined
                                 : 'Precisa da extensão e do Lattes aberto'

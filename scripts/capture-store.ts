@@ -111,7 +111,7 @@ async function capturePanel(name: 'aviso' | 'fila'): Promise<void> {
   await assertRendered(
     cdp,
     `Painel (${name})`,
-    name === 'fila' ? '#ponte:not([hidden])' : '#aviso:not([hidden])',
+    name === 'fila' ? '#conector:not([hidden])' : '#aviso:not([hidden])',
     {
       needsImages: false,
     },
