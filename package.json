@@ -1,6 +1,6 @@
 {
   "name": "lattes-editor",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "private": true,
   "description": "Editor local do Currículo Lattes: carrega a exportação XML, edita e gera XML para o Importar do Lattes.",
   "license": "MIT",

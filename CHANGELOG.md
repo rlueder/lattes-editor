@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.12.0](https://github.com/rlueder/lattes-editor/compare/v0.11.0...v0.12.0) (2026-10-13)
+
+### Novidades
+
+- **ui:** faixa de estados no cabeçalho e estado do Lattes pela extensão ([#33](https://github.com/rlueder/lattes-editor/issues/33)) ([5485ce4](https://github.com/rlueder/lattes-editor/commit/5485ce4916279e1bb5c96acbc75362fdb3bf31f2))
+
 ## [0.11.0](https://github.com/rlueder/lattes-editor/compare/v0.10.0...v0.11.0) (2026-10-13)
 
 ### Novidades
