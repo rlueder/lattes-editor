@@ -4,7 +4,14 @@
 import { type Dispatch, type SetStateAction, useMemo } from 'react';
 
 import type { Session } from '../forms/use-production.ts';
-import { acceptChange, diffDocuments, revertChange, revertField } from '../model/changes.ts';
+import {
+  acceptChange,
+  type Change,
+  diffDocuments,
+  reopenChange,
+  revertChange,
+  revertField,
+} from '../model/changes.ts';
 import { SEQ_ATTR } from '../model/production.ts';
 import { insertInSchemaOrder } from '../model/schema-order.ts';
 import { getAttr, parseXml, serializeXml, type XElement } from '../model/xml.ts';
@@ -21,6 +28,8 @@ export function useChanges(
 ): {
   /** Mudança gravada e conferida no Lattes pela ponte: vira o novo original. */
   accept: (key: string) => void;
+  /** Uma gravação desfeita no Lattes: a mudança volta para a lista. */
+  reopen: (change: Change) => void;
   discard: (entry: ChangeEntry) => void;
   discardField: (entry: ChangeEntry, attr: string) => void;
   groups: ChangeGroup[];
@@ -72,5 +81,14 @@ export function useChanges(
     onEdit(`Conferido no Lattes: ${entry.itemTitle || entry.change.form}`);
   };
 
-  return { accept, discard, discardField, groups, open: changeCount(groups) };
+  const reopen = (change: Change) => {
+    if (!originalXml) return;
+    const doc = parseXml(originalXml);
+    if (!reopenChange(doc.root, change)) return;
+    const xml = serializeXml(doc);
+    setSession((s) => (s ? { doc: s.doc, meta: { ...s.meta, originalXml: xml } } : s));
+    onEdit(`Desfeito no Lattes: ${change.form}`);
+  };
+
+  return { accept, discard, discardField, groups, open: changeCount(groups), reopen };
 }

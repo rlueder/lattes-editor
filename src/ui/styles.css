@@ -580,6 +580,12 @@ details.sub > summary .item-kind {
   margin-right: 6px;
 }
 
+.history-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
 @media (max-width: 760px) {
   .shell {
     grid-template-columns: 1fr;
@@ -1664,6 +1670,77 @@ details.card.is-new {
 
 .panel-section .export-blocked {
   margin: 8px 0 0;
+}
+
+/* Enviado ao Lattes: o que a ponte gravou, por dia, com o desfazer. */
+.panel-section.sent .panel-section-head svg {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+
+.sent-how {
+  margin: 0 0 10px;
+}
+
+.sent-clear {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.sent-clear p {
+  flex-basis: 100%;
+  margin: 0;
+  text-align: right;
+}
+
+.sent-day + .sent-day {
+  margin-top: 12px;
+}
+
+.sent-day-head {
+  margin: 0;
+  padding: 4px 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.sent-list {
+  margin: 0;
+}
+
+.sent-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sent-head strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sent-time {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+.sent-undo {
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.sent-undone .send-field dd,
+.sent-undone strong {
+  color: var(--muted);
 }
 
 /* Novo item */
@@ -4316,15 +4393,6 @@ button.primary:hover:not(:disabled) {
 .send-before {
   color: var(--muted);
   text-decoration: line-through;
-}
-
-.send-backup {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  background: var(--bg);
 }
 
 /* Tela inicial: o editor sem currículo. Menu e cabeçalho ficam visíveis e

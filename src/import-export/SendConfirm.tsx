@@ -1,12 +1,9 @@
 // Confirmação antes de mandar a fila ao Lattes: o que vai mudar em cada item,
-// campo a campo, e a cópia de segurança do currículo, marcada por padrão.
-
-import { useId, useState } from 'react';
+// campo a campo. O ponto de histórico de antes do envio é guardado sozinho.
 
 import { opRows } from '../bridge/field-labels.ts';
 import type { BridgeOp } from '../bridge/plan.ts';
 import { Modal } from '../ui/Modal.tsx';
-import { Switch } from '../ui/primitives/Switch.tsx';
 
 export function SendConfirm({
   onCancel,
@@ -17,10 +14,8 @@ export function SendConfirm({
   open: boolean;
   ops: BridgeOp[];
   onCancel: () => void;
-  onSend: (backup: boolean) => void;
+  onSend: () => void;
 }) {
-  const [backup, setBackup] = useState(true);
-  const backupId = useId();
   const n = ops.length;
   return (
     <Modal
@@ -30,7 +25,7 @@ export function SendConfirm({
           <button type="button" onClick={onCancel}>
             Cancelar
           </button>
-          <button className="primary" type="button" onClick={() => onSend(backup)}>
+          <button className="primary" type="button" onClick={onSend}>
             Enviar ao Lattes
           </button>
         </>
@@ -60,12 +55,6 @@ export function SendConfirm({
           </li>
         ))}
       </ul>
-      <div className="send-backup">
-        <Switch aria-labelledby={backupId} checked={backup} onChange={setBackup} />
-        <span id={backupId}>
-          Baixar antes uma cópia do currículo como ele está no Lattes (recomendado)
-        </span>
-      </div>
     </Modal>
   );
 }

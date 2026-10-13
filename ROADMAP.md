@@ -17,6 +17,9 @@ arquivo quando muda de fato; o detalhe técnico está em
   - mesmo currículo: existe (a ponte recusa enviar se a sessão do Lattes é
     de outro currículo);
   - ler de volta depois de cada gravação: existe;
+  - registro do que foi gravado, com desfazer: existe ("Enviado ao Lattes",
+    em "Levar ao Lattes"). O Lattes não mostra nem descarta pendências antes
+    de "Enviar ao CNPq", então é aqui que se vê e se volta atrás;
   - recusar quando o formulário mudou: existe (o valor antigo e o início do
     vínculo precisam bater antes de gravar);
   - saber quando o CNPq mudou o Lattes: existe ("Verificar o Lattes" no

@@ -21,6 +21,7 @@ import { PrintDialog } from '../print/PrintDialog.tsx';
 import { usePrint } from '../print/use-print.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 import { CommandPalette } from './CommandPalette.tsx';
+import { copyFileName } from './copy-name.ts';
 import { HistoryDialog, ReloadConfirm } from './dialogs.tsx';
 import { EditorContext } from './editor-context.ts';
 import { type HashRoute, parseHash, writeHash } from './hash-route.ts';
@@ -140,7 +141,7 @@ export function App() {
   const sectionsRef = useRef(sections);
   sectionsRef.current = sections;
   const changes = useChanges(session, sections, version, onEdit, setSession);
-  const bridge = useBridge(session, changes.groups, changes.accept);
+  const bridge = useBridge(session, changes.groups, changes.accept, changes.reopen);
 
   const togglePalette = useCallback(() => session && setPaletteOpen((o) => !o), [session]);
   usePaletteShortcut(togglePalette);
@@ -231,6 +232,14 @@ export function App() {
     pendingNotes.current.push(`Restaurado: ${new Date(entry.savedAt).toLocaleString('pt-BR')}`);
     setVersion((v) => v + 1);
     setHistoryOpen(false);
+  };
+
+  const saveHistoryCopy = (entry: HistoryEntry) => {
+    if (!session) return;
+    void saveBytes(
+      encodeCv(parseXml(entry.xml), session.meta.encoding),
+      copyFileName(session.meta.fileName, new Date(entry.savedAt)),
+    );
   };
 
   const closeFile = async () => {
@@ -362,6 +371,7 @@ export function App() {
         open={historyOpen}
         onClose={closeHistory}
         onRestore={restore}
+        onSave={saveHistoryCopy}
       />
     </div>
   );

@@ -27,7 +27,7 @@ import {
 } from '../src/bridge/protocol.ts';
 import { diffDocuments, resolvePath } from '../src/model/changes.ts';
 import { getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
-import { backupFileName } from '../src/ui/backup.ts';
+import { copyFileName } from '../src/ui/copy-name.ts';
 
 const XML = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS>
 <RESUMO-CV TEXTO-RESUMO-CV-RH="Resumo" TEXTO-RESUMO-CV-RH-EN="Summary"/>
@@ -657,13 +657,13 @@ describe('de quem é o currículo da sessão', () => {
   });
 });
 
-describe('cópia de segurança antes do envio', () => {
-  it('nomeia o arquivo com a data e a hora', () => {
-    expect(backupFileName('CV_123.xml', new Date(2026, 9, 11, 15, 7))).toBe(
-      'CV_123-antes-do-envio-2026-10-11-1507.xml',
+describe('cópia de um ponto do histórico', () => {
+  it('nomeia o arquivo com a data e a hora do ponto', () => {
+    expect(copyFileName('CV_123.xml', new Date(2026, 9, 11, 15, 7))).toBe(
+      'CV_123-copia-2026-10-11-1507.xml',
     );
-    expect(backupFileName('CV_123.zip', new Date(2026, 0, 2, 3, 4))).toBe(
-      'CV_123-antes-do-envio-2026-01-02-0304.xml',
+    expect(copyFileName('CV_123.zip', new Date(2026, 0, 2, 3, 4))).toBe(
+      'CV_123-copia-2026-01-02-0304.xml',
     );
     expect(fieldLabel('f_outras_inf_en')).toBe('Outras informações (inglês)');
     expect(fieldLabel('f_desconhecido')).toBe('f_desconhecido');

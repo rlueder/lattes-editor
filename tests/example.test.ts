@@ -1,13 +1,18 @@
 import { readFileSync } from 'node:fs';
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { SentEntry } from '../src/bridge/sent-log.ts';
 import type { WorkingCopy } from '../src/model/store.ts';
 
 const loadWorkingCopy = vi.fn<() => Promise<WorkingCopy | undefined>>();
 const replaceWorkingCopy = vi.fn<(copy: WorkingCopy) => Promise<void>>();
+const addSent = vi.fn<(entry: SentEntry) => Promise<number | undefined>>();
+const listSent = vi.fn<(lattesId: string) => Promise<SentEntry[]>>();
 vi.mock('../src/model/store.ts', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../src/model/store.ts')>()),
+  addSent,
+  listSent,
   loadWorkingCopy,
   replaceWorkingCopy,
 }));
@@ -16,6 +21,10 @@ const { EXAMPLE_URL, openExampleIfAsked } = await import('../src/dev/example.ts'
 const { examplePhotoUrl } = await import('../src/ui/profile.ts');
 
 const fixture = readFileSync(new URL('../fixtures/synthetic_full.xml', import.meta.url));
+
+beforeEach(() => {
+  listSent.mockResolvedValue([]);
+});
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -55,6 +64,31 @@ describe('currículo de exemplo', () => {
     expect(copy.xml).toContain('<CURRICULO-VITAE');
     expect(copy.nextSequencia).toBe(copy.loadedMaxSequencia + 1);
     expect(copy.loadedMaxSequencia).toBeGreaterThan(0);
+  });
+
+  it('preenche o registro do enviado só no currículo de exemplo e só se estiver vazio', async () => {
+    serve();
+    loadWorkingCopy.mockResolvedValue(undefined);
+    listSent.mockResolvedValue([]);
+    addSent.mockResolvedValue(7);
+    await openExampleIfAsked('?exemplo');
+    const seeded = addSent.mock.calls.map(([e]) => e);
+    expect(seeded).toHaveLength(4);
+    expect(seeded.every((e) => e.lattesId === '0000000000000001')).toBe(true);
+    expect(seeded.at(-1)).toMatchObject({ undoOf: 7 });
+
+    vi.clearAllMocks();
+    listSent.mockResolvedValue([seeded[0]!]);
+    loadWorkingCopy.mockResolvedValue({ xml: fixture.toString('latin1') } as WorkingCopy);
+    await openExampleIfAsked('?exemplo');
+    expect(addSent).not.toHaveBeenCalled();
+
+    loadWorkingCopy.mockResolvedValue({
+      xml: '<CURRICULO-VITAE NUMERO-IDENTIFICADOR="8895603755739711"/>',
+    } as WorkingCopy);
+    listSent.mockResolvedValue([]);
+    await openExampleIfAsked('?exemplo');
+    expect(addSent).not.toHaveBeenCalled();
   });
 
   it('avisa quando o servidor não entrega a fixture', async () => {

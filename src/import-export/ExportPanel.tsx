@@ -14,6 +14,7 @@ import { Modal } from '../ui/Modal.tsx';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { BridgeBlock } from './BridgeBlock.tsx';
 import type { ImportFile } from './import-file.ts';
+import { SentList } from './SentList.tsx';
 
 export interface PendingSummary {
   problems: Problem[];
@@ -181,6 +182,8 @@ export function ExportPanel({
         {bridge && <BridgeBlock bridge={bridge} />}
         <ChangesList groups={changes} onDiscard={onDiscard} onDiscardField={onDiscardField} />
       </section>
+
+      {bridge && <SentList bridge={bridge} />}
     </Modal>
   );
 }

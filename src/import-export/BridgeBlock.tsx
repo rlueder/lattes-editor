@@ -71,9 +71,9 @@ export function BridgeBlock({ bridge }: { bridge: BridgeState }) {
         open={confirming}
         ops={ops}
         onCancel={() => setConfirming(false)}
-        onSend={(backup) => {
+        onSend={() => {
           setConfirming(false);
-          void bridge.send({ backup });
+          void bridge.send();
         }}
       />
     </div>

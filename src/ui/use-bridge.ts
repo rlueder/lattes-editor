@@ -7,11 +7,11 @@
 // e comando do próprio app, ver src-tauri/src/ponte.rs). No navegador, em
 // desenvolvimento, por postMessage com o script de conteúdo.
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { OpResult } from '../bridge/apply.ts';
 import { sameCv } from '../bridge/lattes-html.ts';
-import { planChanges } from '../bridge/plan.ts';
+import { type BridgeOp, planChanges } from '../bridge/plan.ts';
 import {
   type BridgeMessage,
   type EditorMessage,
@@ -19,11 +19,12 @@ import {
   fromSamePage,
   isBridgeMessage,
 } from '../bridge/protocol.ts';
-import { isDesktop, saveBytes } from '../desktop/native.ts';
+import { type SentEntry, sentEntry, undoOp } from '../bridge/sent-log.ts';
+import { isDesktop } from '../desktop/native.ts';
 import type { Session } from '../forms/use-production.ts';
-import { encodeCv } from '../model/document.ts';
-import { getAttr, parseXml } from '../model/xml.ts';
-import { backupFileName } from './backup.ts';
+import type { Change } from '../model/changes.ts';
+import { addHistoryPoint, addSent, clearSent, listSent } from '../model/store.ts';
+import { getAttr } from '../model/xml.ts';
 import type { ChangeGroup } from './changes-view.ts';
 import { writeCvCode } from './profile.ts';
 
@@ -81,6 +82,8 @@ function listen(onMessage: (msg: BridgeMessage) => void, onLost: () => void): ()
 
 export interface BridgeState {
   available: boolean;
+  /** Apaga o registro do enviado deste currículo (nada muda no Lattes). */
+  clearSent: () => Promise<void>;
   /** Quantas alterações foram gravadas e conferidas desde o último envio. */
   confirmed: number;
   /** Alterações que a extensão sabe levar e as que ficam para copiar à mão. */
@@ -88,25 +91,72 @@ export interface BridgeState {
   results: Record<string, OpResult>;
   running: boolean;
   /**
-   * backup: salva antes uma cópia do currículo como está no Lattes (no app,
-   * pelo diálogo de salvar). Se a pessoa cancelar a cópia, nada é enviado.
+   * Antes de mandar, guarda sozinho um ponto no histórico com o currículo
+   * como está no Lattes, sem perguntar nada.
+   * undo: em vez da fila planejada, manda só a operação que desfaz essa
+   * entrada do registro.
    */
-  send: (options?: { backup?: boolean }) => Promise<void>;
+  send: (options?: { undo?: SentEntry }) => Promise<void>;
+  /** O que a ponte gravou e conferiu no Lattes para este currículo, do mais recente. */
+  sent: SentEntry[];
   stop: () => void;
+}
+
+/** O que foi mandado em cada chave da fila, para registrar quando voltar conferido. */
+interface Outgoing {
+  change?: Change;
+  op: BridgeOp;
+  undoOf?: number;
 }
 
 export function useBridge(
   session: Session | null,
   groups: ChangeGroup[],
   onConfirmed: (key: string) => void,
+  onUndone: (change: Change) => void,
 ): BridgeState {
   const confirmedRef = useRef(onConfirmed);
   confirmedRef.current = onConfirmed;
+  const undoneRef = useRef(onUndone);
+  undoneRef.current = onUndone;
+  const outgoing = useRef(new Map<string, Outgoing>());
   const [confirmed, setConfirmed] = useState(0);
   const [available, setAvailable] = useState(false);
   const [results, setResults] = useState<Record<string, OpResult>>({});
   const [running, setRunning] = useState(false);
   const lattesId = session ? getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR') : undefined;
+  const [sent, setSent] = useState<SentEntry[]>([]);
+
+  const reloadSent = useCallback(() => {
+    if (!lattesId) {
+      setSent([]);
+      return;
+    }
+    listSent(lattesId)
+      .then(setSent)
+      .catch(() => setSent([]));
+  }, [lattesId]);
+  useEffect(reloadSent, [reloadSent]);
+
+  /** Só o que voltou conferido entra no registro; falhas não gravaram nada. */
+  const recordConfirmed = useCallback(
+    (key: string) => {
+      const item = outgoing.current.get(key);
+      if (!item || !lattesId) return;
+      outgoing.current.delete(key);
+      const entry = sentEntry(item.op, lattesId, Date.now(), {
+        change: item.change,
+        undoOf: item.undoOf,
+      });
+      void addSent(entry)
+        .then(reloadSent)
+        .catch(() => undefined);
+      if (item.undoOf !== undefined && item.change) undoneRef.current(item.change);
+    },
+    [lattesId, reloadSent],
+  );
+  const recordRef = useRef(recordConfirmed);
+  recordRef.current = recordConfirmed;
 
   useEffect(() => {
     const onMessage = (msg: BridgeMessage) => {
@@ -115,6 +165,7 @@ export function useBridge(
         setResults((r) => ({ ...r, [msg.result.key]: msg.result }));
         if (msg.result.status === 'conferido') {
           setConfirmed((n) => n + 1);
+          recordRef.current(msg.result.key);
           confirmedRef.current(msg.result.key);
         }
       }
@@ -146,24 +197,49 @@ export function useBridge(
 
   return {
     available,
+    clearSent: async () => {
+      if (!lattesId) return;
+      await clearSent(lattesId);
+      setSent([]);
+    },
     confirmed,
     plan,
     results,
     running,
-    send: async ({ backup = false } = {}) => {
-      if (backup && session) {
-        const original = parseXml(session.meta.originalXml);
-        const saved = await saveBytes(
-          encodeCv(original, session.meta.encoding),
-          backupFileName(session.meta.fileName, new Date()),
-        );
-        if (!saved) return;
+    send: async ({ undo } = {}) => {
+      const reverse = undo && undoOp(undo);
+      if (undo && !reverse) return;
+      if (session) {
+        // O currículo como o Lattes está antes deste envio (a exportação com o
+        // que já foi conferido). Restaurar esse ponto põe as alterações de
+        // volta na lista, para desfazê-las pelo caminho de sempre. Se o ponto
+        // não grava, o envio segue: o registro do enviado guarda o antes de
+        // cada campo de qualquer jeito.
+        await addHistoryPoint({
+          keep: true,
+          note: reverse ? 'Lattes antes de desfazer' : 'Lattes antes do envio',
+          savedAt: Date.now(),
+          xml: session.meta.originalXml,
+        }).catch((err: unknown) => console.error('Ponto de histórico não gravou:', err));
       }
+      const changes = new Map(
+        groups.flatMap((g) => g.entries).map((e) => [e.change.key, e.change]),
+      );
+      const ops = reverse ? [reverse] : plan.ops;
+      outgoing.current = new Map(
+        ops.map((op) => [
+          op.key,
+          reverse
+            ? { change: undo?.change, op, undoOf: undo?.id }
+            : { change: changes.get(op.key), op },
+        ]),
+      );
       setResults({});
       setConfirmed(0);
       setRunning(true);
-      post({ lattesId, ops: plan.ops, type: 'enviar' });
+      post({ lattesId, ops, type: 'enviar' });
     },
+    sent,
     stop: () => post({ type: 'parar' }),
   };
 }
