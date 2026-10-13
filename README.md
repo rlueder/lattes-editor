@@ -26,6 +26,12 @@ No macOS, o app é assinado e notarizado pela Apple e abre sem aviso. O
 instalador do Windows ainda não tem assinatura: o SmartScreen avisa na
 primeira abertura; abra os detalhes do aviso e escolha executar.
 
+Depois de instalado, o app se atualiza sozinho: ao abrir e de hora em hora,
+confere se saiu versão nova e, se saiu, um aviso no canto oferece
+"Atualizar" (o sino guarda a mesma oferta). O app baixa o pacote, confere a
+assinatura e reinicia. No Linux, isso vale para o AppImage; o `.deb` se
+atualiza baixando o novo.
+
 No Linux, o `.deb` é pequeno porque usa o WebKitGTK do sistema, que o
 gerenciador de pacotes instala junto. O AppImage roda em qualquer
 distribuição sem instalar nada e por isso leva o WebKitGTK dentro, o que o
@@ -155,7 +161,7 @@ ação.
 
 App e extensão saem do mesmo lançamento, com o mesmo número de versão, mas
 se atualizam separados: a extensão pela loja (ou à mão, quando carregada sem
-compactação), o app quando você baixa outro instalador. No aperto de mão,
+compactação), o app pelo aviso de versão nova. No aperto de mão,
 cada um anuncia o que sabe fazer (`src/bridge/compat.ts`). Quando um dos dois
 está atrás, o sino do app mostra "Extensão desatualizada" ou "App
 desatualizado", e o painel da extensão diz qual atualizar.
@@ -209,7 +215,15 @@ Cada push na `main` passa pelo CI. Com ele verde, o semantic-release decide a
 versão pelos commits (`feat` sobe a menor; `fix`, `perf` e `refactor`, a
 correção), atualiza o `CHANGELOG.md`, cria a tag e publica a página do
 lançamento. Em seguida o app é montado nos três sistemas e os instaladores
-entram na mesma página.
+entram na mesma página, junto com os pacotes de atualização assinados e o
+`latest.json` que o app confere (`.github/workflows/desktop-build.yml`). A
+chave de atualização fica nos segredos `TAURI_SIGNING_PRIVATE_KEY` e
+`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, e a pública em
+`src-tauri/tauri.conf.json`. Sem a privada não há como publicar uma
+atualização que o app aceite: guarde uma cópia fora do GitHub.
+
+Para revisar o aviso sem lançar nada: `pnpm dev` e
+`http://localhost:5173/?simular-atualizacao`.
 
 ## Documentação
 

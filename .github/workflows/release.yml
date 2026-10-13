@@ -52,8 +52,10 @@ jobs:
     uses: ./.github/workflows/desktop-build.yml
     with:
       tag: ${{ needs.release.outputs.tag }}
-    # Só os segredos da assinatura do macOS (ver desktop-build.yml).
+    # Os segredos da assinatura do macOS e da chave de atualização (ver desktop-build.yml).
     secrets:
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
       APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
       APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
       APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}

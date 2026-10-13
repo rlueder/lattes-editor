@@ -24,6 +24,12 @@ tauri = { version = "=2.12.0", features = [] }
 tauri-plugin-dialog = "=2.8.0"
 # Links externos (Chrome Web Store, lançamentos, Lattes) no navegador padrão.
 tauri-plugin-opener = "=2.6.0"
+# Atualização automática: confere o latest.json do último lançamento, baixa
+# o pacote assinado com a chave de atualização e reinicia o app.
+tauri-plugin-updater = "=2.13.0"
+tauri-plugin-process = "=2.4.0"
+# O generate_context! embute a configuração dos plugins (updater) como JSON.
+serde_json = "=1.0.154"
 # Chave que cifra os dados locais do editor, no chaveiro de cada sistema
 # (src/chave.rs). No Linux, Secret Service por D-Bus (precisa do libdbus).
 keyring = { version = "=3.6.3", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust"] }

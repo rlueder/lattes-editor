@@ -4,6 +4,7 @@
 
 import { Menu } from '@base-ui/react/menu';
 
+import { installUpdate } from '../desktop/update.ts';
 import { BellIcon } from './icons.tsx';
 import type { Notice } from './notifications.ts';
 import { Tip } from './primitives/Tip.tsx';
@@ -27,11 +28,13 @@ export function NotificationsMenu({ notices }: { notices: Notice[] }) {
               <Menu.GroupLabel className="menu-heading">Notificações</Menu.GroupLabel>
               {notices.length === 0 && <p className="notice-empty">Nenhuma notificação.</p>}
               {notices.map((n) =>
-                n.action === 'armazenamento' ? (
+                n.action ? (
                   <Menu.Item
                     key={n.id}
                     className={`menu-item notice ${n.level}`}
-                    onClick={openStorageNotice}
+                    onClick={
+                      n.action === 'armazenamento' ? openStorageNotice : () => void installUpdate()
+                    }
                   >
                     <NoticeBody notice={n} />
                   </Menu.Item>

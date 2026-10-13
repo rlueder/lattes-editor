@@ -21,7 +21,10 @@
         "minHeight": 600,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
-        "trafficLightPosition": { "x": 18, "y": 24 }
+        "trafficLightPosition": {
+          "x": 18,
+          "y": 24
+        }
       }
     ],
     "security": {
@@ -64,5 +67,11 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDczQjkwMDVBQUVERkQ5RkIKUldUNzJkK3VXZ0M1YzV2eXpUOUFJSXpJWEZ2bXc5SDIxUWN2N1kyc0FxTzdCRU5kYi9Jd25NVEcK",
+      "endpoints": ["https://github.com/rlueder/lattes-editor/releases/latest/download/latest.json"]
+    }
   }
 }
