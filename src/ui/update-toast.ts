@@ -31,6 +31,11 @@ export function updateToastText(s: UpdateState): UpdateToastText | undefined {
         description: `Baixe a versão ${s.version} na página de lançamentos.`,
         title: 'Não deu para atualizar',
       };
+    case 'reiniciar':
+      return {
+        description: `A versão ${s.version} já está instalada. Feche e abra o app para usar.`,
+        title: 'Atualização instalada',
+      };
     case 'nenhuma':
       return undefined;
   }

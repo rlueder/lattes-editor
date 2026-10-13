@@ -98,6 +98,47 @@ describe('atualização automática', () => {
     error.mockRestore();
   });
 
+  it('conferência que termina durante o download não o desfaz', async () => {
+    let release: (u: { downloadAndInstall: () => Promise<void>; version: string }) => void = () =>
+      undefined;
+    let calls = 0;
+    let finish: () => void = () => undefined;
+    const update = {
+      downloadAndInstall: () => new Promise<void>((r) => (finish = r)),
+      version: '3.0.0',
+    };
+    setUpdateDeps({
+      check: () => {
+        calls++;
+        return calls === 1
+          ? Promise.resolve(update)
+          : (new Promise((r) => (release = r)) as Promise<typeof update>);
+      },
+      relaunch: vi.fn(() => Promise.resolve()),
+    });
+    await checkForUpdate(0);
+    const late = checkForUpdate(CHECK_EVERY_MS);
+    const install = installUpdate();
+    release({ ...update });
+    expect(await late).toEqual({ status: 'baixando', version: '3.0.0' });
+    finish();
+    await install;
+  });
+
+  it('instalada, mas o reinício falha: pede para fechar e abrir', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    setUpdateDeps({
+      check: fakeDeps().check,
+      relaunch: () => Promise.reject(new Error('sem permissão')),
+    });
+    await checkForUpdate();
+    await installUpdate();
+    expect(updateState()).toEqual({ status: 'reiniciar', version: '1.2.3' });
+    expect(await checkForUpdate()).toEqual({ status: 'reiniciar', version: '1.2.3' });
+    expect(updateToastText(updateState())?.title).toBe('Atualização instalada');
+    error.mockRestore();
+  });
+
   it('não confere de novo nem instala duas vezes durante o download', async () => {
     let finish: () => void = () => undefined;
     const check = vi.fn(() =>

@@ -11,7 +11,9 @@ export type UpdateState =
   | { status: 'baixando'; progress?: number; version: string }
   | { status: 'disponivel'; version: string }
   | { status: 'falhou'; version: string }
-  | { status: 'nenhuma' };
+  | { status: 'nenhuma' }
+  /** Instalada, mas o app não conseguiu reiniciar sozinho. */
+  | { status: 'reiniciar'; version: string };
 
 /** O pedaço do plugin updater que o app usa (injetável nos testes). */
 export interface PendingUpdate {
@@ -83,17 +85,23 @@ export function setUpdateDeps(next: UpdateDeps): void {
   deps = next;
 }
 
+/** Baixando ou já instalada: nenhuma conferência mexe mais no estado. */
+function installing(): boolean {
+  return state.status === 'baixando' || state.status === 'reiniciar';
+}
+
 /**
  * Confere se há versão nova. Falha de rede ou de leitura passa em silêncio: a
  * próxima conferência tenta de novo. Uma atualização já em download não é
  * substituída.
  */
 export async function checkForUpdate(now = Date.now()): Promise<UpdateState> {
-  if (!deps || state.status === 'baixando') return state;
+  if (!deps || installing()) return state;
   lastCheckedAt = now;
   try {
     const update = await deps.check();
-    if (!update) return state;
+    // Um download começou enquanto a conferência esperava: ela não mexe nele.
+    if (!update || installing()) return state;
     pending = update;
     setState({ status: 'disponivel', version: update.version });
   } catch (err) {
@@ -123,10 +131,17 @@ export async function installUpdate(): Promise<void> {
         setState({ progress: percent(received, total), status: 'baixando', version });
       }
     });
-    await deps?.relaunch();
   } catch (err) {
     console.error('Atualização falhou:', err);
     setState({ status: 'falhou', version });
+    return;
+  }
+  // Já instalada: se o reinício falhar, basta fechar e abrir o app.
+  try {
+    await deps?.relaunch();
+  } catch (err) {
+    console.error('Reinício depois da atualização falhou:', err);
+    setState({ status: 'reiniciar', version });
   }
 }
 
