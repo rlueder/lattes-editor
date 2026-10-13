@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.16.0](https://github.com/rlueder/lattes-editor/compare/v0.15.0...v0.16.0) (2026-10-13)
+
+### Novidades
+
+- **ui:** criar atuação no Lattes pela ponte, desligado até o teste no Lattes real ([#40](https://github.com/rlueder/lattes-editor/issues/40)) ([34ce1c6](https://github.com/rlueder/lattes-editor/commit/34ce1c6fc1b6b3938e13e38c2c7915a11353ad7b))
+
 ## [0.15.0](https://github.com/rlueder/lattes-editor/compare/v0.14.0...v0.15.0) (2026-10-13)
 
 ### Novidades
