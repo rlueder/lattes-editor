@@ -129,18 +129,38 @@ export function markStorageUnavailable(reason: string): StorageStatus {
   return status;
 }
 
+/**
+ * A chave abre o banco? Testa algumas linhas de cada tabela e só conclui que
+ * a chave é outra se nenhuma abrir: uma linha corrompida sozinha não pode
+ * levar a "Apagar e começar de novo" com a chave certa.
+ */
 async function readable(k: CryptoKey): Promise<boolean> {
-  const sample =
-    (await db.working.get('current'))?.sealed ??
-    (await db.history.filter((r) => isSealed(r.sealed)).first())?.sealed ??
-    (await db.sent.filter((r) => isSealed(r.sealed)).first())?.sealed;
-  if (!sample) return true;
-  try {
-    await unseal(k, sample);
-    return true;
-  } catch {
-    return false;
+  const working = (await db.working.get('current'))?.sealed;
+  const samples = [
+    ...(working ? [working] : []),
+    ...(
+      await db.history
+        .filter((r) => isSealed(r.sealed))
+        .limit(3)
+        .toArray()
+    ).map((r) => r.sealed!),
+    ...(
+      await db.sent
+        .filter((r) => isSealed(r.sealed))
+        .limit(3)
+        .toArray()
+    ).map((r) => r.sealed!),
+  ];
+  if (samples.length === 0) return true;
+  for (const sample of samples) {
+    try {
+      await unseal(k, sample);
+      return true;
+    } catch {
+      // Tenta a próxima.
+    }
   }
+  return false;
 }
 
 /** Cifra as linhas que ficaram em claro (de antes da cifra) e apaga o texto aberto. */

@@ -23,8 +23,14 @@ if (/^#_r_/.test(location.hash)) {
   history.replaceState(null, '', location.pathname + location.search);
 }
 
+const root = createRoot(document.getElementById('root')!);
+
+// Enquanto o chaveiro responde (no Linux pode pedir a senha), a janela já
+// mostra algo, em vez de ficar em branco.
+root.render(<p className="boot">Abrindo o LattesEditor…</p>);
+
 function render() {
-  createRoot(document.getElementById('root')!).render(
+  root.render(
     <StrictMode>
       <TipProvider delay={350}>
         <App />

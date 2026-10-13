@@ -127,6 +127,21 @@ describe('banco local (IndexedDB)', () => {
       expect(kept.map((h) => h.note)).not.toContain('Lattes antes do envio');
     });
 
+    it('uma linha corrompida não faz a chave certa parecer perdida', async () => {
+      await store.saveWorkingCopy(copy('<a/>', 1), 'edição 1');
+      await store.saveWorkingCopy(copy('<b/>', 2), 'edição 2');
+      const [first] = await store.db.history.orderBy('savedAt').toArray();
+      await store.db.history.update(first!.id!, {
+        sealed: { data: new ArrayBuffer(8), iv: new Uint8Array(12) },
+      });
+      await store.db.working.update('current', {
+        sealed: { data: new ArrayBuffer(8), iv: new Uint8Array(12) },
+      });
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      expect(await store.openStorage(key)).toBe('cifrado');
+      expect((await store.listHistory()).map((h) => h.note)).toEqual(['edição 2']);
+    });
+
     it('uma linha que não abre fica de fora, sem derrubar a lista', async () => {
       await store.addSent(sentEntry(resumo('um'), '0000000000000001', 100));
       await store.addSent(sentEntry(resumo('dois'), '0000000000000001', 200));

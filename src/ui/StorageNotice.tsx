@@ -7,6 +7,13 @@ import { useState } from 'react';
 import { resetStorage, type StorageStatus } from '../model/store.ts';
 import { Modal } from './Modal.tsx';
 
+/**
+ * Fechado uma vez, não volta na mesma abertura do app. Fica fora do
+ * componente porque o App o monta em lugares diferentes com e sem currículo
+ * aberto, e o estado local voltaria a "aberto" a cada troca.
+ */
+let dismissed = false;
+
 export function StorageNotice({
   onReset,
   reason,
@@ -17,9 +24,12 @@ export function StorageNotice({
   /** Depois de apagar os dados ilegíveis: o editor volta à tela inicial. */
   onReset: () => void;
 }) {
-  const [open, setOpen] = useState(status !== 'cifrado');
+  const [open, setOpen] = useState(status !== 'cifrado' && !dismissed);
   if (status === 'cifrado') return null;
-  const close = () => setOpen(false);
+  const close = () => {
+    dismissed = true;
+    setOpen(false);
+  };
 
   if (status === 'sem-chave') {
     return (
