@@ -282,6 +282,15 @@ describe('incluir a atuação no Lattes falso', () => {
       { code: 'V123', name: 'Uni A' },
       { code: 'D9', name: 'B' },
     ]);
+    // Entidades e apóstrofo escapado; nome que continua com entidade fica de fora.
+    expect(
+      institutionResults(
+        "seleciona('D1','UNIVERSIDADE D\\'AVILA &amp; FILHOS') seleciona('D2','S&atilde;o Paulo') seleciona('D3','Nome &estranho;')",
+      ),
+    ).toEqual([
+      { code: 'D1', name: "UNIVERSIDADE D'AVILA & FILHOS" },
+      { code: 'D2', name: 'São Paulo' },
+    ]);
   });
 });
 

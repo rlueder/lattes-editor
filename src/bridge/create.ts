@@ -25,6 +25,7 @@ import {
   setPairs,
   successfulPairs,
 } from './form.ts';
+import { decodeHtmlEntities } from './html-text.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
 import type { FieldValues } from './plan.ts';
 
@@ -168,11 +169,24 @@ async function getChecked(port: LattesPort, path: string): Promise<string> {
 }
 
 /** Resultados da busca de instituição: cada um é javascript:seleciona('código','nome'). */
+/**
+ * Os resultados da busca de instituição: `seleciona('<código>','<nome>')`. O
+ * nome pode ter apóstrofo escapado (D\\'Avila) e entidades do HTML; volta
+ * decodificado. Nome que ainda sobra com entidade ou barra fica de fora, para
+ * nunca mandar ao Lattes um nome corrompido.
+ */
 export function institutionResults(html: string): { code: string; name: string }[] {
-  return [...html.matchAll(/seleciona\(\s*'([^']*)'\s*,\s*'([^']*)'\s*\)/g)].map((m) => ({
-    code: m[1]!,
-    name: m[2]!,
-  }));
+  const quoted = String.raw`'((?:\\.|[^'\\])*)'`;
+  const call = new RegExp(
+    String.raw`seleciona\(\s*` + quoted + String.raw`\s*,\s*` + quoted + String.raw`\s*\)`,
+    'g',
+  );
+  return [...html.matchAll(call)]
+    .map((m) => ({
+      code: m[1]!,
+      name: decodeHtmlEntities(m[2]!.replace(/\\(.)/g, '$1')),
+    }))
+    .filter((r) => !/&\w+;|\\/.test(r.name));
 }
 
 /** O código da busca (com a letra na frente) que corresponde ao do XML. */
@@ -285,15 +299,30 @@ export async function applyCreateAtuacao(
     }
     const gridHtml = await getChecked(port, created[0]!.path);
     const vinculo = findLinks(gridHtml, 'pkg_ativ.vinculos').find((l) => l.params.f_seq_hist);
-    if (!vinculo) return result('erro', 'A atuação nova não tem o vínculo no Lattes');
+    // Daqui em diante a atuação existe no Lattes: todo resultado leva a
+    // sequência que ela recebeu, para o registro do enviado saber dela.
+    const seqAtiv = created[0]!.seqAtiv;
+    const assigned = { 'SEQUENCIA-ATIVIDADE': seqAtiv };
+    if (!vinculo) {
+      return {
+        ...result('divergente', `Criada no Lattes (atuação ${seqAtiv}), mas sem o vínculo`),
+        assigned,
+      };
+    }
     const saved = readPairs(port, await getChecked(port, vinculo.path), 'GN_ATIV_VINC').pairs;
     const wrong = READ_BACK.filter((f) => (pairValue(saved, f) ?? '') !== (set[f] ?? ''));
     if (wrong.length > 0) {
-      return result('erro', `O Lattes gravou diferente: ${wrong.join(', ')}`);
+      return {
+        ...result(
+          'divergente',
+          `Criada no Lattes (atuação ${seqAtiv}), mas gravada diferente: ${wrong.join(', ')}`,
+        ),
+        assigned,
+      };
     }
     return {
-      ...result('conferido', `Criado e conferido no Lattes (atuação ${created[0]!.seqAtiv})`),
-      assigned: { 'SEQUENCIA-ATIVIDADE': created[0]!.seqAtiv },
+      ...result('conferido', `Criado e conferido no Lattes (atuação ${seqAtiv})`),
+      assigned,
     };
   } catch (err) {
     if (err instanceof Stop) return result(err.status, err.message);
