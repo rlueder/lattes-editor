@@ -15,6 +15,54 @@ import { normalizeTitle } from './consistency.ts';
 /** Títulos mais curtos que isto casariam com qualquer linha; não são comparados. */
 const MIN_TITLE = 4;
 
+/** Sobrenome em maiúsculas seguido de vírgula: o começo de um autor. */
+const SURNAME = /^[A-ZÀ-Ý][A-ZÀ-Ý'’\- ]*,/u;
+
+/**
+ * O trecho do título numa linha da página, depois dos autores: "TESTE, P.;
+ * OUTRA, A.. Título, 2005. (...)" dá "Título, 2005. (...)". Formato observado
+ * em 12/10/2026 (docs/lattes_internals.md, seção 10); a regra de onde os
+ * autores acabam é inferida. Linha sem autores (eventos) devolve undefined.
+ */
+export function titlePart(text: string): string | undefined {
+  const rest = lastAuthor(text);
+  if (rest === undefined) return undefined;
+  // O fim dos autores é certo no ponto duplo ("P.. ") ou no ponto depois de
+  // um nome por extenso ("LÜDER, Rafael. "); um ponto depois de uma letra só
+  // pode ser de uma inicial ou do próprio título, e aí não há trecho seguro.
+  const double = /\.\.\s+/.exec(rest);
+  if (double) return rest.slice(double.index + double[0].length);
+  // Nome por extenso logo depois da vírgula do sobrenome, e só ali.
+  const fullName = /^[^,]+,\s*(?:\p{Lu}\p{Ll}+\s*)+\.\s+/u.exec(rest);
+  return fullName ? rest.slice(fullName[0].length) : undefined;
+}
+
+/** O trecho que começa no último autor da lista, ou undefined se a linha não abre com autor. */
+function lastAuthor(text: string): string | undefined {
+  if (!SURNAME.test(text)) return undefined;
+  let rest = text;
+  for (;;) {
+    const i = rest.indexOf('; ');
+    if (i < 0 || !SURNAME.test(rest.slice(i + 2))) break;
+    rest = rest.slice(i + 2);
+  }
+  return rest;
+}
+
+/**
+ * Linha com autores sem o fim reconhecido: o texto depois da primeira
+ * inicial do último autor ("ANAIS, B.; TESTE, P. Título" → "Título"), para
+ * que nenhum sobrenome da lista case com um título.
+ */
+function afterAuthors(text: string): string {
+  const rest = lastAuthor(text) ?? text;
+  const m = /,\s*(?:[A-ZÀ-Ý]\.\s*)+/u.exec(rest);
+  return m ? rest.slice(m.index + m[0].length) : '';
+}
+
+/** Título longo o bastante para ser procurado em qualquer ponto da linha. */
+const distinctive = (key: string) => key.length >= 8 || key.includes(' ');
+
 export interface EspelhoDiff {
   /** Itens da exportação com título curto ou vazio demais para comparar. */
   skipped: number;
@@ -69,9 +117,27 @@ export function diffEspelho(lattes: EspelhoItem[], root: XElement): EspelhoDiff 
   const matched = new Set<number>();
   const onlyInLattes: EspelhoItem[] = [];
   for (const line of lattes) {
-    const text = ` ${normalizeTitle(line.text)} `;
+    // Com autores, o título tem de abrir o trecho depois deles: um título
+    // curto ("Design", "Anais") não casa com um sobrenome nem com o veículo.
+    // Sem autores (eventos), vale em qualquer ponto, só para títulos longos.
+    // Linha com cara de autores (sobrenome em maiúsculas e vírgula) mas sem o
+    // fim deles reconhecido: o título tem de estar depois da primeira
+    // inicial do último autor, nunca no meio dos nomes. Cada linha é
+    // normalizada uma vez.
+    const part = titlePart(line.text);
+    const authored = part === undefined && SURNAME.test(line.text);
+    const hay =
+      part !== undefined
+        ? ` ${normalizeTitle(part)} `
+        : ` ${normalizeTitle(authored ? afterAuthors(line.text) : line.text)} `;
+    // Título curto só é exigido longo quando a linha tem autores: sem eles
+    // (eventos), não há sobrenome com que colidir.
+    const matches = (key: string) =>
+      part !== undefined
+        ? hay.startsWith(` ${key} `)
+        : (!authored || distinctive(key)) && hay.includes(` ${key} `);
     // Cada linha casa com um item só, para duplicatas contarem certo.
-    const hit = order.find((i) => !matched.has(i) && text.includes(` ${comparable[i]!.key} `));
+    const hit = order.find((i) => !matched.has(i) && matches(comparable[i]!.key));
     if (hit !== undefined) matched.add(hit);
     else onlyInLattes.push(line);
   }

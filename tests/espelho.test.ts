@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { isEspelhoPage, parseEspelho } from '../src/bridge/espelho.ts';
 import { decodeHtmlEntities, htmlLines } from '../src/bridge/html-text.ts';
 import { parseXml } from '../src/model/xml.ts';
-import { diffEspelho } from '../src/review/espelho-diff.ts';
+import { diffEspelho, titlePart } from '../src/review/espelho-diff.ts';
 
 // Página de conferência sintética, com a ordem e os textos vistos em
 // 12/10/2026 (docs/lattes_internals.md, seção 10). As tags são inferidas.
@@ -61,6 +61,16 @@ describe('página de conferência do Lattes (cv_espelho)', () => {
         text: '2º Encontro de Exemplo, 2007. (Congresso) .',
       },
     ]);
+  });
+
+  it('um título de seção fora da lista encerra a seção comparada', () => {
+    const page = `<div><h1>Producão</h1></div><div>Trabalhos técnicos</div>
+      <div>1. TESTE, P.. Relatório Anual, 2005</div>
+      <div><h1>Projetos de pesquisa</h1></div>
+      <div>1. Projeto que não é produção, 2010</div>
+      <div><h1>Inovação</h1></div>
+      <div>2. Outra coisa numerada</div>`;
+    expect(parseEspelho(page).map((i) => i.text)).toEqual(['TESTE, P.. Relatório Anual, 2005']);
   });
 
   it('reconhece a página de conferência e recusa o login', () => {
@@ -159,6 +169,95 @@ describe('o que mudou no Lattes desde a exportação', () => {
     expect(
       diffEspelho([{ section: 'Produção', text: 'Algo que não é nenhum título daqui' }], root),
     ).toMatchObject({ unreadable: true });
+  });
+
+  it('o título é o trecho depois dos autores', () => {
+    expect(titlePart('TESTE, P.; OUTRA, A.. Site Novo (website), 2025')).toBe(
+      'Site Novo (website), 2025',
+    );
+    expect(titlePart('SILVA, J. A.. Um Título. Anais, 2005')).toBe('Um Título. Anais, 2005');
+    expect(titlePart('LÜDER, Rafael. Embraer Defense Systems, 2005')).toBe(
+      'Embraer Defense Systems, 2005',
+    );
+    expect(titlePart('2º Encontro de Exemplo, 2007. (Congresso) .')).toBeUndefined();
+  });
+
+  it('título curto não casa com sobrenome de autor nem com o veículo', () => {
+    const cvWith = (title: string) =>
+      parseXml(`<CURRICULO-VITAE><PRODUCAO-TECNICA>
+        <TRABALHO-TECNICO SEQUENCIA-PRODUCAO="1">
+          <DADOS-BASICOS-DO-TRABALHO-TECNICO TITULO-DO-TRABALHO-TECNICO="${title}" ANO="2005"/>
+        </TRABALHO-TECNICO>
+        <TRABALHO-TECNICO SEQUENCIA-PRODUCAO="2">
+          <DADOS-BASICOS-DO-TRABALHO-TECNICO TITULO-DO-TRABALHO-TECNICO="Outro Trabalho Real" ANO="2005"/>
+        </TRABALHO-TECNICO></PRODUCAO-TECNICA></CURRICULO-VITAE>`).root;
+    // "Design" é sobrenome de um autor da linha, não o título dela.
+    const byAuthor = diffEspelho(
+      [{ section: 'Produção', text: 'DESIGN, Ana; TESTE, P.. Outro Trabalho Real, 2005' }],
+      cvWith('Design'),
+    );
+    expect(byAuthor.onlyInExport.map((e) => e.title)).toEqual(['Design']);
+    // "Anais" aparece no veículo, depois do título de outro item.
+    const byVenue = diffEspelho(
+      [{ section: 'Produção', text: 'TESTE, P.. Outro Trabalho Real. Anais do Congresso, 2005' }],
+      cvWith('Anais'),
+    );
+    expect(byVenue.onlyInExport.map((e) => e.title)).toEqual(['Anais']);
+  });
+
+  it('autor que não termina como de costume não deixa o sobrenome casar com um título', () => {
+    const one = parseXml(`<CURRICULO-VITAE><PRODUCAO-TECNICA>
+      <TRABALHO-TECNICO SEQUENCIA-PRODUCAO="1">
+        <DADOS-BASICOS-DO-TRABALHO-TECNICO TITULO-DO-TRABALHO-TECNICO="Anais de Exemplo" ANO="2005"/>
+      </TRABALHO-TECNICO></PRODUCAO-TECNICA></CURRICULO-VITAE>`).root;
+    // "P. " é inicial: o fim dos autores não é reconhecido, e o título só
+    // pode estar depois dela.
+    const diff = diffEspelho(
+      [
+        { section: 'Produção', text: 'ANAIS DE EXEMPLO, P. Outro Trabalho, 2005' },
+        { section: 'Produção', text: 'TESTE, P. Anais de Exemplo, 2005' },
+      ],
+      one,
+    );
+    expect(diff.onlyInLattes.map((l) => l.text)).toEqual([
+      'ANAIS DE EXEMPLO, P. Outro Trabalho, 2005',
+    ]);
+    expect(diff.onlyInExport).toEqual([]);
+  });
+
+  it('ponto simples depois de inicial não decide o fim dos autores; título curto de evento casa', () => {
+    expect(titlePart('TESTE, P. Outro Trabalho. Anais, 2005')).toBeUndefined();
+    const xml = (titles: string[]) =>
+      parseXml(
+        `<CURRICULO-VITAE><PRODUCAO-TECNICA>${titles
+          .map(
+            (t, i) => `<TRABALHO-TECNICO SEQUENCIA-PRODUCAO="${i + 1}">
+          <DADOS-BASICOS-DO-TRABALHO-TECNICO TITULO-DO-TRABALHO-TECNICO="${t}" ANO="2005"/>
+        </TRABALHO-TECNICO>`,
+          )
+          .join('')}</PRODUCAO-TECNICA></CURRICULO-VITAE>`,
+      ).root;
+    // O título real casa depois dos autores, mesmo com ponto no meio.
+    expect(
+      diffEspelho(
+        [{ section: 'Produção', text: 'TESTE, P. Outro Trabalho. Anais, 2005' }],
+        xml(['Outro Trabalho']),
+      ),
+    ).toEqual({ onlyInExport: [], onlyInLattes: [], skipped: 0 });
+    // O sobrenome do segundo autor não casa com o título.
+    expect(
+      diffEspelho(
+        [
+          { section: 'Produção', text: 'ANAIS, B.; ANAIS DE EXEMPLO, D. Titulo Qualquer' },
+          { section: 'Produção', text: 'TESTE, P.. Anais de Exemplo, 2005' },
+        ],
+        xml(['Anais de Exemplo', 'Titulo Qualquer']),
+      ),
+    ).toEqual({ onlyInExport: [], onlyInLattes: [], skipped: 0 });
+    // Sem autores (evento), um título curto casa.
+    expect(
+      diffEspelho([{ section: 'Eventos', text: 'Fórum, 2007. (Congresso) .' }], xml(['Fórum'])),
+    ).toEqual({ onlyInExport: [], onlyInLattes: [], skipped: 0 });
   });
 
   it('nada mudou quando cada linha tem o seu item', () => {

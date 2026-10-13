@@ -47,6 +47,17 @@ const SECTIONS = new Set([
   'bancas',
 ]);
 
+/**
+ * Outros títulos de seção, que não foram vistos nesta página mas existem no
+ * currículo (os do menu do Lattes e do currículo público). Inferido: um
+ * título assim encerra a seção comparada, para os itens numerados dele não
+ * caírem em Produção ou Eventos.
+ */
+// Cabeçalhos inteiros (a linha toda, até três palavras a mais): uma linha que
+// só começa com "Projeto" ou "Citações" não encerra a seção.
+const OTHER_SECTION =
+  /^(projetos?|patentes|inovacao|educacao e popularizacao|outras informacoes|citacoes|revisor de|membro de corpo editorial)(\s+[a-z&]+){0,3}$/;
+
 const END = 'totais de producao';
 const ITEM = /^(\d+)\.\s+(.+)$/;
 
@@ -59,7 +70,7 @@ export function parseEspelho(html: string): EspelhoItem[] {
   for (const line of htmlLines(html)) {
     const key = foldText(line);
     if (key === END) break;
-    if (SECTIONS.has(key)) {
+    if (SECTIONS.has(key) || OTHER_SECTION.test(key)) {
       section = key;
       group = undefined;
     } else {
