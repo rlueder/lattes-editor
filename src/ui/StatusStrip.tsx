@@ -6,6 +6,7 @@ import { Fragment } from 'react';
 
 import { Tip } from './primitives/Tip.tsx';
 import { segmentLabel, type StripSegment, type StripState } from './status-strip.ts';
+import { StorageBadge } from './StorageNotice.tsx';
 
 const TIPS: Partial<Record<StripSegment['kind'], string>> = {
   alteracoes: 'Alterações no editor que ainda não foram ao Lattes. Abre "Levar ao Lattes".',
@@ -24,9 +25,10 @@ export function StatusStrip({
   state: StripState;
   onOpen: (kind: 'alteracoes' | 'no-lattes') => void;
 }) {
-  if (state.segments.length === 0) return null;
+  if (state.segments.length === 0) return <StorageBadge />;
   return (
     <nav aria-label="Estado do currículo" className="status-strip">
+      <StorageBadge />
       {state.segments.map((segment, i) => {
         const label = segmentLabel(segment);
         const tip = TIPS[segment.kind] ?? label;

@@ -184,6 +184,22 @@ code {
 
 /* Faixa de estados (LAT-40): discreta, em tom secundário; só o passo que pede
    ação ganha cor. */
+.storage-badge {
+  height: 24px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.storage-badge:hover {
+  border-color: var(--warn-text);
+}
+
 .status-strip {
   display: flex;
   align-items: center;
@@ -5376,4 +5392,14 @@ b {
 .select-trigger:hover:not([data-popup-open]):not(:focus-visible),
 .filter-search:hover:not(:focus-within) {
   border-color: var(--border-focus);
+}
+
+/* Antes do primeiro render: o editor espera a chave dos dados locais. */
+.boot {
+  display: grid;
+  min-height: 100vh;
+  margin: 0;
+  place-items: center;
+  color: var(--muted);
+  font-size: 14px;
 }

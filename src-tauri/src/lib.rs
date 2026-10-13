@@ -1,11 +1,13 @@
 //! App de desktop do LattesEditor: a mesma página do editor num webview do
-//! sistema, com diálogos nativos de abrir e salvar.
+//! sistema, com diálogos nativos de abrir e salvar, e a chave que cifra os
+//! dados locais no chaveiro do sistema (chave.rs).
 //!
 //! O app nunca abre o Lattes por conta própria: as alterações vão para o
 //! Lattes pela extensão do navegador (ver docs/lattes_product_requirements.md,
 //! "Atualização de 11/10/2026"). A fila vai à extensão por mensagens nativas
 //! (ver ponte.rs).
 
+mod chave;
 mod ponte;
 
 use std::fs;
@@ -46,7 +48,13 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![read_file, write_file, ponte::ponte_send])
+        .invoke_handler(tauri::generate_handler![
+            read_file,
+            write_file,
+            ponte::ponte_send,
+            chave::storage_key_get,
+            chave::storage_key_set
+        ])
         .run(tauri::generate_context!())
         .expect("erro ao iniciar o app");
 }

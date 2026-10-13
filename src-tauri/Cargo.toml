@@ -22,6 +22,9 @@ tauri-build = { version = "=2.7.0", features = [] }
 [dependencies]
 tauri = { version = "=2.12.0", features = [] }
 tauri-plugin-dialog = "=2.8.0"
+# Chave que cifra os dados locais do editor, no chaveiro de cada sistema
+# (src/chave.rs). No Linux, Secret Service por D-Bus (precisa do libdbus).
+keyring = { version = "=3.6.3", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust"] }
 
 [profile.release]
 codegen-units = 1
