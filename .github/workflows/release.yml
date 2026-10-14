@@ -1,19 +1,19 @@
-name: Release
+name: Lançar versão
 
-# Depois do CI verde na main, o semantic-release decide a versão pelos
-# commits, atualiza o CHANGELOG, cria a tag e a página do lançamento como
-# rascunho, com a extensão (ver .releaserc.cjs). Havendo lançamento novo, o
-# app de desktop é montado nos três sistemas e entra no mesmo rascunho.
+# Merge na main não lança nada: as mudanças se acumulam até este workflow,
+# disparado à mão (Actions, ou `gh workflow run release.yml`). Ele confere
+# que o CI da main passou no commit atual, e o semantic-release decide uma
+# versão só para tudo o que entrou desde o último lançamento: atualiza o
+# CHANGELOG, cria a tag e a página do lançamento como rascunho, com a extensão
+# (ver .releaserc.cjs). Em seguida o app de desktop é montado nos três
+# sistemas e entra no mesmo rascunho.
 #
-# Rascunho é o portão: o app instalado e a página do projeto só veem a versão
-# depois do workflow "Publicar versão" (publicar.yml), disparado à mão depois
-# de testar os instaladores do rascunho.
+# O rascunho é o portão: o app instalado e a página do projeto só veem a
+# versão depois do workflow "Publicar versão" (publicar.yml), disparado à mão
+# depois de testar os instaladores do rascunho.
 
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: release
@@ -26,7 +26,8 @@ permissions:
 
 jobs:
   release:
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    # Versão só sai da main.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
@@ -34,12 +35,22 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
-          ref: ${{ github.event.workflow_run.head_sha }}
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22
           cache: pnpm
+      # Sem CI verde no commit que vira versão, não há lançamento.
+      - name: CI da main passou neste commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          conclusion=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --branch main \
+            --commit "$GITHUB_SHA" --event push --json conclusion --jq '.[0].conclusion // ""')
+          if [ "$conclusion" != "success" ]; then
+            echo "::error::O CI da main não passou em $GITHUB_SHA (resultado: ${conclusion:-nenhum}). Espere o CI ou corrija antes de lançar."
+            exit 1
+          fi
       - run: pnpm install --frozen-lockfile
       - run: pnpm release
         env:
