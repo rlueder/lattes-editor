@@ -152,7 +152,10 @@ export async function checkLists(
       // As listas não impedem o envio: uma leitura que falhou não derruba o
       // relatório, só a queda da sessão.
       if (port.isFatal?.(err)) throw err;
-      const detail = err instanceof Error ? err.message : 'Falha inesperada';
+      // O detalhe vai para a issue pública: a mensagem de erro pode trazer o
+      // caminho, e o código do currículo nele identifica a pessoa.
+      const detail =
+        err instanceof Error ? err.message.replaceAll(code, '[código]') : 'Falha inesperada';
       out.push({ ...base, added: [], detail, removed: [], status: 'erro' });
       continue;
     }

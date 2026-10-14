@@ -93,6 +93,19 @@ describe('vigia das listas: conferência', () => {
     ]);
   });
 
+  it('o código do currículo não vai para o detalhe', async () => {
+    const checks = await checkLists(
+      {
+        get: async (path) => {
+          throw new Error(`falha ao ler ${path}`);
+        },
+      },
+      'K1',
+      watched.slice(2),
+    );
+    expect(checks[0]?.detail).toBe('falha ao ler b?[código]');
+  });
+
   it('falha que não é Error vira um detalhe genérico', async () => {
     const checks = await checkLists(
       {
