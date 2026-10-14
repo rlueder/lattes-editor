@@ -276,6 +276,34 @@ describe('checkContract', () => {
     expect(blocksKind(undefined, 'idioma')).toEqual([]);
   });
 
+  it('confere as listas pelo código do currículo do menu', async () => {
+    const report = await checkContract(fakeLattes().port);
+    expect(report.status).toBe('ok');
+    expect(report.lists?.map((l) => l.status)).toEqual(WATCHED_LISTS.map(() => 'ok'));
+  });
+
+  it('menu sem o código do currículo não passa as listas sem conferir', async () => {
+    const menu = MENU.replaceAll('K000000000', 'x');
+    const report = await checkContract(fakeLattes({ menu }).port);
+    expect(report.status).toBe('mudou');
+    expect(report.lists?.map((l) => l.status)).toEqual(WATCHED_LISTS.map(() => 'erro'));
+    expect(report.lists?.[0]?.detail).toBe('O código do currículo não está no menu');
+  });
+
+  it('falha ao ler o formulário de uma lista não derruba o relatório', async () => {
+    const report = await checkContract(fakeLattes({ throwAt: 'PKG_EVENTO.form' }).port);
+    expect(report.status).toBe('mudou');
+    expect(report.forms.length).toBeGreaterThan(0);
+    const events = report.lists?.find((l) => l.control === 'F_COD_PROD');
+    expect(events).toMatchObject({ detail: 'rede caiu', status: 'erro' });
+    expect(report.lists?.filter((l) => l.status === 'ok')).toHaveLength(2);
+  });
+
+  it('sessão caída no formulário de uma lista ainda para tudo', async () => {
+    const report = await checkContract(fakeLattes({ logonAt: 'PKG_EVENTO.form' }).port);
+    expect(report.status).toBe('sessao');
+  });
+
   it('aceita outro contrato', async () => {
     const contract: Contract = {
       forms: {

@@ -129,6 +129,11 @@ em "mudou". O painel da extensão lista as diferenças, que não impedem o
 envio, e o relatório para issue leva os nomes, que são públicos. A
 comparação ignora acento e caixa, como a dos campos.
 
+Formulário que não deu para ler (falha de rede, por exemplo) marca só as
+listas dele como "não deu para ler", e o resto do relatório fica. Menu sem o
+código do currículo também: as três listas aparecem como não lidas, em vez de
+passar sem conferir. Só a sessão caída interrompe a conferência inteira.
+
 Na leitura de 14/10/2026 as três listas batiam com as do editor: 243 países
 (o combo repete um), 152 idiomas e as 9 naturezas. O formulário de eventos
 pede o parâmetro `F_STA_DIVULGACAO_CIENTIFICA`, que é o do link "Novo" da

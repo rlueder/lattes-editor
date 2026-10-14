@@ -87,12 +87,14 @@ export function compareList(
   };
 }
 
-export type ListStatus = 'mudou' | 'nao-encontrado' | 'ok';
+export type ListStatus = 'erro' | 'mudou' | 'nao-encontrado' | 'ok';
 
 export interface ListCheck {
   /** Opções que o Lattes tem e o editor não. */
   added: string[];
   control: string;
+  /** Por que não deu para ler o formulário, quando não deu. */
+  detail?: string;
   label: string;
   /** Opções que o editor oferece e o Lattes não tem mais. */
   removed: string[];
@@ -101,6 +103,11 @@ export interface ListCheck {
 
 interface ListPort {
   get(path: string): Promise<string>;
+  /**
+   * Se o erro interrompe a conferência inteira (a sessão caiu). Os outros, como
+   * falha de rede, marcam só as listas daquele formulário como 'erro'.
+   */
+  isFatal?(err: unknown): boolean;
 }
 
 /** Até tantos nomes por lista no relatório; o resto vira contagem. */
@@ -109,6 +116,9 @@ const SHOWN = 5;
 /** Uma linha do relatório para uma lista que não está como o editor espera. */
 export function listText(check: ListCheck): string {
   if (check.status === 'nao-encontrado') return `${check.label}: combo ${check.control} sumiu`;
+  if (check.status === 'erro') {
+    return `${check.label}: não deu para ler${check.detail ? ` (${check.detail})` : ''}`;
+  }
   const names = (list: string[]) =>
     list.length > SHOWN
       ? `${list.slice(0, SHOWN).join(', ')} e mais ${list.length - SHOWN}`
@@ -134,9 +144,19 @@ export async function checkLists(
   for (const list of watched) {
     const path = list.path(code);
     if (!pages.has(path)) pages.set(path, port.get(path));
-    const html = await pages.get(path)!;
-    const observed = selectOptions(html, list.control);
     const base = { control: list.control, label: list.label };
+    let html: string;
+    try {
+      html = await pages.get(path)!;
+    } catch (err) {
+      // As listas não impedem o envio: uma leitura que falhou não derruba o
+      // relatório, só a queda da sessão.
+      if (port.isFatal?.(err)) throw err;
+      const detail = err instanceof Error ? err.message : 'Falha inesperada';
+      out.push({ ...base, added: [], detail, removed: [], status: 'erro' });
+      continue;
+    }
+    const observed = selectOptions(html, list.control);
     if (!observed) {
       out.push({ ...base, added: [], removed: [], status: 'nao-encontrado' });
       continue;
@@ -145,4 +165,16 @@ export async function checkLists(
     out.push({ ...base, added, removed, status: added.length || removed.length ? 'mudou' : 'ok' });
   }
   return out;
+}
+
+/** Todas as listas como não lidas, com o motivo (sem o código do currículo, por exemplo). */
+export function unreadLists(detail: string, watched: WatchedList[] = WATCHED_LISTS): ListCheck[] {
+  return watched.map((list) => ({
+    added: [],
+    control: list.control,
+    detail,
+    label: list.label,
+    removed: [],
+    status: 'erro',
+  }));
 }

@@ -4,8 +4,11 @@ import { reportText } from '../src/bridge/contract.ts';
 import {
   checkLists,
   compareList,
+  type ListCheck,
   listText,
   selectOptions,
+  unreadLists,
+  WATCHED_LISTS,
   type WatchedList,
 } from '../src/bridge/list-watch.ts';
 
@@ -68,6 +71,64 @@ describe('vigia das listas: conferência', () => {
     expect(checks[0]).toMatchObject({ added: ['Alemanha'], removed: [] });
   });
 
+  it('leitura que falha marca só as listas daquele formulário', async () => {
+    let gets = 0;
+    const checks = await checkLists(
+      {
+        get: async (path) => {
+          gets++;
+          if (path.startsWith('a')) throw new Error('rede caiu');
+          return '<p>nada</p>';
+        },
+      },
+      'K1',
+      watched,
+    );
+    // A página que falhou é lida uma vez só, mesmo com duas listas nela.
+    expect(gets).toBe(2);
+    expect(checks.map((c) => [c.label, c.status, c.detail])).toEqual([
+      ['Países', 'erro', 'rede caiu'],
+      ['Idiomas', 'erro', 'rede caiu'],
+      ['Outra', 'nao-encontrado', undefined],
+    ]);
+  });
+
+  it('falha que não é Error vira um detalhe genérico', async () => {
+    const checks = await checkLists(
+      {
+        get: async () => {
+          const notAnError: unknown = 'x';
+          throw notAnError;
+        },
+      },
+      'K1',
+      watched.slice(2),
+    );
+    expect(checks[0]).toMatchObject({ detail: 'Falha inesperada', status: 'erro' });
+  });
+
+  it('o erro fatal (sessão caída) interrompe a conferência', async () => {
+    const fatal = new Error('sessão');
+    await expect(
+      checkLists(
+        {
+          get: async () => {
+            throw fatal;
+          },
+          isFatal: (err) => err === fatal,
+        },
+        'K1',
+        watched,
+      ),
+    ).rejects.toBe(fatal);
+  });
+
+  it('sem código do currículo, todas as listas ficam como não lidas', () => {
+    const checks = unreadLists('sem código');
+    expect(checks.map((c) => c.label)).toEqual(WATCHED_LISTS.map((l) => l.label));
+    expect(checks.every((c) => c.status === 'erro' && c.detail === 'sem código')).toBe(true);
+  });
+
   it('o texto do relatório resume listas longas', () => {
     const many = Array.from({ length: 8 }, (_, i) => `P${i}`);
     expect(
@@ -88,6 +149,17 @@ describe('vigia das listas: conferência', () => {
         status: 'nao-encontrado',
       }),
     ).toBe('Outra: combo f_x sumiu');
+    const failed: ListCheck = {
+      added: [],
+      control: 'f_x',
+      label: 'Outra',
+      removed: [],
+      status: 'erro',
+    };
+    expect(listText({ ...failed, detail: 'rede caiu' })).toBe(
+      'Outra: não deu para ler (rede caiu)',
+    );
+    expect(listText(failed)).toBe('Outra: não deu para ler');
   });
 
   it('as listas entram no relatório para a issue', () => {
