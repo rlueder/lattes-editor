@@ -6,8 +6,10 @@ name: App de desktop
 # releases/latest/download/<nome>. Em PR que mexe no src-tauri (Rust,
 # Cargo, configuração do Tauri), só monta, sem enviar: é onde uma quebra de
 # um sistema só aparece montando. O TypeScript de src/desktop já passa pelo
-# lint, pelos tipos e pelos testes do CI, e uma mudança neste arquivo não
-# exercita os passos de lançamento num PR, que dependem da tag.
+# lint, pelos tipos e pelos testes do CI. Uma mudança só neste arquivo também
+# não dispara a montagem no PR; para conferir a matriz e os passos de montagem
+# antes do merge, rode-o à mão na branch, sem tag
+# (gh workflow run desktop-build.yml --ref <branch>).
 #
 # No lançamento, o app de macOS sai assinado com o Developer ID e notarizado
 # pela Apple, e abre sem aviso; sem os segredos, o lançamento falha. O
