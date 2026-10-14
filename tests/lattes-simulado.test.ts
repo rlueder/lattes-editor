@@ -207,6 +207,123 @@ describe('Lattes simulado: o conector de ponta a ponta', () => {
     expect(getAttr(childElements(unicamp, 'VINCULOS')[0]!, 'TIPO-DE-VINCULO')).toBe('CELETISTA');
   });
 
+  it('inclui formação e projeto pelo conector, sobre uma atuação incluída antes', async () => {
+    const lattes = await start();
+    const code = lattes.state.code;
+    const publish = () =>
+      lattes.port.get(
+        `pkg_publicar.enviar?f_chk=1&f_idioma=1&f_chk_en=1&f_email_contato=&f_email_alternativo=&f_cod=${code}&f_ctr=U`,
+      );
+    // Primeiro a atuação na Unicamp, publicada e exportada de novo.
+    const first = await planEdits((doc) => {
+      find(doc.root, (el) => el.name === 'ATUACOES-PROFISSIONAIS').children.push(
+        element(
+          'ATUACAO-PROFISSIONAL',
+          {
+            'CODIGO-INSTITUICAO': '000000000003',
+            'NOME-INSTITUICAO': 'Universidade Estadual de Campinas',
+            'SEQUENCIA-ATIVIDADE': '9',
+          },
+          [
+            element('VINCULOS', {
+              'ANO-INICIO': '2026',
+              'FLAG-VINCULO-EMPREGATICIO': 'SIM',
+              'SEQUENCIA-HISTORICO': '1',
+              'TIPO-DE-VINCULO': 'CELETISTA',
+            }),
+          ],
+        ),
+      );
+    });
+    expect((await applyAll(first.ops, lattes.port)).map((r) => r.status)).toEqual(['conferido']);
+    await publish();
+    const exportedNow = await exported(lattes);
+    if (!exportedNow.ok) throw new Error(exportedNow.reason);
+
+    const plan = await planEdits((doc) => {
+      find(doc.root, (el) => el.name === 'FORMACAO-ACADEMICA-TITULACAO').children.push(
+        element('MESTRADO', {
+          'ANO-DE-INICIO': '2024',
+          'CODIGO-AGENCIA-FINANCIADORA': '000000000002',
+          'CODIGO-CURSO': '00000004',
+          'CODIGO-INSTITUICAO': '000000000003',
+          'FLAG-BOLSA': 'SIM',
+          NIVEL: '3',
+          'NOME-AGENCIA': 'Coordenação de Aperfeiçoamento de Pessoal de Nível Superior',
+          'NOME-COMPLETO-DO-ORIENTADOR': 'Orientadora de Teste',
+          'NOME-CURSO': 'Genética e Biologia Molecular',
+          'NOME-INSTITUICAO': 'Universidade Estadual de Campinas',
+          'SEQUENCIA-FORMACAO': '9',
+          'STATUS-DO-CURSO': 'EM_ANDAMENTO',
+          'TITULO-DA-DISSERTACAO-TESE': 'Genômica de populações de Butia',
+        }),
+      );
+      const unicamp = find(
+        doc.root,
+        (el) => el.name === 'ATUACAO-PROFISSIONAL' && getAttr(el, 'SEQUENCIA-ATIVIDADE') === '3',
+      );
+      unicamp.children.push(
+        element('ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO', {}, [
+          element(
+            'PARTICIPACAO-EM-PROJETO',
+            { 'ANO-INICIO': '2026', 'SEQUENCIA-FUNCAO-ATIVIDADE': '9' },
+            [
+              element('PROJETO-DE-PESQUISA', {
+                'ANO-FIM': '',
+                'ANO-INICIO': '2026',
+                NATUREZA: 'PESQUISA',
+                'NOME-DO-PROJETO': 'Sementes de palmeiras em bancos de germoplasma',
+                'SEQUENCIA-PROJETO': '9',
+                SITUACAO: 'EM_ANDAMENTO',
+              }),
+            ],
+          ),
+        ]),
+      );
+    }, exportedNow.bytes);
+    expect(plan.unsupported).toEqual([]);
+    expect(plan.ops.map((o) => o.kind).sort()).toEqual(['criar-formacao', 'criar-projeto']);
+    const results = await applyAll(plan.ops, lattes.port);
+    expect(results.map((r) => [r.status, r.detail])).toEqual(
+      results.map((r) => ['conferido', r.detail]),
+    );
+    expect(results.map((r) => r.assigned)).toEqual(
+      expect.arrayContaining([{ 'SEQUENCIA-FORMACAO': '5' }, { 'SEQUENCIA-PROJETO': '2' }]),
+    );
+
+    await publish();
+    const after = await exported(lattes);
+    if (!after.ok) throw new Error(after.reason);
+    const doc = (await loadCv(after.bytes, after.fileName)).doc;
+    const mestrado = find(
+      doc.root,
+      (el) => el.name === 'MESTRADO' && getAttr(el, 'SEQUENCIA-FORMACAO') === '5',
+    );
+    expect(mestrado.attrs.filter((a) => a.value).map((a) => [a.name, a.value])).toEqual(
+      expect.arrayContaining([
+        ['CODIGO-INSTITUICAO', '000000000003'],
+        ['NOME-INSTITUICAO', 'Universidade Estadual de Campinas'],
+        ['CODIGO-CURSO', '00000004'],
+        ['NOME-CURSO', 'Genética e Biologia Molecular'],
+        ['CODIGO-AGENCIA-FINANCIADORA', '000000000002'],
+        ['STATUS-DO-CURSO', 'EM_ANDAMENTO'],
+        ['TITULO-DA-DISSERTACAO-TESE', 'Genômica de populações de Butia'],
+      ]),
+    );
+    const projeto = find(
+      doc.root,
+      (el) => el.name === 'PROJETO-DE-PESQUISA' && getAttr(el, 'SEQUENCIA-PROJETO') === '2',
+    );
+    expect(getAttr(projeto, 'NOME-DO-PROJETO')).toBe(
+      'Sementes de palmeiras em bancos de germoplasma',
+    );
+    const unicamp = find(
+      doc.root,
+      (el) => el.name === 'ATUACAO-PROFISSIONAL' && getAttr(el, 'SEQUENCIA-ATIVIDADE') === '3',
+    );
+    expect(childElements(unicamp, 'ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO')).toHaveLength(1);
+  });
+
   it('para a fila quando a sessão vence no meio, como o Lattes de verdade', async () => {
     const lattes = await start({ expireAfterRequests: 3 });
     const plan = await planEdits((doc) =>

@@ -19,7 +19,7 @@ export const INSTITUTIONS: { code: string; name: string; uf: string }[] = [
 ];
 
 /** Cursos por instituição: o valor é uma letra e 8 dígitos, com espaço no fim (observado). */
-const COURSES: Record<string, [string, string][]> = {
+export const COURSES: Record<string, [string, string][]> = {
   V000000000001: [
     ['V00000001 ', 'Genética e Biologia Molecular'],
     ['V00000002 ', 'Botânica'],

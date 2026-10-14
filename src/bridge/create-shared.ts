@@ -223,8 +223,15 @@ export function readBack(
   const differ: string[] = [];
   const unread: string[] = [];
   for (const [name, value] of Object.entries(set)) {
-    if (!saved.controls.some((c) => c.name === name)) unread.push(labelOf(name));
-    else if (!sameValue(pairValue(saved.pairs, name), value)) differ.push(labelOf(name));
+    const control = saved.controls.find((c) => c.name === name);
+    if (!control) {
+      unread.push(labelOf(name));
+      continue;
+    }
+    // Campo desabilitado (instituição, curso e agência, só pelas buscas, seção
+    // 17) não vai nos pares do envio, mas o valor gravado aparece nele.
+    const current = control.disabled ? control.value : pairValue(saved.pairs, name);
+    if (!sameValue(current, value)) differ.push(labelOf(name));
   }
   return { differ, unread };
 }

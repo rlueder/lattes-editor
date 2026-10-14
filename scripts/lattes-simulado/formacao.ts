@@ -8,7 +8,7 @@
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
-import { AGENCIES, INSTITUTIONS } from './buscas.ts';
+import { AGENCIES, COURSES, INSTITUTIONS } from './buscas.ts';
 import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
@@ -82,6 +82,15 @@ function withLetter(code: string): string {
   return INSTITUTIONS.find((i) => i.code.slice(1) === code)?.code ?? `D${code}`;
 }
 
+/** A letra do curso na lista do simulado (buscas.ts), pelo código sem ela. */
+function courseLetter(el: XElement): string {
+  const code = getAttr(el, 'CODIGO-CURSO') ?? '';
+  const hit = Object.values(COURSES)
+    .flat()
+    .find(([value]) => value.trim().slice(1) === code);
+  return hit?.[0][0] ?? 'D';
+}
+
 const hiddenFrom = (name: string, read: (el: XElement) => string, write?: Binding['write']) =>
   ({ kind: 'hidden', name, read, write }) as Binding;
 
@@ -152,15 +161,16 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
       (el) => getAttr(el, 'NOME-INSTITUICAO') ?? '',
       (el, v) => setIfKnown(el, 'NOME-INSTITUICAO', v),
     ),
-    // O curso vai sem a letra; em qual dos dois campos, o simulado não sabe (inferido).
+    // O curso vai sem a letra: V em f_cod_curso, as outras em f_cod_curso2
+    // (seção 18). A letra vem da lista de cursos do simulado; sem ela, D.
     hiddenFrom(
       'f_cod_curso',
-      () => '',
+      (el) => (courseLetter(el) === 'V' ? (getAttr(el, 'CODIGO-CURSO') ?? '') : ''),
       (el, v) => setIfKnown(el, 'CODIGO-CURSO', v),
     ),
     hiddenFrom(
       'f_cod_curso2',
-      (el) => getAttr(el, 'CODIGO-CURSO') ?? '',
+      (el) => (courseLetter(el) === 'V' ? '' : (getAttr(el, 'CODIGO-CURSO') ?? '')),
       (el, v) => setIfKnown(el, 'CODIGO-CURSO', v),
     ),
     hiddenFrom(

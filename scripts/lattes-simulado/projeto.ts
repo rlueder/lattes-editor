@@ -62,6 +62,11 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
     name,
     read: () => '',
   });
+  const fromIds = (name: string): Binding => ({
+    kind: 'hidden',
+    name,
+    read: () => ids[name] ?? '',
+  });
   const yesNo: [string, string][] = [
     ['S', 'Sim'],
     ['N', 'Não'],
@@ -100,12 +105,14 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
     none('f_txt_setor', 'text', 400),
     none('f_cod_inst_empresa'),
     { disabled: true, kind: 'text', maxLength: 75, name: 'f_inst', read: () => ids.inst ?? '' },
+    // Na alteração, os ocultos da instituição e do vínculo vêm como a escolha
+    // da lista os deixou (inferido: o servidor os relê da atuação).
     ...['f_cod_inst', 'f_cod_inst2', 'f_instold', 'f_inst_old', 'f_instituicoes'].map((n) =>
-      none(n),
+      fromIds(n),
     ),
     { disabled: true, kind: 'text', name: 'f_orgao', read: () => '' },
     ...['f_codorgao', 'f_codorgao2', 'f_orgao_old'].map((n) => none(n)),
-    ...['f_vinc', 'f_stavinc', 'f_enqua', 'f_carga', 'f_regime'].map((n) => none(n)),
+    ...['f_vinc', 'f_stavinc', 'f_enqua', 'f_carga', 'f_regime'].map((n) => fromIds(n)),
     fixed('f_tpo_cooperacao', 'X'),
     fixed('f_tpo_acao_inov', 'X'),
     fixed('f_tematica', 'X'),
@@ -137,14 +144,42 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
 const inclusionPath = (state: LattesState, tipo: string) =>
   `PKG_PROJETO.form?f_tpo_cooperacao=X&amp;f_tpo_acao_inov=X&amp;f_tematica=X&amp;F_sta_inovacao=&amp;f_cod_tipo=${tipo}&amp;f_cod=${state.code}`;
 
+/** O vínculo da atuação como preencherOpener() o copia para o formulário (inferido). */
+function vinculoCopy(atuacao: XElement) {
+  const v = childElements(atuacao, 'VINCULOS')[0];
+  const val = (attrName: string) => (v ? (getAttr(v, attrName) ?? '') : '');
+  return {
+    anoFim: val('ANO-FIM'),
+    anoInic: val('ANO-INICIO'),
+    carga: val('CARGA-HORARIA-SEMANAL'),
+    enqua: val('OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO'),
+    regime: val('FLAG-DEDICACAO-EXCLUSIVA') === 'SIM' ? '3' : '',
+    stavinc: val('FLAG-VINCULO-EMPREGATICIO') === 'SIM' ? '1' : '0',
+    vinc: val('OUTRO-VINCULO-INFORMADO') || val('TIPO-DE-VINCULO'),
+  };
+}
+
 function rowIds(p: Placed, tipo: string): Record<string, string> {
   const code = getAttr(p.atuacao, 'CODIGO-INSTITUICAO') ?? '';
+  const lettered = code ? withLetter(code) : '';
+  const name = getAttr(p.atuacao, 'NOME-INSTITUICAO') ?? '';
+  const v = vinculoCopy(p.atuacao);
   return {
+    f_carga: v.carga,
+    // seleciona() grava o código sem a letra: em f_cod_inst com V, senão em f_cod_inst2.
+    f_cod_inst: lettered.startsWith('V') ? code : '',
+    f_cod_inst2: lettered && !lettered.startsWith('V') ? code : '',
     f_cod_tipo: tipo,
     f_codinst: code ? withLetter(code) : '',
+    f_enqua: v.enqua,
+    f_inst_old: name,
+    f_instold: name,
+    f_regime: v.regime,
     f_seq_ativ: getAttr(p.atuacao, 'SEQUENCIA-ATIVIDADE') ?? '',
     f_seq_funcao: getAttr(p.participacao, 'SEQUENCIA-FUNCAO-ATIVIDADE') ?? '',
     f_seq_proj: getAttr(p.projeto, 'SEQUENCIA-PROJETO') ?? '',
+    f_stavinc: v.stavinc,
+    f_vinc: v.vinc,
     inst: getAttr(p.atuacao, 'NOME-INSTITUICAO') ?? '',
   };
 }
@@ -250,16 +285,15 @@ function listaInst(req: SimRequest, state: LattesState): SimResponse {
     .map((a) => {
       const code = withLetter(getAttr(a, 'CODIGO-INSTITUICAO')!);
       const name = getAttr(a, 'NOME-INSTITUICAO') ?? '';
-      const v = childElements(a, 'VINCULOS')[0];
-      const val = (attrName: string) => (v ? (getAttr(v, attrName) ?? '') : '');
+      const v = vinculoCopy(a);
       const args = [
-        val('OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO'),
-        val('FLAG-DEDICACAO-EXCLUSIVA') === 'SIM' ? '3' : '',
-        val('FLAG-VINCULO-EMPREGATICIO') === 'SIM' ? '1' : '0',
-        val('ANO-INICIO'),
-        val('ANO-FIM'),
-        val('CARGA-HORARIA-SEMANAL'),
-        val('OUTRO-VINCULO-INFORMADO') || val('TIPO-DE-VINCULO'),
+        v.enqua,
+        v.regime,
+        v.stavinc,
+        v.anoInic,
+        v.anoFim,
+        v.carga,
+        v.vinc,
         code,
         name,
       ].map((x) => `'${h.jsString(x)}'`);
