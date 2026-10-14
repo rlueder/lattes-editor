@@ -671,6 +671,12 @@ pedem tratamento próprio. O que ainda falta observar é a resposta do
 servidor a uma exclusão e se ela deixa o currículo com alteração pendente
 de envio ao CNPq; isso só com a pessoa acompanhando, num item de teste.
 
+O conector já tem a exclusão do idioma e do vínculo em
+`src/bridge/delete.ts`, desligada (`DELETE_ITEMS_ENABLED = false`). Ela posta
+o formulário inteiro, como o `del()`, só com `f_ctr=E`, e não lê a resposta:
+confere relendo a lista e exigindo que só a linha do item tenha sumido. A
+atuação inteira e as duas formações ficam fora pelos motivos acima.
+
 ## 16. Edição de produções existentes (LAT-51, 14/10/2026)
 
 Lido só com GET, de dentro da aba do menu: as listas do menu e os

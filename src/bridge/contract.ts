@@ -15,6 +15,7 @@ import {
   isBiographicKind,
 } from './biographic.ts';
 import { CREATE_ATUACAO_SPEC, CREATE_ITEMS_ENABLED } from './create.ts';
+import { contractKind, type DeleteOp } from './delete.ts';
 import type { FormControl } from './form.ts';
 import { cvCodeFrom, findLinks, isLogonPage } from './lattes-html.ts';
 import { checkLists, type ListCheck, listText, unreadLists } from './list-watch.ts';
@@ -37,8 +38,12 @@ export interface FormSpec {
   name: string;
 }
 
-/** Formulários que só entram com a chave ligada (create.ts, biographic.ts). */
-type GatedKind = 'criar-atuacao' | BiographicKind;
+/**
+ * Formulários fora do contrato fixo: os que só entram com a chave ligada
+ * (create.ts, biographic.ts) e a exclusão, que não tem formulário próprio
+ * (delete.ts usa o de edição e a conferência dele).
+ */
+type GatedKind = 'criar-atuacao' | BiographicKind | DeleteOp['kind'];
 
 export interface Contract {
   /** A inclusão só entra com CREATE_ITEMS_ENABLED; os dados gerais, com BIOGRAPHIC_OPS_ENABLED. */
@@ -431,7 +436,7 @@ export async function checkContract(
 /** O relatório impede gravar nesse formulário? Só as mudanças que quebram o conector. */
 export function blocksKind(report: ContractReport | undefined, kind: BridgeOp['kind']): Drift[] {
   if (!report || report.status !== 'mudou') return [];
-  const form = report.forms.find((f) => f.kind === kind);
+  const form = report.forms.find((f) => f.kind === contractKind(kind));
   return form ? form.drifts.filter(isBreaking) : [];
 }
 
@@ -446,7 +451,7 @@ export function lacksSample(
   kind: BridgeOp['kind'],
 ): FormCheck | undefined {
   if (!report || (report.status !== 'ok' && report.status !== 'mudou')) return undefined;
-  return report.forms.find((f) => f.kind === kind && f.status === 'sem-amostra');
+  return report.forms.find((f) => f.kind === contractKind(kind) && f.status === 'sem-amostra');
 }
 
 const DRIFT_TEXT: Record<DriftKind, (d: Drift) => string> = {
