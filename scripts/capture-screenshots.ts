@@ -1,5 +1,6 @@
-// Capturas do editor para o README, sempre com o currículo sintético
-// (fixtures/synthetic_full.xml, "Pessoa de Teste A"), nunca com um real.
+// Capturas do editor para o README e a página do projeto, sempre com o
+// currículo de demonstração (fixtures/demo.xml, uma pesquisadora fictícia,
+// pnpm gen:demo), nunca com um real.
 //
 // Usa um Brave ou Chrome sem janela, com perfil temporário, falando pelo
 // protocolo de depuração (sem Playwright nem outra dependência). Cada tela
@@ -21,7 +22,7 @@ import { assertRendered, openTab, sleep, withHeadlessBrowser } from './headless.
 // vira D:\D:\a\... ao abrir o arquivo.
 const root = fileURLToPath(new URL('../', import.meta.url));
 const url = process.argv[2] ?? 'http://localhost:5173/';
-const fixture = join(root, 'fixtures/synthetic_full.xml');
+const fixture = join(root, 'fixtures/demo.xml');
 const outDir = join(root, 'docs/img');
 
 /** Uma tela: como chegar nela a partir do editor aberto. */
@@ -32,8 +33,8 @@ interface Shot {
   /** Roda na página antes da captura. */
   prepare?: string;
   /**
-   * Modo de privacidade (dados pessoais e foto mascarados). Só Dados gerais o
-   * mostra ligado; nas outras telas a foto de exemplo aparece.
+   * Modo de privacidade (dados pessoais mascarados). Só Dados gerais o mostra
+   * ligado.
    */
   privacy?: boolean;
   /** Antes de abrir o currículo (a tela inicial). */
