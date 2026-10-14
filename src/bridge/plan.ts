@@ -5,12 +5,13 @@
 
 import { type Change, resolvePath } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
+import { BIOGRAPHIC_OPS_ENABLED, type BiographicOp, planBiographic } from './biographic.ts';
 import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
 
 /** Valor de campo; null tira o campo do envio (caixa desmarcada). */
 export type FieldValues = Record<string, string | null>;
 
-interface OpBase {
+export interface OpBase {
   /**
    * Valores que o formulário precisa ter agora, antes de gravar: o "antes"
    * de cada campo alterado e o início do vínculo. Se não bater, a linha do
@@ -40,7 +41,13 @@ export interface IdiomaOp extends OpBase {
   kind: 'idioma';
 }
 
-export type BridgeOp = CreateAtuacaoOp | IdiomaOp | ResumoOp | VinculoOp;
+export type BridgeOp = BiographicOp | CreateAtuacaoOp | IdiomaOp | ResumoOp | VinculoOp;
+
+/** Chaves das operações que ainda não foram testadas num Lattes real. */
+export interface PlanOptions {
+  biographicOps?: boolean;
+  createItems?: boolean;
+}
 
 export interface Unsupported {
   key: string;
@@ -141,7 +148,7 @@ export function planChange(
   change: Change,
   chain: XElement[],
   label: string,
-  { createItems = CREATE_ITEMS_ENABLED }: { createItems?: boolean } = {},
+  { biographicOps = BIOGRAPHIC_OPS_ENABLED, createItems = CREATE_ITEMS_ENABLED }: PlanOptions = {},
 ): BridgeOp | Unsupported {
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.
   if (change.kind === 'novo' && createItems && change.element === 'ATUACAO-PROFISSIONAL') {
@@ -214,6 +221,12 @@ export function planChange(
     return { expect, key: change.key, kind: 'resumo', label, set };
   }
 
+  // Formação, endereço e identificação: desligados até o teste no Lattes real (biographic.ts).
+  const biographic = biographicOps ? planBiographic(change, chain, label) : undefined;
+  if (biographic) {
+    return 'reason' in biographic ? unsupported(change, label, biographic.reason) : biographic;
+  }
+
   return unsupported(change, label, 'Formulário não suportado ainda');
 }
 
@@ -225,7 +238,7 @@ export function isOp(p: BridgeOp | Unsupported): p is BridgeOp {
 export function planChanges(
   entries: { change: Change; itemTitle: string }[],
   root: XElement,
-  options: { createItems?: boolean } = {},
+  options: PlanOptions = {},
 ): { ops: BridgeOp[]; unsupported: Unsupported[] } {
   const ops: BridgeOp[] = [];
   const skipped: Unsupported[] = [];
