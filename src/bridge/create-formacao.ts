@@ -250,7 +250,12 @@ export async function applyCreateFormacao(op: CreateFormacaoOp, port: LattesPort
     ) {
       return result('erro', 'O formulário não é o de inclusão deste nível');
     }
-    const absent = absentFields(form.controls, op.set);
+    // "Sem bolsa" num nível que não tem o campo (ensino médio e fundamental) não
+    // é informação perdida: o campo sai do envio em vez de parar a inclusão.
+    const typed = { ...op.set };
+    const bolsa = form.controls.find((c) => c.name === 'F_BOLSA');
+    if (typed.F_BOLSA === 'N' && (!bolsa || bolsa.type === 'hidden')) delete typed.F_BOLSA;
+    const absent = absentFields(form.controls, typed);
     if (absent.length > 0) {
       return result(
         'erro',
@@ -322,7 +327,7 @@ export async function applyCreateFormacao(op: CreateFormacaoOp, port: LattesPort
       lookups.f_nme_agencia = agencies[0]![1] ?? '';
     }
 
-    const set = { ...op.set, ...lookups };
+    const set = { ...typed, ...lookups };
     const limit = overLimit(form.controls, set);
     if (limit) return result('erro', limit);
     const response = await port.post(
@@ -346,7 +351,7 @@ export async function applyCreateFormacao(op: CreateFormacaoOp, port: LattesPort
       const seq = created[0]!.params.f_seq!;
       const assigned = { 'SEQUENCIA-FORMACAO': seq };
       const saved = (await readPairs(port, created[0]!.path, FORMACAO_FORM)).pairs;
-      const wrong = notSaved(saved, op.set);
+      const wrong = notSaved(saved, typed);
       if (!sameCode(formationInstitution(saved), op.institutionCode)) wrong.push('Instituição');
       if (wrong.length > 0) {
         return {

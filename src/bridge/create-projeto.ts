@@ -17,6 +17,7 @@ import {
   getChecked,
   hidden,
   jsCalls,
+  labelIn,
   mapAttrs,
   type Mapper,
   maybeCreated,
@@ -84,6 +85,14 @@ const PROJECT_FIELDS: Record<string, [string, Mapper]> = {
 
 const PROJECT_HANDLED = new Set(['FORMATO-DATA-CERTIFICACAO', 'SEQUENCIA-PROJETO']);
 
+/** O que o editor põe na participação nova a partir do projeto (src/model/general-items.ts). */
+const PARTICIPATION_FROM_PROJECT = new Set([
+  'ANO-FIM',
+  'ANO-INICIO',
+  'FLAG-PERIODO',
+  'SEQUENCIA-FUNCAO-ATIVIDADE',
+]);
+
 /** Mudanças "novo" que trazem um projeto: o próprio, a participação ou o contêiner dela. */
 export const PROJECT_CARRIERS = new Set([
   'ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO',
@@ -142,9 +151,24 @@ export function planCreateProjeto(
   if (filledChildren(projeto, ['EQUIPE-DO-PROJETO']).length > 0) {
     return { reason: 'Financiadores, produções e orientações do projeto ainda vão à mão' };
   }
+  // A participação que embrulha o projeto: o editor só põe nela o número, o
+  // período em ano e se é atual, que seguem o projeto. Órgão, unidade e meses
+  // não têm lugar no formulário de projeto e não podem sumir sem aviso.
+  const participacao = chain.find((c) => c.name === 'PARTICIPACAO-EM-PROJETO');
+  const extra = (participacao?.attrs ?? []).filter(
+    (a) => a.value.trim() && !PARTICIPATION_FROM_PROJECT.has(a.name),
+  );
+  if (extra.length > 0) {
+    return {
+      reason: `A participação no projeto tem campos que o formulário não leva: ${extra.map((a) => labelIn(change, a.name)).join(', ')}`,
+    };
+  }
   const { missing, set, wrong } = mapAttrs(change, projeto, PROJECT_FIELDS, PROJECT_HANDLED);
   const reason = reasonFrom(missing, wrong);
   if (reason) return { reason };
+  // Sem ano de fim (projeto em andamento), o campo vai vazio: senão ficaria o
+  // fim do vínculo, que preencherOpener copia para F_ANO_FIM.
+  set.F_ANO_FIM = getAttr(projeto, 'ANO-FIM') ?? '';
   if (!set.f_titulo || !set.F_ANO_INIC || !set.F_TPO_SITUACAO) {
     return { reason: 'O projeto precisa de nome, situação e ano de início' };
   }

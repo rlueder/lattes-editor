@@ -200,6 +200,23 @@ describe('incluir a formação no Lattes falso', () => {
     expect(fake.posts[0]!.body.f_cod_inst2).toBe('');
   });
 
+  it('"sem bolsa" num nível sem o campo sai do envio', async () => {
+    const semBolsa = {
+      ...op(),
+      agencyCode: undefined,
+      courseCode: undefined,
+      set: { ...op().set, F_BOLSA: 'N' },
+    };
+    const fake = fakeFormacao({ hide: ['F_BOLSA'] });
+    expect(await applyCreateFormacao(semBolsa, fake.port)).toMatchObject({ status: 'conferido' });
+    expect(fake.posts[0]!.body.F_BOLSA).toBe('');
+    // "Com bolsa" num nível sem o campo para antes de enviar.
+    const comBolsa = { ...semBolsa, set: { ...semBolsa.set, F_BOLSA: 'S' } };
+    expect(
+      await applyCreateFormacao(comBolsa, fakeFormacao({ hide: ['F_BOLSA'] }).port),
+    ).toMatchObject({ detail: expect.stringMatching(/não tem: Bolsa/), status: 'erro' });
+  });
+
   it('sem curso nem bolsa, não abre as listas', async () => {
     const plain = { ...op(), agencyCode: undefined, courseCode: undefined };
     const fake = fakeFormacao();

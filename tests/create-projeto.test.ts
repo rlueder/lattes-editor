@@ -83,6 +83,7 @@ describe('planejar a inclusão de um projeto', () => {
       nature: 'P',
     });
     expect(op().set).toEqual({
+      F_ANO_FIM: '',
       F_ANO_INIC: '2024',
       F_NRO_DOUTORADO: '1',
       F_NRO_GRADUACAO: '3',
@@ -148,6 +149,18 @@ describe('planejar a inclusão de um projeto', () => {
     );
   });
 
+  it('órgão, unidade ou meses na participação não somem: o projeto vai à mão', () => {
+    const before = cv('');
+    const after = cv(projeto());
+    const changes = diffDocuments(before, after).filter((c) => c.kind === 'novo');
+    const chain = resolvePath(after, changes[0]!.path);
+    const part = chain.find((c) => c.name === 'PARTICIPACAO-EM-PROJETO')!;
+    part.attrs.push({ name: 'NOME-ORGAO', value: 'Instituto de Biociências' });
+    expect(planCreateProjeto(changes[0]!, chain, 'Projeto')).toEqual({
+      reason: expect.stringMatching(/participação no projeto tem campos.*NOME-ORGAO/),
+    });
+  });
+
   it('a atuação nova com projeto não vai pela inclusão de atuação', () => {
     const atuacao = parseXml(
       `<ATUACAO-PROFISSIONAL CODIGO-INSTITUICAO="1" NOME-INSTITUICAO="U">
@@ -195,7 +208,12 @@ describe('incluir o projeto no Lattes falso', () => {
     const fake = fakeProjeto();
     const v = { ...op(), institutionCode: '007900000004' };
     expect(await applyCreateProjeto(v, fake.port)).toMatchObject({ status: 'conferido' });
-    expect(fake.posts[0]!.body).toMatchObject({ f_cod_inst: '007900000004', f_regime: '' });
+    // O vínculo dessa atuação terminou em 2018; o projeto em andamento vai sem fim.
+    expect(fake.posts[0]!.body).toMatchObject({
+      F_ANO_FIM: '',
+      f_cod_inst: '007900000004',
+      f_regime: '',
+    });
   });
 
   it('para antes de enviar quando algo não confere', async () => {
