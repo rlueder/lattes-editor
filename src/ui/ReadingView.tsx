@@ -3,6 +3,8 @@
 // registro, a identificação, o resumo) vira o formulário de hoje quando a
 // pessoa pede (ReadingBlock.tsx). A lógica sem React está em reading.ts.
 
+import type { CSSProperties } from 'react';
+
 import { elementLabel } from '../labels/labels.ts';
 import { isPendingImport, SEQ_ATTR } from '../model/production.ts';
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
@@ -25,6 +27,7 @@ import {
   paragraphs,
   type ReadingField,
   readingFields,
+  tabWidth,
   yearColumn,
 } from './reading.ts';
 import { EditableBlock } from './ReadingBlock.tsx';
@@ -161,10 +164,20 @@ function GenericReading({ depth = 0, el }: { depth?: number; el: XElement }) {
   );
 }
 
+/**
+ * Referência na leitura: o destaque da NBR 6023 (periódico, anais, livro) em
+ * itálico, mais leve que o negrito na serifa. A norma aceita negrito ou
+ * itálico, desde que o documento use um só; a impressão segue em negrito.
+ */
 function Reference({ segments }: { segments: Segment[] }) {
   return segments.map((s, i) =>
-    s.strong ? <strong key={i}>{curlyQuotes(s.text)}</strong> : curlyQuotes(s.text),
+    s.strong ? <em key={i}>{curlyQuotes(s.text)}</em> : curlyQuotes(s.text),
   );
+}
+
+/** O formulário de hoje para um bloco em edição: todos os campos, inclusive os vazios. */
+export function EditForm({ depth, el, onEdit }: { depth?: number; el: XElement; onEdit: EditFn }) {
+  return <ElementView depth={depth} el={el} showEmpty={true} onEdit={onEdit} />;
 }
 
 /** O corpo de um registro: formação, idioma, referência ABNT ou título e apoio. */
@@ -224,13 +237,12 @@ interface ListProps {
   academic: boolean;
   filter?: SectionFilter;
   items: XElement[];
-  showEmpty: boolean;
   view: ListView;
   onEdit: EditFn;
 }
 
 /** Registros com o ano (ou o idioma) numa coluna à esquerda, sem cartões. */
-function RecordList({ academic, filter, items, onEdit, showEmpty, view }: ListProps) {
+function RecordList({ academic, filter, items, onEdit, view }: ListProps) {
   const { loadedMax, openItem } = useEditor();
   const visible = filter
     ? applyFilter(items, filter.facets, filter.state, (el) => cardText(view.card(el)))
@@ -242,8 +254,11 @@ function RecordList({ academic, filter, items, onEdit, showEmpty, view }: ListPr
     el.name === 'IDIOMA' ? languageLine(el, false).name : (view.card(el).aside ?? ''),
   );
   const column = yearColumn(when);
+  // A coluna da esquerda tem a largura do texto mais longo dela, não uma
+  // tabulação fixa: o ano fica perto do texto e todos continuam alinhados.
+  const tab = { '--read-tab': `${tabWidth(when)}ch` } as CSSProperties;
   return (
-    <ol className="reading-records">
+    <ol className="reading-records" style={tab}>
       {sorted.map((el, i) => {
         const seq = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
         const isNew = isPendingImport(el, loadedMax);
@@ -253,9 +268,7 @@ function RecordList({ academic, filter, items, onEdit, showEmpty, view }: ListPr
           <li key={elementKey(el)} className="reading-record">
             <EditableBlock
               className="rr"
-              edit={(all) => (
-                <ElementView depth={1} el={el} showEmpty={all || showEmpty} onEdit={onEdit} />
-              )}
+              edit={() => <EditForm depth={1} el={el} onEdit={onEdit} />}
               editExtra={
                 isNew && (
                   <button className="ghost" type="button" onClick={() => openItem(seq)}>
@@ -287,12 +300,14 @@ interface GroupProps {
   label: string;
   /** Os itens de lista do grupo; null quando o grupo é um bloco de campos. */
   list: { container?: XElement; items: XElement[]; view: ListView } | null;
-  showEmpty: boolean;
   onEdit: EditFn;
 }
 
-/** Um grupo da seção no modo de leitura. */
-export function ReadingGroup({ elements, filter, label, list, onEdit, showEmpty }: GroupProps) {
+/**
+ * Um grupo da seção no modo de leitura. A leitura esconde os campos vazios e
+ * a edição mostra todos; o ⚙ "Mostrar campos vazios" não vale aqui.
+ */
+export function ReadingGroup({ elements, filter, label, list, onEdit }: GroupProps) {
   if (list) {
     const container = list.container?.name ?? elements[0]?.name;
     return (
@@ -300,16 +315,13 @@ export function ReadingGroup({ elements, filter, label, list, onEdit, showEmpty 
         academic={container === 'FORMACAO-ACADEMICA-TITULACAO'}
         filter={filter}
         items={list.items}
-        showEmpty={showEmpty}
         view={list.view}
         onEdit={onEdit}
       />
     );
   }
   return elements.map((el, i) => {
-    const edit = (all: boolean) => (
-      <ElementView el={el} showEmpty={all || showEmpty} onEdit={onEdit} />
-    );
+    const edit = () => <EditForm el={el} onEdit={onEdit} />;
     if (el.name === 'RESUMO-CV') {
       const hasEnglish = Boolean(getAttr(el, 'TEXTO-RESUMO-CV-RH-EN')?.trim());
       return (

@@ -77,39 +77,60 @@ sem a caixa branca sobre o fundo cinza: os grupos se separam pelo espaço.
 Campo vazio não aparece. Os campos voltam quando a pessoa pede, num bloco
 de cada vez: clique no texto, o botão "Editar" (à vista no foco do teclado,
 no passar do mouse e sempre no toque) ou E com o botão focado abrem o
-formulário de hoje no lugar; Esc ou "Concluir" voltam ao texto. O modo de
-privacidade continua valendo, e os dados escondidos viram uma linha só
-("12 dados pessoais ocultos…").
+formulário de hoje no lugar, com todos os campos, inclusive os vazios; Esc
+ou "Concluir" voltam ao texto. Dois ou três cliques selecionam texto e não
+abrem a edição. O modo de privacidade continua valendo, e os dados
+escondidos viram uma linha só ("12 dados pessoais ocultos…").
+
+O texto de leitura usa a IBM Plex Serif (regular, itálica e seminegrito,
+embutidas como a Plex Sans); a edição, os campos e o cromo continuam na
+Plex Sans.
 
 Os números escolhidos, com a regra de onde saíram:
 
-| Medida                 | Valor                                        | Regra do Typography for Lawyers                                |
-| ---------------------- | -------------------------------------------- | -------------------------------------------------------------- |
-| Corpo                  | 17px, IBM Plex Sans                          | Na web, 15 a 25px ("Point size")                               |
-| Entrelinha             | 1,45                                         | 120 a 145% do corpo ("Line spacing")                           |
-| Medida                 | 57ch, perto de 70 caracteres por linha       | Média de 45 a 90 caracteres ("Line length")                    |
-| Entre parágrafos       | 0,6em (10px, perto de 7,7pt), sem recuo      | 4 a 10pt de espaço ou recuo, nunca os dois                     |
-| Título da página       | 22px, peso 600 (era 26px)                    |                                                                |
-| Título de grupo        | 19px, peso 600, 2,6rem acima e 0,6rem abaixo | Degrau pequeno de tamanho e espaço acima e abaixo ("Headings") |
-| Subtítulo              | 17px, peso 600                               | No máximo dois níveis dentro do conteúdo                       |
-| Rótulo curto em versal | 12px, 8% de espaçamento                      | Caixa alta só em texto curto, com 5 a 12% ("All caps")         |
-| Metadado e rótulo      | 15px na cor secundária                       | Hierarquia por cor, sem itálico em fonte sem serifa            |
-| Coluna de anos         | 9,5rem, algarismos de largura fixa           | A mesma tabulação em todas as listas                           |
+| Medida                | Valor                                          | Regra do Typography for Lawyers                                |
+| --------------------- | ---------------------------------------------- | -------------------------------------------------------------- |
+| Corpo                 | 17px, IBM Plex Serif, peso 400                 | Na web, 15 a 25px ("Point size")                               |
+| Entrelinha            | 1,5                                            | 120 a 145% no papel; na tela, um pouco acima ("Line spacing")  |
+| Medida                | 60ch, de 67 a 73 caracteres por linha          | Média de 45 a 90 caracteres ("Line length")                    |
+| Entre parágrafos      | 0,65em (11px, perto de 8pt), sem recuo         | 4 a 10pt de espaço ou recuo, nunca os dois                     |
+| Título da página      | 26px, peso 600                                 |                                                                |
+| Título de grupo       | 19px, peso 600, 3rem acima e 0,75rem abaixo    | Degrau pequeno de tamanho e espaço acima e abaixo ("Headings") |
+| Subtítulo             | 17px, peso 600                                 | No máximo dois níveis dentro do conteúdo                       |
+| Rótulo curto (versal) | 12px na sans, 8% de espaçamento                | Caixa alta só em texto curto, com 5 a 12% ("All caps")         |
+| Metadado e rótulo     | 15px na cor secundária                         | Hierarquia por cor e tamanho                                   |
+| Coluna de anos        | Largura do texto mais longo da lista e 1,1rem  | Anos alinhados, perto do texto                                 |
+| Coluna de rótulos     | 13rem; em tela estreita, rótulo acima do valor |                                                                |
+
+Cores do texto de leitura, um pouco abaixo do preto e do branco do cromo,
+em tons quentes:
+
+| Tema   | Texto             | Secundário                                       |
+| ------ | ----------------- | ------------------------------------------------ |
+| Claro  | `#2a2824`, 14,0:1 | `#5f5c55`, 6,3:1 (5,9:1 sobre o realce do mouse) |
+| Escuro | `#d9d4ca`, 11,9:1 | `#9b968c`, 6,0:1 (5,5:1 sobre o realce do mouse) |
 
 Mais algumas decisões do mesmo lado:
 
 - Aspas e apóstrofos curvos na tela; o dado no XML não muda.
 - Sublinhado só em link.
-- Negrito só no título de grupo, no subtítulo, na primeira linha de cada
-  formação e no elemento que a NBR 6023 destaca na referência.
+- Seminegrito (600) só nos títulos e na primeira linha de cada formação;
+  nunca 700 no conteúdo. Na formação: o grau em seminegrito, a instituição
+  no corpo, o título do trabalho em itálico, orientação e bolsa em cor
+  secundária, um ponto menor.
 - Produções saem como referência da NBR 6023, a mesma da impressão
-  (`src/print/references.ts`).
+  (`src/print/references.ts`), com o destaque (periódico, anais, livro) em
+  itálico, que pesa menos que o negrito na serifa. A norma aceita um ou
+  outro, desde que o documento use um só; a impressão continua em negrito.
 - O ano aparece na primeira linha de cada sequência e fica em branco nas
   seguintes, como num índice impresso; o leitor de tela continua ouvindo o ano.
-- A cor secundária passa no contraste AA nos dois temas, inclusive sobre o
-  realce do passar do mouse (4,6:1 no claro, 5,4:1 no escuro).
-- O IBM Plex Serif não está embutido no app; o protótipo fica na Plex Sans,
-  e a serifa é uma das perguntas em aberto.
+- O botão "Editar" fica numa margem reservada à direita do bloco e nunca
+  cobre o texto.
+- Com `?leitura`, o item ativo do menu lateral e do "Nesta seção" no tema
+  escuro usa um fundo neutro em vez do azul saturado.
+- O ⚙ "Mostrar campos vazios" sai do menu com `?leitura`: a leitura sempre
+  esconde os vazios e a edição sempre os mostra. Se o modo de leitura virar
+  o padrão, a opção sai de vez.
 
 ## Teclado
 

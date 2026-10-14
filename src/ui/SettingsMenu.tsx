@@ -3,7 +3,7 @@
 // acima da versão, "Verificar atualizações" confere na hora se saiu versão nova.
 
 import { Menu } from '@base-ui/react/menu';
-import type { CSSProperties, ReactNode } from 'react';
+import { type CSSProperties, type ReactNode, useState } from 'react';
 
 import { PrinterIcon } from '../print/PrinterIcon.tsx';
 import {
@@ -22,6 +22,7 @@ import {
   UpdateIcon,
 } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
+import { readingModeOn, showEmptySettingVisible } from './reading.ts';
 import { setShowCodes, useShowCodes } from './show-codes.ts';
 import type { ThemePref } from './theme.ts';
 import { checkUpdatesNow, useManualUpdateCheck } from './use-updates.ts';
@@ -55,6 +56,7 @@ const THEMES: { icon: ReactNode; label: string; value: ThemePref }[] = [
 export function SettingsMenu({ file, onTheme, theme }: Props) {
   const showCodes = useShowCodes();
   const update = useManualUpdateCheck();
+  const [readingMode] = useState(readingModeOn);
   return (
     <Menu.Root>
       <Tip label="Configurações e arquivo">
@@ -102,21 +104,23 @@ export function SettingsMenu({ file, onTheme, theme }: Props) {
             <Menu.Group>
               <Menu.GroupLabel className="menu-heading">Exibição</Menu.GroupLabel>
 
-              <Menu.CheckboxItem
-                checked={file?.showEmpty ?? false}
-                className="menu-item"
-                closeOnClick={false}
-                disabled={!file}
-                onCheckedChange={(show) => file?.onShowEmpty(show)}
-              >
-                <span className="menu-icon">
-                  <EyeIcon />
-                </span>
-                <span className="menu-label">Mostrar campos vazios</span>
-                <Menu.CheckboxItemIndicator className="menu-check">
-                  <CheckIcon />
-                </Menu.CheckboxItemIndicator>
-              </Menu.CheckboxItem>
+              {showEmptySettingVisible(readingMode) && (
+                <Menu.CheckboxItem
+                  checked={file?.showEmpty ?? false}
+                  className="menu-item"
+                  closeOnClick={false}
+                  disabled={!file}
+                  onCheckedChange={(show) => file?.onShowEmpty(show)}
+                >
+                  <span className="menu-icon">
+                    <EyeIcon />
+                  </span>
+                  <span className="menu-label">Mostrar campos vazios</span>
+                  <Menu.CheckboxItemIndicator className="menu-check">
+                    <CheckIcon />
+                  </Menu.CheckboxItemIndicator>
+                </Menu.CheckboxItem>
+              )}
               <Menu.CheckboxItem
                 checked={showCodes}
                 className="menu-item"

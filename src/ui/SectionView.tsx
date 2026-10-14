@@ -2,7 +2,7 @@
 // painel com o filtro (vale para todas as listas da seção), o índice dos grupos
 // e o índice do item aberto.
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { isBlank } from '../model/changes.ts';
 import type { ProductionType } from '../model/production.ts';
@@ -26,7 +26,7 @@ import { type ListView, yearView } from './list-view.ts';
 import { MarkDialog } from './MarkDialog.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { PrivacyContext, usePrivacyMode } from './privacy.ts';
-import { isReadingSection, readingRequested } from './reading.ts';
+import { isReadingSection, readingModeOn } from './reading.ts';
 import { ReadingGroup } from './ReadingView.tsx';
 import { useReferenceIndex } from './reference-context.ts';
 import { type ReferenceIndex, viewForContainer } from './reference-tables.ts';
@@ -59,9 +59,6 @@ function groupList(g: SectionGroup, index: ReferenceIndex): GroupList | null {
   const view = (list.container && viewForContainer(list.container.name, index)) || yearView;
   return { direct: !list.container, items: list.items, view };
 }
-
-/** ?leitura no `pnpm dev`: o protótipo do modo de leitura (reading.ts). */
-const READING = readingRequested(location.search, import.meta.env.DEV);
 
 export function SectionView(props: Props) {
   // A chave zera o filtro ao trocar de seção.
@@ -107,7 +104,13 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, s
     />
   );
   const privacy = section.id === 'dados-gerais';
-  const reading = isReadingSection(section.id, READING);
+  // ?leitura no `pnpm dev`: o protótipo do modo de leitura (reading.ts).
+  const [readingMode] = useState(readingModeOn);
+  // O cromo também muda um pouco no modo de leitura (styles.css, data-leitura).
+  useEffect(() => {
+    if (readingMode) document.documentElement.dataset.leitura = '';
+  }, [readingMode]);
+  const reading = isReadingSection(section.id, readingMode);
   const lists = section.groups.map((g) => groupList(g, index));
   const allItems = lists.flatMap((l) => l?.items ?? []);
   // Recalcula só quando os itens da seção mudam de identidade.
@@ -219,7 +222,6 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, s
                       filter={filter}
                       label={g.label}
                       list={lists[i] ?? null}
-                      showEmpty={showEmpty}
                       onEdit={onEdit}
                     />
                   ) : lists[i]?.direct ? (

@@ -26,6 +26,14 @@ export function readingRequested(search: string, dev: boolean): boolean {
   return value !== null && value !== '0';
 }
 
+/** O modo de leitura desta página: lido na hora, e falso fora do navegador. */
+export function readingModeOn(): boolean {
+  return readingRequested(
+    typeof location === 'undefined' ? '' : location.search,
+    import.meta.env.DEV,
+  );
+}
+
 export function isReadingSection(sectionId: string, reading: boolean): boolean {
   return reading && READING_SECTIONS.has(sectionId);
 }
@@ -57,11 +65,21 @@ export function readingKeyAction(key: string, ctx: ReadingKeyContext): ReadingKe
 }
 
 /**
- * Clique que abre a edição: não quando a pessoa seleciona texto (a leitura
- * deixa copiar) nem quando o clique foi num link ou botão de dentro.
+ * Clique que abre a edição: um clique simples, sem texto selecionado (a
+ * leitura deixa copiar) e fora de link ou botão. O segundo e o terceiro
+ * clique (`detail` 2 e 3) selecionam palavra e parágrafo e não abrem.
  */
-export function clickOpensEditor(selection: string, onControl: boolean): boolean {
-  return selection.trim() === '' && !onControl;
+export function clickOpensEditor(selection: string, onControl: boolean, detail = 1): boolean {
+  return detail <= 1 && selection.trim() === '' && !onControl;
+}
+
+/**
+ * O ⚙ "Mostrar campos vazios" vale para o editor de hoje. No modo de leitura
+ * a leitura sempre esconde os vazios e a edição sempre os mostra, então a
+ * opção sai do menu.
+ */
+export function showEmptySettingVisible(reading: boolean): boolean {
+  return !reading;
 }
 
 /** Antes de uma aspa de abertura: início, espaço, parêntese, travessão ou outra abertura. */
@@ -282,4 +300,13 @@ export function yearColumn(values: string[]): YearCell[] {
     shown: i > 0 && value !== '' && values[i - 1] === value ? '' : value,
     value,
   }));
+}
+
+/**
+ * Largura da coluna da esquerda de uma lista, em ch: o texto mais longo dela
+ * ("2016 – 2018", "Espanhol"), no mínimo a de um ano. A coluna usa corpo
+ * menor que o texto, então a medida em ch do corpo já deixa uma folga.
+ */
+export function tabWidth(values: string[]): number {
+  return Math.max(4, ...values.map((v) => v.length));
 }

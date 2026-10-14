@@ -21,6 +21,8 @@ import {
   readingKeyAction,
   type ReadingKeyContext,
   readingRequested,
+  showEmptySettingVisible,
+  tabWidth,
   yearColumn,
 } from '../src/ui/reading.ts';
 
@@ -91,6 +93,17 @@ describe('modo de leitura: ler e editar', () => {
     expect(clickOpensEditor('  ', false)).toBe(true);
     expect(clickOpensEditor('Porto Alegre', false)).toBe(false);
     expect(clickOpensEditor('', true)).toBe(false);
+  });
+
+  it('dois ou três cliques selecionam texto e não abrem', () => {
+    expect(clickOpensEditor('', false, 1)).toBe(true);
+    expect(clickOpensEditor('', false, 2)).toBe(false);
+    expect(clickOpensEditor('', false, 3)).toBe(false);
+  });
+
+  it('o ⚙ "Mostrar campos vazios" sai do menu no modo de leitura', () => {
+    expect(showEmptySettingVisible(true)).toBe(false);
+    expect(showEmptySettingVisible(false)).toBe(true);
   });
 });
 
@@ -212,6 +225,13 @@ describe('modo de leitura: texto', () => {
     expect(addressLines(element('ENDERECO-RESIDENCIAL', { LOGRADOURO: 'Rua A', UF: '' }))).toEqual([
       'Rua A',
     ]);
+  });
+
+  it('a coluna da esquerda tem a largura do texto mais longo, no mínimo um ano', () => {
+    expect(tabWidth(['2024', '2023'])).toBe(4);
+    expect(tabWidth(['2016 – 2018', '2011'])).toBe(11);
+    expect(tabWidth([])).toBe(4);
+    expect(tabWidth(['', ''])).toBe(4);
   });
 
   it('formata só o CEP de oito dígitos', () => {
