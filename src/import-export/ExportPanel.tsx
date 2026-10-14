@@ -84,12 +84,18 @@ export function ExportPanel({
     setTab(next);
   };
   // Ao abrir: a aba pedida, se houver; e, enquanto aberto, os pedidos novos.
+  // Ao fechar, um pedido que sobrou é descartado e não vale numa abertura
+  // qualquer depois.
   useEffect(() => {
     if (!open) return;
     chosen.current = false;
     const requestedTab = takeRequestedTab();
     if (requestedTab) choose(requestedTab);
-    return listenTabRequests(choose);
+    const stopListening = listenTabRequests(choose);
+    return () => {
+      stopListening();
+      takeRequestedTab();
+    };
   }, [open]);
   // Sem escolha ainda, segue o que faz sentido agora: o registro do enviado
   // pode chegar um instante depois de o painel abrir.
@@ -146,12 +152,14 @@ export function ExportPanel({
                     Gravado pela extensão, conferindo cada um
                   </h3>
                   <BridgeBlock bridge={bridge} />
-                  <ChangesList
-                    groups={routed.conector}
-                    route="conector"
-                    onDiscard={onDiscard}
-                    onDiscardField={onDiscardField}
-                  />
+                  {routed.conector.length > 0 && (
+                    <ChangesList
+                      groups={routed.conector}
+                      route="conector"
+                      onDiscard={onDiscard}
+                      onDiscardField={onDiscardField}
+                    />
+                  )}
                 </section>
               )}
 
