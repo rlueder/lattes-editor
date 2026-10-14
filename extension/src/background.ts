@@ -12,7 +12,6 @@ import {
   AUTO_VERIFY_DELAY_MS,
   AUTO_VERIFY_RETRY_DELAY_MS,
   blocksKind,
-  type ContractReport,
   driftText,
   lacksSample,
   retryAutoVerify,
@@ -20,6 +19,7 @@ import {
 } from '../../src/bridge/contract.ts';
 import { sameCv } from '../../src/bridge/lattes-html.ts';
 import type { LattesStatus } from '../../src/bridge/lattes-status.ts';
+import { photoBusy } from '../../src/bridge/photo.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
 import {
   type BridgeMessage,
@@ -29,7 +29,15 @@ import {
   type NoReadingReason,
 } from '../../src/bridge/protocol.ts';
 import { CONSENT_KEY, hasConsent, isConsentCurrent } from './consent.ts';
-import { injectRunner, lattesTab, readCurriculo, readEspelho } from './lattes-tab.ts';
+import {
+  failedReport,
+  injectRunner,
+  lattesTab,
+  readCurriculo,
+  readEspelho,
+  sendPhoto,
+  verifyOn,
+} from './lattes-tab.ts';
 import {
   APP_KEY,
   type EditorEndpoint,
@@ -59,6 +67,8 @@ let verifyInFlight = false;
 let autoPending = false;
 /** "Verificar de novo" clicado durante outra verificação: roda logo depois dela. */
 let manualQueued = false;
+/** Uma troca de foto em andamento: nem a fila nem outra troca começam junto. */
+let photoInFlight = false;
 let appPort: chrome.runtime.Port | undefined;
 
 /**
@@ -187,6 +197,21 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     await sendCurriculo(editor, msg.id);
     return;
   }
+  if (msg.type === 'enviar-foto') {
+    const busy = photoBusy((await readState()).running, photoInFlight);
+    if (busy) return toEditor(editor, { ...busy, id: msg.id, type: 'foto' });
+    // A pessoa já viu a foto e confirmou no editor; depois, o menu relido
+    // mostra se o Lattes ficou com alteração a enviar ao CNPq.
+    photoInFlight = true;
+    try {
+      const reply = await sendPhoto(msg.jpeg, msg.lattesId);
+      await toEditor(editor, { ...reply, id: msg.id, type: 'foto' });
+      await sendSession(editor, true);
+    } finally {
+      photoInFlight = false;
+    }
+    return;
+  }
   const state = await readState();
   if (state.running) return;
   await writeState({
@@ -197,31 +222,6 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     running: false,
   });
   await chrome.action.setBadgeText({ text: msg.ops.length ? String(msg.ops.length) : '' });
-}
-
-const failedReport = (detail: string): ContractReport => ({
-  checkedAt: new Date().toISOString(),
-  detail,
-  forms: [],
-  menu: [],
-  status: 'erro',
-});
-
-/** Confere o Lattes contra o contrato do conector, só lendo, na aba do menu. */
-async function verifyOn(tabId: number): Promise<ContractReport> {
-  try {
-    await injectRunner(tabId);
-    const [res] = await chrome.scripting.executeScript({
-      func: () =>
-        (
-          globalThis as unknown as { __conector: { verificar(): Promise<ContractReport> } }
-        ).__conector.verificar(),
-      target: { tabId },
-    });
-    return res?.result ?? failedReport('A aba do Lattes não respondeu');
-  } catch (err) {
-    return failedReport(err instanceof Error ? err.message : 'Falha inesperada');
-  }
 }
 
 /**
@@ -292,7 +292,7 @@ async function verifyOnce(auto: boolean): Promise<void> {
 async function run(keys?: string[]): Promise<void> {
   if (!(await hasConsent())) return;
   const state = await readState();
-  if (state.running || state.verificando) return;
+  if (state.running || state.verificando || photoInFlight) return;
   const queue = state.ops.filter(
     (op) => state.results[op.key]?.status !== 'conferido' && (!keys || keys.includes(op.key)),
   );

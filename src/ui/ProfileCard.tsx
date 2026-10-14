@@ -5,11 +5,13 @@
 // o código de 10 caracteres do currículo, que a exportação não traz. Quem o
 // fornece é a extensão (conector), que o lê da sessão do Lattes; sem ela, ficam
 // as iniciais. As iniciais ficam por baixo enquanto a foto não chega, e a foto
-// que falha é tentada de novo (use-photo.ts).
+// que falha é tentada de novo (use-photo.ts). Com a extensão ligada à sessão
+// deste currículo, o lápis sobre a foto abre a troca (PhotoDialog.tsx).
 
 import { useEffect, useState } from 'react';
 
 import { formatLattesDate } from './format.ts';
+import { PencilIcon } from './icons.tsx';
 import { PixelPhoto } from './PixelPhoto.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { usePrivacyMode } from './privacy.ts';
@@ -19,7 +21,15 @@ import { ShareDialog } from './ShareDialog.tsx';
 import { CV_CODE_EVENT } from './use-bridge.ts';
 import { usePhoto } from './use-photo.ts';
 
-export function ProfileCard({ profile }: { profile: Profile }) {
+interface Props {
+  /** Muda depois de uma troca de foto, para buscar a nova em vez da guardada. */
+  photoVersion?: number;
+  profile: Profile;
+  /** Sem ela, não há lápis: a extensão não sabe trocar a foto deste currículo agora. */
+  onChangePhoto?: () => void;
+}
+
+export function ProfileCard({ onChangePhoto, photoVersion = 0, profile }: Props) {
   const date = formatLattesDate(profile.date);
   const url = profile.lattesId ? `https://lattes.cnpq.br/${profile.lattesId}` : undefined;
   const [code, setCode] = useState(() =>
@@ -36,7 +46,10 @@ export function ProfileCard({ profile }: { profile: Profile }) {
   }, [profile.lattesId]);
 
   // O currículo de exemplo do dev usa uma foto de mentira; os outros, a do CNPq.
-  const photo = usePhoto(examplePhotoUrl(profile.lattesId) ?? (code ? photoUrl(code) : undefined));
+  const base = examplePhotoUrl(profile.lattesId) ?? (code ? photoUrl(code) : undefined);
+  const photo = usePhoto(
+    base && photoVersion ? `${base}${base.includes('?') ? '&' : '?'}v=${photoVersion}` : base,
+  );
   const photoClass = photo.loaded ? 'avatar-photo loaded' : 'avatar-photo';
   return (
     <section aria-label="Currículo aberto" className="profile">
@@ -61,6 +74,18 @@ export function ProfileCard({ profile }: { profile: Profile }) {
               />
             ) : null}
           </div>
+          {onChangePhoto && (
+            <Tip label="Trocar a foto no Lattes">
+              <button
+                aria-label="Trocar a foto no Lattes"
+                className="icon-btn avatar-edit"
+                type="button"
+                onClick={onChangePhoto}
+              >
+                <PencilIcon />
+              </button>
+            </Tip>
+          )}
         </div>
         {url && (
           <Tip label="Compartilhar o currículo">

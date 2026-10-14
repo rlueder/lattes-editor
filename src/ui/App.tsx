@@ -48,6 +48,7 @@ import { useHistoryDialog } from './use-history-dialog.ts';
 import { useLattesOpen } from './use-lattes-open.ts';
 import { useNavigate } from './use-navigate.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
+import { usePhotoChange } from './use-photo-change.tsx';
 import { useTopbarHeight } from './use-topbar-height.ts';
 import { useUpdates } from './use-updates.ts';
 import { useVersions } from './use-versions.ts';
@@ -141,6 +142,7 @@ export function App() {
   sectionsRef.current = sections;
   const changes = useChanges(session, sections, version, onEdit, setSession);
   const bridge = useBridge(session, changes.groups, changes.accept, changes.reopen);
+  const photoChange = usePhotoChange(bridge);
 
   const togglePalette = useCallback(() => session && setPaletteOpen((o) => !o), [session]);
   usePaletteShortcut(togglePalette);
@@ -285,10 +287,13 @@ export function App() {
       <Sidebar
         activeId={section?.id}
         pendingIn={pendingIn}
+        photoVersion={photoChange.version}
         profile={profile}
         sections={sections}
+        onChangePhoto={photoChange.open}
         onSelect={(id) => navigate({ sectionId: id })}
       />
+      {photoChange.dialog}
 
       <main className="content">
         <EditorContext.Provider
