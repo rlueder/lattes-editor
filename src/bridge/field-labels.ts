@@ -1,7 +1,12 @@
 // Nomes dos campos dos formulários do Lattes, como a pessoa os conhece.
 // Compartilhado pelo painel da extensão e pela confirmação do envio no editor.
 
+import { BIOGRAPHIC_FIELD_LABELS, BIOGRAPHIC_VALUE_LABELS } from './biographic.ts';
+import { EDIT_FIELD_LABELS, EDIT_VALUE_LABELS } from './edit-items.ts';
+
 export const FIELD_LABELS: Record<string, string> = {
+  ...BIOGRAPHIC_FIELD_LABELS,
+  ...EDIT_FIELD_LABELS,
   f_ano_fim: 'Ano de fim',
   f_ano_ini: 'Ano de início',
   f_carga: 'Carga horária',
@@ -29,6 +34,8 @@ export function fieldLabel(name: string): string {
 
 /** Valores codificados nos formulários, por campo. */
 const VALUE_LABELS: Record<string, Record<string, string>> = {
+  ...BIOGRAPHIC_VALUE_LABELS,
+  ...EDIT_VALUE_LABELS,
   f_regime: { '3': 'Sim' },
   f_status: { N: 'Anterior', S: 'Atual' },
   f_stavinc: { '0': 'Não', '1': 'Sim' },

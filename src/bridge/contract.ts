@@ -8,18 +8,28 @@
 // relatório pode ser colado numa issue pública sem expor o currículo.
 
 import type { LattesPort } from './apply.ts';
+import {
+  biographicContract,
+  type BiographicKind,
+  biographicSample,
+  isBiographicKind,
+} from './biographic.ts';
 import { CREATE_ATUACAO_SPEC, CREATE_ITEMS_ENABLED } from './create.ts';
+import { contractKind, type DeleteOp } from './delete.ts';
+import { editContract, eventoSample } from './edit-items.ts';
 import type { FormControl } from './form.ts';
 import { cvCodeFrom, findLinks, isLogonPage } from './lattes-html.ts';
 import {
   checkLists,
   checkSources,
   type ListCheck,
-  listText,
   unreadLists,
   unreadSources,
 } from './list-watch.ts';
 import type { BridgeOp } from './plan.ts';
+
+// O texto do relatório mora em contract-report.ts; quem já importava daqui segue igual.
+export { driftText, ISSUES_URL, issueUrl, reportText } from './contract-report.ts';
 
 export interface FieldSpec {
   /** Limite do campo (maxlength) quando o HTML declara. */
@@ -38,10 +48,19 @@ export interface FormSpec {
   name: string;
 }
 
+/**
+ * Formulários fora do contrato fixo: os que só entram com a chave ligada
+ * (create.ts, biographic.ts, edit-items.ts) e a exclusão, que não tem
+ * formulário próprio (delete.ts usa o de edição e a conferência dele).
+ */
+type GatedKind = 'criar-atuacao' | 'evento' | BiographicKind | DeleteOp['kind'];
+
 export interface Contract {
-  /** A inclusão só entra com CREATE_ITEMS_ENABLED (create.ts). */
-  forms: Omit<Record<BridgeOp['kind'], FormSpec>, 'criar-atuacao'> &
-    Partial<Record<'criar-atuacao', FormSpec>>;
+  /**
+   * A inclusão só entra com CREATE_ITEMS_ENABLED; os dados gerais, com
+   * BIOGRAPHIC_OPS_ENABLED; os eventos, com EDIT_ITEMS_ENABLED.
+   */
+  forms: Omit<Record<BridgeOp['kind'], FormSpec>, GatedKind> & Partial<Record<GatedKind, FormSpec>>;
   /** Procedimentos que precisam estar linkados no menu do currículo. */
   menu: string[];
 }
@@ -62,6 +81,8 @@ const radio: FieldSpec = { type: 'radio' };
 export const LATTES_CONTRACT: Contract = {
   forms: {
     ...(CREATE_ITEMS_ENABLED ? { 'criar-atuacao': CREATE_ATUACAO_SPEC } : {}),
+    ...biographicContract().forms,
+    ...editContract().forms,
     idioma: {
       action: 'PKG_IDIOMA.FORM',
       fields: {
@@ -121,7 +142,13 @@ export const LATTES_CONTRACT: Contract = {
       name: 'GN_ATIV_VINC',
     },
   },
-  menu: ['pkg_ativ.lista', 'pkg_idioma.lista', 'pkg_resume.'],
+  menu: [
+    'pkg_ativ.lista',
+    'pkg_idioma.lista',
+    'pkg_resume.',
+    ...biographicContract().menu,
+    ...editContract().menu,
+  ],
 };
 
 export type Fingerprint = Record<string, FieldSpec>;
@@ -338,6 +365,15 @@ async function locateAndCheck(
     const link = findLinks(menu, 'pkg_resume.')[0];
     return link ? checkForm(port, kind, spec, link.path) : noLink(kind, spec.name, 'pkg_resume.');
   }
+  if (kind === 'evento' || isBiographicKind(kind)) {
+    const found = isBiographicKind(kind)
+      ? await biographicSample(kind, menu, (path) => getChecked(port, path))
+      : await eventoSample(menu, (path) => getChecked(port, path));
+    if ('path' in found) return checkForm(port, kind, spec, found.path);
+    return 'link' in found
+      ? noLink(kind, spec.name, found.link)
+      : noSample(kind, spec.name, found.none);
+  }
   if (kind === 'criar-atuacao') {
     // O formulário de inclusão abre vazio: não precisa de amostra.
     const lista = findLinks(menu, 'pkg_ativ.lista')[0];
@@ -427,7 +463,7 @@ export async function checkContract(
 /** O relatório impede gravar nesse formulário? Só as mudanças que quebram o conector. */
 export function blocksKind(report: ContractReport | undefined, kind: BridgeOp['kind']): Drift[] {
   if (!report || report.status !== 'mudou') return [];
-  const form = report.forms.find((f) => f.kind === kind);
+  const form = report.forms.find((f) => f.kind === contractKind(kind));
   return form ? form.drifts.filter(isBreaking) : [];
 }
 
@@ -442,68 +478,5 @@ export function lacksSample(
   kind: BridgeOp['kind'],
 ): FormCheck | undefined {
   if (!report || (report.status !== 'ok' && report.status !== 'mudou')) return undefined;
-  return report.forms.find((f) => f.kind === kind && f.status === 'sem-amostra');
-}
-
-const DRIFT_TEXT: Record<DriftKind, (d: Drift) => string> = {
-  'campo-novo': (d) => `${d.form}: campo novo ${d.field}`,
-  'campo-sumiu': (d) => `${d.form}: campo ${d.field} sumiu`,
-  'formulario-sumiu': (d) => `${d.form}: formulário não encontrado na página`,
-  'limite-mudou': (d) => `${d.form}: limite de ${d.field} era ${d.expected}, agora ${d.observed}`,
-  'link-sumiu': (d) => `${d.form}: link ${d.field} sumiu`,
-  'modo-mudou': (d) => `${d.form}: ${d.field} era ${d.expected}, agora ${d.observed}`,
-  'tipo-mudou': (d) => `${d.form}: ${d.field} era ${d.expected}, agora ${d.observed}`,
-};
-
-export function driftText(drift: Drift): string {
-  return DRIFT_TEXT[drift.kind](drift);
-}
-
-const FORM_STATUS: Record<FormStatus, string> = {
-  mudou: 'mudou',
-  'nao-encontrado': 'não encontrado',
-  ok: 'como o esperado',
-  'sem-amostra': 'sem amostra',
-};
-
-/**
- * Relatório em texto, para colar numa issue: data, versão da extensão, menu
- * e formulários. Só nomes de campos e procedimentos; nenhum valor.
- */
-export function reportText(report: ContractReport, version: string): string {
-  const lines = [
-    `Verificação do Lattes em ${report.checkedAt}`,
-    `Extensão ${version}`,
-    `Resultado: ${report.status}${report.detail ? ` (${report.detail})` : ''}`,
-  ];
-  if (report.menu.length) {
-    lines.push('', 'Menu:');
-    for (const m of report.menu) lines.push(`- ${m.proc}: ${m.found ? 'ok' : 'sumiu'}`);
-  }
-  for (const f of report.forms) {
-    lines.push('', `${f.form}: ${FORM_STATUS[f.status]}${f.detail ? ` (${f.detail})` : ''}`);
-    for (const d of f.drifts) lines.push(`- ${driftText(d)}`);
-  }
-  if (report.lists?.length) {
-    lines.push('', 'Listas dos campos tipados:');
-    for (const l of report.lists)
-      lines.push(`- ${l.status === 'ok' ? `${l.label}: ok` : listText(l)}`);
-  }
-  return lines.join('\n');
-}
-
-export const ISSUES_URL = 'https://github.com/rlueder/lattes-editor/issues/new';
-
-/** Link que abre uma issue já preenchida com o relatório. */
-export function issueUrl(report: ContractReport, version: string): string {
-  const title = `O Lattes mudou: ${[
-    ...report.forms.filter((f) => f.drifts.length).map((f) => f.form),
-    ...(report.lists ?? []).filter((l) => l.status !== 'ok').map((l) => l.label),
-  ].join(', ')}`.replace(/: $/, '');
-  const params = new URLSearchParams({
-    body: `\`\`\`\n${reportText(report, version)}\n\`\`\``,
-    labels: 'vigia-lattes',
-    title,
-  });
-  return `${ISSUES_URL}?${params.toString()}`;
+  return report.forms.find((f) => f.kind === contractKind(kind) && f.status === 'sem-amostra');
 }

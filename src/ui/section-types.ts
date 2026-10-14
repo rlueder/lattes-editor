@@ -51,12 +51,22 @@ export const SECTION_DESCRIPTIONS: Record<string, string> = {
   projetos: 'Projetos de pesquisa, extensão e desenvolvimento, dentro de uma atuação.',
 };
 
+/** O Importar não lê estas seções: o item novo segue pela lista de alterações. */
+const BY_CHANGES = 'O item novo vai ao Lattes pela lista de alterações, não pelo Importar.';
+
 export const EMPTY_NOTES: Record<string, string> = {
-  atuacao: 'Criar uma atuação pelo editor ainda não é possível.',
+  atuacao: BY_CHANGES,
   educacao: 'Para um item aparecer aqui, ligue "Divulgação científica" ao editá-lo.',
-  formacao: 'Criar uma formação pelo editor ainda não é possível.',
+  formacao: BY_CHANGES,
   inovacao: 'Para um item aparecer aqui, ligue "Potencial inovação" ao editá-lo.',
-  patentes: 'Criar uma patente ou um registro pelo editor ainda não é possível.',
-  projetos:
-    'Projetos ficam dentro de uma atuação profissional; criar um pelo editor ainda não é possível.',
+  patentes: `Por enquanto só a patente; os outros registros ainda não. ${BY_CHANGES}`,
+  projetos: `Projetos ficam dentro de uma atuação profissional. ${BY_CHANGES}`,
+};
+
+/** O botão de item novo das seções que não vão pelo Importar (src/model/general-items.ts). */
+export const NEW_GENERAL_LABELS: Record<string, string> = {
+  atuacao: 'Nova atuação',
+  formacao: 'Nova formação',
+  patentes: 'Nova patente',
+  projetos: 'Novo projeto',
 };

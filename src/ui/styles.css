@@ -4508,6 +4508,16 @@ button.primary:hover:not(:disabled) {
   margin: 6px 0 0;
 }
 
+/* Exclusão na fila: o Lattes não desfaz. */
+.send-delete {
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  font-size: 13px;
+}
+
 .send-field {
   display: grid;
   grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);

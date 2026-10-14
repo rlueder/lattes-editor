@@ -7,6 +7,7 @@
 
 import type { Change } from '../model/changes.ts';
 import type { ResultStatus } from './apply.ts';
+import { isDeleteOp } from './delete.ts';
 import { opRows } from './field-labels.ts';
 import type { BridgeOp } from './plan.ts';
 
@@ -53,6 +54,21 @@ export function sentEntry(
 export const UNDO_KEY_PREFIX = 'desfazer:';
 
 /**
+ * Por que esta operação não se desfaz pelo editor, mesmo conferida; undefined
+ * quando se desfaz. Desfazer é mandar de volta os valores de antes, e um item
+ * criado ou excluído não tem "antes" no mesmo formulário.
+ */
+export function noUndoReason(op: BridgeOp): string | undefined {
+  if (op.kind === 'criar-atuacao') {
+    return 'Item criado pelo conector: para tirar, exclua no Lattes, à mão';
+  }
+  if (isDeleteOp(op)) {
+    return 'Exclusão: o Lattes não tem como desfazer; para voltar, inclua o item de novo no Lattes, à mão';
+  }
+  return undefined;
+}
+
+/**
  * A operação que volta o Lattes ao que estava antes: grava os valores
  * esperados e espera os gravados. Os campos de identidade que não mudaram (o
  * início do vínculo) seguem como estavam. Sem o "antes" de algum campo, não
@@ -65,6 +81,7 @@ export function undoOp(entry: SentEntry): BridgeOp | undefined {
   // voltar: sai de lá excluída à mão.)
   if (entry.id === undefined || entry.undoOf !== undefined || failed(entry)) return undefined;
   const { op } = entry;
+  if (noUndoReason(op)) return undefined;
   const fields = Object.keys(op.set);
   if (fields.length === 0 || fields.some((f) => !(f in op.expect))) return undefined;
   const set = Object.fromEntries(fields.map((f) => [f, op.expect[f] ?? null]));
@@ -163,7 +180,9 @@ export function sentLogText(
       ? `${OUTCOME_TEXT[entry.outcome.status]}${entry.outcome.detail ? `: ${entry.outcome.detail}` : ''}`
       : entry.undoOf !== undefined
         ? 'desfeito e conferido'
-        : 'gravado e conferido';
+        : isDeleteOp(entry.op)
+          ? 'excluído e conferido'
+          : 'gravado e conferido';
     lines.push(`- ${timeText(entry.sentAt)} ${entry.op.label} (${result})`);
     for (const row of entry.rows) {
       lines.push(`    ${row.label}: ${row.before || '(vazio)'} -> ${row.after || '(vazio)'}`);

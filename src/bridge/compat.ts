@@ -24,6 +24,8 @@ export const BRIDGE_FEATURES = [
   'foto',
   /** Recarregar a aba do Lattes quando a sessão venceu. */
   'recarregar-lattes',
+  /** Importar dos itens novos pelo conector, passos 1 e 2 (src/bridge/importar.ts). */
+  'importar',
   /** Áreas, agências, busca de instituição e cursos lidos no Lattes (src/bridge/lattes-lists.ts). */
   'listas-lattes',
 ] as const;

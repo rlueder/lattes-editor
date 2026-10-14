@@ -218,11 +218,32 @@ export function revertField(
 }
 
 /**
- * Leva os valores novos de uma mudança "alterado" para o original: depois que
- * o conector grava e confere no Lattes, o Lattes é o novo "antes", e a mudança
- * sai da lista. É `revertField` no sentido contrário.
+ * Leva os valores novos de uma mudança "alterado" para o original, ou tira
+ * dele o item de uma "removido": depois que o conector grava e confere no
+ * Lattes, o Lattes é o novo "antes", e a mudança sai da lista. Na alteração,
+ * é `revertField` no sentido contrário.
  */
 export function acceptChange(original: XElement, working: XElement, change: Change): boolean {
+  // Item excluído e conferido no Lattes: sai também do original.
+  if (change.kind === 'removido') {
+    const chain = resolvePath(original, change.path);
+    if (chain.length !== change.path.length || chain.length < 2) return false;
+    const el = chain.at(-1)!;
+    const parent = chain.at(-2)!;
+    // O caminho pode ter posição (#n): só tira se o elemento ainda é o que a
+    // mudança descreve, com os mesmos valores, para não sumir com um vizinho.
+    // Comparação por atributo, sem depender da ordem.
+    const now = new Map(
+      fieldDiff(el, undefined)
+        .filter((f) => f.before)
+        .map((f) => [f.attr, f.before]),
+    );
+    const same =
+      now.size === change.fields.length && change.fields.every((f) => now.get(f.attr) === f.before);
+    if (el.name !== change.element || !same) return false;
+    parent.children = parent.children.filter((c) => c !== el);
+    return true;
+  }
   if (change.kind !== 'alterado') return false;
   return change.fields.every((f) => revertField(working, original, change, f.attr));
 }
