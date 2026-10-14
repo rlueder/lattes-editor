@@ -6300,6 +6300,18 @@ main.content {
   font-size: 14px;
 }
 
+/* Registro do enviado: tentativa que não terminou conferida fica apagada, com
+   o motivo embaixo do título. */
+.sent-failed .sent-before,
+.sent-failed .sent-after {
+  color: var(--muted);
+}
+
+.sent-outcome {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+
 /* Lápis sobre a foto do perfil: troca a foto no Lattes. Aparece ao passar o
    mouse ou com o foco; em tela de toque fica sempre visível. */
 .profile .avatar-wrap .avatar-edit {

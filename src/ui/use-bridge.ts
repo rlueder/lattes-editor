@@ -222,27 +222,31 @@ export function useBridge(
   useEffect(reloadSent, [reloadSent]);
 
   /**
-   * Entra no registro o que voltou conferido e o que foi criado no Lattes
-   * mesmo com problema na conferência; as outras falhas não gravaram nada.
+   * Toda resposta da fila entra no registro: a conferida, a criada no Lattes
+   * com problema na conferência e a que não gravou, cada uma com o resultado
+   * (LAT-47). Só a conferida desfeita reabre a alteração no editor.
    */
-  const recordConfirmed = useCallback(
-    (key: string) => {
-      const item = outgoing.current.get(key);
+  const recordResult = useCallback(
+    (result: OpResult) => {
+      const item = outgoing.current.get(result.key);
       if (!item || !lattesId) return;
-      outgoing.current.delete(key);
+      outgoing.current.delete(result.key);
+      const { detail, status } = result;
+      const ok = status === 'conferido';
       const entry = sentEntry(item.op, lattesId, Date.now(), {
         change: item.change,
+        outcome: status === 'conferido' ? undefined : { detail, status },
         undoOf: item.undoOf,
       });
       void addSent(entry)
         .then(reloadSent)
         .catch(() => undefined);
-      if (item.undoOf !== undefined && item.change) undoneRef.current(item.change);
+      if (ok && item.undoOf !== undefined && item.change) undoneRef.current(item.change);
     },
     [lattesId, reloadSent],
   );
-  const recordRef = useRef(recordConfirmed);
-  recordRef.current = recordConfirmed;
+  const recordRef = useRef(recordResult);
+  recordRef.current = recordResult;
 
   useEffect(() => {
     const onMessage = (msg: BridgeMessage) => {
@@ -250,14 +254,10 @@ export function useBridge(
       if (msg.type === 'ola') setAvailable(true);
       if (msg.type === 'resultado') {
         setResults((r) => ({ ...r, [msg.result.key]: msg.result }));
+        recordRef.current(msg.result);
         if (msg.result.status === 'conferido') {
           setConfirmed((n) => n + 1);
-          recordRef.current(msg.result.key);
           confirmedRef.current(msg.result.key);
-        } else if (msg.result.assigned) {
-          // Criado no Lattes, mas a conferência achou problema: entra no
-          // registro (o item existe lá), e a alteração continua no editor.
-          recordRef.current(msg.result.key);
         }
       }
       if (msg.type === 'fim') setRunning(false);
