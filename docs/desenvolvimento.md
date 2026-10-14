@@ -36,11 +36,11 @@ sendo o dos testes, com todo elemento do schema e valores de teste.
 Algumas telas têm uma prévia no `pnpm dev`, sem precisar do Lattes nem da
 extensão:
 
-| Endereço                 | Mostra                                                                      |
-| ------------------------ | --------------------------------------------------------------------------- |
-| `?simular-atualizacao`   | O aviso de versão nova, com um download simulado                            |
-| `?simular-foto`          | O lápis da foto e a troca, com uma resposta simulada (`=falha` para o erro) |
-| `?primeiro-uso=<estado>` | Um estado fixo da tela de primeiro uso (`src/dev/onboarding-preview.ts`)    |
+| Endereço                 | Mostra                                                                                                           |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `?simular-atualizacao`   | O aviso de versão nova e o item "Verificar atualizações" do ⚙ (`=nenhuma` sem versão nova, `=falha` para o erro) |
+| `?simular-foto`          | O lápis da foto e a troca, com uma resposta simulada (`=falha` para o erro)                                      |
+| `?primeiro-uso=<estado>` | Um estado fixo da tela de primeiro uso (`src/dev/onboarding-preview.ts`)                                         |
 
 Para testar com uma exportação sua, ponha o `CV_<id>.zip` em `fixtures/real/`,
 que está no `.gitignore`. As imagens de `docs/img/` e `site/img/` saem sempre

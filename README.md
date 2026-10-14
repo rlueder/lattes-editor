@@ -31,7 +31,8 @@ maior.
 
 O app se atualiza sozinho. Ao abrir e a cada 15 minutos, ele confere se saiu
 versão nova; se saiu, um aviso no canto oferece "Atualizar", e o app baixa o
-pacote, confere a assinatura e reinicia.
+pacote, confere a assinatura e reinicia. Para conferir na hora, use "Verificar
+atualizações" no menu ⚙.
 
 ## Como funciona
 
