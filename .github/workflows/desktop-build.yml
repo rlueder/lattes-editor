@@ -3,7 +3,11 @@ name: App de desktop
 # Monta o app de desktop (Tauri) para macOS, Windows e Linux. Chamado pelo
 # Release com a tag recém-criada: os instaladores vão para a página daquele
 # lançamento com nomes fixos, para a página do projeto apontar sempre para
-# releases/latest/download/<nome>. Em PR que mexe no app, só monta, sem enviar.
+# releases/latest/download/<nome>. Em PR que mexe no src-tauri (Rust,
+# Cargo, configuração do Tauri), só monta, sem enviar: é onde uma quebra de
+# um sistema só aparece montando. O TypeScript de src/desktop já passa pelo
+# lint, pelos tipos e pelos testes do CI, e uma mudança neste arquivo não
+# exercita os passos de lançamento num PR, que dependem da tag.
 #
 # No lançamento, o app de macOS sai assinado com o Developer ID e notarizado
 # pela Apple, e abre sem aviso; sem os segredos, o lançamento falha. O
@@ -43,8 +47,6 @@ on:
   pull_request:
     paths:
       - 'src-tauri/**'
-      - 'src/desktop/**'
-      - '.github/workflows/desktop-build.yml'
   # Manual, com uma tag, refaz os instaladores de um lançamento que ficou sem
   # eles (o Release falhou depois de criar a tag); sem tag, só monta.
   workflow_dispatch:
