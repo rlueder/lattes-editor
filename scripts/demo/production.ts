@@ -1,10 +1,16 @@
 // Produções, bancas, eventos e orientações do currículo de demonstração.
 
 import type { XElement } from '../../src/model/xml.ts';
+import listas from '../../src/schema/listas-lattes.json' with { type: 'json' };
 import { ANA, authors, COAUTHORS, el, keywords, nextSeq } from './build.ts';
 
 interface Article {
   authors: string[];
+  /**
+   * País de publicação do periódico, como a lista de países do Lattes o
+   * escreve (src/schema/listas-lattes.json), conferido no OpenAlex pelo ISSN.
+   */
+  country: string;
   doi: string;
   issn: string;
   journal: string;
@@ -19,6 +25,7 @@ interface Article {
 const ARTICLES: Article[] = [
   {
     authors: ['ana', 'oliveira', 'ferreira', 'vieira'],
+    country: 'Grã-Bretanha',
     doi: '10.5555/demo.2024.001',
     issn: '0962-1083',
     journal: 'Molecular Ecology',
@@ -31,6 +38,7 @@ const ARTICLES: Article[] = [
   },
   {
     authors: ['ana', 'rocha', 'nascimento'],
+    country: 'Brasil',
     doi: '10.5555/demo.2023.002',
     issn: '0370-6583',
     journal: 'Rodriguésia',
@@ -43,6 +51,7 @@ const ARTICLES: Article[] = [
   },
   {
     authors: ['oliveira', 'ana', 'vieira'],
+    country: 'Holanda',
     doi: '10.5555/demo.2022.003',
     issn: '1566-0621',
     journal: 'Conservation Genetics',
@@ -55,6 +64,7 @@ const ARTICLES: Article[] = [
   },
   {
     authors: ['ana', 'ferreira', 'mendes'],
+    country: 'Brasil',
     doi: '10.5555/demo.2021.004',
     issn: '1415-4757',
     journal: 'Genetics and Molecular Biology',
@@ -67,6 +77,7 @@ const ARTICLES: Article[] = [
   },
   {
     authors: ['ana', 'vieira'],
+    country: 'Suíça',
     doi: '10.5555/demo.2019.005',
     issn: '1664-462X',
     journal: 'Frontiers in Plant Science',
@@ -79,6 +90,7 @@ const ARTICLES: Article[] = [
   },
   {
     authors: ['ana', 'mendes', 'vieira'],
+    country: 'Brasil',
     doi: '10.5555/demo.2017.006',
     issn: '0102-3306',
     journal: 'Acta Botanica Brasilica',
@@ -92,6 +104,9 @@ const ARTICLES: Article[] = [
 ];
 
 function article(a: Article): XElement {
+  if (!listas.paises.includes(a.country)) {
+    throw new Error(`${a.journal}: país fora da lista do Lattes: ${a.country}`);
+  }
   return el('ARTIGO-PUBLICADO', { 'SEQUENCIA-PRODUCAO': nextSeq() }, [
     el('DADOS-BASICOS-DO-ARTIGO', {
       'ANO-DO-ARTIGO': a.year,
@@ -100,7 +115,7 @@ function article(a: Article): XElement {
       IDIOMA: a.language,
       'MEIO-DE-DIVULGACAO': 'MEIO_DIGITAL',
       NATUREZA: 'COMPLETO',
-      'PAIS-DE-PUBLICACAO': a.language === 'Português' ? 'Brasil' : 'Reino Unido',
+      'PAIS-DE-PUBLICACAO': a.country,
       'TITULO-DO-ARTIGO': a.title,
     }),
     el('DETALHAMENTO-DO-ARTIGO', {
