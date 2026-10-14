@@ -259,19 +259,35 @@ function CourseControl({ common, el, lists, onChanged }: Omit<ControlProps, 'kin
   const institution = getAttr(el, 'CODIGO-INSTITUICAO') ?? '';
   const value = getAttr(el, 'NOME-CURSO') ?? '';
   const [state, setState] = useState<CourseState>({ kind: 'parado' });
+  // Cada leitura leva um número; a resposta de uma leitura que ficou para trás
+  // (outra instituição, outro clique, campo fechado) é ignorada, para nunca
+  // oferecer os cursos de outra instituição.
+  const latest = useRef(0);
   // Outra instituição, outra lista.
-  useEffect(() => setState({ kind: 'parado' }), [institution]);
+  useEffect(() => {
+    latest.current++;
+    setState({ kind: 'parado' });
+  }, [institution]);
+  useEffect(
+    () => () => {
+      latest.current++;
+    },
+    [],
+  );
 
   const load = () => {
+    const n = ++latest.current;
     setState({ kind: 'carregando' });
     lists
       .loadCourses(el)
-      .then((courses) => setState({ courses, kind: 'pronto' }))
-      .catch((err: unknown) =>
-        setState({
-          detail: err instanceof Error ? err.message : 'falha inesperada',
-          kind: 'erro',
-        }),
+      .then((courses) => n === latest.current && setState({ courses, kind: 'pronto' }))
+      .catch(
+        (err: unknown) =>
+          n === latest.current &&
+          setState({
+            detail: err instanceof Error ? err.message : 'falha inesperada',
+            kind: 'erro',
+          }),
       );
   };
 

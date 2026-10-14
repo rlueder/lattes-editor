@@ -100,9 +100,14 @@ export function useLattesLists(features: readonly string[]): LattesLists {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [live, ask]);
 
-  return useMemo(() => {
+  // As funções de busca leem o estado da ligação por referência: uma
+  // identidade só, para a busca em andamento não recomeçar quando a cópia das
+  // listas chega ou se renova.
+  const liveRef = useRef(live);
+  liveRef.current = live;
+  const fetchers = useMemo(() => {
     const searchInstitutions = async (query: string, level?: string) => {
-      if (!live) throw new Error('O conector não está ligado');
+      if (!liveRef.current) throw new Error('O conector não está ligado');
       const reply = await ask<Extract<Reply, { type: 'instituicoes' }>>({
         id: nextId('inst'),
         level,
@@ -128,7 +133,7 @@ export function useLattesLists(features: readonly string[]): LattesLists {
 
     const loadCourses = async (el: XElement) => {
       const level = formationLevel(el.name);
-      if (!live || !level) throw new Error('O conector não está ligado');
+      if (!liveRef.current || !level) throw new Error('O conector não está ligado');
       const institution = await fullCodeOf(el, level);
       const cacheKey = `${institution}|${level}`;
       let pending = courseCache.current.get(cacheKey);
@@ -149,13 +154,17 @@ export function useLattesLists(features: readonly string[]): LattesLists {
       return pending;
     };
 
-    return {
+    return { loadCourses, searchInstitutions };
+  }, [ask]);
+
+  return useMemo(
+    () => ({
+      ...fetchers,
       agencies: agencies?.items,
       areas: areas?.items,
       courses: live,
-      loadCourses,
       search: live,
-      searchInstitutions,
-    };
-  }, [live, ask, areas, agencies]);
+    }),
+    [fetchers, live, areas, agencies],
+  );
 }
