@@ -20,6 +20,9 @@ export function useDiscardGuard(item: XElement, onCancel: () => void) {
       open: confirming,
     },
     requestClose: () => {
+      // Com a confirmação aberta, um segundo pedido (Esc que chega ao
+      // formulário) não faz nada: nem reabre nem tira o foco dela.
+      if (confirming) return;
       // Campo de texto só grava no item ao perder o foco: tira o foco antes de
       // comparar, senão o que está sendo digitado (Esc no meio) não conta.
       (document.activeElement as HTMLElement | null)?.blur();

@@ -158,8 +158,8 @@ export function CloseConfirm({
 }
 
 /**
- * Fechar um formulário com algo preenchido (Esc, clique fora, fechar,
- * cancelar) pergunta antes: um Esc sem querer não pode levar o que a pessoa
+ * Fechar um formulário com algo preenchido (Esc, clique fora ou o botão de
+ * fechar) pergunta antes: um Esc sem querer não pode levar o que a pessoa
  * digitou. Continuar editando é o botão principal e o que o Esc faz aqui.
  */
 export function DiscardConfirm({
