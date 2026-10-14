@@ -7,8 +7,9 @@ leitura: as páginas de formulário foram baixadas por GET e analisadas, nenhum
 formulário foi enviado.
 
 Datas das observações: 10/10/2026 (primeiro reconhecimento, ver
-`lattes_editor_reconnaissance.md`) e 11/10/2026 (formulários de edição, este
-documento).
+`lattes_editor_reconnaissance.md`), 11/10/2026 (formulários de edição, este
+documento) e as datas indicadas nas seções seguintes; as seções 16 a 18
+(edição de produções, inclusão e buscas) são de 14/10/2026.
 
 Cada afirmação vem marcada como **observado** (visto no HTML, nos scripts ou
 no comportamento do servidor) ou **inferido** (conclusão a partir do que foi
@@ -728,3 +729,495 @@ por GET (que traz `f_cod` e `f_seq`). As duas formações e a atuação inteira
 pedem tratamento próprio. O que ainda falta observar é a resposta do
 servidor a uma exclusão e se ela deixa o currículo com alteração pendente
 de envio ao CNPq; isso só com a pessoa acompanhando, num item de teste.
+
+O conector já tem a exclusão do idioma e do vínculo em
+`src/bridge/delete.ts`, desligada (`DELETE_ITEMS_ENABLED = false`). Ela posta
+o formulário inteiro, como o `del()`, só com `f_ctr=E`, e não lê a resposta:
+confere relendo a lista e exigindo que só a linha do item tenha sumido. A
+atuação inteira e as duas formações ficam fora pelos motivos acima.
+
+## 16. Edição de produções existentes (LAT-51, 14/10/2026)
+
+Lido só com GET, de dentro da aba do menu: as listas do menu e os
+formulários que as linhas abrem. Nada foi enviado. Os campos de controle
+(`f_cod`, `f_seq`, `f_ctr`) aparecem no fim de cada tabela. Os itens
+existentes neste currículo, além de idioma e formação (seção 5), estão em
+participação em eventos, trabalhos técnicos, editoração e prêmios; o resto
+das listas de produção está vazio e só mostra o link de inclusão (seção 17).
+
+### Participação em eventos: `GN_TEC`, POST `PKG_EVENTO.FORM`
+
+A lista é `pkg_evento.lista?f_cod=…` (no `modalCV1`). Cada linha da tabela
+tem `onclick="self.parent.modalCV2.setarUrl('PKG_EVENTO.form?f_cod=…&F_STA_DIVULGACAO_CIENTIFICA=&f_seq=N',true)"`;
+o "Incluir novo item" é o mesmo endereço sem `f_seq`. Na edição o oculto
+`f_ctr` vem `U`; na inclusão, `I`. Os campos são os mesmos nas duas.
+**Observado.**
+
+| Campo                                  | Tipo                                                                                                                                              | XML (`DADOS-BASICOS-DA-PARTICIPACAO-EM-*`, `DETALHAMENTO-*`)            |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `F_FORMA`                              | rádio `38` Convidado, `39` Participante, `40` Ouvinte                                                                                             | `FORMA-PARTICIPACAO` (**inferido**)                                     |
+| `F_TPO`                                | lista vazia no HTML, montada por `montaTipoApres()` ao clicar em `F_FORMA`; o valor de cada opção é o próprio rótulo                              | `TIPO-PARTICIPACAO` (**inferido**)                                      |
+| `f_nme_evento`                         | texto 400                                                                                                                                         | `NOME-DO-EVENTO`                                                        |
+| `f_ano`                                | texto 4                                                                                                                                           | `ANO`                                                                   |
+| `f_classif`                            | rádio `I` Internacional, `N` Nacional, `R` Regional, `L` Local                                                                                    | sem atributo correspondente no XSD                                      |
+| `F_COD_PROD`                           | lista `A31` Congresso, `A32` Seminário, `A33` Simpósio, `A34` Oficina, `A35` Encontro, `A36` Olimpíada, `A37` Feira, `A38` Exposição, `A39` Outra | o elemento: `PARTICIPACAO-EM-CONGRESSO`, `-SEMINARIO`, … (**inferido**) |
+| `f_cidade`                             | texto 255                                                                                                                                         | `CIDADE-DO-EVENTO` (**inferido**)                                       |
+| `f_pais`                               | lista de 244 países, código de 3 letras (`BRA` Brasil, `RFA` Alemanha, `EUA` Estados Unidos)                                                      | `PAIS`                                                                  |
+| `f_homepage`                           | texto 250                                                                                                                                         | `HOME-PAGE-DO-TRABALHO`                                                 |
+| `f_titulo`                             | texto 255                                                                                                                                         | `TITULO`                                                                |
+| `F_STA_DIVULGACAO_CIENTIFICA`          | rádio `S` sim, `N` não                                                                                                                            | `FLAG-DIVULGACAO-CIENTIFICA`                                            |
+| `f_titulo_en`                          | texto 400                                                                                                                                         | `TITULO-INGLES`                                                         |
+| `f_tipo_privacidade`                   | lista `1` Público, `2` Privado                                                                                                                    |                                                                         |
+| `f_ctr` (`U` ou `I`), `f_cod`, `f_seq` | ocultos                                                                                                                                           |                                                                         |
+
+As opções de `F_TPO`, lidas em `montaTipoApres()`: com Convidado,
+Conferencista, Simposista, Moderador, Avaliador e Homenageado; com
+Participante, "Poster / Painel", "Apresentação oral" e "Outras formas"; com
+Ouvinte, só a opção vazia. Como a lista nasce vazia e só ganha opções no
+clique, quem grava fora da página precisa mandar o texto do rótulo direto em
+`F_TPO`. Os seis eventos deste currículo são de ouvinte, então não se viu
+como a edição de um convidado ou participante marca a opção já gravada.
+**Lacuna.**
+
+O formulário não tem idioma, meio de divulgação, relevância, palavras-chave,
+áreas nem participantes, embora o XSD tenha esses campos no evento.
+`check()` exige forma de participação, tipo (menos para ouvinte), natureza,
+nome do evento, ano (quatro dígitos, entre o nascimento e o ano atual),
+país e título (menos para ouvinte); o rótulo do título muda com o tipo
+(`rotulo_titulo()`: "Título da conferência", "Título da mesa redonda ou
+simpósio", "Natureza da homenagem"). A exigência de o próprio nome estar na
+lista de participantes está comentada. **Observado.** Há ainda
+`evento_comunicacao()`, que abre `pkg_evento.lista_evento_comunic` no
+`modalCV3`, sem botão visível que a chame. **Observado.**
+
+### Trabalhos técnicos: `GN_RELATORIO`, POST `PKG_RELATORIO.FORM`
+
+Lista `pkg_relatorio.lista`; linha abre `pkg_relatorio.form?f_cod=…&f_seq=N`,
+inclusão sem `f_seq`. **Observado.**
+
+| Campo                                             | Tipo                                                                                                                                                |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `F_COD_PROD`                                      | rádio `243` Parecer, `244` Elaboração de projeto, `245` Relatório técnico, `246` Serviços na área da saúde, `247` Extensão tecnológica, `249` Outra |
+| `f_titulo`                                        | texto 400                                                                                                                                           |
+| `f_ano`                                           | texto 4                                                                                                                                             |
+| `f_pais`                                          | lista de 244 países                                                                                                                                 |
+| `F_IDIOMA`                                        | lista de 152 idiomas, código de 2 letras (`PT`, `EN`, `ES`, `DE`, `FR`, `IT`, `LB` Libras)                                                          |
+| `f_meio`                                          | lista vazio, `I` Impresso, `M` meio magnético, `D` meio digital, `F` filme, `H` hipertexto, `O` outro, `V` impresso e mídia eletrônica              |
+| `f_homepage`                                      | texto 250                                                                                                                                           |
+| `F_RELEV`                                         | rádio `S`, `N`                                                                                                                                      |
+| `f_finalidade`                                    | texto 255                                                                                                                                           |
+| `f_duracao`, `f_paginas`                          | texto 5, numéricos                                                                                                                                  |
+| `f_disp`                                          | lista vazio, `Restrita`, `Irrestrita`                                                                                                               |
+| `f_cidade`, `f_inst`                              | texto 255 (instituição promotora, texto livre)                                                                                                      |
+| `f_ref`                                           | área 3950                                                                                                                                           |
+| `f_titulo_en`, `f_ref_en`                         | texto 400, área 3800                                                                                                                                |
+| `f_tipo_privacidade`                              | lista `1`/`2`                                                                                                                                       |
+| `f_ctr` (`U`), `f_cod`, `f_seq`                   | ocultos                                                                                                                                             |
+| `f_autores_l`, `f_plv_l`, `f_setor_l`, `f_area_l` | ocultos, preenchidos por `check()` a partir das grades (abaixo)                                                                                     |
+
+`check()` exige natureza, título, ano, país e o próprio nome entre os
+autores. **Observado.**
+
+### Editoração: `GN_TEC`, POST `PRC_TEC_EDIT`
+
+Lista `prc_tec_demais_lista?f_cod_tipo=2D`; linha abre
+`prc_tec_edit?f_cod=…&f_seq=N`, inclusão sem `f_seq` (`f_ctr=I`).
+`F_COD_PROD` é rádio `2D1` Livro, `2D2` Anais, `2D3` Catálogo, `2D4`
+Coletânea, `2D5` Enciclopédia, `2D6` Periódico, `2D9` Outro. Os demais
+campos são os do trabalho técnico sem finalidade, duração e
+disponibilidade, e com `f_editora` (texto 255); `f_inst`, `f_cidade` e
+`f_paginas` iguais. `check()` exige também o idioma. Mesmas quatro grades
+ocultas. **Observado.**
+
+### Prêmios e títulos: `GN_PREMIO`, POST `pkg_premio.form`
+
+`pkg_premio.form?f_cod=…&f_seq=N`. Só `f_titulo` (texto 200), `f_agencia`
+(texto 100, entidade promotora, texto livre), `f_ano` (texto 4),
+`f_tipo_privacidade` e os ocultos `f_ctr` (`U`), `f_cod`, `f_seq`.
+`check()` exige nome e ano. **Observado.**
+
+### As grades de autores, palavras-chave, áreas e setores
+
+Os formulários de produção com autores (trabalhos técnicos, editoração,
+patente, projeto) desenham grades jQuery (`$.grid`) a partir de vetores
+escritos no próprio HTML (`autorProvider`, `palavraProvider`,
+`areaProvider`, `setorProvider`) e, no `check()`, serializam cada grade num
+oculto: cada linha vira os valores de algumas chaves unidos por `|`, e as
+linhas são unidas por `@`. A ordem dos valores é a ordem das chaves no
+objeto da linha. **Observado.**
+
+| Oculto                   | Grade         | Chaves que entram                           | Limite (`*NumMaxRegistros`) |
+| ------------------------ | ------------- | ------------------------------------------- | --------------------------- |
+| `f_autores_l`            | `autorGrid`   | `c`, `l`, `t`, `pais`, `add`                | 2000                        |
+| `f_area_l`               | `areaGrid`    | `l`, `c`, `r`, `p`                          | 3                           |
+| `f_plv_l`                | `palavraGrid` | `l`, `c`                                    | 6                           |
+| `f_setor_l`              | `setorGrid`   | `l`, `c`                                    | 3                           |
+| `f_depositante_pessoa_l` | titulares     | `c`, `l`, `t`, `pais`, `add`, `staValidado` | (patente)                   |
+| `f_depositante_inst_l`   | titulares     | `c`, `l`, `t`, `tipoInst`, `staValidado`    | (patente)                   |
+
+Uma linha de autor vinda do servidor tem `l` (nome completo), `c` (código,
+vazio quando o coautor não é identificado), `t` (nome em citações),
+`editable` e `deletable`; o autor incluído na hora ganha `add`. Uma área
+tem `l` (nome) e `c` (código de 8 dígitos); uma palavra-chave nova, `l`,
+`c=-1` e `add`. **Observado.** O sentido de `r` e de `pais` não foi visto.
+**Lacuna.** Antes de enviar, se a privacidade mudou, `verificaPriv()` abre
+uma confirmação do `caixaMsg` do menu; se não mudou, envia direto.
+
+## 17. Formulários de inclusão (LAT-52, 14/10/2026)
+
+Lidos por GET, sem enviar. O mapa de onde fica o "Incluir novo item" de
+cada lista vazia deste currículo, lido nos `onclick` das listas
+(`modalCV2.setarUrl(…)`), com os parâmetros da URL: **Observado.**
+
+| Lista do menu                                                        | Formulário de inclusão                                                                                                                                                                                                                                                                                                     |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pkg_projeto.lista` (`f_cod_tipo` P, D, E, N, O)                     | `PKG_PROJETO.form` com `f_tpo_cooperacao=X`, `f_tpo_acao_inov=X`, `f_tematica=X`, `F_sta_inovacao`, `f_cod_tipo`, `f_cod`                                                                                                                                                                                                  |
+| `PKG_PATENTE_REGISTRO.LISTA` (`f_cod_tipo` PP)                       | janela prévia `pkg_patente_registro.informar_dados_patente`, depois `pkg_patente_registro.form`                                                                                                                                                                                                                            |
+| `PKG_PATENTE_REGISTRO.LISTA` (PC, CP, CR, DI, MR, TC)                | `PKG_PATENTE_REGISTRO.form` com `f_reg`, `F_STA_DIVULGACAO_CIENTIFICA`, `f_cod`, `f_cod_tipo`                                                                                                                                                                                                                              |
+| `pkg_artigo_pr.lista`                                                | `PKG_ARTIGO_PR.form` (`f_cod`, `F_STA_DIVULGACAO_CIENTIFICA`)                                                                                                                                                                                                                                                              |
+| `pkg_texto.lista`                                                    | `pkg_texto.form` (`f_sta_divulgacao_cientifica`, `f_cod`)                                                                                                                                                                                                                                                                  |
+| `pkg_trabalho.lista`                                                 | `pkg_trabalho.form` (`f_cod`, `F_STA_DIVULGACAO_CIENTIFICA`, `f_seq_ev`)                                                                                                                                                                                                                                                   |
+| `pkg_produto.lista`, `pkg_processo.lista`                            | `pkg_produto.form`, `pkg_processo.form` (`F_sta_inovacao`, `f_cod`)                                                                                                                                                                                                                                                        |
+| `prc_tec_demais_lista` por `f_cod_tipo`                              | um procedimento por tipo, só com `f_cod`: `prc_tec_apres` (2J), `prc_tec_carta` (2A), `prc_tec_curso` (2B), `prc_tec_desen` (2C), `prc_tec_edit` (2D), `prc_tec_manut` (2E), `prc_tec_maquete` (2F), `prc_tec_org` (2G), `prc_tec_radiotv` (2H), `prc_tec_relat` (2I), `prc_tec_outraprod` (2Z), `prc_midias_sociais` (2L) |
+| `prc_bib_demais_lista` (1A, 1B)                                      | `prc_bib_traducao`, `prc_bib_partitura` (`f_cod`)                                                                                                                                                                                                                                                                          |
+| `pkg_arte_nova.lista` (AC, MU, AV, OU)                               | `pkg_arte_nova.form` (`f_cod`, `F_TIPO`)                                                                                                                                                                                                                                                                                   |
+| `pkg_orient.lista`                                                   | `pkg_orient.form` (`f_cod`, `f_tipo`)                                                                                                                                                                                                                                                                                      |
+| `pkg_banca_trab.lista`, `pkg_banca_julg.lista`                       | `PKG_BANCA_TRAB.form`, `PKG_BANCA_JULG.form` (`f_cod`)                                                                                                                                                                                                                                                                     |
+| `pkg_revisor.lista` (`f_natur` MB, MA, RV, RA)                       | `PKG_REVISOR.inclui` (`f_cod`, `f_natur`, `f_origem`)                                                                                                                                                                                                                                                                      |
+| `PKG_ASSESSORIA_CONSULTORIA.lista`, `PKG_EXTENSAO_TECNOLOGICA.lista` | `.form` do mesmo pacote (`f_cod`)                                                                                                                                                                                                                                                                                          |
+| `pkg_licenca.lista`                                                  | `pkg_licenca.form` (`f_cod`)                                                                                                                                                                                                                                                                                               |
+
+As listas de artigos publicados, livros e capítulos, linhas de pesquisa,
+pós-doutorado, patente e algumas outras não têm o link no `onclick`; a
+inclusão passa por uma função da página (como a patente, abaixo) que não
+foi lida em todas. **Lacuna** para artigos e livros.
+
+### Formação acadêmica: `GN_FORMACAO2`, POST `pkg_formacao.FORM`
+
+O "Incluir novo item" da lista `pkg_formacao.lista?f_tipo=FA` chama
+`selecionarNivel()`, que abre um combo do `caixaMsg` do menu. Cada opção é
+a URL do formulário, `pkg_formacao.form?f_cod=…&f_tipo=FA&f_nivel=<código>`,
+com os códigos da seção 4.2 do reconhecimento (4, 3, 9, 2, D, 1, 7, C, B,
+X). O formulário de cada nível foi lido; todos têm `f_ctr=I`, `f_tipo=FA`
+e `f_nivel` oculto com o código. **Observado.**
+
+A base é a do mestrado (seção 4.2 do reconhecimento): `f_tpo_doutorado`,
+`f_inst` (75, desabilitado, só pela busca), `f_curso` (75, desabilitado, só
+pela busca), `F_STATUS` (`N` em andamento, `S` concluído, `I` incompleto),
+`f_ano_ini`, `f_ano_fim`, `f_mes_obten`, `f_ano_obten`, `F_BOLSA` (`S`, `N`),
+`f_nme_agencia` (75, desabilitado, pela lista de agências), `f_titulo`
+(254), `f_orient` e `f_coorient` (60), os campos do doutorado sanduíche e da
+cotutela, as três grades (`f_plv_l`, `f_setor_l`, `f_area_l`) e
+`f_tipo_privacidade`; ocultos `f_cod_inst`, `f_cod_inst2`, `f_inst_old`,
+`f_cod_curso`, `f_cod_curso2`, `f_curso_old`, `f_agencia`,
+`f_id_orientador`, `f_seq_orientacao`, `f_carga`. O que muda por nível:
+
+| Nível (`f_nivel`)                       | Diferença em relação ao mestrado                                                                                                |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Doutorado (4)                           | os mesmos campos; `f_tpo_doutorado` ganha `C` co-tutela e `CS` co-tutela/sanduíche, além de `N` normal e `S` sanduíche          |
+| Mestrado profissional (9)               | igual ao mestrado                                                                                                               |
+| Graduação (1)                           | sem `f_coorient`; `f_mes_obten` e `f_ano_obten` viram ocultos; `f_titulo` e `f_orient` ficam (trabalho de conclusão)            |
+| Especialização (2), Aperfeiçoamento (X) | sem coorientador nem campos de doutorado; `f_tpo_doutorado` e o ano de obtenção ocultos; `f_carga` vira texto 4 (carga horária) |
+| Residência médica (D)                   | como a especialização, mas `f_curso` e `f_carga` ocultos (`curso()` recusa curso nesse nível)                                   |
+| Ensino técnico (7)                      | sem título, orientador e campos de doutorado (`f_titulo` e `f_orient` ocultos)                                                  |
+| Ensino médio (C), fundamental (B)       | como o técnico, e também sem curso e sem bolsa (`f_curso`, `F_BOLSA` ocultos; `agnull()` limpa a agência)                       |
+
+Na graduação, mestrado e doutorado os campos do sanduíche e da cotutela
+estão no HTML, dentro de blocos escondidos (`lblDoutorado`, `lblMesesSW1`,
+`lblDoutoradoCT`) que `f_tpo_doutorado` mostra. **Observado.**
+
+A instituição, o curso e a agência só entram pelas buscas (seção 18):
+`sele_inst(1)` abre `prc_inst_form?f_cod=…&f_nivel=<nível>`;
+`sele_inst(2)`, `(3)` e `(4)` abrem a mesma busca com `f_sta_outra` igual a
+`S`, `SW` e `CT`, para as instituições do doutorado, do sanduíche e da
+cotutela; `curso()` exige a instituição antes e abre
+`prc_curso_form?f_cod=…&f_pgm=FORM&f_nivel=…&f_inst=<código da instituição>`;
+`agencia()` marca `F_BOLSA=S` e abre `prc_agencia?f_cod=…`. Digitar no
+campo chama `alertainst()`, que avisa e devolve o valor antigo.
+`hist_aval_curso()` abre `prc_hist_aval_curso?f_cod_curso=…`, o histórico
+de avaliação CAPES. **Observado.**
+
+### Patente: janela prévia e `PKG_PATENTE_REGISTRO`, POST `PKG_PATENTE_REGISTRO.FORM`
+
+A lista `PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=PP&f_cod=…` não abre o
+formulário direto. "Incluir novo item" chama `infDadPat()`, que mostra a
+janela "Incluir nova patente" (`$.win` com `url:"pkg_patente_registro.informar_dados_patente?ftipo=PP"`).
+Ela tem o formulário `fDatpat`, sem envio próprio, com `f_inst` (texto 75,
+preenchido por um combo de escritórios) e `f_cod_reg` (texto 16, o número).
+**Observado.**
+
+Os escritórios do combo (`escolhe_inst()`): INPI, Canadian Intellectual
+Property Office, German Patent and Trademark Office, Institut National de
+la Propriete Industrielle, Japanese Patent Office, Oficina de Armonización
+del Mercado Interior, Oficina Española de Patentes y Marcas, Swiss Federal
+Institute of Intellectual Property, UK Patent Office, United States Patent
+and Trademark Office, WIPO, e "Outra (especifique)", que libera o texto
+livre. O valor gravado é o próprio rótulo, com o INPI como "INPI - Instituto
+Nacional da Propriedade Industrial". **Observado.**
+
+O "Confirmar" (`handlePatenteSubmit()`) exige os dois campos; com o INPI,
+o número precisa casar `^(PI|MU|BR)\d+$` (patente) ou, para programa e
+desenho, `\d{5}-\d` ou `BR\d{10}-\d`. Depois pergunta ao servidor se o
+número já está cadastrado, por um **POST** síncrono
+`pkg_patente_registro.verifica_cadastrado` com `f_pi` (número), `f_cod` e
+`f_inst` (resposta `1` = já existe). Esse POST não foi feito. Por fim abre
+no `modalCV2` o GET
+`pkg_patente_registro.form?f_sta_inovacao=&f_cod=…&f_cod_tipo=PP&f_inst=<escritório>&f_cod_reg=<número>&f_ctr=R`.
+**Observado** no código.
+
+O formulário foi lido por GET sem o `f_ctr=R` (com ele, **inferido**, o
+servidor preenche `f_inst` e `f_cod_reg` com os da janela prévia; sem ele,
+vieram vazios). Depois, a lista seguiu com "Nenhum registro cadastrado".
+É uma página de 290 kB, com `f_ctr=I`: **Observado.**
+
+| Campo                                                                                                                               | Tipo                                                                            |
+| ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `f_natureza`                                                                                                                        | rádio `Produto`, `Processo`, `Produto e Processo`, `Outra` (o valor é o rótulo) |
+| `f_cod_reg`                                                                                                                         | texto 16, com botão `f_botao` "Recuperar dados" (`recuperaDadosRegistro()`)     |
+| `f_inst`                                                                                                                            | texto 75                                                                        |
+| `f_pais`                                                                                                                            | lista de 244 países                                                             |
+| `f_tipo`                                                                                                                            | rádio `PI` Patente de Invenção, `MU` Patente de Modelo de Utilidade             |
+| `f_titulo`                                                                                                                          | texto 400                                                                       |
+| `f_nro_deposito_pct`                                                                                                                | texto 16                                                                        |
+| `f_sta_inovacao`                                                                                                                    | rádio `S` sim, `N` não (potencial de inovação), com `f_txt_potencial` texto 400 |
+| `f_ref`, `f_ref_en`                                                                                                                 | área 3950, 3800                                                                 |
+| `f_home_page`, `f_finalidade`                                                                                                       | texto 255                                                                       |
+| `f_inst_financ`                                                                                                                     | área 380                                                                        |
+| `f_titulo_en`                                                                                                                       | texto 400                                                                       |
+| `f_tipo_privacidade`                                                                                                                | lista `1`/`2`                                                                   |
+| `f_dados_grid_datas`                                                                                                                | oculto, XML das datas (abaixo)                                                  |
+| `F_COD_PROD`, `f_sta_validado`, `f_sta_validado_mapa`, `f_origem`, `f_ano`, `f_dta_dep`, `f_dta_dep_pct`, `f_dta_conc`, `f_dta_exp` | ocultos                                                                         |
+| `f_autores_l`, `f_plv_l`, `f_setor_l`, `f_area_l`, `f_depositante_pessoa_l`, `f_depositante_inst_l`                                 | ocultos, das grades (seção 16)                                                  |
+| `f_ctr` (`I`), `f_cod`, `f_seq`, `f_cod_tipo` (`PP`)                                                                                | ocultos                                                                         |
+
+As datas não são campos: ficam numa grade (`gridContatos`, colunas
+"Descrição" e "Datas") cujo vetor vira XML por `array2xml("item","root",…)`
+e vai em `f_dados_grid_datas`. Os códigos de data, de um comentário em
+`valorCodigoData()`: `01` depósito, `02` depósito PCT, `03` concessão, `04`
+expiração, `05` pedido de exame, `06` comercializada, `07` licenciada, `08`
+cedida, `09` aguardando negociação, `10` abandonada. `check()` exige
+depositante ou titular, país, natureza, tipo, instituição de registro,
+número e data de depósito, e confere a ordem das datas. **Observado.**
+
+"Recuperar dados" busca o pedido no INPI por GET
+`PKG_PATENTE_REGISTRO.form_metadata_ajax` com `f_cod_tipo`, `f_cpf` (o CPF
+de quem está logado, de uma variável da página), `f_inst` e `f_cod` (o
+número do registro, não o do currículo); a resposta é JavaScript que a
+página roda com `eval`. Não foi chamado, porque leva o CPF. **Observado** no
+código.
+
+### Projeto de pesquisa: `GN_PROJETO`, POST `PKG_PROJETO.FORM`
+
+O projeto não se inclui pela atuação. A tela de cargos e vínculos de uma
+atuação (`PKG_ATIV.cargos_vinculos`) só leva a vínculos, atividades
+(`pkg_ativ.cargo`, com `selecionarNatureza()`: `1` Direção e administração,
+`2` Pesquisa e desenvolvimento, `4` Ensino, `5` Estágio, `6` Serviço técnico
+especializado, `7` Extensão universitária, `8` Treinamento, `9` Outra
+atividade técnico-científica, `B` Conselhos, comissões e consultoria) e à
+exclusão; o formulário da atividade (`GN_ATIV_CARGO`) não tem projeto.
+**Observado.**
+
+A inclusão sai do menu: "Projetos de pesquisa" é
+`pkg_projeto.lista?f_cod_tipo=P&f_cod=…`, e o "Incluir novo item" abre
+`PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=&f_cod_tipo=P&f_cod=…`.
+As outras naturezas (`D` desenvolvimento, `E` extensão, `N` ensino, `O`
+outros) usam o mesmo formulário com outro `f_cod_tipo`. A ligação com a
+atuação vem da instituição escolhida no formulário. **Observado.**
+
+| Campo                                                                                                      | Tipo                                                                                                                                                 | XML (`PROJETO-DE-PESQUISA`)       |
+| ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| `f_titulo`, `f_titulo_en`                                                                                  | texto 255                                                                                                                                            | `NOME-DO-PROJETO`, `-INGLES`      |
+| `f_ref`, `f_ref_en`                                                                                        | área 3900                                                                                                                                            | `DESCRICAO-DO-PROJETO`, `-INGLES` |
+| `F_TPO_NATUREZA`                                                                                           | lista vazio, `D` Desenvolvimento, `E` Extensão, `P` Pesquisa, `N` Ensino, `O` Outra                                                                  | `NATUREZA`                        |
+| `F_TPO_SITUACAO`                                                                                           | lista vazio, `D` Desativado, `C` Concluído, `A` Em andamento                                                                                         | `SITUACAO`                        |
+| `F_ANO_INIC`, `F_ANO_FIM`                                                                                  | texto 4                                                                                                                                              | `ANO-INICIO`, `ANO-FIM`           |
+| `F_NRO_GRADUACAO`, `F_NRO_ESPECIALIZACAO`, `F_NRO_MESTRADO_ACAD`, `F_NRO_MESTRADO_PROF`, `F_NRO_DOUTORADO` | texto 2                                                                                                                                              | `NUMERO-GRADUACAO` etc.           |
+| `f_nro_tec_nivel_medio`, `F_NRO_PRIMEIRO_GRAU`, `F_NRO_SEGUNDO_GRAU`                                       | ocultos                                                                                                                                              |                                   |
+| `f_sta_inovacao`, `f_txt_potencial`                                                                        | rádio `S`/`N`, texto 400                                                                                                                             | `FLAG-POTENCIAL-INOVACAO`         |
+| `f_tpo_pesq_emp`                                                                                           | rádio `S`/`N`; com `S`, `f_cnpj_empresa` (18), `f_txt_nme_empresa`, `f_txt_email_institucional`, `f_txt_setor` (400) e o oculto `f_cod_inst_empresa` |                                   |
+| `f_inst`                                                                                                   | texto 75, desabilitado, pela busca; ocultos `f_cod_inst`, `f_cod_inst2`, `f_instold`, `f_inst_old`, `f_instituicoes`                                 |                                   |
+| `f_orgao`                                                                                                  | texto, desabilitado, pela busca de órgão; ocultos `f_codorgao`, `f_codorgao2`, `f_orgao_old`                                                         |                                   |
+| `f_vinc`, `f_stavinc`, `f_enqua`, `f_carga`, `f_regime`                                                    | ocultos, copiados do vínculo da atuação escolhida                                                                                                    |                                   |
+| `f_tpo_cooperacao`, `f_tpo_acao_inov`, `f_tematica`                                                        | ocultos (`X` na URL)                                                                                                                                 |                                   |
+| `f_autores_l`, `f_inst_l`, `f_producoes_l`, `f_orientacoes_l`, `f_producoes_d`, `f_orientacoes_d`          | ocultos: equipe, financiadores, produções e orientações ligadas                                                                                      |                                   |
+| `f_tipo_privacidade`                                                                                       | lista `1`/`2`                                                                                                                                        |                                   |
+| `f_ctr` (`I`), `f_cod`, `f_codinst`, `f_seq_ativ`, `f_seq_funcao`, `f_seq_proj`, `f_cod_tipo` (`P`)        | ocultos; na inclusão, `f_codinst` e as três sequências vêm vazias                                                                                    |                                   |
+
+`check()` exige nome, natureza, situação, ano de início (e de fim quando
+concluído), números inteiros nas quantidades de alunos, os dados da empresa
+quando é pesquisa em empresa (com e-mail institucional que não seja de conta
+gratuita) e o próprio nome na equipe. A grade de financiadores vira
+`f_inst_l` com quatro valores por linha unidos por `|` e cada linha
+terminada em `|@`. **Observado.**
+
+A instituição vem de `sele_inst()`, que abre
+`PKG_PROJETO.pp_lista_inst?f_pgm=INSTVINCULO&f_cod=…`: uma lista das
+instituições das atuações do currículo (16 aqui, com código `D` ou `V` mais
+12 dígitos), mais uma caixa de busca. A escolha chama
+`preencherOpener(enqua, regime, stavinc, ano_inic, ano_fim, carga, vinc, código, nome)`,
+que copia o vínculo para os ocultos e os anos para `F_ANO_INIC` e
+`F_ANO_FIM`, e `seleciona(código, nome)`, que grava o código **sem** a letra
+em `f_cod_inst` (letra `V`) ou `f_cod_inst2` (as outras). A busca de órgão,
+`orgao()`, devolve a letra (`V` ou `D`) na frente:
+`PKG_PROJETO.pp_orgao_cargo?f_cod=…&f_cod_inst=<letra><código>`.
+**Observado.** Que o servidor pendure o projeto na atuação dessa
+instituição, criando a atividade de pesquisa e desenvolvimento se for
+preciso, é **inferido**: `f_seq_ativ` e `f_seq_funcao` ficam vazios na
+inclusão.
+
+Outras janelas do formulário: `PKG_PROJETO.pp_lista_inst?f_pgm=INSTFINANC`
+(financiadores), `PKG_PROJETO.pp_lista_autores` (equipe),
+`PKG_PROJETO.pp_lista_prod` (produções ligadas). O CNPJ da empresa é
+consultado por GET ajax `PKG_PROJETO.PR_RECUPERA_DADOS_INST` com `p_cnpj`,
+resposta JSON com `cod`, `nome` e `email`. `chamaVerificaVinculo()` chama
+`pkg_projeto.verifica_vinculo_ajax`, que responde 404: o procedimento não
+existe mais (ou a assinatura mudou). **Observado.**
+
+## 18. Buscas: instituição, curso, agência e área (LAT-48, 14/10/2026)
+
+### Instituição: `prc_inst_form`
+
+Aberta no `modalCV3` por `self.parent.modalCV3.setarUrl(url,true,70,350,450)`,
+com `url` `prc_inst_form?f_cod=…&f_nivel=<nível>` (formação) ou
+`…&f_sta_outra=S|SW|CT` (instituições do doutorado). A página traz o
+formulário `instituicaoForm`, `method=post`, action `PRC_INST_FORM`, com
+os ocultos `F_CTR=C`, `F_COD`, `F_NIVEL`, `F_STA_OUTRA` (`N` por padrão) e
+o texto `f_nome`. O botão chama `recuperaInstMacro()`, que tira `%` do
+texto, exige ao menos duas letras e faz `dc.submit()`. **Observado.**
+
+O mesmo pedido por GET funciona:
+`PRC_INST_FORM?F_CTR=C&F_COD=<10 caracteres>&F_NIVEL=4&F_STA_OUTRA=N&f_nome=<texto>`
+devolve a mesma página com os resultados (testado com "Universidade
+Estadual de Campinas", um resultado, e "Campinas", 85). O texto vai em
+Latin-1 (`escape()`). **Observado.**
+
+A resposta é HTML. Cada resultado é um link
+`<a href="javascript:seleciona('<código>','<nome>')">NOME (UF)</a><br>`,
+seguido de "Foram encontrados N registros.". O código tem 13 caracteres:
+uma letra e 12 dígitos ou letras (`V007900000004` para a Unicamp). As
+instituições com `M` vêm em verde, e o texto da página explica que a verde é
+a instituição "MACRO (principal)" e as outras são unidades do Diretório de
+Instituições. **Observado.** No fim, "Cadastrar nova instituição" chama
+`outrainst()`, que navega para
+`prc_inst_outra?f_cod=…&f_pgm=CURSO&f_nivel=<nível>`. **Observado.**
+
+`seleciona(vlr, texto)` é gerada pelo servidor conforme o contexto. Com
+`F_STA_OUTRA=N` ela escreve, no formulário do `modalCV2`, `f_inst` e
+`f_inst_old` com o nome, limpa o curso, e grava o código inteiro (com a
+letra) em `f_cod_inst` quando começa com `V` e em `f_cod_inst2` nos outros
+casos; depois fecha o modal (`removerModal()`). Com `F_STA_OUTRA=S`
+escreve `f_inst_dout`, `f_cod_inst_dout` e `f_cod_inst2_dout`. **Observado.**
+Os casos `SW` e `CT` gravam, **inferido** pelo nome dos campos, nos
+`*_dout_sw` e `*_dout_ct`.
+
+A letra muda de forma entre telas: a formação guarda o código com a letra,
+o projeto guarda sem ela (seção 17), e os links da atuação usam `D` onde a
+busca mostra `M` (o `f_codinst=D001000000998` da seção 3). Que `D` e `M`
+indiquem o mesmo lado (`f_cod_inst2`) é **inferido**.
+
+### Curso: `prc_curso_form`
+
+`prc_curso_form?f_cod=…&f_pgm=FORM&f_nivel=<nível>&f_inst=<código>` (GET)
+devolve o formulário `GN_CURSO_FORM` (action `PRC_CURSO_FORM`) com os
+ocultos `f_sta_area=S`, `f_cod_inst`, `f_nme_inst` e uma lista `f_curso`
+com os cursos daquele nível na instituição (196 para doutorado na Unicamp).
+Não há busca: é uma lista só. O valor de cada opção é uma letra e 8
+dígitos (com espaço no fim) e o texto traz o nome e o código CAPES do
+programa, como "Administração(33003025005P3)". **Observado.**
+
+`selecionar()` escreve `f_curso` e `f_curso_old` com o texto da opção,
+regrava a instituição como acima e grava o curso **sem** a letra em
+`f_cod_curso` (letra `V`) ou `f_cod_curso2` (as outras). "Novo curso"
+(`novocurso()`) navega para
+`prc_curso_outro?f_cod=…&f_nivel=…&f_inst=…&f_sta_area=…`. **Observado.**
+
+### Agência de fomento: `prc_agencia`
+
+`prc_agencia?f_cod=…` é uma lista fixa de 57 agências, sem formulário. Cada
+uma é um link `atribuir('<código>','<nome>')`, com código de 12 caracteres;
+`atribuir()` escreve `f_nme_agencia` e `f_agencia` e volta. **Observado.**
+
+### Área do conhecimento: no próprio menu, sem pedido ao servidor
+
+A tabela de áreas não vem de uma busca. O `PKG_MENU.menu` declara em script
+o vetor `areaDP`: uma árvore de 1.358 nós, cada um com `l` (nome), `n`
+(nível: 9 grandes áreas, 86 áreas, 373 subáreas, 890 especialidades), `c`
+(código de 8 dígitos) e `b` (filhos). As grandes áreas são 10000003
+Ciências Exatas e da Terra, 20000006 Ciências Biológicas, 30000009
+Engenharias, 40000001 Ciências da Saúde, 50000004 Ciências Agrárias,
+60000007 Ciências Sociais Aplicadas, 70000000 Ciências Humanas, 80000002
+Lingüística, Letras e Artes, 90000005 Outra. O menu declara também
+`setorDP` (87 setores de aplicação da CNAE, `l`, `n`, `c` de 6 dígitos) e,
+com dados do próprio currículo, `autorDP` (`l`, `c`, `t`, `deletable`) e
+`palavraDP` (`l`, `n`, `c`). **Observado.**
+
+Os formulários leem esses vetores de `self.parent`: a caixa `areaSuggest`
+(`$.suggest`) procura no nome sem acento a partir de 4 letras, ignorando as
+grandes áreas, e `treeTodosArea` (`$.tree`) mostra a árvore inteira; uma
+grande área não pode ser escolhida. A escolha vira uma linha de `areaGrid`
+com `l`, `c`, `n` e a privacidade (`priv: "1"`, `vis: "Público"`).
+"Inclusão de área" (`areaWin`) cria uma área que não está na tabela:
+escolhe-se uma área de nível 2 na árvore e digita-se o nome (mínimo de 5
+letras), e a linha fica `{l: <nome>, n: 3, c: -1, p: <código da área pai>}`.
+O envio leva tudo em `f_area_l` (seção 16), no máximo 3 áreas por
+produção. **Observado.**
+
+"Áreas de atuação" (`prc_area_atuacao`, formulário `GN_AREA_ATU`, POST
+`prc_area_atuacao`) usa a mesma grade e serializa duas vezes: `f_area_l`
+com `l`, `c`, `r`, `p` e `f_privacidade` com `priv`, linha a linha. A página
+ainda tem `abrir_area()`, que abriria a janela antiga
+`pkg_area.pp_lista?f_cv_modal=modalCV1&f_origem=AA&f_max=6&f_cod_rh=…`; ela
+existe (GET responde 200, formulário `AREA` com `f_gr`, `f_ar`, `f_sb`,
+`f_ctr`, `f_nme`) e escreve numa grade `gridArea` que a página nova não
+tem. **Observado**; que esteja fora de uso é **inferido**.
+
+Consequência para o conector: a área se resolve sem rede, lendo `areaDP` do
+menu que já está na aba (ou guardando uma cópia da tabela no editor), e
+instituição e curso são GETs cujos resultados se leem nos links
+`seleciona(…)` e nas opções da lista. Nenhuma das três buscas precisa de
+POST. A única consulta por POST encontrada é a de patente já cadastrada.
+
+## 19. Dados gerais pelo conector (LAT-23, 14/10/2026)
+
+Formação acadêmica, endereço e identificação têm operação escrita em
+`src/bridge/biographic.ts`, testada só contra o Lattes falso dos testes e
+desligada (`BIOGRAPHIC_OPS_ENABLED`). Nada foi enviado a um Lattes real.
+Desligada, a mudança segue à mão e o contrato não confere esses formulários.
+
+O que cada operação grava, e de onde vem cada parte:
+
+| Seção         | Formulário e POST                   | Como o conector acha                                                                                                          | Atributo do XML → campo                                                                                                                                                                                                                                    |
+| ------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Formação      | `GN_FORMACAO2`, `pkg_formacao.FORM` | `pkg_formacao.lista` com `f_tipo=FA` no menu, e na lista o único `pkg_formacao.form` com `f_seq` igual a `SEQUENCIA-FORMACAO` | `ANO-DE-INICIO` → `f_ano_ini`, `ANO-DE-CONCLUSAO` → `f_ano_fim`, `ANO-DE-OBTENCAO-DO-TITULO` → `f_ano_obten`, `STATUS-DO-CURSO` → `F_STATUS` (`N`, `S`, `I`), título do trabalho (dissertação, TCC, monografia, residência) → `f_titulo`                   |
+| Endereço      | `GN_ENDERECO`, `PRC_ENDERECO`       | `prc_endereco` no menu                                                                                                        | `ENDERECO-PROFISSIONAL` nos campos `_i` e `ENDERECO-RESIDENCIAL` nos `_r`: logradouro → `f_rua`, `CEP` → `f_cep`, `BAIRRO` → `f_bairro`, `CIDADE` → `f_munic`, `UF` → `f_estado`, `DDD`, `TELEFONE`, `RAMAL`, `FAX`, `CAIXA-POSTAL`, `E-MAIL`, `HOME-PAGE` |
+| Identificação | `GN_IDENT`, `PRC_IDENT`             | `prc_ident` no menu                                                                                                           | `NOME-COMPLETO` → `f_nome`                                                                                                                                                                                                                                 |
+
+- **Observado**: os nomes dos formulários, dos POSTs, dos links do menu e dos
+  campos (seções 4 e 5 e o reconhecimento de 10/10/2026, seção 4.2), os
+  códigos de `F_STATUS` e o `f_nivel` oculto igual ao `NIVEL` da exportação
+  no mestrado, na graduação e no curso técnico.
+- **Inferido**: a correspondência de cada atributo com cada campo (pelo nome
+  e pelo rótulo), que `f_seq` da formação é `SEQUENCIA-FORMACAO`, que os
+  campos de formação lidos no mestrado profissional existem nos outros
+  níveis, e o tipo "texto" dos campos sem tipo anotado nas seções acima.
+- **Travas**: além das de toda alteração (o "antes" de cada campo tem de
+  bater, só os campos da operação podem mudar depois do envio), a formação
+  confere o `f_nivel` e o ano de início; a identificação confere o
+  `f_nacionalidade` com o `NACIONALIDADE` do XML, porque esse oculto é
+  preenchido pelo JavaScript da página e um GET que o traga vazio mandaria
+  vazio. Sem `B` ou `E` no XML, a mudança de identificação segue à mão. Dois
+  atributos que cairiam no mesmo campo (o logradouro de um endereço no do
+  outro, dois títulos na mesma formação) também mandam a mudança à mão.
+- **Fora**: o que só entra por busca (instituição, curso, agência,
+  orientador), o país e as listas cujos códigos não foram lidos (sexo, raça
+  ou cor, nascimento, documentos), a preferência de correspondência
+  (`f_end_corr`), as grades de contatos e redes sociais
+  (`f_dados_grid`, `f_dados_grid_contatos`) e a lista de pós-doutorado e
+  livre-docência (`f_tipo=AP`).
+
+O contrato desses três formulários é parcial: lista os campos que as
+operações gravam e os de controle, menos o ano de obtenção e o título da
+formação, que pelo XSD não existem em todos os níveis (a amostra é a
+primeira formação da lista, de qualquer nível). Os outros aparecem como "campo novo" na
+verificação, que só avisa. O teste acompanhado completa a lista com o que a
+verificação mostrar.

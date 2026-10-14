@@ -5,12 +5,15 @@
 
 import { type Change, resolvePath } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
+import { BIOGRAPHIC_OPS_ENABLED, type BiographicOp, planBiographic } from './biographic.ts';
 import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
+import { DELETE_ITEMS_ENABLED, type DeleteOp, planDelete } from './delete.ts';
+import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
 
 /** Valor de campo; null tira o campo do envio (caixa desmarcada). */
 export type FieldValues = Record<string, string | null>;
 
-interface OpBase {
+export interface OpBase {
   /**
    * Valores que o formulário precisa ter agora, antes de gravar: o "antes"
    * de cada campo alterado e o início do vínculo. Se não bater, a linha do
@@ -40,7 +43,14 @@ export interface IdiomaOp extends OpBase {
   kind: 'idioma';
 }
 
-export type BridgeOp = CreateAtuacaoOp | IdiomaOp | ResumoOp | VinculoOp;
+export type BridgeOp = BiographicOp | CreateAtuacaoOp | DeleteOp | IdiomaOp | ResumoOp | VinculoOp;
+
+/** Chaves das operações que ainda não foram testadas num Lattes real. */
+export interface PlanOptions {
+  biographicOps?: boolean;
+  createItems?: boolean;
+  deleteItems?: boolean;
+}
 
 export interface Unsupported {
   key: string;
@@ -66,19 +76,6 @@ const VINCULO_FIELDS: Record<string, [string, Mapper]> = {
   'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO': ['f_enqua', same],
   'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO-INGLES': ['f_enqua_en', same],
 };
-
-/**
- * Proficiência do IDIOMA → par de campos do GN_IDIOMA: a caixa FC_* diz que a
- * habilidade foi informada, o rádio F_* diz o nível (P, R, B). NAO_INFORMADO
- * é a caixa desmarcada e nenhum rádio. Lido no formulário em 11/10/2026.
- */
-const IDIOMA_SKILLS: Record<string, string> = {
-  'PROFICIENCIA-DE-COMPREENSAO': 'COMPR',
-  'PROFICIENCIA-DE-ESCRITA': 'ESCREVE',
-  'PROFICIENCIA-DE-FALA': 'CONVERSA',
-  'PROFICIENCIA-DE-LEITURA': 'LE',
-};
-const LEVEL: Record<string, string> = { BEM: 'B', POUCO: 'P', RAZOAVELMENTE: 'R' };
 
 function idiomaFields(change: Change): {
   expect: FieldValues;
@@ -141,7 +138,11 @@ export function planChange(
   change: Change,
   chain: XElement[],
   label: string,
-  { createItems = CREATE_ITEMS_ENABLED }: { createItems?: boolean } = {},
+  {
+    biographicOps = BIOGRAPHIC_OPS_ENABLED,
+    createItems = CREATE_ITEMS_ENABLED,
+    deleteItems = DELETE_ITEMS_ENABLED,
+  }: PlanOptions = {},
 ): BridgeOp | Unsupported {
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.
   if (change.kind === 'novo' && createItems && change.element === 'ATUACAO-PROFISSIONAL') {
@@ -152,6 +153,8 @@ export function planChange(
     const planned = planCreateAtuacao(change, el, label);
     return 'reason' in planned ? unsupported(change, label, planned.reason) : planned;
   }
+  // Exclusão: desligada até o teste no Lattes real (delete.ts).
+  if (change.kind === 'removido') return planDelete(change, chain, label, deleteItems);
   if (change.kind !== 'alterado') {
     return unsupported(change, label, 'Incluir ou excluir pelo conector: não suportado ainda');
   }
@@ -214,6 +217,12 @@ export function planChange(
     return { expect, key: change.key, kind: 'resumo', label, set };
   }
 
+  // Formação, endereço e identificação: desligados até o teste no Lattes real (biographic.ts).
+  const biographic = biographicOps ? planBiographic(change, chain, label) : undefined;
+  if (biographic) {
+    return 'reason' in biographic ? unsupported(change, label, biographic.reason) : biographic;
+  }
+
   return unsupported(change, label, 'Formulário não suportado ainda');
 }
 
@@ -225,7 +234,7 @@ export function isOp(p: BridgeOp | Unsupported): p is BridgeOp {
 export function planChanges(
   entries: { change: Change; itemTitle: string }[],
   root: XElement,
-  options: { createItems?: boolean } = {},
+  options: PlanOptions = {},
 ): { ops: BridgeOp[]; unsupported: Unsupported[] } {
   const ops: BridgeOp[] = [];
   const skipped: Unsupported[] = [];
