@@ -22,21 +22,34 @@ import { getAttr, parseXml } from '../model/xml.ts';
 
 export const EXAMPLE_URL = '/fixtures/synthetic_full.xml';
 
+/**
+ * O currículo de demonstração (?exemplo=demo, pnpm dev:demo): uma pesquisadora
+ * fictícia com dados críveis, para gravar o app e tirar imagens. Gerado por
+ * scripts/gen-demo.ts.
+ */
+export const DEMO_URL = '/fixtures/demo.xml';
+
 /** NUMERO-IDENTIFICADOR da fixture; os envios fictícios só entram nesse currículo. */
 export const EXAMPLE_LATTES_ID = '0000000000000001';
 
 /** Abre o exemplo se a URL pedir e não houver currículo; devolve se abriu. */
 export async function openExampleIfAsked(search: string): Promise<boolean> {
-  if (!new URLSearchParams(search).has('exemplo')) return false;
+  const params = new URLSearchParams(search);
+  if (!params.has('exemplo')) return false;
+  const demo = params.get('exemplo') === 'demo';
   // Um currículo já aberto (o exemplo editado, ou outro) nunca é substituído.
   const open = await loadWorkingCopy();
   if (open) {
     await seedSentLog(open.xml);
     return false;
   }
-  const res = await fetch(EXAMPLE_URL);
-  if (!res.ok) throw new Error(`${EXAMPLE_URL} respondeu ${res.status}`);
-  const cv = await loadCv(new Uint8Array(await res.arrayBuffer()), 'synthetic_full.xml');
+  const url = demo ? DEMO_URL : EXAMPLE_URL;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${url} respondeu ${res.status}`);
+  const cv = await loadCv(
+    new Uint8Array(await res.arrayBuffer()),
+    demo ? 'CV_3871592046158372.zip' : 'synthetic_full.xml',
+  );
   const copy = newWorkingCopy(cv, Date.now());
   await replaceWorkingCopy(copy);
   await seedSentLog(copy.xml);
