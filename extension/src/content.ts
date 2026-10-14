@@ -23,7 +23,10 @@ chrome.runtime.onMessage.addListener((message) => {
 });
 
 // Anuncia-se ao carregar: o editor pode ter mandado "ola" antes do script entrar.
-toPage({ type: 'ola', version: chrome.runtime.getManifest().version });
+toPage({
+  type: 'ola',
+  version: chrome.runtime.getManifest().version_name ?? chrome.runtime.getManifest().version,
+});
 
 // Avisa o service worker do tema da barra (ver toolbar-icon.ts), agora e a cada troca.
 const darkScheme = matchMedia('(prefers-color-scheme: dark)');

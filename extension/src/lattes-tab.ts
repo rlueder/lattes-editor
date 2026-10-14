@@ -2,6 +2,7 @@
 // e as leituras que o editor pede, com o motivo quando não dá.
 
 import type { ContractReport } from '../../src/bridge/contract.ts';
+import type { LattesStatus } from '../../src/bridge/lattes-status.ts';
 import type { BridgeMessage } from '../../src/bridge/protocol.ts';
 import { hasConsent } from './consent.ts';
 import { LATTES_MENU } from './state.ts';
@@ -113,4 +114,24 @@ export async function verifyOn(tabId: number): Promise<ContractReport> {
   } catch (err) {
     return failedReport(err instanceof Error ? err.message : 'Falha inesperada');
   }
+}
+
+export interface Identity {
+  code?: string;
+  lattesId?: string;
+  status?: LattesStatus;
+}
+
+/** Quem é o currículo aberto na sessão do Lattes: código interno e identificador público. */
+export async function sessionIdentity(tabId: number, fresh = false): Promise<Identity> {
+  await injectRunner(tabId);
+  const [res] = await chrome.scripting.executeScript({
+    args: [fresh],
+    func: (f: boolean) =>
+      (
+        globalThis as unknown as { __conector: { identity(fresh: boolean): Promise<Identity> } }
+      ).__conector.identity(f),
+    target: { tabId },
+  });
+  return res?.result ?? {};
 }

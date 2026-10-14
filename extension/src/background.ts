@@ -18,7 +18,6 @@ import {
   shouldAutoVerify,
 } from '../../src/bridge/contract.ts';
 import { sameCv } from '../../src/bridge/lattes-html.ts';
-import type { LattesStatus } from '../../src/bridge/lattes-status.ts';
 import { photoBusy } from '../../src/bridge/photo.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
 import {
@@ -29,13 +28,15 @@ import {
   type NoReadingReason,
 } from '../../src/bridge/protocol.ts';
 import { CONSENT_KEY, hasConsent, isConsentCurrent } from './consent.ts';
+import { ownVersion, reloadForApp } from './dev-reload.ts';
 import {
   failedReport,
-  injectRunner,
+  type Identity,
   lattesTab,
   readCurriculo,
   readEspelho,
   sendPhoto,
+  sessionIdentity,
   verifyOn,
 } from './lattes-tab.ts';
 import {
@@ -112,26 +113,6 @@ async function toEditor(editor: EditorEndpoint | undefined, msg: BridgeMessage):
   }
 }
 
-interface Identity {
-  code?: string;
-  lattesId?: string;
-  status?: LattesStatus;
-}
-
-/** Quem é o currículo aberto na sessão do Lattes: código interno e identificador público. */
-async function sessionIdentity(tabId: number, fresh = false): Promise<Identity> {
-  await injectRunner(tabId);
-  const [res] = await chrome.scripting.executeScript({
-    args: [fresh],
-    func: (f: boolean) =>
-      (
-        globalThis as unknown as { __conector: { identity(fresh: boolean): Promise<Identity> } }
-      ).__conector.identity(f),
-    target: { tabId },
-  });
-  return res?.result ?? {};
-}
-
 /**
  * O que o editor sabe da sessão do Lattes: o código de 10 caracteres do
  * currículo, para a foto, e o estado do menu (última publicação e
@@ -172,6 +153,7 @@ async function sendEspelho(editor: EditorEndpoint): Promise<void> {
 
 async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<void> {
   if (msg.type === 'ola') {
+    if (editor === 'app' && (await reloadForApp(msg.version))) return;
     // O que o app de desktop anunciou fica para o painel comparar com a
     // extensão, e sai quando a porta dele fecha. Uma aba de editor em
     // localhost (desenvolvimento) não entra. É secundário: se não gravar, o
@@ -184,7 +166,7 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     await toEditor(editor, {
       features: [...BRIDGE_FEATURES],
       type: 'ola',
-      version: chrome.runtime.getManifest().version,
+      version: ownVersion(),
     });
     await sendSession(editor);
     return;

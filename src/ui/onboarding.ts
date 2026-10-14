@@ -6,9 +6,10 @@
 // distinguir extensão ausente de navegador fechado, e o texto cobre os dois.
 
 import type { Link } from '../bridge/link.ts';
+import { isDevVersion } from '../desktop/dev-channel.ts';
 import type { OpenState } from './lattes-open.ts';
 import { failureText } from './lattes-open.ts';
-import { EXTENSION_URL } from './notifications.ts';
+import { devExtensionHowTo, EXTENSION_URL } from './notifications.ts';
 
 /**
  * O menu do currículo no Lattes. Com sessão, abre o currículo de quem está
@@ -30,11 +31,19 @@ export interface Step {
 
 const STEP_TITLES = ['Instale a extensão', 'Entre no Lattes', 'Seu currículo abre aqui'] as const;
 
-function extensionStep(link: Link, open: OpenState): Step {
+function extensionStep(link: Link, open: OpenState, devFolder?: string): Step {
   const title = STEP_TITLES[0];
   const { state } = link;
   if (state.kind === 'procurando') {
     return { busy: true, status: 'agora', text: 'Procurando a extensão no navegador…', title };
+  }
+  // LattesEditor Dev: a extensão Dev vem no pacote do app e se carrega de uma pasta.
+  if (state.kind === 'sem-extensao' && isDevVersion(__APP_VERSION__)) {
+    return {
+      status: 'agora',
+      text: devExtensionHowTo(devFolder),
+      title: 'Carregue a extensão Dev',
+    };
   }
   const download = { href: EXTENSION_URL, kind: 'link' as const, label: 'Baixar a extensão' };
   if (state.kind === 'sem-extensao') {
@@ -109,8 +118,8 @@ function openStep(open: OpenState): Step {
 const waiting = (title: string, text: string): Step => ({ status: 'depois', text, title });
 
 /** Os três passos, cada um no seu estado; um passo só começa quando o anterior está feito. */
-export function onboardingSteps(link: Link, open: OpenState): Step[] {
-  const extension = extensionStep(link, open);
+export function onboardingSteps(link: Link, open: OpenState, devFolder?: string): Step[] {
+  const extension = extensionStep(link, open, devFolder);
   if (extension.status !== 'feito') {
     return [
       extension,

@@ -62,7 +62,10 @@ for (const name of ENTRIES) {
       outDir: out,
     },
     configFile: false,
-    define: { __NATIVE_HOST__: JSON.stringify(NATIVE_HOST) },
+    define: {
+      __CANAL_DEV__: JSON.stringify(devChannel),
+      __NATIVE_HOST__: JSON.stringify(NATIVE_HOST),
+    },
     logLevel: 'warn',
   });
 }
