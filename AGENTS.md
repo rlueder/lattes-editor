@@ -6,9 +6,13 @@ FOSS project (MIT). It is not part of the precisa-saude ecosystem, but it
 follows the same code standards: the shared ESLint, Prettier, tsconfig and
 commitlint configs are installed from `@precisa-saude/*` and used unchanged.
 
-The plan lives in `docs/lattes_implementation_guide.md`. The contract for
-the exporter is section 5.1 of `docs/lattes_editor_reconnaissance.md`; read
-it before touching `src/import-export/`.
+How the editor works today is in `docs/arquitetura.md` (data model,
+storage, the path to Lattes, code map), and how to run, test and release it
+is in `docs/desenvolvimento.md`; `docs/README.md` indexes every doc as
+current or historical. The original plan is `docs/lattes_implementation_guide.md`
+(historical: read it for the why). The contract for the exporter is section
+5.1 of `docs/lattes_editor_reconnaissance.md`; read it before touching
+`src/import-export/`.
 
 ## Personal data, the first rule
 
@@ -152,6 +156,22 @@ Every transition or animation added to `src/ui/styles.css` or the extension
 panel needs a `@media (prefers-reduced-motion: reduce)` rule that removes it
 or replaces it with an instant change. The existing blocks in `styles.css`
 show the pattern.
+
+## Keep the docs current
+
+Update the doc in the same PR as the change:
+
+| Change                                                            | Update                                           |
+| ----------------------------------------------------------------- | ------------------------------------------------ |
+| Something a user sees or does (flow, install, privacy, extension) | `README.md`                                      |
+| Data model, storage, the path to Lattes, a new module             | `docs/arquitetura.md`                            |
+| Scripts, workflows, Dev channel, release process                  | `docs/desenvolvimento.md`                        |
+| Something learned about how Lattes behaves                        | `docs/lattes_internals.md`                       |
+| A new doc, or a doc that stops describing the editor              | `docs/README.md` (mark it current or historical) |
+
+Historical docs (the original plan, the PRD, research, the first
+reconnaissance) are not rewritten to match the code; they get the
+"Documento histórico" note at the top instead.
 
 ## Language and writing
 

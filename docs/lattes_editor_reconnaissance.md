@@ -1,5 +1,10 @@
 # Editor de Currículo Lattes: relatório de reconhecimento
 
+> **Documento histórico.** Registra o que se sabia e se decidiu na data dele, e
+> vale pelo porquê; parte já não descreve o editor. O editor como ele é hoje
+> está em [`arquitetura.md`](arquitetura.md); o índice de tudo, em
+> [`README.md`](README.md).
+
 Data: 2026-10-10
 Método: automação de navegador conduzindo uma sessão autenticada no próprio navegador do Rafael. Toda ação foi abrir, ler e fechar. Nenhum dado foi salvo, excluído ou publicado.
 Alcance obtido: estrutura do editor, catálogo de menus, Atuação profissional (lista e formulário de inclusão), Formação acadêmica (lista, seletor de nível, formulário de inclusão, busca de instituição), Assistente de importação, Importação de produção, diálogo Imprimir, pontos de entrada de Exportar e Importar.

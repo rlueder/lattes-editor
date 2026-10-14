@@ -1,5 +1,10 @@
 # Recursos de IA no editor do Lattes: pesquisa
 
+> **Documento histórico.** Registra o que se sabia e se decidiu na data dele, e
+> vale pelo porquê; parte já não descreve o editor. O editor como ele é hoje
+> está em [`arquitetura.md`](arquitetura.md); o índice de tudo, em
+> [`README.md`](README.md).
+
 Data: 11/10/2026. Público: quem decide o que entra no editor depois do marco 2,
 e pesquisadores que querem saber o que o editor faria com o currículo deles.
 
