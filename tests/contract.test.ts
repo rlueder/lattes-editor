@@ -22,6 +22,7 @@ import {
   shouldAutoVerify,
 } from '../src/bridge/contract.ts';
 import type { FormControl } from '../src/bridge/form.ts';
+import { WATCHED_LISTS } from '../src/bridge/list-watch.ts';
 
 /** Controles de um formulário a partir da especificação: o Lattes "como o esperado". */
 function controlsFrom(fields: Record<string, FieldSpec>, ctr = 'U'): FormControl[] {
@@ -59,6 +60,12 @@ const MENU = `<a onclick="modalCV1.setarUrl(&quot;pkg_ativ.lista?f_cod=K00000000
   <a onclick="modalCV1.setarUrl(&quot;pkg_resume.prc_resume?f_cod=K000000000&quot;, true)">Resumo</a>
   <a onclick="modalCV1.setarUrl(&quot;pkg_idioma.lista?f_cod=K000000000&quot;, true)">Idiomas</a>`;
 
+/** Um combo como o Lattes o desenha: a opção vazia primeiro. */
+const selectHtml = (name: string, options: readonly string[]) =>
+  `<select name="${name}"><option value="">Selecione</option>${options
+    .map((o, i) => `<option value="C${i}">${o}</option>`)
+    .join('')}</select>`;
+
 function fakeLattes(opts: FakeOptions = {}): { gets: string[]; port: LattesPort } {
   const gets: string[] = [];
   const forms = {
@@ -93,6 +100,9 @@ function fakeLattes(opts: FakeOptions = {}): { gets: string[]; port: LattesPort 
              <a href="pkg_idioma.form?f_cod=K000000000">Novo</a>`;
       }
       if (path.startsWith('pkg_idioma.form')) return 'FORM:GN_IDIOMA';
+      // Os formulários de inclusão com os combos das listas, como o editor os conhece.
+      const lists = WATCHED_LISTS.filter((l) => path === l.path('K000000000'));
+      if (lists.length) return lists.map((l) => selectHtml(l.control, l.expected)).join('');
       return '';
     },
     menuHtml: () => opts.menu ?? MENU,
@@ -264,6 +274,34 @@ describe('checkContract', () => {
     expect(report.detail).toBe('rede caiu');
     expect(blocksKind(report, 'idioma')).toEqual([]);
     expect(blocksKind(undefined, 'idioma')).toEqual([]);
+  });
+
+  it('confere as listas pelo código do currículo do menu', async () => {
+    const report = await checkContract(fakeLattes().port);
+    expect(report.status).toBe('ok');
+    expect(report.lists?.map((l) => l.status)).toEqual(WATCHED_LISTS.map(() => 'ok'));
+  });
+
+  it('menu sem o código do currículo não passa as listas sem conferir', async () => {
+    const menu = MENU.replaceAll('K000000000', 'x');
+    const report = await checkContract(fakeLattes({ menu }).port);
+    expect(report.status).toBe('mudou');
+    expect(report.lists?.map((l) => l.status)).toEqual(WATCHED_LISTS.map(() => 'erro'));
+    expect(report.lists?.[0]?.detail).toBe('O código do currículo não está no menu');
+  });
+
+  it('falha ao ler o formulário de uma lista não derruba o relatório', async () => {
+    const report = await checkContract(fakeLattes({ throwAt: 'PKG_EVENTO.form' }).port);
+    expect(report.status).toBe('mudou');
+    expect(report.forms.length).toBeGreaterThan(0);
+    const events = report.lists?.find((l) => l.control === 'F_COD_PROD');
+    expect(events).toMatchObject({ detail: 'rede caiu', status: 'erro' });
+    expect(report.lists?.filter((l) => l.status === 'ok')).toHaveLength(2);
+  });
+
+  it('sessão caída no formulário de uma lista ainda para tudo', async () => {
+    const report = await checkContract(fakeLattes({ logonAt: 'PKG_EVENTO.form' }).port);
+    expect(report.status).toBe('sessao');
   });
 
   it('aceita outro contrato', async () => {

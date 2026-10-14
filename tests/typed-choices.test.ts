@@ -9,6 +9,7 @@ import {
   canonicalChoice,
   derivedValue,
   emptyChoicesHint,
+  EVENT_NATURES,
   isEventBasics,
   matchesDerived,
   outOfList,
@@ -39,6 +40,10 @@ describe('campos tipados: natureza da participação em evento', () => {
       expect(derivedValue(`DADOS-BASICOS-DA-PARTICIPACAO-EM-${kind}`, 'NATUREZA')).toBe(nature);
     }
     expect(derivedValue(OTHER, 'NATUREZA')).toBe('Outra');
+    // O vigia confere a mesma lista que o campo usa: cada natureza derivada está
+    // nela, e nada além delas.
+    const derived = [...Object.keys(expected).map((k) => expected[k]!), 'Outra'];
+    expect([...EVENT_NATURES].sort()).toEqual(derived.sort());
   });
 
   it('não vale fora da participação em evento nem para outro atributo', () => {

@@ -485,3 +485,168 @@ minutos depois de abrir o Exportar, segue sem causa conhecida.
 Se o POST sem o GET da tela antes também funciona não foi testado. O conector
 faz os dois, e o GET ainda serve para reconhecer, sem `alert()`, a sessão
 caída e a pendência (seção 10). O caminho está em `src/bridge/export.ts`.
+
+## 13. Importar pelo conector: passos 1 e 2 (13/10/2026)
+
+O menu leva ao Importar por `pkg_importa_xml.inicio?f_cod=<10 caracteres>`.
+**Observado.**
+
+**Passo 1.** A tela tem o formulário `fl`, POST multipart para
+`pkg_importa_xml.inicio`, com o arquivo em `file` e os ocultos `f_cod`,
+`f_ctr=I` e `f_ret` (vazio). O botão "Enviar" chama `check()`, que só confere
+se há arquivo e se o nome termina em `.xml`, e então envia o formulário.
+**Observado.**
+
+O teste enviou um arquivo gerado pelo próprio caminho do editor
+(`buildImportFile`, a opção 2: o currículo inteiro mais o item novo), com
+uma participação em congresso nova: NATUREZA "Congresso", PAIS "Alemanha",
+IDIOMA "Inglês", FORMA-PARTICIPACAO "Participante", TIPO-PARTICIPACAO
+"Apresentação oral". O POST feito de dentro da página, com `FormData` e o
+cookie da sessão, foi aceito como o do botão. **Observado.**
+
+**Passo 2.** A resposta ao passo 1 é a tela de seleção, o formulário
+`pkg_imp_xml`, POST (urlencoded) para `pkg_importa_xml.mostra_modulos`, com:
+**Observado.**
+
+- `f_cod`, `f_solic` (o número da solicitação criada pelo passo 1) e
+  `f_ctr` (vazio até a ação);
+- uma caixa `f_chkp` por módulo, com o valor na ordem da tela: 1 Artigos
+  completos publicados, 2 Artigos aceitos, 3 Livros e capítulos, 4 Trabalhos
+  em anais, 5 Texto em jornal ou revista, 6 Apresentação de Trabalho, 7
+  Outras produções bibliográficas, 8 Softwares, 9 Produtos, 10 Processos, 11
+  Trabalhos técnicos, 12 Outras produções técnicas, 13 Produção
+  artística/cultural, 14 Orientações e Supervisões, 15 Demais Trabalhos, 16
+  Eventos, 17 Bancas (e `f_all`, "Selecionar todos");
+- `f_ano_prod`, "Produção C&T a partir de", com os anos 2026, 2007, 2006,
+  2005 e 2004 e 2026 marcado. Que a lista são os anos das produções do
+  arquivo, e o padrão o mais recente, é **inferido**;
+- "Confirmar" (`enviar()`): exige ao menos um módulo marcado, põe
+  `f_ctr=I` e envia; "Descartar" (`excluir()`): pede confirmação, põe
+  `f_ctr=D` e envia.
+
+O passo 2 não mostra os itens: ver como o Lattes trata os valores do item
+(e a "lista vermelha" do passo seguinte) pede o Confirmar, que o teste não
+fez. Se "Participante", "Apresentação oral", "Alemanha" e "Inglês" entram
+como estão continua **inferido**.
+
+O passo 1 cria uma solicitação de importação no servidor, que fica pendente:
+a tela diz "Existe solicitação de Importação de XML pendente", e reabrir o
+Importar leva direto ao passo 2 dela. Nada muda no currículo: depois do
+passo 1, o menu seguiu sem o aviso de alterações não enviadas ao CNPq e com a
+mesma "Última atualização". **Observado.** A solicitação do teste ficou
+pendente, à espera de Confirmar ou Descartar.
+
+Consequência para o conector: os passos 1 e 2 cabem em dois POSTs de dentro
+da aba do Lattes, como o Exportar (seção 12), com os módulos marcados pelo
+que o arquivo traz (`ImportFile.modules`) e o ano a partir do item novo mais
+antigo. O que vem depois do Confirmar (passo 3 e o resultado) ainda precisa
+ser observado com a pessoa acompanhando.
+
+## 14. Foto do currículo (13/10/2026)
+
+A foto do menu é trocada pela janela "Enviar sua foto" (`fotoWin`, um
+`$.win` do jQuery no próprio menu), que carrega
+`prc_upload_foto?f_cod=<10 caracteres>&f_ret=MENU` e tem os botões "Salvar"
+(`checkFoto()`) e "Excluir" (`excluirFoto()`). **Observado.**
+
+O conteúdo é o formulário `fl`, POST multipart para `PRC_UPLOAD_FOTO`, com
+`file` (aceita `image/jpg,image/jpeg`), `f_cod`, `f_ctr` e `f_ret=MENU`. A
+tela pede "uma imagem no formato JPEG com tamanho de até 70kB". **Observado.**
+
+- `checkFoto()` põe `f_ctr=I`, recusa nome sem `.JPG` ou `.JPEG` e chama
+  `enviarFoto()`; `excluirFoto()` põe `f_ctr=E` e chama a mesma função.
+- `enviarFoto()` envia por `ajaxSubmit` (jQuery Form) e, se a resposta trouxer
+  `success`, recarrega a imagem de `pkg_util_img.show_foto?v_cod=...&ts=...`;
+  senão, mostra `message`. Que a resposta seja um objeto com `success` e
+  `message` é **inferido** do código: nenhum envio foi feito.
+- Não há recorte nem passo de confirmação.
+
+Se trocar a foto deixa o currículo com alteração pendente de envio ao CNPq
+não foi testado.
+
+Consequência para o editor: trocar a foto pelo conector é um POST multipart
+de dentro da aba do Lattes, com a imagem já em JPEG de até 70 kB. O editor
+precisa reduzir e comprimir a imagem antes (canvas), e a extensão precisa de
+uma mensagem nova para levar os bytes até a aba.
+
+## 15. Exclusão (LAT-49, 13/10/2026)
+
+Como cada seção do Lattes exclui um item, lido sem excluir nada: só GETs das
+listas do menu e dos formulários de edição que as linhas da lista abrem, e
+leitura do HTML e do JavaScript deles. Nenhum botão de excluir foi clicado e
+nenhum `confirm()` foi respondido. Antes e depois, o menu seguiu sem o aviso
+de alterações não enviadas ao CNPq e com "Última atualização: 13/10/2026".
+
+**Observado**: as 90 listas do menu (27 procedimentos distintos, os outros
+variam só no tipo, como `f_cod_tipo`) não têm controle de exclusão nas
+linhas. A exclusão fica sempre no formulário de edição do item, num botão
+"Excluir" (`<span class="botao excluir">`, link com `onclick="del(); return false;"`).
+Só 8 listas têm item neste currículo; nas outras 82 há apenas os links de
+inclusão, sem `f_seq`, e a exclusão delas não pôde ser lida.
+
+O padrão comum, **observado** no código das 8:
+
+```js
+function del() {
+  if (confirm('\n\nDeseja realmente excluir esta produção?\n\n')) {
+    fecha(); // nem todos chamam
+    dc.f_ctr.value = 'E';
+    enviar(); // ou dc.submit()
+  }
+}
+```
+
+`dc` é o formulário da tela, o mesmo da alteração: POST para o próprio
+procedimento (seção 2) com `f_ctr` trocado de `U` para `E` e os campos do
+item como estão, entre eles `f_cod` e `f_seq`. Que o servidor exclua com esse
+POST e o que ele responde são **inferidos**: nada foi enviado. Também é
+**inferido** que o POST de exclusão aceite só `f_ctr`, `f_cod` e `f_seq`, sem
+os outros campos do formulário.
+
+| Módulo (lista)                                                                | Onde fica a exclusão                             | Requisição                                                                                                            | Parâmetros                                                                                | Texto do confirm                                                                                                                                 |
+| ----------------------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Idiomas (`pkg_idioma.lista`)                                                  | formulário `pkg_idioma.form`                     | POST `PKG_IDIOMA.FORM` (`GN_IDIOMA`), por `dc.submit()`                                                               | `f_ctr=E`, `f_cod`, `f_seq`                                                               | "Você realmente deseja excluir este Idioma?"                                                                                                     |
+| Prêmios e títulos (`pkg_premio.lista`)                                        | formulário `pkg_premio.form`                     | POST `pkg_premio.form` (`GN_PREMIO`)                                                                                  | `f_ctr=E`, `f_cod`, `f_seq`                                                               | "Você realmente deseja excluir este Prêmio/Titulo?"                                                                                              |
+| Formação acadêmica/titulação (`pkg_formacao.lista`)                           | formulário `pkg_formacao.form`                   | POST `pkg_formacao.FORM` (`GN_FORMACAO2`); antes, às vezes, POST ajax `PKG_FORMACAO.SETA_ULTIMO_PUBLICO`              | `f_ctr=E`, `f_cod`, `f_seq`, `f_tipo` (FA); no ajax, `f_cod`, `f_seq`, `f_tipo`, `f_op=E` | "Deseja realmente excluir esta formação acadêmica?"                                                                                              |
+| Formação complementar (`pkg_formacao_compl.lista`)                            | formulário `PKG_FORMACAO_COMPL.form`             | POST `PKG_FORMACAO_COMPL.FORM2` (`GN_FORMACAO2`); antes, às vezes, POST ajax `PKG_FORMACAO_COMPL.SETA_ULTIMO_PUBLICO` | `f_ctr=E`, `f_cod`, `f_seq`, `f_tipo`; no ajax, `f_cod`, `f_seq`, `f_op=E`                | "Você realmente deseja excluir esta formação acadêmica?"                                                                                         |
+| Atuação profissional, vínculo (`pkg_ativ.lista` > `PKG_ATIV.cargos_vinculos`) | formulário `PKG_ATIV.vinculos`                   | POST `PKG_ATIV.VINCULOS` (`GN_ATIV_VINC`)                                                                             | `f_ctr=E`, `f_cod`, `f_codinst`, `f_seq_ativ`, `f_seq_hist`                               | "Deseja realmente excluir este vínculo?"                                                                                                         |
+| Atuação profissional, a atuação inteira                                       | tela `PKG_ATIV.cargos_vinculos`, função `dele()` | **GET** `pkg_ativ.form` por `location=`                                                                               | `f_cod`, `f_seq_ativ`, `f_ctr=E2`                                                         | dois em seguida: "Esta operação apagará: Todas as atividades; Vínculos; Projetos; Linhas de pesquisa. Deseja continuar?" e "Confirmar exclusão?" |
+| Trabalhos técnicos (`pkg_relatorio.lista`)                                    | formulário `pkg_relatorio.form`                  | POST `PKG_RELATORIO.FORM` (`GN_RELATORIO`)                                                                            | `f_ctr=E`, `f_cod`, `f_seq`                                                               | "Deseja realmente excluir esta produção?"                                                                                                        |
+| Produção técnica, Editoração (`prc_tec_demais_lista`, `f_cod_tipo=2D`)        | formulário `prc_tec_edit`                        | POST `PRC_TEC_EDIT` (`GN_TEC`)                                                                                        | `f_ctr=E`, `f_cod`, `f_seq`                                                               | "Deseja realmente excluir esta produção?"                                                                                                        |
+| Participação em eventos (`pkg_evento.lista`)                                  | formulário `PKG_EVENTO.form`                     | POST `PKG_EVENTO.FORM` (`GN_TEC`)                                                                                     | `f_ctr=E`, `f_cod`, `f_seq`                                                               | "Deseja realmente excluir esta produção?"                                                                                                        |
+
+Os textos dos `confirm()` estão sem as quebras de linha do original. Vários
+formulários guardam, comentada, uma versão antiga do texto ("Você realmente
+deseja excluir esta produção?"); a tabela traz a que está ativa.
+
+Pontos fora do padrão, todos **observados** no código:
+
+- **Atuação inteira por GET.** Excluir a atuação (a instituição, com tudo o
+  que pende dela) não é um POST: a função `dele()` da tela de cargos e
+  vínculos navega para `pkg_ativ.form` com `f_ctr=E2` na URL, depois de dois
+  `confirm()`. O primeiro avisa que a exclusão leva junto atividades,
+  vínculos, projetos e linhas de pesquisa. É o `E2` que a seção 2 já citava.
+  Isso corrige o "Desfazer" da seção 11: a exclusão da atuação está mapeada,
+  mas apaga em cascata, e o conector não deve usá-la para desfazer uma
+  inclusão sem que a pessoa veja esse aviso.
+- **Formação mexe na visibilidade antes de excluir.** Nas duas formações,
+  quando `contPriv` é `"0"` (**inferido**: nenhuma outra formação pública), o
+  `del()` faz antes um POST síncrono para `SETA_ULTIMO_PUBLICO` com
+  `f_op=E`. A resposta `SETOU` vira o alerta "É necessário que pelo menos
+  uma formação acadêmica tenha visibilidade Público. Sua última formação
+  acadêmica concluída foi alterada para Público."; `ULTIMO` segue sem aviso;
+  outra resposta mostra "Ocorreu um erro!" e para. Ou seja, excluir uma
+  formação pode tornar pública outra.
+- **Formação complementar posta para `FORM2`**, não para o procedimento que
+  desenha a tela, e o `f_ctr` do formulário vem sem valor (nas outras vem
+  `U`).
+- **`enviar()` varia pouco**: em Idiomas o `del()` chama `dc.submit()` direto;
+  nas outras, `enviar()`, que fecha a janela (`fecha()`) e faz `dc.submit()`.
+  Prêmios não tem `fecha()`.
+
+Consequência para o conector: na maioria das seções, excluir é o mesmo POST
+da alteração com `f_ctr=E`, a partir de um formulário de edição carregado
+por GET (que traz `f_cod` e `f_seq`). As duas formações e a atuação inteira
+pedem tratamento próprio. O que ainda falta observar é a resposta do
+servidor a uma exclusão e se ela deixa o currículo com alteração pendente
+de envio ao CNPq; isso só com a pessoa acompanhando, num item de teste.

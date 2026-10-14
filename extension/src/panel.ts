@@ -12,6 +12,7 @@ import {
 } from '../../src/bridge/contract.ts';
 import { opRows } from '../../src/bridge/field-labels.ts';
 import { PUBLISH_REMINDER } from '../../src/bridge/lattes-status.ts';
+import { listText } from '../../src/bridge/list-watch.ts';
 import { giveConsent, hasConsent, PRIVACY_URL } from './consent.ts';
 import type { AppHello, PanelCommand, QueueState } from './state.ts';
 import { APP_KEY, readState } from './state.ts';
@@ -102,6 +103,11 @@ function renderReport(report: ContractReport | undefined): void {
         ? [`${FORM_TITLE[f.form] ?? f.form}: sem amostra (${f.detail ?? ''})`]
         : f.drifts.map((d) => `${driftText(d)}${isBreaking(d) ? '' : ' (não impede o envio)'}`),
     ),
+    // Lista do Lattes diferente da do editor: os campos tipados precisam de
+    // atualização, mas o envio segue.
+    ...(report.lists ?? [])
+      .filter((l) => l.status !== 'ok')
+      .map((l) => `${listText(l)} (não impede o envio)`),
   ];
   if (lines.length) {
     root.append(
