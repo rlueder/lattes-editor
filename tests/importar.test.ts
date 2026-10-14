@@ -13,7 +13,6 @@ import {
   IMPORT_ENABLED,
   importBusy,
   importItems,
-  type ImportPort,
   type ImportRequest,
   importStopMessage,
   pageShape,
@@ -45,6 +44,7 @@ import {
 } from '../src/model/production.ts';
 import { getAttr, parseXml, serializeXml, setAttr, type XElement } from '../src/model/xml.ts';
 import { lattesSchema as schema } from '../src/schema/lattes.ts';
+import { type LattesSimuladoNoTeste, withLattesSimulado } from './helpers/lattes-simulado.ts';
 
 const ROOT = join(import.meta.dirname, '..');
 const XSD = join(ROOT, 'schema/CurriculoLattes_2022_patched.xsd');
@@ -227,14 +227,6 @@ describe('pedido do editor (importMessage)', () => {
 
 // Um Lattes falso, com as telas como a seção 13 de lattes_internals.md as descreve.
 
-const STEP1 = `<html><body><form name="fl" action="pkg_importa_xml.inicio" method="post" enctype="multipart/form-data">
-  <input type="file" name="file">
-  <input type="hidden" name="f_cod" value="${CODE}">
-  <input type="hidden" name="f_ctr" value="I">
-  <input type="hidden" name="f_ret" value="">
-  <input type="button" value="Enviar" onclick="check()">
-</form></body></html>`;
-
 const boxes = (n = 17) =>
   Array.from(
     { length: n },
@@ -280,28 +272,50 @@ interface Call {
   path: string;
 }
 
-function fakeLattes(pages: { s1?: string; s2?: string; s3?: string } = {}) {
+// O Lattes do teste é o simulado (scripts/lattes-simulado/), com o código do
+// currículo das páginas acima. O passo 1 é o dele; os passos 2 e 3 são as
+// páginas desta seção (as variações que o teste quer), trocadas no lugar das
+// respostas dele.
+let open: LattesSimuladoNoTeste | undefined;
+afterEach(async () => {
+  await open?.close();
+  open = undefined;
+});
+
+/** O passo 1 como o simulado o mostra. */
+async function step1Page(): Promise<string> {
+  open ??= await withLattesSimulado({ code: CODE });
+  return open.port.get(`pkg_importa_xml.inicio?f_cod=${CODE}`);
+}
+
+async function fakeLattes(pages: { s1?: string; s2?: string; s3?: string } = {}) {
+  await open?.close();
   const calls: Call[] = [];
-  const port: ImportPort = {
-    get: async (path) => {
-      calls.push({ method: 'GET', path });
-      return { html: pages.s1 ?? STEP1, url: path };
+  open = await withLattesSimulado({
+    code: CODE,
+    intercept: async (req, state, next) => {
+      const path = state.log.at(-1)!.path;
+      const proc = req.proc.toLowerCase();
+      if (req.method === 'GET') {
+        calls.push({ method: 'GET', path });
+        if (proc === 'pkg_importa_xml.inicio' && pages.s1 !== undefined) return { html: pages.s1 };
+        return next();
+      }
+      if (req.file) {
+        calls.push({
+          fields: req.pairs,
+          file: { name: req.file.name, type: req.file.type, xml: decodeLatin1(req.file.bytes) },
+          method: 'MULTIPART',
+          path,
+        });
+        return { html: pages.s2 ?? step2() };
+      }
+      calls.push({ body: new URLSearchParams(req.pairs).toString(), method: 'POST', path });
+      if (proc === 'pkg_importa_xml.mostra_modulos') return { html: pages.s3 ?? STEP3 };
+      return next();
     },
-    post: async (path, body) => {
-      calls.push({ body, method: 'POST', path });
-      return { html: pages.s3 ?? STEP3, url: path };
-    },
-    postMultipart: async (path, fields, file) => {
-      calls.push({
-        fields,
-        file: { name: file.name, type: file.type, xml: decodeLatin1(file.bytes) },
-        method: 'MULTIPART',
-        path,
-      });
-      return { html: pages.s2 ?? step2(), url: path };
-    },
-  };
-  return { calls, port };
+  });
+  return { calls, port: open.importPort };
 }
 
 const REQ: ImportRequest = {
@@ -311,9 +325,9 @@ const REQ: ImportRequest = {
   oldestYear: 2024,
 };
 
-describe('Importar pelo conector contra um Lattes falso', () => {
+describe('Importar pelo conector contra o Lattes simulado', () => {
   it('desligado (padrão): nem abre a tela do Importar', async () => {
-    const { calls, port } = fakeLattes();
+    const { calls, port } = await fakeLattes();
     const r = await importItems(port, CODE, REQ);
     expect(r.reason).toBe('desligado');
     expect(calls).toEqual([]);
@@ -322,7 +336,7 @@ describe('Importar pelo conector contra um Lattes falso', () => {
   it('fluxo inteiro ligado: arquivo do editor, passos 1 e 2, e para no passo 3 sem confirmar', async () => {
     const { cv, loadedMax } = await cvWithEvent('2024');
     const msg = importMessage(cv.doc, cv.encoding, loadedMax, { id: 'p1' }, true)!;
-    const { calls, port } = fakeLattes();
+    const { calls, port } = await fakeLattes();
     const r = await importItems(
       port,
       CODE,
@@ -377,7 +391,7 @@ describe('Importar pelo conector contra um Lattes falso', () => {
   });
 
   it('vários módulos: cada caixa uma vez, em ordem', async () => {
-    const { calls, port } = fakeLattes();
+    const { calls, port } = await fakeLattes();
     await importItems(port, CODE, { ...REQ, modules: [17, 1, 16, 1] }, true);
     expect(new URLSearchParams(calls[2]!.body).getAll('f_chkp')).toEqual(['1', '16', '17']);
   });
@@ -385,10 +399,10 @@ describe('Importar pelo conector contra um Lattes falso', () => {
   it('solicitação pendente antes de começar: para sem enviar nada nem descartar', async () => {
     for (const s1 of [
       '<p>Existe solicita&ccedil;&atilde;o de Importa&ccedil;&atilde;o de XML pendente</p>',
-      `<p>Existe solicitação de Importação de XML pendente</p>${STEP1}`,
+      `<p>Existe solicitação de Importação de XML pendente</p>${await step1Page()}`,
       step2(),
     ]) {
-      const { calls, port } = fakeLattes({ s1 });
+      const { calls, port } = await fakeLattes({ s1 });
       const r = await importItems(port, CODE, REQ, true);
       expect(r.reason).toBe('pendente');
       expect(r.detail).toContain('Existe solicitação de Importação de XML pendente');
@@ -397,28 +411,29 @@ describe('Importar pelo conector contra um Lattes falso', () => {
   });
 
   it('sessão caída em qualquer passo', async () => {
-    let lattes = fakeLattes({ s1: LOGON });
+    let lattes = await fakeLattes({ s1: LOGON });
     expect((await importItems(lattes.port, CODE, REQ, true)).reason).toBe('sessao');
     expect(lattes.calls).toHaveLength(1);
 
-    lattes = fakeLattes({ s2: LOGON });
+    lattes = await fakeLattes({ s2: LOGON });
     expect((await importItems(lattes.port, CODE, REQ, true)).reason).toBe('sessao');
     expect(lattes.calls).toHaveLength(2);
 
-    lattes = fakeLattes({ s3: LOGON });
+    lattes = await fakeLattes({ s3: LOGON });
     const r = await importItems(lattes.port, CODE, REQ, true);
     expect(r).toMatchObject({ reason: 'sessao', request: '987654' });
     expect(importStopMessage(r)).toMatch(/^A sessão do Lattes caiu\. A solicitação 987654/);
   });
 
   it('tela do passo 1 diferente da mapeada: para antes de enviar', async () => {
+    const step1 = await step1Page();
     for (const s1 of [
       '<html><body>Manutenção</body></html>',
-      STEP1.replace('multipart/form-data', 'application/x-www-form-urlencoded'),
-      STEP1.replace('pkg_importa_xml.inicio', 'outro.proc'),
-      STEP1.replace('name="f_ret"', 'name="f_volta"'),
+      step1.replace('multipart/form-data', 'application/x-www-form-urlencoded'),
+      step1.replace('pkg_importa_xml.inicio', 'outro.proc'),
+      step1.replace('name="f_ret"', 'name="f_volta"'),
     ]) {
-      const { calls, port } = fakeLattes({ s1 });
+      const { calls, port } = await fakeLattes({ s1 });
       const r = await importItems(port, CODE, REQ, true);
       expect(r.reason).toBe('mudou');
       expect(r.page).toBeDefined();
@@ -437,7 +452,7 @@ describe('Importar pelo conector contra um Lattes falso', () => {
       [step2({ years: '<select name="f_ano_prod"></select>' }), /filtro de ano/],
     ];
     for (const [s2, problem] of cases) {
-      const { calls, port } = fakeLattes({ s2 });
+      const { calls, port } = await fakeLattes({ s2 });
       const r = await importItems(port, CODE, REQ, true);
       expect(r.reason).toBe('mudou');
       expect(r.detail).toMatch(problem);
@@ -452,7 +467,7 @@ describe('Importar pelo conector contra um Lattes falso', () => {
       `<script>alert('O arquivo enviado para importação não contém produções científicas.')</script>`,
     ];
     for (const s2 of pages) {
-      const { calls, port } = fakeLattes({ s2 });
+      const { calls, port } = await fakeLattes({ s2 });
       const r = await importItems(port, CODE, REQ, true);
       expect(r.reason).toBe('arquivo');
       expect(r.request).toBeUndefined();
@@ -470,7 +485,7 @@ describe('Importar pelo conector contra um Lattes falso', () => {
   });
 
   it('passo 2 de outro currículo: para e diz qual solicitação ficou pendente', async () => {
-    const { calls, port } = fakeLattes({ s2: step2({ code: 'Z9999999Z9' }) });
+    const { calls, port } = await fakeLattes({ s2: step2({ code: 'Z9999999Z9' }) });
     const r = await importItems(port, CODE, REQ, true);
     expect(r).toMatchObject({ reason: 'outro-cv', request: '987654' });
     expect(importStopMessage(r)).toContain('987654');
@@ -480,11 +495,11 @@ describe('Importar pelo conector contra um Lattes falso', () => {
   it('filtro de ano em botões de opção, e sem ano que cubra o item mais antigo', async () => {
     const radios =
       '<input type="radio" name="f_ano_prod" value="2026" checked> 2026 <input type="radio" name="f_ano_prod" value="2010"> 2010';
-    let lattes = fakeLattes({ s2: step2({ years: radios }) });
+    let lattes = await fakeLattes({ s2: step2({ years: radios }) });
     await importItems(lattes.port, CODE, { ...REQ, oldestYear: 2015 }, true);
     expect(new URLSearchParams(lattes.calls[2]!.body).get('f_ano_prod')).toBe('2010');
 
-    lattes = fakeLattes();
+    lattes = await fakeLattes();
     const r = await importItems(lattes.port, CODE, { ...REQ, oldestYear: 2001 }, true);
     expect(r).toMatchObject({ reason: 'mudou', request: '987654' });
     expect(r.detail).toContain('2001');
@@ -500,11 +515,11 @@ describe('Importar pelo conector contra um Lattes falso', () => {
       { ...REQ, modules: [1.5] },
     ];
     for (const req of bad) {
-      const { calls, port } = fakeLattes();
+      const { calls, port } = await fakeLattes();
       expect((await importItems(port, CODE, req, true)).reason).toBe('arquivo');
       expect(calls).toEqual([]);
     }
-    const { calls, port } = fakeLattes();
+    const { calls, port } = await fakeLattes();
     expect((await importItems(port, undefined, REQ, true)).reason).toBe('erro');
     expect(calls).toEqual([]);
     expect(requestProblem(REQ)).toBeUndefined();
@@ -513,13 +528,13 @@ describe('Importar pelo conector contra um Lattes falso', () => {
 
 describe('falhas de rede no meio do Importar', () => {
   it('antes do envio, a falha sobe (nada foi enviado)', async () => {
-    const { port } = fakeLattes();
+    const { port } = await fakeLattes();
     port.get = async () => Promise.reject(new Error('rede'));
     await expect(importItems(port, CODE, REQ, true)).rejects.toThrow('rede');
   });
 
   it('no envio do arquivo: avisa que pode ter ficado solicitação pendente', async () => {
-    const { port } = fakeLattes();
+    const { port } = await fakeLattes();
     port.postMultipart = async () => Promise.reject(new Error('rede'));
     const r = await importItems(port, CODE, REQ, true);
     expect(r).toMatchObject({ reason: 'erro', request: undefined });
@@ -527,7 +542,7 @@ describe('falhas de rede no meio do Importar', () => {
   });
 
   it('depois do passo 2 lido: devolve o número da solicitação pendente', async () => {
-    const { calls, port } = fakeLattes();
+    const { calls, port } = await fakeLattes();
     port.post = async (path, body) => {
       calls.push({ body, method: 'POST', path });
       return Promise.reject(new Error('rede'));
@@ -565,10 +580,11 @@ describe('o botão do Importar (importStatus)', () => {
 });
 
 describe('leituras das telas do Importar', () => {
-  it('passo 1 e passo 2 lidos sem DOM', () => {
-    expect(step1ScreenState(STEP1)).toBe('ok');
-    expect(step1ScreenState(STEP1, 'https://x/pkg_sec.logon')).toBe('sessao');
-    expect(step1ScreenState(STEP1.replace(/"/g, "'"))).toBe('ok');
+  it('passo 1 e passo 2 lidos sem DOM', async () => {
+    const step1 = await step1Page();
+    expect(step1ScreenState(step1)).toBe('ok');
+    expect(step1ScreenState(step1, 'https://x/pkg_sec.logon')).toBe('sessao');
+    expect(step1ScreenState(step1.replace(/"/g, "'"))).toBe('ok');
     expect(readStep2(step2())).toEqual({
       code: CODE,
       request: '987654',

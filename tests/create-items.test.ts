@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
+import type { Institution } from '../scripts/lattes-simulado/estado.ts';
+import type { SimRequest } from '../scripts/lattes-simulado/pedido.ts';
+import type { Intercept } from '../scripts/lattes-simulado/servidor.ts';
+import type { SimResponse } from '../scripts/lattes-simulado/tipos.ts';
 import { applyOp } from '../src/bridge/apply.ts';
-import { checkContract, LATTES_CONTRACT } from '../src/bridge/contract.ts';
+import { blocksKind, checkContract, LATTES_CONTRACT } from '../src/bridge/contract.ts';
 import {
   applyCreateAtuacao,
   CREATE_ATUACAO_SPEC,
@@ -11,12 +15,25 @@ import {
   planCreateAtuacao,
 } from '../src/bridge/create.ts';
 import { opRows } from '../src/bridge/field-labels.ts';
-import type { FormControl } from '../src/bridge/form.ts';
 import { planChanges } from '../src/bridge/plan.ts';
 import { sentEntry, undoOp } from '../src/bridge/sent-log.ts';
 import type { Change } from '../src/model/changes.ts';
 import { diffDocuments } from '../src/model/changes.ts';
-import { parseXml, type XElement } from '../src/model/xml.ts';
+import {
+  childElements,
+  element,
+  getAttr,
+  parseXml,
+  setAttr,
+  type XElement,
+} from '../src/model/xml.ts';
+import {
+  faults,
+  findIn,
+  type LattesSimuladoNoTeste,
+  postsOf,
+  withSmallLattes,
+} from './helpers/lattes-simulado.ts';
 
 const atuacao = (attrs: string, vinculos: string) =>
   parseXml(`<ATUACAO-PROFISSIONAL ${attrs}>${vinculos}</ATUACAO-PROFISSIONAL>`).root;
@@ -126,161 +143,154 @@ describe('planejar a inclusão de uma atuação', () => {
   });
 });
 
-/** Um Lattes falso com a lista de atuações, a inclusão, a busca e o vínculo. */
-function fakeLattes(
-  opts: {
-    already?: boolean;
-    created?: number;
-    ctr?: string;
-    logonOnPost?: boolean;
-    results?: string;
-    savedDifferent?: boolean;
-  } = {},
-) {
-  const grids = [{ codinst: 'D009', seq: '6' }];
-  if (opts.already) grids.push({ codinst: 'D001000000998', seq: '5' });
-  let saved: Record<string, string> = {};
-  const posts: string[] = [];
-  const list = () =>
-    `${grids
-      .map(
-        (g) =>
-          `<a href="PKG_ATIV.cargos_vinculos?f_cod=K000000000&amp;f_codinst=${g.codinst}&amp;f_seq_ativ=${g.seq}">x</a>`,
-      )
-      .join('')}<a href="PKG_ATIV.inclui?f_cod=K000000000">Incluir</a>`;
-  const ativ: FormControl[] = [
-    ...Object.entries(CREATE_ATUACAO_SPEC.fields).map(([name, spec]) => ({
-      maxLength: spec.maxLength,
-      name,
-      type: spec.type === 'select-one' ? 'select-one' : spec.type,
-      value: name === 'f_ctr' ? (opts.ctr ?? 'I') : name === 'f_cod' ? 'K000000000' : '',
-    })),
-  ];
-  const port = {
-    async get(path: string) {
-      if (path.startsWith('pkg_ativ.lista')) return list();
-      if (path.startsWith('PKG_ATIV.inclui')) return 'FORM:GN_ATIV';
-      if (path.startsWith('PKG_ATIV.cargos_vinculos')) {
-        return `<a href="PKG_ATIV.vinculos?f_cod=K000000000&f_seq_ativ=7&f_seq_hist=1">v</a>`;
-      }
-      if (path.startsWith('PKG_ATIV.vinculos')) return 'FORM:GN_ATIV_VINC';
-      return '';
-    },
-    menuHtml: () => '<a href="pkg_ativ.lista?f_cod=K000000000">Atuação</a>',
-    async post(path: string, body: string) {
-      posts.push(path);
-      if (path === 'PRC_INST_FORM') {
-        return (
-          opts.results ??
-          `<a href="javascript:seleciona('D001000000998','UNIVERSIDADE DE EXEMPLO')">U</a>
-           <a href="javascript:seleciona('D001000000999','OUTRA')">O</a>`
-        );
-      }
-      if (opts.logonOnPost) return '<form action="pkg_sec.logon">';
-      saved = Object.fromEntries(
-        body
-          .split('&')
-          .map((kv) =>
-            kv
-              .split('=')
-              .map((s) =>
-                s
-                  .replace(/\+/g, ' ')
-                  .replace(/%([0-9A-F]{2})/gi, (_, h: string) =>
-                    String.fromCharCode(parseInt(h, 16)),
-                  ),
-              ),
-          ),
-      );
-      for (let i = 0; i < (opts.created ?? 1); i++) {
-        grids.push({ codinst: saved.f_cod_inst2 ?? saved.f_cod_inst ?? '', seq: String(7 + i) });
-      }
-      if (opts.savedDifferent) saved.f_ano_ini = '1999';
-      return '<script>parent.modalCV2.setarUrl("pkg_ativ.lista")</script>';
-    },
-    readForm(html: string, form: string): FormControl[] | undefined {
-      if (html === 'FORM:GN_ATIV' && form === 'GN_ATIV') return ativ;
-      if (html === 'FORM:GN_ATIV_VINC' && form === 'GN_ATIV_VINC') {
-        return Object.entries(saved).map(([name, value]) => ({ name, type: 'text', value }));
-      }
-      return undefined;
-    },
-  };
-  return { port, posts, saved: () => saved };
+// O Lattes do teste é o simulado (scripts/lattes-simulado/), com o currículo
+// pequeno (atuações 5 e 6) e duas instituições a mais na busca: a do XML e
+// outra de nome parecido.
+const INSTITUTIONS: Institution[] = [
+  { code: 'D001000000998', name: 'UNIVERSIDADE DE EXEMPLO', uf: 'RS' },
+  { code: 'D001000000999', name: 'UNIVERSIDADE DE EXEMPLO DO NORTE', uf: 'PA' },
+];
+
+let open: LattesSimuladoNoTeste | undefined;
+afterEach(async () => {
+  await open?.close();
+  open = undefined;
+});
+
+async function lattesFor(options: Parameters<typeof withSmallLattes>[0] = {}) {
+  await open?.close();
+  open = await withSmallLattes({ institutions: INSTITUTIONS, ...options });
+  return open;
 }
+
+const isProc = (req: SimRequest, proc: string) => req.proc.toLowerCase() === proc.toLowerCase();
+
+/** O POST de inclusão da atuação trocado: chama next() n vezes, ou responde outra coisa. */
+const onInclude =
+  (fn: (next: () => Promise<SimResponse>) => Promise<SimResponse>): Intercept =>
+  (req, _state, next) =>
+    req.method === 'POST' && isProc(req, 'PKG_ATIV.INCLUI') ? fn(next) : next();
+
+/** O formulário de inclusão em outro modo. */
+const includeMode = (ctr: string) =>
+  faults.rewritePages(/^PKG_ATIV\.inclui$/i, (html) =>
+    html.replace('name="f_ctr" value="I"', `name="f_ctr" value="${ctr}"`),
+  );
+
+const procs = (lattes: LattesSimuladoNoTeste) => postsOf(lattes).map((p) => p.proc);
 
 const op = () => plan(atuacao(INST, VINCULO)) as CreateAtuacaoOp;
 
-describe('incluir a atuação no Lattes falso', () => {
+describe('incluir a atuação no Lattes simulado', () => {
   it('busca a instituição, inclui, acha a atuação nova e confere o vínculo', async () => {
-    const fake = fakeLattes();
-    const result = await applyOp(op(), fake.port);
+    const lattes = await lattesFor();
+    const result = await applyOp(op(), lattes.port);
     expect(result).toMatchObject({
       assigned: { 'SEQUENCIA-ATIVIDADE': '7' },
       status: 'conferido',
     });
-    expect(fake.posts).toEqual(['PRC_INST_FORM', 'PKG_ATIV.INCLUI']);
+    expect(procs(lattes)).toEqual(['PRC_INST_FORM', 'PKG_ATIV.INCLUI']);
     // Código sem V: vai em f_cod_inst2, com o nome da busca.
-    expect(fake.saved()).toMatchObject({
+    expect(postsOf(lattes)[1]!.fields).toMatchObject({
       f_cod_inst2: 'D001000000998',
       f_ctr: 'I',
       f_inst: 'UNIVERSIDADE DE EXEMPLO',
     });
+    const created = findIn(
+      lattes.state.root,
+      (el) => el.name === 'ATUACAO-PROFISSIONAL' && getAttr(el, 'SEQUENCIA-ATIVIDADE') === '7',
+    )!;
+    expect(getAttr(created, 'CODIGO-INSTITUICAO')).toBe('001000000998');
   });
 
   it('para antes de enviar quando algo não confere', async () => {
-    expect(await applyCreateAtuacao(op(), fakeLattes({ already: true }).port)).toMatchObject({
+    const already = await lattesFor();
+    const atuacoes = findIn(already.state.root, (el) => el.name === 'ATUACOES-PROFISSIONAIS')!;
+    atuacoes.children.push(
+      element('ATUACAO-PROFISSIONAL', {
+        'CODIGO-INSTITUICAO': '001000000998',
+        'NOME-INSTITUICAO': 'Universidade de Exemplo',
+        'SEQUENCIA-ATIVIDADE': '8',
+      }),
+    );
+    expect(await applyCreateAtuacao(op(), already.port)).toMatchObject({
       detail: expect.stringMatching(/já tem uma atuação/),
       status: 'divergente',
     });
-    expect(await applyCreateAtuacao(op(), fakeLattes({ ctr: 'U' }).port)).toMatchObject({
+    expect(
+      await applyCreateAtuacao(op(), (await lattesFor({ intercept: includeMode('U') })).port),
+    ).toMatchObject({
       detail: expect.stringMatching(/modo de inclusão/),
       status: 'erro',
     });
-    const none = fakeLattes({ results: '<p>Nenhuma</p>' });
+    const none = await lattesFor({
+      intercept: (req, _state, next) =>
+        isProc(req, 'PRC_INST_FORM') ? { html: '<p>Nenhuma</p>' } : next(),
+    });
     expect(await applyCreateAtuacao(op(), none.port)).toMatchObject({
       detail: expect.stringMatching(/0 resultados/),
       status: 'erro',
     });
-    expect(none.posts).toEqual(['PRC_INST_FORM']);
+    expect(procs(none)).toEqual(['PRC_INST_FORM']);
     const long = { ...op(), set: { ...op().set, f_carga: '4000' } };
-    expect(await applyCreateAtuacao(long, fakeLattes().port)).toMatchObject({
+    expect(await applyCreateAtuacao(long, (await lattesFor()).port)).toMatchObject({
       detail: expect.stringMatching(/f_carga passa do limite/),
     });
   });
 
   it('depois do envio, confere que existe uma atuação nova e que o vínculo bate', async () => {
     // Depois do POST aceito, o que não confere avisa que a atuação pode existir.
-    expect(await applyCreateAtuacao(op(), fakeLattes({ created: 0 }).port)).toMatchObject({
+    const zero = await lattesFor({
+      intercept: onInclude(async () => ({ html: '<script>/* nada gravado */</script>' })),
+    });
+    expect(await applyCreateAtuacao(op(), zero.port)).toMatchObject({
       detail: expect.stringMatching(/0 atuações novas.*pode ter sido criada/),
       status: 'divergente',
     });
-    expect(await applyCreateAtuacao(op(), fakeLattes({ created: 2 }).port)).toMatchObject({
+    const two = await lattesFor({
+      intercept: onInclude(async (next) => {
+        await next();
+        return next();
+      }),
+    });
+    expect(await applyCreateAtuacao(op(), two.port)).toMatchObject({
       detail: expect.stringMatching(/2 atuações novas.*pode ter sido criada/),
       status: 'divergente',
     });
-    expect(await applyCreateAtuacao(op(), fakeLattes({ savedDifferent: true }).port)).toMatchObject(
-      {
-        assigned: { 'SEQUENCIA-ATIVIDADE': '7' },
-        detail: expect.stringMatching(/gravada diferente: f_ano_ini/),
-        status: 'divergente',
-      },
-    );
-    expect(await applyCreateAtuacao(op(), fakeLattes({ logonOnPost: true }).port)).toMatchObject({
+    const different = await lattesFor({
+      intercept: onInclude(async (next) => {
+        const out = await next();
+        const v = findIn(
+          open!.state.root,
+          (el) => el.name === 'ATUACAO-PROFISSIONAL' && getAttr(el, 'SEQUENCIA-ATIVIDADE') === '7',
+        )!;
+        setAttr(childElements(v, 'VINCULOS')[0]!, 'ANO-INICIO', '1999');
+        return out;
+      }),
+    });
+    expect(await applyCreateAtuacao(op(), different.port)).toMatchObject({
+      assigned: { 'SEQUENCIA-ATIVIDADE': '7' },
+      detail: expect.stringMatching(/gravada diferente: f_ano_ini/),
+      status: 'divergente',
+    });
+    const logon = await lattesFor({
+      intercept: onInclude(async () => ({ html: '<form action="pkg_sec.logon">' })),
+    });
+    expect(await applyCreateAtuacao(op(), logon.port)).toMatchObject({
       status: 'sessao',
     });
   });
 
   it('sem a lista ou o link de inclusão, não envia nada', async () => {
-    const fake = fakeLattes();
+    const lattes = await lattesFor();
     expect(
-      await applyCreateAtuacao(op(), { ...fake.port, menuHtml: () => '<p>menu</p>' }),
+      await applyCreateAtuacao(op(), { ...lattes.port, menuHtml: () => '<p>menu</p>' }),
     ).toMatchObject({ detail: expect.stringMatching(/não encontrada no menu/), status: 'erro' });
-    const noLink = { ...fake.port, get: async () => '<p>lista vazia</p>' };
+    const noLink = { ...lattes.port, get: async () => '<p>lista vazia</p>' };
     expect(await applyCreateAtuacao(op(), noLink)).toMatchObject({
       detail: expect.stringMatching(/Inclusão de atuação/),
     });
-    expect(fake.posts).toEqual([]);
+    expect(procs(lattes)).toEqual([]);
   });
 
   it('lê os resultados da busca de instituição', () => {
@@ -302,13 +312,18 @@ describe('incluir a atuação no Lattes falso', () => {
 
 describe('inclusão no contrato e no registro do enviado', () => {
   it('com a inclusão ligada, o contrato confere o formulário em modo I', async () => {
-    const fake = fakeLattes();
-    const report = await checkContract(fake.port, {
+    const lattes = await lattesFor();
+    const report = await checkContract(lattes.port, {
       forms: { ...LATTES_CONTRACT.forms, 'criar-atuacao': CREATE_ATUACAO_SPEC },
       menu: [],
     });
-    expect(report.forms.find((f) => f.kind === 'criar-atuacao')).toMatchObject({ status: 'ok' });
-    const wrongMode = fakeLattes({ ctr: 'U' });
+    // O tipo de f_tipo_privacidade fica fora do contrato da inclusão: o
+    // formulário o traz, e ele aparece como campo novo, que não trava.
+    expect(report.forms.find((f) => f.kind === 'criar-atuacao')!.drifts).toEqual([
+      { field: 'f_tipo_privacidade', form: 'GN_ATIV', kind: 'campo-novo' },
+    ]);
+    expect(blocksKind(report, 'criar-atuacao')).toEqual([]);
+    const wrongMode = await lattesFor({ intercept: includeMode('U') });
     const changed = await checkContract(wrongMode.port, {
       forms: { ...LATTES_CONTRACT.forms, 'criar-atuacao': CREATE_ATUACAO_SPEC },
       menu: [],

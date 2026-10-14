@@ -110,7 +110,9 @@ export async function handle(
     proc,
     query: query ?? '',
   });
+  const urlencoded = raw.method === 'POST' && !/multipart/i.test(raw.contentType);
   state.log.push({
+    body: urlencoded ? Buffer.from(raw.body).toString('latin1') : undefined,
     ctr: req.get('f_ctr'),
     file: req.file && { field: req.file.field, name: req.file.name },
     method: raw.method,

@@ -14,7 +14,7 @@
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, walk, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
-import { INSTITUTIONS } from './buscas.ts';
+import { withLetter } from './buscas.ts';
 import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
@@ -29,10 +29,6 @@ const NATURE: Record<string, string> = {
   PESQUISA: 'P',
 };
 const SITUATION: Record<string, string> = { CONCLUIDO: 'C', DESATIVADO: 'D', EM_ANDAMENTO: 'A' };
-
-/** A letra que a busca mostra na frente do código (seção 18); D quando não se sabe. */
-const withLetter = (code: string) =>
-  INSTITUTIONS.find((i) => i.code.slice(1) === code)?.code ?? `D${code}`;
 
 interface Placed {
   atuacao: XElement;
@@ -159,9 +155,9 @@ function vinculoCopy(atuacao: XElement) {
   };
 }
 
-function rowIds(p: Placed, tipo: string): Record<string, string> {
+function rowIds(state: LattesState, p: Placed, tipo: string): Record<string, string> {
   const code = getAttr(p.atuacao, 'CODIGO-INSTITUICAO') ?? '';
-  const lettered = code ? withLetter(code) : '';
+  const lettered = code ? withLetter(state, code) : '';
   const name = getAttr(p.atuacao, 'NOME-INSTITUICAO') ?? '';
   const v = vinculoCopy(p.atuacao);
   return {
@@ -170,7 +166,7 @@ function rowIds(p: Placed, tipo: string): Record<string, string> {
     f_cod_inst: lettered.startsWith('V') ? code : '',
     f_cod_inst2: lettered && !lettered.startsWith('V') ? code : '',
     f_cod_tipo: tipo,
-    f_codinst: code ? withLetter(code) : '',
+    f_codinst: lettered,
     f_enqua: v.enqua,
     f_inst_old: name,
     f_instold: name,
@@ -189,7 +185,7 @@ function lista(req: SimRequest, state: LattesState): SimResponse {
   const rows = projetos(state)
     .filter((p) => NATURE[getAttr(p.projeto, 'NATUREZA') ?? ''] === tipo)
     .map((p) => {
-      const ids = rowIds(p, tipo);
+      const ids = rowIds(state, p, tipo);
       const path = `PKG_PROJETO.form?f_cod=${state.code}&amp;f_cod_tipo=${tipo}&amp;f_codinst=${ids.f_codinst}&amp;f_seq_ativ=${ids.f_seq_ativ}&amp;f_seq_funcao=${ids.f_seq_funcao}&amp;f_seq_proj=${ids.f_seq_proj}`;
       return `<tr><td><a href="#" onclick="self.parent.modalCV2.setarUrl('${path}',true); return false;">${h.esc(getAttr(p.projeto, 'NOME-DO-PROJETO') ?? '')}</a></td></tr>`;
     })
@@ -204,7 +200,7 @@ function form(req: SimRequest, state: LattesState): SimResponse {
   const placed = seq ? bySeq(state, seq) : undefined;
   if (seq && !placed) return html(h.page('Projeto', '<p>Registro não encontrado.</p>'));
   const ids: Record<string, string> = placed
-    ? { ...rowIds(placed, tipo), f_ctr: 'U' }
+    ? { ...rowIds(state, placed, tipo), f_ctr: 'U' }
     : { f_cod_tipo: tipo, f_ctr: 'I' };
   const body = `<form name="GN_PROJETO" method="post" action="PKG_PROJETO.FORM">
 ${renderFields(bindings(state, ids), placed?.projeto)}
@@ -283,7 +279,7 @@ function listaInst(req: SimRequest, state: LattesState): SimResponse {
   const rows = atuacoes
     .filter((a) => getAttr(a, 'CODIGO-INSTITUICAO'))
     .map((a) => {
-      const code = withLetter(getAttr(a, 'CODIGO-INSTITUICAO')!);
+      const code = withLetter(state, getAttr(a, 'CODIGO-INSTITUICAO')!);
       const name = getAttr(a, 'NOME-INSTITUICAO') ?? '';
       const v = vinculoCopy(a);
       const args = [

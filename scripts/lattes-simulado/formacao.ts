@@ -8,7 +8,7 @@
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
-import { AGENCIES, COURSES, INSTITUTIONS } from './buscas.ts';
+import { AGENCIES, COURSES, withLetter } from './buscas.ts';
 import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
@@ -72,16 +72,6 @@ function setIfKnown(el: XElement, name: string, value: string): void {
   if (value && attrOf(el, [name])) setAttr(el, name, value);
 }
 
-/**
- * A letra que a busca põe na frente do código da instituição (seção 18). O
- * XML guarda o código sem ela; o simulado a recupera da tabela da busca e usa
- * D quando não acha (inferido).
- */
-function withLetter(code: string): string {
-  if (!code || /^[A-Z]/.test(code)) return code;
-  return INSTITUTIONS.find((i) => i.code.slice(1) === code)?.code ?? `D${code}`;
-}
-
 /** A letra do curso na lista do simulado (buscas.ts), pelo código sem ela. */
 function courseLetter(el: XElement): string {
   const code = getAttr(el, 'CODIGO-CURSO') ?? '';
@@ -101,7 +91,7 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
     name,
     read: () => '',
   });
-  const inst = (el: XElement) => withLetter(getAttr(el, 'CODIGO-INSTITUICAO') ?? '');
+  const inst = (el: XElement) => withLetter(state, getAttr(el, 'CODIGO-INSTITUICAO') ?? '');
   const instWrite: Binding['write'] = (el, value) =>
     setIfKnown(el, 'CODIGO-INSTITUICAO', value.replace(/^[A-Za-z]/, ''));
   return [

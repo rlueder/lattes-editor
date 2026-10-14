@@ -5,18 +5,31 @@
 // agência são sintéticos, no formato observado. As áreas são só as nove
 // grandes áreas, com os códigos observados.
 
-import type { LattesState } from './estado.ts';
+import type { Institution, LattesState } from './estado.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
 import { html, type Routes, type SimResponse } from './tipos.ts';
 
 /** Uma letra e 12 dígitos; V vai em f_cod_inst, as outras letras em f_cod_inst2. */
-export const INSTITUTIONS: { code: string; name: string; uf: string }[] = [
+export const INSTITUTIONS: Institution[] = [
   { code: 'V000000000001', name: 'Universidade Federal do Rio Grande do Sul', uf: 'RS' },
   { code: 'V000000000002', name: 'Universidade de São Paulo', uf: 'SP' },
   { code: 'V000000000003', name: 'Universidade Estadual de Campinas', uf: 'SP' },
   { code: 'M000000000004', name: 'Empresa Brasileira de Pesquisa Agropecuária', uf: 'DF' },
 ];
+
+/** As instituições da busca: as do simulado e as que o teste acrescentou. */
+export const institutionsOf = (state: LattesState) => [...INSTITUTIONS, ...state.institutions];
+
+/**
+ * A letra que a busca mostra na frente do código (seção 18), pelo código sem
+ * ela, como o XML o guarda; D quando a instituição não está na busca
+ * (inferido).
+ */
+export function withLetter(state: LattesState, code: string): string {
+  if (!code || /^[A-Z]/.test(code)) return code;
+  return institutionsOf(state).find((i) => i.code.slice(1) === code)?.code ?? `D${code}`;
+}
 
 /** Cursos por instituição: o valor é uma letra e 8 dígitos, com espaço no fim (observado). */
 export const COURSES: Record<string, [string, string][]> = {
@@ -69,7 +82,7 @@ ${h.text('f_nome', query)} <input type="button" value="Buscar" onclick="recupera
 function recuperaInstMacro(){ dc.f_nome.value = dc.f_nome.value.replace(/%/g, ''); if (dc.f_nome.value.length < 2) { alert('Informe ao menos duas letras.'); return; } dc.submit(); }
 function seleciona(codigo, nome){ alert('Escolhida: ' + nome + ' (' + codigo + ')'); }</script>`;
   if (req.get('f_ctr') !== 'C' || query.length < 2) return html(h.page('Instituição', form));
-  const hits = INSTITUTIONS.filter((i) => fold(i.name).includes(fold(query)));
+  const hits = institutionsOf(state).filter((i) => fold(i.name).includes(fold(query)));
   const results = hits
     .map(
       (i) =>
@@ -88,7 +101,7 @@ function courses(req: SimRequest, state: LattesState): SimResponse {
   const inst = req.get('f_inst') ?? '';
   const options = COURSES[inst] ?? [];
   const body = `<form name="GN_CURSO_FORM" method="post" action="PRC_CURSO_FORM">
-${h.hidden('f_sta_area', 'S')}${h.hidden('f_cod_inst', inst)}${h.hidden('f_nme_inst', INSTITUTIONS.find((i) => i.code === inst)?.name ?? '')}${h.hidden('f_cod', state.code)}
+${h.hidden('f_sta_area', 'S')}${h.hidden('f_cod_inst', inst)}${h.hidden('f_nme_inst', institutionsOf(state).find((i) => i.code === inst)?.name ?? '')}${h.hidden('f_cod', state.code)}
 <p>${h.select('f_curso', options, '')}</p>
 </form>`;
   return html(h.page('Curso', body));

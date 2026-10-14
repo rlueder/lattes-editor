@@ -30,12 +30,21 @@ export const DEMO_XML = new URL('../../fixtures/demo.xml', import.meta.url);
  */
 export type ImportOutcome = 'descartar' | 'inserir' | 'participante';
 
+export interface Institution {
+  /** Uma letra e 12 dígitos, como a busca mostra. */
+  code: string;
+  name: string;
+  uf: string;
+}
+
 export interface SimuladoOptions {
   /** Código de 10 caracteres do currículo (f_cod das chamadas internas). */
   code?: string;
   /** Derruba a sessão depois deste número de pedidos (contando todos). */
   expireAfterRequests?: number;
   importOutcome?: ImportOutcome;
+  /** Instituições a mais na busca, além das do simulado (buscas.ts). */
+  institutions?: Institution[];
   /** O currículo de partida; o padrão é fixtures/demo.xml. */
   xml?: Uint8Array;
 }
@@ -61,6 +70,8 @@ export interface ImportRequest {
 
 /** Um pedido recebido, para o teste conferir o caminho percorrido. */
 export interface LoggedRequest {
+  /** O corpo de um POST urlencoded, como chegou (Latin-1 percentual). */
+  body?: string;
   ctr?: string;
   /** O arquivo de um POST multipart: o campo e o nome. */
   file?: { field: string; name: string };
@@ -93,6 +104,8 @@ export class LattesState {
   imported: { inserted: boolean; seq: string; title: string }[] = [];
   importOutcome: ImportOutcome;
   importRequest?: ImportRequest;
+  /** As instituições a mais que a busca encontra. */
+  institutions: Institution[];
   lastPublished = new Date(2026, 9, 6);
   lastUpdate = new Date(2026, 9, 6);
   log: LoggedRequest[] = [];
@@ -102,6 +115,8 @@ export class LattesState {
   nextProduction = 0;
   pending = false;
   photo: Uint8Array = PLACEHOLDER_JPEG;
+  /** Campos de formulário sem atributo no XML (f_classif do evento), por item. */
+  private formOnlyFields = new WeakMap<XElement, Record<string, string>>();
   /** Privacidade por item (f_tipo_privacidade), que o XML não traz. */
   privacy = new WeakMap<XElement, string>();
   published: XDocument;
@@ -112,6 +127,7 @@ export class LattesState {
     this.code = options.code ?? 'K4790210P3';
     this.expireAfterRequests = options.expireAfterRequests;
     this.importOutcome = options.importOutcome ?? 'participante';
+    this.institutions = options.institutions ?? [];
     this.working = doc;
     this.published = structuredClone(doc);
     walk(doc.root, (el) => {
@@ -171,6 +187,16 @@ export class LattesState {
       this.ids.set(el, id);
     }
     return id;
+  }
+
+  /** Os campos sem atributo no XML guardados ao lado do item. */
+  formOnly(el: XElement): Record<string, string> {
+    let fields = this.formOnlyFields.get(el);
+    if (!fields) {
+      fields = {};
+      this.formOnlyFields.set(el, fields);
+    }
+    return fields;
   }
 
   newImportId(): string {

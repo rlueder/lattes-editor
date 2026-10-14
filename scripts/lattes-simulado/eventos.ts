@@ -97,7 +97,16 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
     },
     on('detail', attr('f_nme_evento', 'NOME-DO-EVENTO', 'text', { maxLength: 400 })),
     on('basics', attr('f_ano', 'ANO', 'text', { maxLength: 4 })),
-    { kind: 'radio', name: 'f_classif', options: h.capturedList('L33'), read: () => '' },
+    {
+      // Sem atributo no XSD: o simulado guarda o valor ao lado do item (formOnly).
+      kind: 'radio',
+      name: 'f_classif',
+      options: h.capturedList('L33'),
+      read: (item) => state.formOnly(item).f_classif ?? '',
+      write: (item, value) => {
+        state.formOnly(item).f_classif = value;
+      },
+    },
     {
       kind: 'select',
       name: 'F_COD_PROD',
@@ -149,9 +158,20 @@ function withTypeOptions(list: Binding[], item: XElement | undefined): Binding[]
   });
 }
 
-function lista(state: LattesState): SimResponse {
+/**
+ * A lista inteira, ou só a de divulgação científica com
+ * f_sta_divulgacao_cientifica=S (as duas estão no menu, observado; que o
+ * filtro seja FLAG-DIVULGACAO-CIENTIFICA é inferido).
+ */
+function lista(req: SimRequest, state: LattesState): SimResponse {
   const base = `PKG_EVENTO.form?f_cod=${state.code}&amp;F_STA_DIVULGACAO_CIENTIFICA=`;
+  const filtered = req.get('f_sta_divulgacao_cientifica')?.toUpperCase() === 'S';
   const rows = eventItems(state)
+    .filter((item) => getAttr(item, 'SEQUENCIA-PRODUCAO'))
+    .filter(
+      (item) =>
+        !filtered || getAttr(partOf(item, 'basics'), 'FLAG-DIVULGACAO-CIENTIFICA') === 'SIM',
+    )
     .map((item) => {
       const name = getAttr(partOf(item, 'detail'), 'NOME-DO-EVENTO') ?? '';
       const year = getAttr(partOf(item, 'basics'), 'ANO') ?? '';
@@ -204,7 +224,7 @@ function post(req: SimRequest, state: LattesState): SimResponse {
   if (!item) return html(h.page('Evento', '<p>Registro não encontrado.</p>'));
   if (ctr === 'E') state.remove(container, item);
   else if (ctr === 'U') applyFields(bindings(state, {}), item, req);
-  else return lista(state);
+  else return lista(req, state);
   state.touch();
   return html(h.eventSavedScript());
 }
@@ -222,6 +242,6 @@ ${h.hidden('f_ctr', 'I')}${h.hidden('f_cod', state.code)}
 
 export const EVENTOS_ROUTES: Routes = {
   'pkg_evento.form': (req, state) => (req.method === 'POST' ? post(req, state) : form(req, state)),
-  'pkg_evento.lista': (_req, state) => lista(state),
+  'pkg_evento.lista': lista,
   prc_midias_sociais: midiasSociais,
 };
