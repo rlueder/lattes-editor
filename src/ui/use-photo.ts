@@ -4,16 +4,17 @@
 import { useEffect, useReducer } from 'react';
 
 import {
-  attemptUrl,
+  focusWakes,
   initialPhotoState,
   PHOTO_TIMEOUT_MS,
   photoReducer,
+  photoSrc,
   retryDelay,
 } from './photo-retry.ts';
 
 export interface PhotoLoad {
   loaded: boolean;
-  /** O endereço da tentativa atual; undefined sem foto ou depois da última falha. */
+  /** O endereço em uso; undefined sem foto. */
   src?: string;
   onError: () => void;
   onLoad: () => void;
@@ -34,7 +35,10 @@ export function usePhoto(base: string | undefined): PhotoLoad {
     if (!base) return;
     if (status === 'loading') {
       // Tentativa sem resposta também conta como falha.
-      const t = setTimeout(() => dispatch({ attempt, base, type: 'fail' }), PHOTO_TIMEOUT_MS);
+      const t = setTimeout(
+        () => dispatch({ attempt, base, reason: 'timeout', type: 'fail' }),
+        PHOTO_TIMEOUT_MS,
+      );
       return () => clearTimeout(t);
     }
     if (status === 'waiting') {
@@ -42,14 +46,18 @@ export function usePhoto(base: string | undefined): PhotoLoad {
       return () => clearTimeout(t);
     }
     if (status === 'gave-up') {
-      // Depois da última falha, a rede que volta ou a janela que volta ao foco
-      // abrem uma nova rodada.
+      // Depois da última falha, a rede que volta abre uma nova rodada; a janela
+      // que volta ao foco também, se já faz um tempo (FOCUS_WAKE_MIN_MS).
+      const gaveUpAt = Date.now();
       const again = () => dispatch({ base, type: 'wake' });
+      const onFocus = () => {
+        if (focusWakes(gaveUpAt, Date.now())) again();
+      };
       window.addEventListener('online', again);
-      window.addEventListener('focus', again);
+      window.addEventListener('focus', onFocus);
       return () => {
         window.removeEventListener('online', again);
-        window.removeEventListener('focus', again);
+        window.removeEventListener('focus', onFocus);
       };
     }
     return undefined;
@@ -57,8 +65,8 @@ export function usePhoto(base: string | undefined): PhotoLoad {
 
   return {
     loaded: status === 'loaded',
-    onError: () => dispatch({ attempt, base, type: 'fail' }),
+    onError: () => dispatch({ attempt, base, reason: 'error', type: 'fail' }),
     onLoad: () => dispatch({ attempt, base, type: 'load' }),
-    src: base && status !== 'gave-up' ? attemptUrl(base, attempt) : undefined,
+    src: photoSrc(state),
   };
 }

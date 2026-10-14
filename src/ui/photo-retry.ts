@@ -7,8 +7,24 @@
 /** Espera antes de cada nova tentativa; depois da última, só ao voltar a rede ou a janela. */
 const RETRY_DELAYS_MS = [3_000, 15_000, 60_000];
 
-/** Sem resposta em tanto tempo, a tentativa conta como falha. */
+/**
+ * Sem resposta em tanto tempo, a tentativa conta como falha. O pedido em curso
+ * não é cancelado: a tentativa seguinte mantém o endereço até vir um erro, para
+ * um download lento ainda poder terminar.
+ */
 export const PHOTO_TIMEOUT_MS = 20_000;
+
+/**
+ * Depois de desistir, voltar ao foco só abre outra rodada passado este tempo.
+ * Uma foto que nunca vai chegar (currículo sem foto) não pede ao CNPq de novo a
+ * cada troca de janela. A rede que volta abre a rodada na hora.
+ */
+export const FOCUS_WAKE_MIN_MS = 5 * 60_000;
+
+/** Se a janela que volta ao foco abre outra rodada, desistida em `gaveUpAt`. */
+export function focusWakes(gaveUpAt: number, now: number): boolean {
+  return now - gaveUpAt >= FOCUS_WAKE_MIN_MS;
+}
 
 /** Quanto esperar antes da tentativa seguinte a `failures` falhas; undefined: parar. */
 export function retryDelay(failures: number): number | undefined {
@@ -31,7 +47,8 @@ export function attemptUrl(src: string, attempt: number): string {
 /**
  * `loading`: esperando a resposta da tentativa. `waiting`: a tentativa falhou
  * e a próxima está marcada. `gave-up`: falharam todas; só tenta de novo quando
- * a rede ou a janela voltam.
+ * a rede ou a janela voltam. Um pedido que só demorou continua valendo em
+ * qualquer um deles.
  */
 export type PhotoStatus = 'gave-up' | 'loaded' | 'loading' | 'waiting';
 
@@ -39,16 +56,26 @@ export interface PhotoState {
   attempt: number;
   base?: string;
   failures: number;
+  /** Como falhou a última tentativa: com erro, ou sem resposta a tempo. */
+  lastFailure?: 'error' | 'timeout';
+  /** A tentativa cujo endereço está em uso (photoSrc). */
+  request: number;
   status: PhotoStatus;
 }
 
 export type PhotoEvent =
-  | { attempt: number; base?: string; type: 'fail' | 'load' | 'retry' }
+  | { attempt: number; base?: string; type: 'fail'; reason: 'error' | 'timeout' }
+  | { attempt: number; base?: string; type: 'load' | 'retry' }
   | { base?: string; type: 'reset' }
   | { base?: string; type: 'wake' };
 
 export function initialPhotoState(base: string | undefined): PhotoState {
-  return { attempt: 0, base, failures: 0, status: 'loading' };
+  return { attempt: 0, base, failures: 0, request: 0, status: 'loading' };
+}
+
+/** O endereço que o avatar carrega; undefined sem foto. */
+export function photoSrc(state: PhotoState): string | undefined {
+  return state.base === undefined ? undefined : attemptUrl(state.base, state.request);
 }
 
 export function photoReducer(state: PhotoState, event: PhotoEvent): PhotoState {
@@ -57,7 +84,14 @@ export function photoReducer(state: PhotoState, event: PhotoEvent): PhotoState {
   if (event.base !== state.base) return state;
   if (event.type === 'wake') {
     return state.status === 'gave-up'
-      ? { ...state, attempt: state.attempt + 1, failures: 0, status: 'loading' }
+      ? {
+          ...state,
+          attempt: state.attempt + 1,
+          failures: 0,
+          lastFailure: undefined,
+          request: state.attempt + 1,
+          status: 'loading',
+        }
       : state;
   }
   if (event.attempt !== state.attempt) return state;
@@ -68,17 +102,20 @@ export function photoReducer(state: PhotoState, event: PhotoEvent): PhotoState {
       return {
         ...state,
         failures,
+        lastFailure: event.reason,
         status: retryDelay(failures) === undefined ? 'gave-up' : 'waiting',
       };
     }
     case 'load':
-      // Uma resposta atrasada que chega durante a espera também vale.
-      return state.status === 'loading' || state.status === 'waiting'
-        ? { ...state, status: 'loaded' }
-        : state;
-    case 'retry':
-      return state.status === 'waiting'
-        ? { ...state, attempt: state.attempt + 1, status: 'loading' }
-        : state;
+      // Uma resposta atrasada, que chega na espera ou depois de desistir, vale.
+      return state.status === 'loaded' ? state : { ...state, status: 'loaded' };
+    case 'retry': {
+      if (state.status !== 'waiting') return state;
+      const attempt = state.attempt + 1;
+      // Depois de um erro, endereço novo; depois de só demorar, o mesmo pedido
+      // segue em curso (trocar o endereço o cancelaria e recomeçaria do zero).
+      const request = state.lastFailure === 'error' ? attempt : state.request;
+      return { ...state, attempt, request, status: 'loading' };
+    }
   }
 }
