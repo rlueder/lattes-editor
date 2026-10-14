@@ -76,6 +76,8 @@ let autoPending = false;
 let manualQueued = false;
 /** Uma troca de foto em andamento: nem a fila nem outra troca começam junto. */
 let photoInFlight = false;
+/** A fila passou da trava e vai gravar: marcado antes de qualquer await, para o Importar ver. */
+let queueActive = false;
 let appPort: chrome.runtime.Port | undefined;
 
 /**
@@ -206,12 +208,11 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
   }
   if (msg.type === 'importar') {
     // Desligado (IMPORT_ENABLED), o pedido volta recusado sem tocar no Lattes.
-    return runImport(
-      msg,
-      { photo: photoInFlight, queue: (await readState()).running },
-      (r) => toEditor(editor, { ...r, id: msg.id, type: 'importacao' }),
-      () => sendSession(editor, true),
-    );
+    // Sem await entre ler a trava e runImport marcar o Importar em andamento;
+    // a fila marca queueActive do mesmo jeito.
+    const busy = { photo: photoInFlight, queue: queueActive, verifying: verifyInFlight };
+    if (await runImport(msg, busy, (m) => toEditor(editor, m))) await sendSession(editor, true);
+    return;
   }
   const state = await readState();
   if (state.running) return;
@@ -263,7 +264,7 @@ async function verifyOnce(auto: boolean): Promise<void> {
   // Sem o "ok" do aviso, nada é lido do Lattes; o painel mostra o aviso no lugar do botão.
   if (!(await hasConsent())) return;
   const state = await readState();
-  if (state.running || state.verificando) return;
+  if (state.running || state.verificando || importRunning()) return;
   if (auto) {
     if (!shouldAutoVerify(state.verificacao, Date.now())) return;
     if ((await lattesTab()) === undefined) return;
@@ -294,6 +295,7 @@ async function run(keys?: string[]): Promise<void> {
   if (!(await hasConsent())) return;
   const state = await readState();
   if (state.running || state.verificando || photoInFlight || importRunning()) return;
+  queueActive = true;
   const queue = state.ops.filter(
     (op) => state.results[op.key]?.status !== 'conferido' && (!keys || keys.includes(op.key)),
   );
@@ -388,6 +390,7 @@ async function run(keys?: string[]): Promise<void> {
     }
   }
   await writeState({ ...(await readState()), results, running: false });
+  queueActive = false;
   const left = state.ops.filter((op) => results[op.key]?.status !== 'conferido').length;
   await chrome.action.setBadgeText({ text: left ? String(left) : '' });
   await toEditor(state.editor, { type: 'fim' });

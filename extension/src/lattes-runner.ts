@@ -216,8 +216,13 @@ interface ExportReply {
     if (!sameCv(expected, lattesIdFrom(menu))) {
       return { detail: 'A sessão aberta no Lattes é de outro currículo.', reason: 'outro-cv' };
     }
+    let req: ImportArgs;
     try {
-      const req = JSON.parse(args) as ImportArgs;
+      req = JSON.parse(args) as ImportArgs;
+    } catch {
+      return { detail: 'O pedido do Importar chegou ilegível à aba do Lattes.', reason: 'erro' };
+    }
+    try {
       return await importItems(importPort, cvCodeFrom(menu), {
         file: fromBase64(req.file),
         fileName: req.fileName,
@@ -225,7 +230,9 @@ interface ExportReply {
         oldestYear: req.oldestYear,
       });
     } catch {
-      return { detail: 'A aba do Lattes não respondeu.', reason: 'erro' };
+      // importItems trata sozinho as falhas depois do envio do arquivo (a
+      // solicitação pendente); o que chega aqui é de antes dele.
+      return { detail: 'A aba do Lattes não respondeu; nada foi enviado.', reason: 'erro' };
     }
   },
   // Só leituras: o menu e um exemplar de cada formulário, comparados ao contrato.

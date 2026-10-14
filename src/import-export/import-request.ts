@@ -3,7 +3,12 @@
 // mais antigo. Nada sai com IMPORT_ENABLED desligado.
 
 import { toBase64 } from '../bridge/export.ts';
-import { IMPORT_ENABLED, STEP2_MODULE_VALUES } from '../bridge/importar.ts';
+import {
+  IMPORT_ENABLED,
+  type ImportResult,
+  importStopMessage,
+  STEP2_MODULE_VALUES,
+} from '../bridge/importar.ts';
 import type { Link } from '../bridge/link.ts';
 import type { EditorMessage } from '../bridge/protocol.ts';
 import type { XDocument } from '../model/xml.ts';
@@ -46,4 +51,40 @@ export function importMessage(
  */
 export function canImportByConnector(link: Link, enabled = IMPORT_ENABLED): boolean {
   return enabled && link.state.kind === 'lido' && Boolean(link.features?.includes('importar'));
+}
+
+/** Quanto esperar a resposta da extensão antes de liberar o botão de novo. */
+export const IMPORT_REPLY_TIMEOUT_MS = 120_000;
+
+/** Um clique no botão: o id do pedido, ou undefined quando nada foi pedido. */
+export interface ImportAttempt {
+  at: number;
+  id?: string;
+}
+
+export type ImportStatus =
+  | { busy: false; text?: string }
+  /** Esperando a extensão: o botão fica desabilitado. */
+  | { busy: true; text: string };
+
+/**
+ * O que o botão do Importar mostra depois de um clique: nada pedido, a
+ * espera, a resposta da extensão ou, passado o prazo sem resposta, o botão
+ * de volta com o aviso.
+ */
+export function importStatus(
+  attempt: ImportAttempt | undefined,
+  result: (Pick<ImportResult, 'detail' | 'reason'> & { id: string }) | undefined,
+  now: number,
+): ImportStatus {
+  if (!attempt) return { busy: false };
+  if (!attempt.id) return { busy: false, text: 'Não há item novo pronto para importar.' };
+  if (result?.id === attempt.id) return { busy: false, text: importStopMessage(result) };
+  if (now - attempt.at < IMPORT_REPLY_TIMEOUT_MS) {
+    return { busy: true, text: 'Enviando ao Importar do Lattes…' };
+  }
+  return {
+    busy: false,
+    text: 'A extensão não respondeu. Confira o Importar no Lattes: se o arquivo chegou, a solicitação ficou pendente por lá.',
+  };
 }

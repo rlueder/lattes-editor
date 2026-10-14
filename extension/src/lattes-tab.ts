@@ -84,10 +84,22 @@ export async function sendImport(
   req: { file: string; fileName: string; modules: number[]; oldestYear?: number },
   lattesId?: string,
 ): Promise<ImportResult> {
+  // Gravar no currículo errado é pior que ler: sem saber de qual currículo é
+  // o editor, nada vai (o sameCv do núcleo também recusaria um id vazio).
+  if (!lattesId) {
+    return {
+      detail: 'O editor não sabe de qual currículo é o arquivo; nada foi enviado.',
+      reason: 'outro-cv',
+    };
+  }
   if (!(await hasConsent())) return { reason: 'consentimento' };
   const tabId = await lattesTab();
   if (tabId === undefined) return { reason: 'sem-aba' };
-  const failed: ImportResult = { detail: 'A aba do Lattes não respondeu.', reason: 'erro' };
+  const failed: ImportResult = {
+    detail:
+      'A aba do Lattes não respondeu. Se o arquivo chegou a ser enviado, a solicitação ficou pendente no Importar; confirme ou descarte por lá.',
+    reason: 'erro',
+  };
   try {
     const args = JSON.stringify({
       file: req.file,
@@ -95,7 +107,7 @@ export async function sendImport(
       modules: req.modules,
       oldestYear: req.oldestYear,
     });
-    return (await runInTab<ImportResult>(tabId, 'importar', args, lattesId ?? '')) ?? failed;
+    return (await runInTab<ImportResult>(tabId, 'importar', args, lattesId)) ?? failed;
   } catch {
     return failed;
   }

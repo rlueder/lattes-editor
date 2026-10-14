@@ -315,6 +315,29 @@ export async function importItems(
     };
   }
 
+  // Daqui em diante o Lattes pode já ter criado a solicitação: uma falha de
+  // rede ou de leitura não pode sumir sem avisar que algo ficou pendente.
+  const known: { request?: string } = {};
+  try {
+    return await uploadAndSelect(port, code, req, known);
+  } catch {
+    return {
+      detail: known.request
+        ? `O Lattes parou de responder no meio do Importar. ${pendingNote(known.request)}`
+        : 'O Lattes parou de responder depois do envio do arquivo. Se ele criou uma solicitação, ela ficou pendente no Importar; confirme ou descarte por lá.',
+      reason: 'erro',
+      request: known.request,
+    };
+  }
+}
+
+/** Passo 1 (envio) e passo 2; known.request recebe o f_solic assim que ele aparece. */
+async function uploadAndSelect(
+  port: ImportPort,
+  code: string,
+  req: ImportRequest,
+  known: { request?: string },
+): Promise<ImportResult> {
   const step2 = await port.postMultipart(
     'pkg_importa_xml.inicio',
     [
@@ -333,6 +356,7 @@ export async function importItems(
       reason: 'mudou',
     };
   }
+  known.request = form.request;
   if (form.code !== code) {
     return {
       detail: `O passo 2 é de outro currículo. ${pendingNote(form.request)}`,
@@ -390,16 +414,17 @@ export function importStopMessage(result: Pick<ImportResult, 'detail' | 'reason'
 }
 
 /**
- * O Importar não começa com a fila de alterações rodando, com uma troca de
- * foto ou com outra importação em andamento: todos usam a mesma sessão e a
- * mesma aba.
+ * O Importar não começa com a fila de alterações rodando, com a conferência
+ * do contrato, com uma troca de foto ou com outra importação em andamento:
+ * todos usam a mesma sessão e a mesma aba.
  */
-export function importBusy(
-  queueRunning: boolean,
-  photoInFlight: boolean,
-  importInFlight: boolean,
-): ImportResult | undefined {
-  if (queueRunning || photoInFlight || importInFlight) {
+export function importBusy(busy: {
+  importing: boolean;
+  photo: boolean;
+  queue: boolean;
+  verifying: boolean;
+}): ImportResult | undefined {
+  if (busy.queue || busy.photo || busy.importing || busy.verifying) {
     return {
       detail: 'A extensão já está enviando algo ao Lattes. Espere terminar e tente de novo.',
       reason: 'erro',

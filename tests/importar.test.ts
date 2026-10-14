@@ -24,7 +24,12 @@ import {
   STEP2_MODULE_VALUES,
 } from '../src/bridge/importar.ts';
 import { buildMinimalImportFile, itemYear } from '../src/import-export/import-file.ts';
-import { canImportByConnector, importMessage } from '../src/import-export/import-request.ts';
+import {
+  canImportByConnector,
+  IMPORT_REPLY_TIMEOUT_MS,
+  importMessage,
+  importStatus,
+} from '../src/import-export/import-request.ts';
 import { IMPORT_MODULES } from '../src/import-export/importable.ts';
 import { loadCv, maxSequenciaProducao } from '../src/model/document.ts';
 import { decodeLatin1 } from '../src/model/latin1.ts';
@@ -482,6 +487,59 @@ describe('Importar pelo conector contra um Lattes falso', () => {
   });
 });
 
+describe('falhas de rede no meio do Importar', () => {
+  it('antes do envio, a falha sobe (nada foi enviado)', async () => {
+    const { port } = fakeLattes();
+    port.get = async () => Promise.reject(new Error('rede'));
+    await expect(importItems(port, CODE, REQ, true)).rejects.toThrow('rede');
+  });
+
+  it('no envio do arquivo: avisa que pode ter ficado solicitação pendente', async () => {
+    const { port } = fakeLattes();
+    port.postMultipart = async () => Promise.reject(new Error('rede'));
+    const r = await importItems(port, CODE, REQ, true);
+    expect(r).toMatchObject({ reason: 'erro', request: undefined });
+    expect(r.detail).toContain('pendente');
+  });
+
+  it('depois do passo 2 lido: devolve o número da solicitação pendente', async () => {
+    const { calls, port } = fakeLattes();
+    port.post = async (path, body) => {
+      calls.push({ body, method: 'POST', path });
+      return Promise.reject(new Error('rede'));
+    };
+    const r = await importItems(port, CODE, REQ, true);
+    expect(r).toMatchObject({ reason: 'erro', request: '987654' });
+    expect(r.detail).toContain('A solicitação 987654 ficou pendente');
+    expect(calls).toHaveLength(3);
+  });
+});
+
+describe('o botão do Importar (importStatus)', () => {
+  it('nada clicado, nada pedido, esperando, resposta e prazo vencido', () => {
+    expect(importStatus(undefined, undefined, 0)).toEqual({ busy: false });
+    expect(importStatus({ at: 0 }, undefined, 0)).toMatchObject({
+      busy: false,
+      text: expect.stringMatching(/Não há item novo/),
+    });
+    const sent = { at: 1000, id: 'p1' };
+    expect(importStatus(sent, undefined, 2000).busy).toBe(true);
+    // Resposta de um pedido anterior não vale por este.
+    expect(importStatus(sent, { id: 'p0', reason: 'erro' }, 2000).busy).toBe(true);
+    expect(
+      importStatus(
+        sent,
+        { detail: 'Passo 3 ainda não mapeado', id: 'p1', reason: 'passo-3' },
+        2000,
+      ),
+    ).toEqual({ busy: false, text: 'Passo 3 ainda não mapeado' });
+    expect(importStatus(sent, undefined, 1000 + IMPORT_REPLY_TIMEOUT_MS)).toMatchObject({
+      busy: false,
+      text: expect.stringMatching(/não respondeu/),
+    });
+  });
+});
+
 describe('leituras das telas do Importar', () => {
   it('passo 1 e passo 2 lidos sem DOM', () => {
     expect(step1ScreenState(STEP1)).toBe('ok');
@@ -524,10 +582,11 @@ describe('leituras das telas do Importar', () => {
   });
 
   it('um envio por vez na aba do Lattes', () => {
-    expect(importBusy(false, false, false)).toBeUndefined();
-    expect(importBusy(true, false, false)?.reason).toBe('erro');
-    expect(importBusy(false, true, false)?.reason).toBe('erro');
-    expect(importBusy(false, false, true)?.reason).toBe('erro');
+    const idle = { importing: false, photo: false, queue: false, verifying: false };
+    expect(importBusy(idle)).toBeUndefined();
+    for (const key of Object.keys(idle)) {
+      expect(importBusy({ ...idle, [key]: true })?.reason).toBe('erro');
+    }
   });
 });
 
@@ -556,25 +615,65 @@ describe('Importar no service worker (extensão)', () => {
     return executeScript;
   }
 
-  const CALL = { file: 'PA==', fileName: 'a.xml', lattesId: '1', modules: [16], oldestYear: 2024 };
+  const CALL = {
+    file: 'PA==',
+    fileName: 'a.xml',
+    id: 'p1',
+    lattesId: '1',
+    modules: [16],
+    oldestYear: 2024,
+  };
+  const IDLE = { photo: false, queue: false, verifying: false };
+
+  it('dois pedidos juntos: o segundo é recusado enquanto o primeiro roda', async () => {
+    let release: () => void = () => undefined;
+    const executeScript = vi.fn(async (opts: { args?: unknown[] }) => {
+      if (!opts.args) return [];
+      await new Promise<void>((resolve) => (release = resolve));
+      return [{ result: { reason: 'passo-3' } }];
+    });
+    vi.stubGlobal('chrome', {
+      scripting: { executeScript },
+      storage: { local: { get: async () => ({ [CONSENT_KEY]: consentRecord() }) } },
+      tabs: { query: async () => [{ id: 3 }] },
+    });
+    const replies: string[] = [];
+    const reply = async (r: { reason: string }) => void replies.push(r.reason);
+    const first = runImport(CALL, IDLE, reply, true);
+    await vi.waitFor(() => expect(importRunning()).toBe(true));
+    expect(await runImport(CALL, IDLE, reply, true)).toBe(false);
+    expect(replies).toEqual(['erro']);
+    await vi.waitFor(() => expect(executeScript.mock.calls.some(([o]) => o.args)).toBe(true));
+    release();
+    expect(await first).toBe(true);
+    expect(replies).toEqual(['erro', 'passo-3']);
+    expect(importRunning()).toBe(false);
+  });
+
+  it('sem o currículo do editor, nada vai à aba', async () => {
+    const exec = stubChrome();
+    expect(await sendImport(CALL)).toMatchObject({ reason: 'outro-cv' });
+    expect(exec).not.toHaveBeenCalled();
+  });
 
   it('desligado: responde "desligado" sem tocar na aba', async () => {
     const exec = stubChrome();
     const reply = vi.fn(async () => undefined);
-    const after = vi.fn(async () => undefined);
-    await runImport(CALL, { photo: false, queue: false }, reply, after);
+    expect(await runImport(CALL, IDLE, reply)).toBe(false);
     expect(reply).toHaveBeenCalledWith(expect.objectContaining({ reason: 'desligado' }));
-    expect(after).not.toHaveBeenCalled();
     expect(exec).not.toHaveBeenCalled();
   });
 
   it('ligado: roda na aba, devolve o resultado e relê o menu; ocupado, recusa', async () => {
     const exec = stubChrome({ result: { reason: 'passo-3', request: '9' } });
     const reply = vi.fn(async () => undefined);
-    const after = vi.fn(async () => undefined);
-    await runImport(CALL, { photo: false, queue: false }, reply, after, true);
-    expect(reply).toHaveBeenCalledWith({ reason: 'passo-3', request: '9' });
-    expect(after).toHaveBeenCalledOnce();
+    expect(await runImport(CALL, IDLE, reply, true)).toBe(true);
+    expect(reply).toHaveBeenCalledWith({
+      id: 'p1',
+      reason: 'passo-3',
+      request: '9',
+      type: 'importacao',
+    });
     expect(importRunning()).toBe(false);
     const call = exec.mock.calls.find(([o]) => o.args)![0] as { args: [string, string[]] };
     expect(call.args[0]).toBe('importar');
@@ -586,22 +685,26 @@ describe('Importar no service worker (extensão)', () => {
     });
     expect(call.args[1][1]).toBe('1');
 
-    await runImport(CALL, { photo: true, queue: false }, reply, after, true);
-    expect(reply).toHaveBeenLastCalledWith(expect.objectContaining({ reason: 'erro' }));
+    for (const busy of [{ photo: true }, { queue: true }, { verifying: true }]) {
+      expect(await runImport(CALL, { ...IDLE, ...busy }, reply, true)).toBe(false);
+      expect(reply).toHaveBeenLastCalledWith(expect.objectContaining({ reason: 'erro' }));
+    }
   });
 
   it('sem consentimento, sem aba ou aba que não responde', async () => {
     stubChrome({ consent: false });
-    expect((await sendImport(CALL)).reason).toBe('consentimento');
+    expect((await sendImport(CALL, '1')).reason).toBe('consentimento');
     stubChrome({ tabs: [] });
-    expect((await sendImport(CALL)).reason).toBe('sem-aba');
+    expect((await sendImport(CALL, '1')).reason).toBe('sem-aba');
     stubChrome({ result: undefined });
-    expect(await sendImport(CALL)).toMatchObject({ reason: 'erro' });
+    expect(await sendImport(CALL, '1')).toMatchObject({ reason: 'erro' });
     vi.stubGlobal('chrome', {
       scripting: { executeScript: async () => Promise.reject(new Error('fechou')) },
       storage: { local: { get: async () => ({ [CONSENT_KEY]: consentRecord() }) } },
       tabs: { query: async () => [{ id: 3 }] },
     });
-    expect(await sendImport(CALL)).toMatchObject({ reason: 'erro' });
+    const failed = await sendImport(CALL, '1');
+    expect(failed).toMatchObject({ reason: 'erro' });
+    expect(failed.detail).toContain('pendente');
   });
 });

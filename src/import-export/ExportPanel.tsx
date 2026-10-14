@@ -10,7 +10,6 @@
 import { Tabs } from '@base-ui/react/tabs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { importStopMessage } from '../bridge/importar.ts';
 import { failed } from '../bridge/sent-log.ts';
 import { elementLabel } from '../labels/labels.ts';
 import type { Problem } from '../model/validate.ts';
@@ -21,7 +20,12 @@ import { Modal } from '../ui/Modal.tsx';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { BridgeBlock } from './BridgeBlock.tsx';
 import type { ImportFile } from './import-file.ts';
-import { canImportByConnector } from './import-request.ts';
+import {
+  canImportByConnector,
+  IMPORT_REPLY_TIMEOUT_MS,
+  type ImportAttempt,
+  importStatus,
+} from './import-request.ts';
 import { RouteTag } from './RouteTag.tsx';
 import {
   initialTab,
@@ -258,23 +262,36 @@ export function ExportPanel({
  * passos 1 e 2 com um arquivo só com os itens novos e para antes do passo 3.
  */
 function ConnectorImport({ bridge }: { bridge: BridgeState }) {
-  const [pendingId, setPendingId] = useState<string | undefined>();
-  const result = bridge.importResult;
-  const waiting = pendingId !== undefined && result?.id !== pendingId;
+  const [attempt, setAttempt] = useState<ImportAttempt | undefined>();
+  const [now, setNow] = useState(() => Date.now());
+  const status = importStatus(attempt, bridge.importResult, now);
+  // Sem resposta, o prazo libera o botão de novo. Se a extensão desligar ou a
+  // leitura do Lattes cair, o componente some e o estado vai junto.
+  useEffect(() => {
+    if (!status.busy || !attempt) return;
+    const timer = setTimeout(
+      () => setNow(Date.now()),
+      attempt.at + IMPORT_REPLY_TIMEOUT_MS - Date.now(),
+    );
+    return () => clearTimeout(timer);
+  }, [status.busy, attempt]);
   return (
     <div className="connector-import">
       <button
         className="ghost"
-        disabled={waiting}
+        disabled={status.busy}
         type="button"
-        onClick={() => setPendingId(bridge.sendImport())}
+        onClick={() => {
+          const at = Date.now();
+          setNow(at);
+          setAttempt({ at, id: bridge.sendImport() });
+        }}
       >
         Importar pelo conector
       </button>
-      {waiting && <p className="muted">Enviando ao Importar do Lattes…</p>}
-      {!waiting && result && result.id === pendingId && (
+      {status.text && (
         <p className="muted" role="status">
-          {importStopMessage(result)}
+          {status.text}
         </p>
       )}
     </div>
