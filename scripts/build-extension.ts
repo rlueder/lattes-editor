@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 import { build } from 'vite';
 
+import { hostPermissions } from '../extension/src/lattes-hosts.ts';
 import { DEFAULT_TOOLBAR_THEME, toolbarIconPaths } from '../extension/src/toolbar-icon.ts';
 
 // fileURLToPath, não .pathname: no Windows, o pathname vem como /D:/a/... e
@@ -87,7 +88,8 @@ const manifest = {
   content_scripts: [{ js: ['content.js'], matches: EDITOR_MATCHES, run_at: 'document_start' }],
   description:
     'Envia ao Lattes as alterações feitas no Editor do Currículo Lattes, a partir da sua própria sessão.',
-  host_permissions: ['https://wwws.cnpq.br/*'],
+  // No canal Dev, também o Lattes simulado em localhost (pnpm dev:lattes).
+  host_permissions: hostPermissions(devChannel),
   icons: ICONS,
   // Chave pública fixa: o ID da extensão fica o mesmo em qualquer pasta
   // (elkaiefkldcngjdgelfjhjbljefbemac), e é esse ID que o app autoriza no

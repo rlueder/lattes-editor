@@ -239,8 +239,10 @@ export function readStep2(html: string): Step2Form | { problem: string } {
   if (!code || !request || !controls.some((c) => c.name === 'f_ctr')) {
     return { problem: 'O passo 2 não tem f_cod, f_solic ou f_ctr.' };
   }
+  // O f_chkp oculto com "dummy", que o passo 3 tem (seção 13) e que o mapa
+  // do teste de 14/10/2026 também cita no passo 2, não é caixa de módulo.
   const boxes = controls
-    .filter((c) => c.name === 'f_chkp')
+    .filter((c) => c.name === 'f_chkp' && !(c.type === 'hidden' && c.value === 'dummy'))
     .map((c) => (c.type === 'checkbox' ? Number(c.value) : NaN))
     .sort((a, b) => a - b);
   const expected = Array.from({ length: MODULE_COUNT }, (_, i) => i + 1);

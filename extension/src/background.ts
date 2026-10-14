@@ -30,6 +30,7 @@ import {
 import { CONSENT_KEY, hasConsent, isConsentCurrent } from './consent.ts';
 import { ownVersion, reloadForApp } from './dev-reload.ts';
 import { importRunning, runImport } from './import-run.ts';
+import { isLattesMenu, isRealLattesMenu } from './lattes-hosts.ts';
 import {
   answerListRequest,
   failedReport,
@@ -42,14 +43,7 @@ import {
   sessionIdentity,
   verifyOn,
 } from './lattes-tab.ts';
-import {
-  APP_KEY,
-  type EditorEndpoint,
-  LATTES_MENU,
-  type PanelCommand,
-  readState,
-  writeState,
-} from './state.ts';
+import { APP_KEY, type EditorEndpoint, type PanelCommand, readState, writeState } from './state.ts';
 import { isToolbarThemeMessage } from './toolbar-icon.ts';
 import { restoreToolbarTheme, setToolbarTheme } from './toolbar-theme.ts';
 
@@ -443,7 +437,8 @@ chrome.storage.onChanged.addListener((changes, area) => {
 // A verificação de fundo também roda aqui.
 chrome.tabs.onUpdated.addListener((_tabId, info, tab) => {
   if (info.status !== 'complete') return;
-  if (!tab.url?.startsWith(LATTES_MENU.replace(/\*$/, ''))) return;
+  const menu = __CANAL_DEV__ ? isLattesMenu(tab.url, true) : isRealLattesMenu(tab.url);
+  if (!menu) return;
   void verify(true);
   if (appPort) void sendSession('app');
 });

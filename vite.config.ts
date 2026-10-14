@@ -68,7 +68,12 @@ export default defineConfig({
   },
   // Versão mostrada no menu de configurações e anunciada à extensão. O canal
   // Dev (.github/workflows/dev.yml) troca pela dele em LATTES_VERSAO.
-  define: { __APP_VERSION__: JSON.stringify(process.env.LATTES_VERSAO || pkg.version) },
+  // __CANAL_DEV__ é da extensão (scripts/build-extension.ts); aqui vale para os
+  // testes do código dela, como na extensão publicada.
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.LATTES_VERSAO || pkg.version),
+    __CANAL_DEV__: 'false',
+  },
   plugins: [react(), inlineBundle()],
   test: {
     coverage: {
