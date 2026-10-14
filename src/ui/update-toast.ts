@@ -1,6 +1,6 @@
 // O texto do aviso de atualização para cada estado (src/desktop/update.ts).
 
-import type { UpdateState } from '../desktop/update.ts';
+import type { CheckOutcome, UpdateState } from '../desktop/update.ts';
 
 export interface UpdateToastText {
   /** O botão: "atualizar" instala; "baixar" abre a página de lançamentos. */
@@ -48,4 +48,26 @@ export function updateToastText(s: UpdateState): UpdateToastText | undefined {
     case 'nenhuma':
       return undefined;
   }
+}
+
+/**
+ * O aviso da conferência pedida no menu (⚙). Com versão nova (ou uma já
+ * baixando), é o aviso de sempre (updateToastText) e este fica undefined; sem
+ * ela, confirma a versão em uso ou diz que a conferência falhou.
+ */
+export function manualCheckText(
+  outcome: CheckOutcome,
+  appVersion: string,
+): UpdateToastText | undefined {
+  if (outcome.state.status !== 'nenhuma') return undefined;
+  if (outcome.failed) {
+    return {
+      description: 'O app tenta de novo sozinho daqui a pouco.',
+      title: 'Não deu para verificar agora',
+    };
+  }
+  return {
+    description: `Você está na versão mais recente (${appVersion}).`,
+    title: 'Nenhuma versão nova',
+  };
 }

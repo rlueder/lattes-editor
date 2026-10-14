@@ -111,20 +111,24 @@ function installing(): boolean {
   return state.status === 'baixando' || state.status === 'reiniciar';
 }
 
-/**
- * Confere se há versão nova. Falha de rede ou de leitura passa em silêncio: a
- * próxima conferência tenta de novo, cada vez mais espaçada (retryDelay). Uma
- * atualização já em download não é substituída. `clock` é o relógio, trocado
- * nos testes.
- */
-export async function checkForUpdate(clock: () => number = Date.now): Promise<UpdateState> {
-  if (!deps || installing()) return state;
+/** O resultado de uma conferência: o estado depois dela e se o pedido falhou. */
+export interface CheckOutcome {
+  failed: boolean;
+  state: UpdateState;
+}
+
+let inFlight: Promise<CheckOutcome> | undefined;
+let manualCheck = false;
+const checkingListeners = new Set<() => void>();
+
+async function runCheck(clock: () => number): Promise<CheckOutcome> {
+  if (!deps || installing()) return { failed: false, state };
   nextCheckAt = clock() + CHECK_EVERY_MS;
   try {
     const update = await deps.check();
     failures = 0;
     // Um download começou enquanto a conferência esperava: ela não mexe nele.
-    if (!update || installing()) return state;
+    if (!update || installing()) return { failed: false, state };
     pending = update;
     setState({ status: 'disponivel', version: update.version });
   } catch (err) {
@@ -133,8 +137,70 @@ export async function checkForUpdate(clock: () => number = Date.now): Promise<Up
     // tempo esgotar não deixa a nova tentativa já vencida.
     nextCheckAt = clock() + retryDelay(failures);
     console.warn('Conferência de atualização falhou:', err);
+    return { failed: true, state };
   }
-  return state;
+  return { failed: false, state };
+}
+
+/** Uma conferência por vez: quem pede durante outra recebe o resultado dela. */
+function sharedCheck(clock: () => number): Promise<CheckOutcome> {
+  inFlight ??= runCheck(clock).finally(() => {
+    inFlight = undefined;
+  });
+  return inFlight;
+}
+
+/**
+ * Confere se há versão nova. Falha de rede ou de leitura passa em silêncio: a
+ * próxima conferência tenta de novo, cada vez mais espaçada (retryDelay). Uma
+ * atualização já em download não é substituída. `clock` é o relógio, trocado
+ * nos testes.
+ */
+export async function checkForUpdate(clock: () => number = Date.now): Promise<UpdateState> {
+  return (await sharedCheck(clock)).state;
+}
+
+function setManualCheck(running: boolean): void {
+  manualCheck = running;
+  for (const listener of checkingListeners) listener();
+}
+
+/** Se a conferência pedida no menu (⚙) ainda está em andamento. */
+export function manualCheckRunning(): boolean {
+  return manualCheck;
+}
+
+export function subscribeManualCheck(listener: () => void): () => void {
+  checkingListeners.add(listener);
+  return () => checkingListeners.delete(listener);
+}
+
+/**
+ * A conferência pedida pela pessoa ("Verificar atualizações", no menu ⚙). É a
+ * mesma das conferências automáticas, que remarca a próxima para daqui a
+ * CHECK_EVERY_MS. Diferente delas, a falha volta para quem pediu, que avisa.
+ * Um segundo clique durante a conferência não faz nada (undefined).
+ */
+export async function checkUpdateNow(
+  clock: () => number = Date.now,
+): Promise<CheckOutcome | undefined> {
+  if (manualCheck) return undefined;
+  if (!deps) return { failed: true, state };
+  setManualCheck(true);
+  try {
+    return await sharedCheck(clock);
+  } finally {
+    setManualCheck(false);
+  }
+}
+
+/**
+ * Onde a atualização liga: no app de desktop publicado e, no `pnpm dev`, só
+ * com ?simular-atualizacao. No navegador e no `tauri dev`, não há o que
+ * conferir.
+ */
+export function updatesEnabled(env: { desktop: boolean; dev: boolean; search: string }): boolean {
+  return env.dev ? new URLSearchParams(env.search).has('simular-atualizacao') : env.desktop;
 }
 
 /** Hora de conferir de novo (ao voltar para a janela, por exemplo). */
@@ -182,5 +248,8 @@ export function resetUpdateForTests(): void {
   nextCheckAt = undefined;
   failures = 0;
   deps = undefined;
+  inFlight = undefined;
+  manualCheck = false;
   listeners.clear();
+  checkingListeners.clear();
 }

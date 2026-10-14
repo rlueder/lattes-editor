@@ -58,6 +58,14 @@ export const DownloadIcon = () => (
   </Icon>
 );
 
+/** Versão nova do app: seta para baixo dentro de um círculo. */
+export const UpdateIcon = () => (
+  <Icon>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 8v7.5M8.75 12.25 12 15.5l3.25-3.25" />
+  </Icon>
+);
+
 export const EyeIcon = () => (
   <Icon>
     <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
