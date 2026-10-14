@@ -75,6 +75,7 @@ describe('currículo de exemplo', () => {
     expect(fetch).toHaveBeenCalledWith(DEMO_URL);
     const copy = replaceWorkingCopy.mock.calls[0]![0];
     expect(copy.xml).toContain('NOME-COMPLETO="Ana Beatriz Souza Lima"');
+    expect(copy.fileName).toBe('3871592046158372.xml');
     expect(copy.xml).not.toContain('Valor de teste');
     // Os envios fictícios são do currículo sintético, não da demonstração.
     expect(addSent).not.toHaveBeenCalled();

@@ -55,7 +55,8 @@ export const COAUTHORS: Record<string, { cite: string; name: string }> = {
 
 export function authors(keys: string[]): XElement[] {
   return keys.map((key, i) => {
-    const person = key === 'ana' ? ANA : COAUTHORS[key]!;
+    const person = key === 'ana' ? ANA : COAUTHORS[key];
+    if (!person) throw new Error(`Autor desconhecido: ${key}`);
     return el('AUTORES', {
       'NOME-COMPLETO-DO-AUTOR': person.name,
       'NOME-PARA-CITACAO': person.cite,

@@ -46,9 +46,11 @@ export async function openExampleIfAsked(search: string): Promise<boolean> {
   const url = demo ? DEMO_URL : EXAMPLE_URL;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`${url} respondeu ${res.status}`);
+  // O nome de origem só vale quando falta NUMERO-IDENTIFICADOR; as duas
+  // fixtures têm um, e o nome de trabalho sai dele.
   const cv = await loadCv(
     new Uint8Array(await res.arrayBuffer()),
-    demo ? 'CV_3871592046158372.zip' : 'synthetic_full.xml',
+    demo ? 'demo.xml' : 'synthetic_full.xml',
   );
   const copy = newWorkingCopy(cv, Date.now());
   await replaceWorkingCopy(copy);
