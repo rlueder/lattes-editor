@@ -34,12 +34,32 @@ export interface UpdateDeps {
 /** Primeira conferência depois de abrir: não compete com a abertura do app. */
 export const FIRST_CHECK_DELAY_MS = 10_000;
 
-/** Entre conferências, com o app aberto. Lançamentos saem poucas vezes por dia. */
-export const CHECK_EVERY_MS = 60 * 60_000;
+/**
+ * Entre conferências, com o app aberto. É um GET pequeno ao GitHub; com uma
+ * hora, quem conferia logo depois de um lançamento ficava uma hora sem saber.
+ */
+export const CHECK_EVERY_MS = 15 * 60_000;
 
-/** Se já passou tempo bastante desde a última conferência para fazer outra. */
-export function shouldCheck(lastCheckedAt: number | undefined, now: number): boolean {
-  return lastCheckedAt === undefined || now - lastCheckedAt >= CHECK_EVERY_MS;
+/**
+ * Depois de uma conferência que falhou. O lançamento aparece no GitHub uns
+ * minutos antes do latest.json (que sobe no fim dos builds), e nesse intervalo
+ * a conferência dá 404: tentar de novo logo, não só na próxima rodada.
+ */
+export const RETRY_AFTER_FAILURE_MS = 2 * 60_000;
+
+/**
+ * Espera depois da enésima falha seguida: 2, 4 e 8 min, e daí em diante o
+ * intervalo normal. Sem rede, ou com o GitHub bloqueado, o app não fica
+ * batendo no GitHub de 2 em 2 minutos enquanto estiver aberto.
+ */
+export function retryDelay(failures: number): number {
+  const doubled = RETRY_AFTER_FAILURE_MS * 2 ** Math.max(0, failures - 1);
+  return Math.min(doubled, CHECK_EVERY_MS);
+}
+
+/** Se já chegou a hora marcada para a próxima conferência. */
+export function shouldCheck(nextCheckAt: number | undefined, now: number): boolean {
+  return nextCheckAt === undefined || now >= nextCheckAt;
 }
 
 /** Percentual baixado (0 a 100), ou undefined sem o tamanho total. */
@@ -51,7 +71,8 @@ export function percent(received: number, total: number | undefined): number | u
 let deps: UpdateDeps | undefined;
 let state: UpdateState = { status: 'nenhuma' };
 let pending: PendingUpdate | undefined;
-let lastCheckedAt: number | undefined;
+let nextCheckAt: number | undefined;
+let failures = 0;
 const listeners = new Set<() => void>();
 
 function setState(next: UpdateState): void {
@@ -92,19 +113,25 @@ function installing(): boolean {
 
 /**
  * Confere se há versão nova. Falha de rede ou de leitura passa em silêncio: a
- * próxima conferência tenta de novo. Uma atualização já em download não é
- * substituída.
+ * próxima conferência tenta de novo, cada vez mais espaçada (retryDelay). Uma
+ * atualização já em download não é substituída. `clock` é o relógio, trocado
+ * nos testes.
  */
-export async function checkForUpdate(now = Date.now()): Promise<UpdateState> {
+export async function checkForUpdate(clock: () => number = Date.now): Promise<UpdateState> {
   if (!deps || installing()) return state;
-  lastCheckedAt = now;
+  nextCheckAt = clock() + CHECK_EVERY_MS;
   try {
     const update = await deps.check();
+    failures = 0;
     // Um download começou enquanto a conferência esperava: ela não mexe nele.
     if (!update || installing()) return state;
     pending = update;
     setState({ status: 'disponivel', version: update.version });
   } catch (err) {
+    failures++;
+    // Conta a partir da falha, não do início: um pedido que demorou até o
+    // tempo esgotar não deixa a nova tentativa já vencida.
+    nextCheckAt = clock() + retryDelay(failures);
     console.warn('Conferência de atualização falhou:', err);
   }
   return state;
@@ -112,7 +139,7 @@ export async function checkForUpdate(now = Date.now()): Promise<UpdateState> {
 
 /** Hora de conferir de novo (ao voltar para a janela, por exemplo). */
 export function dueForCheck(now = Date.now()): boolean {
-  return shouldCheck(lastCheckedAt, now);
+  return shouldCheck(nextCheckAt, now);
 }
 
 /** Baixa, instala e reinicia. Com falha, o estado vira "falhou" e o aviso oferece o download. */
@@ -152,7 +179,8 @@ export async function installUpdate(): Promise<void> {
 export function resetUpdateForTests(): void {
   state = { status: 'nenhuma' };
   pending = undefined;
-  lastCheckedAt = undefined;
+  nextCheckAt = undefined;
+  failures = 0;
   deps = undefined;
   listeners.clear();
 }
