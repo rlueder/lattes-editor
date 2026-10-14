@@ -326,6 +326,12 @@ describe('conector: HTML do Lattes', () => {
     expect(isLogonPage('<form action="pkg_sec.logon" method="post">')).toBe(true);
     expect(isLogonPage('<p>ok</p>', 'https://wwws.cnpq.br/cvlattesweb/pkg_sec.logon')).toBe(true);
     expect(isLogonPage('<a href="x">pkg_sec.logon</a>')).toBe(false);
+    // Sem cookie de sessão, o menu abre com este alerta (14/10/2026).
+    expect(
+      isLogonPage(
+        '<script>alert("Problemas na autenticação");</script>\nerro ao recuperar rh/cookie',
+      ),
+    ).toBe(true);
     // Sessão vencida: a página é só um script que redireciona. HTML como veio do
     // Lattes em 14/10/2026, sem sessão válida.
     const stub = [

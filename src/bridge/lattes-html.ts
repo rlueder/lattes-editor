@@ -70,6 +70,9 @@ export function isLogonPage(html: string, url = ''): boolean {
   return (
     /pkg_sec\.logon/i.test(url) ||
     /<form[^>]*pkg_sec\.logon/i.test(html) ||
+    // Sem cookie de sessão, o menu responde com este alerta antes de mandar
+    // para lattes.cnpq.br (visto em 14/10/2026).
+    /alert\(\s*["']Problemas na autentica/i.test(html) ||
     (LOGON_REDIRECT.test(html) && isRedirectStub(html))
   );
 }
