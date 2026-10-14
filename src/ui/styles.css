@@ -5880,25 +5880,15 @@ button.ghost.icon {
   }
 }
 
-/* Menu lateral sem barra de rolagem: espaçamento mais justo e, em janela
-   baixa, foto e itens menores. Se ainda faltar altura (janela muito baixa),
-   a rolagem continua possível, sem a barra. */
+/* Menu lateral sem barra de rolagem; em janela baixa, a foto encolhe. Se
+   ainda faltar altura, a rolagem continua possível, sem a barra. Os itens
+   mantêm a altura de sempre. */
 .sidebar {
   scrollbar-width: none;
 }
 
 .sidebar::-webkit-scrollbar {
   display: none;
-}
-
-.sidebar li > button {
-  min-height: 32px;
-  padding-top: 5px;
-  padding-bottom: 5px;
-}
-
-.sidebar li + li {
-  margin-top: 1px;
 }
 
 @media (max-height: 860px) {
@@ -5913,12 +5903,6 @@ button.ghost.icon {
     height: 64px;
     margin-left: -42px;
     padding: 8px;
-  }
-
-  .sidebar li > button {
-    min-height: 28px;
-    padding-top: 3px;
-    padding-bottom: 3px;
   }
 
   .sidebar-brand {
