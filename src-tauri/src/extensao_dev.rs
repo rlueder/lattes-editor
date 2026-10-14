@@ -8,12 +8,18 @@
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Manager};
 
 /// Pasta da extensão Dev dentro da pasta de dados do app.
 const FOLDER: &str = "extensao-dev";
+
+/// A pasta, guardada só quando a cópia desta abertura deu certo. Sem ela, o
+/// editor não indica pasta nenhuma e manda à página do canal Dev, em vez de
+/// pedir que se carregue uma pasta ausente ou de outra versão.
+static SYNCED: OnceLock<PathBuf> = OnceLock::new();
 
 /// A version_name do manifest da extensão (0.22.0-dev.42), se houver.
 pub fn installed_version(folder: &Path) -> Option<String> {
@@ -85,25 +91,32 @@ pub fn folder(app: &AppHandle) -> Option<PathBuf> {
     Some(app.path().app_data_dir().ok()?.join(FOLDER))
 }
 
+/// Guarda a pasta em `slot` se a cópia deu certo; o erro passa adiante.
+fn remember(slot: &OnceLock<PathBuf>, result: io::Result<PathBuf>) -> io::Result<()> {
+    let dest = result?;
+    let _ = slot.set(dest);
+    Ok(())
+}
+
 /// Copia a extensão do pacote do app para a pasta de dados, se mudou.
-pub fn sync(app: &AppHandle) -> io::Result<PathBuf> {
-    let source = app
-        .path()
-        .resolve(FOLDER, BaseDirectory::Resource)
-        .map_err(io::Error::other)?;
-    let dest = folder(app).ok_or_else(|| io::Error::other("pasta de dados não encontrada"))?;
-    sync_folder(&source, &dest, &app.package_info().version.to_string())?;
-    Ok(dest)
+pub fn sync(app: &AppHandle) -> io::Result<()> {
+    let copy = || {
+        let source = app
+            .path()
+            .resolve(FOLDER, BaseDirectory::Resource)
+            .map_err(io::Error::other)?;
+        let dest = folder(app).ok_or_else(|| io::Error::other("pasta de dados não encontrada"))?;
+        sync_folder(&source, &dest, &app.package_info().version.to_string())?;
+        Ok(dest)
+    };
+    remember(&SYNCED, copy())
 }
 
 /// Onde está a extensão Dev, para o editor dizer o que carregar no navegador.
-/// Fora do canal Dev, nenhuma.
+/// Nenhuma fora do canal Dev (a cópia nem roda) ou quando a cópia falhou.
 #[tauri::command]
-pub fn extensao_dev_pasta(app: AppHandle) -> Option<String> {
-    if !cfg!(feature = "canal-dev") {
-        return None;
-    }
-    folder(&app).map(|p| p.to_string_lossy().into_owned())
+pub fn extensao_dev_pasta() -> Option<String> {
+    SYNCED.get().map(|p| p.to_string_lossy().into_owned())
 }
 
 #[cfg(test)]
@@ -173,6 +186,16 @@ mod tests {
         assert!(!dest.with_extension("velha").exists());
         let _ = fs::remove_dir_all(&source);
         let _ = fs::remove_dir_all(&dest);
+    }
+
+    #[test]
+    fn so_indica_a_pasta_quando_a_copia_deu_certo() {
+        let slot = OnceLock::new();
+        assert!(remember(&slot, Err(io::Error::other("sem recurso"))).is_err());
+        assert_eq!(slot.get(), None);
+        let dest = PathBuf::from("/dados/extensao-dev");
+        remember(&slot, Ok(dest.clone())).unwrap();
+        assert_eq!(slot.get(), Some(&dest));
     }
 
     #[test]
