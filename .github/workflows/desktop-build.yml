@@ -160,12 +160,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ inputs.tag }}
         # A tag fica fora do filtro do jq (vem de um campo livre do disparo
-        # manual), e a lista é guardada inteira antes do awk, para o gh não
-        # levar SIGPIPE com o pipefail ligado.
+        # manual) e chega ao awk pelo ambiente, sem a interpretação de barras
+        # invertidas do -v. A lista é guardada inteira antes do awk, para o gh
+        # não levar SIGPIPE com o pipefail ligado.
         run: |
           releases=$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate \
             --jq '.[] | "\(.tag_name) \(.draft)"')
-          draft=$(awk -v t="$TAG" '$1 == t { print $2; exit }' <<< "$releases")
+          draft=$(awk '$1 == ENVIRON["TAG"] { print $2; exit }' <<< "$releases")
           if [ -z "$draft" ]; then
             echo "::error::Não há página de lançamento para $TAG"
             exit 1

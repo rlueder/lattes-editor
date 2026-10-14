@@ -8,11 +8,12 @@ name: Publicar versão
 # página do projeto (releases/latest/download/...) passam a apontar para ela.
 #
 # Antes de publicar, confere que o rascunho está completo: os instaladores dos
-# três sistemas, as duas extensões e um latest.json com a versão da tag, em que
-# cada endereço aponta para um arquivo deste mesmo rascunho. Rascunhos mais
-# antigos que o escolhido saem junto, sem a marca de mais recente, para o
-# histórico ficar inteiro. Eles passam pela mesma conferência, e basta um com
-# defeito para nada ser publicado.
+# três sistemas, as duas extensões e um latest.json com a versão da tag e os
+# quatro alvos do atualizador, em que cada endereço aponta para um arquivo
+# deste mesmo rascunho. Rascunhos mais antigos que o escolhido saem junto, sem
+# a marca de mais recente, para o histórico ficar inteiro. Eles passam pela
+# mesma conferência, e basta um com defeito para nada ser publicado. O
+# escolhido precisa ser mais novo que a versão já publicada.
 
 on:
   workflow_dispatch:
@@ -41,21 +42,32 @@ jobs:
           set -euo pipefail
           repo="$GITHUB_REPOSITORY"
 
-          # Rascunhos com tag de versão, do mais antigo ao mais novo.
+          # Páginas com tag de versão: os rascunhos, do mais antigo ao mais
+          # novo, e a versão mais alta já publicada.
           gh api "repos/$repo/releases" --paginate \
-            --jq '.[] | select(.draft and (.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))) | "\(.tag_name) \(.id)"' \
-            | sort -V > drafts.txt
+            --jq '.[] | select(.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")) | "\(.tag_name) \(.id) \(.draft)"' \
+            > releases.txt
+          awk '$3 == "true" { print $1, $2 }' releases.txt | sort -V > drafts.txt
+          published=$(awk '$3 == "false" { print $1 }' releases.txt | sort -V | tail -n 1)
           if [ ! -s drafts.txt ]; then
             echo "::error::Não há rascunho de lançamento para publicar."
             exit 1
           fi
-          target="${TAG:-$(tail -n 1 drafts.txt | cut -d' ' -f1)}"
-          if ! awk -v t="$target" '$1 == t { found = 1 } END { exit !found }' drafts.txt; then
+          # O alvo vai ao awk pelo ambiente: com -v, o awk interpreta barras
+          # invertidas, e a tag vem de um campo livre.
+          export target="${TAG:-$(tail -n 1 drafts.txt | cut -d' ' -f1)}"
+          if ! awk '$1 == ENVIRON["target"] { found = 1 } END { exit !found }' drafts.txt; then
             echo "::error::$target não é um rascunho. Rascunhos: $(cut -d' ' -f1 drafts.txt | tr '\n' ' ')"
             exit 1
           fi
+          # Um rascunho mais velho que a versão publicada viraria a mais
+          # recente e levaria o app e os links fixos de volta a ela.
+          if [ -n "$published" ] && [ "$(printf '%s\n%s\n' "$published" "$target" | sort -V | tail -n 1)" != "$target" ]; then
+            echo "::error::$target não é mais novo que $published, já publicado. Nada foi publicado."
+            exit 1
+          fi
           # Os rascunhos que saem nesta rodada: do mais antigo até o escolhido.
-          awk -v t="$target" '{ print } $1 == t { exit }' drafts.txt > publish.txt
+          awk '{ print } $1 == ENVIRON["target"] { exit }' drafts.txt > publish.txt
           dup=$(cut -d' ' -f1 publish.txt | uniq -d | tr '\n' ' ')
           if [ -n "$dup" ]; then
             echo "::error::Mais de um rascunho com a mesma tag: $dup. Apague o que sobra antes de publicar."
@@ -89,6 +101,14 @@ jobs:
               return 1
             fi
             cut -d' ' -f1 assets.txt | sort > ids.txt
+            # Os quatro alvos que o app instalado consulta, um por sistema e
+            # arquitetura; faltar um deixa quem usa aquele sistema sem atualização.
+            for name in darwin-aarch64 darwin-x86_64 windows-x86_64 linux-x86_64; do
+              if ! jq -e --arg k "$name" '.platforms | has($k)' latest.json > /dev/null; then
+                echo "::error::O latest.json do rascunho $tag não tem $name."
+                return 1
+              fi
+            done
             if ! jq -r '.platforms[].url | capture("/releases/assets/(?<id>[0-9]+)$").id' latest.json > urls.txt \
               || [ ! -s urls.txt ] || [ -n "$(sort -u urls.txt | comm -23 - ids.txt)" ]; then
               echo "::error::O latest.json do rascunho $tag aponta para arquivos de fora dele."
