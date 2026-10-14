@@ -669,3 +669,44 @@ por GET (que traz `f_cod` e `f_seq`). As duas formações e a atuação inteira
 pedem tratamento próprio. O que ainda falta observar é a resposta do
 servidor a uma exclusão e se ela deixa o currículo com alteração pendente
 de envio ao CNPq; isso só com a pessoa acompanhando, num item de teste.
+
+## 16. Dados gerais pelo conector (LAT-23, 14/10/2026)
+
+Formação acadêmica, endereço e identificação têm operação escrita em
+`src/bridge/biographic.ts`, testada só contra o Lattes falso dos testes e
+desligada (`BIOGRAPHIC_OPS_ENABLED`). Nada foi enviado a um Lattes real.
+Desligada, a mudança segue à mão e o contrato não confere esses formulários.
+
+O que cada operação grava, e de onde vem cada parte:
+
+| Seção         | Formulário e POST                   | Como o conector acha                                                                                                          | Atributo do XML → campo                                                                                                                                                                                                                                    |
+| ------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Formação      | `GN_FORMACAO2`, `pkg_formacao.FORM` | `pkg_formacao.lista` com `f_tipo=FA` no menu, e na lista o único `pkg_formacao.form` com `f_seq` igual a `SEQUENCIA-FORMACAO` | `ANO-DE-INICIO` → `f_ano_ini`, `ANO-DE-CONCLUSAO` → `f_ano_fim`, `ANO-DE-OBTENCAO-DO-TITULO` → `f_ano_obten`, `STATUS-DO-CURSO` → `F_STATUS` (`N`, `S`, `I`), título do trabalho (dissertação, TCC, monografia, residência) → `f_titulo`                   |
+| Endereço      | `GN_ENDERECO`, `PRC_ENDERECO`       | `prc_endereco` no menu                                                                                                        | `ENDERECO-PROFISSIONAL` nos campos `_i` e `ENDERECO-RESIDENCIAL` nos `_r`: logradouro → `f_rua`, `CEP` → `f_cep`, `BAIRRO` → `f_bairro`, `CIDADE` → `f_munic`, `UF` → `f_estado`, `DDD`, `TELEFONE`, `RAMAL`, `FAX`, `CAIXA-POSTAL`, `E-MAIL`, `HOME-PAGE` |
+| Identificação | `GN_IDENT`, `PRC_IDENT`             | `prc_ident` no menu                                                                                                           | `NOME-COMPLETO` → `f_nome`                                                                                                                                                                                                                                 |
+
+- **Observado**: os nomes dos formulários, dos POSTs, dos links do menu e dos
+  campos (seções 4 e 5 e o reconhecimento de 10/10/2026, seção 4.2), os
+  códigos de `F_STATUS` e o `f_nivel` oculto igual ao `NIVEL` da exportação
+  no mestrado, na graduação e no curso técnico.
+- **Inferido**: a correspondência de cada atributo com cada campo (pelo nome
+  e pelo rótulo), que `f_seq` da formação é `SEQUENCIA-FORMACAO`, que os
+  campos de formação lidos no mestrado profissional existem nos outros
+  níveis, e o tipo "texto" dos campos sem tipo anotado nas seções acima.
+- **Travas**: além das de toda alteração (o "antes" de cada campo tem de
+  bater, só os campos da operação podem mudar depois do envio), a formação
+  confere o `f_nivel` e o ano de início; a identificação confere o
+  `f_nacionalidade` com o `NACIONALIDADE` do XML quando ele é `B` ou `E`,
+  porque esse oculto é preenchido pelo JavaScript da página e um GET que o
+  traga vazio mandaria vazio.
+- **Fora**: o que só entra por busca (instituição, curso, agência,
+  orientador), o país e as listas cujos códigos não foram lidos (sexo, raça
+  ou cor, nascimento, documentos), a preferência de correspondência
+  (`f_end_corr`), as grades de contatos e redes sociais
+  (`f_dados_grid`, `f_dados_grid_contatos`) e a lista de pós-doutorado e
+  livre-docência (`f_tipo=AP`).
+
+O contrato desses três formulários é parcial: lista os campos que as
+operações gravam e os de controle. Os outros aparecem como "campo novo" na
+verificação, que só avisa. O teste acompanhado completa a lista com o que a
+verificação mostrar.
