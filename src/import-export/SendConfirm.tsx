@@ -1,6 +1,7 @@
 // Confirmação antes de mandar a fila ao Lattes: o que vai mudar em cada item,
 // campo a campo. O ponto de histórico de antes do envio é guardado sozinho.
 
+import { isDeleteOp } from '../bridge/delete.ts';
 import { opRows } from '../bridge/field-labels.ts';
 import type { BridgeOp } from '../bridge/plan.ts';
 import { Modal } from '../ui/Modal.tsx';
@@ -40,6 +41,12 @@ export function SendConfirm({
         {ops.map((op) => (
           <li key={op.key}>
             <strong>{op.label}</strong>
+            {isDeleteOp(op) && (
+              <p className="send-delete">
+                O item sai do Lattes, e o Lattes não tem como desfazer. Para voltar, só incluindo de
+                novo, à mão.
+              </p>
+            )}
             <dl>
               {opRows(op).map((row) => (
                 <div key={row.name} className="send-field">

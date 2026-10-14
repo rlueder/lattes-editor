@@ -101,7 +101,10 @@ real que a exerça, ou de um teste pelo Importar.
 - **País e idioma no editor inteiro**, pelo nome, nas listas do Lattes (243
   países e 152 idiomas), geradas da captura por `node scripts/gen-listas.ts`
   em `src/schema/listas-lattes.json`. O idioma da seção Idiomas, que é
-  código, fica de fora.
+  código, fica de fora. O mesmo arquivo guarda o código que o formulário
+  envia para cada país (`codigosDosPaises`, BRA para Brasil), que o conector
+  usa para gravar o país de um evento; a República Tcheca, que aparece com
+  dois códigos no Lattes (RTC e TCH), fica sem código.
 - **Valor fora da lista** continua visível no campo e aparece como pendência
   ("não está na lista do Lattes"), sem ser apagado.
 

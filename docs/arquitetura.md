@@ -95,7 +95,18 @@ que o painel "Enviar ao Lattes" mostra item por item:
   `src/bridge/plan.ts` transforma a alteração numa operação de formulário, e
   `src/bridge/apply.ts` a aplica na aba do Lattes. Antes de gravar, confere
   que o formulário está como o editor espera; depois, lê de novo e confere que
-  só os campos da operação mudaram.
+  só os campos da operação mudaram. Formação, endereço e identificação têm as
+  operações em `src/bridge/biographic.ts`, desligadas até o teste no Lattes
+  real (`BIOGRAPHIC_OPS_ENABLED`); enquanto isso, seguem à mão.
+- **Item removido no editor** pode ir pela extensão com
+  `src/bridge/delete.ts`, que posta o formulário de edição do item com
+  `f_ctr=E`, como o botão "Excluir" do Lattes, e confere lendo a lista de
+  novo (o item sumiu, nada mais mudou), sem depender da resposta do Lattes.
+  Hoje só idioma e vínculo, e desligado (`DELETE_ITEMS_ENABLED`) até um teste
+  acompanhado; desligado, a remoção fica à mão. A atuação inteira e as
+  formações ficam sempre à mão: a primeira apaga em cascata, e excluir uma
+  formação pode tornar outra pública. Uma exclusão não tem "Desfazer no
+  Lattes" no registro do enviado.
 - **O resto** fica **à mão**, campo a campo, com o valor antigo e o novo lado a
   lado.
 
@@ -111,6 +122,18 @@ global, mas não vai pelo Importar. As sequências biográficas
 (`SEQUENCIA-FORMACAO`, `SEQUENCIA-ATIVIDADE`, `SEQUENCIA-PROJETO`) ficam acima
 da maior da cópia de trabalho e da exportação carregada. O projeto entra numa
 `PARTICIPACAO-EM-PROJETO` nova, dentro da atuação escolhida no formulário.
+
+Uma alteração num item de **participação em eventos** que já está no Lattes
+pode ir pelo conector, no próprio formulário do evento
+(`src/bridge/edit-items.ts`): a linha da lista se acha pelo
+`SEQUENCIA-PRODUCAO`, e a operação confere antes que o formulário é de
+ouvinte, do mesmo tipo de evento e com o mesmo ano ou nome. Vão título, ano,
+país, home page, divulgação científica, título em inglês e nome do evento.
+Ficam à mão os eventos de convidado e participante, a forma, o tipo, a
+natureza, a cidade e o que o formulário não tem (idioma, palavras-chave,
+áreas). O caminho está desligado (`EDIT_ITEMS_ENABLED` em `false`) até um
+teste acompanhado num Lattes real; desligado, o evento segue à mão e o
+contrato não confere o formulário.
 
 A decisão de 13/10/2026 sobre duplicatas (só o que é novo vai pelo Importar;
 alteração no lugar; exclusão pelo formulário) está no
@@ -154,6 +177,17 @@ pelo `window.postMessage` da própria página, por um content script
   conector para a fila antes de gravar.
 - **Foto do currículo** (`src/bridge/photo.ts`): troca a foto pela tela de
   envio do próprio Lattes e confere depois.
+- **Importar dos itens novos** (`src/bridge/importar.ts`, LAT-50), desligado
+  por `IMPORT_ENABLED`. Envia um arquivo só com os itens novos
+  (`buildMinimalImportFile`, em `src/import-export/import-file.ts`), confere
+  o formulário do passo 2, marca só os módulos do arquivo e o ano do item mais
+  antigo, confirma o passo 2 e para na resposta, sem confirmar o passo 3. No
+  teste acompanhado de 14/10/2026 o Lattes recusou o arquivo mínimo, e um
+  Confirmar do passo 3 com sucesso na tela não pôs o item no currículo
+  (`lattes_internals.md`, seção 13), então a chave continua desligada. Uma solicitação
+  pendente no Importar também para o fluxo; o conector nunca descarta nada.
+  Enquanto a chave estiver desligada, o editor não mostra o botão e a extensão
+  recusa o pedido; o "Baixar arquivo" com os passos à mão continua igual.
 
 ## Mapa do código
 

@@ -5,6 +5,7 @@
 import type { OpResult } from './apply.ts';
 import type { EspelhoItem } from './espelho.ts';
 import type { ExportFailure } from './export.ts';
+import type { ImportStop, PageShape } from './importar.ts';
 import type { LattesStatus } from './lattes-status.ts';
 import type { PhotoFailure } from './photo.ts';
 import type { BridgeOp } from './plan.ts';
@@ -37,7 +38,23 @@ export type EditorMessage =
    * lattesId: o currículo aberto no editor, e a extensão só envia se a sessão
    * do Lattes for dele. id volta na resposta.
    */
-  | { id: string; jpeg: string; lattesId?: string; type: 'enviar-foto' };
+  | { id: string; jpeg: string; lattesId?: string; type: 'enviar-foto' }
+  /**
+   * Importa os itens novos pelo Importar do Lattes (src/bridge/importar.ts),
+   * só com IMPORT_ENABLED. file: o arquivo mínimo (opção 1) em base64;
+   * modules: os valores f_chkp do passo 2; oldestYear: o ano do item novo
+   * mais antigo. lattesId: o currículo aberto no editor, e a extensão só
+   * envia se a sessão do Lattes for dele. id volta na resposta.
+   */
+  | {
+      file: string;
+      fileName: string;
+      id: string;
+      lattesId?: string;
+      modules: number[];
+      oldestYear?: number;
+      type: 'importar';
+    };
 
 export type BridgeMessage =
   /** lattesId: de qual currículo é o código, para o editor não guardar o de outro. */
@@ -67,6 +84,19 @@ export type BridgeMessage =
   | { type: 'fim' }
   /** O resultado da troca da foto pedida com o mesmo id. */
   | { detail?: string; id: string; ok: boolean; reason?: PhotoFailure; type: 'foto' }
+  /**
+   * Onde o Importar pedido com o mesmo id parou. Enquanto o passo 3 não for
+   * mapeado, o fim esperado é reason "passo-3", com a forma da página em
+   * page e a solicitação pendente em request.
+   */
+  | {
+      detail?: string;
+      id: string;
+      page?: PageShape;
+      reason: ImportStop;
+      request?: string;
+      type: 'importacao';
+    }
   /** features: o que esta extensão sabe fazer (src/bridge/compat.ts); ausente nas versões de antes do aperto de mão com capacidades. */
   | { features?: string[]; type: 'ola'; version: string }
   /** A extensão tentou ler o menu do Lattes e não conseguiu; reason diz por quê. */

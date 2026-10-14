@@ -13,6 +13,7 @@ import type { OpResult } from '../bridge/apply.ts';
 import { BRIDGE_FEATURES } from '../bridge/compat.ts';
 import type { EspelhoItem } from '../bridge/espelho.ts';
 import type { ExportFailure } from '../bridge/export.ts';
+import type { ImportStop, PageShape } from '../bridge/importar.ts';
 import { sameCv } from '../bridge/lattes-html.ts';
 import type { LattesStatus } from '../bridge/lattes-status.ts';
 import { INITIAL_LINK, type Link, nextLink } from '../bridge/link.ts';
@@ -29,6 +30,7 @@ import {
 import { type SentEntry, sentEntry, undoOp } from '../bridge/sent-log.ts';
 import { isDesktop } from '../desktop/native.ts';
 import type { Session } from '../forms/use-production.ts';
+import { importMessage } from '../import-export/import-request.ts';
 import type { Change } from '../model/changes.ts';
 import { addHistoryPoint, addSent, clearSent, listSent } from '../model/store.ts';
 import { getAttr } from '../model/xml.ts';
@@ -117,6 +119,8 @@ export interface BridgeState {
    * diagnóstico: os itens, ou o motivo de não ter lido.
    */
   espelho?: EspelhoReading;
+  /** A resposta do último Importar pelo conector (src/bridge/importar.ts). */
+  importResult?: ImportReading;
   /**
    * O que a extensão leu do menu do Lattes (última publicação e pendência),
    * só quando a sessão é deste currículo; undefined sem extensão ou sem leitura.
@@ -143,6 +147,12 @@ export interface BridgeState {
    * entrada do registro.
    */
   send: (options?: { undo?: SentEntry }) => Promise<void>;
+  /**
+   * Pede à extensão o Importar dos itens novos, num arquivo só com eles.
+   * Devolve o id do pedido, que volta em importResult; undefined quando nada
+   * foi pedido (IMPORT_ENABLED desligado ou sem item novo).
+   */
+  sendImport: () => string | undefined;
   /**
    * Pede à extensão para trocar a foto no Lattes (jpeg em base64, já com até
    * 70 kB); devolve o id do pedido, que volta em photoUpload.
@@ -173,6 +183,17 @@ export interface PhotoUploadReading {
   id: string;
   ok: boolean;
   reason?: PhotoFailure;
+}
+
+export interface ImportReading {
+  /** Quando a resposta chegou (ms). */
+  at: number;
+  detail?: string;
+  /** O id do pedido que a resposta atende. */
+  id: string;
+  page?: PageShape;
+  reason: ImportStop;
+  request?: string;
 }
 
 export interface EspelhoReading {
@@ -211,6 +232,7 @@ export function useBridge(
   const [link, setLink] = useState<Link>(INITIAL_LINK);
   const [curriculo, setCurriculo] = useState<CurriculoReading | undefined>();
   const [photoUpload, setPhotoUpload] = useState<PhotoUploadReading | undefined>();
+  const [importResult, setImportResult] = useState<ImportReading | undefined>();
 
   const reloadSent = useCallback(() => {
     if (!lattesId) {
@@ -290,6 +312,16 @@ export function useBridge(
           reason: msg.reason,
         });
       }
+      if (msg.type === 'importacao') {
+        setImportResult({
+          at: Date.now(),
+          detail: msg.detail,
+          id: msg.id,
+          page: msg.page,
+          reason: msg.reason,
+          request: msg.request,
+        });
+      }
       if (msg.type === 'espelho') {
         // Itens de outro currículo nunca entram na comparação.
         const other = msg.items && !(lattesId && sameCv(lattesId, msg.lattesId));
@@ -346,6 +378,7 @@ export function useBridge(
     confirmed,
     curriculo,
     espelho,
+    importResult,
     lattes,
     link,
     photoUpload,
@@ -387,6 +420,18 @@ export function useBridge(
       setConfirmed(0);
       setRunning(true);
       post({ lattesId, ops, type: 'enviar' });
+    },
+    sendImport: () => {
+      if (!session) return undefined;
+      const msg = importMessage(
+        session.doc,
+        session.meta.encoding,
+        session.meta.loadedMaxSequencia,
+        { id: `importar-${Date.now()}`, lattesId },
+      );
+      if (!msg) return undefined;
+      post(msg);
+      return msg.id;
     },
     sendPhoto: (jpeg) => {
       const id = `foto-${Date.now()}`;
