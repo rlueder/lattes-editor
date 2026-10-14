@@ -10,6 +10,7 @@
 import { Tabs } from '@base-ui/react/tabs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { importStopMessage } from '../bridge/importar.ts';
 import { failed } from '../bridge/sent-log.ts';
 import { elementLabel } from '../labels/labels.ts';
 import type { Problem } from '../model/validate.ts';
@@ -20,6 +21,7 @@ import { Modal } from '../ui/Modal.tsx';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { BridgeBlock } from './BridgeBlock.tsx';
 import type { ImportFile } from './import-file.ts';
+import { canImportByConnector } from './import-request.ts';
 import { RouteTag } from './RouteTag.tsx';
 import {
   initialTab,
@@ -200,7 +202,14 @@ export function ExportPanel({
                       incompletos sem avisar.
                     </p>
                   ) : (
-                    file && <ImportSteps file={file} minYear={minYear} />
+                    file && (
+                      <>
+                        <ImportSteps file={file} minYear={minYear} />
+                        {bridge && canImportByConnector(bridge.link) && (
+                          <ConnectorImport bridge={bridge} />
+                        )}
+                      </>
+                    )
                   )}
                 </section>
               )}
@@ -241,6 +250,34 @@ export function ExportPanel({
         </Tabs.Panel>
       </Tabs.Root>
     </Modal>
+  );
+}
+
+/**
+ * Importar pelo conector (LAT-50), só com IMPORT_ENABLED: a extensão faz os
+ * passos 1 e 2 com um arquivo só com os itens novos e para antes do passo 3.
+ */
+function ConnectorImport({ bridge }: { bridge: BridgeState }) {
+  const [pendingId, setPendingId] = useState<string | undefined>();
+  const result = bridge.importResult;
+  const waiting = pendingId !== undefined && result?.id !== pendingId;
+  return (
+    <div className="connector-import">
+      <button
+        className="ghost"
+        disabled={waiting}
+        type="button"
+        onClick={() => setPendingId(bridge.sendImport())}
+      >
+        Importar pelo conector
+      </button>
+      {waiting && <p className="muted">Enviando ao Importar do Lattes…</p>}
+      {!waiting && result && result.id === pendingId && (
+        <p className="muted" role="status">
+          {importStopMessage(result)}
+        </p>
+      )}
+    </div>
   );
 }
 

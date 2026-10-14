@@ -561,6 +561,24 @@ que o arquivo traz (`ImportFile.modules`) e o ano a partir do item novo mais
 antigo. O que vem depois do Confirmar (passo 3 e o resultado) ainda precisa
 ser observado com a pessoa acompanhando.
 
+**No conector (14/10/2026, desligado).** `src/bridge/importar.ts` faz os
+passos 1 e 2 com o arquivo da opção 1 (só os itens novos, com um
+`DADOS-GERAIS` mínimo) e para na resposta do Confirmar do passo 2, sem nenhum
+POST a mais, devolvendo só a forma da página (formulários, campos, botões).
+Fica atrás de `IMPORT_ENABLED = false` até um teste acompanhado. O
+`DADOS-GERAIS` mínimo leva, além de `NOME-COMPLETO` e
+`NOME-EM-CITACOES-BIBLIOGRAFICAS`, `NACIONALIDADE` e
+`PERMISSAO-DE-DIVULGACAO`, que o XSD exige. Ainda **não testado**: se o
+Lattes aceita esse arquivo, se o filtro de ano lista só os anos do arquivo e
+como é a página do passo 3. O que o teste precisa observar:
+
+- se o passo 1 aceita o arquivo mínimo e mostra o passo 2;
+- os anos de `f_ano_prod` para esse arquivo, e se é um select ou botões;
+- a página que vem depois do Confirmar do passo 2: o formulário, como cada
+  item aparece, como o vermelho (já no currículo) e o verde se distinguem no
+  HTML, e o botão que confirma;
+- se o Confirmar do passo 2 já muda alguma coisa no currículo.
+
 ## 14. Foto do currículo (13/10/2026)
 
 A foto do menu é trocada pela janela "Enviar sua foto" (`fotoWin`, um

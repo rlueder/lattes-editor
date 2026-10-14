@@ -29,6 +29,7 @@ import {
 } from '../../src/bridge/protocol.ts';
 import { CONSENT_KEY, hasConsent, isConsentCurrent } from './consent.ts';
 import { ownVersion, reloadForApp } from './dev-reload.ts';
+import { importRunning, runImport } from './import-run.ts';
 import {
   failedReport,
   type Identity,
@@ -189,7 +190,7 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     return;
   }
   if (msg.type === 'enviar-foto') {
-    const busy = photoBusy((await readState()).running, photoInFlight);
+    const busy = photoBusy((await readState()).running, photoInFlight || importRunning());
     if (busy) return toEditor(editor, { ...busy, id: msg.id, type: 'foto' });
     // A pessoa já viu a foto e confirmou no editor; depois, o menu relido
     // mostra se o Lattes ficou com alteração a enviar ao CNPq.
@@ -202,6 +203,15 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
       photoInFlight = false;
     }
     return;
+  }
+  if (msg.type === 'importar') {
+    // Desligado (IMPORT_ENABLED), o pedido volta recusado sem tocar no Lattes.
+    return runImport(
+      msg,
+      { photo: photoInFlight, queue: (await readState()).running },
+      (r) => toEditor(editor, { ...r, id: msg.id, type: 'importacao' }),
+      () => sendSession(editor, true),
+    );
   }
   const state = await readState();
   if (state.running) return;
@@ -283,7 +293,7 @@ async function verifyOnce(auto: boolean): Promise<void> {
 async function run(keys?: string[]): Promise<void> {
   if (!(await hasConsent())) return;
   const state = await readState();
-  if (state.running || state.verificando || photoInFlight) return;
+  if (state.running || state.verificando || photoInFlight || importRunning()) return;
   const queue = state.ops.filter(
     (op) => state.results[op.key]?.status !== 'conferido' && (!keys || keys.includes(op.key)),
   );

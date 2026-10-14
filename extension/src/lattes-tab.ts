@@ -2,6 +2,7 @@
 // e as leituras que o editor pede, com o motivo quando não dá.
 
 import type { ContractReport } from '../../src/bridge/contract.ts';
+import type { ImportResult } from '../../src/bridge/importar.ts';
 import type { LattesStatus } from '../../src/bridge/lattes-status.ts';
 import type { BridgeMessage } from '../../src/bridge/protocol.ts';
 import { hasConsent } from './consent.ts';
@@ -19,7 +20,7 @@ export async function injectRunner(tabId: number): Promise<void> {
 /** Roda uma função do núcleo do conector na aba; undefined se a aba não respondeu. */
 async function runInTab<T>(
   tabId: number,
-  name: 'espelho' | 'exportar' | 'foto',
+  name: 'espelho' | 'exportar' | 'foto' | 'importar',
   ...args: string[]
 ): Promise<T | undefined> {
   await injectRunner(tabId);
@@ -70,6 +71,31 @@ export async function sendPhoto(
     return (
       (await runInTab<Omit<Reply<'foto'>, 'id'>>(tabId, 'foto', jpeg, lattesId ?? '')) ?? failed
     );
+  } catch {
+    return failed;
+  }
+}
+
+/**
+ * Importar dos itens novos (lattes-runner.ts, importar): só com o "ok" do
+ * aviso, e o núcleo na aba confere que a sessão é do currículo do editor.
+ */
+export async function sendImport(
+  req: { file: string; fileName: string; modules: number[]; oldestYear?: number },
+  lattesId?: string,
+): Promise<ImportResult> {
+  if (!(await hasConsent())) return { reason: 'consentimento' };
+  const tabId = await lattesTab();
+  if (tabId === undefined) return { reason: 'sem-aba' };
+  const failed: ImportResult = { detail: 'A aba do Lattes não respondeu.', reason: 'erro' };
+  try {
+    const args = JSON.stringify({
+      file: req.file,
+      fileName: req.fileName,
+      modules: req.modules,
+      oldestYear: req.oldestYear,
+    });
+    return (await runInTab<ImportResult>(tabId, 'importar', args, lattesId ?? '')) ?? failed;
   } catch {
     return failed;
   }
