@@ -20,6 +20,8 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
+  # actions: read para conferir o CI do commit (gh run list).
+  actions: read
   contents: write
   issues: write
   pull-requests: write
@@ -45,8 +47,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          conclusion=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --branch main \
-            --commit "$GITHUB_SHA" --event push --json conclusion --jq '.[0].conclusion // ""')
+          # Falha do gh (permissão, workflow renomeado) vira mensagem própria, sem abortar antes.
+          if ! conclusion=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --branch main \
+            --commit "$GITHUB_SHA" --event push --json conclusion --jq '.[0].conclusion // ""' 2>&1); then
+            echo "::error::Não consegui ler o CI deste commit: $conclusion"
+            exit 1
+          fi
           if [ "$conclusion" != "success" ]; then
             echo "::error::O CI da main não passou em $GITHUB_SHA (resultado: ${conclusion:-nenhum}). Espere o CI ou corrija antes de lançar."
             exit 1
