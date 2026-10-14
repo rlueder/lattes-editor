@@ -2,7 +2,7 @@
 // aparecem desabilitados, para quem chega já ver onde vai trabalhar; o painel
 // principal é o passo de abrir o arquivo. Soltar o arquivo vale na janela toda.
 
-import { type DragEvent, useRef, useState } from 'react';
+import { type DragEvent, useEffect, useRef, useState } from 'react';
 
 import type { Link } from '../bridge/link.ts';
 import { useDevExtensionFolder } from '../desktop/dev-channel.ts';
@@ -61,6 +61,9 @@ interface Props {
   onTheme: (theme: ThemePref) => void;
 }
 
+/** Quanto o botão de recarregar fica ocupado: o tempo de a aba chegar ao login. */
+const RELOAD_FEEDBACK_MS = 4000;
+
 /**
  * O botão do passo: um link para fora (abre no navegador), pedir o currículo de
  * novo ou recarregar a aba do Lattes.
@@ -74,6 +77,14 @@ function StepAction({
   onReload: () => void;
   onRetry: () => void;
 }) {
+  // Recarregar não tem resposta da extensão: o botão mostra que o clique foi
+  // recebido e não recarrega de novo no meio do login.
+  const [reloading, setReloading] = useState(false);
+  useEffect(() => {
+    if (!reloading) return;
+    const timer = setTimeout(() => setReloading(false), RELOAD_FEEDBACK_MS);
+    return () => clearTimeout(timer);
+  }, [reloading]);
   if (action.kind === 'link') {
     return (
       <a
@@ -89,10 +100,18 @@ function StepAction({
   return (
     <button
       className="primary onboarding-action"
+      disabled={reloading}
       type="button"
-      onClick={action.kind === 'recarregar' ? onReload : onRetry}
+      onClick={
+        action.kind === 'recarregar'
+          ? () => {
+              setReloading(true);
+              onReload();
+            }
+          : onRetry
+      }
     >
-      {action.label}
+      {reloading ? 'Recarregando…' : action.label}
     </button>
   );
 }
@@ -178,6 +197,7 @@ export function Welcome({ error, lattes, link, onFile, onReloadLattes, onTheme, 
                     <p className="onboarding-text">{step.text}</p>
                     {step.status === 'agora' && step.action && (
                       <StepAction
+                        key={step.action.kind}
                         action={step.action}
                         onReload={onReloadLattes}
                         onRetry={lattes.open}

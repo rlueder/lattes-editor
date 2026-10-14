@@ -64,6 +64,9 @@ if (__CANAL_DEV__) {
   if (sub) sub.textContent = 'Conector Dev';
 }
 
+/** Quanto o botão de recarregar fica ocupado: o tempo de a aba chegar ao login. */
+const RELOAD_FEEDBACK_MS = 4000;
+
 const REPORT_TITLE: Record<ContractReport['status'], string> = {
   erro: 'Não deu para verificar',
   mudou: 'O Lattes mudou',
@@ -130,17 +133,20 @@ function renderReport(report: ContractReport | undefined): void {
   // Sessão vencida: a aba ainda mostra o currículo, então o caminho é
   // recarregá-la e entrar de novo. Nada a copiar nem a reportar.
   if (report.status === 'sessao') {
-    const reload = el('button', {
-      className: 'principal',
-      textContent: 'Recarregar o Lattes',
-      type: 'button',
-    });
+    const label = 'Recarregar o Lattes';
+    const reload = el('button', { className: 'principal', textContent: label, type: 'button' });
     reload.addEventListener('click', () => {
       reload.disabled = true;
+      reload.textContent = 'Recarregando…';
       void reloadLattesTab().then((ok) => {
-        reload.disabled = false;
         // Sem aba do Lattes, o clique não teria efeito visível: o botão avisa.
         if (!ok) reload.textContent = 'Nenhuma aba do Lattes aberta';
+        // O botão volta depois de um tempo: nem recarrega de novo no meio do
+        // login, nem deixa o aviso de "nenhuma aba" para sempre.
+        setTimeout(() => {
+          reload.disabled = false;
+          reload.textContent = label;
+        }, RELOAD_FEEDBACK_MS);
       });
     });
     root.append(
