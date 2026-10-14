@@ -11,7 +11,8 @@ name: Publicar versão
 # três sistemas, as duas extensões e um latest.json com a versão da tag, em que
 # cada endereço aponta para um arquivo deste mesmo rascunho. Rascunhos mais
 # antigos que o escolhido saem junto, sem a marca de mais recente, para o
-# histórico ficar inteiro.
+# histórico ficar inteiro. Eles passam pela mesma conferência, e basta um com
+# defeito para nada ser publicado.
 
 on:
   workflow_dispatch:
@@ -49,45 +50,68 @@ jobs:
             exit 1
           fi
           target="${TAG:-$(tail -n 1 drafts.txt | cut -d' ' -f1)}"
-          id=$(awk -v t="$target" '$1 == t { print $2 }' drafts.txt)
-          if [ -z "$id" ]; then
+          if ! awk -v t="$target" '$1 == t { found = 1 } END { exit !found }' drafts.txt; then
             echo "::error::$target não é um rascunho. Rascunhos: $(cut -d' ' -f1 drafts.txt | tr '\n' ' ')"
+            exit 1
+          fi
+          # Os rascunhos que saem nesta rodada: do mais antigo até o escolhido.
+          awk -v t="$target" '{ print } $1 == t { exit }' drafts.txt > publish.txt
+          dup=$(cut -d' ' -f1 publish.txt | uniq -d | tr '\n' ' ')
+          if [ -n "$dup" ]; then
+            echo "::error::Mais de um rascunho com a mesma tag: $dup. Apague o que sobra antes de publicar."
             exit 1
           fi
 
           # O rascunho completo: o que a página do projeto e o atualizador usam.
-          gh api "repos/$repo/releases/$id/assets" --paginate --jq '.[] | "\(.id) \(.name)"' > assets.txt
-          missing=""
-          for name in latest.json LattesEditor-macOS.dmg LattesEditor-macOS.app.tar.gz \
-            LattesEditor-Windows-setup.exe LattesEditor-Linux.AppImage LattesEditor-Linux.deb \
-            lattes-editor-extensao.zip lattes-editor-extensao-loja.zip; do
-            grep -q " $name\$" assets.txt || missing="$missing $name"
-          done
-          if [ -n "$missing" ]; then
-            echo "::error::O rascunho $target está incompleto. Falta:$missing"
+          # Vale para cada rascunho que vai sair, não só para o escolhido.
+          # Roda dentro de um ||, onde o set -e não vale: cada falha sai com return.
+          check() {
+            local tag="$1" id="$2" name missing="" json_id version
+            gh api "repos/$repo/releases/$id/assets" --paginate --jq '.[] | "\(.id) \(.name)"' > assets.txt \
+              || return 1
+            for name in latest.json LattesEditor-macOS.dmg LattesEditor-macOS.app.tar.gz \
+              LattesEditor-Windows-setup.exe LattesEditor-Linux.AppImage LattesEditor-Linux.deb \
+              lattes-editor-extensao.zip lattes-editor-extensao-loja.zip; do
+              grep -q " $name\$" assets.txt || missing="$missing $name"
+            done
+            if [ -n "$missing" ]; then
+              echo "::error::O rascunho $tag está incompleto. Falta:$missing"
+              return 1
+            fi
+
+            # O latest.json é da versão da tag e só aponta para arquivos deste rascunho.
+            json_id=$(awk '$2 == "latest.json" { print $1 }' assets.txt)
+            gh api -H 'Accept: application/octet-stream' "repos/$repo/releases/assets/$json_id" > latest.json \
+              || return 1
+            version=$(jq -r .version latest.json) || return 1
+            if [ "v$version" != "$tag" ]; then
+              echo "::error::O latest.json do rascunho $tag diz versão $version."
+              return 1
+            fi
+            cut -d' ' -f1 assets.txt | sort > ids.txt
+            if ! jq -r '.platforms[].url | capture("/releases/assets/(?<id>[0-9]+)$").id' latest.json > urls.txt \
+              || [ ! -s urls.txt ] || [ -n "$(sort -u urls.txt | comm -23 - ids.txt)" ]; then
+              echo "::error::O latest.json do rascunho $tag aponta para arquivos de fora dele."
+              return 1
+            fi
+          }
+          # Um rascunho antigo com defeito trava a rodada inteira, antes de
+          # qualquer publicação: refaça os instaladores dele ou apague-o.
+          failed=""
+          while read -r tag id <&3; do
+            check "$tag" "$id" || failed="$failed $tag"
+          done 3< publish.txt
+          if [ -n "$failed" ]; then
+            echo "::error::Nada foi publicado. Rascunhos com defeito:$failed"
             exit 1
           fi
 
-          # O latest.json é da versão da tag e só aponta para arquivos deste rascunho.
-          json_id=$(awk '$2 == "latest.json" { print $1 }' assets.txt)
-          gh api -H 'Accept: application/octet-stream' "repos/$repo/releases/assets/$json_id" > latest.json
-          version=$(jq -r .version latest.json)
-          if [ "v$version" != "$target" ]; then
-            echo "::error::O latest.json do rascunho $target diz versão $version."
-            exit 1
-          fi
-          cut -d' ' -f1 assets.txt | sort > ids.txt
-          jq -r '.platforms[].url | capture("/releases/assets/(?<id>[0-9]+)$").id' latest.json | sort -u > urls.txt
-          if [ ! -s urls.txt ] || [ -n "$(comm -23 urls.txt ids.txt)" ]; then
-            echo "::error::O latest.json do rascunho $target aponta para arquivos de fora dele."
-            exit 1
-          fi
-
-          # Os mais antigos primeiro, sem a marca; o escolhido por último, como o mais recente.
-          while read -r tag _; do
-            [ "$tag" = "$target" ] && break
-            gh release edit "$tag" --repo "$repo" --draft=false --latest=false
-            echo "Publicado (histórico): $tag"
-          done < drafts.txt
-          gh release edit "$target" --repo "$repo" --draft=false --latest
+          # Publica pelo id conferido, não pela tag: o endpoint de tag não
+          # enxerga rascunhos. Os mais antigos primeiro, sem a marca; o
+          # escolhido por último, como o mais recente.
+          while read -r tag id <&3; do
+            if [ "$tag" = "$target" ]; then latest=true; else latest=false; fi
+            gh api -X PATCH "repos/$repo/releases/$id" -F draft=false -f make_latest="$latest" > /dev/null
+            echo "Publicado: $tag (mais recente: $latest)"
+          done 3< publish.txt
           echo "### Publicado: $target" >> "$GITHUB_STEP_SUMMARY"
