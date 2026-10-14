@@ -74,17 +74,37 @@ Butterick, adaptado à tela.
 No modo de leitura, Dados gerais, Formação e Produções aparecem compostos
 como texto, sem borda de campo, sem rótulo que repete o título do grupo e
 sem a caixa branca sobre o fundo cinza: os grupos se separam pelo espaço.
-Campo vazio não aparece. Os campos voltam quando a pessoa pede, num bloco
-de cada vez: clique no texto, o botão "Editar" (à vista no foco do teclado,
-no passar do mouse e sempre no toque) ou E com o botão focado abrem o
-formulário de hoje no lugar, com todos os campos, inclusive os vazios; Esc
-ou "Concluir" voltam ao texto. Dois ou três cliques selecionam texto e não
-abrem a edição. O modo de privacidade continua valendo, e os dados
-escondidos viram uma linha só ("12 dados pessoais ocultos…").
+A leitura mostra todo campo preenchido: o que não cabe na frase (o status
+do curso, o ISSN, o idioma de um artigo) fica em linhas pequenas de rótulo
+e valor logo abaixo. Campo vazio não aparece.
+
+Editar não abre outra tela. O bloco clicado fica no mesmo lugar e cada
+pedaço de texto vira um campo onde estava: o ano continua na coluna do ano,
+o título onde está o título, rótulo e valor continuam em linha. O pedaço
+clicado recebe o foco, com o cursor no ponto do clique. Os campos não têm
+borda; ganham um fundo leve no passar do mouse e o contorno do destaque no
+foco. Os campos vazios aparecem só na edição, no fim do bloco, depois de um
+fio e com rótulo, os obrigatórios primeiro. A ordem é sempre a de leitura,
+nunca a do XSD.
+
+Nas produções a referência não se edita como texto. Ela fica no topo do
+bloco em edição e acompanha o que se digita; abaixo vêm os campos na ordem
+da citação (autores, título, onde saiu, lugar, ano, volume, páginas, DOI) e
+os vazios no fim. O campo em uso acende o trecho dele na referência, e
+clicar num trecho leva ao campo.
+
+Clique no texto, o botão "Editar" (à vista no foco do teclado, no passar do
+mouse e sempre no toque) ou E com o botão focado abrem a edição; dois ou
+três cliques selecionam texto. Esc ou "Concluir" voltam ao texto. O modo de
+privacidade continua valendo, e os dados escondidos viram uma linha só
+("12 dados pessoais ocultos…") na leitura e na edição.
 
 O texto de leitura usa a IBM Plex Serif (regular, itálica e seminegrito,
-embutidas como a Plex Sans); a edição, os campos e o cromo continuam na
-Plex Sans.
+embutidas como a Plex Sans). Na edição, os valores continuam na serifa e no
+mesmo corpo, para o texto não pular; rótulos, botões, legendas e listas de
+escolha ficam na Plex Sans. Uma variável só (`--edit-value-font`) passa os
+valores editáveis para a sans, se a leitura em serifa e a edição em sans
+forem preferidas mesmo com o salto.
 
 Os números escolhidos, com a regra de onde saíram:
 

@@ -1,23 +1,14 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
 
-import { loadCv } from '../src/model/document.ts';
-import { element, firstChild, parseXml } from '../src/model/xml.ts';
+import { parseXml } from '../src/model/xml.ts';
 import {
-  addressLines,
   clickOpensEditor,
   curlyQuotes,
   displayValue,
   formatCep,
-  formationEntry,
-  hasData,
   hiddenNote,
-  isProse,
   isReadingSection,
   paragraphs,
-  readingFields,
   readingKeyAction,
   type ReadingKeyContext,
   readingRequested,
@@ -27,11 +18,6 @@ import {
 } from '../src/ui/reading.ts';
 
 const el = (xml: string) => parseXml(xml).root;
-
-const fixture = async (name: string) => {
-  const bytes = new Uint8Array(readFileSync(join(import.meta.dirname, '../fixtures', name)));
-  return (await loadCv(bytes, name)).doc.root;
-};
 
 describe('modo de leitura: a chave na URL', () => {
   it('vale com ?leitura no pnpm dev e some no build', () => {
@@ -108,63 +94,9 @@ describe('modo de leitura: ler e editar', () => {
 });
 
 describe('modo de leitura: campos', () => {
-  const opts = { hideSensitive: false, showCodes: false };
-
-  it('esconde campos vazios, sequências, formato de data e códigos do Lattes', () => {
-    const dg = el(
-      `<DADOS-GERAIS NOME-COMPLETO="Ana Lima" NUMERO-DO-PASSAPORTE="" SEQUENCIA-X="3" FORMATO-DATA-DE-NASCIMENTO="DDMMAAAA" DATA-NASCIMENTO="03051986" SIGLA-PAIS-NACIONALIDADE="BRA" PAIS-DE-NASCIMENTO="Brasil"/>`,
-    );
-    const fields = readingFields(dg, opts);
-    expect(fields.map((f) => f.attr)).toEqual([
-      'NOME-COMPLETO',
-      'DATA-NASCIMENTO',
-      'PAIS-DE-NASCIMENTO',
-    ]);
-    expect(fields.find((f) => f.attr === 'DATA-NASCIMENTO')?.text).toBe('03/05/1986');
-  });
-
-  it('mostra os códigos quando "Mostrar códigos do Lattes" está ligado', () => {
-    const dg = el(`<DADOS-GERAIS NOME-COMPLETO="Ana" SIGLA-PAIS-NACIONALIDADE="BRA"/>`);
-    const attrs = readingFields(dg, { ...opts, showCodes: true }).map((f) => f.attr);
-    expect(attrs).toContain('SIGLA-PAIS-NACIONALIDADE');
-  });
-
-  it('mascara os dados sensíveis no modo de privacidade, sem pôr o valor na tela', () => {
-    const dg = el(
-      `<DADOS-GERAIS NOME-COMPLETO="Ana" DATA-NASCIMENTO="03051986" NOME-DA-MAE="Marta"/>`,
-    );
-    const fields = readingFields(dg, { ...opts, hideSensitive: true });
-    expect(fields.find((f) => f.attr === 'NOME-COMPLETO')).toMatchObject({
-      masked: false,
-      text: 'Ana',
-    });
-    expect(fields.find((f) => f.attr === 'NOME-DA-MAE')).toMatchObject({ masked: true, text: '' });
-    expect(fields.find((f) => f.attr === 'DATA-NASCIMENTO')?.text).toBe('');
-  });
-
-  it('só o texto longo vira parágrafo sem rótulo', () => {
-    const base = { attr: 'X', label: 'X', masked: false };
-    expect(isProse({ ...base, text: 'Brasil' })).toBe(false);
-    expect(isProse({ ...base, text: 'a'.repeat(91) })).toBe(true);
-    expect(isProse({ ...base, masked: true, text: '' })).toBe(false);
-    expect(isProse({ ...base, text: 'a'.repeat(91), url: 'https://x' })).toBe(false);
-  });
-
-  it('acha dado em qualquer nível, inclusive só nos netos', () => {
-    expect(hasData(el('<A X=""><B Y=""/></A>'))).toBe(false);
-    expect(hasData(el('<A X=""><B><C Z="1"/></B></A>'))).toBe(true);
-    expect(hasData(el('<A X="1"/>'))).toBe(true);
-  });
-
   it('resume os dados escondidos numa linha', () => {
     expect(hiddenNote(1)).toBe('1 dado pessoal oculto pelo modo de privacidade.');
     expect(hiddenNote(12)).toBe('12 dados pessoais ocultos pelo modo de privacidade.');
-  });
-
-  it('deixa de fora o que outro trecho da leitura já mostra', () => {
-    const dg = el(`<DADOS-GERAIS NOME-COMPLETO="Ana" TEXTO-RESUMO-CV-RH="Resumo"/>`);
-    const fields = readingFields(dg, { ...opts, except: new Set(['TEXTO-RESUMO-CV-RH']) });
-    expect(fields.map((f) => f.attr)).toEqual(['NOME-COMPLETO']);
   });
 
   it('escreve enum, sim/não, códigos e citações por extenso', () => {
@@ -178,15 +110,6 @@ describe('modo de leitura: campos', () => {
     );
     expect(displayValue(dg, 'PERMISSAO-DE-DIVULGACAO', 'NAO')).toBe('Não');
     expect(displayValue(dg, 'PERMISSAO-DE-DIVULGACAO', 'SIM')).toBe('Sim');
-  });
-
-  it('transforma página e ORCID em link', () => {
-    const dg = el(`<DADOS-GERAIS ORCID-ID="https://orcid.org/0000-0002-1825-0097"/>`);
-    expect(readingFields(dg, { ...opts, showCodes: true })[0]?.url).toBe(
-      'https://orcid.org/0000-0002-1825-0097',
-    );
-    const prof = el(`<ENDERECO-PROFISSIONAL HOME-PAGE="ufrgs.br"/>`);
-    expect(readingFields(prof, opts)[0]?.url).toBeUndefined();
   });
 });
 
@@ -203,28 +126,6 @@ describe('modo de leitura: texto', () => {
   it('separa parágrafos pelas quebras de linha e descarta linhas vazias', () => {
     expect(paragraphs('Um.\n\nDois.\r\nTrês.  ')).toEqual(['Um.', 'Dois.', 'Três.']);
     expect(paragraphs('')).toEqual([]);
-  });
-
-  it('compõe o endereço em linhas, com CEP formatado', () => {
-    const prof = element('ENDERECO-PROFISSIONAL', {
-      BAIRRO: 'Agronomia',
-      CEP: '91501970',
-      CIDADE: 'Porto Alegre',
-      'LOGRADOURO-COMPLEMENTO': 'Avenida Bento Gonçalves, 9500',
-      'NOME-INSTITUICAO-EMPRESA': 'Universidade Federal do Rio Grande do Sul',
-      'NOME-UNIDADE': 'Departamento de Genética',
-      PAIS: 'Brasil',
-      UF: 'RS',
-    });
-    expect(addressLines(prof)).toEqual([
-      'Universidade Federal do Rio Grande do Sul, Departamento de Genética',
-      'Avenida Bento Gonçalves, 9500, Agronomia',
-      'Porto Alegre – RS',
-      '91501-970, Brasil',
-    ]);
-    expect(addressLines(element('ENDERECO-RESIDENCIAL', { LOGRADOURO: 'Rua A', UF: '' }))).toEqual([
-      'Rua A',
-    ]);
   });
 
   it('a coluna da esquerda tem a largura do texto mais longo, no mínimo um ano', () => {
@@ -249,40 +150,5 @@ describe('modo de leitura: texto', () => {
       { shown: '', value: '' },
       { shown: '2023', value: '2023' },
     ]);
-  });
-});
-
-describe('modo de leitura: formação', () => {
-  it('compõe nível e curso, instituição, trabalho, orientação e bolsa', () => {
-    const mestrado = el(
-      `<MESTRADO NOME-CURSO="Genética" NOME-INSTITUICAO="UFRGS" TITULO-DA-DISSERTACAO-TESE="Estrutura &quot;genética&quot;" TITULO-DA-DISSERTACAO-TESE-INGLES="Genetic structure" NOME-COMPLETO-DO-ORIENTADOR="Paulo Mendes" NOME-DO-CO-ORIENTADOR="Helena Vieira" FLAG-BOLSA="SIM" NOME-AGENCIA="CAPES"/>`,
-    );
-    expect(formationEntry(mestrado, 'Mestrado')).toEqual({
-      degree: 'Mestrado em Genética',
-      institution: 'UFRGS',
-      notes: ['Orientação: Paulo Mendes; coorientação: Helena Vieira', 'Bolsa: CAPES'],
-      work: 'Estrutura “genética”',
-    });
-  });
-
-  it('sem curso fica só o nível; agência sem bolsa não vira bolsa', () => {
-    const pos = el(
-      `<POS-DOUTORADO NOME-INSTITUICAO="USP" FLAG-BOLSA="NAO" NOME-AGENCIA="FAPESP"/>`,
-    );
-    expect(formationEntry(pos, 'Pós-doutorado')).toEqual({
-      degree: 'Pós-doutorado',
-      institution: 'USP',
-      notes: ['Agência: FAPESP'],
-      work: undefined,
-    });
-  });
-
-  it('lê a formação do currículo de demonstração', async () => {
-    const root = await fixture('demo.xml');
-    const dg = firstChild(root, 'DADOS-GERAIS')!;
-    const doutorado = firstChild(firstChild(dg, 'FORMACAO-ACADEMICA-TITULACAO')!, 'DOUTORADO')!;
-    const entry = formationEntry(doutorado, 'Doutorado');
-    expect(entry.degree).toBe('Doutorado em Genética e Biologia Molecular');
-    expect(entry.notes[0]).toMatch(/^Orientação: /);
   });
 });

@@ -5,12 +5,11 @@
 // quando uma tecla abre ou fecha a edição. A composição está em
 // ReadingView.tsx e as medidas tipográficas em styles.css (".reading").
 
-import { attributeLabelIn, enumLabel } from '../labels/labels.ts';
-import { getAttr, type XElement } from '../model/xml.ts';
+import { enumLabel } from '../labels/labels.ts';
+import { type XElement } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
-import { codeValueLabel, isBooleanAttr, isSystemAttr } from './field-kind.ts';
-import { displayLattesDate, isLattesDateAttr, isRedundantDateFormat } from './lattes-date.ts';
-import { isSensitiveAttr } from './privacy.ts';
+import { codeValueLabel, isBooleanAttr } from './field-kind.ts';
+import { displayLattesDate, isLattesDateAttr } from './lattes-date.ts';
 
 /** Seções do protótipo; as outras continuam com os campos de sempre. */
 export const READING_SECTIONS = new Set(['dados-gerais', 'formacao', 'producoes']);
@@ -110,28 +109,6 @@ export function paragraphs(text: string): string[] {
     .filter(Boolean);
 }
 
-export interface ReadingField {
-  attr: string;
-  /** Rótulo do formulário (o mesmo do campo em edição). */
-  label: string;
-  /** Escondido pelo modo de privacidade: o valor não vai para a tela. */
-  masked: boolean;
-  /** Valor por extenso: enum, data, sim/não e códigos conhecidos traduzidos. */
-  text: string;
-  /** Endereço que vira link (página, ORCID). */
-  url?: string;
-}
-
-export interface ReadingOptions {
-  /** Atributos que outro trecho da leitura já mostra. */
-  except?: Set<string>;
-  hideSensitive: boolean;
-  /** "Mostrar códigos do Lattes" ligado. */
-  showCodes: boolean;
-}
-
-const URL_ATTRS = /^(HOME-PAGE|ORCID-ID)/;
-
 /** Valor de um atributo como se lê: "Feminino", "03/05/1986", "Sim". */
 export function displayValue(el: XElement, attr: string, value: string): string {
   const spec = lattesSchema.elements[el.name]?.attributes.find((a) => a.name === attr);
@@ -157,48 +134,6 @@ export function displayValue(el: XElement, attr: string, value: string): string 
   return coded === value ? curlyQuotes(value) : coded;
 }
 
-/**
- * Os campos de um elemento que a leitura mostra: só os preenchidos, sem
- * números de sequência, sem o formato de data que só repete DDMMAAAA e sem os
- * códigos do Lattes (a menos que a pessoa peça para vê-los). Os sensíveis
- * saem mascarados quando o modo de privacidade está ligado.
- */
-export function readingFields(el: XElement, opts: ReadingOptions): ReadingField[] {
-  return el.attrs
-    .filter((a) => a.value.trim() !== '')
-    .filter((a) => !opts.except?.has(a.name))
-    .filter((a) => !a.name.startsWith('SEQUENCIA-'))
-    .filter((a) => !isRedundantDateFormat(a.name, a.value))
-    .filter((a) => opts.showCodes || !isSystemAttr(el.name, a.name))
-    .map((a) => {
-      const masked = opts.hideSensitive && isSensitiveAttr(el.name, a.name);
-      const value = a.value.trim();
-      return {
-        attr: a.name,
-        label: attributeLabelIn(el.name, a.name),
-        masked,
-        text: masked ? '' : displayValue(el, a.name, value),
-        url: !masked && URL_ATTRS.test(a.name) && /^https?:\/\//.test(value) ? value : undefined,
-      };
-    });
-}
-
-/** O elemento tem algum dado: um atributo preenchido aqui ou em qualquer descendente. */
-export function hasData(el: XElement): boolean {
-  return (
-    el.attrs.some((a) => a.value.trim() !== '') ||
-    el.children.some((c) => c.kind === 'element' && hasData(c))
-  );
-}
-
-/** A partir daqui um valor é texto corrido, como na área de texto dos formulários. */
-const PROSE_MIN = 90;
-
-/** Campo que se lê como parágrafo: texto longo, não mascarado, sem link. */
-export function isProse(field: ReadingField): boolean {
-  return !field.masked && !field.url && field.text.length > PROSE_MIN;
-}
-
 /** A linha que substitui os dados escondidos pelo modo de privacidade. */
 export function hiddenNote(count: number): string {
   return count === 1
@@ -206,82 +141,12 @@ export function hiddenNote(count: number): string {
     : `${count} dados pessoais ocultos pelo modo de privacidade.`;
 }
 
-/** Campos que o endereço composto em linhas já mostra (o resto vira lista de rótulos). */
-export const ADDRESS_LINE_ATTRS = new Set([
-  'NOME-INSTITUICAO-EMPRESA',
-  'NOME-ORGAO',
-  'NOME-UNIDADE',
-  'LOGRADOURO-COMPLEMENTO',
-  'LOGRADOURO',
-  'BAIRRO',
-  'CIDADE',
-  'UF',
-  'CEP',
-  'PAIS',
-]);
-
 /** "91501-970" quando o CEP tem os oito dígitos; outro valor fica como veio. */
 export function formatCep(value: string): string {
   const digits = value.replace(/\D/g, '');
   return digits.length === 8 && /^[\d.\s-]+$/.test(value)
     ? `${digits.slice(0, 5)}-${digits.slice(5)}`
     : value;
-}
-
-/**
- * Endereço (profissional ou residencial) em linhas, como num envelope:
- * instituição e unidade, logradouro e bairro, cidade e UF, CEP e país.
- */
-export function addressLines(el: XElement): string[] {
-  const v = (n: string) => getAttr(el, n)?.trim() || undefined;
-  const cep = v('CEP');
-  return [
-    [v('NOME-INSTITUICAO-EMPRESA'), v('NOME-ORGAO'), v('NOME-UNIDADE')],
-    [v('LOGRADOURO-COMPLEMENTO') ?? v('LOGRADOURO'), v('BAIRRO')],
-    [[v('CIDADE'), v('UF')].filter(Boolean).join(' – ') || undefined],
-    [cep && formatCep(cep), v('PAIS')],
-  ]
-    .map((parts) => parts.filter(Boolean).join(', '))
-    .filter(Boolean);
-}
-
-export interface FormationEntry {
-  /** "Mestrado em Genética e Biologia Molecular". */
-  degree: string;
-  institution?: string;
-  /** Linhas de apoio em cor secundária: orientação, bolsa. */
-  notes: string[];
-  /** Título da tese, dissertação ou trabalho de conclusão. */
-  work?: string;
-}
-
-const WORK_TITLE =
-  /^TITULO-(DA-DISSERTACAO-TESE|DO-TRABALHO-DE-CONCLUSAO-DE-CURSO|DA-MONOGRAFIA|DO-TRABALHO)/;
-
-/**
- * Uma formação como se lê num currículo: nível e curso na primeira linha,
- * instituição, o título do trabalho e, em cor secundária, orientação e bolsa.
- */
-export function formationEntry(el: XElement, levelLabel: string): FormationEntry {
-  const v = (n: string) => getAttr(el, n)?.trim() || undefined;
-  const course = v('NOME-CURSO');
-  const degree = course ? `${levelLabel} em ${course}` : levelLabel;
-  const workAttr = el.attrs.find(
-    (a) => WORK_TITLE.test(a.name) && !a.name.endsWith('INGLES') && a.value.trim(),
-  );
-  const advisor = v('NOME-COMPLETO-DO-ORIENTADOR') ?? v('NOME-DO-ORIENTADOR');
-  const coAdvisor = v('NOME-DO-CO-ORIENTADOR');
-  const agency = v('NOME-AGENCIA');
-  const notes = [
-    advisor && `Orientação: ${advisor}${coAdvisor ? `; coorientação: ${coAdvisor}` : ''}`,
-    agency && (getAttr(el, 'FLAG-BOLSA') !== 'NAO' ? `Bolsa: ${agency}` : `Agência: ${agency}`),
-  ].filter((n): n is string => Boolean(n));
-  return {
-    degree,
-    institution: v('NOME-INSTITUICAO') ?? v('NOME-DA-INSTITUICAO'),
-    notes,
-    work: workAttr && curlyQuotes(workAttr.value.trim()),
-  };
 }
 
 export interface YearCell {
@@ -309,4 +174,29 @@ export function yearColumn(values: string[]): YearCell[] {
  */
 export function tabWidth(values: string[]): number {
   return Math.max(4, ...values.map((v) => v.length));
+}
+
+export interface FocusPlan {
+  /** Posição do cursor no campo, quando o clique caiu num texto que é o próprio valor. */
+  caret?: number;
+  index: number;
+}
+
+/**
+ * Que campo recebe o foco ao abrir a edição: o do pedaço clicado (com o
+ * cursor no ponto do clique), o primeiro campo de um autor clicado na
+ * referência ("3:*"), ou o primeiro campo do bloco.
+ */
+export function focusTarget(fields: string[], key?: string, offset?: number): FocusPlan | null {
+  if (fields.length === 0) return null;
+  if (key) {
+    const exact = fields.indexOf(key);
+    if (exact >= 0) return { caret: offset, index: exact };
+    if (key.endsWith(':*')) {
+      const prefix = key.slice(0, -1);
+      const first = fields.findIndex((f) => f.startsWith(prefix));
+      if (first >= 0) return { index: first };
+    }
+  }
+  return { index: 0 };
 }

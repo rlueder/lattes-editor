@@ -1,10 +1,19 @@
-// Bloco do modo de leitura (protótipo, ?leitura): o texto composto e, quando a
-// pessoa pede, o formulário de hoje no mesmo lugar.
+// Bloco do modo de leitura (protótipo, ?leitura): o mesmo texto composto, que
+// vira editável no lugar quando a pessoa pede. Não troca de tela: cada pedaço
+// de texto vira um campo onde estava, o pedaço clicado recebe o foco (com o
+// cursor no ponto do clique) e fica na mesma altura da tela.
 
-import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from 'react';
+import {
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { PencilIcon } from './icons.tsx';
-import { clickOpensEditor, readingKeyAction } from './reading.ts';
+import { clickOpensEditor, focusTarget, readingKeyAction } from './reading.ts';
 
 /** Tecla G recente: o E seguinte é o atalho de seção (G E, Educação), não "editar". */
 const GO_WINDOW_MS = 1500;
@@ -16,68 +25,101 @@ const CLICK_DELAY_MS = 250;
 interface BlockProps {
   /** Ação discreta que também abre a edição ("Adicionar resumo em inglês"). */
   addLabel?: string;
-  /** Conteúdo de leitura. */
-  children: ReactNode;
   className?: string;
-  /** O formulário de hoje, com todos os campos, inclusive os vazios. */
-  edit: () => ReactNode;
-  /** Ação extra no topo do painel de edição (Editar no formulário). */
+  /** Ação extra ao lado de "Concluir" (Editar no formulário). */
   editExtra?: ReactNode;
   /** Nome do bloco, para o botão e para leitores de tela. */
   label: string;
+  /** O conteúdo, lido ou editável: a mesma composição nos dois casos. */
+  render: (editing: boolean) => ReactNode;
+}
+
+/** Onde o clique caiu: o pedaço (data-part), a posição no texto dele e a altura na tela. */
+interface ClickPoint {
+  key?: string;
+  offset?: number;
+  top: number;
+}
+
+/** O pedaço de texto e a posição do cursor sob o ponto clicado. */
+function pointAt(block: HTMLElement, x: number, y: number): ClickPoint {
+  const doc = document as Document & {
+    caretPositionFromPoint?: (x: number, y: number) => { offset: number; offsetNode: Node } | null;
+  };
+  let node: Node | null = null;
+  let offset: number | undefined;
+  const pos = doc.caretPositionFromPoint?.(x, y);
+  if (pos) {
+    node = pos.offsetNode;
+    offset = pos.offset;
+  } else {
+    const range = document.caretRangeFromPoint?.(x, y);
+    node = range?.startContainer ?? null;
+    offset = range?.startOffset;
+  }
+  const host = node instanceof Element ? node : node?.parentElement;
+  const span = host?.closest<HTMLElement>('[data-part]');
+  if (!span || !block.contains(span)) return { top: block.getBoundingClientRect().top };
+  // A posição conta a partir do começo do texto do pedaço, mesmo com nós antes.
+  let before = 0;
+  const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT);
+  for (let t = walker.nextNode(); t && t !== node; t = walker.nextNode()) {
+    before += t.textContent?.length ?? 0;
+  }
+  return {
+    key: span.dataset.part,
+    offset: node && span.contains(node) ? before + (offset ?? 0) : undefined,
+    top: span.getBoundingClientRect().top,
+  };
 }
 
 /**
  * Um bloco que se lê como texto e se edita no lugar. O ponto de foco (Tab) é
  * o botão "Editar", à vista no foco, no passar do mouse e sempre em telas de
- * toque; com ele focado, E também abre. O clique no texto abre a edição para
- * quem usa mouse ou toque, menos quando a pessoa está selecionando texto
+ * toque; com ele focado, E também abre. O clique no texto abre a edição com o
+ * foco no pedaço clicado, menos quando a pessoa está selecionando texto
  * (arrastando, ou com dois ou três cliques). Esc ou "Concluir" voltam à
- * leitura e devolvem o foco ao botão. A leitura esconde os campos vazios; a
- * edição mostra todos, para preencher o que falta.
+ * leitura e devolvem o foco ao botão.
  */
-export function EditableBlock({
-  addLabel,
-  children,
-  className,
-  edit,
-  editExtra,
-  label,
-}: BlockProps) {
+export function EditableBlock({ addLabel, className, editExtra, label, render }: BlockProps) {
   const [editing, setEditing] = useState(false);
+  const blockRef = useRef<HTMLDivElement>(null);
   const editRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
   const restoreFocus = useRef(false);
   const clickTimer = useRef(0);
+  /** O pedaço clicado, ou o topo do bloco, para manter no mesmo lugar da tela. */
+  const anchor = useRef<ClickPoint | null>(null);
 
   useEffect(() => () => clearTimeout(clickTimer.current), []);
 
-  const open = () => {
+  const open = (point?: ClickPoint) => {
     clearTimeout(clickTimer.current);
+    anchor.current = point ?? { top: blockRef.current?.getBoundingClientRect().top ?? 0 };
     setEditing(true);
   };
   const close = () => {
     // Os campos gravam ao perder o foco: tirar o foco antes de fechar grava o
     // que estava sendo digitado.
     const active = document.activeElement;
-    if (active instanceof HTMLElement && panelRef.current?.contains(active)) active.blur();
+    if (active instanceof HTMLElement && blockRef.current?.contains(active)) active.blur();
+    anchor.current = { top: blockRef.current?.getBoundingClientRect().top ?? 0 };
     restoreFocus.current = true;
     setEditing(false);
   };
   const closeRef = useRef(close);
   closeRef.current = close;
 
-  // Esc no painel volta à leitura. O ouvinte fica no documento, na fase de
+  // Esc no bloco volta à leitura. O ouvinte fica no documento, na fase de
   // subida: roda depois dos manipuladores do React (presos na raiz), então um
   // campo que já usou o Esc (fechando a própria lista) deixa defaultPrevented.
-  // Teclas de um menu em portal, fora do painel, e de um controle ainda
-  // aberto (aria-expanded) também não fecham a edição.
+  // Teclas de um menu em portal, fora do bloco, e de um controle ainda aberto
+  // (aria-expanded) também não fecham a edição.
   useEffect(() => {
-    const panel = panelRef.current;
-    if (!editing || !panel) return;
+    const block = blockRef.current;
+    if (!editing || !block) return;
     const onKey = (e: globalThis.KeyboardEvent) => {
       const target = e.target instanceof Element ? e.target : null;
-      const inside = target !== null && panel.contains(target);
+      const inside = target !== null && block.contains(target);
       const expanded = target?.closest('[aria-expanded="true"]') !== null;
       const action = readingKeyAction(e.key, {
         afterGo: false,
@@ -95,32 +137,40 @@ export function EditableBlock({
     return () => document.removeEventListener('keydown', onKey);
   }, [editing]);
 
-  useEffect(() => {
+  // Depois da troca: o pedaço clicado volta à altura em que estava, recebe o
+  // foco e o cursor no ponto do clique. Sem pedaço, o primeiro campo.
+  useLayoutEffect(() => {
+    const block = blockRef.current;
+    const point = anchor.current;
+    anchor.current = null;
+    if (!block || !point) return;
+    const fields = [...block.querySelectorAll<HTMLElement>('[data-field]')];
     if (editing) {
-      const first = panelRef.current?.querySelector<HTMLElement>(
-        '.reading-edit-body input:not([type=hidden]), .reading-edit-body textarea, .reading-edit-body [role=combobox]',
+      const plan = focusTarget(
+        fields.map((f) => f.dataset.field ?? ''),
+        point.key,
+        point.offset,
       );
-      first?.focus();
-    } else if (restoreFocus.current) {
-      restoreFocus.current = false;
-      editRef.current?.focus();
+      const field = plan ? fields[plan.index] : undefined;
+      const nowTop = (field ?? block).getBoundingClientRect().top;
+      if (point.key && field) window.scrollBy(0, nowTop - point.top);
+      else window.scrollBy(0, block.getBoundingClientRect().top - point.top);
+      field?.focus({ preventScroll: true });
+      if (
+        plan?.caret !== undefined &&
+        (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement)
+      ) {
+        const at = Math.min(plan.caret, field.value.length);
+        field.setSelectionRange(at, at);
+      }
+    } else {
+      window.scrollBy(0, block.getBoundingClientRect().top - point.top);
+      if (restoreFocus.current) {
+        restoreFocus.current = false;
+        editRef.current?.focus({ preventScroll: true });
+      }
     }
   }, [editing]);
-
-  if (editing) {
-    return (
-      <div ref={panelRef} aria-label={`Editando: ${label}`} className="reading-edit" role="group">
-        <div className="reading-edit-bar">
-          <span className="reading-edit-title">{label}</span>
-          {editExtra}
-          <button className="primary" type="button" onClick={close}>
-            Concluir
-          </button>
-        </div>
-        <div className="reading-edit-body">{edit()}</div>
-      </div>
-    );
-  }
 
   // E no botão "Editar" (o ponto de foco do bloco) também abre; Enter e espaço
   // já valem por ser botão.
@@ -139,41 +189,70 @@ export function EditableBlock({
     }
   };
 
+  const classes = ['reading-block', className, editing ? 'is-editing' : '']
+    .filter(Boolean)
+    .join(' ');
+
   return (
     // O clique no texto é um atalho para quem usa mouse ou toque; pelo teclado,
     // o mesmo caminho é o botão "Editar", que é o ponto de foco do bloco.
-    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events
     <div
-      className={`reading-block${className ? ` ${className}` : ''}`}
+      ref={blockRef}
+      aria-label={editing ? `Editando: ${label}` : undefined}
+      className={classes}
+      role={editing ? 'group' : undefined}
       onClick={(e) => {
+        if (editing) return;
         // Espera o intervalo de um duplo clique: dois ou três cliques selecionam
         // palavra ou parágrafo e não abrem a edição.
         clearTimeout(clickTimer.current);
         const onControl = (e.target as Element).closest('a, button') !== null;
         if (!clickOpensEditor(window.getSelection()?.toString() ?? '', onControl, e.detail)) return;
+        const block = e.currentTarget;
+        const point = pointAt(block, e.clientX, e.clientY);
         clickTimer.current = window.setTimeout(() => {
-          if (clickOpensEditor(window.getSelection()?.toString() ?? '', false, 1)) open();
+          if (clickOpensEditor(window.getSelection()?.toString() ?? '', false, 1)) {
+            // A página pode ter rolado na espera: a altura vale a de agora.
+            const span = point.key
+              ? block.querySelector<HTMLElement>(`[data-part="${CSS.escape(point.key)}"]`)
+              : null;
+            open({ ...point, top: (span ?? block).getBoundingClientRect().top });
+          }
         }, CLICK_DELAY_MS);
       }}
     >
-      {children}
+      <div key={editing ? 'edit' : 'read'} className="reading-content">
+        {render(editing)}
+      </div>
       <span className="reading-actions">
-        {addLabel && (
-          <button className="reading-add" type="button" onClick={open}>
-            {addLabel}
-          </button>
+        {editing ? (
+          <>
+            {editExtra}
+            <button className="reading-done" type="button" onClick={close}>
+              Concluir
+            </button>
+          </>
+        ) : (
+          <>
+            {addLabel && (
+              <button className="reading-add" type="button" onClick={() => open()}>
+                {addLabel}
+              </button>
+            )}
+            <button
+              ref={editRef}
+              aria-keyshortcuts="E"
+              aria-label={`Editar ${label}`}
+              className="reading-edit-btn"
+              type="button"
+              onClick={() => open()}
+              onKeyDown={onEditKey}
+            >
+              <PencilIcon /> Editar
+            </button>
+          </>
         )}
-        <button
-          ref={editRef}
-          aria-keyshortcuts="E"
-          aria-label={`Editar ${label}`}
-          className="reading-edit-btn"
-          type="button"
-          onClick={() => open()}
-          onKeyDown={onEditKey}
-        >
-          <PencilIcon /> Editar
-        </button>
       </span>
     </div>
   );
