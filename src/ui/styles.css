@@ -5994,23 +5994,6 @@ button.ghost.icon {
   padding-right: 44px;
 }
 
-/* Link com cara de botão principal no estado vazio ("Abrir o Lattes"), do
-   tamanho dos botões ao lado. */
-.empty-actions .action-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: min(320px, 100%);
-  height: 40px;
-  padding: 0 18px;
-  border: 1px solid var(--accent-text);
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--accent-contrast);
-  font-size: 14px;
-  text-decoration: none;
-}
-
 /* Seletor de tema: pílula, como os botões, e com a altura das linhas do menu. */
 .menu .menu-segment {
   padding: 3px;
@@ -6275,4 +6258,26 @@ main.content {
   .menu-seg-indicator {
     transition: none;
   }
+}
+
+/* Estado vazio: todas as ações com o mesmo tamanho, uma por linha, como o
+   botão principal que a seção Projetos tinha (pílula de 40 px, até 320 px). O
+   primeiro é o principal; atalhos de tipo e "Marcar itens" ficam com contorno. */
+.empty-section .empty-actions {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.empty-section .empty-actions button {
+  justify-content: center;
+  width: min(320px, 100%);
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-size: 14px;
+}
+
+.empty-section .empty-actions button:not(.primary) {
+  border: 1px solid var(--border);
 }
