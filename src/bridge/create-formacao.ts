@@ -21,10 +21,11 @@ import {
   mapAttrs,
   type Mapper,
   maybeCreated,
-  notSaved,
   overLimit,
   type Planned,
   radio,
+  readBack,
+  readBackProblem,
   readPairs,
   reasonFrom,
   type Result,
@@ -350,18 +351,14 @@ export async function applyCreateFormacao(op: CreateFormacaoOp, port: LattesPort
       }
       const seq = created[0]!.params.f_seq!;
       const assigned = { 'SEQUENCIA-FORMACAO': seq };
-      const saved = (await readPairs(port, created[0]!.path, FORMACAO_FORM)).pairs;
-      const wrong = notSaved(saved, typed);
-      if (!sameCode(formationInstitution(saved), op.institutionCode)) wrong.push('Instituição');
-      if (wrong.length > 0) {
-        return {
-          ...result(
-            'divergente',
-            `Criada no Lattes (formação ${seq}), mas gravada diferente: ${wrong.join(', ')}`,
-          ),
-          assigned,
-        };
+      const saved = await readPairs(port, created[0]!.path, FORMACAO_FORM);
+      // Tudo o que foi enviado, com instituição, curso e agência das buscas.
+      const check = readBack(saved, set);
+      if (!sameCode(formationInstitution(saved.pairs), op.institutionCode)) {
+        check.differ.push('Instituição');
       }
+      const problem = readBackProblem(`Criada no Lattes (formação ${seq})`, true, check);
+      if (problem) return { ...result('divergente', problem), assigned };
       return { ...result('conferido', `Criada e conferida no Lattes (formação ${seq})`), assigned };
     } catch (err) {
       return maybeCreated(

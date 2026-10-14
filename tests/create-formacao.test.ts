@@ -287,6 +287,24 @@ describe('incluir a formação no Lattes falso', () => {
     expect(
       await applyCreateFormacao(op(), fakeFormacao({ tamper: { f_cod_inst2: 'D9' } }).port),
     ).toMatchObject({ detail: expect.stringMatching(/Instituição/) });
+    // O que veio das buscas também é relido: curso e agência diferentes falham.
+    expect(
+      await applyCreateFormacao(op(), fakeFormacao({ tamper: { f_cod_curso2: '99999999' } }).port),
+    ).toMatchObject({
+      detail: expect.stringMatching(/gravada diferente: f_cod_curso2/),
+      status: 'divergente',
+    });
+    expect(
+      await applyCreateFormacao(op(), fakeFormacao({ tamper: { f_nme_agencia: 'Outra' } }).port),
+    ).toMatchObject({ detail: expect.stringMatching(/gravada diferente: f_nme_agencia/) });
+    // Campo enviado que a releitura não traz fica sem conferir, nunca conferido.
+    expect(
+      await applyCreateFormacao(op(), fakeFormacao({ unread: ['f_agencia', 'f_curso'] }).port),
+    ).toMatchObject({
+      assigned: { 'SEQUENCIA-FORMACAO': '1' },
+      detail: expect.stringMatching(/não conferida: o formulário relido não traz .*f_agencia/),
+      status: 'divergente',
+    });
     expect(await applyCreateFormacao(op(), fakeFormacao({ logonOnPost: true }).port)).toMatchObject(
       {
         status: 'sessao',

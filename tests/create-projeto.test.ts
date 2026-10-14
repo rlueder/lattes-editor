@@ -277,6 +277,24 @@ describe('incluir o projeto no Lattes falso', () => {
       detail: expect.stringMatching(/gravado diferente: Título/),
       status: 'divergente',
     });
+    // A instituição e o vínculo da atuação também são relidos: projeto
+    // pendurado em outra atuação falha.
+    expect(
+      await applyCreateProjeto(
+        op(),
+        fakeProjeto({ tamper: { f_cod_inst2: '009', f_vinc: 'Outro' } }).port,
+      ),
+    ).toMatchObject({
+      detail: expect.stringMatching(/gravado diferente: f_vinc, f_cod_inst2/),
+      status: 'divergente',
+    });
+    expect(
+      await applyCreateProjeto(op(), fakeProjeto({ unread: ['f_vinc', 'f_regime'] }).port),
+    ).toMatchObject({
+      assigned: { 'SEQUENCIA-PROJETO': '1' },
+      detail: expect.stringMatching(/não conferido: o formulário relido não traz/),
+      status: 'divergente',
+    });
     expect(await applyCreateProjeto(op(), fakeProjeto({ logonOnPost: true }).port)).toMatchObject({
       status: 'sessao',
     });

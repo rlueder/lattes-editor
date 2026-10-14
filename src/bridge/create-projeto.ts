@@ -21,10 +21,11 @@ import {
   mapAttrs,
   type Mapper,
   maybeCreated,
-  notSaved,
   overLimit,
   type Planned,
   radio,
+  readBack,
+  readBackProblem,
   readPairs,
   reasonFrom,
   type Result,
@@ -370,14 +371,11 @@ export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort):
       // O nome do parâmetro da sequência no link é inferido do oculto f_seq_proj.
       const seq = created[0]!.params.f_seq_proj;
       const assigned = seq ? { 'SEQUENCIA-PROJETO': seq } : undefined;
-      const saved = (await readPairs(port, created[0]!.path, PROJETO_FORM)).pairs;
-      const wrong = notSaved(saved, op.set);
-      if (wrong.length > 0) {
-        return {
-          ...result('divergente', `Criado no Lattes, mas gravado diferente: ${wrong.join(', ')}`),
-          assigned,
-        };
-      }
+      const saved = await readPairs(port, created[0]!.path, PROJETO_FORM);
+      // Tudo o que foi enviado, com a instituição e o vínculo da atuação: se o
+      // Lattes pendurar o projeto em outra atuação, a releitura acusa.
+      const problem = readBackProblem('Criado no Lattes', false, readBack(saved, set));
+      if (problem) return { ...result('divergente', problem), assigned };
       return { ...result('conferido', 'Criado e conferido no Lattes'), assigned };
     } catch (err) {
       return maybeCreated(

@@ -207,11 +207,40 @@ export function overLimit(controls: FormControl[], set: FieldValues): string | u
 const sameValue = (a: string | null, b: string | null) =>
   (a ?? '') === (b ?? '') || normalizeNewlines(a ?? '') === normalizeNewlines(b ?? '');
 
-/** Campos enviados que voltaram diferentes na releitura. */
-export function notSaved(pairs: Pairs, set: FieldValues): string[] {
-  return Object.entries(set)
-    .filter(([name, v]) => !sameValue(pairValue(pairs, name), v))
-    .map(([name]) => CREATE_FIELD_LABELS[name] ?? name);
+const labelOf = (name: string) => CREATE_FIELD_LABELS[name] ?? name;
+
+/**
+ * Releitura de tudo o que foi enviado, inclusive o que veio das buscas
+ * (instituição, curso, agência, vínculo). Que campos ocultos o formulário de
+ * alteração traz depois de uma inclusão não foi observado: campo que voltou
+ * diferente é falha (`differ`), e campo que não voltou fica sem conferir
+ * (`unread`), nunca dado por conferido.
+ */
+export function readBack(
+  saved: { controls: FormControl[]; pairs: Pairs },
+  set: FieldValues,
+): { differ: string[]; unread: string[] } {
+  const differ: string[] = [];
+  const unread: string[] = [];
+  for (const [name, value] of Object.entries(set)) {
+    if (!saved.controls.some((c) => c.name === name)) unread.push(labelOf(name));
+    else if (!sameValue(pairValue(saved.pairs, name), value)) differ.push(labelOf(name));
+  }
+  return { differ, unread };
+}
+
+/** O motivo de uma inclusão feita mas não conferida, ou undefined se tudo voltou igual. */
+export function readBackProblem(
+  created: string,
+  feminine: boolean,
+  { differ, unread }: { differ: string[]; unread: string[] },
+): string | undefined {
+  const end = feminine ? 'a' : 'o';
+  if (differ.length > 0) return `${created}, mas gravad${end} diferente: ${differ.join(', ')}`;
+  if (unread.length > 0) {
+    return `${created}, mas não conferid${end}: o formulário relido não traz ${unread.join(', ')}`;
+  }
+  return undefined;
 }
 
 export type Result = OpResult & { assigned?: Record<string, string> };

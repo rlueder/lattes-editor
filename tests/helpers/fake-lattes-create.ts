@@ -91,7 +91,13 @@ export interface FakeOpts {
   sessionAfterPost?: boolean;
   /** Muda um campo na gravação, para a releitura acusar. */
   tamper?: Record<string, string>;
+  /** Campos que o formulário de alteração não traz na releitura. */
+  unread?: string[];
 }
+
+/** Os tipos do formulário sem alguns campos (o que a releitura não traz). */
+const without = (types: Record<string, string>, names: string[] = []) =>
+  Object.fromEntries(Object.entries(types).filter(([name]) => !names.includes(name)));
 
 const LOGON = '<SCRIPT>location="pkg_sec.logon?f_cod=ini"</SCRIPT>';
 
@@ -169,7 +175,7 @@ export function fakeFormacao(opts: FakeOpts = {}) {
       if (!m || m[1] !== form) return undefined;
       if (m[2] === 'seq') {
         const row = rows.find((r) => r.f_seq === m[3]);
-        return row ? controlsFrom(row, types) : undefined;
+        return row ? controlsFrom(row, without(types, opts.unread)) : undefined;
       }
       return controlsFrom(
         { f_cod: CV, f_ctr: opts.ctr ?? 'I', f_nivel: m[3]!, f_tipo: 'FA' },
@@ -289,7 +295,7 @@ export function fakeProjeto(opts: FakeOpts & { noInclusion?: boolean } = {}) {
       if (!m || m[1] !== form) return undefined;
       if (m[2] === 'seq') {
         const row = rows.find((r) => r.f_seq_proj === m[3]);
-        return row ? controlsFrom(row, types) : undefined;
+        return row ? controlsFrom(row, without(types, opts.unread)) : undefined;
       }
       return controlsFrom(
         {
