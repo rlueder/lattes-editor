@@ -202,6 +202,12 @@ Para recomeçar do exemplo, feche o arquivo no editor e recarregue a página.
 Os scripts `pnpm gen:schema`, `pnpm gen:fixtures` e `pnpm validate:fixtures`
 geram o modelo a partir do XSD do Lattes e validam as fixtures.
 
+Os campos com lista (país, idioma, forma e tipo de participação em evento)
+usam as opções dos formulários do próprio Lattes, capturadas sem salvar nada.
+`node scripts/gen-listas.ts` gera `src/schema/listas-lattes.json` da captura,
+e `node scripts/inventario-campos.ts --md` refaz o inventário em
+`docs/campos_tipados.md`, com o que já é lista e o que falta.
+
 `node scripts/vigia-lattes.ts` confere, sem login, o que o CNPq expõe ao
 público e de que o editor depende: o XSD (byte a byte contra o do
 repositório), a página que o publica, a foto do perfil e a entrada do Lattes.
