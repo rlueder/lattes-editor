@@ -207,6 +207,8 @@ describe('a exclusão e o resto do conector', () => {
     expect(contractKind('resumo')).toBe('resumo');
     expect(isDeleteOp(idiomaOp)).toBe(true);
     expect(isDeleteOp({ kind: 'idioma' })).toBe(false);
+    expect(isDeleteOp({ kind: 'constructor' })).toBe(false);
+    expect(contractKind('toString')).toBe('toString');
     const report: ContractReport = {
       checkedAt: new Date().toISOString(),
       forms: [
@@ -256,6 +258,12 @@ describe('a exclusão e o resto do conector', () => {
     expect(all(original).some(idioma('EN'))).toBe(false);
     // Já tirado: o caminho não resolve mais.
     expect(acceptChange(original, working, change)).toBe(false);
+    // Item com atributos vazios (as proficiências do espanhol) e em outra ordem.
+    const es = planRemoval(idioma('ES'));
+    const esChange = es.changes.find((c) => c.kind === 'removido')!;
+    const reversed = { ...esChange, fields: [...esChange.fields].reverse() };
+    expect(acceptChange(es.original, es.working, reversed)).toBe(true);
+    expect(diffDocuments(es.original, es.working)).toEqual([]);
     // Mudança velha cujo caminho por posição agora cai num vizinho: não mexe.
     const docs = planRemoval(
       (el) => el.name === 'IDIOMA' && getAttr(el, 'DESCRICAO-DO-IDIOMA') === 'Sem código',

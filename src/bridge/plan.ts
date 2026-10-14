@@ -7,6 +7,7 @@ import { type Change, resolvePath } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
 import { DELETE_ITEMS_ENABLED, type DeleteOp, planDelete } from './delete.ts';
+import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
 
 /** Valor de campo; null tira o campo do envio (caixa desmarcada). */
 export type FieldValues = Record<string, string | null>;
@@ -67,19 +68,6 @@ const VINCULO_FIELDS: Record<string, [string, Mapper]> = {
   'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO': ['f_enqua', same],
   'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO-INGLES': ['f_enqua_en', same],
 };
-
-/**
- * Proficiência do IDIOMA → par de campos do GN_IDIOMA: a caixa FC_* diz que a
- * habilidade foi informada, o rádio F_* diz o nível (P, R, B). NAO_INFORMADO
- * é a caixa desmarcada e nenhum rádio. Lido no formulário em 11/10/2026.
- */
-const IDIOMA_SKILLS: Record<string, string> = {
-  'PROFICIENCIA-DE-COMPREENSAO': 'COMPR',
-  'PROFICIENCIA-DE-ESCRITA': 'ESCREVE',
-  'PROFICIENCIA-DE-FALA': 'CONVERSA',
-  'PROFICIENCIA-DE-LEITURA': 'LE',
-};
-const LEVEL: Record<string, string> = { BEM: 'B', POUCO: 'P', RAZOAVELMENTE: 'R' };
 
 function idiomaFields(change: Change): {
   expect: FieldValues;

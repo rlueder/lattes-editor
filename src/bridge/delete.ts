@@ -30,6 +30,7 @@ import {
   successfulPairs,
   withCheckRules,
 } from './form.ts';
+import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
 import type { FieldValues, Unsupported } from './plan.ts';
 
@@ -70,7 +71,7 @@ const EDIT_FORM = {
 } as const;
 
 export function isDeleteOp(op: { kind: string }): op is DeleteOp {
-  return op.kind in EDIT_FORM;
+  return Object.hasOwn(EDIT_FORM, op.kind);
 }
 
 /**
@@ -78,7 +79,7 @@ export function isDeleteOp(op: { kind: string }): op is DeleteOp {
  * formulário de edição, então vale a conferência dele.
  */
 export function contractKind<K extends string>(kind: K): K | 'idioma' | 'vinculo' {
-  return kind in EDIT_FORM ? EDIT_FORM[kind as DeleteOp['kind']].kind : kind;
+  return Object.hasOwn(EDIT_FORM, kind) ? EDIT_FORM[kind as DeleteOp['kind']].kind : kind;
 }
 
 export const DELETE_OFF_REASON =
@@ -91,15 +92,6 @@ export const FORMACAO_REASON =
   'Excluir uma formação pode tornar pública outra formação no Lattes, e isso ainda não foi observado; exclua à mão';
 
 const FORMACAO = ['FORMACAO-ACADEMICA-TITULACAO', 'FORMACAO-COMPLEMENTAR'];
-
-/** Proficiência do IDIOMA → par caixa FC_* e rádio F_* (o mesmo mapa da alteração). */
-const IDIOMA_SKILLS: Record<string, string> = {
-  'PROFICIENCIA-DE-COMPREENSAO': 'COMPR',
-  'PROFICIENCIA-DE-ESCRITA': 'ESCREVE',
-  'PROFICIENCIA-DE-FALA': 'CONVERSA',
-  'PROFICIENCIA-DE-LEITURA': 'LE',
-};
-const LEVEL: Record<string, string> = { BEM: 'B', POUCO: 'P', RAZOAVELMENTE: 'R' };
 
 /**
  * Planeja a exclusão de um item que a pessoa removeu no editor. `chain` é o

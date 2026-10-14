@@ -232,10 +232,15 @@ export function acceptChange(original: XElement, working: XElement, change: Chan
     const parent = chain.at(-2)!;
     // O caminho pode ter posição (#n): só tira se o elemento ainda é o que a
     // mudança descreve, com os mesmos valores, para não sumir com um vizinho.
-    const fields = fieldDiff(el, undefined).filter((f) => f.before);
-    if (el.name !== change.element || JSON.stringify(fields) !== JSON.stringify(change.fields)) {
-      return false;
-    }
+    // Comparação por atributo, sem depender da ordem.
+    const now = new Map(
+      fieldDiff(el, undefined)
+        .filter((f) => f.before)
+        .map((f) => [f.attr, f.before]),
+    );
+    const same =
+      now.size === change.fields.length && change.fields.every((f) => now.get(f.attr) === f.before);
+    if (el.name !== change.element || !same) return false;
     parent.children = parent.children.filter((c) => c !== el);
     return true;
   }
