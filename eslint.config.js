@@ -19,6 +19,7 @@ export default [
       'fixtures/**',
       'dist-extension/**',
       'dist-extension-loja/**',
+      'dist-extension-dev/**',
     ],
   },
   {
