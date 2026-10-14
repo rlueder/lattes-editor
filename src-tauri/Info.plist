@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Mesclado pelo Tauri no Info.plist do app de macOS.
+
+  A foto do perfil vem de servicosweb.cnpq.br, que só oferece TLS 1.2 com
+  uma cifra sem sigilo futuro (AES128-SHA, conferido em 14/10/2026). O App
+  Transport Security do macOS recusa essa ligação dentro de um app, e a foto
+  não carregava. A exceção vale só para esse domínio e só relaxa o sigilo
+  futuro; o resto do ATS continua (nscurl - -ats-diagnostics passa com ela).
+-->
+<plist version="1.0">
+<dict>
+  <key>NSAppTransportSecurity</key>
+  <dict>
+    <key>NSExceptionDomains</key>
+    <dict>
+      <key>servicosweb.cnpq.br</key>
+      <dict>
+        <key>NSExceptionRequiresForwardSecrecy</key>
+        <false/>
+      </dict>
+    </dict>
+  </dict>
+</dict>
+</plist>

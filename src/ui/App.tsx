@@ -206,7 +206,7 @@ export function App() {
     }
   };
 
-  const lattesOpen = useLattesOpen(!session && !booting, bridge, (file) => void openFile(file));
+  const lattesOpen = useLattesOpen(Boolean(session), booting, bridge, openFile);
 
   const saveFile = () => {
     if (!session) return;

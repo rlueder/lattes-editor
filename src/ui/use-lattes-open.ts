@@ -19,15 +19,20 @@ export interface LattesOpen {
 }
 
 /**
- * active: a tela inicial está aberta (sem currículo). A primeira vez que ela
- * aparece com a extensão pronta, o pedido sai sozinho; depois, só pelo botão
- * ou quando a extensão volta a ler o Lattes após uma falha que se resolve lá.
+ * A tela inicial aparece quando não há currículo aberto e o app já carregou
+ * (booting). A primeira vez que ela aparece com a extensão pronta, o pedido
+ * sai sozinho; depois, só pelo botão ou quando a extensão volta a ler o Lattes
+ * após uma falha que se resolve lá. Depois de um currículo aberto nesta sessão
+ * do app (cvOpen), fechar não pede de novo sozinho: quem fechou não quer que
+ * ele volte.
  */
 export function useLattesOpen(
-  active: boolean,
+  cvOpen: boolean,
+  booting: boolean,
   bridge: Pick<BridgeState, 'curriculo' | 'link' | 'requestCv'>,
-  onFile: (file: File) => void,
+  onFile: (file: File) => unknown,
 ): LattesOpen {
+  const active = !cvOpen && !booting;
   const [state, setState] = useState<OpenState>({ kind: 'parado' });
   /** O pedido em aberto; só a resposta com este id vale. */
   const pending = useRef<string | undefined>(undefined);
@@ -49,6 +54,12 @@ export function useLattesOpen(
     setState({ kind: 'abrindo' });
     request.current(id);
   }, []);
+
+  // Um currículo já esteve aberto (o guardado, ao abrir o app): a tela inicial
+  // que aparece depois de fechá-lo não é a primeira, e o pedido não sai sozinho.
+  useEffect(() => {
+    if (cvOpen) attempted.current = true;
+  }, [cvOpen]);
 
   // Primeira abertura sem currículo, com a extensão pronta: pede sozinho.
   useEffect(() => {
