@@ -34,12 +34,22 @@ export interface UpdateDeps {
 /** Primeira conferência depois de abrir: não compete com a abertura do app. */
 export const FIRST_CHECK_DELAY_MS = 10_000;
 
-/** Entre conferências, com o app aberto. Lançamentos saem poucas vezes por dia. */
-export const CHECK_EVERY_MS = 60 * 60_000;
+/**
+ * Entre conferências, com o app aberto. É um GET pequeno ao GitHub; com uma
+ * hora, quem conferia logo depois de um lançamento ficava uma hora sem saber.
+ */
+export const CHECK_EVERY_MS = 15 * 60_000;
 
-/** Se já passou tempo bastante desde a última conferência para fazer outra. */
-export function shouldCheck(lastCheckedAt: number | undefined, now: number): boolean {
-  return lastCheckedAt === undefined || now - lastCheckedAt >= CHECK_EVERY_MS;
+/**
+ * Depois de uma conferência que falhou. O lançamento aparece no GitHub uns
+ * minutos antes do latest.json (que sobe no fim dos builds), e nesse intervalo
+ * a conferência dá 404: tentar de novo logo, não só na próxima rodada.
+ */
+export const RETRY_AFTER_FAILURE_MS = 2 * 60_000;
+
+/** Se já chegou a hora marcada para a próxima conferência. */
+export function shouldCheck(nextCheckAt: number | undefined, now: number): boolean {
+  return nextCheckAt === undefined || now >= nextCheckAt;
 }
 
 /** Percentual baixado (0 a 100), ou undefined sem o tamanho total. */
@@ -51,7 +61,7 @@ export function percent(received: number, total: number | undefined): number | u
 let deps: UpdateDeps | undefined;
 let state: UpdateState = { status: 'nenhuma' };
 let pending: PendingUpdate | undefined;
-let lastCheckedAt: number | undefined;
+let nextCheckAt: number | undefined;
 const listeners = new Set<() => void>();
 
 function setState(next: UpdateState): void {
@@ -97,7 +107,7 @@ function installing(): boolean {
  */
 export async function checkForUpdate(now = Date.now()): Promise<UpdateState> {
   if (!deps || installing()) return state;
-  lastCheckedAt = now;
+  nextCheckAt = now + CHECK_EVERY_MS;
   try {
     const update = await deps.check();
     // Um download começou enquanto a conferência esperava: ela não mexe nele.
@@ -105,6 +115,7 @@ export async function checkForUpdate(now = Date.now()): Promise<UpdateState> {
     pending = update;
     setState({ status: 'disponivel', version: update.version });
   } catch (err) {
+    nextCheckAt = now + RETRY_AFTER_FAILURE_MS;
     console.warn('Conferência de atualização falhou:', err);
   }
   return state;
@@ -112,7 +123,7 @@ export async function checkForUpdate(now = Date.now()): Promise<UpdateState> {
 
 /** Hora de conferir de novo (ao voltar para a janela, por exemplo). */
 export function dueForCheck(now = Date.now()): boolean {
-  return shouldCheck(lastCheckedAt, now);
+  return shouldCheck(nextCheckAt, now);
 }
 
 /** Baixa, instala e reinicia. Com falha, o estado vira "falhou" e o aviso oferece o download. */
@@ -152,7 +163,7 @@ export async function installUpdate(): Promise<void> {
 export function resetUpdateForTests(): void {
   state = { status: 'nenhuma' };
   pending = undefined;
-  lastCheckedAt = undefined;
+  nextCheckAt = undefined;
   deps = undefined;
   listeners.clear();
 }

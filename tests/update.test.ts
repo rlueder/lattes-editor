@@ -8,6 +8,7 @@ import {
   installUpdate,
   percent,
   resetUpdateForTests,
+  RETRY_AFTER_FAILURE_MS,
   setUpdateDeps,
   shouldCheck,
   subscribeUpdate,
@@ -42,8 +43,8 @@ function fakeDeps(opts: { fail?: boolean; none?: boolean } = {}) {
 describe('atualização automática', () => {
   it('confere na primeira vez e depois de uma hora', () => {
     expect(shouldCheck(undefined, 0)).toBe(true);
-    expect(shouldCheck(0, CHECK_EVERY_MS - 1)).toBe(false);
-    expect(shouldCheck(0, CHECK_EVERY_MS)).toBe(true);
+    expect(shouldCheck(CHECK_EVERY_MS, CHECK_EVERY_MS - 1)).toBe(false);
+    expect(shouldCheck(CHECK_EVERY_MS, CHECK_EVERY_MS)).toBe(true);
   });
 
   it('percentual só com o tamanho conhecido', () => {
@@ -82,8 +83,11 @@ describe('atualização automática', () => {
     expect(await checkForUpdate()).toEqual({ status: 'nenhuma' });
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     setUpdateDeps({ check: () => Promise.reject(new Error('offline')), relaunch: vi.fn() });
-    expect(await checkForUpdate()).toEqual({ status: 'nenhuma' });
+    expect(await checkForUpdate(1000)).toEqual({ status: 'nenhuma' });
     expect(warn).toHaveBeenCalled();
+    // Falhou (o latest.json ainda não subiu, por exemplo): tenta de novo logo.
+    expect(dueForCheck(1000 + RETRY_AFTER_FAILURE_MS - 1)).toBe(false);
+    expect(dueForCheck(1000 + RETRY_AFTER_FAILURE_MS)).toBe(true);
     warn.mockRestore();
   });
 

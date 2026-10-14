@@ -82,7 +82,8 @@ export function useUpdates(): UpdateState {
         if (!alive || (!fake && (!isDesktop() || import.meta.env.DEV))) return;
         if (!fake) setUpdateDeps(tauriDeps);
         void checkForUpdate();
-        interval = setInterval(onFocus, 5 * 60_000);
+        // De minuto em minuto só se olha o relógio; a conferência sai na hora marcada.
+        interval = setInterval(onFocus, 60_000);
         window.addEventListener('focus', onFocus);
       })();
     }, FIRST_CHECK_DELAY_MS);
