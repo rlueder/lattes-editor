@@ -58,6 +58,59 @@ O modal "New issue" do Linear é o modelo para "Novo item":
   branco do mesmo tipo, para quem lança várias produções seguidas. A
   escolha fica lembrada no navegador.
 
+## Dois registros: interface densa e texto de leitura
+
+> Proposta em avaliação. Por enquanto só aparece no `pnpm dev` com
+> `?leitura` na URL (veja `docs/desenvolvimento.md`); o editor de sempre
+> continua o padrão até a decisão.
+
+A escala do Linear serve ao que se opera: menu lateral, cabeçalho, painel
+"Nesta seção", filtro, linhas compactas e formulários. O conteúdo de uma
+seção é outra coisa, porque a maior parte do tempo a pessoa lê o próprio
+currículo e só às vezes muda um dado. Para esse texto a referência é o
+[Typography for Lawyers](https://typographyforlawyers.com/), de Matthew
+Butterick, adaptado à tela.
+
+No modo de leitura, Dados gerais, Formação e Produções aparecem compostos
+como texto, sem borda de campo, sem rótulo que repete o título do grupo e
+sem a caixa branca sobre o fundo cinza: os grupos se separam pelo espaço.
+Campo vazio não aparece. Os campos voltam quando a pessoa pede, num bloco
+de cada vez: clique no texto, o botão "Editar" (à vista no foco do teclado,
+no passar do mouse e sempre no toque) ou E com o botão focado abrem o
+formulário de hoje no lugar; Esc ou "Concluir" voltam ao texto. O modo de
+privacidade continua valendo, e os dados escondidos viram uma linha só
+("12 dados pessoais ocultos…").
+
+Os números escolhidos, com a regra de onde saíram:
+
+| Medida                 | Valor                                        | Regra do Typography for Lawyers                                |
+| ---------------------- | -------------------------------------------- | -------------------------------------------------------------- |
+| Corpo                  | 17px, IBM Plex Sans                          | Na web, 15 a 25px ("Point size")                               |
+| Entrelinha             | 1,45                                         | 120 a 145% do corpo ("Line spacing")                           |
+| Medida                 | 57ch, perto de 70 caracteres por linha       | Média de 45 a 90 caracteres ("Line length")                    |
+| Entre parágrafos       | 0,6em (10px, perto de 7,7pt), sem recuo      | 4 a 10pt de espaço ou recuo, nunca os dois                     |
+| Título da página       | 22px, peso 600 (era 26px)                    |                                                                |
+| Título de grupo        | 19px, peso 600, 2,6rem acima e 0,6rem abaixo | Degrau pequeno de tamanho e espaço acima e abaixo ("Headings") |
+| Subtítulo              | 17px, peso 600                               | No máximo dois níveis dentro do conteúdo                       |
+| Rótulo curto em versal | 12px, 8% de espaçamento                      | Caixa alta só em texto curto, com 5 a 12% ("All caps")         |
+| Metadado e rótulo      | 15px na cor secundária                       | Hierarquia por cor, sem itálico em fonte sem serifa            |
+| Coluna de anos         | 9,5rem, algarismos de largura fixa           | A mesma tabulação em todas as listas                           |
+
+Mais algumas decisões do mesmo lado:
+
+- Aspas e apóstrofos curvos na tela; o dado no XML não muda.
+- Sublinhado só em link.
+- Negrito só no título de grupo, no subtítulo, na primeira linha de cada
+  formação e no elemento que a NBR 6023 destaca na referência.
+- Produções saem como referência da NBR 6023, a mesma da impressão
+  (`src/print/references.ts`).
+- O ano aparece na primeira linha de cada sequência e fica em branco nas
+  seguintes, como num índice impresso; o leitor de tela continua ouvindo o ano.
+- A cor secundária passa no contraste AA nos dois temas, inclusive sobre o
+  realce do passar do mouse (4,6:1 no claro, 5,4:1 no escuro).
+- O IBM Plex Serif não está embutido no app; o protótipo fica na Plex Sans,
+  e a serifa é uma das perguntas em aberto.
+
 ## Teclado
 
 O Linear trata o teclado como caminho principal, e vale estudar o

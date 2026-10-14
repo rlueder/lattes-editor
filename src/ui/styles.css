@@ -6409,3 +6409,309 @@ main.content {
 .photo-text p {
   margin: 0;
 }
+
+/* Modo de leitura (protótipo, ?leitura no `pnpm dev`; docs/estilo_da_interface.md,
+ * "Dois registros"). O conteúdo das seções de leitura segue o Typography for
+ * Lawyers adaptado à tela: corpo de 17px (a faixa para a web é 15 a 25px),
+ * entrelinha de 1,45 (120 a 145%), medida de 57ch, que dá perto de 70
+ * caracteres por linha na Plex Sans (45 a 90; 60ch mediu 73 no resumo do
+ * currículo de demonstração), espaço entre parágrafos e não
+ * recuo, no máximo dois níveis de título dentro do conteúdo, diferenciados
+ * por espaço e por degraus pequenos de tamanho, e caixa alta só em rótulos
+ * curtos, com 8% de espaçamento. O cromo (menu, cabeçalho, painel, campos)
+ * continua na escala densa. */
+.section-layout.reading {
+  --read-size: 17px;
+  --read-leading: 1.45;
+  --read-measure: 57ch;
+  /* Coluna de anos e rótulos: a mesma tabulação em todas as listas. */
+  --read-tab: 9.5rem;
+  --read-tab-gap: 1.25rem;
+  /* 0,6em de 17px: 10px, perto de 7,7pt (4 a 10pt entre parágrafos). */
+  --read-para: 0.6em;
+  --read-small: 15px;
+}
+
+.section-layout.reading .section-head h1 {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Sem caixa branca sobre o cinza: os grupos se separam pelo espaço. */
+.section-layout.reading .group {
+  margin-top: 2.6rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.section-layout.reading .section-body > .group:first-of-type {
+  margin-top: 0.75rem;
+}
+
+.section-layout.reading .group h2 {
+  margin: 0 0 0.6rem;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.reading-block {
+  position: relative;
+  margin: 0 -12px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: var(--read-size);
+  font-kerning: normal;
+  line-height: var(--read-leading);
+  transition: background-color var(--dur) ease;
+}
+
+@media (hover: hover) {
+  .reading-block:hover {
+    background: color-mix(in srgb, var(--surface-2) 45%, transparent);
+  }
+}
+
+.reading-block:has(.reading-actions button:focus-visible) {
+  background: color-mix(in srgb, var(--surface-2) 45%, transparent);
+}
+
+.reading-p {
+  max-width: var(--read-measure);
+  margin: 0 0 var(--read-para);
+  text-wrap: pretty;
+}
+
+.reading-p:last-child {
+  margin-bottom: 0;
+}
+
+/* Rótulo curto em caixa alta: o único lugar do conteúdo com versal. */
+.reading-label {
+  display: block;
+  margin: 1.1em 0 0.2em;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 550;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.reading-none {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--read-small);
+}
+
+.reading-sub + .reading-sub,
+.reading-fields + .reading-sub,
+.reading-p + .reading-sub {
+  margin-top: 1.4em;
+}
+
+.reading-sub h3 {
+  margin: 0 0 0.3em;
+  font-size: var(--read-size);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.reading-address {
+  display: flex;
+  flex-direction: column;
+  max-width: var(--read-measure);
+  font-style: normal;
+}
+
+.reading-fields + .reading-hidden {
+  margin-top: var(--read-para);
+}
+
+.reading-address + .reading-fields {
+  margin-top: var(--read-para);
+}
+
+/* Rótulo e valor na mesma tabulação dos anos dos registros. */
+.reading-fields {
+  display: grid;
+  gap: 0.2em 0;
+  margin: 0;
+}
+
+.reading-field {
+  display: grid;
+  grid-template-columns: var(--read-tab) minmax(0, var(--read-measure));
+  gap: 0 var(--read-tab-gap);
+  align-items: baseline;
+}
+
+.reading-field dt {
+  color: var(--muted);
+  font-size: var(--read-small);
+  line-height: 1.4;
+}
+
+.reading-field dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.reading-block a {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+/* Registros: ano à esquerda, em algarismos de largura fixa, e o texto ao lado. */
+.reading-records {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reading-block.rr {
+  display: grid;
+  grid-template-columns: var(--read-tab) minmax(0, var(--read-measure));
+  gap: 0 var(--read-tab-gap);
+  align-items: baseline;
+}
+
+.rr-when {
+  color: var(--muted);
+  font-size: var(--read-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.rr-body p {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+.rr-title {
+  font-weight: 550;
+}
+
+.rr-meta {
+  color: var(--muted);
+  font-size: var(--read-small);
+}
+
+.rr-kind {
+  display: block;
+  color: var(--muted);
+  font-size: var(--read-small);
+}
+
+.rr-ref strong {
+  font-weight: 600;
+}
+
+.rr-body .tag {
+  vertical-align: 2px;
+}
+
+/* "Editar" (e "Adicionar…"): à vista no foco, no passar do mouse e sempre no toque. */
+.reading-actions {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.reading-block:hover .reading-actions,
+.reading-block:focus-within .reading-actions {
+  opacity: 1;
+}
+
+.reading-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.reading-actions button:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+@media (hover: none) {
+  .reading-actions {
+    position: static;
+    justify-content: flex-end;
+    grid-column: 1 / -1;
+    margin-top: 6px;
+    opacity: 1;
+  }
+}
+
+/* O bloco em edição: o formulário de hoje, na escala densa, no lugar do texto. */
+.reading-edit {
+  margin: 6px -12px 10px;
+  padding: 10px 16px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 13px;
+  line-height: 1.5;
+  animation: reading-edit-in var(--dur) var(--ease-out);
+}
+
+.reading-edit-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.reading-edit-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes reading-edit-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .reading-block.rr,
+  .reading-field {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reading-block,
+  .reading-actions {
+    transition: none;
+  }
+  .reading-edit {
+    animation: none;
+  }
+}
