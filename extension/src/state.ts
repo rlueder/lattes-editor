@@ -49,6 +49,3 @@ export interface AppHello {
   features?: string[];
   version?: string;
 }
-
-/** Menu do currículo no Lattes: é nessa aba que as requisições rodam. */
-export const LATTES_MENU = 'https://wwws.cnpq.br/cvlattesweb/PKG_MENU.menu*';

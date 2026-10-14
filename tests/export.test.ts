@@ -1,120 +1,140 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
+import { PENDING_ALERT } from '../scripts/lattes-simulado/exportar.ts';
+import type { Intercept } from '../scripts/lattes-simulado/servidor.ts';
+import type { SimResponse } from '../scripts/lattes-simulado/tipos.ts';
 import {
   exportCv,
-  type ExportPort,
   exportScreenState,
   fromBase64,
   toBase64,
   zipFileName,
 } from '../src/bridge/export.ts';
+import { loadCv } from '../src/model/document.ts';
+import { getAttr } from '../src/model/xml.ts';
 import { canOpenFromLattes, failureText, retriesOnReading } from '../src/ui/lattes-open.ts';
+import { faults, type LattesSimuladoNoTeste, withSmallLattes } from './helpers/lattes-simulado.ts';
 
-const CODE = 'K000000000';
 const ID = '0000000000000001';
-
-/** A tela do Exportar como o Lattes mostrou em 13/10/2026, sem o que não importa. */
-const SCREEN = `<form name="PKG_IMP" action="PKG_IMPCV.get_arquivo" method="post">
-  <input type="radio" name="f_tpo_arq" value="1" checked> RTF
-  <input type="radio" name="f_tpo_arq" value="3"> XML
-  <input type="hidden" name="f_cod" value="${CODE}"><input type="hidden" name="f_ctr" value="">
-  <a href="#" onclick="check();return false;">Confirmar</a></form>`;
-
-const PENDING = `${SCREEN}<script>alert("Existem alterações realizadas no currículo que só serão aceitas quando enviadas ao CNPq em definitivo")</script>`;
 
 const LOGON = '<form name="login" action="pkg_sec.logon" method="post"></form>';
 
 const ZIP = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00]);
 
-function fakeLattes(opts: {
-  screen?: string;
-  answer?: { bytes: Uint8Array; contentType: string; disposition?: string };
-}) {
-  const calls: { body?: string; method: string; path: string }[] = [];
-  const port: ExportPort = {
-    get(path) {
-      calls.push({ method: 'GET', path });
-      return Promise.resolve({ html: opts.screen ?? SCREEN, url: `https://x/${path}` });
-    },
-    postForBytes(path, body) {
-      calls.push({ body, method: 'POST', path });
-      const a = opts.answer ?? {
-        bytes: ZIP,
-        contentType: 'application/zip',
-        disposition: `attachment; filename="CV_${ID}.zip"`,
-      };
-      return Promise.resolve({ ...a, disposition: a.disposition ?? '', url: `https://x/${path}` });
-    },
-  };
-  return { calls, port };
+// O Lattes do teste é o simulado (scripts/lattes-simulado/), com o currículo
+// pequeno (NUMERO-IDENTIFICADOR 0000000000000001).
+let open: LattesSimuladoNoTeste | undefined;
+afterEach(async () => {
+  await open?.close();
+  open = undefined;
+});
+
+async function lattesFor(options: Parameters<typeof withSmallLattes>[0] = {}) {
+  await open?.close();
+  open = await withSmallLattes(options);
+  return open;
 }
+
+/** A resposta do POST do Exportar trocada por outra (HTML em Latin-1 ou bytes). */
+const answer =
+  (out: SimResponse): Intercept =>
+  (req, _state, next) =>
+    req.method === 'POST' ? out : next();
+
+const exportedCalls = (lattes: LattesSimuladoNoTeste) =>
+  lattes.state.log
+    .filter((l) => /^pkg_impcv\.get_arquivo$/i.test(l.proc))
+    .map((l) => ({ method: l.method, pairs: l.pairs, path: l.path }));
 
 describe('Abrir do Lattes: o Exportar pelo conector', () => {
   it('a tela, depois o POST do "Confirmar" com XML, e o ZIP', async () => {
-    const { calls, port } = fakeLattes({});
-    const r = await exportCv(port, CODE, ID);
-    expect(r).toEqual({ bytes: ZIP, fileName: `CV_${ID}.zip`, ok: true });
-    expect(calls).toEqual([
-      { method: 'GET', path: `pkg_impcv.get_arquivo?f_cod=${CODE}` },
+    const lattes = await lattesFor();
+    const code = lattes.state.code;
+    const r = await exportCv(lattes.exportPort, code, ID);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.fileName).toBe(`CV_${ID}.zip`);
+    expect(r.bytes.slice(0, 2)).toEqual(new Uint8Array([0x50, 0x4b]));
+    expect(getAttr((await loadCv(r.bytes, r.fileName)).doc.root, 'NUMERO-IDENTIFICADOR')).toBe(ID);
+    expect(exportedCalls(lattes)).toEqual([
+      { method: 'GET', pairs: undefined, path: `pkg_impcv.get_arquivo?f_cod=${code}` },
       {
-        body: `f_cod=${CODE}&f_ctr=G&f_tpo_arq=3`,
         method: 'POST',
+        pairs: [
+          ['f_cod', code],
+          ['f_ctr', 'G'],
+          ['f_tpo_arq', '3'],
+        ],
         path: 'PKG_IMPCV.get_arquivo',
       },
     ]);
   });
 
   it('com pendência ou sessão caída, nem tenta o POST', async () => {
-    for (const [screen, reason] of [
-      [PENDING, 'pendente'],
-      [LOGON, 'sessao'],
-    ] as const) {
-      const { calls, port } = fakeLattes({ screen });
-      expect(await exportCv(port, CODE, ID)).toEqual({ ok: false, reason });
-      expect(calls).toHaveLength(1);
-    }
+    const pendente = await lattesFor();
+    pendente.state.touch();
+    expect(await exportCv(pendente.exportPort, pendente.state.code, ID)).toEqual({
+      ok: false,
+      reason: 'pendente',
+    });
+    expect(exportedCalls(pendente)).toEqual([
+      {
+        method: 'GET',
+        pairs: undefined,
+        path: `pkg_impcv.get_arquivo?f_cod=${pendente.state.code}`,
+      },
+    ]);
+    const caida = await lattesFor();
+    caida.state.sessionActive = false;
+    expect(await exportCv(caida.exportPort, caida.state.code, ID)).toEqual({
+      ok: false,
+      reason: 'sessao',
+    });
+    expect(exportedCalls(caida)).toEqual([
+      { method: 'GET', pairs: undefined, path: `pkg_impcv.get_arquivo?f_cod=${caida.state.code}` },
+    ]);
   });
 
   it('tela que mudou, sem código, ou resposta que não é ZIP', async () => {
-    expect(await exportCv(fakeLattes({ screen: '<p>outra</p>' }).port, CODE)).toEqual({
+    const mudou = await lattesFor({
+      intercept: faults.rewritePages(/^pkg_impcv\./i, () => '<p>outra</p>'),
+    });
+    expect(await exportCv(mudou.exportPort, mudou.state.code)).toEqual({
       detail: 'A tela do Exportar do Lattes mudou.',
       ok: false,
       reason: 'erro',
     });
-    expect(await exportCv(fakeLattes({}).port, undefined)).toMatchObject({
+    expect(await exportCv(mudou.exportPort, undefined)).toMatchObject({
       ok: false,
       reason: 'erro',
     });
-    // O Lattes responde em Latin-1.
-    const html = (s: string) => ({
-      bytes: Uint8Array.from(s, (c) => c.charCodeAt(0)),
-      contentType: 'text/html',
-    });
-    expect(await exportCv(fakeLattes({ answer: html(LOGON) }).port, CODE)).toEqual({
-      ok: false,
-      reason: 'sessao',
-    });
-    expect(await exportCv(fakeLattes({ answer: html(PENDING) }).port, CODE)).toEqual({
-      ok: false,
-      reason: 'pendente',
-    });
-    expect(await exportCv(fakeLattes({ answer: html('<p>erro</p>') }).port, CODE)).toEqual({
-      detail: 'O Lattes não devolveu o arquivo da exportação.',
-      ok: false,
-      reason: 'erro',
-    });
+    const pendingPage = `<script>alert("${PENDING_ALERT}")</script>`;
+    for (const [out, expected] of [
+      [{ html: LOGON }, { ok: false, reason: 'sessao' }],
+      [{ html: pendingPage }, { ok: false, reason: 'pendente' }],
+      [
+        { html: '<p>erro</p>' },
+        { detail: 'O Lattes não devolveu o arquivo da exportação.', ok: false, reason: 'erro' },
+      ],
+    ] as const) {
+      const lattes = await lattesFor({ intercept: answer(out) });
+      expect(await exportCv(lattes.exportPort, lattes.state.code)).toEqual(expected);
+    }
     // Content-Type de ZIP com bytes que não são ZIP também não passa.
-    const fake = { bytes: new Uint8Array([1, 2, 3, 4, 5]), contentType: 'application/zip' };
-    expect(await exportCv(fakeLattes({ answer: fake }).port, CODE)).toMatchObject({
-      reason: 'erro',
+    const fake = await lattesFor({
+      intercept: answer({ bytes: new Uint8Array([1, 2, 3, 4, 5]), contentType: 'application/zip' }),
     });
+    expect(await exportCv(fake.exportPort, fake.state.code)).toMatchObject({ reason: 'erro' });
   });
 
-  it('estado da tela do Exportar', () => {
-    expect(exportScreenState(SCREEN)).toBe('ok');
-    expect(exportScreenState(SCREEN.replace('value="3"', 'value="2"'))).toBe('mudou');
-    expect(exportScreenState(SCREEN, 'https://x/pkg_sec.logon')).toBe('sessao');
-    expect(exportScreenState(PENDING)).toBe('pendente');
+  it('estado da tela do Exportar', async () => {
+    const lattes = await lattesFor();
+    const path = `pkg_impcv.get_arquivo?f_cod=${lattes.state.code}`;
+    const screen = await lattes.port.get(path);
+    expect(exportScreenState(screen)).toBe('ok');
+    expect(exportScreenState(screen.replace('value="3"', 'value="2"'))).toBe('mudou');
+    expect(exportScreenState(screen, 'https://x/pkg_sec.logon')).toBe('sessao');
+    lattes.state.touch();
+    expect(exportScreenState(await lattes.port.get(path))).toBe('pendente');
   });
 
   it('nome do arquivo', () => {

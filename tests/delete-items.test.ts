@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
+import type { LattesState } from '../scripts/lattes-simulado/estado.ts';
 import { applyAll, applyOp, type LattesPort } from '../src/bridge/apply.ts';
 import { blocksKind, type ContractReport, lacksSample } from '../src/bridge/contract.ts';
 import {
@@ -16,7 +17,6 @@ import {
   planDelete,
 } from '../src/bridge/delete.ts';
 import { opRows } from '../src/bridge/field-labels.ts';
-import type { FormControl } from '../src/bridge/form.ts';
 import { planChanges } from '../src/bridge/plan.ts';
 import {
   noUndoReason,
@@ -26,7 +26,14 @@ import {
   undoOp,
 } from '../src/bridge/sent-log.ts';
 import { acceptChange, type Change, diffDocuments, resolvePath } from '../src/model/changes.ts';
-import { getAttr, parseXml, type XElement } from '../src/model/xml.ts';
+import { childElements, getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
+import {
+  faults,
+  findIn,
+  type LattesSimuladoNoTeste,
+  postsOf,
+  withSmallLattes,
+} from './helpers/lattes-simulado.ts';
 
 // ------------------------------------------------------------ planejamento
 
@@ -283,162 +290,52 @@ describe('a exclusão e o resto do conector', () => {
   });
 });
 
-// ------------------------------------------------------------ Lattes falso
+// ------------------------------------------------------------ Lattes simulado
 
-function decodeForm(body: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const part of body.split('&')) {
-    const [k, v = ''] = part.split('=');
-    out[decodeURIComponent(k!)] = decodeURIComponent(v.replace(/\+/g, ' '));
-  }
-  return out;
+// O Lattes do teste é o simulado (scripts/lattes-simulado/), com o currículo
+// pequeno (SMALL_CV): idiomas EN e ES, a atuação 5 com os vínculos 1 e 2 e a
+// atuação 6 sem vínculo.
+let open: LattesSimuladoNoTeste | undefined;
+afterEach(async () => {
+  await open?.close();
+  open = undefined;
+});
+
+async function lattesFor(options: Parameters<typeof withSmallLattes>[0] = {}) {
+  await open?.close();
+  open = await withSmallLattes(options);
+  return open;
 }
 
-interface FakeOptions {
-  /** O POST de exclusão também apaga esta linha (idioma:N, vinculo:N, atuacao:N). */
-  alsoDeletes?: string;
-  /** f_ctr do formulário. */
-  ctr?: string;
-  /** O menu sem as listas. */
-  emptyMenu?: boolean;
-  /** O servidor ignora a exclusão. */
-  ignoreDelete?: boolean;
-  /** A sessão cai no GET de número n. */
-  logonAtGet?: number;
-  /** O formulário vem sem o del() que troca f_ctr para E. */
-  noDel?: boolean;
-  /** readForm não acha o formulário. */
-  noForm?: boolean;
-  /** A resposta do POST, que a conferência não deve ler. */
-  response?: string;
-}
+const idiomaIn = (state: LattesState, code: string) =>
+  findIn(state.root, (el) => el.name === 'IDIOMA' && getAttr(el, 'IDIOMA') === code);
+const atuacaoIn = (state: LattesState, seq: string) =>
+  findIn(
+    state.root,
+    (el) => el.name === 'ATUACAO-PROFISSIONAL' && getAttr(el, 'SEQUENCIA-ATIVIDADE') === seq,
+  );
+const vinculoIn = (state: LattesState, seq: string) =>
+  findIn(
+    atuacaoIn(state, '5')!,
+    (el) => el.name === 'VINCULOS' && getAttr(el, 'SEQUENCIA-HISTORICO') === seq,
+  );
+const codes = (state: LattesState) =>
+  childElements(findIn(state.root, (el) => el.name === 'IDIOMAS')!).map((i) =>
+    getAttr(i, 'IDIOMA'),
+  );
 
-const DEL_SCRIPT = `<script>function del(){ if (confirm('Deseja realmente excluir?')) { fecha(); dc.f_ctr.value = 'E'; enviar(); } }</script>`;
-const DELE_SCRIPT = `<script>function dele(){ location = 'pkg_ativ.form?f_cod=K&f_seq_ativ=5&f_ctr=E2'; }</script>`;
+/** A exclusão também apaga outra linha (o que o conector precisa acusar). */
+const alsoDeletes = (pick: (state: LattesState) => XElement | undefined) =>
+  faults.afterPost((req, state) => {
+    if (req.get('f_ctr') !== 'E') return;
+    const el = pick(state);
+    if (!el) return;
+    const parent = findIn(state.root, (p) => p.children.includes(el))!;
+    state.remove(parent, el);
+  });
 
-function fakeLattes(opts: FakeOptions = {}) {
-  const idiomas = new Map<string, { code: string; levels: Record<string, string> }>([
-    ['1', { code: 'EN', levels: { COMPR: 'B', CONVERSA: 'B', ESCREVE: 'B', LE: 'B' } }],
-    ['2', { code: 'ES', levels: { LE: 'P' } }],
-  ]);
-  const atuacoes = new Map<
-    string,
-    { codinst: string; vinculos: Map<string, Record<string, string>> }
-  >([
-    [
-      '5',
-      {
-        codinst: 'D001',
-        vinculos: new Map([
-          ['1', { f_ano_fim: '2012', f_ano_ini: '2011', f_mes_fim: '12', f_mes_ini: '01' }],
-          ['2', { f_ano_fim: '', f_ano_ini: '2013', f_mes_fim: '', f_mes_ini: '01' }],
-        ]),
-      },
-    ],
-    ['6', { codinst: 'D009', vinculos: new Map() }],
-  ]);
-  const posts: { body: Record<string, string>; path: string }[] = [];
-  let gets = 0;
-  const del = opts.noDel ? '' : DEL_SCRIPT;
-
-  const port: LattesPort = {
-    async get(path) {
-      gets += 1;
-      if (opts.logonAtGet === gets) return '<form action="pkg_sec.logon">';
-      const param = (name: string) => new RegExp(`${name}=(\\w+)`).exec(path)?.[1] ?? '';
-      if (path.startsWith('pkg_idioma.lista')) {
-        return [...idiomas.keys()]
-          .map((seq) => `<a href="pkg_idioma.form?f_cod=K&amp;f_seq=${seq}">${seq}</a>`)
-          .concat('<a href="pkg_idioma.form?f_cod=K">Novo</a>')
-          .join('\n');
-      }
-      if (path.startsWith('pkg_idioma.form')) return `FORM:GN_IDIOMA:${param('f_seq')}\n${del}`;
-      if (path.startsWith('pkg_ativ.lista')) {
-        return [...atuacoes]
-          .map(
-            ([seq, a]) =>
-              `<a href="PKG_ATIV.cargos_vinculos?f_cod=K&amp;f_codinst=${a.codinst}&amp;f_seq_ativ=${seq}">${seq}</a>`,
-          )
-          .join('\n');
-      }
-      if (path.startsWith('PKG_ATIV.cargos_vinculos')) {
-        const seq = param('f_seq_ativ');
-        const a = atuacoes.get(seq);
-        if (!a) return '';
-        return (
-          [...a.vinculos.keys()]
-            .map(
-              (h) =>
-                `<a href='PKG_ATIV.vinculos?f_cod=K&f_codinst=${a.codinst}&f_seq_ativ=${seq}&f_seq_hist=${h}'>v</a>`,
-            )
-            .join('\n') + DELE_SCRIPT
-        );
-      }
-      if (path.startsWith('PKG_ATIV.vinculos')) {
-        return `FORM:GN_ATIV_VINC:${param('f_seq_ativ')}:${param('f_seq_hist')}\n${del}`;
-      }
-      return '';
-    },
-    menuHtml: () =>
-      opts.emptyMenu
-        ? '<p>menu</p>'
-        : `<a onclick="modalCV1.setarUrl(&quot;pkg_ativ.lista?f_cod=K&quot;, true)">Atuação</a>
-           <a onclick="modalCV1.setarUrl(&quot;pkg_idioma.lista?f_cod=K&quot;, true)">Idiomas</a>`,
-    async post(path, body) {
-      const pairs = decodeForm(body);
-      posts.push({ body: pairs, path });
-      if (pairs.f_ctr === 'E' && !opts.ignoreDelete) {
-        if (path === 'PKG_IDIOMA.FORM') idiomas.delete(pairs.f_seq!);
-        if (path === 'PKG_ATIV.VINCULOS')
-          atuacoes.get(pairs.f_seq_ativ!)?.vinculos.delete(pairs.f_seq_hist!);
-        const [kind, id] = (opts.alsoDeletes ?? ':').split(':');
-        if (kind === 'idioma') idiomas.delete(id!);
-        if (kind === 'vinculo') atuacoes.get('5')?.vinculos.delete(id!);
-        if (kind === 'atuacao') atuacoes.delete(id!);
-      }
-      return opts.response ?? '';
-    },
-    readForm(html, form) {
-      if (opts.noForm) return undefined;
-      const m = /^FORM:(\w+):([\w:]*)/.exec(html);
-      if (!m || m[1] !== form) return undefined;
-      const ctr = opts.ctr ?? 'U';
-      if (form === 'GN_IDIOMA') {
-        const state = idiomas.get(m[2]!);
-        if (!state) return undefined;
-        const list: FormControl[] = [
-          { name: 'f_cod', type: 'hidden', value: 'K' },
-          { name: 'f_seq', type: 'hidden', value: m[2]! },
-          { name: 'f_ctr', type: 'hidden', value: ctr },
-          { name: 'F_COD_IDIOMA', selected: [state.code], type: 'select-one', value: state.code },
-        ];
-        for (const s of ['LE', 'CONVERSA', 'ESCREVE', 'COMPR']) {
-          const level = state.levels[s];
-          list.push({ checked: Boolean(level), name: `FC_${s}`, type: 'checkbox', value: 'on' });
-          for (const l of ['P', 'R', 'B']) {
-            list.push({ checked: level === l, name: `F_${s}`, type: 'radio', value: l });
-          }
-        }
-        list.push({ name: 'salvar', type: 'button', value: 'Salvar' });
-        return list;
-      }
-      const [seqAtiv, seqHist] = m[2]!.split(':');
-      const state = atuacoes.get(seqAtiv!)?.vinculos.get(seqHist!);
-      if (!state) return undefined;
-      return [
-        { name: 'f_cod', type: 'hidden', value: 'K' },
-        { name: 'f_codinst', type: 'hidden', value: atuacoes.get(seqAtiv!)!.codinst },
-        { name: 'f_seq_ativ', type: 'hidden', value: seqAtiv! },
-        { name: 'f_seq_hist', type: 'hidden', value: seqHist! },
-        { name: 'f_ctr', type: 'hidden', value: ctr },
-        ...Object.entries(state).map(([name, value]) => ({ name, type: 'text', value })),
-        { disabled: true, name: 'f_vinc', type: 'text', value: 'Celetista' },
-        { name: 'f_vinculo', type: 'hidden', value: '' },
-      ];
-    },
-  };
-  return { atuacoes, idiomas, port, posts };
-}
+/** O formulário vem em outro modo (f_ctr) ou sem o del() que troca f_ctr para E. */
+const formPages = /^(pkg_idioma\.form|PKG_ATIV\.vinculos)$/i;
 
 function opFor(match: (el: XElement) => boolean): DeleteOp {
   const op = planRemoval(match).plan.ops[0];
@@ -446,9 +343,11 @@ function opFor(match: (el: XElement) => boolean): DeleteOp {
   return op;
 }
 
-describe('aplicar a exclusão no Lattes falso', () => {
+describe('aplicar a exclusão no Lattes simulado', () => {
   it('exclui o idioma pelo formulário dele, com f_ctr=E, e confere pela lista', async () => {
-    const lattes = fakeLattes({ response: '<html>qualquer coisa</html>' });
+    const lattes = await lattesFor({
+      intercept: faults.postResponse('<html>qualquer coisa</html>'),
+    });
     const op = opFor(idioma('ES'));
     const r = await applyOp(op, lattes.port);
     expect(r).toEqual({
@@ -456,26 +355,28 @@ describe('aplicar a exclusão no Lattes falso', () => {
       key: op.key,
       status: 'conferido',
     });
-    expect(lattes.posts).toHaveLength(1);
-    expect(lattes.posts[0]!.path).toBe('PKG_IDIOMA.FORM');
-    expect(lattes.posts[0]!.body).toMatchObject({
-      f_cod: 'K',
+    const posts = postsOf(lattes);
+    expect(posts).toHaveLength(1);
+    expect(posts[0]!.proc).toBe('PKG_IDIOMA.FORM');
+    expect(posts[0]!.fields).toMatchObject({
+      f_cod: lattes.state.code,
       F_COD_IDIOMA: 'ES',
       f_ctr: 'E',
       f_seq: '2',
       F_LE: 'P',
       FC_LE: 'on',
     });
-    expect([...lattes.idiomas.keys()]).toEqual(['1']);
+    expect(codes(lattes.state)).toEqual(['EN']);
   });
 
   it('exclui o vínculo pelo formulário dele, como o del() do Lattes', async () => {
-    const lattes = fakeLattes();
+    const lattes = await lattesFor();
     const op = opFor(vinculo('1'));
     const r = await applyDelete(op, lattes.port);
     expect(r.status).toBe('conferido');
-    expect(lattes.posts[0]!.path).toBe('PKG_ATIV.VINCULOS');
-    expect(lattes.posts[0]!.body).toMatchObject({
+    const [post] = postsOf(lattes);
+    expect(post!.proc).toBe('PKG_ATIV.VINCULOS');
+    expect(post!.fields).toMatchObject({
       f_codinst: 'D001',
       f_ctr: 'E',
       f_seq_ativ: '5',
@@ -483,18 +384,19 @@ describe('aplicar a exclusão no Lattes falso', () => {
       // O del() não passa pelo check(): f_vinculo vai como a página traz.
       f_vinculo: '',
     });
-    expect('f_vinc' in lattes.posts[0]!.body).toBe(false);
-    expect([...lattes.atuacoes.get('5')!.vinculos.keys()]).toEqual(['2']);
+    expect('f_vinc' in post!.fields).toBe(false);
+    expect(vinculoIn(lattes.state, '1')).toBeUndefined();
+    expect(vinculoIn(lattes.state, '2')).toBeDefined();
   });
 
   it('a fila segue para a próxima depois de uma exclusão conferida', async () => {
-    const lattes = fakeLattes();
+    const lattes = await lattesFor();
     const results = await applyAll([opFor(idioma('ES')), opFor(vinculo('2'))], lattes.port);
     expect(results.map((r) => r.status)).toEqual(['conferido', 'conferido']);
   });
 
   it('o item que continua na lista não conta como excluído', async () => {
-    const lattes = fakeLattes({ ignoreDelete: true });
+    const lattes = await lattesFor({ intercept: faults.ignorePost() });
     const r = await applyDelete(opFor(idioma('ES')), lattes.port);
     expect(r.status).toBe('divergente');
     expect(r.detail).toMatch(/continua na lista.*Confira no Lattes/);
@@ -503,37 +405,39 @@ describe('aplicar a exclusão no Lattes falso', () => {
   it('outra linha que some junto é avisada', async () => {
     const idiomaJunto = await applyDelete(
       opFor(idioma('ES')),
-      fakeLattes({ alsoDeletes: 'idioma:1' }).port,
+      (await lattesFor({ intercept: alsoDeletes((s) => idiomaIn(s, 'EN')) })).port,
     );
     expect(idiomaJunto.status).toBe('divergente');
     expect(idiomaJunto.detail).toMatch(/além do item: idioma:1/);
     const vinculoJunto = await applyDelete(
       opFor(vinculo('1')),
-      fakeLattes({ alsoDeletes: 'vinculo:2' }).port,
+      (await lattesFor({ intercept: alsoDeletes((s) => vinculoIn(s, '2')) })).port,
     );
     expect(vinculoJunto.detail).toMatch(/além do item: vinculo:2/);
     const outraAtuacao = await applyDelete(
       opFor(vinculo('1')),
-      fakeLattes({ alsoDeletes: 'atuacao:6' }).port,
+      (await lattesFor({ intercept: alsoDeletes((s) => atuacaoIn(s, '6')) })).port,
     );
     expect(outraAtuacao.detail).toMatch(/além do item: atuacao:6/);
   });
 
   it('a atuação que some depois de excluir o vínculo é avisada', async () => {
-    const r = await applyDelete(opFor(vinculo('1')), fakeLattes({ alsoDeletes: 'atuacao:5' }).port);
+    const lattes = await lattesFor({ intercept: alsoDeletes((s) => atuacaoIn(s, '5')) });
+    const r = await applyDelete(opFor(vinculo('1')), lattes.port);
     expect(r.status).toBe('divergente');
     expect(r.detail).toMatch(/conferência falhou \(Atuação 5 não encontrada/);
   });
 
   it('sessão que cai depois do envio também pede conferência à mão', async () => {
     // GETs: lista, form 1, form 2, form 2 de novo; depois do POST, a lista.
-    const r = await applyDelete(opFor(idioma('ES')), fakeLattes({ logonAtGet: 5 }).port);
+    const lattes = await lattesFor({ intercept: faults.logonAtGet(5) });
+    const r = await applyDelete(opFor(idioma('ES')), lattes.port);
     expect(r.status).toBe('divergente');
     expect(r.detail).toMatch(/sessão do Lattes caiu/);
   });
 
   it('erro no envio não diz que nada foi enviado: a lista decide', async () => {
-    const chegou = fakeLattes();
+    const chegou = await lattesFor();
     const post = chegou.port.post.bind(chegou.port);
     const caiuDepois: LattesPort = {
       ...chegou.port,
@@ -544,14 +448,14 @@ describe('aplicar a exclusão no Lattes falso', () => {
     };
     expect((await applyDelete(opFor(idioma('ES')), caiuDepois)).status).toBe('conferido');
     const naoChegou: LattesPort = {
-      ...fakeLattes().port,
+      ...(await lattesFor()).port,
       post: () => Promise.reject(new Error('rede caiu')),
     };
     const r = await applyDelete(opFor(idioma('ES')), naoChegou);
     expect(r.status).toBe('divergente');
     expect(r.detail).toMatch(/deu erro \(rede caiu\) e pode ter chegado.*continua na lista/);
     const estranho: LattesPort = {
-      ...fakeLattes().port,
+      ...(await lattesFor()).port,
       post: () => {
         const notAnError: unknown = 'x';
         return Promise.reject(notAnError as Error);
@@ -561,73 +465,88 @@ describe('aplicar a exclusão no Lattes falso', () => {
   });
 
   it('nada é enviado quando o Lattes não está como o editor espera', async () => {
-    const lattes = fakeLattes();
-    lattes.idiomas.get('2')!.levels.LE = 'B';
+    const lattes = await lattesFor();
+    setAttr(idiomaIn(lattes.state, 'ES')!, 'PROFICIENCIA-DE-LEITURA', 'BEM');
     const r = await applyDelete(opFor(idioma('ES')), lattes.port);
     expect(r.status).toBe('divergente');
     expect(r.detail).toMatch(/F_LE/);
-    expect(lattes.posts).toEqual([]);
+    expect(postsOf(lattes)).toEqual([]);
 
-    const outro = fakeLattes();
-    outro.atuacoes.get('5')!.vinculos.get('1')!.f_ano_ini = '2010';
+    const outro = await lattesFor();
+    setAttr(vinculoIn(outro.state, '1')!, 'ANO-INICIO', '2010');
     const rv = await applyDelete(opFor(vinculo('1')), outro.port);
     expect(rv.detail).toMatch(/f_ano_ini/);
-    expect(outro.posts).toEqual([]);
+    expect(postsOf(outro)).toEqual([]);
   });
 
   it('nada é enviado quando a exclusão do formulário mudou', async () => {
-    const lattes = fakeLattes({ noDel: true });
+    const lattes = await lattesFor({
+      intercept: faults.rewritePages(formPages, (html) => html.replace("dc.f_ctr.value = 'E'", '')),
+    });
     const r = await applyDelete(opFor(idioma('ES')), lattes.port);
     expect(r).toMatchObject({ status: 'erro' });
     expect(r.detail).toMatch(/não exclui mais/);
-    expect(lattes.posts).toEqual([]);
+    expect(postsOf(lattes)).toEqual([]);
   });
 
   it('nada é enviado fora do modo de alteração', async () => {
-    const lattes = fakeLattes({ ctr: 'I' });
+    const lattes = await lattesFor({
+      intercept: faults.rewritePages(formPages, (html) =>
+        html.replace('name="f_ctr" value="U"', 'name="f_ctr" value="I"'),
+      ),
+    });
     const r = await applyDelete(opFor(vinculo('2')), lattes.port);
     expect(r.detail).toBe('O formulário não está em modo de alteração');
-    expect(lattes.posts).toEqual([]);
+    expect(postsOf(lattes)).toEqual([]);
   });
 
   it('o item que não está no Lattes para tudo antes de enviar', async () => {
-    const semIdioma = fakeLattes();
-    semIdioma.idiomas.delete('2');
+    const semIdioma = await lattesFor();
+    const es = idiomaIn(semIdioma.state, 'ES')!;
+    semIdioma.state.remove(
+      findIn(semIdioma.state.root, (el) => el.name === 'IDIOMAS')!,
+      es,
+    );
     expect((await applyDelete(opFor(idioma('ES')), semIdioma.port)).detail).toMatch(
       /Idioma ES não encontrado no Lattes \(0 achados\)/,
     );
-    const semVinculo = fakeLattes();
-    semVinculo.atuacoes.get('5')!.vinculos.delete('1');
+    expect(postsOf(semIdioma)).toHaveLength(0);
+    const semVinculo = await lattesFor();
+    semVinculo.state.remove(atuacaoIn(semVinculo.state, '5')!, vinculoIn(semVinculo.state, '1')!);
     expect((await applyDelete(opFor(vinculo('1')), semVinculo.port)).detail).toBe(
       'Vínculo 1 não encontrado no Lattes',
     );
-    const outraInstituicao = fakeLattes();
-    outraInstituicao.atuacoes.get('5')!.codinst = 'D777';
+    expect(postsOf(semVinculo)).toHaveLength(0);
+    const outraInstituicao = await lattesFor();
+    setAttr(atuacaoIn(outraInstituicao.state, '5')!, 'CODIGO-INSTITUICAO', '777');
     expect((await applyDelete(opFor(vinculo('1')), outraInstituicao.port)).detail).toMatch(
       /Atuação 5 não encontrada no Lattes \(0 achadas\)/,
     );
-    expect(semIdioma.posts.length + semVinculo.posts.length + outraInstituicao.posts.length).toBe(
-      0,
-    );
+    expect(postsOf(outraInstituicao)).toHaveLength(0);
   });
 
   it('menu sem as listas, formulário que não abre e sessão caída', async () => {
-    const semMenu = fakeLattes({ emptyMenu: true });
+    const lattes = await lattesFor();
+    const semMenu = { port: { ...lattes.port, menuHtml: () => '<p>menu</p>' } };
     expect((await applyDelete(opFor(idioma('ES')), semMenu.port)).detail).toMatch(
       /Idiomas não encontrados/,
     );
     expect((await applyDelete(opFor(vinculo('1')), semMenu.port)).detail).toMatch(
       /Atuação profissional não encontrada/,
     );
-    const semForm = await applyDelete(opFor(vinculo('1')), fakeLattes({ noForm: true }).port);
+    const semForm = await applyDelete(opFor(vinculo('1')), {
+      ...lattes.port,
+      readForm: () => undefined,
+    });
     expect(semForm).toMatchObject({
       detail: 'Formulário GN_ATIV_VINC não encontrado',
       status: 'erro',
     });
-    const sessao = await applyDelete(opFor(idioma('ES')), fakeLattes({ logonAtGet: 1 }).port);
+    const caida = await lattesFor({ intercept: faults.logonAtGet(1) });
+    const sessao = await applyDelete(opFor(idioma('ES')), caida.port);
     expect(sessao.status).toBe('sessao');
     const falha: LattesPort = {
-      ...fakeLattes().port,
+      ...caida.port,
       menuHtml: () => {
         throw new Error('aba fechada');
       },
@@ -637,7 +556,7 @@ describe('aplicar a exclusão no Lattes falso', () => {
       status: 'erro',
     });
     const estranha: LattesPort = {
-      ...fakeLattes().port,
+      ...caida.port,
       menuHtml: () => {
         const notAnError: unknown = 'sem Error';
         throw notAnError;
@@ -647,7 +566,7 @@ describe('aplicar a exclusão no Lattes falso', () => {
   });
 
   it('formulário que vira a página de login é sessão caída', async () => {
-    const lattes = fakeLattes();
+    const lattes = await lattesFor();
     const port: LattesPort = {
       ...lattes.port,
       async get(path) {

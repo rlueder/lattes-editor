@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
-import { applyAll, applyOp, type LattesPort, sameInstitution } from '../src/bridge/apply.ts';
+import type { LattesState } from '../scripts/lattes-simulado/estado.ts';
+import { applyAll, applyOp, sameInstitution } from '../src/bridge/apply.ts';
 import { fieldLabel, opRows } from '../src/bridge/field-labels.ts';
 import {
   encodeLatin1Form,
@@ -28,6 +29,13 @@ import {
 import { diffDocuments, resolvePath } from '../src/model/changes.ts';
 import { getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
 import { copyFileName } from '../src/ui/copy-name.ts';
+import {
+  faults,
+  findIn,
+  type LattesSimuladoNoTeste,
+  postsOf,
+  withSmallLattes,
+} from './helpers/lattes-simulado.ts';
 
 const XML = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS>
 <RESUMO-CV TEXTO-RESUMO-CV-RH="Resumo" TEXTO-RESUMO-CV-RH-EN="Summary"/>
@@ -54,190 +62,26 @@ function changesAfter(edit: (root: XElement) => void) {
   return { changes: diffDocuments(original, working), working };
 }
 
-// ---------------------------------------------------------------- Lattes falso
+// ---------------------------------------------------------------- Lattes simulado
 
-function decodeForm(body: string): [string, string][] {
-  return body.split('&').map((part) => {
-    const [k, v = ''] = part.split('=');
-    const dec = (s: string) =>
-      s
-        .replace(/\+/g, ' ')
-        .replace(/%([0-9A-F]{2})/gi, (_, h: string) => String.fromCharCode(parseInt(h, 16)))
-        .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)));
-    return [dec(k!), dec(v)];
-  });
+// O Lattes do teste é o simulado (scripts/lattes-simulado/), com um currículo
+// pequeno (SMALL_CV): os mesmos idiomas e o mesmo vínculo do XML acima.
+let open: LattesSimuladoNoTeste | undefined;
+afterEach(async () => {
+  await open?.close();
+  open = undefined;
+});
+
+async function lattesFor(options: Parameters<typeof withSmallLattes>[0] = {}) {
+  open = await withSmallLattes(options);
+  return open;
 }
 
-interface FakeOptions {
-  /** O POST não grava este campo. */
-  dropField?: string;
-  /** A sessão cai no passo n (contagem de GETs). */
-  logonAtGet?: number;
-  /** O POST também muda outro campo. */
-  sideEffect?: [string, string];
-}
-
-function fakeLattes(opts: FakeOptions = {}) {
-  const vinculo: Record<string, string> = {
-    f_ano_fim: '2012',
-    f_ano_ini: '2011',
-    f_carga: '40',
-    f_cod: 'K000000000',
-    f_codinst: 'D001',
-    f_ctr: 'U',
-    f_enqua: '',
-    f_enqua_en: '',
-    f_mes_fim: '12',
-    f_mes_ini: '01',
-    f_outras_inf: '',
-    f_outras_inf_en: '',
-    f_regime: '',
-    f_seq_ativ: '5',
-    f_seq_hist: '1',
-    f_stavinc: '1',
-    f_status: 'N',
-    f_tipo_privacidade: '1',
-    f_vinculo: '',
-  };
-  const resumo: Record<string, string> = { F_TEXTO: 'Resumo', F_TEXTO_EN: 'Summary', f_ctr: 'U' };
-  // Idiomas por f_seq; caixa marcada = 'on', rádio = P/R/B, vazio = sem valor.
-  const skills = ['LE', 'CONVERSA', 'ESCREVE', 'COMPR'];
-  const idioma = (code: string, levels: string[]): Record<string, string> => {
-    const state: Record<string, string> = { F_COD_IDIOMA: code, f_ctr: 'U' };
-    skills.forEach((s, i) => {
-      state[`F_${s}`] = levels[i] ?? '';
-      state[`FC_${s}`] = levels[i] ? 'on' : '';
-    });
-    return state;
-  };
-  const idiomas: Record<string, Record<string, string>> = {
-    '1': idioma('EN', ['B', 'B', 'B', 'B']),
-    '2': idioma('ES', ['P']),
-  };
-  const posts: { body: string; path: string }[] = [];
-  let gets = 0;
-
-  const controls = (state: Record<string, string>, form: string): FormControl[] => {
-    const list: FormControl[] = Object.entries(state)
-      .filter(
-        ([k]) =>
-          !['f_outras_inf_en', 'f_regime', 'f_status'].includes(k) || form !== 'GN_ATIV_VINC',
-      )
-      .map(([name, value]) => ({ name, type: 'text', value }));
-    if (form === 'GN_ATIV_VINC') {
-      list.push({ disabled: true, name: 'f_vinc', type: 'text', value: 'Celetista' });
-      list.push({
-        checked: state.f_regime === '3',
-        name: 'f_regime',
-        type: 'checkbox',
-        value: '3',
-      });
-      list.push({ checked: state.f_status === 'S', name: 'f_status', type: 'radio', value: 'S' });
-      list.push({ checked: state.f_status === 'N', name: 'f_status', type: 'radio', value: 'N' });
-      list.push({
-        maxLength: 2000,
-        name: 'f_outras_inf_en',
-        type: 'textarea',
-        value: state.f_outras_inf_en!,
-      });
-      list.push({ name: 'salvar', type: 'button', value: 'Salvar' });
-    }
-    return list.filter(
-      (c, i, all) =>
-        all.findIndex((x) => x.name === c.name && x.type === c.type) === i || c.type === 'radio',
-    );
-  };
-
-  const idiomaControls = (seq: string): FormControl[] => {
-    const state = idiomas[seq]!;
-    const list: FormControl[] = [
-      { name: 'f_cod', type: 'hidden', value: 'K000000000' },
-      { name: 'f_seq', type: 'hidden', value: seq },
-      { name: 'f_ctr', type: 'hidden', value: state.f_ctr! },
-      {
-        name: 'F_COD_IDIOMA',
-        selected: [state.F_COD_IDIOMA!],
-        type: 'select-one',
-        value: state.F_COD_IDIOMA!,
-      },
-    ];
-    for (const s of skills) {
-      list.push({
-        checked: state[`FC_${s}`] === 'on',
-        name: `FC_${s}`,
-        type: 'checkbox',
-        value: 'on',
-      });
-      for (const level of ['P', 'R', 'B']) {
-        list.push({
-          checked: state[`F_${s}`] === level,
-          name: `F_${s}`,
-          type: 'radio',
-          value: level,
-        });
-      }
-    }
-    return list;
-  };
-
-  const port: LattesPort = {
-    async get(path) {
-      gets += 1;
-      if (opts.logonAtGet === gets) return '<form action="pkg_sec.logon">';
-      if (path.startsWith('pkg_ativ.lista')) {
-        return `<a onclick="setarUrl(&quot;PKG_ATIV.cargos_vinculos?f_cod=K000000000&amp;f_codinst=D001&amp;f_seq_ativ=5&quot;)">x</a>
-                <a href="PKG_ATIV.cargos_vinculos?f_cod=K000000000&amp;f_codinst=D009&amp;f_seq_ativ=6">y</a>`;
-      }
-      if (path.startsWith('PKG_ATIV.cargos_vinculos')) {
-        return `<a href='PKG_ATIV.vinculos?f_cod=K000000000&f_codinst=D001&f_seq_ativ=5&f_seq_hist=1'>v</a>`;
-      }
-      if (path.startsWith('PKG_ATIV.vinculos')) return 'FORM:GN_ATIV_VINC';
-      if (path.startsWith('pkg_resume.')) return 'FORM:RES';
-      if (path.startsWith('pkg_idioma.lista')) {
-        return `<a href="pkg_idioma.form?f_cod=K000000000&amp;f_seq=1">Inglês</a>
-                <a href="pkg_idioma.form?f_cod=K000000000&amp;f_seq=2">Espanhol</a>
-                <a href="pkg_idioma.form?f_cod=K000000000">Novo</a>`;
-      }
-      if (path.startsWith('pkg_idioma.form')) {
-        return `FORM:GN_IDIOMA:${/f_seq=(\d+)/.exec(path)?.[1] ?? ''}`;
-      }
-      return '';
-    },
-    menuHtml: () =>
-      `<a onclick="modalCV1.setarUrl(&quot;pkg_ativ.lista?f_cod=K000000000&quot;, true)">Atuação</a>
-       <a onclick="modalCV1.setarUrl(&quot;pkg_resume.prc_resume?f_cod=K000000000&quot;, true)">Resumo</a>
-       <a onclick="modalCV1.setarUrl(&quot;pkg_idioma.lista?f_cod=K000000000&quot;, true)">Idiomas</a>`,
-    async post(path, body) {
-      posts.push({ body, path });
-      const pairs = decodeForm(body);
-      const seq = pairs.find(([k]) => k === 'f_seq')?.[1] ?? '';
-      const state =
-        path === 'PKG_ATIV.VINCULOS'
-          ? vinculo
-          : path === 'PKG_IDIOMA.FORM'
-            ? idiomas[seq]!
-            : resumo;
-      for (const key of Object.keys(state)) {
-        if (key === opts.dropField) continue;
-        const v = pairs.find(([k]) => k === key)?.[1];
-        const unchecked = key === 'f_regime' || /^FC?_/.test(key);
-        state[key] = v ?? (unchecked ? '' : state[key]!);
-      }
-      // A página volta com f_vinculo vazio, como no Lattes.
-      vinculo.f_vinculo = '';
-      if (opts.sideEffect) state[opts.sideEffect[0]] = opts.sideEffect[1];
-      return "<script>self.parent.modalCV2.setarUrl('PKG_ATIV.cargos_vinculos', true)</script>";
-    },
-    readForm(html, form) {
-      if (html === 'FORM:GN_ATIV_VINC' && form === 'GN_ATIV_VINC') return controls(vinculo, form);
-      if (html === 'FORM:RES' && form === 'RES') return controls(resumo, form);
-      const seq = /^FORM:GN_IDIOMA:(\d+)$/.exec(html)?.[1];
-      if (seq && form === 'GN_IDIOMA') return idiomaControls(seq);
-      return undefined;
-    },
-  };
-  return { idiomas, port, posts, resumo, vinculo };
-}
+const vinculoIn = (state: LattesState) =>
+  findIn(state.root, (el) => el.name === 'VINCULOS' && getAttr(el, 'SEQUENCIA-HISTORICO') === '1')!;
+const idiomaIn = (state: LattesState, code: string) =>
+  findIn(state.root, (el) => el.name === 'IDIOMA' && getAttr(el, 'IDIOMA') === code)!;
+const resumoIn = (state: LattesState) => findIn(state.root, (el) => el.name === 'RESUMO-CV')!;
 
 function idiomaOp(code: string, edit: (el: XElement) => void) {
   const { changes, working } = changesAfter((root) => {
@@ -481,58 +325,70 @@ describe('conector: plano', () => {
   });
 });
 
-describe('conector: aplicar no Lattes (falso)', () => {
+describe('conector: aplicar no Lattes simulado', () => {
   it('grava, relê e confere só os campos da operação', async () => {
-    const fake = fakeLattes();
+    const lattes = await lattesFor();
     const op = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'teste — conector'));
-    const r = await applyOp(op, fake.port);
+    const r = await applyOp(op, lattes.port);
     expect(r).toMatchObject({ key: op.key, status: 'conferido' });
-    expect(fake.vinculo.f_outras_inf_en).toBe('teste — conector');
-    expect(fake.posts[0]!.path).toBe('PKG_ATIV.VINCULOS');
-    expect(fake.posts[0]!.body).toContain('f_vinculo=Celetista');
-    expect(fake.posts[0]!.body).not.toContain('salvar');
+    expect(getAttr(vinculoIn(lattes.state), 'OUTRAS-INFORMACOES-INGLES')).toBe('teste — conector');
+    const [post] = postsOf(lattes);
+    expect(post!.proc).toBe('PKG_ATIV.VINCULOS');
+    expect(post!.fields.f_vinculo).toBe('Celetista');
+    expect('salvar' in post!.fields).toBe(false);
   });
 
   it('marca e desmarca caixa e muda a situação junto com o fim', async () => {
-    const fake = fakeLattes();
+    const lattes = await lattesFor();
     const op = vinculoOp((v) => {
       setAttr(v, 'FLAG-DEDICACAO-EXCLUSIVA', 'SIM');
       setAttr(v, 'ANO-FIM', '');
       setAttr(v, 'MES-FIM', '');
     });
-    expect(await applyOp(op, fake.port)).toMatchObject({ status: 'conferido' });
-    expect(fake.vinculo).toMatchObject({ f_ano_fim: '', f_regime: '3', f_status: 'S' });
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    const v = vinculoIn(lattes.state);
+    expect(getAttr(v, 'FLAG-DEDICACAO-EXCLUSIVA')).toBe('SIM');
+    expect(getAttr(v, 'ANO-FIM')).toBe('');
   });
 
   it('não envia nada quando o Lattes não está como o editor espera', async () => {
-    const fake = fakeLattes();
-    fake.vinculo.f_ano_ini = '2009';
+    const lattes = await lattesFor();
+    setAttr(vinculoIn(lattes.state), 'ANO-INICIO', '2009');
     const op = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'x'));
-    expect(await applyOp(op, fake.port)).toMatchObject({
+    expect(await applyOp(op, lattes.port)).toMatchObject({
       detail: expect.stringMatching(/f_ano_ini/),
       status: 'divergente',
     });
-    expect(fake.posts).toHaveLength(0);
+    expect(postsOf(lattes)).toHaveLength(0);
   });
 
   it('recusa valor acima do limite do campo', async () => {
-    const fake = fakeLattes();
+    const lattes = await lattesFor();
     const op = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'a'.repeat(2001)));
-    expect(await applyOp(op, fake.port)).toMatchObject({
+    expect(await applyOp(op, lattes.port)).toMatchObject({
       detail: expect.stringMatching(/limite/),
       status: 'erro',
     });
-    expect(fake.posts).toHaveLength(0);
+    expect(postsOf(lattes)).toHaveLength(0);
   });
 
   it('acusa campo não gravado e efeito colateral', async () => {
     const op = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'x'));
-    const dropped = fakeLattes({ dropField: 'f_outras_inf_en' });
+    const dropped = await lattesFor({
+      intercept: faults.afterPost((_req, state) =>
+        setAttr(vinculoIn(state), 'OUTRAS-INFORMACOES-INGLES', ''),
+      ),
+    });
     expect(await applyOp(op, dropped.port)).toMatchObject({
       detail: expect.stringMatching(/não gravou/),
       status: 'erro',
     });
-    const side = fakeLattes({ sideEffect: ['f_carga', '20'] });
+    await dropped.close();
+    const side = await lattesFor({
+      intercept: faults.afterPost((_req, state) =>
+        setAttr(vinculoIn(state), 'CARGA-HORARIA-SEMANAL', '20'),
+      ),
+    });
     expect(await applyOp(op, side.port)).toMatchObject({
       detail: expect.stringMatching(/f_carga/),
       status: 'erro',
@@ -542,23 +398,25 @@ describe('conector: aplicar no Lattes (falso)', () => {
   it('para quando a sessão cai, em qualquer passo', async () => {
     const op = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'x'));
     for (const step of [1, 2, 3, 4]) {
-      const fake = fakeLattes({ logonAtGet: step });
-      expect(await applyOp(op, fake.port)).toMatchObject({ status: 'sessao' });
+      const lattes = await lattesFor({ intercept: faults.logonAtGet(step) });
+      expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'sessao' });
+      await lattes.close();
+      open = undefined;
     }
   });
 
   it('acusa atuação, vínculo ou resumo que não acha', async () => {
     const op = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'x'));
-    const fake = fakeLattes();
-    expect(await applyOp({ ...op, seqAtiv: '9' } as BridgeOp, fake.port)).toMatchObject({
+    const lattes = await lattesFor();
+    expect(await applyOp({ ...op, seqAtiv: '9' } as BridgeOp, lattes.port)).toMatchObject({
       detail: expect.stringMatching(/Atuação 9/),
       status: 'erro',
     });
-    expect(await applyOp({ ...op, seqHist: '7' } as BridgeOp, fake.port)).toMatchObject({
+    expect(await applyOp({ ...op, seqHist: '7' } as BridgeOp, lattes.port)).toMatchObject({
       detail: expect.stringMatching(/Vínculo 7/),
       status: 'erro',
     });
-    const empty = { ...fake.port, menuHtml: () => '' };
+    const empty = { ...lattes.port, menuHtml: () => '' };
     expect(await applyOp(op, empty)).toMatchObject({
       detail: expect.stringMatching(/menu/),
       status: 'erro',
@@ -584,37 +442,43 @@ describe('conector: aplicar no Lattes (falso)', () => {
       label: 'R',
       set: { F_TEXTO: 'Novo' },
     };
-    const fake = fakeLattes();
-    expect(await applyOp(resumo, fake.port)).toMatchObject({ status: 'conferido' });
-    expect(fake.resumo.F_TEXTO).toBe('Novo');
+    const lattes = await lattesFor();
+    expect(await applyOp(resumo, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(getAttr(resumoIn(lattes.state), 'TEXTO-RESUMO-CV-RH')).toBe('Novo');
 
-    const noForm = { ...fake.port, readForm: () => undefined };
+    const noForm = { ...lattes.port, readForm: () => undefined };
     expect(await applyOp(resumo, noForm)).toMatchObject({
       detail: expect.stringMatching(/RES não encontrado/),
       status: 'erro',
     });
 
-    const other = fakeLattes();
-    other.resumo.f_ctr = 'I';
-    expect(await applyOp({ ...resumo, expect: {} }, other.port)).toMatchObject({
-      detail: expect.stringMatching(/alteração/),
-      status: 'erro',
-    });
-
-    const failing = { ...fake.port, get: () => Promise.reject(new Error('rede')) };
+    const failing = { ...lattes.port, get: () => Promise.reject(new Error('rede')) };
     expect(await applyOp(resumo, failing)).toMatchObject({ detail: 'rede', status: 'erro' });
-    const weird = { ...fake.port, get: () => Promise.reject('?') };
+    const weird = { ...lattes.port, get: () => Promise.reject('?') };
     expect(await applyOp(resumo, weird)).toMatchObject({
       detail: 'Falha inesperada',
       status: 'erro',
     });
 
     const logonPost = {
-      ...fakeLattes().port,
+      ...lattes.port,
       post: () => Promise.resolve('<form action="pkg_sec.logon">'),
     };
-    expect(await applyOp({ ...resumo, set: { F_TEXTO: 'x' } }, logonPost)).toMatchObject({
+    expect(
+      await applyOp({ ...resumo, expect: {}, set: { F_TEXTO: 'x' } }, logonPost),
+    ).toMatchObject({
       status: 'sessao',
+    });
+    await lattes.close();
+
+    const other = await lattesFor({
+      intercept: faults.rewritePages(/^pkg_resume\./i, (html) =>
+        html.replace('name="f_ctr" value="U"', 'name="f_ctr" value="I"'),
+      ),
+    });
+    expect(await applyOp({ ...resumo, expect: {} }, other.port)).toMatchObject({
+      detail: expect.stringMatching(/alteração/),
+      status: 'erro',
     });
   });
 
@@ -622,13 +486,14 @@ describe('conector: aplicar no Lattes (falso)', () => {
     const ok = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'x'));
     const bad = { ...ok, key: 'b', seqHist: '7' } as BridgeOp;
     const seen: string[] = [];
-    const results = await applyAll([bad, ok], fakeLattes().port, {
+    const lattes = await lattesFor();
+    const results = await applyAll([bad, ok], lattes.port, {
       onResult: (r) => seen.push(r.status),
     });
     expect(seen).toEqual(['erro']);
     expect(results).toHaveLength(1);
-    expect(await applyAll([ok], fakeLattes().port, { shouldStop: () => true })).toEqual([]);
-    expect(await applyAll([ok], fakeLattes().port)).toMatchObject([{ status: 'conferido' }]);
+    expect(await applyAll([ok], lattes.port, { shouldStop: () => true })).toEqual([]);
+    expect(await applyAll([ok], lattes.port)).toMatchObject([{ status: 'conferido' }]);
   });
 });
 
@@ -669,29 +534,31 @@ describe('conector: idioma', () => {
   });
 
   it('acha o idioma pelo código, grava e confere', async () => {
-    const fake = fakeLattes();
+    const lattes = await lattesFor();
     const { ops } = idiomaOp('ES', (el) => {
       setAttr(el, 'PROFICIENCIA-DE-LEITURA', 'BEM');
       setAttr(el, 'PROFICIENCIA-DE-FALA', 'POUCO');
     });
-    expect(await applyOp(ops[0]!, fake.port)).toMatchObject({ status: 'conferido' });
-    expect(fake.idiomas['2']).toMatchObject({ FC_CONVERSA: 'on', F_CONVERSA: 'P', F_LE: 'B' });
-    expect(fake.idiomas['1']!.F_LE).toBe('B');
-    expect(fake.posts[0]!.path).toBe('PKG_IDIOMA.FORM');
+    expect(await applyOp(ops[0]!, lattes.port)).toMatchObject({ status: 'conferido' });
+    const es = idiomaIn(lattes.state, 'ES');
+    expect(getAttr(es, 'PROFICIENCIA-DE-FALA')).toBe('POUCO');
+    expect(getAttr(es, 'PROFICIENCIA-DE-LEITURA')).toBe('BEM');
+    expect(getAttr(idiomaIn(lattes.state, 'EN'), 'PROFICIENCIA-DE-LEITURA')).toBe('BEM');
+    expect(postsOf(lattes)[0]!.proc).toBe('PKG_IDIOMA.FORM');
   });
 
   it('não envia quando o idioma não está no Lattes ou difere do esperado', async () => {
     const { ops } = idiomaOp('EN', (el) => setAttr(el, 'PROFICIENCIA-DE-ESCRITA', 'POUCO'));
     const op = ops[0]!;
-    const fake = fakeLattes();
-    expect(await applyOp({ ...op, code: 'FR' } as BridgeOp, fake.port)).toMatchObject({
+    const lattes = await lattesFor();
+    expect(await applyOp({ ...op, code: 'FR' } as BridgeOp, lattes.port)).toMatchObject({
       detail: expect.stringMatching(/Idioma FR não encontrado/),
       status: 'erro',
     });
-    fake.idiomas['1']!.F_ESCREVE = 'R';
-    expect(await applyOp(op, fake.port)).toMatchObject({ status: 'divergente' });
-    expect(fake.posts).toHaveLength(0);
-    const empty = { ...fake.port, menuHtml: () => '' };
+    setAttr(idiomaIn(lattes.state, 'EN'), 'PROFICIENCIA-DE-ESCRITA', 'RAZOAVELMENTE');
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'divergente' });
+    expect(postsOf(lattes)).toHaveLength(0);
+    const empty = { ...lattes.port, menuHtml: () => '' };
     expect(await applyOp(op, empty)).toMatchObject({
       detail: expect.stringMatching(/Idiomas/),
       status: 'erro',

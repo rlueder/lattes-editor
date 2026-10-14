@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { applyOp, type LattesPort } from '../src/bridge/apply.ts';
 import {
@@ -23,9 +23,16 @@ import { type BridgeOp, planChanges, type Unsupported } from '../src/bridge/plan
 import { sentEntry, undoOp } from '../src/bridge/sent-log.ts';
 import { splitByRoute } from '../src/import-export/send-routes.ts';
 import { diffDocuments, resolvePath } from '../src/model/changes.ts';
+import { encodeLatin1 } from '../src/model/latin1.ts';
 import { getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
 import listas from '../src/schema/listas-lattes.json' with { type: 'json' };
-import { readHtmlForm } from './helpers/html-form.ts';
+import {
+  faults,
+  findIn,
+  type LattesSimuladoNoTeste,
+  postsOf,
+  withLattesSimulado,
+} from './helpers/lattes-simulado.ts';
 
 // ---------------------------------------------------------------- currículo
 
@@ -95,176 +102,47 @@ function onlyReason(edit: (root: XElement) => void): string {
   return plan.unsupported.map((u) => u.reason).join(' | ');
 }
 
-// ---------------------------------------------------------------- Lattes falso
+// ---------------------------------------------------------------- Lattes simulado
 
-/** Estado de um evento no Lattes falso: valor de cada campo do GN_TEC. */
-type EventState = Record<string, string>;
-
-const COD = 'K000000000';
-
-const event = (seq: string, over: Partial<EventState> = {}): EventState => ({
-  f_ano: '2019',
-  f_cidade: 'Porto Alegre',
-  f_classif: 'N',
-  f_cod: COD,
-  F_COD_PROD: 'A31',
-  f_ctr: 'U',
-  F_FORMA: '40',
-  f_homepage: '',
-  f_nme_evento: 'Congresso Brasileiro de Exemplo',
-  f_pais: 'BRA',
-  f_seq: seq,
-  F_STA_DIVULGACAO_CIENTIFICA: 'N',
-  f_tipo_privacidade: '1',
-  f_titulo: '',
-  f_titulo_en: '',
-  ...over,
+// O Lattes do teste é o simulado (scripts/lattes-simulado/), com o currículo do
+// XML acima: os eventos 12 (congresso de ouvinte), 13 (seminário de
+// convidado) e 14 (outra participação de ouvinte).
+let open: LattesSimuladoNoTeste | undefined;
+afterEach(async () => {
+  await open?.close();
+  open = undefined;
 });
 
-const esc = (v: string) => v.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-
-const radios = (name: string, state: EventState, options: [string, string][]) =>
-  options
-    .map(
-      ([value, label]) =>
-        `<input type="radio" name="${name}" value="${value}"${state[name] === value ? ' checked' : ''}> ${label}`,
-    )
-    .join('\n');
-
-const select = (name: string, state: EventState, options: [string, string][]) =>
-  `<select name="${name}">${options
-    .map(
-      ([value, label]) =>
-        `<option value="${value}"${state[name] === value ? ' selected' : ''}>${label}</option>`,
-    )
-    .join('')}</select>`;
-
-const text = (name: string, state: EventState, max: number) =>
-  `<input type="text" name="${name}" maxlength="${max}" value="${esc(state[name] ?? '')}">`;
-
-/** A página do formulário de eventos como a seção 16 de lattes_internals.md descreve. */
-function eventPage(state: EventState, opts: { titleMax?: number } = {}): string {
-  return `<html><head><script>function montaTipoApres(){} function check(){}</script></head><body>
-<form name="GN_TEC" method="post" action="PKG_EVENTO.FORM">
-${radios('F_FORMA', state, [
-  ['38', 'Convidado'],
-  ['39', 'Participante'],
-  ['40', 'Ouvinte'],
-])}
-<select name="F_TPO"></select>
-${text('f_nme_evento', state, 400)}
-${text('f_ano', state, 4)}
-${radios('f_classif', state, [
-  ['I', 'Internacional'],
-  ['N', 'Nacional'],
-  ['R', 'Regional'],
-  ['L', 'Local'],
-])}
-${select('F_COD_PROD', state, [
-  ['', 'Selecione'],
-  ['A31', 'Congresso'],
-  ['A32', 'Seminário'],
-  ['A35', 'Encontro'],
-  ['A39', 'Outra'],
-])}
-${text('f_cidade', state, 255)}
-${select('f_pais', state, [
-  ['BRA', 'Brasil'],
-  ['EUA', 'Estados Unidos'],
-  ['RFA', 'Alemanha'],
-])}
-${text('f_homepage', state, 250)}
-${text('f_titulo', state, opts.titleMax ?? 255)}
-${radios('F_STA_DIVULGACAO_CIENTIFICA', state, [
-  ['S', 'sim'],
-  ['N', 'não'],
-])}
-${text('f_titulo_en', state, 400)}
-${select('f_tipo_privacidade', state, [
-  ['1', 'Público'],
-  ['2', 'Privado'],
-])}
-<input type="hidden" name="f_ctr" value="${state.f_ctr}">
-<input type="hidden" name="f_cod" value="${state.f_cod}">
-<input type="hidden" name="f_seq" value="${state.f_seq}">
-<input type="button" name="salvar" value="Salvar" onclick="check()">
-</form></body></html>`;
-}
-
-const row = (seq: string) =>
-  `<tr onclick="self.parent.modalCV2.setarUrl('PKG_EVENTO.form?f_cod=${COD}&F_STA_DIVULGACAO_CIENTIFICA=&f_seq=${seq}',true)"><td>Evento ${seq}</td></tr>`;
-const NEW_ROW = `<a onclick="self.parent.modalCV2.setarUrl('PKG_EVENTO.form?f_cod=${COD}&F_STA_DIVULGACAO_CIENTIFICA=',true)">Incluir novo item</a>`;
-
-const MENU = `<a onclick="modalCV1.setarUrl(&quot;pkg_evento.LISTA?f_sta_divulgacao_cientifica=S&amp;f_cod=${COD}&quot;, true)">Divulgação científica</a>
-<a onclick="modalCV1.setarUrl(&quot;pkg_evento.lista?f_cod=${COD}&quot;, true)">Participação em eventos</a>
-<a onclick="modalCV1.setarUrl(&quot;pkg_idioma.lista?f_cod=${COD}&quot;, true)">Idiomas</a>`;
-
-function decodeForm(body: string): [string, string][] {
-  return body.split('&').map((part) => {
-    const [k, v = ''] = part.split('=');
-    const dec = (s: string) =>
-      s
-        .replace(/\+/g, ' ')
-        .replace(/%([0-9A-F]{2})/gi, (_, h: string) => String.fromCharCode(parseInt(h, 16)))
-        .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)));
-    return [dec(k!), dec(v)];
+async function lattesFor(options: Parameters<typeof withLattesSimulado>[0] = {}) {
+  await open?.close();
+  open = await withLattesSimulado({
+    xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${XML}`),
+    ...options,
   });
+  // O evento 12 traz a abrangência nacional, que o XML não guarda.
+  open.state.formOnly(itemIn(open, '12')).f_classif = 'N';
+  return open;
 }
 
-interface FakeOptions {
-  /** O POST não grava este campo. */
-  dropField?: string;
-  /** Os eventos do Lattes, por f_seq. */
-  events?: Record<string, EventState>;
-  /** A sessão cai no GET de número n. */
-  logonAtGet?: number;
-  menu?: string;
-  /** O POST também muda outro campo. */
-  sideEffect?: [string, string];
-  titleMax?: number;
-}
+const itemIn = (lattes: LattesSimuladoNoTeste, seq: string) =>
+  findIn(lattes.state.root, (el) => getAttr(el, 'SEQUENCIA-PRODUCAO') === seq)!;
+const basicsIn = (lattes: LattesSimuladoNoTeste, seq = '12') =>
+  child(itemIn(lattes, seq), 'DADOS-BASICOS');
+const detailIn = (lattes: LattesSimuladoNoTeste, seq = '12') =>
+  child(itemIn(lattes, seq), 'DETALHAMENTO');
 
-function fakeLattes(opts: FakeOptions = {}) {
-  const events = opts.events ?? { '12': event('12'), '14': event('14', { F_COD_PROD: 'A39' }) };
-  const posts: { body: string; pairs: [string, string][]; path: string }[] = [];
-  const gets: string[] = [];
-  const port: LattesPort = {
-    async get(path) {
-      gets.push(path);
-      if (opts.logonAtGet === gets.length) {
-        return '<SCRIPT>location="pkg_sec.logon?f_cod=ini"</SCRIPT>';
-      }
-      if (/^pkg_evento\.lista\?/i.test(path)) {
-        // A lista filtrada só mostra o que é divulgação científica.
-        const filtered = /f_sta_divulgacao_cientifica=S/i.test(path);
-        const seqs = Object.keys(events).filter(
-          (s) => !filtered || events[s]!.F_STA_DIVULGACAO_CIENTIFICA === 'S',
-        );
-        return `<table>${seqs.map(row).join('\n')}</table>${NEW_ROW}`;
-      }
-      if (path.startsWith('PKG_EVENTO.form')) {
-        const seq = /f_seq=(\d+)/.exec(path)?.[1];
-        const state = seq ? events[seq] : undefined;
-        return state ? eventPage(state, opts) : '<p>Erro</p>';
-      }
-      return '';
-    },
-    menuHtml: () => opts.menu ?? MENU,
-    async post(path, body) {
-      const pairs = decodeForm(body);
-      posts.push({ body, pairs, path });
-      const seq = pairs.find(([k]) => k === 'f_seq')?.[1] ?? '';
-      const state = events[seq]!;
-      for (const [k, v] of pairs) {
-        if (k in state && k !== opts.dropField) state[k] = v;
-      }
-      if (opts.sideEffect) state[opts.sideEffect[0]] = opts.sideEffect[1];
-      return `<script>self.parent.modalCV1.setarUrl('pkg_evento.lista?f_cod=${COD}',true)</script>`;
-    },
-    readForm: readHtmlForm,
-  };
-  return { events, gets, port, posts };
-}
+const gets = (lattes: LattesSimuladoNoTeste) =>
+  lattes.state.log
+    .filter((l) => l.method === 'GET' && !/^pkg_menu\.menu$/i.test(l.proc))
+    .map((l) => l.path);
+
+const menuWith = (lattes: LattesSimuladoNoTeste, html: string): LattesPort => ({
+  ...lattes.port,
+  menuHtml: () => html.replaceAll('K000000000', lattes.state.code),
+});
+
+/** Troca o HTML do formulário de eventos. */
+const eventForm = (fn: (html: string) => string) => faults.rewritePages(/^PKG_EVENTO\.form$/i, fn);
 
 // ---------------------------------------------------------------- testes
 
@@ -455,118 +333,167 @@ describe('alteração de evento: plano', () => {
 
 const opFor = (edit: (root: XElement) => void): EventoOp => onlyOp(edit);
 
-describe('alteração de evento: aplicar no Lattes (falso)', () => {
+describe('alteração de evento: aplicar no Lattes simulado', () => {
   it('acha o evento pela lista, envia só os campos da operação e confere', async () => {
-    const fake = fakeLattes();
+    const lattes = await lattesFor();
     const op = opFor((root) => {
       setAttr(basics(root), 'TITULO', 'Apresentação … São Paulo');
       setAttr(basics(root), 'PAIS', 'Estados Unidos');
     });
-    const r = await applyOp(op, fake.port);
+    const r = await applyOp(op, lattes.port);
     expect(r).toEqual({
       detail: 'Gravado e conferido no Lattes',
       key: op.key,
       status: 'conferido',
     });
-    expect(fake.events['12']).toMatchObject({
-      f_pais: 'EUA',
-      f_titulo: 'Apresentação … São Paulo',
-    });
-    expect(fake.posts).toHaveLength(1);
-    const post = fake.posts[0]!;
-    expect(post.path).toBe('PKG_EVENTO.FORM');
+    expect(getAttr(basicsIn(lattes), 'PAIS')).toBe('Estados Unidos');
+    expect(getAttr(basicsIn(lattes), 'TITULO')).toBe('Apresentação … São Paulo');
+    const posts = postsOf(lattes);
+    expect(posts).toHaveLength(1);
+    const post = lattes.state.log.find((l) => l.method === 'POST')!;
+    expect(post.proc).toBe('PKG_EVENTO.FORM');
     // Latin-1: "ã" vai como %E3; as reticências, fora do Latin-1, como referência numérica.
     expect(post.body).toContain('f_titulo=Apresenta%E7%E3o+%26%238230%3B+S%E3o+Paulo');
     expect(post.pairs).toContainEqual(['F_TPO', '']);
     expect(post.pairs).toContainEqual(['f_ctr', 'U']);
     expect(post.pairs).toContainEqual(['f_seq', '12']);
     expect(post.pairs).toContainEqual(['f_classif', 'N']);
-    expect(post.pairs.map(([k]) => k)).not.toContain('salvar');
+    expect(post.pairs!.map(([k]) => k)).not.toContain('salvar');
     // A lista inteira é lida antes da filtrada por divulgação científica.
-    expect(fake.gets[0]).toBe(`pkg_evento.lista?f_cod=${COD}`);
+    expect(gets(lattes)[0]).toBe(`pkg_evento.lista?f_cod=${lattes.state.code}`);
   });
 
   it('procura na lista filtrada quando a inteira não tem o evento', async () => {
-    const fake = fakeLattes({
-      menu: `<a onclick="modalCV1.setarUrl(&quot;pkg_evento.lista?f_cod=${COD}&quot;, true)">x</a>
-             <a onclick="modalCV1.setarUrl(&quot;pkg_evento.LISTA?f_sta_divulgacao_cientifica=S&amp;f_cod=${COD}&quot;, true)">y</a>`,
+    // A lista inteira esconde o 12; ele só aparece na filtrada.
+    const lattes = await lattesFor({
+      intercept: async (req, _state, next) => {
+        const out = await next();
+        const whole =
+          /^pkg_evento\.lista$/i.test(req.proc) && !req.get('f_sta_divulgacao_cientifica');
+        if (!whole || !('html' in out)) return out;
+        return { ...out, html: out.html.replace(/<tr[^>]*f_seq=12'[\s\S]*?<\/tr>/, '') };
+      },
     });
-    // A lista inteira falsa mostra tudo; aqui o evento 12 só aparece na filtrada.
-    const get = fake.port.get.bind(fake.port);
-    fake.port.get = async (path) => {
-      if (!/^pkg_evento\.lista\?f_cod/.test(path)) return get(path);
-      fake.gets.push(path);
-      return `<table>${row('14')}</table>`;
-    };
-    fake.events['12']!.F_STA_DIVULGACAO_CIENTIFICA = 'S';
+    setAttr(basicsIn(lattes), 'FLAG-DIVULGACAO-CIENTIFICA', 'SIM');
+    const port = menuWith(
+      lattes,
+      `<a onclick="modalCV1.setarUrl(&quot;pkg_evento.lista?f_cod=K000000000&quot;, true)">x</a>
+       <a onclick="modalCV1.setarUrl(&quot;pkg_evento.LISTA?f_sta_divulgacao_cientifica=S&amp;f_cod=K000000000&quot;, true)">y</a>`,
+    );
     const op = opFor((root) => setAttr(basics(root), 'TITULO', 'T'));
-    expect((await applyOp(op, fake.port)).status).toBe('conferido');
-    expect(fake.gets.slice(0, 2)).toEqual([
-      `pkg_evento.lista?f_cod=${COD}`,
-      `pkg_evento.LISTA?f_sta_divulgacao_cientifica=S&f_cod=${COD}`,
+    expect((await applyOp(op, port)).status).toBe('conferido');
+    const code = lattes.state.code;
+    expect(gets(lattes).slice(0, 2)).toEqual([
+      `pkg_evento.lista?f_cod=${code}`,
+      `pkg_evento.LISTA?f_sta_divulgacao_cientifica=S&f_cod=${code}`,
     ]);
   });
 
   it('não envia nada quando a linha do Lattes não é a que o editor pensa', async () => {
-    const cases: Partial<EventState>[] = [
-      { F_FORMA: '39' },
-      { F_COD_PROD: 'A32' },
-      { f_ano: '2017' },
-      { f_titulo: 'Já mudou no Lattes' },
+    const cases: ((lattes: LattesSimuladoNoTeste) => void)[] = [
+      (l) => setAttr(basicsIn(l), 'FORMA-PARTICIPACAO', 'Participante'),
+      (l) => {
+        // Outra natureza: o item vira um seminário (F_COD_PROD A32).
+        const item = itemIn(l, '12');
+        item.name = 'PARTICIPACAO-EM-SEMINARIO';
+        for (const c of item.children) {
+          if (c.kind === 'element') c.name = c.name.replace('CONGRESSO', 'SEMINARIO');
+        }
+      },
+      (l) => setAttr(basicsIn(l), 'ANO', '2017'),
+      (l) => setAttr(basicsIn(l), 'TITULO', 'Já mudou no Lattes'),
     ];
-    for (const over of cases) {
-      const fake = fakeLattes({ events: { '12': event('12', over) } });
+    for (const change of cases) {
+      const lattes = await lattesFor();
+      change(lattes);
       const op = opFor((root) => setAttr(basics(root), 'TITULO', 'Novo'));
-      const r = await applyOp(op, fake.port);
+      const r = await applyOp(op, lattes.port);
       expect(r.status).toBe('divergente');
       expect(r.detail).toMatch(/^O Lattes não está como o editor espera: /);
-      expect(fake.posts).toEqual([]);
+      expect(postsOf(lattes)).toEqual([]);
     }
   });
 
   it('acusa evento, lista ou formulário que não acha, sem enviar', async () => {
     const op = opFor((root) => setAttr(basics(root), 'TITULO', 'Novo'));
-    const semEvento = fakeLattes({ events: { '14': event('14') } });
+    const semEvento = await lattesFor();
+    const container = findIn(
+      semEvento.state.root,
+      (el) => el.name === 'PARTICIPACAO-EM-EVENTOS-CONGRESSOS',
+    )!;
+    semEvento.state.remove(container, itemIn(semEvento, '12'));
     expect(await applyOp(op, semEvento.port)).toMatchObject({
       detail: 'Evento 12 não encontrado no Lattes',
       status: 'erro',
     });
-    const semLista = fakeLattes({ menu: '<a href="pkg_idioma.lista?f_cod=K000000000">x</a>' });
-    expect(await applyOp(op, semLista.port)).toMatchObject({
+    expect(postsOf(semEvento)).toEqual([]);
+    const lattes = await lattesFor();
+    const semLista = menuWith(lattes, '<a href="pkg_idioma.lista?f_cod=K000000000">x</a>');
+    expect(await applyOp(op, semLista)).toMatchObject({
       detail: 'Participação em eventos não encontrada no menu do Lattes',
       status: 'erro',
     });
-    const semForm = fakeLattes();
-    semForm.port.readForm = () => undefined;
-    expect(await applyOp(op, semForm.port)).toMatchObject({
+    const semForm = { ...lattes.port, readForm: () => undefined };
+    expect(await applyOp(op, semForm)).toMatchObject({
       detail: 'Formulário GN_TEC não encontrado',
       status: 'erro',
     });
-    const inclusao = fakeLattes({ events: { '12': event('12', { f_ctr: 'I' }) } });
+    expect(postsOf(lattes)).toEqual([]);
+    const inclusao = await lattesFor({
+      intercept: eventForm((html) =>
+        html.replace('name="f_ctr" value="U"', 'name="f_ctr" value="I"'),
+      ),
+    });
     expect((await applyOp(op, inclusao.port)).detail).toBe(
       'O formulário não está em modo de alteração',
     );
-    for (const fake of [semEvento, semLista, semForm, inclusao]) expect(fake.posts).toEqual([]);
+    expect(postsOf(inclusao)).toEqual([]);
   });
 
   it('recusa valor acima do limite do campo', async () => {
-    const fake = fakeLattes({ titleMax: 10 });
+    const lattes = await lattesFor({
+      intercept: eventForm((html) =>
+        html.replace(/(name="f_titulo"[^>]*maxlength=")255"/, '$110"'),
+      ),
+    });
     const op = opFor((root) => setAttr(basics(root), 'TITULO', 'Um título comprido demais'));
-    expect(await applyOp(op, fake.port)).toMatchObject({
+    expect(await applyOp(op, lattes.port)).toMatchObject({
       detail: 'f_titulo passa do limite do Lattes (10 caracteres)',
       status: 'erro',
     });
-    expect(fake.posts).toEqual([]);
+    expect(postsOf(lattes)).toEqual([]);
   });
 
   it('acusa campo não gravado e outro campo que mudou junto', async () => {
     const op = () => opFor((root) => setAttr(basics(root), 'TITULO', 'Novo'));
-    const naoGravou = fakeLattes({ dropField: 'f_titulo' });
+    const naoGravou = await lattesFor({
+      intercept: faults.afterPost((_req, state) =>
+        setAttr(
+          child(
+            findIn(state.root, (el) => getAttr(el, 'SEQUENCIA-PRODUCAO') === '12')!,
+            'DADOS-BASICOS',
+          ),
+          'TITULO',
+          '',
+        ),
+      ),
+    });
     expect(await applyOp(op(), naoGravou.port)).toMatchObject({
       detail: 'O Lattes não gravou: f_titulo',
       status: 'erro',
     });
-    const colateral = fakeLattes({ sideEffect: ['f_cidade', 'Canoas'] });
+    const colateral = await lattesFor({
+      intercept: faults.afterPost((_req, state) =>
+        setAttr(
+          child(
+            findIn(state.root, (el) => getAttr(el, 'SEQUENCIA-PRODUCAO') === '12')!,
+            'DETALHAMENTO',
+          ),
+          'CIDADE-DO-EVENTO',
+          'Canoas',
+        ),
+      ),
+    });
     expect(await applyOp(op(), colateral.port)).toMatchObject({
       detail: 'Outros campos mudaram no Lattes: f_cidade',
       status: 'erro',
@@ -575,19 +502,19 @@ describe('alteração de evento: aplicar no Lattes (falso)', () => {
 
   it('para quando a sessão cai, antes ou depois de enviar', async () => {
     for (const at of [1, 2, 3]) {
-      const fake = fakeLattes({ logonAtGet: at });
+      const lattes = await lattesFor({ intercept: faults.logonAtGet(at) });
       const op = opFor((root) => setAttr(basics(root), 'TITULO', 'Novo'));
-      expect((await applyOp(op, fake.port)).status).toBe('sessao');
+      expect((await applyOp(op, lattes.port)).status).toBe('sessao');
     }
   });
 
   it('desfaz pelo registro do enviado, voltando o antes', async () => {
-    const fake = fakeLattes();
+    const lattes = await lattesFor();
     const op = opFor((root) => {
       setAttr(basics(root), 'TITULO', 'Novo');
       setAttr(basics(root), 'PAIS', 'Alemanha');
     });
-    expect((await applyOp(op, fake.port)).status).toBe('conferido');
+    expect((await applyOp(op, lattes.port)).status).toBe('conferido');
     const entry = { ...sentEntry(op, '1', 1000), id: 7 };
     expect(entry.rows).toEqual([
       { after: 'Novo', before: '(vazio)', label: 'Título', name: 'f_titulo' },
@@ -600,8 +527,10 @@ describe('alteração de evento: aplicar no Lattes (falso)', () => {
       seq: '12',
       set: { f_pais: 'BRA', f_titulo: '' },
     });
-    expect((await applyOp(undo, fake.port)).status).toBe('conferido');
-    expect(fake.events['12']).toMatchObject({ f_pais: 'BRA', f_titulo: '' });
+    expect((await applyOp(undo, lattes.port)).status).toBe('conferido');
+    expect(getAttr(basicsIn(lattes), 'PAIS')).toBe('Brasil');
+    expect(getAttr(basicsIn(lattes), 'TITULO')).toBe('');
+    expect(getAttr(detailIn(lattes), 'CIDADE-DO-EVENTO')).toBe('Porto Alegre');
   });
 });
 
@@ -614,36 +543,52 @@ describe('alteração de evento: contrato', () => {
     report.forms.find((f) => f.kind === 'evento')!;
 
   it('confere o formulário de um evento existente, só lendo', async () => {
-    const fake = fakeLattes();
-    const report = await checkContract(fake.port, contract);
+    const lattes = await lattesFor();
+    const report = await checkContract(lattes.port, contract);
     expect(evento(report)).toEqual({ drifts: [], form: 'GN_TEC', kind: 'evento', status: 'ok' });
     expect(report.menu).toContainEqual({ found: true, proc: 'pkg_evento.lista' });
-    expect(fake.posts).toEqual([]);
+    expect(postsOf(lattes)).toEqual([]);
   });
 
   it('aponta campo que mudou e trava a fila de eventos', async () => {
-    const report = await checkContract(fakeLattes({ titleMax: 300 }).port, contract);
+    const longer = await lattesFor({
+      intercept: eventForm((html) =>
+        html.replace(/(name="f_titulo"[^>]*maxlength=")255"/, '$1300"'),
+      ),
+    });
+    const report = await checkContract(longer.port, contract);
     expect(evento(report).drifts).toEqual([
       { expected: '255', field: 'f_titulo', form: 'GN_TEC', kind: 'limite-mudou', observed: '300' },
     ]);
-    const noTpo = fakeLattes();
-    const read = noTpo.port.readForm;
-    noTpo.port.readForm = (html, form) => read(html, form)?.filter((c) => c.name !== 'F_TPO');
-    const broken = await checkContract(noTpo.port, contract);
+    const noTpo = await lattesFor();
+    const broken = await checkContract(
+      {
+        ...noTpo.port,
+        readForm: (html, form) =>
+          noTpo.port.readForm(html, form)?.filter((c) => c.name !== 'F_TPO'),
+      },
+      contract,
+    );
     expect(blocksKind(broken, 'evento')).toEqual([
       { field: 'F_TPO', form: 'GN_TEC', kind: 'campo-sumiu' },
     ]);
   });
 
   it('sem evento cadastrado fica sem amostra; sem a lista, o link sumiu', async () => {
-    const vazio = await checkContract(fakeLattes({ events: {} }).port, contract);
+    const lattes = await lattesFor();
+    const container = findIn(
+      lattes.state.root,
+      (el) => el.name === 'PARTICIPACAO-EM-EVENTOS-CONGRESSOS',
+    )!;
+    container.children = [];
+    const vazio = await checkContract(lattes.port, contract);
     expect(evento(vazio)).toMatchObject({
       detail: 'O currículo não tem participação em eventos',
       status: 'sem-amostra',
     });
     expect(lacksSample(vazio, 'evento')).toBeDefined();
     const semLista = await checkContract(
-      fakeLattes({ menu: `<a href="pkg_idioma.lista?f_cod=${COD}">x</a>` }).port,
+      menuWith(lattes, '<a href="pkg_idioma.lista?f_cod=K000000000">x</a>'),
       contract,
     );
     expect(evento(semLista)).toMatchObject({
@@ -713,13 +658,15 @@ describe('alteração de evento: rótulos e regras do envio', () => {
   });
 
   it('reconhece a lista filtrada por divulgação científica em qualquer caixa', async () => {
-    const fake = fakeLattes({
-      menu: `<a href="pkg_evento.LISTA?F_STA_DIVULGACAO_CIENTIFICA=S&amp;f_cod=${COD}">y</a>
-             <a href="PKG_EVENTO.lista?f_cod=${COD}">x</a>`,
-    });
+    const lattes = await lattesFor();
+    const port = menuWith(
+      lattes,
+      `<a href="pkg_evento.LISTA?F_STA_DIVULGACAO_CIENTIFICA=S&amp;f_cod=K000000000">y</a>
+       <a href="PKG_EVENTO.lista?f_cod=K000000000">x</a>`,
+    );
     const op = opFor((root) => setAttr(basics(root), 'TITULO', 'T'));
-    expect((await applyOp(op, fake.port)).status).toBe('conferido');
-    expect(fake.gets[0]).toBe(`PKG_EVENTO.lista?f_cod=${COD}`);
+    expect((await applyOp(op, port)).status).toBe('conferido');
+    expect(gets(lattes)[0]).toBe(`PKG_EVENTO.lista?f_cod=${lattes.state.code}`);
   });
 
   it('o plano devolve Unsupported com chave e rótulo', () => {

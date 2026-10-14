@@ -13,6 +13,7 @@ pnpm dev                  # só a página do editor, no navegador
 pnpm dev:exemplo          # o editor já aberto com o currículo sintético completo
 pnpm dev:demo             # o editor com o currículo de demonstração, para gravar e tirar imagens
 pnpm build:extension      # a extensão em dist-extension/
+pnpm dev:lattes           # o Lattes simulado, para testar o conector sem o Lattes de verdade
 ```
 
 O app usa Tauri 2 e precisa do Rust e, no macOS, das ferramentas de linha de
@@ -41,6 +42,42 @@ extensão:
 | `?simular-atualizacao`   | O aviso de versão nova e o item "Verificar atualizações" do ⚙ (`=nenhuma` sem versão nova, `=falha` para o erro) |
 | `?simular-foto`          | O lápis da foto e a troca, com uma resposta simulada (`=falha` para o erro)                                      |
 | `?primeiro-uso=<estado>` | Um estado fixo da tela de primeiro uso (`src/dev/onboarding-preview.ts`)                                         |
+
+## Lattes simulado
+
+```bash
+pnpm dev:lattes           # http://127.0.0.1:5197/cvlattesweb/PKG_MENU.menu
+```
+
+Sobe um Lattes de mentira, com o currículo de `fixtures/demo.xml` em memória:
+menu, listas, formulários de edição e inclusão, Exportar com um ZIP montado do
+estado, os três passos do Importar, a página de conferência, a foto, o envio ao
+CNPq e a sessão que vence. Os POSTs com `f_ctr` U, I e E mudam o estado e
+acendem o aviso de alterações pendentes, como no Lattes. O que cada
+procedimento faz, e o que foi observado ou é palpite, está em
+[`scripts/lattes-simulado/README.md`](../scripts/lattes-simulado/README.md).
+
+Para usar com o app e a extensão:
+
+1. `pnpm dev:lattes` e abra o menu no Chrome ou no Brave.
+2. Monte a extensão do canal Dev com `node scripts/build-extension.ts --canal-dev`
+   e carregue `dist-extension-dev/` em `chrome://extensions` (ou use a que vem
+   com o LattesEditor Dev). Só ela acha o Lattes em `localhost` e
+   `127.0.0.1`; a extensão publicada só conhece `wwws.cnpq.br`, e a montagem
+   dela não leva nem o endereço do simulado.
+3. Abra o LattesEditor Dev (`pnpm desktop:dev` também serve): o conector lê o
+   menu do simulado como leria o do Lattes.
+
+As chaves das operações ainda não testadas no Lattes real
+(`BIOGRAPHIC_OPS_ENABLED`, `CREATE_ITEMS_ENABLED`, `DELETE_ITEMS_ENABLED`,
+`EDIT_ITEMS_ENABLED`, `IMPORT_ENABLED`) continuam desligadas no app; o
+simulado não muda isso. Os testes de ponta a ponta as ligam só para eles
+(`tests/lattes-simulado.test.ts`), com o servidor dentro do próprio teste
+(`tests/helpers/lattes-simulado.ts`).
+
+`GET /__simulado/estado` mostra o estado; `POST` em `/__simulado/expirar`,
+`/entrar`, `/publicar` e `/gravar` derruba a sessão, a devolve, publica e
+acende a pendência.
 
 Para testar com uma exportação sua, ponha o `CV_<id>.zip` em `fixtures/real/`,
 que está no `.gitignore`. As imagens de `docs/img/` e `site/img/` saem sempre

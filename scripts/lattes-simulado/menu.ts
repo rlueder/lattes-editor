@@ -1,0 +1,227 @@
+// O menu do currículo (PKG_MENU.menu), o login, a tela de envio ao CNPq, a
+// página de conferência (cv_espelho), o aviso de pendências e a foto. Textos
+// e links do menu como em docs/lattes_internals.md, seções 3, 4, 7, 10 e 14.
+
+import { IMPORT_MODULES } from '../../src/import-export/importable.ts';
+import { childElements, getAttr, type XElement } from '../../src/model/xml.ts';
+import { areaScript } from './buscas.ts';
+import { brDate, type LattesState } from './estado.ts';
+import { eventItems } from './eventos.ts';
+import * as h from './html.ts';
+import { itemTitle } from './importar.ts';
+import type { SimRequest } from './pedido.ts';
+import { html, type Routes, type SimResponse } from './tipos.ts';
+
+/** O aviso do menu enquanto há alteração não enviada (observado em 12/10/2026). */
+export const PENDING_MENU =
+  'Existem alterações realizadas em seu currículo que ainda não foram enviadas ao CNPq';
+
+/** Itens do menu: rótulo e procedimento aberto na primeira camada modal. */
+function menuItems(code: string): [string, string][] {
+  return [
+    ['Identificação', `prc_ident?f_cod=${code}&f_pcd=N`],
+    ['Endereço', `prc_endereco?f_cod=${code}`],
+    ['Idiomas', `pkg_idioma.lista?f_cod=${code}`],
+    ['Formação acadêmica/titulação', `pkg_formacao.lista?f_cod=${code}&f_tipo=FA`],
+    ['Pós-doutorado e livre-docência', `pkg_formacao.lista?f_cod=${code}&f_tipo=AP`],
+    ['Formação complementar', `pkg_formacao_compl.lista?f_cod=${code}`],
+    ['Atuação profissional', `pkg_ativ.lista?f_cod=${code}`],
+    ['Projetos de pesquisa', `pkg_projeto.lista?f_cod_tipo=P&f_cod=${code}`],
+    ['Projetos de desenvolvimento', `pkg_projeto.lista?f_cod_tipo=D&f_cod=${code}`],
+    ['Projetos de extensão', `pkg_projeto.lista?f_cod_tipo=E&f_cod=${code}`],
+    ['Projetos de ensino', `pkg_projeto.lista?f_cod_tipo=N&f_cod=${code}`],
+    ['Outros projetos', `pkg_projeto.lista?f_cod_tipo=O&f_cod=${code}`],
+    ['Prêmios e títulos', `pkg_premio.lista?f_cod=${code}`],
+    ['Patentes', `PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=PP&f_cod=${code}`],
+    ['Resumo', `pkg_resume.prc_resume?f_cod=${code}`],
+    ['Participação em eventos', `pkg_evento.lista?f_cod=${code}`],
+    [
+      'Eventos de divulgação científica',
+      `pkg_evento.lista?f_sta_divulgacao_cientifica=S&f_cod=${code}`,
+    ],
+    ['Exportar', `pkg_impcv.get_arquivo?f_cod=${code}`],
+    ['Importar', `pkg_importa_xml.inicio?f_cod=${code}`],
+    ['Enviar', `pkg_publicar.mostrar_cv?f_cod=${code}`],
+  ];
+}
+
+/**
+ * As camadas modais do menu (modalCV1 a modalCV3) e a caixa de mensagem,
+ * reduzidas a um iframe: o bastante para clicar no simulado pelo navegador.
+ */
+const MENU_SCRIPT = `<script>
+function camada(){ return { setarUrl: function(url){ document.getElementById('camada').src = url; } }; }
+var modalCV1 = camada(), modalCV2 = camada(), modalCV3 = camada();
+var caixaMsg = { exibir: function(msg){ alert(msg && msg.conteudo ? msg.conteudo : msg); } };
+function checkPublicacao(){ }
+function fecharModal(){ document.getElementById('camada').src = 'about:blank'; }
+var fotoWin = { abrir: function(){ modalCV1.setarUrl('prc_upload_foto?f_cod=__COD__&f_ret=MENU'); } };
+</script>`;
+
+function menu(state: LattesState): SimResponse {
+  const links = menuItems(state.code)
+    .map(
+      ([label, url]) =>
+        `<li><a href="#" onclick="modalCV1.setarUrl('${url.replace(/&/g, '&amp;')}', true); return false;">${h.esc(label)}</a></li>`,
+    )
+    .join('\n');
+  const pending = state.pending ? `<li class="aviso">${PENDING_MENU}</li>` : '';
+  const body = `<p>${h.esc(state.personName)} · <a href="http://lattes.cnpq.br/${state.lattesId}">http://lattes.cnpq.br/${state.lattesId}</a></p>
+<p>Última atualização: ${brDate(state.lastUpdate)} · Última publicação: ${brDate(state.lastPublished)}</p>
+<ul class="avisos">${pending}</ul>
+<p><a href="#" onclick="fotoWin.abrir(); return false;"><img src="pkg_util_img.show_foto?v_cod=${state.code}" width="60" alt="Foto"></a></p>
+<div style="display:flex;gap:16px"><ul>${links}</ul>
+<iframe id="camada" style="flex:1;height:70vh;border:1px solid #ccc"></iframe></div>
+${MENU_SCRIPT.replace('__COD__', state.code)}
+${areaScript()}`;
+  return html(h.page('Currículo Lattes', body));
+}
+
+function logon(req: SimRequest, state: LattesState): SimResponse {
+  if (req.method === 'POST') {
+    state.sessionActive = true;
+    return { headers: { Location: 'PKG_MENU.menu' }, html: '', status: 302 };
+  }
+  // Inferido: o login de verdade passa pelo Keycloak de login.cnpq.br.
+  return html(
+    h.page(
+      'Entrar',
+      `<form name="logon" method="post" action="pkg_sec.logon"><input type="submit" value="Entrar no Lattes simulado"></form>`,
+    ),
+  );
+}
+
+/**
+ * A tela de envio (observada em 14/10/2026): o formulário publicar só declara
+ * f_chk, e o enviar() da página monta o resto e navega por GET para
+ * pkg_publicar.enviar.
+ */
+function sendScreen(state: LattesState): SimResponse {
+  const body = `<p><a href="pkg_publicar.cv_espelho?f_cod=${state.code}&amp;f_idioma=1">Versão em Português</a></p>
+<form name="publicar" method="get" action="pkg_publicar.enviar">
+<label>${h.checkbox('f_chk', '1', false)} Declaro que as informações são verdadeiras</label>
+</form>
+<p><a href="#" onclick="enviar(); return false;">Enviar ao CNPq</a> <a href="#" onclick="self.parent.fecharModal(); return false;">Cancelar</a></p>
+<script>function enviar(){ if (!document.forms['publicar'].f_chk.checked) { alert('Marque a declaração.'); return; }
+location = 'pkg_publicar.enviar?f_chk=1&f_idioma=1&f_chk_en=1&f_email_contato=&f_email_alternativo=&f_cod=${state.code}&f_ctr=U'; }</script>`;
+  return html(h.page('Enviar ao CNPq', body));
+}
+
+/**
+ * O envio (observado em 14/10/2026): GET com f_chk=1 e f_ctr=U, resposta com
+ * um alert nativo; depois, as duas datas do menu são as do dia, o aviso de
+ * pendência some e o Exportar volta a exportar.
+ */
+function send(req: SimRequest, state: LattesState): SimResponse {
+  if (req.get('f_chk') !== '1' || req.get('f_ctr') !== 'U') return sendScreen(state);
+  const now = new Date();
+  state.publish(now);
+  state.lastUpdate = now;
+  return html(
+    h.page('Enviar ao CNPq', '<script>alert("O currículo foi enviado para publicação.");</script>'),
+  );
+}
+
+const sectionLine = (title: string) => `<div><b>${h.esc(title)}</b></div>`;
+
+/** Os itens de produção, por módulo, como linhas "AUTORES. Título, ano." (inferido). */
+function productionLines(state: LattesState): string[] {
+  const lines: string[] = [];
+  for (const module of IMPORT_MODULES) {
+    if (module.id === 'eventos' || module.id === 'bancas' || module.id === 'orientacoes') continue;
+    const items = module.paths.flatMap((path) => {
+      const parts = path.split('/');
+      const last = parts.pop()!;
+      const container = state.find(parts);
+      if (!container) return [];
+      return childElements(container).filter((c) =>
+        last === '*' ? !module.exclude?.includes(c.name) : c.name === last,
+      );
+    });
+    if (!items.length) continue;
+    lines.push(`<div>${h.esc(module.label)}</div>`);
+    items.forEach((item, i) => {
+      const authors = childElements(item, 'AUTORES').map(
+        (a) => getAttr(a, 'NOME-PARA-CITACAO')?.split(';')[0]?.trim() ?? '',
+      );
+      lines.push(
+        `<div>${i + 1}. ${h.esc(`${authors.join('; ')}. ${itemTitle(item)}, ${yearOf(item)}.`)}</div>`,
+      );
+    });
+  }
+  return lines;
+}
+
+const yearOf = (item: XElement) =>
+  childElements(item)
+    .find((c) => c.name.startsWith('DADOS-BASICOS'))
+    ?.attrs.find((a) => /^ANO($|-DO-)/.test(a.name))?.value ?? '';
+
+function espelho(_req: SimRequest, state: LattesState): SimResponse {
+  const events = eventItems(state).map((item, i) => {
+    const detail = childElements(item).find((c) => c.name.startsWith('DETALHAMENTO'));
+    const name = (detail && getAttr(detail, 'NOME-DO-EVENTO')) ?? '';
+    return `<div>${i + 1}. ${h.esc(`${name}. ${itemTitle(item) || 'Produção sem título'}. ${yearOf(item)}.`)}</div>`;
+  });
+  const body = [
+    sectionLine('Identificação'),
+    `<div>${h.esc(state.personName)}</div>`,
+    sectionLine('Producão'),
+    ...productionLines(state),
+    sectionLine('Eventos'),
+    ...(events.length ? ['<div>Participação em eventos</div>', ...events] : []),
+    sectionLine('Totais de produção'),
+    '<div>Este arquivo não foi gerado a partir do Currículo Lattes validado e disponível publicamente.</div>',
+  ].join('\n');
+  return html(h.page('Currículo', body));
+}
+
+function photoScreen(_req: SimRequest, state: LattesState): SimResponse {
+  const body = `<p>Envie uma imagem no formato JPEG com tamanho de até 70kB.</p>
+<form name="fl" method="post" action="PRC_UPLOAD_FOTO" enctype="multipart/form-data">
+<input type="file" name="file" accept="image/jpg,image/jpeg">
+${h.hidden('f_cod', state.code)}${h.hidden('f_ctr', '')}${h.hidden('f_ret', 'MENU')}
+<input type="button" value="Salvar" onclick="dc.f_ctr.value = 'I'; dc.submit();">
+<input type="button" value="Excluir" onclick="dc.f_ctr.value = 'E'; dc.submit();">
+</form><script>var dc = document.forms['fl'];</script>`;
+  return html(h.page('Enviar sua foto', body));
+}
+
+/** A resposta que o script da janela espera, { success, message }: inferido do código. */
+function photoUpload(req: SimRequest, state: LattesState): SimResponse {
+  const reply = (success: boolean, message: string): SimResponse => ({
+    contentType: 'application/json',
+    html: JSON.stringify({ message, success }),
+  });
+  if (req.get('f_ctr') !== 'I') return reply(false, 'Operação não simulada.');
+  const bytes = req.file?.bytes;
+  if (!bytes || bytes[0] !== 0xff || bytes[1] !== 0xd8)
+    return reply(false, 'A foto precisa ser JPEG.');
+  if (bytes.length > 70_000) return reply(false, 'A foto passa de 70kB.');
+  state.photo = bytes;
+  return reply(true, 'Foto enviada.');
+}
+
+export const MENU_ROUTES: Routes = {
+  'pkg_aviso_pendencia.inicio': (_req, state) =>
+    html(
+      h.page('Pendências', state.pending ? `<p>${PENDING_MENU}</p>` : '<p>Nenhuma pendência.</p>'),
+    ),
+  'pkg_menu.menu': (_req, state) => menu(state),
+  'pkg_publicar.cv_espelho': espelho,
+  'pkg_publicar.enviar': send,
+  'pkg_publicar.mostrar_cv': (_req, state) => sendScreen(state),
+  // As duas consultas que a tela de envio faz antes de enviar (observadas).
+  'pkg_publicar.racapreenchida_raca_cor': () => ({
+    contentType: 'application/json',
+    html: '{"status": true}',
+  }),
+  'pkg_sec.logon': logon,
+  'pkg_util_img.show_foto': (_req, state) => ({ bytes: state.photo, contentType: 'image/jpeg' }),
+  'pkg_util.existe_email_cadastrado': () => ({
+    contentType: 'application/json',
+    html: '{"existe":false ,"mensagem":"Email não encontrado"}',
+  }),
+  prc_upload_foto: (req, state) =>
+    req.method === 'POST' ? photoUpload(req, state) : photoScreen(req, state),
+};
