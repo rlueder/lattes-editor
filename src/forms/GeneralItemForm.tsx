@@ -96,10 +96,13 @@ export function GeneralItemForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item, version, atuacao]);
 
-  const errorFor = (el: XElement, attr: string) =>
-    attempted
-      ? problems.find((p) => p.element === el.name && p.attribute === attr)?.message.split(': ')[1]
-      : undefined;
+  // A mensagem vem como "Rótulo: o que falta"; o campo já mostra o rótulo.
+  const errorFor = (el: XElement, attr: string) => {
+    if (!attempted) return undefined;
+    const message = problems.find((p) => p.element === el.name && p.attribute === attr)?.message;
+    const cut = message?.indexOf(': ') ?? -1;
+    return message && cut >= 0 ? message.slice(cut + 2) : message;
+  };
 
   const first = parts[0];
   const headline =
@@ -114,13 +117,19 @@ export function GeneralItemForm({
 
   // Como no formulário de produção: o primeiro clique com pendências mostra os
   // erros nos campos, o segundo salva assim mesmo (a lista de envio mostra o que falta).
+  // Sem a atuação o projeto não tem onde entrar: aí não há "salvar assim mesmo",
+  // e o foco vai para a escolha que falta.
   const save = () => {
     if (noAtuacao) return;
+    if (isProject && !atuacao) {
+      setAttempted(true);
+      document.getElementById(atuacaoId)?.focus();
+      return;
+    }
     if (problems.length > 0 && !attempted) {
       setAttempted(true);
       return;
     }
-    if (isProject && !atuacao) return;
     onSave(item, isProject ? atuacao : undefined);
   };
 

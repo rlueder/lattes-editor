@@ -269,8 +269,12 @@ export function removeProduction(doc: XDocument, sequencia: number): boolean {
   return removed;
 }
 
-/** Nomes dos itens que algum módulo do Importar lê. */
-const IMPORTABLE_NAMES = new Set(importableTypes(lattesSchema).map((t) => t.itemName));
+/** Nomes dos itens que algum módulo do Importar lê, calculados no primeiro uso. */
+let importableNames: Set<string> | undefined;
+const isImportableName = (name: string): boolean => {
+  importableNames ??= new Set(importableTypes(lattesSchema).map((t) => t.itemName));
+  return importableNames.has(name);
+};
 
 /**
  * Item novo que vai pelo Importar: sequência acima do maior número da
@@ -280,7 +284,7 @@ const IMPORTABLE_NAMES = new Set(importableTypes(lattesSchema).map((t) => t.item
  */
 export function isPendingImport(el: XElement, loadedMax: number): boolean {
   const n = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
-  return Number.isFinite(n) && n > loadedMax && IMPORTABLE_NAMES.has(el.name);
+  return Number.isFinite(n) && n > loadedMax && isImportableName(el.name);
 }
 
 /** Itens criados no editor que vão pelo Importar (isPendingImport). */
