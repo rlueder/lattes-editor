@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.21.0](https://github.com/rlueder/lattes-editor/compare/v0.20.1...v0.21.0) (2026-10-14)
+
+### Novidades
+
+- campos tipados com as listas do Lattes, começando por eventos (LAT-48) ([#49](https://github.com/rlueder/lattes-editor/issues/49)) ([d18ea1c](https://github.com/rlueder/lattes-editor/commit/d18ea1cbe48121632cf1742513c4023d9a0e6048))
+
 ## [0.20.1](https://github.com/rlueder/lattes-editor/compare/v0.20.0...v0.20.1) (2026-10-14)
 
 ### Correções
