@@ -156,3 +156,40 @@ export function CloseConfirm({
     </Modal>
   );
 }
+
+/**
+ * Fechar um formulário com algo preenchido (Esc, clique fora, fechar,
+ * cancelar) pergunta antes: um Esc sem querer não pode levar o que a pessoa
+ * digitou. Continuar editando é o botão principal e o que o Esc faz aqui.
+ */
+export function DiscardConfirm({
+  onDiscard,
+  onKeep,
+  open,
+}: {
+  open: boolean;
+  onDiscard: () => void;
+  onKeep: () => void;
+}) {
+  return (
+    <Modal
+      className="confirm"
+      footer={
+        <>
+          <button className="text-btn" type="button" onClick={onDiscard}>
+            Descartar
+          </button>
+          <button autoFocus className="primary" type="button" onClick={onKeep}>
+            Continuar editando
+          </button>
+        </>
+      }
+      label="Descartar as mudanças"
+      open={open}
+      title="Descartar as mudanças?"
+      onClose={onKeep}
+    >
+      <p>O que você preencheu ou mudou neste item se perde.</p>
+    </Modal>
+  );
+}
