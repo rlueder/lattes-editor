@@ -42,6 +42,16 @@ const EVENT_NATURE: Record<string, string> = {
   SIMPOSIO: 'Simpósio',
 };
 
+/** A última opção do combo, a natureza das "outras participações". */
+const OTHER_NATURE = 'Outra';
+
+/**
+ * As naturezas do combo do Lattes, tiradas do mesmo mapa que o campo usa, para
+ * o vigia (list-watch.ts) conferir o que o editor oferece de fato. A ordem não
+ * é a do formulário; a comparação não depende dela.
+ */
+export const EVENT_NATURES: readonly string[] = [...Object.values(EVENT_NATURE), OTHER_NATURE];
+
 /** "Ouvinte" conferido na exportação real; "Convidado" e "Participante" são o texto do rádio. */
 const PARTICIPATION_FORMS = ['Convidado', 'Participante', 'Ouvinte'] as const;
 
@@ -80,7 +90,7 @@ export function derivedValue(element: string, attr: string): string | undefined 
   if (attr !== 'NATUREZA') return undefined;
   const m = EVENT_BASICS.exec(element);
   if (!m) return undefined;
-  return m[1] ? EVENT_NATURE[m[1]] : 'Outra';
+  return m[1] ? EVENT_NATURE[m[1]] : OTHER_NATURE;
 }
 
 /**

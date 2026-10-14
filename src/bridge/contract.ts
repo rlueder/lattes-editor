@@ -10,7 +10,8 @@
 import type { LattesPort } from './apply.ts';
 import { CREATE_ATUACAO_SPEC, CREATE_ITEMS_ENABLED } from './create.ts';
 import type { FormControl } from './form.ts';
-import { findLinks, isLogonPage } from './lattes-html.ts';
+import { cvCodeFrom, findLinks, isLogonPage } from './lattes-html.ts';
+import { checkLists, type ListCheck, listText, unreadLists } from './list-watch.ts';
 import type { BridgeOp } from './plan.ts';
 
 export interface FieldSpec {
@@ -213,6 +214,8 @@ export interface ContractReport {
   checkedAt: string;
   detail?: string;
   forms: FormCheck[];
+  /** As listas dos campos tipados (list-watch.ts); ausente em relatórios de antes delas. */
+  lists?: ListCheck[];
   menu: { found: boolean; proc: string }[];
   status: ReportStatus;
 }
@@ -380,8 +383,21 @@ export async function checkContract(
     for (const [kind, spec] of Object.entries(contract.forms) as [BridgeOp['kind'], FormSpec][]) {
       forms.push(await locateAndCheck(port, kind, spec, menu));
     }
-    const changed = forms.some((f) => f.drifts.length > 0) || menuChecks.some((m) => !m.found);
-    return { checkedAt, forms, menu: menuChecks, status: changed ? 'mudou' : 'ok' };
+    // As listas dos campos tipados (list-watch.ts), pelo código do currículo do
+    // menu. Menu sem o código também é mudança do Lattes: as listas ficam como
+    // não lidas, em vez de passar sem conferir.
+    const code = cvCodeFrom(menu);
+    const lists = code
+      ? await checkLists(
+          { get: (path) => getChecked(port, path), isFatal: (err) => err instanceof Stop },
+          code,
+        )
+      : unreadLists('O código do currículo não está no menu');
+    const changed =
+      forms.some((f) => f.drifts.length > 0) ||
+      menuChecks.some((m) => !m.found) ||
+      lists.some((l) => l.status !== 'ok');
+    return { checkedAt, forms, lists, menu: menuChecks, status: changed ? 'mudou' : 'ok' };
   } catch (err) {
     if (err instanceof Stop)
       return { checkedAt, detail: err.message, forms: [], menu: [], status: err.status };
@@ -455,6 +471,11 @@ export function reportText(report: ContractReport, version: string): string {
     lines.push('', `${f.form}: ${FORM_STATUS[f.status]}${f.detail ? ` (${f.detail})` : ''}`);
     for (const d of f.drifts) lines.push(`- ${driftText(d)}`);
   }
+  if (report.lists?.length) {
+    lines.push('', 'Listas dos campos tipados:');
+    for (const l of report.lists)
+      lines.push(`- ${l.status === 'ok' ? `${l.label}: ok` : listText(l)}`);
+  }
   return lines.join('\n');
 }
 
@@ -462,10 +483,10 @@ export const ISSUES_URL = 'https://github.com/rlueder/lattes-editor/issues/new';
 
 /** Link que abre uma issue já preenchida com o relatório. */
 export function issueUrl(report: ContractReport, version: string): string {
-  const title = `O Lattes mudou: ${report.forms
-    .filter((f) => f.drifts.length)
-    .map((f) => f.form)
-    .join(', ')}`.replace(/: $/, '');
+  const title = `O Lattes mudou: ${[
+    ...report.forms.filter((f) => f.drifts.length).map((f) => f.form),
+    ...(report.lists ?? []).filter((l) => l.status !== 'ok').map((l) => l.label),
+  ].join(', ')}`.replace(/: $/, '');
   const params = new URLSearchParams({
     body: `\`\`\`\n${reportText(report, version)}\n\`\`\``,
     labels: 'vigia-lattes',
