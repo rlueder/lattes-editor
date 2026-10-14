@@ -64,13 +64,24 @@ export function clickOpensEditor(selection: string, onControl: boolean): boolean
   return selection.trim() === '' && !onControl;
 }
 
-/** Aspas e apóstrofos retos viram curvos, só na tela; o dado fica como está. */
+/** Antes de uma aspa de abertura: início, espaço, parêntese, travessão ou outra abertura. */
+const OPENS_AFTER = /[\s([{\u2014\u2013\u201c\u2018-]/;
+
+/**
+ * Aspas e apóstrofos retos viram curvos, só na tela; o dado fica como está.
+ * Da esquerda para a direita, para que uma aspa logo depois de outra que
+ * abriu também abra (“‘x’”).
+ */
 export function curlyQuotes(text: string): string {
-  return text
-    .replace(/(^|[\s([{\u2014-])"/g, '$1\u201c')
-    .replace(/"/g, '\u201d')
-    .replace(/(^|[\s([{\u2014-])'/g, '$1\u2018')
-    .replace(/'/g, '\u2019');
+  let out = '';
+  for (const ch of text) {
+    const prev = out.at(-1);
+    const opening = prev === undefined || OPENS_AFTER.test(prev);
+    if (ch === '"') out += opening ? '\u201c' : '\u201d';
+    else if (ch === "'") out += opening ? '\u2018' : '\u2019';
+    else out += ch;
+  }
+  return out;
 }
 
 /** Parágrafos de um texto longo: uma quebra de linha já separa parágrafo. */
@@ -152,6 +163,22 @@ export function readingFields(el: XElement, opts: ReadingOptions): ReadingField[
         url: !masked && URL_ATTRS.test(a.name) && /^https?:\/\//.test(value) ? value : undefined,
       };
     });
+}
+
+/** O elemento tem algum dado: um atributo preenchido aqui ou em qualquer descendente. */
+export function hasData(el: XElement): boolean {
+  return (
+    el.attrs.some((a) => a.value.trim() !== '') ||
+    el.children.some((c) => c.kind === 'element' && hasData(c))
+  );
+}
+
+/** A partir daqui um valor é texto corrido, como na área de texto dos formulários. */
+const PROSE_MIN = 90;
+
+/** Campo que se lê como parágrafo: texto longo, não mascarado, sem link. */
+export function isProse(field: ReadingField): boolean {
+  return !field.masked && !field.url && field.text.length > PROSE_MIN;
 }
 
 /** A linha que substitui os dados escondidos pelo modo de privacidade. */

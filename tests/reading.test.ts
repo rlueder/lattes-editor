@@ -12,7 +12,9 @@ import {
   displayValue,
   formatCep,
   formationEntry,
+  hasData,
   hiddenNote,
+  isProse,
   isReadingSection,
   paragraphs,
   readingFields,
@@ -127,6 +129,20 @@ describe('modo de leitura: campos', () => {
     expect(fields.find((f) => f.attr === 'DATA-NASCIMENTO')?.text).toBe('');
   });
 
+  it('só o texto longo vira parágrafo sem rótulo', () => {
+    const base = { attr: 'X', label: 'X', masked: false };
+    expect(isProse({ ...base, text: 'Brasil' })).toBe(false);
+    expect(isProse({ ...base, text: 'a'.repeat(91) })).toBe(true);
+    expect(isProse({ ...base, masked: true, text: '' })).toBe(false);
+    expect(isProse({ ...base, text: 'a'.repeat(91), url: 'https://x' })).toBe(false);
+  });
+
+  it('acha dado em qualquer nível, inclusive só nos netos', () => {
+    expect(hasData(el('<A X=""><B Y=""/></A>'))).toBe(false);
+    expect(hasData(el('<A X=""><B><C Z="1"/></B></A>'))).toBe(true);
+    expect(hasData(el('<A X="1"/>'))).toBe(true);
+  });
+
   it('resume os dados escondidos numa linha', () => {
     expect(hiddenNote(1)).toBe('1 dado pessoal oculto pelo modo de privacidade.');
     expect(hiddenNote(12)).toBe('12 dados pessoais ocultos pelo modo de privacidade.');
@@ -166,6 +182,9 @@ describe('modo de leitura: texto', () => {
     expect(curlyQuotes('o "projeto" da d\'Ávila')).toBe('o “projeto” da d’Ávila');
     expect(curlyQuotes('\'Butia\' ("palmeira")')).toBe('‘Butia’ (“palmeira”)');
     expect(curlyQuotes('sem aspas')).toBe('sem aspas');
+    // Aspas dentro de aspas abrem nos dois níveis.
+    expect(curlyQuotes(`"'x'"`)).toBe('\u201c\u2018x\u2019\u201d');
+    expect(curlyQuotes(`'"x"'`)).toBe('\u2018\u201cx\u201d\u2019');
   });
 
   it('separa parágrafos pelas quebras de linha e descarta linhas vazias', () => {

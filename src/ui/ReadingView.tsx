@@ -19,7 +19,9 @@ import {
   addressLines,
   curlyQuotes,
   formationEntry,
+  hasData,
   hiddenNote,
+  isProse,
   paragraphs,
   type ReadingField,
   readingFields,
@@ -133,24 +135,28 @@ function GenericReading({ depth = 0, el }: { depth?: number; el: XElement }) {
   const opts = useReadingOptions();
   const except = el.name === 'DADOS-GERAIS' ? IDENTIFICATION_ELSEWHERE : undefined;
   const fields = readingFields(el, { ...opts, except });
-  const kids = childElements(el).filter((c) => c.attrs.some((a) => a.value.trim()));
-  const single = fields.length === 1 && kids.length === 0 && !fields[0]!.masked;
+  const kids = childElements(el).filter(hasData);
+  // Só o texto longo (Outras informações relevantes) vira parágrafo sem rótulo;
+  // um campo curto sozinho ("Brasil", uma data) continua com o rótulo.
+  const prose = fields.length === 1 && kids.length === 0 && isProse(fields[0]!);
   if (fields.length === 0 && kids.length === 0) {
     return <p className="reading-none">Nada preenchido.</p>;
   }
   return (
     <>
-      {single ? <Paragraphs text={fields[0]!.text} /> : <FieldList fields={fields} />}
-      {kids.map((kid, i) =>
-        depth === 0 ? (
-          <section key={i} className="reading-sub">
+      {prose ? <Paragraphs text={fields[0]!.text} /> : <FieldList fields={fields} />}
+      {kids.map((kid, i) => (
+        // Dois níveis de título no conteúdo: daí para baixo, um rótulo em cor
+        // secundária, mas a recursão continua até o último dado.
+        <section key={i} className="reading-sub">
+          {depth === 0 ? (
             <h3>{elementLabel(kid.name)}</h3>
-            <GenericReading depth={1} el={kid} />
-          </section>
-        ) : (
-          <FieldList key={i} fields={readingFields(kid, opts)} />
-        ),
-      )}
+          ) : (
+            <p className="reading-sublabel">{elementLabel(kid.name)}</p>
+          )}
+          <GenericReading depth={depth + 1} el={kid} />
+        </section>
+      ))}
     </>
   );
 }
