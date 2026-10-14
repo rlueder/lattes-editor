@@ -2,7 +2,7 @@
 // aparecem desabilitados, para quem chega já ver onde vai trabalhar; o painel
 // principal é o passo de abrir o arquivo. Soltar o arquivo vale na janela toda.
 
-import { type DragEvent, useRef, useState } from 'react';
+import { type DragEvent, useEffect, useRef, useState } from 'react';
 
 import type { Link } from '../bridge/link.ts';
 import { useDevExtensionFolder } from '../desktop/dev-channel.ts';
@@ -56,17 +56,35 @@ interface Props {
   link: Link;
   theme: ThemePref;
   onFile: (file: File) => void;
+  /** Recarrega a aba do Lattes pela extensão (sessão vencida). */
+  onReloadLattes: () => void;
   onTheme: (theme: ThemePref) => void;
 }
 
-/** O botão do passo: um link para fora (abre no navegador) ou pedir o currículo de novo. */
+/** Quanto o botão de recarregar fica ocupado: o tempo de a aba chegar ao login. */
+const RELOAD_FEEDBACK_MS = 4000;
+
+/**
+ * O botão do passo: um link para fora (abre no navegador), pedir o currículo de
+ * novo ou recarregar a aba do Lattes.
+ */
 function StepAction({
   action,
+  onReload,
   onRetry,
 }: {
   action: NonNullable<Step['action']>;
+  onReload: () => void;
   onRetry: () => void;
 }) {
+  // Recarregar não tem resposta da extensão: o botão mostra que o clique foi
+  // recebido e não recarrega de novo no meio do login.
+  const [reloading, setReloading] = useState(false);
+  useEffect(() => {
+    if (!reloading) return;
+    const timer = setTimeout(() => setReloading(false), RELOAD_FEEDBACK_MS);
+    return () => clearTimeout(timer);
+  }, [reloading]);
   if (action.kind === 'link') {
     return (
       <a
@@ -80,13 +98,25 @@ function StepAction({
     );
   }
   return (
-    <button className="primary onboarding-action" type="button" onClick={onRetry}>
-      {action.label}
+    <button
+      className="primary onboarding-action"
+      disabled={reloading}
+      type="button"
+      onClick={
+        action.kind === 'recarregar'
+          ? () => {
+              setReloading(true);
+              onReload();
+            }
+          : onRetry
+      }
+    >
+      {reloading ? 'Recarregando…' : action.label}
     </button>
   );
 }
 
-export function Welcome({ error, lattes, link, onFile, onTheme, theme }: Props) {
+export function Welcome({ error, lattes, link, onFile, onReloadLattes, onTheme, theme }: Props) {
   // No `pnpm dev`, ?primeiro-uso=<estado> mostra um estado fixo para revisar.
   const preview = import.meta.env.DEV ? onboardingPreview(location.search) : undefined;
   const devFolder = useDevExtensionFolder();
@@ -166,7 +196,12 @@ export function Welcome({ error, lattes, link, onFile, onTheme, theme }: Props) 
                     <h2 className="onboarding-title">{step.title}</h2>
                     <p className="onboarding-text">{step.text}</p>
                     {step.status === 'agora' && step.action && (
-                      <StepAction action={step.action} onRetry={lattes.open} />
+                      <StepAction
+                        key={step.action.kind}
+                        action={step.action}
+                        onReload={onReloadLattes}
+                        onRetry={lattes.open}
+                      />
                     )}
                   </div>
                 </li>

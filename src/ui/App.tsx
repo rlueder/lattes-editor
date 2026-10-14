@@ -245,6 +245,7 @@ export function App() {
           link={bridge.link}
           theme={theme}
           onFile={openFile}
+          onReloadLattes={bridge.reloadLattes}
           onTheme={setTheme}
         />
         {storageNotice}

@@ -128,6 +128,8 @@ export interface BridgeState {
   photoUpload?: PhotoUploadReading;
   /** Alterações que a extensão sabe levar e as que ficam para copiar à mão. */
   plan: ReturnType<typeof planChanges>;
+  /** Recarrega a aba do Lattes pela extensão (sessão vencida leva ao login). */
+  reloadLattes: () => void;
   /** Pede o ZIP do Exportar à extensão (Abrir do Lattes); a resposta chega em curriculo, com o mesmo id. */
   requestCv: (id: string) => void;
   /** Pede a versão atual do Lattes à extensão; a resposta chega em espelho. */
@@ -348,6 +350,7 @@ export function useBridge(
     link,
     photoUpload,
     plan,
+    reloadLattes: () => post({ type: 'recarregar-lattes' }),
     requestCv: (id) => post({ id, type: 'pedir-curriculo' }),
     requestEspelho: () => post({ type: 'pedir-espelho' }),
     results,

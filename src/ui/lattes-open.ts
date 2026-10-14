@@ -37,7 +37,7 @@ export function failureText(reason: OpenFailure, detail?: string): string {
     case 'sem-aba':
       return 'Abra o seu currículo no Lattes numa aba do navegador. Ele abre aqui em seguida.';
     case 'sessao':
-      return 'A sessão do Lattes caiu. Entre de novo no Lattes, e o currículo abre aqui em seguida.';
+      return 'A sessão do Lattes expirou. Entre de novo; o currículo abre em seguida.';
     case 'pendente':
       return 'O seu Lattes tem alterações ainda não enviadas ao CNPq, e o Lattes só exporta depois do envio. Use "Enviar" no Lattes e tente de novo.';
     case 'sem-resposta':

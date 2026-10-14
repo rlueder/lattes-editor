@@ -27,6 +27,11 @@ export type EditorMessage =
   /** Pede a versão atual do Lattes (página de conferência), só leitura. */
   | { type: 'pedir-espelho' }
   /**
+   * Recarrega a aba do Lattes. Com a sessão vencida, a aba continua mostrando
+   * o currículo; recarregada, ela leva ao login.
+   */
+  | { type: 'recarregar-lattes' }
+  /**
    * Troca a foto do currículo no Lattes (src/bridge/photo.ts), depois de a
    * pessoa confirmar no editor. jpeg em base64, já reduzido a até 70 kB;
    * lattesId: o currículo aberto no editor, e a extensão só envia se a sessão

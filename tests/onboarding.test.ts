@@ -62,12 +62,30 @@ describe('primeiro uso: os três passos', () => {
     expect(open?.status).toBe('depois');
   });
 
-  it('logo depois do aperto de mão, o passo 2 procura o Lattes; sessão caída pede entrar de novo', () => {
+  it('logo depois do aperto de mão, o passo 2 procura o Lattes; sessão vencida oferece recarregar', () => {
     const link: Link = { features: ALL, state: { kind: 'lendo', version: v } };
     expect(onboardingSteps(link, parado)[1]).toMatchObject({ busy: true, status: 'agora' });
-    const dropped = onboardingSteps(link, { kind: 'falhou', reason: 'sessao' })[1];
-    expect(dropped?.busy).toBeUndefined();
-    expect(dropped?.text).toMatch(/A sessão do Lattes caiu/);
+    const steps = onboardingSteps(link, { kind: 'falhou', reason: 'sessao' });
+    expect(steps[1]?.busy).toBeUndefined();
+    expect(steps[1]?.text).toBe('A sessão do Lattes expirou.');
+    // A aba ainda mostra o currículo: o que resolve é recarregá-la.
+    const reload = { kind: 'recarregar', label: 'Recarregar o Lattes' };
+    expect(steps[1]?.action).toEqual(reload);
+    // Com o Lattes já lido, quem pede é o passo 3, depois do Abrir do Lattes.
+    const read: Link = { features: ALL, state: { kind: 'lido', version: v } };
+    expect(onboardingSteps(read, { kind: 'falhou', reason: 'sessao' })[2]?.action).toEqual(reload);
+    // Extensão de antes dessa capacidade: o link para o Lattes.
+    const old: Link = { features: ['curriculo'], state: { kind: 'lendo', version: v } };
+    expect(onboardingSteps(old, { kind: 'falhou', reason: 'sessao' })[1]?.action?.kind).toBe(
+      'link',
+    );
+    // O texto do passo 3 serve aos dois botões: não manda recarregar quem só tem o link.
+    const oldRead: Link = { features: ['curriculo'], state: { kind: 'lido', version: v } };
+    const step = onboardingSteps(oldRead, { kind: 'falhou', reason: 'sessao' })[2];
+    expect(step?.action?.kind).toBe('link');
+    expect(step?.text).toBe(
+      'A sessão do Lattes expirou. Entre de novo; o currículo abre em seguida.',
+    );
   });
 
   it('Lattes lido: passo 3 abrindo, com falha, ou à espera do clique', () => {

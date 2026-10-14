@@ -14,6 +14,7 @@ import { opRows } from '../../src/bridge/field-labels.ts';
 import { PUBLISH_REMINDER } from '../../src/bridge/lattes-status.ts';
 import { listText } from '../../src/bridge/list-watch.ts';
 import { giveConsent, hasConsent, PRIVACY_URL } from './consent.ts';
+import { reloadLattesTab } from './lattes-tab.ts';
 import type { AppHello, PanelCommand, QueueState } from './state.ts';
 import { APP_KEY, readState } from './state.ts';
 import { toolbarTheme } from './toolbar-icon.ts';
@@ -22,7 +23,7 @@ const STATUS: Record<OpResult['status'], string> = {
   conferido: 'Conferido',
   divergente: 'Diferente no Lattes',
   erro: 'Erro',
-  sessao: 'Sessão caiu',
+  sessao: 'Sessão expirada',
 };
 
 const send = (cmd: PanelCommand) => void chrome.runtime.sendMessage(cmd);
@@ -63,11 +64,14 @@ if (__CANAL_DEV__) {
   if (sub) sub.textContent = 'Conector Dev';
 }
 
+/** Quanto o botão de recarregar fica ocupado: o tempo de a aba chegar ao login. */
+const RELOAD_FEEDBACK_MS = 4000;
+
 const REPORT_TITLE: Record<ContractReport['status'], string> = {
   erro: 'Não deu para verificar',
   mudou: 'O Lattes mudou',
   ok: 'Lattes como o esperado',
-  sessao: 'Sessão caiu',
+  sessao: 'Sessão expirada',
 };
 
 /** Título da seção da verificação, que só aparece quando algo não está ok. */
@@ -75,7 +79,7 @@ const VIGIA_HEADING: Record<ContractReport['status'], string> = {
   erro: 'Não deu para verificar o Lattes',
   mudou: 'O Lattes mudou desde a última versão do conector',
   ok: '',
-  sessao: 'A sessão do Lattes caiu; entre de novo para enviar',
+  sessao: 'A sessão do Lattes expirou',
 };
 
 const FORM_TITLE: Record<string, string> = {
@@ -126,6 +130,34 @@ function renderReport(report: ContractReport | undefined): void {
     );
   }
   if (report.status === 'ok') return;
+  // Sessão vencida: a aba ainda mostra o currículo, então o caminho é
+  // recarregá-la e entrar de novo. Nada a copiar nem a reportar.
+  if (report.status === 'sessao') {
+    const label = 'Recarregar o Lattes';
+    const reload = el('button', { className: 'principal', textContent: label, type: 'button' });
+    reload.addEventListener('click', () => {
+      reload.disabled = true;
+      reload.textContent = 'Recarregando…';
+      void reloadLattesTab().then((ok) => {
+        // Sem aba do Lattes, o clique não teria efeito visível: o botão avisa.
+        if (!ok) reload.textContent = 'Nenhuma aba do Lattes aberta';
+        // O botão volta depois de um tempo: nem recarrega de novo no meio do
+        // login, nem deixa o aviso de "nenhuma aba" para sempre.
+        setTimeout(() => {
+          reload.disabled = false;
+          reload.textContent = label;
+        }, RELOAD_FEEDBACK_MS);
+      });
+    });
+    root.append(
+      el('p', {
+        className: 'detalhe',
+        textContent: 'A aba ainda mostra o currículo, mas pede login de novo.',
+      }),
+      el('div', { className: 'acoes' }, [reload]),
+    );
+    return;
+  }
   // O relatório só tem nomes de campos e procedimentos; pode ir para uma issue pública.
   const copy = el('button', {
     className: 'fantasma',
