@@ -1,7 +1,8 @@
-// Liga a atualização automática no app de desktop: confere ao abrir, de hora
-// em hora e ao voltar para a janela, e mostra o aviso de toasts.ts conforme o
-// estado. Fora do app (navegador), não faz nada; no `pnpm dev`,
-// ?simular-atualizacao simula uma versão nova (src/dev/fake-update.ts).
+// Liga a atualização automática no app de desktop: confere ao abrir, a cada
+// 15 minutos e ao voltar para a janela, e mostra o aviso de toasts.ts conforme
+// o estado. "Verificar atualizações", no menu ⚙, pede a mesma conferência na
+// hora. Fora do app (navegador), não faz nada; no `pnpm dev`,
+// ?simular-atualizacao simula uma conferência (src/dev/fake-update.ts).
 
 import { createElement, Fragment, useEffect, useSyncExternalStore } from 'react';
 
@@ -9,19 +10,23 @@ import { openExternal } from '../desktop/external-links.ts';
 import { isDesktop } from '../desktop/native.ts';
 import {
   checkForUpdate,
+  checkUpdateNow,
   dueForCheck,
   FIRST_CHECK_DELAY_MS,
   installUpdate,
+  manualCheckRunning,
   setUpdateDeps,
+  subscribeManualCheck,
   subscribeUpdate,
   tauriDeps,
+  updatesEnabled,
   type UpdateState,
   updateState,
 } from '../desktop/update.ts';
 import { RefreshIcon } from './icons.tsx';
 import { APP_DOWNLOAD_URL } from './notifications.ts';
 import { toasts } from './toasts.ts';
-import { updateToastKey, updateToastText } from './update-toast.ts';
+import { manualCheckText, updateToastKey, updateToastText } from './update-toast.ts';
 
 const TOAST_ID = 'atualizacao';
 
@@ -60,33 +65,75 @@ function syncToast(): void {
   }
 }
 
-async function simulated(search: string): Promise<boolean> {
-  if (!import.meta.env.DEV || !new URLSearchParams(search).has('simular-atualizacao')) return false;
+/** O aviso da última conferência pedida no menu, trocado pelo da seguinte. */
+let manualToast: string | undefined;
+
+function enabled(): boolean {
+  return updatesEnabled({
+    desktop: isDesktop(),
+    dev: import.meta.env.DEV,
+    search: location.search,
+  });
+}
+
+/** Põe quem confere: o plugin no app, o simulado no `pnpm dev`. */
+async function installDeps(): Promise<void> {
+  if (!import.meta.env.DEV) {
+    setUpdateDeps(tauriDeps);
+    return;
+  }
   const { fakeUpdateDeps } = await import('../dev/fake-update.ts');
-  setUpdateDeps(fakeUpdateDeps);
-  return true;
+  setUpdateDeps(fakeUpdateDeps(new URLSearchParams(location.search).get('simular-atualizacao')));
+}
+
+/**
+ * "Verificar atualizações", do menu ⚙. Versão nova traz de volta o aviso de
+ * sempre, mesmo que a pessoa o tenha fechado antes; sem ela, um aviso curto
+ * confirma a versão em uso ou diz que a conferência falhou.
+ */
+export async function checkUpdatesNow(): Promise<void> {
+  const outcome = await checkUpdateNow();
+  if (!outcome) return;
+  if (manualToast) toasts.close(manualToast);
+  manualToast = undefined;
+  const text = manualCheckText(outcome, __APP_VERSION__);
+  if (text) {
+    manualToast = toasts.add({ description: text.description, title: text.title });
+    return;
+  }
+  dismissed = undefined;
+  syncToast();
+}
+
+/** O item do menu: se aparece e se a conferência pedida está em andamento. */
+export function useManualUpdateCheck(): { available: boolean; checking: boolean } {
+  const checking = useSyncExternalStore(subscribeManualCheck, manualCheckRunning);
+  return { available: enabled(), checking };
 }
 
 /** Liga as conferências e devolve o estado da atualização, para o sino. */
 export function useUpdates(): UpdateState {
   useEffect(() => {
+    if (!enabled()) return;
     let alive = true;
     const unsubscribe = subscribeUpdate(syncToast);
+    let first: ReturnType<typeof setTimeout> | undefined;
     let interval: ReturnType<typeof setInterval> | undefined;
     const onFocus = () => {
       if (dueForCheck()) void checkForUpdate();
     };
-    const first = setTimeout(() => {
-      void (async () => {
-        const fake = await simulated(location.search);
-        if (!alive || (!fake && (!isDesktop() || import.meta.env.DEV))) return;
-        if (!fake) setUpdateDeps(tauriDeps);
-        void checkForUpdate();
+    // Quem confere entra já, para o menu ⚙ poder conferir antes da primeira
+    // conferência automática; esta espera um pouco e respeita a hora marcada
+    // por uma conferência pedida no menu.
+    void installDeps().then(() => {
+      if (!alive) return;
+      first = setTimeout(() => {
+        onFocus();
         // De minuto em minuto só se olha o relógio; a conferência sai na hora marcada.
         interval = setInterval(onFocus, 60_000);
         window.addEventListener('focus', onFocus);
-      })();
-    }, FIRST_CHECK_DELAY_MS);
+      }, FIRST_CHECK_DELAY_MS);
+    });
     return () => {
       alive = false;
       clearTimeout(first);

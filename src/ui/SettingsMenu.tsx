@@ -1,5 +1,6 @@
 // Menu de configurações (⚙) sobre o Menu do Base UI: opções de exibição e
-// ações de arquivo menos usadas, com a versão no fim.
+// ações de arquivo menos usadas, com a versão no fim. No app de desktop, logo
+// acima da versão, "Verificar atualizações" confere na hora se saiu versão nova.
 
 import { Menu } from '@base-ui/react/menu';
 import type { CSSProperties, ReactNode } from 'react';
@@ -16,11 +17,14 @@ import {
   MoonIcon,
   RefreshIcon,
   SettingsIcon,
+  SpinnerIcon,
   SunIcon,
+  UpdateIcon,
 } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { setShowCodes, useShowCodes } from './show-codes.ts';
 import type { ThemePref } from './theme.ts';
+import { checkUpdatesNow, useManualUpdateCheck } from './use-updates.ts';
 
 /** Ações que pedem um currículo aberto; sem elas, aparecem desabilitadas. */
 interface FileActions {
@@ -50,6 +54,7 @@ const THEMES: { icon: ReactNode; label: string; value: ThemePref }[] = [
 
 export function SettingsMenu({ file, onTheme, theme }: Props) {
   const showCodes = useShowCodes();
+  const update = useManualUpdateCheck();
   return (
     <Menu.Root>
       <Tip label="Configurações e arquivo">
@@ -178,6 +183,22 @@ export function SettingsMenu({ file, onTheme, theme }: Props) {
             </Menu.Item>
 
             <Menu.Separator className="menu-sep" />
+            {update.available && (
+              // Fica aberto: o "Verificando…" aparece aqui, e o resultado, no canto da tela.
+              <Menu.Item
+                className="menu-item"
+                closeOnClick={false}
+                disabled={update.checking}
+                onClick={() => void checkUpdatesNow()}
+              >
+                <span className="menu-icon">
+                  {update.checking ? <SpinnerIcon /> : <UpdateIcon />}
+                </span>
+                <span className="menu-label">
+                  {update.checking ? 'Verificando…' : 'Verificar atualizações'}
+                </span>
+              </Menu.Item>
+            )}
             <div className="menu-version">v{__APP_VERSION__}</div>
           </Menu.Popup>
         </Menu.Positioner>

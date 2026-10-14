@@ -3,20 +3,24 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   CHECK_EVERY_MS,
   checkForUpdate,
+  checkUpdateNow,
   type DownloadEvent,
   dueForCheck,
   installUpdate,
+  manualCheckRunning,
   percent,
   resetUpdateForTests,
   RETRY_AFTER_FAILURE_MS,
   retryDelay,
   setUpdateDeps,
   shouldCheck,
+  subscribeManualCheck,
   subscribeUpdate,
+  updatesEnabled,
   updateState,
 } from '../src/desktop/update.ts';
 import { noticesFor } from '../src/ui/notifications.ts';
-import { updateToastKey, updateToastText } from '../src/ui/update-toast.ts';
+import { manualCheckText, updateToastKey, updateToastText } from '../src/ui/update-toast.ts';
 
 afterEach(() => resetUpdateForTests());
 
@@ -271,16 +275,144 @@ describe('atualização simulada do pnpm dev', () => {
     const reload = vi.fn();
     vi.stubGlobal('location', { reload });
     const { fakeUpdateDeps } = await import('../src/dev/fake-update.ts');
-    const update = await fakeUpdateDeps.check();
+    const deps = fakeUpdateDeps();
+    const checking = deps.check();
+    await vi.runAllTimersAsync();
+    const update = await checking;
     expect(update?.version).toBe('99.0.0');
     const events: string[] = [];
     const done = update!.downloadAndInstall((e) => events.push(e.event));
     await vi.runAllTimersAsync();
     await done;
     expect(events).toEqual(['Started', ...Array<string>(10).fill('Progress'), 'Finished']);
-    await fakeUpdateDeps.relaunch();
+    await deps.relaunch();
     expect(reload).toHaveBeenCalledOnce();
     vi.unstubAllGlobals();
     vi.useRealTimers();
+  });
+
+  it('=nenhuma não acha versão nova; =falha falha', async () => {
+    vi.useFakeTimers();
+    const { fakeUpdateDeps } = await import('../src/dev/fake-update.ts');
+    const none = fakeUpdateDeps('nenhuma').check();
+    await vi.runAllTimersAsync();
+    expect(await none).toBeNull();
+    const fail = fakeUpdateDeps('falha').check();
+    const rejected = expect(fail).rejects.toThrow('falhou');
+    await vi.runAllTimersAsync();
+    await rejected;
+    vi.useRealTimers();
+  });
+});
+
+describe('verificar atualizações pelo menu', () => {
+  it('só no app publicado, ou no pnpm dev com ?simular-atualizacao', () => {
+    expect(updatesEnabled({ desktop: true, dev: false, search: '' })).toBe(true);
+    expect(updatesEnabled({ desktop: false, dev: false, search: '' })).toBe(false);
+    expect(updatesEnabled({ desktop: false, dev: false, search: '?simular-atualizacao' })).toBe(
+      false,
+    );
+    expect(updatesEnabled({ desktop: true, dev: true, search: '' })).toBe(false);
+    expect(updatesEnabled({ desktop: false, dev: true, search: '?simular-atualizacao' })).toBe(
+      true,
+    );
+    expect(
+      updatesEnabled({ desktop: false, dev: true, search: '?simular-atualizacao=falha' }),
+    ).toBe(true);
+  });
+
+  it('marca "verificando" durante a conferência e avisa quem acompanha', async () => {
+    let answer: (u: null) => void = () => undefined;
+    setUpdateDeps({
+      check: () => new Promise((r) => (answer = r)),
+      relaunch: vi.fn(),
+    });
+    const seen: boolean[] = [];
+    subscribeManualCheck(() => seen.push(manualCheckRunning()));
+    expect(manualCheckRunning()).toBe(false);
+    const run = checkUpdateNow(() => 0);
+    expect(manualCheckRunning()).toBe(true);
+    answer(null);
+    await run;
+    expect(manualCheckRunning()).toBe(false);
+    expect(seen).toEqual([true, false]);
+  });
+
+  it('versão nova: o estado vira "disponível" e o aviso é o de sempre', async () => {
+    setUpdateDeps(fakeDeps());
+    const outcome = await checkUpdateNow(() => 0);
+    expect(outcome).toEqual({ failed: false, state: { status: 'disponivel', version: '1.2.3' } });
+    expect(updateState()).toEqual({ status: 'disponivel', version: '1.2.3' });
+    expect(manualCheckText(outcome!, '1.0.0')).toBeUndefined();
+  });
+
+  it('sem versão nova: confirma a versão em uso', async () => {
+    setUpdateDeps(fakeDeps({ none: true }));
+    const outcome = await checkUpdateNow(() => 0);
+    expect(outcome).toEqual({ failed: false, state: { status: 'nenhuma' } });
+    expect(manualCheckText(outcome!, '0.22.0-dev.7')).toEqual({
+      description: 'Você está na versão mais recente (0.22.0-dev.7).',
+      title: 'Nenhuma versão nova',
+    });
+  });
+
+  it('falha: avisa e diz que o app continua conferindo sozinho', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    setUpdateDeps({ check: () => Promise.reject(new Error('offline')), relaunch: vi.fn() });
+    const outcome = await checkUpdateNow(() => 1000);
+    expect(outcome).toEqual({ failed: true, state: { status: 'nenhuma' } });
+    expect(manualCheckText(outcome!, '1.0.0')).toEqual({
+      description: 'O app continua conferindo sozinho a cada 15 minutos.',
+      title: 'Não deu para verificar agora',
+    });
+    // A falha segue a regra das automáticas: nova tentativa logo.
+    expect(dueForCheck(1000 + RETRY_AFTER_FAILURE_MS)).toBe(true);
+    expect(manualCheckRunning()).toBe(false);
+    warn.mockRestore();
+  });
+
+  it('falha com uma versão já conhecida: volta o aviso dela', () => {
+    const state = { status: 'disponivel', version: '1.2.3' } as const;
+    expect(manualCheckText({ failed: true, state }, '1.0.0')).toBeUndefined();
+  });
+
+  it('sem quem confira, conta como falha em vez de dizer que está em dia', async () => {
+    expect(await checkUpdateNow()).toEqual({ failed: true, state: { status: 'nenhuma' } });
+    expect(manualCheckRunning()).toBe(false);
+  });
+
+  it('o segundo clique durante a conferência não confere de novo', async () => {
+    let answer: (u: null) => void = () => undefined;
+    const check = vi.fn(() => new Promise<null>((r) => (answer = r)));
+    setUpdateDeps({ check, relaunch: vi.fn() });
+    const first = checkUpdateNow(() => 0);
+    expect(await checkUpdateNow(() => 0)).toBeUndefined();
+    answer(null);
+    expect(await first).toEqual({ failed: false, state: { status: 'nenhuma' } });
+    expect(check).toHaveBeenCalledOnce();
+  });
+
+  it('pedida durante uma conferência automática, usa o resultado dela', async () => {
+    let answer: (u: null) => void = () => undefined;
+    const check = vi.fn(() => new Promise<null>((r) => (answer = r)));
+    setUpdateDeps({ check, relaunch: vi.fn() });
+    const automatic = checkForUpdate(() => 0);
+    const manual = checkUpdateNow(() => 5000);
+    answer(null);
+    expect(await manual).toEqual({ failed: false, state: { status: 'nenhuma' } });
+    expect(await automatic).toEqual({ status: 'nenhuma' });
+    expect(check).toHaveBeenCalledOnce();
+  });
+
+  it('remarca a próxima conferência automática para daqui a 15 minutos', async () => {
+    setUpdateDeps(fakeDeps({ none: true }));
+    await checkForUpdate(() => 0);
+    expect(dueForCheck(CHECK_EVERY_MS)).toBe(true);
+    // Verificou no menu aos 14 minutos: a automática dos 15 não sai logo depois.
+    const at = 14 * 60_000;
+    await checkUpdateNow(() => at);
+    expect(dueForCheck(CHECK_EVERY_MS)).toBe(false);
+    expect(dueForCheck(at + CHECK_EVERY_MS - 1)).toBe(false);
+    expect(dueForCheck(at + CHECK_EVERY_MS)).toBe(true);
   });
 });
