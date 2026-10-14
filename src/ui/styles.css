@@ -6262,7 +6262,8 @@ main.content {
 
 /* Estado vazio: todas as ações com o mesmo tamanho, uma por linha, como o
    botão principal que a seção Projetos tinha (pílula de 40 px, até 320 px). O
-   primeiro é o principal; atalhos de tipo e "Marcar itens" ficam com contorno. */
+   primeiro é o principal; atalhos de tipo e "Marcar itens" ficam com o contorno
+   que já vem de button, .empty-type e .mark-open. */
 .empty-section .empty-actions {
   flex-direction: column;
   align-items: flex-start;
@@ -6276,8 +6277,4 @@ main.content {
   padding: 0 18px;
   border-radius: 999px;
   font-size: 14px;
-}
-
-.empty-section .empty-actions button:not(.primary) {
-  border: 1px solid var(--border);
 }
