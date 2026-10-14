@@ -696,9 +696,11 @@ O que cada operação grava, e de onde vem cada parte:
 - **Travas**: além das de toda alteração (o "antes" de cada campo tem de
   bater, só os campos da operação podem mudar depois do envio), a formação
   confere o `f_nivel` e o ano de início; a identificação confere o
-  `f_nacionalidade` com o `NACIONALIDADE` do XML quando ele é `B` ou `E`,
-  porque esse oculto é preenchido pelo JavaScript da página e um GET que o
-  traga vazio mandaria vazio.
+  `f_nacionalidade` com o `NACIONALIDADE` do XML, porque esse oculto é
+  preenchido pelo JavaScript da página e um GET que o traga vazio mandaria
+  vazio. Sem `B` ou `E` no XML, a mudança de identificação segue à mão. Dois
+  atributos que cairiam no mesmo campo (o logradouro de um endereço no do
+  outro, dois títulos na mesma formação) também mandam a mudança à mão.
 - **Fora**: o que só entra por busca (instituição, curso, agência,
   orientador), o país e as listas cujos códigos não foram lidos (sexo, raça
   ou cor, nascimento, documentos), a preferência de correspondência

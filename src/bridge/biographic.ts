@@ -103,7 +103,11 @@ const FORMACAO_FIELDS: Record<string, string> = {
   'TITULO-DO-TRABALHO-DE-CONCLUSAO-DE-CURSO': 'f_titulo',
 };
 
-/** Atributo de ENDERECO-PROFISSIONAL ou ENDERECO-RESIDENCIAL → campo, sem o sufixo. */
+/**
+ * Atributo comum a ENDERECO-PROFISSIONAL e ENDERECO-RESIDENCIAL → campo, sem
+ * o sufixo. O logradouro tem um nome em cada elemento (XSD) e entra por
+ * ENDERECO_STREET, para nenhum dos dois cair no logradouro do outro.
+ */
 const ENDERECO_FIELDS: Record<string, string> = {
   BAIRRO: 'f_bairro',
   'CAIXA-POSTAL': 'f_caixa',
@@ -113,8 +117,6 @@ const ENDERECO_FIELDS: Record<string, string> = {
   'E-MAIL': 'f_email',
   FAX: 'f_fax',
   'HOME-PAGE': 'f_homepage',
-  LOGRADOURO: 'f_rua',
-  'LOGRADOURO-COMPLEMENTO': 'f_rua',
   RAMAL: 'f_ramal',
   TELEFONE: 'f_fone',
   UF: 'f_estado',
@@ -123,6 +125,11 @@ const ENDERECO_FIELDS: Record<string, string> = {
 const ENDERECO_SUFFIX: Record<string, string> = {
   'ENDERECO-PROFISSIONAL': '_i',
   'ENDERECO-RESIDENCIAL': '_r',
+};
+
+const ENDERECO_STREET: Record<string, string> = {
+  'ENDERECO-PROFISSIONAL': 'LOGRADOURO-COMPLEMENTO',
+  'ENDERECO-RESIDENCIAL': 'LOGRADOURO',
 };
 
 /** Atributo de DADOS-GERAIS → campo do GN_IDENT. Só o nome tem campo com nome lido. */
@@ -143,9 +150,15 @@ function mapFields(
       missing.push(f.label);
       continue;
     }
+    const name = `${field}${suffix}`;
+    // Dois atributos no mesmo campo: um sobrescreveria o outro sem aviso.
+    if (name in set) {
+      missing.push(f.label);
+      continue;
+    }
     const m = map(f.attr);
-    set[`${field}${suffix}`] = m(f.after);
-    expect[`${field}${suffix}`] = m(f.before);
+    set[name] = m(f.after);
+    expect[name] = m(f.before);
   }
   return { expect, missing, set };
 }
@@ -183,10 +196,12 @@ function planFormacao(
 
 function planEndereco(
   change: Change,
-  suffix: string,
+  element: string,
   label: string,
 ): EnderecoOp | { reason: string } {
-  const { expect, missing, set } = mapFields(change, ENDERECO_FIELDS, undefined, suffix);
+  const table = { ...ENDERECO_FIELDS, [ENDERECO_STREET[element]!]: 'f_rua' };
+  const suffix = ENDERECO_SUFFIX[element]!;
+  const { expect, missing, set } = mapFields(change, table, undefined, suffix);
   if (missing.length) return notYet(missing);
   return { expect, key: change.key, kind: 'endereco', label, set };
 }
@@ -199,10 +214,14 @@ function planIdentificacao(
   const { expect, missing, set } = mapFields(change, IDENTIFICACAO_FIELDS);
   if (missing.length) return notYet(missing);
   // O oculto f_nacionalidade recebe B ou E pelo JavaScript da página (seção
-  // 5). Se o GET o trouxer vazio, o envio direto o mandaria vazio: a
-  // conferência do "antes" para aí, sem enviar.
+  // 5). Se o GET o trouxer vazio, o envio direto o mandaria vazio e apagaria
+  // a nacionalidade: o "antes" tem de trazer o valor do XML, e sem B ou E no
+  // XML não há com o que conferir, então segue à mão.
   const nacionalidade = getAttr(el, 'NACIONALIDADE');
-  if (nacionalidade === 'B' || nacionalidade === 'E') expect.f_nacionalidade = nacionalidade;
+  if (nacionalidade !== 'B' && nacionalidade !== 'E') {
+    return { reason: 'Nacionalidade sem código B ou E no XML: não dá para conferir' };
+  }
+  expect.f_nacionalidade = nacionalidade;
   return { expect, key: change.key, kind: 'identificacao', label, set };
 }
 
@@ -221,8 +240,7 @@ export function planBiographic(
   if (FORMACAO_ELEMENTS.has(el.name) && chain.at(-2)?.name === 'FORMACAO-ACADEMICA-TITULACAO') {
     return planFormacao(change, el, label);
   }
-  const suffix = ENDERECO_SUFFIX[el.name];
-  if (suffix) return planEndereco(change, suffix, label);
+  if (ENDERECO_SUFFIX[el.name]) return planEndereco(change, el.name, label);
   if (el.name === 'DADOS-GERAIS') return planIdentificacao(change, el, label);
   return undefined;
 }

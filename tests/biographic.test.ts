@@ -188,6 +188,31 @@ describe('dados gerais: endereço e identificação', () => {
     ]);
   });
 
+  it('o logradouro de cada endereço vai no campo dele, sem um sobrescrever o outro', () => {
+    const res = onlyOp((root) =>
+      setAttr(find(root, 'ENDERECO-RESIDENCIAL'), 'LOGRADOURO', 'Rua D'),
+    );
+    expect(res.set).toEqual({ f_rua_r: 'Rua D' });
+    // O atributo do outro elemento, se aparecer, não cai no mesmo campo.
+    const both = plan((root) => {
+      const el = find(root, 'ENDERECO-PROFISSIONAL');
+      setAttr(el, 'LOGRADOURO-COMPLEMENTO', 'Rua E');
+      setAttr(el, 'LOGRADOURO', 'Rua F');
+    });
+    expect(both.ops).toEqual([]);
+    expect(both.unsupported.map((u) => u.reason)).toEqual([
+      expect.stringMatching(/^Campos não suportados ainda: /),
+    ]);
+    // Dois títulos no mesmo item da formação também não passam.
+    const titles = plan(
+      editMestrado({
+        'TITULO-DA-DISSERTACAO-TESE': 'Nova',
+        'TITULO-DA-MONOGRAFIA': 'Outra',
+      }),
+    );
+    expect(titles.ops).toEqual([]);
+  });
+
   it('país, instituição e preferência de endereço seguem à mão', () => {
     const reasons = plan((root) => {
       setAttr(find(root, 'ENDERECO-RESIDENCIAL'), 'PAIS', 'Portugal');
@@ -207,12 +232,16 @@ describe('dados gerais: endereço e identificação', () => {
       set: { f_nome: 'Outro Nome' },
     });
     expect(opRows(op)[0]).toMatchObject({ label: 'Nome completo' });
-    // Sem nacionalidade B ou E no XML, não há o que conferir.
-    const foreign = onlyOp(
-      (root) => setAttr(find(root, 'DADOS-GERAIS'), 'NOME-COMPLETO', 'Outro Nome'),
-      XML.replace('NACIONALIDADE="B" ', ''),
-    );
-    expect(foreign.expect).toEqual({ f_nome: 'Pessoa de Teste' });
+    // Sem nacionalidade B ou E no XML, não há com o que conferir: segue à mão.
+    for (const xml of [XML.replace('NACIONALIDADE="B" ', ''), XML.replace('"B"', '""')]) {
+      expect(
+        plan(
+          (root) => setAttr(find(root, 'DADOS-GERAIS'), 'NOME-COMPLETO', 'Outro Nome'),
+          true,
+          xml,
+        ).unsupported.map((u) => u.reason),
+      ).toEqual(['Nacionalidade sem código B ou E no XML: não dá para conferir']);
+    }
     expect(
       plan((root) => setAttr(find(root, 'DADOS-GERAIS'), 'SEXO', 'FEMININO')).unsupported,
     ).toEqual([expect.objectContaining({ reason: expect.stringMatching(/não suportados ainda/) })]);
