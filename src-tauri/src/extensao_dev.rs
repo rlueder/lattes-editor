@@ -40,22 +40,43 @@ fn copy_dir(from: &Path, to: &Path) -> io::Result<()> {
     Ok(())
 }
 
+/// Apaga uma pasta que sobrou de uma troca interrompida, se houver.
+fn remove_leftover(dir: &Path) -> io::Result<()> {
+    if dir.exists() {
+        fs::remove_dir_all(dir)?;
+    }
+    Ok(())
+}
+
 /// Deixa `dest` com a extensão de `source`, se a versão for outra. Copia para
-/// uma pasta ao lado e troca no fim, para o navegador nunca ler uma pasta
-/// pela metade.
+/// uma pasta ao lado (`.nova`) e troca no fim, para o navegador nunca ler uma
+/// pasta pela metade. A troca são dois renames seguidos: a versão em uso vai
+/// para `.velha`, a nova entra no lugar, e só então a velha é apagada. Assim a
+/// pasta fica ausente só entre os dois renames, e não durante a cópia ou a
+/// remoção. Se o segundo rename falhar, a versão em uso volta para o lugar.
 pub fn sync_folder(source: &Path, dest: &Path, version: &str) -> io::Result<bool> {
     if installed_version(dest).as_deref() == Some(version) {
         return Ok(false);
     }
     let staging = dest.with_extension("nova");
-    if staging.exists() {
-        fs::remove_dir_all(&staging)?;
-    }
+    let old = dest.with_extension("velha");
+    remove_leftover(&staging)?;
+    remove_leftover(&old)?;
     copy_dir(source, &staging)?;
-    if dest.exists() {
-        fs::remove_dir_all(dest)?;
+    let had_dest = dest.exists();
+    if had_dest {
+        fs::rename(dest, &old)?;
     }
-    fs::rename(&staging, dest)?;
+    if let Err(e) = fs::rename(&staging, dest) {
+        if had_dest {
+            let _ = fs::rename(&old, dest);
+        }
+        return Err(e);
+    }
+    if had_dest {
+        // A nova já está no lugar; uma velha que não saiu agora sai na próxima troca.
+        let _ = fs::remove_dir_all(&old);
+    }
     Ok(true)
 }
 
@@ -130,6 +151,26 @@ mod tests {
         assert!(sync_folder(&source, &dest, "0.22.0-dev.3").unwrap());
         assert!(!dest.join("velho.txt").exists());
         assert!(!dest.with_extension("nova").exists());
+        assert!(!dest.with_extension("velha").exists());
+        let _ = fs::remove_dir_all(&source);
+        let _ = fs::remove_dir_all(&dest);
+    }
+
+    #[test]
+    fn sobras_de_troca_interrompida_nao_atrapalham() {
+        let source = temp("source-sobra");
+        let dest = temp("dest-sobra");
+        write_extension(&source, "0.22.0-dev.5", "nova");
+        write_extension(&dest, "0.22.0-dev.4", "em uso");
+        // Uma troca anterior parou no meio e deixou as duas pastas ao lado.
+        fs::create_dir_all(dest.with_extension("nova")).unwrap();
+        fs::write(dest.with_extension("nova").join("lixo.txt"), "x").unwrap();
+        fs::create_dir_all(dest.with_extension("velha")).unwrap();
+        assert!(sync_folder(&source, &dest, "0.22.0-dev.5").unwrap());
+        assert_eq!(installed_version(&dest).as_deref(), Some("0.22.0-dev.5"));
+        assert!(!dest.join("lixo.txt").exists());
+        assert!(!dest.with_extension("nova").exists());
+        assert!(!dest.with_extension("velha").exists());
         let _ = fs::remove_dir_all(&source);
         let _ = fs::remove_dir_all(&dest);
     }

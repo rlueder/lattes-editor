@@ -22,7 +22,7 @@ use std::collections::hash_map::RandomState;
 use std::fs;
 use std::hash::{BuildHasher, Hasher};
 use std::io::{self, BufRead, BufReader, Read, Write};
-use std::net::{Ipv4Addr, TcpListener, TcpStream};
+use std::net::{Ipv4Addr, Shutdown, TcpListener, TcpStream};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -111,6 +111,17 @@ pub struct Conector {
     conn: Arc<Mutex<Option<(u64, TcpStream)>>>,
 }
 
+/// Põe a ligação `id` no lugar da atual e fecha a anterior. Fechar é preciso:
+/// a thread de leitura da ligação antiga tem a própria cópia do socket
+/// (try_clone), e soltar a guardada aqui não a encerra. Sem o shutdown, o host
+/// antigo continuaria ligado, mandando mensagens ao editor.
+fn replace_current(conn: &Mutex<Option<(u64, TcpStream)>>, id: u64, stream: TcpStream) {
+    let previous = conn.lock().unwrap().replace((id, stream));
+    if let Some((_, old)) = previous {
+        let _ = old.shutdown(Shutdown::Both);
+    }
+}
+
 /// Uma ligação que caiu só desliga o conector se ainda era a atual: a queda
 /// de um host antigo, depois que um novo tomou o lugar, não muda nada.
 fn drop_if_current(conn: &Mutex<Option<(u64, TcpStream)>>, id: u64) -> bool {
@@ -149,7 +160,7 @@ pub fn start(app: &AppHandle, conector: &Conector) -> io::Result<()> {
             }
             next_id += 1;
             let id = next_id;
-            *conn.lock().unwrap() = Some((id, stream));
+            replace_current(&conn, id, stream);
             let _ = app.emit("conector-ligado", ());
             let (app2, conn2) = (app.clone(), Arc::clone(&conn));
             thread::spawn(move || {
@@ -410,6 +421,29 @@ mod tests {
         // A atual caiu: desliga.
         assert!(drop_if_current(&conn, 2));
         assert!(conn.lock().unwrap().is_none());
+    }
+
+    #[test]
+    fn ligacao_nova_fecha_a_antiga() {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let addr = listener.local_addr().unwrap();
+        let mut old_client = TcpStream::connect(addr).unwrap();
+        let (old, _) = listener.accept().unwrap();
+        let _new_client = TcpStream::connect(addr).unwrap();
+        let (new, _) = listener.accept().unwrap();
+        // A cópia que a thread de leitura da ligação antiga teria.
+        let mut old_reader = old.try_clone().unwrap();
+        let conn = Mutex::new(None);
+        replace_current(&conn, 1, old);
+        replace_current(&conn, 2, new);
+        assert_eq!(conn.lock().unwrap().as_ref().map(|(id, _)| *id), Some(2));
+        // A leitura da antiga termina, e o host antigo vê a ligação fechada.
+        let mut buf = [0u8; 1];
+        assert_eq!(old_reader.read(&mut buf).unwrap(), 0);
+        old_client
+            .set_read_timeout(Some(Duration::from_secs(5)))
+            .unwrap();
+        assert_eq!(old_client.read(&mut buf).unwrap(), 0);
     }
 
     #[test]
