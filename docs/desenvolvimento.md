@@ -11,6 +11,7 @@ pnpm install
 pnpm desktop:dev          # o app, com recarga ao vivo e o selo DEV no ícone (precisa de Rust)
 pnpm dev                  # só a página do editor, no navegador
 pnpm dev:exemplo          # o editor já aberto com o currículo sintético completo
+pnpm dev:demo             # o editor com o currículo de demonstração, para gravar e tirar imagens
 pnpm build:extension      # a extensão em dist-extension/
 ```
 
@@ -23,6 +24,14 @@ desenvolvimento para os dados locais, em vez do chaveiro do sistema.
 próprio armazenamento no navegador, então o currículo aberto no `pnpm dev`
 (porta 5173) não é tocado. Para recomeçar do exemplo, feche o arquivo no editor
 e recarregue a página.
+
+`pnpm dev:demo` abre, na porta 5198, `fixtures/demo.xml`: uma pesquisadora
+fictícia (Ana Beatriz Souza Lima, genética da conservação de palmeiras) com
+formação, atuação, projeto, artigos, eventos, bancas e orientações críveis.
+É o currículo para gravar o app em uso. As pessoas são inventadas;
+instituições e periódicos são reais, os títulos não existem e os DOIs usam o
+prefixo de teste do Crossref (`10.5555`). O `synthetic_full.xml` continua
+sendo o dos testes, com todo elemento do schema e valores de teste.
 
 Algumas telas têm uma prévia no `pnpm dev`, sem precisar do Lattes nem da
 extensão:
@@ -57,6 +66,7 @@ no push, o conjunto todo com cobertura.
 | ---------------------------------------- | --------------------------------------------------------------------------------------- |
 | `pnpm gen:schema`                        | `src/schema/lattes.json` e os tipos, a partir do XSD do Lattes e de `schema/patch.json` |
 | `pnpm gen:fixtures`                      | O currículo sintético em `fixtures/`                                                    |
+| `pnpm gen:demo`                          | O currículo de demonstração, `fixtures/demo.xml` (`scripts/demo/`)                      |
 | `pnpm validate:fixtures`                 | Confere as fixtures contra o XSD                                                        |
 | `node scripts/gen-listas.ts`             | `src/schema/listas-lattes.json`, das listas capturadas nos formulários do Lattes        |
 | `node scripts/inventario-campos.ts --md` | O inventário de [`campos_tipados.md`](campos_tipados.md)                                |

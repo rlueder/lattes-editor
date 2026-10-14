@@ -17,10 +17,11 @@ vi.mock('../src/model/store.ts', async (importOriginal) => ({
   replaceWorkingCopy,
 }));
 
-const { EXAMPLE_URL, openExampleIfAsked } = await import('../src/dev/example.ts');
+const { DEMO_URL, EXAMPLE_URL, openExampleIfAsked } = await import('../src/dev/example.ts');
 const { examplePhotoUrl } = await import('../src/ui/profile.ts');
 
 const fixture = readFileSync(new URL('../fixtures/synthetic_full.xml', import.meta.url));
+const demo = readFileSync(new URL('../fixtures/demo.xml', import.meta.url));
 
 beforeEach(() => {
   listSent.mockResolvedValue([]);
@@ -64,6 +65,20 @@ describe('currículo de exemplo', () => {
     expect(copy.xml).toContain('<CURRICULO-VITAE');
     expect(copy.nextSequencia).toBe(copy.loadedMaxSequencia + 1);
     expect(copy.loadedMaxSequencia).toBeGreaterThan(0);
+  });
+
+  it('?exemplo=demo carrega o currículo de demonstração, sem envios fictícios', async () => {
+    const fetch = vi.fn(() => Promise.resolve(new Response(demo, { status: 200 })));
+    vi.stubGlobal('fetch', fetch);
+    loadWorkingCopy.mockResolvedValue(undefined);
+    expect(await openExampleIfAsked('?exemplo=demo')).toBe(true);
+    expect(fetch).toHaveBeenCalledWith(DEMO_URL);
+    const copy = replaceWorkingCopy.mock.calls[0]![0];
+    expect(copy.xml).toContain('NOME-COMPLETO="Ana Beatriz Souza Lima"');
+    expect(copy.fileName).toBe('3871592046158372.xml');
+    expect(copy.xml).not.toContain('Valor de teste');
+    // Os envios fictícios são do currículo sintético, não da demonstração.
+    expect(addSent).not.toHaveBeenCalled();
   });
 
   it('preenche o registro do enviado só no currículo de exemplo e só se estiver vazio', async () => {
