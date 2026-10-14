@@ -9,6 +9,7 @@
 
 import type { LattesPort } from './apply.ts';
 import { CREATE_ATUACAO_SPEC, CREATE_ITEMS_ENABLED } from './create.ts';
+import { contractKind, type DeleteOp } from './delete.ts';
 import type { FormControl } from './form.ts';
 import { cvCodeFrom, findLinks, isLogonPage } from './lattes-html.ts';
 import { checkLists, type ListCheck, listText, unreadLists } from './list-watch.ts';
@@ -32,8 +33,11 @@ export interface FormSpec {
 }
 
 export interface Contract {
-  /** A inclusão só entra com CREATE_ITEMS_ENABLED (create.ts). */
-  forms: Omit<Record<BridgeOp['kind'], FormSpec>, 'criar-atuacao'> &
+  /**
+   * A inclusão só entra com CREATE_ITEMS_ENABLED (create.ts). A exclusão
+   * (delete.ts) sai do formulário de edição e usa a conferência dele.
+   */
+  forms: Omit<Record<BridgeOp['kind'], FormSpec>, 'criar-atuacao' | DeleteOp['kind']> &
     Partial<Record<'criar-atuacao', FormSpec>>;
   /** Procedimentos que precisam estar linkados no menu do currículo. */
   menu: string[];
@@ -415,7 +419,7 @@ export async function checkContract(
 /** O relatório impede gravar nesse formulário? Só as mudanças que quebram o conector. */
 export function blocksKind(report: ContractReport | undefined, kind: BridgeOp['kind']): Drift[] {
   if (!report || report.status !== 'mudou') return [];
-  const form = report.forms.find((f) => f.kind === kind);
+  const form = report.forms.find((f) => f.kind === contractKind(kind));
   return form ? form.drifts.filter(isBreaking) : [];
 }
 
@@ -430,7 +434,7 @@ export function lacksSample(
   kind: BridgeOp['kind'],
 ): FormCheck | undefined {
   if (!report || (report.status !== 'ok' && report.status !== 'mudou')) return undefined;
-  return report.forms.find((f) => f.kind === kind && f.status === 'sem-amostra');
+  return report.forms.find((f) => f.kind === contractKind(kind) && f.status === 'sem-amostra');
 }
 
 const DRIFT_TEXT: Record<DriftKind, (d: Drift) => string> = {

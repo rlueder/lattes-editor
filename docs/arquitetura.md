@@ -96,6 +96,15 @@ que o painel "Enviar ao Lattes" mostra item por item:
   `src/bridge/apply.ts` a aplica na aba do Lattes. Antes de gravar, confere
   que o formulário está como o editor espera; depois, lê de novo e confere que
   só os campos da operação mudaram.
+- **Item removido no editor** pode ir pela extensão com
+  `src/bridge/delete.ts`, que posta o formulário de edição do item com
+  `f_ctr=E`, como o botão "Excluir" do Lattes, e confere lendo a lista de
+  novo (o item sumiu, nada mais mudou), sem depender da resposta do Lattes.
+  Hoje só idioma e vínculo, e desligado (`DELETE_ITEMS_ENABLED`) até um teste
+  acompanhado; desligado, a remoção fica à mão. A atuação inteira e as
+  formações ficam sempre à mão: a primeira apaga em cascata, e excluir uma
+  formação pode tornar outra pública. Uma exclusão não tem "Desfazer no
+  Lattes" no registro do enviado.
 - **O resto** fica **à mão**, campo a campo, com o valor antigo e o novo lado a
   lado.
 

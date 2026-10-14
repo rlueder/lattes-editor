@@ -6,6 +6,7 @@
 // um Lattes falso: o acesso à rede e ao DOM entra pela porta (LattesPort).
 
 import { applyCreateAtuacao } from './create.ts';
+import { applyDelete, type DeleteOp, isDeleteOp } from './delete.ts';
 import {
   encodeLatin1Form,
   type FormControl,
@@ -39,7 +40,7 @@ export interface OpResult {
   status: ResultStatus;
 }
 
-type EditOp = Exclude<BridgeOp, { kind: 'criar-atuacao' }>;
+type EditOp = Exclude<BridgeOp, DeleteOp | { kind: 'criar-atuacao' }>;
 
 const FORMS: Record<EditOp['kind'], { action: string; name: string }> = {
   idioma: { action: 'PKG_IDIOMA.FORM', name: 'GN_IDIOMA' },
@@ -154,6 +155,7 @@ function changedNames(a: Pairs, b: Pairs): string[] {
 
 export async function applyOp(op: BridgeOp, port: LattesPort): Promise<OpResult> {
   if (op.kind === 'criar-atuacao') return applyCreateAtuacao(op, port);
+  if (isDeleteOp(op)) return applyDelete(op, port);
   const result = (status: ResultStatus, detail: string): OpResult => ({
     detail,
     key: op.key,

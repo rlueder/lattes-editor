@@ -11,6 +11,7 @@ import { useMemo, useState } from 'react';
 import {
   failed,
   groupByDay,
+  noUndoReason,
   type SentEntry,
   sentLogFileName,
   sentLogText,
@@ -68,6 +69,9 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
               const wasUndone = entry.id !== undefined && undone.has(entry.id);
               const canUndo =
                 bridge.available && !bridge.running && !wasUndone && undoOp(entry) !== undefined;
+              // Criar e excluir não se desfazem mandando o "antes": em vez do
+              // botão, o motivo fica escrito, à vista.
+              const noUndo = noUndoReason(entry.op);
               return (
                 <li
                   key={entry.id}
@@ -79,18 +83,16 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
                     {entry.outcome && (
                       <span className="tag warn">{OUTCOME_LABEL[entry.outcome.status]}</span>
                     )}
-                    {entry.undoOf === undefined && !failed(entry) && (
+                    {entry.undoOf === undefined && !failed(entry) && !noUndo && (
                       <button
                         className="ghost sent-undo"
                         disabled={!canUndo}
                         title={
                           wasUndone
                             ? 'Já desfeito'
-                            : entry.op.kind === 'criar-atuacao'
-                              ? 'Item criado pelo conector: para tirar, exclua no Lattes, à mão'
-                              : bridge.available
-                                ? undefined
-                                : 'Precisa da extensão e do Lattes aberto'
+                            : bridge.available
+                              ? undefined
+                              : 'Precisa da extensão e do Lattes aberto'
                         }
                         type="button"
                         onClick={() => setUndoing(entry)}
@@ -102,6 +104,7 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
                   {entry.outcome?.detail && (
                     <p className="muted sent-outcome">{entry.outcome.detail}</p>
                   )}
+                  {noUndo && !failed(entry) && <p className="muted sent-outcome">{noUndo}</p>}
                   <dl className="sent-fields">
                     {entry.rows.map((row) => (
                       <div key={row.name} className="sent-field">

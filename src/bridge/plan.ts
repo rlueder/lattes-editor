@@ -6,6 +6,7 @@
 import { type Change, resolvePath } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
+import { DELETE_ITEMS_ENABLED, type DeleteOp, planDelete } from './delete.ts';
 
 /** Valor de campo; null tira o campo do envio (caixa desmarcada). */
 export type FieldValues = Record<string, string | null>;
@@ -40,7 +41,7 @@ export interface IdiomaOp extends OpBase {
   kind: 'idioma';
 }
 
-export type BridgeOp = CreateAtuacaoOp | IdiomaOp | ResumoOp | VinculoOp;
+export type BridgeOp = CreateAtuacaoOp | DeleteOp | IdiomaOp | ResumoOp | VinculoOp;
 
 export interface Unsupported {
   key: string;
@@ -141,7 +142,10 @@ export function planChange(
   change: Change,
   chain: XElement[],
   label: string,
-  { createItems = CREATE_ITEMS_ENABLED }: { createItems?: boolean } = {},
+  {
+    createItems = CREATE_ITEMS_ENABLED,
+    deleteItems = DELETE_ITEMS_ENABLED,
+  }: { createItems?: boolean; deleteItems?: boolean } = {},
 ): BridgeOp | Unsupported {
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.
   if (change.kind === 'novo' && createItems && change.element === 'ATUACAO-PROFISSIONAL') {
@@ -152,6 +156,8 @@ export function planChange(
     const planned = planCreateAtuacao(change, el, label);
     return 'reason' in planned ? unsupported(change, label, planned.reason) : planned;
   }
+  // Exclusão: desligada até o teste no Lattes real (delete.ts).
+  if (change.kind === 'removido') return planDelete(change, chain, label, deleteItems);
   if (change.kind !== 'alterado') {
     return unsupported(change, label, 'Incluir ou excluir pelo conector: não suportado ainda');
   }
@@ -225,7 +231,7 @@ export function isOp(p: BridgeOp | Unsupported): p is BridgeOp {
 export function planChanges(
   entries: { change: Change; itemTitle: string }[],
   root: XElement,
-  options: { createItems?: boolean } = {},
+  options: { createItems?: boolean; deleteItems?: boolean } = {},
 ): { ops: BridgeOp[]; unsupported: Unsupported[] } {
   const ops: BridgeOp[] = [];
   const skipped: Unsupported[] = [];
