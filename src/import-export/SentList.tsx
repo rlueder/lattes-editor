@@ -12,6 +12,7 @@ import {
   failed,
   groupByDay,
   type SentEntry,
+  sentLogFileName,
   sentLogText,
   undoneIds,
   undoOp,
@@ -41,17 +42,13 @@ async function exportLog(entries: SentEntry[]) {
   const lattesId = entries[0]?.lattesId ?? '';
   const now = Date.now();
   const text = sentLogText(entries, { appVersion: __APP_VERSION__, lattesId, now });
-  const day = new Date(now).toISOString().slice(0, 10);
-  await saveBytes(
-    new TextEncoder().encode(text),
-    `registro-lattes-${lattesId}-${day}.txt`,
-    'text/plain',
-  );
+  await saveBytes(new TextEncoder().encode(text), sentLogFileName(lattesId, now), 'text/plain');
 }
 
 export function SentList({ bridge }: { bridge: BridgeState }) {
   const [undoing, setUndoing] = useState<SentEntry | undefined>();
   const [clearing, setClearing] = useState(false);
+  const [exportError, setExportError] = useState<string | undefined>();
   const days = useMemo(() => groupByDay(bridge.sent), [bridge.sent]);
   const undone = useMemo(() => undoneIds(bridge.sent), [bridge.sent]);
   const reverse = undoing && undoOp(undoing);
@@ -138,6 +135,11 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
           if (entry) void bridge.send({ undo: entry });
         }}
       />
+      {exportError && (
+        <p className="error" role="alert">
+          O registro em texto não foi salvo: {exportError}
+        </p>
+      )}
       <div className="sent-clear">
         {clearing ? (
           <>
@@ -161,7 +163,17 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
           </>
         ) : (
           <>
-            <button className="ghost" type="button" onClick={() => void exportLog(bridge.sent)}>
+            <button
+              className="ghost"
+              type="button"
+              onClick={() => {
+                setExportError(undefined);
+                // Cancelar a janela de salvar não é erro (saveBytes devolve false).
+                exportLog(bridge.sent).catch((err: unknown) =>
+                  setExportError(err instanceof Error ? err.message : String(err)),
+                );
+              }}
+            >
               Exportar em texto
             </button>
             <button className="ghost" type="button" onClick={() => setClearing(true)}>

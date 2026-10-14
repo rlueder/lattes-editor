@@ -59,8 +59,10 @@ export const UNDO_KEY_PREFIX = 'desfazer:';
  * há como desfazer com segurança: devolve undefined.
  */
 export function undoOp(entry: SentEntry): BridgeOp | undefined {
-  // O que não terminou conferido pode não ter gravado nada: voltar o "antes"
-  // às cegas poderia apagar um valor que já estava lá.
+  // O que não terminou conferido pode não ter gravado nada, ou gravado
+  // diferente do enviado: voltar o "antes" às cegas poderia apagar um valor
+  // que já estava lá. (A atuação criada no Lattes nunca teve "antes" para
+  // voltar: sai de lá excluída à mão.)
   if (entry.id === undefined || entry.undoOf !== undefined || failed(entry)) return undefined;
   const { op } = entry;
   const fields = Object.keys(op.set);
@@ -76,9 +78,13 @@ export function undoOp(entry: SentEntry): BridgeOp | undefined {
   };
 }
 
-/** ids das entradas que já foram desfeitas. */
+/**
+ * ids das entradas que já foram desfeitas. Um desfazer que não terminou
+ * conferido não conta: o Lattes pode continuar com o valor gravado, e a
+ * entrada original precisa poder ser desfeita de novo.
+ */
 export function undoneIds(entries: SentEntry[]): Set<number> {
-  return new Set(entries.flatMap((e) => (e.undoOf === undefined ? [] : [e.undoOf])));
+  return new Set(entries.flatMap((e) => (e.undoOf === undefined || failed(e) ? [] : [e.undoOf])));
 }
 
 export interface SentDay {
@@ -105,6 +111,10 @@ export function groupByDay(entries: SentEntry[]): SentDay[] {
   }
   return days;
 }
+
+/** Nome do arquivo do registro em texto, com a data local (a do corpo do texto). */
+export const sentLogFileName = (lattesId: string, now: number): string =>
+  `registro-lattes-${lattesId}-${localDay(now)}.txt`;
 
 const OUTCOME_TEXT: Record<Exclude<ResultStatus, 'conferido'>, string> = {
   divergente: 'não conferido',

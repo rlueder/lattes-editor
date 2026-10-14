@@ -5,6 +5,7 @@ import {
   failed,
   groupByDay,
   sentEntry,
+  sentLogFileName,
   sentLogText,
   UNDO_KEY_PREFIX,
   undoneIds,
@@ -164,6 +165,46 @@ describe('registro do enviado: tentativas e texto para recurso (LAT-47)', () => 
     expect(failed(refused)).toBe(true);
     expect(undoOp(ok)).toBeDefined();
     expect(undoOp(refused)).toBeUndefined();
+  });
+
+  it('um desfazer que não terminou conferido não marca a original como desfeita', () => {
+    const original = { ...sentEntry(vinculo, '123', at(9, 0)), id: 1 };
+    const failedUndo = {
+      ...sentEntry(vinculo, '123', at(9, 10), {
+        outcome: { detail: 'A sessão do Lattes caiu; entre de novo', status: 'sessao' },
+        undoOf: 1,
+      }),
+      id: 2,
+    };
+    expect([...undoneIds([original, failedUndo])]).toEqual([]);
+    expect(undoOp(original)).toBeDefined();
+    const okUndo = { ...sentEntry(vinculo, '123', at(9, 20), { undoOf: 1 }), id: 3 };
+    expect([...undoneIds([original, failedUndo, okUndo])]).toEqual([1]);
+  });
+
+  it('a atuação criada no Lattes não se desfaz daqui, conferida ou não', () => {
+    const create: BridgeOp = {
+      expect: {},
+      institutionCode: '0001',
+      institutionName: 'Universidade',
+      key: 'c',
+      kind: 'criar-atuacao',
+      label: 'Atuação: Universidade',
+      set: { f_ano_ini: '2020' },
+    };
+    expect(undoOp({ ...sentEntry(create, '1', 1), id: 1 })).toBeUndefined();
+    const divergent = sentEntry(create, '1', 1, {
+      outcome: { detail: 'Criada no Lattes (atuação 3), mas sem o vínculo', status: 'divergente' },
+    });
+    expect(undoOp({ ...divergent, id: 2 })).toBeUndefined();
+  });
+
+  it('o arquivo leva a data local, a mesma do texto', () => {
+    // 23:30 do dia 14 no horário local; em UTC-3 já seria dia 15.
+    expect(sentLogFileName('123', at(23, 30))).toBe('registro-lattes-123-2026-10-14.txt');
+    expect(sentLogFileName('123', new Date(2026, 0, 2, 0, 5).getTime())).toBe(
+      'registro-lattes-123-2026-01-02.txt',
+    );
   });
 
   it('o texto traz o currículo, a versão, e cada envio com resultado e valores', () => {
