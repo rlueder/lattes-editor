@@ -208,7 +208,8 @@ describe('número de sequência e inserção', () => {
       'PARTICIPACAO-EM-PROJETO',
     )!;
     expect(getAttr(p, 'FLAG-PERIODO')).toBe('ATUAL');
-    expect(getAttr(p, 'SEQUENCIA-FUNCAO-ATIVIDADE')).toBe('1');
+    // Acima do maior do currículo inteiro, não só da atuação.
+    expect(getAttr(p, 'SEQUENCIA-FUNCAO-ATIVIDADE')).toBe('6');
     expect(findOrderViolations(schema, doc.root)).toEqual([]);
     expect(() =>
       insertGeneralItem(schema, doc, t, newGeneralItem(schema, t), { productionCounter: 1 }),

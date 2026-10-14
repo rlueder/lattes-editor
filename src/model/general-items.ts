@@ -334,10 +334,12 @@ export function insertGeneralItem(
     const container = ensurePath(schema, atuacao, ['ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO']);
     const participacao = blank(schema, 'PARTICIPACAO-EM-PROJETO');
     const fim = getAttr(item, 'ANO-FIM') ?? '';
+    // Se o número é por atuação ou do currículo inteiro não se sabe: acima do
+    // maior do currículo (cópia e exportação) vale nos dois casos.
     setAttr(
       participacao,
       'SEQUENCIA-FUNCAO-ATIVIDADE',
-      String(maxOf([atuacao], 'SEQUENCIA-FUNCAO-ATIVIDADE') + 1),
+      String(nextGeneralSequence(roots, 'SEQUENCIA-FUNCAO-ATIVIDADE')),
     );
     setAttr(participacao, 'FLAG-PERIODO', fim ? 'ANTERIOR' : 'ATUAL');
     setAttr(participacao, 'ANO-INICIO', getAttr(item, 'ANO-INICIO') ?? '');
