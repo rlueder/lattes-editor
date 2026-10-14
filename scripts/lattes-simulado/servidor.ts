@@ -151,6 +151,15 @@ function control(state: LattesState, action: string, query: URLSearchParams): un
   };
 }
 
+/**
+ * O controle só aceita pedido sem Origin (curl, testes) ou da própria origem
+ * do simulado: um POST de outro site aberto no navegador não passa.
+ */
+export function sameOrigin(req: IncomingMessage): boolean {
+  const origin = req.headers.origin;
+  return !origin || origin === `http://${req.headers.host ?? ''}`;
+}
+
 async function readBody(req: IncomingMessage): Promise<Uint8Array> {
   const chunks: Buffer[] = [];
   for await (const chunk of req) chunks.push(chunk as Buffer);
@@ -184,6 +193,13 @@ export async function startLattesSimulado(options: ServerOptions = {}): Promise<
           return;
         }
         const ctl = /^\/__simulado\/(\w*)$/.exec(url.pathname);
+        if (ctl && !sameOrigin(req)) {
+          // Outra página aberta no navegador não mexe no simulado.
+          res
+            .writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' })
+            .end('Origem recusada');
+          return;
+        }
         if (ctl) {
           const body = control(state, req.method === 'POST' ? ctl[1]! : '', url.searchParams);
           res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });

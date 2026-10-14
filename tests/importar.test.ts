@@ -576,6 +576,19 @@ describe('leituras das telas do Importar', () => {
     });
   });
 
+  it('o f_chkp oculto "dummy" não conta como caixa de módulo, nem esconde uma que falte', () => {
+    const dummy = '<input type="hidden" name="f_chkp" value="dummy">';
+    expect(readStep2(step2({ extra: dummy }))).toMatchObject({ code: CODE, request: '987654' });
+    // Com o dummy e só 16 caixas, o passo 2 continua não sendo o mapeado.
+    expect(readStep2(step2({ extra: dummy, modules: boxes(16) }))).toEqual({
+      problem: 'As caixas de módulo do passo 2 não são as 17 mapeadas.',
+    });
+    // Um f_chkp oculto com outro valor também não passa.
+    expect(
+      readStep2(step2({ extra: '<input type="hidden" name="f_chkp" value="18">' })),
+    ).toMatchObject({ problem: expect.stringMatching(/17 mapeadas/) });
+  });
+
   it('ano do filtro', () => {
     expect(pickYear([2026, 2024, 2007], 2024)).toBe(2024);
     expect(pickYear([2026, 2024, 2007], 2020)).toBe(2007);

@@ -34,12 +34,22 @@ const basicsName = (item: string) =>
 const detailName = (item: string) =>
   item.startsWith('OUTRAS-') ? `DETALHAMENTO-DE-${item}` : `DETALHAMENTO-DA-${item}`;
 
-/** A parte do item (dados básicos ou detalhamento), criada quando falta. */
+const partName = (item: XElement, which: 'basics' | 'detail') =>
+  which === 'basics' ? basicsName(item.name) : detailName(item.name);
+
+/**
+ * A parte do item (dados básicos ou detalhamento) para ler: a que existe, ou
+ * uma vazia fora do currículo. Ler nunca muda o estado.
+ */
+function partOf(item: XElement, which: 'basics' | 'detail'): XElement {
+  return childElements(item, partName(item, which))[0] ?? element(partName(item, which));
+}
+
+/** A parte do item para gravar, criada no currículo quando falta. */
 function part(item: XElement, which: 'basics' | 'detail'): XElement {
-  const name = which === 'basics' ? basicsName(item.name) : detailName(item.name);
-  let el = childElements(item, name)[0];
+  let el = childElements(item, partName(item, which))[0];
   if (!el) {
-    el = element(name);
+    el = element(partName(item, which));
     insertInSchemaOrder(lattesSchema, item, el);
   }
   return el;
@@ -49,7 +59,7 @@ function part(item: XElement, which: 'basics' | 'detail'): XElement {
 function on(which: 'basics' | 'detail', b: Binding): Binding {
   return {
     ...b,
-    read: (item) => b.read(part(item, which)),
+    read: (item) => b.read(partOf(item, which)),
     write: b.write && ((item, value) => b.write!(part(item, which), value)),
   };
 }
@@ -82,7 +92,7 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
       // como o Lattes marca o tipo gravado não foi visto.
       kind: 'select',
       name: 'F_TPO',
-      read: (item) => getAttr(part(item, 'basics'), 'TIPO-PARTICIPACAO') ?? '',
+      read: (item) => getAttr(partOf(item, 'basics'), 'TIPO-PARTICIPACAO') ?? '',
       write: (item, value) => setAttr(part(item, 'basics'), 'TIPO-PARTICIPACAO', value),
     },
     on('detail', attr('f_nme_evento', 'NOME-DO-EVENTO', 'text', { maxLength: 400 })),
@@ -143,8 +153,8 @@ function lista(state: LattesState): SimResponse {
   const base = `PKG_EVENTO.form?f_cod=${state.code}&amp;F_STA_DIVULGACAO_CIENTIFICA=`;
   const rows = eventItems(state)
     .map((item) => {
-      const name = getAttr(part(item, 'detail'), 'NOME-DO-EVENTO') ?? '';
-      const year = getAttr(part(item, 'basics'), 'ANO') ?? '';
+      const name = getAttr(partOf(item, 'detail'), 'NOME-DO-EVENTO') ?? '';
+      const year = getAttr(partOf(item, 'basics'), 'ANO') ?? '';
       return `<tr onclick="self.parent.modalCV2.setarUrl('${base}&amp;f_seq=${getAttr(item, 'SEQUENCIA-PRODUCAO')}',true)"><td>${h.esc(name)}, ${h.esc(year)}</td></tr>`;
     })
     .join('\n');

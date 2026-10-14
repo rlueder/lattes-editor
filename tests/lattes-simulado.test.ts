@@ -494,6 +494,58 @@ describe('Lattes simulado: o servidor', () => {
     expect(lattes.state.importRequest).toBeUndefined();
   });
 
+  it('ler páginas não muda o currículo', async () => {
+    const lattes = await start();
+    const before = serializeXml(lattes.state.working);
+    const code = lattes.state.code;
+    const list = await lattes.port.get(`pkg_evento.lista?f_cod=${code}`);
+    for (const seq of [...list.matchAll(/f_seq=(\d+)/g)].map((m) => m[1])) {
+      await lattes.port.get(
+        `PKG_EVENTO.form?f_cod=${code}&F_STA_DIVULGACAO_CIENTIFICA=&f_seq=${seq}`,
+      );
+    }
+    await lattes.port.get(`pkg_publicar.cv_espelho?f_cod=${code}&f_idioma=1`);
+    await checkContract(lattes.port);
+    expect(serializeXml(lattes.state.working)).toBe(before);
+    expect(lattes.state.pending).toBe(false);
+  });
+
+  it('inclusão de idioma: recusa código vazio ou já cadastrado', async () => {
+    const lattes = await start();
+    const code = lattes.state.code;
+    for (const idioma of ['', 'EN', 'ZZ']) {
+      const out = await lattes.port.post(
+        'PKG_IDIOMA.FORM',
+        `f_ctr=I&f_cod=${code}&f_seq=&F_COD_IDIOMA=${idioma}&FC_LE=on&F_LE=B`,
+      );
+      expect(out).toContain('ainda não cadastrado');
+    }
+    expect(lattes.state.pending).toBe(false);
+    await lattes.port.post(
+      'PKG_IDIOMA.FORM',
+      `f_ctr=I&f_cod=${code}&f_seq=&F_COD_IDIOMA=FR&FC_LE=on&F_LE=B`,
+    );
+    const fr = find(lattes.state.root, isIdioma('FR'));
+    expect(getAttr(fr, 'DESCRICAO-DO-IDIOMA')).toBe('Francês');
+    expect(getAttr(fr, 'PROFICIENCIA-DE-LEITURA')).toBe('BEM');
+    expect(lattes.state.pending).toBe(true);
+  });
+
+  it('o controle recusa pedido de outra origem', async () => {
+    const lattes = await start();
+    const other = await fetch(`${lattes.url}/__simulado/expirar`, {
+      headers: { Origin: 'https://exemplo.com' },
+      method: 'POST',
+    });
+    expect(other.status).toBe(403);
+    expect(lattes.state.sessionActive).toBe(true);
+    const same = await fetch(`${lattes.url}/__simulado/publicar`, {
+      headers: { Origin: lattes.url },
+      method: 'POST',
+    });
+    expect(same.status).toBe(200);
+  });
+
   it('responde com a gravação quando há uma para o procedimento', async () => {
     const { mkdtempSync, writeFileSync } = await import('node:fs');
     const { tmpdir } = await import('node:os');

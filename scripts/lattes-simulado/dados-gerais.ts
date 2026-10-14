@@ -102,8 +102,15 @@ ${h.formScripts('GN_IDIOMA', el ? '\n\nVocê realmente deseja excluir este Idiom
 function idiomaPost(req: SimRequest, state: LattesState): SimResponse {
   const ctr = req.get('f_ctr');
   const back = h.savedScript(`pkg_idioma.lista?f_cod=${state.code}`);
-  const container = state.ensurePath(['DADOS-GERAIS', 'IDIOMAS']);
   if (ctr === 'I') {
+    // A página só oferece idiomas ainda não cadastrados; um envio montado fora
+    // dela com código vazio ou repetido é recusado sem gravar (inferido).
+    const code = req.get('F_COD_IDIOMA') ?? '';
+    const known = h.LANGUAGES.some(([c]) => c === code);
+    if (!known || idiomas(state).some((i) => getAttr(i, 'IDIOMA') === code)) {
+      return html('<script>alert("Escolha um idioma ainda não cadastrado.");</script>');
+    }
+    const container = state.ensurePath(['DADOS-GERAIS', 'IDIOMAS']);
     const el = element('IDIOMA');
     container.children.push(el);
     container.selfClosing = false;
@@ -113,7 +120,7 @@ function idiomaPost(req: SimRequest, state: LattesState): SimResponse {
   }
   const el = idiomas(state).find((i) => state.idOf(i) === req.get('f_seq'));
   if (!el) return html(h.page('Idiomas', '<p>Registro não encontrado.</p>'));
-  if (ctr === 'E') state.remove(container, el);
+  if (ctr === 'E') state.remove(state.find(['DADOS-GERAIS', 'IDIOMAS'])!, el);
   else if (ctr === 'U') applyFields(idiomaBindings(state, '', 'U', h.LANGUAGES), el, req);
   else return html(back);
   state.touch();
