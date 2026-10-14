@@ -229,7 +229,8 @@ export function ExportPanel({
         </Tabs.Panel>
 
         <Tabs.Panel className="send-tab-panel" value="enviado">
-          {bridge && sent > 0 ? (
+          {/* O registro aparece mesmo só com tentativas que falharam: é delas que sai o texto para o recurso. */}
+          {bridge && bridge.sent.length > 0 ? (
             <SentList bridge={bridge} />
           ) : (
             <p className="empty">

@@ -182,6 +182,21 @@ describe('registro do enviado: tentativas e texto para recurso (LAT-47)', () => 
     expect([...undoneIds([original, failedUndo, okUndo])]).toEqual([1]);
   });
 
+  it('no texto, o desfazer que falhou se lê como desfazer, com os valores na ordem dele', () => {
+    const original = { ...sentEntry(vinculo, '123', at(9, 0)), id: 1 };
+    const failedUndo = {
+      ...sentEntry(undoOp(original)!, '123', at(9, 10), {
+        outcome: { detail: 'A sessão do Lattes caiu; entre de novo', status: 'sessao' },
+        undoOf: 1,
+      }),
+      id: 2,
+    };
+    const text = sentLogText([original, failedUndo], { appVersion: '0', lattesId: '123', now: 0 });
+    expect(text).toContain(
+      '- 09:10 Desfazer: Vínculo: Universidade (não gravado, sessão do Lattes caída: A sessão do Lattes caiu; entre de novo)\n    Ano de fim: 2025 -> (vazio)',
+    );
+  });
+
   it('a atuação criada no Lattes não se desfaz daqui, conferida ou não', () => {
     const create: BridgeOp = {
       expect: {},
