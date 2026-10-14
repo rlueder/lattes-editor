@@ -66,8 +66,9 @@ export default defineConfig({
     cssCodeSplit: false,
     rollupOptions: { output: { inlineDynamicImports: true } },
   },
-  // Versão mostrada no menu de configurações.
-  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+  // Versão mostrada no menu de configurações e anunciada à extensão. O canal
+  // Dev (.github/workflows/dev.yml) troca pela dele em LATTES_VERSAO.
+  define: { __APP_VERSION__: JSON.stringify(process.env.LATTES_VERSAO || pkg.version) },
   plugins: [react(), inlineBundle()],
   test: {
     coverage: {

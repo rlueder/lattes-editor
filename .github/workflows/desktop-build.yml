@@ -20,6 +20,10 @@ name: App de desktop
 # a chave de atualização (TAURI_SIGNING_PRIVATE_KEY, separada da Apple), e o
 # tauri-action monta o latest.json que o app confere
 # (releases/latest/download/latest.json). Em PR, sem a chave, não gera.
+#
+# Com uma versão do canal Dev (dev.yml), monta o LattesEditor Dev: outro nome,
+# identificador e ícone (src-tauri/tauri.canal-dev.conf.json), a feature
+# canal-dev do Rust (outro host nativo) e a atualização pela página "dev".
 
 on:
   workflow_call:
@@ -28,6 +32,11 @@ on:
         description: Tag do lançamento que recebe os instaladores.
         required: true
         type: string
+      versao:
+        description: Versão do canal Dev (0.22.0-dev.42); vazia monta o app publicado.
+        required: false
+        type: string
+        default: ''
     # Assinatura Developer ID e notarização do app de macOS (só nos lançamentos).
     secrets:
       TAURI_SIGNING_PRIVATE_KEY:
@@ -73,16 +82,16 @@ jobs:
             # Um app só para Apple Silicon e Intel.
             args: --target universal-apple-darwin --bundles app,dmg
             rust-targets: aarch64-apple-darwin x86_64-apple-darwin
-            asset: LattesEditor-macOS[ext]
+            asset: -macOS[ext]
           - name: Windows
             os: windows-latest
             args: --bundles nsis
-            asset: LattesEditor-Windows[setup][ext]
+            asset: -Windows[setup][ext]
           - name: Linux
             # 22.04: glibc mais antiga, o AppImage abre em mais distribuições.
             os: ubuntu-22.04
             args: --bundles appimage,deb
-            asset: LattesEditor-Linux[ext]
+            asset: -Linux[ext]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -176,16 +185,31 @@ jobs:
             exit 1
           fi
           echo "draft=$draft" >> "$GITHUB_OUTPUT"
+      # Canal Dev: a configuração do LattesEditor Dev com a versão deste build.
+      - name: Configuração do canal Dev
+        if: inputs.versao != ''
+        shell: bash
+        env:
+          VERSAO: ${{ inputs.versao }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const c = JSON.parse(fs.readFileSync("src-tauri/tauri.canal-dev.conf.json", "utf8"));
+            c.version = process.env.VERSAO;
+            fs.writeFileSync("src-tauri/tauri.canal-dev.gerado.json", JSON.stringify(c, null, 2));
+          '
       - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # action-v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # A versão que o editor mostra e anuncia à extensão (vite.config.ts).
+          LATTES_VERSAO: ${{ inputs.versao }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           # Sem tag (PR, disparo manual sem tag), só monta e guarda como artefato do workflow.
           tagName: ${{ inputs.tag }}
           releaseDraft: ${{ steps.release.outputs.draft == 'true' }}
-          releaseAssetNamePattern: ${{ matrix.asset }}
+          releaseAssetNamePattern: ${{ inputs.versao != '' && 'LattesEditorDev' || 'LattesEditor' }}${{ matrix.asset }}
           uploadWorkflowArtifacts: ${{ inputs.tag == '' }}
           # A assinatura de cada pacote vai dentro do latest.json; os .sig soltos
           # só encheriam a página do lançamento.
@@ -196,3 +220,4 @@ jobs:
           args: >-
             ${{ matrix.args }}
             ${{ inputs.tag != '' && '--config src-tauri/tauri.release.conf.json' || '' }}
+            ${{ inputs.versao != '' && '--config src-tauri/tauri.canal-dev.gerado.json --features canal-dev' || '' }}

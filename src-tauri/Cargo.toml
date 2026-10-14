@@ -16,6 +16,11 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 name = "LattesEditor"
 path = "src/main.rs"
 
+# Canal Dev (.github/workflows/dev.yml): outro identificador, outro host nativo
+# e a extensão do canal Dev, para o LattesEditor Dev conviver com o LattesEditor.
+[features]
+canal-dev = []
+
 [build-dependencies]
 tauri-build = { version = "=2.7.0", features = [] }
 

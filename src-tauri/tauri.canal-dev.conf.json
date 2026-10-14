@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "LattesEditor Dev",
+  "mainBinaryName": "LattesEditorDev",
+  "identifier": "dev.lattes-editor.app.dev",
+  "bundle": {
+    "createUpdaterArtifacts": true,
+    "icon": [
+      "icons/dev/32x32.png",
+      "icons/dev/128x128.png",
+      "icons/dev/128x128@2x.png",
+      "icons/dev/icon.icns",
+      "icons/dev/icon.ico"
+    ]
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": ["https://github.com/rlueder/lattes-editor/releases/download/dev/latest.json"]
+    }
+  }
+}

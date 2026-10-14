@@ -30,16 +30,33 @@ use std::time::Duration;
 
 use tauri::{AppHandle, Emitter, State};
 
-/// Nome do host nativo, o mesmo que a extensão passa a `connectNative`.
-pub const HOST_NAME: &str = "lattes_editor.conector";
+/// O canal Dev (feature `canal-dev`): outro host, outro identificador e a
+/// extensão do canal Dev, para conviver com o app publicado.
+const DEV: bool = cfg!(feature = "canal-dev");
 
-/// Identificador do app (tauri.conf.json), que dá nome à pasta de dados.
-pub const IDENTIFIER: &str = "dev.lattes-editor.app";
+/// Nome do host nativo, o mesmo que a extensão passa a `connectNative`.
+pub const HOST_NAME: &str = if DEV {
+    "lattes_editor.conector_dev"
+} else {
+    "lattes_editor.conector"
+};
+
+/// Identificador do app (tauri.conf.json, ou src-tauri/tauri.canal-dev.conf.json
+/// no canal Dev), que dá nome à pasta de dados.
+pub const IDENTIFIER: &str = if DEV {
+    "dev.lattes-editor.app.dev"
+} else {
+    "dev.lattes-editor.app"
+};
 
 /// Extensões que podem iniciar o host: a de desenvolvimento, com a chave
 /// fixa do manifest (scripts/build-extension.ts). A da Chrome Web Store
 /// entra aqui quando for publicada.
-const EXTENSION_IDS: &[&str] = &["elkaiefkldcngjdgelfjhjbljefbemac"];
+const EXTENSION_IDS: &[&str] = if DEV {
+    &["alopgghbefjbmjomhgoebbjnmppokkgi"]
+} else {
+    &["elkaiefkldcngjdgelfjhjbljefbemac"]
+};
 
 /// Mensagem maior que isso do navegador é recusada (a fila inteira cabe com folga).
 const MAX_MESSAGE: u32 = 8 * 1024 * 1024;
@@ -352,8 +369,13 @@ mod tests {
     fn manifest_escapa_o_caminho_e_lista_a_extensao() {
         let m = manifest(r#"C:\Program Files\LattesEditor\app.exe"#);
         assert!(m.contains(r#""path": "C:\\Program Files\\LattesEditor\\app.exe""#));
-        assert!(m.contains("chrome-extension://elkaiefkldcngjdgelfjhjbljefbemac/"));
-        assert!(m.contains(r#""name": "lattes_editor.conector""#));
+        if DEV {
+            assert!(m.contains("chrome-extension://alopgghbefjbmjomhgoebbjnmppokkgi/"));
+            assert!(m.contains(r#""name": "lattes_editor.conector_dev""#));
+        } else {
+            assert!(m.contains("chrome-extension://elkaiefkldcngjdgelfjhjbljefbemac/"));
+            assert!(m.contains(r#""name": "lattes_editor.conector""#));
+        }
     }
 
     #[test]

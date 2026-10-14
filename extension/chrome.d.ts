@@ -91,3 +91,6 @@ declare namespace chrome {
     const onClicked: { addListener(cb: () => void): void };
   }
 }
+
+/** Nome do host nativo, definido na montagem (scripts/build-extension.ts). */
+declare const __NATIVE_HOST__: string;
