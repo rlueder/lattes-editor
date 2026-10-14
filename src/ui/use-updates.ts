@@ -76,14 +76,20 @@ function enabled(): boolean {
   });
 }
 
+/** Quem confere, posto uma vez só. */
+let depsReady: Promise<void> | undefined;
+
 /** Põe quem confere: o plugin no app, o simulado no `pnpm dev`. */
-async function installDeps(): Promise<void> {
-  if (!import.meta.env.DEV) {
-    setUpdateDeps(tauriDeps);
-    return;
-  }
-  const { fakeUpdateDeps } = await import('../dev/fake-update.ts');
-  setUpdateDeps(fakeUpdateDeps(new URLSearchParams(location.search).get('simular-atualizacao')));
+function installDeps(): Promise<void> {
+  depsReady ??= (async () => {
+    if (!import.meta.env.DEV) {
+      setUpdateDeps(tauriDeps);
+      return;
+    }
+    const { fakeUpdateDeps } = await import('../dev/fake-update.ts');
+    setUpdateDeps(fakeUpdateDeps(new URLSearchParams(location.search).get('simular-atualizacao')));
+  })();
+  return depsReady;
 }
 
 /**
@@ -92,6 +98,13 @@ async function installDeps(): Promise<void> {
  * confirma a versão em uso ou diz que a conferência falhou.
  */
 export async function checkUpdatesNow(): Promise<void> {
+  // Um clique antes de quem confere estar posto espera por ele, em vez de
+  // virar um "não deu para verificar". Se não der para pôr, aí sim é falha.
+  try {
+    await installDeps();
+  } catch (err) {
+    console.warn('Não deu para preparar a conferência de atualização:', err);
+  }
   const outcome = await checkUpdateNow();
   if (!outcome) return;
   if (manualToast) toasts.close(manualToast);
@@ -125,15 +138,19 @@ export function useUpdates(): UpdateState {
     // Quem confere entra já, para o menu ⚙ poder conferir antes da primeira
     // conferência automática; esta espera um pouco e respeita a hora marcada
     // por uma conferência pedida no menu.
-    void installDeps().then(() => {
-      if (!alive) return;
-      first = setTimeout(() => {
-        onFocus();
-        // De minuto em minuto só se olha o relógio; a conferência sai na hora marcada.
-        interval = setInterval(onFocus, 60_000);
-        window.addEventListener('focus', onFocus);
-      }, FIRST_CHECK_DELAY_MS);
-    });
+    installDeps()
+      .then(() => {
+        if (!alive) return;
+        first = setTimeout(() => {
+          onFocus();
+          // De minuto em minuto só se olha o relógio; a conferência sai na hora marcada.
+          interval = setInterval(onFocus, 60_000);
+          window.addEventListener('focus', onFocus);
+        }, FIRST_CHECK_DELAY_MS);
+      })
+      .catch((err: unknown) => {
+        console.warn('Não deu para preparar a conferência de atualização:', err);
+      });
     return () => {
       alive = false;
       clearTimeout(first);
