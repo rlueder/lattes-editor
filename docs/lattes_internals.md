@@ -509,8 +509,11 @@ vem cada parte. Nada disso foi enviado a um Lattes real; o código está em
 - **Número do item**: a cópia de trabalho guarda o número que o editor deu.
   Até o conector reconciliar com o `SEQUENCIA-ATIVIDADE` que o Lattes devolve,
   o caminho é recarregar a exportação antes de alterar esse item pelo conector.
-- **Fora por enquanto**: Formação (o curso só entra pela busca de cursos,
-  não mapeada), Projetos e Patentes (formulários de inclusão não lidos).
+- **Formação e projeto** (LAT-52): depois do mapa das seções 17 e 18, as
+  inclusões estão em `src/bridge/create-formacao.ts` e
+  `src/bridge/create-projeto.ts`, atrás da mesma chave, também sem envio
+  real. A patente continua fora: a consulta `verifica_cadastrado` e o
+  formulário com `f_ctr=R` não foram observados.
 
 ## 12. Exportar pelo conector (LAT-22, 13/10/2026)
 

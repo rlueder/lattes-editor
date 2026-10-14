@@ -7,6 +7,7 @@ import { type Change, resolvePath } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import { BIOGRAPHIC_OPS_ENABLED, type BiographicOp, planBiographic } from './biographic.ts';
 import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
+import { type CreateItemOp, planCreateItem } from './create-items.ts';
 import { DELETE_ITEMS_ENABLED, type DeleteOp, planDelete } from './delete.ts';
 import { EDIT_ITEMS_ENABLED, type EventoOp, planEvento } from './edit-items.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
@@ -45,7 +46,14 @@ export interface IdiomaOp extends OpBase {
 }
 
 export type BridgeOp =
-  BiographicOp | CreateAtuacaoOp | DeleteOp | EventoOp | IdiomaOp | ResumoOp | VinculoOp;
+  | BiographicOp
+  | CreateAtuacaoOp
+  | CreateItemOp
+  | DeleteOp
+  | EventoOp
+  | IdiomaOp
+  | ResumoOp
+  | VinculoOp;
 
 /** Chaves das operações que ainda não foram testadas num Lattes real. */
 export interface PlanOptions {
@@ -157,6 +165,10 @@ export function planChange(
     const planned = planCreateAtuacao(change, el, label);
     return 'reason' in planned ? unsupported(change, label, planned.reason) : planned;
   }
+  // Formação e projeto (create-items.ts), com a mesma chave.
+  const created =
+    change.kind === 'novo' && createItems ? planCreateItem(change, chain, label) : undefined;
+  if (created) return 'reason' in created ? unsupported(change, label, created.reason) : created;
   // Exclusão: desligada até o teste no Lattes real (delete.ts).
   if (change.kind === 'removido') return planDelete(change, chain, label, deleteItems);
   if (change.kind !== 'alterado') {
