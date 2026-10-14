@@ -62,6 +62,9 @@ ao Lattes (`src/model/validate.ts`). Por cima dele ficam as listas que o
 próprio Lattes oferece nos formulários (país, idioma, natureza de evento),
 capturadas sem salvar nada: `src/schema/typed-choices.ts` e
 `src/schema/listas-lattes.json` (ver [`campos_tipados.md`](campos_tipados.md)).
+As listas grandes demais ou que dependem de uma escolha (áreas do
+conhecimento, agências, instituições, cursos) não vêm no código: a extensão as
+lê no Lattes, e o editor guarda uma cópia (`src/ui/live-lists.ts`).
 
 ## O que o app guarda
 
@@ -69,7 +72,7 @@ Tudo fica no IndexedDB do WebView (`src/model/store.ts`, com Dexie), cifrado
 com AES-GCM (`src/model/seal.ts`). Em claro ficam só as chaves de busca: datas,
 o identificador público do currículo e marcas como "manter". A chave é gerada no primeiro uso e mora no
 chaveiro do sistema (`src-tauri/src/chave.rs`); sem chaveiro, o app não guarda
-nada naquela sessão. São quatro tabelas:
+nada naquela sessão. São cinco tabelas:
 
 | Tabela     | O que guarda                                                                                                                             |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
@@ -77,8 +80,9 @@ nada naquela sessão. São quatro tabelas:
 | `history`  | O histórico de alterações: cada ponto com o XML e uma nota, os marcados para não sair da lista                                           |
 | `versions` | Cada exportação aberta, por currículo: a linha do tempo do Lattes                                                                        |
 | `sent`     | O registro do que o conector gravou no Lattes, com o antes e o depois de cada campo                                                      |
+| `lists`    | A última leitura das listas do Lattes feita pelo conector (áreas do conhecimento e agências), com a data (`src/model/list-cache.ts`)     |
 
-As três primeiras guardam XML serializado; a última guarda as operações do
+As três primeiras guardam XML serializado; `sent` guarda as operações do
 conector. As alterações a enviar não são guardadas: saem, a cada momento, da
 diferença entre a cópia de trabalho e a exportação carregada
 (`src/model/changes.ts`).
@@ -177,6 +181,13 @@ pelo `window.postMessage` da própria página, por um content script
   conector para a fila antes de gravar.
 - **Foto do currículo** (`src/bridge/photo.ts`): troca a foto pela tela de
   envio do próprio Lattes e confere depois.
+- **Listas do Lattes** (`src/bridge/lattes-lists.ts`): só com GET, nunca
+  grava. Lê a tabela de áreas do conhecimento (o vetor `areaDP` do menu, lido
+  como literal, sem `eval`) e a lista de agências de fomento quando o editor
+  liga e a cópia guardada passou de um dia; busca instituição
+  (`PRC_INST_FORM`) enquanto a pessoa digita; lê os cursos de uma instituição
+  (`prc_curso_form`) quando ela pede. A conferência do contrato confere que a
+  tabela de áreas e a lista de agências continuam lá.
 - **Importar dos itens novos** (`src/bridge/importar.ts`, LAT-50), desligado
   por `IMPORT_ENABLED`. Envia um arquivo só com os itens novos
   (`buildMinimalImportFile`, em `src/import-export/import-file.ts`), confere

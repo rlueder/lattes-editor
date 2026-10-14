@@ -43,7 +43,12 @@ pacote, confere a assinatura e reinicia.
 3. **Edite.** O menu lateral leva às seções, e <kbd>⌘K</kbd>
    (<kbd>Ctrl</kbd>+<kbd>K</kbd> fora do Mac) acha qualquer seção, grupo ou tipo
    de item. Os campos que no Lattes são listas (país, idioma, natureza e forma
-   de participação) são listas aqui também. Cada edição fica salva no app.
+   de participação) são listas aqui também. Com a extensão ligada, a área do
+   conhecimento vira a tabela de áreas do Lattes, e na formação acadêmica a
+   instituição sai da busca do Lattes, o curso da lista da instituição e a
+   agência de fomento da lista de agências. O app guarda uma cópia das áreas e
+   das agências; sem cópia e sem extensão, esses campos continuam texto livre.
+   Cada edição fica salva no app.
 4. **Envie ao Lattes.** O painel "Enviar ao Lattes" mostra cada alteração e
    como ela vai: produções novas pelo Importar do próprio Lattes, com o
    arquivo que o app gera; o resumo, os vínculos de atuação e a foto pela

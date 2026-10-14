@@ -31,6 +31,7 @@ import { CONSENT_KEY, hasConsent, isConsentCurrent } from './consent.ts';
 import { ownVersion, reloadForApp } from './dev-reload.ts';
 import { importRunning, runImport } from './import-run.ts';
 import {
+  answerListRequest,
   failedReport,
   type Identity,
   lattesTab,
@@ -183,6 +184,10 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     await sendEspelho(editor);
     return;
   }
+  // Listas do Lattes: só leituras, e nunca durante uma gravação (lattes-tab.ts).
+  const busy = async () => (await readState()).running || photoInFlight || importRunning();
+  const listReply = await answerListRequest(msg, busy);
+  if (listReply) return toEditor(editor, listReply);
   if (msg.type === 'pedir-curriculo') {
     await sendCurriculo(editor, msg.id);
     return;
@@ -210,6 +215,7 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     if (await runImport(msg, busy, (m) => toEditor(editor, m))) await sendSession(editor, true);
     return;
   }
+  if (msg.type !== 'enviar') return;
   const state = await readState();
   if (state.running) return;
   await writeState({

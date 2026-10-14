@@ -122,6 +122,8 @@ interface SentRow extends Partial<Pick<SentEntry, 'change' | 'op' | 'outcome' | 
 }
 
 class LattesDb extends Dexie {
+  /** As listas do Lattes lidas pelo conector (src/model/list-cache.ts). */
+  lists!: Table<{ name: string; readAt: number; sealed: Sealed }, string>;
   working!: Table<WorkingRow, 'current'>;
   history!: Table<HistoryRow, number>;
   sent!: Table<SentRow, number>;
@@ -141,6 +143,14 @@ class LattesDb extends Dexie {
     // cifrada, então não há o que migrar.
     this.version(3).stores({
       history: '++id, savedAt',
+      sent: '++id, lattesId, sentAt',
+      versions: '++id, lattesId, loadedAt',
+      working: 'id',
+    });
+    // Versão 4 só acrescenta as listas do Lattes (cifradas desde o início).
+    this.version(4).stores({
+      history: '++id, savedAt',
+      lists: 'name',
       sent: '++id, lattesId, sentAt',
       versions: '++id, lattesId, loadedAt',
       working: 'id',
@@ -267,11 +277,12 @@ export async function openStorage(k: CryptoKey): Promise<StorageStatus> {
 /** Chave perdida: apaga tudo o que não dá mais para ler e segue com a chave nova. */
 export async function resetStorage(): Promise<void> {
   if (!pendingKey) return;
-  await db.transaction('rw', [db.working, db.history, db.sent, db.versions], async () => {
+  await db.transaction('rw', [db.working, db.history, db.sent, db.versions, db.lists], async () => {
     await db.working.clear();
     await db.history.clear();
     await db.sent.clear();
     await db.versions.clear();
+    await db.lists.clear();
   });
   key = pendingKey;
   pendingKey = undefined;
@@ -536,3 +547,6 @@ export async function clearAll(): Promise<void> {
     await db.history.clear();
   });
 }
+
+/** A chave do banco nesta sessão, para as tabelas que vivem em outro módulo. */
+export const storageKey = (): CryptoKey | undefined => key;

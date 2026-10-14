@@ -69,7 +69,8 @@ salvar, 62 listas distintas e 38 controles com lista
 (`docs/lattes-listas/captura-2026-10-13.json`). As listas que só se preenchem
 depois de outra escolha (o tipo de participação, que depende da forma) vêm
 vazias na captura; as de evento foram lidas à mão. As que saem de uma janela
-de busca (área do conhecimento, instituição) não entram nesta captura.
+de busca (área do conhecimento, instituição) não entram nesta captura: o
+conector as lê no Lattes (ver "Listas lidas pelo conector", abaixo).
 
 O XML nem sempre guarda o texto que o combo mostra. Na exportação real do
 mantenedor:
@@ -141,3 +142,60 @@ Na leitura de 14/10/2026 as três listas batiam com as do editor: 243 países
 (o combo repete um), 152 idiomas e as 9 naturezas. O formulário de eventos
 pede o parâmetro `F_STA_DIVULGACAO_CIENTIFICA`, que é o do link "Novo" da
 lista de eventos; o nome que a captura de 13/10/2026 registrou para ele dá 404.
+
+A conferência também olha as fontes das listas lidas pelo conector, que não
+têm cópia no editor para comparar: a tabela `areaDP` no menu (sem pedido
+novo) e a lista de `prc_agencia`. Fonte que sumiu, ou que mudou de formato a
+ponto de não ser lida, deixa o relatório em "mudou".
+
+## Listas lidas pelo conector
+
+Quatro listas não cabem na captura de 13/10/2026. A tabela de áreas tem 1.358
+nós e só existe dentro do menu do Lattes; a de agências é uma página de links,
+não um combo; instituição e curso dependem do que se busca e da instituição
+escolhida. O mapa das quatro está em `lattes_internals.md`, seção 18. A
+extensão lê cada uma na sessão da pessoa, só com GET e sem salvar nada
+(`src/bridge/lattes-lists.ts`):
+
+| Lista                 | De onde vem                                         | Quando é lida                                     | Campos (na formação, salvo a área)                   |
+| --------------------- | --------------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------- |
+| Áreas do conhecimento | vetor `areaDP` do menu, lido como literal, sem eval | ao ligar o conector, se a cópia passou de um dia  | os quatro nomes das áreas das produções e de atuação |
+| Agências de fomento   | `prc_agencia`, links `atribuir('código','nome')`    | junto com as áreas                                | `NOME-AGENCIA` e `CODIGO-AGENCIA-FINANCIADORA`       |
+| Instituição           | `PRC_INST_FORM` com `F_CTR=C`, links `seleciona()`  | a cada busca, a partir de 3 letras                | `NOME-INSTITUICAO` e `CODIGO-INSTITUICAO`            |
+| Curso                 | combo `f_curso` de `prc_curso_form`                 | quando a pessoa pede, com a instituição escolhida | `NOME-CURSO`, `CODIGO-CURSO`, `CODIGO-CURSO-CAPES`   |
+
+Áreas e agências ficam guardadas na tabela `lists` do banco cifrado, com a
+data da leitura (`src/model/list-cache.ts`), e o editor usa essa cópia mesmo
+com o conector desligado. Instituição e curso não se guardam: cada busca vai ao
+Lattes. Sem cópia e sem conector, ou com uma extensão de antes da capacidade
+`listas-lattes`, os campos ficam como eram, texto livre (ou travados, quando já
+têm código).
+
+Como cada escolha vira XML (`src/ui/live-lists.ts`):
+
+- **Área.** Escolhe-se uma área, subárea ou especialidade; a grande área
+  sozinha não, como no Lattes. A escolha grava os quatro nomes juntos. A
+  grande área vai no valor do XSD tirado do nome ("Ciências Exatas e da Terra"
+  vira `CIENCIAS_EXATAS_E_DA_TERRA`, a forma das exportações), e "Outra" vira
+  `OUTROS`, o que é inferido. Os outros três levam o nome do nó, como a
+  exportação guarda ("Desenho Industrial"). Que os nomes da tabela batam com
+  os das exportações é inferido; a comparação ignora acento e caixa, e uma
+  combinação fora da tabela aparece "como está salva", com os campos ainda
+  editáveis à mão.
+- **Instituição.** O código vai sem a letra da busca (`V007900000004` vira
+  `007900000004`), como a exportação guarda o da atuação (seção 3 do mapa);
+  para a formação, inferido. Trocar por outra instituição limpa o curso, como
+  o `seleciona()` do Lattes faz.
+- **Curso.** A opção traz o nome com o código CAPES entre parênteses
+  ("Administração(33003025005P3)"). O nome vai para `NOME-CURSO`, o código sem
+  a letra para `CODIGO-CURSO` e o CAPES para `CODIGO-CURSO-CAPES`. As três
+  formas são inferidas do formulário, sem exportação que as mostre.
+- **Agência.** Código e nome como vêm da lista, e `FLAG-BOLSA="SIM"`, porque o
+  `agencia()` do formulário marca a bolsa. O formato do código no XML é
+  inferido.
+
+Ficam para depois: instituição e curso fora da formação (atuação, bancas,
+orientações, eventos), as instituições do doutorado sanduíche e da cotutela
+(`-DOUT` e `-OUTRA-DOUT` dependem da letra do código, que o XML não guarda), a
+agência das orientações (`NOME-DA-AGENCIA`) e o efeito do nível na busca de
+instituição (fora da formação vai o 4, o do teste de 14/10/2026).

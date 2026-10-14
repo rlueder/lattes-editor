@@ -40,6 +40,7 @@ import { ReferenceContext } from './reference-context.ts';
 import { buildReferenceIndex, type ReferenceIndex } from './reference-tables.ts';
 import { buildSections } from './sections.ts';
 import { SectionView } from './SectionView.tsx';
+import { ShellWithLists } from './ShellWithLists.tsx';
 import { Sidebar } from './Sidebar.tsx';
 import { statusStrip } from './status-strip.ts';
 import { StorageNotice } from './StorageNotice.tsx';
@@ -258,7 +259,7 @@ export function App() {
   const profile = profileOf(session.doc, session.meta.fileName, exportedOn);
 
   return (
-    <div className="shell">
+    <ShellWithLists features={bridge.features}>
       <Topbar
         ref={topbarRef}
         modified={modified}
@@ -402,7 +403,7 @@ export function App() {
       />
       {versions.dialog}
       {storageNotice}
-    </div>
+    </ShellWithLists>
   );
 }
 

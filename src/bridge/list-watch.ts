@@ -11,6 +11,7 @@
 import listas from '../schema/listas-lattes.json' with { type: 'json' };
 import { EVENT_NATURES } from '../schema/typed-choices.ts';
 import { decodeHtmlEntities, foldText } from './html-text.ts';
+import { agenciesPath, parseAgencies, parseAreaTree } from './lattes-lists.ts';
 
 export interface WatchedList {
   /** Nome do <select> no formulário do Lattes. */
@@ -99,6 +100,8 @@ export interface ListCheck {
   /** Opções que o editor oferece e o Lattes não tem mais. */
   removed: string[];
   status: ListStatus;
+  /** O que sumiu, quando não é um combo (as listas lidas ao vivo). */
+  what?: string;
 }
 
 interface ListPort {
@@ -115,7 +118,9 @@ const SHOWN = 5;
 
 /** Uma linha do relatório para uma lista que não está como o editor espera. */
 export function listText(check: ListCheck): string {
-  if (check.status === 'nao-encontrado') return `${check.label}: combo ${check.control} sumiu`;
+  if (check.status === 'nao-encontrado') {
+    return `${check.label}: ${check.what ?? `combo ${check.control}`} sumiu`;
+  }
   if (check.status === 'erro') {
     return `${check.label}: não deu para ler${check.detail ? ` (${check.detail})` : ''}`;
   }
@@ -179,5 +184,58 @@ export function unreadLists(detail: string, watched: WatchedList[] = WATCHED_LIS
     label: list.label,
     removed: [],
     status: 'erro',
+  }));
+}
+
+/**
+ * As listas que o conector lê ao vivo (lattes-lists.ts) não têm cópia no
+ * editor para comparar. O vigia confere que a fonte de cada uma continua no
+ * Lattes e no formato conhecido: a tabela de áreas no menu (sem pedido novo) e
+ * a lista de agências. A busca de instituição e a lista de cursos dependem do
+ * que se digita e da instituição, e ficam de fora.
+ */
+export const LIVE_SOURCES = [
+  { control: 'areaDP', label: 'Áreas do conhecimento', what: 'a tabela areaDP do menu' },
+  { control: 'atribuir', label: 'Agências de fomento', what: 'a lista de prc_agencia' },
+] as const;
+
+export async function checkSources(
+  port: ListPort,
+  code: string,
+  menu: string,
+): Promise<ListCheck[]> {
+  const [areas, agencies] = LIVE_SOURCES;
+  const base = (s: (typeof LIVE_SOURCES)[number]) => ({
+    added: [],
+    control: s.control,
+    label: s.label,
+    removed: [],
+    what: s.what,
+  });
+  const out: ListCheck[] = [
+    { ...base(areas), status: parseAreaTree(menu) ? 'ok' : 'nao-encontrado' },
+  ];
+  try {
+    const found = parseAgencies(await port.get(agenciesPath(code)));
+    out.push({ ...base(agencies), status: found.length ? 'ok' : 'nao-encontrado' });
+  } catch (err) {
+    if (port.isFatal?.(err)) throw err;
+    const detail =
+      err instanceof Error ? err.message.replaceAll(code, '[código]') : 'Falha inesperada';
+    out.push({ ...base(agencies), detail, status: 'erro' });
+  }
+  return out;
+}
+
+/** As fontes das listas ao vivo como não lidas, com o motivo. */
+export function unreadSources(detail: string): ListCheck[] {
+  return LIVE_SOURCES.map((s) => ({
+    added: [],
+    control: s.control,
+    detail,
+    label: s.label,
+    removed: [],
+    status: 'erro',
+    what: s.what,
   }));
 }

@@ -19,7 +19,13 @@ import { contractKind, type DeleteOp } from './delete.ts';
 import { editContract, eventoSample } from './edit-items.ts';
 import type { FormControl } from './form.ts';
 import { cvCodeFrom, findLinks, isLogonPage } from './lattes-html.ts';
-import { checkLists, type ListCheck, unreadLists } from './list-watch.ts';
+import {
+  checkLists,
+  checkSources,
+  type ListCheck,
+  unreadLists,
+  unreadSources,
+} from './list-watch.ts';
 import type { BridgeOp } from './plan.ts';
 
 // O texto do relatório mora em contract-report.ts; quem já importava daqui segue igual.
@@ -424,13 +430,18 @@ export async function checkContract(
     // As listas dos campos tipados (list-watch.ts), pelo código do currículo do
     // menu. Menu sem o código também é mudança do Lattes: as listas ficam como
     // não lidas, em vez de passar sem conferir.
+    // As fontes das listas lidas ao vivo (área, agência) entram junto.
     const code = cvCodeFrom(menu);
+    const listPort = {
+      get: (path: string) => getChecked(port, path),
+      isFatal: (err: unknown) => err instanceof Stop,
+    };
     const lists = code
-      ? await checkLists(
-          { get: (path) => getChecked(port, path), isFatal: (err) => err instanceof Stop },
-          code,
-        )
-      : unreadLists('O código do currículo não está no menu');
+      ? [...(await checkLists(listPort, code)), ...(await checkSources(listPort, code, menu))]
+      : [
+          ...unreadLists('O código do currículo não está no menu'),
+          ...unreadSources('O código do currículo não está no menu'),
+        ];
     const changed =
       forms.some((f) => f.drifts.length > 0) ||
       menuChecks.some((m) => !m.found) ||
