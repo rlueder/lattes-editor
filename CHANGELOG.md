@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.22.0](https://github.com/rlueder/lattes-editor/compare/v0.21.0...v0.22.0) (2026-10-14)
+
+### Novidades
+
+- revisão de interface e painel "Enviar ao Lattes" em abas ([#50](https://github.com/rlueder/lattes-editor/issues/50)) ([47c1528](https://github.com/rlueder/lattes-editor/commit/47c1528a2d838e60f415b8947a85a9e21dc75128))
+
 ## [0.21.0](https://github.com/rlueder/lattes-editor/compare/v0.20.1...v0.21.0) (2026-10-14)
 
 ### Novidades
