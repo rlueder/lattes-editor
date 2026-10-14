@@ -13,10 +13,13 @@
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { assertRendered, openTab, sleep, withHeadlessBrowser } from './headless.ts';
 
-const root = new URL('../', import.meta.url).pathname;
+// fileURLToPath, não .pathname: no Windows, o pathname vem como /D:/a/... e
+// vira D:\D:\a\... ao abrir o arquivo.
+const root = fileURLToPath(new URL('../', import.meta.url));
 const url = process.argv[2] ?? 'http://localhost:5173/';
 const fixture = join(root, 'fixtures/synthetic_full.xml');
 const outDir = join(root, 'docs/img');

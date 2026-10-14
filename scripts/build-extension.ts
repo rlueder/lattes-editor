@@ -9,12 +9,15 @@
 
 import { copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { build } from 'vite';
 
 import { DEFAULT_TOOLBAR_THEME, toolbarIconPaths } from '../extension/src/toolbar-icon.ts';
 
-const root = new URL('../', import.meta.url).pathname;
+// fileURLToPath, não .pathname: no Windows, o pathname vem como /D:/a/... e
+// vira D:\D:\a\... ao abrir o arquivo.
+const root = fileURLToPath(new URL('../', import.meta.url));
 // A loja recusa o pacote com "key" e dá o próprio ID na primeira publicação.
 const forStore = process.argv.includes('--loja');
 const devChannel = process.argv.includes('--canal-dev');
