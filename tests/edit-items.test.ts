@@ -9,6 +9,7 @@ import {
   LATTES_CONTRACT,
 } from '../src/bridge/contract.ts';
 import {
+  countryCode,
   countryName,
   EDIT_ITEMS_ENABLED,
   editContract,
@@ -23,6 +24,7 @@ import { sentEntry, undoOp } from '../src/bridge/sent-log.ts';
 import { splitByRoute } from '../src/import-export/send-routes.ts';
 import { diffDocuments, resolvePath } from '../src/model/changes.ts';
 import { getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
+import listas from '../src/schema/listas-lattes.json' with { type: 'json' };
 import { readHtmlForm } from './helpers/html-form.ts';
 
 // ---------------------------------------------------------------- currículo
@@ -438,6 +440,17 @@ describe('alteração de evento: plano', () => {
     expect(planEvento(change, [root], 'x')).toBeUndefined();
     expect(planEvento(change, [], 'x')).toBeUndefined();
   });
+
+  it('só planeja alteração: item novo ou removido não vira gravação', () => {
+    const original = parseXml(XML).root;
+    const working = parseXml(XML).root;
+    setAttr(basics(working), 'TITULO', 'Novo');
+    const [change] = diffDocuments(original, working);
+    const chain = resolvePath(working, change!.path);
+    expect(planEvento(change!, chain, 'x')).toMatchObject({ kind: 'evento' });
+    expect(planEvento({ ...change!, kind: 'novo' }, chain, 'x')).toBeUndefined();
+    expect(planEvento({ ...change!, kind: 'removido' }, chain, 'x')).toBeUndefined();
+  });
 });
 
 const opFor = (edit: (root: XElement) => void): EventoOp => onlyOp(edit);
@@ -661,6 +674,17 @@ describe('alteração de evento: rótulos e regras do envio', () => {
     ]);
     expect(countryName('EUA')).toBe('Estados Unidos');
     expect(countryName('XXX')).toBeUndefined();
+  });
+
+  it('todo país da captura com um código só tem código, sem diferença de acento e caixa', () => {
+    const names = Object.entries(listas.codigosDosPaises);
+    expect(names).toHaveLength(242);
+    for (const [name, code] of names) expect(countryCode(name)).toBe(code);
+    expect(countryCode('África do Sul')).toBe('AFS');
+    expect(countryCode('alemanha')).toBe('RFA');
+    // Dois códigos no Lattes (RTC e TCH): fica sem código, e o país vai à mão.
+    expect(countryCode('República Tcheca')).toBeUndefined();
+    expect(countryCode('Atlântida')).toBeUndefined();
   });
 
   it('manda F_TPO vazio só no evento de ouvinte, quando a lista veio vazia', () => {

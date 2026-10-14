@@ -101,7 +101,16 @@ const COUNTRY_NAMES = new Map<string, string>();
   for (const [name, codes] of folded) if (codes.length === 1) COUNTRY_CODES.set(name, codes[0]!);
 }
 
-const country: Mapper = (v) => COUNTRY_CODES.get(foldText(v));
+/**
+ * O código do f_pais para um nome de país, sem diferença de acento e caixa
+ * ("África do Sul" é "África Do Sul", AFS); undefined se o Lattes não tem o
+ * nome ou tem mais de um código para ele.
+ */
+export function countryCode(name: string): string | undefined {
+  return COUNTRY_CODES.get(foldText(name));
+}
+
+const country: Mapper = countryCode;
 
 /** O nome do país de um código do f_pais, para mostrar a quem confere. */
 export function countryName(code: string): string | undefined {
@@ -150,6 +159,8 @@ type Planned = EventoOp | { reason: string };
  * alterado (resolvePath).
  */
 export function planEvento(change: Change, chain: XElement[], label: string): Planned | undefined {
+  // Só alteração: item novo vai pelo Importar, e a exclusão tem caminho próprio.
+  if (change.kind !== 'alterado') return undefined;
   const el = chain.at(-1);
   const item = chain.at(-2);
   if (!el || !item || !(item.name in EVENT_CODES)) return undefined;
