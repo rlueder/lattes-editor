@@ -185,8 +185,9 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     await sendEspelho(editor);
     return;
   }
-  // Listas do Lattes: só leituras, mesmo com a fila rodando (lattes-tab.ts).
-  const listReply = await answerListRequest(msg);
+  // Listas do Lattes: só leituras, e nunca durante uma gravação (lattes-tab.ts).
+  const busy = async () => (await readState()).running || photoInFlight;
+  const listReply = await answerListRequest(msg, busy);
   if (listReply) return toEditor(editor, listReply);
   if (msg.type === 'pedir-curriculo') {
     await sendCurriculo(editor, msg.id);

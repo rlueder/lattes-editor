@@ -34,13 +34,15 @@ export function useLattesLists(features: readonly string[]): LattesLists {
   const fullCodes = useRef(new Map<string, string>());
   const courseCache = useRef(new Map<string, Promise<Course[]>>());
 
+  // A cópia guardada é lida antes de decidir se precisa de leitura nova: sem
+  // isso, um conector que liga antes de o banco responder pediria as listas
+  // mesmo com a cópia do dia.
+  const [cacheLoaded, setCacheLoaded] = useState(false);
   useEffect(() => {
-    void loadCachedList<AreaNode[]>('areas')
-      .then((c) => c && setAreas(c))
-      .catch(() => undefined);
-    void loadCachedList<Agency[]>('agencias')
-      .then((c) => c && setAgencies(c))
-      .catch(() => undefined);
+    void Promise.allSettled([
+      loadCachedList<AreaNode[]>('areas').then((c) => c && setAreas(c)),
+      loadCachedList<Agency[]>('agencias').then((c) => c && setAgencies(c)),
+    ]).then(() => setCacheLoaded(true));
   }, []);
 
   useEffect(
@@ -76,7 +78,7 @@ export function useLattesLists(features: readonly string[]): LattesLists {
   const stale =
     needsRefresh(areas?.readAt, Date.now()) || needsRefresh(agencies?.readAt, Date.now());
   useEffect(() => {
-    if (!live || !stale) return;
+    if (!live || !cacheLoaded || !stale) return;
     let alive = true;
     void ask<Extract<Reply, { type: 'listas' }>>({ id: nextId('listas'), type: 'pedir-listas' })
       .then((reply) => {
@@ -96,9 +98,10 @@ export function useLattesLists(features: readonly string[]): LattesLists {
     return () => {
       alive = false;
     };
-    // Uma vez por ligação: a resposta atualiza a cópia e tira o "stale".
+    // Uma vez por ligação, depois de ler a cópia: a resposta atualiza a cópia
+    // e tira o "stale".
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [live, ask]);
+  }, [live, ask, cacheLoaded]);
 
   // As funções de busca leem o estado da ligação por referência: uma
   // identidade só, para a busca em andamento não recomeçar quando a cópia das

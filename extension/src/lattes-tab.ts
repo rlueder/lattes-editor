@@ -118,7 +118,19 @@ async function readListReply<T extends { error?: string }>(
  * tabela de áreas e as agências, a busca de instituição e os cursos. Outra
  * mensagem: undefined, e o service worker segue com ela.
  */
-export async function answerListRequest(msg: EditorMessage): Promise<BridgeMessage | undefined> {
+export async function answerListRequest(
+  msg: EditorMessage,
+  busy: () => Promise<boolean>,
+): Promise<BridgeMessage | undefined> {
+  const isList = ['pedir-listas', 'buscar-instituicao', 'pedir-cursos'].includes(msg.type);
+  // Nada de leitura no meio de uma gravação: os formulários do Lattes seguem
+  // a sessão, e um GET intercalado poderia atrapalhar a operação em curso.
+  if (isList && (await busy())) {
+    const error = 'O conector está gravando no Lattes; tente de novo quando terminar.';
+    const id = (msg as { id: string }).id;
+    if (msg.type === 'pedir-listas') return { error, id, type: 'listas' };
+    return { error, id, type: msg.type === 'pedir-cursos' ? 'cursos' : 'instituicoes' };
+  }
   if (msg.type === 'pedir-listas') {
     return { ...(await readListReply<Reply<'listas'>>('listas')), id: msg.id, type: 'listas' };
   }
