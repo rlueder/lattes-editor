@@ -324,6 +324,25 @@ aba aberta pelo próprio usuário, a sessão aguentou todas as leituras deste
 documento. **Observado.** Abrir um segundo editor do mesmo currículo parece
 derrubar o primeiro. **Inferido.**
 
+A aba não percebe que a sessão venceu: o menu já carregado continua na tela, e
+só o próximo pedido mostra que acabou. Com a sessão vencida, cada página do
+`cvlattesweb` (`pkg_idioma.lista`, `pkg_impcv.get_arquivo`,
+`prc_midias_sociais`, entre outras) responde só com um script que redireciona
+ao login, sem formulário nenhum. **Observado** em 14/10/2026:
+
+```html
+<script>
+  location = 'pkg_sec.logon?f_cod=ini';
+</script>
+```
+
+O `fetch` da extensão não roda esse script, então quem lê a resposta precisa
+reconhecer o redirecionamento no HTML (`isLogonPage`, em
+`src/bridge/lattes-html.ts`). Sem cookie nenhum, o `PKG_MENU.menu` responde
+outra coisa: um `alert("Problemas na autenticação")` antes de mandar para
+`lattes.cnpq.br`. **Observado**, com um user-agent de navegador; com o do
+`curl`, o Lattes devolve uma página dizendo que o navegador não é suportado.
+
 ## 8. O que ainda não se sabe
 
 - Se o servidor revalida o que `check()` valida.

@@ -33,9 +33,48 @@ export function findLinks(html: string, proc: string): LattesLink[] {
   return out;
 }
 
-/** A sessão caiu: o Lattes devolve a tela de login (pkg_sec.logon). */
+/** Atribuição, replace() ou assign() de location apontando para pkg_sec.logon. */
+const LOGON_REDIRECT =
+  /location(?:\.href)?\s*=\s*["'][^"']*pkg_sec\.logon|location\.(?:replace|assign)\(\s*["'][^"']*pkg_sec\.logon/i;
+
+/** Tags que uma página só de redirecionamento pode ter. Qualquer outra é conteúdo. */
+const STUB_TAGS = new Set(['body', 'br', 'head', 'html', 'link', 'meta']);
+
+/**
+ * Página que só redireciona: tirando scripts, estilos, título, noscript e
+ * comentários (fechados ou não, para uma resposta truncada), não sobra texto
+ * nem elemento além da estrutura do documento. Uma página de conteúdo com um
+ * script que leva ao login (um botão, um tempo esgotado) tem texto, formulário,
+ * frame ou imagem e não conta.
+ */
+function isRedirectStub(html: string): boolean {
+  const rest = html
+    .replace(/<(script|style|title|noscript)\b[^>]*>[\s\S]*?(?:<\/\1\s*>|$)/gi, '')
+    .replace(/<!--[\s\S]*?(?:-->|$)/g, '');
+  for (const m of rest.matchAll(/<\/?([a-z][\w-]*)/gi)) {
+    if (!STUB_TAGS.has(m[1]!.toLowerCase())) return false;
+  }
+  const text = rest.replace(/<[^>]*>/g, '').replace(/&(?:nbsp|#160|#xa0);/gi, '');
+  return text.trim() === '';
+}
+
+/**
+ * A sessão caiu: o Lattes devolve a tela de login (pkg_sec.logon). Com a
+ * sessão vencida, cada página vem como um script que só redireciona
+ * (<SCRIPT>location="pkg_sec.logon?f_cod=ini"</SCRIPT>, visto em 14/10/2026); o
+ * fetch não roda o script, então o redirecionamento precisa ser lido no HTML.
+ * Só a forma com atribuição foi vista; replace() e assign() entram por
+ * precaução.
+ */
 export function isLogonPage(html: string, url = ''): boolean {
-  return /pkg_sec\.logon/i.test(url) || /<form[^>]*pkg_sec\.logon/i.test(html);
+  return (
+    /pkg_sec\.logon/i.test(url) ||
+    /<form[^>]*pkg_sec\.logon/i.test(html) ||
+    // Sem cookie de sessão, o menu responde com este alerta antes de mandar
+    // para lattes.cnpq.br (visto em 14/10/2026).
+    /alert\(\s*["']Problemas na autentica/i.test(html) ||
+    (LOGON_REDIRECT.test(html) && isRedirectStub(html))
+  );
 }
 
 /**

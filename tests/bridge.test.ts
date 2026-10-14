@@ -326,6 +326,47 @@ describe('conector: HTML do Lattes', () => {
     expect(isLogonPage('<form action="pkg_sec.logon" method="post">')).toBe(true);
     expect(isLogonPage('<p>ok</p>', 'https://wwws.cnpq.br/cvlattesweb/pkg_sec.logon')).toBe(true);
     expect(isLogonPage('<a href="x">pkg_sec.logon</a>')).toBe(false);
+    // Sem cookie de sessão, o menu abre com este alerta (14/10/2026).
+    expect(
+      isLogonPage(
+        '<script>alert("Problemas na autenticação");</script>\nerro ao recuperar rh/cookie',
+      ),
+    ).toBe(true);
+    // Sessão vencida: a página é só um script que redireciona. HTML como veio do
+    // Lattes em 14/10/2026, sem sessão válida.
+    const stub = [
+      '<html><body>',
+      '<br><br><BR>',
+      '<HTML><HEAD><TITLE></TITLE>',
+      '<META HTTP-EQUIV="Pragma" CONTENT="no-cache">',
+      '</HEAD>',
+      '<BODY>',
+      '<SCRIPT>location="pkg_sec.logon?f_cod=ini"</SCRIPT>',
+      '</BODY>',
+      '</HTML>',
+      '</body></html>',
+    ].join('\n');
+    expect(isLogonPage(stub)).toBe(true);
+    expect(isLogonPage("<script>window.location.href = 'pkg_sec.logon'</script>")).toBe(true);
+    expect(isLogonPage("<!-- x --><script>location.replace('pkg_sec.logon')</script>")).toBe(true);
+    // Página com conteúdo e um script que leva ao login não é sessão caída.
+    expect(
+      isLogonPage(
+        '<h1>Atuação</h1><script>function sair() { location = "pkg_sec.logon?f_cod=ini"; }</script>',
+      ),
+    ).toBe(false);
+    // Título, noscript, &#160; e script truncado não fazem a página virar conteúdo.
+    expect(
+      isLogonPage(
+        '<title>Lattes</title><noscript>Ative o JavaScript</noscript>&#160;<script>location="pkg_sec.logon"',
+      ),
+    ).toBe(true);
+    // Frame ou formulário sem texto, com um script que leva ao login, é conteúdo.
+    expect(
+      isLogonPage('<iframe src="pkg_menu.menu"></iframe><script>location="pkg_sec.logon"</script>'),
+    ).toBe(false);
+    // Script que só menciona pkg_sec.logon, sem redirecionar.
+    expect(isLogonPage('<script>var proximo = "pkg_sec.logon";</script>')).toBe(false);
     expect(cvCodeFrom('PKG_MENU.menu?f_cod=FE387C4DFE584C19BD79D189C7A9DF99')).toBeUndefined();
     expect(cvCodeFrom('pkg_ativ.lista?f_cod=K1234567A8&quot;')).toBe('K1234567A8');
   });
