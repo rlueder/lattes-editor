@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Modal } from './Modal.tsx';
 import { type PaletteEntry, searchPalette } from './palette-search.ts';
+import { ClearButton } from './primitives/ClearButton.tsx';
+import { effectiveQuery } from './query.ts';
 
 interface Props {
   entries: PaletteEntry[];
@@ -18,7 +20,7 @@ export function CommandPalette({ entries, onClose, onSelect, open }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const results = useMemo(() => searchPalette(entries, query), [entries, query]);
-  const searching = query.trim() !== '';
+  const searching = effectiveQuery(query) !== '';
 
   useEffect(() => {
     if (!open) return;
@@ -76,6 +78,7 @@ export function CommandPalette({ entries, onClose, onSelect, open }: Props) {
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={onKeyDown}
       />
+      <ClearButton input={inputRef} value={query} onClear={() => setQuery('')} />
       <ul ref={listRef} className="palette-results" id="palette-results" role="listbox">
         {results.length === 0 && <li className="palette-empty">Nenhuma seção encontrada.</li>}
         {results.map((entry, i) => (

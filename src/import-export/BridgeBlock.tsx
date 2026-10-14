@@ -1,4 +1,4 @@
-// Envio pela extensão, dentro de "Levar ao Lattes". O próprio botão mostra o
+// Envio pela extensão, dentro de "Enviar ao Lattes". O próprio botão mostra o
 // estado: enviar, parar enquanto a fila corre, e conferido (verde, com o
 // visto) quando tudo foi gravado e lido de volta. O que foi conferido sai da
 // lista de alterações, porque o Lattes já está igual à cópia de trabalho.

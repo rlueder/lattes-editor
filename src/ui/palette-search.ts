@@ -2,6 +2,7 @@
 
 import { FORM_SPECS } from '../forms/specs.ts';
 import { fold } from '../labels/labels.ts';
+import { effectiveQuery } from './query.ts';
 import { countItems, type Section } from './sections.ts';
 
 export interface PaletteEntry {
@@ -49,7 +50,7 @@ function score(text: string, query: string): number {
 }
 
 export function searchPalette(entries: PaletteEntry[], query: string): PaletteEntry[] {
-  const q = fold(query.trim());
+  const q = fold(effectiveQuery(query));
   if (!q) return entries;
   return entries
     .map((e, index) => {
@@ -74,9 +75,13 @@ const action = (id: string, label: string, context: string): PaletteEntry => ({
 /** Ações do ⌘K: criar itens dos tipos mais usados, gerar a importação e o diagnóstico. */
 export function paletteActions(): PaletteEntry[] {
   return [
-    ...FORM_SPECS.map((f) => action(`novo:${f.itemName}`, f.title, 'Novo')),
-    action('novo', 'Outro tipo de item…', 'Novo'),
-    action('exportar', 'Levar ao Lattes (importar e alterações)', ''),
+    // Título do grupo (abre a escolha de todos os tipos), com os tipos mais
+    // usados embaixo, em ordem alfabética.
+    action('novo', 'Novo item', ''),
+    ...[...FORM_SPECS]
+      .sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'))
+      .map((f) => action(`novo:${f.itemName}`, f.title, 'Novo item')),
+    action('exportar', 'Enviar ao Lattes (importar e alterações)', ''),
     action('diagnostico', 'Diagnóstico do currículo', ''),
     action('versoes', 'Versões do Lattes (o que mudou entre exportações)', ''),
   ];

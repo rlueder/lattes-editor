@@ -68,7 +68,7 @@ O conector liga o LattesEditor, o editor gratuito e de código aberto do Curríc
 
 Como funciona:
 1. Com o Lattes aberto numa aba do navegador, o LattesEditor abre o seu currículo pelo conector, sem baixar nem escolher arquivo.
-2. Depois de editar, abra "Levar ao Lattes" no editor e clique em "Aplicar" no painel do conector.
+2. Depois de editar, abra "Enviar ao Lattes" no editor e clique em "Aplicar" no painel do conector.
 3. Cada alteração é gravada na sua sessão, lida de volta e conferida antes da próxima. Se algo não bater, a fila para.
 
 Hoje o conector grava o resumo, os idiomas e os vínculos de atuação. O resto você leva pelo Importar do próprio Lattes, com o arquivo que o editor gera.

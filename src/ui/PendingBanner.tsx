@@ -26,7 +26,7 @@ export function PendingBanner({
     <div className="pending-banner" role="status">
       <span className="pending-text">{pendingMessage(changes, news)}</span>
       <button className="pending-open" type="button" onClick={onOpen}>
-        <UploadIcon /> Levar ao Lattes
+        <UploadIcon /> Enviar ao Lattes
       </button>
       <Tip label="Esconder até mudar">
         <button

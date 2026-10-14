@@ -108,6 +108,51 @@ Repo-specific:
 - The build must work from `file://`: `vite.config.ts` inlines the bundle
   into `index.html`. Do not introduce code splitting or external assets.
 
+## Animation and transitions
+
+Adapted from the precisa-saude web app (`apps/web/AGENTS.md`, "Animation Best
+Practices"). This repo has plain CSS and React, no Tailwind or Framer Motion,
+so only the parts that apply to CSS transitions and keyframes are kept.
+
+### Easing
+
+Use custom curves for natural motion:
+
+```css
+/* ease-out: elements entering or leaving */
+--ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
+--ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+
+/* ease-in-out: elements moving within the screen */
+--ease-in-out-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
+--ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
+```
+
+Avoid `ease-in`: it makes the UI feel slow.
+
+### Duration and timing
+
+- Hover transitions: `transition: <property> 200ms ease` for `color`,
+  `background-color`, `border-color` and `opacity`.
+- Keep it fast: nothing over 1s unless it illustrates something.
+- Origin-aware: animate from the trigger (a menu or popover grows from the
+  button that opened it).
+
+### Performance
+
+- Animate `opacity` and `transform`. Avoid `top`, `left`, `width`, `height`;
+  use `transform` instead.
+- Keep blur at 20px or less.
+- `will-change` sparingly, only for `transform`, `opacity`, `clip-path` and
+  `filter`.
+
+### Reduced motion
+
+Every transition or animation added to `src/ui/styles.css` or the extension
+panel needs a `@media (prefers-reduced-motion: reduce)` rule that removes it
+or replaces it with an instant change. The existing blocks in `styles.css`
+show the pattern.
+
 ## Language and writing
 
 - Identifiers in English. UI text, code comments, commit messages and PR

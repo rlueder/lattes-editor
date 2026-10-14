@@ -1,5 +1,5 @@
 // Agrupa as mudanças por seção do Lattes e dá a cada uma o item a que
-// pertence, para a lista "Alterações a levar ao Lattes".
+// pertence, para a lista "Alterações a enviar ao Lattes".
 
 import { type Change, resolvePath } from '../model/changes.ts';
 import type { XElement } from '../model/xml.ts';

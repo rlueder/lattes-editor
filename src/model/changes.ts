@@ -1,4 +1,4 @@
-// "Alterações a levar ao Lattes" (guia, marco 2): tudo o que difere entre a
+// "Alterações a enviar ao Lattes" (guia, marco 2): tudo o que difere entre a
 // exportação carregada e a cópia de trabalho e que o Importar não leva.
 //
 // O Importar só insere itens de produção novos. Mudanças em seções

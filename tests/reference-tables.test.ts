@@ -87,14 +87,15 @@ describe('buildReferenceIndex', () => {
 describe('institutionView', () => {
   const view = institutionView(index);
 
-  it('agrupa por país, maiores primeiro, "Sem país" no fim; mais usadas antes', () => {
+  it('agrupa por país, maiores primeiro, "Sem país" no fim; em ordem alfabética', () => {
     const groups = view.groups(institutions);
     expect(groups.map((g) => [g.label, g.items.length])).toEqual([
       ['Brasil', 2],
       ['EUA', 1],
       ['Sem país', 1],
     ]);
-    expect(groups[0]!.items.map((el) => view.card(el).title)).toEqual(['PUC', 'AA']);
+    // Em ordem alfabética mesmo com usos diferentes (PUC é mais usada que AA).
+    expect(groups[0]!.items.map((el) => view.card(el).title)).toEqual(['AA', 'PUC']);
   });
 
   it('cartão: sigla no título, nome completo, UF e marcadores no subtítulo', () => {

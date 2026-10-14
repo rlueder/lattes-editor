@@ -9,6 +9,7 @@ import { NewItemPicker } from '../forms/NewItemPicker.tsx';
 import { ProductionForm } from '../forms/ProductionForm.tsx';
 import { type Session, useProduction } from '../forms/use-production.ts';
 import { ExportPanel } from '../import-export/ExportPanel.tsx';
+import { requestTab } from '../import-export/send-routes.ts';
 import { encodeCv, loadCv, maxSequenciaProducao } from '../model/document.ts';
 import { importableTypes } from '../model/production.ts';
 import {
@@ -27,7 +28,7 @@ import { lattesSchema } from '../schema/lattes.ts';
 import { CommandPalette } from './CommandPalette.tsx';
 import { HistoryDialog, ReloadConfirm } from './dialogs.tsx';
 import { EditorContext } from './editor-context.ts';
-import { type HashRoute, parseHash, writeHash } from './hash-route.ts';
+import { parseHash } from './hash-route.ts';
 import { connectionOf, noticesFor } from './notifications.ts';
 import { paletteActions, paletteEntries, type PaletteEntry } from './palette-search.ts';
 import { PendingBanner } from './PendingBanner.tsx';
@@ -45,6 +46,7 @@ import { useBridge } from './use-bridge.ts';
 import { useChanges } from './use-changes.ts';
 import { useHistoryDialog } from './use-history-dialog.ts';
 import { useLattesOpen } from './use-lattes-open.ts';
+import { useNavigate } from './use-navigate.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
 import { useTopbarHeight } from './use-topbar-height.ts';
 import { useUpdates } from './use-updates.ts';
@@ -145,12 +147,7 @@ export function App() {
   const print = usePrint(session !== null);
 
   /** Vai para a seção (e o grupo ou ano) e mantém a URL legível em sincronia. */
-  const navigate = useCallback((route: HashRoute, write = true) => {
-    setSectionId(route.sectionId);
-    pendingAnchor.current = route.anchor ?? null;
-    if (!route.anchor) window.scrollTo({ top: 0 });
-    if (write) writeHash(route);
-  }, []);
+  const navigate = useNavigate(sectionId, setSectionId, pendingAnchor);
   const versions = useVersions(session?.doc.root, navigate);
 
   // Um link "#atuacao/atuacao-profissional/2020", aberto ou editado à mão, leva direto lá.
@@ -279,8 +276,8 @@ export function App() {
         onShowEmpty={setShowEmpty}
         onStripOpen={(kind) => {
           if (kind === 'pendencia-desconhecida') return setDiagnosisOpen(true);
+          if (kind === 'no-lattes') requestTab('enviado');
           openExport();
-          if (kind === 'no-lattes') scrollToSent();
         }}
         onTheme={setTheme}
       />
@@ -396,13 +393,6 @@ export function App() {
       {storageNotice}
     </div>
   );
-}
-
-/** Rola até "Enviado ao Lattes" quando ele aparecer: o painel abre e a lista carrega depois. */
-function scrollToSent(frames = 30): void {
-  const el = document.getElementById('enviado-ao-lattes');
-  if (el) el.scrollIntoView({ block: 'start' });
-  else if (frames > 0) requestAnimationFrame(() => scrollToSent(frames - 1));
 }
 
 /** Conta, dentro de alguns elementos, quantos dos itens pendentes aparecem. */

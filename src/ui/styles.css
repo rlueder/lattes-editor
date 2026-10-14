@@ -1,6 +1,13 @@
 @import './fonts/fonts.css';
 
 :root {
+  /* Movimento (AGENTS.md, "Animation and transitions"): saída suave, curto. */
+  --ease-out: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-in-out: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --dur-fast: 150ms;
+  --dur: 200ms;
+  --dur-slow: 250ms;
   --bg: #fbfaf8;
   --surface: #ffffff;
   --surface-2: #f3f1ed;
@@ -505,7 +512,7 @@ details > summary {
 details > summary::before {
   content: '▸';
   color: var(--muted);
-  transition: transform 0.15s;
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 
 details[open] > summary::before {
@@ -835,7 +842,7 @@ details.card > summary {
   flex: 0 0 auto;
   color: var(--muted);
   transform: rotate(-90deg);
-  transition: transform 0.12s;
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 
 .usage-group-toggle[aria-expanded='true'] .icon-svg {
@@ -1412,12 +1419,7 @@ a.menu-item.notice {
   display: flex;
   align-items: flex-start;
   padding: 8px;
-  border-left: 3px solid transparent;
   border-radius: 6px;
-}
-
-.notice.aviso {
-  border-left-color: var(--warn-text);
 }
 
 .notice-body {
@@ -1426,8 +1428,15 @@ a.menu-item.notice {
 }
 
 .notice-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
   font-weight: 550;
+}
+
+.notice.aviso .notice-title {
+  color: var(--warn-text);
 }
 
 .notice-text {
@@ -1469,7 +1478,7 @@ a.menu-item.notice {
 
 .field .copy-btn {
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-fast) var(--ease-out);
 }
 
 .field:hover .copy-btn,
@@ -1482,7 +1491,7 @@ a.menu-item.notice {
   visibility: hidden;
 }
 
-/* Levar ao Lattes */
+/* Enviar ao Lattes */
 
 .modal.export {
   top: 6vh;
@@ -1731,7 +1740,7 @@ a.menu-item.notice {
   font-size: 13px;
 }
 
-/* Levar ao Lattes */
+/* Enviar ao Lattes */
 
 .panel-section + .panel-section {
   margin-top: 22px;
@@ -2033,7 +2042,7 @@ a.menu-item.notice {
   border-radius: 999px;
   background: var(--border);
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background-color var(--dur-fast) var(--ease-out);
 }
 
 .switch[data-checked] {
@@ -2051,7 +2060,7 @@ a.menu-item.notice {
   border-radius: 50%;
   background: var(--surface);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
-  transition: transform 0.15s;
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 
 .switch-thumb[data-checked] {
@@ -2323,7 +2332,7 @@ a.menu-item.notice {
 
 .picker-more .icon-svg {
   transform: rotate(-90deg);
-  transition: transform 0.15s;
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 
 .picker-more[aria-expanded='true'] .icon-svg {
@@ -2556,9 +2565,6 @@ button.primary:hover {
    borda no topo, expandir e "Criar outro". */
 .modal.form-modal {
   width: min(720px, calc(100% - 32px));
-  transition:
-    width 0.15s,
-    top 0.15s;
 }
 
 .modal.form-modal.expanded {
@@ -2961,16 +2967,6 @@ details > .element {
   object-fit: cover;
 }
 
-.modal.photo-dialog {
-  width: min(520px, calc(100% - 32px));
-}
-
-.photo-steps {
-  margin: 0 0 14px;
-  padding-left: 20px;
-  line-height: 1.6;
-}
-
 /* Assinatura da marca (brand/construction/logo.svg): Lattes em 700 e Editor
    em 400, IBM Plex Sans sem ajuste de espaçamento, as duas palavras no
    violeta da marca. No escuro, a assinatura fica branca. */
@@ -3211,7 +3207,7 @@ body {
   padding-bottom: 8vh;
 }
 
-/* Envio pela extensão do conector, em "Levar ao Lattes". */
+/* Envio pela extensão do conector, em "Enviar ao Lattes". */
 .bridge-block {
   margin: 0 0 14px;
   padding: 12px 14px;
@@ -3313,7 +3309,7 @@ body {
    clareia o fundo. */
 .sidebar li > button {
   border-radius: 6px;
-  transition: background-color 0.12s;
+  transition: background-color var(--dur-fast) var(--ease-out);
 }
 
 .sidebar li > button:hover:not(.active) {
@@ -3434,8 +3430,8 @@ body {
   opacity: 0;
   transform: translateY(-8px);
   transition:
-    opacity 0.15s,
-    transform 0.15s;
+    opacity var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
 }
 
 .sticky-title.visible .sticky-title-bar {
@@ -3492,7 +3488,7 @@ body {
 
 .group details > summary {
   border-radius: 6px;
-  transition: background-color 0.12s;
+  transition: background-color var(--dur-fast) var(--ease-out);
 }
 
 .group details > summary:hover {
@@ -3667,7 +3663,7 @@ details > summary::-webkit-details-marker {
   background: transparent;
   color: var(--muted);
   opacity: 0;
-  transition: opacity 0.12s;
+  transition: opacity var(--dur-fast) var(--ease-out);
 }
 
 .profile .copy-btn .icon-svg {
@@ -3764,7 +3760,6 @@ details > summary::-webkit-details-marker {
 .section-panel {
   top: calc(var(--topbar-h) + var(--section-bar-h, 0px) + 20px);
   max-height: calc(100vh - var(--topbar-h) - var(--section-bar-h, 0px) - 40px);
-  transition: top 0.15s;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4388,7 +4383,7 @@ button.primary:hover:not(:disabled) {
   border-radius: 6px;
   background: #fff;
   cursor: pointer;
-  transition: border-color 0.12s;
+  transition: border-color var(--dur-fast) var(--ease-out);
 }
 
 .profile-qr svg {
@@ -4704,8 +4699,8 @@ button.primary:hover:not(:disabled) {
 /* Arquivo arrastado sobre a janela: o painel principal acende. */
 .welcome-shell .content {
   transition:
-    border-color 120ms ease,
-    background-color 120ms ease;
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
 }
 
 .welcome-shell.over .content {
@@ -4732,37 +4727,7 @@ button.primary:hover:not(:disabled) {
   align-self: flex-start;
 }
 
-.avatar-edit {
-  position: absolute;
-  right: 2px;
-  bottom: 2px;
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 2px solid var(--bg);
-  border-radius: 50%;
-  background: var(--surface-2);
-  color: var(--text);
-  opacity: 0;
-  transition: opacity 120ms ease;
-}
-
-.avatar-wrap:hover .avatar-edit,
-.avatar-edit:focus-visible {
-  opacity: 1;
-}
-
-.avatar-edit:hover {
-  background: var(--accent);
-  color: var(--accent-contrast);
-}
-
 @media (hover: none) {
-  .avatar-edit {
-    opacity: 1;
-  }
 }
 
 /* Botões com texto têm uma altura só, onde quer que estejam: estado vazio,
@@ -4828,7 +4793,7 @@ button.primary:hover:not(:disabled) {
 }
 
 /* Contagem ao lado de um título ou botão (Todos os tipos, seções do painel
-   Levar ao Lattes): o mesmo selo do menu lateral. */
+   Enviar ao Lattes): o mesmo selo do menu lateral. */
 .picker-more .count,
 .panel-section-head .count,
 .usage-group-toggle .count {
@@ -4874,7 +4839,7 @@ button.primary:hover:not(:disabled) {
     center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 6 6 6-6 6'/%3E%3C/svg%3E")
     center / contain no-repeat;
-  transition: transform 0.12s;
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 
 .group details.item[open] > summary .card-main::before {
@@ -5071,8 +5036,8 @@ button.primary:hover:not(:disabled) {
   border: 3px solid var(--divider);
   border-radius: 50%;
   transition:
-    transform 0.15s ease,
-    border-color 0.15s ease;
+    transform var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
 }
 
 .profile-top .profile-qr:hover,
@@ -5083,10 +5048,6 @@ button.primary:hover:not(:disabled) {
 }
 
 /* O lápis da foto vai para a esquerda do avatar, longe do QR. */
-.profile-top .avatar-edit {
-  right: auto;
-  left: 2px;
-}
 
 @media (prefers-reduced-motion: reduce) {
   .profile-top .profile-qr {
@@ -5114,7 +5075,7 @@ button.primary:hover:not(:disabled) {
   margin-top: -8px;
 }
 
-/* Selo de contagem no canto de um botão de ícone (Levar ao Lattes): azul
+/* Selo de contagem no canto de um botão de ícone (Enviar ao Lattes): azul
    sólido, com um anel na cor do cabeçalho para destacar do ícone. Cresce
    para os lados com dois dígitos; acima de 99 vira "99+". */
 .icon-btn.has-badge {
@@ -5168,7 +5129,7 @@ button.primary:hover:not(:disabled) {
   border-bottom: 0;
 }
 
-/* Busca com criar e levar ao Lattes logo à direita, juntos no centro. */
+/* Busca com criar e enviar ao Lattes logo à direita, juntos no centro. */
 .topbar-center {
   align-items: center;
   gap: 6px;
@@ -5577,9 +5538,9 @@ b {
   font-size: 14px;
 }
 
-/* Passar o mouse em qualquer campo: a borda sobe um passo (sand-8). O foco
-   continua mais forte (borda e contorno do destaque), e o seletor aberto
-   mantém a borda do destaque. */
+/* Passar o mouse em qualquer campo, filtro ou lista: a borda fica no azul
+   do destaque (o sand-8 quase não aparecia no tema claro). O foco continua
+   mais forte (borda e contorno do destaque). */
 .field input:hover:not(:focus):not(:disabled),
 .field select:hover:not(:focus):not(:disabled),
 .field textarea:not(.title-input):hover:not(:focus),
@@ -5589,7 +5550,7 @@ b {
 .doi-row input:hover:not(:focus),
 .select-trigger:hover:not([data-popup-open]):not(:focus-visible),
 .filter-search:hover:not(:focus-within) {
-  border-color: var(--border-focus);
+  border-color: var(--accent);
 }
 
 /* Antes do primeiro render: o editor espera a chave dos dados locais. */
@@ -5603,7 +5564,7 @@ b {
 }
 
 /* Diagnóstico do currículo (src/review/DiagnosisPanel.tsx). Reaproveita as
-   seções e listas de "Levar ao Lattes". */
+   seções e listas de "Enviar ao Lattes". */
 .diagnosis-facts,
 .diagnosis-lines {
   margin: 0 0 10px;
@@ -5774,8 +5735,8 @@ b {
   background: var(--surface);
   box-shadow: var(--shadow);
   transition:
-    opacity 200ms ease,
-    transform 200ms cubic-bezier(0.165, 0.84, 0.44, 1);
+    opacity var(--dur) var(--ease-out),
+    transform var(--dur) var(--ease-out);
 }
 
 .toast[data-starting-style],
@@ -5882,4 +5843,436 @@ b {
 
 .combo-empty-option {
   color: var(--muted);
+}
+
+/* Revisão de interface de 14/10/2026. Ajustes por cima das regras acima:
+   busca com fundo azul, contorno da foto no azul, dica azul com seta,
+   botões de ação em pílula e filtros com o passar do mouse mais visível. */
+
+.topbar .search-btn {
+  border-color: transparent;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  transition: border-color var(--dur) var(--ease-out);
+}
+
+.topbar .search-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.topbar .search-btn kbd {
+  background: var(--surface);
+}
+
+.profile .avatar {
+  border-color: var(--accent);
+}
+
+.tip {
+  position: relative;
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.tip-arrow {
+  width: 10px;
+  height: 5px;
+  background: var(--accent);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.tip-arrow[data-side='top'] {
+  bottom: -5px;
+}
+
+.tip-arrow[data-side='bottom'] {
+  top: -5px;
+  transform: rotate(180deg);
+}
+
+.tip-arrow[data-side='left'] {
+  right: -7px;
+  transform: rotate(-90deg);
+}
+
+.tip-arrow[data-side='right'] {
+  left: -7px;
+  transform: rotate(90deg);
+}
+
+/* Botões de ação em pílula em todo o app; os só de ícone, em círculo. Linhas
+   de lista e controles do calendário ficam como estão. */
+button.primary,
+button.danger,
+button.text-btn,
+button.pending-open,
+button.version-banner-open,
+button.bridge-btn,
+button.ghost:not(.icon-btn):not(.icon):not(.pending-item):not(.calendar-nav):not(.calendar-title),
+button:not([class]),
+.empty-actions button,
+.modal-foot button,
+.onboarding-action,
+.toast-action {
+  border-radius: 999px;
+}
+
+button.icon-btn,
+button.ghost.icon {
+  border-radius: 50%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar .search-btn {
+    transition: none;
+  }
+}
+
+/* Menu lateral sem barra de rolagem; em janela baixa, a foto encolhe. Se
+   ainda faltar altura, a rolagem continua possível, sem a barra. Os itens
+   mantêm a altura de sempre. */
+.sidebar {
+  scrollbar-width: none;
+}
+
+.sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-height: 860px) {
+  .profile .avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 20px;
+  }
+
+  .profile-top .profile-qr {
+    width: 64px;
+    height: 64px;
+    margin-left: -42px;
+    padding: 8px;
+  }
+
+  .sidebar-brand {
+    padding-bottom: 10px;
+  }
+}
+
+/* Limpar a busca: o "x" aparece dentro do campo depois de digitar algo. */
+.input-clear.icon-btn {
+  flex: 0 0 auto;
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.input-clear.icon-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.input-clear .icon-svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Na paleta o campo ocupa a largura toda: o "x" fica por cima, à direita
+   (a paleta já é position: fixed, que serve de âncora). */
+.palette > .input-clear {
+  position: absolute;
+  top: 11px;
+  right: 12px;
+}
+
+.palette-input {
+  padding-right: 44px;
+}
+
+/* Link com cara de botão principal no estado vazio ("Abrir o Lattes"), do
+   tamanho dos botões ao lado. */
+.empty-actions .action-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: min(320px, 100%);
+  height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--accent-text);
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+/* Seletor de tema: pílula, como os botões, e com a altura das linhas do menu. */
+.menu .menu-segment {
+  padding: 3px;
+  border-radius: 999px;
+}
+
+.menu .menu-seg {
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+}
+
+/* Enviar ao Lattes: abas "A enviar" e "Enviado" no alto do painel, em pílula. */
+.send-tab-list {
+  display: inline-flex;
+  gap: 2px;
+  margin: 0 0 18px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+
+.send-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background-color 150ms var(--ease-out),
+    color 150ms var(--ease-out);
+}
+
+.send-tab:hover {
+  color: var(--text);
+}
+
+.send-tab[data-active] {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 550;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+}
+
+.send-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.send-tab-panel {
+  outline: none;
+}
+
+/* Selo de como cada coisa vai: conector (azul), Importar (neutro), à mão (aviso). */
+.route-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.route-conector {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.route-importar {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.route-mao {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+
+.panel-section-head .route-tag {
+  margin-right: 2px;
+}
+
+/* Registro do enviado: rótulo em cima, valor de antes riscado e o de depois
+   logo abaixo, com respiro entre um campo e outro. */
+.sent-list > li {
+  padding: 14px 0;
+}
+
+.sent-fields {
+  display: grid;
+  gap: 12px;
+  margin: 10px 0 0;
+}
+
+.sent-field {
+  display: grid;
+  gap: 4px;
+}
+
+.sent-field dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 550;
+  letter-spacing: 0.02em;
+}
+
+.sent-field dd {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.sent-before {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent);
+}
+
+.sent-after {
+  color: var(--text);
+}
+
+.sent-undone .sent-field dd,
+.sent-undone .sent-after {
+  color: var(--muted);
+}
+
+/* Entrada e saída de modais, menus, listas, dicas e calendário: opacidade e
+   escala, que o navegador anima sem refazer o layout. O Base UI marca a
+   abertura e o fechamento com data-starting-style e data-ending-style e espera
+   a transição acabar. A escala usa a propriedade própria (scale), para não
+   brigar com o transform que centraliza o modal. */
+.modal,
+.menu,
+.select-popup,
+.tip,
+.popup-positioner .calendar {
+  transform-origin: var(--transform-origin, center);
+  transition:
+    opacity var(--dur) var(--ease-out),
+    scale var(--dur) var(--ease-out);
+}
+
+.tip {
+  transition-duration: var(--dur-fast);
+}
+
+.modal[data-starting-style],
+.modal[data-ending-style],
+.menu[data-starting-style],
+.menu[data-ending-style],
+.select-popup[data-starting-style],
+.select-popup[data-ending-style],
+.tip[data-starting-style],
+.tip[data-ending-style],
+.popup-positioner .calendar[data-starting-style],
+.popup-positioner .calendar[data-ending-style] {
+  opacity: 0;
+  scale: 0.97;
+}
+
+.modal-backdrop {
+  transition: opacity var(--dur) var(--ease-out);
+}
+
+.modal-backdrop[data-starting-style],
+.modal-backdrop[data-ending-style] {
+  opacity: 0;
+}
+
+/* Troca de seção (Dados gerais, Formação…): o conteúdo sai em fade e o novo
+   entra com um leve deslize, pela View Transitions API (section-transition.ts).
+   Cabeçalho e menu lateral ficam parados: só o conteúdo tem nome de transição. */
+main.content {
+  view-transition-name: secao;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-old(secao) {
+  animation: secao-sai var(--dur-fast) var(--ease-out) both;
+}
+
+::view-transition-new(secao) {
+  animation: secao-entra var(--dur-slow) var(--ease-out) both;
+}
+
+@keyframes secao-sai {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes secao-entra {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Movimento reduzido: nada desliza nem esmaece, em todo o app. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  ::view-transition-old(secao),
+  ::view-transition-new(secao) {
+    animation: none;
+  }
+}
+
+/* Seletor de tema: o destaque é uma peça só, que desliza até a opção
+   escolhida (--seg-index, posto pelo SettingsMenu). As opções ficam por cima,
+   sem fundo próprio. */
+.menu .menu-segment {
+  position: relative;
+  isolation: isolate;
+}
+
+.menu-seg-indicator {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  z-index: -1;
+  /* Largura de uma coluna: tira o respiro (3px de cada lado) e os vãos de 2px. */
+  width: calc((100% - 6px - (var(--seg-count, 3) - 1) * 2px) / var(--seg-count, 3));
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+  transform: translateX(calc(var(--seg-index, 0) * (100% + 2px)));
+  transition: transform var(--dur) var(--ease-in-out);
+}
+
+.menu .menu-seg[data-checked] {
+  background: transparent;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-seg-indicator {
+    transition: none;
+  }
 }

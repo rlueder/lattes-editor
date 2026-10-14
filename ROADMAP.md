@@ -18,7 +18,7 @@ arquivo quando muda de fato; o detalhe técnico está em
     de outro currículo);
   - ler de volta depois de cada gravação: existe;
   - registro do que foi gravado, com desfazer: existe ("Enviado ao Lattes",
-    em "Levar ao Lattes"). O Lattes não mostra nem descarta pendências antes
+    em "Enviar ao Lattes"). O Lattes não mostra nem descarta pendências antes
     de "Enviar ao CNPq", então é aqui que se vê e se volta atrás;
   - recusar quando o formulário mudou: existe (o valor antigo e o início do
     vínculo precisam bater antes de gravar);
@@ -63,7 +63,7 @@ arquivo quando muda de fato; o detalhe técnico está em
 ## Marco 3: acabamento para a turma
 
 - Tela de primeiro uso explicando o ciclo: exportar no Lattes, editar aqui,
-  levar ao Lattes.
+  enviar ao Lattes.
 - Painel de validação do currículo inteiro: obrigatórios, enums, anos,
   autores, DOI.
 - README também em inglês.

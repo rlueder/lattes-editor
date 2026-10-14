@@ -1,5 +1,5 @@
 // Cabeçalho, na ordem do ciclo de uso: à esquerda o estado da cópia de
-// trabalho; à direita encontrar, editar, levar ao Lattes e, no menu
+// trabalho; à direita encontrar, editar, enviar ao Lattes e, no menu
 // de configurações, o que se usa menos.
 
 import { type Ref, useRef, useState } from 'react';
@@ -113,7 +113,7 @@ export function Topbar({
           </Tip>
         )}
 
-        {/* Criar e levar ao Lattes: só ícones, com dica, junto das configurações. */}
+        {/* Criar e enviar ao Lattes: só ícones, com dica, junto das configurações. */}
         <Tip label="Novo item">
           <button
             aria-label="Novo item"
@@ -125,15 +125,15 @@ export function Topbar({
           </button>
         </Tip>
 
-        {/* Levar ao Lattes: só o ícone; o selo no canto conta o que falta levar. */}
+        {/* Enviar ao Lattes: só o ícone; o selo no canto conta o que falta levar. */}
         <Tip
           label={
-            pendingCount > 0 ? `Levar ao Lattes (${pendingCount} pendências)` : 'Levar ao Lattes'
+            pendingCount > 0 ? `Enviar ao Lattes (${pendingCount} pendências)` : 'Enviar ao Lattes'
           }
         >
           <button
             aria-label={
-              pendingCount > 0 ? `Levar ao Lattes, ${pendingCount} pendências` : 'Levar ao Lattes'
+              pendingCount > 0 ? `Enviar ao Lattes, ${pendingCount} pendências` : 'Enviar ao Lattes'
             }
             className="ghost icon-btn has-badge"
             type="button"

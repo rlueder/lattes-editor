@@ -128,7 +128,7 @@ extensão não está na Chrome Web Store, instale assim:
    a pasta pela do zip novo e clique em recarregar.
 3. No primeiro uso, o painel mostra o que a extensão lê e envia e pede um
    "ok"; sem ele, ela não toca no Lattes.
-4. Com o currículo aberto no Lattes numa aba, "Levar ao Lattes" no app passa
+4. Com o currículo aberto no Lattes numa aba, "Enviar ao Lattes" no app passa
    a oferecer o envio pela extensão.
 
 O que a extensão lê e envia está na
@@ -144,7 +144,7 @@ Lattes simulado, mas desligado até um teste acompanhado no Lattes real
 O que o conector grava fica pendente no Lattes até você clicar em "Enviar ao
 CNPq", e o Lattes não mostra nem descarta essas pendências. Por isso o app
 guarda, no próprio computador, o registro do que foi gravado e conferido:
-"Enviado ao Lattes", dentro de "Levar ao Lattes", lista cada alteração por
+"Enviado ao Lattes", dentro de "Enviar ao Lattes", lista cada alteração por
 dia, com o valor de antes e o de depois. "Desfazer no Lattes" manda de volta
 o valor de antes, com a mesma confirmação de qualquer envio, e a alteração
 volta para a lista do que falta levar. O registro continua lá depois de

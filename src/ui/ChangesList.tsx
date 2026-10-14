@@ -1,7 +1,9 @@
-// Lista "Alterações a levar ao Lattes": o que mudou e o Importar não leva,
+// Lista "Alterações a enviar ao Lattes": o que mudou e o Importar não leva,
 // agrupado por seção do Lattes, com antes e depois, botão de copiar por campo
 // e marcação de feito.
 
+import { RouteTag } from '../import-export/RouteTag.tsx';
+import type { SendRoute } from '../import-export/send-routes.ts';
 import { elementLabel } from '../labels/labels.ts';
 import type { ChangeEntry, ChangeGroup } from './changes-view.ts';
 import { CopyButton } from './CopyButton.tsx';
@@ -13,11 +15,13 @@ const KIND_LABEL = { alterado: 'alterado', novo: 'incluir', removido: 'excluir' 
 
 interface Props {
   groups: ChangeGroup[];
+  /** Como estas alterações vão ao Lattes: o selo aparece em cada uma. */
+  route?: SendRoute;
   onDiscard: (entry: ChangeEntry) => void;
   onDiscardField: (entry: ChangeEntry, attr: string) => void;
 }
 
-export function ChangesList({ groups, onDiscard, onDiscardField }: Props) {
+export function ChangesList({ groups, onDiscard, onDiscardField, route }: Props) {
   if (groups.length === 0) {
     return (
       <p className="empty">
@@ -47,6 +51,7 @@ export function ChangesList({ groups, onDiscard, onDiscardField }: Props) {
                 <li key={change.key} className="change">
                   <div className="change-head">
                     <span className={`tag kind-${change.kind}`}>{KIND_LABEL[change.kind]}</span>
+                    {route && <RouteTag route={route} />}
                     <span className="change-where">
                       {context.length ? context.join(' › ') : elementLabel(change.element)}
                     </span>

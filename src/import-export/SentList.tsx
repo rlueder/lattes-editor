@@ -1,12 +1,12 @@
-// "Enviado ao Lattes", dentro de "Levar ao Lattes": o que o conector gravou e
-// conferiu, por dia. O Lattes guarda essas gravações como pendentes até
+// Aba "Enviado" do painel Enviar ao Lattes: o que o conector gravou e
+// conferiu, por dia. Cada campo mostra o rótulo em cima, o valor de antes
+// riscado e o de depois logo abaixo. O Lattes guarda essas gravações como pendentes até
 // "Enviar ao CNPq" e não tem como descartá-las; desfazer daqui manda de
 // volta o valor de antes, pela mesma confirmação de qualquer envio.
 
 import { useMemo, useState } from 'react';
 
 import { groupByDay, type SentEntry, undoneIds, undoOp } from '../bridge/sent-log.ts';
-import { HistoryIcon } from '../ui/icons.tsx';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { SendConfirm } from './SendConfirm.tsx';
 
@@ -30,11 +30,6 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
 
   return (
     <section className="panel-section sent" id="enviado-ao-lattes">
-      <h3 className="panel-section-head">
-        <HistoryIcon />
-        Enviado ao Lattes
-        {bridge.sent.length > 1 && <span className="count">{bridge.sent.length}</span>}
-      </h3>
       <p className="muted sent-how">
         Estas gravações só ficam públicas depois de &quot;Enviar ao CNPq&quot; no Lattes, e o Lattes
         não tem como descartá-las. Para voltar atrás, desfaça aqui antes de enviar.
@@ -72,14 +67,19 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
                       </button>
                     )}
                   </div>
-                  <dl>
+                  <dl className="sent-fields">
                     {entry.rows.map((row) => (
-                      <div key={row.name} className="send-field">
+                      <div key={row.name} className="sent-field">
                         <dt>{row.label}</dt>
                         <dd>
-                          <span className="send-before">{row.before}</span>
-                          <span aria-hidden="true"> → </span>
-                          <span>{row.after}</span>
+                          <span className="sent-before">
+                            <span className="sr-only">Antes: </span>
+                            {row.before || '(vazio)'}
+                          </span>
+                          <span className="sent-after">
+                            <span className="sr-only">Depois: </span>
+                            {row.after || '(vazio)'}
+                          </span>
                         </dd>
                       </div>
                     ))}

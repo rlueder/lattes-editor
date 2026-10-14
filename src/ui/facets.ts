@@ -7,6 +7,7 @@ import { attributeLabel, elementLabel, enumLabel, fold } from '../labels/labels.
 import { childElements, type XElement } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 import { itemMeta } from './item-meta.ts';
+import { effectiveQuery } from './query.ts';
 
 export interface FacetOption {
   count: number;
@@ -133,16 +134,17 @@ export interface FilterState {
 export const NO_FILTER: FilterState = { query: '', selected: {} };
 
 export function isFiltering(state: FilterState): boolean {
-  return state.query.trim() !== '' || Object.keys(state.selected).length > 0;
+  return effectiveQuery(state.query) !== '' || Object.keys(state.selected).length > 0;
 }
 
 /**
  * Busca por início de palavra: cada termo digitado precisa começar alguma
- * palavra do texto ("ag" acha "Ag2" e "Agência", não "Adage"). Sem acento e
- * sem caixa; a ordem dos termos não importa.
+ * palavra do texto ("agê" acha "Agência", não "Adage"). Sem acento e sem
+ * caixa; a ordem dos termos não importa. Só filtra a partir de 3 caracteres
+ * (query.ts).
  */
 export function matchesQuery(text: string, query: string): boolean {
-  const terms = fold(query).split(/\s+/).filter(Boolean);
+  const terms = fold(effectiveQuery(query)).split(/\s+/).filter(Boolean);
   if (terms.length === 0) return true;
   const words = fold(text)
     .split(/[^a-z0-9]+/)
@@ -179,7 +181,7 @@ export function cardText(card: { subtitle: string; title: string }): string {
 
 /** Busca de texto em grupos que não são lista (Identificação, Resumo): valores dos atributos. */
 export function elementMatchesText(el: XElement, query: string): boolean {
-  if (!query.trim()) return true;
+  if (!effectiveQuery(query)) return true;
   // Junta todos os valores: um termo pode estar num campo e o outro em outro.
   const values: string[] = [];
   const visit = (node: XElement) => {

@@ -5,7 +5,7 @@
 import { Menu } from '@base-ui/react/menu';
 
 import { installUpdate } from '../desktop/update.ts';
-import { BellIcon } from './icons.tsx';
+import { AlertIcon, BellIcon } from './icons.tsx';
 import type { Notice } from './notifications.ts';
 import { Tip } from './primitives/Tip.tsx';
 import { openStorageNotice } from './storage-notice-open.ts';
@@ -66,7 +66,11 @@ export function NotificationsMenu({ notices }: { notices: Notice[] }) {
 function NoticeBody({ notice }: { notice: Notice }) {
   return (
     <span className="notice-body">
-      <span className="notice-title">{notice.title}</span>
+      <span className="notice-title">
+        {/* O que pede ação traz o ícone de alerta e a cor de aviso no título. */}
+        {notice.level === 'aviso' && <AlertIcon />}
+        {notice.title}
+      </span>
       <span className="notice-text">
         {notice.text}
         {notice.link && (

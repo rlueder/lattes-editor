@@ -2,7 +2,7 @@
 // for um DOI, oferece começar por ele (o tipo vem do Crossref). Na abertura
 // aparecem só os mais usados; os outros tipos ficam recolhidos por módulo.
 
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 
 import { elementLabel, fold } from '../labels/labels.ts';
 import {
@@ -16,7 +16,9 @@ import { importableTypes, type ProductionType } from '../model/production.ts';
 import { lattesSchema as schema } from '../schema/lattes.ts';
 import { ChevronIcon, SearchIcon } from '../ui/icons.tsx';
 import { Modal } from '../ui/Modal.tsx';
+import { ClearButton } from '../ui/primitives/ClearButton.tsx';
 import { Tip } from '../ui/primitives/Tip.tsx';
+import { effectiveQuery } from '../ui/query.ts';
 import { FORM_SPECS } from './specs.ts';
 
 interface Props {
@@ -29,6 +31,7 @@ type DoiState = { kind: 'idle' } | { kind: 'loading' } | { kind: 'error'; messag
 
 export function NewItemPicker({ onClose, onPick, open }: Props) {
   const [query, setQuery] = useState('');
+  const queryRef = useRef<HTMLInputElement>(null);
   const [showAll, setShowAll] = useState(false);
   const [doiState, setDoiState] = useState<DoiState>({ kind: 'idle' });
   const inputId = useId();
@@ -37,7 +40,7 @@ export function NewItemPicker({ onClose, onPick, open }: Props) {
     FORM_SPECS.find((s) => s.itemName === t.itemName)?.title ?? elementLabel(t.itemName);
 
   const doi = normalizeDoi(query);
-  const q = fold(query.trim());
+  const q = fold(effectiveQuery(query));
   const searching = q !== '' && !doi;
   const matches = (t: ProductionType) =>
     !searching || fold(`${labelOf(t)} ${t.module.label}`).includes(q);
@@ -129,6 +132,7 @@ export function NewItemPicker({ onClose, onPick, open }: Props) {
           Filtrar tipos ou colar um DOI
         </label>
         <input
+          ref={queryRef}
           id={inputId}
           placeholder="Filtrar tipos ou colar um DOI"
           spellCheck={false}
@@ -142,6 +146,14 @@ export function NewItemPicker({ onClose, onPick, open }: Props) {
               e.preventDefault();
               void startFromDoi();
             }
+          }}
+        />
+        <ClearButton
+          input={queryRef}
+          value={query}
+          onClear={() => {
+            setQuery('');
+            setDoiState({ kind: 'idle' });
           }}
         />
       </div>

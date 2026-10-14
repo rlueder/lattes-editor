@@ -103,13 +103,14 @@ export function buildSections(root: XElement): Section[] {
   const dg = firstChild(root, 'DADOS-GERAIS');
   const dadosGerais: SectionGroup[] = [];
   if (dg) {
-    // A identificação são os atributos de DADOS-GERAIS; os filhos têm grupo próprio.
+    // Como no currículo do Lattes, o resumo abre a seção. A identificação são
+    // os atributos de DADOS-GERAIS; os filhos têm grupo próprio.
     claimed.add(dg);
+    dadosGerais.push(...claim(containers('dados-gerais', root, ['DADOS-GERAIS/RESUMO-CV'])));
     dadosGerais.push(group('dados-gerais', 'Identificação', [{ ...dg, children: [] }]));
     dadosGerais.push(
       ...claim(
         containers('dados-gerais', root, [
-          'DADOS-GERAIS/RESUMO-CV',
           'DADOS-GERAIS/OUTRAS-INFORMACOES-RELEVANTES',
           'DADOS-GERAIS/ENDERECO',
           'DADOS-GERAIS/IDIOMAS',

@@ -98,7 +98,9 @@ describe('applyFilter', () => {
       applyFilter(EVENTS, facets, { query: '', selected: { 'NAO-EXISTE': 'x' } }, text),
     ).toHaveLength(4);
     expect(isFiltering(NO_FILTER)).toBe(false);
-    expect(isFiltering({ query: ' x ', selected: {} })).toBe(true);
+    // A busca só filtra a partir de 3 caracteres.
+    expect(isFiltering({ query: ' xy ', selected: {} })).toBe(false);
+    expect(isFiltering({ query: ' xyz ', selected: {} })).toBe(true);
   });
 });
 
@@ -122,8 +124,10 @@ describe('situação', () => {
 
 describe('matchesQuery', () => {
   it('casa no início das palavras, sem acento, em qualquer ordem', () => {
-    expect(matchesQuery('Ag2 Agência de Inteligência Digital', 'Ag')).toBe(true);
-    expect(matchesQuery('Adage Technologies', 'Ag')).toBe(false);
+    expect(matchesQuery('Ag2 Agência de Inteligência Digital', 'Agê')).toBe(true);
+    expect(matchesQuery('Adage Technologies', 'Agê')).toBe(false);
+    // Menos de 3 caracteres ainda não filtra: tudo passa.
+    expect(matchesQuery('Adage Technologies', 'Ag')).toBe(true);
     expect(matchesQuery('Universidade do Vale · Design Estratégico', 'design uni')).toBe(true);
     expect(matchesQuery('Agência', 'agencia')).toBe(true);
     expect(matchesQuery('qualquer coisa', '   ')).toBe(true);

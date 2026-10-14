@@ -65,3 +65,16 @@ describe('⌘K', () => {
     expect(entries[0]?.label).toBe('Dados gerais');
   });
 });
+
+describe('⌘K: ações de novo item', () => {
+  it('ficam sob o título "Novo item", em ordem alfabética', async () => {
+    const { paletteActions } = await import('../src/ui/palette-search.ts');
+    const actions = paletteActions();
+    const header = actions.findIndex((a) => a.action === 'novo');
+    const types = actions.filter((a) => a.context === 'Novo item').map((a) => a.label);
+    expect(actions[header]).toMatchObject({ context: '', label: 'Novo item' });
+    expect(actions.slice(header + 1, header + 1 + types.length).map((a) => a.label)).toEqual(types);
+    expect(types).toEqual([...types].sort((a, b) => a.localeCompare(b, 'pt-BR')));
+    expect(types.length).toBeGreaterThan(1);
+  });
+});

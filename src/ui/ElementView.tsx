@@ -9,13 +9,14 @@ import { childElements, getAttr, type XElement, type XText } from '../model/xml.
 import { lattesSchema } from '../schema/lattes.ts';
 import { AttributeField, type EditFn } from './AttributeField.tsx';
 import type { SectionFilter } from './facets.ts';
-import { groupFields, isBooleanAttr } from './field-kind.ts';
+import { groupFields, isBooleanAttr, isSystemAttr } from './field-kind.ts';
 import { isListItem } from './item-meta.ts';
 import { OUTLINE_HEAD_ATTR, outlineId } from './item-outline.ts';
 import { ItemList } from './ItemList.tsx';
 import { isRedundantDateFormat } from './lattes-date.ts';
 import { useReferenceIndex } from './reference-context.ts';
 import { viewForContainer } from './reference-tables.ts';
+import { useShowCodes } from './show-codes.ts';
 
 export type { EditFn } from './AttributeField.tsx';
 
@@ -35,6 +36,7 @@ function FieldsBlock({
   sources: XElement[];
   onEdit: EditFn;
 }) {
+  const showCodes = useShowCodes();
   const main = sources[0]!;
   const specs = sources.map(
     (src) => new Map(lattesSchema.elements[src.name]?.attributes.map((a) => [a.name, a])),
@@ -46,6 +48,8 @@ function FieldsBlock({
       // O formato da data é sempre DDMMAAAA: o campo de data já diz isso.
       .filter((a) => !isRedundantDateFormat(a.name, a.value))
       .filter((a) => showEmpty || a.value !== '')
+      // Códigos que o Lattes gera: só com "Mostrar códigos do Lattes" ligado.
+      .filter((a) => showCodes || !isSystemAttr(src.name, a.name))
       .map((a) => ({ attr: a.name, element: src.name, key: `${i}:${a.name}`, source: i })),
   );
   const mixed = lattesSchema.elements[main.name]?.mixed;

@@ -35,7 +35,7 @@ import { formatLattesDate } from '../src/ui/format.ts';
 import { parseHash } from '../src/ui/hash-route.ts';
 import { pendingMessage } from '../src/ui/pending.ts';
 import { isSensitiveAttr, readHideSensitive, writeHideSensitive } from '../src/ui/privacy.ts';
-import { initials, parseCvCode, photoUrl, readCvCode, writeCvCode } from '../src/ui/profile.ts';
+import { initials, photoUrl, readCvCode, writeCvCode } from '../src/ui/profile.ts';
 import { qrMatrix, qrPath, qrSvg } from '../src/ui/qr.ts';
 import { GO_KEYS, isTyping, sectionForKey } from '../src/ui/use-section-shortcuts.ts';
 
@@ -385,17 +385,6 @@ describe('perfil', () => {
 });
 
 describe('foto do currículo', () => {
-  it('acha o código de 10 caracteres no endereço colado ou sozinho', () => {
-    expect(
-      parseCvCode(
-        'http://buscatextual.cnpq.br/buscatextual/visualizacv.do?metodo=apresentar&id=K1234567A8',
-      ),
-    ).toBe('K1234567A8');
-    expect(parseCvCode(' k1234567a8 ')).toBe('K1234567A8');
-    expect(parseCvCode('https://lattes.cnpq.br/1234567890123456')).toBeUndefined();
-    expect(parseCvCode('qualquer coisa')).toBeUndefined();
-  });
-
   it('monta o endereço da foto e lembra o código por currículo', () => {
     expect(photoUrl('K1234567A8')).toContain('servletrecuperafoto?tipo=1&id=K1234567A8');
     expect(readCvCode('1')).toBeUndefined();

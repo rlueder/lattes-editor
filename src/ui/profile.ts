@@ -33,18 +33,6 @@ export function initials(name: string): string {
   return (first + last).toUpperCase();
 }
 
-/**
- * Código de 10 caracteres do currículo (o `id=` de
- * buscatextual.cnpq.br/buscatextual/visualizacv.do), tirado de um endereço
- * colado ou do próprio código. A exportação não traz esse código.
- */
-export function parseCvCode(text: string): string | undefined {
-  const t = text.trim();
-  const fromUrl = /[?&]id=([A-Za-z][0-9A-Za-z]{9})(?:[&#]|$)/.exec(t);
-  if (fromUrl) return fromUrl[1]!.toUpperCase();
-  return /^[A-Za-z][0-9A-Za-z]{9}$/.test(t) ? t.toUpperCase() : undefined;
-}
-
 /** Foto do currículo no CNPq; só responde com o código de 10 caracteres. */
 export function photoUrl(code: string): string {
   return `https://servicosweb.cnpq.br/wspessoa/servletrecuperafoto?tipo=1&id=${encodeURIComponent(code)}`;
