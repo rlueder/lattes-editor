@@ -9,7 +9,6 @@ import type { ProductionType } from '../model/production.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 import { SectionArt } from './empty-art.tsx';
 import { PlusIcon } from './icons.tsx';
-import { LATTES_URL } from './onboarding.ts';
 import { EMPTY_NOTES, SECTION_DESCRIPTIONS, typesForSection } from './section-types.ts';
 import type { Section } from './sections.ts';
 
@@ -22,12 +21,6 @@ interface Props {
   onNewItem: (type: ProductionType) => void;
   onOpenPicker: () => void;
 }
-
-/**
- * Seções em que o editor não cria itens (o Importar do Lattes não as aceita):
- * o caminho é cadastrar no próprio Lattes e recarregar a exportação.
- */
-const LATTES_ONLY = new Set(['atuacao', 'formacao', 'patentes', 'projetos']);
 
 export function EmptySection({ action, onNewItem, onOpenPicker, section }: Props) {
   const types = typesForSection(lattesSchema, section.id);
@@ -44,13 +37,6 @@ export function EmptySection({ action, onNewItem, onOpenPicker, section }: Props
       {types.length === 0 ? (
         <>
           {action && <div className="empty-actions">{action}</div>}
-          {!action && LATTES_ONLY.has(section.id) && (
-            <div className="empty-actions">
-              <a className="primary action-link" href={LATTES_URL} rel="noreferrer" target="_blank">
-                Abrir o Lattes
-              </a>
-            </div>
-          )}
           {note && <p className="empty-caption">{note}</p>}
         </>
       ) : (

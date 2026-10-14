@@ -52,14 +52,11 @@ export const SECTION_DESCRIPTIONS: Record<string, string> = {
 };
 
 export const EMPTY_NOTES: Record<string, string> = {
-  atuacao:
-    'Atuações não entram pelo Importar do Lattes; cadastre no próprio Lattes e recarregue a exportação.',
+  atuacao: 'Criar uma atuação pelo editor ainda não é possível.',
   educacao: 'Para um item aparecer aqui, ligue "Divulgação científica" ao editá-lo.',
-  formacao:
-    'Formações não entram pelo Importar do Lattes; cadastre no próprio Lattes e recarregue a exportação.',
+  formacao: 'Criar uma formação pelo editor ainda não é possível.',
   inovacao: 'Para um item aparecer aqui, ligue "Potencial inovação" ao editá-lo.',
-  patentes:
-    'Patentes e registros não entram pelo Importar do Lattes; cadastre no próprio Lattes e recarregue a exportação.',
+  patentes: 'Criar uma patente ou um registro pelo editor ainda não é possível.',
   projetos:
-    'Projetos ficam dentro de uma atuação profissional e não entram pelo Importar; cadastre no Lattes, em Atuação.',
+    'Projetos ficam dentro de uma atuação profissional; criar um pelo editor ainda não é possível.',
 };
