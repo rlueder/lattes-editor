@@ -22,7 +22,10 @@ import {
   shouldAutoVerify,
 } from '../src/bridge/contract.ts';
 import type { FormControl } from '../src/bridge/form.ts';
-import { WATCHED_LISTS } from '../src/bridge/list-watch.ts';
+import { LIVE_SOURCES, WATCHED_LISTS } from '../src/bridge/list-watch.ts';
+
+/** As listas de combo e as fontes das listas lidas ao vivo, na ordem do relatório. */
+const ALL_LISTS = [...WATCHED_LISTS, ...LIVE_SOURCES];
 
 /** Controles de um formulário a partir da especificação: o Lattes "como o esperado". */
 function controlsFrom(fields: Record<string, FieldSpec>, ctr = 'U'): FormControl[] {
@@ -58,7 +61,8 @@ interface FakeOptions {
 
 const MENU = `<a onclick="modalCV1.setarUrl(&quot;pkg_ativ.lista?f_cod=K000000000&quot;, true)">Atuação</a>
   <a onclick="modalCV1.setarUrl(&quot;pkg_resume.prc_resume?f_cod=K000000000&quot;, true)">Resumo</a>
-  <a onclick="modalCV1.setarUrl(&quot;pkg_idioma.lista?f_cod=K000000000&quot;, true)">Idiomas</a>`;
+  <a onclick="modalCV1.setarUrl(&quot;pkg_idioma.lista?f_cod=K000000000&quot;, true)">Idiomas</a>
+  <script>var areaDP = [{"l":"Ciências Exatas e da Terra","n":"1","c":"10000003"}];</script>`;
 
 /** Um combo como o Lattes o desenha: a opção vazia primeiro. */
 const selectHtml = (name: string, options: readonly string[]) =>
@@ -100,6 +104,8 @@ function fakeLattes(opts: FakeOptions = {}): { gets: string[]; port: LattesPort 
              <a href="pkg_idioma.form?f_cod=K000000000">Novo</a>`;
       }
       if (path.startsWith('pkg_idioma.form')) return 'FORM:GN_IDIOMA';
+      if (path.startsWith('prc_agencia'))
+        return `<a href="javascript:atribuir('A1','CNPq')">CNPq</a>`;
       // Os formulários de inclusão com os combos das listas, como o editor os conhece.
       const lists = WATCHED_LISTS.filter((l) => path === l.path('K000000000'));
       if (lists.length) return lists.map((l) => selectHtml(l.control, l.expected)).join('');
@@ -279,14 +285,14 @@ describe('checkContract', () => {
   it('confere as listas pelo código do currículo do menu', async () => {
     const report = await checkContract(fakeLattes().port);
     expect(report.status).toBe('ok');
-    expect(report.lists?.map((l) => l.status)).toEqual(WATCHED_LISTS.map(() => 'ok'));
+    expect(report.lists?.map((l) => l.status)).toEqual(ALL_LISTS.map(() => 'ok'));
   });
 
   it('menu sem o código do currículo não passa as listas sem conferir', async () => {
     const menu = MENU.replaceAll('K000000000', 'x');
     const report = await checkContract(fakeLattes({ menu }).port);
     expect(report.status).toBe('mudou');
-    expect(report.lists?.map((l) => l.status)).toEqual(WATCHED_LISTS.map(() => 'erro'));
+    expect(report.lists?.map((l) => l.status)).toEqual(ALL_LISTS.map(() => 'erro'));
     expect(report.lists?.[0]?.detail).toBe('O código do currículo não está no menu');
   });
 
@@ -296,7 +302,23 @@ describe('checkContract', () => {
     expect(report.forms.length).toBeGreaterThan(0);
     const events = report.lists?.find((l) => l.control === 'F_COD_PROD');
     expect(events).toMatchObject({ detail: 'rede caiu', status: 'erro' });
-    expect(report.lists?.filter((l) => l.status === 'ok')).toHaveLength(2);
+    expect(report.lists?.filter((l) => l.status === 'ok')).toHaveLength(4);
+  });
+
+  it('confere as fontes das listas lidas ao vivo: a tabela de áreas e as agências', async () => {
+    const menu = MENU.replace(/<script>[\s\S]*<\/script>/, '');
+    const report = await checkContract(fakeLattes({ menu, throwAt: 'prc_agencia' }).port);
+    expect(report.status).toBe('mudou');
+    const sources = report.lists?.slice(WATCHED_LISTS.length);
+    expect(sources?.map((l) => [l.control, l.status])).toEqual([
+      ['areaDP', 'nao-encontrado'],
+      ['atribuir', 'erro'],
+    ]);
+    expect(reportText(report, '1.0.0')).toContain(
+      'Áreas do conhecimento: a tabela areaDP do menu sumiu',
+    );
+    const gone = await checkContract(fakeLattes({ logonAt: 'prc_agencia' }).port);
+    expect(gone.status).toBe('sessao');
   });
 
   it('sessão caída no formulário de uma lista ainda para tudo', async () => {

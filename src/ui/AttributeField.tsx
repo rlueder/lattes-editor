@@ -1,7 +1,7 @@
 // Campo de um atributo: texto, área de texto, data, ano ou lista de opções (enum).
 // Grava no elemento ao sair do campo; usado na visão genérica e nos formulários.
 
-import { useEffect, useId, useState } from 'react';
+import { type ReactNode, useEffect, useId, useState } from 'react';
 
 import { attributeLabelIn, elementLabel, enumLabel } from '../labels/labels.ts';
 import { repairMojibake } from '../model/mojibake.ts';
@@ -25,7 +25,10 @@ import {
 } from './field-kind.ts';
 import { LockIcon } from './icons.tsx';
 import { displayLattesDate, isLattesDateAttr, isValidLattesDate } from './lattes-date.ts';
+import { useLattesListsContext } from './lattes-lists-context.ts';
 import { isFourDigitYear, isLattesYearAttr } from './lattes-year.ts';
+import { liveKind } from './live-lists.ts';
+import { LiveListControl } from './LiveListField.tsx';
 import { ComboSelect } from './primitives/ComboSelect.tsx';
 import { Switch } from './primitives/Switch.tsx';
 import { Tip } from './primitives/Tip.tsx';
@@ -68,6 +71,7 @@ export function AttributeField({
   wide,
 }: Props) {
   const hideSensitive = useHideSensitive();
+  const lists = useLattesListsContext();
   const value = getAttr(el, name) ?? '';
   const [draft, setDraft] = useState(value);
   // Valor mudou por fora (busca por DOI, restauração do histórico).
@@ -132,6 +136,29 @@ export function AttributeField({
         </div>
       );
     }
+  }
+
+  // Listas lidas no Lattes pelo conector (LAT-48): sem elas, o campo de sempre.
+  const live = liveKind(el, name, lists);
+  if (live === 'area-derivada') {
+    return (
+      <div className="field field-readonly field-locked">
+        <ReadonlyLabel text={text} why="Segue a área do conhecimento escolhida" />
+        <span className="locked-value">{value ? enumLabelOrValue(name, value) : '(vazio)'}</span>
+      </div>
+    );
+  }
+  if (live) {
+    return wrap(
+      <LiveListControl
+        common={common}
+        el={el}
+        kind={live}
+        lists={lists}
+        onChanged={() => onEdit(`${elementLabel(el.name)} · ${text}`)}
+      />,
+      { copy: copyable },
+    );
   }
 
   const lockedBy = codeAttrFor(el.name, name);
@@ -295,52 +322,67 @@ export function AttributeField({
     );
   }
 
-  return (
-    <div
-      className={`field${wide || prominent || textarea ? ' field-wide' : ''}${prominent ? ' field-prominent' : ''}${error ? ' has-error' : ''}`}
-    >
-      <label
-        className={prominent ? 'sr-only' : undefined}
-        htmlFor={id}
-        id={labelId}
-        title={spec?.patched ? `${name} (fora do XSD publicado)` : name}
+  return wrap(control, { copy: copyable && !boolean, textarea });
+
+  /**
+   * O campo com rótulo, marca de obrigatório, botão de copiar, correção de
+   * texto estragado e erro. Só usa o que já está definido no começo do
+   * componente: é chamado também antes do resto (listas do conector).
+   */
+  function wrap(control: ReactNode, opts: { copy?: boolean; textarea?: boolean } = {}) {
+    const { copy = false, textarea = false } = opts;
+    return (
+      <div
+        className={`field${wide || prominent || textarea ? ' field-wide' : ''}${prominent ? ' field-prominent' : ''}${error ? ' has-error' : ''}`}
       >
-        {text}
-        {(spec?.required || required) && (
-          <span aria-label="obrigatório" className="required">
-            {' '}
-            *
+        <label
+          className={prominent ? 'sr-only' : undefined}
+          htmlFor={id}
+          id={labelId}
+          title={spec?.patched ? `${name} (fora do XSD publicado)` : name}
+        >
+          {text}
+          {(spec?.required || required) && (
+            <span aria-label="obrigatório" className="required">
+              {' '}
+              *
+            </span>
+          )}
+        </label>
+        {copy ? (
+          <span className="field-copy-row">
+            {control}
+            <CopyButton label={text} value={value} />
+          </span>
+        ) : (
+          control
+        )}
+        {repaired !== undefined && (
+          <span className="field-note">
+            Texto estragado no próprio Lattes (acentos ou &quot;aspas&quot;).{' '}
+            <button
+              className="link-btn"
+              title={repaired}
+              type="button"
+              onClick={() => commit(repaired)}
+            >
+              Corrigir
+            </button>
           </span>
         )}
-      </label>
-      {copyable && !boolean ? (
-        <span className="field-copy-row">
-          {control}
-          <CopyButton label={text} value={value} />
-        </span>
-      ) : (
-        control
-      )}
-      {repaired !== undefined && (
-        <span className="field-note">
-          Texto estragado no próprio Lattes (acentos ou &quot;aspas&quot;).{' '}
-          <button
-            className="link-btn"
-            title={repaired}
-            type="button"
-            onClick={() => commit(repaired)}
-          >
-            Corrigir
-          </button>
-        </span>
-      )}
-      {error && (
-        <span className="field-error" id={errorId}>
-          {error}
-        </span>
-      )}
-    </div>
-  );
+        {error && (
+          <span className="field-error" id={errorId}>
+            {error}
+          </span>
+        )}
+      </div>
+    );
+  }
+}
+
+/** A grande área é um valor do XSD (CIENCIAS_EXATAS_E_DA_TERRA): mostrada por extenso. */
+function enumLabelOrValue(attr: string, value: string): string {
+  return attr === 'NOME-GRANDE-AREA-DO-CONHECIMENTO' ? enumLabel(value) : value;
 }
 
 /**

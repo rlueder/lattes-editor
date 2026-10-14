@@ -5,6 +5,7 @@
 import type { OpResult } from './apply.ts';
 import type { EspelhoItem } from './espelho.ts';
 import type { ExportFailure } from './export.ts';
+import type { Agency, AreaNode, Course, Institution } from './lattes-lists.ts';
 import type { LattesStatus } from './lattes-status.ts';
 import type { PhotoFailure } from './photo.ts';
 import type { BridgeOp } from './plan.ts';
@@ -37,7 +38,16 @@ export type EditorMessage =
    * lattesId: o currículo aberto no editor, e a extensão só envia se a sessão
    * do Lattes for dele. id volta na resposta.
    */
-  | { id: string; jpeg: string; lattesId?: string; type: 'enviar-foto' };
+  | { id: string; jpeg: string; lattesId?: string; type: 'enviar-foto' }
+  /**
+   * Listas do Lattes lidas ao vivo (src/bridge/lattes-lists.ts), só leitura:
+   * a tabela de áreas e as agências de fomento. id volta na resposta.
+   */
+  | { id: string; type: 'pedir-listas' }
+  /** Busca de instituição no diretório do Lattes, só leitura; level é o f_nivel da formação. */
+  | { id: string; level?: string; query: string; type: 'buscar-instituicao' }
+  /** Os cursos de uma instituição (código com a letra) num nível da formação, só leitura. */
+  | { id: string; institution: string; level: string; type: 'pedir-cursos' };
 
 export type BridgeMessage =
   /** lattesId: de qual currículo é o código, para o editor não guardar o de outro. */
@@ -70,7 +80,13 @@ export type BridgeMessage =
   /** features: o que esta extensão sabe fazer (src/bridge/compat.ts); ausente nas versões de antes do aperto de mão com capacidades. */
   | { features?: string[]; type: 'ola'; version: string }
   /** A extensão tentou ler o menu do Lattes e não conseguiu; reason diz por quê. */
-  | { lattesId?: string; reason: NoReadingReason; type: 'sem-leitura' };
+  | { lattesId?: string; reason: NoReadingReason; type: 'sem-leitura' }
+  /** As listas pedidas com o mesmo id; a que não veio fica de fora, e error diz por quê. */
+  | { agencies?: Agency[]; areas?: AreaNode[]; error?: string; id: string; type: 'listas' }
+  /** Os resultados da busca de instituição pedida com o mesmo id. */
+  | { error?: string; id: string; results?: Institution[]; type: 'instituicoes' }
+  /** Os cursos pedidos com o mesmo id. */
+  | { courses?: Course[]; error?: string; id: string; type: 'cursos' };
 
 /**
  * Por que não há leitura do Lattes: sem o "ok" do aviso da extensão, sem aba

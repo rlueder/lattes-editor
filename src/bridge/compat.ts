@@ -24,6 +24,8 @@ export const BRIDGE_FEATURES = [
   'foto',
   /** Recarregar a aba do Lattes quando a sessão venceu. */
   'recarregar-lattes',
+  /** Áreas, agências, busca de instituição e cursos lidos no Lattes (src/bridge/lattes-lists.ts). */
+  'listas-lattes',
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

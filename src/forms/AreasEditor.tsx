@@ -6,6 +6,8 @@ import { useId } from 'react';
 import { enumLabel } from '../labels/labels.ts';
 import { type KnowledgeArea, MAX_AREAS } from '../model/production.ts';
 import { lattesSchema as schema } from '../schema/lattes.ts';
+import { useLattesListsContext } from '../ui/lattes-lists-context.ts';
+import { AreaPicker } from '../ui/LiveListField.tsx';
 import { ComboSelect } from '../ui/primitives/ComboSelect.tsx';
 import { areaPath } from './area-path.ts';
 
@@ -29,6 +31,8 @@ const same = (a: KnowledgeArea, b: KnowledgeArea) =>
 
 export function AreasEditor({ areas, known, onChange }: Props) {
   const listId = useId();
+  // Com a tabela do Lattes lida pelo conector, cada área é uma escolha só.
+  const tree = useLattesListsContext().areas;
   const full = areas.length >= MAX_AREAS;
   const suggestions = known.filter((k) => !areas.some((a) => same(a, k)));
   const update = (i: number, patch: Partial<KnowledgeArea>) =>
@@ -65,34 +69,45 @@ export function AreasEditor({ areas, known, onChange }: Props) {
           <span aria-hidden="true" className="author-order">
             {i + 1}
           </span>
-          <ComboSelect
-            aria-label={`Grande área ${i + 1}`}
-            options={[
-              { label: '(grande área)', value: '' },
-              ...BIG_AREAS.map((v) => ({ label: enumLabel(v), value: v })),
-            ]}
-            value={a.bigArea}
-            onChange={(v) => update(i, { bigArea: v })}
-          />
-          <input
-            aria-label={`Área ${i + 1}`}
-            list={listId}
-            placeholder="Área"
-            value={a.area}
-            onChange={(e) => update(i, { area: e.target.value })}
-          />
-          <input
-            aria-label={`Subárea ${i + 1}`}
-            placeholder="Subárea"
-            value={a.subArea}
-            onChange={(e) => update(i, { subArea: e.target.value })}
-          />
-          <input
-            aria-label={`Especialidade ${i + 1}`}
-            placeholder="Especialidade"
-            value={a.specialty}
-            onChange={(e) => update(i, { specialty: e.target.value })}
-          />
+          {tree?.length ? (
+            <AreaPicker
+              area={a}
+              areas={tree}
+              aria-label={`Área do conhecimento ${i + 1}`}
+              onChange={(next) => update(i, next)}
+            />
+          ) : (
+            <>
+              <ComboSelect
+                aria-label={`Grande área ${i + 1}`}
+                options={[
+                  { label: '(grande área)', value: '' },
+                  ...BIG_AREAS.map((v) => ({ label: enumLabel(v), value: v })),
+                ]}
+                value={a.bigArea}
+                onChange={(v) => update(i, { bigArea: v })}
+              />
+              <input
+                aria-label={`Área ${i + 1}`}
+                list={listId}
+                placeholder="Área"
+                value={a.area}
+                onChange={(e) => update(i, { area: e.target.value })}
+              />
+              <input
+                aria-label={`Subárea ${i + 1}`}
+                placeholder="Subárea"
+                value={a.subArea}
+                onChange={(e) => update(i, { subArea: e.target.value })}
+              />
+              <input
+                aria-label={`Especialidade ${i + 1}`}
+                placeholder="Especialidade"
+                value={a.specialty}
+                onChange={(e) => update(i, { specialty: e.target.value })}
+              />
+            </>
+          )}
           <button
             aria-label={`Remover área ${i + 1}`}
             className="ghost icon"

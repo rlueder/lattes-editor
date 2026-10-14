@@ -30,6 +30,7 @@ import {
 import { CONSENT_KEY, hasConsent, isConsentCurrent } from './consent.ts';
 import { ownVersion, reloadForApp } from './dev-reload.ts';
 import {
+  answerListRequest,
   failedReport,
   type Identity,
   lattesTab,
@@ -184,6 +185,9 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     await sendEspelho(editor);
     return;
   }
+  // Listas do Lattes: só leituras, mesmo com a fila rodando (lattes-tab.ts).
+  const listReply = await answerListRequest(msg);
+  if (listReply) return toEditor(editor, listReply);
   if (msg.type === 'pedir-curriculo') {
     await sendCurriculo(editor, msg.id);
     return;
@@ -203,6 +207,7 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     }
     return;
   }
+  if (msg.type !== 'enviar') return;
   const state = await readState();
   if (state.running) return;
   await writeState({

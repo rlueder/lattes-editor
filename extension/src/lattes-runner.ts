@@ -8,6 +8,12 @@ import { type EspelhoItem, isEspelhoPage, parseEspelho } from '../../src/bridge/
 import { exportCv, type ExportPort, fromBase64, toBase64 } from '../../src/bridge/export.ts';
 import type { FormControl } from '../../src/bridge/form.ts';
 import { cvCodeFrom, isLogonPage, lattesIdFrom, sameCv } from '../../src/bridge/lattes-html.ts';
+import {
+  type ListsPort,
+  readCourses,
+  readLists,
+  searchInstitutions,
+} from '../../src/bridge/lattes-lists.ts';
 import { lattesStatusFrom } from '../../src/bridge/lattes-status.ts';
 import { type PhotoPort, type PhotoResult, uploadPhoto } from '../../src/bridge/photo.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
@@ -105,6 +111,12 @@ const photoPort: PhotoPort = {
   },
 };
 
+/** Só GET: as listas do Lattes (src/bridge/lattes-lists.ts) nunca gravam nada. */
+const listsPort: ListsPort = {
+  get: port.get,
+  menuHtml: () => document.documentElement.outerHTML,
+};
+
 /** O que volta ao service worker: o ZIP em base64 (a mensagem é JSON), ou o motivo. */
 interface ExportReply {
   detail?: string;
@@ -116,6 +128,8 @@ interface ExportReply {
 
 (globalThis as unknown as { __conector: unknown }).__conector = {
   apply: (op: BridgeOp) => applyOp(op, port),
+  // Só leituras: os cursos de uma instituição num nível da formação.
+  cursos: (institution: string, level: string) => readCourses(listsPort, institution, level),
   // Só leitura: a página de conferência, com o que ainda não foi enviado ao
   // CNPq (docs/lattes_internals.md, seção 10). O código do currículo vem do
   // menu da aba.
@@ -185,6 +199,11 @@ interface ExportReply {
     }
     return { code: cvCodeFrom(html), lattesId: lattesIdFrom(html), status: lattesStatusFrom(html) };
   },
+  // Só leituras: a busca de instituição, como a janela do próprio Lattes.
+  instituicoes: (query: string, level: string) =>
+    searchInstitutions(listsPort, query, level || undefined),
+  // Só leituras: a tabela de áreas do menu e a lista de agências.
+  listas: () => readLists(listsPort),
   // Só leituras: o menu e um exemplar de cada formulário, comparados ao contrato.
   verificar: () => checkContract(port),
 };

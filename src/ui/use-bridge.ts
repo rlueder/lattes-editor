@@ -48,7 +48,7 @@ const HELLO: EditorMessage = {
   version: __APP_VERSION__,
 };
 
-const post = (msg: EditorMessage): void => {
+export const post = (msg: EditorMessage): void => {
   if (isDesktop()) {
     void import('@tauri-apps/api/core')
       .then(({ invoke }) => invoke('conector_send', { msg: JSON.stringify(editorMessage(msg)) }))
@@ -104,6 +104,42 @@ function listen(
   return () => window.removeEventListener('message', onWindow);
 }
 
+/**
+ * Só as mensagens da extensão, sem o aperto de mão nem a queda da ligação
+ * (que ficam com listen): para quem pede uma leitura e espera a resposta,
+ * como as listas do Lattes (use-lattes-lists.ts).
+ */
+export function listenReplies(onMessage: (msg: BridgeMessage) => void): () => void {
+  const receive = (data: unknown) => {
+    if (isBridgeMessage(data)) onMessage(data);
+  };
+  if (isDesktop()) {
+    let alive = true;
+    let off: (() => void) | undefined;
+    void import('@tauri-apps/api/event').then(async ({ listen: on }) => {
+      const sub = await on<string>('conector', (e) => {
+        try {
+          receive(JSON.parse(e.payload));
+        } catch {
+          // Linha que não é JSON: ignorada.
+        }
+      });
+      if (alive) off = sub;
+      else sub();
+    });
+    return () => {
+      alive = false;
+      off?.();
+    };
+  }
+  const onWindow = (event: MessageEvent) => {
+    if (!fromSamePage(event, { origin: location.origin, window })) return;
+    receive(event.data);
+  };
+  window.addEventListener('message', onWindow);
+  return () => window.removeEventListener('message', onWindow);
+}
+
 export interface BridgeState {
   available: boolean;
   /** Apaga o registro do enviado deste currículo (nada muda no Lattes). */
@@ -117,6 +153,8 @@ export interface BridgeState {
    * diagnóstico: os itens, ou o motivo de não ter lido.
    */
   espelho?: EspelhoReading;
+  /** O que a extensão ligada sabe fazer (src/bridge/compat.ts); vazio sem extensão. */
+  features: readonly string[];
   /**
    * O que a extensão leu do menu do Lattes (última publicação e pendência),
    * só quando a sessão é deste currículo; undefined sem extensão ou sem leitura.
@@ -202,6 +240,7 @@ export function useBridge(
   const outgoing = useRef(new Map<string, Outgoing>());
   const [confirmed, setConfirmed] = useState(0);
   const [available, setAvailable] = useState(false);
+  const [features, setFeatures] = useState<readonly string[]>([]);
   const [results, setResults] = useState<Record<string, OpResult>>({});
   const [running, setRunning] = useState(false);
   const lattesId = session ? getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR') : undefined;
@@ -253,7 +292,10 @@ export function useBridge(
   useEffect(() => {
     const onMessage = (msg: BridgeMessage) => {
       setLink((l) => nextLink(l, msg, lattesId));
-      if (msg.type === 'ola') setAvailable(true);
+      if (msg.type === 'ola') {
+        setAvailable(true);
+        setFeatures(msg.features ?? []);
+      }
       if (msg.type === 'resultado') {
         setResults((r) => ({ ...r, [msg.result.key]: msg.result }));
         recordRef.current(msg.result);
@@ -307,6 +349,7 @@ export function useBridge(
       onMessage,
       () => {
         setAvailable(false);
+        setFeatures([]);
         setRunning(false);
         setLattes(undefined);
         setLink({ state: { kind: 'sem-extensao' } });
@@ -346,6 +389,7 @@ export function useBridge(
     confirmed,
     curriculo,
     espelho,
+    features,
     lattes,
     link,
     photoUpload,

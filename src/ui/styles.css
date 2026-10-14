@@ -1471,6 +1471,19 @@ a.menu-item.notice {
   min-width: 0;
 }
 
+/* Curso antes de ler a lista no Lattes: o valor salvo e o botão de carregar. */
+.live-list-pending {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  min-height: 28px;
+}
+
+.live-list-pending .field-note {
+  flex-basis: 100%;
+}
+
 .copy-btn {
   padding: 4px 6px;
   color: var(--muted);

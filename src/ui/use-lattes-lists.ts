@@ -1,0 +1,161 @@
+// As listas do Lattes que o conector lê na sessão da pessoa (LAT-48,
+// src/bridge/lattes-lists.ts): a cópia guardada das áreas e das agências, lida
+// ao abrir e renovada quando o conector liga e a cópia passou de um dia; e a
+// busca de instituição e os cursos, que dependem do que se escolhe e vão ao
+// Lattes a cada pedido. Extensão sem a capacidade 'listas-lattes' não recebe
+// pedido nenhum: os campos ficam com a cópia guardada, ou texto livre.
+
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+import type { Agency, AreaNode, Course } from '../bridge/lattes-lists.ts';
+import type { BridgeMessage, EditorMessage } from '../bridge/protocol.ts';
+import { type CachedList, loadCachedList, saveCachedList } from '../model/list-cache.ts';
+import { getAttr, type XElement } from '../model/xml.ts';
+import type { LattesLists } from './lattes-lists-context.ts';
+import { formationLevel, needsRefresh, sameCode, withoutLetter } from './live-lists.ts';
+import { listenReplies, post } from './use-bridge.ts';
+
+const FEATURE = 'listas-lattes';
+
+/** Quanto esperar uma resposta da extensão antes de desistir do pedido. */
+const REPLY_TIMEOUT_MS = 20_000;
+
+type Reply = Extract<BridgeMessage, { type: 'cursos' | 'instituicoes' | 'listas' }>;
+
+let counter = 0;
+const nextId = (prefix: string) => `${prefix}-${Date.now()}-${++counter}`;
+
+export function useLattesLists(features: readonly string[]): LattesLists {
+  const live = features.includes(FEATURE);
+  const [areas, setAreas] = useState<CachedList<AreaNode[]>>();
+  const [agencies, setAgencies] = useState<CachedList<Agency[]>>();
+  const waiting = useRef(new Map<string, (reply: Reply) => void>());
+  /** Códigos com a letra, dos resultados de busca desta sessão, pelo código do XML. */
+  const fullCodes = useRef(new Map<string, string>());
+  const courseCache = useRef(new Map<string, Promise<Course[]>>());
+
+  useEffect(() => {
+    void loadCachedList<AreaNode[]>('areas')
+      .then((c) => c && setAreas(c))
+      .catch(() => undefined);
+    void loadCachedList<Agency[]>('agencias')
+      .then((c) => c && setAgencies(c))
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(
+    () =>
+      listenReplies((msg) => {
+        if (msg.type !== 'listas' && msg.type !== 'instituicoes' && msg.type !== 'cursos') return;
+        const resolve = waiting.current.get(msg.id);
+        if (!resolve) return;
+        waiting.current.delete(msg.id);
+        resolve(msg);
+      }),
+    [],
+  );
+
+  const ask = useMemo(
+    () =>
+      <T extends Reply>(msg: EditorMessage & { id: string }): Promise<T> =>
+        new Promise<T>((resolve, reject) => {
+          const timer = setTimeout(() => {
+            waiting.current.delete(msg.id);
+            reject(new Error('A extensão não respondeu'));
+          }, REPLY_TIMEOUT_MS);
+          waiting.current.set(msg.id, (reply) => {
+            clearTimeout(timer);
+            resolve(reply as T);
+          });
+          post(msg);
+        }),
+    [],
+  );
+
+  // Conector ligado: renova a cópia que passou de um dia (ou que não existe).
+  const stale =
+    needsRefresh(areas?.readAt, Date.now()) || needsRefresh(agencies?.readAt, Date.now());
+  useEffect(() => {
+    if (!live || !stale) return;
+    let alive = true;
+    void ask<Extract<Reply, { type: 'listas' }>>({ id: nextId('listas'), type: 'pedir-listas' })
+      .then((reply) => {
+        if (!alive) return;
+        const now = Date.now();
+        if (reply.areas?.length) {
+          setAreas({ items: reply.areas, readAt: now });
+          void saveCachedList('areas', reply.areas, now).catch(() => undefined);
+        }
+        if (reply.agencies?.length) {
+          setAgencies({ items: reply.agencies, readAt: now });
+          void saveCachedList('agencias', reply.agencies, now).catch(() => undefined);
+        }
+        if (reply.error) console.warn('Listas do Lattes:', reply.error);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+    // Uma vez por ligação: a resposta atualiza a cópia e tira o "stale".
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live, ask]);
+
+  return useMemo(() => {
+    const searchInstitutions = async (query: string, level?: string) => {
+      if (!live) throw new Error('O conector não está ligado');
+      const reply = await ask<Extract<Reply, { type: 'instituicoes' }>>({
+        id: nextId('inst'),
+        level,
+        query,
+        type: 'buscar-instituicao',
+      });
+      if (reply.error) throw new Error(reply.error);
+      const results = reply.results ?? [];
+      for (const r of results) fullCodes.current.set(withoutLetter(r.code), r.code);
+      return results;
+    };
+
+    /** O código com a letra da instituição do item: da busca desta sessão, ou de uma busca pelo nome. */
+    const fullCodeOf = async (el: XElement, level: string) => {
+      const code = getAttr(el, 'CODIGO-INSTITUICAO') ?? '';
+      const known = fullCodes.current.get(code);
+      if (known) return known;
+      const name = getAttr(el, 'NOME-INSTITUICAO') ?? '';
+      const found = (await searchInstitutions(name, level)).find((r) => sameCode(r.code, code));
+      if (!found) throw new Error('A instituição do item não apareceu na busca do Lattes');
+      return found.code;
+    };
+
+    const loadCourses = async (el: XElement) => {
+      const level = formationLevel(el.name);
+      if (!live || !level) throw new Error('O conector não está ligado');
+      const institution = await fullCodeOf(el, level);
+      const cacheKey = `${institution}|${level}`;
+      let pending = courseCache.current.get(cacheKey);
+      if (!pending) {
+        pending = ask<Extract<Reply, { type: 'cursos' }>>({
+          id: nextId('cursos'),
+          institution,
+          level,
+          type: 'pedir-cursos',
+        }).then((reply) => {
+          if (reply.error || !reply.courses) throw new Error(reply.error ?? 'Sem cursos');
+          return reply.courses;
+        });
+        courseCache.current.set(cacheKey, pending);
+        // Falha não fica guardada: o próximo pedido tenta de novo.
+        pending.catch(() => courseCache.current.delete(cacheKey));
+      }
+      return pending;
+    };
+
+    return {
+      agencies: agencies?.items,
+      areas: areas?.items,
+      courses: live,
+      loadCourses,
+      search: live,
+      searchInstitutions,
+    };
+  }, [live, ask, areas, agencies]);
+}
