@@ -9,9 +9,8 @@
 // texto exato de f_vinc para cada tipo de vínculo são inferidos. A chave só
 // liga depois de um teste acompanhado, no currículo do dono, com restauração.
 //
-// Formação acadêmica fica de fora: o curso só entra pela busca de cursos,
-// cujos parâmetros não foram mapeados. Projetos e patentes também: os
-// formulários de inclusão deles não foram lidos.
+// Formação acadêmica e projeto estão em create-items.ts (LAT-52), com a mesma
+// chave; a patente continua à mão.
 
 import type { Change } from '../model/changes.ts';
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
@@ -77,6 +76,15 @@ export function planCreateAtuacao(change: Change, el: XElement, label: string): 
   const vinculos = childElements(el, 'VINCULOS');
   if (vinculos.length !== 1) {
     return { reason: 'A inclusão pelo conector cria a atuação com um vínculo só' };
+  }
+  // A inclusão leva só a atuação e o vínculo: atividades e projetos da atuação
+  // nova ficariam para trás sem aviso.
+  const hasValue = (e: XElement): boolean =>
+    e.attrs.some((a) => a.value.trim() !== '') || childElements(e).some(hasValue);
+  if (childElements(el).some((c) => c.name !== 'VINCULOS' && hasValue(c))) {
+    return {
+      reason: 'A atuação nova tem atividades ou projetos: inclua a atuação primeiro, à mão',
+    };
   }
   const v = vinculos[0]!;
   const ano = getAttr(v, 'ANO-INICIO');

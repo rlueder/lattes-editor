@@ -144,6 +144,18 @@ alteração no lugar; exclusão pelo formulário) está no
 [guia de implementação](lattes_implementation_guide.md), seção 1, e nos
 tickets LAT-50, LAT-51 e LAT-49.
 
+A inclusão de itens pelo conector está escrita e **desligada**
+(`CREATE_ITEMS_ENABLED`, em `src/bridge/create.ts`) até um teste acompanhado
+no Lattes real: atuação com o primeiro vínculo (`create.ts`), formação
+acadêmica nos dez níveis do "Incluir novo item" (`create-formacao.ts`) e
+projeto (`create-projeto.ts`), com o que as duas têm em comum em
+`create-shared.ts` e o despacho em `create-items.ts`. Cada inclusão confere
+antes (nada igual na lista, formulário em modo de inclusão, campos presentes),
+acha instituição, curso e agência pelas buscas do próprio Lattes, e depois
+relê a lista: exatamente um item novo, com os campos lidos de volta iguais aos
+enviados. Desfazer uma inclusão não passa pelo conector; o registro do enviado
+diz para excluir no Lattes.
+
 ### O caminho de uma mensagem
 
 1. O editor chama `conector_send` (Rust), que escreve uma linha de JSON na
