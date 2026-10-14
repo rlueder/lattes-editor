@@ -260,8 +260,15 @@ O LattesEditor Dev convive com o app publicado: outro nome e ícone (com o
 selo DEV), outra pasta de dados, outra entrada no chaveiro e outro host
 nativo (`lattes_editor.conector_dev`), que só a extensão Dev chama. Ele se
 atualiza sozinho pela página `dev`, com versões como `0.22.0-dev.42`; o app
-publicado nunca vê o canal. A extensão Dev se instala descompactada
-(`chrome://extensions`, modo do desenvolvedor), ao lado da outra.
+publicado nunca vê o canal.
+
+A extensão Dev vem dentro do LattesEditor Dev. Ao abrir, o app a copia para a
+pasta `extensao-dev`, na pasta de dados dele (no macOS,
+`~/Library/Application Support/dev.lattes-editor.app.dev/extensao-dev`). Essa
+pasta se carrega uma vez no Chrome ou no Brave (`chrome://extensions`, modo
+do desenvolvedor, "Carregar sem compactação"); o app mostra o caminho quando
+não acha a extensão. Depois, a cada atualização do app, a pasta é refeita e a
+extensão se recarrega sozinha quando vê que o app mudou de versão.
 
 Para montar o Dev sem esperar um merge: `gh workflow run dev.yml`.
 

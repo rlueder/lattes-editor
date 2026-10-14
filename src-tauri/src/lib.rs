@@ -9,6 +9,7 @@
 
 mod chave;
 mod conector;
+mod extensao_dev;
 
 use std::fs;
 
@@ -46,6 +47,13 @@ pub fn run() {
             if let Err(e) = conector::register() {
                 eprintln!("conector: registro do host falhou: {e}");
             }
+            // Canal Dev: a extensão que veio no pacote vai para a pasta que o
+            // navegador carrega, antes de a extensão se ligar ao app.
+            if cfg!(feature = "canal-dev") {
+                if let Err(e) = extensao_dev::sync(app.handle()) {
+                    eprintln!("extensão Dev: cópia falhou: {e}");
+                }
+            }
             if let Err(e) = conector::start(app.handle(), &app.state::<conector::Conector>()) {
                 eprintln!("conector: porta local falhou: {e}");
             }
@@ -56,7 +64,8 @@ pub fn run() {
             write_file,
             conector::conector_send,
             chave::storage_key_get,
-            chave::storage_key_set
+            chave::storage_key_set,
+            extensao_dev::extensao_dev_pasta
         ])
         .run(tauri::generate_context!())
         .expect("erro ao iniciar o app");

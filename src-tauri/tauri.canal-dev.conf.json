@@ -3,6 +3,9 @@
   "productName": "LattesEditor Dev",
   "mainBinaryName": "LattesEditorDev",
   "identifier": "dev.lattes-editor.app.dev",
+  "build": {
+    "beforeBuildCommand": "pnpm build && pnpm build:extension --canal-dev"
+  },
   "bundle": {
     "createUpdaterArtifacts": true,
     "icon": [
@@ -11,7 +14,10 @@
       "icons/dev/128x128@2x.png",
       "icons/dev/icon.icns",
       "icons/dev/icon.ico"
-    ]
+    ],
+    "resources": {
+      "../dist-extension-dev/": "extensao-dev/"
+    }
   },
   "plugins": {
     "updater": {
