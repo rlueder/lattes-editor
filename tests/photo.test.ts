@@ -166,6 +166,19 @@ describe('foto: preparar a imagem', () => {
     expect(await fitUnderLimit(async () => new Uint8Array(90_000), 600)).toBeUndefined();
   });
 
+  it('cada lado é tentado uma vez só, mesmo com imagem maior que 600', async () => {
+    const sides: number[] = [];
+    const encode = async (side: number, quality: number) => {
+      if (quality === 0.92) sides.push(side);
+      return new Uint8Array(90_000);
+    };
+    expect(await fitUnderLimit(encode, 1200)).toBeUndefined();
+    expect(sides).toEqual([600, 480, 360]);
+    sides.length = 0;
+    await fitUnderLimit(encode, 500);
+    expect(sides).toEqual([500, 480, 360]);
+  });
+
   it('imagem menor que 600 não é ampliada', async () => {
     const fit = await fitUnderLimit(async () => new Uint8Array(10), 300);
     expect(fit?.side).toBe(300);

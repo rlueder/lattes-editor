@@ -3,7 +3,7 @@
 // e confirmar. Quem envia é a extensão, na sessão do Lattes (src/bridge/photo.ts),
 // e ela confere a foto depois de enviar.
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { toBase64 } from '../bridge/export.ts';
 import { photoFailureMessage } from '../bridge/photo.ts';
@@ -42,19 +42,20 @@ export function PhotoDialog({
 }) {
   const [step, setStep] = useState<Step>({ kind: 'escolher' });
   const input = useRef<HTMLInputElement>(null);
-  const preview = useMemo(
-    () =>
-      'bytes' in step
-        ? URL.createObjectURL(new Blob([step.bytes as BlobPart], { type: 'image/jpeg' }))
-        : undefined,
-    [step],
-  );
-  useEffect(
-    () => () => {
-      if (preview) URL.revokeObjectURL(preview);
-    },
-    [preview],
-  );
+  // A prévia é uma URL de blob criada e revogada no mesmo efeito, presa aos
+  // bytes: os passos que carregam a mesma foto reaproveitam a URL, e o
+  // StrictMode (montar, desmontar, montar) não deixa URL órfã nem revogada.
+  const bytes = 'bytes' in step ? step.bytes : undefined;
+  const [preview, setPreview] = useState<string>();
+  useEffect(() => {
+    if (!bytes) {
+      setPreview(undefined);
+      return;
+    }
+    const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'image/jpeg' }));
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [bytes]);
   // onSent muda a cada render de quem chama; a resposta só é tratada uma vez.
   const sentRef = useRef(onSent);
   sentRef.current = onSent;

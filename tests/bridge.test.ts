@@ -678,6 +678,8 @@ describe('de quem é o currículo da sessão', () => {
     expect(sameCv('1234567890123456', '0000000000000001')).toBe(false);
     expect(sameCv(undefined, '1234567890123456')).toBe(false);
     expect(sameCv('1234567890123456', undefined)).toBe(false);
+    // O editor sem lattesId manda '' para a extensão (lattes-tab.ts): recusa.
+    expect(sameCv('', '1234567890123456')).toBe(false);
   });
 });
 

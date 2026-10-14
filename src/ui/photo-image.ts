@@ -26,8 +26,10 @@ export async function fitUnderLimit(
   maxSide: number,
   limit = PHOTO_MAX_BYTES,
 ): Promise<{ bytes: Uint8Array; quality: number; side: number } | undefined> {
-  const sides = SIDES.filter((s) => s < maxSide);
-  for (const side of [Math.min(maxSide, PHOTO_SIDE), ...sides]) {
+  // O primeiro lado é o da foto do Lattes, ou o da imagem se ela for menor;
+  // os seguintes, só os menores que ele, para nenhum lado ser tentado duas vezes.
+  const first = Math.min(maxSide, PHOTO_SIDE);
+  for (const side of [first, ...SIDES.filter((s) => s < first)]) {
     for (const quality of QUALITIES) {
       const bytes = await encode(side, quality);
       if (bytes.length <= limit) return { bytes, quality, side };
