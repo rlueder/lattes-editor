@@ -45,8 +45,11 @@ import {
   type ToolbarTheme,
 } from './toolbar-icon.ts';
 
-/** Nome do host nativo registrado pelo app (conector::HOST_NAME). */
-/** O host nativo do app: o do LattesEditor ou o do LattesEditor Dev (scripts/build-extension.ts). */
+/**
+ * Nome do host nativo registrado pelo app (conector::HOST_NAME): o do
+ * LattesEditor ou o do LattesEditor Dev, escolhido na montagem
+ * (scripts/build-extension.ts).
+ */
 const NATIVE_HOST = __NATIVE_HOST__;
 
 let stopRequested = false;
