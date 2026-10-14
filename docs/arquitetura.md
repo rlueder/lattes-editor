@@ -99,6 +99,18 @@ que o painel "Enviar ao Lattes" mostra item por item:
 - **O resto** fica **à mão**, campo a campo, com o valor antigo e o novo lado a
   lado.
 
+Uma alteração num item de **participação em eventos** que já está no Lattes
+pode ir pelo conector, no próprio formulário do evento
+(`src/bridge/edit-items.ts`): a linha da lista se acha pelo
+`SEQUENCIA-PRODUCAO`, e a operação confere antes que o formulário é de
+ouvinte, do mesmo tipo de evento e com o mesmo ano ou nome. Vão título, ano,
+país, home page, divulgação científica, título em inglês e nome do evento.
+Ficam à mão os eventos de convidado e participante, a forma, o tipo, a
+natureza, a cidade e o que o formulário não tem (idioma, palavras-chave,
+áreas). O caminho está desligado (`EDIT_ITEMS_ENABLED` em `false`) até um
+teste acompanhado num Lattes real; desligado, o evento segue à mão e o
+contrato não confere o formulário.
+
 A decisão de 13/10/2026 sobre duplicatas (só o que é novo vai pelo Importar;
 alteração no lugar; exclusão pelo formulário) está no
 [guia de implementação](lattes_implementation_guide.md), seção 1, e nos

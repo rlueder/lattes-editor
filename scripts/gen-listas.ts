@@ -38,8 +38,34 @@ function names(control: string): string[] {
     .filter((n) => n && !seen.has(n) && seen.add(n));
 }
 
+/**
+ * Nome → código das opções de um combo ("Brasil" → "BRA"). Nome com mais de um
+ * código no Lattes (República Tcheca: RTC e TCH) fica de fora: não há como
+ * saber qual o currículo usa.
+ */
+function codes(control: string): Record<string, string> {
+  const found = new Map<string, Set<string>>();
+  for (const option of listOf(control)) {
+    const [code = '', ...rest] = option.split('|');
+    const name = rest.join('|').trim();
+    if (!code.trim() || !name) continue;
+    found.set(name, (found.get(name) ?? new Set()).add(code.trim()));
+  }
+  return Object.fromEntries(
+    [...found]
+      .filter(([, set]) => set.size === 1)
+      .map(([name, set]) => [name, [...set][0]!])
+      .sort(([a], [b]) => a!.localeCompare(b!, 'pt-BR')),
+  );
+}
+
 const out = {
   capturedAt: capture.capturedAt,
+  /**
+   * f_pais: o código que o formulário envia para cada nome (BRA para Brasil),
+   * para o conector gravar o país de um item (LAT-51).
+   */
+  codigosDosPaises: codes('f_pais'),
   /** F_IDIOMA: nas produções, o XML guarda o nome (Português na exportação real). */
   idiomas: names('F_IDIOMA'),
   /** f_pais: o XML guarda o nome (Brasil, Argentina, Portugal na exportação real). */
@@ -53,5 +79,5 @@ writeFileSync(
   await format(JSON.stringify(out), { ...(await resolveConfig(path)), filepath: path }),
 );
 console.log(
-  `src/schema/listas-lattes.json: ${out.paises.length} países, ${out.idiomas.length} idiomas`,
+  `src/schema/listas-lattes.json: ${out.paises.length} países (${Object.keys(out.codigosDosPaises).length} com código), ${out.idiomas.length} idiomas`,
 );
