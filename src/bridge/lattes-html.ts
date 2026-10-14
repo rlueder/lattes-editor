@@ -33,17 +33,37 @@ export function findLinks(html: string, proc: string): LattesLink[] {
   return out;
 }
 
+/** Atribuição, replace() ou assign() de location apontando para pkg_sec.logon. */
+const LOGON_REDIRECT =
+  /location(?:\.href)?\s*=\s*["'][^"']*pkg_sec\.logon|location\.(?:replace|assign)\(\s*["'][^"']*pkg_sec\.logon/i;
+
+/**
+ * Página que só redireciona: tirando scripts, comentários e tags, não sobra
+ * texto. Uma página de conteúdo com um script que leva ao login (um botão, um
+ * tempo esgotado) tem texto e não conta.
+ */
+function isRedirectStub(html: string): boolean {
+  const text = html
+    .replace(/<script\b[\s\S]*?<\/script>/gi, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/gi, '');
+  return text.trim() === '';
+}
+
 /**
  * A sessão caiu: o Lattes devolve a tela de login (pkg_sec.logon). Com a
  * sessão vencida, cada página vem como um script que só redireciona
  * (<SCRIPT>location="pkg_sec.logon?f_cod=ini"</SCRIPT>, visto em 14/10/2026); o
  * fetch não roda o script, então o redirecionamento precisa ser lido no HTML.
+ * Só a forma com atribuição foi vista; replace() e assign() entram por
+ * precaução.
  */
 export function isLogonPage(html: string, url = ''): boolean {
   return (
     /pkg_sec\.logon/i.test(url) ||
     /<form[^>]*pkg_sec\.logon/i.test(html) ||
-    /location(?:\.href)?\s*=\s*["'][^"']*pkg_sec\.logon/i.test(html)
+    (LOGON_REDIRECT.test(html) && isRedirectStub(html))
   );
 }
 
