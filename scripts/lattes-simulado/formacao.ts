@@ -8,6 +8,7 @@
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
+import { AGENCIES, INSTITUTIONS } from './buscas.ts';
 import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
@@ -45,9 +46,14 @@ function attrOf(el: XElement, candidates: string[]): string | undefined {
   return candidates.find((c) => names.has(c));
 }
 
-function oneOf(name: string, candidates: string[], max: number): Binding {
+function oneOf(
+  name: string,
+  candidates: string[],
+  max?: number,
+  kind: Binding['kind'] = 'text',
+): Binding {
   return {
-    kind: 'text',
+    kind,
     maxLength: max,
     name,
     read: (el) => {
@@ -61,18 +67,42 @@ function oneOf(name: string, candidates: string[], max: number): Binding {
   };
 }
 
+/** O atributo, se o elemento o tem pelo schema; senão a gravação é ignorada. */
+function setIfKnown(el: XElement, name: string, value: string): void {
+  if (value && attrOf(el, [name])) setAttr(el, name, value);
+}
+
+/**
+ * A letra que a busca põe na frente do código da instituição (seção 18). O
+ * XML guarda o código sem ela; o simulado a recupera da tabela da busca e usa
+ * D quando não acha (inferido).
+ */
+function withLetter(code: string): string {
+  if (!code || /^[A-Z]/.test(code)) return code;
+  return INSTITUTIONS.find((i) => i.code.slice(1) === code)?.code ?? `D${code}`;
+}
+
+const hiddenFrom = (name: string, read: (el: XElement) => string, write?: Binding['write']) =>
+  ({ kind: 'hidden', name, read, write }) as Binding;
+
+/** Os campos de GN_FORMACAO2 (seção 17) e a ligação de cada um com o XML (inferida). */
 function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
   const none = (name: string, kind: Binding['kind'] = 'hidden'): Binding => ({
     kind,
     name,
     read: () => '',
   });
+  const inst = (el: XElement) => withLetter(getAttr(el, 'CODIGO-INSTITUICAO') ?? '');
+  const instWrite: Binding['write'] = (el, value) =>
+    setIfKnown(el, 'CODIGO-INSTITUICAO', value.replace(/^[A-Za-z]/, ''));
   return [
     {
-      ...none('f_tpo_doutorado', 'radio'),
+      ...oneOf('f_tpo_doutorado', ['TIPO-MESTRADO', 'TIPO-DOUTORADO'], undefined, 'radio'),
       options: [
         ['N', 'Normal'],
         ['S', 'Sanduíche'],
+        ['C', 'Co-tutela'],
+        ['CS', 'Co-tutela/sanduíche'],
       ],
     },
     attr('f_inst', 'NOME-INSTITUICAO', 'text', { disabled: true, maxLength: 75 }),
@@ -114,18 +144,46 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
       read: (el) => state.privacy.get(el) ?? '1',
       write: (el, value) => state.privacy.set(el, value || '1'),
     },
-    ...[
-      'f_cod_inst',
-      'f_cod_inst2',
+    // A busca grava o código com a letra: V em f_cod_inst, as outras em f_cod_inst2.
+    hiddenFrom('f_cod_inst', (el) => (inst(el).startsWith('V') ? inst(el) : ''), instWrite),
+    hiddenFrom('f_cod_inst2', (el) => (inst(el).startsWith('V') ? '' : inst(el)), instWrite),
+    hiddenFrom(
       'f_inst_old',
+      (el) => getAttr(el, 'NOME-INSTITUICAO') ?? '',
+      (el, v) => setIfKnown(el, 'NOME-INSTITUICAO', v),
+    ),
+    // O curso vai sem a letra; em qual dos dois campos, o simulado não sabe (inferido).
+    hiddenFrom(
       'f_cod_curso',
+      () => '',
+      (el, v) => setIfKnown(el, 'CODIGO-CURSO', v),
+    ),
+    hiddenFrom(
       'f_cod_curso2',
+      (el) => getAttr(el, 'CODIGO-CURSO') ?? '',
+      (el, v) => setIfKnown(el, 'CODIGO-CURSO', v),
+    ),
+    hiddenFrom(
       'f_curso_old',
+      (el) => getAttr(el, 'NOME-CURSO') ?? '',
+      (el, v) => setIfKnown(el, 'NOME-CURSO', v),
+    ),
+    // atribuir() grava o código; o nome, o servidor tira da lista (inferido).
+    hiddenFrom(
       'f_agencia',
-      'f_id_orientador',
-      'f_seq_orientacao',
+      (el) => getAttr(el, 'CODIGO-AGENCIA-FINANCIADORA') ?? '',
+      (el, v) => {
+        setIfKnown(el, 'CODIGO-AGENCIA-FINANCIADORA', v);
+        setIfKnown(el, 'NOME-AGENCIA', AGENCIES.find(([c]) => c === v)?.[1] ?? '');
+      },
+    ),
+    none('f_id_orientador'),
+    none('f_seq_orientacao'),
+    hiddenFrom(
       'f_carga',
-    ].map((n) => none(n)),
+      (el) => getAttr(el, 'CARGA-HORARIA') ?? '',
+      (el, v) => setIfKnown(el, 'CARGA-HORARIA', v),
+    ),
     fixed('f_ctr', ids.f_ctr ?? 'U'),
     fixed('f_cod', state.code),
     fixed('f_seq', ids.f_seq ?? ''),
@@ -184,8 +242,66 @@ ${renderFields(bindings(state, ids), el)}
 <p><a href="#" onclick="self.parent.modalCV3.setarUrl('prc_inst_form?f_cod=${state.code}&amp;f_nivel=${nivel}',true); return false;">Buscar instituição</a></p>
 ${h.formButtons(Boolean(el))}
 </form>
-${h.formScripts('GN_FORMACAO2', el ? 'Deseja realmente excluir esta formação acadêmica?' : undefined)}`;
+${h.formScripts('GN_FORMACAO2')}${el ? deleteScript(state, el, 'PKG_FORMACAO.SETA_ULTIMO_PUBLICO', 'Deseja realmente excluir esta formação acadêmica?') : ''}`;
   return html(h.page('Formação acadêmica/titulação', body));
+}
+
+/**
+ * O del() das duas formações (seção 15, observado no código): com contPriv
+ * "0", antes de excluir, um POST síncrono a SETA_ULTIMO_PUBLICO com f_op=E;
+ * SETOU vira o aviso de que outra formação ficou pública, ULTIMO segue sem
+ * aviso e outra resposta para com "Ocorreu um erro!". contPriv é aqui o
+ * número das outras formações públicas (inferido).
+ */
+export function deleteScript(
+  state: LattesState,
+  el: XElement,
+  seta: string,
+  confirmText: string,
+): string {
+  const others = publicOthers(state, el).length;
+  return `<script>var contPriv = "${others}";
+function del(){ if (!confirm('${h.jsString(confirmText)}')) return;
+  if (contPriv == "0") { var x = new XMLHttpRequest(); x.open('POST', '${seta}', false);
+    x.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    x.send('f_cod=' + dc.f_cod.value + '&f_seq=' + dc.f_seq.value + '&f_tipo=' + dc.f_tipo.value + '&f_op=E');
+    var r = x.responseText.trim();
+    if (r == 'SETOU') alert('É necessário que pelo menos uma formação acadêmica tenha visibilidade Público. Sua última formação acadêmica concluída foi alterada para Público.');
+    else if (r != 'ULTIMO') { alert('Ocorreu um erro!'); return; } }
+  dc.f_ctr.value = 'E'; enviar(); }</script>`;
+}
+
+/** As outras formações (acadêmicas e complementares) com visibilidade pública. */
+function allFormations(state: LattesState): XElement[] {
+  const fa = state.find(['DADOS-GERAIS', 'FORMACAO-ACADEMICA-TITULACAO']);
+  const fc = state.find(['DADOS-COMPLEMENTARES', 'FORMACAO-COMPLEMENTAR']);
+  return [...(fa ? childElements(fa) : []), ...(fc ? childElements(fc) : [])];
+}
+
+function publicOthers(state: LattesState, el: XElement): XElement[] {
+  return allFormations(state).filter((f) => f !== el && (state.privacy.get(f) ?? '1') === '1');
+}
+
+/**
+ * SETA_ULTIMO_PUBLICO com f_op=E (inferido além do nome e das respostas):
+ * sem outra formação pública, a concluída mais recente entre as outras fica
+ * pública e a resposta é SETOU; sem outra concluída, ULTIMO.
+ */
+export function setaUltimoPublico(req: SimRequest, state: LattesState): SimResponse {
+  const el = allFormations(state).find(
+    (f) => getAttr(f, 'SEQUENCIA-FORMACAO') === req.get('f_seq'),
+  );
+  if (!el || req.get('f_op') !== 'E') return { contentType: 'text/plain', html: 'ERRO' };
+  if (publicOthers(state, el).length > 0) return { contentType: 'text/plain', html: 'ULTIMO' };
+  const concluded = allFormations(state)
+    .filter((f) => f !== el && getAttr(f, 'STATUS-DO-CURSO') === 'CONCLUIDO')
+    .sort(
+      (a, b) => Number(getAttr(b, 'ANO-DE-CONCLUSAO')) - Number(getAttr(a, 'ANO-DE-CONCLUSAO')),
+    );
+  const last = concluded[0];
+  if (!last) return { contentType: 'text/plain', html: 'ULTIMO' };
+  state.privacy.set(last, '1');
+  return { contentType: 'text/plain', html: 'SETOU' };
 }
 
 function post(req: SimRequest, state: LattesState): SimResponse {
@@ -202,15 +318,8 @@ function post(req: SimRequest, state: LattesState): SimResponse {
         ...childElements(container).map((c) => Number(getAttr(c, 'SEQUENCIA-FORMACAO')) || 0),
       ) + 1,
     );
-    // A instituição e o curso vêm das buscas: o código com a letra (seção 18).
-    const el = element(name, {
-      'CODIGO-CURSO': req.get('f_cod_curso') || req.get('f_cod_curso2') || '',
-      'CODIGO-INSTITUICAO': req.get('f_cod_inst') || req.get('f_cod_inst2') || '',
-      NIVEL: nivel,
-      'NOME-CURSO': req.get('f_curso_old') ?? '',
-      'NOME-INSTITUICAO': req.get('f_inst_old') ?? '',
-      'SEQUENCIA-FORMACAO': seq,
-    });
+    // A instituição, o curso e a agência vêm das buscas, pelos ocultos.
+    const el = element(name, { NIVEL: nivel, 'SEQUENCIA-FORMACAO': seq });
     applyFields(bindings(state, {}), el, req);
     insertInSchemaOrder(lattesSchema, container, el);
     state.touch();
@@ -229,4 +338,5 @@ export const FORMACAO_ROUTES: Routes = {
   'pkg_formacao.form': (req, state) =>
     req.method === 'POST' ? post(req, state) : form(req, state),
   'pkg_formacao.lista': lista,
+  'pkg_formacao.seta_ultimo_publico': setaUltimoPublico,
 };

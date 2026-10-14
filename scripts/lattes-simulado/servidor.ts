@@ -24,7 +24,10 @@ import { FORMACAO_ROUTES } from './formacao.ts';
 import { LOGON_REDIRECT } from './html.ts';
 import { IMPORTAR_ROUTES } from './importar.ts';
 import { MENU_ROUTES } from './menu.ts';
+import { PATENTE_ROUTES } from './patente.ts';
 import { buildRequest, type SimRequest } from './pedido.ts';
+import { PREMIOS_COMPLEMENTAR_ROUTES } from './premios-complementar.ts';
+import { PROJETO_ROUTES } from './projeto.ts';
 import { notFound, type Routes, type SimResponse } from './tipos.ts';
 
 export const ROUTES: Routes = {
@@ -36,6 +39,9 @@ export const ROUTES: Routes = {
   ...FORMACAO_ROUTES,
   ...IMPORTAR_ROUTES,
   ...MENU_ROUTES,
+  ...PATENTE_ROUTES,
+  ...PREMIOS_COMPLEMENTAR_ROUTES,
+  ...PROJETO_ROUTES,
 };
 
 /** As duas bases em que o editor do Lattes responde. */

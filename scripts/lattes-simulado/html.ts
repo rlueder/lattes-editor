@@ -155,7 +155,7 @@ export function savedScript(back: string): string {
  * 14/10/2026: checkPublicacao() e a caixa de mensagem do menu.
  */
 export function eventSavedScript(): string {
-  return `<script>if (self.parent.checkPublicacao) self.parent.checkPublicacao(); self.parent.caixaMsg.exibir('A operação foi realizada com sucesso! !');</script>`;
+  return `<script>if (self.parent.checkPublicacao) self.parent.checkPublicacao(); self.parent.caixaMsg.exibir('A operação foi realizada com sucesso!');</script>`;
 }
 
 /** Com a sessão vencida, toda página é só isto (seção 7, observado em 14/10/2026). */

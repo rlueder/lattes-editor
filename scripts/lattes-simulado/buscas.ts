@@ -28,7 +28,7 @@ const COURSES: Record<string, [string, string][]> = {
   V000000000003: [['V00000004 ', 'Genética e Biologia Molecular']],
 };
 
-const AGENCIES: [string, string][] = [
+export const AGENCIES: [string, string][] = [
   ['000000000001', 'Conselho Nacional de Desenvolvimento Científico e Tecnológico'],
   ['000000000002', 'Coordenação de Aperfeiçoamento de Pessoal de Nível Superior'],
   ['000000000003', 'Fundação de Amparo à Pesquisa do Estado de São Paulo'],
