@@ -562,22 +562,63 @@ antigo. O que vem depois do Confirmar (passo 3 e o resultado) ainda precisa
 ser observado com a pessoa acompanhando.
 
 **No conector (14/10/2026, desligado).** `src/bridge/importar.ts` faz os
-passos 1 e 2 com o arquivo da opção 1 (só os itens novos, com um
-`DADOS-GERAIS` mínimo) e para na resposta do Confirmar do passo 2, sem nenhum
-POST a mais, devolvendo só a forma da página (formulários, campos, botões).
-Fica atrás de `IMPORT_ENABLED = false` até um teste acompanhado. O
-`DADOS-GERAIS` mínimo leva, além de `NOME-COMPLETO` e
-`NOME-EM-CITACOES-BIBLIOGRAFICAS`, `NACIONALIDADE` e
-`PERMISSAO-DE-DIVULGACAO`, que o XSD exige. Ainda **não testado**: se o
-Lattes aceita esse arquivo, se o filtro de ano lista só os anos do arquivo e
-como é a página do passo 3. O que o teste precisa observar:
+passos 1 e 2 com o arquivo da opção 1 (`buildMinimalImportFile`) e para na
+resposta do Confirmar do passo 2, sem nenhum POST a mais, devolvendo só a
+forma da página (formulários, campos, botões). Fica atrás de
+`IMPORT_ENABLED = false`; o teste acompanhado abaixo mostrou que a chave não
+pode ser ligada como está.
 
-- se o passo 1 aceita o arquivo mínimo e mostra o passo 2;
-- os anos de `f_ano_prod` para esse arquivo, e se é um select ou botões;
-- a página que vem depois do Confirmar do passo 2: o formulário, como cada
-  item aparece, como o vermelho (já no currículo) e o verde se distinguem no
-  HTML, e o botão que confirma;
-- se o Confirmar do passo 2 já muda alguma coisa no currículo.
+**Teste acompanhado (14/10/2026), a partir da aba do menu.** **Observado.**
+
+1. Arquivo mínimo com `DADOS-GERAIS` só com `NOME-COMPLETO`,
+   `NOME-EM-CITACOES-BIBLIOGRAFICAS`, `NACIONALIDADE` e
+   `PERMISSAO-DE-DIVULGACAO` (o que o XSD exige), e de novo com `SEXO`
+   acrescentado (o DTD `schema/LMPLCurriculo.DTD` tem `SEXO #REQUIRED`; o XSD
+   não): o passo 1 responde com o alerta "Erro. Não foi possível processar o
+   arquivo enviado. Certifique-se que o mesmo esteja de acordo com o DTD do
+   Curriculo Lattes." Nenhuma solicitação é criada. O Lattes confere o
+   arquivo contra o DTD, não contra o XSD.
+2. O mesmo arquivo mínimo, mas com **todos** os atributos do `DADOS-GERAIS`
+   da exportação real (CPF, nascimento, RG, filiação, `ORCID-ID`, `PCD` e o
+   resto), passa da conferência do DTD e cai noutro alerta: "O arquivo
+   enviado para importação não contém produções científicas.", quando o único
+   item novo é uma `PARTICIPACAO-EM-CONGRESSO` em `DADOS-COMPLEMENTARES`.
+   Qual atributo faltava no caso 1 não foi isolado.
+3. Opção 2 (a exportação inteira mais o evento, `SEQUENCIA-PRODUCAO` 34): o
+   passo 2 vem como mapeado acima (formulário `pkg_imp_xml`, as 17 `f_chkp`
+   marcadas, anos 2026, 2007, 2006, 2005 e 2004). Confirmado com `f_chkp=16`
+   e `f_ano_prod=2026`, vem o **passo 3**: formulário `pkg_imp_xml`, POST
+   para `pkg_importa_xml.mostra_lista_prod`, com `f_cod`, `f_solic`,
+   `f_sq=dummy`, `f_ctr`, `f_chkp` (`dummy` e os módulos escolhidos),
+   `f_all` e uma caixa `f_sq` por item, todas marcadas. O valor de `f_sq` é
+   um id do servidor (20 no teste), **não** o nosso `SEQUENCIA-PRODUCAO`.
+   Cada linha tem `<b class="quadrado verde">` ou `<b class="quadrado
+vermelho">`; o único item veio verde. `enviar()` exige ao menos um `f_sq`
+   marcado e põe `f_ctr=I`; `excluir()` pede confirmação e põe `f_ctr=D`.
+4. O Confirmar do passo 3 (POST para `mostra_lista_prod` com `f_ctr=I` e
+   `f_sq=20`) responde com `caixaMsg.exibir` "A operação foi realizada com
+   sucesso!", e a solicitação é consumida (o Importar volta ao passo 1).
+   Mesmo assim, passados mais de 3 minutos, o item **não** está em
+   `pkg_evento.lista`, nem em `cv_espelho`, nem numa exportação nova, e o
+   menu não mostra alteração pendente. A mensagem de sucesso não quer dizer
+   que o item entrou. A causa não se sabe: o Lattes descartou o item em
+   silêncio, ou o POST feito pela página difere do envio do navegador em
+   algum parâmetro.
+
+Consequências:
+
+- Conferir por uma exportação nova depois do Confirmar (já previsto no guia,
+  seção 1) é obrigatório; a mensagem de sucesso não vale como conferência.
+- O arquivo mínimo, como o guia o descreve, não passa. Para passar do DTD
+  ele precisou de todos os atributos de `DADOS-GERAIS`, inclusive dados
+  pessoais, e ainda assim um arquivo só com evento foi recusado como sem
+  produções científicas.
+- O POST do Exportar (seção 12) só funciona em
+  `/cvlattesweb/PKG_IMPCV.get_arquivo`; feito a partir de `/curriculoweb/`,
+  falha com "Failed to fetch".
+
+O conector reconhece os dois alertas do passo 1 e para com o motivo
+`arquivo`, sem solicitação criada.
 
 ## 14. Foto do currículo (13/10/2026)
 

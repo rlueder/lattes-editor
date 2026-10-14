@@ -5,9 +5,10 @@
 // itens vermelhos no Passo 3, e a lista de passos na tela diz isso.
 //
 // A opção 1 (só os itens novos, com um DADOS-GERAIS mínimo) é a escolhida para
-// o Importar pelo conector (LAT-50), mas ainda não foi testada no Lattes.
-// buildMinimalImportFile a monta só para esse caminho, que fica desligado
-// (IMPORT_ENABLED, em src/bridge/importar.ts) até o teste acompanhado.
+// o Importar pelo conector (LAT-50). buildMinimalImportFile a monta só para
+// esse caminho, que fica desligado (IMPORT_ENABLED, em src/bridge/importar.ts).
+// No teste acompanhado de 14/10/2026 o Lattes recusou este arquivo no passo 1
+// (lattes_internals.md, seção 13): ele confere contra o DTD, não contra o XSD.
 
 import { encodeCv } from '../model/document.ts';
 import { pendingItems } from '../model/production.ts';
@@ -128,8 +129,12 @@ const GENERAL_ATTRS = new Set([
  * contêineres. Nada de CPF, RG, nascimento, endereço ou itens já existentes.
  *
  * A árvore é a do documento podada, então a ordem dos filhos continua a do
- * schema. Se o Lattes aceita esse arquivo não foi testado: só o Importar pelo
- * conector o usa, e ele está desligado (IMPORT_ENABLED).
+ * schema. Valida contra o XSD, mas o Lattes o recusou (14/10/2026, seção 13
+ * de lattes_internals.md): com este DADOS-GERAIS, e também com SEXO, o
+ * passo 1 diz que o arquivo não está de acordo com o DTD. Só passou com todos
+ * os atributos de DADOS-GERAIS da exportação, dados pessoais inclusive, e
+ * ainda assim um arquivo só com um evento foi recusado como "sem produções
+ * científicas". Só o Importar pelo conector o usa, e ele está desligado.
  */
 export function buildMinimalImportFile(
   doc: XDocument,

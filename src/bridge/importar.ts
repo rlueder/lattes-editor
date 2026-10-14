@@ -11,21 +11,31 @@
 //   f_chkp por módulo (1 a 17), f_all e o filtro de ano f_ano_prod. O
 //   "Confirmar" põe f_ctr=I e envia.
 //
-// O passo 3 (a lista de itens verdes e vermelhos, com o Confirmar final) nunca
-// foi visto. Por isso o fluxo para na resposta do passo 2, seja ela qual for,
-// sem nenhum POST a mais, e devolve só a forma da página (formulários, campos,
-// botões) para o mapeamento. A solicitação criada no passo 1 fica pendente no
-// Lattes, à espera de Confirmar ou Descartar pela pessoa. Uma solicitação
-// pendente encontrada antes de começar também para o fluxo: o conector nunca
-// descarta nada sozinho.
+// O passo 3 foi visto uma vez, no teste acompanhado de 14/10/2026 (seção 13):
+// formulário pkg_imp_xml, POST para pkg_importa_xml.mostra_lista_prod, uma
+// caixa f_sq por item com um id do servidor (não o SEQUENCIA-PRODUCAO) e
+// <b class="quadrado verde|vermelho"> em cada linha. O Confirmar dele disse
+// "A operação foi realizada com sucesso!" e o item não entrou no currículo.
+// Enquanto não se souber por quê, o fluxo para na resposta do passo 2, seja
+// ela qual for, sem nenhum POST a mais, e devolve só a forma da página. A
+// solicitação criada no passo 1 fica pendente no Lattes, à espera de
+// Confirmar ou Descartar pela pessoa. Uma solicitação pendente encontrada
+// antes de começar também para o fluxo: o conector nunca descarta nada.
+//
+// No mesmo teste, o passo 1 recusou o arquivo mínimo com dois alertas
+// (STEP1_REJECTIONS); o conector os reconhece e para sem solicitação criada.
 
 import { decodeHtmlEntities, foldText, plainText } from './html-text.ts';
 import { isLogonPage } from './lattes-html.ts';
 
 /**
- * Desligado até o teste acompanhado no Lattes: se o arquivo mínimo é aceito e
- * como é a página do passo 3. Enquanto for false, o editor não dispara o
- * fluxo e a extensão recusa o pedido; as instruções do Importar à mão seguem.
+ * Desligado. O teste acompanhado de 14/10/2026 (lattes_internals.md, seção
+ * 13) mostrou que não pode ser ligado como está: o Lattes recusa o arquivo
+ * mínimo no passo 1, e um Confirmar do passo 3 com mensagem de sucesso não
+ * pôs o item no currículo. Ligar pede, antes, um arquivo que o Lattes aceite
+ * sem levar dados pessoais e a conferência por uma exportação nova depois do
+ * Confirmar. Enquanto for false, o editor não dispara o fluxo e a extensão
+ * recusa o pedido; as instruções do Importar à mão seguem.
  */
 export const IMPORT_ENABLED = false;
 
@@ -152,6 +162,29 @@ function controlsIn(body: string): Control[] {
     out.push({ name, type, value: attrOf(tag, 'value') ?? '' });
   }
   return out;
+}
+
+/**
+ * Alertas com que o passo 1 recusa o arquivo, vistos em 14/10/2026 (sem
+ * acento nem caixa). Nenhum cria solicitação.
+ */
+const STEP1_REJECTIONS = [
+  /nao foi possivel processar o arquivo enviado/,
+  /nao contem producoes cientificas/,
+];
+
+/** O alerta de recusa do passo 1, como o Lattes escreveu, ou undefined. */
+export function step1Rejection(html: string): string | undefined {
+  const text = decodeHtmlEntities(html);
+  for (const re of STEP1_REJECTIONS) {
+    if (!re.test(foldText(text))) continue;
+    // O texto do alert(), com acentos, para a pessoa ler como o Lattes disse.
+    for (const m of text.matchAll(/alert\(\s*(["'])([\s\S]*?)\1\s*\)/gi)) {
+      if (re.test(foldText(m[2] ?? ''))) return m[2]!.replace(/\\n/g, ' ').trim();
+    }
+    return 'O Lattes recusou o arquivo.';
+  }
+  return undefined;
 }
 
 /** O aviso do Importar quando o passo 1 já foi feito e ninguém confirmou nem descartou. */
@@ -348,6 +381,13 @@ async function uploadAndSelect(
     { bytes: req.file, field: 'file', name: req.fileName, type: 'text/xml' },
   );
   if (isLogonPage(step2.html, step2.url)) return { reason: 'sessao' };
+  const rejected = step1Rejection(step2.html);
+  if (rejected) {
+    return {
+      detail: `${rejected} Nenhuma solicitação foi criada no Lattes.`,
+      reason: 'arquivo',
+    };
+  }
   const form = readStep2(step2.html);
   if ('problem' in form) {
     return {

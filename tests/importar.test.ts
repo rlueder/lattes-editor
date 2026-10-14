@@ -20,6 +20,7 @@ import {
   pickYear,
   readStep2,
   requestProblem,
+  step1Rejection,
   step1ScreenState,
   STEP2_MODULE_VALUES,
 } from '../src/bridge/importar.ts';
@@ -443,6 +444,29 @@ describe('Importar pelo conector contra um Lattes falso', () => {
       expect(r.detail).toContain('pendente');
       expect(calls.map((c) => c.method)).toEqual(['GET', 'MULTIPART']);
     }
+  });
+
+  it('passo 1 recusa o arquivo (alertas vistos em 14/10/2026): para sem solicitação', async () => {
+    const pages = [
+      `<script>alert("Erro. N&atilde;o foi poss&iacute;vel processar o arquivo enviado. Certifique-se que o mesmo esteja de acordo com o DTD do Curriculo Lattes.");</script>`,
+      `<script>alert('O arquivo enviado para importação não contém produções científicas.')</script>`,
+    ];
+    for (const s2 of pages) {
+      const { calls, port } = fakeLattes({ s2 });
+      const r = await importItems(port, CODE, REQ, true);
+      expect(r.reason).toBe('arquivo');
+      expect(r.request).toBeUndefined();
+      expect(r.detail).toContain('Nenhuma solicitação foi criada');
+      expect(calls.map((c) => c.method)).toEqual(['GET', 'MULTIPART']);
+    }
+    expect(step1Rejection(pages[0]!)).toMatch(/^Erro\. Não foi possível processar/);
+    expect(step1Rejection(pages[1]!)).toBe(
+      'O arquivo enviado para importação não contém produções científicas.',
+    );
+    expect(step1Rejection('<p>Não foi possível processar o arquivo enviado</p>')).toBe(
+      'O Lattes recusou o arquivo.',
+    );
+    expect(step1Rejection(step2())).toBeUndefined();
   });
 
   it('passo 2 de outro currículo: para e diz qual solicitação ficou pendente', async () => {
