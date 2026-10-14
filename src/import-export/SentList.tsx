@@ -2,11 +2,21 @@
 // conferiu, por dia. Cada campo mostra o rótulo em cima, o valor de antes
 // riscado e o de depois logo abaixo. O Lattes guarda essas gravações como pendentes até
 // "Enviar ao CNPq" e não tem como descartá-las; desfazer daqui manda de
-// volta o valor de antes, pela mesma confirmação de qualquer envio.
+// volta o valor de antes, pela mesma confirmação de qualquer envio. As
+// tentativas que não terminaram conferidas aparecem marcadas, com o motivo, e
+// o registro inteiro sai em texto para anexar a um recurso (LAT-47).
 
 import { useMemo, useState } from 'react';
 
-import { groupByDay, type SentEntry, undoneIds, undoOp } from '../bridge/sent-log.ts';
+import {
+  failed,
+  groupByDay,
+  type SentEntry,
+  sentLogText,
+  undoneIds,
+  undoOp,
+} from '../bridge/sent-log.ts';
+import { saveBytes } from '../desktop/native.ts';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { SendConfirm } from './SendConfirm.tsx';
 
@@ -19,6 +29,25 @@ const dayLabel = (day: string) =>
 
 const timeLabel = (ms: number) =>
   new Date(ms).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+const OUTCOME_LABEL = {
+  divergente: 'Não conferido',
+  erro: 'Não gravado',
+  sessao: 'Não gravado',
+} as const;
+
+/** O registro em .txt, com o currículo e a versão do app, para anexar a um recurso. */
+async function exportLog(entries: SentEntry[]) {
+  const lattesId = entries[0]?.lattesId ?? '';
+  const now = Date.now();
+  const text = sentLogText(entries, { appVersion: __APP_VERSION__, lattesId, now });
+  const day = new Date(now).toISOString().slice(0, 10);
+  await saveBytes(
+    new TextEncoder().encode(text),
+    `registro-lattes-${lattesId}-${day}.txt`,
+    'text/plain',
+  );
+}
 
 export function SentList({ bridge }: { bridge: BridgeState }) {
   const [undoing, setUndoing] = useState<SentEntry | undefined>();
@@ -43,11 +72,17 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
               const canUndo =
                 bridge.available && !bridge.running && !wasUndone && undoOp(entry) !== undefined;
               return (
-                <li key={entry.id} className={wasUndone ? 'sent-undone' : undefined}>
+                <li
+                  key={entry.id}
+                  className={wasUndone ? 'sent-undone' : failed(entry) ? 'sent-failed' : undefined}
+                >
                   <div className="sent-head">
                     <strong>{entry.op.label}</strong>
                     <span className="muted sent-time">{timeLabel(entry.sentAt)}</span>
-                    {entry.undoOf === undefined && (
+                    {entry.outcome && (
+                      <span className="tag warn">{OUTCOME_LABEL[entry.outcome.status]}</span>
+                    )}
+                    {entry.undoOf === undefined && !failed(entry) && (
                       <button
                         className="ghost sent-undo"
                         disabled={!canUndo}
@@ -67,6 +102,9 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
                       </button>
                     )}
                   </div>
+                  {entry.outcome?.detail && (
+                    <p className="muted sent-outcome">{entry.outcome.detail}</p>
+                  )}
                   <dl className="sent-fields">
                     {entry.rows.map((row) => (
                       <div key={row.name} className="sent-field">
@@ -122,9 +160,14 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
             </button>
           </>
         ) : (
-          <button className="ghost" type="button" onClick={() => setClearing(true)}>
-            Apagar este registro do app
-          </button>
+          <>
+            <button className="ghost" type="button" onClick={() => void exportLog(bridge.sent)}>
+              Exportar em texto
+            </button>
+            <button className="ghost" type="button" onClick={() => setClearing(true)}>
+              Apagar este registro do app
+            </button>
+          </>
         )}
       </div>
     </section>

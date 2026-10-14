@@ -1,9 +1,12 @@
 // Registro do que o conector gravou no Lattes. O Lattes não mostra o que está
 // pendente nem deixa descartar antes de "Enviar ao CNPq"
 // (docs/lattes_internals.md, seção 10); este registro é o único lugar onde a
-// pessoa vê o que foi gravado e de onde pode desfazer.
+// pessoa vê o que foi gravado e de onde pode desfazer. As tentativas que não
+// deram certo também entram, e o registro sai em texto para anexar a um
+// recurso de edital quando o Lattes cai no prazo (LAT-47).
 
 import type { Change } from '../model/changes.ts';
+import type { ResultStatus } from './apply.ts';
 import { opRows } from './field-labels.ts';
 import type { BridgeOp } from './plan.ts';
 
@@ -22,6 +25,12 @@ export interface SentEntry {
   lattesId: string;
   /** A operação exatamente como foi enviada e conferida. */
   op: BridgeOp;
+  /**
+   * Como terminou, quando não foi conferido: recusado antes de gravar, sessão
+   * caída, ou criado no Lattes com divergência na conferência. Ausente é
+   * gravado e conferido (e todas as entradas de antes deste campo).
+   */
+  outcome?: { detail: string; status: Exclude<ResultStatus, 'conferido'> };
   /** Linhas "antes → depois", guardadas prontas para mostrar. */
   rows: SentRow[];
   sentAt: number;
@@ -29,11 +38,14 @@ export interface SentEntry {
   undoOf?: number;
 }
 
+/** A tentativa não terminou conferida. */
+export const failed = (entry: SentEntry): boolean => entry.outcome !== undefined;
+
 export function sentEntry(
   op: BridgeOp,
   lattesId: string,
   sentAt: number,
-  extra: { change?: Change; undoOf?: number } = {},
+  extra: Pick<SentEntry, 'change' | 'outcome' | 'undoOf'> = {},
 ): SentEntry {
   return { ...extra, lattesId, op, rows: opRows(op), sentAt };
 }
@@ -47,7 +59,9 @@ export const UNDO_KEY_PREFIX = 'desfazer:';
  * há como desfazer com segurança: devolve undefined.
  */
 export function undoOp(entry: SentEntry): BridgeOp | undefined {
-  if (entry.id === undefined || entry.undoOf !== undefined) return undefined;
+  // O que não terminou conferido pode não ter gravado nada: voltar o "antes"
+  // às cegas poderia apagar um valor que já estava lá.
+  if (entry.id === undefined || entry.undoOf !== undefined || failed(entry)) return undefined;
   const { op } = entry;
   const fields = Object.keys(op.set);
   if (fields.length === 0 || fields.some((f) => !(f in op.expect))) return undefined;
@@ -90,4 +104,60 @@ export function groupByDay(entries: SentEntry[]): SentDay[] {
     else days.push({ day, entries: [entry] });
   }
   return days;
+}
+
+const OUTCOME_TEXT: Record<Exclude<ResultStatus, 'conferido'>, string> = {
+  divergente: 'não conferido',
+  erro: 'não gravado',
+  sessao: 'não gravado, sessão do Lattes caída',
+};
+
+const pad = (n: number) => String(n).padStart(2, '0');
+const dateText = (ms: number) => {
+  const d = new Date(ms);
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+};
+const timeText = (ms: number) => {
+  const d = new Date(ms);
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+/**
+ * O registro em texto simples, do mais antigo ao mais recente, para anexar a
+ * um recurso: o currículo, a versão do app, cada envio com data, hora e
+ * resultado, e cada campo com o valor de antes e o de depois.
+ */
+export function sentLogText(
+  entries: SentEntry[],
+  { appVersion, lattesId, now }: { appVersion: string; lattesId: string; now: number },
+): string {
+  const lines = [
+    'Registro do que o LattesEditor enviou ao Currículo Lattes',
+    '',
+    `Currículo: ${lattesId} (https://lattes.cnpq.br/${lattesId})`,
+    `LattesEditor ${appVersion}`,
+    `Gerado em ${dateText(now)} às ${timeText(now)}`,
+    '',
+    'As gravações feitas pelo editor ficam no Lattes como alteração pendente até',
+    '"Enviar ao CNPq"; este registro foi gerado pelo editor e não pelo CNPq.',
+  ];
+  const sorted = [...entries].sort((a, b) => a.sentAt - b.sentAt);
+  let day = '';
+  for (const entry of sorted) {
+    const date = dateText(entry.sentAt);
+    if (date !== day) {
+      day = date;
+      lines.push('', date);
+    }
+    const result = entry.outcome
+      ? `${OUTCOME_TEXT[entry.outcome.status]}${entry.outcome.detail ? `: ${entry.outcome.detail}` : ''}`
+      : entry.undoOf !== undefined
+        ? 'desfeito e conferido'
+        : 'gravado e conferido';
+    lines.push(`- ${timeText(entry.sentAt)} ${entry.op.label} (${result})`);
+    for (const row of entry.rows) {
+      lines.push(`    ${row.label}: ${row.before || '(vazio)'} -> ${row.after || '(vazio)'}`);
+    }
+  }
+  return `${lines.join('\n')}\n`;
 }
