@@ -665,16 +665,37 @@ describe('alteração de evento: rótulos e regras do envio', () => {
 
   it('manda F_TPO vazio só no evento de ouvinte, quando a lista veio vazia', () => {
     const tpo = { name: 'F_TPO', selected: [], type: 'select-one', value: '' };
+    const forma = { checked: true, name: 'F_FORMA', type: 'radio', value: '40' };
     const ouvinte: [string, string][] = [['F_FORMA', '40']];
-    expect(withCheckRules('GN_TEC', [tpo], ouvinte)).toEqual([
+    expect(withCheckRules('GN_TEC', [forma, tpo], ouvinte)).toEqual([
       ['F_FORMA', '40'],
       ['F_TPO', ''],
     ]);
-    expect(withCheckRules('GN_TEC', [tpo], [['F_FORMA', '38']])).toEqual([['F_FORMA', '38']]);
-    expect(withCheckRules('GN_TEC', [], ouvinte)).toEqual(ouvinte);
+    expect(withCheckRules('GN_TEC', [forma, tpo], [['F_FORMA', '38']])).toEqual([
+      ['F_FORMA', '38'],
+    ]);
+    expect(withCheckRules('GN_TEC', [forma], ouvinte)).toEqual(ouvinte);
     const already: [string, string][] = [...ouvinte, ['F_TPO', 'x']];
-    expect(withCheckRules('GN_TEC', [tpo], already)).toEqual(already);
-    expect(withCheckRules('GN_IDIOMA', [tpo], ouvinte)).toEqual(ouvinte);
+    expect(withCheckRules('GN_TEC', [forma, tpo], already)).toEqual(already);
+    expect(withCheckRules('GN_IDIOMA', [forma, tpo], ouvinte)).toEqual(ouvinte);
+    // Editoração também é GN_TEC, mas sem F_FORMA: o envio não ganha F_TPO.
+    const editoracao: [string, string][] = [
+      ['F_COD_PROD', '2D1'],
+      ['F_FORMA', '40'],
+    ];
+    const codProd = { checked: true, name: 'F_COD_PROD', type: 'radio', value: '2D1' };
+    const textoForma = { name: 'F_FORMA', type: 'text', value: '40' };
+    expect(withCheckRules('GN_TEC', [codProd, textoForma, tpo], editoracao)).toEqual(editoracao);
+  });
+
+  it('reconhece a lista filtrada por divulgação científica em qualquer caixa', async () => {
+    const fake = fakeLattes({
+      menu: `<a href="pkg_evento.LISTA?F_STA_DIVULGACAO_CIENTIFICA=S&amp;f_cod=${COD}">y</a>
+             <a href="PKG_EVENTO.lista?f_cod=${COD}">x</a>`,
+    });
+    const op = opFor((root) => setAttr(basics(root), 'TITULO', 'T'));
+    expect((await applyOp(op, fake.port)).status).toBe('conferido');
+    expect(fake.gets[0]).toBe(`PKG_EVENTO.lista?f_cod=${COD}`);
   });
 
   it('o plano devolve Unsupported com chave e rótulo', () => {

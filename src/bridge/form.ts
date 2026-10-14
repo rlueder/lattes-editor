@@ -44,10 +44,16 @@ export function successfulPairs(controls: FormControl[]): Pairs {
  * seção 16).
  */
 export function withCheckRules(form: string, controls: FormControl[], pairs: Pairs): Pairs {
+  // GN_TEC é também o nome do formulário de editoração e de outras produções
+  // técnicas; só o de eventos tem o rádio F_FORMA e a lista F_TPO.
   if (form === 'GN_TEC') {
+    const has = (name: string, type: string) =>
+      controls.some((c) => c.name === name && c.type === type);
+    const evento = has('F_FORMA', 'radio') && has('F_TPO', 'select-one');
     const ouvinte = pairValue(pairs, 'F_FORMA') === '40';
-    const tpo = controls.some((c) => c.name === 'F_TPO');
-    return ouvinte && tpo && pairValue(pairs, 'F_TPO') === null ? [...pairs, ['F_TPO', '']] : pairs;
+    return evento && ouvinte && pairValue(pairs, 'F_TPO') === null
+      ? [...pairs, ['F_TPO', '']]
+      : pairs;
   }
   if (form !== 'GN_ATIV_VINC') return pairs;
   const vinc = controls.find((c) => c.name === 'f_vinc')?.value ?? '';
