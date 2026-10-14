@@ -2,6 +2,7 @@
 
 import { FORM_SPECS } from '../forms/specs.ts';
 import { fold } from '../labels/labels.ts';
+import { effectiveQuery } from './query.ts';
 import { countItems, type Section } from './sections.ts';
 
 export interface PaletteEntry {
@@ -49,7 +50,7 @@ function score(text: string, query: string): number {
 }
 
 export function searchPalette(entries: PaletteEntry[], query: string): PaletteEntry[] {
-  const q = fold(query.trim());
+  const q = fold(effectiveQuery(query));
   if (!q) return entries;
   return entries
     .map((e, index) => {

@@ -7,7 +7,9 @@ import { FORM_SPECS } from '../forms/specs.ts';
 import { elementLabel } from '../labels/labels.ts';
 import type { ProductionType } from '../model/production.ts';
 import { lattesSchema } from '../schema/lattes.ts';
+import { SectionArt } from './empty-art.tsx';
 import { PlusIcon } from './icons.tsx';
+import { LATTES_URL } from './onboarding.ts';
 import { EMPTY_NOTES, SECTION_DESCRIPTIONS, typesForSection } from './section-types.ts';
 import type { Section } from './sections.ts';
 
@@ -21,28 +23,11 @@ interface Props {
   onOpenPicker: () => void;
 }
 
-/** Folhas de currículo empilhadas, em traço, na cor secundária. */
-function SheetsArt() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="empty-art"
-      fill="none"
-      height="96"
-      stroke="currentColor"
-      strokeLinejoin="round"
-      strokeWidth="1.25"
-      viewBox="0 0 96 96"
-      width="96"
-    >
-      <path d="M22 70 48 84l26-14" />
-      <path d="M22 64 48 78l26-14" />
-      <path d="M22 58 48 72l26-14L48 44 22 58Z" />
-      <path d="M33 22h30l7 7v27H33V22Z" transform="rotate(-8 51 39)" />
-      <path d="M40 32h16M40 38h22M40 44h18" transform="rotate(-8 51 39)" />
-    </svg>
-  );
-}
+/**
+ * Seções em que o editor não cria itens (o Importar do Lattes não as aceita):
+ * o caminho é cadastrar no próprio Lattes e recarregar a exportação.
+ */
+const LATTES_ONLY = new Set(['atuacao', 'formacao', 'patentes', 'projetos']);
 
 export function EmptySection({ action, onNewItem, onOpenPicker, section }: Props) {
   const types = typesForSection(lattesSchema, section.id);
@@ -53,12 +38,19 @@ export function EmptySection({ action, onNewItem, onOpenPicker, section }: Props
 
   return (
     <div className="empty-section">
-      <SheetsArt />
+      <SectionArt sectionId={section.id} />
       <h2 className="empty-title">{section.label}</h2>
       {description && <p className="empty-text">{description}</p>}
       {types.length === 0 ? (
         <>
           {action && <div className="empty-actions">{action}</div>}
+          {!action && LATTES_ONLY.has(section.id) && (
+            <div className="empty-actions">
+              <a className="primary action-link" href={LATTES_URL} rel="noreferrer" target="_blank">
+                Abrir o Lattes
+              </a>
+            </div>
+          )}
           {note && <p className="empty-caption">{note}</p>}
         </>
       ) : (

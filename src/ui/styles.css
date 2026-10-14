@@ -1412,12 +1412,7 @@ a.menu-item.notice {
   display: flex;
   align-items: flex-start;
   padding: 8px;
-  border-left: 3px solid transparent;
   border-radius: 6px;
-}
-
-.notice.aviso {
-  border-left-color: var(--warn-text);
 }
 
 .notice-body {
@@ -1426,8 +1421,15 @@ a.menu-item.notice {
 }
 
 .notice-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
   font-weight: 550;
+}
+
+.notice.aviso .notice-title {
+  color: var(--warn-text);
 }
 
 .notice-text {
@@ -2959,16 +2961,6 @@ details > .element {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.modal.photo-dialog {
-  width: min(520px, calc(100% - 32px));
-}
-
-.photo-steps {
-  margin: 0 0 14px;
-  padding-left: 20px;
-  line-height: 1.6;
 }
 
 /* Assinatura da marca (brand/construction/logo.svg): Lattes em 700 e Editor
@@ -4732,37 +4724,7 @@ button.primary:hover:not(:disabled) {
   align-self: flex-start;
 }
 
-.avatar-edit {
-  position: absolute;
-  right: 2px;
-  bottom: 2px;
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 2px solid var(--bg);
-  border-radius: 50%;
-  background: var(--surface-2);
-  color: var(--text);
-  opacity: 0;
-  transition: opacity 120ms ease;
-}
-
-.avatar-wrap:hover .avatar-edit,
-.avatar-edit:focus-visible {
-  opacity: 1;
-}
-
-.avatar-edit:hover {
-  background: var(--accent);
-  color: var(--accent-contrast);
-}
-
 @media (hover: none) {
-  .avatar-edit {
-    opacity: 1;
-  }
 }
 
 /* Botões com texto têm uma altura só, onde quer que estejam: estado vazio,
@@ -5083,10 +5045,6 @@ button.primary:hover:not(:disabled) {
 }
 
 /* O lápis da foto vai para a esquerda do avatar, longe do QR. */
-.profile-top .avatar-edit {
-  right: auto;
-  left: 2px;
-}
 
 @media (prefers-reduced-motion: reduce) {
   .profile-top .profile-qr {
@@ -5828,4 +5786,193 @@ b {
   .toast {
     transition: none;
   }
+}
+
+/* Revisão de interface de 14/10/2026. Ajustes por cima das regras acima:
+   busca com fundo azul, contorno da foto no azul, dica azul com seta,
+   botões de ação em pílula e filtros com o passar do mouse mais visível. */
+
+.topbar .search-btn {
+  border-color: transparent;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  transition: border-color 200ms ease;
+}
+
+.topbar .search-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.topbar .search-btn kbd {
+  background: var(--surface);
+}
+
+.profile .avatar {
+  border-color: var(--accent);
+}
+
+.tip {
+  position: relative;
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.tip-arrow {
+  width: 10px;
+  height: 5px;
+  background: var(--accent);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.tip-arrow[data-side='top'] {
+  bottom: -5px;
+}
+
+.tip-arrow[data-side='bottom'] {
+  top: -5px;
+  transform: rotate(180deg);
+}
+
+.tip-arrow[data-side='left'] {
+  right: -7px;
+  transform: rotate(-90deg);
+}
+
+.tip-arrow[data-side='right'] {
+  left: -7px;
+  transform: rotate(90deg);
+}
+
+/* Botões de ação em pílula em todo o app; os só de ícone, em círculo. Linhas
+   de lista e controles do calendário ficam como estão. */
+button.primary,
+button.danger,
+button.text-btn,
+button.pending-open,
+button.version-banner-open,
+button.bridge-btn,
+button.ghost:not(.icon-btn):not(.icon):not(.pending-item):not(.calendar-nav):not(.calendar-title),
+button:not([class]),
+.empty-actions button,
+.modal-foot button,
+.onboarding-action,
+.toast-action {
+  border-radius: 999px;
+}
+
+button.icon-btn,
+button.ghost.icon {
+  border-radius: 50%;
+}
+
+/* No tema claro, a borda do sand-8 no passar do mouse quase não aparecia nos
+   filtros: sobe para o azul do destaque. */
+.filter-search:hover:not(:focus-within),
+.filter-facet.select-trigger:hover:not([data-popup-open]):not(:focus-visible) {
+  border-color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar .search-btn {
+    transition: none;
+  }
+}
+
+/* Menu lateral sem barra de rolagem: espaçamento mais justo e, em janela
+   baixa, foto e itens menores. Se ainda faltar altura (janela muito baixa),
+   a rolagem continua possível, sem a barra. */
+.sidebar {
+  scrollbar-width: none;
+}
+
+.sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+.sidebar li > button {
+  min-height: 32px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.sidebar li + li {
+  margin-top: 1px;
+}
+
+@media (max-height: 860px) {
+  .profile .avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 20px;
+  }
+
+  .profile-top .profile-qr {
+    width: 64px;
+    height: 64px;
+    margin-left: -42px;
+    padding: 8px;
+  }
+
+  .sidebar li > button {
+    min-height: 28px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+
+  .sidebar-brand {
+    padding-bottom: 10px;
+  }
+}
+
+/* Limpar a busca: o "x" aparece dentro do campo depois de digitar algo. */
+.input-clear.icon-btn {
+  flex: 0 0 auto;
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.input-clear.icon-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.input-clear .icon-svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Na paleta o campo ocupa a largura toda: o "x" fica por cima, à direita
+   (a paleta já é position: fixed, que serve de âncora). */
+.palette > .input-clear {
+  position: absolute;
+  top: 11px;
+  right: 12px;
+}
+
+.palette-input {
+  padding-right: 44px;
+}
+
+/* Link com cara de botão principal no estado vazio ("Abrir o Lattes"), do
+   tamanho dos botões ao lado. */
+.empty-actions .action-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: min(320px, 100%);
+  height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--accent-text);
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 14px;
+  text-decoration: none;
 }

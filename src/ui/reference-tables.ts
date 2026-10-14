@@ -199,7 +199,11 @@ export function institutionView(index: ReferenceIndex): ListView {
         items,
         (el) => attr(el, 'NOME-PAIS-INSTITUICAO') ?? attr(el, 'SIGLA-PAIS-INSTITUICAO'),
         'Sem país',
-        (a, b) => uses(b) - uses(a) || card(a).title.localeCompare(card(b).title, 'pt-BR'),
+        // Ordem alfabética em todo país. Antes era "mais usadas primeiro": nos
+        // países com usos diferentes (Brasil, Reino Unido) a lista saía fora da
+        // ordem alfabética, e nos outros, com uso igual, saía em ordem. O uso
+        // continua no cartão.
+        (a, b) => card(a).title.localeCompare(card(b).title, 'pt-BR'),
       ),
     ungroupedKey: 'sem',
   };

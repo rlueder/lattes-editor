@@ -30,13 +30,6 @@ export const SearchIcon = () => (
 );
 
 /** Editar: lápis. */
-export const PencilIcon = () => (
-  <Icon size={14}>
-    <path d="M4 20h4L19 9l-4-4L4 16v4Z" />
-    <path d="m13.5 6.5 4 4" />
-  </Icon>
-);
-
 export const PlusIcon = () => (
   <Icon>
     <path d="M12 5v14M5 12h14" />
@@ -125,6 +118,12 @@ export const BellIcon = () => (
   <Icon>
     <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
     <path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" />
+  </Icon>
+);
+
+export const HashIcon = () => (
+  <Icon>
+    <path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16" />
   </Icon>
 );
 

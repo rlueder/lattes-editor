@@ -10,6 +10,7 @@ import {
   CloseIcon,
   DownloadIcon,
   EyeIcon,
+  HashIcon,
   HistoryIcon,
   MonitorIcon,
   MoonIcon,
@@ -18,6 +19,7 @@ import {
   SunIcon,
 } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
+import { setShowCodes, useShowCodes } from './show-codes.ts';
 import type { ThemePref } from './theme.ts';
 
 /** Ações que pedem um currículo aberto; sem elas, aparecem desabilitadas. */
@@ -47,12 +49,12 @@ const THEMES: { icon: ReactNode; label: string; value: ThemePref }[] = [
 ];
 
 export function SettingsMenu({ file, onTheme, theme }: Props) {
+  const showCodes = useShowCodes();
   return (
     <Menu.Root>
       <Tip label="Configurações e arquivo">
         <Menu.Trigger aria-label="Configurações e arquivo" className="ghost icon-btn">
           <SettingsIcon />
-          {file?.modified && <span aria-hidden="true" className="dot badge-dot" />}
         </Menu.Trigger>
       </Tip>
       <Menu.Portal>
@@ -99,6 +101,21 @@ export function SettingsMenu({ file, onTheme, theme }: Props) {
                   <CheckIcon />
                 </Menu.CheckboxItemIndicator>
               </Menu.CheckboxItem>
+              <Menu.CheckboxItem
+                checked={showCodes}
+                className="menu-item"
+                closeOnClick={false}
+                disabled={!file}
+                onCheckedChange={setShowCodes}
+              >
+                <span className="menu-icon">
+                  <HashIcon />
+                </span>
+                <span className="menu-label">Mostrar códigos do Lattes</span>
+                <Menu.CheckboxItemIndicator className="menu-check">
+                  <CheckIcon />
+                </Menu.CheckboxItemIndicator>
+              </Menu.CheckboxItem>
             </Menu.Group>
 
             <Menu.Separator className="menu-sep" />
@@ -120,6 +137,12 @@ export function SettingsMenu({ file, onTheme, theme }: Props) {
                 <span className="menu-label">Imprimir ou salvar PDF…</span>
                 <span className="menu-hint">{IS_MAC ? '⌘P' : 'Ctrl+P'}</span>
               </Menu.Item>
+            </Menu.Group>
+
+            <Menu.Separator className="menu-sep" />
+
+            <Menu.Group>
+              <Menu.GroupLabel className="menu-heading">Versões</Menu.GroupLabel>
               <Menu.Item className="menu-item" disabled={!file} onClick={() => file?.onReload()}>
                 <span className="menu-icon">
                   <RefreshIcon />

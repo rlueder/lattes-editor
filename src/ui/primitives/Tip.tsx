@@ -9,8 +9,12 @@ export function Tip({ children, label }: { children: ReactElement; label: string
     <TooltipPrimitive.Root>
       <TooltipPrimitive.Trigger render={children} />
       <TooltipPrimitive.Portal>
-        <TooltipPrimitive.Positioner className="popup-positioner" sideOffset={6}>
-          <TooltipPrimitive.Popup className="tip">{label}</TooltipPrimitive.Popup>
+        <TooltipPrimitive.Positioner className="popup-positioner" sideOffset={8}>
+          <TooltipPrimitive.Popup className="tip">
+            {label}
+            {/* Seta apontando para o botão (embaixo, com a dica acima). */}
+            <TooltipPrimitive.Arrow className="tip-arrow" />
+          </TooltipPrimitive.Popup>
         </TooltipPrimitive.Positioner>
       </TooltipPrimitive.Portal>
     </TooltipPrimitive.Root>

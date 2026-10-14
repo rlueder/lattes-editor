@@ -2,6 +2,7 @@ import { useId } from 'react';
 
 import { type Facet, type FilterState, isFiltering, NO_FILTER } from './facets.ts';
 import { CloseIcon, SearchIcon } from './icons.tsx';
+import { ClearButton } from './primitives/ClearButton.tsx';
 import { Select } from './primitives/Select.tsx';
 import { Tip } from './primitives/Tip.tsx';
 
@@ -29,6 +30,7 @@ export function FilterBar({ facets, onChange, shown, state, total }: Props) {
           value={state.query}
           onChange={(e) => onChange({ ...state, query: e.target.value })}
         />
+        <ClearButton value={state.query} onClear={() => onChange({ ...state, query: '' })} />
       </div>
       {facets.map((f) => {
         const value = state.selected[f.id] ?? '';
