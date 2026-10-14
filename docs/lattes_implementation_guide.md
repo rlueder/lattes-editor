@@ -1,5 +1,10 @@
 # Editor de Currículo Lattes: guia de implementação
 
+> **Documento histórico.** Registra o que se sabia e se decidiu na data dele, e
+> vale pelo porquê; parte já não descreve o editor. O editor como ele é hoje
+> está em [`arquitetura.md`](arquitetura.md); o índice de tudo, em
+> [`README.md`](README.md).
+
 Público: o agente de código que constrói a primeira versão.
 Data: 2026-10-10
 Documentos complementares, anexe-os junto com este guia:

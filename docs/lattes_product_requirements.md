@@ -1,5 +1,10 @@
 # Editor de Currículo Lattes: requisitos de produto e resumo da pesquisa
 
+> **Documento histórico.** Registra o que se sabia e se decidiu na data dele, e
+> vale pelo porquê; parte já não descreve o editor. O editor como ele é hoje
+> está em [`arquitetura.md`](arquitetura.md); o índice de tudo, em
+> [`README.md`](README.md).
+
 ## O que é este documento
 
 Este é um resumo de uma pesquisa extensa de UX, análise competitiva, análise jurídica e análise técnica do schema, conduzida ao longo de várias sessões de pesquisa sobre a Plataforma Lattes. O objetivo é orientar o desenvolvimento de um produto (nome provisório: "Modelo B"): um editor de currículo moderno que exporta XML Lattes válido e permite aos pesquisadores gerenciar sua produção acadêmica fora do Lattes e importá-la depois pelo recurso de importação XML que o próprio Lattes oferece.

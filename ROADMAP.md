@@ -1,8 +1,9 @@
 # Roadmap
 
 O que vem a seguir, em ordem aproximada. O estado de cada item muda neste
-arquivo quando muda de fato; o detalhe técnico está em
-`docs/lattes_implementation_guide.md` e o porquê em
+arquivo quando muda de fato; o estado de cada ticket fica no Linear. Como o
+editor funciona hoje está em `docs/arquitetura.md`; o porquê das decisões
+originais, em `docs/lattes_implementation_guide.md` e
 `docs/lattes_product_requirements.md`.
 
 ## Agora
