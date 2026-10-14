@@ -326,6 +326,13 @@ describe('conector: HTML do Lattes', () => {
     expect(isLogonPage('<form action="pkg_sec.logon" method="post">')).toBe(true);
     expect(isLogonPage('<p>ok</p>', 'https://wwws.cnpq.br/cvlattesweb/pkg_sec.logon')).toBe(true);
     expect(isLogonPage('<a href="x">pkg_sec.logon</a>')).toBe(false);
+    // Sessão vencida: a página é só um script que redireciona (14/10/2026).
+    expect(
+      isLogonPage(
+        '<HTML><HEAD></HEAD><BODY>\n<SCRIPT>location="pkg_sec.logon?f_cod=ini"</SCRIPT>\n</BODY></HTML>',
+      ),
+    ).toBe(true);
+    expect(isLogonPage("<script>window.location.href = 'pkg_sec.logon'</script>")).toBe(true);
     expect(cvCodeFrom('PKG_MENU.menu?f_cod=FE387C4DFE584C19BD79D189C7A9DF99')).toBeUndefined();
     expect(cvCodeFrom('pkg_ativ.lista?f_cod=K1234567A8&quot;')).toBe('K1234567A8');
   });

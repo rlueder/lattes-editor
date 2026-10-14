@@ -33,9 +33,18 @@ export function findLinks(html: string, proc: string): LattesLink[] {
   return out;
 }
 
-/** A sessão caiu: o Lattes devolve a tela de login (pkg_sec.logon). */
+/**
+ * A sessão caiu: o Lattes devolve a tela de login (pkg_sec.logon). Com a
+ * sessão vencida, cada página vem como um script que só redireciona
+ * (<SCRIPT>location="pkg_sec.logon?f_cod=ini"</SCRIPT>, visto em 14/10/2026); o
+ * fetch não roda o script, então o redirecionamento precisa ser lido no HTML.
+ */
 export function isLogonPage(html: string, url = ''): boolean {
-  return /pkg_sec\.logon/i.test(url) || /<form[^>]*pkg_sec\.logon/i.test(html);
+  return (
+    /pkg_sec\.logon/i.test(url) ||
+    /<form[^>]*pkg_sec\.logon/i.test(html) ||
+    /location(?:\.href)?\s*=\s*["'][^"']*pkg_sec\.logon/i.test(html)
+  );
 }
 
 /**
