@@ -1,7 +1,7 @@
 # Editor de Currículo Lattes: relatório de reconhecimento
 
 Data: 2026-10-10
-Método: Claude in Chrome conduzindo uma sessão autenticada no próprio navegador do Rafael. Toda ação foi abrir, ler e fechar. Nenhum dado foi salvo, excluído ou publicado.
+Método: automação de navegador conduzindo uma sessão autenticada no próprio navegador do Rafael. Toda ação foi abrir, ler e fechar. Nenhum dado foi salvo, excluído ou publicado.
 Alcance obtido: estrutura do editor, catálogo de menus, Atuação profissional (lista e formulário de inclusão), Formação acadêmica (lista, seletor de nível, formulário de inclusão, busca de instituição), Assistente de importação, Importação de produção, diálogo Imprimir, pontos de entrada de Exportar e Importar.
 Não alcançado pela extensão: DOM do diálogo de importação XML, Idiomas, Resumo, Endereço, diálogo Enviar. Motivo: a sessão no servidor caiu quatro vezes em poucos minutos (ver seção 7). A importação em si foi depois testada à mão com arquivos gerados (seção 5.1).
 

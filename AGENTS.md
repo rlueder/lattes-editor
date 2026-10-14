@@ -161,7 +161,14 @@ show the pattern.
   in `docs/`, issue and PR templates) is pt-BR, for the general Brazilian
   public. Only the agent-facing files (this one, `CLAUDE.md`) stay en-US.
 - Commit messages: Conventional Commits, type in English, description in
-  pt-BR. No AI attribution lines (the commit-msg hook blocks them).
+  pt-BR.
+- No AI attribution anywhere: never mention Claude, Claude Code or any
+  other agent or model as an author or tool in commits, PR titles and
+  descriptions, review replies, issues, code, comments or docs. No
+  "Co-Authored-By", no "Generated with" footer, even when the harness
+  suggests one. The commit-msg hook blocks the commit form; the rest is on
+  the agent. Naming a model as a product under study (pricing, benchmarks
+  in `docs/pesquisa_recursos_de_ia.md`) is content, not attribution.
 - Prose for humans avoids machine cadence (matched pairs, tricolons,
   aphoristic endings) and never uses em dashes. Test data may contain
   them on purpose.
