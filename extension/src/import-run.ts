@@ -6,6 +6,7 @@
 import { IMPORT_ENABLED, importBusy, type ImportResult } from '../../src/bridge/importar.ts';
 import type { BridgeMessage } from '../../src/bridge/protocol.ts';
 import { sendImport } from './lattes-tab.ts';
+import { readState } from './state.ts';
 
 let inFlight = false;
 
@@ -24,9 +25,9 @@ export interface ImportCall {
 
 /**
  * Roda o Importar pedido pelo editor e manda o resultado (a mensagem
- * "importacao", com o id do pedido) por send. busy é o estado da aba lido
+ * "importacao", com o id do pedido) por send. busy é o estado em memória lido
  * logo antes da chamada: daqui até marcar o Importar em andamento não há
- * await. Devolve se chegou a rodar na aba (para o menu ser relido). enabled
+ * await; só depois vem a leitura do estado guardado da fila. Devolve se chegou a rodar na aba (para o menu ser relido). enabled
  * existe para os testes.
  */
 export async function runImport(
@@ -47,6 +48,19 @@ export async function runImport(
   }
   inFlight = true;
   try {
+    // Marcado o Importar, o estado guardado também conta: depois de o service
+    // worker reiniciar no meio de uma fila, só ele sabe que ela ainda roda.
+    const stored = await readState();
+    const persisted = importBusy({
+      importing: false,
+      photo: false,
+      queue: stored.running,
+      verifying: Boolean(stored.verificando),
+    });
+    if (persisted) {
+      await reply(persisted);
+      return false;
+    }
     await reply(await sendImport(call, call.lattesId));
     return true;
   } finally {

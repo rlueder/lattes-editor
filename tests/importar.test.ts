@@ -597,9 +597,15 @@ describe('Importar no service worker (extensão)', () => {
 
   function stubChrome({
     consent = true,
+    fila,
     result,
     tabs = [{ id: 3 }],
-  }: { consent?: boolean; result?: unknown; tabs?: { id?: number }[] } = {}) {
+  }: {
+    consent?: boolean;
+    fila?: { ops: []; results: object; running: boolean; verificando?: boolean };
+    result?: unknown;
+    tabs?: { id?: number }[];
+  } = {}) {
     const executeScript = vi.fn(async (opts: { args?: unknown[] }) =>
       opts.args ? [{ result }] : [],
     );
@@ -609,6 +615,7 @@ describe('Importar no service worker (extensão)', () => {
         local: {
           get: async () => (consent ? { [CONSENT_KEY]: consentRecord() } : {}),
         },
+        session: { get: async () => ({ fila: fila ?? undefined }) },
       },
       tabs: { query: async () => tabs },
     });
@@ -634,7 +641,10 @@ describe('Importar no service worker (extensão)', () => {
     });
     vi.stubGlobal('chrome', {
       scripting: { executeScript },
-      storage: { local: { get: async () => ({ [CONSENT_KEY]: consentRecord() }) } },
+      storage: {
+        local: { get: async () => ({ [CONSENT_KEY]: consentRecord() }) },
+        session: { get: async () => ({}) },
+      },
       tabs: { query: async () => [{ id: 3 }] },
     });
     const replies: string[] = [];
@@ -648,6 +658,20 @@ describe('Importar no service worker (extensão)', () => {
     expect(await first).toBe(true);
     expect(replies).toEqual(['erro', 'passo-3']);
     expect(importRunning()).toBe(false);
+  });
+
+  it('fila ou conferência guardadas como em andamento (service worker reiniciado): recusa', async () => {
+    for (const fila of [
+      { ops: [] as [], results: {}, running: true },
+      { ops: [] as [], results: {}, running: false, verificando: true },
+    ]) {
+      const exec = stubChrome({ fila });
+      const reply = vi.fn(async () => undefined);
+      expect(await runImport(CALL, IDLE, reply, true)).toBe(false);
+      expect(reply).toHaveBeenCalledWith(expect.objectContaining({ reason: 'erro' }));
+      expect(exec).not.toHaveBeenCalled();
+      expect(importRunning()).toBe(false);
+    }
   });
 
   it('sem o currículo do editor, nada vai à aba', async () => {
