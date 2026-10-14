@@ -30,6 +30,16 @@ Leia o relatório de reconhecimento antes de mexer no exportador. A seção 5.1 
 | Licença                                       | MIT                                                                                                                                                                              | A mais simples para uma ferramenta pessoal de software livre. Trocar para AGPL só se a hospedagem por terceiros virar uma preocupação. |
 | Postura jurídica                              | O app nunca toca no Lattes. O usuário exporta, edita e importa.                                                                                                                  | Evita por completo a cláusula antiautomação e a cláusula de uso comercial da Portaria de 2022                                          |
 
+### Importação sem duplicata (13/10/2026, LAT-50)
+
+O caminho de escrita acima continua valendo para itens novos, mas deixa de ser manual e deixa de ser o único. Quem usa o editor não confere marcadores no Lattes: só a diferença vai, e nada que já existe vira duplicata.
+
+- Itens novos vão pelo Importar do Lattes, num arquivo só com eles (opção 1 da seção 3.3), e o conector roda os passos 1 a 3 sozinho. Se o passo 3 mostrar algum item em vermelho, o conector para sem confirmar. Depois do Confirmar, uma nova exportação confere que cada item entrou uma vez só.
+- Alteração em item que já existe nunca passa pelo Importar. Ela vai no lugar, pelo formulário do próprio item: LAT-51 para as produções, LAT-23 para as seções biográficas.
+- Exclusão vai pelo "Excluir" do formulário do item (LAT-49; mapa na seção 15 de `lattes_internals.md`).
+
+Isso muda a "Postura jurídica" da tabela acima: o conector, uma extensão que roda na sessão da própria pessoa e só depois de ela confirmar a fila, passa a gravar no Lattes. A decisão de construí-lo já tinha sido tomada (fase "Conector no navegador", seção 5).
+
 Não decidido; use o padrão a menos que Rafael se oponha:
 
 | Tema         | Padrão                                                                                                                                                                                                                                                                                                              |
@@ -121,6 +131,8 @@ Há duas opções. A primeira não foi testada e precisa ser antes de o exportad
 2. Arquivo completo: o currículo inteiro com os itens novos acrescentados. Verificado que funciona, mas o Passo 3 passa a listar todos os itens existentes em vermelho e marcados, e o usuário precisa desmarcá-los um por um.
 
 Teste a opção 1 primeiro. Se falhar, publique a opção 2 com a instrução mais chamativa possível na tela: "Em Passo 3, desmarque os itens vermelhos."
+
+Desde 13/10/2026 (LAT-50) a opção 1 é a escolhida, e a opção 2 deixa de ser alternativa: com o Importar automatizado pelo conector, um item vermelho no passo 3 faz o conector parar sem confirmar, em vez de pedir à pessoa que desmarque. O teste da opção 1 continua pendente e é o primeiro passo do LAT-50.
 
 ### 3.4 Seções importáveis e seus contêineres XML
 
