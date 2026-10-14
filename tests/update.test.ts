@@ -356,13 +356,13 @@ describe('verificar atualizações pelo menu', () => {
     });
   });
 
-  it('falha: avisa e diz que o app continua conferindo sozinho', async () => {
+  it('falha: avisa e diz que o app tenta de novo sozinho', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     setUpdateDeps({ check: () => Promise.reject(new Error('offline')), relaunch: vi.fn() });
     const outcome = await checkUpdateNow(() => 1000);
     expect(outcome).toEqual({ failed: true, state: { status: 'nenhuma' } });
     expect(manualCheckText(outcome!, '1.0.0')).toEqual({
-      description: 'O app continua conferindo sozinho a cada 15 minutos.',
+      description: 'O app tenta de novo sozinho daqui a pouco.',
       title: 'Não deu para verificar agora',
     });
     // A falha segue a regra das automáticas: nova tentativa logo.

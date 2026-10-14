@@ -1,6 +1,6 @@
 // O texto do aviso de atualização para cada estado (src/desktop/update.ts).
 
-import { CHECK_EVERY_MS, type CheckOutcome, type UpdateState } from '../desktop/update.ts';
+import type { CheckOutcome, UpdateState } from '../desktop/update.ts';
 
 export interface UpdateToastText {
   /** O botão: "atualizar" instala; "baixar" abre a página de lançamentos. */
@@ -62,7 +62,7 @@ export function manualCheckText(
   if (outcome.state.status !== 'nenhuma') return undefined;
   if (outcome.failed) {
     return {
-      description: `O app continua conferindo sozinho a cada ${CHECK_EVERY_MS / 60_000} minutos.`,
+      description: 'O app tenta de novo sozinho daqui a pouco.',
       title: 'Não deu para verificar agora',
     };
   }
