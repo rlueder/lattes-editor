@@ -248,6 +248,23 @@ A chave de atualização fica nos segredos `TAURI_SIGNING_PRIVATE_KEY` e
 `src-tauri/tauri.conf.json`. Sem a privada não há como publicar uma
 atualização que o app aceite: guarde uma cópia fora do GitHub.
 
+### Canal Dev
+
+A cada merge na `main`, depois do CI verde, o workflow "Versão Dev"
+(`.github/workflows/dev.yml`) monta o **LattesEditor Dev** nos três sistemas e
+a extensão **LattesEditor Dev: Conector**, na página
+[`dev`](https://github.com/rlueder/lattes-editor/releases/tag/dev). É o que
+vai entrar na próxima versão, para testar antes do "Lançar versão".
+
+O LattesEditor Dev convive com o app publicado: outro nome e ícone (com o
+selo DEV), outra pasta de dados, outra entrada no chaveiro e outro host
+nativo (`lattes_editor.conector_dev`), que só a extensão Dev chama. Ele se
+atualiza sozinho pela página `dev`, com versões como `0.22.0-dev.42`; o app
+publicado nunca vê o canal. A extensão Dev se instala descompactada
+(`chrome://extensions`, modo do desenvolvedor), ao lado da outra.
+
+Para montar o Dev sem esperar um merge: `gh workflow run dev.yml`.
+
 Para revisar o aviso sem lançar nada: `pnpm dev` e
 `http://localhost:5173/?simular-atualizacao`.
 

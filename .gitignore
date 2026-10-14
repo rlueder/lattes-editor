@@ -14,3 +14,6 @@ CV_*.zip
 CV_*.xml
 fixtures/real/
 release/
+# Canal Dev (.github/workflows/dev.yml)
+dist-extension-dev/
+src-tauri/tauri.canal-dev.gerado.json

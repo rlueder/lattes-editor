@@ -1,0 +1,133 @@
+name: Versão Dev
+
+# O canal Dev, como o Nightly do Firefox ou o Insiders do VS Code: a cada merge
+# na main (depois do CI verde), monta o LattesEditor Dev nos três sistemas e a
+# extensão "LattesEditor Dev: Conector", para testar o que vai entrar na
+# próxima versão antes do "Lançar versão".
+#
+# O LattesEditor Dev convive com o app publicado: outro nome, identificador,
+# ícone (com o selo DEV), pasta de dados e entrada no chaveiro, e outro host
+# nativo, que só a extensão Dev chama. Ele se atualiza sozinho pela página
+# "dev" (releases/download/dev/latest.json); o app publicado nunca vê o canal.
+#
+# A página "dev" é uma pré-estreia que se refaz a cada build: a anterior é
+# apagada com a tag, e a nova aponta para o commit do build. Não é rascunho
+# (o "Publicar versão" não a toca) nem a mais recente (releases/latest a
+# ignora). A versão é a do package.json com o número do build
+# (0.22.0-dev.42): sempre maior que a do build anterior.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  # Refazer o Dev da main sem esperar um merge.
+  workflow_dispatch:
+
+# Um build em andamento sempre termina: cancelado no meio, ele deixaria a
+# página "dev" sem latest.json até o build seguinte. Os merges que chegam
+# nesse meio esperam; o GitHub guarda só o último na fila, e ele monta o topo
+# da main, que já inclui os outros.
+concurrency:
+  group: dev
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  # O Dev é sempre o topo da main. O CI de cada commit leva o seu tempo, e o
+  # workflow_run de um commit pode chegar depois do de um mais novo. Então todo
+  # build monta o topo da main, se o CI dele já passou; se ainda não passou,
+  # este build não faz nada e o fim daquele CI dispara o Dev.
+  topo:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      sha: ${{ steps.topo.outputs.sha }}
+    steps:
+      - id: topo
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENTO: ${{ github.event_name }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          topo=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          if [ "$EVENTO" = workflow_run ] && [ "$topo" != "$SHA" ]; then
+            verdes=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$topo&event=push&status=success" --jq .total_count)
+            if [ "$verdes" = 0 ]; then
+              echo "::notice::${SHA:0:7} não é mais o topo da main, e o CI do topo (${topo:0:7}) ainda não passou: o fim dele monta o Dev."
+              exit 0
+            fi
+          fi
+          echo "sha=$topo" >> "$GITHUB_OUTPUT"
+
+  preparar:
+    needs: topo
+    if: needs.topo.outputs.sha != ''
+    runs-on: ubuntu-latest
+    outputs:
+      versao: ${{ steps.versao.outputs.versao }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ needs.topo.outputs.sha }}
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - id: versao
+        run: echo "versao=$(node -p 'require("./package.json").version')-dev.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+      - run: pnpm install --frozen-lockfile
+      - name: Extensão do canal Dev
+        env:
+          LATTES_VERSAO: ${{ steps.versao.outputs.versao }}
+        run: |
+          pnpm build:extension --canal-dev
+          mkdir -p release
+          (cd dist-extension-dev && zip -qr ../release/lattes-editor-dev-extensao.zip .)
+      # A página "dev" de antes sai com a tag; a nova nasce no commit deste build.
+      - name: Página "dev"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSAO: ${{ steps.versao.outputs.versao }}
+          SHA: ${{ needs.topo.outputs.sha }}
+        # Só "não existe" passa em silêncio (a primeira vez); outra falha do gh
+        # (permissão, rede) para aqui, com a mensagem dele.
+        run: |
+          if ! saida=$(gh release view dev --json tagName 2>&1); then
+            if [ "$saida" != "release not found" ]; then
+              echo "$saida" >&2
+              exit 1
+            fi
+          else
+            gh release delete dev --cleanup-tag --yes
+          fi
+          gh release create dev release/lattes-editor-dev-extensao.zip \
+            --prerelease --latest=false --target "$SHA" \
+            --title "LattesEditor Dev $VERSAO" \
+            --notes "Canal Dev, montado da main em ${SHA:0:7}. Não é uma versão publicada: serve para testar o que vai entrar na próxima. Instale o LattesEditor Dev ao lado do LattesEditor e carregue a extensão Dev descompactada (chrome://extensions, modo do desenvolvedor). O app Dev se atualiza sozinho por esta página."
+
+  desktop:
+    needs: preparar
+    uses: ./.github/workflows/desktop-build.yml
+    with:
+      tag: dev
+      versao: ${{ needs.preparar.outputs.versao }}
+    secrets:
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+      APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+      APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+      APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}

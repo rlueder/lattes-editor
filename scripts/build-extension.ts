@@ -2,6 +2,10 @@
 // (service worker, script do editor, painel, script injetado no Lattes), o
 // manifest e os arquivos estáticos do painel. Com --loja, monta em
 // dist-extension-loja/ o pacote para a Chrome Web Store, sem a chave do manifest.
+// Com --canal-dev, monta em dist-extension-dev/ a extensão do canal Dev: outro
+// ID, outro nome e o host nativo do LattesEditor Dev, para as duas conviverem
+// no mesmo navegador. LATTES_VERSAO, se definida, troca a versão do
+// package.json (o canal Dev usa 0.22.0-dev.42).
 
 import { copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -13,8 +17,15 @@ import { DEFAULT_TOOLBAR_THEME, toolbarIconPaths } from '../extension/src/toolba
 const root = new URL('../', import.meta.url).pathname;
 // A loja recusa o pacote com "key" e dá o próprio ID na primeira publicação.
 const forStore = process.argv.includes('--loja');
-const out = `${root}${forStore ? 'dist-extension-loja' : 'dist-extension'}`;
+const devChannel = process.argv.includes('--canal-dev');
+const out = `${root}${forStore ? 'dist-extension-loja' : devChannel ? 'dist-extension-dev' : 'dist-extension'}`;
 const pkg = JSON.parse(readFileSync(`${root}package.json`, 'utf8')) as { version: string };
+const version = process.env.LATTES_VERSAO || pkg.version;
+/** O Chrome só aceita números na versão: 0.22.0-dev.42 vira 0.22.0.42 (o texto inteiro vai em version_name). */
+const manifestVersion = version.replace(/-[a-z]+\./i, '.');
+
+/** Host nativo do app (src-tauri/src/conector.rs, HOST_NAME). */
+const NATIVE_HOST = devChannel ? 'lattes_editor.conector_dev' : 'lattes_editor.conector';
 
 /**
  * Onde o editor roda. Localhost cobre o desenvolvimento (qualquer porta). O
@@ -24,6 +35,13 @@ const pkg = JSON.parse(readFileSync(`${root}package.json`, 'utf8')) as { version
 const EDITOR_MATCHES = ['http://localhost/*', 'http://127.0.0.1/*'];
 
 const ENTRIES = ['background', 'content', 'panel', 'lattes-runner', 'offscreen'];
+
+/**
+ * Chave pública (DER em base64) da extensão do canal Dev, que fixa o ID
+ * alopgghbefjbmjomhgoebbjnmppokkgi. A privada não é usada nem guardada.
+ */
+const DEV_EXTENSION_KEY =
+  'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtBvNUqSTyD5FIUrbUVibxTVxgmpQeEuRzBcoT82UNeQJ5fgdEbxMTgPITrWJYJh2OGMyhur7JoOwL6dyf4t9545sELRCmfBPOZXYtm4Qs67ybeDXJmltHHIZdtMGsOxuKtFfqtM8Q4djOsKOD2jYOgyE3a4ENaaLEadTErlKkUkVcE3TGE8MTQbR44suMSs4AXSymM+7WCSzPTnbA3iGIBj9rKGY4Ng/GQ3bgANFF2sKUiIJf9gQ8R6ANohq+jM/FH06RcL/CSRizuMbYcYFFN5MR/V8QZ8TrdRHDYgzsOghe6d0G4mKrja3gOGfa8A0UYA1OWoOGYhcBDPLnqAEoQIDAQAB';
 
 /** Chave pública (DER em base64) que fixa o ID da extensão. A privada não é usada nem guardada. */
 const EXTENSION_KEY =
@@ -44,6 +62,7 @@ for (const name of ENTRIES) {
       outDir: out,
     },
     configFile: false,
+    define: { __NATIVE_HOST__: JSON.stringify(NATIVE_HOST) },
     logLevel: 'warn',
   });
 }
@@ -57,7 +76,7 @@ const TOOLBAR_ICONS = toolbarIconPaths(DEFAULT_TOOLBAR_THEME);
 // narrowest permissions necessary"): só o domínio do editor do Lattes. A foto
 // do perfil é carregada pela página do editor, não pela extensão.
 const manifest = {
-  action: { default_icon: TOOLBAR_ICONS, default_title: 'Conector' },
+  action: { default_icon: TOOLBAR_ICONS, default_title: devChannel ? 'Conector Dev' : 'Conector' },
   background: { service_worker: 'background.js' },
   content_scripts: [{ js: ['content.js'], matches: EDITOR_MATCHES, run_at: 'document_start' }],
   description:
@@ -67,15 +86,16 @@ const manifest = {
   // Chave pública fixa: o ID da extensão fica o mesmo em qualquer pasta
   // (elkaiefkldcngjdgelfjhjbljefbemac), e é esse ID que o app autoriza no
   // host de mensagens nativas (src-tauri/src/conector.rs).
-  ...(forStore ? {} : { key: EXTENSION_KEY }),
+  ...(forStore ? {} : { key: devChannel ? DEV_EXTENSION_KEY : EXTENSION_KEY }),
   manifest_version: 3,
-  name: 'LattesEditor: Conector',
+  name: devChannel ? 'LattesEditor Dev: Conector' : 'LattesEditor: Conector',
   // Sem "tabs": achar a aba do Lattes pela URL basta com a permissão de host.
   // nativeMessaging fala com o app de desktop; alarms refaz a ligação; offscreen
   // lê o tema do navegador para o ícone da barra (o service worker não tem matchMedia).
   permissions: ['alarms', 'nativeMessaging', 'offscreen', 'scripting', 'sidePanel', 'storage'],
   side_panel: { default_path: 'panel.html' },
-  version: pkg.version,
+  version: manifestVersion,
+  ...(manifestVersion === version ? {} : { version_name: version }),
 };
 writeFileSync(`${out}/manifest.json`, `${JSON.stringify(manifest, null, 2)}\n`);
 for (const file of ['panel.html', 'panel.css', 'offscreen.html'])
