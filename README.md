@@ -217,26 +217,33 @@ conferido pela extensão (ver acima).
 
 ## Lançamentos
 
-Cada push na `main` passa pelo CI. Com ele verde, o semantic-release decide a
-versão pelos commits (`feat` sobe a menor; `fix`, `perf` e `refactor`, a
-correção), atualiza o `CHANGELOG.md`, cria a tag e a página do lançamento
-como rascunho. Em seguida o app é montado nos três sistemas e os instaladores
-entram no mesmo rascunho, junto com os pacotes de atualização assinados e o
-`latest.json` que o app confere (`.github/workflows/desktop-build.yml`).
+Merge na `main` não lança nada: as mudanças se acumulam até você decidir
+lançar uma versão. Os dois passos são manuais, em Actions ou pelo `gh`:
+
+```sh
+gh workflow run release.yml               # Lançar versão: cria o rascunho
+gh workflow run publicar.yml              # Publicar versão: o rascunho mais recente
+gh workflow run publicar.yml -f tag=v0.23.0
+```
+
+"Lançar versão" (`.github/workflows/release.yml`) confere que o CI passou no
+commit atual da `main`. Então o semantic-release decide uma versão só para
+tudo o que entrou desde o último lançamento (`feat` sobe a menor; `fix`,
+`perf` e `refactor`, a correção), atualiza o `CHANGELOG.md`, cria a tag e a
+página do lançamento como rascunho. Em seguida o app é montado nos três
+sistemas e os instaladores entram no mesmo rascunho, junto com os pacotes de
+atualização assinados e o `latest.json` que o app confere
+(`.github/workflows/desktop-build.yml`).
 
 O rascunho é o portão. Só quem cuida do repositório o vê, e é dele que saem
 os instaladores para testar a versão antes de ela chegar a alguém. O app
 instalado e os links da página do projeto continuam na versão publicada
-anterior até o workflow "Publicar versão" (`.github/workflows/publicar.yml`),
-disparado à mão em Actions. Ele confere que o rascunho tem os instaladores, as
-duas extensões e um `latest.json` da mesma versão, e só então o publica como o
-mais recente. Rascunhos mais antigos saem junto, sem essa marca:
+anterior até o "Publicar versão" (`.github/workflows/publicar.yml`). Ele
+confere que o rascunho tem os instaladores, as duas extensões e um
+`latest.json` da mesma versão, e só então o publica como o mais recente.
+Rascunhos mais antigos saem junto, sem essa marca.
 
-````sh
-gh workflow run publicar.yml              # o rascunho mais recente
-gh workflow run publicar.yml -f tag=v0.23.0
-``` A
-chave de atualização fica nos segredos `TAURI_SIGNING_PRIVATE_KEY` e
+A chave de atualização fica nos segredos `TAURI_SIGNING_PRIVATE_KEY` e
 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, e a pública em
 `src-tauri/tauri.conf.json`. Sem a privada não há como publicar uma
 atualização que o app aceite: guarde uma cópia fora do GitHub.
@@ -265,4 +272,7 @@ Para revisar o aviso sem lançar nada: `pnpm dev` e
 
 MIT. A fonte IBM Plex vem sob a SIL Open Font License, em
 `src/ui/fonts/LICENSE.txt` e `brand/construction/fonts/LICENSE.txt`.
-````
+
+```
+
+```

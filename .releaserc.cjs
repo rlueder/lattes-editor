@@ -1,5 +1,7 @@
 /**
- * Lançamentos com semantic-release, a cada push na main. A página do
+ * Lançamentos com semantic-release, pelo workflow "Lançar versão"
+ * (.github/workflows/release.yml), disparado à mão: merge na main não lança
+ * nada, e uma versão junta tudo o que entrou desde a anterior. A página do
  * lançamento nasce como rascunho: só quem cuida do repositório a vê e baixa os
  * instaladores para testar. Quem usa o app só recebe a versão depois do
  * workflow "Publicar versão" (.github/workflows/publicar.yml).
