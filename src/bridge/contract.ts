@@ -8,6 +8,12 @@
 // relatório pode ser colado numa issue pública sem expor o currículo.
 
 import type { LattesPort } from './apply.ts';
+import {
+  biographicContract,
+  type BiographicKind,
+  biographicSample,
+  isBiographicKind,
+} from './biographic.ts';
 import { CREATE_ATUACAO_SPEC, CREATE_ITEMS_ENABLED } from './create.ts';
 import { contractKind, type DeleteOp } from './delete.ts';
 import type { FormControl } from './form.ts';
@@ -32,13 +38,16 @@ export interface FormSpec {
   name: string;
 }
 
+/**
+ * Formulários fora do contrato fixo: os que só entram com a chave ligada
+ * (create.ts, biographic.ts) e a exclusão, que não tem formulário próprio
+ * (delete.ts usa o de edição e a conferência dele).
+ */
+type GatedKind = 'criar-atuacao' | BiographicKind | DeleteOp['kind'];
+
 export interface Contract {
-  /**
-   * A inclusão só entra com CREATE_ITEMS_ENABLED (create.ts). A exclusão
-   * (delete.ts) sai do formulário de edição e usa a conferência dele.
-   */
-  forms: Omit<Record<BridgeOp['kind'], FormSpec>, 'criar-atuacao' | DeleteOp['kind']> &
-    Partial<Record<'criar-atuacao', FormSpec>>;
+  /** A inclusão só entra com CREATE_ITEMS_ENABLED; os dados gerais, com BIOGRAPHIC_OPS_ENABLED. */
+  forms: Omit<Record<BridgeOp['kind'], FormSpec>, GatedKind> & Partial<Record<GatedKind, FormSpec>>;
   /** Procedimentos que precisam estar linkados no menu do currículo. */
   menu: string[];
 }
@@ -59,6 +68,7 @@ const radio: FieldSpec = { type: 'radio' };
 export const LATTES_CONTRACT: Contract = {
   forms: {
     ...(CREATE_ITEMS_ENABLED ? { 'criar-atuacao': CREATE_ATUACAO_SPEC } : {}),
+    ...biographicContract().forms,
     idioma: {
       action: 'PKG_IDIOMA.FORM',
       fields: {
@@ -118,7 +128,7 @@ export const LATTES_CONTRACT: Contract = {
       name: 'GN_ATIV_VINC',
     },
   },
-  menu: ['pkg_ativ.lista', 'pkg_idioma.lista', 'pkg_resume.'],
+  menu: ['pkg_ativ.lista', 'pkg_idioma.lista', 'pkg_resume.', ...biographicContract().menu],
 };
 
 export type Fingerprint = Record<string, FieldSpec>;
@@ -334,6 +344,13 @@ async function locateAndCheck(
   if (kind === 'resumo') {
     const link = findLinks(menu, 'pkg_resume.')[0];
     return link ? checkForm(port, kind, spec, link.path) : noLink(kind, spec.name, 'pkg_resume.');
+  }
+  if (isBiographicKind(kind)) {
+    const found = await biographicSample(kind, menu, (path) => getChecked(port, path));
+    if ('path' in found) return checkForm(port, kind, spec, found.path);
+    return 'link' in found
+      ? noLink(kind, spec.name, found.link)
+      : noSample(kind, spec.name, found.none);
   }
   if (kind === 'criar-atuacao') {
     // O formulário de inclusão abre vazio: não precisa de amostra.

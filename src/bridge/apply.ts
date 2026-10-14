@@ -5,6 +5,12 @@
 // Roda dentro da aba do Lattes (sessão do próprio usuário) ou num teste, com
 // um Lattes falso: o acesso à rede e ao DOM entra pela porta (LattesPort).
 
+import {
+  BIOGRAPHIC_SPECS,
+  type BiographicOp,
+  isBiographicOp,
+  locateBiographic,
+} from './biographic.ts';
 import { applyCreateAtuacao } from './create.ts';
 import { applyDelete, type DeleteOp, isDeleteOp } from './delete.ts';
 import {
@@ -40,7 +46,7 @@ export interface OpResult {
   status: ResultStatus;
 }
 
-type EditOp = Exclude<BridgeOp, DeleteOp | { kind: 'criar-atuacao' }>;
+type EditOp = Exclude<BridgeOp, BiographicOp | DeleteOp | { kind: 'criar-atuacao' }>;
 
 const FORMS: Record<EditOp['kind'], { action: string; name: string }> = {
   idioma: { action: 'PKG_IDIOMA.FORM', name: 'GN_IDIOMA' },
@@ -162,8 +168,12 @@ export async function applyOp(op: BridgeOp, port: LattesPort): Promise<OpResult>
     status,
   });
   try {
-    const { action, name } = FORMS[op.kind];
-    const path = await locate(op, port, await port.menuHtml());
+    // Formação, endereço e identificação: formulários e caminhos em biographic.ts.
+    const { action, name } = isBiographicOp(op) ? BIOGRAPHIC_SPECS[op.kind] : FORMS[op.kind];
+    const menu = await port.menuHtml();
+    const path = isBiographicOp(op)
+      ? await locateBiographic(op, menu, (p) => getChecked(port, p))
+      : await locate(op, port, menu);
     const before = await readPairs(port, path, name);
 
     if (pairValue(before.pairs, 'f_ctr') !== 'U') {

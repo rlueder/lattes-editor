@@ -28,9 +28,11 @@ originais, em `docs/lattes_implementation_guide.md` e
     `docs/lattes_internals.md`, seção 9). Conferido num Lattes real em
     12/10/2026: o contrato bateu de primeira.
 - **Conector, além do vínculo, do resumo e dos idiomas.**
-  Formação, endereço e identificação já têm o formulário mapeado em
-  `docs/lattes_internals.md`; falta escrever a operação de cada um e testar
-  com restauração, como foi feito com o vínculo. O idioma tem a operação
+  Formação, endereço e identificação têm a operação escrita e testada contra
+  o Lattes falso (`src/bridge/biographic.ts`, LAT-23), mas desligada
+  (`BIOGRAPHIC_OPS_ENABLED`) até um teste acompanhado com restauração no
+  Lattes real, como foi feito com o vínculo. O que entra e o que fica de fora
+  está em `docs/lattes_internals.md`, seção 19. O idioma tem a operação
   escrita e testada contra o Lattes falso, falta o teste no Lattes real.
 - **Lembrar do envio ao CNPq.** Feito: o painel da extensão e o editor
   dizem no fim de cada fila que nada está público até "Enviar ao CNPq", com
