@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.20.1](https://github.com/rlueder/lattes-editor/compare/v0.20.0...v0.20.1) (2026-10-14)
+
+### Correções
+
+- fechar o formulário de item com algo preenchido pede confirmação ([#47](https://github.com/rlueder/lattes-editor/issues/47)) ([c59b7f2](https://github.com/rlueder/lattes-editor/commit/c59b7f20050cbbf85ad71e56a280ff0afd1d8705))
+
 ## [0.20.0](https://github.com/rlueder/lattes-editor/compare/v0.19.1...v0.20.0) (2026-10-13)
 
 ### Novidades
