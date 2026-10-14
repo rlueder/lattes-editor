@@ -4,8 +4,8 @@
 // A foto vem do CNPq, para ser sempre a mesma do Lattes. O endereço dela pede
 // o código de 10 caracteres do currículo, que a exportação não traz. Quem o
 // fornece é a extensão (conector), que o lê da sessão do Lattes; sem ela, ficam
-// as iniciais. O editor não troca a foto no Lattes, então não há o que editar
-// aqui.
+// as iniciais. As iniciais ficam por baixo enquanto a foto não chega, e a foto
+// que falha é tentada de novo (use-photo.ts).
 
 import { useEffect, useState } from 'react';
 
@@ -17,6 +17,7 @@ import { examplePhotoUrl, initials, photoUrl, type Profile, readCvCode } from '.
 import { QrCode } from './QrCode.tsx';
 import { ShareDialog } from './ShareDialog.tsx';
 import { CV_CODE_EVENT } from './use-bridge.ts';
+import { usePhoto } from './use-photo.ts';
 
 export function ProfileCard({ profile }: { profile: Profile }) {
   const date = formatLattesDate(profile.date);
@@ -24,11 +25,9 @@ export function ProfileCard({ profile }: { profile: Profile }) {
   const [code, setCode] = useState(() =>
     profile.lattesId ? readCvCode(profile.lattesId) : undefined,
   );
-  const [failed, setFailed] = useState(false);
   // Com a privacidade ligada, a foto vira mosaico.
   const [hidden] = usePrivacyMode();
   const [sharing, setSharing] = useState(false);
-  useEffect(() => setFailed(false), [code]);
   // A extensão do conector entrega o código lido no Lattes.
   useEffect(() => {
     const reload = () => setCode(profile.lattesId ? readCvCode(profile.lattesId) : undefined);
@@ -37,20 +36,30 @@ export function ProfileCard({ profile }: { profile: Profile }) {
   }, [profile.lattesId]);
 
   // O currículo de exemplo do dev usa uma foto de mentira; os outros, a do CNPq.
-  const src = examplePhotoUrl(profile.lattesId) ?? (code ? photoUrl(code) : undefined);
-  const showPhoto = src && !failed;
+  const photo = usePhoto(examplePhotoUrl(profile.lattesId) ?? (code ? photoUrl(code) : undefined));
+  const photoClass = photo.loaded ? 'avatar-photo loaded' : 'avatar-photo';
   return (
     <section aria-label="Currículo aberto" className="profile">
       <div className="profile-top">
         <div className="avatar-wrap">
           <div aria-hidden="true" className="avatar">
-            {showPhoto && hidden ? (
-              <PixelPhoto src={src} />
-            ) : showPhoto ? (
-              <img alt="" src={src} onError={() => setFailed(true)} />
-            ) : (
-              initials(profile.name)
-            )}
+            <span className="avatar-initials">{initials(profile.name)}</span>
+            {photo.src && hidden ? (
+              <PixelPhoto
+                className={photoClass}
+                src={photo.src}
+                onError={photo.onError}
+                onLoad={photo.onLoad}
+              />
+            ) : photo.src ? (
+              <img
+                alt=""
+                className={photoClass}
+                src={photo.src}
+                onError={photo.onError}
+                onLoad={photo.onLoad}
+              />
+            ) : null}
           </div>
         </div>
         {url && (
