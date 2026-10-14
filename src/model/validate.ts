@@ -3,6 +3,7 @@
 // tem de aparecer aqui.
 
 import { attributeLabel, elementLabel } from '../labels/labels.ts';
+import { outOfList, titleRequired } from '../schema/typed-choices.ts';
 import type { LattesSchema } from '../schema/types.ts';
 import { authorElementName, readAuthors } from './production.ts';
 import { childElements, type XElement } from './xml.ts';
@@ -33,6 +34,11 @@ export function validateItem(schema: LattesSchema, item: XElement, today = new D
             ? `${attributeLabel(a.name)}: valor "${a.value}" não é aceito`
             : `${attributeLabel(a.name)}: escolha uma opção`,
         });
+      } else if (outOfList(el, a.name)) {
+        problems.push({
+          ...where,
+          message: `${attributeLabel(a.name)}: "${a.value}" não está na lista do Lattes`,
+        });
       } else if (attrSpec.required && !a.value.trim()) {
         problems.push({ ...where, message: `${attributeLabel(a.name)}: obrigatório` });
       } else if (/^ANO($|-)/.test(a.name) && a.value && !validYear(a.value, today)) {
@@ -48,7 +54,8 @@ export function validateItem(schema: LattesSchema, item: XElement, today = new D
     const title = basics.attrs.find(
       (a) => a.name.startsWith('TITULO') && !a.name.endsWith('INGLES'),
     );
-    if (title && !title.value.trim()) {
+    // Participação em evento: o Lattes só pede título a convidado e participante.
+    if (title && !title.value.trim() && titleRequired(basics)) {
       problems.push({
         attribute: title.name,
         element: basics.name,

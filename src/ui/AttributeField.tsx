@@ -6,6 +6,7 @@ import { useEffect, useId, useState } from 'react';
 import { attributeLabelIn, elementLabel, enumLabel } from '../labels/labels.ts';
 import { repairMojibake } from '../model/mojibake.ts';
 import { getAttr, setAttr, type XElement } from '../model/xml.ts';
+import { derivedValue, emptyChoicesHint, typedChoices } from '../schema/typed-choices.ts';
 import type { AttributeSpec } from '../schema/types.ts';
 import { parseEmails, parseSocial } from './contacts.ts';
 import { CopyButton } from './CopyButton.tsx';
@@ -20,7 +21,7 @@ import {
 import { LockIcon } from './icons.tsx';
 import { displayLattesDate, isLattesDateAttr, isValidLattesDate } from './lattes-date.ts';
 import { isFourDigitYear, isLattesYearAttr } from './lattes-year.ts';
-import { Select } from './primitives/Select.tsx';
+import { ComboSelect } from './primitives/ComboSelect.tsx';
 import { Switch } from './primitives/Switch.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { isSensitiveAttr, useHideSensitive } from './privacy.ts';
@@ -142,6 +143,16 @@ export function AttributeField({
     );
   }
 
+  if (derivedValue(el.name, name) !== undefined) {
+    // Segue outra escolha (a natureza segue o tipo de evento): lido, não editado.
+    return (
+      <div className="field field-readonly field-locked">
+        <ReadonlyLabel text={text} why="Segue o tipo de item escolhido" />
+        <span className="locked-value">{value || derivedValue(el.name, name)}</span>
+      </div>
+    );
+  }
+
   const dateAttr = isLattesDateAttr(
     el.name,
     name,
@@ -168,7 +179,8 @@ export function AttributeField({
   }
 
   const boolean = isBooleanAttr(name, spec, value);
-  const choices = codeChoices(el.name, name);
+  // Lista do Lattes: códigos conhecidos (field-kind) ou campos tipados (LAT-48).
+  const choices = codeChoices(el.name, name) ?? typedChoices(el, name);
   // Data em DDMMAAAA vira campo de data; valor que não é data válida fica texto, intacto.
   const date = dateAttr && (value === '' || isValidLattesDate(value));
   // Ano em AAAA vira campo de ano; valor que não tem quatro dígitos fica texto, intacto.
@@ -199,13 +211,15 @@ export function AttributeField({
       </span>
     );
   } else if (choices) {
-    // Código que a pessoa escolhe no Lattes (normal ou sanduíche): lista com os nomes.
+    // Lista do Lattes. Valor fora dela continua visível (e aparece como pendência).
     const known = choices.some((c) => c.value === value) || value === '';
+    const hint = choices.length === 0 ? emptyChoicesHint(el, name) : undefined;
     control = (
-      <Select
+      <ComboSelect
         {...common}
+        disabled={choices.length === 0 && known}
         options={[
-          { label: '(escolha)', value: '' },
+          { label: hint ?? '(escolha)', value: '' },
           ...(known ? [] : [{ label: value, value }]),
           ...choices,
         ]}
@@ -217,7 +231,7 @@ export function AttributeField({
     // Valor fora da lista (exportação mais nova que o XSD) continua visível.
     const values = spec.enum.includes(value) || value === '' ? spec.enum : [value, ...spec.enum];
     control = (
-      <Select
+      <ComboSelect
         {...common}
         options={[
           { label: '(escolha)', value: '' },

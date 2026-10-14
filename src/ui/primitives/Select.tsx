@@ -17,6 +17,8 @@ interface Props {
   'aria-invalid'?: boolean;
   'aria-label'?: string;
   className?: string;
+  /** Sem opção que se aplique (o tipo de participação de um ouvinte, por exemplo). */
+  disabled?: boolean;
   id?: string;
   options: Option[];
   placeholder?: string;
@@ -24,9 +26,19 @@ interface Props {
   onChange: (value: string) => void;
 }
 
-export function Select({ className, id, onChange, options, placeholder, value, ...aria }: Props) {
+export function Select({
+  className,
+  disabled,
+  id,
+  onChange,
+  options,
+  placeholder,
+  value,
+  ...aria
+}: Props) {
   return (
     <SelectPrimitive.Root
+      disabled={disabled}
       items={options.map((o) => ({ label: o.selectedLabel ?? o.label, value: o.value }))}
       value={value}
       onValueChange={(next) => onChange((next as string | null) ?? '')}

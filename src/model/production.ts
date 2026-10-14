@@ -8,6 +8,7 @@
 // INFORMACOES-ADICIONAIS só quando preenchidos.
 
 import { IMPORT_MODULES, type ImportModule } from '../import-export/importable.ts';
+import { derivedValue } from '../schema/typed-choices.ts';
 import type { LattesSchema } from '../schema/types.ts';
 import { insertInSchemaOrder } from './schema-order.ts';
 import {
@@ -192,7 +193,10 @@ export function newItem(schema: LattesSchema, itemName: string, sequencia: numbe
     const structural =
       child.name.startsWith('DADOS-BASICOS') || child.name.startsWith('DETALHAMENTO');
     if (structural || (child.min > 0 && !AUTHOR_ELEMENTS.includes(child.name))) {
-      insertInSchemaOrder(schema, item, element(child.name, emptyAttrs(schema, child.name)));
+      const attrs = emptyAttrs(schema, child.name);
+      // Valor que segue o tipo de item (natureza da participação em evento).
+      for (const a of attrs) a.value = derivedValue(child.name, a.name) ?? a.value;
+      insertInSchemaOrder(schema, item, element(child.name, attrs));
     }
   }
   return item;

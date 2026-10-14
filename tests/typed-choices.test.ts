@@ -1,0 +1,183 @@
+import { describe, expect, it } from 'vitest';
+
+import { newItem } from '../src/model/production.ts';
+import { validateItem } from '../src/model/validate.ts';
+import { element, firstChild, setAttr } from '../src/model/xml.ts';
+import { lattesSchema as schema } from '../src/schema/lattes.ts';
+import listas from '../src/schema/listas-lattes.json' with { type: 'json' };
+import {
+  derivedValue,
+  emptyChoicesHint,
+  isEventBasics,
+  outOfList,
+  titleRequired,
+  typedChoices,
+} from '../src/schema/typed-choices.ts';
+
+const CONGRESS = 'DADOS-BASICOS-DA-PARTICIPACAO-EM-CONGRESSO';
+const OTHER = 'DADOS-BASICOS-DE-OUTRAS-PARTICIPACOES-EM-EVENTOS-CONGRESSOS';
+const TODAY = new Date(2026, 9, 13);
+
+const basics = (name: string, attrs: Record<string, string> = {}) => element(name, attrs);
+const values = (choices: { value: string }[] | undefined) => choices?.map((c) => c.value);
+
+describe('campos tipados: natureza da participação em evento', () => {
+  it('segue o tipo de evento, com o texto do combo do Lattes', () => {
+    const expected: Record<string, string> = {
+      CONGRESSO: 'Congresso',
+      ENCONTRO: 'Encontro',
+      EXPOSICAO: 'Exposição',
+      FEIRA: 'Feira',
+      OFICINA: 'Oficina',
+      OLIMPIADA: 'Olimpíada',
+      SEMINARIO: 'Seminário',
+      SIMPOSIO: 'Simpósio',
+    };
+    for (const [kind, nature] of Object.entries(expected)) {
+      expect(derivedValue(`DADOS-BASICOS-DA-PARTICIPACAO-EM-${kind}`, 'NATUREZA')).toBe(nature);
+    }
+    expect(derivedValue(OTHER, 'NATUREZA')).toBe('Outra');
+  });
+
+  it('não vale fora da participação em evento nem para outro atributo', () => {
+    expect(derivedValue('DADOS-BASICOS-DO-TRABALHO', 'NATUREZA')).toBeUndefined();
+    expect(derivedValue(CONGRESS, 'TITULO')).toBeUndefined();
+    expect(isEventBasics(CONGRESS)).toBe(true);
+    expect(isEventBasics(OTHER)).toBe(true);
+    expect(isEventBasics('DADOS-BASICOS-DO-ARTIGO')).toBe(false);
+  });
+
+  it('um item novo já vem com a natureza', () => {
+    const item = newItem(schema, 'PARTICIPACAO-EM-CONGRESSO', 34);
+    expect(firstChild(item, CONGRESS)?.attrs.find((a) => a.name === 'NATUREZA')?.value).toBe(
+      'Congresso',
+    );
+  });
+});
+
+describe('campos tipados: listas', () => {
+  it('país e idioma pelo nome, nas listas do Lattes', () => {
+    const countries = values(typedChoices(basics('DADOS-BASICOS-DO-ARTIGO'), 'PAIS'));
+    expect(countries).toEqual(listas.paises);
+    expect(countries).toContain('Alemanha');
+    expect(countries).toContain('Brasil');
+    for (const attr of ['PAIS-DE-NASCIMENTO', 'PAIS-DE-PUBLICACAO', 'PAIS-DO-EVENTO']) {
+      expect(typedChoices(basics('DADOS-GERAIS'), attr)).toBeDefined();
+    }
+    const languages = values(typedChoices(basics('DADOS-BASICOS-DO-ARTIGO'), 'IDIOMA'));
+    expect(languages).toContain('Inglês');
+    expect(languages).toContain('Português');
+    expect(typedChoices(basics('DETALHAMENTO-DA-TRADUCAO'), 'IDIOMA-DA-OBRA-ORIGINAL')).toEqual(
+      typedChoices(basics('DADOS-BASICOS-DO-ARTIGO'), 'IDIOMA'),
+    );
+  });
+
+  it('o idioma da seção Idiomas é código e fica de fora', () => {
+    expect(typedChoices(basics('IDIOMA'), 'IDIOMA')).toBeUndefined();
+  });
+
+  it('forma de participação e tipo conforme a forma', () => {
+    expect(values(typedChoices(basics(CONGRESS), 'FORMA-PARTICIPACAO'))).toEqual([
+      'Convidado',
+      'Participante',
+      'Ouvinte',
+    ]);
+    const typeFor = (form: string) =>
+      values(typedChoices(basics(CONGRESS, { 'FORMA-PARTICIPACAO': form }), 'TIPO-PARTICIPACAO'));
+    expect(typeFor('Convidado')).toEqual([
+      'Conferencista',
+      'Simposista',
+      'Moderador',
+      'Avaliador',
+      'Homenageado',
+    ]);
+    expect(typeFor('Participante')).toEqual([
+      'Poster / Painel',
+      'Apresentação oral',
+      'Outras formas',
+    ]);
+    expect(typeFor('Ouvinte')).toEqual([]);
+    expect(typeFor('')).toEqual([]);
+    expect(values(typedChoices(basics(CONGRESS), 'TIPO-PARTICIPACAO'))).toEqual([]);
+  });
+
+  it('campo livre e participação fora de evento não têm lista', () => {
+    expect(typedChoices(basics(CONGRESS), 'TITULO')).toBeUndefined();
+    expect(typedChoices(basics('DADOS-BASICOS-DO-ARTIGO'), 'FORMA-PARTICIPACAO')).toBeUndefined();
+  });
+
+  it('o tipo sem opção explica por quê', () => {
+    expect(emptyChoicesHint(basics(CONGRESS), 'TIPO-PARTICIPACAO')).toBe(
+      'Escolha a forma primeiro',
+    );
+    expect(
+      emptyChoicesHint(basics(CONGRESS, { 'FORMA-PARTICIPACAO': 'Ouvinte' }), 'TIPO-PARTICIPACAO'),
+    ).toBe('Não se aplica a ouvinte');
+    expect(emptyChoicesHint(basics(CONGRESS), 'PAIS')).toBeUndefined();
+    expect(
+      emptyChoicesHint(basics('DADOS-BASICOS-DO-ARTIGO'), 'TIPO-PARTICIPACAO'),
+    ).toBeUndefined();
+  });
+});
+
+describe('campos tipados: valor fora da lista', () => {
+  it('vazio e valor da lista não contam; o resto sim', () => {
+    expect(outOfList(basics(CONGRESS, { PAIS: '' }), 'PAIS')).toBe(false);
+    expect(outOfList(basics(CONGRESS, { PAIS: 'Alemanha' }), 'PAIS')).toBe(false);
+    expect(outOfList(basics(CONGRESS, { PAIS: 'Germany' }), 'PAIS')).toBe(true);
+    expect(outOfList(basics(CONGRESS, { TITULO: 'Qualquer coisa' }), 'TITULO')).toBe(false);
+  });
+
+  it('a natureza tem de ser a do tipo de evento', () => {
+    expect(outOfList(basics(CONGRESS, { NATUREZA: 'Congresso' }), 'NATUREZA')).toBe(false);
+    expect(outOfList(basics(CONGRESS, { NATUREZA: 'Encontro' }), 'NATUREZA')).toBe(true);
+  });
+
+  it('o tipo tem de combinar com a forma', () => {
+    const el = basics(CONGRESS, {
+      'FORMA-PARTICIPACAO': 'Ouvinte',
+      'TIPO-PARTICIPACAO': 'Apresentação oral',
+    });
+    expect(outOfList(el, 'TIPO-PARTICIPACAO')).toBe(true);
+    setAttr(el, 'FORMA-PARTICIPACAO', 'Participante');
+    expect(outOfList(el, 'TIPO-PARTICIPACAO')).toBe(false);
+  });
+});
+
+describe('campos tipados: validação da participação em evento', () => {
+  function participation(attrs: Record<string, string>) {
+    const item = newItem(schema, 'PARTICIPACAO-EM-CONGRESSO', 34);
+    const part = firstChild(item, CONGRESS)!;
+    setAttr(part, 'ANO', '2026');
+    for (const [k, v] of Object.entries(attrs)) setAttr(part, k, v);
+    const detail = firstChild(item, 'DETALHAMENTO-DA-PARTICIPACAO-EM-CONGRESSO')!;
+    setAttr(detail, 'NOME-DO-EVENTO', '2026 LOINC Conference');
+    return item;
+  }
+  const messages = (attrs: Record<string, string>) =>
+    validateItem(schema, participation(attrs), TODAY).map((p) => p.message);
+
+  it('ouvinte não precisa de título', () => {
+    expect(messages({ 'FORMA-PARTICIPACAO': 'Ouvinte' })).not.toContain('Título: obrigatório');
+    expect(messages({})).not.toContain('Título: obrigatório');
+  });
+
+  it('participante e convidado precisam de título', () => {
+    expect(messages({ 'FORMA-PARTICIPACAO': 'Participante' })).toContain('Título: obrigatório');
+    expect(messages({ 'FORMA-PARTICIPACAO': 'Convidado' })).toContain('Título: obrigatório');
+    expect(messages({ 'FORMA-PARTICIPACAO': 'Participante', TITULO: 'fhir-brasil' })).not.toContain(
+      'Título: obrigatório',
+    );
+  });
+
+  it('valor fora da lista vira pendência, sem apagar o valor', () => {
+    const item = participation({ PAIS: 'Germany' });
+    const problems = validateItem(schema, item, TODAY);
+    expect(problems.map((p) => p.message)).toContain('País: "Germany" não está na lista do Lattes');
+    expect(firstChild(item, CONGRESS)?.attrs.find((a) => a.name === 'PAIS')?.value).toBe('Germany');
+  });
+
+  it('título fora da participação em evento continua obrigatório', () => {
+    expect(titleRequired(basics('DADOS-BASICOS-DO-ARTIGO'))).toBe(true);
+  });
+});
