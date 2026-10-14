@@ -46,10 +46,23 @@ export function initialTab(toSend: number, sent: number): PanelTab {
 }
 
 let requested: PanelTab | undefined;
+let openPanel: ((tab: PanelTab) => void) | undefined;
 
-/** Pede a aba da próxima abertura do painel (a faixa abre direto no registro). */
+/**
+ * Pede uma aba do painel (a faixa abre direto no registro). Com o painel
+ * aberto, vale na hora; fechado, vale na próxima abertura e só nela.
+ */
 export function requestTab(tab: PanelTab): void {
-  requested = tab;
+  if (openPanel) openPanel(tab);
+  else requested = tab;
+}
+
+/** O painel aberto recebe os pedidos de aba; ao fechar, deixa de receber. */
+export function listenTabRequests(onTab: (tab: PanelTab) => void): () => void {
+  openPanel = onTab;
+  return () => {
+    if (openPanel === onTab) openPanel = undefined;
+  };
 }
 
 /** A aba pedida, uma vez só; depois volta à escolha normal. */

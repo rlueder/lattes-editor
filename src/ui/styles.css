@@ -5538,9 +5538,9 @@ b {
   font-size: 14px;
 }
 
-/* Passar o mouse em qualquer campo: a borda sobe um passo (sand-8). O foco
-   continua mais forte (borda e contorno do destaque), e o seletor aberto
-   mantém a borda do destaque. */
+/* Passar o mouse em qualquer campo, filtro ou lista: a borda fica no azul
+   do destaque (o sand-8 quase não aparecia no tema claro). O foco continua
+   mais forte (borda e contorno do destaque). */
 .field input:hover:not(:focus):not(:disabled),
 .field select:hover:not(:focus):not(:disabled),
 .field textarea:not(.title-input):hover:not(:focus),
@@ -5550,7 +5550,7 @@ b {
 .doi-row input:hover:not(:focus),
 .select-trigger:hover:not([data-popup-open]):not(:focus-visible),
 .filter-search:hover:not(:focus-within) {
-  border-color: var(--border-focus);
+  border-color: var(--accent);
 }
 
 /* Antes do primeiro render: o editor espera a chave dos dados locais. */
@@ -5868,13 +5868,6 @@ button:not([class]),
 button.icon-btn,
 button.ghost.icon {
   border-radius: 50%;
-}
-
-/* No tema claro, a borda do sand-8 no passar do mouse quase não aparecia nos
-   filtros: sobe para o azul do destaque. */
-.filter-search:hover:not(:focus-within),
-.filter-facet.select-trigger:hover:not([data-popup-open]):not(:focus-visible) {
-  border-color: var(--accent);
 }
 
 @media (prefers-reduced-motion: reduce) {

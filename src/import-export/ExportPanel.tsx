@@ -8,7 +8,7 @@
 // Lattes pré-marca tudo nos Passos 2 e 3, e confirmar um item vermelho duplica.
 
 import { Tabs } from '@base-ui/react/tabs';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { elementLabel } from '../labels/labels.ts';
 import type { Problem } from '../model/validate.ts';
@@ -22,6 +22,7 @@ import type { ImportFile } from './import-file.ts';
 import { RouteTag } from './RouteTag.tsx';
 import {
   initialTab,
+  listenTabRequests,
   type PanelTab,
   splitByRoute,
   takeRequestedTab,
@@ -66,19 +67,35 @@ export function ExportPanel({
   const blocked = pending.filter((p) => p.problems.length > 0);
   const years = pending.map((p) => p.year).filter((y): y is number => y !== undefined);
   const minYear = years.length ? Math.min(...years) : undefined;
+  // Só o que o conector leva entra; sem conector, nenhuma rota é dele.
+  const connectorOps = bridge?.available ? bridge.plan.ops : undefined;
   const connectorKeys = useMemo(
-    () => new Set(bridge?.available ? bridge.plan.ops.map((op) => op.key) : []),
-    [bridge?.available, bridge?.plan.ops],
+    () => new Set((connectorOps ?? []).map((op) => op.key)),
+    [connectorOps],
   );
   const routed = useMemo(() => splitByRoute(changes, connectorKeys), [changes, connectorKeys]);
   const toSend = toSendCount(pending.length, changes);
   const sent = bridge?.sent.length ?? 0;
   const [tab, setTab] = useState<PanelTab>(() => initialTab(toSend, sent));
-  // Cada vez que o painel abre, começa pela aba que faz sentido agora.
+  // A aba foi escolhida (pela pessoa ou por um pedido): a escolha automática para.
+  const chosen = useRef(false);
+  const choose = (next: PanelTab) => {
+    chosen.current = true;
+    setTab(next);
+  };
+  // Ao abrir: a aba pedida, se houver; e, enquanto aberto, os pedidos novos.
   useEffect(() => {
-    if (open) setTab(takeRequestedTab() ?? initialTab(toSend, sent));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!open) return;
+    chosen.current = false;
+    const requestedTab = takeRequestedTab();
+    if (requestedTab) choose(requestedTab);
+    return listenTabRequests(choose);
   }, [open]);
+  // Sem escolha ainda, segue o que faz sentido agora: o registro do enviado
+  // pode chegar um instante depois de o painel abrir.
+  useEffect(() => {
+    if (open && !chosen.current) setTab(initialTab(toSend, sent));
+  }, [open, toSend, sent]);
 
   return (
     <Modal
@@ -102,7 +119,7 @@ export function ExportPanel({
       title="Enviar ao Lattes"
       onClose={onClose}
     >
-      <Tabs.Root className="send-tabs" value={tab} onValueChange={(v) => setTab(v as PanelTab)}>
+      <Tabs.Root className="send-tabs" value={tab} onValueChange={(v) => choose(v as PanelTab)}>
         <Tabs.List aria-label="Enviar ao Lattes" className="send-tab-list">
           <Tabs.Tab className="send-tab" value="a-enviar">
             A enviar

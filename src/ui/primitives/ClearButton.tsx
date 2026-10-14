@@ -10,7 +10,8 @@ export function ClearButton({
   onClear,
   value,
 }: {
-  input?: RefObject<HTMLInputElement | null>;
+  /** O campo que ele limpa: o foco volta para ele (o botão some ao limpar). */
+  input: RefObject<HTMLInputElement | null>;
   value: string;
   onClear: () => void;
 }) {
@@ -22,7 +23,7 @@ export function ClearButton({
       type="button"
       onClick={() => {
         onClear();
-        input?.current?.focus();
+        input.current?.focus();
       }}
     >
       <CloseIcon />

@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, useRef } from 'react';
 
 import { type Facet, type FilterState, isFiltering, NO_FILTER } from './facets.ts';
 import { CloseIcon, SearchIcon } from './icons.tsx';
@@ -16,6 +16,7 @@ interface Props {
 
 export function FilterBar({ facets, onChange, shown, state, total }: Props) {
   const searchId = useId();
+  const searchRef = useRef<HTMLInputElement>(null);
   const filtering = isFiltering(state);
   return (
     <div className="filter-bar" role="search">
@@ -25,12 +26,17 @@ export function FilterBar({ facets, onChange, shown, state, total }: Props) {
           Filtrar esta seção
         </label>
         <input
+          ref={searchRef}
           id={searchId}
           placeholder="Filtrar esta seção"
           value={state.query}
           onChange={(e) => onChange({ ...state, query: e.target.value })}
         />
-        <ClearButton value={state.query} onClear={() => onChange({ ...state, query: '' })} />
+        <ClearButton
+          input={searchRef}
+          value={state.query}
+          onClear={() => onChange({ ...state, query: '' })}
+        />
       </div>
       {facets.map((f) => {
         const value = state.selected[f.id] ?? '';
