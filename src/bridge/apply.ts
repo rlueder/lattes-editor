@@ -13,6 +13,7 @@ import {
 } from './biographic.ts';
 import { applyCreateAtuacao } from './create.ts';
 import { applyDelete, type DeleteOp, isDeleteOp } from './delete.ts';
+import { EVENTO_SPEC, type EventoOp, isEventoOp, locateEvento } from './edit-items.ts';
 import {
   encodeLatin1Form,
   type FormControl,
@@ -46,7 +47,7 @@ export interface OpResult {
   status: ResultStatus;
 }
 
-type EditOp = Exclude<BridgeOp, BiographicOp | DeleteOp | { kind: 'criar-atuacao' }>;
+type EditOp = Exclude<BridgeOp, BiographicOp | DeleteOp | EventoOp | { kind: 'criar-atuacao' }>;
 
 const FORMS: Record<EditOp['kind'], { action: string; name: string }> = {
   idioma: { action: 'PKG_IDIOMA.FORM', name: 'GN_IDIOMA' },
@@ -168,12 +169,19 @@ export async function applyOp(op: BridgeOp, port: LattesPort): Promise<OpResult>
     status,
   });
   try {
-    // Formação, endereço e identificação: formulários e caminhos em biographic.ts.
-    const { action, name } = isBiographicOp(op) ? BIOGRAPHIC_SPECS[op.kind] : FORMS[op.kind];
+    // Formação, endereço e identificação (biographic.ts) e participação em
+    // eventos (edit-items.ts): formulários e caminhos próprios.
+    const { action, name } = isBiographicOp(op)
+      ? BIOGRAPHIC_SPECS[op.kind]
+      : isEventoOp(op)
+        ? EVENTO_SPEC
+        : FORMS[op.kind];
     const menu = await port.menuHtml();
     const path = isBiographicOp(op)
       ? await locateBiographic(op, menu, (p) => getChecked(port, p))
-      : await locate(op, port, menu);
+      : isEventoOp(op)
+        ? await locateEvento(op, menu, (p) => getChecked(port, p))
+        : await locate(op, port, menu);
     const before = await readPairs(port, path, name);
 
     if (pairValue(before.pairs, 'f_ctr') !== 'U') {

@@ -8,6 +8,7 @@ import { getAttr, type XElement } from '../model/xml.ts';
 import { BIOGRAPHIC_OPS_ENABLED, type BiographicOp, planBiographic } from './biographic.ts';
 import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
 import { DELETE_ITEMS_ENABLED, type DeleteOp, planDelete } from './delete.ts';
+import { EDIT_ITEMS_ENABLED, type EventoOp, planEvento } from './edit-items.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
 
 /** Valor de campo; null tira o campo do envio (caixa desmarcada). */
@@ -43,13 +44,15 @@ export interface IdiomaOp extends OpBase {
   kind: 'idioma';
 }
 
-export type BridgeOp = BiographicOp | CreateAtuacaoOp | DeleteOp | IdiomaOp | ResumoOp | VinculoOp;
+export type BridgeOp =
+  BiographicOp | CreateAtuacaoOp | DeleteOp | EventoOp | IdiomaOp | ResumoOp | VinculoOp;
 
 /** Chaves das operações que ainda não foram testadas num Lattes real. */
 export interface PlanOptions {
   biographicOps?: boolean;
   createItems?: boolean;
   deleteItems?: boolean;
+  editItems?: boolean;
 }
 
 export interface Unsupported {
@@ -142,6 +145,7 @@ export function planChange(
     biographicOps = BIOGRAPHIC_OPS_ENABLED,
     createItems = CREATE_ITEMS_ENABLED,
     deleteItems = DELETE_ITEMS_ENABLED,
+    editItems = EDIT_ITEMS_ENABLED,
   }: PlanOptions = {},
 ): BridgeOp | Unsupported {
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.
@@ -222,6 +226,9 @@ export function planChange(
   if (biographic) {
     return 'reason' in biographic ? unsupported(change, label, biographic.reason) : biographic;
   }
+  // Participação em eventos: desligada até o teste no Lattes real (edit-items.ts).
+  const evento = editItems ? planEvento(change, chain, label) : undefined;
+  if (evento) return 'reason' in evento ? unsupported(change, label, evento.reason) : evento;
 
   return unsupported(change, label, 'Formulário não suportado ainda');
 }
