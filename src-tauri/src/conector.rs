@@ -105,7 +105,22 @@ fn secret() -> String {
 /// Conexão do host com o app aberto (uma por vez: a mais recente vale).
 #[derive(Default)]
 pub struct Conector {
-    conn: Arc<Mutex<Option<TcpStream>>>,
+    /// A ligação atual, com o número dela. Um host novo (outro navegador, uma
+    /// extensão recarregada) toma o lugar do anterior; o número diz, quando
+    /// uma ligação cai, se ela ainda era a atual.
+    conn: Arc<Mutex<Option<(u64, TcpStream)>>>,
+}
+
+/// Uma ligação que caiu só desliga o conector se ainda era a atual: a queda
+/// de um host antigo, depois que um novo tomou o lugar, não muda nada.
+fn drop_if_current(conn: &Mutex<Option<(u64, TcpStream)>>, id: u64) -> bool {
+    let mut guard = conn.lock().unwrap();
+    if guard.as_ref().is_some_and(|(current, _)| *current == id) {
+        *guard = None;
+        true
+    } else {
+        false
+    }
 }
 
 /// Escuta numa porta local e repassa ao editor o que vier da extensão.
@@ -122,6 +137,7 @@ pub fn start(app: &AppHandle, conector: &Conector) -> io::Result<()> {
     let conn = Arc::clone(&conector.conn);
     let app = app.clone();
     thread::spawn(move || {
+        let mut next_id: u64 = 0;
         for stream in listener.incoming().flatten() {
             let mut reader = BufReader::new(match stream.try_clone() {
                 Ok(s) => s,
@@ -131,7 +147,9 @@ pub fn start(app: &AppHandle, conector: &Conector) -> io::Result<()> {
             if reader.read_line(&mut first).is_err() || first.trim() != token {
                 continue;
             }
-            *conn.lock().unwrap() = Some(stream);
+            next_id += 1;
+            let id = next_id;
+            *conn.lock().unwrap() = Some((id, stream));
             let _ = app.emit("conector-ligado", ());
             let (app2, conn2) = (app.clone(), Arc::clone(&conn));
             thread::spawn(move || {
@@ -144,8 +162,9 @@ pub fn start(app: &AppHandle, conector: &Conector) -> io::Result<()> {
                         Err(_) => break,
                     }
                 }
-                *conn2.lock().unwrap() = None;
-                let _ = app2.emit("conector-desligado", ());
+                if drop_if_current(&conn2, id) {
+                    let _ = app2.emit("conector-desligado", ());
+                }
             });
         }
     });
@@ -156,7 +175,7 @@ pub fn start(app: &AppHandle, conector: &Conector) -> io::Result<()> {
 #[tauri::command]
 pub fn conector_send(conector: State<'_, Conector>, msg: String) -> Result<(), String> {
     let mut guard = conector.conn.lock().unwrap();
-    let stream = guard.as_mut().ok_or("A extensão não está conectada")?;
+    let (_, stream) = guard.as_mut().ok_or("A extensão não está conectada")?;
     let line = msg.replace('\n', " ");
     stream
         .write_all(format!("{line}\n").as_bytes())
@@ -376,6 +395,21 @@ mod tests {
             assert!(m.contains("chrome-extension://elkaiefkldcngjdgelfjhjbljefbemac/"));
             assert!(m.contains(r#""name": "lattes_editor.conector""#));
         }
+    }
+
+    #[test]
+    fn queda_de_ligacao_antiga_nao_desliga_a_nova() {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let addr = listener.local_addr().unwrap();
+        let _client = TcpStream::connect(addr).unwrap();
+        let (stream, _) = listener.accept().unwrap();
+        let conn = Mutex::new(Some((2, stream)));
+        // A ligação 1 caiu depois que a 2 tomou o lugar: nada muda.
+        assert!(!drop_if_current(&conn, 1));
+        assert!(conn.lock().unwrap().is_some());
+        // A atual caiu: desliga.
+        assert!(drop_if_current(&conn, 2));
+        assert!(conn.lock().unwrap().is_none());
     }
 
     #[test]
