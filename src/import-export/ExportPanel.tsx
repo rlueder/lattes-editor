@@ -20,6 +20,12 @@ import { Modal } from '../ui/Modal.tsx';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { BridgeBlock } from './BridgeBlock.tsx';
 import type { ImportFile } from './import-file.ts';
+import {
+  canImportByConnector,
+  IMPORT_REPLY_TIMEOUT_MS,
+  type ImportAttempt,
+  importStatus,
+} from './import-request.ts';
 import { RouteTag } from './RouteTag.tsx';
 import {
   initialTab,
@@ -200,7 +206,14 @@ export function ExportPanel({
                       incompletos sem avisar.
                     </p>
                   ) : (
-                    file && <ImportSteps file={file} minYear={minYear} />
+                    file && (
+                      <>
+                        <ImportSteps file={file} minYear={minYear} />
+                        {bridge && canImportByConnector(bridge.link) && (
+                          <ConnectorImport bridge={bridge} />
+                        )}
+                      </>
+                    )
                   )}
                 </section>
               )}
@@ -241,6 +254,47 @@ export function ExportPanel({
         </Tabs.Panel>
       </Tabs.Root>
     </Modal>
+  );
+}
+
+/**
+ * Importar pelo conector (LAT-50), só com IMPORT_ENABLED: a extensão faz os
+ * passos 1 e 2 com um arquivo só com os itens novos e para antes do passo 3.
+ */
+function ConnectorImport({ bridge }: { bridge: BridgeState }) {
+  const [attempt, setAttempt] = useState<ImportAttempt | undefined>();
+  const [now, setNow] = useState(() => Date.now());
+  const status = importStatus(attempt, bridge.importResult, now);
+  // Sem resposta, o prazo libera o botão de novo. Se a extensão desligar ou a
+  // leitura do Lattes cair, o componente some e o estado vai junto.
+  useEffect(() => {
+    if (!status.busy || !attempt) return;
+    const timer = setTimeout(
+      () => setNow(Date.now()),
+      attempt.at + IMPORT_REPLY_TIMEOUT_MS - Date.now(),
+    );
+    return () => clearTimeout(timer);
+  }, [status.busy, attempt]);
+  return (
+    <div className="connector-import">
+      <button
+        className="ghost"
+        disabled={status.busy}
+        type="button"
+        onClick={() => {
+          const at = Date.now();
+          setNow(at);
+          setAttempt({ at, id: bridge.sendImport() });
+        }}
+      >
+        Importar pelo conector
+      </button>
+      {status.text && (
+        <p className="muted" role="status">
+          {status.text}
+        </p>
+      )}
+    </div>
   );
 }
 

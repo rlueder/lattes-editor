@@ -5,7 +5,14 @@
 // Roda dentro da aba do Lattes (sessão do próprio usuário) ou num teste, com
 // um Lattes falso: o acesso à rede e ao DOM entra pela porta (LattesPort).
 
+import {
+  BIOGRAPHIC_SPECS,
+  type BiographicOp,
+  isBiographicOp,
+  locateBiographic,
+} from './biographic.ts';
 import { applyCreateAtuacao } from './create.ts';
+import { applyDelete, type DeleteOp, isDeleteOp } from './delete.ts';
 import { EVENTO_SPEC, type EventoOp, isEventoOp, locateEvento } from './edit-items.ts';
 import {
   encodeLatin1Form,
@@ -40,7 +47,7 @@ export interface OpResult {
   status: ResultStatus;
 }
 
-type EditOp = Exclude<BridgeOp, EventoOp | { kind: 'criar-atuacao' }>;
+type EditOp = Exclude<BridgeOp, BiographicOp | DeleteOp | EventoOp | { kind: 'criar-atuacao' }>;
 
 const FORMS: Record<EditOp['kind'], { action: string; name: string }> = {
   idioma: { action: 'PKG_IDIOMA.FORM', name: 'GN_IDIOMA' },
@@ -155,18 +162,26 @@ function changedNames(a: Pairs, b: Pairs): string[] {
 
 export async function applyOp(op: BridgeOp, port: LattesPort): Promise<OpResult> {
   if (op.kind === 'criar-atuacao') return applyCreateAtuacao(op, port);
+  if (isDeleteOp(op)) return applyDelete(op, port);
   const result = (status: ResultStatus, detail: string): OpResult => ({
     detail,
     key: op.key,
     status,
   });
   try {
-    // Participação em eventos: formulário e caminho em edit-items.ts.
-    const { action, name } = isEventoOp(op) ? EVENTO_SPEC : FORMS[op.kind];
+    // Formação, endereço e identificação (biographic.ts) e participação em
+    // eventos (edit-items.ts): formulários e caminhos próprios.
+    const { action, name } = isBiographicOp(op)
+      ? BIOGRAPHIC_SPECS[op.kind]
+      : isEventoOp(op)
+        ? EVENTO_SPEC
+        : FORMS[op.kind];
     const menu = await port.menuHtml();
-    const path = isEventoOp(op)
-      ? await locateEvento(op, menu, (p) => getChecked(port, p))
-      : await locate(op, port, menu);
+    const path = isBiographicOp(op)
+      ? await locateBiographic(op, menu, (p) => getChecked(port, p))
+      : isEventoOp(op)
+        ? await locateEvento(op, menu, (p) => getChecked(port, p))
+        : await locate(op, port, menu);
     const before = await readPairs(port, path, name);
 
     if (pairValue(before.pairs, 'f_ctr') !== 'U') {
