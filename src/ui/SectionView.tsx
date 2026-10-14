@@ -26,6 +26,8 @@ import { type ListView, yearView } from './list-view.ts';
 import { MarkDialog } from './MarkDialog.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { PrivacyContext, usePrivacyMode } from './privacy.ts';
+import { isReadingSection, readingRequested } from './reading.ts';
+import { ReadingGroup } from './ReadingView.tsx';
 import { useReferenceIndex } from './reference-context.ts';
 import { type ReferenceIndex, viewForContainer } from './reference-tables.ts';
 import { NEW_GENERAL_LABELS } from './section-types.ts';
@@ -57,6 +59,9 @@ function groupList(g: SectionGroup, index: ReferenceIndex): GroupList | null {
   const view = (list.container && viewForContainer(list.container.name, index)) || yearView;
   return { direct: !list.container, items: list.items, view };
 }
+
+/** ?leitura no `pnpm dev`: o protótipo do modo de leitura (reading.ts). */
+const READING = readingRequested(location.search, import.meta.env.DEV);
 
 export function SectionView(props: Props) {
   // A chave zera o filtro ao trocar de seção.
@@ -102,6 +107,7 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, s
     />
   );
   const privacy = section.id === 'dados-gerais';
+  const reading = isReadingSection(section.id, READING);
   const lists = section.groups.map((g) => groupList(g, index));
   const allItems = lists.flatMap((l) => l?.items ?? []);
   // Recalcula só quando os itens da seção mudam de identidade.
@@ -186,7 +192,7 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, s
 
   return (
     <PrivacyContext.Provider value={privacy && hideSensitive}>
-      <div ref={rootRef} className="section-layout">
+      <div ref={rootRef} className={reading ? 'section-layout reading' : 'section-layout'}>
         <StickyTitle
           actions={privacyToggle}
           groups={visibleGroups.map((g) => ({ id: g.id, label: g.label }))}
@@ -207,7 +213,16 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, s
                   <h2>{g.label}</h2>
                   {/* Itens soltos viram cartões, mesmo um só; o contêiner que embrulha
                       uma lista (IDIOMAS, ARTIGOS-PUBLICADOS) passa pelo ElementView. */}
-                  {lists[i]?.direct ? (
+                  {reading ? (
+                    <ReadingGroup
+                      elements={g.elements}
+                      filter={filter}
+                      label={g.label}
+                      list={lists[i] ?? null}
+                      showEmpty={showEmpty}
+                      onEdit={onEdit}
+                    />
+                  ) : lists[i]?.direct ? (
                     <ItemList
                       anchorBase={g.id}
                       filter={filter}
