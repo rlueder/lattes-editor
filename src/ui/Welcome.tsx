@@ -5,6 +5,7 @@
 import { type DragEvent, useRef, useState } from 'react';
 
 import type { Link } from '../bridge/link.ts';
+import { useDevExtensionFolder } from '../desktop/dev-channel.ts';
 import { isDesktop, pickFileNative } from '../desktop/native.ts';
 import { onboardingPreview } from '../dev/onboarding-preview.ts';
 import { parseXml } from '../model/xml.ts';
@@ -88,7 +89,8 @@ function StepAction({
 export function Welcome({ error, lattes, link, onFile, onTheme, theme }: Props) {
   // No `pnpm dev`, ?primeiro-uso=<estado> mostra um estado fixo para revisar.
   const preview = import.meta.env.DEV ? onboardingPreview(location.search) : undefined;
-  const steps = onboardingSteps(preview?.link ?? link, preview?.open ?? lattes.state);
+  const devFolder = useDevExtensionFolder();
+  const steps = onboardingSteps(preview?.link ?? link, preview?.open ?? lattes.state, devFolder);
   const [over, setOver] = useState(false);
   const input = useRef<HTMLInputElement>(null);
 

@@ -54,7 +54,14 @@ function emptyState(): HTMLElement {
   ]);
 }
 
-const VERSION = chrome.runtime.getManifest().version;
+const VERSION = chrome.runtime.getManifest().version_name ?? chrome.runtime.getManifest().version;
+
+// A extensão do canal Dev se anuncia no topo, para não ser confundida com a outra.
+if (__CANAL_DEV__) {
+  document.title = 'Conector Dev';
+  const sub = document.querySelector('.topo-sub');
+  if (sub) sub.textContent = 'Conector Dev';
+}
 
 const REPORT_TITLE: Record<ContractReport['status'], string> = {
   erro: 'Não deu para verificar',

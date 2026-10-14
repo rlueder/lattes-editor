@@ -22,7 +22,7 @@ use std::collections::hash_map::RandomState;
 use std::fs;
 use std::hash::{BuildHasher, Hasher};
 use std::io::{self, BufRead, BufReader, Read, Write};
-use std::net::{Ipv4Addr, TcpListener, TcpStream};
+use std::net::{Ipv4Addr, Shutdown, TcpListener, TcpStream};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -105,7 +105,33 @@ fn secret() -> String {
 /// Conexão do host com o app aberto (uma por vez: a mais recente vale).
 #[derive(Default)]
 pub struct Conector {
-    conn: Arc<Mutex<Option<TcpStream>>>,
+    /// A ligação atual, com o número dela. Um host novo (outro navegador, uma
+    /// extensão recarregada) toma o lugar do anterior; o número diz, quando
+    /// uma ligação cai, se ela ainda era a atual.
+    conn: Arc<Mutex<Option<(u64, TcpStream)>>>,
+}
+
+/// Põe a ligação `id` no lugar da atual e fecha a anterior. Fechar é preciso:
+/// a thread de leitura da ligação antiga tem a própria cópia do socket
+/// (try_clone), e soltar a guardada aqui não a encerra. Sem o shutdown, o host
+/// antigo continuaria ligado, mandando mensagens ao editor.
+fn replace_current(conn: &Mutex<Option<(u64, TcpStream)>>, id: u64, stream: TcpStream) {
+    let previous = conn.lock().unwrap().replace((id, stream));
+    if let Some((_, old)) = previous {
+        let _ = old.shutdown(Shutdown::Both);
+    }
+}
+
+/// Uma ligação que caiu só desliga o conector se ainda era a atual: a queda
+/// de um host antigo, depois que um novo tomou o lugar, não muda nada.
+fn drop_if_current(conn: &Mutex<Option<(u64, TcpStream)>>, id: u64) -> bool {
+    let mut guard = conn.lock().unwrap();
+    if guard.as_ref().is_some_and(|(current, _)| *current == id) {
+        *guard = None;
+        true
+    } else {
+        false
+    }
 }
 
 /// Escuta numa porta local e repassa ao editor o que vier da extensão.
@@ -122,6 +148,7 @@ pub fn start(app: &AppHandle, conector: &Conector) -> io::Result<()> {
     let conn = Arc::clone(&conector.conn);
     let app = app.clone();
     thread::spawn(move || {
+        let mut next_id: u64 = 0;
         for stream in listener.incoming().flatten() {
             let mut reader = BufReader::new(match stream.try_clone() {
                 Ok(s) => s,
@@ -131,7 +158,9 @@ pub fn start(app: &AppHandle, conector: &Conector) -> io::Result<()> {
             if reader.read_line(&mut first).is_err() || first.trim() != token {
                 continue;
             }
-            *conn.lock().unwrap() = Some(stream);
+            next_id += 1;
+            let id = next_id;
+            replace_current(&conn, id, stream);
             let _ = app.emit("conector-ligado", ());
             let (app2, conn2) = (app.clone(), Arc::clone(&conn));
             thread::spawn(move || {
@@ -144,8 +173,9 @@ pub fn start(app: &AppHandle, conector: &Conector) -> io::Result<()> {
                         Err(_) => break,
                     }
                 }
-                *conn2.lock().unwrap() = None;
-                let _ = app2.emit("conector-desligado", ());
+                if drop_if_current(&conn2, id) {
+                    let _ = app2.emit("conector-desligado", ());
+                }
             });
         }
     });
@@ -156,7 +186,7 @@ pub fn start(app: &AppHandle, conector: &Conector) -> io::Result<()> {
 #[tauri::command]
 pub fn conector_send(conector: State<'_, Conector>, msg: String) -> Result<(), String> {
     let mut guard = conector.conn.lock().unwrap();
-    let stream = guard.as_mut().ok_or("A extensão não está conectada")?;
+    let (_, stream) = guard.as_mut().ok_or("A extensão não está conectada")?;
     let line = msg.replace('\n', " ");
     stream
         .write_all(format!("{line}\n").as_bytes())
@@ -376,6 +406,44 @@ mod tests {
             assert!(m.contains("chrome-extension://elkaiefkldcngjdgelfjhjbljefbemac/"));
             assert!(m.contains(r#""name": "lattes_editor.conector""#));
         }
+    }
+
+    #[test]
+    fn queda_de_ligacao_antiga_nao_desliga_a_nova() {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let addr = listener.local_addr().unwrap();
+        let _client = TcpStream::connect(addr).unwrap();
+        let (stream, _) = listener.accept().unwrap();
+        let conn = Mutex::new(Some((2, stream)));
+        // A ligação 1 caiu depois que a 2 tomou o lugar: nada muda.
+        assert!(!drop_if_current(&conn, 1));
+        assert!(conn.lock().unwrap().is_some());
+        // A atual caiu: desliga.
+        assert!(drop_if_current(&conn, 2));
+        assert!(conn.lock().unwrap().is_none());
+    }
+
+    #[test]
+    fn ligacao_nova_fecha_a_antiga() {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let addr = listener.local_addr().unwrap();
+        let mut old_client = TcpStream::connect(addr).unwrap();
+        let (old, _) = listener.accept().unwrap();
+        let _new_client = TcpStream::connect(addr).unwrap();
+        let (new, _) = listener.accept().unwrap();
+        // A cópia que a thread de leitura da ligação antiga teria.
+        let mut old_reader = old.try_clone().unwrap();
+        let conn = Mutex::new(None);
+        replace_current(&conn, 1, old);
+        replace_current(&conn, 2, new);
+        assert_eq!(conn.lock().unwrap().as_ref().map(|(id, _)| *id), Some(2));
+        // A leitura da antiga termina, e o host antigo vê a ligação fechada.
+        let mut buf = [0u8; 1];
+        assert_eq!(old_reader.read(&mut buf).unwrap(), 0);
+        old_client
+            .set_read_timeout(Some(Duration::from_secs(5)))
+            .unwrap();
+        assert_eq!(old_client.read(&mut buf).unwrap(), 0);
     }
 
     #[test]

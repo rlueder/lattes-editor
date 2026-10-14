@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LattesStatus } from '../bridge/lattes-status.ts';
 import type { Link } from '../bridge/link.ts';
 import type { SentEntry } from '../bridge/sent-log.ts';
+import { useDevExtensionFolder } from '../desktop/dev-channel.ts';
 import { saveBytes } from '../desktop/native.ts';
 import type { UpdateState } from '../desktop/update.ts';
 import { NewItemPicker } from '../forms/NewItemPicker.tsx';
@@ -143,6 +144,7 @@ export function App() {
   const changes = useChanges(session, sections, version, onEdit, setSession);
   const bridge = useBridge(session, changes.groups, changes.accept, changes.reopen);
   const photoChange = usePhotoChange(bridge);
+  const devExtensionFolder = useDevExtensionFolder();
 
   const togglePalette = useCallback(() => session && setPaletteOpen((o) => !o), [session]);
   usePaletteShortcut(togglePalette);
@@ -261,7 +263,7 @@ export function App() {
       <Topbar
         ref={topbarRef}
         modified={modified}
-        notices={noticesOf(bridge, update)}
+        notices={noticesOf(bridge, update, devExtensionFolder)}
         pendingCount={production.pending.length + changes.open}
         saveState={saveState}
         showEmpty={showEmpty}
@@ -416,10 +418,15 @@ function stripFor(editorChanges: number, bridge: { lattes?: LattesStatus; sent: 
 }
 
 /** O sino: por que o Lattes não foi lido, um lado desatualizado, armazenamento sem chave. */
-function noticesOf(bridge: { lattes?: LattesStatus; link: Link }, update: UpdateState) {
+function noticesOf(
+  bridge: { lattes?: LattesStatus; link: Link },
+  update: UpdateState,
+  devExtensionFolder?: string,
+) {
   return noticesFor({
     appVersion: __APP_VERSION__,
     connection: connectionOf(bridge.link, Boolean(bridge.lattes)),
+    devExtensionFolder,
     storage: storageStatus().status,
     update,
   });

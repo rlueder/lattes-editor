@@ -27,7 +27,9 @@ declare namespace chrome {
     }
     /** Mensagens nativas: inicia o host registrado no sistema (o app de desktop). */
     function connectNative(application: string): Port;
-    function getManifest(): { version: string };
+    function getManifest(): { version: string; version_name?: string };
+    /** Recarrega a extensão, lendo de novo os arquivos (a descompactada lê da pasta). */
+    function reload(): void;
     function getURL(path: string): string;
   }
 
@@ -94,3 +96,6 @@ declare namespace chrome {
 
 /** Nome do host nativo, definido na montagem (scripts/build-extension.ts). */
 declare const __NATIVE_HOST__: string;
+
+/** Montagem do canal Dev (scripts/build-extension.ts --canal-dev). */
+declare const __CANAL_DEV__: boolean;

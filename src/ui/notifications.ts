@@ -3,6 +3,7 @@
 // estados fica só com o caminho das alterações.
 
 import type { Link } from '../bridge/link.ts';
+import { DEV_PAGE_URL, isDevVersion } from '../desktop/dev-channel.ts';
 import type { UpdateState } from '../desktop/update.ts';
 import type { StorageStatus } from '../model/store.ts';
 
@@ -109,7 +110,20 @@ export function connectionTitle(c: Connection): string {
   }
 }
 
-export function connectionText(c: Connection, appVersion: string): string {
+/**
+ * O passo a passo para carregar a extensão Dev, uma vez só. Sem a pasta (ainda
+ * não lida do app), aponta a página do canal Dev.
+ */
+export function devExtensionHowTo(folder: string | undefined): string {
+  const where = folder ? `a pasta ${folder}` : `a pasta da extensão Dev (página ${DEV_PAGE_URL})`;
+  return `No Chrome ou no Brave, abra chrome://extensions, ligue o modo do desenvolvedor, clique em "Carregar sem compactação" e escolha ${where}. É uma vez só: depois a extensão se atualiza junto com o app. Ela procura o app a cada minuto, então pode levar até um minuto para aparecer aqui.`;
+}
+
+export function connectionText(c: Connection, appVersion: string, devFolder?: string): string {
+  // No LattesEditor Dev, a extensão é a Dev, que se carrega de uma pasta.
+  if (c.kind === 'sem-extensao' && isDevVersion(appVersion)) {
+    return `A extensão Dev não respondeu. ${devExtensionHowTo(devFolder)}`;
+  }
   switch (c.kind) {
     case 'app-antigo':
       return `A extensão (v${c.version}) é mais nova do que o editor (v${appVersion}).`;
@@ -137,7 +151,11 @@ export function connectionText(c: Connection, appVersion: string): string {
 }
 
 /** O que fazer quando a saída é atualizar um dos lados. */
-export function connectionLink(c: Connection): NoticeLink | undefined {
+export function connectionLink(c: Connection, appVersion = ''): NoticeLink | undefined {
+  // No LattesEditor Dev, app e extensão saem juntos da página do canal Dev.
+  if (isDevVersion(appVersion) && (c.kind === 'extensao-antiga' || c.kind === 'incompativel')) {
+    return { href: DEV_PAGE_URL, label: 'Baixe a extensão Dev da página do canal.' };
+  }
   switch (c.kind) {
     case 'app-antigo':
       return { href: APP_DOWNLOAD_URL, label: 'Baixe a versão nova do editor.' };
@@ -167,11 +185,14 @@ const STORAGE: Record<Exclude<StorageStatus, 'cifrado'>, Omit<Notice, 'id' | 'le
 export function noticesFor({
   appVersion,
   connection,
+  devExtensionFolder,
   storage,
   update,
 }: {
   appVersion: string;
   connection?: Connection;
+  /** No LattesEditor Dev, a pasta da extensão Dev (src/desktop/dev-channel.ts). */
+  devExtensionFolder?: string;
   storage: StorageStatus;
   update?: UpdateState;
 }): Notice[] {
@@ -193,8 +214,8 @@ export function noticesFor({
     notices.push({
       id: 'ligacao',
       level: INFO.has(connection.kind) ? 'info' : 'aviso',
-      link: connectionLink(connection),
-      text: connectionText(connection, appVersion),
+      link: connectionLink(connection, appVersion),
+      text: connectionText(connection, appVersion, devExtensionFolder),
       title: connectionTitle(connection),
     });
   }

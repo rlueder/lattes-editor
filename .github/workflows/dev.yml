@@ -114,7 +114,7 @@ jobs:
           gh release create dev release/lattes-editor-dev-extensao.zip \
             --prerelease --latest=false --target "$SHA" \
             --title "LattesEditor Dev $VERSAO" \
-            --notes "Canal Dev, montado da main em ${SHA:0:7}. Não é uma versão publicada: serve para testar o que vai entrar na próxima. Instale o LattesEditor Dev ao lado do LattesEditor e carregue a extensão Dev descompactada (chrome://extensions, modo do desenvolvedor). O app Dev se atualiza sozinho por esta página."
+            --notes "Canal Dev, montado da main em ${SHA:0:7}. Não é uma versão publicada: serve para testar o que vai entrar na próxima. Instale o LattesEditor Dev ao lado do LattesEditor e abra o app: ele traz a extensão Dev e mostra a pasta para carregar uma vez no navegador (chrome://extensions, modo do desenvolvedor, Carregar sem compactação). Depois, app e extensão se atualizam sozinhos por esta página."
 
   desktop:
     needs: preparar
