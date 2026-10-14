@@ -64,11 +64,11 @@ sessão.
 **Descrição:**
 
 ```text
-O conector leva ao Currículo Lattes as alterações que você fez no LattesEditor, o editor gratuito e de código aberto do Currículo Lattes para macOS, Windows e Linux.
+O conector liga o LattesEditor, o editor gratuito e de código aberto do Currículo Lattes para macOS, Windows e Linux, ao seu currículo no Lattes: traz o currículo para o editor e leva de volta o que você mudou.
 
 Como funciona:
-1. No LattesEditor, abra "Levar ao Lattes" e use "Enviar pela extensão".
-2. Com o seu currículo aberto no Lattes numa aba do navegador, clique em "Aplicar" no painel da extensão.
+1. Com o Lattes aberto numa aba do navegador, o LattesEditor abre o seu currículo pelo conector, sem baixar nem escolher arquivo.
+2. Depois de editar, abra "Levar ao Lattes" no editor e clique em "Aplicar" no painel do conector.
 3. Cada alteração é gravada na sua sessão, lida de volta e conferida antes da próxima. Se algo não bater, a fila para.
 
 Hoje o conector grava o resumo, os idiomas e os vínculos de atuação. O resto você leva pelo Importar do próprio Lattes, com o arquivo que o editor gera.
@@ -88,21 +88,21 @@ https://github.com/rlueder/lattes-editor/issues
 
 ### Aba "Privacidade"
 
-**Finalidade única:** levar ao Currículo Lattes, na sessão que a própria
-pessoa abriu, as alterações que ela fez no LattesEditor, conferindo cada uma
-depois de gravada.
+**Finalidade única:** ligar o LattesEditor ao Currículo Lattes da própria
+pessoa, na sessão que ela abriu: trazer o currículo para o editor e levar de
+volta as alterações feitas nele, conferindo cada uma depois de gravada.
 
 **Justificativa das permissões:**
 
-| Permissão                       | Justificativa                                                                                                                                         |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `https://wwws.cnpq.br/*` (host) | Ler os formulários do currículo na sessão aberta, gravar as alterações confirmadas e ler de volta para conferir. Nenhum outro domínio.                |
-| `scripting`                     | Rodar, na aba do Lattes, o código que lê e envia os formulários, porque as requisições precisam sair da sessão da pessoa.                             |
-| `sidePanel`                     | Mostrar a fila de alterações e o resultado de cada uma ao lado do Lattes.                                                                             |
-| `storage`                       | Guardar a fila durante a sessão do navegador, o tema do ícone da barra e o registro de que a pessoa aceitou o aviso de uso.                           |
-| `nativeMessaging`               | Receber a fila do app LattesEditor instalado no computador e devolver o resultado de cada alteração. A conversa não sai da máquina.                   |
-| `alarms`                        | Refazer a ligação com o app quando ele é aberto depois do navegador.                                                                                  |
-| `offscreen`                     | Abrir um documento sem janela que só lê o tema do navegador (`matchMedia`), para o ícone da barra ser branco nas barras escuras e grafite nas claras. |
+| Permissão                       | Justificativa                                                                                                                                                                                            |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `https://wwws.cnpq.br/*` (host) | Ler os formulários e o menu do currículo na sessão aberta, pedir o mesmo arquivo do "Exportar" para o editor abrir, gravar as alterações confirmadas e ler de volta para conferir. Nenhum outro domínio. |
+| `scripting`                     | Rodar, na aba do Lattes, o código que lê e envia os formulários, porque as requisições precisam sair da sessão da pessoa.                                                                                |
+| `sidePanel`                     | Mostrar a fila de alterações e o resultado de cada uma ao lado do Lattes.                                                                                                                                |
+| `storage`                       | Guardar a fila durante a sessão do navegador, o tema do ícone da barra e o registro de que a pessoa aceitou o aviso de uso.                                                                              |
+| `nativeMessaging`               | Receber a fila do app LattesEditor instalado no computador e devolver o resultado de cada alteração. A conversa não sai da máquina.                                                                      |
+| `alarms`                        | Refazer a ligação com o app quando ele é aberto depois do navegador.                                                                                                                                     |
+| `offscreen`                     | Abrir um documento sem janela que só lê o tema do navegador (`matchMedia`), para o ícone da barra ser branco nas barras escuras e grafite nas claras.                                                    |
 
 **Código remoto:** não. Todo o código vai no pacote.
 
