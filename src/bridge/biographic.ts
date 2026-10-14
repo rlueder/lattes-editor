@@ -275,6 +275,12 @@ function enderecoFields(suffix: string): Record<string, FieldSpec> {
  * "text" dos campos sem tipo anotado ali é inferido. Os campos que não estão
  * aqui aparecem como "campo novo" na verificação, que só avisa; o teste
  * acompanhado completa esta lista com o que a verificação mostrar.
+ *
+ * Na formação, o exemplar é a primeira linha da lista, de qualquer nível, e
+ * pelo XSD o ano de obtenção e o título não existem em todos (técnico,
+ * ensino médio). Por isso f_ano_obten e f_titulo ficam fora da conferência:
+ * na gravação, um campo que não existir no formulário daquele nível faz o
+ * "antes" não bater, e nada é enviado.
  */
 export const BIOGRAPHIC_SPECS: Record<BiographicKind, FormSpec> = {
   endereco: {
@@ -287,14 +293,12 @@ export const BIOGRAPHIC_SPECS: Record<BiographicKind, FormSpec> = {
     fields: {
       f_ano_fim: text(),
       f_ano_ini: text(),
-      f_ano_obten: text(),
       f_cod: hidden,
       f_ctr: hidden,
       f_nivel: hidden,
       f_seq: hidden,
       F_STATUS: { type: 'radio' },
       f_tipo: hidden,
-      f_titulo: text(254),
     },
     name: 'GN_FORMACAO2',
   },

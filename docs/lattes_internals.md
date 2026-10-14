@@ -709,6 +709,8 @@ O que cada operação grava, e de onde vem cada parte:
   livre-docência (`f_tipo=AP`).
 
 O contrato desses três formulários é parcial: lista os campos que as
-operações gravam e os de controle. Os outros aparecem como "campo novo" na
+operações gravam e os de controle, menos o ano de obtenção e o título da
+formação, que pelo XSD não existem em todos os níveis (a amostra é a
+primeira formação da lista, de qualquer nível). Os outros aparecem como "campo novo" na
 verificação, que só avisa. O teste acompanhado completa a lista com o que a
 verificação mostrar.

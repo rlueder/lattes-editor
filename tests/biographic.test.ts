@@ -9,7 +9,13 @@ import {
   biographicSample,
   planBiographic,
 } from '../src/bridge/biographic.ts';
-import { checkContract, type Contract, LATTES_CONTRACT } from '../src/bridge/contract.ts';
+import {
+  blocksKind,
+  checkContract,
+  type Contract,
+  type FieldSpec,
+  LATTES_CONTRACT,
+} from '../src/bridge/contract.ts';
 import { opRows } from '../src/bridge/field-labels.ts';
 import type { FormControl } from '../src/bridge/form.ts';
 import { planChanges } from '../src/bridge/plan.ts';
@@ -346,7 +352,13 @@ function fakeLattes(opts: FakeOptions = {}) {
 
   const controls = (kind: keyof typeof BIOGRAPHIC_SPECS, state: Record<string, string>) => {
     const out: FormControl[] = [];
-    for (const [name, spec] of Object.entries(BIOGRAPHIC_SPECS[kind].fields)) {
+    // Os campos do contrato, mais os do estado que ficaram fora dele (o ano de
+    // obtenção e o título da formação), como texto.
+    const fields: Record<string, FieldSpec> = {
+      ...Object.fromEntries(Object.keys(state).map((name) => [name, { type: 'text' }])),
+      ...BIOGRAPHIC_SPECS[kind].fields,
+    };
+    for (const [name, spec] of Object.entries(fields)) {
       if (spec.type === 'radio') {
         for (const v of ['N', 'S', 'I']) {
           out.push({ checked: state[name] === v, name, type: 'radio', value: v });
@@ -538,9 +550,17 @@ describe('dados gerais no contrato', () => {
   it('com a chave ligada, confere os três formulários só lendo', async () => {
     const fake = fakeLattes();
     const report = await checkContract(fake.port, contractOn());
-    for (const kind of ['formacao', 'endereco', 'identificacao']) {
+    for (const kind of ['endereco', 'identificacao']) {
       expect(report.forms.find((f) => f.kind === kind)).toMatchObject({ status: 'ok' });
     }
+    // Ano de obtenção e título ficam fora do contrato (não existem em todo
+    // nível): na formação que tem, aparecem como campo novo, que não trava.
+    const formacao = report.forms.find((f) => f.kind === 'formacao')!;
+    expect(formacao.drifts.map((d) => [d.kind, d.field])).toEqual([
+      ['campo-novo', 'f_ano_obten'],
+      ['campo-novo', 'f_titulo'],
+    ]);
+    expect(blocksKind(report, 'formacao')).toEqual([]);
     // O Lattes falso só tem os links dos dados gerais no menu.
     expect(report.menu.filter((m) => m.found).map((m) => m.proc)).toEqual([
       'pkg_formacao.lista',
