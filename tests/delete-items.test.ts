@@ -256,6 +256,20 @@ describe('a exclusão e o resto do conector', () => {
     expect(all(original).some(idioma('EN'))).toBe(false);
     // Já tirado: o caminho não resolve mais.
     expect(acceptChange(original, working, change)).toBe(false);
+    // Mudança velha cujo caminho por posição agora cai num vizinho: não mexe.
+    const docs = planRemoval(
+      (el) => el.name === 'IDIOMA' && getAttr(el, 'DESCRICAO-DO-IDIOMA') === 'Sem código',
+    );
+    const semCodigo = docs.changes.find((c) => c.kind === 'removido')!;
+    const vizinho = all(docs.original).find(
+      (el) => el.name === 'IDIOMA' && getAttr(el, 'DESCRICAO-DO-IDIOMA') === 'Sem código',
+    )!;
+    vizinho.attrs = [{ name: 'DESCRICAO-DO-IDIOMA', value: 'Outro' }];
+    expect(acceptChange(docs.original, docs.working, semCodigo)).toBe(false);
+    expect(all(docs.original).some((el) => getAttr(el, 'DESCRICAO-DO-IDIOMA') === 'Outro')).toBe(
+      true,
+    );
+    expect(acceptChange(docs.original, docs.working, { ...semCodigo, element: 'X' })).toBe(false);
     const raiz: Change = { ...change, path: [original.name] };
     expect(acceptChange(original, working, raiz)).toBe(false);
   });
@@ -508,6 +522,34 @@ describe('aplicar a exclusão no Lattes falso', () => {
     const r = await applyDelete(opFor(idioma('ES')), fakeLattes({ logonAtGet: 5 }).port);
     expect(r.status).toBe('divergente');
     expect(r.detail).toMatch(/sessão do Lattes caiu/);
+  });
+
+  it('erro no envio não diz que nada foi enviado: a lista decide', async () => {
+    const chegou = fakeLattes();
+    const post = chegou.port.post.bind(chegou.port);
+    const caiuDepois: LattesPort = {
+      ...chegou.port,
+      async post(path, body) {
+        await post(path, body);
+        throw new Error('rede caiu');
+      },
+    };
+    expect((await applyDelete(opFor(idioma('ES')), caiuDepois)).status).toBe('conferido');
+    const naoChegou: LattesPort = {
+      ...fakeLattes().port,
+      post: () => Promise.reject(new Error('rede caiu')),
+    };
+    const r = await applyDelete(opFor(idioma('ES')), naoChegou);
+    expect(r.status).toBe('divergente');
+    expect(r.detail).toMatch(/deu erro \(rede caiu\) e pode ter chegado.*continua na lista/);
+    const estranho: LattesPort = {
+      ...fakeLattes().port,
+      post: () => {
+        const notAnError: unknown = 'x';
+        return Promise.reject(notAnError as Error);
+      },
+    };
+    expect((await applyDelete(opFor(idioma('ES')), estranho)).detail).toMatch(/falha inesperada/);
   });
 
   it('nada é enviado quando o Lattes não está como o editor espera', async () => {

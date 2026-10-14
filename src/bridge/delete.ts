@@ -313,15 +313,22 @@ export async function applyDelete(op: DeleteOp, port: LattesPort): Promise<OpRes
     }
 
     // Como o del() do Lattes: o formulário inteiro, como está, só com f_ctr=E.
-    await port.post(action, encodeLatin1Form(setPairs(pairs, { f_ctr: 'E' })));
+    // Um erro no envio (rede, aba fechada) não quer dizer que o pedido não
+    // chegou: a conferência pela lista roda do mesmo jeito.
+    let sendError: string | undefined;
+    try {
+      await port.post(action, encodeLatin1Form(setPairs(pairs, { f_ctr: 'E' })));
+    } catch (err) {
+      sendError = err instanceof Error ? err.message : 'falha inesperada';
+    }
 
     // Daqui em diante o Lattes pode ter excluído: toda falha diz isso, para
     // ninguém mandar de novo às cegas.
+    const lead = sendError
+      ? `O envio da exclusão deu erro (${sendError}) e pode ter chegado ao Lattes`
+      : 'O Lattes recebeu a exclusão';
     const maybe = (why: string) =>
-      result(
-        'divergente',
-        `O Lattes recebeu a exclusão, mas ${why}. Confira no Lattes antes de mandar de novo.`,
-      );
+      result('divergente', `${lead}, mas ${why}. Confira no Lattes antes de mandar de novo.`);
     let after: Map<string, string>;
     try {
       after = await snapshot(op, port);
