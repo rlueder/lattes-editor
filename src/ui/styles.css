@@ -6299,3 +6299,15 @@ main.content {
   border-radius: 999px;
   font-size: 14px;
 }
+
+/* Registro do enviado: tentativa que não terminou conferida fica apagada, com
+   o motivo embaixo do título. */
+.sent-failed .sent-before,
+.sent-failed .sent-after {
+  color: var(--muted);
+}
+
+.sent-outcome {
+  margin: 4px 0 0;
+  font-size: 13px;
+}

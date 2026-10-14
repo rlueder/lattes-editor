@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import type { BridgeOp } from '../src/bridge/plan.ts';
 import {
+  failed,
   groupByDay,
   sentEntry,
+  sentLogFileName,
+  sentLogText,
   UNDO_KEY_PREFIX,
   undoneIds,
   undoOp,
@@ -144,5 +147,106 @@ describe('reabrir uma mudança desfeita no Lattes', () => {
       path: [...change!.path.slice(0, -1), 'VINCULOS[SEQUENCIA-HISTORICO=9]'],
     };
     expect(reopenChange(original, gone)).toBe(false);
+  });
+});
+
+describe('registro do enviado: tentativas e texto para recurso (LAT-47)', () => {
+  const at = (h: number, m: number) => new Date(2026, 9, 14, h, m).getTime();
+
+  it('a tentativa que não terminou conferida entra marcada e não se desfaz', () => {
+    const ok = { ...sentEntry(vinculo, '123', at(9, 0)), id: 1 };
+    const refused = {
+      ...sentEntry(idioma, '123', at(9, 5), {
+        outcome: { detail: 'O Lattes não está como o editor esperava', status: 'divergente' },
+      }),
+      id: 2,
+    };
+    expect(failed(ok)).toBe(false);
+    expect(failed(refused)).toBe(true);
+    expect(undoOp(ok)).toBeDefined();
+    expect(undoOp(refused)).toBeUndefined();
+  });
+
+  it('um desfazer que não terminou conferido não marca a original como desfeita', () => {
+    const original = { ...sentEntry(vinculo, '123', at(9, 0)), id: 1 };
+    const failedUndo = {
+      ...sentEntry(vinculo, '123', at(9, 10), {
+        outcome: { detail: 'A sessão do Lattes caiu; entre de novo', status: 'sessao' },
+        undoOf: 1,
+      }),
+      id: 2,
+    };
+    expect([...undoneIds([original, failedUndo])]).toEqual([]);
+    expect(undoOp(original)).toBeDefined();
+    const okUndo = { ...sentEntry(vinculo, '123', at(9, 20), { undoOf: 1 }), id: 3 };
+    expect([...undoneIds([original, failedUndo, okUndo])]).toEqual([1]);
+  });
+
+  it('no texto, o desfazer que falhou se lê como desfazer, com os valores na ordem dele', () => {
+    const original = { ...sentEntry(vinculo, '123', at(9, 0)), id: 1 };
+    const failedUndo = {
+      ...sentEntry(undoOp(original)!, '123', at(9, 10), {
+        outcome: { detail: 'A sessão do Lattes caiu; entre de novo', status: 'sessao' },
+        undoOf: 1,
+      }),
+      id: 2,
+    };
+    const text = sentLogText([original, failedUndo], { appVersion: '0', lattesId: '123', now: 0 });
+    expect(text).toContain(
+      '- 09:10 Desfazer: Vínculo: Universidade (não gravado, sessão do Lattes caída: A sessão do Lattes caiu; entre de novo)\n    Ano de fim: 2025 -> (vazio)',
+    );
+  });
+
+  it('a atuação criada no Lattes não se desfaz daqui, conferida ou não', () => {
+    const create: BridgeOp = {
+      expect: {},
+      institutionCode: '0001',
+      institutionName: 'Universidade',
+      key: 'c',
+      kind: 'criar-atuacao',
+      label: 'Atuação: Universidade',
+      set: { f_ano_ini: '2020' },
+    };
+    expect(undoOp({ ...sentEntry(create, '1', 1), id: 1 })).toBeUndefined();
+    const divergent = sentEntry(create, '1', 1, {
+      outcome: { detail: 'Criada no Lattes (atuação 3), mas sem o vínculo', status: 'divergente' },
+    });
+    expect(undoOp({ ...divergent, id: 2 })).toBeUndefined();
+  });
+
+  it('o arquivo leva a data local, a mesma do texto', () => {
+    // 23:30 do dia 14 no horário local; em UTC-3 já seria dia 15.
+    expect(sentLogFileName('123', at(23, 30))).toBe('registro-lattes-123-2026-10-14.txt');
+    expect(sentLogFileName('123', new Date(2026, 0, 2, 0, 5).getTime())).toBe(
+      'registro-lattes-123-2026-01-02.txt',
+    );
+  });
+
+  it('o texto traz o currículo, a versão, e cada envio com resultado e valores', () => {
+    const entries = [
+      {
+        ...sentEntry(idioma, '1234567890123456', at(10, 5), {
+          outcome: { detail: 'A sessão do Lattes caiu', status: 'sessao' },
+        }),
+        id: 2,
+      },
+      { ...sentEntry(vinculo, '1234567890123456', at(9, 30)), id: 1 },
+    ];
+    const text = sentLogText(entries, {
+      appVersion: '0.23.0',
+      lattesId: '1234567890123456',
+      now: at(11, 0),
+    });
+    expect(text).toContain('Currículo: 1234567890123456 (https://lattes.cnpq.br/1234567890123456)');
+    expect(text).toContain('LattesEditor 0.23.0');
+    expect(text).toContain('Gerado em 14/10/2026 às 11:00');
+    // Do mais antigo ao mais recente, agrupado por dia.
+    expect(text.split('\n14/10/2026\n')[1]).toMatch(
+      /^- 09:30 Vínculo: Universidade \(gravado e conferido\)\n {4}Ano de fim: \(vazio\) -> 2025/,
+    );
+    expect(text).toContain(
+      '- 10:05 Idioma: Inglês (não gravado, sessão do Lattes caída: A sessão do Lattes caiu)',
+    );
+    expect(text).not.toContain('—');
   });
 });

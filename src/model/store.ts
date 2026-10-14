@@ -113,7 +113,7 @@ interface VersionRow {
   loadedAt: number;
   sealed: Sealed;
 }
-interface SentRow extends Partial<Pick<SentEntry, 'change' | 'op' | 'rows'>> {
+interface SentRow extends Partial<Pick<SentEntry, 'change' | 'op' | 'outcome' | 'rows'>> {
   id?: number;
   lattesId: string;
   sealed?: Sealed;
@@ -390,8 +390,14 @@ export async function listHistory(): Promise<HistoryEntry[]> {
 /** Grava no registro do que foi enviado ao Lattes; devolve o id. */
 export async function addSent(entry: SentEntry): Promise<number | undefined> {
   if (!key) return undefined;
-  const { change, id: _id, lattesId, op, rows, sentAt, undoOf } = entry;
-  return db.sent.add({ lattesId, sealed: await seal(key, { change, op, rows }), sentAt, undoOf });
+  const { change, id: _id, lattesId, op, outcome, rows, sentAt, undoOf } = entry;
+  // O resultado vai cifrado junto: o detalhe de uma divergência traz valores do currículo.
+  return db.sent.add({
+    lattesId,
+    sealed: await seal(key, { change, op, outcome, rows }),
+    sentAt,
+    undoOf,
+  });
 }
 
 /** O que foi gravado no Lattes para este currículo, do mais recente ao mais antigo. */
@@ -403,7 +409,7 @@ export async function listSent(lattesId: string): Promise<SentEntry[]> {
     rows
       .filter((r) => r.sealed)
       .map(async ({ id, sealed, sentAt, undoOf }) => {
-        const open = await unsealRow<Pick<SentEntry, 'change' | 'op' | 'rows'>>(
+        const open = await unsealRow<Pick<SentEntry, 'change' | 'op' | 'outcome' | 'rows'>>(
           k,
           sealed!,
           'registro do enviado',

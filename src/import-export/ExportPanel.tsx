@@ -10,6 +10,7 @@
 import { Tabs } from '@base-ui/react/tabs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { failed } from '../bridge/sent-log.ts';
 import { elementLabel } from '../labels/labels.ts';
 import type { Problem } from '../model/validate.ts';
 import type { ChangeEntry, ChangeGroup } from '../ui/changes-view.ts';
@@ -75,7 +76,8 @@ export function ExportPanel({
   );
   const routed = useMemo(() => splitByRoute(changes, connectorKeys), [changes, connectorKeys]);
   const toSend = toSendCount(pending.length, changes);
-  const sent = bridge?.sent.length ?? 0;
+  // As tentativas que não deram certo ficam no registro, mas não contam como enviadas.
+  const sent = bridge?.sent.filter((e) => !failed(e)).length ?? 0;
   const [tab, setTab] = useState<PanelTab>(() => initialTab(toSend, sent));
   // A aba foi escolhida (pela pessoa ou por um pedido): a escolha automática para.
   const chosen = useRef(false);
@@ -227,7 +229,8 @@ export function ExportPanel({
         </Tabs.Panel>
 
         <Tabs.Panel className="send-tab-panel" value="enviado">
-          {bridge && sent > 0 ? (
+          {/* O registro aparece mesmo só com tentativas que falharam: é delas que sai o texto para o recurso. */}
+          {bridge && bridge.sent.length > 0 ? (
             <SentList bridge={bridge} />
           ) : (
             <p className="empty">
