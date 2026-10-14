@@ -10,8 +10,8 @@ conferida em cada formulário.
 
 | Tipo             | Atributos |
 | ---------------- | --------- |
-| texto livre      | 504       |
-| sistema          | 334       |
+| texto livre      | 505       |
+| sistema          | 333       |
 | lista a capturar | 266       |
 | formato          | 154       |
 | código e nome    | 148       |

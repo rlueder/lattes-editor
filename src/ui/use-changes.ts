@@ -12,9 +12,9 @@ import {
   revertChange,
   revertField,
 } from '../model/changes.ts';
-import { SEQ_ATTR } from '../model/production.ts';
+import { isPendingImport } from '../model/production.ts';
 import { insertInSchemaOrder } from '../model/schema-order.ts';
-import { getAttr, parseXml, serializeXml, type XElement } from '../model/xml.ts';
+import { parseXml, serializeXml, type XElement } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 import { changeCount, type ChangeEntry, type ChangeGroup, groupChanges } from './changes-view.ts';
 import type { Section } from './sections.ts';
@@ -45,7 +45,7 @@ export function useChanges(
     if (!session || !original) return [];
     const loadedMax = session.meta.loadedMaxSequencia;
     // Produção nova vai pelo Importar, não por esta lista.
-    const skip = (el: XElement) => Number(getAttr(el, SEQ_ATTR) ?? 0) > loadedMax;
+    const skip = (el: XElement) => isPendingImport(el, loadedMax);
     const changes = diffDocuments(original, session.doc.root, { skip });
     return groupChanges(changes, original, session.doc.root, sections);
     // O documento é mutado no lugar; `version` avisa a mudança.

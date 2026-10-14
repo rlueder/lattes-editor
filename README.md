@@ -57,7 +57,11 @@ pacote, confere a assinatura e reinicia.
 </picture>
 
 Para cadastrar uma produção, use **+** ao lado da busca. Colar um DOI
-preenche o formulário pelo Crossref.
+preenche o formulário pelo Crossref. Formação acadêmica (escolhendo o nível,
+como no Lattes), atuação profissional, projeto e patente se criam pelo botão
+da própria seção. Como o Importar do Lattes não lê essas seções, o item novo
+entra na lista de alterações do painel "Enviar ao Lattes", para cadastrar à
+mão com os valores ao lado.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/novo-item-escuro.jpg" />

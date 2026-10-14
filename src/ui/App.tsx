@@ -6,8 +6,10 @@ import type { SentEntry } from '../bridge/sent-log.ts';
 import { useDevExtensionFolder } from '../desktop/dev-channel.ts';
 import { saveBytes } from '../desktop/native.ts';
 import type { UpdateState } from '../desktop/update.ts';
+import { GeneralItemDialogs } from '../forms/GeneralItemPicker.tsx';
 import { NewItemPicker } from '../forms/NewItemPicker.tsx';
 import { ProductionForm } from '../forms/ProductionForm.tsx';
+import { useGeneralItem } from '../forms/use-general-item.ts';
 import { type Session, useProduction } from '../forms/use-production.ts';
 import { ExportPanel } from '../import-export/ExportPanel.tsx';
 import { requestTab } from '../import-export/send-routes.ts';
@@ -122,6 +124,7 @@ export function App() {
   }, []);
 
   const production = useProduction(session, setSession, version, onEdit);
+  const general = useGeneralItem(session, setSession, version, onEdit);
   // Data da exportação carregada, lida uma vez por arquivo.
   const originalXml = session?.meta.originalXml;
   const exportedOn = useMemo(() => exportDateOf(originalXml), [originalXml]);
@@ -208,11 +211,6 @@ export function App() {
 
   const lattesOpen = useLattesOpen(Boolean(session), booting, bridge, openFile);
 
-  const saveFile = () => {
-    if (!session) return;
-    void saveBytes(encodeCv(session.doc, session.meta.encoding), session.meta.fileName);
-  };
-
   /** Nova exportação do Lattes: itens novos que ainda não foram importados se perdem. */
   const reload = (file: File) => {
     if (production.pending.length > 0) setReloadFile(file);
@@ -277,7 +275,9 @@ export function App() {
         onPalette={togglePalette}
         onPrint={print.show}
         onReload={reload}
-        onSave={saveFile}
+        onSave={() =>
+          void saveBytes(encodeCv(session.doc, session.meta.encoding), session.meta.fileName)
+        }
         onShowEmpty={setShowEmpty}
         onStripOpen={(kind) => {
           if (kind === 'pendencia-desconhecida') return setDiagnosisOpen(true);
@@ -315,6 +315,7 @@ export function App() {
                 section={section}
                 showEmpty={showEmpty}
                 onEdit={onEdit}
+                onNewGeneral={general.open}
                 onNewItem={production.startNew}
                 onOpenPicker={() => setPickerOpen(true)}
               />
@@ -338,6 +339,8 @@ export function App() {
           onSave={production.save}
         />
       )}
+
+      <GeneralItemDialogs general={general} sectionLabel={section?.label ?? ''} />
 
       <NewItemPicker
         open={pickerOpen}
