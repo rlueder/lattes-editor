@@ -24,20 +24,22 @@ on:
   # Refazer o Dev da main sem esperar um merge.
   workflow_dispatch:
 
-# Um merge novo torna o build em andamento velho: fica só o mais recente.
+# Um build em andamento sempre termina: cancelado no meio, ele deixaria a
+# página "dev" sem latest.json até o build seguinte. Os merges que chegam
+# nesse meio esperam; o GitHub guarda só o último na fila, e ele monta o topo
+# da main, que já inclui os outros.
 concurrency:
   group: dev
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: write
 
 jobs:
   # O Dev é sempre o topo da main. O CI de cada commit leva o seu tempo, e o
-  # workflow_run de um commit pode chegar depois do de um mais novo; a
-  # concorrência acima já terá cancelado o build do mais novo. Então todo build
-  # monta o topo da main, se o CI dele já passou; se ainda não passou, este
-  # build não faz nada e o fim daquele CI dispara o Dev.
+  # workflow_run de um commit pode chegar depois do de um mais novo. Então todo
+  # build monta o topo da main, se o CI dele já passou; se ainda não passou,
+  # este build não faz nada e o fim daquele CI dispara o Dev.
   topo:
     if: >-
       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
