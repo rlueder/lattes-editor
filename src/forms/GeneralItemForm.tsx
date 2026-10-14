@@ -14,6 +14,7 @@ import type { XElement } from '../model/xml.ts';
 import { lattesSchema as schema } from '../schema/lattes.ts';
 import { AttributeField } from '../ui/AttributeField.tsx';
 import { DiscardConfirm } from '../ui/dialogs.tsx';
+import { isSystemAttr } from '../ui/field-kind.ts';
 import { ChevronIcon, CloseIcon, CollapseIcon, ExpandIcon } from '../ui/icons.tsx';
 import { isRedundantDateFormat } from '../ui/lattes-date.ts';
 import { Modal } from '../ui/Modal.tsx';
@@ -57,11 +58,14 @@ export function GeneralItemForm({
   const { confirm, requestClose } = useDiscardGuard(item, onCancel);
 
   // ⌘Enter (Ctrl+Enter fora do Mac) salva, como no formulário de produção.
+  // Com a pergunta de descartar aberta, o atalho não salva o rascunho por baixo dela.
+  const confirmingRef = useRef(false);
+  confirmingRef.current = confirm.open;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Enter' || !(e.metaKey || e.ctrlKey)) return;
       const form = formRef.current;
-      if (!form) return;
+      if (!form || confirmingRef.current) return;
       e.preventDefault();
       (document.activeElement as HTMLElement | null)?.blur();
       setTimeout(() => form.requestSubmit(), 0);
@@ -273,8 +277,13 @@ export function GeneralItemForm({
             {showAll &&
               [...listed].map(([el, names]) => {
                 const attrSpecs = schema.elements[el.name]?.attributes ?? [];
+                // Números e códigos que o Lattes dá ficam de fora: num item novo
+                // estão vazios, e a sequência sai no salvar.
                 const rest = el.attrs.filter(
-                  (a) => !names.has(a.name) && !isRedundantDateFormat(a.name, a.value),
+                  (a) =>
+                    !names.has(a.name) &&
+                    !isRedundantDateFormat(a.name, a.value) &&
+                    !isSystemAttr(el.name, a.name),
                 );
                 if (rest.length === 0) return null;
                 return (
