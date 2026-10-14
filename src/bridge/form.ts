@@ -36,8 +36,25 @@ export function successfulPairs(controls: FormControl[]): Pairs {
 /**
  * O que check() faz antes de enviar e o navegador não: no vínculo, o tipo
  * fica num campo desabilitado (f_vinc) e é copiado para o oculto f_vinculo.
+ *
+ * No evento de ouvinte (F_FORMA 40), a lista F_TPO vem vazia no HTML e só
+ * ganha opções no clique da forma (montaTipoApres(); para ouvinte, só a
+ * opção vazia). O envio leva F_TPO vazio, como a página mandaria depois de
+ * montar a lista. Inferido: nenhum evento foi enviado (docs/lattes_internals.md,
+ * seção 16).
  */
 export function withCheckRules(form: string, controls: FormControl[], pairs: Pairs): Pairs {
+  // GN_TEC é também o nome do formulário de editoração e de outras produções
+  // técnicas; só o de eventos tem o rádio F_FORMA e a lista F_TPO.
+  if (form === 'GN_TEC') {
+    const has = (name: string, type: string) =>
+      controls.some((c) => c.name === name && c.type === type);
+    const evento = has('F_FORMA', 'radio') && has('F_TPO', 'select-one');
+    const ouvinte = pairValue(pairs, 'F_FORMA') === '40';
+    return evento && ouvinte && pairValue(pairs, 'F_TPO') === null
+      ? [...pairs, ['F_TPO', '']]
+      : pairs;
+  }
   if (form !== 'GN_ATIV_VINC') return pairs;
   const vinc = controls.find((c) => c.name === 'f_vinc')?.value ?? '';
   return pairs.map(([k, v]) => (k === 'f_vinculo' ? [k, vinc] : [k, v]));

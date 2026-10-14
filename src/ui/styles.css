@@ -1471,6 +1471,19 @@ a.menu-item.notice {
   min-width: 0;
 }
 
+/* Curso antes de ler a lista no Lattes: o valor salvo e o botão de carregar. */
+.live-list-pending {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  min-height: 28px;
+}
+
+.live-list-pending .field-note {
+  flex-basis: 100%;
+}
+
 .copy-btn {
   padding: 4px 6px;
   color: var(--muted);
@@ -4493,6 +4506,16 @@ button.primary:hover:not(:disabled) {
 
 .send-list dl {
   margin: 6px 0 0;
+}
+
+/* Exclusão na fila: o Lattes não desfaz. */
+.send-delete {
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  font-size: 13px;
 }
 
 .send-field {

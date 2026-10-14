@@ -90,7 +90,15 @@ const LEVEL_CODES = /^(NIVEL|NIVEL-CURSO)$/;
 const LEVEL_FROM_TYPE =
   /^(GRADUACAO|ESPECIALIZACAO|MESTRADO|DOUTORADO|POS-DOUTORADO|LIVRE-DOCENCIA|CURSO-TECNICO-PROFISSIONALIZANTE|MESTRADO-PROFISSIONALIZANTE|ENSINO-FUNDAMENTAL-PRIMEIRO-GRAU|ENSINO-MEDIO-SEGUNDO-GRAU|RESIDENCIA-MEDICA|APERFEICOAMENTO|MBA)$/;
 
+/**
+ * Começam por CODIGO- mas quem preenche é a pessoa: o número do registro ou da
+ * patente é o campo de texto f_cod_reg do formulário de patente
+ * (docs/lattes_internals.md, seção 17).
+ */
+const TYPED_CODES = new Set(['CODIGO-DO-REGISTRO-OU-PATENTE']);
+
 export function isSystemAttr(element: string, attr: string): boolean {
+  if (TYPED_CODES.has(attr)) return false;
   return SYSTEM.test(attr) || OWNER_ONLY[attr] === element || LEVEL_CODES.test(attr);
 }
 

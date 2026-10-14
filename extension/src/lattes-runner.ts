@@ -7,7 +7,14 @@ import { checkContract } from '../../src/bridge/contract.ts';
 import { type EspelhoItem, isEspelhoPage, parseEspelho } from '../../src/bridge/espelho.ts';
 import { exportCv, type ExportPort, fromBase64, toBase64 } from '../../src/bridge/export.ts';
 import type { FormControl } from '../../src/bridge/form.ts';
+import { importItems, type ImportPort, type ImportResult } from '../../src/bridge/importar.ts';
 import { cvCodeFrom, isLogonPage, lattesIdFrom, sameCv } from '../../src/bridge/lattes-html.ts';
+import {
+  type ListsPort,
+  readCourses,
+  readLists,
+  searchInstitutions,
+} from '../../src/bridge/lattes-lists.ts';
 import { lattesStatusFrom } from '../../src/bridge/lattes-status.ts';
 import { type PhotoPort, type PhotoResult, uploadPhoto } from '../../src/bridge/photo.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
@@ -105,6 +112,35 @@ const photoPort: PhotoPort = {
   },
 };
 
+const importPort: ImportPort = {
+  get: (path) => photoPort.get(path),
+  async post(path, body) {
+    const res = await fetch(new URL(path, location.href), {
+      body,
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      method: 'POST',
+    });
+    return { html: await text(res), url: res.url };
+  },
+  // Como o formulário "fl" do passo 1: o arquivo, depois f_cod, f_ctr e f_ret.
+  postMultipart: (path, fields, file) => photoPort.postMultipart(path, fields, file),
+};
+
+/** O pedido do Importar como chega do service worker (só texto passa pelo executeScript). */
+interface ImportArgs {
+  file: string;
+  fileName: string;
+  modules: number[];
+  oldestYear?: number;
+}
+
+/** Só GET: as listas do Lattes (src/bridge/lattes-lists.ts) nunca gravam nada. */
+const listsPort: ListsPort = {
+  get: port.get,
+  menuHtml: () => document.documentElement.outerHTML,
+};
+
 /** O que volta ao service worker: o ZIP em base64 (a mensagem é JSON), ou o motivo. */
 interface ExportReply {
   detail?: string;
@@ -116,6 +152,8 @@ interface ExportReply {
 
 (globalThis as unknown as { __conector: unknown }).__conector = {
   apply: (op: BridgeOp) => applyOp(op, port),
+  // Só leituras: os cursos de uma instituição num nível da formação.
+  cursos: (institution: string, level: string) => readCourses(listsPort, institution, level),
   // Só leitura: a página de conferência, com o que ainda não foi enviado ao
   // CNPq (docs/lattes_internals.md, seção 10). O código do currículo vem do
   // menu da aba.
@@ -185,6 +223,37 @@ interface ExportReply {
     }
     return { code: cvCodeFrom(html), lattesId: lattesIdFrom(html), status: lattesStatusFrom(html) };
   },
+  // Importar dos itens novos (src/bridge/importar.ts): passos 1 e 2, e para
+  // antes do passo 3. Só se a sessão desta aba for do currículo do editor.
+  importar: async (args: string, expected?: string): Promise<ImportResult> => {
+    const menu = document.documentElement.outerHTML;
+    if (!sameCv(expected, lattesIdFrom(menu))) {
+      return { detail: 'A sessão aberta no Lattes é de outro currículo.', reason: 'outro-cv' };
+    }
+    let req: ImportArgs;
+    try {
+      req = JSON.parse(args) as ImportArgs;
+    } catch {
+      return { detail: 'O pedido do Importar chegou ilegível à aba do Lattes.', reason: 'erro' };
+    }
+    try {
+      return await importItems(importPort, cvCodeFrom(menu), {
+        file: fromBase64(req.file),
+        fileName: req.fileName,
+        modules: req.modules,
+        oldestYear: req.oldestYear,
+      });
+    } catch {
+      // importItems trata sozinho as falhas depois do envio do arquivo (a
+      // solicitação pendente); o que chega aqui é de antes dele.
+      return { detail: 'A aba do Lattes não respondeu; nada foi enviado.', reason: 'erro' };
+    }
+  },
+  // Só leituras: a busca de instituição, como a janela do próprio Lattes.
+  instituicoes: (query: string, level: string) =>
+    searchInstitutions(listsPort, query, level || undefined),
+  // Só leituras: a tabela de áreas do menu e a lista de agências.
+  listas: () => readLists(listsPort),
   // Só leituras: o menu e um exemplar de cada formulário, comparados ao contrato.
   verificar: () => checkContract(port),
 };

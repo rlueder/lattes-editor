@@ -13,6 +13,7 @@ import type { OpResult } from '../bridge/apply.ts';
 import { BRIDGE_FEATURES } from '../bridge/compat.ts';
 import type { EspelhoItem } from '../bridge/espelho.ts';
 import type { ExportFailure } from '../bridge/export.ts';
+import type { ImportStop, PageShape } from '../bridge/importar.ts';
 import { sameCv } from '../bridge/lattes-html.ts';
 import type { LattesStatus } from '../bridge/lattes-status.ts';
 import { INITIAL_LINK, type Link, nextLink } from '../bridge/link.ts';
@@ -29,6 +30,7 @@ import {
 import { type SentEntry, sentEntry, undoOp } from '../bridge/sent-log.ts';
 import { isDesktop } from '../desktop/native.ts';
 import type { Session } from '../forms/use-production.ts';
+import { importMessage } from '../import-export/import-request.ts';
 import type { Change } from '../model/changes.ts';
 import { addHistoryPoint, addSent, clearSent, listSent } from '../model/store.ts';
 import { getAttr } from '../model/xml.ts';
@@ -48,7 +50,7 @@ const HELLO: EditorMessage = {
   version: __APP_VERSION__,
 };
 
-const post = (msg: EditorMessage): void => {
+export const post = (msg: EditorMessage): void => {
   if (isDesktop()) {
     void import('@tauri-apps/api/core')
       .then(({ invoke }) => invoke('conector_send', { msg: JSON.stringify(editorMessage(msg)) }))
@@ -104,6 +106,42 @@ function listen(
   return () => window.removeEventListener('message', onWindow);
 }
 
+/**
+ * Só as mensagens da extensão, sem o aperto de mão nem a queda da ligação
+ * (que ficam com listen): para quem pede uma leitura e espera a resposta,
+ * como as listas do Lattes (use-lattes-lists.ts).
+ */
+export function listenReplies(onMessage: (msg: BridgeMessage) => void): () => void {
+  const receive = (data: unknown) => {
+    if (isBridgeMessage(data)) onMessage(data);
+  };
+  if (isDesktop()) {
+    let alive = true;
+    let off: (() => void) | undefined;
+    void import('@tauri-apps/api/event').then(async ({ listen: on }) => {
+      const sub = await on<string>('conector', (e) => {
+        try {
+          receive(JSON.parse(e.payload));
+        } catch {
+          // Linha que não é JSON: ignorada.
+        }
+      });
+      if (alive) off = sub;
+      else sub();
+    });
+    return () => {
+      alive = false;
+      off?.();
+    };
+  }
+  const onWindow = (event: MessageEvent) => {
+    if (!fromSamePage(event, { origin: location.origin, window })) return;
+    receive(event.data);
+  };
+  window.addEventListener('message', onWindow);
+  return () => window.removeEventListener('message', onWindow);
+}
+
 export interface BridgeState {
   available: boolean;
   /** Apaga o registro do enviado deste currículo (nada muda no Lattes). */
@@ -117,6 +155,10 @@ export interface BridgeState {
    * diagnóstico: os itens, ou o motivo de não ter lido.
    */
   espelho?: EspelhoReading;
+  /** O que a extensão ligada sabe fazer (src/bridge/compat.ts); vazio sem extensão. */
+  features: readonly string[];
+  /** A resposta do último Importar pelo conector (src/bridge/importar.ts). */
+  importResult?: ImportReading;
   /**
    * O que a extensão leu do menu do Lattes (última publicação e pendência),
    * só quando a sessão é deste currículo; undefined sem extensão ou sem leitura.
@@ -143,6 +185,12 @@ export interface BridgeState {
    * entrada do registro.
    */
   send: (options?: { undo?: SentEntry }) => Promise<void>;
+  /**
+   * Pede à extensão o Importar dos itens novos, num arquivo só com eles.
+   * Devolve o id do pedido, que volta em importResult; undefined quando nada
+   * foi pedido (IMPORT_ENABLED desligado ou sem item novo).
+   */
+  sendImport: () => string | undefined;
   /**
    * Pede à extensão para trocar a foto no Lattes (jpeg em base64, já com até
    * 70 kB); devolve o id do pedido, que volta em photoUpload.
@@ -175,6 +223,17 @@ export interface PhotoUploadReading {
   reason?: PhotoFailure;
 }
 
+export interface ImportReading {
+  /** Quando a resposta chegou (ms). */
+  at: number;
+  detail?: string;
+  /** O id do pedido que a resposta atende. */
+  id: string;
+  page?: PageShape;
+  reason: ImportStop;
+  request?: string;
+}
+
 export interface EspelhoReading {
   /** Quando a resposta chegou (ms). */
   at: number;
@@ -202,6 +261,7 @@ export function useBridge(
   const outgoing = useRef(new Map<string, Outgoing>());
   const [confirmed, setConfirmed] = useState(0);
   const [available, setAvailable] = useState(false);
+  const [features, setFeatures] = useState<readonly string[]>([]);
   const [results, setResults] = useState<Record<string, OpResult>>({});
   const [running, setRunning] = useState(false);
   const lattesId = session ? getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR') : undefined;
@@ -211,6 +271,7 @@ export function useBridge(
   const [link, setLink] = useState<Link>(INITIAL_LINK);
   const [curriculo, setCurriculo] = useState<CurriculoReading | undefined>();
   const [photoUpload, setPhotoUpload] = useState<PhotoUploadReading | undefined>();
+  const [importResult, setImportResult] = useState<ImportReading | undefined>();
 
   const reloadSent = useCallback(() => {
     if (!lattesId) {
@@ -253,7 +314,10 @@ export function useBridge(
   useEffect(() => {
     const onMessage = (msg: BridgeMessage) => {
       setLink((l) => nextLink(l, msg, lattesId));
-      if (msg.type === 'ola') setAvailable(true);
+      if (msg.type === 'ola') {
+        setAvailable(true);
+        setFeatures(msg.features ?? []);
+      }
       if (msg.type === 'resultado') {
         setResults((r) => ({ ...r, [msg.result.key]: msg.result }));
         recordRef.current(msg.result);
@@ -290,6 +354,16 @@ export function useBridge(
           reason: msg.reason,
         });
       }
+      if (msg.type === 'importacao') {
+        setImportResult({
+          at: Date.now(),
+          detail: msg.detail,
+          id: msg.id,
+          page: msg.page,
+          reason: msg.reason,
+          request: msg.request,
+        });
+      }
       if (msg.type === 'espelho') {
         // Itens de outro currículo nunca entram na comparação.
         const other = msg.items && !(lattesId && sameCv(lattesId, msg.lattesId));
@@ -307,6 +381,7 @@ export function useBridge(
       onMessage,
       () => {
         setAvailable(false);
+        setFeatures([]);
         setRunning(false);
         setLattes(undefined);
         setLink({ state: { kind: 'sem-extensao' } });
@@ -346,6 +421,8 @@ export function useBridge(
     confirmed,
     curriculo,
     espelho,
+    features,
+    importResult,
     lattes,
     link,
     photoUpload,
@@ -387,6 +464,18 @@ export function useBridge(
       setConfirmed(0);
       setRunning(true);
       post({ lattesId, ops, type: 'enviar' });
+    },
+    sendImport: () => {
+      if (!session) return undefined;
+      const msg = importMessage(
+        session.doc,
+        session.meta.encoding,
+        session.meta.loadedMaxSequencia,
+        { id: `importar-${Date.now()}`, lattesId },
+      );
+      if (!msg) return undefined;
+      post(msg);
+      return msg.id;
     },
     sendPhoto: (jpeg) => {
       const id = `foto-${Date.now()}`;

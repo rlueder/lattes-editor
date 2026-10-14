@@ -29,7 +29,9 @@ import {
 } from '../../src/bridge/protocol.ts';
 import { CONSENT_KEY, hasConsent, isConsentCurrent } from './consent.ts';
 import { ownVersion, reloadForApp } from './dev-reload.ts';
+import { importRunning, runImport } from './import-run.ts';
 import {
+  answerListRequest,
   failedReport,
   type Identity,
   lattesTab,
@@ -48,12 +50,8 @@ import {
   readState,
   writeState,
 } from './state.ts';
-import {
-  DEFAULT_TOOLBAR_THEME,
-  isToolbarThemeMessage,
-  toolbarIconPaths,
-  type ToolbarTheme,
-} from './toolbar-icon.ts';
+import { isToolbarThemeMessage } from './toolbar-icon.ts';
+import { restoreToolbarTheme, setToolbarTheme } from './toolbar-theme.ts';
 
 /**
  * Nome do host nativo registrado pelo app (conector::HOST_NAME): o do
@@ -75,6 +73,8 @@ let autoPending = false;
 let manualQueued = false;
 /** Uma troca de foto em andamento: nem a fila nem outra troca começam junto. */
 let photoInFlight = false;
+/** A fila passou da trava e vai gravar: marcado antes de qualquer await, para o Importar ver. */
+let queueActive = false;
 let appPort: chrome.runtime.Port | undefined;
 
 /**
@@ -184,12 +184,16 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     await sendEspelho(editor);
     return;
   }
+  // Listas do Lattes: só leituras, e nunca durante uma gravação (lattes-tab.ts).
+  const busy = async () => (await readState()).running || photoInFlight || importRunning();
+  const listReply = await answerListRequest(msg, busy);
+  if (listReply) return toEditor(editor, listReply);
   if (msg.type === 'pedir-curriculo') {
     await sendCurriculo(editor, msg.id);
     return;
   }
   if (msg.type === 'enviar-foto') {
-    const busy = photoBusy((await readState()).running, photoInFlight);
+    const busy = photoBusy((await readState()).running, photoInFlight || importRunning());
     if (busy) return toEditor(editor, { ...busy, id: msg.id, type: 'foto' });
     // A pessoa já viu a foto e confirmou no editor; depois, o menu relido
     // mostra se o Lattes ficou com alteração a enviar ao CNPq.
@@ -203,6 +207,15 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     }
     return;
   }
+  if (msg.type === 'importar') {
+    // Desligado (IMPORT_ENABLED), o pedido volta recusado sem tocar no Lattes.
+    // Sem await entre ler a trava e runImport marcar o Importar em andamento;
+    // a fila marca queueActive do mesmo jeito.
+    const busy = { photo: photoInFlight, queue: queueActive, verifying: verifyInFlight };
+    if (await runImport(msg, busy, (m) => toEditor(editor, m))) await sendSession(editor, true);
+    return;
+  }
+  if (msg.type !== 'enviar') return;
   const state = await readState();
   if (state.running) return;
   await writeState({
@@ -253,7 +266,7 @@ async function verifyOnce(auto: boolean): Promise<void> {
   // Sem o "ok" do aviso, nada é lido do Lattes; o painel mostra o aviso no lugar do botão.
   if (!(await hasConsent())) return;
   const state = await readState();
-  if (state.running || state.verificando) return;
+  if (state.running || state.verificando || importRunning()) return;
   if (auto) {
     if (!shouldAutoVerify(state.verificacao, Date.now())) return;
     if ((await lattesTab()) === undefined) return;
@@ -283,106 +296,113 @@ async function verifyOnce(auto: boolean): Promise<void> {
 async function run(keys?: string[]): Promise<void> {
   if (!(await hasConsent())) return;
   const state = await readState();
-  if (state.running || state.verificando || photoInFlight) return;
-  const queue = state.ops.filter(
-    (op) => state.results[op.key]?.status !== 'conferido' && (!keys || keys.includes(op.key)),
-  );
-  stopRequested = false;
-  await writeState({ ...state, running: true });
-  const results = { ...state.results };
-  const record = async (r: OpResult) => {
-    results[r.key] = r;
-    await writeState({ ...(await readState()), results, running: true });
-    await toEditor(state.editor, { result: r, type: 'resultado' });
-  };
+  if (state.running || state.verificando || photoInFlight || importRunning()) return;
+  queueActive = true;
+  // A trava solta mesmo se algo estourar no meio, senão o Importar ficaria
+  // recusado até o service worker reiniciar.
+  try {
+    const queue = state.ops.filter(
+      (op) => state.results[op.key]?.status !== 'conferido' && (!keys || keys.includes(op.key)),
+    );
+    stopRequested = false;
+    await writeState({ ...state, running: true });
+    const results = { ...state.results };
+    const record = async (r: OpResult) => {
+      results[r.key] = r;
+      await writeState({ ...(await readState()), results, running: true });
+      await toEditor(state.editor, { result: r, type: 'resultado' });
+    };
 
-  const tabId = await lattesTab();
-  if (tabId === undefined) {
-    const first = queue[0];
-    if (first) {
-      await record({
-        detail: 'Abra o currículo no Lattes (a página do menu) numa aba e tente de novo',
-        key: first.key,
-        status: 'erro',
-      });
-    }
-  } else {
-    // Trava: só grava se a sessão do Lattes for do mesmo currículo aberto no editor.
-    const session = await sessionIdentity(tabId).catch((): Identity => ({}));
-    const first = queue[0];
-    if (!sameCv(state.lattesId, session.lattesId)) {
+    const tabId = await lattesTab();
+    if (tabId === undefined) {
+      const first = queue[0];
       if (first) {
         await record({
-          detail: session.lattesId
-            ? `O Lattes aberto é de outro currículo (${session.lattesId}); nada foi enviado`
-            : 'Não deu para saber de quem é o currículo aberto no Lattes; nada foi enviado',
+          detail: 'Abra o currículo no Lattes (a página do menu) numa aba e tente de novo',
           key: first.key,
           status: 'erro',
         });
       }
-      queue.length = 0;
-    }
-    // Trava: antes de gravar, o Lattes precisa estar como o conector espera. Uma
-    // mudança do CNPq num formulário da fila para tudo, com o campo apontado.
-    // Se nem deu para conferir, também para: sem leitura, não há garantia.
-    if (queue.length > 0) {
-      const report = await verifyOn(tabId);
-      await writeState({ ...(await readState()), verificacao: report });
-      const kinds = [...new Set(queue.map((op) => op.kind))];
-      const blocking = kinds.flatMap((kind) => blocksKind(report, kind));
-      const unsampled = kinds.map((kind) => lacksSample(report, kind)).find(Boolean);
-      const stop =
-        report.status === 'sessao'
-          ? {
-              detail: report.detail ?? 'A sessão do Lattes caiu; entre de novo',
-              status: 'sessao' as const,
-            }
-          : report.status === 'erro'
-            ? {
-                detail: `Não deu para conferir o Lattes (${report.detail ?? 'sem detalhe'}); nada foi enviado`,
-                status: 'erro' as const,
-              }
-            : blocking.length > 0
-              ? {
-                  detail: `O Lattes mudou (${blocking.map(driftText).join('; ')}); nada foi enviado. Veja a verificação no painel`,
-                  status: 'erro' as const,
-                }
-              : unsampled
-                ? {
-                    detail: `Não achei no Lattes um exemplar de ${unsampled.form} para conferir (${unsampled.detail ?? 'sem amostra'}); nada foi enviado`,
-                    status: 'erro' as const,
-                  }
-                : undefined;
-      if (stop && first) {
-        await record({ ...stop, key: first.key });
+    } else {
+      // Trava: só grava se a sessão do Lattes for do mesmo currículo aberto no editor.
+      const session = await sessionIdentity(tabId).catch((): Identity => ({}));
+      const first = queue[0];
+      if (!sameCv(state.lattesId, session.lattesId)) {
+        if (first) {
+          await record({
+            detail: session.lattesId
+              ? `O Lattes aberto é de outro currículo (${session.lattesId}); nada foi enviado`
+              : 'Não deu para saber de quem é o currículo aberto no Lattes; nada foi enviado',
+            key: first.key,
+            status: 'erro',
+          });
+        }
         queue.length = 0;
       }
+      // Trava: antes de gravar, o Lattes precisa estar como o conector espera. Uma
+      // mudança do CNPq num formulário da fila para tudo, com o campo apontado.
+      // Se nem deu para conferir, também para: sem leitura, não há garantia.
+      if (queue.length > 0) {
+        const report = await verifyOn(tabId);
+        await writeState({ ...(await readState()), verificacao: report });
+        const kinds = [...new Set(queue.map((op) => op.kind))];
+        const blocking = kinds.flatMap((kind) => blocksKind(report, kind));
+        const unsampled = kinds.map((kind) => lacksSample(report, kind)).find(Boolean);
+        const stop =
+          report.status === 'sessao'
+            ? {
+                detail: report.detail ?? 'A sessão do Lattes caiu; entre de novo',
+                status: 'sessao' as const,
+              }
+            : report.status === 'erro'
+              ? {
+                  detail: `Não deu para conferir o Lattes (${report.detail ?? 'sem detalhe'}); nada foi enviado`,
+                  status: 'erro' as const,
+                }
+              : blocking.length > 0
+                ? {
+                    detail: `O Lattes mudou (${blocking.map(driftText).join('; ')}); nada foi enviado. Veja a verificação no painel`,
+                    status: 'erro' as const,
+                  }
+                : unsampled
+                  ? {
+                      detail: `Não achei no Lattes um exemplar de ${unsampled.form} para conferir (${unsampled.detail ?? 'sem amostra'}); nada foi enviado`,
+                      status: 'erro' as const,
+                    }
+                  : undefined;
+        if (stop && first) {
+          await record({ ...stop, key: first.key });
+          queue.length = 0;
+        }
+      }
+      for (const op of queue) {
+        if (stopRequested) break;
+        const [res] = await chrome.scripting.executeScript({
+          args: [op] as [BridgeOp],
+          func: (o: BridgeOp) =>
+            (
+              globalThis as unknown as { __conector: { apply(op: BridgeOp): Promise<OpResult> } }
+            ).__conector.apply(o),
+          target: { tabId },
+        });
+        const r = res?.result ?? {
+          detail: 'A aba do Lattes não respondeu',
+          key: op.key,
+          status: 'erro',
+        };
+        await record(r);
+        if (r.status !== 'conferido') break;
+      }
     }
-    for (const op of queue) {
-      if (stopRequested) break;
-      const [res] = await chrome.scripting.executeScript({
-        args: [op] as [BridgeOp],
-        func: (o: BridgeOp) =>
-          (
-            globalThis as unknown as { __conector: { apply(op: BridgeOp): Promise<OpResult> } }
-          ).__conector.apply(o),
-        target: { tabId },
-      });
-      const r = res?.result ?? {
-        detail: 'A aba do Lattes não respondeu',
-        key: op.key,
-        status: 'erro',
-      };
-      await record(r);
-      if (r.status !== 'conferido') break;
-    }
+    await writeState({ ...(await readState()), results, running: false });
+    const left = state.ops.filter((op) => results[op.key]?.status !== 'conferido').length;
+    await chrome.action.setBadgeText({ text: left ? String(left) : '' });
+    await toEditor(state.editor, { type: 'fim' });
+    // Menu relido: a aba aberta ainda mostra o estado de antes das gravações.
+    if (state.editor !== undefined) await sendSession(state.editor, true);
+  } finally {
+    queueActive = false;
   }
-  await writeState({ ...(await readState()), results, running: false });
-  const left = state.ops.filter((op) => results[op.key]?.status !== 'conferido').length;
-  await chrome.action.setBadgeText({ text: left ? String(left) : '' });
-  await toEditor(state.editor, { type: 'fim' });
-  // Menu relido: a aba aberta ainda mostra o estado de antes das gravações.
-  if (state.editor !== undefined) await sendSession(state.editor, true);
 }
 
 chrome.runtime.onMessage.addListener((message, sender) => {
@@ -406,37 +426,8 @@ chrome.runtime.onMessage.addListener((message, sender) => {
   }
 });
 
-const TOOLBAR_KEY = 'temaDaBarra';
-
-/** Troca o ícone da barra pela variante do tema e guarda a escolha. */
-async function setToolbarTheme(theme: ToolbarTheme): Promise<void> {
-  await chrome.action.setIcon({ path: toolbarIconPaths(theme) });
-  await chrome.storage.local.set({ [TOOLBAR_KEY]: theme });
-}
-
-// Ao acordar, volta ao último tema conhecido e abre o documento fora da tela,
-// que lê o tema atual e avisa a cada troca. O painel e a página do editor
-// também avisam, caso o documento não abra.
-void chrome.storage.local.get(TOOLBAR_KEY).then((stored) => {
-  const theme = stored[TOOLBAR_KEY] as ToolbarTheme | undefined;
-  if (theme && theme !== DEFAULT_TOOLBAR_THEME) {
-    void chrome.action.setIcon({ path: toolbarIconPaths(theme) });
-  }
-});
-void watchToolbarTheme();
-
-async function watchToolbarTheme(): Promise<void> {
-  try {
-    if (await chrome.offscreen.hasDocument()) return;
-    await chrome.offscreen.createDocument({
-      justification: 'Ler o tema do navegador para escolher o ícone da barra.',
-      reasons: ['MATCH_MEDIA'],
-      url: 'offscreen.html',
-    });
-  } catch {
-    // Sem a API (ou com o documento já aberto por outra chamada): fica o painel.
-  }
-}
+// Ao acordar, volta ao último tema da barra e passa a acompanhar as trocas.
+void restoreToolbarTheme();
 
 // Com o "ok" dado agora, o app já ligado recebe o código do currículo que
 // ficou retido, sem esperar a próxima reconexão.

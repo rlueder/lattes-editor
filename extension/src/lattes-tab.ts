@@ -2,8 +2,9 @@
 // e as leituras que o editor pede, com o motivo quando não dá.
 
 import type { ContractReport } from '../../src/bridge/contract.ts';
+import type { ImportResult } from '../../src/bridge/importar.ts';
 import type { LattesStatus } from '../../src/bridge/lattes-status.ts';
-import type { BridgeMessage } from '../../src/bridge/protocol.ts';
+import type { BridgeMessage, EditorMessage } from '../../src/bridge/protocol.ts';
 import { hasConsent } from './consent.ts';
 import { LATTES_MENU } from './state.ts';
 
@@ -19,7 +20,7 @@ export async function injectRunner(tabId: number): Promise<void> {
 /** Roda uma função do núcleo do conector na aba; undefined se a aba não respondeu. */
 async function runInTab<T>(
   tabId: number,
-  name: 'espelho' | 'exportar' | 'foto',
+  name: 'cursos' | 'espelho' | 'exportar' | 'foto' | 'importar' | 'instituicoes' | 'listas',
   ...args: string[]
 ): Promise<T | undefined> {
   await injectRunner(tabId);
@@ -75,6 +76,43 @@ export async function sendPhoto(
   }
 }
 
+/**
+ * Importar dos itens novos (lattes-runner.ts, importar): só com o "ok" do
+ * aviso, e o núcleo na aba confere que a sessão é do currículo do editor.
+ */
+export async function sendImport(
+  req: { file: string; fileName: string; modules: number[]; oldestYear?: number },
+  lattesId?: string,
+): Promise<ImportResult> {
+  // Gravar no currículo errado é pior que ler: sem saber de qual currículo é
+  // o editor, nada vai (o sameCv do núcleo também recusaria um id vazio).
+  if (!lattesId) {
+    return {
+      detail: 'O editor não sabe de qual currículo é o arquivo; nada foi enviado.',
+      reason: 'outro-cv',
+    };
+  }
+  if (!(await hasConsent())) return { reason: 'consentimento' };
+  const tabId = await lattesTab();
+  if (tabId === undefined) return { reason: 'sem-aba' };
+  const failed: ImportResult = {
+    detail:
+      'A aba do Lattes não respondeu. Se o arquivo chegou a ser enviado, a solicitação ficou pendente no Importar; confirme ou descarte por lá.',
+    reason: 'erro',
+  };
+  try {
+    const args = JSON.stringify({
+      file: req.file,
+      fileName: req.fileName,
+      modules: req.modules,
+      oldestYear: req.oldestYear,
+    });
+    return (await runInTab<ImportResult>(tabId, 'importar', args, lattesId)) ?? failed;
+  } catch {
+    return failed;
+  }
+}
+
 /** A versão atual do Lattes, para o diagnóstico do editor; só lê, e só com o "ok" do aviso. */
 export async function readEspelho(): Promise<Reply<'espelho'>> {
   if (!(await hasConsent())) return { error: 'Aceite o aviso da extensão antes de ler o Lattes.' };
@@ -88,6 +126,65 @@ export async function readEspelho(): Promise<Reply<'espelho'>> {
   } catch {
     return failed;
   }
+}
+
+/**
+ * Uma leitura das listas do Lattes (src/bridge/lattes-lists.ts), só GET, com o
+ * "ok" do aviso e na aba do menu; o motivo em error quando não dá.
+ */
+async function readListReply<T extends { error?: string }>(
+  name: 'cursos' | 'instituicoes' | 'listas',
+  ...args: string[]
+): Promise<T> {
+  if (!(await hasConsent())) {
+    return { error: 'Aceite o aviso da extensão antes de ler o Lattes.' } as T;
+  }
+  const tabId = await lattesTab();
+  if (tabId === undefined) {
+    return { error: 'Abra o currículo no Lattes (a página do menu) numa aba.' } as T;
+  }
+  const failed = { error: 'A aba do Lattes não respondeu.' } as T;
+  try {
+    return (await runInTab<T>(tabId, name, ...args)) ?? failed;
+  } catch {
+    return failed;
+  }
+}
+
+/**
+ * Responde aos pedidos de lista do editor (src/bridge/lattes-lists.ts): a
+ * tabela de áreas e as agências, a busca de instituição e os cursos. Outra
+ * mensagem: undefined, e o service worker segue com ela.
+ */
+export async function answerListRequest(
+  msg: EditorMessage,
+  busy: () => Promise<boolean>,
+): Promise<BridgeMessage | undefined> {
+  const isList = ['pedir-listas', 'buscar-instituicao', 'pedir-cursos'].includes(msg.type);
+  // Nada de leitura no meio de uma gravação: os formulários do Lattes seguem
+  // a sessão, e um GET intercalado poderia atrapalhar a operação em curso.
+  if (isList && (await busy())) {
+    const error = 'O conector está gravando no Lattes; tente de novo quando terminar.';
+    const id = (msg as { id: string }).id;
+    if (msg.type === 'pedir-listas') return { error, id, type: 'listas' };
+    return { error, id, type: msg.type === 'pedir-cursos' ? 'cursos' : 'instituicoes' };
+  }
+  if (msg.type === 'pedir-listas') {
+    return { ...(await readListReply<Reply<'listas'>>('listas')), id: msg.id, type: 'listas' };
+  }
+  if (msg.type === 'buscar-instituicao') {
+    const reply = await readListReply<Reply<'instituicoes'>>(
+      'instituicoes',
+      msg.query,
+      msg.level ?? '',
+    );
+    return { ...reply, id: msg.id, type: 'instituicoes' };
+  }
+  if (msg.type === 'pedir-cursos') {
+    const reply = await readListReply<Reply<'cursos'>>('cursos', msg.institution, msg.level);
+    return { ...reply, id: msg.id, type: 'cursos' };
+  }
+  return undefined;
 }
 
 /** Relatório de conferência que não chegou a ler o Lattes. */
