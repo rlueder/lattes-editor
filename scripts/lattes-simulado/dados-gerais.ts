@@ -198,7 +198,7 @@ function enderecoForm(_req: SimRequest, state: LattesState): SimResponse {
   }).join('\n');
   const body = `<form name="GN_ENDERECO" method="post" action="PRC_ENDERECO">
 ${blocks}
-${h.hidden('f_cod', state.code)}${h.hidden('f_ctr', 'U')}
+${h.hidden('f_ctr', 'U')}
 ${h.formButtons(false)}
 </form>${h.formScripts('GN_ENDERECO')}`;
   return html(h.page('Endereço', body));
@@ -223,22 +223,21 @@ function enderecoPost(req: SimRequest, state: LattesState): SimResponse {
 
 /**
  * Só os campos com nome lido no HTML (seção 5): o nome, a nacionalidade, que
- * a página preenche por JavaScript, e os de controle. Os outros (CPF, nome em
+ * a página preenche por JavaScript, e f_ctr. Os outros (CPF, nome em
  * citações, nascimento, documentos) existem no Lattes com nomes não anotados e
  * ficam de fora do simulado.
  */
-function identBindings(state: LattesState): Binding[] {
+function identBindings(): Binding[] {
   return [
     attr('f_nome', 'NOME-COMPLETO', 'text', { maxLength: 60 }),
     attr('f_nacionalidade', 'NACIONALIDADE', 'hidden'),
-    fixed('f_cod', state.code),
     fixed('f_ctr', 'U'),
   ];
 }
 
 function identForm(_req: SimRequest, state: LattesState): SimResponse {
   const body = `<form name="GN_IDENT" method="post" action="PRC_IDENT">
-${renderFields(identBindings(state), state.general)}
+${renderFields(identBindings(), state.general)}
 ${h.formButtons(false)}
 </form>${h.formScripts('GN_IDENT')}`;
   return html(h.page('Identificação', body));
@@ -246,7 +245,7 @@ ${h.formButtons(false)}
 
 function identPost(req: SimRequest, state: LattesState): SimResponse {
   if (req.get('f_ctr') === 'U') {
-    applyFields(identBindings(state), state.general, req);
+    applyFields(identBindings(), state.general, req);
     state.touch();
   }
   return html(h.savedScript(`prc_ident?f_cod=${state.code}`));

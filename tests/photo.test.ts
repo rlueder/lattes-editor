@@ -1,17 +1,18 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
+import type { Intercept } from '../scripts/lattes-simulado/servidor.ts';
 import {
   isJpeg,
   PHOTO_MAX_BYTES,
   photoBusy,
   photoFailureMessage,
-  type PhotoPort,
   photoProblem,
   photoScreenState,
   uploadPhoto,
   uploadReply,
 } from '../src/bridge/photo.ts';
 import { centerSquare, fitUnderLimit } from '../src/ui/photo-image.ts';
+import { faults, type LattesSimuladoNoTeste, withSmallLattes } from './helpers/lattes-simulado.ts';
 
 const jpeg = (n: number, fill = 1) => {
   const bytes = new Uint8Array(n).fill(fill);
@@ -19,41 +20,35 @@ const jpeg = (n: number, fill = 1) => {
   return bytes;
 };
 
-/** A tela de envio como lida no Lattes em 14/10/2026. */
-const SCREEN = `<form name="fl" action="PRC_UPLOAD_FOTO" method="post" enctype="multipart/form-data">
-  <input type="file" name="file" accept="image/jpg,image/jpeg">
-  <input type="hidden" name="f_cod" value="K1234567A8">
-  <input type="hidden" name="f_ctr" value="I">
-  <input type="hidden" name="f_ret" value="MENU">
-</form>`;
+// O Lattes do teste é o simulado (scripts/lattes-simulado/): a tela de envio,
+// a foto atual e o POST multipart que a troca.
+let open: LattesSimuladoNoTeste | undefined;
+afterEach(async () => {
+  await open?.close();
+  open = undefined;
+});
 
-/** Um Lattes falso: guarda a foto que chega e devolve a atual. */
-function fakeLattes({
-  reply = '{"success":true}',
-  screen = SCREEN,
-  stores = true,
-}: { reply?: string; screen?: string; stores?: boolean } = {}) {
-  let current: Uint8Array = jpeg(500, 7);
-  const calls: string[] = [];
-  const posted: { fields: [string, string][]; file: { field: string; name: string } }[] = [];
-  const port: PhotoPort = {
-    get: async (path) => {
-      calls.push(`GET ${path}`);
-      return { html: screen, url: path };
-    },
-    getBytes: async (path) => {
-      calls.push(`FOTO ${path.split('&ts=')[0]}`);
-      return { bytes: current, contentType: 'image/jpeg', url: path };
-    },
-    postMultipart: async (path, fields, file) => {
-      calls.push(`POST ${path}`);
-      posted.push({ fields, file: { field: file.field, name: file.name } });
-      if (stores) current = file.bytes;
-      return { html: reply, url: path };
-    },
-  };
-  return { calls, port, posted };
+async function lattesFor(options: Parameters<typeof withSmallLattes>[0] = {}) {
+  await open?.close();
+  open = await withSmallLattes(options);
+  open.state.photo = jpeg(500, 7);
+  return open;
 }
+
+/** O que o conector pediu ao Lattes, na ordem. */
+const calls = (lattes: LattesSimuladoNoTeste) =>
+  lattes.state.log.map((l) =>
+    l.method === 'GET' ? `GET ${l.path.split('&ts=')[0]}` : `POST ${l.proc}`,
+  );
+
+/** A resposta do envio trocada, sem guardar a foto. */
+const reply =
+  (html: string): Intercept =>
+  (req, _state, next) =>
+    req.method === 'POST' ? { contentType: 'application/json', html } : next();
+
+const screenOf = async (lattes: LattesSimuladoNoTeste) =>
+  lattes.port.get(`prc_upload_foto?f_cod=${lattes.state.code}&f_ret=MENU`);
 
 describe('foto: o arquivo', () => {
   it('só JPEG de até 70 kB', () => {
@@ -64,10 +59,12 @@ describe('foto: o arquivo', () => {
     expect(photoProblem(new Uint8Array([1, 2, 3, 4]))).toMatch(/JPEG/);
   });
 
-  it('a tela de envio: formulário como lido, sessão caída ou outra tela', () => {
-    expect(photoScreenState(SCREEN)).toBe('ok');
-    expect(photoScreenState(SCREEN.replace('name="f_ctr"', 'name="outro"'))).toBe('mudou');
+  it('a tela de envio: formulário como lido, sessão caída ou outra tela', async () => {
+    const screen = await screenOf(await lattesFor());
+    expect(photoScreenState(screen)).toBe('ok');
+    expect(photoScreenState(screen.replace('name="f_ctr"', 'name="outro"'))).toBe('mudou');
     expect(photoScreenState('<html>nada</html>')).toBe('mudou');
+    expect(photoScreenState(screen, 'https://x/pkg_sec.logon')).toBe('sessao');
   });
 
   it('a resposta do envio só conta se for o objeto esperado', () => {
@@ -82,50 +79,62 @@ describe('foto: o arquivo', () => {
 
 describe('foto: envio ao Lattes', () => {
   it('abre a tela, guarda a de antes, envia como o "Salvar" e confere', async () => {
-    const lattes = fakeLattes();
-    const result = await uploadPhoto(lattes.port, 'K1234567A8', jpeg(800), () => 1);
+    const lattes = await lattesFor();
+    const code = lattes.state.code;
+    const sent = jpeg(800);
+    const result = await uploadPhoto(lattes.photoPort, code, sent, () => 1);
     expect(result).toEqual({ ok: true });
-    expect(lattes.calls).toEqual([
-      'GET prc_upload_foto?f_cod=K1234567A8&f_ret=MENU',
-      'FOTO pkg_util_img.show_foto?v_cod=K1234567A8',
+    expect(calls(lattes)).toEqual([
+      `GET prc_upload_foto?f_cod=${code}&f_ret=MENU`,
+      `GET pkg_util_img.show_foto?v_cod=${code}`,
       'POST PRC_UPLOAD_FOTO',
-      'FOTO pkg_util_img.show_foto?v_cod=K1234567A8',
+      `GET pkg_util_img.show_foto?v_cod=${code}`,
     ]);
-    expect(lattes.posted[0]).toEqual({
-      fields: [
-        ['f_cod', 'K1234567A8'],
-        ['f_ctr', 'I'],
-        ['f_ret', 'MENU'],
-      ],
-      file: { field: 'file', name: 'foto.jpg' },
-    });
+    const post = lattes.state.log.find((l) => l.method === 'POST')!;
+    expect(post.pairs).toEqual([
+      ['f_cod', code],
+      ['f_ctr', 'I'],
+      ['f_ret', 'MENU'],
+    ]);
+    expect(post.file).toEqual({ field: 'file', name: 'foto.jpg' });
+    expect([...lattes.state.photo]).toEqual([...sent]);
   });
 
   it('arquivo fora do formato não chega a ir', async () => {
-    const lattes = fakeLattes();
-    const result = await uploadPhoto(lattes.port, 'K1234567A8', jpeg(PHOTO_MAX_BYTES + 5));
+    const lattes = await lattesFor();
+    const result = await uploadPhoto(
+      lattes.photoPort,
+      lattes.state.code,
+      jpeg(PHOTO_MAX_BYTES + 5),
+    );
     expect(result).toMatchObject({ ok: false, reason: 'arquivo' });
-    expect(lattes.calls).toEqual([]);
+    expect(calls(lattes)).toEqual([]);
   });
 
   it('sem código, tela mudada ou sessão caída: nada é enviado', async () => {
-    expect(await uploadPhoto(fakeLattes().port, undefined, jpeg(10))).toMatchObject({
+    const lattes = await lattesFor();
+    expect(await uploadPhoto(lattes.photoPort, undefined, jpeg(10))).toMatchObject({
       reason: 'erro',
     });
-    const changed = fakeLattes({ screen: '<html>outra</html>' });
-    expect(await uploadPhoto(changed.port, 'K1234567A8', jpeg(10))).toMatchObject({
+    const changed = await lattesFor({
+      intercept: faults.rewritePages(/^prc_upload_foto$/i, () => '<html>outra</html>'),
+    });
+    expect(await uploadPhoto(changed.photoPort, changed.state.code, jpeg(10))).toMatchObject({
       reason: 'erro',
     });
-    expect(changed.calls.some((c) => c.startsWith('POST'))).toBe(false);
-    const logon = fakeLattes({ screen: '<form name="frmLogon" action="pkg_sec.logon">' });
-    expect(await uploadPhoto(logon.port, 'K1234567A8', jpeg(10))).toMatchObject({
+    expect(calls(changed).some((c) => c.startsWith('POST'))).toBe(false);
+    const logon = await lattesFor({ intercept: faults.logonAtGet(1) });
+    expect(await uploadPhoto(logon.photoPort, logon.state.code, jpeg(10))).toMatchObject({
       reason: 'sessao',
     });
+    expect(calls(logon).some((c) => c.startsWith('POST'))).toBe(false);
   });
 
   it('recusa do Lattes vira erro com a mensagem dele', async () => {
-    const lattes = fakeLattes({ reply: '{"success":false,"message":"Formato inválido."}' });
-    expect(await uploadPhoto(lattes.port, 'K1234567A8', jpeg(10))).toEqual({
+    const lattes = await lattesFor({
+      intercept: reply('{"success":false,"message":"Formato inválido."}'),
+    });
+    expect(await uploadPhoto(lattes.photoPort, lattes.state.code, jpeg(10))).toEqual({
       detail: 'Formato inválido.',
       ok: false,
       reason: 'erro',
@@ -133,8 +142,8 @@ describe('foto: envio ao Lattes', () => {
   });
 
   it('foto que não mudou depois do envio é divergência', async () => {
-    const lattes = fakeLattes({ reply: '', stores: false });
-    expect(await uploadPhoto(lattes.port, 'K1234567A8', jpeg(10))).toMatchObject({
+    const lattes = await lattesFor({ intercept: reply('') });
+    expect(await uploadPhoto(lattes.photoPort, lattes.state.code, jpeg(10))).toMatchObject({
       ok: false,
       reason: 'divergente',
     });

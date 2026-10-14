@@ -112,8 +112,10 @@ export async function handle(
   });
   state.log.push({
     ctr: req.get('f_ctr'),
+    file: req.file && { field: req.file.field, name: req.file.name },
     method: raw.method,
     pairs: raw.method === 'POST' ? req.pairs : undefined,
+    path: query ? `${proc}?${query}` : proc,
     proc,
   });
   if (state.expireAfterRequests !== undefined && state.log.length > state.expireAfterRequests) {

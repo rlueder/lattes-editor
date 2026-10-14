@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
+import type { LattesState } from '../scripts/lattes-simulado/estado.ts';
+import { LOGON_REDIRECT } from '../scripts/lattes-simulado/html.ts';
+import type { Intercept } from '../scripts/lattes-simulado/servidor.ts';
 import type { LattesPort } from '../src/bridge/apply.ts';
 import {
   AUTO_VERIFY_EVERY_MS,
@@ -21,106 +24,61 @@ import {
   retryAutoVerify,
   shouldAutoVerify,
 } from '../src/bridge/contract.ts';
-import type { FormControl } from '../src/bridge/form.ts';
 import { LIVE_SOURCES, WATCHED_LISTS } from '../src/bridge/list-watch.ts';
+import { childElements, element, walk, type XElement } from '../src/model/xml.ts';
+import {
+  faults,
+  findIn,
+  type LattesSimuladoNoTeste,
+  withSmallLattes,
+} from './helpers/lattes-simulado.ts';
 
 /** As listas de combo e as fontes das listas lidas ao vivo, na ordem do relatório. */
 const ALL_LISTS = [...WATCHED_LISTS, ...LIVE_SOURCES];
 
-/** Controles de um formulário a partir da especificação: o Lattes "como o esperado". */
-function controlsFrom(fields: Record<string, FieldSpec>, ctr = 'U'): FormControl[] {
-  const list: FormControl[] = [];
-  for (const [name, spec] of Object.entries(fields)) {
-    const value = name === 'f_ctr' ? ctr : '';
-    if (spec.type === 'radio') {
-      list.push({ checked: false, name, type: 'radio', value: 'S' });
-      list.push({ checked: true, name, type: 'radio', value: 'N' });
-      continue;
-    }
-    list.push(
-      spec.maxLength
-        ? { maxLength: spec.maxLength, name, type: spec.type, value }
-        : { name, type: spec.type, value },
-    );
-  }
-  list.push({ name: 'salvar', type: 'button', value: 'Salvar' });
-  return list;
+// O Lattes do teste é o simulado (scripts/lattes-simulado/), com o currículo
+// pequeno: idiomas, resumo e uma atuação com vínculos, e as listas dos
+// formulários de inclusão como o Lattes as mostrou.
+let open: LattesSimuladoNoTeste | undefined;
+afterEach(async () => {
+  await open?.close();
+  open = undefined;
+});
+
+async function lattesFor(options: Parameters<typeof withSmallLattes>[0] = {}) {
+  await open?.close();
+  open = await withSmallLattes(options);
+  return open;
 }
 
-interface FakeOptions {
-  forms?: Partial<Record<'GN_ATIV_VINC' | 'GN_IDIOMA' | 'RES', FormControl[] | undefined>>;
-  logonAt?: string;
-  menu?: string;
-  noAtuacao?: boolean;
-  noIdioma?: boolean;
-  noVinculo?: boolean;
-  throwAt?: string;
-  /** A primeira atuação não tem vínculo; a segunda tem. */
-  vinculoNaSegunda?: boolean;
-}
+/** Os caminhos lidos por GET, sem o menu. */
+const gets = (lattes: LattesSimuladoNoTeste) =>
+  lattes.state.log
+    .filter((l) => l.method === 'GET' && !/^pkg_menu\.menu$/i.test(l.proc))
+    .map((l) => l.path);
 
-const MENU = `<a onclick="modalCV1.setarUrl(&quot;pkg_ativ.lista?f_cod=K000000000&quot;, true)">Atuação</a>
-  <a onclick="modalCV1.setarUrl(&quot;pkg_resume.prc_resume?f_cod=K000000000&quot;, true)">Resumo</a>
-  <a onclick="modalCV1.setarUrl(&quot;pkg_idioma.lista?f_cod=K000000000&quot;, true)">Idiomas</a>
-  <script>var areaDP = [{"l":"Ciências Exatas e da Terra","n":"1","c":"10000003"}];</script>`;
+/** A porta que falha (rede caída) nas leituras que começam por prefix. */
+const failingAt = (port: LattesPort, prefix: string): LattesPort => ({
+  ...port,
+  get: (path) =>
+    path.toLowerCase().startsWith(prefix.toLowerCase())
+      ? Promise.reject(new Error('rede caiu'))
+      : port.get(path),
+});
 
-/** Um combo como o Lattes o desenha: a opção vazia primeiro. */
-const selectHtml = (name: string, options: readonly string[]) =>
-  `<select name="${name}"><option value="">Selecione</option>${options
-    .map((o, i) => `<option value="C${i}">${o}</option>`)
-    .join('')}</select>`;
+/** A sessão cai nas páginas dos procedimentos que casam. */
+const logonAt =
+  (proc: RegExp): Intercept =>
+  (req, _state, next) =>
+    proc.test(req.proc) ? { html: LOGON_REDIRECT } : next();
 
-function fakeLattes(opts: FakeOptions = {}): { gets: string[]; port: LattesPort } {
-  const gets: string[] = [];
-  const forms = {
-    GN_ATIV_VINC: controlsFrom(LATTES_CONTRACT.forms.vinculo.fields),
-    GN_IDIOMA: controlsFrom(LATTES_CONTRACT.forms.idioma.fields),
-    RES: controlsFrom(LATTES_CONTRACT.forms.resumo.fields),
-    ...opts.forms,
-  };
-  const port: LattesPort = {
-    async get(path) {
-      gets.push(path);
-      if (opts.throwAt && path.startsWith(opts.throwAt)) throw new Error('rede caiu');
-      if (opts.logonAt && path.startsWith(opts.logonAt)) return '<form action="pkg_sec.logon">';
-      if (path.startsWith('pkg_ativ.lista')) {
-        if (opts.noAtuacao) return '<p>Nenhuma</p>';
-        const grid = (seq: number) =>
-          `<a href="PKG_ATIV.cargos_vinculos?f_cod=K000000000&amp;f_codinst=D001&amp;f_seq_ativ=${seq}">x</a>`;
-        return opts.vinculoNaSegunda ? grid(5) + grid(6) : grid(5);
-      }
-      if (path.startsWith('PKG_ATIV.cargos_vinculos')) {
-        const empty = opts.noVinculo || (opts.vinculoNaSegunda && !path.includes('f_seq_ativ=6'));
-        return empty
-          ? `<a href='PKG_ATIV.vinculos?f_cod=K000000000&f_codinst=D001&f_seq_ativ=5'>novo</a>`
-          : `<a href='PKG_ATIV.vinculos?f_cod=K000000000&f_codinst=D001&f_seq_ativ=6&f_seq_hist=1'>v</a>`;
-      }
-      if (path.startsWith('PKG_ATIV.vinculos')) return 'FORM:GN_ATIV_VINC';
-      if (path.startsWith('pkg_resume.')) return 'FORM:RES';
-      if (path.startsWith('pkg_idioma.lista')) {
-        return opts.noIdioma
-          ? `<a href="pkg_idioma.form?f_cod=K000000000">Novo</a>`
-          : `<a href="pkg_idioma.form?f_cod=K000000000&amp;f_seq=1">Inglês</a>
-             <a href="pkg_idioma.form?f_cod=K000000000">Novo</a>`;
-      }
-      if (path.startsWith('pkg_idioma.form')) return 'FORM:GN_IDIOMA';
-      if (path.startsWith('prc_agencia'))
-        return `<a href="javascript:atribuir('A1','CNPq')">CNPq</a>`;
-      // Os formulários de inclusão com os combos das listas, como o editor os conhece.
-      const lists = WATCHED_LISTS.filter((l) => path === l.path('K000000000'));
-      if (lists.length) return lists.map((l) => selectHtml(l.control, l.expected)).join('');
-      return '';
-    },
-    menuHtml: () => opts.menu ?? MENU,
-    async post() {
-      throw new Error('a verificação não grava');
-    },
-    readForm(html, form) {
-      return html === `FORM:${form}` ? forms[form as keyof typeof forms] : undefined;
-    },
-  };
-  return { gets, port };
-}
+const removeAll = (state: LattesState, name: string) => {
+  const parents: XElement[] = [];
+  walk(state.root, (el) => {
+    if (childElements(el, name).length) parents.push(el);
+  });
+  for (const p of parents) for (const c of childElements(p, name)) state.remove(p, c);
+};
 
 describe('fingerprint', () => {
   it('guarda nome, tipo e limite, junta os rádios e ignora botões e valores', () => {
@@ -172,8 +130,8 @@ describe('compareForm', () => {
 
 describe('checkContract', () => {
   it('lê o menu e um exemplar de cada formulário, sem gravar', async () => {
-    const { gets, port } = fakeLattes();
-    const report = await checkContract(port);
+    const lattes = await lattesFor();
+    const report = await checkContract(lattes.port);
     expect(report.status).toBe('ok');
     expect(report.menu).toEqual([
       { found: true, proc: 'pkg_ativ.lista' },
@@ -185,17 +143,20 @@ describe('checkContract', () => {
       ['resumo', 'ok'],
       ['vinculo', 'ok'],
     ]);
-    expect(gets.some((p) => p.startsWith('PKG_ATIV.vinculos?'))).toBe(true);
+    expect(gets(lattes).some((p) => p.startsWith('PKG_ATIV.vinculos?'))).toBe(true);
+    expect(lattes.state.log.some((l) => l.method === 'POST')).toBe(false);
     expect(report.checkedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
   it('aponta o campo que sumiu e o que apareceu', async () => {
-    const idioma = controlsFrom(LATTES_CONTRACT.forms.idioma.fields).filter(
-      (c) => c.name !== 'F_COMPR',
-    );
-    idioma.push({ name: 'F_NOVO', type: 'text', value: '' });
-    const { port } = fakeLattes({ forms: { GN_IDIOMA: idioma } });
-    const report = await checkContract(port);
+    const lattes = await lattesFor({
+      intercept: faults.rewritePages(/^pkg_idioma\.form$/i, (html) =>
+        html
+          .replace(/<input type="radio" name="F_COMPR"[^>]*>/g, '')
+          .replace('</form>', '<input type="text" name="F_NOVO" value=""></form>'),
+      ),
+    });
+    const report = await checkContract(lattes.port);
     expect(report.status).toBe('mudou');
     const form = report.forms.find((f) => f.kind === 'idioma')!;
     expect(form.status).toBe('mudou');
@@ -208,25 +169,35 @@ describe('checkContract', () => {
   });
 
   it('aponta o modo do formulário fora de alteração', async () => {
-    const { port } = fakeLattes({
-      forms: { RES: controlsFrom(LATTES_CONTRACT.forms.resumo.fields, 'I') },
+    const lattes = await lattesFor({
+      intercept: faults.rewritePages(/^pkg_resume\./i, (html) =>
+        html.replace('name="f_ctr" value="U"', 'name="f_ctr" value="I"'),
+      ),
     });
-    const report = await checkContract(port);
+    const report = await checkContract(lattes.port);
     expect(report.forms.find((f) => f.kind === 'resumo')!.drifts).toEqual([
       { expected: 'U', field: 'f_ctr', form: 'RES', kind: 'modo-mudou', observed: 'I' },
     ]);
   });
 
   it('aponta o formulário que não está mais na página', async () => {
-    const { port } = fakeLattes({ forms: { GN_ATIV_VINC: undefined } });
-    const report = await checkContract(port);
+    const lattes = await lattesFor({
+      intercept: faults.rewritePages(/^PKG_ATIV\.vinculos$/i, (html) =>
+        html.replace('name="GN_ATIV_VINC"', 'name="OUTRO"'),
+      ),
+    });
+    const report = await checkContract(lattes.port);
     const form = report.forms.find((f) => f.kind === 'vinculo')!;
     expect(form.status).toBe('mudou');
     expect(form.drifts[0]!.kind).toBe('formulario-sumiu');
   });
 
   it('aponta os links que sumiram do menu', async () => {
-    const { port } = fakeLattes({ menu: '<a href="pkg_resume.prc_resume?f_cod=K000000000">R</a>' });
+    const lattes = await lattesFor();
+    const port = {
+      ...lattes.port,
+      menuHtml: () => `<a href="pkg_resume.prc_resume?f_cod=${lattes.state.code}">R</a>`,
+    };
     const report = await checkContract(port);
     expect(report.status).toBe('mudou');
     expect(report.menu.filter((m) => !m.found).map((m) => m.proc)).toEqual([
@@ -241,41 +212,58 @@ describe('checkContract', () => {
   });
 
   it('sem idioma, atuação ou vínculo no currículo, fica sem amostra', async () => {
-    const { port } = fakeLattes({ noIdioma: true, noVinculo: true });
-    const report = await checkContract(port);
+    const lattes = await lattesFor();
+    removeAll(lattes.state, 'IDIOMA');
+    removeAll(lattes.state, 'VINCULOS');
+    const report = await checkContract(lattes.port);
     expect(report.status).toBe('ok');
     expect(report.forms.map((f) => f.status)).toEqual(['sem-amostra', 'ok', 'sem-amostra']);
-    const semAtuacao = await checkContract(fakeLattes({ noAtuacao: true }).port);
-    expect(semAtuacao.forms.find((f) => f.kind === 'vinculo')!.detail).toContain('atuação');
+    const semAtuacao = await lattesFor();
+    removeAll(semAtuacao.state, 'ATUACAO-PROFISSIONAL');
+    const report2 = await checkContract(semAtuacao.port);
+    expect(report2.forms.find((f) => f.kind === 'vinculo')!.detail).toContain('atuação');
   });
 
   it('procura o vínculo em todas as atuações, não só na primeira', async () => {
-    const { gets, port } = fakeLattes({ vinculoNaSegunda: true });
-    const report = await checkContract(port);
+    const lattes = await lattesFor();
+    const atuacoes = childElements(
+      findIn(lattes.state.root, (el) => el.name === 'ATUACOES-PROFISSIONAIS')!,
+      'ATUACAO-PROFISSIONAL',
+    );
+    // A primeira atuação fica sem vínculo; a segunda ganha um.
+    removeAll(lattes.state, 'VINCULOS');
+    const second = atuacoes[1]!;
+    second.children.push(element('VINCULOS', { 'ANO-INICIO': '2020', 'SEQUENCIA-HISTORICO': '1' }));
+    const report = await checkContract(lattes.port);
     expect(report.forms.find((f) => f.kind === 'vinculo')!.status).toBe('ok');
-    expect(gets.filter((g) => g.startsWith('PKG_ATIV.cargos_vinculos'))).toHaveLength(2);
+    expect(gets(lattes).filter((g) => g.startsWith('PKG_ATIV.cargos_vinculos'))).toHaveLength(2);
   });
 
   it('lacksSample aponta o formulário sem exemplar, e só ele', async () => {
-    const report = await checkContract(fakeLattes({ noVinculo: true }).port);
+    const lattes = await lattesFor();
+    removeAll(lattes.state, 'VINCULOS');
+    const report = await checkContract(lattes.port);
     expect(lacksSample(report, 'vinculo')?.form).toBe('GN_ATIV_VINC');
     expect(lacksSample(report, 'idioma')).toBeUndefined();
     expect(lacksSample(undefined, 'vinculo')).toBeUndefined();
-    const erro = await checkContract(fakeLattes({ throwAt: 'pkg_idioma.lista' }).port);
+    const erro = await checkContract(failingAt(lattes.port, 'pkg_idioma.lista'));
     expect(lacksSample(erro, 'vinculo')).toBeUndefined();
   });
 
   it('para quando a sessão caiu, no menu ou numa página', async () => {
-    const noMenu = await checkContract(fakeLattes({ menu: '<form action="pkg_sec.logon">' }).port);
+    const menu = await lattesFor({ intercept: logonAt(/^pkg_menu\.menu$/i) });
+    const noMenu = await checkContract(menu.port);
     expect(noMenu.status).toBe('sessao');
     expect(noMenu.forms).toEqual([]);
-    const later = await checkContract(fakeLattes({ logonAt: 'pkg_ativ.lista' }).port);
+    const page = await lattesFor({ intercept: logonAt(/^pkg_ativ\.lista$/i) });
+    const later = await checkContract(page.port);
     expect(later.status).toBe('sessao');
     expect(later.detail).toContain('sessão');
   });
 
   it('devolve erro quando a leitura falha', async () => {
-    const report = await checkContract(fakeLattes({ throwAt: 'pkg_idioma.lista' }).port);
+    const lattes = await lattesFor();
+    const report = await checkContract(failingAt(lattes.port, 'pkg_idioma.lista'));
     expect(report.status).toBe('erro');
     expect(report.detail).toBe('rede caiu');
     expect(blocksKind(report, 'idioma')).toEqual([]);
@@ -283,21 +271,27 @@ describe('checkContract', () => {
   });
 
   it('confere as listas pelo código do currículo do menu', async () => {
-    const report = await checkContract(fakeLattes().port);
+    const report = await checkContract((await lattesFor()).port);
     expect(report.status).toBe('ok');
     expect(report.lists?.map((l) => l.status)).toEqual(ALL_LISTS.map(() => 'ok'));
   });
 
   it('menu sem o código do currículo não passa as listas sem conferir', async () => {
-    const menu = MENU.replaceAll('K000000000', 'x');
-    const report = await checkContract(fakeLattes({ menu }).port);
+    const lattes = await lattesFor();
+    const code = lattes.state.code;
+    const port = {
+      ...lattes.port,
+      menuHtml: async () => (await lattes.port.menuHtml()).replaceAll(code, 'x'),
+    };
+    const report = await checkContract(port);
     expect(report.status).toBe('mudou');
     expect(report.lists?.map((l) => l.status)).toEqual(ALL_LISTS.map(() => 'erro'));
     expect(report.lists?.[0]?.detail).toBe('O código do currículo não está no menu');
   });
 
   it('falha ao ler o formulário de uma lista não derruba o relatório', async () => {
-    const report = await checkContract(fakeLattes({ throwAt: 'PKG_EVENTO.form' }).port);
+    const lattes = await lattesFor();
+    const report = await checkContract(failingAt(lattes.port, 'PKG_EVENTO.form'));
     expect(report.status).toBe('mudou');
     expect(report.forms.length).toBeGreaterThan(0);
     const events = report.lists?.find((l) => l.control === 'F_COD_PROD');
@@ -306,8 +300,12 @@ describe('checkContract', () => {
   });
 
   it('confere as fontes das listas lidas ao vivo: a tabela de áreas e as agências', async () => {
-    const menu = MENU.replace(/<script>[\s\S]*<\/script>/, '');
-    const report = await checkContract(fakeLattes({ menu, throwAt: 'prc_agencia' }).port);
+    const lattes = await lattesFor({
+      intercept: faults.rewritePages(/^pkg_menu\.menu$/i, (html) =>
+        html.replace(/<script>var areaDP[\s\S]*?<\/script>/, ''),
+      ),
+    });
+    const report = await checkContract(failingAt(lattes.port, 'prc_agencia'));
     expect(report.status).toBe('mudou');
     const sources = report.lists?.slice(WATCHED_LISTS.length);
     expect(sources?.map((l) => [l.control, l.status])).toEqual([
@@ -317,12 +315,13 @@ describe('checkContract', () => {
     expect(reportText(report, '1.0.0')).toContain(
       'Áreas do conhecimento: a tabela areaDP do menu sumiu',
     );
-    const gone = await checkContract(fakeLattes({ logonAt: 'prc_agencia' }).port);
-    expect(gone.status).toBe('sessao');
+    const gone = await lattesFor({ intercept: logonAt(/^prc_agencia$/i) });
+    expect((await checkContract(gone.port)).status).toBe('sessao');
   });
 
   it('sessão caída no formulário de uma lista ainda para tudo', async () => {
-    const report = await checkContract(fakeLattes({ logonAt: 'PKG_EVENTO.form' }).port);
+    const lattes = await lattesFor({ intercept: logonAt(/^PKG_EVENTO\.form$/i) });
+    const report = await checkContract(lattes.port);
     expect(report.status).toBe('sessao');
   });
 
@@ -334,7 +333,7 @@ describe('checkContract', () => {
       },
       menu: ['pkg_resume.'],
     };
-    const report = await checkContract(fakeLattes().port, contract);
+    const report = await checkContract((await lattesFor()).port, contract);
     expect(report.menu).toHaveLength(1);
     expect(report.forms.find((f) => f.kind === 'resumo')!.drifts.map((d) => d.kind)).toEqual(
       Array<string>(6).fill('campo-novo'),

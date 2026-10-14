@@ -4,6 +4,8 @@
 
 export interface UploadedFile {
   bytes: Uint8Array;
+  /** O nome do campo do arquivo no formulário. */
+  field: string;
   name: string;
   type: string;
 }
@@ -76,6 +78,7 @@ export function parseMultipart(
     if (fileName !== undefined) {
       file = {
         bytes: new Uint8Array(Buffer.from(content, 'latin1')),
+        field: name,
         name: fileName,
         type: /content-type:\s*([^\r\n]+)/i.exec(headers)?.[1]?.trim() ?? '',
       };

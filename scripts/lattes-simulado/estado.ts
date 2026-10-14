@@ -62,9 +62,13 @@ export interface ImportRequest {
 /** Um pedido recebido, para o teste conferir o caminho percorrido. */
 export interface LoggedRequest {
   ctr?: string;
+  /** O arquivo de um POST multipart: o campo e o nome. */
+  file?: { field: string; name: string };
   method: string;
   /** Os campos de um POST, na ordem em que vieram. */
   pairs?: [string, string][];
+  /** O procedimento com a query, como veio no caminho. */
+  path: string;
   proc: string;
 }
 

@@ -1,9 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
-import { applyOp, type LattesPort } from '../src/bridge/apply.ts';
+import { applyOp } from '../src/bridge/apply.ts';
 import {
   BIOGRAPHIC_OPS_ENABLED,
-  BIOGRAPHIC_SPECS,
   biographicContract,
   type BiographicOp,
   biographicSample,
@@ -13,15 +12,21 @@ import {
   blocksKind,
   checkContract,
   type Contract,
-  type FieldSpec,
   LATTES_CONTRACT,
 } from '../src/bridge/contract.ts';
 import { opRows } from '../src/bridge/field-labels.ts';
-import type { FormControl } from '../src/bridge/form.ts';
 import { planChanges } from '../src/bridge/plan.ts';
 import { sentEntry, undoOp } from '../src/bridge/sent-log.ts';
 import { diffDocuments, resolvePath } from '../src/model/changes.ts';
-import { parseXml, setAttr, type XElement } from '../src/model/xml.ts';
+import { encodeLatin1 } from '../src/model/latin1.ts';
+import { getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
+import {
+  faults,
+  findIn,
+  type LattesSimuladoNoTeste,
+  postsOf,
+  withLattesSimulado,
+} from './helpers/lattes-simulado.ts';
 
 const XML = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1">
 <DADOS-GERAIS NOME-COMPLETO="Pessoa de Teste" NACIONALIDADE="B" SEXO="MASCULINO">
@@ -272,152 +277,37 @@ describe('dados gerais: endereço e identificação', () => {
   });
 });
 
-// ---------------------------------------------------------------- Lattes falso
+// ---------------------------------------------------------------- Lattes simulado
 
-function decodeForm(body: string): [string, string][] {
-  return body.split('&').map((part) => {
-    const [k, v = ''] = part.split('=');
-    const dec = (s: string) =>
-      s
-        .replace(/\+/g, ' ')
-        .replace(/%([0-9A-F]{2})/gi, (_, h: string) => String.fromCharCode(parseInt(h, 16)));
-    return [dec(k!), dec(v)];
+// O Lattes do teste é o simulado (scripts/lattes-simulado/), com o currículo
+// do XML acima: a lista de formação, o endereço e a identificação vêm dele.
+let open: LattesSimuladoNoTeste | undefined;
+afterEach(async () => {
+  await open?.close();
+  open = undefined;
+});
+
+async function lattesFor(options: Parameters<typeof withLattesSimulado>[0] = {}) {
+  await open?.close();
+  open = await withLattesSimulado({
+    xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${XML}`),
+    ...options,
   });
+  return open;
 }
 
-interface FakeOptions {
-  /** O formulário vem em outro modo. */
-  ctr?: string;
-  /** f_nacionalidade como o GET a traz (o JavaScript da página preenche). */
-  nacionalidade?: string;
-  /** Sem formação nenhuma na lista. */
-  noFormacao?: boolean;
-  /** O POST também muda outro campo. */
-  sideEffect?: [string, string];
-}
+const inState = (lattes: LattesSimuladoNoTeste, name: string, seq?: string) =>
+  findIn(
+    lattes.state.root,
+    (el) => el.name === name && (seq === undefined || getAttr(el, 'SEQUENCIA-FORMACAO') === seq),
+  )!;
 
-/** Um Lattes falso com a lista de formação, o endereço e a identificação. */
-function fakeLattes(opts: FakeOptions = {}) {
-  const formacao = (seq: string, nivel: string, values: Record<string, string>) => ({
-    f_ano_fim: '',
-    f_ano_ini: '',
-    f_ano_obten: '',
-    f_cod: 'K000000000',
-    f_ctr: opts.ctr ?? 'U',
-    f_nivel: nivel,
-    f_seq: seq,
-    f_tipo: 'FA',
-    f_titulo: '',
-    F_STATUS: '',
-    ...values,
-  });
-  const forms: Record<string, Record<string, string>> = {
-    'formacao:1': formacao('1', '3', {
-      f_ano_ini: '2006',
-      f_titulo: 'Dissertação',
-      F_STATUS: 'N',
-    }),
-    'formacao:2': formacao('2', '1', {
-      f_ano_fim: '2004',
-      f_ano_ini: '2001',
-      f_titulo: 'TCC',
-      F_STATUS: 'S',
-    }),
-    endereco: {
-      ...Object.fromEntries(
-        Object.keys(BIOGRAPHIC_SPECS.endereco.fields).map((name) => [name, '']),
-      ),
-      f_bairro_i: 'Centro',
-      f_bairro_r: 'Fragata',
-      f_cep_i: '90000000',
-      f_cep_r: '96000000',
-      f_ctr: opts.ctr ?? 'U',
-      f_ddd_i: '51',
-      f_email_i: 'a@example.org',
-      f_estado_i: 'RS',
-      f_estado_r: 'RS',
-      f_fone_i: '33330000',
-      f_munic_i: 'Porto Alegre',
-      f_munic_r: 'Pelotas',
-      f_rua_i: 'Rua A, 1',
-      f_rua_r: 'Rua B, 2',
-    },
-    identificacao: {
-      f_ctr: opts.ctr ?? 'U',
-      f_nacionalidade: opts.nacionalidade ?? 'B',
-      f_nome: 'Pessoa de Teste',
-    },
-  };
-  const posts: { body: string; path: string }[] = [];
+const posts = (lattes: LattesSimuladoNoTeste) => postsOf(lattes).map((p) => p.proc);
 
-  const controls = (kind: keyof typeof BIOGRAPHIC_SPECS, state: Record<string, string>) => {
-    const out: FormControl[] = [];
-    // Os campos do contrato, mais os do estado que ficaram fora dele (o ano de
-    // obtenção e o título da formação), como texto.
-    const fields: Record<string, FieldSpec> = {
-      ...Object.fromEntries(Object.keys(state).map((name) => [name, { type: 'text' }])),
-      ...BIOGRAPHIC_SPECS[kind].fields,
-    };
-    for (const [name, spec] of Object.entries(fields)) {
-      if (spec.type === 'radio') {
-        for (const v of ['N', 'S', 'I']) {
-          out.push({ checked: state[name] === v, name, type: 'radio', value: v });
-        }
-        continue;
-      }
-      out.push({ maxLength: spec.maxLength, name, type: spec.type, value: state[name] ?? '' });
-    }
-    return out;
-  };
-
-  const formacaoLinks = opts.noFormacao
-    ? ''
-    : `<a href="pkg_formacao.form?f_cod=K000000000&amp;f_seq=1&amp;f_tipo=FA">Mestrado</a>
-       <a href="pkg_formacao.form?f_cod=K000000000&amp;f_seq=2&amp;f_tipo=FA">Graduação</a>`;
-
-  const port: LattesPort = {
-    async get(path) {
-      if (path.startsWith('pkg_formacao.lista')) {
-        return `${formacaoLinks}<a href="pkg_formacao.form?f_cod=K000000000&amp;f_tipo=FA&amp;f_nivel=9">Incluir</a>`;
-      }
-      if (path.startsWith('pkg_formacao.form')) {
-        return `FORM:formacao:${/f_seq=(\d+)/.exec(path)?.[1] ?? ''}`;
-      }
-      if (path.startsWith('prc_endereco')) return 'FORM:endereco';
-      if (path.startsWith('prc_ident')) return 'FORM:identificacao';
-      return '';
-    },
-    menuHtml: () =>
-      `<a onclick="modalCV1.setarUrl(&quot;pkg_formacao.lista?f_cod=K000000000&amp;f_tipo=AP&quot;, true)">Pós</a>
-       <a onclick="modalCV1.setarUrl(&quot;pkg_formacao.lista?f_cod=K000000000&amp;f_tipo=FA&quot;, true)">Formação</a>
-       <a onclick="modalCV1.setarUrl(&quot;prc_endereco?f_cod=K000000000&quot;, true)">Endereço</a>
-       <a onclick="modalCV1.setarUrl(&quot;prc_ident?f_cod=K000000000&amp;f_pcd=N&quot;, true)">Identificação</a>`,
-    async post(path, body) {
-      posts.push({ body, path });
-      const pairs = decodeForm(body);
-      const key =
-        path === 'pkg_formacao.FORM'
-          ? `formacao:${pairs.find(([k]) => k === 'f_seq')?.[1]}`
-          : path === 'PRC_ENDERECO'
-            ? 'endereco'
-            : 'identificacao';
-      const state = forms[key]!;
-      for (const name of Object.keys(state)) {
-        state[name] = pairs.find(([k]) => k === name)?.[1] ?? '';
-      }
-      if (opts.sideEffect) state[opts.sideEffect[0]] = opts.sideEffect[1];
-      return '<script>self.parent.modalCV1.setarUrl("x", true)</script>';
-    },
-    readForm(html, form) {
-      const key = /^FORM:(.+)$/.exec(html)?.[1];
-      const state = key && forms[key];
-      if (!state) return undefined;
-      const kind = key.split(':')[0] as keyof typeof BIOGRAPHIC_SPECS;
-      return form === BIOGRAPHIC_SPECS[kind].name ? controls(kind, state) : undefined;
-    },
-  };
-  return { forms, port, posts };
-}
+/** Os formulários de dados gerais em outro modo (f_ctr). */
+const otherMode = faults.rewritePages(/^(pkg_formacao\.form|prc_endereco|prc_ident)$/i, (html) =>
+  html.replace('name="f_ctr" value="U"', 'name="f_ctr" value="I"'),
+);
 
 const mestradoOp = () =>
   onlyOp(
@@ -428,82 +318,92 @@ const mestradoOp = () =>
     }),
   );
 
-describe('dados gerais no Lattes falso', () => {
+describe('dados gerais no Lattes simulado', () => {
   it('formação: acha a linha pelo f_seq, envia só os campos e confere', async () => {
-    const fake = fakeLattes();
-    expect(await applyOp(mestradoOp(), fake.port)).toMatchObject({ status: 'conferido' });
-    expect(fake.posts.map((p) => p.path)).toEqual(['pkg_formacao.FORM']);
-    expect(fake.forms['formacao:1']).toMatchObject({
-      f_ano_fim: '2007',
-      f_ano_ini: '2006',
-      f_nivel: '3',
-      f_titulo: 'Dissertação revista',
-      F_STATUS: 'S',
-    });
+    const lattes = await lattesFor();
+    expect(await applyOp(mestradoOp(), lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(posts(lattes)).toEqual(['pkg_formacao.FORM']);
+    const mestrado = inState(lattes, 'MESTRADO');
+    expect(getAttr(mestrado, 'ANO-DE-CONCLUSAO')).toBe('2007');
+    expect(getAttr(mestrado, 'ANO-DE-INICIO')).toBe('2006');
+    expect(getAttr(mestrado, 'NIVEL')).toBe('3');
+    expect(getAttr(mestrado, 'TITULO-DA-DISSERTACAO-TESE')).toBe('Dissertação revista');
+    expect(getAttr(mestrado, 'STATUS-DO-CURSO')).toBe('CONCLUIDO');
     // A outra formação ficou como estava.
-    expect(fake.forms['formacao:2']).toMatchObject({ f_titulo: 'TCC', F_STATUS: 'S' });
+    const graduacao = inState(lattes, 'GRADUACAO');
+    expect(getAttr(graduacao, 'TITULO-DO-TRABALHO-DE-CONCLUSAO-DE-CURSO')).toBe('TCC');
+    expect(getAttr(graduacao, 'STATUS-DO-CURSO')).toBe('CONCLUIDO');
   });
 
   it('formação: desfazer volta ao que estava', async () => {
-    const fake = fakeLattes();
+    const lattes = await lattesFor();
     const op = mestradoOp();
-    expect(await applyOp(op, fake.port)).toMatchObject({ status: 'conferido' });
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
     const undo = undoOp({ ...sentEntry(op, '1', 1), id: 7 })!;
     expect(undo.set).toMatchObject({ f_ano_fim: '', f_titulo: 'Dissertação', F_STATUS: 'N' });
-    expect(await applyOp(undo, fake.port)).toMatchObject({ status: 'conferido' });
-    expect(fake.forms['formacao:1']).toMatchObject({
-      f_ano_fim: '',
-      f_titulo: 'Dissertação',
-      F_STATUS: 'N',
-    });
+    expect(await applyOp(undo, lattes.port)).toMatchObject({ status: 'conferido' });
+    const mestrado = inState(lattes, 'MESTRADO');
+    expect(getAttr(mestrado, 'ANO-DE-CONCLUSAO')).toBe('');
+    expect(getAttr(mestrado, 'TITULO-DA-DISSERTACAO-TESE')).toBe('Dissertação');
+    expect(getAttr(mestrado, 'STATUS-DO-CURSO')).toBe('EM_ANDAMENTO');
   });
 
   it('formação: para antes de enviar quando algo não confere', async () => {
     // Nível diferente: a linha do Lattes não é a que o editor pensa.
-    const wrong = fakeLattes();
-    wrong.forms['formacao:1']!.f_nivel = '4';
+    const wrong = await lattesFor();
+    setAttr(inState(wrong, 'MESTRADO'), 'NIVEL', '4');
     expect(await applyOp(mestradoOp(), wrong.port)).toMatchObject({
       detail: expect.stringMatching(/f_nivel/),
       status: 'divergente',
     });
-    expect(wrong.posts).toEqual([]);
+    expect(posts(wrong)).toEqual([]);
     // Sem a linha na lista.
-    const none = fakeLattes({ noFormacao: true });
+    const none = await lattesFor();
+    const fa = inState(none, 'FORMACAO-ACADEMICA-TITULACAO');
+    for (const name of ['MESTRADO', 'GRADUACAO']) none.state.remove(fa, inState(none, name));
     expect(await applyOp(mestradoOp(), none.port)).toMatchObject({
       detail: 'Formação 1 não encontrada no Lattes (0 achadas)',
       status: 'erro',
     });
     // Sem a lista no menu.
-    const noMenu = { ...fakeLattes().port, menuHtml: () => '<p>menu</p>' };
+    const noMenu = { ...(await lattesFor()).port, menuHtml: () => '<p>menu</p>' };
     expect(await applyOp(mestradoOp(), noMenu)).toMatchObject({
       detail: 'Formação acadêmica não encontrada no menu do Lattes',
       status: 'erro',
     });
     // Fora do modo de alteração.
-    expect(await applyOp(mestradoOp(), fakeLattes({ ctr: 'I' }).port)).toMatchObject({
+    expect(
+      await applyOp(mestradoOp(), (await lattesFor({ intercept: otherMode })).port),
+    ).toMatchObject({
       detail: expect.stringMatching(/modo de alteração/),
       status: 'erro',
     });
     // Sessão caída na lista.
-    const logon = {
-      ...fakeLattes().port,
-      get: async () => "<script>location = 'pkg_sec.logon?f_cod=ini';</script>",
-    };
-    expect(await applyOp(mestradoOp(), logon)).toMatchObject({ status: 'sessao' });
+    const logon = await lattesFor({ intercept: faults.logonAtGet(1) });
+    expect(await applyOp(mestradoOp(), logon.port)).toMatchObject({ status: 'sessao' });
   });
 
   it('endereço: grava só o residencial e confere que o resto não mudou', async () => {
-    const fake = fakeLattes();
+    const lattes = await lattesFor();
     const op = onlyOp((root) => setAttr(find(root, 'ENDERECO-RESIDENCIAL'), 'BAIRRO', 'Centro'));
-    expect(await applyOp(op, fake.port)).toMatchObject({ status: 'conferido' });
-    expect(fake.posts.map((p) => p.path)).toEqual(['PRC_ENDERECO']);
-    expect(fake.forms.endereco).toMatchObject({ f_bairro_i: 'Centro', f_bairro_r: 'Centro' });
-    const side = fakeLattes({ sideEffect: ['f_rua_i', 'outra'] });
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(posts(lattes)).toEqual(['PRC_ENDERECO']);
+    expect(getAttr(inState(lattes, 'ENDERECO-PROFISSIONAL'), 'BAIRRO')).toBe('Centro');
+    expect(getAttr(inState(lattes, 'ENDERECO-RESIDENCIAL'), 'BAIRRO')).toBe('Centro');
+    const side = await lattesFor({
+      intercept: faults.afterPost((_req, state) =>
+        setAttr(
+          findIn(state.root, (el) => el.name === 'ENDERECO-PROFISSIONAL')!,
+          'LOGRADOURO-COMPLEMENTO',
+          'outra',
+        ),
+      ),
+    });
     expect(await applyOp(op, side.port)).toMatchObject({
       detail: 'Outros campos mudaram no Lattes: f_rua_i',
       status: 'erro',
     });
-    const noMenu = { ...fakeLattes().port, menuHtml: () => '<p>menu</p>' };
+    const noMenu = { ...side.port, menuHtml: () => '<p>menu</p>' };
     expect(await applyOp(op, noMenu)).toMatchObject({
       detail: 'Endereço não encontrado no menu do Lattes',
       status: 'erro',
@@ -511,28 +411,31 @@ describe('dados gerais no Lattes falso', () => {
   });
 
   it('endereço: o limite do campo vale antes de enviar', async () => {
-    const fake = fakeLattes();
+    const lattes = await lattesFor();
     const op = onlyOp((root) =>
       setAttr(find(root, 'ENDERECO-PROFISSIONAL'), 'CEP', '9'.repeat(16)),
     );
-    expect(await applyOp(op, fake.port)).toMatchObject({
+    expect(await applyOp(op, lattes.port)).toMatchObject({
       detail: 'f_cep_i passa do limite do Lattes (15 caracteres)',
       status: 'erro',
     });
-    expect(fake.posts).toEqual([]);
+    expect(posts(lattes)).toEqual([]);
   });
 
   it('identificação: grava o nome; com a nacionalidade vazia no GET, não envia', async () => {
     const op = onlyOp((root) => setAttr(find(root, 'DADOS-GERAIS'), 'NOME-COMPLETO', 'Outro Nome'));
-    const fake = fakeLattes();
-    expect(await applyOp(op, fake.port)).toMatchObject({ status: 'conferido' });
-    expect(fake.forms.identificacao).toMatchObject({ f_nacionalidade: 'B', f_nome: 'Outro Nome' });
-    const empty = fakeLattes({ nacionalidade: '' });
+    const lattes = await lattesFor();
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    const general = inState(lattes, 'DADOS-GERAIS');
+    expect(getAttr(general, 'NACIONALIDADE')).toBe('B');
+    expect(getAttr(general, 'NOME-COMPLETO')).toBe('Outro Nome');
+    const empty = await lattesFor();
+    setAttr(inState(empty, 'DADOS-GERAIS'), 'NACIONALIDADE', '');
     expect(await applyOp(op, empty.port)).toMatchObject({
       detail: expect.stringMatching(/f_nacionalidade/),
       status: 'divergente',
     });
-    expect(empty.posts).toEqual([]);
+    expect(posts(empty)).toEqual([]);
   });
 });
 
@@ -548,39 +451,66 @@ const contractOn = (): Contract => {
 
 describe('dados gerais no contrato', () => {
   it('com a chave ligada, confere os três formulários só lendo', async () => {
-    const fake = fakeLattes();
-    const report = await checkContract(fake.port, contractOn());
+    const lattes = await lattesFor();
+    const report = await checkContract(lattes.port, contractOn());
     for (const kind of ['endereco', 'identificacao']) {
       expect(report.forms.find((f) => f.kind === kind)).toMatchObject({ status: 'ok' });
     }
-    // Ano de obtenção e título ficam fora do contrato (não existem em todo
-    // nível): na formação que tem, aparecem como campo novo, que não trava.
+    // O contrato da formação é parcial: ano de obtenção, título e os outros
+    // campos do formulário (seção 17) aparecem como campo novo, que não trava.
     const formacao = report.forms.find((f) => f.kind === 'formacao')!;
-    expect(formacao.drifts.map((d) => [d.kind, d.field])).toEqual([
-      ['campo-novo', 'f_ano_obten'],
-      ['campo-novo', 'f_titulo'],
+    expect(formacao.drifts.every((d) => d.kind === 'campo-novo')).toBe(true);
+    expect(formacao.drifts.map((d) => d.field)).toEqual([
+      'f_tpo_doutorado',
+      'f_inst',
+      'f_curso',
+      'f_mes_obten',
+      'f_ano_obten',
+      'F_BOLSA',
+      'f_nme_agencia',
+      'f_titulo',
+      'f_orient',
+      'f_coorient',
+      'f_plv_l',
+      'f_setor_l',
+      'f_area_l',
+      'f_tipo_privacidade',
+      'f_cod_inst',
+      'f_cod_inst2',
+      'f_inst_old',
+      'f_cod_curso',
+      'f_cod_curso2',
+      'f_curso_old',
+      'f_agencia',
+      'f_id_orientador',
+      'f_seq_orientacao',
+      'f_carga',
     ]);
     expect(blocksKind(report, 'formacao')).toEqual([]);
-    // O Lattes falso só tem os links dos dados gerais no menu.
-    expect(report.menu.filter((m) => m.found).map((m) => m.proc)).toEqual([
-      'pkg_formacao.lista',
-      'prc_endereco',
-      'prc_ident',
-    ]);
-    expect(fake.posts).toEqual([]);
+    expect(report.menu.every((m) => m.found)).toBe(true);
+    expect(report.menu.map((m) => m.proc)).toEqual(contractOn().menu);
+    expect(postsOf(lattes)).toEqual([]);
   });
 
   it('aponta modo errado, formação sem exemplar e link sumido', async () => {
-    const wrongMode = await checkContract(fakeLattes({ ctr: 'I' }).port, contractOn());
+    const wrongMode = await checkContract(
+      (await lattesFor({ intercept: otherMode })).port,
+      contractOn(),
+    );
     expect(wrongMode.forms.find((f) => f.kind === 'identificacao')?.drifts).toContainEqual(
       expect.objectContaining({ expected: 'U', kind: 'modo-mudou', observed: 'I' }),
     );
-    const empty = await checkContract(fakeLattes({ noFormacao: true }).port, contractOn());
+    const semFormacao = await lattesFor();
+    const fa = inState(semFormacao, 'FORMACAO-ACADEMICA-TITULACAO');
+    for (const name of ['MESTRADO', 'GRADUACAO']) {
+      semFormacao.state.remove(fa, inState(semFormacao, name));
+    }
+    const empty = await checkContract(semFormacao.port, contractOn());
     expect(empty.forms.find((f) => f.kind === 'formacao')).toMatchObject({
       detail: 'O currículo não tem formação acadêmica',
       status: 'sem-amostra',
     });
-    const noMenu = { ...fakeLattes().port, menuHtml: () => '<p>menu</p>' };
+    const noMenu = { ...semFormacao.port, menuHtml: () => '<p>menu</p>' };
     const gone = await checkContract(noMenu, contractOn());
     for (const [kind, proc] of [
       ['formacao', 'pkg_formacao.lista'],
@@ -595,14 +525,15 @@ describe('dados gerais no contrato', () => {
   });
 
   it('o exemplar da formação ignora a lista de pós-doutorado e o link de inclusão', async () => {
-    const fake = fakeLattes();
-    const found = await biographicSample('formacao', await fake.port.menuHtml(), fake.port.get);
-    expect(found).toEqual({ path: 'pkg_formacao.form?f_cod=K000000000&f_seq=1&f_tipo=FA' });
-    const sample = await biographicSample(
-      'identificacao',
-      await fake.port.menuHtml(),
-      fake.port.get,
-    );
-    expect(sample).toEqual({ path: 'prc_ident?f_cod=K000000000&f_pcd=N' });
+    const lattes = await lattesFor();
+    const code = lattes.state.code;
+    const menu = await lattes.port.menuHtml();
+    // O menu tem também a lista de pós-doutorado (f_tipo=AP); o exemplar sai só da FA.
+    expect(menu).toContain('f_tipo=AP');
+    const found = await biographicSample('formacao', menu, lattes.port.get);
+    // A primeira linha da lista, a graduação (f_seq 2), e não o pós-doutorado.
+    expect(found).toEqual({ path: `pkg_formacao.form?f_cod=${code}&f_seq=2&f_tipo=FA` });
+    const sample = await biographicSample('identificacao', menu, lattes.port.get);
+    expect(sample).toEqual({ path: `prc_ident?f_cod=${code}&f_pcd=N` });
   });
 });
