@@ -99,6 +99,19 @@ que o painel "Enviar ao Lattes" mostra item por item:
 - **O resto** fica **à mão**, campo a campo, com o valor antigo e o novo lado a
   lado.
 
+Formação acadêmica, atuação profissional, projeto e patente também se criam no
+editor (`src/model/general-items.ts`, formulário em
+`src/forms/GeneralItemForm.tsx`), mas nenhum módulo do Importar lê essas
+seções. O item novo é uma alteração como as outras: o conector o inclui quando
+souber (a inclusão de atuação existe em `src/bridge/create.ts`, desligada), e
+fora isso ele vai à mão. Por isso "item novo de produção" quer dizer item com
+`SEQUENCIA-PRODUCAO` nova **e** tipo que um módulo do Importar lê
+(`isPendingImport`, em `src/model/production.ts`): a patente usa o contador
+global, mas não vai pelo Importar. As sequências biográficas
+(`SEQUENCIA-FORMACAO`, `SEQUENCIA-ATIVIDADE`, `SEQUENCIA-PROJETO`) ficam acima
+da maior da cópia de trabalho e da exportação carregada. O projeto entra numa
+`PARTICIPACAO-EM-PROJETO` nova, dentro da atuação escolhida no formulário.
+
 A decisão de 13/10/2026 sobre duplicatas (só o que é novo vai pelo Importar;
 alteração no lugar; exclusão pelo formulário) está no
 [guia de implementação](lattes_implementation_guide.md), seção 1, e nos
@@ -149,7 +162,7 @@ pelo `window.postMessage` da própria página, por um content script
 | `src/model/`         | Árvore XML, carga e gravação (ZIP e XML, Latin-1), diferenças, validação, banco cifrado                   |
 | `src/schema/`        | Modelo gerado do XSD, tipos derivados, listas do Lattes                                                   |
 | `src/ui/`            | A interface: seções, formulários de atributo, sino, ⌘K, temas, foto, primeiro uso                         |
-| `src/forms/`         | Formulários dos itens de produção (autores, áreas, palavras-chave) e o "Novo item"                        |
+| `src/forms/`         | Formulários de item novo: produção (autores, áreas, palavras-chave), formação, atuação, projeto e patente |
 | `src/import-export/` | O painel "Enviar ao Lattes", o arquivo do Importar, o ZIP, o registro do enviado                          |
 | `src/bridge/`        | O núcleo do conector, usado pela extensão e pelo editor: protocolo, plano, aplicação, leituras do Lattes  |
 | `src/review/`        | Diagnóstico do currículo e o que mudou no Lattes desde a exportação                                       |

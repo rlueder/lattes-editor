@@ -8,6 +8,7 @@
 // INFORMACOES-ADICIONAIS só quando preenchidos.
 
 import { IMPORT_MODULES, type ImportModule } from '../import-export/importable.ts';
+import { lattesSchema } from '../schema/lattes.ts';
 import { derivedValue } from '../schema/typed-choices.ts';
 import type { LattesSchema } from '../schema/types.ts';
 import { insertInSchemaOrder } from './schema-order.ts';
@@ -161,7 +162,7 @@ export function knownAuthors(doc: XDocument): Author[] {
  * FLAG-RELEVANCIA="NAO"). Os outros enums ficam vazios até alguém escolher, e
  * a validação impede exportar assim.
  */
-function emptyAttrs(schema: LattesSchema, name: string): XAttr[] {
+export function emptyAttrs(schema: LattesSchema, name: string): XAttr[] {
   return (schema.elements[name]?.attributes ?? [])
     .filter((a) => !a.name.startsWith('CPF'))
     .map((a) => {
@@ -268,12 +269,25 @@ export function removeProduction(doc: XDocument, sequencia: number): boolean {
   return removed;
 }
 
-/** Itens criados no editor: sequência acima do maior número da exportação carregada. */
+/** Nomes dos itens que algum módulo do Importar lê. */
+const IMPORTABLE_NAMES = new Set(importableTypes(lattesSchema).map((t) => t.itemName));
+
+/**
+ * Item novo que vai pelo Importar: sequência acima do maior número da
+ * exportação carregada e tipo que um módulo do Passo 2 lê. A patente também
+ * tem SEQUENCIA-PRODUCAO, mas o Importar não a leva: ela segue com as outras
+ * alterações (conector ou à mão).
+ */
+export function isPendingImport(el: XElement, loadedMax: number): boolean {
+  const n = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
+  return Number.isFinite(n) && n > loadedMax && IMPORTABLE_NAMES.has(el.name);
+}
+
+/** Itens criados no editor que vão pelo Importar (isPendingImport). */
 export function pendingItems(doc: XDocument, loadedMax: number): XElement[] {
   const items: XElement[] = [];
   walk(doc.root, (el) => {
-    const n = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
-    if (Number.isFinite(n) && n > loadedMax) items.push(el);
+    if (isPendingImport(el, loadedMax)) items.push(el);
   });
   return items;
 }

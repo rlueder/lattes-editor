@@ -5,7 +5,7 @@
 import { useId, useState } from 'react';
 
 import { elementLabel, slugify } from '../labels/labels.ts';
-import { SEQ_ATTR } from '../model/production.ts';
+import { isPendingImport, SEQ_ATTR } from '../model/production.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import { useEditor } from './editor-context.ts';
 import { type EditFn, ElementView } from './ElementView.tsx';
@@ -116,7 +116,7 @@ function ItemCard({
   // Ids dos títulos de subseção, para o índice do item no painel lateral.
   const outlineBase = useId();
   const seq = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
-  const isNew = Number.isFinite(seq) && seq > loadedMax;
+  const isNew = isPendingImport(el, loadedMax);
   return (
     <details className={isNew ? 'item card is-new' : 'item card'}>
       <summary>

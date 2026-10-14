@@ -19,7 +19,7 @@ import {
   NO_FILTER,
 } from './facets.ts';
 import { FilterBar } from './FilterBar.tsx';
-import { EyeIcon, EyeOffIcon } from './icons.tsx';
+import { EyeIcon, EyeOffIcon, PlusIcon } from './icons.tsx';
 import { ItemList } from './ItemList.tsx';
 import { JumpBar } from './JumpBar.tsx';
 import { type ListView, yearView } from './list-view.ts';
@@ -28,6 +28,7 @@ import { Tip } from './primitives/Tip.tsx';
 import { PrivacyContext, usePrivacyMode } from './privacy.ts';
 import { useReferenceIndex } from './reference-context.ts';
 import { type ReferenceIndex, viewForContainer } from './reference-tables.ts';
+import { NEW_GENERAL_LABELS } from './section-types.ts';
 import { countItems, groupItemList, type Section, type SectionGroup } from './sections.ts';
 import { StickyTitle } from './StickyTitle.tsx';
 import { useOpenItem } from './use-open-item.ts';
@@ -36,6 +37,8 @@ interface Props {
   section: Section;
   showEmpty: boolean;
   onEdit: EditFn;
+  /** Item novo de formação, atuação, projeto ou patente, pela seção. */
+  onNewGeneral: (sectionId: string) => void;
   onNewItem: (type: ProductionType) => void;
   onOpenPicker: () => void;
 }
@@ -60,7 +63,7 @@ export function SectionView(props: Props) {
   return <SectionBody key={props.section.id} {...props} />;
 }
 
-function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Props) {
+function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, showEmpty }: Props) {
   const index = useReferenceIndex();
   const [state, setState] = useState<FilterState>(NO_FILTER);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -74,6 +77,20 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
       Marcar itens
     </button>
   );
+  // Formação, atuação, projetos e patentes: o item novo pela própria seção. Na
+  // seção vazia o botão é o principal; com itens, fica discreto ao lado do título.
+  const newLabel = NEW_GENERAL_LABELS[section.id];
+  const newButton = (primary: boolean) =>
+    newLabel && (
+      <button
+        className={primary ? 'primary' : 'ghost mark-open'}
+        type="button"
+        onClick={() => onNewGeneral(section.id)}
+      >
+        <PlusIcon /> {newLabel}
+      </button>
+    );
+  const actions = markButton || newButton(false);
   const markDialog = mark && (
     <MarkDialog
       attr={mark.attr}
@@ -139,8 +156,8 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
       <div className="section-head">
         <h1 ref={titleRef}>{section.label}</h1>
         {privacyToggle}
-        {section.groups.length > 0 && markButton && (
-          <span className="section-head-actions">{markButton}</span>
+        {section.groups.length > 0 && actions && (
+          <span className="section-head-actions">{actions}</span>
         )}
       </div>
       {section.importable === 'filtro' && (
@@ -157,7 +174,7 @@ function SectionBody({ onEdit, onNewItem, onOpenPicker, section, showEmpty }: Pr
       <div className="section-main section-main-empty">
         {head}
         <EmptySection
-          action={markButton}
+          action={markButton || newButton(true)}
           section={section}
           onNewItem={onNewItem}
           onOpenPicker={onOpenPicker}
