@@ -12,13 +12,26 @@ interface Props {
   disabled?: boolean;
   /** Quantos itens novos (ainda não importados) há dentro destes elementos. */
   pendingIn: (els: XElement[]) => number;
+  /** Muda depois de uma troca de foto (ProfileCard). */
+  photoVersion?: number;
   /** Sem perfil, o topo do menu fica com o lugar da foto vazio. */
   profile?: Profile;
   sections: Section[];
+  /** Abre a troca da foto; ausente quando a extensão não pode trocá-la agora. */
+  onChangePhoto?: () => void;
   onSelect: (id: string) => void;
 }
 
-export function Sidebar({ activeId, disabled, onSelect, pendingIn, profile, sections }: Props) {
+export function Sidebar({
+  activeId,
+  disabled,
+  onChangePhoto,
+  onSelect,
+  pendingIn,
+  photoVersion,
+  profile,
+  sections,
+}: Props) {
   const ids = useMemo(() => (disabled ? [] : sections.map((s) => s.id)), [disabled, sections]);
   const goArmed = useGoShortcuts(ids, onSelect);
 
@@ -31,7 +44,7 @@ export function Sidebar({ activeId, disabled, onSelect, pendingIn, profile, sect
         </span>
       </div>
       {profile ? (
-        <ProfileCard profile={profile} />
+        <ProfileCard photoVersion={photoVersion} profile={profile} onChangePhoto={onChangePhoto} />
       ) : (
         <section aria-hidden="true" className="profile profile-placeholder">
           <div className="avatar" />

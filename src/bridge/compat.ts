@@ -20,6 +20,8 @@ export const BRIDGE_FEATURES = [
   'sem-leitura',
   /** O ZIP do Exportar, pedido pelo editor (src/bridge/export.ts). */
   'curriculo',
+  /** Troca da foto do currículo (src/bridge/photo.ts). */
+  'foto',
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

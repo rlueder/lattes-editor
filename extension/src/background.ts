@@ -12,7 +12,6 @@ import {
   AUTO_VERIFY_DELAY_MS,
   AUTO_VERIFY_RETRY_DELAY_MS,
   blocksKind,
-  type ContractReport,
   driftText,
   lacksSample,
   retryAutoVerify,
@@ -29,7 +28,15 @@ import {
   type NoReadingReason,
 } from '../../src/bridge/protocol.ts';
 import { CONSENT_KEY, hasConsent, isConsentCurrent } from './consent.ts';
-import { injectRunner, lattesTab, readCurriculo, readEspelho } from './lattes-tab.ts';
+import {
+  failedReport,
+  injectRunner,
+  lattesTab,
+  readCurriculo,
+  readEspelho,
+  sendPhoto,
+  verifyOn,
+} from './lattes-tab.ts';
 import {
   APP_KEY,
   type EditorEndpoint,
@@ -187,6 +194,17 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     await sendCurriculo(editor, msg.id);
     return;
   }
+  if (msg.type === 'enviar-foto') {
+    // A pessoa já viu a foto e confirmou no editor; depois, o menu relido
+    // mostra se o Lattes ficou com alteração a enviar ao CNPq.
+    await toEditor(editor, {
+      ...(await sendPhoto(msg.jpeg, msg.lattesId)),
+      id: msg.id,
+      type: 'foto',
+    });
+    await sendSession(editor, true);
+    return;
+  }
   const state = await readState();
   if (state.running) return;
   await writeState({
@@ -197,31 +215,6 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     running: false,
   });
   await chrome.action.setBadgeText({ text: msg.ops.length ? String(msg.ops.length) : '' });
-}
-
-const failedReport = (detail: string): ContractReport => ({
-  checkedAt: new Date().toISOString(),
-  detail,
-  forms: [],
-  menu: [],
-  status: 'erro',
-});
-
-/** Confere o Lattes contra o contrato do conector, só lendo, na aba do menu. */
-async function verifyOn(tabId: number): Promise<ContractReport> {
-  try {
-    await injectRunner(tabId);
-    const [res] = await chrome.scripting.executeScript({
-      func: () =>
-        (
-          globalThis as unknown as { __conector: { verificar(): Promise<ContractReport> } }
-        ).__conector.verificar(),
-      target: { tabId },
-    });
-    return res?.result ?? failedReport('A aba do Lattes não respondeu');
-  } catch (err) {
-    return failedReport(err instanceof Error ? err.message : 'Falha inesperada');
-  }
 }
 
 /**

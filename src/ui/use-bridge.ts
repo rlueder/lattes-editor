@@ -16,6 +16,7 @@ import type { ExportFailure } from '../bridge/export.ts';
 import { sameCv } from '../bridge/lattes-html.ts';
 import type { LattesStatus } from '../bridge/lattes-status.ts';
 import { INITIAL_LINK, type Link, nextLink } from '../bridge/link.ts';
+import type { PhotoFailure } from '../bridge/photo.ts';
 import { type BridgeOp, planChanges } from '../bridge/plan.ts';
 import {
   type BridgeMessage,
@@ -123,6 +124,8 @@ export interface BridgeState {
   lattes?: LattesStatus;
   /** Em que pé está a ligação com o Lattes, para o cabeçalho explicar a falta de leitura. */
   link: Link;
+  /** A resposta do último pedido de troca da foto. */
+  photoUpload?: PhotoUploadReading;
   /** Alterações que a extensão sabe levar e as que ficam para copiar à mão. */
   plan: ReturnType<typeof planChanges>;
   /** Pede o ZIP do Exportar à extensão (Abrir do Lattes); a resposta chega em curriculo, com o mesmo id. */
@@ -138,6 +141,11 @@ export interface BridgeState {
    * entrada do registro.
    */
   send: (options?: { undo?: SentEntry }) => Promise<void>;
+  /**
+   * Pede à extensão para trocar a foto no Lattes (jpeg em base64, já com até
+   * 70 kB); devolve o id do pedido, que volta em photoUpload.
+   */
+  sendPhoto: (jpeg: string) => string;
   /** O que o conector gravou e conferiu no Lattes para este currículo, do mais recente. */
   sent: SentEntry[];
   stop: () => void;
@@ -153,6 +161,16 @@ export interface CurriculoReading {
   reason?: ExportFailure;
   /** O ZIP em base64. */
   zip?: string;
+}
+
+export interface PhotoUploadReading {
+  /** Quando a resposta chegou (ms). */
+  at: number;
+  detail?: string;
+  /** O id do pedido que a resposta atende. */
+  id: string;
+  ok: boolean;
+  reason?: PhotoFailure;
 }
 
 export interface EspelhoReading {
@@ -190,6 +208,7 @@ export function useBridge(
   const [espelho, setEspelho] = useState<EspelhoReading | undefined>();
   const [link, setLink] = useState<Link>(INITIAL_LINK);
   const [curriculo, setCurriculo] = useState<CurriculoReading | undefined>();
+  const [photoUpload, setPhotoUpload] = useState<PhotoUploadReading | undefined>();
 
   const reloadSent = useCallback(() => {
     if (!lattesId) {
@@ -260,6 +279,15 @@ export function useBridge(
           zip: msg.zip,
         });
       }
+      if (msg.type === 'foto') {
+        setPhotoUpload({
+          at: Date.now(),
+          detail: msg.detail,
+          id: msg.id,
+          ok: msg.ok,
+          reason: msg.reason,
+        });
+      }
       if (msg.type === 'espelho') {
         // Itens de outro currículo nunca entram na comparação.
         const other = msg.items && !(lattesId && sameCv(lattesId, msg.lattesId));
@@ -318,6 +346,7 @@ export function useBridge(
     espelho,
     lattes,
     link,
+    photoUpload,
     plan,
     requestCv: (id) => post({ id, type: 'pedir-curriculo' }),
     requestEspelho: () => post({ type: 'pedir-espelho' }),
@@ -355,6 +384,11 @@ export function useBridge(
       setConfirmed(0);
       setRunning(true);
       post({ lattesId, ops, type: 'enviar' });
+    },
+    sendPhoto: (jpeg) => {
+      const id = `foto-${Date.now()}`;
+      post({ id, jpeg, lattesId, type: 'enviar-foto' });
+      return id;
     },
     sent,
     stop: () => post({ type: 'parar' }),

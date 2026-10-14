@@ -6,6 +6,7 @@ import type { OpResult } from './apply.ts';
 import type { EspelhoItem } from './espelho.ts';
 import type { ExportFailure } from './export.ts';
 import type { LattesStatus } from './lattes-status.ts';
+import type { PhotoFailure } from './photo.ts';
 import type { BridgeOp } from './plan.ts';
 
 export const PROTOCOL_VERSION = 1;
@@ -24,7 +25,14 @@ export type EditorMessage =
    */
   | { id: string; type: 'pedir-curriculo' }
   /** Pede a versão atual do Lattes (página de conferência), só leitura. */
-  | { type: 'pedir-espelho' };
+  | { type: 'pedir-espelho' }
+  /**
+   * Troca a foto do currículo no Lattes (src/bridge/photo.ts), depois de a
+   * pessoa confirmar no editor. jpeg em base64, já reduzido a até 70 kB;
+   * lattesId: o currículo aberto no editor, e a extensão só envia se a sessão
+   * do Lattes for dele. id volta na resposta.
+   */
+  | { id: string; jpeg: string; lattesId?: string; type: 'enviar-foto' };
 
 export type BridgeMessage =
   /** lattesId: de qual currículo é o código, para o editor não guardar o de outro. */
@@ -52,6 +60,8 @@ export type BridgeMessage =
       zip?: string;
     }
   | { type: 'fim' }
+  /** O resultado da troca da foto pedida com o mesmo id. */
+  | { detail?: string; id: string; ok: boolean; reason?: PhotoFailure; type: 'foto' }
   /** features: o que esta extensão sabe fazer (src/bridge/compat.ts); ausente nas versões de antes do aperto de mão com capacidades. */
   | { features?: string[]; type: 'ola'; version: string }
   /** A extensão tentou ler o menu do Lattes e não conseguiu; reason diz por quê. */

@@ -1,6 +1,7 @@
 // A aba do menu do Lattes: achar, injetar o núcleo do conector (lattes-runner.ts)
 // e as leituras que o editor pede, com o motivo quando não dá.
 
+import type { ContractReport } from '../../src/bridge/contract.ts';
 import type { BridgeMessage } from '../../src/bridge/protocol.ts';
 import { hasConsent } from './consent.ts';
 import { LATTES_MENU } from './state.ts';
@@ -15,14 +16,20 @@ export async function injectRunner(tabId: number): Promise<void> {
 }
 
 /** Roda uma função do núcleo do conector na aba; undefined se a aba não respondeu. */
-async function runInTab<T>(tabId: number, name: 'espelho' | 'exportar'): Promise<T | undefined> {
+async function runInTab<T>(
+  tabId: number,
+  name: 'espelho' | 'exportar' | 'foto',
+  ...args: string[]
+): Promise<T | undefined> {
   await injectRunner(tabId);
   const [res] = await chrome.scripting.executeScript({
-    args: [name] as [string],
-    func: (fn: string) =>
-      (globalThis as unknown as { __conector: Record<string, () => Promise<unknown>> }).__conector[
-        fn
-      ]!(),
+    args: [name, args] as [string, string[]],
+    func: (fn: string, fnArgs: string[]) =>
+      (
+        globalThis as unknown as {
+          __conector: Record<string, (...a: string[]) => Promise<unknown>>;
+        }
+      ).__conector[fn]!(...fnArgs),
     target: { tabId },
   });
   return res?.result as T | undefined;
@@ -46,6 +53,27 @@ export async function readCurriculo(): Promise<Reply<'curriculo'>> {
   }
 }
 
+/**
+ * Troca a foto do currículo (lattes-runner.ts, foto): só com o "ok" do aviso,
+ * e o núcleo na aba confere que a sessão é do currículo do editor.
+ */
+export async function sendPhoto(
+  jpeg: string,
+  lattesId?: string,
+): Promise<Omit<Reply<'foto'>, 'id'>> {
+  if (!(await hasConsent())) return { ok: false, reason: 'consentimento' };
+  const tabId = await lattesTab();
+  if (tabId === undefined) return { ok: false, reason: 'sem-aba' };
+  const failed = { detail: 'A aba do Lattes não respondeu.', ok: false, reason: 'erro' } as const;
+  try {
+    return (
+      (await runInTab<Omit<Reply<'foto'>, 'id'>>(tabId, 'foto', jpeg, lattesId ?? '')) ?? failed
+    );
+  } catch {
+    return failed;
+  }
+}
+
 /** A versão atual do Lattes, para o diagnóstico do editor; só lê, e só com o "ok" do aviso. */
 export async function readEspelho(): Promise<Reply<'espelho'>> {
   if (!(await hasConsent())) return { error: 'Aceite o aviso da extensão antes de ler o Lattes.' };
@@ -58,5 +86,31 @@ export async function readEspelho(): Promise<Reply<'espelho'>> {
     return (await runInTab<Reply<'espelho'>>(tabId, 'espelho')) ?? failed;
   } catch {
     return failed;
+  }
+}
+
+/** Relatório de conferência que não chegou a ler o Lattes. */
+export const failedReport = (detail: string): ContractReport => ({
+  checkedAt: new Date().toISOString(),
+  detail,
+  forms: [],
+  menu: [],
+  status: 'erro',
+});
+
+/** Confere o Lattes contra o contrato do conector, só lendo, na aba do menu. */
+export async function verifyOn(tabId: number): Promise<ContractReport> {
+  try {
+    await injectRunner(tabId);
+    const [res] = await chrome.scripting.executeScript({
+      func: () =>
+        (
+          globalThis as unknown as { __conector: { verificar(): Promise<ContractReport> } }
+        ).__conector.verificar(),
+      target: { tabId },
+    });
+    return res?.result ?? failedReport('A aba do Lattes não respondeu');
+  } catch (err) {
+    return failedReport(err instanceof Error ? err.message : 'Falha inesperada');
   }
 }

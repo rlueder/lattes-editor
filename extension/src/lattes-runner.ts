@@ -5,10 +5,11 @@
 import { applyOp, type LattesPort } from '../../src/bridge/apply.ts';
 import { checkContract } from '../../src/bridge/contract.ts';
 import { type EspelhoItem, isEspelhoPage, parseEspelho } from '../../src/bridge/espelho.ts';
-import { exportCv, type ExportPort, toBase64 } from '../../src/bridge/export.ts';
+import { exportCv, type ExportPort, fromBase64, toBase64 } from '../../src/bridge/export.ts';
 import type { FormControl } from '../../src/bridge/form.ts';
-import { cvCodeFrom, isLogonPage, lattesIdFrom } from '../../src/bridge/lattes-html.ts';
+import { cvCodeFrom, isLogonPage, lattesIdFrom, sameCv } from '../../src/bridge/lattes-html.ts';
 import { lattesStatusFrom } from '../../src/bridge/lattes-status.ts';
+import { type PhotoPort, type PhotoResult, uploadPhoto } from '../../src/bridge/photo.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
 import { decodeLatin1 } from '../../src/model/latin1.ts';
 
@@ -74,6 +75,36 @@ const exportPort: ExportPort = {
   },
 };
 
+const photoPort: PhotoPort = {
+  async get(path) {
+    const res = await fetch(new URL(path, location.href), { credentials: 'include' });
+    return { html: await text(res), url: res.url };
+  },
+  async getBytes(path) {
+    const res = await fetch(new URL(path, location.href), {
+      cache: 'no-store',
+      credentials: 'include',
+    });
+    return {
+      bytes: new Uint8Array(await res.arrayBuffer()),
+      contentType: res.headers.get('content-type') ?? '',
+      url: res.url,
+    };
+  },
+  async postMultipart(path, fields, file) {
+    // Como o formulário "fl": o arquivo primeiro, depois os campos escondidos.
+    const body = new FormData();
+    body.append(file.field, new Blob([file.bytes as BlobPart], { type: file.type }), file.name);
+    for (const [name, value] of fields) body.append(name, value);
+    const res = await fetch(new URL(path, location.href), {
+      body,
+      credentials: 'include',
+      method: 'POST',
+    });
+    return { html: await text(res), url: res.url };
+  },
+};
+
 /** O que volta ao service worker: o ZIP em base64 (a mensagem é JSON), ou o motivo. */
 interface ExportReply {
   detail?: string;
@@ -118,6 +149,24 @@ interface ExportReply {
       return { detail: r.detail, lattesId, reason: r.reason as ExportReply['reason'] };
     } catch {
       return { detail: 'A aba do Lattes não respondeu.', lattesId, reason: 'erro' };
+    }
+  },
+  // Troca da foto (src/bridge/photo.ts), só se a sessão desta aba for do
+  // currículo aberto no editor.
+  foto: async (jpeg: string, expected?: string): Promise<PhotoResult> => {
+    const menu = document.documentElement.outerHTML;
+    const lattesId = lattesIdFrom(menu);
+    if (!sameCv(expected, lattesId)) {
+      return {
+        detail: 'A sessão aberta no Lattes é de outro currículo.',
+        ok: false,
+        reason: 'outro-cv',
+      };
+    }
+    try {
+      return await uploadPhoto(photoPort, cvCodeFrom(menu), fromBase64(jpeg));
+    } catch {
+      return { detail: 'A aba do Lattes não respondeu.', ok: false, reason: 'erro' };
     }
   },
   // Ao conectar, o menu que já está na aba. Depois de uma fila, um GET novo do
