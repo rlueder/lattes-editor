@@ -12,10 +12,13 @@
 
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { assertRendered, type Cdp, openTab, withHeadlessBrowser } from './headless.ts';
 
-const root = new URL('../', import.meta.url).pathname;
+// fileURLToPath, não .pathname: no Windows, o pathname vem como /D:/a/... e
+// vira D:\D:\a\... ao abrir o arquivo.
+const root = fileURLToPath(new URL('../', import.meta.url));
 const url = process.argv[2] ?? 'http://localhost:5173/';
 const outDir = join(root, 'docs/img/loja');
 
