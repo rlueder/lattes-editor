@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   isJpeg,
   PHOTO_MAX_BYTES,
+  photoBusy,
   photoFailureMessage,
   type PhotoPort,
   photoProblem,
@@ -144,6 +145,21 @@ describe('foto: envio ao Lattes', () => {
     expect(photoFailureMessage('outro-cv')).toMatch(/outro currículo/);
     expect(photoFailureMessage('erro', 'Detalhe')).toBe('Detalhe');
     expect(photoFailureMessage(undefined)).toMatch(/não foi trocada/);
+  });
+});
+
+describe('foto: uma coisa por vez na sessão', () => {
+  it('recusa com a fila rodando ou outra troca em andamento', () => {
+    expect(photoBusy(false, false)).toBeUndefined();
+    expect(photoBusy(true, false)).toMatchObject({
+      detail: expect.stringContaining('enviando alterações'),
+      ok: false,
+      reason: 'erro',
+    });
+    expect(photoBusy(false, true)).toMatchObject({
+      detail: expect.stringContaining('Outra troca'),
+      ok: false,
+    });
   });
 });
 

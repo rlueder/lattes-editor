@@ -19,6 +19,7 @@ import {
 } from '../../src/bridge/contract.ts';
 import { sameCv } from '../../src/bridge/lattes-html.ts';
 import type { LattesStatus } from '../../src/bridge/lattes-status.ts';
+import { photoBusy } from '../../src/bridge/photo.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
 import {
   type BridgeMessage,
@@ -66,6 +67,8 @@ let verifyInFlight = false;
 let autoPending = false;
 /** "Verificar de novo" clicado durante outra verificação: roda logo depois dela. */
 let manualQueued = false;
+/** Uma troca de foto em andamento: nem a fila nem outra troca começam junto. */
+let photoInFlight = false;
 let appPort: chrome.runtime.Port | undefined;
 
 /**
@@ -195,14 +198,18 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     return;
   }
   if (msg.type === 'enviar-foto') {
+    const busy = photoBusy((await readState()).running, photoInFlight);
+    if (busy) return toEditor(editor, { ...busy, id: msg.id, type: 'foto' });
     // A pessoa já viu a foto e confirmou no editor; depois, o menu relido
     // mostra se o Lattes ficou com alteração a enviar ao CNPq.
-    await toEditor(editor, {
-      ...(await sendPhoto(msg.jpeg, msg.lattesId)),
-      id: msg.id,
-      type: 'foto',
-    });
-    await sendSession(editor, true);
+    photoInFlight = true;
+    try {
+      const reply = await sendPhoto(msg.jpeg, msg.lattesId);
+      await toEditor(editor, { ...reply, id: msg.id, type: 'foto' });
+      await sendSession(editor, true);
+    } finally {
+      photoInFlight = false;
+    }
     return;
   }
   const state = await readState();
@@ -285,7 +292,7 @@ async function verifyOnce(auto: boolean): Promise<void> {
 async function run(keys?: string[]): Promise<void> {
   if (!(await hasConsent())) return;
   const state = await readState();
-  if (state.running || state.verificando) return;
+  if (state.running || state.verificando || photoInFlight) return;
   const queue = state.ops.filter(
     (op) => state.results[op.key]?.status !== 'conferido' && (!keys || keys.includes(op.key)),
   );

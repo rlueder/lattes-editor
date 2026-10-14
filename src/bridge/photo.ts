@@ -145,6 +145,29 @@ export async function uploadPhoto(
   };
 }
 
+/**
+ * A troca da foto não começa com a fila de alterações rodando nem com outra
+ * troca em andamento: as duas usariam a mesma sessão e a mesma aba, e o menu
+ * relido depois da foto cairia no meio da fila.
+ */
+export function photoBusy(queueRunning: boolean, photoInFlight: boolean): PhotoResult | undefined {
+  if (queueRunning) {
+    return {
+      detail: 'A extensão está enviando alterações ao Lattes. Espere terminar e tente de novo.',
+      ok: false,
+      reason: 'erro',
+    };
+  }
+  if (photoInFlight) {
+    return {
+      detail: 'Outra troca de foto ainda está em andamento.',
+      ok: false,
+      reason: 'erro',
+    };
+  }
+  return undefined;
+}
+
 /** O que dizer quando a troca não deu certo. */
 export function photoFailureMessage(reason: PhotoFailure | undefined, detail?: string): string {
   switch (reason) {
