@@ -42,6 +42,19 @@ const EVENT_NATURE: Record<string, string> = {
   SIMPOSIO: 'Simpósio',
 };
 
+/** As naturezas do combo do Lattes, na ordem do formulário, com "Outra" no fim. */
+export const EVENT_NATURES: readonly string[] = [
+  'Congresso',
+  'Seminário',
+  'Simpósio',
+  'Oficina',
+  'Encontro',
+  'Olimpíada',
+  'Feira',
+  'Exposição',
+  'Outra',
+];
+
 /** "Ouvinte" conferido na exportação real; "Convidado" e "Participante" são o texto do rádio. */
 const PARTICIPATION_FORMS = ['Convidado', 'Participante', 'Ouvinte'] as const;
 

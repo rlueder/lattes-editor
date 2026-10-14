@@ -112,3 +112,24 @@ Conferido numa exportação real: país e idioma pelo nome, "Congresso",
 mostre: as outras naturezas (Seminário, Simpósio, Oficina, Feira, Exposição,
 Olimpíada, Outra), "Convidado", "Participante" e todos os tipos de
 participação. O teste pelo Importar fecha essa dúvida.
+
+## Vigia das listas
+
+A conferência que a extensão faz do Lattes (`src/bridge/contract.ts`), só
+lendo, agora também abre dois formulários de inclusão sem salvar e compara os
+combos com o que o editor oferece (`src/bridge/list-watch.ts`):
+
+- país (`f_pais`) e idioma (`F_IDIOMA`), no formulário de mídias sociais
+  (`prc_midias_sociais`);
+- a natureza da participação em evento (`F_COD_PROD`), no formulário de
+  eventos (`PKG_EVENTO.form`).
+
+Opção nova no Lattes, ou opção do editor que sumiu de lá, deixa o relatório
+em "mudou". O painel da extensão lista as diferenças, que não impedem o
+envio, e o relatório para issue leva os nomes, que são públicos. A
+comparação ignora acento e caixa, como a dos campos.
+
+Na leitura de 14/10/2026 as três listas batiam com as do editor: 243 países
+(o combo repete um), 152 idiomas e as 9 naturezas. O formulário de eventos
+pede o parâmetro `F_STA_DIVULGACAO_CIENTIFICA`, que é o do link "Novo" da
+lista de eventos; o nome que a captura de 13/10/2026 registrou para ele dá 404.
