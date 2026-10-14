@@ -1,0 +1,5548 @@
+{
+  "capturedAt": "2026-10-14T01:01:17.297Z",
+  "source": "wwws.cnpq.br/cvlattesweb: formulários de inclusão (Incluir novo item) abertos sem salvar",
+  "lists": {
+    "L0": [
+      "ARG|Argentina",
+      "AUS|Austrália",
+      "BRA|Brasil",
+      "CAN|Canadá",
+      "ESP|Espanha",
+      "EUA|Estados Unidos",
+      "FRA|França",
+      "GBR|Grã-Bretanha",
+      "HOL|Holanda",
+      "ING|Inglaterra",
+      "ITA|Itália",
+      "POR|Portugal",
+      "RFA|Alemanha",
+      "ABW|Aruba",
+      "AFG|Afeganistão",
+      "AFS|África Do Sul",
+      "AHL|Antilhas Holandesas",
+      "ALB|Albânia",
+      "ANB|Antigua",
+      "AND|Andorra",
+      "ANG|Angola",
+      "ARA|Arábia Saudita",
+      "ARL|Argélia",
+      "ARM|Armênia",
+      "ASM|Samoa Americana",
+      "ATC|Antartida",
+      "AUT|Austria",
+      "AZE|Azerbaijão",
+      "BAR|Barein",
+      "BEA|Belarus",
+      "BEL|Bélgica",
+      "BEN|Benin",
+      "BER|Bermudas",
+      "BGD|Bangladesh",
+      "BHS|Bahamas",
+      "BIR|Birmânia",
+      "BKF|Burkina Fasso",
+      "BLZ|Belize",
+      "BOL|Bolívia",
+      "BOS|Bósnia",
+      "BOT|Botsuana",
+      "BRB|Barbados",
+      "BRN|Brunei",
+      "BUL|Bulgária",
+      "BUR|Burundi",
+      "BUT|Butão",
+      "CAM|Camarões",
+      "CAT|Catar",
+      "CAZ|Cazaquistão",
+      "CBJ|Camboja",
+      "CBV|Cabo Verde",
+      "CCK|Ilhas Cocos",
+      "CHA|Chade",
+      "CHL|Chile",
+      "CHN|China",
+      "CHP|Chipre",
+      "CIN|Cingapura",
+      "CMF|Costa Do Marfim",
+      "COD|Rd Congo",
+      "COK|Ilhas Cook",
+      "COL|Colômbia",
+      "COM|Comores",
+      "CON|Congo",
+      "CRC|Costa Rica",
+      "CRN|Coréia Do Norte",
+      "CRO|Croácia",
+      "CRS|Coréia Do Sul",
+      "CUB|Cuba",
+      "CXR|Christmas Island",
+      "CYM|Ilhas Cayman",
+      "DIN|Dinamarca",
+      "DJI|Djibuti",
+      "DOM|República Dominicana",
+      "DON|Dominica",
+      "EAU|Emirados Árabes",
+      "EGI|Egito",
+      "ELS|El Salvador",
+      "EQU|Equador",
+      "ERT|Eritréa",
+      "ESC|Escócia",
+      "ESH|Western Sahara",
+      "EST|Estônia",
+      "ETP|Etiópia",
+      "FIL|Filipinas",
+      "FIN|Finlândia",
+      "FJI|Fiji",
+      "FLK|Ilhas Falkland",
+      "FOR|Formosa",
+      "FSM|Micronésia",
+      "GAB|Gabão",
+      "GAL|Gales",
+      "GAM|Gâmbia",
+      "GAN|Gana",
+      "GDL|Guadalupe",
+      "GEO|Geórgia",
+      "GFR|Guiana Francesa",
+      "GIB|Gibraltar",
+      "GNB|Guiné Bissau",
+      "GNE|Guiné",
+      "GNQ|Guiné Equatorial",
+      "GRD|Granada",
+      "GRE|Grécia",
+      "GRL|Groênlandia",
+      "GUA|Guatemala",
+      "GUI|Guiana",
+      "GUM|Guam",
+      "HKG|Hong Kong",
+      "HON|Honduras",
+      "HTI|Haiti",
+      "HUN|Hungria",
+      "IDN|Indonésia",
+      "IEM|Iêmem",
+      "IFA|Ilhas Faroe",
+      "IMH|Ilhas Marshall",
+      "IMS|Iêmen Do Sul",
+      "IND|Índia",
+      "IOT|Britsh Indian Ocean",
+      "IRA|Irã",
+      "IRL|Irlanda",
+      "IRN|Irlanda Do Norte",
+      "IRQ|Iraque",
+      "ISL|Islândia",
+      "ISR|Israel",
+      "IUG|Iugoslávia",
+      "IVA|Ilhas Vírgens Eua",
+      "JAM|Jamaica",
+      "JAP|Japão",
+      "JOR|Jordânia",
+      "KIR|Kiribati",
+      "KNA|São Cristóvão Nevis",
+      "KWT|Kuweit",
+      "LAO|Laos",
+      "LBN|Líbano",
+      "LBR|Libéria",
+      "LCA|Santa Lúcia",
+      "LES|Lesoto",
+      "LET|Letônia",
+      "LIB|Líbia",
+      "LIE|Liechtenstein",
+      "LIT|Lituânia",
+      "LUX|Luxemburgo",
+      "MAC|Macau",
+      "MAD|Madagascar",
+      "MAL|Malásia",
+      "MAR|Marrocos",
+      "MAU|Maurício",
+      "MBQ|Moçambique",
+      "MCD|Macedônia",
+      "MDV|Maldivas",
+      "MEX|México",
+      "MGL|Mongólia",
+      "MID|Ilhas Midway",
+      "MLI|Mali",
+      "MLT|Malta",
+      "MLV|Malavi",
+      "MMR|Mianmar",
+      "MNE|Montenegro",
+      "MOL|Moldova",
+      "MON|Mônaco",
+      "MRT|Martinica",
+      "MSR|Montserrat",
+      "MTN|Mauritânia",
+      "NAM|Namíbia",
+      "NCL|Nova Caledônia",
+      "NFK|Ilhas Norfolk",
+      "NGA|Nigéria",
+      "NIC|Nicarágua",
+      "NIG|Niger",
+      "NIU|Niue",
+      "NOR|Noruega",
+      "NPL|Nepal",
+      "NRU|Nauru",
+      "NZL|Nova Zelândia",
+      "OMA|Omã",
+      "PAN|Panamá",
+      "PAQ|Paquistão",
+      "PCI|Pacific Islands",
+      "PCN|Pitcairn",
+      "PER|Peru",
+      "PLF|Polinésia Francesa",
+      "PLU|Palau",
+      "PNG|Papua Nova Guiné",
+      "POL|Polônia",
+      "PRG|Paraguai",
+      "PSE|Palestina",
+      "PTR|Porto Rico",
+      "QUE|Quênia",
+      "QUI|Quirgistão",
+      "RCA|Rep.Centro-Africana",
+      "REU|Reunião",
+      "ROM|Romênia",
+      "RS|Sérvia",
+      "RSS|Rússia",
+      "RTC|República Tcheca",
+      "RUA|Ruanda",
+      "SAM|Samoa Ocidental",
+      "SEN|Senegal",
+      "SHN|Ilhas Santa Helena",
+      "SIR|Síria",
+      "SLB|Ilhas Salomão",
+      "SMR|San Marino",
+      "SOM|Somália",
+      "SPM|São Pedro Miquelon",
+      "SRI|Sri Lanka",
+      "SRL|Serra Leoa",
+      "STP|São Tomé E Príncipe",
+      "SUA|Suazilândia",
+      "SUD|Sudão",
+      "SUE|Suécia",
+      "SUI|Suíça",
+      "SUR|Suriname",
+      "SVK|Eslováquia",
+      "SVN|Eslovênia",
+      "SYC|Seychelles",
+      "TAD|Tadjaquistão",
+      "TAI|Tailândia",
+      "TAN|Tanzânia",
+      "TCA|Ilhas Turcas Caicos",
+      "TCH|República Tcheca",
+      "TGO|Togo",
+      "TKL|Tokelau",
+      "TMP|Timor Leste",
+      "TON|Tonga",
+      "TRT|Trinidad E Tobago",
+      "TUC|Turcomenistão",
+      "TUN|Tunísia",
+      "TUR|Turquia",
+      "TUV|Tuvalu",
+      "UCR|Ucrânia",
+      "UGA|Uganda",
+      "URS|União Soviética",
+      "URU|Uruguai",
+      "UZB|Uzbekistan",
+      "VAT|Vaticano",
+      "VCT|São Vicente Granadi",
+      "VEN|Venezuela",
+      "VGB|Ilhas Vírgens Gbr",
+      "VTN|Vietnã",
+      "VUT|Vanuatu",
+      "WAK|Ilhas Wake",
+      "WLF|Ilhas Wallis Futuna",
+      "ZAN|Zâmbia",
+      "ZAR|Zaire",
+      "ZIN|Zimbabue"
+    ],
+    "L1": [
+      "DE|Alemão",
+      "ES|Espanhol",
+      "FR|Francês",
+      "EN|Inglês",
+      "IT|Italiano",
+      "LB|Libras",
+      "PT|Português",
+      "AB|Abhkazian",
+      "AA|Afar",
+      "AF|Afrikaans",
+      "AY|Aimara",
+      "SQ|Albanês",
+      "AM|Amarico",
+      "AR|Árabe",
+      "AN|Armênio",
+      "AS|Assames",
+      "AZ|Azerbaidjano",
+      "BC|Baluchi",
+      "EU|Basco",
+      "BA|Bashquir",
+      "BN|Bengali",
+      "BB|Berbere",
+      "BE|Bielo-Russo",
+      "BH|Bihari",
+      "BM|Birmanês",
+      "BI|Bislama",
+      "BR|Bretão",
+      "BG|Búlgaro",
+      "CB|Cabie",
+      "KS|Cachemiriano",
+      "KM|Cambodjano",
+      "KN|Canadá",
+      "KK|Casaque",
+      "CA|Catalão",
+      "ZH|Chinês",
+      "SI|Cingalês",
+      "KO|Coreano",
+      "CO|Corsico",
+      "CR|Crioulo",
+      "HR|Croata",
+      "KU|Curdo",
+      "DA|Dinamarquês",
+      "DI|Divehi",
+      "DZ|Dzongka",
+      "FY|Erisão",
+      "SK|Eslovaco",
+      "SL|Esloveno",
+      "EO|Esperanto",
+      "ET|Estoniano",
+      "EE|Eue",
+      "FO|Feróico",
+      "FJ|Fijiano",
+      "FL|Filipino",
+      "FI|Finlandês",
+      "GD|Gaelico Escocês",
+      "GL|Galego",
+      "CY|Galês",
+      "KA|Georgiano",
+      "EL|Grego",
+      "KL|Groenlandês",
+      "GN|Guarani",
+      "GU|Gujarati",
+      "HY|Harmênio",
+      "HA|Hausa",
+      "IW|Hebraico",
+      "HI|Hindi",
+      "NL|Holandês",
+      "HU|Húngaro",
+      "JI|Iidiche",
+      "IN|Indonésio",
+      "IA|Interlíngua",
+      "IE|Interlíngue",
+      "IK|Inupiak",
+      "ID|Ioma",
+      "GA|Irlandês",
+      "IS|Islandês",
+      "JA|Japonês",
+      "JV|Javanês",
+      "LO|Laosiano",
+      "LP|Lapão",
+      "LA|Latim",
+      "LV|Letão",
+      "LN|Lingála",
+      "LT|Lituano",
+      "LX|Luxemburguês",
+      "MK|Macedônio",
+      "ML|Malaiala",
+      "MS|Malaio",
+      "MG|Malgaxe",
+      "MT|Maltês",
+      "MA|Mandingo",
+      "MI|Maori",
+      "MR|Maratí",
+      "MO|Moldavio",
+      "MN|Mongol",
+      "NA|Nauruano",
+      "NE|Nepali",
+      "NO|Norueguês",
+      "OR|Oria",
+      "OM|Oromo",
+      "FA|Persa",
+      "PL|Polonês",
+      "PA|Punjabi",
+      "PS|Pushto",
+      "QU|Quichua",
+      "RW|Quiniaruanda",
+      "KY|Quirquiz",
+      "RN|Quirundi",
+      "QI|Quisuahili",
+      "RM|Reto-Romano",
+      "RO|Romeno",
+      "RU|Russo",
+      "SM|Samoano",
+      "SG|Sango",
+      "SA|Sanscrito",
+      "SR|Serbian",
+      "SH|Servo-Croata",
+      "ST|Sesoto",
+      "TN|Setsuana",
+      "SN|Shona",
+      "SD|Sindi",
+      "MY|Sirmanês",
+      "SS|Sisvati",
+      "SO|Somali",
+      "SW|Suaili",
+      "SU|Sudanês",
+      "SV|Sueco",
+      "TG|Tadjique",
+      "TH|Tai",
+      "TL|Talagog",
+      "TA|Tamil",
+      "TT|Tatar",
+      "CS|Tcheco",
+      "TE|Telugo",
+      "BO|Tibetano",
+      "TI|Tigrina",
+      "TO|Tongalês",
+      "TS|Tsonga",
+      "TW|Tui",
+      "TR|Turco",
+      "TK|Turcomano",
+      "TU|Tuvaloano",
+      "UK|Ucraniâno",
+      "UR|Urdu",
+      "UZ|Uzbeco",
+      "VI|Vietnamita",
+      "VO|Volupak",
+      "WO|Wolof",
+      "XH|Xosa",
+      "YO|Yoruba",
+      "ZU|Zulú",
+      "OU|Outros"
+    ],
+    "L2": [
+      "|",
+      "I|Impresso",
+      "M|meio magnético",
+      "D|meio digital",
+      "F|filme",
+      "H|hipertexto",
+      "O|outro",
+      "V|impresso e mídia eletrônica"
+    ],
+    "L3": ["|", "Restrita|Restrita", "Irrestrita|Irrestrita"],
+    "L4": ["1|Público", "2|Privado"],
+    "L5": ["241|Assessoria", "242|Consultoria"],
+    "L6": ["S|sim", "N|não"],
+    "L7": ["|", "D|Desenvolvimento", "E|Extensão", "P|Pesquisa", "N|Ensino", "O|Outra"],
+    "L8": ["|", "D|Desativado", "C|Concluído", "A|Em andamento"],
+    "L9": [
+      "|",
+      "RFA|Alemanha",
+      "ARG|Argentina",
+      "AUS|Austrália",
+      "BRA|Brasil",
+      "CAN|Canadá",
+      "ESP|Espanha",
+      "EUA|Estados Unidos",
+      "FRA|França",
+      "GBR|Grã-Bretanha",
+      "HOL|Holanda",
+      "ING|Inglaterra",
+      "ITA|Itália",
+      "POR|Portugal",
+      "AFG|Afeganistão",
+      "AFS|África Do Sul",
+      "ALB|Albânia",
+      "AND|Andorra",
+      "ANG|Angola",
+      "ATC|Antartida",
+      "ANB|Antigua",
+      "AHL|Antilhas Holandesas",
+      "ARA|Arábia Saudita",
+      "ARL|Argélia",
+      "ARM|Armênia",
+      "ABW|Aruba",
+      "AUT|Austria",
+      "AZE|Azerbaijão",
+      "BHS|Bahamas",
+      "BGD|Bangladesh",
+      "BRB|Barbados",
+      "BAR|Barein",
+      "BEA|Belarus",
+      "BEL|Bélgica",
+      "BLZ|Belize",
+      "BEN|Benin",
+      "BER|Bermudas",
+      "BIR|Birmânia",
+      "BOL|Bolívia",
+      "BOS|Bósnia",
+      "BOT|Botsuana",
+      "IOT|Britsh Indian Ocean",
+      "BRN|Brunei",
+      "BUL|Bulgária",
+      "BKF|Burkina Fasso",
+      "BUR|Burundi",
+      "BUT|Butão",
+      "CBV|Cabo Verde",
+      "CAM|Camarões",
+      "CBJ|Camboja",
+      "CAT|Catar",
+      "CAZ|Cazaquistão",
+      "CHA|Chade",
+      "CHL|Chile",
+      "CHN|China",
+      "CHP|Chipre",
+      "CXR|Christmas Island",
+      "CIN|Cingapura",
+      "COL|Colômbia",
+      "COM|Comores",
+      "CON|Congo",
+      "CRN|Coréia Do Norte",
+      "CRS|Coréia Do Sul",
+      "CMF|Costa Do Marfim",
+      "CRC|Costa Rica",
+      "CRO|Croácia",
+      "CUB|Cuba",
+      "DIN|Dinamarca",
+      "DJI|Djibuti",
+      "DON|Dominica",
+      "EGI|Egito",
+      "ELS|El Salvador",
+      "EAU|Emirados Árabes",
+      "EQU|Equador",
+      "ERT|Eritréa",
+      "ESC|Escócia",
+      "SVK|Eslováquia",
+      "SVN|Eslovênia",
+      "EST|Estônia",
+      "ETP|Etiópia",
+      "FJI|Fiji",
+      "FIL|Filipinas",
+      "FIN|Finlândia",
+      "FOR|Formosa",
+      "GAB|Gabão",
+      "GAL|Gales",
+      "GAM|Gâmbia",
+      "GAN|Gana",
+      "GEO|Geórgia",
+      "GIB|Gibraltar",
+      "GRD|Granada",
+      "GRE|Grécia",
+      "GRL|Groênlandia",
+      "GDL|Guadalupe",
+      "GUM|Guam",
+      "GUA|Guatemala",
+      "GUI|Guiana",
+      "GFR|Guiana Francesa",
+      "GNE|Guiné",
+      "GNB|Guiné Bissau",
+      "GNQ|Guiné Equatorial",
+      "HTI|Haiti",
+      "HON|Honduras",
+      "HKG|Hong Kong",
+      "HUN|Hungria",
+      "IEM|Iêmem",
+      "IMS|Iêmen Do Sul",
+      "CYM|Ilhas Cayman",
+      "CCK|Ilhas Cocos",
+      "COK|Ilhas Cook",
+      "FLK|Ilhas Falkland",
+      "IFA|Ilhas Faroe",
+      "IMH|Ilhas Marshall",
+      "MID|Ilhas Midway",
+      "NFK|Ilhas Norfolk",
+      "SLB|Ilhas Salomão",
+      "SHN|Ilhas Santa Helena",
+      "TCA|Ilhas Turcas Caicos",
+      "IVA|Ilhas Vírgens Eua",
+      "VGB|Ilhas Vírgens Gbr",
+      "WAK|Ilhas Wake",
+      "WLF|Ilhas Wallis Futuna",
+      "IND|Índia",
+      "IDN|Indonésia",
+      "IRA|Irã",
+      "IRQ|Iraque",
+      "IRL|Irlanda",
+      "IRN|Irlanda Do Norte",
+      "ISL|Islândia",
+      "ISR|Israel",
+      "IUG|Iugoslávia",
+      "JAM|Jamaica",
+      "JAP|Japão",
+      "JOR|Jordânia",
+      "KIR|Kiribati",
+      "KWT|Kuweit",
+      "LAO|Laos",
+      "LES|Lesoto",
+      "LET|Letônia",
+      "LBN|Líbano",
+      "LBR|Libéria",
+      "LIB|Líbia",
+      "LIE|Liechtenstein",
+      "LIT|Lituânia",
+      "LUX|Luxemburgo",
+      "MAC|Macau",
+      "MCD|Macedônia",
+      "MAD|Madagascar",
+      "MAL|Malásia",
+      "MLV|Malavi",
+      "MDV|Maldivas",
+      "MLI|Mali",
+      "MLT|Malta",
+      "MAR|Marrocos",
+      "MRT|Martinica",
+      "MAU|Maurício",
+      "MTN|Mauritânia",
+      "MEX|México",
+      "MMR|Mianmar",
+      "FSM|Micronésia",
+      "MBQ|Moçambique",
+      "MOL|Moldova",
+      "MON|Mônaco",
+      "MGL|Mongólia",
+      "MNE|Montenegro",
+      "MSR|Montserrat",
+      "NAM|Namíbia",
+      "NRU|Nauru",
+      "NPL|Nepal",
+      "NIC|Nicarágua",
+      "NIG|Niger",
+      "NGA|Nigéria",
+      "NIU|Niue",
+      "NOR|Noruega",
+      "NCL|Nova Caledônia",
+      "NZL|Nova Zelândia",
+      "OMA|Omã",
+      "PCI|Pacific Islands",
+      "PLU|Palau",
+      "PSE|Palestina",
+      "PAN|Panamá",
+      "PNG|Papua Nova Guiné",
+      "PAQ|Paquistão",
+      "PRG|Paraguai",
+      "PER|Peru",
+      "PCN|Pitcairn",
+      "PLF|Polinésia Francesa",
+      "POL|Polônia",
+      "PTR|Porto Rico",
+      "QUE|Quênia",
+      "QUI|Quirgistão",
+      "COD|Rd Congo",
+      "RCA|Rep.Centro-Africana",
+      "DOM|República Dominicana",
+      "TCH|República Tcheca",
+      "RTC|República Tcheca",
+      "REU|Reunião",
+      "ROM|Romênia",
+      "RUA|Ruanda",
+      "RSS|Rússia",
+      "ASM|Samoa Americana",
+      "SAM|Samoa Ocidental",
+      "SMR|San Marino",
+      "LCA|Santa Lúcia",
+      "KNA|São Cristóvão Nevis",
+      "SPM|São Pedro Miquelon",
+      "STP|São Tomé E Príncipe",
+      "VCT|São Vicente Granadi",
+      "SEN|Senegal",
+      "SRL|Serra Leoa",
+      "RS|Sérvia",
+      "SYC|Seychelles",
+      "SIR|Síria",
+      "SOM|Somália",
+      "SRI|Sri Lanka",
+      "SUA|Suazilândia",
+      "SUD|Sudão",
+      "SUE|Suécia",
+      "SUI|Suíça",
+      "SUR|Suriname",
+      "TAD|Tadjaquistão",
+      "TAI|Tailândia",
+      "TAN|Tanzânia",
+      "TMP|Timor Leste",
+      "TGO|Togo",
+      "TKL|Tokelau",
+      "TON|Tonga",
+      "TRT|Trinidad E Tobago",
+      "TUN|Tunísia",
+      "TUC|Turcomenistão",
+      "TUR|Turquia",
+      "TUV|Tuvalu",
+      "UCR|Ucrânia",
+      "UGA|Uganda",
+      "URS|União Soviética",
+      "URU|Uruguai",
+      "UZB|Uzbekistan",
+      "VUT|Vanuatu",
+      "VAT|Vaticano",
+      "VEN|Venezuela",
+      "VTN|Vietnã",
+      "ESH|Western Sahara",
+      "ZAR|Zaire",
+      "ZAN|Zâmbia",
+      "ZIN|Zimbabue"
+    ],
+    "L10": [
+      "|",
+      "AC|AC",
+      "AL|AL",
+      "AM|AM",
+      "AP|AP",
+      "BA|BA",
+      "CE|CE",
+      "DF|DF",
+      "ES|ES",
+      "GO|GO",
+      "MA|MA",
+      "MG|MG",
+      "MS|MS",
+      "MT|MT",
+      "PA|PA",
+      "PB|PB",
+      "PE|PE",
+      "PI|PI",
+      "PR|PR",
+      "RJ|RJ",
+      "RN|RN",
+      "RO|RO",
+      "RR|RR",
+      "RS|RS",
+      "SC|SC",
+      "SE|SE",
+      "SP|SP",
+      "TO|TO"
+    ],
+    "L11": ["S|Não", "N|"],
+    "L12": [
+      "|",
+      "3A1|Audiovisual",
+      "3A2|Circense",
+      "3A3|Coreográfica",
+      "3A4|Diversas",
+      "3A5|Operística",
+      "3A6|Performática",
+      "3A7|Radialística",
+      "3A8|Teatral",
+      "3AZ|Outra"
+    ],
+    "L13": [
+      "|",
+      "Apresentação única|Apresentação única",
+      "Concurso|Concurso",
+      "Festival|Festival",
+      "Teledrama|Teledrama",
+      "Temporada|Temporada",
+      "Turnê|Turnê",
+      "Outro|Outro"
+    ],
+    "L14": [
+      "|",
+      "Aderecista|Aderecista",
+      "Ator|Ator",
+      "Bonequeiro|Bonequeiro",
+      "Caracterizador|Caracterizador",
+      "Cenógrafo|Cenógrafo",
+      "Coreógrafo|Coreógrafo",
+      "Dançarino|Dançarino",
+      "Diretor|Diretor",
+      "Diretor Musical|Diretor Musical",
+      "Dramaturgista|Dramaturgista",
+      "Dramaturgo|Dramaturgo",
+      "Encenador|Encenador",
+      "Figurinista|Figurinista",
+      "Iluminador|Iluminador",
+      "Maquiador|Maquiador",
+      "Preparador corporal|Preparador corporal",
+      "Preparador vocal|Preparador vocal",
+      "Outra|Outra"
+    ],
+    "L15": [
+      "|",
+      "3B1|Apresentação de Obra (para compositores)",
+      "3B2|Arranjo",
+      "3B3|Audiovisual",
+      "3B4|Composição (estréia)",
+      "3B5|Diversas",
+      "3B6|Interpretação",
+      "3B7|Publicação de Partitura",
+      "3B8|Registro Fonográfico",
+      "3B9|Trilha Sonora",
+      "3BZ|Outra"
+    ],
+    "L16": [
+      "|",
+      "Concerto|Concerto",
+      "Concurso|Concurso",
+      "Festival|Festival",
+      "Performance|Performance",
+      "Récita Lírica|Récita Lírica",
+      "Recital|Recital",
+      "Registro fonográfico|Registro fonográfico",
+      "Show|Show",
+      "Temporada|Temporada",
+      "Turnê|Turnê",
+      "Outro|Outro"
+    ],
+    "L17": [
+      "|",
+      "Arranjador|Arranjador",
+      "Cantor|Cantor",
+      "Compositor|Compositor",
+      "Instrumentista|Instrumentista",
+      "Regente|Regente",
+      "Solista|Solista",
+      "Outra|Outra"
+    ],
+    "L18": ["Computacional|Computacional", "Multimídia|Multimídia", "Outro|Outro"],
+    "L19": ["2L1|Rede Social", "2L2|Forum", "2L3|Blog", "2L4|Site"],
+    "L20": [
+      "|",
+      "3C1|Animação",
+      "3C2|Computação Gráfica",
+      "3C3|Desenho",
+      "3C4|Diversas",
+      "3C5|Escultura",
+      "3C6|Filme",
+      "3C7|Fotografia",
+      "3C8|Gravura",
+      "3C9|Ilustração",
+      "3CA|Instalação",
+      "3CB|Intervenção Urbana",
+      "3CC|Livro de Artista",
+      "3CD|Performance",
+      "3CE|Pintura",
+      "3CF|Programação Visual",
+      "3CG|Vídeo",
+      "3CH|WebArt",
+      "3CZ|Outra"
+    ],
+    "L21": [
+      "|",
+      "Apresentação|Apresentação",
+      "Bienal|Bienal",
+      "Exposição Individual|Exposição Individual",
+      "Exposição Individual Convite|Exposição Individual Convite",
+      "Exposição Individual Seleção|Exposição Individual Seleção",
+      "Exposição Individual Edital|Exposição Individual Edital",
+      "Exposição Coletiva|Exposição Coletiva",
+      "Exposição Coletiva Convite|Exposição Coletiva Convite",
+      "Exposição Coletiva Seleção|Exposição Coletiva Seleção",
+      "Exposição Coletiva Edital|Exposição Coletiva Edital",
+      "Festival|Festival",
+      "Salão|Salão",
+      "Outro|Outro"
+    ],
+    "L22": [
+      "|",
+      "Aderecista|Aderecista",
+      "Animador|Animador",
+      "Artista Multimídia|Artista Multimídia",
+      "Artista Plástico|Artista Plástico",
+      "Artista Visual|Artista Visual",
+      "Cenógrafo|Cenógrafo",
+      "Cineasta|Cineasta",
+      "Curador|Curador",
+      "Desenhista|Desenhista",
+      "Escultor|Escultor",
+      "Figurinista|Figurinista",
+      "Fotógrafo|Fotógrafo",
+      "Gravador|Gravador",
+      "Ilustrador|Ilustrador",
+      "Performer|Performer",
+      "Pintor|Pintor",
+      "Programador visual|Programador visual",
+      "Roteirista|Roteirista",
+      "Vídeo Maker|Vídeo Maker",
+      "Web artist|Web artist",
+      "Outra|Outra"
+    ],
+    "L23": ["|", "M|Maternidade", "P|Paternidade", "A|Adoção"],
+    "L24": [
+      "|",
+      "FR|Francês",
+      "IT|Italiano",
+      "LB|Libras",
+      "PT|Português",
+      "AB|Abhkazian",
+      "AA|Afar",
+      "AF|Afrikaans",
+      "AY|Aimara",
+      "SQ|Albanês",
+      "AM|Amarico",
+      "AR|Árabe",
+      "AN|Armênio",
+      "AS|Assames",
+      "AZ|Azerbaidjano",
+      "BC|Baluchi",
+      "EU|Basco",
+      "BA|Bashquir",
+      "BN|Bengali",
+      "BB|Berbere",
+      "BE|Bielo-Russo",
+      "BH|Bihari",
+      "BM|Birmanês",
+      "BI|Bislama",
+      "BR|Bretão",
+      "BG|Búlgaro",
+      "CB|Cabie",
+      "KS|Cachemiriano",
+      "KM|Cambodjano",
+      "KN|Canadá",
+      "KK|Casaque",
+      "CA|Catalão",
+      "ZH|Chinês",
+      "SI|Cingalês",
+      "KO|Coreano",
+      "CO|Corsico",
+      "CR|Crioulo",
+      "HR|Croata",
+      "KU|Curdo",
+      "DA|Dinamarquês",
+      "DI|Divehi",
+      "DZ|Dzongka",
+      "FY|Erisão",
+      "SK|Eslovaco",
+      "SL|Esloveno",
+      "EO|Esperanto",
+      "ET|Estoniano",
+      "EE|Eue",
+      "FO|Feróico",
+      "FJ|Fijiano",
+      "FL|Filipino",
+      "FI|Finlandês",
+      "GD|Gaelico Escocês",
+      "GL|Galego",
+      "CY|Galês",
+      "KA|Georgiano",
+      "EL|Grego",
+      "KL|Groenlandês",
+      "GN|Guarani",
+      "GU|Gujarati",
+      "HY|Harmênio",
+      "HA|Hausa",
+      "IW|Hebraico",
+      "HI|Hindi",
+      "NL|Holandês",
+      "HU|Húngaro",
+      "JI|Iidiche",
+      "IN|Indonésio",
+      "IA|Interlíngua",
+      "IE|Interlíngue",
+      "IK|Inupiak",
+      "ID|Ioma",
+      "GA|Irlandês",
+      "IS|Islandês",
+      "JA|Japonês",
+      "JV|Javanês",
+      "LO|Laosiano",
+      "LP|Lapão",
+      "LA|Latim",
+      "LV|Letão",
+      "LN|Lingála",
+      "LT|Lituano",
+      "LX|Luxemburguês",
+      "MK|Macedônio",
+      "ML|Malaiala",
+      "MS|Malaio",
+      "MG|Malgaxe",
+      "MT|Maltês",
+      "MA|Mandingo",
+      "MI|Maori",
+      "MR|Maratí",
+      "MO|Moldavio",
+      "MN|Mongol",
+      "NA|Nauruano",
+      "NE|Nepali",
+      "NO|Norueguês",
+      "OR|Oria",
+      "OM|Oromo",
+      "FA|Persa",
+      "PL|Polonês",
+      "PA|Punjabi",
+      "PS|Pushto",
+      "QU|Quichua",
+      "RW|Quiniaruanda",
+      "KY|Quirquiz",
+      "RN|Quirundi",
+      "QI|Quisuahili",
+      "RM|Reto-Romano",
+      "RO|Romeno",
+      "RU|Russo",
+      "SM|Samoano",
+      "SG|Sango",
+      "SA|Sanscrito",
+      "SR|Serbian",
+      "SH|Servo-Croata",
+      "ST|Sesoto",
+      "TN|Setsuana",
+      "SN|Shona",
+      "SD|Sindi",
+      "MY|Sirmanês",
+      "SS|Sisvati",
+      "SO|Somali",
+      "SW|Suaili",
+      "SU|Sudanês",
+      "SV|Sueco",
+      "TG|Tadjique",
+      "TH|Tai",
+      "TL|Talagog",
+      "TA|Tamil",
+      "TT|Tatar",
+      "CS|Tcheco",
+      "TE|Telugo",
+      "BO|Tibetano",
+      "TI|Tigrina",
+      "TO|Tongalês",
+      "TS|Tsonga",
+      "TW|Tui",
+      "TR|Turco",
+      "TK|Turcomano",
+      "TU|Tuvaloano",
+      "UK|Ucraniâno",
+      "UR|Urdu",
+      "UZ|Uzbeco",
+      "VI|Vietnamita",
+      "VO|Volupak",
+      "WO|Wolof",
+      "XH|Xosa",
+      "YO|Yoruba",
+      "ZU|Zulú",
+      "OU|Outros"
+    ],
+    "L25": ["P|Pouco", "R|Razoavelmente", "B|Bem"],
+    "L26": ["|", "F|Curso De Curta Duração", "8|Extensão Universitária", "E|Mba", "Y|Outros"],
+    "L27": ["N|em andamento", "S|concluído", "I|incompleto"],
+    "L28": ["|", "0|Não", "1|Sim"],
+    "L29": ["S|Atual (não finalizado)", "N|Anterior (finalizado)"],
+    "L30": ["S|", "N|"],
+    "L31": ["141|Jornal de notícias", "142|Revista (Magazine)"],
+    "L32": ["121|Completo", "122|Resumo", "123|Resumo Expandido"],
+    "L33": ["I|Internacional", "N|Nacional", "R|Regional", "L|Local"],
+    "L34": [
+      "2J1|Comunicação",
+      "2J2|Conferência ou palestra",
+      "2J3|Congresso",
+      "2J4|Seminário",
+      "2J5|Simpósio",
+      "2J9|Outra"
+    ],
+    "L35": ["1B1|Canto", "1B2|Coral", "1B3|Orquestral", "1B9|Outra"],
+    "L36": [
+      "|",
+      "DE|Alemão",
+      "ES|Espanhol",
+      "FR|Francês",
+      "EN|Inglês",
+      "IT|Italiano",
+      "LB|Libras",
+      "PT|Português",
+      "AB|Abhkazian",
+      "AA|Afar",
+      "AF|Afrikaans",
+      "AY|Aimara",
+      "SQ|Albanês",
+      "AM|Amarico",
+      "AR|Árabe",
+      "AN|Armênio",
+      "AS|Assames",
+      "AZ|Azerbaidjano",
+      "BC|Baluchi",
+      "EU|Basco",
+      "BA|Bashquir",
+      "BN|Bengali",
+      "BB|Berbere",
+      "BE|Bielo-Russo",
+      "BH|Bihari",
+      "BM|Birmanês",
+      "BI|Bislama",
+      "BR|Bretão",
+      "BG|Búlgaro",
+      "CB|Cabie",
+      "KS|Cachemiriano",
+      "KM|Cambodjano",
+      "KN|Canadá",
+      "KK|Casaque",
+      "CA|Catalão",
+      "ZH|Chinês",
+      "SI|Cingalês",
+      "KO|Coreano",
+      "CO|Corsico",
+      "CR|Crioulo",
+      "HR|Croata",
+      "KU|Curdo",
+      "DA|Dinamarquês",
+      "DI|Divehi",
+      "DZ|Dzongka",
+      "FY|Erisão",
+      "SK|Eslovaco",
+      "SL|Esloveno",
+      "EO|Esperanto",
+      "ET|Estoniano",
+      "EE|Eue",
+      "FO|Feróico",
+      "FJ|Fijiano",
+      "FL|Filipino",
+      "FI|Finlandês",
+      "GD|Gaelico Escocês",
+      "GL|Galego",
+      "CY|Galês",
+      "KA|Georgiano",
+      "EL|Grego",
+      "KL|Groenlandês",
+      "GN|Guarani",
+      "GU|Gujarati",
+      "HY|Harmênio",
+      "HA|Hausa",
+      "IW|Hebraico",
+      "HI|Hindi",
+      "NL|Holandês",
+      "HU|Húngaro",
+      "JI|Iidiche",
+      "IN|Indonésio",
+      "IA|Interlíngua",
+      "IE|Interlíngue",
+      "IK|Inupiak",
+      "ID|Ioma",
+      "GA|Irlandês",
+      "IS|Islandês",
+      "JA|Japonês",
+      "JV|Javanês",
+      "LO|Laosiano",
+      "LP|Lapão",
+      "LA|Latim",
+      "LV|Letão",
+      "LN|Lingála",
+      "LT|Lituano",
+      "LX|Luxemburguês",
+      "MK|Macedônio",
+      "ML|Malaiala",
+      "MS|Malaio",
+      "MG|Malgaxe",
+      "MT|Maltês",
+      "MA|Mandingo",
+      "MI|Maori",
+      "MR|Maratí",
+      "MO|Moldavio",
+      "MN|Mongol",
+      "NA|Nauruano",
+      "NE|Nepali",
+      "NO|Norueguês",
+      "OR|Oria",
+      "OM|Oromo",
+      "FA|Persa",
+      "PL|Polonês",
+      "PA|Punjabi",
+      "PS|Pushto",
+      "QU|Quichua",
+      "RW|Quiniaruanda",
+      "KY|Quirquiz",
+      "RN|Quirundi",
+      "QI|Quisuahili",
+      "RM|Reto-Romano",
+      "RO|Romeno",
+      "RU|Russo",
+      "SM|Samoano",
+      "SG|Sango",
+      "SA|Sanscrito",
+      "SR|Serbian",
+      "SH|Servo-Croata",
+      "ST|Sesoto",
+      "TN|Setsuana",
+      "SN|Shona",
+      "SD|Sindi",
+      "MY|Sirmanês",
+      "SS|Sisvati",
+      "SO|Somali",
+      "SW|Suaili",
+      "SU|Sudanês",
+      "SV|Sueco",
+      "TG|Tadjique",
+      "TH|Tai",
+      "TL|Talagog",
+      "TA|Tamil",
+      "TT|Tatar",
+      "CS|Tcheco",
+      "TE|Telugo",
+      "BO|Tibetano",
+      "TI|Tigrina",
+      "TO|Tongalês",
+      "TS|Tsonga",
+      "TW|Tui",
+      "TR|Turco",
+      "TK|Turcomano",
+      "TU|Tuvaloano",
+      "UK|Ucraniâno",
+      "UR|Urdu",
+      "UZ|Uzbeco",
+      "VI|Vietnamita",
+      "VO|Volupak",
+      "WO|Wolof",
+      "XH|Xosa",
+      "YO|Yoruba",
+      "ZU|Zulú",
+      "OU|Outros"
+    ],
+    "L37": ["1A1|Artigo", "1A2|Livro", "1A9|Outra"],
+    "L38": [
+      "|",
+      "12|Aparelho",
+      "13|Instrumento",
+      "14|Equipamento",
+      "15|Fármacos e similares",
+      "16|Outra"
+    ],
+    "L39": ["221|Piloto", "222|Projeto", "223|Protótipo", "229|Outro"],
+    "L40": [
+      "231|Analítica",
+      "232|Instrumental",
+      "233|Pedagógica",
+      "234|Processual",
+      "235|Terapêutica",
+      "239|Outra"
+    ],
+    "L41": [
+      "243|Parecer",
+      "244|Elaboração de projeto",
+      "245|Relatório técnico",
+      "246|Serviços na área da saúde",
+      "247|Extensão tecnológica",
+      "249|Outra"
+    ],
+    "L42": ["2A1|Aerofotograma", "2A2|Carta", "2A3|Fotograma", "2A4|Mapa", "2A9|Outro"],
+    "L43": ["|", "Docente|Docente", "Organizador|Organizador", "Outra|Outra"],
+    "L44": ["|", "horas|horas", "dias|dias", "semanas|semanas"],
+    "L45": ["2B1|Extensão", "2B2|Aperfeiçoamento", "2B3|Especialização", "2B9|Outro"],
+    "L46": [
+      "2D1|Livro",
+      "2D2|Anais",
+      "2D3|Catálogo",
+      "2D4|Coletânea",
+      "2D5|Enciclopédia",
+      "2D6|Periódico",
+      "2D9|Outro"
+    ],
+    "L47": [
+      "|",
+      "17|Arquitetura",
+      "18|Desenho",
+      "19|Escultura",
+      "20|Fotografia",
+      "21|Gravura",
+      "22|Pintura",
+      "23|Outra"
+    ],
+    "L48": ["|", "Público|Público", "Privado|Privado"],
+    "L49": ["2E1|Conservação", "2E2|Restauração", "2E9|Outra"],
+    "L50": ["|", "I|Impresso", "W|Web", "O|Outrooutro"],
+    "L51": ["2H1|Entrevista", "2H2|Mesa redonda", "2H3|Comentário", "2H4|Programa", "2H9|Outra"],
+    "L52": ["|", "24|Curadoria", "25|Montagem", "27|Museologia", "26|Organização", "28|Outra"],
+    "L53": [
+      "2G1|Concerto",
+      "2G2|Concurso",
+      "2G3|Congresso",
+      "2G4|Exposição",
+      "2G5|Festival",
+      "2G6|Feira",
+      "2G7|Olimpíada",
+      "2G9|Outro"
+    ],
+    "L54": [
+      "|",
+      "A31|Congresso",
+      "A32|Seminário",
+      "A33|Simpósio",
+      "A34|Oficina",
+      "A35|Encontro",
+      "A36|Olimpíada",
+      "A37|Feira",
+      "A38|Exposição",
+      "A39|Outra"
+    ],
+    "L55": ["38|Convidado", "39|Participante", "40|Ouvinte"],
+    "L56": [
+      "41|Dissertação de mestrado",
+      "42|Tese de doutorado",
+      "43|Monografia de conclusão de curso de aper",
+      "44|Trabalho de conclusão de curso de gradua",
+      "45|Iniciação Científica",
+      "46|Supervisão de pós-doutorado",
+      "49|Orientação de outra natureza"
+    ],
+    "L57": ["O|Orientador principal", "C|coorientador"],
+    "L58": [
+      "A41|Dissertação de mestrado",
+      "A42|Tese de doutorado",
+      "A43|Monografia de conclusão de curso de aper",
+      "A44|Trabalho de conclusão de curso de gradua",
+      "A45|Iniciação Científica",
+      "A46|Supervisão de pós-doutorado",
+      "A49|Orientação de outra natureza"
+    ],
+    "L59": ["|", "34 |Acadêmico", "35 |Profissional"],
+    "L60": [
+      "A11|Mestrado",
+      "A12|Doutorado",
+      "A13|Exame de qualificação de doutorado",
+      "A16|Exame de qualificação de mestrado",
+      "A14|Curso de aperfeiçoamento/especialização",
+      "A15|Graduação"
+    ],
+    "L61": [
+      "A21|Professor titular",
+      "A22|Concurso público",
+      "A23|Livre-docência",
+      "A24|Avaliação de cursos",
+      "A29|Outra"
+    ]
+  },
+  "forms": [
+    {
+      "form": "PKG_ASSESSORIA_CCOD.form?f_cod=COD",
+      "list": "PKG_ASSESSORIA_CCOD.lista?f_cod=COD",
+      "names": ["GN_RELATORIO>PKG_ASSESSORIA_CONSULTORIA.FORM"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "f_disp",
+          "label": "",
+          "list": "L3"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L5",
+        "F_RELEV": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_finalidade:255",
+        "f_duracao:5",
+        "f_paginas:5",
+        "f_cidade:255",
+        "f_inst:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "PKG_EXTENSAO_TCOD.form?f_cod=COD",
+      "list": "PKG_EXTENSAO_TCOD.lista?f_cod=COD",
+      "names": ["GN_RELATORIO>PKG_EXTENSAO_TECNOLOGICA.FORM"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "f_disp",
+          "label": "",
+          "list": "L3"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_RELEV": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_finalidade:255",
+        "f_duracao:5",
+        "f_paginas:5",
+        "f_cidade:255",
+        "f_inst:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=&f_cod_tipo=E&f_cod=COD",
+      "list": "pkg_projeto.lista?f_cod_tipo=E&f_cod=COD",
+      "names": ["GN_PROJETO>PKG_PROJETO.FORM", "instituicaoForm>", "GN_INST_OUTRA2>PRC_INST_OUTRA"],
+      "selects": [
+        {
+          "name": "F_TPO_NATUREZA",
+          "label": "",
+          "list": "L7"
+        },
+        {
+          "name": "F_TPO_SITUACAO",
+          "label": "",
+          "list": "L8"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        },
+        {
+          "name": "f_pais_inst",
+          "label": "",
+          "list": "L9"
+        },
+        {
+          "name": "f_uf",
+          "label": "",
+          "list": "L10"
+        }
+      ],
+      "radios": {
+        "f_tpo_pesq_emp": "L11",
+        "f_sta_inovacao": "L11"
+      },
+      "texts": [
+        "f_titulo:255",
+        "f_ref:3900",
+        "F_ANO_INIC:4",
+        "F_ANO_FIM:4",
+        "f_cnpj_empresa:18",
+        "f_txt_nme_empresa:400",
+        "f_txt_email_institucional:400",
+        "f_txt_setor:400",
+        "f_txt_potencial:400",
+        "f_inst:75",
+        "f_orgao:",
+        ":60",
+        ":60",
+        ":60",
+        "F_NRO_GRADUACAO:2",
+        "F_NRO_ESPECIALIZACAO:2",
+        "F_NRO_MESTRADO_ACAD:2",
+        "F_NRO_MESTRADO_PROF:2",
+        "F_NRO_DOUTORADO:2",
+        "f_titulo_en:255",
+        "f_ref_en:3900",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":60",
+        ":60",
+        "f_nome:",
+        "f_nme_inst:75",
+        "f_sigla:16",
+        ":60",
+        ":60"
+      ]
+    },
+    {
+      "form": "PKG_PATENTE_REGISTRO.form?f_reg=&F_STA_DIVULGACAO_COD=&f_cod=COD&f_cod_tipo=CR",
+      "list": "PKG_PATENTE_REGISTRO.LISTA?f_sta_inovacao=S&f_cod_tipo=CR&f_cod=COD",
+      "names": [
+        "PKG_PATENTE_REGISTRO>PKG_PATENTE_REGISTRO.FORM",
+        "instituicaoForm>PRC_INST_FORM",
+        "GN_INST_OUTRA>PRC_INST_OUTRA"
+      ],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        },
+        {
+          "name": "f_pais_inst",
+          "label": "",
+          "list": "L9"
+        },
+        {
+          "name": "f_uf",
+          "label": "",
+          "list": "L10"
+        }
+      ],
+      "radios": {
+        "f_sta_inovacao": "L11"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_inst:75",
+        "f_cod_reg:16",
+        "f_dta_dep:10",
+        "f_txt_potencial:400",
+        ":60",
+        ":60",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":60",
+        ":60",
+        "f_nome:",
+        "f_nme_inst:75",
+        "f_sigla:16",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=&f_cod_tipo=D&f_cod=COD",
+      "list": "pkg_projeto.lista?f_cod_tipo=D&f_cod=COD",
+      "names": ["GN_PROJETO>PKG_PROJETO.FORM", "instituicaoForm>", "GN_INST_OUTRA2>PRC_INST_OUTRA"],
+      "selects": [
+        {
+          "name": "F_TPO_NATUREZA",
+          "label": "",
+          "list": "L7"
+        },
+        {
+          "name": "F_TPO_SITUACAO",
+          "label": "",
+          "list": "L8"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        },
+        {
+          "name": "f_pais_inst",
+          "label": "",
+          "list": "L9"
+        },
+        {
+          "name": "f_uf",
+          "label": "",
+          "list": "L10"
+        }
+      ],
+      "radios": {
+        "f_tpo_pesq_emp": "L11",
+        "f_sta_inovacao": "L11"
+      },
+      "texts": [
+        "f_titulo:255",
+        "f_ref:3900",
+        "F_ANO_INIC:4",
+        "F_ANO_FIM:4",
+        "f_cnpj_empresa:18",
+        "f_txt_nme_empresa:400",
+        "f_txt_email_institucional:400",
+        "f_txt_setor:400",
+        "f_txt_potencial:400",
+        "f_inst:75",
+        "f_orgao:",
+        ":60",
+        ":60",
+        ":60",
+        "F_NRO_TEC_NIVEL_MEDIO:2",
+        "F_NRO_GRADUACAO:2",
+        "F_NRO_ESPECIALIZACAO:2",
+        "F_NRO_MESTRADO_ACAD:2",
+        "F_NRO_MESTRADO_PROF:2",
+        "F_NRO_DOUTORADO:2",
+        "f_titulo_en:255",
+        "f_ref_en:3900",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":60",
+        ":60",
+        "f_nome:",
+        "f_nme_inst:75",
+        "f_sigla:16",
+        ":60",
+        ":60"
+      ]
+    },
+    {
+      "form": "PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=&f_cod_tipo=O&f_cod=COD",
+      "list": "pkg_projeto.lista?f_cod_tipo=O&f_cod=COD",
+      "names": ["GN_PROJETO>PKG_PROJETO.FORM", "instituicaoForm>", "GN_INST_OUTRA2>PRC_INST_OUTRA"],
+      "selects": [
+        {
+          "name": "F_TPO_NATUREZA",
+          "label": "",
+          "list": "L7"
+        },
+        {
+          "name": "F_TPO_SITUACAO",
+          "label": "",
+          "list": "L8"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        },
+        {
+          "name": "f_pais_inst",
+          "label": "",
+          "list": "L9"
+        },
+        {
+          "name": "f_uf",
+          "label": "",
+          "list": "L10"
+        }
+      ],
+      "radios": {
+        "f_tpo_pesq_emp": "L11",
+        "f_sta_inovacao": "L11"
+      },
+      "texts": [
+        "f_titulo:255",
+        "f_ref:3900",
+        "F_ANO_INIC:4",
+        "F_ANO_FIM:4",
+        "f_cnpj_empresa:18",
+        "f_txt_nme_empresa:400",
+        "f_txt_email_institucional:400",
+        "f_txt_setor:400",
+        "f_txt_potencial:400",
+        "f_inst:75",
+        "f_orgao:",
+        ":60",
+        ":60",
+        ":60",
+        "F_NRO_GRADUACAO:2",
+        "F_NRO_ESPECIALIZACAO:2",
+        "F_NRO_MESTRADO_ACAD:2",
+        "F_NRO_MESTRADO_PROF:2",
+        "F_NRO_DOUTORADO:2",
+        "f_titulo_en:255",
+        "f_ref_en:3900",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":60",
+        ":60",
+        "f_nome:",
+        "f_nme_inst:75",
+        "f_sigla:16",
+        ":60",
+        ":60"
+      ]
+    },
+    {
+      "form": "pkg_arte_nova.form?f_cod=COD&F_TIPO=AC",
+      "list": "pkg_arte_nova.lista?f_sta_divulgacao_cientifica=S&f_cod_tipo=AC&f_cod=COD",
+      "names": ["GN_ARTE>PKG_ARTE_NOVA.FORM"],
+      "selects": [
+        {
+          "name": "F_COD_PROD",
+          "label": "",
+          "list": "L12"
+        },
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "f_tpo_evento",
+          "label": "",
+          "list": "L13"
+        },
+        {
+          "name": "f_tpo_ativ",
+          "label": "",
+          "list": "L14"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_dta_ini:10",
+        "f_local_estreia:255",
+        "f_premiacao:255",
+        "f_inst_premio:255",
+        "F_EXPOSICAO:255",
+        "f_autor_obra:255",
+        "f_ano_obra:4",
+        "f_duracao:5",
+        "f_temporada:255",
+        "f_inst:255",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_arte_nova.form?f_cod=COD&F_TIPO=MU",
+      "list": "pkg_arte_nova.lista?f_sta_divulgacao_cientifica=S&f_cod_tipo=MU&f_cod=COD",
+      "names": ["GN_ARTE>PKG_ARTE_NOVA.FORM"],
+      "selects": [
+        {
+          "name": "F_COD_PROD",
+          "label": "",
+          "list": "L15"
+        },
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "f_tpo_evento",
+          "label": "",
+          "list": "L16"
+        },
+        {
+          "name": "f_tpo_ativ",
+          "label": "",
+          "list": "L17"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_form_instr:255",
+        "f_dta_ini:10",
+        "f_local_estreia:255",
+        "f_premiacao:255",
+        "f_inst_premio:255",
+        "F_EXPOSICAO:255",
+        "f_autor_obra:255",
+        "f_ano_obra:4",
+        "f_duracao:5",
+        "f_temporada:255",
+        "f_inst:255",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "PKG_PATENTE_REGISTRO.form?f_reg=N&F_STA_DIVULGACAO_COD=&f_cod=COD&f_cod_tipo=PC",
+      "list": "PKG_PATENTE_REGISTRO.LISTA?f_sta_inovacao=S&f_reg=N&f_cod_tipo=PC&f_cod=COD",
+      "names": [
+        "PKG_PATENTE_REGISTRO>PKG_PATENTE_REGISTRO.FORM",
+        "instituicaoForm>PRC_INST_FORM",
+        "GN_INST_OUTRA>PRC_INST_OUTRA"
+      ],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "Título",
+          "list": "L0"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        },
+        {
+          "name": "f_pais_inst",
+          "label": "",
+          "list": "L9"
+        },
+        {
+          "name": "f_uf",
+          "label": "",
+          "list": "L10"
+        }
+      ],
+      "radios": {
+        "f_natureza": "L18",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6",
+        "f_sta_inovacao": "L11",
+        "F_RELEV": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_finalidade:255",
+        "f_txt_potencial:400",
+        "f_inst_financ:380",
+        "f_plataforma:255",
+        ":",
+        ":60",
+        ":60",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":60",
+        ":60",
+        "f_nome:",
+        "f_nme_inst:75",
+        "f_sigla:16",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_arte_nova.form?f_cod=COD&F_TIPO=OU",
+      "list": "pkg_arte_nova.lista?f_cod_tipo=OU&f_cod=COD&f_sta_divulgacao_cientifica=S ",
+      "names": ["GN_ARTE>PKG_ARTE_NOVA.FORM"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_natureza:100",
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_tpo_evento:28",
+        "f_tpo_ativ:50",
+        "f_dta_ini:10",
+        "f_dta_fim:10",
+        "f_local_estreia:255",
+        "f_premiacao:255",
+        "f_inst_premio:255",
+        "F_EXPOSICAO:255",
+        "f_autor_obra:255",
+        "f_ano_obra:4",
+        "f_duracao:5",
+        "f_temporada:255",
+        "f_inst:255",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_midias_sociais?f_cod=COD",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2L&f_cod=COD",
+      "names": ["GN_TEC>PRC_MIDIAS_SOCIAIS"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L19",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "F_HOMEPAGE:400",
+        "f_tema:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_arte_nova.form?f_cod=COD&F_TIPO=AV",
+      "list": "pkg_arte_nova.lista?f_sta_divulgacao_cientifica=S&f_cod_tipo=AV&f_cod=COD",
+      "names": ["GN_ARTE>PKG_ARTE_NOVA.FORM"],
+      "selects": [
+        {
+          "name": "F_COD_PROD",
+          "label": "",
+          "list": "L20"
+        },
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "f_tpo_evento",
+          "label": "",
+          "list": "L21"
+        },
+        {
+          "name": "f_tpo_ativ",
+          "label": "",
+          "list": "L22"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_premiacao:255",
+        "f_inst_premio:255",
+        "f_temporada:255",
+        "f_inst:255",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_licenca.form?f_cod=COD",
+      "list": "pkg_licenca.lista?f_cod=COD",
+      "names": ["GN_LICENCA>PKG_LICENCA.FORM"],
+      "selects": [
+        {
+          "name": "f_tipo_licenca",
+          "label": "",
+          "list": "L23"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {},
+      "texts": ["f_dta_inicio:10", "f_dta_fim:10", "f_dta_nasc_adoc:10", "f_tipo_privacidade:", ":"]
+    },
+    {
+      "form": "pkg_idioma.form?f_cod=COD",
+      "list": "pkg_idioma.lista?f_cod=COD",
+      "names": ["GN_IDIOMA>PKG_IDIOMA.FORM"],
+      "selects": [
+        {
+          "name": "F_COD_IDIOMA",
+          "label": "",
+          "list": "L24"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_LE": "L25",
+        "F_CONVERSA": "L25",
+        "F_ESCREVE": "L25",
+        "F_COMPR": "L25"
+      },
+      "texts": ["f_tipo_privacidade:", ":"]
+    },
+    {
+      "form": "pkg_premio.form?f_cod=COD",
+      "list": "pkg_premio.lista?f_cod=COD",
+      "names": ["GN_PREMIO>pkg_premio.form"],
+      "selects": [
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {},
+      "texts": ["f_titulo:200", "f_agencia:100", "f_ano:4", "f_tipo_privacidade:", ":"]
+    },
+    {
+      "form": "PKG_FORMACAO_COMPL.form?f_cod=COD&f_tipo=FA",
+      "list": "pkg_formacao_compl.lista?f_cod=COD",
+      "names": ["GN_FORMACAO2>PKG_FORMACAO_COMPL.FORM2"],
+      "selects": [
+        {
+          "name": "f_nivel",
+          "label": "",
+          "list": "L26"
+        }
+      ],
+      "radios": {
+        "F_STATUS": "L27"
+      },
+      "texts": ["f_inst:75", "f_curso:50", "f_carga:4"]
+    },
+    {
+      "form": "PKG_ATIV.ordenar?f_cod=COD",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": ["GN_ORDENAR>PKG_ATIV.ORDENAR"],
+      "selects": [],
+      "radios": {},
+      "texts": []
+    },
+    {
+      "form": "PKG_ATIV.cargos_vinculos?f_cod=COD&f_codinst=D001000000998&f_seq_ativ=5",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": [],
+      "selects": [],
+      "radios": {},
+      "texts": []
+    },
+    {
+      "form": "PKG_ATIV.cargos_vinculos?f_cod=COD&f_codinst=D001100000990&f_seq_ativ=6",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": [],
+      "selects": [],
+      "radios": {},
+      "texts": []
+    },
+    {
+      "form": "PKG_ATIV.cargos_vinculos?f_cod=COD&f_codinst=D001200000991&f_seq_ativ=7",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": [],
+      "selects": [],
+      "radios": {},
+      "texts": []
+    },
+    {
+      "form": "PKG_ATIV.cargos_vinculos?f_cod=COD&f_codinst=D001300000993&f_seq_ativ=8",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": [],
+      "selects": [],
+      "radios": {},
+      "texts": []
+    },
+    {
+      "form": "PKG_ATIV.cargos_vinculos?f_cod=COD&f_codinst=D001400000995&f_seq_ativ=9",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": [],
+      "selects": [],
+      "radios": {},
+      "texts": []
+    },
+    {
+      "form": "PKG_ATIV.cargos_vinculos?f_cod=COD&f_codinst=D001500000997&f_seq_ativ=10",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": [],
+      "selects": [],
+      "radios": {},
+      "texts": []
+    },
+    {
+      "form": "PKG_ATIV.cargos_vinculos?f_cod=COD&f_codinst=D001600000999&f_seq_ativ=11",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": [],
+      "selects": [],
+      "radios": {},
+      "texts": []
+    },
+    {
+      "form": "PKG_ATIV.cargos_vinculos?f_cod=COD&f_codinst=D001700000990&f_seq_ativ=12",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": [],
+      "selects": [],
+      "radios": {},
+      "texts": []
+    },
+    {
+      "form": "PKG_ATIV.cargos_vinculos?f_cod=COD&f_codinst=D001800000992&f_seq_ativ=13",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": [],
+      "selects": [],
+      "radios": {},
+      "texts": []
+    },
+    {
+      "form": "PKG_ATIV.cargos_vinculos?f_cod=COD&f_codinst=D001900000994&f_seq_ativ=14",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": [],
+      "selects": [],
+      "radios": {},
+      "texts": []
+    },
+    {
+      "form": "PKG_ATIV.cargos_vinculos?f_cod=COD&f_codinst=D002000000996&f_seq_ativ=15",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": [],
+      "selects": [],
+      "radios": {},
+      "texts": []
+    },
+    {
+      "form": "PKG_ATIV.cargos_vinculos?f_cod=COD&f_codinst=D002100000998&f_seq_ativ=16",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": [],
+      "selects": [],
+      "radios": {},
+      "texts": []
+    },
+    {
+      "form": "PKG_ATIV.cargos_vinculos?f_cod=COD&f_codinst=D002200000990&f_seq_ativ=17",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": [],
+      "selects": [],
+      "radios": {},
+      "texts": []
+    },
+    {
+      "form": "PKG_ATIV.cargos_vinculos?f_cod=COD&f_codinst=D000300000995&f_seq_ativ=1",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": [],
+      "selects": [],
+      "radios": {},
+      "texts": []
+    },
+    {
+      "form": "PKG_ATIV.cargos_vinculos?f_cod=COD&f_codinst=V985600720469&f_seq_ativ=2",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": [],
+      "selects": [],
+      "radios": {},
+      "texts": []
+    },
+    {
+      "form": "PKG_ATIV.cargos_vinculos?f_cod=COD&f_codinst=V985600215039&f_seq_ativ=3",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": [],
+      "selects": [],
+      "radios": {},
+      "texts": []
+    },
+    {
+      "form": "PKG_ATIV.cargos_vinculos?f_cod=COD&f_codinst=D000800000994&f_seq_ativ=4",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": [],
+      "selects": [],
+      "radios": {},
+      "texts": []
+    },
+    {
+      "form": "PKG_ATIV.inclui?f_cod=COD",
+      "list": "pkg_ativ.lista?f_cod=COD",
+      "names": ["GN_ATIV>PKG_ATIV.INCLUI"],
+      "selects": [
+        {
+          "name": "f_stavinc",
+          "label": "",
+          "list": "L28"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "f_status": "L29"
+      },
+      "texts": [
+        "f_inst:75",
+        "f_vinc:30",
+        "f_enqua:45",
+        "f_carga:3",
+        "f_mes_ini:2",
+        "f_ano_ini:4",
+        "f_mes_fim:2",
+        "f_ano_fim:4",
+        "f_outras_inf:3950",
+        "f_tipo_privacidade:",
+        ":"
+      ]
+    },
+    {
+      "form": "PKG_REVISOR.inclui?f_cod=COD&f_natur=MB&f_origem=L",
+      "list": "pkg_revisor.lista?f_natur=MB&f_cod=COD",
+      "names": ["GN_ATIV>PKG_REVISOR.INCLUI"],
+      "selects": [
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "f_status": "L30"
+      },
+      "texts": [
+        "f_nme_agencia:255",
+        "f_mes_ini:2",
+        "f_ano_ini:4",
+        "f_mes_fim:2",
+        "f_ano_fim:4",
+        "f_outras_inf:3950",
+        "f_tipo_privacidade:",
+        ":"
+      ]
+    },
+    {
+      "form": "PKG_REVISOR.inclui?f_cod=COD&f_natur=MA&f_origem=L",
+      "list": "pkg_revisor.lista?f_natur=MA&f_cod=COD",
+      "names": ["GN_ATIV>PKG_REVISOR.INCLUI"],
+      "selects": [
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "f_status": "L30"
+      },
+      "texts": [
+        "f_nme_agencia:255",
+        "f_comite:200",
+        "f_mes_ini:2",
+        "f_ano_ini:4",
+        "f_mes_fim:2",
+        "f_ano_fim:4",
+        "f_outras_inf:3950",
+        "f_tipo_privacidade:",
+        ":"
+      ]
+    },
+    {
+      "form": "PKG_REVISOR.inclui?f_cod=COD&f_natur=RV&f_origem=L",
+      "list": "pkg_revisor.lista?f_natur=RV&f_cod=COD",
+      "names": ["GN_ATIV>PKG_REVISOR.INCLUI"],
+      "selects": [
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "f_status": "L30"
+      },
+      "texts": [
+        "f_nme_agencia:255",
+        "f_mes_ini:2",
+        "f_ano_ini:4",
+        "f_mes_fim:2",
+        "f_ano_fim:4",
+        "f_outras_inf:3950",
+        "f_tipo_privacidade:",
+        ":"
+      ]
+    },
+    {
+      "form": "PKG_REVISOR.inclui?f_cod=COD&f_natur=RA&f_origem=L",
+      "list": "pkg_revisor.lista?f_natur=RA&f_cod=COD",
+      "names": ["GN_ATIV>PKG_REVISOR.INCLUI"],
+      "selects": [
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "f_status": "L30"
+      },
+      "texts": [
+        "f_nme_agencia:255",
+        "f_mes_ini:2",
+        "f_ano_ini:4",
+        "f_mes_fim:2",
+        "f_ano_fim:4",
+        "f_outras_inf:3950",
+        "f_tipo_privacidade:",
+        ":"
+      ]
+    },
+    {
+      "form": "PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=&f_cod_tipo=P&f_cod=COD",
+      "list": "pkg_projeto.lista?f_cod_tipo=P&f_cod=COD",
+      "names": ["GN_PROJETO>PKG_PROJETO.FORM", "instituicaoForm>", "GN_INST_OUTRA2>PRC_INST_OUTRA"],
+      "selects": [
+        {
+          "name": "F_TPO_NATUREZA",
+          "label": "",
+          "list": "L7"
+        },
+        {
+          "name": "F_TPO_SITUACAO",
+          "label": "",
+          "list": "L8"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        },
+        {
+          "name": "f_pais_inst",
+          "label": "",
+          "list": "L9"
+        },
+        {
+          "name": "f_uf",
+          "label": "",
+          "list": "L10"
+        }
+      ],
+      "radios": {
+        "f_tpo_pesq_emp": "L11",
+        "f_sta_inovacao": "L11"
+      },
+      "texts": [
+        "f_titulo:255",
+        "f_ref:3900",
+        "F_ANO_INIC:4",
+        "F_ANO_FIM:4",
+        "f_cnpj_empresa:18",
+        "f_txt_nme_empresa:400",
+        "f_txt_email_institucional:400",
+        "f_txt_setor:400",
+        "f_txt_potencial:400",
+        "f_inst:75",
+        "f_orgao:",
+        ":60",
+        ":60",
+        ":60",
+        "F_NRO_GRADUACAO:2",
+        "F_NRO_ESPECIALIZACAO:2",
+        "F_NRO_MESTRADO_ACAD:2",
+        "F_NRO_MESTRADO_PROF:2",
+        "F_NRO_DOUTORADO:2",
+        "f_titulo_en:255",
+        "f_ref_en:3900",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":60",
+        ":60",
+        "f_nome:",
+        "f_nme_inst:75",
+        "f_sigla:16",
+        ":60",
+        ":60"
+      ]
+    },
+    {
+      "form": "PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=&f_cod_tipo=N&f_cod=COD",
+      "list": "pkg_projeto.lista?f_cod_tipo=N&f_cod=COD",
+      "names": ["GN_PROJETO>PKG_PROJETO.FORM", "instituicaoForm>", "GN_INST_OUTRA2>PRC_INST_OUTRA"],
+      "selects": [
+        {
+          "name": "F_TPO_NATUREZA",
+          "label": "",
+          "list": "L7"
+        },
+        {
+          "name": "F_TPO_SITUACAO",
+          "label": "",
+          "list": "L8"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        },
+        {
+          "name": "f_pais_inst",
+          "label": "",
+          "list": "L9"
+        },
+        {
+          "name": "f_uf",
+          "label": "",
+          "list": "L10"
+        }
+      ],
+      "radios": {
+        "f_tpo_pesq_emp": "L30",
+        "f_sta_inovacao": "L11"
+      },
+      "texts": [
+        "f_titulo:255",
+        "f_ref:3900",
+        "F_ANO_INIC:4",
+        "F_ANO_FIM:4",
+        "f_especifique:50",
+        "f_objetivos_metas:3900",
+        "f_inst:75",
+        "f_orgao:",
+        ":60",
+        ":60",
+        ":60",
+        "F_NRO_PRIMEIRO_GRAU:2",
+        "F_NRO_SEGUNDO_GRAU:2",
+        "F_NRO_GRADUACAO:2",
+        "F_NRO_ESPECIALIZACAO:2",
+        "F_NRO_MESTRADO_ACAD:2",
+        "F_NRO_MESTRADO_PROF:2",
+        "F_NRO_DOUTORADO:2",
+        "f_titulo_en:255",
+        "f_ref_en:3900",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":60",
+        ":60",
+        "f_nome:",
+        "f_nme_inst:75",
+        "f_sigla:16",
+        ":60",
+        ":60"
+      ]
+    },
+    {
+      "form": "PKG_ARTIGO_PR.form?f_cod=COD&F_STA_DIVULGACAO_COD=",
+      "list": "pkg_artigo_pr.lista?f_cod=COD",
+      "names": ["GN_ARTIGO>PKG_ARTIGO_PR.FORM", "formdoi>"],
+      "selects": [
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_cod_doi:250",
+        "f_titulo:400",
+        "f_ano:4",
+        "f_titulo_periodico:255",
+        "f_jcr:",
+        "f_issn:10",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_texto.form?f_sta_divulgacao_cientifica=&f_cod=COD",
+      "list": "pkg_texto.lista?f_cod=COD",
+      "names": ["GN_TEXTO>PKG_TEXTO.FORM"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L31",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_titulo_periodico:255",
+        "f_issn:10",
+        "f_data:10",
+        "f_volume:10",
+        "f_pag_ini:15",
+        "f_pag_fim:15",
+        "f_local:30",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_trabalho.form?f_cod=COD&F_STA_DIVULGACAO_COD=&f_seq_ev=",
+      "list": "pkg_trabalho.lista?f_cod=COD",
+      "names": ["GN_TRABALHO>PKG_TRABALHO.FORM", "formdoi>"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L32",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6",
+        "f_tipo_evento": "L33"
+      },
+      "texts": [
+        "f_cod_doi:250",
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_evento:255",
+        "f_cidade_evento:30",
+        "f_ano_evento:4",
+        "f_titulo_pub:255",
+        "f_volume:6",
+        "f_fasciculo:10",
+        "f_serie:5",
+        "f_pag_ini:15",
+        "f_pag_fim:15",
+        "f_isbn:13",
+        "f_editora:100",
+        "f_cidade_ed:30",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_apres?f_cod=COD",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2J&f_cod=COD",
+      "names": ["GN_TEC>PRC_TEC_APRES"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L34",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_nme_evento:255",
+        "f_inst:255",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_bib_partitura?f_cod=COD",
+      "list": "prc_bib_demais_lista?f_cod_tipo=1B&f_cod=COD",
+      "names": ["GN_BIB>PRC_BIB_PARTITURA"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L35",
+        "F_RELEV": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_formacao:255",
+        "f_editora:100",
+        "f_cidade:30",
+        "f_paginas:5",
+        "f_issn:10",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_bib_traducao?f_cod=COD",
+      "list": "prc_bib_demais_lista?f_cod_tipo=1A&f_cod=COD",
+      "names": ["GN_BIB>PRC_BIB_TRADUCAO"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "F_IDIOMA_OBRA",
+          "label": "",
+          "list": "L36"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L37",
+        "F_RELEV": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_autor_trad:60",
+        "f_tit_obra:255",
+        "f_issn:13",
+        "f_editora:100",
+        "f_cidade:30",
+        "f_edicao:10",
+        "f_paginas:5",
+        "f_volume:6",
+        "f_fasciculo:10",
+        "f_serie:5",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_produto.form?F_sta_inovacao=&f_cod=COD",
+      "list": "pkg_produto.lista?f_cod=COD",
+      "names": ["GN_PRODUTO>PKG_PRODUTO.FORM"],
+      "selects": [
+        {
+          "name": "F_SUB_PROD",
+          "label": "",
+          "list": "L38"
+        },
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "f_disp",
+          "label": "",
+          "list": "L3"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L39",
+        "F_RELEV": "L6",
+        "f_sta_inovacao": "L11"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_txt_potencial:400",
+        "f_finalidade:255",
+        "f_cidade:255",
+        "f_inst:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_processo.form?F_sta_inovacao=&f_cod=COD",
+      "list": "pkg_processo.lista?f_cod=COD",
+      "names": ["GN_PROCESSO>PKG_PROCESSO.FORM"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "f_disp",
+          "label": "",
+          "list": "L3"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L40",
+        "F_RELEV": "L6",
+        "f_sta_inovacao": "L11"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_txt_potencial:400",
+        "f_finalidade:255",
+        "f_cidade:255",
+        "f_inst:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_relatorio.form?f_cod=COD",
+      "list": "pkg_relatorio.lista?f_cod=COD",
+      "names": ["GN_RELATORIO>PKG_RELATORIO.FORM"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "f_disp",
+          "label": "",
+          "list": "L3"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L41",
+        "F_RELEV": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_finalidade:255",
+        "f_duracao:5",
+        "f_paginas:5",
+        "f_cidade:255",
+        "f_inst:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_carta?f_cod=COD",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2A&f_cod=COD",
+      "names": ["GN_TEC>PRC_TEC_CARTA"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L42",
+        "F_RELEV": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_tema:255",
+        "f_tecnica:255",
+        "f_finalidade:255",
+        "f_area:255",
+        "f_inst:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_curso?f_cod=COD",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2B&f_cod=COD",
+      "names": ["GN_TEC>PRC_TEC_CURSO"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "f_participacao",
+          "label": "",
+          "list": "L43"
+        },
+        {
+          "name": "f_unidade",
+          "label": "",
+          "list": "L44"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L45",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_duracao:5",
+        "f_inst:255",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_desen?f_cod=COD",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2C&f_cod=COD",
+      "names": ["GN_TEC>PRC_TEC_DESEN"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_natureza:100",
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_finalidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_edit?f_cod=COD",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2D&f_cod=COD",
+      "names": ["GN_TEC>PRC_TEC_EDIT"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L46",
+        "F_RELEV": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_paginas:5",
+        "f_inst:255",
+        "f_editora:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_manut?f_cod=COD",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2E&f_cod=COD",
+      "names": ["GN_TEC>PRC_TEC_MANUT"],
+      "selects": [
+        {
+          "name": "F_SUB_PROD",
+          "label": "",
+          "list": "L47"
+        },
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "f_acervo",
+          "label": "",
+          "list": "L48"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L49",
+        "F_RELEV": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_obra:255",
+        "f_autor_obra:255",
+        "f_ano_obra:4",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_maquete?f_cod=COD",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2F&f_cod=COD",
+      "names": ["GN_TEC>PRC_TEC_MAQUETE"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_RELEV": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_finalidade:255",
+        "f_objeto:255",
+        "f_material:255",
+        "f_inst:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_radiotv?f_cod=COD",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2H&f_cod=COD",
+      "names": ["GN_TEC>PRC_TEC_RADIOTV"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L50"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L51",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "F_HOMEPAGE:400",
+        "f_emissora:255",
+        "f_tema:255",
+        "f_data:10",
+        "f_duracao:5",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_relat?f_cod=COD",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2I&f_cod=COD",
+      "names": ["GN_TEC>PRC_TEC_RELAT"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "f_disp",
+          "label": "",
+          "list": "L3"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_RELEV": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_projeto:255",
+        "f_paginas:5",
+        "f_inst:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_outraprod?f_cod=COD",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2Z&f_cod=COD",
+      "names": ["GN_TEC>PRC_TEC_OUTRAPROD"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_natureza:100",
+        "f_titulo:400",
+        "f_ano:4",
+        "f_finalidade:255",
+        "f_inst:255",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "PKG_PATENTE_REGISTRO.form?f_reg=&F_STA_DIVULGACAO_COD=&f_cod=COD&f_cod_tipo=CP",
+      "list": "PKG_PATENTE_REGISTRO.LISTA?f_sta_inovacao=S&f_cod_tipo=CP&f_cod=COD",
+      "names": [
+        "PKG_PATENTE_REGISTRO>PKG_PATENTE_REGISTRO.FORM",
+        "instituicaoForm>PRC_INST_FORM",
+        "GN_INST_OUTRA>PRC_INST_OUTRA"
+      ],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        },
+        {
+          "name": "f_pais_inst",
+          "label": "",
+          "list": "L9"
+        },
+        {
+          "name": "f_uf",
+          "label": "",
+          "list": "L10"
+        }
+      ],
+      "radios": {
+        "f_sta_inovacao": "L11"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_nme_comum:16",
+        "f_nme_cientifico:16",
+        "f_inst:75",
+        "f_cod_reg:16",
+        "f_cod_cert:16",
+        "f_dta_dep:10",
+        "f_dta_conc:10",
+        "f_txt_potencial:400",
+        ":60",
+        ":60",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":60",
+        ":60",
+        "f_nome:",
+        "f_nme_inst:75",
+        "f_sigla:16",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_produto.form?F_sta_inovacao=S&f_cod=COD",
+      "list": "pkg_produto.lista?f_sta_inovacao=S&f_cod=COD",
+      "names": ["GN_PRODUTO>PKG_PRODUTO.FORM"],
+      "selects": [
+        {
+          "name": "F_SUB_PROD",
+          "label": "",
+          "list": "L38"
+        },
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "f_disp",
+          "label": "",
+          "list": "L3"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L39",
+        "F_RELEV": "L6",
+        "f_sta_inovacao": "L11"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_txt_potencial:400",
+        "f_finalidade:255",
+        "f_cidade:255",
+        "f_inst:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_processo.form?F_sta_inovacao=S&f_cod=COD",
+      "list": "pkg_processo.lista?f_sta_inovacao=S&f_cod=COD",
+      "names": ["GN_PROCESSO>PKG_PROCESSO.FORM"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "f_disp",
+          "label": "",
+          "list": "L3"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L40",
+        "F_RELEV": "L6",
+        "f_sta_inovacao": "L11"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_txt_potencial:400",
+        "f_finalidade:255",
+        "f_cidade:255",
+        "f_inst:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=S&f_cod_tipo=P&f_cod=COD",
+      "list": "pkg_projeto.lista?f_sta_inovacao=S&f_cod_tipo=P&f_cod=COD",
+      "names": ["GN_PROJETO>PKG_PROJETO.FORM", "instituicaoForm>", "GN_INST_OUTRA2>PRC_INST_OUTRA"],
+      "selects": [
+        {
+          "name": "F_TPO_NATUREZA",
+          "label": "",
+          "list": "L7"
+        },
+        {
+          "name": "F_TPO_SITUACAO",
+          "label": "",
+          "list": "L8"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        },
+        {
+          "name": "f_pais_inst",
+          "label": "",
+          "list": "L9"
+        },
+        {
+          "name": "f_uf",
+          "label": "",
+          "list": "L10"
+        }
+      ],
+      "radios": {
+        "f_tpo_pesq_emp": "L11",
+        "f_sta_inovacao": "L11"
+      },
+      "texts": [
+        "f_titulo:255",
+        "f_ref:3900",
+        "F_ANO_INIC:4",
+        "F_ANO_FIM:4",
+        "f_cnpj_empresa:18",
+        "f_txt_nme_empresa:400",
+        "f_txt_email_institucional:400",
+        "f_txt_setor:400",
+        "f_txt_potencial:400",
+        "f_inst:75",
+        "f_orgao:",
+        ":60",
+        ":60",
+        ":60",
+        "F_NRO_GRADUACAO:2",
+        "F_NRO_ESPECIALIZACAO:2",
+        "F_NRO_MESTRADO_ACAD:2",
+        "F_NRO_MESTRADO_PROF:2",
+        "F_NRO_DOUTORADO:2",
+        "f_titulo_en:255",
+        "f_ref_en:3900",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":60",
+        ":60",
+        "f_nome:",
+        "f_nme_inst:75",
+        "f_sigla:16",
+        ":60",
+        ":60"
+      ]
+    },
+    {
+      "form": "PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=S&f_cod_tipo=D&f_cod=COD",
+      "list": "pkg_projeto.lista?f_sta_inovacao=S&f_cod_tipo=D&f_cod=COD",
+      "names": ["GN_PROJETO>PKG_PROJETO.FORM", "instituicaoForm>", "GN_INST_OUTRA2>PRC_INST_OUTRA"],
+      "selects": [
+        {
+          "name": "F_TPO_NATUREZA",
+          "label": "",
+          "list": "L7"
+        },
+        {
+          "name": "F_TPO_SITUACAO",
+          "label": "",
+          "list": "L8"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        },
+        {
+          "name": "f_pais_inst",
+          "label": "",
+          "list": "L9"
+        },
+        {
+          "name": "f_uf",
+          "label": "",
+          "list": "L10"
+        }
+      ],
+      "radios": {
+        "f_tpo_pesq_emp": "L11",
+        "f_sta_inovacao": "L11"
+      },
+      "texts": [
+        "f_titulo:255",
+        "f_ref:3900",
+        "F_ANO_INIC:4",
+        "F_ANO_FIM:4",
+        "f_cnpj_empresa:18",
+        "f_txt_nme_empresa:400",
+        "f_txt_email_institucional:400",
+        "f_txt_setor:400",
+        "f_txt_potencial:400",
+        "f_inst:75",
+        "f_orgao:",
+        ":60",
+        ":60",
+        ":60",
+        "F_NRO_TEC_NIVEL_MEDIO:2",
+        "F_NRO_GRADUACAO:2",
+        "F_NRO_ESPECIALIZACAO:2",
+        "F_NRO_MESTRADO_ACAD:2",
+        "F_NRO_MESTRADO_PROF:2",
+        "F_NRO_DOUTORADO:2",
+        "f_titulo_en:255",
+        "f_ref_en:3900",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":60",
+        ":60",
+        "f_nome:",
+        "f_nme_inst:75",
+        "f_sigla:16",
+        ":60",
+        ":60"
+      ]
+    },
+    {
+      "form": "PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=S&f_cod_tipo=E&f_cod=COD",
+      "list": "pkg_projeto.lista?f_sta_inovacao=S&f_cod_tipo=E&f_cod=COD",
+      "names": ["GN_PROJETO>PKG_PROJETO.FORM", "instituicaoForm>", "GN_INST_OUTRA2>PRC_INST_OUTRA"],
+      "selects": [
+        {
+          "name": "F_TPO_NATUREZA",
+          "label": "",
+          "list": "L7"
+        },
+        {
+          "name": "F_TPO_SITUACAO",
+          "label": "",
+          "list": "L8"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        },
+        {
+          "name": "f_pais_inst",
+          "label": "",
+          "list": "L9"
+        },
+        {
+          "name": "f_uf",
+          "label": "",
+          "list": "L10"
+        }
+      ],
+      "radios": {
+        "f_tpo_pesq_emp": "L11",
+        "f_sta_inovacao": "L11"
+      },
+      "texts": [
+        "f_titulo:255",
+        "f_ref:3900",
+        "F_ANO_INIC:4",
+        "F_ANO_FIM:4",
+        "f_cnpj_empresa:18",
+        "f_txt_nme_empresa:400",
+        "f_txt_email_institucional:400",
+        "f_txt_setor:400",
+        "f_txt_potencial:400",
+        "f_inst:75",
+        "f_orgao:",
+        ":60",
+        ":60",
+        ":60",
+        "F_NRO_GRADUACAO:2",
+        "F_NRO_ESPECIALIZACAO:2",
+        "F_NRO_MESTRADO_ACAD:2",
+        "F_NRO_MESTRADO_PROF:2",
+        "F_NRO_DOUTORADO:2",
+        "f_titulo_en:255",
+        "f_ref_en:3900",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":60",
+        ":60",
+        "f_nome:",
+        "f_nme_inst:75",
+        "f_sigla:16",
+        ":60",
+        ":60"
+      ]
+    },
+    {
+      "form": "PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=S&f_cod_tipo=O&f_cod=COD",
+      "list": "pkg_projeto.lista?f_sta_inovacao=S&f_cod_tipo=O&f_cod=COD",
+      "names": ["GN_PROJETO>PKG_PROJETO.FORM", "instituicaoForm>", "GN_INST_OUTRA2>PRC_INST_OUTRA"],
+      "selects": [
+        {
+          "name": "F_TPO_NATUREZA",
+          "label": "",
+          "list": "L7"
+        },
+        {
+          "name": "F_TPO_SITUACAO",
+          "label": "",
+          "list": "L8"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        },
+        {
+          "name": "f_pais_inst",
+          "label": "",
+          "list": "L9"
+        },
+        {
+          "name": "f_uf",
+          "label": "",
+          "list": "L10"
+        }
+      ],
+      "radios": {
+        "f_tpo_pesq_emp": "L11",
+        "f_sta_inovacao": "L11"
+      },
+      "texts": [
+        "f_titulo:255",
+        "f_ref:3900",
+        "F_ANO_INIC:4",
+        "F_ANO_FIM:4",
+        "f_cnpj_empresa:18",
+        "f_txt_nme_empresa:400",
+        "f_txt_email_institucional:400",
+        "f_txt_setor:400",
+        "f_txt_potencial:400",
+        "f_inst:75",
+        "f_orgao:",
+        ":60",
+        ":60",
+        ":60",
+        "F_NRO_GRADUACAO:2",
+        "F_NRO_ESPECIALIZACAO:2",
+        "F_NRO_MESTRADO_ACAD:2",
+        "F_NRO_MESTRADO_PROF:2",
+        "F_NRO_DOUTORADO:2",
+        "f_titulo_en:255",
+        "f_ref_en:3900",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":60",
+        ":60",
+        "f_nome:",
+        "f_nme_inst:75",
+        "f_sigla:16",
+        ":60",
+        ":60"
+      ]
+    },
+    {
+      "form": "PKG_ARTIGO_PR.form?f_cod=COD&F_STA_DIVULGACAO_COD=S",
+      "list": "pkg_artigo_pr.LISTA?f_sta_divulgacao_cientifica=S&f_cod=COD",
+      "names": ["GN_ARTIGO>PKG_ARTIGO_PR.FORM", "formdoi>"],
+      "selects": [
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_cod_doi:250",
+        "f_titulo:400",
+        "f_ano:4",
+        "f_titulo_periodico:255",
+        "f_jcr:",
+        "f_issn:10",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_texto.form?f_sta_divulgacao_cientifica=S&f_cod=COD",
+      "list": "pkg_texto.LISTA?f_sta_divulgacao_cientifica=S&f_cod=COD",
+      "names": ["GN_TEXTO>PKG_TEXTO.FORM"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L31",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_titulo_periodico:255",
+        "f_issn:10",
+        "f_data:10",
+        "f_volume:10",
+        "f_pag_ini:15",
+        "f_pag_fim:15",
+        "f_local:30",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_trabalho.form?f_cod=COD&F_STA_DIVULGACAO_COD=S&f_seq_ev=",
+      "list": "pkg_trabalho.LISTA?f_sta_divulgacao_cientifica=S&f_cod=COD",
+      "names": ["GN_TRABALHO>PKG_TRABALHO.FORM", "formdoi>"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L32",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6",
+        "f_tipo_evento": "L33"
+      },
+      "texts": [
+        "f_cod_doi:250",
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_evento:255",
+        "f_cidade_evento:30",
+        "f_ano_evento:4",
+        "f_titulo_pub:255",
+        "f_volume:6",
+        "f_fasciculo:10",
+        "f_serie:5",
+        "f_pag_ini:15",
+        "f_pag_fim:15",
+        "f_isbn:13",
+        "f_editora:100",
+        "f_cidade_ed:30",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_apres?f_sta_divulgacao_cientifica=S&f_cod=COD",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2J&f_cod=COD&f_sta_divulgacao_cientifica=S",
+      "names": ["GN_TEC>PRC_TEC_APRES"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L34",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_nme_evento:255",
+        "f_inst:255",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_apres?f_sta_divulgacao_cientifica=S&f_cod=COD&f_STA_DIVULGACAO_COD=S",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2J&f_cod=COD&f_sta_divulgacao_cientifica=S",
+      "names": ["GN_TEC>PRC_TEC_APRES"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L34",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_nme_evento:255",
+        "f_inst:255",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "PKG_PATENTE_REGISTRO.form?f_reg=N&F_STA_DIVULGACAO_COD=S&f_cod=COD&f_cod_tipo=PC",
+      "list": "pkg_patente_registro.LISTA?f_sta_divulgacao_cientifica=S&f_reg=N&f_cod_tipo=PC&f_cod=COD",
+      "names": [
+        "PKG_PATENTE_REGISTRO>PKG_PATENTE_REGISTRO.FORM",
+        "instituicaoForm>PRC_INST_FORM",
+        "GN_INST_OUTRA>PRC_INST_OUTRA"
+      ],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "Título",
+          "list": "L0"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        },
+        {
+          "name": "f_pais_inst",
+          "label": "",
+          "list": "L9"
+        },
+        {
+          "name": "f_uf",
+          "label": "",
+          "list": "L10"
+        }
+      ],
+      "radios": {
+        "f_natureza": "L18",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6",
+        "f_sta_inovacao": "L11",
+        "F_RELEV": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_finalidade:255",
+        "f_txt_potencial:400",
+        "f_inst_financ:380",
+        "f_plataforma:255",
+        ":",
+        ":60",
+        ":60",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":60",
+        ":60",
+        "f_nome:",
+        "f_nme_inst:75",
+        "f_sigla:16",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_curso?f_sta_divulgacao_cientifica=S&f_cod=COD",
+      "list": "prc_tec_demais_lista?f_sta_divulgacao_cientifica=S&f_cod_tipo=2B&f_cod=COD",
+      "names": ["GN_TEC>PRC_TEC_CURSO"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "f_participacao",
+          "label": "",
+          "list": "L43"
+        },
+        {
+          "name": "f_unidade",
+          "label": "",
+          "list": "L44"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L45",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_duracao:5",
+        "f_inst:255",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_curso?f_sta_divulgacao_cientifica=S&f_cod=COD&f_STA_DIVULGACAO_COD=S",
+      "list": "prc_tec_demais_lista?f_sta_divulgacao_cientifica=S&f_cod_tipo=2B&f_cod=COD",
+      "names": ["GN_TEC>PRC_TEC_CURSO"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "f_participacao",
+          "label": "",
+          "list": "L43"
+        },
+        {
+          "name": "f_unidade",
+          "label": "",
+          "list": "L44"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L45",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_duracao:5",
+        "f_inst:255",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_desen?f_sta_divulgacao_cientifica=S&f_cod=COD",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2C&f_cod=COD&f_sta_divulgacao_cientifica=S",
+      "names": ["GN_TEC>PRC_TEC_DESEN"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_natureza:100",
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_finalidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_desen?f_sta_divulgacao_cientifica=S&f_cod=COD&f_STA_DIVULGACAO_COD=S",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2C&f_cod=COD&f_sta_divulgacao_cientifica=S",
+      "names": ["GN_TEC>PRC_TEC_DESEN"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_natureza:100",
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_finalidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_radiotv?f_sta_divulgacao_cientifica=S&f_cod=COD",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2H&f_cod=COD&f_sta_divulgacao_cientifica=S",
+      "names": ["GN_TEC>PRC_TEC_RADIOTV"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L50"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L51",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "F_HOMEPAGE:400",
+        "f_emissora:255",
+        "f_tema:255",
+        "f_data:10",
+        "f_duracao:5",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_radiotv?f_sta_divulgacao_cientifica=S&f_cod=COD&f_STA_DIVULGACAO_COD=S",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2H&f_cod=COD&f_sta_divulgacao_cientifica=S",
+      "names": ["GN_TEC>PRC_TEC_RADIOTV"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L50"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L51",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "F_HOMEPAGE:400",
+        "f_emissora:255",
+        "f_tema:255",
+        "f_data:10",
+        "f_duracao:5",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_org?f_sta_divulgacao_cientifica=S&f_cod=COD",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2G&f_cod=COD&f_sta_divulgacao_cientifica=S",
+      "names": ["GN_TEC>PRC_TEC_ORG"],
+      "selects": [
+        {
+          "name": "F_SUB_PROD",
+          "label": "",
+          "list": "L52"
+        },
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L53",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_inst:255",
+        "f_duracao:5",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_tec_org?f_sta_divulgacao_cientifica=S&f_cod=COD&f_STA_DIVULGACAO_COD=S",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2G&f_cod=COD&f_sta_divulgacao_cientifica=S",
+      "names": ["GN_TEC>PRC_TEC_ORG"],
+      "selects": [
+        {
+          "name": "F_SUB_PROD",
+          "label": "",
+          "list": "L52"
+        },
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L53",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_inst:255",
+        "f_duracao:5",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "PKG_EVENTO.form?f_cod=COD&F_STA_DIVULGACAO_COD=S",
+      "list": "pkg_evento.LISTA?f_sta_divulgacao_cientifica=S&f_cod=COD",
+      "names": ["GN_TEC>PKG_EVENTO.FORM"],
+      "selects": [
+        {
+          "name": "F_COD_PROD",
+          "label": "",
+          "list": "L54"
+        },
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_FORMA": "L55",
+        "f_classif": "L33",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_nme_evento:400",
+        "f_ano:4",
+        "f_cidade:255",
+        "f_homepage:250",
+        "f_titulo:255",
+        "f_titulo_en:400",
+        "f_tipo_privacidade:",
+        ":"
+      ]
+    },
+    {
+      "form": "prc_midias_sociais?f_sta_divulgacao_cientifica=S&f_cod=COD",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2L&f_cod=COD&f_sta_divulgacao_cientifica=S",
+      "names": ["GN_TEC>PRC_MIDIAS_SOCIAIS"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L19",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "F_HOMEPAGE:400",
+        "f_tema:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "prc_midias_sociais?f_sta_divulgacao_cientifica=S&f_cod=COD&f_STA_DIVULGACAO_COD=S",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2L&f_cod=COD&f_sta_divulgacao_cientifica=S",
+      "names": ["GN_TEC>PRC_MIDIAS_SOCIAIS"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L19",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "F_HOMEPAGE:400",
+        "f_tema:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_arte_nova.form?f_cod=COD&F_TIPO=AV&f_STA_DIVULGACAO_COD=S",
+      "list": "pkg_arte_nova.lista?f_sta_divulgacao_cientifica=S&f_cod_tipo=AV&f_cod=COD",
+      "names": ["GN_ARTE>PKG_ARTE_NOVA.FORM"],
+      "selects": [
+        {
+          "name": "F_COD_PROD",
+          "label": "",
+          "list": "L20"
+        },
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "f_tpo_evento",
+          "label": "",
+          "list": "L21"
+        },
+        {
+          "name": "f_tpo_ativ",
+          "label": "",
+          "list": "L22"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_premiacao:255",
+        "f_inst_premio:255",
+        "f_temporada:255",
+        "f_inst:255",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_arte_nova.form?f_cod=COD&F_TIPO=AC&f_STA_DIVULGACAO_COD=S",
+      "list": "pkg_arte_nova.lista?f_sta_divulgacao_cientifica=S&f_cod_tipo=AC&f_cod=COD",
+      "names": ["GN_ARTE>PKG_ARTE_NOVA.FORM"],
+      "selects": [
+        {
+          "name": "F_COD_PROD",
+          "label": "",
+          "list": "L12"
+        },
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "f_tpo_evento",
+          "label": "",
+          "list": "L13"
+        },
+        {
+          "name": "f_tpo_ativ",
+          "label": "",
+          "list": "L14"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_dta_ini:10",
+        "f_local_estreia:255",
+        "f_premiacao:255",
+        "f_inst_premio:255",
+        "F_EXPOSICAO:255",
+        "f_autor_obra:255",
+        "f_ano_obra:4",
+        "f_duracao:5",
+        "f_temporada:255",
+        "f_inst:255",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_arte_nova.form?f_cod=COD&F_TIPO=MU&f_STA_DIVULGACAO_COD=S",
+      "list": "pkg_arte_nova.lista?f_sta_divulgacao_cientifica=S&f_cod_tipo=MU&f_cod=COD",
+      "names": ["GN_ARTE>PKG_ARTE_NOVA.FORM"],
+      "selects": [
+        {
+          "name": "F_COD_PROD",
+          "label": "",
+          "list": "L15"
+        },
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "f_tpo_evento",
+          "label": "",
+          "list": "L16"
+        },
+        {
+          "name": "f_tpo_ativ",
+          "label": "",
+          "list": "L17"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_form_instr:255",
+        "f_dta_ini:10",
+        "f_local_estreia:255",
+        "f_premiacao:255",
+        "f_inst_premio:255",
+        "F_EXPOSICAO:255",
+        "f_autor_obra:255",
+        "f_ano_obra:4",
+        "f_duracao:5",
+        "f_temporada:255",
+        "f_inst:255",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_arte_nova.form?f_cod=COD&F_TIPO=OU&f_STA_DIVULGACAO_COD=S",
+      "list": "pkg_arte_nova.lista?f_cod_tipo=OU&f_cod=COD&f_sta_divulgacao_cientifica=S ",
+      "names": ["GN_ARTE>PKG_ARTE_NOVA.FORM"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_natureza:100",
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_tpo_evento:28",
+        "f_tpo_ativ:50",
+        "f_dta_ini:10",
+        "f_dta_fim:10",
+        "f_local_estreia:255",
+        "f_premiacao:255",
+        "f_inst_premio:255",
+        "F_EXPOSICAO:255",
+        "f_autor_obra:255",
+        "f_ano_obra:4",
+        "f_duracao:5",
+        "f_temporada:255",
+        "f_inst:255",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "PKG_EVENTO.form?f_cod=COD&F_STA_DIVULGACAO_COD=",
+      "list": "pkg_evento.lista?f_cod=COD",
+      "names": ["GN_TEC>PKG_EVENTO.FORM"],
+      "selects": [
+        {
+          "name": "F_COD_PROD",
+          "label": "",
+          "list": "L54"
+        },
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_FORMA": "L55",
+        "f_classif": "L33",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_nme_evento:400",
+        "f_ano:4",
+        "f_cidade:255",
+        "f_homepage:250",
+        "f_titulo:255",
+        "f_titulo_en:400",
+        "f_tipo_privacidade:",
+        ":"
+      ]
+    },
+    {
+      "form": "prc_tec_org?f_cod=COD",
+      "list": "prc_tec_demais_lista?f_cod_tipo=2G&f_cod=COD",
+      "names": ["GN_TEC>PRC_TEC_ORG"],
+      "selects": [
+        {
+          "name": "F_SUB_PROD",
+          "label": "",
+          "list": "L52"
+        },
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "f_meio",
+          "label": "",
+          "list": "L2"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L53",
+        "F_RELEV": "L6",
+        "F_STA_DIVULGACAO_CIENTIFICA": "L6"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_inst:255",
+        "f_duracao:5",
+        "f_local:255",
+        "f_cidade:255",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_orient.form?f_cod=COD&f_tipo=C",
+      "list": "pkg_orient.lista?f_tipo=C&f_cod=COD",
+      "names": ["PKG_ORIENT>PKG_ORIENT.FORM", "formchk>"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L56",
+        "F_RELEV": "L6",
+        "f_tpo_orient": "L57",
+        "F_BOLSA": "L6"
+      },
+      "texts": [
+        "f_dsc_outra:100",
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_nme_orient:60",
+        "f_inst:75",
+        "f_curso:50",
+        "f_nme_agencia:75",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "pkg_orient.form?f_cod=COD&f_tipo=A",
+      "list": "pkg_orient.lista?f_tipo=A&f_cod=COD",
+      "names": ["PKG_ORIENT>PKG_ORIENT.FORM", "formchk>"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L58",
+        "F_RELEV": "L6",
+        "f_tpo_orient": "L57",
+        "F_BOLSA": "L6"
+      },
+      "texts": [
+        "f_dsc_outra:100",
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_nme_orient:60",
+        "f_inst:75",
+        "f_curso:50",
+        "f_nme_agencia:75",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "PKG_BANCA_TRAB.form?f_cod=COD",
+      "list": "pkg_banca_trab.lista?f_cod=COD",
+      "names": ["PKG_BANCA_TRAB>PKG_BANCA_TRAB.FORM"],
+      "selects": [
+        {
+          "name": "f_sub_prod",
+          "label": "",
+          "list": "L59"
+        },
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L60"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_nme_orient:60",
+        "f_inst:75",
+        "f_curso:50",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    },
+    {
+      "form": "PKG_BANCA_JULG.form?f_cod=COD",
+      "list": "pkg_banca_julg.lista?f_cod=COD",
+      "names": ["PKG_BANCA_JULG>PKG_BANCA_JULG.FORM"],
+      "selects": [
+        {
+          "name": "f_pais",
+          "label": "",
+          "list": "L0"
+        },
+        {
+          "name": "F_IDIOMA",
+          "label": "",
+          "list": "L1"
+        },
+        {
+          "name": "",
+          "label": "",
+          "list": "L4"
+        }
+      ],
+      "radios": {
+        "F_COD_PROD": "L61"
+      },
+      "texts": [
+        "f_titulo:400",
+        "f_ano:4",
+        "f_homepage:250",
+        "f_inst:75",
+        ":60",
+        ":50",
+        ":86",
+        ":",
+        "f_ref:3950",
+        "f_titulo_en:400",
+        "f_ref_en:3800",
+        "f_tipo_privacidade:",
+        ":",
+        ":60",
+        ":60",
+        ":50",
+        ":85"
+      ]
+    }
+  ]
+}
