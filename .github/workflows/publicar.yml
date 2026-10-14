@@ -1,0 +1,93 @@
+name: Publicar versão
+
+# O portão dos lançamentos. Cada merge na main gera a versão como rascunho
+# (release.yml): instaladores, extensão e latest.json ficam numa página que só
+# quem cuida do repositório vê. Depois de testar os instaladores do rascunho,
+# este workflow, disparado à mão, publica a página e a marca como a mais
+# recente. Só então o app instalado oferece a atualização e os links fixos da
+# página do projeto (releases/latest/download/...) passam a apontar para ela.
+#
+# Antes de publicar, confere que o rascunho está completo: os instaladores dos
+# três sistemas, as duas extensões e um latest.json com a versão da tag, em que
+# cada endereço aponta para um arquivo deste mesmo rascunho. Rascunhos mais
+# antigos que o escolhido saem junto, sem a marca de mais recente, para o
+# histórico ficar inteiro.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag do rascunho a publicar (vazio publica o mais recente).
+        required: false
+        type: string
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conferir e publicar o rascunho
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+
+          # Rascunhos com tag de versão, do mais antigo ao mais novo.
+          gh api "repos/$repo/releases" --paginate \
+            --jq '.[] | select(.draft and (.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))) | "\(.tag_name) \(.id)"' \
+            | sort -V > drafts.txt
+          if [ ! -s drafts.txt ]; then
+            echo "::error::Não há rascunho de lançamento para publicar."
+            exit 1
+          fi
+          target="${TAG:-$(tail -n 1 drafts.txt | cut -d' ' -f1)}"
+          id=$(awk -v t="$target" '$1 == t { print $2 }' drafts.txt)
+          if [ -z "$id" ]; then
+            echo "::error::$target não é um rascunho. Rascunhos: $(cut -d' ' -f1 drafts.txt | tr '\n' ' ')"
+            exit 1
+          fi
+
+          # O rascunho completo: o que a página do projeto e o atualizador usam.
+          gh api "repos/$repo/releases/$id/assets" --paginate --jq '.[] | "\(.id) \(.name)"' > assets.txt
+          missing=""
+          for name in latest.json LattesEditor-macOS.dmg LattesEditor-macOS.app.tar.gz \
+            LattesEditor-Windows-setup.exe LattesEditor-Linux.AppImage LattesEditor-Linux.deb \
+            lattes-editor-extensao.zip lattes-editor-extensao-loja.zip; do
+            grep -q " $name\$" assets.txt || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::O rascunho $target está incompleto. Falta:$missing"
+            exit 1
+          fi
+
+          # O latest.json é da versão da tag e só aponta para arquivos deste rascunho.
+          json_id=$(awk '$2 == "latest.json" { print $1 }' assets.txt)
+          gh api -H 'Accept: application/octet-stream' "repos/$repo/releases/assets/$json_id" > latest.json
+          version=$(jq -r .version latest.json)
+          if [ "v$version" != "$target" ]; then
+            echo "::error::O latest.json do rascunho $target diz versão $version."
+            exit 1
+          fi
+          cut -d' ' -f1 assets.txt | sort > ids.txt
+          jq -r '.platforms[].url | capture("/releases/assets/(?<id>[0-9]+)$").id' latest.json | sort -u > urls.txt
+          if [ ! -s urls.txt ] || [ -n "$(comm -23 urls.txt ids.txt)" ]; then
+            echo "::error::O latest.json do rascunho $target aponta para arquivos de fora dele."
+            exit 1
+          fi
+
+          # Os mais antigos primeiro, sem a marca; o escolhido por último, como o mais recente.
+          while read -r tag _; do
+            [ "$tag" = "$target" ] && break
+            gh release edit "$tag" --repo "$repo" --draft=false --latest=false
+            echo "Publicado (histórico): $tag"
+          done < drafts.txt
+          gh release edit "$target" --repo "$repo" --draft=false --latest
+          echo "### Publicado: $target" >> "$GITHUB_STEP_SUMMARY"

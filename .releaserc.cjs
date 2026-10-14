@@ -1,5 +1,8 @@
 /**
- * Lançamentos com semantic-release, a cada push na main.
+ * Lançamentos com semantic-release, a cada push na main. A página do
+ * lançamento nasce como rascunho: só quem cuida do repositório a vê e baixa os
+ * instaladores para testar. Quem usa o app só recebe a versão depois do
+ * workflow "Publicar versão" (.github/workflows/publicar.yml).
  *
  * A versão sai dos tipos dos commits (Conventional Commits):
  *   - quebra (rodapé BREAKING CHANGE) → maior
@@ -88,6 +91,9 @@ module.exports = {
             path: 'release/lattes-editor-extensao-loja.zip',
           },
         ],
+        // Rascunho até o "Publicar versão": nem o atualizador do app nem os
+        // links de releases/latest enxergam um rascunho.
+        draftRelease: true,
         failComment: false,
         releasedLabels: false,
         successCommentCondition: false,
