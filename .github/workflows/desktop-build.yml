@@ -149,6 +149,29 @@ jobs:
             echo "::error::Falta o segredo TAURI_SIGNING_PRIVATE_KEY"
             exit 1
           fi
+      # O lançamento novo é um rascunho (.releaserc.cjs); refazer os instaladores
+      # de um já publicado (disparo manual) sobe para a página publicada. O
+      # tauri-action só acha um rascunho pela tag quando sabe que é rascunho.
+      - name: Rascunho ou publicado
+        id: release
+        if: inputs.tag != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        # A tag fica fora do filtro do jq (vem de um campo livre do disparo
+        # manual) e chega ao awk pelo ambiente, sem a interpretação de barras
+        # invertidas do -v. A lista é guardada inteira antes do awk, para o gh
+        # não levar SIGPIPE com o pipefail ligado.
+        run: |
+          releases=$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate \
+            --jq '.[] | "\(.tag_name) \(.draft)"')
+          draft=$(awk '$1 == ENVIRON["TAG"] { print $2; exit }' <<< "$releases")
+          if [ -z "$draft" ]; then
+            echo "::error::Não há página de lançamento para $TAG"
+            exit 1
+          fi
+          echo "draft=$draft" >> "$GITHUB_OUTPUT"
       - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # action-v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -157,6 +180,7 @@ jobs:
         with:
           # Sem tag (PR, disparo manual sem tag), só monta e guarda como artefato do workflow.
           tagName: ${{ inputs.tag }}
+          releaseDraft: ${{ steps.release.outputs.draft == 'true' }}
           releaseAssetNamePattern: ${{ matrix.asset }}
           uploadWorkflowArtifacts: ${{ inputs.tag == '' }}
           # A assinatura de cada pacote vai dentro do latest.json; os .sig soltos

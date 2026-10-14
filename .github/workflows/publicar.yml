@@ -1,0 +1,137 @@
+name: Publicar versão
+
+# O portão dos lançamentos. Cada merge na main gera a versão como rascunho
+# (release.yml): instaladores, extensão e latest.json ficam numa página que só
+# quem cuida do repositório vê. Depois de testar os instaladores do rascunho,
+# este workflow, disparado à mão, publica a página e a marca como a mais
+# recente. Só então o app instalado oferece a atualização e os links fixos da
+# página do projeto (releases/latest/download/...) passam a apontar para ela.
+#
+# Antes de publicar, confere que o rascunho está completo: os instaladores dos
+# três sistemas, as duas extensões e um latest.json com a versão da tag e os
+# quatro alvos do atualizador, em que cada endereço aponta para um arquivo
+# deste mesmo rascunho. Rascunhos mais antigos que o escolhido saem junto, sem
+# a marca de mais recente, para o histórico ficar inteiro. Eles passam pela
+# mesma conferência, e basta um com defeito para nada ser publicado. O
+# escolhido precisa ser mais novo que a versão já publicada.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag do rascunho a publicar (vazio publica o mais recente).
+        required: false
+        type: string
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conferir e publicar o rascunho
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+
+          # Páginas com tag de versão: os rascunhos, do mais antigo ao mais
+          # novo, e a versão mais alta já publicada.
+          gh api "repos/$repo/releases" --paginate \
+            --jq '.[] | select(.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")) | "\(.tag_name) \(.id) \(.draft)"' \
+            > releases.txt
+          awk '$3 == "true" { print $1, $2 }' releases.txt | sort -V > drafts.txt
+          published=$(awk '$3 == "false" { print $1 }' releases.txt | sort -V | tail -n 1)
+          if [ ! -s drafts.txt ]; then
+            echo "::error::Não há rascunho de lançamento para publicar."
+            exit 1
+          fi
+          # O alvo vai ao awk pelo ambiente: com -v, o awk interpreta barras
+          # invertidas, e a tag vem de um campo livre.
+          export target="${TAG:-$(tail -n 1 drafts.txt | cut -d' ' -f1)}"
+          if ! awk '$1 == ENVIRON["target"] { found = 1 } END { exit !found }' drafts.txt; then
+            echo "::error::$target não é um rascunho. Rascunhos: $(cut -d' ' -f1 drafts.txt | tr '\n' ' ')"
+            exit 1
+          fi
+          # Um rascunho mais velho que a versão publicada viraria a mais
+          # recente e levaria o app e os links fixos de volta a ela.
+          if [ -n "$published" ] && [ "$(printf '%s\n%s\n' "$published" "$target" | sort -V | tail -n 1)" != "$target" ]; then
+            echo "::error::$target não é mais novo que $published, já publicado. Nada foi publicado."
+            exit 1
+          fi
+          # Os rascunhos que saem nesta rodada: do mais antigo até o escolhido.
+          awk '{ print } $1 == ENVIRON["target"] { exit }' drafts.txt > publish.txt
+          dup=$(cut -d' ' -f1 publish.txt | uniq -d | tr '\n' ' ')
+          if [ -n "$dup" ]; then
+            echo "::error::Mais de um rascunho com a mesma tag: $dup. Apague o que sobra antes de publicar."
+            exit 1
+          fi
+
+          # O rascunho completo: o que a página do projeto e o atualizador usam.
+          # Vale para cada rascunho que vai sair, não só para o escolhido.
+          # Roda dentro de um ||, onde o set -e não vale: cada falha sai com return.
+          check() {
+            local tag="$1" id="$2" name missing="" json_id version
+            gh api "repos/$repo/releases/$id/assets" --paginate --jq '.[] | "\(.id) \(.name)"' > assets.txt \
+              || return 1
+            for name in latest.json LattesEditor-macOS.dmg LattesEditor-macOS.app.tar.gz \
+              LattesEditor-Windows-setup.exe LattesEditor-Linux.AppImage LattesEditor-Linux.deb \
+              lattes-editor-extensao.zip lattes-editor-extensao-loja.zip; do
+              grep -q " $name\$" assets.txt || missing="$missing $name"
+            done
+            if [ -n "$missing" ]; then
+              echo "::error::O rascunho $tag está incompleto. Falta:$missing"
+              return 1
+            fi
+
+            # O latest.json é da versão da tag e só aponta para arquivos deste rascunho.
+            json_id=$(awk '$2 == "latest.json" { print $1 }' assets.txt)
+            gh api -H 'Accept: application/octet-stream' "repos/$repo/releases/assets/$json_id" > latest.json \
+              || return 1
+            version=$(jq -r .version latest.json) || return 1
+            if [ "v$version" != "$tag" ]; then
+              echo "::error::O latest.json do rascunho $tag diz versão $version."
+              return 1
+            fi
+            cut -d' ' -f1 assets.txt | sort > ids.txt
+            # Os quatro alvos que o app instalado consulta, um por sistema e
+            # arquitetura; faltar um deixa quem usa aquele sistema sem atualização.
+            for name in darwin-aarch64 darwin-x86_64 windows-x86_64 linux-x86_64; do
+              if ! jq -e --arg k "$name" '.platforms | has($k)' latest.json > /dev/null; then
+                echo "::error::O latest.json do rascunho $tag não tem $name."
+                return 1
+              fi
+            done
+            if ! jq -r '.platforms[].url | capture("/releases/assets/(?<id>[0-9]+)$").id' latest.json > urls.txt \
+              || [ ! -s urls.txt ] || [ -n "$(sort -u urls.txt | comm -23 - ids.txt)" ]; then
+              echo "::error::O latest.json do rascunho $tag aponta para arquivos de fora dele."
+              return 1
+            fi
+          }
+          # Um rascunho antigo com defeito trava a rodada inteira, antes de
+          # qualquer publicação: refaça os instaladores dele ou apague-o.
+          failed=""
+          while read -r tag id <&3; do
+            check "$tag" "$id" || failed="$failed $tag"
+          done 3< publish.txt
+          if [ -n "$failed" ]; then
+            echo "::error::Nada foi publicado. Rascunhos com defeito:$failed"
+            exit 1
+          fi
+
+          # Publica pelo id conferido, não pela tag: o endpoint de tag não
+          # enxerga rascunhos. Os mais antigos primeiro, sem a marca; o
+          # escolhido por último, como o mais recente.
+          while read -r tag id <&3; do
+            if [ "$tag" = "$target" ]; then latest=true; else latest=false; fi
+            gh api -X PATCH "repos/$repo/releases/$id" -F draft=false -f make_latest="$latest" > /dev/null
+            echo "Publicado: $tag (mais recente: $latest)"
+          done 3< publish.txt
+          echo "### Publicado: $target" >> "$GITHUB_STEP_SUMMARY"

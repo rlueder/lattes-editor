@@ -1,9 +1,13 @@
 name: Release
 
 # Depois do CI verde na main, o semantic-release decide a versão pelos
-# commits, atualiza o CHANGELOG, cria a tag e publica a página do lançamento
-# com o editor e a extensão (ver .releaserc.cjs). Havendo lançamento novo, o
-# app de desktop é montado nos três sistemas e entra na mesma página.
+# commits, atualiza o CHANGELOG, cria a tag e a página do lançamento como
+# rascunho, com a extensão (ver .releaserc.cjs). Havendo lançamento novo, o
+# app de desktop é montado nos três sistemas e entra no mesmo rascunho.
+#
+# Rascunho é o portão: o app instalado e a página do projeto só veem a versão
+# depois do workflow "Publicar versão" (publicar.yml), disparado à mão depois
+# de testar os instaladores do rascunho.
 
 on:
   workflow_run:

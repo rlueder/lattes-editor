@@ -219,10 +219,23 @@ conferido pela extensão (ver acima).
 
 Cada push na `main` passa pelo CI. Com ele verde, o semantic-release decide a
 versão pelos commits (`feat` sobe a menor; `fix`, `perf` e `refactor`, a
-correção), atualiza o `CHANGELOG.md`, cria a tag e publica a página do
-lançamento. Em seguida o app é montado nos três sistemas e os instaladores
-entram na mesma página, junto com os pacotes de atualização assinados e o
-`latest.json` que o app confere (`.github/workflows/desktop-build.yml`). A
+correção), atualiza o `CHANGELOG.md`, cria a tag e a página do lançamento
+como rascunho. Em seguida o app é montado nos três sistemas e os instaladores
+entram no mesmo rascunho, junto com os pacotes de atualização assinados e o
+`latest.json` que o app confere (`.github/workflows/desktop-build.yml`).
+
+O rascunho é o portão. Só quem cuida do repositório o vê, e é dele que saem
+os instaladores para testar a versão antes de ela chegar a alguém. O app
+instalado e os links da página do projeto continuam na versão publicada
+anterior até o workflow "Publicar versão" (`.github/workflows/publicar.yml`),
+disparado à mão em Actions. Ele confere que o rascunho tem os instaladores, as
+duas extensões e um `latest.json` da mesma versão, e só então o publica como o
+mais recente. Rascunhos mais antigos saem junto, sem essa marca:
+
+````sh
+gh workflow run publicar.yml              # o rascunho mais recente
+gh workflow run publicar.yml -f tag=v0.23.0
+``` A
 chave de atualização fica nos segredos `TAURI_SIGNING_PRIVATE_KEY` e
 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, e a pública em
 `src-tauri/tauri.conf.json`. Sem a privada não há como publicar uma
@@ -252,3 +265,4 @@ Para revisar o aviso sem lançar nada: `pnpm dev` e
 
 MIT. A fonte IBM Plex vem sob a SIL Open Font License, em
 `src/ui/fonts/LICENSE.txt` e `brand/construction/fonts/LICENSE.txt`.
+````
