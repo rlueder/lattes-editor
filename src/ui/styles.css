@@ -2967,6 +2967,27 @@ details > .element {
   object-fit: cover;
 }
 
+/* Iniciais e foto na mesma célula: as iniciais aparecem até a foto chegar, e
+   ficam se ela não chegar. */
+.profile .avatar > * {
+  grid-area: 1 / 1;
+}
+
+.profile .avatar .avatar-photo {
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.profile .avatar .avatar-photo.loaded {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile .avatar .avatar-photo {
+    transition: none;
+  }
+}
+
 /* Assinatura da marca (brand/construction/logo.svg): Lattes em 700 e Editor
    em 400, IBM Plex Sans sem ajuste de espaçamento, as duas palavras no
    violeta da marca. No escuro, a assinatura fica branca. */
