@@ -8,7 +8,7 @@ import { Tip } from './primitives/Tip.tsx';
 import { segmentLabel, type StripSegment, type StripState } from './status-strip.ts';
 
 const TIPS: Partial<Record<StripSegment['kind'], string>> = {
-  alteracoes: 'Alterações no editor que ainda não foram ao Lattes. Abre "Levar ao Lattes".',
+  alteracoes: 'Alterações no editor que ainda não foram ao Lattes. Abre "Enviar ao Lattes".',
   'no-lattes':
     'Gravadas no Lattes e ainda não publicadas. O Lattes não descarta; para voltar atrás, desfaça antes de "Enviar ao CNPq". Abre o registro do enviado.',
   original: 'O currículo como veio da última exportação do Lattes.',

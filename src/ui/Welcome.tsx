@@ -131,7 +131,7 @@ export function Welcome({ error, lattes, link, onFile, onTheme, theme }: Props) 
           <button disabled aria-label="Novo item" className="ghost icon-btn" type="button">
             <PlusIcon />
           </button>
-          <button disabled aria-label="Levar ao Lattes" className="ghost icon-btn" type="button">
+          <button disabled aria-label="Enviar ao Lattes" className="ghost icon-btn" type="button">
             <UploadIcon />
           </button>
           <SettingsMenu theme={theme} onTheme={onTheme} />

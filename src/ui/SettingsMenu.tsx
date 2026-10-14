@@ -2,7 +2,7 @@
 // ações de arquivo menos usadas, com a versão no fim.
 
 import { Menu } from '@base-ui/react/menu';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 import { PrinterIcon } from '../print/PrinterIcon.tsx';
 import {
@@ -64,9 +64,20 @@ export function SettingsMenu({ file, onTheme, theme }: Props) {
               <Menu.GroupLabel className="menu-heading">Tema</Menu.GroupLabel>
               <Menu.RadioGroup
                 className="menu-segment"
+                // A posição do destaque, que desliza até a opção escolhida.
+                style={
+                  {
+                    '--seg-count': THEMES.length,
+                    '--seg-index': Math.max(
+                      0,
+                      THEMES.findIndex((t) => t.value === theme),
+                    ),
+                  } as CSSProperties
+                }
                 value={theme}
                 onValueChange={(v) => onTheme(v as ThemePref)}
               >
+                <span aria-hidden="true" className="menu-seg-indicator" />
                 {THEMES.map((t) => (
                   <Menu.RadioItem
                     key={t.value}

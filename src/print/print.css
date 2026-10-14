@@ -242,42 +242,6 @@
   color: var(--muted);
 }
 
-.print-segment {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 2px;
-  padding: 2px;
-  border-radius: 8px;
-  background: var(--surface-2);
-}
-
-.print-segment label {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 28px;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.print-segment label.active {
-  background: var(--surface);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
-  font-weight: 600;
-}
-
-.print-segment input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.print-segment label:has(input:focus-visible) {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-
 .print-sections,
 .print-sections ul {
   list-style: none;
@@ -451,26 +415,7 @@
   margin: 0 0 6pt 12pt;
 }
 
-/* Controle segmentado do modelo: trilho no fundo sutil, opção escolhida um
-   degrau acima, com borda e texto forte (escala do Radix, ver styles.css). */
-.print-segment {
-  border: 1px solid var(--border);
-  background: var(--bg);
-}
-
-.print-segment label {
-  color: var(--muted);
-}
-
-.print-segment label:hover {
-  background: var(--surface-2);
-  color: var(--text);
-}
-
-.print-segment label.active {
-  border: 1px solid var(--border-strong);
-  background: var(--surface-3);
-  color: var(--text);
-  font-weight: 600;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+/* Modelo de impressão: uma lista, na largura da coluna de opções. */
+.print-template {
+  width: 100%;
 }

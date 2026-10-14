@@ -34,7 +34,7 @@ conta. As partes que importam para esta pesquisa:
   ISBN, editora e idioma num item novo. A requisição leva só o DOI, sem o
   parâmetro `mailto`. Os autores devolvidos são trocados pelos coautores já
   conhecidos quando o nome normalizado bate (`crossrefAuthors`).
-- `src/model/changes.ts` calcula a lista "Alterações a levar ao Lattes": a
+- `src/model/changes.ts` calcula a lista "Alterações a enviar ao Lattes": a
   diferença entre a exportação carregada (`originalXml`) e a cópia de
   trabalho, com valor antigo e novo por campo, e permite descartar cada
   mudança (`revertChange`, `revertField`).
@@ -59,7 +59,7 @@ desvio silencioso.
 Outro fato limita o alcance de qualquer correção: o Importar do Lattes só
 insere itens novos e nunca altera os que já estão lá (guia, seção 3.1). Quando
 a revisão encontra um ano errado ou um DOI faltando num artigo que já está no
-Lattes, a correção vai para a lista "Alterações a levar ao Lattes" e o usuário
+Lattes, a correção vai para a lista "Alterações a enviar ao Lattes" e o usuário
 a copia à mão no formulário do Lattes. O ganho é real, porque o editor diz o
 que corrigir e com qual valor, mas não é automático.
 
@@ -203,7 +203,7 @@ Detalhes para o editor:
 
 O DOI escolhido entra no item como qualquer edição. Para item novo, vai no
 arquivo de importação. Para item que já está no Lattes, aparece em
-"Alterações a levar ao Lattes" com valor antigo vazio e valor novo, para o
+"Alterações a enviar ao Lattes" com valor antigo vazio e valor novo, para o
 usuário colar no formulário do Lattes.
 
 ### 2.4 Conferência dos itens com DOI (sem modelo)

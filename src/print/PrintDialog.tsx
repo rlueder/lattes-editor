@@ -10,6 +10,7 @@ import { createPortal } from 'react-dom';
 
 import { firstChild, getAttr, type XDocument } from '../model/xml.ts';
 import { Modal } from '../ui/Modal.tsx';
+import { Select } from '../ui/primitives/Select.tsx';
 import { Switch } from '../ui/primitives/Switch.tsx';
 import type { Profile } from '../ui/profile.ts';
 import type { Section } from '../ui/sections.ts';
@@ -142,26 +143,21 @@ export function PrintDialog({ control, doc, profile, sections }: Props) {
           <div className="print-options">
             <fieldset className="print-fieldset">
               <legend>Modelo</legend>
-              <div aria-label="Modelo" className="print-segment" role="radiogroup">
-                {TEMPLATES.map((t) => (
-                  <label key={t.value} className={template === t.value ? 'active' : undefined}>
-                    <input
-                      checked={template === t.value}
-                      name="print-template"
-                      type="radio"
-                      value={t.value}
-                      onChange={() => {
-                        setTemplate(t.value);
-                        setOptions((o) => ({
-                          ...o,
-                          selected: templateSelection(outline, t.value, o.selected),
-                        }));
-                      }}
-                    />
-                    {t.label}
-                  </label>
-                ))}
-              </div>
+              <Select
+                aria-label="Modelo"
+                className="print-template"
+                options={TEMPLATES.map((t) => ({ label: t.label, value: t.value }))}
+                value={template}
+                onChange={(next) => {
+                  const t = TEMPLATES.find((x) => x.value === next);
+                  if (!t) return;
+                  setTemplate(t.value);
+                  setOptions((o) => ({
+                    ...o,
+                    selected: templateSelection(outline, t.value, o.selected),
+                  }));
+                }}
+              />
             </fieldset>
 
             <fieldset className="print-fieldset">

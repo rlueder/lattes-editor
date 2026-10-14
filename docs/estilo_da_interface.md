@@ -98,7 +98,7 @@ A página de entrada do projeto segue a linha das páginas do Linear sem
 copiar: título curto sobre o que o editor resolve, uma imagem real da
 interface, e blocos com as funções que já existem (abrir o XML exportado,
 navegar por seções e anos, criar produção a partir do DOI, revisar
-alterações antes de levar ao Lattes, tudo local no navegador). Downloads
+alterações antes de enviar ao Lattes, tudo local no navegador). Downloads
 dos apps de desktop entram quando existirem builds assinados; até lá a
 página não mostra botão de download.
 
