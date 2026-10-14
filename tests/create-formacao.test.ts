@@ -134,6 +134,13 @@ describe('planejar a inclusão de uma formação', () => {
     expect(reason(`${base} TIPO-MESTRADO="X"`)).toMatch(/sem correspondência.*\(X\)/);
     expect(reason(`${base} STATUS-DO-CURSO="TRANCADO"`)).toMatch(/sem correspondência/);
     expect(reason('CODIGO-INSTITUICAO="1" NOME-INSTITUICAO="U"')).toMatch(/ano de início/);
+    // Dois atributos do orientador com nomes diferentes: um se perderia.
+    expect(
+      reason(`${base} NOME-COMPLETO-DO-ORIENTADOR="Helena" NOME-DO-ORIENTADOR="Paulo"`),
+    ).toMatch(/outro valor para o mesmo campo/);
+    expect(
+      plan(`${base} NOME-COMPLETO-DO-ORIENTADOR="Helena" NOME-DO-ORIENTADOR="Helena"`, 'MESTRADO'),
+    ).toHaveProperty('kind', 'criar-formacao');
   });
 
   it('patente e itens que não são formação nem projeto ficam de fora', () => {

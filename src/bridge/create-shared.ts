@@ -68,8 +68,13 @@ export function mapAttrs(
       continue;
     }
     const mapped = entry[1](value);
+    const taken = set[entry[0]];
     if (mapped === undefined) wrong.push(`${labelIn(change, name)} (${value})`);
-    else set[entry[0]] = mapped;
+    // Dois atributos para o mesmo campo (orientador) com valores diferentes:
+    // um deles se perderia.
+    else if (taken !== undefined && taken !== mapped) {
+      wrong.push(`${labelIn(change, name)} (outro valor para o mesmo campo)`);
+    } else set[entry[0]] = mapped;
   }
   return { missing, set, wrong };
 }

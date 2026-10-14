@@ -13,7 +13,7 @@ import {
 import { planChanges } from '../src/bridge/plan.ts';
 import { sentEntry, undoOp } from '../src/bridge/sent-log.ts';
 import { type Change, diffDocuments, resolvePath } from '../src/model/changes.ts';
-import { parseXml } from '../src/model/xml.ts';
+import { parseXml, type XElement } from '../src/model/xml.ts';
 import { CV, fakeProjeto } from './helpers/fake-lattes-create.ts';
 
 const PROJETO =
@@ -158,6 +158,26 @@ describe('planejar a inclusão de um projeto', () => {
     part.attrs.push({ name: 'NOME-ORGAO', value: 'Instituto de Biociências' });
     expect(planCreateProjeto(changes[0]!, chain, 'Projeto')).toEqual({
       reason: expect.stringMatching(/participação no projeto tem campos.*NOME-ORGAO/),
+    });
+  });
+
+  it('também quando a mudança é o contêiner das participações', () => {
+    const original = parseXml(
+      `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1234567890123456"><DADOS-GERAIS NOME-COMPLETO="Ana Silva"><ATUACOES-PROFISSIONAIS>
+        <ATUACAO-PROFISSIONAL CODIGO-INSTITUICAO="001000000998" NOME-INSTITUICAO="Universidade de Exemplo" SEQUENCIA-ATIVIDADE="3">
+          <VINCULOS SEQUENCIA-HISTORICO="1" ANO-INICIO="2019"/>
+        </ATUACAO-PROFISSIONAL>
+      </ATUACOES-PROFISSIONAIS></DADOS-GERAIS></CURRICULO-VITAE>`,
+    ).root;
+    const after = cv(projeto());
+    const change = diffDocuments(original, after).find((c) => c.kind === 'novo')!;
+    expect(change.element).toBe('ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO');
+    const chain = resolvePath(after, change.path);
+    expect(planCreateProjeto(change, chain, 'Projeto')).toHaveProperty('kind', 'criar-projeto');
+    const participacao = chain.at(-1)!.children.find((c): c is XElement => c.kind === 'element')!;
+    participacao.attrs.push({ name: 'MES-INICIO', value: '3' });
+    expect(planCreateProjeto(change, chain, 'Projeto')).toEqual({
+      reason: expect.stringMatching(/participação no projeto tem campos.*MES-INICIO/),
     });
   });
 

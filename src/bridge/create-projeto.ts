@@ -129,12 +129,16 @@ export function planCreateProjeto(
   label: string,
 ): Planned<CreateProjetoOp> {
   const el = chain.at(-1)!;
-  const projetos: XElement[] = [];
-  walk(el, (node) => {
-    if (node.name === 'PROJETO-DE-PESQUISA') projetos.push(node);
+  // Cada projeto com o caminho inteiro desde a raiz: a mudança pode ser o
+  // contêiner das participações, e aí a participação fica abaixo dela.
+  const projetos: { node: XElement; path: XElement[] }[] = [];
+  walk(el, (node, ancestors) => {
+    if (node.name === 'PROJETO-DE-PESQUISA') {
+      projetos.push({ node, path: [...chain.slice(0, -1), ...ancestors] });
+    }
   });
   if (projetos.length !== 1) return { reason: 'A inclusão pelo conector leva um projeto por vez' };
-  const projeto = projetos[0]!;
+  const { node: projeto, path } = projetos[0]!;
   const atuacao = chain.find((c) => c.name === 'ATUACAO-PROFISSIONAL');
   const institutionCode = atuacao && getAttr(atuacao, 'CODIGO-INSTITUICAO');
   const institutionName = atuacao && getAttr(atuacao, 'NOME-INSTITUICAO');
@@ -154,7 +158,7 @@ export function planCreateProjeto(
   // A participação que embrulha o projeto: o editor só põe nela o número, o
   // período em ano e se é atual, que seguem o projeto. Órgão, unidade e meses
   // não têm lugar no formulário de projeto e não podem sumir sem aviso.
-  const participacao = chain.find((c) => c.name === 'PARTICIPACAO-EM-PROJETO');
+  const participacao = path.find((c) => c.name === 'PARTICIPACAO-EM-PROJETO');
   const extra = (participacao?.attrs ?? []).filter(
     (a) => a.value.trim() && !PARTICIPATION_FROM_PROJECT.has(a.name),
   );
