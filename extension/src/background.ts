@@ -35,6 +35,7 @@ import {
   lattesTab,
   readCurriculo,
   readEspelho,
+  reloadLattesTab,
   sendPhoto,
   sessionIdentity,
   verifyOn,
@@ -173,6 +174,10 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
   }
   if (msg.type === 'parar') {
     stopRequested = true;
+    return;
+  }
+  if (msg.type === 'recarregar-lattes') {
+    await reloadLattesTab().catch(() => false);
     return;
   }
   if (msg.type === 'pedir-espelho') {

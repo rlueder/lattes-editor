@@ -20,8 +20,11 @@ export const LATTES_URL = 'https://wwws.cnpq.br/cvlattesweb/PKG_MENU.menu';
 export type StepStatus = 'agora' | 'depois' | 'feito';
 
 export interface Step {
-  /** O que fazer agora: abrir um endereço fora do app ou pedir o currículo de novo. */
-  action?: { href?: string; kind: 'link' | 'tentar'; label: string };
+  /**
+   * O que fazer agora: abrir um endereço fora do app, pedir o currículo de
+   * novo ou recarregar a aba do Lattes (sessão vencida).
+   */
+  action?: { href?: string; kind: 'link' | 'recarregar' | 'tentar'; label: string };
   /** Esperando a extensão ou o Lattes: o passo mostra que está andando. */
   busy?: boolean;
   status: StepStatus;
@@ -87,24 +90,46 @@ function lattesStep(link: Link, open: OpenState): Step {
   if (link.state.kind === 'lendo' && !dropped) {
     return { busy: true, status: 'agora', text: 'Procurando o Lattes aberto no navegador…', title };
   }
+  if (dropped) {
+    return {
+      action: reloadAction(link),
+      status: 'agora',
+      text: 'A sessão do Lattes expirou.',
+      title,
+    };
+  }
   return {
     action: { href: LATTES_URL, kind: 'link', label: 'Abrir o Lattes' },
     status: 'agora',
-    text: dropped
-      ? 'A sessão do Lattes caiu. Entre de novo no navegador com a extensão.'
-      : 'No navegador com a extensão, entre no Lattes e deixe o menu do currículo aberto numa aba.',
+    text: 'No navegador com a extensão, entre no Lattes e deixe o menu do currículo aberto numa aba.',
     title,
   };
 }
 
-function openStep(open: OpenState): Step {
+/**
+ * Sessão vencida: a aba ainda mostra o currículo, então o que resolve é
+ * recarregá-la (o Lattes leva ao login). Extensão de antes dessa capacidade:
+ * o link para o Lattes.
+ */
+function reloadAction(link: Link): NonNullable<Step['action']> {
+  return link.features?.includes('recarregar-lattes')
+    ? { kind: 'recarregar', label: 'Recarregar o Lattes' }
+    : { href: LATTES_URL, kind: 'link', label: 'Abrir o Lattes' };
+}
+
+function openStep(open: OpenState, link: Link): Step {
   const title = STEP_TITLES[2];
   const retry = { kind: 'tentar' as const, label: 'Tentar de novo' };
   switch (open.kind) {
     case 'abrindo':
       return { busy: true, status: 'agora', text: 'Trazendo o currículo do Lattes…', title };
     case 'falhou':
-      return { action: retry, status: 'agora', text: failureText(open.reason, open.detail), title };
+      return {
+        action: open.reason === 'sessao' ? reloadAction(link) : retry,
+        status: 'agora',
+        text: failureText(open.reason, open.detail),
+        title,
+      };
     case 'parado':
       return {
         action: { kind: 'tentar', label: 'Abrir do Lattes' },
@@ -131,5 +156,5 @@ export function onboardingSteps(link: Link, open: OpenState, devFolder?: string)
   if (lattes.status !== 'feito') {
     return [extension, lattes, waiting(STEP_TITLES[2], 'Sem baixar nem escolher arquivo.')];
   }
-  return [extension, lattes, openStep(open)];
+  return [extension, lattes, openStep(open, link)];
 }

@@ -267,7 +267,8 @@ class Stop extends Error {
 
 async function getChecked(port: LattesPort, path: string): Promise<string> {
   const html = await port.get(path);
-  if (isLogonPage(html, path)) throw new Stop('sessao', 'A sessão do Lattes caiu; entre de novo');
+  if (isLogonPage(html, path))
+    throw new Stop('sessao', 'A sessão do Lattes expirou; entre de novo');
   return html;
 }
 
@@ -374,7 +375,7 @@ export async function checkContract(
   const checkedAt = new Date().toISOString();
   try {
     const menu = await port.menuHtml();
-    if (isLogonPage(menu)) throw new Stop('sessao', 'A sessão do Lattes caiu; entre de novo');
+    if (isLogonPage(menu)) throw new Stop('sessao', 'A sessão do Lattes expirou; entre de novo');
     const menuChecks = contract.menu.map((proc) => ({
       found: findLinks(menu, proc).length > 0,
       proc,

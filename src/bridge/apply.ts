@@ -57,7 +57,8 @@ class Stop extends Error {
 
 async function getChecked(port: LattesPort, path: string): Promise<string> {
   const html = await port.get(path);
-  if (isLogonPage(html, path)) throw new Stop('sessao', 'A sessão do Lattes caiu; entre de novo');
+  if (isLogonPage(html, path))
+    throw new Stop('sessao', 'A sessão do Lattes expirou; entre de novo');
   return html;
 }
 
@@ -130,7 +131,7 @@ async function readPairs(
   const controls = port.readForm(html, form);
   if (!controls) {
     throw isLogonPage(html)
-      ? new Stop('sessao', 'A sessão do Lattes caiu; entre de novo')
+      ? new Stop('sessao', 'A sessão do Lattes expirou; entre de novo')
       : new Stop('erro', `Formulário ${form} não encontrado`);
   }
   return { controls, pairs: withCheckRules(form, controls, successfulPairs(controls)) };
@@ -179,7 +180,7 @@ export async function applyOp(op: BridgeOp, port: LattesPort): Promise<OpResult>
 
     const next = setPairs(before.pairs, op.set);
     const response = await port.post(action, encodeLatin1Form(next));
-    if (isLogonPage(response)) return result('sessao', 'A sessão do Lattes caiu; entre de novo');
+    if (isLogonPage(response)) return result('sessao', 'A sessão do Lattes expirou; entre de novo');
 
     const after = await readPairs(port, path, name);
     const notSaved = mismatches(after.pairs, op.set);

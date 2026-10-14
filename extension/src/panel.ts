@@ -14,6 +14,7 @@ import { opRows } from '../../src/bridge/field-labels.ts';
 import { PUBLISH_REMINDER } from '../../src/bridge/lattes-status.ts';
 import { listText } from '../../src/bridge/list-watch.ts';
 import { giveConsent, hasConsent, PRIVACY_URL } from './consent.ts';
+import { reloadLattesTab } from './lattes-tab.ts';
 import type { AppHello, PanelCommand, QueueState } from './state.ts';
 import { APP_KEY, readState } from './state.ts';
 import { toolbarTheme } from './toolbar-icon.ts';
@@ -22,7 +23,7 @@ const STATUS: Record<OpResult['status'], string> = {
   conferido: 'Conferido',
   divergente: 'Diferente no Lattes',
   erro: 'Erro',
-  sessao: 'Sessão caiu',
+  sessao: 'Sessão expirada',
 };
 
 const send = (cmd: PanelCommand) => void chrome.runtime.sendMessage(cmd);
@@ -67,7 +68,7 @@ const REPORT_TITLE: Record<ContractReport['status'], string> = {
   erro: 'Não deu para verificar',
   mudou: 'O Lattes mudou',
   ok: 'Lattes como o esperado',
-  sessao: 'Sessão caiu',
+  sessao: 'Sessão expirada',
 };
 
 /** Título da seção da verificação, que só aparece quando algo não está ok. */
@@ -75,7 +76,7 @@ const VIGIA_HEADING: Record<ContractReport['status'], string> = {
   erro: 'Não deu para verificar o Lattes',
   mudou: 'O Lattes mudou desde a última versão do conector',
   ok: '',
-  sessao: 'A sessão do Lattes caiu; entre de novo para enviar',
+  sessao: 'A sessão do Lattes expirou',
 };
 
 const FORM_TITLE: Record<string, string> = {
@@ -126,6 +127,24 @@ function renderReport(report: ContractReport | undefined): void {
     );
   }
   if (report.status === 'ok') return;
+  // Sessão vencida: a aba ainda mostra o currículo, então o caminho é
+  // recarregá-la e entrar de novo. Nada a copiar nem a reportar.
+  if (report.status === 'sessao') {
+    const reload = el('button', {
+      className: 'principal',
+      textContent: 'Recarregar o Lattes',
+      type: 'button',
+    });
+    reload.addEventListener('click', () => void reloadLattesTab());
+    root.append(
+      el('p', {
+        className: 'detalhe',
+        textContent: 'A aba ainda mostra o currículo, mas pede login de novo.',
+      }),
+      el('div', { className: 'acoes' }, [reload]),
+    );
+    return;
+  }
   // O relatório só tem nomes de campos e procedimentos; pode ir para uma issue pública.
   const copy = el('button', {
     className: 'fantasma',

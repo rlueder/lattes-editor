@@ -56,15 +56,22 @@ interface Props {
   link: Link;
   theme: ThemePref;
   onFile: (file: File) => void;
+  /** Recarrega a aba do Lattes pela extensão (sessão vencida). */
+  onReloadLattes: () => void;
   onTheme: (theme: ThemePref) => void;
 }
 
-/** O botão do passo: um link para fora (abre no navegador) ou pedir o currículo de novo. */
+/**
+ * O botão do passo: um link para fora (abre no navegador), pedir o currículo de
+ * novo ou recarregar a aba do Lattes.
+ */
 function StepAction({
   action,
+  onReload,
   onRetry,
 }: {
   action: NonNullable<Step['action']>;
+  onReload: () => void;
   onRetry: () => void;
 }) {
   if (action.kind === 'link') {
@@ -80,13 +87,17 @@ function StepAction({
     );
   }
   return (
-    <button className="primary onboarding-action" type="button" onClick={onRetry}>
+    <button
+      className="primary onboarding-action"
+      type="button"
+      onClick={action.kind === 'recarregar' ? onReload : onRetry}
+    >
       {action.label}
     </button>
   );
 }
 
-export function Welcome({ error, lattes, link, onFile, onTheme, theme }: Props) {
+export function Welcome({ error, lattes, link, onFile, onReloadLattes, onTheme, theme }: Props) {
   // No `pnpm dev`, ?primeiro-uso=<estado> mostra um estado fixo para revisar.
   const preview = import.meta.env.DEV ? onboardingPreview(location.search) : undefined;
   const devFolder = useDevExtensionFolder();
@@ -166,7 +177,11 @@ export function Welcome({ error, lattes, link, onFile, onTheme, theme }: Props) 
                     <h2 className="onboarding-title">{step.title}</h2>
                     <p className="onboarding-text">{step.text}</p>
                     {step.status === 'agora' && step.action && (
-                      <StepAction action={step.action} onRetry={lattes.open} />
+                      <StepAction
+                        action={step.action}
+                        onReload={onReloadLattes}
+                        onRetry={lattes.open}
+                      />
                     )}
                   </div>
                 </li>

@@ -39,6 +39,7 @@ declare namespace chrome {
       url?: string;
     }
     function query(q: { url?: string | string[] }): Promise<Tab[]>;
+    function reload(tabId: number): Promise<void>;
     function sendMessage(tabId: number, message: unknown): Promise<unknown>;
     function create(props: { url: string }): Promise<Tab>;
     const onUpdated: {

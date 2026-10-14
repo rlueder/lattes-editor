@@ -22,6 +22,8 @@ export const BRIDGE_FEATURES = [
   'curriculo',
   /** Troca da foto do currículo (src/bridge/photo.ts). */
   'foto',
+  /** Recarregar a aba do Lattes quando a sessão venceu. */
+  'recarregar-lattes',
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];
