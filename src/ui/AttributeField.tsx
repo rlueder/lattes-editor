@@ -6,7 +6,7 @@ import { useEffect, useId, useState } from 'react';
 import { attributeLabelIn, elementLabel, enumLabel } from '../labels/labels.ts';
 import { repairMojibake } from '../model/mojibake.ts';
 import { getAttr, setAttr, type XElement } from '../model/xml.ts';
-import { derivedValue, emptyChoicesHint, typedChoices } from '../schema/typed-choices.ts';
+import { emptyChoicesHint, matchesDerived, typedChoices } from '../schema/typed-choices.ts';
 import type { AttributeSpec } from '../schema/types.ts';
 import { parseEmails, parseSocial } from './contacts.ts';
 import { CopyButton } from './CopyButton.tsx';
@@ -143,12 +143,12 @@ export function AttributeField({
     );
   }
 
-  if (derivedValue(el.name, name) !== undefined) {
+  if (matchesDerived(el, name)) {
     // Segue outra escolha (a natureza segue o tipo de evento): lido, não editado.
     return (
       <div className="field field-readonly field-locked">
         <ReadonlyLabel text={text} why="Segue o tipo de item escolhido" />
-        <span className="locked-value">{value || derivedValue(el.name, name)}</span>
+        <span className="locked-value">{value}</span>
       </div>
     );
   }

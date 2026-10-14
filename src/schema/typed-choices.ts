@@ -4,6 +4,7 @@
 // docs/campos_tipados.md.
 
 import { getAttr, type XElement } from '../model/xml.ts';
+import { foldText } from '../ui/option-filter.ts';
 import listas from './listas-lattes.json' with { type: 'json' };
 
 export interface Choice {
@@ -87,6 +88,9 @@ export function derivedValue(element: string, attr: string): string | undefined 
  * elemento do campo: o tipo de participação depende da forma escolhida nele.
  */
 export function typedChoices(el: XElement, attr: string): Choice[] | undefined {
+  // Valor derivado fora do lugar (vazio ou outro): uma opção só, a certa.
+  const derived = derivedValue(el.name, attr);
+  if (derived !== undefined) return asChoices([derived]);
   if (COUNTRY_ATTRS.has(attr)) return COUNTRIES;
   if (LANGUAGE_ATTRS.has(attr) && el.name !== 'IDIOMA') return LANGUAGES;
   if (!isEventBasics(el.name)) return undefined;
@@ -103,12 +107,22 @@ export function emptyChoicesHint(el: XElement, attr: string): string | undefined
   return getAttr(el, 'FORMA-PARTICIPACAO') ? 'Não se aplica a ouvinte' : 'Escolha a forma primeiro';
 }
 
-/** Valor preenchido que não está na lista do Lattes (vazio e derivados não contam). */
+/** O valor salvo é o derivado (sem diferença de acento nem maiúscula). */
+export function matchesDerived(el: XElement, attr: string): boolean {
+  const derived = derivedValue(el.name, attr);
+  return derived !== undefined && foldText(getAttr(el, attr) ?? '') === foldText(derived);
+}
+
+/**
+ * Valor que não está na lista do Lattes. Acento e maiúscula não contam
+ * ("Coreia do Sul" vale "Coréia Do Sul"), porque só parte das listas foi
+ * conferida numa exportação real. Vazio só conta onde o valor é derivado: a
+ * natureza da participação em evento nunca fica vazia no Lattes.
+ */
 export function outOfList(el: XElement, attr: string): boolean {
+  if (derivedValue(el.name, attr) !== undefined) return !matchesDerived(el, attr);
   const value = getAttr(el, attr) ?? '';
   if (!value) return false;
-  const derived = derivedValue(el.name, attr);
-  if (derived !== undefined) return value !== derived;
   const choices = typedChoices(el, attr);
-  return choices !== undefined && !choices.some((c) => c.value === value);
+  return choices !== undefined && !choices.some((c) => foldText(c.value) === foldText(value));
 }

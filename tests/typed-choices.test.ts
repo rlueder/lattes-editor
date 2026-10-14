@@ -9,6 +9,7 @@ import {
   derivedValue,
   emptyChoicesHint,
   isEventBasics,
+  matchesDerived,
   outOfList,
   titleRequired,
   typedChoices,
@@ -131,6 +132,19 @@ describe('campos tipados: valor fora da lista', () => {
   it('a natureza tem de ser a do tipo de evento', () => {
     expect(outOfList(basics(CONGRESS, { NATUREZA: 'Congresso' }), 'NATUREZA')).toBe(false);
     expect(outOfList(basics(CONGRESS, { NATUREZA: 'Encontro' }), 'NATUREZA')).toBe(true);
+    // Vazia conta: o Lattes nunca deixa a natureza vazia.
+    expect(outOfList(basics(CONGRESS, { NATUREZA: '' }), 'NATUREZA')).toBe(true);
+    // Fora do lugar, a lista tem só a natureza certa, para corrigir num clique.
+    expect(values(typedChoices(basics(CONGRESS, { NATUREZA: 'Encontro' }), 'NATUREZA'))).toEqual([
+      'Congresso',
+    ]);
+    expect(matchesDerived(basics(CONGRESS, { NATUREZA: 'congresso' }), 'NATUREZA')).toBe(true);
+    expect(matchesDerived(basics(CONGRESS, { NATUREZA: '' }), 'NATUREZA')).toBe(false);
+  });
+
+  it('acento e maiúscula não contam na comparação com a lista', () => {
+    expect(outOfList(basics(CONGRESS, { PAIS: 'alemanha' }), 'PAIS')).toBe(false);
+    expect(outOfList(basics(CONGRESS, { PAIS: 'Coreia Do Sul' }), 'PAIS')).toBe(false);
   });
 
   it('o tipo tem de combinar com a forma', () => {

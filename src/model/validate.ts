@@ -37,7 +37,9 @@ export function validateItem(schema: LattesSchema, item: XElement, today = new D
       } else if (outOfList(el, a.name)) {
         problems.push({
           ...where,
-          message: `${attributeLabel(a.name)}: "${a.value}" não está na lista do Lattes`,
+          message: a.value
+            ? `${attributeLabel(a.name)}: "${a.value}" não está na lista do Lattes`
+            : `${attributeLabel(a.name)}: escolha uma opção`,
         });
       } else if (attrSpec.required && !a.value.trim()) {
         problems.push({ ...where, message: `${attributeLabel(a.name)}: obrigatório` });

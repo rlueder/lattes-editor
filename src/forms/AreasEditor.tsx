@@ -6,7 +6,7 @@ import { useId } from 'react';
 import { enumLabel } from '../labels/labels.ts';
 import { type KnowledgeArea, MAX_AREAS } from '../model/production.ts';
 import { lattesSchema as schema } from '../schema/lattes.ts';
-import { Select } from '../ui/primitives/Select.tsx';
+import { ComboSelect } from '../ui/primitives/ComboSelect.tsx';
 import { areaPath } from './area-path.ts';
 
 interface Props {
@@ -65,7 +65,7 @@ export function AreasEditor({ areas, known, onChange }: Props) {
           <span aria-hidden="true" className="author-order">
             {i + 1}
           </span>
-          <Select
+          <ComboSelect
             aria-label={`Grande área ${i + 1}`}
             options={[
               { label: '(grande área)', value: '' },
