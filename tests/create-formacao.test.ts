@@ -10,8 +10,10 @@ import {
   planCreateFormacao,
 } from '../src/bridge/create-formacao.ts';
 import { CREATE_SPECS, planCreateItem } from '../src/bridge/create-items.ts';
-import { jsCalls, selectEntries } from '../src/bridge/create-shared.ts';
+import { CREATE_FIELD_LABELS } from '../src/bridge/create-labels.ts';
+import { jsCalls, readBack, readBackProblem, selectEntries } from '../src/bridge/create-shared.ts';
 import { opRows } from '../src/bridge/field-labels.ts';
+import { type FormControl, successfulPairs } from '../src/bridge/form.ts';
 import { planChanges } from '../src/bridge/plan.ts';
 import { sentEntry, undoOp } from '../src/bridge/sent-log.ts';
 import { type Change, diffDocuments } from '../src/model/changes.ts';
@@ -365,6 +367,56 @@ describe('leituras das buscas', () => {
       ),
     ).toEqual([{ text: 'Um', value: 'V1' }]);
     expect(selectEntries('<p/>', 'f_curso')).toEqual([]);
+  });
+});
+
+describe('releitura de campo desabilitado', () => {
+  const label = (name: string) => CREATE_FIELD_LABELS[name] ?? name;
+
+  it('compara o que o campo de texto ou de lista desabilitado mostra', () => {
+    const controls: FormControl[] = [
+      { disabled: true, name: 'f_inst', type: 'text', value: 'OUTRA UNIVERSIDADE' },
+      { disabled: true, name: 'f_nme_agencia', type: 'text', value: 'CAPES' },
+      { disabled: true, name: 'f_curso', selected: ['V2'], type: 'select-one', value: 'V2' },
+      { name: 'f_titulo', type: 'text', value: 'Título' },
+    ];
+    const saved = { controls, pairs: successfulPairs(controls) };
+    expect(
+      readBack(saved, {
+        f_curso: 'V2',
+        f_inst: 'UNIVERSIDADE DE EXEMPLO',
+        f_nme_agencia: 'CAPES',
+        f_titulo: 'Título',
+      }),
+    ).toEqual({ differ: [label('f_inst')], unread: [] });
+    // A lista desabilitada vale pela opção marcada, não pelo value.
+    expect(readBack(saved, { f_curso: 'V1' })).toEqual({ differ: [label('f_curso')], unread: [] });
+    const problem = readBackProblem(
+      'Criada no Lattes (formação 5)',
+      true,
+      readBack(saved, { f_inst: 'UNIVERSIDADE DE EXEMPLO' }),
+    );
+    expect(problem).toBe(
+      `Criada no Lattes (formação 5), mas gravada diferente: ${label('f_inst')}`,
+    );
+  });
+
+  it('rádio, caixa e nome repetido seguem pelos pares, mesmo desabilitados', () => {
+    const controls: FormControl[] = [
+      { checked: true, disabled: true, name: 'F_BOLSA', type: 'radio', value: 'S' },
+      { checked: true, disabled: true, name: 'f_chk', type: 'checkbox', value: 'on' },
+      { disabled: true, name: 'f_dup', type: 'text', value: 'a' },
+      { name: 'f_dup', type: 'text', value: 'b' },
+    ];
+    const saved = { controls, pairs: successfulPairs(controls) };
+    // Desabilitados, não vão nos pares: não contam como gravados.
+    expect(readBack(saved, { F_BOLSA: 'S', f_chk: 'on' }).differ).toEqual([
+      label('F_BOLSA'),
+      label('f_chk'),
+    ]);
+    // Dois controles com o nome: vale o par enviado, não o primeiro controle.
+    expect(readBack(saved, { f_dup: 'b' })).toEqual({ differ: [], unread: [] });
+    expect(readBack(saved, { f_dup: 'a' }).differ).toEqual([label('f_dup')]);
   });
 });
 

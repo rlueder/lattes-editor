@@ -18,6 +18,7 @@ import { applyAll } from '../src/bridge/apply.ts';
 import { biographicContract } from '../src/bridge/biographic.ts';
 import { checkContract, isBreaking, LATTES_CONTRACT } from '../src/bridge/contract.ts';
 import { CREATE_ATUACAO_SPEC } from '../src/bridge/create.ts';
+import { CREATE_FIELD_LABELS } from '../src/bridge/create-labels.ts';
 import { editContract } from '../src/bridge/edit-items.ts';
 import { isEspelhoPage, parseEspelho } from '../src/bridge/espelho.ts';
 import { exportCv, fromBase64 } from '../src/bridge/export.ts';
@@ -324,6 +325,46 @@ describe('Lattes simulado: o conector de ponta a ponta', () => {
     expect(childElements(unicamp, 'ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO')).toHaveLength(1);
   });
 
+  it('formação incluída com a agência mostrada diferente não é dada por conferida', async () => {
+    // Depois do POST, o campo desabilitado da agência mostra outra coisa.
+    const lattes = await start({
+      intercept: async (req, state, next) => {
+        const out = await next();
+        if (req.method === 'POST' && /^pkg_formacao\.form$/i.test(req.proc)) {
+          const novo = find(
+            state.root,
+            (el) => el.name === 'MESTRADO' && getAttr(el, 'SEQUENCIA-FORMACAO') === '5',
+          );
+          setAttr(novo, 'NOME-AGENCIA', 'Outra agência');
+        }
+        return out;
+      },
+    });
+    const plan = await planEdits((doc) => {
+      find(doc.root, (el) => el.name === 'FORMACAO-ACADEMICA-TITULACAO').children.push(
+        element('MESTRADO', {
+          'ANO-DE-INICIO': '2024',
+          'CODIGO-AGENCIA-FINANCIADORA': '000000000002',
+          'CODIGO-INSTITUICAO': '000000000003',
+          'FLAG-BOLSA': 'SIM',
+          NIVEL: '3',
+          'NOME-AGENCIA': 'Coordenação de Aperfeiçoamento de Pessoal de Nível Superior',
+          'NOME-INSTITUICAO': 'Universidade Estadual de Campinas',
+          'SEQUENCIA-FORMACAO': '9',
+          'STATUS-DO-CURSO': 'EM_ANDAMENTO',
+        }),
+      );
+    });
+    expect(plan.ops.map((o) => o.kind)).toEqual(['criar-formacao']);
+    const [r] = await applyAll(plan.ops, lattes.port);
+    expect(r).toMatchObject({
+      assigned: { 'SEQUENCIA-FORMACAO': '5' },
+      status: 'divergente',
+    });
+    expect(r!.detail).toMatch(/^Criada no Lattes \(formação 5\), mas gravada diferente: /);
+    expect(r!.detail).toContain(CREATE_FIELD_LABELS.f_nme_agencia ?? 'f_nme_agencia');
+  });
+
   it('para a fila quando a sessão vence no meio, como o Lattes de verdade', async () => {
     const lattes = await start({ expireAfterRequests: 3 });
     const plan = await planEdits((doc) =>
@@ -407,13 +448,14 @@ describe('Lattes simulado: o conector de ponta a ponta', () => {
     // A pessoa confirma o passo 2 e o passo 3.
     const step3 = await lattes.port.post(
       'pkg_importa_xml.mostra_modulos',
-      `f_cod=${code}&f_solic=${request}&f_ctr=I&f_chkp=16&f_ano_prod=2026`,
+      `f_cod=${code}&f_solic=${request}&f_chkp=dummy&f_ctr=I&f_chkp=16&f_ano_prod=2026`,
     );
     const rows = [...step3.matchAll(/name="f_sq" value="(\d+)"[^]*?class="quadrado (\w+)"/g)];
     expect(rows.map((m) => m[2])).toEqual(['verde']);
     const done = await lattes.port.post(
       'pkg_importa_xml.mostra_lista_prod',
-      `f_cod=${code}&f_solic=${request}&f_sq=dummy&f_ctr=I&f_chkp=dummy&f_chkp=16&f_sq=${rows[0]![1]}`,
+      // Os campos e a ordem do envio do navegador no passo 3 (14/10/2026).
+      `f_cod=${code}&f_solic=${request}&f_sq=dummy&f_ctr=I&f_chkp=dummy&f_chkp=16&f_all=on&f_sq=${rows[0]![1]}`,
     );
     expect(done).toContain(DONE_MESSAGE);
     expect(lattes.state.importRequest).toBeUndefined();

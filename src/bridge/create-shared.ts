@@ -216,6 +216,16 @@ const labelOf = (name: string) => CREATE_FIELD_LABELS[name] ?? name;
  * diferente é falha (`differ`), e campo que não voltou fica sem conferir
  * (`unread`), nunca dado por conferido.
  */
+const TEXT_LIKE = new Set(['hidden', 'password', 'text', 'textarea']);
+
+/** O que um controle desabilitado de texto ou de lista mostra; undefined nos outros casos. */
+function displayedValue(control: FormControl): string | undefined {
+  if (!control.disabled) return undefined;
+  if (TEXT_LIKE.has(control.type)) return control.value;
+  if (control.type.startsWith('select')) return control.selected?.[0] ?? '';
+  return undefined;
+}
+
 export function readBack(
   saved: { controls: FormControl[]; pairs: Pairs },
   set: FieldValues,
@@ -223,14 +233,17 @@ export function readBack(
   const differ: string[] = [];
   const unread: string[] = [];
   for (const [name, value] of Object.entries(set)) {
-    const control = saved.controls.find((c) => c.name === name);
-    if (!control) {
+    const controls = saved.controls.filter((c) => c.name === name);
+    if (controls.length === 0) {
       unread.push(labelOf(name));
       continue;
     }
     // Campo desabilitado (instituição, curso e agência, só pelas buscas, seção
-    // 17) não vai nos pares do envio, mas o valor gravado aparece nele.
-    const current = control.disabled ? control.value : pairValue(saved.pairs, name);
+    // 17) não vai nos pares do envio, mas o valor gravado aparece nele. Só
+    // vale para um controle único de texto ou de lista; o resto (rádios,
+    // caixas, nomes repetidos) segue pelos pares.
+    const shown = controls.length === 1 ? displayedValue(controls[0]!) : undefined;
+    const current = shown ?? pairValue(saved.pairs, name);
     if (!sameValue(current, value)) differ.push(labelOf(name));
   }
   return { differ, unread };

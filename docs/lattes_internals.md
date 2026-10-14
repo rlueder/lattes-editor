@@ -647,7 +647,14 @@ vermelho">`; o único item veio verde. `enviar()` exige ao menos um `f_sq`
 6. O Confirmar feito pela própria tela manda os mesmos campos que o POST
    montado de dentro da página: os dois foram comparados campo a campo nos
    passos 2 e 3. A diferença entre o envio do conector e o do navegador não
-   explica o item que não entrou.
+   explica o item que não entrou. O formulário do passo 2 tem, nesta ordem,
+   `f_cod`, `f_solic`, um `f_chkp` oculto com `dummy`, `f_ctr`, `f_all`, as
+   caixas `f_chkp` de 1 a 17 e `f_ano_prod`. O envio do navegador no passo 2
+   foi `f_cod`, `f_solic`, `f_chkp=dummy`, `f_ctr=I`, `f_chkp=16`,
+   `f_ano_prod=2026`, sem `f_all`; no passo 3, `f_cod`, `f_solic`,
+   `f_sq=dummy`, `f_ctr=I`, `f_chkp=dummy`, `f_chkp=16`, `f_all=on`,
+   `f_sq=20`. **Observado.** O conector manda o passo 2 com os mesmos campos,
+   na mesma ordem.
 7. No passo 3, o verde e o vermelho comparam pelo título: os eventos de
    ouvinte sem título aparecem como "Produção sem título", todos verdes,
    embora já estejam no currículo. O filtro de ano do passo 2 limita a

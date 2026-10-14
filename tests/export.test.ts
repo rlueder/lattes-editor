@@ -44,7 +44,7 @@ const answer =
 const exportedCalls = (lattes: LattesSimuladoNoTeste) =>
   lattes.state.log
     .filter((l) => /^pkg_impcv\.get_arquivo$/i.test(l.proc))
-    .map((l) => ({ method: l.method, pairs: l.pairs, proc: l.proc }));
+    .map((l) => ({ method: l.method, pairs: l.pairs, path: l.path }));
 
 describe('Abrir do Lattes: o Exportar pelo conector', () => {
   it('a tela, depois o POST do "Confirmar" com XML, e o ZIP', async () => {
@@ -56,7 +56,7 @@ describe('Abrir do Lattes: o Exportar pelo conector', () => {
     expect(r.bytes.slice(0, 2)).toEqual(new Uint8Array([0x50, 0x4b]));
     expect(getAttr((await loadCv(r.bytes, r.fileName)).doc.root, 'NUMERO-IDENTIFICADOR')).toBe(ID);
     expect(exportedCalls(lattes)).toEqual([
-      { method: 'GET', pairs: undefined, proc: 'pkg_impcv.get_arquivo' },
+      { method: 'GET', pairs: undefined, path: `pkg_impcv.get_arquivo?f_cod=${code}` },
       {
         method: 'POST',
         pairs: [
@@ -64,7 +64,7 @@ describe('Abrir do Lattes: o Exportar pelo conector', () => {
           ['f_ctr', 'G'],
           ['f_tpo_arq', '3'],
         ],
-        proc: 'PKG_IMPCV.get_arquivo',
+        path: 'PKG_IMPCV.get_arquivo',
       },
     ]);
   });
@@ -76,14 +76,22 @@ describe('Abrir do Lattes: o Exportar pelo conector', () => {
       ok: false,
       reason: 'pendente',
     });
-    expect(exportedCalls(pendente)).toHaveLength(1);
+    expect(exportedCalls(pendente)).toEqual([
+      {
+        method: 'GET',
+        pairs: undefined,
+        path: `pkg_impcv.get_arquivo?f_cod=${pendente.state.code}`,
+      },
+    ]);
     const caida = await lattesFor();
     caida.state.sessionActive = false;
     expect(await exportCv(caida.exportPort, caida.state.code, ID)).toEqual({
       ok: false,
       reason: 'sessao',
     });
-    expect(exportedCalls(caida)).toHaveLength(1);
+    expect(exportedCalls(caida)).toEqual([
+      { method: 'GET', pairs: undefined, path: `pkg_impcv.get_arquivo?f_cod=${caida.state.code}` },
+    ]);
   });
 
   it('tela que mudou, sem código, ou resposta que não é ZIP', async () => {

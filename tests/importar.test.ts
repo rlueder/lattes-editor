@@ -363,13 +363,15 @@ describe('Importar pelo conector contra o Lattes simulado', () => {
     expect(upload.file?.name).toBe('0000000000000001-itens-novos.xml');
     expect(upload.file?.xml).toContain('PARTICIPACAO-EM-CONGRESSO');
     expect(upload.file?.xml).not.toContain('CPF=');
-    const sent = new URLSearchParams(calls[2]!.body);
-    expect(sent.get('f_cod')).toBe(CODE);
-    expect(sent.get('f_solic')).toBe('987654');
-    expect(sent.get('f_ctr')).toBe('I');
-    expect(sent.getAll('f_chkp')).toEqual(['16']);
-    expect(sent.get('f_ano_prod')).toBe('2024');
-    expect(sent.has('f_all')).toBe(false);
+    // Os campos e a ordem do envio do navegador no passo 2 (14/10/2026).
+    expect([...new URLSearchParams(calls[2]!.body)]).toEqual([
+      ['f_cod', CODE],
+      ['f_solic', '987654'],
+      ['f_chkp', 'dummy'],
+      ['f_ctr', 'I'],
+      ['f_chkp', '16'],
+      ['f_ano_prod', '2024'],
+    ]);
 
     expect(r.reason).toBe('passo-3');
     expect(r.request).toBe('987654');
@@ -393,7 +395,12 @@ describe('Importar pelo conector contra o Lattes simulado', () => {
   it('vários módulos: cada caixa uma vez, em ordem', async () => {
     const { calls, port } = await fakeLattes();
     await importItems(port, CODE, { ...REQ, modules: [17, 1, 16, 1] }, true);
-    expect(new URLSearchParams(calls[2]!.body).getAll('f_chkp')).toEqual(['1', '16', '17']);
+    expect(new URLSearchParams(calls[2]!.body).getAll('f_chkp')).toEqual([
+      'dummy',
+      '1',
+      '16',
+      '17',
+    ]);
   });
 
   it('solicitação pendente antes de começar: para sem enviar nada nem descartar', async () => {
