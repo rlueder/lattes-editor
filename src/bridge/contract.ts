@@ -8,7 +8,8 @@
 // relatório pode ser colado numa issue pública sem expor o currículo.
 
 import type { LattesPort } from './apply.ts';
-import { CREATE_ATUACAO_SPEC, CREATE_ITEMS_ENABLED } from './create.ts';
+import { CREATE_ITEMS_ENABLED } from './create.ts';
+import { CREATE_SPECS, createFormPath } from './create-items.ts';
 import type { FormControl } from './form.ts';
 import { cvCodeFrom, findLinks, isLogonPage } from './lattes-html.ts';
 import { checkLists, type ListCheck, listText, unreadLists } from './list-watch.ts';
@@ -29,12 +30,19 @@ export interface FormSpec {
   mode?: string;
   /** Atributo name do <form>. */
   name: string;
+  /**
+   * Só os campos listados são conferidos: o mapa não registrou o tipo de todos
+   * (formulários de inclusão de formação e projeto). Campo a mais não é mudança.
+   */
+  partial?: boolean;
 }
+
+type CreateKind = 'criar-atuacao' | 'criar-formacao' | 'criar-projeto';
 
 export interface Contract {
   /** A inclusão só entra com CREATE_ITEMS_ENABLED (create.ts). */
-  forms: Omit<Record<BridgeOp['kind'], FormSpec>, 'criar-atuacao'> &
-    Partial<Record<'criar-atuacao', FormSpec>>;
+  forms: Omit<Record<BridgeOp['kind'], FormSpec>, CreateKind> &
+    Partial<Record<CreateKind, FormSpec>>;
   /** Procedimentos que precisam estar linkados no menu do currículo. */
   menu: string[];
 }
@@ -54,7 +62,7 @@ const radio: FieldSpec = { type: 'radio' };
  */
 export const LATTES_CONTRACT: Contract = {
   forms: {
-    ...(CREATE_ITEMS_ENABLED ? { 'criar-atuacao': CREATE_ATUACAO_SPEC } : {}),
+    ...(CREATE_ITEMS_ENABLED ? CREATE_SPECS : {}),
     idioma: {
       action: 'PKG_IDIOMA.FORM',
       fields: {
@@ -169,6 +177,7 @@ export function compareForm(
   form: string,
   expected: Record<string, FieldSpec>,
   observed: Fingerprint,
+  partial = false,
 ): Drift[] {
   const drifts: Drift[] = [];
   for (const [field, spec] of Object.entries(expected)) {
@@ -190,6 +199,7 @@ export function compareForm(
       });
     }
   }
+  if (partial) return drifts;
   for (const field of Object.keys(observed)) {
     if (!(field in expected)) drifts.push({ field, form, kind: 'campo-novo' });
   }
@@ -289,7 +299,7 @@ async function checkForm(
       status: 'mudou',
     };
   }
-  const drifts = compareForm(spec.name, spec.fields, fingerprint(controls));
+  const drifts = compareForm(spec.name, spec.fields, fingerprint(controls), spec.partial);
   // O conector só grava em modo de alteração; o valor de controle não é pessoal.
   const ctr = controls.find((c) => c.name === 'f_ctr')?.value;
   const mode = spec.mode ?? 'U';
@@ -330,6 +340,13 @@ async function locateAndCheck(
   if (kind === 'resumo') {
     const link = findLinks(menu, 'pkg_resume.')[0];
     return link ? checkForm(port, kind, spec, link.path) : noLink(kind, spec.name, 'pkg_resume.');
+  }
+  if (kind === 'criar-formacao' || kind === 'criar-projeto') {
+    // Formulários de inclusão: abrem vazios, não precisam de amostra.
+    const found = await createFormPath(kind, (path) => getChecked(port, path), menu);
+    return 'path' in found
+      ? checkForm(port, kind, spec, found.path)
+      : noLink(kind, spec.name, found.missing);
   }
   if (kind === 'criar-atuacao') {
     // O formulário de inclusão abre vazio: não precisa de amostra.

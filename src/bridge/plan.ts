@@ -6,6 +6,7 @@
 import { type Change, resolvePath } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
+import { type CreateItemOp, planCreateItem } from './create-items.ts';
 
 /** Valor de campo; null tira o campo do envio (caixa desmarcada). */
 export type FieldValues = Record<string, string | null>;
@@ -40,7 +41,7 @@ export interface IdiomaOp extends OpBase {
   kind: 'idioma';
 }
 
-export type BridgeOp = CreateAtuacaoOp | IdiomaOp | ResumoOp | VinculoOp;
+export type BridgeOp = CreateAtuacaoOp | CreateItemOp | IdiomaOp | ResumoOp | VinculoOp;
 
 export interface Unsupported {
   key: string;
@@ -152,6 +153,10 @@ export function planChange(
     const planned = planCreateAtuacao(change, el, label);
     return 'reason' in planned ? unsupported(change, label, planned.reason) : planned;
   }
+  // Formação e projeto (create-items.ts), com a mesma chave.
+  const created =
+    change.kind === 'novo' && createItems ? planCreateItem(change, chain, label) : undefined;
+  if (created) return 'reason' in created ? unsupported(change, label, created.reason) : created;
   if (change.kind !== 'alterado') {
     return unsupported(change, label, 'Incluir ou excluir pelo conector: não suportado ainda');
   }

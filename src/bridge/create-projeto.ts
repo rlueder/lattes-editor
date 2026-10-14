@@ -1,0 +1,365 @@
+// Incluir um projeto no Lattes pelo conector (LAT-52), atrás de
+// CREATE_ITEMS_ENABLED (create.ts). Lista, formulário e a janela das
+// instituições das atuações: docs/lattes_internals.md, seção 17. Inferido até
+// o teste acompanhado: a resposta do POST, o servidor pendurar o projeto na
+// atuação da instituição escolhida, o projeto novo aparecer na lista, e a
+// equipe, que vai como o formulário a traz (a grade não é montada).
+
+import type { Change } from '../model/changes.ts';
+import { childElements, firstChild, getAttr, walk, type XElement } from '../model/xml.ts';
+import type { LattesPort, OpResult } from './apply.ts';
+import type { FormSpec } from './contract.ts';
+import { CREATE_FIELD_LABELS } from './create-labels.ts';
+import {
+  absentFields,
+  type CreateOpBase,
+  filledChildren,
+  getChecked,
+  hidden,
+  jsCalls,
+  mapAttrs,
+  type Mapper,
+  maybeCreated,
+  notSaved,
+  overLimit,
+  type Planned,
+  radio,
+  readPairs,
+  reasonFrom,
+  type Result,
+  same,
+  sameCode,
+  select,
+  SESSION,
+  Stop,
+  text,
+} from './create-shared.ts';
+import { encodeLatin1Form, pairValue, setPairs } from './form.ts';
+import { foldText } from './html-text.ts';
+import { findLinks, isLogonPage, type LattesLink } from './lattes-html.ts';
+import type { FieldValues } from './plan.ts';
+
+export interface CreateProjetoOp extends CreateOpBase {
+  kind: 'criar-projeto';
+  /** f_cod_tipo da lista e do formulário: P pesquisa, D desenvolvimento… */
+  nature: string;
+}
+
+// Projeto -------------------------------------------------------------------------
+
+/** NATUREZA do XML → f_cod_tipo da lista e F_TPO_NATUREZA do formulário (pelos rótulos). */
+const PROJECT_NATURE: Record<string, string> = {
+  DESENVOLVIMENTO: 'D',
+  ENSINO: 'N',
+  EXTENSAO: 'E',
+  OUTRA: 'O',
+  PESQUISA: 'P',
+};
+
+/** SITUACAO do XML → F_TPO_SITUACAO (pelos rótulos). */
+const PROJECT_SITUATION: Record<string, string> = {
+  CONCLUIDO: 'C',
+  DESATIVADO: 'D',
+  EM_ANDAMENTO: 'A',
+};
+
+/** Atributo do PROJETO-DE-PESQUISA → campo do GN_PROJETO (tabela da seção 17). */
+const PROJECT_FIELDS: Record<string, [string, Mapper]> = {
+  'ANO-FIM': ['F_ANO_FIM', same],
+  'ANO-INICIO': ['F_ANO_INIC', same],
+  'DESCRICAO-DO-PROJETO': ['f_ref', same],
+  'DESCRICAO-DO-PROJETO-INGLES': ['f_ref_en', same],
+  // Com SIM, o formulário pede o texto do potencial (f_txt_potencial), que o XML não tem.
+  'FLAG-POTENCIAL-INOVACAO': ['f_sta_inovacao', (v) => (v === 'NAO' ? 'N' : undefined)],
+  NATUREZA: ['F_TPO_NATUREZA', (v) => PROJECT_NATURE[v]],
+  'NOME-DO-PROJETO': ['f_titulo', same],
+  'NOME-DO-PROJETO-INGLES': ['f_titulo_en', same],
+  'NUMERO-DOUTORADO': ['F_NRO_DOUTORADO', same],
+  'NUMERO-ESPECIALIZACAO': ['F_NRO_ESPECIALIZACAO', same],
+  'NUMERO-GRADUACAO': ['F_NRO_GRADUACAO', same],
+  'NUMERO-MESTRADO-ACADEMICO': ['F_NRO_MESTRADO_ACAD', same],
+  'NUMERO-MESTRADO-PROF': ['F_NRO_MESTRADO_PROF', same],
+  SITUACAO: ['F_TPO_SITUACAO', (v) => PROJECT_SITUATION[v]],
+};
+
+const PROJECT_HANDLED = new Set(['FORMATO-DATA-CERTIFICACAO', 'SEQUENCIA-PROJETO']);
+
+/** Mudanças "novo" que trazem um projeto: o próprio, a participação ou o contêiner dela. */
+export const PROJECT_CARRIERS = new Set([
+  'ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO',
+  'PARTICIPACAO-EM-PROJETO',
+  'PROJETO-DE-PESQUISA',
+]);
+
+/** A equipe tem só o dono do currículo (pelo ID Lattes ou, sem ele, pelo nome)? */
+function onlyOwner(projeto: XElement, root: XElement | undefined): boolean {
+  const equipe = firstChild(projeto, 'EQUIPE-DO-PROJETO');
+  const members = equipe ? childElements(equipe, 'INTEGRANTES-DO-PROJETO') : [];
+  if (members.length === 0) return true;
+  if (members.length > 1 || !root) return false;
+  const member = members[0]!;
+  const ownerId = getAttr(root, 'NUMERO-IDENTIFICADOR') ?? '';
+  const memberId = getAttr(member, 'NRO-ID-CNPQ') ?? '';
+  if (ownerId && memberId) return ownerId === memberId;
+  const dg = firstChild(root, 'DADOS-GERAIS');
+  const ownerName = (dg && getAttr(dg, 'NOME-COMPLETO')) ?? '';
+  return (
+    foldText(ownerName) !== '' &&
+    foldText(ownerName) === foldText(getAttr(member, 'NOME-COMPLETO') ?? '')
+  );
+}
+
+/**
+ * Um projeto novo como inclusão. `chain` vai da raiz ao elemento novo; o
+ * projeto entra pela atuação dele, como o Lattes faz pela instituição escolhida
+ * no formulário (seção 17).
+ */
+export function planCreateProjeto(
+  change: Change,
+  chain: XElement[],
+  label: string,
+): Planned<CreateProjetoOp> {
+  const el = chain.at(-1)!;
+  const projetos: XElement[] = [];
+  walk(el, (node) => {
+    if (node.name === 'PROJETO-DE-PESQUISA') projetos.push(node);
+  });
+  if (projetos.length !== 1) return { reason: 'A inclusão pelo conector leva um projeto por vez' };
+  const projeto = projetos[0]!;
+  const atuacao = chain.find((c) => c.name === 'ATUACAO-PROFISSIONAL');
+  const institutionCode = atuacao && getAttr(atuacao, 'CODIGO-INSTITUICAO');
+  const institutionName = atuacao && getAttr(atuacao, 'NOME-INSTITUICAO');
+  if (!institutionCode || !institutionName) {
+    return { reason: 'A atuação do projeto não tem o código da instituição do Lattes' };
+  }
+  const nature = PROJECT_NATURE[getAttr(projeto, 'NATUREZA') ?? ''];
+  if (!nature) return { reason: 'Escolha a natureza do projeto' };
+  if (!onlyOwner(projeto, chain[0])) {
+    return {
+      reason: 'Equipe além de você ainda vai à mão: o conector não monta a grade da equipe',
+    };
+  }
+  if (filledChildren(projeto, ['EQUIPE-DO-PROJETO']).length > 0) {
+    return { reason: 'Financiadores, produções e orientações do projeto ainda vão à mão' };
+  }
+  const { missing, set, wrong } = mapAttrs(change, projeto, PROJECT_FIELDS, PROJECT_HANDLED);
+  const reason = reasonFrom(missing, wrong);
+  if (reason) return { reason };
+  if (!set.f_titulo || !set.F_ANO_INIC || !set.F_TPO_SITUACAO) {
+    return { reason: 'O projeto precisa de nome, situação e ano de início' };
+  }
+  return {
+    expect: {},
+    institutionCode,
+    institutionName,
+    key: change.key,
+    kind: 'criar-projeto',
+    label,
+    nature,
+    set,
+  };
+}
+
+/** O formulário de inclusão do projeto (tabela da seção 17). */
+export const CREATE_PROJETO_SPEC: FormSpec & { mode: string; partial: true } = {
+  action: 'PKG_PROJETO.FORM',
+  fields: {
+    F_ANO_FIM: text(4),
+    F_ANO_INIC: text(4),
+    f_autores_l: hidden,
+    f_carga: hidden,
+    f_cod: hidden,
+    f_cod_inst: hidden,
+    f_cod_inst2: hidden,
+    f_cod_tipo: hidden,
+    f_codinst: hidden,
+    f_ctr: hidden,
+    f_enqua: hidden,
+    f_inst: text(75),
+    f_inst_l: hidden,
+    f_inst_old: hidden,
+    f_instituicoes: hidden,
+    f_instold: hidden,
+    F_NRO_DOUTORADO: text(2),
+    F_NRO_ESPECIALIZACAO: text(2),
+    F_NRO_GRADUACAO: text(2),
+    F_NRO_MESTRADO_ACAD: text(2),
+    F_NRO_MESTRADO_PROF: text(2),
+    f_ref: { maxLength: 3900, type: 'textarea' },
+    f_ref_en: { maxLength: 3900, type: 'textarea' },
+    f_regime: hidden,
+    f_seq_ativ: hidden,
+    f_seq_funcao: hidden,
+    f_seq_proj: hidden,
+    f_sta_inovacao: radio,
+    f_stavinc: hidden,
+    f_tipo_privacidade: select,
+    f_titulo: text(255),
+    f_titulo_en: text(255),
+    F_TPO_NATUREZA: select,
+    F_TPO_SITUACAO: select,
+    f_txt_potencial: text(400),
+    f_vinc: hidden,
+  },
+  mode: 'I',
+  name: 'GN_PROJETO',
+  partial: true,
+};
+
+// Projeto no Lattes ------------------------------------------------------------------
+
+const PROJETO_FORM = 'GN_PROJETO';
+
+/** Os parâmetros do link "Incluir novo item" da lista de projetos (seção 17). */
+const INCLUSION_PARAMS = new Set([
+  'f_cod',
+  'f_cod_tipo',
+  'f_sta_inovacao',
+  'f_tematica',
+  'f_tpo_acao_inov',
+  'f_tpo_cooperacao',
+]);
+
+/**
+ * O link de inclusão tem só esses parâmetros; uma linha de projeto existente
+ * traz algo a mais (a sequência). Como é esse algo não foi visto: a lista do
+ * currículo mapeado estava vazia.
+ */
+export const isInclusion = (l: LattesLink) =>
+  Object.keys(l.params).every((k) => INCLUSION_PARAMS.has(k));
+
+const projectRows = (html: string) =>
+  findLinks(html, 'PKG_PROJETO.form').filter((l) => !isInclusion(l));
+
+/**
+ * As instituições das atuações que a janela pp_lista_inst oferece: cada uma
+ * chama preencherOpener(enqua, regime, stavinc, ano_inic, ano_fim, carga,
+ * vinc, código, nome), que copia o vínculo para os ocultos (seção 17).
+ */
+export function vinculoChoices(html: string) {
+  return jsCalls(html, 'preencherOpener')
+    .filter((a) => a.length === 9)
+    .map(([enqua, regime, stavinc, anoInic, anoFim, carga, vinc, code, name]) => ({
+      anoFim: anoFim!,
+      anoInic: anoInic!,
+      carga: carga!,
+      code: code!,
+      enqua: enqua!,
+      name: name!,
+      regime: regime!,
+      stavinc: stavinc!,
+      vinc: vinc!,
+    }));
+}
+
+export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort): Promise<Result> {
+  const result = (status: OpResult['status'], detail: string): Result => ({
+    detail,
+    key: op.key,
+    status,
+  });
+  try {
+    const menu = await port.menuHtml();
+    const lista = findLinks(menu, 'pkg_projeto.lista').find(
+      (l) => (l.params.f_cod_tipo ?? '').toUpperCase() === op.nature,
+    );
+    if (!lista?.params.f_cod) {
+      throw new Stop('erro', 'A lista de projetos dessa natureza não está no menu do Lattes');
+    }
+    const cv = lista.params.f_cod;
+    const listaHtml = await getChecked(port, lista.path);
+    const inclusion = findLinks(listaHtml, 'PKG_PROJETO.form').find(isInclusion);
+    if (!inclusion) throw new Stop('erro', 'Inclusão de projeto não encontrada na lista do Lattes');
+    const before = projectRows(listaHtml);
+    for (const row of before) {
+      const { pairs } = await readPairs(port, row.path, PROJETO_FORM);
+      if (foldText(pairValue(pairs, 'f_titulo') ?? '') === foldText(op.set.f_titulo ?? '')) {
+        return result('divergente', 'O Lattes já tem um projeto com esse nome');
+      }
+    }
+
+    const form = await readPairs(port, inclusion.path, PROJETO_FORM);
+    if (
+      pairValue(form.pairs, 'f_ctr') !== 'I' ||
+      (pairValue(form.pairs, 'f_cod_tipo') ?? '').toUpperCase() !== op.nature
+    ) {
+      return result('erro', 'O formulário não é o de inclusão desta natureza');
+    }
+    const absent = absentFields(form.controls, op.set);
+    if (absent.length > 0) {
+      return result(
+        'erro',
+        `O formulário de projeto não tem: ${absent.map((f) => CREATE_FIELD_LABELS[f] ?? f).join(', ')}`,
+      );
+    }
+
+    // A instituição sai da janela das atuações do currículo. O código vai sem a
+    // letra: em f_cod_inst quando a letra é V, em f_cod_inst2 nos outros casos.
+    const choices = vinculoChoices(
+      await getChecked(port, `PKG_PROJETO.pp_lista_inst?f_pgm=INSTVINCULO&f_cod=${cv}`),
+    ).filter((c) => sameCode(c.code, op.institutionCode));
+    if (choices.length !== 1) {
+      return result(
+        'erro',
+        `A atuação do projeto não está na lista do Lattes (${choices.length} achadas com o código)`,
+      );
+    }
+    const v = choices[0]!;
+    // Os anos do vínculo que preencherOpener copia ficam por baixo dos do projeto.
+    const set: FieldValues = {
+      F_ANO_FIM: v.anoFim,
+      F_ANO_INIC: v.anoInic,
+      f_carga: v.carga,
+      f_enqua: v.enqua,
+      f_inst: v.name,
+      f_inst_old: v.name,
+      f_regime: v.regime,
+      f_stavinc: v.stavinc,
+      f_vinc: v.vinc,
+      [v.code.startsWith('V') ? 'f_cod_inst' : 'f_cod_inst2']: v.code.slice(1),
+      ...op.set,
+    };
+    const limit = overLimit(form.controls, set);
+    if (limit) return result('erro', limit);
+    const response = await port.post(
+      CREATE_PROJETO_SPEC.action,
+      encodeLatin1Form(setPairs(form.pairs, set)),
+    );
+    if (isLogonPage(response)) return result('sessao', SESSION);
+
+    try {
+      const known = new Set(before.map((l) => l.path));
+      const created = projectRows(await getChecked(port, lista.path)).filter(
+        (l) => !known.has(l.path),
+      );
+      if (created.length !== 1) {
+        return maybeCreated(
+          op.key,
+          'O projeto pode ter sido criado',
+          `a lista mostra ${created.length} projetos novos`,
+        );
+      }
+      // O nome do parâmetro da sequência no link é inferido do oculto f_seq_proj.
+      const seq = created[0]!.params.f_seq_proj;
+      const assigned = seq ? { 'SEQUENCIA-PROJETO': seq } : undefined;
+      const saved = (await readPairs(port, created[0]!.path, PROJETO_FORM)).pairs;
+      const wrong = notSaved(saved, op.set);
+      if (wrong.length > 0) {
+        return {
+          ...result('divergente', `Criado no Lattes, mas gravado diferente: ${wrong.join(', ')}`),
+          assigned,
+        };
+      }
+      return { ...result('conferido', 'Criado e conferido no Lattes'), assigned };
+    } catch (err) {
+      return maybeCreated(
+        op.key,
+        'O projeto pode ter sido criado',
+        `a conferência falhou (${err instanceof Error ? err.message : 'falha inesperada'})`,
+      );
+    }
+  } catch (err) {
+    if (err instanceof Stop) return result(err.status, err.message);
+    return result('erro', err instanceof Error ? err.message : 'Falha inesperada');
+  }
+}

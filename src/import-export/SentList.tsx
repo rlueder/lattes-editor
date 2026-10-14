@@ -86,7 +86,7 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
                         title={
                           wasUndone
                             ? 'Já desfeito'
-                            : entry.op.kind === 'criar-atuacao'
+                            : entry.op.kind.startsWith('criar-')
                               ? 'Item criado pelo conector: para tirar, exclua no Lattes, à mão'
                               : bridge.available
                                 ? undefined
