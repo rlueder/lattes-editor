@@ -9,6 +9,7 @@ import {
   percent,
   resetUpdateForTests,
   RETRY_AFTER_FAILURE_MS,
+  retryDelay,
   setUpdateDeps,
   shouldCheck,
   subscribeUpdate,
@@ -41,7 +42,7 @@ function fakeDeps(opts: { fail?: boolean; none?: boolean } = {}) {
 }
 
 describe('atualização automática', () => {
-  it('confere na primeira vez e depois de uma hora', () => {
+  it('confere na primeira vez e na hora marcada', () => {
     expect(shouldCheck(undefined, 0)).toBe(true);
     expect(shouldCheck(CHECK_EVERY_MS, CHECK_EVERY_MS - 1)).toBe(false);
     expect(shouldCheck(CHECK_EVERY_MS, CHECK_EVERY_MS)).toBe(true);
@@ -65,7 +66,7 @@ describe('atualização automática', () => {
     setUpdateDeps(deps);
     const seen: unknown[] = [];
     subscribeUpdate(() => seen.push(updateState()));
-    expect(await checkForUpdate(1000)).toEqual({ status: 'disponivel', version: '1.2.3' });
+    expect(await checkForUpdate(() => 1000)).toEqual({ status: 'disponivel', version: '1.2.3' });
     expect(dueForCheck(1000 + CHECK_EVERY_MS - 1)).toBe(false);
     expect(dueForCheck(1000 + CHECK_EVERY_MS)).toBe(true);
     await installUpdate();
@@ -83,11 +84,47 @@ describe('atualização automática', () => {
     expect(await checkForUpdate()).toEqual({ status: 'nenhuma' });
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     setUpdateDeps({ check: () => Promise.reject(new Error('offline')), relaunch: vi.fn() });
-    expect(await checkForUpdate(1000)).toEqual({ status: 'nenhuma' });
+    expect(await checkForUpdate(() => 1000)).toEqual({ status: 'nenhuma' });
     expect(warn).toHaveBeenCalled();
     // Falhou (o latest.json ainda não subiu, por exemplo): tenta de novo logo.
     expect(dueForCheck(1000 + RETRY_AFTER_FAILURE_MS - 1)).toBe(false);
     expect(dueForCheck(1000 + RETRY_AFTER_FAILURE_MS)).toBe(true);
+    warn.mockRestore();
+  });
+
+  it('falhas seguidas espaçam a nova tentativa até o intervalo normal', () => {
+    expect([1, 2, 3, 4, 10].map(retryDelay)).toEqual([
+      RETRY_AFTER_FAILURE_MS,
+      2 * RETRY_AFTER_FAILURE_MS,
+      4 * RETRY_AFTER_FAILURE_MS,
+      CHECK_EVERY_MS,
+      CHECK_EVERY_MS,
+    ]);
+  });
+
+  it('a nova tentativa conta da falha e volta ao começo depois de um sucesso', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    let now = 0;
+    let fail = true;
+    setUpdateDeps({
+      check: () => {
+        // O pedido demora um minuto até falhar.
+        now += 60_000;
+        return fail ? Promise.reject(new Error('offline')) : Promise.resolve(null);
+      },
+      relaunch: vi.fn(),
+    });
+    const clock = () => now;
+    await checkForUpdate(clock);
+    expect(dueForCheck(60_000 + RETRY_AFTER_FAILURE_MS - 1)).toBe(false);
+    expect(dueForCheck(60_000 + RETRY_AFTER_FAILURE_MS)).toBe(true);
+    await checkForUpdate(clock);
+    expect(dueForCheck(now + 2 * RETRY_AFTER_FAILURE_MS - 1)).toBe(false);
+    fail = false;
+    await checkForUpdate(clock);
+    fail = true;
+    await checkForUpdate(clock);
+    expect(dueForCheck(now + RETRY_AFTER_FAILURE_MS)).toBe(true);
     warn.mockRestore();
   });
 
@@ -120,8 +157,8 @@ describe('atualização automática', () => {
       },
       relaunch: vi.fn(() => Promise.resolve()),
     });
-    await checkForUpdate(0);
-    const late = checkForUpdate(CHECK_EVERY_MS);
+    await checkForUpdate(() => 0);
+    const late = checkForUpdate(() => CHECK_EVERY_MS);
     const install = installUpdate();
     release({ ...update });
     expect(await late).toEqual({ status: 'baixando', version: '3.0.0' });

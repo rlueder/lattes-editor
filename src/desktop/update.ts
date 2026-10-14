@@ -47,6 +47,16 @@ export const CHECK_EVERY_MS = 15 * 60_000;
  */
 export const RETRY_AFTER_FAILURE_MS = 2 * 60_000;
 
+/**
+ * Espera depois da enésima falha seguida: 2, 4 e 8 min, e daí em diante o
+ * intervalo normal. Sem rede, ou com o GitHub bloqueado, o app não fica
+ * batendo no GitHub de 2 em 2 minutos enquanto estiver aberto.
+ */
+export function retryDelay(failures: number): number {
+  const doubled = RETRY_AFTER_FAILURE_MS * 2 ** Math.max(0, failures - 1);
+  return Math.min(doubled, CHECK_EVERY_MS);
+}
+
 /** Se já chegou a hora marcada para a próxima conferência. */
 export function shouldCheck(nextCheckAt: number | undefined, now: number): boolean {
   return nextCheckAt === undefined || now >= nextCheckAt;
@@ -62,6 +72,7 @@ let deps: UpdateDeps | undefined;
 let state: UpdateState = { status: 'nenhuma' };
 let pending: PendingUpdate | undefined;
 let nextCheckAt: number | undefined;
+let failures = 0;
 const listeners = new Set<() => void>();
 
 function setState(next: UpdateState): void {
@@ -102,20 +113,25 @@ function installing(): boolean {
 
 /**
  * Confere se há versão nova. Falha de rede ou de leitura passa em silêncio: a
- * próxima conferência tenta de novo. Uma atualização já em download não é
- * substituída.
+ * próxima conferência tenta de novo, cada vez mais espaçada (retryDelay). Uma
+ * atualização já em download não é substituída. `clock` é o relógio, trocado
+ * nos testes.
  */
-export async function checkForUpdate(now = Date.now()): Promise<UpdateState> {
+export async function checkForUpdate(clock: () => number = Date.now): Promise<UpdateState> {
   if (!deps || installing()) return state;
-  nextCheckAt = now + CHECK_EVERY_MS;
+  nextCheckAt = clock() + CHECK_EVERY_MS;
   try {
     const update = await deps.check();
+    failures = 0;
     // Um download começou enquanto a conferência esperava: ela não mexe nele.
     if (!update || installing()) return state;
     pending = update;
     setState({ status: 'disponivel', version: update.version });
   } catch (err) {
-    nextCheckAt = now + RETRY_AFTER_FAILURE_MS;
+    failures++;
+    // Conta a partir da falha, não do início: um pedido que demorou até o
+    // tempo esgotar não deixa a nova tentativa já vencida.
+    nextCheckAt = clock() + retryDelay(failures);
     console.warn('Conferência de atualização falhou:', err);
   }
   return state;
@@ -164,6 +180,7 @@ export function resetUpdateForTests(): void {
   state = { status: 'nenhuma' };
   pending = undefined;
   nextCheckAt = undefined;
+  failures = 0;
   deps = undefined;
   listeners.clear();
 }
