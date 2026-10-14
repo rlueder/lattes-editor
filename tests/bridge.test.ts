@@ -349,6 +349,16 @@ describe('conector: HTML do Lattes', () => {
         '<h1>Atuação</h1><script>function sair() { location = "pkg_sec.logon?f_cod=ini"; }</script>',
       ),
     ).toBe(false);
+    // Título, noscript, &#160; e script truncado não fazem a página virar conteúdo.
+    expect(
+      isLogonPage(
+        '<title>Lattes</title><noscript>Ative o JavaScript</noscript>&#160;<script>location="pkg_sec.logon"',
+      ),
+    ).toBe(true);
+    // Frame ou formulário sem texto, com um script que leva ao login, é conteúdo.
+    expect(
+      isLogonPage('<iframe src="pkg_menu.menu"></iframe><script>location="pkg_sec.logon"</script>'),
+    ).toBe(false);
     // Script que só menciona pkg_sec.logon, sem redirecionar.
     expect(isLogonPage('<script>var proximo = "pkg_sec.logon";</script>')).toBe(false);
     expect(cvCodeFrom('PKG_MENU.menu?f_cod=FE387C4DFE584C19BD79D189C7A9DF99')).toBeUndefined();

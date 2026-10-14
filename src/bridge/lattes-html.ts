@@ -37,17 +37,24 @@ export function findLinks(html: string, proc: string): LattesLink[] {
 const LOGON_REDIRECT =
   /location(?:\.href)?\s*=\s*["'][^"']*pkg_sec\.logon|location\.(?:replace|assign)\(\s*["'][^"']*pkg_sec\.logon/i;
 
+/** Tags que uma página só de redirecionamento pode ter. Qualquer outra é conteúdo. */
+const STUB_TAGS = new Set(['body', 'br', 'head', 'html', 'link', 'meta']);
+
 /**
- * Página que só redireciona: tirando scripts, comentários e tags, não sobra
- * texto. Uma página de conteúdo com um script que leva ao login (um botão, um
- * tempo esgotado) tem texto e não conta.
+ * Página que só redireciona: tirando scripts, estilos, título, noscript e
+ * comentários (fechados ou não, para uma resposta truncada), não sobra texto
+ * nem elemento além da estrutura do documento. Uma página de conteúdo com um
+ * script que leva ao login (um botão, um tempo esgotado) tem texto, formulário,
+ * frame ou imagem e não conta.
  */
 function isRedirectStub(html: string): boolean {
-  const text = html
-    .replace(/<script\b[\s\S]*?<\/script>/gi, '')
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;/gi, '');
+  const rest = html
+    .replace(/<(script|style|title|noscript)\b[^>]*>[\s\S]*?(?:<\/\1\s*>|$)/gi, '')
+    .replace(/<!--[\s\S]*?(?:-->|$)/g, '');
+  for (const m of rest.matchAll(/<\/?([a-z][\w-]*)/gi)) {
+    if (!STUB_TAGS.has(m[1]!.toLowerCase())) return false;
+  }
+  const text = rest.replace(/<[^>]*>/g, '').replace(/&(?:nbsp|#160|#xa0);/gi, '');
   return text.trim() === '';
 }
 
