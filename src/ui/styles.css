@@ -6981,3 +6981,119 @@ main.content {
 :root[data-leitura][data-theme='dark'] .filter-search:hover:not(:focus-within) {
   border-color: var(--border-focus);
 }
+
+/* Modo foco (protótipo, com ?leitura; focus-mode.ts). Só o conteúdo e o
+   índice "Nesta seção": o menu de seções e o cabeçalho saem de cena e voltam
+   por cima do conteúdo, sem empurrá-lo, quando o ponteiro encosta na borda,
+   quando o foco do teclado entra neles, no G (menu) e no ⌘K (cabeçalho). O
+   conteúdo fica centrado na mesma medida; a troca é animada no JavaScript
+   (FLIP, 200ms), sem salto. */
+.shell.is-focus {
+  --topbar-h: 0px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.shell.is-focus .content {
+  margin: 0;
+  border-radius: 0;
+  /* A coluna de leitura (820px) e o painel (260px, 48px de intervalo) no centro. */
+  padding-left: max(40px, calc((100% - 1128px) / 2));
+}
+
+.shell.is-focus .topbar,
+.shell.is-focus .sidebar {
+  position: fixed;
+  z-index: 40;
+  background: var(--chrome);
+  transition:
+    transform var(--dur) var(--ease-out),
+    box-shadow var(--dur) ease;
+}
+
+.shell.is-focus .topbar {
+  top: 0;
+  right: 0;
+  left: 0;
+  transform: translateY(-100%);
+}
+
+.shell.is-focus .sidebar {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 240px;
+  max-height: none;
+  transform: translateX(-100%);
+}
+
+.shell.is-focus.reveal-top .topbar,
+.shell.is-focus .topbar:focus-within,
+.shell.is-focus.reveal-left .sidebar,
+.shell.is-focus .sidebar:focus-within,
+.shell.is-focus .sidebar.go-armed {
+  transform: none;
+  box-shadow: var(--shadow);
+}
+
+/* Com o cabeçalho à mostra, o menu começa abaixo dele. */
+.shell.is-focus.reveal-top .sidebar {
+  top: var(--topbar-real-h, 57px);
+}
+
+/* Puxador na borda esquerda: discreto; em tela de toque, é como se abre o menu. */
+.focus-handle {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  z-index: 39;
+  width: 14px;
+  height: 56px;
+  padding: 0;
+  border: 0;
+  border-radius: 0 6px 6px 0;
+  background: transparent;
+  transform: translateY(-50%);
+}
+
+.focus-handle::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 3px;
+  width: 4px;
+  border-radius: 2px;
+  background: var(--border-strong);
+  transition: background-color var(--dur) ease;
+}
+
+.focus-handle:hover::before,
+.focus-handle:focus-visible::before,
+.focus-handle[aria-expanded='true']::before {
+  background: var(--accent);
+}
+
+@media (hover: none) {
+  .focus-handle {
+    width: 24px;
+    height: 72px;
+  }
+}
+
+.menu-kbd {
+  margin-left: auto;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: 11px var(--font);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell.is-focus .topbar,
+  .shell.is-focus .sidebar,
+  .focus-handle::before {
+    transition: none;
+  }
+}

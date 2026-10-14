@@ -33,7 +33,7 @@ import { HistoryDialog, ReloadConfirm } from './dialogs.tsx';
 import { EditorContext } from './editor-context.ts';
 import { parseHash } from './hash-route.ts';
 import { connectionOf, noticesFor } from './notifications.ts';
-import { paletteActions, paletteEntries, type PaletteEntry } from './palette-search.ts';
+import { allEntries, type PaletteEntry } from './palette-search.ts';
 import { PendingBanner } from './PendingBanner.tsx';
 import { profileOf } from './profile.ts';
 import { ReferenceContext } from './reference-context.ts';
@@ -48,9 +48,10 @@ import { useTheme } from './theme.ts';
 import { type SaveState, Topbar } from './Topbar.tsx';
 import { useBridge } from './use-bridge.ts';
 import { useChanges } from './use-changes.ts';
+import { useFocusShell } from './use-focus-mode.ts';
 import { useHistoryDialog } from './use-history-dialog.ts';
 import { useLattesOpen } from './use-lattes-open.ts';
-import { useNavigate } from './use-navigate.ts';
+import { useNavigate, useScrollToPendingAnchor } from './use-navigate.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
 import { usePhotoChange } from './use-photo-change.tsx';
 import { useTopbarHeight } from './use-topbar-height.ts';
@@ -81,6 +82,7 @@ export function App() {
   const topbarRef = useRef<HTMLElement>(null);
 
   useTopbarHeight(topbarRef, session);
+  const focusShell = useFocusShell(paletteOpen, sectionId); // modo foco, com ?leitura
   const update = useUpdates();
 
   // Restaura a cópia de trabalho da última sessão.
@@ -136,7 +138,8 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [session, version],
   );
-  const entries = useMemo(() => [...paletteEntries(sections), ...paletteActions()], [sections]);
+  const focusLabel = focusShell.label;
+  const entries = useMemo(() => allEntries(sections, focusLabel), [sections, focusLabel]);
   const referenceIndex = useMemo(
     () => (session ? buildReferenceIndex(session.doc.root) : undefined),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -178,20 +181,14 @@ export function App() {
       else if (entry.action === 'diagnostico') setDiagnosisOpen(true);
       else if (entry.action === 'novo') setPickerOpen(true);
       else if (entry.action === 'versoes') void versions.show();
+      else if (entry.action === 'foco') focusShell.focus.toggle();
       else startNewItem(entry.action, production.startNew);
       return;
     }
     navigate({ anchor: entry.anchorId, sectionId: entry.sectionId });
   };
 
-  // Rola até o grupo escolhido no ⌘K depois que a seção renderiza.
-  useEffect(() => {
-    const anchor = pendingAnchor.current;
-    if (!anchor) return;
-    pendingAnchor.current = null;
-    const el = document.getElementById(anchor);
-    el?.scrollIntoView({ block: 'start' });
-  });
+  useScrollToPendingAnchor(pendingAnchor);
 
   const openFile = async (file: File) => {
     setError(null);
@@ -259,9 +256,10 @@ export function App() {
   const profile = profileOf(session.doc, session.meta.fileName, exportedOn);
 
   return (
-    <ShellWithLists features={bridge.features}>
+    <ShellWithLists features={bridge.features} focus={focusShell}>
       <Topbar
         ref={topbarRef}
+        focus={focusShell.menuItem}
         modified={modified}
         notices={noticesOf(bridge, update, devExtensionFolder)}
         pendingCount={production.pending.length + changes.open}

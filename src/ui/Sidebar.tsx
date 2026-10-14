@@ -36,7 +36,7 @@ export function Sidebar({
   const goArmed = useGoShortcuts(ids, onSelect);
 
   return (
-    <nav aria-label="Seções" className="sidebar">
+    <nav aria-label="Seções" className={goArmed ? 'sidebar go-armed' : 'sidebar'}>
       {/* Marca provisória, até existir um logo. */}
       <div className="sidebar-brand">
         <span aria-label="LattesEditor" className="brand">

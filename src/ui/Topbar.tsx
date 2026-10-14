@@ -20,6 +20,8 @@ export type SaveState = 'salvo' | 'salvando' | 'erro';
 const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
 interface Props {
+  /** Modo foco (com ?leitura): estado, atalho e troca, para o ⚙. */
+  focus?: { label: string; on: boolean; toggle: () => void };
   modified: boolean;
   /** Notificações do sino: ligação com o Lattes e armazenamento. */
   notices: Notice[];
@@ -57,6 +59,7 @@ const SAVE_LABEL: Record<SaveState, string> = {
 };
 
 export function Topbar({
+  focus,
   modified,
   notices,
   onClose,
@@ -165,6 +168,7 @@ export function Topbar({
             onShowEmpty,
             showEmpty,
           }}
+          focus={focus}
           theme={theme}
           onTheme={onTheme}
         />

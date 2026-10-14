@@ -41,7 +41,7 @@ extensão:
 | `?simular-atualizacao`   | O aviso de versão nova e o item "Verificar atualizações" do ⚙ (`=nenhuma` sem versão nova, `=falha` para o erro) |
 | `?simular-foto`          | O lápis da foto e a troca, com uma resposta simulada (`=falha` para o erro)                                      |
 | `?primeiro-uso=<estado>` | Um estado fixo da tela de primeiro uso (`src/dev/onboarding-preview.ts`)                                         |
-| `?leitura`               | O protótipo do modo de leitura em Dados gerais, Formação e Produções                                             |
+| `?leitura`               | O protótipo do modo de leitura em Dados gerais, Formação e Produções, e o modo foco (⌘⇧F)                        |
 
 Para testar com uma exportação sua, ponha o `CV_<id>.zip` em `fixtures/real/`,
 que está no `.gitignore`. As imagens de `docs/img/` e `site/img/` saem sempre

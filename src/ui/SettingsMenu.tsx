@@ -11,6 +11,7 @@ import {
   CloseIcon,
   DownloadIcon,
   EyeIcon,
+  FocusIcon,
   HashIcon,
   HistoryIcon,
   MonitorIcon,
@@ -41,6 +42,8 @@ interface FileActions {
 
 interface Props {
   file?: FileActions;
+  /** Modo foco (com ?leitura): estado, atalho e troca. */
+  focus?: { label: string; on: boolean; toggle: () => void };
   theme: ThemePref;
   onTheme: (theme: ThemePref) => void;
 }
@@ -53,7 +56,7 @@ const THEMES: { icon: ReactNode; label: string; value: ThemePref }[] = [
   { icon: <MoonIcon />, label: 'Escuro', value: 'escuro' },
 ];
 
-export function SettingsMenu({ file, onTheme, theme }: Props) {
+export function SettingsMenu({ file, focus, onTheme, theme }: Props) {
   const showCodes = useShowCodes();
   const update = useManualUpdateCheck();
   const [readingMode] = useState(readingModeOn);
@@ -104,6 +107,24 @@ export function SettingsMenu({ file, onTheme, theme }: Props) {
             <Menu.Group>
               <Menu.GroupLabel className="menu-heading">Exibição</Menu.GroupLabel>
 
+              {focus && (
+                <Menu.CheckboxItem
+                  checked={focus.on}
+                  className="menu-item"
+                  closeOnClick={true}
+                  title={`Modo foco: só o conteúdo e o índice da seção (${focus.label})`}
+                  onCheckedChange={() => focus.toggle()}
+                >
+                  <span className="menu-icon">
+                    <FocusIcon />
+                  </span>
+                  <span className="menu-label">Modo foco</span>
+                  <kbd className="menu-kbd">{focus.label}</kbd>
+                  <Menu.CheckboxItemIndicator className="menu-check">
+                    <CheckIcon />
+                  </Menu.CheckboxItemIndicator>
+                </Menu.CheckboxItem>
+              )}
               {showEmptySettingVisible(readingMode) && (
                 <Menu.CheckboxItem
                   checked={file?.showEmpty ?? false}

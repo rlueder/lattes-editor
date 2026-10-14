@@ -73,7 +73,8 @@ const action = (id: string, label: string, context: string): PaletteEntry => ({
 });
 
 /** Ações do ⌘K: criar itens dos tipos mais usados, gerar a importação e o diagnóstico. */
-export function paletteActions(): PaletteEntry[] {
+/** `focus`: o atalho do modo foco, quando ele existe (com ?leitura). */
+export function paletteActions({ focus }: { focus?: string } = {}): PaletteEntry[] {
   return [
     // Título do grupo (abre a escolha de todos os tipos), com os tipos mais
     // usados embaixo, em ordem alfabética.
@@ -84,5 +85,11 @@ export function paletteActions(): PaletteEntry[] {
     action('exportar', 'Enviar ao Lattes (importar e alterações)', ''),
     action('diagnostico', 'Diagnóstico do currículo', ''),
     action('versoes', 'Versões do Lattes (o que mudou entre exportações)', ''),
+    ...(focus ? [action('foco', `Modo foco: só o conteúdo (${focus})`, '')] : []),
   ];
+}
+
+/** As seções e as ações do ⌘K; `focus` é o atalho do modo foco, quando ele existe. */
+export function allEntries(sections: Section[], focus?: string): PaletteEntry[] {
+  return [...paletteEntries(sections), ...paletteActions({ focus })];
 }

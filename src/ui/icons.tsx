@@ -210,3 +210,11 @@ export const CollapseIcon = () => (
     <path d="M14 10h5M14 10V5M10 14H5M10 14v5M14 10l6-6M10 14l-6 6" />
   </Icon>
 );
+
+/** Modo foco: a coluna do texto, sem as bordas. */
+export const FocusIcon = () => (
+  <Icon>
+    <rect height="16" rx="1.5" width="10" x="7" y="4" />
+    <path d="M3 8v8M21 8v8" />
+  </Icon>
+);

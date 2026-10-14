@@ -152,11 +152,35 @@ Mais algumas decisões do mesmo lado:
   esconde os vazios e a edição sempre os mostra. Se o modo de leitura virar
   o padrão, a opção sai de vez.
 
+### Modo foco
+
+> Proposta em avaliação, também só com `?leitura`.
+
+Inspirado no modo foco do iA Writer: fica só o conteúdo e o índice "Nesta
+seção". O menu de seções (com foto e nome) e o cabeçalho (⌘K, novo item,
+enviar, sino, ⚙) saem de cena, e o conteúdo fica centrado na mesma medida.
+Ao entrar e ao sair, o conteúdo desliza do lugar antigo para o novo em
+200ms, sem salto; com movimento reduzido, a troca é direta.
+
+- Liga e desliga com ⌘⇧F (Ctrl+Shift+F fora do Mac), pelo item "Modo foco"
+  do ⚙ (com o atalho ao lado) ou pelo ⌘K. A escolha fica lembrada neste
+  aparelho.
+- O ponteiro na borda esquerda (faixa de 12px, espera de 150ms) traz o menu
+  por cima do conteúdo, sem empurrá-lo; sair dele com 24px de folga o
+  esconde. A borda de cima faz o mesmo com o cabeçalho.
+- Pelo teclado: G mostra o menu enquanto espera a letra da seção, o ⌘K
+  mostra o cabeçalho, e o Tab alcança os dois painéis, que aparecem quando o
+  foco entra neles. Nada prende o foco.
+- Em tela de toque, sem o passar do mouse, um puxador discreto na borda
+  esquerda abre e fecha o menu.
+- Editar um bloco funciona igual.
+
 ## Teclado
 
 O Linear trata o teclado como caminho principal, e vale estudar o
 conjunto inteiro antes de inventar atalhos nossos. Já temos ⌘K, G e uma letra para cada seção e
-⌘Enter para salvar o formulário. Falta levantar o que
+⌘Enter para salvar o formulário; o protótipo de leitura acrescenta E para editar o bloco
+focado e ⌘⇧F para o modo foco. Falta levantar o que
 o Linear faz para criar item (tecla única), navegar em lista (setas, J/K),
 abrir e fechar detalhes, e como ele mostra o atalho junto de cada ação
 (na dica e no menu), e decidir quais fazem sentido aqui.
