@@ -152,6 +152,17 @@ pelo `window.postMessage` da própria página, por um content script
   conector para a fila antes de gravar.
 - **Foto do currículo** (`src/bridge/photo.ts`): troca a foto pela tela de
   envio do próprio Lattes e confere depois.
+- **Importar dos itens novos** (`src/bridge/importar.ts`, LAT-50), desligado
+  por `IMPORT_ENABLED`. Envia um arquivo só com os itens novos
+  (`buildMinimalImportFile`, em `src/import-export/import-file.ts`), confere
+  o formulário do passo 2, marca só os módulos do arquivo e o ano do item mais
+  antigo, confirma o passo 2 e para na resposta, sem confirmar o passo 3. No
+  teste acompanhado de 14/10/2026 o Lattes recusou o arquivo mínimo, e um
+  Confirmar do passo 3 com sucesso na tela não pôs o item no currículo
+  (`lattes_internals.md`, seção 13), então a chave continua desligada. Uma solicitação
+  pendente no Importar também para o fluxo; o conector nunca descarta nada.
+  Enquanto a chave estiver desligada, o editor não mostra o botão e a extensão
+  recusa o pedido; o "Baixar arquivo" com os passos à mão continua igual.
 
 ## Mapa do código
 
