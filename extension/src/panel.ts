@@ -135,7 +135,14 @@ function renderReport(report: ContractReport | undefined): void {
       textContent: 'Recarregar o Lattes',
       type: 'button',
     });
-    reload.addEventListener('click', () => void reloadLattesTab());
+    reload.addEventListener('click', () => {
+      reload.disabled = true;
+      void reloadLattesTab().then((ok) => {
+        reload.disabled = false;
+        // Sem aba do Lattes, o clique não teria efeito visível: o botão avisa.
+        if (!ok) reload.textContent = 'Nenhuma aba do Lattes aberta';
+      });
+    });
     root.append(
       el('p', {
         className: 'detalhe',

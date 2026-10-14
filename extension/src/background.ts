@@ -177,7 +177,7 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     return;
   }
   if (msg.type === 'recarregar-lattes') {
-    await reloadLattesTab().catch(() => false);
+    await reloadLattesTab();
     return;
   }
   if (msg.type === 'pedir-espelho') {

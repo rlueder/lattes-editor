@@ -139,11 +139,16 @@ export async function sessionIdentity(tabId: number, fresh = false): Promise<Ide
 /**
  * Recarrega a aba do Lattes. Com a sessão vencida, a aba segue mostrando o
  * currículo; recarregada, o Lattes leva ao login, e depois dele ao menu, que a
- * extensão lê de novo sozinha. Devolve se havia aba.
+ * extensão lê de novo sozinha. Devolve se recarregou: false sem aba, ou se ela
+ * fechou no meio do caminho (nunca rejeita, quem chama não precisa de catch).
  */
 export async function reloadLattesTab(): Promise<boolean> {
-  const tabId = await lattesTab();
-  if (tabId === undefined) return false;
-  await chrome.tabs.reload(tabId);
-  return true;
+  try {
+    const tabId = await lattesTab();
+    if (tabId === undefined) return false;
+    await chrome.tabs.reload(tabId);
+    return true;
+  } catch {
+    return false;
+  }
 }

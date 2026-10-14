@@ -79,6 +79,13 @@ describe('primeiro uso: os três passos', () => {
     expect(onboardingSteps(old, { kind: 'falhou', reason: 'sessao' })[1]?.action?.kind).toBe(
       'link',
     );
+    // O texto do passo 3 serve aos dois botões: não manda recarregar quem só tem o link.
+    const oldRead: Link = { features: ['curriculo'], state: { kind: 'lido', version: v } };
+    const step = onboardingSteps(oldRead, { kind: 'falhou', reason: 'sessao' })[2];
+    expect(step?.action?.kind).toBe('link');
+    expect(step?.text).toBe(
+      'A sessão do Lattes expirou. Entre de novo; o currículo abre em seguida.',
+    );
   });
 
   it('Lattes lido: passo 3 abrindo, com falha, ou à espera do clique', () => {
