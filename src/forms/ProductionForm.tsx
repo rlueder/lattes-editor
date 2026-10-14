@@ -22,6 +22,7 @@ import { validateItem } from '../model/validate.ts';
 import type { XElement } from '../model/xml.ts';
 import { lattesSchema as schema } from '../schema/lattes.ts';
 import { AttributeField } from '../ui/AttributeField.tsx';
+import { DiscardConfirm } from '../ui/dialogs.tsx';
 import { Attributes } from '../ui/ElementView.tsx';
 import { ChevronIcon, CloseIcon, CollapseIcon, ExpandIcon } from '../ui/icons.tsx';
 import { isRedundantDateFormat } from '../ui/lattes-date.ts';
@@ -31,6 +32,7 @@ import { Tip } from '../ui/primitives/Tip.tsx';
 import { AreasEditor } from './AreasEditor.tsx';
 import { AuthorsEditor } from './AuthorsEditor.tsx';
 import { formSpec, missingRequired } from './specs.ts';
+import { useDiscardGuard } from './use-discard-guard.ts';
 
 /** Tipos que o mapeamento do Crossref sabe preencher. */
 const DOI_TYPES = new Set([
@@ -85,6 +87,7 @@ export function ProductionForm({
   const [showAll, setShowAll] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const touch = () => setVersion((v) => v + 1);
+  const { confirm, requestClose } = useDiscardGuard(item, onCancel);
 
   const spec = formSpec(item.name);
   const authorEl = authorElementName(schema, item.name);
@@ -141,7 +144,7 @@ export function ProductionForm({
       className={`form-modal${expanded ? ' expanded' : ''}`}
       focusFirstField={isNew}
       label={title}
-      onClose={onCancel}
+      onClose={requestClose}
     >
       <form
         ref={formRef}
@@ -174,7 +177,7 @@ export function ProductionForm({
             aria-label="Fechar"
             className="ghost icon-btn modal-close"
             type="button"
-            onClick={onCancel}
+            onClick={requestClose}
           >
             <CloseIcon />
           </button>
@@ -358,6 +361,7 @@ export function ProductionForm({
           </span>
         </footer>
       </form>
+      <DiscardConfirm {...confirm} />
     </Modal>
   );
 }
