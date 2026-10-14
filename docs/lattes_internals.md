@@ -635,8 +635,10 @@ pode ser ligada como está.
 vermelho">`; o único item veio verde. `enviar()` exige ao menos um `f_sq`
    marcado e põe `f_ctr=I`; `excluir()` pede confirmação e põe `f_ctr=D`.
 4. O Confirmar do passo 3 (POST para `mostra_lista_prod` com `f_ctr=I` e
-   `f_sq=20`) responde com `caixaMsg.exibir` "A operação foi realizada com
-   sucesso!", e a solicitação é consumida (o Importar volta ao passo 1).
+   `f_sq=20`) responde com
+   `caixaMsg.exibir({titulo:'Sucesso',conteudo:'A operação foi realizada com sucesso! !',classe:'ok'})`
+   (o texto é esse, com o espaço e o segundo "!"), e a solicitação é
+   consumida (o Importar volta ao passo 1).
    Mesmo assim, passados mais de 3 minutos, o item **não** está em
    `pkg_evento.lista` nem em `cv_espelho`. A mensagem de sucesso não quer
    dizer que o item entrou.
@@ -848,8 +850,10 @@ como a edição de um convidado ou participante marca a opção já gravada.
 **Alteração enviada** (14/10/2026, num evento de ouvinte de teste). O POST
 para `PKG_EVENTO.FORM` com todos os campos do formulário como vieram, só
 `f_titulo` trocado, `F_TPO` vazio e `f_ctr=U`, responde com um script que
-chama `checkPublicacao()` e a caixa de mensagem "A operação foi realizada com
-sucesso!". Relido, só `f_titulo` mudou. Depois da alteração, o menu passa a
+chama `checkPublicacao()` e
+`caixaMsg.exibir({titulo:'Sucesso',conteudo:'A operação foi realizada com sucesso! !',classe:'ok'})`,
+a mesma caixa do Confirmar do Importar (seção 13). O conector não lê esse
+texto: confere relendo o formulário. Relido, só `f_titulo` mudou. Depois da alteração, o menu passa a
 mostrar a pendência e o Exportar recusa. O `f_seq` desse formulário é o
 `SEQUENCIA-PRODUCAO` que o servidor deu ao item (seção 13, item 9).
 **Observado.**

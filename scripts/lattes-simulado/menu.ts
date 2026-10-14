@@ -52,7 +52,7 @@ function menuItems(code: string): [string, string][] {
 const MENU_SCRIPT = `<script>
 function camada(){ return { setarUrl: function(url){ document.getElementById('camada').src = url; } }; }
 var modalCV1 = camada(), modalCV2 = camada(), modalCV3 = camada();
-var caixaMsg = { exibir: function(msg){ alert(msg); } };
+var caixaMsg = { exibir: function(msg){ alert(msg && msg.conteudo ? msg.conteudo : msg); } };
 function checkPublicacao(){ }
 function fecharModal(){ document.getElementById('camada').src = 'about:blank'; }
 var fotoWin = { abrir: function(){ modalCV1.setarUrl('prc_upload_foto?f_cod=__COD__&f_ret=MENU'); } };

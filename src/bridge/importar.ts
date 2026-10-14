@@ -15,7 +15,7 @@
 // formulário pkg_imp_xml, POST para pkg_importa_xml.mostra_lista_prod, uma
 // caixa f_sq por item com um id do servidor (não o SEQUENCIA-PRODUCAO) e
 // <b class="quadrado verde|vermelho"> em cada linha. O Confirmar dele disse
-// "A operação foi realizada com sucesso!" e o item não entrou no currículo.
+// "A operação foi realizada com sucesso! !" e o item não entrou no currículo.
 // Enquanto não se souber por quê, o fluxo para na resposta do passo 2, seja
 // ela qual for, sem nenhum POST a mais, e devolve só a forma da página. A
 // solicitação criada no passo 1 fica pendente no Lattes, à espera de

@@ -27,7 +27,11 @@ export const DTD_ALERT =
 export const NO_PRODUCTION_ALERT =
   'O arquivo enviado para importação não contém produções científicas.';
 export const SENT_ALERT = 'O arquivo foi enviado com sucesso!';
-export const DONE_MESSAGE = 'A operação foi realizada com sucesso!';
+/** O texto da caixa de sucesso, com o espaço e o segundo "!" (observado em 14/10/2026). */
+export const DONE_MESSAGE = 'A operação foi realizada com sucesso! !';
+
+/** A caixa de mensagem do menu com o sucesso, como o Lattes a chama. */
+export const DONE_SCRIPT = `self.parent.caixaMsg.exibir({titulo:'Sucesso',conteudo:'${DONE_MESSAGE}',classe:'ok'});`;
 export const PENDING_NOTICE = 'Existe solicitação de Importação de XML pendente';
 
 const TYPES = importableTypes(lattesSchema);
@@ -253,7 +257,7 @@ function confirm(req: SimRequest, state: LattesState): SimResponse {
     addProduction(lattesSchema, state.working, i.type, copy);
   }
   state.importRequest = undefined;
-  return html(`<script>self.parent.caixaMsg.exibir('${DONE_MESSAGE}');</script>`);
+  return html(`<script>${DONE_SCRIPT}</script>`);
 }
 
 export const IMPORTAR_ROUTES: Routes = {

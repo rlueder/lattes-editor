@@ -583,7 +583,7 @@ describe('Lattes simulado: o servidor', () => {
     );
     expect(form).toContain("dc.f_ctr.value = 'E'");
     const done = await lattes.port.post('PKG_EVENTO.FORM', `f_ctr=E&f_cod=${code}&f_seq=${seq}`);
-    expect(done).toContain('A operação foi realizada com sucesso!');
+    expect(done).toContain('A operação foi realizada com sucesso! !');
     expect(await lattes.port.get(`pkg_evento.lista?f_cod=${code}`)).not.toContain(`f_seq=${seq}'`);
     expect(lattes.state.pending).toBe(true);
   });
