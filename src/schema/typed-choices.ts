@@ -3,8 +3,8 @@
 // exportação real; o que ainda é inferido fica marcado. Ver
 // docs/campos_tipados.md.
 
+import { foldText } from '../model/fold-text.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
-import { foldText } from '../ui/option-filter.ts';
 import listas from './listas-lattes.json' with { type: 'json' };
 
 export interface Choice {
@@ -104,13 +104,28 @@ export function typedChoices(el: XElement, attr: string): Choice[] | undefined {
 /** O que dizer quando um campo tipado não tem opção (tipo de participação de ouvinte). */
 export function emptyChoicesHint(el: XElement, attr: string): string | undefined {
   if (attr !== 'TIPO-PARTICIPACAO' || !isEventBasics(el.name)) return undefined;
-  return getAttr(el, 'FORMA-PARTICIPACAO') ? 'Não se aplica a ouvinte' : 'Escolha a forma primeiro';
+  const form = getAttr(el, 'FORMA-PARTICIPACAO') ?? '';
+  if (!form) return 'Escolha a forma primeiro';
+  return form === 'Ouvinte' ? 'Não se aplica a ouvinte' : 'Forma não reconhecida: escolha outra';
 }
 
-/** O valor salvo é o derivado (sem diferença de acento nem maiúscula). */
+/** O valor salvo é exatamente o derivado: só então o campo fica só para leitura. */
 export function matchesDerived(el: XElement, attr: string): boolean {
   const derived = derivedValue(el.name, attr);
-  return derived !== undefined && foldText(getAttr(el, attr) ?? '') === foldText(derived);
+  return derived !== undefined && getAttr(el, attr) === derived;
+}
+
+/**
+ * A opção da lista que o valor salvo quer dizer quando só difere dela em
+ * acento ou maiúscula ("alemanha" é "Alemanha"). O campo mostra a opção certa e,
+ * ao escolhê-la, grava o texto da lista; o valor salvo não muda sozinho.
+ */
+export function canonicalChoice(el: XElement, attr: string): string | undefined {
+  const value = getAttr(el, attr) ?? '';
+  if (!value) return undefined;
+  const folded = foldText(value);
+  const match = typedChoices(el, attr)?.find((c) => foldText(c.value) === folded);
+  return match && match.value !== value ? match.value : undefined;
 }
 
 /**
@@ -120,7 +135,8 @@ export function matchesDerived(el: XElement, attr: string): boolean {
  * natureza da participação em evento nunca fica vazia no Lattes.
  */
 export function outOfList(el: XElement, attr: string): boolean {
-  if (derivedValue(el.name, attr) !== undefined) return !matchesDerived(el, attr);
+  const derived = derivedValue(el.name, attr);
+  if (derived !== undefined) return foldText(getAttr(el, attr) ?? '') !== foldText(derived);
   const value = getAttr(el, attr) ?? '';
   if (!value) return false;
   const choices = typedChoices(el, attr);

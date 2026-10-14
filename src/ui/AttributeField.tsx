@@ -6,7 +6,12 @@ import { useEffect, useId, useState } from 'react';
 import { attributeLabelIn, elementLabel, enumLabel } from '../labels/labels.ts';
 import { repairMojibake } from '../model/mojibake.ts';
 import { getAttr, setAttr, type XElement } from '../model/xml.ts';
-import { emptyChoicesHint, matchesDerived, typedChoices } from '../schema/typed-choices.ts';
+import {
+  canonicalChoice,
+  emptyChoicesHint,
+  matchesDerived,
+  typedChoices,
+} from '../schema/typed-choices.ts';
 import type { AttributeSpec } from '../schema/types.ts';
 import { parseEmails, parseSocial } from './contacts.ts';
 import { CopyButton } from './CopyButton.tsx';
@@ -211,8 +216,11 @@ export function AttributeField({
       </span>
     );
   } else if (choices) {
-    // Lista do Lattes. Valor fora dela continua visível (e aparece como pendência).
+    // Lista do Lattes. Valor fora dela continua visível (e aparece como pendência);
+    // o que só difere em acento ou maiúscula aparece como está salvo, ao lado da
+    // opção certa, que é a que grava o texto da lista.
     const known = choices.some((c) => c.value === value) || value === '';
+    const canonical = canonicalChoice(el, name);
     const hint = choices.length === 0 ? emptyChoicesHint(el, name) : undefined;
     control = (
       <ComboSelect
@@ -220,7 +228,7 @@ export function AttributeField({
         disabled={choices.length === 0 && known}
         options={[
           { label: hint ?? '(escolha)', value: '' },
-          ...(known ? [] : [{ label: value, value }]),
+          ...(known ? [] : [{ label: canonical ? `${value} (como está salvo)` : value, value }]),
           ...choices,
         ]}
         value={value}

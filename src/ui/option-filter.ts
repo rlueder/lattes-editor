@@ -2,14 +2,13 @@
 // maiúsculas e acentos, a partir do primeiro caractere, com quem começa pelo
 // texto antes de quem só o contém. Código curto, como a UF "RS", também vale.
 
+import { foldText } from '../model/fold-text.ts';
+
+export { foldText };
+
 export interface FilterableOption {
   label: string;
   value: string;
-}
-
-/** Sem acento, em minúsculas e sem espaço nas pontas: "São Tomé" casa com "sao to". */
-export function foldText(text: string): string {
-  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 }
 
 /**

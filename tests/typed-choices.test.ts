@@ -6,6 +6,7 @@ import { element, firstChild, setAttr } from '../src/model/xml.ts';
 import { lattesSchema as schema } from '../src/schema/lattes.ts';
 import listas from '../src/schema/listas-lattes.json' with { type: 'json' };
 import {
+  canonicalChoice,
   derivedValue,
   emptyChoicesHint,
   isEventBasics,
@@ -114,6 +115,10 @@ describe('campos tipados: listas', () => {
     expect(
       emptyChoicesHint(basics(CONGRESS, { 'FORMA-PARTICIPACAO': 'Ouvinte' }), 'TIPO-PARTICIPACAO'),
     ).toBe('Não se aplica a ouvinte');
+    // Forma que não é da lista (dado antigo): não fingir que é ouvinte.
+    expect(
+      emptyChoicesHint(basics(CONGRESS, { 'FORMA-PARTICIPACAO': 'Outro' }), 'TIPO-PARTICIPACAO'),
+    ).toBe('Forma não reconhecida: escolha outra');
     expect(emptyChoicesHint(basics(CONGRESS), 'PAIS')).toBeUndefined();
     expect(
       emptyChoicesHint(basics('DADOS-BASICOS-DO-ARTIGO'), 'TIPO-PARTICIPACAO'),
@@ -138,13 +143,27 @@ describe('campos tipados: valor fora da lista', () => {
     expect(values(typedChoices(basics(CONGRESS, { NATUREZA: 'Encontro' }), 'NATUREZA'))).toEqual([
       'Congresso',
     ]);
-    expect(matchesDerived(basics(CONGRESS, { NATUREZA: 'congresso' }), 'NATUREZA')).toBe(true);
+    // Só o texto exato trava o campo; "congresso" fica editável para virar "Congresso".
+    expect(matchesDerived(basics(CONGRESS, { NATUREZA: 'Congresso' }), 'NATUREZA')).toBe(true);
+    expect(matchesDerived(basics(CONGRESS, { NATUREZA: 'congresso' }), 'NATUREZA')).toBe(false);
+    expect(outOfList(basics(CONGRESS, { NATUREZA: 'congresso' }), 'NATUREZA')).toBe(false);
     expect(matchesDerived(basics(CONGRESS, { NATUREZA: '' }), 'NATUREZA')).toBe(false);
   });
 
   it('acento e maiúscula não contam na comparação com a lista', () => {
     expect(outOfList(basics(CONGRESS, { PAIS: 'alemanha' }), 'PAIS')).toBe(false);
     expect(outOfList(basics(CONGRESS, { PAIS: 'Coreia Do Sul' }), 'PAIS')).toBe(false);
+  });
+
+  it('o valor que só difere em acento ou maiúscula aponta a opção certa', () => {
+    expect(canonicalChoice(basics(CONGRESS, { PAIS: 'alemanha' }), 'PAIS')).toBe('Alemanha');
+    expect(canonicalChoice(basics(CONGRESS, { PAIS: 'Alemanha' }), 'PAIS')).toBeUndefined();
+    expect(canonicalChoice(basics(CONGRESS, { PAIS: 'Germany' }), 'PAIS')).toBeUndefined();
+    expect(canonicalChoice(basics(CONGRESS, { PAIS: '' }), 'PAIS')).toBeUndefined();
+    expect(canonicalChoice(basics(CONGRESS, { TITULO: 'x' }), 'TITULO')).toBeUndefined();
+    expect(canonicalChoice(basics(CONGRESS, { NATUREZA: 'congresso' }), 'NATUREZA')).toBe(
+      'Congresso',
+    );
   });
 
   it('o tipo tem de combinar com a forma', () => {
