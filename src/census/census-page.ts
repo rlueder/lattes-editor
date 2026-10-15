@@ -163,3 +163,65 @@ export function publicPath(proc: string, params: Record<string, string>): string
     .join('&');
   return query ? `${proc}?${query}` : proc;
 }
+
+const REMOVED_SCRIPT = '[removido]';
+
+/** E-mails, CPFs e números longos (código ou identificador do currículo, CPF sem pontos). */
+const SCRIPT_PERSONAL = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+|\d{3}\.\d{3}\.\d{3}-\d{2}|\b[A-Z]?\d{6,}\b/g;
+
+const DATA_LINE = /\w*Provider\s*=|=\s*\[\s*\{|\bnew\s+Array\s*\(\s*['"{]/;
+
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Um pedaço do código da página sem dado pessoal: cada e-mail, CPF ou número
+ * longo e cada texto que quem roda pediu para esconder vira "[removido]". Se
+ * um desses textos ainda aparece sem acento ou com outra caixa, o pedaço
+ * inteiro sai.
+ */
+function scrubScript(text: string, redact: readonly string[]): string {
+  // Vetores de dados que alimentam as grades (autorProvider, palavraProvider…)
+  // e listas de objetos escritas na página: podem trazer nomes de coautores.
+  if (DATA_LINE.test(text)) return REMOVED_SCRIPT;
+  let out = text.replace(SCRIPT_PERSONAL, REMOVED_SCRIPT);
+  for (const r of redact) {
+    if (r.trim().length < 3) continue;
+    out = out.replace(new RegExp(escapeRe(r.trim()), 'gi'), REMOVED_SCRIPT);
+  }
+  const folded = foldText(out);
+  return redact.some((r) => r.trim().length >= 3 && folded.includes(foldText(r)))
+    ? REMOVED_SCRIPT
+    : out;
+}
+
+/**
+ * Os scripts da própria página (sem `src`), para ler como ela monta o que
+ * envia: a grade de datas, as máscaras, o check(). Sai o que tem cara de dado
+ * pessoal e o que quem roda pediu para esconder (scrubScript), linha a linha;
+ * o resto do código fica como veio. Linhas que montam os dados das grades (os
+ * autores de um item, por exemplo) saem inteiras como "[removido]".
+ */
+export function pageScripts(html: string, redact: readonly string[] = []): string[] {
+  const out: string[] = [];
+  for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
+    if (/\bsrc\s*=/i.test(m[1] ?? '')) continue;
+    const body = (m[2] ?? '').trim();
+    if (!body) continue;
+    out.push(
+      body
+        .split('\n')
+        .map((line) => scrubScript(line, redact))
+        .join('\n'),
+    );
+  }
+  return out;
+}
+
+/** Os endereços do Lattes que a página abre (links, setarUrl, location), sem os parâmetros privados. */
+export function pageLinks(html: string): string[] {
+  const found = new Set<string>();
+  for (const m of html.matchAll(/\b((?:pkg|prc)_[\w.]+)(\?[^'"\s<>\\]*)?/gi)) {
+    found.add(publicUrl(`${m[1]}${(m[2] ?? '').replace(/&amp;/g, '&')}`));
+  }
+  return [...found].sort();
+}

@@ -6,6 +6,7 @@
 //   await __lattesCensus.capture()            // formulários de inclusão
 //   await __lattesCensus.link()               // passada de edição, pela exportação
 //   await __lattesCensus.captureAll({ download: true })
+//   await __lattesCensus.inspect(['pkg_x.form?…'], { download: true })  // recaptura avulsa
 //
 // Só GET de formulário e de lista. A única exceção é link() sem XML, que
 // pede a exportação pelo mesmo POST de leitura do "Exportar" (o conector já
@@ -13,6 +14,7 @@
 
 import { exportCv, type ExportPort } from '../../src/bridge/export.ts';
 import { cvCodeFrom, isLogonPage, lattesIdFrom } from '../../src/bridge/lattes-html.ts';
+import { inspectPages } from '../../src/census/inspect.ts';
 import { linkFields, type LinkOptions } from '../../src/census/link.ts';
 import {
   type CensusFile,
@@ -139,6 +141,22 @@ async function captureAll(options: Options & { xml?: string } = {}): Promise<Cen
   return out;
 }
 
+/**
+ * Páginas avulsas, com scripts e links (docs/lattes-formularios/recaptura.md).
+ * Cada caminho vai sem f_cod; `{ path, noCode: true }` abre sem ele.
+ */
+async function inspect(
+  paths: Parameters<typeof inspectPages>[2],
+  options: Pick<Options, 'delayMs' | 'download' | 'redact'> = {},
+): Promise<CensusFile> {
+  const file = await inspectPages(port, await code(), paths, {
+    ...options,
+    collector: `lattes-editor ${__CENSO_VERSAO__}`,
+  });
+  if (options.download) download(file, `recaptura-${new Date().toISOString().slice(0, 10)}.json`);
+  return file;
+}
+
 /** Contagens para conferir de relance o que voltou. */
 function summary(file: CensusFile) {
   const status: Record<string, number> = {};
@@ -156,6 +174,7 @@ function summary(file: CensusFile) {
   capture,
   captureAll,
   download,
+  inspect,
   link,
   summary,
   version: __CENSO_VERSAO__,

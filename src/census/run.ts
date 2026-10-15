@@ -10,6 +10,8 @@ import {
   type CensusOption,
   type CensusPage,
   censusPage,
+  pageLinks,
+  pageScripts,
   publicPath,
 } from './census-page.ts';
 import type { FieldLink, LinkSummary } from './link.ts';
@@ -31,10 +33,14 @@ export interface CensusEntry {
   elementsProvenance: Provenance;
   id: string;
   label: string;
+  /** Os endereços do Lattes que a página abre (só em inspectPages). */
+  links?: string[];
   page?: CensusPage;
   /** Caminho aberto, sem o código do currículo nem números de item. */
   path?: string;
   provenance: Provenance;
+  /** Os scripts da página, como ids de CensusFile.scripts (só com a opção scripts). */
+  scripts?: string[];
   /** Quando a página não trouxe formulário: tamanho e contagem de tags, sem texto. */
   shape?: Record<string, number>;
   source: string;
@@ -50,6 +56,12 @@ export interface CensusOptions {
   now?: () => Date;
   /** Textos a esconder se aparecerem num rótulo (o próprio nome, por exemplo). */
   redact?: string[];
+  /**
+   * Guarda também os scripts da própria página de cada formulário, sem dado
+   * pessoal (census-page.ts, pageScripts), para ler o que a página monta antes
+   * de enviar (a grade de datas da patente, as máscaras de data, o check()).
+   */
+  scripts?: boolean;
   targets?: CensusTarget[];
   /** Só as entradas com esses ids (ou que começam com eles). */
   only?: string[];
@@ -73,6 +85,8 @@ export interface CensusFile {
   /** Listas de opções longas, guardadas uma vez e citadas pelo nome nos campos. */
   lists: Record<string, CensusOption[]>;
   origin: string;
+  /** Scripts das páginas (opção scripts), guardados uma vez e citados pelo id nas entradas. */
+  scripts?: Record<string, string>;
 }
 
 export class SessionLost extends Error {
@@ -246,12 +260,13 @@ export function pathKey(path: string): string {
 }
 
 /** Abre e registra uma entrada. Sessão caída sobe; o resto vira status. */
-async function readEntry(
+export async function readEntry(
   reader: CensusReader,
   t: CensusTarget,
   redact: string[],
   code: string,
-): Promise<CensusEntry> {
+  extras: { links?: boolean; scripts?: boolean } = {},
+): Promise<CensusEntry & { scriptText?: string[] }> {
   const base = pending(t);
   try {
     const where = await reader.locate(t);
@@ -272,8 +287,14 @@ async function readEntry(
     }
     const page = censusPage(res.html, redact);
     const fields = page.forms.reduce((n, f) => n + f.fields.length + f.hidden.length, 0);
-    if (!fields) return { ...base, path, shape: pageShape(res.html), status: 'sem-formulario' };
-    return { ...base, page, path, status: 'ok' };
+    const more = {
+      ...(extras.links ? { links: pageLinks(res.html) } : {}),
+      ...(extras.scripts ? { scriptText: pageScripts(res.html, redact) } : {}),
+    };
+    if (!fields) {
+      return { ...base, ...more, path, shape: pageShape(res.html), status: 'sem-formulario' };
+    }
+    return { ...base, ...more, page, path, status: 'ok' };
   } catch (err) {
     if (err instanceof SessionLost) throw err;
     return {
@@ -361,7 +382,7 @@ export async function runCensus(
       continue;
     }
     try {
-      entries.push(await readEntry(reader, t, redact, code));
+      entries.push(await readEntry(reader, t, redact, code, { scripts: options.scripts }));
     } catch {
       interrupted = true;
       entries.push({ ...pending(t), status: 'nao-lido' });
@@ -376,6 +397,7 @@ export async function runCensus(
       interrupted = true;
     }
   }
+  const scripts = shareScripts(entries);
   return {
     capturedAt: (options.now?.() ?? new Date()).toISOString(),
     collector: options.collector ?? 'lattes-editor',
@@ -385,10 +407,34 @@ export async function runCensus(
     ...(interrupted ? { interrupted: true } : {}),
     lists: shareLists(entries),
     origin: 'cvlattesweb: formulários de inclusão abertos por GET, sem f_seq e sem enviar',
+    ...(scripts ? { scripts } : {}),
   };
 }
 
-function pending(t: CensusTarget): CensusEntry {
+/**
+ * Os scripts lidos (scriptText) guardados uma vez só: a entrada fica com os
+ * ids. Undefined quando nenhuma entrada leu script.
+ */
+export function shareScripts(
+  entries: (CensusEntry & { scriptText?: string[] })[],
+): Record<string, string> | undefined {
+  const byText = new Map<string, string>();
+  for (const e of entries) {
+    if (!e.scriptText) continue;
+    e.scripts = e.scriptText.map((text) => {
+      let id = byText.get(text);
+      if (!id) {
+        id = `s${byText.size + 1}`;
+        byText.set(text, id);
+      }
+      return id;
+    });
+    delete e.scriptText;
+  }
+  return byText.size ? Object.fromEntries([...byText].map(([text, id]) => [id, text])) : undefined;
+}
+
+export function pending(t: CensusTarget): CensusEntry {
   return {
     elements: t.elements,
     elementsProvenance: t.elementsProvenance,
