@@ -311,10 +311,13 @@ export interface IncomingItem {
  * Um item igual a outro da mesma leva também aparece: o segundo é comparado
  * com os anteriores.
  */
-export function preDiff(incoming: XElement[], root: XElement): IncomingItem[] {
+export function preDiff(
+  incoming: XElement[],
+  root: XElement,
+  cache: ProfileCache = new Map(),
+): IncomingItem[] {
   const existing = productionItems(root);
   const seen: XElement[] = [];
-  const cache: ProfileCache = new Map();
   return incoming.map((item) => {
     const best = candidatesFor(item, [...existing, ...seen], cache)[0];
     seen.push(item);

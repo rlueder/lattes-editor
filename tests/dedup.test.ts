@@ -282,7 +282,7 @@ describe('pré-diff e deduplicação explicável (LAT-45)', () => {
     expect(closestInCv(one(artigo(3, { titulo: 'Outra coisa' })), root)).toBeUndefined();
   });
 
-  it('uma leva grande contra um currículo grande termina rápido (cada item lido uma vez)', () => {
+  it('uma leva grande contra um currículo grande lê cada item uma vez só', () => {
     const many = (from: number, n: number, prefix: string) =>
       Array.from({ length: n }, (_, i) =>
         artigo(from + i, {
@@ -293,12 +293,17 @@ describe('pré-diff e deduplicação explicável (LAT-45)', () => {
       ).join('');
     const root = cv(many(1, 800, 'existente'));
     const incoming = incomingItems(schema, cv(many(5000, 200, 'novo')));
-    const start = performance.now();
-    const diff = preDiff(incoming, root);
-    const ms = performance.now() - start;
+    // Cada leitura de perfil é um set no cache: conta o trabalho, sem relógio.
+    let reads = 0;
+    class Counting extends Map<XElement, never> {
+      override set(key: XElement, value: never) {
+        reads += 1;
+        return super.set(key, value);
+      }
+    }
+    const diff = preDiff(incoming, root, new Counting());
     expect(diff).toHaveLength(200);
-    // Folgado de propósito: sem o cache e o corte pelo título, levava segundos.
-    expect(ms).toBeLessThan(3000);
+    expect(reads).toBe(800 + 200);
   });
 
   it('o cache lê cada item do currículo uma vez, e a leitura serve à leva toda', () => {
