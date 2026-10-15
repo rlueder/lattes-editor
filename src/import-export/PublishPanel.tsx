@@ -23,6 +23,7 @@ import {
   checksLine,
   initialForm,
   type PublishAttempt,
+  publishBlockers,
   type PublishForm,
   publishRequest,
   publishStatus,
@@ -30,6 +31,7 @@ import {
   SCREEN_TIMEOUT_MS,
   sendScreenStatus,
 } from './publish-view.ts';
+import { PublishBlockers } from './PublishBlockers.tsx';
 
 interface Props {
   bridge: BridgeState;
@@ -127,6 +129,8 @@ function PublishPanelBody(props: Props) {
   }, [status.busy, attempt, now]);
 
   const pending = unpublishedEntries(bridge.sent, bridge.lattes).filter((e) => !failed(e));
+  // Freio de escrita (LAT-59): gravação divergente sem conferência bloqueia o envio.
+  const blockers = publishBlockers(bridge.sent, bridge.lattes);
   const original = useMemo(
     () => (open && originalXml ? parseXml(originalXml).root : undefined),
     [open, originalXml],
@@ -139,7 +143,7 @@ function PublishPanelBody(props: Props) {
 
   const request = form && screen && publishRequest(form, declared, screen.declaration);
   const problem = request && requestProblem(request, screen);
-  const canSend = enabled && !!request && !problem && !status.locked;
+  const canSend = enabled && !!request && !problem && !status.locked && blockers.length === 0;
   const set = (patch: Partial<PublishForm>) => setForm((f) => f && { ...f, ...patch });
 
   const send = () => {
@@ -258,6 +262,8 @@ function PublishPanelBody(props: Props) {
           </div>
         )}
       </section>
+
+      <PublishBlockers blockers={blockers} onCheck={bridge.checkSent} />
 
       {checks && (
         <section className="panel-section">

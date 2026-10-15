@@ -11,6 +11,7 @@ import type { LattesStatus } from './lattes-status.ts';
 import type { PhotoFailure } from './photo.ts';
 import type { BridgeOp } from './plan.ts';
 import type { PublishRequest, PublishResult, SendScreen } from './publish.ts';
+import type { RoundPause } from './write-brake.ts';
 
 export const PROTOCOL_VERSION = 1;
 export const EDITOR_SOURCE = 'lattes-editor';
@@ -106,7 +107,11 @@ export type BridgeMessage =
       type: 'curriculo';
       zip?: string;
     }
-  | { type: 'fim' }
+  /**
+   * A fila parou. pause: parou no teto de gravações da rodada
+   * (src/bridge/write-brake.ts) e o resto espera o "Continuar" no painel.
+   */
+  | { pause?: RoundPause; type: 'fim' }
   /** O resultado da troca da foto pedida com o mesmo id. */
   | { detail?: string; id: string; ok: boolean; reason?: PhotoFailure; type: 'foto' }
   /**

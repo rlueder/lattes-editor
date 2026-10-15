@@ -4,6 +4,7 @@
 import type { OpResult } from '../../src/bridge/apply.ts';
 import type { ContractReport } from '../../src/bridge/contract.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
+import type { RoundPause } from '../../src/bridge/write-brake.ts';
 
 /** Onde está o editor que mandou a fila: o app de desktop ou uma aba (desenvolvimento). */
 export type EditorEndpoint = 'app' | number;
@@ -13,6 +14,8 @@ export interface QueueState {
   /** Currículo aberto no editor quando a fila foi enviada. */
   lattesId?: string;
   ops: BridgeOp[];
+  /** A última rodada parou no teto de gravações (src/bridge/write-brake.ts). */
+  pausa?: RoundPause;
   results: Record<string, OpResult>;
   running: boolean;
   /** Última verificação do Lattes contra o contrato do conector (src/bridge/contract.ts). */

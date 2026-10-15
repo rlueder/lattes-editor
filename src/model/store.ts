@@ -113,7 +113,11 @@ interface VersionRow {
   loadedAt: number;
   sealed: Sealed;
 }
-interface SentRow extends Partial<Pick<SentEntry, 'change' | 'op' | 'outcome' | 'rows'>> {
+/** O que vai cifrado numa linha do registro do enviado. */
+type SentSealed = Pick<SentEntry, 'change' | 'op' | 'outcome' | 'rows'>;
+interface SentRow extends Partial<SentSealed> {
+  /** Em claro, como sentAt: só a hora em que a pessoa conferiu no Lattes. */
+  checkedAt?: number;
   id?: number;
   lattesId: string;
   sealed?: Sealed;
@@ -423,13 +427,9 @@ export async function listSent(lattesId: string): Promise<SentEntry[]> {
   const entries = await Promise.all(
     rows
       .filter((r) => r.sealed)
-      .map(async ({ id, sealed, sentAt, undoOf }) => {
-        const open = await unsealRow<Pick<SentEntry, 'change' | 'op' | 'outcome' | 'rows'>>(
-          k,
-          sealed!,
-          'registro do enviado',
-        );
-        return open && { ...open, id, lattesId, sentAt, undoOf };
+      .map(async ({ checkedAt, id, sealed, sentAt, undoOf }) => {
+        const open = await unsealRow<SentSealed>(k, sealed!, 'registro do enviado');
+        return open && { ...open, checkedAt, id, lattesId, sentAt, undoOf };
       }),
   );
   return entries.filter((e) => e !== undefined).sort((a, b) => b.sentAt - a.sentAt);

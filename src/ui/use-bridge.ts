@@ -24,6 +24,7 @@ import {
   isIncompatibleHello,
 } from '../bridge/protocol.ts';
 import { type SentEntry, sentEntry, undoOp } from '../bridge/sent-log.ts';
+import type { RoundPause } from '../bridge/write-brake.ts';
 import { isDesktop } from '../desktop/native.ts';
 import type { Session } from '../forms/use-production.ts';
 import { importMessage } from '../import-export/import-request.ts';
@@ -40,6 +41,7 @@ import type {
 import type { ChangeGroup } from './changes-view.ts';
 import { writeCvCode } from './profile.ts';
 import { type RestoreState, useRestorePoint } from './use-restore-point.ts';
+import { useWriteBrake } from './use-write-brake.ts';
 
 // As leituras das respostas da extensão moram em bridge-readings.ts; quem já
 // importava daqui segue igual.
@@ -162,6 +164,8 @@ export interface BridgeState {
    */
   answerRestore: (go: boolean) => void;
   available: boolean;
+  /** "Já conferi no Lattes" numa gravação divergente do registro (LAT-59). */
+  checkSent: (entry: SentEntry) => Promise<void>;
   /** Apaga o registro do enviado deste currículo (nada muda no Lattes). */
   clearSent: () => Promise<void>;
   /** Quantas alterações foram gravadas e conferidas desde o último envio. */
@@ -186,6 +190,11 @@ export interface BridgeState {
   lattes?: LattesStatus;
   /** Em que pé está a ligação com o Lattes, para o cabeçalho explicar a falta de leitura. */
   link: Link;
+  /**
+   * A rodada parou no teto de gravações e o resto espera o "Continuar" no
+   * painel da extensão (src/bridge/write-brake.ts).
+   */
+  pause?: RoundPause;
   /** A resposta do último pedido de troca da foto. */
   photoUpload?: PhotoUploadReading;
   /** Alterações que a extensão sabe levar e as que ela ainda não leva. */
@@ -268,6 +277,8 @@ export function useBridge(
       .catch(() => setSent([]));
   }, [lattesId]);
   useEffect(reloadSent, [reloadSent]);
+  const brake = useWriteBrake(reloadSent);
+  const { setPause } = brake;
 
   /**
    * Toda resposta da fila entra no registro: a conferida, a criada no Lattes
@@ -304,6 +315,7 @@ export function useBridge(
         setFeatures(msg.features ?? []);
       }
       if (msg.type === 'resultado') {
+        setPause(undefined);
         setResults((r) => ({ ...r, [msg.result.key]: msg.result }));
         recordRef.current(msg.result);
         if (msg.result.status === 'conferido') {
@@ -311,7 +323,10 @@ export function useBridge(
           confirmedRef.current(msg.result.key, msg.result.assigned);
         }
       }
-      if (msg.type === 'fim') setRunning(false);
+      if (msg.type === 'fim') {
+        setRunning(false);
+        setPause(msg.pause);
+      }
       // Só guarda o código se ele for deste currículo (a sessão do Lattes pode ser de outro).
       if (msg.type === 'codigo-cv' && lattesId && sameCv(lattesId, msg.lattesId)) {
         writeCvCode(lattesId, msg.code);
@@ -368,6 +383,7 @@ export function useBridge(
       onMessage,
       () => {
         dropRestoreRequests();
+        setPause(undefined);
         setAvailable(false);
         setFeatures([]);
         setRunning(false);
@@ -386,7 +402,7 @@ export function useBridge(
       clearTimeout(timer);
       stopListening();
     };
-  }, [lattesId, takeRestoreReply, dropRestoreRequests]);
+  }, [lattesId, takeRestoreReply, dropRestoreRequests, setPause]);
 
   // Os eventos saem do Importar só com a extensão que anuncia 'incluir-itens'
   // (direct-inclusion.ts). Segue as capacidades: sem extensão (features
@@ -408,6 +424,7 @@ export function useBridge(
 
   return {
     ...restorePoint.fields,
+    ...brake.fields,
     available,
     clearSent: async () => {
       if (!lattesId) return;
@@ -459,6 +476,7 @@ export function useBridge(
         ]),
       );
       setResults({});
+      setPause(undefined);
       setConfirmed(0);
       setRunning(true);
       post({ lattesId, ops, type: 'enviar' });

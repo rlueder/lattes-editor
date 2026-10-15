@@ -150,7 +150,9 @@ até você clicar no olho, ao lado do título.
 A extensão para Chrome e Brave é o que deixa o app abrir o currículo do Lattes
 e enviar as alterações direto ao Lattes. Ela trabalha na aba do Lattes em que
 você já está logado; nenhuma senha passa por ela nem pelo app. Cada alteração
-é gravada, lida de volta e conferida, e a fila para no primeiro problema.
+é gravada, lida de volta e conferida, e a fila para no primeiro problema. A
+cada 20 gravações seguidas a extensão faz uma pausa, para você olhar o Lattes,
+e só segue com um novo clique em "Continuar" no painel dela.
 
 Enquanto a extensão não está na Chrome Web Store, instale assim:
 
@@ -175,7 +177,10 @@ acompanhado; o que cada uma precisa mostrar está na seção "Ações ligadas" d
 O que o conector grava fica pendente no Lattes até você clicar em "Enviar ao
 CNPq", e o Lattes não mostra nem descarta essas pendências. Por isso o app
 guarda o registro do que foi gravado, com o valor de antes e o de depois, e
-pode desfazer. O que a extensão lê e envia está na
+pode desfazer. Uma gravação que não voltou conferida fica marcada no registro
+e bloqueia o "Enviar ao CNPq" do editor até você conferir o item no Lattes e
+clicar em "Já conferi no Lattes", ou mandar a alteração de novo até ela voltar
+conferida. O que a extensão lê e envia está na
 [política de privacidade da extensão](https://rlueder.github.io/lattes-editor/privacidade.html).
 
 ## Documentação

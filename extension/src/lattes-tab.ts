@@ -1,9 +1,11 @@
 // A aba do menu do Lattes: achar, injetar o núcleo do conector (lattes-runner.ts)
 // e as leituras que o editor pede, com o motivo quando não dá.
 
+import type { OpResult } from '../../src/bridge/apply.ts';
 import type { ContractReport } from '../../src/bridge/contract.ts';
 import type { ImportResult } from '../../src/bridge/importar.ts';
 import type { LattesStatus } from '../../src/bridge/lattes-status.ts';
+import type { BridgeOp } from '../../src/bridge/plan.ts';
 import type { BridgeMessage, EditorMessage } from '../../src/bridge/protocol.ts';
 import type { PublishRequest, PublishResult } from '../../src/bridge/publish.ts';
 import { hasConsent } from './consent.ts';
@@ -243,6 +245,23 @@ export async function answerListRequest(
 }
 
 /** Relatório de conferência que não chegou a ler o Lattes. */
+/**
+ * Uma operação da fila na aba do Lattes, pelo núcleo do conector injetado
+ * (lattes-runner.ts). A resposta volta crua: quem chama confere
+ * (checkedResult, em src/bridge/write-brake.ts).
+ */
+export async function applyInTab(tabId: number, op: BridgeOp): Promise<unknown> {
+  const [res] = await chrome.scripting.executeScript({
+    args: [op] as [BridgeOp],
+    func: (o: BridgeOp) =>
+      (
+        globalThis as unknown as { __conector: { apply(op: BridgeOp): Promise<OpResult> } }
+      ).__conector.apply(o),
+    target: { tabId },
+  });
+  return res?.result;
+}
+
 export const failedReport = (detail: string): ContractReport => ({
   checkedAt: new Date().toISOString(),
   detail,

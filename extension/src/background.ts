@@ -8,7 +8,6 @@
 
 import type { OpResult } from '../../src/bridge/apply.ts';
 import { BRIDGE_FEATURES } from '../../src/bridge/compat.ts';
-import { blocksKind, driftText, lacksSample } from '../../src/bridge/contract.ts';
 import {
   AUTO_VERIFY_DELAY_MS,
   AUTO_VERIFY_RETRY_DELAY_MS,
@@ -17,7 +16,6 @@ import {
 } from '../../src/bridge/contract-schedule.ts';
 import { sameCv } from '../../src/bridge/lattes-html.ts';
 import { photoBusy } from '../../src/bridge/photo.ts';
-import type { BridgeOp } from '../../src/bridge/plan.ts';
 import {
   type BridgeMessage,
   bridgeMessage,
@@ -25,12 +23,14 @@ import {
   isEditorMessage,
   type NoReadingReason,
 } from '../../src/bridge/protocol.ts';
+import { contractStop, type RoundPause, runRound } from '../../src/bridge/write-brake.ts';
 import { CONSENT_KEY, hasConsent, isConsentCurrent } from './consent.ts';
 import { ownVersion, reloadForApp } from './dev-reload.ts';
 import { importRunning, runImport } from './import-run.ts';
 import { isLattesMenu, isRealLattesMenu } from './lattes-hosts.ts';
 import {
   answerListRequest,
+  applyInTab,
   failedReport,
   type Identity,
   lattesTab,
@@ -313,20 +313,23 @@ async function run(keys?: string[]): Promise<void> {
     return;
   }
   queueActive = true;
+  const queue = state.ops.filter(
+    (op) => state.results[op.key]?.status !== 'conferido' && (!keys || keys.includes(op.key)),
+  );
+  const results = { ...state.results };
+  let pause: RoundPause | undefined;
+  let recorded = false;
+  const record = async (r: OpResult) => {
+    recorded = true;
+    results[r.key] = r;
+    await writeState({ ...(await readState()), results, running: true });
+    await toEditor(state.editor, { result: r, type: 'resultado' });
+  };
   // A trava solta mesmo se algo estourar no meio, senão o Importar ficaria
   // recusado até o service worker reiniciar.
   try {
-    const queue = state.ops.filter(
-      (op) => state.results[op.key]?.status !== 'conferido' && (!keys || keys.includes(op.key)),
-    );
     stopRequested = false;
-    await writeState({ ...state, running: true });
-    const results = { ...state.results };
-    const record = async (r: OpResult) => {
-      results[r.key] = r;
-      await writeState({ ...(await readState()), results, running: true });
-      await toEditor(state.editor, { result: r, type: 'resultado' });
-    };
+    await writeState({ ...state, pausa: undefined, running: true });
 
     const tabId = await lattesTab();
     if (tabId === undefined) {
@@ -360,63 +363,48 @@ async function run(keys?: string[]): Promise<void> {
       if (queue.length > 0) {
         const report = await verifyOn(tabId);
         await writeState({ ...(await readState()), verificacao: report });
-        const kinds = [...new Set(queue.map((op) => op.kind))];
-        const blocking = kinds.flatMap((kind) => blocksKind(report, kind));
-        const unsampled = kinds.map((kind) => lacksSample(report, kind)).find(Boolean);
-        const stop =
-          report.status === 'sessao'
-            ? {
-                detail: report.detail ?? 'A sessão do Lattes caiu; entre de novo',
-                status: 'sessao' as const,
-              }
-            : report.status === 'erro'
-              ? {
-                  detail: `Não deu para conferir o Lattes (${report.detail ?? 'sem detalhe'}); nada foi enviado`,
-                  status: 'erro' as const,
-                }
-              : blocking.length > 0
-                ? {
-                    detail: `O Lattes mudou (${blocking.map(driftText).join('; ')}); nada foi enviado. Veja a verificação no painel`,
-                    status: 'erro' as const,
-                  }
-                : unsampled
-                  ? {
-                      detail: `Não achei no Lattes um exemplar de ${unsampled.form} para conferir (${unsampled.detail ?? 'sem amostra'}); nada foi enviado`,
-                      status: 'erro' as const,
-                    }
-                  : undefined;
+        const stop = contractStop(report, queue);
         if (stop && first) {
           await record({ ...stop, key: first.key });
           queue.length = 0;
         }
       }
-      for (const op of queue) {
-        if (stopRequested) break;
-        const [res] = await chrome.scripting.executeScript({
-          args: [op] as [BridgeOp],
-          func: (o: BridgeOp) =>
-            (
-              globalThis as unknown as { __conector: { apply(op: BridgeOp): Promise<OpResult> } }
-            ).__conector.apply(o),
-          target: { tabId },
+      // Freio de escrita (LAT-59): no máximo WRITES_PER_ROUND por clique, e a
+      // fila para no primeiro resultado não conferido ou falha da aba.
+      if (queue.length > 0) {
+        const end = await runRound(queue, {
+          apply: (op) => applyInTab(tabId, op),
+          onResult: record,
+          shouldStop: () => stopRequested,
         });
-        const r = res?.result ?? {
-          detail: 'A aba do Lattes não respondeu',
-          key: op.key,
-          status: 'erro',
-        };
-        await record(r);
-        if (r.status !== 'conferido') break;
+        if (end.kind === 'pausa') pause = { done: end.done, left: end.left };
       }
     }
-    await writeState({ ...(await readState()), results, running: false });
-    const left = state.ops.filter((op) => results[op.key]?.status !== 'conferido').length;
-    await chrome.action.setBadgeText({ text: left ? String(left) : '' });
-    await toEditor(state.editor, { type: 'fim' });
-    // Menu relido: a aba aberta ainda mostra o estado de antes das gravações.
-    if (state.editor !== undefined) await sendSession(state.editor, true);
+  } catch (err) {
+    // Falha antes de qualquer resposta (a conferência ou a leitura da sessão
+    // estourou), então nada foi gravado: a primeira da fila leva o motivo,
+    // que aparece no painel e no editor.
+    const first = queue[0];
+    if (!recorded && first) {
+      await record({
+        detail: `Falha inesperada no conector (${err instanceof Error ? err.message : String(err)}); nada foi enviado`,
+        key: first.key,
+        status: 'erro',
+      }).catch(() => undefined);
+    }
   } finally {
-    queueActive = false;
+    // Mesmo com algo estourando no meio, a fila deixa de correr, o painel
+    // destrava e o editor sabe que a rodada acabou.
+    try {
+      await writeState({ ...(await readState()), pausa: pause, results, running: false });
+      const left = state.ops.filter((op) => results[op.key]?.status !== 'conferido').length;
+      await chrome.action.setBadgeText({ text: left ? String(left) : '' });
+      await toEditor(state.editor, { pause, type: 'fim' });
+      // Menu relido: a aba aberta ainda mostra o estado de antes das gravações.
+      if (state.editor !== undefined) await sendSession(state.editor, true);
+    } finally {
+      queueActive = false;
+    }
   }
 }
 
@@ -434,9 +422,18 @@ chrome.runtime.onMessage.addListener((message, sender) => {
   if (m.cmd === 'parar') stopRequested = true;
   if (m.cmd === 'verificar') void verify(m.auto);
   if (m.cmd === 'limpar') {
-    void readState().then((s) =>
-      writeState({ ...s, ops: [], results: {}, running: false, verificando: false }),
-    );
+    void readState().then(async (s) => {
+      await writeState({
+        ...s,
+        ops: [],
+        pausa: undefined,
+        results: {},
+        running: false,
+        verificando: false,
+      });
+      // A fila em pausa saiu: o editor deixa de mandar continuar no painel.
+      if (s.pausa) await toEditor(s.editor, { type: 'fim' });
+    });
     void chrome.action.setBadgeText({ text: '' });
   }
 });

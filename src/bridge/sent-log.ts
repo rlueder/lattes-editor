@@ -21,6 +21,11 @@ export interface SentRow {
 export interface SentEntry {
   /** Mudança do editor que gerou a operação, para reabri-la se for desfeita. */
   change?: Change;
+  /**
+   * Quando a pessoa marcou "Já conferi no Lattes" numa gravação divergente:
+   * a divergência deixa de bloquear o envio ao CNPq (src/bridge/write-brake.ts).
+   */
+  checkedAt?: number;
   id?: number;
   /** NUMERO-IDENTIFICADOR do currículo. */
   lattesId: string;
@@ -194,8 +199,12 @@ export function sentLogText(
       day = date;
       lines.push('', date);
     }
+    const checked =
+      entry.checkedAt === undefined
+        ? ''
+        : `; conferido no Lattes pela pessoa em ${dateText(entry.checkedAt)} às ${timeText(entry.checkedAt)}`;
     const result = entry.outcome
-      ? `${OUTCOME_TEXT[entry.outcome.status]}${entry.outcome.detail ? `: ${entry.outcome.detail}` : ''}`
+      ? `${OUTCOME_TEXT[entry.outcome.status]}${entry.outcome.detail ? `: ${entry.outcome.detail}` : ''}${checked}`
       : entry.undoOf !== undefined
         ? 'desfeito e conferido'
         : isDeleteOp(entry.op)

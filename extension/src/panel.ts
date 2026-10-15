@@ -13,6 +13,7 @@ import {
 import { opRows } from '../../src/bridge/field-labels.ts';
 import { PUBLISH_REMINDER } from '../../src/bridge/lattes-status.ts';
 import { listText } from '../../src/bridge/list-watch.ts';
+import { pauseText, WRITES_PER_ROUND } from '../../src/bridge/write-brake.ts';
 import { giveConsent, hasConsent, PRIVACY_URL } from './consent.ts';
 import { reloadLattesTab } from './lattes-tab.ts';
 import type { AppHello, PanelCommand, QueueState } from './state.ts';
@@ -54,6 +55,9 @@ function emptyState(): HTMLElement {
     }),
   ]);
 }
+
+// O teto da rodada vem do mesmo número que a fila usa.
+document.getElementById('teto')!.textContent = String(WRITES_PER_ROUND);
 
 const VERSION = chrome.runtime.getManifest().version_name ?? chrome.runtime.getManifest().version;
 
@@ -204,8 +208,19 @@ function render(state: QueueState): void {
   action.dataset.modo = mode;
   action.className = mode === 'parar' ? 'parar' : mode === 'ok' ? 'conferido' : 'principal';
   action.disabled = mode === 'ok' || state.ops.length === 0;
+  // Em pausa no teto da rodada, o mesmo botão segue com o resto (write-brake.ts).
+  const paused = mode === 'aplicar' && state.pausa !== undefined;
   action.textContent =
-    mode === 'parar' ? 'Parar' : mode === 'ok' ? '✓ Tudo conferido' : 'Aplicar todas';
+    mode === 'parar'
+      ? 'Parar'
+      : mode === 'ok'
+        ? '✓ Tudo conferido'
+        : paused
+          ? 'Continuar'
+          : 'Aplicar todas';
+  const pauseNote = document.getElementById('pausa')!;
+  pauseNote.textContent = paused && state.pausa ? pauseText(state.pausa, 'painel') : '';
+  pauseNote.hidden = !paused;
   root.replaceChildren();
   const verify = document.getElementById('verificar') as HTMLButtonElement;
   verify.disabled = Boolean(state.running || state.verificando);

@@ -172,6 +172,41 @@ currículo param a rodada, sem gravar nada. Nunca se grava sem um ponto novo
 ou essa confirmação. Desfazer pelo registro do enviado passa pelo mesmo
 caminho.
 
+### Freio de escrita (LAT-59)
+
+As regras estão em `src/bridge/write-brake.ts`, sem chrome nem React, e a
+extensão roda a fila por elas (`runRound`, chamado por `run` em
+`extension/src/background.ts`):
+
+- **Teto por rodada.** Cada clique em "Aplicar todas" (ou em "Continuar")
+  grava no máximo `WRITES_PER_ROUND` (20) operações. Passou disso, a fila
+  pausa: o estado da extensão guarda `pausa` com quantas gravou e quantas
+  faltam, o painel troca o botão por "Continuar" com o aviso, e o `fim` que
+  vai ao editor leva a mesma pausa, que o "Enviar ao Lattes" mostra
+  (`src/ui/use-write-brake.ts`). Só o clique no painel retoma; o editor não
+  tem mensagem que faça a extensão gravar. "Limpar fila" tira a pausa e avisa
+  o editor.
+- **Parada na primeira surpresa.** A fila para no primeiro resultado que não
+  é conferido (divergente, erro, sessão caída), como já parava. A falha que
+  estoura no meio da operação (a aba fechou, a página mudou) e a resposta
+  ausente ou fora do formato viram resultado `divergente` com "não dá para
+  saber se gravou" (`checkedResult`, `unexpectedResult`): antes, a resposta
+  ausente era `erro` ("não gravado"), e uma exceção deixava a fila marcada
+  como correndo, sem `fim` para o editor. Agora o fim da rodada (estado,
+  selo, `fim`, menu relido) roda num `finally`. Tudo o que voltou, conferido
+  ou não, entra no registro do enviado como antes.
+- **"Enviar ao CNPq" bloqueado.** Uma entrada `divergente` do registro do
+  enviado bloqueia o botão do painel "Enviar ao CNPq" até se resolver
+  (`openDivergences`): a mesma alteração (a mesma chave) volta mais tarde
+  conferida, ou a pessoa clica em "Já conferi no Lattes", que grava
+  `checkedAt` na linha do registro (`src/model/sent-checks.ts`), em claro
+  como a hora do envio. O registro mora no IndexedDB por currículo, então
+  reabrir o app não desbloqueia nada. Contam só as entradas ainda não
+  publicadas, pela mesma janela de `unpublishedEntries`
+  (`src/ui/status-strip.ts`); sem a leitura do menu do Lattes, conta o
+  registro inteiro (`publishBlockers`, em
+  `src/import-export/publish-view.ts`). Erro e sessão caída não bloqueiam.
+
 ## Do editor ao Lattes
 
 Cada alteração segue um de três caminhos (`src/import-export/send-routes.ts`),

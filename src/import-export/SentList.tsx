@@ -22,6 +22,7 @@ import {
 import { saveBytes } from '../desktop/native.ts';
 import { FieldChange } from '../ui/FieldChange.tsx';
 import type { BridgeState } from '../ui/use-bridge.ts';
+import { publishBlockers } from './publish-view.ts';
 import { SendConfirm } from './SendConfirm.tsx';
 
 const dayLabel = (day: string) =>
@@ -33,6 +34,9 @@ const dayLabel = (day: string) =>
 
 const timeLabel = (ms: number) =>
   new Date(ms).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+const checkedLabel = (ms: number) =>
+  new Date(ms).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 
 const OUTCOME_LABEL = {
   divergente: 'Não conferido',
@@ -54,6 +58,11 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
   const [exportError, setExportError] = useState<string | undefined>();
   const days = useMemo(() => groupByDay(bridge.sent), [bridge.sent]);
   const undone = useMemo(() => undoneIds(bridge.sent), [bridge.sent]);
+  // As divergentes que bloqueiam o envio ao CNPq agora (LAT-59).
+  const blocking = useMemo(
+    () => new Set(publishBlockers(bridge.sent, bridge.lattes)),
+    [bridge.sent, bridge.lattes],
+  );
   const reverse = undoing && undoOp(undoing);
   if (bridge.sent.length === 0) return null;
 
@@ -110,6 +119,26 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
                   </div>
                   {entry.outcome?.detail && (
                     <p className="muted sent-outcome">{entry.outcome.detail}</p>
+                  )}
+                  {(blocking.has(entry) || entry.checkedAt !== undefined) && (
+                    <p className="muted sent-outcome">
+                      {entry.checkedAt === undefined ? (
+                        <>
+                          Enquanto não for conferida, esta gravação bloqueia o envio ao CNPq pelo
+                          editor.{' '}
+                          <button
+                            className="ghost sent-check"
+                            disabled={entry.id === undefined}
+                            type="button"
+                            onClick={() => void bridge.checkSent(entry)}
+                          >
+                            Já conferi no Lattes
+                          </button>
+                        </>
+                      ) : (
+                        `Você conferiu no Lattes em ${checkedLabel(entry.checkedAt)}.`
+                      )}
+                    </p>
                   )}
                   {noUndo && !failed(entry) && <p className="muted sent-outcome">{noUndo}</p>}
                   <div className="sent-fields">

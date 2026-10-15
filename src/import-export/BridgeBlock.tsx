@@ -10,6 +10,7 @@ import { useState } from 'react';
 import type { ResultStatus } from '../bridge/apply.ts';
 import { PUBLISH_REMINDER } from '../bridge/lattes-status.ts';
 import { doneText } from '../bridge/restore-point.ts';
+import { pauseText } from '../bridge/write-brake.ts';
 import { CheckIcon, UploadIcon } from '../ui/icons.tsx';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { SendConfirm } from './SendConfirm.tsx';
@@ -65,6 +66,11 @@ export function BridgeBlock({ bridge }: { bridge: BridgeState }) {
       )}
       {!bridge.running && bridge.confirmed > 0 && (
         <p className="bridge-note bridge-publish">{PUBLISH_REMINDER}</p>
+      )}
+      {bridge.pause && !bridge.running && (
+        <p className="bridge-note bridge-publish" role="status">
+          {pauseText(bridge.pause, 'editor')}
+        </p>
       )}
       {bridge.running && (
         <p className="muted bridge-note">
