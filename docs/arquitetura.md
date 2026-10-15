@@ -192,7 +192,8 @@ diz para excluir no Lattes.
 ### Ações ligadas para o teste ao vivo
 
 Desde o PR "ligar as ações do conector", todas as chaves estão ligadas, para o
-dono testar no Lattes real. Cada uma tem a capacidade da extensão em
+dono testar no Lattes real, menos `PUBLISH_ENABLED` (o envio ao CNPq, LAT-54),
+que continua desligada até um envio acompanhado. Cada uma tem a capacidade da extensão em
 `BRIDGE_FEATURES`, e o app só manda a operação a uma extensão que a anuncia:
 com uma extensão mais antiga, a alteração fica em "Não enviado" e o evento
 novo fica no Importar. O release estável só leva isso se o dono gerar um.
@@ -243,7 +244,8 @@ pelo `window.postMessage` da própria página, por um content script
   deste currículo guardada no app (`src/ui/use-stored-version.ts`), que abre
   como cópia de trabalho com o diagnóstico já comparando com a página de
   conferência; a página de conferência é texto, e não vira currículo
-  editável.
+  editável. A mesma tela tem o link para o "Enviar ao CNPq", que libera o
+  Exportar; publicado, o editor pede o currículo de novo.
 - **Estado do Lattes** (`src/bridge/lattes-status.ts`): lê do menu a data da
   última publicação e se há alteração pendente de envio ao CNPq.
 - **Conferência do contrato** (`src/bridge/contract.ts`): só com leituras,

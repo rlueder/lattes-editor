@@ -60,6 +60,8 @@ interface Props {
   onFile: (file: File) => void;
   /** Abre uma versão guardada pelo app (Exportar bloqueado por pendência). */
   onOpenVersion: (id: number) => void;
+  /** Exportar bloqueado por pendência: abre o "Enviar ao CNPq" (LAT-54). */
+  onPublish: () => void;
   /** Recarrega a aba do Lattes pela extensão (sessão vencida). */
   onReloadLattes: () => void;
   onTheme: (theme: ThemePref) => void;
@@ -130,6 +132,7 @@ export function Welcome({
   link,
   onFile,
   onOpenVersion,
+  onPublish,
   onReloadLattes,
   onTheme,
   theme,
@@ -234,6 +237,14 @@ export function Welcome({
               ))}
             </ol>
             <div className="onboarding-file">
+              {open.kind === 'falhou' && open.reason === 'pendente' && (
+                <p className="onboarding-manual">
+                  O envio ao CNPq libera o Exportar.{' '}
+                  <button className="link-button" type="button" onClick={onPublish}>
+                    Enviar ao CNPq…
+                  </button>
+                </p>
+              )}
               <button className="link-button" type="button" onClick={pick}>
                 Prefiro abrir o arquivo exportado
               </button>

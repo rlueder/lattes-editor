@@ -19,7 +19,6 @@ import { clearAll, newWorkingCopy, replaceWorkingCopy, storageStatus } from '../
 import { getAttr, serializeXml, walk, type XElement } from '../model/xml.ts';
 import { PrintDialog } from '../print/PrintDialog.tsx';
 import { usePrint } from '../print/use-print.ts';
-import { reviewCv } from '../review/consistency.ts';
 import { DiagnosisPanel } from '../review/DiagnosisPanel.tsx';
 import { lattesSchema } from '../schema/lattes.ts';
 import { CommandPalette } from './CommandPalette.tsx';
@@ -30,6 +29,7 @@ import { type ReloadFailure, reloadNotice } from './lattes-reload.ts';
 import { connectionOf, noticesFor } from './notifications.ts';
 import { allEntries, type PaletteEntry } from './palette-search.ts';
 import { PendingBanner } from './PendingBanner.tsx';
+import { preflight } from './preflight.ts';
 import { profileOf } from './profile.ts';
 import { ReferenceContext } from './reference-context.ts';
 import { buildReferenceIndex, type ReferenceIndex } from './reference-tables.ts';
@@ -203,8 +203,16 @@ export function App() {
           theme={theme}
           onFile={openFile}
           onOpenVersion={openVersion}
+          onPublish={() => setPublishOpen(true)}
           onReloadLattes={bridge.reloadLattes}
           onTheme={setTheme}
+        />
+        <PublishPanel
+          bridge={bridge}
+          lattesId={lattesOpen.state.kind === 'falhou' ? lattesOpen.state.lattesId : undefined}
+          open={publishOpen}
+          onClose={() => setPublishOpen(false)}
+          onPublished={lattesOpen.open}
         />
         {storageNotice}
       </>
@@ -332,7 +340,7 @@ export function App() {
 
       <PublishPanel
         bridge={bridge}
-        checks={preflight(session.doc.root, () => setDiagnosisOpen(true))}
+        checks={preflight(publishOpen && session.doc.root, sections, () => setDiagnosisOpen(true))}
         lattesId={getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR')}
         open={publishOpen}
         originalXml={session.meta.originalXml}
@@ -376,16 +384,6 @@ export function App() {
       {storageNotice}
     </ShellWithLists>
   );
-}
-
-/**
- * A conferência antes de publicar (LAT-54): quantos achados o diagnóstico do
- * currículo tem, e abri-lo. Provisório: até a LAT-25 chegar à main, conta só
- * os da revisão de consistência; com ela, passa a contar os de validateCv,
- * que o mesmo diagnóstico mostra.
- */
-function preflight(root: XElement, onOpen: () => void) {
-  return { count: reviewCv(root).length, onOpen };
 }
 
 /** Conta, dentro de alguns elementos, quantos dos itens pendentes aparecem. */
