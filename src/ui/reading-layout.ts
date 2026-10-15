@@ -11,7 +11,7 @@ import { isRedundantDateFormat } from './lattes-date.ts';
 import { isSensitiveAttr } from './privacy.ts';
 import { displayValue, formatCep } from './reading.ts';
 
-export type PartFormat = 'cep' | 'ddd' | 'level' | 'number' | 'phone';
+export type PartFormat = 'cep' | 'ddd' | 'level' | 'month' | 'number' | 'phone';
 
 /** Um pedaço editável: um atributo de um elemento do bloco. */
 export interface Part {
@@ -219,11 +219,28 @@ export function partText(p: Part): string {
   if (p.format === 'cep') return formatCep(v);
   // Telefone: o DDD entre parênteses e o número com hífen ("(51) 3308-1234");
   // o fax leva o DDD do mesmo endereço no próprio texto.
+  if (p.format === 'month') return MONTH_NAMES[Number(v) - 1] ?? v;
   if (p.format === 'ddd') return `(${v.replace(/\D/g, '')})`;
   if (p.format === 'number') return formatPhone('', v);
   if (p.format === 'phone') return formatPhone(value(p.el, 'DDD'), v);
   return displayValue(p.el, p.attr, v);
 }
+
+/** Mês por extenso curto, como no período da atuação (item-meta.ts). */
+const MONTH_NAMES = [
+  'jan',
+  'fev',
+  'mar',
+  'abr',
+  'mai',
+  'jun',
+  'jul',
+  'ago',
+  'set',
+  'out',
+  'nov',
+  'dez',
+];
 
 const LEVELS: Record<string, string> = {
   BEM: 'bem',
@@ -248,7 +265,7 @@ export function shownParts(line: Line): ShownPart[] {
     if (!isFilled(part)) continue;
     let before = part.before ?? '';
     if (out.length === 0 && !line.prefix) {
-      before = before.replace(/^\s*[,;›–·]\s*/, '');
+      before = before.replace(/^\s*[,;›–·]?\s*/, '');
       before = before.charAt(0).toLocaleUpperCase('pt-BR') + before.slice(1);
     }
     out.push({ before, part, text: partText(part) });

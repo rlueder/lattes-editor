@@ -16,6 +16,7 @@ import {
   type Line,
   type NestedGroup,
   type Part,
+  partText,
   type Section,
   value,
 } from './reading-layout.ts';
@@ -28,7 +29,22 @@ function whenLine(keys: Keys, el: XElement): Line {
     const point = POINT_ATTRS.find((a) => has(el, a));
     return { kind: 'when', parts: point ? [keys.part(el, point)] : [] };
   }
-  const parts = [keys.part(el, start), ...(end ? [keys.part(el, end, { before: ' – ' })] : [])];
+  // Com o mês ao lado do ano (vínculo: MES-INICIO), o período diz o mês, como
+  // na coluna da atuação ("jan 2026 – atual"), e o mês sai da grade.
+  const month = (attr: string) => (has(el, attr) ? [keys.part(el, attr, { format: 'month' })] : []);
+  const endMonth = end && has(el, 'MES-FIM') && value(el, 'MES-FIM') !== '';
+  const parts = [
+    ...month('MES-INICIO'),
+    keys.part(el, start, { before: ' ' }),
+    ...(end
+      ? [
+          ...(has(el, 'MES-FIM')
+            ? [keys.part(el, 'MES-FIM', { before: ' – ', format: 'month' })]
+            : []),
+          keys.part(el, end, { before: endMonth ? ' ' : ' – ' }),
+        ]
+      : []),
+  ];
   const current = itemMeta(el).current && value(el, start) !== '';
   const ended = end !== undefined && value(el, end) !== '';
   return { kind: 'when', parts, suffix: current && !ended ? ' – atual' : undefined };
@@ -91,7 +107,13 @@ function recordSources(el: XElement): XElement[] {
 const PEOPLE = /^NOME-(DO|DA)-(ORIENTADO|ORIENTANDO|CANDIDATO|ALUNO)$/;
 
 /** Forma e tipo de participação, ao lado do evento ("· Convidado"); o tipo do vínculo. */
-const KIND_ATTRS = ['FORMA-PARTICIPACAO', 'TIPO-PARTICIPACAO', 'TIPO-DE-VINCULO'];
+const KIND_ATTRS = [
+  'FORMA-PARTICIPACAO',
+  'TIPO-PARTICIPACAO',
+  'TIPO-DE-VINCULO',
+  // O enquadramento do vínculo ("Professor adjunto") vem logo depois do tipo.
+  'ENQUADRAMENTO-FUNCIONAL',
+];
 
 /** O título do registro entre as partes: TITULO-*, o nome do evento, ou como no cartão. */
 function recordTitle(sources: XElement[]): { attr: string; el: XElement } | undefined {
@@ -99,9 +121,10 @@ function recordTitle(sources: XElement[]): { attr: string; el: XElement } | unde
   for (const test of [
     (n: string) => /^TITULO/.test(n) && !/(INGLES|ANAIS|PERIODICO|LIVRO|JORNAL)/.test(n),
     (n: string) => n === 'NOME-DO-EVENTO',
-    // O vínculo de uma atuação lê pelo cargo ("Professora adjunta").
-    (n: string) =>
-      n === 'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO' || n === 'OUTRO-VINCULO-INFORMADO',
+    // O vínculo de uma atuação lê pelo cargo escrito à parte ("Fundador,
+    // CPO/CTO"; "Professora adjunta"), e só sem ele pelo outro vínculo.
+    (n: string) => n === 'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO',
+    (n: string) => n === 'OUTRO-VINCULO-INFORMADO',
   ]) {
     for (const el of sources) {
       const a = el.attrs.find((x) => test(x.name) && filled(el, x.name));
@@ -136,7 +159,24 @@ function genericRecord(keys: Keys, el: XElement, opts: LayoutOptions, depth = 0)
   const secondary = pick(SECONDARY_ATTRS).map(({ a, s }, i) =>
     keys.part(s, a, i > 0 ? { before: ', ' } : {}),
   );
-  const kinds = pick(KIND_ATTRS).map(({ a, s }) => keys.part(s, a, { before: ' · ' }));
+  // O mesmo texto duas vezes (tipo "Livre" e enquadramento "Livre") aparece uma
+  // só, na linha; o repetido sai também da grade.
+  const kindParts = pick(KIND_ATTRS).map(({ a, s }) => keys.part(s, a, { before: ' · ' }));
+  const repeated = new Set<string>();
+  // "Outro" no tipo ou no enquadramento só diz que o texto livre vale: com o
+  // texto preenchido (o título ou a linha), o "Outro" sai.
+  const replacedBy: Record<string, string> = {
+    'ENQUADRAMENTO-FUNCIONAL': 'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO',
+    'TIPO-DE-VINCULO': 'OUTRO-VINCULO-INFORMADO',
+  };
+  const kinds = kindParts.filter((part, i) => {
+    const text = partText(part).trim();
+    const free = replacedBy[part.attr];
+    const other = value(part.el, part.attr) === 'OUTRO' && free && value(part.el, free) !== '';
+    const dup = text !== '' && kindParts.slice(0, i).some((p) => partText(p).trim() === text);
+    if (dup || other) repeated.add(part.attr);
+    return !dup && !other;
+  });
   const people = sources.flatMap((s) =>
     s.attrs
       .filter((a) => PEOPLE.test(a.name))
@@ -155,6 +195,7 @@ function genericRecord(keys: Keys, el: XElement, opts: LayoutOptions, depth = 0)
     sources,
     { lines, nested: nestedGroups(keys, el, sources, opts, depth), quietRows: true, when },
     opts,
+    repeated,
   );
 }
 
