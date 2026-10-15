@@ -7352,3 +7352,11 @@ main.content {
 .reading-contact-kind {
   color: var(--read-muted, var(--muted));
 }
+
+/* A página rola na janela (html). O espaço da barra de rolagem fica sempre
+   reservado, com ou sem rolagem: trocar de uma seção curta para uma longa
+   não move o título nem o painel. As faixas de borda a borda (aviso de
+   pendências, barra fixa do título) vão até a borda do espaço reservado. */
+html {
+  scrollbar-gutter: stable;
+}
