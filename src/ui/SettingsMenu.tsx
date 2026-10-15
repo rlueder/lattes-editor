@@ -22,6 +22,7 @@ import {
   SpinnerIcon,
   SunIcon,
   UpdateIcon,
+  UploadIcon,
   VersionsIcon,
 } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
@@ -36,6 +37,8 @@ interface FileActions {
   /** Diagnóstico do currículo: comparação com o Lattes e revisão de consistência. */
   onDiagnosis: () => void;
   onHistory: () => void;
+  /** Trazer produções de outro XML, com o pré-diff contra o currículo (LAT-45). */
+  onIncoming: () => void;
   onPrint: () => void;
   onReload: () => void;
   onSave: () => void;
@@ -191,6 +194,12 @@ export function SettingsMenu({ file, focus, onTheme, theme }: Props) {
                 </span>
                 <span className="menu-label">Imprimir ou salvar PDF…</span>
                 <span className="menu-hint">{IS_MAC ? '⌘P' : 'Ctrl+P'}</span>
+              </Menu.Item>
+              <Menu.Item className="menu-item" disabled={!file} onClick={() => file?.onIncoming()}>
+                <span className="menu-icon">
+                  <UploadIcon />
+                </span>
+                <span className="menu-label">Trazer itens de outro XML…</span>
               </Menu.Item>
             </Menu.Group>
 

@@ -70,6 +70,13 @@ da própria seção. Como o Importar do Lattes não lê essas seções, o item n
 entra na lista de alterações do painel "Enviar ao Lattes", para cadastrar à
 mão com os valores ao lado.
 
+Produções de outro arquivo XML (o de outro programa, ou uma exportação
+antiga) entram por "Trazer itens de outro XML…", no ⚙. Cada item é
+comparado com o seu currículo antes de entrar, e o editor diz com o que ele
+se parece e por quê ("parece duplicata de… (85%): título igual, mesmo ano");
+só entra o que você marcar. O formulário de produção nova avisa do mesmo
+jeito, inclusive quando o item vem do DOI.
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/novo-item-escuro.jpg" />
   <img src="docs/img/novo-item-claro.jpg" alt="O modal Novo item de produção com a busca de tipos e os tipos mais usados." />
