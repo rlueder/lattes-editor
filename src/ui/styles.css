@@ -6919,6 +6919,14 @@ main.content {
   box-shadow: var(--shadow);
 }
 
+/* O cabeçalho aparece sem sombra, só com o fio de baixo, como a barra da
+   seção. */
+.shell.is-focus.reveal-top .topbar,
+.shell.is-focus .topbar:focus-within {
+  border-bottom: 1px solid var(--border);
+  box-shadow: none;
+}
+
 /* Com o cabeçalho à mostra, o menu começa abaixo dele. */
 .shell.is-focus.reveal-top .sidebar {
   top: var(--topbar-real-h, 57px);
