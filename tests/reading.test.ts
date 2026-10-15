@@ -111,6 +111,12 @@ describe('modo de leitura: campos', () => {
     expect(displayValue(dg, 'PERMISSAO-DE-DIVULGACAO', 'NAO')).toBe('Não');
     expect(displayValue(dg, 'PERMISSAO-DE-DIVULGACAO', 'SIM')).toBe('Sim');
   });
+
+  it('lê pelo rótulo o valor que outro elemento enumera no mesmo atributo', () => {
+    const pos = el(`<POS-DOUTORADO STATUS-DO-CURSO="CONCLUIDO"/>`);
+    expect(displayValue(pos, 'STATUS-DO-CURSO', 'CONCLUIDO')).toBe('Concluído');
+    expect(displayValue(pos, 'STATUS-DO-CURSO', 'em andamento')).toBe('em andamento');
+  });
 });
 
 describe('modo de leitura: texto', () => {

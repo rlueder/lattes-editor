@@ -55,11 +55,22 @@ export function LineView({ line }: { line: Line }) {
   );
 }
 
-/** Rótulo e valor: o rótulo pequeno, na sans, na coluna da esquerda. */
+/** Até quantos caracteres um valor ainda cabe numa coluna da grade. */
+const GRID_VALUE_MAX = 24;
+
+/**
+ * Rótulo e valor: o rótulo pequeno, na sans, na coluna da esquerda. Quando
+ * todos os valores são curtos (situação, ano, "Sim"), viram uma grade de três
+ * colunas com o rótulo acima do valor, que se lê de uma vez.
+ */
 export function Rows({ parts, quiet }: { parts: Part[]; quiet: boolean }) {
   if (parts.length === 0) return null;
+  const grid = parts.length > 1 && parts.every((p) => partText(p).length <= GRID_VALUE_MAX);
+  const classes = ['reading-fields', quiet && 'is-quiet', grid && 'is-grid']
+    .filter(Boolean)
+    .join(' ');
   return (
-    <dl className={quiet ? 'reading-fields is-quiet' : 'reading-fields'}>
+    <dl className={classes}>
       {parts.map((p) => (
         <div key={p.key} className="reading-field">
           <dt>{attributeLabelIn(p.el.name, p.attr)}</dt>

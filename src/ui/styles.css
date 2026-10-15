@@ -6648,6 +6648,18 @@ main.content {
   font-size: 12px;
 }
 
+/* Valores curtos em grade: três colunas, o rótulo acima do valor. */
+.reading-fields.is-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5em var(--read-tab-gap);
+  max-width: var(--read-measure);
+}
+
+.reading-fields.is-grid .reading-field {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.1em;
+}
+
 .reading-block a {
   color: var(--accent-text);
   text-decoration: underline;
@@ -6766,6 +6778,9 @@ main.content {
   .reading-block.rr > .reading-content,
   .reading-field {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .reading-fields.is-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
