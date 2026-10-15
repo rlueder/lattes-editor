@@ -2881,11 +2881,7 @@ details > .element {
 }
 
 /* Olho de privacidade, na ponta direita da linha do título. */
-.section-head .privacy-toggle {
-  margin-left: auto;
-}
-
-.section-head .privacy-toggle[aria-pressed='true'] {
+.privacy-toggle[aria-pressed='true'] {
   background: var(--accent-soft);
   color: var(--accent-text);
 }
@@ -4197,6 +4193,9 @@ button.primary.danger-fill:hover {
 
 /* Marcar itens (Inovação, Educação). */
 .section-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   margin-left: auto;
 }
 
@@ -5346,7 +5345,6 @@ b {
   align-items: center;
 }
 
-.privacy-toggle.icon-btn,
 .sticky-title-actions .icon-btn {
   display: inline-flex;
   align-items: center;
@@ -5356,10 +5354,6 @@ b {
   height: 32px;
   padding: 0;
   border-color: transparent;
-}
-
-.privacy-toggle.icon-btn:hover:not([aria-pressed='true']) {
-  background: var(--surface-2);
 }
 
 /* Último cartão de uma lista dentro de uma subseção: sem o fio de baixo. O

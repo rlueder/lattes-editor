@@ -23,7 +23,6 @@ import { EyeIcon, EyeOffIcon, PlusIcon } from './icons.tsx';
 import { JumpBar } from './JumpBar.tsx';
 import { type ListView, yearView } from './list-view.ts';
 import { MarkDialog } from './MarkDialog.tsx';
-import { Tip } from './primitives/Tip.tsx';
 import { PrivacyContext, usePrivacyMode } from './privacy.ts';
 import { ReadingGroup } from './ReadingView.tsx';
 import { useReferenceIndex } from './reference-context.ts';
@@ -142,30 +141,36 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section }:
   const showFilter = section.id !== 'dados-gerais';
   const hasPanel = section.groups.length > 0;
 
-  // Olho de privacidade em Dados gerais: na linha do título, à direita da
-  // coluna do conteúdo, e repetido no cabeçalho fixo ao rolar.
+  // Olho de privacidade em Dados gerais: o mesmo botão de contorno dos "Nova
+  // …", com ícone e o nome da ação, que segue o estado; aria-pressed diz se
+  // os dados estão ocultos. Fica antes das outras ações da seção, embaixo do
+  // título e na barra fixa ao rolar.
+  const privacyLabel = hideSensitive ? 'Mostrar dados pessoais' : 'Ocultar dados pessoais';
   const privacyToggle = privacy ? (
-    <Tip label={hideSensitive ? 'Mostrar dados pessoais' : 'Esconder dados pessoais'}>
-      <button
-        aria-label="Esconder dados pessoais"
-        aria-pressed={hideSensitive}
-        className="ghost icon-btn privacy-toggle"
-        type="button"
-        onClick={() => setHideSensitive(!hideSensitive)}
-      >
-        {hideSensitive ? <EyeOffIcon /> : <EyeIcon />}
-      </button>
-    </Tip>
+    <button
+      aria-label={privacyLabel}
+      aria-pressed={hideSensitive}
+      className="ghost mark-open privacy-toggle"
+      title={privacyLabel}
+      type="button"
+      onClick={() => setHideSensitive(!hideSensitive)}
+    >
+      {hideSensitive ? <EyeOffIcon /> : <EyeIcon />}{' '}
+      <span className="btn-label">{privacyLabel}</span>
+    </button>
   ) : null;
+  const headActions = (privacyToggle || actions) && (
+    <>
+      {privacyToggle}
+      {section.groups.length > 0 && actions}
+    </>
+  );
 
   const head = (
     <>
       <div className="section-head">
         <h1 ref={titleRef}>{section.label}</h1>
-        {privacyToggle}
-        {section.groups.length > 0 && actions && (
-          <span className="section-head-actions">{actions}</span>
-        )}
+        {headActions && <span className="section-head-actions">{headActions}</span>}
       </div>
       {section.importable === 'filtro' && (
         <p className="muted section-note">
@@ -197,14 +202,7 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section }:
         <StickyTitle
           // O que está no lugar das ações sob o título vai também para a barra
           // fixa: os mesmos botões (mesmo clique, mesmo fluxo), na versão compacta.
-          actions={
-            (privacyToggle || actions) && (
-              <>
-                {privacyToggle}
-                {actions && <span className="sticky-section-actions">{actions}</span>}
-              </>
-            )
-          }
+          actions={headActions && <span className="sticky-section-actions">{headActions}</span>}
           groups={visibleGroups.map((g) => ({ id: g.id, label: g.label }))}
           host={rootRef}
           label={section.label}
