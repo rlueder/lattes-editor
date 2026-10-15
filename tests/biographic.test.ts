@@ -367,7 +367,7 @@ describe('dados gerais no Lattes simulado', () => {
     ]) {
       const r = await applyOp(onlyOp(edit), open.port);
       expect(r.status).toBe('divergente');
-      expect(r.detail).toMatch(/f_inst_old/);
+      expect(r.detail).toMatch(/Instituição/);
     }
     expect(posts(open)).toEqual([]);
   });
@@ -383,7 +383,7 @@ describe('dados gerais no Lattes simulado', () => {
     const wrong = await lattesFor();
     setAttr(inState(wrong, 'MESTRADO'), 'NIVEL', '4');
     expect(await applyOp(mestradoOp(), wrong.port)).toMatchObject({
-      detail: expect.stringMatching(/f_nivel/),
+      detail: expect.stringMatching(/Nível/),
       status: 'divergente',
     });
     expect(posts(wrong)).toEqual([]);
@@ -430,7 +430,7 @@ describe('dados gerais no Lattes simulado', () => {
       ),
     });
     expect(await applyOp(op, side.port)).toMatchObject({
-      detail: 'Outros campos mudaram no Lattes: f_rua_i',
+      detail: 'Outros campos mudaram no Lattes: Logradouro (profissional)',
       status: 'erro',
     });
     const noMenu = { ...side.port, menuHtml: () => '<p>menu</p>' };
@@ -446,7 +446,7 @@ describe('dados gerais no Lattes simulado', () => {
       setAttr(find(root, 'ENDERECO-PROFISSIONAL'), 'CEP', '9'.repeat(16)),
     );
     expect(await applyOp(op, lattes.port)).toMatchObject({
-      detail: 'f_cep_i passa do limite do Lattes (15 caracteres)',
+      detail: 'CEP (profissional) passa do limite do Lattes (15 caracteres)',
       status: 'erro',
     });
     expect(posts(lattes)).toEqual([]);

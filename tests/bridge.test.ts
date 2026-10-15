@@ -379,7 +379,7 @@ describe('conector: aplicar no Lattes simulado', () => {
     setAttr(vinculoIn(lattes.state), 'ANO-INICIO', '2009');
     const op = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'x'));
     expect(await applyOp(op, lattes.port)).toMatchObject({
-      detail: expect.stringMatching(/f_ano_ini/),
+      detail: 'O Lattes não está como o editor espera: Ano de início',
       status: 'divergente',
     });
     expect(postsOf(lattes)).toHaveLength(0);
@@ -387,9 +387,9 @@ describe('conector: aplicar no Lattes simulado', () => {
 
   it('vínculo de mesmo início com outro fim ou outra carga não recebe a gravação', async () => {
     for (const [attr, value, field] of [
-      ['ANO-FIM', '2015', 'f_ano_fim'],
-      ['MES-FIM', '06', 'f_mes_fim'],
-      ['CARGA-HORARIA-SEMANAL', '20', 'f_carga'],
+      ['ANO-FIM', '2015', 'Ano de fim'],
+      ['MES-FIM', '06', 'Mês de fim'],
+      ['CARGA-HORARIA-SEMANAL', '20', 'Carga horária'],
     ]) {
       const lattes = await lattesFor();
       setAttr(vinculoIn(lattes.state), attr!, value!);
@@ -439,7 +439,7 @@ describe('conector: aplicar no Lattes simulado', () => {
       ),
     });
     expect(await applyOp(op, side.port)).toMatchObject({
-      detail: expect.stringMatching(/f_carga/),
+      detail: 'Outros campos mudaram no Lattes: Carga horária',
       status: 'erro',
     });
   });

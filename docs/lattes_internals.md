@@ -913,6 +913,47 @@ do mesmo ano. Esses três se comparam sem acento,
 caixa nem espaço nas pontas, e, quando a outra parte do item muda o campo na
 mesma fila, o antes e o depois valem. A exclusão de evento (`f_ctr=E`, seção 15) segue fora do conector.
 
+**Convidado, participante, forma, tipo, natureza e cidade (LAT-58, 15/10/2026,
+desligado).** Escritos atrás da chave `EDIT_EVENTO_ENABLED`, desligada até um
+teste acompanhado, e cobertos no Lattes simulado. O que cada um usa:
+
+- `f_cidade` ↔ `CIDADE-DO-EVENTO` e `F_FORMA` ↔ `FORMA-PARTICIPACAO`,
+  **observados** na passada de edição do censo (seção 20). Só a opção 40 foi
+  vista com o valor do XML ("Ouvinte"); que 38 e 39 gravem "Convidado" e
+  "Participante" vem do rótulo do rádio, **inferido**.
+- A natureza é o rótulo da opção de `F_COD_PROD` (**observado** no censo, nos
+  congressos e encontros). Ela segue o elemento do XML, e o editor não a deixa
+  trocar; o conector só confere que o Lattes tem a opção do elemento e não
+  envia nada quando é só isso.
+- `F_TPO` leva o texto do tipo (o valor de cada opção é o rótulo). Como a
+  edição de um convidado ou participante marca o tipo gravado continua sendo
+  **lacuna**: por isso o tipo vai sempre na conferência do "antes". Se a
+  página não mostrar o tipo gravado, nada é enviado, em vez de mandar `F_TPO`
+  vazio e apagar o tipo.
+- As regras do `check()` valem antes de enviar: convidado e participante
+  pedem tipo da lista da forma e título; ouvinte não tem tipo.
+
+Trocar a forma de ouvinte para convidado ou participante fica à mão: a
+página monta a lista `F_TPO` por script (`montaTipoApres()`; o censo de
+15/10/2026 marcou o campo como preenchido por script), e depois do envio a
+releitura do HTML não veria o tipo gravado, deixando o evento trocado com
+"não gravou". Pelo mesmo motivo, a troca de convidado ou participante para
+ouvinte não oferece "Desfazer".
+
+No teste acompanhado, nesta ordem:
+
+1. Num evento de teste de convidado, abrir o formulário pela lista e ver se o
+   tipo gravado vem marcado no HTML. Se não vier, toda alteração de convidado
+   e participante para em "Tipo de participação", sem enviar nada, e é isso
+   que precisa ser ajustado antes do resto (ler o tipo da chamada de
+   `montaTipoApres()`, se o script trouxer os argumentos).
+2. Se vier: trocar título e cidade e conferir a releitura.
+3. Trocar a forma de convidado para ouvinte e conferir a releitura.
+4. Conferir na exportação seguinte que `FORMA-PARTICIPACAO` e
+   `TIPO-PARTICIPACAO` vieram com os textos enviados.
+5. Só então decidir se a troca de ouvinte para convidado ou participante pode
+   ir pelo conector.
+
 O formulário não tem idioma, meio de divulgação, relevância, palavras-chave,
 áreas nem participantes, embora o XSD tenha esses campos no evento.
 `check()` exige forma de participação, tipo (menos para ouvinte), natureza,
@@ -969,6 +1010,51 @@ ocultas. **Observado.**
 (texto 100, entidade promotora, texto livre), `f_ano` (texto 4),
 `f_tipo_privacidade` e os ocultos `f_ctr` (`U`), `f_cod`, `f_seq`.
 `check()` exige nome e ano. **Observado.**
+
+**No conector (LAT-58, 15/10/2026, desligado).** Prêmios e formação
+complementar estão escritos em `src/bridge/edit-lists.ts`, cada um atrás da
+própria chave (`EDIT_PREMIO_ENABLED`, `EDIT_FORMACAO_COMPL_ENABLED`),
+desligada até um teste acompanhado, e cobertos no Lattes simulado. Nos dois, a
+linha não se acha pelo número: o prêmio não tem número na exportação, e o
+`f_seq` da formação complementar não bateu com `SEQUENCIA-FORMACAO` num dos
+itens do censo. O conector abre o formulário de cada linha da lista (pelo link
+da linha) e fica com o único cujos valores, sem acento nem caixa, são os do
+item; depois confere o "antes" estrito, envia o formulário como veio, com só
+os campos alterados trocados, e lê de volta.
+
+- Prêmio: nome, entidade promotora e ano, ligações **observadas** no censo
+  (cinco itens). Que o POST com `f_ctr=U` grave é **inferido**. O nome em
+  inglês não tem campo.
+- Formação complementar: carga horária e status, com o nível na conferência
+  e o curso e a instituição (os ocultos `f_curso_old` e `f_inst_old`) para
+  achar a linha. As ligações de carga, status, curso e instituição são
+  **observadas**; que `f_nivel` seja o `NIVEL` do XML é **inferido** (a
+  passada de edição não ligou o campo ao atributo). Instituição e curso
+  visíveis vêm desabilitados e não vão no envio; a releitura confere que não
+  mudaram. O envio vai para `FORM2` com o
+  `f_ctr` vazio que a página traz (**inferido** que grave assim), e N e I do
+  status como `EM_ANDAMENTO` e `INCOMPLETO` vêm do rótulo (**inferido**; só
+  "concluído" foi visto). Instituição e curso mudam só pelas buscas, e o
+  formulário não tem os anos nem o nome do curso em inglês: ficam à mão.
+
+Nos dois, o `f_ctr` não distingue sempre incluir de alterar (o da formação
+complementar vem vazio na inclusão e na edição). Depois do envio, o conector
+conta de novo as linhas da lista e acusa se ela ganhou uma. Sem nenhuma linha
+com o "antes", ele tenta achar a linha só pelos outros valores, e uma única
+achada assim vira "divergente" na conferência, em vez de "não encontrado".
+
+No teste acompanhado: num prêmio de teste, trocar a entidade promotora,
+conferir a releitura, que a lista não ganhou linha, e a exportação; numa
+formação complementar de teste, trocar a carga horária e o status para "em
+andamento", conferir a releitura, que a lista não ganhou linha, a exportação
+(`STATUS-DO-CURSO`) e que o curso e a instituição não mudaram.
+
+Ficam fora, sem caminho: as áreas de atuação (`prc_area_atuacao` serializa a
+grade em `f_area_l`, e o sentido das chaves `r` e `p` não foi lido) e as
+atividades da atuação (o link de edição é montado por JavaScript, seção 8; a
+recaptura em `lattes-formularios/recaptura-edicao.md` mostra onde ele está).
+Nos idiomas, as quatro proficiências já vão, e o código do idioma é do
+sistema no editor, com o nome atrelado a ele: não sobra campo a enviar.
 
 ### As grades de autores, palavras-chave, áreas e setores
 
@@ -1430,6 +1516,18 @@ com itens no currículo. **Observado**:
   sem formulário nenhum; o coletor passou a guardar a forma da página (tamanho
   e contagem de tags) para a próxima leitura dizer o que veio. A de linhas de
   pesquisa não tem link na lista (**inferido**: sai de uma função da página).
+- Das produções, só trabalhos técnicos e editoração estão na exportação do
+  dono, e as duas foram lidas só até o limite padrão de 8 itens. As outras
+  saíram "sem-itens" porque a passada de edição decidia isso só pelo XML, sem
+  abrir a lista; a atuação e a atividade saíram "ok" com 0 itens lidos, por
+  falta de link de edição reconhecível (a grade de atividades monta o link
+  por JavaScript, seção 8). Corrigido na LAT-58: a passada conta os links da
+  lista antes do limite, abre a lista mesmo sem item no XML e marca
+  `so-na-lista` e `sem-link`. O que rodar de novo está em
+  `lattes-formularios/recaptura-edicao.md`.
+- Nos trabalhos técnicos, `f_seq` ↔ `SEQUENCIA-PRODUCAO` bateu em 5 itens e
+  não bateu em 3, com os outros campos casando nos 8: o `f_seq` da lista não
+  é sempre o número do item na exportação. **Observado**; o porquê não se sabe.
 - Rádios com o texto antes ("Sim (o) Não (o)", nos projetos e patentes) saíram
   com o rótulo deslocado nesta captura; o coletor foi corrigido, e a próxima
   captura traz os rótulos certos.

@@ -9,7 +9,11 @@
 // - entra uma capacidade quando um tipo de mensagem novo passa a ser usado
 //   pelos dois lados;
 // - nenhuma sai, mesmo que deixe de ser usada: um lado mais novo sem ela
-//   pareceria o mais antigo.
+//   pareceria o mais antigo;
+// - a exceção são as capacidades das alterações atrás de chave (GATED_EDITS,
+//   em plan.ts): entram quando a chave liga e saem se ela voltar a desligar,
+//   porque anunciá-las com a chave desligada levaria o app a mandar operações
+//   que a extensão não tem no contrato. tests/edit-flags.test.ts cobra isso.
 
 export const BRIDGE_FEATURES = [
   /** Data da última publicação e pendência, lidas do menu do Lattes. */

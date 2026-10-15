@@ -37,7 +37,7 @@ pelo porquê, não pelo estado atual.
 - [`../ROADMAP.md`](../ROADMAP.md): o que vem a seguir. O estado de cada ticket fica no Linear (time LattesEditor).
 - [`../CHANGELOG.md`](../CHANGELOG.md): o que mudou em cada versão, gerado pelo semantic-release.
 - [`lattes-listas/`](lattes-listas/): a captura das listas dos formulários do Lattes, fonte de `src/schema/listas-lattes.json`.
-- [`lattes-formularios/`](lattes-formularios/): o censo dos formulários do Lattes (campos, opções e ligação com o XML), com o relatório de cobertura e como capturar.
+- [`lattes-formularios/`](lattes-formularios/): o censo dos formulários do Lattes (campos, opções e ligação com o XML), com o relatório de cobertura, como capturar e o que falta recapturar.
 - [`lattes_maximal_skeleton.xml`](lattes_maximal_skeleton.xml): esqueleto anotado com todos os elementos e atributos possíveis, do XSD, do DTD e de uma exportação real. É referência para leitura, não um XML válido.
 - [`img/`](img/): as imagens do README e da loja, sempre do currículo sintético.
 - [`../brand/`](../brand/): o símbolo, a assinatura e os ícones, com a grade de construção (`brand/LEIA-ME.txt`).

@@ -13,7 +13,7 @@
 
 import { exportCv, type ExportPort } from '../../src/bridge/export.ts';
 import { cvCodeFrom, isLogonPage, lattesIdFrom } from '../../src/bridge/lattes-html.ts';
-import { linkFields, type LinkOptions } from '../../src/census/link.ts';
+import { linkFields, linkOnlyFile, type LinkOptions } from '../../src/census/link.ts';
 import {
   type CensusFile,
   type CensusOptions,
@@ -110,8 +110,21 @@ async function capture(options: Options = {}): Promise<CensusFile> {
   return file;
 }
 
-async function link(xml?: string, options: LinkOptions = {}) {
-  return linkFields(port, await code(), xml ?? (await exportedXml()), options);
+/**
+ * Só a passada de edição. Com `download`, baixa um arquivo no formato do censo
+ * (sem formulários), que o relatório lê junto com as capturas
+ * (docs/lattes-formularios/recaptura-edicao.md).
+ */
+async function link(xml?: string, options: LinkOptions & { download?: boolean } = {}) {
+  const result = await linkFields(port, await code(), xml ?? (await exportedXml()), options);
+  if (options.download) {
+    const day = new Date().toISOString().slice(0, 10);
+    download(
+      linkOnlyFile(result, `lattes-editor ${__CENSO_VERSAO__}`),
+      `censo-${day}-ligacoes.json`,
+    );
+  }
+  return result;
 }
 
 /** As duas passadas num arquivo só: a captura e as ligações observadas. */

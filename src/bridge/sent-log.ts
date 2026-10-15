@@ -76,6 +76,11 @@ export function noUndoReason(op: BridgeOp): string | undefined {
   if (isDeleteOp(op)) {
     return 'Exclusão: o Lattes não tem como desfazer; para voltar, inclua o item de novo no próprio Lattes';
   }
+  // Desfazer a troca para ouvinte seria trocar a forma de ouvinte para outra,
+  // que o conector ainda não faz (edit-items.ts, planShape).
+  if (op.kind === 'evento' && op.set.F_FORMA === '40' && (op.expect.F_FORMA ?? '40') !== '40') {
+    return 'Voltar de ouvinte para convidado ou participante pelo conector espera o teste acompanhado; volte a forma no próprio Lattes';
+  }
   return undefined;
 }
 
@@ -95,6 +100,8 @@ export function undoOp(entry: SentEntry): BridgeOp | undefined {
   if (noUndoReason(op)) return undefined;
   const fields = Object.keys(op.set);
   if (fields.length === 0 || fields.some((f) => !(f in op.expect))) return undefined;
+  // Nada mudou (a natureza do evento, só conferida): não há o que desfazer.
+  if (fields.every((f) => op.set[f] === op.expect[f])) return undefined;
   const set = Object.fromEntries(fields.map((f) => [f, op.expect[f] ?? null]));
   const expect = { ...op.expect, ...op.set };
   return {
