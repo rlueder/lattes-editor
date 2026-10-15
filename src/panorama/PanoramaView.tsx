@@ -114,12 +114,6 @@ export function PanoramaView({ chartId, onOpen, root, sections, version }: Props
         <div className="section-main">
           <div className="section-body pano-body">
             <ChartBody chartId={chart.id} cv={cv} f={filters} />
-            <dl className="pano-sources">
-              <dt>De onde vem</dt>
-              <dd>{chart.sources}</dd>
-              <dt>O que não aparece</dt>
-              <dd>{chart.gaps}</dd>
-            </dl>
           </div>
         </div>
         <aside aria-label="Filtros do gráfico" className="section-panel">
