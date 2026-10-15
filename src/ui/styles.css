@@ -4711,6 +4711,9 @@ button.primary:hover:not(:disabled) {
      variável --topbar-h ainda não foi medida nesta tela. */
   min-height: 0;
   padding-bottom: 16px;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
 }
 
 .welcome-shell .section-main-empty {
@@ -4724,12 +4727,6 @@ button.primary:hover:not(:disabled) {
 }
 
 /* Arquivo arrastado sobre a janela: o painel principal acende. */
-.welcome-shell .content {
-  transition:
-    border-color var(--dur-fast) var(--ease-out),
-    background-color var(--dur-fast) var(--ease-out);
-}
-
 .welcome-shell.over .content {
   border-color: var(--accent-text);
   border-style: dashed;

@@ -324,7 +324,7 @@ export function App() {
         <ProductionForm
           key={`${production.form.sequencia}-${production.form.isNew}`}
           byChanges={production.formByChanges}
-          duplicateOf={(item) => closestInCv(item, session.doc.root)}
+          duplicateOf={(item, cache) => closestInCv(item, session.doc.root, cache)}
           isNew={production.form.isNew}
           item={production.form.item}
           knownAreas={production.areas}

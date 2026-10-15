@@ -10,7 +10,7 @@ import {
 } from '../src/import-export/incoming.ts';
 import { loadCv } from '../src/model/document.ts';
 import { findBySequencia, pendingItems } from '../src/model/production.ts';
-import { getAttr, parseXml, type XElement } from '../src/model/xml.ts';
+import { getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
 import { productionItems } from '../src/review/consistency.ts';
 import {
   authorKey,
@@ -280,6 +280,17 @@ describe('pré-diff e deduplicação explicável (LAT-45)', () => {
     const itself = productionItems(root)[0]!;
     expect(closestInCv(structuredClone(itself), root)).toBeUndefined();
     expect(closestInCv(one(artigo(3, { titulo: 'Outra coisa' })), root)).toBeUndefined();
+    // O mesmo cache entre edições: o currículo é lido uma vez, o rascunho a cada vez.
+    const cache = new Map();
+    expect(closestInCv(draft, root, cache)?.level).toBe('duplicata');
+    const read = cache.get(itself);
+    setAttr(
+      draft.children.find((c) => c.kind === 'element') as XElement,
+      'TITULO-DO-ARTIGO',
+      'Outra coisa',
+    );
+    expect(closestInCv(draft, root, cache)).toBeUndefined();
+    expect(cache.get(itself)).toBe(read);
   });
 
   it('uma leva grande contra um currículo grande lê cada item uma vez só', () => {

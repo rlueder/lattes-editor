@@ -20,7 +20,7 @@ import {
 } from '../model/production.ts';
 import { uniqueProblems, validateItem } from '../model/validate.ts';
 import type { XElement } from '../model/xml.ts';
-import type { Candidate } from '../review/dedup.ts';
+import type { Candidate, ProfileCache } from '../review/dedup.ts';
 import { lattesSchema as schema } from '../schema/lattes.ts';
 import { AttributeField } from '../ui/AttributeField.tsx';
 import { DiscardConfirm } from '../ui/dialogs.tsx';
@@ -54,7 +54,7 @@ interface Props {
    * O item do currículo com que este se parece (LAT-45), para um item novo
    * não virar duplicata sem a pessoa saber; ela decide se salva.
    */
-  duplicateOf?: (item: XElement) => Candidate | undefined;
+  duplicateOf?: (item: XElement, cache: ProfileCache) => Candidate | undefined;
   isNew: boolean;
   item: XElement;
   knownAreas: KnowledgeArea[];

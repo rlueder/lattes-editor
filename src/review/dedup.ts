@@ -328,12 +328,20 @@ export function preDiff(
 /**
  * O item do currículo com que um item em criação mais se parece (o
  * formulário de produção nova, inclusive o preenchido pelo DOI). Um item com
- * o mesmo número de sequência é ele mesmo e fica de fora.
+ * o mesmo número de sequência é ele mesmo e fica de fora. cache: o mesmo a
+ * cada edição do formulário, para o currículo ser lido uma vez só.
  */
-export function closestInCv(item: XElement, root: XElement): Candidate | undefined {
+export function closestInCv(
+  item: XElement,
+  root: XElement,
+  cache: ProfileCache = new Map(),
+): Candidate | undefined {
   const seq = getAttr(item, 'SEQUENCIA-PRODUCAO');
   const existing = productionItems(root).filter(
     (el) => seq === undefined || getAttr(el, 'SEQUENCIA-PRODUCAO') !== seq,
   );
-  return candidatesFor(item, existing)[0];
+  // O rascunho muda a cada tecla e é lido de novo; os itens do currículo, que
+  // não mudam com o formulário aberto, ficam no cache de quem chama.
+  cache.delete(item);
+  return candidatesFor(item, existing, cache)[0];
 }
