@@ -53,7 +53,7 @@ export function YearField({ common, label, onCommit, value }: Props) {
         autoComplete="off"
         inputMode="numeric"
         maxLength={4}
-        placeholder="aaaa"
+        placeholder="AAAA"
         type="text"
         value={draft}
         onBlur={finish}

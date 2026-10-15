@@ -82,10 +82,15 @@ const VIGIA_HEADING: Record<ContractReport['status'], string> = {
   sessao: 'A sessão do Lattes expirou',
 };
 
+/**
+ * Pelo tipo da operação, não pelo nome do formulário: GN_TEC é o nome do de
+ * eventos e também o de editoração e outras produções técnicas.
+ */
 const FORM_TITLE: Record<string, string> = {
-  GN_ATIV_VINC: 'Vínculo',
-  GN_IDIOMA: 'Idioma',
-  RES: 'Resumo',
+  evento: 'Participação em eventos',
+  idioma: 'Idioma',
+  resumo: 'Resumo',
+  vinculo: 'Vínculo',
 };
 
 function renderReport(report: ContractReport | undefined): void {
@@ -111,7 +116,7 @@ function renderReport(report: ContractReport | undefined): void {
     ...report.menu.filter((m) => !m.found).map((m) => `Menu: link ${m.proc} sumiu`),
     ...report.forms.flatMap((f) =>
       f.status === 'sem-amostra'
-        ? [`${FORM_TITLE[f.form] ?? f.form}: sem amostra (${f.detail ?? ''})`]
+        ? [`${FORM_TITLE[f.kind] ?? f.form}: sem amostra (${f.detail ?? ''})`]
         : f.drifts.map((d) => `${driftText(d)}${isBreaking(d) ? '' : ' (não impede o envio)'}`),
     ),
     // Lista do Lattes diferente da do editor: os campos tipados precisam de

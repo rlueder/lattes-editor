@@ -51,8 +51,8 @@ export const SECTION_DESCRIPTIONS: Record<string, string> = {
   projetos: 'Projetos de pesquisa, extensão e desenvolvimento, dentro de uma atuação.',
 };
 
-/** O Importar não lê estas seções: o item novo segue pela lista de alterações. */
-const BY_CHANGES = 'O item novo vai ao Lattes pela lista de alterações, não pelo Importar.';
+/** O que acontece com o item novo destas seções (src/model/general-items.ts). */
+const BY_CHANGES = 'O item novo vai ao Lattes por "Enviar ao Lattes".';
 
 export const EMPTY_NOTES: Record<string, string> = {
   atuacao: BY_CHANGES,

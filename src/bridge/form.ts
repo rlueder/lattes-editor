@@ -40,8 +40,8 @@ export function successfulPairs(controls: FormControl[]): Pairs {
  * No evento de ouvinte (F_FORMA 40), a lista F_TPO vem vazia no HTML e só
  * ganha opções no clique da forma (montaTipoApres(); para ouvinte, só a
  * opção vazia). O envio leva F_TPO vazio, como a página mandaria depois de
- * montar a lista. Inferido: nenhum evento foi enviado (docs/lattes_internals.md,
- * seção 16).
+ * montar a lista. Observado: o POST de 14/10/2026 foi com F_TPO vazio e o
+ * Lattes gravou (docs/lattes_internals.md, seção 16).
  */
 export function withCheckRules(form: string, controls: FormControl[], pairs: Pairs): Pairs {
   // GN_TEC é também o nome do formulário de editoração e de outras produções

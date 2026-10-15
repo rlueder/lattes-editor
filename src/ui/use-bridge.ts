@@ -18,7 +18,7 @@ import { sameCv } from '../bridge/lattes-html.ts';
 import type { LattesStatus } from '../bridge/lattes-status.ts';
 import { INITIAL_LINK, type Link, nextLink } from '../bridge/link.ts';
 import type { PhotoFailure } from '../bridge/photo.ts';
-import { type BridgeOp, planChanges } from '../bridge/plan.ts';
+import { type BridgeOp, planChanges, planOptionsFor } from '../bridge/plan.ts';
 import {
   type BridgeMessage,
   type EditorMessage,
@@ -168,7 +168,7 @@ export interface BridgeState {
   link: Link;
   /** A resposta do último pedido de troca da foto. */
   photoUpload?: PhotoUploadReading;
-  /** Alterações que a extensão sabe levar e as que ficam para copiar à mão. */
+  /** Alterações que a extensão sabe levar e as que ela ainda não leva. */
   plan: ReturnType<typeof planChanges>;
   /** Recarrega a aba do Lattes pela extensão (sessão vencida leva ao login). */
   reloadLattes: () => void;
@@ -406,9 +406,10 @@ export function useBridge(
         ? planChanges(
             groups.flatMap((g) => g.entries),
             session.doc.root,
+            planOptionsFor(features),
           )
         : { ops: [], unsupported: [] },
-    [session, groups],
+    [session, groups, features],
   );
 
   return {

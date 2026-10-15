@@ -1,6 +1,6 @@
 // Aba "Enviado" do painel Enviar ao Lattes: o que o conector gravou e
-// conferiu, por dia. Cada campo mostra o rótulo em cima, o valor de antes
-// riscado e o de depois logo abaixo. O Lattes guarda essas gravações como pendentes até
+// conferiu, por dia. Cada campo mostra o rótulo em cima e, embaixo, o valor
+// de antes riscado e o de depois, lado a lado (FieldChange). O Lattes guarda essas gravações como pendentes até
 // "Enviar ao CNPq" e não tem como descartá-las; desfazer daqui manda de
 // volta o valor de antes, pela mesma confirmação de qualquer envio. As
 // tentativas que não terminaram conferidas aparecem marcadas, com o motivo, e
@@ -12,6 +12,7 @@ import {
   failed,
   groupByDay,
   noUndoReason,
+  opBadge,
   type SentEntry,
   sentLogFileName,
   sentLogText,
@@ -19,6 +20,7 @@ import {
   undoOp,
 } from '../bridge/sent-log.ts';
 import { saveBytes } from '../desktop/native.ts';
+import { FieldChange } from '../ui/FieldChange.tsx';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { SendConfirm } from './SendConfirm.tsx';
 
@@ -79,6 +81,11 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
                 >
                   <div className="sent-head">
                     <strong>{entry.op.label}</strong>
+                    {opBadge(entry.op) && (
+                      <span className={`change-kind kind-${opBadge(entry.op)}`}>
+                        {opBadge(entry.op)}
+                      </span>
+                    )}
                     <span className="muted sent-time">{timeLabel(entry.sentAt)}</span>
                     {entry.outcome && (
                       <span className="tag warn">{OUTCOME_LABEL[entry.outcome.status]}</span>
@@ -105,23 +112,17 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
                     <p className="muted sent-outcome">{entry.outcome.detail}</p>
                   )}
                   {noUndo && !failed(entry) && <p className="muted sent-outcome">{noUndo}</p>}
-                  <dl className="sent-fields">
-                    {entry.rows.map((row) => (
-                      <div key={row.name} className="sent-field">
-                        <dt>{row.label}</dt>
-                        <dd>
-                          <span className="sent-before">
-                            <span className="sr-only">Antes: </span>
-                            {row.before || '(vazio)'}
-                          </span>
-                          <span className="sent-after">
-                            <span className="sr-only">Depois: </span>
-                            {row.after || '(vazio)'}
-                          </span>
-                        </dd>
-                      </div>
+                  <div className="sent-fields">
+                    {entry.rows.map((row, i) => (
+                      <FieldChange
+                        key={row.name}
+                        after={row.after}
+                        before={row.before}
+                        captions={i === 0}
+                        label={row.label}
+                      />
                     ))}
-                  </dl>
+                  </div>
                 </li>
               );
             })}

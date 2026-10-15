@@ -22,7 +22,7 @@ describe('typesForSection', () => {
 
   it('Patentes cria todos os registros: sem o aviso de "só a patente"', () => {
     expect(EMPTY_NOTES.patentes).not.toMatch(/só a patente|ainda não/);
-    expect(EMPTY_NOTES.patentes).toMatch(/lista de alterações/);
+    expect(EMPTY_NOTES.patentes).toMatch(/Enviar ao Lattes/);
     expect(NEW_GENERAL_LABELS.patentes).toBe('Nova patente ou registro');
   });
 });

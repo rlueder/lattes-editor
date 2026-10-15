@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { applyOp, type LattesPort } from '../src/bridge/apply.ts';
+import { BRIDGE_FEATURES } from '../src/bridge/compat.ts';
 import {
   blocksKind,
   checkContract,
@@ -11,7 +12,7 @@ import {
 import {
   countryCode,
   countryName,
-  EDIT_ITEMS_ENABLED,
+  EDIT_OUVINTE_ENABLED,
   editContract,
   EVENTO_SPEC,
   type EventoOp,
@@ -19,7 +20,12 @@ import {
 } from '../src/bridge/edit-items.ts';
 import { opRows } from '../src/bridge/field-labels.ts';
 import { withCheckRules } from '../src/bridge/form.ts';
-import { type BridgeOp, planChanges, type Unsupported } from '../src/bridge/plan.ts';
+import {
+  type BridgeOp,
+  planChanges,
+  planOptionsFor,
+  type Unsupported,
+} from '../src/bridge/plan.ts';
 import { sentEntry, undoOp } from '../src/bridge/sent-log.ts';
 import { splitByRoute } from '../src/import-export/send-routes.ts';
 import { diffDocuments, resolvePath } from '../src/model/changes.ts';
@@ -69,7 +75,7 @@ const child = (item: XElement, prefix: string) =>
   item.children.find((c): c is XElement => c.kind === 'element' && c.name.startsWith(prefix))!;
 
 /** As mudanças depois de editar a cópia, e o plano com a chave ligada (ou não). */
-function planAfter(edit: (root: XElement) => void, editItems = true) {
+function planAfter(edit: (root: XElement) => void, editOuvinte = true) {
   const original = parseXml(XML).root;
   const working = parseXml(XML).root;
   edit(working);
@@ -79,7 +85,7 @@ function planAfter(edit: (root: XElement) => void, editItems = true) {
     plan: planChanges(
       changes.map((change) => ({ change, itemTitle: 'Congresso Brasileiro de Exemplo' })),
       working,
-      { editItems },
+      { editOuvinte },
     ),
     working,
   };
@@ -147,20 +153,56 @@ const eventForm = (fn: (html: string) => string) => faults.rewritePages(/^PKG_EV
 // ---------------------------------------------------------------- testes
 
 describe('alteração de evento: chave', () => {
-  it('fica desligada por padrão: o evento segue à mão e o contrato não confere o formulário', () => {
-    expect(EDIT_ITEMS_ENABLED).toBe(false);
-    expect(LATTES_CONTRACT.forms.evento).toBeUndefined();
-    expect(LATTES_CONTRACT.menu).not.toContain('pkg_evento.lista');
+  it('fica ligada: o contrato confere o formulário, e o plano liga com as capacidades da extensão', () => {
+    expect(EDIT_OUVINTE_ENABLED).toBe(true);
+    expect(LATTES_CONTRACT.forms.evento).toEqual(EVENTO_SPEC);
+    expect(LATTES_CONTRACT.menu).toContain('pkg_evento.lista');
     const edit = (root: XElement) => setAttr(basics(root), 'TITULO', 'Novo título');
     const original = parseXml(XML).root;
     const working = parseXml(XML).root;
     edit(working);
     const entries = diffDocuments(original, working).map((change) => ({ change, itemTitle: '' }));
-    const off = planChanges(entries, working);
-    expect(off.ops).toEqual([]);
-    expect(off.unsupported[0]!.reason).toBe('Formulário não suportado ainda');
+    // Sem as opções, o evento fica à mão: esquecer as capacidades não manda nada à extensão.
+    const semOpcoes = planChanges(entries, working);
+    expect(semOpcoes.ops).toEqual([]);
+    expect(semOpcoes.unsupported[0]!.reason).toBe('Formulário não suportado ainda');
     expect(planAfter(edit, false).plan.ops).toEqual([]);
     expect(planAfter(edit).plan.ops.map((o) => o.kind)).toEqual(['evento']);
+  });
+
+  it('só vai a uma extensão que anuncia a alteração de evento', () => {
+    expect(BRIDGE_FEATURES).toContain('alterar-evento');
+    expect(planOptionsFor(BRIDGE_FEATURES)).toEqual({ editOuvinte: true });
+    expect(planOptionsFor(['estado-lattes', 'curriculo'])).toEqual({ editOuvinte: false });
+    expect(planOptionsFor([])).toEqual({ editOuvinte: false });
+    const original = parseXml(XML).root;
+    const working = parseXml(XML).root;
+    setAttr(basics(working), 'TITULO', 'Novo título');
+    const entries = diffDocuments(original, working).map((change) => ({ change, itemTitle: '' }));
+    const antiga = planChanges(entries, working, planOptionsFor(['estado-lattes']));
+    expect(antiga.ops).toEqual([]);
+    expect(antiga.unsupported.map((u) => u.reason)).toEqual(['Formulário não suportado ainda']);
+    const nova = planChanges(entries, working, planOptionsFor(BRIDGE_FEATURES));
+    expect(nova.ops.map((o) => o.kind)).toEqual(['evento']);
+  });
+
+  it('ligada, convidado e participante continuam à mão, e a exclusão segue desligada', () => {
+    const seminario = (root: XElement) =>
+      child(find(root, 'PARTICIPACAO-EM-SEMINARIO', '13'), 'DADOS-BASICOS');
+    const original = parseXml(XML).root;
+    const working = parseXml(XML).root;
+    setAttr(seminario(working), 'TITULO', 'Outra palestra');
+    const container = find(working, 'PARTICIPACAO-EM-EVENTOS-CONGRESSOS');
+    container.children = container.children.filter(
+      (c) => c.kind !== 'element' || getAttr(c, 'SEQUENCIA-PRODUCAO') !== '14',
+    );
+    const entries = diffDocuments(original, working).map((change) => ({ change, itemTitle: '' }));
+    const { ops, unsupported } = planChanges(entries, working, planOptionsFor(BRIDGE_FEATURES));
+    expect(ops).toEqual([]);
+    expect(unsupported.map((u) => u.reason)).toEqual([
+      expect.stringMatching(/só a participação como ouvinte; a edição como Convidado/),
+      'Excluir pelo conector: desligado até um teste acompanhado no Lattes',
+    ]);
   });
 
   it('com a chave ligada, a alteração vai pelo conector no painel Enviar ao Lattes', () => {
@@ -180,7 +222,7 @@ describe('alteração de evento: chave', () => {
     expect(routed.conector[0]!.entries.map((e) => e.change.element)).toEqual([
       'DADOS-BASICOS-DA-PARTICIPACAO-EM-CONGRESSO',
     ]);
-    expect(routed.mao[0]!.entries.map((e) => e.change.element)).toEqual([
+    expect(routed.pendente[0]!.entries.map((e) => e.change.element)).toEqual([
       'DETALHAMENTO-DA-PARTICIPACAO-EM-CONGRESSO',
     ]);
     const off = planAfter(edit, false).plan;

@@ -74,7 +74,7 @@ type GatedKind = CreateKind | 'evento' | BiographicKind | DeleteOp['kind'];
 export interface Contract {
   /**
    * A inclusão só entra com CREATE_ITEMS_ENABLED; os dados gerais, com
-   * BIOGRAPHIC_OPS_ENABLED; os eventos, com EDIT_ITEMS_ENABLED.
+   * BIOGRAPHIC_OPS_ENABLED; os eventos, com EDIT_OUVINTE_ENABLED.
    */
   forms: Omit<Record<BridgeOp['kind'], FormSpec>, GatedKind> & Partial<Record<GatedKind, FormSpec>>;
   /** Procedimentos que precisam estar linkados no menu do currículo. */

@@ -1,4 +1,4 @@
-// Lista de alterações a levar à mão ao Lattes, recalculada a cada edição, e a
+// Lista de alterações a levar ao Lattes, recalculada a cada edição, e a
 // marcação de "feito", guardada com a cópia de trabalho.
 
 import { type Dispatch, type SetStateAction, useMemo } from 'react';

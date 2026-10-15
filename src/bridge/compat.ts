@@ -28,6 +28,8 @@ export const BRIDGE_FEATURES = [
   'importar',
   /** Áreas, agências, busca de instituição e cursos lidos no Lattes (src/bridge/lattes-lists.ts). */
   'listas-lattes',
+  /** Alteração de evento de ouvinte, com o formulário de eventos no contrato (src/bridge/edit-items.ts). */
+  'alterar-evento',
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

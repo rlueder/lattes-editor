@@ -8,6 +8,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { arrowJumpAllowed, nextJump } from './jump-keys.ts';
 import { Tip } from './primitives/Tip.tsx';
 
 /** Igual ao max-width de .jump-label (14ch). */
@@ -37,6 +38,7 @@ function setHash(id: string): void {
 }
 
 export function JumpBar({
+  arrowKeys = false,
   entries,
   focusTarget = false,
   label,
@@ -44,6 +46,8 @@ export function JumpBar({
   linkable = false,
   vertical = false,
 }: {
+  /** ↓ e ↑ pulam para a próxima divisão e a anterior (jump-keys.ts). */
+  arrowKeys?: boolean;
   entries: JumpEntry[];
   /** O clique também leva o foco ao título (que precisa de tabIndex -1). */
   focusTarget?: boolean;
@@ -56,6 +60,8 @@ export function JumpBar({
 }) {
   const barRef = useRef<HTMLElement>(null);
   const [active, setActive] = useState(entries[0]?.id);
+  /** O que o leitor de tela ouve depois de um salto pelas setas. */
+  const [announced, setAnnounced] = useState('');
   // A lista é recriada a cada render; a chave só muda quando as divisões mudam.
   const ids = entries.map((e) => e.id).join('|');
 
@@ -77,6 +83,38 @@ export function JumpBar({
   // Depois de um clique, a rolagem suave passa por outras divisões; o chip
   // clicado fica ativo até a rolagem parar.
   const lockedTo = useRef<string | null>(null);
+
+  const jump = (id: string) => {
+    if (linkable) setHash(id);
+    setActive(id);
+    lockedTo.current = id;
+    const target = document.getElementById(id);
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (focusTarget) target?.focus({ preventScroll: true });
+  };
+  const jumpRef = useRef(jump);
+  jumpRef.current = jump;
+  const activeRef = useRef(active);
+  activeRef.current = active;
+
+  // ↓ e ↑ fora de campos e de menus abertos: a próxima divisão ou a anterior,
+  // como o clique. Na primeira e na última, a tecla segue para a rolagem.
+  useEffect(() => {
+    if (!arrowKeys) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!arrowJumpAllowed(e, document)) return;
+      const list = ids.split('|');
+      const next = nextJump(list, activeRef.current, e.key === 'ArrowDown' ? 1 : -1);
+      if (next === undefined) return;
+      e.preventDefault();
+      jumpRef.current(next);
+      setAnnounced(entries.find((x) => x.id === next)?.label ?? '');
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // entries acompanha ids: os dois mudam juntos.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [arrowKeys, ids]);
 
   useEffect(() => {
     const headIds = ids.split('|');
@@ -145,9 +183,15 @@ export function JumpBar({
   return (
     <nav
       ref={barRef}
+      aria-keyshortcuts={arrowKeys ? 'ArrowDown ArrowUp' : undefined}
       aria-label={label}
       className={`jump-bar ${level}${vertical ? ' vertical' : ''}`}
     >
+      {arrowKeys && (
+        <span aria-live="polite" className="sr-only">
+          {announced}
+        </span>
+      )}
       {entries.map((e) => {
         const chip = (
           <a
@@ -157,12 +201,7 @@ export function JumpBar({
             href={`#${e.id}`}
             onClick={(ev) => {
               ev.preventDefault();
-              if (linkable) setHash(e.id);
-              setActive(e.id);
-              lockedTo.current = e.id;
-              const target = document.getElementById(e.id);
-              target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              if (focusTarget) target?.focus({ preventScroll: true });
+              jump(e.id);
             }}
           >
             <span className="jump-label">{e.label}</span>

@@ -117,7 +117,6 @@ ligação do formulário com os elementos do XML foi conferida.
 - DADOS-BASICOS-DE-EDITORACAO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica) (aceita: a opção V (impresso e mídia eletrônica) não apareceu em nenhum item da exportação; VARIOS seria palpite, então o editor fica com o XSD até um item com V mostrar o valor)
 - DADOS-BASICOS-DE-EDITORACAO@NATUREZA: opções do Lattes sem valor conhecido no XSD (8 valores): 2D9 (Outro) (aceita: 2D9 é "Outro" no Lattes e o XSD tem OUTRA; nenhum item com 2D9 mostrou o valor gravado)
 - DADOS-BASICOS-DO-TRABALHO-TECNICO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica) (aceita: a opção V (impresso e mídia eletrônica) não apareceu em nenhum item da exportação; VARIOS seria palpite)
-- POS-DOUTORADO@STATUS-DO-CURSO: o campo F_STATUS tem opções no Lattes e o editor mostra texto livre (aceita: ligado em typed-choices.ts no #81 (POSTDOC_STATUS), ainda fora da main)
 - DETALHAMENTO-DO-TRABALHO-TECNICO@DISPONIBILIDADE: o campo f_disp tem opções no Lattes e o editor mostra texto livre (aceita: o XML guarda o texto da opção (Restrita, Irrestrita), mas a grafia exata não foi registrada na captura de 15/10/2026; a próxima registra em spelling)
 
 ## Lacunas prováveis de opções (ligação inferida)
@@ -149,7 +148,6 @@ não cobra estas até a passada de edição observar a ligação.
 - DADOS-BASICOS-DO-TEXTO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
 - DADOS-BASICOS-DO-TRABALHO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
 - DADOS-BASICOS-DA-TRADUCAO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DOUTORADO@TIPO-DOUTORADO: o campo f_tpo_doutorado tem opções no Lattes e o editor mostra texto livre
 - DADOS-GERAIS@PCD: o campo f_pcd tem opções no Lattes e o editor mostra texto livre
 - DETALHAMENTO-DO-PROCESSOS-OU-TECNICAS@DISPONIBILIDADE: o campo f_disp tem opções no Lattes e o editor mostra texto livre
 - DETALHAMENTO-DO-PRODUTO-TECNOLOGICO@DISPONIBILIDADE: o campo f_disp tem opções no Lattes e o editor mostra texto livre
@@ -341,7 +339,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 - `DOUTORADO@STATUS-DO-CURSO` ← `F_STATUS` (documentado)
 - `DOUTORADO@FLAG-BOLSA` ← `F_BOLSA` (observado)
-- `DOUTORADO@TIPO-DOUTORADO` ← `f_tpo_doutorado` (inferido)
+- `DOUTORADO@TIPO-DOUTORADO` ← `f_tpo_doutorado` (observado)
 
 **texto livre**
 

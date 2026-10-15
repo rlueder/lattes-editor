@@ -12,7 +12,6 @@ import { ProductionForm } from '../forms/ProductionForm.tsx';
 import { useGeneralItem } from '../forms/use-general-item.ts';
 import { type Session, useProduction } from '../forms/use-production.ts';
 import { ExportPanel } from '../import-export/ExportPanel.tsx';
-import { requestTab } from '../import-export/send-routes.ts';
 import { encodeCv, loadCv, maxSequenciaProducao } from '../model/document.ts';
 import { importableTypes } from '../model/production.ts';
 import {
@@ -33,7 +32,7 @@ import { HistoryDialog, ReloadConfirm } from './dialogs.tsx';
 import { EditorContext } from './editor-context.ts';
 import { parseHash } from './hash-route.ts';
 import { connectionOf, noticesFor } from './notifications.ts';
-import { paletteActions, paletteEntries, type PaletteEntry } from './palette-search.ts';
+import { allEntries, type PaletteEntry } from './palette-search.ts';
 import { PendingBanner } from './PendingBanner.tsx';
 import { profileOf } from './profile.ts';
 import { ReferenceContext } from './reference-context.ts';
@@ -48,9 +47,10 @@ import { useTheme } from './theme.ts';
 import { type SaveState, Topbar } from './Topbar.tsx';
 import { useBridge } from './use-bridge.ts';
 import { useChanges } from './use-changes.ts';
+import { useFocusShell } from './use-focus-mode.ts';
 import { useHistoryDialog } from './use-history-dialog.ts';
 import { useLattesOpen } from './use-lattes-open.ts';
-import { useNavigate } from './use-navigate.ts';
+import { useNavigate, useScrollToPendingAnchor } from './use-navigate.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
 import { usePhotoChange } from './use-photo-change.tsx';
 import { useTopbarHeight } from './use-topbar-height.ts';
@@ -70,7 +70,6 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [sectionId, setSectionId] = useState('dados-gerais');
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [showEmpty, setShowEmpty] = useState(false);
   const [theme, setTheme] = useTheme();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -81,6 +80,7 @@ export function App() {
   const topbarRef = useRef<HTMLElement>(null);
 
   useTopbarHeight(topbarRef, session);
+  const focusShell = useFocusShell(paletteOpen, sectionId); // modo foco, com ?leitura
   const update = useUpdates();
 
   // Restaura a cópia de trabalho da última sessão.
@@ -136,7 +136,7 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [session, version],
   );
-  const entries = useMemo(() => [...paletteEntries(sections), ...paletteActions()], [sections]);
+  const entries = useMemo(() => allEntries(sections), [sections]);
   const referenceIndex = useMemo(
     () => (session ? buildReferenceIndex(session.doc.root) : undefined),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -155,7 +155,8 @@ export function App() {
   const print = usePrint(session !== null);
 
   /** Vai para a seção (e o grupo ou ano) e mantém a URL legível em sincronia. */
-  const navigate = useNavigate(sectionId, setSectionId, pendingAnchor);
+  // No modo foco, o painel revelado de onde veio a escolha fecha na hora.
+  const navigate = useNavigate(sectionId, setSectionId, pendingAnchor, focusShell.onNavigate);
   const versions = useVersions(session?.doc.root, navigate);
 
   // Um link "#atuacao/atuacao-profissional/2020", aberto ou editado à mão, leva direto lá.
@@ -174,24 +175,14 @@ export function App() {
 
   const jump = (entry: PaletteEntry) => {
     if (entry.action) {
-      if (entry.action === 'exportar') setExportOpen(true);
-      else if (entry.action === 'diagnostico') setDiagnosisOpen(true);
-      else if (entry.action === 'novo') setPickerOpen(true);
-      else if (entry.action === 'versoes') void versions.show();
+      if (entry.action === 'novo') setPickerOpen(true);
       else startNewItem(entry.action, production.startNew);
       return;
     }
     navigate({ anchor: entry.anchorId, sectionId: entry.sectionId });
   };
 
-  // Rola até o grupo escolhido no ⌘K depois que a seção renderiza.
-  useEffect(() => {
-    const anchor = pendingAnchor.current;
-    if (!anchor) return;
-    pendingAnchor.current = null;
-    const el = document.getElementById(anchor);
-    el?.scrollIntoView({ block: 'start' });
-  });
+  useScrollToPendingAnchor(pendingAnchor);
 
   const openFile = async (file: File) => {
     setError(null);
@@ -259,17 +250,17 @@ export function App() {
   const profile = profileOf(session.doc, session.meta.fileName, exportedOn);
 
   return (
-    <ShellWithLists features={bridge.features}>
+    <ShellWithLists features={bridge.features} focus={focusShell}>
       <Topbar
         ref={topbarRef}
+        focus={focusShell.menuItem}
         modified={modified}
         notices={noticesOf(bridge, update, devExtensionFolder)}
         pendingCount={production.pending.length + changes.open}
         saveState={saveState}
-        showEmpty={showEmpty}
-        strip={stripFor(production.pending.length + changes.open, bridge)}
         theme={theme}
         onClose={closeFile}
+        onDiagnosis={() => setDiagnosisOpen(true)}
         onExport={openExport}
         onHistory={() => void history.show()}
         onNewItem={() => setPickerOpen(true)}
@@ -279,13 +270,8 @@ export function App() {
         onSave={() =>
           void saveBytes(encodeCv(session.doc, session.meta.encoding), session.meta.fileName)
         }
-        onShowEmpty={setShowEmpty}
-        onStripOpen={(kind) => {
-          if (kind === 'pendencia-desconhecida') return setDiagnosisOpen(true);
-          if (kind === 'no-lattes') requestTab('enviado');
-          openExport();
-        }}
         onTheme={setTheme}
+        onVersions={() => void versions.show()}
       />
 
       <Sidebar
@@ -314,7 +300,6 @@ export function App() {
             {section && (
               <SectionView
                 section={section}
-                showEmpty={showEmpty}
                 onEdit={onEdit}
                 onNewGeneral={general.open}
                 onNewItem={production.startNew}
@@ -358,7 +343,9 @@ export function App() {
         file={exportFile}
         open={exportOpen}
         pending={production.summaries}
+        strip={stripFor(production.pending.length + changes.open, bridge)}
         onClose={() => setExportOpen(false)}
+        onDiagnosis={() => setDiagnosisOpen(true)}
         onDiscard={changes.discard}
         onDiscardField={changes.discardField}
         onDownload={() => exportFile && void saveBytes(exportFile.bytes, exportFile.fileName)}
@@ -424,7 +411,7 @@ function stripFor(editorChanges: number, bridge: { lattes?: LattesStatus; sent: 
 
 /** O sino: por que o Lattes não foi lido, um lado desatualizado, armazenamento sem chave. */
 function noticesOf(
-  bridge: { lattes?: LattesStatus; link: Link },
+  bridge: { lattes?: LattesStatus; link: Link; sent: SentEntry[] },
   update: UpdateState,
   devExtensionFolder?: string,
 ) {
@@ -433,6 +420,7 @@ function noticesOf(
     connection: connectionOf(bridge.link, Boolean(bridge.lattes)),
     devExtensionFolder,
     storage: storageStatus().status,
+    unknownPending: stripFor(0, bridge).segments.some((x) => x.kind === 'pendencia-desconhecida'),
     update,
   });
 }

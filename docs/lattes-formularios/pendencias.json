@@ -13,10 +13,6 @@
       "reason": "a opção V (impresso e mídia eletrônica) não apareceu em nenhum item da exportação; VARIOS seria palpite"
     },
     {
-      "key": "lista-nao-ligada:formacao-AP-5:POS-DOUTORADO@STATUS-DO-CURSO:F_STATUS",
-      "reason": "ligado em typed-choices.ts no #81 (POSTDOC_STATUS), ainda fora da main"
-    },
-    {
       "key": "lista-nao-ligada:trabalho-tecnico:DETALHAMENTO-DO-TRABALHO-TECNICO@DISPONIBILIDADE:f_disp",
       "reason": "o XML guarda o texto da opção (Restrita, Irrestrita), mas a grafia exata não foi registrada na captura de 15/10/2026; a próxima registra em spelling"
     }

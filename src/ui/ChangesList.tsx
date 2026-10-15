@@ -1,31 +1,30 @@
-// Lista "Alterações a enviar ao Lattes": o que mudou e o Importar não leva,
-// agrupado por seção do Lattes, com antes e depois, botão de copiar por campo
-// e marcação de feito.
+// Lista "Alterações a enviar ao Lattes": o que mudou nas seções e nos itens
+// que já estão no Lattes, agrupado por seção, com antes e depois e o
+// descartar por campo. No desenho do ⌘K: títulos de grupo, linhas sem caixa,
+// fios entre os itens; o caminho (extensão, não enviado) fica uma vez, no
+// título da parte do painel, e não em cada item.
 
-import { RouteTag } from '../import-export/RouteTag.tsx';
-import type { SendRoute } from '../import-export/send-routes.ts';
 import { elementLabel } from '../labels/labels.ts';
 import type { ChangeEntry, ChangeGroup } from './changes-view.ts';
-import { CopyButton } from './CopyButton.tsx';
 import { displayValue } from './display.ts';
+import { FieldChange } from './FieldChange.tsx';
 import { TrashIcon } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
 
-const KIND_LABEL = { alterado: 'alterado', novo: 'incluir', removido: 'excluir' } as const;
+/** Selo só para as exceções: a lista inteira é de alterações, e a alteração de um item não tem selo. */
+const KIND_BADGE = { alterado: undefined, novo: 'novo', removido: 'removido' } as const;
 
 interface Props {
   groups: ChangeGroup[];
-  /** Como estas alterações vão ao Lattes: o selo aparece em cada uma. */
-  route?: SendRoute;
   onDiscard: (entry: ChangeEntry) => void;
   onDiscardField: (entry: ChangeEntry, attr: string) => void;
 }
 
-export function ChangesList({ groups, onDiscard, onDiscardField, route }: Props) {
+export function ChangesList({ groups, onDiscard, onDiscardField }: Props) {
   if (groups.length === 0) {
     return (
       <p className="empty">
-        Nada a copiar à mão. Mudanças em Dados gerais, Formação, Atuação e em itens que já estão no
+        Nenhuma alteração. Mudanças em Dados gerais, Formação, Atuação e em itens que já estão no
         Lattes aparecem aqui.
       </p>
     );
@@ -34,15 +33,7 @@ export function ChangesList({ groups, onDiscard, onDiscardField, route }: Props)
     <div className="changes">
       {groups.map((g) => (
         <section key={g.label} className="changes-group">
-          <h3>
-            {g.label}
-            {g.importable && (
-              <span className="muted changes-note">
-                {' '}
-                · o Importar não altera itens que já estão no Lattes
-              </span>
-            )}
-          </h3>
+          <h3>{g.label}</h3>
           <ul>
             {g.entries.map((entry) => {
               const { change } = entry;
@@ -50,11 +41,14 @@ export function ChangesList({ groups, onDiscard, onDiscardField, route }: Props)
               return (
                 <li key={change.key} className="change">
                   <div className="change-head">
-                    <span className={`tag kind-${change.kind}`}>{KIND_LABEL[change.kind]}</span>
-                    {route && <RouteTag route={route} />}
                     <span className="change-where">
                       {context.length ? context.join(' › ') : elementLabel(change.element)}
                     </span>
+                    {KIND_BADGE[change.kind] && (
+                      <span className={`change-kind kind-${change.kind}`}>
+                        {KIND_BADGE[change.kind]}
+                      </span>
+                    )}
                     {change.kind !== 'alterado' && (
                       <span className="change-actions">
                         <DiscardButton
@@ -66,49 +60,30 @@ export function ChangesList({ groups, onDiscard, onDiscardField, route }: Props)
                       </span>
                     )}
                   </div>
-                  {
-                    <table className="change-fields">
-                      <tbody>
-                        {change.fields.map((f) => {
-                          // Código de enum aparece (e é copiado) como o rótulo do formulário do Lattes.
-                          const show = (v: string) => displayValue(change.element, f.attr, v);
-                          return (
-                            <tr key={f.attr}>
-                              <th scope="row">{f.label}</th>
-                              {change.kind === 'alterado' && (
-                                <td className="before">
-                                  {show(f.before) || <span className="muted">(vazio)</span>}
-                                </td>
-                              )}
-                              <td className="after">
-                                {/* Copiar fica dentro do valor, à direita; em texto longo, no alto. */}
-                                <span className="after-value">
-                                  <span className="after-text">
-                                    {change.kind === 'removido'
-                                      ? show(f.before)
-                                      : show(f.after) || <span className="muted">(vazio)</span>}
-                                  </span>
-                                  {change.kind !== 'removido' && show(f.after) && (
-                                    <CopyButton label={f.label} value={show(f.after)} />
-                                  )}
-                                </span>
-                              </td>
-                              <td className="copy">
-                                <span className="field-actions">
-                                  {change.kind === 'alterado' && (
-                                    <DiscardButton
-                                      label={`Descartar ${f.label}`}
-                                      onClick={() => onDiscardField(entry, f.attr)}
-                                    />
-                                  )}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  }
+                  <div className="change-fields">
+                    {change.fields.map((f, i) => {
+                      // Código de enum aparece (e é copiado) como o rótulo do formulário do Lattes.
+                      const show = (v: string) => displayValue(change.element, f.attr, v);
+                      const after = change.kind === 'removido' ? show(f.before) : show(f.after);
+                      return (
+                        <FieldChange
+                          key={f.attr}
+                          actions={
+                            change.kind === 'alterado' && (
+                              <DiscardButton
+                                label={`Descartar ${f.label}`}
+                                onClick={() => onDiscardField(entry, f.attr)}
+                              />
+                            )
+                          }
+                          after={after}
+                          before={change.kind === 'alterado' ? show(f.before) : undefined}
+                          captions={i === 0}
+                          label={f.label}
+                        />
+                      );
+                    })}
+                  </div>
                 </li>
               );
             })}

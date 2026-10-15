@@ -18,7 +18,7 @@ const STATUS: Record<Exclude<ResultStatus, 'conferido'>, string> = {
 };
 
 export function BridgeBlock({ bridge }: { bridge: BridgeState }) {
-  const { ops, unsupported } = bridge.plan;
+  const { ops } = bridge.plan;
   // Nada vai ao Lattes sem a pessoa ver a fila inteira e confirmar.
   const [confirming, setConfirming] = useState(false);
   const failed = Object.values(bridge.results).filter((r) => r.status !== 'conferido');
@@ -33,9 +33,6 @@ export function BridgeBlock({ bridge }: { bridge: BridgeState }) {
           {allDone
             ? `${plural(bridge.confirmed)} ${bridge.confirmed === 1 ? 'gravada e conferida' : 'gravadas e conferidas'} no Lattes.`
             : `A extensão pode levar ${plural(ops.length)} direto ao Lattes, conferindo cada uma.`}
-          {!allDone &&
-            unsupported.length > 0 &&
-            ` ${unsupported.length === 1 ? '1 fica' : `${unsupported.length} ficam`} para copiar à mão.`}
         </p>
         {allDone ? (
           <button disabled className="bridge-btn ok" type="button">

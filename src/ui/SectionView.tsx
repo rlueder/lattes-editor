@@ -7,25 +7,24 @@ import { useMemo, useRef, useState } from 'react';
 import { isBlank } from '../model/changes.ts';
 import type { ProductionType } from '../model/production.ts';
 import type { XElement } from '../model/xml.ts';
-import { type EditFn, ElementView } from './ElementView.tsx';
+import type { EditFn } from './ElementView.tsx';
 import { EmptySection } from './EmptySection.tsx';
 import {
   applyFilter,
   buildFacets,
-  cardText,
   elementMatchesText,
   type FilterState,
   isFiltering,
   NO_FILTER,
+  recordSearchText,
 } from './facets.ts';
 import { FilterBar } from './FilterBar.tsx';
 import { EyeIcon, EyeOffIcon, PlusIcon } from './icons.tsx';
-import { ItemList } from './ItemList.tsx';
 import { JumpBar } from './JumpBar.tsx';
 import { type ListView, yearView } from './list-view.ts';
 import { MarkDialog } from './MarkDialog.tsx';
-import { Tip } from './primitives/Tip.tsx';
 import { PrivacyContext, usePrivacyMode } from './privacy.ts';
+import { ReadingGroup } from './ReadingView.tsx';
 import { useReferenceIndex } from './reference-context.ts';
 import { type ReferenceIndex, viewForContainer } from './reference-tables.ts';
 import { NEW_GENERAL_LABELS } from './section-types.ts';
@@ -35,7 +34,6 @@ import { useOpenItem } from './use-open-item.ts';
 
 interface Props {
   section: Section;
-  showEmpty: boolean;
   onEdit: EditFn;
   /** Item novo de formação, atuação, projeto ou patente, pela seção. */
   onNewGeneral: (sectionId: string) => void;
@@ -44,8 +42,6 @@ interface Props {
 }
 
 interface GroupList {
-  /** Os itens são os próprios elementos do grupo, sem contêiner que os embrulhe. */
-  direct: boolean;
   items: XElement[];
   view: ListView;
 }
@@ -55,7 +51,7 @@ function groupList(g: SectionGroup, index: ReferenceIndex): GroupList | null {
   const list = groupItemList(g);
   if (!list) return null;
   const view = (list.container && viewForContainer(list.container.name, index)) || yearView;
-  return { direct: !list.container, items: list.items, view };
+  return { items: list.items, view };
 }
 
 export function SectionView(props: Props) {
@@ -63,7 +59,7 @@ export function SectionView(props: Props) {
   return <SectionBody key={props.section.id} {...props} />;
 }
 
-function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, showEmpty }: Props) {
+function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section }: Props) {
   const index = useReferenceIndex();
   const [state, setState] = useState<FilterState>(NO_FILTER);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -73,8 +69,14 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, s
   const [marking, setMarking] = useState(false);
   const mark = section.mark;
   const markButton = mark && mark.items.length > 0 && (
-    <button className="ghost mark-open" type="button" onClick={() => setMarking(true)}>
-      Marcar itens
+    <button
+      aria-label="Marcar itens"
+      className="ghost mark-open"
+      title="Marcar itens"
+      type="button"
+      onClick={() => setMarking(true)}
+    >
+      <span className="btn-label">Marcar itens</span>
     </button>
   );
   // Formação, atuação, projetos e patentes: o item novo pela própria seção. Na
@@ -83,11 +85,13 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, s
   const newButton = (primary: boolean) =>
     newLabel && (
       <button
+        aria-label={newLabel}
         className={primary ? 'primary' : 'ghost mark-open'}
+        title={newLabel}
         type="button"
         onClick={() => onNewGeneral(section.id)}
       >
-        <PlusIcon /> {newLabel}
+        <PlusIcon /> <span className="btn-label">{newLabel}</span>
       </button>
     );
   const actions = markButton || newButton(false);
@@ -117,10 +121,12 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, s
   const shownIn = (g: SectionGroup, i: number): number => {
     const list = lists[i];
     // Bloco só com campos vazios (Outras informações relevantes sem texto) não aparece.
-    if (!showEmpty && g.elements.every(isBlank)) return 0;
+    if (g.elements.every(isBlank)) return 0;
     if (!filtering) return countItems(g);
     if (list)
-      return applyFilter(list.items, facets, state, (el) => cardText(list.view.card(el))).length;
+      return applyFilter(list.items, facets, state, (el) =>
+        recordSearchText(list.view.card(el), el),
+      ).length;
     // Grupo de campos (Identificação, Resumo): só a busca de texto vale, sem facetas.
     if (Object.keys(state.selected).length > 0) return 0;
     return g.elements.some((el) => elementMatchesText(el, state.query)) ? 1 : 0;
@@ -135,30 +141,39 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, s
   const showFilter = section.id !== 'dados-gerais';
   const hasPanel = section.groups.length > 0;
 
-  // Olho de privacidade em Dados gerais: na linha do título, à direita da
-  // coluna do conteúdo, e repetido no cabeçalho fixo ao rolar.
+  // Olho de privacidade em Dados gerais: o mesmo botão de contorno dos "Nova
+  // …", com ícone e o nome da ação, que segue o estado; aria-pressed diz se
+  // os dados estão ocultos. Fica antes das outras ações da seção, embaixo do
+  // título e na barra fixa ao rolar.
+  const privacyLabel = hideSensitive ? 'Mostrar dados pessoais' : 'Ocultar dados pessoais';
   const privacyToggle = privacy ? (
-    <Tip label={hideSensitive ? 'Mostrar dados pessoais' : 'Esconder dados pessoais'}>
-      <button
-        aria-label="Esconder dados pessoais"
-        aria-pressed={hideSensitive}
-        className="ghost icon-btn privacy-toggle"
-        type="button"
-        onClick={() => setHideSensitive(!hideSensitive)}
-      >
-        {hideSensitive ? <EyeOffIcon /> : <EyeIcon />}
-      </button>
-    </Tip>
+    <button
+      aria-label={privacyLabel}
+      aria-pressed={hideSensitive}
+      className="ghost mark-open privacy-toggle"
+      title={privacyLabel}
+      type="button"
+      onClick={() => setHideSensitive(!hideSensitive)}
+    >
+      {hideSensitive ? <EyeOffIcon /> : <EyeIcon />}{' '}
+      <span className="btn-label">{privacyLabel}</span>
+    </button>
   ) : null;
+  const headActions = (privacyToggle || actions) && (
+    <>
+      {privacyToggle}
+      {section.groups.length > 0 && actions}
+    </>
+  );
 
   const head = (
     <>
       <div className="section-head">
-        <h1 ref={titleRef}>{section.label}</h1>
-        {privacyToggle}
-        {section.groups.length > 0 && actions && (
-          <span className="section-head-actions">{actions}</span>
-        )}
+        {/* tabIndex -1: o modo foco leva o foco aqui ao escolher a seção no painel. */}
+        <h1 ref={titleRef} tabIndex={-1}>
+          {section.label}
+        </h1>
+        {headActions && <span className="section-head-actions">{headActions}</span>}
       </div>
       {section.importable === 'filtro' && (
         <p className="muted section-note">
@@ -170,15 +185,20 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, s
   );
 
   if (!hasPanel) {
+    // Mesmas colunas das outras seções: título, texto e estado vazio na
+    // coluna de leitura, e a do painel lateral reservada, mesmo vazia.
     return (
-      <div className="section-main section-main-empty">
-        {head}
-        <EmptySection
-          action={markButton || newButton(true)}
-          section={section}
-          onNewItem={onNewItem}
-          onOpenPicker={onOpenPicker}
-        />
+      <div className="section-layout reading">
+        <div className="section-title">{head}</div>
+        <div className="section-main section-main-empty">
+          <EmptySection
+            action={markButton || newButton(true)}
+            section={section}
+            onNewItem={onNewItem}
+            onOpenPicker={onOpenPicker}
+          />
+        </div>
+        <div aria-hidden="true" className="section-panel-space" />
         {markDialog}
       </div>
     );
@@ -186,9 +206,11 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, s
 
   return (
     <PrivacyContext.Provider value={privacy && hideSensitive}>
-      <div ref={rootRef} className="section-layout">
+      <div ref={rootRef} className="section-layout reading">
         <StickyTitle
-          actions={privacyToggle}
+          // O que está no lugar das ações sob o título vai também para a barra
+          // fixa: os mesmos botões (mesmo clique, mesmo fluxo), na versão compacta.
+          actions={headActions && <span className="sticky-section-actions">{headActions}</span>}
           groups={visibleGroups.map((g) => ({ id: g.id, label: g.label }))}
           host={rootRef}
           label={section.label}
@@ -205,28 +227,13 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, s
               counts[i]! > 0 ? (
                 <section key={g.id} className="group" id={g.id}>
                   <h2>{g.label}</h2>
-                  {/* Itens soltos viram cartões, mesmo um só; o contêiner que embrulha
-                      uma lista (IDIOMAS, ARTIGOS-PUBLICADOS) passa pelo ElementView. */}
-                  {lists[i]?.direct ? (
-                    <ItemList
-                      anchorBase={g.id}
-                      filter={filter}
-                      items={lists[i].items}
-                      showEmpty={showEmpty}
-                      onEdit={onEdit}
-                    />
-                  ) : (
-                    g.elements.map((el, j) => (
-                      <ElementView
-                        key={j}
-                        anchorBase={g.id}
-                        el={el}
-                        filter={filter}
-                        showEmpty={showEmpty}
-                        onEdit={onEdit}
-                      />
-                    ))
-                  )}
+                  <ReadingGroup
+                    elements={g.elements}
+                    filter={filter}
+                    label={g.label}
+                    list={lists[i] ?? null}
+                    onEdit={onEdit}
+                  />
                 </section>
               ) : null,
             )}
@@ -246,8 +253,11 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, s
           )}
           {visibleGroups.length > 1 && (
             <div className="panel-block">
-              <h2 className="panel-heading">Nesta seção</h2>
+              <h2 className="panel-heading" title="↓ e ↑ pulam entre os grupos">
+                Nesta seção
+              </h2>
               <JumpBar
+                arrowKeys
                 linkable
                 vertical
                 entries={section.groups

@@ -2,21 +2,28 @@
 // campos, filhos como blocos recolhíveis. Serve a cauda longa de seções; as
 // mais usadas ganham formulários próprios no marco 2.
 
-import { Fragment, useId, useState } from 'react';
+import { Fragment, useId, useRef, useState } from 'react';
 
 import { attributeLabel, elementLabel } from '../labels/labels.ts';
 import { childElements, getAttr, type XElement, type XText } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 import { AttributeField, type EditFn } from './AttributeField.tsx';
+import { groupSummary, switchedOff } from './disclosure.ts';
+import { DisclosureGroup } from './DisclosureGroup.tsx';
+import { useFieldSlot, usePartKey, useTargetPart } from './draft-context.ts';
 import type { SectionFilter } from './facets.ts';
-import { groupFields, isBooleanAttr, isSystemAttr } from './field-kind.ts';
+import { type FieldGroup, groupFields, isBooleanAttr, isSystemAttr } from './field-kind.ts';
+import { offForm } from './form-order.ts';
 import { isListItem } from './item-meta.ts';
 import { OUTLINE_HEAD_ATTR, outlineId } from './item-outline.ts';
 import { ItemList } from './ItemList.tsx';
 import { isRedundantDateFormat } from './lattes-date.ts';
+import { linkError } from './link-fields.ts';
+import { displayValue } from './reading.ts';
 import { useReferenceIndex } from './reference-context.ts';
 import { viewForContainer } from './reference-tables.ts';
 import { useShowCodes } from './show-codes.ts';
+import { useGroupStarts } from './use-group-starts.ts';
 
 export type { EditFn } from './AttributeField.tsx';
 
@@ -37,6 +44,10 @@ function FieldsBlock({
   onEdit: EditFn;
 }) {
   const showCodes = useShowCodes();
+  const fieldSlot = useFieldSlot();
+  const partKey = usePartKey();
+  const targetPart = useTargetPart();
+  const openedEmpty = useRef(new Map<string, boolean>());
   const main = sources[0]!;
   const specs = sources.map(
     (src) => new Map(lattesSchema.elements[src.name]?.attributes.map((a) => [a.name, a])),
@@ -48,41 +59,104 @@ function FieldsBlock({
       // O formato da data é sempre DDMMAAAA: o campo de data já diz isso.
       .filter((a) => !isRedundantDateFormat(a.name, a.value))
       .filter((a) => showEmpty || a.value !== '')
+      // Fora do formulário do Lattes (form-order.ts): só aparece preenchido.
+      .filter((a) => a.value !== '' || !offForm(src.name, a.name))
       // Códigos que o Lattes gera: só com "Mostrar códigos do Lattes" ligado.
       .filter((a) => showCodes || !isSystemAttr(src.name, a.name))
+      // Sanduíche e cotutela só depois de o tipo do curso os escolher.
+      .filter((a) => !switchedOff(src, a.name))
       .map((a) => ({ attr: a.name, element: src.name, key: `${i}:${a.name}`, source: i })),
   );
   const mixed = lattesSchema.elements[main.name]?.mixed;
   const text = main.children.find((c): c is XText => c.kind === 'text' && c.value.trim() !== '');
-  if (entries.length === 0 && !mixed) return null;
   const sourceOf = (key: string) => Number(key.slice(0, key.indexOf(':')));
-  const groups = groupFields(entries, attributeLabel, (e) => {
-    const i = sourceOf(e.key);
-    return isBooleanAttr(e.attr, specs[i]!.get(e.attr), getAttr(sources[i]!, e.attr) ?? '');
-  });
+  const valueOf = (e: { attr: string; key: string }) =>
+    getAttr(sources[sourceOf(e.key)]!, e.attr) ?? '';
+  // Com os vazios à mostra, eles ficam no fim de cada grupo. Vazio é o que
+  // estava vazio quando o bloco abriu: preencher um campo não o tira do lugar
+  // enquanto a pessoa ainda está nele.
+  const emptyAtOpen = (e: { attr: string; key: string }) => {
+    let empty = openedEmpty.current.get(e.key);
+    if (empty === undefined) {
+      empty = valueOf(e).trim() === '';
+      openedEmpty.current.set(e.key, empty);
+    }
+    return empty;
+  };
+  // "Como na prévia" (modo de leitura): vale quando a prévia dá lugar a algum
+  // campo deste bloco; partes que ela não mostra (autores) seguem a do Lattes.
+  const previewSlot = fieldSlot
+    ? (e: { attr: string; key: string }) => fieldSlot(sources[sourceOf(e.key)]!, e.attr)
+    : undefined;
+  const groups = groupFields(
+    entries,
+    attributeLabel,
+    (e) => isBooleanAttr(e.attr, specs[sourceOf(e.key)]!.get(e.attr), valueOf(e)),
+    emptyAtOpen,
+    previewSlot && entries.some((e) => previewSlot(e)) ? previewSlot : undefined,
+  );
   // Com poucos campos, os títulos de grupo pesam mais do que ajudam.
   const titled = entries.length >= 6 && groups.length > 1;
+  const specOf = (e: { attr: string; key: string }) => specs[sourceOf(e.key)]!.get(e.attr);
+  const facts = groups.map((g) => ({
+    error: g.entries.some((e) => linkError(e.attr, valueOf(e)) !== undefined),
+    filled: g.entries.filter((e) => valueOf(e).trim() !== '').length,
+    label: g.label,
+    required: g.entries.some((e) => specOf(e)?.required === true),
+    target:
+      targetPart !== null &&
+      g.entries.some((e) => partKey?.(sources[sourceOf(e.key)]!, e.attr) === targetPart),
+  }));
+  const startOf = useGroupStarts(facts, { editing: true, fields: entries.length });
+  if (entries.length === 0 && !mixed) return null;
+  const fieldsOf = (g: FieldGroup) => (
+    <div className={`fields cols-${columnsFor(g.label)}`}>
+      {g.entries.map((e) => {
+        const i = sourceOf(e.key);
+        return (
+          <AttributeField
+            key={e.key}
+            el={sources[i]!}
+            name={e.attr}
+            spec={specs[i]!.get(e.attr)}
+            onEdit={onEdit}
+          />
+        );
+      })}
+    </div>
+  );
   return (
     <div className="fields-block">
-      {groups.map((g) => (
-        <Fragment key={g.label}>
-          {titled && <div className="fields-group">{g.label}</div>}
-          <div className={`fields cols-${columnsFor(g.label)}`}>
-            {g.entries.map((e) => {
-              const i = sourceOf(e.key);
-              return (
-                <AttributeField
-                  key={e.key}
-                  el={sources[i]!}
-                  name={e.attr}
-                  spec={specs[i]!.get(e.attr)}
-                  onEdit={onEdit}
-                />
-              );
-            })}
-          </div>
-        </Fragment>
-      ))}
+      {groups.map((g, gi) => {
+        const start = startOf(g.label);
+        if (titled && start.collapsible) {
+          const fact = facts[gi]!;
+          return (
+            <DisclosureGroup
+              key={g.label}
+              filled={fact.filled}
+              forceOpen={fact.error || fact.target}
+              initialOpen={start.open}
+              label={g.label}
+              summary={groupSummary(
+                g.entries.map((e) => ({
+                  attr: e.attr,
+                  value: displayValue(sources[sourceOf(e.key)]!, e.attr, valueOf(e)),
+                })),
+              )}
+              titleClass="disclosure-title-caps"
+            >
+              {fieldsOf(g)}
+            </DisclosureGroup>
+          );
+        }
+        return (
+          <Fragment key={g.label}>
+            {titled && <div className="fields-group">{g.label}</div>}
+            {fieldsOf(g)}
+          </Fragment>
+        );
+      })}
       {mixed && (
         <div className="fields cols-2">
           <TextField el={main} node={text} onEdit={onEdit} />

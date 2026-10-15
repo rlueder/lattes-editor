@@ -14,8 +14,6 @@ export interface ChangeEntry {
 
 export interface ChangeGroup {
   entries: ChangeEntry[];
-  /** A seção é lida pelo Importar, mas o Importar não atualiza itens existentes. */
-  importable: boolean;
   label: string;
 }
 
@@ -65,7 +63,7 @@ export function groupChanges(
     const chain = resolvePath(change.kind === 'removido' ? original : working, change.path);
     const label = section?.label ?? 'Outros dados';
     if (!groups.has(label)) {
-      groups.set(label, { entries: [], importable: section?.importable === true, label });
+      groups.set(label, { entries: [], label });
     }
     groups.get(label)!.entries.push({
       change,

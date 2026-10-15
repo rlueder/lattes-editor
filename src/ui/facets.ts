@@ -6,6 +6,7 @@
 import { attributeLabel, elementLabel, enumLabel, fold } from '../labels/labels.ts';
 import { childElements, type XElement } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
+import { flagAsShown } from './field-kind.ts';
 import { itemMeta } from './item-meta.ts';
 import { effectiveQuery } from './query.ts';
 
@@ -50,7 +51,8 @@ function candidateAttrs(el: XElement): { attr: string; enumerated: boolean; valu
   for (const src of sources(el)) {
     const spec = lattesSchema.elements[src.name];
     for (const a of src.attrs) {
-      const value = a.value.trim();
+      // Marcas que a exportação grava ao contrário filtram no sentido da tela.
+      const value = flagAsShown(src.name, a.name, a.value.trim());
       if (!value || SKIP.test(a.name)) continue;
       const enumerated =
         Boolean(spec?.attributes.find((s) => s.name === a.name)?.enum) ||
@@ -182,7 +184,11 @@ export function cardText(card: { subtitle: string; title: string }): string {
 /** Busca de texto em grupos que não são lista (Identificação, Resumo): valores dos atributos. */
 export function elementMatchesText(el: XElement, query: string): boolean {
   if (!effectiveQuery(query)) return true;
-  // Junta todos os valores: um termo pode estar num campo e o outro em outro.
+  return matchesQuery(elementText(el), query);
+}
+
+/** Todos os valores do elemento e dos filhos: um termo pode estar num campo e o outro em outro. */
+function elementText(el: XElement): string {
   const values: string[] = [];
   const visit = (node: XElement) => {
     for (const a of node.attrs) values.push(a.value);
@@ -192,5 +198,15 @@ export function elementMatchesText(el: XElement, query: string): boolean {
     }
   };
   visit(el);
-  return matchesQuery(values.join(' '), query);
+  return values.join(' ');
+}
+
+/**
+ * Texto que a busca considera num registro da leitura: o do cartão e todos os
+ * valores do item, inclusive os das listas dentro dele (o projeto de uma
+ * atividade, a equipe do projeto). A lista fechada que tem o resultado abre
+ * (nested-collapse.ts).
+ */
+export function recordSearchText(card: { subtitle: string; title: string }, el: XElement): string {
+  return `${cardText(card)} ${elementText(el)}`;
 }

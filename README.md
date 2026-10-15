@@ -52,8 +52,9 @@ atualizações" no menu ⚙.
    Cada edição fica salva no app.
 4. **Envie ao Lattes.** O painel "Enviar ao Lattes" mostra cada alteração e
    como ela vai: produções novas pelo Importar do próprio Lattes, com o
-   arquivo que o app gera; o resumo, os vínculos de atuação e a foto pela
-   extensão, gravados e conferidos um a um (os idiomas ainda em teste); o resto campo a campo, com o valor antigo e
+   arquivo que o app gera; o resumo, os vínculos de atuação, a foto e as
+   alterações em eventos de que você participou como ouvinte pela extensão,
+   gravados e conferidos um a um (os idiomas ainda em teste); o resto campo a campo, com o valor antigo e
    o novo lado a lado. A aba "Enviado" guarda o que já foi, com o antes e o
    depois, e deixa desfazer.
 
@@ -75,7 +76,7 @@ mão com os valores ao lado.
 </picture>
 
 Cada exportação aberta vira uma versão, e o app diz o que mudou desde a
-anterior ("Versões do Lattes", no ⌘K), inclusive o que foi editado direto no
+anterior ("Versões do Lattes", no ⚙), inclusive o que foi editado direto no
 Lattes. O **Diagnóstico do currículo** mostra a data da última publicação, o
 que mudou no Lattes desde a exportação e o que vale conferir no currículo
 inteiro: duplicatas, ISSN, DOI, datas e vínculos antigos ainda marcados como
@@ -109,7 +110,7 @@ até você clicar no olho, ao lado do título.
 ## Extensão do conector
 
 A extensão para Chrome e Brave é o que deixa o app abrir o currículo do Lattes
-e enviar as alterações sem copiar à mão. Ela trabalha na aba do Lattes em que
+e enviar as alterações direto ao Lattes. Ela trabalha na aba do Lattes em que
 você já está logado; nenhuma senha passa por ela nem pelo app. Cada alteração
 é gravada, lida de volta e conferida, e a fila para no primeiro problema.
 
