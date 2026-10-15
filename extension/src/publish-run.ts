@@ -58,7 +58,18 @@ export async function runPublish(
   }
   inFlight = true;
   try {
-    const stored = await readState();
+    let stored: Awaited<ReturnType<typeof readState>>;
+    try {
+      stored = await readState();
+    } catch {
+      // Sem ler o estado guardado, não dá para saber se a fila roda: nada sai,
+      // e o editor recebe a resposta em vez de esperar o prazo.
+      await reply({
+        detail: 'A extensão não leu o próprio estado; nada foi enviado.',
+        outcome: 'erro',
+      });
+      return false;
+    }
     const persisted = publishBusy({
       importing: false,
       photo: false,

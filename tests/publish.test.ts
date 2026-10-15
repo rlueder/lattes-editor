@@ -591,6 +591,25 @@ describe('Enviar ao CNPq no service worker (extensão)', () => {
     expect(outcomes).toEqual(['erro', 'publicado']);
   });
 
+  it('o estado guardado não lê: responde "erro" e nada vai à aba', async () => {
+    const executeScript = vi.fn(async () => []);
+    vi.stubGlobal('chrome', {
+      scripting: { executeScript },
+      storage: {
+        local: { get: async () => ({ [CONSENT_KEY]: consentRecord() }) },
+        session: { get: async () => Promise.reject(new Error('sem estado')) },
+      },
+      tabs: { query: async () => [{ id: 3 }] },
+    });
+    const reply = vi.fn(async () => undefined);
+    expect(await runPublish(CALL, IDLE, reply, true)).toBe(false);
+    expect(reply).toHaveBeenCalledWith(
+      expect.objectContaining({ result: expect.objectContaining({ outcome: 'erro' }) }),
+    );
+    expect(executeScript).not.toHaveBeenCalled();
+    expect(publishRunning()).toBe(false);
+  });
+
   it('fila guardada como em andamento (service worker reiniciado): recusa', async () => {
     const exec = stubChrome({ fila: { ops: [], results: {}, running: true } });
     const reply = vi.fn(async () => undefined);

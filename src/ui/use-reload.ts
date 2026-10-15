@@ -13,7 +13,7 @@ import { reloadPlan } from './lattes-reload.ts';
 export function useReload(
   session: { doc: XDocument; meta: { originalXml: string } } | null,
   work: { changes: number; pending: PendingSummary[] },
-  openFile: (file: File, previous?: { note: string; xml: string }) => unknown,
+  openFile: (file: File, reload: { previous?: { note: string; xml: string } }) => unknown,
 ) {
   const [file, setFile] = useState<File | null>(null);
   const plan = () =>
@@ -27,7 +27,7 @@ export function useReload(
   const reload = (next: File) => {
     const p = plan();
     if (p.confirm) setFile(next);
-    else void openFile(next, p.previous);
+    else void openFile(next, { previous: p.previous });
   };
 
   const dialog = createElement(ReloadConfirm, {
@@ -36,7 +36,7 @@ export function useReload(
     onCancel: () => setFile(null),
     onConfirm: (next: File) => {
       setFile(null);
-      void openFile(next, plan().previous);
+      void openFile(next, { previous: plan().previous });
     },
     pending: work.pending,
   });
