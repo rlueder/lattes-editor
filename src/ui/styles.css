@@ -7360,3 +7360,18 @@ main.content {
 html {
   scrollbar-gutter: stable;
 }
+
+/* Atalhos por ano nas listas da leitura (ReadingView, RecordList): grudam sob
+   a barra fixa do título, na largura da coluna de leitura. O salto para o
+   primeiro registro do ano desconta as duas barras. */
+.section-layout.reading .jump-bar.year {
+  margin: 0 0 12px;
+  padding: 8px 0;
+  background: var(--bg);
+}
+
+.reading-record {
+  scroll-margin-top: calc(
+    var(--topbar-h) + var(--section-bar-h, 0px) + var(--year-bar-h, 0px) + 8px
+  );
+}

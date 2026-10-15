@@ -3,7 +3,7 @@
 // texto fica no topo como prévia e os campos vêm abaixo (ReadingBlock.tsx).
 // A composição sem React está em reading-layout.ts e reading-reference.ts.
 
-import { type CSSProperties, useMemo } from 'react';
+import { type CSSProperties, useId, useMemo } from 'react';
 
 import { elementLabel } from '../labels/labels.ts';
 import { isPendingImport, SEQ_ATTR } from '../model/production.ts';
@@ -15,8 +15,9 @@ import { useEditor } from './editor-context.ts';
 import { type EditFn, ElementView } from './ElementView.tsx';
 import { applyFilter, recordSearchText, type SectionFilter } from './facets.ts';
 import { useFieldOrder } from './field-order.ts';
-import { formatPeriod, itemMeta } from './item-meta.ts';
+import { formatPeriod, groupByYear, itemMeta } from './item-meta.ts';
 import { ItemList } from './ItemList.tsx';
+import { JumpBar } from './JumpBar.tsx';
 import { elementKey, type ListView, yearView } from './list-view.ts';
 import { ReadingQueryContext } from './nested-collapse.ts';
 import { type PreviewKind, previewSlots } from './preview-order.ts';
@@ -165,6 +166,7 @@ function RecordRead({
 function RecordList({ academic, filter, items, onEdit, view }: ListProps) {
   const { loadedMax, openItem } = useEditor();
   const opts = useLayoutOptions();
+  const listId = useId();
   const visible = filter
     ? applyFilter(items, filter.facets, filter.state, (el) => recordSearchText(view.card(el), el))
     : items;
@@ -178,8 +180,21 @@ function RecordList({ academic, filter, items, onEdit, view }: ListProps) {
   const column = yearColumn(when);
   // A coluna da esquerda tem a largura do texto mais longo dela.
   const tab = { '--read-tab': `${tabWidth(when)}ch` } as CSSProperties;
+  // Atalhos por ano ("Atual", 2025, 2024…), como na lista de antes: com mais
+  // de um ano, uma pílula por ano leva ao primeiro registro dele. O ano é o
+  // mesmo da ordem da lista (groupByYear), que segue o período da coluna.
+  const years = groupByYear(sorted).filter((g) => g.key !== 'sem-ano');
+  const yearAnchor = (key: string) => `${listId}-ano-${key}`;
+  const firstOfYear = new Map(years.map((g) => [g.items[0]!.el, yearAnchor(g.key)]));
   return (
     <ReadingQueryContext.Provider value={filter?.state.query ?? ''}>
+      {years.length > 1 && (
+        <JumpBar
+          entries={years.map((g) => ({ id: yearAnchor(g.key), label: g.label }))}
+          label="Anos da lista"
+          level="year"
+        />
+      )}
       <ol className="reading-records" style={tab}>
         {sorted.map((el, i) => {
           const seq = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
@@ -190,7 +205,7 @@ function RecordList({ academic, filter, items, onEdit, view }: ListProps) {
             ? referenceText(referenceFor(el)).slice(0, 80)
             : lineText(recordLayout(el, academic, opts).lines[0]!) || elementLabel(el.name);
           return (
-            <li key={elementKey(el)} className="reading-record">
+            <li key={elementKey(el)} className="reading-record" id={firstOfYear.get(el)}>
               <EditableBlock
                 className="rr"
                 editExtra={
