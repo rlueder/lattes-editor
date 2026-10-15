@@ -222,8 +222,9 @@ exportação, lida também pelo editor, traz `NAO`. Até 15/10/2026 esta tabela
 dizia `1` = sim: a conferência do "antes" falharia em toda alteração desse
 campo e, se passasse, a gravação trocaria o valor real da pessoa. A
 dedicação exclusiva não inverte: `f_regime` desmarcado no Lattes sai `NAO`.
-Por que o Lattes grava assim não se sabe. O conector e o Lattes simulado
-traduzem os dois sentidos em `src/bridge/vinculo-flag.ts`.
+Por que o Lattes grava assim não se sabe. O conector traduz os dois
+sentidos em `src/bridge/vinculo-flag.ts`, e o Lattes simulado usa um mapa
+literal próprio, para que um confira o outro.
 
 Nota sobre o tipo de vínculo: `check()` copia o texto de `f_vinc` para o
 oculto `f_vinculo` antes de enviar, e o texto vem de uma lista em

@@ -7,9 +7,10 @@
 // (f_regime, caixa de valor 3) não é invertida: desmarcada no Lattes, NAO
 // na exportação. Ver docs/lattes_internals.md, seções 5 e 20.
 //
-// Toda tradução entre o XML e f_stavinc passa por aqui, no conector e no
-// Lattes simulado; o censo usa INVERTED_FLAGS para não acusar a inversão
-// como divergência (e acusar se ela deixar de existir).
+// Toda tradução do conector entre o XML e f_stavinc passa por aqui (o Lattes
+// simulado tem um mapa literal próprio, para conferir este); o censo usa
+// INVERTED_FLAGS para não acusar a inversão como divergência (e acusar se ela
+// deixar de existir).
 
 /** Campo do formulário → atributo do XML cujo SIM/NAO é o inverso do código da opção. */
 export const INVERTED_FLAGS: Readonly<Record<string, string>> = {
