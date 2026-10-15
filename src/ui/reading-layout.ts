@@ -348,11 +348,14 @@ export function addressLayout(endereco: XElement, opts: LayoutOptions): Section[
       {
         kind: 'text',
         parts: [
+          // O rótulo vai no primeiro pedaço preenchido: sem DDD, no número.
           ...(value(part, 'TELEFONE') !== ''
-            ? [
-                p('DDD', { before: 'Telefone ', format: 'ddd' }),
-                p('TELEFONE', { before: ' ', format: 'number' }),
-              ]
+            ? value(part, 'DDD') !== ''
+              ? [
+                  p('DDD', { before: 'Telefone ', format: 'ddd' }),
+                  p('TELEFONE', { before: ' ', format: 'number' }),
+                ]
+              : [p('TELEFONE', { before: 'Telefone ', format: 'number' })]
             : []),
           p('RAMAL', { before: ', ramal ' }),
           p('FAX', { before: ' · Fax ', format: 'phone' }),

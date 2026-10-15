@@ -38,10 +38,11 @@ function whenLine(keys: Keys, el: XElement): Line {
     keys.part(el, start, { before: ' ' }),
     ...(end
       ? [
-          ...(has(el, 'MES-FIM')
+          // O mês do fim só com o ano do fim: senão sobraria "jan 2026 – mar".
+          ...(endMonth && value(el, end) !== ''
             ? [keys.part(el, 'MES-FIM', { before: ' – ', format: 'month' })]
             : []),
-          keys.part(el, end, { before: endMonth ? ' ' : ' – ' }),
+          keys.part(el, end, { before: endMonth && value(el, end) !== '' ? ' ' : ' – ' }),
         ]
       : []),
   ];

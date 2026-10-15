@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { parseXml } from '../src/model/xml.ts';
 import { addressLayout, lineText } from '../src/ui/reading-layout.ts';
+import { recordWhen } from '../src/ui/reading-records.ts';
 
 const opts = { hideSensitive: false, showCodes: false };
 
@@ -21,8 +22,25 @@ describe('endereço na leitura', () => {
     expect(prof!.rows.map((r) => r.attr)).not.toContain('DDD');
   });
 
+  it('telefone sem DDD leva o rótulo no número', () => {
+    const el = parseXml(`<ENDERECO><ENDERECO-PROFISSIONAL TELEFONE="00001234"/></ENDERECO>`).root;
+    const lines = addressLayout(el, opts)[0]!.lines.map(lineText).filter(Boolean);
+    expect(lines).toContain('Telefone 0000-1234');
+  });
+
   it('DDD sem telefone fica na grade', () => {
     const el = parseXml(`<ENDERECO><ENDERECO-PROFISSIONAL DDD="51"/></ENDERECO>`).root;
     expect(addressLayout(el, opts)[0]!.rows.map((r) => r.attr)).toContain('DDD');
+  });
+});
+
+describe('período do vínculo na leitura', () => {
+  it('mês do fim só aparece com o ano do fim', () => {
+    const el = parseXml(
+      `<VINCULOS MES-INICIO="01" ANO-INICIO="2026" MES-FIM="03" ANO-FIM="" TIPO-DE-VINCULO="LIVRE"/>`,
+    ).root;
+    const text = lineText(recordWhen(el, false, opts)!);
+    expect(text).not.toMatch(/mar/);
+    expect(text).toMatch(/^jan 2026/);
   });
 });
