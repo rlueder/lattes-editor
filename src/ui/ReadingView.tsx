@@ -7,7 +7,7 @@ import { type CSSProperties, useMemo } from 'react';
 
 import { elementLabel } from '../labels/labels.ts';
 import { isPendingImport, SEQ_ATTR } from '../model/production.ts';
-import { getAttr, type XElement } from '../model/xml.ts';
+import { childElements, getAttr, type XElement } from '../model/xml.ts';
 import { referenceText } from '../print/abnt.ts';
 import { hasReference, referenceFor } from '../print/references.ts';
 import { FieldSlotContext } from './draft-context.ts';
@@ -16,7 +16,8 @@ import { type EditFn, ElementView } from './ElementView.tsx';
 import { applyFilter, cardText, type SectionFilter } from './facets.ts';
 import { useFieldOrder } from './field-order.ts';
 import { formatPeriod, itemMeta } from './item-meta.ts';
-import { elementKey, type ListView } from './list-view.ts';
+import { ItemList } from './ItemList.tsx';
+import { elementKey, type ListView, yearView } from './list-view.ts';
 import { type PreviewKind, previewSlots } from './preview-order.ts';
 import { tabWidth, yearColumn } from './reading.ts';
 import {
@@ -24,10 +25,9 @@ import {
   fieldsLayout,
   type LayoutOptions,
   lineText,
-  recordLayout,
-  recordWhen,
   resumoLayout,
 } from './reading-layout.ts';
+import { recordLayout, recordWhen } from './reading-records.ts';
 import { EditableBlock } from './ReadingBlock.tsx';
 import { CitationReading } from './ReadingCitation.tsx';
 import { LineView, Sections, SectionView } from './ReadingParts.tsx';
@@ -105,6 +105,14 @@ interface ListProps {
   onEdit: EditFn;
 }
 
+/**
+ * Produção com autores: lida como referência da NBR 6023. Os outros itens com
+ * dados básicos (evento, orientação, banca) leem como registro.
+ */
+function isCitation(el: XElement): boolean {
+  return hasReference(el) && childElements(el).some((c) => c.name === 'AUTORES');
+}
+
 /** O texto da coluna da esquerda de um registro: período, ano ou idioma. */
 function whenOf(el: XElement, academic: boolean, opts: LayoutOptions): string {
   const when = recordWhen(el, academic, opts);
@@ -127,7 +135,7 @@ function RecordRead({
   kind?: string;
 }) {
   const opts = useLayoutOptions();
-  const citation = hasReference(el);
+  const citation = isCitation(el);
   const layout = citation ? undefined : recordLayout(el, academic, opts);
   // Cada ano com a chave do campo dele, para acender quando o campo está em foco.
   const when = recordWhen(el, academic, opts);
@@ -176,7 +184,7 @@ function RecordList({ academic, filter, items, onEdit, view }: ListProps) {
         const isNew = isPendingImport(el, loadedMax);
         // Na formação, o grau já diz o tipo do item.
         const kind = showKind && !academic ? elementLabel(el.name) : undefined;
-        const title = hasReference(el)
+        const title = isCitation(el)
           ? referenceText(referenceFor(el)).slice(0, 80)
           : lineText(recordLayout(el, academic, opts).lines[0]!) || elementLabel(el.name);
         return (
@@ -194,7 +202,7 @@ function RecordList({ academic, filter, items, onEdit, view }: ListProps) {
                 <OrderedForm
                   depth={1}
                   el={el}
-                  kind={hasReference(el) ? 'citation' : academic ? 'academic' : 'record'}
+                  kind={isCitation(el) ? 'citation' : academic ? 'academic' : 'record'}
                   onEdit={onEdit}
                 />
               )}
@@ -239,6 +247,19 @@ interface GroupProps {
  * "Mostrar campos vazios" não vale aqui.
  */
 export function ReadingGroup({ elements, filter, label, list, onEdit }: GroupProps) {
+  // Tabelas de apoio (instituições, cursos em "Outros dados") têm visão própria,
+  // com "Onde aparece": continuam como lista de cartões.
+  if (list && list.view !== yearView) {
+    return (
+      <ItemList
+        filter={filter}
+        items={list.items}
+        showEmpty={false}
+        view={list.view}
+        onEdit={onEdit}
+      />
+    );
+  }
   if (list) {
     const container = list.container?.name ?? elements[0]?.name;
     return (

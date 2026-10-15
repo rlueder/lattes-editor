@@ -32,11 +32,9 @@ describe('modo de leitura: a chave na URL', () => {
     expect(readingRequested('?leitura=0', true)).toBe(false);
   });
 
-  it('só vale para Dados gerais, Formação e Produções', () => {
-    expect(isReadingSection('dados-gerais', true)).toBe(true);
-    expect(isReadingSection('formacao', true)).toBe(true);
-    expect(isReadingSection('producoes', true)).toBe(true);
-    expect(isReadingSection('atuacao', true)).toBe(false);
+  it('vale para todas as seções', () => {
+    expect(isReadingSection('atuacao', true)).toBe(true);
+    expect(isReadingSection('outros', true)).toBe(true);
     expect(isReadingSection('producoes', false)).toBe(false);
   });
 });

@@ -11,9 +11,6 @@ import { lattesSchema } from '../schema/lattes.ts';
 import { codeValueLabel, isBooleanAttr } from './field-kind.ts';
 import { displayLattesDate, isLattesDateAttr } from './lattes-date.ts';
 
-/** Seções do protótipo; as outras continuam com os campos de sempre. */
-export const READING_SECTIONS = new Set(['dados-gerais', 'formacao', 'producoes']);
-
 /**
  * O modo de leitura foi pedido na URL (?leitura, ?leitura=1). Só vale no
  * `pnpm dev`: o padrão continua o editor de hoje até a proposta ser aprovada.
@@ -33,8 +30,8 @@ export function readingModeOn(): boolean {
   );
 }
 
-export function isReadingSection(sectionId: string, reading: boolean): boolean {
-  return reading && READING_SECTIONS.has(sectionId);
+export function isReadingSection(_sectionId: string, reading: boolean): boolean {
+  return reading;
 }
 
 export type ReadingKeyAction = 'edit' | 'close';

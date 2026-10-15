@@ -7,6 +7,7 @@ import { cellSpan, curlyQuotes, hiddenNote, paragraphs } from './reading.ts';
 import {
   type Line,
   lineVisible,
+  type NestedGroup,
   type Part,
   partText,
   type Section,
@@ -93,7 +94,40 @@ export function Rows({ parts, quiet }: { parts: Part[]; quiet: boolean }) {
 }
 
 function hasContent(s: Section): boolean {
-  return s.hidden || s.masked > 0 || s.rows.length > 0 || s.lines.some(lineVisible);
+  return (
+    s.hidden ||
+    s.masked > 0 ||
+    s.rows.length > 0 ||
+    s.lines.some(lineVisible) ||
+    s.nested.some((g) => g.items.some(hasContent))
+  );
+}
+
+/**
+ * As listas de filhos de um registro (vínculos, integrantes, participantes):
+ * um rótulo curto e cada item como um registro pequeno, recuado, com o
+ * período antes do título.
+ */
+function NestedList({ group }: { group: NestedGroup }) {
+  const items = group.items.filter(hasContent);
+  if (items.length === 0) return null;
+  return (
+    <div className="reading-nested">
+      <p className="reading-nested-label">{group.label}</p>
+      <ul>
+        {items.map((item, i) => (
+          <li key={i}>
+            {item.when && lineVisible(item.when) && (
+              <p className="rl rl-meta rl-nested-when">
+                <LineView line={item.when} />
+              </p>
+            )}
+            <SectionView section={{ ...item, when: undefined }} />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 /** Uma seção do bloco: título, linhas e rótulos. */
@@ -107,6 +141,9 @@ export function SectionView({ section }: { section: Section }) {
         <LineView key={i} line={line} />
       ))}
       <Rows parts={section.rows} quiet={section.quietRows} />
+      {section.nested.map((g, i) => (
+        <NestedList key={i} group={g} />
+      ))}
       {section.masked > 0 && (
         <p className="reading-none reading-hidden">{hiddenNote(section.masked)}</p>
       )}

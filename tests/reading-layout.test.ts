@@ -19,13 +19,13 @@ import {
   isFilled,
   isUsable,
   lineText,
-  recordLayout,
   resumoLayout,
   rowRank,
   type Section,
   shownKeys,
 } from '../src/ui/reading-layout.ts';
 import { addDraft, withDrafts } from '../src/ui/reading-preview.ts';
+import { recordLayout } from '../src/ui/reading-records.ts';
 import {
   appearsIn,
   citationFields,

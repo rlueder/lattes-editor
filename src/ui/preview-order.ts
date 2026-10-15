@@ -13,11 +13,11 @@ import {
   flatten,
   isUsable,
   type LayoutOptions,
-  recordLayout,
   resumoLayout,
   rowRank,
   type Section,
 } from './reading-layout.ts';
+import { recordLayout } from './reading-records.ts';
 import { citationRank, isCitationAttr } from './reading-reference.ts';
 
 export type PreviewKind = 'academic' | 'address' | 'citation' | 'fields' | 'record' | 'resumo';
@@ -95,12 +95,16 @@ export function previewSlots(root: XElement, kind: PreviewKind): PreviewSlotFn {
     for (const p of cited) put(p.el, p.attr, PREVIEW_REFERENCE);
     for (const p of rest) put(p.el, p.attr, PREVIEW_DETAILS);
   } else {
-    for (const s of sectionsOf(kind, filled)) {
+    const walk = (s: Section, main: string) => {
       const lines = [...(s.when ? [s.when] : []), ...s.lines];
-      for (const p of lines.flatMap((l) => l.parts)) put(p.el, p.attr, PREVIEW_MAIN);
-      const rowsLabel = lines.some((l) => l.parts.length > 0) ? PREVIEW_DETAILS : PREVIEW_MAIN;
+      for (const p of lines.flatMap((l) => l.parts)) put(p.el, p.attr, main);
+      const rowsLabel =
+        main !== PREVIEW_MAIN || !lines.some((l) => l.parts.length > 0) ? main : PREVIEW_DETAILS;
       for (const p of s.rows) put(p.el, p.attr, rowsLabel);
-    }
+      // Listas de filhos (vínculos, integrantes): o grupo leva o nome da lista.
+      for (const g of s.nested) for (const item of g.items) walk(item, g.label);
+    };
+    for (const s of sectionsOf(kind, filled)) walk(s, PREVIEW_MAIN);
   }
   const originalIndex = new Map(originals.map((el, i) => [el, i]));
   return (el, attr) => {

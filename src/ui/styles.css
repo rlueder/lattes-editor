@@ -6660,6 +6660,42 @@ main.content {
   font-size: 12px;
 }
 
+/* Listas de filhos de um registro (vínculos, integrantes, participantes):
+   recuadas, com um fio à esquerda, cada item como um registro pequeno. */
+.reading-nested {
+  max-width: var(--read-measure);
+  margin-top: 0.8em;
+}
+
+.reading-nested-label {
+  margin: 0 0 0.3em;
+  color: var(--read-muted);
+  font-family: var(--edit-font);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reading-nested ul {
+  margin: 0;
+  padding: 0 0 0 0.9em;
+  border-left: 1px solid var(--border);
+  list-style: none;
+}
+
+.reading-nested li + li {
+  margin-top: 0.6em;
+}
+
+.reading-nested .rl-lead {
+  font-weight: 500;
+}
+
+.rl-nested-when {
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
 .reading-block a {
   color: var(--accent-text);
   text-decoration: underline;

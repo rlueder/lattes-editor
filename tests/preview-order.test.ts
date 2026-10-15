@@ -19,7 +19,8 @@ import {
   previewSlots,
 } from '../src/ui/preview-order.ts';
 import { cellSpan } from '../src/ui/reading.ts';
-import { lineText, recordWhen } from '../src/ui/reading-layout.ts';
+import { lineText } from '../src/ui/reading-layout.ts';
+import { recordWhen } from '../src/ui/reading-records.ts';
 
 const el = (xml: string) => parseXml(xml).root;
 const opts = { hideSensitive: false, showCodes: false };

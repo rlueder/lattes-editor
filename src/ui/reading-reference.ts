@@ -1,10 +1,11 @@
 // A referência de uma produção no modo de leitura, sem React: que campos
-// preenchidos a referência da NBR 6023 já mostra, para a leitura mostrar os
-// outros em linhas de rótulo e valor abaixo dela.
+// preenchidos a referência da NBR 6023 já mostra (para a leitura mostrar os
+// outros em linhas de rótulo e valor abaixo dela) e de que campo vem cada
+// trecho dela (para o campo em foco acender o trecho na prévia).
 
 import { readAuthor } from '../model/production.ts';
 import type { XElement } from '../model/xml.ts';
-import { abntAuthor, referenceText } from '../print/abnt.ts';
+import { abntAuthor, referenceText, type Segment } from '../print/abnt.ts';
 import { referenceFor } from '../print/references.ts';
 import {
   flatten,
@@ -15,6 +16,9 @@ import {
   partText,
   rowRank,
 } from './reading-layout.ts';
+
+/** Os campos do autor que a referência mostra juntos (nome e forma de citação). */
+const AUTHOR_FIELDS = ['NOME-COMPLETO-DO-AUTOR', 'NOME-PARA-CITACAO'];
 
 /** Um trecho da referência e o campo dele. */
 export interface Highlight {
@@ -101,15 +105,18 @@ export function citationRank(attr: string): number {
   return i < 0 ? CITATION_ORDER.length * 10 + rowRank(attr) : i;
 }
 
-/** Os campos preenchidos de uma produção, sem os autores, na ordem da citação. */
+/**
+ * Os campos preenchidos de uma produção na ordem da citação. Dos autores, só
+ * o que a referência não mostra (CPF, por exemplo): nome e forma de citação
+ * já estão nela.
+ */
 export function citationFields(item: XElement, opts: LayoutOptions): Part[] {
   return flatten(item)
     .flatMap((el, i) =>
-      el.name === 'AUTORES'
-        ? []
-        : el.attrs
-            .filter((a) => isUsable(el, a.name, opts))
-            .map((a): Part => ({ attr: a.name, el, key: `${i}:${a.name}` })),
+      el.attrs
+        .filter((a) => isUsable(el, a.name, opts))
+        .filter((a) => el.name !== 'AUTORES' || !AUTHOR_FIELDS.includes(a.name))
+        .map((a): Part => ({ attr: a.name, el, key: `${i}:${a.name}` })),
     )
     .filter(isFilled)
     .sort((a, b) => citationRank(a.attr) - citationRank(b.attr));
@@ -135,4 +142,72 @@ export function appearsIn(text: string, value: string): boolean {
   const v = value.trim();
   if (!v) return false;
   return new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(v)}(?![\\p{L}\\p{N}])`, 'iu').test(text);
+}
+
+/** Um pedaço da referência para compor: o texto, se é destaque, e os campos dele. */
+export interface Piece {
+  /** Chaves dos campos (posição:atributo); vazio nos trechos fixos ("In:", "[S. l.]"). */
+  keys: string[];
+  strong?: boolean;
+  text: string;
+}
+
+/**
+ * Corta os trechos da referência nas bordas de cada campo. Cada pedaço leva
+ * as chaves de todos os campos que ele mostra: o do trecho e os outros de
+ * mesmo valor (o ano do trabalho e o de realização caem no mesmo "2023").
+ */
+export function splitSegments(
+  segments: Segment[],
+  highlights: (Highlight & { also?: string[] })[],
+): Piece[] {
+  const out: Piece[] = [];
+  let pos = 0;
+  for (const seg of segments) {
+    const start = pos;
+    const end = pos + seg.text.length;
+    const cuts = new Set([start, end]);
+    for (const h of highlights) {
+      if (h.start > start && h.start < end) cuts.add(h.start);
+      if (h.end > start && h.end < end) cuts.add(h.end);
+    }
+    const points = [...cuts].sort((a, b) => a - b);
+    for (let i = 0; i < points.length - 1; i++) {
+      const a = points[i]!;
+      const b = points[i + 1]!;
+      const h = highlights.find((x) => x.start <= a && x.end >= b);
+      const keys = h ? [h.key, ...(h.also ?? [])] : [];
+      out.push({ keys, strong: seg.strong, text: seg.text.slice(a - start, b - start) });
+    }
+    pos = end;
+  }
+  return out;
+}
+
+/**
+ * A referência do item em pedaços, cada um com as chaves dos campos de onde
+ * veio, na mesma conta de chaves do formulário (partKeys em reading-layout.ts).
+ * O autor ("3:*") vira as chaves do nome e da forma de citação dele.
+ */
+export function referencePieces(item: XElement, opts: LayoutOptions): Piece[] {
+  const segments = referenceFor(item);
+  const text = referenceText(segments);
+  const candidates = referenceCandidates(item, opts);
+  const els = flatten(item);
+  const expand = (key: string) => {
+    if (!key.endsWith(':*')) return [key];
+    const i = Number(key.slice(0, -2));
+    const el = els[i];
+    return AUTHOR_FIELDS.filter((a) => el?.attrs.some((x) => x.name === a)).map((a) => `${i}:${a}`);
+  };
+  const fold = (t: string) => t.trim().toLocaleLowerCase('pt-BR');
+  const highlights = referenceHighlights(text, candidates).map((h) => {
+    const shown = fold(text.slice(h.start, h.end));
+    const also = candidates
+      .filter((c) => c.key !== h.key && fold(c.text) === shown)
+      .flatMap((c) => expand(c.key));
+    const [key, ...rest] = expand(h.key);
+    return { ...h, also: [...rest, ...also], key: key ?? h.key };
+  });
+  return splitSegments(segments, highlights);
 }
