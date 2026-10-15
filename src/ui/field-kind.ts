@@ -2,7 +2,7 @@
 
 import { elementLabel } from '../labels/labels.ts';
 import type { AttributeSpec } from '../schema/types.ts';
-import { formLayout, formSlot, OTHER_DATA } from './form-order.ts';
+import { formLayout, formSlot, IN_ENGLISH, isEnglishAttr, OTHER_DATA } from './form-order.ts';
 
 /**
  * Campos que o Lattes gera e que não se editam à mão: números de sequência,
@@ -13,10 +13,12 @@ import { formLayout, formSlot, OTHER_DATA } from './form-order.ts';
  * Também os derivados de outra escolha: a sigla do país sai do país
  * escolhido, a sigla e a UF da instituição saem da tabela de instituições, a
  * data e a hora de atualização são carimbadas pelo Lattes ao salvar, e o
- * ORCID entra pela vinculação com o próprio ORCID, não digitado.
+ * ORCID entra pela vinculação com o próprio ORCID, não digitado. O número
+ * Lattes do orientador (ou do orientado) é o que o formulário acha ao
+ * "verificar o nome do orientador na base Lattes", não digitado.
  */
 const SYSTEM =
-  /^(SEQUENCIA-|CODIGO-|COD-|ID-|NUMERO-IDENTIFICADOR$|NRO-ID-CNPQ$|FORMATO-|STATUS-OASISBR$|SIGLA-PAIS-|SIGLA-INSTITUICAO$|SIGLA-UF-INSTITUICAO$|DATA-ATUALIZACAO$|HORA-ATUALIZACAO$|ORCID-ID$)/;
+  /^(SEQUENCIA-|NUMERO-ID-ORIENT|CODIGO-|COD-|ID-|NUMERO-IDENTIFICADOR$|NRO-ID-CNPQ$|FORMATO-|STATUS-OASISBR$|SIGLA-PAIS-|SIGLA-INSTITUICAO$|SIGLA-UF-INSTITUICAO$|DATA-ATUALIZACAO$|HORA-ATUALIZACAO$|ORCID-ID$)/;
 
 /** CPF do dono do currículo vem do cadastro; o CPF de autor é digitado. */
 const OWNER_ONLY: Record<string, string> = {
@@ -171,7 +173,8 @@ function periodRank(attr: string): number {
 /**
  * Ordena os campos de um bloco. Nos elementos com formulário conhecido no
  * Lattes (form-order.ts), na ordem do Lattes, em grupos que são trechos dele,
- * e os campos que o Lattes não tem em "Outros dados". Nos outros, por assunto,
+ * e os campos que o Lattes não tem em "Em inglês" (as versões em inglês) ou
+ * em "Outros dados". Nos outros, por assunto,
  * depois pelo rótulo. Sim/não juntos em "Marcações" e os códigos do Lattes no
  * fim. Com `isEmpty`, os vazios vão para o fim de cada grupo. O bloco pode
  * juntar campos de várias partes do item (dados básicos, detalhamento,
@@ -192,6 +195,7 @@ export function groupFields(
   const order = [
     ...new Set([
       ...formLabels,
+      IN_ENGLISH,
       OTHER_DATA,
       ...GROUPS.map((g) => g.label),
       'Marcações',
@@ -217,7 +221,9 @@ export function groupFields(
       (isSystemAttr(entry.element, entry.attr)
         ? 'Códigos do Lattes'
         : mapped(entry)
-          ? OTHER_DATA
+          ? isEnglishAttr(entry.attr)
+            ? IN_ENGLISH
+            : OTHER_DATA
           : isBoolean(entry)
             ? 'Marcações'
             : (GROUPS.find((g) => g.test.test(entry.attr))?.label ?? 'Outros'));

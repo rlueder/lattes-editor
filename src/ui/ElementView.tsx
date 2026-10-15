@@ -10,6 +10,7 @@ import { lattesSchema } from '../schema/lattes.ts';
 import { AttributeField, type EditFn } from './AttributeField.tsx';
 import type { SectionFilter } from './facets.ts';
 import { groupFields, isBooleanAttr, isSystemAttr } from './field-kind.ts';
+import { offForm } from './form-order.ts';
 import { isListItem } from './item-meta.ts';
 import { OUTLINE_HEAD_ATTR, outlineId } from './item-outline.ts';
 import { ItemList } from './ItemList.tsx';
@@ -48,6 +49,8 @@ function FieldsBlock({
       // O formato da data é sempre DDMMAAAA: o campo de data já diz isso.
       .filter((a) => !isRedundantDateFormat(a.name, a.value))
       .filter((a) => showEmpty || a.value !== '')
+      // Fora do formulário do Lattes (form-order.ts): só aparece preenchido.
+      .filter((a) => a.value !== '' || !offForm(src.name, a.name))
       // Códigos que o Lattes gera: só com "Mostrar códigos do Lattes" ligado.
       .filter((a) => showCodes || !isSystemAttr(src.name, a.name))
       .map((a) => ({ attr: a.name, element: src.name, key: `${i}:${a.name}`, source: i })),

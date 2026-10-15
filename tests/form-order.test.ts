@@ -1,13 +1,21 @@
 // Ordem dos campos nos formulários: a do formulário do Lattes onde ela é
 // conhecida (src/ui/form-order.ts), com os campos que o Lattes não tem em
-// "Outros dados" e nenhum campo num grupo errado por semelhança de nome.
+// "Em inglês" (as versões em inglês) ou em "Outros dados", e nenhum campo num
+// grupo errado por semelhança de nome.
 
 import { describe, expect, it } from 'vitest';
 
 import { attributeLabel } from '../src/labels/labels.ts';
 import { lattesSchema } from '../src/schema/lattes.ts';
 import { codeAttrFor, type FieldEntry, groupFields, isSystemAttr } from '../src/ui/field-kind.ts';
-import { formLayout, formSlot, OTHER_DATA } from '../src/ui/form-order.ts';
+import {
+  formLayout,
+  formSlot,
+  IN_ENGLISH,
+  isEnglishAttr,
+  offForm,
+  OTHER_DATA,
+} from '../src/ui/form-order.ts';
 
 /** Todos os atributos dos elementos, como um bloco do formulário. */
 function entriesOf(...elements: string[]): FieldEntry[] {
@@ -61,6 +69,7 @@ describe('ordem do formulário do Lattes', () => {
         'Trabalho apresentado',
         ['HOME-PAGE-DO-TRABALHO', 'TITULO', 'FLAG-DIVULGACAO-CIENTIFICA', 'TITULO-INGLES'],
       ],
+      [IN_ENGLISH, ['NOME-DO-EVENTO-INGLES']],
       [
         OTHER_DATA,
         [
@@ -68,7 +77,6 @@ describe('ordem do formulário do Lattes', () => {
           'IDIOMA',
           'LOCAL-DO-EVENTO',
           'MEIO-DE-DIVULGACAO',
-          'NOME-DO-EVENTO-INGLES',
           'NOME-INSTITUICAO',
           'CODIGO-INSTITUICAO',
           'FLAG-RELEVANCIA',
@@ -91,7 +99,15 @@ describe('ordem do formulário do Lattes', () => {
     expect(shape(entriesOf('MESTRADO')).slice(0, 4)).toEqual([
       [
         'Curso',
-        ['TIPO-MESTRADO', 'NOME-INSTITUICAO', 'CODIGO-INSTITUICAO', 'NOME-CURSO', 'CODIGO-CURSO'],
+        [
+          'TIPO-MESTRADO',
+          'NOME-INSTITUICAO',
+          'CODIGO-INSTITUICAO',
+          'NOME-ORGAO',
+          'CODIGO-ORGAO',
+          'NOME-CURSO',
+          'CODIGO-CURSO',
+        ],
       ],
       [
         'Situação e período',
@@ -111,15 +127,42 @@ describe('ordem do formulário do Lattes', () => {
       'TIPO-MESTRADO',
       'NOME-INSTITUICAO',
       'CODIGO-INSTITUICAO',
+      'NOME-ORGAO',
+      'CODIGO-ORGAO',
       'NOME-CURSO',
       'CODIGO-CURSO',
     ]);
   });
 
-  it('prêmio: título, entidade promotora, ano; o título em inglês em outros dados', () => {
+  it('doutorado: orientadores do sanduíche e da cotutela no grupo deles', () => {
+    const group = groupsOf(entriesOf('DOUTORADO')).find((g) => g.label === 'Sanduíche e cotutela')!;
+    expect(group.entries.map((e) => e.attr)).toEqual(
+      expect.arrayContaining(['NOME-DO-ORIENTADOR-SANDUICHE', 'NOME-DO-ORIENTADOR-CO-TUTELA']),
+    );
+  });
+
+  it('o número Lattes do orientador é código do Lattes', () => {
+    expect(isSystemAttr('DOUTORADO', 'NUMERO-ID-ORIENTADOR')).toBe(true);
+    expect(
+      isSystemAttr('DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-MESTRADO', 'NUMERO-ID-ORIENTADO'),
+    ).toBe(true);
+    expect(isSystemAttr('DADOS-GERAIS', 'NUMERO-IDENTIDADE')).toBe(false);
+  });
+
+  it('pós-doutorado: só os campos do formulário do Lattes aparecem vazios', () => {
+    for (const attr of ['NOME-INSTITUICAO', 'STATUS-DO-CURSO', 'ANO-DE-INICIO', 'NOME-AGENCIA']) {
+      expect(offForm('POS-DOUTORADO', attr), attr).toBe(false);
+    }
+    for (const attr of ['STATUS-DO-ESTAGIO', 'TITULO-DO-TRABALHO', 'NOME-CURSO-INGLES']) {
+      expect(offForm('POS-DOUTORADO', attr), attr).toBe(true);
+    }
+    expect(offForm('DOUTORADO', 'STATUS-DO-ESTAGIO')).toBe(false);
+  });
+
+  it('prêmio: título, entidade promotora, ano; o título em inglês à parte', () => {
     expect(shape(entriesOf('PREMIO-TITULO'))).toEqual([
       ['Principal', ['NOME-DO-PREMIO-OU-TITULO', 'NOME-DA-ENTIDADE-PROMOTORA', 'ANO-DA-PREMIACAO']],
-      [OTHER_DATA, ['NOME-DO-PREMIO-OU-TITULO-INGLES']],
+      [IN_ENGLISH, ['NOME-DO-PREMIO-OU-TITULO-INGLES']],
     ]);
   });
 
@@ -215,7 +258,9 @@ describe('ordem do formulário do Lattes', () => {
           if (slot) expect(g.label, `${element} ${e.attr}`).toBe(slot.label);
           else if (paired) expect(isSystemAttr(element, e.attr)).toBe(true);
           else if (g.label !== 'Códigos do Lattes') {
-            expect(g.label, `${element} ${e.attr}`).toBe(OTHER_DATA);
+            expect(g.label, `${element} ${e.attr}`).toBe(
+              isEnglishAttr(e.attr) ? IN_ENGLISH : OTHER_DATA,
+            );
           }
         });
       }

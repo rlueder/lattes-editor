@@ -20,6 +20,14 @@ export interface FormGroup {
 /** Grupo dos campos do XML que o formulário do Lattes não tem. */
 export const OTHER_DATA = 'Outros dados';
 
+/** As versões em inglês que o formulário do Lattes não tem, à parte de "Outros dados". */
+export const IN_ENGLISH = 'Em inglês';
+
+/** Versão em inglês de outro campo (TITULO-DO-TRABALHO-INGLES, TEXTO-RESUMO-CV-RH-EN). */
+export function isEnglishAttr(attr: string): boolean {
+  return /-(INGLES|EN)$/.test(attr);
+}
+
 /**
  * Participação em evento, GN_TEC / PKG_EVENTO.FORM (seção 16): forma,
  * tipo, nome do evento, ano, classificação (sem atributo no XSD), natureza,
@@ -48,7 +56,14 @@ const EVENT: FormGroup[] = [
  */
 const FORMATION: FormGroup[] = [
   {
-    attrs: ['TIPO-MESTRADO', 'TIPO-DOUTORADO', 'TIPO-GRADUACAO', 'NOME-INSTITUICAO', 'NOME-CURSO'],
+    attrs: [
+      'TIPO-MESTRADO',
+      'TIPO-DOUTORADO',
+      'TIPO-GRADUACAO',
+      'NOME-INSTITUICAO',
+      'NOME-ORGAO',
+      'NOME-CURSO',
+    ],
     label: 'Curso',
   },
   {
@@ -83,6 +98,8 @@ const FORMATION: FormGroup[] = [
       'NOME-INSTITUICAO-GRAD',
       'NOME-INSTITUICAO-OUTRA-GRAD',
       'NOME-ORIENTADOR-GRAD',
+      'NOME-DO-ORIENTADOR-SANDUICHE',
+      'NOME-DO-ORIENTADOR-CO-TUTELA',
     ],
     label: 'Sanduíche e cotutela',
   },
@@ -216,6 +233,32 @@ const PROJECT: FormGroup[] = [
 const RESUME: FormGroup[] = [
   { attrs: ['TEXTO-RESUMO-CV-RH', 'TEXTO-RESUMO-CV-RH-EN'], label: 'Resumo' },
 ];
+
+/**
+ * Os campos que o formulário do Lattes mostra, nos formulários em que essa
+ * lista foi conferida campo a campo. Os outros atributos do XML desses
+ * elementos não aparecem no editor enquanto estão vazios.
+ *
+ * Pós-doutorado: pkg_formacao.form com f_tipo=AP e f_nivel=5, lido em
+ * 15/10/2026. Título do trabalho e ano de obtenção vão ocultos no formulário;
+ * status do estágio e as versões em inglês não existem nele.
+ */
+const FORM_FIELDS: Record<string, ReadonlySet<string>> = {
+  'POS-DOUTORADO': new Set([
+    'NOME-INSTITUICAO',
+    'STATUS-DO-CURSO',
+    'ANO-DE-INICIO',
+    'ANO-DE-CONCLUSAO',
+    'FLAG-BOLSA',
+    'NOME-AGENCIA',
+  ]),
+};
+
+/** Atributo fora do formulário do Lattes, num formulário conferido: some quando vazio. */
+export function offForm(element: string, attr: string): boolean {
+  const fields = FORM_FIELDS[element];
+  return fields !== undefined && !fields.has(attr);
+}
 
 const FORMATION_LEVELS =
   /^(GRADUACAO|ESPECIALIZACAO|MESTRADO|DOUTORADO|POS-DOUTORADO|LIVRE-DOCENCIA|CURSO-TECNICO-PROFISSIONALIZANTE|MESTRADO-PROFISSIONALIZANTE|ENSINO-FUNDAMENTAL-PRIMEIRO-GRAU|ENSINO-MEDIO-SEGUNDO-GRAU|RESIDENCIA-MEDICA|APERFEICOAMENTO)$/;
