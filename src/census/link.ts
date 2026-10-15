@@ -13,7 +13,7 @@ import { findLinks } from '../bridge/lattes-html.ts';
 import { parseXml, walk, type XElement } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 import { scanForms, type ScannedField } from './html-scan.ts';
-import { type CensusPort, CensusReader, listPath, SessionLost } from './run.ts';
+import { type CensusFile, type CensusPort, CensusReader, listPath, SessionLost } from './run.ts';
 import type { CensusTarget } from './targets.ts';
 import { CENSUS_TARGETS } from './targets-production.ts';
 
@@ -44,10 +44,42 @@ export interface FieldLink {
 export interface LinkSummary {
   /** Itens cujo par na exportação não ficou claro. */
   ambiguous: number;
+  /**
+   * Os ocultos de grade (f_autores_l, f_plv_l, f_area_l…) nos formulários de
+   * edição lidos: em quantos vieram preenchidos e em quantos vazios, sem o
+   * valor. Diz se a página já traz a grade serializada, ou se só o check()
+   * a monta no envio (e enviar o formulário como veio a apagaria).
+   */
+  grids?: Record<string, { empty: number; filled: number }>;
+  /**
+   * Links de edição achados na lista (e nas telas intermediárias abertas),
+   * antes do limite de itens lidos: com `read` menor, o limite cortou.
+   * Ausente quando a lista não foi aberta.
+   */
+  listed?: number;
+  /**
+   * Quando a lista não tem link de edição que o censo reconheça: os
+   * procedimentos que a página abre, com os nomes dos parâmetros e sem os
+   * valores, e quantas vezes o procedimento do formulário aparece no HTML fora
+   * de um link (num script, por exemplo). É o que diz onde procurar.
+   */
+  listShape?: { mentions: number; procs: string[] };
   /** Itens casados com um elemento da exportação. */
   matched: number;
   read: number;
-  status: 'erro' | 'ok' | 'sem-itens' | 'sem-lista';
+  /**
+   * - `ok`: lido;
+   * - `sem-itens`: a exportação não tem o elemento, e a lista do Lattes também
+   *   não tem link de edição (ou não foi aberta);
+   * - `so-na-lista`: a exportação não tem o elemento, mas a lista do Lattes
+   *   tem itens (a exportação é a versão publicada, e o item importado fica
+   *   fora dela até o envio ao CNPq);
+   * - `sem-link`: a exportação tem itens e a lista não tem link de edição
+   *   reconhecível (veja `listShape`);
+   * - `sem-lista`: a entrada não tem lista;
+   * - `erro`: falha de rede no meio.
+   */
+  status: 'erro' | 'ok' | 'sem-itens' | 'sem-lista' | 'sem-link' | 'so-na-lista';
   target: string;
 }
 
@@ -221,6 +253,9 @@ const ownValues = (els: XElement[]): AttrValue[] =>
     el.attrs.map((a) => ({ attribute: a.name, element: el.name, value: a.value })),
   );
 
+/** Ocultos onde o check() serializa uma grade (seção 16 de lattes_internals.md). */
+const GRID_HIDDEN = /^f_\w+_l$/i;
+
 /** Links de edição de uma página: os que levam o número do item. */
 function editLinks(html: string, proc: string, itemKey: string) {
   return findLinks(html, proc).filter((l) => l.params[itemKey.toLowerCase()]);
@@ -252,28 +287,70 @@ function groupsOf(targets: CensusTarget[]): Group[] {
   return [...groups.values()];
 }
 
+interface ItemPages {
+  /** Links de edição achados, antes do limite. */
+  listed: number;
+  pages: { path: string; seq?: string }[];
+  /** Os procedimentos que a lista abre, só com os nomes (ver LinkSummary.listShape). */
+  shape?: LinkSummary['listShape'];
+}
+
+/** Os procedimentos que uma página abre, com os nomes dos parâmetros, sem valores. */
+function pageShape(htmls: string[], proc: string): NonNullable<LinkSummary['listShape']> {
+  const procs = new Set<string>();
+  let mentions = 0;
+  const name = proc.replace(/\.$/, '').toLowerCase();
+  for (const html of htmls) {
+    for (const m of html.matchAll(/([A-Za-z_]+\.[A-Za-z_]+|prc_[A-Za-z_]+)\?([^'"\s<>]*)/g)) {
+      const params = m[2]!
+        .replace(/&amp;/g, '&')
+        .split('&')
+        .map((p) => p.split('=')[0]!.toLowerCase())
+        .filter(Boolean)
+        .sort();
+      procs.add(`${m[1]}?${[...new Set(params)].join('&')}`);
+    }
+    const lower = html.toLowerCase();
+    let at = lower.indexOf(name);
+    while (at >= 0) {
+      // Fora de um endereço com "?": o nome num script ou num texto.
+      if (lower[at + name.length] !== '?') mentions++;
+      at = lower.indexOf(name, at + 1);
+    }
+  }
+  return { mentions, procs: [...procs].sort() };
+}
+
 async function itemPages(
   reader: CensusReader,
   code: string,
   t: CensusTarget,
   max: number,
-): Promise<{ path: string; seq?: string }[]> {
+): Promise<ItemPages> {
   if (t.singleton) {
     const where = await reader.locate(t);
-    return where.path ? [{ path: where.path }] : [];
+    return where.path ? { listed: 1, pages: [{ path: where.path }] } : { listed: 0, pages: [] };
   }
-  if (!t.list || t.locate.kind === 'unknown') return [];
+  if (!t.list || t.locate.kind === 'unknown') return { listed: 0, pages: [] };
   const listHtml = (await reader.get(listPath(await reader.menuHtml(), code, t.list))).html;
-  const pages = t.via ? findLinks(listHtml, t.via).slice(0, max) : [{ path: '' }];
+  const vias = t.via ? findLinks(listHtml, t.via).slice(0, Math.max(max, 1)) : [{ path: '' }];
   const out: { path: string; seq?: string }[] = [];
-  for (const page of pages) {
+  const seen: string[] = [listHtml];
+  let listed = 0;
+  for (const page of vias) {
     const html = page.path ? (await reader.get(page.path)).html : listHtml;
+    if (page.path) seen.push(html);
     for (const link of editLinks(html, t.locate.proc, t.itemKey)) {
-      if (out.length >= max) return out;
-      out.push({ path: link.path, seq: link.params[t.itemKey.toLowerCase()] });
+      listed++;
+      if (out.length < max)
+        out.push({ path: link.path, seq: link.params[t.itemKey.toLowerCase()] });
     }
   }
-  return out;
+  return {
+    listed,
+    pages: out,
+    shape: listed ? undefined : pageShape(seen, t.locate.proc),
+  };
 }
 
 async function readGroup(
@@ -296,14 +373,38 @@ async function readGroup(
     group.targets.flatMap((t) => t.elements),
   );
   const all = [...summaries.values()];
-  if (!items.length || (!first.singleton && !first.list)) {
+  if (!first.singleton && !first.list) {
     for (const s of all) s.status = items.length ? 'sem-lista' : 'sem-itens';
+    return all;
+  }
+  if (!items.length) {
+    for (const s of all) s.status = 'sem-itens';
+    // Sem item na exportação, a lista ainda diz se o Lattes tem algum: só
+    // conta os links, sem abrir formulário.
+    if (first.singleton) return all;
+    try {
+      const { listed } = await itemPages(reader, code, first, 0);
+      for (const s of all) {
+        s.listed = listed;
+        if (listed > 0) s.status = 'so-na-lista';
+      }
+    } catch (err) {
+      if (err instanceof SessionLost) throw err;
+    }
     return all;
   }
   const owner = (el: XElement) =>
     summaries.get(group.targets.find((t) => t.elements.includes(el.name))!.id)!;
   try {
-    for (const page of await itemPages(reader, code, first, max)) {
+    const found = await itemPages(reader, code, first, max);
+    for (const s of all) s.listed = found.listed;
+    if (!found.listed) {
+      for (const s of all) {
+        s.status = 'sem-link';
+        if (found.shape) s.listShape = found.shape;
+      }
+    }
+    for (const page of found.pages) {
       const fields = scanForms((await reader.get(page.path)).html).forms.flatMap((f) => f.fields);
       const item = first.singleton ? items[0] : bestItem(fields, items, page.seq);
       if (!item) {
@@ -314,6 +415,12 @@ async function readGroup(
       const s = owner(item);
       s.read++;
       s.matched++;
+      for (const f of fields) {
+        if (f.type !== 'hidden' || !GRID_HIDDEN.test(f.name)) continue;
+        const tally = ((s.grids ??= {})[f.name] ??= { empty: 0, filled: 0 });
+        if (f.value.trim()) tally.filled++;
+        else tally.empty++;
+      }
       const values = first.singleton ? ownValues(items) : itemValues(item);
       collectLinks(out, s.target, fields, values);
     }
@@ -323,7 +430,7 @@ async function readGroup(
   }
   for (const t of group.targets) {
     const s = summaries.get(t.id)!;
-    if (s.status === 'ok' && !itemsOf(doc, t.elements).length) s.status = 'sem-itens';
+    if (s.status !== 'erro' && !itemsOf(doc, t.elements).length) s.status = 'sem-itens';
   }
   return all;
 }
@@ -359,4 +466,27 @@ function compareLinks(a: FieldLink, b: FieldLink): number {
     b.matches - a.matches ||
     `${a.element}@${a.attribute}`.localeCompare(`${b.element}@${b.attribute}`)
   );
+}
+
+/**
+ * A passada de edição sozinha, no formato de um arquivo do censo sem
+ * formulários: o relatório (report.ts) pega as ligações da captura mais
+ * recente de cada entrada, então este arquivo atualiza só as ligações.
+ */
+export function linkOnlyFile(
+  result: { links: FieldLink[]; summary: LinkSummary[] },
+  collector: string,
+  now: () => Date = () => new Date(),
+): CensusFile {
+  return {
+    capturedAt: now().toISOString(),
+    collector,
+    entries: [],
+    format: 1,
+    links: result.links,
+    linkSummary: result.summary,
+    lists: {},
+    origin:
+      'cvlattesweb: só a passada de edição, formulários de edição abertos por GET, sem enviar',
+  };
 }

@@ -87,9 +87,11 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
       ),
     ),
     {
-      // A lista nasce vazia e montaTipoApres() a enche no clique da forma
-      // (observado). Com um tipo já gravado, o simulado mostra só ele, marcado:
-      // como o Lattes marca o tipo gravado não foi visto.
+      // A lista nasce só com a opção vazia e montaTipoApres() a enche por
+      // script (observado: censo de 15/10/2026, scriptFilled). Como a edição
+      // de um convidado mostra o tipo gravado não foi visto; o simulado faz
+      // como a página observada e não o mostra no HTML (withTypeOptions). O
+      // POST grava o tipo que vier.
       kind: 'select',
       name: 'F_TPO',
       read: (item) => getAttr(partOf(item, 'basics'), 'TIPO-PARTICIPACAO') ?? '',
@@ -149,12 +151,20 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
   ];
 }
 
-/** Opções do F_TPO: as do valor gravado (ver bindings), ou nenhuma. */
-function withTypeOptions(list: Binding[], item: XElement | undefined): Binding[] {
+/**
+ * Opções do F_TPO no HTML: só a vazia, como a página observada (o script é que
+ * monta as outras). Nos testes, `tpoRendered` mostra o tipo gravado, marcado,
+ * para simular uma edição que o traga no HTML.
+ */
+function withTypeOptions(
+  list: Binding[],
+  item: XElement | undefined,
+  tpoRendered: boolean,
+): Binding[] {
   return list.map((b) => {
     if (b.name !== 'F_TPO') return b;
-    const current = item ? b.read(item) : '';
-    return { ...b, options: current ? [[current, current]] : [] };
+    const current = item && tpoRendered ? b.read(item) : '';
+    return { ...b, options: current ? [[current, current]] : [['', '']] };
   });
 }
 
@@ -189,6 +199,7 @@ function form(req: SimRequest, state: LattesState): SimResponse {
   const list = withTypeOptions(
     bindings(state, { f_ctr: item ? 'U' : 'I', f_seq: seq ?? '' }),
     item,
+    state.tpoRendered,
   );
   const body = `<form name="GN_TEC" method="post" action="PKG_EVENTO.FORM">
 ${renderFields(list, item)}

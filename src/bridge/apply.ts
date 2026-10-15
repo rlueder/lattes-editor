@@ -15,12 +15,25 @@ import { applyCreateAtuacao } from './create.ts';
 import { applyCreateFormacao, applyCreateProjeto } from './create-items.ts';
 import { applyDelete, type DeleteOp, isDeleteOp } from './delete.ts';
 import {
+  EDIT_EVENTO_ENABLED,
   EVENTO_SPEC,
   type EventoOp,
   identityMismatches,
   isEventoOp,
+  isFullEvento,
   locateEvento,
 } from './edit-items.ts';
+import {
+  countListEdits,
+  enabledListEdits,
+  isListEditOp,
+  LIST_EDIT_WATCH,
+  type ListEditKind,
+  type ListEditOp,
+  listEditSpec,
+  locateListEdit,
+} from './edit-lists.ts';
+import { fieldLabel } from './field-labels.ts';
 import {
   encodeLatin1Form,
   type FormControl,
@@ -59,6 +72,7 @@ type EditOp = Exclude<
   | BiographicOp
   | DeleteOp
   | EventoOp
+  | ListEditOp
   | { kind: 'criar-atuacao' | 'criar-formacao' | 'criar-projeto' }
 >;
 
@@ -173,7 +187,38 @@ function changedNames(a: Pairs, b: Pairs): string[] {
   return [...names].filter((n) => !same(pairValue(a, n), pairValue(b, n)));
 }
 
-export async function applyOp(op: BridgeOp, port: LattesPort): Promise<OpResult> {
+/**
+ * As alterações atrás de chave que este lado grava: as que têm o formulário
+ * no contrato dele. O app só manda essas operações a uma extensão que anuncia
+ * a capacidade (plan.ts, GATED_EDITS), mas a extensão não confia nisso: uma
+ * operação de um tipo cuja chave ela tem desligada para sem enviar nada.
+ */
+export interface ApplyGates {
+  editEvento: boolean;
+  lists: ReadonlySet<ListEditKind>;
+}
+
+export const BUILD_GATES: ApplyGates = {
+  editEvento: EDIT_EVENTO_ENABLED,
+  lists: enabledListEdits(),
+};
+
+/** Por que esta extensão não grava a operação; undefined quando grava. */
+function gatedOut(op: BridgeOp, gates: ApplyGates): string | undefined {
+  if (isListEditOp(op) && !gates.lists.has(op.kind)) {
+    return 'Esta extensão não tem o formulário deste tipo no contrato; a alteração fica à mão';
+  }
+  if (isEventoOp(op) && !gates.editEvento && isFullEvento(op)) {
+    return 'Esta extensão só altera eventos de ouvinte; a alteração fica à mão';
+  }
+  return undefined;
+}
+
+export async function applyOp(
+  op: BridgeOp,
+  port: LattesPort,
+  gates: ApplyGates = BUILD_GATES,
+): Promise<OpResult> {
   if (op.kind === 'criar-atuacao') return applyCreateAtuacao(op, port);
   if (op.kind === 'criar-formacao') return applyCreateFormacao(op, port);
   if (op.kind === 'criar-projeto') return applyCreateProjeto(op, port);
@@ -183,54 +228,105 @@ export async function applyOp(op: BridgeOp, port: LattesPort): Promise<OpResult>
     key: op.key,
     status,
   });
+  const gated = gatedOut(op, gates);
+  if (gated) return result('erro', gated);
   try {
-    // Formação, endereço e identificação (biographic.ts) e participação em
-    // eventos (edit-items.ts): formulários e caminhos próprios.
-    const { action, name } = isBiographicOp(op)
+    // Formação, endereço e identificação (biographic.ts), participação em
+    // eventos (edit-items.ts) e as listas sem número (edit-lists.ts):
+    // formulários e caminhos próprios.
+    const spec: { action: string; mode?: string; name: string } = isBiographicOp(op)
       ? BIOGRAPHIC_SPECS[op.kind]
       : isEventoOp(op)
         ? EVENTO_SPEC
-        : FORMS[op.kind];
+        : isListEditOp(op)
+          ? listEditSpec(op.kind)
+          : FORMS[op.kind];
+    const { action, name } = spec;
     const menu = await port.menuHtml();
+    const get = (p: string) => getChecked(port, p);
+    // Nas listas sem número, quantas linhas havia: um envio que inclui em vez
+    // de alterar aparece como uma linha a mais.
+    let listed: number | undefined;
     const path = isBiographicOp(op)
-      ? await locateBiographic(op, menu, (p) => getChecked(port, p))
+      ? await locateBiographic(op, menu, get)
       : isEventoOp(op)
-        ? await locateEvento(op, menu, (p) => getChecked(port, p))
-        : await locate(op, port, menu);
+        ? await locateEvento(op, menu, get)
+        : isListEditOp(op)
+          ? await locateListEdit(
+              op,
+              menu,
+              get,
+              async (p) => (await readPairs(port, p, name)).pairs,
+            ).then((found) => {
+              listed = found.listed;
+              return found.path;
+            })
+          : await locate(op, port, menu);
     const before = await readPairs(port, path, name);
 
-    if (pairValue(before.pairs, 'f_ctr') !== 'U') {
+    // O f_ctr da edição é U; o da formação complementar vem vazio (seção 15).
+    if (pairValue(before.pairs, 'f_ctr') !== (spec.mode ?? 'U')) {
       return result('erro', 'O formulário não está em modo de alteração');
     }
+    const labels = (names: string[]) => names.map((n) => fieldLabel(n, op.kind)).join(', ');
     const wrong = [
       ...mismatches(before.pairs, op.expect),
       ...(isEventoOp(op) ? identityMismatches(op, (n) => pairValue(before.pairs, n)) : []),
     ];
     if (wrong.length > 0) {
-      return result('divergente', `O Lattes não está como o editor espera: ${wrong.join(', ')}`);
+      return result('divergente', `O Lattes não está como o editor espera: ${labels(wrong)}`);
     }
     for (const [field, value] of Object.entries(op.set)) {
       const limit = before.controls.find((c) => c.name === field)?.maxLength;
       if (value && limit && limit > 0 && value.length > limit) {
-        return result('erro', `${field} passa do limite do Lattes (${limit} caracteres)`);
+        return result(
+          'erro',
+          `${fieldLabel(field, op.kind)} passa do limite do Lattes (${limit} caracteres)`,
+        );
       }
+    }
+    // Nada a trocar: só no evento, onde a natureza vai para ser conferida e
+    // não trocada (edit-items.ts). O "antes" já bateu, e enviar o formulário
+    // igual só acenderia a pendência. Os outros tipos seguem enviando sempre.
+    if (isEventoOp(op) && mismatches(before.pairs, op.set).length === 0) {
+      return result('conferido', 'O Lattes já estava assim; nada foi enviado');
     }
 
     const next = setPairs(before.pairs, op.set);
     const response = await port.post(action, encodeLatin1Form(next));
     if (isLogonPage(response)) return result('sessao', 'A sessão do Lattes expirou; entre de novo');
 
+    if (isListEditOp(op) && listed !== undefined) {
+      // O f_ctr desses formulários não distingue sempre incluir de alterar (o
+      // da formação complementar vem vazio nos dois): a lista não pode ter
+      // ganhado linha.
+      const now = await countListEdits(op.kind, menu, get);
+      if (now > listed) {
+        return result(
+          'erro',
+          `O Lattes incluiu uma linha nova em vez de alterar (${listed} antes, ${now} depois): confira a lista no Lattes e exclua a cópia`,
+        );
+      }
+    }
+
     const after = await readPairs(port, path, name);
     const notSaved = mismatches(after.pairs, op.set);
     if (notSaved.length > 0) {
-      return result('erro', `O Lattes não gravou: ${notSaved.join(', ')}`);
+      return result('erro', `O Lattes não gravou: ${labels(notSaved)}`);
     }
     // f_vinculo é preenchido no envio (check()); a página sempre o traz vazio.
     const unexpected = changedNames(before.pairs, after.pairs).filter(
       (n) => !(n in op.set) && n !== 'f_vinculo',
     );
+    // Campos desabilitados não vão nos pares; os que identificam o item
+    // (instituição e curso da formação complementar) se conferem à parte.
+    const value = (controls: FormControl[], n: string) =>
+      controls.find((c) => c.name === n)?.value ?? null;
+    for (const n of isListEditOp(op) ? LIST_EDIT_WATCH[op.kind] : []) {
+      if (!same(value(before.controls, n), value(after.controls, n))) unexpected.push(n);
+    }
     if (unexpected.length > 0) {
-      return result('erro', `Outros campos mudaram no Lattes: ${unexpected.join(', ')}`);
+      return result('erro', `Outros campos mudaram no Lattes: ${labels(unexpected)}`);
     }
     return result('conferido', 'Gravado e conferido no Lattes');
   } catch (err) {
@@ -243,12 +339,16 @@ export async function applyOp(op: BridgeOp, port: LattesPort): Promise<OpResult>
 export async function applyAll(
   ops: BridgeOp[],
   port: LattesPort,
-  hooks: { onResult?: (r: OpResult) => void; shouldStop?: () => boolean } = {},
+  hooks: {
+    gates?: ApplyGates;
+    onResult?: (r: OpResult) => void;
+    shouldStop?: () => boolean;
+  } = {},
 ): Promise<OpResult[]> {
   const results: OpResult[] = [];
   for (const op of ops) {
     if (hooks.shouldStop?.()) break;
-    const r = await applyOp(op, port);
+    const r = await applyOp(op, port, hooks.gates);
     results.push(r);
     hooks.onResult?.(r);
     if (r.status !== 'conferido') break;
