@@ -25,8 +25,11 @@ interface Props {
   /** Muda depois de uma troca de foto, para buscar a nova em vez da guardada. */
   photoVersion?: number;
   profile: Profile;
-  /** Sem ela, não há lápis: a extensão não sabe trocar a foto deste currículo agora. */
-  onChangePhoto?: () => void;
+  /**
+   * Abre a troca da foto, com a foto de agora. Sem ela, não há lápis: a
+   * extensão não sabe trocar a foto deste currículo agora.
+   */
+  onChangePhoto?: (current?: string) => void;
 }
 
 export function ProfileCard({ onChangePhoto, photoVersion = 0, profile }: Props) {
@@ -80,7 +83,7 @@ export function ProfileCard({ onChangePhoto, photoVersion = 0, profile }: Props)
                 aria-label="Trocar a foto no Lattes"
                 className="icon-btn avatar-edit"
                 type="button"
-                onClick={onChangePhoto}
+                onClick={() => onChangePhoto(photo.loaded ? photo.src : undefined)}
               >
                 <PencilIcon />
               </button>

@@ -9,6 +9,7 @@ import { toBase64 } from '../bridge/export.ts';
 import { photoFailureMessage } from '../bridge/photo.ts';
 import { Modal } from './Modal.tsx';
 import { preparePhoto } from './photo-image.ts';
+import { usePrivacyMode } from './privacy.ts';
 import type { PhotoUploadReading } from './use-bridge.ts';
 
 /** Sem resposta da extensão em tanto tempo, o envio conta como falho. */
@@ -25,12 +26,15 @@ type Step =
 const kb = (n: number) => `${Math.round(n / 1000)} kB`;
 
 export function PhotoDialog({
+  current,
   onClose,
   onSent,
   open,
   reading,
   send,
 }: {
+  /** A foto de agora, no círculo até a pessoa escolher outra. */
+  current?: string;
   open: boolean;
   /** A resposta mais recente da extensão a um pedido de troca. */
   reading?: PhotoUploadReading;
@@ -41,6 +45,9 @@ export function PhotoDialog({
   onSent: () => void;
 }) {
   const [step, setStep] = useState<Step>({ kind: 'escolher' });
+  // No modo de privacidade a foto de agora não aparece, nem se ele mudar com o diálogo aberto.
+  const [hidden] = usePrivacyMode();
+  const shown = hidden ? undefined : current;
   const input = useRef<HTMLInputElement>(null);
   // A prévia é uma URL de blob criada e revogada no mesmo efeito, presa aos
   // bytes: os passos que carregam a mesma foto reaproveitam a URL, e o
@@ -158,7 +165,11 @@ export function PhotoDialog({
       />
       <div className="photo-body">
         <div aria-hidden="true" className="photo-preview">
-          {preview && <img alt="" src={preview} />}
+          {preview ? (
+            <img alt="" src={preview} />
+          ) : (
+            shown && step.kind !== 'enviada' && <img alt="" src={shown} />
+          )}
         </div>
         <div className="photo-text">
           {step.kind === 'enviada' ? (

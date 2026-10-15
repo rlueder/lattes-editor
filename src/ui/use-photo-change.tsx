@@ -19,6 +19,8 @@ function simulated(): 'falha' | 'ok' | undefined {
 
 export function usePhotoChange(bridge: BridgeState) {
   const [open, setOpen] = useState(false);
+  /** A foto que o currículo tem agora, mostrada no diálogo antes da troca. */
+  const [current, setCurrent] = useState<string>();
   const [version, setVersion] = useState(0);
   const [fakeReading, setFakeReading] = useState<PhotoUploadReading | undefined>();
   const fake = simulated();
@@ -44,14 +46,24 @@ export function usePhotoChange(bridge: BridgeState) {
   return {
     dialog: (
       <PhotoDialog
+        current={current}
         open={open}
         reading={fake ? fakeReading : bridge.photoUpload}
         send={send}
         onClose={() => setOpen(false)}
-        onSent={() => setVersion((v) => v + 1)}
+        onSent={() => {
+          setVersion((v) => v + 1);
+          setCurrent(undefined);
+        }}
       />
     ),
-    open: canChange ? () => setOpen(true) : undefined,
+    open: canChange
+      ? (photo?: string) => {
+          // Cada abertura troca a foto guardada; quem chama embrulha num arrow, sem passar o evento.
+          setCurrent(photo);
+          setOpen(true);
+        }
+      : undefined,
     version,
   };
 }
