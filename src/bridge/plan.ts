@@ -9,7 +9,12 @@ import { BIOGRAPHIC_OPS_ENABLED, type BiographicOp, planBiographic } from './bio
 import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
 import { type CreateItemOp, planCreateItem } from './create-items.ts';
 import { DELETE_ITEMS_ENABLED, type DeleteOp, planDelete } from './delete.ts';
-import { EDIT_OUVINTE_ENABLED, type EventoOp, planEvento } from './edit-items.ts';
+import {
+  EDIT_EVENTO_ENABLED,
+  EDIT_OUVINTE_ENABLED,
+  type EventoOp,
+  planEvento,
+} from './edit-items.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
 import { stavincFromFlag } from './vinculo-flag.ts';
 
@@ -62,6 +67,11 @@ export interface PlanOptions {
   createItems?: boolean;
   deleteItems?: boolean;
   /**
+   * Convidado, participante, forma, tipo, natureza e cidade do evento
+   * (EDIT_EVENTO_ENABLED). Sem valor, desligada, como editOuvinte.
+   */
+  editEvento?: boolean;
+  /**
    * Alteração de evento de ouvinte (edit-items.ts). Sem valor, fica
    * desligada: só planOptionsFor liga, com as capacidades da extensão. Assim,
    * esquecer as opções deixa o evento à mão, em vez de mandá-lo a uma
@@ -71,13 +81,31 @@ export interface PlanOptions {
 }
 
 /**
- * As chaves do plano para a extensão ligada: a alteração de evento de ouvinte
- * só vai a uma extensão que anuncia 'alterar-evento' (compat.ts), porque uma
- * mais antiga não tem o formulário de eventos no contrato e gravaria sem
- * conferir. Sem ela, essas mudanças ficam à mão.
+ * Chaves de alteração que dependem de uma capacidade da extensão. Cada uma
+ * entra em BRIDGE_FEATURES (compat.ts) no mesmo commit em que a chave liga, e
+ * só então: uma extensão que anunciasse a capacidade com a chave desligada não
+ * teria o formulário no contrato e gravaria sem conferir. O teste
+ * tests/edit-flags.test.ts cobra as duas coisas juntas.
+ */
+export const GATED_EDITS: readonly {
+  enabled: boolean;
+  feature: string;
+  option: keyof PlanOptions;
+}[] = [
+  { enabled: EDIT_OUVINTE_ENABLED, feature: 'alterar-evento', option: 'editOuvinte' },
+  { enabled: EDIT_EVENTO_ENABLED, feature: 'alterar-evento-completo', option: 'editEvento' },
+];
+
+/**
+ * As chaves do plano para a extensão ligada: cada alteração de GATED_EDITS
+ * só vai a uma extensão que anuncia a capacidade dela (compat.ts), porque uma
+ * mais antiga não tem o formulário no contrato e gravaria sem conferir. Sem
+ * ela, essas mudanças ficam à mão.
  */
 export function planOptionsFor(features: readonly string[]): PlanOptions {
-  return { editOuvinte: EDIT_OUVINTE_ENABLED && features.includes('alterar-evento') };
+  return Object.fromEntries(
+    GATED_EDITS.map((g) => [g.option, g.enabled && features.includes(g.feature)]),
+  );
 }
 
 export interface Unsupported {
@@ -171,6 +199,7 @@ export function planChange(
     biographicOps = BIOGRAPHIC_OPS_ENABLED,
     createItems = CREATE_ITEMS_ENABLED,
     deleteItems = DELETE_ITEMS_ENABLED,
+    editEvento = false,
     editOuvinte = false,
   }: PlanOptions = {},
 ): BridgeOp | Unsupported {
@@ -256,8 +285,10 @@ export function planChange(
   if (biographic) {
     return 'reason' in biographic ? unsupported(change, label, biographic.reason) : biographic;
   }
-  // Participação em eventos como ouvinte (edit-items.ts), testada no Lattes real em 14/10/2026.
-  const evento = editOuvinte ? planEvento(change, chain, label) : undefined;
+  // Participação em eventos (edit-items.ts): ouvinte testado no Lattes real em
+  // 14/10/2026; o resto, com a chave própria.
+  const evento =
+    editOuvinte || editEvento ? planEvento(change, chain, label, { full: editEvento }) : undefined;
   if (evento) return 'reason' in evento ? unsupported(change, label, evento.reason) : evento;
 
   return unsupported(change, label, 'Formulário não suportado ainda');

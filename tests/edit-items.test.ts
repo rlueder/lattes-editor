@@ -172,9 +172,12 @@ describe('alteração de evento: chave', () => {
 
   it('só vai a uma extensão que anuncia a alteração de evento', () => {
     expect(BRIDGE_FEATURES).toContain('alterar-evento');
-    expect(planOptionsFor(BRIDGE_FEATURES)).toEqual({ editOuvinte: true });
-    expect(planOptionsFor(['estado-lattes', 'curriculo'])).toEqual({ editOuvinte: false });
-    expect(planOptionsFor([])).toEqual({ editOuvinte: false });
+    expect(planOptionsFor(BRIDGE_FEATURES)).toEqual({ editEvento: false, editOuvinte: true });
+    expect(planOptionsFor(['estado-lattes', 'curriculo'])).toEqual({
+      editEvento: false,
+      editOuvinte: false,
+    });
+    expect(planOptionsFor([])).toEqual({ editEvento: false, editOuvinte: false });
     const original = parseXml(XML).root;
     const working = parseXml(XML).root;
     setAttr(basics(working), 'TITULO', 'Novo título');
@@ -500,7 +503,7 @@ describe('alteração de evento: aplicar no Lattes simulado', () => {
     });
     const op = opFor((root) => setAttr(basics(root), 'TITULO', 'Um título comprido demais'));
     expect(await applyOp(op, lattes.port)).toMatchObject({
-      detail: 'f_titulo passa do limite do Lattes (10 caracteres)',
+      detail: 'Título passa do limite do Lattes (10 caracteres)',
       status: 'erro',
     });
     expect(postsOf(lattes)).toEqual([]);
@@ -521,7 +524,7 @@ describe('alteração de evento: aplicar no Lattes simulado', () => {
       ),
     });
     expect(await applyOp(op(), naoGravou.port)).toMatchObject({
-      detail: 'O Lattes não gravou: f_titulo',
+      detail: 'O Lattes não gravou: Título',
       status: 'erro',
     });
     const colateral = await lattesFor({
@@ -537,7 +540,7 @@ describe('alteração de evento: aplicar no Lattes simulado', () => {
       ),
     });
     expect(await applyOp(op(), colateral.port)).toMatchObject({
-      detail: 'Outros campos mudaram no Lattes: f_cidade',
+      detail: 'Outros campos mudaram no Lattes: Cidade',
       status: 'erro',
     });
   });

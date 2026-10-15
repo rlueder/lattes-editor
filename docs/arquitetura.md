@@ -152,9 +152,13 @@ natureza, a cidade e o que o formulário não tem (idioma, palavras-chave,
 acompanhado de 14/10/2026 no Lattes real, e o contrato confere o formulário de
 eventos antes de cada fila. O app só manda essas operações a uma extensão que
 anuncia a capacidade `alterar-evento` (`src/bridge/compat.ts`); com uma
-extensão mais antiga, o evento fica em "Não enviado". Convidado, participante e os
-outros tipos de produção, quando ganharem caminho, entram com chave própria,
-desligada até o teste deles.
+extensão mais antiga, o evento fica em "Não enviado". Convidado, participante,
+a forma, o tipo, a natureza e a cidade já têm caminho no mesmo arquivo, atrás
+da chave `EDIT_EVENTO_ENABLED`, desligada até o teste acompanhado. Cada chave
+de alteração dessas tem uma capacidade da extensão (`GATED_EDITS`, em
+`src/bridge/plan.ts`), que só entra em `BRIDGE_FEATURES` quando a chave liga.
+Quando a operação não muda nada no formulário (a natureza de um evento, que só
+se confere), o conector confere o "antes" e não envia.
 
 A decisão de 13/10/2026 sobre duplicatas (só o que é novo vai pelo Importar;
 alteração no lugar; exclusão pelo formulário) está no

@@ -379,7 +379,7 @@ describe('conector: aplicar no Lattes simulado', () => {
     setAttr(vinculoIn(lattes.state), 'ANO-INICIO', '2009');
     const op = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'x'));
     expect(await applyOp(op, lattes.port)).toMatchObject({
-      detail: expect.stringMatching(/f_ano_ini/),
+      detail: 'O Lattes não está como o editor espera: Ano de início',
       status: 'divergente',
     });
     expect(postsOf(lattes)).toHaveLength(0);
@@ -413,7 +413,7 @@ describe('conector: aplicar no Lattes simulado', () => {
       ),
     });
     expect(await applyOp(op, side.port)).toMatchObject({
-      detail: expect.stringMatching(/f_carga/),
+      detail: 'Outros campos mudaram no Lattes: Carga horária',
       status: 'erro',
     });
   });

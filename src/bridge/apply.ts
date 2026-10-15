@@ -15,6 +15,7 @@ import { applyCreateAtuacao } from './create.ts';
 import { applyCreateFormacao, applyCreateProjeto } from './create-items.ts';
 import { applyDelete, type DeleteOp, isDeleteOp } from './delete.ts';
 import { EVENTO_SPEC, type EventoOp, isEventoOp, locateEvento } from './edit-items.ts';
+import { fieldLabel } from './field-labels.ts';
 import {
   encodeLatin1Form,
   type FormControl,
@@ -196,15 +197,24 @@ export async function applyOp(op: BridgeOp, port: LattesPort): Promise<OpResult>
     if (pairValue(before.pairs, 'f_ctr') !== 'U') {
       return result('erro', 'O formulário não está em modo de alteração');
     }
+    const labels = (names: string[]) => names.map((n) => fieldLabel(n, op.kind)).join(', ');
     const wrong = mismatches(before.pairs, op.expect);
     if (wrong.length > 0) {
-      return result('divergente', `O Lattes não está como o editor espera: ${wrong.join(', ')}`);
+      return result('divergente', `O Lattes não está como o editor espera: ${labels(wrong)}`);
     }
     for (const [field, value] of Object.entries(op.set)) {
       const limit = before.controls.find((c) => c.name === field)?.maxLength;
       if (value && limit && limit > 0 && value.length > limit) {
-        return result('erro', `${field} passa do limite do Lattes (${limit} caracteres)`);
+        return result(
+          'erro',
+          `${fieldLabel(field, op.kind)} passa do limite do Lattes (${limit} caracteres)`,
+        );
       }
+    }
+    // Nada a trocar (a natureza de um evento, que só se confere): o "antes"
+    // já bateu, e enviar o formulário igual só acenderia a pendência.
+    if (mismatches(before.pairs, op.set).length === 0) {
+      return result('conferido', 'O Lattes já estava assim; nada foi enviado');
     }
 
     const next = setPairs(before.pairs, op.set);
@@ -214,14 +224,14 @@ export async function applyOp(op: BridgeOp, port: LattesPort): Promise<OpResult>
     const after = await readPairs(port, path, name);
     const notSaved = mismatches(after.pairs, op.set);
     if (notSaved.length > 0) {
-      return result('erro', `O Lattes não gravou: ${notSaved.join(', ')}`);
+      return result('erro', `O Lattes não gravou: ${labels(notSaved)}`);
     }
     // f_vinculo é preenchido no envio (check()); a página sempre o traz vazio.
     const unexpected = changedNames(before.pairs, after.pairs).filter(
       (n) => !(n in op.set) && n !== 'f_vinculo',
     );
     if (unexpected.length > 0) {
-      return result('erro', `Outros campos mudaram no Lattes: ${unexpected.join(', ')}`);
+      return result('erro', `Outros campos mudaram no Lattes: ${labels(unexpected)}`);
     }
     return result('conferido', 'Gravado e conferido no Lattes');
   } catch (err) {

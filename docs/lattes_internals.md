@@ -898,6 +898,34 @@ e `F_COD_PROD` com a forma e o elemento do XML continua **inferida**, e por
 isso os dois entram na conferência do "antes": se não baterem, nada é
 enviado. A exclusão de evento (`f_ctr=E`, seção 15) segue fora do conector.
 
+**Convidado, participante, forma, tipo, natureza e cidade (LAT-58, 15/10/2026,
+desligado).** Escritos atrás da chave `EDIT_EVENTO_ENABLED`, desligada até um
+teste acompanhado, e cobertos no Lattes simulado. O que cada um usa:
+
+- `f_cidade` ↔ `CIDADE-DO-EVENTO` e `F_FORMA` ↔ `FORMA-PARTICIPACAO`,
+  **observados** na passada de edição do censo (seção 20). Só a opção 40 foi
+  vista com o valor do XML ("Ouvinte"); que 38 e 39 gravem "Convidado" e
+  "Participante" vem do rótulo do rádio, **inferido**.
+- A natureza é o rótulo da opção de `F_COD_PROD` (**observado** no censo, nos
+  congressos e encontros). Ela segue o elemento do XML, e o editor não a deixa
+  trocar; o conector só confere que o Lattes tem a opção do elemento e não
+  envia nada quando é só isso.
+- `F_TPO` leva o texto do tipo (o valor de cada opção é o rótulo). Como a
+  edição de um convidado ou participante marca o tipo gravado continua sendo
+  **lacuna**: por isso o tipo vai sempre na conferência do "antes". Se a
+  página não mostrar o tipo gravado, nada é enviado, em vez de mandar `F_TPO`
+  vazio e apagar o tipo.
+- As regras do `check()` valem antes de enviar: convidado e participante
+  pedem tipo da lista da forma e título; ouvinte não tem tipo.
+
+No teste acompanhado, num evento de teste de convidado: abrir o formulário
+pela lista e ver se o tipo gravado vem marcado no HTML (se não vier, a
+operação para em "Tipo de participação" e é isso que precisa ser ajustado);
+trocar título e cidade e conferir a releitura; trocar a forma de ouvinte para
+participante com tipo e título, e voltar pelo "Desfazer"; conferir na
+exportação seguinte que `FORMA-PARTICIPACAO` e `TIPO-PARTICIPACAO` vieram com
+os textos enviados.
+
 O formulário não tem idioma, meio de divulgação, relevância, palavras-chave,
 áreas nem participantes, embora o XSD tenha esses campos no evento.
 `check()` exige forma de participação, tipo (menos para ouvinte), natureza,
