@@ -256,14 +256,16 @@ describe('alteração de evento: plano', () => {
       f_titulo: 'Título … novo',
       f_titulo_en: 'New title',
     });
+    expect(op.identity).toEqual({
+      f_ano: ['2019'],
+      f_cidade: ['Porto Alegre'],
+      f_nme_evento: ['Congresso Brasileiro de Exemplo'],
+    });
     expect(op.expect).toEqual({
-      f_ano: '2019',
-      f_cidade: 'Porto Alegre',
       F_COD_PROD: 'A31',
       F_FORMA: '40',
       f_homepage: '',
       f_pais: 'BRA',
-      f_nme_evento: 'Congresso Brasileiro de Exemplo',
       F_STA_DIVULGACAO_CIENTIFICA: 'N',
       f_titulo: '',
       f_titulo_en: '',
@@ -277,12 +279,11 @@ describe('alteração de evento: plano', () => {
     const nome = onlyOp((root) => setAttr(detail(root), 'NOME-DO-EVENTO', 'Congresso Novo'));
     expect(nome.set).toEqual({ f_nme_evento: 'Congresso Novo' });
     expect(nome.expect).toEqual({
-      f_ano: '2019',
-      f_cidade: 'Porto Alegre',
       F_COD_PROD: 'A31',
       F_FORMA: '40',
       f_nme_evento: 'Congresso Brasileiro de Exemplo',
     });
+    expect(nome.identity).toEqual({ f_ano: ['2019'], f_cidade: ['Porto Alegre'] });
     const nome2 = onlyOp((root) => {
       const outro = find(root, 'OUTRAS-PARTICIPACOES-EM-EVENTOS-CONGRESSOS', '14');
       setAttr(child(outro, 'DETALHAMENTO'), 'NOME-DO-EVENTO', 'Outro');
@@ -497,14 +498,37 @@ describe('alteração de evento: aplicar no Lattes simulado', () => {
         setAttr(detail(root), 'NOME-DO-EVENTO', 'Congresso Novo');
       });
       expect(plan.ops).toHaveLength(2);
-      // Cada uma deixa de fora o campo que a outra troca.
-      expect(plan.ops[0]!.expect).not.toHaveProperty('f_nme_evento');
-      expect(plan.ops[1]!.expect).not.toHaveProperty('f_ano');
+      // Cada uma aceita o antes e o depois do campo que a outra troca.
+      const [first, second] = plan.ops as EventoOp[];
+      expect(first!.identity?.f_nme_evento).toEqual([
+        'Congresso Brasileiro de Exemplo',
+        'Congresso Novo',
+      ]);
+      expect(second!.identity?.f_ano).toEqual(['2019', '2018']);
       const ops = reverse ? [...plan.ops].reverse() : plan.ops;
       for (const op of ops) expect((await applyOp(op, lattes.port)).status).toBe('conferido');
       expect(getAttr(basicsIn(lattes), 'ANO')).toBe('2018');
       expect(getAttr(detailIn(lattes), 'NOME-DO-EVENTO')).toBe('Congresso Novo');
     }
+  });
+
+  it('a identidade aceita outra caixa e espaço, mas não outro valor, mesmo se a outra operação não for', async () => {
+    const lattes = await lattesFor();
+    setAttr(detailIn(lattes), 'CIDADE-DO-EVENTO', ' PORTO ALEGRE ');
+    const op = opFor((root) => setAttr(basics(root), 'TITULO', 'Novo'));
+    expect((await applyOp(op, lattes.port)).status).toBe('conferido');
+    // O nome muda no detalhamento, mas só a operação dos dados básicos vai.
+    const { plan } = planAfter((root) => {
+      setAttr(basics(root), 'ANO', '2018');
+      setAttr(detail(root), 'NOME-DO-EVENTO', 'Congresso Novo');
+    });
+    const other = await lattesFor();
+    setAttr(detailIn(other), 'NOME-DO-EVENTO', 'Terceiro nome');
+    expect(await applyOp(plan.ops[0]!, other.port)).toMatchObject({
+      detail: 'O Lattes não está como o editor espera: f_nme_evento',
+      status: 'divergente',
+    });
+    expect(postsOf(other)).toEqual([]);
   });
 
   it('acusa evento, lista ou formulário que não acha, sem enviar', async () => {

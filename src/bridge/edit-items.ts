@@ -54,8 +54,24 @@ export const EDIT_OUVINTE_ENABLED = true;
  * f_seq sozinho não basta; ver planEvento).
  */
 export interface EventoOp extends OpBase {
+  /**
+   * Campos que confirmam que o formulário aberto pelo f_seq é o do item, além
+   * do expect: o valor do Lattes, sem acento, caixa nem espaço nas pontas,
+   * precisa ser um dos listados (o antes e o depois, quando outra operação da
+   * fila troca o campo). Ausente nas operações de antes desta conferência.
+   */
+  identity?: Record<string, string[]>;
   kind: 'evento';
   seq: string;
+}
+
+const folded = (value: string | null) => (value === null ? '' : foldText(value.trim()));
+
+/** Os campos de identidade (EventoOp.identity) que o formulário não confirma. */
+export function identityMismatches(op: EventoOp, value: (name: string) => string | null): string[] {
+  return Object.entries(op.identity ?? {})
+    .filter(([name, ok]) => !ok.some((v) => folded(v) === folded(value(name))))
+    .map(([name]) => name);
 }
 
 export function isEventoOp(op: BridgeOp): op is EventoOp {
@@ -239,25 +255,31 @@ export function planEvento(
   expect.F_FORMA = OUVINTE;
   expect.F_COD_PROD = EVENT_CODES[item.name]!;
   //
-  // A outra parte do item pode ter alteração própria na mesma fila (o ano nos
-  // dados básicos e a cidade no detalhamento): um campo dela que muda fica de
-  // fora daqui, porque o Lattes pode estar com o antes ou com o depois,
-  // conforme a ordem dos envios. A operação da outra parte confere esse campo.
-  const pending = new Set(
-    siblings
-      .filter((c) => c !== change && c.kind === 'alterado' && c.element !== el.name)
-      .filter((c) => c.path.slice(0, -1).join('/') === change.path.slice(0, -1).join('/'))
-      .flatMap((c) => c.fields.map((f) => `${c.element}@${f.attr}`)),
-  );
-  const identity = (part: XElement | undefined, attr: string, field: string) => {
-    if (field in expect || !part || pending.has(`${part.name}@${attr}`)) return;
-    expect[field] = getAttr(part, attr) ?? '';
+  // Os campos de identidade que a operação não troca vão em `identity`, e não
+  // no expect: comparados sem acento, caixa nem espaço nas pontas (texto
+  // livre, como a cidade, pode voltar do Lattes com outra grafia). Quando a
+  // outra parte do item tem alteração própria na mesma fila (o ano nos dados
+  // básicos e o nome no detalhamento), o Lattes pode estar com o antes ou com
+  // o depois, conforme a ordem dos envios, e os dois valem. Assim o campo é
+  // sempre conferido, mesmo que a outra operação não vá.
+  const pending = new Map<string, string>();
+  for (const c of siblings) {
+    if (c === change || c.kind !== 'alterado' || c.element === el.name) continue;
+    if (c.path.slice(0, -1).join('/') !== change.path.slice(0, -1).join('/')) continue;
+    for (const f of c.fields) pending.set(`${c.element}@${f.attr}`, f.before);
+  }
+  const identity: Record<string, string[]> = {};
+  const add = (part: XElement | undefined, attr: string, field: string) => {
+    if (field in expect) return;
+    const now = (part && getAttr(part, attr)) ?? '';
+    const before = part ? pending.get(`${part.name}@${attr}`) : undefined;
+    identity[field] = before === undefined || before === now ? [now] : [before, now];
   };
   const detail = isDetail ? el : childElements(item, detailOf(item.name))[0];
-  identity(isBasics ? el : basics, 'ANO', 'f_ano');
-  identity(detail, 'NOME-DO-EVENTO', 'f_nme_evento');
-  identity(detail, 'CIDADE-DO-EVENTO', 'f_cidade');
-  return { expect, key: change.key, kind: 'evento', label, seq, set };
+  add(isBasics ? el : basics, 'ANO', 'f_ano');
+  add(detail, 'NOME-DO-EVENTO', 'f_nme_evento');
+  add(detail, 'CIDADE-DO-EVENTO', 'f_cidade');
+  return { expect, identity, key: change.key, kind: 'evento', label, seq, set };
 }
 
 // ---------------------------------------------------------------- contrato

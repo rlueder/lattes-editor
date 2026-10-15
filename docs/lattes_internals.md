@@ -902,7 +902,9 @@ técnicos do censo de 15/10/2026 não era o `SEQUENCIA-PRODUCAO` do item
 (`lattes-formularios/censo-2026-10-15.json`, ligação `f_seq` do
 `trabalho-tecnico`), e com só
 a forma, a natureza e o ano um congresso podia ser gravado no lugar de outro
-do mesmo ano. A exclusão de evento (`f_ctr=E`, seção 15) segue fora do conector.
+do mesmo ano. Esses três se comparam sem acento,
+caixa nem espaço nas pontas, e, quando a outra parte do item muda o campo na
+mesma fila, o antes e o depois valem. A exclusão de evento (`f_ctr=E`, seção 15) segue fora do conector.
 
 O formulário não tem idioma, meio de divulgação, relevância, palavras-chave,
 áreas nem participantes, embora o XSD tenha esses campos no evento.
