@@ -21,8 +21,10 @@ import { diffDocuments } from '../src/model/changes.ts';
 import {
   DIRECT_INCLUSION_TYPES,
   directInclusion,
+  includeCapability,
   setIncludeCapability,
   subscribeIncludeCapability,
+  syncIncludeCapability,
 } from '../src/model/direct-inclusion.ts';
 import { loadCv } from '../src/model/document.ts';
 import { goesByChanges, isNewProduction, isPendingImport } from '../src/model/production.ts';
@@ -114,6 +116,13 @@ describe('evento: a extensão e o Importar decidem o caminho', () => {
     stop();
     setIncludeCapability(true);
     expect(calls).toBe(1);
+    // As capacidades da extensão decidem: sem extensão, ou uma mais antiga, desliga.
+    syncIncludeCapability([]);
+    expect(includeCapability()).toBe(false);
+    syncIncludeCapability(['incluir-itens', 'importar']);
+    expect(includeCapability()).toBe(true);
+    syncIncludeCapability(['importar']);
+    expect(includeCapability()).toBe(false);
   });
 
   it('o que o formulário de eventos não leva volta ao Importar, quando o Importar leva', async () => {

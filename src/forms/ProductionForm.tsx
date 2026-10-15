@@ -6,7 +6,6 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { attributeLabel, elementLabel } from '../labels/labels.ts';
 import { applyCrossref, crossrefAuthors, itemNameFor } from '../lookups/crossref.ts';
 import { DoiLookup } from '../lookups/DoiLookup.tsx';
-import { directInclusion } from '../model/direct-inclusion.ts';
 import {
   type Author,
   authorElementName,
@@ -47,6 +46,8 @@ const DOI_TYPES = new Set([
 ]);
 
 interface Props {
+  /** O item vai por "Enviar ao Lattes" (inclusão pelo conector), e não pelo Importar. */
+  byChanges?: boolean;
   isNew: boolean;
   item: XElement;
   knownAreas: KnowledgeArea[];
@@ -65,6 +66,7 @@ const footText = (byChanges: boolean) =>
     : { problems: 'para importar no Lattes', ready: 'Pronto para importar' };
 
 export function ProductionForm({
+  byChanges = false,
   isNew,
   item,
   knownAreas,
@@ -75,7 +77,7 @@ export function ProductionForm({
   sequencia,
 }: Props) {
   const [version, setVersion] = useState(0);
-  const foot = footText(directInclusion().has(item.name));
+  const foot = footText(byChanges);
   const [expanded, setExpanded] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const createMoreId = useId();

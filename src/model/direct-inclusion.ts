@@ -42,6 +42,13 @@ export function setIncludeCapability(on: boolean): void {
 
 export const includeCapability = (): boolean => canInclude;
 
+/**
+ * Segue as capacidades da extensão ligada: sem extensão (lista vazia) ou com
+ * uma que não anuncia 'incluir-itens', o evento novo volta ao Importar.
+ */
+export const syncIncludeCapability = (features: readonly string[]): void =>
+  setIncludeCapability(features.includes('incluir-itens'));
+
 export function subscribeIncludeCapability(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);

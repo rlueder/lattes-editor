@@ -11,6 +11,7 @@ import {
   addProduction,
   authorElementName,
   findBySequencia,
+  goesByChanges,
   knownAreas,
   knownAuthors,
   newItem,
@@ -156,6 +157,10 @@ export function useProduction(
     buildFile,
     cancel: () => setForm(null),
     form,
+    /** O item aberto vai por "Enviar ao Lattes" (inclusão pelo conector), e não pelo Importar. */
+    formByChanges: Boolean(
+      form && session && goesByChanges(form.item, loadedMax, undefined, session.doc.root),
+    ),
     loadedMax,
     openItem,
     pending,
