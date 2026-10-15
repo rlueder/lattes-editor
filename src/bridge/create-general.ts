@@ -80,9 +80,9 @@ export const GENERAL_BY_HAND: Record<string, string> = {
   'AREA-DE-ATUACAO':
     'Área de atuação vai à mão: a grade de áreas (f_area_l) tem a chave r, de sentido não lido',
   ATIVIDADE:
-    'Atividade vai à mão: os campos do formulário de cada natureza ainda não foram lidos no Lattes',
+    'Atividade vai à mão: o Lattes exige o órgão ou unidade, que entra por uma busca cuja resposta ainda não foi lida (a de ensino já vai)',
   DISCIPLINA:
-    'Disciplina vai à mão: ela entra pela grade da atividade de ensino, de formato não observado',
+    'Disciplina numa atividade que já está no Lattes vai à mão: a grade leva também as que já existem, que a página traz só em script (numa atividade de ensino nova, ela vai junto)',
   'FINANCIADOR-DO-PROJETO':
     'Financiador vai à mão: os valores de cada linha da grade de financiadores vêm de uma janela que não foi lida',
   FORMACAO_COMPLEMENTAR:
@@ -90,13 +90,13 @@ export const GENERAL_BY_HAND: Record<string, string> = {
   LICENCA:
     'Licença vai à mão: o Lattes exige a data de nascimento ou adoção, que o currículo não guarda',
   'LINHA-DE-PESQUISA':
-    'Linha de pesquisa vai à mão: a lista de linhas não tem inclusão, e a atividade de pesquisa e desenvolvimento ainda não foi lida',
+    'Linha de pesquisa vai à mão: ela entra pela grade da atividade de pesquisa e desenvolvimento, que exige o órgão ou unidade, e a grade só leva o nome',
   ORIENTACAO:
     'Orientação do projeto vai à mão: ela se liga a uma orientação do currículo pela janela de orientações, que não foi lida',
   'PRODUCAO-CT-DO-PROJETO':
     'Produção do projeto vai à mão: ela se liga a uma produção do currículo pela janela de produções, que não foi lida',
   TREINAMENTO:
-    'Treinamento vai à mão: ele entra pela grade da atividade de treinamento, de formato não observado',
+    'Treinamento vai à mão: ele entra pela grade da atividade de treinamento, que exige o órgão ou unidade',
 };
 
 /** O motivo de ir à mão para um elemento novo, ou undefined quando não é destes. */

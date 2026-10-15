@@ -106,6 +106,23 @@ var label = { l: rotulo, t: citado };
     expect(lines[7]).toBe('var label = { l: rotulo, t: citado };');
   });
 
+  it('a lista de coautores da janela de equipe e o título com o nome da instituição', () => {
+    const html = `<script>
+p[0]="3#silva maria@SILVA, M. (Maria Silva)";
+p[11]='11#outro nome@NOME, O. (Outro Nome)';
+self.parent.modalCV9.setarTitulo("Atuação profissional - Atividades (Ensino)<br>Universidade Federal do Exemplo", true );
+self.parent.modalCV1.setarTitulo("Atuação profissional - Linhas de pesquisa");
+var x = "a#b";
+</script>`;
+    expect(pageScripts(html)[0]!.split('\n')).toEqual([
+      'p[0]="3#[removido]@[removido]";',
+      "p[11]='11#[removido]@[removido]';",
+      'self.parent.modalCV9.setarTitulo("Atuação profissional - Atividades (Ensino)<br>[removido]", true );',
+      'self.parent.modalCV1.setarTitulo("Atuação profissional - Linhas de pesquisa");',
+      'var x = "a#b";',
+    ]);
+  });
+
   it('a forma das linhas de autor do menu, sem nome nenhum', () => {
     const shape = authorShape(
       [

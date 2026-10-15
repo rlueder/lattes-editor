@@ -1,0 +1,332 @@
+// Incluir uma atividade de ensino numa atuação que já está no Lattes, com as
+// disciplinas (LAT-57), atrás de CREATE_ITEMS_ENABLED (create.ts).
+// Formulário GN_ATIV_CARGO, POST PKG_ATIV.cargo, aberto pelo "Incluir
+// atividade" da tela de cargos e vínculos com f_natur_ativ=4
+// (docs/lattes_internals.md, seções 17 e 22).
+//
+// Observado (lote 3 da recaptura de 15/10/2026): os campos (nível, curso,
+// mês e ano de início e de fim, período), as opções do nível (401 graduação a
+// 409 outro) e do período (N anterior, S atual), a busca de curso
+// prc_curso_form com f_pgm=ATIV e o nível do curso tirado do nível da
+// atividade (401 → 1, 402 → 5, 403 e 404 → 2), o check() (curso obrigatório
+// nos níveis 401 a 404, início, período, fim quando anterior e ao menos uma
+// disciplina) e a grade das disciplinas em f_espec_l: "<n>@<c>?<nome>!" por
+// linha, completada até 8 com "<n>@?!", e a linha digitada com c = 0.
+// Inferido: a ligação de cada campo com o atributo do XML (o tipo de ensino
+// pelo rótulo do nível), o valor de f_inst na busca de curso (o f_codinst do
+// link), a resposta do POST, a atividade nova aparecer na tela com um
+// f_seq_funcao novo.
+//
+// As outras naturezas vão à mão: o check() exige o órgão ou unidade, que
+// entra pela busca prc_orgao_cargo, cuja resposta ainda não foi lida.
+
+import type { Change } from '../model/changes.ts';
+import { childElements, getAttr, type XElement } from '../model/xml.ts';
+import type { LattesPort, OpResult } from './apply.ts';
+import { CREATE_FIELD_LABELS } from './create-labels.ts';
+import {
+  absentFields,
+  getChecked,
+  maybeCreated,
+  overLimit,
+  type Planned,
+  readBack,
+  readBackProblem,
+  readPairs,
+  type Result,
+  sameCode,
+  selectEntries,
+  SESSION,
+  Stop,
+} from './create-shared.ts';
+import { encodeLatin1Form, pairValue, setPairs } from './form.ts';
+import { findLinks, isLogonPage, type LattesLink } from './lattes-html.ts';
+import type { FieldValues } from './plan.ts';
+
+export interface CreateAtividadeOp {
+  /** CODIGO-CURSO do XML, quando o nível pede curso. */
+  courseCode?: string;
+  expect: FieldValues;
+  key: string;
+  kind: 'criar-atividade';
+  label: string;
+  /** SEQUENCIA-ATIVIDADE da atuação que recebe a atividade. */
+  seqAtiv: string;
+  set: FieldValues;
+}
+
+/** TIPO-ENSINO do XML → f_nivel, pelo rótulo da opção (inferido). */
+const TEACHING_LEVELS: Record<string, string> = {
+  APERFEICOAMENTO: '404',
+  'ENSINO-FUNDAMENTAL': '405',
+  'ENSINO-MEDIO': '406',
+  ESPECIALIZACAO: '403',
+  GRADUACAO: '401',
+  OUTRO: '409',
+  'POS-GRADUACAO': '402',
+};
+
+/** O nível do curso na busca, pelo nível da atividade (curso() da página, observado). */
+const COURSE_LEVELS: Record<string, string> = { '401': '1', '402': '5', '403': '2', '404': '2' };
+
+/** A grade das disciplinas como o check() a monta (seção 22). */
+export function specGrid(names: string[]): string {
+  let out = '';
+  for (let i = 1; i <= Math.max(8, names.length); i++) {
+    const name = names[i - 1];
+    out += name === undefined ? `${i}@?!` : `${i}@0?${name}!`;
+  }
+  return out;
+}
+
+const text = (el: XElement) =>
+  el.children
+    .map((c) => (c.kind === 'text' ? c.value : ''))
+    .join('')
+    .trim();
+
+/** A atividade de ensino que a mudança traz: a própria, ou o contêiner novo com uma só. */
+export function teachingItem(el: XElement): XElement | undefined {
+  if (el.name === 'ENSINO') return el;
+  if (el.name !== 'ATIVIDADES-DE-ENSINO') return undefined;
+  const kids = childElements(el);
+  return kids.length === 1 && kids[0]!.name === 'ENSINO' ? kids[0] : undefined;
+}
+
+const OWN = new Set([
+  'ANO-FIM',
+  'ANO-INICIO',
+  'CODIGO-CURSO',
+  'FLAG-PERIODO',
+  'MES-FIM',
+  'MES-INICIO',
+  'NOME-CURSO',
+  'SEQUENCIA-FUNCAO-ATIVIDADE',
+  'TIPO-ENSINO',
+]);
+
+/** Uma atividade de ensino nova como inclusão; o motivo, quando vai à mão. */
+export function planCreateAtividade(
+  change: Change,
+  chain: XElement[],
+  item: XElement,
+  label: string,
+): Planned<CreateAtividadeOp> {
+  const atuacao = chain.find((c) => c.name === 'ATUACAO-PROFISSIONAL');
+  const seqAtiv = atuacao && getAttr(atuacao, 'SEQUENCIA-ATIVIDADE');
+  if (!seqAtiv) return { reason: 'A atuação da atividade ainda não está no Lattes' };
+  const extra = item.attrs.filter((a) => a.value.trim() && !OWN.has(a.name)).map((a) => a.name);
+  if (extra.length > 0) {
+    return { reason: `Campos que o formulário de atividade não tem: ${extra.join(', ')}` };
+  }
+  const level = TEACHING_LEVELS[getAttr(item, 'TIPO-ENSINO') ?? ''];
+  if (!level) return { reason: 'Escolha o tipo de ensino' };
+  const courseCode = getAttr(item, 'CODIGO-CURSO') || undefined;
+  if (COURSE_LEVELS[level] && !courseCode) {
+    return { reason: 'O Lattes exige o curso, escolhido na lista de cursos, neste nível' };
+  }
+  if (!COURSE_LEVELS[level] && getAttr(item, 'NOME-CURSO')) {
+    return { reason: 'O Lattes não aceita curso neste nível de ensino' };
+  }
+  const disciplines = childElements(item, 'DISCIPLINA').map(text).filter(Boolean);
+  if (disciplines.length === 0) return { reason: 'O Lattes exige ao menos uma disciplina' };
+  const start = getAttr(item, 'ANO-INICIO') ?? '';
+  const end = getAttr(item, 'ANO-FIM') ?? '';
+  if (!start) return { reason: 'A atividade precisa do ano de início' };
+  return {
+    courseCode: COURSE_LEVELS[level] ? courseCode : undefined,
+    expect: {},
+    key: change.key,
+    kind: 'criar-atividade',
+    label,
+    seqAtiv,
+    set: {
+      f_ano_fim: end,
+      f_ano_ini: start,
+      f_espec_l: specGrid(disciplines),
+      f_mes_fim: getAttr(item, 'MES-FIM') ?? '',
+      f_mes_ini: getAttr(item, 'MES-INICIO') ?? '',
+      f_nivel: level,
+      // Período: anterior quando há fim (rótulos do rádio, observado).
+      f_status: end ? 'N' : 'S',
+    },
+  };
+}
+
+// Lattes ----------------------------------------------------------------------------
+
+const FORM = 'GN_ATIV_CARGO';
+
+const activityRows = (html: string) =>
+  findLinks(html, 'pkg_ativ.cargo').filter((l) => l.params.f_seq_funcao);
+
+/** O link de inclusão da natureza: o "Incluir atividade" com f_natur_ativ trocado. */
+function inclusionPath(link: LattesLink, nature: string): string {
+  const base = link.path.replace(/([?&])f_natur_ativ=[^&]*/i, '$1').replace(/[?&]$/, '');
+  return `${base}${base.includes('?') ? '&' : '?'}f_natur_ativ=${nature}`;
+}
+
+export async function applyCreateAtividade(
+  op: CreateAtividadeOp,
+  port: LattesPort,
+): Promise<Result> {
+  const result = (status: OpResult['status'], detail: string): Result => ({
+    detail,
+    key: op.key,
+    status,
+  });
+  try {
+    const menu = await port.menuHtml();
+    const lista = findLinks(menu, 'pkg_ativ.lista')[0];
+    if (!lista?.params.f_cod) {
+      throw new Stop('erro', 'Atuação profissional não encontrada no menu do Lattes');
+    }
+    const cv = lista.params.f_cod;
+    const grids = findLinks(await getChecked(port, lista.path), 'pkg_ativ.cargos_vinculos').filter(
+      (l) => l.params.f_seq_ativ === op.seqAtiv,
+    );
+    if (grids.length !== 1) {
+      throw new Stop(
+        'erro',
+        `Atuação ${op.seqAtiv} não encontrada no Lattes (${grids.length} achadas)`,
+      );
+    }
+    const gridHtml = await getChecked(port, grids[0]!.path);
+    const before = activityRows(gridHtml);
+    // Duplicata: atividade de ensino da atuação com o mesmo nível e o mesmo início.
+    for (const row of before.filter((l) => l.params.f_natur_ativ === '4')) {
+      const { pairs } = await readPairs(port, row.path, FORM);
+      if (
+        pairValue(pairs, 'f_nivel') === op.set.f_nivel &&
+        pairValue(pairs, 'f_ano_ini') === op.set.f_ano_ini
+      ) {
+        return result(
+          'divergente',
+          'A atuação já tem essa atividade de ensino (mesmo nível e início)',
+        );
+      }
+    }
+    const inclusion = findLinks(gridHtml, 'pkg_ativ.cargo').find((l) => !l.params.f_seq_funcao);
+    if (!inclusion) throw new Stop('erro', 'Inclusão de atividade não encontrada no Lattes');
+    const form = await readPairs(port, inclusionPath(inclusion, '4'), FORM);
+    if (pairValue(form.pairs, 'f_ctr') !== 'I' || pairValue(form.pairs, 'f_natur_ativ') !== '4') {
+      return result('erro', 'O formulário não é o de inclusão de atividade de ensino');
+    }
+    const { f_espec_l: _grid, ...typed } = op.set;
+    const absent = absentFields(form.controls, typed);
+    if (absent.length > 0) {
+      return result(
+        'erro',
+        `O formulário de atividade não tem: ${absent.map((f) => CREATE_FIELD_LABELS[f] ?? f).join(', ')}`,
+      );
+    }
+    const set: FieldValues = { ...op.set };
+    if (op.courseCode) {
+      const inst = inclusion.params.f_codinst ?? '';
+      const courses = selectEntries(
+        await getChecked(
+          port,
+          `prc_curso_form?f_cod=${cv}&f_inst=${inst}&f_nivel=${COURSE_LEVELS[op.set.f_nivel ?? '']}&f_pgm=ATIV`,
+        ),
+        'f_curso',
+      ).filter((o) => sameCode(o.value, op.courseCode!));
+      if (courses.length !== 1) {
+        return result(
+          'erro',
+          `Curso não encontrado na lista do Lattes (${courses.length} achados)`,
+        );
+      }
+      const course = courses[0]!;
+      set[course.value.startsWith('V') ? 'f_cod_curso' : 'f_cod_curso2'] = course.value.slice(1);
+      set.f_curso = course.text;
+      set.f_curso_old = course.text;
+    }
+    const limit = overLimit(form.controls, set);
+    if (limit) return result('erro', limit);
+    const response = await port.post('PKG_ATIV.cargo', encodeLatin1Form(setPairs(form.pairs, set)));
+    if (isLogonPage(response)) return result('sessao', SESSION);
+    const mayExist = 'A atividade pode ter sido criada';
+    try {
+      const known = new Set(before.map((l) => l.params.f_seq_funcao));
+      const created = activityRows(await getChecked(port, grids[0]!.path)).filter(
+        (l) => !known.has(l.params.f_seq_funcao),
+      );
+      if (created.length !== 1) {
+        return maybeCreated(
+          op.key,
+          mayExist,
+          `a atuação mostra ${created.length} atividades novas`,
+        );
+      }
+      const seq = created[0]!.params.f_seq_funcao!;
+      const assigned = { 'SEQUENCIA-FUNCAO-ATIVIDADE': seq };
+      const saved = await readPairs(port, created[0]!.path, FORM);
+      // As disciplinas voltam no script da página, não num campo: ficam sem reler.
+      // f_curso_old só guarda o nome anterior para a página; não é gravado.
+      const { f_curso_old: _old, f_espec_l: _spec, ...checked } = set;
+      const problem = readBackProblem(
+        `Criada no Lattes (atividade ${seq})`,
+        true,
+        readBack(saved, checked),
+      );
+      if (problem) return { ...result('divergente', problem), assigned };
+      return {
+        ...result(
+          'conferido',
+          `Criada e conferida no Lattes (atividade ${seq}; disciplinas não relidas)`,
+        ),
+        assigned,
+      };
+    } catch (err) {
+      const why = err instanceof Error ? err.message : 'falha inesperada';
+      return maybeCreated(op.key, mayExist, `a conferência falhou (${why})`);
+    }
+  } catch (err) {
+    if (err instanceof Stop) return result(err.status, err.message);
+    return result('erro', err instanceof Error ? err.message : 'Falha inesperada');
+  }
+}
+
+// Contrato ----------------------------------------------------------------------------
+
+const textField = (maxLength: number) => ({ maxLength, type: 'text' });
+const hiddenField = { type: 'hidden' };
+
+/** O formulário de atividade (GN_ATIV_CARGO), como o lote 3 o leu. */
+export const CREATE_ATIVIDADE_SPEC = {
+  action: 'PKG_ATIV.cargo',
+  fields: {
+    f_ano_fim: textField(4),
+    f_ano_ini: textField(4),
+    f_cod: hiddenField,
+    f_codinst: hiddenField,
+    f_ctr: hiddenField,
+    f_espec_l: hiddenField,
+    f_mes_fim: textField(2),
+    f_mes_ini: textField(2),
+    f_natur_ativ: hiddenField,
+    f_seq_ativ: hiddenField,
+    f_seq_funcao: hiddenField,
+    f_status: { type: 'radio' },
+    f_tipo_privacidade: { type: 'select-one' },
+  },
+  mode: 'I',
+  name: FORM,
+  partial: true as const,
+};
+
+/** O caminho do formulário de inclusão de atividade, pela primeira atuação da lista. */
+export async function atividadeFormPath(
+  get: (path: string) => Promise<string>,
+  menu: string,
+): Promise<{ missing: string } | { path: string }> {
+  const lista = findLinks(menu, 'pkg_ativ.lista')[0];
+  if (!lista) return { missing: 'pkg_ativ.lista' };
+  for (const grid of findLinks(await get(lista.path), 'pkg_ativ.cargos_vinculos')) {
+    const inc = findLinks(await get(grid.path), 'pkg_ativ.cargo').find(
+      (l) => !l.params.f_seq_funcao,
+    );
+    if (inc) return { path: inclusionPath(inc, '4') };
+  }
+  return { missing: 'pkg_ativ.cargo' };
+}

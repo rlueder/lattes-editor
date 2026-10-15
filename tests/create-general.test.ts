@@ -170,8 +170,11 @@ describe('planejar idioma, prêmio e vínculo', () => {
     expect(
       await reasonOf((doc) =>
         ufrgs(doc).children.push(
-          element('ATIVIDADES-DE-ENSINO', {}, [
-            element('ENSINO', { 'ANO-INICIO': '2020', 'SEQUENCIA-FUNCAO-ATIVIDADE': '9' }),
+          element('ATIVIDADES-DE-DIRECAO-E-ADMINISTRACAO', {}, [
+            element('DIRECAO-E-ADMINISTRACAO', {
+              'ANO-INICIO': '2020',
+              'SEQUENCIA-FUNCAO-ATIVIDADE': '9',
+            }),
           ]),
         ),
       ),
@@ -184,13 +187,13 @@ describe('planejar idioma, prêmio e vínculo', () => {
       ['AREA-DE-ATUACAO', /f_area_l/],
       ['MBA', /passo depois/],
       ['OUTROS', /Formação complementar/],
-      ['DISCIPLINA', /grade da atividade de ensino/],
-      ['TREINAMENTO', /grade da atividade de treinamento/],
-      ['LINHA-DE-PESQUISA', /não tem inclusão/],
+      ['DISCIPLINA', /grade leva também as que já existem/],
+      ['TREINAMENTO', /atividade de treinamento, que exige o órgão/],
+      ['LINHA-DE-PESQUISA', /atividade de pesquisa e desenvolvimento/],
       ['FINANCIADOR-DO-PROJETO', /janela que não foi lida/],
       ['PRODUCAO-CT-DO-PROJETO', /janela de produções/],
       ['ORIENTACAO', /janela de orientações/],
-      ['CONSELHO-COMISSAO-E-CONSULTORIA', /natureza/],
+      ['CONSELHO-COMISSAO-E-CONSULTORIA', /órgão ou unidade/],
     ] as const) {
       expect(byHandReason(name), name).toMatch(pattern);
     }

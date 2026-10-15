@@ -13,7 +13,6 @@ import { CREATE_SPECS } from '../src/bridge/create-items.ts';
 import {
   type CreateRegistroOp,
   formDate,
-  OWNER_BY_HAND,
   PATENT_BY_HAND,
   patentDateGrid,
   registroFields,
@@ -145,13 +144,13 @@ function findAll(root: XElement, name: string): XElement[] {
 }
 
 describe('planejar a inclusão de um registro', () => {
-  it('o planejamento manda todo registro à mão pela grade de autores (seção 21)', async () => {
+  it('com a chave ligada o registro vira inclusão; a patente vai à mão pelo titular', async () => {
     expect(LATTES_CONTRACT.forms['criar-registro']).toBeUndefined();
     const edit = (doc: XDocument) => addRegistro(doc, 'DESENHO-INDUSTRIAL', desenho);
     expect((await plan(edit, false)).planned.ops).toEqual([]);
     const { planned } = await plan(edit);
-    expect(planned.ops.filter(isOp)).toEqual([]);
-    expect(planned.unsupported.map((u) => u.reason)).toEqual([OWNER_BY_HAND]);
+    expect(planned.unsupported).toEqual([]);
+    expect(planned.ops.filter(isOp).map((o) => o.kind)).toEqual(['criar-registro']);
     const patente = await plan((doc) =>
       addRegistro(doc, 'PATENTE', (item) => {
         desenho(item);
@@ -340,8 +339,15 @@ describe('incluir registros no Lattes simulado', () => {
     expect(unsupported).toEqual([]);
     const results = await applyAll(ops, lattes.port);
     expect(results.map((r) => r.status)).toEqual(['conferido']);
-    expect(results[0]!.detail).toMatch(/^Criado e conferido no Lattes \(registro \d+\)$/);
+    expect(results[0]!.detail).toMatch(
+      /^Criado e conferido no Lattes \(registro \d+; inventores não relidos\)$/,
+    );
     expect(results[0]!.assigned).toEqual({ 'SEQUENCIA-PRODUCAO': expect.any(String) });
+    // A própria pessoa vai na grade de inventores, pela linha dela no autorDP do menu.
+    const post = lattes.state.log.filter((l) => l.method === 'POST').at(-1)!;
+    expect(post.pairs?.find(([k]) => k === 'f_autores_l')?.[1]).toBe(
+      `${OWNER.name}||${lattes.state.general.attrs.find((a) => a.name === 'NOME-EM-CITACOES-BIBLIOGRAFICAS')?.value.split(';')[0]}`,
+    );
 
     const others = await plan((doc) => {
       addRegistro(doc, 'DESENHO-INDUSTRIAL', desenho);
@@ -372,6 +378,7 @@ describe('incluir registros no Lattes simulado', () => {
     expect(getAttr(registry(mr!), 'TIPO-PATENTE')).toBe('MARCA_REGISTRADA_DE_PRODUTO_MPD');
     expect(getAttr(part(mr!, 'DETALHAMENTO-'), 'NATUREZA')).toBe('Nominativa');
     const [cr] = findAll(doc.root, 'CULTIVAR-REGISTRADA');
+    expect(getAttr(firstChild(cr!, 'AUTORES')!, 'NOME-COMPLETO-DO-AUTOR')).toBe(OWNER.name);
     expect(getAttr(part(cr!, 'DADOS-BASICOS-'), 'DENOMINACAO')).toBe('BRS Butiá');
     expect(getAttr(part(cr!, 'DADOS-BASICOS-'), 'ANO-SOLICITACAO')).toBe('2023');
     const [tc] = findAll(doc.root, 'TOPOGRAFIA-DE-CIRCUITO-INTEGRADO');
@@ -442,6 +449,18 @@ describe('incluir registros no Lattes simulado', () => {
     });
     expect(await applyOp(op('CR'), noLink.port)).toMatchObject({
       detail: 'Inclusão não encontrada na lista do Lattes',
+      status: 'erro',
+    });
+    const noOwner = await start({
+      intercept: async (req, _state, next) => {
+        const out = await next();
+        return /pkg_menu\.menu/i.test(req.proc) && 'html' in out
+          ? { ...out, html: out.html.replace(/var autorDP = [^;]*;/, '') }
+          : out;
+      },
+    });
+    expect(await applyOp(op('CR'), noOwner.port)).toMatchObject({
+      detail: 'A sua linha de autor não está no menu do Lattes (autorDP)',
       status: 'erro',
     });
     // Campo que o formulário do tipo não tem: para antes do POST.

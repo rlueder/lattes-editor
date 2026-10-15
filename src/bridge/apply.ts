@@ -13,6 +13,7 @@ import {
 } from './biographic.ts';
 import { applyCreateAtuacao } from './create.ts';
 import {
+  applyCreateAtividade,
   applyCreateEvento,
   applyCreateFormacao,
   applyCreateGeneral,
@@ -62,6 +63,7 @@ type EditOp = Exclude<
   | EventoOp
   | {
       kind:
+        | 'criar-atividade'
         | 'criar-atuacao'
         | 'criar-dado'
         | 'criar-evento'
@@ -189,6 +191,7 @@ export async function applyOp(op: BridgeOp, port: LattesPort): Promise<OpResult>
   if (op.kind === 'criar-projeto') return applyCreateProjeto(op, port);
   if (op.kind === 'criar-registro') return applyCreateRegistro(op, port);
   if (op.kind === 'criar-dado') return applyCreateGeneral(op, port);
+  if (op.kind === 'criar-atividade') return applyCreateAtividade(op, port);
   if (op.kind === 'criar-evento') return applyCreateEvento(op, port);
   if (op.kind === 'criar-vinculo') return applyCreateVinculo(op, port);
   if (isDeleteOp(op)) return applyDelete(op, port);

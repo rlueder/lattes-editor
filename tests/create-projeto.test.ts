@@ -210,6 +210,8 @@ describe('incluir o projeto no Lattes falso', () => {
     });
     expect(fake.posts.map((p) => p.path)).toEqual(['PKG_PROJETO.FORM']);
     expect(fake.posts[0]!.body).toMatchObject({
+      // A própria pessoa na equipe, como coordenadora (seção 22).
+      f_autores_l: 'Ana Silva||SILVA, A.|s',
       // O vínculo da atuação vai para os ocultos; os anos do projeto valem.
       F_ANO_FIM: '',
       F_ANO_INIC: '2024',

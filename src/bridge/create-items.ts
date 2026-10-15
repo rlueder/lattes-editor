@@ -24,6 +24,14 @@ import { childElements, type XElement } from '../model/xml.ts';
 import type { FormSpec } from './contract.ts';
 import { CREATE_ATUACAO_SPEC } from './create.ts';
 import {
+  applyCreateAtividade,
+  atividadeFormPath,
+  CREATE_ATIVIDADE_SPEC,
+  type CreateAtividadeOp,
+  planCreateAtividade,
+  teachingItem,
+} from './create-atividade.ts';
+import {
   applyCreateEvento,
   type CreateEventoOp,
   EVENT_ELEMENTS,
@@ -64,6 +72,7 @@ import {
   CREATE_REGISTRO_SPEC,
   type CreateRegistroOp,
   planCreateRegistro,
+  REGISTRY_TYPES,
   registryInclusion,
   registryItem,
   registryList,
@@ -73,6 +82,7 @@ import { EVENTO_SPEC } from './edit-items.ts';
 import { findLinks } from './lattes-html.ts';
 
 export {
+  applyCreateAtividade,
   applyCreateEvento,
   applyCreateFormacao,
   applyCreateGeneral,
@@ -82,6 +92,7 @@ export {
 };
 
 export type CreateItemOp =
+  | CreateAtividadeOp
   | CreateEventoOp
   | CreateFormacaoOp
   | CreateGeneralOp
@@ -99,10 +110,14 @@ export const CONNECTOR_CREATES: ReadonlySet<string> = new Set([
   'ATUACAO-PROFISSIONAL',
   ...Object.keys(FORMATION_LEVELS),
   ...Object.keys(AP_LEVELS),
-  // Projeto e registros têm a operação (projetoOp, registroFields), mas o
-  // planejamento os manda à mão: o check() do Lattes exige o dono na grade de
-  // equipe ou de autores, que a inclusão abre vazia (seção 21).
+  // Registros: a própria pessoa entra na grade de inventores pelo autorDP do
+  // menu (seção 22). A patente e o projeto têm a operação (registroFields,
+  // projetoOp), mas o planejamento os manda à mão: o titular da patente e o
+  // órgão do projeto ainda não têm como ir.
+  ...Object.keys(REGISTRY_TYPES).filter((n) => n !== 'PATENTE'),
   ...GENERAL_CREATES,
+  // A atividade de ensino, com as disciplinas (create-atividade.ts).
+  'ENSINO',
   // Eventos: pelo formulário, no lugar do Importar, com a chave ligada (direct-inclusion.ts).
   ...EVENT_ELEMENTS,
 ]);
@@ -120,6 +135,8 @@ export function planCreateItem(
   if (!el) return undefined;
   const registro = registryItem(el);
   if (registro) return planCreateRegistro(change, chain, registro, label);
+  const ensino = teachingItem(el);
+  if (ensino) return planCreateAtividade(change, chain, ensino, label);
   const evento = eventItem(el);
   if (evento) return planCreateEvento(change, chain, evento, label);
   const general = planCreateGeneral(change, chain, label);
@@ -149,6 +166,7 @@ export async function createFormPath(
   menu: string,
 ): Promise<{ missing: string } | { path: string }> {
   if (kind === 'criar-dado' || kind === 'criar-vinculo') return generalFormPath(kind, get, menu);
+  if (kind === 'criar-atividade') return atividadeFormPath(get, menu);
   if (kind === 'criar-evento') {
     const lista = findLinks(menu, 'pkg_evento.lista').find(
       (l) => !l.params.f_sta_divulgacao_cientifica,
@@ -181,6 +199,7 @@ export async function createFormPath(
 
 /** Os formulários de inclusão que o contrato confere com a chave ligada. */
 export const CREATE_SPECS: Record<'criar-atuacao' | CreateItemOp['kind'], FormSpec> = {
+  'criar-atividade': CREATE_ATIVIDADE_SPEC,
   'criar-atuacao': CREATE_ATUACAO_SPEC,
   'criar-dado': CREATE_DADO_SPEC,
   'criar-evento': { ...EVENTO_SPEC, mode: 'I', partial: true },

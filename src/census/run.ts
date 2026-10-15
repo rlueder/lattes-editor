@@ -115,6 +115,18 @@ export function isSafeGet(path: string): boolean {
   return !/(^|[&?])f_ctr=[^&?]/i.test(query);
 }
 
+/** O caminho com os parâmetros dados trocados (ou acrescentados). */
+export function withParams(path: string, set: Record<string, string>): string {
+  const [proc, query] = splitAtQuery(path);
+  const parts = query.split('&').filter(Boolean);
+  for (const [k, v] of Object.entries(set)) {
+    const i = parts.findIndex((p) => p.split('=')[0]!.toLowerCase() === k.toLowerCase());
+    if (i >= 0) parts[i] = `${k}=${v}`;
+    else parts.push(`${k}=${v}`);
+  }
+  return `${proc}?${parts.join('&')}`;
+}
+
 export function buildPath(code: string, at: LattesPath): string {
   const params = [
     ...(at.noCode ? [] : [`f_cod=${code}`]),
@@ -219,7 +231,8 @@ export class CensusReader {
       page = (await this.get(via.path)).html;
     }
     const link = inclusionLink(linksTo(page, loc.proc, [t.list.proc]), t.itemKey);
-    return link ? { path: link.path } : { status: 'sem-link' };
+    if (!link) return { status: 'sem-link' };
+    return { path: loc.set ? withParams(link.path, loc.set) : link.path };
   }
 }
 

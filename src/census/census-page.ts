@@ -219,6 +219,17 @@ function scrubScript(
   if (DATA_LINE.test(text))
     return { inComment: nextCommentState(text, inComment), line: REMOVED_SCRIPT };
   let out = commentAware(text, inComment)
+    // A lista de coautores da janela de equipe: p[i]="<código>#<nome>@<citação> (<nome>)".
+    .replace(
+      /(["'])([\w-]*)#[^"'@]*@[^"']*\1/g,
+      (_, q: string, code: string) => `${q}${code}#${REMOVED_SCRIPT}@${REMOVED_SCRIPT}${q}`,
+    )
+    // O título de uma janela modal traz, depois do primeiro <br>, o nome da
+    // instituição ou do item: setarTitulo("Atuação profissional - …<br>Nome").
+    .replace(
+      /(setarTitulo\s*\(\s*(["'])(?:(?!\2).)*?<br\s*\/?>)(?:(?!\2).)*\2/gi,
+      (_, head: string, q: string) => `${head}${REMOVED_SCRIPT}${q}`,
+    )
     .replace(SCRIPT_PERSONAL, REMOVED_SCRIPT)
     .replace(
       NAME_FIELD,

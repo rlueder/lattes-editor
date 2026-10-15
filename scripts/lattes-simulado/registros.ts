@@ -107,6 +107,31 @@ const titleOf = (item: XElement) => {
   return (basics && (getAttr(basics, 'TITULO') || getAttr(basics, 'DENOMINACAO'))) ?? '';
 };
 
+/**
+ * Os inventores do f_autores_l: linhas unidas por "@" e valores por "|". O
+ * simulado lê só as linhas escolhidas na sugestão (l, c, t, como o autorDP do
+ * menu; observado), e grava nome e citação. Como o servidor grava os autores
+ * é inferido.
+ */
+function writeAuthors(item: XElement, grid: string): void {
+  grid
+    .split('@')
+    .filter(Boolean)
+    .forEach((row, i) => {
+      const [l, c, t] = row.split('|');
+      if (!l || c === undefined || !/^\d*$/.test(c)) return;
+      insertInSchemaOrder(
+        lattesSchema,
+        item,
+        element('AUTORES', {
+          'NOME-COMPLETO-DO-AUTOR': l,
+          'NOME-PARA-CITACAO': t ?? '',
+          'ORDEM-DE-AUTORIA': String(i + 1),
+        }),
+      );
+    });
+}
+
 export function registroLista(state: LattesState, tipo: string): SimResponse {
   const [, label] = REGISTRY_ITEMS[tipo]!;
   const rows = registros(state, tipo)
@@ -151,6 +176,7 @@ export function registroPost(req: SimRequest, state: LattesState, tipo: string):
       'SEQUENCIA-PRODUCAO': String(state.nextProduction),
     });
     applyCensusForm(screen(tipo), item, req, state);
+    writeAuthors(item, req.get('f_autores_l') ?? '');
     insertInSchemaOrder(lattesSchema, state.ensurePath(PATH), item);
     state.touch();
     return html(back);

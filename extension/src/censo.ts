@@ -9,6 +9,7 @@
 //   await __lattesCensus.inspect(['pkg_x.form?…'], { download: true })  // recaptura avulsa
 //   await __lattesCensus.activities({ download: true })  // atividades por natureza
 //   __lattesCensus.authorShape('Nome Completo')           // forma das linhas de autor
+//   __lattesCensus.vectorShape('titularPessoaDP', 'Nome') // o mesmo, para outro vetor do menu
 //
 // Só GET de formulário e de lista. A única exceção é link() sem XML, que
 // pede a exportação pelo mesmo POST de leitura do "Exportar" (o conector já
@@ -178,8 +179,12 @@ async function activities(
  * chaves, o padrão dos códigos e a linha do dono, achada pelo nome dado.
  */
 function authorShape(ownerName?: string) {
-  const dp = (globalThis as unknown as { autorDP?: unknown }).autorDP;
-  return shapeOf(dp, ownerName);
+  return vectorShape('autorDP', ownerName);
+}
+
+/** O mesmo para outro vetor do menu (titularPessoaDP, por exemplo). */
+function vectorShape(name: string, ownerName?: string) {
+  return shapeOf((globalThis as unknown as Record<string, unknown>)[name], ownerName);
 }
 
 /** Contagens para conferir de relance o que voltou. */
@@ -204,5 +209,6 @@ function summary(file: CensusFile) {
   inspect,
   link,
   summary,
+  vectorShape,
   version: __CENSO_VERSAO__,
 };

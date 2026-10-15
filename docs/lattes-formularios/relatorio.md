@@ -4,7 +4,7 @@ Gerado por `pnpm censo:relatorio` a partir das capturas em `docs/lattes-formular
 e de `src/schema/lattes.json`. Não editar à mão. Como capturar e o que cada
 grupo quer dizer está no `README.md` desta pasta.
 
-Formulários no censo: 78, com captura: 76, sem captura: 2.
+Formulários no censo: 87, com captura: 85, sem captura: 2.
 
 ## Atributos por grupo
 
@@ -22,86 +22,95 @@ Formulários no censo: 78, com captura: 76, sem captura: 2.
 "Endereço" diz se o caminho do formulário foi visto no Lattes; "Elementos", se a
 ligação do formulário com os elementos do XML foi conferida.
 
-| Formulário                                                            | Como abre             | Endereço  | Elementos | Captura    | Opções | Texto | Oculto | Fora |
-| --------------------------------------------------------------------- | --------------------- | --------- | --------- | ---------- | -----: | ----: | -----: | ---: |
-| Identificação (`identificacao`)                                       | link do menu          | observado | observado | 2026-10-15 |      5 |     5 |      4 |   14 |
-| Endereço (`endereco`)                                                 | link do menu          | observado | observado | 2026-10-15 |      1 |    26 |      1 |    8 |
-| Resumo (`resumo`)                                                     | link do menu          | observado | observado | 2026-10-15 |      0 |     2 |      0 |    0 |
-| Outras informações relevantes (`outras-informacoes`)                  | link do menu          | observado | observado | 2026-10-15 |      0 |     0 |      0 |    1 |
-| Áreas de atuação (`areas-de-atuacao`)                                 | link do menu          | observado | observado | 2026-10-15 |      0 |     0 |      0 |    5 |
-| Idiomas (`idioma`)                                                    | endereço conhecido    | observado | observado | 2026-10-15 |      5 |     0 |      0 |    1 |
-| Prêmios e títulos (`premio`)                                          | endereço conhecido    | observado | observado | 2026-10-15 |      0 |     3 |      0 |    1 |
-| Licenças (`licenca`)                                                  | endereço conhecido    | observado | inferido  | 2026-10-15 |      1 |     0 |      0 |    4 |
-| Formação acadêmica: doutorado (`formacao-FA-4`)                       | endereço conhecido    | observado | inferido  | 2026-10-15 |      3 |    10 |     26 |   17 |
-| Formação acadêmica: mestrado (`formacao-FA-3`)                        | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    10 |     27 |   12 |
-| Formação acadêmica: mestrado profissional (`formacao-FA-9`)           | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     9 |     25 |    8 |
-| Formação acadêmica: especialização (`formacao-FA-2`)                  | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     8 |      3 |    6 |
-| Formação acadêmica: residência médica (`formacao-FA-D`)               | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     5 |     23 |    4 |
-| Formação acadêmica: graduação (`formacao-FA-1`)                       | endereço conhecido    | observado | observado | 2026-10-15 |      2 |     7 |      5 |   14 |
-| Formação acadêmica: ensino técnico (`formacao-FA-7`)                  | endereço conhecido    | observado | observado | 2026-10-15 |      2 |     5 |      3 |    5 |
-| Formação acadêmica: ensino médio (`formacao-FA-C`)                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      1 |     3 |      2 |    1 |
-| Formação acadêmica: ensino fundamental (`formacao-FA-B`)              | endereço conhecido    | observado | inferido  | 2026-10-15 |      1 |     3 |      2 |    1 |
-| Formação acadêmica: aperfeiçoamento (`formacao-FA-X`)                 | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     8 |      3 |    7 |
-| Formação: pós-doutorado (`formacao-AP-5`)                             | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     4 |     26 |    6 |
-| Formação: livre-docência (`formacao-AP-6`)                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     3 |     23 |    2 |
-| Formação complementar (`formacao-complementar`)                       | endereço conhecido    | observado | observado | 2026-10-15 |      8 |     6 |      9 |   56 |
-| Atuação profissional (`atuacao`)                                      | endereço conhecido    | observado | observado | 2026-10-15 |      0 |     4 |      1 |    9 |
-| Vínculo de uma atuação (`vinculo`)                                    | link da lista         | observado | observado | 2026-10-15 |      2 |    10 |      0 |    3 |
-| Atividade de uma atuação (`atividade`)                                | link da lista         | inferido  | inferido  | 2026-10-15 |      0 |    36 |      1 |   65 |
-| Corpo editorial, revisão e assessoramento (MB) (`revisor-MB`)         | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
-| Corpo editorial, revisão e assessoramento (MA) (`revisor-MA`)         | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
-| Corpo editorial, revisão e assessoramento (RV) (`revisor-RV`)         | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
-| Corpo editorial, revisão e assessoramento (RA) (`revisor-RA`)         | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
-| Linhas de pesquisa (`linha-de-pesquisa`)                              | link da lista         | inferido  | inferido  | falta      |        |       |        |      |
-| Projeto de pesquisa (`projeto-P`)                                     | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    14 |      2 |   18 |
-| Projeto de desenvolvimento (`projeto-D`)                              | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    15 |      1 |   18 |
-| Projeto de extensão (`projeto-E`)                                     | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    14 |      2 |   18 |
-| Projeto de ensino (`projeto-N`)                                       | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    14 |      2 |   18 |
-| Projeto de outros (`projeto-O`)                                       | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    14 |      2 |   18 |
-| Artigos completos publicados (`artigo-publicado`)                     | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     9 |     26 |   10 |
-| Artigos aceitos para publicação (`artigo-aceito`)                     | endereço conhecido    | observado | inferido  | 2026-10-15 |      3 |     5 |     26 |   14 |
-| Livros e capítulos (`livro-capitulo`)                                 | link da lista         | inferido  | inferido  | 2026-10-15 |     10 |    17 |     26 |   17 |
-| Trabalhos em anais (`trabalho-em-eventos`)                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |    12 |     26 |   12 |
-| Textos em jornais ou revistas (`texto-jornal`)                        | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    10 |     26 |    7 |
-| Tradução (`traducao`)                                                 | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |    13 |     26 |    7 |
-| Partitura musical (`partitura`)                                       | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     9 |     26 |    5 |
-| Prefácio, posfácio e outra produção bibliográfica (`prefacio-outras`) | endereço desconhecido | inferido  | inferido  | falta      |        |       |        |      |
-| Patente: janela "Incluir nova patente" (`patente-janela`)             | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
-| Patente (`patente`)                                                   | endereço conhecido    | observado | observado | 2026-10-15 |      3 |     9 |     27 |   19 |
-| Programa de computador (`registro-PC`)                                | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     8 |     27 |   20 |
-| Programa de computador registrado (`registro-PC-S`)                   | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     9 |     28 |   18 |
-| Cultivar protegida (`registro-CP`)                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     6 |     26 |   17 |
-| Cultivar registrada (`registro-CR`)                                   | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     6 |     26 |   17 |
-| Desenho industrial (`registro-DI`)                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     7 |     27 |   15 |
-| Marca (`registro-MR`)                                                 | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     7 |     26 |   14 |
-| Topografia de circuito integrado (`registro-TC`)                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     8 |     26 |   15 |
-| Produtos tecnológicos (`produto`)                                     | endereço conhecido    | observado | inferido  | 2026-10-15 |      6 |    10 |     26 |   17 |
-| Processos ou técnicas (`processo`)                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      6 |    10 |     26 |   16 |
-| Trabalhos técnicos (`trabalho-tecnico`)                               | endereço conhecido    | observado | observado | 2026-10-15 |      6 |    10 |     27 |    3 |
-| Assessoria e consultoria (`assessoria`)                               | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
-| Extensão tecnológica (`extensao-tecnologica`)                         | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
-| Apresentação de trabalho (`tec-2J`)                                   | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     8 |     26 |    5 |
-| Carta, mapa ou similar (`tec-2A`)                                     | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |    10 |     26 |    5 |
-| Curso de curta duração (`tec-2B`)                                     | endereço conhecido    | observado | inferido  | 2026-10-15 |      7 |     8 |     26 |    6 |
-| Material didático (`tec-2C`)                                          | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     7 |     26 |    5 |
-| Editoração (`tec-2D`)                                                 | endereço conhecido    | observado | observado | 2026-10-15 |      5 |     9 |     27 |    2 |
-| Manutenção de obra artística (`tec-2E`)                               | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     7 |     26 |    7 |
-| Maquete (`tec-2F`)                                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     8 |     26 |    5 |
-| Organização de evento (`tec-2G`)                                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      7 |     8 |     26 |    6 |
-| Programa de rádio ou TV (`tec-2H`)                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     9 |     26 |    7 |
-| Relatório de pesquisa (`tec-2I`)                                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     7 |     26 |    4 |
-| Redes sociais, sites e blogs (`tec-2L`)                               | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     6 |     26 |    4 |
-| Outra produção técnica (`tec-2Z`)                                     | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    11 |     26 |   17 |
-| Artes cênicas (`arte-AC`)                                             | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    12 |     27 |   11 |
-| Música (`arte-MU`)                                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    12 |     26 |   13 |
-| Artes visuais (`arte-AV`)                                             | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    10 |     26 |    4 |
-| Outra produção artística (`arte-OU`)                                  | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    11 |     26 |    4 |
-| Orientações concluídas (`orientacao-concluida`)                       | endereço conhecido    | observado | inferido  | 2026-10-15 |     16 |    17 |     35 |   54 |
-| Orientações em andamento (`orientacao-andamento`)                     | endereço conhecido    | observado | inferido  | 2026-10-15 |     21 |    36 |     37 |   80 |
-| Bancas de trabalhos de conclusão (`banca-trabalho`)                   | endereço conhecido    | observado | inferido  | 2026-10-15 |     12 |    25 |     33 |   63 |
-| Bancas julgadoras (`banca-julgadora`)                                 | endereço conhecido    | observado | inferido  | 2026-10-15 |     10 |    21 |     26 |   28 |
-| Participação em eventos (`evento`)                                    | endereço conhecido    | observado | observado | 2026-10-15 |     37 |    54 |      1 |  116 |
-| Demais trabalhos (`demais-trabalhos`)                                 | link da lista         | inferido  | inferido  | 2026-10-15 |      4 |     8 |     26 |    4 |
+| Formulário                                                                   | Como abre             | Endereço  | Elementos | Captura    | Opções | Texto | Oculto | Fora |
+| ---------------------------------------------------------------------------- | --------------------- | --------- | --------- | ---------- | -----: | ----: | -----: | ---: |
+| Identificação (`identificacao`)                                              | link do menu          | observado | observado | 2026-10-15 |      5 |     5 |      4 |   14 |
+| Endereço (`endereco`)                                                        | link do menu          | observado | observado | 2026-10-15 |      1 |    26 |      1 |    8 |
+| Resumo (`resumo`)                                                            | link do menu          | observado | observado | 2026-10-15 |      0 |     2 |      0 |    0 |
+| Outras informações relevantes (`outras-informacoes`)                         | link do menu          | observado | observado | 2026-10-15 |      0 |     0 |      0 |    1 |
+| Áreas de atuação (`areas-de-atuacao`)                                        | link do menu          | observado | observado | 2026-10-15 |      0 |     0 |      0 |    5 |
+| Idiomas (`idioma`)                                                           | endereço conhecido    | observado | observado | 2026-10-15 |      5 |     0 |      0 |    1 |
+| Prêmios e títulos (`premio`)                                                 | endereço conhecido    | observado | observado | 2026-10-15 |      0 |     3 |      0 |    1 |
+| Licenças (`licenca`)                                                         | endereço conhecido    | observado | inferido  | 2026-10-15 |      1 |     0 |      0 |    4 |
+| Formação acadêmica: doutorado (`formacao-FA-4`)                              | endereço conhecido    | observado | inferido  | 2026-10-15 |      3 |    10 |     26 |   17 |
+| Formação acadêmica: mestrado (`formacao-FA-3`)                               | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    10 |     27 |   12 |
+| Formação acadêmica: mestrado profissional (`formacao-FA-9`)                  | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     9 |     25 |    8 |
+| Formação acadêmica: especialização (`formacao-FA-2`)                         | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     8 |      3 |    6 |
+| Formação acadêmica: residência médica (`formacao-FA-D`)                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     5 |     23 |    4 |
+| Formação acadêmica: graduação (`formacao-FA-1`)                              | endereço conhecido    | observado | observado | 2026-10-15 |      2 |     7 |      5 |   14 |
+| Formação acadêmica: ensino técnico (`formacao-FA-7`)                         | endereço conhecido    | observado | observado | 2026-10-15 |      2 |     5 |      3 |    5 |
+| Formação acadêmica: ensino médio (`formacao-FA-C`)                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      1 |     3 |      2 |    1 |
+| Formação acadêmica: ensino fundamental (`formacao-FA-B`)                     | endereço conhecido    | observado | inferido  | 2026-10-15 |      1 |     3 |      2 |    1 |
+| Formação acadêmica: aperfeiçoamento (`formacao-FA-X`)                        | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     8 |      3 |    7 |
+| Formação: pós-doutorado (`formacao-AP-5`)                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     4 |     26 |    6 |
+| Formação: livre-docência (`formacao-AP-6`)                                   | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     3 |     23 |    2 |
+| Formação complementar (`formacao-complementar`)                              | endereço conhecido    | observado | observado | 2026-10-15 |      8 |     6 |      9 |   56 |
+| Atuação profissional (`atuacao`)                                             | endereço conhecido    | observado | observado | 2026-10-15 |      0 |     4 |      1 |    9 |
+| Vínculo de uma atuação (`vinculo`)                                           | link da lista         | observado | observado | 2026-10-15 |      2 |    10 |      0 |    3 |
+| Atividade de uma atuação (`atividade`)                                       | link da lista         | inferido  | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
+| Atividade de uma atuação: direção e administração (`atividade-1`)            | link da lista         | observado | inferido  | 2026-10-15 |      0 |     4 |      0 |    9 |
+| Atividade de uma atuação: pesquisa e desenvolvimento (`atividade-2`)         | link da lista         | observado | inferido  | 2026-10-15 |      0 |     4 |      0 |    6 |
+| Atividade de uma atuação: ensino (`atividade-4`)                             | link da lista         | observado | inferido  | 2026-10-15 |      0 |     4 |      1 |    8 |
+| Atividade de uma atuação: estágio (`atividade-5`)                            | link da lista         | observado | inferido  | 2026-10-15 |      0 |     4 |      0 |    7 |
+| Atividade de uma atuação: serviço técnico especializado (`atividade-6`)      | link da lista         | observado | inferido  | 2026-10-15 |      0 |     4 |      0 |    7 |
+| Atividade de uma atuação: extensão universitária (`atividade-7`)             | link da lista         | observado | inferido  | 2026-10-15 |      0 |     4 |      0 |    7 |
+| Atividade de uma atuação: treinamento (`atividade-8`)                        | link da lista         | observado | inferido  | 2026-10-15 |      0 |     4 |      0 |    7 |
+| Atividade de uma atuação: outra atividade técnico-científica (`atividade-9`) | link da lista         | observado | inferido  | 2026-10-15 |      0 |     4 |      0 |    7 |
+| Atividade de uma atuação: conselhos, comissões e consultoria (`atividade-B`) | link da lista         | observado | inferido  | 2026-10-15 |      0 |     4 |      0 |    7 |
+| Corpo editorial, revisão e assessoramento (MB) (`revisor-MB`)                | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
+| Corpo editorial, revisão e assessoramento (MA) (`revisor-MA`)                | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
+| Corpo editorial, revisão e assessoramento (RV) (`revisor-RV`)                | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
+| Corpo editorial, revisão e assessoramento (RA) (`revisor-RA`)                | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
+| Linhas de pesquisa (`linha-de-pesquisa`)                                     | link da lista         | inferido  | inferido  | falta      |        |       |        |      |
+| Projeto de pesquisa (`projeto-P`)                                            | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    14 |      2 |   18 |
+| Projeto de desenvolvimento (`projeto-D`)                                     | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    15 |      1 |   18 |
+| Projeto de extensão (`projeto-E`)                                            | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    14 |      2 |   18 |
+| Projeto de ensino (`projeto-N`)                                              | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    14 |      2 |   18 |
+| Projeto de outros (`projeto-O`)                                              | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    14 |      2 |   18 |
+| Artigos completos publicados (`artigo-publicado`)                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     9 |     26 |   10 |
+| Artigos aceitos para publicação (`artigo-aceito`)                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      3 |     5 |     26 |   14 |
+| Livros e capítulos (`livro-capitulo`)                                        | link da lista         | inferido  | inferido  | 2026-10-15 |     10 |    17 |     26 |   17 |
+| Trabalhos em anais (`trabalho-em-eventos`)                                   | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |    12 |     26 |   12 |
+| Textos em jornais ou revistas (`texto-jornal`)                               | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    10 |     26 |    7 |
+| Tradução (`traducao`)                                                        | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |    13 |     26 |    7 |
+| Partitura musical (`partitura`)                                              | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     9 |     26 |    5 |
+| Prefácio, posfácio e outra produção bibliográfica (`prefacio-outras`)        | endereço desconhecido | inferido  | inferido  | falta      |        |       |        |      |
+| Patente: janela "Incluir nova patente" (`patente-janela`)                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
+| Patente (`patente`)                                                          | endereço conhecido    | observado | observado | 2026-10-15 |      3 |     9 |     27 |   19 |
+| Programa de computador (`registro-PC`)                                       | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     8 |     27 |   20 |
+| Programa de computador registrado (`registro-PC-S`)                          | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     9 |     28 |   18 |
+| Cultivar protegida (`registro-CP`)                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     6 |     26 |   17 |
+| Cultivar registrada (`registro-CR`)                                          | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     6 |     26 |   17 |
+| Desenho industrial (`registro-DI`)                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     7 |     27 |   15 |
+| Marca (`registro-MR`)                                                        | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     7 |     26 |   14 |
+| Topografia de circuito integrado (`registro-TC`)                             | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     8 |     26 |   15 |
+| Produtos tecnológicos (`produto`)                                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      6 |    10 |     26 |   17 |
+| Processos ou técnicas (`processo`)                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      6 |    10 |     26 |   16 |
+| Trabalhos técnicos (`trabalho-tecnico`)                                      | endereço conhecido    | observado | observado | 2026-10-15 |      6 |    10 |     27 |    3 |
+| Assessoria e consultoria (`assessoria`)                                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
+| Extensão tecnológica (`extensao-tecnologica`)                                | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
+| Apresentação de trabalho (`tec-2J`)                                          | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     8 |     26 |    5 |
+| Carta, mapa ou similar (`tec-2A`)                                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |    10 |     26 |    5 |
+| Curso de curta duração (`tec-2B`)                                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      7 |     8 |     26 |    6 |
+| Material didático (`tec-2C`)                                                 | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     7 |     26 |    5 |
+| Editoração (`tec-2D`)                                                        | endereço conhecido    | observado | observado | 2026-10-15 |      5 |     9 |     27 |    2 |
+| Manutenção de obra artística (`tec-2E`)                                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     7 |     26 |    7 |
+| Maquete (`tec-2F`)                                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     8 |     26 |    5 |
+| Organização de evento (`tec-2G`)                                             | endereço conhecido    | observado | inferido  | 2026-10-15 |      7 |     8 |     26 |    6 |
+| Programa de rádio ou TV (`tec-2H`)                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     9 |     26 |    7 |
+| Relatório de pesquisa (`tec-2I`)                                             | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     7 |     26 |    4 |
+| Redes sociais, sites e blogs (`tec-2L`)                                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     6 |     26 |    4 |
+| Outra produção técnica (`tec-2Z`)                                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    11 |     26 |   17 |
+| Artes cênicas (`arte-AC`)                                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    12 |     27 |   11 |
+| Música (`arte-MU`)                                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    12 |     26 |   13 |
+| Artes visuais (`arte-AV`)                                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    10 |     26 |    4 |
+| Outra produção artística (`arte-OU`)                                         | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    11 |     26 |    4 |
+| Orientações concluídas (`orientacao-concluida`)                              | endereço conhecido    | observado | inferido  | 2026-10-15 |     16 |    17 |     35 |   54 |
+| Orientações em andamento (`orientacao-andamento`)                            | endereço conhecido    | observado | inferido  | 2026-10-15 |     21 |    36 |     37 |   80 |
+| Bancas de trabalhos de conclusão (`banca-trabalho`)                          | endereço conhecido    | observado | inferido  | 2026-10-15 |     12 |    25 |     33 |   63 |
+| Bancas julgadoras (`banca-julgadora`)                                        | endereço conhecido    | observado | inferido  | 2026-10-15 |     10 |    21 |     26 |   28 |
+| Participação em eventos (`evento`)                                           | endereço conhecido    | observado | observado | 2026-10-15 |     37 |    54 |      1 |  116 |
+| Demais trabalhos (`demais-trabalhos`)                                        | link da lista         | inferido  | inferido  | 2026-10-15 |      4 |     8 |     26 |    4 |
 
 ## Divergências entre o Lattes capturado e o editor
 
@@ -1015,48 +1024,16 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 <details><summary>Atividade de uma atuação (atividade)</summary>
 
+</details>
+
+<details><summary>Atividade de uma atuação: direção e administração (atividade-1)</summary>
+
 **texto livre**
 
 - `DIRECAO-E-ADMINISTRACAO@MES-INICIO` ← `f_mes_ini` (inferido)
 - `DIRECAO-E-ADMINISTRACAO@ANO-INICIO` ← `f_ano_ini` (inferido)
 - `DIRECAO-E-ADMINISTRACAO@MES-FIM` ← `f_mes_fim` (inferido)
 - `DIRECAO-E-ADMINISTRACAO@ANO-FIM` ← `f_ano_fim` (inferido)
-- `PESQUISA-E-DESENVOLVIMENTO@MES-INICIO` ← `f_mes_ini` (inferido)
-- `PESQUISA-E-DESENVOLVIMENTO@ANO-INICIO` ← `f_ano_ini` (inferido)
-- `PESQUISA-E-DESENVOLVIMENTO@MES-FIM` ← `f_mes_fim` (inferido)
-- `PESQUISA-E-DESENVOLVIMENTO@ANO-FIM` ← `f_ano_fim` (inferido)
-- `ENSINO@MES-INICIO` ← `f_mes_ini` (inferido)
-- `ENSINO@ANO-INICIO` ← `f_ano_ini` (inferido)
-- `ENSINO@MES-FIM` ← `f_mes_fim` (inferido)
-- `ENSINO@ANO-FIM` ← `f_ano_fim` (inferido)
-- `ESTAGIO@MES-INICIO` ← `f_mes_ini` (inferido)
-- `ESTAGIO@ANO-INICIO` ← `f_ano_ini` (inferido)
-- `ESTAGIO@MES-FIM` ← `f_mes_fim` (inferido)
-- `ESTAGIO@ANO-FIM` ← `f_ano_fim` (inferido)
-- `SERVICO-TECNICO-ESPECIALIZADO@MES-INICIO` ← `f_mes_ini` (inferido)
-- `SERVICO-TECNICO-ESPECIALIZADO@ANO-INICIO` ← `f_ano_ini` (inferido)
-- `SERVICO-TECNICO-ESPECIALIZADO@MES-FIM` ← `f_mes_fim` (inferido)
-- `SERVICO-TECNICO-ESPECIALIZADO@ANO-FIM` ← `f_ano_fim` (inferido)
-- `EXTENSAO-UNIVERSITARIA@MES-INICIO` ← `f_mes_ini` (inferido)
-- `EXTENSAO-UNIVERSITARIA@ANO-INICIO` ← `f_ano_ini` (inferido)
-- `EXTENSAO-UNIVERSITARIA@MES-FIM` ← `f_mes_fim` (inferido)
-- `EXTENSAO-UNIVERSITARIA@ANO-FIM` ← `f_ano_fim` (inferido)
-- `TREINAMENTO-MINISTRADO@MES-INICIO` ← `f_mes_ini` (inferido)
-- `TREINAMENTO-MINISTRADO@ANO-INICIO` ← `f_ano_ini` (inferido)
-- `TREINAMENTO-MINISTRADO@MES-FIM` ← `f_mes_fim` (inferido)
-- `TREINAMENTO-MINISTRADO@ANO-FIM` ← `f_ano_fim` (inferido)
-- `OUTRA-ATIVIDADE-TECNICO-CIENTIFICA@MES-INICIO` ← `f_mes_ini` (inferido)
-- `OUTRA-ATIVIDADE-TECNICO-CIENTIFICA@ANO-INICIO` ← `f_ano_ini` (inferido)
-- `OUTRA-ATIVIDADE-TECNICO-CIENTIFICA@MES-FIM` ← `f_mes_fim` (inferido)
-- `OUTRA-ATIVIDADE-TECNICO-CIENTIFICA@ANO-FIM` ← `f_ano_fim` (inferido)
-- `CONSELHO-COMISSAO-E-CONSULTORIA@MES-INICIO` ← `f_mes_ini` (inferido)
-- `CONSELHO-COMISSAO-E-CONSULTORIA@ANO-INICIO` ← `f_ano_ini` (inferido)
-- `CONSELHO-COMISSAO-E-CONSULTORIA@MES-FIM` ← `f_mes_fim` (inferido)
-- `CONSELHO-COMISSAO-E-CONSULTORIA@ANO-FIM` ← `f_ano_fim` (inferido)
-
-**oculto**
-
-- `ENSINO@CODIGO-CURSO` ← `f_cod_curso` (inferido)
 
 **fora do formulário**
 
@@ -1069,12 +1046,44 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DIRECAO-E-ADMINISTRACAO@CARGO-OU-FUNCAO`
 - `DIRECAO-E-ADMINISTRACAO@NOME-UNIDADE`
 - `DIRECAO-E-ADMINISTRACAO@CARGO-OU-FUNCAO-INGLES`
+
+</details>
+
+<details><summary>Atividade de uma atuação: pesquisa e desenvolvimento (atividade-2)</summary>
+
+**texto livre**
+
+- `PESQUISA-E-DESENVOLVIMENTO@MES-INICIO` ← `f_mes_ini` (inferido)
+- `PESQUISA-E-DESENVOLVIMENTO@ANO-INICIO` ← `f_ano_ini` (inferido)
+- `PESQUISA-E-DESENVOLVIMENTO@MES-FIM` ← `f_mes_fim` (inferido)
+- `PESQUISA-E-DESENVOLVIMENTO@ANO-FIM` ← `f_ano_fim` (inferido)
+
+**fora do formulário**
+
 - `PESQUISA-E-DESENVOLVIMENTO@SEQUENCIA-FUNCAO-ATIVIDADE`
 - `PESQUISA-E-DESENVOLVIMENTO@FLAG-PERIODO`
 - `PESQUISA-E-DESENVOLVIMENTO@CODIGO-ORGAO`
 - `PESQUISA-E-DESENVOLVIMENTO@NOME-ORGAO`
 - `PESQUISA-E-DESENVOLVIMENTO@CODIGO-UNIDADE`
 - `PESQUISA-E-DESENVOLVIMENTO@NOME-UNIDADE`
+
+</details>
+
+<details><summary>Atividade de uma atuação: ensino (atividade-4)</summary>
+
+**texto livre**
+
+- `ENSINO@MES-INICIO` ← `f_mes_ini` (inferido)
+- `ENSINO@ANO-INICIO` ← `f_ano_ini` (inferido)
+- `ENSINO@MES-FIM` ← `f_mes_fim` (inferido)
+- `ENSINO@ANO-FIM` ← `f_ano_fim` (inferido)
+
+**oculto**
+
+- `ENSINO@CODIGO-CURSO` ← `f_cod_curso` (inferido)
+
+**fora do formulário**
+
 - `ENSINO@SEQUENCIA-FUNCAO-ATIVIDADE`
 - `ENSINO@FLAG-PERIODO`
 - `ENSINO@TIPO-ENSINO`
@@ -1083,6 +1092,20 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `ENSINO@NOME-CURSO`
 - `ENSINO@NOME-CURSO-INGLES`
 - `DISCIPLINA@SEQUENCIA-ESPECIFICACAO`
+
+</details>
+
+<details><summary>Atividade de uma atuação: estágio (atividade-5)</summary>
+
+**texto livre**
+
+- `ESTAGIO@MES-INICIO` ← `f_mes_ini` (inferido)
+- `ESTAGIO@ANO-INICIO` ← `f_ano_ini` (inferido)
+- `ESTAGIO@MES-FIM` ← `f_mes_fim` (inferido)
+- `ESTAGIO@ANO-FIM` ← `f_ano_fim` (inferido)
+
+**fora do formulário**
+
 - `ESTAGIO@SEQUENCIA-FUNCAO-ATIVIDADE`
 - `ESTAGIO@FLAG-PERIODO`
 - `ESTAGIO@CODIGO-ORGAO`
@@ -1090,6 +1113,20 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `ESTAGIO@CODIGO-UNIDADE`
 - `ESTAGIO@NOME-UNIDADE`
 - `ESTAGIO@ESTAGIO-REALIZADO`
+
+</details>
+
+<details><summary>Atividade de uma atuação: serviço técnico especializado (atividade-6)</summary>
+
+**texto livre**
+
+- `SERVICO-TECNICO-ESPECIALIZADO@MES-INICIO` ← `f_mes_ini` (inferido)
+- `SERVICO-TECNICO-ESPECIALIZADO@ANO-INICIO` ← `f_ano_ini` (inferido)
+- `SERVICO-TECNICO-ESPECIALIZADO@MES-FIM` ← `f_mes_fim` (inferido)
+- `SERVICO-TECNICO-ESPECIALIZADO@ANO-FIM` ← `f_ano_fim` (inferido)
+
+**fora do formulário**
+
 - `SERVICO-TECNICO-ESPECIALIZADO@SEQUENCIA-FUNCAO-ATIVIDADE`
 - `SERVICO-TECNICO-ESPECIALIZADO@FLAG-PERIODO`
 - `SERVICO-TECNICO-ESPECIALIZADO@CODIGO-ORGAO`
@@ -1097,6 +1134,20 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `SERVICO-TECNICO-ESPECIALIZADO@CODIGO-UNIDADE`
 - `SERVICO-TECNICO-ESPECIALIZADO@NOME-UNIDADE`
 - `SERVICO-TECNICO-ESPECIALIZADO@SERVICO-REALIZADO`
+
+</details>
+
+<details><summary>Atividade de uma atuação: extensão universitária (atividade-7)</summary>
+
+**texto livre**
+
+- `EXTENSAO-UNIVERSITARIA@MES-INICIO` ← `f_mes_ini` (inferido)
+- `EXTENSAO-UNIVERSITARIA@ANO-INICIO` ← `f_ano_ini` (inferido)
+- `EXTENSAO-UNIVERSITARIA@MES-FIM` ← `f_mes_fim` (inferido)
+- `EXTENSAO-UNIVERSITARIA@ANO-FIM` ← `f_ano_fim` (inferido)
+
+**fora do formulário**
+
 - `EXTENSAO-UNIVERSITARIA@SEQUENCIA-FUNCAO-ATIVIDADE`
 - `EXTENSAO-UNIVERSITARIA@FLAG-PERIODO`
 - `EXTENSAO-UNIVERSITARIA@CODIGO-ORGAO`
@@ -1104,6 +1155,20 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `EXTENSAO-UNIVERSITARIA@CODIGO-UNIDADE`
 - `EXTENSAO-UNIVERSITARIA@NOME-UNIDADE`
 - `EXTENSAO-UNIVERSITARIA@ATIVIDADE-DE-EXTENSAO-REALIZADA`
+
+</details>
+
+<details><summary>Atividade de uma atuação: treinamento (atividade-8)</summary>
+
+**texto livre**
+
+- `TREINAMENTO-MINISTRADO@MES-INICIO` ← `f_mes_ini` (inferido)
+- `TREINAMENTO-MINISTRADO@ANO-INICIO` ← `f_ano_ini` (inferido)
+- `TREINAMENTO-MINISTRADO@MES-FIM` ← `f_mes_fim` (inferido)
+- `TREINAMENTO-MINISTRADO@ANO-FIM` ← `f_ano_fim` (inferido)
+
+**fora do formulário**
+
 - `TREINAMENTO-MINISTRADO@SEQUENCIA-FUNCAO-ATIVIDADE`
 - `TREINAMENTO-MINISTRADO@FLAG-PERIODO`
 - `TREINAMENTO-MINISTRADO@CODIGO-ORGAO`
@@ -1111,6 +1176,20 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `TREINAMENTO-MINISTRADO@CODIGO-UNIDADE`
 - `TREINAMENTO-MINISTRADO@NOME-UNIDADE`
 - `TREINAMENTO@SEQUENCIA-ESPECIFICACAO`
+
+</details>
+
+<details><summary>Atividade de uma atuação: outra atividade técnico-científica (atividade-9)</summary>
+
+**texto livre**
+
+- `OUTRA-ATIVIDADE-TECNICO-CIENTIFICA@MES-INICIO` ← `f_mes_ini` (inferido)
+- `OUTRA-ATIVIDADE-TECNICO-CIENTIFICA@ANO-INICIO` ← `f_ano_ini` (inferido)
+- `OUTRA-ATIVIDADE-TECNICO-CIENTIFICA@MES-FIM` ← `f_mes_fim` (inferido)
+- `OUTRA-ATIVIDADE-TECNICO-CIENTIFICA@ANO-FIM` ← `f_ano_fim` (inferido)
+
+**fora do formulário**
+
 - `OUTRA-ATIVIDADE-TECNICO-CIENTIFICA@SEQUENCIA-FUNCAO-ATIVIDADE`
 - `OUTRA-ATIVIDADE-TECNICO-CIENTIFICA@FLAG-PERIODO`
 - `OUTRA-ATIVIDADE-TECNICO-CIENTIFICA@CODIGO-ORGAO`
@@ -1118,6 +1197,20 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `OUTRA-ATIVIDADE-TECNICO-CIENTIFICA@CODIGO-UNIDADE`
 - `OUTRA-ATIVIDADE-TECNICO-CIENTIFICA@ATIVIDADE-REALIZADA`
 - `OUTRA-ATIVIDADE-TECNICO-CIENTIFICA@NOME-UNIDADE`
+
+</details>
+
+<details><summary>Atividade de uma atuação: conselhos, comissões e consultoria (atividade-B)</summary>
+
+**texto livre**
+
+- `CONSELHO-COMISSAO-E-CONSULTORIA@MES-INICIO` ← `f_mes_ini` (inferido)
+- `CONSELHO-COMISSAO-E-CONSULTORIA@ANO-INICIO` ← `f_ano_ini` (inferido)
+- `CONSELHO-COMISSAO-E-CONSULTORIA@MES-FIM` ← `f_mes_fim` (inferido)
+- `CONSELHO-COMISSAO-E-CONSULTORIA@ANO-FIM` ← `f_ano_fim` (inferido)
+
+**fora do formulário**
+
 - `CONSELHO-COMISSAO-E-CONSULTORIA@SEQUENCIA-FUNCAO-ATIVIDADE`
 - `CONSELHO-COMISSAO-E-CONSULTORIA@FLAG-PERIODO`
 - `CONSELHO-COMISSAO-E-CONSULTORIA@CODIGO-ORGAO`

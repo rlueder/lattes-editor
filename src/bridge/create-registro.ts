@@ -15,11 +15,10 @@
 // novo aparecer na lista com um f_seq novo, e o servidor aceitar a patente
 // sem a janela prévia e sem o f_ctr=R.
 //
-// O planejamento manda todo registro à mão por enquanto: o check() exige a
-// própria pessoa na lista de inventores (ou de melhoristas), a inclusão abre
-// com a grade vazia, e a linha do dono na grade não foi lida; a patente exige
-// também o titular, noutra grade. registroFields() já monta o resto,
-// inclusive as datas, para quando a linha for lida (lote 4 da recaptura).
+// A própria pessoa entra na grade de inventores (f_autores_l) pela linha dela
+// no autorDP do menu, como o check() exige (author-grid.ts, seção 22). A
+// patente vai à mão: o check() exige também o titular ou depositante, numa
+// grade que vem de outro vetor do menu, de forma ainda não lida.
 // Também ficam à mão: datas na marca e na topografia (não há campo de data na
 // tela), autores além do dono, palavras-chave, áreas, setores e informações
 // adicionais, e o que o formulário do tipo não tem.
@@ -29,6 +28,7 @@ import { foldText } from '../model/fold-text.ts';
 import { readAuthors } from '../model/production.ts';
 import { childElements, firstChild, getAttr, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
+import { ownerAuthor, ownerGridRow, REGISTRY_AUTHOR_KEYS, serializeGrid } from './author-grid.ts';
 import type { FormSpec } from './contract.ts';
 import { CREATE_FIELD_LABELS } from './create-labels.ts';
 import {
@@ -317,30 +317,27 @@ export function registroFields(
 }
 
 /**
- * Uma patente ou registro novo como inclusão; o motivo, quando vai à mão. Por
- * enquanto vai sempre à mão: o check() do Lattes exige a própria pessoa na
- * lista de inventores (ou de melhoristas, na cultivar), a inclusão abre com a
- * grade vazia, e a linha do dono na grade ainda não foi lida (seção 21). A
- * patente exige também o titular, numa grade de sentido não lido.
+ * Uma patente ou registro novo como inclusão; o motivo, quando vai à mão. A
+ * própria pessoa entra na grade de inventores pela linha dela no autorDP do
+ * menu, na hora do envio (author-grid.ts). A patente vai à mão: o check()
+ * exige também o titular ou depositante, cuja grade vem de outro vetor do menu
+ * (titularPessoaDP), de forma ainda não lida.
  */
 export function planCreateRegistro(
   change: Change,
   chain: XElement[],
   item: XElement,
-  _label: string,
+  label: string,
 ): Planned<CreateRegistroOp> {
   const fields = registroFields(change, chain, item);
   if ('reason' in fields) return fields;
   if (fields.tipo === 'PP') return { reason: PATENT_BY_HAND };
-  return { reason: OWNER_BY_HAND };
+  return { expect: {}, key: change.key, kind: 'criar-registro', label, ...fields };
 }
 
-/** Por que todo registro vai à mão hoje (seção 21 de docs/lattes_internals.md). */
-export const OWNER_BY_HAND =
-  'Vai à mão: o Lattes exige você na lista de inventores, e a linha da grade de autores com você ainda não foi lida';
-
+/** Por que a patente vai à mão hoje (seção 22 de docs/lattes_internals.md). */
 export const PATENT_BY_HAND =
-  'Vai à mão: o Lattes exige você entre os inventores e o titular ou depositante, em grades ainda não lidas';
+  'A patente vai à mão: o Lattes exige o titular ou depositante, numa grade cuja linha ainda não foi lida';
 
 /**
  * O formulário de inclusão de um registro, na cultivar registrada (censo de
@@ -430,6 +427,12 @@ export async function applyCreateRegistro(op: CreateRegistroOp, port: LattesPort
     // A grade de datas da patente vai num oculto, como o check() a monta (seção 21).
     const { f_dados_grid_datas: _grid, ...typed } = op.set;
     const absent = absentFields(form.controls, typed);
+    // A própria pessoa na grade de inventores, pela linha dela no autorDP do menu.
+    const owner = ownerAuthor(menu);
+    if (!owner) {
+      return result('erro', 'A sua linha de autor não está no menu do Lattes (autorDP)');
+    }
+    const authors = serializeGrid([ownerGridRow(owner)], REGISTRY_AUTHOR_KEYS);
     if (absent.length > 0) {
       return result(
         'erro',
@@ -440,7 +443,7 @@ export async function applyCreateRegistro(op: CreateRegistroOp, port: LattesPort
     if (limit) return result('erro', limit);
     const response = await port.post(
       CREATE_REGISTRO_SPEC.action,
-      encodeLatin1Form(setPairs(form.pairs, op.set)),
+      encodeLatin1Form(setPairs(form.pairs, { ...op.set, f_autores_l: authors })),
     );
     if (isLogonPage(response)) return result('sessao', SESSION);
 
@@ -465,8 +468,12 @@ export async function applyCreateRegistro(op: CreateRegistroOp, port: LattesPort
         readBack(saved, op.set),
       );
       if (problem) return { ...result('divergente', problem), assigned };
+      // A grade de autores volta no script da página, não num campo: fica sem reler.
       return {
-        ...result('conferido', `Criado e conferido no Lattes (registro ${seq})`),
+        ...result(
+          'conferido',
+          `Criado e conferido no Lattes (registro ${seq}; inventores não relidos)`,
+        ),
         assigned,
       };
     } catch (err) {

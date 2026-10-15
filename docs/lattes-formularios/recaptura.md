@@ -15,8 +15,12 @@ Estas chamadas servem para isso:
   (o código entra sozinho); `{ path, noCode: true }` abre sem ele, e um
   caminho que já traz `f_cod` (copiado do Lattes) não ganha outro. O arquivo
   baixado é `recaptura-AAAA-MM-DD.json` e não é um censo versionado;
-- `__lattesCensus.activities()` e `__lattesCensus.authorShape(nome)` servem
-  aos lotes 3 e 4, abaixo.
+- `__lattesCensus.activities()` abre o formulário de atividade de cada
+  natureza numa atuação do currículo;
+- `__lattesCensus.authorShape(nome)` e `__lattesCensus.vectorShape(vetor,
+nome)` descrevem um vetor do menu (`autorDP`, `titularPessoaDP`) sem nome
+  nenhum: a ordem das chaves, o padrão dos códigos e as linhas que casam com o
+  nome dado.
 
 Em 15/10/2026, a lista de atuações aberta à mão com `f_cod` voltou com 53
 bytes e sem links. Que o `f_cod` repetido pelo `inspect` tenha causado isso é
@@ -40,35 +44,39 @@ de cada registro, o programa de computador registrado, o artigo publicado, a
 licença, a grade de áreas (em parte), as grades do projeto (em parte), a
 formação complementar (até o envio), a lista de linhas de pesquisa, a grade
 de autores (em parte) e as buscas das orientações. Prefácio e outra produção
-bibliográfica não apareceram em nenhuma lista. O lote 3 não rodou: a lista
-de atuações voltou vazia.
+bibliográfica não apareceram em nenhuma lista. O lote 3 não rodou na primeira
+vez: a lista de atuações voltou vazia.
+
+Os lotes 3 a 5 rodaram depois, no mesmo dia (seção 22 de
+`../lattes_internals.md`; as nove telas de atividade em
+`censo-2026-10-15c.json`). Responderam: a linha da própria pessoa no
+`autorDP` (o que destravou os registros, menos a patente, e a equipe do
+projeto), os campos e o `check()` de cada natureza de atividade, o formato de
+`f_espec_l` e o rótulo da grade de cada natureza (a linha de pesquisa entra
+pela atividade de pesquisa e desenvolvimento), e a forma das buscas de
+titular e de financiador, que são POST e por isso não trouxeram resultado.
+`PKG_PROJETO.pp_lista_prod` respondeu 404.
 
 ## O lote que falta
 
-Com o menu do Lattes aberto na aba e o script colado no console:
+Com o menu do Lattes aberto na aba e o script colado no console. Os códigos
+entre `<…>` se copiam do Lattes: o da instituição está no link da busca de
+órgão do formulário de atividade, e o link de alteração de uma atividade de
+ensino está na tela de cargos e vínculos da atuação.
 
 ```js
 const redact = ['Seu Nome Completo', 'SOBRENOME, N.'];
 
-// 3. As atividades de uma atuação, uma por natureza. O lote acha sozinho a
-//    primeira atuação com o link "Incluir atividade" (pkg_ativ.lista, depois
-//    a tela de cargos e vínculos) e abre o formulário de cada natureza. Os
-//    códigos da atuação ficam fora do arquivo.
-await __lattesCensus.activities({ redact, download: true });
+// 6. A forma do vetor de titulares pessoa do menu, sem nome nenhum.
+copy(JSON.stringify(__lattesCensus.vectorShape('titularPessoaDP', 'Seu Nome Completo'), null, 2));
 
-// 4. A forma das linhas de autor do menu (autorDP), sem nome nenhum: a ordem
-//    das chaves, o padrão dos códigos e a linha do dono, achada pelo nome.
-copy(JSON.stringify(__lattesCensus.authorShape('Seu Nome Completo'), null, 2));
-
-// 5. As janelas de onde vêm as grades de titulares da patente e as de
-//    financiadores, produções e equipe do projeto.
+// 7. A busca de órgão de uma atuação (a das atividades e a do projeto) e a
+//    tela de alteração de uma atividade de ensino que já existe.
 await __lattesCensus.inspect(
   [
-    'pkg_titular_inst.sele_inst',
-    'pkg_titular_inst.sele_inst?f_ctr=O',
-    'PKG_PROJETO.pp_lista_inst?f_pgm=INSTFINANC',
-    'PKG_PROJETO.pp_lista_prod',
-    'PKG_PROJETO.pp_lista_autores',
+    'prc_orgao_cargo?f_modal_cv=9&f_cod_inst=<código da instituição>',
+    'PKG_PROJETO.pp_orgao_cargo?f_cod_inst=<código da instituição>',
+    '<link de alteração de uma atividade de ensino>',
   ],
   { redact, download: true },
 );
@@ -76,17 +84,20 @@ await __lattesCensus.inspect(
 
 ## O que extrair de cada item
 
-| Item                                            | Onde                                                      | O que procurar                                                                                                                                                                                                              |
-| ----------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A linha do dono na grade de autores e de equipe | o resultado do lote 4                                     | a ordem das chaves do `autorDP` e o padrão do código `c` da linha do dono ("-…", vazio ou "D"): é o que falta para incluir registros, produções, bancas e o projeto                                                         |
-| Atividades de uma atuação                       | o lote 3, uma página por natureza                         | os campos de cada natureza (órgão, unidade, cargo, curso, especificação) e a grade `f_espec_l` de disciplinas e treinamentos: chaves e separadores; se a atividade de pesquisa e desenvolvimento leva as linhas de pesquisa |
-| Titulares da patente                            | as duas páginas de `pkg_titular_inst.sele_inst` do lote 5 | o que cada linha de titular leva em `pais`, `staValidado` e `tipoInst`                                                                                                                                                      |
-| Financiadores, produções e equipe do projeto    | as três janelas de `PKG_PROJETO` do lote 5                | os quatro valores de cada financiador em `f_inst_l`, o valor que liga uma produção ou orientação, e o que a janela de equipe põe numa linha                                                                                 |
+| Item                                 | Onde                                 | O que procurar                                                                                                                                                              |
+| ------------------------------------ | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Titular pessoa da patente            | o resultado do lote 6                | a ordem das chaves do `titularPessoaDP` e a linha da própria pessoa: é o que falta para a patente ir pelo conector                                                          |
+| Órgão ou unidade de uma atuação      | as duas buscas de órgão do lote 7    | se a busca responde por GET com a lista de órgãos, e o código que ela põe em `f_codorgao`: é o que falta para as outras oito naturezas de atividade e para o projeto        |
+| Atividade que já existe              | a tela de alteração do lote 7        | onde ficam as disciplinas que a atividade já tem (o `Provider` da grade) e o código `c` de cada uma: é o que falta para incluir uma disciplina numa atividade que já existe |
+| Financiadores e produções do projeto | o resultado das buscas, que são POST | os quatro valores de cada financiador em `f_inst_l` e o valor que liga uma produção ou orientação; ler a resposta pede enviar a busca, e isso é decisão do dono             |
 
 O que só se responde enviando, e por isso fica para um teste acompanhado: o
-passo depois do envio da formação complementar (`FORM2`) e o elemento do XML
+passo depois do envio da formação complementar (`FORM2`), o elemento do XML
 que o corpo editorial, a revisão e o assessoramento gravam (o currículo não
-tem nenhum item desses). A licença não tem como ir pelo formulário: o Lattes
+tem nenhum item desses) e a primeira inclusão real de cada tipo que o
+conector já inclui sem ter sido acompanhado: os cinco registros que não são
+patente e a atividade de ensino, que dependem da linha da própria pessoa e do
+formato de `f_espec_l` lidos no código, sem envio. A licença não tem como ir pelo formulário: o Lattes
 exige a data de nascimento ou adoção, que o XML não guarda.
 
 Depois de lido, o que virar fato vai para `docs/lattes_internals.md` (com a

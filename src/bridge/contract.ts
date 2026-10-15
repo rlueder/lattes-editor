@@ -55,6 +55,7 @@ export interface FormSpec {
 }
 
 type CreateKind =
+  | 'criar-atividade'
   | 'criar-atuacao'
   | 'criar-dado'
   | 'criar-evento'
@@ -386,6 +387,7 @@ async function locateAndCheck(
     kind === 'criar-formacao' ||
     kind === 'criar-projeto' ||
     kind === 'criar-registro' ||
+    kind === 'criar-atividade' ||
     kind === 'criar-dado' ||
     kind === 'criar-evento' ||
     kind === 'criar-vinculo'

@@ -1509,3 +1509,96 @@ desconhecido.
 
 **Aperfeiçoamento.** O formulário do nível X, que deu erro de rede no censo,
 foi lido e entrou no censo.
+
+## 22. Recaptura de 15/10/2026, lotes 3 a 5 (LAT-57)
+
+Só leitura, na sessão do dono do currículo, com os ajudantes `activities()`,
+`authorShape()` e `inspect()` do censo (`lattes-formularios/recaptura.md`).
+Os arquivos crus não são versionados; as nove telas de atividade viraram
+entradas do censo em `lattes-formularios/censo-2026-10-15c.json`.
+**Observado**, menos onde está marcado.
+
+**A linha de autor do menu (lote 4).** O vetor `autorDP` do menu tem 14
+linhas, todas com as chaves `l`, `c`, `t` e `deletable`, nessa ordem. O código
+`c` é "9" em nove linhas, "99" em quatro e vazio em uma. O `authorShape()`
+comparou cada `l` com o nome do dono sem devolvê-lo: duas linhas casaram, as
+duas com "99". O que o código das páginas mostra:
+
+- o `check()` só reconhece a própria pessoa por uma linha com `c` vazio,
+  começando com "-" ou igual a "D" (seção 21);
+- o `recuperaPosicaoUsuario()` do projeto procura na grade serializada por
+  "||" ou "|-", isto é, um `c` vazio ou negativo logo depois de `l`;
+- o `update.grid()` copia a linha escolhida na sugestão para a grade com
+  `$.extend` e acrescenta `editable`;
+- um autor digitado na hora vira `{l, t, c: " ", tit, add: true}` e, na grade
+  serializada, "l|t| |…";
+- os códigos de `pp_lista_autores` (abaixo) são os mesmos números do `autorDP`.
+
+Daí a linha da própria pessoa ser a única com `c` vazio, e as duas linhas
+"99" que casam com o nome serem entradas de coautoria com o mesmo nome. Isso é
+**inferido**: é a única linha que o `check()` aceita, mas o que o Lattes grava
+com ela só se vê numa inclusão. Com as chaves na ordem do `autorDP`, a linha
+da pessoa vai na grade como "l||t" (`deletable` e `editable` ficam de fora da
+lista de chaves de cada formulário), e no projeto, como coordenadora, "l||t|s"
+(`src/bridge/author-grid.ts`).
+
+**Atividades de uma atuação (lote 3).** `pkg_ativ.cargo?f_natur_ativ=<n>`,
+com `f_ctr=I`, envia para `PKG_ATIV.cargo`. As naturezas 1, 2, 5, 6, 7, 8, 9 e
+B têm o mesmo formulário: órgão ou unidade (`f_orgao`, desabilitado, que a
+busca `prc_orgao_cargo?f_modal_cv=9&f_cod_inst=<instituição>` preenche em
+`f_codorgao`), início, período (`f_status` `N` anterior, `S` atual), fim e
+privacidade. A de ensino (4) troca o órgão por nível (`f_nivel`) e curso
+(`f_curso`, pela busca `prc_curso_form?f_inst=<instituição>&f_nivel=<nível>`,
+que preenche `f_cod_curso`). Os campos ocultos são `f_natur_ativ`, `f_ctr`,
+`f_espec_l`, `f_cod`, `f_codinst`, `f_seq_ativ`, `f_seq_funcao`,
+`f_codorgao`, `f_codorgao2`, `f_exc`, `f_natur_old`, `f_cod_curso`,
+`f_cod_curso2`, `f_curso_old` e `f_orgao_old`.
+
+O `check()` exige o órgão em toda natureza menos a de ensino; na de ensino,
+exige o curso nos níveis 3, 4 e 401 a 404, e o nível sempre. Exige também o
+período, o ano de início (não antes do nascimento, não depois do ano atual),
+o fim quando o período é anterior e nenhum fim quando é atual, e ao menos uma
+linha na grade de descrições ("Informe a descrição da atividade").
+
+A grade de descrições tem uma coluna, com o rótulo de cada natureza: "Cargo ou
+função" (1 e B), "Linhas de pesquisa" (2), "Disciplinas ministradas" (4),
+"Estagio Realizado" (5), "Serviço realizado" (6), "Atividade de extensão
+realizada" (7), "Treinamento ministrado" (8) e "Outra atividade
+técnico-científica" (9). O `check()` serializa a grade em `f_espec_l` como
+`<n>@<c>?<nome>!` por linha, oito linhas no mínimo, as vazias como `<n>@?!`.
+O número da linha começa em 1, e uma linha digitada vira `{l, c}`, com o `c`
+que ela já tinha ou 0 (`edit.atividade`), então uma disciplina nova vai como
+`1@0?<nome>!`. O que o Lattes faz com esse código numa alteração não foi
+lido. A linha de pesquisa, o treinamento ministrado e
+a disciplina entram, então, pela grade da atividade de pesquisa e
+desenvolvimento, de treinamento e de ensino, o que confirma o que a seção 21
+deixou como inferido para a linha de pesquisa.
+
+A ligação de cada campo com o XML (`TIPO-ENSINO`, `FLAG-PERIODO`, as
+disciplinas como `DISCIPLINA` com `SEQUENCIA-ESPECIFICACAO`) é **inferida**
+pelo rótulo: o currículo de quem capturou não tem atividade de ensino. Os
+níveis de 401 a 409 seguem os rótulos das opções.
+
+**Titular da patente (lote 5).** `pkg_titular_inst.sele_inst` abre uma busca
+de instituição por nome que envia (POST) para `PRC_INST_FORM`, com `f_ctr` e
+`f_cod` ocultos; a resposta da busca não foi lida, porque é POST.
+`pkg_titular_inst.sele_inst?f_ctr=O` foi recusado pelo próprio censo, que não abre
+endereço com `f_ctr` preenchido (`isSafeGet`). A sugestão de titular
+pessoa vem de `self.parent.titularPessoaDP`, no menu, cuja forma não foi
+lida. **Lacuna.**
+
+**Financiador, produção e equipe do projeto (lote 5).**
+`PKG_PROJETO.pp_lista_inst?f_pgm=INSTFINANC` é uma busca por nome que envia
+(POST) para `PKG_PROJETO.PP_LISTA_INST`, com `F_CTR`, `F_COD`, `F_PGM`,
+`F_COD_INST`, `F_SEQ_FUNCAO`, `F_SEQ_ATIV` e `F_SEQ_PROJ` ocultos, e um
+segundo formulário para `PKG_PROJETO.EDITAR_FINANCIAMENTO` (`P_COD`,
+`P_COD_INST`, `P_CTR`). A resposta não foi lida. `PKG_PROJETO.pp_lista_prod`
+responde 404 sem parâmetros. `PKG_PROJETO.pp_lista_autores` tem um campo de
+busca, a lista de pessoas (cada uma como `p[i]="<código>#<nome>@<citação>"`,
+com os códigos do `autorDP`) e o link `pkg_projeto.novo_equipe?f_tipo=A&f_nome=`
+para incluir quem não está na lista.
+
+**O redator do censo.** As páginas desses lotes trazem nomes em dois lugares
+que o redator não conhecia, os literais `"<código>#<nome>@<citação>"` e o
+texto depois do primeiro `<br>` em `setarTitulo(...)`. Os dois passaram a ser
+trocados por `[removido]` (`src/census/census-page.ts`).

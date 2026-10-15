@@ -2,12 +2,13 @@
 // CREATE_ITEMS_ENABLED (create.ts). Lista, formulário e a janela das
 // instituições das atuações: docs/lattes_internals.md, seção 17. Inferido até
 // o teste acompanhado: a resposta do POST, o servidor pendurar o projeto na
-// atuação da instituição escolhida, o projeto novo aparecer na lista, e a
-// equipe, que vai como o formulário a traz (a grade não é montada).
+// atuação da instituição escolhida e o projeto novo aparecer na lista. A
+// equipe leva a própria pessoa como coordenadora (seção 22).
 
 import type { Change } from '../model/changes.ts';
 import { childElements, firstChild, getAttr, walk, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
+import { ownerAuthor, ownerGridRow, serializeGrid, TEAM_KEYS } from './author-grid.ts';
 import type { FormSpec } from './contract.ts';
 import { CREATE_FIELD_LABELS } from './create-labels.ts';
 import {
@@ -119,16 +120,16 @@ function onlyOwner(projeto: XElement, root: XElement | undefined): boolean {
   );
 }
 
-/** Por que o projeto vai à mão hoje (seção 21 de docs/lattes_internals.md). */
+/** Por que o projeto vai à mão hoje (seções 21 e 22 de docs/lattes_internals.md). */
 export const TEAM_BY_HAND =
-  'Vai à mão: o Lattes exige você e um coordenador na equipe e o órgão na inclusão, e a linha da grade da equipe com você ainda não foi lida';
+  'Vai à mão: o Lattes exige o órgão ou unidade na inclusão do projeto, que o editor ainda não pede';
 
 /**
  * Um projeto novo como inclusão; o motivo, quando vai à mão. Por enquanto vai
- * sempre à mão: a recaptura de 15/10/2026 mostrou que o check() do formulário
- * exige o próprio nome e um coordenador na equipe (a inclusão abre com a
- * grade vazia) e, na inclusão, o órgão ou unidade, e a linha do dono na grade
- * ainda não foi lida (seção 21). projetoOp() monta o resto.
+ * sempre à mão: o check() do formulário exige, na inclusão, o órgão ou unidade
+ * (a busca pp_orgao_cargo), e o editor não tem esse campo no projeto. A
+ * equipe já tem como ir: projetoOp() põe a própria pessoa como coordenadora,
+ * pela linha dela no autorDP do menu (seção 22).
  */
 export function planCreateProjeto(
   change: Change,
@@ -370,9 +371,16 @@ export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort):
     };
     const limit = overLimit(form.controls, set);
     if (limit) return result('erro', limit);
+    // A própria pessoa na equipe, como coordenadora (tit "s"): o check() exige
+    // a pessoa e um coordenador, e a inclusão abre a grade vazia (seção 22).
+    const owner = ownerAuthor(menu);
+    if (!owner) {
+      return result('erro', 'A sua linha de autor não está no menu do Lattes (autorDP)');
+    }
+    const team = serializeGrid([ownerGridRow(owner, { tit: 's' })], TEAM_KEYS);
     const response = await port.post(
       CREATE_PROJETO_SPEC.action,
-      encodeLatin1Form(setPairs(form.pairs, set)),
+      encodeLatin1Form(setPairs(form.pairs, { ...set, f_autores_l: team })),
     );
     if (isLogonPage(response)) return result('sessao', SESSION);
 

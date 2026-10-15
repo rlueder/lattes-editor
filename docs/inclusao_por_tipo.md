@@ -41,18 +41,25 @@ outro item.
 
 | Caminho hoje | Tipos | Editor cria |
 | ------------ | ----: | ----------: |
-| conector     |    25 |          25 |
+| conector     |    31 |          31 |
 | importar     |    60 |          60 |
-| nenhum       |    29 |          29 |
+| nenhum       |    23 |          23 |
 
-O editor cria todos os tipos. Os 29 sem caminho vão para "A enviar" com a
-rota "à mão", cada um com o motivo: a patente e os cinco outros registros e o
-projeto (o Lattes exige a própria pessoa na grade de inventores ou na equipe,
-que a inclusão abre vazia, e a linha do dono na grade ainda não foi lida), a
-formação complementar, a licença, as áreas de atuação, as nove atividades de
-uma atuação, a disciplina, o treinamento, a linha de pesquisa, o financiador,
-a produção e a orientação de um projeto, e a participação em projeto (que
-nasce com o projeto).
+O editor cria todos os tipos. Os 23 sem caminho vão para "A enviar" com a
+rota "à mão", cada um com o motivo: a patente (o titular sai de um vetor do
+menu cuja forma ainda não foi lida), o projeto (o Lattes exige o órgão ou
+unidade na inclusão, e o editor não o pede), a formação complementar, a
+licença, as áreas de atuação, oito das nove naturezas de atividade de uma
+atuação (todas menos a de ensino pedem o órgão, que entra por uma busca cuja
+resposta não foi lida), a disciplina numa atividade que já existe, o
+treinamento, a linha de pesquisa, o financiador, a produção e a orientação de
+um projeto, e a participação em projeto (que nasce com o projeto).
+
+Os outros cinco registros (programa de computador, cultivar protegida e
+registrada, desenho industrial, marca e topografia de circuito) e a atividade
+de ensino com as suas disciplinas passaram a ir pelo conector em 15/10/2026,
+depois que o lote 4 da recaptura leu a linha da própria pessoa no vetor de
+autores do menu. Nenhum deles teve ainda uma inclusão real acompanhada.
 
 O que entra num item que já existe pede, antes do formulário, onde entra: a
 atuação do vínculo e das atividades, a atividade de ensino da disciplina, a de
@@ -105,15 +112,15 @@ e treinamento são só um nome, que fica no texto do elemento.
 | `TREINAMENTO`                        | Treinamento                        | `TREINAMENTO-MINISTRADO`     | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
 | `ATUACAO-PROFISSIONAL`               | Atuação profissional               |                              | sim         | conector     | `atuacao`                                                       | lido                         | observado/observado                                                                                     |
 | `VINCULOS`                           | Vínculo                            | `ATUACAO-PROFISSIONAL`       | sim         | conector     | `vinculo`                                                       | lido                         | observado/observado                                                                                     |
-| `DIRECAO-E-ADMINISTRACAO`            | Direção e administração            | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
-| `PESQUISA-E-DESENVOLVIMENTO`         | Pesquisa e desenvolvimento         | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
-| `ENSINO`                             | Ensino                             | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
-| `ESTAGIO`                            | Estágio                            | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
-| `SERVICO-TECNICO-ESPECIALIZADO`      | Serviço técnico especializado      | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
-| `EXTENSAO-UNIVERSITARIA`             | Extensão universitária             | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
-| `TREINAMENTO-MINISTRADO`             | Treinamento ministrado             | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
-| `OUTRA-ATIVIDADE-TECNICO-CIENTIFICA` | Outra atividade técnico-científica | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
-| `CONSELHO-COMISSAO-E-CONSULTORIA`    | Conselho, comissão e consultoria   | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
+| `DIRECAO-E-ADMINISTRACAO`            | Direção e administração            | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | `atividade-1`                                                   | lido                         | observado/inferido                                                                                      |
+| `PESQUISA-E-DESENVOLVIMENTO`         | Pesquisa e desenvolvimento         | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | `atividade-2`                                                   | lido                         | observado/inferido                                                                                      |
+| `ENSINO`                             | Ensino                             | `ATUACAO-PROFISSIONAL`       | sim         | conector     | `atividade-4`                                                   | lido                         | observado/inferido                                                                                      |
+| `ESTAGIO`                            | Estágio                            | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | `atividade-5`                                                   | lido                         | observado/inferido                                                                                      |
+| `SERVICO-TECNICO-ESPECIALIZADO`      | Serviço técnico especializado      | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | `atividade-6`                                                   | lido                         | observado/inferido                                                                                      |
+| `EXTENSAO-UNIVERSITARIA`             | Extensão universitária             | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | `atividade-7`                                                   | lido                         | observado/inferido                                                                                      |
+| `TREINAMENTO-MINISTRADO`             | Treinamento ministrado             | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | `atividade-8`                                                   | lido                         | observado/inferido                                                                                      |
+| `OUTRA-ATIVIDADE-TECNICO-CIENTIFICA` | Outra atividade técnico-científica | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | `atividade-9`                                                   | lido                         | observado/inferido                                                                                      |
+| `CONSELHO-COMISSAO-E-CONSULTORIA`    | Conselho, comissão e consultoria   | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | `atividade-B`                                                   | lido                         | observado/inferido                                                                                      |
 | `PARTICIPACAO-EM-PROJETO`            | Participação em projeto            | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
 
 ### Patentes e registros
@@ -121,11 +128,11 @@ e treinamento são só um nome, que fica no texto do elemento.
 | Elemento                           | Item                             | Faz parte de | Editor cria | Caminho hoje | Formulário no censo | Captura | Endereço/ligação    |
 | ---------------------------------- | -------------------------------- | ------------ | ----------- | ------------ | ------------------- | ------- | ------------------- |
 | `PATENTE`                          | Patente                          |              | sim         | nenhum       | `patente`           | lido    | observado/observado |
-| `CULTIVAR-PROTEGIDA`               | Cultivar protegida               |              | sim         | nenhum       | `registro-CP`       | lido    | observado/inferido  |
-| `CULTIVAR-REGISTRADA`              | Cultivar registrada              |              | sim         | nenhum       | `registro-CR`       | lido    | observado/inferido  |
-| `DESENHO-INDUSTRIAL`               | Desenho industrial               |              | sim         | nenhum       | `registro-DI`       | lido    | observado/inferido  |
-| `MARCA`                            | Marca                            |              | sim         | nenhum       | `registro-MR`       | lido    | observado/inferido  |
-| `TOPOGRAFIA-DE-CIRCUITO-INTEGRADO` | Topografia de circuito integrado |              | sim         | nenhum       | `registro-TC`       | lido    | observado/inferido  |
+| `CULTIVAR-PROTEGIDA`               | Cultivar protegida               |              | sim         | conector     | `registro-CP`       | lido    | observado/inferido  |
+| `CULTIVAR-REGISTRADA`              | Cultivar registrada              |              | sim         | conector     | `registro-CR`       | lido    | observado/inferido  |
+| `DESENHO-INDUSTRIAL`               | Desenho industrial               |              | sim         | conector     | `registro-DI`       | lido    | observado/inferido  |
+| `MARCA`                            | Marca                            |              | sim         | conector     | `registro-MR`       | lido    | observado/inferido  |
+| `TOPOGRAFIA-DE-CIRCUITO-INTEGRADO` | Topografia de circuito integrado |              | sim         | conector     | `registro-TC`       | lido    | observado/inferido  |
 
 ### Eventos
 
@@ -237,13 +244,15 @@ tipo exige, e a operação passou a mandar as datas: na cultivar e no desenho
 industrial em `f_dta_dep` e `f_dta_conc`, na patente em `f_dados_grid_datas`.
 A marca e a topografia não têm campo de data na tela; com data, vão à mão.
 
-Mesmo assim, o planejamento manda todo registro à mão. O `check()` exige a
-própria pessoa na lista de inventores (ou de melhoristas, na cultivar), o
-formulário de inclusão abre com essa grade vazia, e a linha do dono na grade
-vem do `autorDP` do menu, cuja forma ainda não foi lida. A patente exige
-também o titular ou depositante, noutra grade. Por isso a tabela traz os seis
-tipos com caminho `nenhum`. O lote 4 da recaptura (`authorShape`) responde
-sem nome nenhum, e aí a operação passa a valer.
+A recaptura de 15/10/2026 leu também a forma da linha de autor (seção 22):
+o vetor `autorDP` do menu traz as chaves `l`, `c`, `t` e `deletable`, nessa
+ordem, e uma linha só com o código `c` vazio, que é a única que o `check()`
+aceita como a própria pessoa. A operação passou a montar a grade de inventores
+com essa linha (`src/bridge/author-grid.ts`), e os cinco registros que não são
+patente voltaram a ir pelo conector. Que essa linha seja a da pessoa é
+inferido pelo `check()`; o que o Lattes grava com ela só se vê na primeira
+inclusão acompanhada. A patente continua à mão: exige também o titular ou
+depositante, que vem do vetor `titularPessoaDP`, cuja forma não foi lida.
 
 O programa de computador registrado é um `SOFTWARE` com registro: a lista de
 programas abre a janela prévia com `ftipo=PC` e depois o formulário com
@@ -254,15 +263,20 @@ caminho pelo conector desde a LAT-52, e o aperfeiçoamento, que deu erro na
 captura do censo, foi lido na recaptura. O projeto também tem a operação
 (`projetoOp`), mas a recaptura mostrou que o `check()` do formulário de
 projeto exige a própria pessoa e um coordenador na equipe (que a inclusão
-abre vazia) e, na inclusão, o órgão ou unidade, que a operação não monta: o
-planejamento passou a mandar o projeto à mão, com esse motivo, até a linha do
-dono na grade ser lida. Pós-doutorado e livre-docência entram pela lista
+abre vazia) e, na inclusão, o órgão ou unidade. A operação agora manda a
+equipe com a linha da própria pessoa como coordenadora (seção 22), mas não
+monta o órgão, e o planejamento manda o projeto à mão com esse motivo. Pós-doutorado e livre-docência entram pela lista
 `f_tipo=AP` (etapa 5). A formação complementar abre com nível, instituição,
 curso, carga horária e situação, sem os anos, e envia para `FORM2`, cujo passo
-seguinte só se vê enviando. Atividades de uma atuação usam `pkg_ativ.cargo`,
-ainda lido só sem a natureza (o lote 3 da recaptura não rodou); disciplina e
-treinamento entram pela grade dessa atividade. A lista de linhas de pesquisa
-não tem inclusão.
+seguinte só se vê enviando. Atividades de uma atuação usam `pkg_ativ.cargo`, que o lote 3 da recaptura
+leu nas nove naturezas (censo `censo-2026-10-15c.json`). A de ensino é a única
+sem órgão: tem nível (`f_nivel`, de 401 a 409), curso, período e a grade de
+disciplinas em `f_espec_l`, e vai pelo conector
+(`src/bridge/create-atividade.ts`), com as disciplinas junto. As outras oito
+pedem o órgão ou unidade por uma busca (`prc_orgao_cargo`) cuja resposta não
+foi lida, e vão à mão. Treinamento e linha de pesquisa entram pela grade da
+atividade de treinamento e da de pesquisa e desenvolvimento, e a lista de
+linhas de pesquisa não tem inclusão própria.
 
 **Dados gerais.** Idioma, prêmio e licença têm formulário lido, simples, com
 `f_ctr=I`. Áreas de atuação são uma grade única em `prc_area_atuacao`.
@@ -280,9 +294,10 @@ só em inglês: com o texto em português, vai à mão.
 Ficam à mão, com o motivo de cada um: a licença (o `check()` exige a data de
 nascimento ou adoção, que o XML da licença não guarda), as áreas de atuação
 (a grade `f_area_l` tem a chave `r`, de sentido não lido), a formação
-complementar, as atividades, a disciplina, o treinamento, a linha de pesquisa
-e o financiador, a produção e a orientação do projeto (as janelas de onde vêm
-os valores dessas grades não foram lidas). O que falta ler para cada um está
+complementar, as atividades que pedem órgão, a disciplina numa atividade que
+já existe, o treinamento, a linha de pesquisa e o financiador, a produção e a
+orientação do projeto (as buscas de onde vêm os valores dessas grades são POST
+e a resposta não foi lida). O que falta ler para cada um está
 em `lattes-formularios/recaptura.md`.
 
 **Produções, eventos, orientações e bancas.** A captura leu o formulário de
@@ -338,16 +353,16 @@ segue no arquivo do Importar.
 **Produções bibliográficas, técnicas e artísticas, demais trabalhos e bancas:
 Importar, por enquanto.** Os formulários de inclusão desses tipos foram lidos,
 e mandam os autores (e, nas bancas, os participantes) na grade `f_autores_l`.
-A recaptura de 15/10/2026 (seção 21) respondeu parte do que faltava: o
-`check()` exige a própria pessoa na grade, a inclusão abre com ela vazia (o
-vetor `autorProvider` é `[{}]`), e a grade vai com as chaves `c`, `l`, `t`,
-`pais` e `add` de cada linha, na ordem do objeto. A linha da própria pessoa
-vem do `autorDP` do menu, e a forma dela (a ordem das chaves e o código `c`,
-que o `check()` reconhece por começar com "-", ser vazio ou ser "D") ainda não
-foi lida, nem o sentido de `pais`. Uma inclusão direta sem isso gravaria a
-produção sem autores, ou com uma linha que o Lattes não reconhece como a
-pessoa. O lote 4 da recaptura (`authorShape`) lê essa forma sem nome nenhum.
-Palavras-chave, áreas e setores vão em grades parecidas.
+A recaptura de 15/10/2026 (seções 21 e 22) respondeu o que faltava da grade:
+o `check()` exige a própria pessoa nela, a inclusão abre com ela vazia (o
+vetor `autorProvider` é `[{}]`), a grade vai com as chaves `c`, `l`, `t`,
+`pais` e `add` de cada linha, na ordem do objeto, e a linha da própria pessoa
+é a do `autorDP` com `c` vazio, com as chaves `l`, `c`, `t` e `deletable`. A
+grade já se monta (`src/bridge/author-grid.ts`, a mesma dos registros). Falta
+o resto: o sentido de `pais`, a ligação de cada campo com o XML (inferida em
+quase todos, porque o currículo de quem capturou tem poucas produções) e as
+grades de palavras-chave, áreas e setores. Como o Importar funciona para
+esses tipos, a inclusão direta deles não foi construída.
 
 **Orientações: Importar, por enquanto, com o caminho direto mapeado.** O
 formulário não tem grade de autores, e a recaptura leu as buscas: a de

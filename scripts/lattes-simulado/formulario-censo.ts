@@ -11,6 +11,8 @@
 // limites, opções e valores.
 
 import censo from '../../docs/lattes-formularios/censo-2026-10-15.json' with { type: 'json' };
+import recapturaB from '../../docs/lattes-formularios/censo-2026-10-15b.json' with { type: 'json' };
+import recapturaC from '../../docs/lattes-formularios/censo-2026-10-15c.json' with { type: 'json' };
 import { foldText } from '../../src/model/fold-text.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
@@ -45,18 +47,24 @@ interface CensusJson {
   lists: Record<string, CapturedOption[]>;
 }
 
-const CENSUS = censo as unknown as CensusJson;
+/** As capturas versionadas, da mais recente para a mais antiga (as recapturas trazem só algumas entradas). */
+const CAPTURES = [recapturaC, recapturaB, censo] as unknown as CensusJson[];
 
-/** O primeiro formulário que a captura leu para a entrada do censo. */
+/** O primeiro formulário que a captura mais recente leu para a entrada do censo. */
 export function capturedForm(entry: string): CapturedForm {
-  const form = CENSUS.entries.find((e) => e.id === entry)?.page?.forms?.[0];
-  if (!form) throw new Error(`O censo não tem formulário para ${entry}`);
-  return form;
+  for (const file of CAPTURES) {
+    const form = file.entries.find((e) => e.id === entry)?.page?.forms?.[0];
+    if (form) return form;
+  }
+  throw new Error(`O censo não tem formulário para ${entry}`);
 }
 
 /** As opções [valor, rótulo] de um campo capturado. */
 export function capturedOptions(field: CapturedField): [string, string][] {
-  const list = typeof field.options === 'string' ? CENSUS.lists[field.options] : field.options;
+  const list =
+    typeof field.options === 'string'
+      ? CAPTURES.map((f) => f.lists[field.options as string]).find(Boolean)
+      : field.options;
   return (list ?? []).map((o) => [o.value, o.label]);
 }
 
