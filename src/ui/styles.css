@@ -7037,3 +7037,35 @@ main.content {
     transition: none;
   }
 }
+
+/* Ações da seção na barra fixa (StickyTitle): os mesmos botões de sob o
+   título, compactos, à direita; em tela estreita, só o ícone, com o nome na
+   dica e no aria-label. */
+.sticky-title-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.sticky-section-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.sticky-section-actions button {
+  min-height: 26px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .sticky-section-actions .btn-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}

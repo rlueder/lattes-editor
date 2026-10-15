@@ -72,8 +72,14 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section }:
   const [marking, setMarking] = useState(false);
   const mark = section.mark;
   const markButton = mark && mark.items.length > 0 && (
-    <button className="ghost mark-open" type="button" onClick={() => setMarking(true)}>
-      Marcar itens
+    <button
+      aria-label="Marcar itens"
+      className="ghost mark-open"
+      title="Marcar itens"
+      type="button"
+      onClick={() => setMarking(true)}
+    >
+      <span className="btn-label">Marcar itens</span>
     </button>
   );
   // Formação, atuação, projetos e patentes: o item novo pela própria seção. Na
@@ -82,11 +88,13 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section }:
   const newButton = (primary: boolean) =>
     newLabel && (
       <button
+        aria-label={newLabel}
         className={primary ? 'primary' : 'ghost mark-open'}
+        title={newLabel}
         type="button"
         onClick={() => onNewGeneral(section.id)}
       >
-        <PlusIcon /> {newLabel}
+        <PlusIcon /> <span className="btn-label">{newLabel}</span>
       </button>
     );
   const actions = markButton || newButton(false);
@@ -187,7 +195,16 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section }:
     <PrivacyContext.Provider value={privacy && hideSensitive}>
       <div ref={rootRef} className="section-layout reading">
         <StickyTitle
-          actions={privacyToggle}
+          // O que está no lugar das ações sob o título vai também para a barra
+          // fixa: os mesmos botões (mesmo clique, mesmo fluxo), na versão compacta.
+          actions={
+            (privacyToggle || actions) && (
+              <>
+                {privacyToggle}
+                {actions && <span className="sticky-section-actions">{actions}</span>}
+              </>
+            )
+          }
           groups={visibleGroups.map((g) => ({ id: g.id, label: g.label }))}
           host={rootRef}
           label={section.label}

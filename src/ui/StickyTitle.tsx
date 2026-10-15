@@ -8,7 +8,7 @@ import { type ReactNode, type RefObject, useEffect, useState } from 'react';
 const BAR_H = 44;
 
 interface Props {
-  /** Ações da seção (o olho de privacidade) no mesmo lugar em que estão sob o título. */
+  /** Ações da seção (o olho de privacidade, "Nova formação"…), as mesmas que ficam sob o título. */
   actions?: ReactNode;
   groups: { id: string; label: string }[];
   /** Raiz da seção, onde a altura da barra é publicada. */
@@ -60,7 +60,13 @@ export function StickyTitle({ actions, groups, host, label, title }: Props) {
 
   const group = groups.find((g) => g.id === current);
   return (
-    <div aria-hidden={!visible} className={`sticky-title${visible ? ' visible' : ''}`}>
+    // Escondida, a barra sai da ordem do Tab (inert): as ações dela são as
+    // mesmas que estão sob o título, à vista.
+    <div
+      aria-hidden={!visible}
+      className={`sticky-title${visible ? ' visible' : ''}`}
+      inert={!visible}
+    >
       <div className="sticky-title-bar">
         <div className="sticky-title-main">
           <strong>{label}</strong>
