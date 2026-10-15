@@ -6497,7 +6497,7 @@ main.content {
   position: relative;
   margin: 0 -12px;
   padding: 6px var(--reading-gutter) 6px 12px;
-  border-radius: 8px;
+  border-radius: 0;
   color: var(--read-text);
   font-family: var(--read-serif);
   font-size: var(--read-size);
@@ -6762,7 +6762,7 @@ main.content {
   position: relative;
   margin: -6px calc(-1 * var(--reading-gutter)) 0 -12px;
   padding: 6px var(--reading-gutter) 0 12px;
-  border-radius: 8px 8px 0 0;
+  border-radius: 0;
 }
 
 .reading-block.is-editing .reading-head {
@@ -6787,7 +6787,7 @@ main.content {
 
 /* O trecho do campo em foco, aceso na prévia. */
 .reading-content .is-focus-part {
-  border-radius: 3px;
+  border-radius: 0;
   background: var(--accent-soft-strong);
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
