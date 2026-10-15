@@ -9,6 +9,7 @@ import { toBase64 } from '../bridge/export.ts';
 import { photoFailureMessage } from '../bridge/photo.ts';
 import { Modal } from './Modal.tsx';
 import { preparePhoto } from './photo-image.ts';
+import { usePrivacyMode } from './privacy.ts';
 import type { PhotoUploadReading } from './use-bridge.ts';
 
 /** Sem resposta da extensão em tanto tempo, o envio conta como falho. */
@@ -44,6 +45,9 @@ export function PhotoDialog({
   onSent: () => void;
 }) {
   const [step, setStep] = useState<Step>({ kind: 'escolher' });
+  // No modo de privacidade a foto de agora não aparece, nem se ele mudar com o diálogo aberto.
+  const [hidden] = usePrivacyMode();
+  const shown = hidden ? undefined : current;
   const input = useRef<HTMLInputElement>(null);
   // A prévia é uma URL de blob criada e revogada no mesmo efeito, presa aos
   // bytes: os passos que carregam a mesma foto reaproveitam a URL, e o
@@ -164,7 +168,7 @@ export function PhotoDialog({
           {preview ? (
             <img alt="" src={preview} />
           ) : (
-            current && step.kind !== 'enviada' && <img alt="" src={current} />
+            shown && step.kind !== 'enviada' && <img alt="" src={shown} />
           )}
         </div>
         <div className="photo-text">

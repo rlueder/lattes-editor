@@ -50,13 +50,20 @@ export function usePhotoChange(bridge: BridgeState) {
         open={open}
         reading={fake ? fakeReading : bridge.photoUpload}
         send={send}
-        onClose={() => setOpen(false)}
-        onSent={() => setVersion((v) => v + 1)}
+        onClose={() => {
+          setOpen(false);
+          setCurrent(undefined);
+        }}
+        onSent={() => {
+          setVersion((v) => v + 1);
+          setCurrent(undefined);
+        }}
       />
     ),
     open: canChange
-      ? (photo?: string) => {
-          setCurrent(photo);
+      ? (photo?: unknown) => {
+          // Quem liga direto num onClick passaria o evento: só texto vale como foto.
+          setCurrent(typeof photo === 'string' ? photo : undefined);
           setOpen(true);
         }
       : undefined,
