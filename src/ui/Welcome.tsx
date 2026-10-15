@@ -17,6 +17,7 @@ import { SettingsMenu } from './SettingsMenu.tsx';
 import { Sidebar } from './Sidebar.tsx';
 import type { ThemePref } from './theme.ts';
 import type { LattesOpen } from './use-lattes-open.ts';
+import { useStoredVersion } from './use-stored-version.ts';
 
 const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
@@ -57,6 +58,10 @@ interface Props {
   link: Link;
   theme: ThemePref;
   onFile: (file: File) => void;
+  /** Abre uma versão guardada pelo app (Exportar bloqueado por pendência). */
+  onOpenVersion: (id: number) => void;
+  /** Exportar bloqueado por pendência: abre o "Enviar ao CNPq" (LAT-54). */
+  onPublish: () => void;
   /** Recarrega a aba do Lattes pela extensão (sessão vencida). */
   onReloadLattes: () => void;
   onTheme: (theme: ThemePref) => void;
@@ -73,10 +78,12 @@ function StepAction({
   action,
   onReload,
   onRetry,
+  onVersion,
 }: {
   action: NonNullable<Step['action']>;
   onReload: () => void;
   onRetry: () => void;
+  onVersion: () => void;
 }) {
   // Recarregar não tem resposta da extensão: o botão mostra que o clique foi
   // recebido e não recarrega de novo no meio do login.
@@ -109,7 +116,9 @@ function StepAction({
               setReloading(true);
               onReload();
             }
-          : onRetry
+          : action.kind === 'versao'
+            ? onVersion
+            : onRetry
       }
     >
       {reloading ? 'Recarregando…' : action.label}
@@ -117,11 +126,27 @@ function StepAction({
   );
 }
 
-export function Welcome({ error, lattes, link, onFile, onReloadLattes, onTheme, theme }: Props) {
+export function Welcome({
+  error,
+  lattes,
+  link,
+  onFile,
+  onOpenVersion,
+  onPublish,
+  onReloadLattes,
+  onTheme,
+  theme,
+}: Props) {
   // No `pnpm dev`, ?primeiro-uso=<estado> mostra um estado fixo para revisar.
   const preview = import.meta.env.DEV ? onboardingPreview(location.search) : undefined;
   const devFolder = useDevExtensionFolder();
-  const steps = onboardingSteps(preview?.link ?? link, preview?.open ?? lattes.state, devFolder);
+  const open = preview?.open ?? lattes.state;
+  // Exportar bloqueado por pendência: a última versão deste currículo guardada no app.
+  const saved = useStoredVersion(
+    open.kind === 'falhou' && open.reason === 'pendente' ? open.lattesId : undefined,
+  );
+  const stored = preview ? preview.stored : saved;
+  const steps = onboardingSteps(preview?.link ?? link, open, devFolder, stored);
   const [over, setOver] = useState(false);
   const input = useRef<HTMLInputElement>(null);
 
@@ -204,6 +229,9 @@ export function Welcome({ error, lattes, link, onFile, onReloadLattes, onTheme, 
                         action={step.action}
                         onReload={onReloadLattes}
                         onRetry={lattes.open}
+                        onVersion={() =>
+                          stored && stored !== 'procurando' && onOpenVersion(stored.id)
+                        }
                       />
                     )}
                   </div>
@@ -211,6 +239,14 @@ export function Welcome({ error, lattes, link, onFile, onReloadLattes, onTheme, 
               ))}
             </ol>
             <div className="onboarding-file">
+              {open.kind === 'falhou' && open.reason === 'pendente' && (
+                <p className="onboarding-manual">
+                  O envio ao CNPq libera o Exportar.{' '}
+                  <button className="link-button" type="button" onClick={onPublish}>
+                    Enviar ao CNPq…
+                  </button>
+                </p>
+              )}
               <button className="link-button" type="button" onClick={pick}>
                 Prefiro abrir o arquivo exportado
               </button>

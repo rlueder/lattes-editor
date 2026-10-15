@@ -87,11 +87,18 @@ export function GeneralItemForm({
     const fromForm = missingGeneral(parts).map((m) => ({
       attribute: m.attr,
       element: m.element,
+      kind: 'obrigatorio' as const,
       message: `${attributeLabel(m.attr)}: obrigatório`,
     }));
     const fromPlace: Problem[] =
       isProject && !atuacao
-        ? [{ element: item.name, message: 'Escolha a atuação onde o projeto entra' }]
+        ? [
+            {
+              element: item.name,
+              kind: 'obrigatorio',
+              message: 'Escolha a atuação onde o projeto entra',
+            },
+          ]
         : [];
     const seen = new Set<string>();
     return [...fromPlace, ...fromSchema, ...fromForm].filter((p) => {

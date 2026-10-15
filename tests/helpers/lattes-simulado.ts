@@ -1,6 +1,6 @@
 // O Lattes simulado (scripts/lattes-simulado/) dentro do teste: sobe o
 // servidor numa porta livre e entrega as portas que o núcleo do conector usa
-// (LattesPort, ExportPort, ImportPort, PhotoPort), feitas como as da
+// (LattesPort, ExportPort, ImportPort, PhotoPort, PublishPort), feitas como as da
 // extensão (extension/src/lattes-runner.ts): fetch na base /cvlattesweb/,
 // texto em Latin-1 e formulários lidos do HTML. A diferença é o menu: na aba,
 // o conector lê o que está na tela; aqui, cada leitura pede o menu de novo,
@@ -19,6 +19,7 @@ import type { LattesPort } from '../../src/bridge/apply.ts';
 import type { ExportPort } from '../../src/bridge/export.ts';
 import type { ImportPort } from '../../src/bridge/importar.ts';
 import type { PhotoPort } from '../../src/bridge/photo.ts';
+import type { PublishPort } from '../../src/bridge/publish.ts';
 import { decodeLatin1, encodeLatin1 } from '../../src/model/latin1.ts';
 import { walk, type XElement } from '../../src/model/xml.ts';
 import { readHtmlForm } from './html-form.ts';
@@ -85,7 +86,9 @@ export async function withLattesSimulado(options: ServerOptions = {}) {
     postMultipart: multipart,
   };
 
-  return { ...lattes, at, exportPort, importPort, photoPort, port };
+  const publishPort: PublishPort = { get: exportPort.get, post: importPort.post };
+
+  return { ...lattes, at, exportPort, importPort, photoPort, port, publishPort };
 }
 
 export type LattesSimuladoNoTeste = Awaited<ReturnType<typeof withLattesSimulado>>;

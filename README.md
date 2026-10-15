@@ -56,7 +56,10 @@ atualizações" no menu ⚙.
    alterações em eventos de que você participou como ouvinte pela extensão,
    gravados e conferidos um a um (os idiomas ainda em teste); o resto campo a campo, com o valor antigo e
    o novo lado a lado. A aba "Enviado" guarda o que já foi, com o antes e o
-   depois, e deixa desfazer.
+   depois, e deixa desfazer. Quando o Lattes tem algo a publicar, o "Enviar
+   ao CNPq" mostra o que vai ser publicado e a declaração do CNPq como está na
+   tela do Lattes; por enquanto, o envio em si continua sendo feito no
+   Lattes.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/ir-para-escuro.jpg" />
@@ -84,10 +87,15 @@ jeito, inclusive quando o item vem do DOI.
 
 Cada exportação aberta vira uma versão, e o app diz o que mudou desde a
 anterior ("Versões do Lattes", no ⚙), inclusive o que foi editado direto no
-Lattes. O **Diagnóstico do currículo** mostra a data da última publicação, o
-que mudou no Lattes desde a exportação e o que vale conferir no currículo
-inteiro: duplicatas, ISSN, DOI, datas e vínculos antigos ainda marcados como
-atuais. Só aponta; nada muda sem você.
+Lattes. Com a extensão, "Recarregar do Lattes…" traz a exportação de agora
+sem escolher arquivo; se o Lattes tiver alterações ainda não enviadas ao
+CNPq, que bloqueiam o Exportar, o app abre a última versão que guardou e
+compara com o que está no Lattes. O **Diagnóstico do currículo**, no ⚙, confere o currículo inteiro de
+uma vez, item por item: campos obrigatórios, valores fora das listas do
+Lattes, anos, autores, DOI e a revisão de consistência (duplicatas, ISSN,
+vínculos antigos ainda marcados como atuais). Logo abaixo, mostra a data da
+última publicação e o que mudou no Lattes desde a exportação. Só aponta;
+nada muda sem você.
 
 Também dá para imprimir ou salvar em PDF nas regras da NBR 14724, com
 referências na NBR 6023, e compartilhar o currículo por um código QR.
