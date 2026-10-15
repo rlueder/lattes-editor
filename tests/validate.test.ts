@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { newItem, setAuthors } from '../src/model/production.ts';
-import { problemPlace, validateItem } from '../src/model/validate.ts';
+import { problemPlace, uniqueProblems, validateItem } from '../src/model/validate.ts';
 import { firstChild, setAttr } from '../src/model/xml.ts';
 import { lattesSchema as schema } from '../src/schema/lattes.ts';
 
@@ -69,5 +69,13 @@ describe('validateItem', () => {
     expect(validateItem(schema, root, TODAY).map((p) => p.message)).toEqual([
       'Sistema origem XML: obrigatório',
     ]);
+  });
+});
+
+describe('uniqueProblems', () => {
+  it('tira o mesmo campo apontado duas vezes', () => {
+    const p = { attribute: 'ANO', element: 'X', message: 'Ano' };
+    const q = { element: 'X', message: 'Inclua' };
+    expect(uniqueProblems([p, { ...p, message: 'outro' }, q, q])).toEqual([p, q]);
   });
 });

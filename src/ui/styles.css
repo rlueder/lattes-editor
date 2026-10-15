@@ -5575,6 +5575,97 @@ b {
   font-size: 12px;
 }
 
+/* Resumo e tipo do item à direita. */
+.incoming-summary {
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+
+.incoming-summary strong {
+  font-weight: 600;
+}
+
+.incoming-meta {
+  flex-shrink: 0;
+  max-width: 40%;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Itens de outro arquivo (src/import-export/IncomingReview.tsx, LAT-45) e o
+   aviso de duplicata no formulário de item novo. */
+.incoming-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.incoming-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background-color 200ms ease;
+}
+
+.incoming-row:hover {
+  background: var(--surface-2);
+}
+
+.incoming-row input {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.incoming-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.incoming-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.incoming-match {
+  color: var(--warn-text);
+  font-size: 12px;
+}
+
+.incoming-row.parecido .incoming-match {
+  color: var(--text);
+}
+
+.incoming-reasons {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.form-duplicate {
+  margin: 0;
+  padding: 8px 16px;
+  border-top: 1px solid var(--border);
+  color: var(--warn-text);
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .incoming-row {
+    transition: none;
+  }
+}
+
 /* Versões do Lattes (LAT-12): exportações à esquerda, o que mudou à direita. */
 .modal.versions {
   width: min(880px, calc(100% - 32px));

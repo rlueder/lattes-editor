@@ -18,8 +18,9 @@ import {
   setAuthors,
   setKeywords,
 } from '../model/production.ts';
-import { validateItem } from '../model/validate.ts';
+import { uniqueProblems, validateItem } from '../model/validate.ts';
 import type { XElement } from '../model/xml.ts';
+import type { Candidate } from '../review/dedup.ts';
 import { lattesSchema as schema } from '../schema/lattes.ts';
 import { AttributeField } from '../ui/AttributeField.tsx';
 import { DiscardConfirm } from '../ui/dialogs.tsx';
@@ -32,6 +33,7 @@ import { Tip } from '../ui/primitives/Tip.tsx';
 import { useGroupStarts } from '../ui/use-group-starts.ts';
 import { AreasEditor } from './AreasEditor.tsx';
 import { AuthorsEditor } from './AuthorsEditor.tsx';
+import { DuplicateNotice } from './DuplicateNotice.tsx';
 import { sectionFacts } from './form-sections.ts';
 import { FormSection } from './FormSection.tsx';
 import { formSpec, missingRequired } from './specs.ts';
@@ -48,6 +50,11 @@ const DOI_TYPES = new Set([
 interface Props {
   /** O item vai por "Enviar ao Lattes" (inclusão pelo conector), e não pelo Importar. */
   byChanges?: boolean;
+  /**
+   * O item do currículo com que este se parece (LAT-45), para um item novo
+   * não virar duplicata sem a pessoa saber; ela decide se salva.
+   */
+  duplicateOf?: (item: XElement) => Candidate | undefined;
   isNew: boolean;
   item: XElement;
   knownAreas: KnowledgeArea[];
@@ -67,6 +74,7 @@ const footText = (byChanges: boolean) =>
 
 export function ProductionForm({
   byChanges = false,
+  duplicateOf,
   isNew,
   item,
   knownAreas,
@@ -117,14 +125,7 @@ export function ProductionForm({
           message: `${attributeLabel(m.attr)}: obrigatório`,
         }))
       : [];
-    // O formulário e a validação geral podem apontar o mesmo campo.
-    const seen = new Set<string>();
-    return [...fromSchema, ...fromForm].filter((p) => {
-      const key = `${p.element}/${p.attribute ?? p.message}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+    return uniqueProblems([...fromSchema, ...fromForm]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item, version]);
 
@@ -342,6 +343,7 @@ export function ProductionForm({
           )}
         </div>
 
+        <DuplicateNotice find={isNew ? duplicateOf : undefined} item={item} version={version} />
         <footer className="modal-foot form-foot">
           {problems.length > 0 ? (
             <details className="form-problems">
