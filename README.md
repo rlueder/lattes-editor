@@ -77,7 +77,10 @@ mão com os valores ao lado.
 
 Cada exportação aberta vira uma versão, e o app diz o que mudou desde a
 anterior ("Versões do Lattes", no ⚙), inclusive o que foi editado direto no
-Lattes. O **Diagnóstico do currículo** mostra a data da última publicação, o
+Lattes. Com a extensão, "Recarregar do Lattes…" traz a exportação de agora
+sem escolher arquivo; se o Lattes tiver alterações ainda não enviadas ao
+CNPq, que bloqueiam o Exportar, o app abre a última versão que guardou e
+compara com o que está no Lattes. O **Diagnóstico do currículo** mostra a data da última publicação, o
 que mudou no Lattes desde a exportação e o que vale conferir no currículo
 inteiro: duplicatas, ISSN, DOI, datas e vínculos antigos ainda marcados como
 atuais. Só aponta; nada muda sem você.

@@ -13,10 +13,13 @@ import { openStorageNotice } from './storage-notice-open.ts';
 export function NotificationsMenu({
   notices,
   onDiagnosis,
+  onReloadFile,
 }: {
   notices: Notice[];
   /** Alterações no Lattes que não passaram por aqui: abre o diagnóstico. */
   onDiagnosis?: () => void;
+  /** Recarregar pela extensão falhou: escolhe o arquivo exportado. */
+  onReloadFile?: () => void;
 }) {
   const urgent = notices.some((n) => n.level === 'aviso');
   const label = notices.length ? `Notificações (${notices.length})` : 'Notificações';
@@ -44,7 +47,9 @@ export function NotificationsMenu({
                         ? openStorageNotice
                         : n.action === 'diagnostico'
                           ? onDiagnosis
-                          : () => void installUpdate()
+                          : n.action === 'recarregar-arquivo'
+                            ? onReloadFile
+                            : () => void installUpdate()
                     }
                   >
                     <NoticeBody notice={n} />

@@ -40,6 +40,11 @@ interface Props {
   onPalette: () => void;
   onPrint: () => void;
   onReload: (file: File) => void;
+  /**
+   * Com a extensão sabendo exportar, "Recarregar do Lattes…" pede o ZIP pela
+   * ponte (use-lattes-reload.ts); sem ela, o menu pede o arquivo.
+   */
+  onReloadFromLattes?: () => void;
   onSave: () => void;
   onTheme: (theme: ThemePref) => void;
   /** ⚙ › Versões do Lattes: o que mudou entre as exportações. */
@@ -70,6 +75,7 @@ export function Topbar({
   onPalette,
   onPrint,
   onReload,
+  onReloadFromLattes,
   onSave,
   onTheme,
   onVersions,
@@ -80,6 +86,10 @@ export function Topbar({
 }: Props) {
   const reloadInput = useRef<HTMLInputElement>(null);
   const [closing, setClosing] = useState(false);
+  const pickReloadFile = () => {
+    if (isDesktop()) void pickFileNative().then((file) => file && onReload(file));
+    else reloadInput.current?.click();
+  };
   return (
     <header ref={ref} data-tauri-drag-region className="topbar">
       {/* O símbolo e o nome do app (no app de macOS, depois dos botões da janela). */}
@@ -148,7 +158,11 @@ export function Topbar({
           </button>
         </Tip>
 
-        <NotificationsMenu notices={notices} onDiagnosis={onDiagnosis} />
+        <NotificationsMenu
+          notices={notices}
+          onDiagnosis={onDiagnosis}
+          onReloadFile={pickReloadFile}
+        />
 
         {/* Exibição e arquivo: o que se usa menos fica no menu. */}
         <SettingsMenu
@@ -158,10 +172,7 @@ export function Topbar({
             onDiagnosis,
             onHistory,
             onPrint,
-            onReload: () => {
-              if (isDesktop()) void pickFileNative().then((file) => file && onReload(file));
-              else reloadInput.current?.click();
-            },
+            onReload: onReloadFromLattes ?? pickReloadFile,
             onSave,
             onVersions,
           }}

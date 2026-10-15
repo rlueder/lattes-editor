@@ -97,8 +97,21 @@ describe('primeiro uso: os três passos', () => {
     const link: Link = { features: ALL, state: { kind: 'lido', version: v } };
     const pending = onboardingSteps(link, { kind: 'falhou', reason: 'pendente' })[2];
     expect(pending?.text).toMatch(/não enviadas ao CNPq/);
+    expect(pending?.text).toMatch(/não guardou nenhuma versão/);
     expect(pending?.action).toEqual({ kind: 'tentar', label: 'Tentar de novo' });
     expect(onboardingSteps(link, parado)[2]?.action?.label).toBe('Abrir do Lattes');
+  });
+
+  it('Exportar bloqueado por pendência, com uma versão guardada: abrir essa versão (LAT-46)', () => {
+    const link: Link = { features: ALL, state: { kind: 'lido', version: v } };
+    const stored = { date: '06/10/2026', id: 7 };
+    const open: OpenState = { kind: 'falhou', lattesId: '1', reason: 'pendente' };
+    const step = onboardingSteps(link, open, undefined, stored)[2];
+    expect(step?.action).toEqual({ kind: 'versao', label: 'Abrir a versão de 06/10/2026' });
+    expect(step?.text).toMatch(/versão publicada de 06\/10\/2026/);
+    // Outra falha, mesmo com versão guardada, segue o caminho de sempre.
+    const other = onboardingSteps(link, { kind: 'falhou', reason: 'erro' }, undefined, stored)[2];
+    expect(other?.action?.kind).toBe('tentar');
   });
 });
 
@@ -113,10 +126,11 @@ describe('prévia do primeiro uso no pnpm dev', () => {
       'lattes',
       'abrindo',
       'pendente',
+      'pendente-versao',
     ]) {
       const p = onboardingPreview(`?primeiro-uso=${name}`);
       expect(p, name).toBeDefined();
-      expect(onboardingSteps(p!.link, p!.open)).toHaveLength(3);
+      expect(onboardingSteps(p!.link, p!.open, undefined, p!.stored)).toHaveLength(3);
     }
     expect(onboardingPreview('?primeiro-uso=outro')).toBeUndefined();
     expect(onboardingPreview('')).toBeUndefined();
