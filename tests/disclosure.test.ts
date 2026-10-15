@@ -191,7 +191,9 @@ describe('na edição de um bloco', () => {
           onEdit: () => {},
         }),
       );
-    expect(render('N')).not.toContain('Orientador no sanduíche');
-    expect(render('S')).toContain('Orientador no sanduíche');
+    expect(render('N')).not.toContain('Nome do orientador sanduíche');
+    expect(render('S')).toContain('Nome do orientador sanduíche');
+    // O tipo é uma lista com os códigos do formulário do Lattes.
+    expect(render('S')).toContain('value="Sanduíche"');
   });
 });

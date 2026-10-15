@@ -77,7 +77,9 @@ function address(): KnownLink[] {
 const FORMATION: KnownLink[] = [
   doc('F_STATUS', 'STATUS-DO-CURSO'),
   doc('f_tpo_doutorado', 'TIPO-MESTRADO'),
-  guess('f_tpo_doutorado', 'TIPO-DOUTORADO'),
+  // Observada nas exportações reais: o XML traz o código da opção (N, S).
+  // Fontes em src/ui/field-kind.ts, CODE_VALUES.
+  seen('f_tpo_doutorado', 'TIPO-DOUTORADO'),
   seen('f_ano_ini', 'ANO-DE-INICIO'),
   seen('f_ano_fim', 'ANO-DE-CONCLUSAO'),
   guess('f_ano_obten', 'ANO-DE-OBTENCAO-DO-TITULO'),

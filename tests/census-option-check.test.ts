@@ -31,7 +31,8 @@ describe('censo: opções do Lattes contra o controle do editor', () => {
     expect(editorControl('DADOS-BASICOS-DO-ARTIGO', 'PAIS')).toBe('lista');
     expect(editorControl('MESTRADO', 'STATUS-DO-CURSO')).toBe('enum');
     expect(editorControl('MESTRADO', 'NOME-INSTITUICAO')).toBe('derivado');
-    expect(editorControl('DOUTORADO', 'TIPO-DOUTORADO')).toBe('texto');
+    expect(editorControl('DOUTORADO', 'TIPO-DOUTORADO')).toBe('codigo');
+    expect(editorControl('DADOS-GERAIS', 'PCD')).toBe('texto');
   });
 
   it('sim/não pelo código, ou pelo rótulo quando o código não diz', () => {
@@ -111,9 +112,8 @@ describe('censo: opções do Lattes contra o controle do editor', () => {
     expect(pais.control).toBe('lista');
     expect(pais.found[0]!.detail).toMatch(/novas no Lattes: Atlântida; só no editor: /);
     expect(
-      checkOptions('t:DOUTORADO@TIPO-DOUTORADO', radio('f_tpo'), [o('N', 'normal')], []).found[0]!
-        .key,
-    ).toBe('lista-nao-ligada:t:DOUTORADO@TIPO-DOUTORADO:f_tpo');
+      checkOptions('t:DADOS-GERAIS@PCD', radio('f_pcd'), [o('N', 'não')], []).found[0]!.key,
+    ).toBe('lista-nao-ligada:t:DADOS-GERAIS@PCD:f_pcd');
     expect(
       checkOptions('t:IDIOMA@IDIOMA', radio('F_COD_IDIOMA'), [o('EN', 'Inglês')], []).found,
     ).toEqual([]);

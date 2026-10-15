@@ -269,6 +269,15 @@ export function slugify(text: string): string {
  * do idioma numa produção.
  */
 const IN_ELEMENT: Record<string, string> = {
+  /*
+   * No doutorado sanduíche (TIPO-DOUTORADO S), a exportação real
+   * RafaelQSantos-RQS/LattesHub database/data/lattes/5601958689947032.xml
+   * preenche NOME-INSTITUICAO-DOUT e NOME-ORIENTADOR-DOUT e deixa vazios
+   * NOME-INSTITUICAO-OUTRA-DOUT e NOME-DO-ORIENTADOR-SANDUICHE: os campos
+   * -DOUT são os do sanduíche. Só no doutorado; no mestrado, sem exemplo.
+   */
+  'DOUTORADO NOME-INSTITUICAO-DOUT': 'Instituição do sanduíche',
+  'DOUTORADO NOME-ORIENTADOR-DOUT': 'Orientador no sanduíche',
   'IDIOMA IDIOMA': 'Código do idioma',
 };
 

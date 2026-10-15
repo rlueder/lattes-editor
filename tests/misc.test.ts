@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   attributeLabel,
+  attributeLabelIn,
   elementLabel,
   enumLabel,
   fold,
@@ -504,7 +505,13 @@ describe('rótulos legíveis', () => {
     expect(attributeLabel('TITULO-INGLES')).toBe('Título em inglês');
     expect(attributeLabel('NOME-DO-CO-ORIENTADOR')).toBe('Nome do coorientador');
     expect(attributeLabel('TIPO-GRADUACAO')).toBe('Tipo de graduação');
-    expect(attributeLabel('NOME-DO-ORIENTADOR-SANDUICHE')).toBe('Orientador no sanduíche');
+    expect(attributeLabel('NOME-DO-ORIENTADOR-SANDUICHE')).toBe('Nome do orientador sanduíche');
+    // No doutorado, os campos -DOUT são os do sanduíche (exportação real com TIPO-DOUTORADO S).
+    expect(attributeLabelIn('DOUTORADO', 'NOME-ORIENTADOR-DOUT')).toBe('Orientador no sanduíche');
+    expect(attributeLabelIn('DOUTORADO', 'NOME-INSTITUICAO-DOUT')).toBe('Instituição do sanduíche');
+    expect(attributeLabelIn('MESTRADO', 'NOME-ORIENTADOR-DOUT')).not.toBe(
+      'Orientador no sanduíche',
+    );
     expect(attributeLabel('NOME-DO-PREMIO-OU-TITULO')).toBe('Nome do prêmio ou título');
   });
 });

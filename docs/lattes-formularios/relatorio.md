@@ -138,7 +138,6 @@ não cobra estas até a passada de edição observar a ligação.
 - DADOS-BASICOS-DO-TEXTO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
 - DADOS-BASICOS-DO-TRABALHO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
 - DADOS-BASICOS-DA-TRADUCAO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DOUTORADO@TIPO-DOUTORADO: o campo f_tpo_doutorado tem opções no Lattes e o editor mostra texto livre
 - DADOS-GERAIS@PCD: o campo f_pcd tem opções no Lattes e o editor mostra texto livre
 - DETALHAMENTO-DO-PROCESSOS-OU-TECNICAS@DISPONIBILIDADE: o campo f_disp tem opções no Lattes e o editor mostra texto livre
 - DETALHAMENTO-DO-PRODUTO-TECNOLOGICO@DISPONIBILIDADE: o campo f_disp tem opções no Lattes e o editor mostra texto livre
@@ -330,7 +329,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 - `DOUTORADO@STATUS-DO-CURSO` ← `F_STATUS` (documentado)
 - `DOUTORADO@FLAG-BOLSA` ← `F_BOLSA` (observado)
-- `DOUTORADO@TIPO-DOUTORADO` ← `f_tpo_doutorado` (inferido)
+- `DOUTORADO@TIPO-DOUTORADO` ← `f_tpo_doutorado` (observado)
 
 **texto livre**
 

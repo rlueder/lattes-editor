@@ -39,6 +39,25 @@ const OWNER_ONLY: Record<string, string> = {
  */
 const CODE_VALUES: Record<string, Record<string, string>> = {
   'DADOS-GERAIS NACIONALIDADE': { B: 'Brasileira', E: 'Estrangeira' },
+  /*
+   * TIPO-DOUTORADO: o rádio f_tpo_doutorado do formulário de doutorado (censo
+   * LAT-55, opções "normal", "sanduíche", "co-tutela", "co-tutela/sanduíche"),
+   * e o XML guarda o código da opção. N e S observados em exportações reais
+   * publicadas no GitHub (arquivos LATTES_OFFLINE): N em
+   * RafaelQSantos-RQS/LattesHub database/data/lattes/3633682231940138.xml,
+   * NARizzardi/UFPR 1002/lattes/lattes-cvs/algoritmos/kohayakawa.xml e
+   * LiaCasatiRamaldes/vira-lattes-db cv/mock_jean.xml (talvez simulado); S em
+   * RafaelQSantos-RQS/LattesHub database/data/lattes/5601958689947032.xml. C e
+   * CS não apareceram em nenhuma exportação: inferidos pelas opções do
+   * formulário. Valor fora da lista continua à mostra, como veio.
+   */
+  'DOUTORADO TIPO-DOUTORADO': {
+    // Como no formulário do Lattes (o censo compara os rótulos).
+    C: 'Co-tutela',
+    CS: 'Co-tutela/sanduíche',
+    N: 'Normal',
+    S: 'Sanduíche',
+  },
   'MESTRADO TIPO-MESTRADO': { N: 'Normal', S: 'Sanduíche' },
 };
 
