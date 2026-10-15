@@ -189,9 +189,55 @@ reconnaissance) are not rewritten to match the code; they get the
   suggests one. The commit-msg hook blocks the commit form; the rest is on
   the agent. Naming a model as a product under study (pricing, benchmarks
   in `docs/pesquisa_recursos_de_ia.md`) is content, not attribution.
-- Prose for humans avoids machine cadence (matched pairs, tricolons,
-  aphoristic endings) and never uses em dashes. Test data may contain
-  them on purpose.
+- Prose for humans avoids machine cadence and never uses em dashes. Test
+  data may contain them on purpose. The rules are in the next section.
+
+## Writing style: avoid machine cadence
+
+Applies to everything with a human reader: UI text (labels, notes, empty
+states, chart descriptions, tooltips, error messages), docs, README,
+CHANGELOG, commit bodies, PR descriptions, review replies and code
+comments written for a person. Adapted from the shared rules of the
+precisa-saude repos.
+
+The failure is rhythmic, not lexical. Swapping words while keeping the
+sentence rhythm doesn't fix it; rewrite at the sentence level.
+
+### Patterns to avoid
+
+- **Matched pairs:** two clauses of similar length set against each
+  other, often as a correction ("O histórico não existe. Existem PDFs
+  soltos."). Say the thing once.
+- **Tricolons:** three parallel beats escalating to a reveal ("Um valor
+  plausível, num campo plausível, completamente errado."). One clause,
+  then the consequence.
+- **Appositive glosses:** breaking a sentence to define the term just
+  used. Pick the right term, or explain it separately.
+- **A question answered by itself:** "Duas páginas discordam? Então…".
+  Write "Quando duas páginas discordam, …".
+- **Clever inversions and chiasmus:** they read as slogans.
+- **Tacked-on validators:** closers that add nothing ("E isso faz toda a
+  diferença."). Cut them.
+- **Aphoristic closure:** ending every paragraph on something quotable.
+- **Uniform sentence length:** several medium declaratives in a row.
+- **"Não só X, mas Y"** and similar balanced connectives: use a plain
+  "e".
+- **Abstract "o que / como" framings in UI copy:** a description like
+  "O que este currículo tem, numa tela, no período escolhido." reads as
+  generated. Say what is shown: "Os totais do período escolhido."
+- **Em dashes (`—`):** never. Use a comma, colon, parentheses or a full
+  stop. A verbatim quotation keeps its source punctuation.
+
+### What to do instead
+
+- Vary sentence length on purpose.
+- Prefer a concrete specific (a field name, a number, an actual case)
+  over an abstraction.
+- In the UI, describe what the screen or control shows or does, in the
+  fewest words that stay clear. Labels and notes don't need a full
+  sentence.
+- Read it back before committing. If every paragraph lands a punchline,
+  rewrite the ones that aren't carrying information.
 
 ## Git
 

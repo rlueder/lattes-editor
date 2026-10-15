@@ -47,7 +47,12 @@ function dayStart(date: string): number {
  *   nova no Lattes.
  */
 export function unpublishedSent(sent: SentEntry[], lattes?: LattesStatus): number {
-  if (!lattes) return 0;
+  return unpublishedEntries(sent, lattes).length;
+}
+
+/** As gravações que unpublishedSent conta, para o envio ao CNPq mostrar quais são. */
+export function unpublishedEntries(sent: SentEntry[], lattes?: LattesStatus): SentEntry[] {
+  if (!lattes) return [];
   const since = lattes.pending
     ? lattes.lastPublished
       ? dayStart(lattes.lastPublished)
@@ -58,7 +63,7 @@ export function unpublishedSent(sent: SentEntry[], lattes?: LattesStatus): numbe
   const cancelled = new Set(
     window.flatMap((e) => (e.undoOf !== undefined && ids.has(e.undoOf) ? [e.undoOf, e.id] : [])),
   );
-  return window.filter((e) => !cancelled.has(e.id)).length;
+  return window.filter((e) => !cancelled.has(e.id));
 }
 
 /** DD/MM/AAAA de uma data AAAA-MM-DD. */

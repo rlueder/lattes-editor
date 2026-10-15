@@ -18,6 +18,15 @@ import {
 import { lattesStatusFrom } from '../../src/bridge/lattes-status.ts';
 import { type PhotoPort, type PhotoResult, uploadPhoto } from '../../src/bridge/photo.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
+import {
+  PUBLISH_ENABLED,
+  publishCv,
+  type PublishPort,
+  type PublishRequest,
+  type PublishResult,
+  readSendScreenFrom,
+  type SendScreen,
+} from '../../src/bridge/publish.ts';
 import { decodeLatin1 } from '../../src/model/latin1.ts';
 
 async function text(res: Response): Promise<string> {
@@ -133,6 +142,38 @@ interface ImportArgs {
   fileName: string;
   modules: number[];
   oldestYear?: number;
+}
+
+/**
+ * O envio ao CNPq (src/bridge/publish.ts): os GET e POST da tela de envio. Os
+ * GET não usam cache: o menu lido antes e depois do envio tem de ser o de agora.
+ */
+const publishPort: PublishPort = {
+  async get(path) {
+    const res = await fetch(new URL(path, location.href), {
+      cache: 'no-store',
+      credentials: 'include',
+    });
+    return { html: await text(res), url: res.url };
+  },
+  post: importPort.post,
+};
+
+/** Os endereços da página de conferência nas duas línguas, na base desta aba. */
+function previewsOf(code: string): { en: string; pt: string } {
+  const at = (idioma: string) =>
+    new URL(`pkg_publicar.cv_espelho?f_cod=${code}&f_idioma=${idioma}`, location.href).href;
+  // Inferido: f_idioma=2 é a versão em inglês (só a em português, 1, foi vista).
+  return { en: at('2'), pt: at('1') };
+}
+
+/** O que a tela de envio volta ao service worker. */
+interface SendScreenReply {
+  detail?: string;
+  lattesId?: string;
+  previews?: { en: string; pt: string };
+  reason?: 'erro' | 'mudou' | 'sessao';
+  screen?: SendScreen;
 }
 
 /** Só GET: as listas do Lattes (src/bridge/lattes-lists.ts) nunca gravam nada. */
@@ -254,6 +295,46 @@ interface ExportReply {
     searchInstitutions(listsPort, query, level || undefined),
   // Só leituras: a tabela de áreas do menu e a lista de agências.
   listas: () => readLists(listsPort),
+  // Enviar ao CNPq (src/bridge/publish.ts), só se a sessão desta aba for do
+  // currículo do editor. A declaração vem marcada pela pessoa no editor; o
+  // núcleo recusa sem ela.
+  publicar: async (args: string, expected?: string): Promise<PublishResult> => {
+    // A chave de novo aqui, além do service worker e do núcleo.
+    if (!PUBLISH_ENABLED) {
+      return { detail: 'O envio ao CNPq pelo editor está desligado.', outcome: 'desligado' };
+    }
+    const menu = document.documentElement.outerHTML;
+    if (!sameCv(expected, lattesIdFrom(menu))) {
+      return { detail: 'A sessão aberta no Lattes é de outro currículo.', outcome: 'outro-cv' };
+    }
+    let req: { request: PublishRequest; today: string };
+    try {
+      req = JSON.parse(args) as { request: PublishRequest; today: string };
+    } catch {
+      return { detail: 'O pedido de envio chegou ilegível à aba do Lattes.', outcome: 'erro' };
+    }
+    try {
+      return await publishCv(publishPort, cvCodeFrom(menu), req.request, { today: req.today });
+    } catch {
+      return {
+        detail:
+          'A aba do Lattes não respondeu no meio do envio. Confira a "Última publicação" no menu do Lattes antes de tentar de novo.',
+        outcome: 'erro',
+      };
+    }
+  },
+  // Só leitura: a tela de envio ao CNPq, para o editor mostrar a declaração.
+  telaEnvio: async (): Promise<SendScreenReply> => {
+    const menu = document.documentElement.outerHTML;
+    const lattesId = lattesIdFrom(menu);
+    const code = cvCodeFrom(menu);
+    try {
+      const read = await readSendScreenFrom(publishPort, code);
+      return { ...read, lattesId, previews: code ? previewsOf(code) : undefined };
+    } catch {
+      return { detail: 'A aba do Lattes não respondeu.', lattesId, reason: 'erro' };
+    }
+  },
   // Só leituras: o menu e um exemplar de cada formulário, comparados ao contrato.
   verificar: () => checkContract(port),
 };
