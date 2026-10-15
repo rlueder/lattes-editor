@@ -204,3 +204,36 @@ conferir a montagem antes do merge em outro caso:
 `site/` é publicada em [rlueder.github.io/lattes-editor](https://rlueder.github.io/lattes-editor/)
 pelo `pages.yml`, quando muda na `main`. A política de
 privacidade da extensão é `site/privacidade.html`.
+
+Para testar a página sem compilar o editor:
+
+```bash
+python3 -m http.server 8858 --bind 127.0.0.1 --directory site
+```
+
+Abra `http://127.0.0.1:8858/`. O site usa HTML, CSS e JavaScript sem etapa
+de build; `homepage.css` e `homepage.js` atendem a página inicial.
+`site.css` continua atendendo a política de privacidade da extensão.
+Os links de download apontam para os instaladores da última versão publicada.
+
+A página inicial segue a direção Capa, com fundo claro, ameixa e lavanda.
+As fontes Margem e Pausa vêm do mesmo endereço usado pelo FHIR Brasil,
+sem incluir os arquivos licenciados no repositório. IBM Plex é a alternativa
+local quando as fontes remotas não carregam.
+
+A demonstração de edição é uma simulação local, sem consulta à Crossref ou
+envio ao Lattes. A seção Panorama alterna capturas reais e mostra a passagem
+de uma contagem para o artigo correspondente no editor. O recurso permanece
+identificado como em desenvolvimento até ser incluído na versão pública.
+
+As imagens em `site/img/homepage/` usam exclusivamente o currículo fictício
+`fixtures/demo.xml`. As capturas do Panorama foram feitas no código de
+desenvolvimento `b1bb89d`; os controles da prévia não executam o app.
+
+O destaque inicial reproduz uma sequência de três capturas, mediante clique.
+Com redução de movimento, o botão avança uma tela por vez. Para substituir
+a sequência por uma gravação, coloque o vídeo em `site/img/homepage/` e
+defina o atributo `src` do elemento `video[data-workflow-video]` em
+`site/index.html`. Use apenas o currículo fictício e inclua legendas caso
+haja fala. O vídeo usa controles nativos e não inicia automaticamente;
+se falhar, a sequência de capturas volta a aparecer.
