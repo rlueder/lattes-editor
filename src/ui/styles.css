@@ -3208,9 +3208,11 @@ body {
   background: var(--chrome);
 }
 
+/* O menu lateral no fundo do conteúdo; o fio da esquerda do conteúdo os
+   separa. O cabeçalho fica no cromo. */
 .sidebar {
   border-right: 0;
-  background: var(--chrome);
+  background: var(--bg);
 }
 
 .content {
@@ -3221,15 +3223,22 @@ body {
   background: var(--bg);
 }
 
-/* Fio entre o menu e o conteúdo; fora do modo foco, onde o menu sai. Em
-   tela estreita o menu fica em cima, e o fio passa para cima do conteúdo. */
-.shell:not(.is-focus) > .content {
+/* Fio entre o menu e o conteúdo. No modo foco o fio fica transparente, com
+   a mesma largura, para o conteúdo não andar 1px. Em tela estreita o menu
+   fica em cima, e o fio passa para cima do conteúdo. */
+.shell > .content {
   border-left: 1px solid var(--border);
+}
+
+.shell.is-focus > .content {
+  border-left-color: transparent;
 }
 
 @media (max-width: 760px) {
   .shell:not(.is-focus) > .content {
     border-top: 1px solid var(--border);
+  }
+  .shell > .content {
     border-left: 0;
   }
 }
@@ -6937,15 +6946,16 @@ main.content {
 /* O aviso de pendências vai de uma borda à outra, também no modo foco: passa
    por cima da coluna vazia do menu, com o texto no mesmo lugar. */
 .shell.is-focus .pending-banner {
-  margin-left: calc(-40px - var(--focus-pad));
-  padding-left: calc(40px + var(--focus-pad));
+  /* O 1px é o fio transparente da esquerda do conteúdo. */
+  margin-left: calc(-41px - var(--focus-pad));
+  padding-left: calc(41px + var(--focus-pad));
 }
 
 /* A barra fixa do título (Seção › Grupo) também vai de uma borda à outra,
    fio e fundo, com o texto e as ações no mesmo lugar. */
 .shell.is-focus .sticky-title-bar {
-  left: calc(-40px - var(--focus-pad));
-  padding-left: calc(40px + var(--focus-pad));
+  left: calc(-41px - var(--focus-pad));
+  padding-left: calc(41px + var(--focus-pad));
 }
 
 /* Tela estreita: o menu fica em cima do conteúdo, numa coluna só. Guardar o
@@ -6974,6 +6984,11 @@ main.content {
   z-index: 40;
   background: var(--chrome);
   transition: transform var(--dur) var(--ease-out);
+}
+
+/* O menu revelado no fundo do conteúdo, como fora do modo foco. */
+.shell.is-focus .sidebar {
+  background: var(--bg);
 }
 
 .shell.is-focus .topbar {

@@ -194,7 +194,7 @@ largura nem de margem.
 - Liga e desliga com ⌘⇧F (Ctrl+Shift+F fora do Mac), pelo item "Modo foco"
   do ⚙ (com o atalho ao lado) ou pelo ⌘K. A escolha fica lembrada neste
   aparelho.
-- O ponteiro na borda esquerda (faixa de 12px, espera de 150ms) traz o menu
+- O ponteiro na borda esquerda (faixa de 16px, espera de 150ms) traz o menu
   por cima do conteúdo, sem empurrá-lo; sair dele com 24px de folga o
   esconde. A borda de cima faz o mesmo com o cabeçalho.
 - Pelo teclado: G mostra o menu enquanto espera a letra da seção, o ⌘K

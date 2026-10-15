@@ -57,8 +57,13 @@ export function focusShortcutLabel(mac: boolean): string {
   return mac ? '⌘⇧F' : 'Ctrl+Shift+F';
 }
 
-/** Borda que revela: faixa de 12px, espera de 150ms, e 24px de folga para sair do painel. */
-export const EDGE = { delay: 150, slack: 24, zone: 12 } as const;
+/**
+ * Borda que revela: faixa de 16px (em cima e à esquerda), espera de 150ms e
+ * 24px de folga para sair do painel. A espera é a guarda contra a barra do
+ * navegador: passar pela faixa a caminho das abas não abre o cabeçalho; só
+ * parar ou andar dentro dela por 150ms.
+ */
+export const EDGE = { delay: 150, slack: 24, zone: 16 } as const;
 
 export interface EdgeState {
   /**
