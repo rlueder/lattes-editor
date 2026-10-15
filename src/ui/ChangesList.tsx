@@ -8,6 +8,7 @@ import { elementLabel } from '../labels/labels.ts';
 import type { ChangeEntry, ChangeGroup } from './changes-view.ts';
 import { CopyButton } from './CopyButton.tsx';
 import { displayValue } from './display.ts';
+import { FieldChange } from './FieldChange.tsx';
 import { TrashIcon } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
 
@@ -65,49 +66,34 @@ export function ChangesList({ groups, onDiscard, onDiscardField }: Props) {
                       </span>
                     )}
                   </div>
-                  {
-                    <table className="change-fields">
-                      <tbody>
-                        {change.fields.map((f) => {
-                          // Código de enum aparece (e é copiado) como o rótulo do formulário do Lattes.
-                          const show = (v: string) => displayValue(change.element, f.attr, v);
-                          return (
-                            <tr key={f.attr}>
-                              <th scope="row">{f.label}</th>
-                              {change.kind === 'alterado' && (
-                                <td className="before">
-                                  {show(f.before) || <span className="muted">(vazio)</span>}
-                                </td>
-                              )}
-                              <td className="after">
-                                {/* Copiar fica dentro do valor, à direita; em texto longo, no alto. */}
-                                <span className="after-value">
-                                  <span className="after-text">
-                                    {change.kind === 'removido'
-                                      ? show(f.before)
-                                      : show(f.after) || <span className="muted">(vazio)</span>}
-                                  </span>
-                                  {change.kind !== 'removido' && show(f.after) && (
-                                    <CopyButton label={f.label} value={show(f.after)} />
-                                  )}
-                                </span>
-                              </td>
-                              <td className="copy">
-                                <span className="field-actions">
-                                  {change.kind === 'alterado' && (
-                                    <DiscardButton
-                                      label={`Descartar ${f.label}`}
-                                      onClick={() => onDiscardField(entry, f.attr)}
-                                    />
-                                  )}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  }
+                  <div className="change-fields">
+                    {change.fields.map((f, i) => {
+                      // Código de enum aparece (e é copiado) como o rótulo do formulário do Lattes.
+                      const show = (v: string) => displayValue(change.element, f.attr, v);
+                      const after = change.kind === 'removido' ? show(f.before) : show(f.after);
+                      return (
+                        <FieldChange
+                          key={f.attr}
+                          actions={
+                            change.kind === 'alterado' && (
+                              <DiscardButton
+                                label={`Descartar ${f.label}`}
+                                onClick={() => onDiscardField(entry, f.attr)}
+                              />
+                            )
+                          }
+                          after={after}
+                          before={change.kind === 'alterado' ? show(f.before) : undefined}
+                          captions={i === 0}
+                          copy={
+                            change.kind !== 'removido' &&
+                            after && <CopyButton label={f.label} value={after} />
+                          }
+                          label={f.label}
+                        />
+                      );
+                    })}
+                  </div>
                 </li>
               );
             })}

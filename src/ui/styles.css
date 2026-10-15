@@ -1592,38 +1592,6 @@ a.menu-item.notice {
   color: var(--danger);
 }
 
-.change-fields {
-  width: 100%;
-  margin-top: 6px;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-
-.change-fields th {
-  width: 28%;
-  padding: 3px 8px 3px 26px;
-  text-align: left;
-  font-weight: 400;
-  color: var(--muted);
-  vertical-align: top;
-}
-
-.change-fields td {
-  padding: 3px 6px;
-  vertical-align: top;
-  overflow-wrap: anywhere;
-}
-
-.change-fields .before {
-  color: var(--muted);
-  text-decoration: line-through;
-}
-
-.change-fields .copy {
-  width: 32px;
-  text-align: right;
-}
-
 /* Áreas do conhecimento */
 
 .area-suggestions {
@@ -2555,10 +2523,6 @@ button.primary:hover {
   font-size: 12px;
 }
 
-.change-fields th {
-  padding-left: 0;
-}
-
 .changes-how {
   margin: 0 0 10px;
   font-size: 12px;
@@ -2567,10 +2531,6 @@ button.primary:hover {
 .field-actions {
   display: inline-flex;
   gap: 2px;
-}
-
-.change-fields .copy {
-  width: 72px;
 }
 
 .discard-btn {
@@ -4085,43 +4045,6 @@ button.primary.danger-fill:hover {
 
 .sidebar li + li {
   margin-top: 2px;
-}
-
-/* Valor novo na lista de alterações: copiar dentro do valor, à direita,
-   alinhado ao topo quando o texto ocupa várias linhas. */
-.change-fields .after-value {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 4px 4px 4px 8px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
-}
-
-.change-fields .after-text {
-  flex: 1;
-  min-width: 0;
-  padding-top: 2px;
-  overflow-wrap: anywhere;
-}
-
-.change-fields .after-value .copy-btn {
-  flex: 0 0 auto;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-}
-
-.change-fields .after-value .copy-btn:hover {
-  color: var(--accent-text);
-}
-
-.change-fields .copy {
-  width: 40px;
 }
 
 /* Texto longo para ler e editar: corpo um pouco maior, entrelinha folgada,
@@ -6163,48 +6086,6 @@ button.ghost.icon {
   padding: 14px 0;
 }
 
-.sent-fields {
-  display: grid;
-  gap: 12px;
-  margin: 10px 0 0;
-}
-
-.sent-field {
-  display: grid;
-  gap: 4px;
-}
-
-.sent-field dt {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 550;
-  letter-spacing: 0.02em;
-}
-
-.sent-field dd {
-  display: grid;
-  gap: 4px;
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-}
-
-.sent-before {
-  color: var(--muted);
-  text-decoration: line-through;
-  text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent);
-}
-
-.sent-after {
-  color: var(--text);
-}
-
-.sent-undone .sent-field dd,
-.sent-undone .sent-after {
-  color: var(--muted);
-}
-
 /* Entrada e saída de modais, menus, listas, dicas e calendário: opacidade e
    escala, que o navegador anima sem refazer o layout. O Base UI marca a
    abertura e o fechamento com data-starting-style e data-ending-style e espera
@@ -6352,11 +6233,6 @@ main.content {
 
 /* Registro do enviado: tentativa que não terminou conferida fica apagada, com
    o motivo embaixo do título. */
-.sent-failed .sent-before,
-.sent-failed .sent-after {
-  color: var(--muted);
-}
-
 .sent-outcome {
   margin: 4px 0 0;
   font-size: 13px;
@@ -7317,69 +7193,30 @@ main.content {
   color: var(--danger);
 }
 
-.change-fields {
-  margin-top: 4px;
-  font-size: 13px;
-}
-
-.change-fields th {
-  width: 30%;
-  padding: 5px 12px 5px 0;
-  font-size: 12px;
-}
-
-.change-fields td {
-  padding: 5px 6px 5px 0;
-}
-
-.change-fields .before {
-  width: 28%;
-}
-
-.change-fields .after-value {
-  display: inline-flex;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: none;
-}
-
-.change-fields .after-text {
-  padding-top: 0;
-}
-
-.change-fields .after-value .copy-btn {
-  width: 20px;
-  height: 20px;
-  margin-top: -1px;
-}
-
 /* Descartar: só ao passar o mouse na linha ou com o foco nela (o botão
    continua no teclado: o foco nele mostra a linha inteira de ações). */
-.change-fields .discard-btn,
+.fc-actions .discard-btn,
 .change-actions .discard-btn {
   opacity: 0;
   transition: opacity var(--dur-fast) ease;
 }
 
-.change-fields tr:hover .discard-btn,
-.change-fields tr:focus-within .discard-btn,
+.fc:hover .discard-btn,
+.fc:focus-within .discard-btn,
 .change:hover .change-actions .discard-btn,
 .change-head:focus-within .discard-btn {
   opacity: 1;
 }
 
 @media (hover: none) {
-  .change-fields .discard-btn,
+  .fc-actions .discard-btn,
   .change-actions .discard-btn {
     opacity: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .change-fields .discard-btn,
+  .fc-actions .discard-btn,
   .change-actions .discard-btn {
     transition: none;
   }
@@ -7416,5 +7253,140 @@ main.content {
     overflow: hidden;
     clip: rect(0 0 0 0);
     white-space: nowrap;
+  }
+}
+
+/* Campo alterado (FieldChange.tsx), nas abas "A enviar" e "Enviado": o
+   rótulo em cima, pequeno e apagado como na grade da prévia; embaixo, duas
+   colunas iguais, "Antes" riscado e "Depois". Texto longo para em quatro
+   linhas. Abaixo de 600px as colunas empilham. */
+.change-fields,
+.sent-fields {
+  display: grid;
+  gap: 12px;
+  margin: 8px 0 0;
+}
+
+.fc-label {
+  overflow: hidden;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fc-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.fc-cols.is-single {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.fc-col {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.fc-caption {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fc-before > .fc-more,
+.fc-before .fc-foot {
+  margin-top: 2px;
+}
+
+.fc-before .fc-text {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent);
+}
+
+.fc-empty {
+  color: var(--muted);
+}
+
+.fc-text {
+  white-space: pre-line;
+}
+
+.fc-text.is-clamped {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}
+
+.fc-value {
+  display: block;
+}
+
+.fc-value .copy-btn {
+  width: 20px;
+  height: 20px;
+  margin-left: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  vertical-align: middle;
+}
+
+.fc-value .copy-btn:hover {
+  color: var(--accent-text);
+}
+
+.fc-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.fc-foot .copy-btn {
+  margin-left: 0;
+}
+
+.fc-more {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  font-size: 12px;
+}
+
+.fc-more:hover {
+  text-decoration: underline;
+}
+
+.sent-undone .fc-after,
+.sent-failed .fc-col {
+  color: var(--muted);
+}
+
+@media (max-width: 600px) {
+  .fc-cols {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .fc-col {
+    grid-column: 1;
+  }
+  .fc-actions {
+    grid-row: 1;
+    grid-column: 2;
   }
 }
