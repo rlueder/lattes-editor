@@ -117,11 +117,24 @@ async function link(xml?: string, options: LinkOptions = {}) {
 /** As duas passadas num arquivo só: a captura e as ligações observadas. */
 async function captureAll(options: Options & { xml?: string } = {}): Promise<CensusFile> {
   const file = await capture({ ...options, download: false });
-  const { links, summary } = await link(options.xml, {
-    delayMs: options.delayMs,
-    only: options.only,
-  });
-  const out: CensusFile = { ...file, links, linkSummary: summary };
+  let out: CensusFile = file;
+  // Sessão caída na captura: a passada de edição nem começa. Caída (ou
+  // exportação recusada) na passada de edição: a captura feita não se perde.
+  if (!file.interrupted) {
+    try {
+      const { links, summary } = await link(options.xml, {
+        delayMs: options.delayMs,
+        only: options.only,
+      });
+      out = { ...file, links, linkSummary: summary };
+    } catch (err) {
+      out = {
+        ...file,
+        interrupted: true,
+        linkError: err instanceof Error ? err.message : 'Falha inesperada',
+      };
+    }
+  }
   if (options.download) download(out);
   return out;
 }

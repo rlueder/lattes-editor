@@ -65,6 +65,8 @@ export interface CensusFile {
   /** A sessão caiu no meio: as entradas que faltavam ficam como não lidas. */
   interrupted?: boolean;
   /** Ligações campo e atributo da passada de edição (link.ts). */
+  /** Por que a passada de edição parou, quando parou (sessão caída, exportação recusada). */
+  linkError?: string;
   links?: FieldLink[];
   /** O que a passada de edição leu em cada entrada (itens lidos, casados, ambíguos). */
   linkSummary?: LinkSummary[];

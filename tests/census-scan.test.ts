@@ -201,6 +201,14 @@ describe('censo: leitura dos formulários sem DOM', () => {
     expect(censusForm(form!).fields[0]!.label).toHaveLength(160);
   });
 
+  it('opções de uma lista sem name (busca das grades) não viram rótulo', () => {
+    const [form] = scanForms(
+      '<form name="A"><select><option>Área um</option></select><input name="f_x"></form>',
+    ).forms;
+    expect(form!.fields.map((f) => [f.name, f.label])).toEqual([['f_x', '']]);
+    expect(form!.unnamed).toBe(1);
+  });
+
   it('HTML truncado e tags soltas não travam a leitura', () => {
     const { forms } = scanForms(
       '<form name="A"><div hidden><input name="a"></div></span><input name="b"><select name="c"><option value="1">um',

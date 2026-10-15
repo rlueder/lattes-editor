@@ -148,6 +148,8 @@ class Scanner {
   private explicit: Map<string, string>;
   private openOption: ScannedOption | undefined;
   private openSelect: ScannedField | undefined;
+  /** Dentro de um <select>, com ou sem name: o texto das opções nunca é rótulo. */
+  private inSelect = false;
   /** Rádio ou caixa cujo rótulo é o texto logo depois dela. */
   private pending: ScannedOption | undefined;
   private segments: string[] = [''];
@@ -171,7 +173,7 @@ class Scanner {
       this.openOption.label += text;
       return;
     }
-    if (this.openSelect) return;
+    if (this.inSelect) return;
     this.segments[this.segments.length - 1] += text;
   }
 
@@ -238,6 +240,7 @@ class Scanner {
     if (tag === 'select') {
       this.endOption();
       this.openSelect = undefined;
+      this.inSelect = false;
       return;
     }
     const at = this.stack.map((t) => t.tag).lastIndexOf(tag);
@@ -271,6 +274,7 @@ class Scanner {
 
   private select(attrs: Record<string, string>): void {
     const type = 'multiple' in attrs ? 'select-multiple' : 'select-one';
+    this.inSelect = true;
     this.openSelect = this.field(attrs, type, '');
     if (this.openSelect) this.openSelect.options = [];
   }

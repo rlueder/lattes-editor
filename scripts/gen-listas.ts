@@ -31,6 +31,10 @@ const census = JSON.parse(readFileSync(root + CENSUS, 'utf8')) as {
   lists: Record<string, { label: string; value: string }[]>;
 };
 const ufs = (census.lists.f_uf_nasc ?? []).map((o) => o.value).filter(Boolean);
+// Sem a lista (outro nome no censo, por exemplo), o editor perderia as UFs calado.
+if (ufs.length !== 27) {
+  throw new Error(`${CENSUS}: esperava as 27 UFs em lists.f_uf_nasc, achei ${ufs.length}`);
+}
 
 /** A lista de um controle (pelo nome no formulário), a mais longa entre os formulários. */
 function listOf(control: string): string[] {
