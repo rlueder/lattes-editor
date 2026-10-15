@@ -77,7 +77,9 @@ mão com os valores ao lado.
 
 Cada exportação aberta vira uma versão, e o app diz o que mudou desde a
 anterior ("Versões do Lattes", no ⚙), inclusive o que foi editado direto no
-Lattes. O **Diagnóstico do currículo** mostra a data da última publicação, o
+Lattes. A primeira exportação de cada currículo e uma cópia do Lattes antes de
+cada envio pelo conector ficam em `Documentos/LattesEditor/Cópias de
+segurança`, e o app nunca as apaga. O **Diagnóstico do currículo** mostra a data da última publicação, o
 que mudou no Lattes desde a exportação e o que vale conferir no currículo
 inteiro: duplicatas, ISSN, DOI, datas e vínculos antigos ainda marcados como
 atuais. Só aponta; nada muda sem você.

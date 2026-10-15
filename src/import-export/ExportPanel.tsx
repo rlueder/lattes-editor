@@ -29,6 +29,7 @@ import {
   type ImportAttempt,
   importStatus,
 } from './import-request.ts';
+import { RestorePointDialog } from './RestorePointDialog.tsx';
 import {
   initialTab,
   listenTabRequests,
@@ -257,6 +258,7 @@ export function ExportPanel({
           )}
         </Tabs.Panel>
       </Tabs.Root>
+      {bridge && <RestorePointDialog bridge={bridge} />}
     </Modal>
   );
 }

@@ -79,7 +79,7 @@ os filtros usam. Que o Importar leia o arquivo de volta com a mesma convenção
 
 ## O que o app guarda
 
-Tudo fica no IndexedDB do WebView (`src/model/store.ts`, com Dexie), cifrado
+Tudo, menos as cópias de segurança (abaixo), fica no IndexedDB do WebView (`src/model/store.ts`, com Dexie), cifrado
 com AES-GCM (`src/model/seal.ts`). Em claro ficam só as chaves de busca: datas,
 o identificador público do currículo e marcas como "manter". A chave é gerada no primeiro uso e mora no
 chaveiro do sistema (`src-tauri/src/chave.rs`); sem chaveiro, o app não guarda
@@ -97,6 +97,65 @@ As três primeiras guardam XML serializado; `sent` guarda as operações do
 conector. As alterações a enviar não são guardadas: saem, a cada momento, da
 diferença entre a cópia de trabalho e a exportação carregada
 (`src/model/changes.ts`).
+
+### Cópias de segurança (LAT-59)
+
+Tudo acima mora no armazenamento interno do WebView, e perder esse
+armazenamento ou a chave do chaveiro leva tudo junto. Por isso as cópias de
+segurança ficam fora dele, sem cifra, com os bytes que o Lattes entregou
+(é o mesmo arquivo que o Exportar dá):
+
+- **Ponto zero**: a primeira exportação de cada currículo (pelo
+  `NUMERO-IDENTIFICADOR`), aberta de um arquivo ou pelo conector, como
+  `ponto-zero-<AAAA-MM-DD>.zip` (ou `.xml`, se a pessoa abriu um XML solto).
+  Se já existe um ponto zero daquele currículo, de qualquer data, nada é
+  gravado.
+- **Ponto de restauração**: antes da primeira gravação de cada rodada do
+  conector, `restauracao-<AAAA-MM-DD-HHMM>.zip`, com `-2`, `-3` no mesmo
+  minuto. O sidecar leva a contagem da fila por tipo de operação, sem valores.
+  A primeira restauração também vale como ponto zero quando o currículo ainda
+  não tem um.
+
+Cada arquivo tem um `.json` ao lado com data, origem (`arquivo` ou
+`conector`), tamanho, versão do app e o SHA-256 do arquivo
+(`src/model/backups.ts`).
+
+No app de desktop, a pasta é
+`<Documentos>/LattesEditor/Cópias de segurança/<id>/`: no macOS,
+`~/Documents`, que o Finder mostra como "Documentos"; no Windows, a pasta
+Documentos; no Linux, a `XDG_DOCUMENTS_DIR`, ou a pasta pessoal sem ela.
+Quem grava é o Rust (`src-tauri/src/copias.rs`), sempre com `create_new`,
+que falha se o nome existe e nunca trunca; o ponto zero confere a pasta e
+cria sob uma trava. Os comandos só criam, listam e mostram na pasta: não há
+comando que apague, renomeie ou reescreva um arquivo dali. O identificador
+só aceita dígitos e o nome é montado no Rust, então nada sai da pasta. No
+macOS, a primeira gravação pede acesso a Documentos
+(`NSDocumentsFolderUsageDescription`, em `src-tauri/Info.plist`).
+
+No navegador, sem acesso a pastas, as cópias ficam no IndexedDB, num banco à
+parte, `lattes-editor-copias` (`src/model/backup-store.ts`), também em claro.
+Nenhum "Limpar" do app (fechar o arquivo, apagar as versões, apagar o
+registro do enviado, o recomeço depois de perder a chave) alcança esse banco,
+e o módulo só tem `add`. A pessoa leva o arquivo para fora com "Baixar", e a
+interface diz que, no navegador, a cópia mora dentro do navegador.
+
+"Cópias de segurança", embaixo de ⚙ › Versões do Lattes
+(`src/ui/BackupsSection.tsx`), mostra a pasta e lista os arquivos com a data,
+com "Mostrar na pasta" no desktop e "Baixar" no navegador. Nada ali apaga.
+
+O ponto de restauração segue `src/bridge/restore-point.ts`, chamado por
+`src/ui/use-restore-point.ts` antes do `enviar`: o editor pede o ZIP à
+extensão (`pedir-curriculo`, o mesmo do Abrir do Lattes), confere que o
+`NUMERO-IDENTIFICADOR` de dentro do ZIP é o do currículo aberto e guarda.
+Como o Exportar recusa com pendência (`lattes_internals.md`, seção 10), a
+segunda rodada antes de "Enviar ao CNPq" nunca tem ponto novo: o app diz
+por quê, mostra a cópia mais recente e pede "Continuar sem ponto de
+restauração" (`src/import-export/RestorePointDialog.tsx`). A cópia que não
+grava (disco cheio, acesso negado a Documentos) também cai nessa pergunta.
+Sessão caída, Lattes fechado, extensão sem resposta ou sessão de outro
+currículo param a rodada, sem gravar nada. Nunca se grava sem um ponto novo
+ou essa confirmação. Desfazer pelo registro do enviado passa pelo mesmo
+caminho.
 
 ## Do editor ao Lattes
 

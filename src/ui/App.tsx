@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LattesStatus } from '../bridge/lattes-status.ts';
 import type { Link } from '../bridge/link.ts';
 import type { SentEntry } from '../bridge/sent-log.ts';
+import { keepBaseline } from '../desktop/backup-folder.ts';
 import { useDevExtensionFolder } from '../desktop/dev-channel.ts';
 import { saveBytes } from '../desktop/native.ts';
 import type { UpdateState } from '../desktop/update.ts';
@@ -12,6 +13,7 @@ import { ProductionForm } from '../forms/ProductionForm.tsx';
 import { useGeneralItem } from '../forms/use-general-item.ts';
 import { type Session, useProduction } from '../forms/use-production.ts';
 import { ExportPanel } from '../import-export/ExportPanel.tsx';
+import type { BackupSource } from '../model/backups.ts';
 import { encodeCv, loadCv, maxSequenciaProducao } from '../model/document.ts';
 import { importableTypes } from '../model/production.ts';
 import {
@@ -22,7 +24,7 @@ import {
   saveWorkingCopy,
   storageStatus,
 } from '../model/store.ts';
-import { parseXml, serializeXml, walk, type XElement } from '../model/xml.ts';
+import { getAttr, parseXml, serializeXml, walk, type XElement } from '../model/xml.ts';
 import { PrintDialog } from '../print/PrintDialog.tsx';
 import { usePrint } from '../print/use-print.ts';
 import { DiagnosisPanel } from '../review/DiagnosisPanel.tsx';
@@ -184,10 +186,18 @@ export function App() {
 
   useScrollToPendingAnchor(pendingAnchor);
 
-  const openFile = async (file: File) => {
+  /**
+   * Abre uma exportação. `origin` diz de onde ela veio do Lattes (arquivo ou
+   * conector): só então a exportação pode virar o ponto zero (LAT-59).
+   */
+  const openFile = async (file: File, origin?: BackupSource) => {
     setError(null);
     try {
-      const cv = await loadCv(new Uint8Array(await file.arrayBuffer()), file.name);
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const cv = await loadCv(bytes, file.name);
+      // Ponto zero: a primeira exportação de cada currículo, byte a byte. Não
+      // atrasa nem impede a abertura.
+      if (origin) void keepBaseline(getAttr(cv.doc.root, 'NUMERO-IDENTIFICADOR'), bytes, origin);
       const copy = newWorkingCopy(cv, Date.now());
       await replaceWorkingCopy(copy);
       // A linha do tempo é auxiliar: se não gravar, o currículo abre igual.
@@ -201,12 +211,14 @@ export function App() {
     }
   };
 
-  const lattesOpen = useLattesOpen(Boolean(session), booting, bridge, openFile);
+  const lattesOpen = useLattesOpen(Boolean(session), booting, bridge, (file) =>
+    openFile(file, 'conector'),
+  );
 
   /** Nova exportação do Lattes: itens novos que ainda não foram importados se perdem. */
   const reload = (file: File) => {
     if (production.pending.length > 0) setReloadFile(file);
-    else void openFile(file);
+    else void openFile(file, 'arquivo');
   };
 
   const closePalette = useCallback(() => setPaletteOpen(false), []);
@@ -234,7 +246,7 @@ export function App() {
           lattes={lattesOpen}
           link={bridge.link}
           theme={theme}
-          onFile={openFile}
+          onFile={(file) => void openFile(file, 'arquivo')}
           onReloadLattes={bridge.reloadLattes}
           onTheme={setTheme}
         />
@@ -366,7 +378,7 @@ export function App() {
         onCancel={() => setReloadFile(null)}
         onConfirm={(file) => {
           setReloadFile(null);
-          void openFile(file);
+          void openFile(file, 'arquivo');
         }}
       />
 
