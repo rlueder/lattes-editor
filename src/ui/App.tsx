@@ -408,9 +408,10 @@ export function App() {
 }
 
 /**
- * A conferência antes de publicar (LAT-54). Provisório: até a validação do
- * currículo inteiro (LAT-25) chegar à main, conta os achados da revisão de
- * consistência e abre o diagnóstico, onde eles estão.
+ * A conferência antes de publicar (LAT-54): quantos achados o diagnóstico do
+ * currículo tem, e abri-lo. Provisório: até a LAT-25 chegar à main, conta só
+ * os da revisão de consistência; com ela, passa a contar os de validateCv,
+ * que o mesmo diagnóstico mostra.
  */
 function preflight(root: XElement, onOpen: () => void) {
   return { count: reviewCv(root).length, onOpen };

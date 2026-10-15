@@ -110,10 +110,10 @@ export function publishUiEnabled(search: string, dev: boolean): boolean {
   return PUBLISH_ENABLED || (dev && new URLSearchParams(search).has('publicar'));
 }
 
-/** A linha da conferência do currículo antes de publicar. */
+/** A linha dos achados do diagnóstico do currículo antes de publicar. */
 export function checksLine(count: number): string {
-  if (count === 0) return 'A conferência do currículo não achou nada a corrigir.';
+  if (count === 0) return 'O diagnóstico do currículo não achou nada a conferir.';
   return count === 1
-    ? 'A conferência do currículo achou 1 ponto que vale ver antes de publicar.'
-    : `A conferência do currículo achou ${count} pontos que valem ver antes de publicar.`;
+    ? 'O diagnóstico do currículo achou 1 ponto que vale ver antes de publicar.'
+    : `O diagnóstico do currículo achou ${count} pontos que valem ver antes de publicar.`;
 }

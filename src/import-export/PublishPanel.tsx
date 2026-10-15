@@ -31,7 +31,7 @@ import {
 
 interface Props {
   bridge: BridgeState;
-  /** A conferência do currículo antes de publicar: quantos pontos, e onde vê-los. */
+  /** Os achados do diagnóstico do currículo antes de publicar: quantos são, e abrir o diagnóstico. */
   checks: { count: number; onOpen: () => void };
   /** NUMERO-IDENTIFICADOR do currículo aberto: a tela e o envio só valem para ele. */
   lattesId?: string;
@@ -225,7 +225,7 @@ function PublishPanelBody({ bridge, checks, lattesId, onClose, open, originalXml
         {checks.count > 0 && (
           <div className="diagnosis-actions">
             <button type="button" onClick={checks.onOpen}>
-              Ver o que conferir
+              Abrir o diagnóstico
             </button>
           </div>
         )}

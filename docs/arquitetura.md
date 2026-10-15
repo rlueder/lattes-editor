@@ -233,7 +233,7 @@ pelo `window.postMessage` da própria página, por um content script
   (`src/import-export/PublishPanel.tsx`), aberto pelo "Enviar ao Lattes"
   quando o Lattes tem pendência, mostra o que vai ser publicado (as gravações
   do editor desde a última publicação e a comparação de títulos com a
-  página de conferência), a conferência do currículo e a declaração do CNPq
+  página de conferência), quantos achados o diagnóstico do currículo tem e a declaração do CNPq
   lida da tela de envio, com o link do Termo de Uso. A caixa da declaração
   começa desmarcada a cada abertura e só a pessoa a marca. Ligado, o conector
   repete as consultas e o envio da tela e confere a publicação pelo menu
