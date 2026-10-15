@@ -367,8 +367,12 @@ export async function addHistoryPoint(entry: Omit<HistoryEntry, 'id'>): Promise<
   });
 }
 
-/** Novo arquivo carregado: substitui a cópia de trabalho e zera o histórico. */
-export async function replaceWorkingCopy(copy: WorkingCopy): Promise<void> {
+/**
+ * Novo arquivo carregado: substitui a cópia de trabalho e zera o histórico.
+ * keepMarked (Recarregar do Lattes): os pontos marcados ficam, inclusive o da
+ * cópia de antes, gravado antes de trocar.
+ */
+export async function replaceWorkingCopy(copy: WorkingCopy, keepMarked = false): Promise<void> {
   if (!key) return;
   const working = await workingRow(key, copy);
   const point = await historyRow(key, {
@@ -377,7 +381,7 @@ export async function replaceWorkingCopy(copy: WorkingCopy): Promise<void> {
     xml: copy.xml,
   });
   await db.transaction('rw', db.working, db.history, async () => {
-    await db.history.clear();
+    await (keepMarked ? db.history.filter((r) => !r.keep).delete() : db.history.clear());
     await db.working.put(working);
     await db.history.add(point);
   });

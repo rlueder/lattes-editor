@@ -3,7 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { lattesStatusFrom } from '../src/bridge/lattes-status.ts';
 import type { BridgeOp } from '../src/bridge/plan.ts';
 import { type SentEntry, sentEntry } from '../src/bridge/sent-log.ts';
-import { dateLabel, segmentLabel, statusStrip, unpublishedSent } from '../src/ui/status-strip.ts';
+import {
+  dateLabel,
+  segmentLabel,
+  statusStrip,
+  unpublishedEntries,
+  unpublishedSent,
+} from '../src/ui/status-strip.ts';
 
 const op: BridgeOp = {
   expect: { F_TEXTO: 'a' },
@@ -59,6 +65,11 @@ describe('o que espera "Enviar ao CNPq"', () => {
       entry(3, at(2026, 10, 12)),
     ];
     expect(unpublishedSent(sent, { lastPublished: published, pending: true })).toBe(2);
+    // As mesmas, para o envio ao CNPq mostrar quais são.
+    expect(
+      unpublishedEntries(sent, { lastPublished: published, pending: true }).map((e) => e.id),
+    ).toEqual([2, 3]);
+    expect(unpublishedEntries(sent)).toEqual([]);
   });
 
   it('sem pendência no Lattes, só o gravado depois da leitura, que ela não viu', () => {

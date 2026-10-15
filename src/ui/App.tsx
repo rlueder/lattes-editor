@@ -13,26 +13,28 @@ import { ProductionForm } from '../forms/ProductionForm.tsx';
 import { useGeneralItem } from '../forms/use-general-item.ts';
 import { type Session, useProduction } from '../forms/use-production.ts';
 import { ExportPanel } from '../import-export/ExportPanel.tsx';
+import { PublishPanel } from '../import-export/PublishPanel.tsx';
+import { useIncoming } from '../import-export/use-incoming.tsx';
 import type { BackupSource } from '../model/backups.ts';
-import { encodeCv, loadCv, maxSequenciaProducao } from '../model/document.ts';
+import { encodeCv, loadCv } from '../model/document.ts';
 import { importableTypes } from '../model/production.ts';
 import {
+  addHistoryPoint,
   clearAll,
-  loadWorkingCopy,
   newWorkingCopy,
   replaceWorkingCopy,
-  saveWorkingCopy,
   storageStatus,
 } from '../model/store.ts';
-import { parseXml, serializeXml, walk, type XElement } from '../model/xml.ts';
+import { getAttr, serializeXml, walk, type XElement } from '../model/xml.ts';
 import { PrintDialog } from '../print/PrintDialog.tsx';
 import { usePrint } from '../print/use-print.ts';
 import { DiagnosisPanel } from '../review/DiagnosisPanel.tsx';
 import { lattesSchema } from '../schema/lattes.ts';
 import { CommandPalette } from './CommandPalette.tsx';
-import { HistoryDialog, ReloadConfirm } from './dialogs.tsx';
+import { HistoryDialog } from './dialogs.tsx';
 import { EditorContext } from './editor-context.ts';
 import { parseHash } from './hash-route.ts';
+import { type ReloadFailure, reloadNotice } from './lattes-reload.ts';
 import { connectionOf, noticesFor } from './notifications.ts';
 import { allEntries, type PaletteEntry } from './palette-search.ts';
 import { PendingBanner } from './PendingBanner.tsx';
@@ -46,29 +48,31 @@ import { Sidebar } from './Sidebar.tsx';
 import { statusStrip } from './status-strip.ts';
 import { StorageNotice } from './StorageNotice.tsx';
 import { useTheme } from './theme.ts';
-import { type SaveState, Topbar } from './Topbar.tsx';
+import { Topbar } from './Topbar.tsx';
 import { useBridge } from './use-bridge.ts';
 import { useChanges } from './use-changes.ts';
 import { useFocusShell } from './use-focus-mode.ts';
 import { useHistoryDialog } from './use-history-dialog.ts';
 import { useLattesOpen } from './use-lattes-open.ts';
+import { useLattesReload } from './use-lattes-reload.ts';
 import { useNavigate, useScrollToPendingAnchor } from './use-navigate.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
 import { usePhotoChange } from './use-photo-change.tsx';
+import { usePreflight } from './use-preflight.ts';
+import { type ReloadArg, useReload } from './use-reload.ts';
+import { useOpenStoredVersion } from './use-stored-version.ts';
 import { useTopbarHeight } from './use-topbar-height.ts';
 import { useUpdates } from './use-updates.ts';
 import { useVersions } from './use-versions.ts';
+import { useAutosave, useRestoreWorkingCopy } from './use-working-copy.ts';
 import { exportDateOf } from './version-diff.ts';
 import { Welcome } from './Welcome.tsx';
 
-const AUTOSAVE_MS = 400;
 const EMPTY_INDEX: ReferenceIndex = { courses: new Map(), institutions: new Map() };
 
 export function App() {
   const [session, setSession] = useState<Session | null>(null);
-  const [booting, setBooting] = useState(true);
   const [version, setVersion] = useState(0);
-  const [saveState, setSaveState] = useState<SaveState>('salvo');
   const [error, setError] = useState<string | null>(null);
   const [sectionId, setSectionId] = useState('dados-gerais');
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -76,7 +80,7 @@ export function App() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [diagnosisOpen, setDiagnosisOpen] = useState(false);
-  const [reloadFile, setReloadFile] = useState<File | null>(null);
+  const [publishOpen, setPublishOpen] = useState(false);
   const pendingNotes = useRef<string[]>([]);
   const pendingAnchor = useRef<string | null>(null);
   const topbarRef = useRef<HTMLElement>(null);
@@ -85,41 +89,8 @@ export function App() {
   const focusShell = useFocusShell(paletteOpen, sectionId); // modo foco, com ?leitura
   const update = useUpdates();
 
-  // Restaura a cópia de trabalho da última sessão.
-  useEffect(() => {
-    loadWorkingCopy()
-      .then((copy) => {
-        if (copy) {
-          const { savedAt: _savedAt, xml, ...meta } = copy;
-          // Cópias salvas antes do marco 2 não tinham o máximo da exportação.
-          const loadedMaxSequencia =
-            meta.loadedMaxSequencia ?? maxSequenciaProducao(parseXml(meta.originalXml));
-          setSession({ doc: parseXml(xml), meta: { ...meta, loadedMaxSequencia } });
-        }
-      })
-      .catch((err: unknown) =>
-        setError(`Não foi possível ler a cópia salva no navegador: ${String(err)}`),
-      )
-      .finally(() => setBooting(false));
-  }, []);
-
-  // Autosave: cada edição marca uma versão; grava depois de uma pausa curta.
-  useEffect(() => {
-    if (!session || version === 0) return;
-    setSaveState('salvando');
-    const timer = setTimeout(() => {
-      const notes = pendingNotes.current.splice(0);
-      const note =
-        notes.length > 1 ? `${notes.at(-1)} (+${notes.length - 1})` : (notes[0] ?? 'Alteração');
-      saveWorkingCopy(
-        { ...session.meta, savedAt: Date.now(), xml: serializeXml(session.doc) },
-        note,
-      )
-        .then(() => setSaveState('salvo'))
-        .catch(() => setSaveState('erro'));
-    }, AUTOSAVE_MS);
-    return () => clearTimeout(timer);
-  }, [session, version]);
+  const booting = useRestoreWorkingCopy(setSession, setError);
+  const [saveState, setSaveState] = useAutosave(session, version, pendingNotes);
 
   const onEdit = useCallback((note: string) => {
     pendingNotes.current.push(note);
@@ -128,6 +99,7 @@ export function App() {
 
   const production = useProduction(session, setSession, version, onEdit);
   const general = useGeneralItem(session, setSession, version, onEdit);
+  const incoming = useIncoming(session, setSession, onEdit);
   // Data da exportação carregada, lida uma vez por arquivo.
   const originalXml = session?.meta.originalXml;
   const exportedOn = useMemo(() => exportDateOf(originalXml), [originalXml]);
@@ -187,10 +159,13 @@ export function App() {
   useScrollToPendingAnchor(pendingAnchor);
 
   /**
-   * Abre uma exportação. `origin` diz de onde ela veio do Lattes (arquivo ou
-   * conector): só então a exportação pode virar o ponto zero (LAT-59).
+   * reload: um "Recarregar do Lattes", que guarda os pontos marcados do
+   * histórico e, com previous, a cópia de trabalho de antes. `origin` diz de
+   * onde a exportação veio do Lattes (arquivo ou conector): só então ela pode
+   * virar o ponto zero (LAT-59).
    */
-  const openFile = async (file: File, origin?: BackupSource) => {
+  const openFile = async (file: File, reload?: ReloadArg, origin?: BackupSource) => {
+    const previous = reload?.previous;
     setError(null);
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
@@ -200,7 +175,9 @@ export function App() {
       // atrasa nem impede a abertura.
       if (origin) void keepPristineBaseline(cv.doc.root, bytes, file.name, origin);
       const copy = newWorkingCopy(cv, Date.now());
-      await replaceWorkingCopy(copy);
+      // A cópia de antes vai para o histórico primeiro: se não gravar, nada é trocado.
+      if (previous) await addHistoryPoint({ ...previous, keep: true, savedAt: copy.savedAt - 1 });
+      await replaceWorkingCopy(copy, reload !== undefined);
       // A linha do tempo é auxiliar: se não gravar, o currículo abre igual.
       void versions.record(cv.doc.root, copy.originalXml).catch((e: unknown) => console.warn(e));
       const { savedAt: _savedAt, xml: _xml, ...meta } = copy;
@@ -213,14 +190,17 @@ export function App() {
   };
 
   const lattesOpen = useLattesOpen(Boolean(session), booting, bridge, (file) =>
-    openFile(file, 'conector'),
+    openFile(file, undefined, 'conector'),
   );
 
   /** Nova exportação do Lattes: itens novos que ainda não foram importados se perdem. */
-  const reload = (file: File) => {
-    if (production.pending.length > 0) setReloadFile(file);
-    else void openFile(file, 'arquivo');
-  };
+  const openVersion = useOpenStoredVersion(openFile, bridge, () => setDiagnosisOpen(true));
+  const { dialog: reloadDialog, reload } = useReload(
+    session,
+    { changes: changes.open, pending: production.summaries },
+    openFile,
+  );
+  const lattesReload = useLattesReload(bridge, cvId(session), (f) => reload(f, 'conector'));
 
   const closePalette = useCallback(() => setPaletteOpen(false), []);
   const history = useHistoryDialog(session, (doc, note) => {
@@ -235,6 +215,10 @@ export function App() {
     setVersion(0);
   };
 
+  const checks = usePreflight(publishOpen, session?.doc.root, sections, version, () =>
+    setDiagnosisOpen(true),
+  );
+
   if (booting) return null;
 
   const storageNotice = <StorageNotice {...storageStatus()} onReset={closeFile} />;
@@ -247,9 +231,21 @@ export function App() {
           lattes={lattesOpen}
           link={bridge.link}
           theme={theme}
-          onFile={(file) => void openFile(file, 'arquivo')}
+          onFile={(file) => void openFile(file, undefined, 'arquivo')}
+          onOpenVersion={openVersion}
+          onPublish={() => setPublishOpen(true)}
           onReloadLattes={bridge.reloadLattes}
           onTheme={setTheme}
+        />
+        <PublishPanel
+          bridge={bridge}
+          lattesId={lattesOpen.state.kind === 'falhou' ? lattesOpen.state.lattesId : undefined}
+          open={publishOpen}
+          onClose={() => setPublishOpen(false)}
+          onPublished={() => {
+            setPublishOpen(false);
+            lattesOpen.open();
+          }}
         />
         {storageNotice}
       </>
@@ -268,7 +264,7 @@ export function App() {
         ref={topbarRef}
         focus={focusShell.menuItem}
         modified={modified}
-        notices={noticesOf(bridge, update, devExtensionFolder)}
+        notices={noticesOf(bridge, update, devExtensionFolder, lattesReload.failure)}
         pendingCount={production.pending.length + changes.open}
         saveState={saveState}
         theme={theme}
@@ -276,10 +272,12 @@ export function App() {
         onDiagnosis={() => setDiagnosisOpen(true)}
         onExport={openExport}
         onHistory={() => void history.show()}
+        onIncoming={incoming.pick}
         onNewItem={() => setPickerOpen(true)}
         onPalette={togglePalette}
         onPrint={print.show}
-        onReload={reload}
+        onReload={(file) => reload(file, 'arquivo')}
+        onReloadFromLattes={lattesReload.available ? lattesReload.start : undefined}
         onSave={() =>
           void saveBytes(encodeCv(session.doc, session.meta.encoding), session.meta.fileName)
         }
@@ -333,6 +331,7 @@ export function App() {
         <ProductionForm
           key={`${production.form.sequencia}-${production.form.isNew}`}
           byChanges={production.formByChanges}
+          duplicateIn={session.doc.root}
           isNew={production.form.isNew}
           item={production.form.item}
           knownAreas={production.areas}
@@ -371,17 +370,19 @@ export function App() {
           setExportOpen(false);
           production.openItem(seq);
         }}
+        onPublish={() => setPublishOpen(true)}
       />
 
-      <ReloadConfirm
-        file={reloadFile}
-        pending={production.summaries}
-        onCancel={() => setReloadFile(null)}
-        onConfirm={(file) => {
-          setReloadFile(null);
-          void openFile(file, 'arquivo');
-        }}
+      <PublishPanel
+        bridge={bridge}
+        checks={checks}
+        lattesId={getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR')}
+        open={publishOpen}
+        originalXml={session.meta.originalXml}
+        onClose={() => setPublishOpen(false)}
       />
+
+      {reloadDialog}
 
       <DiagnosisPanel
         available={bridge.available}
@@ -407,6 +408,7 @@ export function App() {
         onSave={history.saveCopy}
       />
       {versions.dialog}
+      {incoming.dialog}
       {storageNotice}
     </ShellWithLists>
   );
@@ -422,6 +424,11 @@ function countPendingIn(pending: XElement[]): (els: XElement[]) => number {
   };
 }
 
+/** O NUMERO-IDENTIFICADOR do currículo aberto. */
+function cvId(session: Session | null): string | undefined {
+  return session ? getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR') : undefined;
+}
+
 /** A faixa do cabeçalho: alterações do editor, mais o que o conector sabe do Lattes. */
 function stripFor(editorChanges: number, bridge: { lattes?: LattesStatus; sent: SentEntry[] }) {
   return statusStrip({ editorChanges, lattes: bridge.lattes, sent: bridge.sent });
@@ -432,11 +439,13 @@ function noticesOf(
   bridge: { lattes?: LattesStatus; link: Link; sent: SentEntry[] },
   update: UpdateState,
   devExtensionFolder?: string,
+  reloadFailure?: ReloadFailure,
 ) {
   return noticesFor({
     appVersion: __APP_VERSION__,
     connection: connectionOf(bridge.link, Boolean(bridge.lattes)),
     devExtensionFolder,
+    reload: reloadFailure && reloadNotice(reloadFailure),
     storage: storageStatus().status,
     unknownPending: stripFor(0, bridge).segments.some((x) => x.kind === 'pendencia-desconhecida'),
     update,

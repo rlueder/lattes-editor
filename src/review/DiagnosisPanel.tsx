@@ -1,20 +1,23 @@
-// Diagnóstico do currículo, para quem volta ao Lattes depois de muito tempo
-// (docs/fluxos_de_uso.md): o que o Lattes diz (publicação e pendência), o que
-// mudou lá desde a exportação e o que vale conferir no currículo inteiro.
+// Diagnóstico do currículo: primeiro o que vale conferir no currículo inteiro
+// (os achados de validation.ts, em Findings.tsx, LAT-25); depois o que o
+// Lattes diz (publicação e pendência) e o que mudou lá desde a exportação,
+// para quem volta ao Lattes depois de muito tempo (docs/fluxos_de_uso.md).
 // Só leitura: cada achado leva ao item no editor.
 
 import { useMemo, useRef } from 'react';
 
 import type { LattesStatus } from '../bridge/lattes-status.ts';
 import { parseXml, type XElement } from '../model/xml.ts';
+import { lattesSchema } from '../schema/lattes.ts';
 import type { HashRoute } from '../ui/hash-route.ts';
 import { Modal } from '../ui/Modal.tsx';
 import type { Section } from '../ui/sections.ts';
 import { dateLabel } from '../ui/status-strip.ts';
 import type { EspelhoReading } from '../ui/use-bridge.ts';
-import { type Finding, reviewCv } from './consistency.ts';
 import { diffEspelho } from './espelho-diff.ts';
+import { Findings } from './Findings.tsx';
 import { bySequencia, type Place, placeIndex, sequenciaKey } from './locate.ts';
+import { validateCv } from './validation.ts';
 
 interface Props {
   /** A extensão está conectada (sem ela não há leitura do Lattes). */
@@ -37,32 +40,13 @@ interface Props {
   onRequestEspelho: () => void;
 }
 
-interface Located<T> {
-  entry: T;
-  place?: Place;
-}
-
-/** Agrupa por seção, na ordem em que as seções aparecem no menu. */
-function bySection<T>(sections: Section[], entries: Located<T>[]) {
-  const order = new Map(sections.map((s, i) => [s.id, i]));
-  const groups = new Map<string, { label: string; rows: Located<T>[] }>();
-  for (const e of entries) {
-    const id = e.place?.sectionId ?? '';
-    if (!groups.has(id)) groups.set(id, { label: e.place?.sectionLabel ?? 'Outros', rows: [] });
-    groups.get(id)!.rows.push(e);
-  }
-  return [...groups.entries()]
-    .sort(([a], [b]) => (order.get(a) ?? 99) - (order.get(b) ?? 99))
-    .map(([, g]) => g);
-}
-
 function LattesSummary({ available, lattes }: { available: boolean; lattes?: LattesStatus }) {
   if (!lattes) {
     return (
       <p className="muted">
         {available
           ? 'Abra o seu currículo no Lattes, numa aba deste navegador, para o editor ler a data da última publicação e se há algo pendente.'
-          : 'Sem a extensão, o editor não lê o Lattes: o diagnóstico abaixo vale só para o arquivo aberto.'}
+          : 'Sem a extensão, o editor não lê o Lattes: os achados acima valem só para o arquivo aberto.'}
       </p>
     );
   }
@@ -89,13 +73,10 @@ export function DiagnosisPanel(props: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [open, sections, version],
   );
-  const findings = useMemo(
-    () =>
-      open
-        ? reviewCv(root).map((f): Located<Finding> => ({ entry: f, place: places.get(f.item) }))
-        : [],
+  const validation = useMemo(
+    () => (open ? validateCv(lattesSchema, root, sections) : undefined),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [open, root, places, version],
+    [open, root, sections, version],
   );
   // O painel fica montado o tempo todo: a exportação só é lida com ele
   // aberto, e fica guardada (por arquivo) para as próximas aberturas.
@@ -138,17 +119,21 @@ export function DiagnosisPanel(props: Props) {
       }
       label="Diagnóstico do currículo"
       open={open}
-      subtitle="O que o Lattes diz, o que mudou lá e o que vale conferir. Nada aqui altera o currículo."
+      subtitle="O que vale conferir no currículo inteiro e o que o Lattes diz. Nada aqui altera o currículo."
       title="Diagnóstico do currículo"
       onClose={props.onClose}
     >
       <section className="panel-section">
-        <h3 className="panel-section-head">No Lattes</h3>
-        <LattesSummary available={available} lattes={lattes} />
+        <h3 className="panel-section-head">Vale conferir</h3>
+        {validation && <Findings validation={validation} onGo={go} />}
       </section>
 
-      <section className="panel-section">
-        <h3 className="panel-section-head">O que mudou no Lattes desde a sua exportação</h3>
+      <section className="panel-section diagnosis-lattes">
+        <h3 className="panel-section-head">No Lattes</h3>
+        <LattesSummary available={available} lattes={lattes} />
+        <h4 className="panel-section-head diagnosis-subhead">
+          O que mudou no Lattes desde a sua exportação
+        </h4>
         <p className="muted">
           Compara os títulos das produções e dos eventos com a versão atual do Lattes, inclusive o
           que ainda não foi enviado ao CNPq. Mudanças em outros campos (ano, autores) não aparecem.
@@ -165,40 +150,6 @@ export function DiagnosisPanel(props: Props) {
         </div>
         {espelho?.error && <p className="export-blocked">{espelho.error}</p>}
         {diff && <EspelhoResult diff={diff} placeOf={placeOf} onGo={go} />}
-      </section>
-
-      <section className="panel-section">
-        <h3 className="panel-section-head">
-          Vale conferir
-          {findings.length > 0 && <span className="count">{findings.length}</span>}
-        </h3>
-        {findings.length === 0 ? (
-          <p className="empty">Nada chamou atenção no currículo.</p>
-        ) : (
-          bySection(sections, findings).map((g) => (
-            <div key={g.label} className="diagnosis-group">
-              <h4 className="sent-day-head">{g.label}</h4>
-              <ul className="pending-list">
-                {g.rows.map(({ entry, place }, i) => (
-                  <li key={`${entry.check}-${i}`}>
-                    <button
-                      className="ghost pending-item diagnosis-item"
-                      disabled={!place}
-                      type="button"
-                      onClick={() => go(place)}
-                    >
-                      <span className="pending-title">{entry.title}</span>
-                      <span className={`tag${entry.severity === 'aviso' ? ' warn' : ''}`}>
-                        {entry.severity === 'aviso' ? 'corrigir?' : 'conferir'}
-                      </span>
-                      <span className="diagnosis-message">{entry.message}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))
-        )}
       </section>
     </Modal>
   );

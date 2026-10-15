@@ -11,13 +11,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { OpResult } from '../bridge/apply.ts';
 import { BRIDGE_FEATURES } from '../bridge/compat.ts';
-import type { EspelhoItem } from '../bridge/espelho.ts';
-import type { ExportFailure } from '../bridge/export.ts';
-import type { ImportStop, PageShape } from '../bridge/importar.ts';
 import { sameCv } from '../bridge/lattes-html.ts';
 import type { LattesStatus } from '../bridge/lattes-status.ts';
 import { INITIAL_LINK, type Link, nextLink } from '../bridge/link.ts';
-import type { PhotoFailure } from '../bridge/photo.ts';
 import { type BridgeOp, planChanges, planOptionsFor } from '../bridge/plan.ts';
 import {
   type BridgeMessage,
@@ -35,9 +31,24 @@ import type { Change } from '../model/changes.ts';
 import { setIncludeCapability, syncIncludeCapability } from '../model/direct-inclusion.ts';
 import { addHistoryPoint, addSent, clearSent, listSent } from '../model/store.ts';
 import { getAttr } from '../model/xml.ts';
+import type {
+  CurriculoReading,
+  EspelhoReading,
+  ImportReading,
+  PhotoUploadReading,
+} from './bridge-readings.ts';
 import type { ChangeGroup } from './changes-view.ts';
 import { writeCvCode } from './profile.ts';
 import { type RestoreState, useRestorePoint } from './use-restore-point.ts';
+
+// As leituras das respostas da extensão moram em bridge-readings.ts; quem já
+// importava daqui segue igual.
+export type {
+  CurriculoReading,
+  EspelhoReading,
+  ImportReading,
+  PhotoUploadReading,
+} from './bridge-readings.ts';
 
 /** Evento da janela avisando que um novo código do currículo foi guardado. */
 export const CV_CODE_EVENT = 'lattes-editor:codigo-cv';
@@ -211,46 +222,6 @@ export interface BridgeState {
   stop: () => void;
 }
 
-export interface CurriculoReading {
-  /** Quando a resposta chegou (ms). */
-  at: number;
-  detail?: string;
-  fileName?: string;
-  /** O id do pedido que a resposta atende. */
-  id?: string;
-  reason?: ExportFailure;
-  /** O ZIP em base64. */
-  zip?: string;
-}
-
-export interface PhotoUploadReading {
-  /** Quando a resposta chegou (ms). */
-  at: number;
-  detail?: string;
-  /** O id do pedido que a resposta atende. */
-  id: string;
-  ok: boolean;
-  reason?: PhotoFailure;
-}
-
-export interface ImportReading {
-  /** Quando a resposta chegou (ms). */
-  at: number;
-  detail?: string;
-  /** O id do pedido que a resposta atende. */
-  id: string;
-  page?: PageShape;
-  reason: ImportStop;
-  request?: string;
-}
-
-export interface EspelhoReading {
-  /** Quando a resposta chegou (ms). */
-  at: number;
-  error?: string;
-  items?: EspelhoItem[];
-}
-
 /** O que foi mandado em cada chave da fila, para registrar quando voltar conferido. */
 interface Outgoing {
   change?: Change;
@@ -354,6 +325,7 @@ export function useBridge(
           detail: msg.detail,
           fileName: msg.fileName,
           id: msg.id,
+          lattesId: msg.lattesId,
           reason: msg.reason,
           zip: msg.zip,
         });
