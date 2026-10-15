@@ -7,6 +7,7 @@ import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } f
 import { attributeLabelIn } from '../labels/labels.ts';
 import { getAttr } from '../model/xml.ts';
 import { parseEmails, parseSocial } from './contacts.ts';
+import { isEnglishAttr } from './form-order.ts';
 import { isDoiAttr, linkHref, linkPieces, shortUrl } from './link-fields.ts';
 import {
   actionWord,
@@ -164,7 +165,8 @@ export function Rows({ parts, quiet }: { parts: Part[]; quiet: boolean }) {
           <div key={p.key} className={classes} data-part={p.key}>
             {/* Rótulo numa linha só; o nome inteiro no passar do mouse. */}
             <dt title={labelOf(p)}>{labelOf(p)}</dt>
-            <dd>
+            {/* Versão em inglês com o idioma certo: hifeniza em inglês. */}
+            <dd lang={isEnglishAttr(p.attr) ? 'en' : undefined}>
               <PartText part={p} text={partText(p)} />
             </dd>
           </div>
