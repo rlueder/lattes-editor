@@ -123,7 +123,7 @@ function CommitteeStrip({ cv, period }: { cv: CvData; period: Period }) {
 
 function CommitteeRow({ c, cv }: { c: Committee; cv: CvData }) {
   const { pick } = useChart();
-  const others = c.members.filter((m) => m.full && m.full !== cv.name).map((m) => m.full);
+  const others = c.members.filter((m) => m.full && !cv.isOwner(m.full, m.cit)).map((m) => m.full);
   return (
     <li>
       <button
@@ -176,8 +176,8 @@ export function PeopleList({ cv, level, list, period, tie }: Props) {
             <CommitteeStrip cv={cv} period={period} />
           </div>
           <ul className="pano-rows">
-            {committees.map((c) => (
-              <CommitteeRow key={`${c.title}-${c.year}`} c={c} cv={cv} />
+            {committees.map((c, i) => (
+              <CommitteeRow key={`${c.title}-${c.year}-${i}`} c={c} cv={cv} />
             ))}
           </ul>
         </li>

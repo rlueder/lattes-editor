@@ -33,7 +33,8 @@ import { StickyTitle } from './StickyTitle.tsx';
 import { useOpenItem } from './use-open-item.ts';
 import { yearBounds } from './year-filter.ts';
 
-const NOW = new Date().getFullYear();
+/** O ano corrente, lido na hora: um app aberto na virada do ano não fica no ano anterior. */
+const thisYear = () => new Date().getFullYear();
 
 interface Props {
   /** Filtro com que a seção abre (vindo de um clique no Panorama). */
@@ -264,7 +265,7 @@ function SectionBody({
               shown={shownTotal}
               state={state}
               total={allItems.length}
-              years={yearBounds(allItems, NOW)}
+              years={yearBounds(allItems, thisYear())}
               onChange={setState}
             />
           )}

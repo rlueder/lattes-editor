@@ -17,17 +17,28 @@ import {
 } from './model.ts';
 
 export interface Period {
+  /**
+   * O período é a carreira inteira: entram também os itens sem ano, como na
+   * seção do editor sem filtro de período e no Total dos quadriênios.
+   */
+  all?: boolean;
   from: number;
   to: number;
 }
 
-export const inPeriod = (year: number | undefined, p: Period): year is number =>
-  year !== undefined && year >= p.from && year <= p.to;
+/** O ano cai no período; sem ano, só quando o período é a carreira inteira. */
+export const inPeriod = (year: number | undefined, p: Period): boolean =>
+  year === undefined ? p.all === true : year >= p.from && year <= p.to;
+
+/** Só os itens com ano, para os gráficos que desenham por ano. */
+export function dated<T extends { year?: number }>(items: T[]): (T & { year: number })[] {
+  return items.filter((i): i is T & { year: number } => i.year !== undefined);
+}
 
 export const range = (a: number, b: number): number[] =>
   Array.from({ length: Math.max(0, b - a + 1) }, (_, i) => a + i);
 
-/** Itens com ano dentro do período. */
+/** Itens com ano dentro do período (e os sem ano, quando o período é a carreira inteira). */
 export function within<T extends { year?: number }>(items: T[], p: Period): T[] {
   return items.filter((i) => inPeriod(i.year, p));
 }
@@ -280,7 +291,9 @@ export function csvFileName(cv: CvData, hidden: boolean, today: Date): string {
   const parts = cv.name.split(/\s+/).filter(Boolean);
   const short = parts.length > 1 ? `${parts[0]} ${parts.at(-1)}` : (parts[0] ?? '');
   const who = hidden || !short ? cv.lattesId || 'curriculo' : slugify(short);
-  const date = today.toISOString().slice(0, 10);
+  // A data local: depois das 21h no Brasil, a data em UTC já é a de amanhã.
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const date = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
   return `quadrienios-${who}-${date}.csv`;
 }
 
@@ -295,7 +308,7 @@ export interface AuthorshipPoint {
 }
 
 export function authorship(cv: CvData, p: Period, groups?: ProductionGroup[]): AuthorshipPoint[] {
-  return within(cv.productions, p).flatMap((item) => {
+  return dated(within(cv.productions, p)).flatMap((item) => {
     if (groups && !groups.includes(item.group)) return [];
     const i = selfIndex(item);
     const n = item.authors.length;
@@ -372,7 +385,7 @@ export function committeeKind(name: string): string {
 
 /** Bancas por ano no período, para a faixa do cabeçalho da seção Bancas. */
 export function committeesByYear(cv: CvData, p: Period): { items: Committee[]; year: number }[] {
-  const years = within(cv.committees, p).map((c) => c.year!);
+  const years = dated(within(cv.committees, p)).map((c) => c.year);
   if (years.length === 0) return [];
   return range(Math.min(...years), Math.max(...years)).map((year) => ({
     items: cv.committees.filter((c) => c.year === year),

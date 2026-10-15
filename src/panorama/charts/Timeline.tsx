@@ -105,7 +105,8 @@ export function Timeline({ cv, now, period, whole }: Props) {
     return () => el.removeEventListener('wheel', onWheel);
   }, [fit]);
 
-  if (entries.length === 0) return <p className="pano-note">Nada com período neste currículo.</p>;
+  if (entries.length === 0)
+    return <p className="pano-note">Nenhum item tem ano de início ou de conclusão.</p>;
 
   const sx = (year: number) => PAD + (year - first) * scale;
   const lanes = LANES.filter((l) => entries.some((e) => e.lane === l));

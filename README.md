@@ -89,8 +89,9 @@ O **Panorama** mostra o currículo em números e gráficos, calculados só com o
 que está no XML: produções por ano (com os anos vazios marcados), contagens
 por quadriênio da CAPES, linha do tempo da carreira, as pessoas com quem
 você trabalha (coautores, orientandos, orientadores e bancas), posição de
-autoria, onde publica, temas e o que falta preencher: nove gráficos. Ele fica no controle "Currículo | Panorama", logo abaixo
-da sua foto, e cada gráfico tem um item no menu. Clicar num número abre a
+autoria, onde publica, temas e o que falta preencher. Ele fica no controle
+"Currículo | Panorama", logo abaixo da sua foto, e cada gráfico tem um item
+no menu. Clicar num número abre a
 seção do currículo já filtrada por tipo, período ou campo que falta; clicar
 numa pessoa mostra, no painel, o que ela tem em cada seção. A tabela de
 quadriênios sai também como planilha (CSV); nela, o quadriênio que ainda não

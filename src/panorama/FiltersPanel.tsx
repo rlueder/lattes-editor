@@ -8,7 +8,13 @@ import { FilterStatus } from '../ui/FilterStatus.tsx';
 import { Select } from '../ui/primitives/Select.tsx';
 import { YearRangeFilter } from '../ui/YearRangeFilter.tsx';
 import { type FilterKind, filterOrder } from './catalog.ts';
-import { changedCount, defaultFilters, type Filters, periodPresets } from './filters.ts';
+import {
+  changedCount,
+  defaultFilters,
+  type Filters,
+  periodPresets,
+  resetKinds,
+} from './filters.ts';
 import { type CvData, LEVELS, PRODUCTION_GROUPS } from './model.ts';
 import { TIES } from './people.ts';
 
@@ -133,7 +139,7 @@ export function FiltersPanel({ cv, filters, kinds, now, onChange }: Props) {
         <Fragment key={k}>{controls[k]}</Fragment>
       ))}
       {changed > 0 && (
-        <FilterStatus onClear={() => onChange(defaults)}>
+        <FilterStatus onClear={() => onChange(resetKinds(filters, defaults, kinds))}>
           {changed} {changed === 1 ? 'filtro' : 'filtros'}
         </FilterStatus>
       )}

@@ -18,7 +18,8 @@ interface Props {
   onChange: (state: FilterState) => void;
 }
 
-const NOW = new Date().getFullYear();
+/** O ano corrente, lido na hora: um app aberto na virada do ano não fica no ano anterior. */
+const thisYear = () => new Date().getFullYear();
 
 export function FilterBar({ facets, onChange, shown, state, total, years }: Props) {
   const searchId = useId();
@@ -75,8 +76,8 @@ export function FilterBar({ facets, onChange, shown, state, total, years }: Prop
           label="Período"
           max={years.to}
           min={years.from}
-          presets={yearPresets(years, NOW)}
-          today={NOW}
+          presets={yearPresets(years, thisYear())}
+          today={thisYear()}
           value={state.years ?? years}
           onChange={(r) =>
             onChange({

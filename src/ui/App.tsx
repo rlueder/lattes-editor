@@ -266,8 +266,8 @@ export function App() {
             {shell.view ??
               (section && (
                 <SectionView
-                  key={shell.sectionFilter.key}
-                  initialFilter={shell.sectionFilter.filter}
+                  key={shell.sectionKey}
+                  initialFilter={shell.initialFilter(section.id)}
                   section={section}
                   onEdit={onEdit}
                   onNewGeneral={general.open}

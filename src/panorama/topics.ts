@@ -3,7 +3,7 @@
 
 import { fold } from '../labels/labels.ts';
 import { missingCheck } from '../model/missing.ts';
-import { type Period, within } from './aggregate.ts';
+import { dated, inPeriod, type Period, within } from './aggregate.ts';
 import type {
   CvData,
   EventParticipation,
@@ -104,7 +104,8 @@ export interface Topics {
 }
 
 export function topics(cv: CvData, p: Period, onlyRepeated = false, limit = 24): Topics {
-  const prods = within(cv.productions, p);
+  // A grade é por ano: produção sem ano não tem onde aparecer.
+  const prods = dated(within(cv.productions, p));
   const withKeywords = prods.filter((x) => x.keywords.length > 0);
   const map = new Map<string, Topic>();
   for (const prod of withKeywords) {
@@ -158,7 +159,7 @@ interface Row {
 export function healthChecks(cv: CvData, p: Period, group?: ProductionGroup): Check[] {
   const prods = within(cv.productions, p).filter((x) => !group || x.group === group);
   const supervisions: Supervision[] = cv.supervisions.filter(
-    (s) => s.ongoing || (s.year !== undefined && s.year >= p.from && s.year <= p.to),
+    (s) => s.ongoing || inPeriod(s.year, p),
   );
   const row = (
     group: HealthGroup,

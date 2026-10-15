@@ -129,7 +129,8 @@ export function YearGrid({
                   key={year}
                   ref={active ? activeRef : undefined}
                   aria-current={year === today ? 'date' : undefined}
-                  aria-selected={selectedCell || undefined}
+                  // Na grade de intervalo (multisseleção), toda célula diz se está ou não escolhida.
+                  aria-selected={range ? selectedCell : selectedCell || undefined}
                   className={[
                     'calendar-cell',
                     year === today ? 'today' : '',

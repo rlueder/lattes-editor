@@ -3,6 +3,8 @@
 // item) e, quando o filtro da seção reproduz o grupo, "Abrir em <Seção>".
 // Para uma pessoa, cada seção abre filtrada pelo nome dela.
 
+import { memo, useMemo } from 'react';
+
 import { CloseIcon } from '../ui/icons.tsx';
 import { Tip } from '../ui/primitives/Tip.tsx';
 import type { Section } from '../ui/sections.ts';
@@ -18,9 +20,12 @@ interface Props {
 
 const SHOWN = 6;
 
-export function SelectionPanel({ now, onClose, onOpen, sections, selection }: Props) {
+function SelectionPanelView({ now, onClose, onOpen, sections, selection }: Props) {
   const { items, label, person } = selection;
-  const groups = selectionGroups(sections, selection, now);
+  const groups = useMemo(
+    () => selectionGroups(sections, selection, now),
+    [now, sections, selection],
+  );
   return (
     <div className="panel-block pano-selection">
       <div className="pano-selection-head">
@@ -71,3 +76,6 @@ export function SelectionPanel({ now, onClose, onOpen, sections, selection }: Pr
     </div>
   );
 }
+
+/** Memorizado: só refaz os grupos quando a seleção muda. */
+export const SelectionPanel = memo(SelectionPanelView);

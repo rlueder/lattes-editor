@@ -2,7 +2,7 @@
 // currículo: título e nota, a coluna do gráfico e o painel à direita com os
 // filtros e a seleção feita no gráfico.
 
-import { useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 
 import { saveBytes } from '../desktop/native.ts';
 import type { XElement } from '../model/xml.ts';
@@ -21,12 +21,12 @@ import { Timeline } from './charts/Timeline.tsx';
 import { Topics } from './charts/Topics.tsx';
 import { Venues } from './charts/Venues.tsx';
 import { type OpenTarget, type Selection, selectionGroups } from './drill.ts';
-import { defaultFilters, type Filters, isWhole } from './filters.ts';
+import { chartPeriod, defaultFilters, type Filters } from './filters.ts';
 import { FiltersPanel } from './FiltersPanel.tsx';
 import { readCv } from './model.ts';
 import { type CvData, PRODUCTION_GROUPS } from './model.ts';
 import { SelectionPanel } from './SelectionPanel.tsx';
-import { ChartContext, type TipState } from './use-chart.ts';
+import { ChartContext, createTipStore, type TipStore, useTip } from './use-chart.ts';
 
 interface Props {
   chartId: string;
@@ -37,38 +37,36 @@ interface Props {
   onOpen: (target: OpenTarget) => void;
 }
 
-const NOW = new Date().getFullYear();
+/** O ano corrente, lido na hora: um app aberto na virada do ano não fica no ano anterior. */
+const thisYear = () => new Date().getFullYear();
 
 /** A tabela de quadriênios em CSV: o diálogo de salvar no app, download no navegador. */
 async function exportQuadrennia(cv: CvData, lastYears: number, hidden: boolean) {
-  const csv = countsCsv(countRows(cv), windows(cv, NOW, lastYears));
+  const csv = countsCsv(countRows(cv), windows(cv, thisYear(), lastYears));
   const name = csvFileName(cv, hidden, new Date());
   await saveBytes(new TextEncoder().encode(csv), name, 'text/csv;charset=utf-8');
 }
 
-function ChartBody({
-  chartId,
-  cv,
-  f,
-  setF,
-}: {
+interface ChartBodyProps {
   chartId: string;
   cv: CvData;
   f: Filters;
   setF: (f: Filters) => void;
-}) {
-  const period = { from: f.from, to: f.to };
-  const whole = isWhole(cv, period);
+}
+
+function ChartBodyView({ chartId, cv, f, setF }: ChartBodyProps) {
+  const period = chartPeriod(cv, f);
+  const whole = period.all === true;
   const groups = f.group ? [f.group] : PRODUCTION_GROUPS.map((g) => g.key);
   switch (chartId) {
     case 'saude-do-curriculo':
       return <Health cv={cv} group={f.group || undefined} period={period} whole={whole} />;
     case 'producoes-por-ano':
-      return <Productions cv={cv} groups={groups} now={NOW} period={period} />;
+      return <Productions cv={cv} groups={groups} now={thisYear()} period={period} />;
     case 'quadrienios':
-      return <Quadrennia cv={cv} lastYears={f.lastYears} now={NOW} />;
+      return <Quadrennia cv={cv} lastYears={f.lastYears} now={thisYear()} />;
     case 'linha-do-tempo':
-      return <Timeline cv={cv} now={NOW} period={period} whole={whole} />;
+      return <Timeline cv={cv} now={thisYear()} period={period} whole={whole} />;
     case 'pessoas':
       return (
         <People
@@ -87,36 +85,51 @@ function ChartBody({
     case 'temas':
       return <Topics cv={cv} period={period} onlyRepeated={f.repeated} />;
     default:
-      return <Summary cv={cv} now={NOW} period={period} whole={whole} />;
+      return <Summary cv={cv} now={thisYear()} period={period} whole={whole} />;
   }
+}
+
+/** Memorizado: a página redesenha sem refazer as contas do gráfico quando nada dele mudou. */
+const ChartBody = memo(ChartBodyView);
+
+/** A dica do passar do mouse, num componente próprio: só ele redesenha quando o ponteiro anda. */
+function TipLayer({ store }: { store: TipStore }) {
+  const tip = useTip(store);
+  if (!tip) return null;
+  return (
+    <div className="pano-tip" role="tooltip" style={{ left: tip.x + 14, top: tip.y - 10 }}>
+      {tip.content}
+    </div>
+  );
 }
 
 export function PanoramaView({ chartId, onOpen, root, sections, version }: Props) {
   const chart = chartById(chartId);
   // O documento muda no lugar; `version` avisa que é preciso ler de novo.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const cv = useMemo(() => readCv(root, NOW), [root, version]);
+  const cv = useMemo(() => readCv(root, thisYear()), [root, version]);
   const [filters, setFilters] = useState<Filters>(() => defaultFilters(cv));
   const [selection, setSelection] = useState<{ chart: string; s: Selection } | null>(null);
-  const [tip, setTip] = useState<TipState | null>(null);
+  const [tips] = useState(createTipStore);
   // Com a privacidade ligada, o nome não vai no nome do arquivo exportado.
   const [hidden] = usePrivacyMode();
   const current = selection?.chart === chart.id ? selection.s : null;
+  const closeSelection = useCallback(() => setSelection(null), []);
 
   const api = useMemo(
     () => ({
       pick: (s: Selection) => {
-        setTip(null);
+        tips.set(null);
         // Quando o filtro da seção mostra exatamente os itens, abre direto;
         // uma pessoa, ou itens que nenhum filtro reproduz, vão para a seleção.
-        const groups = selectionGroups(sections, s, NOW);
+        const groups = selectionGroups(sections, s, thisYear());
         const only = groups.length === 1 ? groups[0] : undefined;
         if (only?.exact && !s.person) onOpen(only.target);
         else setSelection({ chart: chart.id, s });
       },
-      setTip,
+      setTip: tips.set,
     }),
-    [chart.id, onOpen, sections],
+    [chart.id, onOpen, sections, tips],
   );
 
   return (
@@ -141,7 +154,7 @@ export function PanoramaView({ chartId, onOpen, root, sections, version }: Props
                 cv={cv}
                 filters={filters}
                 kinds={chart.filters}
-                now={NOW}
+                now={thisYear()}
                 onChange={setFilters}
               />
             </div>
@@ -159,20 +172,16 @@ export function PanoramaView({ chartId, onOpen, root, sections, version }: Props
           )}
           {current && (
             <SelectionPanel
-              now={NOW}
+              now={thisYear()}
               sections={sections}
               selection={current}
-              onClose={() => setSelection(null)}
+              onClose={closeSelection}
               onOpen={onOpen}
             />
           )}
         </aside>
       </div>
-      {tip && (
-        <div className="pano-tip" role="tooltip" style={{ left: tip.x + 14, top: tip.y - 10 }}>
-          {tip.content}
-        </div>
-      )}
+      <TipLayer store={tips} />
     </ChartContext.Provider>
   );
 }

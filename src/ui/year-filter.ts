@@ -1,11 +1,14 @@
 // O filtro de período das seções: cada registro vale pelos anos que mostra na
 // coluna da esquerda. Item com início vai do início ao fim, e o que ainda
-// está em andamento vale até o ano corrente; item pontual vale pelo seu ano;
-// item só com o ano de fim, por esse ano.
+// está em andamento (inclusive a orientação em andamento, cujo ANO é o de
+// início) vale até o ano corrente; item pontual vale pelo seu ano; item só
+// com o ano de fim, por esse ano.
 
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
 import { END_ATTRS, itemMeta } from './item-meta.ts';
 import type { YearRange } from './year-range.ts';
+
+const ONGOING_SUPERVISION = /^(ORIENTACAO-EM-ANDAMENTO-|OUTRAS-ORIENTACOES-EM-ANDAMENTO)/;
 
 export function recordYears(el: XElement, now: number): undefined | YearRange {
   const meta = itemMeta(el);
@@ -13,6 +16,9 @@ export function recordYears(el: XElement, now: number): undefined | YearRange {
     const to = meta.current ? now : (meta.end?.year ?? meta.start.year);
     return { from: meta.start.year, to: Math.max(meta.start.year, to) };
   }
+  // Orientação em andamento: o ANO é o de início, e ela segue até hoje.
+  if (meta.year !== undefined && ONGOING_SUPERVISION.test(el.name))
+    return { from: meta.year, to: Math.max(meta.year, now) };
   const year = meta.year ?? endOnly(el);
   return year === undefined ? undefined : { from: year, to: year };
 }

@@ -24,9 +24,10 @@ export function Segmented<T extends string>({
     options.findIndex((o) => o.value === value),
   );
   const onKeyDown = (e: KeyboardEvent) => {
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    const forward = e.key === 'ArrowRight' || e.key === 'ArrowDown';
+    if (!forward && e.key !== 'ArrowLeft' && e.key !== 'ArrowUp') return;
     e.preventDefault();
-    const next = (index + (e.key === 'ArrowRight' ? 1 : options.length - 1)) % options.length;
+    const next = (index + (forward ? 1 : options.length - 1)) % options.length;
     onChange(options[next]!.value);
     refs.current[next]?.focus();
   };

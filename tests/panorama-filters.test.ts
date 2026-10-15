@@ -6,9 +6,11 @@ import { describe, expect, it } from 'vitest';
 import { loadCv } from '../src/model/document.ts';
 import { MISSING_CHECKS, missingCheck, ownerTest } from '../src/model/missing.ts';
 import { parseXml, type XElement } from '../src/model/xml.ts';
+import { summaryTiles } from '../src/panorama/aggregate.ts';
 import { sectionResult, selectionGroups } from '../src/panorama/drill.ts';
+import { chartPeriod, defaultFilters, resetKinds } from '../src/panorama/filters.ts';
 import { readCv } from '../src/panorama/model.ts';
-import { people, personItems } from '../src/panorama/people.ts';
+import { people, personItems, spans } from '../src/panorama/people.ts';
 import { healthChecks, venues } from '../src/panorama/topics.ts';
 import {
   applyFilter,
@@ -50,6 +52,22 @@ describe('filtro de período das seções', () => {
     const endOnly = el('<GRADUACAO ANO-DE-CONCLUSAO="2008"/>');
     expect(recordYears(endOnly, NOW)).toEqual({ from: 2008, to: 2008 });
     expect(recordYears(el('<X/>'), NOW)).toBeUndefined();
+  });
+
+  it('conta a orientação em andamento do ano de início até hoje', () => {
+    const ongoing = el(
+      '<ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO><DADOS-BASICOS-DA-ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO ANO="2018"/></ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO>',
+    );
+    expect(recordYears(ongoing, NOW)).toEqual({ from: 2018, to: NOW });
+    expect(inYears(ongoing, { from: NOW - 4, to: NOW }, NOW)).toBe(true);
+    const other = el(
+      '<OUTRAS-ORIENTACOES-EM-ANDAMENTO><DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-EM-ANDAMENTO ANO="2024"/></OUTRAS-ORIENTACOES-EM-ANDAMENTO>',
+    );
+    expect(recordYears(other, NOW)).toEqual({ from: 2024, to: NOW });
+    const done = el(
+      '<ORIENTACOES-CONCLUIDAS-PARA-MESTRADO><DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-MESTRADO ANO="2018"/></ORIENTACOES-CONCLUIDAS-PARA-MESTRADO>',
+    );
+    expect(recordYears(done, NOW)).toEqual({ from: 2018, to: 2018 });
   });
 
   it('deixa passar o que tem algum ano no período, e o em andamento até hoje', () => {
@@ -104,6 +122,29 @@ describe('filtro "Faltando", o mesmo da Saúde do currículo', () => {
       expect([c.id, byId[c.id]]).toEqual([c.id, c.missing.length]);
     const supervision = missingFacet(sectionItems(sections, 'orientacoes'), owner)!;
     expect(supervision.options.map((o) => [o.value, o.count])).toEqual([['agencia', 0]]);
+  });
+
+  it('conta também o que não tem ano quando o período é a carreira inteira', async () => {
+    const xml =
+      '<CURRICULO-VITAE><DADOS-GERAIS NOME-COMPLETO="Ana Lima"/><PRODUCAO-BIBLIOGRAFICA><ARTIGOS-PUBLICADOS>' +
+      '<ARTIGO-PUBLICADO SEQUENCIA-PRODUCAO="1"><DADOS-BASICOS-DO-ARTIGO TITULO-DO-ARTIGO="Com ano" ANO-DO-ARTIGO="2020" DOI=""/><DETALHAMENTO-DO-ARTIGO/></ARTIGO-PUBLICADO>' +
+      '<ARTIGO-PUBLICADO SEQUENCIA-PRODUCAO="2"><DADOS-BASICOS-DO-ARTIGO TITULO-DO-ARTIGO="Sem ano" ANO-DO-ARTIGO="" DOI=""/><DETALHAMENTO-DO-ARTIGO/></ARTIGO-PUBLICADO>' +
+      '</ARTIGOS-PUBLICADOS></PRODUCAO-BIBLIOGRAFICA></CURRICULO-VITAE>';
+    const root = parseXml(xml).root;
+    const cv = readCv(root, NOW);
+    const sections = buildSections(root);
+    const whole = chartPeriod(cv, { from: cv.careerStart, to: cv.lastYear });
+    expect(whole.all).toBe(true);
+    const doi = healthChecks(cv, whole).find((c) => c.id === 'doi')!;
+    const facet = missingFacet(sectionItems(sections, 'producoes'), cv.isOwner)!;
+    expect(doi.missing).toHaveLength(2);
+    expect(facet.options.find((o) => o.value === 'doi')!.count).toBe(2);
+    expect(summaryTiles(cv, whole).find((t) => t.key === 'artigos')!.items).toHaveLength(2);
+    // Com um recorte de anos, o que não tem ano fica de fora, como na seção.
+    const recent = chartPeriod(cv, { from: 2020, to: 2020 });
+    expect(recent.all).toBe(false);
+    expect(healthChecks(cv, recent).find((c) => c.id === 'doi')!.missing).toHaveLength(1);
+    expect(summaryTiles(cv, recent).find((t) => t.key === 'artigos')!.items).toHaveLength(1);
   });
 
   it('mostra só os campos que a seção tem e filtra pelos que faltam', async () => {
@@ -199,6 +240,22 @@ describe('clique no Panorama: que lista abre e com que filtro', () => {
     expect(only({ items: banca, label: 'b', years: { from: 2022, to: 2022 } }).exact).toBe(true);
   });
 
+  it('não marca um tipo que o painel da seção não oferece', async () => {
+    const { cv, sections } = await demo();
+    // Bancas do demo são todas de mestrado: a seção não tem o filtro de tipo.
+    const [g] = selectionGroups(
+      sections,
+      { items: cv.committees, label: 'Bancas', years: { from: 2022, to: 2024 } },
+      NOW,
+    );
+    expect(g!.target.filter).toEqual({
+      query: '',
+      selected: {},
+      years: { from: 2022, to: 2024 },
+    });
+    expect(g!.exact).toBe(true);
+  });
+
   it('separa por seção o que mora em mais de uma, como as edições de um evento', async () => {
     const { cv, sections } = await demo();
     const series = venues(cv, ALL).events.find(
@@ -240,5 +297,56 @@ describe('clique no Panorama: que lista abre e com que filtro', () => {
     );
     expect(groups.map((g) => g.sectionId)).toEqual(['producoes', 'projetos', 'orientacoes']);
     expect(groups.every((g) => g.target.filter?.query === 'tiago silveira oliveira')).toBe(true);
+  });
+});
+
+describe('pessoas no período', () => {
+  it('só conta projetos, orientações e formação que tocam o período', async () => {
+    const { cv } = await demo();
+    const recent = { from: 2023, to: 2024 };
+    // João concluiu o mestrado em 2021: em 2023 a 2024 ele aparece só pela coautoria.
+    const joao = people(cv, recent).find((p) => p.name.startsWith('João'))!;
+    expect([joao.supervisions.length, joao.productions.length]).toEqual([0, 1]);
+    // Tiago segue em andamento (desde 2022) e está no projeto (desde 2020).
+    const tiago = people(cv, recent).find((p) => p.name.startsWith('Tiago'))!;
+    expect([tiago.supervisions.length, tiago.projects.length]).toEqual([1, 1]);
+    // A formação dela (2004 a 2018) fica fora: os orientadores só entram pela coautoria.
+    expect(people(cv, recent).flatMap((p) => p.degrees)).toEqual([]);
+    expect(spans(undefined, undefined, { from: 2000, to: 2001 })).toBe(false);
+    expect(spans(undefined, undefined, { all: true, from: 2000, to: 2001 })).toBe(true);
+  });
+
+  it('reconhece a dona do currículo pelo nome em citações', async () => {
+    const { cv } = await demo();
+    const banca = {
+      ...cv.committees[0]!,
+      members: [{ cit: 'LIMA, A. B. S.', full: 'A. B. S. Lima' }],
+    };
+    const list = people({ ...cv, committees: [banca] }, ALL);
+    expect(list.some((p) => p.name === 'A. B. S. Lima')).toBe(false);
+  });
+});
+
+describe('limpar filtros de um gráfico', () => {
+  it('volta ao padrão só o que o gráfico mostra', async () => {
+    const { cv } = await demo();
+    const d = defaultFilters(cv);
+    const changed = {
+      ...d,
+      from: 2020,
+      group: 'artigos' as const,
+      tie: 'banca' as const,
+      view: 'rede' as const,
+    };
+    expect(resetKinds(changed, d, ['periodo', 'laco'])).toEqual({
+      ...d,
+      group: 'artigos',
+      view: 'rede',
+    });
+    expect(resetKinds(changed, d, ['grupo', 'janela', 'nivel', 'repetidos'])).toMatchObject({
+      from: 2020,
+      group: '',
+      tie: 'banca',
+    });
   });
 });

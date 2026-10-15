@@ -18,7 +18,7 @@ export function Summary({ cv, now, period, whole }: Props) {
   const area = cv.areas[0];
   const role = [
     position && [position.title, position.inst].filter(Boolean).join(', '),
-    doctorate && `Doutorado em ${doctorate}`,
+    doctorate && `Doutorado concluído em ${doctorate}`,
     area && [area.area, area.sub].filter(Boolean).join(', '),
   ].filter(Boolean);
   const tiles = summaryTiles(cv, period);

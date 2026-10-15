@@ -5,7 +5,13 @@
 
 import { fold } from '../labels/labels.ts';
 import { walk, type XElement } from '../model/xml.ts';
-import { applyFilter, buildFacets, type FilterState, recordSearchText } from '../ui/facets.ts';
+import {
+  applyFilter,
+  buildFacets,
+  type Facet,
+  type FilterState,
+  recordSearchText,
+} from '../ui/facets.ts';
 import { yearView } from '../ui/list-view.ts';
 import { groupItemList, type Section } from '../ui/sections.ts';
 import type { YearRange } from '../ui/year-range.ts';
@@ -85,13 +91,19 @@ export function itemTarget(sections: Section[], item: PanoramaItem): OpenTarget 
   return { anchor: groupId, filter: text ? query(searchTerms(text)) : undefined, sectionId };
 }
 
-/** Os registros de uma seção que o filtro dela deixa à mostra, como na página. */
-export function sectionResult(section: Section, filter: FilterState, now: number): XElement[] {
+/** Os registros de lista de uma seção e as facetas que o painel dela oferece. */
+function sectionFacets(section: Section): { facets: Facet[]; items: XElement[] } {
   const items = section.groups.flatMap((g) => groupItemList(g)?.items ?? []);
   const facets = buildFacets(items, {
     owner: section.owner,
     typesInPageOrder: section.id === 'dados-gerais',
   });
+  return { facets, items };
+}
+
+/** Os registros de uma seção que o filtro dela deixa à mostra, como na página. */
+export function sectionResult(section: Section, filter: FilterState, now: number): XElement[] {
+  const { facets, items } = sectionFacets(section);
   return applyFilter(items, facets, filter, (el) => recordSearchText(yearView.card(el), el), now);
 }
 
@@ -132,9 +144,11 @@ export function selectionGroups(
       if (sel.person) target = { filter: query(searchTerms(sel.person)), sectionId };
       else if (items.length === 1) target = itemTarget(sections, items[0]!);
       else {
+        // Só facetas que o painel da seção mostra: filtro invisível não explica a lista.
+        const shownFacets = new Set(section ? sectionFacets(section).facets.map((f) => f.id) : []);
         const selected: Record<string, string> = {};
-        if (names.size === 1) selected.tipo = [...names][0]!;
-        if (sel.missing) selected.faltando = sel.missing;
+        if (names.size === 1 && shownFacets.has('tipo')) selected.tipo = [...names][0]!;
+        if (sel.missing && shownFacets.has('faltando')) selected.faltando = sel.missing;
         target = {
           anchor: groups.size === 1 ? [...groups][0] : undefined,
           filter: {

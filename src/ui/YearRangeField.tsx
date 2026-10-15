@@ -122,6 +122,15 @@ export function YearRangeField({ active, id, label, max, min, onChange, today, v
               min={min}
               range={shown}
               today={today}
+              // Com o início marcado, Esc desfaz o início; sem ele, fecha o calendário.
+              onEscape={
+                start === undefined
+                  ? undefined
+                  : () => {
+                      setStart(undefined);
+                      setHover(undefined);
+                    }
+              }
               onHover={start === undefined ? undefined : setHover}
               onMove={move}
               onPick={(year) => {
@@ -129,6 +138,8 @@ export function YearRangeField({ active, id, label, max, min, onChange, today, v
                 if ('pending' in r) {
                   setStart(r.pending);
                   setHover(r.pending);
+                  // O foco segue o clique, para as setas partirem do início escolhido.
+                  setFocus(r.pending);
                   return;
                 }
                 onChange(r.done);

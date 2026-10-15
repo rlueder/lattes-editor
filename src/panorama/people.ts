@@ -3,7 +3,7 @@
 // é o nome sem acento e sem caixa; variações ("Silva, J." e "João Silva") só
 // se juntam quando a revisão de consistência souber fundi-las.
 
-import { type Period, within } from './aggregate.ts';
+import { inPeriod, type Period, within } from './aggregate.ts';
 import {
   type Committee,
   type CvData,
@@ -71,6 +71,12 @@ export function hasTie(p: Person, tie: Tie): boolean {
   return p.projects.length > 0;
 }
 
+/** Um intervalo de anos toca o período; sem fim, segue até hoje; sem início, só na carreira inteira. */
+export function spans(start: number | undefined, end: number | undefined, p: Period): boolean {
+  if (start === undefined) return p.all === true;
+  return start <= p.to && (end ?? Number.POSITIVE_INFINITY) >= p.from;
+}
+
 export function people(cv: CvData, p: Period): Person[] {
   const map = new Map<string, Person>();
   const get = (full: string, cit = ''): Person | undefined => {
@@ -93,11 +99,8 @@ export function people(cv: CvData, p: Period): Person[] {
     }
     return person;
   };
-  const selfKeys = new Set(
-    cv.productions.flatMap((x) => x.authors.filter((a) => a.self).map((a) => personKey(a.full))),
-  );
-  selfKeys.add(personKey(cv.name));
-  const isSelf = (full: string) => selfKeys.has(personKey(full));
+  // A dona do currículo, reconhecida igual em todo lugar (nome completo ou nome em citações).
+  const isSelf = cv.isOwner;
 
   for (const prod of within(cv.productions, p)) {
     for (const a of prod.authors) {
@@ -109,21 +112,26 @@ export function people(cv: CvData, p: Period): Person[] {
   }
   for (const c of within(cv.committees, p)) {
     for (const m of c.members) {
-      if (isSelf(m.full)) continue;
+      if (isSelf(m.full, m.cit)) continue;
       const person = get(m.full, m.cit);
       person?.committees.push(c);
       if (c.year) person?.years.push(c.year);
     }
   }
-  for (const pr of cv.projects)
-    for (const m of pr.team) if (!isSelf(m.full)) get(m.full, m.cit)?.projects.push(pr);
+  for (const pr of cv.projects) {
+    if (!spans(pr.start, pr.end, p)) continue;
+    for (const m of pr.team) if (!isSelf(m.full, m.cit)) get(m.full, m.cit)?.projects.push(pr);
+  }
   for (const s of cv.supervisions) {
-    if (!s.student) continue;
+    // Em andamento vale do ano de início até hoje; concluída, pelo ano de conclusão.
+    const inside = s.ongoing ? spans(s.year, undefined, p) : inPeriod(s.year, p);
+    if (!s.student || !inside) continue;
     const person = get(s.student);
     person?.supervisions.push(s);
     if (s.year) person?.years.push(s.year);
   }
-  for (const d of cv.degrees) if (d.advisor) get(d.advisor)?.degrees.push(d);
+  for (const d of cv.degrees)
+    if (d.advisor && spans(d.start ?? d.end, d.end, p)) get(d.advisor)?.degrees.push(d);
 
   return [...map.values()].sort(
     (a, b) =>

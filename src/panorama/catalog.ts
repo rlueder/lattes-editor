@@ -22,7 +22,8 @@ export const CHARTS: ChartInfo[] = [
     filters: ['periodo', 'grupo'],
     id: 'saude-do-curriculo',
     label: 'Saúde do currículo',
-    question: 'Campos vazios que valem preencher: DOI, ISSN, palavras-chave, títulos em inglês.',
+    question:
+      'Campos vazios que vale a pena preencher: DOI, ISSN, palavras-chave, títulos em inglês.',
   },
   {
     filters: ['periodo', 'grupo'],
@@ -34,7 +35,7 @@ export const CHARTS: ChartInfo[] = [
     filters: ['janela'],
     id: 'quadrienios',
     label: 'Quadriênios',
-    question: 'Contagem por tipo nos quadriênios da CAPES e nos últimos cinco anos.',
+    question: 'Contagem por tipo nos quadriênios da CAPES e na janela recente escolhida no painel.',
   },
   {
     filters: ['periodo'],
