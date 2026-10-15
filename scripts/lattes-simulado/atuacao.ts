@@ -45,11 +45,15 @@ function vinculoFields(state: LattesState, disabledVinc: boolean): Binding[] {
         getAttr(el, 'OUTRO-VINCULO-INFORMADO') ??
         '',
     },
+    // Invertido como no Lattes (observado em 15/10/2026): o formulário diz
+    // Sim (1) e a exportação grava NAO; Não (0) vira SIM. O mapa é literal,
+    // de propósito separado de src/bridge/vinculo-flag.ts, para que os testes
+    // de ponta a ponta confiram o conector contra uma fonte independente.
     mapped(
       'f_stavinc',
       'FLAG-VINCULO-EMPREGATICIO',
       'select',
-      { NAO: '0', SIM: '1' },
+      { NAO: '1', SIM: '0' },
       {
         options: [
           ['', ''],

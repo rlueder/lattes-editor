@@ -11,6 +11,7 @@ import { type CreateItemOp, planCreateItem } from './create-items.ts';
 import { DELETE_ITEMS_ENABLED, type DeleteOp, planDelete } from './delete.ts';
 import { EDIT_ITEMS_ENABLED, type EventoOp, planEvento } from './edit-items.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
+import { stavincFromFlag } from './vinculo-flag.ts';
 
 /** Valor de campo; null tira o campo do envio (caixa desmarcada). */
 export type FieldValues = Record<string, string | null>;
@@ -79,7 +80,8 @@ const VINCULO_FIELDS: Record<string, [string, Mapper]> = {
   'CARGA-HORARIA-SEMANAL': ['f_carga', same],
   // Caixa com valor 3: marcada = dedicação exclusiva.
   'FLAG-DEDICACAO-EXCLUSIVA': ['f_regime', (v) => (v === 'SIM' ? '3' : null)],
-  'FLAG-VINCULO-EMPREGATICIO': ['f_stavinc', (v) => (v === 'SIM' ? '1' : v === 'NAO' ? '0' : '')],
+  // Invertido: f_stavinc 1 (Sim) vem como NAO na exportação (vinculo-flag.ts).
+  'FLAG-VINCULO-EMPREGATICIO': ['f_stavinc', stavincFromFlag],
   'MES-FIM': ['f_mes_fim', same],
   'MES-INICIO': ['f_mes_ini', same],
   'OUTRAS-INFORMACOES': ['f_outras_inf', same],

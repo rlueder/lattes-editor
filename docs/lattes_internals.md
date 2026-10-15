@@ -197,21 +197,34 @@ chaves, `*_old`) aparecem no fim de cada lista.
 Aberto por GET `PKG_ATIV.vinculos` com `f_cod`, `f_codinst`, `f_seq_ativ` e
 `f_seq_hist` (sem `f_seq_hist`, abre um vínculo novo).
 
-| Campo                                                                        | Tipo                              | XML (`VINCULOS`)                                                                       |
-| ---------------------------------------------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------- |
-| `f_vinc`                                                                     | texto 30                          | `TIPO-DE-VINCULO` / `OUTRO-VINCULO-INFORMADO` (o formulário guarda o rótulo; ver nota) |
-| `f_stavinc`                                                                  | lista: vazio, `0`, `1`            | `FLAG-VINCULO-EMPREGATICIO` (`1` = sim, `0` = não)                                     |
-| `f_enqua`                                                                    | texto 45                          | `OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO`                                              |
-| `f_enqua_en`                                                                 | texto 45                          | `OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO-INGLES`                                       |
-| `f_carga`                                                                    | texto 3                           | `CARGA-HORARIA-SEMANAL`                                                                |
-| `f_regime`                                                                   | caixa, valor `3`                  | `FLAG-DEDICACAO-EXCLUSIVA` (marcada = sim)                                             |
-| `f_mes_ini`, `f_ano_ini`                                                     | texto 2, 4                        | `MES-INICIO`, `ANO-INICIO`                                                             |
-| `f_status`                                                                   | rádio `S` = Atual, `N` = Anterior | atual quando `ANO-FIM` é vazio                                                         |
-| `f_mes_fim`, `f_ano_fim`                                                     | texto 2, 4                        | `MES-FIM`, `ANO-FIM`                                                                   |
-| `f_outras_inf`                                                               | área 3950                         | `OUTRAS-INFORMACOES`                                                                   |
-| `f_outras_inf_en`                                                            | área 2000                         | `OUTRAS-INFORMACOES-INGLES`                                                            |
-| `f_tipo_privacidade`                                                         | lista `1` público, `2` privado    | sem correspondente no XML                                                              |
-| `f_ctr` (`U`), `f_vinculo`, `f_cod`, `f_codinst`, `f_seq_ativ`, `f_seq_hist` | ocultos                           |                                                                                        |
+| Campo                                                                        | Tipo                              | XML (`VINCULOS`)                                                                                |
+| ---------------------------------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `f_vinc`                                                                     | texto 30                          | `TIPO-DE-VINCULO` / `OUTRO-VINCULO-INFORMADO` (o formulário guarda o rótulo; ver nota)          |
+| `f_stavinc`                                                                  | lista: vazio, `0`, `1`            | `FLAG-VINCULO-EMPREGATICIO`, **invertido**: `1` (Sim) sai `NAO`, `0` (Não) sai `SIM` (ver nota) |
+| `f_enqua`                                                                    | texto 45                          | `OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO`                                                       |
+| `f_enqua_en`                                                                 | texto 45                          | `OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO-INGLES`                                                |
+| `f_carga`                                                                    | texto 3                           | `CARGA-HORARIA-SEMANAL`                                                                         |
+| `f_regime`                                                                   | caixa, valor `3`                  | `FLAG-DEDICACAO-EXCLUSIVA` (marcada = sim)                                                      |
+| `f_mes_ini`, `f_ano_ini`                                                     | texto 2, 4                        | `MES-INICIO`, `ANO-INICIO`                                                                      |
+| `f_status`                                                                   | rádio `S` = Atual, `N` = Anterior | atual quando `ANO-FIM` é vazio                                                                  |
+| `f_mes_fim`, `f_ano_fim`                                                     | texto 2, 4                        | `MES-FIM`, `ANO-FIM`                                                                            |
+| `f_outras_inf`                                                               | área 3950                         | `OUTRAS-INFORMACOES`                                                                            |
+| `f_outras_inf_en`                                                            | área 2000                         | `OUTRAS-INFORMACOES-INGLES`                                                                     |
+| `f_tipo_privacidade`                                                         | lista `1` público, `2` privado    | sem correspondente no XML                                                                       |
+| `f_ctr` (`U`), `f_vinculo`, `f_cod`, `f_codinst`, `f_seq_ativ`, `f_seq_hist` | ocultos                           |                                                                                                 |
+
+**Invertido, observado em 15/10/2026.** O `f_stavinc` ("Possui vínculo
+empregatício") é o contrário de `FLAG-VINCULO-EMPREGATICIO` na exportação. A
+passada de edição do censo (seção 20) casou os 8 vínculos do dono do
+currículo com `f_stavinc` `0` ↔ `SIM` e `1` ↔ `NAO`, e a tela confirmou um
+deles: o Lattes mostra "Sim" (`f_stavinc=1`, `selected` no HTML) e a
+exportação, lida também pelo editor, traz `NAO`. Até 15/10/2026 esta tabela
+dizia `1` = sim: a conferência do "antes" falharia em toda alteração desse
+campo e, se passasse, a gravação trocaria o valor real da pessoa. A
+dedicação exclusiva não inverte: `f_regime` desmarcado no Lattes sai `NAO`.
+Por que o Lattes grava assim não se sabe. O conector traduz os dois
+sentidos em `src/bridge/vinculo-flag.ts`, e o Lattes simulado usa um mapa
+literal próprio, para que um confira o outro.
 
 Nota sobre o tipo de vínculo: `check()` copia o texto de `f_vinc` para o
 oculto `f_vinculo` antes de enviar, e o texto vem de uma lista em
@@ -1141,8 +1154,9 @@ A instituição vem de `sele_inst()`, que abre
 instituições das atuações do currículo (16 aqui, com código `D` ou `V` mais
 12 dígitos), mais uma caixa de busca. A escolha chama
 `preencherOpener(enqua, regime, stavinc, ano_inic, ano_fim, carga, vinc, código, nome)`,
-que copia o vínculo para os ocultos e os anos para `F_ANO_INIC` e
-`F_ANO_FIM`, e `seleciona(código, nome)`, que grava o código **sem** a letra
+que copia o vínculo para os ocultos (o `stavinc` como código do
+formulário, invertido em relação à exportação como na seção 5, **inferido**)
+e os anos para `F_ANO_INIC` e `F_ANO_FIM`, e `seleciona(código, nome)`, que grava o código **sem** a letra
 em `f_cod_inst` (letra `V`) ou `f_cod_inst2` (as outras). A busca de órgão,
 `orgao()`, devolve a letra (`V` ou `D`) na frente:
 `PKG_PROJETO.pp_orgao_cargo?f_cod=…&f_cod_inst=<letra><código>`.
@@ -1338,12 +1352,15 @@ com itens no currículo. **Observado**:
   residencial, rua, bairro, município, UF, país, DDD, telefone e página; o
   `f_seq` do evento, da editoração, do trabalho técnico e do mestrado é o
   `SEQUENCIA-*` do item.
-- Contrariado: nos 8 vínculos lidos, `f_stavinc` ("Possui vínculo
-  empregatício") 0 veio com `FLAG-VINCULO-EMPREGATICIO="SIM"` e 1 com `NAO`,
-  ao contrário da tabela da seção 5 (1 = sim) e de `src/bridge/plan.ts`. A
-  exportação é a versão publicada (seção 10) e o formulário mostra a de
-  trabalho, então a causa não está isolada. **A conferir** antes de gravar o
-  vínculo pelo conector.
+- Contrariado, depois explicado: nos 8 vínculos lidos, `f_stavinc`
+  ("Possui vínculo empregatício") 0 veio com
+  `FLAG-VINCULO-EMPREGATICIO="SIM"` e 1 com `NAO`, ao contrário da tabela da
+  seção 5 (então 1 = sim) e de `src/bridge/plan.ts`. Conferido na tela no
+  mesmo dia: um dos vínculos mostra "Sim" no Lattes e `NAO` na exportação,
+  e `f_regime` não inverte. A exportação grava o contrário do
+  formulário; a seção 5, o conector e o Lattes simulado passaram a tratar
+  `f_stavinc` como invertido (LAT-56), e o censo só acusa esse campo se a
+  inversão deixar de aparecer.
 - Os formulários de corpo editorial, revisão e assessoramento
   (`PKG_REVISOR.inclui`, `f_natur` MB, MA, RV, RA) são `GN_ATIV`, POST
   `PKG_REVISOR.INCLUI`, com os ocultos de uma atividade da atuação

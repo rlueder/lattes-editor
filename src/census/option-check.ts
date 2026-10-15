@@ -7,6 +7,7 @@
 // os códigos do editor, os rótulos de uma lista com os da lista tipada.
 
 import { compareList } from '../bridge/list-watch.ts';
+import { INVERTED_FLAGS } from '../bridge/vinculo-flag.ts';
 import { foldText } from '../model/fold-text.ts';
 import { element } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
@@ -121,13 +122,17 @@ export function checkOptions(
         `o editor mostra sim/não e ${field.name} tem ${names(opts.map((o) => o.label || o.value))}`,
       );
     }
-    const contradicted = Object.entries(seen).filter(
-      ([code, value]) => booleanOf({ label: '', value: code }) !== value,
-    );
+    // Num campo invertido (vinculo-flag.ts), o esperado é o contrário do código.
+    const inverted = INVERTED_FLAGS[field.name] === attr;
+    const expected = (code: string) => {
+      const b = booleanOf({ label: '', value: code });
+      return inverted && b ? (b === 'SIM' ? 'NAO' : 'SIM') : b;
+    };
+    const contradicted = Object.entries(seen).filter(([code, value]) => expected(code) !== value);
     if (contradicted.length) {
       add(
         'valor-contrariado',
-        `nos itens da exportação, ${field.name} ${contradicted.map(([c, v]) => `${c} vem com ${v}`).join(', ')}, ao contrário do código da opção`,
+        `nos itens da exportação, ${field.name} ${contradicted.map(([c, v]) => `${c} vem com ${v}`).join(', ')}, ao contrário ${inverted ? 'da inversão observada' : 'do código da opção'}`,
         `:${field.name}`,
       );
     }

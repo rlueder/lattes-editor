@@ -150,7 +150,10 @@ function vinculoCopy(atuacao: XElement) {
     carga: val('CARGA-HORARIA-SEMANAL'),
     enqua: val('OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO'),
     regime: val('FLAG-DEDICACAO-EXCLUSIVA') === 'SIM' ? '3' : '',
-    stavinc: val('FLAG-VINCULO-EMPREGATICIO') === 'SIM' ? '1' : '0',
+    // O código do formulário, invertido em relação à exportação como o
+    // f_stavinc do vínculo (observado em 15/10/2026); que preencherOpener leve
+    // esse mesmo código é inferido. Literal, separado de vinculo-flag.ts.
+    stavinc: { NAO: '1', SIM: '0' }[val('FLAG-VINCULO-EMPREGATICIO')] ?? '',
     vinc: val('OUTRO-VINCULO-INFORMADO') || val('TIPO-DE-VINCULO'),
   };
 }

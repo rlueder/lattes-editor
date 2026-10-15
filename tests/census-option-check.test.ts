@@ -66,6 +66,23 @@ describe('censo: opções do Lattes contra o controle do editor', () => {
         key: 'valor-contrariado:t:MESTRADO@FLAG-BOLSA:f_s',
       },
     ]);
+    // f_stavinc é invertido em relação à exportação (observado em 15/10/2026):
+    // 0 ↔ SIM e 1 ↔ NAO é o esperado, e o contrário passa a ser a divergência.
+    const vinc = 'vinculo:VINCULOS@FLAG-VINCULO-EMPREGATICIO';
+    const stavinc = { name: 'f_stavinc', type: 'select-one' };
+    const opts = [o(''), o('0', 'Não'), o('1', 'Sim')];
+    expect(checkOptions(vinc, stavinc, opts, [enumLink({ '0': 'SIM', '1': 'NAO' })]).found).toEqual(
+      [],
+    );
+    expect(checkOptions(vinc, stavinc, opts, [enumLink({ '0': 'NAO', '1': 'SIM' })]).found).toEqual(
+      [
+        {
+          detail:
+            'VINCULOS@FLAG-VINCULO-EMPREGATICIO: nos itens da exportação, f_stavinc 0 vem com NAO, 1 vem com SIM, ao contrário da inversão observada',
+          key: 'valor-contrariado:vinculo:VINCULOS@FLAG-VINCULO-EMPREGATICIO:f_stavinc',
+        },
+      ],
+    );
     // Mapa fraco (um item, ou com contradição) não conta.
     expect(
       observedMap([enumLink({ S: 'X' }, { matches: 1 }), enumLink({ N: 'Y' }, { conflicts: 1 })]),
