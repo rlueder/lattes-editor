@@ -3,8 +3,9 @@
 // guarda o elemento de origem para o clique levar à lista certa no editor.
 
 import { elementLabel } from '../labels/labels.ts';
+import { type OwnerTest, ownerTest } from '../model/missing.ts';
 import { childElements, walk, type XElement } from '../model/xml.ts';
-import { attr, childStarting, descendants, personKey, titleOf, yearOf } from './read-helpers.ts';
+import { attr, childStarting, descendants, titleOf, yearOf } from './read-helpers.ts';
 
 export { personKey, yearOf } from './read-helpers.ts';
 import { readAwards, readDegrees, readPositions, readProjects } from './read-bio.ts';
@@ -134,8 +135,12 @@ export interface CvData {
   committees: Committee[];
   degrees: Degree[];
   events: EventParticipation[];
+  /** A dona do currículo, para os filtros de campo que falta. */
+  isOwner: OwnerTest;
   /** Último ano com algum item, ou o ano corrente. */
   lastYear: number;
+  /** NUMERO-IDENTIFICADOR, o número público do currículo. */
+  lattesId: string;
   name: string;
   orcid: string;
   positions: Position[];
@@ -228,16 +233,8 @@ function readProduction(el: XElement, group: ProductionGroup, isSelf: SelfTest):
   };
 }
 
-export type SelfTest = (full: string, cit: string) => boolean;
-
-/** Reconhece a própria pessoa pelo nome completo ou por um dos nomes em citações. */
-function selfTest(dadosGerais: XElement | undefined): SelfTest {
-  const names = new Set([personKey(attr(dadosGerais, 'NOME-COMPLETO'))]);
-  const cits = new Set(
-    attr(dadosGerais, 'NOME-EM-CITACOES-BIBLIOGRAFICAS').split(';').map(personKey).filter(Boolean),
-  );
-  return (full, cit) => names.has(personKey(full)) || (cit !== '' && cits.has(personKey(cit)));
-}
+/** Reconhece a dona do currículo entre autores e participantes. */
+export type SelfTest = OwnerTest;
 
 function readProductions(root: XElement, isSelf: SelfTest): Production[] {
   const found: Production[] = [];
@@ -332,7 +329,7 @@ function readEvents(root: XElement): EventParticipation[] {
 /** O currículo inteiro, pronto para os gráficos. `now` é o ano corrente. */
 export function readCv(root: XElement, now: number): CvData {
   const dg = childElements(root, 'DADOS-GERAIS')[0];
-  const isSelf = selfTest(dg);
+  const isSelf = ownerTest(dg);
   const summary = dg && descendants(dg, (el) => el.name === 'RESUMO-CV')[0];
   const data = {
     areas: descendants(root, (el) => el.name === 'AREA-DE-ATUACAO').map((a) => ({
@@ -343,6 +340,8 @@ export function readCv(root: XElement, now: number): CvData {
     committees: readCommittees(root),
     degrees: readDegrees(root),
     events: readEvents(root),
+    isOwner: isSelf,
+    lattesId: attr(root, 'NUMERO-IDENTIFICADOR'),
     name: attr(dg, 'NOME-COMPLETO'),
     orcid: attr(dg, 'ORCID-ID'),
     positions: readPositions(root),

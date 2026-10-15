@@ -42,10 +42,8 @@ export function Summary({ cv, now, period, whole }: Props) {
               pick({
                 items: t.items,
                 label: t.label,
-                soon:
-                  whole || t.key === 'orientacoes-andamento' || t.key === 'projetos'
-                    ? undefined
-                    : 'Recorte por período',
+                // Em andamento conta todas, sem recorte de anos.
+                years: whole || t.key === 'orientacoes-andamento' ? undefined : period,
               })
             }
           >
@@ -68,7 +66,11 @@ export function Summary({ cv, now, period, whole }: Props) {
               <Mark
                 key={b.year}
                 label={`${b.year}: ${b.total} produções`}
-                selection={{ items, label: `Produções de ${b.year}`, soon: 'Recorte por ano' }}
+                selection={{
+                  items,
+                  label: `Produções de ${b.year}`,
+                  years: { from: b.year, to: b.year },
+                }}
               >
                 <path className="pano-bar-1" d={topRound(x, H - 16 - h, w, h, 2)} />
               </Mark>

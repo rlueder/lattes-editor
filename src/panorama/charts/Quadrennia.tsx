@@ -1,6 +1,4 @@
-import { useState } from 'react';
-
-import { countRows, countsTsv, inWindow, windows } from '../aggregate.ts';
+import { countRows, inWindow, windows } from '../aggregate.ts';
 import type { CvData } from '../model.ts';
 import { useChart } from '../use-chart.ts';
 
@@ -13,15 +11,8 @@ interface Props {
 
 export function Quadrennia({ cv, lastYears, now }: Props) {
   const { pick } = useChart();
-  const [copied, setCopied] = useState(false);
   const cols = windows(cv, now, lastYears);
   const rows = countRows(cv);
-  const copy = () => {
-    void navigator.clipboard?.writeText(countsTsv(rows, cols)).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  };
   return (
     <>
       <div className="pano-table-wrap">
@@ -53,7 +44,7 @@ export function Quadrennia({ cv, lastYears, now }: Props) {
                             pick({
                               items,
                               label: `${r.label}, ${c.label}`,
-                              soon: c.label === 'Total' ? undefined : 'Recorte por período',
+                              years: c.label === 'Total' ? undefined : { from: c.from, to: c.to },
                             })
                           }
                         >
@@ -70,12 +61,6 @@ export function Quadrennia({ cv, lastYears, now }: Props) {
           </tbody>
         </table>
       </div>
-      <p className="pano-note">
-        <button className="ghost pano-copy" type="button" onClick={copy}>
-          {copied ? 'Copiado' : 'Copiar como planilha'}
-        </button>{' '}
-        Quadriênios da avaliação da CAPES.
-      </p>
     </>
   );
 }

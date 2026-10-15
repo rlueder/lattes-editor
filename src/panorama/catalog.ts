@@ -1,8 +1,7 @@
 // Os gráficos do Panorama: nome no menu e a frase sob o título. A ordem é a
 // do menu lateral.
 
-export type FilterKind =
-  'grupo' | 'janela' | 'laco' | 'nivel' | 'periodo' | 'repetidos' | 'vista' | 'zoom';
+export type FilterKind = 'grupo' | 'janela' | 'laco' | 'nivel' | 'periodo' | 'repetidos';
 
 export interface ChartInfo {
   filters: FilterKind[];
@@ -70,6 +69,14 @@ export const CHARTS: ChartInfo[] = [
 ];
 
 export const DEFAULT_CHART = CHARTS[0]!.id;
+
+/** A ordem dos filtros no painel: os do gráfico primeiro, o período sempre por último. */
+const ORDER: FilterKind[] = ['grupo', 'laco', 'nivel', 'janela', 'repetidos', 'periodo'];
+
+/** Os filtros de um gráfico na ordem do painel, qualquer que seja a ordem no catálogo. */
+export function filterOrder(kinds: FilterKind[]): FilterKind[] {
+  return ORDER.filter((k) => kinds.includes(k));
+}
 
 export function chartById(id: string | undefined): ChartInfo {
   return CHARTS.find((c) => c.id === id) ?? CHARTS[0]!;

@@ -4,8 +4,12 @@
 
 import { useMemo, useState } from 'react';
 
+import { saveBytes } from '../desktop/native.ts';
 import type { XElement } from '../model/xml.ts';
+import { DownloadIcon } from '../ui/icons.tsx';
+import { usePrivacyMode } from '../ui/privacy.ts';
 import type { Section } from '../ui/sections.ts';
+import { countRows, countsCsv, csvFileName, windows } from './aggregate.ts';
 import { chartById } from './catalog.ts';
 import { Authorship } from './charts/Authorship.tsx';
 import { Health } from './charts/Health.tsx';
@@ -16,14 +20,7 @@ import { Summary } from './charts/Summary.tsx';
 import { Timeline } from './charts/Timeline.tsx';
 import { Topics } from './charts/Topics.tsx';
 import { Venues } from './charts/Venues.tsx';
-import {
-  itemTarget,
-  listTarget,
-  type OpenTarget,
-  personTarget,
-  type Selection,
-  spansSections,
-} from './drill.ts';
+import { type OpenTarget, type Selection, selectionGroups } from './drill.ts';
 import { defaultFilters, type Filters, isWhole } from './filters.ts';
 import { FiltersPanel } from './FiltersPanel.tsx';
 import { readCv } from './model.ts';
@@ -42,6 +39,13 @@ interface Props {
 
 const NOW = new Date().getFullYear();
 
+/** A tabela de quadriênios em CSV: o diálogo de salvar no app, download no navegador. */
+async function exportQuadrennia(cv: CvData, lastYears: number, hidden: boolean) {
+  const csv = countsCsv(countRows(cv), windows(cv, NOW, lastYears));
+  const name = csvFileName(cv, hidden, new Date());
+  await saveBytes(new TextEncoder().encode(csv), name, 'text/csv;charset=utf-8');
+}
+
 function ChartBody({
   chartId,
   cv,
@@ -58,7 +62,7 @@ function ChartBody({
   const groups = f.group ? [f.group] : PRODUCTION_GROUPS.map((g) => g.key);
   switch (chartId) {
     case 'saude-do-curriculo':
-      return <Health cv={cv} group={f.group || undefined} period={period} />;
+      return <Health cv={cv} group={f.group || undefined} period={period} whole={whole} />;
     case 'producoes-por-ano':
       return <Productions cv={cv} groups={groups} now={NOW} period={period} />;
     case 'quadrienios':
@@ -95,22 +99,19 @@ export function PanoramaView({ chartId, onOpen, root, sections, version }: Props
   const [filters, setFilters] = useState<Filters>(() => defaultFilters(cv));
   const [selection, setSelection] = useState<{ chart: string; s: Selection } | null>(null);
   const [tip, setTip] = useState<TipState | null>(null);
+  // Com a privacidade ligada, o nome não vai no nome do arquivo exportado.
+  const [hidden] = usePrivacyMode();
   const current = selection?.chart === chart.id ? selection.s : null;
 
   const api = useMemo(
     () => ({
       pick: (s: Selection) => {
         setTip(null);
-        // Um item só: o título acha exatamente ele, sem recorte nenhum.
-        if (s.items.length === 1 && !s.person) {
-          onOpen(itemTarget(sections, s.items[0]!));
-          return;
-        }
-        // Sem recorte que falte ao editor e numa seção só: abre direto.
-        const target = s.person
-          ? personTarget(sections, s.person, s.items)
-          : listTarget(sections, s.items);
-        if (target && !s.soon && !spansSections(sections, s.items)) onOpen(target);
+        // Quando o filtro da seção mostra exatamente os itens, abre direto;
+        // uma pessoa, ou itens que nenhum filtro reproduz, vão para a seleção.
+        const groups = selectionGroups(sections, s, NOW);
+        const only = groups.length === 1 ? groups[0] : undefined;
+        if (only?.exact && !s.person) onOpen(only.target);
         else setSelection({ chart: chart.id, s });
       },
       setTip,
@@ -145,8 +146,20 @@ export function PanoramaView({ chartId, onOpen, root, sections, version }: Props
               />
             </div>
           )}
+          {chart.id === 'quadrienios' && (
+            <div className="panel-block">
+              <button
+                className="pano-open"
+                type="button"
+                onClick={() => void exportQuadrennia(cv, filters.lastYears, hidden)}
+              >
+                <DownloadIcon /> Exportar como planilha
+              </button>
+            </div>
+          )}
           {current && (
             <SelectionPanel
+              now={NOW}
               sections={sections}
               selection={current}
               onClose={() => setSelection(null)}

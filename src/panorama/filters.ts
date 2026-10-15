@@ -1,6 +1,7 @@
 // O estado dos filtros do painel à direita. O período vale para todos os
 // gráficos que o usam; os outros filtros são de um gráfico só.
 
+import { yearPresets } from '../ui/year-range.ts';
 import type { Period } from './aggregate.ts';
 import type { FilterKind } from './catalog.ts';
 import type { CvData, Level, ProductionGroup } from './model.ts';
@@ -34,20 +35,11 @@ export interface Preset {
   period: Period;
 }
 
-/**
- * Atalhos de período: a carreira inteira, os últimos 5 anos e cada
- * quadriênio da CAPES que toca a carreira, do mais recente ao mais antigo.
- */
+/** Atalhos de período: os do seletor de anos, com "Toda a carreira" no lugar de "Todos os anos". */
 export function periodPresets(cv: CvData, now: number): Preset[] {
-  const quads: Preset[] = [];
-  for (let a = 2013; a <= now; a += 4)
-    if (a + 3 >= cv.careerStart)
-      quads.unshift({ id: `q${a}`, label: `${a}–${a + 3}`, period: { from: a, to: a + 3 } });
-  return [
-    { id: 'tudo', label: 'Toda a carreira', period: { from: cv.careerStart, to: cv.lastYear } },
-    { id: 'ultimos-5', label: 'Últimos 5 anos', period: { from: now - 4, to: now } },
-    ...quads,
-  ];
+  return yearPresets({ from: cv.careerStart, to: cv.lastYear }, now, 'Toda a carreira').map(
+    (p) => ({ id: p.id, label: p.label, period: p.range }),
+  );
 }
 
 /** O período cobre toda a carreira: a lista do editor não precisa de recorte. */
@@ -63,7 +55,6 @@ export function changedCount(f: Filters, d: Filters, kinds: FilterKind[]): numbe
     ['janela', f.lastYears !== d.lastYears],
     ['nivel', f.level !== d.level],
     ['laco', f.tie !== d.tie],
-    ['vista', f.view !== d.view],
     ['repetidos', f.repeated !== d.repeated],
   ];
   return changed.filter(([k, c]) => c && kinds.includes(k)).length;

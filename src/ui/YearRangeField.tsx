@@ -1,7 +1,7 @@
 // Campo de intervalo de anos: o campo mostra "2009 – 2026" com o botão do
-// calendário, como o campo de ano, e o popover traz atalhos e a grade de
-// anos. O primeiro clique marca o início, o segundo o fim; entre os dois, a
-// grade mostra a prévia. Mesma família do campo de data e do campo de ano
+// calendário, como o campo de ano, e o popover traz só a grade de anos. O
+// primeiro clique marca o início, o segundo o fim; entre os dois, a grade
+// mostra a prévia. Os atalhos ficam fora, no painel (YearRangeFilter). Mesma família do campo de data e do campo de ano
 // (CalendarPopover e a grade de anos de Calendar.tsx).
 
 import { useLayoutEffect, useRef, useState } from 'react';
@@ -12,25 +12,20 @@ import { CalendarPopover } from './CalendarPopover.tsx';
 import { ChevronIcon } from './icons.tsx';
 import { formatRange, pickYear, shownRange, type YearRange } from './year-range.ts';
 
-export interface RangePreset {
-  id: string;
-  label: string;
-  range: YearRange;
-}
-
 interface Props {
+  /** Período diferente de "todos os anos": o campo fica marcado como filtro ativo. */
+  active?: boolean;
   id: string;
   /** Rótulo do campo; dá nome ao diálogo para leitores de tela. */
   label: string;
   max: number;
   min: number;
-  presets: RangePreset[];
   today: number;
   value: YearRange;
   onChange: (range: YearRange) => void;
 }
 
-export function YearRangeField({ id, label, max, min, onChange, presets, today, value }: Props) {
+export function YearRangeField({ active, id, label, max, min, onChange, today, value }: Props) {
   const [open, setOpen] = useState(false);
   const [start, setStart] = useState<number | undefined>();
   const [hover, setHover] = useState<number | undefined>();
@@ -63,11 +58,15 @@ export function YearRangeField({ id, label, max, min, onChange, presets, today, 
   };
 
   return (
-    <div ref={anchorRef} className="date-field year-range-field">
+    <div
+      ref={anchorRef}
+      className={active ? 'date-field year-range-field active' : 'date-field year-range-field'}
+    >
       <input
         ref={inputRef}
         readOnly
         aria-haspopup="dialog"
+        aria-label={label}
         id={id}
         type="text"
         value={formatRange(value)}
@@ -90,22 +89,6 @@ export function YearRangeField({ id, label, max, min, onChange, presets, today, 
       >
         {(close) => (
           <div className="calendar-body calendar-year-picker year-range-picker">
-            <div aria-label="Atalhos de período" className="year-range-presets" role="group">
-              {presets.map((p) => (
-                <button
-                  key={p.id}
-                  aria-pressed={p.range.from === value.from && p.range.to === value.to}
-                  className="year-range-preset"
-                  type="button"
-                  onClick={() => {
-                    onChange(p.range);
-                    close();
-                  }}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
             <div className="calendar-head">
               <button
                 aria-label="Anos anteriores"

@@ -4426,14 +4426,16 @@ button.primary:hover:not(:disabled) {
 /* Botões secundários dos rodapés de modal: fundo de componente (passo 4) e
    borda de controle (passo 7), para não sumirem no escuro. */
 .modal-foot button:not(.primary),
-.form-foot button:not(.primary):not(.danger) {
+.form-foot button:not(.primary):not(.danger),
+.section-panel button.pano-open {
   border: 1px solid var(--border-strong);
   background: var(--surface-2);
   color: var(--text);
 }
 
 .modal-foot button:not(.primary):hover,
-.form-foot button:not(.primary):not(.danger):hover {
+.form-foot button:not(.primary):not(.danger):hover,
+.section-panel button.pano-open:hover {
   background: var(--surface-3);
   border-color: var(--border-focus);
 }
@@ -5134,7 +5136,8 @@ button.primary:hover:not(:disabled) {
   border-color: transparent;
 }
 
-.topbar .icon-btn.ghost:hover:not(:disabled) {
+.topbar .icon-btn.ghost:hover:not(:disabled),
+.section-panel .icon-btn.ghost:hover:not(:disabled) {
   background: var(--surface-2);
 }
 
@@ -5470,33 +5473,10 @@ b {
 
 /* Seletor de intervalo de anos (Panorama): atalhos acima da grade, o
    intervalo em azul claro e as pontas em azul cheio, sem cantos arredondados. */
-.year-range-presets {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px;
-  margin-bottom: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-}
-
-.year-range-preset {
-  padding: 5px 8px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  font-size: 12px;
-  text-align: left;
-  font-variant-numeric: tabular-nums;
-}
-
-.year-range-preset:hover {
-  background: var(--surface-2);
-}
-
-.year-range-preset[aria-pressed='true'] {
-  background: var(--accent-soft);
-  color: var(--accent-text);
-  font-weight: 550;
+.year-range-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .year-range-hint {
@@ -5537,6 +5517,12 @@ b {
   font-size: 13px;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
+}
+
+.year-range-field.active input {
+  border-color: var(--accent-text);
+  background: var(--accent-soft);
+  color: var(--accent-text);
 }
 
 .year-range-field input:hover:not(:focus) {

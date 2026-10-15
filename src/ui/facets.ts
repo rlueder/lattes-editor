@@ -4,11 +4,14 @@
 // quando divide a lista de verdade.
 
 import { attributeLabel, elementLabel, enumLabel, fold } from '../labels/labels.ts';
+import { MISSING_CHECKS, missingCheck, type OwnerTest } from '../model/missing.ts';
 import { childElements, type XElement } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 import { flagAsShown } from './field-kind.ts';
 import { itemMeta } from './item-meta.ts';
 import { effectiveQuery } from './query.ts';
+import { inYears } from './year-filter.ts';
+import type { YearRange } from './year-range.ts';
 
 export interface FacetOption {
   count: number;
@@ -19,6 +22,8 @@ export interface FacetOption {
 export interface Facet {
   id: string;
   label: string;
+  /** Faceta em que um item casa com vários valores ("Faltando": sem DOI e sem ISSN). */
+  matches?: (el: XElement, value: string) => boolean;
   options: FacetOption[];
   valueOf: (el: XElement) => string | undefined;
 }
@@ -88,7 +93,13 @@ function options(
  * que os tipos aparecem na página (Dados gerais, que começa pela
  * identificação); nas outras seções, a ordem é alfabética.
  */
-export function buildFacets(items: XElement[], { typesInPageOrder = false } = {}): Facet[] {
+export function buildFacets(
+  items: XElement[],
+  {
+    owner = NO_OWNER,
+    typesInPageOrder = false,
+  }: { owner?: OwnerTest; typesInPageOrder?: boolean } = {},
+): Facet[] {
   const facets: Facet[] = [];
 
   const kinds = options(items, (el) => el.name, elementLabel, typesInPageOrder);
@@ -124,19 +135,54 @@ export function buildFacets(items: XElement[], { typesInPageOrder = false } = {}
     if (opts.length < 2 || opts.length > MAX_OPTIONS) continue;
     facets.push({ id: attr, label: attributeLabel(attr), options: opts, valueOf });
   }
+  const missing = missingFacet(items, owner);
+  if (missing) facets.push(missing);
   return facets;
+}
+
+const NO_OWNER: OwnerTest = () => false;
+
+/**
+ * "Faltando": uma opção por campo que existe em algum item da seção (DOI,
+ * ISSN, palavras-chave…), com quantos itens estão sem ele. As verificações
+ * são as mesmas da Saúde do currículo (src/model/missing.ts).
+ */
+export function missingFacet(items: XElement[], owner: OwnerTest): Facet | undefined {
+  const opts = MISSING_CHECKS.flatMap((c) => {
+    const applies = items.filter((el) => c.applies(el, owner));
+    if (applies.length === 0) return [];
+    const count = applies.filter((el) => c.missing(el, owner)).length;
+    return [{ count, label: c.label, value: c.id }];
+  });
+  if (opts.length === 0) return undefined;
+  return {
+    id: 'faltando',
+    label: 'Faltando',
+    matches: (el, value) => {
+      const c = missingCheck(value);
+      return c !== undefined && c.applies(el, owner) && c.missing(el, owner);
+    },
+    options: opts,
+    valueOf: () => undefined,
+  };
 }
 
 export interface FilterState {
   query: string;
   /** Faceta → valor escolhido; ausente = todos. */
   selected: Record<string, string>;
+  /** Período: só os registros com algum ano dentro dele (year-filter.ts). */
+  years?: YearRange;
 }
 
 export const NO_FILTER: FilterState = { query: '', selected: {} };
 
 export function isFiltering(state: FilterState): boolean {
-  return effectiveQuery(state.query) !== '' || Object.keys(state.selected).length > 0;
+  return (
+    effectiveQuery(state.query) !== '' ||
+    Object.keys(state.selected).length > 0 ||
+    state.years !== undefined
+  );
 }
 
 /**
@@ -154,18 +200,21 @@ export function matchesQuery(text: string, query: string): boolean {
   return terms.every((t) => words.some((w) => w.startsWith(t)));
 }
 
-/** Itens que passam pela busca (no texto do cartão) e por todas as facetas escolhidas. */
+/** Itens que passam pela busca (no texto do cartão), pelo período e por todas as facetas escolhidas. */
 export function applyFilter(
   items: XElement[],
   facets: Facet[],
   state: FilterState,
   textOf: (el: XElement) => string,
+  now = new Date().getFullYear(),
 ): XElement[] {
   return items.filter((el) => {
     if (!matchesQuery(textOf(el), state.query)) return false;
+    if (state.years && !inYears(el, state.years, now)) return false;
     return Object.entries(state.selected).every(([id, value]) => {
       const facet = facets.find((f) => f.id === id);
-      return !facet || facet.valueOf(el) === value;
+      if (!facet) return true;
+      return facet.matches ? facet.matches(el, value) : facet.valueOf(el) === value;
     });
   });
 }

@@ -91,8 +91,13 @@ por quadriênio da CAPES, linha do tempo da carreira, as pessoas com quem
 você trabalha (coautores, orientandos, orientadores e bancas), posição de
 autoria, onde publica, temas e o que falta preencher: nove gráficos. Ele fica no controle "Currículo | Panorama", logo abaixo
 da sua foto, e cada gráfico tem um item no menu. Clicar num número abre a
-lista no currículo com o filtro que o editor já sabe aplicar; o recorte por
-ano ainda não existe na lista e aparece marcado como "em breve".
+seção do currículo já filtrada por tipo, período ou campo que falta; clicar
+numa pessoa mostra, no painel, o que ela tem em cada seção.
+
+As seções do currículo também filtram por período (com atalhos para os
+últimos 5 anos e os quadriênios da CAPES) e por campo que falta ("Sem DOI",
+"Sem palavras-chave", "Sem agência"), com as mesmas contagens da Saúde do
+currículo.
 
 ## Privacidade
 

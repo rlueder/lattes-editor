@@ -2,6 +2,7 @@
 // sobre o CvData.
 
 import { fold } from '../labels/labels.ts';
+import { missingCheck } from '../model/missing.ts';
 import { type Period, within } from './aggregate.ts';
 import type {
   CvData,
@@ -140,103 +141,78 @@ export interface Check {
   total: PanoramaItem[];
 }
 
-interface CheckSpec<T extends PanoramaItem> {
+interface Row {
   group: HealthGroup;
   hint: string;
+  /** Id da verificação em src/model/missing.ts. */
   id: string;
-  items: T[];
   label: string;
-  ok: (x: T) => boolean;
+  /** Itens entre os quais a verificação procura os que se aplicam. */
+  pool: PanoramaItem[];
 }
 
-function check<T extends PanoramaItem>(spec: CheckSpec<T>): Check {
-  const { group, hint, id, items, label, ok } = spec;
-  return { group, hint, id, label, missing: items.filter((x) => !ok(x)), total: items };
-}
-
+/**
+ * As linhas da Saúde do currículo. Quais itens contam e quais faltam vêm das
+ * mesmas verificações do filtro "Faltando" das seções, para os números baterem.
+ */
 export function healthChecks(cv: CvData, p: Period, group?: ProductionGroup): Check[] {
   const prods = within(cv.productions, p).filter((x) => !group || x.group === group);
-  const articles = prods.filter((x) => x.group === 'artigos');
-  const events = prods.filter((x) => x.group === 'eventos');
-  const books = prods.filter((x) => x.group === 'livros');
   const supervisions: Supervision[] = cv.supervisions.filter(
     (s) => s.ongoing || (s.year !== undefined && s.year >= p.from && s.year <= p.to),
   );
-  const coauthored = prods.filter((x) => x.authors.some((a) => !a.self));
-  return [
-    check({
-      group: 'Produções',
-      hint: 'Liga o artigo ao OpenAlex e ao Crossref.',
-      id: 'doi',
-      items: articles,
-      label: 'Artigos com DOI',
-      ok: (x) => x.doi !== '',
-    }),
-    check({
-      group: 'Produções',
-      hint: 'Usado para achar o estrato Qualis do periódico.',
-      id: 'issn',
-      items: articles,
-      label: 'Artigos com ISSN',
-      ok: (x) => x.issn !== '',
-    }),
-    check({
-      group: 'Produções',
-      hint: 'Entram na referência do artigo.',
-      id: 'volume',
-      items: articles,
-      label: 'Artigos com volume e páginas',
-      ok: (x) => x.volume !== '' && x.pages !== '',
-    }),
-    check({
-      group: 'Produções',
-      hint: 'Identifica a obra na referência.',
-      id: 'isbn',
-      items: books,
-      label: 'Livros e capítulos com ISBN',
-      ok: (x) => x.isbn !== '',
-    }),
-    check({
-      group: 'Produções',
-      hint: 'Usadas no gráfico Temas.',
-      id: 'palavras-chave',
-      items: prods,
-      label: 'Produções com palavras-chave',
-      ok: (x) => x.keywords.length > 0,
-    }),
-    check({
-      group: 'Produções',
-      hint: 'Aparece na versão em inglês do currículo.',
-      id: 'titulo-ingles',
-      items: prods,
-      label: 'Produções com título em inglês',
-      ok: (x) => x.titleEn !== '',
-    }),
-    check({
-      group: 'Eventos',
-      hint: 'Muitos anais não têm DOI; vale como aviso.',
-      id: 'doi-eventos',
-      items: events,
-      label: 'Trabalhos em eventos com DOI',
-      ok: (x) => x.doi !== '',
-    }),
-    check({
-      group: 'Pessoas',
-      hint: 'Liga cada coautor ao currículo dele no Lattes.',
-      id: 'id-cnpq',
-      items: coauthored,
-      label: 'Coautores com ID CNPq',
-      ok: (x) => x.authors.every((a) => a.self || a.cnpq !== ''),
-    }),
-    check({
-      group: 'Orientações',
-      hint: 'Agência que financiou a bolsa.',
-      id: 'agencia',
-      items: supervisions,
-      label: 'Orientações com agência de fomento',
-      ok: (x) => x.agency !== '',
-    }),
-  ].filter((c) => c.total.length > 0);
+  const row = (
+    group: HealthGroup,
+    id: string,
+    label: string,
+    hint: string,
+    pool: PanoramaItem[] = prods,
+  ): Row => ({
+    group,
+    hint,
+    id,
+    label,
+    pool,
+  });
+  const rows: Row[] = [
+    row('Produções', 'doi', 'Artigos com DOI', 'Liga o artigo ao OpenAlex e ao Crossref.'),
+    row('Produções', 'issn', 'Artigos com ISSN', 'Usado para achar o estrato Qualis do periódico.'),
+    row('Produções', 'volume', 'Artigos com volume e páginas', 'Entram na referência do artigo.'),
+    row('Produções', 'isbn', 'Livros e capítulos com ISBN', 'Identifica a obra na referência.'),
+    row('Produções', 'palavras-chave', 'Produções com palavras-chave', 'Usadas no gráfico Temas.'),
+    row(
+      'Produções',
+      'titulo-ingles',
+      'Produções com título em inglês',
+      'Aparece na versão em inglês do currículo.',
+    ),
+    row(
+      'Eventos',
+      'doi-eventos',
+      'Trabalhos em eventos com DOI',
+      'Muitos anais não têm DOI; vale como aviso.',
+    ),
+    row(
+      'Pessoas',
+      'id-cnpq',
+      'Coautores com ID CNPq',
+      'Liga cada coautor ao currículo dele no Lattes.',
+    ),
+    row(
+      'Orientações',
+      'agencia',
+      'Orientações com agência de fomento',
+      'Agência que financiou a bolsa.',
+      supervisions,
+    ),
+  ];
+  return rows
+    .map(({ group: g, hint, id, label, pool }) => {
+      const c = missingCheck(id)!;
+      const total = pool.filter((x) => c.applies(x.el, cv.isOwner));
+      const missing = total.filter((x) => c.missing(x.el, cv.isOwner));
+      return { group: g, hint, id, label, missing, total };
+    })
+    .filter((c) => c.total.length > 0);
 }
 
 export interface Flag {

@@ -31,6 +31,9 @@ import { NEW_GENERAL_LABELS } from './section-types.ts';
 import { countItems, groupItemList, type Section, type SectionGroup } from './sections.ts';
 import { StickyTitle } from './StickyTitle.tsx';
 import { useOpenItem } from './use-open-item.ts';
+import { yearBounds } from './year-filter.ts';
+
+const NOW = new Date().getFullYear();
 
 interface Props {
   /** Filtro com que a seção abre (vindo de um clique no Panorama). */
@@ -119,7 +122,11 @@ function SectionBody({
   const allItems = lists.flatMap((l) => l?.items ?? []);
   // Recalcula só quando os itens da seção mudam de identidade.
   const facets = useMemo(
-    () => buildFacets(allItems, { typesInPageOrder: section.id === 'dados-gerais' }),
+    () =>
+      buildFacets(allItems, {
+        owner: section.owner,
+        typesInPageOrder: section.id === 'dados-gerais',
+      }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [section, allItems.length],
   );
@@ -137,7 +144,7 @@ function SectionBody({
         recordSearchText(list.view.card(el), el),
       ).length;
     // Grupo de campos (Identificação, Resumo): só a busca de texto vale, sem facetas.
-    if (Object.keys(state.selected).length > 0) return 0;
+    if (Object.keys(state.selected).length > 0 || state.years) return 0;
     return g.elements.some((el) => elementMatchesText(el, state.query)) ? 1 : 0;
   };
   const counts = section.groups.map(shownIn);
@@ -257,6 +264,7 @@ function SectionBody({
               shown={shownTotal}
               state={state}
               total={allItems.length}
+              years={yearBounds(allItems, NOW)}
               onChange={setState}
             />
           )}

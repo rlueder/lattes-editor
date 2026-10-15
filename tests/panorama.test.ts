@@ -11,7 +11,9 @@ import {
   committeeKind,
   committeesByYear,
   countRows,
-  countsTsv,
+  countsCsv,
+  csvField,
+  csvFileName,
   currentRole,
   inWindow,
   levelBadge,
@@ -21,16 +23,9 @@ import {
   windows,
   yearRanges,
 } from '../src/panorama/aggregate.ts';
-import { chartById, CHARTS, DEFAULT_CHART } from '../src/panorama/catalog.ts';
+import { chartById, CHARTS, DEFAULT_CHART, filterOrder } from '../src/panorama/catalog.ts';
 import { plural, rightRound, SERIES, topRound } from '../src/panorama/charts/geometry.ts';
-import {
-  itemTarget,
-  listTarget,
-  locate,
-  personTarget,
-  searchTerms,
-  spansSections,
-} from '../src/panorama/drill.ts';
+import { itemTarget, locate, searchTerms, selectionGroups } from '../src/panorama/drill.ts';
 import { changedCount, defaultFilters, isWhole, periodPresets } from '../src/panorama/filters.ts';
 import { levelOf, personKey, readCv, yearOf } from '../src/panorama/model.ts';
 import { chartOfAction, panoramaPaletteEntries } from '../src/panorama/palette.ts';
@@ -221,7 +216,23 @@ describe('contagens', () => {
     const articles = rows.find((r) => r.label === 'Artigos em periódicos')!;
     expect(cols.map((c) => inWindow(articles.items, c).length)).toEqual([0, 2, 4, 0, 3, 6]);
     expect(rows.some((r) => r.sub && r.label === 'Mestrado')).toBe(true);
-    expect(countsTsv(rows, cols).split('\n')[1]).toBe('Artigos em periódicos\t0\t2\t4\t0\t3\t6');
+    const csv = countsCsv(rows, cols);
+    expect(
+      csv.startsWith('﻿Tipo;2013–2016;2017–2020;2021–2024;2025–2028;2022–2026;Total\r\n'),
+    ).toBe(true);
+    expect(csv.split('\r\n')[1]).toBe('Artigos em periódicos;0;2;4;0;3;6');
+    expect(csv).toContain('\r\nOrientações concluídas: Mestrado;0;0;2;0;1;2\r\n');
+    expect(csv.endsWith('\r\n')).toBe(true);
+    expect(csvField('a;b')).toBe('"a;b"');
+    expect(csvField('a"b')).toBe('"a""b"');
+    expect(csvField('linha\nnova')).toBe('"linha\nnova"');
+    expect(csvField(3)).toBe('3');
+    const day = new Date('2026-10-15T12:00:00Z');
+    expect(csvFileName(cv, false, day)).toBe('quadrienios-ana-lima-2026-10-15.csv');
+    expect(csvFileName(cv, true, day)).toBe('quadrienios-3871592046158372-2026-10-15.csv');
+    expect(csvFileName({ ...cv, lattesId: '', name: '' }, false, day)).toBe(
+      'quadrienios-curriculo-2026-10-15.csv',
+    );
   });
 
   it('classifica a posição de autoria', async () => {
@@ -408,30 +419,45 @@ describe('clique: que lista abre no editor', () => {
     expect(award.sectionId).toBe('dados-gerais');
   });
 
-  it('leva vários itens do mesmo tipo ao filtro de tipo', async () => {
+  it('agrupa a seleção por seção e diz se o filtro a reproduz', async () => {
     const { cv, sections } = await demo();
     const arts = cv.productions.filter((p) => p.group === 'artigos');
-    expect(listTarget(sections, arts)).toMatchObject({
-      filter: { selected: { tipo: 'ARTIGO-PUBLICADO' } },
-      sectionId: 'producoes',
+    const [g] = selectionGroups(sections, { items: arts, label: 'Artigos' }, NOW);
+    expect(g).toMatchObject({
+      exact: true,
+      label: 'Produções',
+      target: { filter: { selected: { tipo: 'ARTIGO-PUBLICADO' } }, sectionId: 'producoes' },
     });
-    const mixed = listTarget(sections, cv.productions);
-    expect(mixed?.filter).toBeUndefined();
-    expect(mixed?.anchor).toBeUndefined();
-    expect(listTarget(sections, [])).toBeUndefined();
-    expect(spansSections(sections, [...arts, ...cv.committees])).toBe(true);
-    expect(spansSections(sections, arts)).toBe(false);
+    const mixed = selectionGroups(
+      sections,
+      { items: [...arts, ...cv.committees], label: 'Misto' },
+      NOW,
+    );
+    expect(mixed.map((x) => [x.sectionId, x.items.length])).toEqual([
+      ['producoes', 6],
+      ['bancas', 2],
+    ]);
+    expect(selectionGroups(sections, { items: [], label: 'Nada' }, NOW)).toEqual([]);
+    expect(searchTerms('Ação: um, dois!', 2)).toBe('acao um');
   });
 
-  it('leva uma pessoa à seção onde ela mais aparece, pelo nome', async () => {
+  it('mostra uma pessoa em cada seção onde ela aparece, filtrada pelo nome', async () => {
     const { cv, sections } = await demo();
     const paulo = people(cv, ALL).find((p) => p.name.startsWith('Paulo'))!;
-    expect(personTarget(sections, paulo.name, personItems(paulo))).toEqual({
-      filter: { query: 'paulo roberto mendes', selected: {} },
-      sectionId: 'producoes',
-    });
-    expect(personTarget(sections, 'X', [])).toBeUndefined();
-    expect(searchTerms('Ação: um, dois!', 2)).toBe('acao um');
+    const groups = selectionGroups(
+      sections,
+      { items: personItems(paulo), label: paulo.name, person: paulo.name },
+      NOW,
+    );
+    expect(groups.map((x) => [x.label, x.items.length])).toEqual([
+      ['Produções', 3],
+      ['Bancas', 2],
+      ['Formação', 2],
+    ]);
+    for (const x of groups)
+      expect(x.target.filter).toEqual({ query: 'paulo roberto mendes', selected: {} });
+    // O nome acha nas bancas exatamente as duas em que ele esteve.
+    expect(groups.find((x) => x.sectionId === 'bancas')!.exact).toBe(true);
   });
 });
 
@@ -454,10 +480,10 @@ describe('filtros, linha do tempo, ⌘K e geometria', () => {
     expect(isWhole(cv, { from: 2020, to: NOW })).toBe(false);
     const g = { ...f, from: 2015, group: 'artigos' as const, view: 'rede' as const };
     expect(changedCount(g, f, ['periodo', 'grupo'])).toBe(2);
-    expect(changedCount(g, f, ['periodo', 'grupo', 'vista', 'nivel'])).toBe(3);
-    expect(
-      changedCount(f, f, ['periodo', 'grupo', 'janela', 'nivel', 'laco', 'vista', 'repetidos']),
-    ).toBe(0);
+    expect(changedCount({ ...g, level: 'Mestrado' }, f, ['periodo', 'grupo', 'nivel'])).toBe(3);
+    expect(changedCount(f, f, ['periodo', 'grupo', 'janela', 'nivel', 'laco', 'repetidos'])).toBe(
+      0,
+    );
   });
 
   it('põe cada item da carreira na sua faixa', async () => {
@@ -496,6 +522,20 @@ describe('filtros, linha do tempo, ⌘K e geometria', () => {
     expect(zoomAt(10, 0, 50, 0.5, 1).scrollLeft).toBe(0);
     expect([tickStep(60), tickStep(30), tickStep(10), tickStep(5), tickStep(1)]).toEqual([
       1, 2, 5, 10, 10,
+    ]);
+  });
+
+  it('põe o período por último no painel de todo gráfico', () => {
+    for (const c of CHARTS) {
+      const order = filterOrder(c.filters);
+      expect(order.toSorted(), c.id).toEqual([...c.filters].sort());
+      if (c.filters.includes('periodo')) expect(order.at(-1), c.id).toBe('periodo');
+    }
+    expect(filterOrder(['periodo', 'laco', 'grupo', 'nivel'])).toEqual([
+      'grupo',
+      'laco',
+      'nivel',
+      'periodo',
     ]);
   });
 

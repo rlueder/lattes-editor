@@ -11,6 +11,8 @@ interface Props {
   cv: CvData;
   group?: ProductionGroup;
   period: Period;
+  /** O período cobre a carreira inteira: a seção abre sem recorte de anos. */
+  whole: boolean;
 }
 
 const pct = (a: number, b: number) => (b ? Math.round((100 * a) / b) : 0);
@@ -25,7 +27,7 @@ function StateIcon({ ok }: { ok: boolean }) {
   );
 }
 
-function Row({ c }: { c: Check }) {
+function Row({ c, period, whole }: { c: Check; period: Period; whole: boolean }) {
   const { pick } = useChart();
   const ok = c.total.length - c.missing.length;
   const done = c.missing.length === 0;
@@ -39,7 +41,8 @@ function Row({ c }: { c: Check }) {
           pick({
             items: c.missing,
             label: `${c.label}: faltam ${c.missing.length}`,
-            soon: `Filtro "${c.label.replace(' com ', ' sem ')}"`,
+            missing: c.id,
+            years: whole ? undefined : period,
           })
         }
       >
@@ -68,7 +71,7 @@ function Group({ children, label }: { children: ReactNode; label: string }) {
   );
 }
 
-export function Health({ cv, group, period }: Props) {
+export function Health({ cv, group, period, whole }: Props) {
   const checks = healthChecks(cv, period, group);
   const flags = profileFlags(cv);
   const total = checks.length + flags.length;
@@ -86,7 +89,7 @@ export function Health({ cv, group, period }: Props) {
           return rows.length ? (
             <Group key={g} label={g}>
               {rows.map((c) => (
-                <Row key={c.id} c={c} />
+                <Row key={c.id} c={c} period={period} whole={whole} />
               ))}
             </Group>
           ) : null;

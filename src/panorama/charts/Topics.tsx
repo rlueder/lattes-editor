@@ -62,7 +62,8 @@ export function Topics({ cv, onlyRepeated, period }: Props) {
                       selection={{
                         items,
                         label: `"${topic.label}" em ${year}`,
-                        soon: 'Filtro por palavra-chave',
+                        query: topic.label,
+                        years: { from: year, to: year },
                       }}
                     >
                       <circle

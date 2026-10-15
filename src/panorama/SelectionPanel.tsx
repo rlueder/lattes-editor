@@ -1,26 +1,26 @@
-// O que foi clicado no gráfico, no painel à direita: os itens, o botão que
-// abre a lista no editor com o filtro que ele já sabe aplicar, e o recorte
-// que ainda falta ao editor, marcado como "em breve".
+// O que foi clicado no gráfico, no painel à direita, separado pela seção do
+// editor em que cada item mora. Cada grupo tem os itens (cada um abre o
+// item) e, quando o filtro da seção reproduz o grupo, "Abrir em <Seção>".
+// Para uma pessoa, cada seção abre filtrada pelo nome dela.
 
 import { CloseIcon } from '../ui/icons.tsx';
 import { Tip } from '../ui/primitives/Tip.tsx';
 import type { Section } from '../ui/sections.ts';
-import { itemTarget, listTarget, type OpenTarget, personTarget, type Selection } from './drill.ts';
+import { itemTarget, type OpenTarget, type Selection, selectionGroups } from './drill.ts';
 
 interface Props {
+  now: number;
   sections: Section[];
   selection: Selection;
   onClose: () => void;
   onOpen: (target: OpenTarget) => void;
 }
 
-const SHOWN = 8;
+const SHOWN = 6;
 
-export function SelectionPanel({ onClose, onOpen, sections, selection }: Props) {
-  const { items, label, person, soon } = selection;
-  const target = person ? personTarget(sections, person, items) : listTarget(sections, items);
-  const sectionLabel = sections.find((s) => s.id === target?.sectionId)?.label;
-  const sorted = [...items].sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
+export function SelectionPanel({ now, onClose, onOpen, sections, selection }: Props) {
+  const { items, label, person } = selection;
+  const groups = selectionGroups(sections, selection, now);
   return (
     <div className="panel-block pano-selection">
       <div className="pano-selection-head">
@@ -39,29 +39,35 @@ export function SelectionPanel({ onClose, onOpen, sections, selection }: Props) 
       <p className="pano-selection-label">
         {label} <span className="muted">({items.length})</span>
       </p>
-      {items.length > 0 && (
-        <ol className="pano-selection-list">
-          {sorted.slice(0, SHOWN).map((item, i) => (
-            <li key={`${item.title}-${i}`}>
-              <button type="button" onClick={() => onOpen(itemTarget(sections, item))}>
-                <span className="pano-selection-year">{item.year ?? '–'}</span>
-                <span>{item.title || item.typeLabel}</span>
+      {items.length === 0 && <p className="pano-note">Nenhum item.</p>}
+      {groups.map((g) => {
+        const sorted = [...g.items].sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
+        return (
+          <section key={g.sectionId} className="pano-selection-group">
+            {groups.length > 1 && (
+              <h3 className="pano-selection-section">
+                {g.label} <span className="muted">({g.items.length})</span>
+              </h3>
+            )}
+            <ol className="pano-selection-list">
+              {sorted.slice(0, SHOWN).map((item, i) => (
+                <li key={`${item.title}-${i}`}>
+                  <button type="button" onClick={() => onOpen(itemTarget(sections, item))}>
+                    <span className="pano-selection-year">{item.year ?? '–'}</span>
+                    <span>{item.title || item.typeLabel}</span>
+                  </button>
+                </li>
+              ))}
+              {g.items.length > SHOWN && <li className="muted">e mais {g.items.length - SHOWN}</li>}
+            </ol>
+            {(person || g.exact) && (
+              <button className="pano-open" type="button" onClick={() => onOpen(g.target)}>
+                Abrir em {g.label}
               </button>
-            </li>
-          ))}
-          {items.length > SHOWN && <li className="muted">e mais {items.length - SHOWN}</li>}
-        </ol>
-      )}
-      {target && sectionLabel && (
-        <button className="pano-open" type="button" onClick={() => onOpen(target)}>
-          Abrir em {sectionLabel}
-        </button>
-      )}
-      {soon && (
-        <p className="pano-soon">
-          <span className="pano-soon-tag">em breve</span> {soon}
-        </p>
-      )}
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }

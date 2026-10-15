@@ -15,11 +15,11 @@ interface Props {
 function Rows({
   buckets,
   color,
-  soon,
+  years,
 }: {
   buckets: Bucket<PanoramaItem>[];
   color: string;
-  soon?: string;
+  years?: Period;
 }) {
   const { pick } = useChart();
   const max = Math.max(1, ...buckets.map((b) => b.items.length));
@@ -30,7 +30,7 @@ function Rows({
           <button
             className="pano-row"
             type="button"
-            onClick={() => pick({ items: b.items, label: b.label, soon })}
+            onClick={() => pick({ items: b.items, label: b.label, query: b.label, years })}
           >
             <span className="pano-row-name">
               {b.label}
@@ -53,16 +53,12 @@ export function Venues({ cv, period, whole }: Props) {
   const total = v.languages.reduce((n, l) => n + l.items.length, 0);
   const W = 760;
   let x = 0;
-  const by = whole ? undefined : 'Recorte por período';
+  const years = whole ? undefined : period;
   return (
     <>
       <h2 className="pano-h">Periódicos</h2>
       {v.journals.length ? (
-        <Rows
-          buckets={v.journals}
-          color={SERIES[0]!}
-          soon={`Filtro por periódico${by ? ' e período' : ''}`}
-        />
+        <Rows buckets={v.journals} color={SERIES[0]!} years={years} />
       ) : (
         <p className="pano-note">Nenhum artigo no período.</p>
       )}
@@ -78,7 +74,7 @@ export function Venues({ cv, period, whole }: Props) {
             <Mark
               key={l.label}
               label={`${l.label}: ${l.items.length} (${pct}%)`}
-              selection={{ items: l.items, label: `Idioma: ${l.label}`, soon: 'Filtro por idioma' }}
+              selection={{ items: l.items, label: `Idioma: ${l.label}`, query: l.label, years }}
             >
               <rect fill={SERIES[i]} height="14" rx="3" width={Math.max(0, w - 2)} x={x0} y="0" />
               {w > 70 && (
@@ -98,7 +94,9 @@ export function Venues({ cv, period, whole }: Props) {
             key={c.label}
             className="pano-chip"
             type="button"
-            onClick={() => pick({ items: c.items, label: `País: ${c.label}`, soon: by })}
+            onClick={() =>
+              pick({ items: c.items, label: `País: ${c.label}`, query: c.label, years })
+            }
           >
             {c.label} <small>{c.items.length}</small>
           </button>
@@ -107,11 +105,7 @@ export function Venues({ cv, period, whole }: Props) {
 
       <h2 className="pano-h">Eventos, com as edições agrupadas</h2>
       {v.events.length ? (
-        <Rows
-          buckets={v.events}
-          color={SERIES[2]!}
-          soon="Trabalhos e participações do mesmo evento numa lista só"
-        />
+        <Rows buckets={v.events} color={SERIES[2]!} years={years} />
       ) : (
         <p className="pano-note">Nenhum evento no período.</p>
       )}

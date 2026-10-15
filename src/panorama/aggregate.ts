@@ -1,6 +1,7 @@
 // Contagens do Panorama: funções puras sobre o CvData, uma por gráfico (as
 // de pessoas e temas ficam em people.ts e topics.ts).
 
+import { slugify } from '../labels/labels.ts';
 import {
   type Committee,
   type CvData,
@@ -235,12 +236,37 @@ export function countRows(cv: CvData): CountRow[] {
 export const inWindow = (items: PanoramaItem[], w: Window): PanoramaItem[] =>
   items.filter((i) => i.year !== undefined && i.year >= w.from && i.year <= w.to);
 
-/** A tabela em texto separado por tabulação, para colar numa planilha. */
-export function countsTsv(rows: CountRow[], cols: Window[]): string {
-  return [
-    ['Tipo', ...cols.map((c) => c.label)].join('\t'),
-    ...rows.map((r) => [r.label, ...cols.map((c) => inWindow(r.items, c).length)].join('\t')),
-  ].join('\n');
+/** Um campo de CSV: entre aspas quando tem separador, aspas ou quebra de linha. */
+export function csvField(value: number | string): string {
+  const text = String(value);
+  return /[;"\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+/**
+ * A tabela de quadriênios em CSV para o Excel em português: UTF-8 com BOM
+ * (para os acentos), ";" como separador e CRLF. Uma linha por tipo, as
+ * subdivisões com o nome do grupo ("Orientações concluídas: Mestrado").
+ */
+export function countsCsv(rows: CountRow[], cols: Window[]): string {
+  let parent = '';
+  const lines = [
+    ['Tipo', ...cols.map((c) => c.label)],
+    ...rows.map((r) => {
+      if (!r.sub) parent = r.label;
+      const label = r.sub ? `${parent}: ${r.label}` : r.label;
+      return [label, ...cols.map((c) => inWindow(r.items, c).length)];
+    }),
+  ];
+  return `\uFEFF${lines.map((l) => l.map(csvField).join(';')).join('\r\n')}\r\n`;
+}
+
+/** "quadrienios-ana-lima-2026-10-15.csv"; com a privacidade ligada, o número do currículo no lugar do nome. */
+export function csvFileName(cv: CvData, hidden: boolean, today: Date): string {
+  const parts = cv.name.split(/\s+/).filter(Boolean);
+  const short = parts.length > 1 ? `${parts[0]} ${parts.at(-1)}` : (parts[0] ?? '');
+  const who = hidden || !short ? cv.lattesId || 'curriculo' : slugify(short);
+  const date = today.toISOString().slice(0, 10);
+  return `quadrienios-${who}-${date}.csv`;
 }
 
 // ---------- Posição de autoria ----------

@@ -48,7 +48,6 @@ function PersonRow({ max, p }: { max: number; p: Person }) {
             items: personItems(p),
             label: p.name,
             person: p.name,
-            soon: 'A pessoa em todas as seções',
           })
         }
       >
@@ -94,7 +93,11 @@ function CommitteeStrip({ cv, period }: { cv: CvData; period: Period }) {
           <Mark
             key={y.year}
             label={`${y.year}: ${y.items.length} ${y.items.length === 1 ? 'banca' : 'bancas'}`}
-            selection={{ items: y.items, label: `Bancas de ${y.year}`, soon: 'Recorte por ano' }}
+            selection={{
+              items: y.items,
+              label: `Bancas de ${y.year}`,
+              years: { from: y.year, to: y.year },
+            }}
           >
             <path
               className="pano-bar-1"

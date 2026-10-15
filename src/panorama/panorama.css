@@ -68,8 +68,13 @@
 }
 
 .pano-chart-head .pano-segment {
-  margin: 0 0 0 auto;
   min-width: 200px;
+}
+
+/* A vista (Lista | Rede) centrada na coluna, acima da lista ou da rede. */
+.pano-view-switch {
+  display: flex;
+  justify-content: center;
 }
 
 .pano-facts {
@@ -769,8 +774,9 @@ button.pano-chip:hover {
   cursor: pointer;
 }
 
-.pano-selection-list li > button:hover {
-  background: var(--surface-2);
+.pano-selection-list li > button:hover,
+.pano-selection-list li > button:focus-visible {
+  background: var(--accent-soft);
 }
 
 .pano-selection-list li.muted {
@@ -784,27 +790,15 @@ button.pano-chip:hover {
 }
 
 .pano-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   width: 100%;
   margin-top: 10px;
   padding: 6px 12px;
   border-radius: 999px;
   cursor: pointer;
-}
-
-.pano-soon {
-  margin: 10px 0 0;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.pano-soon-tag {
-  display: inline-block;
-  margin-right: 4px;
-  padding: 0 6px;
-  border-radius: 0;
-  background: var(--warn-bg);
-  color: var(--warn-text);
-  font-size: 11px;
 }
 
 @media (max-width: 640px) {

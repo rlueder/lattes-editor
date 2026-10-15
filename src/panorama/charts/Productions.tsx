@@ -87,7 +87,11 @@ export function Productions({ cv, groups, now, period }: Props) {
                   <Mark
                     key={g.key}
                     label={`${b.year}, ${g.label}: ${items.length}`}
-                    selection={{ items, label: `${g.label} de ${b.year}`, soon: 'Recorte por ano' }}
+                    selection={{
+                      items,
+                      label: `${g.label} de ${b.year}`,
+                      years: { from: b.year, to: b.year },
+                    }}
                   >
                     {last ? (
                       <path d={topRound(x, top, w, h)} fill={g.color} />
@@ -108,7 +112,6 @@ export function Productions({ cv, groups, now, period }: Props) {
                   selection={{
                     items: [],
                     label: `${b.year}: nenhuma produção`,
-                    soon: 'Procurar no OpenAlex o que falta neste ano',
                   }}
                 >
                   <rect

@@ -6,6 +6,7 @@ import {
   hasTie,
   people,
   type Person,
+  personItems,
   shortName,
   type Tie,
 } from '../people.ts';
@@ -58,7 +59,6 @@ export function People({ cv, level, onView, period, tie, view }: Props) {
             </li>
           )}
         </ul>
-        <Segmented label="Vista" options={VIEWS} value={view} onChange={onView} />
       </div>
       {(supervision.length > 0 || committees > 0) && (
         <ul className="pano-facts secondary">
@@ -68,6 +68,9 @@ export function People({ cv, level, onView, period, tie, view }: Props) {
           {committees > 0 && <li>{committees === 1 ? '1 banca' : `${committees} bancas`}</li>}
         </ul>
       )}
+      <div className="pano-view-switch">
+        <Segmented label="Vista" options={VIEWS} value={view} onChange={onView} />
+      </div>
       {view === 'lista' ? (
         <PeopleList cv={cv} level={level} list={list} period={period} tie={tie} />
       ) : (
@@ -142,10 +145,9 @@ function Network({ cv, list, period }: { cv: CvData; list: Person[]; period: Per
               key={n.key}
               label={`${n.name}: ${plural(n.productions.length, 'produção', 'produções')} juntos`}
               selection={{
-                items: n.productions,
-                label: `Coautoria com ${n.name}`,
+                items: personItems(n),
+                label: n.name,
                 person: n.name,
-                soon: 'Recorte por coautor',
               }}
             >
               <circle
