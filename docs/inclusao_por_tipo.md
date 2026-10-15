@@ -41,16 +41,16 @@ outro item.
 
 | Caminho hoje | Tipos | Editor cria |
 | ------------ | ----: | ----------: |
-| conector     |    17 |          17 |
+| conector     |    22 |          22 |
 | importar     |    69 |          69 |
-| nenhum       |    28 |          28 |
+| nenhum       |    23 |          23 |
 
-Desde a etapa 4, o editor cria todos os tipos. Os 28 sem caminho vão para "A
-enviar" com a rota "à mão": a patente, o pós-doutorado, a livre-docência, a
-formação complementar, idioma, prêmio, licença, áreas de atuação e as partes
-de uma atuação ou de um projeto (vínculo novo, atividades, disciplinas,
-treinamentos, linhas de pesquisa, financiadores, produções e orientações do
-projeto, e a participação em projeto, que o editor cria junto com o projeto).
+Desde a etapa 4, o editor cria todos os tipos. Os 23 sem caminho vão para "A
+enviar" com a rota "à mão", cada um com o motivo: a patente, a formação
+complementar, a licença, as áreas de atuação, as nove atividades de uma
+atuação, a disciplina, o treinamento, a linha de pesquisa, o financiador, a
+produção e a orientação de um projeto, e a participação em projeto (que nasce
+com o projeto, cuja inclusão já a leva).
 
 O que entra num item que já existe pede, antes do formulário, onde entra: a
 atuação do vínculo e das atividades, a atividade de ensino da disciplina, a de
@@ -74,8 +74,8 @@ e treinamento são só um nome, que fica no texto do elemento.
 | `MESTRADO-PROFISSIONALIZANTE`                     | Mestrado profissionalizante                     |              | sim         | conector     | `formacao-FA-9`         | lido    | observado/inferido  |
 | `DOUTORADO`                                       | Doutorado                                       |              | sim         | conector     | `formacao-FA-4`         | lido    | observado/inferido  |
 | `RESIDENCIA-MEDICA`                               | Residência médica                               |              | sim         | conector     | `formacao-FA-D`         | lido    | observado/inferido  |
-| `LIVRE-DOCENCIA`                                  | Livre-docência                                  |              | sim         | nenhum       | `formacao-AP-6`         | lido    | observado/inferido  |
-| `POS-DOUTORADO`                                   | Pós-doutorado                                   |              | sim         | nenhum       | `formacao-AP-5`         | lido    | observado/inferido  |
+| `LIVRE-DOCENCIA`                                  | Livre-docência                                  |              | sim         | conector     | `formacao-AP-6`         | lido    | observado/inferido  |
+| `POS-DOUTORADO`                                   | Pós-doutorado                                   |              | sim         | conector     | `formacao-AP-5`         | lido    | observado/inferido  |
 | `FORMACAO-COMPLEMENTAR-DE-EXTENSAO-UNIVERSITARIA` | Formação complementar de extensão universitária |              | sim         | nenhum       | `formacao-complementar` | lido    | observado/observado |
 | `MBA`                                             | MBA                                             |              | sim         | nenhum       | `formacao-complementar` | lido    | observado/observado |
 | `FORMACAO-COMPLEMENTAR-CURSO-DE-CURTA-DURACAO`    | Formação complementar curso de curta duração    |              | sim         | nenhum       | `formacao-complementar` | lido    | observado/observado |
@@ -86,9 +86,9 @@ e treinamento são só um nome, que fica no texto do elemento.
 | Elemento          | Item             | Faz parte de | Editor cria | Caminho hoje | Formulário no censo | Captura | Endereço/ligação    |
 | ----------------- | ---------------- | ------------ | ----------- | ------------ | ------------------- | ------- | ------------------- |
 | `AREA-DE-ATUACAO` | Área de atuação  |              | sim         | nenhum       | `areas-de-atuacao`  | lido    | observado/observado |
-| `IDIOMA`          | Idioma           |              | sim         | nenhum       | `idioma`            | lido    | observado/observado |
+| `IDIOMA`          | Idioma           |              | sim         | conector     | `idioma`            | lido    | observado/observado |
 | `LICENCA`         | Licença          |              | sim         | nenhum       | `licenca`           | lido    | observado/inferido  |
-| `PREMIO-TITULO`   | Prêmio ou título |              | sim         | nenhum       | `premio`            | lido    | observado/observado |
+| `PREMIO-TITULO`   | Prêmio ou título |              | sim         | conector     | `premio`            | lido    | observado/observado |
 
 ### Atuação e projetos
 
@@ -102,7 +102,7 @@ e treinamento são só um nome, que fica no texto do elemento.
 | `ORIENTACAO`                         | Orientação                         | `PROJETO-DE-PESQUISA`        | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
 | `TREINAMENTO`                        | Treinamento                        | `TREINAMENTO-MINISTRADO`     | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
 | `ATUACAO-PROFISSIONAL`               | Atuação profissional               |                              | sim         | conector     | `atuacao`                                                       | lido                         | observado/observado                                                                                     |
-| `VINCULOS`                           | Vínculo                            | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | `vinculo`                                                       | lido                         | observado/observado                                                                                     |
+| `VINCULOS`                           | Vínculo                            | `ATUACAO-PROFISSIONAL`       | sim         | conector     | `vinculo`                                                       | lido                         | observado/observado                                                                                     |
 | `DIRECAO-E-ADMINISTRACAO`            | Direção e administração            | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
 | `PESQUISA-E-DESENVOLVIMENTO`         | Pesquisa e desenvolvimento         | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
 | `ENSINO`                             | Ensino                             | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
@@ -252,6 +252,27 @@ próprio conhecido.
 
 **Dados gerais.** Idioma, prêmio e licença têm formulário lido, simples, com
 `f_ctr=I`. Áreas de atuação são uma grade única em `prc_area_atuacao`.
+
+A etapa 5 (`src/bridge/create-general.ts`) inclui pelo conector o idioma
+(`GN_IDIOMA`), o prêmio (`GN_PREMIO`) e um vínculo numa atuação que já está
+no Lattes (`GN_ATIV_VINC`, pelo "Incluir vínculo" da tela de cargos e
+vínculos), e `create-formacao.ts` passa a incluir o pós-doutorado e a
+livre-docência pela lista `f_tipo=AP` (níveis 5 e 6). A ligação de cada campo
+com o XML é observada no idioma, no prêmio e no vínculo (a passada de edição
+do censo casou 3 idiomas, 5 prêmios e 8 vínculos) e inferida no pós-doutorado
+e na livre-docência. O vínculo novo não tem "Outras informações" em português,
+só em inglês: com o texto em português, vai à mão.
+
+Ficam à mão, com o motivo de cada um: a licença (data em campo de texto, de
+formato não observado), as áreas de atuação (a grade `f_area_l` tem chaves de
+sentido não observado), a formação complementar (o formulário de inclusão não
+tem os anos, e o passo depois de `FORM2` não foi observado), as atividades de
+uma atuação (o censo leu `pkg_ativ.cargo` sem natureza, e os campos de cada
+natureza não foram lidos), a disciplina e o treinamento (entram pela grade
+`f_espec_l` da atividade), a linha de pesquisa (link de inclusão não achado) e
+o financiador, a produção e a orientação do projeto (grades do formulário do
+projeto). O que falta ler para cada um está em
+`lattes-formularios/recaptura.md`.
 
 **Produções, eventos, orientações e bancas.** Todos vão pelo Importar hoje. A
 captura leu o formulário de inclusão de quase todos. Ficaram de fora o artigo

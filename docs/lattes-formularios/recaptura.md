@@ -65,7 +65,29 @@ await __lattesCensus.inspect(
     'pkg_revisor.lista?f_natur=MA',
     'pkg_revisor.lista?f_natur=RV',
     'pkg_revisor.lista?f_natur=RA',
+    // Licença: a máscara das datas.
+    'pkg_licenca.form',
+    // Áreas de atuação: a grade f_area_l.
+    'prc_area_atuacao',
+    // Projeto: as grades de financiadores, produções e orientações.
+    'PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=&f_cod_tipo=P',
+    // Formação complementar: o formulário de inclusão e a lista.
+    'PKG_FORMACAO_COMPL.form?f_tipo=FA',
+    'pkg_formacao_compl.lista',
+    // Linhas de pesquisa: a lista (o link de inclusão não foi achado).
+    'pkg_linhapesq.lista',
   ],
+  { redact, download: true },
+);
+
+// 3. As atividades de uma atuação, uma por natureza. Abra a tela "Cargos e
+//    vínculos" de uma atuação e copie, do link de "Incluir atividade", os
+//    valores de f_codinst e f_seq_ativ (ficam fora do arquivo baixado).
+const atuacao = 'f_codinst=<valor>&f_seq_ativ=<valor>';
+await __lattesCensus.inspect(
+  ['1', '2', '4', '5', '6', '7', '8', '9', 'B'].map(
+    (n) => `pkg_ativ.cargo?${atuacao}&f_natur_ativ=${n}`,
+  ),
   { redact, download: true },
 );
 ```
@@ -83,6 +105,13 @@ await __lattesCensus.inspect(
 | Prefácio, posfácio e outra produção bibliográfica | `links` de `prc_bib_demais_lista` e o `discovered` do passo 1 | os `f_cod_tipo` dos dois tipos e o procedimento de inclusão de cada um (depois, uma entrada nova no censo)                                                                                                                                                                                 |
 | Aperfeiçoamento                                   | a entrada `formacao-FA-X` do passo 1                          | os campos do nível X (no censo de 15/10/2026 deu "Failed to fetch")                                                                                                                                                                                                                        |
 | Elemento do XML do corpo editorial e da revisão   | `links` das quatro listas de `pkg_revisor`                    | se o currículo tem algum item desses: o link de edição de cada um. Com item, a passada de edição (`link()`) pode casar os campos com a exportação; sem item, só um teste acompanhado (incluir, exportar, comparar e excluir) diz que elemento ele grava, e isso escreve no currículo       |
+
+| Licença | scripts de `pkg_licenca.form` | a máscara ou a validação de `f_dta_inicio` e `f_dta_fim`, e o que `f_dta_nasc_adoc` exige |
+| Áreas de atuação | scripts de `prc_area_atuacao` | como `f_area_l` é montada: o sentido das chaves `r` e `p` de cada linha e se uma área nova vai com código |
+| Financiador, produção e orientação do projeto | scripts do formulário de projeto | como `f_inst_l` (quatro valores por linha), `f_producoes_l` e `f_orientacoes_l` são montados, e o que é cada valor |
+| Formação complementar | o formulário e a lista | o que `check()` faz antes de `FORM2` e se a lista mostra os anos; o passo depois de `FORM2` só aparece enviando, o que fica para um teste acompanhado |
+| Linha de pesquisa | `links` de `pkg_linhapesq.lista` e o `discovered` do passo 1 | o procedimento de inclusão da linha (provavelmente uma função da página, que os scripts mostram) |
+| Atividades de uma atuação | o lote 3, uma página por natureza | os campos de cada natureza (órgão, unidade, cargo, curso, especificação) e a grade `f_espec_l` de disciplinas e treinamentos: chaves e separadores |
 
 Depois de lido, o que virar fato vai para `docs/lattes_internals.md` (com a
 data) e para o código, e a linha sai desta lista.

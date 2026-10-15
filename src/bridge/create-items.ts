@@ -24,12 +24,26 @@ import { childElements, type XElement } from '../model/xml.ts';
 import type { FormSpec } from './contract.ts';
 import { CREATE_ATUACAO_SPEC } from './create.ts';
 import {
+  AP_LEVELS,
   applyCreateFormacao,
   CREATE_FORMACAO_SPEC,
   type CreateFormacaoOp,
   FORMATION_LEVELS,
   planCreateFormacao,
 } from './create-formacao.ts';
+import {
+  applyCreateGeneral,
+  applyCreateVinculo,
+  type CreateGeneralOp,
+  type CreateVinculoOp,
+  GENERAL_CREATES,
+  planCreateGeneral,
+} from './create-general.ts';
+import {
+  CREATE_DADO_SPEC,
+  CREATE_VINCULO_SPEC,
+  generalFormPath,
+} from './create-general-contract.ts';
 import {
   applyCreateProjeto,
   CREATE_PROJETO_SPEC,
@@ -51,9 +65,16 @@ import {
 import type { Planned } from './create-shared.ts';
 import { findLinks } from './lattes-html.ts';
 
-export { applyCreateFormacao, applyCreateProjeto, applyCreateRegistro };
+export {
+  applyCreateFormacao,
+  applyCreateGeneral,
+  applyCreateProjeto,
+  applyCreateRegistro,
+  applyCreateVinculo,
+};
 
-export type CreateItemOp = CreateFormacaoOp | CreateProjetoOp | CreateRegistroOp;
+export type CreateItemOp =
+  CreateFormacaoOp | CreateGeneralOp | CreateProjetoOp | CreateRegistroOp | CreateVinculoOp;
 
 /**
  * Os elementos que o conector sabe incluir (com a chave ligada): a atuação
@@ -64,9 +85,11 @@ export type CreateItemOp = CreateFormacaoOp | CreateProjetoOp | CreateRegistroOp
 export const CONNECTOR_CREATES: ReadonlySet<string> = new Set([
   'ATUACAO-PROFISSIONAL',
   ...Object.keys(FORMATION_LEVELS),
+  ...Object.keys(AP_LEVELS),
   'PROJETO-DE-PESQUISA',
   // A patente tem a operação, mas o planejamento sempre a manda à mão (create-registro.ts).
   ...Object.keys(REGISTRY_TYPES).filter((n) => n !== 'PATENTE'),
+  ...GENERAL_CREATES,
 ]);
 
 /**
@@ -82,6 +105,8 @@ export function planCreateItem(
   if (!el) return undefined;
   const registro = registryItem(el);
   if (registro) return planCreateRegistro(change, chain, registro, label);
+  const general = planCreateGeneral(change, chain, label);
+  if (general) return general;
   if (PROJECT_CARRIERS.has(el.name)) return planCreateProjeto(change, chain, label);
   if (chain.at(-2)?.name === 'FORMACAO-ACADEMICA-TITULACAO') {
     return planCreateFormacao(change, el, label);
@@ -106,6 +131,7 @@ export async function createFormPath(
   get: (path: string) => Promise<string>,
   menu: string,
 ): Promise<{ missing: string } | { path: string }> {
+  if (kind === 'criar-dado' || kind === 'criar-vinculo') return generalFormPath(kind, get, menu);
   if (kind === 'criar-registro') {
     // A cultivar registrada: o formulário do contrato (create-registro.ts).
     const lista = registryList(menu, 'CR');
@@ -131,7 +157,9 @@ export async function createFormPath(
 /** Os formulários de inclusão que o contrato confere com a chave ligada. */
 export const CREATE_SPECS: Record<'criar-atuacao' | CreateItemOp['kind'], FormSpec> = {
   'criar-atuacao': CREATE_ATUACAO_SPEC,
+  'criar-dado': CREATE_DADO_SPEC,
   'criar-formacao': CREATE_FORMACAO_SPEC,
   'criar-projeto': CREATE_PROJETO_SPEC,
   'criar-registro': CREATE_REGISTRO_SPEC,
+  'criar-vinculo': CREATE_VINCULO_SPEC,
 };

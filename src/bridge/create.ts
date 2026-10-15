@@ -62,6 +62,60 @@ const VINCULO_TEXT: Record<string, string> = {
 type Planned = CreateAtuacaoOp | { reason: string };
 
 /**
+ * Os campos do vínculo no formulário (GN_ATIV na inclusão da atuação,
+ * GN_ATIV_VINC na inclusão de um vínculo numa atuação que já existe, LAT-57).
+ * O formulário de vínculo novo não tem "Outras informações" em português,
+ * só em inglês (censo de 15/10/2026): com `vinculo`, o texto em português vai
+ * à mão, e o em inglês e o enquadramento em inglês entram.
+ */
+export function vinculoFields(
+  v: XElement,
+  vinculo: boolean,
+): { reason: string } | { set: FieldValues } {
+  const ano = getAttr(v, 'ANO-INICIO');
+  if (!ano) return { reason: 'O vínculo precisa do ano de início' };
+  const outro = getAttr(v, 'OUTRO-VINCULO-INFORMADO');
+  const tipo = getAttr(v, 'TIPO-DE-VINCULO') ?? '';
+  const vinc = outro || VINCULO_TEXT[tipo];
+  if (!vinc) return { reason: `Tipo de vínculo ainda não mapeado: ${tipo || 'vazio'}` };
+  if (
+    getAttr(v, 'ENQUADRAMENTO-FUNCIONAL') &&
+    !getAttr(v, 'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO')
+  ) {
+    return { reason: 'Enquadramento da lista do Lattes ainda não mapeado; use o texto livre' };
+  }
+  if (vinculo && getAttr(v, 'OUTRAS-INFORMACOES')?.trim()) {
+    return {
+      reason: 'O formulário de vínculo novo não tem "Outras informações" em português: vai à mão',
+    };
+  }
+  const anoFim = getAttr(v, 'ANO-FIM') ?? '';
+  const set: FieldValues = {
+    f_ano_fim: anoFim,
+    f_ano_ini: ano,
+    f_carga: getAttr(v, 'CARGA-HORARIA-SEMANAL') ?? '',
+    f_enqua: getAttr(v, 'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO') ?? '',
+    f_mes_fim: getAttr(v, 'MES-FIM') ?? '',
+    f_mes_ini: getAttr(v, 'MES-INICIO') ?? '',
+    // Caixa com valor 3: marcada = dedicação exclusiva (como na alteração).
+    f_regime: getAttr(v, 'FLAG-DEDICACAO-EXCLUSIVA') === 'SIM' ? '3' : null,
+    f_status: anoFim ? 'N' : 'S',
+    // Invertido em relação ao XML (vinculo-flag.ts).
+    f_stavinc: stavincFromFlag(getAttr(v, 'FLAG-VINCULO-EMPREGATICIO')),
+    f_vinc: vinc,
+    // check() copia o texto de f_vinc para f_vinculo antes do envio.
+    f_vinculo: vinc,
+  };
+  if (vinculo) {
+    set.f_enqua_en = getAttr(v, 'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO-INGLES') ?? '';
+    set.f_outras_inf_en = getAttr(v, 'OUTRAS-INFORMACOES-INGLES') ?? '';
+  } else {
+    set.f_outras_inf = getAttr(v, 'OUTRAS-INFORMACOES') ?? '';
+  }
+  return { set };
+}
+
+/**
  * Uma atuação nova do editor como operação de inclusão. Só com exatamente
  * um vínculo, com instituição codificada (veio da busca do Lattes) e com os
  * campos que o formulário de inclusão tem.
@@ -85,37 +139,9 @@ export function planCreateAtuacao(change: Change, el: XElement, label: string): 
       reason: 'A atuação nova tem atividades ou projetos: inclua a atuação primeiro, à mão',
     };
   }
-  const v = vinculos[0]!;
-  const ano = getAttr(v, 'ANO-INICIO');
-  if (!ano) return { reason: 'O vínculo precisa do ano de início' };
-  const outro = getAttr(v, 'OUTRO-VINCULO-INFORMADO');
-  const tipo = getAttr(v, 'TIPO-DE-VINCULO') ?? '';
-  const vinc = outro || VINCULO_TEXT[tipo];
-  if (!vinc) return { reason: `Tipo de vínculo ainda não mapeado: ${tipo || 'vazio'}` };
-  if (
-    getAttr(v, 'ENQUADRAMENTO-FUNCIONAL') &&
-    !getAttr(v, 'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO')
-  ) {
-    return { reason: 'Enquadramento da lista do Lattes ainda não mapeado; use o texto livre' };
-  }
-  const anoFim = getAttr(v, 'ANO-FIM') ?? '';
-  const set: FieldValues = {
-    f_ano_fim: anoFim,
-    f_ano_ini: ano,
-    f_carga: getAttr(v, 'CARGA-HORARIA-SEMANAL') ?? '',
-    f_enqua: getAttr(v, 'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO') ?? '',
-    f_mes_fim: getAttr(v, 'MES-FIM') ?? '',
-    f_mes_ini: getAttr(v, 'MES-INICIO') ?? '',
-    f_outras_inf: getAttr(v, 'OUTRAS-INFORMACOES') ?? '',
-    // Caixa com valor 3: marcada = dedicação exclusiva (como na alteração).
-    f_regime: getAttr(v, 'FLAG-DEDICACAO-EXCLUSIVA') === 'SIM' ? '3' : null,
-    f_status: anoFim ? 'N' : 'S',
-    // Invertido em relação ao XML (vinculo-flag.ts).
-    f_stavinc: stavincFromFlag(getAttr(v, 'FLAG-VINCULO-EMPREGATICIO')),
-    f_vinc: vinc,
-    // check() copia o texto de f_vinc para f_vinculo antes do envio.
-    f_vinculo: vinc,
-  };
+  const fields = vinculoFields(vinculos[0]!, false);
+  if ('reason' in fields) return fields;
+  const { set } = fields;
   return {
     expect: {},
     institutionCode,

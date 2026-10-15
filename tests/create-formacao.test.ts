@@ -121,7 +121,17 @@ describe('planejar a inclusão de uma formação', () => {
     const base = 'CODIGO-INSTITUICAO="1" NOME-INSTITUICAO="U" ANO-DE-INICIO="2009"';
     const reason = (attrs: string, name = 'MESTRADO', children = '') =>
       (plan(attrs, name, children) as { reason: string }).reason;
-    expect(reason(base, 'POS-DOUTORADO')).toMatch(/combo|Incluir novo item/);
+    // Pós-doutorado e livre-docência entram pela lista f_tipo=AP (LAT-57).
+    expect(plan(base, 'POS-DOUTORADO')).toMatchObject({ kind: 'criar-formacao', level: '5' });
+    expect(reason('CODIGO-INSTITUICAO="1" NOME-INSTITUICAO="U"', 'LIVRE-DOCENCIA')).toMatch(
+      /ano de obtenção/,
+    );
+    expect(
+      plan(
+        'CODIGO-INSTITUICAO="1" NOME-INSTITUICAO="U" ANO-DE-OBTENCAO-DO-TITULO="2015" TITULO-DO-TRABALHO="Tese"',
+        'LIVRE-DOCENCIA',
+      ),
+    ).toMatchObject({ level: '6', set: { f_ano_obten: '2015', f_titulo: 'Tese' } });
     expect(reason('NOME-INSTITUICAO="U" ANO-DE-INICIO="2009"')).toMatch(/busca de instituições/);
     expect(reason(`${base} NOME-CURSO="Biologia"`)).toMatch(/lista de cursos/);
     expect(reason(`${base} FLAG-BOLSA="SIM" NOME-AGENCIA="CNPq"`)).toMatch(/lista de agências/);
@@ -150,8 +160,8 @@ describe('planejar a inclusão de uma formação', () => {
     expect(planCreateItem(change(), [patente], 'Patente')).toEqual({
       reason: expect.stringMatching(/A patente vai à mão/),
     });
-    const idioma = parseXml('<IDIOMA IDIOMA="EN"/>').root;
-    expect(planCreateItem(change(), [idioma], 'Idioma')).toBeUndefined();
+    const resumo = parseXml('<RESUMO-CV TEXTO-RESUMO-CV-RH="x"/>').root;
+    expect(planCreateItem(change(), [resumo], 'Resumo')).toBeUndefined();
     expect(planCreateItem(change(), [], 'Nada')).toBeUndefined();
   });
 });
