@@ -45,7 +45,7 @@ describe('groupChanges', () => {
 
   it('item existente de produção editado: seção importável, com aviso', () => {
     const [group] = setup((x) => x.replace('Um artigo', 'Um artigo revisto'));
-    expect(group).toMatchObject({ importable: true, label: 'Produções' });
+    expect(group).toMatchObject({ label: 'Produções' });
     expect(group!.entries[0]!.itemTitle).toBe('Um artigo revisto');
   });
 

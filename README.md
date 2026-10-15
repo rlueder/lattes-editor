@@ -109,7 +109,7 @@ até você clicar no olho, ao lado do título.
 ## Extensão do conector
 
 A extensão para Chrome e Brave é o que deixa o app abrir o currículo do Lattes
-e enviar as alterações sem copiar à mão. Ela trabalha na aba do Lattes em que
+e enviar as alterações direto ao Lattes. Ela trabalha na aba do Lattes em que
 você já está logado; nenhuma senha passa por ela nem pelo app. Cada alteração
 é gravada, lida de volta e conferida, e a fila para no primeiro problema.
 

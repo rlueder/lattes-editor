@@ -44,7 +44,7 @@ export function SendConfirm({
             {isDeleteOp(op) && (
               <p className="send-delete">
                 O item sai do Lattes, e o Lattes não tem como desfazer. Para voltar, só incluindo de
-                novo, à mão.
+                novo no Lattes.
               </p>
             )}
             <dl>

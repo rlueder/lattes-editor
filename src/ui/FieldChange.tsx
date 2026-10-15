@@ -13,27 +13,16 @@ function isLong(text: string): boolean {
   return text.length > LONG_TEXT || text.includes('\n');
 }
 
-/** O valor, com o copiar ao lado; no texto longo, o copiar vai na linha do "mostrar tudo". */
-function Value({ extra, text }: { extra?: ReactNode; text: string }) {
+function Value({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   if (!text) return <span className="fc-empty">(vazio)</span>;
-  if (!isLong(text)) {
-    return (
-      <>
-        <span className="fc-text">{text}</span>
-        {extra}
-      </>
-    );
-  }
+  if (!isLong(text)) return <span className="fc-text">{text}</span>;
   return (
     <>
       <span className={`fc-text${open ? '' : ' is-clamped'}`}>{text}</span>
-      <span className="fc-foot">
-        <button className="fc-more" type="button" onClick={() => setOpen(!open)}>
-          {open ? 'mostrar menos' : 'mostrar tudo'}
-        </button>
-        {extra}
-      </span>
+      <button className="fc-more" type="button" onClick={() => setOpen(!open)}>
+        {open ? 'mostrar menos' : 'mostrar tudo'}
+      </button>
     </>
   );
 }
@@ -43,7 +32,6 @@ export function FieldChange({
   after,
   before,
   captions = false,
-  copy,
   label,
 }: {
   /** Ações do campo (descartar), à mostra no passar do mouse ou com foco. */
@@ -53,8 +41,6 @@ export function FieldChange({
   before?: string;
   /** "Antes" e "Depois" à vista: no primeiro campo de cada item. */
   captions?: boolean;
-  /** Botão de copiar o valor novo. */
-  copy?: ReactNode;
   label: string;
 }) {
   const two = before !== undefined;
@@ -76,9 +62,7 @@ export function FieldChange({
         )}
         <div className="fc-col fc-after">
           {two && caption('Depois')}
-          <span className="fc-value">
-            <Value extra={copy} text={after} />
-          </span>
+          <Value text={after} />
         </div>
         {actions && <div className="fc-actions">{actions}</div>}
       </div>

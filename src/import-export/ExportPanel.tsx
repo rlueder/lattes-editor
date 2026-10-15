@@ -1,8 +1,9 @@
 // "Enviar ao Lattes": o que espera ir ao Lattes e o que já foi, em duas abas.
 // "A enviar" é uma lista só, com itens novos e alterações, e cada coisa diz como
 // vai hoje: pelo conector (a extensão grava e confere), pelo Importar (no
-// arquivo de importação, com os passos na tela) ou à mão (copiar no formulário
-// do Lattes). O objetivo é que tudo vá sozinho; sem nada à mão, essa parte some.
+// arquivo de importação, com os passos na tela) ou ainda não ("Não enviado":
+// o editor ainda não leva). O objetivo é que tudo vá sozinho; sem nada
+// pendente, essa parte some.
 // "Enviado" é o registro do que o conector gravou.
 // As instruções do Importar importam tanto quanto o arquivo (guia, seção 6): o
 // Lattes pré-marca tudo nos Passos 2 e 3, e confirmar um item vermelho duplica.
@@ -28,7 +29,6 @@ import {
   type ImportAttempt,
   importStatus,
 } from './import-request.ts';
-import { RouteTag } from './RouteTag.tsx';
 import {
   initialTab,
   listenTabRequests,
@@ -173,10 +173,7 @@ export function ExportPanel({
             <>
               {bridge && (routed.conector.length > 0 || bridge.confirmed > 0) && (
                 <section className="panel-section">
-                  <h3 className="panel-section-head">
-                    <RouteTag route="conector" />
-                    Gravado pela extensão, conferindo cada um
-                  </h3>
+                  <h3 className="panel-section-head">Pela extensão, conferindo cada um</h3>
                   <BridgeBlock bridge={bridge} />
                   {routed.conector.length > 0 && (
                     <ChangesList
@@ -190,10 +187,7 @@ export function ExportPanel({
 
               {pending.length > 0 && (
                 <section className="panel-section">
-                  <h3 className="panel-section-head">
-                    <RouteTag route="importar" />
-                    Itens novos, no arquivo de importação
-                  </h3>
+                  <h3 className="panel-section-head">Itens novos, no arquivo de importação</h3>
                   <ul className="pending-list">
                     {pending.map((p) => (
                       <li key={p.sequencia}>
@@ -235,19 +229,13 @@ export function ExportPanel({
                 </section>
               )}
 
-              {routed.mao.length > 0 && (
+              {routed.pendente.length > 0 && (
                 <section className="panel-section">
-                  <h3 className="panel-section-head">
-                    <RouteTag route="mao" />
-                    Copiar no formulário do Lattes
+                  <h3 className="panel-section-head" title="O editor ainda não envia estes">
+                    Não enviado
                   </h3>
-                  <p className="muted changes-how">
-                    O editor ainda não grava estes campos sozinho. Copie cada valor no formulário do
-                    Lattes; depois use &quot;Recarregar do Lattes&quot; e o que já estiver lá some
-                    desta lista.
-                  </p>
                   <ChangesList
-                    groups={routed.mao}
+                    groups={routed.pendente}
                     onDiscard={onDiscard}
                     onDiscardField={onDiscardField}
                   />

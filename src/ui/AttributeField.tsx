@@ -14,7 +14,6 @@ import {
 } from '../schema/typed-choices.ts';
 import type { AttributeSpec } from '../schema/types.ts';
 import { parseEmails, parseSocial } from './contacts.ts';
-import { CopyButton } from './CopyButton.tsx';
 import { DateField } from './DateField.tsx';
 import { useDraft, usePartKey } from './draft-context.ts';
 import {
@@ -42,8 +41,6 @@ import { YearField } from './YearField.tsx';
 export type EditFn = (note: string) => void;
 
 interface Props {
-  /** Mostra o botão "copiar" do valor, para colar no formulário do Lattes. */
-  copyable?: boolean;
   el: XElement;
   /** Mensagem de validação mostrada sob o campo. */
   error?: string;
@@ -62,7 +59,6 @@ interface Props {
 }
 
 export function AttributeField({
-  copyable,
   el,
   error,
   label,
@@ -132,7 +128,6 @@ export function AttributeField({
                 <span className="field-copy-row">
                   <span className="contact-value">{c.email}</span>
                   {c.address && <span className="muted contact-kind">{c.address}</span>}
-                  <CopyButton label={text} value={c.email} />
                 </span>
               </li>
             ))}
@@ -143,7 +138,6 @@ export function AttributeField({
                     {c.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
                   </a>
                   <span className="muted contact-kind">{c.name}</span>
-                  <CopyButton label={c.name} value={c.url} />
                 </span>
               </li>
             ))}
@@ -172,7 +166,6 @@ export function AttributeField({
         lists={lists}
         onChanged={() => onEdit(`${elementLabel(el.name)} · ${text}`)}
       />,
-      { copy: copyable },
     );
   }
 
@@ -182,10 +175,7 @@ export function AttributeField({
     return (
       <div className="field field-readonly field-locked">
         <ReadonlyLabel text={text} why="Escolhido numa lista do Lattes; muda junto com o código" />
-        <span className="field-copy-row">
-          <span className="locked-value">{value || '(vazio)'}</span>
-          {copyable && <CopyButton label={text} value={value} />}
-        </span>
+        <span className="locked-value">{value || '(vazio)'}</span>
       </div>
     );
   }
@@ -211,15 +201,12 @@ export function AttributeField({
     return (
       <div className="field field-readonly">
         <ReadonlyLabel text={text} why="Gerado pelo Lattes; não se edita aqui" />
-        <span className="field-copy-row">
-          <span className="readonly-value">
-            {value
-              ? dateAttr
-                ? displayLattesDate(value)
-                : codeValueLabel(el.name, name, value)
-              : '(vazio)'}
-          </span>
-          {copyable && <CopyButton label={text} value={value} />}
+        <span className="readonly-value">
+          {value
+            ? dateAttr
+              ? displayLattesDate(value)
+              : codeValueLabel(el.name, name, value)
+            : '(vazio)'}
         </span>
       </div>
     );
@@ -339,15 +326,15 @@ export function AttributeField({
     );
   }
 
-  return wrap(control, { copy: copyable && !boolean, textarea });
+  return wrap(control, { textarea });
 
   /**
-   * O campo com rótulo, marca de obrigatório, botão de copiar, correção de
+   * O campo com rótulo, marca de obrigatório, correção de
    * texto estragado e erro. Só usa o que já está definido no começo do
    * componente: é chamado também antes do resto (listas do conector).
    */
-  function wrap(control: ReactNode, opts: { copy?: boolean; textarea?: boolean } = {}) {
-    const { copy = false, textarea = false } = opts;
+  function wrap(control: ReactNode, opts: { textarea?: boolean } = {}) {
+    const { textarea = false } = opts;
     return (
       <div
         className={`field${wide || prominent || textarea ? ' field-wide' : ''}${prominent ? ' field-prominent' : ''}${shownError ? ' has-error' : ''}`}
@@ -367,14 +354,7 @@ export function AttributeField({
             </span>
           )}
         </label>
-        {copy ? (
-          <span className="field-copy-row">
-            {control}
-            <CopyButton label={text} value={value} />
-          </span>
-        ) : (
-          control
-        )}
+        {control}
         {repaired !== undefined && (
           <span className="field-note">
             Texto estragado no próprio Lattes (acentos ou &quot;aspas&quot;).{' '}

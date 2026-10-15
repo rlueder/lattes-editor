@@ -1,12 +1,11 @@
-// Lista "Alterações a enviar ao Lattes": o que mudou e o Importar não leva,
-// agrupado por seção do Lattes, com antes e depois, botão de copiar por campo
-// e marcação de feito. No desenho do ⌘K: títulos de grupo, linhas sem caixa,
-// fios entre os itens; o caminho (à mão, extensão) fica uma vez, no título da
-// parte do painel, e não em cada item.
+// Lista "Alterações a enviar ao Lattes": o que mudou nas seções e nos itens
+// que já estão no Lattes, agrupado por seção, com antes e depois e o
+// descartar por campo. No desenho do ⌘K: títulos de grupo, linhas sem caixa,
+// fios entre os itens; o caminho (extensão, não enviado) fica uma vez, no
+// título da parte do painel, e não em cada item.
 
 import { elementLabel } from '../labels/labels.ts';
 import type { ChangeEntry, ChangeGroup } from './changes-view.ts';
-import { CopyButton } from './CopyButton.tsx';
 import { displayValue } from './display.ts';
 import { FieldChange } from './FieldChange.tsx';
 import { TrashIcon } from './icons.tsx';
@@ -24,7 +23,7 @@ export function ChangesList({ groups, onDiscard, onDiscardField }: Props) {
   if (groups.length === 0) {
     return (
       <p className="empty">
-        Nada a copiar à mão. Mudanças em Dados gerais, Formação, Atuação e em itens que já estão no
+        Nenhuma alteração. Mudanças em Dados gerais, Formação, Atuação e em itens que já estão no
         Lattes aparecem aqui.
       </p>
     );
@@ -33,15 +32,7 @@ export function ChangesList({ groups, onDiscard, onDiscardField }: Props) {
     <div className="changes">
       {groups.map((g) => (
         <section key={g.label} className="changes-group">
-          <h3>
-            {g.label}
-            {g.importable && (
-              <span className="muted changes-note">
-                {' '}
-                · o Importar não altera itens que já estão no Lattes
-              </span>
-            )}
-          </h3>
+          <h3>{g.label}</h3>
           <ul>
             {g.entries.map((entry) => {
               const { change } = entry;
@@ -85,10 +76,6 @@ export function ChangesList({ groups, onDiscard, onDiscardField }: Props) {
                           after={after}
                           before={change.kind === 'alterado' ? show(f.before) : undefined}
                           captions={i === 0}
-                          copy={
-                            change.kind !== 'removido' &&
-                            after && <CopyButton label={f.label} value={after} />
-                          }
                           label={f.label}
                         />
                       );

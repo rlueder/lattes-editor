@@ -1,30 +1,23 @@
 // Como cada coisa vai ao Lattes hoje, para a aba "A enviar" do painel Enviar ao
 // Lattes: pelo conector (a extensão grava e confere), pelo Importar (vai no
-// arquivo de importação) ou à mão (a pessoa copia no formulário do Lattes). O
-// objetivo é que tudo vá sozinho; enquanto houver o que vai à mão, a lista diz
-// o quê, e sem nada à mão essa parte some.
+// arquivo de importação) ou ainda não (o editor ainda não sabe levar; fica na
+// lista, em "Não enviado", e dá para descartar). O objetivo é que tudo vá
+// sozinho; sem nada pendente, essa parte some.
 
 import type { ChangeGroup } from '../ui/changes-view.ts';
 import { changeCount } from '../ui/changes-view.ts';
-
-export type SendRoute = 'conector' | 'importar' | 'mao';
-
-export const ROUTE_LABEL: Record<SendRoute, string> = {
-  conector: 'conector',
-  importar: 'Importar',
-  mao: 'à mão',
-};
 
 export type PanelTab = 'a-enviar' | 'enviado';
 
 /**
  * Separa as alterações entre as que o conector sabe gravar (as chaves da fila
- * planejada) e as que ficam à mão, mantendo os grupos por seção e a ordem.
+ * planejada) e as que o editor ainda não envia, mantendo os grupos por seção
+ * e a ordem.
  */
 export function splitByRoute(
   groups: ChangeGroup[],
   connectorKeys: ReadonlySet<string>,
-): { conector: ChangeGroup[]; mao: ChangeGroup[] } {
+): { conector: ChangeGroup[]; pendente: ChangeGroup[] } {
   const pick = (byConnector: boolean) =>
     groups
       .map((g) => ({
@@ -32,7 +25,7 @@ export function splitByRoute(
         entries: g.entries.filter((e) => connectorKeys.has(e.change.key) === byConnector),
       }))
       .filter((g) => g.entries.length > 0);
-  return { conector: pick(true), mao: pick(false) };
+  return { conector: pick(true), pendente: pick(false) };
 }
 
 /** Quantas coisas esperam ir ao Lattes: itens novos mais alterações. */

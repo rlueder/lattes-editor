@@ -60,10 +60,10 @@ export const UNDO_KEY_PREFIX = 'desfazer:';
  */
 export function noUndoReason(op: BridgeOp): string | undefined {
   if (op.kind.startsWith('criar-')) {
-    return 'Item criado pelo conector: para tirar, exclua no Lattes, à mão';
+    return 'Item criado pelo conector: para tirar, exclua no próprio Lattes';
   }
   if (isDeleteOp(op)) {
-    return 'Exclusão: o Lattes não tem como desfazer; para voltar, inclua o item de novo no Lattes, à mão';
+    return 'Exclusão: o Lattes não tem como desfazer; para voltar, inclua o item de novo no próprio Lattes';
   }
   return undefined;
 }

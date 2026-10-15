@@ -229,8 +229,8 @@ e não como acabamento.
 - Meta de acessibilidade: WCAG 2.1 nível AA, e conferir o que o eMAG
   (modelo de acessibilidade do governo federal) acrescenta.
 - Todo controle alcançável e operável só pelo teclado, com foco visível.
-  Nada de ação que só exista no passar do mouse (o botão de copiar hoje
-  aparece no hover; precisa aparecer também no foco, e no toque).
+  Nada de ação que só exista no passar do mouse (o descartar dos campos
+  alterados aparece no hover, e também no foco e no toque).
 - Contraste AA nos dois temas, inclusive no cinza secundário que a
   escala nova usa mais.
 - Alvos de toque de pelo menos 24px (AA), e 44px no celular, onde a

@@ -2,7 +2,7 @@
 // vez), atuação profissional com o primeiro vínculo, projeto e patente. Segue
 // o "Novo item" de produção (ProductionForm): trabalha sobre uma cópia e nada
 // entra no documento até "Salvar". O Importar não leva estas seções; o item
-// vai ao Lattes pela lista "Enviar ao Lattes" (conector ou à mão).
+// vai ao Lattes pela lista "Enviar ao Lattes" (pela extensão, quando ela souber).
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
@@ -335,9 +335,7 @@ export function GeneralItemForm({
               </ul>
             </details>
           ) : (
-            <span className="form-ok">
-              Pronto. Vai ao Lattes pela lista de alterações, não pelo Importar.
-            </span>
+            <span className="form-ok">Pronto. Vai ao Lattes por &quot;Enviar ao Lattes&quot;.</span>
           )}
           <span className="form-actions">
             <Tip label="⌘Enter">

@@ -1467,7 +1467,7 @@ a.menu-item.notice {
   font-size: 13px;
 }
 
-/* Copiar valor */
+/* Valor e o que vai ao lado dele, numa linha (contatos, endereço do currículo). */
 
 .field-copy-row {
   display: flex;
@@ -1496,17 +1496,6 @@ a.menu-item.notice {
 .copy-btn {
   padding: 4px 6px;
   color: var(--muted);
-}
-
-.field .copy-btn {
-  opacity: 0;
-  transition: opacity var(--dur-fast) var(--ease-out);
-}
-
-.field:hover .copy-btn,
-.field:focus-within .copy-btn,
-.field .copy-btn:focus-visible {
-  opacity: 1;
 }
 
 .copy-btn:disabled {
@@ -6048,38 +6037,6 @@ button.ghost.icon {
   outline: none;
 }
 
-/* Selo de como cada coisa vai: conector (azul), Importar (neutro), à mão (aviso). */
-.route-tag {
-  display: inline-flex;
-  align-items: center;
-  height: 20px;
-  padding: 0 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 550;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-}
-
-.route-conector {
-  background: var(--accent-soft);
-  color: var(--accent-text);
-}
-
-.route-importar {
-  background: var(--surface-2);
-  color: var(--text);
-}
-
-.route-mao {
-  background: var(--warn-bg);
-  color: var(--warn-text);
-}
-
-.panel-section-head .route-tag {
-  margin-right: 2px;
-}
-
 /* Registro do enviado: rótulo em cima, valor de antes riscado e o de depois
    logo abaixo, com respiro entre um campo e outro. */
 .sent-list > li {
@@ -7134,10 +7091,8 @@ main.content {
 /* Lista "Enviar ao Lattes" no desenho do ⌘K: os grupos (Dados gerais,
    Formação) com o título dos grupos da paleta, cada alteração numa linha sem
    caixa, com fio fino entre uma e a próxima. O título do item manda; o tipo
-   da mudança é uma palavra discreta, e o caminho (à mão) fica uma vez, no
-   título da parte. Nos campos: rótulo, valor antigo riscado e apagado, valor
-   novo em texto, com o copiar ao lado; descartar aparece ao passar o mouse
-   ou com o foco na linha. */
+   da mudança é um selo ao lado dele, e o caminho fica uma vez, no título da
+   parte. Descartar aparece ao passar o mouse ou com o foco na linha. */
 .changes {
   margin: 0;
 }
@@ -7179,18 +7134,30 @@ main.content {
   font-weight: 550;
 }
 
+/* O tipo da mudança, num selo em pílula: alterado (azul claro), incluir
+   (azul) e excluir (aviso), o mesmo conjunto em todas as listas. */
 .change-kind {
+  display: inline-flex;
   flex: none;
-  color: var(--muted);
-  font-size: 12px;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .change-kind.kind-novo {
-  color: var(--accent-text);
+  background: var(--accent-soft-strong);
 }
 
 .change-kind.kind-removido {
-  color: var(--danger);
+  background: var(--warn-bg);
+  color: var(--warn-text);
 }
 
 /* Descartar: só ao passar o mouse na linha ou com o foco nela (o botão
@@ -7304,8 +7271,8 @@ main.content {
   text-transform: uppercase;
 }
 
-.fc-before > .fc-more,
-.fc-before .fc-foot {
+.fc-more {
+  display: block;
   margin-top: 2px;
 }
 
@@ -7329,36 +7296,6 @@ main.content {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
   line-clamp: 4;
-}
-
-.fc-value {
-  display: block;
-}
-
-.fc-value .copy-btn {
-  width: 20px;
-  height: 20px;
-  margin-left: 4px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  vertical-align: middle;
-}
-
-.fc-value .copy-btn:hover {
-  color: var(--accent-text);
-}
-
-.fc-foot {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 2px;
-}
-
-.fc-foot .copy-btn {
-  margin-left: 0;
 }
 
 .fc-more {

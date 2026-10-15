@@ -112,25 +112,25 @@ que o painel "Enviar ao Lattes" mostra item por item:
   que o formulário está como o editor espera; depois, lê de novo e confere que
   só os campos da operação mudaram. Formação, endereço e identificação têm as
   operações em `src/bridge/biographic.ts`, desligadas até o teste no Lattes
-  real (`BIOGRAPHIC_OPS_ENABLED`); enquanto isso, seguem à mão.
+  real (`BIOGRAPHIC_OPS_ENABLED`); enquanto isso, ficam em "Não enviado".
 - **Item removido no editor** pode ir pela extensão com
   `src/bridge/delete.ts`, que posta o formulário de edição do item com
   `f_ctr=E`, como o botão "Excluir" do Lattes, e confere lendo a lista de
   novo (o item sumiu, nada mais mudou), sem depender da resposta do Lattes.
   Hoje só idioma e vínculo, e desligado (`DELETE_ITEMS_ENABLED`) até um teste
-  acompanhado; desligado, a remoção fica à mão. A atuação inteira e as
-  formações ficam sempre à mão: a primeira apaga em cascata, e excluir uma
+  acompanhado; desligado, a remoção fica em "Não enviado". A atuação inteira
+  e as formações não vão pela extensão: a primeira apaga em cascata, e excluir uma
   formação pode tornar outra pública. Uma exclusão não tem "Desfazer no
   Lattes" no registro do enviado.
-- **O resto** fica **à mão**, campo a campo, com o valor antigo e o novo lado a
-  lado.
+- **O resto** fica em **"Não enviado"**, campo a campo, com o valor antigo e o
+  novo lado a lado, até o editor saber levar; dá para descartar.
 
 Formação acadêmica, atuação profissional, projeto e patente também se criam no
 editor (`src/model/general-items.ts`, formulário em
 `src/forms/GeneralItemForm.tsx`), mas nenhum módulo do Importar lê essas
 seções. O item novo é uma alteração como as outras: o conector o inclui quando
 souber (a inclusão de atuação existe em `src/bridge/create.ts`, desligada), e
-fora isso ele vai à mão. Por isso "item novo de produção" quer dizer item com
+fora isso fica em "Não enviado". Por isso "item novo de produção" quer dizer item com
 `SEQUENCIA-PRODUCAO` nova **e** tipo que um módulo do Importar lê
 (`isPendingImport`, em `src/model/production.ts`): a patente usa o contador
 global, mas não vai pelo Importar. As sequências biográficas
@@ -144,10 +144,10 @@ pode ir pelo conector, no próprio formulário do evento
 `SEQUENCIA-PRODUCAO`, e a operação confere antes que o formulário é de
 ouvinte, do mesmo tipo de evento e com o mesmo ano ou nome. Vão título, ano,
 país, home page, divulgação científica, título em inglês e nome do evento.
-Ficam à mão os eventos de convidado e participante, a forma, o tipo, a
+Não vão pela extensão os eventos de convidado e participante, a forma, o tipo, a
 natureza, a cidade e o que o formulário não tem (idioma, palavras-chave,
 áreas). O caminho está desligado (`EDIT_ITEMS_ENABLED` em `false`) até um
-teste acompanhado num Lattes real; desligado, o evento segue à mão e o
+teste acompanhado num Lattes real; desligado, o evento fica em "Não enviado" e o
 contrato não confere o formulário.
 
 A decisão de 13/10/2026 sobre duplicatas (só o que é novo vai pelo Importar;
