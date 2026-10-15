@@ -9,7 +9,7 @@ import { BIOGRAPHIC_OPS_ENABLED, type BiographicOp, planBiographic } from './bio
 import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
 import { type CreateItemOp, planCreateItem } from './create-items.ts';
 import { DELETE_ITEMS_ENABLED, type DeleteOp, planDelete } from './delete.ts';
-import { EDIT_ITEMS_ENABLED, type EventoOp, planEvento } from './edit-items.ts';
+import { EDIT_OUVINTE_ENABLED, type EventoOp, planEvento } from './edit-items.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
 import { stavincFromFlag } from './vinculo-flag.ts';
 
@@ -56,12 +56,28 @@ export type BridgeOp =
   | ResumoOp
   | VinculoOp;
 
-/** Chaves das operações que ainda não foram testadas num Lattes real. */
+/** Chaves das operações que dependem de teste num Lattes real ou da versão da extensão. */
 export interface PlanOptions {
   biographicOps?: boolean;
   createItems?: boolean;
   deleteItems?: boolean;
-  editItems?: boolean;
+  /**
+   * Alteração de evento de ouvinte (edit-items.ts). Sem valor, fica
+   * desligada: só planOptionsFor liga, com as capacidades da extensão. Assim,
+   * esquecer as opções deixa o evento à mão, em vez de mandá-lo a uma
+   * extensão que gravaria sem conferir.
+   */
+  editOuvinte?: boolean;
+}
+
+/**
+ * As chaves do plano para a extensão ligada: a alteração de evento de ouvinte
+ * só vai a uma extensão que anuncia 'alterar-evento' (compat.ts), porque uma
+ * mais antiga não tem o formulário de eventos no contrato e gravaria sem
+ * conferir. Sem ela, essas mudanças ficam à mão.
+ */
+export function planOptionsFor(features: readonly string[]): PlanOptions {
+  return { editOuvinte: EDIT_OUVINTE_ENABLED && features.includes('alterar-evento') };
 }
 
 export interface Unsupported {
@@ -155,7 +171,7 @@ export function planChange(
     biographicOps = BIOGRAPHIC_OPS_ENABLED,
     createItems = CREATE_ITEMS_ENABLED,
     deleteItems = DELETE_ITEMS_ENABLED,
-    editItems = EDIT_ITEMS_ENABLED,
+    editOuvinte = false,
   }: PlanOptions = {},
 ): BridgeOp | Unsupported {
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.
@@ -240,8 +256,8 @@ export function planChange(
   if (biographic) {
     return 'reason' in biographic ? unsupported(change, label, biographic.reason) : biographic;
   }
-  // Participação em eventos: desligada até o teste no Lattes real (edit-items.ts).
-  const evento = editItems ? planEvento(change, chain, label) : undefined;
+  // Participação em eventos como ouvinte (edit-items.ts), testada no Lattes real em 14/10/2026.
+  const evento = editOuvinte ? planEvento(change, chain, label) : undefined;
   if (evento) return 'reason' in evento ? unsupported(change, label, evento.reason) : evento;
 
   return unsupported(change, label, 'Formulário não suportado ainda');

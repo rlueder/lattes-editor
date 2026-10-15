@@ -1,19 +1,23 @@
 // Alterar no lugar um item de produção que já está no Lattes (LAT-51). Por
-// enquanto só a participação em eventos, pelo formulário GN_TEC
+// enquanto só a participação em eventos como ouvinte, pelo formulário GN_TEC
 // (PKG_EVENTO.form, POST PKG_EVENTO.FORM), cujos campos estão em
 // docs/lattes_internals.md, seção 16. Segue o caminho do vínculo e do idioma:
 // a operação traz o "antes" de cada campo (expect) e o valor novo (set), e
 // apply.ts acha o formulário, confere, envia só esses campos trocados e lê de
 // volta.
 //
-// DESLIGADO: nenhuma alteração de evento foi enviada a um Lattes de verdade.
-// O formulário foi lido só por GET. Que f_seq seja o SEQUENCIA-PRODUCAO do
-// XML e que F_FORMA e F_COD_PROD correspondam à forma e ao elemento é
-// inferido; por isso os dois entram na conferência do "antes", e um palpite
-// errado faz a operação parar sem enviar nada. A chave só liga depois de um
-// teste acompanhado, no currículo do dono, com restauração. Quando ligar, o
-// app e a extensão precisam ser da mesma versão: uma extensão antiga não
-// conhece a operação e responde com erro, sem gravar.
+// LIGADO desde o teste acompanhado de 14/10/2026, no currículo do dono: um
+// evento de ouvinte de teste alterado por POST direto ao PKG_EVENTO.FORM,
+// com a resposta de sucesso, a releitura (só f_titulo mudou) e a pendência
+// acesa no menu (seção 16). Que F_FORMA e F_COD_PROD correspondam à forma e
+// ao elemento continua inferido; por isso os dois entram na conferência do
+// "antes", e um palpite errado faz a operação parar sem enviar nada. O app só
+// manda essas operações a uma extensão que anuncia 'alterar-evento'
+// (compat.ts): uma extensão mais antiga não confere o formulário de eventos.
+//
+// A chave cobre só o evento de ouvinte. Um caminho novo de alteração
+// (convidado, participante, outros tipos de produção) entra com chave
+// própria, desligada até o teste acompanhado dele.
 //
 // Fica à mão:
 // - eventos com forma Convidado ou Participante: só se viu a edição de
@@ -37,11 +41,12 @@ import { findLinks } from './lattes-html.ts';
 import type { BridgeOp, FieldValues, OpBase } from './plan.ts';
 
 /**
- * Fica false até um teste acompanhado num Lattes real. Desligada, o
- * planejamento manda essas mudanças para o caminho à mão e o contrato não
- * confere o formulário de eventos; os testes ligam com `editItems: true`.
+ * Alteração de evento de ouvinte pelo conector: ligada depois do teste de
+ * 14/10/2026. Desligada (nos testes, `editOuvinte: false`), o planejamento
+ * manda essas mudanças para o caminho à mão e o contrato não confere o
+ * formulário de eventos.
  */
-export const EDIT_ITEMS_ENABLED = false;
+export const EDIT_OUVINTE_ENABLED = true;
 
 /** Participação em evento: a linha da lista se acha por f_seq = SEQUENCIA-PRODUCAO. */
 export interface EventoOp extends OpBase {
@@ -264,10 +269,10 @@ export const EVENTO_SPEC: FormSpec = {
 const EVENTO_LIST = 'pkg_evento.lista';
 
 /**
- * O que a alteração de itens acrescenta ao contrato (contract.ts): nada com a
- * chave desligada; os testes pedem com `enabled: true`.
+ * O que a alteração de itens acrescenta ao contrato (contract.ts): o
+ * formulário e a lista de eventos com a chave ligada, nada com ela desligada.
  */
-export function editContract(enabled: boolean = EDIT_ITEMS_ENABLED): {
+export function editContract(enabled: boolean = EDIT_OUVINTE_ENABLED): {
   forms: Partial<Record<'evento', FormSpec>>;
   menu: string[];
 } {

@@ -887,6 +887,17 @@ mostrar a pendência e o Exportar recusa. O `f_seq` desse formulário é o
 `SEQUENCIA-PRODUCAO` que o servidor deu ao item (seção 13, item 9).
 **Observado.**
 
+**No conector (15/10/2026, ligado).** Com esse teste, a alteração de eventos
+de ouvinte passou a ir pela extensão (`src/bridge/edit-items.ts`, chave
+`EDIT_OUVINTE_ENABLED`), e o formulário `GN_TEC` e a lista `pkg_evento.lista`
+entraram no contrato fixo. Só o evento cuja `FORMA-PARTICIPACAO` é "Ouvinte";
+convidado e participante ficam à mão, porque a marcação do `F_TPO` já gravado
+não foi vista. Campos que vão: título, ano, país, home page, divulgação
+científica, título em inglês e nome do evento. A correspondência de `F_FORMA`
+e `F_COD_PROD` com a forma e o elemento do XML continua **inferida**, e por
+isso os dois entram na conferência do "antes": se não baterem, nada é
+enviado. A exclusão de evento (`f_ctr=E`, seção 15) segue fora do conector.
+
 O formulário não tem idioma, meio de divulgação, relevância, palavras-chave,
 áreas nem participantes, embora o XSD tenha esses campos no evento.
 `check()` exige forma de participação, tipo (menos para ouvinte), natureza,

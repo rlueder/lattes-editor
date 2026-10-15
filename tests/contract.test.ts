@@ -137,8 +137,11 @@ describe('checkContract', () => {
       { found: true, proc: 'pkg_ativ.lista' },
       { found: true, proc: 'pkg_idioma.lista' },
       { found: true, proc: 'pkg_resume.' },
+      { found: true, proc: 'pkg_evento.lista' },
     ]);
+    // O currículo deste teste não tem evento: o formulário de eventos fica sem amostra.
     expect(report.forms.map((f) => [f.kind, f.status])).toEqual([
+      ['evento', 'sem-amostra'],
       ['idioma', 'ok'],
       ['resumo', 'ok'],
       ['vinculo', 'ok'],
@@ -203,8 +206,10 @@ describe('checkContract', () => {
     expect(report.menu.filter((m) => !m.found).map((m) => m.proc)).toEqual([
       'pkg_ativ.lista',
       'pkg_idioma.lista',
+      'pkg_evento.lista',
     ]);
     expect(report.forms.filter((f) => f.status === 'nao-encontrado').map((f) => f.kind)).toEqual([
+      'evento',
       'idioma',
       'vinculo',
     ]);
@@ -217,7 +222,12 @@ describe('checkContract', () => {
     removeAll(lattes.state, 'VINCULOS');
     const report = await checkContract(lattes.port);
     expect(report.status).toBe('ok');
-    expect(report.forms.map((f) => f.status)).toEqual(['sem-amostra', 'ok', 'sem-amostra']);
+    expect(report.forms.map((f) => f.status)).toEqual([
+      'sem-amostra',
+      'sem-amostra',
+      'ok',
+      'sem-amostra',
+    ]);
     const semAtuacao = await lattesFor();
     removeAll(semAtuacao.state, 'ATUACAO-PROFISSIONAL');
     const report2 = await checkContract(semAtuacao.port);

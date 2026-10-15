@@ -1,7 +1,8 @@
 // O conector de ponta a ponta contra o Lattes simulado (scripts/lattes-simulado/):
 // conferência do contrato, Exportar, alteração, exclusão, inclusão, envio ao
 // CNPq e os três passos do Importar, cada um com a chave forçada a ligar só
-// aqui. O simulado nasce de fixtures/demo.xml.
+// aqui (a alteração de evento de ouvinte já vem ligada e roda também como o
+// app a usa). O simulado nasce de fixtures/demo.xml.
 
 import { readFileSync } from 'node:fs';
 
@@ -16,7 +17,14 @@ import {
 } from '../scripts/lattes-simulado/importar.ts';
 import { applyAll } from '../src/bridge/apply.ts';
 import { biographicContract } from '../src/bridge/biographic.ts';
-import { checkContract, isBreaking, LATTES_CONTRACT } from '../src/bridge/contract.ts';
+import { BRIDGE_FEATURES } from '../src/bridge/compat.ts';
+import {
+  blocksKind,
+  checkContract,
+  isBreaking,
+  lacksSample,
+  LATTES_CONTRACT,
+} from '../src/bridge/contract.ts';
 import { CREATE_ATUACAO_SPEC } from '../src/bridge/create.ts';
 import { CREATE_FIELD_LABELS } from '../src/bridge/create-labels.ts';
 import { editContract } from '../src/bridge/edit-items.ts';
@@ -27,7 +35,7 @@ import { importItems, readStep2, STEP2_MODULE_VALUES } from '../src/bridge/impor
 import { cvCodeFrom, lattesIdFrom } from '../src/bridge/lattes-html.ts';
 import { lattesStatusFrom } from '../src/bridge/lattes-status.ts';
 import { uploadPhoto } from '../src/bridge/photo.ts';
-import { planChanges } from '../src/bridge/plan.ts';
+import { planChanges, type PlanOptions, planOptionsFor } from '../src/bridge/plan.ts';
 import { buildImportFile } from '../src/import-export/import-file.ts';
 import { importMessage } from '../src/import-export/import-request.ts';
 import { diffDocuments } from '../src/model/changes.ts';
@@ -47,7 +55,7 @@ import { lattesSchema as schema } from '../src/schema/lattes.ts';
 import { type LattesSimuladoNoTeste, withLattesSimulado } from './helpers/lattes-simulado.ts';
 
 const DEMO = new Uint8Array(readFileSync(DEMO_XML));
-const ALL_ON = { biographicOps: true, createItems: true, deleteItems: true, editItems: true };
+const ALL_ON = { biographicOps: true, createItems: true, deleteItems: true, editOuvinte: true };
 
 let open: LattesSimuladoNoTeste | undefined;
 afterEach(async () => {
@@ -70,7 +78,11 @@ function find(root: XElement, match: (el: XElement) => boolean): XElement {
 }
 
 /** O que o editor faria: carrega a exportação, edita e planeja. */
-async function planEdits(edit: (doc: XDocument) => void, bytes: Uint8Array = DEMO) {
+async function planEdits(
+  edit: (doc: XDocument) => void,
+  bytes: Uint8Array = DEMO,
+  options: PlanOptions = ALL_ON,
+) {
   const original = await loadCv(bytes, 'demo.xml');
   const working = structuredClone(original.doc);
   edit(working);
@@ -78,7 +90,7 @@ async function planEdits(edit: (doc: XDocument) => void, bytes: Uint8Array = DEM
     change,
     itemTitle: '',
   }));
-  return planChanges(entries, working.root, ALL_ON);
+  return planChanges(entries, working.root, options);
 }
 
 async function exported(lattes: LattesSimuladoNoTeste) {
@@ -575,7 +587,7 @@ describe('Lattes simulado: o conector de ponta a ponta', () => {
     expect(r.detail).toContain(NO_PRODUCTION_ALERT);
   });
 
-  it('evento de ouvinte incluído na tela do Lattes e alterado pelo conector', async () => {
+  it('evento de ouvinte incluído na tela do Lattes e alterado pelo conector, com as chaves do app', async () => {
     const lattes = await start();
     const code = lattes.state.code;
     // A pessoa inclui pela tela: POST do formulário com f_ctr=I.
@@ -590,16 +602,25 @@ describe('Lattes simulado: o conector de ponta a ponta', () => {
     const r = await exported(lattes);
     if (!r.ok) throw new Error(r.reason);
 
-    const plan = await planEdits((doc) => {
-      const basics = find(
-        doc.root,
-        (el) =>
-          el.name === 'DADOS-BASICOS-DA-PARTICIPACAO-EM-SEMINARIO' &&
-          getAttr(el, 'FORMA-PARTICIPACAO') === 'Ouvinte',
-      );
-      setAttr(basics, 'TITULO', 'Ouvinte no seminário');
-    }, r.bytes);
+    const plan = await planEdits(
+      (doc) => {
+        const basics = find(
+          doc.root,
+          (el) =>
+            el.name === 'DADOS-BASICOS-DA-PARTICIPACAO-EM-SEMINARIO' &&
+            getAttr(el, 'FORMA-PARTICIPACAO') === 'Ouvinte',
+        );
+        setAttr(basics, 'TITULO', 'Ouvinte no seminário');
+      },
+      r.bytes,
+      planOptionsFor(BRIDGE_FEATURES),
+    );
     expect(plan.ops.map((o) => o.kind)).toEqual(['evento']);
+    // A trava da extensão antes de gravar: o contrato fixo confere o formulário de eventos.
+    const report = await checkContract(lattes.port);
+    expect(report.forms.find((f) => f.kind === 'evento')).toMatchObject({ status: 'ok' });
+    expect(blocksKind(report, 'evento')).toEqual([]);
+    expect(lacksSample(report, 'evento')).toBeUndefined();
     const [result] = await applyAll(plan.ops, lattes.port);
     expect(result?.status).toBe('conferido');
     expect(lattesStatusFrom(await lattes.port.menuHtml())?.pending).toBe(true);
