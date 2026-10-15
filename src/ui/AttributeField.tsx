@@ -91,7 +91,9 @@ export function AttributeField({
     onDraft?.(el, name, next);
   };
   const commit = (next: string) => {
-    onDraft?.(el, name, next);
+    // O campo mostra o valor limpo (cleanLinkValue) mesmo quando o gravado já
+    // era ele e nada muda no elemento.
+    change(next);
     if (next === (getAttr(el, name) ?? '')) return;
     setAttr(el, name, next);
     onEdit(`${elementLabel(el.name)} · ${text}`);

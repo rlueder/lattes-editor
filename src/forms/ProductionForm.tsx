@@ -136,6 +136,8 @@ export function ProductionForm({
     const part = partOf(set.part);
     if (!part) return [];
     const fields = set.fields.filter((field) => field !== headline);
+    // A parte que fica só com o título (que vai para o topo) não aparece nem conta.
+    if (fields.length === 0) return [];
     const facts = sectionFacts(set.legend, part, fields, (attr) => !!errorFor(part, attr));
     return [{ facts, fields, part, set }];
   });

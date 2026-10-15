@@ -43,8 +43,6 @@ interface Props {
 }
 
 interface GroupList {
-  /** Os itens são os próprios elementos do grupo, sem contêiner que os embrulhe. */
-  direct: boolean;
   items: XElement[];
   view: ListView;
 }
@@ -54,7 +52,7 @@ function groupList(g: SectionGroup, index: ReferenceIndex): GroupList | null {
   const list = groupItemList(g);
   if (!list) return null;
   const view = (list.container && viewForContainer(list.container.name, index)) || yearView;
-  return { direct: !list.container, items: list.items, view };
+  return { items: list.items, view };
 }
 
 export function SectionView(props: Props) {

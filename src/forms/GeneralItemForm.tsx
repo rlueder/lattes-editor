@@ -117,10 +117,13 @@ export function GeneralItemForm({
     first?.fields[0] && isHeadline(first.fields[0].attr) ? first.fields[0] : undefined;
   // Partes longas fecham numa linha (disclosure.ts); a primeira e as com
   // obrigatório ficam abertas, e um erro do primeiro "Salvar" abre a sua.
-  const sections = parts.map((part) => {
+  // Só as partes que aparecem: a que fica só com o título (que vai para o
+  // topo) não conta, senão o lugar do "primeiro grupo aberto" iria para ela.
+  const sections = parts.flatMap((part) => {
     const fields = part.fields.filter((field) => !(part === first && field === headline));
+    if (fields.length === 0) return [];
     const facts = sectionFacts(part.legend, part.el, fields, (attr) => !!errorFor(part.el, attr));
-    return { facts, fields, part };
+    return [{ facts, fields, part }];
   });
   const startOf = useGroupStarts(
     sections.map((s) => s.facts),
@@ -246,7 +249,6 @@ export function GeneralItemForm({
 
           {sections.map(({ facts, fields, part }) => {
             const attrSpecs = schema.elements[part.el.name]?.attributes ?? [];
-            if (fields.length === 0) return null;
             return (
               <FormSection key={part.legend} facts={facts} start={startOf(part.legend)}>
                 <div className="fields">
