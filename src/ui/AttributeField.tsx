@@ -14,12 +14,14 @@ import {
 } from '../schema/typed-choices.ts';
 import type { AttributeSpec } from '../schema/types.ts';
 import { parseEmails, parseSocial } from './contacts.ts';
-import { CopyButton } from './CopyButton.tsx';
 import { DateField } from './DateField.tsx';
+import { useDraft, usePartKey } from './draft-context.ts';
 import {
   codeAttrFor,
   codeChoices,
   codeValueLabel,
+  flagAsShown,
+  flagToXml,
   isBooleanAttr,
   isSystemAttr,
 } from './field-kind.ts';
@@ -27,6 +29,7 @@ import { LockIcon } from './icons.tsx';
 import { displayLattesDate, isLattesDateAttr, isValidLattesDate } from './lattes-date.ts';
 import { useLattesListsContext } from './lattes-lists-context.ts';
 import { isFourDigitYear, isLattesYearAttr } from './lattes-year.ts';
+import { cleanLinkValue, linkError } from './link-fields.ts';
 import { liveKind } from './live-lists.ts';
 import { LiveListControl } from './LiveListField.tsx';
 import { ComboSelect } from './primitives/ComboSelect.tsx';
@@ -38,8 +41,6 @@ import { YearField } from './YearField.tsx';
 export type EditFn = (note: string) => void;
 
 interface Props {
-  /** Mostra o botão "copiar" do valor, para colar no formulário do Lattes. */
-  copyable?: boolean;
   el: XElement;
   /** Mensagem de validação mostrada sob o campo. */
   error?: string;
@@ -58,7 +59,6 @@ interface Props {
 }
 
 export function AttributeField({
-  copyable,
   el,
   error,
   label,
@@ -72,6 +72,9 @@ export function AttributeField({
 }: Props) {
   const hideSensitive = useHideSensitive();
   const lists = useLattesListsContext();
+  // Prévia do modo de leitura: acompanha o texto antes de gravar.
+  const onDraft = useDraft();
+  const partKey = usePartKey()?.(el, name);
   const value = getAttr(el, name) ?? '';
   const [draft, setDraft] = useState(value);
   // Valor mudou por fora (busca por DOI, restauração do histórico).
@@ -79,17 +82,25 @@ export function AttributeField({
   const text = label ?? attributeLabelIn(el.name, name);
   // Só sugere; o valor fica como veio até a pessoa clicar em "Corrigir".
   const repaired = repairMojibake(value);
+  const change = (next: string) => {
+    setDraft(next);
+    onDraft?.(el, name, next);
+  };
   const commit = (next: string) => {
+    // O campo mostra o valor limpo (cleanLinkValue) mesmo quando o gravado já
+    // era ele e nada muda no elemento.
+    change(next);
     if (next === (getAttr(el, name) ?? '')) return;
     setAttr(el, name, next);
     onEdit(`${elementLabel(el.name)} · ${text}`);
   };
+  const shownError = error ?? linkError(name, value);
   const id = useId();
   const errorId = `${id}-erro`;
   const labelId = `${id}-rotulo`;
   const common = {
-    'aria-describedby': error ? errorId : undefined,
-    'aria-invalid': error ? true : undefined,
+    'aria-describedby': shownError ? errorId : undefined,
+    'aria-invalid': shownError ? true : undefined,
     id,
   };
 
@@ -117,7 +128,6 @@ export function AttributeField({
                 <span className="field-copy-row">
                   <span className="contact-value">{c.email}</span>
                   {c.address && <span className="muted contact-kind">{c.address}</span>}
-                  <CopyButton label={text} value={c.email} />
                 </span>
               </li>
             ))}
@@ -128,7 +138,6 @@ export function AttributeField({
                     {c.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
                   </a>
                   <span className="muted contact-kind">{c.name}</span>
-                  <CopyButton label={c.name} value={c.url} />
                 </span>
               </li>
             ))}
@@ -157,7 +166,6 @@ export function AttributeField({
         lists={lists}
         onChanged={() => onEdit(`${elementLabel(el.name)} · ${text}`)}
       />,
-      { copy: copyable },
     );
   }
 
@@ -167,10 +175,7 @@ export function AttributeField({
     return (
       <div className="field field-readonly field-locked">
         <ReadonlyLabel text={text} why="Escolhido numa lista do Lattes; muda junto com o código" />
-        <span className="field-copy-row">
-          <span className="locked-value">{value || '(vazio)'}</span>
-          {copyable && <CopyButton label={text} value={value} />}
-        </span>
+        <span className="locked-value">{value || '(vazio)'}</span>
       </div>
     );
   }
@@ -196,21 +201,20 @@ export function AttributeField({
     return (
       <div className="field field-readonly">
         <ReadonlyLabel text={text} why="Gerado pelo Lattes; não se edita aqui" />
-        <span className="field-copy-row">
-          <span className="readonly-value">
-            {value
-              ? dateAttr
-                ? displayLattesDate(value)
-                : codeValueLabel(el.name, name, value)
-              : '(vazio)'}
-          </span>
-          {copyable && <CopyButton label={text} value={value} />}
+        <span className="readonly-value">
+          {value
+            ? dateAttr
+              ? displayLattesDate(value)
+              : codeValueLabel(el.name, name, value)
+            : '(vazio)'}
         </span>
       </div>
     );
   }
 
   const boolean = isBooleanAttr(name, spec, value);
+  // No sentido da tela do Lattes (marcas que a exportação grava ao contrário).
+  const shownFlag = flagAsShown(el.name, name, value);
   // Lista do Lattes: códigos conhecidos (field-kind) ou campos tipados (LAT-48).
   const choices = codeChoices(el.name, name) ?? typedChoices(el, name);
   // Data em DDMMAAAA vira campo de data; valor que não é data válida fica texto, intacto.
@@ -233,12 +237,12 @@ export function AttributeField({
         <Switch
           aria-describedby={common['aria-describedby']}
           aria-labelledby={labelId}
-          checked={value === 'SIM'}
+          checked={shownFlag === 'SIM'}
           id={id}
-          onChange={(on) => commit(on ? 'SIM' : 'NAO')}
+          onChange={(on) => commit(flagToXml(el.name, name, on ? 'SIM' : 'NAO'))}
         />
         <span aria-hidden="true" className="switch-text">
-          {value === 'SIM' ? 'Sim' : value === 'NAO' ? 'Não' : 'Não informado'}
+          {shownFlag === 'SIM' ? 'Sim' : shownFlag === 'NAO' ? 'Não' : 'Não informado'}
         </span>
       </span>
     );
@@ -288,8 +292,8 @@ export function AttributeField({
         placeholder={text}
         rows={1}
         value={draft}
-        onBlur={() => commit(draft)}
-        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => commit(cleanLinkValue(name, draft))}
+        onChange={(e) => change(e.target.value)}
         onKeyDown={(e) => {
           // Título é uma linha só: Enter confirma em vez de quebrar.
           if (e.key === 'Enter') {
@@ -305,8 +309,8 @@ export function AttributeField({
         {...common}
         rows={multiline ? 3 : 4}
         value={draft}
-        onBlur={() => commit(draft)}
-        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => commit(cleanLinkValue(name, draft))}
+        onChange={(e) => change(e.target.value)}
       />
     );
   } else {
@@ -315,25 +319,26 @@ export function AttributeField({
         {...common}
         type="text"
         value={draft}
-        onBlur={() => commit(draft)}
-        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => commit(cleanLinkValue(name, draft))}
+        onChange={(e) => change(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
       />
     );
   }
 
-  return wrap(control, { copy: copyable && !boolean, textarea });
+  return wrap(control, { textarea });
 
   /**
-   * O campo com rótulo, marca de obrigatório, botão de copiar, correção de
+   * O campo com rótulo, marca de obrigatório, correção de
    * texto estragado e erro. Só usa o que já está definido no começo do
    * componente: é chamado também antes do resto (listas do conector).
    */
-  function wrap(control: ReactNode, opts: { copy?: boolean; textarea?: boolean } = {}) {
-    const { copy = false, textarea = false } = opts;
+  function wrap(control: ReactNode, opts: { textarea?: boolean } = {}) {
+    const { textarea = false } = opts;
     return (
       <div
-        className={`field${wide || prominent || textarea ? ' field-wide' : ''}${prominent ? ' field-prominent' : ''}${error ? ' has-error' : ''}`}
+        className={`field${wide || prominent || textarea ? ' field-wide' : ''}${prominent ? ' field-prominent' : ''}${shownError ? ' has-error' : ''}`}
+        data-part={partKey}
       >
         <label
           className={prominent ? 'sr-only' : undefined}
@@ -349,14 +354,7 @@ export function AttributeField({
             </span>
           )}
         </label>
-        {copy ? (
-          <span className="field-copy-row">
-            {control}
-            <CopyButton label={text} value={value} />
-          </span>
-        ) : (
-          control
-        )}
+        {control}
         {repaired !== undefined && (
           <span className="field-note">
             Texto estragado no próprio Lattes (acentos ou &quot;aspas&quot;).{' '}
@@ -370,9 +368,9 @@ export function AttributeField({
             </button>
           </span>
         )}
-        {error && (
+        {shownError && (
           <span className="field-error" id={errorId}>
-            {error}
+            {shownError}
           </span>
         )}
       </div>

@@ -1,6 +1,6 @@
-// A faixa de estados do cabeçalho (LAT-40): o caminho de uma alteração, de
-// original a publicada, com a contagem do que está em cada passo. Ver
-// docs/fluxos_de_uso.md, "O caminho de uma alteração".
+// A faixa de estados (LAT-40), no alto do "Enviar ao Lattes": o caminho de
+// uma alteração, de original a publicada, com a contagem do que está em cada
+// passo. Ver docs/fluxos_de_uso.md, "O caminho de uma alteração".
 
 import type { LattesStatus } from '../bridge/lattes-status.ts';
 import type { SentEntry } from '../bridge/sent-log.ts';

@@ -58,7 +58,7 @@ export function EmptySection({ action, onNewItem, onOpenPicker, section }: Props
             ))}
           </div>
           <p className="empty-caption">
-            O item novo entra no próximo arquivo para o Importar do Lattes.
+            O item novo vai ao Lattes por &quot;Enviar ao Lattes&quot;.
           </p>
         </>
       )}

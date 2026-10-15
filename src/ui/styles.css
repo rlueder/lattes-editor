@@ -25,7 +25,6 @@
   --danger: #a3261b;
   --ok: #2f6b3a;
   --radius: 6px;
-  --shadow: 0 12px 40px rgb(0 0 0 / 0.18);
   /* Altura real do cabeçalho; o App mede e atualiza quando ele quebra linha. */
   --topbar-h: 57px;
   /* Altura única das pílulas (atalhos, busca, facetas) e dos controles. */
@@ -55,7 +54,6 @@
     --warn-text: #f0c776;
     --danger: #f08a7e;
     --ok: #8fcf98;
-    --shadow: 0 12px 40px rgb(0 0 0 / 0.5);
     color-scheme: dark;
   }
 }
@@ -75,7 +73,6 @@
   --warn-text: #f0c776;
   --danger: #f08a7e;
   --ok: #8fcf98;
-  --shadow: 0 12px 40px rgb(0 0 0 / 0.5);
   color-scheme: dark;
 }
 
@@ -340,6 +337,20 @@ button.status-seg:hover,
   flex-shrink: 0;
 }
 
+/* Botão com ícone (Nova atuação, Editar, Enviar ao Lattes, Marcar itens, os
+   da barra de cima e as cópias na barra fixa): o ícone no centro da linha do
+   texto, num tamanho fixo. :where() deixa a regra sem especificidade, então o
+   display de cada botão (none, flex, grid) continua valendo por cima dela. */
+:where(button:has(> .icon-svg)) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+:where(button) > .icon-svg {
+  flex: none;
+}
+
 .dot {
   width: 6px;
   height: 6px;
@@ -571,7 +582,6 @@ details.sub > summary .item-kind {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: var(--shadow);
   overflow: hidden;
 }
 
@@ -1317,7 +1327,6 @@ details.card.is-new {
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface);
-  box-shadow: var(--shadow);
 }
 
 .menu-heading {
@@ -1328,7 +1337,7 @@ details.card.is-new {
 
 .menu-segment {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(var(--seg-count, 3), minmax(0, 1fr));
   gap: 2px;
   margin: 2px 4px 6px;
   padding: 2px;
@@ -1348,7 +1357,7 @@ details.card.is-new {
 
 .menu-seg.active {
   background: var(--surface);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+  box-shadow: inset 0 0 0 1px var(--border);
   font-weight: 550;
 }
 
@@ -1458,7 +1467,7 @@ a.menu-item.notice {
   font-size: 13px;
 }
 
-/* Copiar valor */
+/* Valor e o que vai ao lado dele, numa linha (contatos, endereço do currículo). */
 
 .field-copy-row {
   display: flex;
@@ -1487,17 +1496,6 @@ a.menu-item.notice {
 .copy-btn {
   padding: 4px 6px;
   color: var(--muted);
-}
-
-.field .copy-btn {
-  opacity: 0;
-  transition: opacity var(--dur-fast) var(--ease-out);
-}
-
-.field:hover .copy-btn,
-.field:focus-within .copy-btn,
-.field .copy-btn:focus-visible {
-  opacity: 1;
 }
 
 .copy-btn:disabled {
@@ -1566,53 +1564,6 @@ a.menu-item.notice {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.tag.kind-alterado {
-  background: var(--accent-soft);
-  color: var(--accent-text);
-}
-
-.tag.kind-novo {
-  background: var(--accent);
-  color: var(--accent-contrast);
-}
-
-.tag.kind-removido {
-  background: var(--warn-bg);
-  color: var(--danger);
-}
-
-.change-fields {
-  width: 100%;
-  margin-top: 6px;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-
-.change-fields th {
-  width: 28%;
-  padding: 3px 8px 3px 26px;
-  text-align: left;
-  font-weight: 400;
-  color: var(--muted);
-  vertical-align: top;
-}
-
-.change-fields td {
-  padding: 3px 6px;
-  vertical-align: top;
-  overflow-wrap: anywhere;
-}
-
-.change-fields .before {
-  color: var(--muted);
-  text-decoration: line-through;
-}
-
-.change-fields .copy {
-  width: 32px;
-  text-align: right;
 }
 
 /* Áreas do conhecimento */
@@ -1757,6 +1708,13 @@ a.menu-item.notice {
 
 .panel-section + .panel-section {
   margin-top: 22px;
+}
+
+/* O que o editor ainda não envia: depois do que vai, um fio e uma linha
+   apagada; sozinho na aba, só a linha. */
+.panel-section + .pending-unsupported {
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
 }
 
 .panel-section-head {
@@ -2072,7 +2030,7 @@ a.menu-item.notice {
   height: 12px;
   border-radius: 50%;
   background: var(--surface);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  box-shadow: inset 0 0 0 1px var(--border);
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
@@ -2168,7 +2126,6 @@ a.menu-item.notice {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
-  box-shadow: var(--shadow);
   outline: none;
 }
 
@@ -2267,7 +2224,7 @@ a.menu-item.notice {
 
 .menu-seg[data-checked] {
   background: var(--surface);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+  box-shadow: inset 0 0 0 1px var(--border);
   font-weight: 550;
 }
 
@@ -2547,10 +2504,6 @@ button.primary:hover {
   font-size: 12px;
 }
 
-.change-fields th {
-  padding-left: 0;
-}
-
 .changes-how {
   margin: 0 0 10px;
   font-size: 12px;
@@ -2559,10 +2512,6 @@ button.primary:hover {
 .field-actions {
   display: inline-flex;
   gap: 2px;
-}
-
-.change-fields .copy {
-  width: 72px;
 }
 
 .discard-btn {
@@ -2867,11 +2816,7 @@ details > .element {
 }
 
 /* Olho de privacidade, na ponta direita da linha do título. */
-.section-head .privacy-toggle {
-  margin-left: auto;
-}
-
-.section-head .privacy-toggle[aria-pressed='true'] {
+.privacy-toggle[aria-pressed='true'] {
   background: var(--accent-soft);
   color: var(--accent-text);
 }
@@ -3196,22 +3141,53 @@ body {
   background: var(--chrome);
 }
 
+/* O cromo (cabeçalho e menu) emoldura o conteúdo só com fios: o de baixo do
+   cabeçalho e o da esquerda do conteúdo, na altura toda, sem recuo nem canto
+   arredondado. */
 .topbar {
+  border-bottom: 1px solid var(--border);
   background: var(--chrome);
-  border-bottom-color: transparent;
 }
 
+/* O menu lateral no fundo do conteúdo; o fio da esquerda do conteúdo os
+   separa. O cabeçalho fica no cromo. A moldura inteira também usa o fundo do
+   conteúdo: o menu gruda e para na altura da lista, e abaixo dele aparece a
+   moldura, da mesma cor, em qualquer altura de janela e de rolagem. */
 .sidebar {
   border-right: 0;
-  background: var(--chrome);
+  background: var(--bg);
+}
+
+.shell {
+  background: var(--bg);
 }
 
 .content {
-  min-height: calc(100vh - var(--topbar-h) - 8px);
-  margin: 0 8px 8px 0;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  min-height: calc(100vh - var(--topbar-h));
+  margin: 0;
+  border: 0;
+  border-radius: 0;
   background: var(--bg);
+}
+
+/* Fio entre o menu e o conteúdo. No modo foco o fio fica transparente, com
+   a mesma largura, para o conteúdo não andar 1px. Em tela estreita o menu
+   fica em cima, e o fio passa para cima do conteúdo. */
+.shell > .content {
+  border-left: 1px solid var(--border);
+}
+
+.shell.is-focus > .content {
+  border-left-color: transparent;
+}
+
+@media (max-width: 760px) {
+  .shell:not(.is-focus) > .content {
+    border-top: 1px solid var(--border);
+  }
+  .shell > .content {
+    border-left: 0;
+  }
 }
 
 .sidebar li > button.active {
@@ -3227,13 +3203,25 @@ body {
   }
 }
 
-/* Seção vazia: sem painel lateral, o bloco fica no centro do painel de
-   conteúdo inteiro, na horizontal e na vertical. */
+/* Seção vazia: as mesmas colunas das outras seções, com a do painel
+   reservada; o bloco fica no centro da coluna de leitura, na horizontal e
+   na vertical. */
 .section-main-empty {
   display: flex;
   flex-direction: column;
-  max-width: none;
-  min-height: calc(100vh - var(--topbar-h) - 120px);
+  min-height: calc(100vh - var(--topbar-h) - 180px);
+}
+
+@media (max-width: 1180px) {
+  .section-panel-space {
+    display: none;
+  }
+}
+
+/* A nota sob o título (seções-filtro) quebra na medida da leitura: 50em de
+   12px dá os ~600px dos 60ch do texto de leitura a 17px. */
+.section-layout.reading .section-note {
+  max-width: 50em;
 }
 
 .section-main-empty .empty-section {
@@ -4040,43 +4028,6 @@ button.primary.danger-fill:hover {
   margin-top: 2px;
 }
 
-/* Valor novo na lista de alterações: copiar dentro do valor, à direita,
-   alinhado ao topo quando o texto ocupa várias linhas. */
-.change-fields .after-value {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 4px 4px 4px 8px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
-}
-
-.change-fields .after-text {
-  flex: 1;
-  min-width: 0;
-  padding-top: 2px;
-  overflow-wrap: anywhere;
-}
-
-.change-fields .after-value .copy-btn {
-  flex: 0 0 auto;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-}
-
-.change-fields .after-value .copy-btn:hover {
-  color: var(--accent-text);
-}
-
-.change-fields .copy {
-  width: 40px;
-}
-
 /* Texto longo para ler e editar: corpo um pouco maior, entrelinha folgada,
    respiro interno e linha limitada a uma medida confortável. */
 .field textarea:not(.title-input) {
@@ -4183,6 +4134,9 @@ button.primary.danger-fill:hover {
 
 /* Marcar itens (Inovação, Educação). */
 .section-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   margin-left: auto;
 }
 
@@ -4240,7 +4194,10 @@ button.primary.danger-fill:hover {
  * O sólido do destaque continua o azul do CNPq (#326c99), com texto branco
  * nos dois temas. */
 :root {
-  --chrome: #f1f0ef; /* sand-3 */
+  /* Cromo (cabeçalho e menu lateral) branco, separado do conteúdo pelos fios. */
+  --chrome: #ffffff;
+  /* A busca do cabeçalho no azul mais forte, para destacar do branco. */
+  --search-bg: var(--accent-soft-strong);
   --bg: #f9f9f8; /* sand-2 */
   --surface: #fdfdfc; /* sand-1 */
   --surface-2: #e9e8e6; /* sand-4 */
@@ -4262,7 +4219,9 @@ button.primary.danger-fill:hover {
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
+    /* No escuro, o cromo continua o fundo mais escuro, com os mesmos fios. */
     --chrome: #111110; /* sand-1 */
+    --search-bg: var(--accent-soft);
     --bg: #191918; /* sand-2 */
     --surface: #222221; /* sand-3 */
     --surface-2: #2a2a28; /* sand-4 */
@@ -4285,6 +4244,7 @@ button.primary.danger-fill:hover {
 
 :root[data-theme='dark'] {
   --chrome: #111110;
+  --search-bg: var(--accent-soft);
   --bg: #191918;
   --surface: #222221;
   --surface-2: #2a2a28;
@@ -5039,15 +4999,8 @@ button.primary:hover:not(:disabled) {
   margin-top: 24px;
 }
 
-/* Topo do menu lateral: a marca, depois avatar e QR lado a lado (o QR
-   alinhado à base do avatar). */
-.sidebar-brand {
-  padding: 4px 8px 18px;
-  /* Marca não é texto para selecionar nem link: cursor normal. */
-  cursor: default;
-  -webkit-user-select: none;
-  user-select: none;
-}
+/* Topo do menu lateral: avatar e QR lado a lado (o QR alinhado à base do
+   avatar). */
 
 .profile-top {
   display: flex;
@@ -5106,17 +5059,6 @@ button.primary:hover:not(:disabled) {
 /* Hover dos itens mais discreto: metade do tom de superfície. */
 .group details > summary:hover {
   background: color-mix(in srgb, var(--surface-2) 50%, transparent);
-}
-
-/* Marca no topo do menu lateral, maior que a do antigo cabeçalho. */
-.sidebar-brand .brand {
-  font-size: 20px;
-}
-
-/* Linha de base da marca na mesma altura da do caminho (Dados gerais ›
-   Identificação) no cabeçalho fixo da seção. */
-.sidebar-brand {
-  margin-top: -8px;
 }
 
 /* Selo de contagem no canto de um botão de ícone (Enviar ao Lattes): azul
@@ -5332,7 +5274,6 @@ b {
   align-items: center;
 }
 
-.privacy-toggle.icon-btn,
 .sticky-title-actions .icon-btn {
   display: inline-flex;
   align-items: center;
@@ -5342,10 +5283,6 @@ b {
   height: 32px;
   padding: 0;
   border-color: transparent;
-}
-
-.privacy-toggle.icon-btn:hover:not([aria-pressed='true']) {
-  background: var(--surface-2);
 }
 
 /* Último cartão de uma lista dentro de uma subseção: sem o fio de baixo. O
@@ -5400,7 +5337,6 @@ b {
   border: 1px solid var(--border);
   border-radius: 0;
   background: var(--surface);
-  box-shadow: var(--shadow);
   outline: none;
 }
 
@@ -5777,7 +5713,6 @@ b {
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface);
-  box-shadow: var(--shadow);
   transition:
     opacity var(--dur) var(--ease-out),
     transform var(--dur) var(--ease-out);
@@ -5895,7 +5830,7 @@ b {
 
 .topbar .search-btn {
   border-color: transparent;
-  background: var(--accent-soft);
+  background: var(--search-bg, var(--accent-soft));
   color: var(--accent-text);
   transition: border-color var(--dur) var(--ease-out);
 }
@@ -5998,10 +5933,6 @@ button.ghost.icon {
     margin-left: -42px;
     padding: 8px;
   }
-
-  .sidebar-brand {
-    padding-bottom: 10px;
-  }
 }
 
 /* Limpar a busca: o "x" aparece dentro do campo depois de digitar algo. */
@@ -6086,7 +6017,7 @@ button.ghost.icon {
   background: var(--surface);
   color: var(--text);
   font-weight: 550;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .send-tab:focus-visible {
@@ -6098,84 +6029,10 @@ button.ghost.icon {
   outline: none;
 }
 
-/* Selo de como cada coisa vai: conector (azul), Importar (neutro), à mão (aviso). */
-.route-tag {
-  display: inline-flex;
-  align-items: center;
-  height: 20px;
-  padding: 0 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 550;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-}
-
-.route-conector {
-  background: var(--accent-soft);
-  color: var(--accent-text);
-}
-
-.route-importar {
-  background: var(--surface-2);
-  color: var(--text);
-}
-
-.route-mao {
-  background: var(--warn-bg);
-  color: var(--warn-text);
-}
-
-.panel-section-head .route-tag {
-  margin-right: 2px;
-}
-
 /* Registro do enviado: rótulo em cima, valor de antes riscado e o de depois
    logo abaixo, com respiro entre um campo e outro. */
 .sent-list > li {
   padding: 14px 0;
-}
-
-.sent-fields {
-  display: grid;
-  gap: 12px;
-  margin: 10px 0 0;
-}
-
-.sent-field {
-  display: grid;
-  gap: 4px;
-}
-
-.sent-field dt {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 550;
-  letter-spacing: 0.02em;
-}
-
-.sent-field dd {
-  display: grid;
-  gap: 4px;
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-}
-
-.sent-before {
-  color: var(--muted);
-  text-decoration: line-through;
-  text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent);
-}
-
-.sent-after {
-  color: var(--text);
-}
-
-.sent-undone .sent-field dd,
-.sent-undone .sent-after {
-  color: var(--muted);
 }
 
 /* Entrada e saída de modais, menus, listas, dicas e calendário: opacidade e
@@ -6288,7 +6145,7 @@ main.content {
   width: calc((100% - 6px - (var(--seg-count, 3) - 1) * 2px) / var(--seg-count, 3));
   border-radius: 999px;
   background: var(--surface);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+  box-shadow: inset 0 0 0 1px var(--border);
   transform: translateX(calc(var(--seg-index, 0) * (100% + 2px)));
   transition: transform var(--dur) var(--ease-in-out);
 }
@@ -6325,11 +6182,6 @@ main.content {
 
 /* Registro do enviado: tentativa que não terminou conferida fica apagada, com
    o motivo embaixo do título. */
-.sent-failed .sent-before,
-.sent-failed .sent-after {
-  color: var(--muted);
-}
-
 .sent-outcome {
   margin: 4px 0 0;
   font-size: 13px;
@@ -6408,4 +6260,1063 @@ main.content {
 
 .photo-text p {
   margin: 0;
+}
+
+/* Modo de leitura (protótipo, ?leitura no `pnpm dev`; docs/estilo_da_interface.md,
+ * "Dois registros"). O conteúdo das seções de leitura segue o Typography for
+ * Lawyers adaptado à tela, na IBM Plex Serif: corpo de 17px (na web, 15 a
+ * 25px), entrelinha de 1,5 (120 a 145% no papel; a tela pede o topo da
+ * faixa), medida de 60ch, perto de 70 caracteres por linha (45 a 90), espaço
+ * entre parágrafos e não recuo, dois níveis de título no conteúdo, só com
+ * degrau pequeno de tamanho e espaço, e caixa alta só em rótulo curto, com 8%
+ * de espaçamento. Peso 400 no texto, 600 só em títulos e na primeira linha
+ * de um registro, nunca 700.
+ *
+ * Na edição, o texto fica no topo como prévia, na serifa, e os campos vêm
+ * abaixo, na Plex Sans e na escala densa do resto do editor. */
+:root {
+  /* Texto de leitura um pouco abaixo do preto e do branco do cromo: 14:1 no
+     claro e 11,9:1 no escuro, em vez de 15:1. Secundário a 6,3:1 e 6:1. */
+  --read-text: #2a2824;
+  --read-muted: #5f5c55;
+  --read-serif: 'IBM Plex Serif', 'Iowan Old Style', Charter, Georgia, serif;
+  /* Fonte do que é da edição e do cromo: rótulos, botões, campos. */
+  --edit-font: var(--font);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --read-text: #d9d4ca;
+    --read-muted: #9b968c;
+  }
+}
+
+:root[data-theme='dark'] {
+  --read-text: #d9d4ca;
+  --read-muted: #9b968c;
+}
+
+.section-layout.reading {
+  --read-size: 17px;
+  --read-leading: 1.5;
+  --read-measure: 60ch;
+  /* Coluna de anos: a largura do texto mais longo da lista (ReadingView). */
+  --read-tab: 4ch;
+  --read-tab-gap: 1.1rem;
+  /* 0,65em de 17px: 11px, perto de 8pt (4 a 10pt entre parágrafos). */
+  --read-para: 0.65em;
+  --read-small: 15px;
+}
+
+.section-layout.reading .section-head h1 {
+  font-family: var(--read-serif);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--read-text);
+}
+
+/* Sem caixa branca sobre o cinza: os grupos se separam pelo espaço. */
+.section-layout.reading .group {
+  margin-top: 3rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.section-layout.reading .section-body > .group:first-of-type {
+  margin-top: 1rem;
+}
+
+/* Título de grupo um degrau abaixo do da página e acima do texto. */
+.section-layout.reading .group h2 {
+  margin: 0 0 0.75rem;
+  color: var(--read-text);
+  font-family: var(--read-serif);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+/* O bloco: a margem direita fica reservada para "Editar" e "Concluir", que
+   nunca cobrem o texto. Em edição, um fundo levemente diferente diz que o
+   bloco está aberto, com a prévia no topo e os campos abaixo de um fio. */
+.reading-block {
+  --reading-gutter: 96px;
+  position: relative;
+  margin: 0 -12px;
+  padding: 6px var(--reading-gutter) 6px 12px;
+  border-radius: 0;
+  color: var(--read-text);
+  font-family: var(--read-serif);
+  font-size: var(--read-size);
+  font-weight: 400;
+  font-kerning: normal;
+  line-height: var(--read-leading);
+  transition: background-color var(--dur-fast) ease;
+}
+
+.reading-block strong,
+.reading-block b {
+  font-weight: 600;
+}
+
+@media (hover: hover) {
+  .reading-block:not(.is-editing):hover {
+    background: color-mix(in srgb, var(--surface-2) 45%, transparent);
+  }
+}
+
+.reading-block:has(.reading-actions button:focus-visible),
+.reading-block.is-editing {
+  background: color-mix(in srgb, var(--surface-2) 45%, transparent);
+}
+
+/* Troca entre ler e editar: a prévia não muda; os campos surgem em 120ms. */
+@keyframes reading-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.reading-p {
+  max-width: var(--read-measure);
+  margin: 0 0 var(--read-para);
+  text-wrap: pretty;
+}
+
+.reading-p:last-child {
+  margin-bottom: 0;
+}
+
+/* Linhas de um registro ou bloco. */
+.rl {
+  max-width: var(--read-measure);
+  margin: 0;
+  text-wrap: pretty;
+}
+
+.rl-lead {
+  font-weight: 600;
+}
+
+.rl-work {
+  font-style: italic;
+}
+
+.rl-meta {
+  color: var(--read-muted);
+  font-size: var(--read-small);
+}
+
+.rl-translation {
+  margin-top: 1.1em;
+}
+
+/* Rótulo curto em versal: o único lugar do conteúdo com caixa alta, na sans. */
+.reading-label,
+.reading-empty-caption {
+  display: block;
+  margin: 0 0 0.25em;
+  color: var(--read-muted);
+  font-family: var(--edit-font);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.reading-none {
+  margin: 0;
+  color: var(--read-muted);
+  font-size: var(--read-small);
+}
+
+.reading-sub + .reading-sub,
+.rl + .reading-sub,
+.reading-fields + .reading-sub {
+  margin-top: 1.5em;
+}
+
+.reading-sub h3 {
+  margin: 0 0 0.3em;
+  font-size: var(--read-size);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.reading-sublabel {
+  margin: 0 0 0.15em;
+  color: var(--read-muted);
+  font-size: var(--read-small);
+  font-style: italic;
+}
+
+.reading-fields + .reading-hidden {
+  margin-top: var(--read-para);
+}
+
+/* Rótulo e valor em grade de três colunas, o rótulo acima do valor; o valor
+   longo ocupa duas colunas ou a linha inteira (cellSpan em reading.ts). Sem
+   grid-auto-flow: dense, para a grade seguir a ordem de leitura. */
+.reading-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9em var(--read-tab-gap);
+  max-width: var(--read-measure);
+  margin: 0;
+}
+
+.reading-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.1em;
+  min-width: 0;
+}
+
+.reading-field.span-2 {
+  grid-column: span 2;
+}
+
+.reading-field.span-all {
+  grid-column: 1 / -1;
+}
+
+.reading-field dt {
+  overflow: hidden;
+  color: var(--read-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--edit-font);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.reading-field dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.reading-fields.is-quiet {
+  gap: 0.7em var(--read-tab-gap);
+  font-size: var(--read-small);
+}
+
+.reading-fields.is-quiet dt {
+  font-size: 12px;
+}
+
+/* Listas de filhos de um registro (vínculos, integrantes, participantes):
+   recuadas, com um fio à esquerda, cada item como um registro pequeno. */
+.reading-nested {
+  max-width: var(--read-measure);
+  margin-top: 0.8em;
+}
+
+.reading-nested-label {
+  margin: 0 0 0.3em;
+  color: var(--read-muted);
+  font-family: var(--edit-font);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reading-nested ul {
+  margin: 0;
+  padding: 0 0 0 1.75em;
+  list-style: none;
+}
+
+.reading-nested li + li {
+  margin-top: 0.6em;
+}
+
+.reading-nested .rl-lead {
+  font-weight: 500;
+}
+
+.rl-nested-when {
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.reading-block a {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+/* Registros: ano à esquerda, em algarismos de largura fixa, e o texto ao lado. */
+.reading-records {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reading-records > li + li {
+  margin-top: 1rem;
+}
+
+.reading-block.rr .reading-content {
+  display: grid;
+  grid-template-columns: var(--read-tab) minmax(0, var(--read-measure));
+  gap: 0 var(--read-tab-gap);
+  align-items: baseline;
+}
+
+.rr-when {
+  color: var(--read-muted);
+  font-size: var(--read-small);
+  font-variant-numeric: lining-nums tabular-nums;
+  white-space: nowrap;
+}
+
+/* Entre o texto de um registro (linhas, referência, endereço) e a grade de
+   rótulos abaixo dele, mais espaço do que entre as linhas da grade (0,9em),
+   e menos do que entre dois registros (1rem mais o respiro dos blocos). Vale
+   na leitura e na prévia fixa da edição. */
+.reading-block :is(.rl, .rr-ref, .reading-address, .reading-p) + .reading-fields {
+  margin-top: 1.2em;
+}
+
+.rr-kind {
+  display: block;
+  color: var(--read-muted);
+  font-size: var(--read-small);
+}
+
+.rr-ref {
+  max-width: var(--read-measure);
+  margin: 0;
+}
+
+.rr-ref em {
+  font-style: italic;
+}
+
+.rr-body .tag {
+  font-family: var(--edit-font);
+  vertical-align: 2px;
+}
+
+/* A prévia e os botões. Ocupa o bloco até as bordas (a margem reservada
+   inclusive), para, em edição, grudar no alto da tela com o fundo do bloco
+   enquanto os campos rolam por baixo. Uma prévia longa (o resumo) rola
+   dentro de si a partir de 40% da altura da tela. */
+.reading-head {
+  position: relative;
+  margin: -6px calc(-1 * var(--reading-gutter)) 0 -12px;
+  padding: 6px var(--reading-gutter) 0 12px;
+  border-radius: 0;
+}
+
+.reading-block.is-editing .reading-head {
+  position: sticky;
+  top: calc(var(--topbar-h) + var(--section-bar-h, 0px));
+  z-index: 2;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-2) 45%, var(--bg));
+}
+
+.reading-block.is-editing .reading-content {
+  max-height: 40vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.reading-block.is-editing .reading-form {
+  margin-top: 0;
+  border-top: 0;
+}
+
+/* O trecho do campo em foco, aceso na prévia. */
+.reading-content .is-focus-part {
+  border-radius: 0;
+  background: var(--accent-soft-strong);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  transition: background-color var(--dur-fast) ease;
+}
+
+/* "Editar", "Adicionar…" e "Concluir", em sans, na margem reservada: à vista
+   no foco, no passar do mouse e sempre no toque e em edição. */
+.reading-actions {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  max-width: 84px;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.reading-block:hover .reading-actions,
+.reading-block:focus-within .reading-actions,
+.reading-block.is-editing .reading-actions {
+  opacity: 1;
+}
+
+/* Os botões são os do app (ghost e primary, em pílula); aqui só a fonte da
+   interface, já que o bloco herda a serifa da leitura. */
+.reading-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 13px/1.5 var(--font);
+}
+
+/* Os campos do bloco em edição: o formulário de sempre, na sans e na escala
+   densa, abaixo da prévia, separado dela por um fio. */
+.reading-form {
+  margin-top: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--edit-font);
+  font-size: 13px;
+  font-weight: 450;
+  line-height: 1.5;
+  animation: reading-fade 120ms var(--ease-out);
+}
+
+@media (hover: none), (max-width: 760px) {
+  .reading-block {
+    --reading-gutter: 12px;
+  }
+  .reading-actions {
+    position: static;
+    flex-direction: row;
+    justify-content: flex-end;
+    max-width: none;
+    margin-top: 6px;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 760px) {
+  .reading-block.rr .reading-content {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .reading-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .reading-field.span-2 {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reading-block,
+  .reading-actions {
+    transition: none;
+  }
+  .reading-form {
+    animation: none;
+  }
+}
+
+/* No tema escuro, o cromo fica mais quieto: o item ativo do menu e do
+   "Nesta seção" num fundo neutro com o texto no tom de leitura, em vez do
+   azul saturado, e a busca do painel sem a borda azul no passar do mouse. O
+   foco do teclado continua com o contorno do destaque. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .sidebar li > button.active,
+  :root:not([data-theme='light']) .jump-bar.vertical a.active {
+    background: var(--surface-3);
+    color: var(--read-text);
+  }
+  :root:not([data-theme='light']) .filter-search:hover:not(:focus-within) {
+    border-color: var(--border-focus);
+  }
+}
+
+:root[data-theme='dark'] .sidebar li > button.active,
+:root[data-theme='dark'] .jump-bar.vertical a.active {
+  background: var(--surface-3);
+  color: var(--read-text);
+}
+
+:root[data-theme='dark'] .filter-search:hover:not(:focus-within) {
+  border-color: var(--border-focus);
+}
+
+/* Modo foco (focus-mode.ts). O menu de seções e o cabeçalho saem de cena e
+   voltam por cima do conteúdo, sem empurrá-lo, quando o ponteiro encosta na
+   borda, quando o foco do teclado entra neles, no G (menu) e no ⌘K
+   (cabeçalho). Na horizontal o conteúdo não sai do lugar: a coluna do menu
+   fica reservada. Em cima, o lugar do cabeçalho fecha e a página começa no
+   alto da janela. A janela inteira vira o fundo do conteúdo, sem borda, canto
+   nem moldura em volta; o menu e o cabeçalho revelados mantêm o fundo deles. */
+.shell.is-focus {
+  /* As barras que grudam no alto (título da seção) sobem até a borda. */
+  --topbar-h: 0px;
+  /* A largura da coluna do menu, para o aviso de pendências ir até a borda. */
+  --focus-pad: 220px;
+  background: var(--bg);
+}
+
+.shell.is-focus .content {
+  grid-row: 1 / -1;
+  grid-column: -2 / -1;
+  min-height: 100vh;
+  border-color: transparent;
+  border-radius: 0;
+}
+
+/* O aviso de pendências vai de uma borda à outra, também no modo foco: passa
+   por cima da coluna vazia do menu, com o texto no mesmo lugar. */
+.shell.is-focus .pending-banner {
+  /* O 1px é o fio transparente da esquerda do conteúdo. */
+  margin-left: calc(-41px - var(--focus-pad));
+  padding-left: calc(41px + var(--focus-pad));
+}
+
+/* A barra fixa do título (Seção › Grupo) também vai de uma borda à outra,
+   fio e fundo, com o texto e as ações no mesmo lugar. */
+.shell.is-focus .sticky-title-bar {
+  left: calc(-41px - var(--focus-pad));
+  padding-left: calc(41px + var(--focus-pad));
+}
+
+/* Tela estreita: o menu fica em cima do conteúdo, numa coluna só. Guardar o
+   lugar dele deixaria um vazio da altura da lista de seções; aí o conteúdo
+   sobe, sem mudar de largura nem de margem. */
+@media (max-width: 760px) {
+  .shell.is-focus {
+    --focus-pad: 0px;
+  }
+  .shell.is-focus .pending-banner {
+    margin-right: -16px;
+    margin-left: -16px;
+    padding-right: 12px;
+    padding-left: 16px;
+  }
+  .shell.is-focus .sticky-title-bar {
+    right: -16px;
+    left: -16px;
+    padding: 0 16px;
+  }
+}
+
+.shell.is-focus .topbar,
+.shell.is-focus .sidebar {
+  position: fixed;
+  z-index: 40;
+  background: var(--chrome);
+  transition: transform var(--dur) var(--ease-out);
+}
+
+/* O menu revelado no fundo do conteúdo, como fora do modo foco. */
+.shell.is-focus .sidebar {
+  background: var(--bg);
+}
+
+.shell.is-focus .topbar {
+  top: 0;
+  right: 0;
+  left: 0;
+  transform: translateY(-100%);
+}
+
+.shell.is-focus .sidebar {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 240px;
+  max-height: none;
+  /* O align-self: start do menu na grade vale também para caixa fixa: sem
+     isto, o painel encolhe à altura do conteúdo em vez de ir até o fim da
+     janela. */
+  align-self: stretch;
+  transform: translateX(-100%);
+}
+
+.shell.is-focus.reveal-top .topbar,
+.shell.is-focus .topbar:focus-within,
+.shell.is-focus.reveal-left .sidebar,
+.shell.is-focus .sidebar:focus-within,
+.shell.is-focus .sidebar.go-armed {
+  transform: none;
+}
+
+/* O menu revelado se separa do conteúdo pelo fio da direita, sem sombra. */
+.shell.is-focus .sidebar {
+  border-right: 1px solid var(--border);
+}
+
+/* O cabeçalho aparece sem sombra, só com o fio de baixo, como a barra da
+   seção. */
+.shell.is-focus.reveal-top .topbar,
+.shell.is-focus .topbar:focus-within {
+  border-bottom: 1px solid var(--border);
+}
+
+/* Com o cabeçalho à mostra, o menu começa abaixo dele. */
+.shell.is-focus.reveal-top .sidebar {
+  top: var(--topbar-real-h, 57px);
+}
+
+/* Puxador na borda esquerda: discreto; em tela de toque, é como se abre o menu. */
+.focus-handle {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  z-index: 39;
+  width: 14px;
+  height: 56px;
+  padding: 0;
+  border: 0;
+  border-radius: 0 6px 6px 0;
+  background: transparent;
+  transform: translateY(-50%);
+}
+
+.focus-handle::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 3px;
+  width: 4px;
+  border-radius: 2px;
+  background: var(--border-strong);
+  transition: background-color var(--dur) ease;
+}
+
+.focus-handle:hover::before,
+.focus-handle:focus-visible::before,
+.focus-handle[aria-expanded='true']::before {
+  background: var(--accent);
+}
+
+@media (hover: none) {
+  .focus-handle {
+    width: 24px;
+    height: 72px;
+  }
+}
+
+.menu-kbd {
+  margin-left: auto;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: 11px var(--font);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell.is-focus .topbar,
+  .shell.is-focus .sidebar,
+  .focus-handle::before {
+    transition: none;
+  }
+}
+
+/* Ações da seção na barra fixa (StickyTitle): os mesmos botões de sob o
+   título, compactos, à direita; em tela estreita, só o ícone, com o nome na
+   dica e no aria-label. */
+.sticky-title-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.sticky-section-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.sticky-section-actions button {
+  min-height: 26px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .sticky-section-actions .btn-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
+/* Grupo de campos que fecha (DisclosureGroup): uma linha de texto, sem caixa
+   nem borda. Só o título fica no estilo dos títulos de grupo; a contagem e o
+   resumo seguem em texto pequeno e apagado, cortados numa linha. Ao passar o
+   mouse, muda só a cor. */
+.disclosure {
+  margin-top: 18px;
+}
+
+.fields-block > .disclosure:first-child {
+  margin-top: 0;
+}
+
+.disclosure-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  font: 12px/1.4 var(--font);
+  text-align: left;
+}
+
+.disclosure-toggle:hover {
+  color: var(--text);
+}
+
+.disclosure-chevron {
+  display: inline-flex;
+  flex: none;
+  transform: rotate(-90deg);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.disclosure.is-open .disclosure-chevron {
+  transform: none;
+}
+
+.disclosure-text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* O título em caixa alta pequena, como os títulos de grupo da edição. */
+.disclosure-title-caps {
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* No formulário de item novo, como a legenda das outras partes. */
+.disclosure-title-legend {
+  font-weight: 550;
+}
+
+.disclosure-body {
+  margin-top: 14px;
+}
+
+.form-disclosure {
+  padding-top: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disclosure-chevron {
+    transition: none;
+  }
+}
+
+/* Listas dentro de listas: só o recuo marca o nível, sem fio à esquerda. Na
+   tela estreita, o passo é menor, para o texto do nível fundo não espremer. */
+@media (max-width: 759px) {
+  .reading-nested ul {
+    padding-left: 0.9em;
+  }
+}
+
+/* Lista do segundo nível para baixo, fechada numa linha de texto pequena e
+   apagada ("Equipe do projeto · 4 pessoas · mostrar"). Ao passar o mouse,
+   muda a cor e a palavra de ação ganha sublinhado. */
+.reading-nested-toggle {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--read-muted, var(--muted));
+  font: 12px/1.5 var(--font);
+  text-align: left;
+}
+
+.reading-nested-toggle:hover {
+  color: var(--text);
+}
+
+.reading-nested-text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.reading-nested-action {
+  flex: none;
+  white-space: pre;
+}
+
+.reading-nested-toggle:hover .reading-nested-verb {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.reading-nested.is-open > .reading-nested-toggle {
+  margin-bottom: 0.3em;
+}
+
+/* Lista "Enviar ao Lattes" no desenho do ⌘K: os grupos (Dados gerais,
+   Formação) com o título dos grupos da paleta, cada alteração numa linha sem
+   caixa, com fio fino entre uma e a próxima. O título do item manda; o tipo
+   da mudança é um selo ao lado dele, e o caminho fica uma vez, no título da
+   parte. Descartar aparece ao passar o mouse ou com o foco na linha. */
+.changes {
+  margin: 0;
+}
+
+.changes-group + .changes-group {
+  margin-top: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--divider, var(--border));
+}
+
+.changes-group h3 {
+  margin: 4px 0 6px;
+  font-size: 15px;
+  font-weight: 550;
+}
+
+.changes-note {
+  font-size: 12px;
+}
+
+.change {
+  margin: 0;
+  padding: 10px 0;
+  border: 0;
+  background: none;
+}
+
+.change + .change {
+  border-top: 1px solid var(--border);
+}
+
+.change-head {
+  gap: 10px;
+}
+
+.change-where {
+  flex: 0 1 auto;
+  font-size: 13px;
+  font-weight: 550;
+}
+
+/* As exceções numa lista de alterações, num selo em pílula: novo (azul) e
+   removido (aviso), nas abas "A enviar" e "Enviado". A alteração de um item
+   que já existia não tem selo. */
+.change-kind {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.change-kind.kind-novo {
+  background: var(--accent-soft-strong);
+}
+
+.change-kind.kind-removido {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+
+/* Descartar: só ao passar o mouse na linha ou com o foco nela (o botão
+   continua no teclado: o foco nele mostra a linha inteira de ações). */
+.fc-actions .discard-btn,
+.change-actions .discard-btn {
+  opacity: 0;
+  transition: opacity var(--dur-fast) ease;
+}
+
+.fc:hover .discard-btn,
+.fc:focus-within .discard-btn,
+.change:hover .change-actions .discard-btn,
+.change-head:focus-within .discard-btn {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .fc-actions .discard-btn,
+  .change-actions .discard-btn {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fc-actions .discard-btn,
+  .change-actions .discard-btn {
+    transition: none;
+  }
+}
+
+/* Símbolo e nome do app no canto do cabeçalho (Brand.tsx): os dois
+   centrados na linha, 8px entre eles; símbolo de 24px e nome de 18px. Em
+   tela estreita, só o símbolo. */
+.topbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.topbar-brand .brand-icon {
+  flex: none;
+  width: auto;
+  height: 24px;
+}
+
+.topbar-brand .brand-name {
+  font-size: 18px;
+  line-height: 1;
+}
+
+@media (max-width: 760px) {
+  .topbar-brand .brand-name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
+/* Campo alterado (FieldChange.tsx), nas abas "A enviar" e "Enviado": o
+   rótulo em cima, pequeno e apagado como na grade da prévia; embaixo, duas
+   colunas iguais, "Antes" riscado e "Depois". Texto longo para em quatro
+   linhas. Abaixo de 600px as colunas empilham. */
+.change-fields,
+.sent-fields {
+  display: grid;
+  gap: 12px;
+  margin: 8px 0 0;
+}
+
+.fc-label {
+  overflow: hidden;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fc-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.fc-cols.is-single {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.fc-col {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.fc-caption {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fc-more {
+  display: block;
+  margin-top: 2px;
+}
+
+.fc-before .fc-text {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent);
+}
+
+.fc-empty {
+  color: var(--muted);
+}
+
+.fc-text {
+  white-space: pre-line;
+}
+
+.fc-text.is-clamped {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}
+
+.fc-more {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  font-size: 12px;
+}
+
+.fc-more:hover {
+  text-decoration: underline;
+}
+
+.sent-undone .fc-after,
+.sent-failed .fc-col {
+  color: var(--muted);
+}
+
+@media (max-width: 600px) {
+  .fc-cols {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .fc-col {
+    grid-column: 1;
+  }
+  .fc-actions {
+    grid-row: 1;
+    grid-column: 2;
+  }
 }

@@ -3,20 +3,30 @@
 
 import type { ReactNode } from 'react';
 
+import { FocusHandle } from './FocusHandle.tsx';
 import { LattesListsContext } from './lattes-lists-context.ts';
+import type { FocusShell } from './use-focus-mode.ts';
 import { useLattesLists } from './use-lattes-lists.ts';
 
 export function ShellWithLists({
   children,
   features,
+  focus,
 }: {
   children: ReactNode;
   features: readonly string[];
+  /** Modo foco (com ?leitura): classes da moldura e o puxador da borda. */
+  focus?: FocusShell;
 }) {
   const lists = useLattesLists(features);
   return (
     <LattesListsContext.Provider value={lists}>
-      <div className="shell">{children}</div>
+      <div className={focus?.className ?? 'shell'}>
+        {children}
+        {focus?.focus.on && (
+          <FocusHandle open={focus.menuPinned} onToggle={() => focus.setMenuPinned((v) => !v)} />
+        )}
+      </div>
     </LattesListsContext.Provider>
   );
 }

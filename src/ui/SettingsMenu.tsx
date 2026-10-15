@@ -6,11 +6,13 @@ import { Menu } from '@base-ui/react/menu';
 import type { CSSProperties, ReactNode } from 'react';
 
 import { PrinterIcon } from '../print/PrinterIcon.tsx';
+import { FIELD_ORDERS, type FieldOrder, setFieldOrder, useFieldOrder } from './field-order.ts';
 import {
   CheckIcon,
   CloseIcon,
+  DiagnosisIcon,
   DownloadIcon,
-  EyeIcon,
+  FocusIcon,
   HashIcon,
   HistoryIcon,
   MonitorIcon,
@@ -20,6 +22,7 @@ import {
   SpinnerIcon,
   SunIcon,
   UpdateIcon,
+  VersionsIcon,
 } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { setShowCodes, useShowCodes } from './show-codes.ts';
@@ -29,17 +32,21 @@ import { checkUpdatesNow, useManualUpdateCheck } from './use-updates.ts';
 /** Ações que pedem um currículo aberto; sem elas, aparecem desabilitadas. */
 interface FileActions {
   modified: boolean;
-  showEmpty: boolean;
   onClose: () => void;
+  /** Diagnóstico do currículo: comparação com o Lattes e revisão de consistência. */
+  onDiagnosis: () => void;
   onHistory: () => void;
   onPrint: () => void;
   onReload: () => void;
   onSave: () => void;
-  onShowEmpty: (show: boolean) => void;
+  /** Versões do Lattes: o que mudou entre as exportações guardadas. */
+  onVersions: () => void;
 }
 
 interface Props {
   file?: FileActions;
+  /** Modo foco (com ?leitura): estado, atalho e troca. */
+  focus?: { label: string; on: boolean; toggle: () => void };
   theme: ThemePref;
   onTheme: (theme: ThemePref) => void;
 }
@@ -52,9 +59,10 @@ const THEMES: { icon: ReactNode; label: string; value: ThemePref }[] = [
   { icon: <MoonIcon />, label: 'Escuro', value: 'escuro' },
 ];
 
-export function SettingsMenu({ file, onTheme, theme }: Props) {
+export function SettingsMenu({ file, focus, onTheme, theme }: Props) {
   const showCodes = useShowCodes();
   const update = useManualUpdateCheck();
+  const fieldOrder = useFieldOrder();
   return (
     <Menu.Root>
       <Tip label="Configurações e arquivo">
@@ -98,25 +106,56 @@ export function SettingsMenu({ file, onTheme, theme }: Props) {
             </Menu.Group>
 
             <Menu.Separator className="menu-sep" />
+            <Menu.Group>
+              <Menu.GroupLabel className="menu-heading">Ordem dos campos</Menu.GroupLabel>
+              <Menu.RadioGroup
+                className="menu-segment"
+                style={
+                  {
+                    '--seg-count': FIELD_ORDERS.length,
+                    '--seg-index': FIELD_ORDERS.findIndex((o) => o.value === fieldOrder),
+                  } as CSSProperties
+                }
+                value={fieldOrder}
+                onValueChange={(v) => setFieldOrder(v as FieldOrder)}
+              >
+                <span aria-hidden="true" className="menu-seg-indicator" />
+                {FIELD_ORDERS.map((o) => (
+                  <Menu.RadioItem
+                    key={o.value}
+                    className="menu-seg"
+                    closeOnClick={false}
+                    value={o.value}
+                  >
+                    {o.label}
+                  </Menu.RadioItem>
+                ))}
+              </Menu.RadioGroup>
+            </Menu.Group>
+
+            <Menu.Separator className="menu-sep" />
 
             <Menu.Group>
               <Menu.GroupLabel className="menu-heading">Exibição</Menu.GroupLabel>
 
-              <Menu.CheckboxItem
-                checked={file?.showEmpty ?? false}
-                className="menu-item"
-                closeOnClick={false}
-                disabled={!file}
-                onCheckedChange={(show) => file?.onShowEmpty(show)}
-              >
-                <span className="menu-icon">
-                  <EyeIcon />
-                </span>
-                <span className="menu-label">Mostrar campos vazios</span>
-                <Menu.CheckboxItemIndicator className="menu-check">
-                  <CheckIcon />
-                </Menu.CheckboxItemIndicator>
-              </Menu.CheckboxItem>
+              {focus && (
+                <Menu.CheckboxItem
+                  checked={focus.on}
+                  className="menu-item"
+                  closeOnClick={true}
+                  title={`Modo foco: só o conteúdo e o índice da seção (${focus.label})`}
+                  onCheckedChange={() => focus.toggle()}
+                >
+                  <span className="menu-icon">
+                    <FocusIcon />
+                  </span>
+                  <span className="menu-label">Modo foco</span>
+                  <kbd className="menu-kbd">{focus.label}</kbd>
+                  <Menu.CheckboxItemIndicator className="menu-check">
+                    <CheckIcon />
+                  </Menu.CheckboxItemIndicator>
+                </Menu.CheckboxItem>
+              )}
               <Menu.CheckboxItem
                 checked={showCodes}
                 className="menu-item"
@@ -170,6 +209,18 @@ export function SettingsMenu({ file, onTheme, theme }: Props) {
                   <HistoryIcon />
                 </span>
                 <span className="menu-label">Histórico de alterações</span>
+              </Menu.Item>
+              <Menu.Item className="menu-item" disabled={!file} onClick={() => file?.onVersions()}>
+                <span className="menu-icon">
+                  <VersionsIcon />
+                </span>
+                <span className="menu-label">Versões do Lattes</span>
+              </Menu.Item>
+              <Menu.Item className="menu-item" disabled={!file} onClick={() => file?.onDiagnosis()}>
+                <span className="menu-icon">
+                  <DiagnosisIcon />
+                </span>
+                <span className="menu-label">Diagnóstico do currículo</span>
               </Menu.Item>
             </Menu.Group>
 

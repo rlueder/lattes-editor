@@ -168,7 +168,7 @@ export interface BridgeState {
   link: Link;
   /** A resposta do último pedido de troca da foto. */
   photoUpload?: PhotoUploadReading;
-  /** Alterações que a extensão sabe levar e as que ficam para copiar à mão. */
+  /** Alterações que a extensão sabe levar e as que ela ainda não leva. */
   plan: ReturnType<typeof planChanges>;
   /** Recarrega a aba do Lattes pela extensão (sessão vencida leva ao login). */
   reloadLattes: () => void;

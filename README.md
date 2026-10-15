@@ -75,7 +75,7 @@ mão com os valores ao lado.
 </picture>
 
 Cada exportação aberta vira uma versão, e o app diz o que mudou desde a
-anterior ("Versões do Lattes", no ⌘K), inclusive o que foi editado direto no
+anterior ("Versões do Lattes", no ⚙), inclusive o que foi editado direto no
 Lattes. O **Diagnóstico do currículo** mostra a data da última publicação, o
 que mudou no Lattes desde a exportação e o que vale conferir no currículo
 inteiro: duplicatas, ISSN, DOI, datas e vínculos antigos ainda marcados como
@@ -109,7 +109,7 @@ até você clicar no olho, ao lado do título.
 ## Extensão do conector
 
 A extensão para Chrome e Brave é o que deixa o app abrir o currículo do Lattes
-e enviar as alterações sem copiar à mão. Ela trabalha na aba do Lattes em que
+e enviar as alterações direto ao Lattes. Ela trabalha na aba do Lattes em que
 você já está logado; nenhuma senha passa por ela nem pelo app. Cada alteração
 é gravada, lida de volta e conferida, e a fila para no primeiro problema.
 

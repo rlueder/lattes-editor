@@ -21,32 +21,31 @@ const change = (key: string): Change => ({
 
 const group = (label: string, keys: string[]): ChangeGroup => ({
   entries: keys.map((k) => ({ change: change(k), itemTitle: '' })),
-  importable: false,
   label,
 });
 
 describe('enviar ao Lattes: como cada coisa vai', () => {
-  it('separa o que o conector grava do que fica à mão, mantendo grupos e ordem', () => {
+  it('separa o que o conector grava do que ainda não vai, mantendo grupos e ordem', () => {
     const groups = [group('Dados gerais', ['resumo', 'endereco']), group('Atuação', ['vinculo'])];
-    const { conector, mao } = splitByRoute(groups, new Set(['resumo', 'vinculo']));
+    const { conector, pendente } = splitByRoute(groups, new Set(['resumo', 'vinculo']));
     expect(conector.map((g) => [g.label, g.entries.map((e) => e.change.key)])).toEqual([
       ['Dados gerais', ['resumo']],
       ['Atuação', ['vinculo']],
     ]);
-    expect(mao.map((g) => [g.label, g.entries.map((e) => e.change.key)])).toEqual([
+    expect(pendente.map((g) => [g.label, g.entries.map((e) => e.change.key)])).toEqual([
       ['Dados gerais', ['endereco']],
     ]);
   });
 
-  it('sem nada à mão, essa parte fica vazia', () => {
-    const { mao } = splitByRoute([group('Dados gerais', ['resumo'])], new Set(['resumo']));
-    expect(mao).toEqual([]);
+  it('sem nada pendente, essa parte fica vazia', () => {
+    const { pendente } = splitByRoute([group('Dados gerais', ['resumo'])], new Set(['resumo']));
+    expect(pendente).toEqual([]);
   });
 
-  it('sem conector, tudo fica à mão', () => {
-    const { conector, mao } = splitByRoute([group('Atuação', ['a', 'b'])], new Set());
+  it('sem conector, nada vai por ele', () => {
+    const { conector, pendente } = splitByRoute([group('Atuação', ['a', 'b'])], new Set());
     expect(conector).toEqual([]);
-    expect(mao[0]?.entries).toHaveLength(2);
+    expect(pendente[0]?.entries).toHaveLength(2);
   });
 
   it('conta itens novos e alterações juntos', () => {

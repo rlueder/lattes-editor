@@ -13,11 +13,13 @@ const ENUMS: Record<string, string> = labels.enums;
 
 const ACCENTED: Record<string, string> = {
   academica: 'acadêmica',
+  academico: 'acadêmico',
   adicionais: 'adicionais',
   administracao: 'administração',
   agencia: 'agência',
   agrarias: 'agrárias',
   ambito: 'âmbito',
+  analitica: 'analítica',
   aperfeicoamento: 'aperfeiçoamento',
   apresentacao: 'apresentação',
   area: 'área',
@@ -26,12 +28,15 @@ const ACCENTED: Record<string, string> = {
   artistico: 'artístico',
   atuacao: 'atuação',
   atuacoes: 'atuações',
+  auxilio: 'auxílio',
   avaliacao: 'avaliação',
   basicos: 'básicos',
   bibliografica: 'bibliográfica',
+  bibliograficas: 'bibliográficas',
   biologicas: 'biológicas',
   capitulo: 'capítulo',
   capitulos: 'capítulos',
+  catalogo: 'catálogo',
   cenicas: 'cênicas',
   ciencias: 'ciências',
   cientifica: 'científica',
@@ -40,6 +45,8 @@ const ACCENTED: Record<string, string> = {
   citacoes: 'citações',
   classificacao: 'classificação',
   codigo: 'código',
+  coletanea: 'coletânea',
+  comentario: 'comentário',
   comissao: 'comissão',
   compreensao: 'compreensão',
   concessao: 'concessão',
@@ -48,6 +55,9 @@ const ACCENTED: Record<string, string> = {
   concluido: 'concluído',
   conclusao: 'conclusão',
   conferencia: 'conferência',
+  coreografica: 'coreográfica',
+  curriculo: 'currículo',
+  danca: 'dança',
   deposito: 'depósito',
   descricao: 'descrição',
   didatico: 'didático',
@@ -60,14 +70,21 @@ const ACCENTED: Record<string, string> = {
   editoracao: 'editoração',
   eletronico: 'eletrônico',
   emissao: 'emissão',
+  empregaticio: 'empregatício',
+  enciclopedia: 'enciclopédia',
   endereco: 'endereço',
   especializacao: 'especialização',
   estagio: 'estágio',
   exposicao: 'exposição',
   extensao: 'extensão',
+  farmacos: 'fármacos',
   fasciculo: 'fascículo',
+  fonografico: 'fonográfico',
   formacao: 'formação',
+  forum: 'fórum',
   graduacao: 'graduação',
+  grafica: 'gráfica',
+  historico: 'histórico',
   horaria: 'horária',
   identificacao: 'identificação',
   informacao: 'informação',
@@ -80,16 +97,22 @@ const ACCENTED: Record<string, string> = {
   licenca: 'licença',
   licencas: 'licenças',
   linguistica: 'linguística',
+  literaria: 'literária',
   localizacao: 'localização',
   mae: 'mãe',
+  magnetico: 'magnético',
+  medica: 'médica',
   medio: 'médio',
   mes: 'mês',
   midia: 'mídia',
+  multimidia: 'multimídia',
   musica: 'música',
   nao: 'não',
   nivel: 'nível',
+  noticias: 'notícias',
   numero: 'número',
   olimpiada: 'olimpíada',
+  operistica: 'operística',
   orgao: 'órgão',
   orientacao: 'orientação',
   orientacoes: 'orientações',
@@ -98,7 +121,10 @@ const ACCENTED: Record<string, string> = {
   pais: 'país',
   participacao: 'participação',
   participacoes: 'participações',
+  pedagogica: 'pedagógica',
+  performatica: 'performática',
   periodico: 'periódico',
+  periodicos: 'periódicos',
   periodo: 'período',
   permissao: 'permissão',
   portugues: 'português',
@@ -106,16 +132,21 @@ const ACCENTED: Record<string, string> = {
   posfacio: 'posfácio',
   prefacio: 'prefácio',
   preferencia: 'preferência',
+  premio: 'prêmio',
   premios: 'prêmios',
+  privilegio: 'privilégio',
   producao: 'produção',
   producoes: 'produções',
   proficiencia: 'proficiência',
+  prototipo: 'protótipo',
   publicacao: 'publicação',
   publico: 'público',
   qualificacao: 'qualificação',
   raca: 'raça',
+  radialistica: 'radialística',
   radio: 'rádio',
   realizacao: 'realização',
+  recem: 'recém',
   relatorio: 'relatório',
   relevancia: 'relevância',
   responsavel: 'responsável',
@@ -125,6 +156,7 @@ const ACCENTED: Record<string, string> = {
   sequencia: 'sequência',
   serie: 'série',
   servico: 'serviço',
+  servicos: 'serviços',
   simposio: 'simpósio',
   situacao: 'situação',
   tecnica: 'técnica',
@@ -133,12 +165,17 @@ const ACCENTED: Record<string, string> = {
   tecnicos: 'técnicos',
   tecnologica: 'tecnológica',
   tecnologico: 'tecnológico',
+  temporaria: 'temporária',
+  terapeutica: 'terapêutica',
   titulacao: 'titulação',
   titulo: 'título',
   titulos: 'títulos',
   traducao: 'tradução',
+  universitaria: 'universitária',
+  varias: 'várias',
   varios: 'vários',
   veiculo: 'veículo',
+  video: 'vídeo',
   vinculo: 'vínculo',
   vinculos: 'vínculos',
 };
@@ -183,6 +220,8 @@ function humanize(xmlName: string): string {
   if (out.length === 0) return xmlName;
   const first = out[0]!;
   out[0] = ACRONYMS[words[0]!] ? first : first.charAt(0).toUpperCase() + first.slice(1);
+  // -INGLES é a versão em inglês do campo: "Título do trabalho em inglês".
+  if (out.length > 1 && words.at(-1) === 'ingles') out.splice(-1, 1, 'em', 'inglês');
   return out.join(' ');
 }
 
@@ -230,6 +269,15 @@ export function slugify(text: string): string {
  * do idioma numa produção.
  */
 const IN_ELEMENT: Record<string, string> = {
+  /*
+   * No doutorado sanduíche (TIPO-DOUTORADO S), a exportação real
+   * RafaelQSantos-RQS/LattesHub database/data/lattes/5601958689947032.xml
+   * preenche NOME-INSTITUICAO-DOUT e NOME-ORIENTADOR-DOUT e deixa vazios
+   * NOME-INSTITUICAO-OUTRA-DOUT e NOME-DO-ORIENTADOR-SANDUICHE: os campos
+   * -DOUT são os do sanduíche. Só no doutorado; no mestrado, sem exemplo.
+   */
+  'DOUTORADO NOME-INSTITUICAO-DOUT': 'Instituição do sanduíche',
+  'DOUTORADO NOME-ORIENTADOR-DOUT': 'Orientador no sanduíche',
   'IDIOMA IDIOMA': 'Código do idioma',
 };
 

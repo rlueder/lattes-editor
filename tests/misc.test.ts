@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   attributeLabel,
+  attributeLabelIn,
   elementLabel,
   enumLabel,
   fold,
@@ -27,8 +28,11 @@ import {
   codeAttrFor,
   codeChoices,
   codeValueLabel,
+  flagAsShown,
+  flagToXml,
   groupFields,
   isBooleanAttr,
+  isInvertedFlag,
   isSystemAttr,
 } from '../src/ui/field-kind.ts';
 import { formatLattesDate } from '../src/ui/format.ts';
@@ -37,6 +41,7 @@ import { pendingMessage } from '../src/ui/pending.ts';
 import { isSensitiveAttr, readHideSensitive, writeHideSensitive } from '../src/ui/privacy.ts';
 import { initials, photoUrl, readCvCode, writeCvCode } from '../src/ui/profile.ts';
 import { qrMatrix, qrPath, qrSvg } from '../src/ui/qr.ts';
+import { displayValue as readingValue } from '../src/ui/reading.ts';
 import { GO_KEYS, isTyping, sectionForKey } from '../src/ui/use-section-shortcuts.ts';
 
 describe('rótulos', () => {
@@ -275,7 +280,8 @@ describe('groupFields', () => {
       'CODIGO-CURSO-CAPES',
       'NOME-CURSO-INGLES',
     ];
-    const entries = names.map((attr) => ({ attr, element: 'MESTRADO', key: attr }));
+    // Elemento sem formulário conhecido no Lattes: vale a ordem por assunto.
+    const entries = names.map((attr) => ({ attr, element: 'SEM-FORMULARIO', key: attr }));
     const groups = groupFields(entries, attributeLabel, (e) => e.attr === 'FLAG-BOLSA');
     expect(groups.map((g) => [g.label, g.entries.map((e) => e.attr)])).toEqual([
       [
@@ -487,5 +493,52 @@ describe('código QR', () => {
       ]),
     ).toBe('M0 0h1v1h-1zM1 1h1v1h-1z');
     expect(qrSvg('x')).toContain('<svg');
+  });
+});
+
+describe('rótulos legíveis', () => {
+  it('versão em inglês e nomes da formação', () => {
+    expect(attributeLabel('TITULO-DO-TRABALHO-DE-CONCLUSAO-DE-CURSO-INGLES')).toBe(
+      'Título do trabalho de conclusão de curso em inglês',
+    );
+    expect(attributeLabel('NOME-CURSO-INGLES')).toBe('Nome do curso em inglês');
+    expect(attributeLabel('TITULO-INGLES')).toBe('Título em inglês');
+    expect(attributeLabel('NOME-DO-CO-ORIENTADOR')).toBe('Nome do coorientador');
+    expect(attributeLabel('TIPO-GRADUACAO')).toBe('Tipo de graduação');
+    expect(attributeLabel('NOME-DO-ORIENTADOR-SANDUICHE')).toBe('Nome do orientador sanduíche');
+    // No doutorado, os campos -DOUT são os do sanduíche (exportação real com TIPO-DOUTORADO S).
+    expect(attributeLabelIn('DOUTORADO', 'NOME-ORIENTADOR-DOUT')).toBe('Orientador no sanduíche');
+    expect(attributeLabelIn('DOUTORADO', 'NOME-INSTITUICAO-DOUT')).toBe('Instituição do sanduíche');
+    expect(attributeLabelIn('MESTRADO', 'NOME-ORIENTADOR-DOUT')).not.toBe(
+      'Orientador no sanduíche',
+    );
+    expect(attributeLabel('NOME-DO-PREMIO-OU-TITULO')).toBe('Nome do prêmio ou título');
+  });
+});
+
+describe('vínculo empregatício no sentido da tela do Lattes', () => {
+  it('a exportação grava ao contrário: NAO no XML é "Sim" na tela, e a volta grava NAO', () => {
+    expect(isInvertedFlag('VINCULOS', 'FLAG-VINCULO-EMPREGATICIO')).toBe(true);
+    expect(flagAsShown('VINCULOS', 'FLAG-VINCULO-EMPREGATICIO', 'NAO')).toBe('SIM');
+    expect(flagAsShown('VINCULOS', 'FLAG-VINCULO-EMPREGATICIO', 'SIM')).toBe('NAO');
+    expect(flagAsShown('VINCULOS', 'FLAG-VINCULO-EMPREGATICIO', '')).toBe('');
+    expect(flagToXml('VINCULOS', 'FLAG-VINCULO-EMPREGATICIO', 'SIM')).toBe('NAO');
+    // A dedicação exclusiva do mesmo vínculo não troca.
+    expect(flagAsShown('VINCULOS', 'FLAG-DEDICACAO-EXCLUSIVA', 'SIM')).toBe('SIM');
+  });
+
+  it('a leitura e a grade mostram "Sim" onde o XML diz NAO', () => {
+    const vinculo = parseXml(
+      '<VINCULOS FLAG-VINCULO-EMPREGATICIO="NAO" FLAG-DEDICACAO-EXCLUSIVA="NAO"/>',
+    ).root;
+    expect(readingValue(vinculo, 'FLAG-VINCULO-EMPREGATICIO', 'NAO')).toBe('Sim');
+    expect(readingValue(vinculo, 'FLAG-DEDICACAO-EXCLUSIVA', 'NAO')).toBe('Não');
+  });
+});
+
+describe('vínculo empregatício na lista de alterações', () => {
+  it('mostra o valor no sentido da tela do Lattes', () => {
+    expect(displayValue('VINCULOS', 'FLAG-VINCULO-EMPREGATICIO', 'NAO')).toBe('Sim');
+    expect(displayValue('VINCULOS', 'FLAG-VINCULO-EMPREGATICIO', 'SIM')).toBe('Não');
   });
 });
