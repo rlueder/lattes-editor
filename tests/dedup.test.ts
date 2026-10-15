@@ -16,7 +16,9 @@ import {
   authorKey,
   candidateLine,
   candidatesFor,
+  closestIn,
   closestInCv,
+  cvIndex,
   DUPLICATE_AT,
   normalizeDoi,
   preDiff,
@@ -280,17 +282,26 @@ describe('pré-diff e deduplicação explicável (LAT-45)', () => {
     const itself = productionItems(root)[0]!;
     expect(closestInCv(structuredClone(itself), root)).toBeUndefined();
     expect(closestInCv(one(artigo(3, { titulo: 'Outra coisa' })), root)).toBeUndefined();
-    // O mesmo cache entre edições: o currículo é lido uma vez, o rascunho a cada vez.
-    const cache = new Map();
-    expect(closestInCv(draft, root, cache)?.level).toBe('duplicata');
-    const read = cache.get(itself);
+    // O mesmo índice entre edições: o currículo é lido uma vez, o rascunho a cada vez.
+    const index = cvIndex(root);
+    expect(index.existing).toHaveLength(1);
+    expect(closestIn(draft, index)?.level).toBe('duplicata');
+    const read = index.profiles.get(itself);
     setAttr(
       draft.children.find((c) => c.kind === 'element') as XElement,
       'TITULO-DO-ARTIGO',
       'Outra coisa',
     );
-    expect(closestInCv(draft, root, cache)).toBeUndefined();
-    expect(cache.get(itself)).toBe(read);
+    expect(closestIn(draft, index)).toBeUndefined();
+    expect(index.profiles.get(itself)).toBe(read);
+  });
+
+  it('as mesmas palavras em outra ordem não são "título igual"', () => {
+    const existing = productionItems(cv(artigo(1, { titulo: 'Genômica de palmeiras' })));
+    const [best] = candidatesFor(one(artigo(2, { titulo: 'Palmeiras de genômica' })), existing);
+    expect(best?.parts.titulo).toMatchObject({ reason: 'título com as mesmas palavras' });
+    expect(best!.parts.titulo.points).toBeLessThan(WEIGHTS.titulo);
+    expect(candidateLine(best!)).toMatch(/"Genômica de palmeiras"/);
   });
 
   it('uma leva grande contra um currículo grande lê cada item uma vez só', () => {

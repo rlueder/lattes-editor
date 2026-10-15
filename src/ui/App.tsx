@@ -26,7 +26,6 @@ import {
 import { parseXml, serializeXml, walk, type XElement } from '../model/xml.ts';
 import { PrintDialog } from '../print/PrintDialog.tsx';
 import { usePrint } from '../print/use-print.ts';
-import { closestInCv } from '../review/dedup.ts';
 import { DiagnosisPanel } from '../review/DiagnosisPanel.tsx';
 import { lattesSchema } from '../schema/lattes.ts';
 import { CommandPalette } from './CommandPalette.tsx';
@@ -324,7 +323,7 @@ export function App() {
         <ProductionForm
           key={`${production.form.sequencia}-${production.form.isNew}`}
           byChanges={production.formByChanges}
-          duplicateOf={(item, cache) => closestInCv(item, session.doc.root, cache)}
+          duplicateIn={session.doc.root}
           isNew={production.form.isNew}
           item={production.form.item}
           knownAreas={production.areas}

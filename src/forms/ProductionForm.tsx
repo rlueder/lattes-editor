@@ -20,7 +20,6 @@ import {
 } from '../model/production.ts';
 import { uniqueProblems, validateItem } from '../model/validate.ts';
 import type { XElement } from '../model/xml.ts';
-import type { Candidate, ProfileCache } from '../review/dedup.ts';
 import { lattesSchema as schema } from '../schema/lattes.ts';
 import { AttributeField } from '../ui/AttributeField.tsx';
 import { DiscardConfirm } from '../ui/dialogs.tsx';
@@ -51,10 +50,10 @@ interface Props {
   /** O item vai por "Enviar ao Lattes" (inclusão pelo conector), e não pelo Importar. */
   byChanges?: boolean;
   /**
-   * O item do currículo com que este se parece (LAT-45), para um item novo
-   * não virar duplicata sem a pessoa saber; ela decide se salva.
+   * O currículo aberto, para avisar quando um item novo se parece com um que
+   * já está nele (LAT-45); a pessoa decide se salva.
    */
-  duplicateOf?: (item: XElement, cache: ProfileCache) => Candidate | undefined;
+  duplicateIn?: XElement;
   isNew: boolean;
   item: XElement;
   knownAreas: KnowledgeArea[];
@@ -74,7 +73,7 @@ const footText = (byChanges: boolean) =>
 
 export function ProductionForm({
   byChanges = false,
-  duplicateOf,
+  duplicateIn,
   isNew,
   item,
   knownAreas,
@@ -343,7 +342,7 @@ export function ProductionForm({
           )}
         </div>
 
-        <DuplicateNotice find={isNew ? duplicateOf : undefined} item={item} version={version} />
+        <DuplicateNotice item={item} root={isNew ? duplicateIn : undefined} version={version} />
         <footer className="modal-foot form-foot">
           {problems.length > 0 ? (
             <details className="form-problems">

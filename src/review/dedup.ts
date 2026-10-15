@@ -160,12 +160,22 @@ function titleShare(a: Profile, b: Profile): number {
   return a.title === b.title && a.title ? 1 : titleSimilarity(a.titleWords, b.titleWords);
 }
 
+/** Abaixo de "igual": as mesmas palavras em outra ordem não são o mesmo título. */
+const SAME_WORDS = 0.99;
+
 function compare(a: Profile, b: Profile): Record<Part, PartScore> {
-  const sim = titleShare(a, b);
+  const equal = Boolean(a.title) && a.title === b.title;
+  const sim = equal ? 1 : Math.min(titleShare(a, b), SAME_WORDS);
   const titulo = part(
     WEIGHTS.titulo,
     sim,
-    sim === 1 ? 'título igual' : sim > 0 ? `título ${pct(sim)} parecido` : 'título diferente',
+    equal
+      ? 'título igual'
+      : sim === SAME_WORDS
+        ? 'título com as mesmas palavras'
+        : sim > 0
+          ? `título ${pct(sim)} parecido`
+          : 'título diferente',
   );
 
   let identificador: PartScore;
@@ -326,22 +336,34 @@ export function preDiff(
 }
 
 /**
+ * O currículo pronto para comparar um item em criação: as produções, lidas
+ * uma vez por formulário aberto, e os perfis delas.
+ */
+export interface CvIndex {
+  existing: XElement[];
+  profiles: ProfileCache;
+}
+
+export function cvIndex(root: XElement): CvIndex {
+  return { existing: productionItems(root), profiles: new Map() };
+}
+
+/**
  * O item do currículo com que um item em criação mais se parece (o
  * formulário de produção nova, inclusive o preenchido pelo DOI). Um item com
- * o mesmo número de sequência é ele mesmo e fica de fora. cache: o mesmo a
- * cada edição do formulário, para o currículo ser lido uma vez só.
+ * o mesmo número de sequência é ele mesmo e fica de fora. O rascunho muda a
+ * cada tecla e é lido de novo; o currículo vem do índice.
  */
-export function closestInCv(
-  item: XElement,
-  root: XElement,
-  cache: ProfileCache = new Map(),
-): Candidate | undefined {
+export function closestIn(item: XElement, index: CvIndex): Candidate | undefined {
   const seq = getAttr(item, 'SEQUENCIA-PRODUCAO');
-  const existing = productionItems(root).filter(
+  const existing = index.existing.filter(
     (el) => seq === undefined || getAttr(el, 'SEQUENCIA-PRODUCAO') !== seq,
   );
-  // O rascunho muda a cada tecla e é lido de novo; os itens do currículo, que
-  // não mudam com o formulário aberto, ficam no cache de quem chama.
-  cache.delete(item);
-  return candidatesFor(item, existing, cache)[0];
+  index.profiles.delete(item);
+  return candidatesFor(item, existing, index.profiles)[0];
+}
+
+/** O mesmo, sem índice guardado: lê o currículo inteiro. */
+export function closestInCv(item: XElement, root: XElement): Candidate | undefined {
+  return closestIn(item, cvIndex(root));
 }

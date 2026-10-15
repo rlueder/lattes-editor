@@ -5595,7 +5595,8 @@ b {
   font-size: 12px;
 }
 
-/* Resumo e tipo do item à direita. */
+/* Itens de outro arquivo: o resumo da leva e o tipo e o ano de cada item, à
+   direita da linha. */
 .incoming-summary {
   margin: 0 0 12px;
   font-size: 13px;
