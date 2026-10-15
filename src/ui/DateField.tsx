@@ -48,7 +48,7 @@ export function DateField({ common, label, onCommit, value }: Props) {
         autoComplete="off"
         inputMode="numeric"
         maxLength={10}
-        placeholder="dd/mm/aaaa"
+        placeholder="DD/MM/AAAA"
         type="text"
         value={draft}
         onBlur={finish}
