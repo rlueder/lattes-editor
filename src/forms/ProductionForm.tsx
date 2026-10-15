@@ -29,8 +29,11 @@ import { isRedundantDateFormat } from '../ui/lattes-date.ts';
 import { Modal } from '../ui/Modal.tsx';
 import { Switch } from '../ui/primitives/Switch.tsx';
 import { Tip } from '../ui/primitives/Tip.tsx';
+import { useGroupStarts } from '../ui/use-group-starts.ts';
 import { AreasEditor } from './AreasEditor.tsx';
 import { AuthorsEditor } from './AuthorsEditor.tsx';
+import { sectionFacts } from './form-sections.ts';
+import { FormSection } from './FormSection.tsx';
 import { formSpec, missingRequired } from './specs.ts';
 import { useDiscardGuard } from './use-discard-guard.ts';
 
@@ -127,6 +130,20 @@ export function ProductionForm({
   const headline = firstSet?.fields[0]?.attr.startsWith('TITULO') ? firstSet.fields[0] : undefined;
   const headlinePart = firstSet && partOf(firstSet.part);
 
+  // Partes longas fecham numa linha (disclosure.ts): a primeira e as com
+  // obrigatório abertas; um erro do primeiro "Salvar" abre a sua.
+  const sections = (spec?.fieldsets ?? []).flatMap((set) => {
+    const part = partOf(set.part);
+    if (!part) return [];
+    const fields = set.fields.filter((field) => field !== headline);
+    const facts = sectionFacts(set.legend, part, fields, (attr) => !!errorFor(part, attr));
+    return [{ facts, fields, part, set }];
+  });
+  const startOf = useGroupStarts(
+    sections.map((s) => s.facts),
+    { editing: !isNew, fields: sections.reduce((n, s) => n + s.fields.length, 0) },
+  );
+
   // Primeiro clique com pendências mostra os erros nos campos; o segundo salva
   // assim mesmo (o item fica marcado e a exportação espera a correção).
   const save = () => {
@@ -215,31 +232,26 @@ export function ProductionForm({
             />
           )}
           {spec
-            ? spec.fieldsets.map((set) => {
-                const part = partOf(set.part);
-                if (!part) return null;
+            ? sections.map(({ facts, fields, part, set }) => {
                 const attrSpecs = schema.elements[part.name]?.attributes ?? [];
                 return (
-                  <fieldset key={set.legend} className="form-fieldset">
-                    <legend>{set.legend}</legend>
+                  <FormSection key={set.legend} facts={facts} start={startOf(set.legend)}>
                     <div className="fields">
-                      {set.fields
-                        .filter((field) => field !== headline)
-                        .map((field) => (
-                          <AttributeField
-                            key={field.attr}
-                            el={part}
-                            error={errorFor(part, field.attr)}
-                            multiline={field.multiline}
-                            name={field.attr}
-                            required={field.required}
-                            spec={attrSpecs.find((a) => a.name === field.attr)}
-                            wide={field.wide}
-                            onEdit={touch}
-                          />
-                        ))}
+                      {fields.map((field) => (
+                        <AttributeField
+                          key={field.attr}
+                          el={part}
+                          error={errorFor(part, field.attr)}
+                          multiline={field.multiline}
+                          name={field.attr}
+                          required={field.required}
+                          spec={attrSpecs.find((a) => a.name === field.attr)}
+                          wide={field.wide}
+                          onEdit={touch}
+                        />
+                      ))}
                     </div>
-                  </fieldset>
+                  </FormSection>
                 );
               })
             : // Sem formulário desenhado: todos os campos das partes do item.

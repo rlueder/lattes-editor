@@ -39,3 +39,14 @@ export const FieldSlotContext = createContext<FieldSlotFn | null>(null);
 export function useFieldSlot(): FieldSlotFn | null {
   return useContext(FieldSlotContext);
 }
+
+/**
+ * O trecho da prévia que a pessoa clicou para abrir a edição (a chave dele,
+ * como em PartKeyContext): o grupo do campo desse trecho abre, e o foco vai
+ * para o campo. Sem provedor, nenhum.
+ */
+export const TargetPartContext = createContext<string | null>(null);
+
+export function useTargetPart(): string | null {
+  return useContext(TargetPartContext);
+}

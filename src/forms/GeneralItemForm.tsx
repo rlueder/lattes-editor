@@ -14,13 +14,17 @@ import type { XElement } from '../model/xml.ts';
 import { lattesSchema as schema } from '../schema/lattes.ts';
 import { AttributeField } from '../ui/AttributeField.tsx';
 import { DiscardConfirm } from '../ui/dialogs.tsx';
+import { switchedOff } from '../ui/disclosure.ts';
 import { isSystemAttr } from '../ui/field-kind.ts';
 import { ChevronIcon, CloseIcon, CollapseIcon, ExpandIcon } from '../ui/icons.tsx';
 import { isRedundantDateFormat } from '../ui/lattes-date.ts';
 import { Modal } from '../ui/Modal.tsx';
 import { Select } from '../ui/primitives/Select.tsx';
 import { Tip } from '../ui/primitives/Tip.tsx';
+import { useGroupStarts } from '../ui/use-group-starts.ts';
 import { AuthorsEditor } from './AuthorsEditor.tsx';
+import { sectionFacts } from './form-sections.ts';
+import { FormSection } from './FormSection.tsx';
 import { generalParts, missingGeneral } from './general-specs.ts';
 import { useDiscardGuard } from './use-discard-guard.ts';
 
@@ -111,6 +115,17 @@ export function GeneralItemForm({
   const first = parts[0];
   const headline =
     first?.fields[0] && isHeadline(first.fields[0].attr) ? first.fields[0] : undefined;
+  // Partes longas fecham numa linha (disclosure.ts); a primeira e as com
+  // obrigatório ficam abertas, e um erro do primeiro "Salvar" abre a sua.
+  const sections = parts.map((part) => {
+    const fields = part.fields.filter((field) => !(part === first && field === headline));
+    const facts = sectionFacts(part.legend, part.el, fields, (attr) => !!errorFor(part.el, attr));
+    return { facts, fields, part };
+  });
+  const startOf = useGroupStarts(
+    sections.map((s) => s.facts),
+    { editing: false, fields: sections.reduce((n, s) => n + s.fields.length, 0) },
+  );
   // Campos já mostrados, por elemento: as partes da formação editam todas o próprio item.
   const listed = new Map<XElement, Set<string>>();
   for (const p of parts) {
@@ -229,13 +244,11 @@ export function GeneralItemForm({
             </fieldset>
           )}
 
-          {parts.map((part) => {
+          {sections.map(({ facts, fields, part }) => {
             const attrSpecs = schema.elements[part.el.name]?.attributes ?? [];
-            const fields = part.fields.filter((field) => !(part === first && field === headline));
             if (fields.length === 0) return null;
             return (
-              <fieldset key={part.legend} className="form-fieldset">
-                <legend>{part.legend}</legend>
+              <FormSection key={part.legend} facts={facts} start={startOf(part.legend)}>
                 <div className="fields">
                   {fields.map((field) => (
                     <AttributeField
@@ -251,7 +264,7 @@ export function GeneralItemForm({
                     />
                   ))}
                 </div>
-              </fieldset>
+              </FormSection>
             );
           })}
 
@@ -283,7 +296,9 @@ export function GeneralItemForm({
                   (a) =>
                     !names.has(a.name) &&
                     !isRedundantDateFormat(a.name, a.value) &&
-                    !isSystemAttr(el.name, a.name),
+                    !isSystemAttr(el.name, a.name) &&
+                    // Sanduíche e cotutela só depois de o tipo do curso os escolher.
+                    !switchedOff(el, a.name),
                 );
                 if (rest.length === 0) return null;
                 return (

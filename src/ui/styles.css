@@ -340,6 +340,20 @@ button.status-seg:hover,
   flex-shrink: 0;
 }
 
+/* Botão com ícone (Nova atuação, Editar, Enviar ao Lattes, Marcar itens, os
+   da barra de cima e as cópias na barra fixa): o ícone no centro da linha do
+   texto, num tamanho fixo. :where() deixa a regra sem especificidade, então o
+   display de cada botão (none, flex, grid) continua valendo por cima dela. */
+:where(button:has(> .icon-svg)) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+:where(button) > .icon-svg {
+  flex: none;
+}
+
 .dot {
   width: 6px;
   height: 6px;
@@ -7070,5 +7084,81 @@ main.content {
     overflow: hidden;
     clip: rect(0 0 0 0);
     white-space: nowrap;
+  }
+}
+
+/* Grupo de campos que fecha (DisclosureGroup): uma linha de texto, sem caixa
+   nem borda. Só o título fica no estilo dos títulos de grupo; a contagem e o
+   resumo seguem em texto pequeno e apagado, cortados numa linha. Ao passar o
+   mouse, muda só a cor. */
+.disclosure {
+  margin-top: 18px;
+}
+
+.fields-block > .disclosure:first-child {
+  margin-top: 0;
+}
+
+.disclosure-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  font: 12px/1.4 var(--font);
+  text-align: left;
+}
+
+.disclosure-toggle:hover {
+  color: var(--text);
+}
+
+.disclosure-chevron {
+  display: inline-flex;
+  flex: none;
+  transform: rotate(-90deg);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.disclosure.is-open .disclosure-chevron {
+  transform: none;
+}
+
+.disclosure-text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* O título em caixa alta pequena, como os títulos de grupo da edição. */
+.disclosure-title-caps {
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* No formulário de item novo, como a legenda das outras partes. */
+.disclosure-title-legend {
+  font-weight: 550;
+}
+
+.disclosure-body {
+  margin-top: 14px;
+}
+
+.form-disclosure {
+  padding-top: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disclosure-chevron {
+    transition: none;
   }
 }

@@ -15,7 +15,7 @@ import {
 } from 'react';
 
 import type { XElement } from '../model/xml.ts';
-import { DraftContext, PartKeyContext } from './draft-context.ts';
+import { DraftContext, PartKeyContext, TargetPartContext } from './draft-context.ts';
 import { type OpenEditor, openOnly, registerOpen, unregister } from './edit-session.ts';
 import { PencilIcon } from './icons.tsx';
 import { clickOpensEditor, readingKeyAction } from './reading.ts';
@@ -74,6 +74,8 @@ export function EditableBlock({
   const clickTimer = useRef(0);
   /** O campo em foco, pela chave do pedaço dele na prévia. */
   const [focusPart, setFocusPart] = useState<string | null>(null);
+  /** O trecho da prévia clicado para abrir: o campo dele recebe o foco. */
+  const [targetPart, setTargetPart] = useState<string | null>(null);
   const keyOf = useMemo(() => partKeys(root), [root]);
   /** Altura do bloco na tela antes da troca, para mantê-lo no mesmo lugar. */
   const anchor = useRef<number | null>(null);
@@ -85,17 +87,18 @@ export function EditableBlock({
     [],
   );
 
-  const doOpen = () => {
+  const doOpen = (target: string | null = null) => {
     clearTimeout(clickTimer.current);
+    setTargetPart(target);
     anchor.current = blockRef.current?.getBoundingClientRect().top ?? null;
     setDrafts(new Map());
     setEditing(true);
     registerOpen(handle.current);
   };
   /** Abrir: um bloco de cada vez; o que estava aberto fecha antes (edit-session.ts). */
-  const open = () => {
+  const open = (target: string | null = null) => {
     clearTimeout(clickTimer.current);
-    openOnly(doOpen, handle.current);
+    openOnly(() => doOpen(target), handle.current);
   };
   /**
    * Fechar. `own` é falso quando outro bloco abre: aí este não devolve o foco
@@ -156,16 +159,23 @@ export function EditableBlock({
     if (!block || before === null) return;
     window.scrollBy(0, block.getBoundingClientRect().top - before);
     if (editing) {
-      block
-        .querySelector<HTMLElement>(
+      // O campo do trecho clicado, quando há; senão o primeiro.
+      const fields = 'input:not([type=hidden]), textarea, [role=combobox], button[role=switch]';
+      const target = targetPart
+        ? block.querySelector(`.reading-form [data-part="${CSS.escape(targetPart)}"]`)
+        : null;
+      (
+        target?.querySelector<HTMLElement>(fields) ??
+        block.querySelector<HTMLElement>(
           '.reading-form input:not([type=hidden]), .reading-form textarea, .reading-form [role=combobox]',
         )
-        ?.focus({ preventScroll: true });
+      )?.focus({ preventScroll: true });
     } else if (restoreFocus.current) {
       restoreFocus.current = false;
       editRef.current?.focus({ preventScroll: true });
     }
-  }, [editing]);
+    // O alvo muda junto com a abertura (doOpen); sozinho, sem a âncora, sai cedo.
+  }, [editing, targetPart]);
 
   // O trecho do campo em foco acende na prévia. A prévia se refaz a cada
   // tecla, então a marca é reaplicada depois de toda renderização.
@@ -225,8 +235,9 @@ export function EditableBlock({
         clearTimeout(clickTimer.current);
         const onControl = (e.target as Element).closest('a, button') !== null;
         if (!clickOpensEditor(window.getSelection()?.toString() ?? '', onControl, e.detail)) return;
+        const part = (e.target as Element).closest('[data-part]')?.getAttribute('data-part');
         clickTimer.current = window.setTimeout(() => {
-          if (clickOpensEditor(window.getSelection()?.toString() ?? '', false, 1)) open();
+          if (clickOpensEditor(window.getSelection()?.toString() ?? '', false, 1)) open(part);
         }, CLICK_DELAY_MS);
       }}
     >
@@ -245,7 +256,7 @@ export function EditableBlock({
           ) : (
             <>
               {addLabel && (
-                <button className="ghost reading-add" type="button" onClick={open}>
+                <button className="ghost reading-add" type="button" onClick={() => open()}>
                   {addLabel}
                 </button>
               )}
@@ -255,7 +266,7 @@ export function EditableBlock({
                 aria-label={`Editar ${label}`}
                 className="ghost reading-edit-btn"
                 type="button"
-                onClick={open}
+                onClick={() => open()}
                 onKeyDown={onEditKey}
               >
                 <PencilIcon /> Editar
@@ -267,17 +278,19 @@ export function EditableBlock({
       {editing && (
         <DraftContext.Provider value={onDraft}>
           <PartKeyContext.Provider value={keyOf}>
-            <div
-              className="reading-form"
-              onBlur={(e) => {
-                if (!e.currentTarget.contains(e.relatedTarget)) setFocusPart(null);
-              }}
-              onFocus={(e) => {
-                setFocusPart(e.target.closest('[data-part]')?.getAttribute('data-part') ?? null);
-              }}
-            >
-              {form()}
-            </div>
+            <TargetPartContext.Provider value={targetPart}>
+              <div
+                className="reading-form"
+                onBlur={(e) => {
+                  if (!e.currentTarget.contains(e.relatedTarget)) setFocusPart(null);
+                }}
+                onFocus={(e) => {
+                  setFocusPart(e.target.closest('[data-part]')?.getAttribute('data-part') ?? null);
+                }}
+              >
+                {form()}
+              </div>
+            </TargetPartContext.Provider>
           </PartKeyContext.Provider>
         </DraftContext.Provider>
       )}
