@@ -71,7 +71,6 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [sectionId, setSectionId] = useState('dados-gerais');
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [showEmpty, setShowEmpty] = useState(false);
   const [theme, setTheme] = useTheme();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -264,7 +263,6 @@ export function App() {
         notices={noticesOf(bridge, update, devExtensionFolder)}
         pendingCount={production.pending.length + changes.open}
         saveState={saveState}
-        showEmpty={showEmpty}
         strip={stripFor(production.pending.length + changes.open, bridge)}
         theme={theme}
         onClose={closeFile}
@@ -277,7 +275,6 @@ export function App() {
         onSave={() =>
           void saveBytes(encodeCv(session.doc, session.meta.encoding), session.meta.fileName)
         }
-        onShowEmpty={setShowEmpty}
         onStripOpen={(kind) => {
           if (kind === 'pendencia-desconhecida') return setDiagnosisOpen(true);
           if (kind === 'no-lattes') requestTab('enviado');
@@ -312,7 +309,6 @@ export function App() {
             {section && (
               <SectionView
                 section={section}
-                showEmpty={showEmpty}
                 onEdit={onEdit}
                 onNewGeneral={general.open}
                 onNewItem={production.startNew}

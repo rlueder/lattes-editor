@@ -29,7 +29,6 @@ interface Props {
   pendingCount: number;
   ref: Ref<HTMLElement>;
   saveState: SaveState;
-  showEmpty: boolean;
   /** Faixa de estados: original, alterações, no Lattes, publicado. */
   strip: StripState;
   theme: ThemePref;
@@ -41,7 +40,6 @@ interface Props {
   onPrint: () => void;
   onReload: (file: File) => void;
   onSave: () => void;
-  onShowEmpty: (show: boolean) => void;
   onStripOpen: (kind: StripOpenKind) => void;
   onTheme: (theme: ThemePref) => void;
 }
@@ -70,13 +68,11 @@ export function Topbar({
   onPrint,
   onReload,
   onSave,
-  onShowEmpty,
   onStripOpen,
   onTheme,
   pendingCount,
   ref,
   saveState,
-  showEmpty,
   strip,
   theme,
 }: Props) {
@@ -165,8 +161,6 @@ export function Topbar({
               else reloadInput.current?.click();
             },
             onSave,
-            onShowEmpty,
-            showEmpty,
           }}
           focus={focus}
           theme={theme}

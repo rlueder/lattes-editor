@@ -3,7 +3,7 @@
 // acima da versão, "Verificar atualizações" confere na hora se saiu versão nova.
 
 import { Menu } from '@base-ui/react/menu';
-import { type CSSProperties, type ReactNode, useState } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 import { PrinterIcon } from '../print/PrinterIcon.tsx';
 import { FIELD_ORDERS, type FieldOrder, setFieldOrder, useFieldOrder } from './field-order.ts';
@@ -11,7 +11,6 @@ import {
   CheckIcon,
   CloseIcon,
   DownloadIcon,
-  EyeIcon,
   FocusIcon,
   HashIcon,
   HistoryIcon,
@@ -24,7 +23,6 @@ import {
   UpdateIcon,
 } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
-import { readingModeOn, showEmptySettingVisible } from './reading.ts';
 import { setShowCodes, useShowCodes } from './show-codes.ts';
 import type { ThemePref } from './theme.ts';
 import { checkUpdatesNow, useManualUpdateCheck } from './use-updates.ts';
@@ -32,13 +30,11 @@ import { checkUpdatesNow, useManualUpdateCheck } from './use-updates.ts';
 /** Ações que pedem um currículo aberto; sem elas, aparecem desabilitadas. */
 interface FileActions {
   modified: boolean;
-  showEmpty: boolean;
   onClose: () => void;
   onHistory: () => void;
   onPrint: () => void;
   onReload: () => void;
   onSave: () => void;
-  onShowEmpty: (show: boolean) => void;
 }
 
 interface Props {
@@ -60,7 +56,6 @@ const THEMES: { icon: ReactNode; label: string; value: ThemePref }[] = [
 export function SettingsMenu({ file, focus, onTheme, theme }: Props) {
   const showCodes = useShowCodes();
   const update = useManualUpdateCheck();
-  const [readingMode] = useState(readingModeOn);
   const fieldOrder = useFieldOrder();
   return (
     <Menu.Root>
@@ -104,37 +99,33 @@ export function SettingsMenu({ file, focus, onTheme, theme }: Props) {
               </Menu.RadioGroup>
             </Menu.Group>
 
-            {readingMode && (
-              <>
-                <Menu.Separator className="menu-sep" />
-                <Menu.Group>
-                  <Menu.GroupLabel className="menu-heading">Ordem dos campos</Menu.GroupLabel>
-                  <Menu.RadioGroup
-                    className="menu-segment"
-                    style={
-                      {
-                        '--seg-count': FIELD_ORDERS.length,
-                        '--seg-index': FIELD_ORDERS.findIndex((o) => o.value === fieldOrder),
-                      } as CSSProperties
-                    }
-                    value={fieldOrder}
-                    onValueChange={(v) => setFieldOrder(v as FieldOrder)}
+            <Menu.Separator className="menu-sep" />
+            <Menu.Group>
+              <Menu.GroupLabel className="menu-heading">Ordem dos campos</Menu.GroupLabel>
+              <Menu.RadioGroup
+                className="menu-segment"
+                style={
+                  {
+                    '--seg-count': FIELD_ORDERS.length,
+                    '--seg-index': FIELD_ORDERS.findIndex((o) => o.value === fieldOrder),
+                  } as CSSProperties
+                }
+                value={fieldOrder}
+                onValueChange={(v) => setFieldOrder(v as FieldOrder)}
+              >
+                <span aria-hidden="true" className="menu-seg-indicator" />
+                {FIELD_ORDERS.map((o) => (
+                  <Menu.RadioItem
+                    key={o.value}
+                    className="menu-seg"
+                    closeOnClick={false}
+                    value={o.value}
                   >
-                    <span aria-hidden="true" className="menu-seg-indicator" />
-                    {FIELD_ORDERS.map((o) => (
-                      <Menu.RadioItem
-                        key={o.value}
-                        className="menu-seg"
-                        closeOnClick={false}
-                        value={o.value}
-                      >
-                        {o.label}
-                      </Menu.RadioItem>
-                    ))}
-                  </Menu.RadioGroup>
-                </Menu.Group>
-              </>
-            )}
+                    {o.label}
+                  </Menu.RadioItem>
+                ))}
+              </Menu.RadioGroup>
+            </Menu.Group>
 
             <Menu.Separator className="menu-sep" />
 
@@ -154,23 +145,6 @@ export function SettingsMenu({ file, focus, onTheme, theme }: Props) {
                   </span>
                   <span className="menu-label">Modo foco</span>
                   <kbd className="menu-kbd">{focus.label}</kbd>
-                  <Menu.CheckboxItemIndicator className="menu-check">
-                    <CheckIcon />
-                  </Menu.CheckboxItemIndicator>
-                </Menu.CheckboxItem>
-              )}
-              {showEmptySettingVisible(readingMode) && (
-                <Menu.CheckboxItem
-                  checked={file?.showEmpty ?? false}
-                  className="menu-item"
-                  closeOnClick={false}
-                  disabled={!file}
-                  onCheckedChange={(show) => file?.onShowEmpty(show)}
-                >
-                  <span className="menu-icon">
-                    <EyeIcon />
-                  </span>
-                  <span className="menu-label">Mostrar campos vazios</span>
                   <Menu.CheckboxItemIndicator className="menu-check">
                     <CheckIcon />
                   </Menu.CheckboxItemIndicator>

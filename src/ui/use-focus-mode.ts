@@ -14,7 +14,6 @@ import {
   shellClass,
   writeFocusMode,
 } from './focus-mode.ts';
-import { readingModeOn } from './reading.ts';
 
 const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
@@ -161,8 +160,7 @@ export interface FocusShell {
  * mostra (borda, puxador, ⌘K) e o atalho. Só existe com ?leitura.
  */
 export function useFocusShell(paletteOpen: boolean, sectionId: string): FocusShell {
-  const [readingMode] = useState(readingModeOn);
-  const focus = useFocusMode(readingMode);
+  const focus = useFocusMode(true);
   const edge = useEdgeReveal(focus.on);
   const topMenu = usePopupOpen('.topbar', focus.on);
   const sideMenu = usePopupOpen('.sidebar', focus.on);

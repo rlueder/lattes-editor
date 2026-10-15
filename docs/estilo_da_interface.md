@@ -60,10 +60,6 @@ O modal "New issue" do Linear é o modelo para "Novo item":
 
 ## Dois registros: interface densa e texto de leitura
 
-> Proposta em avaliação. Por enquanto só aparece no `pnpm dev` com
-> `?leitura` na URL (veja `docs/desenvolvimento.md`); o editor de sempre
-> continua o padrão até a decisão.
-
 A escala do Linear serve ao que se opera: menu lateral, cabeçalho, painel
 "Nesta seção", filtro, linhas compactas e formulários. O conteúdo de uma
 seção é outra coisa, porque a maior parte do tempo a pessoa lê o próprio
@@ -71,7 +67,7 @@ currículo e só às vezes muda um dado. Para esse texto a referência é o
 [Typography for Lawyers](https://typographyforlawyers.com/), de Matthew
 Butterick, adaptado à tela.
 
-No modo de leitura, Dados gerais, Formação e Produções aparecem compostos
+Todas as seções aparecem compostas
 como texto, sem borda de campo, sem rótulo que repete o título do grupo e
 sem a caixa branca sobre o fundo cinza: os grupos se separam pelo espaço.
 A leitura mostra todo campo preenchido: o que não cabe na frase (o status
@@ -80,6 +76,15 @@ colunas (duas em tela estreita), com o rótulo pequeno acima do valor; um
 valor de mais de 24 caracteres ocupa duas colunas, e um de mais de 48, a linha
 inteira. A grade segue a ordem de leitura, sem reacomodar valores curtos nos
 buracos. Campo vazio não aparece.
+
+Atuação, projetos, orientações, bancas e eventos leem como registro: período
+ou ano, título, uma linha de onde e de que forma ("69º Congresso Brasileiro
+de Genética · Convidado · Conferencista"), quem o item envolve ("Orientado:",
+"Candidato:") e o resto em grade. O que se repete dentro do item (vínculos,
+atividades, integrantes, participantes) vira uma lista recuada, cada item
+como um registro pequeno. As produções com autores leem como referência da
+NBR 6023. As tabelas de apoio de "Outros dados" (instituições, cursos)
+continuam como cartões, por causa do "Onde aparece".
 
 Na edição, o texto do bloco fica no topo como prévia, igual ao que estava
 na tela e na mesma tipografia de leitura, e acompanha o que se digita. Abaixo
@@ -136,11 +141,10 @@ Mais algumas decisões do mesmo lado:
   seguintes, como num índice impresso; o leitor de tela continua ouvindo o ano.
 - O botão "Editar" fica numa margem reservada à direita do bloco e nunca
   cobre o texto.
-- Com `?leitura`, o item ativo do menu lateral e do "Nesta seção" no tema
-  escuro usa um fundo neutro em vez do azul saturado.
-- O ⚙ "Mostrar campos vazios" sai do menu com `?leitura`: a leitura sempre
-  esconde os vazios e a edição sempre os mostra. Se o modo de leitura virar
-  o padrão, a opção sai de vez.
+- No tema escuro, o item ativo do menu lateral e do "Nesta seção" usa um
+  fundo neutro em vez do azul saturado.
+- Não há mais o ⚙ "Mostrar campos vazios": a leitura sempre esconde os
+  vazios e a edição sempre os mostra.
 
 ### Ordem dos campos
 
@@ -153,7 +157,7 @@ preenchido, então preencher não o muda de lugar. Nas produções, cuja prévia
 a referência, os campos da referência vêm na ordem da citação e o resto em
 "Detalhes". O ⚙ tem "Ordem dos campos: como na prévia / como no Lattes".
 
-Como no Lattes, e no editor fora do modo de leitura, os campos de um item
+Como no Lattes (a outra opção do ⚙), os campos de um item
 seguem a ordem do formulário do próprio Lattes quando
 ela é conhecida (`src/ui/form-order.ts`, a partir das seções 5, 16 e 17 de
 `docs/lattes_internals.md`): participação em evento, formação acadêmica (por
@@ -162,8 +166,7 @@ e resumo. Os grupos (Principal, Local, Curso, Situação e período…) são
 trechos seguidos desse formulário; um campo do XML que o Lattes não pede
 fica em "Outros dados", e não num grupo por semelhança de nome. Nos outros
 itens vale a ordem por assunto de antes, com os erros óbvios corrigidos (o
-nome e a cidade do evento iam para "Publicação"). Vale também fora do modo
-de leitura.
+nome e a cidade do evento iam para "Publicação").
 
 ### Um bloco de cada vez
 
@@ -172,8 +175,6 @@ estava aberto, gravando antes o campo em foco, como o "Concluir"; as
 mudanças valem na hora, como no resto do editor.
 
 ### Modo foco
-
-> Proposta em avaliação, também só com `?leitura`.
 
 Inspirado no modo foco do iA Writer: fica só o conteúdo e o índice "Nesta
 seção". O menu de seções (com foto e nome) e o cabeçalho (⌘K, novo item,

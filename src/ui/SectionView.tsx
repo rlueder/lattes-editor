@@ -2,12 +2,12 @@
 // painel com o filtro (vale para todas as listas da seção), o índice dos grupos
 // e o índice do item aberto.
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import { isBlank } from '../model/changes.ts';
 import type { ProductionType } from '../model/production.ts';
 import type { XElement } from '../model/xml.ts';
-import { type EditFn, ElementView } from './ElementView.tsx';
+import type { EditFn } from './ElementView.tsx';
 import { EmptySection } from './EmptySection.tsx';
 import {
   applyFilter,
@@ -20,13 +20,11 @@ import {
 } from './facets.ts';
 import { FilterBar } from './FilterBar.tsx';
 import { EyeIcon, EyeOffIcon, PlusIcon } from './icons.tsx';
-import { ItemList } from './ItemList.tsx';
 import { JumpBar } from './JumpBar.tsx';
 import { type ListView, yearView } from './list-view.ts';
 import { MarkDialog } from './MarkDialog.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { PrivacyContext, usePrivacyMode } from './privacy.ts';
-import { isReadingSection, readingModeOn } from './reading.ts';
 import { ReadingGroup } from './ReadingView.tsx';
 import { useReferenceIndex } from './reference-context.ts';
 import { type ReferenceIndex, viewForContainer } from './reference-tables.ts';
@@ -37,7 +35,6 @@ import { useOpenItem } from './use-open-item.ts';
 
 interface Props {
   section: Section;
-  showEmpty: boolean;
   onEdit: EditFn;
   /** Item novo de formação, atuação, projeto ou patente, pela seção. */
   onNewGeneral: (sectionId: string) => void;
@@ -65,7 +62,7 @@ export function SectionView(props: Props) {
   return <SectionBody key={props.section.id} {...props} />;
 }
 
-function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, showEmpty }: Props) {
+function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section }: Props) {
   const index = useReferenceIndex();
   const [state, setState] = useState<FilterState>(NO_FILTER);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -104,13 +101,6 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, s
     />
   );
   const privacy = section.id === 'dados-gerais';
-  // ?leitura no `pnpm dev`: o protótipo do modo de leitura (reading.ts).
-  const [readingMode] = useState(readingModeOn);
-  // O cromo também muda um pouco no modo de leitura (styles.css, data-leitura).
-  useEffect(() => {
-    if (readingMode) document.documentElement.dataset.leitura = '';
-  }, [readingMode]);
-  const reading = isReadingSection(section.id, readingMode);
   const lists = section.groups.map((g) => groupList(g, index));
   const allItems = lists.flatMap((l) => l?.items ?? []);
   // Recalcula só quando os itens da seção mudam de identidade.
@@ -126,7 +116,7 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, s
   const shownIn = (g: SectionGroup, i: number): number => {
     const list = lists[i];
     // Bloco só com campos vazios (Outras informações relevantes sem texto) não aparece.
-    if (!showEmpty && g.elements.every(isBlank)) return 0;
+    if (g.elements.every(isBlank)) return 0;
     if (!filtering) return countItems(g);
     if (list)
       return applyFilter(list.items, facets, state, (el) => cardText(list.view.card(el))).length;
@@ -195,7 +185,7 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, s
 
   return (
     <PrivacyContext.Provider value={privacy && hideSensitive}>
-      <div ref={rootRef} className={reading ? 'section-layout reading' : 'section-layout'}>
+      <div ref={rootRef} className="section-layout reading">
         <StickyTitle
           actions={privacyToggle}
           groups={visibleGroups.map((g) => ({ id: g.id, label: g.label }))}
@@ -214,36 +204,13 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section, s
               counts[i]! > 0 ? (
                 <section key={g.id} className="group" id={g.id}>
                   <h2>{g.label}</h2>
-                  {/* Itens soltos viram cartões, mesmo um só; o contêiner que embrulha
-                      uma lista (IDIOMAS, ARTIGOS-PUBLICADOS) passa pelo ElementView. */}
-                  {reading ? (
-                    <ReadingGroup
-                      elements={g.elements}
-                      filter={filter}
-                      label={g.label}
-                      list={lists[i] ?? null}
-                      onEdit={onEdit}
-                    />
-                  ) : lists[i]?.direct ? (
-                    <ItemList
-                      anchorBase={g.id}
-                      filter={filter}
-                      items={lists[i].items}
-                      showEmpty={showEmpty}
-                      onEdit={onEdit}
-                    />
-                  ) : (
-                    g.elements.map((el, j) => (
-                      <ElementView
-                        key={j}
-                        anchorBase={g.id}
-                        el={el}
-                        filter={filter}
-                        showEmpty={showEmpty}
-                        onEdit={onEdit}
-                      />
-                    ))
-                  )}
+                  <ReadingGroup
+                    elements={g.elements}
+                    filter={filter}
+                    label={g.label}
+                    list={lists[i] ?? null}
+                    onEdit={onEdit}
+                  />
                 </section>
               ) : null,
             )}

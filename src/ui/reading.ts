@@ -1,38 +1,15 @@
-// Modo de leitura (protótipo, ?leitura no `pnpm dev`): a seção aparece como
-// texto composto, sem bordas de campo nem rótulos que repetem o título, e os
-// campos voltam só quando a pessoa pede para editar um bloco. Aqui fica a
+// Modo de leitura: a seção aparece como texto composto, sem bordas de campo
+// nem rótulos que repetem o título, e os campos voltam só quando a pessoa
+// pede para editar um bloco. Aqui fica a
 // lógica sem React: o que aparece na leitura, como cada valor se escreve e
 // quando uma tecla abre ou fecha a edição. A composição está em
 // ReadingView.tsx e as medidas tipográficas em styles.css (".reading").
 
 import { enumLabel } from '../labels/labels.ts';
-import { type XElement } from '../model/xml.ts';
+import type { XElement } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 import { codeValueLabel, isBooleanAttr } from './field-kind.ts';
 import { displayLattesDate, isLattesDateAttr } from './lattes-date.ts';
-
-/**
- * O modo de leitura foi pedido na URL (?leitura, ?leitura=1). Só vale no
- * `pnpm dev`: o padrão continua o editor de hoje até a proposta ser aprovada.
- * ?leitura=0 desliga, para comparar na mesma aba.
- */
-export function readingRequested(search: string, dev: boolean): boolean {
-  if (!dev) return false;
-  const value = new URLSearchParams(search).get('leitura');
-  return value !== null && value !== '0';
-}
-
-/** O modo de leitura desta página: lido na hora, e falso fora do navegador. */
-export function readingModeOn(): boolean {
-  return readingRequested(
-    typeof location === 'undefined' ? '' : location.search,
-    import.meta.env.DEV,
-  );
-}
-
-export function isReadingSection(_sectionId: string, reading: boolean): boolean {
-  return reading;
-}
 
 export type ReadingKeyAction = 'edit' | 'close';
 
@@ -67,15 +44,6 @@ export function readingKeyAction(key: string, ctx: ReadingKeyContext): ReadingKe
  */
 export function clickOpensEditor(selection: string, onControl: boolean, detail = 1): boolean {
   return detail <= 1 && selection.trim() === '' && !onControl;
-}
-
-/**
- * O ⚙ "Mostrar campos vazios" vale para o editor de hoje. No modo de leitura
- * a leitura sempre esconde os vazios e a edição sempre os mostra, então a
- * opção sai do menu.
- */
-export function showEmptySettingVisible(reading: boolean): boolean {
-  return !reading;
 }
 
 /** Antes de uma aspa de abertura: início, espaço, parêntese, travessão ou outra abertura. */

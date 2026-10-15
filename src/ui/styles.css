@@ -6872,28 +6872,28 @@ main.content {
   }
 }
 
-/* Com ?leitura, o cromo escuro fica mais quieto: o item ativo do menu e do
+/* No tema escuro, o cromo fica mais quieto: o item ativo do menu e do
    "Nesta seção" num fundo neutro com o texto no tom de leitura, em vez do
    azul saturado, e a busca do painel sem a borda azul no passar do mouse. O
    foco do teclado continua com o contorno do destaque. */
 @media (prefers-color-scheme: dark) {
-  :root[data-leitura]:not([data-theme='light']) .sidebar li > button.active,
-  :root[data-leitura]:not([data-theme='light']) .jump-bar.vertical a.active {
+  :root:not([data-theme='light']) .sidebar li > button.active,
+  :root:not([data-theme='light']) .jump-bar.vertical a.active {
     background: var(--surface-3);
     color: var(--read-text);
   }
-  :root[data-leitura]:not([data-theme='light']) .filter-search:hover:not(:focus-within) {
+  :root:not([data-theme='light']) .filter-search:hover:not(:focus-within) {
     border-color: var(--border-focus);
   }
 }
 
-:root[data-leitura][data-theme='dark'] .sidebar li > button.active,
-:root[data-leitura][data-theme='dark'] .jump-bar.vertical a.active {
+:root[data-theme='dark'] .sidebar li > button.active,
+:root[data-theme='dark'] .jump-bar.vertical a.active {
   background: var(--surface-3);
   color: var(--read-text);
 }
 
-:root[data-leitura][data-theme='dark'] .filter-search:hover:not(:focus-within) {
+:root[data-theme='dark'] .filter-search:hover:not(:focus-within) {
   border-color: var(--border-focus);
 }
 

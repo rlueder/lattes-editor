@@ -7,37 +7,14 @@ import {
   displayValue,
   formatCep,
   hiddenNote,
-  isReadingSection,
   paragraphs,
   readingKeyAction,
   type ReadingKeyContext,
-  readingRequested,
-  showEmptySettingVisible,
   tabWidth,
   yearColumn,
 } from '../src/ui/reading.ts';
 
 const el = (xml: string) => parseXml(xml).root;
-
-describe('modo de leitura: a chave na URL', () => {
-  it('vale com ?leitura no pnpm dev e some no build', () => {
-    expect(readingRequested('?leitura', true)).toBe(true);
-    expect(readingRequested('?exemplo=demo&leitura=1', true)).toBe(true);
-    expect(readingRequested('?leitura', false)).toBe(false);
-  });
-
-  it('fica desligado sem a chave ou com ?leitura=0', () => {
-    expect(readingRequested('', true)).toBe(false);
-    expect(readingRequested('?exemplo=demo', true)).toBe(false);
-    expect(readingRequested('?leitura=0', true)).toBe(false);
-  });
-
-  it('vale para todas as seções', () => {
-    expect(isReadingSection('atuacao', true)).toBe(true);
-    expect(isReadingSection('outros', true)).toBe(true);
-    expect(isReadingSection('producoes', false)).toBe(false);
-  });
-});
 
 describe('modo de leitura: ler e editar', () => {
   const reading: ReadingKeyContext = {
@@ -83,11 +60,6 @@ describe('modo de leitura: ler e editar', () => {
     expect(clickOpensEditor('', false, 1)).toBe(true);
     expect(clickOpensEditor('', false, 2)).toBe(false);
     expect(clickOpensEditor('', false, 3)).toBe(false);
-  });
-
-  it('o ⚙ "Mostrar campos vazios" sai do menu no modo de leitura', () => {
-    expect(showEmptySettingVisible(true)).toBe(false);
-    expect(showEmptySettingVisible(false)).toBe(true);
   });
 });
 
