@@ -896,7 +896,15 @@ não foi vista. Campos que vão: título, ano, país, home page, divulgação
 científica, título em inglês e nome do evento. A correspondência de `F_FORMA`
 e `F_COD_PROD` com a forma e o elemento do XML continua **inferida**, e por
 isso os dois entram na conferência do "antes": se não baterem, nada é
-enviado. A exclusão de evento (`f_ctr=E`, seção 15) segue fora do conector.
+enviado. Desde 15/10/2026, a conferência leva também o ano, o nome do evento e
+a cidade, qualquer que seja a parte alterada: o `f_seq` de 3 de 8 trabalhos
+técnicos do censo de 15/10/2026 não era o `SEQUENCIA-PRODUCAO` do item
+(`lattes-formularios/censo-2026-10-15.json`, ligação `f_seq` do
+`trabalho-tecnico`), e com só
+a forma, a natureza e o ano um congresso podia ser gravado no lugar de outro
+do mesmo ano. Esses três se comparam sem acento,
+caixa nem espaço nas pontas, e, quando a outra parte do item muda o campo na
+mesma fila, o antes e o depois valem. A exclusão de evento (`f_ctr=E`, seção 15) segue fora do conector.
 
 O formulário não tem idioma, meio de divulgação, relevância, palavras-chave,
 áreas nem participantes, embora o XSD tenha esses campos no evento.

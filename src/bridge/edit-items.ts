@@ -48,10 +48,30 @@ import type { BridgeOp, FieldValues, OpBase } from './plan.ts';
  */
 export const EDIT_OUVINTE_ENABLED = true;
 
-/** Participação em evento: a linha da lista se acha por f_seq = SEQUENCIA-PRODUCAO. */
+/**
+ * Participação em evento: o formulário se abre pelo link da lista com f_seq =
+ * SEQUENCIA-PRODUCAO, e a conferência do "antes" diz se é mesmo o item (o
+ * f_seq sozinho não basta; ver planEvento).
+ */
 export interface EventoOp extends OpBase {
+  /**
+   * Campos que confirmam que o formulário aberto pelo f_seq é o do item, além
+   * do expect: o valor do Lattes, sem acento, caixa nem espaço nas pontas,
+   * precisa ser um dos listados (o antes e o depois, quando outra operação da
+   * fila troca o campo). Ausente nas operações de antes desta conferência.
+   */
+  identity?: Record<string, string[]>;
   kind: 'evento';
   seq: string;
+}
+
+const folded = (value: string | null) => (value === null ? '' : foldText(value.trim()));
+
+/** Os campos de identidade (EventoOp.identity) que o formulário não confirma. */
+export function identityMismatches(op: EventoOp, value: (name: string) => string | null): string[] {
+  return Object.entries(op.identity ?? {})
+    .filter(([name, ok]) => !ok.some((v) => folded(v) === folded(value(name))))
+    .map(([name]) => name);
 }
 
 export function isEventoOp(op: BridgeOp): op is EventoOp {
@@ -163,7 +183,12 @@ type Planned = EventoOp | { reason: string };
  * para os outros caminhos do plano). `chain` vai da raiz até o elemento
  * alterado (resolvePath).
  */
-export function planEvento(change: Change, chain: XElement[], label: string): Planned | undefined {
+export function planEvento(
+  change: Change,
+  chain: XElement[],
+  label: string,
+  siblings: readonly Change[] = [],
+): Planned | undefined {
   // Só alteração: item novo vai pelo Importar, e a exclusão tem caminho próprio.
   if (change.kind !== 'alterado') return undefined;
   const el = chain.at(-1);
@@ -221,14 +246,40 @@ export function planEvento(change: Change, chain: XElement[], label: string): Pl
   }
 
   // Conferência de identidade: a linha do Lattes com esse f_seq precisa ser
-  // de ouvinte, do mesmo tipo de evento e ter o mesmo ano ou nome.
+  // de ouvinte, do mesmo tipo de evento, e ter o mesmo ano, nome do evento e
+  // cidade, qualquer que seja a parte alterada. O f_seq sozinho não basta: no
+  // censo de 15/10/2026, o f_seq de 3 de 8 trabalhos técnicos não era o
+  // SEQUENCIA-PRODUCAO do item, e o Importar dá números do servidor. Com só a
+  // forma, a natureza e o ano, um congresso podia ser gravado no lugar de
+  // outro do mesmo ano. O formulário GN_TEC tem os campos das duas partes.
   expect.F_FORMA = OUVINTE;
   expect.F_COD_PROD = EVENT_CODES[item.name]!;
-  if (isBasics && !('f_ano' in expect)) expect.f_ano = getAttr(el, 'ANO') ?? '';
-  if (isDetail && !('f_nme_evento' in expect)) {
-    expect.f_nme_evento = getAttr(el, 'NOME-DO-EVENTO') ?? '';
+  //
+  // Os campos de identidade que a operação não troca vão em `identity`, e não
+  // no expect: comparados sem acento, caixa nem espaço nas pontas (texto
+  // livre, como a cidade, pode voltar do Lattes com outra grafia). Quando a
+  // outra parte do item tem alteração própria na mesma fila (o ano nos dados
+  // básicos e o nome no detalhamento), o Lattes pode estar com o antes ou com
+  // o depois, conforme a ordem dos envios, e os dois valem. Assim o campo é
+  // sempre conferido, mesmo que a outra operação não vá.
+  const pending = new Map<string, string>();
+  for (const c of siblings) {
+    if (c === change || c.kind !== 'alterado' || c.element === el.name) continue;
+    if (c.path.slice(0, -1).join('/') !== change.path.slice(0, -1).join('/')) continue;
+    for (const f of c.fields) pending.set(`${c.element}@${f.attr}`, f.before);
   }
-  return { expect, key: change.key, kind: 'evento', label, seq, set };
+  const identity: Record<string, string[]> = {};
+  const add = (part: XElement | undefined, attr: string, field: string) => {
+    if (field in expect) return;
+    const now = (part && getAttr(part, attr)) ?? '';
+    const before = part ? pending.get(`${part.name}@${attr}`) : undefined;
+    identity[field] = before === undefined || before === now ? [now] : [before, now];
+  };
+  const detail = isDetail ? el : childElements(item, detailOf(item.name))[0];
+  add(isBasics ? el : basics, 'ANO', 'f_ano');
+  add(detail, 'NOME-DO-EVENTO', 'f_nme_evento');
+  add(detail, 'CIDADE-DO-EVENTO', 'f_cidade');
+  return { expect, identity, key: change.key, kind: 'evento', label, seq, set };
 }
 
 // ---------------------------------------------------------------- contrato

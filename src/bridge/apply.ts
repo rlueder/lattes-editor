@@ -14,7 +14,13 @@ import {
 import { applyCreateAtuacao } from './create.ts';
 import { applyCreateFormacao, applyCreateProjeto } from './create-items.ts';
 import { applyDelete, type DeleteOp, isDeleteOp } from './delete.ts';
-import { EVENTO_SPEC, type EventoOp, isEventoOp, locateEvento } from './edit-items.ts';
+import {
+  EVENTO_SPEC,
+  type EventoOp,
+  identityMismatches,
+  isEventoOp,
+  locateEvento,
+} from './edit-items.ts';
 import {
   encodeLatin1Form,
   type FormControl,
@@ -196,7 +202,10 @@ export async function applyOp(op: BridgeOp, port: LattesPort): Promise<OpResult>
     if (pairValue(before.pairs, 'f_ctr') !== 'U') {
       return result('erro', 'O formulário não está em modo de alteração');
     }
-    const wrong = mismatches(before.pairs, op.expect);
+    const wrong = [
+      ...mismatches(before.pairs, op.expect),
+      ...(isEventoOp(op) ? identityMismatches(op, (n) => pairValue(before.pairs, n)) : []),
+    ];
     if (wrong.length > 0) {
       return result('divergente', `O Lattes não está como o editor espera: ${wrong.join(', ')}`);
     }
