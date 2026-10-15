@@ -281,4 +281,23 @@ describe('pré-diff e deduplicação explicável (LAT-45)', () => {
     expect(closestInCv(structuredClone(itself), root)).toBeUndefined();
     expect(closestInCv(one(artigo(3, { titulo: 'Outra coisa' })), root)).toBeUndefined();
   });
+
+  it('uma leva grande contra um currículo grande termina rápido (cada item lido uma vez)', () => {
+    const many = (from: number, n: number, prefix: string) =>
+      Array.from({ length: n }, (_, i) =>
+        artigo(from + i, {
+          ano: String(1990 + (i % 30)),
+          doi: `10.5555/${prefix}${i}`,
+          titulo: `${prefix} estudo número ${i} sobre palmeiras e genética ${i * 7}`,
+        }),
+      ).join('');
+    const root = cv(many(1, 1500, 'existente'));
+    const incoming = incomingItems(schema, cv(many(5000, 400, 'novo')));
+    const start = performance.now();
+    const diff = preDiff(incoming, root);
+    const ms = performance.now() - start;
+    expect(diff).toHaveLength(400);
+    // Folgado de propósito: sem o cache e o corte pelo título, levava segundos.
+    expect(ms).toBeLessThan(3000);
+  });
 });

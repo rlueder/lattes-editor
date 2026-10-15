@@ -228,21 +228,41 @@ function compare(a: Profile, b: Profile): Record<Part, PartScore> {
 }
 
 /**
+ * Os perfis já lidos numa comparação, para cada item ser lido uma vez só,
+ * e não uma vez por item que chega. Vale só durante uma comparação: o
+ * documento é mutado no lugar a cada edição.
+ */
+export type ProfileCache = Map<XElement, Profile>;
+
+function cachedProfile(cache: ProfileCache, item: XElement): Profile {
+  let p = cache.get(item);
+  if (!p) {
+    p = profileOf(item);
+    cache.set(item, p);
+  }
+  return p;
+}
+
+/**
  * Os itens do currículo com que `incoming` se parece, do mais parecido ao
  * menos, só os que passam de SIMILAR_AT (ou têm o mesmo DOI).
  */
-export function candidatesFor(incoming: XElement, existing: XElement[]): Candidate[] {
-  const mine = profileOf(incoming);
+export function candidatesFor(
+  incoming: XElement,
+  existing: XElement[],
+  cache: ProfileCache = new Map(),
+): Candidate[] {
+  const mine = cachedProfile(cache, incoming);
   const out: Candidate[] = [];
   for (const item of existing) {
     if (item === incoming) continue;
-    const other = profileOf(item);
+    const other = cachedProfile(cache, item);
+    const sameDoi = Boolean(mine.doi && mine.doi === other.doi);
+    // Título muito diferente nunca vira candidato: nem chega a pontuar.
+    if (!sameDoi && titleShare(mine, other) < MIN_TITLE_SIMILARITY) continue;
     const parts = compare(mine, other);
     const score = Math.round(Object.values(parts).reduce((n, p) => n + p.points, 0));
-    const sameDoi = Boolean(mine.doi && mine.doi === other.doi);
-    if (!sameDoi && (score < SIMILAR_AT || titleShare(mine, other) < MIN_TITLE_SIMILARITY)) {
-      continue;
-    }
+    if (!sameDoi && score < SIMILAR_AT) continue;
     // Dois DOIs diferentes são dois trabalhos, a não ser que um DOI esteja errado.
     const otherDoi = Boolean(mine.doi && other.doi && !sameDoi);
     out.push({
@@ -294,8 +314,9 @@ export interface IncomingItem {
 export function preDiff(incoming: XElement[], root: XElement): IncomingItem[] {
   const existing = productionItems(root);
   const seen: XElement[] = [];
+  const cache: ProfileCache = new Map();
   return incoming.map((item) => {
-    const best = candidatesFor(item, [...existing, ...seen])[0];
+    const best = candidatesFor(item, [...existing, ...seen], cache)[0];
     seen.push(item);
     return { best, item, status: best ? best.level : 'novo' };
   });
