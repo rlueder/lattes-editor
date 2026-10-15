@@ -254,6 +254,7 @@ as chaves ligadas (`tests/lattes-simulado.test.ts`).
 | `src/bridge/`        | O núcleo do conector, usado pela extensão e pelo editor: protocolo, plano, aplicação, leituras do Lattes                                          |
 | `src/review/`        | Diagnóstico do currículo e o que mudou no Lattes desde a exportação                                                                               |
 | `src/print/`         | Impressão e PDF (NBR 14724), referências na NBR 6023                                                                                              |
+| `src/panorama/`      | O Panorama: gráficos do currículo, só com o XML carregado; entra no editor por `index.ts` e pelo controle de modo                                 |
 | `src/lookups/`       | Busca por DOI no Crossref                                                                                                                         |
 | `src/desktop/`       | O que só existe no app: arquivos nativos, chave do chaveiro, atualização automática, links externos                                               |
 | `src/labels/`        | Rótulos pt-BR de elementos, atributos e valores                                                                                                   |

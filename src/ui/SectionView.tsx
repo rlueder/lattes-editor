@@ -33,6 +33,8 @@ import { StickyTitle } from './StickyTitle.tsx';
 import { useOpenItem } from './use-open-item.ts';
 
 interface Props {
+  /** Filtro com que a seção abre (vindo de um clique no Panorama). */
+  initialFilter?: FilterState;
   section: Section;
   onEdit: EditFn;
   /** Item novo de formação, atuação, projeto ou patente, pela seção. */
@@ -59,9 +61,16 @@ export function SectionView(props: Props) {
   return <SectionBody key={props.section.id} {...props} />;
 }
 
-function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section }: Props) {
+function SectionBody({
+  initialFilter,
+  onEdit,
+  onNewGeneral,
+  onNewItem,
+  onOpenPicker,
+  section,
+}: Props) {
   const index = useReferenceIndex();
-  const [state, setState] = useState<FilterState>(NO_FILTER);
+  const [state, setState] = useState<FilterState>(initialFilter ?? NO_FILTER);
   const rootRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const itemOutline = useOpenItem(rootRef);
