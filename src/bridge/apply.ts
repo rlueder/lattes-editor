@@ -18,7 +18,6 @@ import {
   EDIT_EVENTO_ENABLED,
   EVENTO_SPEC,
   type EventoOp,
-  identityMismatches,
   isEventoOp,
   isFullEvento,
   locateEvento,
@@ -37,6 +36,7 @@ import { fieldLabel } from './field-labels.ts';
 import {
   encodeLatin1Form,
   type FormControl,
+  identityMismatches,
   normalizeNewlines,
   type Pairs,
   pairValue,
@@ -271,7 +271,7 @@ export async function applyOp(
     const labels = (names: string[]) => names.map((n) => fieldLabel(n, op.kind)).join(', ');
     const wrong = [
       ...mismatches(before.pairs, op.expect),
-      ...(isEventoOp(op) ? identityMismatches(op, (n) => pairValue(before.pairs, n)) : []),
+      ...identityMismatches(op.identity, (n) => pairValue(before.pairs, n)),
     ];
     if (wrong.length > 0) {
       return result('divergente', `O Lattes não está como o editor espera: ${labels(wrong)}`);

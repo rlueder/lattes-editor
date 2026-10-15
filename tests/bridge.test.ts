@@ -6,6 +6,7 @@ import { fieldLabel, opRows } from '../src/bridge/field-labels.ts';
 import {
   encodeLatin1Form,
   type FormControl,
+  identityMismatches,
   pairValue,
   setPairs,
   successfulPairs,
@@ -18,7 +19,7 @@ import {
   lattesIdFrom,
   sameCv,
 } from '../src/bridge/lattes-html.ts';
-import { type BridgeOp, planChange, planChanges } from '../src/bridge/plan.ts';
+import { type BridgeOp, planChange, planChanges, type VinculoOp } from '../src/bridge/plan.ts';
 import {
   bridgeMessage,
   editorMessage,
@@ -383,6 +384,37 @@ describe('conector: aplicar no Lattes simulado', () => {
       status: 'divergente',
     });
     expect(postsOf(lattes)).toHaveLength(0);
+  });
+
+  it('vínculo de mesmo início com outro fim ou outra carga não recebe a gravação', async () => {
+    for (const [attr, value, field] of [
+      ['ANO-FIM', '2015', 'Ano de fim'],
+      ['MES-FIM', '06', 'Mês de fim'],
+      ['CARGA-HORARIA-SEMANAL', '20', 'Carga horária'],
+    ]) {
+      const lattes = await lattesFor();
+      setAttr(vinculoIn(lattes.state), attr!, value!);
+      const op = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'x'));
+      expect(await applyOp(op, lattes.port)).toMatchObject({
+        detail: `O Lattes não está como o editor espera: ${field}`,
+        status: 'divergente',
+      });
+      expect(postsOf(lattes)).toHaveLength(0);
+    }
+    // Número com outro zero à esquerda é o mesmo número.
+    const zeros = await lattesFor();
+    setAttr(vinculoIn(zeros.state), 'CARGA-HORARIA-SEMANAL', '040');
+    const same = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'x'));
+    expect((await applyOp(same, zeros.port)).status).toBe('conferido');
+    // Números longos se comparam dígito a dígito, sem arredondar.
+    expect(identityMismatches({ x: ['12345678901234567'] }, () => '12345678901234568')).toEqual([
+      'x',
+    ]);
+    expect(identityMismatches({ x: ['0'] }, () => '000')).toEqual([]);
+    // O fim alterado pela própria operação sai da identidade e vai no antes.
+    const op = vinculoOp((v) => setAttr(v, 'ANO-FIM', '2013')) as VinculoOp;
+    expect(op.identity).not.toHaveProperty('f_ano_fim');
+    expect(op.identity).toMatchObject({ f_carga: ['40'], f_mes_fim: ['12'] });
   });
 
   it('recusa valor acima do limite do campo', async () => {

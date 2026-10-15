@@ -28,7 +28,11 @@ import type { BridgeOp, FieldValues, OpBase } from './plan.ts';
  */
 export const BIOGRAPHIC_OPS_ENABLED = false;
 
-/** Formação acadêmica: a linha da lista se acha por f_seq = SEQUENCIA-FORMACAO. */
+/**
+ * Formação acadêmica: o formulário se abre pelo link da lista com f_seq =
+ * SEQUENCIA-FORMACAO, e a identidade (instituição, curso, ano de início) diz
+ * se é mesmo o item.
+ */
 export interface FormacaoOp extends OpBase {
   kind: 'formacao';
   seq: string;
@@ -188,10 +192,21 @@ function planFormacao(
   if (missing.length) return notYet(missing);
   // Conferência de identidade: o nível (oculto no formulário, igual ao NIVEL
   // da exportação: 3 mestrado, 1 graduação, 7 técnico, observado em
-  // 11/10/2026) e o ano de início têm de bater.
+  // 11/10/2026) tem de bater, e a instituição, o curso e o ano de início
+  // também, qualquer que seja o campo alterado. O f_seq sozinho não basta:
+  // no censo de 15/10/2026, o f_seq de 3 de 8 trabalhos técnicos não era o
+  // número do item, e com só nível e ano, uma graduação podia ser gravada no
+  // lugar de outra do mesmo ano. Instituição e curso vêm nos ocultos
+  // f_inst_old e f_curso_old (ligação observada no censo: os campos visíveis
+  // vêm desabilitados e não vão no envio), e se comparam sem acento, caixa
+  // nem espaço nas pontas (identity).
   expect.f_nivel = nivel;
-  if (!('f_ano_ini' in expect)) expect.f_ano_ini = getAttr(el, 'ANO-DE-INICIO') ?? '';
-  return { expect, key: change.key, kind: 'formacao', label, seq, set };
+  const identity: Record<string, string[]> = {
+    f_curso_old: [getAttr(el, 'NOME-CURSO') ?? ''],
+    f_inst_old: [getAttr(el, 'NOME-INSTITUICAO') ?? ''],
+  };
+  if (!('f_ano_ini' in expect)) identity.f_ano_ini = [getAttr(el, 'ANO-DE-INICIO') ?? ''];
+  return { expect, identity, key: change.key, kind: 'formacao', label, seq, set };
 }
 
 function planEndereco(
@@ -412,6 +427,9 @@ export const BIOGRAPHIC_FIELD_LABELS: Record<string, string> = {
     ]),
   ),
   f_ano_obten: 'Ano de obtenção do título',
+  f_curso_old: 'Curso',
+  f_inst_old: 'Instituição',
+  f_nivel: 'Nível',
   f_nome: 'Nome completo',
   F_STATUS: 'Situação do curso',
   f_titulo: 'Título do trabalho',

@@ -237,6 +237,13 @@ obrigatórios; fim obrigatório quando o status é Anterior e proibido quando é
 Atual; início antes do fim; nenhuma data no futuro; início não anterior ao
 nascimento.
 
+O conector acha o vínculo pela atuação (`f_seq_ativ` e o código da
+instituição no link, quando o XML o traz) e pelo `f_seq_hist`, e antes de
+gravar confere o início (mês e ano) e, quando a operação não os troca, o fim e
+a carga horária, sem acento, caixa nem espaço nas pontas (ligações observadas
+nos 8 vínculos do censo de 15/10/2026). Assim, um número de vínculo que não
+seja o do item não leva a gravação para outro vínculo do mesmo início.
+
 ### Formação acadêmica: `GN_FORMACAO2`, POST `pkg_formacao.FORM`
 
 Aberto por GET `pkg_formacao.form` com `f_cod`, `f_seq` e `f_tipo` (`FA`).
@@ -1435,7 +1442,10 @@ O que cada operação grava, e de onde vem cada parte:
   níveis, e o tipo "texto" dos campos sem tipo anotado nas seções acima.
 - **Travas**: além das de toda alteração (o "antes" de cada campo tem de
   bater, só os campos da operação podem mudar depois do envio), a formação
-  confere o `f_nivel` e o ano de início; a identificação confere o
+  confere o `f_nivel` e, qualquer que seja o campo alterado, a instituição, o
+  curso (os ocultos `f_inst_old` e `f_curso_old`, ligação observada no censo
+  de 15/10/2026) e o ano de início, sem acento, caixa nem espaço nas pontas:
+  o `f_seq` sozinho não identifica o item (seção 16); a identificação confere o
   `f_nacionalidade` com o `NACIONALIDADE` do XML, porque esse oculto é
   preenchido pelo JavaScript da página e um GET que o traga vazio mandaria
   vazio. Sem `B` ou `E` no XML, a mudança de identificação segue à mão. Dois

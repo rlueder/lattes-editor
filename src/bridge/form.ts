@@ -2,6 +2,8 @@
 // "bem-sucedidos" (com nome, habilitados, caixas marcadas), em Latin-1, do
 // jeito que o POST clássico de enviar() mandaria.
 
+import { foldText } from '../model/fold-text.ts';
+
 export interface FormControl {
   checked?: boolean;
   disabled?: boolean;
@@ -110,4 +112,25 @@ function encodeValue(value: string): string {
 
 export function encodeLatin1Form(pairs: Pairs): string {
   return pairs.map(([k, v]) => `${encodeValue(k)}=${encodeValue(v)}`).join('&');
+}
+
+/** Para comparar: sem acento, caixa nem espaço nas pontas, e número sem zero à esquerda (06 é 6). */
+const folded = (value: string | null) => {
+  const text = value === null ? '' : foldText(value.trim());
+  // Só os zeros à esquerda: número longo (processo, documento) não passa por Number.
+  return /^\d+$/.test(text) ? text.replace(/^0+(?=\d)/, '') : text;
+};
+
+/**
+ * Os campos de identidade (OpBase.identity) que o formulário não confirma:
+ * sem acento, caixa nem espaço nas pontas, e com números comparados pelo
+ * valor, o do Lattes precisa ser um dos aceitos.
+ */
+export function identityMismatches(
+  identity: Record<string, string[]> | undefined,
+  value: (name: string) => string | null,
+): string[] {
+  return Object.entries(identity ?? {})
+    .filter(([name, ok]) => !ok.some((v) => folded(v) === folded(value(name))))
+    .map(([name]) => name);
 }
