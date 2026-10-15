@@ -22,7 +22,7 @@ import {
   XmlParseError,
 } from '../src/model/xml.ts';
 import { lattesSchema } from '../src/schema/lattes.ts';
-import { parseEmails, parseSocial } from '../src/ui/contacts.ts';
+import { formatPhone, parseEmails, parseSocial, socialName } from '../src/ui/contacts.ts';
 import { displayValue } from '../src/ui/display.ts';
 import {
   codeAttrFor,
@@ -368,8 +368,9 @@ describe('ordem do endereço', () => {
 describe('contatos do endereço', () => {
   it('lê o e-mail com o código do endereço', () => {
     expect(parseEmails('I: nome@inst.br')).toEqual([
-      { address: 'Institucional', email: 'nome@inst.br' },
+      { address: 'E-mail para contato', email: 'nome@inst.br' },
     ]);
+    expect(parseEmails('R: outro@mail.br')[0]?.address).toBe('E-mail alternativo');
     expect(parseEmails('nome@inst.br')).toEqual([{ address: undefined, email: 'nome@inst.br' }]);
     expect(parseEmails('sem e-mail')).toEqual([]);
   });
@@ -377,8 +378,18 @@ describe('contatos do endereço', () => {
   it('lê redes sociais, consertando o texto estragado', () => {
     expect(
       parseSocial('ID Rede Social: 7, Nome Rede Social: Linkedin, EndereÃ§o: https://x.org/a/'),
-    ).toEqual([{ name: 'Linkedin', url: 'https://x.org/a/' }]);
+    ).toEqual([{ name: 'LinkedIn', url: 'https://x.org/a/' }]);
+    expect(socialName('minha rede')).toBe('Minha rede');
     expect(parseSocial('qualquer coisa')).toEqual([]);
+  });
+});
+
+describe('telefone', () => {
+  it('junta DDD e número: 8 e 9 dígitos com hífen, sem DDD só o número', () => {
+    expect(formatPhone('51', '33081234')).toBe('(51) 3308-1234');
+    expect(formatPhone('51', '999991234')).toBe('(51) 99999-1234');
+    expect(formatPhone('', '33081234')).toBe('3308-1234');
+    expect(formatPhone('51', '1234')).toBe('(51) 1234');
   });
 });
 

@@ -7320,3 +7320,13 @@ main.content {
     grid-column: 2;
   }
 }
+
+/* Contatos do endereço na leitura (e-mails, redes): um por linha. */
+.reading-contacts {
+  display: grid;
+  gap: 2px;
+}
+
+.reading-contact-kind {
+  color: var(--read-muted, var(--muted));
+}
