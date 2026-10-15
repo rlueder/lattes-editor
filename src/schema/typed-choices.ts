@@ -120,10 +120,19 @@ export function typedChoices(el: XElement, attr: string): Choice[] | undefined {
   if (!isEventBasics(el.name)) return undefined;
   if (attr === 'FORMA-PARTICIPACAO') return asChoices(PARTICIPATION_FORMS);
   if (attr === 'TIPO-PARTICIPACAO') {
-    return asChoices(PARTICIPATION_TYPES[getAttr(el, 'FORMA-PARTICIPACAO') ?? ''] ?? []);
+    return asChoices(PARTICIPATION_TYPES[getAttr(el, CHOICE_SOURCE[attr]!) ?? ''] ?? []);
   }
   return undefined;
 }
+
+/**
+ * Campo cuja lista depende de outro campo do mesmo elemento: o tipo de
+ * participação depende da forma (montaTipoApres no formulário do Lattes).
+ * Vale nos dados básicos das participações em evento.
+ */
+export const CHOICE_SOURCE: Readonly<Record<string, string>> = {
+  'TIPO-PARTICIPACAO': 'FORMA-PARTICIPACAO',
+};
 
 /** O que dizer quando um campo tipado não tem opção (tipo de participação de ouvinte). */
 export function emptyChoicesHint(el: XElement, attr: string): string | undefined {

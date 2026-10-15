@@ -305,3 +305,19 @@ export function formSlot(
   }
   return undefined;
 }
+
+/** Os tipos que o formulário da formação usa para mostrar o sanduíche e a cotutela. */
+const FORMATION_TYPES = ['TIPO-GRADUACAO', 'TIPO-MESTRADO', 'TIPO-DOUTORADO'];
+
+/**
+ * Campos que o formulário do Lattes mostra ou esconde por outro campo: na
+ * formação, o tipo (f_tpo_doutorado: normal, sanduíche, cotutela) abre os
+ * campos do sanduíche e da cotutela (seção 17, blocos lblDoutorado,
+ * lblMesesSW1, lblDoutoradoCT). Devolve [campo que decide, campos que ele
+ * abre].
+ */
+export function formSwitches(element: string): [string, string[]][] {
+  if (!FORMATION_LEVELS.test(element)) return [];
+  const switched = FORMATION.find((g) => g.label === 'Sanduíche e cotutela')!.attrs;
+  return FORMATION_TYPES.map((t) => [t, switched]);
+}

@@ -2,6 +2,7 @@
 
 import { elementLabel } from '../labels/labels.ts';
 import type { AttributeSpec } from '../schema/types.ts';
+import { controllersFirst } from './field-dependencies.ts';
 import { formLayout, formSlot, IN_ENGLISH, isEnglishAttr, OTHER_DATA } from './form-order.ts';
 
 /**
@@ -187,7 +188,9 @@ export function groupFields(
   isEmpty: (entry: FieldEntry) => boolean = () => false,
   previewSlot?: (entry: FieldEntry) => FieldSlot | undefined,
 ): FieldGroup[] {
-  if (previewSlot) return groupByPreview(entries, labelOf, previewSlot);
+  // Campo que decide as opções de outros vem antes deles (field-dependencies.ts).
+  if (previewSlot)
+    return controllersFirst(groupByPreview(entries, labelOf, previewSlot), codeAttrFor);
   const buckets = new Map<string, FieldEntry[]>();
   const mapped = (e: FieldEntry) => formLayout(e.element) !== undefined;
   const formLabels = [
@@ -222,7 +225,7 @@ export function groupFields(
             : (GROUPS.find((g) => g.test.test(entry.attr))?.label ?? 'Outros'));
     buckets.set(label, [...(buckets.get(label) ?? []), entry]);
   }
-  return order
+  const groups = order
     .filter((label) => buckets.has(label))
     .map((label) => ({
       entries: withCodes(
@@ -240,6 +243,7 @@ export function groupFields(
       label,
       system: label === 'Códigos do Lattes',
     }));
+  return controllersFirst(groups, codeAttrFor);
 }
 
 /** Grupo e posição de um campo: no formulário do Lattes ou na prévia. */

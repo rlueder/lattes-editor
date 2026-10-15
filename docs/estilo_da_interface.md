@@ -168,6 +168,12 @@ fica em "Outros dados", e não num grupo por semelhança de nome. Nos outros
 itens vale a ordem por assunto de antes, com os erros óbvios corrigidos (o
 nome e a cidade do evento iam para "Publicação").
 
+Nas duas ordens, um campo que decide as opções de outros vem antes deles,
+logo antes do primeiro que depende dele: a grande área antes da área (e esta
+antes da subárea e da especialidade), a forma de participação antes do tipo,
+o tipo de mestrado ou doutorado antes dos campos do sanduíche e da cotutela
+(`src/ui/field-dependencies.ts`).
+
 ### Um bloco de cada vez
 
 Só um bloco fica em edição. Abrir outro (clique, "Editar" ou E) fecha o que
