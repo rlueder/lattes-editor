@@ -6909,11 +6909,24 @@ main.content {
   grid-template-rows: minmax(0, 1fr);
 }
 
+.shell.is-focus {
+  /* A margem da coluna centrada, medida na largura da janela de conteúdo
+     (cqw), para o aviso de pendências poder voltar até a borda. */
+  container-type: inline-size;
+  --focus-pad: max(40px, calc((100cqw - 1128px) / 2));
+}
+
 .shell.is-focus .content {
   margin: 0;
   border-radius: 0;
   /* A coluna de leitura (820px) e o painel (260px, 48px de intervalo) no centro. */
-  padding-left: max(40px, calc((100% - 1128px) / 2));
+  padding-left: var(--focus-pad);
+}
+
+/* O aviso de pendências vai de uma borda à outra, também no modo foco. */
+.shell.is-focus .pending-banner {
+  margin-left: calc(-1 * var(--focus-pad));
+  padding-left: var(--focus-pad);
 }
 
 .shell.is-focus .topbar,
