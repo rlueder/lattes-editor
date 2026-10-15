@@ -67,8 +67,12 @@ export interface NoticeLink {
 }
 
 export interface Notice {
-  /** Abre o aviso do armazenamento, baixa e instala a versão nova do app ou abre o diagnóstico. */
-  action?: 'armazenamento' | 'atualizacao' | 'diagnostico';
+  /**
+   * Abre o aviso do armazenamento, baixa e instala a versão nova do app, abre
+   * o diagnóstico ou, depois de um "Recarregar do Lattes" que falhou, a escolha
+   * do arquivo exportado.
+   */
+  action?: 'armazenamento' | 'atualizacao' | 'diagnostico' | 'recarregar-arquivo';
   id: string;
   /** "aviso" acende o sino; "info" só aparece ao abrir. */
   level: 'aviso' | 'info';
@@ -186,6 +190,7 @@ export function noticesFor({
   appVersion,
   connection,
   devExtensionFolder,
+  reload,
   storage,
   unknownPending = false,
   update,
@@ -194,6 +199,8 @@ export function noticesFor({
   connection?: Connection;
   /** No LattesEditor Dev, a pasta da extensão Dev (src/desktop/dev-channel.ts). */
   devExtensionFolder?: string;
+  /** "Recarregar do Lattes" pela extensão que falhou (lattes-reload.ts, reloadNotice). */
+  reload?: Notice;
   storage: StorageStatus;
   /** O Lattes tem alterações não enviadas que não passaram por este editor. */
   unknownPending?: boolean;
@@ -210,6 +217,7 @@ export function noticesFor({
       title: 'Nova versão disponível',
     });
   }
+  if (reload) notices.push(reload);
   if (unknownPending) {
     notices.push({
       action: 'diagnostico',

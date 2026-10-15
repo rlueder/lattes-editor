@@ -90,7 +90,12 @@ export function useLattesOpen(
       }
     } else {
       readingAtFailure.current = linkState.current;
-      setState({ detail: reply.detail, kind: 'falhou', reason: reply.reason ?? 'erro' });
+      setState({
+        detail: reply.detail,
+        kind: 'falhou',
+        lattesId: reply.lattesId,
+        reason: reply.reason ?? 'erro',
+      });
     }
   }, [active, reply]);
 

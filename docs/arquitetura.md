@@ -58,7 +58,9 @@ que as exportações reais trazem e o XSD não declara) e gera
 A interface lê esse modelo para montar os campos e saber o que é obrigatório.
 O serializador o usa para pôr cada filho novo no lugar certo
 (`src/model/schema-order.ts`), e a validação, para conferir um item antes de ir
-ao Lattes (`src/model/validate.ts`). Por cima dele ficam as listas que o
+ao Lattes (`src/model/validate.ts`). A mesma conferência roda no currículo
+inteiro, item por item, junto com a revisão de consistência, no diagnóstico
+do currículo (`src/review/validation.ts`). Por cima dele ficam as listas que o
 próprio Lattes oferece nos formulários (país, idioma, natureza de evento),
 capturadas sem salvar nada: `src/schema/typed-choices.ts` e
 `src/schema/listas-lattes.json` (ver [`campos_tipados.md`](campos_tipados.md)).
@@ -190,7 +192,8 @@ diz para excluir no Lattes.
 ### Ações ligadas para o teste ao vivo
 
 Desde o PR "ligar as ações do conector", todas as chaves estão ligadas, para o
-dono testar no Lattes real. Cada uma tem a capacidade da extensão em
+dono testar no Lattes real, menos `PUBLISH_ENABLED` (o envio ao CNPq, LAT-54),
+que continua desligada até um envio acompanhado. Cada uma tem a capacidade da extensão em
 `BRIDGE_FEATURES`, e o app só manda a operação a uma extensão que a anuncia:
 com uma extensão mais antiga, a alteração fica em "Não enviado" e o evento
 novo fica no Importar. O release estável só leva isso se o dono gerar um.
@@ -232,7 +235,22 @@ pelo `window.postMessage` da própria página, por um content script
 ### O que a extensão faz sozinha
 
 - **Abrir do Lattes** (`src/bridge/export.ts`): pede o mesmo ZIP do "Exportar"
-  na sessão da pessoa e o entrega ao editor.
+  na sessão da pessoa e o entrega ao editor. O mesmo pedido serve ao
+  "Recarregar do Lattes…" do ⚙ (`src/ui/use-lattes-reload.ts`, LAT-46), que
+  só aceita o ZIP do currículo aberto, passa pela confirmação de sempre
+  quando há itens novos não importados e deixa a falha no sino, com a
+  escolha do arquivo exportado. Sem a extensão, o menu pede o arquivo. Com o
+  Exportar bloqueado por pendência, a tela inicial oferece a última versão
+  deste currículo guardada no app (`src/ui/use-stored-version.ts`), que abre
+  como cópia de trabalho com o diagnóstico já comparando com a página de
+  conferência; a página de conferência é texto, e não vira currículo
+  editável. O que se manda depois a partir dessa versão não sobrescreve o
+  que está pendente no Lattes: a alteração confere, antes do POST, os
+  valores de antes dos campos que muda e a identidade do item no formulário
+  lido agora (`src/bridge/apply.ts`), e para como "divergente" se não
+  baterem; o resto do formulário vai como foi lido; a inclusão confere que
+  não há item igual na lista. A mesma tela tem o link para o "Enviar ao CNPq", que libera o
+  Exportar; publicado, o editor pede o currículo de novo.
 - **Estado do Lattes** (`src/bridge/lattes-status.ts`): lê do menu a data da
   última publicação e se há alteração pendente de envio ao CNPq.
 - **Conferência do contrato** (`src/bridge/contract.ts`): só com leituras,
@@ -261,6 +279,21 @@ pelo `window.postMessage` da própria página, por um content script
   pendente no Importar também para o fluxo; o conector nunca descarta nada.
   Com a chave desligada, o editor não mostra o botão e a extensão recusa o
   pedido; o "Baixar arquivo" com os passos à mão continua igual.
+- **Enviar ao CNPq** (`src/bridge/publish.ts`, LAT-54), desligado por
+  `PUBLISH_ENABLED`. O painel "Enviar ao CNPq"
+  (`src/import-export/PublishPanel.tsx`), aberto pelo "Enviar ao Lattes"
+  quando o Lattes tem pendência, mostra o que vai ser publicado (as gravações
+  do editor desde a última publicação e a comparação de títulos com a
+  página de conferência), quantos achados o diagnóstico do currículo tem e a declaração do CNPq
+  lida da tela de envio, com o link do Termo de Uso. A caixa da declaração
+  começa desmarcada a cada abertura e só a pessoa a marca. Ligado, o conector
+  repete as consultas e o envio da tela e confere a publicação pelo menu
+  (`lattes_internals.md`, seção 10). A tela e o envio passam por
+  `src/ui/use-publish.ts` e, na extensão, por `extension/src/publish-run.ts`,
+  que nunca roda junto com a fila, a foto ou o Importar. Desligado, o painel
+  mostra a declaração como texto e manda a pessoa enviar pelo Lattes; em
+  `pnpm dev`, `?publicar` na URL mostra a caixa e o botão, e a extensão
+  continua recusando.
 
 ### O Lattes simulado
 
@@ -285,7 +318,7 @@ as chaves ligadas (`tests/lattes-simulado.test.ts`).
 | `src/forms/`         | Formulários de item novo: produção (autores, áreas, palavras-chave), formação, atuação, projeto e patente                                         |
 | `src/import-export/` | O painel "Enviar ao Lattes", o arquivo do Importar, o ZIP, o registro do enviado                                                                  |
 | `src/bridge/`        | O núcleo do conector, usado pela extensão e pelo editor: protocolo, plano, aplicação, leituras do Lattes                                          |
-| `src/review/`        | Diagnóstico do currículo e o que mudou no Lattes desde a exportação                                                                               |
+| `src/review/`        | Diagnóstico do currículo: a conferência do currículo inteiro (`validation.ts`) e o que mudou no Lattes desde a exportação                         |
 | `src/print/`         | Impressão e PDF (NBR 14724), referências na NBR 6023                                                                                              |
 | `src/lookups/`       | Busca por DOI no Crossref                                                                                                                         |
 | `src/desktop/`       | O que só existe no app: arquivos nativos, chave do chaveiro, atualização automática, links externos                                               |

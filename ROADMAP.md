@@ -68,7 +68,8 @@ originais, em `docs/lattes_implementation_guide.md` e
 - Tela de primeiro uso explicando o ciclo: exportar no Lattes, editar aqui,
   enviar ao Lattes.
 - Painel de validação do currículo inteiro: obrigatórios, enums, anos,
-  autores, DOI.
+  autores, DOI (LAT-25). Feito, no "Diagnóstico do currículo", numa lista
+  só com os achados da revisão de consistência e filtros por tipo.
 - README também em inglês.
 - **Teclado e acessibilidade.** Tudo operável só pelo teclado: navegar nas
   listas com as setas (e J/K), abrir e fechar itens, editar campos e voltar
