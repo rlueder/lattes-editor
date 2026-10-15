@@ -1,5 +1,5 @@
-// Estado do item novo fora da produção (formação, atuação, projeto, patente):
-// qual seção pediu, o nível escolhido, o rascunho e o salvar.
+// Estado do item novo fora da produção (formação, atuação, projeto, patente e
+// registros): qual seção pediu, o tipo escolhido, o rascunho e o salvar.
 
 import { useMemo, useState } from 'react';
 
@@ -12,7 +12,7 @@ import {
   newGeneralItem,
 } from '../model/general-items.ts';
 import { knownAuthors } from '../model/production.ts';
-import { firstChild, getAttr, parseXml, type XElement } from '../model/xml.ts';
+import { childElements, firstChild, getAttr, parseXml, type XElement } from '../model/xml.ts';
 import { lattesSchema as schema } from '../schema/lattes.ts';
 import type { Session } from './use-production.ts';
 
@@ -27,14 +27,21 @@ export const typesFor = (sectionId: string): GeneralType[] =>
 
 /** Título do item: o primeiro texto que diz o que ele é, para a nota do histórico. */
 function titleOf(item: XElement, type: GeneralType): string {
-  const basics = firstChild(item, 'DADOS-BASICOS-DA-PATENTE');
+  // Patente e registros: o título (ou a denominação da cultivar) fica nos dados básicos.
+  const basics = childElements(item).find((c) => c.name.startsWith('DADOS-BASICOS-'));
   return (
     getAttr(item, 'NOME-DO-PROJETO') ||
-    (basics && getAttr(basics, 'TITULO')) ||
+    (basics && (getAttr(basics, 'TITULO') || getAttr(basics, 'DENOMINACAO'))) ||
     getAttr(item, 'NOME-INSTITUICAO') ||
     type.label
   );
 }
+
+/** O título do seletor de tipo, nas seções que têm mais de um. */
+const PICKER_TITLES: Record<string, string> = {
+  formacao: 'Nova formação acadêmica',
+  patentes: 'Nova patente ou registro',
+};
 
 export function useGeneralItem(
   session: Session | null,
@@ -66,7 +73,7 @@ export function useGeneralItem(
     setDraft({ item: newGeneralItem(schema, type, owner), type });
   };
 
-  /** Pedido da seção: um tipo só abre o formulário; a formação pede o nível antes. */
+  /** Pedido da seção: um tipo só abre o formulário; formação e registros pedem o tipo antes. */
   const open = (sectionId: string) => {
     const types = typesFor(sectionId);
     if (types.length === 1) start(types[0]!);
@@ -94,6 +101,7 @@ export function useGeneralItem(
     closePicker: () => setPickerFor(null),
     draft,
     open,
+    pickerTitle: (pickerFor && PICKER_TITLES[pickerFor]) || 'Novo item',
     pickerTypes: pickerFor ? typesFor(pickerFor) : [],
     save,
     start,

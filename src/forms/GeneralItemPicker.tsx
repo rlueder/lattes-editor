@@ -1,7 +1,7 @@
-// Escolha do nível de uma formação nova: no Lattes, o "Incluir novo item" da
+// Escolha do tipo de um item novo: no Lattes, o "Incluir novo item" da
 // formação pede o nível antes de abrir o formulário, e cada nível é um
-// elemento próprio no XML. As outras seções têm um tipo só e abrem o
-// formulário direto.
+// elemento próprio no XML; em "Patentes e Registros", cada registro tem a sua
+// lista. As outras seções têm um tipo só e abrem o formulário direto.
 
 import type { GeneralType } from '../model/general-items.ts';
 import { Modal } from '../ui/Modal.tsx';
@@ -57,7 +57,7 @@ export function GeneralItemDialogs({
       )}
       <GeneralItemPicker
         open={general.pickerTypes.length > 0}
-        title="Nova formação acadêmica"
+        title={general.pickerTitle}
         types={general.pickerTypes}
         onClose={general.closePicker}
         onPick={general.start}

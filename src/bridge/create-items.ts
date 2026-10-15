@@ -29,6 +29,7 @@ import {
   applyCreateFormacao,
   CREATE_FORMACAO_SPEC,
   type CreateFormacaoOp,
+  FORMATION_LEVELS,
   planCreateFormacao,
 } from './create-formacao.ts';
 import {
@@ -45,6 +46,17 @@ import { findLinks } from './lattes-html.ts';
 export { applyCreateFormacao, applyCreateProjeto };
 
 export type CreateItemOp = CreateFormacaoOp | CreateProjetoOp;
+
+/**
+ * Os elementos que o conector sabe incluir (com a chave ligada): a atuação
+ * (create.ts), cada nível do "Incluir novo item" da formação e o projeto.
+ * O inventário (create-inventory.ts) parte daqui.
+ */
+export const CONNECTOR_CREATES: ReadonlySet<string> = new Set([
+  'ATUACAO-PROFISSIONAL',
+  ...Object.keys(FORMATION_LEVELS),
+  'PROJETO-DE-PESQUISA',
+]);
 
 /**
  * Planeja a inclusão de um item novo de formação ou projeto; undefined quando

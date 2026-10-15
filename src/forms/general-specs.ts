@@ -1,8 +1,8 @@
 // Campos dos formulários de item novo fora da produção (formação, atuação,
-// projeto, patente). Cada parte lista os campos principais na ordem de quem
-// preenche; o resto dos atributos do schema fica em "Mais campos". Um campo
-// listado que o elemento não tem (cada nível de formação tem os seus) não
-// aparece: a lista é uma preferência, o schema é que decide.
+// projeto, patente e registros). Cada parte lista os campos principais na
+// ordem de quem preenche; o resto dos atributos do schema fica em "Mais
+// campos". Um campo listado que o elemento não tem (cada nível de formação tem
+// os seus) não aparece: a lista é uma preferência, o schema é que decide.
 //
 // Instituição, curso, agência e área ficam como texto, pelo AttributeField:
 // quando as listas do Lattes chegarem aos campos tipados (LAT-48), estes
@@ -121,17 +121,35 @@ const PROJETO: GeneralPart[] = [
   },
 ];
 
+/** A parte do item cujo nome começa assim (DADOS-BASICOS-DA-MARCA, DETALHAMENTO-DA-CULTIVAR…). */
+const partNamed = (prefix: string) => (item: XElement) =>
+  childElements(item).find((c) => c.name.startsWith(prefix));
+
+/**
+ * O tipo do registro só se escolhe na patente (invenção ou modelo de
+ * utilidade) e na marca (de produto, de serviço…); nos outros registros o
+ * formulário do Lattes não tem o campo (censo de 15/10/2026).
+ */
+const CHOOSES_TYPE = new Set(['MARCA', 'PATENTE']);
+
+/**
+ * Patente e registros: os campos de cada um saem do schema (a cultivar tem
+ * denominação e ano de solicitação no lugar de título e ano de
+ * desenvolvimento; a marca tem natureza).
+ */
 const PATENTE: GeneralPart[] = [
   {
     fields: [
       f('TITULO', { required: true, wide: true }),
+      f('DENOMINACAO', { required: true, wide: true }),
       required('ANO-DESENVOLVIMENTO'),
+      required('ANO-SOLICITACAO'),
       f('PAIS'),
       wide('HOME-PAGE'),
       f('FLAG-POTENCIAL-INOVACAO'),
     ],
-    legend: 'Patente',
-    part: (item) => firstChild(item, 'DADOS-BASICOS-DA-PATENTE'),
+    legend: 'Registro',
+    part: partNamed('DADOS-BASICOS-'),
   },
   {
     fields: [
@@ -139,19 +157,20 @@ const PATENTE: GeneralPart[] = [
       required('CODIGO-DO-REGISTRO-OU-PATENTE'),
       wide('INSTITUICAO-DEPOSITO-REGISTRO'),
       f('DATA-PEDIDO-DE-DEPOSITO'),
+      f('DATA-DE-CONCESSAO'),
       wide('NOME-DO-TITULAR'),
       wide('NOME-DO-DEPOSITANTE'),
     ],
-    legend: 'Registro',
+    legend: 'Número e depósito',
     part: (item) => {
-      const detail = firstChild(item, 'DETALHAMENTO-DA-PATENTE');
+      const detail = partNamed('DETALHAMENTO-')(item);
       return detail && firstChild(detail, 'REGISTRO-OU-PATENTE');
     },
   },
   {
-    fields: [wide('FINALIDADE'), wide('INSTITUICAO-FINANCIADORA')],
+    fields: [f('NATUREZA'), wide('FINALIDADE'), wide('INSTITUICAO-FINANCIADORA')],
     legend: 'Detalhamento',
-    part: (item) => firstChild(item, 'DETALHAMENTO-DA-PATENTE'),
+    part: partNamed('DETALHAMENTO-'),
   },
 ];
 
@@ -177,6 +196,7 @@ export function generalParts(schema: LattesSchema, kind: GeneralKind, item: XEle
     const el = p.part(item);
     if (!el) return [];
     const known = new Set(schema.elements[el.name]?.attributes.map((a) => a.name));
+    if (kind === 'patente' && !CHOOSES_TYPE.has(item.name)) known.delete('TIPO-PATENTE');
     const fields = p.fields.filter((field) => known.has(field.attr));
     return fields.length > 0 ? [{ el, fields, legend: p.legend }] : [];
   });

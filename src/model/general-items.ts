@@ -1,8 +1,8 @@
 // Itens novos fora da produção (LAT-52): formação acadêmica, atuação
-// profissional, projeto e patente. O Importar do Lattes não lê nenhuma dessas
-// seções (src/import-export/importable.ts), então o item novo fica na cópia de
-// trabalho e vai ao Lattes como as outras alterações: pelo conector, quando ele
-// souber incluir aquele tipo, ou à mão.
+// profissional, projeto, patente e os outros registros (LAT-57). O Importar do
+// Lattes não lê nenhuma dessas seções (src/import-export/importable.ts), então
+// o item novo fica na cópia de trabalho e vai ao Lattes como as outras
+// alterações: pelo conector, quando ele souber incluir aquele tipo, ou à mão.
 //
 // Cada item nasce como o novo item de produção: atributos do schema na ordem
 // dele, vazios, e os filhos que o formulário precisa. O número de sequência só
@@ -22,6 +22,7 @@ import {
   type XElement,
 } from './xml.ts';
 
+/** `patente` cobre a patente e os outros registros, que têm a mesma forma. */
 export type GeneralKind = 'atuacao' | 'formacao' | 'patente' | 'projeto';
 
 export interface GeneralType {
@@ -65,6 +66,23 @@ const FORMATION_ORDER = [
   'ENSINO-MEDIO-SEGUNDO-GRAU',
   'ENSINO-FUNDAMENTAL-PRIMEIRO-GRAU',
   'APERFEICOAMENTO',
+];
+
+/**
+ * A patente e os registros da seção "Patentes e Registros", na ordem e com os
+ * nomes das listas do Lattes (docs/lattes_internals.md, seção 17; censo de
+ * 15/10/2026, src/census/targets-production.ts). Todos são inclusões de
+ * PKG_PATENTE_REGISTRO e têm a mesma forma no XML: dados básicos,
+ * detalhamento com um REGISTRO-OU-PATENTE e autores. O programa de computador
+ * fica em Produções (SOFTWARE, pelo Importar).
+ */
+const REGISTRIES: [string, string][] = [
+  ['PATENTE', 'Patente'],
+  ['CULTIVAR-PROTEGIDA', 'Cultivar protegida'],
+  ['CULTIVAR-REGISTRADA', 'Cultivar registrada'],
+  ['DESENHO-INDUSTRIAL', 'Desenho industrial'],
+  ['MARCA', 'Marca'],
+  ['TOPOGRAFIA-DE-CIRCUITO-INTEGRADO', 'Topografia de circuito integrado'],
 ];
 
 const FORMATION_PATH = ['DADOS-GERAIS', 'FORMACAO-ACADEMICA-TITULACAO'];
@@ -121,15 +139,15 @@ export function generalTypes(
     ];
   }
   if (sectionId === 'patentes') {
-    return [
-      {
+    return REGISTRIES.filter(([itemName]) => schema.elements[itemName]).map(
+      ([itemName, label]) => ({
         containerPath: ['PRODUCAO-TECNICA'],
-        itemName: 'PATENTE',
-        kind: 'patente',
-        label: 'Patente',
+        itemName,
+        kind: 'patente' as const,
+        label,
         seqAttr: SEQ_ATTR,
-      },
-    ];
+      }),
+    );
   }
   return [];
 }
@@ -149,8 +167,8 @@ function addPart(schema: LattesSchema, parent: XElement, name: string): XElement
 /**
  * O item vazio, sem número de sequência (sai no salvar). A atuação já vem com
  * um vínculo, como o formulário de inclusão do Lattes (que cria a atuação e o
- * primeiro vínculo juntos); a patente com dados básicos, detalhamento, um
- * registro e o dono como primeiro autor; o projeto com o dono na equipe, que o
+ * primeiro vínculo juntos); a patente e cada registro com dados básicos,
+ * detalhamento, um registro e o dono como primeiro autor; o projeto com o dono na equipe, que o
  * Lattes exige.
  */
 export function newGeneralItem(schema: LattesSchema, type: GeneralType, owner?: Author): XElement {
@@ -159,8 +177,13 @@ export function newGeneralItem(schema: LattesSchema, type: GeneralType, owner?: 
     setAttr(addPart(schema, item, 'VINCULOS'), 'SEQUENCIA-HISTORICO', '1');
   }
   if (type.kind === 'patente') {
-    addPart(schema, item, 'DADOS-BASICOS-DA-PATENTE');
-    addPart(schema, addPart(schema, item, 'DETALHAMENTO-DA-PATENTE'), 'REGISTRO-OU-PATENTE');
+    // Os nomes das partes mudam por tipo (DADOS-BASICOS-DA-CULTIVAR,
+    // DETALHAMENTO-DA-MARCA…); o schema diz quais são.
+    const parts = schema.elements[type.itemName]?.children.map((c) => c.name) ?? [];
+    const basics = parts.find((n) => n.startsWith('DADOS-BASICOS-'));
+    const detail = parts.find((n) => n.startsWith('DETALHAMENTO-'));
+    if (basics) addPart(schema, item, basics);
+    if (detail) addPart(schema, addPart(schema, item, detail), 'REGISTRO-OU-PATENTE');
     if (owner) setAuthorsOf(schema, item, 'AUTORES', [owner]);
   }
   if (type.kind === 'projeto' && owner) setTeam(schema, item, [owner]);
