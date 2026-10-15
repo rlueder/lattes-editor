@@ -6916,26 +6916,24 @@ main.content {
 /* Modo foco (focus-mode.ts). O menu de seções e o cabeçalho saem de cena e
    voltam por cima do conteúdo, sem empurrá-lo, quando o ponteiro encosta na
    borda, quando o foco do teclado entra neles, no G (menu) e no ⌘K
-   (cabeçalho). O conteúdo não sai do lugar: a grade continua a mesma, a
-   coluna do menu e a altura do cabeçalho ficam reservadas e vazias. */
+   (cabeçalho). Na horizontal o conteúdo não sai do lugar: a coluna do menu
+   fica reservada. Em cima, o lugar do cabeçalho fecha e a página começa no
+   alto da janela. A janela inteira vira o fundo do conteúdo, sem borda, canto
+   nem moldura em volta; o menu e o cabeçalho revelados mantêm o fundo deles. */
 .shell.is-focus {
   /* As barras que grudam no alto (título da seção) sobem até a borda. */
   --topbar-h: 0px;
   /* A largura da coluna do menu, para o aviso de pendências ir até a borda. */
   --focus-pad: 220px;
-}
-
-/* O lugar do cabeçalho, com a altura dele (medida em use-focus-mode.ts). */
-.shell.is-focus::before {
-  content: '';
-  grid-row: 1;
-  grid-column: 1 / -1;
-  height: var(--topbar-real-h, 61px);
+  background: var(--bg);
 }
 
 .shell.is-focus .content {
-  grid-row: 2;
+  grid-row: 1 / -1;
   grid-column: -2 / -1;
+  min-height: 100vh;
+  border-color: transparent;
+  border-radius: 0;
 }
 
 /* O aviso de pendências vai de uma borda à outra, também no modo foco: passa
