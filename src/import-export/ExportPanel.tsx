@@ -163,7 +163,6 @@ export function ExportPanel({
                   {routed.conector.length > 0 && (
                     <ChangesList
                       groups={routed.conector}
-                      route="conector"
                       onDiscard={onDiscard}
                       onDiscardField={onDiscardField}
                     />
@@ -231,7 +230,6 @@ export function ExportPanel({
                   </p>
                   <ChangesList
                     groups={routed.mao}
-                    route="mao"
                     onDiscard={onDiscard}
                     onDiscardField={onDiscardField}
                   />

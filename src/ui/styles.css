@@ -7226,3 +7226,133 @@ main.content {
 .reading-nested.is-open > .reading-nested-toggle {
   margin-bottom: 0.3em;
 }
+
+/* Lista "Enviar ao Lattes" no desenho do ⌘K: os grupos (Dados gerais,
+   Formação) com o título dos grupos da paleta, cada alteração numa linha sem
+   caixa, com fio fino entre uma e a próxima. O título do item manda; o tipo
+   da mudança é uma palavra discreta, e o caminho (à mão) fica uma vez, no
+   título da parte. Nos campos: rótulo, valor antigo riscado e apagado, valor
+   novo em texto, com o copiar ao lado; descartar aparece ao passar o mouse
+   ou com o foco na linha. */
+.changes {
+  margin: 0;
+}
+
+.changes-group + .changes-group {
+  margin-top: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--divider, var(--border));
+}
+
+.changes-group h3 {
+  margin: 4px 0 6px;
+  font-size: 15px;
+  font-weight: 550;
+}
+
+.changes-note {
+  font-size: 12px;
+}
+
+.change {
+  margin: 0;
+  padding: 10px 0;
+  border: 0;
+  background: none;
+}
+
+.change + .change {
+  border-top: 1px solid var(--border);
+}
+
+.change-head {
+  gap: 10px;
+}
+
+.change-where {
+  flex: 0 1 auto;
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.change-kind {
+  flex: none;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.change-kind.kind-novo {
+  color: var(--accent-text);
+}
+
+.change-kind.kind-removido {
+  color: var(--danger);
+}
+
+.change-fields {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.change-fields th {
+  width: 30%;
+  padding: 5px 12px 5px 0;
+  font-size: 12px;
+}
+
+.change-fields td {
+  padding: 5px 6px 5px 0;
+}
+
+.change-fields .before {
+  width: 28%;
+}
+
+.change-fields .after-value {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.change-fields .after-text {
+  padding-top: 0;
+}
+
+.change-fields .after-value .copy-btn {
+  width: 20px;
+  height: 20px;
+  margin-top: -1px;
+}
+
+/* Descartar: só ao passar o mouse na linha ou com o foco nela (o botão
+   continua no teclado: o foco nele mostra a linha inteira de ações). */
+.change-fields .discard-btn,
+.change-actions .discard-btn {
+  opacity: 0;
+  transition: opacity var(--dur-fast) ease;
+}
+
+.change-fields tr:hover .discard-btn,
+.change-fields tr:focus-within .discard-btn,
+.change:hover .change-actions .discard-btn,
+.change-head:focus-within .discard-btn {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .change-fields .discard-btn,
+  .change-actions .discard-btn {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .change-fields .discard-btn,
+  .change-actions .discard-btn {
+    transition: none;
+  }
+}
