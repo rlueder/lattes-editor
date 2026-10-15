@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   acceptChange,
+  acceptCreated,
   diffDocuments,
   resolvePath,
   revertChange,
@@ -229,5 +230,62 @@ describe('aceitar mudança conferida no Lattes', () => {
     const working = parseXml('<CURRICULO-VITAE><IDIOMA IDIOMA="Inglês"/></CURRICULO-VITAE>').root;
     const [change] = diffDocuments(original, working);
     expect(acceptChange(original, working, change!)).toBe(false);
+  });
+});
+
+describe('aceitar item novo incluído pelo conector', () => {
+  it('entra no original com o número que o Lattes deu, e a mudança some da lista', () => {
+    const original = doc(ORIGINAL);
+    const working = doc(ORIGINAL);
+    const atuacoes = resolvePath(working, ['CURRICULO-VITAE', 'DADOS-GERAIS[#0]']).at(-1)!;
+    const container = atuacoes.children.find(
+      (c) => c.kind === 'element' && c.name === 'ATUACOES-PROFISSIONAIS',
+    );
+    if (!container || container.kind !== 'element') throw new Error('sem atuações');
+    container.children.push(
+      parseXml(
+        '<ATUACAO-PROFISSIONAL SEQUENCIA-ATIVIDADE="3" NOME-INSTITUICAO="C"><VINCULOS SEQUENCIA-HISTORICO="1" ANO-INICIO="2020"/></ATUACAO-PROFISSIONAL>',
+      ).root,
+    );
+    const [change] = diffDocuments(original, working);
+    expect(change?.kind).toBe('novo');
+    // O Lattes deu 7, não o 3 provisório do editor.
+    expect(acceptCreated(original, working, change!, { 'SEQUENCIA-ATIVIDADE': '7' })).toBe(true);
+    expect(diffDocuments(original, working)).toEqual([]);
+    const accepted = resolvePath(original, [
+      'CURRICULO-VITAE',
+      'DADOS-GERAIS[#0]',
+      'ATUACOES-PROFISSIONAIS[#0]',
+      'ATUACAO-PROFISSIONAL[SEQUENCIA-ATIVIDADE=7]',
+    ]);
+    expect(accepted).toHaveLength(4);
+    expect(acceptChange(original, working, change!)).toBe(false);
+  });
+
+  it('cria os contêineres que o original não tem; número sem dono certo fica de fora', () => {
+    const original = parseXml('<CURRICULO-VITAE/>').root;
+    const working = parseXml(
+      '<CURRICULO-VITAE><DADOS-COMPLEMENTARES><PARTICIPACAO-EM-EVENTOS-CONGRESSOS><PARTICIPACAO-EM-CONGRESSO SEQUENCIA-PRODUCAO="90"><DADOS-BASICOS-DA-PARTICIPACAO-EM-CONGRESSO TITULO="T"/></PARTICIPACAO-EM-CONGRESSO></PARTICIPACAO-EM-EVENTOS-CONGRESSOS></DADOS-COMPLEMENTARES></CURRICULO-VITAE>',
+    ).root;
+    const [change] = diffDocuments(original, working);
+    expect(change?.element).toBe('PARTICIPACAO-EM-CONGRESSO');
+    expect(
+      acceptCreated(original, working, change!, {
+        'SEQUENCIA-PRODUCAO': '41',
+        'SEQUENCIA-OUTRA': '1',
+      }),
+    ).toBe(true);
+    expect(diffDocuments(original, working)).toEqual([]);
+    expect(
+      resolvePath(original, [
+        'CURRICULO-VITAE',
+        'DADOS-COMPLEMENTARES[#0]',
+        'PARTICIPACAO-EM-EVENTOS-CONGRESSOS[#0]',
+        'PARTICIPACAO-EM-CONGRESSO[SEQUENCIA-PRODUCAO=41]',
+      ]),
+    ).toHaveLength(4);
+    // Caminho que não existe mais na cópia, ou mudança que não é inclusão: nada muda.
+    expect(acceptCreated(original, working, { ...change!, path: ['X'] })).toBe(false);
+    expect(acceptCreated(original, working, { ...change!, kind: 'alterado' })).toBe(false);
   });
 });

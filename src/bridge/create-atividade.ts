@@ -44,6 +44,8 @@ import { findLinks, isLogonPage, type LattesLink } from './lattes-html.ts';
 import type { FieldValues } from './plan.ts';
 
 export interface CreateAtividadeOp {
+  /** CODIGO-INSTITUICAO da atuação, para conferir que a atuação achada é ela (como no vínculo). */
+  codInst?: string;
   /** CODIGO-CURSO do XML, quando o nível pede curso. */
   courseCode?: string;
   expect: FieldValues;
@@ -123,7 +125,7 @@ export function planCreateAtividade(
   if (!level) return { reason: 'Escolha o tipo de ensino' };
   const courseCode = getAttr(item, 'CODIGO-CURSO') || undefined;
   if (COURSE_LEVELS[level] && !courseCode) {
-    return { reason: 'O Lattes exige o curso, escolhido na lista de cursos, neste nível' };
+    return { reason: COURSE_BY_HAND };
   }
   if (!COURSE_LEVELS[level] && getAttr(item, 'NOME-CURSO')) {
     return { reason: 'O Lattes não aceita curso neste nível de ensino' };
@@ -139,7 +141,9 @@ export function planCreateAtividade(
   const start = getAttr(item, 'ANO-INICIO') ?? '';
   const end = getAttr(item, 'ANO-FIM') ?? '';
   if (!start) return { reason: 'A atividade precisa do ano de início' };
+  const codInst = getAttr(atuacao, 'CODIGO-INSTITUICAO') || undefined;
   return {
+    codInst,
     courseCode: COURSE_LEVELS[level] ? courseCode : undefined,
     expect: {},
     key: change.key,
@@ -158,6 +162,21 @@ export function planCreateAtividade(
     },
   };
 }
+
+/**
+ * Por que a atividade de ensino de graduação, pós-graduação, especialização ou
+ * aperfeiçoamento vai à mão quando o item não traz o código do curso: o Lattes
+ * exige o curso da lista dele (prc_curso_form com f_pgm=ATIV e a instituição
+ * da atuação, endereço lido no lote 3), e o formulário do editor ainda não
+ * oferece essa lista. Ligá-la pede um parâmetro novo no pedido de cursos à
+ * extensão, que uma extensão antiga ignoraria, devolvendo a lista da formação.
+ */
+export const COURSE_BY_HAND =
+  'Vai à mão: neste nível o Lattes exige o curso da lista de cursos da instituição, que o editor ainda não oferece na atividade de ensino';
+
+/** Por que a atividade criada fica divergente: as disciplinas não são relidas. */
+export const DISCIPLINES_UNREAD =
+  'Criada no Lattes, com os campos conferidos; confira as disciplinas no Lattes, que o conector não relê';
 
 // Lattes ----------------------------------------------------------------------------
 
@@ -188,8 +207,11 @@ export async function applyCreateAtividade(
       throw new Stop('erro', 'Atuação profissional não encontrada no menu do Lattes');
     }
     const cv = lista.params.f_cod;
+    // A atuação pelo número e, com o código da instituição no XML, também por ele.
+    const sameInst = (code: string | undefined) =>
+      (code ?? '').replace(/^[A-Za-z]/, '') === (op.codInst ?? '').replace(/^[A-Za-z]/, '');
     const grids = findLinks(await getChecked(port, lista.path), 'pkg_ativ.cargos_vinculos').filter(
-      (l) => l.params.f_seq_ativ === op.seqAtiv,
+      (l) => l.params.f_seq_ativ === op.seqAtiv && (!op.codInst || sameInst(l.params.f_codinst)),
     );
     if (grids.length !== 1) {
       throw new Stop(
@@ -199,9 +221,26 @@ export async function applyCreateAtividade(
     }
     const gridHtml = await getChecked(port, grids[0]!.path);
     const before = activityRows(gridHtml);
+    const inclusion = findLinks(gridHtml, 'pkg_ativ.cargo').find((l) => !l.params.f_seq_funcao);
+    if (!inclusion) throw new Stop('erro', 'Inclusão de atividade não encontrada no Lattes');
+    // Linhas de atividade sem f_seq_funcao (o parâmetro do link é inferido) não
+    // entrariam na conferência de duplicata: com elas, nada se envia.
+    const unknown = findLinks(gridHtml, 'pkg_ativ.cargo').filter(
+      (l) => !l.params.f_seq_funcao && l.path !== inclusion.path,
+    );
+    if (unknown.length > 0) {
+      throw new Stop(
+        'erro',
+        'A tela de cargos e vínculos tem atividades que o conector não reconhece; nada foi enviado',
+      );
+    }
     // Duplicata: atividade de ensino da atuação com o mesmo nível e o mesmo início.
-    for (const row of before.filter((l) => l.params.f_natur_ativ === '4')) {
+    // A natureza vem do oculto f_natur_ativ de cada formulário (observado), e
+    // não do link da linha, cujos parâmetros são inferidos: assim uma linha sem
+    // o parâmetro não escapa da conferência.
+    for (const row of before) {
       const { pairs } = await readPairs(port, row.path, FORM);
+      if (pairValue(pairs, 'f_natur_ativ') !== '4') continue;
       if (
         pairValue(pairs, 'f_nivel') === op.set.f_nivel &&
         pairValue(pairs, 'f_ano_ini') === op.set.f_ano_ini
@@ -212,8 +251,6 @@ export async function applyCreateAtividade(
         );
       }
     }
-    const inclusion = findLinks(gridHtml, 'pkg_ativ.cargo').find((l) => !l.params.f_seq_funcao);
-    if (!inclusion) throw new Stop('erro', 'Inclusão de atividade não encontrada no Lattes');
     const form = await readPairs(port, inclusionPath(inclusion, '4'), FORM);
     if (pairValue(form.pairs, 'f_ctr') !== 'I' || pairValue(form.pairs, 'f_natur_ativ') !== '4') {
       return result('erro', 'O formulário não é o de inclusão de atividade de ensino');
@@ -276,13 +313,8 @@ export async function applyCreateAtividade(
         readBack(saved, checked),
       );
       if (problem) return { ...result('divergente', problem), assigned };
-      return {
-        ...result(
-          'conferido',
-          `Criada e conferida no Lattes (atividade ${seq}; disciplinas não relidas)`,
-        ),
-        assigned,
-      };
+      // Sem reler as disciplinas, a inclusão não se dá por conferida.
+      return { ...result('divergente', `${DISCIPLINES_UNREAD} (atividade ${seq})`), assigned };
     } catch (err) {
       const why = err instanceof Error ? err.message : 'falha inesperada';
       return maybeCreated(op.key, mayExist, `a conferência falhou (${why})`);

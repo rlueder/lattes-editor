@@ -1,11 +1,21 @@
 // O que o formulário de patente e registros pede, como a recaptura de
 // 15/10/2026 o leu no código das páginas (docs/lattes_internals.md, seção 21):
 // o formato das datas, a grade de datas da patente, os campos de data de cada
-// tipo e o que o check() de cada tipo exige. Usado por create-registro.ts.
+// tipo e o que o check() de cada tipo exige, e como achar as linhas e a
+// inclusão na lista de cada tipo. Usado por create-registro.ts.
 
-/** DDMMAAAA do XML → dd/mm/aaaa, como check_data() dos formulários exige (seção 21). */
+import { findLinks, type LattesLink } from './lattes-html.ts';
+
+/**
+ * DDMMAAAA do XML → dd/mm/aaaa, como check_data() dos formulários exige (seção
+ * 21). Uma data já digitada como dd/mm/aaaa passa como está.
+ */
 export function formDate(xml: string): string | undefined {
-  return /^\d{8}$/.test(xml) ? `${xml.slice(0, 2)}/${xml.slice(2, 4)}/${xml.slice(4)}` : undefined;
+  const value = xml.trim();
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) return value;
+  return /^\d{8}$/.test(value)
+    ? `${value.slice(0, 2)}/${value.slice(2, 4)}/${value.slice(4)}`
+    : undefined;
 }
 
 /**
@@ -85,3 +95,50 @@ export const ATTR_LABELS: Record<string, string> = {
   'TITULO-INGLES': 'Título em inglês',
   'TITULO-PATENTE': 'Título da patente',
 };
+
+/** Por que o registro criado fica divergente: a grade de inventores não é relida. */
+export const INVENTORS_UNREAD =
+  'Criado no Lattes, com os campos conferidos; confira a lista de inventores no Lattes, que o conector não relê';
+
+/** Por que a patente vai à mão hoje (seção 22 de docs/lattes_internals.md). */
+export const PATENT_BY_HAND =
+  'A patente vai à mão: o Lattes exige o titular ou depositante, numa grade cuja linha ainda não foi lida';
+
+// A lista de cada tipo -------------------------------------------------------------
+
+const sameType = (l: LattesLink, tipo: string) =>
+  (l.params.f_cod_tipo ?? '').toUpperCase() === tipo;
+
+/**
+ * As linhas da lista: links do formulário com f_seq (inferido, como nas outras
+ * produções). Sem filtrar pelo f_cod_tipo do link, também inferido: a lista já
+ * é a do tipo, e o tipo de cada linha se confere no oculto do formulário.
+ */
+export const registryRows = (html: string) =>
+  findLinks(html, 'PKG_PATENTE_REGISTRO.form').filter((l) => l.params.f_seq);
+
+/**
+ * Links do formulário que não são linha nem a inclusão do tipo: linhas num
+ * formato que o conector não reconhece. Com elas, a conferência de duplicata
+ * não vale, e nada se envia.
+ */
+export const unknownLinks = (html: string, inclusion: string | undefined) =>
+  findLinks(html, 'PKG_PATENTE_REGISTRO.form').filter(
+    (l) => !l.params.f_seq && l.path !== inclusion,
+  );
+
+/**
+ * O formulário de inclusão do tipo. Na patente, a lista abre a janela prévia
+ * (infDadPat) e o conector abre o formulário pelo endereço que a janela usa,
+ * sem f_ctr=R; nos outros, o link "Incluir novo item" da lista.
+ */
+export function registryInclusion(listHtml: string, tipo: string, cv: string): string | undefined {
+  if (tipo === 'PP') return `pkg_patente_registro.form?f_sta_inovacao=&f_cod=${cv}&f_cod_tipo=PP`;
+  return findLinks(listHtml, 'PKG_PATENTE_REGISTRO.form').find(
+    (l) => !l.params.f_seq && sameType(l, tipo),
+  )?.path;
+}
+
+/** A lista do tipo no menu: PKG_PATENTE_REGISTRO.LISTA com o f_cod_tipo. */
+export const registryList = (menu: string, tipo: string) =>
+  findLinks(menu, 'PKG_PATENTE_REGISTRO.LISTA').find((l) => sameType(l, tipo));

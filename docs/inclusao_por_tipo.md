@@ -55,8 +55,8 @@ resposta não foi lida), a disciplina numa atividade que já existe, o
 treinamento, a linha de pesquisa, o financiador, a produção e a orientação de
 um projeto, e a participação em projeto (que nasce com o projeto).
 
-Os outros cinco registros (programa de computador, cultivar protegida e
-registrada, desenho industrial, marca e topografia de circuito) e a atividade
+Os outros cinco registros (cultivar protegida, cultivar registrada, desenho
+industrial, marca e topografia de circuito) e a atividade
 de ensino com as suas disciplinas passaram a ir pelo conector em 15/10/2026,
 depois que o lote 4 da recaptura leu a linha da própria pessoa no vetor de
 autores do menu. Nenhum deles teve ainda uma inclusão real acompanhada.
@@ -247,12 +247,16 @@ A marca e a topografia não têm campo de data na tela; com data, vão à mão.
 A recaptura de 15/10/2026 leu também a forma da linha de autor (seção 22):
 o vetor `autorDP` do menu traz as chaves `l`, `c`, `t` e `deletable`, nessa
 ordem, e uma linha só com o código `c` vazio, que é a única que o `check()`
-aceita como a própria pessoa. A operação passou a montar a grade de inventores
-com essa linha (`src/bridge/author-grid.ts`), e os cinco registros que não são
-patente voltaram a ir pelo conector. Que essa linha seja a da pessoa é
-inferido pelo `check()`; o que o Lattes grava com ela só se vê na primeira
-inclusão acompanhada. A patente continua à mão: exige também o titular ou
-depositante, que vem do vetor `titularPessoaDP`, cuja forma não foi lida.
+aceita como a própria pessoa. A operação monta a grade de inventores com essa
+linha (`src/bridge/author-grid.ts`), mas só quando ela traz o nome completo
+ou uma das citações do currículo; senão, para sem enviar. A linha não tem o
+número do Lattes, e a sessão já é conferida pelo número antes da fila. Com
+isso, cinco registros voltaram a ir pelo conector: a cultivar protegida e a
+registrada, o desenho industrial, a marca e a topografia de circuito. Como a
+lista de inventores não é relida depois do envio, a inclusão volta como
+divergente, com o pedido de conferir os inventores no Lattes, e não como
+conferida. A patente continua à mão: exige também o titular ou depositante,
+que vem do vetor `titularPessoaDP`, cuja forma não foi lida.
 
 O programa de computador registrado é um `SOFTWARE` com registro: a lista de
 programas abre a janela prévia com `ftipo=PC` e depois o formulário com
@@ -272,7 +276,15 @@ seguinte só se vê enviando. Atividades de uma atuação usam `pkg_ativ.cargo`,
 leu nas nove naturezas (censo `censo-2026-10-15c.json`). A de ensino é a única
 sem órgão: tem nível (`f_nivel`, de 401 a 409), curso, período e a grade de
 disciplinas em `f_espec_l`, e vai pelo conector
-(`src/bridge/create-atividade.ts`), com as disciplinas junto. As outras oito
+(`src/bridge/create-atividade.ts`), com as disciplinas junto. Volta como
+divergente, porque as disciplinas não são relidas. Nos níveis de graduação,
+pós-graduação, especialização e aperfeiçoamento (401 a 404) o Lattes exige o
+curso da lista de cursos da instituição da atuação
+(`prc_curso_form?…&f_pgm=ATIV`, endereço lido no lote 3, resposta não lida), e
+o formulário do editor ainda não oferece essa lista na atividade de ensino:
+sem o código do curso no item, esses níveis vão à mão, com o motivo. Ligar a
+lista pede um parâmetro novo no pedido de cursos à extensão, que entra com a
+capacidade da inclusão. As outras oito
 pedem o órgão ou unidade por uma busca (`prc_orgao_cargo`) cuja resposta não
 foi lida, e vão à mão. Treinamento e linha de pesquisa entram pela grade da
 atividade de treinamento e da de pesquisa e desenvolvimento, e a lista de

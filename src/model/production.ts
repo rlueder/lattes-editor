@@ -293,6 +293,25 @@ export function isPendingImport(
   return Number.isFinite(n) && n > loadedMax && isImportableName(el.name) && !direct.has(el.name);
 }
 
+/**
+ * Produção criada no editor que ainda não está no Lattes, vá pelo Importar ou,
+ * com a inclusão pelo conector ligada, pela lista de alterações: as duas
+ * guardam o "novo" e o "Editar no formulário".
+ */
+export function isNewProduction(el: XElement, loadedMax: number): boolean {
+  const n = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
+  return Number.isFinite(n) && n > loadedMax && isImportableName(el.name);
+}
+
+/** Produção nova que vai pela lista de alterações, e não pelo Importar. */
+export function goesByChanges(
+  el: XElement,
+  loadedMax: number,
+  direct: ReadonlySet<string> = directInclusion(),
+): boolean {
+  return isNewProduction(el, loadedMax) && direct.has(el.name);
+}
+
 /** Itens criados no editor que vão pelo Importar (isPendingImport). */
 export function pendingItems(doc: XDocument, loadedMax: number): XElement[] {
   const items: XElement[] = [];

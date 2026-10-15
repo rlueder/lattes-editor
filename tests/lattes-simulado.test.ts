@@ -27,7 +27,7 @@ import {
 } from '../src/bridge/contract.ts';
 import { CREATE_ATUACAO_SPEC } from '../src/bridge/create.ts';
 import { CREATE_FIELD_LABELS } from '../src/bridge/create-labels.ts';
-import { projetoOp, TEAM_BY_HAND } from '../src/bridge/create-projeto.ts';
+import { projetoOp, TEAM_BY_HAND, TEAM_UNREAD } from '../src/bridge/create-projeto.ts';
 import { editContract } from '../src/bridge/edit-items.ts';
 import { isEspelhoPage, parseEspelho } from '../src/bridge/espelho.ts';
 import { exportCv, fromBase64 } from '../src/bridge/export.ts';
@@ -348,9 +348,9 @@ describe('Lattes simulado: o conector de ponta a ponta', () => {
     );
     if ('reason' in projetoNovo) throw new Error(projetoNovo.reason);
     const results = await applyAll([...plan.ops, projetoNovo], lattes.port);
-    expect(results.map((r) => [r.status, r.detail])).toEqual(
-      results.map((r) => ['conferido', r.detail]),
-    );
+    // A formação confere; o projeto fica divergente porque a equipe não é relida.
+    expect(results.map((r) => r.status)).toEqual(['conferido', 'divergente']);
+    expect(results[1]!.detail).toBe(TEAM_UNREAD);
     expect(results.map((r) => r.assigned)).toEqual(
       expect.arrayContaining([{ 'SEQUENCIA-FORMACAO': '5' }, { 'SEQUENCIA-PROJETO': '2' }]),
     );

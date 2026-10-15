@@ -28,16 +28,30 @@ import { foldText } from '../model/fold-text.ts';
 import { readAuthors } from '../model/production.ts';
 import { childElements, firstChild, getAttr, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
-import { ownerAuthor, ownerGridRow, REGISTRY_AUTHOR_KEYS, serializeGrid } from './author-grid.ts';
+import {
+  NO_OWNER_NAME,
+  ownerAuthor,
+  ownerGridRow,
+  type OwnerNames,
+  ownerNamesOf,
+  REGISTRY_AUTHOR_KEYS,
+  serializeGrid,
+} from './author-grid.ts';
 import type { FormSpec } from './contract.ts';
 import { CREATE_FIELD_LABELS } from './create-labels.ts';
 import {
   ATTR_LABELS,
   DATE_FIELDS,
   formDate,
+  INVENTORS_UNREAD,
+  PATENT_BY_HAND,
   PATENT_DATE_CODES,
   patentDateGrid,
+  registryInclusion,
+  registryList,
+  registryRows,
   REQUIRED_BY_TYPE,
+  unknownLinks,
 } from './create-registro-rules.ts';
 import {
   absentFields,
@@ -62,7 +76,7 @@ import {
 } from './create-shared.ts';
 import { countryCode } from './edit-items.ts';
 import { encodeLatin1Form, pairValue, setPairs } from './form.ts';
-import { cvCodeFrom, findLinks, isLogonPage, type LattesLink } from './lattes-html.ts';
+import { cvCodeFrom, isLogonPage } from './lattes-html.ts';
 import type { FieldValues } from './plan.ts';
 
 export interface CreateRegistroOp {
@@ -71,6 +85,8 @@ export interface CreateRegistroOp {
   key: string;
   kind: 'criar-registro';
   label: string;
+  /** O nome completo e as citações do currículo, para conferir a linha de autor do menu. */
+  owner: OwnerNames;
   set: FieldValues;
   /** f_cod_tipo da lista e do formulário: PP patente, CP, CR, DI, MR, TC. */
   tipo: string;
@@ -332,12 +348,10 @@ export function planCreateRegistro(
   const fields = registroFields(change, chain, item);
   if ('reason' in fields) return fields;
   if (fields.tipo === 'PP') return { reason: PATENT_BY_HAND };
-  return { expect: {}, key: change.key, kind: 'criar-registro', label, ...fields };
+  const owner = ownerNamesOf(chain[0]);
+  if (!owner) return { reason: NO_OWNER_NAME };
+  return { expect: {}, key: change.key, kind: 'criar-registro', label, owner, ...fields };
 }
-
-/** Por que a patente vai à mão hoje (seção 22 de docs/lattes_internals.md). */
-export const PATENT_BY_HAND =
-  'A patente vai à mão: o Lattes exige o titular ou depositante, numa grade cuja linha ainda não foi lida';
 
 /**
  * O formulário de inclusão de um registro, na cultivar registrada (censo de
@@ -370,29 +384,6 @@ export const CREATE_REGISTRO_SPEC: FormSpec & { mode: string; partial: true } = 
 
 const REGISTRO_FORM = 'PKG_PATENTE_REGISTRO';
 
-const sameType = (l: LattesLink, tipo: string) =>
-  (l.params.f_cod_tipo ?? '').toUpperCase() === tipo;
-
-/** As linhas da lista: links do formulário com f_seq (inferido, como nas outras produções). */
-const registryRows = (html: string, tipo: string) =>
-  findLinks(html, 'PKG_PATENTE_REGISTRO.form').filter((l) => l.params.f_seq && sameType(l, tipo));
-
-/**
- * O formulário de inclusão do tipo. Na patente, a lista abre a janela prévia
- * (infDadPat) e o conector abre o formulário pelo endereço que a janela usa,
- * sem f_ctr=R; nos outros, o link "Incluir novo item" da lista.
- */
-export function registryInclusion(listHtml: string, tipo: string, cv: string): string | undefined {
-  if (tipo === 'PP') return `pkg_patente_registro.form?f_sta_inovacao=&f_cod=${cv}&f_cod_tipo=PP`;
-  return findLinks(listHtml, 'PKG_PATENTE_REGISTRO.form').find(
-    (l) => !l.params.f_seq && sameType(l, tipo),
-  )?.path;
-}
-
-/** A lista do tipo no menu: PKG_PATENTE_REGISTRO.LISTA com o f_cod_tipo. */
-export const registryList = (menu: string, tipo: string) =>
-  findLinks(menu, 'PKG_PATENTE_REGISTRO.LISTA').find((l) => sameType(l, tipo));
-
 export async function applyCreateRegistro(op: CreateRegistroOp, port: LattesPort): Promise<Result> {
   const result = (status: OpResult['status'], detail: string): Result => ({
     detail,
@@ -405,18 +396,31 @@ export async function applyCreateRegistro(op: CreateRegistroOp, port: LattesPort
     const cv = lista?.params.f_cod ?? cvCodeFrom(menu);
     if (!lista || !cv) throw new Stop('erro', 'A lista deste registro não está no menu do Lattes');
     const listaHtml = await getChecked(port, lista.path);
-    const before = registryRows(listaHtml, op.tipo);
+    const before = registryRows(listaHtml);
+    const inclusion = registryInclusion(listaHtml, op.tipo, cv);
+    if (!inclusion) throw new Stop('erro', 'Inclusão não encontrada na lista do Lattes');
+    if (op.tipo !== 'PP' && unknownLinks(listaHtml, inclusion).length > 0) {
+      throw new Stop(
+        'erro',
+        'A lista do Lattes tem linhas que o conector não reconhece; nada foi enviado',
+      );
+    }
     // Duplicata: o mesmo número já cadastrado (o que verifica_cadastrado
-    // perguntaria ao servidor, seção 17).
+    // perguntaria ao servidor, seção 17). Cada linha precisa ser do tipo, pelo
+    // oculto f_cod_tipo do formulário; uma de outro tipo para tudo.
     for (const row of before) {
       const { pairs } = await readPairs(port, row.path, REGISTRO_FORM);
+      if ((pairValue(pairs, 'f_cod_tipo') ?? '').toUpperCase() !== op.tipo) {
+        throw new Stop(
+          'erro',
+          'A lista do Lattes mostrou um registro de outro tipo; nada foi enviado',
+        );
+      }
       if (foldText(pairValue(pairs, 'f_cod_reg') ?? '') === foldText(op.set.f_cod_reg ?? '')) {
         return result('divergente', 'O Lattes já tem um registro com esse número');
       }
     }
 
-    const inclusion = registryInclusion(listaHtml, op.tipo, cv);
-    if (!inclusion) throw new Stop('erro', 'Inclusão não encontrada na lista do Lattes');
     const form = await readPairs(port, inclusion, REGISTRO_FORM);
     if (
       pairValue(form.pairs, 'f_ctr') !== 'I' ||
@@ -428,11 +432,10 @@ export async function applyCreateRegistro(op: CreateRegistroOp, port: LattesPort
     const { f_dados_grid_datas: _grid, ...typed } = op.set;
     const absent = absentFields(form.controls, typed);
     // A própria pessoa na grade de inventores, pela linha dela no autorDP do menu.
-    const owner = ownerAuthor(menu);
-    if (!owner) {
-      return result('erro', 'A sua linha de autor não está no menu do Lattes (autorDP)');
-    }
-    const authors = serializeGrid([ownerGridRow(owner)], REGISTRY_AUTHOR_KEYS);
+    // A linha só vale se trouxer o nome completo ou uma citação do currículo.
+    const owner = ownerAuthor(menu, op.owner);
+    if ('reason' in owner) return result('erro', owner.reason);
+    const authors = serializeGrid([ownerGridRow(owner.owner)], REGISTRY_AUTHOR_KEYS);
     if (absent.length > 0) {
       return result(
         'erro',
@@ -449,7 +452,7 @@ export async function applyCreateRegistro(op: CreateRegistroOp, port: LattesPort
 
     try {
       const known = new Set(before.map((l) => l.params.f_seq));
-      const created = registryRows(await getChecked(port, lista.path), op.tipo).filter(
+      const created = registryRows(await getChecked(port, lista.path)).filter(
         (l) => !known.has(l.params.f_seq),
       );
       if (created.length !== 1) {
@@ -468,14 +471,9 @@ export async function applyCreateRegistro(op: CreateRegistroOp, port: LattesPort
         readBack(saved, op.set),
       );
       if (problem) return { ...result('divergente', problem), assigned };
-      // A grade de autores volta no script da página, não num campo: fica sem reler.
-      return {
-        ...result(
-          'conferido',
-          `Criado e conferido no Lattes (registro ${seq}; inventores não relidos)`,
-        ),
-        assigned,
-      };
+      // A grade de autores volta no script da página, não num campo: sem reler
+      // os inventores, a inclusão não se dá por conferida.
+      return { ...result('divergente', `${INVENTORS_UNREAD} (registro ${seq})`), assigned };
     } catch (err) {
       return maybeCreated(
         op.key,

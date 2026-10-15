@@ -8,7 +8,15 @@
 import type { Change } from '../model/changes.ts';
 import { childElements, firstChild, getAttr, walk, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
-import { ownerAuthor, ownerGridRow, serializeGrid, TEAM_KEYS } from './author-grid.ts';
+import {
+  NO_OWNER_NAME,
+  ownerAuthor,
+  ownerGridRow,
+  type OwnerNames,
+  ownerNamesOf,
+  serializeGrid,
+  TEAM_KEYS,
+} from './author-grid.ts';
 import type { FormSpec } from './contract.ts';
 import { CREATE_FIELD_LABELS } from './create-labels.ts';
 import {
@@ -46,6 +54,8 @@ export interface CreateProjetoOp extends CreateOpBase {
   kind: 'criar-projeto';
   /** f_cod_tipo da lista e do formulário: P pesquisa, D desenvolvimento… */
   nature: string;
+  /** O nome completo e as citações do currículo, para conferir a linha de autor do menu. */
+  owner: OwnerNames;
 }
 
 // Projeto -------------------------------------------------------------------------
@@ -119,6 +129,10 @@ function onlyOwner(projeto: XElement, root: XElement | undefined): boolean {
     foldText(ownerName) === foldText(getAttr(member, 'NOME-COMPLETO') ?? '')
   );
 }
+
+/** Por que o projeto criado fica divergente: a equipe não é relida. */
+export const TEAM_UNREAD =
+  'Criado no Lattes, com os campos conferidos; confira a equipe no Lattes, que o conector não relê';
 
 /** Por que o projeto vai à mão hoje (seções 21 e 22 de docs/lattes_internals.md). */
 export const TEAM_BY_HAND =
@@ -198,6 +212,8 @@ export function projetoOp(
   if (!set.f_titulo || !set.F_ANO_INIC || !set.F_TPO_SITUACAO) {
     return { reason: 'O projeto precisa de nome, situação e ano de início' };
   }
+  const owner = ownerNamesOf(chain[0]);
+  if (!owner) return { reason: NO_OWNER_NAME };
   return {
     expect: {},
     institutionCode,
@@ -206,6 +222,7 @@ export function projetoOp(
     kind: 'criar-projeto',
     label,
     nature,
+    owner,
     set,
   };
 }
@@ -373,11 +390,9 @@ export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort):
     if (limit) return result('erro', limit);
     // A própria pessoa na equipe, como coordenadora (tit "s"): o check() exige
     // a pessoa e um coordenador, e a inclusão abre a grade vazia (seção 22).
-    const owner = ownerAuthor(menu);
-    if (!owner) {
-      return result('erro', 'A sua linha de autor não está no menu do Lattes (autorDP)');
-    }
-    const team = serializeGrid([ownerGridRow(owner, { tit: 's' })], TEAM_KEYS);
+    const owner = ownerAuthor(menu, op.owner);
+    if ('reason' in owner) return result('erro', owner.reason);
+    const team = serializeGrid([ownerGridRow(owner.owner, { tit: 's' })], TEAM_KEYS);
     const response = await port.post(
       CREATE_PROJETO_SPEC.action,
       encodeLatin1Form(setPairs(form.pairs, { ...set, f_autores_l: team })),
@@ -404,7 +419,9 @@ export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort):
       // Lattes pendurar o projeto em outra atuação, a releitura acusa.
       const problem = readBackProblem('Criado no Lattes', false, readBack(saved, set));
       if (problem) return { ...result('divergente', problem), assigned };
-      return { ...result('conferido', 'Criado e conferido no Lattes'), assigned };
+      // A equipe volta no script da página, não num campo: sem relê-la, a
+      // inclusão não se dá por conferida.
+      return { ...result('divergente', TEAM_UNREAD), assigned };
     } catch (err) {
       return maybeCreated(
         op.key,

@@ -110,6 +110,9 @@ var label = { l: rotulo, t: citado };
     const html = `<script>
 p[0]="3#silva maria@SILVA, M. (Maria Silva)";
 p[11]='11#outro nome@NOME, O. (Outro Nome)';
+p[12]="12#ana d'ávila@D'ÁVILA, A. (Ana D'Ávila)";
+p[13]='13#bia d\\'ávila@D\\'ÁVILA, B.';
+self.parent.modalCV3.setarTitulo("Projeto&lt;br&gt;Instituto de Exemplo");
 self.parent.modalCV9.setarTitulo("Atuação profissional - Atividades (Ensino)<br>Universidade Federal do Exemplo", true );
 self.parent.modalCV1.setarTitulo("Atuação profissional - Linhas de pesquisa");
 var x = "a#b";
@@ -117,6 +120,9 @@ var x = "a#b";
     expect(pageScripts(html)[0]!.split('\n')).toEqual([
       'p[0]="3#[removido]@[removido]";',
       "p[11]='11#[removido]@[removido]';",
+      'p[12]="12#[removido]@[removido]";',
+      "p[13]='13#[removido]@[removido]';",
+      'self.parent.modalCV3.setarTitulo("Projeto&lt;br&gt;[removido]");',
       'self.parent.modalCV9.setarTitulo("Atuação profissional - Atividades (Ensino)<br>[removido]", true );',
       'self.parent.modalCV1.setarTitulo("Atuação profissional - Linhas de pesquisa");',
       'var x = "a#b";',
@@ -124,23 +130,38 @@ var x = "a#b";
   });
 
   it('a forma das linhas de autor do menu, sem nome nenhum', () => {
-    const shape = authorShape(
-      [
-        { c: '', deletable: false, l: 'Ána Silva', t: 'SILVA, A.' },
-        { c: 'K4790210P3', deletable: true, l: 'Coautora', t: 'COAUTORA, C.' },
-        { c: 'K4790210P4', deletable: true, l: 'Outra', t: 'OUTRA, O.' },
-        'lixo',
-      ],
-      'Ana Silva',
-    );
+    const rows = [
+      { c: '', deletable: false, l: 'Ána Silva', t: 'SILVA, A.' },
+      { c: 'K4790210P3', deletable: true, l: 'Coautora', t: 'COAUTORA, C.' },
+      { c: '99', deletable: true, l: 'Ana Silva', t: 'SILVA, ANA' },
+      { c: '9', deletable: true, l: 'Outra', t: 'SILVA, A.' },
+      'lixo',
+    ];
+    const shape = authorShape(rows, ['Ana Silva', 'SILVA, A.']);
     expect(shape).toEqual({
-      codePatterns: { '': 1, A9999999A9: 2 },
-      keyOrders: { 'c,deletable,l,t': 3 },
-      owner: { codePattern: '', keys: ['c', 'deletable', 'l', 't'], matches: 1 },
-      total: 4,
+      codePatterns: { '': 1, '9': 1, '99': 1, A9999999A9: 1 },
+      emptyCode: { count: 1, matchesOwner: true },
+      keyOrders: { 'c,deletable,l,t': 4 },
+      // Cada linha que casou, com o padrão de cada uma, e não só o da última.
+      owner: {
+        matches: [
+          { by: 'l', codePattern: '', keys: ['c', 'deletable', 'l', 't'] },
+          { by: 'l', codePattern: '99', keys: ['c', 'deletable', 'l', 't'] },
+          { by: 't', codePattern: '9', keys: ['c', 'deletable', 'l', 't'] },
+        ],
+      },
+      total: 5,
     });
-    expect(JSON.stringify(shape)).not.toMatch(/Silva|Coautora|K479/);
-    expect(authorShape(undefined)).toEqual({ codePatterns: {}, keyOrders: {}, total: 0 });
+    expect(JSON.stringify(shape)).not.toMatch(/Silva|SILVA|Coautora|K479/);
+    // A linha sem código que não casa com nenhum dos nomes fica marcada.
+    expect(authorShape(rows, 'Outra Pessoa').emptyCode).toEqual({ count: 1, matchesOwner: false });
+    expect(authorShape(rows).emptyCode).toEqual({ count: 1 });
+    expect(authorShape(undefined)).toEqual({
+      codePatterns: {},
+      emptyCode: { count: 0 },
+      keyOrders: {},
+      total: 0,
+    });
   });
 });
 

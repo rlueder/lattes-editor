@@ -13,11 +13,14 @@ import { CREATE_SPECS } from '../src/bridge/create-items.ts';
 import {
   type CreateRegistroOp,
   formDate,
-  PATENT_BY_HAND,
   patentDateGrid,
   registroFields,
-  registryInclusion,
 } from '../src/bridge/create-registro.ts';
+import {
+  INVENTORS_UNREAD,
+  PATENT_BY_HAND,
+  registryInclusion,
+} from '../src/bridge/create-registro-rules.ts';
 import { exportCv } from '../src/bridge/export.ts';
 import { cvCodeFrom, lattesIdFrom } from '../src/bridge/lattes-html.ts';
 import { isOp, planChanges } from '../src/bridge/plan.ts';
@@ -38,6 +41,11 @@ import { lattesSchema as schema } from '../src/schema/lattes.ts';
 import { type LattesSimuladoNoTeste, withLattesSimulado } from './helpers/lattes-simulado.ts';
 
 const DEMO = new Uint8Array(readFileSync(DEMO_XML));
+/** Os nomes de fixtures/demo.xml, com que o conector confere a linha do autorDP. */
+const DEMO_OWNER = {
+  citations: ['LIMA, A. B. S.', 'LIMA, ANA BEATRIZ SOUZA', 'SOUZA LIMA, A. B.'],
+  full: 'Ana Beatriz Souza Lima',
+};
 const OWNER = {
   citation: 'LIMA, A. B. S.',
   lattesId: '3871592046158372',
@@ -98,6 +106,7 @@ async function plan(edit: (doc: XDocument) => void, on = true) {
         expect: {},
         key: change.key,
         kind: 'criar-registro',
+        owner: DEMO_OWNER,
         label: 'Registro',
         ...fields,
       });
@@ -168,6 +177,7 @@ describe('planejar a inclusão de um registro', () => {
     expect(ops).toEqual([
       expect.objectContaining({
         kind: 'criar-registro',
+        owner: DEMO_OWNER,
         set: {
           f_cod_reg: 'BR302020001234',
           f_dta_dep: '01/02/2020',
@@ -186,6 +196,10 @@ describe('planejar a inclusão de um registro', () => {
   it('a patente leva as datas na grade, como array2xml a monta (seção 21)', async () => {
     expect(formDate('01022020')).toBe('01/02/2020');
     expect(formDate('2020-02-01')).toBeUndefined();
+    // A data digitada como o Lattes mostra também vale.
+    expect(formDate('01/02/2020')).toBe('01/02/2020');
+    expect(formDate(' 01/02/2020 ')).toBe('01/02/2020');
+    expect(formDate('1/2/2020')).toBeUndefined();
     expect(patentDateGrid([{ code: '1', date: '01/02/2020', label: 'Depósito' }])).toBe(
       '<root><item>\n\t<id>1</id>\n\t<contato>Depósito</contato>\n\t<endereco>01/02/2020</endereco>\n</item >\n</root >',
     );
@@ -338,9 +352,10 @@ describe('incluir registros no Lattes simulado', () => {
     });
     expect(unsupported).toEqual([]);
     const results = await applyAll(ops, lattes.port);
-    expect(results.map((r) => r.status)).toEqual(['conferido']);
-    expect(results[0]!.detail).toMatch(
-      /^Criado e conferido no Lattes \(registro \d+; inventores não relidos\)$/,
+    // Os campos voltam conferidos, mas os inventores não são relidos: fica divergente.
+    expect(results.map((r) => r.status)).toEqual(['divergente']);
+    expect(results[0]!.detail).toBe(
+      `${INVENTORS_UNREAD} (registro ${results[0]!.assigned!['SEQUENCIA-PRODUCAO']})`,
     );
     expect(results[0]!.assigned).toEqual({ 'SEQUENCIA-PRODUCAO': expect.any(String) });
     // A própria pessoa vai na grade de inventores, pela linha dela no autorDP do menu.
@@ -366,8 +381,12 @@ describe('incluir registros no Lattes simulado', () => {
     });
     const all = [...others.ops, ...marca.ops, ...topografia.ops];
     expect(all.map((o) => (o as CreateRegistroOp).tipo)).toEqual(['DI', 'MR', 'TC']);
-    const done = await applyAll(all, lattes.port);
-    expect(done.map((r) => r.status)).toEqual(['conferido', 'conferido', 'conferido']);
+    // Um por vez: divergente para a fila, como no painel.
+    const done = [];
+    for (const one of all) done.push(await applyOp(one, lattes.port));
+    expect(done.map((r) => r.detail)).toEqual(
+      done.map((r) => `${INVENTORS_UNREAD} (registro ${r.assigned!['SEQUENCIA-PRODUCAO']})`),
+    );
 
     const doc = await exportedDoc(lattes);
     const [di] = findAll(doc.root, 'DESENHO-INDUSTRIAL');
@@ -427,6 +446,7 @@ describe('incluir registros no Lattes simulado', () => {
       key: 'k',
       kind: 'criar-registro',
       label: 'Registro',
+      owner: DEMO_OWNER,
       set: { f_cod_reg: '1', f_titulo: 'X' },
       tipo,
     });
@@ -473,6 +493,82 @@ describe('incluir registros no Lattes simulado', () => {
     expect((await applyOp(long, lattes.port)).detail).toMatch(/passa do limite do Lattes \(16/);
   });
 
+  it('linha de autor sem código que não é da pessoa: para antes de enviar', async () => {
+    const lattes = await start();
+    const { ops } = await plan((doc) => addRegistro(doc, 'DESENHO-INDUSTRIAL', desenho));
+    const op = {
+      ...(ops[0] as CreateRegistroOp),
+      owner: { citations: ['OUTRA, P.'], full: 'Outra Pessoa' },
+    };
+    const posts = lattes.state.log.filter((l) => l.method === 'POST').length;
+    expect(await applyOp(op, lattes.port)).toMatchObject({
+      detail: expect.stringMatching(/não tem o seu nome completo nem uma das suas citações/),
+      status: 'erro',
+    });
+    expect(lattes.state.log.filter((l) => l.method === 'POST').length).toBe(posts);
+  });
+
+  it('a conferência de duplicata não passa em silêncio por linhas que não reconhece', async () => {
+    const isList = (proc: string) => /^pkg_patente_registro\.lista$/i.test(proc);
+    const withBody = (edit: (html: string) => string): Parameters<typeof start>[0] => ({
+      intercept: async (req, _state, next) => {
+        const out = await next();
+        return req.method === 'GET' && isList(req.proc) && 'html' in out
+          ? { ...out, html: edit(out.html) }
+          : out;
+      },
+    });
+    const send = async (options: Parameters<typeof start>[0]) => {
+      const lattes = await start(options);
+      const { ops } = await plan((doc) => addRegistro(doc, 'DESENHO-INDUSTRIAL', desenho));
+      const r = await applyOp(ops[0]!, lattes.port);
+      const posts = lattes.state.log.filter((l) => l.method === 'POST').length;
+      await open?.close();
+      open = undefined;
+      return { posts, r };
+    };
+    // Uma linha num formato sem f_seq: a duplicata não teria como ser vista.
+    const unknown = await send(
+      withBody((html) =>
+        html.replace(
+          '</body>',
+          '<a href="PKG_PATENTE_REGISTRO.form?f_cod=X&f_item=9">Outro</a></body>',
+        ),
+      ),
+    );
+    expect(unknown.r).toMatchObject({
+      detail: 'A lista do Lattes tem linhas que o conector não reconhece; nada foi enviado',
+      status: 'erro',
+    });
+    expect(unknown.posts).toBe(0);
+    // Uma linha cujo formulário é de outro tipo: o filtro pelo link não vale.
+    let swap = false;
+    const lattes = await start({
+      intercept: async (req, _state, next) => {
+        const out = await next();
+        const row = req.method === 'GET' && /^pkg_patente_registro\.form$/i.test(req.proc);
+        return swap && row && req.get('f_seq') && 'html' in out
+          ? { ...out, html: out.html.replace(/(name="f_cod_tipo"[^>]*value=")DI"/i, '$1MR"') }
+          : out;
+      },
+    });
+    const first = await plan((doc) => addRegistro(doc, 'DESENHO-INDUSTRIAL', desenho));
+    await applyOp(first.ops[0]!, lattes.port);
+    swap = true;
+    const second = first.ops[0] as CreateRegistroOp;
+    const posts = lattes.state.log.filter((l) => l.method === 'POST').length;
+    expect(
+      await applyOp(
+        { ...second, set: { ...second.set, f_cod_reg: 'BR302020009999' } },
+        lattes.port,
+      ),
+    ).toMatchObject({
+      detail: 'A lista do Lattes mostrou um registro de outro tipo; nada foi enviado',
+      status: 'erro',
+    });
+    expect(lattes.state.log.filter((l) => l.method === 'POST').length).toBe(posts);
+  });
+
   it('a patente abre o formulário pelo endereço da janela prévia, sem f_ctr=R', async () => {
     expect(registryInclusion('', 'PP', 'K000000000')).toBe(
       'pkg_patente_registro.form?f_sta_inovacao=&f_cod=K000000000&f_cod_tipo=PP',
@@ -483,13 +579,17 @@ describe('incluir registros no Lattes simulado', () => {
         expect: {},
         key: 'k',
         kind: 'criar-registro',
+        owner: DEMO_OWNER,
         label: 'Patente',
         set: { f_cod_reg: 'BR102024000001', f_inst: 'INPI', f_titulo: 'Invento' },
         tipo: 'PP',
       },
       lattes.port,
     );
-    expect(r.status).toBe('conferido');
+    expect(r.status).toBe('divergente');
+    expect(r.detail).toMatch(
+      /^Criado no Lattes, com os campos conferidos; confira a lista de inventores/,
+    );
     expect(findAll(lattes.state.root, 'PATENTE')).toHaveLength(1);
   });
 

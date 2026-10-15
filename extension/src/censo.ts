@@ -8,7 +8,7 @@
 //   await __lattesCensus.captureAll({ download: true })
 //   await __lattesCensus.inspect(['pkg_x.form?…'], { download: true })  // recaptura avulsa
 //   await __lattesCensus.activities({ download: true })  // atividades por natureza
-//   __lattesCensus.authorShape('Nome Completo')           // forma das linhas de autor
+//   __lattesCensus.authorShape(['Nome Completo', 'NOME, N.']) // forma das linhas de autor
 //   __lattesCensus.vectorShape('titularPessoaDP', 'Nome') // o mesmo, para outro vetor do menu
 //
 // Só GET de formulário e de lista. A única exceção é link() sem XML, que
@@ -176,15 +176,16 @@ async function activities(
 
 /**
  * A forma das linhas de autor do menu (autorDP), sem nomes: a ordem das
- * chaves, o padrão dos códigos e a linha do dono, achada pelo nome dado.
+ * chaves, o padrão dos códigos, cada linha que casa com o nome completo ou
+ * uma das citações dadas, e se a linha sem código é uma delas.
  */
-function authorShape(ownerName?: string) {
-  return vectorShape('autorDP', ownerName);
+function authorShape(ownerNames?: string | string[]) {
+  return vectorShape('autorDP', ownerNames);
 }
 
 /** O mesmo para outro vetor do menu (titularPessoaDP, por exemplo). */
-function vectorShape(name: string, ownerName?: string) {
-  return shapeOf((globalThis as unknown as Record<string, unknown>)[name], ownerName);
+function vectorShape(name: string, ownerNames?: string | string[]) {
+  return shapeOf((globalThis as unknown as Record<string, unknown>)[name], ownerNames);
 }
 
 /** Contagens para conferir de relance o que voltou. */

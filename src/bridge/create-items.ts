@@ -73,10 +73,9 @@ import {
   type CreateRegistroOp,
   planCreateRegistro,
   REGISTRY_TYPES,
-  registryInclusion,
   registryItem,
-  registryList,
 } from './create-registro.ts';
+import { registryInclusion, registryList } from './create-registro-rules.ts';
 import type { Planned } from './create-shared.ts';
 import { EVENTO_SPEC } from './edit-items.ts';
 import { findLinks } from './lattes-html.ts';

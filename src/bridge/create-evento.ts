@@ -189,16 +189,23 @@ export async function applyCreateEvento(op: CreateEventoOp, port: LattesPort): P
     if (!lista) throw new Stop('erro', 'Participação em eventos não encontrada no menu do Lattes');
     const listaHtml = await getChecked(port, lista.path);
     const before = eventRows(listaHtml);
+    // Quem apresenta pode ter mais de um trabalho no mesmo evento: aí o título
+    // também entra na chave. O ouvinte não tem título.
+    const presenter = op.set.F_FORMA !== FORMS.Ouvinte;
     for (const row of before) {
       const { pairs } = await readPairs(port, row.path, EVENTO_FORM);
       if (
         foldText(pairValue(pairs, 'f_nme_evento') ?? '') === foldText(op.set.f_nme_evento ?? '') &&
         pairValue(pairs, 'f_ano') === op.set.f_ano &&
-        pairValue(pairs, 'F_FORMA') === op.set.F_FORMA
+        pairValue(pairs, 'F_FORMA') === op.set.F_FORMA &&
+        (!presenter ||
+          foldText(pairValue(pairs, 'f_titulo') ?? '') === foldText(op.set.f_titulo ?? ''))
       ) {
         return result(
           'divergente',
-          'O Lattes já tem essa participação (mesmo evento, ano e forma)',
+          presenter
+            ? 'O Lattes já tem essa participação (mesmo evento, ano, forma e título)'
+            : 'O Lattes já tem essa participação (mesmo evento, ano e forma)',
         );
       }
     }

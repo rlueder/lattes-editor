@@ -77,7 +77,13 @@ export interface PlanOptions {
  * conferir. Sem ela, essas mudanças ficam à mão.
  */
 export function planOptionsFor(features: readonly string[]): PlanOptions {
-  return { editOuvinte: EDIT_OUVINTE_ENABLED && features.includes('alterar-evento') };
+  return {
+    // A inclusão pelo conector só vai a uma extensão que anuncia 'incluir-itens':
+    // as operações de inclusão são mensagens que uma extensão antiga não conhece.
+    // A capacidade entra em BRIDGE_FEATURES junto com a chave ligada.
+    createItems: CREATE_ITEMS_ENABLED && features.includes('incluir-itens'),
+    editOuvinte: EDIT_OUVINTE_ENABLED && features.includes('alterar-evento'),
+  };
 }
 
 export interface Unsupported {

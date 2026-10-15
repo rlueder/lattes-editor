@@ -11,9 +11,11 @@
 // lote 4), e update.grid() as copia para a linha da grade; o vetor tem uma
 // linha só com `c` vazio. Inferido: que essa linha seja a da própria pessoa
 // (é a única que o check() aceita, e recuperaPosicaoUsuario() do projeto a
-// procura por "||").
+// procura por "||"). Por isso o conector só a usa quando ela traz o nome
+// completo ou uma das citações do currículo.
 
-import { decodeHtmlEntities } from './html-text.ts';
+import { childElements, getAttr, type XElement } from '../model/xml.ts';
+import { decodeHtmlEntities, foldText } from './html-text.ts';
 import { parseJsLiteral } from './lattes-lists.ts';
 
 export interface MenuAuthor {
@@ -42,10 +44,50 @@ export function menuAuthors(menuHtml: string): MenuAuthor[] | undefined {
   }
 }
 
-/** A linha da própria pessoa: a única com o código vazio; undefined se não houver uma só. */
-export function ownerAuthor(menuHtml: string): MenuAuthor | undefined {
+/** O nome completo e as citações da própria pessoa, do DADOS-GERAIS do currículo. */
+export interface OwnerNames {
+  citations: string[];
+  full: string;
+}
+
+/** Os nomes de DADOS-GERAIS; undefined se o currículo não tem o nome completo. */
+export function ownerNamesOf(root: XElement | undefined): OwnerNames | undefined {
+  const dg = root && childElements(root, 'DADOS-GERAIS')[0];
+  const full = (dg && getAttr(dg, 'NOME-COMPLETO'))?.trim() ?? '';
+  if (!full) return undefined;
+  const citations = ((dg && getAttr(dg, 'NOME-EM-CITACOES-BIBLIOGRAFICAS')) ?? '')
+    .split(';')
+    .map((c) => c.trim())
+    .filter(Boolean);
+  return { citations, full };
+}
+
+/** Sem o nome completo no currículo, a linha do autorDP não tem com o que ser conferida. */
+export const NO_OWNER_NAME =
+  'O currículo não tem o nome completo, com o qual o conector confere a sua linha de autor';
+
+const NO_OWNER_ROW = 'A sua linha de autor não está no menu do Lattes (autorDP)';
+
+/**
+ * A linha da própria pessoa: a única com o código vazio (a que o check()
+ * aceita), e só se ela traz o nome completo (`l`) ou uma das citações (`t`)
+ * do currículo. Que a linha sem código seja a do dono é inferido (seção 22);
+ * a conferência pelo nome impede mandar outra pessoa como autora.
+ */
+export function ownerAuthor(
+  menuHtml: string,
+  names: OwnerNames,
+): { owner: MenuAuthor } | { reason: string } {
   const own = (menuAuthors(menuHtml) ?? []).filter((r) => r.c.trim() === '');
-  return own.length === 1 ? own[0] : undefined;
+  if (own.length !== 1) return { reason: NO_OWNER_ROW };
+  const row = own[0]!;
+  const full = foldText(names.full);
+  const citations = new Set(names.citations.map(foldText));
+  if ((full && foldText(row.l) === full) || citations.has(foldText(row.t))) return { owner: row };
+  return {
+    reason:
+      'A linha sem código do autorDP não tem o seu nome completo nem uma das suas citações; nada foi enviado',
+  };
 }
 
 /**

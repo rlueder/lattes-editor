@@ -92,6 +92,16 @@ export function isBlank(el: XElement): boolean {
   return el.attrs.every((a) => !a.value.trim()) && !text(el) && childElements(el).every(isBlank);
 }
 
+/**
+ * Contêineres que, novos, não viram uma mudança só: os eventos dentro deles
+ * entram um por um (LAT-57). Um currículo sem DADOS-COMPLEMENTARES ganha o
+ * contêiner junto com o primeiro evento.
+ */
+const DESCEND_WHEN_NEW: ReadonlySet<string> = new Set([
+  'DADOS-COMPLEMENTARES',
+  'PARTICIPACAO-EM-EVENTOS-CONGRESSOS',
+]);
+
 export interface DiffOptions {
   /** Itens que o Importar leva (produção nova): ficam fora desta lista. */
   skip?: (el: XElement) => boolean;
@@ -109,6 +119,12 @@ export function diffDocuments(
     if (a && opts.skip?.(a)) return;
     const kind: ChangeKind = !b ? 'novo' : !a ? 'removido' : 'alterado';
     if (kind !== 'alterado' && isBlank(el)) return;
+    // Contêiner de eventos novo: cada evento vira uma mudança, para cada um
+    // ter o seu caminho (inclusão pelo formulário, ou o Importar pelo skip).
+    if (kind === 'novo' && DESCEND_WHEN_NEW.has(el.name) && el.attrs.every((x) => !x.value)) {
+      for (const [key, child] of keyed(a!)) visit(undefined, child, [...path, key]);
+      return;
+    }
 
     const fields = fieldDiff(b, a).filter((f) => kind === 'alterado' || f.after || f.before);
     if (fields.length > 0 || kind !== 'alterado') {
@@ -246,6 +262,51 @@ export function acceptChange(original: XElement, working: XElement, change: Chan
   }
   if (change.kind !== 'alterado') return false;
   return change.fields.every((f) => revertField(working, original, change, f.attr));
+}
+
+/**
+ * Item novo incluído e conferido no Lattes: entra no original (com os
+ * contêineres que faltarem) e recebe, no original e na cópia de trabalho, os
+ * números que o Lattes deu (`assigned`, de OpResult). Cada número vai no
+ * elemento do item que já tem esse atributo (o número provisório do editor);
+ * se nenhum ou mais de um tiver, o número não é posto. Devolve false se o
+ * caminho não existe mais na cópia de trabalho.
+ */
+export function acceptCreated(
+  original: XElement,
+  working: XElement,
+  change: Change,
+  assigned: Record<string, string> = {},
+  insert: (parent: XElement, child: XElement) => void = (parent, child) =>
+    parent.children.push(child),
+): boolean {
+  if (change.kind !== 'novo') return false;
+  const workChain = resolvePath(working, change.path);
+  if (workChain.length !== change.path.length || workChain.length < 2) return false;
+  const el = workChain.at(-1)!;
+  for (const [attr, value] of Object.entries(assigned)) {
+    const holders: XElement[] = [];
+    const visitAll = (node: XElement) => {
+      if (node.attrs.some((a) => a.name === attr)) holders.push(node);
+      childElements(node).forEach(visitAll);
+    };
+    visitAll(el);
+    if (holders.length === 1) setAttr(holders[0]!, attr, value);
+  }
+  // Os contêineres que o original não tem entram vazios, como na cópia.
+  let parent = original;
+  for (let i = 1; i < workChain.length - 1; i++) {
+    const next = keyed(parent).get(change.path[i]!);
+    if (next) {
+      parent = next;
+      continue;
+    }
+    const shell: XElement = { ...structuredClone(workChain[i]!), children: [] };
+    insert(parent, shell);
+    parent = shell;
+  }
+  insert(parent, structuredClone(el));
+  return true;
 }
 
 /**

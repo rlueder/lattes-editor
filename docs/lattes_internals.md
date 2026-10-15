@@ -1560,26 +1560,52 @@ entradas do censo em `lattes-formularios/censo-2026-10-15c.json`.
 **A linha de autor do menu (lote 4).** O vetor `autorDP` do menu tem 14
 linhas, todas com as chaves `l`, `c`, `t` e `deletable`, nessa ordem. O código
 `c` é "9" em nove linhas, "99" em quatro e vazio em uma. O `authorShape()`
-comparou cada `l` com o nome do dono sem devolvê-lo: duas linhas casaram, as
-duas com "99". O que o código das páginas mostra:
+dessa rodada comparou cada `l` com o nome completo do dono, sem devolvê-lo, e
+respondeu `matches: 2` com `codePattern: "99"`. Esse padrão é o da última
+linha que casou: o ajudante de então sobrescrevia o padrão a cada casamento,
+então a saída não diz o código da outra linha, nem se a linha com `c` vazio
+casou com o nome. O ajudante agora devolve cada casamento (pelo nome ou pela
+citação) e diz se a linha sem código é uma delas; a nova rodada do lote 4 está
+em `lattes-formularios/recaptura.md`. O que o código das páginas mostra:
 
 - o `check()` só reconhece a própria pessoa por uma linha com `c` vazio,
   começando com "-" ou igual a "D" (seção 21);
 - o `recuperaPosicaoUsuario()` do projeto procura na grade serializada por
-  "||" ou "|-", isto é, um `c` vazio ou negativo logo depois de `l`;
+  "||" ou "|-", isto é, um `c` vazio ou negativo logo depois de `l`, e o
+  `seqResp()` devolve "0" para o coordenador com `c` vazio;
 - o `update.grid()` copia a linha escolhida na sugestão para a grade com
   `$.extend` e acrescenta `editable`;
 - um autor digitado na hora vira `{l, t, c: " ", tit, add: true}` e, na grade
   serializada, "l|t| |…";
-- os códigos de `pp_lista_autores` (abaixo) são os mesmos números do `autorDP`.
+- em `pp_lista_autores` (abaixo) os códigos são de 1 a 12, mais um -1, cujo
+  nome e citação levam um segundo texto entre parênteses; a página pinta de
+  azul o código negativo e o esconde quando `ignoraUsuario` vale 1. Que o -1
+  seja a própria pessoa é **inferido** do nome da variável.
 
-Daí a linha da própria pessoa ser a única com `c` vazio, e as duas linhas
-"99" que casam com o nome serem entradas de coautoria com o mesmo nome. Isso é
-**inferido**: é a única linha que o `check()` aceita, mas o que o Lattes grava
-com ela só se vê numa inclusão. Com as chaves na ordem do `autorDP`, a linha
-da pessoa vai na grade como "l||t" (`deletable` e `editable` ficam de fora da
-lista de chaves de cada formulário), e no projeto, como coordenadora, "l||t|s"
-(`src/bridge/author-grid.ts`).
+**Nenhum número do Lattes na grade.** Procurei o identificador do dono
+(`NUMERO-IDENTIFICADOR`, `f_id`, `id_usuario`, `nro_id_cnpq` e parecidos) nos
+scripts e ocultos das capturas de 15/10/2026 (`censo-2026-10-15.json`, `b`,
+`c` e os três arquivos crus da recaptura). Não aparece em linha nenhuma do
+`autorDP`, em nenhuma chave serializada em `f_autores_l` nem em oculto dos
+formulários de registro, projeto e atividade. O único `f_id` é o parâmetro do
+Importar (`pkg_import_cv.form01`), e o redator troca qualquer número longo por
+`[removido]`, então um valor de 16 dígitos não sobraria para ser lido, mas o
+nome do campo, sim. Os códigos `c` das outras linhas têm um ou dois dígitos,
+como os de `pp_lista_autores`: que sejam posições numa lista, e não
+identificadores, é **inferido** do padrão. O número do Lattes que o conector
+tem é o do menu (`lattesIdFrom`, o link `lattes.cnpq.br/<16 dígitos>`), e a
+fila já para quando ele não é o do currículo aberto no editor.
+
+Daí o conector usar a linha com `c` vazio como a da própria pessoa só quando
+ela traz o nome completo (`l`) ou uma das citações (`t`) do `DADOS-GERAIS` do
+currículo; senão, para sem enviar. Que essa linha seja a do dono continua
+**inferido**: é a única que o `check()` aceita, mas o que o Lattes grava com
+ela só se vê numa inclusão, e por isso o registro, o projeto e a atividade
+criados voltam como divergentes, com o pedido de conferir no Lattes os
+inventores, a equipe ou as disciplinas, que o conector não relê. Com as chaves
+na ordem do `autorDP`, a linha da pessoa vai na grade como "l||t" (`deletable`
+e `editable` ficam de fora da lista de chaves de cada formulário), e no
+projeto, como coordenadora, "l||t|s" (`src/bridge/author-grid.ts`).
 
 **Atividades de uma atuação (lote 3).** `pkg_ativ.cargo?f_natur_ativ=<n>`,
 com `f_ctr=I`, envia para `PKG_ATIV.cargo`. As naturezas 1, 2, 5, 6, 7, 8, 9 e
@@ -1633,11 +1659,13 @@ lida. **Lacuna.**
 segundo formulário para `PKG_PROJETO.EDITAR_FINANCIAMENTO` (`P_COD`,
 `P_COD_INST`, `P_CTR`). A resposta não foi lida. `PKG_PROJETO.pp_lista_prod`
 responde 404 sem parâmetros. `PKG_PROJETO.pp_lista_autores` tem um campo de
-busca, a lista de pessoas (cada uma como `p[i]="<código>#<nome>@<citação>"`,
-com os códigos do `autorDP`) e o link `pkg_projeto.novo_equipe?f_tipo=A&f_nome=`
+busca, a lista de pessoas (cada uma como `p[i]="<código>#<nome>@<citação>"`)
+e o link `pkg_projeto.novo_equipe?f_tipo=A&f_nome=`
 para incluir quem não está na lista.
 
 **O redator do censo.** As páginas desses lotes trazem nomes em dois lugares
 que o redator não conhecia, os literais `"<código>#<nome>@<citação>"` e o
 texto depois do primeiro `<br>` em `setarTitulo(...)`. Os dois passaram a ser
-trocados por `[removido]` (`src/census/census-page.ts`).
+trocados por `[removido]` (`src/census/census-page.ts`), também com um
+apóstrofo no nome (D'Ávila, aspa escapada ou não) e com o `<br>` escapado
+(`&lt;br&gt;`).

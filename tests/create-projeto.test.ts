@@ -10,6 +10,7 @@ import {
   planCreateProjeto,
   projetoOp,
   TEAM_BY_HAND,
+  TEAM_UNREAD,
   vinculoChoices,
 } from '../src/bridge/create-projeto.ts';
 import { planChanges } from '../src/bridge/plan.ts';
@@ -206,7 +207,8 @@ describe('incluir o projeto no Lattes falso', () => {
     const result = await applyOp(op(), fake.port);
     expect(result).toMatchObject({
       assigned: { 'SEQUENCIA-PROJETO': '1' },
-      status: 'conferido',
+      detail: TEAM_UNREAD,
+      status: 'divergente',
     });
     expect(fake.posts.map((p) => p.path)).toEqual(['PKG_PROJETO.FORM']);
     expect(fake.posts[0]!.body).toMatchObject({
@@ -234,7 +236,7 @@ describe('incluir o projeto no Lattes falso', () => {
   it('código com V vai em f_cod_inst', async () => {
     const fake = fakeProjeto();
     const v = { ...op(), institutionCode: '007900000004' };
-    expect(await applyCreateProjeto(v, fake.port)).toMatchObject({ status: 'conferido' });
+    expect(await applyCreateProjeto(v, fake.port)).toMatchObject({ status: 'divergente' });
     // O vínculo dessa atuação terminou em 2018; o projeto em andamento vai sem fim.
     expect(fake.posts[0]!.body).toMatchObject({
       F_ANO_FIM: '',

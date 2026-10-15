@@ -66,9 +66,16 @@ ensino está na tela de cargos e vínculos da atuação.
 
 ```js
 const redact = ['Seu Nome Completo', 'SOBRENOME, N.'];
+// O nome completo e todas as citações do DADOS-GERAIS, como estão no currículo.
+const names = ['Seu Nome Completo', 'SOBRENOME, N.', 'SOBRENOME, NOME'];
+
+// 4 (de novo). A linha de autor do menu com o ajudante novo: cada linha que
+//    casa com o nome ou com uma citação, com o padrão do código de cada uma, e
+//    se a linha sem código (emptyCode.matchesOwner) é uma delas.
+copy(JSON.stringify(__lattesCensus.authorShape(names), null, 2));
 
 // 6. A forma do vetor de titulares pessoa do menu, sem nome nenhum.
-copy(JSON.stringify(__lattesCensus.vectorShape('titularPessoaDP', 'Seu Nome Completo'), null, 2));
+copy(JSON.stringify(__lattesCensus.vectorShape('titularPessoaDP', names), null, 2));
 
 // 7. A busca de órgão de uma atuação (a das atividades e a do projeto) e a
 //    tela de alteração de uma atividade de ensino que já existe.
@@ -84,19 +91,21 @@ await __lattesCensus.inspect(
 
 ## O que extrair de cada item
 
-| Item                                 | Onde                                 | O que procurar                                                                                                                                                              |
-| ------------------------------------ | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Titular pessoa da patente            | o resultado do lote 6                | a ordem das chaves do `titularPessoaDP` e a linha da própria pessoa: é o que falta para a patente ir pelo conector                                                          |
-| Órgão ou unidade de uma atuação      | as duas buscas de órgão do lote 7    | se a busca responde por GET com a lista de órgãos, e o código que ela põe em `f_codorgao`: é o que falta para as outras oito naturezas de atividade e para o projeto        |
-| Atividade que já existe              | a tela de alteração do lote 7        | onde ficam as disciplinas que a atividade já tem (o `Provider` da grade) e o código `c` de cada uma: é o que falta para incluir uma disciplina numa atividade que já existe |
-| Financiadores e produções do projeto | o resultado das buscas, que são POST | os quatro valores de cada financiador em `f_inst_l` e o valor que liga uma produção ou orientação; ler a resposta pede enviar a busca, e isso é decisão do dono             |
+| Item                                 | Onde                                 | O que procurar                                                                                                                                                                    |
+| ------------------------------------ | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A linha de autor do menu             | o resultado do lote 4, de novo       | `emptyCode.count` igual a 1 e `emptyCode.matchesOwner` verdadeiro, e o `codePattern` de cada casamento: confirma que a linha sem código é a do dono, sem depender só do `check()` |
+| Titular pessoa da patente            | o resultado do lote 6                | a ordem das chaves do `titularPessoaDP` e a linha da própria pessoa: é o que falta para a patente ir pelo conector                                                                |
+| Órgão ou unidade de uma atuação      | as duas buscas de órgão do lote 7    | se a busca responde por GET com a lista de órgãos, e o código que ela põe em `f_codorgao`: é o que falta para as outras oito naturezas de atividade e para o projeto              |
+| Atividade que já existe              | a tela de alteração do lote 7        | onde ficam as disciplinas que a atividade já tem (o `Provider` da grade) e o código `c` de cada uma: é o que falta para incluir uma disciplina numa atividade que já existe       |
+| Financiadores e produções do projeto | o resultado das buscas, que são POST | os quatro valores de cada financiador em `f_inst_l` e o valor que liga uma produção ou orientação; ler a resposta pede enviar a busca, e isso é decisão do dono                   |
 
 O que só se responde enviando, e por isso fica para um teste acompanhado: o
 passo depois do envio da formação complementar (`FORM2`), o elemento do XML
 que o corpo editorial, a revisão e o assessoramento gravam (o currículo não
 tem nenhum item desses) e a primeira inclusão real de cada tipo que o
-conector já inclui sem ter sido acompanhado: os cinco registros que não são
-patente e a atividade de ensino, que dependem da linha da própria pessoa e do
+conector já inclui sem ter sido acompanhado: a cultivar protegida e a
+registrada, o desenho industrial, a marca e a topografia (o programa de
+computador vai pelo Importar, como software) e a atividade de ensino, que dependem da linha da própria pessoa e do
 formato de `f_espec_l` lidos no código, sem envio. A licença não tem como ir pelo formulário: o Lattes
 exige a data de nascimento ou adoção, que o XML não guarda.
 

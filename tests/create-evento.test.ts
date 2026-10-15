@@ -15,7 +15,7 @@ import { planChanges } from '../src/bridge/plan.ts';
 import { diffDocuments } from '../src/model/changes.ts';
 import { DIRECT_INCLUSION_TYPES, directInclusion } from '../src/model/direct-inclusion.ts';
 import { loadCv } from '../src/model/document.ts';
-import { isPendingImport } from '../src/model/production.ts';
+import { goesByChanges, isNewProduction, isPendingImport } from '../src/model/production.ts';
 import { element, getAttr, walk, type XElement } from '../src/model/xml.ts';
 import { type LattesSimuladoNoTeste, withLattesSimulado } from './helpers/lattes-simulado.ts';
 
@@ -85,6 +85,65 @@ async function plan(item: XElement) {
   return planChanges(entries, working.root, { createItems: true });
 }
 
+describe('evento em contêiner novo', () => {
+  it('currículo sem DADOS-COMPLEMENTARES: o congresso novo vira inclusão', async () => {
+    const strip = (root: XElement) => {
+      root.children = root.children.filter(
+        (c) => c.kind !== 'element' || c.name !== 'DADOS-COMPLEMENTARES',
+      );
+    };
+    // Os dois documentos sem o contêiner: só o congresso é novo.
+    const original = await loadCv(DEMO, 'demo.xml');
+    strip(original.doc.root);
+    const working = structuredClone(original.doc);
+    working.root.children.push(
+      element('DADOS-COMPLEMENTARES', {}, [
+        element('PARTICIPACAO-EM-EVENTOS-CONGRESSOS', {}, [congresso()]),
+      ]),
+    );
+    const changes = diffDocuments(original.doc.root, working.root);
+    expect(changes.map((c) => c.element)).toEqual(['PARTICIPACAO-EM-CONGRESSO']);
+    const { ops, unsupported } = planChanges(
+      changes.map((change) => ({ change, itemTitle: '' })),
+      working.root,
+      { createItems: true },
+    );
+    expect(unsupported).toEqual([]);
+    expect(ops.map((o) => o.kind)).toEqual(['criar-evento']);
+    // Com a chave desligada, o mesmo congresso fica só no Importar.
+    const skip = (el: XElement) => isPendingImport(el, 33, directInclusion(false));
+    expect(diffDocuments(original.doc.root, working.root, { skip })).toEqual([]);
+  });
+
+  it('dois eventos num contêiner novo: uma inclusão para cada um', async () => {
+    const original = await loadCv(DEMO, 'demo.xml');
+    const dcOf = (root: XElement) => find(root, (el) => el.name === 'DADOS-COMPLEMENTARES');
+    // O currículo carregado não tem eventos; os dois entram com o contêiner.
+    const dc = dcOf(original.doc.root);
+    dc.children = dc.children.filter(
+      (c) => c.kind !== 'element' || c.name !== 'PARTICIPACAO-EM-EVENTOS-CONGRESSOS',
+    );
+    const working = structuredClone(original.doc);
+    const second = congresso({ ANO: '2024', TITULO: 'Outro trabalho' });
+    second.attrs = [{ name: 'SEQUENCIA-PRODUCAO', value: '91' }];
+    dcOf(working.root).children.push(
+      element('PARTICIPACAO-EM-EVENTOS-CONGRESSOS', {}, [congresso(), second]),
+    );
+    const changes = diffDocuments(original.doc.root, working.root);
+    expect(changes.map((c) => c.element)).toEqual([
+      'PARTICIPACAO-EM-CONGRESSO',
+      'PARTICIPACAO-EM-CONGRESSO',
+    ]);
+    const { ops, unsupported } = planChanges(
+      changes.map((change) => ({ change, itemTitle: '' })),
+      working.root,
+      { createItems: true },
+    );
+    expect(unsupported).toEqual([]);
+    expect(ops.map((o) => o.kind)).toEqual(['criar-evento', 'criar-evento']);
+  });
+});
+
 describe('evento: Importar ou formulário', () => {
   it('com a chave desligada, o evento novo segue no arquivo do Importar; ligada, sai dele', () => {
     expect([...DIRECT_INCLUSION_TYPES].sort()).toEqual([...EVENT_ELEMENTS].sort());
@@ -95,6 +154,13 @@ describe('evento: Importar ou formulário', () => {
     // Um tipo que segue pelo Importar não muda.
     const artigo = element('ARTIGO-PUBLICADO', { 'SEQUENCIA-PRODUCAO': '91' });
     expect(isPendingImport(artigo, 33, directInclusion(true))).toBe(true);
+    // Fora do Importar, o evento continua "novo" (com o "Editar no formulário"),
+    // e o painel diz que ele vai pela lista de alterações.
+    expect(isNewProduction(item, 33)).toBe(true);
+    expect(goesByChanges(item, 33, directInclusion(true))).toBe(true);
+    expect(goesByChanges(item, 33, directInclusion(false))).toBe(false);
+    expect(goesByChanges(artigo, 33, directInclusion(true))).toBe(false);
+    expect(isNewProduction(item, 90)).toBe(false);
   });
 
   it('o evento novo vira inclusão com os campos do formulário', async () => {
@@ -174,10 +240,22 @@ describe('incluir evento no Lattes simulado', () => {
     // De novo: já está no Lattes, nada é enviado.
     const posts = lattes.state.log.filter((l) => l.method === 'POST').length;
     expect(await applyOp(ops[0]!, lattes.port)).toMatchObject({
-      detail: 'O Lattes já tem essa participação (mesmo evento, ano e forma)',
+      detail: 'O Lattes já tem essa participação (mesmo evento, ano, forma e título)',
       status: 'divergente',
     });
     expect(lattes.state.log.filter((l) => l.method === 'POST').length).toBe(posts);
+    // Outro trabalho no mesmo evento, com outro título: não é duplicata.
+    const other = await plan(congresso({ TITULO: 'Outro trabalho' }));
+    expect(await applyOp(other.ops[0]!, lattes.port)).toMatchObject({ status: 'conferido' });
+    // Ouvinte não tem título: a chave fica no evento, no ano e na forma.
+    const ouvinte = await plan(
+      congresso({ 'FORMA-PARTICIPACAO': 'Ouvinte', 'TIPO-PARTICIPACAO': '', TITULO: '' }),
+    );
+    expect(await applyOp(ouvinte.ops[0]!, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(await applyOp(ouvinte.ops[0]!, lattes.port)).toMatchObject({
+      detail: 'O Lattes já tem essa participação (mesmo evento, ano e forma)',
+      status: 'divergente',
+    });
   });
 
   it('sem lista, sem link ou com campo a mais, para antes de enviar', async () => {

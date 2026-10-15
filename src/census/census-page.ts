@@ -220,14 +220,17 @@ function scrubScript(
     return { inComment: nextCommentState(text, inComment), line: REMOVED_SCRIPT };
   let out = commentAware(text, inComment)
     // A lista de coautores da janela de equipe: p[i]="<código>#<nome>@<citação> (<nome>)".
+    // O nome pode ter a outra aspa (D'Ávila) ou uma aspa escapada (D\'Ávila):
+    // só a aspa que abriu, sem barra antes, fecha o literal.
     .replace(
-      /(["'])([\w-]*)#[^"'@]*@[^"']*\1/g,
+      /(["'])([\w-]*)#(?:\\.|(?!\1)[^@\\])*@(?:\\.|(?!\1)[^\\])*\1/g,
       (_, q: string, code: string) => `${q}${code}#${REMOVED_SCRIPT}@${REMOVED_SCRIPT}${q}`,
     )
     // O título de uma janela modal traz, depois do primeiro <br>, o nome da
-    // instituição ou do item: setarTitulo("Atuação profissional - …<br>Nome").
+    // instituição ou do item: setarTitulo("Atuação profissional - …<br>Nome"),
+    // às vezes com o <br> escapado (&lt;br&gt;).
     .replace(
-      /(setarTitulo\s*\(\s*(["'])(?:(?!\2).)*?<br\s*\/?>)(?:(?!\2).)*\2/gi,
+      /(setarTitulo\s*\(\s*(["'])(?:(?!\2).)*?(?:<br\s*\/?>|&lt;br\s*\/?&gt;))(?:(?!\2).)*\2/gi,
       (_, head: string, q: string) => `${head}${REMOVED_SCRIPT}${q}`,
     )
     .replace(SCRIPT_PERSONAL, REMOVED_SCRIPT)

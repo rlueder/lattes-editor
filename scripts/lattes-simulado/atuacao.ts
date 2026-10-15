@@ -161,7 +161,10 @@ function cargosVinculos(req: SimRequest, state: LattesState): SimResponse {
   // No atributo onclick o & vai como &amp;; dentro do <script>, literal.
   const cargoUrl = `pkg_ativ.cargo?f_cod=${state.code}&f_codinst=${inst}&f_seq_ativ=${seqAtiv}&f_natur_ativ=`;
   const cargo = cargoUrl.replaceAll('&', '&amp;');
-  // As atividades de ensino, cada uma com f_seq_funcao (link inferido).
+  // As atividades de ensino, cada uma com f_natur_ativ e f_seq_funcao no link.
+  // Inferido: a forma do link de uma atividade na tela de cargos e vínculos
+  // não foi lida (o lote 3 leu só a inclusão). O conector não confia nesses
+  // parâmetros para conferir duplicata: lê a natureza no oculto do formulário.
   const activities = teaching(a)
     .map(
       (e) =>

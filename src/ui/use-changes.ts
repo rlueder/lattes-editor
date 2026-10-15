@@ -6,6 +6,7 @@ import { type Dispatch, type SetStateAction, useMemo } from 'react';
 import type { Session } from '../forms/use-production.ts';
 import {
   acceptChange,
+  acceptCreated,
   type Change,
   diffDocuments,
   reopenChange,
@@ -27,7 +28,7 @@ export function useChanges(
   setSession: Dispatch<SetStateAction<Session | null>>,
 ): {
   /** Mudança gravada e conferida no Lattes pelo conector: vira o novo original. */
-  accept: (key: string) => void;
+  accept: (key: string, assigned?: Record<string, string>) => void;
   /** Uma gravação desfeita no Lattes: a mudança volta para a lista. */
   reopen: (change: Change) => void;
   discard: (entry: ChangeEntry) => void;
@@ -70,12 +71,19 @@ export function useChanges(
     onEdit(`Campo descartado: ${entry.itemTitle || entry.change.form} · ${label}`);
   };
 
-  const accept = (key: string) => {
+  const accept = (key: string, assigned?: Record<string, string>) => {
     if (!session || !originalXml) return;
     const entry = groups.flatMap((g) => g.entries).find((e) => e.change.key === key);
     if (!entry) return;
     const doc = parseXml(originalXml);
-    if (!acceptChange(doc.root, session.doc.root, entry.change)) return;
+    // Item novo: entra no original com o número que o Lattes deu (OpResult.assigned).
+    const ok =
+      entry.change.kind === 'novo'
+        ? acceptCreated(doc.root, session.doc.root, entry.change, assigned, (parent, child) =>
+            insertInSchemaOrder(lattesSchema, parent, child),
+          )
+        : acceptChange(doc.root, session.doc.root, entry.change);
+    if (!ok) return;
     const xml = serializeXml(doc);
     setSession((s) => (s ? { doc: s.doc, meta: { ...s.meta, originalXml: xml } } : s));
     onEdit(`Conferido no Lattes: ${entry.itemTitle || entry.change.form}`);
