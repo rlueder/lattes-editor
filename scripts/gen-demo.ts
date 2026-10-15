@@ -6,8 +6,8 @@
 // As pessoas são fictícias, inclusive coautores, orientandos e bancas.
 // Instituições e periódicos são reais, os títulos dos trabalhos não existem e
 // os DOIs usam o prefixo de teste do Crossref (10.5555), que não aponta para
-// trabalho nenhum. Não há e-mail nem telefone, para não colidir com contato
-// real. O ORCID é o de exemplo da documentação do ORCID (Josiah Carberry).
+// trabalho nenhum. E-mail, rede social e telefone usam o domínio reservado
+// example.org e o número 0000-1234, que não colidem com contato real. O ORCID é o de exemplo da documentação do ORCID (Josiah Carberry).
 //
 // Cada atributo vem do schema (src/schema/lattes.json): um nome que não existe
 // no elemento ou um valor fora do enumerado para a geração, e o resultado é

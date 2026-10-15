@@ -1,8 +1,10 @@
 // Contatos do bloco ENDERECO, que a exportação traz serializados num atributo
 // só (campos acrescentados depois do XSD publicado):
 //
-//   ELETRONICO:  "I: nome@instituicao.br"  (I = endereço institucional,
-//                R = residencial, como os campos _i/_r do formulário do Lattes)
+//   ELETRONICO:  "I: nome@instituicao.br". No formulário de endereço do
+//                Lattes (censo LAT-55), f_email_i é "e-mail para contato" e
+//                f_email_r é "e-mail alternativo"; que I e R sejam esses dois
+//                campos é inferido pelo sufixo (_i, _r), não observado.
 //   REDE-SOCIAL: "ID Rede Social: 7442497, Nome Rede Social: Linkedin,
 //                 Endereço: https://..."
 //
@@ -13,8 +15,8 @@
 import { repairMojibake } from '../model/mojibake.ts';
 
 export interface EmailContact {
-  /** Endereço a que o e-mail pertence, quando o código é conhecido. */
-  address?: 'Institucional' | 'Residencial';
+  /** O campo do Lattes a que o e-mail pertence, quando o código é conhecido. */
+  address?: 'E-mail para contato' | 'E-mail alternativo';
   email: string;
 }
 
@@ -23,7 +25,10 @@ export interface SocialContact {
   url: string;
 }
 
-const ADDRESS: Record<string, EmailContact['address']> = { I: 'Institucional', R: 'Residencial' };
+const ADDRESS: Record<string, EmailContact['address']> = {
+  I: 'E-mail para contato',
+  R: 'E-mail alternativo',
+};
 
 export function parseEmails(value: string): EmailContact[] {
   return [...value.matchAll(/(?:\b([IR]):\s*)?([^\s,;:]+@[^\s,;]+)/g)].map((m) => ({
@@ -36,5 +41,37 @@ export function parseSocial(value: string): SocialContact[] {
   const text = repairMojibake(value) ?? value;
   return [
     ...text.matchAll(/Nome Rede Social:\s*([^,]+?)\s*,\s*Endere\S*o:\s*(\S+?)(?=[\s,;]|$)/g),
-  ].map((m) => ({ name: m[1]!, url: m[2]! }));
+  ].map((m) => ({ name: socialName(m[1]!), url: m[2]! }));
+}
+
+/** Grafia das redes mais comuns; as outras ficam como vieram, com maiúscula. */
+const SOCIAL_NAMES: Record<string, string> = {
+  facebook: 'Facebook',
+  github: 'GitHub',
+  instagram: 'Instagram',
+  linkedin: 'LinkedIn',
+  researchgate: 'ResearchGate',
+  twitter: 'Twitter',
+  x: 'X',
+  youtube: 'YouTube',
+};
+
+export function socialName(name: string): string {
+  const key = name.trim().toLocaleLowerCase('pt-BR').replace(/\s+/g, '');
+  const known = SOCIAL_NAMES[key];
+  if (known) return known;
+  const t = name.trim();
+  return t.charAt(0).toLocaleUpperCase('pt-BR') + t.slice(1);
+}
+
+/**
+ * Telefone como se lê: "(51) 99999-9999", "(51) 3308-1234" ou, sem DDD, só o
+ * número. Fora de 8 ou 9 dígitos, o número fica como veio.
+ */
+export function formatPhone(ddd: string, number: string): string {
+  const d = ddd.replace(/\D/g, '');
+  const n = number.replace(/\D/g, '');
+  const body =
+    n.length === 8 || n.length === 9 ? `${n.slice(0, -4)}-${n.slice(-4)}` : number.trim();
+  return d ? `(${d}) ${body}` : body;
 }

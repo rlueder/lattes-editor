@@ -34,19 +34,33 @@ export function generalData(): XElement {
         'TEXTO-RESUMO-CV-RH-EN':
           'Biologist and associate professor at the Department of Genetics of the Federal University of Rio Grande do Sul (UFRGS), where she leads the Conservation Genomics Lab. Her research addresses genetic diversity, population structure and local adaptation of native palms from the Cerrado, the Atlantic Forest and the Pampa.',
       }),
-      el('ENDERECO', { 'FLAG-DE-PREFERENCIA': 'ENDERECO_INSTITUCIONAL' }, [
-        el('ENDERECO-PROFISSIONAL', {
-          BAIRRO: 'Agronomia',
-          CEP: '91501970',
-          CIDADE: 'Porto Alegre',
-          'LOGRADOURO-COMPLEMENTO': 'Avenida Bento Gonçalves, 9500, Prédio 43323',
-          'NOME-INSTITUICAO-EMPRESA': 'Universidade Federal do Rio Grande do Sul',
-          'NOME-ORGAO': 'Instituto de Biociências',
-          'NOME-UNIDADE': 'Departamento de Genética',
-          PAIS: 'Brasil',
-          UF: 'RS',
-        }),
-      ]),
+      el(
+        'ENDERECO',
+        {
+          // Contatos fictícios (domínio reservado example.org, telefone 0000), na
+          // forma serializada da exportação (src/ui/contacts.ts).
+          ELETRONICO: 'I: ana.lima@example.org',
+          'FLAG-DE-PREFERENCIA': 'ENDERECO_INSTITUCIONAL',
+          'REDE-SOCIAL':
+            'ID Rede Social: 1000001, Nome Rede Social: Linkedin, Endereço: https://example.org/ana-lima/',
+        },
+        [
+          el('ENDERECO-PROFISSIONAL', {
+            BAIRRO: 'Agronomia',
+            CEP: '91501970',
+            CIDADE: 'Porto Alegre',
+            DDD: '51',
+            'LOGRADOURO-COMPLEMENTO': 'Avenida Bento Gonçalves, 9500, Prédio 43323',
+            'NOME-INSTITUICAO-EMPRESA': 'Universidade Federal do Rio Grande do Sul',
+            'NOME-ORGAO': 'Instituto de Biociências',
+            'NOME-UNIDADE': 'Departamento de Genética',
+            PAIS: 'Brasil',
+            RAMAL: '12',
+            TELEFONE: '00001234',
+            UF: 'RS',
+          }),
+        ],
+      ),
       el('FORMACAO-ACADEMICA-TITULACAO', {}, [
         el('GRADUACAO', {
           'ANO-DE-CONCLUSAO': '2008',

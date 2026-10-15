@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { loadCv } from '../src/model/document.ts';
-import { childElements, walk, type XElement } from '../src/model/xml.ts';
+import { childElements, parseXml, walk, type XElement } from '../src/model/xml.ts';
 import { flatten, isUsable, lineText, shownKeys } from '../src/ui/reading-layout.ts';
 import { recordLayout } from '../src/ui/reading-records.ts';
 import { referencePieces, splitSegments } from '../src/ui/reading-reference.ts';
@@ -49,8 +49,27 @@ describe('registros com listas de filhos', () => {
     const vinculo = s.nested[0]!.items[0]!;
     expect(lineText(vinculo.lines[0]!)).toBe('Professora Adjunta');
     expect(lineText(vinculo.lines[1]!)).toBe('Servidor público');
+    // O período do vínculo diz o mês, e o mês sai da grade.
+    expect(lineText(vinculo.when!)).toBe('mar 2019 – atual');
     const shown = shownKeys([s]);
-    for (const key of filledKeys(atuacao)) expect(shown, key).toContain(key);
+    // O enquadramento "Outro" só diz que vale o cargo escrito à parte, que já
+    // é o título do vínculo: sai de propósito.
+    const redundant = '1:ENQUADRAMENTO-FUNCIONAL';
+    expect(shown).not.toContain(redundant);
+    for (const key of filledKeys(atuacao).filter((k) => k !== redundant)) {
+      expect(shown, key).toContain(key);
+    }
+  });
+
+  it('vínculo com tipo e enquadramento iguais ("Livre"): uma vez só', () => {
+    const atuacao = parseXml(
+      `<ATUACAO-PROFISSIONAL NOME-INSTITUICAO="Empresa"><VINCULOS TIPO-DE-VINCULO="LIVRE" ENQUADRAMENTO-FUNCIONAL="LIVRE" OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO="Fundador" MES-INICIO="1" ANO-INICIO="2026" FLAG-VINCULO-EMPREGATICIO="NAO"/></ATUACAO-PROFISSIONAL>`,
+    ).root;
+    const vinculo = recordLayout(atuacao, false, opts).nested[0]!.items[0]!;
+    expect(lineText(vinculo.lines[0]!)).toBe('Fundador');
+    expect(lineText(vinculo.lines[1]!)).toBe('Livre');
+    expect(vinculo.rows.map((r) => r.attr)).not.toContain('ENQUADRAMENTO-FUNCIONAL');
+    expect(vinculo.rows.map((r) => r.attr)).not.toContain('MES-INICIO');
   });
 
   it('projeto: a equipe é uma lista de integrantes, cada um pelo nome', async () => {
