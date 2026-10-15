@@ -93,8 +93,10 @@ const BREAKS = new Set([
 /** Botões não são campos: o texto ao lado deles não é rótulo do campo seguinte. */
 const BUTTON_TYPES = new Set(['button', 'image', 'reset', 'submit']);
 
+// Sem caixa: páginas PL/SQL antigas escrevem <SCRIPT> e <TEXTAREA>, e com a
+// flag i a referência \1 casa o fechamento em qualquer caixa.
 const TOKEN =
-  /<!--[\s\S]*?(?:-->|$)|<(script|style|textarea|title)\b([^>]*)>([\s\S]*?)(?:<\/\1\s*>|$)|<\/?[a-zA-Z][^>]*>|[^<]+|</g;
+  /<!--[\s\S]*?(?:-->|$)|<(script|style|textarea|title)\b([^>]*)>([\s\S]*?)(?:<\/\1\s*>|$)|<\/?[a-zA-Z][^>]*>|[^<]+|</gi;
 
 export function tagAttrs(inner: string): Record<string, string> {
   const out: Record<string, string> = {};

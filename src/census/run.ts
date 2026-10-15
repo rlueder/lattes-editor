@@ -81,15 +81,24 @@ export class SessionLost extends Error {
   }
 }
 
+/**
+ * Procedimento e query, cortando só no primeiro "?": split('?', 2) do JS
+ * descarta o que vem depois de um segundo "?", e um f_ctr ali passaria.
+ */
+export function splitAtQuery(path: string): [string, string] {
+  const i = path.indexOf('?');
+  return i < 0 ? [path, ''] : [path.slice(0, i), path.slice(i + 1)];
+}
+
 /** Procedimentos que gravam, publicam ou saem: o censo nunca os abre, nem por GET. */
 const UNSAFE_PROC =
   /publicar|importa|impcv|upload|logon|logout|sair|enviar|salvar|exclu|seta_ultimo|verifica|_ajax|existe_email/i;
 
 /** Um GET que não grava: procedimento seguro e sem f_ctr de operação (E2 apaga por GET). */
 export function isSafeGet(path: string): boolean {
-  const [proc = '', query = ''] = path.split('?', 2);
+  const [proc, query] = splitAtQuery(path);
   if (UNSAFE_PROC.test(proc)) return false;
-  return !query.split('&').some((p) => /^f_ctr=./i.test(p));
+  return !/(^|[&?])f_ctr=[^&?]/i.test(query);
 }
 
 export function buildPath(code: string, at: LattesPath): string {
@@ -208,7 +217,7 @@ function selected(targets: CensusTarget[], only?: string[]): CensusTarget[] {
 }
 
 function splitPath(path: string): { params: Record<string, string>; proc: string } {
-  const [proc = '', query = ''] = path.split('?', 2);
+  const [proc, query] = splitAtQuery(path);
   const params = Object.fromEntries(
     query
       .split('&')
@@ -325,7 +334,7 @@ async function discover(reader: CensusReader, opened: Set<string>): Promise<stri
       continue;
     }
     for (const path of setarUrlPaths(html)) {
-      const [proc = '', query = ''] = path.split('?', 2);
+      const [proc, query] = splitAtQuery(path);
       if (/lista|ordenar|aviso/i.test(proc) || !isSafeGet(path)) continue;
       if (/(^|&)f_seq\w*=[^&]/i.test(query)) continue;
       if (!opened.has(pathKey(path))) found.add(publicOf(path));

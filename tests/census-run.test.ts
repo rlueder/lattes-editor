@@ -15,6 +15,7 @@ import {
   publicOf,
   runCensus,
   shareLists,
+  splitAtQuery,
 } from '../src/census/run.ts';
 import type { CensusTarget } from '../src/census/targets.ts';
 import { CENSUS_TARGETS } from '../src/census/targets-production.ts';
@@ -45,6 +46,10 @@ describe('censo: caminhos', () => {
     expect(isSafeGet('pkg_formacao.form?f_cod=K&f_tipo=FA&f_nivel=3')).toBe(true);
     expect(isSafeGet('pkg_ativ.form?f_cod=K&f_seq_ativ=1&f_ctr=E2')).toBe(false);
     expect(isSafeGet('pkg_ativ.form?f_cod=K&f_ctr=')).toBe(true);
+    // Um segundo "?" não esconde o f_ctr.
+    expect(isSafeGet('pkg_ativ.form?a=1?b=2&f_ctr=E2')).toBe(false);
+    expect(isSafeGet('pkg_ativ.form?x=1?f_ctr=E')).toBe(false);
+    expect(splitAtQuery('p?a=1?b=2')).toEqual(['p', 'a=1?b=2']);
     for (const bad of [
       'pkg_publicar.enviar?f_chk=1',
       'pkg_importa_xml.inicio?f_cod=K',

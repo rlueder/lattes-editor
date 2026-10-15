@@ -201,6 +201,16 @@ describe('censo: leitura dos formulários sem DOM', () => {
     expect(censusForm(form!).fields[0]!.label).toHaveLength(160);
   });
 
+  it('SCRIPT e TEXTAREA em maiúsculas são lidos como o resto', () => {
+    const [form] = scanForms(
+      `<FORM NAME="A"><SCRIPT>var s = "<input name='fantasma'>";</Script>
+<TD>Resumo</TD><TEXTAREA NAME="f_ref">texto da pessoa</textarea></FORM>`,
+    ).forms;
+    expect(form!.fields.map((f) => [f.name, f.label, f.type, f.value])).toEqual([
+      ['f_ref', 'Resumo', 'textarea', 'texto da pessoa'],
+    ]);
+  });
+
   it('opções de uma lista sem name (busca das grades) não viram rótulo', () => {
     const [form] = scanForms(
       '<form name="A"><select><option>Área um</option></select><input name="f_x"></form>',
