@@ -1,8 +1,7 @@
 // Composição do modo de leitura, sem React: cada bloco (um registro, a
-// identificação, o endereço, o resumo) vira seções com linhas de texto, linhas
-// de rótulo e valor e, só na edição, os campos vazios. A leitura e a edição
-// usam a mesma composição: na edição, cada pedaço de texto vira um campo no
-// mesmo lugar. A ordem dos campos é a ordem de leitura, nunca a do XSD.
+// identificação, o endereço, o resumo) vira seções com linhas de texto e
+// linhas de rótulo e valor. Todo campo preenchido aparece; os vazios, não.
+// A mesma composição é a prévia no topo do bloco em edição.
 
 import { elementLabel, enumLabel } from '../labels/labels.ts';
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
@@ -42,8 +41,6 @@ export interface Line {
 }
 
 export interface Section {
-  /** Campos vazios, para a edição: obrigatórios primeiro, depois na ordem de leitura. */
-  empty: Part[];
   heading?: string;
   /** Seção inteira escondida pelo modo de privacidade (endereço residencial). */
   hidden: boolean;
@@ -91,10 +88,6 @@ export function isUsable(el: XElement, attr: string, opts: LayoutOptions): boole
   if (attr.startsWith('SEQUENCIA-') || attr === 'ORDEM-DE-AUTORIA') return false;
   if (isRedundantDateFormat(attr, getAttr(el, attr) ?? '')) return false;
   return opts.showCodes || !isSystemAttr(el.name, attr);
-}
-
-export function isRequired(el: XElement, attr: string): boolean {
-  return Boolean(lattesSchema.elements[el.name]?.attributes.find((a) => a.name === attr)?.required);
 }
 
 /** Ordem de leitura dos rótulos na identificação: nome, origem, documentos, filiação. */
@@ -146,20 +139,14 @@ function byRank(a: Part, b: Part): number {
   return rowRank(a.attr) - rowRank(b.attr);
 }
 
-/** Campos vazios: obrigatórios (pelo schema) primeiro; dentro de cada grupo, a ordem recebida. */
-export function orderEmpty(parts: Part[]): Part[] {
-  const req = parts.filter((p) => isRequired(p.el, p.attr));
-  return [...req, ...parts.filter((p) => !req.includes(p))];
-}
-
 /**
  * Fecha uma seção: as linhas guardam só pedaços de atributos que existem; os
- * preenchidos que sobram viram rótulo e valor; os vazios vão para o fim.
+ * preenchidos que sobram viram rótulo e valor.
  */
 function finish(
   keys: Keys,
   els: XElement[],
-  base: Omit<Section, 'empty' | 'hidden' | 'masked' | 'minor' | 'quietRows' | 'rows'> &
+  base: Omit<Section, 'hidden' | 'masked' | 'minor' | 'quietRows' | 'rows'> &
     Partial<Pick<Section, 'hidden' | 'minor' | 'quietRows'>>,
   opts: LayoutOptions,
   except: Set<string> = new Set(),
@@ -179,13 +166,8 @@ function finish(
   const filledLoose = loose.filter(isFilled);
   const rows = filledLoose.filter((p) => !sensitive(p)).sort(byRank);
   const masked = filledLoose.filter(sensitive).length;
-  const empty = orderEmpty([
-    ...inLines.filter((p) => !isFilled(p)),
-    ...loose.filter((p) => !isFilled(p) && !sensitive(p)).sort(byRank),
-  ]);
   return {
     ...base,
-    empty,
     hidden: base.hidden ?? false,
     lines,
     masked,
@@ -308,7 +290,7 @@ export function addressLayout(endereco: XElement, opts: LayoutOptions): Section[
     return finish(keys, [part], { heading: elementLabel(part.name), hidden, lines }, opts);
   });
   const own = finish(keys, [endereco], { heading: 'Contatos e preferência', lines: [] }, opts);
-  return own.rows.length + own.empty.length > 0 ? [...sections, own] : sections;
+  return own.rows.length > 0 ? [...sections, own] : sections;
 }
 
 // Registros -------------------------------------------------------------------
@@ -459,12 +441,4 @@ export function shownKeys(sections: Section[]): Set<string> {
     for (const r of s.rows) keys.add(r.key);
   }
   return keys;
-}
-
-/** Ordem dos campos na edição: os das linhas, os de rótulo e valor, e os vazios por último. */
-export function editOrder(section: Section): Part[] {
-  const lineParts = [...(section.when ? [section.when] : []), ...section.lines].flatMap((l) =>
-    l.parts.filter(isFilled),
-  );
-  return [...lineParts, ...section.rows, ...section.empty];
 }

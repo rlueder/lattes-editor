@@ -1,17 +1,16 @@
-// Referência viva do modo de leitura: na edição de uma produção, a referência
-// da NBR 6023 fica no topo e acompanha o que se digita; cada campo acende o
-// trecho dele na referência, e clicar num trecho leva ao campo. Sem React.
+// A referência de uma produção no modo de leitura, sem React: que campos
+// preenchidos a referência da NBR 6023 já mostra, para a leitura mostrar os
+// outros em linhas de rótulo e valor abaixo dela.
 
 import { readAuthor } from '../model/production.ts';
-import { cloneElement, getAttr, setAttr, type XElement } from '../model/xml.ts';
-import { abntAuthor, referenceText, type Segment } from '../print/abnt.ts';
+import type { XElement } from '../model/xml.ts';
+import { abntAuthor, referenceText } from '../print/abnt.ts';
 import { referenceFor } from '../print/references.ts';
 import {
   flatten,
   isFilled,
   isUsable,
   type LayoutOptions,
-  orderEmpty,
   type Part,
   partText,
   rowRank,
@@ -66,54 +65,6 @@ export function referenceHighlights(text: string, candidates: Candidate[]): High
   return taken.sort((a, b) => a.start - b.start);
 }
 
-/** Um pedaço da referência para compor: o texto, se é destaque, e o campo dele. */
-export interface Piece {
-  key?: string;
-  strong?: boolean;
-  text: string;
-}
-
-/** Corta os trechos da referência nas bordas dos destaques e dos campos. */
-export function splitSegments(segments: Segment[], highlights: Highlight[]): Piece[] {
-  const out: Piece[] = [];
-  let pos = 0;
-  for (const seg of segments) {
-    const start = pos;
-    const end = pos + seg.text.length;
-    const cuts = new Set([start, end]);
-    for (const h of highlights) {
-      if (h.start > start && h.start < end) cuts.add(h.start);
-      if (h.end > start && h.end < end) cuts.add(h.end);
-    }
-    const points = [...cuts].sort((a, b) => a - b);
-    for (let i = 0; i < points.length - 1; i++) {
-      const a = points[i]!;
-      const b = points[i + 1]!;
-      const h = highlights.find((x) => x.start <= a && x.end >= b);
-      out.push({ key: h?.key, strong: seg.strong, text: seg.text.slice(a - start, b - start) });
-    }
-    pos = end;
-  }
-  return out;
-}
-
-/** Chave "posição:atributo" na árvore do item. */
-export type Drafts = ReadonlyMap<string, string>;
-
-/** Cópia do item com os rascunhos dos campos aplicados, para a referência viva. */
-export function withDrafts(item: XElement, drafts: Drafts): XElement {
-  if (drafts.size === 0) return item;
-  const copy = cloneElement(item);
-  const els = flatten(copy);
-  for (const [key, v] of drafts) {
-    const i = Number(key.slice(0, key.indexOf(':')));
-    const attr = key.slice(key.indexOf(':') + 1);
-    const el = els[i];
-    if (el && getAttr(el, attr) !== undefined) setAttr(el, attr, v);
-  }
-  return copy;
-}
-
 /** Os valores do item que podem aparecer na referência, com a chave do campo. */
 export function referenceCandidates(item: XElement, opts: LayoutOptions): Candidate[] {
   return flatten(item).flatMap((el, i) => {
@@ -127,27 +78,6 @@ export function referenceCandidates(item: XElement, opts: LayoutOptions): Candid
         text: partText({ attr: a.name, el, key: `${i}:${a.name}` }),
       }));
   });
-}
-
-export interface LiveReference {
-  highlights: Highlight[];
-  pieces: Piece[];
-  text: string;
-}
-
-/** A referência do item com os rascunhos, já cortada nos trechos de cada campo. */
-export function liveReference(item: XElement, drafts: Drafts, opts: LayoutOptions): LiveReference {
-  const current = withDrafts(item, drafts);
-  const segments = referenceFor(current);
-  const text = referenceText(segments);
-  const highlights = referenceHighlights(text, referenceCandidates(current, opts));
-  return { highlights, pieces: splitSegments(segments, highlights), text };
-}
-
-/** O campo acende o trecho: a mesma chave, ou o autor inteiro ("3:*"). */
-export function highlightMatches(highlightKey: string, fieldKey: string): boolean {
-  if (highlightKey === fieldKey) return true;
-  return highlightKey.endsWith(':*') && fieldKey.startsWith(highlightKey.slice(0, -1));
 }
 
 /** Ordem da citação: título, onde saiu, lugar, ano, volume, páginas, DOI. */
@@ -165,36 +95,18 @@ export function citationRank(attr: string): number {
   return i < 0 ? order.length * 10 + rowRank(attr) : i;
 }
 
-export interface CitationFields {
-  /** Campos dos autores, um grupo por autor, na ordem de autoria. */
-  authors: { index: number; parts: Part[] }[];
-  /** Campos vazios, obrigatórios primeiro. */
-  empty: Part[];
-  /** Campos preenchidos na ordem da citação. */
-  filled: Part[];
-}
-
-/** Os campos de uma produção na ordem da citação, autores primeiro e vazios no fim. */
-export function citationFields(item: XElement, opts: LayoutOptions): CitationFields {
-  const els = flatten(item);
-  const part = (el: XElement, i: number, attr: string): Part => ({ attr, el, key: `${i}:${attr}` });
-  const authors = els
-    .map((el, i) => ({ el, i }))
-    .filter(({ el }) => el.name === 'AUTORES')
-    .map(({ el, i }) => ({
-      index: i,
-      parts: el.attrs.filter((a) => isUsable(el, a.name, opts)).map((a) => part(el, i, a.name)),
-    }));
-  const rest = els.flatMap((el, i) =>
-    el.name === 'AUTORES'
-      ? []
-      : el.attrs.filter((a) => isUsable(el, a.name, opts)).map((a) => part(el, i, a.name)),
-  );
-  const filled = rest.filter(isFilled).sort((a, b) => citationRank(a.attr) - citationRank(b.attr));
-  const empty = orderEmpty(
-    rest.filter((p) => !isFilled(p)).sort((a, b) => citationRank(a.attr) - citationRank(b.attr)),
-  );
-  return { authors, empty, filled };
+/** Os campos preenchidos de uma produção, sem os autores, na ordem da citação. */
+export function citationFields(item: XElement, opts: LayoutOptions): Part[] {
+  return flatten(item)
+    .flatMap((el, i) =>
+      el.name === 'AUTORES'
+        ? []
+        : el.attrs
+            .filter((a) => isUsable(el, a.name, opts))
+            .map((a): Part => ({ attr: a.name, el, key: `${i}:${a.name}` })),
+    )
+    .filter(isFilled)
+    .sort((a, b) => citationRank(a.attr) - citationRank(b.attr));
 }
 
 /**
@@ -202,12 +114,14 @@ export function citationFields(item: XElement, opts: LayoutOptions): CitationFie
  * a leitura os mostra em linhas de rótulo e valor abaixo dela.
  */
 export function outsideReference(item: XElement, opts: LayoutOptions): Part[] {
-  const ref = liveReference(item, new Map(), opts);
-  const shown = new Set(ref.highlights.map((h) => h.key));
+  const text = referenceText(referenceFor(item));
+  const shown = new Set(
+    referenceHighlights(text, referenceCandidates(item, opts)).map((h) => h.key),
+  );
   // Dois campos com o mesmo valor (o ano do trabalho e o de realização) aparecem
   // juntos no mesmo trecho: os dois contam como mostrados.
-  const appears = (p: Part) => appearsIn(ref.text, partText(p));
-  return citationFields(item, opts).filled.filter((p) => !shown.has(p.key) && !appears(p));
+  const appears = (p: Part) => appearsIn(text, partText(p));
+  return citationFields(item, opts).filter((p) => !shown.has(p.key) && !appears(p));
 }
 
 /** O valor aparece no texto como palavra inteira, sem diferença de maiúscula. */

@@ -16,6 +16,7 @@ import type { AttributeSpec } from '../schema/types.ts';
 import { parseEmails, parseSocial } from './contacts.ts';
 import { CopyButton } from './CopyButton.tsx';
 import { DateField } from './DateField.tsx';
+import { useDraft } from './draft-context.ts';
 import {
   codeAttrFor,
   codeChoices,
@@ -72,6 +73,8 @@ export function AttributeField({
 }: Props) {
   const hideSensitive = useHideSensitive();
   const lists = useLattesListsContext();
+  // Prévia do modo de leitura: acompanha o texto antes de gravar.
+  const onDraft = useDraft();
   const value = getAttr(el, name) ?? '';
   const [draft, setDraft] = useState(value);
   // Valor mudou por fora (busca por DOI, restauração do histórico).
@@ -79,7 +82,12 @@ export function AttributeField({
   const text = label ?? attributeLabelIn(el.name, name);
   // Só sugere; o valor fica como veio até a pessoa clicar em "Corrigir".
   const repaired = repairMojibake(value);
+  const change = (next: string) => {
+    setDraft(next);
+    onDraft?.(el, name, next);
+  };
   const commit = (next: string) => {
+    onDraft?.(el, name, next);
     if (next === (getAttr(el, name) ?? '')) return;
     setAttr(el, name, next);
     onEdit(`${elementLabel(el.name)} · ${text}`);
@@ -289,7 +297,7 @@ export function AttributeField({
         rows={1}
         value={draft}
         onBlur={() => commit(draft)}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(e) => change(e.target.value)}
         onKeyDown={(e) => {
           // Título é uma linha só: Enter confirma em vez de quebrar.
           if (e.key === 'Enter') {
@@ -306,7 +314,7 @@ export function AttributeField({
         rows={multiline ? 3 : 4}
         value={draft}
         onBlur={() => commit(draft)}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(e) => change(e.target.value)}
       />
     );
   } else {
@@ -316,7 +324,7 @@ export function AttributeField({
         type="text"
         value={draft}
         onBlur={() => commit(draft)}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(e) => change(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
       />
     );

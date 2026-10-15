@@ -56,10 +56,15 @@ function FieldsBlock({
   const text = main.children.find((c): c is XText => c.kind === 'text' && c.value.trim() !== '');
   if (entries.length === 0 && !mixed) return null;
   const sourceOf = (key: string) => Number(key.slice(0, key.indexOf(':')));
-  const groups = groupFields(entries, attributeLabel, (e) => {
-    const i = sourceOf(e.key);
-    return isBooleanAttr(e.attr, specs[i]!.get(e.attr), getAttr(sources[i]!, e.attr) ?? '');
-  });
+  const valueOf = (e: { attr: string; key: string }) =>
+    getAttr(sources[sourceOf(e.key)]!, e.attr) ?? '';
+  const groups = groupFields(
+    entries,
+    attributeLabel,
+    (e) => isBooleanAttr(e.attr, specs[sourceOf(e.key)]!.get(e.attr), valueOf(e)),
+    // Com os vazios à mostra, eles ficam no fim de cada grupo.
+    (e) => valueOf(e).trim() === '',
+  );
   // Com poucos campos, os títulos de grupo pesam mais do que ajudam.
   const titled = entries.length >= 6 && groups.length > 1;
   return (

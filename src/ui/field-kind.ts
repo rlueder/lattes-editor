@@ -2,6 +2,7 @@
 
 import { elementLabel } from '../labels/labels.ts';
 import type { AttributeSpec } from '../schema/types.ts';
+import { formLayout, formSlot, OTHER_DATA } from './form-order.ts';
 
 /**
  * Campos que o Lattes gera e que não se editam à mão: números de sequência,
@@ -118,77 +119,32 @@ export function isBooleanAttr(
   return attr.startsWith('FLAG-') && (value === '' || value === 'SIM' || value === 'NAO');
 }
 
-/** Grupos de campos por assunto, na ordem em que aparecem num bloco. */
+/**
+ * Grupos por assunto para os elementos cuja ordem no Lattes não é conhecida
+ * (form-order.ts tem os que são). O nome e a cidade do evento são do evento,
+ * não da publicação; o título dos anais e o do periódico são da publicação.
+ */
 const GROUPS: { label: string; test: RegExp }[] = [
   {
     label: 'Principal',
-    test: /^(TITULO|NOME-CURSO|NOME-DO-PROJETO|DESCRICAO|NATUREZA|TIPO|NIVEL|STATUS|SITUACAO|FORMA-|ENQUADRAMENTO|OUTRO-ENQUADRAMENTO)/,
+    // O título dos anais, do periódico ou do livro é de onde saiu, não do item.
+    test: /^(TITULO(?!-(DOS?|DA)-(ANAIS|PERIODICO|LIVRO|JORNAL))|NOME-CURSO|NOME-DO-PROJETO|DESCRICAO|NATUREZA|TIPO|NIVEL|STATUS|SITUACAO|FORMA-|ENQUADRAMENTO|OUTRO-ENQUADRAMENTO)/,
   },
   { label: 'Instituição', test: /(INSTITUICAO|ORGAO|UNIDADE|EMPRESA)/ },
+  {
+    label: 'Evento',
+    test: /^(NOME-DO-EVENTO|CIDADE-DO-EVENTO|LOCAL-DO-EVENTO|ANO-DE-REALIZACAO|CLASSIFICACAO-DO-EVENTO)/,
+  },
   { label: 'Período', test: /^(ANO|MES|DATA|CARGA|DURACAO)|PERIODO/ },
   { label: 'Pessoas', test: /(ORIENTADOR|ORIENTADO|AUTOR|PARTICIPANTE|COORIENTADOR|INTEGRANTE)/ },
   { label: 'Local e idioma', test: /^(PAIS|CIDADE|UF|LOCAL|IDIOMA|SIGLA-UF|SIGLA-PAIS)/ },
   {
     label: 'Publicação',
-    test: /(PERIODICO|EVENTO|ANAIS|EDITORA|VOLUME|FASCICULO|SERIE|PAGINA|ISSN|ISBN|^DOI$|HOME-PAGE|MEIO-DE-DIVULGACAO)/,
+    test: /(PERIODICO|ANAIS|EDITORA|VOLUME|FASCICULO|SERIE|PAGINA|ISSN|ISBN|^DOI$|HOME-PAGE|MEIO-DE-DIVULGACAO)/,
   },
   { label: 'Bolsa e fomento', test: /(BOLSA|AGENCIA|FINANCIADOR)/ },
   { label: 'Palavras-chave e setores', test: /^(PALAVRA-CHAVE|SETOR-DE-ATIVIDADE)/ },
 ];
-
-/**
- * Blocos com ordem fixa, na ordem em que se preenche um endereço: quem, onde,
- * como falar. DDD fica antes do telefone, na mesma linha.
- */
-const ADDRESS_LAYOUT: { attrs: string[]; label: string }[] = [
-  { attrs: ['NOME-INSTITUICAO-EMPRESA', 'NOME-ORGAO', 'NOME-UNIDADE'], label: 'Instituição' },
-  {
-    attrs: [
-      'LOGRADOURO-COMPLEMENTO',
-      'LOGRADOURO',
-      'BAIRRO',
-      'CEP',
-      'CIDADE',
-      'UF',
-      'PAIS',
-      'CAIXA-POSTAL',
-    ],
-    label: 'Localização',
-  },
-  { attrs: ['DDD', 'TELEFONE', 'RAMAL', 'FAX', 'E-MAIL', 'HOME-PAGE'], label: 'Contato' },
-];
-
-const FIXED_LAYOUT: Record<string, { attrs: string[]; label: string }[]> = {
-  ENDERECO: [
-    { attrs: ['FLAG-DE-PREFERENCIA'], label: 'Preferência' },
-    { attrs: ['ELETRONICO', 'REDE-SOCIAL', 'OUTRA-FORMA-DE-CONTATO'], label: 'Contatos' },
-  ],
-  'ENDERECO-PROFISSIONAL': ADDRESS_LAYOUT,
-  'ENDERECO-RESIDENCIAL': ADDRESS_LAYOUT,
-  IDIOMA: [
-    { attrs: ['DESCRICAO-DO-IDIOMA', 'IDIOMA'], label: 'Idioma' },
-    {
-      attrs: [
-        'PROFICIENCIA-DE-LEITURA',
-        'PROFICIENCIA-DE-FALA',
-        'PROFICIENCIA-DE-ESCRITA',
-        'PROFICIENCIA-DE-COMPREENSAO',
-      ],
-      label: 'Proficiência',
-    },
-  ],
-};
-
-/** Grupo e posição de um campo num bloco de ordem fixa. */
-function fixedSlot(element: string, attr: string): { label: string; rank: number } | undefined {
-  const layout = FIXED_LAYOUT[element];
-  if (!layout) return undefined;
-  for (const group of layout) {
-    const rank = group.attrs.indexOf(attr);
-    if (rank >= 0) return { label: group.label, rank };
-  }
-  return undefined;
-}
 
 /** Um campo de um bloco: o atributo e o elemento onde ele mora. */
 export interface FieldEntry {
@@ -213,51 +169,58 @@ function periodRank(attr: string): number {
 }
 
 /**
- * Ordena os campos de um bloco por assunto (relação primeiro), depois pelo
- * rótulo; sim/não juntos em "Marcações" e os códigos do Lattes no fim. O
- * bloco pode juntar campos de várias partes do item (dados básicos,
- * detalhamento, palavras-chave), que aparecem como um só formulário.
+ * Ordena os campos de um bloco. Nos elementos com formulário conhecido no
+ * Lattes (form-order.ts), na ordem do Lattes, em grupos que são trechos dele,
+ * e os campos que o Lattes não tem em "Outros dados". Nos outros, por assunto,
+ * depois pelo rótulo. Sim/não juntos em "Marcações" e os códigos do Lattes no
+ * fim. Com `isEmpty`, os vazios vão para o fim de cada grupo. O bloco pode
+ * juntar campos de várias partes do item (dados básicos, detalhamento,
+ * palavras-chave), que aparecem como um só formulário.
  */
 export function groupFields(
   entries: FieldEntry[],
   labelOf: (attr: string) => string,
   isBoolean: (entry: FieldEntry) => boolean,
+  isEmpty: (entry: FieldEntry) => boolean = () => false,
 ): FieldGroup[] {
   const buckets = new Map<string, FieldEntry[]>();
-  const fixedLabels = [
-    ...new Set(entries.flatMap((e) => FIXED_LAYOUT[e.element]?.map((g) => g.label) ?? [])),
+  const mapped = (e: FieldEntry) => formLayout(e.element) !== undefined;
+  const formLabels = [
+    ...new Set(entries.flatMap((e) => formLayout(e.element)?.map((g) => g.label) ?? [])),
   ];
-  // Rótulo repetido (Instituição existe nos dois) aparece uma vez só, na posição fixa.
+  // Rótulo repetido (Instituição existe nos dois) aparece uma vez só, na posição do formulário.
   const order = [
     ...new Set([
-      ...fixedLabels,
+      ...formLabels,
+      OTHER_DATA,
       ...GROUPS.map((g) => g.label),
       'Marcações',
       'Outros',
       'Códigos do Lattes',
     ]),
   ];
-  const rankOf = (e: FieldEntry) => fixedSlot(e.element, e.attr)?.rank;
+  const rankOf = (e: FieldEntry) => formSlot(e.element, e.attr)?.rank;
   // Código com o nome dele no bloco vai logo depois do nome, lado a lado.
   const pairedCodes = new Map<string, FieldEntry>();
   for (const entry of entries) {
     const code = codeAttrFor(entry.element, entry.attr);
     const codeEntry = code && entries.find((e) => e.attr === code && e.element === entry.element);
-    if (codeEntry && !fixedSlot(codeEntry.element, codeEntry.attr)) {
+    if (codeEntry && !formSlot(codeEntry.element, codeEntry.attr)) {
       pairedCodes.set(entry.key, codeEntry);
     }
   }
   const paired = new Set([...pairedCodes.values()].map((e) => e.key));
   for (const entry of entries) {
     if (paired.has(entry.key)) continue;
-    const fixed = fixedSlot(entry.element, entry.attr)?.label;
     const label =
-      fixed ??
+      formSlot(entry.element, entry.attr)?.label ??
       (isSystemAttr(entry.element, entry.attr)
         ? 'Códigos do Lattes'
-        : isBoolean(entry)
-          ? 'Marcações'
-          : (GROUPS.find((g) => g.test.test(entry.attr))?.label ?? 'Outros'));
+        : mapped(entry)
+          ? OTHER_DATA
+          : isBoolean(entry)
+            ? 'Marcações'
+            : (GROUPS.find((g) => g.test.test(entry.attr))?.label ?? 'Outros'));
     buckets.set(label, [...(buckets.get(label) ?? []), entry]);
   }
   return order
@@ -267,7 +230,8 @@ export function groupFields(
         .get(label)!
         .sort(
           (a, b) =>
-            (rankOf(a) ?? 99) - (rankOf(b) ?? 99) ||
+            Number(isEmpty(a)) - Number(isEmpty(b)) ||
+            (rankOf(a) ?? 999) - (rankOf(b) ?? 999) ||
             (label === 'Período' ? periodRank(a.attr) - periodRank(b.attr) : 0) ||
             labelOf(a.attr).localeCompare(labelOf(b.attr), 'pt-BR'),
         )

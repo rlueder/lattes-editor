@@ -78,20 +78,11 @@ A leitura mostra todo campo preenchido: o que não cabe na frase (o status
 do curso, o ISSN, o idioma de um artigo) fica em linhas pequenas de rótulo
 e valor logo abaixo. Campo vazio não aparece.
 
-Editar não abre outra tela. O bloco clicado fica no mesmo lugar e cada
-pedaço de texto vira um campo onde estava: o ano continua na coluna do ano,
-o título onde está o título, rótulo e valor continuam em linha. O pedaço
-clicado recebe o foco, com o cursor no ponto do clique. Os campos não têm
-borda; ganham um fundo leve no passar do mouse e o contorno do destaque no
-foco. Os campos vazios aparecem só na edição, no fim do bloco, depois de um
-fio e com rótulo, os obrigatórios primeiro. A ordem é sempre a de leitura,
-nunca a do XSD.
-
-Nas produções a referência não se edita como texto. Ela fica no topo do
-bloco em edição e acompanha o que se digita; abaixo vêm os campos na ordem
-da citação (autores, título, onde saiu, lugar, ano, volume, páginas, DOI) e
-os vazios no fim. O campo em uso acende o trecho dele na referência, e
-clicar num trecho leva ao campo.
+Na edição, o texto do bloco fica no topo como prévia, igual ao que estava
+na tela e na mesma tipografia de leitura, e acompanha o que se digita. Abaixo
+dele, depois de um fio, vêm os campos, na Plex Sans e na escala densa do
+resto do editor, todos eles, inclusive os vazios, que ficam no fim de cada
+grupo. Nas produções, a prévia é a referência da NBR 6023.
 
 Clique no texto, o botão "Editar" (à vista no foco do teclado, no passar do
 mouse e sempre no toque) ou E com o botão focado abrem a edição; dois ou
@@ -100,11 +91,7 @@ privacidade continua valendo, e os dados escondidos viram uma linha só
 ("12 dados pessoais ocultos…") na leitura e na edição.
 
 O texto de leitura usa a IBM Plex Serif (regular, itálica e seminegrito,
-embutidas como a Plex Sans). Na edição, os valores continuam na serifa e no
-mesmo corpo, para o texto não pular; rótulos, botões, legendas e listas de
-escolha ficam na Plex Sans. Uma variável só (`--edit-value-font`) passa os
-valores editáveis para a sans, se a leitura em serifa e a edição em sans
-forem preferidas mesmo com o salto.
+embutidas como a Plex Sans); os campos ficam na Plex Sans.
 
 Os números escolhidos, com a regra de onde saíram:
 
@@ -151,6 +138,19 @@ Mais algumas decisões do mesmo lado:
 - O ⚙ "Mostrar campos vazios" sai do menu com `?leitura`: a leitura sempre
   esconde os vazios e a edição sempre os mostra. Se o modo de leitura virar
   o padrão, a opção sai de vez.
+
+### Ordem dos campos
+
+Os campos de um item seguem a ordem do formulário do próprio Lattes quando
+ela é conhecida (`src/ui/form-order.ts`, a partir das seções 5, 16 e 17 de
+`docs/lattes_internals.md`): participação em evento, formação acadêmica (por
+nível), prêmio, idioma, endereço, identificação, vínculo da atuação, projeto
+e resumo. Os grupos (Principal, Local, Curso, Situação e período…) são
+trechos seguidos desse formulário; um campo do XML que o Lattes não pede
+fica em "Outros dados", e não num grupo por semelhança de nome. Nos outros
+itens vale a ordem por assunto de antes, com os erros óbvios corrigidos (o
+nome e a cidade do evento iam para "Publicação"). Vale também fora do modo
+de leitura.
 
 ### Modo foco
 

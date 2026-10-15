@@ -275,7 +275,8 @@ describe('groupFields', () => {
       'CODIGO-CURSO-CAPES',
       'NOME-CURSO-INGLES',
     ];
-    const entries = names.map((attr) => ({ attr, element: 'MESTRADO', key: attr }));
+    // Elemento sem formulário conhecido no Lattes: vale a ordem por assunto.
+    const entries = names.map((attr) => ({ attr, element: 'SEM-FORMULARIO', key: attr }));
     const groups = groupFields(entries, attributeLabel, (e) => e.attr === 'FLAG-BOLSA');
     expect(groups.map((g) => [g.label, g.entries.map((e) => e.attr)])).toEqual([
       [

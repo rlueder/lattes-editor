@@ -1,7 +1,6 @@
 // Modo de leitura (protótipo, ?leitura): cada grupo da seção composto como
-// texto, sem bordas de campo nem rótulos que repetem o título. A edição é a
-// mesma composição com cada pedaço virando campo no lugar (ReadingBlock.tsx,
-// InlineField.tsx); os campos vazios aparecem só na edição, no fim do bloco.
+// texto, sem bordas de campo nem rótulos que repetem o título. Na edição, o
+// texto fica no topo como prévia e os campos vêm abaixo (ReadingBlock.tsx).
 // A composição sem React está em reading-layout.ts e reading-reference.ts.
 
 import type { CSSProperties } from 'react';
@@ -9,7 +8,8 @@ import type { CSSProperties } from 'react';
 import { elementLabel } from '../labels/labels.ts';
 import { isPendingImport, SEQ_ATTR } from '../model/production.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
-import { hasReference } from '../print/references.ts';
+import { referenceText } from '../print/abnt.ts';
+import { hasReference, referenceFor } from '../print/references.ts';
 import { useEditor } from './editor-context.ts';
 import { type EditFn, ElementView } from './ElementView.tsx';
 import { applyFilter, cardText, type SectionFilter } from './facets.ts';
@@ -19,14 +19,14 @@ import { tabWidth, yearColumn } from './reading.ts';
 import {
   addressLayout,
   fieldsLayout,
+  type LayoutOptions,
   lineText,
   recordLayout,
   resumoLayout,
 } from './reading-layout.ts';
-import { liveReference } from './reading-reference.ts';
 import { EditableBlock } from './ReadingBlock.tsx';
-import { CitationBody } from './ReadingCitation.tsx';
-import { LineView, Sections, SectionView } from './ReadingParts.tsx';
+import { CitationReading } from './ReadingCitation.tsx';
+import { Sections, SectionView } from './ReadingParts.tsx';
 import { useLayoutOptions } from './use-reading-options.ts';
 
 /** O formulário de hoje com todos os campos; ainda serve aos testes e ao "Editar no formulário". */
@@ -37,12 +37,12 @@ export function EditForm({ depth, el, onEdit }: { depth?: number; el: XElement; 
 /** Bloco de campos (resumo, identificação, endereço, outras informações). */
 function FieldsBlock({ el, label, onEdit }: { el: XElement; label: string; onEdit: EditFn }) {
   const opts = useLayoutOptions();
-  const sections =
-    el.name === 'RESUMO-CV'
-      ? resumoLayout(el, opts)
-      : el.name === 'ENDERECO'
-        ? addressLayout(el, opts)
-        : fieldsLayout(el, opts);
+  const sectionsOf = (x: XElement) =>
+    x.name === 'RESUMO-CV'
+      ? resumoLayout(x, opts)
+      : x.name === 'ENDERECO'
+        ? addressLayout(x, opts)
+        : fieldsLayout(x, opts);
   const missingEnglish =
     el.name === 'RESUMO-CV' && !getAttr(el, 'TEXTO-RESUMO-CV-RH-EN')?.trim()
       ? 'Adicionar resumo em inglês'
@@ -51,8 +51,10 @@ function FieldsBlock({ el, label, onEdit }: { el: XElement; label: string; onEdi
     <EditableBlock
       addLabel={missingEnglish}
       className={el.name === 'RESUMO-CV' ? 'reading-prose' : undefined}
+      form={() => <EditForm el={el} onEdit={onEdit} />}
       label={label}
-      render={(editing) => <Sections editing={editing} hooks={{ onEdit }} sections={sections} />}
+      read={(x) => <Sections sections={sectionsOf(x)} />}
+      root={el}
     />
   );
 }
@@ -64,6 +66,49 @@ interface ListProps {
   items: XElement[];
   view: ListView;
   onEdit: EditFn;
+}
+
+/** O texto da coluna da esquerda de um registro: período, ano ou idioma. */
+function whenOf(el: XElement, academic: boolean, opts: LayoutOptions): string {
+  if (hasReference(el)) return formatPeriod(itemMeta(el));
+  const layout = recordLayout(el, academic, opts);
+  return layout.when ? lineText(layout.when) : formatPeriod(itemMeta(el));
+}
+
+/** Um registro lido: a coluna da esquerda e o texto ao lado. */
+function RecordRead({
+  academic,
+  cell,
+  el,
+  isNew,
+  kind,
+}: {
+  academic: boolean;
+  /** O ano mostrado na coluna (vazio quando repete o de cima) e o ano inteiro. */
+  cell: { shown: string; value: string };
+  el: XElement;
+  isNew: boolean;
+  kind?: string;
+}) {
+  const opts = useLayoutOptions();
+  const citation = hasReference(el);
+  const layout = citation ? undefined : recordLayout(el, academic, opts);
+  return (
+    <>
+      <span className="rr-when">{cell.shown || <span className="sr-only">{cell.value}</span>}</span>
+      <div className="rr-body">
+        {isNew && <span className="tag new">novo</span>}
+        {citation ? (
+          <CitationReading el={el} kind={kind} />
+        ) : (
+          <>
+            {kind && <span className="rr-kind">{kind}</span>}
+            <SectionView section={{ ...layout!, when: undefined }} />
+          </>
+        )}
+      </div>
+    </>
+  );
 }
 
 /** Registros com o ano (ou o idioma) numa coluna à esquerda, sem cartões. */
@@ -79,26 +124,20 @@ function RecordList({ academic, filter, items, onEdit, view }: ListProps) {
     .sort((a, b) => b.key - a.key || a.i - b.i)
     .map((x) => x.el);
   const showKind = new Set(items.map((el) => el.name)).size > 1;
-  const records = sorted.map((el) => {
-    const citation = hasReference(el);
-    const layout = citation ? undefined : recordLayout(el, academic, opts);
-    const when = layout?.when ? lineText(layout.when) : formatPeriod(itemMeta(el));
-    return { citation, el, layout, when };
-  });
-  const column = yearColumn(records.map((r) => r.when));
+  const when = sorted.map((el) => whenOf(el, academic, opts));
+  const column = yearColumn(when);
   // A coluna da esquerda tem a largura do texto mais longo dela.
-  const tab = { '--read-tab': `${tabWidth(records.map((r) => r.when))}ch` } as CSSProperties;
+  const tab = { '--read-tab': `${tabWidth(when)}ch` } as CSSProperties;
   return (
     <ol className="reading-records" style={tab}>
-      {records.map(({ citation, el, layout, when }, i) => {
+      {sorted.map((el, i) => {
         const seq = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
         const isNew = isPendingImport(el, loadedMax);
-        const cell = column[i]!;
         // Na formação, o grau já diz o tipo do item.
         const kind = showKind && !academic ? elementLabel(el.name) : undefined;
-        const title = citation
-          ? liveReference(el, new Map(), opts).text.slice(0, 80)
-          : lineText(layout!.lines[0]!) || elementLabel(el.name);
+        const title = hasReference(el)
+          ? referenceText(referenceFor(el)).slice(0, 80)
+          : lineText(recordLayout(el, academic, opts).lines[0]!) || elementLabel(el.name);
         return (
           <li key={elementKey(el)} className="reading-record">
             <EditableBlock
@@ -110,39 +149,23 @@ function RecordList({ academic, filter, items, onEdit, view }: ListProps) {
                   </button>
                 )
               }
+              form={() => <EditForm depth={1} el={el} onEdit={onEdit} />}
               label={title}
-              render={(editing) => (
-                <>
-                  <span className="rr-when">
-                    {editing && layout?.when ? (
-                      <LineView editing={true} hooks={{ onEdit }} line={layout.when} />
-                    ) : cell.shown ? (
-                      layout?.when ? (
-                        <LineView editing={false} hooks={{ onEdit }} line={layout.when} />
-                      ) : (
-                        cell.shown
-                      )
-                    ) : (
-                      <span className="sr-only">{when}</span>
-                    )}
-                  </span>
-                  <div className="rr-body">
-                    {isNew && <span className="tag new">novo</span>}
-                    {citation ? (
-                      <CitationBody editing={editing} el={el} kind={kind} onEdit={onEdit} />
-                    ) : (
-                      <>
-                        {kind && <span className="rr-kind">{kind}</span>}
-                        <SectionView
-                          editing={editing}
-                          hooks={{ onEdit }}
-                          section={{ ...layout!, when: undefined }}
-                        />
-                      </>
-                    )}
-                  </div>
-                </>
+              read={(x, editing) => (
+                <RecordRead
+                  academic={academic}
+                  // Na edição, a prévia mostra o ano inteiro, com o rascunho.
+                  cell={
+                    editing
+                      ? { shown: whenOf(x, academic, opts), value: whenOf(x, academic, opts) }
+                      : column[i]!
+                  }
+                  el={x}
+                  isNew={isNew}
+                  kind={kind}
+                />
               )}
+              root={el}
             />
           </li>
         );
@@ -163,8 +186,9 @@ interface GroupProps {
 
 /**
  * Um grupo da seção no modo de leitura. A leitura mostra todo campo
- * preenchido e esconde os vazios; a edição é a mesma composição, editável,
- * com os vazios no fim. O ⚙ "Mostrar campos vazios" não vale aqui.
+ * preenchido e esconde os vazios; na edição, o texto fica no topo como prévia
+ * e os campos, todos, vêm abaixo, com os vazios no fim de cada grupo. O ⚙
+ * "Mostrar campos vazios" não vale aqui.
  */
 export function ReadingGroup({ elements, filter, label, list, onEdit }: GroupProps) {
   if (list) {

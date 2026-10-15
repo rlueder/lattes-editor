@@ -1,0 +1,264 @@
+// Ordem dos campos nos formulários do editor, tirada dos formulários do
+// próprio Lattes quando ela é conhecida (docs/lattes_internals.md, seções 5,
+// 16 e 17), para quem vem do Lattes achar cada campo onde espera. Os grupos
+// saem dessa ordem: cada um é um trecho seguido do formulário do Lattes, com
+// um título nosso. Um campo do XML que o formulário do Lattes não tem vai
+// para "Outros dados", e nunca para um grupo por semelhança de nome.
+//
+// A ligação entre o campo do formulário e o atributo do XML vem das tabelas
+// das seções 5, 16 e 17 quando elas têm a coluna XML (evento, vínculo,
+// idioma, projeto). Na formação, no prêmio, no endereço e na identificação,
+// as seções listam os campos do formulário sem essa coluna, e a ligação é
+// pelo nome (f_inst e NOME-INSTITUICAO, f_ano e ANO-DA-PREMIACAO); fica
+// marcada como inferida em cada uma.
+
+export interface FormGroup {
+  attrs: string[];
+  label: string;
+}
+
+/** Grupo dos campos do XML que o formulário do Lattes não tem. */
+export const OTHER_DATA = 'Outros dados';
+
+/**
+ * Participação em evento, GN_TEC / PKG_EVENTO.FORM (seção 16): forma,
+ * tipo, nome do evento, ano, classificação (sem atributo no XSD), natureza,
+ * cidade, país, página, título, divulgação científica, título em inglês.
+ * A natureza do XML fica onde o formulário pede a natureza (F_COD_PROD),
+ * que lá escolhe o tipo de evento: posição inferida.
+ */
+const EVENT: FormGroup[] = [
+  {
+    attrs: ['FORMA-PARTICIPACAO', 'TIPO-PARTICIPACAO', 'NOME-DO-EVENTO', 'ANO', 'NATUREZA'],
+    label: 'Principal',
+  },
+  { attrs: ['CIDADE-DO-EVENTO', 'PAIS'], label: 'Local' },
+  {
+    attrs: ['HOME-PAGE-DO-TRABALHO', 'TITULO', 'FLAG-DIVULGACAO-CIENTIFICA', 'TITULO-INGLES'],
+    label: 'Trabalho apresentado',
+  },
+];
+
+/**
+ * Formação acadêmica, pkg_formacao.FORM (seção 17, base do mestrado):
+ * tipo, instituição, curso, situação, início, fim, obtenção do título,
+ * bolsa, agência, título do trabalho, orientador, coorientador, e os campos
+ * do sanduíche e da cotutela. Ligação pelo nome do campo: inferida, menos
+ * situação e tipo do mestrado (seção 5).
+ */
+const FORMATION: FormGroup[] = [
+  {
+    attrs: ['TIPO-MESTRADO', 'TIPO-DOUTORADO', 'TIPO-GRADUACAO', 'NOME-INSTITUICAO', 'NOME-CURSO'],
+    label: 'Curso',
+  },
+  {
+    attrs: [
+      'STATUS-DO-CURSO',
+      'STATUS-DO-ESTAGIO',
+      'ANO-DE-INICIO',
+      'ANO-DE-CONCLUSAO',
+      'ANO-DE-OBTENCAO-DO-TITULO',
+      'CARGA-HORARIA',
+    ],
+    label: 'Situação e período',
+  },
+  { attrs: ['FLAG-BOLSA', 'NOME-AGENCIA'], label: 'Bolsa' },
+  {
+    attrs: [
+      'TITULO-DA-DISSERTACAO-TESE',
+      'TITULO-DO-TRABALHO-DE-CONCLUSAO-DE-CURSO',
+      'TITULO-DA-MONOGRAFIA',
+      'TITULO-DO-TRABALHO',
+      'NOME-COMPLETO-DO-ORIENTADOR',
+      'NOME-DO-ORIENTADOR',
+      'NOME-DO-CO-ORIENTADOR',
+    ],
+    label: 'Trabalho e orientação',
+  },
+  {
+    attrs: [
+      'NOME-INSTITUICAO-DOUT',
+      'NOME-INSTITUICAO-OUTRA-DOUT',
+      'NOME-ORIENTADOR-DOUT',
+      'NOME-INSTITUICAO-GRAD',
+      'NOME-INSTITUICAO-OUTRA-GRAD',
+      'NOME-ORIENTADOR-GRAD',
+    ],
+    label: 'Sanduíche e cotutela',
+  },
+];
+
+/** Prêmios e títulos, pkg_premio.form (seção 16): título, entidade promotora, ano. Inferida pelo nome. */
+const PRIZE: FormGroup[] = [
+  {
+    attrs: ['NOME-DO-PREMIO-OU-TITULO', 'NOME-DA-ENTIDADE-PROMOTORA', 'ANO-DA-PREMIACAO'],
+    label: 'Principal',
+  },
+];
+
+/** Idioma, PKG_IDIOMA.FORM (seção 5): idioma, lê, fala, escreve, compreende. */
+const LANGUAGE: FormGroup[] = [
+  { attrs: ['DESCRICAO-DO-IDIOMA', 'IDIOMA'], label: 'Idioma' },
+  {
+    attrs: [
+      'PROFICIENCIA-DE-LEITURA',
+      'PROFICIENCIA-DE-FALA',
+      'PROFICIENCIA-DE-ESCRITA',
+      'PROFICIENCIA-DE-COMPREENSAO',
+    ],
+    label: 'Proficiência',
+  },
+];
+
+/**
+ * Endereço, PRC_ENDERECO (seção 5): instituição e órgão do institucional,
+ * depois país, CEP, rua, bairro, município, estado, DDD, telefone, ramal,
+ * fax, caixa postal, página e e-mail. Inferida pelo nome do campo.
+ */
+const ADDRESS: FormGroup[] = [
+  { attrs: ['NOME-INSTITUICAO-EMPRESA', 'NOME-ORGAO', 'NOME-UNIDADE'], label: 'Instituição' },
+  {
+    attrs: ['PAIS', 'CEP', 'LOGRADOURO-COMPLEMENTO', 'LOGRADOURO', 'BAIRRO', 'CIDADE', 'UF'],
+    label: 'Localização',
+  },
+  {
+    attrs: ['DDD', 'TELEFONE', 'RAMAL', 'FAX', 'CAIXA-POSTAL', 'HOME-PAGE', 'E-MAIL'],
+    label: 'Contato',
+  },
+];
+
+/** Bloco ENDERECO: preferência de correspondência (f_end_corr) e contatos. */
+const ADDRESS_BLOCK: FormGroup[] = [
+  { attrs: ['FLAG-DE-PREFERENCIA'], label: 'Preferência' },
+  { attrs: ['ELETRONICO', 'REDE-SOCIAL', 'OUTRA-FORMA-DE-CONTATO'], label: 'Contatos' },
+];
+
+/**
+ * Identificação, PRC_IDENT (seção 5): nome, nome em citações,
+ * nacionalidade e país, CPF, sexo, raça ou cor, nascimento (país, UF,
+ * cidade, data), RG, passaporte, pais, deficiência. Inferida pelo nome.
+ */
+const IDENTIFICATION: FormGroup[] = [
+  {
+    attrs: [
+      'NOME-COMPLETO',
+      'NOME-EM-CITACOES-BIBLIOGRAFICAS',
+      'NACIONALIDADE',
+      'PAIS-DE-NACIONALIDADE',
+      'CPF',
+      'SEXO',
+      'RACA-OU-COR',
+    ],
+    label: 'Identificação',
+  },
+  {
+    attrs: ['PAIS-DE-NASCIMENTO', 'UF-NASCIMENTO', 'CIDADE-NASCIMENTO', 'DATA-NASCIMENTO'],
+    label: 'Nascimento',
+  },
+  {
+    attrs: [
+      'NUMERO-IDENTIDADE',
+      'ORGAO-EMISSOR',
+      'UF-ORGAO-EMISSOR',
+      'DATA-DE-EMISSAO',
+      'NUMERO-DO-PASSAPORTE',
+    ],
+    label: 'Documentos',
+  },
+  { attrs: ['NOME-DO-PAI', 'NOME-DA-MAE'], label: 'Filiação' },
+  { attrs: ['PCD'], label: 'Deficiência' },
+];
+
+/** Vínculo de uma atuação, PKG_ATIV.VINCULOS (seção 5, com a coluna XML). */
+const BOND: FormGroup[] = [
+  {
+    attrs: [
+      'TIPO-DE-VINCULO',
+      'OUTRO-VINCULO-INFORMADO',
+      'FLAG-VINCULO-EMPREGATICIO',
+      'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO',
+      'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO-INGLES',
+      'CARGA-HORARIA-SEMANAL',
+      'FLAG-DEDICACAO-EXCLUSIVA',
+    ],
+    label: 'Vínculo',
+  },
+  { attrs: ['MES-INICIO', 'ANO-INICIO', 'MES-FIM', 'ANO-FIM'], label: 'Período' },
+  { attrs: ['OUTRAS-INFORMACOES', 'OUTRAS-INFORMACOES-INGLES'], label: 'Outras informações' },
+];
+
+/** Projeto de pesquisa, PKG_PROJETO.FORM (seção 17, com a coluna XML). */
+const PROJECT: FormGroup[] = [
+  {
+    attrs: [
+      'NOME-DO-PROJETO',
+      'NOME-DO-PROJETO-INGLES',
+      'DESCRICAO-DO-PROJETO',
+      'DESCRICAO-DO-PROJETO-INGLES',
+    ],
+    label: 'Projeto',
+  },
+  { attrs: ['NATUREZA', 'SITUACAO', 'ANO-INICIO', 'ANO-FIM'], label: 'Situação e período' },
+  {
+    attrs: [
+      'NUMERO-GRADUACAO',
+      'NUMERO-ESPECIALIZACAO',
+      'NUMERO-MESTRADO-ACADEMICO',
+      'NUMERO-MESTRADO-PROF',
+      'NUMERO-DOUTORADO',
+    ],
+    label: 'Alunos envolvidos',
+  },
+  { attrs: ['FLAG-POTENCIAL-INOVACAO'], label: 'Inovação' },
+];
+
+/** Resumo, PKG_RESUME.FORM (seção 5): o texto e o texto em inglês. */
+const RESUME: FormGroup[] = [
+  { attrs: ['TEXTO-RESUMO-CV-RH', 'TEXTO-RESUMO-CV-RH-EN'], label: 'Resumo' },
+];
+
+const FORMATION_LEVELS =
+  /^(GRADUACAO|ESPECIALIZACAO|MESTRADO|DOUTORADO|POS-DOUTORADO|LIVRE-DOCENCIA|CURSO-TECNICO-PROFISSIONALIZANTE|MESTRADO-PROFISSIONALIZANTE|ENSINO-FUNDAMENTAL-PRIMEIRO-GRAU|ENSINO-MEDIO-SEGUNDO-GRAU|RESIDENCIA-MEDICA|APERFEICOAMENTO)$/;
+
+/** O formulário do Lattes que corresponde a um elemento, se a ordem dele é conhecida. */
+export function formLayout(element: string): FormGroup[] | undefined {
+  if (/^(DADOS-BASICOS|DETALHAMENTO)-DA-PARTICIPACAO-EM-(?!BANCA)/.test(element)) return EVENT;
+  if (FORMATION_LEVELS.test(element)) return FORMATION;
+  switch (element) {
+    case 'PREMIO-TITULO':
+      return PRIZE;
+    case 'IDIOMA':
+      return LANGUAGE;
+    case 'ENDERECO-PROFISSIONAL':
+    case 'ENDERECO-RESIDENCIAL':
+      return ADDRESS;
+    case 'ENDERECO':
+      return ADDRESS_BLOCK;
+    case 'DADOS-GERAIS':
+      return IDENTIFICATION;
+    case 'VINCULOS':
+      return BOND;
+    case 'PROJETO-DE-PESQUISA':
+      return PROJECT;
+    case 'RESUMO-CV':
+      return RESUME;
+    default:
+      return undefined;
+  }
+}
+
+/** Grupo e posição de um campo no formulário do Lattes; undefined fora dele. */
+export function formSlot(
+  element: string,
+  attr: string,
+): { label: string; rank: number } | undefined {
+  const layout = formLayout(element);
+  if (!layout) return undefined;
+  let rank = 0;
+  for (const group of layout) {
+    const i = group.attrs.indexOf(attr);
+    if (i >= 0) return { label: group.label, rank: rank + i };
+    rank += group.attrs.length;
+  }
+  return undefined;
+}

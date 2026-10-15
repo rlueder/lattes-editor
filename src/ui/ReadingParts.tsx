@@ -1,13 +1,10 @@
-// Peças do modo de leitura: linhas de texto, rótulos e valores, campos vazios
-// e seções. Cada uma se compõe igual na leitura e na edição; na edição, os
-// valores viram campos no mesmo lugar (InlineField.tsx).
+// Peças do modo de leitura: linhas de texto, rótulos e valores e seções,
+// compostas a partir de reading-layout.ts. Servem à leitura e à prévia no topo
+// do bloco em edição, que é a mesma composição com os rascunhos dos campos.
 
 import { attributeLabelIn } from '../labels/labels.ts';
-import type { EditFn } from './ElementView.tsx';
-import { InlineField } from './InlineField.tsx';
 import { curlyQuotes, hiddenNote, paragraphs } from './reading.ts';
 import {
-  isRequired,
   type Line,
   lineVisible,
   type Part,
@@ -16,73 +13,41 @@ import {
   shownParts,
 } from './reading-layout.ts';
 
-export interface FieldHooks {
-  onActive?: (key: string | null) => void;
-  onDraft?: (key: string, value: string) => void;
-  onEdit: EditFn;
-}
-
-/** O valor lido de um pedaço, marcado para o clique saber onde caiu. */
+/** O valor lido de um pedaço; página e ORCID viram link. */
 function PartText({ part, text }: { part: Part; text: string }) {
   const url = /^(HOME-PAGE|ORCID-ID)/.test(part.attr) && /^https?:\/\//.test(text) ? text : '';
+  if (!url) return text;
   return (
-    <span data-part={part.key}>
-      {url ? (
-        <a href={url} rel="noreferrer" target="_blank">
-          {text.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
-        </a>
-      ) : (
-        text
-      )}
-    </span>
+    <a href={url} rel="noreferrer" target="_blank">
+      {text.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
+    </a>
   );
 }
 
-/** Uma linha de texto; na edição, cada pedaço preenchido vira campo no mesmo lugar. */
-export function LineView({
-  editing,
-  hooks,
-  line,
-}: {
-  editing: boolean;
-  hooks: FieldHooks;
-  line: Line;
-}) {
+/** Uma linha de texto: prefixo, pedaços preenchidos com a ligação certa e sufixo. */
+export function LineView({ line }: { line: Line }) {
   const shown = shownParts(line);
-  if (!lineVisible(line) || (shown.length === 0 && !line.always)) return null;
-  const Tag = line.kind === 'when' ? 'span' : 'p';
+  if (!lineVisible(line)) return null;
   if (line.kind === 'para' || line.kind === 'translation') {
-    const part = shown[0]!.part;
     return (
       <div className={`rl rl-${line.kind}`} lang={line.kind === 'translation' ? 'en' : undefined}>
         {line.label && <span className="reading-label">{line.label}</span>}
-        {editing ? (
-          <InlineField {...hooks} part={part} />
-        ) : (
-          <div data-part={part.key}>
-            {paragraphs(shown[0]!.text).map((p, i) => (
-              <p key={i} className="reading-p">
-                {curlyQuotes(p)}
-              </p>
-            ))}
-          </div>
-        )}
+        {paragraphs(shown[0]?.text ?? '').map((p, i) => (
+          <p key={i} className="reading-p">
+            {curlyQuotes(p)}
+          </p>
+        ))}
       </div>
     );
   }
-  // Pedaço sozinho na linha vira campo do tamanho da linha; vários, campos na frase.
-  const inline = shown.length > 1 || Boolean(line.prefix || line.suffix) || line.kind === 'when';
+  const Tag = line.kind === 'when' ? 'span' : 'p';
   return (
     <Tag className={`rl rl-${line.kind}`}>
       {line.prefix}
       {shown.map((s) => (
         <span key={s.part.key}>
           {s.before}
-          {editing ? (
-            <InlineField {...hooks} inline={inline} part={s.part} />
-          ) : (
-            <PartText part={s.part} text={s.text} />
-          )}
+          <PartText part={s.part} text={s.text} />
         </span>
       ))}
       {line.suffix}
@@ -90,18 +55,8 @@ export function LineView({
   );
 }
 
-/** Rótulo e valor; na edição, o valor vira campo e o rótulo fica onde estava. */
-export function Rows({
-  editing,
-  hooks,
-  parts,
-  quiet,
-}: {
-  editing: boolean;
-  hooks: FieldHooks;
-  parts: Part[];
-  quiet: boolean;
-}) {
+/** Rótulo e valor: o rótulo pequeno, na sans, na coluna da esquerda. */
+export function Rows({ parts, quiet }: { parts: Part[]; quiet: boolean }) {
   if (parts.length === 0) return null;
   return (
     <dl className={quiet ? 'reading-fields is-quiet' : 'reading-fields'}>
@@ -109,11 +64,7 @@ export function Rows({
         <div key={p.key} className="reading-field">
           <dt>{attributeLabelIn(p.el.name, p.attr)}</dt>
           <dd>
-            {editing ? (
-              <InlineField {...hooks} part={p} />
-            ) : (
-              <PartText part={p} text={partText(p)} />
-            )}
+            <PartText part={p} text={partText(p)} />
           </dd>
         </div>
       ))}
@@ -121,59 +72,23 @@ export function Rows({
   );
 }
 
-/** Os campos vazios, só na edição: depois de um fio, obrigatórios primeiro e marcados. */
-export function EmptyGroup({ hooks, parts }: { hooks: FieldHooks; parts: Part[] }) {
-  if (parts.length === 0) return null;
-  return (
-    <div className="reading-empty">
-      <p className="reading-empty-caption">Campos vazios</p>
-      <dl className="reading-fields is-quiet">
-        {parts.map((p) => (
-          <div key={p.key} className="reading-field">
-            <dt>
-              {attributeLabelIn(p.el.name, p.attr)}
-              {isRequired(p.el, p.attr) && <span className="reading-required">obrigatório</span>}
-            </dt>
-            <dd>
-              <InlineField {...hooks} part={p} />
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </div>
-  );
-}
-
 function hasContent(s: Section): boolean {
   return s.hidden || s.masked > 0 || s.rows.length > 0 || s.lines.some(lineVisible);
 }
 
-/** Uma seção do bloco: título, linhas, rótulos e, na edição, os vazios. */
-export function SectionView({
-  editing,
-  hooks,
-  section,
-}: {
-  editing: boolean;
-  hooks: FieldHooks;
-  section: Section;
-}) {
-  if (!hasContent(section) && !(editing && section.empty.length > 0)) return null;
-  const body = (
+/** Uma seção do bloco: título, linhas e rótulos. */
+export function SectionView({ section }: { section: Section }) {
+  if (!hasContent(section)) return null;
+  const body = section.hidden ? (
+    <p className="reading-none">Oculto pelo modo de privacidade.</p>
+  ) : (
     <>
-      {section.hidden ? (
-        <p className="reading-none">Oculto pelo modo de privacidade.</p>
-      ) : (
-        <>
-          {section.lines.map((line, i) => (
-            <LineView key={i} editing={editing} hooks={hooks} line={line} />
-          ))}
-          <Rows editing={editing} hooks={hooks} parts={section.rows} quiet={section.quietRows} />
-          {section.masked > 0 && (
-            <p className="reading-none reading-hidden">{hiddenNote(section.masked)}</p>
-          )}
-          {editing && <EmptyGroup hooks={hooks} parts={section.empty} />}
-        </>
+      {section.lines.map((line, i) => (
+        <LineView key={i} line={line} />
+      ))}
+      <Rows parts={section.rows} quiet={section.quietRows} />
+      {section.masked > 0 && (
+        <p className="reading-none reading-hidden">{hiddenNote(section.masked)}</p>
       )}
     </>
   );
@@ -190,19 +105,7 @@ export function SectionView({
   );
 }
 
-export function Sections({
-  editing,
-  hooks,
-  sections,
-}: {
-  editing: boolean;
-  hooks: FieldHooks;
-  sections: Section[];
-}) {
-  if (!editing && !sections.some(hasContent)) {
-    return <p className="reading-none">Nada preenchido.</p>;
-  }
-  return sections.map((s, i) => (
-    <SectionView key={i} editing={editing} hooks={hooks} section={s} />
-  ));
+export function Sections({ sections }: { sections: Section[] }) {
+  if (!sections.some(hasContent)) return <p className="reading-none">Nada preenchido.</p>;
+  return sections.map((s, i) => <SectionView key={i} section={s} />);
 }

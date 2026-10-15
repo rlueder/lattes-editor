@@ -6420,19 +6420,15 @@ main.content {
  * de espaçamento. Peso 400 no texto, 600 só em títulos e na primeira linha
  * de um registro, nunca 700.
  *
- * A edição é o mesmo texto, editável no lugar: os valores continuam na serifa
- * e no mesmo corpo, para nada mudar de lugar; rótulos, botões, legendas e
- * listas de escolha são da edição e ficam na Plex Sans. Para os valores
- * editáveis passarem à sans, basta trocar --edit-value-font. */
+ * Na edição, o texto fica no topo como prévia, na serifa, e os campos vêm
+ * abaixo, na Plex Sans e na escala densa do resto do editor. */
 :root {
   /* Texto de leitura um pouco abaixo do preto e do branco do cromo: 14:1 no
      claro e 11,9:1 no escuro, em vez de 15:1. Secundário a 6,3:1 e 6:1. */
   --read-text: #2a2824;
   --read-muted: #5f5c55;
   --read-serif: 'IBM Plex Serif', 'Iowan Old Style', Charter, Georgia, serif;
-  /* Fonte dos valores em edição: a da leitura, para o texto não pular. */
-  --edit-value-font: var(--read-serif);
-  /* Fonte do que é só da edição: rótulos, botões, legendas, listas. */
+  /* Fonte do que é da edição e do cromo: rótulos, botões, campos. */
   --edit-font: var(--font);
 }
 
@@ -6496,8 +6492,8 @@ main.content {
 }
 
 /* O bloco: a margem direita fica reservada para "Editar" e "Concluir", que
-   nunca cobrem o texto. Em edição, só um fundo levemente diferente diz que o
-   bloco está aberto; nada de caixa nova. */
+   nunca cobrem o texto. Em edição, um fundo levemente diferente diz que o
+   bloco está aberto, com a prévia no topo e os campos abaixo de um fio. */
 .reading-block {
   position: relative;
   margin: 0 -12px;
@@ -6528,14 +6524,10 @@ main.content {
   background: color-mix(in srgb, var(--surface-2) 45%, transparent);
 }
 
-/* Troca entre ler e editar: um esmaecer curto do conteúdo, sem caixa. */
-.reading-content {
-  animation: reading-fade 120ms var(--ease-out);
-}
-
+/* Troca entre ler e editar: a prévia não muda; os campos surgem em 120ms. */
 @keyframes reading-fade {
   from {
-    opacity: 0.4;
+    opacity: 0;
   }
 }
 
@@ -6712,168 +6704,6 @@ main.content {
   vertical-align: 2px;
 }
 
-/* Campos no lugar do texto: mesma fonte, corpo, peso e cor, sem borda; um
-   fundo leve no passar do mouse e o contorno do destaque no foco. */
-.inline-input,
-.inline-select,
-.inline-picker input {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 3px;
-  background: transparent;
-  color: inherit;
-  font-family: var(--edit-value-font);
-  font-size: inherit;
-  font-style: inherit;
-  font-weight: inherit;
-  letter-spacing: inherit;
-  line-height: inherit;
-  transition: background-color var(--dur-fast) ease;
-}
-
-.inline-input {
-  display: block;
-  width: 100%;
-  overflow: hidden;
-  resize: none;
-}
-
-.inline-input.is-inline {
-  display: inline;
-  width: auto;
-  min-width: 2ch;
-  field-sizing: content;
-}
-
-.inline-input:hover,
-.inline-select:hover,
-.inline-picker input:hover {
-  background: color-mix(in srgb, var(--surface-3) 70%, transparent);
-}
-
-.inline-input:focus,
-.inline-select:focus,
-.inline-picker input:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-  background: var(--surface);
-}
-
-.inline-select {
-  max-width: 100%;
-  cursor: pointer;
-}
-
-.inline-select.is-inline {
-  width: auto;
-  field-sizing: content;
-}
-
-.inline-select option {
-  font-family: var(--edit-font);
-}
-
-.inline-picker {
-  position: relative;
-  display: inline-block;
-}
-
-.inline-picker .date-field {
-  display: inline-flex;
-}
-
-.inline-picker input {
-  width: auto;
-  min-width: 4ch;
-  field-sizing: content;
-  font-variant-numeric: inherit;
-}
-
-/* O botão do calendário fica fora do texto e só aparece com o campo em uso. */
-.inline-picker .date-field .date-field-button {
-  right: -30px;
-  font-family: var(--edit-font);
-  opacity: 0;
-}
-
-.inline-picker:focus-within .date-field .date-field-button,
-.inline-picker:hover .date-field .date-field-button {
-  opacity: 1;
-}
-
-.inline-locked {
-  cursor: default;
-}
-
-.inline-live {
-  display: block;
-  font-family: var(--edit-font);
-  font-size: 13px;
-}
-
-/* Campos vazios: só na edição, depois de um fio, com rótulo; os obrigatórios
-   primeiro e marcados. Vazio não tem texto, então o campo ganha um traço. */
-.reading-empty {
-  margin-top: 0.9em;
-  padding-top: 0.6em;
-  border-top: 1px solid var(--border);
-}
-
-.reading-empty .inline-input,
-.reading-empty .inline-select,
-.reading-empty .inline-picker input {
-  border-bottom: 1px dashed var(--border-focus);
-  border-radius: 0;
-}
-
-.reading-required {
-  margin-left: 6px;
-  color: var(--accent-text);
-  font-size: 11px;
-}
-
-/* Autores da produção em edição: nome e forma de citação lado a lado. */
-.reading-author {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 1.4em;
-}
-
-.reading-author-part {
-  display: flex;
-  flex: 1 1 12em;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.reading-caption {
-  color: var(--read-muted);
-  font-family: var(--edit-font);
-  font-size: 11px;
-}
-
-/* Referência viva: o trecho do campo em uso acende; clicar num trecho leva
-   ao campo. */
-.rr-ref.is-live {
-  margin-bottom: 0.6em;
-}
-
-.rr-ref.is-live .ref-piece {
-  border-radius: 2px;
-  cursor: pointer;
-  transition: background-color var(--dur-fast) ease;
-}
-
-.rr-ref.is-live .ref-piece:hover {
-  background: color-mix(in srgb, var(--accent-soft) 60%, transparent);
-}
-
-.rr-ref .ref-piece.is-lit {
-  background: var(--accent-soft-strong);
-  box-shadow: 0 0 0 2px var(--accent-soft-strong);
-}
-
 /* "Editar", "Adicionar…" e "Concluir", em sans, na margem reservada: à vista
    no foco, no passar do mouse e sempre no toque e em edição. */
 .reading-actions {
@@ -6916,6 +6746,20 @@ main.content {
   border-color: var(--border-focus);
 }
 
+/* Os campos do bloco em edição: o formulário de sempre, na sans e na escala
+   densa, abaixo da prévia, separado dela por um fio. */
+.reading-form {
+  margin-top: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--edit-font);
+  font-size: 13px;
+  font-weight: 450;
+  line-height: 1.5;
+  animation: reading-fade 120ms var(--ease-out);
+}
+
 .reading-actions .reading-done {
   border-color: var(--accent);
   background: var(--accent);
@@ -6945,14 +6789,10 @@ main.content {
 
 @media (prefers-reduced-motion: reduce) {
   .reading-block,
-  .reading-actions,
-  .inline-input,
-  .inline-select,
-  .inline-picker input,
-  .rr-ref.is-live .ref-piece {
+  .reading-actions {
     transition: none;
   }
-  .reading-content {
+  .reading-form {
     animation: none;
   }
 }

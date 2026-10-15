@@ -175,28 +175,3 @@ export function yearColumn(values: string[]): YearCell[] {
 export function tabWidth(values: string[]): number {
   return Math.max(4, ...values.map((v) => v.length));
 }
-
-export interface FocusPlan {
-  /** Posição do cursor no campo, quando o clique caiu num texto que é o próprio valor. */
-  caret?: number;
-  index: number;
-}
-
-/**
- * Que campo recebe o foco ao abrir a edição: o do pedaço clicado (com o
- * cursor no ponto do clique), o primeiro campo de um autor clicado na
- * referência ("3:*"), ou o primeiro campo do bloco.
- */
-export function focusTarget(fields: string[], key?: string, offset?: number): FocusPlan | null {
-  if (fields.length === 0) return null;
-  if (key) {
-    const exact = fields.indexOf(key);
-    if (exact >= 0) return { caret: offset, index: exact };
-    if (key.endsWith(':*')) {
-      const prefix = key.slice(0, -1);
-      const first = fields.findIndex((f) => f.startsWith(prefix));
-      if (first >= 0) return { index: first };
-    }
-  }
-  return { index: 0 };
-}
