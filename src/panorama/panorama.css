@@ -1,0 +1,822 @@
+/* Panorama: os gráficos do currículo. Usa os tokens do editor (styles.css);
+   as quatro cores de série são a paleta categórica validada para daltonismo
+   (ordem fixa: azul, laranja, verde-água, amarelo), com passos próprios no
+   tema escuro. Sem sombras, fios finos. */
+
+:root {
+  --pano-1: #2a78d6;
+  --pano-2: #eb6834;
+  --pano-3: #1baf7a;
+  --pano-4: #eda100;
+  --pano-grid: var(--surface-3);
+  --pano-shade: var(--accent-soft);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --pano-1: #3987e5;
+    --pano-2: #d95926;
+    --pano-3: #199e70;
+    --pano-4: #c98500;
+  }
+}
+
+:root[data-theme='dark'] {
+  --pano-1: #3987e5;
+  --pano-2: #d95926;
+  --pano-3: #199e70;
+  --pano-4: #c98500;
+}
+
+/* Controle segmentado (Currículo | Panorama, Lista | Rede). */
+.pano-segment {
+  position: relative;
+  isolation: isolate;
+  padding: 3px;
+  border-radius: 999px;
+}
+
+.pano-segment .menu-seg {
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.pano-segment .menu-seg[aria-checked='true'] {
+  color: var(--text);
+  font-weight: 550;
+}
+
+.pano-segment .menu-seg:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.mode-switch {
+  margin: 0 8px 14px;
+}
+
+/* Cabeçalho do gráfico: os números à esquerda, a vista à direita. */
+.pano-chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pano-chart-head .pano-segment {
+  min-width: 200px;
+}
+
+/* A vista (Lista | Rede) centrada na coluna, acima da lista ou da rede. */
+.pano-view-switch {
+  display: flex;
+  justify-content: center;
+}
+
+.pano-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--read-serif);
+  font-size: 17px;
+  color: var(--read-text);
+}
+
+.pano-facts li + li::before {
+  content: '·';
+  margin: 0 10px;
+  color: var(--muted);
+}
+
+.pano-facts b {
+  font-weight: 600;
+}
+
+/* Segunda linha de fatos: orientações por nível e bancas, menor. */
+.pano-facts.secondary {
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Cabeçalho de seção com a faixa de bancas por ano à direita. */
+.pano-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-right: 8px;
+}
+
+.pano-strip {
+  display: block;
+  height: 26px;
+  overflow: visible;
+}
+
+.pano-row.pano-committee {
+  grid-template-columns: 3.2em minmax(0, 1fr);
+}
+
+.pano-committee-year {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pano-committee .pano-row-name small {
+  display: block;
+  margin: 0;
+}
+
+/* Laços com a pessoa: o selo do app (.tag), em azul claro. */
+.tag.pano-tie {
+  margin: 0 0 0 6px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+/* Página do gráfico */
+.panorama .pano-question {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.pano-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pano-body svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.pano-insight {
+  margin: 0;
+  max-width: 60ch;
+  font-family: var(--read-serif);
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--read-text);
+}
+
+.pano-insight b {
+  font-weight: 600;
+}
+
+.pano-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.pano-h {
+  margin: 18px 0 2px;
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Legenda */
+.pano-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.pano-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pano-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid transparent;
+  border-radius: 3px;
+}
+
+.pano-swatch.ring {
+  border-radius: 50%;
+  background: var(--accent-soft);
+}
+
+.pano-swatch.hatch {
+  border-color: var(--border-strong);
+  background: repeating-linear-gradient(135deg, var(--muted) 0 1px, transparent 1px 4px);
+}
+
+/* Marcas e eixos do SVG */
+.pano-body svg text {
+  font-family: var(--font);
+  font-size: 11px;
+  fill: var(--muted);
+}
+
+.pano-body svg .pano-lane,
+.pano-body svg .pano-value {
+  fill: var(--text);
+}
+
+.pano-body svg .pano-span-label {
+  font-size: 11px;
+  fill: var(--text);
+  pointer-events: none;
+}
+
+.pano-body svg .pano-span-label.on-fill {
+  fill: #fff;
+}
+
+.pano-body svg .pano-band-label {
+  font-size: 9px;
+  fill: var(--text);
+  pointer-events: none;
+}
+
+.pano-grid {
+  stroke: var(--pano-grid);
+  stroke-width: 1;
+}
+
+.pano-grid.faint {
+  opacity: 0.6;
+}
+
+.pano-axis {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+
+.pano-mark {
+  cursor: pointer;
+  outline: none;
+}
+
+.pano-mark:hover > :first-child,
+.pano-mark:focus-visible > :first-child {
+  opacity: 0.8;
+}
+
+.pano-mark:focus-visible > :first-child {
+  stroke: var(--text);
+  stroke-width: 2;
+}
+
+.pano-bar-1 {
+  fill: var(--pano-1);
+}
+
+.pano-bar-muted {
+  fill: var(--muted);
+}
+
+.pano-empty {
+  fill: var(--border-strong);
+}
+
+.pano-hatch-line {
+  stroke: var(--muted);
+  stroke-width: 1;
+  opacity: 0.6;
+}
+
+.pano-band {
+  fill: var(--surface-3);
+}
+
+.pano-shade {
+  fill: var(--pano-shade);
+  opacity: 0.6;
+}
+
+.pano-span.done {
+  fill: var(--accent);
+}
+
+.pano-span.open {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+  stroke-width: 1;
+}
+
+.pano-diamond {
+  fill: var(--accent);
+}
+
+.pano-dot.fill-1 {
+  fill: var(--pano-1);
+}
+
+/* Linha do tempo: faixas fixas à esquerda, a área dos anos rola para os lados. */
+.pano-tl {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.pano-tl-lanes {
+  position: relative;
+  border-right: 1px solid var(--border);
+}
+
+.pano-tl-lanes span {
+  position: absolute;
+  left: 0;
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.pano-tl-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  cursor: grab;
+  overscroll-behavior-x: contain;
+}
+
+.pano-tl-scroll:active {
+  cursor: grabbing;
+}
+
+.pano-tl-scroll svg {
+  max-width: none;
+}
+
+.pano-today {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.pano-body svg .pano-today-label {
+  fill: var(--accent-text);
+  font-weight: 550;
+}
+
+.pano-diamond,
+.pano-dot {
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+
+.pano-dot.ring-1 {
+  fill: var(--bg);
+  stroke: var(--pano-1);
+  stroke-width: 1.5;
+}
+
+.pano-spoke {
+  stroke: var(--border-strong);
+}
+
+.pano-edge {
+  fill: none;
+  stroke: var(--pano-1);
+  stroke-opacity: 0.45;
+}
+
+.pano-ego {
+  fill: var(--text);
+}
+
+.pano-node {
+  fill: var(--pano-1);
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+
+.pano-node.student {
+  fill: var(--pano-2);
+}
+
+/* Dica do passar do mouse */
+.pano-tip {
+  position: fixed;
+  z-index: 50;
+  max-width: 300px;
+  padding: 6px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 12px;
+  line-height: 1.4;
+  pointer-events: none;
+  transform: translateY(-100%);
+}
+
+.pano-tip b {
+  font-weight: 600;
+}
+
+/* Em resumo */
+.pano-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pano-who {
+  margin: 0;
+  font-family: var(--read-serif);
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.pano-who-sub {
+  margin: 2px 0 0;
+  font-family: var(--read-serif);
+  font-size: 15px;
+  color: var(--read-muted);
+}
+
+.pano-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 8px;
+}
+
+/* Todos os cartões da mesma altura: o número no alto, o rótulo logo abaixo,
+   com espaço para duas linhas. */
+.pano-tile {
+  display: grid;
+  grid-template-rows: auto minmax(2.8em, 1fr);
+  align-content: start;
+  gap: 4px;
+  height: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 200ms ease;
+}
+
+.pano-tile:hover {
+  background: var(--surface-2);
+}
+
+.pano-tile-n {
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.pano-tile-l {
+  align-self: start;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.pano-tile.zero .pano-tile-n {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.pano-figure {
+  margin: 0;
+}
+
+.pano-caption {
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Saúde: linhas da mesma altura (toda linha tem a nota), agrupadas com o
+   rótulo no estilo dos grupos do ⌘K, sem cantos arredondados. */
+.pano-check-groups,
+.pano-checks,
+.pano-rows,
+.pano-selection-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pano-group-label {
+  margin: 0;
+  padding: 10px 8px 6px;
+  font-size: 15px;
+  font-weight: 550;
+}
+
+.pano-check-group + .pano-check-group {
+  margin-top: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--divider);
+}
+
+.pano-check {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) 90px 76px;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: 52px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+
+button.pano-check:not(:disabled) {
+  cursor: pointer;
+}
+
+button.pano-check:not(:disabled):hover {
+  background: var(--surface-2);
+}
+
+button.pano-check:disabled {
+  opacity: 1;
+  color: inherit;
+}
+
+.pano-check-text small {
+  display: block;
+  min-height: 1.4em;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.pano-check-icon {
+  display: inline-flex;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.pano-check-icon.ok {
+  color: var(--accent-text);
+}
+
+.pano-check-icon.warn {
+  color: var(--warn-text);
+}
+
+.pano-meter {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 0;
+  background: var(--accent-soft);
+}
+
+.pano-meter i {
+  display: block;
+  height: 100%;
+  border-radius: 0;
+  background: var(--accent);
+}
+
+.pano-check-frac,
+.pano-row-n {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+/* Listas com barra (pessoas, periódicos, eventos) */
+.pano-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px 28px;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pano-row:hover {
+  background: var(--surface-2);
+}
+
+.pano-row-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pano-row-name small {
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.pano-row-bar i {
+  display: block;
+  height: 8px;
+  border-radius: 0;
+  background: var(--pano-1);
+}
+
+.pano-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 0;
+  background: var(--surface-2);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.pano-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pano-chip {
+  padding: 2px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 13px;
+}
+
+button.pano-chip {
+  cursor: pointer;
+}
+
+button.pano-chip:hover {
+  background: var(--surface-2);
+}
+
+.pano-chip small {
+  color: var(--muted);
+}
+
+/* Quadriênios */
+.pano-table-wrap {
+  overflow-x: auto;
+}
+
+.pano-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.pano-table th,
+.pano-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.pano-table th[scope='row'],
+.pano-table thead th:first-child {
+  text-align: left;
+  white-space: normal;
+  font-weight: 400;
+}
+
+.pano-table thead th {
+  vertical-align: bottom;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--muted);
+}
+
+.pano-table thead th small {
+  display: block;
+  font-weight: 400;
+}
+
+.pano-table tr.sub th[scope='row'] {
+  padding-left: 22px;
+  color: var(--muted);
+}
+
+.pano-num {
+  padding: 0 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--accent-text);
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.pano-num:hover {
+  background: var(--accent-soft);
+}
+
+.pano-zero {
+  color: var(--muted);
+}
+
+.pano-copy {
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+/* Painel à direita */
+.pano-period {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pano-year-label {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.pano-selection-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pano-selection-label {
+  margin: 0 0 8px;
+  font-weight: 550;
+}
+
+.pano-selection-list li > button {
+  display: grid;
+  grid-template-columns: 3em 1fr;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pano-selection-list li > button:hover,
+.pano-selection-list li > button:focus-visible {
+  background: var(--accent-soft);
+}
+
+.pano-selection-list li.muted {
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
+.pano-selection-year {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pano-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .pano-row {
+    grid-template-columns: minmax(0, 1fr) 70px 24px;
+  }
+
+  .pano-check {
+    grid-template-columns: 18px minmax(0, 1fr) 56px;
+  }
+
+  .pano-meter {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pano-tile {
+    transition: none;
+  }
+}

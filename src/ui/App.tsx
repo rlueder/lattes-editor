@@ -30,7 +30,7 @@ import { EditorContext } from './editor-context.ts';
 import { parseHash } from './hash-route.ts';
 import { type ReloadFailure, reloadNotice } from './lattes-reload.ts';
 import { connectionOf, noticesFor } from './notifications.ts';
-import { allEntries, type PaletteEntry } from './palette-search.ts';
+import type { PaletteEntry } from './palette-search.ts';
 import { PendingBanner } from './PendingBanner.tsx';
 import { profileOf } from './profile.ts';
 import { ReferenceContext } from './reference-context.ts';
@@ -51,6 +51,7 @@ import { useLattesOpen } from './use-lattes-open.ts';
 import { useLattesReload } from './use-lattes-reload.ts';
 import { useNavigate, useScrollToPendingAnchor } from './use-navigate.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
+import { usePanoramaShell } from './use-panorama-shell.tsx';
 import { usePhotoChange } from './use-photo-change.tsx';
 import { useOpenStoredVersion } from './use-stored-version.ts';
 import { useTopbarHeight } from './use-topbar-height.ts';
@@ -103,7 +104,6 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [session, version],
   );
-  const entries = useMemo(() => allEntries(sections), [sections]);
   const referenceIndex = useMemo(
     () => (session ? buildReferenceIndex(session.doc.root) : undefined),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -124,7 +124,8 @@ export function App() {
   /** Vai para a seção (e o grupo ou ano) e mantém a URL legível em sincronia. */
   // No modo foco, o painel revelado de onde veio a escolha fecha na hora.
   const navigate = useNavigate(sectionId, setSectionId, pendingAnchor, focusShell.onNavigate);
-  const versions = useVersions(session?.doc.root, navigate);
+  const shell = usePanoramaShell({ navigate, sectionId, sections, session, version });
+  const versions = useVersions(session?.doc.root, shell.go);
 
   // Um link "#atuacao/atuacao-profissional/2020", aberto ou editado à mão, leva direto lá.
   const hasSections = sections.length > 0;
@@ -141,12 +142,13 @@ export function App() {
   }, [hasSections, navigate]);
 
   const jump = (entry: PaletteEntry) => {
+    if (shell.jumpChart(entry)) return;
     if (entry.action) {
       if (entry.action === 'novo') setPickerOpen(true);
       else startNewItem(entry.action, production.startNew);
       return;
     }
-    navigate({ anchor: entry.anchorId, sectionId: entry.sectionId });
+    shell.go({ anchor: entry.anchorId, sectionId: entry.sectionId });
   };
 
   useScrollToPendingAnchor(pendingAnchor);
@@ -249,12 +251,14 @@ export function App() {
 
       <Sidebar
         activeId={section?.id}
+        modeSwitch={shell.modeSwitch}
+        nav={shell.nav}
         pendingIn={pendingIn}
         photoVersion={photoChange.version}
         profile={profile}
         sections={sections}
         onChangePhoto={photoChange.open}
-        onSelect={(id) => navigate({ sectionId: id })}
+        onSelect={(id) => shell.go({ sectionId: id })}
       />
       {photoChange.dialog}
 
@@ -274,20 +278,28 @@ export function App() {
               onOpen={openExport}
             />
             {error && <p className="error">{error}</p>}
-            {section && (
-              <SectionView
-                section={section}
-                onEdit={onEdit}
-                onNewGeneral={general.open}
-                onNewItem={production.startNew}
-                onOpenPicker={() => setPickerOpen(true)}
-              />
-            )}
+            {shell.view ??
+              (section && (
+                <SectionView
+                  key={shell.sectionFilter.key}
+                  initialFilter={shell.sectionFilter.filter}
+                  section={section}
+                  onEdit={onEdit}
+                  onNewGeneral={general.open}
+                  onNewItem={production.startNew}
+                  onOpenPicker={() => setPickerOpen(true)}
+                />
+              ))}
           </ReferenceContext.Provider>
         </EditorContext.Provider>
       </main>
 
-      <CommandPalette entries={entries} open={paletteOpen} onClose={closePalette} onSelect={jump} />
+      <CommandPalette
+        entries={shell.entries}
+        open={paletteOpen}
+        onClose={closePalette}
+        onSelect={jump}
+      />
 
       {production.form && (
         <ProductionForm
@@ -364,7 +376,7 @@ export function App() {
         sections={sections}
         version={version}
         onClose={() => setDiagnosisOpen(false)}
-        onGo={navigate}
+        onGo={shell.go}
         onRequestEspelho={bridge.requestEspelho}
       />
 

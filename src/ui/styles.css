@@ -4426,14 +4426,16 @@ button.primary:hover:not(:disabled) {
 /* Botões secundários dos rodapés de modal: fundo de componente (passo 4) e
    borda de controle (passo 7), para não sumirem no escuro. */
 .modal-foot button:not(.primary),
-.form-foot button:not(.primary):not(.danger) {
+.form-foot button:not(.primary):not(.danger),
+.section-panel button.pano-open {
   border: 1px solid var(--border-strong);
   background: var(--surface-2);
   color: var(--text);
 }
 
 .modal-foot button:not(.primary):hover,
-.form-foot button:not(.primary):not(.danger):hover {
+.form-foot button:not(.primary):not(.danger):hover,
+.section-panel button.pano-open:hover {
   background: var(--surface-3);
   border-color: var(--border-focus);
 }
@@ -5134,7 +5136,8 @@ button.primary:hover:not(:disabled) {
   border-color: transparent;
 }
 
-.topbar .icon-btn.ghost:hover:not(:disabled) {
+.topbar .icon-btn.ghost:hover:not(:disabled),
+.section-panel .icon-btn.ghost:hover:not(:disabled) {
   background: var(--surface-2);
 }
 
@@ -5466,6 +5469,76 @@ b {
 
 .calendar-year-picker .calendar-years .calendar-cell {
   height: calc(var(--cell) + 8px);
+}
+
+/* Seletor de intervalo de anos (Panorama): atalhos acima da grade, o
+   intervalo em azul claro e as pontas em azul cheio, sem cantos arredondados. */
+.year-range-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.year-range-hint {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.calendar-cell.range-in,
+.calendar-cell.range-end {
+  border-radius: 0;
+}
+
+.calendar-cell.range-in[aria-selected='true'] {
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 400;
+}
+
+.calendar-cell.range-end[aria-selected='true'] {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
+
+/* O campo do intervalo: a caixa dos campos de data, inteira clicável, com o
+   foco dos campos do editor (borda de foco e anel de 2px por dentro). */
+.year-range-field input {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--pill-h);
+  padding: 0 38px 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.year-range-field.active input {
+  border-color: var(--accent-text);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.year-range-field input:hover:not(:focus) {
+  border-color: var(--accent);
+}
+
+.year-range-field input:focus,
+.year-range-field input:focus-visible {
+  border-color: var(--border-focus);
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.year-range-field .date-field-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 /* "Fechar" existe para quem usa leitor de tela no toque; aparece no foco do

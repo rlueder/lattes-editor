@@ -26,6 +26,7 @@ import {
   YEARS_PER_PAGE,
 } from './calendar-dates.ts';
 import { ChevronIcon } from './icons.tsx';
+import { cellState } from './year-range.ts';
 
 /**
  * Teclado e troca de grade levam o foco à célula nova depois de desenhar; os
@@ -48,10 +49,18 @@ interface YearGridProps {
   focus: number;
   max?: number;
   min?: number;
+  /**
+   * Intervalo destacado (seletor de intervalo do Panorama): as pontas em azul
+   * cheio, o miolo em azul claro. Com ele, Home e End vão ao primeiro e ao
+   * último ano permitidos, não à ponta da página.
+   */
+  range?: { from: number; to: number };
   selected?: number;
   today: number;
   /** Esc tratado na grade. Sem ele, o Esc segue até o popover, que fecha. */
   onEscape?: () => void;
+  /** Ponteiro sobre um ano (ou fora da grade), para a prévia do intervalo. */
+  onHover?: (year: number | undefined) => void;
   /** Teclado moveu o foco para outro ano. */
   onMove: (year: number) => void;
   /** Clique, Enter ou espaço num ano. */
@@ -65,8 +74,10 @@ export function YearGrid({
   max = MAX_YEAR,
   min = MIN_YEAR,
   onEscape,
+  onHover,
   onMove,
   onPick,
+  range,
   selected,
   today,
 }: YearGridProps) {
@@ -85,7 +96,12 @@ export function YearGrid({
       onEscape();
       return;
     }
-    const next = moveYear(focus, e.key, min, max);
+    const next =
+      range && (e.key === 'Home' || e.key === 'End')
+        ? e.key === 'Home'
+          ? min
+          : max
+        : moveYear(focus, e.key, min, max);
     if (next === undefined) return;
     e.preventDefault();
     onMove(next);
@@ -94,9 +110,11 @@ export function YearGrid({
   return (
     <table
       aria-label={`Anos de ${first} a ${last}`}
+      aria-multiselectable={range ? true : undefined}
       className="calendar-grid calendar-years"
       role="grid"
       onKeyDown={onKeyDown}
+      onMouseLeave={onHover && (() => onHover(undefined))}
     >
       <tbody>
         {Array.from({ length: page.length / YEAR_COLUMNS }, (_, row) => (
@@ -104,15 +122,25 @@ export function YearGrid({
             {page.slice(row * YEAR_COLUMNS, (row + 1) * YEAR_COLUMNS).map((year) => {
               if (!isYearInRange(year, min, max)) return <td key={year} />;
               const active = year === focus;
+              const state = range ? cellState(year, range) : undefined;
+              const selectedCell = range ? state !== 'out' : year === selected;
               return (
                 <td
                   key={year}
                   ref={active ? activeRef : undefined}
                   aria-current={year === today ? 'date' : undefined}
-                  aria-selected={year === selected || undefined}
-                  className={`calendar-cell${year === today ? ' today' : ''}`}
+                  aria-selected={selectedCell || undefined}
+                  className={[
+                    'calendar-cell',
+                    year === today ? 'today' : '',
+                    state === 'end' ? 'range-end' : state === 'in' ? 'range-in' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                   tabIndex={active ? 0 : -1}
                   onClick={() => onPick(year)}
+                  onFocus={onHover && (() => onHover(year))}
+                  onMouseEnter={onHover && (() => onHover(year))}
                 >
                   {year}
                 </td>
