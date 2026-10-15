@@ -78,15 +78,15 @@ function Contacts({ part }: { part: Part }) {
   if (part.attr === 'ELETRONICO') {
     const all = parseEmails(raw);
     if (all.length === 0) return <LinkedText text={raw} />;
-    // O e-mail alternativo é o do bloco residencial, que o Lattes deixa
-    // privado: o modo de privacidade o esconde, como o endereço residencial.
-    const emails = hideSensitive ? all.filter((c) => c.address !== 'E-mail alternativo') : all;
+    // O modo de privacidade esconde todos: qual dos dois o Lattes publica é
+    // inferido do nome do campo (contacts.ts), não observado.
+    const emails = hideSensitive ? [] : all;
     const masked = all.length - emails.length;
     return (
       <span className="reading-contacts">
         {masked > 0 && <span className="reading-none">{hiddenNote(masked)}</span>}
-        {emails.map((c) => (
-          <span key={c.email} className="reading-contact">
+        {emails.map((c, i) => (
+          <span key={`${i}:${c.email}`} className="reading-contact">
             {c.address && <span className="reading-contact-kind">{c.address}: </span>}
             <ExternalLink href={`mailto:${c.email}`}>{c.email}</ExternalLink>
           </span>
@@ -98,11 +98,15 @@ function Contacts({ part }: { part: Part }) {
   if (networks.length === 0) return <LinkedText text={raw} />;
   return (
     <span className="reading-contacts">
-      {networks.map((c) => (
-        <span key={c.url} className="reading-contact">
-          <ExternalLink href={c.url}>{c.name}</ExternalLink>
-        </span>
-      ))}
+      {networks.map((c, i) => {
+        // O endereço vem do XML importado: só http(s) vira link.
+        const href = /^https?:\/\//i.test(c.url) ? c.url : undefined;
+        return (
+          <span key={`${i}:${c.url}`} className="reading-contact">
+            {href ? <ExternalLink href={href}>{c.name}</ExternalLink> : `${c.name}: ${c.url}`}
+          </span>
+        );
+      })}
     </span>
   );
 }
