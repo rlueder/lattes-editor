@@ -75,8 +75,11 @@ No modo de leitura, Dados gerais, Formação e Produções aparecem compostos
 como texto, sem borda de campo, sem rótulo que repete o título do grupo e
 sem a caixa branca sobre o fundo cinza: os grupos se separam pelo espaço.
 A leitura mostra todo campo preenchido: o que não cabe na frase (o status
-do curso, o ISSN, o idioma de um artigo) fica em linhas pequenas de rótulo
-e valor logo abaixo. Campo vazio não aparece.
+do curso, o ISSN, o idioma de um artigo) fica logo abaixo numa grade de três
+colunas (duas em tela estreita), com o rótulo pequeno acima do valor; um
+valor de mais de 24 caracteres ocupa duas colunas, e um de mais de 48, a linha
+inteira. A grade segue a ordem de leitura, sem reacomodar valores curtos nos
+buracos. Campo vazio não aparece.
 
 Na edição, o texto do bloco fica no topo como prévia, igual ao que estava
 na tela e na mesma tipografia de leitura, e acompanha o que se digita. Abaixo
@@ -141,7 +144,17 @@ Mais algumas decisões do mesmo lado:
 
 ### Ordem dos campos
 
-Os campos de um item seguem a ordem do formulário do próprio Lattes quando
+No modo de leitura, os campos do bloco em edição seguem, por padrão, a ordem
+da prévia acima deles (`src/ui/preview-order.ts`): cada campo fica onde o
+valor dele aparece no texto, primeiro o texto do item (período, grau e
+curso, instituição, trabalho, orientação, bolsa) e depois os valores da
+grade, em "Detalhes". Um campo vazio já fica onde vai aparecer quando for
+preenchido, então preencher não o muda de lugar. Nas produções, cuja prévia é
+a referência, os campos da referência vêm na ordem da citação e o resto em
+"Detalhes". O ⚙ tem "Ordem dos campos: como na prévia / como no Lattes".
+
+Como no Lattes, e no editor fora do modo de leitura, os campos de um item
+seguem a ordem do formulário do próprio Lattes quando
 ela é conhecida (`src/ui/form-order.ts`, a partir das seções 5, 16 e 17 de
 `docs/lattes_internals.md`): participação em evento, formação acadêmica (por
 nível), prêmio, idioma, endereço, identificação, vínculo da atuação, projeto
@@ -151,6 +164,12 @@ fica em "Outros dados", e não num grupo por semelhança de nome. Nos outros
 itens vale a ordem por assunto de antes, com os erros óbvios corrigidos (o
 nome e a cidade do evento iam para "Publicação"). Vale também fora do modo
 de leitura.
+
+### Um bloco de cada vez
+
+Só um bloco fica em edição. Abrir outro (clique, "Editar" ou E) fecha o que
+estava aberto, gravando antes o campo em foco, como o "Concluir"; as
+mudanças valem na hora, como no resto do editor.
 
 ### Modo foco
 

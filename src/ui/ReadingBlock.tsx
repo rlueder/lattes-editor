@@ -16,6 +16,7 @@ import {
 
 import type { XElement } from '../model/xml.ts';
 import { DraftContext, PartKeyContext } from './draft-context.ts';
+import { type OpenEditor, openOnly, registerOpen, unregister } from './edit-session.ts';
 import { PencilIcon } from './icons.tsx';
 import { clickOpensEditor, readingKeyAction } from './reading.ts';
 import { partKeys } from './reading-layout.ts';
@@ -84,24 +85,39 @@ export function EditableBlock({
     [],
   );
 
-  const open = () => {
+  const doOpen = () => {
     clearTimeout(clickTimer.current);
     anchor.current = blockRef.current?.getBoundingClientRect().top ?? null;
     setDrafts(new Map());
     setEditing(true);
+    registerOpen(handle.current);
   };
-  const close = () => {
+  /** Abrir: um bloco de cada vez; o que estava aberto fecha antes (edit-session.ts). */
+  const open = () => {
+    clearTimeout(clickTimer.current);
+    openOnly(doOpen, handle.current);
+  };
+  /**
+   * Fechar. `own` é falso quando outro bloco abre: aí este não devolve o foco
+   * ao botão dele nem segura a altura da tela; quem manda é o que abre.
+   */
+  const close = (own = true) => {
     // Os campos gravam ao perder o foco: tirar o foco antes de fechar grava o
     // que estava sendo digitado.
     const active = document.activeElement;
     if (active instanceof HTMLElement && blockRef.current?.contains(active)) active.blur();
-    anchor.current = blockRef.current?.getBoundingClientRect().top ?? null;
-    restoreFocus.current = true;
+    anchor.current = own ? (blockRef.current?.getBoundingClientRect().top ?? null) : null;
+    restoreFocus.current = own;
     setFocusPart(null);
     setEditing(false);
+    unregister(handle.current);
   };
   const closeRef = useRef(close);
   closeRef.current = close;
+  // O bloco visto de fora: fechar, quando outro bloco abre.
+  const handle = useRef<OpenEditor>({ close: () => closeRef.current(false) });
+  // Bloco que some aberto (troca de seção) deixa de ser o aberto.
+  useEffect(() => () => unregister(handle.current), []);
 
   // Esc no bloco volta à leitura. O ouvinte fica no documento, na fase de
   // subida: roda depois dos manipuladores do React (presos na raiz), então um
@@ -222,7 +238,7 @@ export function EditableBlock({
           {editing ? (
             <>
               {editExtra}
-              <button className="primary reading-done" type="button" onClick={close}>
+              <button className="primary reading-done" type="button" onClick={() => close()}>
                 Concluir
               </button>
             </>
