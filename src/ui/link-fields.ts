@@ -93,11 +93,68 @@ export function linkError(attr: string, value: string): string | undefined {
   return undefined;
 }
 
-/** O link da prévia para um valor de DOI ou endereço; undefined nos outros. */
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * O link da prévia para um valor: DOI vai ao doi.org; e-mail vira mailto:;
+ * endereço (pelo atributo, ou pelo valor que começa com http(s):// ou www.)
+ * vira link, com https:// quando não há esquema. Undefined quando não é link.
+ */
 export function linkHref(attr: string, value: string): string | undefined {
-  if (!value.trim()) return undefined;
-  if (isDoiAttr(attr)) return doiLink(value);
-  if (isUrlAttr(attr) || attr === 'ORCID-ID')
-    return urlError(value) ? undefined : urlForLink(value);
+  const v = value.trim();
+  if (!v) return undefined;
+  if (isDoiAttr(attr)) return doiLink(v);
+  if (attr === 'E-MAIL') return EMAIL.test(v) ? `mailto:${v}` : undefined;
+  if (isUrlAttr(attr) || attr === 'ORCID-ID' || /^(https?:\/\/|www\.)/i.test(v)) {
+    return urlError(v) ? undefined : urlForLink(v);
+  }
   return undefined;
+}
+
+/** Texto do link de endereço, encurtado como na prévia: sem esquema, www. e barra final. */
+export function shortUrl(value: string): string {
+  return value
+    .trim()
+    .replace(/^https?:\/\/(www\.)?/i, '')
+    .replace(/^www\./i, '')
+    .replace(/\/$/, '');
+}
+
+/** Um pedaço de texto corrido, com o link quando o pedaço é endereço ou e-mail. */
+export interface TextPiece {
+  href?: string;
+  text: string;
+}
+
+/**
+ * Corta um texto corrido nos endereços (http(s)://…) e e-mails que ele traz,
+ * para cada um virar link: o "DOI: https://doi.org/…" da referência, os
+ * e-mails do campo de contatos. A pontuação final (ponto, vírgula) fica fora
+ * do link; o texto não muda.
+ */
+export function linkPieces(text: string): TextPiece[] {
+  const re = /https?:\/\/[^\s<>"]+|[^\s@:;,<>"]+@[^\s@;,<>"]+\.[^\s@;,<>"]+/gi;
+  const out: TextPiece[] = [];
+  let pos = 0;
+  for (const m of text.matchAll(re)) {
+    let found = m[0];
+    const trail = /[.,;:)\]]+$/.exec(found)?.[0] ?? '';
+    found = found.slice(0, found.length - trail.length);
+    if (!found) continue;
+    if (m.index > pos) out.push({ text: text.slice(pos, m.index) });
+    out.push({ href: found.includes('://') ? found : `mailto:${found}`, text: found });
+    pos = m.index + found.length;
+  }
+  if (pos < text.length) out.push({ text: text.slice(pos) });
+  return out;
+}
+
+/** Onde ficam os links num texto: início, fim e destino (de linkPieces). */
+export function linkRanges(text: string): { end: number; href: string; start: number }[] {
+  let pos = 0;
+  return linkPieces(text).flatMap((p) => {
+    const start = pos;
+    pos += p.text.length;
+    return p.href ? [{ end: pos, href: p.href, start }] : [];
+  });
 }

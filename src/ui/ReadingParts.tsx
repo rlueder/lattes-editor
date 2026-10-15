@@ -2,8 +2,10 @@
 // compostas a partir de reading-layout.ts. Servem à leitura e à prévia no topo
 // do bloco em edição, que é a mesma composição com os rascunhos dos campos.
 
+import type { ReactNode } from 'react';
+
 import { attributeLabelIn } from '../labels/labels.ts';
-import { linkHref } from './link-fields.ts';
+import { isDoiAttr, linkHref, linkPieces, shortUrl } from './link-fields.ts';
 import { cellSpan, curlyQuotes, hiddenNote, paragraphs } from './reading.ts';
 import {
   type Line,
@@ -15,15 +17,40 @@ import {
   shownParts,
 } from './reading-layout.ts';
 
-/** O valor lido de um pedaço; DOI, página e ORCID viram link (link-fields.ts). */
-function PartText({ part, text }: { part: Part; text: string }) {
-  const href = linkHref(part.attr, text);
-  if (!href) return text;
+/** Link para fora: aba nova no navegador; no app, o navegador do sistema (external-links.ts). */
+export function ExternalLink({ children, href }: { children: ReactNode; href: string }) {
   return (
-    <a href={href} rel="noreferrer" target="_blank">
-      {text.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
+    <a href={href} rel="noreferrer noopener" target="_blank">
+      {children}
     </a>
   );
+}
+
+/** Texto corrido com os endereços e e-mails que ele traz como links. */
+export function LinkedText({ text }: { text: string }) {
+  return linkPieces(text).map((p, i) =>
+    p.href ? (
+      <ExternalLink key={i} href={p.href}>
+        {p.text}
+      </ExternalLink>
+    ) : (
+      p.text
+    ),
+  );
+}
+
+/**
+ * O valor lido de um pedaço. DOI, endereço, ORCID e e-mail viram link
+ * (link-fields.ts); o texto é o guardado, com o endereço encurtado.
+ */
+function PartText({ part, text }: { part: Part; text: string }) {
+  const href = linkHref(part.attr, text);
+  if (href) {
+    const shown = href.startsWith('http') && !isDoiAttr(part.attr) ? shortUrl(text) : text;
+    return <ExternalLink href={href}>{shown}</ExternalLink>;
+  }
+  // Contatos serializados (ELETRONICO): cada e-mail do texto vira link.
+  return part.attr === 'ELETRONICO' ? <LinkedText text={text} /> : text;
 }
 
 /** Uma linha de texto: prefixo, pedaços preenchidos com a ligação certa e sufixo. */

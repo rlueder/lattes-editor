@@ -10,6 +10,9 @@ import {
   isUrlAttr,
   linkError,
   linkHref,
+  linkPieces,
+  linkRanges,
+  shortUrl,
   urlError,
   urlForLink,
 } from '../src/ui/link-fields.ts';
@@ -93,5 +96,38 @@ describe('por atributo', () => {
     );
     expect(linkHref('TITULO', 'foo.com')).toBeUndefined();
     expect(linkHref('DOI', ' ')).toBeUndefined();
+  });
+});
+
+describe('todo endereço da prévia vira link', () => {
+  it('pelo valor (http, https, www.) em qualquer campo, e e-mail como mailto', () => {
+    expect(linkHref('OUTRA-COISA', 'www.ufrgs.br')).toBe('https://www.ufrgs.br');
+    expect(linkHref('OUTRA-COISA', 'http://foo.com/a')).toBe('http://foo.com/a');
+    expect(linkHref('OUTRA-COISA', 'texto qualquer')).toBeUndefined();
+    expect(linkHref('E-MAIL', 'ana@ufrgs.br')).toBe('mailto:ana@ufrgs.br');
+    expect(linkHref('E-MAIL', 'sem arroba')).toBeUndefined();
+  });
+
+  it('encurta o texto do link como antes', () => {
+    expect(shortUrl('https://www.ufrgs.br/genetica/')).toBe('ufrgs.br/genetica');
+    expect(shortUrl('www.ufrgs.br')).toBe('ufrgs.br');
+  });
+
+  it('acha endereços e e-mails no texto corrido, sem a pontuação final', () => {
+    expect(linkPieces('DOI: https://doi.org/10.5555/a.1.')).toEqual([
+      { text: 'DOI: ' },
+      { href: 'https://doi.org/10.5555/a.1', text: 'https://doi.org/10.5555/a.1' },
+      { text: '.' },
+    ]);
+    expect(linkPieces('I: ana@ufrgs.br, R: ana@gmail.com')).toEqual([
+      { text: 'I: ' },
+      { href: 'mailto:ana@ufrgs.br', text: 'ana@ufrgs.br' },
+      { text: ', R: ' },
+      { href: 'mailto:ana@gmail.com', text: 'ana@gmail.com' },
+    ]);
+    expect(linkPieces('nada aqui')).toEqual([{ text: 'nada aqui' }]);
+    expect(linkRanges('ver https://a.com/x, fim')).toEqual([
+      { end: 19, href: 'https://a.com/x', start: 4 },
+    ]);
   });
 });

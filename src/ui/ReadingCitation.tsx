@@ -1,12 +1,13 @@
 // Produção no modo de leitura: a referência da NBR 6023, com o destaque em
 // itálico, e abaixo dela os campos preenchidos que a referência não mostra.
 
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 
 import type { XElement } from '../model/xml.ts';
+import { linkRanges } from './link-fields.ts';
 import { curlyQuotes } from './reading.ts';
 import { outsideReference, type Piece, referencePieces } from './reading-reference.ts';
-import { Rows } from './ReadingParts.tsx';
+import { ExternalLink, Rows } from './ReadingParts.tsx';
 import { useLayoutOptions } from './use-reading-options.ts';
 
 /**
@@ -20,9 +21,7 @@ export function CitationReading({ el, kind }: { el: XElement; kind?: string }) {
     <>
       <p className="rr-text rr-ref">
         {kind && <span className="rr-kind">{kind}</span>}
-        {referencePieces(el, opts).map((p, i) => (
-          <PieceText key={i} piece={p} />
-        ))}
+        <ReferenceText pieces={referencePieces(el, opts)} />
       </p>
       <Rows parts={outsideReference(el, opts)} quiet={true} />
     </>
@@ -39,4 +38,51 @@ function PieceText({ piece }: { piece: Piece }) {
   let node: ReactNode = piece.strong ? <em>{text}</em> : text;
   for (const key of [...piece.keys].reverse()) node = <span data-part={key}>{node}</span>;
   return node;
+}
+
+/**
+ * A referência inteira. Os endereços dela ("DOI: https://doi.org/…") viram
+ * link sobre os pedaços, que podem vir partidos (o prefixo fixo e o DOI do
+ * campo): o texto e a pontuação não mudam, e cada pedaço continua com a
+ * chave dele dentro do link.
+ */
+function ReferenceText({ pieces }: { pieces: Piece[] }) {
+  const links = linkRanges(pieces.map((p) => p.text).join(''));
+  const cut: { link: number; piece: Piece }[] = [];
+  let pos = 0;
+  for (const piece of pieces) {
+    const start = pos;
+    const end = pos + piece.text.length;
+    const points = new Set([start, end]);
+    for (const l of links) {
+      if (l.start > start && l.start < end) points.add(l.start);
+      if (l.end > start && l.end < end) points.add(l.end);
+    }
+    const sorted = [...points].sort((a, b) => a - b);
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const a = sorted[i]!;
+      const b = sorted[i + 1]!;
+      cut.push({
+        link: links.findIndex((l) => l.start <= a && l.end >= b),
+        piece: { ...piece, text: piece.text.slice(a - start, b - start) },
+      });
+    }
+    pos = end;
+  }
+  const groups: { link: number; pieces: Piece[] }[] = [];
+  for (const c of cut) {
+    const last = groups.at(-1);
+    if (last && last.link === c.link && c.link >= 0) last.pieces.push(c.piece);
+    else groups.push({ link: c.link, pieces: [c.piece] });
+  }
+  return groups.map((g, i) => {
+    const body = g.pieces.map((p, j) => <PieceText key={j} piece={p} />);
+    return g.link >= 0 ? (
+      <ExternalLink key={i} href={links[g.link]!.href}>
+        {body}
+      </ExternalLink>
+    ) : (
+      <Fragment key={i}>{body}</Fragment>
+    );
+  });
 }
