@@ -16,7 +16,10 @@
 //   anuncia 'alterar-evento' (compat.ts).
 // - EDIT_EVENTO_ENABLED (LAT-58), DESLIGADA até um teste acompanhado: eventos
 //   de convidado e participante, e a forma, o tipo, a natureza e a cidade em
-//   qualquer evento. Ligada, ela também cobre o que a outra cobre.
+//   qualquer evento. Ligada, ela também cobre o que a outra cobre. Trocar a
+//   forma de ouvinte para outra fica à mão mesmo com ela ligada (planShape).
+//   A extensão confere a chave da própria montagem antes de gravar
+//   (apply.ts, ApplyGates).
 //
 // O que é observado e o que é inferido no caminho da segunda chave:
 // - F_FORMA ↔ FORMA-PARTICIPACAO e f_cidade ↔ CIDADE-DO-EVENTO: observados na
@@ -78,6 +81,17 @@ export interface EventoOp extends OpBase {
 
 export function isEventoOp(op: BridgeOp): op is EventoOp {
   return op.kind === 'evento';
+}
+
+/** Campos que só o caminho de EDIT_EVENTO_ENABLED manda. */
+const FULL_FIELDS = ['F_COD_PROD', 'F_FORMA', 'F_TPO', 'f_cidade'];
+
+/**
+ * A operação é do caminho de EDIT_EVENTO_ENABLED (convidado, participante,
+ * forma, tipo, natureza ou cidade), e não do de ouvinte, já testado.
+ */
+export function isFullEvento(op: EventoOp): boolean {
+  return op.expect.F_FORMA !== OUVINTE || FULL_FIELDS.some((f) => f in op.set);
 }
 
 /**
@@ -373,7 +387,19 @@ function planShape(
 
   const ouvinteAfter = shape.formaAfter === OUVINTE_XML;
   const ouvinteBefore = shape.formaBefore === OUVINTE_XML;
-  if (ouvinteAfter && shape.tipoAfter) {
+  if (ouvinteBefore && !ouvinteAfter) {
+    // Na página, a lista F_TPO é montada por script (montaTipoApres(), censo
+    // de 15/10/2026: scriptFilled), e o HTML lido de volta não traz o tipo
+    // gravado. Depois do envio, a releitura acusaria "não gravou" num evento
+    // já trocado, sem desfazer. Fica à mão até o teste acompanhado mostrar
+    // como a edição de um convidado traz o tipo.
+    return {
+      reason: `Trocar a forma de ouvinte para ${shape.formaAfter.toLowerCase()} pelo conector espera o teste acompanhado: o Lattes monta o tipo da participação por script, e a releitura não o vê`,
+    };
+  }
+  // Ouvinte não tem tipo. Um tipo antigo esquecido no XML não impede
+  // alterar o resto: só não vai, e a página manda F_TPO vazio como sempre.
+  if (ouvinteAfter && shape.tipoAfter && (changed('TIPO-PARTICIPACAO') || !ouvinteBefore)) {
     return { reason: `Ouvinte não tem ${label('TIPO-PARTICIPACAO').toLowerCase()} no Lattes` };
   }
   if (!ouvinteAfter) {

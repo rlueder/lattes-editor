@@ -158,8 +158,11 @@ a forma, o tipo, a natureza e a cidade já têm caminho no mesmo arquivo, atrás
 da chave `EDIT_EVENTO_ENABLED`, desligada até o teste acompanhado. Cada chave
 de alteração dessas tem uma capacidade da extensão (`GATED_EDITS`, em
 `src/bridge/plan.ts`), que só entra em `BRIDGE_FEATURES` quando a chave liga.
-Quando a operação não muda nada no formulário (a natureza de um evento, que só
-se confere), o conector confere o "antes" e não envia.
+Quando uma operação de evento não muda nada no formulário (a natureza, que só
+se confere), o conector confere o "antes" e não envia; os outros tipos
+sempre enviam. A extensão também confere as chaves da própria montagem
+(`ApplyGates`, em `src/bridge/apply.ts`): uma operação de tipo desligado
+nela para sem enviar.
 
 Prêmios e formação complementar seguem o mesmo caminho em
 `src/bridge/edit-lists.ts`, cada um com a própria chave, desligada. Como a

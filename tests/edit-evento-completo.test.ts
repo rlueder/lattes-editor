@@ -5,11 +5,11 @@
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { applyOp } from '../src/bridge/apply.ts';
+import { type ApplyGates, applyOp } from '../src/bridge/apply.ts';
 import { EDIT_EVENTO_ENABLED, editContract, type EventoOp } from '../src/bridge/edit-items.ts';
 import { opRows } from '../src/bridge/field-labels.ts';
 import { planChanges } from '../src/bridge/plan.ts';
-import { sentEntry, undoOp } from '../src/bridge/sent-log.ts';
+import { noUndoReason, sentEntry, undoOp } from '../src/bridge/sent-log.ts';
 import { diffDocuments } from '../src/model/changes.ts';
 import { encodeLatin1 } from '../src/model/latin1.ts';
 import { getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
@@ -76,6 +76,9 @@ function onlyReason(edit: (root: XElement) => void): string {
   expect(plan.ops).toEqual([]);
   return plan.unsupported.map((u) => u.reason).join(' | ');
 }
+
+/** As chaves ligadas do lado da extensão, como numa montagem com elas ligadas. */
+const GATES: ApplyGates = { editEvento: true, lists: new Set(['formacao-complementar', 'premio']) };
 
 let open: LattesSimuladoNoTeste | undefined;
 afterEach(async () => {
@@ -176,28 +179,17 @@ describe('alteração de evento completa: plano', () => {
     expect(convidado.set).toEqual({ f_cidade: '', F_TPO: 'Conferencista' });
   });
 
-  it('forma: de ouvinte para convidado leva tipo e título; de volta, tipo vazio', () => {
-    const op = onlyOp((root) => {
-      const b = basics(root, '12');
-      setAttr(b, 'FORMA-PARTICIPACAO', 'Convidado');
-      setAttr(b, 'TIPO-PARTICIPACAO', 'Moderador');
-      setAttr(b, 'TITULO', 'Mesa redonda');
-    });
-    expect(op.set).toEqual({ F_FORMA: '38', F_TPO: 'Moderador', f_titulo: 'Mesa redonda' });
-    expect(op.expect).toEqual({
-      f_ano: '2019',
-      f_cidade: 'Porto Alegre',
-      F_COD_PROD: 'A31',
-      F_FORMA: '40',
-      f_nme_evento: 'Congresso Brasileiro de Exemplo',
-      F_TPO: '',
-      f_titulo: '',
-    });
-    expect(opRows(op).map((r) => [r.label, r.before, r.after])).toEqual([
-      ['Título', '(vazio)', 'Mesa redonda'],
-      ['Forma de participação', 'Ouvinte', 'Convidado'],
-      ['Tipo de participação', '(vazio)', 'Moderador'],
-    ]);
+  it('forma: sair de ouvinte fica à mão; voltar a ouvinte leva o tipo vazio', () => {
+    // A página monta o tipo por script: depois do envio, a releitura não o
+    // veria, e o evento ficaria trocado com "não gravou".
+    expect(
+      onlyReason((root) => {
+        const b = basics(root, '12');
+        setAttr(b, 'FORMA-PARTICIPACAO', 'Convidado');
+        setAttr(b, 'TIPO-PARTICIPACAO', 'Moderador');
+        setAttr(b, 'TITULO', 'Mesa redonda');
+      }),
+    ).toMatch(/^Trocar a forma de ouvinte para convidado pelo conector espera o teste acompanhado/);
     const back = onlyOp((root) => {
       const b = basics(root, '13');
       setAttr(b, 'FORMA-PARTICIPACAO', 'Ouvinte');
@@ -205,18 +197,36 @@ describe('alteração de evento completa: plano', () => {
     });
     expect(back.set).toEqual({ F_FORMA: '40', F_TPO: '' });
     expect(back.expect).toMatchObject({ F_FORMA: '38', F_TPO: 'Conferencista' });
+    expect(opRows(back).map((r) => [r.label, r.before, r.after])).toEqual([
+      ['Forma de participação', 'Convidado', 'Ouvinte'],
+      ['Tipo de participação', 'Conferencista', '(vazio)'],
+    ]);
+  });
+
+  it('ouvinte com um tipo antigo no XML segue alterável; o tipo não vai', () => {
+    const xml = XML.replace(
+      'TIPO-PARTICIPACAO="" FORMA-PARTICIPACAO="Ouvinte"',
+      'TIPO-PARTICIPACAO="Conferencista" FORMA-PARTICIPACAO="Ouvinte"',
+    );
+    const original = parseXml(xml).root;
+    const working = parseXml(xml).root;
+    setAttr(basics(working, '12'), 'TITULO', 'Novo');
+    const plan = planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: '' })),
+      working,
+      { editEvento: true },
+    );
+    expect(plan.unsupported).toEqual([]);
+    expect(plan.ops[0]!.set).toEqual({ f_titulo: 'Novo' });
   });
 
   it('segue as regras do check(): tipo e título de quem apresentou, ouvinte sem tipo', () => {
-    expect(
-      onlyReason((root) => setAttr(basics(root, '12'), 'FORMA-PARTICIPACAO', 'Convidado')),
-    ).toBe('O Lattes exige o tipo de participação de convidado');
-    expect(
-      onlyReason((root) => {
-        setAttr(basics(root, '12'), 'FORMA-PARTICIPACAO', 'Participante');
-        setAttr(basics(root, '12'), 'TIPO-PARTICIPACAO', 'Apresentação oral');
-      }),
-    ).toBe('O Lattes exige o título da apresentação de participante');
+    expect(onlyReason((root) => setAttr(basics(root, '13'), 'TIPO-PARTICIPACAO', ''))).toBe(
+      'O Lattes exige o tipo de participação de convidado',
+    );
+    expect(onlyReason((root) => setAttr(basics(root, '15'), 'TITULO', ''))).toBe(
+      'O Lattes exige o título da apresentação de participante',
+    );
     expect(
       onlyReason((root) => setAttr(basics(root, '13'), 'TIPO-PARTICIPACAO', 'Poster / Painel')),
     ).toBe('Tipo de participação que o Lattes não tem para Convidado: Poster / Painel');
@@ -268,10 +278,22 @@ describe('alteração de evento completa: plano', () => {
 const opFor = (edit: (root: XElement) => void): EventoOp => onlyOp(edit);
 
 describe('alteração de evento completa: aplicar no Lattes simulado', () => {
-  it('convidado: envia o título com o tipo gravado e confere', async () => {
+  it('convidado, com a página como a observada: o tipo não aparece, e nada é enviado', async () => {
+    // A lista F_TPO vem só com a opção vazia (o script monta o resto). A
+    // conferência do tipo para antes de mandar F_TPO vazio e apagá-lo.
     const lattes = await lattesFor();
     const op = opFor((root) => setAttr(basics(root, '13'), 'TITULO', 'Conferência nova'));
-    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({
+      detail: 'O Lattes não está como o editor espera: Tipo de participação',
+      status: 'divergente',
+    });
+    expect(postsOf(lattes)).toEqual([]);
+  });
+
+  it('convidado, se a edição mostrar o tipo gravado: envia o título com ele e confere', async () => {
+    const lattes = await lattesFor({ tpoRendered: true });
+    const op = opFor((root) => setAttr(basics(root, '13'), 'TITULO', 'Conferência nova'));
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({ status: 'conferido' });
     expect(getAttr(basicsIn(lattes, '13'), 'TITULO')).toBe('Conferência nova');
     expect(getAttr(basicsIn(lattes, '13'), 'TIPO-PARTICIPACAO')).toBe('Conferencista');
     const post = lattes.state.log.find((l) => l.method === 'POST')!;
@@ -279,36 +301,64 @@ describe('alteração de evento completa: aplicar no Lattes simulado', () => {
     expect(post.pairs).toContainEqual(['F_FORMA', '38']);
   });
 
-  it('troca a forma e o tipo, e volta pelo desfazer', async () => {
+  it('de ouvinte para participante com o tipo não mostrado: o envio deixaria o evento trocado', async () => {
+    // Por isso o plano recusa (planShape). Aqui, a operação montada à mão
+    // mostra o que aconteceria: gravado, mas a releitura não vê o tipo.
     const lattes = await lattesFor();
-    const op = opFor((root) => {
-      const b = basics(root, '12');
-      setAttr(b, 'FORMA-PARTICIPACAO', 'Participante');
-      setAttr(b, 'TIPO-PARTICIPACAO', 'Apresentação oral');
-      setAttr(b, 'TITULO', 'Comunicação');
+    const op: EventoOp = {
+      expect: { F_COD_PROD: 'A31', F_FORMA: '40', F_TPO: '' },
+      key: 'k',
+      kind: 'evento',
+      label: 'Evento',
+      seq: '12',
+      set: { F_FORMA: '39', F_TPO: 'Apresentação oral', f_titulo: 'Comunicação' },
+    };
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({
+      detail: 'O Lattes não gravou: Tipo de participação',
+      status: 'erro',
     });
-    expect((await applyOp(op, lattes.port)).status).toBe('conferido');
-    const b = basicsIn(lattes, '12');
-    expect(getAttr(b, 'FORMA-PARTICIPACAO')).toBe('Participante');
-    expect(getAttr(b, 'TIPO-PARTICIPACAO')).toBe('Apresentação oral');
-    const undo = undoOp({ ...sentEntry(op, '1', 1000), id: 3 })!;
-    expect(undo.set).toEqual({ F_FORMA: '40', F_TPO: '', f_titulo: '' });
-    expect((await applyOp(undo, lattes.port)).status).toBe('conferido');
+    expect(getAttr(basicsIn(lattes, '12'), 'FORMA-PARTICIPACAO')).toBe('Participante');
+  });
+
+  it('de convidado para ouvinte vai, e não oferece desfazer', async () => {
+    const lattes = await lattesFor({ tpoRendered: true });
+    const op = opFor((root) => {
+      const b = basics(root, '13');
+      setAttr(b, 'FORMA-PARTICIPACAO', 'Ouvinte');
+      setAttr(b, 'TIPO-PARTICIPACAO', '');
+    });
+    expect((await applyOp(op, lattes.port, GATES)).status).toBe('conferido');
+    const b = basicsIn(lattes, '13');
     expect(getAttr(b, 'FORMA-PARTICIPACAO')).toBe('Ouvinte');
     expect(getAttr(b, 'TIPO-PARTICIPACAO')).toBe('');
+    expect(noUndoReason(op)).toMatch(/^Voltar de ouvinte para convidado ou participante/);
+    expect(undoOp({ ...sentEntry(op, '1', 1000), id: 3 })).toBeUndefined();
+  });
+
+  it('a extensão com a chave desligada não grava convidado nem cidade, e grava ouvinte', async () => {
+    const lattes = await lattesFor({ tpoRendered: true });
+    const off: ApplyGates = { editEvento: false, lists: new Set() };
+    const reason = 'Esta extensão só altera eventos de ouvinte; a alteração fica à mão';
+    const convidado = opFor((root) => setAttr(basics(root, '13'), 'TITULO', 'Nova'));
+    expect(await applyOp(convidado, lattes.port, off)).toMatchObject({ detail: reason });
+    const cidade = opFor((root) => setAttr(detail(root, '12'), 'CIDADE-DO-EVENTO', 'Pelotas'));
+    expect(await applyOp(cidade, lattes.port, off)).toMatchObject({ detail: reason });
+    expect(postsOf(lattes)).toEqual([]);
+    const ouvinte = opFor((root) => setAttr(basics(root, '12'), 'TITULO', 'Novo'));
+    expect((await applyOp(ouvinte, lattes.port, off)).status).toBe('conferido');
   });
 
   it('cidade gravada e conferida', async () => {
     const lattes = await lattesFor();
     const op = opFor((root) => setAttr(detail(root, '12'), 'CIDADE-DO-EVENTO', 'Pelotas'));
-    expect((await applyOp(op, lattes.port)).status).toBe('conferido');
+    expect((await applyOp(op, lattes.port, GATES)).status).toBe('conferido');
     expect(getAttr(detailIn(lattes, '12'), 'CIDADE-DO-EVENTO')).toBe('Pelotas');
   });
 
   it('a natureza que já está no Lattes não gera envio', async () => {
-    const lattes = await lattesFor();
+    const lattes = await lattesFor({ tpoRendered: true });
     const op = opFor((root) => setAttr(basics(root, '15'), 'NATUREZA', 'Encontro'));
-    expect(await applyOp(op, lattes.port)).toMatchObject({
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({
       detail: 'O Lattes já estava assim; nada foi enviado',
       status: 'conferido',
     });
@@ -324,9 +374,10 @@ describe('alteração de evento completa: aplicar no Lattes simulado', () => {
       intercept: faults.rewritePages(/^PKG_EVENTO\.form$/i, (html) =>
         html.replace(/<option value="Conferencista"[^>]*>Conferencista<\/option>/, ''),
       ),
+      tpoRendered: true,
     });
     const op = opFor((root) => setAttr(basics(root, '13'), 'TITULO', 'Nova'));
-    expect(await applyOp(op, lattes.port)).toMatchObject({
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({
       detail: 'O Lattes não está como o editor espera: Tipo de participação',
       status: 'divergente',
     });
@@ -337,7 +388,7 @@ describe('alteração de evento completa: aplicar no Lattes simulado', () => {
     const lattes = await lattesFor();
     setAttr(basicsIn(lattes, '13'), 'FORMA-PARTICIPACAO', 'Participante');
     const op = opFor((root) => setAttr(basics(root, '13'), 'TITULO', 'Nova'));
-    const r = await applyOp(op, lattes.port);
+    const r = await applyOp(op, lattes.port, GATES);
     expect(r.status).toBe('divergente');
     expect(r.detail).toMatch(/Forma de participação/);
     expect(postsOf(lattes)).toEqual([]);

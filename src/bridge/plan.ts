@@ -95,9 +95,12 @@ export interface PlanOptions {
 /**
  * Chaves de alteração que dependem de uma capacidade da extensão. Cada uma
  * entra em BRIDGE_FEATURES (compat.ts) no mesmo commit em que a chave liga, e
- * só então: uma extensão que anunciasse a capacidade com a chave desligada não
- * teria o formulário no contrato e gravaria sem conferir. O teste
- * tests/edit-flags.test.ts cobra as duas coisas juntas.
+ * só então, e sai no commit em que ela voltar a desligar (a exceção à regra
+ * de compat.ts de que capacidade não sai): uma extensão que anunciasse a
+ * capacidade com a chave desligada não teria o formulário no contrato. Mesmo
+ * assim, applyOp recusa o tipo desligado na montagem dela (apply.ts,
+ * ApplyGates). O teste tests/edit-flags.test.ts cobra chave e capacidade
+ * juntas.
  */
 export const GATED_EDITS: readonly {
   enabled: boolean;

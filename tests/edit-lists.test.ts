@@ -5,7 +5,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { applyOp } from '../src/bridge/apply.ts';
+import { type ApplyGates, applyOp } from '../src/bridge/apply.ts';
 import { checkContract, type Contract, LATTES_CONTRACT } from '../src/bridge/contract.ts';
 import {
   EDIT_FORMACAO_COMPL_ENABLED,
@@ -75,6 +75,9 @@ function onlyReason(edit: (root: XElement) => void, options: PlanOptions = ON): 
   expect(plan.ops).toEqual([]);
   return plan.unsupported.map((u) => u.reason).join(' | ');
 }
+
+/** As chaves ligadas do lado da extensão, como numa montagem com elas ligadas. */
+const GATES: ApplyGates = { editEvento: true, lists: new Set(['formacao-complementar', 'premio']) };
 
 let open: LattesSimuladoNoTeste | undefined;
 afterEach(async () => {
@@ -193,7 +196,7 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
   it('prêmio: abre as linhas, acha a única igual, envia e confere', async () => {
     const lattes = await lattesFor();
     const op = onlyOp((root) => setAttr(premios(root)[1]!, 'NOME-DA-ENTIDADE-PROMOTORA', 'SBX'));
-    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({ status: 'conferido' });
     expect(getAttr(premioIn(lattes, 1), 'NOME-DA-ENTIDADE-PROMOTORA')).toBe('SBX');
     expect(getAttr(premioIn(lattes, 2), 'NOME-DA-ENTIDADE-PROMOTORA')).toBe('Sociedade Fictícia');
     const post = lattes.state.log.find((l) => l.method === 'POST')!;
@@ -207,10 +210,10 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
     const op = onlyOp((root) =>
       setAttr(premios(root)[0]!, 'NOME-DO-PREMIO-OU-TITULO', 'Prêmio Pesquisador'),
     );
-    expect((await applyOp(op, lattes.port)).status).toBe('conferido');
+    expect((await applyOp(op, lattes.port, GATES)).status).toBe('conferido');
     const undo = undoOp({ ...sentEntry(op, '1', 1000), id: 2 })!;
     expect(undo).toMatchObject({ kind: 'premio', set: { f_titulo: 'Prêmio Jovem Pesquisador' } });
-    expect((await applyOp(undo, lattes.port)).status).toBe('conferido');
+    expect((await applyOp(undo, lattes.port, GATES)).status).toBe('conferido');
     expect(getAttr(premioIn(lattes, 0), 'NOME-DO-PREMIO-OU-TITULO')).toBe(
       'Prêmio Jovem Pesquisador',
     );
@@ -220,13 +223,13 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
     const lattes = await lattesFor();
     setAttr(premioIn(lattes, 2), 'ANO-DA-PREMIACAO', '2020');
     const op = onlyOp((root) => setAttr(premios(root)[1]!, 'NOME-DA-ENTIDADE-PROMOTORA', 'SBX'));
-    expect(await applyOp(op, lattes.port)).toMatchObject({
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({
       detail: 'Mais de um item de prêmios e títulos igual no Lattes',
       status: 'erro',
     });
     setAttr(premioIn(lattes, 1), 'NOME-DA-ENTIDADE-PROMOTORA', 'Outra');
     setAttr(premioIn(lattes, 2), 'NOME-DA-ENTIDADE-PROMOTORA', 'Outra');
-    expect(await applyOp(op, lattes.port)).toMatchObject({
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({
       detail: 'Item de prêmios e títulos não encontrado no Lattes',
       status: 'erro',
     });
@@ -239,7 +242,7 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
     const op = onlyOp((root) =>
       setAttr(premios(root)[0]!, 'NOME-DO-PREMIO-OU-TITULO', 'Prêmio Pesquisador'),
     );
-    expect(await applyOp(op, lattes.port)).toMatchObject({
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({
       detail: 'O Lattes não está como o editor espera: Nome do prêmio ou título',
       status: 'divergente',
     });
@@ -256,18 +259,79 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
       match: { f_agencia: 'Fundação Exemplo', f_titulo: 'Prêmio Jovem Pesquisador' },
       set: { f_ano: '2018' },
     };
-    expect(await applyOp(op, lattes.port)).toMatchObject({
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({
       detail: 'Gravado e conferido no Lattes',
       status: 'conferido',
     });
     expect(postsOf(lattes)).toHaveLength(1);
   });
 
+  it('prêmio: para no segundo item igual, sem ler o resto da lista', async () => {
+    const lattes = await lattesFor();
+    setAttr(premioIn(lattes, 0), 'NOME-DO-PREMIO-OU-TITULO', 'Menção honrosa');
+    setAttr(premioIn(lattes, 0), 'NOME-DA-ENTIDADE-PROMOTORA', 'Sociedade Fictícia');
+    setAttr(premioIn(lattes, 0), 'ANO-DA-PREMIACAO', '2020');
+    const op = onlyOp((root) => setAttr(premios(root)[1]!, 'NOME-DA-ENTIDADE-PROMOTORA', 'SBX'));
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({
+      detail: 'Mais de um item de prêmios e títulos igual no Lattes',
+      status: 'erro',
+    });
+    const forms = lattes.state.log.filter(
+      (l) => l.method === 'GET' && /^pkg_premio\.form$/i.test(l.proc),
+    );
+    expect(forms).toHaveLength(2);
+  });
+
+  it('prêmio: um envio que inclui em vez de alterar é acusado', async () => {
+    // O Lattes simulado, depois do POST, ganha uma linha: como se o envio
+    // tivesse sido lido como inclusão.
+    const lattes = await lattesFor({
+      intercept: faults.afterPost((_req, state) => {
+        const container = findIn(state.root, (el) => el.name === 'PREMIOS-TITULOS')!;
+        const copy = parseXml(
+          '<PREMIO-TITULO NOME-DO-PREMIO-OU-TITULO="Cópia" NOME-DA-ENTIDADE-PROMOTORA="X" ANO-DA-PREMIACAO="2018"/>',
+        ).root;
+        container.children.push(copy);
+      }),
+    });
+    const op = onlyOp((root) => setAttr(premios(root)[0]!, 'ANO-DA-PREMIACAO', '2019'));
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({
+      detail:
+        'O Lattes incluiu uma linha nova em vez de alterar (3 antes, 4 depois): confira a lista no Lattes e exclua a cópia',
+      status: 'erro',
+    });
+  });
+
+  it('prêmio: o ano vai com quatro dígitos', () => {
+    expect(onlyReason((root) => setAttr(premios(root)[0]!, 'ANO-DA-PREMIACAO', '19'))).toMatch(
+      /com quatro dígitos$/,
+    );
+  });
+
+  it('a extensão com a chave desligada não grava prêmio nem formação complementar', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp((root) => setAttr(premios(root)[0]!, 'ANO-DA-PREMIACAO', '2019'));
+    expect(
+      await applyOp(op, lattes.port, {
+        editEvento: true,
+        lists: new Set(['formacao-complementar']),
+      }),
+    ).toMatchObject({
+      detail: 'Esta extensão não tem o formulário deste tipo no contrato; a alteração fica à mão',
+      status: 'erro',
+    });
+    // Sem as opções, vale a montagem: as duas chaves desligadas.
+    expect((await applyOp(op, lattes.port)).status).toBe('erro');
+    expect(lattes.state.log.filter((l) => l.method === 'GET' && /premio/i.test(l.proc))).toEqual(
+      [],
+    );
+  });
+
   it('sem a lista no menu, para antes de ler', async () => {
     const lattes = await lattesFor();
     const port = { ...lattes.port, menuHtml: () => '<a href="pkg_idioma.lista?f_cod=x">x</a>' };
     const op = onlyOp((root) => setAttr(premios(root)[0]!, 'ANO-DA-PREMIACAO', '2019'));
-    expect(await applyOp(op, port)).toMatchObject({
+    expect(await applyOp(op, port, GATES)).toMatchObject({
       detail: 'Lista de prêmios e títulos não encontrada no menu do Lattes',
       status: 'erro',
     });
@@ -279,7 +343,7 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
       setAttr(compl(root, '5'), 'CARGA-HORARIA', '60');
       setAttr(compl(root, '5'), 'STATUS-DO-CURSO', 'CONCLUIDO');
     });
-    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({ status: 'conferido' });
     const el = compl(lattes.state.root, '5');
     expect(getAttr(el, 'CARGA-HORARIA')).toBe('60');
     expect(getAttr(el, 'STATUS-DO-CURSO')).toBe('CONCLUIDO');
@@ -289,15 +353,47 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
     expect(post.pairs).toContainEqual(['f_ctr', '']);
   });
 
+  it('formação complementar: desfaz pelo registro', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp((root) => {
+      setAttr(compl(root, '5'), 'CARGA-HORARIA', '60');
+      setAttr(compl(root, '5'), 'STATUS-DO-CURSO', 'CONCLUIDO');
+    });
+    expect((await applyOp(op, lattes.port, GATES)).status).toBe('conferido');
+    const undo = undoOp({ ...sentEntry(op, '1', 1000), id: 5 })!;
+    expect(undo).toMatchObject({ set: { f_carga: '40', F_STATUS: 'N' } });
+    expect((await applyOp(undo, lattes.port, GATES)).status).toBe('conferido');
+    const el = compl(lattes.state.root, '5');
+    expect(getAttr(el, 'CARGA-HORARIA')).toBe('40');
+    expect(getAttr(el, 'STATUS-DO-CURSO')).toBe('EM_ANDAMENTO');
+  });
+
+  it('formação complementar: instituição ou curso que mudam junto são acusados', async () => {
+    const lattes = await lattesFor({
+      intercept: faults.afterPost((_req, state) =>
+        setAttr(
+          findIn(state.root, (el) => getAttr(el, 'SEQUENCIA-FORMACAO') === '5')!,
+          'NOME-INSTITUICAO',
+          'Outra escola',
+        ),
+      ),
+    });
+    const op = onlyOp((root) => setAttr(compl(root, '5'), 'CARGA-HORARIA', '60'));
+    const r = await applyOp(op, lattes.port, GATES);
+    expect(r.status).toBe('erro');
+    expect(r.detail).toMatch(/^Outros campos mudaram no Lattes: .*Instituição/);
+  });
+
   it('formação complementar: outro nível no Lattes, nada é enviado', async () => {
     const lattes = await lattesFor();
     const el = compl(lattes.state.root, '5');
     el.attrs = el.attrs.map((a) => (a.name === 'NIVEL' ? { ...a, value: 'F' } : a));
     const op = onlyOp((root) => setAttr(compl(root, '5'), 'CARGA-HORARIA', '60'));
-    expect(await applyOp(op, lattes.port)).toMatchObject({
-      // O nível também acha a linha: com outro, nenhuma é a do editor.
-      detail: 'Item de formação complementar não encontrado no Lattes',
-      status: 'erro',
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({
+      // Nenhuma linha com o antes; achada pelo curso e pela instituição, a
+      // conferência estrita acusa o nível.
+      detail: 'O Lattes não está como o editor espera: Nível',
+      status: 'divergente',
     });
     expect(postsOf(lattes)).toEqual([]);
   });
@@ -309,7 +405,7 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
       ),
     });
     const op = onlyOp((root) => setAttr(compl(root, '4'), 'CARGA-HORARIA', '30'));
-    expect((await applyOp(op, lattes.port)).detail).toBe(
+    expect((await applyOp(op, lattes.port, GATES)).detail).toBe(
       'O formulário não está em modo de alteração',
     );
     expect(postsOf(lattes)).toEqual([]);

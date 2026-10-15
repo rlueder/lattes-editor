@@ -924,13 +924,26 @@ teste acompanhado, e cobertos no Lattes simulado. O que cada um usa:
 - As regras do `check()` valem antes de enviar: convidado e participante
   pedem tipo da lista da forma e título; ouvinte não tem tipo.
 
-No teste acompanhado, num evento de teste de convidado: abrir o formulário
-pela lista e ver se o tipo gravado vem marcado no HTML (se não vier, a
-operação para em "Tipo de participação" e é isso que precisa ser ajustado);
-trocar título e cidade e conferir a releitura; trocar a forma de ouvinte para
-participante com tipo e título, e voltar pelo "Desfazer"; conferir na
-exportação seguinte que `FORMA-PARTICIPACAO` e `TIPO-PARTICIPACAO` vieram com
-os textos enviados.
+Trocar a forma de ouvinte para convidado ou participante fica à mão: a
+página monta a lista `F_TPO` por script (`montaTipoApres()`; o censo de
+15/10/2026 marcou o campo como preenchido por script), e depois do envio a
+releitura do HTML não veria o tipo gravado, deixando o evento trocado com
+"não gravou". Pelo mesmo motivo, a troca de convidado ou participante para
+ouvinte não oferece "Desfazer".
+
+No teste acompanhado, nesta ordem:
+
+1. Num evento de teste de convidado, abrir o formulário pela lista e ver se o
+   tipo gravado vem marcado no HTML. Se não vier, toda alteração de convidado
+   e participante para em "Tipo de participação", sem enviar nada, e é isso
+   que precisa ser ajustado antes do resto (ler o tipo da chamada de
+   `montaTipoApres()`, se o script trouxer os argumentos).
+2. Se vier: trocar título e cidade e conferir a releitura.
+3. Trocar a forma de convidado para ouvinte e conferir a releitura.
+4. Conferir na exportação seguinte que `FORMA-PARTICIPACAO` e
+   `TIPO-PARTICIPACAO` vieram com os textos enviados.
+5. Só então decidir se a troca de ouvinte para convidado ou participante pode
+   ir pelo conector.
 
 O formulário não tem idioma, meio de divulgação, relevância, palavras-chave,
 áreas nem participantes, embora o XSD tenha esses campos no evento.
@@ -1005,16 +1018,27 @@ os campos alterados trocados, e lê de volta.
   inglês não tem campo.
 - Formação complementar: carga horária e status, com o nível na conferência
   e o curso e a instituição (os ocultos `f_curso_old` e `f_inst_old`) para
-  achar a linha, ligações **observadas**. O envio vai para `FORM2` com o
+  achar a linha. As ligações de carga, status, curso e instituição são
+  **observadas**; que `f_nivel` seja o `NIVEL` do XML é **inferido** (a
+  passada de edição não ligou o campo ao atributo). Instituição e curso
+  visíveis vêm desabilitados e não vão no envio; a releitura confere que não
+  mudaram. O envio vai para `FORM2` com o
   `f_ctr` vazio que a página traz (**inferido** que grave assim), e N e I do
   status como `EM_ANDAMENTO` e `INCOMPLETO` vêm do rótulo (**inferido**; só
   "concluído" foi visto). Instituição e curso mudam só pelas buscas, e o
   formulário não tem os anos nem o nome do curso em inglês: ficam à mão.
 
-No teste acompanhado: num prêmio de teste, trocar a entidade promotora e
-conferir a releitura e a exportação; numa formação complementar de teste,
-trocar a carga horária e o status para "em andamento", conferir a releitura,
-a exportação (`STATUS-DO-CURSO`) e que o curso e a instituição não mudaram.
+Nos dois, o `f_ctr` não distingue sempre incluir de alterar (o da formação
+complementar vem vazio na inclusão e na edição). Depois do envio, o conector
+conta de novo as linhas da lista e acusa se ela ganhou uma. Sem nenhuma linha
+com o "antes", ele tenta achar a linha só pelos outros valores, e uma única
+achada assim vira "divergente" na conferência, em vez de "não encontrado".
+
+No teste acompanhado: num prêmio de teste, trocar a entidade promotora,
+conferir a releitura, que a lista não ganhou linha, e a exportação; numa
+formação complementar de teste, trocar a carga horária e o status para "em
+andamento", conferir a releitura, que a lista não ganhou linha, a exportação
+(`STATUS-DO-CURSO`) e que o curso e a instituição não mudaram.
 
 Ficam fora, sem caminho: as áreas de atuação (`prc_area_atuacao` serializa a
 grade em `f_area_l`, e o sentido das chaves `r` e `p` não foi lido) e as

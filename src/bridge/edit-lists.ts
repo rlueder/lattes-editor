@@ -8,7 +8,9 @@
 // alterados trocados, e lê de volta (apply.ts).
 //
 // Cada tipo tem chave própria, desligada até um teste acompanhado no Lattes
-// real. O que se sabe de cada um, e o que conferir no teste, está na seção 16
+// real. Depois do envio, apply.ts conta de novo as linhas da lista (o f_ctr
+// não distingue sempre incluir de alterar) e confere os campos desabilitados
+// que identificam o item (LIST_EDIT_WATCH). O que se sabe de cada um, e o que conferir no teste, está na seção 16
 // de docs/lattes_internals.md.
 //
 // Prêmios e títulos (GN_PREMIO, POST pkg_premio.form). Observado: os campos,
@@ -244,6 +246,11 @@ export function planListEdit(
     if (t.required.includes(field) && !after.trim()) {
       return { reason: `O Lattes não aceita ${f.label.toLowerCase()} vazio` };
     }
+    // O ano do prêmio vai com quatro dígitos (inferido do check() dos outros
+    // formulários com ano, como o de eventos; o campo tem 4 caracteres).
+    if (field === 'f_ano' && kind === 'premio' && !/^\d{4}$/.test(after.trim())) {
+      return { reason: `O Lattes exige ${f.label.toLowerCase()} com quatro dígitos` };
+    }
     set[field] = after;
     expect[field] = before;
   }
@@ -326,37 +333,61 @@ export async function listEditSample(
 
 const folded = (v: string | null) => (v === null ? null : foldText(v.trim()));
 
+/** Quantas linhas a lista tem (links de edição), para saber se um envio incluiu em vez de alterar. */
+export async function countListEdits(kind: ListEditKind, menu: string, get: Get): Promise<number> {
+  const links = await editLinks(kind, menu, get);
+  if (!links) throw new Error(`Lista de ${NAMES[kind]} não encontrada no menu do Lattes`);
+  return links.length;
+}
+
 /**
  * O formulário de edição da linha cujos valores são os do item: abre o de
- * cada linha da lista e exige exatamente um. Não achar lança um Error com o
- * motivo; `get` e `read` já param quando a sessão caiu.
+ * cada linha da lista e exige exatamente um. Devolve também quantas linhas a
+ * lista tinha. Não achar lança um Error com o motivo; `get` e `read` já param
+ * quando a sessão caiu.
+ *
+ * Primeiro com o "antes" e os valores que acham a linha (match). Sem nenhum
+ * achado, tenta só com match: a linha certa cujo "antes" mudou no Lattes
+ * volta, e a conferência estrita de apply.ts a acusa como divergente, em vez
+ * de "não encontrado".
  */
 export async function locateListEdit(
   op: ListEditOp,
   menu: string,
   get: Get,
   read: Read,
-): Promise<string> {
+): Promise<{ listed: number; path: string }> {
   const links = await editLinks(op.kind, menu, get);
   if (!links) throw new Error(`Lista de ${NAMES[op.kind]} não encontrada no menu do Lattes`);
-  const want = Object.entries({ ...op.match, ...op.expect });
+  const read_: { pairs: Pairs; path: string }[] = [];
+  const matching = (pairs: Pairs, values: FieldValues) =>
+    Object.entries(values).every(([k, v]) => folded(pairValue(pairs, k)) === folded(v));
   const hits: string[] = [];
   // Lê todas as linhas para provar que só uma é a do item, mas para no
   // segundo achado: aí já não há como seguir, e o resto seria pedido à toa.
   for (const path of links) {
     const pairs = await read(path);
-    if (want.every(([k, v]) => folded(pairValue(pairs, k)) === folded(v))) hits.push(path);
-    if (hits.length > 1) break;
+    read_.push({ pairs, path });
+    if (matching(pairs, { ...op.match, ...op.expect })) hits.push(path);
+    if (hits.length > 1) {
+      throw new Error(`Mais de um item de ${NAMES[op.kind]} igual no Lattes`);
+    }
   }
-  if (hits.length !== 1) {
-    throw new Error(
-      hits.length === 0
-        ? `Item de ${NAMES[op.kind]} não encontrado no Lattes`
-        : `Mais de um item de ${NAMES[op.kind]} igual no Lattes`,
-    );
-  }
-  return hits[0]!;
+  if (hits.length === 1) return { listed: links.length, path: hits[0]! };
+  // Nenhuma com o antes: a lista inteira já foi lida, sem novo pedido.
+  const loose = read_.filter((r) => matching(r.pairs, op.match));
+  if (loose.length === 1) return { listed: links.length, path: loose[0]!.path };
+  throw new Error(`Item de ${NAMES[op.kind]} não encontrado no Lattes`);
 }
+
+/**
+ * Campos desabilitados que identificam o item e não vão no envio (o navegador
+ * não manda campo desabilitado): a releitura confere que não mudaram.
+ */
+export const LIST_EDIT_WATCH: Record<ListEditKind, string[]> = {
+  'formacao-complementar': ['f_inst', 'f_curso'],
+  premio: [],
+};
 
 // ---------------------------------------------------------------- rótulos
 
@@ -364,7 +395,9 @@ export async function locateListEdit(
 export const LIST_EDIT_FIELD_LABELS: Record<ListEditKind, Record<string, string>> = {
   'formacao-complementar': {
     f_carga: 'Carga horária',
+    f_curso: 'Curso',
     f_curso_old: 'Curso',
+    f_inst: 'Instituição',
     f_inst_old: 'Instituição',
     f_nivel: 'Nível',
     F_STATUS: 'Status do curso',

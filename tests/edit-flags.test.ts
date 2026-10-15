@@ -4,7 +4,10 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { BUILD_GATES } from '../src/bridge/apply.ts';
 import { BRIDGE_FEATURES } from '../src/bridge/compat.ts';
+import { LATTES_CONTRACT } from '../src/bridge/contract.ts';
+import { EDIT_EVENTO_ENABLED } from '../src/bridge/edit-items.ts';
 import { GATED_EDITS, planOptionsFor } from '../src/bridge/plan.ts';
 
 describe('chaves de alteração e capacidades da extensão', () => {
@@ -30,5 +33,15 @@ describe('chaves de alteração e capacidades da extensão', () => {
       expect(planOptionsFor(all)[g.option]).toBe(g.enabled);
       expect(planOptionsFor([])[g.option]).toBe(false);
     }
+  });
+});
+
+describe('chaves do lado da extensão', () => {
+  it('BUILD_GATES segue as chaves da montagem e o contrato', () => {
+    expect(BUILD_GATES.editEvento).toBe(EDIT_EVENTO_ENABLED);
+    const inContract = (['formacao-complementar', 'premio'] as const).filter(
+      (k) => LATTES_CONTRACT.forms[k] !== undefined,
+    );
+    expect([...BUILD_GATES.lists].sort()).toEqual(inContract);
   });
 });

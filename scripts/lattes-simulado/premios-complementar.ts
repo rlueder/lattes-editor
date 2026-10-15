@@ -154,8 +154,9 @@ function complBindings(state: LattesState, el: XElement): Binding[] {
     fixed('f_cod_curso2', getAttr(el, 'CODIGO-CURSO') ?? ''),
     fixed('f_inst_old', getAttr(el, 'NOME-INSTITUICAO') ?? ''),
     fixed('f_curso_old', getAttr(el, 'NOME-CURSO') ?? ''),
-    // O valor de f_tipo aqui não foi anotado (inferido: vazio).
-    fixed('f_tipo', ''),
+    // FA, como no formulário capturado no censo de 15/10/2026 (a inclusão); que
+    // a edição traga o mesmo é inferido.
+    fixed('f_tipo', 'FA'),
   ];
 }
 

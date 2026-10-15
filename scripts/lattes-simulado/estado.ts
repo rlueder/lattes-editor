@@ -45,6 +45,12 @@ export interface SimuladoOptions {
   importOutcome?: ImportOutcome;
   /** Instituições a mais na busca, além das do simulado (buscas.ts). */
   institutions?: Institution[];
+  /**
+   * Mostra no HTML do formulário de eventos o tipo de participação gravado,
+   * marcado. A página observada não mostra (o script monta a lista); serve
+   * para testar o caminho em que a edição de um convidado o trouxesse.
+   */
+  tpoRendered?: boolean;
   /** O currículo de partida; o padrão é fixtures/demo.xml. */
   xml?: Uint8Array;
 }
@@ -106,6 +112,8 @@ export class LattesState {
   importRequest?: ImportRequest;
   /** As instituições a mais que a busca encontra. */
   institutions: Institution[];
+  /** O tipo de participação gravado aparece no HTML do evento (SimuladoOptions). */
+  tpoRendered: boolean;
   lastPublished = new Date(2026, 9, 6);
   lastUpdate = new Date(2026, 9, 6);
   log: LoggedRequest[] = [];
@@ -128,6 +136,7 @@ export class LattesState {
     this.expireAfterRequests = options.expireAfterRequests;
     this.importOutcome = options.importOutcome ?? 'participante';
     this.institutions = options.institutions ?? [];
+    this.tpoRendered = options.tpoRendered ?? false;
     this.working = doc;
     this.published = structuredClone(doc);
     walk(doc.root, (el) => {
