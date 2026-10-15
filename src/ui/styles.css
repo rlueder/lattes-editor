@@ -4702,6 +4702,29 @@ button.primary:hover:not(:disabled) {
   margin-top: 12px;
 }
 
+/* Primeiro uso: o bloco (desenho, título, passos, arquivo) fica no centro da
+   altura do painel de conteúdo, abaixo do cabeçalho. Em janela baixa, uma
+   margem mínima em cima e embaixo, e a página rola quando ele não cabe. */
+.welcome-shell .content {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  /* A linha da grade (100vh menos o cabeçalho de verdade) dá a altura: a
+     variável --topbar-h ainda não foi medida nesta tela. */
+  min-height: 0;
+  padding-bottom: 16px;
+}
+
+.welcome-shell .section-main-empty {
+  flex: 1;
+  min-height: 0;
+  padding: 24px 0;
+}
+
+.welcome-shell .onboarding-layout {
+  padding-bottom: 0;
+}
+
 /* Arquivo arrastado sobre a janela: o painel principal acende. */
 .welcome-shell .content {
   transition:
