@@ -7375,3 +7375,38 @@ html {
     var(--topbar-h) + var(--section-bar-h, 0px) + var(--year-bar-h, 0px) + 8px
   );
 }
+
+/* App de macOS no modo foco: sem o cabeçalho, os botões da janela (em
+   x=18, y=24, src-tauri/tauri.conf.json) ficariam por cima do conteúdo e do
+   menu revelado. Uma faixa de 48px (24 até os botões, ~14 deles e folga)
+   fica reservada no alto, no fundo do conteúdo, e arrasta a janela; o que
+   gruda no alto (barra do título, anos) para logo abaixo dela. No navegador
+   e no Windows e no Linux, nada muda. */
+.mac-titlebar-strip {
+  display: none;
+}
+
+.desktop-mac .shell.is-focus {
+  --mac-titlebar-h: 48px;
+  --topbar-h: var(--mac-titlebar-h);
+  padding-top: var(--mac-titlebar-h);
+}
+
+.desktop-mac .shell.is-focus .mac-titlebar-strip {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 30;
+  display: block;
+  height: var(--mac-titlebar-h);
+  background: var(--bg);
+}
+
+.desktop-mac .shell.is-focus .sidebar {
+  padding-top: calc(12px + var(--mac-titlebar-h));
+}
+
+.desktop-mac .shell.is-focus .content {
+  min-height: calc(100vh - var(--mac-titlebar-h));
+}

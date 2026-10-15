@@ -12,8 +12,13 @@ export const SPY_SLACK = 12;
 export function spyEdge(doc: Pick<Document, 'querySelector'>): number {
   const bar = doc.querySelector('.sticky-title.visible .sticky-title-bar');
   if (bar) return bar.getBoundingClientRect().bottom;
-  // No modo foco o cabeçalho sai para cima da janela: a borda é 0.
-  return Math.max(0, doc.querySelector('.topbar')?.getBoundingClientRect().bottom ?? 0);
+  // No modo foco o cabeçalho sai para cima da janela: a borda é 0, ou a
+  // faixa reservada aos botões da janela no app de macOS (--topbar-h).
+  const shell = doc.querySelector('.shell');
+  const reserved = shell
+    ? Number.parseFloat(getComputedStyle(shell).getPropertyValue('--topbar-h')) || 0
+    : 0;
+  return Math.max(0, reserved, doc.querySelector('.topbar')?.getBoundingClientRect().bottom ?? 0);
 }
 
 /**
