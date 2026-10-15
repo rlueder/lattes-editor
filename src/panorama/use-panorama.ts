@@ -21,7 +21,14 @@ export function usePanorama(): PanoramaMode {
   if (chart) last.current = chart;
 
   useEffect(() => {
-    const sync = () => setChart(parsePanoramaHash(location.hash));
+    const sync = () => {
+      const id = parsePanoramaHash(location.hash);
+      // Endereço antigo ou desconhecido: a URL passa a dizer o gráfico aberto.
+      if (id && location.hash !== panoramaHash(id))
+        history.replaceState(null, '', panoramaHash(id));
+      setChart(id);
+    };
+    sync();
     window.addEventListener('hashchange', sync);
     window.addEventListener('popstate', sync);
     return () => {

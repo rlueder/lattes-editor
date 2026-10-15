@@ -8,14 +8,16 @@ import { parseXml } from '../src/model/xml.ts';
 import {
   authorship,
   careerBands,
+  committeeKind,
   committeesByYear,
   countRows,
   countsTsv,
   currentRole,
   inWindow,
+  levelBadge,
   productionsByYear,
   summaryTiles,
-  supervisionRows,
+  supervisionFacts,
   windows,
   yearRanges,
 } from '../src/panorama/aggregate.ts';
@@ -230,15 +232,49 @@ describe('contagens', () => {
     expect(authorship(cv, ALL, ['eventos'])).toHaveLength(3);
   });
 
-  it('separa orientações por nível e bancas por ano', async () => {
+  it('resume orientações por nível e bancas por ano', async () => {
     const { cv } = await demo();
-    const rows = supervisionRows(cv, ALL);
-    expect(rows.map((r) => [r.level, r.done.length, r.ongoing.length])).toEqual([
-      ['Mestrado', 2, 0],
-      ['Doutorado', 0, 1],
+    expect(supervisionFacts(cv, ALL)).toEqual([
+      '2 mestrados concluídos',
+      '1 doutorado em andamento',
     ]);
-    expect(supervisionRows(cv, ALL, 'Doutorado')).toHaveLength(1);
-    expect(committeesByYear(cv, [2022, 2023]).map((x) => x.items.length)).toEqual([1, 0]);
+    expect(supervisionFacts(cv, ALL, 'Doutorado')).toEqual(['1 doutorado em andamento']);
+    expect(supervisionFacts(cv, { from: 2023, to: 2023 })).toEqual([
+      '1 mestrado concluído',
+      '1 doutorado em andamento',
+    ]);
+    const ic = { ...cv.supervisions[0]!, level: 'Iniciação científica' as const, ongoing: false };
+    expect(supervisionFacts({ ...cv, supervisions: [ic, ic] }, ALL)).toEqual([
+      '2 iniciações científicas concluídas',
+    ]);
+    expect(levelBadge('Iniciação científica')).toBe('IC');
+    expect(committeesByYear(cv, ALL).map((x) => [x.year, x.items.length])).toEqual([
+      [2022, 1],
+      [2023, 0],
+      [2024, 1],
+    ]);
+    expect(committeesByYear(cv, { from: 2000, to: 2001 })).toEqual([]);
+    expect(
+      [
+        'PARTICIPACAO-EM-BANCA-DE-MESTRADO',
+        'PARTICIPACAO-EM-BANCA-DE-DOUTORADO',
+        'PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO',
+        'PARTICIPACAO-EM-BANCA-DE-APERFEICOAMENTO-ESPECIALIZACAO',
+        'PARTICIPACAO-EM-BANCA-DE-GRADUACAO',
+        'OUTRAS-PARTICIPACOES-EM-BANCA',
+        'BANCA-JULGADORA-PARA-CONCURSO-PUBLICO',
+        'OUTRAS-BANCAS-JULGADORAS',
+      ].map(committeeKind),
+    ).toEqual([
+      'mestrado',
+      'doutorado',
+      'qualificação',
+      'especialização',
+      'graduação',
+      'outra',
+      'julgadora',
+      'julgadora',
+    ]);
   });
 });
 
@@ -277,9 +313,9 @@ describe('pessoas', () => {
       ['Coautores', ['Gabriela']],
     ]);
     const onlyBanca = people(cv, ALL).find((p) => p.name.startsWith('Paulo'))!;
-    expect(roleOf({ ...onlyBanca, degrees: [], productions: [], supervisions: [] })).toBe(
-      'Bancas e projetos',
-    );
+    const bare = { ...onlyBanca, degrees: [], productions: [], supervisions: [] };
+    expect(roleOf(bare)).toBe('Bancas');
+    expect(roleOf({ ...bare, projects: cv.projects })).toBe('Projetos');
     expect(TIES.map((t) => t.key)).toEqual(['coautoria', 'banca', 'projeto']);
   });
 
@@ -349,11 +385,12 @@ describe('rota e catálogo', () => {
     expect(parsePanoramaHash('#panorama/temas')).toBe('temas');
     expect(parsePanoramaHash('#panorama')).toBe(DEFAULT_CHART);
     expect(parsePanoramaHash('#panorama/nada')).toBe(DEFAULT_CHART);
+    expect(parsePanoramaHash('#panorama/orientacoes-e-bancas')).toBe('pessoas');
     expect(parsePanoramaHash('#producoes')).toBeUndefined();
     expect(parsePanoramaHash('#%E0%A4%A')).toBeUndefined();
     expect(panoramaHash('pessoas')).toBe(`#${PANORAMA_ROUTE}/pessoas`);
     expect(chartById('nada').id).toBe(CHARTS[0]!.id);
-    expect(new Set(CHARTS.map((c) => c.id)).size).toBe(10);
+    expect(new Set(CHARTS.map((c) => c.id)).size).toBe(9);
   });
 });
 

@@ -44,7 +44,7 @@ export const CHARTS: ChartInfo[] = [
     question: 'Formação, vínculos, projetos, orientações e prêmios ao longo dos anos.',
   },
   {
-    filters: ['periodo', 'laco'],
+    filters: ['periodo', 'laco', 'nivel'],
     id: 'pessoas',
     label: 'Pessoas',
     question: 'As pessoas com quem você mais trabalha, em coautoria, orientação, banca ou projeto.',
@@ -54,12 +54,6 @@ export const CHARTS: ChartInfo[] = [
     id: 'posicao-de-autoria',
     label: 'Posição de autoria',
     question: 'Sua posição na lista de autores, ano a ano.',
-  },
-  {
-    filters: ['periodo', 'nivel'],
-    id: 'orientacoes-e-bancas',
-    label: 'Orientações e bancas',
-    question: 'Orientações por nível, concluídas e em andamento, e bancas por ano.',
   },
   {
     filters: ['periodo'],

@@ -5,6 +5,9 @@ import { chartById } from './catalog.ts';
 
 export const PANORAMA_ROUTE = 'panorama';
 
+/** Gráficos que viraram parte de outro: o endereço antigo leva ao novo. */
+const MOVED: Record<string, string> = { 'orientacoes-e-bancas': 'pessoas' };
+
 /** O id do gráfico se o hash aponta o Panorama; undefined para as seções do currículo. */
 export function parsePanoramaHash(hash: string): string | undefined {
   let path = hash.replace(/^#/, '');
@@ -15,7 +18,7 @@ export function parsePanoramaHash(hash: string): string | undefined {
   }
   const [head, chart] = path.split('/').filter(Boolean);
   if (head !== PANORAMA_ROUTE) return undefined;
-  return chartById(chart).id;
+  return chartById(chart && (MOVED[chart] ?? chart)).id;
 }
 
 export function panoramaHash(chartId: string): string {

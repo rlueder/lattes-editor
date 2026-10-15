@@ -37,15 +37,20 @@ export const TIES: { key: Tie; label: string }[] = [
   { key: 'projeto', label: 'Projeto' },
 ];
 
-/** A seção da lista em que a pessoa aparece: o papel mais específico vence. */
-export const ROLES = ['Orientadores', 'Orientandos', 'Coautores', 'Bancas e projetos'] as const;
-export type Role = (typeof ROLES)[number];
+/**
+ * As seções de pessoas da lista, na ordem em que aparecem. Quem só esteve em
+ * banca não tem seção de pessoa: aparece nas linhas da seção Bancas.
+ */
+export const ROLES = ['Orientadores', 'Orientandos', 'Coautores', 'Projetos'] as const;
+export type Role = 'Bancas' | (typeof ROLES)[number];
 
+/** O papel mais específico da pessoa, que decide a seção. */
 export function roleOf(p: Person): Role {
   if (p.degrees.length) return 'Orientadores';
   if (p.supervisions.length) return 'Orientandos';
   if (p.productions.length) return 'Coautores';
-  return 'Bancas e projetos';
+  if (p.projects.length) return 'Projetos';
+  return 'Bancas';
 }
 
 /** A lista em seções, na ordem de ROLES, cada uma mantendo a ordem por contagem. */
@@ -112,7 +117,12 @@ export function people(cv: CvData, p: Period): Person[] {
   }
   for (const pr of cv.projects)
     for (const m of pr.team) if (!isSelf(m.full)) get(m.full, m.cit)?.projects.push(pr);
-  for (const s of cv.supervisions) if (s.student) get(s.student)?.supervisions.push(s);
+  for (const s of cv.supervisions) {
+    if (!s.student) continue;
+    const person = get(s.student);
+    person?.supervisions.push(s);
+    if (s.year) person?.years.push(s.year);
+  }
   for (const d of cv.degrees) if (d.advisor) get(d.advisor)?.degrees.push(d);
 
   return [...map.values()].sort(

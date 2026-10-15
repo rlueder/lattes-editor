@@ -13,7 +13,6 @@ import {
   PRODUCTION_GROUPS,
   type ProductionGroup,
   selfIndex,
-  type Supervision,
 } from './model.ts';
 
 export interface Period {
@@ -265,27 +264,77 @@ export function authorship(cv: CvData, p: Period, groups?: ProductionGroup[]): A
   });
 }
 
-// ---------- Orientações e bancas ----------
+// ---------- Orientações e bancas (no gráfico Pessoas) ----------
 
-export interface LevelRow {
-  done: Supervision[];
-  level: Level;
-  ongoing: Supervision[];
+/** Nome de cada nível nas frases e nos selos, com gênero para concordar. */
+const LEVEL_WORDS: Record<Level, { badge: string; f: boolean; one: string; many: string }> = {
+  Doutorado: { badge: 'doutorado', f: false, many: 'doutorados', one: 'doutorado' },
+  Especialização: {
+    badge: 'especialização',
+    f: true,
+    many: 'especializações',
+    one: 'especialização',
+  },
+  'Graduação (TCC)': { badge: 'TCC', f: false, many: 'TCCs', one: 'TCC' },
+  'Iniciação científica': {
+    badge: 'IC',
+    f: true,
+    many: 'iniciações científicas',
+    one: 'iniciação científica',
+  },
+  Mestrado: { badge: 'mestrado', f: false, many: 'mestrados', one: 'mestrado' },
+  'Outra natureza': {
+    badge: 'outra',
+    f: true,
+    many: 'orientações de outra natureza',
+    one: 'orientação de outra natureza',
+  },
+  'Pós-doutorado': {
+    badge: 'pós-doutorado',
+    f: false,
+    many: 'pós-doutorados',
+    one: 'pós-doutorado',
+  },
+};
+
+export const levelBadge = (l: Level): string => LEVEL_WORDS[l].badge;
+
+/**
+ * As orientações em frases curtas, por nível: "2 mestrados concluídos",
+ * "1 doutorado em andamento". Concluídas contam no período; em andamento, todas.
+ */
+export function supervisionFacts(cv: CvData, p: Period, level?: Level): string[] {
+  const out: string[] = [];
+  for (const l of LEVELS) {
+    if (level && l !== level) continue;
+    const w = LEVEL_WORDS[l];
+    const done = within(cv.supervisions, p).filter((s) => !s.ongoing && s.level === l).length;
+    const ongoing = cv.supervisions.filter((s) => s.ongoing && s.level === l).length;
+    const noun = (n: number) => (n === 1 ? w.one : w.many);
+    if (done)
+      out.push(`${done} ${noun(done)} ${w.f ? 'concluída' : 'concluído'}${done > 1 ? 's' : ''}`);
+    if (ongoing) out.push(`${ongoing} ${noun(ongoing)} em andamento`);
+  }
+  return out;
 }
 
-export function supervisionRows(cv: CvData, p: Period, level?: Level): LevelRow[] {
-  return LEVELS.filter((l) => !level || l === level)
-    .map((l) => ({
-      done: within(cv.supervisions, p).filter((s) => !s.ongoing && s.level === l),
-      level: l,
-      ongoing: cv.supervisions.filter((s) => s.ongoing && s.level === l),
-    }))
-    .filter((r) => r.done.length + r.ongoing.length > 0);
+/** O tipo da banca em uma palavra, para o selo. */
+export function committeeKind(name: string): string {
+  if (name.startsWith('BANCA-JULGADORA') || name === 'OUTRAS-BANCAS-JULGADORAS') return 'julgadora';
+  if (name.includes('QUALIFICACAO')) return 'qualificação';
+  if (name.includes('DOUTORADO')) return 'doutorado';
+  if (name.includes('MESTRADO')) return 'mestrado';
+  if (name.includes('ESPECIALIZACAO')) return 'especialização';
+  if (name.includes('GRADUACAO')) return 'graduação';
+  return 'outra';
 }
 
-export function committeesByYear(
-  cv: CvData,
-  years: number[],
-): { items: Committee[]; year: number }[] {
-  return years.map((year) => ({ items: cv.committees.filter((c) => c.year === year), year }));
+/** Bancas por ano no período, para a faixa do cabeçalho da seção Bancas. */
+export function committeesByYear(cv: CvData, p: Period): { items: Committee[]; year: number }[] {
+  const years = within(cv.committees, p).map((c) => c.year!);
+  if (years.length === 0) return [];
+  return range(Math.min(...years), Math.max(...years)).map((year) => ({
+    items: cv.committees.filter((c) => c.year === year),
+    year,
+  }));
 }

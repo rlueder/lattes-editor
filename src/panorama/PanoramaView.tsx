@@ -13,7 +13,6 @@ import { People } from './charts/People.tsx';
 import { Productions } from './charts/Productions.tsx';
 import { Quadrennia } from './charts/Quadrennia.tsx';
 import { Summary } from './charts/Summary.tsx';
-import { Supervision } from './charts/Supervision.tsx';
 import { Timeline } from './charts/Timeline.tsx';
 import { Topics } from './charts/Topics.tsx';
 import { Venues } from './charts/Venues.tsx';
@@ -70,6 +69,7 @@ function ChartBody({
       return (
         <People
           cv={cv}
+          level={f.level || undefined}
           period={period}
           tie={f.tie || undefined}
           view={f.view}
@@ -78,8 +78,6 @@ function ChartBody({
       );
     case 'posicao-de-autoria':
       return <Authorship cv={cv} groups={groups} period={period} />;
-    case 'orientacoes-e-bancas':
-      return <Supervision cv={cv} level={f.level || undefined} now={NOW} period={period} />;
     case 'onde-publica':
       return <Venues cv={cv} period={period} whole={whole} />;
     case 'temas':

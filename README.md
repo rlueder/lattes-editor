@@ -87,9 +87,9 @@ referências na NBR 6023, e compartilhar o currículo por um código QR.
 
 O **Panorama** mostra o currículo em números e gráficos, calculados só com o
 que está no XML: produções por ano (com os anos vazios marcados), contagens
-por quadriênio da CAPES, linha do tempo da carreira, pessoas com quem você
-trabalha, posição de autoria, orientações e bancas, onde publica, temas e o
-que falta preencher. Ele fica no controle "Currículo | Panorama", logo abaixo
+por quadriênio da CAPES, linha do tempo da carreira, as pessoas com quem
+você trabalha (coautores, orientandos, orientadores e bancas), posição de
+autoria, onde publica, temas e o que falta preencher: nove gráficos. Ele fica no controle "Currículo | Panorama", logo abaixo
 da sua foto, e cada gráfico tem um item no menu. Clicar num número abre a
 lista no currículo com o filtro que o editor já sabe aplicar; o recorte por
 ano ainda não existe na lista e aparece marcado como "em breve".

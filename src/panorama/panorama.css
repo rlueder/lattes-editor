@@ -94,6 +94,42 @@
   font-weight: 600;
 }
 
+/* Segunda linha de fatos: orientações por nível e bancas, menor. */
+.pano-facts.secondary {
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Cabeçalho de seção com a faixa de bancas por ano à direita. */
+.pano-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-right: 8px;
+}
+
+.pano-strip {
+  display: block;
+  height: 26px;
+  overflow: visible;
+}
+
+.pano-row.pano-committee {
+  grid-template-columns: 3.2em minmax(0, 1fr);
+}
+
+.pano-committee-year {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pano-committee .pano-row-name small {
+  display: block;
+  margin: 0;
+}
+
 /* Laços com a pessoa: o selo do app (.tag), em azul claro. */
 .tag.pano-tie {
   margin: 0 0 0 6px;
