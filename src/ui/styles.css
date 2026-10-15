@@ -6604,7 +6604,6 @@ main.content {
   font-style: italic;
 }
 
-.rl + .reading-fields,
 .reading-fields + .reading-hidden {
   margin-top: var(--read-para);
 }
@@ -6711,7 +6710,7 @@ main.content {
 }
 
 .reading-records > li + li {
-  margin-top: 0.35rem;
+  margin-top: 1rem;
 }
 
 .reading-block.rr .reading-content {
@@ -6728,8 +6727,12 @@ main.content {
   white-space: nowrap;
 }
 
-.rr-body .reading-fields {
-  margin-top: 0.25em;
+/* Entre o texto de um registro (linhas, referência, endereço) e a grade de
+   rótulos abaixo dele, mais espaço do que entre as linhas da grade (0,9em),
+   e menos do que entre dois registros (1rem mais o respiro dos blocos). Vale
+   na leitura e na prévia fixa da edição. */
+.reading-block :is(.rl, .rr-ref, .reading-address, .reading-p) + .reading-fields {
+  margin-top: 1.2em;
 }
 
 .rr-kind {
