@@ -8,6 +8,7 @@
 // escolhas do editor para dizer "talvez", não regras do Lattes.
 
 import { fold } from '../labels/labels.ts';
+import { validIssn } from '../model/standard-numbers.ts';
 import { childElements, firstChild, getAttr, walk, type XElement } from '../model/xml.ts';
 import { itemMeta } from '../ui/item-meta.ts';
 
@@ -76,14 +77,8 @@ export function productionItems(root: XElement): XElement[] {
   return items;
 }
 
-/** ISSN com dígito verificador certo (ISO 3297: pesos 8 a 2, módulo 11, X vale 10). */
-export function validIssn(value: string): boolean {
-  const s = value.replace(/[-\s]/g, '').toUpperCase();
-  if (!/^\d{7}[\dX]$/.test(s)) return false;
-  const sum = [...s.slice(0, 7)].reduce((acc, d, i) => acc + Number(d) * (8 - i), 0);
-  const check = (11 - (sum % 11)) % 11;
-  return s[7] === (check === 10 ? 'X' : String(check));
-}
+/** ISSN com dígito verificador certo: a conta mora em src/model/standard-numbers.ts. */
+export { validIssn };
 
 function finding(
   check: FindingCheck,

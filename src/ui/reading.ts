@@ -6,6 +6,7 @@
 // ReadingView.tsx e as medidas tipográficas em styles.css (".reading").
 
 import { enumLabel } from '../labels/labels.ts';
+import { formatIssn } from '../model/standard-numbers.ts';
 import type { XElement } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 import { codeValueLabel, flagAsShown, isBooleanAttr } from './field-kind.ts';
@@ -103,6 +104,8 @@ export function displayValue(el: XElement, attr: string, value: string): string 
   )
     return displayLattesDate(value);
   if (spec?.enum?.includes(value) || enumElsewhere(attr, value)) return enumLabel(value);
+  // ISSN guardado com ou sem hífen; na leitura, sempre NNNN-NNNN.
+  if (attr === 'ISSN') return formatIssn(value);
   if (attr === 'NOME-EM-CITACOES-BIBLIOGRAFICAS') {
     return value
       .split(';')

@@ -1,5 +1,6 @@
 // Campos de DOI e de endereço na web: limpeza ao sair do campo, aviso de
-// formato e o link na prévia.
+// formato e o link na prévia. ISSN e ISBN entram na mesma limpeza e no mesmo
+// aviso (src/model/standard-numbers.ts), sem link.
 //
 // Formato guardado: nenhuma exportação real no repositório mostra um DOI ou
 // uma página preenchidos, e o censo LAT-55 (docs/lattes-formularios/) só diz
@@ -10,6 +11,16 @@
 // leem o valor sem mudá-lo.
 
 import { normalizeDoi } from '../lookups/crossref.ts';
+import {
+  cleanIsbn,
+  cleanIssn,
+  isbnError,
+  isIsbnAttr,
+  isIssnAttr,
+  isIssnOrIsbnAttr,
+  issnError,
+  issnOrIsbnError,
+} from '../model/standard-numbers.ts';
 
 /** Atributo de DOI: DOI e qualquer *-DOI. */
 export function isDoiAttr(attr: string): boolean {
@@ -79,17 +90,26 @@ export function urlError(value: string): string | undefined {
   return undefined;
 }
 
-/** A limpeza de um campo ao sair dele: DOI e endereço; os outros passam iguais. */
+/** A limpeza de um campo ao sair dele: DOI, endereço, ISSN e ISBN; os outros passam iguais. */
 export function cleanLinkValue(attr: string, value: string): string {
   if (isDoiAttr(attr)) return cleanDoi(value);
   if (isUrlAttr(attr)) return cleanUrl(value);
+  if (isIssnAttr(attr)) return cleanIssn(value);
+  if (isIsbnAttr(attr)) return cleanIsbn(value);
+  if (isIssnOrIsbnAttr(attr)) {
+    // Oito caracteres é ISSN (fica com o hífen); o resto, ISBN só com dígitos.
+    return cleanIsbn(value).length === 8 ? cleanIssn(value) : cleanIsbn(value);
+  }
   return value;
 }
 
-/** O aviso de formato de um campo de DOI ou endereço; undefined nos outros. */
+/** O aviso de formato de um campo de DOI, endereço, ISSN ou ISBN; undefined nos outros. */
 export function linkError(attr: string, value: string): string | undefined {
   if (isDoiAttr(attr)) return doiError(value);
   if (isUrlAttr(attr)) return urlError(value);
+  if (isIssnAttr(attr)) return issnError(value);
+  if (isIsbnAttr(attr)) return isbnError(value);
+  if (isIssnOrIsbnAttr(attr)) return issnOrIsbnError(value);
   return undefined;
 }
 
