@@ -106,6 +106,48 @@ export class ExportRequests {
   }
 }
 
+/**
+ * A pergunta "continuar sem ponto de restauração?" de uma rodada. Quando o
+ * painel fecha ou a extensão desliga, a rodada é cancelada: a pergunta em
+ * aberto responde não, e a que viria depois (o ponto ainda sendo feito)
+ * nem chega a ser feita. Uma rodada nova começa com reset().
+ */
+export class ConfirmGate {
+  private pending: ((go: boolean) => void) | undefined;
+  private cancelled = false;
+
+  /** A rodada foi cancelada: o resultado dela não aparece mais para a pessoa. */
+  get isCancelled(): boolean {
+    return this.cancelled;
+  }
+
+  /** Uma rodada nova: a pergunta volta a valer. */
+  reset(): void {
+    this.cancelled = false;
+  }
+
+  /** undefined quando a rodada já foi cancelada, e então a resposta é não. */
+  ask(): Promise<boolean> | undefined {
+    if (this.cancelled) return undefined;
+    return new Promise((resolve) => {
+      this.pending = resolve;
+    });
+  }
+
+  /** A resposta da pessoa; sem pergunta em aberto, não faz nada. */
+  answer(go: boolean): void {
+    const resolve = this.pending;
+    this.pending = undefined;
+    resolve?.(go);
+  }
+
+  /** O painel fechou ou a extensão desligou: nada desta rodada é gravado sem ponto. */
+  cancel(): void {
+    this.cancelled = true;
+    this.answer(false);
+  }
+}
+
 /** Sem ponto novo, mas a pessoa pode seguir confirmando. */
 export type NoRestoreReason = 'gravacao' | 'pendente' | 'sem-exportar';
 /** A rodada para: escrever agora seria às cegas. */

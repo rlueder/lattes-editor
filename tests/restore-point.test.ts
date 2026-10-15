@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { zipOne } from '../scripts/lattes-simulado/exportar.ts';
 import {
   beginSendSession,
+  ConfirmGate,
   doneText,
   EXPIRED_LIMIT,
   type ExportReply,
@@ -270,5 +271,59 @@ describe('pedidos de exportação do ponto de restauração', () => {
     requests.dropAll();
     expect(await reply).toEqual({ ok: false, reason: 'sem-resposta' });
     expect(requests.take(curriculo(id))).toBe(true);
+  });
+});
+
+describe('pergunta sem ponto de restauração', () => {
+  const noPoint: RestoreOutcome = { kind: 'sem-ponto', reason: 'pendente' };
+  const confirmWith = (gate: ConfirmGate) => () => gate.ask() ?? Promise.resolve(false);
+
+  it('a resposta da pessoa decide a rodada', async () => {
+    const gate = new ConfirmGate();
+    const go = beginSendSession({
+      confirmWithout: confirmWith(gate),
+      restore: () => Promise.resolve(noPoint),
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    gate.answer(true);
+    expect(await go).toBe(true);
+  });
+
+  it('o painel fechou com a pergunta aberta: a rodada para sem gravar', async () => {
+    const gate = new ConfirmGate();
+    const go = beginSendSession({
+      confirmWithout: confirmWith(gate),
+      restore: () => Promise.resolve(noPoint),
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    gate.cancel();
+    expect(await go).toBe(false);
+    expect(gate.isCancelled).toBe(true);
+  });
+
+  it('o painel fechou com o ponto ainda sendo feito: a pergunta nem chega a ser feita', async () => {
+    const gate = new ConfirmGate();
+    let finish: (outcome: RestoreOutcome) => void = () => undefined;
+    const go = beginSendSession({
+      confirmWithout: confirmWith(gate),
+      restore: () => new Promise((resolve) => (finish = resolve)),
+    });
+    gate.cancel();
+    finish(noPoint);
+    expect(await go).toBe(false);
+  });
+
+  it('a rodada seguinte volta a perguntar; responder sem pergunta não faz nada', async () => {
+    const gate = new ConfirmGate();
+    gate.cancel();
+    gate.reset();
+    expect(gate.isCancelled).toBe(false);
+    gate.answer(true);
+    const asked = gate.ask();
+    expect(asked).toBeInstanceOf(Promise);
+    gate.answer(false);
+    expect(await asked).toBe(false);
   });
 });

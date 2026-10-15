@@ -13,18 +13,11 @@ import type { BridgeState } from '../ui/use-bridge.ts';
 
 export function RestorePointDialog({ bridge }: { bridge: BridgeState }) {
   const { restore } = bridge;
-  const answer = useRef(bridge.answerRestore);
-  answer.current = bridge.answerRestore;
-  const asking = restore?.kind === 'sem-ponto';
-  const askingRef = useRef(asking);
-  askingRef.current = asking;
-  // O painel fechou com a pergunta aberta: vale como cancelar, e nada é gravado.
-  useEffect(
-    () => () => {
-      if (askingRef.current) answer.current(false);
-    },
-    [],
-  );
+  const dismiss = useRef(bridge.dismissRestore);
+  dismiss.current = bridge.dismissRestore;
+  // O painel fechou com o ponto ainda sendo feito ou com a pergunta aberta:
+  // vale como cancelar, nada é gravado e o aviso não volta ao reabrir.
+  useEffect(() => () => dismiss.current(), []);
 
   if (restore?.kind === 'parar') {
     return (

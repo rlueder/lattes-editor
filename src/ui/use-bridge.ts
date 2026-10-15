@@ -168,6 +168,8 @@ export interface BridgeState {
   confirmed: number;
   /** O ZIP do Exportar que a extensão trouxe do Lattes, ou o motivo de não ter vindo. */
   curriculo?: CurriculoReading;
+  /** O painel fechou: cancela a rodada que ainda faz o ponto ou pergunta. */
+  dismissRestore: () => void;
   /**
    * A versão atual do Lattes, lida da página de conferência a pedido do
    * diagnóstico: os itens, ou o motivo de não ter lido.
