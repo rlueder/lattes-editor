@@ -209,6 +209,8 @@ export interface CurriculoReading {
   fileName?: string;
   /** O id do pedido que a resposta atende. */
   id?: string;
+  /** De qual currículo é a sessão do Lattes que respondeu. */
+  lattesId?: string;
   reason?: ExportFailure;
   /** O ZIP em base64. */
   zip?: string;
@@ -342,6 +344,7 @@ export function useBridge(
           detail: msg.detail,
           fileName: msg.fileName,
           id: msg.id,
+          lattesId: msg.lattesId,
           reason: msg.reason,
           zip: msg.zip,
         });

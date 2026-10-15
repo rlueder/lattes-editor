@@ -22,9 +22,10 @@ export type StepStatus = 'agora' | 'depois' | 'feito';
 export interface Step {
   /**
    * O que fazer agora: abrir um endereço fora do app, pedir o currículo de
-   * novo ou recarregar a aba do Lattes (sessão vencida).
+   * novo, recarregar a aba do Lattes (sessão vencida) ou, com o Exportar
+   * bloqueado, abrir a última versão que o app guardou.
    */
-  action?: { href?: string; kind: 'link' | 'recarregar' | 'tentar'; label: string };
+  action?: { href?: string; kind: 'link' | 'recarregar' | 'tentar' | 'versao'; label: string };
   /** Esperando a extensão ou o Lattes: o passo mostra que está andando. */
   busy?: boolean;
   status: StepStatus;
@@ -117,13 +118,34 @@ function reloadAction(link: Link): NonNullable<Step['action']> {
     : { href: LATTES_URL, kind: 'link', label: 'Abrir o Lattes' };
 }
 
-function openStep(open: OpenState, link: Link): Step {
+/**
+ * A última versão deste currículo que o app guardou (a linha do tempo de
+ * versões, LAT-12): uma exportação, logo uma versão publicada.
+ */
+export interface StoredVersion {
+  /** DD/MM/AAAA da exportação. */
+  date: string;
+  id: number;
+}
+
+function openStep(open: OpenState, link: Link, stored?: StoredVersion): Step {
   const title = STEP_TITLES[2];
   const retry = { kind: 'tentar' as const, label: 'Tentar de novo' };
   switch (open.kind) {
     case 'abrindo':
       return { busy: true, status: 'agora', text: 'Trazendo o currículo do Lattes…', title };
     case 'falhou':
+      // Com o Exportar bloqueado por pendência, o app não para: abre a última
+      // versão publicada que tem e compara com a página de conferência do
+      // Lattes (docs/fluxos_de_uso.md, "Quem volta ao Lattes depois de anos").
+      if (open.reason === 'pendente' && stored) {
+        return {
+          action: { kind: 'versao', label: `Abrir a versão de ${stored.date}` },
+          status: 'agora',
+          text: `O seu Lattes tem alterações ainda não enviadas ao CNPq e só exporta depois do envio. Abra a versão publicada de ${stored.date}, guardada no app; o diagnóstico mostra o que mudou no Lattes desde então.`,
+          title,
+        };
+      }
       return {
         action: open.reason === 'sessao' ? reloadAction(link) : retry,
         status: 'agora',
@@ -143,7 +165,12 @@ function openStep(open: OpenState, link: Link): Step {
 const waiting = (title: string, text: string): Step => ({ status: 'depois', text, title });
 
 /** Os três passos, cada um no seu estado; um passo só começa quando o anterior está feito. */
-export function onboardingSteps(link: Link, open: OpenState, devFolder?: string): Step[] {
+export function onboardingSteps(
+  link: Link,
+  open: OpenState,
+  devFolder?: string,
+  stored?: StoredVersion,
+): Step[] {
   const extension = extensionStep(link, open, devFolder);
   if (extension.status !== 'feito') {
     return [
@@ -156,5 +183,5 @@ export function onboardingSteps(link: Link, open: OpenState, devFolder?: string)
   if (lattes.status !== 'feito') {
     return [extension, lattes, waiting(STEP_TITLES[2], 'Sem baixar nem escolher arquivo.')];
   }
-  return [extension, lattes, openStep(open, link)];
+  return [extension, lattes, openStep(open, link, stored)];
 }
