@@ -157,7 +157,8 @@ export function App() {
   const print = usePrint(session !== null);
 
   /** Vai para a seção (e o grupo ou ano) e mantém a URL legível em sincronia. */
-  const navigate = useNavigate(sectionId, setSectionId, pendingAnchor);
+  // No modo foco, o painel revelado de onde veio a escolha fecha na hora.
+  const navigate = useNavigate(sectionId, setSectionId, pendingAnchor, focusShell.onNavigate);
   const versions = useVersions(session?.doc.root, navigate);
 
   // Um link "#atuacao/atuacao-profissional/2020", aberto ou editado à mão, leva direto lá.

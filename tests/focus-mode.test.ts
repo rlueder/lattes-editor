@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  DISMISSED,
   EDGE,
   edgeWait,
   FOCUS_KEY,
@@ -125,6 +126,19 @@ describe('modo foco: borda que revela os painéis', () => {
     expect(s.left).toBe(true);
     s = nextEdge(s, { t: 0, x: 240 + EDGE.slack + 1, y: 400 }, panels);
     expect(s.left).toBe(false);
+  });
+
+  it('depois de escolher no painel, o ponteiro parado na borda não o reabre', () => {
+    // Fechado pela escolha, com o ponteiro ainda na faixa da esquerda.
+    let s = nextEdge(DISMISSED, { t: 0, x: 4, y: 400 }, panels);
+    s = nextEdge(s, { t: EDGE.delay * 3, x: 4, y: 400 }, panels);
+    expect(s).toEqual(DISMISSED);
+    // Sai da faixa: volta ao normal, e voltar à borda abre depois da espera.
+    s = nextEdge(s, { t: 1000, x: 300, y: 400 }, panels);
+    expect(s).toEqual(NO_EDGE);
+    s = nextEdge(s, { t: 1100, x: 4, y: 400 }, panels);
+    s = nextEdge(s, { t: 1100 + EDGE.delay, x: 4, y: 400 }, panels);
+    expect(s.left).toBe(true);
   });
 
   it('a borda de cima revela o cabeçalho do mesmo jeito', () => {

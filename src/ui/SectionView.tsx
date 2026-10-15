@@ -169,7 +169,10 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section }:
   const head = (
     <>
       <div className="section-head">
-        <h1 ref={titleRef}>{section.label}</h1>
+        {/* tabIndex -1: o modo foco leva o foco aqui ao escolher a seção no painel. */}
+        <h1 ref={titleRef} tabIndex={-1}>
+          {section.label}
+        </h1>
         {headActions && <span className="section-head-actions">{headActions}</span>}
       </div>
       {section.importable === 'filtro' && (

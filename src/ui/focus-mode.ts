@@ -61,6 +61,12 @@ export function focusShortcutLabel(mac: boolean): string {
 export const EDGE = { delay: 150, slack: 24, zone: 12 } as const;
 
 export interface EdgeState {
+  /**
+   * Escolher uma seção no painel revelado fecha o painel; com o ponteiro
+   * ainda na faixa da borda, ele só volta depois de o ponteiro sair da faixa
+   * e voltar a ela.
+   */
+  blocked?: boolean;
   left: boolean;
   /** Desde quando o ponteiro está na faixa da esquerda (ainda sem revelar). */
   leftSince?: number;
@@ -69,6 +75,9 @@ export interface EdgeState {
 }
 
 export const NO_EDGE: EdgeState = { left: false, top: false };
+
+/** Os painéis fechados depois de uma escolha, sem reabrir com o ponteiro parado na borda. */
+export const DISMISSED: EdgeState = { blocked: true, left: false, top: false };
 
 export interface PointerAt {
   /** Instante, em ms. */
@@ -89,6 +98,8 @@ export interface PanelSize {
  * some quando o ponteiro sai dele com folga.
  */
 export function nextEdge(s: EdgeState, p: PointerAt, panels: PanelSize): EdgeState {
+  // Fechado por uma escolha: fica fechado até o ponteiro sair das faixas.
+  if (s.blocked) return p.x > EDGE.zone && p.y > EDGE.zone ? NO_EDGE : DISMISSED;
   const side = (
     open: boolean,
     since: number | undefined,

@@ -11,11 +11,14 @@ export function useNavigate(
   sectionId: string,
   setSectionId: (id: string) => void,
   pendingAnchor: MutableRefObject<string | null>,
+  /** Antes de cada navegação (o modo foco fecha o painel revelado). */
+  before?: () => void,
 ): (route: HashRoute, write?: boolean) => void {
   const current = useRef(sectionId);
   current.current = sectionId;
   return useCallback(
     (route: HashRoute, write = true) => {
+      before?.();
       const go = () => {
         setSectionId(route.sectionId);
         pendingAnchor.current = route.anchor ?? null;
@@ -25,7 +28,7 @@ export function useNavigate(
       else go();
       if (write) writeHash(route);
     },
-    [pendingAnchor, setSectionId],
+    [before, pendingAnchor, setSectionId],
   );
 }
 

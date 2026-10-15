@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
+  DISMISSED,
   type EdgeState,
   edgeWait,
   focusShortcutLabel,
@@ -67,10 +68,17 @@ export function useFocusMode(available: boolean): FocusMode {
   return { available, on, toggle };
 }
 
-/** Os painéis que a borda revela no modo foco: o menu à esquerda e o cabeçalho em cima. */
-export function useEdgeReveal(on: boolean): EdgeState {
+/**
+ * Os painéis que a borda revela no modo foco: o menu à esquerda e o cabeçalho
+ * em cima. `dismiss` fecha os dois depois de uma escolha (nextEdge, blocked).
+ */
+export function useEdgeReveal(on: boolean): { dismiss: () => void; state: EdgeState } {
   const [state, setState] = useState<EdgeState>(NO_EDGE);
   const current = useRef<EdgeState>(NO_EDGE);
+  const dismiss = useCallback(() => {
+    current.current = DISMISSED;
+    setState(DISMISSED);
+  }, []);
   useEffect(() => {
     current.current = NO_EDGE;
     setState(NO_EDGE);
@@ -101,7 +109,7 @@ export function useEdgeReveal(on: boolean): EdgeState {
       window.removeEventListener('pointermove', onMove);
     };
   }, [on]);
-  return state;
+  return { dismiss, state };
 }
 
 /**
@@ -142,6 +150,11 @@ export interface FocusShell {
   menuItem?: { label: string; on: boolean; toggle: () => void };
   menuPinned: boolean;
   setMenuPinned: (v: boolean | ((v: boolean) => boolean)) => void;
+  /**
+   * Antes de navegar: no modo foco, fecha o menu e o cabeçalho revelados e
+   * leva o foco ao título da seção, para o :focus-within não segurar o painel.
+   */
+  onNavigate: () => void;
 }
 
 /**
@@ -150,12 +163,34 @@ export interface FocusShell {
  */
 export function useFocusShell(paletteOpen: boolean, sectionId: string): FocusShell {
   const focus = useFocusMode(true);
-  const edge = useEdgeReveal(focus.on);
+  const { dismiss, state: edge } = useEdgeReveal(focus.on);
   const topMenu = usePopupOpen('.topbar', focus.on);
   const sideMenu = usePopupOpen('.sidebar', focus.on);
   const [menuPinned, setMenuPinned] = useState(false);
   // O menu aberto pelo puxador fecha ao sair do modo foco ou ao escolher seção.
   useEffect(() => setMenuPinned(false), [focus.on, sectionId]);
+  // O foco sai do painel para o título da seção nova. A troca de seção pode
+  // chegar depois (transição de página): tenta de novo quando a seção muda,
+  // por até um segundo.
+  const refocusUntil = useRef(0);
+  const [navigations, setNavigations] = useState(0);
+  // Estável: navegar não pode depender de o modo foco ter acabado de mudar
+  // (o seguidor do endereço, em App.tsx, refaria a navegação).
+  const focusOn = useRef(focus.on);
+  focusOn.current = focus.on;
+  const onNavigate = useCallback(() => {
+    if (!focusOn.current) return;
+    const active = document.activeElement;
+    if (active?.closest('.sidebar, .topbar')) refocusUntil.current = performance.now() + 1000;
+    setMenuPinned(false);
+    dismiss();
+    setNavigations((n) => n + 1);
+  }, [dismiss]);
+  useEffect(() => {
+    if (performance.now() > refocusUntil.current) return;
+    const title = document.querySelector<HTMLElement>('.section-head h1');
+    title?.focus({ preventScroll: true });
+  }, [sectionId, navigations]);
   const label = focus.available ? focusShortcutLabel(IS_MAC) : undefined;
   return {
     className: shellClass(focus.on, {
@@ -166,6 +201,7 @@ export function useFocusShell(paletteOpen: boolean, sectionId: string): FocusShe
     label,
     menuItem: label ? { label, on: focus.on, toggle: focus.toggle } : undefined,
     menuPinned,
+    onNavigate,
     setMenuPinned,
   };
 }
