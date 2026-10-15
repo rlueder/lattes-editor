@@ -3200,9 +3200,12 @@ body {
   background: var(--chrome);
 }
 
+/* O cromo (cabeçalho e menu) emoldura o conteúdo só com fios: o de baixo do
+   cabeçalho e o da esquerda do conteúdo, na altura toda, sem recuo nem canto
+   arredondado. */
 .topbar {
+  border-bottom: 1px solid var(--border);
   background: var(--chrome);
-  border-bottom-color: transparent;
 }
 
 .sidebar {
@@ -3211,11 +3214,24 @@ body {
 }
 
 .content {
-  min-height: calc(100vh - var(--topbar-h) - 8px);
-  margin: 0 8px 8px 0;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  min-height: calc(100vh - var(--topbar-h));
+  margin: 0;
+  border: 0;
+  border-radius: 0;
   background: var(--bg);
+}
+
+/* Fio entre o menu e o conteúdo; fora do modo foco, onde o menu sai. Em
+   tela estreita o menu fica em cima, e o fio passa para cima do conteúdo. */
+.shell:not(.is-focus) > .content {
+  border-left: 1px solid var(--border);
+}
+
+@media (max-width: 760px) {
+  .shell:not(.is-focus) > .content {
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
 }
 
 .sidebar li > button.active {
@@ -4259,7 +4275,10 @@ button.primary.danger-fill:hover {
  * O sólido do destaque continua o azul do CNPq (#326c99), com texto branco
  * nos dois temas. */
 :root {
-  --chrome: #f1f0ef; /* sand-3 */
+  /* Cromo (cabeçalho e menu lateral) branco, separado do conteúdo pelos fios. */
+  --chrome: #ffffff;
+  /* A busca do cabeçalho no azul mais forte, para destacar do branco. */
+  --search-bg: var(--accent-soft-strong);
   --bg: #f9f9f8; /* sand-2 */
   --surface: #fdfdfc; /* sand-1 */
   --surface-2: #e9e8e6; /* sand-4 */
@@ -4281,7 +4300,9 @@ button.primary.danger-fill:hover {
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
+    /* No escuro, o cromo continua o fundo mais escuro, com os mesmos fios. */
     --chrome: #111110; /* sand-1 */
+    --search-bg: var(--accent-soft);
     --bg: #191918; /* sand-2 */
     --surface: #222221; /* sand-3 */
     --surface-2: #2a2a28; /* sand-4 */
@@ -4304,6 +4325,7 @@ button.primary.danger-fill:hover {
 
 :root[data-theme='dark'] {
   --chrome: #111110;
+  --search-bg: var(--accent-soft);
   --bg: #191918;
   --surface: #222221;
   --surface-2: #2a2a28;
@@ -5889,7 +5911,7 @@ b {
 
 .topbar .search-btn {
   border-color: transparent;
-  background: var(--accent-soft);
+  background: var(--search-bg, var(--accent-soft));
   color: var(--accent-text);
   transition: border-color var(--dur) var(--ease-out);
 }
@@ -6913,21 +6935,16 @@ main.content {
 }
 
 /* O aviso de pendências vai de uma borda à outra, também no modo foco: passa
-   por cima da coluna vazia do menu e da margem de 8px à direita do
-   conteúdo, com o texto no mesmo lugar. */
+   por cima da coluna vazia do menu, com o texto no mesmo lugar. */
 .shell.is-focus .pending-banner {
-  margin-right: -48px;
   margin-left: calc(-40px - var(--focus-pad));
-  padding-right: 36px;
   padding-left: calc(40px + var(--focus-pad));
 }
 
 /* A barra fixa do título (Seção › Grupo) também vai de uma borda à outra,
    fio e fundo, com o texto e as ações no mesmo lugar. */
 .shell.is-focus .sticky-title-bar {
-  right: -48px;
   left: calc(-40px - var(--focus-pad));
-  padding-right: 48px;
   padding-left: calc(40px + var(--focus-pad));
 }
 
@@ -7348,8 +7365,8 @@ main.content {
 }
 
 /* Símbolo e nome do app no canto do cabeçalho (Brand.tsx): os dois
-   centrados na linha, 8px entre eles; o símbolo na altura visível do nome
-   de 16px. Em tela estreita, só o símbolo. */
+   centrados na linha, 8px entre eles; símbolo de 24px e nome de 18px. Em
+   tela estreita, só o símbolo. */
 .topbar-brand {
   display: inline-flex;
   align-items: center;
@@ -7362,11 +7379,11 @@ main.content {
 .topbar-brand .brand-icon {
   flex: none;
   width: auto;
-  height: 19px;
+  height: 24px;
 }
 
 .topbar-brand .brand-name {
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1;
 }
 
