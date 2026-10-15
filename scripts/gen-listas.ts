@@ -1,7 +1,8 @@
 // Gera src/schema/listas-lattes.json, as listas que o editor oferece nos campos
 // tipados (LAT-48), a partir da captura dos formulários do próprio Lattes em
-// docs/lattes-listas/. Só entram listas cujo formato no XML foi conferido numa
-// exportação real (ver docs/campos_tipados.md, "Achados").
+// docs/lattes-listas/ e, para as UFs, do censo em docs/lattes-formularios/.
+// Só entram listas cujo formato no XML foi conferido numa exportação real (ver
+// docs/campos_tipados.md, "Achados").
 //
 //   node scripts/gen-listas.ts
 
@@ -20,6 +21,20 @@ interface Capture {
 }
 
 const capture = JSON.parse(readFileSync(root + CAPTURE, 'utf8')) as Capture;
+
+/**
+ * O censo de 15/10/2026 (docs/lattes-formularios/): as UFs do formulário de
+ * identificação (f_uf_nasc, a mesma lista de f_uf_rg), código e rótulo iguais.
+ */
+const CENSUS = 'docs/lattes-formularios/censo-2026-10-15.json';
+const census = JSON.parse(readFileSync(root + CENSUS, 'utf8')) as {
+  lists: Record<string, { label: string; value: string }[]>;
+};
+const ufs = (census.lists.f_uf_nasc ?? []).map((o) => o.value).filter(Boolean);
+// Sem a lista (outro nome no censo, por exemplo), o editor perderia as UFs calado.
+if (ufs.length !== 27) {
+  throw new Error(`${CENSUS}: esperava as 27 UFs em lists.f_uf_nasc, achei ${ufs.length}`);
+}
 
 /** A lista de um controle (pelo nome no formulário), a mais longa entre os formulários. */
 function listOf(control: string): string[] {
@@ -71,6 +86,9 @@ const out = {
   /** f_pais: o XML guarda o nome (Brasil, Argentina, Portugal na exportação real). */
   paises: names('f_pais'),
   source: CAPTURE,
+  /** f_uf_nasc e f_uf_rg: o XML guarda a sigla (RS na exportação real, 15/10/2026). */
+  ufs,
+  ufsSource: CENSUS,
 };
 // Formatado pelo Prettier, senão o format:check e o gerador se reprovam.
 const path = `${root}src/schema/listas-lattes.json`;
@@ -79,5 +97,5 @@ writeFileSync(
   await format(JSON.stringify(out), { ...(await resolveConfig(path)), filepath: path }),
 );
 console.log(
-  `src/schema/listas-lattes.json: ${out.paises.length} países (${Object.keys(out.codigosDosPaises).length} com código), ${out.idiomas.length} idiomas`,
+  `src/schema/listas-lattes.json: ${out.paises.length} países (${Object.keys(out.codigosDosPaises).length} com código), ${out.idiomas.length} idiomas, ${out.ufs.length} UFs`,
 );

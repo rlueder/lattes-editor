@@ -155,6 +155,18 @@ alteração no lugar; exclusão pelo formulário) está no
 [guia de implementação](lattes_implementation_guide.md), seção 1, e nos
 tickets LAT-50, LAT-51 e LAT-49.
 
+A inclusão de itens pelo conector está escrita e **desligada**
+(`CREATE_ITEMS_ENABLED`, em `src/bridge/create.ts`) até um teste acompanhado
+no Lattes real: atuação com o primeiro vínculo (`create.ts`), formação
+acadêmica nos dez níveis do "Incluir novo item" (`create-formacao.ts`) e
+projeto (`create-projeto.ts`), com o que as duas têm em comum em
+`create-shared.ts` e o despacho em `create-items.ts`. Cada inclusão confere
+antes (nada igual na lista, formulário em modo de inclusão, campos presentes),
+acha instituição, curso e agência pelas buscas do próprio Lattes, e depois
+relê a lista: exatamente um item novo, com os campos lidos de volta iguais aos
+enviados. Desfazer uma inclusão não passa pelo conector; o registro do enviado
+diz para excluir no Lattes.
+
 ### O caminho de uma mensagem
 
 1. O editor chama `conector_send` (Rust), que escreve uma linha de JSON na
@@ -211,26 +223,39 @@ pelo `window.postMessage` da própria página, por um content script
   Enquanto a chave estiver desligada, o editor não mostra o botão e a extensão
   recusa o pedido; o "Baixar arquivo" com os passos à mão continua igual.
 
+### O Lattes simulado
+
+`scripts/lattes-simulado/` é um servidor local (`pnpm dev:lattes`) que imita o
+editor web do Lattes com o currículo em memória, para testar o caminho todo
+(editor, app, host nativo, extensão e núcleo do conector) sem um currículo de
+verdade. Cada procedimento do Lattes é uma rota pelo nome, e cada formulário é
+uma lista de campos ligados a atributos do XML: a mesma lista desenha a página
+e grava o POST. A extensão só o enxerga no canal Dev: a escolha é feita na
+montagem (`__CANAL_DEV__`, `extension/src/lattes-hosts.ts`), e a publicada não
+leva o endereço nem a permissão de `localhost`. Os testes sobem o mesmo
+servidor (`tests/helpers/lattes-simulado.ts`) e rodam contra ele o conector com
+as chaves ligadas (`tests/lattes-simulado.test.ts`).
+
 ## Mapa do código
 
-| Pasta                | O que tem                                                                                                 |
-| -------------------- | --------------------------------------------------------------------------------------------------------- |
-| `src/model/`         | Árvore XML, carga e gravação (ZIP e XML, Latin-1), diferenças, validação, banco cifrado                   |
-| `src/schema/`        | Modelo gerado do XSD, tipos derivados, listas do Lattes                                                   |
-| `src/ui/`            | A interface: seções, formulários de atributo, sino, ⌘K, temas, foto, primeiro uso                         |
-| `src/forms/`         | Formulários de item novo: produção (autores, áreas, palavras-chave), formação, atuação, projeto e patente |
-| `src/import-export/` | O painel "Enviar ao Lattes", o arquivo do Importar, o ZIP, o registro do enviado                          |
-| `src/bridge/`        | O núcleo do conector, usado pela extensão e pelo editor: protocolo, plano, aplicação, leituras do Lattes  |
-| `src/review/`        | Diagnóstico do currículo e o que mudou no Lattes desde a exportação                                       |
-| `src/print/`         | Impressão e PDF (NBR 14724), referências na NBR 6023                                                      |
-| `src/lookups/`       | Busca por DOI no Crossref                                                                                 |
-| `src/desktop/`       | O que só existe no app: arquivos nativos, chave do chaveiro, atualização automática, links externos       |
-| `src/labels/`        | Rótulos pt-BR de elementos, atributos e valores                                                           |
-| `extension/`         | A extensão: service worker, painel, script na aba do Lattes, aviso de consentimento                       |
-| `src-tauri/`         | O app Tauri em Rust: comandos, host nativo, chaveiro, configuração e ícones                               |
-| `scripts/`           | Geradores (schema, fixtures, listas, inventário), montagem da extensão, capturas de tela, vigia do Lattes |
-| `site/`              | A página do projeto e a política de privacidade da extensão (GitHub Pages)                                |
-| `fixtures/`          | O currículo sintético dos testes e das imagens (`fixtures/real/` fica fora do git)                        |
+| Pasta                | O que tem                                                                                                                                         |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/model/`         | Árvore XML, carga e gravação (ZIP e XML, Latin-1), diferenças, validação, banco cifrado                                                           |
+| `src/schema/`        | Modelo gerado do XSD, tipos derivados, listas do Lattes                                                                                           |
+| `src/ui/`            | A interface: seções, formulários de atributo, sino, ⌘K, temas, foto, primeiro uso                                                                 |
+| `src/forms/`         | Formulários de item novo: produção (autores, áreas, palavras-chave), formação, atuação, projeto e patente                                         |
+| `src/import-export/` | O painel "Enviar ao Lattes", o arquivo do Importar, o ZIP, o registro do enviado                                                                  |
+| `src/bridge/`        | O núcleo do conector, usado pela extensão e pelo editor: protocolo, plano, aplicação, leituras do Lattes                                          |
+| `src/review/`        | Diagnóstico do currículo e o que mudou no Lattes desde a exportação                                                                               |
+| `src/print/`         | Impressão e PDF (NBR 14724), referências na NBR 6023                                                                                              |
+| `src/lookups/`       | Busca por DOI no Crossref                                                                                                                         |
+| `src/desktop/`       | O que só existe no app: arquivos nativos, chave do chaveiro, atualização automática, links externos                                               |
+| `src/labels/`        | Rótulos pt-BR de elementos, atributos e valores                                                                                                   |
+| `extension/`         | A extensão: service worker, painel, script na aba do Lattes, aviso de consentimento                                                               |
+| `src-tauri/`         | O app Tauri em Rust: comandos, host nativo, chaveiro, configuração e ícones                                                                       |
+| `scripts/`           | Geradores (schema, fixtures, listas, inventário), montagem da extensão, capturas de tela, vigia do Lattes, o Lattes simulado (`lattes-simulado/`) |
+| `site/`              | A página do projeto e a política de privacidade da extensão (GitHub Pages)                                                                        |
+| `fixtures/`          | O currículo sintético dos testes e das imagens (`fixtures/real/` fica fora do git)                                                                |
 
 ## Canais e versões
 

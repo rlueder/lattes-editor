@@ -361,6 +361,7 @@ outra coisa: um `alert("Problemas na autenticação")` antes de mandar para
 - O formulário de edição de uma atividade existente (`pkg_ativ.cargo` com
   `f_seq_funcao`, montado por JavaScript na grade da atuação).
 - Se o POST do Exportar funciona sem o GET da tela antes (seção 12).
+- Por que um item confirmado no passo 3 do Importar some (seção 13, item 8).
 
 ## 9. Vigia: saber quando o CNPq mudou algo
 
@@ -416,9 +417,10 @@ O topo do menu mostra "Última atualização: <data>" e "Última publicação:
 <data>", e a lista de avisos traz "Existem alterações realizadas em seu
 currículo que ainda não foram enviadas ao CNPq" enquanto houver pendência.
 **Observado.** A extensão lê os dois do menu que já está na aba, sem
-requisição nova (`src/bridge/lattes-status.ts`). Que o aviso some depois de
-"Enviar ao CNPq" é **inferido**; o menu aberto na aba também só muda quando
-é recarregado, então depois de uma fila o estado pode estar defasado.
+requisição nova (`src/bridge/lattes-status.ts`). O menu aberto na aba só
+muda quando é recarregado, então depois de uma fila o estado pode estar
+defasado. Que o aviso some depois de "Enviar ao CNPq" foi **observado** em
+14/10/2026 (abaixo).
 
 "Exportar", no menu secundário, chama
 `modalCV1.setarUrl('pkg_impcv.get_arquivo?f_cod=<10 caracteres>', true)`:
@@ -442,7 +444,35 @@ formulário sem gravar. **Observado.**
 Consequência para o conector: tudo o que ele grava deixa o currículo com
 pendência até a pessoa enviar ao CNPq, e até lá o Exportar recusa. Abrir do
 Lattes pelo conector precisa reconhecer esse estado e pedir o envio antes; não
-adianta tentar de novo.
+adianta tentar de novo. A edição e a exclusão de um evento pelo formulário
+acendem a pendência (seção 16, 14/10/2026). **Observado.**
+
+O Exportar entrega a versão publicada, não a de trabalho: um item que entrou
+pelo Importar, que não acende a pendência, não aparece numa exportação feita
+logo depois (seção 13, 14/10/2026). **Observado.**
+
+**Enviar ao CNPq** (14/10/2026, feito pela pessoa, com a página observada só
+lendo). **Observado.**
+
+- A tela é `pkg_publicar.mostrar_cv?f_cod=…`, aberta no modal. O formulário
+  `publicar` declara só `f_chk` (a declaração); o `enviar()` da página monta
+  o resto.
+- Antes do envio, a página faz três POSTs ajax:
+  `pkg_publicar.racapreenchida_raca_cor` com `f_cod`, que responde
+  `{"status": true}`, e `pkg_util.existe_email_cadastrado` com `f_email` e
+  `f_cod`, uma vez para o e-mail de contato e outra para o alternativo
+  (vazio), que responde `{"existe":false ,"mensagem":"Email não encontrado"}`.
+- O envio é um **GET** para `pkg_publicar.enviar` com `f_chk=1`,
+  `f_idioma=1` (português; `2` seria inglês, **inferido**), `f_chk_en=1`
+  (autoriza a versão em inglês), `f_email_contato`, `f_email_alternativo`,
+  `f_cod` e `f_ctr=U`. Levou cerca de 18 segundos.
+- A resposta é uma página com o `alert("O currículo foi enviado para
+publicação.")`, que trava a aba até alguém clicar em OK (um `fetch` não roda
+  o script). A página traz também um `enviar()` que navegaria para
+  `pkg_publicar.salvar` com os mesmos campos menos `f_chk`; quando ele é
+  chamado não foi visto.
+- Depois, o menu mostra "Última atualização" e "Última publicação" na data do
+  dia, sem o aviso de pendência, e o Exportar volta a exportar.
 
 A versão atual do currículo, com o que ainda não foi enviado, sai de
 `pkg_publicar.cv_espelho?f_cod=<10 caracteres>&f_idioma=1`, o link "Versão em
@@ -488,8 +518,11 @@ vem cada parte. Nada disso foi enviado a um Lattes real; o código está em
 - **Número do item**: a cópia de trabalho guarda o número que o editor deu.
   Até o conector reconciliar com o `SEQUENCIA-ATIVIDADE` que o Lattes devolve,
   o caminho é recarregar a exportação antes de alterar esse item pelo conector.
-- **Fora por enquanto**: Formação (o curso só entra pela busca de cursos,
-  não mapeada), Projetos e Patentes (formulários de inclusão não lidos).
+- **Formação e projeto** (LAT-52): depois do mapa das seções 17 e 18, as
+  inclusões estão em `src/bridge/create-formacao.ts` e
+  `src/bridge/create-projeto.ts`, atrás da mesma chave, também sem envio
+  real. A patente continua fora: a consulta `verifica_cadastrado` e o
+  formulário com `f_ctr=R` não foram observados.
 
 ## 12. Exportar pelo conector (LAT-22, 13/10/2026)
 
@@ -510,6 +543,11 @@ filename="CV_<16 dígitos>.zip"`, em menos de meio segundo. O ZIP tem uma
 A sessão continuou de pé: o menu respondeu logo depois e cinco minutos
 depois do POST. **Observado** uma vez; a queda de 10/10/2026, cerca de três
 minutos depois de abrir o Exportar, segue sem causa conhecida.
+
+O POST só funciona em `/cvlattesweb/PKG_IMPCV.get_arquivo`: feito a partir de
+uma página em `/curriculoweb/`, o `fetch` falha com "Failed to fetch"
+(14/10/2026). **Observado.** O editor responde nas duas bases; a causa da
+falha (redirecionamento ou CORS) é **inferida**.
 
 Se o POST sem o GET da tela antes também funciona não foi testado. O conector
 faz os dois, e o GET ainda serve para reconhecer, sem `alert()`, a sessão
@@ -606,26 +644,60 @@ pode ser ligada como está.
 vermelho">`; o único item veio verde. `enviar()` exige ao menos um `f_sq`
    marcado e põe `f_ctr=I`; `excluir()` pede confirmação e põe `f_ctr=D`.
 4. O Confirmar do passo 3 (POST para `mostra_lista_prod` com `f_ctr=I` e
-   `f_sq=20`) responde com `caixaMsg.exibir` "A operação foi realizada com
-   sucesso!", e a solicitação é consumida (o Importar volta ao passo 1).
+   `f_sq=20`) responde com
+   `caixaMsg.exibir({titulo:'Sucesso',conteudo:'A operação foi realizada com sucesso! !',classe:'ok'})`
+   (o texto é esse, com o espaço e o segundo "!"), e a solicitação é
+   consumida (o Importar volta ao passo 1).
    Mesmo assim, passados mais de 3 minutos, o item **não** está em
-   `pkg_evento.lista`, nem em `cv_espelho`, nem numa exportação nova, e o
-   menu não mostra alteração pendente. A mensagem de sucesso não quer dizer
-   que o item entrou. A causa não se sabe: o Lattes descartou o item em
-   silêncio, ou o POST feito pela página difere do envio do navegador em
-   algum parâmetro.
+   `pkg_evento.lista` nem em `cv_espelho`. A mensagem de sucesso não quer
+   dizer que o item entrou.
+5. "Descartar" no passo 2 (POST para `mostra_modulos` com `f_ctr=D`) volta
+   ao passo 1 e encerra a solicitação.
+6. O Confirmar feito pela própria tela manda os mesmos campos que o POST
+   montado de dentro da página: os dois foram comparados campo a campo nos
+   passos 2 e 3. A diferença entre o envio do conector e o do navegador não
+   explica o item que não entrou. O formulário do passo 2 tem, nesta ordem,
+   `f_cod`, `f_solic`, um `f_chkp` oculto com `dummy`, `f_ctr`, `f_all`, as
+   caixas `f_chkp` de 1 a 17 e `f_ano_prod`. O envio do navegador no passo 2
+   foi `f_cod`, `f_solic`, `f_chkp=dummy`, `f_ctr=I`, `f_chkp=16`,
+   `f_ano_prod=2026`, sem `f_all`; no passo 3, `f_cod`, `f_solic`,
+   `f_sq=dummy`, `f_ctr=I`, `f_chkp=dummy`, `f_chkp=16`, `f_all=on`,
+   `f_sq=20`. **Observado.** O conector manda o passo 2 com os mesmos campos,
+   na mesma ordem.
+7. No passo 3, o verde e o vermelho comparam pelo título: os eventos de
+   ouvinte sem título aparecem como "Produção sem título", todos verdes,
+   embora já estejam no currículo. O filtro de ano do passo 2 limita a
+   lista do passo 3.
+8. Um evento montado à mão (Participante, Apresentação oral, `IDIOMA`
+   Português, `TITULO` preenchido, **sem** `PARTICIPANTE-DE-EVENTOS-CONGRESSOS`)
+   recebeu o "sucesso" e não entrou, duas vezes, uma delas pela tela. Uma
+   cópia de um evento de ouvinte que já estava no currículo, com o
+   `PARTICIPANTE-DE-EVENTOS-CONGRESSOS` da própria pessoa e `IDIOMA` vazio,
+   só com o nome e o título trocados, entrou. Que o item sem a própria
+   pessoa entre os participantes seja descartado em silêncio é **inferido**:
+   a causa não foi isolada.
+9. Cada importação confirmada gasta um `SEQUENCIA-PRODUCAO`, mesmo a que
+   some: o item que entrou ficou com `f_seq=36`, e 34 e 35 foram das duas que
+   não entraram (o máximo anterior era 33). O arquivo trazia 34: o número é
+   o do servidor, não o do arquivo, e é ele o `f_seq` do formulário de
+   edição.
+10. O item que entrou não acende o aviso de alterações não enviadas ao CNPq,
+    aparece na lista e em `cv_espelho`, e **não** aparece no Exportar: o
+    Exportar entrega a versão publicada (seção 10).
 
 Consequências:
 
-- Conferir por uma exportação nova depois do Confirmar (já previsto no guia,
-  seção 1) é obrigatório; a mensagem de sucesso não vale como conferência.
+- A conferência de uma importação é pela lista ou por `cv_espelho`, nunca
+  por uma exportação nova: o Exportar entrega a versão publicada (seção 10),
+  e que o item apareça nele depois do envio ao CNPq é **inferido**. A
+  mensagem de sucesso não vale como conferência. Isso corrige o plano do
+  guia (seção 1) de conferir por uma exportação.
 - O arquivo mínimo, como o guia o descreve, não passa. Para passar do DTD
   ele precisou de todos os atributos de `DADOS-GERAIS`, inclusive dados
   pessoais, e ainda assim um arquivo só com evento foi recusado como sem
   produções científicas.
-- O POST do Exportar (seção 12) só funciona em
-  `/cvlattesweb/PKG_IMPCV.get_arquivo`; feito a partir de `/curriculoweb/`,
-  falha com "Failed to fetch".
+- Um evento importado precisa levar a própria pessoa entre os
+  participantes (**inferido** do item 8).
 
 O conector reconhece os dois alertas do passo 1 e para com o motivo
 `arquivo`, sem solicitação criada.
@@ -686,10 +758,13 @@ function del() {
 
 `dc` é o formulário da tela, o mesmo da alteração: POST para o próprio
 procedimento (seção 2) com `f_ctr` trocado de `U` para `E` e os campos do
-item como estão, entre eles `f_cod` e `f_seq`. Que o servidor exclua com esse
-POST e o que ele responde são **inferidos**: nada foi enviado. Também é
-**inferido** que o POST de exclusão aceite só `f_ctr`, `f_cod` e `f_seq`, sem
-os outros campos do formulário.
+item como estão, entre eles `f_cod` e `f_seq`. Na participação em eventos, o
+POST com todos os campos do formulário e `f_ctr=E` exclui: a resposta é a
+mesma da alteração (seção 16), a linha sai da lista na hora (de 7 para 6) e
+some de `cv_espelho`, e a pendência continua acesa (14/10/2026, num item de
+teste). **Observado.** Nas outras telas, que o servidor exclua e o que ele
+responde seguem **inferidos**. Também é **inferido** que o POST de exclusão
+aceite só `f_ctr`, `f_cod` e `f_seq`, sem os outros campos do formulário.
 
 | Módulo (lista)                                                                | Onde fica a exclusão                             | Requisição                                                                                                            | Parâmetros                                                                                | Texto do confirm                                                                                                                                 |
 | ----------------------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -735,9 +810,9 @@ Pontos fora do padrão, todos **observados** no código:
 Consequência para o conector: na maioria das seções, excluir é o mesmo POST
 da alteração com `f_ctr=E`, a partir de um formulário de edição carregado
 por GET (que traz `f_cod` e `f_seq`). As duas formações e a atuação inteira
-pedem tratamento próprio. O que ainda falta observar é a resposta do
-servidor a uma exclusão e se ela deixa o currículo com alteração pendente
-de envio ao CNPq; isso só com a pessoa acompanhando, num item de teste.
+pedem tratamento próprio. A resposta do servidor e a pendência foram vistas
+na exclusão de um evento (acima); nas outras telas, ainda só com a pessoa
+acompanhando, num item de teste.
 
 O conector já tem a exclusão do idioma e do vínculo em
 `src/bridge/delete.ts`, desligada (`DELETE_ITEMS_ENABLED = false`). Ela posta
@@ -787,6 +862,17 @@ clique, quem grava fora da página precisa mandar o texto do rótulo direto em
 `F_TPO`. Os seis eventos deste currículo são de ouvinte, então não se viu
 como a edição de um convidado ou participante marca a opção já gravada.
 **Lacuna.**
+
+**Alteração enviada** (14/10/2026, num evento de ouvinte de teste). O POST
+para `PKG_EVENTO.FORM` com todos os campos do formulário como vieram, só
+`f_titulo` trocado, `F_TPO` vazio e `f_ctr=U`, responde com um script que
+chama `checkPublicacao()` e
+`caixaMsg.exibir({titulo:'Sucesso',conteudo:'A operação foi realizada com sucesso! !',classe:'ok'})`,
+a mesma caixa do Confirmar do Importar (seção 13). O conector não lê esse
+texto: confere relendo o formulário. Relido, só `f_titulo` mudou. Depois da alteração, o menu passa a
+mostrar a pendência e o Exportar recusa. O `f_seq` desse formulário é o
+`SEQUENCIA-PRODUCAO` que o servidor deu ao item (seção 13, item 9).
+**Observado.**
 
 O formulário não tem idioma, meio de divulgação, relevância, palavras-chave,
 áreas nem participantes, embora o XSD tenha esses campos no evento.
@@ -1230,3 +1316,55 @@ formação, que pelo XSD não existem em todos os níveis (a amostra é a
 primeira formação da lista, de qualquer nível). Os outros aparecem como "campo novo" na
 verificação, que só avisa. O teste acompanhado completa a lista com o que a
 verificação mostrar.
+
+## 20. Censo dos formulários (LAT-55, 15/10/2026)
+
+As seções acima foram escritas formulário a formulário, à mão. O censo faz a
+mesma leitura de uma vez, para todos os formulários de inclusão que este
+documento e a captura das listas de 13/10/2026 conhecem: abre cada um por GET,
+sem `f_seq`, e guarda os campos na ordem da página com o rótulo ao lado, os
+ocultos e as opções, sem nenhum valor do currículo. Para os itens que o
+currículo de quem roda já tem, abre também o formulário de edição e casa cada
+campo com o atributo do mesmo item na exportação, o que transforma em
+**observado** a ligação campo ↔ atributo que as tabelas acima marcam como
+inferida.
+
+O código está em `src/census/`, a lista de formulários em
+`src/census/targets.ts` e `targets-production.ts` (com o que é observado e o
+que é inferido em cada entrada), e as capturas, o relatório de cobertura e o
+passo a passo em `docs/lattes-formularios/`.
+
+**Primeira captura (15/10/2026)**, na sessão do dono do currículo, cerca de
+13 minutos: 77 formulários, 72 lidos, 285 ligações observadas em 15 entradas
+com itens no currículo. **Observado**:
+
+- Confirmadas pela passada de edição, entre as que as seções acima marcavam
+  como inferidas: no evento, `F_FORMA` → `FORMA-PARTICIPACAO` e `f_cidade` →
+  `CIDADE-DO-EVENTO`; na formação (graduação, mestrado, técnico), `f_ano_ini`
+  → `ANO-DE-INICIO`, `f_ano_fim` → `ANO-DE-CONCLUSAO`, `f_inst` →
+  `NOME-INSTITUICAO`, `f_curso` → `NOME-CURSO`, `F_BOLSA` → `FLAG-BOLSA`,
+  `f_titulo` → título do trabalho e `f_orient` → orientador; no endereço
+  residencial, rua, bairro, município, UF, país, DDD, telefone e página; o
+  `f_seq` do evento, da editoração, do trabalho técnico e do mestrado é o
+  `SEQUENCIA-*` do item.
+- Contrariado: nos 8 vínculos lidos, `f_stavinc` ("Possui vínculo
+  empregatício") 0 veio com `FLAG-VINCULO-EMPREGATICIO="SIM"` e 1 com `NAO`,
+  ao contrário da tabela da seção 5 (1 = sim) e de `src/bridge/plan.ts`. A
+  exportação é a versão publicada (seção 10) e o formulário mostra a de
+  trabalho, então a causa não está isolada. **A conferir** antes de gravar o
+  vínculo pelo conector.
+- Os formulários de corpo editorial, revisão e assessoramento
+  (`PKG_REVISOR.inclui`, `f_natur` MB, MA, RV, RA) são `GN_ATIV`, POST
+  `PKG_REVISOR.INCLUI`, com os ocultos de uma atividade da atuação
+  (`f_codinst`, `f_seq_ativ`, `f_seq_funcao_ativ`) e 7 ou 8 campos (periódico
+  ou agência, comitê, mês e ano de início e fim, status). Que elemento do XML
+  gravam não se sabe.
+- A janela prévia da patente (`informar_dados_patente?ftipo=PP`) responde 404
+  com `f_cod`: o Lattes a abre sem ele, e o coletor passou a abrir assim.
+- A inclusão de artigos publicados (`PKG_ARTIGO.form`, do link da lista) veio
+  sem formulário nenhum; o coletor passou a guardar a forma da página (tamanho
+  e contagem de tags) para a próxima leitura dizer o que veio. A de linhas de
+  pesquisa não tem link na lista (**inferido**: sai de uma função da página).
+- Rádios com o texto antes ("Sim (o) Não (o)", nos projetos e patentes) saíram
+  com o rótulo deslocado nesta captura; o coletor foi corrigido, e a próxima
+  captura traz os rótulos certos.

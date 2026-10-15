@@ -59,7 +59,7 @@ export const UNDO_KEY_PREFIX = 'desfazer:';
  * criado ou excluído não tem "antes" no mesmo formulário.
  */
 export function noUndoReason(op: BridgeOp): string | undefined {
-  if (op.kind === 'criar-atuacao') {
+  if (op.kind.startsWith('criar-')) {
     return 'Item criado pelo conector: para tirar, exclua no Lattes, à mão';
   }
   if (isDeleteOp(op)) {

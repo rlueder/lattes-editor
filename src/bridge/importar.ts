@@ -15,7 +15,7 @@
 // formulário pkg_imp_xml, POST para pkg_importa_xml.mostra_lista_prod, uma
 // caixa f_sq por item com um id do servidor (não o SEQUENCIA-PRODUCAO) e
 // <b class="quadrado verde|vermelho"> em cada linha. O Confirmar dele disse
-// "A operação foi realizada com sucesso!" e o item não entrou no currículo.
+// "A operação foi realizada com sucesso! !" e o item não entrou no currículo.
 // Enquanto não se souber por quê, o fluxo para na resposta do passo 2, seja
 // ela qual for, sem nenhum POST a mais, e devolve só a forma da página. A
 // solicitação criada no passo 1 fica pendente no Lattes, à espera de
@@ -239,8 +239,10 @@ export function readStep2(html: string): Step2Form | { problem: string } {
   if (!code || !request || !controls.some((c) => c.name === 'f_ctr')) {
     return { problem: 'O passo 2 não tem f_cod, f_solic ou f_ctr.' };
   }
+  // O f_chkp oculto com "dummy" (observado no passo 2 em 14/10/2026, seção
+  // 13) não é caixa de módulo.
   const boxes = controls
-    .filter((c) => c.name === 'f_chkp')
+    .filter((c) => c.name === 'f_chkp' && !(c.type === 'hidden' && c.value === 'dummy'))
     .map((c) => (c.type === 'checkbox' ? Number(c.value) : NaN))
     .sort((a, b) => a - b);
   const expected = Array.from({ length: MODULE_COUNT }, (_, i) => i + 1);
@@ -413,9 +415,12 @@ async function uploadAndSelect(
     };
   }
 
+  // Os campos e a ordem do envio do próprio navegador no passo 2, observados
+  // em 14/10/2026: f_cod, f_solic, f_chkp=dummy, f_ctr=I, os módulos e o ano.
   const body = new URLSearchParams([
     ['f_cod', code],
     ['f_solic', form.request],
+    ['f_chkp', 'dummy'],
     ['f_ctr', 'I'],
     ...[...new Set(req.modules)]
       .sort((a, b) => a - b)

@@ -1,5 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
+import {
+  AGENCIES as SIMULATED_AGENCIES,
+  AREAS as SIMULATED_AREAS,
+} from '../scripts/lattes-simulado/buscas.ts';
 import {
   agenciesPath,
   countAreas,
@@ -18,6 +22,7 @@ import {
   selectEntries,
 } from '../src/bridge/lattes-lists.ts';
 import { checkSources, listText, unreadSources } from '../src/bridge/list-watch.ts';
+import { type LattesSimuladoNoTeste, withLattesSimulado } from './helpers/lattes-simulado.ts';
 
 // Fixtures feitas à mão, no formato descrito em docs/lattes_internals.md
 // (seção 18): poucos nós do areaDP num menu falso, uma resposta da busca de
@@ -196,55 +201,67 @@ describe('agências, instituições e cursos', () => {
   });
 });
 
-/** Uma aba do Lattes falsa: o menu e as páginas por prefixo; nunca POST. */
-function fakePort(pages: Record<string, string | Error>, menu = MENU) {
+// As leituras pelo conector correm contra o Lattes simulado
+// (scripts/lattes-simulado/), com a tabela de áreas no menu, a lista de
+// agências e as buscas de instituição e de curso. As páginas trocadas por
+// prefixo simulam o que o simulado não tem (lista vazia, rede caída, login).
+let open: LattesSimuladoNoTeste | undefined;
+afterEach(async () => {
+  await open?.close();
+  open = undefined;
+});
+
+async function lattesPort(pages: Record<string, string | Error> = {}, menu?: string) {
+  open ??= await withLattesSimulado();
+  const lattes = open;
   const gets: string[] = [];
   const port: ListsPort = {
     async get(path) {
       gets.push(path);
       const hit = Object.entries(pages).find(([prefix]) => path.startsWith(prefix))?.[1];
       if (hit instanceof Error) throw hit;
-      return hit ?? '';
+      return hit ?? lattes.port.get(path);
     },
-    menuHtml: () => menu,
+    menuHtml: () => menu ?? lattes.port.menuHtml(),
   };
-  return { gets, port };
+  return { code: lattes.state.code, gets, menu: await lattes.port.menuHtml(), port };
 }
 
 const LOGON = '<form action="pkg_sec.logon">';
 
 describe('leituras pelo conector', () => {
   it('lê áreas do menu da aba e agências num GET', async () => {
-    const { gets, port } = fakePort({ prc_agencia: AGENCIES });
+    const { code, gets, port } = await lattesPort();
     const r = await readLists(port);
     expect(r.error).toBeUndefined();
-    expect(r.areas).toHaveLength(3);
-    expect(r.agencies).toHaveLength(2);
-    expect(gets).toEqual(['prc_agencia?f_cod=K000000000']);
+    expect(r.areas?.map((a) => a.c)).toEqual(SIMULATED_AREAS.map(([c]) => c));
+    expect(r.agencies).toEqual(SIMULATED_AGENCIES.map(([c, name]) => ({ code: c, name })));
+    expect(gets).toEqual([`prc_agencia?f_cod=${code}`]);
   });
 
   it('sem a tabela na aba, lê o menu de novo; uma lista que falha não leva a outra', async () => {
-    const tabMenu = MENU.replace(/var areaDP[^;]*\];/s, '');
-    const { gets, port } = fakePort({ PKG_MENU: MENU, prc_agencia: new Error('rede') }, tabMenu);
+    const full = await lattesPort();
+    const tabMenu = full.menu.replace(/var areaDP[^;]*\];/s, '');
+    const { code, gets, port } = await lattesPort({ prc_agencia: new Error('rede') }, tabMenu);
     const r = await readLists(port);
-    expect(gets).toEqual(['PKG_MENU.menu', 'prc_agencia?f_cod=K000000000']);
-    expect(r.areas).toHaveLength(3);
+    expect(gets).toEqual(['PKG_MENU.menu', `prc_agencia?f_cod=${code}`]);
+    expect(r.areas).toHaveLength(SIMULATED_AREAS.length);
     expect(r.agencies).toBeUndefined();
     expect(r.error).toBe('A aba do Lattes não respondeu');
   });
 
   it('diz por que não veio: menu sem tabela, sem código, lista vazia, sessão caída', async () => {
     const bare = '<p>menu</p>';
-    expect(await readLists(fakePort({ PKG_MENU: bare }, bare).port)).toEqual({
+    expect(await readLists((await lattesPort({ PKG_MENU: bare }, bare)).port)).toEqual({
       agencies: undefined,
       areas: undefined,
       error: 'A tabela de áreas não está no menu do Lattes; O código do currículo não está no menu',
     });
-    expect((await readLists(fakePort({ prc_agencia: '<p></p>' }).port)).error).toBe(
+    expect((await readLists((await lattesPort({ prc_agencia: '<p></p>' })).port)).error).toBe(
       'A lista de agências veio vazia',
     );
-    expect((await readLists(fakePort({}, LOGON).port)).error).toMatch(/sessão/);
-    const gone = await readLists(fakePort({ PKG_MENU: LOGON }, bare).port);
+    expect((await readLists((await lattesPort({}, LOGON)).port)).error).toMatch(/sessão/);
+    const gone = await readLists((await lattesPort({ PKG_MENU: LOGON }, bare)).port);
     expect(gone.error).toMatch(/sessão do Lattes caiu/);
     const broken: ListsPort = {
       get: async () => '',
@@ -254,67 +271,94 @@ describe('leituras pelo conector', () => {
   });
 
   it('busca instituição só com 3 letras ou mais, e só com GET', async () => {
-    const { gets, port } = fakePort({ PRC_INST_FORM: INSTITUTIONS });
+    const { gets, port } = await lattesPort();
     expect(await searchInstitutions(port, ' %Un ')).toEqual({ results: [] });
     expect(gets).toEqual([]);
     const r = await searchInstitutions(port, 'Campinas', '3');
-    expect(r.results?.map((i) => i.code)).toEqual(['M007900000004', 'V007900000099']);
+    expect(r.results).toEqual([
+      {
+        code: 'V000000000003',
+        label: 'UNIVERSIDADE ESTADUAL DE CAMPINAS (SP)',
+        name: 'Universidade Estadual de Campinas',
+      },
+    ]);
     expect(gets[0]).toContain('F_NIVEL=3');
-    expect(await searchInstitutions(fakePort({}, '<p></p>').port, 'Campinas')).toEqual({
+    // Instituição "macro" (letra M), que vai em f_cod_inst2.
+    const macro = await searchInstitutions(port, 'Agropecuária');
+    expect(macro.results?.map((i) => i.code)).toEqual(['M000000000004']);
+    expect(await searchInstitutions((await lattesPort({}, '<p></p>')).port, 'Campinas')).toEqual({
       error: 'O código do currículo não está no menu',
     });
     expect(
-      (await searchInstitutions(fakePort({ PRC_INST_FORM: LOGON }).port, 'Campinas')).error,
+      (await searchInstitutions((await lattesPort({ PRC_INST_FORM: LOGON })).port, 'Campinas'))
+        .error,
     ).toMatch(/sessão/);
   });
 
   it('lê os cursos da instituição no nível', async () => {
-    const { gets, port } = fakePort({ prc_curso_form: COURSES });
-    const r = await readCourses(port, 'V007900000004', '4');
-    expect(r.courses).toHaveLength(3);
-    expect(gets).toEqual([coursesPath('K000000000', 'V007900000004', '4')]);
-    expect(await readCourses(fakePort({ prc_curso_form: '<p></p>' }).port, 'V1', '4')).toEqual({
+    const { code, gets, port } = await lattesPort();
+    const r = await readCourses(port, 'V000000000001', '4');
+    expect(r.courses).toEqual([
+      { label: 'Genética e Biologia Molecular', value: 'V00000001' },
+      { label: 'Botânica', value: 'V00000002' },
+    ]);
+    expect(gets).toEqual([coursesPath(code, 'V000000000001', '4')]);
+    expect(
+      await readCourses((await lattesPort({ prc_curso_form: '<p></p>' })).port, 'V1', '4'),
+    ).toEqual({
       error: 'A lista de cursos não veio na página do Lattes',
     });
-    expect(await readCourses(fakePort({}, '<p></p>').port, 'V1', '4')).toEqual({
+    expect(await readCourses((await lattesPort({}, '<p></p>')).port, 'V1', '4')).toEqual({
       error: 'O código do currículo não está no menu',
     });
     expect(
-      (await readCourses(fakePort({ prc_curso_form: new Error('x') }).port, 'V1', '4')).error,
+      (await readCourses((await lattesPort({ prc_curso_form: new Error('x') })).port, 'V1', '4'))
+        .error,
     ).toBe('A aba do Lattes não respondeu');
   });
 });
 
 describe('vigia das fontes das listas ao vivo', () => {
-  const listPort = (pages: Record<string, string | Error>) => ({
-    ...fakePort(pages).port,
-    isFatal: (err: unknown) => err instanceof Error && err.message === 'fatal',
-  });
+  const listPort = async (pages: Record<string, string | Error>) => {
+    const l = await lattesPort(pages);
+    return {
+      code: l.code,
+      menu: l.menu,
+      port: {
+        ...l.port,
+        isFatal: (err: unknown) => err instanceof Error && err.message === 'fatal',
+      },
+    };
+  };
 
   it('confere a tabela de áreas no menu e a lista de agências', async () => {
-    const ok = await checkSources(listPort({ prc_agencia: AGENCIES }), 'K000000000', MENU);
+    const { code, menu, port } = await listPort({});
+    const ok = await checkSources(port, code, menu);
     expect(ok.map((c) => c.status)).toEqual(['ok', 'ok']);
-    const gone = await checkSources(listPort({ prc_agencia: '<p></p>' }), 'K000000000', '<p></p>');
+    const empty = await listPort({ prc_agencia: '<p></p>' });
+    const gone = await checkSources(empty.port, code, '<p></p>');
     expect(gone.map((c) => c.status)).toEqual(['nao-encontrado', 'nao-encontrado']);
     expect(listText(gone[1]!)).toBe('Agências de fomento: a lista de prc_agencia sumiu');
   });
 
   it('falha de leitura vira erro sem o código do currículo; sessão caída para tudo', async () => {
-    const err = new Error('GET prc_agencia?f_cod=K000000000 falhou');
-    const [, agencies] = await checkSources(listPort({ prc_agencia: err }), 'K000000000', MENU);
+    const first = await listPort({});
+    const code = first.code;
+    const err = new Error(`GET prc_agencia?f_cod=${code} falhou`);
+    const failing = await listPort({ prc_agencia: err });
+    const [, agencies] = await checkSources(failing.port, code, failing.menu);
     expect(agencies).toMatchObject({
       detail: 'GET prc_agencia?f_cod=[código] falhou',
       status: 'erro',
     });
     const odd = await checkSources(
       { get: () => Promise.reject('texto'), isFatal: () => false },
-      'K000000000',
-      MENU,
+      code,
+      first.menu,
     );
     expect(odd[1]).toMatchObject({ detail: 'Falha inesperada', status: 'erro' });
-    await expect(
-      checkSources(listPort({ prc_agencia: new Error('fatal') }), 'K000000000', MENU),
-    ).rejects.toThrow('fatal');
+    const fatal = await listPort({ prc_agencia: new Error('fatal') });
+    await expect(checkSources(fatal.port, code, fatal.menu)).rejects.toThrow('fatal');
     expect(unreadSources('sem código').map((c) => c.status)).toEqual(['erro', 'erro']);
   });
 });

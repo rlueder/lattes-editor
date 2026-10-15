@@ -6,10 +6,11 @@ import type { ImportResult } from '../../src/bridge/importar.ts';
 import type { LattesStatus } from '../../src/bridge/lattes-status.ts';
 import type { BridgeMessage, EditorMessage } from '../../src/bridge/protocol.ts';
 import { hasConsent } from './consent.ts';
-import { LATTES_MENU } from './state.ts';
+import { LATTES_MENU, lattesMenus } from './lattes-hosts.ts';
 
 export async function lattesTab(): Promise<number | undefined> {
-  const [tab] = await chrome.tabs.query({ url: LATTES_MENU });
+  // Escolha na montagem: na extensão publicada, o simulado não entra no código.
+  const [tab] = await chrome.tabs.query({ url: __CANAL_DEV__ ? lattesMenus(true) : [LATTES_MENU] });
   return tab?.id;
 }
 

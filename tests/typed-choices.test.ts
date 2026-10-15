@@ -79,6 +79,19 @@ describe('campos tipados: listas', () => {
     );
   });
 
+  it('UF de nascimento e do órgão emissor pela sigla, da identificação', () => {
+    const ufs = values(typedChoices(basics('DADOS-GERAIS'), 'UF-NASCIMENTO'));
+    expect(ufs).toHaveLength(27);
+    expect(ufs).toContain('RS');
+    expect(typedChoices(basics('DADOS-GERAIS'), 'UF-ORGAO-EMISSOR')).toEqual(
+      typedChoices(basics('DADOS-GERAIS'), 'UF-NASCIMENTO'),
+    );
+    expect(typedChoices(basics('ENDERECO-PROFISSIONAL'), 'UF')).toBeUndefined();
+    expect(outOfList(basics('DADOS-GERAIS', { 'UF-NASCIMENTO': 'XX' }), 'UF-NASCIMENTO')).toBe(
+      true,
+    );
+  });
+
   it('o idioma da seção Idiomas é código e fica de fora', () => {
     expect(typedChoices(basics('IDIOMA'), 'IDIOMA')).toBeUndefined();
   });
