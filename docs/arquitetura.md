@@ -99,7 +99,9 @@ que o painel "Enviar ao Lattes" mostra item por item:
   `src/bridge/plan.ts` transforma a alteração numa operação de formulário, e
   `src/bridge/apply.ts` a aplica na aba do Lattes. Antes de gravar, confere
   que o formulário está como o editor espera; depois, lê de novo e confere que
-  só os campos da operação mudaram. Formação, endereço e identificação têm as
+  só os campos da operação mudaram. O "Possui vínculo empregatício" do Lattes
+  é o inverso do `FLAG-VINCULO-EMPREGATICIO` da exportação, e a tradução dos
+  dois sentidos fica em `src/bridge/vinculo-flag.ts`. Formação, endereço e identificação têm as
   operações em `src/bridge/biographic.ts`, desligadas até o teste no Lattes
   real (`BIOGRAPHIC_OPS_ENABLED`); enquanto isso, seguem à mão.
 - **Item removido no editor** pode ir pela extensão com

@@ -27,6 +27,7 @@ import {
 import { decodeHtmlEntities } from './html-text.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
 import type { FieldValues } from './plan.ts';
+import { stavincFromFlag } from './vinculo-flag.ts';
 
 /**
  * Fica false até um teste acompanhado num Lattes real. Desligada, o
@@ -56,8 +57,6 @@ const VINCULO_TEXT: Record<string, string> = {
   PROFESSOR_VISITANTE: 'Professor Visitante',
   SERVIDOR_PUBLICO: 'Servidor público',
 };
-
-const yesNo = (v: string | undefined) => (v === 'SIM' ? '1' : v === 'NAO' ? '0' : '');
 
 /** O que falta para incluir, em texto para a pessoa; undefined se dá. */
 type Planned = CreateAtuacaoOp | { reason: string };
@@ -111,7 +110,8 @@ export function planCreateAtuacao(change: Change, el: XElement, label: string): 
     // Caixa com valor 3: marcada = dedicação exclusiva (como na alteração).
     f_regime: getAttr(v, 'FLAG-DEDICACAO-EXCLUSIVA') === 'SIM' ? '3' : null,
     f_status: anoFim ? 'N' : 'S',
-    f_stavinc: yesNo(getAttr(v, 'FLAG-VINCULO-EMPREGATICIO')),
+    // Invertido em relação ao XML (vinculo-flag.ts).
+    f_stavinc: stavincFromFlag(getAttr(v, 'FLAG-VINCULO-EMPREGATICIO')),
     f_vinc: vinc,
     // check() copia o texto de f_vinc para f_vinculo antes do envio.
     f_vinculo: vinc,

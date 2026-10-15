@@ -11,6 +11,7 @@
 // novo (na atuação da instituição escolhida, numa participação em projeto
 // nova).
 
+import { stavincFromFlag } from '../../src/bridge/vinculo-flag.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, walk, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
@@ -150,7 +151,10 @@ function vinculoCopy(atuacao: XElement) {
     carga: val('CARGA-HORARIA-SEMANAL'),
     enqua: val('OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO'),
     regime: val('FLAG-DEDICACAO-EXCLUSIVA') === 'SIM' ? '3' : '',
-    stavinc: val('FLAG-VINCULO-EMPREGATICIO') === 'SIM' ? '1' : '0',
+    // O código do formulário, invertido em relação à exportação como o
+    // f_stavinc do vínculo (observado em 15/10/2026, vinculo-flag.ts); que
+    // preencherOpener leve esse mesmo código é inferido.
+    stavinc: stavincFromFlag(val('FLAG-VINCULO-EMPREGATICIO')),
     vinc: val('OUTRO-VINCULO-INFORMADO') || val('TIPO-DE-VINCULO'),
   };
 }

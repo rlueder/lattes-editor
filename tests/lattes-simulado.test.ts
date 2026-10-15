@@ -22,6 +22,7 @@ import { CREATE_FIELD_LABELS } from '../src/bridge/create-labels.ts';
 import { editContract } from '../src/bridge/edit-items.ts';
 import { isEspelhoPage, parseEspelho } from '../src/bridge/espelho.ts';
 import { exportCv, fromBase64 } from '../src/bridge/export.ts';
+import { pairValue, successfulPairs } from '../src/bridge/form.ts';
 import { importItems, readStep2, STEP2_MODULE_VALUES } from '../src/bridge/importar.ts';
 import { cvCodeFrom, lattesIdFrom } from '../src/bridge/lattes-html.ts';
 import { lattesStatusFrom } from '../src/bridge/lattes-status.ts';
@@ -206,6 +207,46 @@ describe('Lattes simulado: o conector de ponta a ponta', () => {
     );
     expect(getAttr(unicamp, 'CODIGO-INSTITUICAO')).toBe('000000000003');
     expect(getAttr(childElements(unicamp, 'VINCULOS')[0]!, 'TIPO-DE-VINCULO')).toBe('CELETISTA');
+    // Passou pelo f_stavinc invertido (0) e voltou SIM na exportação.
+    expect(getAttr(childElements(unicamp, 'VINCULOS')[0]!, 'FLAG-VINCULO-EMPREGATICIO')).toBe(
+      'SIM',
+    );
+  });
+
+  it('f_stavinc é o inverso de FLAG-VINCULO-EMPREGATICIO, como no Lattes (observado em 15/10/2026)', async () => {
+    const lattes = await start();
+    const form = async () => {
+      const html = await lattes.port.get(
+        `PKG_ATIV.vinculos?f_cod=${lattes.state.code}&f_codinst=&f_seq_ativ=1&f_seq_hist=1`,
+      );
+      return pairValue(successfulPairs(lattes.port.readForm(html, 'GN_ATIV_VINC')!), 'f_stavinc');
+    };
+    // A demonstração exporta SIM: o formulário mostra Não (0).
+    expect(await form()).toBe('0');
+
+    const plan = await planEdits((doc) =>
+      setAttr(
+        find(doc.root, (el) => el.name === 'VINCULOS'),
+        'FLAG-VINCULO-EMPREGATICIO',
+        'NAO',
+      ),
+    );
+    expect(plan.ops).toMatchObject([
+      { expect: { f_stavinc: '0' }, kind: 'vinculo', set: { f_stavinc: '1' } },
+    ]);
+    expect((await applyAll(plan.ops, lattes.port)).map((r) => r.status)).toEqual(['conferido']);
+    expect(await form()).toBe('1');
+
+    await lattes.port.get(
+      `pkg_publicar.enviar?f_chk=1&f_idioma=1&f_chk_en=1&f_email_contato=&f_email_alternativo=&f_cod=${lattes.state.code}&f_ctr=U`,
+    );
+    const r = await exported(lattes);
+    if (!r.ok) throw new Error(r.reason);
+    const doc = (await loadCv(r.bytes, r.fileName)).doc;
+    const vinculo = find(doc.root, (el) => el.name === 'VINCULOS');
+    expect(getAttr(vinculo, 'FLAG-VINCULO-EMPREGATICIO')).toBe('NAO');
+    // A dedicação exclusiva não é invertida.
+    expect(getAttr(vinculo, 'FLAG-DEDICACAO-EXCLUSIVA')).toBe('SIM');
   });
 
   it('inclui formação e projeto pelo conector, sobre uma atuação incluída antes', async () => {

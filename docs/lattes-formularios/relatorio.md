@@ -109,7 +109,6 @@ ligação do formulário com os elementos do XML foi conferida.
 - DADOS-BASICOS-DO-TRABALHO-TECNICO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica) (aceita: a opção V (impresso e mídia eletrônica) não apareceu em nenhum item da exportação; VARIOS seria palpite)
 - POS-DOUTORADO@STATUS-DO-CURSO: o campo F_STATUS tem opções no Lattes e o editor mostra texto livre (aceita: ligado em typed-choices.ts no #81 (POSTDOC_STATUS), ainda fora da main)
 - DETALHAMENTO-DO-TRABALHO-TECNICO@DISPONIBILIDADE: o campo f_disp tem opções no Lattes e o editor mostra texto livre (aceita: o XML guarda o texto da opção (Restrita, Irrestrita), mas a grafia exata não foi registrada na captura de 15/10/2026; a próxima registra em spelling)
-- VINCULOS@FLAG-VINCULO-EMPREGATICIO: nos itens da exportação, f_stavinc 0 vem com SIM, 1 vem com NAO, ao contrário do código da opção (aceita: a conferir: nos 8 vínculos lidos, f_stavinc 0 (Não) veio com SIM e 1 (Sim) com NAO, e f_stavinc bateu com FLAG-DEDICACAO-EXCLUSIVA; a seção 5 e plan.ts usam 1 = SIM. Pode ser a exportação (versão publicada) ou o mapa da seção 5)
 
 ## Lacunas prováveis de opções (ligação inferida)
 

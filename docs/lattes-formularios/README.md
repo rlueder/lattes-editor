@@ -111,7 +111,10 @@ conta), lista de `src/schema/typed-choices.ts`, enumeração do XSD, texto.
 - `booleano-diferente`: o editor mostra sim/não e o campo do Lattes tem
   outras opções (uma caixa sozinha é sim/não);
 - `valor-contrariado`: nos itens da exportação, o código da opção veio com o
-  valor contrário ao que ele diz (S com NAO);
+  valor contrário ao que ele diz (S com NAO). Nos campos que o Lattes grava
+  invertidos (`INVERTED_FLAGS` em `src/bridge/vinculo-flag.ts`: hoje só
+  `f_stavinc`, observado em 15/10/2026), o esperado é o contrário do código,
+  e a divergência passa a ser o código bater com o valor;
 - `ordem`: a ordem dos campos no formulário do Lattes é outra que a de
   `src/ui/form-order.ts` (só quando esse arquivo existe).
 

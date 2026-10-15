@@ -19,10 +19,6 @@
     {
       "key": "lista-nao-ligada:trabalho-tecnico:DETALHAMENTO-DO-TRABALHO-TECNICO@DISPONIBILIDADE:f_disp",
       "reason": "o XML guarda o texto da opção (Restrita, Irrestrita), mas a grafia exata não foi registrada na captura de 15/10/2026; a próxima registra em spelling"
-    },
-    {
-      "key": "valor-contrariado:vinculo:VINCULOS@FLAG-VINCULO-EMPREGATICIO:f_stavinc",
-      "reason": "a conferir: nos 8 vínculos lidos, f_stavinc 0 (Não) veio com SIM e 1 (Sim) com NAO, e f_stavinc bateu com FLAG-DEDICACAO-EXCLUSIVA; a seção 5 e plan.ts usam 1 = SIM. Pode ser a exportação (versão publicada) ou o mapa da seção 5"
     }
   ]
 }

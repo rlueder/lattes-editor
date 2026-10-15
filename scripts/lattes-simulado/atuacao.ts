@@ -4,10 +4,11 @@
 // Formulários e links como em docs/lattes_internals.md, seções 3, 5, 11, 15 e
 // 18, e no reconhecimento de 10/10/2026, seção 4.1.
 
+import { flagFromStavinc, stavincFromFlag } from '../../src/bridge/vinculo-flag.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
-import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
+import { applyFields, attr, type Binding, fixed, renderFields } from './campos.ts';
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
@@ -45,19 +46,19 @@ function vinculoFields(state: LattesState, disabledVinc: boolean): Binding[] {
         getAttr(el, 'OUTRO-VINCULO-INFORMADO') ??
         '',
     },
-    mapped(
-      'f_stavinc',
-      'FLAG-VINCULO-EMPREGATICIO',
-      'select',
-      { NAO: '0', SIM: '1' },
-      {
-        options: [
-          ['', ''],
-          ['0', 'Não'],
-          ['1', 'Sim'],
-        ],
-      },
-    ),
+    {
+      // Invertido como no Lattes (observado em 15/10/2026): o formulário diz
+      // Sim (1) e a exportação grava NAO; Não (0) vira SIM.
+      kind: 'select',
+      name: 'f_stavinc',
+      options: [
+        ['', ''],
+        ['0', 'Não'],
+        ['1', 'Sim'],
+      ],
+      read: (el) => stavincFromFlag(getAttr(el, 'FLAG-VINCULO-EMPREGATICIO')),
+      write: (el, value) => setAttr(el, 'FLAG-VINCULO-EMPREGATICIO', flagFromStavinc(value)),
+    },
     attr('f_enqua', 'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO', 'text', { maxLength: 45 }),
     attr('f_carga', 'CARGA-HORARIA-SEMANAL', 'text', { maxLength: 3 }),
     {

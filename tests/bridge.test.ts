@@ -26,6 +26,7 @@ import {
   isBridgeMessage,
   isEditorMessage,
 } from '../src/bridge/protocol.ts';
+import { flagFromStavinc, stavincFromFlag } from '../src/bridge/vinculo-flag.ts';
 import { diffDocuments, resolvePath } from '../src/model/changes.ts';
 import { getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
 import { copyFileName } from '../src/ui/copy-name.ts';
@@ -260,15 +261,37 @@ describe('conector: plano', () => {
       f_mes_fim: '',
       f_outras_inf_en: 'More',
       f_regime: '3',
-      f_stavinc: '0',
+      // NAO no XML é Sim (1) no formulário: invertido, observado em 15/10/2026.
+      f_stavinc: '1',
       f_status: 'S',
     });
     expect(op.expect).toMatchObject({
       f_ano_ini: '2011',
       f_mes_ini: '01',
       f_regime: null,
+      f_stavinc: '0',
       f_status: 'N',
     });
+  });
+
+  it('FLAG-VINCULO-EMPREGATICIO vai invertido para f_stavinc (observado em 15/10/2026)', () => {
+    // No Lattes, "Possui vínculo empregatício: Sim" (f_stavinc=1) sai como NAO
+    // na exportação, e Não (0) sai como SIM; a dedicação exclusiva não inverte.
+    expect([stavincFromFlag('SIM'), stavincFromFlag('NAO'), stavincFromFlag('')]).toEqual([
+      '0',
+      '1',
+      '',
+    ]);
+    expect([flagFromStavinc('0'), flagFromStavinc('1'), flagFromStavinc('')]).toEqual([
+      'SIM',
+      'NAO',
+      '',
+    ]);
+    const op = vinculoOp((v) => setAttr(v, 'FLAG-VINCULO-EMPREGATICIO', 'NAO'));
+    expect(op.expect).toMatchObject({ f_stavinc: '0' });
+    expect(op.set).toEqual({ f_stavinc: '1' });
+    const regime = vinculoOp((v) => setAttr(v, 'FLAG-DEDICACAO-EXCLUSIVA', 'SIM'));
+    expect(regime.set).toEqual({ f_regime: '3' });
   });
 
   it('mapeia o resumo', () => {

@@ -90,7 +90,8 @@ describe('planejar a inclusão de uma atuação', () => {
       f_enqua: 'Fundador',
       f_mes_ini: '1',
       f_regime: null,
-      f_stavinc: '1',
+      // SIM no XML é Não (0) no formulário: invertido, observado em 15/10/2026.
+      f_stavinc: '0',
       f_status: 'S',
       f_vinc: 'Sócio-fundador',
       f_vinculo: 'Sócio-fundador',
