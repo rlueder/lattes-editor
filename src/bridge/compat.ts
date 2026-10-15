@@ -46,6 +46,8 @@ export const BRIDGE_FEATURES = [
   'alterar-premio',
   /** Formação complementar (edit-lists.ts). */
   'alterar-formacao-complementar',
+  /** Tela de envio ao CNPq e o envio, só com PUBLISH_ENABLED (src/bridge/publish.ts). */
+  'enviar-cnpq',
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

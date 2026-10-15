@@ -10,6 +10,7 @@ import type { Agency, AreaNode, Course, Institution } from './lattes-lists.ts';
 import type { LattesStatus } from './lattes-status.ts';
 import type { PhotoFailure } from './photo.ts';
 import type { BridgeOp } from './plan.ts';
+import type { PublishRequest, PublishResult, SendScreen } from './publish.ts';
 
 export const PROTOCOL_VERSION = 1;
 export const EDITOR_SOURCE = 'lattes-editor';
@@ -64,7 +65,21 @@ export type EditorMessage =
       modules: number[];
       oldestYear?: number;
       type: 'importar';
-    };
+    }
+  /**
+   * Lê a tela de envio ao CNPq (pkg_publicar.mostrar_cv), só GET: a
+   * declaração, o Termo de Uso, o idioma, a versão em inglês e os e-mails.
+   * id volta na resposta.
+   */
+  | { id: string; type: 'ler-envio' }
+  /**
+   * Envia ao CNPq (src/bridge/publish.ts), só com PUBLISH_ENABLED e depois de
+   * a pessoa marcar a declaração no editor (request.declarationAccepted).
+   * lattesId: o currículo aberto no editor, e a extensão só envia se a sessão
+   * do Lattes for dele. today: AAAA-MM-DD da pessoa, para conferir a
+   * publicação no menu. id volta na resposta.
+   */
+  | { id: string; lattesId?: string; request: PublishRequest; today: string; type: 'publicar' };
 
 export type BridgeMessage =
   /** lattesId: de qual currículo é o código, para o editor não guardar o de outro. */
@@ -116,7 +131,27 @@ export type BridgeMessage =
   /** Os resultados da busca de instituição pedida com o mesmo id. */
   | { error?: string; id: string; results?: Institution[]; type: 'instituicoes' }
   /** Os cursos pedidos com o mesmo id. */
-  | { courses?: Course[]; error?: string; id: string; type: 'cursos' };
+  | { courses?: Course[]; error?: string; id: string; type: 'cursos' }
+  /**
+   * A tela de envio ao CNPq pedida com o mesmo id, ou o motivo de não ter
+   * lido; previews: os endereços da página de conferência em português e em
+   * inglês, na base do Lattes da aba. lattesId diz de qual currículo é a sessão.
+   */
+  | {
+      detail?: string;
+      id: string;
+      lattesId?: string;
+      previews?: { en: string; pt: string };
+      reason?: SendScreenFailure;
+      screen?: SendScreen;
+      type: 'tela-envio';
+    }
+  /** O resultado do envio ao CNPq pedido com o mesmo id. */
+  | { id: string; result: PublishResult; type: 'publicacao' };
+
+/** Por que a tela de envio não foi lida. */
+export type SendScreenFailure =
+  'consentimento' | 'erro' | 'mudou' | 'ocupado' | 'sem-aba' | 'sessao';
 
 /**
  * Por que não há leitura do Lattes: sem o "ok" do aviso da extensão, sem aba

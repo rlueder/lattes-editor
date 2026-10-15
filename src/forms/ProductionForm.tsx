@@ -18,7 +18,7 @@ import {
   setAuthors,
   setKeywords,
 } from '../model/production.ts';
-import { validateItem } from '../model/validate.ts';
+import { uniqueProblems, validateItem } from '../model/validate.ts';
 import type { XElement } from '../model/xml.ts';
 import { lattesSchema as schema } from '../schema/lattes.ts';
 import { AttributeField } from '../ui/AttributeField.tsx';
@@ -118,14 +118,7 @@ export function ProductionForm({
           message: `${attributeLabel(m.attr)}: obrigatório`,
         }))
       : [];
-    // O formulário e a validação geral podem apontar o mesmo campo.
-    const seen = new Set<string>();
-    return [...fromSchema, ...fromForm].filter((p) => {
-      const key = `${p.element}/${p.attribute ?? p.message}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+    return uniqueProblems([...fromSchema, ...fromForm]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item, version]);
 

@@ -12,19 +12,14 @@ import { ProductionForm } from '../forms/ProductionForm.tsx';
 import { useGeneralItem } from '../forms/use-general-item.ts';
 import { type Session, useProduction } from '../forms/use-production.ts';
 import { ExportPanel } from '../import-export/ExportPanel.tsx';
-import { encodeCv, loadCv, maxSequenciaProducao } from '../model/document.ts';
+import { PublishPanel } from '../import-export/PublishPanel.tsx';
+import { encodeCv, loadCv } from '../model/document.ts';
 import { importableTypes } from '../model/production.ts';
-import {
-  clearAll,
-  loadWorkingCopy,
-  newWorkingCopy,
-  replaceWorkingCopy,
-  saveWorkingCopy,
-  storageStatus,
-} from '../model/store.ts';
-import { parseXml, serializeXml, walk, type XElement } from '../model/xml.ts';
+import { clearAll, newWorkingCopy, replaceWorkingCopy, storageStatus } from '../model/store.ts';
+import { getAttr, serializeXml, walk, type XElement } from '../model/xml.ts';
 import { PrintDialog } from '../print/PrintDialog.tsx';
 import { usePrint } from '../print/use-print.ts';
+import { reviewCv } from '../review/consistency.ts';
 import { DiagnosisPanel } from '../review/DiagnosisPanel.tsx';
 import { lattesSchema } from '../schema/lattes.ts';
 import { CommandPalette } from './CommandPalette.tsx';
@@ -44,7 +39,7 @@ import { Sidebar } from './Sidebar.tsx';
 import { statusStrip } from './status-strip.ts';
 import { StorageNotice } from './StorageNotice.tsx';
 import { useTheme } from './theme.ts';
-import { type SaveState, Topbar } from './Topbar.tsx';
+import { Topbar } from './Topbar.tsx';
 import { useBridge } from './use-bridge.ts';
 import { useChanges } from './use-changes.ts';
 import { useFocusShell } from './use-focus-mode.ts';
@@ -56,17 +51,15 @@ import { usePhotoChange } from './use-photo-change.tsx';
 import { useTopbarHeight } from './use-topbar-height.ts';
 import { useUpdates } from './use-updates.ts';
 import { useVersions } from './use-versions.ts';
+import { useAutosave, useRestoreWorkingCopy } from './use-working-copy.ts';
 import { exportDateOf } from './version-diff.ts';
 import { Welcome } from './Welcome.tsx';
 
-const AUTOSAVE_MS = 400;
 const EMPTY_INDEX: ReferenceIndex = { courses: new Map(), institutions: new Map() };
 
 export function App() {
   const [session, setSession] = useState<Session | null>(null);
-  const [booting, setBooting] = useState(true);
   const [version, setVersion] = useState(0);
-  const [saveState, setSaveState] = useState<SaveState>('salvo');
   const [error, setError] = useState<string | null>(null);
   const [sectionId, setSectionId] = useState('dados-gerais');
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -74,6 +67,7 @@ export function App() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [diagnosisOpen, setDiagnosisOpen] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
   const [reloadFile, setReloadFile] = useState<File | null>(null);
   const pendingNotes = useRef<string[]>([]);
   const pendingAnchor = useRef<string | null>(null);
@@ -83,41 +77,8 @@ export function App() {
   const focusShell = useFocusShell(paletteOpen, sectionId); // modo foco, com ?leitura
   const update = useUpdates();
 
-  // Restaura a cópia de trabalho da última sessão.
-  useEffect(() => {
-    loadWorkingCopy()
-      .then((copy) => {
-        if (copy) {
-          const { savedAt: _savedAt, xml, ...meta } = copy;
-          // Cópias salvas antes do marco 2 não tinham o máximo da exportação.
-          const loadedMaxSequencia =
-            meta.loadedMaxSequencia ?? maxSequenciaProducao(parseXml(meta.originalXml));
-          setSession({ doc: parseXml(xml), meta: { ...meta, loadedMaxSequencia } });
-        }
-      })
-      .catch((err: unknown) =>
-        setError(`Não foi possível ler a cópia salva no navegador: ${String(err)}`),
-      )
-      .finally(() => setBooting(false));
-  }, []);
-
-  // Autosave: cada edição marca uma versão; grava depois de uma pausa curta.
-  useEffect(() => {
-    if (!session || version === 0) return;
-    setSaveState('salvando');
-    const timer = setTimeout(() => {
-      const notes = pendingNotes.current.splice(0);
-      const note =
-        notes.length > 1 ? `${notes.at(-1)} (+${notes.length - 1})` : (notes[0] ?? 'Alteração');
-      saveWorkingCopy(
-        { ...session.meta, savedAt: Date.now(), xml: serializeXml(session.doc) },
-        note,
-      )
-        .then(() => setSaveState('salvo'))
-        .catch(() => setSaveState('erro'));
-    }, AUTOSAVE_MS);
-    return () => clearTimeout(timer);
-  }, [session, version]);
+  const booting = useRestoreWorkingCopy(setSession, setError);
+  const [saveState, setSaveState] = useAutosave(session, version, pendingNotes);
 
   const onEdit = useCallback((note: string) => {
     pendingNotes.current.push(note);
@@ -358,6 +319,16 @@ export function App() {
           setExportOpen(false);
           production.openItem(seq);
         }}
+        onPublish={() => setPublishOpen(true)}
+      />
+
+      <PublishPanel
+        bridge={bridge}
+        checks={preflight(session.doc.root, () => setDiagnosisOpen(true))}
+        lattesId={getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR')}
+        open={publishOpen}
+        originalXml={session.meta.originalXml}
+        onClose={() => setPublishOpen(false)}
       />
 
       <ReloadConfirm
@@ -397,6 +368,16 @@ export function App() {
       {storageNotice}
     </ShellWithLists>
   );
+}
+
+/**
+ * A conferência antes de publicar (LAT-54): quantos achados o diagnóstico do
+ * currículo tem, e abri-lo. Provisório: até a LAT-25 chegar à main, conta só
+ * os da revisão de consistência; com ela, passa a contar os de validateCv,
+ * que o mesmo diagnóstico mostra.
+ */
+function preflight(root: XElement, onOpen: () => void) {
+  return { count: reviewCv(root).length, onOpen };
 }
 
 /** Conta, dentro de alguns elementos, quantos dos itens pendentes aparecem. */
