@@ -902,7 +902,9 @@ técnicos do censo de 15/10/2026 não era o `SEQUENCIA-PRODUCAO` do item
 (`lattes-formularios/censo-2026-10-15.json`, ligação `f_seq` do
 `trabalho-tecnico`), e com só
 a forma, a natureza e o ano um congresso podia ser gravado no lugar de outro
-do mesmo ano. A exclusão de evento (`f_ctr=E`, seção 15) segue fora do conector.
+do mesmo ano. Esses três se comparam sem acento,
+caixa nem espaço nas pontas, e, quando a outra parte do item muda o campo na
+mesma fila, o antes e o depois valem. A exclusão de evento (`f_ctr=E`, seção 15) segue fora do conector.
 
 **Convidado, participante, forma, tipo, natureza e cidade (LAT-58, 15/10/2026,
 desligado).** Escritos atrás da chave `EDIT_EVENTO_ENABLED`, desligada até um

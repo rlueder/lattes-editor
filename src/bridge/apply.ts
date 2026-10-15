@@ -18,6 +18,7 @@ import {
   EDIT_EVENTO_ENABLED,
   EVENTO_SPEC,
   type EventoOp,
+  identityMismatches,
   isEventoOp,
   isFullEvento,
   locateEvento,
@@ -268,7 +269,10 @@ export async function applyOp(
       return result('erro', 'O formulário não está em modo de alteração');
     }
     const labels = (names: string[]) => names.map((n) => fieldLabel(n, op.kind)).join(', ');
-    const wrong = mismatches(before.pairs, op.expect);
+    const wrong = [
+      ...mismatches(before.pairs, op.expect),
+      ...(isEventoOp(op) ? identityMismatches(op, (n) => pairValue(before.pairs, n)) : []),
+    ];
     if (wrong.length > 0) {
       return result('divergente', `O Lattes não está como o editor espera: ${labels(wrong)}`);
     }

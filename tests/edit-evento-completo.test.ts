@@ -127,13 +127,15 @@ describe('alteração de evento completa: plano', () => {
     expect(op).toMatchObject({ kind: 'evento', seq: '13' });
     expect(op.set).toEqual({ F_TPO: 'Conferencista', f_titulo: 'Outra palestra' });
     expect(op.expect).toEqual({
-      f_ano: '2020',
-      f_cidade: 'Canoas',
       F_COD_PROD: 'A32',
       F_FORMA: '38',
-      f_nme_evento: 'Seminário de Exemplo',
       F_TPO: 'Conferencista',
       f_titulo: 'Palestra',
+    });
+    expect(op.identity).toEqual({
+      f_ano: ['2020'],
+      f_cidade: ['Canoas'],
+      f_nme_evento: ['Seminário de Exemplo'],
     });
     // O tipo que não muda não aparece para quem confere.
     expect(opRows(op).map((r) => r.label)).toEqual(['Título']);
@@ -155,9 +157,8 @@ describe('alteração de evento completa: plano', () => {
     ]);
     const nome = onlyOp((root) => setAttr(detail(root, '15'), 'NOME-DO-EVENTO', 'Outro encontro'));
     expect(nome.set).toEqual({ F_TPO: 'Poster / Painel', f_nme_evento: 'Outro encontro' });
+    expect(nome.identity).toEqual({ f_ano: ['2021'], f_cidade: [''] });
     expect(nome.expect).toEqual({
-      f_ano: '2021',
-      f_cidade: '',
       F_COD_PROD: 'A35',
       F_FORMA: '39',
       f_nme_evento: 'Encontro de Exemplo',
@@ -168,12 +169,14 @@ describe('alteração de evento completa: plano', () => {
   it('cidade, em ouvinte e em convidado', () => {
     const ouvinte = onlyOp((root) => setAttr(detail(root, '12'), 'CIDADE-DO-EVENTO', 'Canoas'));
     expect(ouvinte.set).toEqual({ f_cidade: 'Canoas' });
+    expect(ouvinte.identity).toEqual({
+      f_ano: ['2019'],
+      f_nme_evento: ['Congresso Brasileiro de Exemplo'],
+    });
     expect(ouvinte.expect).toEqual({
-      f_ano: '2019',
       f_cidade: 'Porto Alegre',
       F_COD_PROD: 'A31',
       F_FORMA: '40',
-      f_nme_evento: 'Congresso Brasileiro de Exemplo',
     });
     const convidado = onlyOp((root) => setAttr(detail(root, '13'), 'CIDADE-DO-EVENTO', ''));
     expect(convidado.set).toEqual({ f_cidade: '', F_TPO: 'Conferencista' });
