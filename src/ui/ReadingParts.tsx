@@ -3,6 +3,7 @@
 // do bloco em edição, que é a mesma composição com os rascunhos dos campos.
 
 import { attributeLabelIn } from '../labels/labels.ts';
+import { linkHref } from './link-fields.ts';
 import { cellSpan, curlyQuotes, hiddenNote, paragraphs } from './reading.ts';
 import {
   type Line,
@@ -14,12 +15,12 @@ import {
   shownParts,
 } from './reading-layout.ts';
 
-/** O valor lido de um pedaço; página e ORCID viram link. */
+/** O valor lido de um pedaço; DOI, página e ORCID viram link (link-fields.ts). */
 function PartText({ part, text }: { part: Part; text: string }) {
-  const url = /^(HOME-PAGE|ORCID-ID)/.test(part.attr) && /^https?:\/\//.test(text) ? text : '';
-  if (!url) return text;
+  const href = linkHref(part.attr, text);
+  if (!href) return text;
   return (
-    <a href={url} rel="noreferrer" target="_blank">
+    <a href={href} rel="noreferrer" target="_blank">
       {text.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
     </a>
   );

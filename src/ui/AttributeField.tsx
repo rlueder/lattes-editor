@@ -30,6 +30,7 @@ import { LockIcon } from './icons.tsx';
 import { displayLattesDate, isLattesDateAttr, isValidLattesDate } from './lattes-date.ts';
 import { useLattesListsContext } from './lattes-lists-context.ts';
 import { isFourDigitYear, isLattesYearAttr } from './lattes-year.ts';
+import { cleanLinkValue, linkError } from './link-fields.ts';
 import { liveKind } from './live-lists.ts';
 import { LiveListControl } from './LiveListField.tsx';
 import { ComboSelect } from './primitives/ComboSelect.tsx';
@@ -95,12 +96,13 @@ export function AttributeField({
     setAttr(el, name, next);
     onEdit(`${elementLabel(el.name)} · ${text}`);
   };
+  const shownError = error ?? linkError(name, value);
   const id = useId();
   const errorId = `${id}-erro`;
   const labelId = `${id}-rotulo`;
   const common = {
-    'aria-describedby': error ? errorId : undefined,
-    'aria-invalid': error ? true : undefined,
+    'aria-describedby': shownError ? errorId : undefined,
+    'aria-invalid': shownError ? true : undefined,
     id,
   };
 
@@ -301,7 +303,7 @@ export function AttributeField({
         placeholder={text}
         rows={1}
         value={draft}
-        onBlur={() => commit(draft)}
+        onBlur={() => commit(cleanLinkValue(name, draft))}
         onChange={(e) => change(e.target.value)}
         onKeyDown={(e) => {
           // Título é uma linha só: Enter confirma em vez de quebrar.
@@ -318,7 +320,7 @@ export function AttributeField({
         {...common}
         rows={multiline ? 3 : 4}
         value={draft}
-        onBlur={() => commit(draft)}
+        onBlur={() => commit(cleanLinkValue(name, draft))}
         onChange={(e) => change(e.target.value)}
       />
     );
@@ -328,7 +330,7 @@ export function AttributeField({
         {...common}
         type="text"
         value={draft}
-        onBlur={() => commit(draft)}
+        onBlur={() => commit(cleanLinkValue(name, draft))}
         onChange={(e) => change(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
       />
@@ -346,7 +348,7 @@ export function AttributeField({
     const { copy = false, textarea = false } = opts;
     return (
       <div
-        className={`field${wide || prominent || textarea ? ' field-wide' : ''}${prominent ? ' field-prominent' : ''}${error ? ' has-error' : ''}`}
+        className={`field${wide || prominent || textarea ? ' field-wide' : ''}${prominent ? ' field-prominent' : ''}${shownError ? ' has-error' : ''}`}
         data-part={partKey}
       >
         <label
@@ -384,9 +386,9 @@ export function AttributeField({
             </button>
           </span>
         )}
-        {error && (
+        {shownError && (
           <span className="field-error" id={errorId}>
-            {error}
+            {shownError}
           </span>
         )}
       </div>
