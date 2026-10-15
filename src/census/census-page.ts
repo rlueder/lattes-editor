@@ -63,8 +63,17 @@ export const IDENTITY_FIELDS = new Set([
 /** Parâmetros de URL que identificam a pessoa ou um item dela: nunca vão para o arquivo. */
 export function isPrivateParam(name: string): boolean {
   const key = name.toLowerCase();
-  return key === 'f_cod' || key.startsWith('f_seq') || key.startsWith('f_codinst');
+  return (
+    key === 'f_cod' ||
+    // O identificador de 16 dígitos do currículo (pkg_import_cv.form01?…&f_id=, 15/10/2026).
+    key === 'f_id' ||
+    key.startsWith('f_seq') ||
+    key.startsWith('f_codinst')
+  );
 }
+
+/** Valor de parâmetro com cara de identificador (CPF, ID Lattes, número de item). */
+const PRIVATE_VALUE = /\d{6,}/;
 
 const REMOVED = '[removido]';
 
@@ -159,7 +168,7 @@ export function publicUrl(url: string): string {
 export function publicPath(proc: string, params: Record<string, string>): string {
   const query = Object.entries(params)
     .filter(([k]) => !isPrivateParam(k))
-    .map(([k, v]) => `${k}=${v}`)
+    .map(([k, v]) => `${k}=${PRIVATE_VALUE.test(v) ? REMOVED : v}`)
     .join('&');
   return query ? `${proc}?${query}` : proc;
 }
@@ -174,24 +183,105 @@ const DATA_LINE = /\w*Provider\s*=|=\s*\[\s*\{|\bnew\s+Array\s*\(\s*['"{]/;
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
- * Um pedaço do código da página sem dado pessoal: cada e-mail, CPF ou número
- * longo e cada texto que quem roda pediu para esconder vira "[removido]". Se
- * um desses textos ainda aparece sem acento ou com outra caixa, o pedaço
- * inteiro sai.
+ * Campos de nome e citação em objetos escritos na página, inclusive em JSON
+ * comentado ({"n":"…","t":"…"}, autorProvider de exemplo): o valor sai.
  */
-function scrubScript(text: string, redact: readonly string[]): string {
+const NAME_FIELD =
+  /(["']?)\b(n|t|l|nome|nome_?completo|nome_?citacao|citacao|autor|author)\1(\s*:\s*)(["'])((?:\\.|(?!\4)[^\\])*)\4/gi;
+
+/** "comentado por Fulano", "Criado por: Fulano", "Autor: Fulano" num comentário. */
+const AUTHOR_IN_COMMENT =
+  /\b((?:[Cc]omentad|[Cc]riad|[Aa]lterad|[Mm]odificad|[Ee]scrit|[Dd]esenvolvid|[Ff]eit|[Aa]justad|[Cc]orrigid)[oa]s?\s+[Pp]or|[Aa]utor(?:a|es)?|AUTOR|[Aa]uthor|[Cc]reated\s+[Bb]y|[Bb]y)(\s*:?\s+)([A-ZÀ-Þ][\wÀ-ÿ.'-]*(?:\s+(?:d[aeo]s?\s+)?[A-ZÀ-Þ][\wÀ-ÿ.'-]*){0,5})/g;
+
+/** Tira do texto de um comentário os nomes de quem o escreveu. */
+function scrubComment(comment: string): string {
+  return comment.replace(
+    AUTHOR_IN_COMMENT,
+    (_, lead: string, gap: string) => `${lead}${gap}${REMOVED_SCRIPT}`,
+  );
+}
+
+/**
+ * Um pedaço do código da página sem dado pessoal: cada e-mail, CPF ou número
+ * longo, cada campo de nome ou citação num objeto escrito na página, cada
+ * nome de autor num comentário e cada texto que quem roda pediu para esconder
+ * vira "[removido]". Se um desses textos ainda aparece sem acento ou com
+ * outra caixa, o pedaço inteiro sai. `inComment` diz se a linha começa dentro
+ * de um comentário de bloco.
+ */
+function scrubScript(
+  text: string,
+  redact: readonly string[],
+  inComment = false,
+): { line: string; inComment: boolean } {
   // Vetores de dados que alimentam as grades (autorProvider, palavraProvider…)
   // e listas de objetos escritas na página: podem trazer nomes de coautores.
-  if (DATA_LINE.test(text)) return REMOVED_SCRIPT;
-  let out = text.replace(SCRIPT_PERSONAL, REMOVED_SCRIPT);
+  if (DATA_LINE.test(text))
+    return { inComment: nextCommentState(text, inComment), line: REMOVED_SCRIPT };
+  let out = commentAware(text, inComment)
+    .replace(SCRIPT_PERSONAL, REMOVED_SCRIPT)
+    .replace(
+      NAME_FIELD,
+      (_, q: string, key: string, colon: string, vq: string) =>
+        `${q}${key}${q}${colon}${vq}${REMOVED_SCRIPT}${vq}`,
+    );
   for (const r of redact) {
     if (r.trim().length < 3) continue;
     out = out.replace(new RegExp(escapeRe(r.trim()), 'gi'), REMOVED_SCRIPT);
   }
   const folded = foldText(out);
-  return redact.some((r) => r.trim().length >= 3 && folded.includes(foldText(r)))
+  const line = redact.some((r) => r.trim().length >= 3 && folded.includes(foldText(r)))
     ? REMOVED_SCRIPT
     : out;
+  return { inComment: nextCommentState(text, inComment), line };
+}
+
+/** A linha com o texto dos comentários (// e /* … *\/) passado por scrubComment. */
+function commentAware(text: string, inComment: boolean): string {
+  let out = '';
+  let rest = text;
+  let open = inComment;
+  while (rest) {
+    if (open) {
+      const end = rest.indexOf('*/');
+      if (end < 0) return out + scrubComment(rest);
+      out += `${scrubComment(rest.slice(0, end))}*/`;
+      rest = rest.slice(end + 2);
+      open = false;
+      continue;
+    }
+    const block = rest.indexOf('/*');
+    const line = rest.indexOf('//');
+    if (block < 0 && line < 0) return out + rest;
+    if (line >= 0 && (block < 0 || line < block)) {
+      return `${out}${rest.slice(0, line)}//${scrubComment(rest.slice(line + 2))}`;
+    }
+    out += `${rest.slice(0, block)}/*`;
+    rest = rest.slice(block + 2);
+    open = true;
+  }
+  return out;
+}
+
+/** Se a linha termina dentro de um comentário de bloco. */
+function nextCommentState(text: string, inComment: boolean): boolean {
+  let open = inComment;
+  let i = 0;
+  while (i < text.length) {
+    if (open) {
+      const end = text.indexOf('*/', i);
+      if (end < 0) return true;
+      open = false;
+      i = end + 2;
+    } else {
+      const block = text.indexOf('/*', i);
+      const line = text.indexOf('//', i);
+      if (block < 0 || (line >= 0 && line < block)) return false;
+      open = true;
+      i = block + 2;
+    }
+  }
+  return open;
 }
 
 /**
@@ -207,12 +297,14 @@ export function pageScripts(html: string, redact: readonly string[] = []): strin
     if (/\bsrc\s*=/i.test(m[1] ?? '')) continue;
     const body = (m[2] ?? '').trim();
     if (!body) continue;
-    out.push(
-      body
-        .split('\n')
-        .map((line) => scrubScript(line, redact))
-        .join('\n'),
-    );
+    let inComment = false;
+    const lines: string[] = [];
+    for (const raw of body.split('\n')) {
+      const scrubbed = scrubScript(raw, redact, inComment);
+      lines.push(scrubbed.line);
+      inComment = scrubbed.inComment;
+    }
+    out.push(lines.join('\n'));
   }
   return out;
 }

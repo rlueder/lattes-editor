@@ -164,7 +164,7 @@ ${h.formButtons(false)}
   return html(h.page('Licenças', body));
 }
 
-const notSimulated = () =>
+export const notSimulated = () =>
   html(
     h.page('Não simulado', '<p>O simulado só mostra este formulário; o envio não é simulado.</p>'),
   );

@@ -8,7 +8,9 @@ import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
 import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
+import { notSimulated } from './censo.ts';
 import type { LattesState } from './estado.ts';
+import { renderCensusForm } from './formulario-censo.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
 import { html, type Routes, type SimResponse } from './tipos.ts';
@@ -155,8 +157,12 @@ function cargosVinculos(req: SimRequest, state: LattesState): SimResponse {
     .join('\n');
   // dele(): a atuação inteira, por GET com f_ctr=E2 (seção 15).
   const dele = `<script>function dele(){ if (confirm('Esta operação apagará: Todas as atividades; Vínculos; Projetos; Linhas de pesquisa. Deseja continuar?') && confirm('Confirmar exclusão?')) location = 'pkg_ativ.form?f_cod=${state.code}&f_seq_ativ=${seqAtiv}&f_ctr=E2'; }</script>`;
+  // selecionarNatureza() abre o combo de naturezas e o formulário pkg_ativ.cargo
+  // (seção 17); o endereço com f_natur_ativ vazio é o que o censo leu na tela.
+  const cargo = `pkg_ativ.cargo?f_cod=${state.code}&amp;f_codinst=${inst}&amp;f_seq_ativ=${seqAtiv}&amp;f_natur_ativ=`;
   const body = `<table>${rows}</table>
-<p><a href="${base}">Incluir vínculo</a> <a href="#" onclick="dele(); return false;">Excluir atuação</a></p>${dele}`;
+<p><a href="${base}">Incluir vínculo</a> <a href="#" onclick="selecionarNatureza(); return false;">Incluir atividade</a> <a href="#" onclick="dele(); return false;">Excluir atuação</a></p>${dele}
+<script>function selecionarNatureza(){ self.parent.modalCV2.setarUrl('${cargo}', true); }</script>`;
   return html(h.page(getAttr(a, 'NOME-INSTITUICAO') ?? 'Atuação', body));
 }
 
@@ -266,7 +272,26 @@ function ativForm(req: SimRequest, state: LattesState): SimResponse {
   return lista(state);
 }
 
+/** O formulário de atividade, só para leitura, como o censo de 15/10/2026 o leu (sem natureza). */
+function cargoForm(req: SimRequest, state: LattesState): SimResponse {
+  const hidden = {
+    f_cod: state.code,
+    f_codinst: req.get('f_codinst') ?? '',
+    f_ctr: 'I',
+    f_natur_ativ: req.get('f_natur_ativ') ?? '',
+    f_seq_ativ: req.get('f_seq_ativ') ?? '',
+  };
+  return html(
+    h.page(
+      'Atividade',
+      renderCensusForm({ entry: 'atividade', links: {} }, undefined, hidden, state),
+    ),
+  );
+}
+
 export const ATUACAO_ROUTES: Routes = {
+  'pkg_ativ.cargo': (req, state) =>
+    req.method === 'POST' ? notSimulated() : cargoForm(req, state),
   'pkg_ativ.cargos_vinculos': cargosVinculos,
   'pkg_ativ.form': ativForm,
   'pkg_ativ.inclui': (req, state) =>

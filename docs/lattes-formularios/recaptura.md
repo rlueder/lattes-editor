@@ -5,15 +5,24 @@ captura de 15/10/2026 não guardou. Tudo é leitura: GET de lista e de
 formulário de inclusão, sem `f_seq` e sem enviar nada. Roda numa sessão só,
 com o mesmo `dist-censo/censo-lattes.js` do censo (`README.md` desta pasta).
 
-Duas chamadas novas servem para isso:
+Estas chamadas servem para isso:
 
 - `__lattesCensus.capture({ scripts: true, … })` guarda também os scripts da
   própria página de cada formulário, sem dado pessoal;
 - `__lattesCensus.inspect([caminhos], { download: true })` abre páginas que o
   censo ainda não tem como entrada e guarda, de cada uma, o formulário, os
   scripts e os endereços do Lattes que ela abre. Os caminhos vão sem `f_cod`
-  (o código entra sozinho); `{ path, noCode: true }` abre sem ele. O arquivo
-  baixado é `recaptura-AAAA-MM-DD.json` e não é um censo versionado.
+  (o código entra sozinho); `{ path, noCode: true }` abre sem ele, e um
+  caminho que já traz `f_cod` (copiado do Lattes) não ganha outro. O arquivo
+  baixado é `recaptura-AAAA-MM-DD.json` e não é um censo versionado;
+- `__lattesCensus.activities()` e `__lattesCensus.authorShape(nome)` servem
+  aos lotes 3 e 4, abaixo.
+
+Em 15/10/2026, a lista de atuações aberta à mão com `f_cod` voltou com 53
+bytes e sem links. Que o `f_cod` repetido pelo `inspect` tenha causado isso é
+**inferido** (o gateway responde 404 a um parâmetro que o procedimento não
+declara, seção 1 de `lattes_internals.md`; o parâmetro repetido não foi
+testado). O lote 3 agora acha a atuação sozinho.
 
 Dos scripts sai, linha a linha, todo e-mail, CPF e número longo (código e
 identificador do currículo), cada texto passado em `redact` e as linhas que
@@ -88,16 +97,15 @@ await __lattesCensus.inspect(
   { redact, download: true },
 );
 
-// 3. As atividades de uma atuação, uma por natureza. Abra a tela "Cargos e
-//    vínculos" de uma atuação e copie, do link de "Incluir atividade", os
-//    valores de f_codinst e f_seq_ativ (ficam fora do arquivo baixado).
-const atuacao = 'f_codinst=<valor>&f_seq_ativ=<valor>';
-await __lattesCensus.inspect(
-  ['1', '2', '4', '5', '6', '7', '8', '9', 'B'].map(
-    (n) => `pkg_ativ.cargo?${atuacao}&f_natur_ativ=${n}`,
-  ),
-  { redact, download: true },
-);
+// 3. As atividades de uma atuação, uma por natureza. O lote acha sozinho a
+//    primeira atuação com o link "Incluir atividade" (pkg_ativ.lista, depois
+//    a tela de cargos e vínculos) e abre o formulário de cada natureza. Os
+//    códigos da atuação ficam fora do arquivo.
+await __lattesCensus.activities({ redact, download: true });
+
+// 4. A forma das linhas de autor do menu (autorDP), sem nome nenhum: a ordem
+//    das chaves, o padrão dos códigos e a linha do dono, achada pelo nome.
+copy(JSON.stringify(__lattesCensus.authorShape('Seu Nome Completo'), null, 2));
 ```
 
 ## O que extrair de cada item

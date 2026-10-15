@@ -7,6 +7,8 @@
 //   await __lattesCensus.link()               // passada de edição, pela exportação
 //   await __lattesCensus.captureAll({ download: true })
 //   await __lattesCensus.inspect(['pkg_x.form?…'], { download: true })  // recaptura avulsa
+//   await __lattesCensus.activities({ download: true })  // atividades por natureza
+//   __lattesCensus.authorShape('Nome Completo')           // forma das linhas de autor
 //
 // Só GET de formulário e de lista. A única exceção é link() sem XML, que
 // pede a exportação pelo mesmo POST de leitura do "Exportar" (o conector já
@@ -14,7 +16,8 @@
 
 import { exportCv, type ExportPort } from '../../src/bridge/export.ts';
 import { cvCodeFrom, isLogonPage, lattesIdFrom } from '../../src/bridge/lattes-html.ts';
-import { inspectPages } from '../../src/census/inspect.ts';
+import { authorShape as shapeOf } from '../../src/census/author-shape.ts';
+import { inspectActivities, inspectPages } from '../../src/census/inspect.ts';
 import { linkFields, type LinkOptions } from '../../src/census/link.ts';
 import {
   type CensusFile,
@@ -157,6 +160,28 @@ async function inspect(
   return file;
 }
 
+/** Os formulários de atividade de cada natureza, numa atuação do currículo. */
+async function activities(
+  options: Pick<Options, 'delayMs' | 'download' | 'redact'> = {},
+): Promise<CensusFile> {
+  const file = await inspectActivities(port, await code(), {
+    ...options,
+    collector: `lattes-editor ${__CENSO_VERSAO__}`,
+  });
+  if (options.download)
+    download(file, `recaptura-atividades-${new Date().toISOString().slice(0, 10)}.json`);
+  return file;
+}
+
+/**
+ * A forma das linhas de autor do menu (autorDP), sem nomes: a ordem das
+ * chaves, o padrão dos códigos e a linha do dono, achada pelo nome dado.
+ */
+function authorShape(ownerName?: string) {
+  const dp = (globalThis as unknown as { autorDP?: unknown }).autorDP;
+  return shapeOf(dp, ownerName);
+}
+
 /** Contagens para conferir de relance o que voltou. */
 function summary(file: CensusFile) {
   const status: Record<string, number> = {};
@@ -171,6 +196,8 @@ function summary(file: CensusFile) {
 }
 
 (globalThis as unknown as { __lattesCensus: unknown }).__lattesCensus = {
+  activities,
+  authorShape,
   capture,
   captureAll,
   download,
