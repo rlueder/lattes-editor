@@ -12,7 +12,15 @@ import {
   locateBiographic,
 } from './biographic.ts';
 import { applyCreateAtuacao } from './create.ts';
-import { applyCreateFormacao, applyCreateProjeto } from './create-items.ts';
+import {
+  applyCreateAtividade,
+  applyCreateEvento,
+  applyCreateFormacao,
+  applyCreateGeneral,
+  applyCreateProjeto,
+  applyCreateRegistro,
+  applyCreateVinculo,
+} from './create-items.ts';
 import { applyDelete, type DeleteOp, isDeleteOp } from './delete.ts';
 import {
   EDIT_EVENTO_ENABLED,
@@ -73,7 +81,17 @@ type EditOp = Exclude<
   | DeleteOp
   | EventoOp
   | ListEditOp
-  | { kind: 'criar-atuacao' | 'criar-formacao' | 'criar-projeto' }
+  | {
+      kind:
+        | 'criar-atividade'
+        | 'criar-atuacao'
+        | 'criar-dado'
+        | 'criar-evento'
+        | 'criar-formacao'
+        | 'criar-projeto'
+        | 'criar-registro'
+        | 'criar-vinculo';
+    }
 >;
 
 const FORMS: Record<EditOp['kind'], { action: string; name: string }> = {
@@ -222,6 +240,11 @@ export async function applyOp(
   if (op.kind === 'criar-atuacao') return applyCreateAtuacao(op, port);
   if (op.kind === 'criar-formacao') return applyCreateFormacao(op, port);
   if (op.kind === 'criar-projeto') return applyCreateProjeto(op, port);
+  if (op.kind === 'criar-registro') return applyCreateRegistro(op, port);
+  if (op.kind === 'criar-dado') return applyCreateGeneral(op, port);
+  if (op.kind === 'criar-atividade') return applyCreateAtividade(op, port);
+  if (op.kind === 'criar-evento') return applyCreateEvento(op, port);
+  if (op.kind === 'criar-vinculo') return applyCreateVinculo(op, port);
   if (isDeleteOp(op)) return applyDelete(op, port);
   const result = (status: ResultStatus, detail: string): OpResult => ({
     detail,

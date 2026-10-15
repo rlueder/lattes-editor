@@ -46,7 +46,7 @@ export const SECTION_DESCRIPTIONS: Record<string, string> = {
   inovacao: 'Produções, patentes e projetos marcados como de potencial de inovação.',
   orientacoes: 'Orientações e supervisões de iniciação científica, TCC, mestrado e doutorado.',
   outros: 'Itens que não se encaixam nas outras seções.',
-  patentes: 'Patentes, programas de computador, marcas e outros registros.',
+  patentes: 'Patentes, marcas, desenhos industriais, cultivares e outros registros.',
   producoes: 'Artigos, livros, capítulos, trabalhos em eventos e a produção técnica e artística.',
   projetos: 'Projetos de pesquisa, extensão e desenvolvimento, dentro de uma atuação.',
 };
@@ -59,14 +59,15 @@ export const EMPTY_NOTES: Record<string, string> = {
   educacao: 'Para um item aparecer aqui, ligue "Divulgação científica" ao editá-lo.',
   formacao: BY_CHANGES,
   inovacao: 'Para um item aparecer aqui, ligue "Potencial inovação" ao editá-lo.',
-  patentes: `Por enquanto só a patente; os outros registros ainda não. ${BY_CHANGES}`,
+  patentes: `O programa de computador fica em Produções, como software. ${BY_CHANGES}`,
   projetos: `Projetos ficam dentro de uma atuação profissional. ${BY_CHANGES}`,
 };
 
 /** O botão de item novo das seções que não vão pelo Importar (src/model/general-items.ts). */
 export const NEW_GENERAL_LABELS: Record<string, string> = {
-  atuacao: 'Nova atuação',
+  atuacao: 'Nova atuação ou atividade',
+  'dados-gerais': 'Novo item',
   formacao: 'Nova formação',
-  patentes: 'Nova patente',
-  projetos: 'Novo projeto',
+  patentes: 'Nova patente ou registro',
+  projetos: 'Novo projeto ou parte',
 };

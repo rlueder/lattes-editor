@@ -9,6 +9,7 @@ import {
   lacksSample,
   LATTES_CONTRACT,
 } from '../src/bridge/contract.ts';
+import { CREATE_ITEMS_ENABLED } from '../src/bridge/create.ts';
 import {
   countryCode,
   countryName,
@@ -172,12 +173,24 @@ describe('alteração de evento: chave', () => {
 
   it('só vai a uma extensão que anuncia a alteração de evento', () => {
     expect(BRIDGE_FEATURES).toContain('alterar-evento');
-    expect(planOptionsFor(BRIDGE_FEATURES)).toMatchObject({ editEvento: false, editOuvinte: true });
+    expect(planOptionsFor(BRIDGE_FEATURES)).toMatchObject({
+      createItems: false,
+      editEvento: false,
+      editOuvinte: true,
+    });
     expect(planOptionsFor(['estado-lattes', 'curriculo'])).toMatchObject({
+      createItems: false,
       editEvento: false,
       editOuvinte: false,
     });
-    expect(planOptionsFor([])).toMatchObject({ editEvento: false, editOuvinte: false });
+    expect(planOptionsFor([])).toMatchObject({
+      createItems: false,
+      editEvento: false,
+      editOuvinte: false,
+    });
+    // A inclusão pede a chave e a capacidade 'incluir-itens' da extensão.
+    expect(planOptionsFor(['incluir-itens']).createItems).toBe(CREATE_ITEMS_ENABLED);
+    expect(BRIDGE_FEATURES).not.toContain('incluir-itens');
     const original = parseXml(XML).root;
     const working = parseXml(XML).root;
     setAttr(basics(working), 'TITULO', 'Novo título');

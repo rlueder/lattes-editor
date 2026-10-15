@@ -6,6 +6,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { attributeLabel, elementLabel } from '../labels/labels.ts';
 import { applyCrossref, crossrefAuthors, itemNameFor } from '../lookups/crossref.ts';
 import { DoiLookup } from '../lookups/DoiLookup.tsx';
+import { directInclusion } from '../model/direct-inclusion.ts';
 import {
   type Author,
   authorElementName,
@@ -57,6 +58,12 @@ interface Props {
   onSave: (item: XElement, another?: boolean) => void;
 }
 
+/** O rodapé: o evento incluído pelo conector vai por "Enviar ao Lattes", não pelo Importar. */
+const footText = (byChanges: boolean) =>
+  byChanges
+    ? { problems: 'para enviar ao Lattes', ready: 'Pronto para enviar ao Lattes' }
+    : { problems: 'para importar no Lattes', ready: 'Pronto para importar' };
+
 export function ProductionForm({
   isNew,
   item,
@@ -68,6 +75,7 @@ export function ProductionForm({
   sequencia,
 }: Props) {
   const [version, setVersion] = useState(0);
+  const foot = footText(directInclusion().has(item.name));
   const [expanded, setExpanded] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const createMoreId = useId();
@@ -336,8 +344,8 @@ export function ProductionForm({
           {problems.length > 0 ? (
             <details className="form-problems">
               <summary>
-                {problems.length === 1 ? '1 pendência' : `${problems.length} pendências`} para
-                importar no Lattes
+                {problems.length === 1 ? '1 pendência' : `${problems.length} pendências`}{' '}
+                {foot.problems}
               </summary>
               <ul>
                 {problems.map((p, i) => (
@@ -346,7 +354,7 @@ export function ProductionForm({
               </ul>
             </details>
           ) : (
-            <span className="form-ok">Pronto para importar</span>
+            <span className="form-ok">{foot.ready}</span>
           )}
           <span className="form-actions">
             {isNew && (

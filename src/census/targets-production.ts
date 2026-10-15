@@ -85,16 +85,21 @@ const TECH_OTHERS: [string, string, string, string, Provenance][] = [
 ];
 
 /**
- * PKG_PATENTE_REGISTRO.form por f_cod_tipo (seção 17). Os três primeiros
- * estão na captura; DI, MR e TC só na lista da seção 17, sem o valor de f_reg.
+ * PKG_PATENTE_REGISTRO.form por f_cod_tipo (seção 17), e o programa de
+ * computador registrado (PC com f_reg=S).
  */
 const REGISTRIES: [string, string, string, string, Provenance][] = [
   ['PC', 'N', 'Programa de computador', 'SOFTWARE', 'observado'],
+  // Registrado: a lista de PC abre a janela prévia com ftipo=PC e depois o
+  // formulário com f_reg=S (recaptura de 15/10/2026).
+  ['PC-S', 'S', 'Programa de computador registrado', 'SOFTWARE', 'observado'],
   ['CP', '', 'Cultivar protegida', 'CULTIVAR-PROTEGIDA', 'observado'],
   ['CR', '', 'Cultivar registrada', 'CULTIVAR-REGISTRADA', 'observado'],
-  ['DI', '', 'Desenho industrial', 'DESENHO-INDUSTRIAL', 'inferido'],
-  ['MR', '', 'Marca', 'MARCA', 'inferido'],
-  ['TC', '', 'Topografia de circuito integrado', 'TOPOGRAFIA-DE-CIRCUITO-INTEGRADO', 'inferido'],
+  // DI, MR e TC: o endereço montado por analogia abriu o formulário certo nas
+  // capturas de 15/10/2026 (censo e recaptura).
+  ['DI', '', 'Desenho industrial', 'DESENHO-INDUSTRIAL', 'observado'],
+  ['MR', '', 'Marca', 'MARCA', 'observado'],
+  ['TC', '', 'Topografia de circuito integrado', 'TOPOGRAFIA-DE-CIRCUITO-INTEGRADO', 'observado'],
 ];
 
 const ARTS: [string, string, string][] = [
@@ -119,10 +124,17 @@ const BIBLIOGRAPHIC: CensusTarget[] = [
   production(
     'artigo-publicado',
     'Artigos completos publicados',
-    { kind: 'list', proc: 'pkg_artigo.' },
+    // A lista oferece três entradas: por DOI (F_COD_DOI), por periódico
+    // (F_ID_PERIOD) e à mão (F_ORIGEM_WS=F), que abre o formulário (recaptura
+    // de 15/10/2026).
+    at('PKG_ARTIGO.form', {
+      F_ORIGEM_WS: 'F',
+      f_sta_divulgacao_cientifica: '',
+      F_TITULO_PERIODICO: '',
+    }),
     ['ARTIGO-PUBLICADO'],
     'pkg_artigo.lista',
-    { source: 'lattes_internals.md, seção 17 (lacuna: inclusão por função da página)' },
+    { source: 'recaptura de 15/10/2026 (links da lista de artigos)' },
   ),
   production(
     'artigo-aceito',
@@ -200,12 +212,12 @@ const TECHNICAL: CensusTarget[] = [
       `registro-${type}`,
       label,
       at('PKG_PATENTE_REGISTRO.form', {
-        f_cod_tipo: type,
+        f_cod_tipo: type.slice(0, 2),
         f_reg: reg,
         F_STA_DIVULGACAO_CIENTIFICA: '',
       }),
       [element],
-      `PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=${type}`,
+      `PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=${type.slice(0, 2)}`,
       prov === 'inferido'
         ? { provenance: 'inferido', source: 'lattes_internals.md, seção 17' }
         : {},

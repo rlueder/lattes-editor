@@ -8,9 +8,7 @@
 // seção 5) são inferidos até o teste acompanhado.
 //
 // Fica de fora, à mão:
-// - patente: a inclusão passa por uma janela prévia e por um POST
-//   verifica_cadastrado que não foi feito, e o formulário com f_ctr=R não foi
-//   lido (seção 17);
+// - patente e registros: create-registro.ts (LAT-57);
 // - pós-doutorado e livre-docência, que não estão no combo de níveis;
 // - palavras-chave, áreas e setores (grades serializadas, seção 16), o
 //   sanduíche e a cotutela do doutorado, equipe além do dono, financiadores,
@@ -26,11 +24,41 @@ import { childElements, type XElement } from '../model/xml.ts';
 import type { FormSpec } from './contract.ts';
 import { CREATE_ATUACAO_SPEC } from './create.ts';
 import {
+  applyCreateAtividade,
+  atividadeFormPath,
+  CREATE_ATIVIDADE_SPEC,
+  type CreateAtividadeOp,
+  planCreateAtividade,
+  teachingItem,
+} from './create-atividade.ts';
+import {
+  applyCreateEvento,
+  type CreateEventoOp,
+  EVENT_ELEMENTS,
+  eventItem,
+  planCreateEvento,
+} from './create-evento.ts';
+import {
+  AP_LEVELS,
   applyCreateFormacao,
   CREATE_FORMACAO_SPEC,
   type CreateFormacaoOp,
+  FORMATION_LEVELS,
   planCreateFormacao,
 } from './create-formacao.ts';
+import {
+  applyCreateGeneral,
+  applyCreateVinculo,
+  type CreateGeneralOp,
+  type CreateVinculoOp,
+  GENERAL_CREATES,
+  planCreateGeneral,
+} from './create-general.ts';
+import {
+  CREATE_DADO_SPEC,
+  CREATE_VINCULO_SPEC,
+  generalFormPath,
+} from './create-general-contract.ts';
 import {
   applyCreateProjeto,
   CREATE_PROJETO_SPEC,
@@ -39,12 +67,59 @@ import {
   planCreateProjeto,
   PROJECT_CARRIERS,
 } from './create-projeto.ts';
+import {
+  applyCreateRegistro,
+  CREATE_REGISTRO_SPEC,
+  type CreateRegistroOp,
+  planCreateRegistro,
+  REGISTRY_TYPES,
+  registryItem,
+} from './create-registro.ts';
+import { registryInclusion, registryList } from './create-registro-rules.ts';
 import type { Planned } from './create-shared.ts';
+import { EVENTO_SPEC } from './edit-items.ts';
 import { findLinks } from './lattes-html.ts';
 
-export { applyCreateFormacao, applyCreateProjeto };
+export {
+  applyCreateAtividade,
+  applyCreateEvento,
+  applyCreateFormacao,
+  applyCreateGeneral,
+  applyCreateProjeto,
+  applyCreateRegistro,
+  applyCreateVinculo,
+};
 
-export type CreateItemOp = CreateFormacaoOp | CreateProjetoOp;
+export type CreateItemOp =
+  | CreateAtividadeOp
+  | CreateEventoOp
+  | CreateFormacaoOp
+  | CreateGeneralOp
+  | CreateProjetoOp
+  | CreateRegistroOp
+  | CreateVinculoOp;
+
+/**
+ * Os elementos que o conector sabe incluir (com a chave ligada): a atuação
+ * (create.ts), cada nível da formação, o projeto, os registros, os dados
+ * gerais, o vínculo e os eventos. O inventário (create-inventory.ts) parte
+ * daqui.
+ */
+export const CONNECTOR_CREATES: ReadonlySet<string> = new Set([
+  'ATUACAO-PROFISSIONAL',
+  ...Object.keys(FORMATION_LEVELS),
+  ...Object.keys(AP_LEVELS),
+  // Registros: a própria pessoa entra na grade de inventores pelo autorDP do
+  // menu (seção 22). A patente e o projeto têm a operação (registroFields,
+  // projetoOp), mas o planejamento os manda à mão: o titular da patente e o
+  // órgão do projeto ainda não têm como ir.
+  ...Object.keys(REGISTRY_TYPES).filter((n) => n !== 'PATENTE'),
+  ...GENERAL_CREATES,
+  // A atividade de ensino, com as disciplinas (create-atividade.ts).
+  'ENSINO',
+  // Eventos: pelo formulário, no lugar do Importar, com a chave ligada (direct-inclusion.ts).
+  ...EVENT_ELEMENTS,
+]);
 
 /**
  * Planeja a inclusão de um item novo de formação ou projeto; undefined quando
@@ -57,12 +132,14 @@ export function planCreateItem(
 ): Planned<CreateItemOp> | undefined {
   const el = chain.at(-1);
   if (!el) return undefined;
-  if (el.name === 'PATENTE') {
-    return {
-      reason:
-        'Patente vai à mão: a inclusão passa por uma consulta prévia ao Lattes que ainda não foi observada',
-    };
-  }
+  const registro = registryItem(el);
+  if (registro) return planCreateRegistro(change, chain, registro, label);
+  const ensino = teachingItem(el);
+  if (ensino) return planCreateAtividade(change, chain, ensino, label);
+  const evento = eventItem(el);
+  if (evento) return planCreateEvento(change, chain, evento, label);
+  const general = planCreateGeneral(change, chain, label);
+  if (general) return general;
   if (PROJECT_CARRIERS.has(el.name)) return planCreateProjeto(change, chain, label);
   if (chain.at(-2)?.name === 'FORMACAO-ACADEMICA-TITULACAO') {
     return planCreateFormacao(change, el, label);
@@ -80,13 +157,30 @@ export function planCreateItem(
 /**
  * O caminho do formulário de inclusão que o contrato confere, seguindo os
  * links do menu: o mestrado na formação (a base da seção 17), a lista de
- * projetos de pesquisa no projeto. Devolve o procedimento que faltou, se faltou.
+ * projetos de pesquisa no projeto, a cultivar registrada nos registros. Devolve o procedimento que faltou, se faltou.
  */
 export async function createFormPath(
   kind: CreateItemOp['kind'],
   get: (path: string) => Promise<string>,
   menu: string,
 ): Promise<{ missing: string } | { path: string }> {
+  if (kind === 'criar-dado' || kind === 'criar-vinculo') return generalFormPath(kind, get, menu);
+  if (kind === 'criar-atividade') return atividadeFormPath(get, menu);
+  if (kind === 'criar-evento') {
+    const lista = findLinks(menu, 'pkg_evento.lista').find(
+      (l) => !l.params.f_sta_divulgacao_cientifica,
+    );
+    if (!lista) return { missing: 'pkg_evento.lista' };
+    const inc = findLinks(await get(lista.path), 'PKG_EVENTO.form').find((l) => !l.params.f_seq);
+    return inc ? { path: inc.path } : { missing: 'PKG_EVENTO.form' };
+  }
+  if (kind === 'criar-registro') {
+    // A cultivar registrada: o formulário do contrato (create-registro.ts).
+    const lista = registryList(menu, 'CR');
+    if (!lista) return { missing: 'PKG_PATENTE_REGISTRO.LISTA' };
+    const path = registryInclusion(await get(lista.path), 'CR', lista.params.f_cod ?? '');
+    return path ? { path } : { missing: 'PKG_PATENTE_REGISTRO.form' };
+  }
   if (kind === 'criar-formacao') {
     const lista = findLinks(menu, 'pkg_formacao.lista').find(
       (l) => (l.params.f_tipo ?? '').toUpperCase() === 'FA',
@@ -104,7 +198,16 @@ export async function createFormPath(
 
 /** Os formulários de inclusão que o contrato confere com a chave ligada. */
 export const CREATE_SPECS: Record<'criar-atuacao' | CreateItemOp['kind'], FormSpec> = {
+  'criar-atividade': CREATE_ATIVIDADE_SPEC,
   'criar-atuacao': CREATE_ATUACAO_SPEC,
+  'criar-dado': CREATE_DADO_SPEC,
+  'criar-evento': { ...EVENTO_SPEC, mode: 'I', partial: true },
   'criar-formacao': CREATE_FORMACAO_SPEC,
   'criar-projeto': CREATE_PROJETO_SPEC,
+  'criar-registro': CREATE_REGISTRO_SPEC,
+  'criar-vinculo': CREATE_VINCULO_SPEC,
 };
+
+/** As inclusões de create-items.ts (a da atuação fica em create.ts). */
+export const isCreateItemKind = (kind: string): kind is CreateItemOp['kind'] =>
+  kind !== 'criar-atuacao' && kind in CREATE_SPECS;

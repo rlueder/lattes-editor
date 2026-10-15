@@ -1,0 +1,994 @@
+{
+  "capturedAt": "2026-10-15T17:41:38.483Z",
+  "collector": "lattes-editor 0.22.0",
+  "entries": [
+    {
+      "status": "ok",
+      "page": {
+        "forms": [
+          {
+            "action": "PKG_ATIV.cargo",
+            "fields": [
+              {
+                "label": "Órgão/Unidade",
+                "name": "f_orgao",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "label": "Início",
+                "name": "f_mes_ini",
+                "type": "text",
+                "maxLength": 2
+              },
+              {
+                "label": "",
+                "name": "f_ano_ini",
+                "type": "text",
+                "maxLength": 4
+              },
+              {
+                "label": "",
+                "name": "f_status",
+                "type": "radio",
+                "options": [
+                  {
+                    "label": "Anterior (finalizado)",
+                    "value": "N"
+                  },
+                  {
+                    "label": "Atual (não finalizado)",
+                    "value": "S"
+                  }
+                ]
+              },
+              {
+                "label": "Mes",
+                "name": "f_mes_fim",
+                "type": "text",
+                "maxLength": 2,
+                "inHiddenBlock": true
+              },
+              {
+                "label": "Ano",
+                "name": "f_ano_fim",
+                "type": "text",
+                "maxLength": 4,
+                "inHiddenBlock": true
+              },
+              {
+                "label": "Privado: As informações não serão exibidas na consulta pública.",
+                "name": "f_tipo_privacidade",
+                "type": "select-one",
+                "options": [
+                  {
+                    "label": "Público",
+                    "value": "1"
+                  },
+                  {
+                    "label": "Privado",
+                    "value": "2"
+                  }
+                ]
+              }
+            ],
+            "hidden": [
+              "f_natur_ativ",
+              "f_ctr",
+              "f_espec_l",
+              "f_cod",
+              "f_codinst",
+              "f_seq_ativ",
+              "f_seq_funcao",
+              "f_codorgao",
+              "f_codorgao2",
+              "f_exc",
+              "f_natur_old",
+              "f_cod_curso",
+              "f_cod_curso2",
+              "f_curso_old",
+              "f_orgao_old"
+            ],
+            "identity": {
+              "f_ctr": "I"
+            },
+            "method": "post",
+            "name": "GN_ATIV_CARGO",
+            "unnamed": 0
+          }
+        ],
+        "title": "Currículo Lattes"
+      },
+      "path": "pkg_ativ.cargo?f_natur_ativ=1",
+      "id": "atividade-1",
+      "label": "Atividade de uma atuação: direção e administração",
+      "elements": ["DIRECAO-E-ADMINISTRACAO"],
+      "provenance": "observado",
+      "elementsProvenance": "inferido",
+      "source": "recaptura de 15/10/2026, lote 3 (seção 22)"
+    },
+    {
+      "status": "ok",
+      "page": {
+        "forms": [
+          {
+            "action": "PKG_ATIV.cargo",
+            "fields": [
+              {
+                "label": "Órgão/Unidade",
+                "name": "f_orgao",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "label": "Início",
+                "name": "f_mes_ini",
+                "type": "text",
+                "maxLength": 2
+              },
+              {
+                "label": "",
+                "name": "f_ano_ini",
+                "type": "text",
+                "maxLength": 4
+              },
+              {
+                "label": "",
+                "name": "f_status",
+                "type": "radio",
+                "options": [
+                  {
+                    "label": "Anterior (finalizado)",
+                    "value": "N"
+                  },
+                  {
+                    "label": "Atual (não finalizado)",
+                    "value": "S"
+                  }
+                ]
+              },
+              {
+                "label": "Mes",
+                "name": "f_mes_fim",
+                "type": "text",
+                "maxLength": 2,
+                "inHiddenBlock": true
+              },
+              {
+                "label": "Ano",
+                "name": "f_ano_fim",
+                "type": "text",
+                "maxLength": 4,
+                "inHiddenBlock": true
+              },
+              {
+                "label": "Privado: As informações não serão exibidas na consulta pública.",
+                "name": "f_tipo_privacidade",
+                "type": "select-one",
+                "options": [
+                  {
+                    "label": "Público",
+                    "value": "1"
+                  },
+                  {
+                    "label": "Privado",
+                    "value": "2"
+                  }
+                ]
+              }
+            ],
+            "hidden": [
+              "f_natur_ativ",
+              "f_ctr",
+              "f_espec_l",
+              "f_cod",
+              "f_codinst",
+              "f_seq_ativ",
+              "f_seq_funcao",
+              "f_codorgao",
+              "f_codorgao2",
+              "f_exc",
+              "f_natur_old",
+              "f_cod_curso",
+              "f_cod_curso2",
+              "f_curso_old",
+              "f_orgao_old"
+            ],
+            "identity": {
+              "f_ctr": "I"
+            },
+            "method": "post",
+            "name": "GN_ATIV_CARGO",
+            "unnamed": 0
+          }
+        ],
+        "title": "Currículo Lattes"
+      },
+      "path": "pkg_ativ.cargo?f_natur_ativ=2",
+      "id": "atividade-2",
+      "label": "Atividade de uma atuação: pesquisa e desenvolvimento",
+      "elements": ["PESQUISA-E-DESENVOLVIMENTO"],
+      "provenance": "observado",
+      "elementsProvenance": "inferido",
+      "source": "recaptura de 15/10/2026, lote 3 (seção 22)"
+    },
+    {
+      "status": "ok",
+      "page": {
+        "forms": [
+          {
+            "action": "PKG_ATIV.cargo",
+            "fields": [
+              {
+                "label": "Nivel",
+                "name": "f_nivel",
+                "type": "select-one",
+                "options": [
+                  {
+                    "label": "",
+                    "value": ""
+                  },
+                  {
+                    "label": "Graduação",
+                    "value": "401"
+                  },
+                  {
+                    "label": "Pós-graduação",
+                    "value": "402"
+                  },
+                  {
+                    "label": "Especialização",
+                    "value": "403"
+                  },
+                  {
+                    "label": "Aperfeiçoamento",
+                    "value": "404"
+                  },
+                  {
+                    "label": "Ensino fundamental",
+                    "value": "405"
+                  },
+                  {
+                    "label": "Ensino médio",
+                    "value": "406"
+                  },
+                  {
+                    "label": "Outro",
+                    "value": "409"
+                  }
+                ]
+              },
+              {
+                "label": "Curso",
+                "name": "f_curso",
+                "type": "text",
+                "maxLength": 50,
+                "disabled": true
+              },
+              {
+                "label": "Início",
+                "name": "f_mes_ini",
+                "type": "text",
+                "maxLength": 2
+              },
+              {
+                "label": "",
+                "name": "f_ano_ini",
+                "type": "text",
+                "maxLength": 4
+              },
+              {
+                "label": "",
+                "name": "f_status",
+                "type": "radio",
+                "options": [
+                  {
+                    "label": "Anterior (finalizado)",
+                    "value": "N"
+                  },
+                  {
+                    "label": "Atual (não finalizado)",
+                    "value": "S"
+                  }
+                ]
+              },
+              {
+                "label": "Mes",
+                "name": "f_mes_fim",
+                "type": "text",
+                "maxLength": 2,
+                "inHiddenBlock": true
+              },
+              {
+                "label": "Ano",
+                "name": "f_ano_fim",
+                "type": "text",
+                "maxLength": 4,
+                "inHiddenBlock": true
+              },
+              {
+                "label": "Privado: As informações não serão exibidas na consulta pública.",
+                "name": "f_tipo_privacidade",
+                "type": "select-one",
+                "options": [
+                  {
+                    "label": "Público",
+                    "value": "1"
+                  },
+                  {
+                    "label": "Privado",
+                    "value": "2"
+                  }
+                ]
+              }
+            ],
+            "hidden": [
+              "f_natur_ativ",
+              "f_ctr",
+              "f_espec_l",
+              "f_cod",
+              "f_codinst",
+              "f_seq_ativ",
+              "f_seq_funcao",
+              "f_codorgao",
+              "f_codorgao2",
+              "f_exc",
+              "f_natur_old",
+              "f_cod_curso",
+              "f_cod_curso2",
+              "f_curso_old",
+              "f_orgao_old"
+            ],
+            "identity": {
+              "f_ctr": "I"
+            },
+            "method": "post",
+            "name": "GN_ATIV_CARGO",
+            "unnamed": 0
+          }
+        ],
+        "title": "Currículo Lattes"
+      },
+      "path": "pkg_ativ.cargo?f_natur_ativ=4",
+      "id": "atividade-4",
+      "label": "Atividade de uma atuação: ensino",
+      "elements": ["ENSINO"],
+      "provenance": "observado",
+      "elementsProvenance": "inferido",
+      "source": "recaptura de 15/10/2026, lote 3 (seção 22)"
+    },
+    {
+      "status": "ok",
+      "page": {
+        "forms": [
+          {
+            "action": "PKG_ATIV.cargo",
+            "fields": [
+              {
+                "label": "Órgão/Unidade",
+                "name": "f_orgao",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "label": "Início",
+                "name": "f_mes_ini",
+                "type": "text",
+                "maxLength": 2
+              },
+              {
+                "label": "",
+                "name": "f_ano_ini",
+                "type": "text",
+                "maxLength": 4
+              },
+              {
+                "label": "",
+                "name": "f_status",
+                "type": "radio",
+                "options": [
+                  {
+                    "label": "Anterior (finalizado)",
+                    "value": "N"
+                  },
+                  {
+                    "label": "Atual (não finalizado)",
+                    "value": "S"
+                  }
+                ]
+              },
+              {
+                "label": "Mes",
+                "name": "f_mes_fim",
+                "type": "text",
+                "maxLength": 2,
+                "inHiddenBlock": true
+              },
+              {
+                "label": "Ano",
+                "name": "f_ano_fim",
+                "type": "text",
+                "maxLength": 4,
+                "inHiddenBlock": true
+              },
+              {
+                "label": "Privado: As informações não serão exibidas na consulta pública.",
+                "name": "f_tipo_privacidade",
+                "type": "select-one",
+                "options": [
+                  {
+                    "label": "Público",
+                    "value": "1"
+                  },
+                  {
+                    "label": "Privado",
+                    "value": "2"
+                  }
+                ]
+              }
+            ],
+            "hidden": [
+              "f_natur_ativ",
+              "f_ctr",
+              "f_espec_l",
+              "f_cod",
+              "f_codinst",
+              "f_seq_ativ",
+              "f_seq_funcao",
+              "f_codorgao",
+              "f_codorgao2",
+              "f_exc",
+              "f_natur_old",
+              "f_cod_curso",
+              "f_cod_curso2",
+              "f_curso_old",
+              "f_orgao_old"
+            ],
+            "identity": {
+              "f_ctr": "I"
+            },
+            "method": "post",
+            "name": "GN_ATIV_CARGO",
+            "unnamed": 0
+          }
+        ],
+        "title": "Currículo Lattes"
+      },
+      "path": "pkg_ativ.cargo?f_natur_ativ=5",
+      "id": "atividade-5",
+      "label": "Atividade de uma atuação: estágio",
+      "elements": ["ESTAGIO"],
+      "provenance": "observado",
+      "elementsProvenance": "inferido",
+      "source": "recaptura de 15/10/2026, lote 3 (seção 22)"
+    },
+    {
+      "status": "ok",
+      "page": {
+        "forms": [
+          {
+            "action": "PKG_ATIV.cargo",
+            "fields": [
+              {
+                "label": "Órgão/Unidade",
+                "name": "f_orgao",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "label": "Início",
+                "name": "f_mes_ini",
+                "type": "text",
+                "maxLength": 2
+              },
+              {
+                "label": "",
+                "name": "f_ano_ini",
+                "type": "text",
+                "maxLength": 4
+              },
+              {
+                "label": "",
+                "name": "f_status",
+                "type": "radio",
+                "options": [
+                  {
+                    "label": "Anterior (finalizado)",
+                    "value": "N"
+                  },
+                  {
+                    "label": "Atual (não finalizado)",
+                    "value": "S"
+                  }
+                ]
+              },
+              {
+                "label": "Mes",
+                "name": "f_mes_fim",
+                "type": "text",
+                "maxLength": 2,
+                "inHiddenBlock": true
+              },
+              {
+                "label": "Ano",
+                "name": "f_ano_fim",
+                "type": "text",
+                "maxLength": 4,
+                "inHiddenBlock": true
+              },
+              {
+                "label": "Privado: As informações não serão exibidas na consulta pública.",
+                "name": "f_tipo_privacidade",
+                "type": "select-one",
+                "options": [
+                  {
+                    "label": "Público",
+                    "value": "1"
+                  },
+                  {
+                    "label": "Privado",
+                    "value": "2"
+                  }
+                ]
+              }
+            ],
+            "hidden": [
+              "f_natur_ativ",
+              "f_ctr",
+              "f_espec_l",
+              "f_cod",
+              "f_codinst",
+              "f_seq_ativ",
+              "f_seq_funcao",
+              "f_codorgao",
+              "f_codorgao2",
+              "f_exc",
+              "f_natur_old",
+              "f_cod_curso",
+              "f_cod_curso2",
+              "f_curso_old",
+              "f_orgao_old"
+            ],
+            "identity": {
+              "f_ctr": "I"
+            },
+            "method": "post",
+            "name": "GN_ATIV_CARGO",
+            "unnamed": 0
+          }
+        ],
+        "title": "Currículo Lattes"
+      },
+      "path": "pkg_ativ.cargo?f_natur_ativ=6",
+      "id": "atividade-6",
+      "label": "Atividade de uma atuação: serviço técnico especializado",
+      "elements": ["SERVICO-TECNICO-ESPECIALIZADO"],
+      "provenance": "observado",
+      "elementsProvenance": "inferido",
+      "source": "recaptura de 15/10/2026, lote 3 (seção 22)"
+    },
+    {
+      "status": "ok",
+      "page": {
+        "forms": [
+          {
+            "action": "PKG_ATIV.cargo",
+            "fields": [
+              {
+                "label": "Órgão/Unidade",
+                "name": "f_orgao",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "label": "Início",
+                "name": "f_mes_ini",
+                "type": "text",
+                "maxLength": 2
+              },
+              {
+                "label": "",
+                "name": "f_ano_ini",
+                "type": "text",
+                "maxLength": 4
+              },
+              {
+                "label": "",
+                "name": "f_status",
+                "type": "radio",
+                "options": [
+                  {
+                    "label": "Anterior (finalizado)",
+                    "value": "N"
+                  },
+                  {
+                    "label": "Atual (não finalizado)",
+                    "value": "S"
+                  }
+                ]
+              },
+              {
+                "label": "Mes",
+                "name": "f_mes_fim",
+                "type": "text",
+                "maxLength": 2,
+                "inHiddenBlock": true
+              },
+              {
+                "label": "Ano",
+                "name": "f_ano_fim",
+                "type": "text",
+                "maxLength": 4,
+                "inHiddenBlock": true
+              },
+              {
+                "label": "Privado: As informações não serão exibidas na consulta pública.",
+                "name": "f_tipo_privacidade",
+                "type": "select-one",
+                "options": [
+                  {
+                    "label": "Público",
+                    "value": "1"
+                  },
+                  {
+                    "label": "Privado",
+                    "value": "2"
+                  }
+                ]
+              }
+            ],
+            "hidden": [
+              "f_natur_ativ",
+              "f_ctr",
+              "f_espec_l",
+              "f_cod",
+              "f_codinst",
+              "f_seq_ativ",
+              "f_seq_funcao",
+              "f_codorgao",
+              "f_codorgao2",
+              "f_exc",
+              "f_natur_old",
+              "f_cod_curso",
+              "f_cod_curso2",
+              "f_curso_old",
+              "f_orgao_old"
+            ],
+            "identity": {
+              "f_ctr": "I"
+            },
+            "method": "post",
+            "name": "GN_ATIV_CARGO",
+            "unnamed": 0
+          }
+        ],
+        "title": "Currículo Lattes"
+      },
+      "path": "pkg_ativ.cargo?f_natur_ativ=7",
+      "id": "atividade-7",
+      "label": "Atividade de uma atuação: extensão universitária",
+      "elements": ["EXTENSAO-UNIVERSITARIA"],
+      "provenance": "observado",
+      "elementsProvenance": "inferido",
+      "source": "recaptura de 15/10/2026, lote 3 (seção 22)"
+    },
+    {
+      "status": "ok",
+      "page": {
+        "forms": [
+          {
+            "action": "PKG_ATIV.cargo",
+            "fields": [
+              {
+                "label": "Órgão/Unidade",
+                "name": "f_orgao",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "label": "Início",
+                "name": "f_mes_ini",
+                "type": "text",
+                "maxLength": 2
+              },
+              {
+                "label": "",
+                "name": "f_ano_ini",
+                "type": "text",
+                "maxLength": 4
+              },
+              {
+                "label": "",
+                "name": "f_status",
+                "type": "radio",
+                "options": [
+                  {
+                    "label": "Anterior (finalizado)",
+                    "value": "N"
+                  },
+                  {
+                    "label": "Atual (não finalizado)",
+                    "value": "S"
+                  }
+                ]
+              },
+              {
+                "label": "Mes",
+                "name": "f_mes_fim",
+                "type": "text",
+                "maxLength": 2,
+                "inHiddenBlock": true
+              },
+              {
+                "label": "Ano",
+                "name": "f_ano_fim",
+                "type": "text",
+                "maxLength": 4,
+                "inHiddenBlock": true
+              },
+              {
+                "label": "Privado: As informações não serão exibidas na consulta pública.",
+                "name": "f_tipo_privacidade",
+                "type": "select-one",
+                "options": [
+                  {
+                    "label": "Público",
+                    "value": "1"
+                  },
+                  {
+                    "label": "Privado",
+                    "value": "2"
+                  }
+                ]
+              }
+            ],
+            "hidden": [
+              "f_natur_ativ",
+              "f_ctr",
+              "f_espec_l",
+              "f_cod",
+              "f_codinst",
+              "f_seq_ativ",
+              "f_seq_funcao",
+              "f_codorgao",
+              "f_codorgao2",
+              "f_exc",
+              "f_natur_old",
+              "f_cod_curso",
+              "f_cod_curso2",
+              "f_curso_old",
+              "f_orgao_old"
+            ],
+            "identity": {
+              "f_ctr": "I"
+            },
+            "method": "post",
+            "name": "GN_ATIV_CARGO",
+            "unnamed": 0
+          }
+        ],
+        "title": "Currículo Lattes"
+      },
+      "path": "pkg_ativ.cargo?f_natur_ativ=8",
+      "id": "atividade-8",
+      "label": "Atividade de uma atuação: treinamento",
+      "elements": ["TREINAMENTO-MINISTRADO"],
+      "provenance": "observado",
+      "elementsProvenance": "inferido",
+      "source": "recaptura de 15/10/2026, lote 3 (seção 22)"
+    },
+    {
+      "status": "ok",
+      "page": {
+        "forms": [
+          {
+            "action": "PKG_ATIV.cargo",
+            "fields": [
+              {
+                "label": "Órgão/Unidade",
+                "name": "f_orgao",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "label": "Início",
+                "name": "f_mes_ini",
+                "type": "text",
+                "maxLength": 2
+              },
+              {
+                "label": "",
+                "name": "f_ano_ini",
+                "type": "text",
+                "maxLength": 4
+              },
+              {
+                "label": "",
+                "name": "f_status",
+                "type": "radio",
+                "options": [
+                  {
+                    "label": "Anterior (finalizado)",
+                    "value": "N"
+                  },
+                  {
+                    "label": "Atual (não finalizado)",
+                    "value": "S"
+                  }
+                ]
+              },
+              {
+                "label": "Mes",
+                "name": "f_mes_fim",
+                "type": "text",
+                "maxLength": 2,
+                "inHiddenBlock": true
+              },
+              {
+                "label": "Ano",
+                "name": "f_ano_fim",
+                "type": "text",
+                "maxLength": 4,
+                "inHiddenBlock": true
+              },
+              {
+                "label": "Privado: As informações não serão exibidas na consulta pública.",
+                "name": "f_tipo_privacidade",
+                "type": "select-one",
+                "options": [
+                  {
+                    "label": "Público",
+                    "value": "1"
+                  },
+                  {
+                    "label": "Privado",
+                    "value": "2"
+                  }
+                ]
+              }
+            ],
+            "hidden": [
+              "f_natur_ativ",
+              "f_ctr",
+              "f_espec_l",
+              "f_cod",
+              "f_codinst",
+              "f_seq_ativ",
+              "f_seq_funcao",
+              "f_codorgao",
+              "f_codorgao2",
+              "f_exc",
+              "f_natur_old",
+              "f_cod_curso",
+              "f_cod_curso2",
+              "f_curso_old",
+              "f_orgao_old"
+            ],
+            "identity": {
+              "f_ctr": "I"
+            },
+            "method": "post",
+            "name": "GN_ATIV_CARGO",
+            "unnamed": 0
+          }
+        ],
+        "title": "Currículo Lattes"
+      },
+      "path": "pkg_ativ.cargo?f_natur_ativ=9",
+      "id": "atividade-9",
+      "label": "Atividade de uma atuação: outra atividade técnico-científica",
+      "elements": ["OUTRA-ATIVIDADE-TECNICO-CIENTIFICA"],
+      "provenance": "observado",
+      "elementsProvenance": "inferido",
+      "source": "recaptura de 15/10/2026, lote 3 (seção 22)"
+    },
+    {
+      "status": "ok",
+      "page": {
+        "forms": [
+          {
+            "action": "PKG_ATIV.cargo",
+            "fields": [
+              {
+                "label": "Órgão/Unidade",
+                "name": "f_orgao",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "label": "Início",
+                "name": "f_mes_ini",
+                "type": "text",
+                "maxLength": 2
+              },
+              {
+                "label": "",
+                "name": "f_ano_ini",
+                "type": "text",
+                "maxLength": 4
+              },
+              {
+                "label": "",
+                "name": "f_status",
+                "type": "radio",
+                "options": [
+                  {
+                    "label": "Anterior (finalizado)",
+                    "value": "N"
+                  },
+                  {
+                    "label": "Atual (não finalizado)",
+                    "value": "S"
+                  }
+                ]
+              },
+              {
+                "label": "Mes",
+                "name": "f_mes_fim",
+                "type": "text",
+                "maxLength": 2,
+                "inHiddenBlock": true
+              },
+              {
+                "label": "Ano",
+                "name": "f_ano_fim",
+                "type": "text",
+                "maxLength": 4,
+                "inHiddenBlock": true
+              },
+              {
+                "label": "Privado: As informações não serão exibidas na consulta pública.",
+                "name": "f_tipo_privacidade",
+                "type": "select-one",
+                "options": [
+                  {
+                    "label": "Público",
+                    "value": "1"
+                  },
+                  {
+                    "label": "Privado",
+                    "value": "2"
+                  }
+                ]
+              }
+            ],
+            "hidden": [
+              "f_natur_ativ",
+              "f_ctr",
+              "f_espec_l",
+              "f_cod",
+              "f_codinst",
+              "f_seq_ativ",
+              "f_seq_funcao",
+              "f_codorgao",
+              "f_codorgao2",
+              "f_exc",
+              "f_natur_old",
+              "f_cod_curso",
+              "f_cod_curso2",
+              "f_curso_old",
+              "f_orgao_old"
+            ],
+            "identity": {
+              "f_ctr": "I"
+            },
+            "method": "post",
+            "name": "GN_ATIV_CARGO",
+            "unnamed": 0
+          }
+        ],
+        "title": "Currículo Lattes"
+      },
+      "path": "pkg_ativ.cargo?f_natur_ativ=B",
+      "id": "atividade-B",
+      "label": "Atividade de uma atuação: conselhos, comissões e consultoria",
+      "elements": ["CONSELHO-COMISSAO-E-CONSULTORIA"],
+      "provenance": "observado",
+      "elementsProvenance": "inferido",
+      "source": "recaptura de 15/10/2026, lote 3 (seção 22)"
+    }
+  ],
+  "format": 1,
+  "lists": {},
+  "origin": "cvlattesweb: recaptura de 15/10/2026, lote 3, só leitura (formulários de atividade abertos por GET); sem scripts"
+}

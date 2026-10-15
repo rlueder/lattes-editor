@@ -100,7 +100,7 @@ export function isFullEvento(op: EventoOp): boolean {
  * de 15/10/2026, os congressos e encontros do dono vieram com essas opções
  * (o rótulo é a NATUREZA do XML). Os outros seguem pelo nome, inferidos.
  */
-const EVENT_CODES: Record<string, string> = {
+export const EVENT_CODES: Record<string, string> = {
   'OUTRAS-PARTICIPACOES-EM-EVENTOS-CONGRESSOS': 'A39',
   'PARTICIPACAO-EM-CONGRESSO': 'A31',
   'PARTICIPACAO-EM-ENCONTRO': 'A35',

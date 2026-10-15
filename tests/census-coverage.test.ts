@@ -33,7 +33,10 @@ describe('censo: as entradas', () => {
         expect(Object.keys(t.locate.params).map((k) => k.toLowerCase())).not.toContain('f_cod');
       }
       if (t.locate.kind !== 'fixed' && t.locate.kind !== 'menu') {
-        expect(t.provenance === 'inferido' || t.id === 'vinculo', t.id).toBe(true);
+        // Achados por link e vistos no Lattes: o vínculo (seção 5) e as atividades
+        // por natureza (lote 3 da recaptura de 15/10/2026).
+        const seen = t.id === 'vinculo' || t.id.startsWith('atividade-');
+        expect(t.provenance === 'inferido' || seen, t.id).toBe(true);
       }
     }
   });

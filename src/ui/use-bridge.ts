@@ -251,7 +251,7 @@ interface Outgoing {
 export function useBridge(
   session: Session | null,
   groups: ChangeGroup[],
-  onConfirmed: (key: string) => void,
+  onConfirmed: (key: string, assigned?: Record<string, string>) => void,
   onUndone: (change: Change) => void,
 ): BridgeState {
   const confirmedRef = useRef(onConfirmed);
@@ -323,7 +323,7 @@ export function useBridge(
         recordRef.current(msg.result);
         if (msg.result.status === 'conferido') {
           setConfirmed((n) => n + 1);
-          confirmedRef.current(msg.result.key);
+          confirmedRef.current(msg.result.key, msg.result.assigned);
         }
       }
       if (msg.type === 'fim') setRunning(false);

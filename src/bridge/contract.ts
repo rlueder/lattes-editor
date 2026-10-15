@@ -15,7 +15,7 @@ import {
   isBiographicKind,
 } from './biographic.ts';
 import { CREATE_ITEMS_ENABLED } from './create.ts';
-import { CREATE_SPECS, createFormPath } from './create-items.ts';
+import { CREATE_SPECS, createFormPath, isCreateItemKind } from './create-items.ts';
 import { contractKind, type DeleteOp } from './delete.ts';
 import { editContract, eventoSample } from './edit-items.ts';
 import {
@@ -60,7 +60,15 @@ export interface FormSpec {
   partial?: boolean;
 }
 
-type CreateKind = 'criar-atuacao' | 'criar-formacao' | 'criar-projeto';
+type CreateKind =
+  | 'criar-atividade'
+  | 'criar-atuacao'
+  | 'criar-dado'
+  | 'criar-evento'
+  | 'criar-formacao'
+  | 'criar-projeto'
+  | 'criar-registro'
+  | 'criar-vinculo';
 
 /**
  * Formulários fora do contrato fixo: os que só entram com a chave ligada
@@ -383,7 +391,7 @@ async function locateAndCheck(
     const link = findLinks(menu, 'pkg_resume.')[0];
     return link ? checkForm(port, kind, spec, link.path) : noLink(kind, spec.name, 'pkg_resume.');
   }
-  if (kind === 'criar-formacao' || kind === 'criar-projeto') {
+  if (isCreateItemKind(kind)) {
     // Formulários de inclusão: abrem vazios, não precisam de amostra.
     const found = await createFormPath(kind, (path) => getChecked(port, path), menu);
     return 'path' in found

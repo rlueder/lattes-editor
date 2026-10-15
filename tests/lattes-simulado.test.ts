@@ -27,6 +27,7 @@ import {
 } from '../src/bridge/contract.ts';
 import { CREATE_ATUACAO_SPEC } from '../src/bridge/create.ts';
 import { CREATE_FIELD_LABELS } from '../src/bridge/create-labels.ts';
+import { projetoOp, TEAM_BY_HAND, TEAM_UNREAD } from '../src/bridge/create-projeto.ts';
 import { editContract } from '../src/bridge/edit-items.ts';
 import { isEspelhoPage, parseEspelho } from '../src/bridge/espelho.ts';
 import { exportCv, fromBase64 } from '../src/bridge/export.ts';
@@ -38,7 +39,7 @@ import { uploadPhoto } from '../src/bridge/photo.ts';
 import { planChanges, type PlanOptions, planOptionsFor } from '../src/bridge/plan.ts';
 import { buildImportFile } from '../src/import-export/import-file.ts';
 import { importMessage } from '../src/import-export/import-request.ts';
-import { diffDocuments } from '../src/model/changes.ts';
+import { diffDocuments, resolvePath } from '../src/model/changes.ts';
 import { loadCv, maxSequenciaProducao } from '../src/model/document.ts';
 import { addProduction, newItem, productionType } from '../src/model/production.ts';
 import {
@@ -90,7 +91,7 @@ async function planEdits(
     change,
     itemTitle: '',
   }));
-  return planChanges(entries, working.root, options);
+  return { ...planChanges(entries, working.root, options), entries, working };
 }
 
 async function exported(lattes: LattesSimuladoNoTeste) {
@@ -335,12 +336,21 @@ describe('Lattes simulado: o conector de ponta a ponta', () => {
         ]),
       );
     }, exportedNow.bytes);
-    expect(plan.unsupported).toEqual([]);
-    expect(plan.ops.map((o) => o.kind).sort()).toEqual(['criar-formacao', 'criar-projeto']);
-    const results = await applyAll(plan.ops, lattes.port);
-    expect(results.map((r) => [r.status, r.detail])).toEqual(
-      results.map((r) => ['conferido', r.detail]),
+    // O projeto vai à mão pela equipe e pelo órgão (seção 21); a operação que
+    // projetoOp() monta segue exercida aqui, para quando a equipe for lida.
+    expect(plan.unsupported.map((u) => u.reason)).toEqual([TEAM_BY_HAND]);
+    expect(plan.ops.map((o) => o.kind)).toEqual(['criar-formacao']);
+    const projectChange = plan.entries.find((e) => e.change.element !== 'MESTRADO')!.change;
+    const projetoNovo = projetoOp(
+      projectChange,
+      resolvePath(plan.working.root, projectChange.path),
+      'Projeto',
     );
+    if ('reason' in projetoNovo) throw new Error(projetoNovo.reason);
+    const results = await applyAll([...plan.ops, projetoNovo], lattes.port);
+    // A formação confere; o projeto fica divergente porque a equipe não é relida.
+    expect(results.map((r) => r.status)).toEqual(['conferido', 'divergente']);
+    expect(results[1]!.detail).toBe(TEAM_UNREAD);
     expect(results.map((r) => r.assigned)).toEqual(
       expect.arrayContaining([{ 'SEQUENCIA-FORMACAO': '5' }, { 'SEQUENCIA-PROJETO': '2' }]),
     );

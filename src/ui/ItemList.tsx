@@ -5,7 +5,7 @@
 import { useId, useState } from 'react';
 
 import { elementLabel, slugify } from '../labels/labels.ts';
-import { isPendingImport, SEQ_ATTR } from '../model/production.ts';
+import { goesByChanges, isNewProduction, SEQ_ATTR } from '../model/production.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import { useEditor } from './editor-context.ts';
 import { type EditFn, ElementView } from './ElementView.tsx';
@@ -116,7 +116,9 @@ function ItemCard({
   // Ids dos títulos de subseção, para o índice do item no painel lateral.
   const outlineBase = useId();
   const seq = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
-  const isNew = isPendingImport(el, loadedMax);
+  // Novo também quando vai pela lista de alterações (inclusão pelo conector).
+  const isNew = isNewProduction(el, loadedMax);
+  const byChanges = goesByChanges(el, loadedMax);
   return (
     <details className={isNew ? 'item card is-new' : 'item card'}>
       <summary>
@@ -138,7 +140,9 @@ function ItemCard({
       {isNew && (
         <div className="card-actions">
           <span className="muted">
-            Ainda não está no Lattes: entra no próximo arquivo de importação.
+            {byChanges
+              ? 'Ainda não está no Lattes: vai por "Enviar ao Lattes".'
+              : 'Ainda não está no Lattes: entra no próximo arquivo de importação.'}
           </span>
           <button className="ghost" type="button" onClick={() => openItem(seq)}>
             Editar no formulário

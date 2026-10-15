@@ -33,6 +33,20 @@ function menuItems(code: string): [string, string][] {
     ['Outros projetos', `pkg_projeto.lista?f_cod_tipo=O&f_cod=${code}`],
     ['Prêmios e títulos', `pkg_premio.lista?f_cod=${code}`],
     ['Patentes', `PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=PP&f_cod=${code}`],
+    // Os outros registros: a mesma lista com outro f_cod_tipo (reconhecimento,
+    // catálogo de menus; o parâmetro de cada um no menu é inferido).
+    ...(
+      [
+        ['Cultivar protegida', 'CP'],
+        ['Cultivar registrada', 'CR'],
+        ['Desenho industrial', 'DI'],
+        ['Marca', 'MR'],
+        ['Topografia de circuito integrado', 'TC'],
+      ] as const
+    ).map(([label, tipo]): [string, string] => [
+      label,
+      `PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=${tipo}&f_cod=${code}`,
+    ]),
     ['Resumo', `pkg_resume.prc_resume?f_cod=${code}`],
     ['Participação em eventos', `pkg_evento.lista?f_cod=${code}`],
     [
@@ -58,6 +72,23 @@ function fecharModal(){ document.getElementById('camada').src = 'about:blank'; }
 var fotoWin = { abrir: function(){ modalCV1.setarUrl('prc_upload_foto?f_cod=__COD__&f_ret=MENU'); } };
 </script>`;
 
+/**
+ * O vetor autorDP do menu: as linhas l, c, t e deletable, nessa ordem
+ * (observado no lote 4 da recaptura de 15/10/2026), a da própria pessoa com o
+ * código vazio e as de coautores com um número. Os coautores são sintéticos.
+ */
+function authorScript(state: LattesState): string {
+  const dg = state.general;
+  const citation = getAttr(dg, 'NOME-EM-CITACOES-BIBLIOGRAFICAS')?.split(';')[0] ?? '';
+  const rows = [
+    { c: '', l: state.personName, t: citation },
+    { c: '3', l: 'Coautora de Exemplo', t: 'EXEMPLO, C.' },
+  ]
+    .map((r) => `{l:'${h.jsString(r.l)}',c:'${r.c}',t:'${h.jsString(r.t)}',deletable:false}`)
+    .join(',');
+  return `<script>var autorDP = [${rows}];</script>`;
+}
+
 function menu(state: LattesState): SimResponse {
   const links = menuItems(state.code)
     .map(
@@ -73,7 +104,8 @@ function menu(state: LattesState): SimResponse {
 <div style="display:flex;gap:16px"><ul>${links}</ul>
 <iframe id="camada" style="flex:1;height:70vh;border:1px solid #ccc"></iframe></div>
 ${MENU_SCRIPT.replace('__COD__', state.code)}
-${areaScript()}`;
+${areaScript()}
+${authorScript(state)}`;
   return html(h.page('Currículo Lattes', body));
 }
 

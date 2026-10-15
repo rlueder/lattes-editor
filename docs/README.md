@@ -12,6 +12,7 @@ pelo porquê, não pelo estado atual.
 | [`desenvolvimento.md`](desenvolvimento.md)         | Rodar, testar, geradores, vigias, canal Dev e como lançar uma versão                                                               | Atual  |
 | [`lattes_internals.md`](lattes_internals.md)       | Como o editor web do Lattes funciona por dentro: menu, formulários, Exportar, Importar, foto, exclusão. A base do conector         | Atual  |
 | [`campos_tipados.md`](campos_tipados.md)           | Cada atributo do schema classificado pelo controle que merece, e as listas do Lattes já tipadas                                    | Atual  |
+| [`inclusao_por_tipo.md`](inclusao_por_tipo.md)     | Cada tipo de item de lista, como um item novo chega ao Lattes hoje e o formulário de inclusão que o censo conhece (LAT-57)         | Atual  |
 | [`estilo_da_interface.md`](estilo_da_interface.md) | Referência visual e regras de interface                                                                                            | Atual  |
 | [`fluxos_de_uso.md`](fluxos_de_uso.md)             | Como três tipos de pessoa usam o editor e o que ele faz sozinho por elas                                                           | Atual  |
 | [`../AGENTS.md`](../AGENTS.md)                     | Regras para quem contribui (pessoas e agentes de código)                                                                           | Atual  |

@@ -279,7 +279,8 @@ export function fakeProjeto(opts: FakeOpts & { noInclusion?: boolean } = {}) {
     },
     menuHtml: () =>
       `<a href="pkg_projeto.lista?f_cod_tipo=P&amp;f_cod=${CV}">Projetos de pesquisa</a>
-       <a href="pkg_projeto.lista?f_cod_tipo=E&amp;f_cod=${CV}">Projetos de extensão</a>`,
+       <a href="pkg_projeto.lista?f_cod_tipo=E&amp;f_cod=${CV}">Projetos de extensão</a>
+       <script>var autorDP = [{l:'Ana Silva',c:'',t:'SILVA, A.',deletable:false}];</script>`,
     async post(path: string, body: string) {
       const values = decodeBody(body);
       posts.push({ body: values, path });

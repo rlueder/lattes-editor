@@ -60,25 +60,64 @@ const type = (sectionId: string, itemName?: string) => {
 
 describe('tipos de item novo fora da produção', () => {
   it('cada seção tem os seus; a formação tem um tipo por nível, na ordem do Lattes', () => {
-    const levels = typesFor('formacao');
-    expect(levels).toHaveLength(12);
+    const all = typesFor('formacao');
+    // Os 12 níveis da formação acadêmica e os 4 da formação complementar.
+    expect(all).toHaveLength(16);
+    const levels = all.slice(0, 12);
     expect(levels.slice(0, 3).map((t) => t.label)).toEqual([
       'Doutorado',
       'Mestrado',
       'Mestrado Profissional',
     ]);
     expect(levels.at(-1)!.itemName).toMatch(/POS-DOUTORADO|LIVRE-DOCENCIA/);
+    expect(all.slice(12).map((t) => t.containerPath.at(-1))).toEqual(
+      Array(4).fill('FORMACAO-COMPLEMENTAR'),
+    );
     expect(levels.every((t) => t.seqAttr === 'SEQUENCIA-FORMACAO')).toBe(true);
     expect(type('atuacao').itemName).toBe('ATUACAO-PROFISSIONAL');
     expect(type('projetos').kind).toBe('projeto');
     expect(type('patentes').seqAttr).toBe('SEQUENCIA-PRODUCAO');
+    // Patentes e Registros: a patente e cada registro, na ordem das listas do Lattes.
+    expect(typesFor('patentes').map((t) => [t.itemName, t.label])).toEqual([
+      ['PATENTE', 'Patente'],
+      ['CULTIVAR-PROTEGIDA', 'Cultivar protegida'],
+      ['CULTIVAR-REGISTRADA', 'Cultivar registrada'],
+      ['DESENHO-INDUSTRIAL', 'Desenho industrial'],
+      ['MARCA', 'Marca'],
+      ['TOPOGRAFIA-DE-CIRCUITO-INTEGRADO', 'Topografia de circuito integrado'],
+    ]);
+    expect(typesFor('patentes').every((t) => t.kind === 'patente')).toBe(true);
     expect(typesFor('producoes')).toEqual([]);
     expect(generalTypes(schema, 'formacao', () => 'x').some((t) => t.label === 'x')).toBe(true);
     expect(Object.keys(NEW_GENERAL_LABELS).sort()).toEqual([
       'atuacao',
+      'dados-gerais',
       'formacao',
       'patentes',
       'projetos',
+    ]);
+    expect(typesFor('dados-gerais').map((t) => t.itemName)).toEqual([
+      'IDIOMA',
+      'PREMIO-TITULO',
+      'LICENCA',
+      'AREA-DE-ATUACAO',
+    ]);
+    // Na atuação, o que entra numa atuação que já existe pede onde entrar.
+    const atuacao = typesFor('atuacao');
+    expect(atuacao[0]!.itemName).toBe('ATUACAO-PROFISSIONAL');
+    expect(atuacao.slice(1).every((t) => t.host)).toBe(true);
+    expect(atuacao.find((t) => t.itemName === 'DISCIPLINA')).toMatchObject({
+      host: 'ENSINO',
+      text: true,
+    });
+    expect(
+      typesFor('projetos')
+        .slice(1)
+        .map((t) => [t.itemName, t.host]),
+    ).toEqual([
+      ['FINANCIADOR-DO-PROJETO', 'PROJETO-DE-PESQUISA'],
+      ['PRODUCAO-CT-DO-PROJETO', 'PROJETO-DE-PESQUISA'],
+      ['ORIENTACAO', 'PROJETO-DE-PESQUISA'],
     ]);
   });
 });
@@ -102,6 +141,23 @@ describe('item novo vazio', () => {
     expect(readAuthors(patente)).toEqual([OWNER]);
     // CPF nunca entra.
     expect(firstChild(patente, 'AUTORES')!.attrs.some((a) => a.name === 'CPF')).toBe(false);
+
+    // Os registros têm as mesmas peças, com o nome de cada tipo.
+    const marca = newGeneralItem(schema, type('patentes', 'MARCA'), OWNER);
+    expect(childElements(marca).map((c) => c.name)).toEqual([
+      'DADOS-BASICOS-DA-MARCA',
+      'DETALHAMENTO-DA-MARCA',
+      'AUTORES',
+    ]);
+    expect(
+      firstChild(firstChild(marca, 'DETALHAMENTO-DA-MARCA')!, 'REGISTRO-OU-PATENTE'),
+    ).toBeDefined();
+    expect(readAuthors(marca)).toEqual([OWNER]);
+    const cultivar = newGeneralItem(schema, type('patentes', 'CULTIVAR-PROTEGIDA'));
+    expect(childElements(cultivar).map((c) => c.name)).toEqual([
+      'DADOS-BASICOS-DA-CULTIVAR',
+      'DETALHAMENTO-DA-CULTIVAR',
+    ]);
 
     const projeto = newGeneralItem(schema, type('projetos'), OWNER);
     expect(readTeam(projeto)).toEqual([OWNER]);
@@ -175,6 +231,27 @@ describe('número de sequência e inserção', () => {
     expect(getAttr(item, 'SEQUENCIA-PRODUCAO')).toBe('31');
     expect(counter).toBe(32);
     expect(firstChild(firstChild(doc.root, 'PRODUCAO-TECNICA')!, 'PATENTE')).toBe(item);
+    expect(findOrderViolations(schema, doc.root)).toEqual([]);
+  });
+
+  it('registros entram em PRODUCAO-TECNICA, na ordem do schema, e não vão pelo Importar', () => {
+    const doc = load();
+    let counter = 31;
+    for (const t of typesFor('patentes').toReversed()) {
+      const item = newGeneralItem(schema, t, OWNER);
+      counter = insertGeneralItem(schema, doc, t, item, { productionCounter: counter });
+      expect(isPendingImport(item, 30)).toBe(false);
+    }
+    expect(counter).toBe(37);
+    expect(
+      childElements(firstChild(doc.root, 'PRODUCAO-TECNICA')!)
+        .map((c) => c.name)
+        .sort(),
+    ).toEqual(
+      typesFor('patentes')
+        .map((t) => t.itemName)
+        .sort(),
+    );
     expect(findOrderViolations(schema, doc.root)).toEqual([]);
   });
 
@@ -294,6 +371,30 @@ describe('campos do formulário', () => {
     ]);
     // Sem a parte (item montado à mão), a parte some em vez de quebrar.
     expect(generalParts(schema, 'patente', parseXml('<PATENTE/>').root)).toEqual([]);
+    const attrsOf = (itemName: string) =>
+      generalParts(schema, 'patente', newGeneralItem(schema, type('patentes', itemName))).flatMap(
+        (p) => p.fields.map((f) => f.attr),
+      );
+    // A cultivar tem denominação e ano de solicitação; o tipo só se escolhe na
+    // patente e na marca; a natureza é da marca.
+    expect(attrsOf('CULTIVAR-PROTEGIDA')).toEqual(
+      expect.arrayContaining(['DENOMINACAO', 'ANO-SOLICITACAO', 'CODIGO-DO-REGISTRO-OU-PATENTE']),
+    );
+    expect(attrsOf('CULTIVAR-PROTEGIDA')).not.toContain('TIPO-PATENTE');
+    expect(attrsOf('DESENHO-INDUSTRIAL')).not.toContain('TIPO-PATENTE');
+    expect(attrsOf('MARCA')).toEqual(expect.arrayContaining(['TIPO-PATENTE', 'NATUREZA']));
+    expect(attrsOf('PATENTE')).toContain('TIPO-PATENTE');
+    const desenho = newGeneralItem(schema, type('patentes', 'DESENHO-INDUSTRIAL'));
+    expect(missingGeneral(generalParts(schema, 'patente', desenho)).map((m) => m.attr)).toEqual([
+      'TITULO',
+      'CODIGO-DO-REGISTRO-OU-PATENTE',
+    ]);
+    // Campos que o formulário do Lattes não tem para o tipo saem da lista principal.
+    expect(attrsOf('DESENHO-INDUSTRIAL')).not.toContain('ANO-DESENVOLVIMENTO');
+    expect(attrsOf('CULTIVAR-REGISTRADA')).not.toContain('FINALIDADE');
+    expect(attrsOf('TOPOGRAFIA-DE-CIRCUITO-INTEGRADO')).toEqual(
+      expect.arrayContaining(['ANO-DESENVOLVIMENTO', 'FINALIDADE', 'INSTITUICAO-FINANCIADORA']),
+    );
     const projeto = newGeneralItem(schema, type('projetos'));
     expect(generalParts(schema, 'projeto', projeto)[0]!.fields[0]!.attr).toBe('NOME-DO-PROJETO');
   });

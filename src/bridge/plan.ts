@@ -132,9 +132,15 @@ export const GATED_EDITS: readonly {
  * ela, essas mudanças ficam à mão.
  */
 export function planOptionsFor(features: readonly string[]): PlanOptions {
-  return Object.fromEntries(
-    GATED_EDITS.map((g) => [g.option, g.enabled && features.includes(g.feature)]),
-  );
+  return {
+    ...Object.fromEntries(
+      GATED_EDITS.map((g) => [g.option, g.enabled && features.includes(g.feature)]),
+    ),
+    // A inclusão pelo conector só vai a uma extensão que anuncia 'incluir-itens':
+    // as operações de inclusão são mensagens que uma extensão antiga não conhece.
+    // A capacidade entra em BRIDGE_FEATURES junto com a chave ligada.
+    createItems: CREATE_ITEMS_ENABLED && features.includes('incluir-itens'),
+  };
 }
 
 export interface Unsupported {

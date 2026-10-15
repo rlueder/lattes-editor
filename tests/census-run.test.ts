@@ -164,7 +164,8 @@ describe('censo contra o Lattes simulado', () => {
         path: 'pkg_patente_registro.informar_dados_patente?ftipo=PP',
         status: 'ok',
       });
-      expect(byId(file.entries, 'atividade').status).toBe('sem-link');
+      // A atividade abre pelo link de selecionarNatureza() da tela de cargos e vínculos.
+      expect(byId(file.entries, 'atividade').status).toBe('ok');
       expect(byId(file.entries, 'prefacio-outras')).toMatchObject({ status: 'desconhecido' });
 
       const tech = byId(file.entries, 'trabalho-tecnico');

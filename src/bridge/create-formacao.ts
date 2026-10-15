@@ -72,6 +72,21 @@ export const FORMATION_LEVELS: Record<string, string> = {
   'RESIDENCIA-MEDICA': 'D',
 };
 
+/**
+ * Pós-doutorado e livre-docência: a lista f_tipo=AP, com o nível no
+ * f_nivel (5 e 6), lida no censo de 15/10/2026. Os campos são outros: o
+ * pós-doutorado tem situação, anos e bolsa; a livre-docência, o mês e o ano
+ * de obtenção e o título.
+ */
+export const AP_LEVELS: Record<string, string> = {
+  'LIVRE-DOCENCIA': '6',
+  'POS-DOUTORADO': '5',
+};
+
+/** A lista de um nível: AP para pós-doutorado e livre-docência, FA para o resto. */
+export const formationList = (level: string) =>
+  Object.values(AP_LEVELS).includes(level) ? 'AP' : 'FA';
+
 /** STATUS-DO-CURSO → F_STATUS (seção 5, conferido nos rótulos do formulário). */
 const COURSE_STATUS: Record<string, string> = {
   CONCLUIDO: 'S',
@@ -94,6 +109,8 @@ const FORMATION_FIELDS: Record<string, [string, Mapper]> = {
   'TITULO-DA-DISSERTACAO-TESE': ['f_titulo', same],
   'TITULO-DA-MONOGRAFIA': ['f_titulo', same],
   'TITULO-DA-RESIDENCIA-MEDICA': ['f_titulo', same],
+  // Livre-docência: o "Título" do formulário (censo de 15/10/2026, inferido).
+  'TITULO-DO-TRABALHO': ['f_titulo', same],
   'TITULO-DO-TRABALHO-DE-CONCLUSAO-DE-CURSO': ['f_titulo', same],
 };
 
@@ -118,7 +135,7 @@ export function planCreateFormacao(
   el: XElement,
   label: string,
 ): Planned<CreateFormacaoOp> {
-  const level = FORMATION_LEVELS[el.name];
+  const level = FORMATION_LEVELS[el.name] ?? AP_LEVELS[el.name];
   if (!level) return { reason: 'Este nível não está no "Incluir novo item" da formação' };
   const institutionCode = getAttr(el, 'CODIGO-INSTITUICAO');
   const institutionName = getAttr(el, 'NOME-INSTITUICAO');
@@ -143,7 +160,15 @@ export function planCreateFormacao(
   const { missing, set, wrong } = mapAttrs(change, el, FORMATION_FIELDS, FORMATION_HANDLED);
   const reason = reasonFrom(missing, wrong);
   if (reason) return { reason };
-  if (!set.f_ano_ini) return { reason: 'A formação precisa do ano de início' };
+  // A livre-docência não tem início: tem o ano de obtenção.
+  if (level === '6' ? !set.f_ano_obten : !set.f_ano_ini) {
+    return {
+      reason:
+        level === '6'
+          ? 'A livre-docência precisa do ano de obtenção'
+          : 'A formação precisa do ano de início',
+    };
+  }
   if (bolsa === 'SIM' || bolsa === 'NAO') set.F_BOLSA = bolsa === 'SIM' ? 'S' : 'N';
   return {
     agencyCode,
@@ -217,7 +242,8 @@ export async function applyCreateFormacao(op: CreateFormacaoOp, port: LattesPort
   try {
     const menu = await port.menuHtml();
     const listas = findLinks(menu, 'pkg_formacao.lista');
-    const lista = listas.find((l) => (l.params.f_tipo ?? '').toUpperCase() === 'FA');
+    const tipo = formationList(op.level);
+    const lista = listas.find((l) => (l.params.f_tipo ?? '').toUpperCase() === tipo);
     if (!lista?.params.f_cod) {
       throw new Stop('erro', 'Formação acadêmica não encontrada no menu do Lattes');
     }
@@ -229,7 +255,10 @@ export async function applyCreateFormacao(op: CreateFormacaoOp, port: LattesPort
       if (
         pairValue(pairs, 'f_nivel') === op.level &&
         sameCode(formationInstitution(pairs), op.institutionCode) &&
-        pairValue(pairs, 'f_ano_ini') === op.set.f_ano_ini
+        // A livre-docência não tem início: o ano que a identifica é o de obtenção.
+        (op.level === '6'
+          ? pairValue(pairs, 'f_ano_obten') === op.set.f_ano_obten
+          : pairValue(pairs, 'f_ano_ini') === op.set.f_ano_ini)
       ) {
         return result(
           'divergente',
@@ -241,12 +270,12 @@ export async function applyCreateFormacao(op: CreateFormacaoOp, port: LattesPort
     // O link de cada nível é o que o combo do "Incluir novo item" abre (seção 17).
     const form = await readPairs(
       port,
-      `pkg_formacao.form?f_cod=${cv}&f_tipo=FA&f_nivel=${op.level}`,
+      `pkg_formacao.form?f_cod=${cv}&f_tipo=${tipo}&f_nivel=${op.level}`,
       FORMACAO_FORM,
     );
     if (
       pairValue(form.pairs, 'f_ctr') !== 'I' ||
-      pairValue(form.pairs, 'f_tipo') !== 'FA' ||
+      pairValue(form.pairs, 'f_tipo') !== tipo ||
       pairValue(form.pairs, 'f_nivel') !== op.level
     ) {
       return result('erro', 'O formulário não é o de inclusão deste nível');

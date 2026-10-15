@@ -6,6 +6,10 @@
 //   await __lattesCensus.capture()            // formulários de inclusão
 //   await __lattesCensus.link()               // passada de edição, pela exportação
 //   await __lattesCensus.captureAll({ download: true })
+//   await __lattesCensus.inspect(['pkg_x.form?…'], { download: true })  // recaptura avulsa
+//   await __lattesCensus.activities({ download: true })  // atividades por natureza
+//   __lattesCensus.authorShape(['Nome Completo', 'NOME, N.']) // forma das linhas de autor
+//   __lattesCensus.vectorShape('titularPessoaDP', 'Nome') // o mesmo, para outro vetor do menu
 //
 // Só GET de formulário e de lista. A única exceção é link() sem XML, que
 // pede a exportação pelo mesmo POST de leitura do "Exportar" (o conector já
@@ -13,6 +17,8 @@
 
 import { exportCv, type ExportPort } from '../../src/bridge/export.ts';
 import { cvCodeFrom, isLogonPage, lattesIdFrom } from '../../src/bridge/lattes-html.ts';
+import { authorShape as shapeOf } from '../../src/census/author-shape.ts';
+import { inspectActivities, inspectPages } from '../../src/census/inspect.ts';
 import { linkFields, linkOnlyFile, type LinkOptions } from '../../src/census/link.ts';
 import {
   type CensusFile,
@@ -152,6 +158,49 @@ async function captureAll(options: Options & { xml?: string } = {}): Promise<Cen
   return out;
 }
 
+/**
+ * Páginas avulsas, com scripts e links (docs/lattes-formularios/recaptura.md).
+ * Cada caminho vai sem f_cod; `{ path, noCode: true }` abre sem ele.
+ */
+async function inspect(
+  paths: Parameters<typeof inspectPages>[2],
+  options: Pick<Options, 'delayMs' | 'download' | 'redact'> = {},
+): Promise<CensusFile> {
+  const file = await inspectPages(port, await code(), paths, {
+    ...options,
+    collector: `lattes-editor ${__CENSO_VERSAO__}`,
+  });
+  if (options.download) download(file, `recaptura-${new Date().toISOString().slice(0, 10)}.json`);
+  return file;
+}
+
+/** Os formulários de atividade de cada natureza, numa atuação do currículo. */
+async function activities(
+  options: Pick<Options, 'delayMs' | 'download' | 'redact'> = {},
+): Promise<CensusFile> {
+  const file = await inspectActivities(port, await code(), {
+    ...options,
+    collector: `lattes-editor ${__CENSO_VERSAO__}`,
+  });
+  if (options.download)
+    download(file, `recaptura-atividades-${new Date().toISOString().slice(0, 10)}.json`);
+  return file;
+}
+
+/**
+ * A forma das linhas de autor do menu (autorDP), sem nomes: a ordem das
+ * chaves, o padrão dos códigos, cada linha que casa com o nome completo ou
+ * uma das citações dadas, e se a linha sem código é uma delas.
+ */
+function authorShape(ownerNames?: string | string[]) {
+  return vectorShape('autorDP', ownerNames);
+}
+
+/** O mesmo para outro vetor do menu (titularPessoaDP, por exemplo). */
+function vectorShape(name: string, ownerNames?: string | string[]) {
+  return shapeOf((globalThis as unknown as Record<string, unknown>)[name], ownerNames);
+}
+
 /** Contagens para conferir de relance o que voltou. */
 function summary(file: CensusFile) {
   const status: Record<string, number> = {};
@@ -166,10 +215,14 @@ function summary(file: CensusFile) {
 }
 
 (globalThis as unknown as { __lattesCensus: unknown }).__lattesCensus = {
+  activities,
+  authorShape,
   capture,
   captureAll,
   download,
+  inspect,
   link,
   summary,
+  vectorShape,
   version: __CENSO_VERSAO__,
 };

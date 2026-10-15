@@ -30,9 +30,10 @@ export type Locate =
   | { kind: 'menu'; proc: string }
   /**
    * O link de inclusão numa lista (ou numa tela aberta a partir dela, `via`):
-   * o que leva ao procedimento sem o parâmetro do item.
+   * o que leva ao procedimento sem o parâmetro do item. `set` troca
+   * parâmetros do link (a natureza da atividade, que selecionarNatureza() põe).
    */
-  | { kind: 'list'; proc: string }
+  | { kind: 'list'; proc: string; set?: Record<string, string> }
   /** Sabe-se que existe, não se sabe o endereço: entra no relatório como lacuna. */
   | { kind: 'unknown'; note: string };
 
@@ -208,6 +209,19 @@ const ACTIVITIES = [
   'ATIVIDADES-DE-CONSELHO-COMISSAO-E-CONSULTORIA',
 ];
 
+/** Natureza do selecionarNatureza() → elemento do XML, pelo rótulo (inferido). */
+const ACTIVITY_NATURES: [string, string, string][] = [
+  ['1', 'DIRECAO-E-ADMINISTRACAO', 'direção e administração'],
+  ['2', 'PESQUISA-E-DESENVOLVIMENTO', 'pesquisa e desenvolvimento'],
+  ['4', 'ENSINO', 'ensino'],
+  ['5', 'ESTAGIO', 'estágio'],
+  ['6', 'SERVICO-TECNICO-ESPECIALIZADO', 'serviço técnico especializado'],
+  ['7', 'EXTENSAO-UNIVERSITARIA', 'extensão universitária'],
+  ['8', 'TREINAMENTO-MINISTRADO', 'treinamento'],
+  ['9', 'OUTRA-ATIVIDADE-TECNICO-CIENTIFICA', 'outra atividade técnico-científica'],
+  ['B', 'CONSELHO-COMISSAO-E-CONSULTORIA', 'conselhos, comissões e consultoria'],
+];
+
 const PROJECT_KINDS: [string, string][] = [
   ['P', 'pesquisa'],
   ['D', 'desenvolvimento'],
@@ -247,6 +261,23 @@ const PROFESSIONAL: CensusTarget[] = [
       source: 'lattes_internals.md, seção 17 (o link é montado por selecionarNatureza())',
       via: 'PKG_ATIV.cargos_vinculos',
     },
+  ),
+  // Uma entrada por natureza, como selecionarNatureza() abre o formulário
+  // (seção 17); lidas no lote 3 da recaptura de 15/10/2026 (seção 22).
+  ...ACTIVITY_NATURES.map(([natur, element, name]) =>
+    form(
+      `atividade-${natur}`,
+      `Atividade de uma atuação: ${name}`,
+      { kind: 'list', proc: 'pkg_ativ.cargo', set: { f_natur_ativ: natur } },
+      [element],
+      {
+        itemKey: 'f_seq_funcao',
+        list: list('pkg_ativ.lista'),
+        provenance: 'observado',
+        source: 'recaptura de 15/10/2026, lote 3 (seção 22)',
+        via: 'PKG_ATIV.cargos_vinculos',
+      },
+    ),
   ),
   ...['MB', 'MA', 'RV', 'RA'].map((natur) =>
     form(

@@ -6,7 +6,7 @@
 import { type CSSProperties, useId, useMemo } from 'react';
 
 import { elementLabel } from '../labels/labels.ts';
-import { isPendingImport, SEQ_ATTR } from '../model/production.ts';
+import { isNewProduction, SEQ_ATTR } from '../model/production.ts';
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
 import { referenceText } from '../print/abnt.ts';
 import { hasReference, referenceFor } from '../print/references.ts';
@@ -198,7 +198,8 @@ function RecordList({ academic, filter, items, onEdit, view }: ListProps) {
       <ol className="reading-records" style={tab}>
         {sorted.map((el, i) => {
           const seq = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
-          const isNew = isPendingImport(el, loadedMax);
+          // Novo também quando vai pela lista de alterações (inclusão pelo conector).
+          const isNew = isNewProduction(el, loadedMax);
           // Na formação, o grau já diz o tipo do item.
           const kind = showKind && !academic ? elementLabel(el.name) : undefined;
           const title = isCitation(el)

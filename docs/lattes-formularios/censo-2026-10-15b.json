@@ -1,0 +1,2220 @@
+{
+  "capturedAt": "2026-10-15T17:12:50.183Z",
+  "collector": "lattes-editor 0.22.0",
+  "entries": [
+    {
+      "elements": ["APERFEICOAMENTO"],
+      "elementsProvenance": "inferido",
+      "id": "formacao-FA-X",
+      "label": "Formação acadêmica: aperfeiçoamento",
+      "provenance": "observado",
+      "source": "lattes_internals.md, seção 17",
+      "status": "ok",
+      "page": {
+        "forms": [
+          {
+            "action": "pkg_formacao.FORM",
+            "fields": [
+              {
+                "label": "Instituição",
+                "name": "f_inst",
+                "type": "text",
+                "maxLength": 75,
+                "disabled": true
+              },
+              {
+                "label": "Curso",
+                "name": "f_curso",
+                "type": "text",
+                "maxLength": 75,
+                "disabled": true
+              },
+              {
+                "label": "Carga Horária",
+                "name": "f_carga",
+                "type": "text",
+                "maxLength": 4
+              },
+              {
+                "label": "Status do curso",
+                "name": "F_STATUS",
+                "type": "radio",
+                "options": [
+                  {
+                    "label": "em andamento",
+                    "value": "N"
+                  },
+                  {
+                    "label": "concluído",
+                    "value": "S"
+                  },
+                  {
+                    "label": "incompleto",
+                    "value": "I"
+                  }
+                ]
+              },
+              {
+                "label": "Início (ano)",
+                "name": "f_ano_ini",
+                "type": "text",
+                "maxLength": 4
+              },
+              {
+                "label": "Conclusão (ano)",
+                "name": "f_ano_fim",
+                "type": "text",
+                "maxLength": 4
+              },
+              {
+                "label": "Com bolsa?",
+                "name": "F_BOLSA",
+                "type": "radio",
+                "options": [
+                  {
+                    "label": "Sim",
+                    "value": "S"
+                  },
+                  {
+                    "label": "Não",
+                    "value": "N"
+                  }
+                ]
+              },
+              {
+                "label": "Agência financiadora",
+                "name": "f_nme_agencia",
+                "type": "text",
+                "maxLength": 75,
+                "disabled": true
+              },
+              {
+                "label": "Título monografia",
+                "name": "f_titulo",
+                "type": "text",
+                "maxLength": 254
+              },
+              {
+                "label": "Nome completo do orientador",
+                "name": "f_orient",
+                "type": "text",
+                "maxLength": 60
+              },
+              {
+                "label": "Privado: As informações não serão exibidas na consulta pública.",
+                "name": "f_tipo_privacidade",
+                "type": "select-one",
+                "options": [
+                  {
+                    "label": "Público",
+                    "value": "1"
+                  },
+                  {
+                    "label": "Privado",
+                    "value": "2"
+                  }
+                ]
+              }
+            ],
+            "hidden": [
+              "f_tpo_doutorado",
+              "f_ano_obten",
+              "f_mes_obten",
+              "f_agencia",
+              "f_ctr",
+              "f_cod",
+              "f_seq",
+              "f_cod_inst",
+              "f_cod_curso",
+              "f_cod_inst2",
+              "f_cod_curso2",
+              "f_inst_old",
+              "f_curso_old",
+              "f_tipo",
+              "f_nivel",
+              "f_id_orientador",
+              "f_seq_orientacao",
+              "f_plv_l",
+              "f_setor_l",
+              "f_area_l"
+            ],
+            "identity": {
+              "f_ctr": "I",
+              "f_tipo": "FA",
+              "f_nivel": "X"
+            },
+            "method": "post",
+            "name": "GN_FORMACAO2",
+            "unnamed": 0
+          },
+          {
+            "action": "",
+            "fields": [],
+            "hidden": ["f_cod_chk", "f_seq_chk", "start", "finish", "status", "f_nme_orientador"],
+            "identity": {},
+            "method": "get",
+            "name": "formchk",
+            "unnamed": 0
+          }
+        ],
+        "title": "Currículo Lattes"
+      },
+      "path": "pkg_formacao.form?f_nivel=X&f_tipo=FA"
+    },
+    {
+      "status": "ok",
+      "page": {
+        "forms": [
+          {
+            "action": "PKG_ARTIGO.FORM",
+            "fields": [
+              {
+                "label": "Informe o Digital Object Identifier (DOI®) do artigo e clique no botão para recuperar os dados da produção",
+                "name": "f_cod_doi",
+                "type": "text",
+                "maxLength": 250
+              },
+              {
+                "label": "Título",
+                "name": "f_titulo",
+                "type": "text",
+                "maxLength": 400
+              },
+              {
+                "label": "Ano",
+                "name": "f_ano",
+                "type": "text",
+                "maxLength": 4
+              },
+              {
+                "label": "Idioma",
+                "name": "F_IDIOMA",
+                "type": "select-one",
+                "options": "f_idioma"
+              },
+              {
+                "label": "Meio de divulgação",
+                "name": "f_meio",
+                "type": "select-one",
+                "options": [
+                  {
+                    "label": "",
+                    "value": ""
+                  },
+                  {
+                    "label": "Impresso",
+                    "value": "I"
+                  },
+                  {
+                    "label": "meio digital",
+                    "value": "D"
+                  },
+                  {
+                    "label": "Impresso e mídia eletrônica",
+                    "value": "V"
+                  }
+                ]
+              },
+              {
+                "label": "Home page do trabalho (URL)",
+                "name": "f_homepage",
+                "type": "text",
+                "maxLength": 250
+              },
+              {
+                "label": "É um dos 10 trabalhos mais relevantes de sua produção?",
+                "name": "F_RELEV",
+                "type": "radio",
+                "options": [
+                  {
+                    "label": "sim",
+                    "value": "S"
+                  },
+                  {
+                    "label": "não",
+                    "value": "N"
+                  }
+                ]
+              },
+              {
+                "label": "É uma produção para educação e popularização de CeT?",
+                "name": "F_STA_DIVULGACAO_CIENTIFICA",
+                "type": "radio",
+                "options": [
+                  {
+                    "label": "sim",
+                    "value": "S"
+                  },
+                  {
+                    "label": "não",
+                    "value": "N"
+                  }
+                ]
+              },
+              {
+                "label": "Título do periódico/revista em que o artigo foi publicado",
+                "name": "f_titulo_periodico",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "label": "Fator de Impacto(JCR)",
+                "name": "f_jcr",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "label": "ISSN",
+                "name": "f_issn",
+                "type": "text",
+                "maxLength": 10
+              },
+              {
+                "label": "Volume",
+                "name": "f_volume",
+                "type": "text",
+                "maxLength": 6
+              },
+              {
+                "label": "Série",
+                "name": "f_serie",
+                "type": "text",
+                "maxLength": 5
+              },
+              {
+                "label": "Página inicial/ Número artigo eletrônico",
+                "name": "f_pag_ini",
+                "type": "text",
+                "maxLength": 15
+              },
+              {
+                "label": "Página final",
+                "name": "f_pag_fim",
+                "type": "text",
+                "maxLength": 15
+              },
+              {
+                "label": "Outras informações",
+                "name": "f_ref",
+                "type": "textarea",
+                "maxLength": 3950
+              },
+              {
+                "label": "Title",
+                "name": "f_titulo_en",
+                "type": "text",
+                "maxLength": 400
+              },
+              {
+                "label": "Other information",
+                "name": "f_ref_en",
+                "type": "textarea",
+                "maxLength": 3800
+              },
+              {
+                "label": "Privado: As informações não serão exibidas na consulta pública.",
+                "name": "f_tipo_privacidade",
+                "type": "select-one",
+                "options": [
+                  {
+                    "label": "Público",
+                    "value": "1"
+                  },
+                  {
+                    "label": "Privado",
+                    "value": "2"
+                  }
+                ]
+              }
+            ],
+            "hidden": [
+              "F_COD_PROD",
+              "f_id_prod",
+              "f_origem_ws",
+              "f_hash_doi",
+              "f_titulo_periodico_h",
+              "f_issn_h",
+              "f_ctr",
+              "f_cod",
+              "f_seq",
+              "f_autores_l",
+              "f_autores_l2",
+              "f_autores_l3",
+              "f_autores_l4",
+              "f_autores_l5",
+              "f_plv_l",
+              "f_setor_l",
+              "f_area_l",
+              "f_seq_per",
+              "f_ano_h",
+              "f_volume_h",
+              "f_serie_h",
+              "f_pag_ini_h",
+              "f_pag_fim_h",
+              "f_titulo_h",
+              "f_cod_doi_h"
+            ],
+            "identity": {
+              "f_ctr": "I"
+            },
+            "method": "post",
+            "name": "GN_ARTIGO",
+            "unnamed": 0
+          },
+          {
+            "action": "",
+            "fields": [],
+            "hidden": ["f_cod_doi", "start", "finish", "status"],
+            "identity": {},
+            "method": "get",
+            "name": "formdoi",
+            "unnamed": 0
+          }
+        ],
+        "title": "Currículo Lattes"
+      },
+      "path": "PKG_ARTIGO.form?f_sta_divulgacao_cientifica=&F_ORIGEM_WS=F&F_TITULO_PERIODICO=",
+      "id": "artigo-publicado",
+      "label": "Artigos completos publicados",
+      "elements": ["ARTIGO-PUBLICADO"],
+      "provenance": "observado",
+      "elementsProvenance": "inferido",
+      "source": "recaptura de 15/10/2026 (links da lista de artigos)"
+    },
+    {
+      "status": "ok",
+      "page": {
+        "forms": [
+          {
+            "action": "PKG_PATENTE_REGISTRO.FORM",
+            "fields": [
+              {
+                "label": "Natureza",
+                "name": "f_natureza",
+                "type": "radio",
+                "options": [
+                  {
+                    "label": "Computacional",
+                    "value": "Computacional"
+                  },
+                  {
+                    "label": "Multimídia",
+                    "value": "Multimídia"
+                  },
+                  {
+                    "label": "Outro",
+                    "value": "Outro"
+                  }
+                ]
+              },
+              {
+                "label": "Instituição de registro",
+                "name": "f_inst",
+                "type": "text",
+                "maxLength": 75
+              },
+              {
+                "label": "País",
+                "name": "f_pais",
+                "type": "select-one",
+                "options": "f_pais"
+              },
+              {
+                "label": "Número do registro",
+                "name": "f_cod_reg",
+                "type": "text",
+                "maxLength": 16
+              },
+              {
+                "label": "Título",
+                "name": "f_titulo",
+                "type": "text",
+                "maxLength": 400
+              },
+              {
+                "label": "Data do registro",
+                "name": "f_dta_dep",
+                "type": "text",
+                "maxLength": 10
+              },
+              {
+                "label": "Data do certificado de registro",
+                "name": "f_dta_conc",
+                "type": "text",
+                "maxLength": 10
+              },
+              {
+                "label": "Finalidade",
+                "name": "f_finalidade",
+                "type": "text",
+                "maxLength": 255
+              },
+              {
+                "label": "É uma produção para educação e popularização de CeT?",
+                "name": "F_STA_DIVULGACAO_CIENTIFICA",
+                "type": "radio",
+                "options": [
+                  {
+                    "label": "sim",
+                    "value": "S"
+                  },
+                  {
+                    "label": "não",
+                    "value": "N"
+                  }
+                ]
+              },
+              {
+                "label": "Possui potencial de inovação de produtos, processos ou serviços?",
+                "name": "f_sta_inovacao",
+                "type": "radio",
+                "options": [
+                  {
+                    "label": "Sim",
+                    "value": "S"
+                  },
+                  {
+                    "label": "Não",
+                    "value": "N"
+                  }
+                ]
+              },
+              {
+                "label": "Qual o potencial de inovação?",
+                "name": "f_txt_potencial",
+                "type": "text",
+                "maxLength": 400
+              },
+              {
+                "label": "É um dos 10 trabalhos mais relevantes de sua produção?",
+                "name": "F_RELEV",
+                "type": "radio",
+                "options": [
+                  {
+                    "label": "sim",
+                    "value": "S"
+                  },
+                  {
+                    "label": "não",
+                    "value": "N"
+                  }
+                ]
+              },
+              {
+                "label": "Instituição(ões) financiadora(s) (separadas por ponto e vírgula)",
+                "name": "f_inst_financ",
+                "type": "textarea",
+                "maxLength": 380
+              },
+              {
+                "label": "Linguagens",
+                "name": "f_plataforma",
+                "type": "text",
+                "maxLength": 255
+              },
+              {
+                "label": "Outras informações",
+                "name": "f_ref",
+                "type": "textarea",
+                "maxLength": 3950
+              },
+              {
+                "label": "Title",
+                "name": "f_titulo_en",
+                "type": "text",
+                "maxLength": 400
+              },
+              {
+                "label": "Other information",
+                "name": "f_ref_en",
+                "type": "textarea",
+                "maxLength": 3800
+              },
+              {
+                "label": "Privado: As informações não serão exibidas na consulta pública.",
+                "name": "f_tipo_privacidade",
+                "type": "select-one",
+                "options": [
+                  {
+                    "label": "Público",
+                    "value": "1"
+                  },
+                  {
+                    "label": "Privado",
+                    "value": "2"
+                  }
+                ]
+              }
+            ],
+            "hidden": [
+              "f_dados_grid_datas",
+              "F_COD_PROD",
+              "f_sta_validado",
+              "f_sta_validado_mapa",
+              "f_origem",
+              "f_ano",
+              "f_dta_dep_pct",
+              "f_ambiente",
+              "f_dta_exp",
+              "f_ctr",
+              "f_cod",
+              "f_seq",
+              "f_autores_l",
+              "f_plv_l",
+              "f_setor_l",
+              "f_area_l",
+              "f_depositante_pessoa_l",
+              "f_depositante_inst_l",
+              "f_cod_tipo"
+            ],
+            "identity": {
+              "f_origem": "",
+              "f_ctr": "I",
+              "f_cod_tipo": "PC"
+            },
+            "method": "post",
+            "name": "PKG_PATENTE_REGISTRO",
+            "unnamed": 0
+          }
+        ],
+        "title": "Currículo Lattes"
+      },
+      "path": "PKG_PATENTE_REGISTRO.form?f_cod_tipo=PC&f_reg=S&F_STA_DIVULGACAO_CIENTIFICA=",
+      "id": "registro-PC-S",
+      "label": "Programa de computador registrado",
+      "elements": ["SOFTWARE"],
+      "provenance": "observado",
+      "elementsProvenance": "inferido",
+      "source": "captura de 13/10/2026 (docs/lattes-listas/)"
+    },
+    {
+      "status": "ok",
+      "page": {
+        "forms": [
+          {
+            "action": "",
+            "fields": [
+              {
+                "label": "Instituição onde foi depositada",
+                "name": "f_inst",
+                "type": "text",
+                "maxLength": 75
+              },
+              {
+                "label": "Número do registro",
+                "name": "f_cod_reg",
+                "type": "text",
+                "maxLength": 16
+              }
+            ],
+            "hidden": [],
+            "identity": {},
+            "method": "get",
+            "name": "fDatpat",
+            "unnamed": 0
+          }
+        ],
+        "title": ""
+      },
+      "path": "pkg_patente_registro.informar_dados_patente?ftipo=PP",
+      "id": "patente-janela",
+      "label": "Patente: janela \"Incluir nova patente\"",
+      "elements": [],
+      "provenance": "observado",
+      "elementsProvenance": "inferido",
+      "source": "lattes_internals.md, seção 17"
+    }
+  ],
+  "format": 1,
+  "lists": {
+    "f_idioma": [
+      {
+        "label": "Alemão",
+        "value": "DE"
+      },
+      {
+        "label": "Espanhol",
+        "value": "ES"
+      },
+      {
+        "label": "Francês",
+        "value": "FR"
+      },
+      {
+        "label": "Inglês",
+        "value": "EN"
+      },
+      {
+        "label": "Italiano",
+        "value": "IT"
+      },
+      {
+        "label": "Libras",
+        "value": "LB"
+      },
+      {
+        "label": "Português",
+        "value": "PT"
+      },
+      {
+        "label": "Abhkazian",
+        "value": "AB"
+      },
+      {
+        "label": "Afar",
+        "value": "AA"
+      },
+      {
+        "label": "Afrikaans",
+        "value": "AF"
+      },
+      {
+        "label": "Aimara",
+        "value": "AY"
+      },
+      {
+        "label": "Albanês",
+        "value": "SQ"
+      },
+      {
+        "label": "Amarico",
+        "value": "AM"
+      },
+      {
+        "label": "Árabe",
+        "value": "AR"
+      },
+      {
+        "label": "Armênio",
+        "value": "AN"
+      },
+      {
+        "label": "Assames",
+        "value": "AS"
+      },
+      {
+        "label": "Azerbaidjano",
+        "value": "AZ"
+      },
+      {
+        "label": "Baluchi",
+        "value": "BC"
+      },
+      {
+        "label": "Basco",
+        "value": "EU"
+      },
+      {
+        "label": "Bashquir",
+        "value": "BA"
+      },
+      {
+        "label": "Bengali",
+        "value": "BN"
+      },
+      {
+        "label": "Berbere",
+        "value": "BB"
+      },
+      {
+        "label": "Bielo-Russo",
+        "value": "BE"
+      },
+      {
+        "label": "Bihari",
+        "value": "BH"
+      },
+      {
+        "label": "Birmanês",
+        "value": "BM"
+      },
+      {
+        "label": "Bislama",
+        "value": "BI"
+      },
+      {
+        "label": "Bretão",
+        "value": "BR"
+      },
+      {
+        "label": "Búlgaro",
+        "value": "BG"
+      },
+      {
+        "label": "Cabie",
+        "value": "CB"
+      },
+      {
+        "label": "Cachemiriano",
+        "value": "KS"
+      },
+      {
+        "label": "Cambodjano",
+        "value": "KM"
+      },
+      {
+        "label": "Canadá",
+        "value": "KN"
+      },
+      {
+        "label": "Casaque",
+        "value": "KK"
+      },
+      {
+        "label": "Catalão",
+        "value": "CA"
+      },
+      {
+        "label": "Chinês",
+        "value": "ZH"
+      },
+      {
+        "label": "Cingalês",
+        "value": "SI"
+      },
+      {
+        "label": "Coreano",
+        "value": "KO"
+      },
+      {
+        "label": "Corsico",
+        "value": "CO"
+      },
+      {
+        "label": "Crioulo",
+        "value": "CR"
+      },
+      {
+        "label": "Croata",
+        "value": "HR"
+      },
+      {
+        "label": "Curdo",
+        "value": "KU"
+      },
+      {
+        "label": "Dinamarquês",
+        "value": "DA"
+      },
+      {
+        "label": "Divehi",
+        "value": "DI"
+      },
+      {
+        "label": "Dzongka",
+        "value": "DZ"
+      },
+      {
+        "label": "Erisão",
+        "value": "FY"
+      },
+      {
+        "label": "Eslovaco",
+        "value": "SK"
+      },
+      {
+        "label": "Esloveno",
+        "value": "SL"
+      },
+      {
+        "label": "Esperanto",
+        "value": "EO"
+      },
+      {
+        "label": "Estoniano",
+        "value": "ET"
+      },
+      {
+        "label": "Eue",
+        "value": "EE"
+      },
+      {
+        "label": "Feróico",
+        "value": "FO"
+      },
+      {
+        "label": "Fijiano",
+        "value": "FJ"
+      },
+      {
+        "label": "Filipino",
+        "value": "FL"
+      },
+      {
+        "label": "Finlandês",
+        "value": "FI"
+      },
+      {
+        "label": "Gaelico Escocês",
+        "value": "GD"
+      },
+      {
+        "label": "Galego",
+        "value": "GL"
+      },
+      {
+        "label": "Galês",
+        "value": "CY"
+      },
+      {
+        "label": "Georgiano",
+        "value": "KA"
+      },
+      {
+        "label": "Grego",
+        "value": "EL"
+      },
+      {
+        "label": "Groenlandês",
+        "value": "KL"
+      },
+      {
+        "label": "Guarani",
+        "value": "GN"
+      },
+      {
+        "label": "Gujarati",
+        "value": "GU"
+      },
+      {
+        "label": "Harmênio",
+        "value": "HY"
+      },
+      {
+        "label": "Hausa",
+        "value": "HA"
+      },
+      {
+        "label": "Hebraico",
+        "value": "IW"
+      },
+      {
+        "label": "Hindi",
+        "value": "HI"
+      },
+      {
+        "label": "Holandês",
+        "value": "NL"
+      },
+      {
+        "label": "Húngaro",
+        "value": "HU"
+      },
+      {
+        "label": "Iidiche",
+        "value": "JI"
+      },
+      {
+        "label": "Indonésio",
+        "value": "IN"
+      },
+      {
+        "label": "Interlíngua",
+        "value": "IA"
+      },
+      {
+        "label": "Interlíngue",
+        "value": "IE"
+      },
+      {
+        "label": "Inupiak",
+        "value": "IK"
+      },
+      {
+        "label": "Ioma",
+        "value": "ID"
+      },
+      {
+        "label": "Irlandês",
+        "value": "GA"
+      },
+      {
+        "label": "Islandês",
+        "value": "IS"
+      },
+      {
+        "label": "Japonês",
+        "value": "JA"
+      },
+      {
+        "label": "Javanês",
+        "value": "JV"
+      },
+      {
+        "label": "Laosiano",
+        "value": "LO"
+      },
+      {
+        "label": "Lapão",
+        "value": "LP"
+      },
+      {
+        "label": "Latim",
+        "value": "LA"
+      },
+      {
+        "label": "Letão",
+        "value": "LV"
+      },
+      {
+        "label": "Lingála",
+        "value": "LN"
+      },
+      {
+        "label": "Lituano",
+        "value": "LT"
+      },
+      {
+        "label": "Luxemburguês",
+        "value": "LX"
+      },
+      {
+        "label": "Macedônio",
+        "value": "MK"
+      },
+      {
+        "label": "Malaiala",
+        "value": "ML"
+      },
+      {
+        "label": "Malaio",
+        "value": "MS"
+      },
+      {
+        "label": "Malgaxe",
+        "value": "MG"
+      },
+      {
+        "label": "Maltês",
+        "value": "MT"
+      },
+      {
+        "label": "Mandingo",
+        "value": "MA"
+      },
+      {
+        "label": "Maori",
+        "value": "MI"
+      },
+      {
+        "label": "Maratí",
+        "value": "MR"
+      },
+      {
+        "label": "Moldavio",
+        "value": "MO"
+      },
+      {
+        "label": "Mongol",
+        "value": "MN"
+      },
+      {
+        "label": "Nauruano",
+        "value": "NA"
+      },
+      {
+        "label": "Nepali",
+        "value": "NE"
+      },
+      {
+        "label": "Norueguês",
+        "value": "NO"
+      },
+      {
+        "label": "Oria",
+        "value": "OR"
+      },
+      {
+        "label": "Oromo",
+        "value": "OM"
+      },
+      {
+        "label": "Persa",
+        "value": "FA"
+      },
+      {
+        "label": "Polonês",
+        "value": "PL"
+      },
+      {
+        "label": "Punjabi",
+        "value": "PA"
+      },
+      {
+        "label": "Pushto",
+        "value": "PS"
+      },
+      {
+        "label": "Quichua",
+        "value": "QU"
+      },
+      {
+        "label": "Quiniaruanda",
+        "value": "RW"
+      },
+      {
+        "label": "Quirquiz",
+        "value": "KY"
+      },
+      {
+        "label": "Quirundi",
+        "value": "RN"
+      },
+      {
+        "label": "Quisuahili",
+        "value": "QI"
+      },
+      {
+        "label": "Reto-Romano",
+        "value": "RM"
+      },
+      {
+        "label": "Romeno",
+        "value": "RO"
+      },
+      {
+        "label": "Russo",
+        "value": "RU"
+      },
+      {
+        "label": "Samoano",
+        "value": "SM"
+      },
+      {
+        "label": "Sango",
+        "value": "SG"
+      },
+      {
+        "label": "Sanscrito",
+        "value": "SA"
+      },
+      {
+        "label": "Serbian",
+        "value": "SR"
+      },
+      {
+        "label": "Servo-Croata",
+        "value": "SH"
+      },
+      {
+        "label": "Sesoto",
+        "value": "ST"
+      },
+      {
+        "label": "Setsuana",
+        "value": "TN"
+      },
+      {
+        "label": "Shona",
+        "value": "SN"
+      },
+      {
+        "label": "Sindi",
+        "value": "SD"
+      },
+      {
+        "label": "Sirmanês",
+        "value": "MY"
+      },
+      {
+        "label": "Sisvati",
+        "value": "SS"
+      },
+      {
+        "label": "Somali",
+        "value": "SO"
+      },
+      {
+        "label": "Suaili",
+        "value": "SW"
+      },
+      {
+        "label": "Sudanês",
+        "value": "SU"
+      },
+      {
+        "label": "Sueco",
+        "value": "SV"
+      },
+      {
+        "label": "Tadjique",
+        "value": "TG"
+      },
+      {
+        "label": "Tai",
+        "value": "TH"
+      },
+      {
+        "label": "Talagog",
+        "value": "TL"
+      },
+      {
+        "label": "Tamil",
+        "value": "TA"
+      },
+      {
+        "label": "Tatar",
+        "value": "TT"
+      },
+      {
+        "label": "Tcheco",
+        "value": "CS"
+      },
+      {
+        "label": "Telugo",
+        "value": "TE"
+      },
+      {
+        "label": "Tibetano",
+        "value": "BO"
+      },
+      {
+        "label": "Tigrina",
+        "value": "TI"
+      },
+      {
+        "label": "Tongalês",
+        "value": "TO"
+      },
+      {
+        "label": "Tsonga",
+        "value": "TS"
+      },
+      {
+        "label": "Tui",
+        "value": "TW"
+      },
+      {
+        "label": "Turco",
+        "value": "TR"
+      },
+      {
+        "label": "Turcomano",
+        "value": "TK"
+      },
+      {
+        "label": "Tuvaloano",
+        "value": "TU"
+      },
+      {
+        "label": "Ucraniâno",
+        "value": "UK"
+      },
+      {
+        "label": "Urdu",
+        "value": "UR"
+      },
+      {
+        "label": "Uzbeco",
+        "value": "UZ"
+      },
+      {
+        "label": "Vietnamita",
+        "value": "VI"
+      },
+      {
+        "label": "Volupak",
+        "value": "VO"
+      },
+      {
+        "label": "Wolof",
+        "value": "WO"
+      },
+      {
+        "label": "Xosa",
+        "value": "XH"
+      },
+      {
+        "label": "Yoruba",
+        "value": "YO"
+      },
+      {
+        "label": "Zulú",
+        "value": "ZU"
+      },
+      {
+        "label": "Outros",
+        "value": "OU"
+      }
+    ],
+    "f_pais": [
+      {
+        "label": "Argentina",
+        "value": "ARG"
+      },
+      {
+        "label": "Austrália",
+        "value": "AUS"
+      },
+      {
+        "label": "Brasil",
+        "value": "BRA"
+      },
+      {
+        "label": "Canadá",
+        "value": "CAN"
+      },
+      {
+        "label": "Espanha",
+        "value": "ESP"
+      },
+      {
+        "label": "Estados Unidos",
+        "value": "EUA"
+      },
+      {
+        "label": "França",
+        "value": "FRA"
+      },
+      {
+        "label": "Grã-Bretanha",
+        "value": "GBR"
+      },
+      {
+        "label": "Holanda",
+        "value": "HOL"
+      },
+      {
+        "label": "Inglaterra",
+        "value": "ING"
+      },
+      {
+        "label": "Itália",
+        "value": "ITA"
+      },
+      {
+        "label": "Portugal",
+        "value": "POR"
+      },
+      {
+        "label": "Alemanha",
+        "value": "RFA"
+      },
+      {
+        "label": "Aruba",
+        "value": "ABW"
+      },
+      {
+        "label": "Afeganistão",
+        "value": "AFG"
+      },
+      {
+        "label": "África Do Sul",
+        "value": "AFS"
+      },
+      {
+        "label": "Antilhas Holandesas",
+        "value": "AHL"
+      },
+      {
+        "label": "Albânia",
+        "value": "ALB"
+      },
+      {
+        "label": "Antigua",
+        "value": "ANB"
+      },
+      {
+        "label": "Andorra",
+        "value": "AND"
+      },
+      {
+        "label": "Angola",
+        "value": "ANG"
+      },
+      {
+        "label": "Arábia Saudita",
+        "value": "ARA"
+      },
+      {
+        "label": "Argélia",
+        "value": "ARL"
+      },
+      {
+        "label": "Armênia",
+        "value": "ARM"
+      },
+      {
+        "label": "Samoa Americana",
+        "value": "ASM"
+      },
+      {
+        "label": "Antartida",
+        "value": "ATC"
+      },
+      {
+        "label": "Austria",
+        "value": "AUT"
+      },
+      {
+        "label": "Azerbaijão",
+        "value": "AZE"
+      },
+      {
+        "label": "Barein",
+        "value": "BAR"
+      },
+      {
+        "label": "Belarus",
+        "value": "BEA"
+      },
+      {
+        "label": "Bélgica",
+        "value": "BEL"
+      },
+      {
+        "label": "Benin",
+        "value": "BEN"
+      },
+      {
+        "label": "Bermudas",
+        "value": "BER"
+      },
+      {
+        "label": "Bangladesh",
+        "value": "BGD"
+      },
+      {
+        "label": "Bahamas",
+        "value": "BHS"
+      },
+      {
+        "label": "Birmânia",
+        "value": "BIR"
+      },
+      {
+        "label": "Burkina Fasso",
+        "value": "BKF"
+      },
+      {
+        "label": "Belize",
+        "value": "BLZ"
+      },
+      {
+        "label": "Bolívia",
+        "value": "BOL"
+      },
+      {
+        "label": "Bósnia",
+        "value": "BOS"
+      },
+      {
+        "label": "Botsuana",
+        "value": "BOT"
+      },
+      {
+        "label": "Barbados",
+        "value": "BRB"
+      },
+      {
+        "label": "Brunei",
+        "value": "BRN"
+      },
+      {
+        "label": "Bulgária",
+        "value": "BUL"
+      },
+      {
+        "label": "Burundi",
+        "value": "BUR"
+      },
+      {
+        "label": "Butão",
+        "value": "BUT"
+      },
+      {
+        "label": "Camarões",
+        "value": "CAM"
+      },
+      {
+        "label": "Catar",
+        "value": "CAT"
+      },
+      {
+        "label": "Cazaquistão",
+        "value": "CAZ"
+      },
+      {
+        "label": "Camboja",
+        "value": "CBJ"
+      },
+      {
+        "label": "Cabo Verde",
+        "value": "CBV"
+      },
+      {
+        "label": "Ilhas Cocos",
+        "value": "CCK"
+      },
+      {
+        "label": "Chade",
+        "value": "CHA"
+      },
+      {
+        "label": "Chile",
+        "value": "CHL"
+      },
+      {
+        "label": "China",
+        "value": "CHN"
+      },
+      {
+        "label": "Chipre",
+        "value": "CHP"
+      },
+      {
+        "label": "Cingapura",
+        "value": "CIN"
+      },
+      {
+        "label": "Costa Do Marfim",
+        "value": "CMF"
+      },
+      {
+        "label": "Rd Congo",
+        "value": "COD"
+      },
+      {
+        "label": "Ilhas Cook",
+        "value": "COK"
+      },
+      {
+        "label": "Colômbia",
+        "value": "COL"
+      },
+      {
+        "label": "Comores",
+        "value": "COM"
+      },
+      {
+        "label": "Congo",
+        "value": "CON"
+      },
+      {
+        "label": "Costa Rica",
+        "value": "CRC"
+      },
+      {
+        "label": "Coréia Do Norte",
+        "value": "CRN"
+      },
+      {
+        "label": "Croácia",
+        "value": "CRO"
+      },
+      {
+        "label": "Coréia Do Sul",
+        "value": "CRS"
+      },
+      {
+        "label": "Cuba",
+        "value": "CUB"
+      },
+      {
+        "label": "Christmas Island",
+        "value": "CXR"
+      },
+      {
+        "label": "Ilhas Cayman",
+        "value": "CYM"
+      },
+      {
+        "label": "Dinamarca",
+        "value": "DIN"
+      },
+      {
+        "label": "Djibuti",
+        "value": "DJI"
+      },
+      {
+        "label": "República Dominicana",
+        "value": "DOM"
+      },
+      {
+        "label": "Dominica",
+        "value": "DON"
+      },
+      {
+        "label": "Emirados Árabes",
+        "value": "EAU"
+      },
+      {
+        "label": "Egito",
+        "value": "EGI"
+      },
+      {
+        "label": "El Salvador",
+        "value": "ELS"
+      },
+      {
+        "label": "Equador",
+        "value": "EQU"
+      },
+      {
+        "label": "Eritréa",
+        "value": "ERT"
+      },
+      {
+        "label": "Escócia",
+        "value": "ESC"
+      },
+      {
+        "label": "Western Sahara",
+        "value": "ESH"
+      },
+      {
+        "label": "Estônia",
+        "value": "EST"
+      },
+      {
+        "label": "Etiópia",
+        "value": "ETP"
+      },
+      {
+        "label": "Filipinas",
+        "value": "FIL"
+      },
+      {
+        "label": "Finlândia",
+        "value": "FIN"
+      },
+      {
+        "label": "Fiji",
+        "value": "FJI"
+      },
+      {
+        "label": "Ilhas Falkland",
+        "value": "FLK"
+      },
+      {
+        "label": "Formosa",
+        "value": "FOR"
+      },
+      {
+        "label": "Micronésia",
+        "value": "FSM"
+      },
+      {
+        "label": "Gabão",
+        "value": "GAB"
+      },
+      {
+        "label": "Gales",
+        "value": "GAL"
+      },
+      {
+        "label": "Gâmbia",
+        "value": "GAM"
+      },
+      {
+        "label": "Gana",
+        "value": "GAN"
+      },
+      {
+        "label": "Guadalupe",
+        "value": "GDL"
+      },
+      {
+        "label": "Geórgia",
+        "value": "GEO"
+      },
+      {
+        "label": "Guiana Francesa",
+        "value": "GFR"
+      },
+      {
+        "label": "Gibraltar",
+        "value": "GIB"
+      },
+      {
+        "label": "Guiné Bissau",
+        "value": "GNB"
+      },
+      {
+        "label": "Guiné",
+        "value": "GNE"
+      },
+      {
+        "label": "Guiné Equatorial",
+        "value": "GNQ"
+      },
+      {
+        "label": "Granada",
+        "value": "GRD"
+      },
+      {
+        "label": "Grécia",
+        "value": "GRE"
+      },
+      {
+        "label": "Groênlandia",
+        "value": "GRL"
+      },
+      {
+        "label": "Guatemala",
+        "value": "GUA"
+      },
+      {
+        "label": "Guiana",
+        "value": "GUI"
+      },
+      {
+        "label": "Guam",
+        "value": "GUM"
+      },
+      {
+        "label": "Hong Kong",
+        "value": "HKG"
+      },
+      {
+        "label": "Honduras",
+        "value": "HON"
+      },
+      {
+        "label": "Haiti",
+        "value": "HTI"
+      },
+      {
+        "label": "Hungria",
+        "value": "HUN"
+      },
+      {
+        "label": "Indonésia",
+        "value": "IDN"
+      },
+      {
+        "label": "Iêmem",
+        "value": "IEM"
+      },
+      {
+        "label": "Ilhas Faroe",
+        "value": "IFA"
+      },
+      {
+        "label": "Ilhas Marshall",
+        "value": "IMH"
+      },
+      {
+        "label": "Iêmen Do Sul",
+        "value": "IMS"
+      },
+      {
+        "label": "Índia",
+        "value": "IND"
+      },
+      {
+        "label": "Britsh Indian Ocean",
+        "value": "IOT"
+      },
+      {
+        "label": "Irã",
+        "value": "IRA"
+      },
+      {
+        "label": "Irlanda",
+        "value": "IRL"
+      },
+      {
+        "label": "Irlanda Do Norte",
+        "value": "IRN"
+      },
+      {
+        "label": "Iraque",
+        "value": "IRQ"
+      },
+      {
+        "label": "Islândia",
+        "value": "ISL"
+      },
+      {
+        "label": "Israel",
+        "value": "ISR"
+      },
+      {
+        "label": "Iugoslávia",
+        "value": "IUG"
+      },
+      {
+        "label": "Ilhas Vírgens Eua",
+        "value": "IVA"
+      },
+      {
+        "label": "Jamaica",
+        "value": "JAM"
+      },
+      {
+        "label": "Japão",
+        "value": "JAP"
+      },
+      {
+        "label": "Jordânia",
+        "value": "JOR"
+      },
+      {
+        "label": "Kiribati",
+        "value": "KIR"
+      },
+      {
+        "label": "São Cristóvão Nevis",
+        "value": "KNA"
+      },
+      {
+        "label": "Kuweit",
+        "value": "KWT"
+      },
+      {
+        "label": "Laos",
+        "value": "LAO"
+      },
+      {
+        "label": "Líbano",
+        "value": "LBN"
+      },
+      {
+        "label": "Libéria",
+        "value": "LBR"
+      },
+      {
+        "label": "Santa Lúcia",
+        "value": "LCA"
+      },
+      {
+        "label": "Lesoto",
+        "value": "LES"
+      },
+      {
+        "label": "Letônia",
+        "value": "LET"
+      },
+      {
+        "label": "Líbia",
+        "value": "LIB"
+      },
+      {
+        "label": "Liechtenstein",
+        "value": "LIE"
+      },
+      {
+        "label": "Lituânia",
+        "value": "LIT"
+      },
+      {
+        "label": "Luxemburgo",
+        "value": "LUX"
+      },
+      {
+        "label": "Macau",
+        "value": "MAC"
+      },
+      {
+        "label": "Madagascar",
+        "value": "MAD"
+      },
+      {
+        "label": "Malásia",
+        "value": "MAL"
+      },
+      {
+        "label": "Marrocos",
+        "value": "MAR"
+      },
+      {
+        "label": "Maurício",
+        "value": "MAU"
+      },
+      {
+        "label": "Moçambique",
+        "value": "MBQ"
+      },
+      {
+        "label": "Macedônia",
+        "value": "MCD"
+      },
+      {
+        "label": "Maldivas",
+        "value": "MDV"
+      },
+      {
+        "label": "México",
+        "value": "MEX"
+      },
+      {
+        "label": "Mongólia",
+        "value": "MGL"
+      },
+      {
+        "label": "Ilhas Midway",
+        "value": "MID"
+      },
+      {
+        "label": "Mali",
+        "value": "MLI"
+      },
+      {
+        "label": "Malta",
+        "value": "MLT"
+      },
+      {
+        "label": "Malavi",
+        "value": "MLV"
+      },
+      {
+        "label": "Mianmar",
+        "value": "MMR"
+      },
+      {
+        "label": "Montenegro",
+        "value": "MNE"
+      },
+      {
+        "label": "Moldova",
+        "value": "MOL"
+      },
+      {
+        "label": "Mônaco",
+        "value": "MON"
+      },
+      {
+        "label": "Martinica",
+        "value": "MRT"
+      },
+      {
+        "label": "Montserrat",
+        "value": "MSR"
+      },
+      {
+        "label": "Mauritânia",
+        "value": "MTN"
+      },
+      {
+        "label": "Namíbia",
+        "value": "NAM"
+      },
+      {
+        "label": "Nova Caledônia",
+        "value": "NCL"
+      },
+      {
+        "label": "Ilhas Norfolk",
+        "value": "NFK"
+      },
+      {
+        "label": "Nigéria",
+        "value": "NGA"
+      },
+      {
+        "label": "Nicarágua",
+        "value": "NIC"
+      },
+      {
+        "label": "Niger",
+        "value": "NIG"
+      },
+      {
+        "label": "Niue",
+        "value": "NIU"
+      },
+      {
+        "label": "Noruega",
+        "value": "NOR"
+      },
+      {
+        "label": "Nepal",
+        "value": "NPL"
+      },
+      {
+        "label": "Nauru",
+        "value": "NRU"
+      },
+      {
+        "label": "Nova Zelândia",
+        "value": "NZL"
+      },
+      {
+        "label": "Omã",
+        "value": "OMA"
+      },
+      {
+        "label": "Panamá",
+        "value": "PAN"
+      },
+      {
+        "label": "Paquistão",
+        "value": "PAQ"
+      },
+      {
+        "label": "Pacific Islands",
+        "value": "PCI"
+      },
+      {
+        "label": "Pitcairn",
+        "value": "PCN"
+      },
+      {
+        "label": "Peru",
+        "value": "PER"
+      },
+      {
+        "label": "Polinésia Francesa",
+        "value": "PLF"
+      },
+      {
+        "label": "Palau",
+        "value": "PLU"
+      },
+      {
+        "label": "Papua Nova Guiné",
+        "value": "PNG"
+      },
+      {
+        "label": "Polônia",
+        "value": "POL"
+      },
+      {
+        "label": "Paraguai",
+        "value": "PRG"
+      },
+      {
+        "label": "Palestina",
+        "value": "PSE"
+      },
+      {
+        "label": "Porto Rico",
+        "value": "PTR"
+      },
+      {
+        "label": "Quênia",
+        "value": "QUE"
+      },
+      {
+        "label": "Quirgistão",
+        "value": "QUI"
+      },
+      {
+        "label": "Rep.Centro-Africana",
+        "value": "RCA"
+      },
+      {
+        "label": "Reunião",
+        "value": "REU"
+      },
+      {
+        "label": "Romênia",
+        "value": "ROM"
+      },
+      {
+        "label": "Sérvia",
+        "value": "RS"
+      },
+      {
+        "label": "Rússia",
+        "value": "RSS"
+      },
+      {
+        "label": "República Tcheca",
+        "value": "RTC"
+      },
+      {
+        "label": "Ruanda",
+        "value": "RUA"
+      },
+      {
+        "label": "Samoa Ocidental",
+        "value": "SAM"
+      },
+      {
+        "label": "Senegal",
+        "value": "SEN"
+      },
+      {
+        "label": "Ilhas Santa Helena",
+        "value": "SHN"
+      },
+      {
+        "label": "Síria",
+        "value": "SIR"
+      },
+      {
+        "label": "Ilhas Salomão",
+        "value": "SLB"
+      },
+      {
+        "label": "San Marino",
+        "value": "SMR"
+      },
+      {
+        "label": "Somália",
+        "value": "SOM"
+      },
+      {
+        "label": "São Pedro Miquelon",
+        "value": "SPM"
+      },
+      {
+        "label": "Sri Lanka",
+        "value": "SRI"
+      },
+      {
+        "label": "Serra Leoa",
+        "value": "SRL"
+      },
+      {
+        "label": "São Tomé E Príncipe",
+        "value": "STP"
+      },
+      {
+        "label": "Suazilândia",
+        "value": "SUA"
+      },
+      {
+        "label": "Sudão",
+        "value": "SUD"
+      },
+      {
+        "label": "Suécia",
+        "value": "SUE"
+      },
+      {
+        "label": "Suíça",
+        "value": "SUI"
+      },
+      {
+        "label": "Suriname",
+        "value": "SUR"
+      },
+      {
+        "label": "Eslováquia",
+        "value": "SVK"
+      },
+      {
+        "label": "Eslovênia",
+        "value": "SVN"
+      },
+      {
+        "label": "Seychelles",
+        "value": "SYC"
+      },
+      {
+        "label": "Tadjaquistão",
+        "value": "TAD"
+      },
+      {
+        "label": "Tailândia",
+        "value": "TAI"
+      },
+      {
+        "label": "Tanzânia",
+        "value": "TAN"
+      },
+      {
+        "label": "Ilhas Turcas Caicos",
+        "value": "TCA"
+      },
+      {
+        "label": "República Tcheca",
+        "value": "TCH"
+      },
+      {
+        "label": "Togo",
+        "value": "TGO"
+      },
+      {
+        "label": "Tokelau",
+        "value": "TKL"
+      },
+      {
+        "label": "Timor Leste",
+        "value": "TMP"
+      },
+      {
+        "label": "Tonga",
+        "value": "TON"
+      },
+      {
+        "label": "Trinidad E Tobago",
+        "value": "TRT"
+      },
+      {
+        "label": "Turcomenistão",
+        "value": "TUC"
+      },
+      {
+        "label": "Tunísia",
+        "value": "TUN"
+      },
+      {
+        "label": "Turquia",
+        "value": "TUR"
+      },
+      {
+        "label": "Tuvalu",
+        "value": "TUV"
+      },
+      {
+        "label": "Ucrânia",
+        "value": "UCR"
+      },
+      {
+        "label": "Uganda",
+        "value": "UGA"
+      },
+      {
+        "label": "União Soviética",
+        "value": "URS"
+      },
+      {
+        "label": "Uruguai",
+        "value": "URU"
+      },
+      {
+        "label": "Uzbekistan",
+        "value": "UZB"
+      },
+      {
+        "label": "Vaticano",
+        "value": "VAT"
+      },
+      {
+        "label": "São Vicente Granadi",
+        "value": "VCT"
+      },
+      {
+        "label": "Venezuela",
+        "value": "VEN"
+      },
+      {
+        "label": "Ilhas Vírgens Gbr",
+        "value": "VGB"
+      },
+      {
+        "label": "Vietnã",
+        "value": "VTN"
+      },
+      {
+        "label": "Vanuatu",
+        "value": "VUT"
+      },
+      {
+        "label": "Ilhas Wake",
+        "value": "WAK"
+      },
+      {
+        "label": "Ilhas Wallis Futuna",
+        "value": "WLF"
+      },
+      {
+        "label": "Zâmbia",
+        "value": "ZAN"
+      },
+      {
+        "label": "Zaire",
+        "value": "ZAR"
+      },
+      {
+        "label": "Zimbabue",
+        "value": "ZIN"
+      }
+    ]
+  },
+  "origin": "cvlattesweb: recaptura de 15/10/2026, só leitura (formulários de inclusão abertos por GET); entradas tiradas de inspect() e capture(), sem scripts"
+}

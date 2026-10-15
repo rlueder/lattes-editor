@@ -11,6 +11,7 @@ para dizer, atributo por atributo, se o editor cobre o que o Lattes oferece.
 | `relatorio.md`                   | A cobertura, gerada por `pnpm censo:relatorio`; não editar à mão                     |
 | `pendencias.json`                | As divergências já conhecidas, que o teste aceita (`pnpm censo:relatorio --aceitar`) |
 | `censo-AAAA-MM-DD-ligacoes.json` | Só a passada de edição, sem formulários (`link(xml, { download: true })`)            |
+| `recaptura.md`                   | O que ainda falta ler no Lattes, com o lote de comandos e o que extrair de cada item |
 | `recaptura-edicao.md`            | O que a LAT-58 precisa ler de novo na passada de edição, e como                      |
 
 O código está em `src/census/`: a leitura das páginas sem DOM
@@ -68,7 +69,12 @@ alteração não enviada ao CNPq, e aí o XML vai como argumento.
    `{ only: ['formacao', 'evento'] }` restringe as entradas,
    `{ redact: ['Seu Nome'] }` esconde textos, `{ discover: true }` lê as
    listas do menu e anota inclusões que a lista de formulários não tem, e
-   `{ delayMs: 300 }` é a pausa entre pedidos.
+   `{ delayMs: 300 }` é a pausa entre pedidos, e `{ scripts: true }` guarda
+   também os scripts da própria página de cada formulário, sem dado pessoal
+   (em `scripts` no arquivo, citados pelo id em cada entrada).
+   `await __lattesCensus.inspect(caminhos, { download: true })` abre páginas
+   que ainda não são entrada do censo e baixa `recaptura-AAAA-MM-DD.json`
+   (veja `recaptura.md`).
 
 4. Leia o arquivo antes de versionar (procure o próprio nome), copie para esta
    pasta e rode `pnpm censo:relatorio`. Divergências novas aparecem no console

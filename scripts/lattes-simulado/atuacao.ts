@@ -7,6 +7,7 @@
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
+import { cargoForm, cargoPost, teaching } from './atividades.ts';
 import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
@@ -155,8 +156,24 @@ function cargosVinculos(req: SimRequest, state: LattesState): SimResponse {
     .join('\n');
   // dele(): a atuação inteira, por GET com f_ctr=E2 (seção 15).
   const dele = `<script>function dele(){ if (confirm('Esta operação apagará: Todas as atividades; Vínculos; Projetos; Linhas de pesquisa. Deseja continuar?') && confirm('Confirmar exclusão?')) location = 'pkg_ativ.form?f_cod=${state.code}&f_seq_ativ=${seqAtiv}&f_ctr=E2'; }</script>`;
-  const body = `<table>${rows}</table>
-<p><a href="${base}">Incluir vínculo</a> <a href="#" onclick="dele(); return false;">Excluir atuação</a></p>${dele}`;
+  // selecionarNatureza() abre o combo de naturezas e o formulário pkg_ativ.cargo
+  // (seção 17); o endereço com f_natur_ativ vazio é o que o censo leu na tela.
+  // No atributo onclick o & vai como &amp;; dentro do <script>, literal.
+  const cargoUrl = `pkg_ativ.cargo?f_cod=${state.code}&f_codinst=${inst}&f_seq_ativ=${seqAtiv}&f_natur_ativ=`;
+  const cargo = cargoUrl.replaceAll('&', '&amp;');
+  // As atividades de ensino, cada uma com f_natur_ativ e f_seq_funcao no link.
+  // Inferido: a forma do link de uma atividade na tela de cargos e vínculos
+  // não foi lida (o lote 3 leu só a inclusão). O conector não confia nesses
+  // parâmetros para conferir duplicata: lê a natureza no oculto do formulário.
+  const activities = teaching(a)
+    .map(
+      (e) =>
+        `<tr><td><a href="#" onclick="self.parent.modalCV2.setarUrl('${cargo}4&amp;f_seq_funcao=${getAttr(e, 'SEQUENCIA-FUNCAO-ATIVIDADE')}',true); return false;">Ensino ${getAttr(e, 'ANO-INICIO') ?? ''}</a></td></tr>`,
+    )
+    .join('\n');
+  const body = `<table>${rows}${activities}</table>
+<p><a href="${base}">Incluir vínculo</a> <a href="#" onclick="selecionarNatureza(); return false;">Incluir atividade</a> <a href="#" onclick="dele(); return false;">Excluir atuação</a></p>${dele}
+<script>function selecionarNatureza(){ self.parent.modalCV2.setarUrl('${cargoUrl}', true); }</script>`;
   return html(h.page(getAttr(a, 'NOME-INSTITUICAO') ?? 'Atuação', body));
 }
 
@@ -267,6 +284,10 @@ function ativForm(req: SimRequest, state: LattesState): SimResponse {
 }
 
 export const ATUACAO_ROUTES: Routes = {
+  'pkg_ativ.cargo': (req, state) => {
+    const a = findAtuacao(state, req.get('f_seq_ativ'));
+    return req.method === 'POST' ? cargoPost(req, state, a) : cargoForm(req, state, a);
+  },
   'pkg_ativ.cargos_vinculos': cargosVinculos,
   'pkg_ativ.form': ativForm,
   'pkg_ativ.inclui': (req, state) =>
