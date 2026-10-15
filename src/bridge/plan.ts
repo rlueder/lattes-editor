@@ -173,6 +173,7 @@ export function planChange(
     deleteItems = DELETE_ITEMS_ENABLED,
     editOuvinte = false,
   }: PlanOptions = {},
+  siblings: readonly Change[] = [],
 ): BridgeOp | Unsupported {
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.
   if (change.kind === 'novo' && createItems && change.element === 'ATUACAO-PROFISSIONAL') {
@@ -257,7 +258,7 @@ export function planChange(
     return 'reason' in biographic ? unsupported(change, label, biographic.reason) : biographic;
   }
   // Participação em eventos como ouvinte (edit-items.ts), testada no Lattes real em 14/10/2026.
-  const evento = editOuvinte ? planEvento(change, chain, label) : undefined;
+  const evento = editOuvinte ? planEvento(change, chain, label, siblings) : undefined;
   if (evento) return 'reason' in evento ? unsupported(change, label, evento.reason) : evento;
 
   return unsupported(change, label, 'Formulário não suportado ainda');
@@ -275,9 +276,12 @@ export function planChanges(
 ): { ops: BridgeOp[]; unsupported: Unsupported[] } {
   const ops: BridgeOp[] = [];
   const skipped: Unsupported[] = [];
+  // As outras mudanças da fila, para uma operação saber o que muda na outra
+  // parte do mesmo item (edit-items.ts).
+  const all = entries.map((e) => e.change);
   for (const { change, itemTitle } of entries) {
     const label = itemTitle ? `${change.form} · ${itemTitle}` : change.form;
-    const planned = planChange(change, resolvePath(root, change.path), label, options);
+    const planned = planChange(change, resolvePath(root, change.path), label, options, all);
     if (isOp(planned)) ops.push(planned);
     else skipped.push(planned);
   }
