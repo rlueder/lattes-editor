@@ -54,6 +54,17 @@ export function sentEntry(
 export const UNDO_KEY_PREFIX = 'desfazer:';
 
 /**
+ * O selo de uma gravação no registro do enviado: "novo" para um item criado,
+ * "removido" para uma exclusão; a alteração de um item que já existia não
+ * tem selo.
+ */
+export function opBadge(op: BridgeOp): 'novo' | 'removido' | undefined {
+  if (op.kind.startsWith('criar-')) return 'novo';
+  if (isDeleteOp(op)) return 'removido';
+  return undefined;
+}
+
+/**
  * Por que esta operação não se desfaz pelo editor, mesmo conferida; undefined
  * quando se desfaz. Desfazer é mandar de volta os valores de antes, e um item
  * criado ou excluído não tem "antes" no mesmo formulário.
@@ -78,7 +89,7 @@ export function undoOp(entry: SentEntry): BridgeOp | undefined {
   // O que não terminou conferido pode não ter gravado nada, ou gravado
   // diferente do enviado: voltar o "antes" às cegas poderia apagar um valor
   // que já estava lá. (A atuação criada no Lattes nunca teve "antes" para
-  // voltar: sai de lá excluída à mão.)
+  // voltar: sai de lá excluída no próprio Lattes.)
   if (entry.id === undefined || entry.undoOf !== undefined || failed(entry)) return undefined;
   const { op } = entry;
   if (noUndoReason(op)) return undefined;

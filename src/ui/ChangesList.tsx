@@ -11,7 +11,8 @@ import { FieldChange } from './FieldChange.tsx';
 import { TrashIcon } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
 
-const KIND_LABEL = { alterado: 'alterado', novo: 'incluir', removido: 'excluir' } as const;
+/** Selo só para as exceções: a lista inteira é de alterações, e a alteração de um item não tem selo. */
+const KIND_BADGE = { alterado: undefined, novo: 'novo', removido: 'removido' } as const;
 
 interface Props {
   groups: ChangeGroup[];
@@ -43,9 +44,11 @@ export function ChangesList({ groups, onDiscard, onDiscardField }: Props) {
                     <span className="change-where">
                       {context.length ? context.join(' › ') : elementLabel(change.element)}
                     </span>
-                    <span className={`change-kind kind-${change.kind}`}>
-                      {KIND_LABEL[change.kind]}
-                    </span>
+                    {KIND_BADGE[change.kind] && (
+                      <span className={`change-kind kind-${change.kind}`}>
+                        {KIND_BADGE[change.kind]}
+                      </span>
+                    )}
                     {change.kind !== 'alterado' && (
                       <span className="change-actions">
                         <DiscardButton

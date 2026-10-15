@@ -230,10 +230,10 @@ export function ExportPanel({
               )}
 
               {routed.pendente.length > 0 && (
-                <section className="panel-section">
-                  <h3 className="panel-section-head" title="O editor ainda não envia estes">
-                    Não enviado
-                  </h3>
+                // O resto da aba: o que o editor ainda não envia, depois de um fio
+                // (sem fio quando é a única parte).
+                <section className="panel-section pending-unsupported">
+                  <p className="muted changes-how">O editor ainda não envia estes</p>
                   <ChangesList
                     groups={routed.pendente}
                     onDiscard={onDiscard}

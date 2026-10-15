@@ -1566,21 +1566,6 @@ a.menu-item.notice {
   white-space: nowrap;
 }
 
-.tag.kind-alterado {
-  background: var(--accent-soft);
-  color: var(--accent-text);
-}
-
-.tag.kind-novo {
-  background: var(--accent);
-  color: var(--accent-contrast);
-}
-
-.tag.kind-removido {
-  background: var(--warn-bg);
-  color: var(--danger);
-}
-
 /* Áreas do conhecimento */
 
 .area-suggestions {
@@ -1723,6 +1708,13 @@ a.menu-item.notice {
 
 .panel-section + .panel-section {
   margin-top: 22px;
+}
+
+/* O que o editor ainda não envia: depois do que vai, um fio e uma linha
+   apagada; sozinho na aba, só a linha. */
+.panel-section + .pending-unsupported {
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
 }
 
 .panel-section-head {
@@ -7134,8 +7126,9 @@ main.content {
   font-weight: 550;
 }
 
-/* O tipo da mudança, num selo em pílula: alterado (azul claro), incluir
-   (azul) e excluir (aviso), o mesmo conjunto em todas as listas. */
+/* As exceções numa lista de alterações, num selo em pílula: novo (azul) e
+   removido (aviso), nas abas "A enviar" e "Enviado". A alteração de um item
+   que já existia não tem selo. */
 .change-kind {
   display: inline-flex;
   flex: none;

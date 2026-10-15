@@ -12,6 +12,7 @@ import {
   failed,
   groupByDay,
   noUndoReason,
+  opBadge,
   type SentEntry,
   sentLogFileName,
   sentLogText,
@@ -80,6 +81,11 @@ export function SentList({ bridge }: { bridge: BridgeState }) {
                 >
                   <div className="sent-head">
                     <strong>{entry.op.label}</strong>
+                    {opBadge(entry.op) && (
+                      <span className={`change-kind kind-${opBadge(entry.op)}`}>
+                        {opBadge(entry.op)}
+                      </span>
+                    )}
                     <span className="muted sent-time">{timeLabel(entry.sentAt)}</span>
                     {entry.outcome && (
                       <span className="tag warn">{OUTCOME_LABEL[entry.outcome.status]}</span>
