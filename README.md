@@ -77,10 +77,12 @@ mão com os valores ao lado.
 
 Cada exportação aberta vira uma versão, e o app diz o que mudou desde a
 anterior ("Versões do Lattes", no ⚙), inclusive o que foi editado direto no
-Lattes. O **Diagnóstico do currículo** mostra a data da última publicação, o
-que mudou no Lattes desde a exportação e o que vale conferir no currículo
-inteiro: duplicatas, ISSN, DOI, datas e vínculos antigos ainda marcados como
-atuais. Só aponta; nada muda sem você.
+Lattes. O **Diagnóstico do currículo**, no ⚙, confere o currículo inteiro de
+uma vez, item por item: campos obrigatórios, valores fora das listas do
+Lattes, anos, autores, DOI e a revisão de consistência (duplicatas, ISSN,
+vínculos antigos ainda marcados como atuais). Logo abaixo, mostra a data da
+última publicação e o que mudou no Lattes desde a exportação. Só aponta;
+nada muda sem você.
 
 Também dá para imprimir ou salvar em PDF nas regras da NBR 14724, com
 referências na NBR 6023, e compartilhar o currículo por um código QR.
