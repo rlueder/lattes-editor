@@ -76,6 +76,14 @@ await __lattesCensus.inspect(
     'pkg_formacao_compl.lista',
     // Linhas de pesquisa: a lista (o link de inclusão não foi achado).
     'pkg_linhapesq.lista',
+    // Produções, orientações e bancas: a grade de autores e as buscas.
+    'PKG_ARTIGO_PR.form?F_STA_DIVULGACAO_CIENTIFICA=',
+    'pkg_trabalho.form?F_STA_DIVULGACAO_CIENTIFICA=',
+    'pkg_relatorio.form',
+    'pkg_orient.form?f_tipo=C',
+    'pkg_orient.form?f_tipo=A',
+    'PKG_BANCA_TRAB.form',
+    'PKG_BANCA_JULG.form',
   ],
   { redact, download: true },
 );
@@ -112,6 +120,9 @@ await __lattesCensus.inspect(
 | Formação complementar | o formulário e a lista | o que `check()` faz antes de `FORM2` e se a lista mostra os anos; o passo depois de `FORM2` só aparece enviando, o que fica para um teste acompanhado |
 | Linha de pesquisa | `links` de `pkg_linhapesq.lista` e o `discovered` do passo 1 | o procedimento de inclusão da linha (provavelmente uma função da página, que os scripts mostram) |
 | Atividades de uma atuação | o lote 3, uma página por natureza | os campos de cada natureza (órgão, unidade, cargo, curso, especificação) e a grade `f_espec_l` de disciplinas e treinamentos: chaves e separadores |
+
+| Autores das produções e participantes das bancas | scripts dos formulários de artigo aceito, trabalho em anais, trabalho técnico e das duas bancas | se a inclusão já traz a própria pessoa no `autorProvider` (a linha sai como "[removido]": basta saber se existe), como `check()` monta `f_autores_l` e o sentido de `pais`; o mesmo para `f_plv_l`, `f_area_l` e `f_setor_l` |
+| Orientações | scripts dos dois formulários de orientação | os parâmetros das buscas de instituição, curso e agência (`sele_inst`, `curso()`, `agencia()`), o sentido de `f_sub_prod` e `f_ctr_natur`, e o que `check()` exige por tipo |
 
 Depois de lido, o que virar fato vai para `docs/lattes_internals.md` (com a
 data) e para o código, e a linha sai desta lista.

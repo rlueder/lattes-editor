@@ -58,7 +58,7 @@ export function isEventoOp(op: BridgeOp): op is EventoOp {
  * formulário (A31 Congresso … A39 Outra); a correspondência com o elemento é
  * pelo nome, inferida.
  */
-const EVENT_CODES: Record<string, string> = {
+export const EVENT_CODES: Record<string, string> = {
   'OUTRAS-PARTICIPACOES-EM-EVENTOS-CONGRESSOS': 'A39',
   'PARTICIPACAO-EM-CONGRESSO': 'A31',
   'PARTICIPACAO-EM-ENCONTRO': 'A35',

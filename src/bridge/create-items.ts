@@ -24,6 +24,13 @@ import { childElements, type XElement } from '../model/xml.ts';
 import type { FormSpec } from './contract.ts';
 import { CREATE_ATUACAO_SPEC } from './create.ts';
 import {
+  applyCreateEvento,
+  type CreateEventoOp,
+  EVENT_ELEMENTS,
+  eventItem,
+  planCreateEvento,
+} from './create-evento.ts';
+import {
   AP_LEVELS,
   applyCreateFormacao,
   CREATE_FORMACAO_SPEC,
@@ -63,9 +70,11 @@ import {
   registryList,
 } from './create-registro.ts';
 import type { Planned } from './create-shared.ts';
+import { EVENTO_SPEC } from './edit-items.ts';
 import { findLinks } from './lattes-html.ts';
 
 export {
+  applyCreateEvento,
   applyCreateFormacao,
   applyCreateGeneral,
   applyCreateProjeto,
@@ -74,13 +83,18 @@ export {
 };
 
 export type CreateItemOp =
-  CreateFormacaoOp | CreateGeneralOp | CreateProjetoOp | CreateRegistroOp | CreateVinculoOp;
+  | CreateEventoOp
+  | CreateFormacaoOp
+  | CreateGeneralOp
+  | CreateProjetoOp
+  | CreateRegistroOp
+  | CreateVinculoOp;
 
 /**
  * Os elementos que o conector sabe incluir (com a chave ligada): a atuação
- * (create.ts), cada nível do "Incluir novo item" da formação, o projeto e os
- * registros.
- * O inventário (create-inventory.ts) parte daqui.
+ * (create.ts), cada nível da formação, o projeto, os registros, os dados
+ * gerais, o vínculo e os eventos. O inventário (create-inventory.ts) parte
+ * daqui.
  */
 export const CONNECTOR_CREATES: ReadonlySet<string> = new Set([
   'ATUACAO-PROFISSIONAL',
@@ -90,6 +104,8 @@ export const CONNECTOR_CREATES: ReadonlySet<string> = new Set([
   // A patente tem a operação, mas o planejamento sempre a manda à mão (create-registro.ts).
   ...Object.keys(REGISTRY_TYPES).filter((n) => n !== 'PATENTE'),
   ...GENERAL_CREATES,
+  // Eventos: pelo formulário, no lugar do Importar, com a chave ligada (direct-inclusion.ts).
+  ...EVENT_ELEMENTS,
 ]);
 
 /**
@@ -105,6 +121,8 @@ export function planCreateItem(
   if (!el) return undefined;
   const registro = registryItem(el);
   if (registro) return planCreateRegistro(change, chain, registro, label);
+  const evento = eventItem(el);
+  if (evento) return planCreateEvento(change, chain, evento, label);
   const general = planCreateGeneral(change, chain, label);
   if (general) return general;
   if (PROJECT_CARRIERS.has(el.name)) return planCreateProjeto(change, chain, label);
@@ -132,6 +150,14 @@ export async function createFormPath(
   menu: string,
 ): Promise<{ missing: string } | { path: string }> {
   if (kind === 'criar-dado' || kind === 'criar-vinculo') return generalFormPath(kind, get, menu);
+  if (kind === 'criar-evento') {
+    const lista = findLinks(menu, 'pkg_evento.lista').find(
+      (l) => !l.params.f_sta_divulgacao_cientifica,
+    );
+    if (!lista) return { missing: 'pkg_evento.lista' };
+    const inc = findLinks(await get(lista.path), 'PKG_EVENTO.form').find((l) => !l.params.f_seq);
+    return inc ? { path: inc.path } : { missing: 'PKG_EVENTO.form' };
+  }
   if (kind === 'criar-registro') {
     // A cultivar registrada: o formulário do contrato (create-registro.ts).
     const lista = registryList(menu, 'CR');
@@ -158,6 +184,7 @@ export async function createFormPath(
 export const CREATE_SPECS: Record<'criar-atuacao' | CreateItemOp['kind'], FormSpec> = {
   'criar-atuacao': CREATE_ATUACAO_SPEC,
   'criar-dado': CREATE_DADO_SPEC,
+  'criar-evento': { ...EVENTO_SPEC, mode: 'I', partial: true },
   'criar-formacao': CREATE_FORMACAO_SPEC,
   'criar-projeto': CREATE_PROJETO_SPEC,
   'criar-registro': CREATE_REGISTRO_SPEC,

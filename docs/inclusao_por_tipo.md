@@ -41,8 +41,8 @@ outro item.
 
 | Caminho hoje | Tipos | Editor cria |
 | ------------ | ----: | ----------: |
-| conector     |    22 |          22 |
-| importar     |    69 |          69 |
+| conector     |    31 |          31 |
+| importar     |    60 |          60 |
 | nenhum       |    23 |          23 |
 
 Desde a etapa 4, o editor cria todos os tipos. Os 23 sem caminho vão para "A
@@ -129,15 +129,15 @@ e treinamento são só um nome, que fica no texto do elemento.
 
 | Elemento                                     | Item                                         | Faz parte de | Editor cria | Caminho hoje | Formulário no censo | Captura | Endereço/ligação    |
 | -------------------------------------------- | -------------------------------------------- | ------------ | ----------- | ------------ | ------------------- | ------- | ------------------- |
-| `PARTICIPACAO-EM-CONGRESSO`                  | Participação em congresso                    |              | sim         | importar     | `evento`            | lido    | observado/observado |
-| `PARTICIPACAO-EM-FEIRA`                      | Participação em feira                        |              | sim         | importar     | `evento`            | lido    | observado/observado |
-| `PARTICIPACAO-EM-SEMINARIO`                  | Participação em seminário                    |              | sim         | importar     | `evento`            | lido    | observado/observado |
-| `PARTICIPACAO-EM-SIMPOSIO`                   | Participação em simpósio                     |              | sim         | importar     | `evento`            | lido    | observado/observado |
-| `PARTICIPACAO-EM-OFICINA`                    | Participação em oficina                      |              | sim         | importar     | `evento`            | lido    | observado/observado |
-| `PARTICIPACAO-EM-ENCONTRO`                   | Participação em encontro                     |              | sim         | importar     | `evento`            | lido    | observado/observado |
-| `PARTICIPACAO-EM-EXPOSICAO`                  | Participação em exposição                    |              | sim         | importar     | `evento`            | lido    | observado/observado |
-| `PARTICIPACAO-EM-OLIMPIADA`                  | Participação em olimpíada                    |              | sim         | importar     | `evento`            | lido    | observado/observado |
-| `OUTRAS-PARTICIPACOES-EM-EVENTOS-CONGRESSOS` | Outras participações em eventos e congressos |              | sim         | importar     | `evento`            | lido    | observado/observado |
+| `PARTICIPACAO-EM-CONGRESSO`                  | Participação em congresso                    |              | sim         | conector     | `evento`            | lido    | observado/observado |
+| `PARTICIPACAO-EM-FEIRA`                      | Participação em feira                        |              | sim         | conector     | `evento`            | lido    | observado/observado |
+| `PARTICIPACAO-EM-SEMINARIO`                  | Participação em seminário                    |              | sim         | conector     | `evento`            | lido    | observado/observado |
+| `PARTICIPACAO-EM-SIMPOSIO`                   | Participação em simpósio                     |              | sim         | conector     | `evento`            | lido    | observado/observado |
+| `PARTICIPACAO-EM-OFICINA`                    | Participação em oficina                      |              | sim         | conector     | `evento`            | lido    | observado/observado |
+| `PARTICIPACAO-EM-ENCONTRO`                   | Participação em encontro                     |              | sim         | conector     | `evento`            | lido    | observado/observado |
+| `PARTICIPACAO-EM-EXPOSICAO`                  | Participação em exposição                    |              | sim         | conector     | `evento`            | lido    | observado/observado |
+| `PARTICIPACAO-EM-OLIMPIADA`                  | Participação em olimpíada                    |              | sim         | conector     | `evento`            | lido    | observado/observado |
+| `OUTRAS-PARTICIPACOES-EM-EVENTOS-CONGRESSOS` | Outras participações em eventos e congressos |              | sim         | conector     | `evento`            | lido    | observado/observado |
 
 ### Orientações
 
@@ -274,18 +274,71 @@ o financiador, a produção e a orientação do projeto (grades do formulário d
 projeto). O que falta ler para cada um está em
 `lattes-formularios/recaptura.md`.
 
-**Produções, eventos, orientações e bancas.** Todos vão pelo Importar hoje. A
-captura leu o formulário de inclusão de quase todos. Ficaram de fora o artigo
-publicado (a página veio sem formulário), prefácio e outra produção
-bibliográfica (endereço desconhecido) e os tipos artísticos antigos do XSD
-(apresentação de obra artística, arranjo, composição, sonoplastia e outros),
-que o Lattes de hoje não oferece mais na inclusão: a produção artística entra
-por `pkg_arte_nova.form` em artes cênicas, música, artes visuais e outra. Se
-vale trocar o Importar pela inclusão direta é a etapa 4.
+**Produções, eventos, orientações e bancas.** A captura leu o formulário de
+inclusão de quase todos. Ficaram de fora o artigo publicado (a página veio sem
+formulário), prefácio e outra produção bibliográfica (endereço desconhecido) e
+os tipos artísticos antigos do XSD (apresentação de obra artística, arranjo,
+composição, sonoplastia e outros), que o Lattes de hoje não oferece mais na
+inclusão: a produção artística entra por `pkg_arte_nova.form` em artes cênicas,
+música, artes visuais e outra. A escolha entre o Importar e a inclusão direta
+está na seção abaixo.
 
 **Formulários sem elemento conhecido.** Corpo editorial, revisão e
 assessoramento (`PKG_REVISOR.inclui`, quatro naturezas) foram lidos, mas o
 elemento do XML que gravam não se sabe; não entram na tabela.
+
+## Importar ou inclusão direta (etapa 6)
+
+O que o teste acompanhado do Importar mostrou em 14/10/2026 (seção 13 de
+`lattes_internals.md`):
+
+- o arquivo mínimo que o guia previa é recusado pelo DTD; para passar, ele
+  precisou de todos os atributos de `DADOS-GERAIS`, inclusive dados pessoais, e
+  um arquivo só com evento ainda foi recusado como "sem produções científicas".
+  O caminho que funciona é o currículo inteiro mais o item novo;
+- a mensagem de sucesso do passo 3 não quer dizer que o item entrou. Um evento
+  sem a própria pessoa entre os participantes recebeu o "sucesso" e sumiu, duas
+  vezes, e cada importação confirmada gastou um `SEQUENCIA-PRODUCAO`, mesmo a
+  que sumiu;
+- o passo 3 compara pelo título: os eventos de ouvinte sem título aparecem
+  como "Produção sem título", todos verdes, embora já estejam no currículo;
+- o Importar pelo conector está desligado, e hoje quem importa faz os três
+  passos à mão, com o arquivo que o editor gera.
+
+A inclusão pelo formulário de cada tipo grava um item por vez, a conferência
+é a releitura da lista, e o número vem do Lattes. O que pesa contra ela é o
+que o formulário monta no navegador antes de enviar.
+
+**Eventos: inclusão direta.** O formulário de eventos não tem participantes
+(é a própria pessoa quem inclui), não tem grade nenhuma e teve a ligação de
+nome, ano, cidade, país, forma e divulgação científica com o XML observada na
+passada de edição do censo. A alteração pelo mesmo formulário foi enviada e
+conferida em 14/10/2026. Com `CREATE_ITEMS_ENABLED` ligada, o evento novo sai
+do arquivo do Importar (`src/model/direct-inclusion.ts`) e vai pela lista de
+alterações, incluído por `src/bridge/create-evento.ts`. O que o formulário não
+tem (idioma, meio de divulgação, DOI, local, instituição promotora, nome em
+inglês, relevância "sim", participantes além da pessoa, palavras-chave) faz o
+evento ir à mão, com o motivo. Com a chave desligada, nada muda: o evento
+segue no arquivo do Importar.
+
+**Produções bibliográficas, técnicas e artísticas, demais trabalhos e bancas:
+Importar, por enquanto.** Os formulários de inclusão desses tipos foram lidos,
+mas mandam os autores (e, nas bancas, os participantes) na grade `f_autores_l`,
+que o `check()` da página monta a partir do vetor `autorProvider`. O formato
+da linha é conhecido (`c`, `l`, `t`, `pais` e `add` unidos por `|`, linhas
+unidas por `@`, seção 16), mas o sentido de `pais` e se o formulário de
+inclusão já traz a própria pessoa na grade não foram observados. Uma inclusão
+direta sem isso poderia gravar a produção sem autores. Palavras-chave, áreas e
+setores vão em grades parecidas. A recaptura (`lattes-formularios/recaptura.md`)
+pede os scripts desses formulários.
+
+**Orientações: Importar, por enquanto.** O formulário não tem grade de
+autores, mas a instituição, o curso e a agência entram por buscas cujos
+parâmetros a partir deste formulário não foram lidos, o tipo da orientação
+(`F_COD_PROD`, 41 a 49 e A41 a A49) se divide entre elementos e o atributo
+`NATUREZA` de "outras orientações" por inferência, e o sentido dos ocultos
+`f_sub_prod` e `f_ctr_natur` não se sabe. Não há evidência de que o Importar
+perca orientações. A recaptura pede os scripts do formulário.
 
 ## Etapas
 

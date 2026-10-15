@@ -11,6 +11,7 @@ import { IMPORT_MODULES, type ImportModule } from '../import-export/importable.t
 import { lattesSchema } from '../schema/lattes.ts';
 import { derivedValue } from '../schema/typed-choices.ts';
 import type { LattesSchema } from '../schema/types.ts';
+import { directInclusion } from './direct-inclusion.ts';
 import { insertInSchemaOrder } from './schema-order.ts';
 import {
   childElements,
@@ -280,11 +281,16 @@ const isImportableName = (name: string): boolean => {
  * Item novo que vai pelo Importar: sequência acima do maior número da
  * exportação carregada e tipo que um módulo do Passo 2 lê. A patente também
  * tem SEQUENCIA-PRODUCAO, mas o Importar não a leva: ela segue com as outras
- * alterações (conector ou à mão).
+ * alterações (conector ou à mão). Com a inclusão pelo conector ligada, os
+ * tipos de `direct` (os eventos, direct-inclusion.ts) também seguem por lá.
  */
-export function isPendingImport(el: XElement, loadedMax: number): boolean {
+export function isPendingImport(
+  el: XElement,
+  loadedMax: number,
+  direct: ReadonlySet<string> = directInclusion(),
+): boolean {
   const n = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
-  return Number.isFinite(n) && n > loadedMax && isImportableName(el.name);
+  return Number.isFinite(n) && n > loadedMax && isImportableName(el.name) && !direct.has(el.name);
 }
 
 /** Itens criados no editor que vão pelo Importar (isPendingImport). */

@@ -57,6 +57,7 @@ export interface FormSpec {
 type CreateKind =
   | 'criar-atuacao'
   | 'criar-dado'
+  | 'criar-evento'
   | 'criar-formacao'
   | 'criar-projeto'
   | 'criar-registro'
@@ -386,6 +387,7 @@ async function locateAndCheck(
     kind === 'criar-projeto' ||
     kind === 'criar-registro' ||
     kind === 'criar-dado' ||
+    kind === 'criar-evento' ||
     kind === 'criar-vinculo'
   ) {
     // Formulários de inclusão: abrem vazios, não precisam de amostra.
