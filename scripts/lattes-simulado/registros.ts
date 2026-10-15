@@ -46,13 +46,18 @@ const BASICS = ['DADOS-BASICOS-'];
 const DETAIL = ['DETALHAMENTO-'];
 const REGISTRY = ['DETALHAMENTO-', 'REGISTRO-OU-PATENTE'];
 
-const field = (entry: string, name: string) =>
-  capturedForm(entry).fields.find((f) => f.name === name)!;
+function field(entry: string, name: string) {
+  const found = capturedForm(entry).fields.find((f) => f.name === name);
+  if (!found) throw new Error(`O censo não tem o campo ${name} em ${entry}`);
+  return found;
+}
 
 /** TIPO-PATENTE da marca pelo código no fim do valor do XSD (MARCA_REGISTRADA_DE_PRODUTO_MPD ↔ MPD). */
-const BRAND_TYPES = (lattesSchema.elements['REGISTRO-OU-PATENTE']?.attributes ?? [])
-  .find((a) => a.name === 'TIPO-PATENTE')!
-  .enum!.filter((v) => v.startsWith('MARCA_REGISTRADA_'));
+const BRAND_TYPES = (
+  (lattesSchema.elements['REGISTRO-OU-PATENTE']?.attributes ?? []).find(
+    (a) => a.name === 'TIPO-PATENTE',
+  )?.enum ?? []
+).filter((v) => v.startsWith('MARCA_REGISTRADA_'));
 const brandType: Pick<FieldLink, 'toForm' | 'toXml'> = {
   toForm: (xml) => (xml.startsWith('MARCA_REGISTRADA_') ? (xml.split('_').at(-1) ?? '') : ''),
   toXml: (form) => BRAND_TYPES.find((v) => v.endsWith(`_${form}`)) ?? '',
