@@ -191,12 +191,13 @@ describe('ordem do formulário do Lattes', () => {
     ]);
   });
 
-  it('identificação: nome, nascimento, documentos, filiação; o resto em outros dados', () => {
+  it('identificação na ordem do censo: nome, nascimento, documentos, nacionalidade e CPF, filiação', () => {
     const groups = shape(entriesOf('DADOS-GERAIS'));
     expect(groups.map(([label]) => label)).toEqual([
       'Identificação',
       'Nascimento',
       'Documentos',
+      'Nacionalidade',
       'Filiação',
       'Deficiência',
       OTHER_DATA,
@@ -209,28 +210,37 @@ describe('ordem do formulário do Lattes', () => {
     ]);
     // O órgão emissor do RG não vai para "Instituição" por ter ORGAO no nome.
     expect(groups[2]![1]).toContain('ORGAO-EMISSOR');
+    expect(groups[3]![1]).toEqual([
+      'NACIONALIDADE',
+      'PAIS-DE-NACIONALIDADE',
+      'SIGLA-PAIS-NACIONALIDADE',
+      'CPF',
+      'NUMERO-DO-PASSAPORTE',
+    ]);
     expect(groups.at(-1)![1]).toContain('PERMISSAO-DE-DIVULGACAO');
   });
 
-  it('vínculo da atuação: vínculo, período, outras informações', () => {
+  it('vínculo da atuação: vínculo, período, outras informações e, no fim, o inglês', () => {
     expect(shownOrder(entriesOf('VINCULOS'), 'VINCULOS')).toEqual(formOrder('VINCULOS'));
     expect(shape(entriesOf('VINCULOS')).map(([label]) => label)).toEqual([
       'Vínculo',
       'Período',
       'Outras informações',
+      'Em inglês',
       OTHER_DATA,
     ]);
   });
 
-  it('projeto: nome e descrição, situação e período, alunos, inovação', () => {
+  it('projeto: nome e descrição, situação e período, inovação, alunos e o inglês no fim', () => {
     expect(shownOrder(entriesOf('PROJETO-DE-PESQUISA'), 'PROJETO-DE-PESQUISA')).toEqual(
       formOrder('PROJETO-DE-PESQUISA'),
     );
     expect(shape(entriesOf('PROJETO-DE-PESQUISA')).map(([label]) => label)).toEqual([
       'Projeto',
       'Situação e período',
-      'Alunos envolvidos',
       'Inovação',
+      'Alunos envolvidos',
+      'Em inglês',
       OTHER_DATA,
     ]);
   });

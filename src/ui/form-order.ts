@@ -151,21 +151,14 @@ const ADDRESS_BLOCK: FormGroup[] = [
 ];
 
 /**
- * Identificação, PRC_IDENT (seção 5): nome, nome em citações,
- * nacionalidade e país, CPF, sexo, raça ou cor, nascimento (país, UF,
- * cidade, data), RG, passaporte, pais, deficiência. Inferida pelo nome.
+ * Identificação, PRC_IDENT: a ordem da página no censo LAT-55
+ * (docs/lattes-formularios/): nome, nascimento, RG, nacionalidade e CPF,
+ * pais. Os campos que o censo não liga (sexo, raça ou cor, passaporte,
+ * deficiência) ficam junto do assunto deles.
  */
 const IDENTIFICATION: FormGroup[] = [
   {
-    attrs: [
-      'NOME-COMPLETO',
-      'NOME-EM-CITACOES-BIBLIOGRAFICAS',
-      'NACIONALIDADE',
-      'PAIS-DE-NACIONALIDADE',
-      'CPF',
-      'SEXO',
-      'RACA-OU-COR',
-    ],
+    attrs: ['NOME-COMPLETO', 'NOME-EM-CITACOES-BIBLIOGRAFICAS', 'SEXO', 'RACA-OU-COR'],
     label: 'Identificação',
   },
   {
@@ -173,20 +166,21 @@ const IDENTIFICATION: FormGroup[] = [
     label: 'Nascimento',
   },
   {
-    attrs: [
-      'NUMERO-IDENTIDADE',
-      'ORGAO-EMISSOR',
-      'UF-ORGAO-EMISSOR',
-      'DATA-DE-EMISSAO',
-      'NUMERO-DO-PASSAPORTE',
-    ],
+    attrs: ['NUMERO-IDENTIDADE', 'ORGAO-EMISSOR', 'UF-ORGAO-EMISSOR', 'DATA-DE-EMISSAO'],
     label: 'Documentos',
+  },
+  {
+    attrs: ['NACIONALIDADE', 'PAIS-DE-NACIONALIDADE', 'CPF', 'NUMERO-DO-PASSAPORTE'],
+    label: 'Nacionalidade',
   },
   { attrs: ['NOME-DO-PAI', 'NOME-DA-MAE'], label: 'Filiação' },
   { attrs: ['PCD'], label: 'Deficiência' },
 ];
 
-/** Vínculo de uma atuação, PKG_ATIV.VINCULOS (seção 5, com a coluna XML). */
+/**
+ * Vínculo de uma atuação, PKG_ATIV.VINCULOS (seção 5, com a coluna XML); as
+ * versões em inglês no fim, como na página capturada no censo LAT-55.
+ */
 const BOND: FormGroup[] = [
   {
     attrs: [
@@ -194,28 +188,28 @@ const BOND: FormGroup[] = [
       'OUTRO-VINCULO-INFORMADO',
       'FLAG-VINCULO-EMPREGATICIO',
       'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO',
-      'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO-INGLES',
       'CARGA-HORARIA-SEMANAL',
       'FLAG-DEDICACAO-EXCLUSIVA',
     ],
     label: 'Vínculo',
   },
   { attrs: ['MES-INICIO', 'ANO-INICIO', 'MES-FIM', 'ANO-FIM'], label: 'Período' },
-  { attrs: ['OUTRAS-INFORMACOES', 'OUTRAS-INFORMACOES-INGLES'], label: 'Outras informações' },
+  { attrs: ['OUTRAS-INFORMACOES'], label: 'Outras informações' },
+  {
+    attrs: ['OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO-INGLES', 'OUTRAS-INFORMACOES-INGLES'],
+    label: 'Em inglês',
+  },
 ];
 
-/** Projeto de pesquisa, PKG_PROJETO.FORM (seção 17, com a coluna XML). */
+/**
+ * Projeto de pesquisa, PKG_PROJETO.FORM (seção 17, com a coluna XML), na
+ * ordem da página capturada no censo LAT-55: nome, natureza, situação, anos,
+ * inovação, alunos e, por fim, as versões em inglês.
+ */
 const PROJECT: FormGroup[] = [
-  {
-    attrs: [
-      'NOME-DO-PROJETO',
-      'NOME-DO-PROJETO-INGLES',
-      'DESCRICAO-DO-PROJETO',
-      'DESCRICAO-DO-PROJETO-INGLES',
-    ],
-    label: 'Projeto',
-  },
+  { attrs: ['NOME-DO-PROJETO', 'DESCRICAO-DO-PROJETO'], label: 'Projeto' },
   { attrs: ['NATUREZA', 'SITUACAO', 'ANO-INICIO', 'ANO-FIM'], label: 'Situação e período' },
+  { attrs: ['FLAG-POTENCIAL-INOVACAO'], label: 'Inovação' },
   {
     attrs: [
       'NUMERO-GRADUACAO',
@@ -226,7 +220,7 @@ const PROJECT: FormGroup[] = [
     ],
     label: 'Alunos envolvidos',
   },
-  { attrs: ['FLAG-POTENCIAL-INOVACAO'], label: 'Inovação' },
+  { attrs: ['NOME-DO-PROJETO-INGLES', 'DESCRICAO-DO-PROJETO-INGLES'], label: 'Em inglês' },
 ];
 
 /** Resumo, PKG_RESUME.FORM (seção 5): o texto e o texto em inglês. */
