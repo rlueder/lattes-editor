@@ -144,6 +144,17 @@ function validYear(value: string, today: Date): boolean {
   return n >= 1900 && n <= today.getFullYear() + 5;
 }
 
+/** Sem repetição: o formulário e a validação geral podem apontar o mesmo campo. */
+export function uniqueProblems(problems: Problem[]): Problem[] {
+  const seen = new Set<string>();
+  return problems.filter((p) => {
+    const key = `${p.element}/${p.attribute ?? p.message}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 /** Nome legível do lugar do problema, para a lista na tela. */
 export function problemPlace(p: Problem): string {
   return elementLabel(p.element);

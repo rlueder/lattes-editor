@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { loadCv } from '../src/model/document.ts';
-import { validateItem } from '../src/model/validate.ts';
+import { uniqueProblems, validateItem } from '../src/model/validate.ts';
 import { parseXml, setAttr } from '../src/model/xml.ts';
 import {
   CATEGORIES,
@@ -138,5 +138,11 @@ describe('validateItem: o tipo de cada problema', () => {
     ).root;
     expect(validateItem(schema, item, TODAY).some((p) => p.kind === 'ano')).toBe(true);
     expect(validateItem(schema, item, TODAY, (el) => el.name === 'VINCULOS')).toEqual([]);
+  });
+
+  it('uniqueProblems tira o mesmo campo apontado duas vezes', () => {
+    const p = { attribute: 'ANO', element: 'X', kind: 'obrigatorio' as const, message: 'Ano' };
+    const q = { element: 'X', kind: 'autores' as const, message: 'Inclua' };
+    expect(uniqueProblems([p, { ...p, message: 'outro' }, q, q])).toEqual([p, q]);
   });
 });
