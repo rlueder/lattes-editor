@@ -209,7 +209,14 @@ largura nem de margem.
 O Linear trata o teclado como caminho principal, e vale estudar o
 conjunto inteiro antes de inventar atalhos nossos. Já temos ⌘K, G e uma letra para cada seção e
 ⌘Enter para salvar o formulário; o protótipo de leitura acrescenta E para editar o bloco
-focado e ⌘⇧F para o modo foco. Falta levantar o que
+focado e ⌘⇧F para o modo foco. Nas seções com o índice "Nesta seção", ↓ e ↑
+pulam para o grupo seguinte e o anterior, como o clique no índice, e o
+leitor de tela ouve o nome do grupo. A tecla só vale fora de campos, listas
+e menus, sem modificador (⌥, ⌘ e Shift com seta continuam do navegador) e
+sem janela ou menu aberto; no primeiro e no último grupo, ela segue para a
+rolagem normal. O custo: dentro de um grupo mais alto que a janela, a seta
+não rola mais linha a linha; espaço, Page Up, Page Down e a roda continuam
+rolando. Falta levantar o que
 o Linear faz para criar item (tecla única), navegar em lista (setas, J/K),
 abrir e fechar detalhes, e como ele mostra o atalho junto de cada ação
 (na dica e no menu), e decidir quais fazem sentido aqui.

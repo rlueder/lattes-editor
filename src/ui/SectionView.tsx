@@ -248,8 +248,11 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section }:
           )}
           {visibleGroups.length > 1 && (
             <div className="panel-block">
-              <h2 className="panel-heading">Nesta seção</h2>
+              <h2 className="panel-heading" title="↓ e ↑ pulam entre os grupos">
+                Nesta seção
+              </h2>
               <JumpBar
+                arrowKeys
                 linkable
                 vertical
                 entries={section.groups
