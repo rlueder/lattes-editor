@@ -18,7 +18,7 @@ interface Props {
   profile?: Profile;
   sections: Section[];
   /** Abre a troca da foto; ausente quando a extensão não pode trocá-la agora. */
-  onChangePhoto?: () => void;
+  onChangePhoto?: (current?: string) => void;
   onSelect: (id: string) => void;
 }
 

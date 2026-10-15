@@ -25,12 +25,15 @@ type Step =
 const kb = (n: number) => `${Math.round(n / 1000)} kB`;
 
 export function PhotoDialog({
+  current,
   onClose,
   onSent,
   open,
   reading,
   send,
 }: {
+  /** A foto de agora, no círculo até a pessoa escolher outra. */
+  current?: string;
   open: boolean;
   /** A resposta mais recente da extensão a um pedido de troca. */
   reading?: PhotoUploadReading;
@@ -158,7 +161,11 @@ export function PhotoDialog({
       />
       <div className="photo-body">
         <div aria-hidden="true" className="photo-preview">
-          {preview && <img alt="" src={preview} />}
+          {preview ? (
+            <img alt="" src={preview} />
+          ) : (
+            current && step.kind !== 'enviada' && <img alt="" src={current} />
+          )}
         </div>
         <div className="photo-text">
           {step.kind === 'enviada' ? (
