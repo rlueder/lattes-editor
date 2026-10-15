@@ -61,7 +61,12 @@ export interface PlanOptions {
   biographicOps?: boolean;
   createItems?: boolean;
   deleteItems?: boolean;
-  /** Alteração de evento de ouvinte (edit-items.ts). */
+  /**
+   * Alteração de evento de ouvinte (edit-items.ts). Sem valor, fica
+   * desligada: só planOptionsFor liga, com as capacidades da extensão. Assim,
+   * esquecer as opções deixa o evento à mão, em vez de mandá-lo a uma
+   * extensão que gravaria sem conferir.
+   */
   editOuvinte?: boolean;
 }
 
@@ -166,7 +171,7 @@ export function planChange(
     biographicOps = BIOGRAPHIC_OPS_ENABLED,
     createItems = CREATE_ITEMS_ENABLED,
     deleteItems = DELETE_ITEMS_ENABLED,
-    editOuvinte = EDIT_OUVINTE_ENABLED,
+    editOuvinte = false,
   }: PlanOptions = {},
 ): BridgeOp | Unsupported {
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.

@@ -153,7 +153,7 @@ const eventForm = (fn: (html: string) => string) => faults.rewritePages(/^PKG_EV
 // ---------------------------------------------------------------- testes
 
 describe('alteração de evento: chave', () => {
-  it('fica ligada por padrão: o evento de ouvinte vai pelo conector e o contrato confere o formulário', () => {
+  it('fica ligada: o contrato confere o formulário, e o plano liga com as capacidades da extensão', () => {
     expect(EDIT_OUVINTE_ENABLED).toBe(true);
     expect(LATTES_CONTRACT.forms.evento).toEqual(EVENTO_SPEC);
     expect(LATTES_CONTRACT.menu).toContain('pkg_evento.lista');
@@ -162,10 +162,12 @@ describe('alteração de evento: chave', () => {
     const working = parseXml(XML).root;
     edit(working);
     const entries = diffDocuments(original, working).map((change) => ({ change, itemTitle: '' }));
-    expect(planChanges(entries, working).ops.map((o) => o.kind)).toEqual(['evento']);
-    const off = planAfter(edit, false).plan;
-    expect(off.ops).toEqual([]);
-    expect(off.unsupported[0]!.reason).toBe('Formulário não suportado ainda');
+    // Sem as opções, o evento fica à mão: esquecer as capacidades não manda nada à extensão.
+    const semOpcoes = planChanges(entries, working);
+    expect(semOpcoes.ops).toEqual([]);
+    expect(semOpcoes.unsupported[0]!.reason).toBe('Formulário não suportado ainda');
+    expect(planAfter(edit, false).plan.ops).toEqual([]);
+    expect(planAfter(edit).plan.ops.map((o) => o.kind)).toEqual(['evento']);
   });
 
   it('só vai a uma extensão que anuncia a alteração de evento', () => {
@@ -195,7 +197,7 @@ describe('alteração de evento: chave', () => {
       (c) => c.kind !== 'element' || getAttr(c, 'SEQUENCIA-PRODUCAO') !== '14',
     );
     const entries = diffDocuments(original, working).map((change) => ({ change, itemTitle: '' }));
-    const { ops, unsupported } = planChanges(entries, working);
+    const { ops, unsupported } = planChanges(entries, working, planOptionsFor(BRIDGE_FEATURES));
     expect(ops).toEqual([]);
     expect(unsupported.map((u) => u.reason)).toEqual([
       expect.stringMatching(/só a participação como ouvinte; a edição como Convidado/),
