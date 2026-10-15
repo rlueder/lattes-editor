@@ -114,11 +114,16 @@ export function encodeLatin1Form(pairs: Pairs): string {
   return pairs.map(([k, v]) => `${encodeValue(k)}=${encodeValue(v)}`).join('&');
 }
 
-const folded = (value: string | null) => (value === null ? '' : foldText(value.trim()));
+/** Para comparar: sem acento, caixa nem espaço nas pontas, e número sem zero à esquerda (06 é 6). */
+const folded = (value: string | null) => {
+  const text = value === null ? '' : foldText(value.trim());
+  return /^\d+$/.test(text) ? String(Number(text)) : text;
+};
 
 /**
  * Os campos de identidade (OpBase.identity) que o formulário não confirma:
- * sem acento, caixa nem espaço nas pontas, o valor precisa ser um dos aceitos.
+ * sem acento, caixa nem espaço nas pontas, e com números comparados pelo
+ * valor, o do Lattes precisa ser um dos aceitos.
  */
 export function identityMismatches(
   identity: Record<string, string[]> | undefined,

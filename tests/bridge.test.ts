@@ -400,6 +400,11 @@ describe('conector: aplicar no Lattes simulado', () => {
       });
       expect(postsOf(lattes)).toHaveLength(0);
     }
+    // Número com outro zero à esquerda é o mesmo número.
+    const zeros = await lattesFor();
+    setAttr(vinculoIn(zeros.state), 'CARGA-HORARIA-SEMANAL', '040');
+    const same = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'x'));
+    expect((await applyOp(same, zeros.port)).status).toBe('conferido');
     // O fim alterado pela própria operação sai da identidade e vai no antes.
     const op = vinculoOp((v) => setAttr(v, 'ANO-FIM', '2013')) as VinculoOp;
     expect(op.identity).not.toHaveProperty('f_ano_fim');
