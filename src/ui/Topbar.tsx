@@ -36,6 +36,8 @@ interface Props {
   onDiagnosis: () => void;
   onExport: () => void;
   onHistory: () => void;
+  /** Um XML de outro programa (ou exportação antiga), para trazer produções dele (LAT-45). */
+  onIncoming: (file: File) => void;
   onNewItem: () => void;
   onPalette: () => void;
   onPrint: () => void;
@@ -71,6 +73,7 @@ export function Topbar({
   onDiagnosis,
   onExport,
   onHistory,
+  onIncoming,
   onNewItem,
   onPalette,
   onPrint,
@@ -85,6 +88,7 @@ export function Topbar({
   theme,
 }: Props) {
   const reloadInput = useRef<HTMLInputElement>(null);
+  const incomingInput = useRef<HTMLInputElement>(null);
   const [closing, setClosing] = useState(false);
   const pickReloadFile = () => {
     if (isDesktop()) void pickFileNative().then((file) => file && onReload(file));
@@ -171,6 +175,10 @@ export function Topbar({
             onClose: () => setClosing(true),
             onDiagnosis,
             onHistory,
+            onIncoming: () => {
+              if (isDesktop()) void pickFileNative().then((file) => file && onIncoming(file));
+              else incomingInput.current?.click();
+            },
             onPrint,
             onReload: onReloadFromLattes ?? pickReloadFile,
             onSave,
@@ -189,6 +197,17 @@ export function Topbar({
             onClose();
           }}
           onSave={onSave}
+        />
+        <input
+          ref={incomingInput}
+          hidden
+          accept=".zip,.xml,application/zip,application/xml,text/xml"
+          type="file"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) onIncoming(file);
+            e.target.value = '';
+          }}
         />
         <input
           ref={reloadInput}

@@ -13,6 +13,7 @@ import { useGeneralItem } from '../forms/use-general-item.ts';
 import { type Session, useProduction } from '../forms/use-production.ts';
 import { ExportPanel } from '../import-export/ExportPanel.tsx';
 import { PublishPanel } from '../import-export/PublishPanel.tsx';
+import { useIncoming } from '../import-export/use-incoming.tsx';
 import { encodeCv, loadCv } from '../model/document.ts';
 import { importableTypes } from '../model/production.ts';
 import { clearAll, newWorkingCopy, replaceWorkingCopy, storageStatus } from '../model/store.ts';
@@ -20,6 +21,7 @@ import { getAttr, serializeXml, walk, type XElement } from '../model/xml.ts';
 import { PrintDialog } from '../print/PrintDialog.tsx';
 import { usePrint } from '../print/use-print.ts';
 import { reviewCv } from '../review/consistency.ts';
+import { closestInCv } from '../review/dedup.ts';
 import { DiagnosisPanel } from '../review/DiagnosisPanel.tsx';
 import { lattesSchema } from '../schema/lattes.ts';
 import { CommandPalette } from './CommandPalette.tsx';
@@ -90,6 +92,7 @@ export function App() {
 
   const production = useProduction(session, setSession, version, onEdit);
   const general = useGeneralItem(session, setSession, version, onEdit);
+  const incoming = useIncoming(session, setSession, onEdit);
   // Data da exportação carregada, lida uma vez por arquivo.
   const originalXml = session?.meta.originalXml;
   const exportedOn = useMemo(() => exportDateOf(originalXml), [originalXml]);
@@ -231,6 +234,7 @@ export function App() {
         onDiagnosis={() => setDiagnosisOpen(true)}
         onExport={openExport}
         onHistory={() => void history.show()}
+        onIncoming={incoming.pick}
         onNewItem={() => setPickerOpen(true)}
         onPalette={togglePalette}
         onPrint={print.show}
@@ -289,6 +293,7 @@ export function App() {
         <ProductionForm
           key={`${production.form.sequencia}-${production.form.isNew}`}
           byChanges={production.formByChanges}
+          duplicateOf={(item) => closestInCv(item, session.doc.root)}
           isNew={production.form.isNew}
           item={production.form.item}
           knownAreas={production.areas}
@@ -373,6 +378,7 @@ export function App() {
         onSave={history.saveCopy}
       />
       {versions.dialog}
+      {incoming.dialog}
       {storageNotice}
     </ShellWithLists>
   );
