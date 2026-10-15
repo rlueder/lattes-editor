@@ -5575,6 +5575,86 @@ b {
   font-size: 12px;
 }
 
+/* Enviar ao CNPq (src/import-export/PublishPanel.tsx, LAT-54). */
+.publish-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin: 0 0 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.publish-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 0;
+}
+
+.publish-fields {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.publish-choices {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.publish-choices legend,
+.publish-choices .field-label {
+  padding: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.publish-choices label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--pill-h);
+  margin-right: 14px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.field.publish-choices input {
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.publish-declaration {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.publish-declaration input {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+blockquote.publish-declaration {
+  display: block;
+  color: var(--text);
+}
+
+.publish-done {
+  color: var(--ok);
+  font-weight: 500;
+}
+
 /* Versões do Lattes (LAT-12): exportações à esquerda, o que mudou à direita. */
 .modal.versions {
   width: min(880px, calc(100% - 32px));

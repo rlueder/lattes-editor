@@ -43,6 +43,7 @@ import {
   sessionIdentity,
   verifyOn,
 } from './lattes-tab.ts';
+import { answerPublishRequest, publishRunning } from './publish-run.ts';
 import { APP_KEY, type EditorEndpoint, type PanelCommand, readState, writeState } from './state.ts';
 import { isToolbarThemeMessage } from './toolbar-icon.ts';
 import { restoreToolbarTheme, setToolbarTheme } from './toolbar-theme.ts';
@@ -179,15 +180,31 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     return;
   }
   // Listas do Lattes: só leituras, e nunca durante uma gravação (lattes-tab.ts).
-  const busy = async () => (await readState()).running || photoInFlight || importRunning();
+  const busy = async () =>
+    (await readState()).running || photoInFlight || importRunning() || publishRunning();
   const listReply = await answerListRequest(msg, busy);
   if (listReply) return toEditor(editor, listReply);
   if (msg.type === 'pedir-curriculo') {
     await sendCurriculo(editor, msg.id);
     return;
   }
+  // A tela de envio ao CNPq e o envio (publish-run.ts).
+  const publishLocks = {
+    importing: importRunning(),
+    photo: photoInFlight,
+    queue: queueActive,
+    verifying: verifyInFlight,
+  };
+  const publishReply = { busy, send: (m: BridgeMessage) => toEditor(editor, m) };
+  if (await answerPublishRequest(msg, publishLocks, publishReply)) {
+    if (msg.type === 'publicar') await sendSession(editor, true);
+    return;
+  }
   if (msg.type === 'enviar-foto') {
-    const busy = photoBusy((await readState()).running, photoInFlight || importRunning());
+    const busy = photoBusy(
+      (await readState()).running,
+      photoInFlight || importRunning() || publishRunning(),
+    );
     if (busy) return toEditor(editor, { ...busy, id: msg.id, type: 'foto' });
     // A pessoa já viu a foto e confirmou no editor; depois, o menu relido
     // mostra se o Lattes ficou com alteração a enviar ao CNPq.
@@ -205,7 +222,11 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     // Desligado (IMPORT_ENABLED), o pedido volta recusado sem tocar no Lattes.
     // Sem await entre ler a trava e runImport marcar o Importar em andamento;
     // a fila marca queueActive do mesmo jeito.
-    const busy = { photo: photoInFlight, queue: queueActive, verifying: verifyInFlight };
+    const busy = {
+      photo: photoInFlight || publishRunning(),
+      queue: queueActive,
+      verifying: verifyInFlight,
+    };
     if (await runImport(msg, busy, (m) => toEditor(editor, m))) await sendSession(editor, true);
     return;
   }
@@ -260,7 +281,7 @@ async function verifyOnce(auto: boolean): Promise<void> {
   // Sem o "ok" do aviso, nada é lido do Lattes; o painel mostra o aviso no lugar do botão.
   if (!(await hasConsent())) return;
   const state = await readState();
-  if (state.running || state.verificando || importRunning()) return;
+  if (state.running || state.verificando || importRunning() || publishRunning()) return;
   if (auto) {
     if (!shouldAutoVerify(state.verificacao, Date.now())) return;
     if ((await lattesTab()) === undefined) return;
@@ -290,7 +311,9 @@ async function verifyOnce(auto: boolean): Promise<void> {
 async function run(keys?: string[]): Promise<void> {
   if (!(await hasConsent())) return;
   const state = await readState();
-  if (state.running || state.verificando || photoInFlight || importRunning()) return;
+  if (state.running || state.verificando || photoInFlight || importRunning() || publishRunning()) {
+    return;
+  }
   queueActive = true;
   // A trava solta mesmo se algo estourar no meio, senão o Importar ficaria
   // recusado até o service worker reiniciar.

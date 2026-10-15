@@ -19,6 +19,9 @@ import {
 } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
 
+/** O e-mail de contato do currículo simulado, num domínio reservado para exemplos. */
+export const SIMULATED_EMAIL = 'contato@example.org';
+
 export const DEMO_XML = new URL('../../fixtures/demo.xml', import.meta.url);
 
 /**
@@ -97,6 +100,8 @@ const PLACEHOLDER_JPEG = Uint8Array.from(
 
 export class LattesState {
   code: string;
+  /** O e-mail de contato que a tela de envio mostra. */
+  contactEmail = SIMULATED_EMAIL;
   expireAfterRequests?: number;
   /** Ids do servidor para itens sem número no XML (idiomas). */
   private ids = new WeakMap<XElement, string>();

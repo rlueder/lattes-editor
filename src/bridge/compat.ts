@@ -30,6 +30,8 @@ export const BRIDGE_FEATURES = [
   'listas-lattes',
   /** Alteração de evento de ouvinte, com o formulário de eventos no contrato (src/bridge/edit-items.ts). */
   'alterar-evento',
+  /** Tela de envio ao CNPq e o envio, só com PUBLISH_ENABLED (src/bridge/publish.ts). */
+  'enviar-cnpq',
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

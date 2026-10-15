@@ -12,6 +12,7 @@ import { ProductionForm } from '../forms/ProductionForm.tsx';
 import { useGeneralItem } from '../forms/use-general-item.ts';
 import { type Session, useProduction } from '../forms/use-production.ts';
 import { ExportPanel } from '../import-export/ExportPanel.tsx';
+import { PublishPanel } from '../import-export/PublishPanel.tsx';
 import { encodeCv, loadCv, maxSequenciaProducao } from '../model/document.ts';
 import { importableTypes } from '../model/production.ts';
 import {
@@ -22,9 +23,10 @@ import {
   saveWorkingCopy,
   storageStatus,
 } from '../model/store.ts';
-import { parseXml, serializeXml, walk, type XElement } from '../model/xml.ts';
+import { getAttr, parseXml, serializeXml, walk, type XElement } from '../model/xml.ts';
 import { PrintDialog } from '../print/PrintDialog.tsx';
 import { usePrint } from '../print/use-print.ts';
+import { reviewCv } from '../review/consistency.ts';
 import { DiagnosisPanel } from '../review/DiagnosisPanel.tsx';
 import { lattesSchema } from '../schema/lattes.ts';
 import { CommandPalette } from './CommandPalette.tsx';
@@ -74,6 +76,7 @@ export function App() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [diagnosisOpen, setDiagnosisOpen] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
   const [reloadFile, setReloadFile] = useState<File | null>(null);
   const pendingNotes = useRef<string[]>([]);
   const pendingAnchor = useRef<string | null>(null);
@@ -353,6 +356,16 @@ export function App() {
           setExportOpen(false);
           production.openItem(seq);
         }}
+        onPublish={() => setPublishOpen(true)}
+      />
+
+      <PublishPanel
+        bridge={bridge}
+        checks={preflight(session.doc.root, () => setDiagnosisOpen(true))}
+        lattesId={getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR')}
+        open={publishOpen}
+        originalXml={session.meta.originalXml}
+        onClose={() => setPublishOpen(false)}
       />
 
       <ReloadConfirm
@@ -392,6 +405,15 @@ export function App() {
       {storageNotice}
     </ShellWithLists>
   );
+}
+
+/**
+ * A conferência antes de publicar (LAT-54). Provisório: até a validação do
+ * currículo inteiro (LAT-25) chegar à main, conta os achados da revisão de
+ * consistência e abre o diagnóstico, onde eles estão.
+ */
+function preflight(root: XElement, onOpen: () => void) {
+  return { count: reviewCv(root).length, onOpen };
 }
 
 /** Conta, dentro de alguns elementos, quantos dos itens pendentes aparecem. */

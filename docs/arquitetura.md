@@ -228,6 +228,21 @@ pelo `window.postMessage` da própria página, por um content script
   pendente no Importar também para o fluxo; o conector nunca descarta nada.
   Enquanto a chave estiver desligada, o editor não mostra o botão e a extensão
   recusa o pedido; o "Baixar arquivo" com os passos à mão continua igual.
+- **Enviar ao CNPq** (`src/bridge/publish.ts`, LAT-54), desligado por
+  `PUBLISH_ENABLED`. O painel "Enviar ao CNPq"
+  (`src/import-export/PublishPanel.tsx`), aberto pelo "Enviar ao Lattes"
+  quando o Lattes tem pendência, mostra o que vai ser publicado (as gravações
+  do editor desde a última publicação e a comparação de títulos com a
+  página de conferência), a conferência do currículo e a declaração do CNPq
+  lida da tela de envio, com o link do Termo de Uso. A caixa da declaração
+  começa desmarcada a cada abertura e só a pessoa a marca. Ligado, o conector
+  repete as consultas e o envio da tela e confere a publicação pelo menu
+  (`lattes_internals.md`, seção 10). A tela e o envio passam por
+  `src/ui/use-publish.ts` e, na extensão, por `extension/src/publish-run.ts`,
+  que nunca roda junto com a fila, a foto ou o Importar. Desligado, o painel
+  mostra a declaração como texto e manda a pessoa enviar pelo Lattes; em
+  `pnpm dev`, `?publicar` na URL mostra a caixa e o botão, e a extensão
+  continua recusando.
 
 ### O Lattes simulado
 
