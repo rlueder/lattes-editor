@@ -1,20 +1,22 @@
 // Diagnóstico do currículo, para quem volta ao Lattes depois de muito tempo
 // (docs/fluxos_de_uso.md): o que o Lattes diz (publicação e pendência), o que
-// mudou lá desde a exportação e o que vale conferir no currículo inteiro.
+// mudou lá desde a exportação e um resumo do que vale conferir no currículo
+// inteiro, cujo detalhe fica na validação do currículo (ValidationPanel.tsx).
 // Só leitura: cada achado leva ao item no editor.
 
 import { useMemo, useRef } from 'react';
 
 import type { LattesStatus } from '../bridge/lattes-status.ts';
 import { parseXml, type XElement } from '../model/xml.ts';
+import { lattesSchema } from '../schema/lattes.ts';
 import type { HashRoute } from '../ui/hash-route.ts';
 import { Modal } from '../ui/Modal.tsx';
 import type { Section } from '../ui/sections.ts';
 import { dateLabel } from '../ui/status-strip.ts';
 import type { EspelhoReading } from '../ui/use-bridge.ts';
-import { type Finding, reviewCv } from './consistency.ts';
 import { diffEspelho } from './espelho-diff.ts';
 import { bySequencia, type Place, placeIndex, sequenciaKey } from './locate.ts';
+import { summaryLine, validateCv } from './validation.ts';
 
 interface Props {
   /** A extensão está conectada (sem ela não há leitura do Lattes). */
@@ -35,25 +37,8 @@ interface Props {
   onClose: () => void;
   onGo: (route: HashRoute) => void;
   onRequestEspelho: () => void;
-}
-
-interface Located<T> {
-  entry: T;
-  place?: Place;
-}
-
-/** Agrupa por seção, na ordem em que as seções aparecem no menu. */
-function bySection<T>(sections: Section[], entries: Located<T>[]) {
-  const order = new Map(sections.map((s, i) => [s.id, i]));
-  const groups = new Map<string, { label: string; rows: Located<T>[] }>();
-  for (const e of entries) {
-    const id = e.place?.sectionId ?? '';
-    if (!groups.has(id)) groups.set(id, { label: e.place?.sectionLabel ?? 'Outros', rows: [] });
-    groups.get(id)!.rows.push(e);
-  }
-  return [...groups.entries()]
-    .sort(([a], [b]) => (order.get(a) ?? 99) - (order.get(b) ?? 99))
-    .map(([, g]) => g);
+  /** Abre a validação do currículo, com o detalhe do que vale conferir. */
+  onValidation: () => void;
 }
 
 function LattesSummary({ available, lattes }: { available: boolean; lattes?: LattesStatus }) {
@@ -89,13 +74,10 @@ export function DiagnosisPanel(props: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [open, sections, version],
   );
-  const findings = useMemo(
-    () =>
-      open
-        ? reviewCv(root).map((f): Located<Finding> => ({ entry: f, place: places.get(f.item) }))
-        : [],
+  const validation = useMemo(
+    () => (open ? validateCv(lattesSchema, root, sections) : undefined),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [open, root, places, version],
+    [open, root, sections, version],
   );
   // O painel fica montado o tempo todo: a exportação só é lida com ele
   // aberto, e fica guardada (por arquivo) para as próximas aberturas.
@@ -168,36 +150,21 @@ export function DiagnosisPanel(props: Props) {
       </section>
 
       <section className="panel-section">
-        <h3 className="panel-section-head">
-          Vale conferir
-          {findings.length > 0 && <span className="count">{findings.length}</span>}
-        </h3>
-        {findings.length === 0 ? (
+        <h3 className="panel-section-head">Vale conferir</h3>
+        {validation && validation.items.length === 0 ? (
           <p className="empty">Nada chamou atenção no currículo.</p>
         ) : (
-          bySection(sections, findings).map((g) => (
-            <div key={g.label} className="diagnosis-group">
-              <h4 className="sent-day-head">{g.label}</h4>
-              <ul className="pending-list">
-                {g.rows.map(({ entry, place }, i) => (
-                  <li key={`${entry.check}-${i}`}>
-                    <button
-                      className="ghost pending-item diagnosis-item"
-                      disabled={!place}
-                      type="button"
-                      onClick={() => go(place)}
-                    >
-                      <span className="pending-title">{entry.title}</span>
-                      <span className={`tag${entry.severity === 'aviso' ? ' warn' : ''}`}>
-                        {entry.severity === 'aviso' ? 'corrigir?' : 'conferir'}
-                      </span>
-                      <span className="diagnosis-message">{entry.message}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+          <>
+            <p className="muted">
+              {validation ? summaryLine(validation) : ''} no currículo inteiro. A validação mostra
+              cada um, item por item.
+            </p>
+            <div className="diagnosis-actions">
+              <button type="button" onClick={props.onValidation}>
+                Abrir a validação
+              </button>
             </div>
-          ))
+          </>
         )}
       </section>
     </Modal>

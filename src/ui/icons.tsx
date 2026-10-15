@@ -235,3 +235,13 @@ export const DiagnosisIcon = () => (
     <path d="m9 14 2 2 4-4" />
   </Icon>
 );
+
+/** Validação do currículo: lista com vistos. */
+export const ValidationIcon = () => (
+  <Icon>
+    <path d="m4 6.5 1.5 1.5L8 5.5" />
+    <path d="m4 12.5 1.5 1.5L8 11.5" />
+    <path d="M11 7h9M11 13h9M11 19h9" />
+    <path d="M5 19h1" />
+  </Icon>
+);

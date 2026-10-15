@@ -104,6 +104,7 @@ export function ProductionForm({
       ? missingRequired(spec, partOf).map((m) => ({
           attribute: m.attr,
           element: m.element,
+          kind: 'obrigatorio' as const,
           message: `${attributeLabel(m.attr)}: obrigatório`,
         }))
       : [];

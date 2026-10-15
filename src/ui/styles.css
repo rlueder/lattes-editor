@@ -5575,6 +5575,126 @@ b {
   font-size: 12px;
 }
 
+/* Validação do currículo (src/review/ValidationPanel.tsx, LAT-25): resumo,
+   pílulas de filtro e linhas como as do ⌘K, com os achados embaixo. */
+.validation-summary {
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+
+.validation-summary strong {
+  font-weight: 600;
+}
+
+.validation-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+
+button.filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--pill-h);
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  transition:
+    border-color 200ms ease,
+    color 200ms ease,
+    background-color 200ms ease;
+}
+
+button.filter-pill:hover {
+  border-color: var(--accent-text);
+  color: var(--accent-text);
+}
+
+button.filter-pill[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent-text);
+  color: var(--accent-contrast);
+}
+
+button.filter-pill[aria-pressed='true'] .count {
+  color: inherit;
+  opacity: 0.8;
+}
+
+.validation-list {
+  list-style: none;
+  margin: 0 0 6px;
+  padding: 0;
+}
+
+button.validation-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  width: 100%;
+  height: auto;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--radius);
+  text-align: left;
+}
+
+button.validation-row:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.validation-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.validation-head .tag {
+  margin-right: 0;
+}
+
+.validation-group {
+  flex-shrink: 0;
+  max-width: 40%;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.validation-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.validation-check.erro {
+  color: var(--warn-text);
+}
+
+@media (max-width: 640px) {
+  .validation-group {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.filter-pill {
+    transition: none;
+  }
+}
+
 /* Versões do Lattes (LAT-12): exportações à esquerda, o que mudou à direita. */
 .modal.versions {
   width: min(880px, calc(100% - 32px));
