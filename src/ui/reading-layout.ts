@@ -5,12 +5,13 @@
 
 import { elementLabel, enumLabel } from '../labels/labels.ts';
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
+import { formatPhone } from './contacts.ts';
 import { isSystemAttr } from './field-kind.ts';
 import { isRedundantDateFormat } from './lattes-date.ts';
 import { isSensitiveAttr } from './privacy.ts';
 import { displayValue, formatCep } from './reading.ts';
 
-export type PartFormat = 'cep' | 'level';
+export type PartFormat = 'cep' | 'ddd' | 'level' | 'month' | 'number' | 'phone';
 
 /** Um pedaço editável: um atributo de um elemento do bloco. */
 export interface Part {
@@ -216,8 +217,30 @@ export function partText(p: Part): string {
   const v = value(p.el, p.attr);
   if (p.format === 'level') return LEVELS[v] ?? enumLabel(v).toLocaleLowerCase('pt-BR');
   if (p.format === 'cep') return formatCep(v);
+  // Telefone: o DDD entre parênteses e o número com hífen ("(51) 3308-1234");
+  // o fax leva o DDD do mesmo endereço no próprio texto.
+  if (p.format === 'month') return MONTH_NAMES[Number(v) - 1] ?? v;
+  if (p.format === 'ddd') return `(${v.replace(/\D/g, '')})`;
+  if (p.format === 'number') return formatPhone('', v);
+  if (p.format === 'phone') return formatPhone(value(p.el, 'DDD'), v);
   return displayValue(p.el, p.attr, v);
 }
+
+/** Mês por extenso curto, como no período da atuação (item-meta.ts). */
+const MONTH_NAMES = [
+  'jan',
+  'fev',
+  'mar',
+  'abr',
+  'mai',
+  'jun',
+  'jul',
+  'ago',
+  'set',
+  'out',
+  'nov',
+  'dez',
+];
 
 const LEVELS: Record<string, string> = {
   BEM: 'bem',
@@ -242,7 +265,7 @@ export function shownParts(line: Line): ShownPart[] {
     if (!isFilled(part)) continue;
     let before = part.before ?? '';
     if (out.length === 0 && !line.prefix) {
-      before = before.replace(/^\s*[,;›–·]\s*/, '');
+      before = before.replace(/^\s*[,;›–·]?\s*/, '');
       before = before.charAt(0).toLocaleUpperCase('pt-BR') + before.slice(1);
     }
     out.push({ before, part, text: partText(part) });
@@ -318,6 +341,28 @@ export function addressLayout(endereco: XElement, opts: LayoutOptions): Section[
       { kind: 'text', parts: [p(street), p('BAIRRO', { before: ', ' })] },
       { kind: 'text', parts: [p('CIDADE'), p('UF', { before: ' – ' })] },
       { kind: 'text', parts: [p('CEP', { format: 'cep' }), p('PAIS', { before: ', ' })] },
+      { kind: 'text', parts: [p('CAIXA-POSTAL', { before: 'Caixa postal ' })] },
+      // Um telefone só, com o DDD junto ("Telefone (51) 3308-1234"), o ramal e
+      // o fax; a edição continua nos campos separados. Sem telefone, o DDD
+      // fica na grade.
+      {
+        kind: 'text',
+        parts: [
+          // O rótulo vai no primeiro pedaço preenchido: sem DDD, no número.
+          ...(value(part, 'TELEFONE') !== ''
+            ? value(part, 'DDD') !== ''
+              ? [
+                  p('DDD', { before: 'Telefone ', format: 'ddd' }),
+                  p('TELEFONE', { before: ' ', format: 'number' }),
+                ]
+              : [p('TELEFONE', { before: 'Telefone ', format: 'number' })]
+            : []),
+          p('RAMAL', { before: ', ramal ' }),
+          p('FAX', { before: ' · Fax ', format: 'phone' }),
+        ],
+      },
+      { kind: 'text', parts: [p('E-MAIL')] },
+      { kind: 'text', parts: [p('HOME-PAGE')] },
     ];
     const hidden = opts.hideSensitive && isSensitiveAttr(part.name, '');
     return finish(keys, [part], { heading: elementLabel(part.name), hidden, lines }, opts);

@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { arrowJumpAllowed, nextJump } from './jump-keys.ts';
 import { Tip } from './primitives/Tip.tsx';
+import { activeGroup, atPageBottom, headTops, spyEdge } from './scroll-spy.ts';
 
 /** Igual ao max-width de .jump-label (14ch). */
 const MAX_LABEL = 14;
@@ -123,33 +124,24 @@ export function JumpBar({
     const update = () => {
       frame = 0;
       if (lockedTo.current) return;
-      // Ativa é a última divisão cujo título já passou da borda de baixo da barra.
-      // A folga cobre o arredondamento de scroll-margin, que põe o título na borda.
-      // Na lista vertical, a borda é o cabeçalho da página.
-      // Com a barra do título visível, a borda é ela; senão, o cabeçalho.
-      const edgeEl = vertical
-        ? (document.querySelector('.sticky-title.visible .sticky-title-bar') ??
-          document.querySelector('.topbar'))
-        : barRef.current;
-      const edge = (edgeEl?.getBoundingClientRect().bottom ?? 0) + 24;
-      let current = headIds[0];
-      for (const id of headIds) {
-        const head = document.getElementById(id);
-        if (!head) continue;
-        // Título que para mais abaixo (subseção de um cartão, sob a barra de
-        // anos) usa a própria margem de rolagem como borda.
-        if (head.getBoundingClientRect().top <= Math.max(edge, scrollMargin(head) + 16))
-          current = id;
-      }
-      // No fim da página, as últimas divisões não sobem até a barra: vale a última visível.
-      const atBottom =
-        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
-      if (atBottom) {
-        for (const id of headIds) {
-          const head = document.getElementById(id);
-          if (head && head.getBoundingClientRect().top < window.innerHeight) current = id;
-        }
-      }
+      // Ativa é a última divisão cujo título já chegou à borda de baixo do que
+      // gruda no alto (scroll-spy.ts, a mesma conta do caminho da barra fixa).
+      // Na barra horizontal, a borda é a própria barra; um título que para mais
+      // abaixo (subseção de um cartão) usa a própria margem de rolagem.
+      const edge = vertical
+        ? spyEdge(document)
+        : (barRef.current?.getBoundingClientRect().bottom ?? 0);
+      // Título que para abaixo da borda (margem de rolagem maior) conta como
+      // chegado quando chega à própria margem: o topo sobe o tanto da diferença.
+      const tops = headTops(document, headIds).map((t) => {
+        const head = document.getElementById(t.id);
+        const lift = head ? Math.max(0, scrollMargin(head) + 4 - edge) : 0;
+        return { ...t, top: t.top === undefined ? undefined : t.top - lift };
+      });
+      const current = activeGroup(tops, edge, {
+        atBottom: atPageBottom(),
+        viewport: window.innerHeight,
+      });
       setActive(current);
     };
     const schedule = () => {

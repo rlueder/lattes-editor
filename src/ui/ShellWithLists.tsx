@@ -24,7 +24,13 @@ export function ShellWithLists({
       <div className={focus?.className ?? 'shell'}>
         {children}
         {focus?.focus.on && (
-          <FocusHandle open={focus.menuPinned} onToggle={() => focus.setMenuPinned((v) => !v)} />
+          <>
+            {/* App de macOS: no modo foco o cabeçalho sai, e esta faixa guarda o
+                lugar dos botões da janela e deixa arrastar a janela. Só aparece
+                com .desktop-mac (styles.css). */}
+            <div data-tauri-drag-region aria-hidden="true" className="mac-titlebar-strip" />
+            <FocusHandle open={focus.menuPinned} onToggle={() => focus.setMenuPinned((v) => !v)} />
+          </>
         )}
       </div>
     </LattesListsContext.Provider>
