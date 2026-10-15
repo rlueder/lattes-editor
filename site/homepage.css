@@ -128,8 +128,8 @@
 #homepage .cp-screen img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: top;
+  object-fit: contain;
+  object-position: center;
   display: block;
 }
 #homepage .cp-filmbar {
@@ -335,14 +335,13 @@
 }
 #homepage .cp-reading-art img {
   display: block;
-  width: 125%;
-  max-width: none;
+  width: 100%;
+  max-width: 100%;
   box-shadow: 0 8px 22px #30264f18;
+  height: auto;
 }
 #homepage .cp-art-label {
-  position: absolute;
-  bottom: 15px;
-  left: 15px;
+  position: static;
   padding: 9px 14px;
   font:
     11px 'IBM Plex Mono',
@@ -716,12 +715,9 @@
     padding: 8px 8px 0;
     margin-top: -28px;
   }
-  #homepage .cp-screen {
-    aspect-ratio: 1.65;
-  }
   #homepage .cp-screen img {
-    object-fit: cover;
-    object-position: left top;
+    object-fit: contain;
+    object-position: center;
   }
   #homepage .cp-filmbar {
     gap: 6px;
@@ -1129,7 +1125,7 @@
 #homepage .cp-reading-art {
   background: #e5e0f0;
   border-radius: 10px;
-  padding: 22px 0 22px 22px;
+  padding: 22px;
 }
 #homepage .cp-reading-art img {
   border-radius: 5px;
@@ -1324,9 +1320,6 @@
     padding: 8px 8px 0;
     border-radius: 9px;
   }
-  #homepage .cp-screen {
-    aspect-ratio: 1.6;
-  }
   #homepage .cp-filmbar {
     gap: 5px;
   }
@@ -1440,12 +1433,12 @@
 }
 #homepage .cp-pan-figure img {
   width: 100%;
-  aspect-ratio: 16/9;
   object-fit: contain;
   display: block;
   border-radius: 6px;
   background: var(--cp-sheet);
   border: 1px solid #d0cbd8;
+  height: auto;
 }
 #homepage .cp-pan-figure figcaption {
   display: flex;
@@ -1668,4 +1661,9 @@ html {
     transition: none !important;
     animation: none !important;
   }
+}
+#homepage .cp-art-label {
+  display: table;
+  margin: 14px auto 0;
+  text-align: center;
 }

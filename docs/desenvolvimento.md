@@ -229,6 +229,11 @@ identificado como em desenvolvimento até ser incluído na versão pública.
 As imagens em `site/img/homepage/` usam exclusivamente o currículo fictício
 `fixtures/demo.xml`. As capturas do Panorama foram feitas no código de
 desenvolvimento `b1bb89d`; os controles da prévia não executam o app.
+As imagens mantêm os arquivos originais, sem a redução e a recompressão usadas
+na proposta visual. Busca e novo item têm 2880 × 1720 pixels; as capturas do
+Panorama têm cerca de 1280 × 720. Preserve as dimensões de cada arquivo nos
+atributos `width` e `height`, inclusive quando trocar a imagem pelo JavaScript.
+O CSS mantém a proporção original e exibe toda a captura, sem recortar a interface.
 
 O destaque inicial reproduz uma sequência de três capturas, mediante clique.
 Com redução de movimento, o botão avança uma tela por vez. Para substituir

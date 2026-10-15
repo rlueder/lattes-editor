@@ -105,6 +105,22 @@
     updatePreview();
   });
 
+  const imageSizes = {
+    panorama: [1280, 720],
+    'panorama-item': [1280, 720],
+    'panorama-people': [1265, 712],
+    'panorama-timeline': [1280, 720],
+    new: [2880, 1720],
+  };
+
+  function setImage(image, name, alt) {
+    const [width, height] = imageSizes[name];
+    image.width = width;
+    image.height = height;
+    image.src = `img/homepage/${name}.jpg`;
+    image.alt = alt;
+  }
+
   const views = {
     production: {
       image: 'panorama',
@@ -132,10 +148,13 @@
   function drawPanorama() {
     const view = views[selectedView];
     const image = root.querySelector('[data-pan-image]');
-    image.src = `img/homepage/${showItem ? 'panorama-item' : view.image}.jpg`;
-    image.alt = showItem
-      ? 'Artigo de 2023 aberto no currículo a partir do Panorama'
-      : `${view.title} no Panorama, com currículo fictício`;
+    setImage(
+      image,
+      showItem ? 'panorama-item' : view.image,
+      showItem
+        ? 'Artigo de 2023 aberto no currículo a partir do Panorama'
+        : `${view.title} no Panorama, com currículo fictício`,
+    );
     root.querySelector('[data-pan-title]').textContent = showItem
       ? 'Artigo selecionado no currículo'
       : view.title;
@@ -181,8 +200,7 @@
   function drawScene() {
     const scene = scenes[sceneIndex];
     const image = root.querySelector('.cp-screen img');
-    image.src = `img/homepage/${scene.image}.jpg`;
-    image.alt = scene.alt;
+    setImage(image, scene.image, scene.alt);
     root.querySelector('.cp-scene-title').textContent = scene.title;
     root.querySelectorAll('[data-scene]').forEach((button) => {
       button.setAttribute('aria-pressed', String(Number(button.dataset.scene) === sceneIndex));
