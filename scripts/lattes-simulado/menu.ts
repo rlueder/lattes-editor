@@ -33,6 +33,20 @@ function menuItems(code: string): [string, string][] {
     ['Outros projetos', `pkg_projeto.lista?f_cod_tipo=O&f_cod=${code}`],
     ['Prêmios e títulos', `pkg_premio.lista?f_cod=${code}`],
     ['Patentes', `PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=PP&f_cod=${code}`],
+    // Os outros registros: a mesma lista com outro f_cod_tipo (reconhecimento,
+    // catálogo de menus; o parâmetro de cada um no menu é inferido).
+    ...(
+      [
+        ['Cultivar protegida', 'CP'],
+        ['Cultivar registrada', 'CR'],
+        ['Desenho industrial', 'DI'],
+        ['Marca', 'MR'],
+        ['Topografia de circuito integrado', 'TC'],
+      ] as const
+    ).map(([label, tipo]): [string, string] => [
+      label,
+      `PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=${tipo}&f_cod=${code}`,
+    ]),
     ['Resumo', `pkg_resume.prc_resume?f_cod=${code}`],
     ['Participação em eventos', `pkg_evento.lista?f_cod=${code}`],
     [

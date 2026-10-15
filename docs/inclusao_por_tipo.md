@@ -41,17 +41,17 @@ outro item.
 
 | Caminho hoje | Tipos | Editor cria |
 | ------------ | ----: | ----------: |
-| conector     |    12 |          12 |
+| conector     |    17 |          17 |
 | importar     |    69 |          69 |
-| nenhum       |    33 |           8 |
+| nenhum       |    28 |           3 |
 
-Os 8 que o editor cria e que não têm caminho são a patente, os cinco outros
-registros (desde a etapa 2 desta LAT-57), o pós-doutorado e a livre-docência:
-o item novo vai para "A enviar" com a rota "à mão". Os 25 restantes sem caminho
-o editor nem cria: formação complementar, idioma, prêmio, licença, áreas de
-atuação e as partes de uma atuação (vínculo novo, atividades, disciplinas,
-treinamentos, linhas de pesquisa, financiadores, produções e orientações do
-projeto, e a participação em projeto, que o editor cria junto com o projeto).
+Os 3 que o editor cria e que não têm caminho são a patente, o pós-doutorado e
+a livre-docência: o item novo vai para "A enviar" com a rota "à mão". Os 25
+restantes sem caminho o editor nem cria: formação complementar, idioma, prêmio,
+licença, áreas de atuação e as partes de uma atuação (vínculo novo, atividades,
+disciplinas, treinamentos, linhas de pesquisa, financiadores, produções e
+orientações do projeto, e a participação em projeto, que o editor cria junto
+com o projeto).
 
 ## Tabelas
 
@@ -114,11 +114,11 @@ projeto, e a participação em projeto, que o editor cria junto com o projeto).
 | Elemento                           | Item                             | Faz parte de | Editor cria | Caminho hoje | Formulário no censo | Captura | Endereço/ligação    |
 | ---------------------------------- | -------------------------------- | ------------ | ----------- | ------------ | ------------------- | ------- | ------------------- |
 | `PATENTE`                          | Patente                          |              | sim         | nenhum       | `patente`           | lido    | observado/observado |
-| `CULTIVAR-PROTEGIDA`               | Cultivar protegida               |              | sim         | nenhum       | `registro-CP`       | lido    | observado/inferido  |
-| `CULTIVAR-REGISTRADA`              | Cultivar registrada              |              | sim         | nenhum       | `registro-CR`       | lido    | observado/inferido  |
-| `DESENHO-INDUSTRIAL`               | Desenho industrial               |              | sim         | nenhum       | `registro-DI`       | lido    | inferido/inferido   |
-| `MARCA`                            | Marca                            |              | sim         | nenhum       | `registro-MR`       | lido    | inferido/inferido   |
-| `TOPOGRAFIA-DE-CIRCUITO-INTEGRADO` | Topografia de circuito integrado |              | sim         | nenhum       | `registro-TC`       | lido    | inferido/inferido   |
+| `CULTIVAR-PROTEGIDA`               | Cultivar protegida               |              | sim         | conector     | `registro-CP`       | lido    | observado/inferido  |
+| `CULTIVAR-REGISTRADA`              | Cultivar registrada              |              | sim         | conector     | `registro-CR`       | lido    | observado/inferido  |
+| `DESENHO-INDUSTRIAL`               | Desenho industrial               |              | sim         | conector     | `registro-DI`       | lido    | inferido/inferido   |
+| `MARCA`                            | Marca                            |              | sim         | conector     | `registro-MR`       | lido    | inferido/inferido   |
+| `TOPOGRAFIA-DE-CIRCUITO-INTEGRADO` | Topografia de circuito integrado |              | sim         | conector     | `registro-TC`       | lido    | inferido/inferido   |
 
 ### Eventos
 
@@ -219,11 +219,22 @@ porque o `f_reg` não tinha sido lido antes; a captura abriu os três com
 `f_reg` vazio e recebeu o formulário de inclusão do tipo certo
 (`f_cod_tipo` no oculto). O currículo de quem capturou não tem nenhum desses
 itens, então a ligação de cada campo com o atributo do XML é inferida em todos,
-menos na patente (seção 17 de `lattes_internals.md`). As datas são o ponto
-fraco: na cultivar protegida, na registrada e no desenho industrial,
-`f_dta_dep` (e `f_dta_conc`, quando existe) é um campo de texto; na patente, na
-marca e na topografia, as datas só entram pela grade serializada em
-`f_dados_grid_datas`, cujo formato (`array2xml`) não foi observado.
+menos na patente (seção 17 de `lattes_internals.md`).
+
+A operação do conector (`src/bridge/create-registro.ts`, etapa 3) cobre os seis
+tipos e liga cada campo ao atributo pelo rótulo que o censo leu: "Título" é o
+`TITULO` (a `DENOMINACAO`, na cultivar), "Ano de desenvolvimento" é o
+`ANO-DESENVOLVIMENTO` (o `ANO-SOLICITACAO`, na cultivar), "Instituição de
+registro" e "Autoridade Nacional" são a `INSTITUICAO-DEPOSITO-REGISTRO`, e o
+tipo da marca (`MPD`, `MSV`, `MCL`, `MCT`) é o `TIPO-PATENTE` que termina com o
+mesmo código. Tudo isso é inferido. O conector não manda datas: na patente, na
+marca e na topografia elas só entram pela grade serializada em
+`f_dados_grid_datas`, cujo formato (`array2xml`) não foi observado; na cultivar
+e no desenho industrial há o campo `f_dta_dep` (e `f_dta_conc`), mas o formato
+da data nele também não foi observado. Um registro com data vai à mão, com esse
+motivo. A patente vai sempre à mão: o `check()` do formulário exige a data de
+depósito e o titular ou depositante, e os dois vão em grades. Por isso a
+patente continua com caminho `nenhum` na tabela.
 
 **Formação, atuação e projetos.** Os doze tipos com caminho pelo conector são
 os da LAT-52. Pós-doutorado e livre-docência têm formulário lido

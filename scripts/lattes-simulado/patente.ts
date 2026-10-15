@@ -10,8 +10,9 @@
 // formulário. Inferidos: a resposta da consulta além de "1" (já existe), o
 // preenchimento de f_inst e f_cod_reg pelo f_ctr=R (o GET sem ele veio com os
 // dois vazios), o link de cada linha da lista, a correspondência dos campos
-// com o XML e o efeito do POST. O nome do formulário não foi anotado; o
-// simulado o deixa sem nome.
+// com o XML e o efeito do POST. O nome do formulário, PKG_PATENTE_REGISTRO,
+// veio do censo de 15/10/2026. Os outros registros (f_cod_tipo CP, CR, DI, MR,
+// TC) passam pelos mesmos procedimentos e ficam em registros.ts.
 
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
@@ -20,6 +21,7 @@ import { applyFields, type Binding, fixed, renderFields } from './campos.ts';
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
+import { registroForm, registroLista, registroPost, REGISTRY_ITEMS } from './registros.ts';
 import { html, type Routes, type SimResponse } from './tipos.ts';
 
 const PATH = ['PRODUCAO-TECNICA'];
@@ -226,7 +228,7 @@ function form(req: SimRequest, state: LattesState): SimResponse {
     ids.f_cod_reg = req.get('f_cod_reg') ?? '';
   }
   // Sem item, os campos leem de um elemento vazio, e só os da janela prévia têm valor.
-  const body = `<form method="post" action="PKG_PATENTE_REGISTRO.FORM">
+  const body = `<form name="PKG_PATENTE_REGISTRO" method="post" action="PKG_PATENTE_REGISTRO.FORM">
 ${renderFields(bindings(state, ids), item ?? element(''))}
 ${h.formButtons(Boolean(item))}
 </form>
@@ -254,10 +256,26 @@ function post(req: SimRequest, state: LattesState): SimResponse {
   return html(back);
 }
 
+/** O f_cod_tipo de um registro que não é a patente, ou undefined. */
+function registryType(req: SimRequest): string | undefined {
+  const tipo = (req.get('f_cod_tipo') ?? '').toUpperCase();
+  return REGISTRY_ITEMS[tipo] ? tipo : undefined;
+}
+
 export const PATENTE_ROUTES: Routes = {
-  'pkg_patente_registro.form': (req, state) =>
-    req.method === 'POST' ? post(req, state) : form(req, state),
+  'pkg_patente_registro.form': (req, state) => {
+    const tipo = registryType(req);
+    if (tipo) {
+      return req.method === 'POST'
+        ? registroPost(req, state, tipo)
+        : registroForm(req, state, tipo);
+    }
+    return req.method === 'POST' ? post(req, state) : form(req, state);
+  },
   'pkg_patente_registro.informar_dados_patente': (_req, state) => prior(state),
-  'pkg_patente_registro.lista': (_req, state) => lista(state),
+  'pkg_patente_registro.lista': (req, state) => {
+    const tipo = registryType(req);
+    return tipo ? registroLista(state, tipo) : lista(state);
+  },
   'pkg_patente_registro.verifica_cadastrado': verify,
 };

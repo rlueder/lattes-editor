@@ -12,7 +12,7 @@ import {
   locateBiographic,
 } from './biographic.ts';
 import { applyCreateAtuacao } from './create.ts';
-import { applyCreateFormacao, applyCreateProjeto } from './create-items.ts';
+import { applyCreateFormacao, applyCreateProjeto, applyCreateRegistro } from './create-items.ts';
 import { applyDelete, type DeleteOp, isDeleteOp } from './delete.ts';
 import { EVENTO_SPEC, type EventoOp, isEventoOp, locateEvento } from './edit-items.ts';
 import {
@@ -53,7 +53,7 @@ type EditOp = Exclude<
   | BiographicOp
   | DeleteOp
   | EventoOp
-  | { kind: 'criar-atuacao' | 'criar-formacao' | 'criar-projeto' }
+  | { kind: 'criar-atuacao' | 'criar-formacao' | 'criar-projeto' | 'criar-registro' }
 >;
 
 const FORMS: Record<EditOp['kind'], { action: string; name: string }> = {
@@ -171,6 +171,7 @@ export async function applyOp(op: BridgeOp, port: LattesPort): Promise<OpResult>
   if (op.kind === 'criar-atuacao') return applyCreateAtuacao(op, port);
   if (op.kind === 'criar-formacao') return applyCreateFormacao(op, port);
   if (op.kind === 'criar-projeto') return applyCreateProjeto(op, port);
+  if (op.kind === 'criar-registro') return applyCreateRegistro(op, port);
   if (isDeleteOp(op)) return applyDelete(op, port);
   const result = (status: ResultStatus, detail: string): OpResult => ({
     detail,

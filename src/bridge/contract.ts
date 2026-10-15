@@ -54,7 +54,7 @@ export interface FormSpec {
   partial?: boolean;
 }
 
-type CreateKind = 'criar-atuacao' | 'criar-formacao' | 'criar-projeto';
+type CreateKind = 'criar-atuacao' | 'criar-formacao' | 'criar-projeto' | 'criar-registro';
 
 /**
  * Formulários fora do contrato fixo: os que só entram com a chave ligada
@@ -375,7 +375,7 @@ async function locateAndCheck(
     const link = findLinks(menu, 'pkg_resume.')[0];
     return link ? checkForm(port, kind, spec, link.path) : noLink(kind, spec.name, 'pkg_resume.');
   }
-  if (kind === 'criar-formacao' || kind === 'criar-projeto') {
+  if (kind === 'criar-formacao' || kind === 'criar-projeto' || kind === 'criar-registro') {
     // Formulários de inclusão: abrem vazios, não precisam de amostra.
     const found = await createFormPath(kind, (path) => getChecked(port, path), menu);
     return 'path' in found

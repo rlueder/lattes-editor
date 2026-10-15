@@ -126,11 +126,19 @@ const partNamed = (prefix: string) => (item: XElement) =>
   childElements(item).find((c) => c.name.startsWith(prefix));
 
 /**
- * O tipo do registro só se escolhe na patente (invenção ou modelo de
- * utilidade) e na marca (de produto, de serviço…); nos outros registros o
- * formulário do Lattes não tem o campo (censo de 15/10/2026).
+ * Campos que o formulário de inclusão do Lattes não tem para o tipo (censo de
+ * 15/10/2026): ficam fora da lista principal, em "Mais campos". O tipo do
+ * registro só se escolhe na patente e na marca; o desenho industrial e a
+ * patente não têm ano visível; a cultivar e a marca não têm finalidade.
  */
-const CHOOSES_TYPE = new Set(['MARCA', 'PATENTE']);
+const NOT_IN_FORM: Record<string, string[]> = {
+  'CULTIVAR-PROTEGIDA': ['TIPO-PATENTE', 'FINALIDADE', 'INSTITUICAO-FINANCIADORA'],
+  'CULTIVAR-REGISTRADA': ['TIPO-PATENTE', 'FINALIDADE', 'INSTITUICAO-FINANCIADORA'],
+  'DESENHO-INDUSTRIAL': ['TIPO-PATENTE', 'ANO-DESENVOLVIMENTO'],
+  MARCA: ['FINALIDADE'],
+  PATENTE: ['ANO-DESENVOLVIMENTO'],
+  'TOPOGRAFIA-DE-CIRCUITO-INTEGRADO': ['TIPO-PATENTE'],
+};
 
 /**
  * Patente e registros: os campos de cada um saem do schema (a cultivar tem
@@ -196,7 +204,7 @@ export function generalParts(schema: LattesSchema, kind: GeneralKind, item: XEle
     const el = p.part(item);
     if (!el) return [];
     const known = new Set(schema.elements[el.name]?.attributes.map((a) => a.name));
-    if (kind === 'patente' && !CHOOSES_TYPE.has(item.name)) known.delete('TIPO-PATENTE');
+    if (kind === 'patente') for (const attr of NOT_IN_FORM[item.name] ?? []) known.delete(attr);
     const fields = p.fields.filter((field) => known.has(field.attr));
     return fields.length > 0 ? [{ el, fields, legend: p.legend }] : [];
   });

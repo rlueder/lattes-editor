@@ -358,9 +358,14 @@ describe('campos do formulário', () => {
     const desenho = newGeneralItem(schema, type('patentes', 'DESENHO-INDUSTRIAL'));
     expect(missingGeneral(generalParts(schema, 'patente', desenho)).map((m) => m.attr)).toEqual([
       'TITULO',
-      'ANO-DESENVOLVIMENTO',
       'CODIGO-DO-REGISTRO-OU-PATENTE',
     ]);
+    // Campos que o formulário do Lattes não tem para o tipo saem da lista principal.
+    expect(attrsOf('DESENHO-INDUSTRIAL')).not.toContain('ANO-DESENVOLVIMENTO');
+    expect(attrsOf('CULTIVAR-REGISTRADA')).not.toContain('FINALIDADE');
+    expect(attrsOf('TOPOGRAFIA-DE-CIRCUITO-INTEGRADO')).toEqual(
+      expect.arrayContaining(['ANO-DESENVOLVIMENTO', 'FINALIDADE', 'INSTITUICAO-FINANCIADORA']),
+    );
     const projeto = newGeneralItem(schema, type('projetos'));
     expect(generalParts(schema, 'projeto', projeto)[0]!.fields[0]!.attr).toBe('NOME-DO-PROJETO');
   });
