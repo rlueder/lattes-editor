@@ -90,12 +90,15 @@ anterior ("Versões do Lattes", no ⚙), inclusive o que foi editado direto no
 Lattes. Com a extensão, "Recarregar do Lattes…" traz a exportação de agora
 sem escolher arquivo; se o Lattes tiver alterações ainda não enviadas ao
 CNPq, que bloqueiam o Exportar, o app abre a última versão que guardou e
-compara com o que está no Lattes. O **Diagnóstico do currículo**, no ⚙, confere o currículo inteiro de
-uma vez, item por item: campos obrigatórios, valores fora das listas do
-Lattes, anos, autores, DOI e a revisão de consistência (duplicatas, ISSN,
-vínculos antigos ainda marcados como atuais). Logo abaixo, mostra a data da
-última publicação e o que mudou no Lattes desde a exportação. Só aponta;
-nada muda sem você.
+compara com o que está no Lattes. A primeira exportação de cada currículo
+(pelo conector, ou o ZIP do Exportar como veio) e uma cópia do Lattes antes de
+cada envio pelo conector ficam em `Documentos/LattesEditor/Cópias de
+segurança`, e o app nunca as apaga. O **Diagnóstico do currículo**, no ⚙,
+confere o currículo inteiro de uma vez, item por item: campos obrigatórios,
+valores fora das listas do Lattes, anos, autores, DOI e a revisão de
+consistência (duplicatas, ISSN, vínculos antigos ainda marcados como atuais).
+Logo abaixo, mostra a data da última publicação e o que mudou no Lattes desde
+a exportação. Só aponta; nada muda sem você.
 
 Também dá para imprimir ou salvar em PDF nas regras da NBR 14724, com
 referências na NBR 6023, e compartilhar o currículo por um código QR.

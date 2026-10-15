@@ -8,9 +8,15 @@
   Transport Security do macOS recusa essa ligação dentro de um app, e a foto
   não carregava. A exceção vale só para esse domínio e só relaxa o sigilo
   futuro; o resto do ATS continua (nscurl - -ats-diagnostics passa com ela).
+
+  As cópias de segurança (LAT-59) vão para Documentos/LattesEditor. Na
+  primeira gravação, o macOS pede permissão para a pasta Documentos e mostra
+  o texto de NSDocumentsFolderUsageDescription.
 -->
 <plist version="1.0">
 <dict>
+  <key>NSDocumentsFolderUsageDescription</key>
+  <string>O LattesEditor guarda as cópias de segurança do seu currículo em Documentos/LattesEditor.</string>
   <key>NSAppTransportSecurity</key>
   <dict>
     <key>NSExceptionDomains</key>

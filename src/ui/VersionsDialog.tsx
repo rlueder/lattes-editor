@@ -3,7 +3,7 @@
 // anterior. Também a faixa curta que aparece depois de abrir uma exportação
 // nova.
 
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 
 import type { ChangeKind } from '../model/changes.ts';
 import { getVersion, type LattesVersion } from '../model/store.ts';
@@ -82,12 +82,15 @@ function VersionChanges({
 }
 
 export function VersionsDialog({
+  backups,
   onClear,
   onClose,
   onGo,
   open,
   versions,
 }: {
+  /** "Cópias de segurança" (BackupsSection), embaixo das versões. */
+  backups?: ReactNode;
   open: boolean;
   /** Da mais recente à mais antiga, sem o XML. */
   versions: VersionInfo[];
@@ -114,7 +117,8 @@ export function VersionsDialog({
         clearing ? (
           <>
             <span className="muted versions-clear-note">
-              Apaga as versões guardadas deste currículo. A cópia de trabalho e o Lattes não mudam.
+              Apaga as versões guardadas deste currículo. A cópia de trabalho, as cópias de
+              segurança e o Lattes não mudam.
             </span>
             <button type="button" onClick={() => setClearing(false)}>
               Manter
@@ -170,6 +174,7 @@ export function VersionsDialog({
           </div>
         </div>
       )}
+      {backups}
     </Modal>
   );
 }
