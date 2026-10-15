@@ -1,6 +1,6 @@
 // Estado da linha do tempo de versões (LAT-12) para o App: guarda cada
 // exportação aberta, monta o resumo do que mudou desde a anterior e abre o
-// diálogo "Versões do Lattes".
+// diálogo "Versões do Lattes", com as cópias de segurança embaixo (LAT-59).
 
 import { createElement, useCallback, useState } from 'react';
 
@@ -12,6 +12,7 @@ import {
   listVersionInfo,
 } from '../model/store.ts';
 import { getAttr, parseXml, type XElement } from '../model/xml.ts';
+import { BackupsSection } from './BackupsSection.tsx';
 import type { HashRoute } from './hash-route.ts';
 import { buildSections } from './sections.ts';
 import { diffSummary, diffVersions, exportStamp, versionDate } from './version-diff.ts';
@@ -63,6 +64,7 @@ export function useVersions(root: XElement | undefined, onGo: (route: HashRoute)
   });
 
   const dialog = createElement(VersionsDialog, {
+    backups: createElement(BackupsSection, { lattesId, open }),
     onClear: () => {
       if (!lattesId) return;
       clearVersions(lattesId).then(

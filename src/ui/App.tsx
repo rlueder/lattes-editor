@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LattesStatus } from '../bridge/lattes-status.ts';
 import type { Link } from '../bridge/link.ts';
 import type { SentEntry } from '../bridge/sent-log.ts';
+import { keepPristineBaseline } from '../desktop/backup-folder.ts';
 import { useDevExtensionFolder } from '../desktop/dev-channel.ts';
 import { saveBytes } from '../desktop/native.ts';
 import type { UpdateState } from '../desktop/update.ts';
@@ -14,6 +15,7 @@ import { type Session, useProduction } from '../forms/use-production.ts';
 import { ExportPanel } from '../import-export/ExportPanel.tsx';
 import { PublishPanel } from '../import-export/PublishPanel.tsx';
 import { useIncoming } from '../import-export/use-incoming.tsx';
+import type { BackupSource } from '../model/backups.ts';
 import { encodeCv, loadCv } from '../model/document.ts';
 import { importableTypes } from '../model/production.ts';
 import {
@@ -57,7 +59,7 @@ import { useNavigate, useScrollToPendingAnchor } from './use-navigate.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
 import { usePhotoChange } from './use-photo-change.tsx';
 import { usePreflight } from './use-preflight.ts';
-import { useReload } from './use-reload.ts';
+import { type ReloadArg, useReload } from './use-reload.ts';
 import { useOpenStoredVersion } from './use-stored-version.ts';
 import { useTopbarHeight } from './use-topbar-height.ts';
 import { useUpdates } from './use-updates.ts';
@@ -158,13 +160,20 @@ export function App() {
 
   /**
    * reload: um "Recarregar do Lattes", que guarda os pontos marcados do
-   * histórico e, com previous, a cópia de trabalho de antes.
+   * histórico e, com previous, a cópia de trabalho de antes. `origin` diz de
+   * onde a exportação veio do Lattes (arquivo ou conector): só então ela pode
+   * virar o ponto zero (LAT-59).
    */
-  const openFile = async (file: File, reload?: { previous?: { note: string; xml: string } }) => {
+  const openFile = async (file: File, reload?: ReloadArg, origin?: BackupSource) => {
     const previous = reload?.previous;
     setError(null);
     try {
-      const cv = await loadCv(new Uint8Array(await file.arrayBuffer()), file.name);
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const cv = await loadCv(bytes, file.name);
+      // Ponto zero: a primeira exportação de cada currículo, byte a byte, se
+      // for uma exportação do Lattes sem mexer (isBaselineCandidate). Não
+      // atrasa nem impede a abertura.
+      if (origin) void keepPristineBaseline(cv.doc.root, bytes, file.name, origin);
       const copy = newWorkingCopy(cv, Date.now());
       // A cópia de antes vai para o histórico primeiro: se não gravar, nada é trocado.
       if (previous) await addHistoryPoint({ ...previous, keep: true, savedAt: copy.savedAt - 1 });
@@ -180,7 +189,9 @@ export function App() {
     }
   };
 
-  const lattesOpen = useLattesOpen(Boolean(session), booting, bridge, openFile);
+  const lattesOpen = useLattesOpen(Boolean(session), booting, bridge, (file) =>
+    openFile(file, undefined, 'conector'),
+  );
 
   /** Nova exportação do Lattes: itens novos que ainda não foram importados se perdem. */
   const openVersion = useOpenStoredVersion(openFile, bridge, () => setDiagnosisOpen(true));
@@ -189,7 +200,7 @@ export function App() {
     { changes: changes.open, pending: production.summaries },
     openFile,
   );
-  const lattesReload = useLattesReload(bridge, cvId(session), reload);
+  const lattesReload = useLattesReload(bridge, cvId(session), (f) => reload(f, 'conector'));
 
   const closePalette = useCallback(() => setPaletteOpen(false), []);
   const history = useHistoryDialog(session, (doc, note) => {
@@ -220,7 +231,7 @@ export function App() {
           lattes={lattesOpen}
           link={bridge.link}
           theme={theme}
-          onFile={openFile}
+          onFile={(file) => void openFile(file, undefined, 'arquivo')}
           onOpenVersion={openVersion}
           onPublish={() => setPublishOpen(true)}
           onReloadLattes={bridge.reloadLattes}
@@ -265,7 +276,7 @@ export function App() {
         onNewItem={() => setPickerOpen(true)}
         onPalette={togglePalette}
         onPrint={print.show}
-        onReload={reload}
+        onReload={(file) => reload(file, 'arquivo')}
         onReloadFromLattes={lattesReload.available ? lattesReload.start : undefined}
         onSave={() =>
           void saveBytes(encodeCv(session.doc, session.meta.encoding), session.meta.fileName)

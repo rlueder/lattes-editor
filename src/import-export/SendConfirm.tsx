@@ -1,5 +1,6 @@
 // Confirmação antes de mandar a fila ao Lattes: o que vai mudar em cada item,
-// campo a campo. O ponto de histórico de antes do envio é guardado sozinho.
+// campo a campo. O ponto de histórico de antes do envio é guardado sozinho, e
+// o ponto de restauração vem logo depois de "Enviar ao Lattes" (LAT-59).
 
 import { isDeleteOp } from '../bridge/delete.ts';
 import { opRows } from '../bridge/field-labels.ts';
@@ -33,7 +34,7 @@ export function SendConfirm({
       }
       label="Enviar ao Lattes"
       open={open}
-      subtitle="Cada alteração é gravada, lida de volta e conferida. A fila para no primeiro problema."
+      subtitle="Antes, o editor guarda uma cópia do Lattes como está. Cada alteração é gravada, lida de volta e conferida. A fila para no primeiro problema."
       title={n === 1 ? 'Enviar 1 alteração ao Lattes?' : `Enviar ${n} alterações ao Lattes?`}
       onClose={onCancel}
     >

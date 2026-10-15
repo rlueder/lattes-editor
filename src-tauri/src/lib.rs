@@ -1,6 +1,7 @@
 //! App de desktop do LattesEditor: a mesma página do editor num webview do
 //! sistema, com diálogos nativos de abrir e salvar, e a chave que cifra os
-//! dados locais no chaveiro do sistema (chave.rs).
+//! dados locais no chaveiro do sistema (chave.rs). As cópias de segurança do
+//! currículo vão para uma pasta visível, em Documentos (copias.rs).
 //!
 //! O app nunca abre o Lattes por conta própria: as alterações vão para o
 //! Lattes pela extensão do navegador (ver docs/lattes_product_requirements.md,
@@ -9,6 +10,7 @@
 
 mod chave;
 mod conector;
+mod copias;
 mod extensao_dev;
 
 use std::fs;
@@ -65,6 +67,11 @@ pub fn run() {
             conector::conector_send,
             chave::storage_key_get,
             chave::storage_key_set,
+            copias::backup_folder,
+            copias::backup_list,
+            copias::backup_reveal,
+            copias::backup_save_baseline,
+            copias::backup_save_restore_point,
             extensao_dev::extensao_dev_pasta
         ])
         .run(tauri::generate_context!())

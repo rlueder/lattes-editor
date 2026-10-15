@@ -2,11 +2,14 @@
 // estado: enviar, parar enquanto a fila corre, e conferido (verde, com o
 // visto) quando tudo foi gravado e lido de volta. O que foi conferido sai da
 // lista de alterações, porque o Lattes já está igual à cópia de trabalho.
+// Antes da primeira gravação, o editor guarda um ponto de restauração
+// (src/bridge/restore-point.ts); o aviso curto fica aqui.
 
 import { useState } from 'react';
 
 import type { ResultStatus } from '../bridge/apply.ts';
 import { PUBLISH_REMINDER } from '../bridge/lattes-status.ts';
+import { doneText } from '../bridge/restore-point.ts';
 import { CheckIcon, UploadIcon } from '../ui/icons.tsx';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { SendConfirm } from './SendConfirm.tsx';
@@ -38,6 +41,10 @@ export function BridgeBlock({ bridge }: { bridge: BridgeState }) {
           <button disabled className="bridge-btn ok" type="button">
             <CheckIcon /> Conferido
           </button>
+        ) : bridge.restore?.kind === 'fazendo' ? (
+          <button disabled className="bridge-btn" type="button">
+            Guardando cópia…
+          </button>
         ) : bridge.running ? (
           <button className="bridge-btn" type="button" onClick={bridge.stop}>
             Parar
@@ -48,6 +55,14 @@ export function BridgeBlock({ bridge }: { bridge: BridgeState }) {
           </button>
         )}
       </div>
+      {bridge.restore?.kind === 'fazendo' && (
+        <p className="muted bridge-note">
+          Antes de gravar, o editor exporta o Lattes como está e guarda um ponto de restauração.
+        </p>
+      )}
+      {bridge.restore?.kind === 'feito' && (
+        <p className="muted bridge-note">{doneText(bridge.restore)}</p>
+      )}
       {!bridge.running && bridge.confirmed > 0 && (
         <p className="bridge-note bridge-publish">{PUBLISH_REMINDER}</p>
       )}

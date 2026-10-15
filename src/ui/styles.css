@@ -7767,3 +7767,65 @@ html {
 .desktop-mac .shell.is-focus .content {
   min-height: calc(100vh - var(--mac-titlebar-h));
 }
+
+/* Cópias de segurança (LAT-59), embaixo das versões do Lattes. */
+.backups {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.backups-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.backups-head h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.backups-note {
+  margin: 6px 0 12px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.backups-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.backups-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.backups-kind {
+  flex-shrink: 0;
+  min-width: 150px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.backups-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .backups-list li {
+    flex-wrap: wrap;
+  }
+
+  .backups-kind {
+    min-width: 0;
+  }
+}
