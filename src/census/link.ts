@@ -45,6 +45,13 @@ export interface LinkSummary {
   /** Itens cujo par na exportação não ficou claro. */
   ambiguous: number;
   /**
+   * Os ocultos de grade (f_autores_l, f_plv_l, f_area_l…) nos formulários de
+   * edição lidos: em quantos vieram preenchidos e em quantos vazios, sem o
+   * valor. Diz se a página já traz a grade serializada, ou se só o check()
+   * a monta no envio (e enviar o formulário como veio a apagaria).
+   */
+  grids?: Record<string, { empty: number; filled: number }>;
+  /**
    * Links de edição achados na lista (e nas telas intermediárias abertas),
    * antes do limite de itens lidos: com `read` menor, o limite cortou.
    * Ausente quando a lista não foi aberta.
@@ -246,6 +253,9 @@ const ownValues = (els: XElement[]): AttrValue[] =>
     el.attrs.map((a) => ({ attribute: a.name, element: el.name, value: a.value })),
   );
 
+/** Ocultos onde o check() serializa uma grade (seção 16 de lattes_internals.md). */
+const GRID_HIDDEN = /^f_\w+_l$/i;
+
 /** Links de edição de uma página: os que levam o número do item. */
 function editLinks(html: string, proc: string, itemKey: string) {
   return findLinks(html, proc).filter((l) => l.params[itemKey.toLowerCase()]);
@@ -405,6 +415,12 @@ async function readGroup(
       const s = owner(item);
       s.read++;
       s.matched++;
+      for (const f of fields) {
+        if (f.type !== 'hidden' || !GRID_HIDDEN.test(f.name)) continue;
+        const tally = ((s.grids ??= {})[f.name] ??= { empty: 0, filled: 0 });
+        if (f.value.trim()) tally.filled++;
+        else tally.empty++;
+      }
       const values = first.singleton ? ownValues(items) : itemValues(item);
       collectLinks(out, s.target, fields, values);
     }

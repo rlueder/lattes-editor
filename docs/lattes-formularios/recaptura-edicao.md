@@ -35,6 +35,9 @@ Desde este ramo, a passada de edição:
   edição reconhecível, e guarda em `listShape` os procedimentos que a página
   abre, só com os nomes dos parâmetros, e quantas vezes o procedimento do
   formulário aparece fora de um link.
+- conta, nos ocultos de grade (`f_autores_l`, `f_plv_l`, `f_area_l`,
+  `f_setor_l`…) dos formulários de edição lidos, em quantos vieram
+  preenchidos e em quantos vazios (`grids`), sem guardar o valor.
 
 ## O que rodar
 
@@ -67,13 +70,26 @@ diferentes como divergência.
 
 ## O que olhar no resultado
 
-| Onde                                                            | O que diz                                                                                                                                                                         |
-| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `status: 'so-na-lista'`                                         | o Lattes tem itens desse tipo que a exportação não tem. Para ler as ligações deles, envie ao CNPq e rode de novo, ou passe um XML que os tenha                                    |
-| `trabalho-tecnico` e `tec-2D`, `listed` e `read`                | com `maxItems: 50`, os dois iguais: todos os trabalhos técnicos e editorações lidos                                                                                               |
-| `trabalho-tecnico`, `f_seq` ↔ `SEQUENCIA-PRODUCAO`              | em 15/10/2026, 5 itens bateram e 3 não. Com todos lidos, diz se o `f_seq` da lista é o número do item ou não; até lá, o conector acha o item pelos valores, nunca só pelo `f_seq` |
-| `atividade` e `atuacao`, `status: 'sem-link'`                   | `listShape.procs` mostra o que a tela de cargos e vínculos abre, e `mentions` quantas vezes `pkg_ativ.cargo` aparece num script: é onde está o link de edição da atividade        |
-| `premio`, `idioma`, `formacao-complementar`, `areas-de-atuacao` | as ligações dos tipos que a LAT-58 já altera, agora com todos os itens                                                                                                            |
+| Onde                                                            | O que diz                                                                                                                                                                                                                                                                                              |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `status: 'so-na-lista'`                                         | o Lattes tem itens desse tipo que a exportação não tem. Para ler as ligações deles, envie ao CNPq e rode de novo, ou passe um XML que os tenha                                                                                                                                                         |
+| `trabalho-tecnico` e `tec-2D`, `listed` e `read`                | com `maxItems: 50`, os dois iguais: todos os trabalhos técnicos e editorações lidos                                                                                                                                                                                                                    |
+| `trabalho-tecnico`, `f_seq` ↔ `SEQUENCIA-PRODUCAO`              | em 15/10/2026, 5 itens bateram e 3 não. Com todos lidos, diz se o `f_seq` da lista é o número do item ou não; até lá, o conector acha o item pelos valores, nunca só pelo `f_seq`                                                                                                                      |
+| `atividade` e `atuacao`, `status: 'sem-link'`                   | `listShape.procs` mostra o que a tela de cargos e vínculos abre, e `mentions` quantas vezes `pkg_ativ.cargo` aparece num script: é onde está o link de edição da atividade                                                                                                                             |
+| `premio`, `idioma`, `formacao-complementar`, `areas-de-atuacao` | as ligações dos tipos que a LAT-58 já altera, agora com todos os itens                                                                                                                                                                                                                                 |
+| `trabalho-tecnico` e `tec-2D`, `grids`                          | se o formulário de edição já traz as grades serializadas (`filled`) ou vazias (`empty`). Vazias, enviar o formulário como veio apagaria autores, palavras-chave, áreas e setores: a edição de produção precisa montar as grades (a de autores é a da LAT-57). Preenchidas, basta mandá-las como vieram |
+
+## Os tipos sem item no currículo
+
+Orientações, bancas, projetos, patentes e registros, e as produções que não
+são trabalho técnico nem editoração, não têm item na exportação do dono: a
+passada de edição não tem formulário de edição para ler, e o conector não tem
+como conferir a ligação de campo e atributo nem o link de edição da lista.
+Para observar, alguém inclui à mão no Lattes um item de teste de cada tipo
+(o dono decide se e quais), envia ao CNPq para entrar na exportação, e roda o
+mesmo `link()` acima com `only` restrito a esses tipos, por exemplo
+`{ maxItems: 50, download: true, only: ['orientacao', 'banca', 'projeto'] }`.
+Os itens de teste saem depois pelo próprio Lattes.
 
 Depois de lido, o que virar fato vai para `../lattes_internals.md` (seção 20,
 com a data) e para o código, e a linha sai desta lista.

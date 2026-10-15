@@ -96,7 +96,14 @@ describe('censo, passada de edição', () => {
         only: ['trabalho-tecnico'],
       });
       expect(summary).toEqual([
-        { ambiguous: 0, listed: 2, matched: 2, read: 2, status: 'ok', target: 'trabalho-tecnico' },
+        expect.objectContaining({
+          ambiguous: 0,
+          listed: 2,
+          matched: 2,
+          read: 2,
+          status: 'ok',
+          target: 'trabalho-tecnico',
+        }),
       ]);
       expect(find(links, 'f_titulo', 'TITULO-DO-TRABALHO-TECNICO')?.matches).toBe(2);
       expect(find(links, 'f_pais', 'PAIS')).toMatchObject({
@@ -116,6 +123,9 @@ describe('censo, passada de edição', () => {
         spelling: { dobrado: 2 },
       });
       expect(find(links, 'f_inst', 'INSTITUICAO-FINANCIADORA')?.matches).toBe(2);
+      // As grades do trabalho técnico: o simulado traz os ocultos vazios.
+      const tech = summary[0]!;
+      expect(tech.grids).toMatchObject({ f_autores_l: { empty: 2, filled: 0 } });
       const text = JSON.stringify(links);
       for (const value of personalValues(TECH_CV)) expect(text).not.toContain(value);
     } finally {
