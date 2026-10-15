@@ -10,7 +10,14 @@ import type { Notice } from './notifications.ts';
 import { Tip } from './primitives/Tip.tsx';
 import { openStorageNotice } from './storage-notice-open.ts';
 
-export function NotificationsMenu({ notices }: { notices: Notice[] }) {
+export function NotificationsMenu({
+  notices,
+  onDiagnosis,
+}: {
+  notices: Notice[];
+  /** Alterações no Lattes que não passaram por aqui: abre o diagnóstico. */
+  onDiagnosis?: () => void;
+}) {
   const urgent = notices.some((n) => n.level === 'aviso');
   const label = notices.length ? `Notificações (${notices.length})` : 'Notificações';
   return (
@@ -33,7 +40,11 @@ export function NotificationsMenu({ notices }: { notices: Notice[] }) {
                     key={n.id}
                     className={`menu-item notice ${n.level}`}
                     onClick={
-                      n.action === 'armazenamento' ? openStorageNotice : () => void installUpdate()
+                      n.action === 'armazenamento'
+                        ? openStorageNotice
+                        : n.action === 'diagnostico'
+                          ? onDiagnosis
+                          : () => void installUpdate()
                     }
                   >
                     <NoticeBody notice={n} />

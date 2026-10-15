@@ -24,20 +24,22 @@ nos dois primeiros sem esforço:
    currículo público mostra a alteração, e a próxima exportação vira o novo
    original.
 
-### No cabeçalho
+### Onde aparecem
 
-O cabeçalho mostra esses quatro estados numa faixa discreta, com a contagem
-de cada um, por exemplo `Original · 5 alterações · 3 no Lattes · publicado
-em 17/08/2026`. O estado que pede ação fica em destaque, e cada contagem
-abre a lista correspondente: alterações do editor, registro do enviado,
-página de envio do Lattes. Sem nada pendente, a faixa se resume à data da
-última publicação.
+A contagem das alterações do editor fica no selo do botão "Enviar ao
+Lattes", no cabeçalho, e no aviso de pendências no alto da página. O que
+está no Lattes e ainda não foi publicado e a data da última publicação ficam
+numa linha discreta no alto do painel "Enviar ao Lattes", por exemplo `3 no
+Lattes · publicado em 17/08/2026`; a contagem do Lattes abre o registro do
+enviado (aba "Enviado"). O canto esquerdo do cabeçalho mostra o símbolo e o
+nome do app.
 
 As contagens de 2 e 3 o app já sabe (lista de alterações e registro do
 enviado). A data de publicação e a pendência no Lattes vêm da extensão, que
 lê o menu do Lattes na sessão aberta. Pendência que o app não gravou (feita
 direto no Lattes, ou por outro aparelho) aparece como "pendências que o
-editor não conhece".
+editor não conhece", na mesma linha do painel e como aviso no sino, e os
+dois abrem o diagnóstico.
 
 Sem leitura do Lattes, o sino ao lado das configurações diz o motivo
 (extensão ausente ou desatualizada, aviso da extensão não aceito, Lattes

@@ -5046,15 +5046,8 @@ button.primary:hover:not(:disabled) {
   margin-top: 24px;
 }
 
-/* Topo do menu lateral: a marca, depois avatar e QR lado a lado (o QR
-   alinhado à base do avatar). */
-.sidebar-brand {
-  padding: 4px 8px 18px;
-  /* Marca não é texto para selecionar nem link: cursor normal. */
-  cursor: default;
-  -webkit-user-select: none;
-  user-select: none;
-}
+/* Topo do menu lateral: avatar e QR lado a lado (o QR alinhado à base do
+   avatar). */
 
 .profile-top {
   display: flex;
@@ -5113,17 +5106,6 @@ button.primary:hover:not(:disabled) {
 /* Hover dos itens mais discreto: metade do tom de superfície. */
 .group details > summary:hover {
   background: color-mix(in srgb, var(--surface-2) 50%, transparent);
-}
-
-/* Marca no topo do menu lateral, maior que a do antigo cabeçalho. */
-.sidebar-brand .brand {
-  font-size: 20px;
-}
-
-/* Linha de base da marca na mesma altura da do caminho (Dados gerais ›
-   Identificação) no cabeçalho fixo da seção. */
-.sidebar-brand {
-  margin-top: -8px;
 }
 
 /* Selo de contagem no canto de um botão de ícone (Enviar ao Lattes): azul
@@ -5997,10 +5979,6 @@ button.ghost.icon {
     height: 64px;
     margin-left: -42px;
     padding: 8px;
-  }
-
-  .sidebar-brand {
-    padding-bottom: 10px;
   }
 }
 
@@ -7354,5 +7332,39 @@ main.content {
   .change-fields .discard-btn,
   .change-actions .discard-btn {
     transition: none;
+  }
+}
+
+/* Símbolo e nome do app no canto do cabeçalho (Brand.tsx): os dois
+   centrados na linha, 8px entre eles; o símbolo na altura visível do nome
+   de 16px. Em tela estreita, só o símbolo. */
+.topbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.topbar-brand .brand-icon {
+  flex: none;
+  width: auto;
+  height: 19px;
+}
+
+.topbar-brand .brand-name {
+  font-size: 16px;
+  line-height: 1;
+}
+
+@media (max-width: 760px) {
+  .topbar-brand .brand-name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 }

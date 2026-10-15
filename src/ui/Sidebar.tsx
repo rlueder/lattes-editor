@@ -37,12 +37,6 @@ export function Sidebar({
 
   return (
     <nav aria-label="Seções" className={goArmed ? 'sidebar go-armed' : 'sidebar'}>
-      {/* Marca provisória, até existir um logo. */}
-      <div className="sidebar-brand">
-        <span aria-label="LattesEditor" className="brand">
-          Lattes<span className="brand-accent">Editor</span>
-        </span>
-      </div>
       {profile ? (
         <ProfileCard photoVersion={photoVersion} profile={profile} onChangePhoto={onChangePhoto} />
       ) : (

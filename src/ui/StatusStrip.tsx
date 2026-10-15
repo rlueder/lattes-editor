@@ -1,4 +1,4 @@
-// Faixa de estados no cabeçalho (LAT-40): Original · alterações · no Lattes ·
+// Faixa de estados (LAT-40), no alto do "Enviar ao Lattes": no Lattes ·
 // publicado. O passo que pede ação fica em destaque; as contagens abrem a
 // lista correspondente. A regra de cada contagem está em status-strip.ts.
 

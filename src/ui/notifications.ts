@@ -1,6 +1,6 @@
 // Notificações do cabeçalho (o sino ao lado das configurações): o que impede o
-// app de ler o Lattes ou de guardar o trabalho, com o que fazer. A faixa de
-// estados fica só com o caminho das alterações.
+// app de ler o Lattes ou de guardar o trabalho, e alterações no Lattes que
+// não passaram pelo editor, com o que fazer.
 
 import type { Link } from '../bridge/link.ts';
 import { DEV_PAGE_URL, isDevVersion } from '../desktop/dev-channel.ts';
@@ -67,8 +67,8 @@ export interface NoticeLink {
 }
 
 export interface Notice {
-  /** Abre o aviso do armazenamento, ou baixa e instala a versão nova do app. */
-  action?: 'armazenamento' | 'atualizacao';
+  /** Abre o aviso do armazenamento, baixa e instala a versão nova do app ou abre o diagnóstico. */
+  action?: 'armazenamento' | 'atualizacao' | 'diagnostico';
   id: string;
   /** "aviso" acende o sino; "info" só aparece ao abrir. */
   level: 'aviso' | 'info';
@@ -138,13 +138,13 @@ export function connectionText(c: Connection, appVersion: string, devFolder?: st
     case 'procurando':
       return 'Esperando a extensão do LattesEditor responder.';
     case 'sem-aba':
-      return 'Abra o seu currículo no Lattes numa aba do navegador para o cabeçalho mostrar a data da última publicação e o que está pendente.';
+      return 'Abra o seu currículo no Lattes numa aba do navegador para o "Enviar ao Lattes" mostrar a data da última publicação e o que está pendente.';
     case 'sem-consentimento':
       return 'A extensão só lê o Lattes depois do aviso aceito. Abra o painel da extensão e aceite.';
     case 'sem-data':
       return 'A aba do Lattes não está no menu do currículo, ou a sessão caiu. Volte ao menu (ou entre de novo) para ler a data da última publicação.';
     case 'sem-extensao':
-      return 'A extensão do LattesEditor não respondeu. Com ela instalada e o Lattes aberto no navegador, o cabeçalho mostra a data da última publicação e o que está pendente.';
+      return 'A extensão do LattesEditor não respondeu. Com ela instalada e o Lattes aberto no navegador, o "Enviar ao Lattes" mostra a data da última publicação e o que está pendente.';
     case 'sem-leitura':
       return 'A extensão não conseguiu ler a aba do Lattes. Recarregue a aba.';
   }
@@ -187,6 +187,7 @@ export function noticesFor({
   connection,
   devExtensionFolder,
   storage,
+  unknownPending = false,
   update,
 }: {
   appVersion: string;
@@ -194,6 +195,8 @@ export function noticesFor({
   /** No LattesEditor Dev, a pasta da extensão Dev (src/desktop/dev-channel.ts). */
   devExtensionFolder?: string;
   storage: StorageStatus;
+  /** O Lattes tem alterações não enviadas que não passaram por este editor. */
+  unknownPending?: boolean;
   update?: UpdateState;
 }): Notice[] {
   const notices: Notice[] = [];
@@ -205,6 +208,15 @@ export function noticesFor({
       level: 'aviso',
       text: `Versão ${update.version}. O app reinicia ao atualizar.`,
       title: 'Nova versão disponível',
+    });
+  }
+  if (unknownPending) {
+    notices.push({
+      action: 'diagnostico',
+      id: 'pendencia-desconhecida',
+      level: 'aviso',
+      text: 'Feitas direto no Lattes ou em outro aparelho, e ainda não enviadas ao CNPq. Abre o diagnóstico.',
+      title: 'Alterações no Lattes que não passaram por aqui',
     });
   }
   if (storage !== 'cifrado') {

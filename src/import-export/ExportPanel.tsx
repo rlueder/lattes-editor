@@ -17,6 +17,8 @@ import type { ChangeEntry, ChangeGroup } from '../ui/changes-view.ts';
 import { ChangesList } from '../ui/ChangesList.tsx';
 import { DownloadIcon } from '../ui/icons.tsx';
 import { Modal } from '../ui/Modal.tsx';
+import type { StripState } from '../ui/status-strip.ts';
+import { StatusStrip } from '../ui/StatusStrip.tsx';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { BridgeBlock } from './BridgeBlock.tsx';
 import type { ImportFile } from './import-file.ts';
@@ -52,7 +54,14 @@ interface Props {
   file?: ImportFile;
   open: boolean;
   pending: PendingSummary[];
+  /**
+   * Estado do currículo no Lattes (status-strip.ts): gravado e não publicado,
+   * alterações que não passaram por aqui e a data da última publicação. Fica
+   * no alto do painel; a contagem de alterações já está no selo e no aviso.
+   */
+  strip: StripState;
   onClose: () => void;
+  onDiagnosis: () => void;
   onDiscard: (entry: ChangeEntry) => void;
   onDiscardField: (entry: ChangeEntry, attr: string) => void;
   onDownload: () => void;
@@ -64,12 +73,14 @@ export function ExportPanel({
   changes,
   file,
   onClose,
+  onDiagnosis,
   onDiscard,
   onDiscardField,
   onDownload,
   onOpenItem,
   open,
   pending,
+  strip,
 }: Props) {
   const blocked = pending.filter((p) => p.problems.length > 0);
   const years = pending.map((p) => p.year).filter((y): y is number => y !== undefined);
@@ -133,6 +144,13 @@ export function ExportPanel({
       title="Enviar ao Lattes"
       onClose={onClose}
     >
+      <StatusStrip
+        state={{
+          ...strip,
+          segments: strip.segments.filter((x) => x.kind !== 'original' && x.kind !== 'alteracoes'),
+        }}
+        onOpen={(kind) => (kind === 'pendencia-desconhecida' ? onDiagnosis() : choose('enviado'))}
+      />
       <Tabs.Root className="send-tabs" value={tab} onValueChange={(v) => choose(v as PanelTab)}>
         <Tabs.List aria-label="Enviar ao Lattes" className="send-tab-list">
           <Tabs.Tab className="send-tab" value="a-enviar">

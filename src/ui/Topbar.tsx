@@ -1,18 +1,19 @@
-// Cabeçalho, na ordem do ciclo de uso: à esquerda o estado da cópia de
-// trabalho; à direita encontrar, editar, enviar ao Lattes e, no menu
-// de configurações, o que se usa menos.
+// Cabeçalho, na ordem do ciclo de uso: à esquerda o símbolo e o nome do app;
+// à direita encontrar, editar, enviar ao Lattes e, no menu de configurações,
+// o que se usa menos. O estado do currículo (no Lattes, publicado) fica no
+// "Enviar ao Lattes"; a contagem de alterações, no selo do botão de enviar e
+// no aviso de pendências.
 
 import { type Ref, useRef, useState } from 'react';
 
 import { isDesktop, pickFileNative } from '../desktop/native.ts';
+import { Brand } from './Brand.tsx';
 import { CloseConfirm } from './dialogs.tsx';
 import { AlertIcon, PlusIcon, SearchIcon, UploadIcon } from './icons.tsx';
 import type { Notice } from './notifications.ts';
 import { NotificationsMenu } from './NotificationsMenu.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { SettingsMenu } from './SettingsMenu.tsx';
-import type { StripState } from './status-strip.ts';
-import { StatusStrip, type StripOpenKind } from './StatusStrip.tsx';
 import type { ThemePref } from './theme.ts';
 
 export type SaveState = 'salvo' | 'salvando' | 'erro';
@@ -29,10 +30,10 @@ interface Props {
   pendingCount: number;
   ref: Ref<HTMLElement>;
   saveState: SaveState;
-  /** Faixa de estados: original, alterações, no Lattes, publicado. */
-  strip: StripState;
   theme: ThemePref;
   onClose: () => void;
+  /** O sino avisa de alterações no Lattes que não passaram por aqui: abre o diagnóstico. */
+  onDiagnosis: () => void;
   onExport: () => void;
   onHistory: () => void;
   onNewItem: () => void;
@@ -40,7 +41,6 @@ interface Props {
   onPrint: () => void;
   onReload: (file: File) => void;
   onSave: () => void;
-  onStripOpen: (kind: StripOpenKind) => void;
   onTheme: (theme: ThemePref) => void;
 }
 
@@ -61,6 +61,7 @@ export function Topbar({
   modified,
   notices,
   onClose,
+  onDiagnosis,
   onExport,
   onHistory,
   onNewItem,
@@ -68,22 +69,19 @@ export function Topbar({
   onPrint,
   onReload,
   onSave,
-  onStripOpen,
   onTheme,
   pendingCount,
   ref,
   saveState,
-  strip,
   theme,
 }: Props) {
   const reloadInput = useRef<HTMLInputElement>(null);
   const [closing, setClosing] = useState(false);
   return (
     <header ref={ref} data-tauri-drag-region className="topbar">
-      {/* A marca e quem é o currículo ficam no menu lateral; aqui, a faixa de
-          estados (e, no app de macOS, os botões da janela). */}
+      {/* O símbolo e o nome do app (no app de macOS, depois dos botões da janela). */}
       <div data-tauri-drag-region className="topbar-identity">
-        <StatusStrip state={strip} onOpen={onStripOpen} />
+        <Brand />
       </div>
 
       {/* Encontrar: centralizado na página. */}
@@ -147,7 +145,7 @@ export function Topbar({
           </button>
         </Tip>
 
-        <NotificationsMenu notices={notices} />
+        <NotificationsMenu notices={notices} onDiagnosis={onDiagnosis} />
 
         {/* Exibição e arquivo: o que se usa menos fica no menu. */}
         <SettingsMenu

@@ -12,7 +12,6 @@ import { ProductionForm } from '../forms/ProductionForm.tsx';
 import { useGeneralItem } from '../forms/use-general-item.ts';
 import { type Session, useProduction } from '../forms/use-production.ts';
 import { ExportPanel } from '../import-export/ExportPanel.tsx';
-import { requestTab } from '../import-export/send-routes.ts';
 import { encodeCv, loadCv, maxSequenciaProducao } from '../model/document.ts';
 import { importableTypes } from '../model/production.ts';
 import {
@@ -264,9 +263,9 @@ export function App() {
         notices={noticesOf(bridge, update, devExtensionFolder)}
         pendingCount={production.pending.length + changes.open}
         saveState={saveState}
-        strip={stripFor(production.pending.length + changes.open, bridge)}
         theme={theme}
         onClose={closeFile}
+        onDiagnosis={() => setDiagnosisOpen(true)}
         onExport={openExport}
         onHistory={() => void history.show()}
         onNewItem={() => setPickerOpen(true)}
@@ -276,11 +275,6 @@ export function App() {
         onSave={() =>
           void saveBytes(encodeCv(session.doc, session.meta.encoding), session.meta.fileName)
         }
-        onStripOpen={(kind) => {
-          if (kind === 'pendencia-desconhecida') return setDiagnosisOpen(true);
-          if (kind === 'no-lattes') requestTab('enviado');
-          openExport();
-        }}
         onTheme={setTheme}
       />
 
@@ -353,7 +347,9 @@ export function App() {
         file={exportFile}
         open={exportOpen}
         pending={production.summaries}
+        strip={stripFor(production.pending.length + changes.open, bridge)}
         onClose={() => setExportOpen(false)}
+        onDiagnosis={() => setDiagnosisOpen(true)}
         onDiscard={changes.discard}
         onDiscardField={changes.discardField}
         onDownload={() => exportFile && void saveBytes(exportFile.bytes, exportFile.fileName)}
@@ -419,7 +415,7 @@ function stripFor(editorChanges: number, bridge: { lattes?: LattesStatus; sent: 
 
 /** O sino: por que o Lattes não foi lido, um lado desatualizado, armazenamento sem chave. */
 function noticesOf(
-  bridge: { lattes?: LattesStatus; link: Link },
+  bridge: { lattes?: LattesStatus; link: Link; sent: SentEntry[] },
   update: UpdateState,
   devExtensionFolder?: string,
 ) {
@@ -428,6 +424,7 @@ function noticesOf(
     connection: connectionOf(bridge.link, Boolean(bridge.lattes)),
     devExtensionFolder,
     storage: storageStatus().status,
+    unknownPending: stripFor(0, bridge).segments.some((x) => x.kind === 'pendencia-desconhecida'),
     update,
   });
 }
