@@ -10,11 +10,19 @@ import { DEMO_XML } from '../scripts/lattes-simulado/estado.ts';
 import { applyAll, applyOp } from '../src/bridge/apply.ts';
 import { checkContract, isBreaking, LATTES_CONTRACT } from '../src/bridge/contract.ts';
 import { CREATE_SPECS } from '../src/bridge/create-items.ts';
-import { type CreateRegistroOp, registryInclusion } from '../src/bridge/create-registro.ts';
+import {
+  type CreateRegistroOp,
+  formDate,
+  OWNER_BY_HAND,
+  PATENT_BY_HAND,
+  patentDateGrid,
+  registroFields,
+  registryInclusion,
+} from '../src/bridge/create-registro.ts';
 import { exportCv } from '../src/bridge/export.ts';
 import { cvCodeFrom, lattesIdFrom } from '../src/bridge/lattes-html.ts';
-import { planChanges } from '../src/bridge/plan.ts';
-import { diffDocuments } from '../src/model/changes.ts';
+import { isOp, planChanges } from '../src/bridge/plan.ts';
+import { diffDocuments, resolvePath } from '../src/model/changes.ts';
 import { loadCv } from '../src/model/document.ts';
 import { generalTypes, insertGeneralItem, newGeneralItem } from '../src/model/general-items.ts';
 import {
@@ -66,15 +74,36 @@ function addRegistro(doc: XDocument, itemName: string, fill: (item: XElement) =>
   return item;
 }
 
-async function plan(edit: (doc: XDocument) => void, bytes: Uint8Array = DEMO, on = true) {
-  const original = await loadCv(bytes, 'demo.xml');
+/**
+ * O que o planejamento faz com o registro novo, e a operação que
+ * registroFields() monta para ele: o planejamento ainda o manda à mão pela
+ * grade de autores (seção 21), e a operação é a que vai quando ela for lida.
+ */
+async function plan(edit: (doc: XDocument) => void, on = true) {
+  const original = await loadCv(DEMO, 'demo.xml');
   const working = structuredClone(original.doc);
   edit(working);
-  const entries = diffDocuments(original.doc.root, working.root).map((change) => ({
-    change,
-    itemTitle: '',
-  }));
-  return planChanges(entries, working.root, { createItems: on });
+  const changes = diffDocuments(original.doc.root, working.root);
+  const entries = changes.map((change) => ({ change, itemTitle: '' }));
+  const planned = planChanges(entries, working.root, { createItems: on });
+  const ops: CreateRegistroOp[] = [];
+  const unsupported: string[] = [];
+  for (const change of changes) {
+    const chain = resolvePath(working.root, change.path);
+    const container = chain.at(-1)!;
+    const item = childElements(container)[0] ?? container;
+    const fields = registroFields(change, chain, item);
+    if ('reason' in fields) unsupported.push(fields.reason);
+    else
+      ops.push({
+        expect: {},
+        key: change.key,
+        kind: 'criar-registro',
+        label: 'Registro',
+        ...fields,
+      });
+  }
+  return { ops, planned, unsupported };
 }
 
 const desenho = (item: XElement) => {
@@ -82,7 +111,18 @@ const desenho = (item: XElement) => {
   setAttr(part(item, 'DADOS-BASICOS-'), 'PAIS', 'Brasil');
   setAttr(part(item, 'DADOS-BASICOS-'), 'FLAG-POTENCIAL-INOVACAO', 'NAO');
   setAttr(part(item, 'DETALHAMENTO-'), 'FINALIDADE', 'Mobiliário');
+  setAttr(part(item, 'DETALHAMENTO-'), 'INSTITUICAO-FINANCIADORA', 'FINEP');
   setAttr(registry(item), 'CODIGO-DO-REGISTRO-OU-PATENTE', 'BR302020001234');
+  setAttr(registry(item), 'INSTITUICAO-DEPOSITO-REGISTRO', 'INPI');
+  setAttr(registry(item), 'DATA-PEDIDO-DE-DEPOSITO', '01022020');
+};
+
+const marcaFill = (item: XElement) => {
+  setAttr(part(item, 'DADOS-BASICOS-'), 'TITULO', 'Sabiá');
+  setAttr(part(item, 'DADOS-BASICOS-'), 'PAIS', 'Brasil');
+  setAttr(part(item, 'DETALHAMENTO-'), 'NATUREZA', 'Nominativa');
+  setAttr(registry(item), 'TIPO-PATENTE', 'MARCA_REGISTRADA_DE_PRODUTO_MPD');
+  setAttr(registry(item), 'CODIGO-DO-REGISTRO-OU-PATENTE', '912345678');
   setAttr(registry(item), 'INSTITUICAO-DEPOSITO-REGISTRO', 'INPI');
 };
 
@@ -105,19 +145,36 @@ function findAll(root: XElement, name: string): XElement[] {
 }
 
 describe('planejar a inclusão de um registro', () => {
-  it('desligada por padrão; ligada, o desenho industrial vira inclusão com os campos do formulário', async () => {
+  it('o planejamento manda todo registro à mão pela grade de autores (seção 21)', async () => {
     expect(LATTES_CONTRACT.forms['criar-registro']).toBeUndefined();
     const edit = (doc: XDocument) => addRegistro(doc, 'DESENHO-INDUSTRIAL', desenho);
-    expect((await plan(edit, DEMO, false)).ops).toEqual([]);
-    const { ops, unsupported } = await plan(edit);
+    expect((await plan(edit, false)).planned.ops).toEqual([]);
+    const { planned } = await plan(edit);
+    expect(planned.ops.filter(isOp)).toEqual([]);
+    expect(planned.unsupported.map((u) => u.reason)).toEqual([OWNER_BY_HAND]);
+    const patente = await plan((doc) =>
+      addRegistro(doc, 'PATENTE', (item) => {
+        desenho(item);
+        setAttr(registry(item), 'TIPO-PATENTE', 'PRIVILEGIO_DE_INOVACAO_PI');
+      }),
+    );
+    expect(patente.planned.unsupported.map((u) => u.reason)).toEqual([PATENT_BY_HAND]);
+  });
+
+  it('o desenho industrial leva os campos e a data do registro como dd/mm/aaaa', async () => {
+    const { ops, unsupported } = await plan((doc) =>
+      addRegistro(doc, 'DESENHO-INDUSTRIAL', desenho),
+    );
     expect(unsupported).toEqual([]);
     expect(ops).toEqual([
       expect.objectContaining({
         kind: 'criar-registro',
         set: {
           f_cod_reg: 'BR302020001234',
+          f_dta_dep: '01/02/2020',
           f_finalidade: 'Mobiliário',
           f_inst: 'INPI',
+          f_inst_financ: 'FINEP',
           f_pais: 'BRA',
           f_sta_inovacao: 'N',
           f_titulo: 'Cadeira dobrável',
@@ -127,14 +184,35 @@ describe('planejar a inclusão de um registro', () => {
     ]);
   });
 
+  it('a patente leva as datas na grade, como array2xml a monta (seção 21)', async () => {
+    expect(formDate('01022020')).toBe('01/02/2020');
+    expect(formDate('2020-02-01')).toBeUndefined();
+    expect(patentDateGrid([{ code: '1', date: '01/02/2020', label: 'Depósito' }])).toBe(
+      '<root><item>\n\t<id>1</id>\n\t<contato>Depósito</contato>\n\t<endereco>01/02/2020</endereco>\n</item >\n</root >',
+    );
+    const { ops } = await plan((doc) =>
+      addRegistro(doc, 'PATENTE', (item) => {
+        desenho(item);
+        setAttr(registry(item), 'TIPO-PATENTE', 'PRIVILEGIO_DE_INOVACAO_PI');
+        setAttr(registry(item), 'DATA-DE-CONCESSAO', '05062023');
+      }),
+    );
+    expect(ops[0]!.set.f_dados_grid_datas).toBe(
+      patentDateGrid([
+        { code: '1', date: '01/02/2020', label: 'Depósito' },
+        { code: '3', date: '05/06/2023', label: 'Concessão' },
+      ]),
+    );
+    expect(ops[0]!.set.f_tipo).toBe('PI');
+  });
+
   it('a marca leva o tipo e a natureza; a cultivar, a denominação e o ano de solicitação', async () => {
     const { ops } = await plan((doc) => {
       addRegistro(doc, 'MARCA', (item) => {
-        setAttr(part(item, 'DADOS-BASICOS-'), 'TITULO', 'Sabiá');
+        marcaFill(item);
         setAttr(part(item, 'DADOS-BASICOS-'), 'ANO-DESENVOLVIMENTO', '2024');
         setAttr(part(item, 'DETALHAMENTO-'), 'NATUREZA', 'mista');
         setAttr(registry(item), 'TIPO-PATENTE', 'MARCA_REGISTRADA_DE_SERVICO_MSV');
-        setAttr(registry(item), 'CODIGO-DO-REGISTRO-OU-PATENTE', '912345678');
       });
     });
     expect(ops[0]).toMatchObject({
@@ -145,11 +223,19 @@ describe('planejar a inclusão de um registro', () => {
       addRegistro(doc, 'CULTIVAR-PROTEGIDA', (item) => {
         setAttr(part(item, 'DADOS-BASICOS-'), 'DENOMINACAO', 'BRS Pitanga');
         setAttr(part(item, 'DADOS-BASICOS-'), 'ANO-SOLICITACAO', '2022');
+        setAttr(part(item, 'DADOS-BASICOS-'), 'PAIS', 'Brasil');
         setAttr(registry(item), 'CODIGO-DO-REGISTRO-OU-PATENTE', '20220001');
+        setAttr(registry(item), 'INSTITUICAO-DEPOSITO-REGISTRO', 'SNPC');
+        setAttr(registry(item), 'DATA-DE-CONCESSAO', '10102022');
       });
     });
     expect(cultivar.ops[0]).toMatchObject({
-      set: { f_ano: '2022', f_cod_reg: '20220001', f_titulo: 'BRS Pitanga' },
+      set: {
+        f_ano: '2022',
+        f_cod_reg: '20220001',
+        f_dta_conc: '10/10/2022',
+        f_titulo: 'BRS Pitanga',
+      },
       tipo: 'CP',
     });
   });
@@ -158,17 +244,40 @@ describe('planejar a inclusão de um registro', () => {
     const reason = async (itemName: string, fill: (item: XElement) => void) => {
       const r = await plan((doc) => addRegistro(doc, itemName, fill));
       expect(r.ops, itemName).toEqual([]);
-      return r.unsupported[0]!.reason;
+      return r.unsupported[0]!;
     };
-    const withDate = (item: XElement) => {
-      desenho(item);
-      setAttr(registry(item), 'DATA-PEDIDO-DE-DEPOSITO', '01022024');
-    };
-    expect(await reason('MARCA', withDate)).toMatch(/grade de datas.*não foi observado/);
-    expect(await reason('DESENHO-INDUSTRIAL', withDate)).toMatch(
-      /formato da data no formulário não foi observado/,
-    );
-    expect(await reason('PATENTE', desenho)).toMatch(/A patente vai à mão.*data de depósito/);
+    // Marca e topografia: nenhum campo de data na tela (seção 21).
+    expect(
+      await reason('MARCA', (item) => {
+        marcaFill(item);
+        setAttr(registry(item), 'DATA-PEDIDO-DE-DEPOSITO', '01022024');
+      }),
+    ).toBe('Campos que o formulário de inclusão não tem: DATA-PEDIDO-DE-DEPOSITO');
+    expect(
+      await reason('DESENHO-INDUSTRIAL', (item) => {
+        desenho(item);
+        setAttr(registry(item), 'DATA-PEDIDO-DE-DEPOSITO', '2024');
+      }),
+    ).toMatch(/Valores sem correspondência.*\(2024\)/);
+    expect(
+      await reason('PATENTE', (item) => {
+        desenho(item);
+        setAttr(registry(item), 'TIPO-PATENTE', 'PRIVILEGIO_DE_INOVACAO_PI');
+        setAttr(registry(item), 'DATA-PEDIDO-DE-DEPOSITO', '');
+      }),
+    ).toMatch(/data de depósito ou a de depósito PCT/);
+    expect(
+      await reason('DESENHO-INDUSTRIAL', (item) => {
+        desenho(item);
+        setAttr(part(item, 'DETALHAMENTO-'), 'FINALIDADE', '');
+      }),
+    ).toBe('O Lattes exige a finalidade');
+    expect(
+      await reason('MARCA', (item) => {
+        marcaFill(item);
+        setAttr(part(item, 'DETALHAMENTO-'), 'NATUREZA', '');
+      }),
+    ).toBe('O Lattes exige a natureza');
     // O desenho industrial não tem ano no formulário (o f_ano é oculto).
     expect(
       await reason('DESENHO-INDUSTRIAL', (item) => {
@@ -184,8 +293,7 @@ describe('planejar a inclusão de um registro', () => {
     ).toMatch(/Valores sem correspondência no formulário: .*\(SIM\)/);
     expect(
       await reason('MARCA', (item) => {
-        setAttr(part(item, 'DADOS-BASICOS-'), 'TITULO', 'Sabiá');
-        setAttr(registry(item), 'CODIGO-DO-REGISTRO-OU-PATENTE', '1');
+        marcaFill(item);
         setAttr(registry(item), 'TIPO-PATENTE', 'MARCA_REGISTRADA_MISTA_MRM');
       }),
     ).toMatch(/MARCA_REGISTRADA_MISTA_MRM/);
@@ -213,7 +321,7 @@ describe('planejar a inclusão de um registro', () => {
       await reason('TOPOGRAFIA-DE-CIRCUITO-INTEGRADO', (item) =>
         setAttr(part(item, 'DADOS-BASICOS-'), 'TITULO', 'Chip'),
       ),
-    ).toMatch(/precisa do título .* e do número/);
+    ).toMatch(/exige título .* número, instituição de registro e país/);
   });
 });
 
@@ -238,20 +346,16 @@ describe('incluir registros no Lattes simulado', () => {
     const others = await plan((doc) => {
       addRegistro(doc, 'DESENHO-INDUSTRIAL', desenho);
     });
-    const marca = await plan((doc) => {
-      addRegistro(doc, 'MARCA', (item) => {
-        setAttr(part(item, 'DADOS-BASICOS-'), 'TITULO', 'Sabiá');
-        setAttr(part(item, 'DETALHAMENTO-'), 'NATUREZA', 'Nominativa');
-        setAttr(registry(item), 'TIPO-PATENTE', 'MARCA_REGISTRADA_DE_PRODUTO_MPD');
-        setAttr(registry(item), 'CODIGO-DO-REGISTRO-OU-PATENTE', '912345678');
-      });
-    });
+    const marca = await plan((doc) => addRegistro(doc, 'MARCA', marcaFill));
     const topografia = await plan((doc) => {
       addRegistro(doc, 'TOPOGRAFIA-DE-CIRCUITO-INTEGRADO', (item) => {
         setAttr(part(item, 'DADOS-BASICOS-'), 'TITULO', 'Conversor AD');
         setAttr(part(item, 'DADOS-BASICOS-'), 'ANO-DESENVOLVIMENTO', '2021');
+        setAttr(part(item, 'DADOS-BASICOS-'), 'PAIS', 'Brasil');
         setAttr(part(item, 'DETALHAMENTO-'), 'INSTITUICAO-FINANCIADORA', 'FINEP');
+        setAttr(part(item, 'DETALHAMENTO-'), 'FINALIDADE', 'Instrumentação');
         setAttr(registry(item), 'CODIGO-DO-REGISTRO-OU-PATENTE', 'BR132021000011');
+        setAttr(registry(item), 'INSTITUICAO-DEPOSITO-REGISTRO', 'INPI');
       });
     });
     const all = [...others.ops, ...marca.ops, ...topografia.ops];

@@ -4,18 +4,18 @@ Gerado por `pnpm censo:relatorio` a partir das capturas em `docs/lattes-formular
 e de `src/schema/lattes.json`. Não editar à mão. Como capturar e o que cada
 grupo quer dizer está no `README.md` desta pasta.
 
-Formulários no censo: 77, com captura: 72, sem captura: 5.
+Formulários no censo: 78, com captura: 76, sem captura: 2.
 
 ## Atributos por grupo
 
 | Grupo              | Atributo por formulário | Atributo distinto |
 | ------------------ | ----------------------: | ----------------: |
-| com opções         |                     304 |               289 |
-| texto livre        |                     681 |               565 |
-| oculto             |                    1186 |               136 |
-| fora do formulário |                     998 |               742 |
-| sem captura        |                     162 |                66 |
-| total              |                    3331 |              1798 |
+| com opções         |                     315 |               292 |
+| texto livre        |                     707 |               577 |
+| oculto             |                    1243 |               139 |
+| fora do formulário |                    1033 |               746 |
+| sem captura        |                      93 |                44 |
+| total              |                    3391 |              1798 |
 
 ## Formulários
 
@@ -41,7 +41,7 @@ ligação do formulário com os elementos do XML foi conferida.
 | Formação acadêmica: ensino técnico (`formacao-FA-7`)                  | endereço conhecido    | observado | observado | 2026-10-15 |      2 |     5 |      3 |    5 |
 | Formação acadêmica: ensino médio (`formacao-FA-C`)                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      1 |     3 |      2 |    1 |
 | Formação acadêmica: ensino fundamental (`formacao-FA-B`)              | endereço conhecido    | observado | inferido  | 2026-10-15 |      1 |     3 |      2 |    1 |
-| Formação acadêmica: aperfeiçoamento (`formacao-FA-X`)                 | endereço conhecido    | observado | inferido  | falta      |        |       |        |      |
+| Formação acadêmica: aperfeiçoamento (`formacao-FA-X`)                 | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     8 |      3 |    7 |
 | Formação: pós-doutorado (`formacao-AP-5`)                             | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     4 |     26 |    6 |
 | Formação: livre-docência (`formacao-AP-6`)                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     3 |     23 |    2 |
 | Formação complementar (`formacao-complementar`)                       | endereço conhecido    | observado | observado | 2026-10-15 |      8 |     6 |      9 |   56 |
@@ -58,7 +58,7 @@ ligação do formulário com os elementos do XML foi conferida.
 | Projeto de extensão (`projeto-E`)                                     | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    14 |      2 |   18 |
 | Projeto de ensino (`projeto-N`)                                       | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    14 |      2 |   18 |
 | Projeto de outros (`projeto-O`)                                       | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    14 |      2 |   18 |
-| Artigos completos publicados (`artigo-publicado`)                     | link da lista         | inferido  | inferido  | falta      |        |       |        |      |
+| Artigos completos publicados (`artigo-publicado`)                     | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     9 |     26 |   10 |
 | Artigos aceitos para publicação (`artigo-aceito`)                     | endereço conhecido    | observado | inferido  | 2026-10-15 |      3 |     5 |     26 |   14 |
 | Livros e capítulos (`livro-capitulo`)                                 | link da lista         | inferido  | inferido  | 2026-10-15 |     10 |    17 |     26 |   17 |
 | Trabalhos em anais (`trabalho-em-eventos`)                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |    12 |     26 |   12 |
@@ -66,14 +66,15 @@ ligação do formulário com os elementos do XML foi conferida.
 | Tradução (`traducao`)                                                 | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |    13 |     26 |    7 |
 | Partitura musical (`partitura`)                                       | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     9 |     26 |    5 |
 | Prefácio, posfácio e outra produção bibliográfica (`prefacio-outras`) | endereço desconhecido | inferido  | inferido  | falta      |        |       |        |      |
-| Patente: janela "Incluir nova patente" (`patente-janela`)             | endereço conhecido    | observado | inferido  | falta      |        |       |        |      |
+| Patente: janela "Incluir nova patente" (`patente-janela`)             | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
 | Patente (`patente`)                                                   | endereço conhecido    | observado | observado | 2026-10-15 |      3 |     9 |     27 |   19 |
 | Programa de computador (`registro-PC`)                                | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     8 |     27 |   20 |
+| Programa de computador registrado (`registro-PC-S`)                   | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     9 |     28 |   18 |
 | Cultivar protegida (`registro-CP`)                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     6 |     26 |   17 |
 | Cultivar registrada (`registro-CR`)                                   | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     6 |     26 |   17 |
-| Desenho industrial (`registro-DI`)                                    | endereço conhecido    | inferido  | inferido  | 2026-10-15 |      2 |     7 |     27 |   15 |
-| Marca (`registro-MR`)                                                 | endereço conhecido    | inferido  | inferido  | 2026-10-15 |      4 |     7 |     26 |   14 |
-| Topografia de circuito integrado (`registro-TC`)                      | endereço conhecido    | inferido  | inferido  | 2026-10-15 |      2 |     8 |     26 |   15 |
+| Desenho industrial (`registro-DI`)                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     7 |     27 |   15 |
+| Marca (`registro-MR`)                                                 | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     7 |     26 |   14 |
+| Topografia de circuito integrado (`registro-TC`)                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     8 |     26 |   15 |
 | Produtos tecnológicos (`produto`)                                     | endereço conhecido    | observado | inferido  | 2026-10-15 |      6 |    10 |     26 |   17 |
 | Processos ou técnicas (`processo`)                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      6 |    10 |     26 |   16 |
 | Trabalhos técnicos (`trabalho-tecnico`)                               | endereço conhecido    | observado | observado | 2026-10-15 |      6 |    10 |     27 |    3 |
@@ -119,6 +120,7 @@ não cobra estas até a passada de edição observar a ligação.
 - DADOS-BASICOS-DE-ARTES-VISUAIS@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
 - DADOS-BASICOS-DA-MUSICA@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
 - DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
+- DADOS-BASICOS-DO-ARTIGO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (Impresso e mídia eletrônica)
 - DADOS-BASICOS-DE-DEMAIS-TRABALHOS@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
 - DADOS-GERAIS@SEXO: opções do Lattes sem valor conhecido no XSD (2 valores): M (), F ()
 - LICENCA@TIPO-LICENCA: opções do Lattes sem valor conhecido no XSD (1 valores): P (Paternidade), A (Adoção)
@@ -148,7 +150,7 @@ não cobra estas até a passada de edição observar a ligação.
 
 ## Lacunas
 
-Formulários sem captura: `formacao-FA-X`, `linha-de-pesquisa`, `artigo-publicado`, `prefacio-outras`, `patente-janela`.
+Formulários sem captura: `linha-de-pesquisa`, `prefacio-outras`.
 
 Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA-ARTISTICA`, `APRESENTACAO-EM-RADIO-OU-TV`, `ARRANJO-MUSICAL`, `COMPOSICAO-MUSICAL`, `CURRICULO-VITAE`, `CURSO-DE-CURTA-DURACAO`, `DADOS-BASICOS-DA-APRESENTACAO-DE-OBRA-ARTISTICA`, `DADOS-BASICOS-DA-APRESENTACAO-EM-RADIO-OU-TV`, `DADOS-BASICOS-DA-COMPOSICAO-MUSICAL`, `DADOS-BASICOS-DA-OBRA-DE-ARTES-VISUAIS`, `DADOS-BASICOS-DE-SONOPLASTIA`, `DADOS-BASICOS-DO-ARRANJO-MUSICAL`, `DADOS-BASICOS-DO-CURSO-DE-CURTA-DURACAO`, `DETALHAMENTO-DA-APRESENTACAO-DE-OBRA-ARTISTICA`, `DETALHAMENTO-DA-APRESENTACAO-EM-RADIO-OU-TV`, `DETALHAMENTO-DA-COMPOSICAO-MUSICAL`, `DETALHAMENTO-DA-OBRA-DE-ARTES-VISUAIS`, `DETALHAMENTO-DE-SONOPLASTIA`, `DETALHAMENTO-DO-ARRANJO-MUSICAL`, `DETALHAMENTO-DO-CURSO-DE-CURTA-DURACAO`, `INFORMACAO-ADICIONAL-CURSO`, `INFORMACAO-ADICIONAL-INSTITUICAO`, `OBRA-DE-ARTES-VISUAIS`, `SONOPLASTIA`.
 
@@ -727,6 +729,42 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 **fora do formulário**
 
 - `ENSINO-FUNDAMENTAL-PRIMEIRO-GRAU@SEQUENCIA-FORMACAO`
+
+</details>
+
+<details><summary>Formação acadêmica: aperfeiçoamento (formacao-FA-X)</summary>
+
+**com opções**
+
+- `APERFEICOAMENTO@STATUS-DO-CURSO` ← `F_STATUS` (documentado)
+- `APERFEICOAMENTO@FLAG-BOLSA` ← `F_BOLSA` (observado)
+
+**texto livre**
+
+- `APERFEICOAMENTO@TITULO-DA-MONOGRAFIA` ← `f_titulo` (inferido)
+- `APERFEICOAMENTO@NOME-DO-ORIENTADOR` ← `f_orient` (observado)
+- `APERFEICOAMENTO@NOME-INSTITUICAO` ← `f_inst` (observado)
+- `APERFEICOAMENTO@NOME-CURSO` ← `f_curso` (observado)
+- `APERFEICOAMENTO@ANO-DE-INICIO` ← `f_ano_ini` (observado)
+- `APERFEICOAMENTO@ANO-DE-CONCLUSAO` ← `f_ano_fim` (observado)
+- `APERFEICOAMENTO@NOME-AGENCIA` ← `f_nme_agencia` (inferido)
+- `APERFEICOAMENTO@CARGA-HORARIA` ← `f_carga` (inferido)
+
+**oculto**
+
+- `APERFEICOAMENTO@NIVEL` ← `f_nivel` (inferido)
+- `APERFEICOAMENTO@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
+- `APERFEICOAMENTO@CODIGO-CURSO` ← `f_cod_curso` (inferido)
+
+**fora do formulário**
+
+- `APERFEICOAMENTO@SEQUENCIA-FORMACAO`
+- `APERFEICOAMENTO@CODIGO-ORGAO`
+- `APERFEICOAMENTO@NOME-ORGAO`
+- `APERFEICOAMENTO@CODIGO-AREA-CURSO`
+- `APERFEICOAMENTO@CODIGO-AGENCIA-FINANCIADORA`
+- `APERFEICOAMENTO@TITULO-DA-MONOGRAFIA-INGLES`
+- `APERFEICOAMENTO@NOME-CURSO-INGLES`
 
 </details>
 
@@ -1371,6 +1409,71 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 </details>
 
+<details><summary>Artigos completos publicados (artigo-publicado)</summary>
+
+**com opções**
+
+- `DADOS-BASICOS-DO-ARTIGO@IDIOMA` ← `F_IDIOMA` (inferido)
+- `DADOS-BASICOS-DO-ARTIGO@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
+- `DADOS-BASICOS-DO-ARTIGO@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
+- `DADOS-BASICOS-DO-ARTIGO@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
+
+**texto livre**
+
+- `DADOS-BASICOS-DO-ARTIGO@TITULO-DO-ARTIGO` ← `f_titulo` (inferido)
+- `DADOS-BASICOS-DO-ARTIGO@ANO-DO-ARTIGO` ← `f_ano` (inferido)
+- `DADOS-BASICOS-DO-ARTIGO@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (inferido)
+- `DADOS-BASICOS-DO-ARTIGO@TITULO-DO-ARTIGO-INGLES` ← `f_titulo_en` (inferido)
+- `DETALHAMENTO-DO-ARTIGO@ISSN` ← `f_issn` (inferido)
+- `DETALHAMENTO-DO-ARTIGO@VOLUME` ← `f_volume` (inferido)
+- `DETALHAMENTO-DO-ARTIGO@SERIE` ← `f_serie` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+
+**oculto**
+
+- `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
+- `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
+- `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
+- `AUTORES@CPF` ← `f_autores_l` (inferido)
+- `AUTORES@NRO-ID-CNPQ` ← `f_autores_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-1` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-2` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-3` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-4` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-5` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-6` ← `f_plv_l` (inferido)
+- `AREA-DO-CONHECIMENTO-1@NOME-GRANDE-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-1@NOME-DA-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-1@NOME-DA-SUB-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-1@NOME-DA-ESPECIALIDADE` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-2@NOME-GRANDE-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-2@NOME-DA-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-2@NOME-DA-SUB-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-2@NOME-DA-ESPECIALIDADE` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-3@NOME-GRANDE-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-3@NOME-DA-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-3@NOME-DA-SUB-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-3@NOME-DA-ESPECIALIDADE` ← `f_area_l` (inferido)
+- `SETORES-DE-ATIVIDADE@SETOR-DE-ATIVIDADE-1` ← `f_setor_l` (inferido)
+- `SETORES-DE-ATIVIDADE@SETOR-DE-ATIVIDADE-2` ← `f_setor_l` (inferido)
+- `SETORES-DE-ATIVIDADE@SETOR-DE-ATIVIDADE-3` ← `f_setor_l` (inferido)
+
+**fora do formulário**
+
+- `ARTIGO-PUBLICADO@SEQUENCIA-PRODUCAO`
+- `ARTIGO-PUBLICADO@ORDEM-IMPORTANCIA`
+- `DADOS-BASICOS-DO-ARTIGO@NATUREZA`
+- `DADOS-BASICOS-DO-ARTIGO@PAIS-DE-PUBLICACAO`
+- `DADOS-BASICOS-DO-ARTIGO@DOI`
+- `DETALHAMENTO-DO-ARTIGO@TITULO-DO-PERIODICO-OU-REVISTA`
+- `DETALHAMENTO-DO-ARTIGO@FASCICULO`
+- `DETALHAMENTO-DO-ARTIGO@PAGINA-INICIAL`
+- `DETALHAMENTO-DO-ARTIGO@PAGINA-FINAL`
+- `DETALHAMENTO-DO-ARTIGO@LOCAL-DE-PUBLICACAO`
+
+</details>
+
 <details><summary>Artigos aceitos para publicação (artigo-aceito)</summary>
 
 **com opções**
@@ -1781,6 +1884,10 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 </details>
 
+<details><summary>Patente: janela "Incluir nova patente" (patente-janela)</summary>
+
+</details>
+
 <details><summary>Patente (patente)</summary>
 
 **com opções**
@@ -1928,6 +2035,82 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `REGISTRO-OU-PATENTE@NOME-DO-TITULAR`
 - `REGISTRO-OU-PATENTE@NOME-DO-DEPOSITANTE`
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
+
+</details>
+
+<details><summary>Programa de computador registrado (registro-PC-S)</summary>
+
+**com opções**
+
+- `DADOS-BASICOS-DO-SOFTWARE@NATUREZA` ← `f_natureza` (inferido)
+- `DADOS-BASICOS-DO-SOFTWARE@PAIS` ← `f_pais` (inferido)
+- `DADOS-BASICOS-DO-SOFTWARE@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
+- `DADOS-BASICOS-DO-SOFTWARE@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
+- `DADOS-BASICOS-DO-SOFTWARE@FLAG-POTENCIAL-INOVACAO` ← `f_sta_inovacao` (inferido)
+
+**texto livre**
+
+- `DADOS-BASICOS-DO-SOFTWARE@TITULO-DO-SOFTWARE` ← `f_titulo` (inferido)
+- `DADOS-BASICOS-DO-SOFTWARE@TITULO-DO-SOFTWARE-INGLES` ← `f_titulo_en` (inferido)
+- `DETALHAMENTO-DO-SOFTWARE@FINALIDADE` ← `f_finalidade` (inferido)
+- `DETALHAMENTO-DO-SOFTWARE@PLATAFORMA` ← `f_plataforma` (inferido)
+- `REGISTRO-OU-PATENTE@CODIGO-DO-REGISTRO-OU-PATENTE` ← `f_cod_reg` (inferido)
+- `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
+- `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+
+**oculto**
+
+- `DADOS-BASICOS-DO-SOFTWARE@ANO` ← `f_ano` (inferido)
+- `DETALHAMENTO-DO-SOFTWARE@AMBIENTE` ← `f_ambiente` (inferido)
+- `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
+- `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
+- `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
+- `AUTORES@CPF` ← `f_autores_l` (inferido)
+- `AUTORES@NRO-ID-CNPQ` ← `f_autores_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-1` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-2` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-3` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-4` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-5` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-6` ← `f_plv_l` (inferido)
+- `AREA-DO-CONHECIMENTO-1@NOME-GRANDE-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-1@NOME-DA-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-1@NOME-DA-SUB-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-1@NOME-DA-ESPECIALIDADE` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-2@NOME-GRANDE-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-2@NOME-DA-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-2@NOME-DA-SUB-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-2@NOME-DA-ESPECIALIDADE` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-3@NOME-GRANDE-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-3@NOME-DA-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-3@NOME-DA-SUB-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-3@NOME-DA-ESPECIALIDADE` ← `f_area_l` (inferido)
+- `SETORES-DE-ATIVIDADE@SETOR-DE-ATIVIDADE-1` ← `f_setor_l` (inferido)
+- `SETORES-DE-ATIVIDADE@SETOR-DE-ATIVIDADE-2` ← `f_setor_l` (inferido)
+- `SETORES-DE-ATIVIDADE@SETOR-DE-ATIVIDADE-3` ← `f_setor_l` (inferido)
+
+**fora do formulário**
+
+- `SOFTWARE@SEQUENCIA-PRODUCAO`
+- `DADOS-BASICOS-DO-SOFTWARE@IDIOMA`
+- `DADOS-BASICOS-DO-SOFTWARE@MEIO-DE-DIVULGACAO`
+- `DADOS-BASICOS-DO-SOFTWARE@HOME-PAGE-DO-TRABALHO`
+- `DADOS-BASICOS-DO-SOFTWARE@DOI`
+- `DETALHAMENTO-DO-SOFTWARE@DISPONIBILIDADE`
+- `DETALHAMENTO-DO-SOFTWARE@INSTITUICAO-FINANCIADORA`
+- `DETALHAMENTO-DO-SOFTWARE@FINALIDADE-INGLES`
+- `REGISTRO-OU-PATENTE@TIPO-PATENTE`
+- `REGISTRO-OU-PATENTE@FORMATO-DATA-PEDIDO`
+- `REGISTRO-OU-PATENTE@DATA-PEDIDO-DE-DEPOSITO`
+- `REGISTRO-OU-PATENTE@DATA-DE-PEDIDO-DE-EXAME`
+- `REGISTRO-OU-PATENTE@DATA-DE-CONCESSAO`
+- `REGISTRO-OU-PATENTE@NUMERO-DEPOSITO-PCT`
+- `REGISTRO-OU-PATENTE@FORMATO-DATA-DEPOSITO-PCT`
+- `REGISTRO-OU-PATENTE@DATA-DEPOSITO-PCT`
+- `REGISTRO-OU-PATENTE@NOME-DO-TITULAR`
+- `REGISTRO-OU-PATENTE@NOME-DO-DEPOSITANTE`
 
 </details>
 

@@ -1376,3 +1376,136 @@ com itens no currículo. **Observado**:
 - Rádios com o texto antes ("Sim (o) Não (o)", nos projetos e patentes) saíram
   com o rótulo deslocado nesta captura; o coletor foi corrigido, e a próxima
   captura traz os rótulos certos.
+
+## 21. Recaptura de 15/10/2026 (LAT-57)
+
+Só leitura, na sessão do dono do currículo, com o `inspect()` e o
+`capture({ scripts: true, discover: true })` do censo
+(`lattes-formularios/recaptura.md`): 31 páginas, com os scripts da própria
+página sem dado pessoal. Os arquivos crus não são versionados; o que virou
+entrada do censo está em `lattes-formularios/censo-2026-10-15b.json`. Tudo
+abaixo foi lido no código das páginas, sem enviar nada. **Observado**, menos
+onde está marcado.
+
+**Datas da patente.** Ficam na grade `gridContatos`, cada linha um objeto
+`{id, contato, endereco}`: `id` é o código da situação como número (1
+depósito, 2 depósito PCT, 3 concessão, 4 expiração, 5 pedido de exame, 6
+comercialização, 7 licenciamento, 8 cessão, 9 aguardando negociação, 10 em
+domínio público), `contato` é o rótulo da opção ("Depósito", "Depósito PCT",
+"Pedido do Exame", "Licenciamento", "Concessão", "Comercialização", "Cessão",
+"Em Domínio Público", "Aguardando Negociação"; a expiração não está no combo)
+e `endereco` é a data. A data se digita com a máscara `formatacao.data` e
+`check_data()` exige dez caracteres com barras: `dd/mm/aaaa`. Na situação 9
+a data vira "Não se Aplica". O `check()` monta `f_dados_grid_datas` com
+`array2xml("item", "root", gridContatos.getProvider())`, que passa o vetor por
+`json2xml.convert` e troca as marcas numéricas, e tira `<search/>`,
+`<getObj/>` e "Não se Aplica". Uma linha fica assim:
+
+```xml
+<root><item>
+	<id>1</id>
+	<contato>Depósito</contato>
+	<endereco>01/02/2024</endereco>
+</item >
+</root >
+```
+
+O `check()` da patente exige depositante ou titular (as grades
+`titularPessoaGrid` e `titularInstGrid`, que vão em `f_depositante_pessoa_l` e
+`f_depositante_inst_l`, com as chaves da seção 16), país, categoria (`f_natureza`), natureza (`f_tipo`),
+instituição de registro, número (com o INPI, `^(PI|MU|BR)\d+$`), e a data de
+depósito ou a de depósito PCT, de onde ele tira o ano (`f_ano`). O número já
+cadastrado é conferido pelo POST `verifica_cadastrado` (`existeCadastrado`).
+O sentido de `pais`, `staValidado` e `tipoInst` nas grades de titulares não
+foi lido. **Lacuna.**
+
+**Datas dos outros registros.** Na cultivar protegida (`f_dta_dep` "Data de
+depósito", `f_dta_conc` "Data de concessão"), na registrada (`f_dta_dep`) e no
+desenho industrial (`f_dta_dep` "Data do registro", obrigatória; `f_dta_conc`
+"Data de concessão") as datas são campos de texto, e o `check()` as lê como
+`dd/mm/aaaa` (`substr(6,4) + substr(3,2) + substr(0,2)`, mensagens "Digite no
+formato dd/mm/aaaa"). Na marca e na topografia os mesmos campos são ocultos e
+não há campo de data na tela; que só a recuperação de dados do INPI os
+preencha é **inferido** do código, que é o mesmo para todos os tipos.
+
+**Autores, inventores e melhoristas.** Em todos os registros e nas produções
+lidas (artigo aceito, trabalho em anais, trabalho técnico, bancas), o
+`check()` exige o próprio nome na grade (`checkIncluiUsuarioComoAutor`: alguma
+linha com o código `c` começando com "-", vazio ou "D"; na cultivar, "lista de
+melhoristas"). O formulário de inclusão abre com a grade vazia: o vetor
+`autorProvider` é `[{}]`, só a linha em branco do fim. A grade vai em
+`f_autores_l` com as chaves `c`, `l`, `t`, `pais` e `add` de cada linha, na
+ordem do objeto (nos registros, também `tit`), separadas por `|`, e as
+linhas por `@`; nos artigos, o que
+passa de 32.500 caracteres segue em `f_autores_l2` a `f_autores_l4`. Um autor
+digitado na hora vira `{l, t, c: " ", tit: "n", add: true, …}`; os sugeridos
+vêm do `autorDP` do menu (seção 18). Como é a linha do dono no `autorDP`, e o
+sentido de `pais`, não foram lidos. **Lacuna**: o lote 4 da recaptura
+(`authorShape`) responde sem nome nenhum.
+
+**Projeto.** A equipe usa a mesma grade, com as chaves `c`, `l`, `t`, `tit` e
+`add`; o `check()` exige o próprio nome, um coordenador (e só um) e, na
+inclusão, o órgão ou unidade (`f_codorgao` ou `f_codorgao2`). Os financiadores
+vão em `f_inst_l` com quatro valores da grade `grid_2` por linha, unidos por
+`|` e terminados em `|@`; os valores vêm da janela
+`pp_lista_inst?f_pgm=INSTFINANC`, e o sentido de cada um não foi lido. As
+produções e orientações ligadas vão em `f_producoes_l` e `f_orientacoes_l`, o
+primeiro valor de cada linha seguido de `@`.
+
+**Programa de computador registrado.** A lista de programas
+(`PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=PC`) abre a janela prévia
+`informar_dados_patente?ftipo=PC` e depois
+`pkg_patente_registro.form?f_sta_inovacao=&f_reg=S&f_cod_tipo=PC&f_inst=…`. O
+formulário com `f_reg=S` tem instituição de registro, número, data do registro
+e data do certificado de registro (obrigatórias), linguagens, finalidade,
+instituição financiadora e o tipo de programa, todos obrigatórios no
+`check()`.
+
+**Artigo publicado.** A lista oferece três entradas: pelo DOI (`F_COD_DOI`),
+pelo periódico (`F_ID_PERIOD`) e à mão (`F_ORIGEM_WS=F`). A entrada à mão
+abre o formulário, agora no censo.
+
+**Prefácio, posfácio e outra produção bibliográfica.** `prc_bib_demais_lista`
+sem `f_cod_tipo` responde 404, e a leitura das listas do menu (`discover`) só
+achou inclusão de tradução e partitura entre os demais tipos. Que o Lattes não
+ofereça mais incluir esses dois tipos é **inferido**.
+
+**Licença.** `f_tipo_licenca` tem `M` maternidade, `P` paternidade e `A`
+adoção; as datas são `dd/mm/aaaa`. O `check()` exige o tipo, o início, o fim e
+a data de nascimento ou adoção (`f_dta_nasc_adoc`), início depois dela e
+período de até 180 dias. O XML da licença não guarda a data de nascimento ou
+adoção, e o XSD só tem `MATERNIDADE`.
+
+**Áreas de atuação.** `prc_area_atuacao` serializa a grade em `f_area_l` com
+as chaves `l`, `c`, `r` e `p` (o `r` com a letra "r" na frente) e a
+privacidade em `f_privacidade`, linha a linha. O sentido de `r` não foi lido.
+
+**Formação complementar.** O `check()` exige nível, curso (pela busca
+`prc_curso_form?f_pgm=FORM&f_nivel=<nível>&f_inst=<instituição>`), instituição
+(pela busca `prc_inst_form?f_nivel=<nível>`, dispensada nos níveis B, C, 9, D
+e Y), situação (menos na livre-docência) e carga horária numérica, e envia
+para `PKG_FORMACAO_COMPL.FORM2`. O formulário não tem os anos; o que vem
+depois do envio só se vê enviando. **Lacuna.**
+
+**Linha de pesquisa.** A lista ("Atuação profissional - Linhas de pesquisa")
+não tem formulário nem link de inclusão. Que a linha entre pela atividade de
+pesquisa e desenvolvimento da atuação é **inferido**.
+
+**Orientações.** A busca de instituição é `prc_inst_form?f_cod=…`, sem nível;
+a de curso, `prc_curso_form?f_pgm=TESE&f_cod=…&f_inst=<código>&f_nivel=<nível>&f_sta_area=<s>`,
+com o nível tirado da natureza (`retnivel()`: 41 mestrado 3, ou 9 com
+`f_sub_prod` 30; 42 doutorado 4; 43 aperfeiçoamento 2; 44, 45 e 49 nível 1;
+46 4; os códigos A41 a A49 das orientações em andamento seguem o mesmo, com
+`f_sub_prod` 37 para o mestrado profissional) e `f_sta_area` "N" no
+aperfeiçoamento e na graduação; a agência é `prc_agencia`. `f_sub_prod` e
+`f_dsc_outra` vêm de `atribui("<código>#<descrição>")`. O `check()` exige
+natureza, título, ano, país, idioma, tipo de orientação, nome do orientando,
+instituição e, menos na supervisão de pós-doutorado, na iniciação científica e
+em outra natureza, o curso.
+
+**Corpo editorial, revisão e assessoramento.** As quatro listas só têm o link
+de inclusão; o currículo não tem item, e o elemento do XML continua
+desconhecido.
+
+**Aperfeiçoamento.** O formulário do nível X, que deu erro de rede no censo,
+foi lido e entrou no censo.

@@ -158,7 +158,7 @@ describe('planejar a inclusão de uma formação', () => {
   it('patente e itens que não são formação nem projeto ficam de fora', () => {
     const patente = parseXml('<PATENTE SEQUENCIA-PRODUCAO="40"/>').root;
     expect(planCreateItem(change(), [patente], 'Patente')).toEqual({
-      reason: expect.stringMatching(/A patente vai à mão/),
+      reason: expect.stringMatching(/O Lattes exige título/),
     });
     const resumo = parseXml('<RESUMO-CV TEXTO-RESUMO-CV-RH="x"/>').root;
     expect(planCreateItem(change(), [resumo], 'Resumo')).toBeUndefined();

@@ -10,8 +10,9 @@
 // Inferidos: as listas dos outros tipos no menu e o link de
 // inclusão delas, o link de cada linha (com f_seq), a ligação de cada campo
 // com o atributo do XML (nenhum item desses no currículo de quem capturou) e
-// o efeito do POST. As datas não são ligadas: o formato que o formulário
-// espera não foi observado, e o conector não as manda.
+// o efeito do POST. As datas em campo de texto (cultivares e desenho) são
+// dd/mm/aaaa, observado na recaptura de 15/10/2026; a ligação de cada uma com o
+// atributo do XML é inferida pelo rótulo.
 
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, type XElement } from '../../src/model/xml.ts';
@@ -76,6 +77,16 @@ function links(tipo: string): Record<string, FieldLink> {
   }
   if (has('f_finalidade')) out.f_finalidade = { attr: 'FINALIDADE', under: DETAIL };
   if (has('f_inst_financ')) out.f_inst_financ = { attr: 'INSTITUICAO-FINANCIADORA', under: DETAIL };
+  // Datas em campo de texto, dd/mm/aaaa (recaptura de 15/10/2026); no XML, DDMMAAAA.
+  const date: Pick<FieldLink, 'toForm' | 'toXml'> = {
+    toForm: (xml) =>
+      /^\d{8}$/.test(xml) ? `${xml.slice(0, 2)}/${xml.slice(2, 4)}/${xml.slice(4)}` : '',
+    toXml: (form) => form.replace(/^(\d{2})\/(\d{2})\/(\d{4})$/, '$1$2$3'),
+  };
+  if (has('f_dta_dep')) {
+    out.f_dta_dep = { attr: 'DATA-PEDIDO-DE-DEPOSITO', under: REGISTRY, ...date };
+  }
+  if (has('f_dta_conc')) out.f_dta_conc = { attr: 'DATA-DE-CONCESSAO', under: REGISTRY, ...date };
   if (tipo === 'MR') {
     out.f_tipo = { attr: 'TIPO-PATENTE', under: REGISTRY, ...brandType };
     out.f_natureza = { attr: 'NATUREZA', under: DETAIL };

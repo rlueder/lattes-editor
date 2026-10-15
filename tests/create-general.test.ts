@@ -180,16 +180,16 @@ describe('planejar idioma, prêmio e vínculo', () => {
 
   it('cada tipo à mão tem o seu motivo', () => {
     for (const [name, pattern] of [
-      ['LICENCA', /formato da data/],
+      ['LICENCA', /nascimento ou adoção/],
       ['AREA-DE-ATUACAO', /f_area_l/],
-      ['MBA', /segundo passo|passo depois/],
+      ['MBA', /passo depois/],
       ['OUTROS', /Formação complementar/],
       ['DISCIPLINA', /grade da atividade de ensino/],
       ['TREINAMENTO', /grade da atividade de treinamento/],
-      ['LINHA-DE-PESQUISA', /link de inclusão/],
-      ['FINANCIADOR-DO-PROJETO', /grade de financiadores/],
-      ['PRODUCAO-CT-DO-PROJETO', /grade de produções/],
-      ['ORIENTACAO', /grade de orientações/],
+      ['LINHA-DE-PESQUISA', /não tem inclusão/],
+      ['FINANCIADOR-DO-PROJETO', /janela que não foi lida/],
+      ['PRODUCAO-CT-DO-PROJETO', /janela de produções/],
+      ['ORIENTACAO', /janela de orientações/],
       ['CONSELHO-COMISSAO-E-CONSULTORIA', /natureza/],
     ] as const) {
       expect(byHandReason(name), name).toMatch(pattern);

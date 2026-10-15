@@ -16,15 +16,13 @@
 // Inferido até o teste acompanhado: a resposta do POST de inclusão e o item
 // novo aparecer na lista com um f_seq (ou f_seq_hist) novo.
 //
-// Fica à mão, com o motivo: licença (datas em campo de texto, formato não
-// observado), áreas de atuação (grade f_area_l, sentido das chaves r e p não
-// observado), formação complementar (o formulário de inclusão não tem os anos:
-// há um segundo passo, depois de FORM2, que não foi observado), atividades
-// de uma atuação (o censo leu o formulário sem natureza; os campos de cada
-// natureza não foram lidos), disciplina e treinamento (grade f_espec_l da
-// atividade, formato não observado), linha de pesquisa (o link de inclusão
-// não foi achado) e financiador, produção e orientação do projeto (grades do
-// formulário do projeto).
+// Fica à mão, com o motivo de GENERAL_BY_HAND (recaptura de 15/10/2026,
+// seção 21): licença (o Lattes exige a data de nascimento ou adoção, que o
+// XML não guarda), áreas de atuação (a chave r da grade), formação
+// complementar (o passo depois de FORM2), atividades de uma atuação, disciplina
+// e treinamento (os formulários de cada natureza ainda não foram lidos), linha
+// de pesquisa (sem inclusão na lista) e financiador, produção e orientação do
+// projeto (janelas não lidas).
 
 import type { Change } from '../model/changes.ts';
 import { foldText } from '../model/fold-text.ts';
@@ -77,24 +75,26 @@ export interface CreateVinculoOp {
 /** Elementos novos que viram inclusão aqui, e os que ficam à mão com o motivo. */
 export const GENERAL_CREATES = new Set(['IDIOMA', 'PREMIO-TITULO', 'VINCULOS']);
 
+/** Por que cada um vai à mão (seção 21 de docs/lattes_internals.md). */
 export const GENERAL_BY_HAND: Record<string, string> = {
   'AREA-DE-ATUACAO':
-    'Área de atuação vai à mão: a grade de áreas (f_area_l) tem chaves de sentido não observado',
+    'Área de atuação vai à mão: a grade de áreas (f_area_l) tem a chave r, de sentido não lido',
   ATIVIDADE:
     'Atividade vai à mão: os campos do formulário de cada natureza ainda não foram lidos no Lattes',
   DISCIPLINA:
     'Disciplina vai à mão: ela entra pela grade da atividade de ensino, de formato não observado',
   'FINANCIADOR-DO-PROJETO':
-    'Financiador vai à mão: ele entra pela grade de financiadores do projeto, de formato não observado',
+    'Financiador vai à mão: os valores de cada linha da grade de financiadores vêm de uma janela que não foi lida',
   FORMACAO_COMPLEMENTAR:
-    'Formação complementar vai à mão: o formulário de inclusão não tem os anos, e o passo depois dele não foi observado',
-  LICENCA: 'Licença vai à mão: o formato da data no formulário não foi observado',
+    'Formação complementar vai à mão: o formulário de inclusão não tem os anos, e o passo depois dele só se vê enviando',
+  LICENCA:
+    'Licença vai à mão: o Lattes exige a data de nascimento ou adoção, que o currículo não guarda',
   'LINHA-DE-PESQUISA':
-    'Linha de pesquisa vai à mão: o link de inclusão da lista não foi achado no Lattes',
+    'Linha de pesquisa vai à mão: a lista de linhas não tem inclusão, e a atividade de pesquisa e desenvolvimento ainda não foi lida',
   ORIENTACAO:
-    'Orientação do projeto vai à mão: ela entra pela grade de orientações do projeto, de formato não observado',
+    'Orientação do projeto vai à mão: ela se liga a uma orientação do currículo pela janela de orientações, que não foi lida',
   'PRODUCAO-CT-DO-PROJETO':
-    'Produção do projeto vai à mão: ela entra pela grade de produções do projeto, de formato não observado',
+    'Produção do projeto vai à mão: ela se liga a uma produção do currículo pela janela de produções, que não foi lida',
   TREINAMENTO:
     'Treinamento vai à mão: ele entra pela grade da atividade de treinamento, de formato não observado',
 };

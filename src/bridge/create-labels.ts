@@ -13,6 +13,8 @@ export const CREATE_FIELD_LABELS: Record<string, string> = {
   f_carga: 'Carga horária',
   f_cod_reg: 'Número do registro',
   f_coorient: 'Coorientador',
+  f_dta_conc: 'Data de concessão',
+  f_dta_dep: 'Data de depósito ou do registro',
   f_finalidade: 'Finalidade',
   f_home_page: 'Home page',
   f_inst: 'Instituição',

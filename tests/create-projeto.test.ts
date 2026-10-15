@@ -8,6 +8,8 @@ import {
   applyCreateProjeto,
   type CreateProjetoOp,
   planCreateProjeto,
+  projetoOp,
+  TEAM_BY_HAND,
   vinculoChoices,
 } from '../src/bridge/create-projeto.ts';
 import { planChanges } from '../src/bridge/plan.ts';
@@ -54,13 +56,13 @@ function planned(xml: string, inst?: string) {
   ).root;
   const changes = diffDocuments(original, after).filter((c) => c.kind === 'novo');
   const change = changes[0]!;
-  return planCreateProjeto(change, resolvePath(after, change.path), 'Projeto · Genômica');
+  return projetoOp(change, resolvePath(after, change.path), 'Projeto · Genômica');
 }
 
 const op = () => planned(projeto()) as CreateProjetoOp;
 
 describe('planejar a inclusão de um projeto', () => {
-  it('fica desligada por padrão; ligada, o projeto novo vira inclusão', () => {
+  it('fica desligada por padrão; ligada, o projeto novo vai à mão pela equipe', () => {
     expect(LATTES_CONTRACT.forms['criar-projeto']).toBeUndefined();
     const before = cv(projeto(PROJETO.replace('SEQUENCIA-PROJETO="8"', 'SEQUENCIA-PROJETO="7"')));
     const after = cv(
@@ -69,9 +71,10 @@ describe('planejar a inclusão de um projeto', () => {
     const entries = diffDocuments(before, after).map((c) => ({ change: c, itemTitle: '' }));
     expect(entries.map((e) => e.change.element)).toEqual(['PROJETO-DE-PESQUISA']);
     expect(planChanges(entries, after).ops).toEqual([]);
-    expect(planChanges(entries, after, { createItems: true }).ops.map((o) => o.kind)).toEqual([
-      'criar-projeto',
-    ]);
+    // Ligada, o projeto novo vai à mão pelo motivo da equipe (seção 21).
+    const on = planChanges(entries, after, { createItems: true });
+    expect(on.ops).toEqual([]);
+    expect(on.unsupported.map((u) => u.reason)).toEqual([TEAM_BY_HAND]);
   });
 
   it('leva os campos do projeto e a natureza, que escolhe a lista', () => {
@@ -156,7 +159,7 @@ describe('planejar a inclusão de um projeto', () => {
     const chain = resolvePath(after, changes[0]!.path);
     const part = chain.find((c) => c.name === 'PARTICIPACAO-EM-PROJETO')!;
     part.attrs.push({ name: 'NOME-ORGAO', value: 'Instituto de Biociências' });
-    expect(planCreateProjeto(changes[0]!, chain, 'Projeto')).toEqual({
+    expect(projetoOp(changes[0]!, chain, 'Projeto')).toEqual({
       reason: expect.stringMatching(/participação no projeto tem campos.*NOME-ORGAO/),
     });
   });
@@ -173,10 +176,12 @@ describe('planejar a inclusão de um projeto', () => {
     const change = diffDocuments(original, after).find((c) => c.kind === 'novo')!;
     expect(change.element).toBe('ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO');
     const chain = resolvePath(after, change.path);
-    expect(planCreateProjeto(change, chain, 'Projeto')).toHaveProperty('kind', 'criar-projeto');
+    expect(projetoOp(change, chain, 'Projeto')).toHaveProperty('kind', 'criar-projeto');
+    // O planejamento manda à mão: a equipe e o órgão (seção 21).
+    expect(planCreateProjeto(change, chain, 'Projeto')).toEqual({ reason: TEAM_BY_HAND });
     const participacao = chain.at(-1)!.children.find((c): c is XElement => c.kind === 'element')!;
     participacao.attrs.push({ name: 'MES-INICIO', value: '3' });
-    expect(planCreateProjeto(change, chain, 'Projeto')).toEqual({
+    expect(projetoOp(change, chain, 'Projeto')).toEqual({
       reason: expect.stringMatching(/participação no projeto tem campos.*MES-INICIO/),
     });
   });

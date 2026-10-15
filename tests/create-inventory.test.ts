@@ -21,7 +21,7 @@ import { element, type XElement } from '../src/model/xml.ts';
 import { lattesSchema as schema } from '../src/schema/lattes.ts';
 
 const DOC = readFileSync(new URL('../docs/inclusao_por_tipo.md', import.meta.url), 'utf8');
-const census = loadCensusFiles().at(-1);
+const census = loadCensusFiles();
 
 /** As linhas das tabelas cujo primeiro campo é um elemento: células sem o rótulo. */
 function docRows(): Map<string, string[]> {

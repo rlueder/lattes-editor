@@ -64,7 +64,6 @@ import {
   CREATE_REGISTRO_SPEC,
   type CreateRegistroOp,
   planCreateRegistro,
-  REGISTRY_TYPES,
   registryInclusion,
   registryItem,
   registryList,
@@ -100,9 +99,9 @@ export const CONNECTOR_CREATES: ReadonlySet<string> = new Set([
   'ATUACAO-PROFISSIONAL',
   ...Object.keys(FORMATION_LEVELS),
   ...Object.keys(AP_LEVELS),
-  'PROJETO-DE-PESQUISA',
-  // A patente tem a operação, mas o planejamento sempre a manda à mão (create-registro.ts).
-  ...Object.keys(REGISTRY_TYPES).filter((n) => n !== 'PATENTE'),
+  // Projeto e registros têm a operação (projetoOp, registroFields), mas o
+  // planejamento os manda à mão: o check() do Lattes exige o dono na grade de
+  // equipe ou de autores, que a inclusão abre vazia (seção 21).
   ...GENERAL_CREATES,
   // Eventos: pelo formulário, no lugar do Importar, com a chave ligada (direct-inclusion.ts).
   ...EVENT_ELEMENTS,

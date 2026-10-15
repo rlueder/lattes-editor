@@ -119,12 +119,32 @@ function onlyOwner(projeto: XElement, root: XElement | undefined): boolean {
   );
 }
 
+/** Por que o projeto vai à mão hoje (seção 21 de docs/lattes_internals.md). */
+export const TEAM_BY_HAND =
+  'Vai à mão: o Lattes exige você e um coordenador na equipe e o órgão na inclusão, e a linha da grade da equipe com você ainda não foi lida';
+
 /**
- * Um projeto novo como inclusão. `chain` vai da raiz ao elemento novo; o
- * projeto entra pela atuação dele, como o Lattes faz pela instituição escolhida
- * no formulário (seção 17).
+ * Um projeto novo como inclusão; o motivo, quando vai à mão. Por enquanto vai
+ * sempre à mão: a recaptura de 15/10/2026 mostrou que o check() do formulário
+ * exige o próprio nome e um coordenador na equipe (a inclusão abre com a
+ * grade vazia) e, na inclusão, o órgão ou unidade, e a linha do dono na grade
+ * ainda não foi lida (seção 21). projetoOp() monta o resto.
  */
 export function planCreateProjeto(
+  change: Change,
+  chain: XElement[],
+  label: string,
+): Planned<CreateProjetoOp> {
+  const op = projetoOp(change, chain, label);
+  return 'reason' in op ? op : { reason: TEAM_BY_HAND };
+}
+
+/**
+ * Um projeto novo como operação de inclusão. `chain` vai da raiz ao elemento
+ * novo; o projeto entra pela atuação dele, como o Lattes faz pela instituição
+ * escolhida no formulário (seção 17).
+ */
+export function projetoOp(
   change: Change,
   chain: XElement[],
   label: string,

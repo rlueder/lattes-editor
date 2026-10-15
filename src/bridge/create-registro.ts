@@ -7,24 +7,22 @@
 //
 // Observado: o formulário de cada tipo, o nome dele, os ocultos, as opções; a
 // lista de patentes no menu; os parâmetros do link de inclusão das listas
-// (seção 17). Inferido até o teste acompanhado: a ligação de cada campo com o
-// atributo do XML (o currículo de quem capturou não tem nenhum registro; o
-// rótulo de cada campo é a pista), a lista de cada tipo no menu, a resposta do
-// POST, o item novo aparecer na lista com um f_seq novo, e o servidor aceitar
-// a patente sem a janela prévia e sem o f_ctr=R (os campos do escritório e do
-// número estão no próprio formulário).
+// (seção 17); o formato das datas (dd/mm/aaaa), a grade de datas da patente e
+// o que o check() de cada tipo exige (recaptura de 15/10/2026, seção 21).
+// Inferido até o teste acompanhado: a ligação de cada campo com o atributo do
+// XML (o currículo de quem capturou não tem nenhum registro; o rótulo de cada
+// campo é a pista), a lista de cada tipo no menu, a resposta do POST, o item
+// novo aparecer na lista com um f_seq novo, e o servidor aceitar a patente
+// sem a janela prévia e sem o f_ctr=R.
 //
-// Fica à mão, com o motivo:
-// - datas: na patente, na marca e na topografia elas só entram pela grade
-//   serializada em f_dados_grid_datas, de formato não observado; na cultivar e
-//   no desenho industrial há campo de texto, mas o formato da data nele também
-//   não foi observado;
-// - a patente inteira: check() do Lattes exige a data de depósito e o titular
-//   ou depositante, que vão em grades de formato não observado;
-// - autores além do dono do currículo, titulares, depositantes, palavras-chave,
-//   áreas, setores e informações adicionais (grades que o conector não monta);
-// - o que o formulário do tipo não tem (ano no desenho industrial, finalidade
-//   na cultivar e na marca, finalidade em inglês, título da patente).
+// O planejamento manda todo registro à mão por enquanto: o check() exige a
+// própria pessoa na lista de inventores (ou de melhoristas), a inclusão abre
+// com a grade vazia, e a linha do dono na grade não foi lida; a patente exige
+// também o titular, noutra grade. registroFields() já monta o resto,
+// inclusive as datas, para quando a linha for lida (lote 4 da recaptura).
+// Também ficam à mão: datas na marca e na topografia (não há campo de data na
+// tela), autores além do dono, palavras-chave, áreas, setores e informações
+// adicionais, e o que o formulário do tipo não tem.
 
 import type { Change } from '../model/changes.ts';
 import { foldText } from '../model/fold-text.ts';
@@ -33,6 +31,14 @@ import { childElements, firstChild, getAttr, type XElement } from '../model/xml.
 import type { LattesPort, OpResult } from './apply.ts';
 import type { FormSpec } from './contract.ts';
 import { CREATE_FIELD_LABELS } from './create-labels.ts';
+import {
+  ATTR_LABELS,
+  DATE_FIELDS,
+  formDate,
+  PATENT_DATE_CODES,
+  patentDateGrid,
+  REQUIRED_BY_TYPE,
+} from './create-registro-rules.ts';
 import {
   absentFields,
   filledChildren,
@@ -71,8 +77,6 @@ export interface CreateRegistroOp {
 }
 
 interface RegistryType {
-  /** Onde as datas entram no formulário deste tipo. */
-  dates: 'campo' | 'grade';
   /** Os campos visíveis do formulário do tipo (censo de 15/10/2026). */
   fields: string[];
   tipo: string;
@@ -81,17 +85,14 @@ interface RegistryType {
 /** Elemento do XML → tipo do registro (seção 17; censo de 15/10/2026). */
 export const REGISTRY_TYPES: Record<string, RegistryType> = {
   'CULTIVAR-PROTEGIDA': {
-    dates: 'campo',
     fields: ['f_titulo', 'f_ano', 'f_pais', 'f_inst', 'f_cod_reg', 'f_sta_inovacao', 'f_titulo_en'],
     tipo: 'CP',
   },
   'CULTIVAR-REGISTRADA': {
-    dates: 'campo',
     fields: ['f_titulo', 'f_ano', 'f_pais', 'f_inst', 'f_cod_reg', 'f_sta_inovacao', 'f_titulo_en'],
     tipo: 'CR',
   },
   'DESENHO-INDUSTRIAL': {
-    dates: 'campo',
     fields: [
       'f_inst',
       'f_pais',
@@ -105,7 +106,6 @@ export const REGISTRY_TYPES: Record<string, RegistryType> = {
     tipo: 'DI',
   },
   MARCA: {
-    dates: 'grade',
     fields: [
       'f_inst',
       'f_pais',
@@ -120,7 +120,6 @@ export const REGISTRY_TYPES: Record<string, RegistryType> = {
     tipo: 'MR',
   },
   PATENTE: {
-    dates: 'grade',
     fields: [
       'f_inst',
       'f_pais',
@@ -137,7 +136,6 @@ export const REGISTRY_TYPES: Record<string, RegistryType> = {
     tipo: 'PP',
   },
   'TOPOGRAFIA-DE-CIRCUITO-INTEGRADO': {
-    dates: 'grade',
     fields: [
       'f_inst',
       'f_pais',
@@ -214,40 +212,8 @@ const DATES = new Set([
 /** Os formatos de data acompanham as datas; FLAG-RELEVANCIA "não" é o padrão do editor. */
 const SYSTEM = new Set(['FORMATO-DATA-DEPOSITO-PCT', 'FORMATO-DATA-PEDIDO']);
 
-/**
- * Rótulos dos atributos dos registros nas mensagens de "vai à mão". A mudança
- * nova só lista os atributos do item, não os das partes; os rótulos ficam aqui
- * porque o conector não carrega os do editor (html-text.ts).
- */
-const ATTR_LABELS: Record<string, string> = {
-  'ANO-DESENVOLVIMENTO': 'Ano de desenvolvimento',
-  'ANO-SOLICITACAO': 'Ano de solicitação',
-  'CODIGO-DO-REGISTRO-OU-PATENTE': 'Número do registro',
-  DENOMINACAO: 'Denominação',
-  'DENOMINACAO-INGLES': 'Denominação em inglês',
-  FINALIDADE: 'Finalidade',
-  'FINALIDADE-INGLES': 'Finalidade em inglês',
-  'FLAG-POTENCIAL-INOVACAO': 'Potencial de inovação',
-  'FLAG-RELEVANCIA': 'Relevância',
-  'HOME-PAGE': 'Home page',
-  'INSTITUICAO-DEPOSITO-REGISTRO': 'Instituição de registro',
-  'INSTITUICAO-FINANCIADORA': 'Instituição financiadora',
-  NATUREZA: 'Natureza',
-  'NOME-DO-DEPOSITANTE': 'Depositante',
-  'NOME-DO-TITULAR': 'Titular',
-  'NUMERO-DEPOSITO-PCT': 'Número do depósito PCT',
-  PAIS: 'País',
-  'TIPO-PATENTE': 'Tipo',
-  TITULO: 'Título',
-  'TITULO-INGLES': 'Título em inglês',
-  'TITULO-PATENTE': 'Título da patente',
-};
-
 const labelOf = (change: Change, attr: string) =>
   change.fields.find((f) => f.attr === attr)?.label ?? ATTR_LABELS[attr] ?? attr;
-
-const GRID_DATES = 'o formato da grade de datas (f_dados_grid_datas) não foi observado';
-const FIELD_DATES = 'o formato da data no formulário não foi observado';
 
 /** O dono do currículo, pelo ID Lattes ou, sem ele, pelo nome. */
 function isOwner(author: { lattesId: string; name: string }, root: XElement | undefined) {
@@ -267,13 +233,16 @@ export function registryItem(el: XElement): XElement | undefined {
   return items.length === 1 && childElements(el).length === 1 ? items[0] : undefined;
 }
 
-/** Uma patente ou registro novo como inclusão; o motivo, quando vai à mão. */
-export function planCreateRegistro(
+/**
+ * Os campos do formulário para uma patente ou registro novo, com as datas no
+ * formato do Lattes; o motivo, quando algo não tem como ir. Não decide se a
+ * inclusão vai: planCreateRegistro ainda para por causa da grade de autores.
+ */
+export function registroFields(
   change: Change,
   chain: XElement[],
   item: XElement,
-  label: string,
-): Planned<CreateRegistroOp> {
+): { reason: string } | { set: FieldValues; tipo: string } {
   const type = REGISTRY_TYPES[item.name]!;
   const basics = childElements(item).find((c) => c.name.startsWith('DADOS-BASICOS-'));
   const detail = childElements(item).find((c) => c.name.startsWith('DETALHAMENTO-'));
@@ -286,25 +255,32 @@ export function planCreateRegistro(
   if (extra.length > 0) {
     return { reason: 'Palavras-chave, áreas, setores e informações adicionais ainda vão à mão' };
   }
-  const dated = (registry?.attrs ?? []).some((a) => DATES.has(a.name) && a.value.trim());
-  if (dated) {
-    return {
-      reason: `Datas do registro ainda vão à mão: ${type.dates === 'grade' ? GRID_DATES : FIELD_DATES}`,
-    };
-  }
-  if (type.tipo === 'PP') {
-    return {
-      reason: `A patente vai à mão: o Lattes exige a data de depósito e o titular, e ${GRID_DATES}`,
-    };
-  }
   const set: FieldValues = {};
   const missing: string[] = [];
   const wrong: string[] = [];
+  const grid: { code: string; date: string; label: string }[] = [];
+  const dateFields = DATE_FIELDS[type.tipo];
   const map = (el: XElement | undefined, table: Record<string, [string, Mapper]>) => {
     for (const { name, value } of el?.attrs ?? []) {
       if (!value.trim() || SYSTEM.has(name)) continue;
       // Relevância "não" é o padrão; "sim" não tem campo no formulário do registro.
       if (name === 'FLAG-RELEVANCIA' && value === 'NAO') continue;
+      if (value === 'NAO_INFORMADO') continue;
+      if (DATES.has(name)) {
+        const date = formDate(value);
+        if (!date) {
+          wrong.push(`${labelOf(change, name)} (${value})`);
+        } else if (type.tipo === 'PP' && PATENT_DATE_CODES[name]) {
+          const [code, label] = PATENT_DATE_CODES[name];
+          grid.push({ code, date, label });
+        } else if (dateFields?.[name]) {
+          set[dateFields[name]] = date;
+        } else {
+          // Marca e topografia: nenhum campo de data na tela (seção 21).
+          missing.push(labelOf(change, name));
+        }
+        continue;
+      }
       let entry = table[name];
       if (name === 'TIPO-PATENTE') {
         const types = type.tipo === 'MR' ? BRAND_TYPES : PATENT_TYPES;
@@ -325,11 +301,46 @@ export function planCreateRegistro(
   map(registry, REGISTRY);
   const reason = reasonFrom(missing, wrong);
   if (reason) return { reason };
-  if (!set.f_titulo || !set.f_cod_reg) {
-    return { reason: 'O registro precisa do título (ou denominação) e do número' };
+  if (grid.length > 0) set.f_dados_grid_datas = patentDateGrid(grid);
+  // check() de todos os tipos: título, número, instituição de registro e país.
+  if (!set.f_titulo || !set.f_cod_reg || !set.f_inst || !set.f_pais) {
+    return {
+      reason: 'O Lattes exige título (ou denominação), número, instituição de registro e país',
+    };
   }
-  return { expect: {}, key: change.key, kind: 'criar-registro', label, set, tipo: type.tipo };
+  const lacking = (REQUIRED_BY_TYPE[type.tipo] ?? []).filter(([f]) => !set[f]).map(([, l]) => l);
+  if (lacking.length > 0) return { reason: `O Lattes exige ${lacking.join(', ')}` };
+  if (type.tipo === 'PP' && !grid.some((g) => g.code === '1' || g.code === '2')) {
+    return { reason: 'O Lattes exige a data de depósito ou a de depósito PCT' };
+  }
+  return { set, tipo: type.tipo };
 }
+
+/**
+ * Uma patente ou registro novo como inclusão; o motivo, quando vai à mão. Por
+ * enquanto vai sempre à mão: o check() do Lattes exige a própria pessoa na
+ * lista de inventores (ou de melhoristas, na cultivar), a inclusão abre com a
+ * grade vazia, e a linha do dono na grade ainda não foi lida (seção 21). A
+ * patente exige também o titular, numa grade de sentido não lido.
+ */
+export function planCreateRegistro(
+  change: Change,
+  chain: XElement[],
+  item: XElement,
+  _label: string,
+): Planned<CreateRegistroOp> {
+  const fields = registroFields(change, chain, item);
+  if ('reason' in fields) return fields;
+  if (fields.tipo === 'PP') return { reason: PATENT_BY_HAND };
+  return { reason: OWNER_BY_HAND };
+}
+
+/** Por que todo registro vai à mão hoje (seção 21 de docs/lattes_internals.md). */
+export const OWNER_BY_HAND =
+  'Vai à mão: o Lattes exige você na lista de inventores, e a linha da grade de autores com você ainda não foi lida';
+
+export const PATENT_BY_HAND =
+  'Vai à mão: o Lattes exige você entre os inventores e o titular ou depositante, em grades ainda não lidas';
 
 /**
  * O formulário de inclusão de um registro, na cultivar registrada (censo de
@@ -416,7 +427,9 @@ export async function applyCreateRegistro(op: CreateRegistroOp, port: LattesPort
     ) {
       return result('erro', 'O formulário não é o de inclusão deste registro');
     }
-    const absent = absentFields(form.controls, op.set);
+    // A grade de datas da patente vai num oculto, como o check() a monta (seção 21).
+    const { f_dados_grid_datas: _grid, ...typed } = op.set;
+    const absent = absentFields(form.controls, typed);
     if (absent.length > 0) {
       return result(
         'erro',
@@ -468,3 +481,5 @@ export async function applyCreateRegistro(op: CreateRegistroOp, port: LattesPort
     return result('erro', err instanceof Error ? err.message : 'Falha inesperada');
   }
 }
+
+export { formDate, patentDateGrid };

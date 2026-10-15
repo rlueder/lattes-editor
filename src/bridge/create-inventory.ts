@@ -103,17 +103,17 @@ const CAPTURE_LABELS: Record<EntryStatus, string> = {
 /**
  * As células de uma linha da tabela de docs/inclusao_por_tipo.md, menos o
  * rótulo: elemento, faz parte de, editor cria, caminho hoje, formulários do
- * censo, resultado da captura mais recente e procedência (endereço/ligação).
+ * censo, resultado da captura mais recente de cada entrada e procedência
+ * (endereço/ligação).
  */
-export function inventoryRow(
-  schema: LattesSchema,
-  name: string,
-  census: CensusFile | undefined,
-): string[] {
+export function inventoryRow(schema: LattesSchema, name: string, census: CensusFile[]): string[] {
   const code = (s: string) => `\`${s}\``;
   const ids = censusTargetsFor(name);
   const targets = ids.map((id) => CENSUS_TARGETS.find((t) => t.id === id)!);
-  const status = (id: string) => census?.entries.find((e) => e.id === id)?.status;
+  // A captura mais recente que leu a entrada (uma recaptura traz só algumas).
+  const byDate = [...census].sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
+  const status = (id: string) =>
+    byDate.map((f) => f.entries.find((e) => e.id === id)?.status).find(Boolean);
   const parent = partOf(schema, name);
   return [
     code(name),
