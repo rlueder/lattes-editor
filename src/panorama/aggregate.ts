@@ -168,6 +168,11 @@ export function careerBands(cv: CvData, p: Period): { bands: Band[]; rows: numbe
 // ---------- Quadriênios ----------
 
 export interface Window {
+  /**
+   * A coluna Total: todos os itens da linha, inclusive os sem ano, para o
+   * total bater com a contagem da seção no editor.
+   */
+  all?: boolean;
   from: number;
   label: string;
   note: string;
@@ -200,7 +205,7 @@ export function windows(cv: CvData, now: number, lastYears: number): Window[] {
       note: `últimos ${lastYears} anos`,
       to: now,
     },
-    { from: 0, label: 'Total', note: 'todos os anos', to: 9999 },
+    { all: true, from: 0, label: 'Total', note: 'com e sem ano', to: 9999 },
   ];
 }
 
@@ -234,7 +239,17 @@ export function countRows(cv: CvData): CountRow[] {
 }
 
 export const inWindow = (items: PanoramaItem[], w: Window): PanoramaItem[] =>
-  items.filter((i) => i.year !== undefined && i.year >= w.from && i.year <= w.to);
+  w.all ? items : items.filter((i) => i.year !== undefined && i.year >= w.from && i.year <= w.to);
+
+/**
+ * O cabeçalho de uma coluna no CSV, que não tem a linha de nota da tela: o
+ * quadriênio que ainda não terminou leva "(em curso)", e o Total diz que
+ * conta os itens sem ano.
+ */
+export function csvHeader(w: Window): string {
+  if (w.all) return 'Total (com e sem ano)';
+  return w.note === 'em curso' ? `${w.label} (em curso)` : w.label;
+}
 
 /** Um campo de CSV: entre aspas quando tem separador, aspas ou quebra de linha. */
 export function csvField(value: number | string): string {
@@ -250,7 +265,7 @@ export function csvField(value: number | string): string {
 export function countsCsv(rows: CountRow[], cols: Window[]): string {
   let parent = '';
   const lines = [
-    ['Tipo', ...cols.map((c) => c.label)],
+    ['Tipo', ...cols.map(csvHeader)],
     ...rows.map((r) => {
       if (!r.sub) parent = r.label;
       const label = r.sub ? `${parent}: ${r.label}` : r.label;

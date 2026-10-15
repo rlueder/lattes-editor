@@ -218,11 +218,18 @@ describe('contagens', () => {
     expect(rows.some((r) => r.sub && r.label === 'Mestrado')).toBe(true);
     const csv = countsCsv(rows, cols);
     expect(
-      csv.startsWith('﻿Tipo;2013–2016;2017–2020;2021–2024;2025–2028;2022–2026;Total\r\n'),
+      csv.startsWith(
+        '﻿Tipo;2013–2016;2017–2020;2021–2024;2025–2028 (em curso);2022–2026;Total (com e sem ano)\r\n',
+      ),
     ).toBe(true);
     expect(csv.split('\r\n')[1]).toBe('Artigos em periódicos;0;2;4;0;3;6');
     expect(csv).toContain('\r\nOrientações concluídas: Mestrado;0;0;2;0;1;2\r\n');
     expect(csv.endsWith('\r\n')).toBe(true);
+    // O Total conta também o item sem ano, que nenhum quadriênio pega.
+    const total = cols.at(-1)!;
+    const undated = { ...articles.items[0]!, year: undefined };
+    expect(inWindow([...articles.items, undated], total)).toHaveLength(7);
+    expect(cols.slice(0, -1).every((c) => !inWindow([undated], c).length)).toBe(true);
     expect(csvField('a;b')).toBe('"a;b"');
     expect(csvField('a"b')).toBe('"a""b"');
     expect(csvField('linha\nnova')).toBe('"linha\nnova"');
