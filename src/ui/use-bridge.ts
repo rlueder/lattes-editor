@@ -32,6 +32,7 @@ import { isDesktop } from '../desktop/native.ts';
 import type { Session } from '../forms/use-production.ts';
 import { importMessage } from '../import-export/import-request.ts';
 import type { Change } from '../model/changes.ts';
+import { setIncludeCapability, syncIncludeCapability } from '../model/direct-inclusion.ts';
 import { addHistoryPoint, addSent, clearSent, listSent } from '../model/store.ts';
 import { getAttr } from '../model/xml.ts';
 import type { ChangeGroup } from './changes-view.ts';
@@ -399,6 +400,12 @@ export function useBridge(
       stopListening();
     };
   }, [lattesId]);
+
+  // Os eventos saem do Importar só com a extensão que anuncia 'incluir-itens'
+  // (direct-inclusion.ts). Segue as capacidades: sem extensão (features
+  // vazias) ou com uma mais antiga, volta a desligar; ao sair, também.
+  useEffect(() => syncIncludeCapability(features), [features]);
+  useEffect(() => () => setIncludeCapability(false), []);
 
   const plan = useMemo(
     () =>

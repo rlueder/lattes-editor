@@ -95,11 +95,11 @@ async function lattesFor(options: Parameters<typeof withLattesSimulado>[0] = {})
 }
 
 describe('alteração em listas sem número: chaves', () => {
-  it('ficam desligadas até o teste acompanhado, e desligadas o item fica à mão', () => {
-    expect(EDIT_PREMIO_ENABLED).toBe(false);
-    expect(EDIT_FORMACAO_COMPL_ENABLED).toBe(false);
-    expect(enabledListEdits()).toEqual(new Set());
-    expect(LATTES_CONTRACT.forms.premio).toBeUndefined();
+  it('ligadas na montagem; com a opção desligada, o item fica à mão', () => {
+    expect(EDIT_PREMIO_ENABLED).toBe(true);
+    expect(EDIT_FORMACAO_COMPL_ENABLED).toBe(true);
+    expect(enabledListEdits()).toEqual(new Set(['formacao-complementar', 'premio']));
+    expect(LATTES_CONTRACT.forms.premio).toBeDefined();
     const edit = (root: XElement) => setAttr(premios(root)[0]!, 'ANO-DA-PREMIACAO', '2019');
     expect(onlyReason(edit, {})).toBe('Formulário não suportado ainda');
     expect(onlyReason(edit, { editFormacaoComplementar: true })).toBe(
@@ -308,7 +308,7 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
     );
   });
 
-  it('a extensão com a chave desligada não grava prêmio nem formação complementar', async () => {
+  it('a extensão com a chave desligada não grava prêmio nem formação complementar; ligada, grava', async () => {
     const lattes = await lattesFor();
     const op = onlyOp((root) => setAttr(premios(root)[0]!, 'ANO-DA-PREMIACAO', '2019'));
     expect(
@@ -320,11 +320,15 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
       detail: 'Esta extensão não tem o formulário deste tipo no contrato; a alteração fica à mão',
       status: 'erro',
     });
-    // Sem as opções, vale a montagem: as duas chaves desligadas.
-    expect((await applyOp(op, lattes.port)).status).toBe('erro');
+    // A montagem de nenhuma das duas, forçada: também para sem ler.
+    expect((await applyOp(op, lattes.port, { editEvento: true, lists: new Set() })).status).toBe(
+      'erro',
+    );
     expect(lattes.state.log.filter((l) => l.method === 'GET' && /premio/i.test(l.proc))).toEqual(
       [],
     );
+    // Sem as opções, vale a montagem desta versão, com as duas ligadas: grava.
+    expect((await applyOp(op, lattes.port)).status).toBe('conferido');
   });
 
   it('sem a lista no menu, para antes de ler', async () => {

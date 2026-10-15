@@ -11,7 +11,7 @@ import { IMPORT_MODULES, type ImportModule } from '../import-export/importable.t
 import { lattesSchema } from '../schema/lattes.ts';
 import { derivedValue } from '../schema/typed-choices.ts';
 import type { LattesSchema } from '../schema/types.ts';
-import { directInclusion } from './direct-inclusion.ts';
+import { directInclusion, goesDirect } from './direct-inclusion.ts';
 import { insertInSchemaOrder } from './schema-order.ts';
 import {
   childElements,
@@ -288,9 +288,9 @@ export function isPendingImport(
   el: XElement,
   loadedMax: number,
   direct: ReadonlySet<string> = directInclusion(),
+  root?: XElement,
 ): boolean {
-  const n = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
-  return Number.isFinite(n) && n > loadedMax && isImportableName(el.name) && !direct.has(el.name);
+  return isNewProduction(el, loadedMax) && !goesDirect(el, direct, root);
 }
 
 /**
@@ -308,15 +308,16 @@ export function goesByChanges(
   el: XElement,
   loadedMax: number,
   direct: ReadonlySet<string> = directInclusion(),
+  root?: XElement,
 ): boolean {
-  return isNewProduction(el, loadedMax) && direct.has(el.name);
+  return isNewProduction(el, loadedMax) && goesDirect(el, direct, root);
 }
 
 /** Itens criados no editor que vão pelo Importar (isPendingImport). */
 export function pendingItems(doc: XDocument, loadedMax: number): XElement[] {
   const items: XElement[] = [];
   walk(doc.root, (el) => {
-    if (isPendingImport(el, loadedMax)) items.push(el);
+    if (isPendingImport(el, loadedMax, undefined, doc.root)) items.push(el);
   });
   return items;
 }

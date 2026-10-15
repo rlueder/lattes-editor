@@ -14,7 +14,7 @@
 //   home page, divulgação científica, título em inglês e nome do evento, só no
 //   evento de ouvinte. O app só manda essas operações a uma extensão que
 //   anuncia 'alterar-evento' (compat.ts).
-// - EDIT_EVENTO_ENABLED (LAT-58), DESLIGADA até um teste acompanhado: eventos
+// - EDIT_EVENTO_ENABLED (LAT-58), ligada para o teste ao vivo: eventos
 //   de convidado e participante, e a forma, o tipo, a natureza e a cidade em
 //   qualquer evento. Ligada, ela também cobre o que a outra cobre. Trocar a
 //   forma de ouvinte para outra fica à mão mesmo com ela ligada (planShape).
@@ -63,11 +63,11 @@ export const EDIT_OUVINTE_ENABLED = true;
 
 /**
  * Alteração de evento de convidado e participante, e da forma, do tipo, da
- * natureza e da cidade em qualquer evento (LAT-58). Desligada até um teste
- * acompanhado no Lattes real: o que conferir nele está no começo deste
- * arquivo.
+ * natureza e da cidade em qualquer evento (LAT-58). Ligada para o teste ao
+ * vivo, antes de um teste acompanhado no Lattes real: o que conferir nele
+ * está no começo deste arquivo.
  */
-export const EDIT_EVENTO_ENABLED = false;
+export const EDIT_EVENTO_ENABLED = true;
 
 /**
  * Participação em evento: o formulário se abre pelo link da lista com f_seq =

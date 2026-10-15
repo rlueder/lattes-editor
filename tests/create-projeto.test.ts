@@ -63,8 +63,8 @@ function planned(xml: string, inst?: string) {
 const op = () => planned(projeto()) as CreateProjetoOp;
 
 describe('planejar a inclusão de um projeto', () => {
-  it('fica desligada por padrão; ligada, o projeto novo vai à mão pela equipe', () => {
-    expect(LATTES_CONTRACT.forms['criar-projeto']).toBeUndefined();
+  it('sem a opção do plano fica de fora; ligada, o projeto novo vai à mão pela equipe', () => {
+    expect(LATTES_CONTRACT.forms['criar-projeto']).toBeDefined();
     const before = cv(projeto(PROJETO.replace('SEQUENCIA-PROJETO="8"', 'SEQUENCIA-PROJETO="7"')));
     const after = cv(
       projeto(PROJETO.replace('SEQUENCIA-PROJETO="8"', 'SEQUENCIA-PROJETO="7"')) + projeto(),

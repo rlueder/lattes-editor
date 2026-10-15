@@ -287,7 +287,11 @@ export function App() {
 
       <main className="content">
         <EditorContext.Provider
-          value={{ loadedMax: production.loadedMax, openItem: production.openItem }}
+          value={{
+            loadedMax: production.loadedMax,
+            openItem: production.openItem,
+            root: session?.doc.root,
+          }}
         >
           <ReferenceContext.Provider value={referenceIndex ?? EMPTY_INDEX}>
             {versions.banner}
@@ -315,6 +319,7 @@ export function App() {
       {production.form && (
         <ProductionForm
           key={`${production.form.sequencia}-${production.form.isNew}`}
+          byChanges={production.formByChanges}
           isNew={production.form.isNew}
           item={production.form.item}
           knownAreas={production.areas}

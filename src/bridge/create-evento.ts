@@ -102,17 +102,38 @@ export function eventItem(el: XElement): XElement | undefined {
   return kids.length === 1 && EVENT_ELEMENTS.has(kids[0]!.name) ? kids[0] : undefined;
 }
 
-/** Uma participação em evento nova como inclusão; o motivo, quando vai à mão. */
-export function planCreateEvento(
-  change: Change,
-  chain: XElement[],
+/** O dono do currículo é um dos participantes, pelo ID Lattes ou pelo nome? */
+function ownerAmong(item: XElement, root: XElement | undefined): boolean {
+  if (!root) return false;
+  const ownerId = getAttr(root, 'NUMERO-IDENTIFICADOR') ?? '';
+  const dg = firstChild(root, 'DADOS-GERAIS');
+  const ownerName = foldText((dg && getAttr(dg, 'NOME-COMPLETO')) ?? '');
+  return childElements(item, 'PARTICIPANTE-DE-EVENTOS-CONGRESSOS').some((p) => {
+    const id = getAttr(p, 'NRO-ID-CNPQ') ?? '';
+    if (ownerId && id) return ownerId === id;
+    const name = p.attrs.find((a) => a.name.startsWith('NOME-COMPLETO'))?.value ?? '';
+    return ownerName !== '' && foldText(name) === ownerName;
+  });
+}
+
+/**
+ * O Importar leva este evento? Só com a própria pessoa entre os
+ * participantes: sem ela, o Importar diz que importou e descarta o evento
+ * (seção 13 de docs/lattes_internals.md).
+ */
+export function eventCarriedByImport(item: XElement, root: XElement | undefined): boolean {
+  return ownerAmong(item, root);
+}
+
+/** Os campos do formulário de eventos para o item, ou o motivo de ir à mão. */
+function eventoFields(
   item: XElement,
-  label: string,
-): Planned<CreateEventoOp> {
+  root: XElement | undefined,
+): { set: FieldValues } | { reason: string } {
   const basics = basicsOf(item);
   const detail = detailOf(item);
   if (!basics || !detail) return { reason: 'O evento precisa dos dados básicos e do detalhamento' };
-  if (!onlyOwner(item, chain[0])) {
+  if (!onlyOwner(item, root)) {
     return {
       reason:
         'Participantes além de você vão à mão: o formulário de eventos do Lattes não tem participantes',
@@ -166,7 +187,25 @@ export function planCreateEvento(
   }
   if (!country) return { reason: 'País sem código na lista do Lattes' };
   if (!ouvinte && !set.f_titulo) return { reason: 'Quem apresenta precisa do título' };
-  return { expect: {}, key: change.key, kind: 'criar-evento', label, set };
+  return { set };
+}
+
+/** Por que o evento não vai pelo formulário de eventos; undefined quando vai. */
+export function eventoProblem(item: XElement, root: XElement | undefined): string | undefined {
+  const fields = eventoFields(item, root);
+  return 'reason' in fields ? fields.reason : undefined;
+}
+
+/** Uma participação em evento nova como inclusão; o motivo, quando vai à mão. */
+export function planCreateEvento(
+  change: Change,
+  chain: XElement[],
+  item: XElement,
+  label: string,
+): Planned<CreateEventoOp> {
+  const fields = eventoFields(item, chain[0]);
+  if ('reason' in fields) return fields;
+  return { expect: {}, key: change.key, kind: 'criar-evento', label, set: fields.set };
 }
 
 // Lattes ----------------------------------------------------------------------------
@@ -175,7 +214,7 @@ const EVENTO_FORM = 'GN_TEC';
 
 /** Por que o evento de quem apresenta fica divergente: o tipo não volta na releitura. */
 export const TYPE_UNREAD =
-  'Criada no Lattes, com os campos conferidos; confira o tipo da participação no Lattes, que a releitura não vê';
+  'Criada no Lattes, com os outros campos conferidos. O tipo da participação não dá para conferir daqui, porque a página do Lattes o monta por script; confira no Lattes';
 
 const eventRows = (html: string) =>
   findLinks(html, 'PKG_EVENTO.form').filter((l) => l.params.f_seq);

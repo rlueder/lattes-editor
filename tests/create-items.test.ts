@@ -58,9 +58,9 @@ const change: Change = {
 const plan = (el: XElement) => planCreateAtuacao(change, el, 'Atuação · Exemplo');
 
 describe('planejar a inclusão de uma atuação', () => {
-  it('fica desligada por padrão até o teste no Lattes real', () => {
-    expect(CREATE_ITEMS_ENABLED).toBe(false);
-    expect(LATTES_CONTRACT.forms['criar-atuacao']).toBeUndefined();
+  it('ligada na montagem; sem a opção do plano (a capacidade da extensão), fica de fora', () => {
+    expect(CREATE_ITEMS_ENABLED).toBe(true);
+    expect(LATTES_CONTRACT.forms['criar-atuacao']).toBeDefined();
     const before = parseXml(
       '<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS><ATUACOES-PROFISSIONAIS></ATUACOES-PROFISSIONAIS></DADOS-GERAIS></CURRICULO-VITAE>',
     ).root;
@@ -318,11 +318,9 @@ describe('inclusão no contrato e no registro do enviado', () => {
       forms: { ...LATTES_CONTRACT.forms, 'criar-atuacao': CREATE_ATUACAO_SPEC },
       menu: [],
     });
-    // O tipo de f_tipo_privacidade fica fora do contrato da inclusão: o
-    // formulário o traz, e ele aparece como campo novo, que não trava.
-    expect(report.forms.find((f) => f.kind === 'criar-atuacao')!.drifts).toEqual([
-      { field: 'f_tipo_privacidade', form: 'GN_ATIV', kind: 'campo-novo' },
-    ]);
+    // O tipo de f_tipo_privacidade fica fora do contrato da inclusão, que é
+    // parcial: o formulário o traz, e a verificação não acusa mudança por ele.
+    expect(report.forms.find((f) => f.kind === 'criar-atuacao')!.drifts).toEqual([]);
     expect(blocksKind(report, 'criar-atuacao')).toEqual([]);
     const wrongMode = await lattesFor({ intercept: includeMode('U') });
     const changed = await checkContract(wrongMode.port, {

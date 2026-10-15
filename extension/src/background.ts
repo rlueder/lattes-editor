@@ -8,15 +8,13 @@
 
 import type { OpResult } from '../../src/bridge/apply.ts';
 import { BRIDGE_FEATURES } from '../../src/bridge/compat.ts';
+import { blocksKind, driftText, lacksSample } from '../../src/bridge/contract.ts';
 import {
   AUTO_VERIFY_DELAY_MS,
   AUTO_VERIFY_RETRY_DELAY_MS,
-  blocksKind,
-  driftText,
-  lacksSample,
   retryAutoVerify,
   shouldAutoVerify,
-} from '../../src/bridge/contract.ts';
+} from '../../src/bridge/contract-schedule.ts';
 import { sameCv } from '../../src/bridge/lattes-html.ts';
 import { photoBusy } from '../../src/bridge/photo.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';

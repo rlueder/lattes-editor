@@ -173,9 +173,10 @@ describe('alteração de evento: chave', () => {
 
   it('só vai a uma extensão que anuncia a alteração de evento', () => {
     expect(BRIDGE_FEATURES).toContain('alterar-evento');
+    // Com tudo ligado na montagem, a extensão desta versão anuncia tudo.
     expect(planOptionsFor(BRIDGE_FEATURES)).toMatchObject({
-      createItems: false,
-      editEvento: false,
+      createItems: true,
+      editEvento: true,
       editOuvinte: true,
     });
     expect(planOptionsFor(['estado-lattes', 'curriculo'])).toMatchObject({
@@ -190,7 +191,7 @@ describe('alteração de evento: chave', () => {
     });
     // A inclusão pede a chave e a capacidade 'incluir-itens' da extensão.
     expect(planOptionsFor(['incluir-itens']).createItems).toBe(CREATE_ITEMS_ENABLED);
-    expect(BRIDGE_FEATURES).not.toContain('incluir-itens');
+    expect(BRIDGE_FEATURES).toContain('incluir-itens');
     const original = parseXml(XML).root;
     const working = parseXml(XML).root;
     setAttr(basics(working), 'TITULO', 'Novo título');
@@ -202,7 +203,7 @@ describe('alteração de evento: chave', () => {
     expect(nova.ops.map((o) => o.kind)).toEqual(['evento']);
   });
 
-  it('ligada, convidado e participante continuam à mão, e a exclusão segue desligada', () => {
+  it('extensão que só anuncia a alteração de ouvinte: convidado, participante e exclusão à mão', () => {
     const seminario = (root: XElement) =>
       child(find(root, 'PARTICIPACAO-EM-SEMINARIO', '13'), 'DADOS-BASICOS');
     const original = parseXml(XML).root;
@@ -213,7 +214,7 @@ describe('alteração de evento: chave', () => {
       (c) => c.kind !== 'element' || getAttr(c, 'SEQUENCIA-PRODUCAO') !== '14',
     );
     const entries = diffDocuments(original, working).map((change) => ({ change, itemTitle: '' }));
-    const { ops, unsupported } = planChanges(entries, working, planOptionsFor(BRIDGE_FEATURES));
+    const { ops, unsupported } = planChanges(entries, working, planOptionsFor(['alterar-evento']));
     expect(ops).toEqual([]);
     expect(unsupported.map((u) => u.reason)).toEqual([
       expect.stringMatching(/só a participação como ouvinte; a edição como Convidado/),

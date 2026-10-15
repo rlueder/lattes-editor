@@ -113,14 +113,15 @@ que o painel "Enviar ao Lattes" mostra item por item:
   só os campos da operação mudaram. O "Possui vínculo empregatício" do Lattes
   é o inverso do `FLAG-VINCULO-EMPREGATICIO` da exportação, e a tradução dos
   dois sentidos fica em `src/bridge/vinculo-flag.ts`. Formação, endereço e identificação têm as
-  operações em `src/bridge/biographic.ts`, desligadas até o teste no Lattes
-  real (`BIOGRAPHIC_OPS_ENABLED`); enquanto isso, ficam em "Não enviado".
+  operações em `src/bridge/biographic.ts`, ligadas para o teste ao vivo
+  (`BIOGRAPHIC_OPS_ENABLED`, seção "Ações ligadas" abaixo).
 - **Item removido no editor** pode ir pela extensão com
   `src/bridge/delete.ts`, que posta o formulário de edição do item com
   `f_ctr=E`, como o botão "Excluir" do Lattes, e confere lendo a lista de
   novo (o item sumiu, nada mais mudou), sem depender da resposta do Lattes.
-  Hoje só idioma e vínculo, e desligado (`DELETE_ITEMS_ENABLED`) até um teste
-  acompanhado; desligado, a remoção fica em "Não enviado". A atuação inteira
+  Hoje só idioma e vínculo, ligado para o teste ao vivo
+  (`DELETE_ITEMS_ENABLED`); com a chave desligada, a remoção fica em "Não
+  enviado". A atuação inteira
   e as formações não vão pela extensão: a primeira apaga em cascata, e excluir uma
   formação pode tornar outra pública. Uma exclusão não tem "Desfazer no
   Lattes" no registro do enviado.
@@ -131,8 +132,7 @@ Formação acadêmica, atuação profissional, projeto e patente também se cria
 editor (`src/model/general-items.ts`, formulário em
 `src/forms/GeneralItemForm.tsx`), mas nenhum módulo do Importar lê essas
 seções. O item novo é uma alteração como as outras: o conector o inclui quando
-souber (a inclusão de atuação existe em `src/bridge/create.ts`, desligada), e
-fora isso fica em "Não enviado". Por isso "item novo de produção" quer dizer item com
+souber (a inclusão pelo conector, abaixo), e fora isso fica em "Não enviado". Por isso "item novo de produção" quer dizer item com
 `SEQUENCIA-PRODUCAO` nova **e** tipo que um módulo do Importar lê
 (`isPendingImport`, em `src/model/production.ts`): a patente usa o contador
 global, mas não vai pelo Importar. As sequências biográficas
@@ -155,9 +155,10 @@ eventos antes de cada fila. O app só manda essas operações a uma extensão qu
 anuncia a capacidade `alterar-evento` (`src/bridge/compat.ts`); com uma
 extensão mais antiga, o evento fica em "Não enviado". Convidado, participante,
 a forma, o tipo, a natureza e a cidade já têm caminho no mesmo arquivo, atrás
-da chave `EDIT_EVENTO_ENABLED`, desligada até o teste acompanhado. Cada chave
-de alteração dessas tem uma capacidade da extensão (`GATED_EDITS`, em
-`src/bridge/plan.ts`), que só entra em `BRIDGE_FEATURES` quando a chave liga.
+da chave `EDIT_EVENTO_ENABLED`, ligada para o teste ao vivo. Cada chave de
+inclusão, exclusão e alteração tem uma capacidade da extensão (`GATED_EDITS`,
+em `src/bridge/plan.ts`), que só entra em `BRIDGE_FEATURES` quando a chave
+liga, e o app só planeja a operação para uma extensão que a anuncia.
 Quando uma operação de evento não muda nada no formulário (a natureza, que só
 se confere), o conector confere o "antes" e não envia; os outros tipos
 sempre enviam. A extensão também confere as chaves da própria montagem
@@ -165,7 +166,7 @@ sempre enviam. A extensão também confere as chaves da própria montagem
 nela para sem enviar.
 
 Prêmios e formação complementar seguem o mesmo caminho em
-`src/bridge/edit-lists.ts`, cada um com a própria chave, desligada. Como a
+`src/bridge/edit-lists.ts`, cada um com a própria chave. Como a
 linha da lista não se acha pelo número, a operação abre o formulário de cada
 linha e fica com a única cujos valores são os do item (`match`, comparado sem
 acento nem caixa), antes da conferência estrita do "antes".
@@ -175,9 +176,8 @@ alteração no lugar; exclusão pelo formulário) está no
 [guia de implementação](lattes_implementation_guide.md), seção 1, e nos
 tickets LAT-50, LAT-51 e LAT-49.
 
-A inclusão de itens pelo conector está escrita e **desligada**
-(`CREATE_ITEMS_ENABLED`, em `src/bridge/create.ts`) até um teste acompanhado
-no Lattes real: atuação com o primeiro vínculo (`create.ts`), formação
+A inclusão de itens pelo conector (`CREATE_ITEMS_ENABLED`, em
+`src/bridge/create.ts`) cobre a atuação com o primeiro vínculo (`create.ts`), formação
 acadêmica nos dez níveis do "Incluir novo item" (`create-formacao.ts`) e
 projeto (`create-projeto.ts`), com o que as duas têm em comum em
 `create-shared.ts` e o despacho em `create-items.ts`. Cada inclusão confere
@@ -186,6 +186,24 @@ acha instituição, curso e agência pelas buscas do próprio Lattes, e depois
 relê a lista: exatamente um item novo, com os campos lidos de volta iguais aos
 enviados. Desfazer uma inclusão não passa pelo conector; o registro do enviado
 diz para excluir no Lattes.
+
+### Ações ligadas para o teste ao vivo
+
+Desde o PR "ligar as ações do conector", todas as chaves estão ligadas, para o
+dono testar no Lattes real. Cada uma tem a capacidade da extensão em
+`BRIDGE_FEATURES`, e o app só manda a operação a uma extensão que a anuncia:
+com uma extensão mais antiga, a alteração fica em "Não enviado" e o evento
+novo fica no Importar. O release estável só leva isso se o dono gerar um.
+
+| Ação                                                                                                                                               | Chave e capacidade                                             | O que o teste ao vivo ainda precisa mostrar                                                                                                                                                                                                                                                        |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Inclusão de atuação, formação (dez níveis, pós-doutorado e livre-docência), idioma, prêmio, vínculo, cinco registros, atividade de ensino e evento | `CREATE_ITEMS_ENABLED`, `incluir-itens`                        | A primeira inclusão real de cada tipo. Registro e atividade voltam como divergentes porque inventores e disciplinas não são relidos; o evento de quem apresenta, porque o tipo não volta na releitura. Patente, projeto e as atividades que pedem órgão seguem à mão (`docs/inclusao_por_tipo.md`) |
+| Exclusão de idioma e vínculo                                                                                                                       | `DELETE_ITEMS_ENABLED`, `excluir-itens`                        | Que o item some da lista e nada mais muda (seção 15 de `lattes_internals.md`)                                                                                                                                                                                                                      |
+| Formação, endereço e identificação                                                                                                                 | `BIOGRAPHIC_OPS_ENABLED`, `alterar-dados-gerais`               | O primeiro envio de cada um, com a releitura                                                                                                                                                                                                                                                       |
+| Eventos de convidado e participante: forma, tipo, natureza e cidade                                                                                | `EDIT_EVENTO_ENABLED`, `alterar-evento-completo`               | Como a edição de um convidado traz o tipo, que a página monta por script (seção 16)                                                                                                                                                                                                                |
+| Prêmios e títulos                                                                                                                                  | `EDIT_PREMIO_ENABLED`, `alterar-premio`                        | Que a linha certa se acha pelos valores e o POST com U grava                                                                                                                                                                                                                                       |
+| Formação complementar                                                                                                                              | `EDIT_FORMACAO_COMPL_ENABLED`, `alterar-formacao-complementar` | O que `FORM2` grava com `f_ctr` vazio e o passo depois do envio                                                                                                                                                                                                                                    |
+| Importar dos itens novos                                                                                                                           | `IMPORT_ENABLED`, `importar`                                   | O arquivo mínimo foi recusado e um passo 3 com sucesso não pôs o item no currículo (seção 13): conferir o currículo depois de cada importação                                                                                                                                                      |
 
 ### O caminho de uma mensagem
 
@@ -231,17 +249,18 @@ pelo `window.postMessage` da própria página, por um content script
   (`PRC_INST_FORM`) enquanto a pessoa digita; lê os cursos de uma instituição
   (`prc_curso_form`) quando ela pede. A conferência do contrato confere que a
   tabela de áreas e a lista de agências continuam lá.
-- **Importar dos itens novos** (`src/bridge/importar.ts`, LAT-50), desligado
-  por `IMPORT_ENABLED`. Envia um arquivo só com os itens novos
+- **Importar dos itens novos** (`src/bridge/importar.ts`, LAT-50), ligado
+  para o teste ao vivo por `IMPORT_ENABLED`. Envia um arquivo só com os itens novos
   (`buildMinimalImportFile`, em `src/import-export/import-file.ts`), confere
   o formulário do passo 2, marca só os módulos do arquivo e o ano do item mais
   antigo, confirma o passo 2 e para na resposta, sem confirmar o passo 3. No
   teste acompanhado de 14/10/2026 o Lattes recusou o arquivo mínimo, e um
   Confirmar do passo 3 com sucesso na tela não pôs o item no currículo
-  (`lattes_internals.md`, seção 13), então a chave continua desligada. Uma solicitação
+  (`lattes_internals.md`, seção 13), e por isso o teste ao vivo precisa
+  conferir o currículo depois de cada importação. Uma solicitação
   pendente no Importar também para o fluxo; o conector nunca descarta nada.
-  Enquanto a chave estiver desligada, o editor não mostra o botão e a extensão
-  recusa o pedido; o "Baixar arquivo" com os passos à mão continua igual.
+  Com a chave desligada, o editor não mostra o botão e a extensão recusa o
+  pedido; o "Baixar arquivo" com os passos à mão continua igual.
 
 ### O Lattes simulado
 

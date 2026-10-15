@@ -30,11 +30,12 @@ import type { FieldValues } from './plan.ts';
 import { stavincFromFlag } from './vinculo-flag.ts';
 
 /**
- * Fica false até um teste acompanhado num Lattes real. Desligada, o
- * planejamento nunca produz operação de inclusão e o contrato não confere o
- * formulário de inclusão; os testes ligam com `enabled: true`.
+ * Ligada para o teste ao vivo, antes de um teste acompanhado de cada tipo num
+ * Lattes real. O plano só a usa com a capacidade `incluir-itens` da extensão
+ * (plan.ts). Desligada, o planejamento nunca produz operação de inclusão e o
+ * contrato não confere o formulário de inclusão.
  */
-export const CREATE_ITEMS_ENABLED = false;
+export const CREATE_ITEMS_ENABLED = true;
 
 export interface CreateAtuacaoOp {
   /** Nenhum valor anterior: o item não existe no Lattes. */
@@ -162,7 +163,7 @@ const hidden: FieldSpec = { type: 'hidden' };
  * f_tipo_privacidade aparece como "texto, com um select": o tipo exato é
  * inferido e fica de fora da conferência.
  */
-export const CREATE_ATUACAO_SPEC: FormSpec & { mode: string } = {
+export const CREATE_ATUACAO_SPEC: FormSpec & { mode: string; partial: true } = {
   action: 'PKG_ATIV.INCLUI',
   fields: {
     f_ano_fim: text(4),
@@ -186,6 +187,9 @@ export const CREATE_ATUACAO_SPEC: FormSpec & { mode: string } = {
   },
   mode: 'I',
   name: 'GN_ATIV',
+  // Como as outras inclusões: confere os campos que a operação usa, e um campo
+  // a mais no formulário (f_tipo_privacidade) não acusa mudança.
+  partial: true,
 };
 
 class Stop extends Error {

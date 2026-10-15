@@ -68,14 +68,14 @@ Para usar com o app e a extensão:
 3. Abra o LattesEditor Dev (`pnpm desktop:dev` também serve): o conector lê o
    menu do simulado como leria o do Lattes.
 
-As chaves das operações ainda não testadas no Lattes real
-(`BIOGRAPHIC_OPS_ENABLED`, `CREATE_ITEMS_ENABLED`, `DELETE_ITEMS_ENABLED`,
-`IMPORT_ENABLED`, `EDIT_EVENTO_ENABLED`, `EDIT_PREMIO_ENABLED`,
-`EDIT_FORMACAO_COMPL_ENABLED`) continuam desligadas no app; o simulado não muda isso. A
-alteração de evento de ouvinte (`EDIT_OUVINTE_ENABLED`) já vem ligada desde o
-teste de 14/10/2026. Os testes de ponta a ponta as ligam só para eles
-(`tests/lattes-simulado.test.ts`), com o servidor dentro do próprio teste
-(`tests/helpers/lattes-simulado.ts`).
+As chaves das operações (`BIOGRAPHIC_OPS_ENABLED`, `CREATE_ITEMS_ENABLED`,
+`DELETE_ITEMS_ENABLED`, `IMPORT_ENABLED`, `EDIT_OUVINTE_ENABLED`,
+`EDIT_EVENTO_ENABLED`, `EDIT_PREMIO_ENABLED`, `EDIT_FORMACAO_COMPL_ENABLED`)
+estão ligadas para o teste ao vivo (seção "Ações ligadas" de
+`arquitetura.md`). O plano só as usa com a capacidade que a extensão anuncia
+(`planOptionsFor`, em `src/bridge/plan.ts`), e os testes que cobrem o caminho
+desligado forçam a chave ou a opção a desligar. Os testes de ponta a ponta
+rodam com o servidor dentro do próprio teste (`tests/helpers/lattes-simulado.ts`).
 
 `GET /__simulado/estado` mostra o estado; `POST` em `/__simulado/expirar`,
 `/entrar`, `/publicar` e `/gravar` derruba a sessão, a devolve, publica e

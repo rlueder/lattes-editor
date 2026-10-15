@@ -35,11 +35,11 @@ import { findLinks, isLogonPage } from './lattes-html.ts';
 import type { FieldValues, Unsupported } from './plan.ts';
 
 /**
- * Fica false até um teste acompanhado num Lattes real. Desligada, uma
- * remoção no editor segue pelo caminho de excluir à mão; os testes ligam com
- * `enabled: true` (ou `deleteItems: true` no planejamento).
+ * Ligada para o teste ao vivo, antes de um teste acompanhado num Lattes real.
+ * O plano só a usa com a capacidade `excluir-itens` da extensão (plan.ts).
+ * Desligada, uma remoção no editor segue pelo caminho de excluir à mão.
  */
-export const DELETE_ITEMS_ENABLED = false;
+export const DELETE_ITEMS_ENABLED = true;
 
 interface DeleteBase {
   /** Valores que o formulário precisa ter agora: a identidade do item a excluir. */

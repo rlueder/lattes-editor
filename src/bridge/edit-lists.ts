@@ -46,11 +46,11 @@ import { type Pairs, pairValue } from './form.ts';
 import { findLinks } from './lattes-html.ts';
 import type { BridgeOp, FieldValues, OpBase } from './plan.ts';
 
-/** Alteração de prêmio e título. Desligada até um teste acompanhado. */
-export const EDIT_PREMIO_ENABLED = false;
+/** Alteração de prêmio e título. Ligada para o teste ao vivo, antes de um teste acompanhado. */
+export const EDIT_PREMIO_ENABLED = true;
 
-/** Alteração de formação complementar. Desligada até um teste acompanhado. */
-export const EDIT_FORMACAO_COMPL_ENABLED = false;
+/** Alteração de formação complementar. Ligada para o teste ao vivo, antes de um teste acompanhado. */
+export const EDIT_FORMACAO_COMPL_ENABLED = true;
 
 export type ListEditKind = 'formacao-complementar' | 'premio';
 

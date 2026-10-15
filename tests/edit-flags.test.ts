@@ -44,4 +44,13 @@ describe('chaves do lado da extensão', () => {
     );
     expect([...BUILD_GATES.lists].sort()).toEqual(inContract);
   });
+
+  it('esta montagem, com tudo ligado, deixa passar cada operação atrás de chave', () => {
+    // Para o teste ao vivo: todas as chaves ligadas, com a capacidade anunciada.
+    expect(GATED_EDITS.every((g) => g.enabled)).toBe(true);
+    expect(BUILD_GATES.editEvento).toBe(true);
+    expect([...BUILD_GATES.lists].sort()).toEqual(['formacao-complementar', 'premio']);
+    const all = planOptionsFor(BRIDGE_FEATURES);
+    for (const g of GATED_EDITS) expect(all[g.option]).toBe(true);
+  });
 });

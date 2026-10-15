@@ -77,7 +77,11 @@ export type BridgeOp =
   | ResumoOp
   | VinculoOp;
 
-/** Chaves das operações que dependem de teste num Lattes real ou da versão da extensão. */
+/**
+ * Chaves das operações que dependem de teste num Lattes real ou da versão da
+ * extensão. Sem valor, cada uma fica desligada: só planOptionsFor liga, com a
+ * chave da montagem e a capacidade da extensão.
+ */
 export interface PlanOptions {
   biographicOps?: boolean;
   createItems?: boolean;
@@ -101,7 +105,8 @@ export interface PlanOptions {
 }
 
 /**
- * Chaves de alteração que dependem de uma capacidade da extensão. Cada uma
+ * Chaves de inclusão, exclusão e alteração que dependem de uma capacidade da
+ * extensão. Cada uma
  * entra em BRIDGE_FEATURES (compat.ts) no mesmo commit em que a chave liga, e
  * só então, e sai no commit em que ela voltar a desligar (a exceção à regra
  * de compat.ts de que capacidade não sai): uma extensão que anunciasse a
@@ -115,6 +120,9 @@ export const GATED_EDITS: readonly {
   feature: string;
   option: keyof PlanOptions;
 }[] = [
+  { enabled: CREATE_ITEMS_ENABLED, feature: 'incluir-itens', option: 'createItems' },
+  { enabled: DELETE_ITEMS_ENABLED, feature: 'excluir-itens', option: 'deleteItems' },
+  { enabled: BIOGRAPHIC_OPS_ENABLED, feature: 'alterar-dados-gerais', option: 'biographicOps' },
   { enabled: EDIT_OUVINTE_ENABLED, feature: 'alterar-evento', option: 'editOuvinte' },
   { enabled: EDIT_EVENTO_ENABLED, feature: 'alterar-evento-completo', option: 'editEvento' },
   { enabled: EDIT_PREMIO_ENABLED, feature: 'alterar-premio', option: 'editPremio' },
@@ -132,15 +140,9 @@ export const GATED_EDITS: readonly {
  * ela, essas mudanças ficam à mão.
  */
 export function planOptionsFor(features: readonly string[]): PlanOptions {
-  return {
-    ...Object.fromEntries(
-      GATED_EDITS.map((g) => [g.option, g.enabled && features.includes(g.feature)]),
-    ),
-    // A inclusão pelo conector só vai a uma extensão que anuncia 'incluir-itens':
-    // as operações de inclusão são mensagens que uma extensão antiga não conhece.
-    // A capacidade entra em BRIDGE_FEATURES junto com a chave ligada.
-    createItems: CREATE_ITEMS_ENABLED && features.includes('incluir-itens'),
-  };
+  return Object.fromEntries(
+    GATED_EDITS.map((g) => [g.option, g.enabled && features.includes(g.feature)]),
+  );
 }
 
 export interface Unsupported {
@@ -231,9 +233,9 @@ export function planChange(
   chain: XElement[],
   label: string,
   {
-    biographicOps = BIOGRAPHIC_OPS_ENABLED,
-    createItems = CREATE_ITEMS_ENABLED,
-    deleteItems = DELETE_ITEMS_ENABLED,
+    biographicOps = false,
+    createItems = false,
+    deleteItems = false,
     editEvento = false,
     editFormacaoComplementar = false,
     editOuvinte = false,

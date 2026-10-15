@@ -112,13 +112,13 @@ function ItemCard({
   showEmpty: boolean;
   showKind: boolean;
 }) {
-  const { loadedMax, openItem } = useEditor();
+  const { loadedMax, openItem, root } = useEditor();
   // Ids dos títulos de subseção, para o índice do item no painel lateral.
   const outlineBase = useId();
   const seq = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
   // Novo também quando vai pela lista de alterações (inclusão pelo conector).
   const isNew = isNewProduction(el, loadedMax);
-  const byChanges = goesByChanges(el, loadedMax);
+  const byChanges = goesByChanges(el, loadedMax, undefined, root);
   return (
     <details className={isNew ? 'item card is-new' : 'item card'}>
       <summary>

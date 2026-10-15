@@ -51,9 +51,9 @@ const plan = (attrs = DOUTORADO, name = 'DOUTORADO', children = '') =>
 const op = () => plan() as CreateFormacaoOp;
 
 describe('planejar a inclusão de uma formação', () => {
-  it('fica desligada por padrão; ligada, a formação nova vira inclusão', () => {
-    expect(CREATE_ITEMS_ENABLED).toBe(false);
-    expect(LATTES_CONTRACT.forms['criar-formacao']).toBeUndefined();
+  it('ligada na montagem; sem a opção do plano, fica de fora; ligada, vira inclusão', () => {
+    expect(CREATE_ITEMS_ENABLED).toBe(true);
+    expect(LATTES_CONTRACT.forms['criar-formacao']).toBeDefined();
     const before = cv('<GRADUACAO SEQUENCIA-FORMACAO="1" NOME-INSTITUICAO="UFPel"/>');
     const after = cv(
       `<GRADUACAO SEQUENCIA-FORMACAO="1" NOME-INSTITUICAO="UFPel"/><DOUTORADO ${DOUTORADO}/>`,

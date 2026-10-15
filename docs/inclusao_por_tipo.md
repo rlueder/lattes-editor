@@ -22,10 +22,11 @@ livre; as outras saem do código.
 - **Editor cria**: o editor oferece criar o tipo, no "Novo item" das produções
   ou no botão da seção (formação, atuação, projetos, patentes e registros).
 - **Caminho hoje**: `conector` quando o conector tem a operação de inclusão
-  (todas atrás de `CREATE_ITEMS_ENABLED`, desligada até o teste acompanhado);
-  `importar` quando o item vai no arquivo do Importar, que a pessoa envia pelos
-  passos na tela, porque o Importar pelo conector também está desligado
-  (`lattes_internals.md`, seção 13); `nenhum` quando o item novo só chega ao
+  (todas atrás de `CREATE_ITEMS_ENABLED` e da capacidade `incluir-itens` da
+  extensão, ligadas para o teste ao vivo); `importar` quando o item vai no
+  arquivo do Importar, pelos passos na tela ou pelo Importar do conector, que
+  ainda não pôs um item no currículo num teste real (`lattes_internals.md`,
+  seção 13); `nenhum` quando o item novo só chega ao
   Lattes copiado à mão.
 - **Formulário no censo**: a entrada do censo (`src/census/targets.ts` e
   `targets-production.ts`) cujo formulário grava o elemento.
@@ -354,13 +355,17 @@ que o formulário monta no navegador antes de enviar.
 (é a própria pessoa quem inclui), não tem grade nenhuma e teve a ligação de
 nome, ano, cidade, país, forma e divulgação científica com o XML observada na
 passada de edição do censo. A alteração pelo mesmo formulário foi enviada e
-conferida em 14/10/2026. Com `CREATE_ITEMS_ENABLED` ligada, o evento novo sai
-do arquivo do Importar (`src/model/direct-inclusion.ts`) e vai pela lista de
-alterações, incluído por `src/bridge/create-evento.ts`. O que o formulário não
-tem (idioma, meio de divulgação, DOI, local, instituição promotora, nome em
-inglês, relevância "sim", participantes além da pessoa, palavras-chave) faz o
-evento ir à mão, com o motivo. Com a chave desligada, nada muda: o evento
-segue no arquivo do Importar.
+conferida em 14/10/2026. Com `CREATE_ITEMS_ENABLED` ligada e uma extensão que
+anuncia `incluir-itens`, o evento novo sai do arquivo do Importar
+(`src/model/direct-inclusion.ts`) e vai pela lista de alterações, incluído por
+`src/bridge/create-evento.ts`. O que o formulário não tem (idioma, meio de
+divulgação, DOI, local, instituição promotora, nome em inglês, relevância
+"sim", participantes além da pessoa, palavras-chave) faz o evento voltar ao
+Importar, quando a própria pessoa está entre os participantes; sem ela, o
+Importar descartaria o evento, e ele vai à mão, com o motivo. O evento de quem
+apresenta volta como divergente: o tipo da participação não aparece na
+releitura, porque a página o monta por script. Com a chave desligada, ou com
+uma extensão mais antiga, nada muda: o evento segue no arquivo do Importar.
 
 **Produções bibliográficas, técnicas e artísticas, demais trabalhos e bancas:
 Importar, por enquanto.** Os formulários de inclusão desses tipos foram lidos,
