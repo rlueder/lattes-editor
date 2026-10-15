@@ -20,6 +20,7 @@ export default [
       'dist-extension/**',
       'dist-extension-loja/**',
       'dist-extension-dev/**',
+      'dist-censo/**',
       // Montagens locais do Tauri (pnpm tauri build), com cópias da extensão.
       'src-tauri/target/**',
     ],

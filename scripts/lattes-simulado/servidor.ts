@@ -16,6 +16,7 @@ import { join } from 'node:path';
 import { encodeLatin1 } from '../../src/model/latin1.ts';
 import { ATUACAO_ROUTES } from './atuacao.ts';
 import { BUSCAS_ROUTES } from './buscas.ts';
+import { CENSO_ROUTES } from './censo.ts';
 import { DADOS_GERAIS_ROUTES } from './dados-gerais.ts';
 import { type ImportOutcome, LattesState, type SimuladoOptions } from './estado.ts';
 import { EVENTOS_ROUTES } from './eventos.ts';
@@ -33,6 +34,7 @@ import { notFound, type Routes, type SimResponse } from './tipos.ts';
 export const ROUTES: Routes = {
   ...ATUACAO_ROUTES,
   ...BUSCAS_ROUTES,
+  ...CENSO_ROUTES,
   ...DADOS_GERAIS_ROUTES,
   ...EVENTOS_ROUTES,
   ...EXPORTAR_ROUTES,

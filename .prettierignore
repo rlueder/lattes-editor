@@ -3,6 +3,7 @@ dist
 dist-extension
 dist-extension-loja
 dist-extension-dev
+dist-censo
 coverage
 pnpm-lock.yaml
 private

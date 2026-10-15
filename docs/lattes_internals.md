@@ -1307,3 +1307,21 @@ formação, que pelo XSD não existem em todos os níveis (a amostra é a
 primeira formação da lista, de qualquer nível). Os outros aparecem como "campo novo" na
 verificação, que só avisa. O teste acompanhado completa a lista com o que a
 verificação mostrar.
+
+## 20. Censo dos formulários (LAT-55, 15/10/2026)
+
+As seções acima foram escritas formulário a formulário, à mão. O censo faz a
+mesma leitura de uma vez, para todos os formulários de inclusão que este
+documento e a captura das listas de 13/10/2026 conhecem: abre cada um por GET,
+sem `f_seq`, e guarda os campos na ordem da página com o rótulo ao lado, os
+ocultos e as opções, sem nenhum valor do currículo. Para os itens que o
+currículo de quem roda já tem, abre também o formulário de edição e casa cada
+campo com o atributo do mesmo item na exportação, o que transforma em
+**observado** a ligação campo ↔ atributo que as tabelas acima marcam como
+inferida.
+
+O código está em `src/census/`, a lista de formulários em
+`src/census/targets.ts` e `targets-production.ts` (com o que é observado e o
+que é inferido em cada entrada), e as capturas, o relatório de cobertura e o
+passo a passo em `docs/lattes-formularios/`. Nenhuma captura real foi feita
+ainda: até lá, o relatório só lista as lacunas.
