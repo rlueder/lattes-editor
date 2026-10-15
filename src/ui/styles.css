@@ -6725,25 +6725,13 @@ main.content {
   opacity: 1;
 }
 
+/* Os botões são os do app (ghost e primary, em pílula); aqui só a fonte da
+   interface, já que o bloco herda a serifa da leitura. */
 .reading-actions button {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  min-height: 26px;
-  padding: 2px 8px;
-  border: 1px solid var(--border-strong);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--muted);
-  font-family: var(--edit-font);
-  font-size: 12px;
-  line-height: 1.2;
-  text-align: left;
-}
-
-.reading-actions button:hover {
-  color: var(--text);
-  border-color: var(--border-focus);
+  font: 13px/1.5 var(--font);
 }
 
 /* Os campos do bloco em edição: o formulário de sempre, na sans e na escala
@@ -6758,12 +6746,6 @@ main.content {
   font-weight: 450;
   line-height: 1.5;
   animation: reading-fade 120ms var(--ease-out);
-}
-
-.reading-actions .reading-done {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--accent-contrast);
 }
 
 @media (hover: none), (max-width: 760px) {

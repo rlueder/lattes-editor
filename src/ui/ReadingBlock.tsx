@@ -196,14 +196,14 @@ export function EditableBlock({
         {editing ? (
           <>
             {editExtra}
-            <button className="reading-done" type="button" onClick={close}>
+            <button className="primary reading-done" type="button" onClick={close}>
               Concluir
             </button>
           </>
         ) : (
           <>
             {addLabel && (
-              <button className="reading-add" type="button" onClick={open}>
+              <button className="ghost reading-add" type="button" onClick={open}>
                 {addLabel}
               </button>
             )}
@@ -211,7 +211,7 @@ export function EditableBlock({
               ref={editRef}
               aria-keyshortcuts="E"
               aria-label={`Editar ${label}`}
-              className="reading-edit-btn"
+              className="ghost reading-edit-btn"
               type="button"
               onClick={open}
               onKeyDown={onEditKey}
