@@ -16,7 +16,7 @@ import type { AttributeSpec } from '../schema/types.ts';
 import { parseEmails, parseSocial } from './contacts.ts';
 import { CopyButton } from './CopyButton.tsx';
 import { DateField } from './DateField.tsx';
-import { useDraft } from './draft-context.ts';
+import { useDraft, usePartKey } from './draft-context.ts';
 import {
   codeAttrFor,
   codeChoices,
@@ -75,6 +75,7 @@ export function AttributeField({
   const lists = useLattesListsContext();
   // Prévia do modo de leitura: acompanha o texto antes de gravar.
   const onDraft = useDraft();
+  const partKey = usePartKey()?.(el, name);
   const value = getAttr(el, name) ?? '';
   const [draft, setDraft] = useState(value);
   // Valor mudou por fora (busca por DOI, restauração do histórico).
@@ -342,6 +343,7 @@ export function AttributeField({
     return (
       <div
         className={`field${wide || prominent || textarea ? ' field-wide' : ''}${prominent ? ' field-prominent' : ''}${error ? ' has-error' : ''}`}
+        data-part={partKey}
       >
         <label
           className={prominent ? 'sr-only' : undefined}

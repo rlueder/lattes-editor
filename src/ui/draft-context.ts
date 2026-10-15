@@ -12,3 +12,15 @@ export const DraftContext = createContext<DraftFn | null>(null);
 export function useDraft(): DraftFn | null {
   return useContext(DraftContext);
 }
+
+/**
+ * A chave que a prévia dá ao valor de um campo (reading-layout.ts), para o
+ * campo em foco acender o trecho dele na prévia. Sem provedor, nada.
+ */
+export type PartKeyFn = (el: XElement, attr: string) => string | undefined;
+
+export const PartKeyContext = createContext<PartKeyFn | null>(null);
+
+export function usePartKey(): PartKeyFn | null {
+  return useContext(PartKeyContext);
+}

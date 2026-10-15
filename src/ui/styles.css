@@ -6495,9 +6495,10 @@ main.content {
    nunca cobrem o texto. Em edição, um fundo levemente diferente diz que o
    bloco está aberto, com a prévia no topo e os campos abaixo de um fio. */
 .reading-block {
+  --reading-gutter: 96px;
   position: relative;
   margin: 0 -12px;
-  padding: 6px 96px 6px 12px;
+  padding: 6px var(--reading-gutter) 6px 12px;
   border-radius: 8px;
   color: var(--read-text);
   font-family: var(--read-serif);
@@ -6678,7 +6679,7 @@ main.content {
   margin-top: 0.35rem;
 }
 
-.reading-block.rr > .reading-content {
+.reading-block.rr .reading-content {
   display: grid;
   grid-template-columns: var(--read-tab) minmax(0, var(--read-measure));
   gap: 0 var(--read-tab-gap);
@@ -6714,6 +6715,46 @@ main.content {
 .rr-body .tag {
   font-family: var(--edit-font);
   vertical-align: 2px;
+}
+
+/* A prévia e os botões. Ocupa o bloco até as bordas (a margem reservada
+   inclusive), para, em edição, grudar no alto da tela com o fundo do bloco
+   enquanto os campos rolam por baixo. Uma prévia longa (o resumo) rola
+   dentro de si a partir de 40% da altura da tela. */
+.reading-head {
+  position: relative;
+  margin: -6px calc(-1 * var(--reading-gutter)) 0 -12px;
+  padding: 6px var(--reading-gutter) 0 12px;
+  border-radius: 8px 8px 0 0;
+}
+
+.reading-block.is-editing .reading-head {
+  position: sticky;
+  top: calc(var(--topbar-h) + var(--section-bar-h, 0px));
+  z-index: 2;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-2) 45%, var(--bg));
+}
+
+.reading-block.is-editing .reading-content {
+  max-height: 40vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.reading-block.is-editing .reading-form {
+  margin-top: 0;
+  border-top: 0;
+}
+
+/* O trecho do campo em foco, aceso na prévia. */
+.reading-content .is-focus-part {
+  border-radius: 3px;
+  background: var(--accent-soft-strong);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  transition: background-color var(--dur-fast) ease;
 }
 
 /* "Editar", "Adicionar…" e "Concluir", em sans, na margem reservada: à vista
@@ -6762,7 +6803,7 @@ main.content {
 
 @media (hover: none), (max-width: 760px) {
   .reading-block {
-    padding-right: 12px;
+    --reading-gutter: 12px;
   }
   .reading-actions {
     position: static;
@@ -6775,7 +6816,7 @@ main.content {
 }
 
 @media (max-width: 760px) {
-  .reading-block.rr > .reading-content,
+  .reading-block.rr .reading-content,
   .reading-field {
     grid-template-columns: minmax(0, 1fr);
   }

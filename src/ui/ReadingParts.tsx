@@ -30,7 +30,11 @@ export function LineView({ line }: { line: Line }) {
   if (!lineVisible(line)) return null;
   if (line.kind === 'para' || line.kind === 'translation') {
     return (
-      <div className={`rl rl-${line.kind}`} lang={line.kind === 'translation' ? 'en' : undefined}>
+      <div
+        className={`rl rl-${line.kind}`}
+        data-part={shown[0]?.part.key}
+        lang={line.kind === 'translation' ? 'en' : undefined}
+      >
         {line.label && <span className="reading-label">{line.label}</span>}
         {paragraphs(shown[0]?.text ?? '').map((p, i) => (
           <p key={i} className="reading-p">
@@ -47,7 +51,9 @@ export function LineView({ line }: { line: Line }) {
       {shown.map((s) => (
         <span key={s.part.key}>
           {s.before}
-          <PartText part={s.part} text={s.text} />
+          <span data-part={s.part.key}>
+            <PartText part={s.part} text={s.text} />
+          </span>
         </span>
       ))}
       {line.suffix}
@@ -72,7 +78,7 @@ export function Rows({ parts, quiet }: { parts: Part[]; quiet: boolean }) {
   return (
     <dl className={classes}>
       {parts.map((p) => (
-        <div key={p.key} className="reading-field">
+        <div key={p.key} className="reading-field" data-part={p.key}>
           <dt>{attributeLabelIn(p.el.name, p.attr)}</dt>
           <dd>
             <PartText part={p} text={partText(p)} />

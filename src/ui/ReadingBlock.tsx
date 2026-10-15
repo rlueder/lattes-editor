@@ -9,14 +9,16 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 
 import type { XElement } from '../model/xml.ts';
-import { DraftContext } from './draft-context.ts';
+import { DraftContext, PartKeyContext } from './draft-context.ts';
 import { PencilIcon } from './icons.tsx';
 import { clickOpensEditor, readingKeyAction } from './reading.ts';
+import { partKeys } from './reading-layout.ts';
 import { addDraft, type Drafts, withDrafts } from './reading-preview.ts';
 
 /** Tecla G recente: o E seguinte é o atalho de seção (G E, Educação), não "editar". */
@@ -50,6 +52,9 @@ interface BlockProps {
  * texto (arrastando, ou com dois ou três cliques). Ao abrir, a prévia fica
  * exatamente onde estava o texto clicado. Esc ou "Concluir" voltam à leitura
  * e devolvem o foco ao botão.
+ *
+ * Em edição, a prévia (com "Concluir") gruda no alto da tela enquanto os
+ * campos rolam por baixo, e o trecho do campo em foco acende nela.
  */
 export function EditableBlock({
   addLabel,
@@ -66,6 +71,9 @@ export function EditableBlock({
   const editRef = useRef<HTMLButtonElement>(null);
   const restoreFocus = useRef(false);
   const clickTimer = useRef(0);
+  /** O campo em foco, pela chave do pedaço dele na prévia. */
+  const [focusPart, setFocusPart] = useState<string | null>(null);
+  const keyOf = useMemo(() => partKeys(root), [root]);
   /** Altura do bloco na tela antes da troca, para mantê-lo no mesmo lugar. */
   const anchor = useRef<number | null>(null);
 
@@ -89,6 +97,7 @@ export function EditableBlock({
     if (active instanceof HTMLElement && blockRef.current?.contains(active)) active.blur();
     anchor.current = blockRef.current?.getBoundingClientRect().top ?? null;
     restoreFocus.current = true;
+    setFocusPart(null);
     setEditing(false);
   };
   const closeRef = useRef(close);
@@ -142,6 +151,27 @@ export function EditableBlock({
     }
   }, [editing]);
 
+  // O trecho do campo em foco acende na prévia. A prévia se refaz a cada
+  // tecla, então a marca é reaplicada depois de toda renderização.
+  useEffect(() => {
+    const content = blockRef.current?.querySelector('.reading-content');
+    if (!content) return;
+    let lit: HTMLElement | null = null;
+    for (const node of content.querySelectorAll<HTMLElement>('[data-part]')) {
+      const on = node.getAttribute('data-part') === focusPart;
+      node.classList.toggle('is-focus-part', on);
+      if (on) lit ??= node;
+    }
+    // Na prévia longa, que rola dentro de si, o trecho aceso vem para a vista.
+    if (lit && content.scrollHeight > content.clientHeight) {
+      const box = content.getBoundingClientRect();
+      const at = lit.getBoundingClientRect();
+      if (at.top < box.top || at.bottom > box.bottom) {
+        content.scrollTop += at.top - box.top - 8;
+      }
+    }
+  });
+
   // E no botão "Editar" (o ponto de foco do bloco) também abre; Enter e espaço
   // já valem por ser botão.
   const onEditKey = (e: KeyboardEvent<HTMLButtonElement>) => {
@@ -184,43 +214,57 @@ export function EditableBlock({
         }, CLICK_DELAY_MS);
       }}
     >
-      <div className="reading-content">
-        {read(editing ? withDrafts(root, drafts) : root, editing)}
+      <div className="reading-head">
+        <div className="reading-content">
+          {read(editing ? withDrafts(root, drafts) : root, editing)}
+        </div>
+        <span className="reading-actions">
+          {editing ? (
+            <>
+              {editExtra}
+              <button className="primary reading-done" type="button" onClick={close}>
+                Concluir
+              </button>
+            </>
+          ) : (
+            <>
+              {addLabel && (
+                <button className="ghost reading-add" type="button" onClick={open}>
+                  {addLabel}
+                </button>
+              )}
+              <button
+                ref={editRef}
+                aria-keyshortcuts="E"
+                aria-label={`Editar ${label}`}
+                className="ghost reading-edit-btn"
+                type="button"
+                onClick={open}
+                onKeyDown={onEditKey}
+              >
+                <PencilIcon /> Editar
+              </button>
+            </>
+          )}
+        </span>
       </div>
       {editing && (
         <DraftContext.Provider value={onDraft}>
-          <div className="reading-form">{form()}</div>
+          <PartKeyContext.Provider value={keyOf}>
+            <div
+              className="reading-form"
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget)) setFocusPart(null);
+              }}
+              onFocus={(e) => {
+                setFocusPart(e.target.closest('[data-part]')?.getAttribute('data-part') ?? null);
+              }}
+            >
+              {form()}
+            </div>
+          </PartKeyContext.Provider>
         </DraftContext.Provider>
       )}
-      <span className="reading-actions">
-        {editing ? (
-          <>
-            {editExtra}
-            <button className="primary reading-done" type="button" onClick={close}>
-              Concluir
-            </button>
-          </>
-        ) : (
-          <>
-            {addLabel && (
-              <button className="ghost reading-add" type="button" onClick={open}>
-                {addLabel}
-              </button>
-            )}
-            <button
-              ref={editRef}
-              aria-keyshortcuts="E"
-              aria-label={`Editar ${label}`}
-              className="ghost reading-edit-btn"
-              type="button"
-              onClick={open}
-              onKeyDown={onEditKey}
-            >
-              <PencilIcon /> Editar
-            </button>
-          </>
-        )}
-      </span>
     </div>
   );
 }

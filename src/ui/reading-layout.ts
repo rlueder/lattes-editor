@@ -68,6 +68,15 @@ export function flatten(root: XElement): XElement[] {
   return out;
 }
 
+/** A chave de um campo no bloco, a mesma que a prévia dá ao pedaço dele. */
+export function partKeys(root: XElement): (el: XElement, attr: string) => string | undefined {
+  const index = new Map(flatten(root).map((el, i) => [el, i]));
+  return (el, attr) => {
+    const i = index.get(el);
+    return i === undefined ? undefined : `${i}:${attr}`;
+  };
+}
+
 class Keys {
   private readonly index = new Map<XElement, number>();
   constructor(root: XElement) {
