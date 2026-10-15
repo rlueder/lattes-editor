@@ -1440,6 +1440,18 @@ com itens no currículo. **Observado**:
   sem formulário nenhum; o coletor passou a guardar a forma da página (tamanho
   e contagem de tags) para a próxima leitura dizer o que veio. A de linhas de
   pesquisa não tem link na lista (**inferido**: sai de uma função da página).
+- Das produções, só trabalhos técnicos e editoração estão na exportação do
+  dono, e as duas foram lidas só até o limite padrão de 8 itens. As outras
+  saíram "sem-itens" porque a passada de edição decidia isso só pelo XML, sem
+  abrir a lista; a atuação e a atividade saíram "ok" com 0 itens lidos, por
+  falta de link de edição reconhecível (a grade de atividades monta o link
+  por JavaScript, seção 8). Corrigido na LAT-58: a passada conta os links da
+  lista antes do limite, abre a lista mesmo sem item no XML e marca
+  `so-na-lista` e `sem-link`. O que rodar de novo está em
+  `lattes-formularios/recaptura-edicao.md`.
+- Nos trabalhos técnicos, `f_seq` ↔ `SEQUENCIA-PRODUCAO` bateu em 5 itens e
+  não bateu em 3, com os outros campos casando nos 8: o `f_seq` da lista não
+  é sempre o número do item na exportação. **Observado**; o porquê não se sabe.
 - Rádios com o texto antes ("Sim (o) Não (o)", nos projetos e patentes) saíram
   com o rótulo deslocado nesta captura; o coletor foi corrigido, e a próxima
   captura traz os rótulos certos.

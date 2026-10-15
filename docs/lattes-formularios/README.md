@@ -5,11 +5,13 @@ pessoa vê com o rótulo ao lado, os campos ocultos, as opções de cada rádio 
 lista, e a ligação de cada campo com o atributo do XML da exportação. Serve
 para dizer, atributo por atributo, se o editor cobre o que o Lattes oferece.
 
-| Arquivo                 | O que tem                                                                            |
-| ----------------------- | ------------------------------------------------------------------------------------ |
-| `censo-AAAA-MM-DD.json` | Uma captura feita numa sessão real do Lattes (ainda nenhuma nesta pasta)             |
-| `relatorio.md`          | A cobertura, gerada por `pnpm censo:relatorio`; não editar à mão                     |
-| `pendencias.json`       | As divergências já conhecidas, que o teste aceita (`pnpm censo:relatorio --aceitar`) |
+| Arquivo                          | O que tem                                                                            |
+| -------------------------------- | ------------------------------------------------------------------------------------ |
+| `censo-AAAA-MM-DD.json`          | Uma captura feita numa sessão real do Lattes (ainda nenhuma nesta pasta)             |
+| `relatorio.md`                   | A cobertura, gerada por `pnpm censo:relatorio`; não editar à mão                     |
+| `pendencias.json`                | As divergências já conhecidas, que o teste aceita (`pnpm censo:relatorio --aceitar`) |
+| `censo-AAAA-MM-DD-ligacoes.json` | Só a passada de edição, sem formulários (`link(xml, { download: true })`)            |
+| `recaptura-edicao.md`            | O que a LAT-58 precisa ler de novo na passada de edição, e como                      |
 
 O código está em `src/census/`: a leitura das páginas sem DOM
 (`html-scan.ts`), o registro sem dados pessoais (`census-page.ts`), a lista de
@@ -33,7 +35,12 @@ pode pedir para esconder outros textos (o próprio nome, por exemplo).
 
 A passada de edição (`link()`) lê os valores do currículo para casar campo e
 atributo, só em memória, e guarda nomes e contagens: em quantos itens o valor
-do campo era o do atributo, e em quantos era outro. Num campo de opções cujo
+do campo era o do atributo, e em quantos era outro. Por entrada, guarda também
+quantos links de edição a lista tinha (`listed`, antes do limite de itens
+lidos) e, quando a lista não tem link de edição reconhecível, os
+procedimentos que a página abre só com os nomes dos parâmetros. A lista é
+aberta mesmo quando a exportação não tem o elemento, para dizer se o Lattes
+tem itens que ela não tem (`so-na-lista`). Num campo de opções cujo
 rótulo não é o valor do XML, guarda o par código da opção ↔ valor enumerado do
 XSD (`S` ↔ `CONCLUIDO`), que vem do Lattes e do XSD, não da pessoa.
 
