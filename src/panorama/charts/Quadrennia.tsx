@@ -74,8 +74,7 @@ export function Quadrennia({ cv, lastYears, now }: Props) {
         <button className="ghost pano-copy" type="button" onClick={copy}>
           {copied ? 'Copiado' : 'Copiar como planilha'}
         </button>{' '}
-        Os quadriênios são os da avaliação da CAPES. Este gráfico não usa o período: as janelas são
-        as colunas.
+        Quadriênios da avaliação da CAPES.
       </p>
     </>
   );

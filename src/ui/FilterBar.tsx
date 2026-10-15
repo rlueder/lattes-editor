@@ -1,10 +1,10 @@
 import { useId, useRef } from 'react';
 
 import { type Facet, type FilterState, isFiltering, NO_FILTER } from './facets.ts';
-import { CloseIcon, SearchIcon } from './icons.tsx';
+import { FilterStatus } from './FilterStatus.tsx';
+import { SearchIcon } from './icons.tsx';
 import { ClearButton } from './primitives/ClearButton.tsx';
 import { Select } from './primitives/Select.tsx';
-import { Tip } from './primitives/Tip.tsx';
 
 interface Props {
   facets: Facet[];
@@ -60,19 +60,9 @@ export function FilterBar({ facets, onChange, shown, state, total }: Props) {
         );
       })}
       {filtering && (
-        <span className="filter-status">
+        <FilterStatus onClear={() => onChange(NO_FILTER)}>
           {shown} de {total}
-          <Tip label="Limpar filtros">
-            <button
-              aria-label="Limpar filtros"
-              className="ghost icon-btn"
-              type="button"
-              onClick={() => onChange(NO_FILTER)}
-            >
-              <CloseIcon />
-            </button>
-          </Tip>
-        </span>
+        </FilterStatus>
       )}
     </div>
   );

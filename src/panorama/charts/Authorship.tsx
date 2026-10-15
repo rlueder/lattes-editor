@@ -26,8 +26,8 @@ export function Authorship({ cv, groups, period }: Props) {
   return (
     <>
       <Insight>
-        De {points.length} produções com autores, <b>{count(0) + count(1)}</b> com autoria única ou
-        na primeira posição e <b>{count(3)}</b> na última.
+        Primeira posição ou autoria única em <b>{count(0) + count(1)}</b> de {points.length}{' '}
+        produções; última posição em <b>{count(3)}</b>.
       </Insight>
       <Legend
         items={PRODUCTION_GROUPS.map((g, i) => ({ color: SERIES[i]!, label: g.label })).filter(
@@ -89,7 +89,7 @@ export function Authorship({ cv, groups, period }: Props) {
         })}
       </svg>
       <p className="pano-note">
-        Em algumas áreas a ordem é alfabética; o XML não diz qual convenção vale.
+        Em algumas áreas a ordem dos autores é alfabética, e o XML não diz qual é o caso.
       </p>
     </>
   );

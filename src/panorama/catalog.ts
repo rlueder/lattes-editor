@@ -1,7 +1,8 @@
 // Os gráficos do Panorama: nome no menu e a frase sob o título. A ordem é a
 // do menu lateral.
 
-export type FilterKind = 'grupo' | 'janela' | 'laco' | 'nivel' | 'periodo' | 'repetidos' | 'vista';
+export type FilterKind =
+  'grupo' | 'janela' | 'laco' | 'nivel' | 'periodo' | 'repetidos' | 'vista' | 'zoom';
 
 export interface ChartInfo {
   filters: FilterKind[];
@@ -43,7 +44,7 @@ export const CHARTS: ChartInfo[] = [
     question: 'Formação, vínculos, projetos, orientações e prêmios ao longo dos anos.',
   },
   {
-    filters: ['periodo', 'laco', 'vista'],
+    filters: ['periodo', 'laco'],
     id: 'pessoas',
     label: 'Pessoas',
     question: 'As pessoas com quem você mais trabalha, em coautoria, orientação, banca ou projeto.',

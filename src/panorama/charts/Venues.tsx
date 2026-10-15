@@ -116,8 +116,7 @@ export function Venues({ cv, period, whole }: Props) {
         <p className="pano-note">Nenhum evento no período.</p>
       )}
       <p className="pano-note">
-        Trabalhos em eventos: {v.national} nacionais e {v.international} internacionais, pela
-        classificação do evento.
+        Trabalhos em eventos: {v.national} nacionais, {v.international} internacionais.
       </p>
     </>
   );

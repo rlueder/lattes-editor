@@ -1,25 +1,36 @@
 import type { Period } from '../aggregate.ts';
 import type { CvData } from '../model.ts';
 import {
+  byRole,
   coauthorEdges,
   collaboration,
   hasTie,
   people,
   type Person,
   personItems,
+  roleOf,
   shortName,
   type Tie,
 } from '../people.ts';
+import { Segmented } from '../Segmented.tsx';
 import { useChart } from '../use-chart.ts';
 import { plural } from './geometry.ts';
-import { Insight, Legend, Mark } from './shared.tsx';
+import { Legend, Mark } from './shared.tsx';
 
 interface Props {
   cv: CvData;
   period: Period;
   tie?: Tie;
-  view: 'lista' | 'rede';
+  view: View;
+  onView: (view: View) => void;
 }
+
+type View = 'lista' | 'rede';
+
+const VIEWS = [
+  { label: 'Lista', value: 'lista' },
+  { label: 'Rede', value: 'rede' },
+] as const;
 
 const span = (years: number[]) => {
   if (years.length === 0) return '';
@@ -28,31 +39,44 @@ const span = (years: number[]) => {
   return a === b ? `${a}` : `${a}–${b}`;
 };
 
-function tags(p: Person): string[] {
+/** Laços além do papel da seção, como selos. */
+function badges(p: Person): string[] {
   const out: string[] = [];
-  if (p.supervisions.length)
-    out.push(p.supervisions.some((s) => s.ongoing) ? 'orientando(a)' : 'ex-orientando(a)');
-  if (p.degrees.length) out.push('orientou você');
-  if (p.committees.length) out.push(`banca ×${p.committees.length}`);
+  if (roleOf(p) === 'Orientandos')
+    out.push(p.supervisions.some((s) => s.ongoing) ? 'em andamento' : 'concluída');
+  if (p.committees.length)
+    out.push(p.committees.length > 1 ? `banca ×${p.committees.length}` : 'banca');
   if (p.projects.length) out.push('projeto');
   return out;
 }
 
-export function People({ cv, period, tie, view }: Props) {
+export function People({ cv, onView, period, tie, view }: Props) {
   const all = people(cv, period);
   const stats = collaboration(cv, period, all);
   const list = tie ? all.filter((p) => hasTie(p, tie)) : all;
   const avg = stats.avgAuthors.toFixed(1).replace('.', ',');
   return (
     <>
-      <Insight>
-        <b>
-          {stats.withAuthors - stats.solo} de {stats.withAuthors}
-        </b>{' '}
-        produções em colaboração, {stats.solo} sem coautor; média de {avg} autores.
-        {stats.students > 0 &&
-          ` ${stats.studentsCoauthoring} de ${plural(stats.students, 'pessoa orientada assina', 'pessoas orientadas assinam')} produções com você.`}
-      </Insight>
+      <div className="pano-chart-head">
+        <ul className="pano-facts">
+          <li>
+            <b>
+              {stats.withAuthors - stats.solo} de {stats.withAuthors}
+            </b>{' '}
+            produções em coautoria
+          </li>
+          <li>
+            <b>{avg}</b> autores por produção
+          </li>
+          {stats.students > 0 && (
+            <li>
+              <b>{stats.studentsCoauthoring}</b>{' '}
+              {stats.studentsCoauthoring === 1 ? 'orientando coautor' : 'orientandos coautores'}
+            </li>
+          )}
+        </ul>
+        <Segmented label="Vista" options={VIEWS} value={view} onChange={onView} />
+      </div>
       {view === 'lista' ? (
         <PeopleList list={list} />
       ) : (
@@ -64,41 +88,47 @@ export function People({ cv, period, tie, view }: Props) {
 
 function PeopleList({ list }: { list: Person[] }) {
   const { pick } = useChart();
-  const shown = list.slice(0, 20);
-  const max = Math.max(1, ...shown.map((p) => p.productions.length));
-  if (shown.length === 0) return <p className="pano-note">Ninguém com esse laço no período.</p>;
+  const max = Math.max(1, ...list.map((p) => p.productions.length));
+  if (list.length === 0) return <p className="pano-note">Ninguém com esse laço no período.</p>;
   return (
-    <ul className="pano-rows">
-      {shown.map((p) => (
-        <li key={p.key}>
-          <button
-            className="pano-row"
-            type="button"
-            onClick={() =>
-              pick({
-                items: personItems(p),
-                label: p.name,
-                person: p.name,
-                soon: 'A pessoa em todas as seções',
-              })
-            }
-          >
-            <span className="pano-row-name">
-              {p.name}
-              <small>{span(p.years)}</small>
-              {tags(p).map((t) => (
-                <span key={t} className="pano-tag">
-                  {t}
-                </span>
-              ))}
-            </span>
-            <span aria-hidden="true" className="pano-row-bar">
-              {p.productions.length > 0 && (
-                <i style={{ width: `${(p.productions.length / max) * 100}%` }} />
-              )}
-            </span>
-            <span className="pano-row-n">{p.productions.length || ''}</span>
-          </button>
+    <ul className="pano-check-groups">
+      {byRole(list).map((g) => (
+        <li key={g.role} className="pano-check-group">
+          <h3 className="pano-group-label">{g.role}</h3>
+          <ul className="pano-rows">
+            {g.people.slice(0, 20).map((p) => (
+              <li key={p.key}>
+                <button
+                  className="pano-row"
+                  type="button"
+                  onClick={() =>
+                    pick({
+                      items: personItems(p),
+                      label: p.name,
+                      person: p.name,
+                      soon: 'A pessoa em todas as seções',
+                    })
+                  }
+                >
+                  <span className="pano-row-name">
+                    {p.name}
+                    <small>{span(p.years)}</small>
+                    {badges(p).map((t) => (
+                      <span key={t} className="tag pano-tie">
+                        {t}
+                      </span>
+                    ))}
+                  </span>
+                  <span aria-hidden="true" className="pano-row-bar">
+                    {p.productions.length > 0 && (
+                      <i style={{ width: `${(p.productions.length / max) * 100}%` }} />
+                    )}
+                  </span>
+                  <span className="pano-row-n">{p.productions.length || ''}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </li>
       ))}
     </ul>
@@ -195,8 +225,7 @@ function Network({ cv, list, period }: { cv: CvData; list: Person[]; period: Per
         })}
       </svg>
       <p className="pano-note">
-        Raio do nó: produções em comum. As curvas ligam coautores que assinaram juntos, o que mostra
-        grupos dentro da rede.
+        Tamanho do círculo: produções em comum. Curvas: coautores que assinaram juntos.
       </p>
     </>
   );

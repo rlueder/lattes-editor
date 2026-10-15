@@ -113,6 +113,20 @@ export function productionsByYear(
   };
 }
 
+/** [2009, 2010, 2011, 2018] → "2009 a 2011 e 2018". */
+export function yearRanges(years: number[]): string {
+  const runs: [number, number][] = [];
+  for (const y of [...years].sort((a, b) => a - b)) {
+    const last = runs.at(-1);
+    if (last && y === last[1] + 1) last[1] = y;
+    else runs.push([y, y]);
+  }
+  const parts = runs.map(([a, b]) =>
+    a === b ? `${a}` : b === a + 1 ? `${a}, ${b}` : `${a} a ${b}`,
+  );
+  return parts.length > 1 ? `${parts.slice(0, -1).join(', ')} e ${parts.at(-1)}` : (parts[0] ?? '');
+}
+
 export interface Band {
   end: number;
   item: Degree | Position;

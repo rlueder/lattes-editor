@@ -91,3 +91,33 @@ export function pack<T>(
     return row;
   });
 }
+
+// ---------- Zoom e rolagem ----------
+
+export const MAX_SCALE = 320;
+
+/** Pixels por ano para `years` anos caberem na largura visível. */
+export function scaleFor(width: number, years: number): number {
+  return Math.min(MAX_SCALE, width / Math.max(1, years));
+}
+
+/**
+ * Zoom em volta do ponteiro: o ano sob o cursor fica no mesmo lugar. `x` é a
+ * posição do cursor dentro da área visível; a escala fica entre `min` e MAX_SCALE.
+ */
+export function zoomAt(
+  scale: number,
+  scrollLeft: number,
+  x: number,
+  factor: number,
+  min: number,
+): { scale: number; scrollLeft: number } {
+  const next = Math.min(MAX_SCALE, Math.max(min, scale * factor));
+  const k = next / scale;
+  return { scale: next, scrollLeft: Math.max(0, (scrollLeft + x) * k - x) };
+}
+
+/** Passo entre os anos marcados no eixo, para as marcas ficarem a pelo menos 44px. */
+export function tickStep(scale: number): number {
+  return [1, 2, 5, 10].find((s) => s * scale >= 44) ?? 10;
+}

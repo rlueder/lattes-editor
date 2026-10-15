@@ -17,6 +17,7 @@ import {
   summaryTiles,
   supervisionRows,
   windows,
+  yearRanges,
 } from '../src/panorama/aggregate.ts';
 import { chartById, CHARTS, DEFAULT_CHART } from '../src/panorama/catalog.ts';
 import { plural, rightRound, SERIES, topRound } from '../src/panorama/charts/geometry.ts';
@@ -28,28 +29,38 @@ import {
   searchTerms,
   spansSections,
 } from '../src/panorama/drill.ts';
-import {
-  defaultFilters,
-  isWhole,
-  periodPresets,
-  presetOf,
-  setBound,
-  yearOptions,
-} from '../src/panorama/filters.ts';
+import { changedCount, defaultFilters, isWhole, periodPresets } from '../src/panorama/filters.ts';
 import { levelOf, personKey, readCv, yearOf } from '../src/panorama/model.ts';
 import { chartOfAction, panoramaPaletteEntries } from '../src/panorama/palette.ts';
 import {
+  byRole,
   coauthorEdges,
   collaboration,
   hasTie,
   people,
   personItems,
+  roleOf,
   shortName,
+  TIES,
 } from '../src/panorama/people.ts';
 import { PANORAMA_ROUTE, panoramaHash, parsePanoramaHash } from '../src/panorama/route.ts';
-import { pack, timelineEntries } from '../src/panorama/timeline.ts';
+import {
+  MAX_SCALE,
+  pack,
+  scaleFor,
+  tickStep,
+  timelineEntries,
+  zoomAt,
+} from '../src/panorama/timeline.ts';
 import { eventSeries, healthChecks, profileFlags, topics, venues } from '../src/panorama/topics.ts';
 import { buildSections } from '../src/ui/sections.ts';
+import {
+  cellState,
+  formatRange,
+  orderedRange,
+  pickYear,
+  shownRange,
+} from '../src/ui/year-range.ts';
 
 const NOW = 2026;
 const ALL = { from: 1900, to: NOW };
@@ -176,6 +187,13 @@ describe('contagens', () => {
     expect(only.bars.filter((b) => b.total > 0).map((b) => b.year)).toEqual([2020]);
   });
 
+  it('escreve listas de anos com intervalos', () => {
+    expect(yearRanges([2009, 2010, 2011, 2012, 2018, 2025])).toBe('2009 a 2012, 2018 e 2025');
+    expect(yearRanges([2018, 2017])).toBe('2017, 2018');
+    expect(yearRanges([2018])).toBe('2018');
+    expect(yearRanges([])).toBe('');
+  });
+
   it('empilha as faixas da carreira sem cruzar', async () => {
     const { cv } = await demo();
     const { bands, rows } = careerBands(cv, ALL);
@@ -250,6 +268,21 @@ describe('pessoas', () => {
     expect(pair?.items).toHaveLength(2);
   });
 
+  it('separa as pessoas por papel, o mais específico primeiro', async () => {
+    const { cv } = await demo();
+    const groups = byRole(people(cv, ALL));
+    expect(groups.map((g) => [g.role, g.people.map((p) => p.name.split(' ')[0])])).toEqual([
+      ['Orientadores', ['Helena', 'Paulo']],
+      ['Orientandos', ['Luísa', 'Tiago', 'João']],
+      ['Coautores', ['Gabriela']],
+    ]);
+    const onlyBanca = people(cv, ALL).find((p) => p.name.startsWith('Paulo'))!;
+    expect(roleOf({ ...onlyBanca, degrees: [], productions: [], supervisions: [] })).toBe(
+      'Bancas e projetos',
+    );
+    expect(TIES.map((t) => t.key)).toEqual(['coautoria', 'banca', 'projeto']);
+  });
+
   it('encurta nomes', () => {
     expect(shortName('Ana Beatriz Souza Lima')).toBe('Ana Lima');
     expect(shortName('Ana Lima')).toBe('Ana Lima');
@@ -300,9 +333,13 @@ describe('veículos, temas e saúde', () => {
       'isbn',
       'palavras-chave',
       'titulo-ingles',
-      'agencia',
       'id-cnpq',
+      'agencia',
     ]);
+    expect(new Set(healthChecks(cv, ALL).map((c) => c.group))).toEqual(
+      new Set(['Produções', 'Eventos', 'Pessoas', 'Orientações']),
+    );
+    expect(healthChecks(cv, ALL).every((c) => c.hint !== '')).toBe(true);
     expect(profileFlags(cv).map((f) => f.ok)).toEqual([true, true]);
   });
 });
@@ -370,17 +407,20 @@ describe('filtros, linha do tempo, ⌘K e geometria', () => {
     expect(presets.map((p) => p.label)).toEqual([
       'Toda a carreira',
       'Últimos 5 anos',
-      'Quadriênio 2021–2024',
-      'Quadriênio 2017–2020',
+      '2025–2028',
+      '2021–2024',
+      '2017–2020',
+      '2013–2016',
     ]);
-    expect(periodPresets(cv, 2024).at(-1)!.label).toBe('Quadriênio 2013–2016');
-    expect(presetOf(presets, { from: 2021, to: 2024 })).toBe('q2021');
-    expect(presetOf(presets, { from: 2010, to: 2011 })).toBe('');
-    expect(yearOptions(cv)[0]).toBe(2009);
+    expect(periodPresets(cv, 2016).map((p) => p.id)).toEqual(['tudo', 'ultimos-5', 'q2013']);
     expect(isWhole(cv, { from: 2009, to: NOW })).toBe(true);
     expect(isWhole(cv, { from: 2020, to: NOW })).toBe(false);
-    expect(setBound(f, 'from', 2030)).toMatchObject({ from: 2030, to: 2030 });
-    expect(setBound(f, 'to', 2000)).toMatchObject({ from: 2000, to: 2000 });
+    const g = { ...f, from: 2015, group: 'artigos' as const, view: 'rede' as const };
+    expect(changedCount(g, f, ['periodo', 'grupo'])).toBe(2);
+    expect(changedCount(g, f, ['periodo', 'grupo', 'vista', 'nivel'])).toBe(3);
+    expect(
+      changedCount(f, f, ['periodo', 'grupo', 'janela', 'nivel', 'laco', 'vista', 'repetidos']),
+    ).toBe(0);
   });
 
   it('põe cada item da carreira na sua faixa', async () => {
@@ -405,6 +445,21 @@ describe('filtros, linha do tempo, ⌘K e geometria', () => {
         (x) => x + 10,
       ),
     ).toEqual([0, 1, 0, 2]);
+  });
+
+  it('calcula o zoom e a rolagem da linha do tempo', () => {
+    expect(scaleFor(700, 23)).toBeCloseTo(700 / 23);
+    expect(scaleFor(700, 10)).toBe(70);
+    expect(scaleFor(7000, 5)).toBe(MAX_SCALE);
+    expect(scaleFor(700, 0)).toBe(MAX_SCALE);
+    // O ano sob o cursor fica no lugar: (100 + 50) * 2 - 50.
+    expect(zoomAt(10, 100, 50, 2, 5)).toEqual({ scale: 20, scrollLeft: 250 });
+    expect(zoomAt(10, 0, 0, 0.1, 5).scale).toBe(5);
+    expect(zoomAt(300, 0, 0, 10, 5).scale).toBe(MAX_SCALE);
+    expect(zoomAt(10, 0, 50, 0.5, 1).scrollLeft).toBe(0);
+    expect([tickStep(60), tickStep(30), tickStep(10), tickStep(5), tickStep(1)]).toEqual([
+      1, 2, 5, 10, 10,
+    ]);
   });
 
   it('oferece os gráficos no ⌘K', () => {
@@ -436,5 +491,29 @@ describe('filtros, linha do tempo, ⌘K e geometria', () => {
       'panoramaPaletteEntries',
       'usePanorama',
     ]);
+  });
+});
+
+describe('intervalo de anos', () => {
+  it('marca início e fim em dois cliques, em qualquer ordem', () => {
+    expect(pickYear(undefined, 2015)).toEqual({ pending: 2015 });
+    expect(pickYear(2015, 2010)).toEqual({ done: { from: 2010, to: 2015 } });
+    expect(pickYear(2015, 2020)).toEqual({ done: { from: 2015, to: 2020 } });
+    expect(orderedRange(3, 3)).toEqual({ from: 3, to: 3 });
+  });
+
+  it('mostra a prévia e o estado de cada ano', () => {
+    const value = { from: 2009, to: 2026 };
+    expect(shownRange(value, undefined, 2012)).toBe(value);
+    expect(shownRange(value, 2015, 2012)).toEqual({ from: 2012, to: 2015 });
+    expect(shownRange(value, 2015, undefined)).toEqual({ from: 2015, to: 2015 });
+    expect([2008, 2009, 2010, 2026].map((y) => cellState(y, value))).toEqual([
+      'out',
+      'end',
+      'in',
+      'end',
+    ]);
+    expect(formatRange(value)).toBe('2009 – 2026');
+    expect(formatRange({ from: 2020, to: 2020 })).toBe('2020');
   });
 });

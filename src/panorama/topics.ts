@@ -125,7 +125,12 @@ export function topics(cv: CvData, p: Period, onlyRepeated = false, limit = 24):
 
 // ---------- Saúde do currículo ----------
 
+/** Grupos da lista, na ordem em que aparecem. */
+export const HEALTH_GROUPS = ['Produções', 'Eventos', 'Pessoas', 'Orientações', 'Perfil'] as const;
+export type HealthGroup = (typeof HEALTH_GROUPS)[number];
+
 export interface Check {
+  group: HealthGroup;
   hint: string;
   id: string;
   label: string;
@@ -135,14 +140,18 @@ export interface Check {
   total: PanoramaItem[];
 }
 
-function check<T extends PanoramaItem>(
-  id: string,
-  label: string,
-  items: T[],
-  ok: (x: T) => boolean,
-  hint = '',
-): Check {
-  return { hint, id, label, missing: items.filter((x) => !ok(x)), total: items };
+interface CheckSpec<T extends PanoramaItem> {
+  group: HealthGroup;
+  hint: string;
+  id: string;
+  items: T[];
+  label: string;
+  ok: (x: T) => boolean;
+}
+
+function check<T extends PanoramaItem>(spec: CheckSpec<T>): Check {
+  const { group, hint, id, items, label, ok } = spec;
+  return { group, hint, id, label, missing: items.filter((x) => !ok(x)), total: items };
 }
 
 export function healthChecks(cv: CvData, p: Period, group?: ProductionGroup): Check[] {
@@ -155,56 +164,78 @@ export function healthChecks(cv: CvData, p: Period, group?: ProductionGroup): Ch
   );
   const coauthored = prods.filter((x) => x.authors.some((a) => !a.self));
   return [
-    check(
-      'doi',
-      'Artigos com DOI',
-      articles,
-      (x) => x.doi !== '',
-      'Sem DOI, o artigo não se liga ao OpenAlex nem ao Crossref.',
-    ),
-    check(
-      'issn',
-      'Artigos com ISSN',
-      articles,
-      (x) => x.issn !== '',
-      'O ISSN é a chave para o Qualis.',
-    ),
-    check(
-      'volume',
-      'Artigos com volume e páginas',
-      articles,
-      (x) => x.volume !== '' && x.pages !== '',
-    ),
-    check(
-      'doi-eventos',
-      'Trabalhos em eventos com DOI',
-      events,
-      (x) => x.doi !== '',
-      'Nem todo anais tem DOI; aqui é aviso, não erro.',
-    ),
-    check('isbn', 'Livros e capítulos com ISBN', books, (x) => x.isbn !== ''),
-    check(
-      'palavras-chave',
-      'Produções com palavras-chave',
-      prods,
-      (x) => x.keywords.length > 0,
-      'Alimenta o gráfico de temas.',
-    ),
-    check(
-      'titulo-ingles',
-      'Produções com título em inglês',
-      prods,
-      (x) => x.titleEn !== '',
-      'Usado quando o currículo é lido em inglês.',
-    ),
-    check('agencia', 'Orientações com agência de fomento', supervisions, (x) => x.agency !== ''),
-    check(
-      'id-cnpq',
-      'Coautorias com ID CNPq em todos os coautores',
-      coauthored,
-      (x) => x.authors.every((a) => a.self || a.cnpq !== ''),
-      'Liga o coautor ao currículo dele e separa homônimos.',
-    ),
+    check({
+      group: 'Produções',
+      hint: 'Liga o artigo ao OpenAlex e ao Crossref.',
+      id: 'doi',
+      items: articles,
+      label: 'Artigos com DOI',
+      ok: (x) => x.doi !== '',
+    }),
+    check({
+      group: 'Produções',
+      hint: 'Usado para achar o estrato Qualis do periódico.',
+      id: 'issn',
+      items: articles,
+      label: 'Artigos com ISSN',
+      ok: (x) => x.issn !== '',
+    }),
+    check({
+      group: 'Produções',
+      hint: 'Entram na referência do artigo.',
+      id: 'volume',
+      items: articles,
+      label: 'Artigos com volume e páginas',
+      ok: (x) => x.volume !== '' && x.pages !== '',
+    }),
+    check({
+      group: 'Produções',
+      hint: 'Identifica a obra na referência.',
+      id: 'isbn',
+      items: books,
+      label: 'Livros e capítulos com ISBN',
+      ok: (x) => x.isbn !== '',
+    }),
+    check({
+      group: 'Produções',
+      hint: 'Usadas no gráfico Temas.',
+      id: 'palavras-chave',
+      items: prods,
+      label: 'Produções com palavras-chave',
+      ok: (x) => x.keywords.length > 0,
+    }),
+    check({
+      group: 'Produções',
+      hint: 'Aparece na versão em inglês do currículo.',
+      id: 'titulo-ingles',
+      items: prods,
+      label: 'Produções com título em inglês',
+      ok: (x) => x.titleEn !== '',
+    }),
+    check({
+      group: 'Eventos',
+      hint: 'Muitos anais não têm DOI; vale como aviso.',
+      id: 'doi-eventos',
+      items: events,
+      label: 'Trabalhos em eventos com DOI',
+      ok: (x) => x.doi !== '',
+    }),
+    check({
+      group: 'Pessoas',
+      hint: 'Liga cada coautor ao currículo dele no Lattes.',
+      id: 'id-cnpq',
+      items: coauthored,
+      label: 'Coautores com ID CNPq',
+      ok: (x) => x.authors.every((a) => a.self || a.cnpq !== ''),
+    }),
+    check({
+      group: 'Orientações',
+      hint: 'Agência que financiou a bolsa.',
+      id: 'agencia',
+      items: supervisions,
+      label: 'Orientações com agência de fomento',
+      ok: (x) => x.agency !== '',
+    }),
   ].filter((c) => c.total.length > 0);
 }
 
@@ -216,11 +247,11 @@ export interface Flag {
 
 export function profileFlags(cv: CvData): Flag[] {
   return [
+    { hint: 'Usado para buscar produções no OpenAlex.', label: 'ORCID iD', ok: cv.orcid !== '' },
     {
-      hint: 'Necessário para buscar produções no OpenAlex.',
-      label: 'ORCID iD',
-      ok: cv.orcid !== '',
+      hint: 'Aparece na versão em inglês do currículo.',
+      label: 'Resumo em inglês',
+      ok: cv.summaryEn !== '',
     },
-    { hint: '', label: 'Resumo em inglês', ok: cv.summaryEn !== '' },
   ];
 }

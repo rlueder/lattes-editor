@@ -28,16 +28,15 @@
   --pano-4: #c98500;
 }
 
-/* Controle "Currículo | Panorama" sob o perfil. */
-.mode-switch {
+/* Controle segmentado (Currículo | Panorama, Lista | Rede). */
+.pano-segment {
   position: relative;
   isolation: isolate;
-  margin: 0 8px 14px;
   padding: 3px;
   border-radius: 999px;
 }
 
-.mode-switch .menu-seg {
+.pano-segment .menu-seg {
   min-height: 28px;
   padding: 0 12px;
   border-radius: 999px;
@@ -45,14 +44,61 @@
   cursor: pointer;
 }
 
-.mode-switch .menu-seg[aria-checked='true'] {
+.pano-segment .menu-seg[aria-checked='true'] {
   color: var(--text);
   font-weight: 550;
 }
 
-.mode-switch .menu-seg:focus-visible {
+.pano-segment .menu-seg:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+
+.mode-switch {
+  margin: 0 8px 14px;
+}
+
+/* Cabeçalho do gráfico: os números à esquerda, a vista à direita. */
+.pano-chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pano-chart-head .pano-segment {
+  margin: 0 0 0 auto;
+  min-width: 200px;
+}
+
+.pano-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--read-serif);
+  font-size: 17px;
+  color: var(--read-text);
+}
+
+.pano-facts li + li::before {
+  content: '·';
+  margin: 0 10px;
+  color: var(--muted);
+}
+
+.pano-facts b {
+  font-weight: 600;
+}
+
+/* Laços com a pessoa: o selo do app (.tag), em azul claro. */
+.tag.pano-tie {
+  margin: 0 0 0 6px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
 }
 
 /* Página do gráfico */
@@ -223,18 +269,66 @@
 }
 
 .pano-span.done {
-  fill: var(--pano-1);
+  fill: var(--accent);
 }
 
 .pano-span.open {
   fill: var(--accent-soft);
-  stroke: var(--pano-1);
+  stroke: var(--accent);
   stroke-width: 1;
 }
 
-.pano-diamond,
+.pano-diamond {
+  fill: var(--accent);
+}
+
 .pano-dot.fill-1 {
   fill: var(--pano-1);
+}
+
+/* Linha do tempo: faixas fixas à esquerda, a área dos anos rola para os lados. */
+.pano-tl {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.pano-tl-lanes {
+  position: relative;
+  border-right: 1px solid var(--border);
+}
+
+.pano-tl-lanes span {
+  position: absolute;
+  left: 0;
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.pano-tl-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  cursor: grab;
+  overscroll-behavior-x: contain;
+}
+
+.pano-tl-scroll:active {
+  cursor: grabbing;
+}
+
+.pano-tl-scroll svg {
+  max-width: none;
+}
+
+.pano-today {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.pano-body svg .pano-today-label {
+  fill: var(--accent-text);
+  font-weight: 550;
 }
 
 .pano-diamond,
@@ -316,17 +410,21 @@
 .pano-tiles {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-auto-rows: 1fr;
   gap: 8px;
 }
 
+/* Todos os cartões da mesma altura: o número no alto, o rótulo logo abaixo,
+   com espaço para duas linhas. */
 .pano-tile {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  display: grid;
+  grid-template-rows: auto minmax(2.8em, 1fr);
+  align-content: start;
+  gap: 4px;
+  height: 100%;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--surface);
   text-align: left;
   cursor: pointer;
@@ -345,7 +443,9 @@
 }
 
 .pano-tile-l {
+  align-self: start;
   font-size: 12px;
+  line-height: 1.4;
   color: var(--muted);
 }
 
@@ -364,7 +464,9 @@
   color: var(--muted);
 }
 
-/* Saúde */
+/* Saúde: linhas da mesma altura (toda linha tem a nota), agrupadas com o
+   rótulo no estilo dos grupos do ⌘K, sem cantos arredondados. */
+.pano-check-groups,
 .pano-checks,
 .pano-rows,
 .pano-selection-list {
@@ -373,15 +475,29 @@
   list-style: none;
 }
 
+.pano-group-label {
+  margin: 0;
+  padding: 10px 8px 6px;
+  font-size: 15px;
+  font-weight: 550;
+}
+
+.pano-check-group + .pano-check-group {
+  margin-top: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--divider);
+}
+
 .pano-check {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr) 90px 76px;
   gap: 10px;
   align-items: center;
   width: 100%;
+  min-height: 52px;
   padding: 6px 8px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 0;
   background: transparent;
   text-align: left;
 }
@@ -401,6 +517,7 @@ button.pano-check:disabled {
 
 .pano-check-text small {
   display: block;
+  min-height: 1.4em;
   font-size: 12px;
   color: var(--muted);
 }
@@ -412,7 +529,7 @@ button.pano-check:disabled {
 }
 
 .pano-check-icon.ok {
-  color: var(--ok);
+  color: var(--accent-text);
 }
 
 .pano-check-icon.warn {
@@ -422,15 +539,15 @@ button.pano-check:disabled {
 .pano-meter {
   height: 6px;
   overflow: hidden;
-  border-radius: 3px;
-  background: var(--surface-2);
+  border-radius: 0;
+  background: var(--accent-soft);
 }
 
 .pano-meter i {
   display: block;
   height: 100%;
-  border-radius: 0 3px 3px 0;
-  background: var(--muted);
+  border-radius: 0;
+  background: var(--accent);
 }
 
 .pano-check-frac,
@@ -449,7 +566,7 @@ button.pano-check:disabled {
   width: 100%;
   padding: 5px 8px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 0;
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -474,7 +591,7 @@ button.pano-check:disabled {
 .pano-row-bar i {
   display: block;
   height: 8px;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0;
   background: var(--pano-1);
 }
 
@@ -482,7 +599,7 @@ button.pano-check:disabled {
   display: inline-block;
   margin-left: 6px;
   padding: 0 6px;
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--surface-2);
   font-size: 11px;
   color: var(--muted);
@@ -560,7 +677,7 @@ button.pano-chip:hover {
 .pano-num {
   padding: 0 4px;
   border: 0;
-  border-radius: 4px;
+  border-radius: 0;
   background: transparent;
   color: var(--accent-text);
   font-weight: 550;
@@ -581,14 +698,15 @@ button.pano-chip:hover {
 }
 
 /* Painel à direita */
-.pano-filters .pano-range {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+.pano-period {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.section-panel .pano-filters .pano-range .filter-facet.select-trigger {
-  min-width: 0;
+.pano-year-label {
+  font-size: 11px;
+  color: var(--muted);
 }
 
 .pano-selection-head {
@@ -609,7 +727,7 @@ button.pano-chip:hover {
   width: 100%;
   padding: 4px 6px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 0;
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -647,7 +765,7 @@ button.pano-chip:hover {
   display: inline-block;
   margin-right: 4px;
   padding: 0 6px;
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--warn-bg);
   color: var(--warn-text);
   font-size: 11px;

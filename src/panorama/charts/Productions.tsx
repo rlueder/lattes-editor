@@ -1,6 +1,6 @@
-import { careerBands, type Period, productionsByYear } from '../aggregate.ts';
+import { careerBands, type Period, productionsByYear, yearRanges } from '../aggregate.ts';
 import { type CvData, PRODUCTION_GROUPS, type ProductionGroup } from '../model.ts';
-import { SERIES, topRound } from './geometry.ts';
+import { plural, SERIES, topRound } from './geometry.ts';
 import { HatchDefs, Insight, Legend, Mark } from './shared.tsx';
 
 interface Props {
@@ -43,14 +43,16 @@ export function Productions({ cv, groups, now, period }: Props) {
   return (
     <>
       {gaps.length > 0 && (
-        <Insight>
-          <b>
-            {gaps.length} {gaps.length === 1 ? 'ano' : 'anos'} sem nenhuma produção
-          </b>{' '}
-          ({gaps.join(', ')}). O ano corrente não conta.
-          {inStudy.length > 1 &&
-            ' Vários caem no mestrado ou no doutorado: vale conferir se faltam resumos de congresso desses anos.'}
-        </Insight>
+        <>
+          <Insight>
+            <b>{plural(gaps.length, 'ano', 'anos')} sem produção:</b> {yearRanges(gaps)}.
+          </Insight>
+          <p className="pano-note">
+            {inStudy.length > 1 &&
+              `${inStudy.length} deles caem no mestrado ou no doutorado; vale conferir se faltam resumos de congresso. `}
+            {now} fica de fora, o ano não terminou.
+          </p>
+        </>
       )}
       <Legend
         items={[
@@ -157,10 +159,7 @@ export function Productions({ cv, groups, now, period }: Props) {
           );
         })}
       </svg>
-      <p className="pano-note">
-        A faixa cinza embaixo mostra mestrado, doutorado e vínculos, para ler a produção contra a
-        fase da carreira.
-      </p>
+      <p className="pano-note">Faixas cinza: mestrado, doutorado e vínculos de cada época.</p>
     </>
   );
 }

@@ -1,9 +1,14 @@
 // Filtros do gráfico no painel à direita, empilhados como os filtros de uma
-// seção do editor: período (atalho, de, até) e os filtros próprios do gráfico.
+// seção do editor: o período (um campo de intervalo de anos, com os atalhos
+// dentro), os filtros próprios do gráfico e, no fim, "Limpar filtros".
 
+import { useId } from 'react';
+
+import { FilterStatus } from '../ui/FilterStatus.tsx';
 import { Select } from '../ui/primitives/Select.tsx';
+import { YearRangeField } from '../ui/YearRangeField.tsx';
 import type { FilterKind } from './catalog.ts';
-import { type Filters, periodPresets, presetOf, setBound, yearOptions } from './filters.ts';
+import { changedCount, defaultFilters, type Filters, periodPresets } from './filters.ts';
 import { type CvData, LEVELS, PRODUCTION_GROUPS } from './model.ts';
 import { TIES } from './people.ts';
 
@@ -16,48 +21,32 @@ interface Props {
 }
 
 export function FiltersPanel({ cv, filters, kinds, now, onChange }: Props) {
-  const presets = periodPresets(cv, now);
-  const preset = presetOf(presets, filters);
-  const years = yearOptions(cv).map((y) => ({ label: String(y), value: String(y) }));
+  const id = useId();
+  const defaults = defaultFilters(cv);
+  const changed = changedCount(filters, defaults, kinds);
   const cls = (active: boolean) => (active ? 'filter-facet active' : 'filter-facet');
   return (
     <div className="filter-bar pano-filters">
       {kinds.includes('periodo') && (
-        <>
-          <Select
-            aria-label="Período"
-            className={cls(preset !== 'tudo')}
-            options={[
-              ...presets.map((p) => ({
-                label: p.label,
-                selectedLabel: `Período: ${p.label}`,
-                value: p.id,
-              })),
-              ...(preset ? [] : [{ label: 'Outro', selectedLabel: 'Período: outro', value: '' }]),
-            ]}
-            value={preset}
-            onChange={(id) => {
-              const p = presets.find((x) => x.id === id);
-              if (p) onChange({ ...filters, ...p.period });
-            }}
+        <div className="pano-period">
+          <label className="pano-year-label" htmlFor={`${id}-periodo`}>
+            Período
+          </label>
+          <YearRangeField
+            id={`${id}-periodo`}
+            label="Período"
+            max={Math.max(cv.lastYear, now)}
+            min={cv.careerStart}
+            presets={periodPresets(cv, now).map((p) => ({
+              id: p.id,
+              label: p.label,
+              range: p.period,
+            }))}
+            today={now}
+            value={{ from: filters.from, to: filters.to }}
+            onChange={(r) => onChange({ ...filters, ...r })}
           />
-          <div className="pano-range">
-            <Select
-              aria-label="Desde o ano"
-              className="filter-facet"
-              options={years.map((y) => ({ ...y, selectedLabel: `De ${y.label}` }))}
-              value={String(filters.from)}
-              onChange={(v) => onChange(setBound(filters, 'from', Number(v)))}
-            />
-            <Select
-              aria-label="Até o ano"
-              className="filter-facet"
-              options={years.map((y) => ({ ...y, selectedLabel: `Até ${y.label}` }))}
-              value={String(filters.to)}
-              onChange={(v) => onChange(setBound(filters, 'to', Number(v)))}
-            />
-          </div>
-        </>
+        </div>
       )}
       {kinds.includes('janela') && (
         <Select
@@ -151,6 +140,11 @@ export function FiltersPanel({ cv, filters, kinds, now, onChange }: Props) {
           value={filters.repeated ? 'sim' : ''}
           onChange={(v) => onChange({ ...filters, repeated: v === 'sim' })}
         />
+      )}
+      {changed > 0 && (
+        <FilterStatus onClear={() => onChange(defaults)}>
+          {changed} {changed === 1 ? 'filtro' : 'filtros'}
+        </FilterStatus>
       )}
     </div>
   );

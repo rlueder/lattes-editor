@@ -55,11 +55,6 @@ export function SelectionPanel({ onClose, onOpen, sections, selection }: Props) 
       {target && sectionLabel && (
         <button className="pano-open" type="button" onClick={() => onOpen(target)}>
           Abrir em {sectionLabel}
-          {person
-            ? ', filtrado pelo nome'
-            : target.filter?.selected.tipo
-              ? ', filtrado pelo tipo'
-              : ''}
         </button>
       )}
       {soon && (

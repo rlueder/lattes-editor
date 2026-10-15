@@ -1,7 +1,8 @@
 // O estado dos filtros do painel à direita. O período vale para todos os
 // gráficos que o usam; os outros filtros são de um gráfico só.
 
-import { type Period, range } from './aggregate.ts';
+import type { Period } from './aggregate.ts';
+import type { FilterKind } from './catalog.ts';
 import type { CvData, Level, ProductionGroup } from './model.ts';
 import type { Tie } from './people.ts';
 
@@ -33,16 +34,15 @@ export interface Preset {
   period: Period;
 }
 
-/** Atalhos de período: tudo, últimos 5 anos e os dois últimos quadriênios fechados da CAPES. */
+/**
+ * Atalhos de período: a carreira inteira, os últimos 5 anos e cada
+ * quadriênio da CAPES que toca a carreira, do mais recente ao mais antigo.
+ */
 export function periodPresets(cv: CvData, now: number): Preset[] {
-  const lastClosed = 2013 + Math.floor((now - 2013) / 4) * 4 - 1;
-  const quads = [lastClosed - 3, lastClosed - 7]
-    .filter((a) => a + 3 >= cv.careerStart)
-    .map((a) => ({
-      id: `q${a}`,
-      label: `Quadriênio ${a}–${a + 3}`,
-      period: { from: a, to: a + 3 },
-    }));
+  const quads: Preset[] = [];
+  for (let a = 2013; a <= now; a += 4)
+    if (a + 3 >= cv.careerStart)
+      quads.unshift({ id: `q${a}`, label: `${a}–${a + 3}`, period: { from: a, to: a + 3 } });
   return [
     { id: 'tudo', label: 'Toda a carreira', period: { from: cv.careerStart, to: cv.lastYear } },
     { id: 'ultimos-5', label: 'Últimos 5 anos', period: { from: now - 4, to: now } },
@@ -50,22 +50,21 @@ export function periodPresets(cv: CvData, now: number): Preset[] {
   ];
 }
 
-export function presetOf(presets: Preset[], p: Period): string {
-  return presets.find((x) => x.period.from === p.from && x.period.to === p.to)?.id ?? '';
-}
-
-/** Anos que o seletor de período oferece. */
-export function yearOptions(cv: CvData): number[] {
-  return range(cv.careerStart, cv.lastYear);
-}
-
 /** O período cobre toda a carreira: a lista do editor não precisa de recorte. */
 export function isWhole(cv: CvData, p: Period): boolean {
   return p.from <= cv.careerStart && p.to >= cv.lastYear;
 }
 
-/** Ajusta um lado do período sem deixar o início passar do fim. */
-export function setBound(f: Filters, side: 'from' | 'to', year: number): Filters {
-  if (side === 'from') return { ...f, from: year, to: Math.max(year, f.to) };
-  return { ...f, from: Math.min(year, f.from), to: year };
+/** Quantos filtros do gráfico estão fora do padrão (o período conta como um). */
+export function changedCount(f: Filters, d: Filters, kinds: FilterKind[]): number {
+  const changed: [FilterKind, boolean][] = [
+    ['periodo', f.from !== d.from || f.to !== d.to],
+    ['grupo', f.group !== d.group],
+    ['janela', f.lastYears !== d.lastYears],
+    ['nivel', f.level !== d.level],
+    ['laco', f.tie !== d.tie],
+    ['vista', f.view !== d.view],
+    ['repetidos', f.repeated !== d.repeated],
+  ];
+  return changed.filter(([k, c]) => c && kinds.includes(k)).length;
 }

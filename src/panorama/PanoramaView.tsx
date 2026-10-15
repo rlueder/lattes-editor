@@ -43,7 +43,17 @@ interface Props {
 
 const NOW = new Date().getFullYear();
 
-function ChartBody({ chartId, cv, f }: { chartId: string; cv: CvData; f: Filters }) {
+function ChartBody({
+  chartId,
+  cv,
+  f,
+  setF,
+}: {
+  chartId: string;
+  cv: CvData;
+  f: Filters;
+  setF: (f: Filters) => void;
+}) {
   const period = { from: f.from, to: f.to };
   const whole = isWhole(cv, period);
   const groups = f.group ? [f.group] : PRODUCTION_GROUPS.map((g) => g.key);
@@ -55,9 +65,17 @@ function ChartBody({ chartId, cv, f }: { chartId: string; cv: CvData; f: Filters
     case 'quadrienios':
       return <Quadrennia cv={cv} lastYears={f.lastYears} now={NOW} />;
     case 'linha-do-tempo':
-      return <Timeline cv={cv} now={NOW} period={period} />;
+      return <Timeline cv={cv} now={NOW} period={period} whole={whole} />;
     case 'pessoas':
-      return <People cv={cv} period={period} tie={f.tie || undefined} view={f.view} />;
+      return (
+        <People
+          cv={cv}
+          period={period}
+          tie={f.tie || undefined}
+          view={f.view}
+          onView={(view) => setF({ ...f, view })}
+        />
+      );
     case 'posicao-de-autoria':
       return <Authorship cv={cv} groups={groups} period={period} />;
     case 'orientacoes-e-bancas':
@@ -113,7 +131,7 @@ export function PanoramaView({ chartId, onOpen, root, sections, version }: Props
         </div>
         <div className="section-main">
           <div className="section-body pano-body">
-            <ChartBody chartId={chart.id} cv={cv} f={filters} />
+            <ChartBody chartId={chart.id} cv={cv} f={filters} setF={setFilters} />
           </div>
         </div>
         <aside aria-label="Filtros do gráfico" className="section-panel">

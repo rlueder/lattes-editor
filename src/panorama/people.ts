@@ -30,12 +30,30 @@ export interface Person {
 
 export type Tie = 'banca' | 'coautoria' | 'orientacao' | 'projeto';
 
+/** O filtro "Laço" do painel; orientação já tem seção própria na lista. */
 export const TIES: { key: Tie; label: string }[] = [
   { key: 'coautoria', label: 'Coautoria' },
-  { key: 'orientacao', label: 'Orientação' },
   { key: 'banca', label: 'Banca' },
   { key: 'projeto', label: 'Projeto' },
 ];
+
+/** A seção da lista em que a pessoa aparece: o papel mais específico vence. */
+export const ROLES = ['Orientadores', 'Orientandos', 'Coautores', 'Bancas e projetos'] as const;
+export type Role = (typeof ROLES)[number];
+
+export function roleOf(p: Person): Role {
+  if (p.degrees.length) return 'Orientadores';
+  if (p.supervisions.length) return 'Orientandos';
+  if (p.productions.length) return 'Coautores';
+  return 'Bancas e projetos';
+}
+
+/** A lista em seções, na ordem de ROLES, cada uma mantendo a ordem por contagem. */
+export function byRole(list: Person[]): { people: Person[]; role: Role }[] {
+  return ROLES.map((role) => ({ people: list.filter((p) => roleOf(p) === role), role })).filter(
+    (g) => g.people.length > 0,
+  );
+}
 
 export function personItems(p: Person): PanoramaItem[] {
   return [...p.productions, ...p.committees, ...p.projects, ...p.supervisions, ...p.degrees];

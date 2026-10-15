@@ -1,6 +1,5 @@
 import { committeesByYear, type Period, range, supervisionRows } from '../aggregate.ts';
 import type { CvData, Level } from '../model.ts';
-import { people } from '../people.ts';
 import { rightRound, topRound } from './geometry.ts';
 import { Insight, Legend, Mark } from './shared.tsx';
 
@@ -29,14 +28,11 @@ export function Supervision({ cv, level, now, period }: Props) {
   const H = barsTop + 58;
   const done = cv.supervisions.filter((s) => !s.ongoing).length;
   const ongoing = cv.supervisions.length - done;
-  const list = people(cv, { from: 0, to: 9999 });
-  const students = list.filter((p) => p.supervisions.length > 0);
-  const coauthoring = students.filter((p) => p.productions.length > 0).length;
   return (
     <>
       <Insight>
-        <b>{done}</b> {done === 1 ? 'concluída' : 'concluídas'} e <b>{ongoing}</b> em andamento;{' '}
-        {coauthoring} de {students.length} pessoas orientadas assinam produções com você.
+        <b>{done}</b> {done === 1 ? 'orientação concluída' : 'orientações concluídas'} e{' '}
+        <b>{ongoing}</b> em andamento.
       </Insight>
       <Legend
         items={[

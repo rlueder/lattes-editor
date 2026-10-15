@@ -22,11 +22,10 @@ export function Topics({ cv, onlyRepeated, period }: Props) {
   return (
     <>
       <Insight>
-        Palavras-chave em{' '}
         <b>
           {t.withKeywords} de {t.total}
         </b>{' '}
-        produções do período. Em destaque, as que voltam em mais de um trabalho.
+        produções têm palavras-chave.
       </Insight>
       {t.topics.length === 0 ? (
         <p className="pano-note">Nenhuma palavra-chave com esse filtro.</p>

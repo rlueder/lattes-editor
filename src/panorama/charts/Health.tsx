@@ -1,7 +1,9 @@
+import type { ReactNode } from 'react';
+
 import { CheckIcon } from '../../ui/icons.tsx';
 import type { Period } from '../aggregate.ts';
 import type { CvData, ProductionGroup } from '../model.ts';
-import { healthChecks, profileFlags } from '../topics.ts';
+import { type Check, HEALTH_GROUPS, healthChecks, profileFlags } from '../topics.ts';
 import { useChart } from '../use-chart.ts';
 import { Insight } from './shared.tsx';
 
@@ -13,72 +15,97 @@ interface Props {
 
 const pct = (a: number, b: number) => (b ? Math.round((100 * a) / b) : 0);
 
-export function Health({ cv, group, period }: Props) {
+/** ✓ no azul do destaque; "!" no tom de aviso, para o estado não depender só da forma. */
+function StateIcon({ ok }: { ok: boolean }) {
+  return (
+    <span className={ok ? 'pano-check-icon ok' : 'pano-check-icon warn'}>
+      {ok ? <CheckIcon /> : '!'}
+      <span className="sr-only">{ok ? 'completo' : 'incompleto'}</span>
+    </span>
+  );
+}
+
+function Row({ c }: { c: Check }) {
   const { pick } = useChart();
+  const ok = c.total.length - c.missing.length;
+  const done = c.missing.length === 0;
+  return (
+    <li>
+      <button
+        className="pano-check"
+        disabled={done}
+        type="button"
+        onClick={() =>
+          pick({
+            items: c.missing,
+            label: `${c.label}: faltam ${c.missing.length}`,
+            soon: `Filtro "${c.label.replace(' com ', ' sem ')}"`,
+          })
+        }
+      >
+        <StateIcon ok={done} />
+        <span className="pano-check-text">
+          {c.label}
+          <small>{c.hint}</small>
+        </span>
+        <span aria-hidden="true" className="pano-meter">
+          <i style={{ width: `${pct(ok, c.total.length)}%` }} />
+        </span>
+        <span className="pano-check-frac">
+          {ok} de {c.total.length}
+        </span>
+      </button>
+    </li>
+  );
+}
+
+function Group({ children, label }: { children: ReactNode; label: string }) {
+  return (
+    <li className="pano-check-group">
+      <h3 className="pano-group-label">{label}</h3>
+      <ul className="pano-checks">{children}</ul>
+    </li>
+  );
+}
+
+export function Health({ cv, group, period }: Props) {
   const checks = healthChecks(cv, period, group);
-  const doi = checks.find((c) => c.id === 'doi');
+  const flags = profileFlags(cv);
+  const total = checks.length + flags.length;
+  const open =
+    checks.filter((c) => c.missing.length > 0).length + flags.filter((f) => !f.ok).length;
   return (
     <>
       <Insight>
-        {doi && (
-          <>
-            <b>{pct(doi.total.length - doi.missing.length, doi.total.length)}%</b> dos artigos com
-            DOI.{' '}
-          </>
-        )}
-        Cada linha abre só os itens que faltam completar.
+        {open === 0 ? 'Nada a completar.' : `Faltam dados em ${open} das ${total} linhas.`}
       </Insight>
-      <ul className="pano-checks">
-        {checks.map((c) => {
-          const ok = c.total.length - c.missing.length;
-          const done = c.missing.length === 0;
-          return (
-            <li key={c.id}>
-              <button
-                className="pano-check"
-                disabled={done}
-                type="button"
-                onClick={() =>
-                  pick({
-                    items: c.missing,
-                    label: `${c.label}: faltam ${c.missing.length}`,
-                    soon: `Filtro "${c.label.replace(' com ', ' sem ')}"`,
-                  })
-                }
-              >
-                <span className={done ? 'pano-check-icon ok' : 'pano-check-icon warn'}>
-                  {done ? <CheckIcon /> : '!'}
-                  <span className="sr-only">{done ? 'completo' : 'incompleto'}</span>
-                </span>
-                <span className="pano-check-text">
-                  {c.label}
-                  {c.hint && <small>{c.hint}</small>}
-                </span>
-                <span aria-hidden="true" className="pano-meter">
-                  <i style={{ width: `${pct(ok, c.total.length)}%` }} />
-                </span>
-                <span className="pano-check-frac">
-                  {ok} de {c.total.length}
-                </span>
-              </button>
-            </li>
-          );
+      <p className="pano-note">Clique numa linha para ver o que falta.</p>
+      <ul className="pano-check-groups">
+        {HEALTH_GROUPS.filter((g) => g !== 'Perfil').map((g) => {
+          const rows = checks.filter((c) => c.group === g);
+          return rows.length ? (
+            <Group key={g} label={g}>
+              {rows.map((c) => (
+                <Row key={c.id} c={c} />
+              ))}
+            </Group>
+          ) : null;
         })}
-        {profileFlags(cv).map((f) => (
-          <li key={f.label}>
-            <div className="pano-check static">
-              <span className={f.ok ? 'pano-check-icon ok' : 'pano-check-icon warn'}>
-                {f.ok ? <CheckIcon /> : '!'}
-              </span>
-              <span className="pano-check-text">
-                {f.label}
-                {f.hint && <small>{f.hint}</small>}
-              </span>
-              <span />
-              <span className="pano-check-frac">{f.ok ? 'preenchido' : 'vazio'}</span>
-            </div>
-          </li>
-        ))}
+        <Group label="Perfil">
+          {flags.map((f) => (
+            <li key={f.label}>
+              <div className="pano-check static">
+                <StateIcon ok={f.ok} />
+                <span className="pano-check-text">
+                  {f.label}
+                  <small>{f.hint}</small>
+                </span>
+                <span />
+                <span className="pano-check-frac">{f.ok ? 'preenchido' : 'vazio'}</span>
+              </div>
+            </li>
+          ))}
+        </Group>
       </ul>
     </>
   );
