@@ -5,6 +5,8 @@
 
 import { type ReactNode, type RefObject, useEffect, useState } from 'react';
 
+import { activeGroup, atPageBottom, headTops, SPY_SLACK, spyEdge } from './scroll-spy.ts';
+
 const BAR_H = 44;
 
 interface Props {
@@ -31,12 +33,17 @@ export function StickyTitle({ actions, groups, host, label, title }: Props) {
       const head = title.current?.getBoundingClientRect();
       const show = head ? head.bottom < top : false;
       setVisible(show);
-      let active: string | undefined;
-      for (const id of ids.split('|')) {
-        const el = id && document.getElementById(id);
-        if (el && el.getBoundingClientRect().top <= top + BAR_H + 24) active = id;
-      }
-      setCurrent(active);
+      // A mesma conta do "Nesta seção" (scroll-spy.ts). Antes do primeiro
+      // grupo chegar à barra, nenhum: o caminho mostra só a seção.
+      const list = ids.split('|').filter(Boolean);
+      const tops = headTops(document, list);
+      const edge = spyEdge(document);
+      const first = tops[0]?.top;
+      setCurrent(
+        first !== undefined && first > edge + SPY_SLACK
+          ? undefined
+          : activeGroup(tops, edge, { atBottom: atPageBottom(), viewport: window.innerHeight }),
+      );
     };
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(update);

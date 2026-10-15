@@ -66,7 +66,11 @@ export const EDIT_OUVINTE_ENABLED = true;
  */
 export const EDIT_EVENTO_ENABLED = false;
 
-/** Participação em evento: a linha da lista se acha por f_seq = SEQUENCIA-PRODUCAO. */
+/**
+ * Participação em evento: o formulário se abre pelo link da lista com f_seq =
+ * SEQUENCIA-PRODUCAO, e a conferência do "antes" diz se é mesmo o item (o
+ * f_seq sozinho não basta; ver planEvento).
+ */
 export interface EventoOp extends OpBase {
   kind: 'evento';
   seq: string;
@@ -305,12 +309,22 @@ export function planEvento(
   }
 
   // Conferência de identidade: a linha do Lattes com esse f_seq precisa ser
-  // da mesma forma, do mesmo tipo de evento e ter o mesmo ano ou nome.
+  // da mesma forma, do mesmo tipo de evento, e ter o mesmo ano, nome do
+  // evento e cidade, qualquer que seja a parte alterada. O f_seq sozinho não
+  // basta: no censo de 15/10/2026, o f_seq de 3 de 8 trabalhos técnicos não
+  // era o SEQUENCIA-PRODUCAO do item, e o Importar dá números do servidor.
+  // Com só a forma, a natureza e o ano, um congresso podia ser gravado no
+  // lugar de outro do mesmo ano. O formulário GN_TEC tem os campos das duas
+  // partes.
   expect.F_FORMA ??= formaCode(shape.formaBefore) ?? OUVINTE;
   expect.F_COD_PROD = EVENT_CODES[item.name]!;
-  if (isBasics && !('f_ano' in expect)) expect.f_ano = getAttr(el, 'ANO') ?? '';
-  if (isDetail && !('f_nme_evento' in expect)) {
-    expect.f_nme_evento = getAttr(el, 'NOME-DO-EVENTO') ?? '';
+  const detail = isDetail ? el : childElements(item, detailOf(item.name))[0];
+  if (!('f_ano' in expect)) expect.f_ano = (basics && getAttr(basics, 'ANO')) ?? '';
+  if (!('f_nme_evento' in expect)) {
+    expect.f_nme_evento = (detail && getAttr(detail, 'NOME-DO-EVENTO')) ?? '';
+  }
+  if (!('f_cidade' in expect)) {
+    expect.f_cidade = (detail && getAttr(detail, 'CIDADE-DO-EVENTO')) ?? '';
   }
   return { expect, key: change.key, kind: 'evento', label, seq, set };
 }

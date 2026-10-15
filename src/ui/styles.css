@@ -6300,6 +6300,10 @@ main.content {
   --read-size: 17px;
   --read-leading: 1.5;
   --read-measure: 60ch;
+  /* Texto corrido (resumo, descrições): ~66 caracteres por linha. No IBM
+     Plex Serif, um caractere médio tem ~0,5em, mais estreito que o "0" do
+     ch: 60ch davam 71 por linha. */
+  --read-prose: 34em;
   /* Coluna de anos: a largura do texto mais longo da lista (ReadingView). */
   --read-tab: 4ch;
   --read-tab-gap: 1.1rem;
@@ -6385,6 +6389,24 @@ main.content {
 .reading-p {
   max-width: var(--read-measure);
   margin: 0 0 var(--read-para);
+  text-wrap: pretty;
+}
+
+/* Texto corrido (resumo, a tradução, descrições e outras informações, que
+   ocupam a linha toda na grade): medida de ~66 caracteres e hifenização pelo
+   idioma do elemento (pt-BR no documento, en nas traduções). Palavras
+   curtas não quebram: no mínimo 6 letras, 3 de cada lado. Endereço longo
+   quebra onde der. Campos curtos e a grade não hifenizam. */
+.section-layout.reading .reading-p,
+.section-layout.reading .reading-field.span-all dd,
+.reading-content .reading-p {
+  max-width: var(--read-prose, 34em);
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  -webkit-hyphenate-limit-before: 3;
+  -webkit-hyphenate-limit-after: 3;
+  hyphenate-limit-chars: 6 3 3;
+  overflow-wrap: break-word;
   text-wrap: pretty;
 }
 
@@ -7319,4 +7341,72 @@ main.content {
     grid-row: 1;
     grid-column: 2;
   }
+}
+
+/* Contatos do endereço na leitura (e-mails, redes): um por linha. */
+.reading-contacts {
+  display: grid;
+  gap: 2px;
+}
+
+.reading-contact-kind {
+  color: var(--read-muted, var(--muted));
+}
+
+/* A página rola na janela (html). O espaço da barra de rolagem fica sempre
+   reservado, com ou sem rolagem: trocar de uma seção curta para uma longa
+   não move o título nem o painel. As faixas de borda a borda (aviso de
+   pendências, barra fixa do título) vão até a borda do espaço reservado. */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* Atalhos por ano nas listas da leitura (ReadingView, RecordList): grudam sob
+   a barra fixa do título, na largura da coluna de leitura. O salto para o
+   primeiro registro do ano desconta as duas barras. */
+.section-layout.reading .jump-bar.year {
+  margin: 0 0 12px;
+  padding: 8px 0;
+  background: var(--bg);
+}
+
+.reading-record {
+  scroll-margin-top: calc(
+    var(--topbar-h) + var(--section-bar-h, 0px) + var(--year-bar-h, 0px) + 8px
+  );
+}
+
+/* App de macOS no modo foco: sem o cabeçalho, os botões da janela (em
+   x=18, y=24, src-tauri/tauri.conf.json) ficariam por cima do conteúdo e do
+   menu revelado. Uma faixa de 48px (24 até os botões, ~14 deles e folga)
+   fica reservada no alto, no fundo do conteúdo, e arrasta a janela; o que
+   gruda no alto (barra do título, anos) para logo abaixo dela. No navegador
+   e no Windows e no Linux, nada muda. */
+.mac-titlebar-strip {
+  display: none;
+}
+
+.desktop-mac .shell.is-focus {
+  --mac-titlebar-h: 48px;
+  --topbar-h: var(--mac-titlebar-h);
+  padding-top: var(--mac-titlebar-h);
+}
+
+.desktop-mac .shell.is-focus .mac-titlebar-strip {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 30;
+  display: block;
+  height: var(--mac-titlebar-h);
+  background: var(--bg);
+}
+
+.desktop-mac .shell.is-focus .sidebar {
+  padding-top: calc(12px + var(--mac-titlebar-h));
+}
+
+.desktop-mac .shell.is-focus .content {
+  min-height: calc(100vh - var(--mac-titlebar-h));
 }

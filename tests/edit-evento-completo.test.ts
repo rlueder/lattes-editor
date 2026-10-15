@@ -125,8 +125,10 @@ describe('alteração de evento completa: plano', () => {
     expect(op.set).toEqual({ F_TPO: 'Conferencista', f_titulo: 'Outra palestra' });
     expect(op.expect).toEqual({
       f_ano: '2020',
+      f_cidade: 'Canoas',
       F_COD_PROD: 'A32',
       F_FORMA: '38',
+      f_nme_evento: 'Seminário de Exemplo',
       F_TPO: 'Conferencista',
       f_titulo: 'Palestra',
     });
@@ -151,6 +153,8 @@ describe('alteração de evento completa: plano', () => {
     const nome = onlyOp((root) => setAttr(detail(root, '15'), 'NOME-DO-EVENTO', 'Outro encontro'));
     expect(nome.set).toEqual({ F_TPO: 'Poster / Painel', f_nme_evento: 'Outro encontro' });
     expect(nome.expect).toEqual({
+      f_ano: '2021',
+      f_cidade: '',
       F_COD_PROD: 'A35',
       F_FORMA: '39',
       f_nme_evento: 'Encontro de Exemplo',
@@ -162,6 +166,7 @@ describe('alteração de evento completa: plano', () => {
     const ouvinte = onlyOp((root) => setAttr(detail(root, '12'), 'CIDADE-DO-EVENTO', 'Canoas'));
     expect(ouvinte.set).toEqual({ f_cidade: 'Canoas' });
     expect(ouvinte.expect).toEqual({
+      f_ano: '2019',
       f_cidade: 'Porto Alegre',
       F_COD_PROD: 'A31',
       F_FORMA: '40',
@@ -181,8 +186,10 @@ describe('alteração de evento completa: plano', () => {
     expect(op.set).toEqual({ F_FORMA: '38', F_TPO: 'Moderador', f_titulo: 'Mesa redonda' });
     expect(op.expect).toEqual({
       f_ano: '2019',
+      f_cidade: 'Porto Alegre',
       F_COD_PROD: 'A31',
       F_FORMA: '40',
+      f_nme_evento: 'Congresso Brasileiro de Exemplo',
       F_TPO: '',
       f_titulo: '',
     });

@@ -896,7 +896,13 @@ não foi vista. Campos que vão: título, ano, país, home page, divulgação
 científica, título em inglês e nome do evento. A correspondência de `F_FORMA`
 e `F_COD_PROD` com a forma e o elemento do XML continua **inferida**, e por
 isso os dois entram na conferência do "antes": se não baterem, nada é
-enviado. A exclusão de evento (`f_ctr=E`, seção 15) segue fora do conector.
+enviado. Desde 15/10/2026, a conferência leva também o ano, o nome do evento e
+a cidade, qualquer que seja a parte alterada: o `f_seq` de 3 de 8 trabalhos
+técnicos do censo de 15/10/2026 não era o `SEQUENCIA-PRODUCAO` do item
+(`lattes-formularios/censo-2026-10-15.json`, ligação `f_seq` do
+`trabalho-tecnico`), e com só
+a forma, a natureza e o ano um congresso podia ser gravado no lugar de outro
+do mesmo ano. A exclusão de evento (`f_ctr=E`, seção 15) segue fora do conector.
 
 **Convidado, participante, forma, tipo, natureza e cidade (LAT-58, 15/10/2026,
 desligado).** Escritos atrás da chave `EDIT_EVENTO_ENABLED`, desligada até um

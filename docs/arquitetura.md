@@ -144,7 +144,8 @@ Uma alteração num item de **participação em eventos** que já está no Latte
 pode ir pelo conector, no próprio formulário do evento
 (`src/bridge/edit-items.ts`): a linha da lista se acha pelo
 `SEQUENCIA-PRODUCAO`, e a operação confere antes que o formulário é de
-ouvinte, do mesmo tipo de evento e com o mesmo ano ou nome. Vão título, ano,
+ouvinte, do mesmo tipo de evento e com o mesmo ano, nome do evento e cidade,
+qualquer que seja a parte alterada: o `f_seq` sozinho não identifica o item. Vão título, ano,
 país, home page, divulgação científica, título em inglês e nome do evento.
 Não vão pela extensão os eventos de convidado e participante, a forma, o tipo, a
 natureza, a cidade e o que o formulário não tem (idioma, palavras-chave,

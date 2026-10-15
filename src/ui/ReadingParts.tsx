@@ -5,6 +5,9 @@
 import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 
 import { attributeLabelIn } from '../labels/labels.ts';
+import { getAttr } from '../model/xml.ts';
+import { parseEmails, parseSocial } from './contacts.ts';
+import { isEnglishAttr } from './form-order.ts';
 import { isDoiAttr, linkHref, linkPieces, shortUrl } from './link-fields.ts';
 import {
   actionWord,
@@ -15,6 +18,7 @@ import {
   startsCollapsed,
   useNestedContext,
 } from './nested-collapse.ts';
+import { useHideSensitive } from './privacy.ts';
 import { cellSpan, curlyQuotes, hiddenNote, paragraphs } from './reading.ts';
 import {
   type Line,
@@ -58,8 +62,53 @@ function PartText({ part, text }: { part: Part; text: string }) {
     const shown = href.startsWith('http') && !isDoiAttr(part.attr) ? shortUrl(text) : text;
     return <ExternalLink href={href}>{shown}</ExternalLink>;
   }
-  // Contatos serializados (ELETRONICO): cada e-mail do texto vira link.
-  return part.attr === 'ELETRONICO' ? <LinkedText text={text} /> : text;
+  if (part.attr === 'ELETRONICO' || part.attr === 'REDE-SOCIAL') return <Contacts part={part} />;
+  return text;
+}
+
+/**
+ * Contatos que a exportação traz num texto só (contacts.ts): cada e-mail com
+ * o nome do campo do Lattes e o endereço como link de e-mail; cada rede pelo
+ * nome, como link. O código interno da rede nunca aparece. Sem nada que se
+ * leia, o texto como veio, com os endereços como link.
+ */
+function Contacts({ part }: { part: Part }) {
+  const hideSensitive = useHideSensitive();
+  const raw = getAttr(part.el, part.attr) ?? '';
+  if (part.attr === 'ELETRONICO') {
+    const all = parseEmails(raw);
+    if (all.length === 0) return <LinkedText text={raw} />;
+    // O modo de privacidade esconde todos: qual dos dois o Lattes publica é
+    // inferido do nome do campo (contacts.ts), não observado.
+    const emails = hideSensitive ? [] : all;
+    const masked = all.length - emails.length;
+    return (
+      <span className="reading-contacts">
+        {masked > 0 && <span className="reading-none">{hiddenNote(masked)}</span>}
+        {emails.map((c, i) => (
+          <span key={`${i}:${c.email}`} className="reading-contact">
+            {c.address && <span className="reading-contact-kind">{c.address}: </span>}
+            <ExternalLink href={`mailto:${c.email}`}>{c.email}</ExternalLink>
+          </span>
+        ))}
+      </span>
+    );
+  }
+  const networks = parseSocial(raw);
+  if (networks.length === 0) return <LinkedText text={raw} />;
+  return (
+    <span className="reading-contacts">
+      {networks.map((c, i) => {
+        // O endereço vem do XML importado: só http(s) vira link.
+        const href = /^https?:\/\//i.test(c.url) ? c.url : undefined;
+        return (
+          <span key={`${i}:${c.url}`} className="reading-contact">
+            {href ? <ExternalLink href={href}>{c.name}</ExternalLink> : `${c.name}: ${c.url}`}
+          </span>
+        );
+      })}
+    </span>
+  );
 }
 
 /** Uma linha de texto: prefixo, pedaços preenchidos com a ligação certa e sufixo. */
@@ -120,7 +169,8 @@ export function Rows({ parts, quiet }: { parts: Part[]; quiet: boolean }) {
           <div key={p.key} className={classes} data-part={p.key}>
             {/* Rótulo numa linha só; o nome inteiro no passar do mouse. */}
             <dt title={labelOf(p)}>{labelOf(p)}</dt>
-            <dd>
+            {/* Versão em inglês com o idioma certo: hifeniza em inglês. */}
+            <dd lang={isEnglishAttr(p.attr) ? 'en' : undefined}>
               <PartText part={p} text={partText(p)} />
             </dd>
           </div>
