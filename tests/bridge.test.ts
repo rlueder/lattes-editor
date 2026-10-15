@@ -6,6 +6,7 @@ import { fieldLabel, opRows } from '../src/bridge/field-labels.ts';
 import {
   encodeLatin1Form,
   type FormControl,
+  identityMismatches,
   pairValue,
   setPairs,
   successfulPairs,
@@ -405,6 +406,11 @@ describe('conector: aplicar no Lattes simulado', () => {
     setAttr(vinculoIn(zeros.state), 'CARGA-HORARIA-SEMANAL', '040');
     const same = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'x'));
     expect((await applyOp(same, zeros.port)).status).toBe('conferido');
+    // Números longos se comparam dígito a dígito, sem arredondar.
+    expect(identityMismatches({ x: ['12345678901234567'] }, () => '12345678901234568')).toEqual([
+      'x',
+    ]);
+    expect(identityMismatches({ x: ['0'] }, () => '000')).toEqual([]);
     // O fim alterado pela própria operação sai da identidade e vai no antes.
     const op = vinculoOp((v) => setAttr(v, 'ANO-FIM', '2013')) as VinculoOp;
     expect(op.identity).not.toHaveProperty('f_ano_fim');

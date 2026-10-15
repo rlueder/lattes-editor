@@ -117,7 +117,8 @@ export function encodeLatin1Form(pairs: Pairs): string {
 /** Para comparar: sem acento, caixa nem espaço nas pontas, e número sem zero à esquerda (06 é 6). */
 const folded = (value: string | null) => {
   const text = value === null ? '' : foldText(value.trim());
-  return /^\d+$/.test(text) ? String(Number(text)) : text;
+  // Só os zeros à esquerda: número longo (processo, documento) não passa por Number.
+  return /^\d+$/.test(text) ? text.replace(/^0+(?=\d)/, '') : text;
 };
 
 /**
