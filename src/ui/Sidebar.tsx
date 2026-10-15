@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import type { XElement } from '../model/xml.ts';
 import type { Profile } from './profile.ts';
 import { ProfileCard } from './ProfileCard.tsx';
-import { countItems, type Section } from './sections.ts';
+import { navCount, type Section } from './sections.ts';
 import { GO_KEYS, useGoShortcuts } from './use-section-shortcuts.ts';
 
 interface Props {
@@ -50,9 +50,7 @@ export function Sidebar({
       )}
       <ul>
         {sections.map((s) => {
-          const total = s.groups.reduce((n, g) => n + countItems(g), 0);
-          // Dados gerais é o perfil: somar Identificação, Resumo e endereços não é contagem de nada.
-          const shownTotal = s.id === 'dados-gerais' ? 0 : total;
+          const shownTotal = navCount(s);
           // Inovação e Educação repetem itens de outras seções; contar de novo confundiria.
           const fresh =
             s.importable === 'filtro' ? 0 : pendingIn(s.groups.flatMap((g) => g.elements));
@@ -80,7 +78,7 @@ export function Sidebar({
                       {fresh} novo{fresh > 1 ? 's' : ''}
                     </span>
                   )}
-                  {!goArmed && shownTotal > 1 && <span className="count">{shownTotal}</span>}
+                  {!goArmed && shownTotal > 0 && <span className="count">{shownTotal}</span>}
                 </span>
               </button>
             </li>
