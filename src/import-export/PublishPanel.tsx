@@ -31,14 +31,22 @@ import {
 
 interface Props {
   bridge: BridgeState;
-  /** Os achados do diagnóstico do currículo antes de publicar: quantos são, e abrir o diagnóstico. */
-  checks: { count: number; onOpen: () => void };
+  /**
+   * Os achados do diagnóstico do currículo antes de publicar: quantos são, e
+   * abrir o diagnóstico. Sem currículo aberto (a tela inicial), não há.
+   */
+  checks?: { count: number; onOpen: () => void };
   /** NUMERO-IDENTIFICADOR do currículo aberto: a tela e o envio só valem para ele. */
   lattesId?: string;
   open: boolean;
-  /** A última exportação aberta, que é a última versão publicada (o Exportar só exporta publicado). */
-  originalXml: string;
+  /**
+   * A última exportação aberta, que é a última versão publicada (o Exportar só
+   * exporta publicado). Sem ela (a tela inicial), não há comparação de títulos.
+   */
+  originalXml?: string;
   onClose: () => void;
+  /** O menu confirmou a publicação (a tela inicial tenta abrir o currículo de novo). */
+  onPublished?: () => void;
 }
 
 /** O painel inteiro é remontado a cada abertura: a declaração nunca vem marcada. */
@@ -52,7 +60,8 @@ export function PublishPanel(props: Props) {
   return <PublishPanelBody key={opening} {...props} />;
 }
 
-function PublishPanelBody({ bridge, checks, lattesId, onClose, open, originalXml }: Props) {
+function PublishPanelBody(props: Props) {
+  const { bridge, checks, lattesId, onClose, onPublished, open, originalXml } = props;
   const cnpq = usePublish(lattesId);
   const enabled = publishUiEnabled(location.search, import.meta.env.DEV);
   const [screenId, setScreenId] = useState<string | undefined>();
@@ -80,6 +89,13 @@ function PublishPanelBody({ bridge, checks, lattesId, onClose, open, originalXml
   }, [reading]);
 
   const status = publishStatus(attempt, cnpq.result, now);
+  // Uma vez por envio confirmado: quem abriu o painel pode seguir (a tela inicial
+  // tenta abrir o currículo de novo, agora que o Exportar está liberado).
+  const published = status.done ? attempt?.id : undefined;
+  useEffect(() => {
+    if (published) onPublished?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [published]);
   useEffect(() => {
     if (!status.busy || !attempt) return;
     const timer = setTimeout(() => setNow(Date.now()), 1000);
@@ -88,7 +104,7 @@ function PublishPanelBody({ bridge, checks, lattesId, onClose, open, originalXml
 
   const pending = unpublishedEntries(bridge.sent, bridge.lattes).filter((e) => !failed(e));
   const original = useMemo(
-    () => (open ? parseXml(originalXml).root : undefined),
+    () => (open && originalXml ? parseXml(originalXml).root : undefined),
     [open, originalXml],
   );
   const diff = useMemo(
@@ -219,17 +235,19 @@ function PublishPanelBody({ bridge, checks, lattesId, onClose, open, originalXml
         )}
       </section>
 
-      <section className="panel-section">
-        <h3 className="panel-section-head">Antes de publicar</h3>
-        <p className="muted">{checksLine(checks.count)}</p>
-        {checks.count > 0 && (
-          <div className="diagnosis-actions">
-            <button type="button" onClick={checks.onOpen}>
-              Abrir o diagnóstico
-            </button>
-          </div>
-        )}
-      </section>
+      {checks && (
+        <section className="panel-section">
+          <h3 className="panel-section-head">Antes de publicar</h3>
+          <p className="muted">{checksLine(checks.count)}</p>
+          {checks.count > 0 && (
+            <div className="diagnosis-actions">
+              <button type="button" onClick={checks.onOpen}>
+                Abrir o diagnóstico
+              </button>
+            </div>
+          )}
+        </section>
+      )}
 
       {bridge.available && !reading && <p className="muted">Lendo a tela de envio do Lattes…</p>}
       {sendScreenProblem(reading) && <p className="export-blocked">{sendScreenProblem(reading)}</p>}
