@@ -15,6 +15,7 @@ import { cvCodeFrom, lattesIdFrom } from '../src/bridge/lattes-html.ts';
 import type { BridgeMessage } from '../src/bridge/protocol.ts';
 import {
   localDay,
+  missingControls,
   PUBLISH_ENABLED,
   publishBusy,
   publishCv,
@@ -27,6 +28,7 @@ import {
   readSendScreenFrom,
   requestProblem,
   sendPairs,
+  type SendScreen,
   termsLink,
 } from '../src/bridge/publish.ts';
 import { type LattesSimuladoNoTeste, withLattesSimulado } from './helpers/lattes-simulado.ts';
@@ -45,10 +47,11 @@ async function start(intercept?: Intercept) {
 }
 
 const TODAY = localDay(new Date());
-const noWait = { today: TODAY, verifyAttempts: 2, wait: async () => undefined };
+const noWait = { enabled: true, today: TODAY, verifyAttempts: 2, wait: async () => undefined };
 
 const request = (over: Partial<PublishRequest> = {}): PublishRequest => ({
   declarationAccepted: true,
+  declarationText: SIMULATED_DECLARATION,
   emailAlternative: '',
   emailContact: SIMULATED_EMAIL,
   english: true,
@@ -100,6 +103,7 @@ describe('Enviar ao CNPq pelo conector (LAT-54)', () => {
     const result = await publishCv(lattes.publishPort, await code(lattes), request(), noWait);
     expect(result).toEqual({ lastPublished: TODAY, outcome: 'publicado', sent: true });
     expect(procs(lattes)).toEqual([
+      'GET pkg_menu.menu',
       'GET pkg_menu.menu',
       'GET pkg_publicar.mostrar_cv',
       'POST pkg_publicar.racapreenchida_raca_cor',
@@ -260,6 +264,85 @@ describe('Enviar ao CNPq pelo conector (LAT-54)', () => {
     expect(result.outcome).toBe('erro');
     expect(procs(lattes)).not.toContain('POST pkg_publicar.racapreenchida_raca_cor');
   });
+
+  it('sem pendência no menu, não há o que publicar, e nada sai', async () => {
+    open = await withLattesSimulado();
+    const lattes = open;
+    const cod = await code(lattes);
+    lattes.state.log.length = 0;
+    const result = await publishCv(lattes.publishPort, cod, request(), noWait);
+    expect(result.outcome).toBe('nada-a-publicar');
+    expect(procs(lattes)).toEqual(['GET pkg_menu.menu']);
+  });
+
+  it('publicado mais cedo no mesmo dia e o envio falha: não é "publicado"', async () => {
+    const ignored: Intercept = (req, _state, next) =>
+      req.proc.toLowerCase() === 'pkg_publicar.enviar' ? { html: '<p>?</p>' } : next();
+    open = await withLattesSimulado({ intercept: ignored });
+    const lattes = open;
+    // Publicado hoje de manhã, e depois o conector gravou de novo.
+    lattes.state.publish(new Date());
+    lattes.state.touch();
+    const result = await publishCv(lattes.publishPort, await code(lattes), request(), noWait);
+    expect(result.outcome).toBe('nao-confirmado');
+    expect(result.sent).toBe(true);
+    expect(lattes.state.pending).toBe(true);
+  });
+
+  it('a declaração que a pessoa leu precisa ser a da tela no envio', async () => {
+    const lattes = await start();
+    const result = await publishCv(
+      lattes.publishPort,
+      await code(lattes),
+      request({ declarationText: 'Uma declaração que a tela não tem mais.' }),
+      noWait,
+    );
+    expect(result.outcome).toBe('mudou');
+    expect(procs(lattes)).not.toContain('POST pkg_publicar.racapreenchida_raca_cor');
+  });
+
+  it('tela sem o e-mail alternativo ou sem a versão em inglês: "mudou", nada sai', async () => {
+    for (const control of ['f_email_alternativo', 'f_chk_en']) {
+      const lattes = await start((req, _state, next) =>
+        Promise.resolve(next()).then((out) =>
+          req.proc.toLowerCase() === 'pkg_publicar.mostrar_cv' && 'html' in out
+            ? {
+                ...out,
+                html: out.html.replace(new RegExp(`<input[^>]*name="${control}"[^>]*>`), ''),
+              }
+            : out,
+        ),
+      );
+      const read = await readSendScreenFrom(lattes.publishPort, await code(lattes));
+      expect(read.reason).toBe('mudou');
+      const result = await publishCv(lattes.publishPort, await code(lattes), request(), noWait);
+      expect(result.outcome).toBe('mudou');
+      expect(procs(lattes)).not.toContain('GET pkg_publicar.enviar');
+      await lattes.close();
+      open = undefined;
+    }
+  });
+
+  it('com a chave desligada, o núcleo não pede nada ao Lattes', async () => {
+    const lattes = await start();
+    lattes.state.log.length = 0;
+    const result = await publishCv(lattes.publishPort, await code(lattes), request(), {
+      ...noWait,
+      enabled: false,
+    });
+    expect(result.outcome).toBe('desligado');
+    expect(procs(lattes).filter((p) => !p.endsWith('pkg_menu.menu'))).toEqual([]);
+  });
+
+  it('menu sem a data da publicação antes do envio: "mudou"', async () => {
+    const lattes = await start((req, _state, next) =>
+      req.proc.toLowerCase() === 'pkg_menu.menu' && req.method === 'GET'
+        ? { html: '<p>menu diferente</p>' }
+        : next(),
+    );
+    const result = await publishCv(lattes.publishPort, 'K4790210P3', request(), noWait);
+    expect(result.outcome).toBe('mudou');
+  });
 });
 
 describe('Enviar ao CNPq: leituras e regras', () => {
@@ -302,16 +385,38 @@ describe('Enviar ao CNPq: leituras e regras', () => {
   });
 
   it('o que a pessoa escolheu precisa caber no que a tela tem', () => {
-    const screen = readSendScreen(
-      `<form name="publicar"><input type="checkbox" name="f_chk" value="1"> Um texto de declaração comprido o bastante <a href="t.html">Termo de Uso</a></form>`,
+    const bare = readSendScreen(
+      `<form name="publicar"><input type="checkbox" name="f_chk" value="1"> ${SIMULATED_DECLARATION} <a href="t.html">Termo de Uso</a></form>`,
       page,
     )!;
-    expect(requestProblem(request({ declarationAccepted: false }), screen)).toMatch(/Marque/);
-    expect(requestProblem(request(), undefined)).toMatch(/não leu/);
-    expect(requestProblem(request(), { ...screen, terms: undefined })).toMatch(/Termo de Uso/);
-    expect(requestProblem(request({ language: '2' }), screen)).toMatch(/idioma/);
-    expect(requestProblem(request({ emailContact: ' ' }), screen)).toMatch(/e-mail/);
-    expect(requestProblem(request(), screen)).toBeUndefined();
+    const r = (over: Partial<PublishRequest> = {}) =>
+      request({ declarationText: bare.declaration, ...over });
+    // Sem os controles do envio na tela, nada vai.
+    expect(missingControls(bare)).toEqual([
+      'idioma principal',
+      'versão em inglês',
+      'e-mail de contato',
+      'e-mail alternativo',
+    ]);
+    expect(requestProblem(r(), bare)).toMatch(/não tem idioma principal/);
+    const screen: SendScreen = {
+      ...bare,
+      emailAlternative: '',
+      emailContact: SIMULATED_EMAIL,
+      english: { checked: true, label: 'Autorizo', value: '1' },
+      language: { options: [{ label: 'Português', value: '1' }], selected: '1' },
+    };
+    expect(missingControls(screen)).toEqual([]);
+    expect(requestProblem(r({ declarationText: 'outro texto' }), screen)).toMatch(
+      /não é o que você marcou/,
+    );
+    expect(requestProblem(r({ declarationAccepted: false }), screen)).toMatch(/Marque/);
+    expect(requestProblem(r(), undefined)).toMatch(/não leu/);
+    expect(requestProblem(r(), { ...screen, terms: undefined })).toMatch(/Termo de Uso/);
+    expect(requestProblem(r({ language: '2' }), screen)).toMatch(/idioma/);
+    expect(requestProblem(r({ english: false }), screen)).toMatch(/versão em inglês/);
+    expect(requestProblem(r({ emailContact: ' ' }), screen)).toMatch(/e-mail/);
+    expect(requestProblem(r(), screen)).toBeUndefined();
   });
 
   it('respostas das consultas e os parâmetros do envio', () => {

@@ -109,6 +109,10 @@ describe('primeiro uso: os três passos', () => {
     const step = onboardingSteps(link, open, undefined, stored)[2];
     expect(step?.action).toEqual({ kind: 'versao', label: 'Abrir a versão de 06/10/2026' });
     expect(step?.text).toMatch(/versão publicada de 06\/10\/2026/);
+    // Enquanto o índice das versões é lido, a tela não diz que não há versão.
+    const looking = onboardingSteps(link, open, undefined, 'procurando')[2];
+    expect(looking).toMatchObject({ busy: true, status: 'agora' });
+    expect(looking?.text).not.toMatch(/não guardou/);
     // Outra falha, mesmo com versão guardada, segue o caminho de sempre.
     const other = onboardingSteps(link, { kind: 'falhou', reason: 'erro' }, undefined, stored)[2];
     expect(other?.action?.kind).toBe('tentar');

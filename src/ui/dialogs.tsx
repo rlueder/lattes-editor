@@ -49,13 +49,20 @@ export function HistoryDialog({
   );
 }
 
-/** Recarregar com itens novos pendentes os descarta; pede confirmação antes. */
+/**
+ * Recarregar troca a cópia de trabalho pela exportação nova: itens novos e
+ * alterações que não foram ao Lattes saem dela. Pede confirmação antes, e a
+ * cópia de agora fica no histórico.
+ */
 export function ReloadConfirm({
+  changes,
   file,
   onCancel,
   onConfirm,
   pending,
 }: {
+  /** Alterações do editor que não foram ao Lattes (além dos itens novos). */
+  changes: number;
   file: File | null;
   pending: PendingSummary[];
   onCancel: () => void;
@@ -79,19 +86,31 @@ export function ReloadConfirm({
       title="Recarregar do Lattes"
       onClose={onCancel}
     >
-      <p>
-        {pending.length === 1
-          ? 'Há 1 item novo que só existe aqui:'
-          : `Há ${pending.length} itens novos que só existem aqui:`}
-      </p>
-      <ul className="confirm-list">
-        {pending.map((p) => (
-          <li key={p.sequencia}>{p.title || '(sem título)'}</li>
-        ))}
-      </ul>
+      {pending.length > 0 && (
+        <>
+          <p>
+            {pending.length === 1
+              ? 'Há 1 item novo que só existe aqui:'
+              : `Há ${pending.length} itens novos que só existem aqui:`}
+          </p>
+          <ul className="confirm-list">
+            {pending.map((p) => (
+              <li key={p.sequencia}>{p.title || '(sem título)'}</li>
+            ))}
+          </ul>
+        </>
+      )}
+      {changes > 0 && (
+        <p>
+          {changes === 1
+            ? '1 alteração feita aqui ainda não foi ao Lattes.'
+            : `${changes} alterações feitas aqui ainda não foram ao Lattes.`}
+        </p>
+      )}
       <p className="muted">
-        Se você já importou esses itens no Lattes, eles vêm na nova exportação e pode seguir. Se
-        não, eles se perdem ao recarregar.
+        A nova exportação traz o que está publicado no Lattes. O que só existe aqui sai da cópia de
+        trabalho, mas a cópia de agora fica no Histórico de alterações, marcada para não sair, e dá
+        para restaurá-la ou salvá-la em arquivo.
       </p>
     </Modal>
   );

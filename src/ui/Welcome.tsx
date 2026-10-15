@@ -229,7 +229,9 @@ export function Welcome({
                         action={step.action}
                         onReload={onReloadLattes}
                         onRetry={lattes.open}
-                        onVersion={() => stored && onOpenVersion(stored.id)}
+                        onVersion={() =>
+                          stored && stored !== 'procurando' && onOpenVersion(stored.id)
+                        }
                       />
                     )}
                   </div>

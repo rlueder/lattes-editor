@@ -15,21 +15,26 @@ import { ExportPanel } from '../import-export/ExportPanel.tsx';
 import { PublishPanel } from '../import-export/PublishPanel.tsx';
 import { encodeCv, loadCv } from '../model/document.ts';
 import { importableTypes } from '../model/production.ts';
-import { clearAll, newWorkingCopy, replaceWorkingCopy, storageStatus } from '../model/store.ts';
+import {
+  addHistoryPoint,
+  clearAll,
+  newWorkingCopy,
+  replaceWorkingCopy,
+  storageStatus,
+} from '../model/store.ts';
 import { getAttr, serializeXml, walk, type XElement } from '../model/xml.ts';
 import { PrintDialog } from '../print/PrintDialog.tsx';
 import { usePrint } from '../print/use-print.ts';
 import { DiagnosisPanel } from '../review/DiagnosisPanel.tsx';
 import { lattesSchema } from '../schema/lattes.ts';
 import { CommandPalette } from './CommandPalette.tsx';
-import { HistoryDialog, ReloadConfirm } from './dialogs.tsx';
+import { HistoryDialog } from './dialogs.tsx';
 import { EditorContext } from './editor-context.ts';
 import { parseHash } from './hash-route.ts';
 import { type ReloadFailure, reloadNotice } from './lattes-reload.ts';
 import { connectionOf, noticesFor } from './notifications.ts';
 import { allEntries, type PaletteEntry } from './palette-search.ts';
 import { PendingBanner } from './PendingBanner.tsx';
-import { preflight } from './preflight.ts';
 import { profileOf } from './profile.ts';
 import { ReferenceContext } from './reference-context.ts';
 import { buildReferenceIndex, type ReferenceIndex } from './reference-tables.ts';
@@ -50,6 +55,8 @@ import { useLattesReload } from './use-lattes-reload.ts';
 import { useNavigate, useScrollToPendingAnchor } from './use-navigate.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
 import { usePhotoChange } from './use-photo-change.tsx';
+import { usePreflight } from './use-preflight.ts';
+import { useReload } from './use-reload.ts';
 import { useOpenStoredVersion } from './use-stored-version.ts';
 import { useTopbarHeight } from './use-topbar-height.ts';
 import { useUpdates } from './use-updates.ts';
@@ -71,7 +78,6 @@ export function App() {
   const [exportOpen, setExportOpen] = useState(false);
   const [diagnosisOpen, setDiagnosisOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
-  const [reloadFile, setReloadFile] = useState<File | null>(null);
   const pendingNotes = useRef<string[]>([]);
   const pendingAnchor = useRef<string | null>(null);
   const topbarRef = useRef<HTMLElement>(null);
@@ -148,12 +154,14 @@ export function App() {
 
   useScrollToPendingAnchor(pendingAnchor);
 
-  const openFile = async (file: File) => {
+  /** previous: a cópia de trabalho de antes, guardada no histórico (Recarregar do Lattes). */
+  const openFile = async (file: File, previous?: { note: string; xml: string }) => {
     setError(null);
     try {
       const cv = await loadCv(new Uint8Array(await file.arrayBuffer()), file.name);
       const copy = newWorkingCopy(cv, Date.now());
       await replaceWorkingCopy(copy);
+      if (previous) await addHistoryPoint({ ...previous, keep: true, savedAt: copy.savedAt - 1 });
       // A linha do tempo é auxiliar: se não gravar, o currículo abre igual.
       void versions.record(cv.doc.root, copy.originalXml).catch((e: unknown) => console.warn(e));
       const { savedAt: _savedAt, xml: _xml, ...meta } = copy;
@@ -169,12 +177,12 @@ export function App() {
 
   /** Nova exportação do Lattes: itens novos que ainda não foram importados se perdem. */
   const openVersion = useOpenStoredVersion(openFile, bridge, () => setDiagnosisOpen(true));
-  const lattesReload = useLattesReload(bridge, cvId(session), (file) => reload(file));
-
-  const reload = (file: File) => {
-    if (production.pending.length > 0) setReloadFile(file);
-    else void openFile(file);
-  };
+  const { dialog: reloadDialog, reload } = useReload(
+    session,
+    { changes: changes.open, pending: production.summaries },
+    openFile,
+  );
+  const lattesReload = useLattesReload(bridge, cvId(session), reload);
 
   const closePalette = useCallback(() => setPaletteOpen(false), []);
   const history = useHistoryDialog(session, (doc, note) => {
@@ -188,6 +196,10 @@ export function App() {
     setSession(null);
     setVersion(0);
   };
+
+  const checks = usePreflight(publishOpen, session?.doc.root, sections, version, () =>
+    setDiagnosisOpen(true),
+  );
 
   if (booting) return null;
 
@@ -212,7 +224,10 @@ export function App() {
           lattesId={lattesOpen.state.kind === 'falhou' ? lattesOpen.state.lattesId : undefined}
           open={publishOpen}
           onClose={() => setPublishOpen(false)}
-          onPublished={lattesOpen.open}
+          onPublished={() => {
+            setPublishOpen(false);
+            lattesOpen.open();
+          }}
         />
         {storageNotice}
       </>
@@ -340,22 +355,14 @@ export function App() {
 
       <PublishPanel
         bridge={bridge}
-        checks={preflight(publishOpen && session.doc.root, sections, () => setDiagnosisOpen(true))}
+        checks={checks}
         lattesId={getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR')}
         open={publishOpen}
         originalXml={session.meta.originalXml}
         onClose={() => setPublishOpen(false)}
       />
 
-      <ReloadConfirm
-        file={reloadFile}
-        pending={production.summaries}
-        onCancel={() => setReloadFile(null)}
-        onConfirm={(file) => {
-          setReloadFile(null);
-          void openFile(file);
-        }}
-      />
+      {reloadDialog}
 
       <DiagnosisPanel
         available={bridge.available}

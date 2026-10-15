@@ -80,3 +80,35 @@ export function versionBytes(xml: string): Uint8Array<ArrayBuffer> {
   }
   return new TextEncoder().encode(xml);
 }
+
+/** O que recarregar faz com o trabalho que só existe no editor. */
+export interface ReloadPlan {
+  /** Pergunta antes: há itens novos, alterações ou edição que não foram ao Lattes. */
+  confirm: boolean;
+  /**
+   * A cópia de trabalho de agora, guardada no histórico (marcada para não
+   * sair) antes de a exportação nova tomar o lugar dela; ausente quando ela é
+   * a própria exportação carregada.
+   */
+  previous?: { note: string; xml: string };
+}
+
+export function reloadPlan({
+  currentXml,
+  newItems,
+  openChanges,
+  originalXml,
+}: {
+  currentXml: string;
+  newItems: number;
+  openChanges: number;
+  originalXml: string;
+}): ReloadPlan {
+  const modified = currentXml !== originalXml;
+  return {
+    confirm: newItems > 0 || openChanges > 0 || modified,
+    previous: modified
+      ? { note: 'Cópia de trabalho antes de recarregar do Lattes', xml: currentXml }
+      : undefined,
+  };
+}

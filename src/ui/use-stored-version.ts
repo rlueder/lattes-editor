@@ -9,24 +9,33 @@ import { versionBytes } from './lattes-reload.ts';
 import type { StoredVersion } from './onboarding.ts';
 import { versionDate } from './version-diff.ts';
 
-export function useStoredVersion(lattesId: string | undefined): StoredVersion | undefined {
-  const [stored, setStored] = useState<StoredVersion | undefined>();
+/**
+ * A última versão guardada, 'procurando' enquanto o índice é lido (para a
+ * tela não dizer "nenhuma versão" antes de saber), ou undefined sem versão.
+ */
+export function useStoredVersion(
+  lattesId: string | undefined,
+): StoredVersion | 'procurando' | undefined {
+  const [found, setFound] = useState<{ id?: string; stored?: StoredVersion }>({});
   useEffect(() => {
-    setStored(undefined);
     if (!lattesId) return;
     let alive = true;
     listVersionInfo(lattesId)
       .then(([latest]) => {
-        if (alive && latest?.id !== undefined) {
-          setStored({ date: versionDate(latest), id: latest.id });
-        }
+        if (!alive) return;
+        setFound({
+          id: lattesId,
+          stored:
+            latest?.id !== undefined ? { date: versionDate(latest), id: latest.id } : undefined,
+        });
       })
-      .catch(() => undefined);
+      .catch(() => alive && setFound({ id: lattesId }));
     return () => {
       alive = false;
     };
   }, [lattesId]);
-  return stored;
+  if (!lattesId) return undefined;
+  return found.id === lattesId ? found.stored : 'procurando';
 }
 
 /**

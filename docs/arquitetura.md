@@ -244,7 +244,12 @@ pelo `window.postMessage` da própria página, por um content script
   deste currículo guardada no app (`src/ui/use-stored-version.ts`), que abre
   como cópia de trabalho com o diagnóstico já comparando com a página de
   conferência; a página de conferência é texto, e não vira currículo
-  editável. A mesma tela tem o link para o "Enviar ao CNPq", que libera o
+  editável. O que se manda depois a partir dessa versão não sobrescreve o
+  que está pendente no Lattes: a alteração confere, antes do POST, os
+  valores de antes dos campos que muda e a identidade do item no formulário
+  lido agora (`src/bridge/apply.ts`), e para como "divergente" se não
+  baterem; o resto do formulário vai como foi lido; a inclusão confere que
+  não há item igual na lista. A mesma tela tem o link para o "Enviar ao CNPq", que libera o
   Exportar; publicado, o editor pede o currículo de novo.
 - **Estado do Lattes** (`src/bridge/lattes-status.ts`): lê do menu a data da
   última publicação e se há alteração pendente de envio ao CNPq.

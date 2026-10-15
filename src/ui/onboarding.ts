@@ -128,7 +128,7 @@ export interface StoredVersion {
   id: number;
 }
 
-function openStep(open: OpenState, link: Link, stored?: StoredVersion): Step {
+function openStep(open: OpenState, link: Link, stored?: StoredVersion | 'procurando'): Step {
   const title = STEP_TITLES[2];
   const retry = { kind: 'tentar' as const, label: 'Tentar de novo' };
   switch (open.kind) {
@@ -138,7 +138,15 @@ function openStep(open: OpenState, link: Link, stored?: StoredVersion): Step {
       // Com o Exportar bloqueado por pendência, o app não para: abre a última
       // versão publicada que tem e compara com a página de conferência do
       // Lattes (docs/fluxos_de_uso.md, "Quem volta ao Lattes depois de anos").
-      if (open.reason === 'pendente' && stored) {
+      if (open.reason === 'pendente' && stored === 'procurando') {
+        return {
+          busy: true,
+          status: 'agora',
+          text: 'O seu Lattes tem alterações ainda não enviadas ao CNPq. Procurando uma versão deste currículo guardada no app…',
+          title,
+        };
+      }
+      if (open.reason === 'pendente' && stored && stored !== 'procurando') {
         return {
           action: { kind: 'versao', label: `Abrir a versão de ${stored.date}` },
           status: 'agora',
@@ -169,7 +177,7 @@ export function onboardingSteps(
   link: Link,
   open: OpenState,
   devFolder?: string,
-  stored?: StoredVersion,
+  stored?: StoredVersion | 'procurando',
 ): Step[] {
   const extension = extensionStep(link, open, devFolder);
   if (extension.status !== 'feito') {

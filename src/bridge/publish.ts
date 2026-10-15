@@ -59,7 +59,11 @@ export interface ChoiceOption {
   value: string;
 }
 
-/** O que a tela de envio do Lattes tem, lido sem enviar nada. */
+/**
+ * O que a tela de envio do Lattes tem, lido sem enviar nada. Os campos
+ * opcionais ficam undefined quando a tela não tem o controle; aí o editor
+ * não envia (missingControls), porque mandaria um valor que não leu.
+ */
 export interface SendScreen {
   /** O texto da declaração, como está na tela. */
   declaration: string;
@@ -81,6 +85,11 @@ export interface PublishRequest {
    * qualquer outro valor recusa o envio.
    */
   declarationAccepted: boolean;
+  /**
+   * O texto da declaração que a pessoa leu quando marcou. Se a tela relida no
+   * envio disser outra coisa, nada vai.
+   */
+  declarationText: string;
   emailAlternative: string;
   emailContact: string;
   /** Autoriza a versão em inglês. Só o que foi observado (sim) é enviado. */
@@ -97,6 +106,7 @@ export type PublishOutcome =
   | 'email'
   | 'erro'
   | 'mudou'
+  | 'nada-a-publicar'
   | 'nao-confirmado'
   | 'outro-cv'
   | 'publicado'
@@ -200,19 +210,41 @@ export function readSendScreen(html: string, pageUrl: string): SendScreen | unde
   };
 }
 
+/**
+ * Os controles que o envio usa e a tela não mostrou. Que eles existam com os
+ * nomes dos parâmetros do GET é inferido; sem algum deles, o editor não
+ * envia, para não mandar um valor que não leu (um e-mail vazio por cima do
+ * que o Lattes tem, a versão em inglês presumida).
+ */
+export function missingControls(screen: SendScreen): string[] {
+  return [
+    ...(screen.language ? [] : ['idioma principal']),
+    ...(screen.english ? [] : ['versão em inglês']),
+    ...(screen.emailContact === undefined ? ['e-mail de contato'] : []),
+    ...(screen.emailAlternative === undefined ? ['e-mail alternativo'] : []),
+  ];
+}
+
 /** O motivo de não poder enviar daqui com o que a tela tem e o que a pessoa escolheu. */
 export function requestProblem(req: PublishRequest, screen?: SendScreen): string | undefined {
   if (req.declarationAccepted !== true) {
     return 'Marque a declaração para enviar.';
   }
   if (!screen) return 'O editor não leu a tela de envio do Lattes.';
+  if (req.declarationText !== screen.declaration) {
+    return 'O texto da declaração no Lattes não é o que você marcou. Feche e abra este painel para ler de novo.';
+  }
+  const missing = missingControls(screen);
+  if (missing.length) {
+    return `A tela de envio do Lattes não tem ${missing.join(', ')} onde o editor espera; envie pelo Lattes.`;
+  }
   if (!screen.terms) {
     return 'O editor não achou o link do Termo de Uso na tela de envio; envie pelo Lattes.';
   }
   if (!req.english) {
     return 'Enviar sem autorizar a versão em inglês ainda não foi observado; para isso, envie pela tela do Lattes.';
   }
-  const languages = screen.language?.options.map((o) => o.value) ?? [OBSERVED_LANGUAGE];
+  const languages = screen.language!.options.map((o) => o.value);
   if (!languages.includes(req.language)) return 'Escolha o idioma principal.';
   if (!req.emailContact.trim()) return 'Informe o e-mail de contato.';
   return undefined;
@@ -262,6 +294,8 @@ export function publishedOn(menuHtml: string, today: string): boolean {
 }
 
 export interface PublishOptions {
+  /** A chave (PUBLISH_ENABLED); só os testes passam outro valor. */
+  enabled?: boolean;
   /** AAAA-MM-DD de hoje, no fuso da pessoa (o do Lattes). */
   today: string;
   /** Quantas vezes reler o menu depois do envio, e quanto esperar entre elas. */
@@ -288,6 +322,13 @@ export async function readSendScreenFrom(
       reason: 'mudou',
     };
   }
+  const missing = missingControls(screen);
+  if (missing.length) {
+    return {
+      detail: `A tela de envio do Lattes não tem ${missing.join(', ')} onde o editor espera.`,
+      reason: 'mudou',
+    };
+  }
   return { screen };
 }
 
@@ -303,8 +344,29 @@ export async function publishCv(
   req: PublishRequest,
   options: PublishOptions,
 ): Promise<PublishResult> {
+  if (!(options.enabled ?? PUBLISH_ENABLED)) {
+    return { detail: 'O envio ao CNPq pelo editor está desligado.', outcome: 'desligado' };
+  }
   if (req.declarationAccepted !== true) {
     return { detail: 'A declaração não foi marcada; nada foi enviado.', outcome: 'declaracao' };
+  }
+  // Antes de tudo, o menu: sem o aviso de pendência, não há o que publicar, e
+  // um envio repetido (depois de um resultado incerto) para aqui.
+  const menuBefore = await port.get('PKG_MENU.menu');
+  if (isLogonPage(menuBefore.html, menuBefore.url)) return { outcome: 'sessao' };
+  const before = lattesStatusFrom(menuBefore.html);
+  if (!before) {
+    return {
+      detail: 'O menu do Lattes não mostrou a data da última publicação.',
+      outcome: 'mudou',
+    };
+  }
+  if (!before.pending) {
+    return {
+      detail: 'O menu do Lattes não tem o aviso de alterações não enviadas: não há o que publicar.',
+      lastPublished: before.lastPublished,
+      outcome: 'nada-a-publicar',
+    };
   }
   const read = await readSendScreenFrom(port, code);
   if (!read.screen) {
@@ -314,7 +376,10 @@ export async function publishCv(
     };
   }
   const problem = requestProblem(req, read.screen);
-  if (problem) return { detail: problem, outcome: 'erro' };
+  if (problem) {
+    const changed = req.declarationText !== read.screen.declaration;
+    return { detail: problem, outcome: changed ? 'mudou' : 'erro' };
+  }
   const cod = code!;
 
   const race = await port.post(
@@ -378,6 +443,9 @@ export async function publishCv(
       };
     }
     menu = res.html;
+    // Só conta a passagem: havia pendência antes do envio (conferido acima) e
+    // agora não há, com a publicação de hoje. Uma publicação de mais cedo no
+    // mesmo dia, com a pendência ainda acesa, não é sucesso.
     if (publishedOn(menu, options.today)) {
       return { lastPublished: options.today, outcome: 'publicado', sent: true };
     }

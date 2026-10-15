@@ -158,17 +158,23 @@ function sendScreen(state: LattesState): SimResponse {
 <p><a href="termo_de_uso_simulado" target="_blank">Termo de Uso</a></p>
 </form>
 <p><a href="#" onclick="enviar(); return false;">Enviar ao CNPq</a> <a href="#" onclick="self.parent.fecharModal(); return false;">Cancelar</a></p>
-<script>function enviar(){ if (!document.forms['publicar'].f_chk.checked) { alert('Marque a declaração.'); return; }
+<script>async function enviar(){ if (!document.forms['publicar'].f_chk.checked) { alert('Marque a declaração.'); return; }
+var post = function(proc, body){ return fetch(proc, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body }).then(function(r){ return r.json(); }); };
+var contato = document.querySelector('input[name=f_email_contato]').value, alternativo = document.querySelector('input[name=f_email_alternativo]').value;
+if (!(await post('pkg_publicar.racapreenchida_raca_cor', 'f_cod=${state.code}')).status) { alert('Preencha raça ou cor.'); return; }
+for (var e of [contato, alternativo]) { if ((await post('pkg_util.existe_email_cadastrado', 'f_email=' + encodeURIComponent(e) + '&f_cod=${state.code}')).existe) { alert('E-mail já cadastrado.'); return; } }
 var idioma = document.querySelector('input[name=f_idioma]:checked');
-location = 'pkg_publicar.enviar?f_chk=1&f_idioma=' + (idioma ? idioma.value : '1') + '&f_chk_en=1&f_email_contato=' + encodeURIComponent(document.querySelector('input[name=f_email_contato]').value) + '&f_email_alternativo=' + encodeURIComponent(document.querySelector('input[name=f_email_alternativo]').value) + '&f_cod=${state.code}&f_ctr=U'; }</script>`;
+location = 'pkg_publicar.enviar?f_chk=1&f_idioma=' + (idioma ? idioma.value : '1') + '&f_chk_en=1&f_email_contato=' + encodeURIComponent(contato) + '&f_email_alternativo=' + encodeURIComponent(alternativo) + '&f_cod=${state.code}&f_ctr=U'; }</script>`;
   return html(h.page('Enviar ao CNPq', body));
 }
 
 /**
  * O envio (observado em 14/10/2026): GET com f_chk=1 e f_ctr=U, resposta com
  * um alert nativo; depois, as duas datas do menu são as do dia, o aviso de
- * pendência some e o Exportar volta a exportar. O simulado guarda o pedido
- * o e-mail de contato que veio no pedido.
+ * pendência some e o Exportar volta a exportar. O simulado guarda o e-mail
+ * de contato que veio no pedido. As duas consultas de antes (raça ou cor e
+ * e-mail) ficam com o enviar() da tela, como na página observada; esta rota
+ * não as confere.
  */
 function send(req: SimRequest, state: LattesState): SimResponse {
   if (req.get('f_chk') !== '1' || req.get('f_ctr') !== 'U') return sendScreen(state);

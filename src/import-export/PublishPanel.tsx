@@ -7,7 +7,7 @@
 // feita sob as penas da lei (arts. 297 a 299 do Código Penal). As regras ficam
 // em publish-view.ts; o envio, em src/bridge/publish.ts.
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 
 import { requestProblem } from '../bridge/publish.ts';
 import { failed } from '../bridge/sent-log.ts';
@@ -19,6 +19,7 @@ import { dateLabel, unpublishedEntries } from '../ui/status-strip.ts';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { usePublish } from '../ui/use-publish.ts';
 import {
+  canReadSendScreen,
   checksLine,
   initialForm,
   type PublishAttempt,
@@ -26,7 +27,8 @@ import {
   publishRequest,
   publishStatus,
   publishUiEnabled,
-  sendScreenProblem,
+  SCREEN_TIMEOUT_MS,
+  sendScreenStatus,
 } from './publish-view.ts';
 
 interface Props {
@@ -52,11 +54,13 @@ interface Props {
 /** O painel inteiro é remontado a cada abertura: a declaração nunca vem marcada. */
 export function PublishPanel(props: Props) {
   const [opening, setOpening] = useState(0);
-  const wasOpen = useRef(false);
-  useEffect(() => {
-    if (props.open && !wasOpen.current) setOpening((n) => n + 1);
-    wasOpen.current = props.open;
-  }, [props.open]);
+  // A troca de chave acontece no próprio render em que o painel abre, e não
+  // num efeito depois dele: nem um quadro com o estado da abertura anterior.
+  const [wasOpen, setWasOpen] = useState(props.open);
+  if (props.open !== wasOpen) {
+    setWasOpen(props.open);
+    if (props.open) setOpening((n) => n + 1);
+  }
   return <PublishPanelBody key={opening} {...props} />;
 }
 
@@ -64,7 +68,7 @@ function PublishPanelBody(props: Props) {
   const { bridge, checks, lattesId, onClose, onPublished, open, originalXml } = props;
   const cnpq = usePublish(lattesId);
   const enabled = publishUiEnabled(location.search, import.meta.env.DEV);
-  const [screenId, setScreenId] = useState<string | undefined>();
+  const [screenRequest, setScreenRequest] = useState<{ at: number; id: string } | undefined>();
   // A declaração: só o clique da pessoa muda isto, e o painel remontado volta a false.
   const [declared, setDeclared] = useState(false);
   const [form, setForm] = useState<PublishForm | undefined>();
@@ -73,20 +77,40 @@ function PublishPanelBody(props: Props) {
   const ids = useId();
 
   // Ao abrir, com a extensão: a tela de envio e a versão atual do Lattes, só leituras.
-  const { available, requestEspelho } = bridge;
+  // Sem a capacidade enviar-cnpq, o pedido nem sai.
+  const { available, features, requestEspelho } = bridge;
+  const readable = available && canReadSendScreen(features);
   useEffect(() => {
-    if (!open || !available) return;
-    setScreenId(cnpq.requestScreen());
+    if (!open || !readable) return;
+    setScreenRequest({ at: Date.now(), id: cnpq.requestScreen() });
     requestEspelho();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, available]);
+  }, [open, readable]);
 
-  const reading = cnpq.screen?.id === screenId ? cnpq.screen : undefined;
+  const reading = cnpq.screen?.id === screenRequest?.id ? cnpq.screen : undefined;
   const screen = reading?.screen;
-  // O formulário começa com o que o Lattes tem, uma vez por leitura.
+  // O formulário começa com o que o Lattes tem, uma vez por leitura; uma
+  // leitura nova desmarca a declaração, que valia para o texto de antes.
   useEffect(() => {
-    if (reading) setForm(initialForm(reading.screen));
+    if (!reading) return;
+    setForm(initialForm(reading.screen));
+    setDeclared(false);
   }, [reading]);
+  const screenStatus = sendScreenStatus({
+    features,
+    now,
+    reading,
+    requestedAt: screenRequest?.at,
+  });
+  // Sem resposta, o prazo da leitura da tela também passa.
+  useEffect(() => {
+    if (!screenStatus.waiting || !screenRequest) return;
+    const timer = setTimeout(
+      () => setNow(Date.now()),
+      screenRequest.at + SCREEN_TIMEOUT_MS - Date.now(),
+    );
+    return () => clearTimeout(timer);
+  }, [screenStatus.waiting, screenRequest]);
 
   const status = publishStatus(attempt, cnpq.result, now);
   // Uma vez por envio confirmado: quem abriu o painel pode seguir (a tela inicial
@@ -113,9 +137,9 @@ function PublishPanelBody(props: Props) {
     [original, bridge.espelho],
   );
 
-  const request = form && publishRequest(form, declared);
+  const request = form && screen && publishRequest(form, declared, screen.declaration);
   const problem = request && requestProblem(request, screen);
-  const canSend = enabled && !!request && !problem && !status.busy && !status.done;
+  const canSend = enabled && !!request && !problem && !status.locked;
   const set = (patch: Partial<PublishForm>) => setForm((f) => f && { ...f, ...patch });
 
   const send = () => {
@@ -135,7 +159,7 @@ function PublishPanelBody(props: Props) {
           <button className="ghost" type="button" onClick={onClose}>
             {status.done || !enabled ? 'Fechar' : 'Cancelar'}
           </button>
-          {enabled && !status.done && (
+          {enabled && !status.locked && (
             <button className="primary" disabled={!canSend} type="button" onClick={send}>
               Enviar ao CNPq
             </button>
@@ -249,8 +273,10 @@ function PublishPanelBody(props: Props) {
         </section>
       )}
 
-      {bridge.available && !reading && <p className="muted">Lendo a tela de envio do Lattes…</p>}
-      {sendScreenProblem(reading) && <p className="export-blocked">{sendScreenProblem(reading)}</p>}
+      {screenStatus.waiting && <p className="muted">Lendo a tela de envio do Lattes…</p>}
+      {bridge.available && screenStatus.problem && (
+        <p className="export-blocked">{screenStatus.problem}</p>
+      )}
 
       {screen && form && (
         <>
@@ -306,12 +332,6 @@ function PublishPanelBody(props: Props) {
                 />
               </div>
             </div>
-            {(!screen.language || !screen.english) && (
-              <p className="muted">
-                A tela do Lattes não mostrou {!screen.language ? 'o idioma' : 'a versão em inglês'}{' '}
-                onde o editor procura; vai o que foi visto num envio pelo Lattes.
-              </p>
-            )}
           </section>
 
           <section className="panel-section">
@@ -320,7 +340,7 @@ function PublishPanelBody(props: Props) {
               <label className="publish-declaration">
                 <input
                   checked={declared}
-                  disabled={status.busy || status.done}
+                  disabled={status.locked}
                   type="checkbox"
                   onChange={(e) => setDeclared(e.target.checked)}
                 />

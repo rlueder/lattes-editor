@@ -19,6 +19,7 @@ import { lattesStatusFrom } from '../../src/bridge/lattes-status.ts';
 import { type PhotoPort, type PhotoResult, uploadPhoto } from '../../src/bridge/photo.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
 import {
+  PUBLISH_ENABLED,
   publishCv,
   type PublishPort,
   type PublishRequest,
@@ -143,8 +144,20 @@ interface ImportArgs {
   oldestYear?: number;
 }
 
-/** O envio ao CNPq (src/bridge/publish.ts): os GET e POST da tela de envio. */
-const publishPort: PublishPort = { get: importPort.get, post: importPort.post };
+/**
+ * O envio ao CNPq (src/bridge/publish.ts): os GET e POST da tela de envio. Os
+ * GET não usam cache: o menu lido antes e depois do envio tem de ser o de agora.
+ */
+const publishPort: PublishPort = {
+  async get(path) {
+    const res = await fetch(new URL(path, location.href), {
+      cache: 'no-store',
+      credentials: 'include',
+    });
+    return { html: await text(res), url: res.url };
+  },
+  post: importPort.post,
+};
 
 /** Os endereços da página de conferência nas duas línguas, na base desta aba. */
 function previewsOf(code: string): { en: string; pt: string } {
@@ -286,6 +299,10 @@ interface ExportReply {
   // currículo do editor. A declaração vem marcada pela pessoa no editor; o
   // núcleo recusa sem ela.
   publicar: async (args: string, expected?: string): Promise<PublishResult> => {
+    // A chave de novo aqui, além do service worker e do núcleo.
+    if (!PUBLISH_ENABLED) {
+      return { detail: 'O envio ao CNPq pelo editor está desligado.', outcome: 'desligado' };
+    }
     const menu = document.documentElement.outerHTML;
     if (!sameCv(expected, lattesIdFrom(menu))) {
       return { detail: 'A sessão aberta no Lattes é de outro currículo.', outcome: 'outro-cv' };

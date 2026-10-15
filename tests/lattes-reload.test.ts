@@ -6,6 +6,7 @@ import type { OpenFailure } from '../src/ui/lattes-open.ts';
 import {
   reloadFailureText,
   reloadNotice,
+  reloadPlan,
   reloadReply,
   versionBytes,
 } from '../src/ui/lattes-reload.ts';
@@ -85,5 +86,20 @@ describe('Recarregar do Lattes pela ponte (LAT-46)', () => {
     const utf = '<?xml version="1.0" encoding="UTF-8"?><CURRICULO-VITAE A="Ação"/>';
     expect(new TextDecoder().decode(versionBytes(utf))).toBe(utf);
     expect(versionBytes('<CURRICULO-VITAE/>').length).toBe(18);
+  });
+
+  it('recarregar pergunta antes quando há trabalho que não foi ao Lattes', () => {
+    const base = { currentXml: '<a/>', newItems: 0, openChanges: 0, originalXml: '<a/>' };
+    expect(reloadPlan(base)).toEqual({ confirm: false, previous: undefined });
+    expect(reloadPlan({ ...base, newItems: 1 }).confirm).toBe(true);
+    expect(reloadPlan({ ...base, openChanges: 2 }).confirm).toBe(true);
+    // Editado sem nada na lista (um campo que o editor não planeja): também pergunta,
+    // e a cópia de agora vai para o histórico.
+    const edited = reloadPlan({ ...base, currentXml: '<a b="1"/>' });
+    expect(edited.confirm).toBe(true);
+    expect(edited.previous).toEqual({
+      note: 'Cópia de trabalho antes de recarregar do Lattes',
+      xml: '<a b="1"/>',
+    });
   });
 });

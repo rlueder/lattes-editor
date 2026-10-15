@@ -455,8 +455,9 @@ conector pode ler o HTML e reconhecer o aviso.
 
 Não há como descartar alterações pendentes. A tela de envio
 (`pkg_publicar.mostrar_cv`, aberta pelo "Enviar" e pelo aviso de pendências)
-só tem "Enviar ao CNPq" (formulário `publicar`, POST `pkg_publicar.enviar`,
-com a concordância no `f_chk`) e "Cancelar", que fecha a tela. Nenhuma das
+só tem "Enviar ao CNPq" (formulário `publicar`, com a concordância no
+`f_chk`; o `enviar()` da página navega por GET para `pkg_publicar.enviar`,
+ver abaixo) e "Cancelar", que fecha a tela. Nenhuma das
 nove ferramentas do menu secundário desfaz alterações. Os textos com "serão
 descartadas" no código da página são o aviso genérico de sair de um
 formulário sem gravar. **Observado.**

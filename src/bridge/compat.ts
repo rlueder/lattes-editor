@@ -46,7 +46,11 @@ export const BRIDGE_FEATURES = [
   'alterar-premio',
   /** Formação complementar (edit-lists.ts). */
   'alterar-formacao-complementar',
-  /** Tela de envio ao CNPq e o envio, só com PUBLISH_ENABLED (src/bridge/publish.ts). */
+  /**
+   * Tela de envio ao CNPq e o pedido de envio (src/bridge/publish.ts). A
+   * extensão anuncia sempre que sabe ler a tela e receber o pedido; o envio
+   * em si só sai com PUBLISH_ENABLED, e sem ela a extensão responde "desligado".
+   */
   'enviar-cnpq',
 ] as const;
 
