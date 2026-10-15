@@ -160,8 +160,9 @@ export function App() {
     try {
       const cv = await loadCv(new Uint8Array(await file.arrayBuffer()), file.name);
       const copy = newWorkingCopy(cv, Date.now());
-      await replaceWorkingCopy(copy);
+      // A cópia de antes vai para o histórico primeiro: se não gravar, nada é trocado.
       if (previous) await addHistoryPoint({ ...previous, keep: true, savedAt: copy.savedAt - 1 });
+      await replaceWorkingCopy(copy, previous !== undefined);
       // A linha do tempo é auxiliar: se não gravar, o currículo abre igual.
       void versions.record(cv.doc.root, copy.originalXml).catch((e: unknown) => console.warn(e));
       const { savedAt: _savedAt, xml: _xml, ...meta } = copy;

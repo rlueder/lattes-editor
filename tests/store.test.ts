@@ -165,14 +165,15 @@ describe('banco local (IndexedDB)', () => {
 
     it('recarregar com edição guarda a cópia de antes no histórico, marcada (LAT-46)', async () => {
       await store.saveWorkingCopy(copy('<editado/>', 5), 'edição');
-      // Como o App faz: troca a cópia e põe a de antes no histórico, marcada.
-      await store.replaceWorkingCopy(copy('<novo/>', 10));
+      // Como o App faz: grava a cópia de antes, marcada, e só depois troca,
+      // guardando os pontos marcados.
       await store.addHistoryPoint({
         keep: true,
         note: 'Cópia de trabalho antes de recarregar do Lattes',
         savedAt: 9,
         xml: '<editado/>',
       });
+      await store.replaceWorkingCopy(copy('<novo/>', 10), true);
       const history = await store.listHistory();
       expect(history.map((h) => [h.note, h.xml, h.keep])).toEqual([
         ['Arquivo carregado', '<novo/>', undefined],
