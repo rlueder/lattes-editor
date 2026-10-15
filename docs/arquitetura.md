@@ -59,8 +59,8 @@ A interface lê esse modelo para montar os campos e saber o que é obrigatório.
 O serializador o usa para pôr cada filho novo no lugar certo
 (`src/model/schema-order.ts`), e a validação, para conferir um item antes de ir
 ao Lattes (`src/model/validate.ts`). A mesma conferência roda no currículo
-inteiro, item por item, junto com a revisão de consistência, na validação do
-currículo (`src/review/validation.ts`). Por cima dele ficam as listas que o
+inteiro, item por item, junto com a revisão de consistência, no diagnóstico
+do currículo (`src/review/validation.ts`). Por cima dele ficam as listas que o
 próprio Lattes oferece nos formulários (país, idioma, natureza de evento),
 capturadas sem salvar nada: `src/schema/typed-choices.ts` e
 `src/schema/listas-lattes.json` (ver [`campos_tipados.md`](campos_tipados.md)).
@@ -254,7 +254,7 @@ as chaves ligadas (`tests/lattes-simulado.test.ts`).
 | `src/forms/`         | Formulários de item novo: produção (autores, áreas, palavras-chave), formação, atuação, projeto e patente                                         |
 | `src/import-export/` | O painel "Enviar ao Lattes", o arquivo do Importar, o ZIP, o registro do enviado                                                                  |
 | `src/bridge/`        | O núcleo do conector, usado pela extensão e pelo editor: protocolo, plano, aplicação, leituras do Lattes                                          |
-| `src/review/`        | Diagnóstico do currículo, o que mudou no Lattes desde a exportação e a validação do currículo inteiro (`validation.ts`)                           |
+| `src/review/`        | Diagnóstico do currículo: a conferência do currículo inteiro (`validation.ts`) e o que mudou no Lattes desde a exportação                         |
 | `src/print/`         | Impressão e PDF (NBR 14724), referências na NBR 6023                                                                                              |
 | `src/lookups/`       | Busca por DOI no Crossref                                                                                                                         |
 | `src/desktop/`       | O que só existe no app: arquivos nativos, chave do chaveiro, atualização automática, links externos                                               |

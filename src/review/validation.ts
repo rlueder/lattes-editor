@@ -1,5 +1,5 @@
-// Validação do currículo inteiro (LAT-25): o que o formulário de cada item já
-// confere (obrigatórios, listas do Lattes, anos, autores e DOI, em
+// Os achados do diagnóstico do currículo (LAT-25): o que o formulário de cada
+// item já confere (obrigatórios, listas do Lattes, anos, autores e DOI, em
 // src/model/validate.ts), agora de uma vez para todos os itens, junto com a
 // revisão de consistência (LAT-29, src/review/consistency.ts). O editor
 // aponta e a pessoa decide: nada aqui muda o currículo.
@@ -13,7 +13,7 @@ import type { XElement } from '../model/xml.ts';
 import type { LattesSchema } from '../schema/types.ts';
 import { itemMeta } from '../ui/item-meta.ts';
 import { groupItemList, type Section } from '../ui/sections.ts';
-import { type Finding, type FindingCheck, reviewCv } from './consistency.ts';
+import { type Finding, reviewCv } from './consistency.ts';
 import { type Place, placeIndex } from './locate.ts';
 
 /** Os grupos de conferência, na ordem em que aparecem no painel. */
@@ -22,18 +22,18 @@ export const CATEGORIES = [
   'lista',
   'ano',
   'autores',
-  'identificadores',
-  'duplicatas',
+  'doi',
+  'consistencia',
 ] as const;
 
 export type Category = (typeof CATEGORIES)[number];
 
 export const CATEGORY_LABELS: Record<Category, string> = {
-  ano: 'Anos e períodos',
+  ano: 'Anos',
   autores: 'Autores',
-  duplicatas: 'Duplicatas',
-  identificadores: 'DOI e ISSN',
-  lista: 'Listas do Lattes',
+  consistencia: 'Consistência',
+  doi: 'DOI',
+  lista: 'Listas',
   obrigatorio: 'Obrigatórios',
 };
 
@@ -71,21 +71,9 @@ export interface CvValidation {
 const KIND_CATEGORY: Record<ProblemKind, Category> = {
   ano: 'ano',
   autores: 'autores',
-  doi: 'identificadores',
+  doi: 'doi',
   lista: 'lista',
   obrigatorio: 'obrigatorio',
-};
-
-const FINDING_CATEGORY: Record<FindingCheck, Category> = {
-  'ano-futuro': 'ano',
-  'atual-antigo': 'ano',
-  'autor-repetido': 'autores',
-  'curso-longo': 'ano',
-  'fim-antes-do-inicio': 'ano',
-  'issn-invalido': 'identificadores',
-  'nome-de-citacao': 'autores',
-  'producao-repetida': 'duplicatas',
-  'sem-doi': 'identificadores',
 };
 
 const SEVERITY_ORDER: Record<Severity, number> = { aviso: 1, erro: 0, nota: 2 };
@@ -133,8 +121,9 @@ function fromProblem(p: Problem): Check {
   return { category: KIND_CATEGORY[p.kind], message: p.message, severity: 'erro' };
 }
 
+/** Os achados da revisão de consistência (LAT-29) ficam juntos, em "Consistência". */
 function fromFinding(f: Finding): Check {
-  return { category: FINDING_CATEGORY[f.check], message: f.message, severity: f.severity };
+  return { category: 'consistencia', message: f.message, severity: f.severity };
 }
 
 /**

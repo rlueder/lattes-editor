@@ -1,7 +1,7 @@
-// Diagnóstico do currículo, para quem volta ao Lattes depois de muito tempo
-// (docs/fluxos_de_uso.md): o que o Lattes diz (publicação e pendência), o que
-// mudou lá desde a exportação e um resumo do que vale conferir no currículo
-// inteiro, cujo detalhe fica na validação do currículo (ValidationPanel.tsx).
+// Diagnóstico do currículo: primeiro o que vale conferir no currículo inteiro
+// (os achados de validation.ts, em Findings.tsx, LAT-25); depois o que o
+// Lattes diz (publicação e pendência) e o que mudou lá desde a exportação,
+// para quem volta ao Lattes depois de muito tempo (docs/fluxos_de_uso.md).
 // Só leitura: cada achado leva ao item no editor.
 
 import { useMemo, useRef } from 'react';
@@ -15,8 +15,9 @@ import type { Section } from '../ui/sections.ts';
 import { dateLabel } from '../ui/status-strip.ts';
 import type { EspelhoReading } from '../ui/use-bridge.ts';
 import { diffEspelho } from './espelho-diff.ts';
+import { Findings } from './Findings.tsx';
 import { bySequencia, type Place, placeIndex, sequenciaKey } from './locate.ts';
-import { summaryLine, validateCv } from './validation.ts';
+import { validateCv } from './validation.ts';
 
 interface Props {
   /** A extensão está conectada (sem ela não há leitura do Lattes). */
@@ -37,8 +38,6 @@ interface Props {
   onClose: () => void;
   onGo: (route: HashRoute) => void;
   onRequestEspelho: () => void;
-  /** Abre a validação do currículo, com o detalhe do que vale conferir. */
-  onValidation: () => void;
 }
 
 function LattesSummary({ available, lattes }: { available: boolean; lattes?: LattesStatus }) {
@@ -47,7 +46,7 @@ function LattesSummary({ available, lattes }: { available: boolean; lattes?: Lat
       <p className="muted">
         {available
           ? 'Abra o seu currículo no Lattes, numa aba deste navegador, para o editor ler a data da última publicação e se há algo pendente.'
-          : 'Sem a extensão, o editor não lê o Lattes: o diagnóstico abaixo vale só para o arquivo aberto.'}
+          : 'Sem a extensão, o editor não lê o Lattes: os achados acima valem só para o arquivo aberto.'}
       </p>
     );
   }
@@ -120,17 +119,21 @@ export function DiagnosisPanel(props: Props) {
       }
       label="Diagnóstico do currículo"
       open={open}
-      subtitle="O que o Lattes diz, o que mudou lá e o que vale conferir. Nada aqui altera o currículo."
+      subtitle="O que vale conferir no currículo inteiro e o que o Lattes diz. Nada aqui altera o currículo."
       title="Diagnóstico do currículo"
       onClose={props.onClose}
     >
       <section className="panel-section">
-        <h3 className="panel-section-head">No Lattes</h3>
-        <LattesSummary available={available} lattes={lattes} />
+        <h3 className="panel-section-head">Vale conferir</h3>
+        {validation && <Findings validation={validation} onGo={go} />}
       </section>
 
-      <section className="panel-section">
-        <h3 className="panel-section-head">O que mudou no Lattes desde a sua exportação</h3>
+      <section className="panel-section diagnosis-lattes">
+        <h3 className="panel-section-head">No Lattes</h3>
+        <LattesSummary available={available} lattes={lattes} />
+        <h4 className="panel-section-head diagnosis-subhead">
+          O que mudou no Lattes desde a sua exportação
+        </h4>
         <p className="muted">
           Compara os títulos das produções e dos eventos com a versão atual do Lattes, inclusive o
           que ainda não foi enviado ao CNPq. Mudanças em outros campos (ano, autores) não aparecem.
@@ -147,25 +150,6 @@ export function DiagnosisPanel(props: Props) {
         </div>
         {espelho?.error && <p className="export-blocked">{espelho.error}</p>}
         {diff && <EspelhoResult diff={diff} placeOf={placeOf} onGo={go} />}
-      </section>
-
-      <section className="panel-section">
-        <h3 className="panel-section-head">Vale conferir</h3>
-        {validation && validation.items.length === 0 ? (
-          <p className="empty">Nada chamou atenção no currículo.</p>
-        ) : (
-          <>
-            <p className="muted">
-              {validation ? summaryLine(validation) : ''} no currículo inteiro. A validação mostra
-              cada um, item por item.
-            </p>
-            <div className="diagnosis-actions">
-              <button type="button" onClick={props.onValidation}>
-                Abrir a validação
-              </button>
-            </div>
-          </>
-        )}
       </section>
     </Modal>
   );

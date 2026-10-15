@@ -42,8 +42,6 @@ interface Props {
   onReload: (file: File) => void;
   onSave: () => void;
   onTheme: (theme: ThemePref) => void;
-  /** ⚙ › Validação do currículo: o que o editor confere no currículo inteiro. */
-  onValidation: () => void;
   /** ⚙ › Versões do Lattes: o que mudou entre as exportações. */
   onVersions: () => void;
 }
@@ -74,7 +72,6 @@ export function Topbar({
   onReload,
   onSave,
   onTheme,
-  onValidation,
   onVersions,
   pendingCount,
   ref,
@@ -166,7 +163,6 @@ export function Topbar({
               else reloadInput.current?.click();
             },
             onSave,
-            onValidation,
             onVersions,
           }}
           focus={focus}

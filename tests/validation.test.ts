@@ -60,9 +60,8 @@ describe('validação do currículo inteiro (LAT-25)', () => {
     expect(report.title).toBe('Universidade A');
     expect(report.checks.map((c) => [c.category, c.severity])).toEqual([
       ['lista', 'erro'],
-      ['ano', 'nota'],
+      ['consistencia', 'nota'],
     ]);
-    expect(report.checks.at(-1)).toMatchObject({ category: 'ano', severity: 'nota' });
     expect(worst(report)).toBe(report.checks[0]!.severity);
   });
 
@@ -102,9 +101,10 @@ describe('validação do currículo inteiro (LAT-25)', () => {
     );
     const v = validateCv(schema, root, sections, TODAY);
     expect(onlyCategory(v.items)).toBe(v.items);
-    const anos = onlyCategory(v.items, 'ano');
-    expect(anos.every((r) => r.checks.every((c) => c.category === 'ano'))).toBe(true);
-    expect(onlyCategory(v.items, 'duplicatas')).toEqual([]);
+    const lists = onlyCategory(v.items, 'lista');
+    expect(lists.every((r) => r.checks.every((c) => c.category === 'lista'))).toBe(true);
+    expect(onlyCategory(v.items, 'consistencia')).toHaveLength(1);
+    expect(onlyCategory(v.items, 'doi')).toEqual([]);
     expect(Object.keys(v.byCategory)).toEqual([...CATEGORIES]);
     expect(summaryLine({ bySeverity: { aviso: 1, erro: 0, nota: 2 } })).toBe('3 para conferir');
     expect(summaryLine({ bySeverity: { aviso: 0, erro: 2, nota: 1 } })).toBe(

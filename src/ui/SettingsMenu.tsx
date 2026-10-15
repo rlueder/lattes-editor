@@ -22,7 +22,6 @@ import {
   SpinnerIcon,
   SunIcon,
   UpdateIcon,
-  ValidationIcon,
   VersionsIcon,
 } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
@@ -40,8 +39,6 @@ interface FileActions {
   onPrint: () => void;
   onReload: () => void;
   onSave: () => void;
-  /** Validação do currículo inteiro: obrigatórios, listas, anos, autores, DOI. */
-  onValidation: () => void;
   /** Versões do Lattes: o que mudou entre as exportações guardadas. */
   onVersions: () => void;
 }
@@ -224,16 +221,6 @@ export function SettingsMenu({ file, focus, onTheme, theme }: Props) {
                   <DiagnosisIcon />
                 </span>
                 <span className="menu-label">Diagnóstico do currículo</span>
-              </Menu.Item>
-              <Menu.Item
-                className="menu-item"
-                disabled={!file}
-                onClick={() => file?.onValidation()}
-              >
-                <span className="menu-icon">
-                  <ValidationIcon />
-                </span>
-                <span className="menu-label">Validação do currículo</span>
               </Menu.Item>
             </Menu.Group>
 

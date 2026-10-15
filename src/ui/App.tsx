@@ -25,7 +25,7 @@ import {
 import { parseXml, serializeXml, walk, type XElement } from '../model/xml.ts';
 import { PrintDialog } from '../print/PrintDialog.tsx';
 import { usePrint } from '../print/use-print.ts';
-import { type ReviewPanel, ReviewPanels } from '../review/ReviewPanels.tsx';
+import { DiagnosisPanel } from '../review/DiagnosisPanel.tsx';
 import { lattesSchema } from '../schema/lattes.ts';
 import { CommandPalette } from './CommandPalette.tsx';
 import { HistoryDialog, ReloadConfirm } from './dialogs.tsx';
@@ -73,7 +73,7 @@ export function App() {
   const [theme, setTheme] = useTheme();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
-  const [review, setReview] = useState<ReviewPanel | null>(null);
+  const [diagnosisOpen, setDiagnosisOpen] = useState(false);
   const [reloadFile, setReloadFile] = useState<File | null>(null);
   const pendingNotes = useRef<string[]>([]);
   const pendingAnchor = useRef<string | null>(null);
@@ -260,7 +260,7 @@ export function App() {
         saveState={saveState}
         theme={theme}
         onClose={closeFile}
-        onDiagnosis={() => setReview('diagnostico')}
+        onDiagnosis={() => setDiagnosisOpen(true)}
         onExport={openExport}
         onHistory={() => void history.show()}
         onNewItem={() => setPickerOpen(true)}
@@ -271,7 +271,6 @@ export function App() {
           void saveBytes(encodeCv(session.doc, session.meta.encoding), session.meta.fileName)
         }
         onTheme={setTheme}
-        onValidation={() => setReview('validacao')}
         onVersions={() => void versions.show()}
       />
 
@@ -346,7 +345,7 @@ export function App() {
         pending={production.summaries}
         strip={stripFor(production.pending.length + changes.open, bridge)}
         onClose={() => setExportOpen(false)}
-        onDiagnosis={() => setReview('diagnostico')}
+        onDiagnosis={() => setDiagnosisOpen(true)}
         onDiscard={changes.discard}
         onDiscardField={changes.discardField}
         onDownload={() => exportFile && void saveBytes(exportFile.bytes, exportFile.fileName)}
@@ -366,15 +365,18 @@ export function App() {
         }}
       />
 
-      <ReviewPanels
-        bridge={bridge}
-        open={review}
+      <DiagnosisPanel
+        available={bridge.available}
+        espelho={bridge.espelho}
+        lattes={bridge.lattes}
+        open={diagnosisOpen}
         originalXml={session.meta.originalXml}
         root={session.doc.root}
         sections={sections}
         version={version}
+        onClose={() => setDiagnosisOpen(false)}
         onGo={navigate}
-        onOpen={setReview}
+        onRequestEspelho={bridge.requestEspelho}
       />
 
       <PrintDialog control={print} doc={session.doc} profile={profile} sections={sections} />

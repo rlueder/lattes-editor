@@ -5565,46 +5565,39 @@ b {
   margin-top: 10px;
 }
 
-.diagnosis-item {
-  flex-wrap: wrap;
-}
-
-.diagnosis-message {
-  flex-basis: 100%;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-/* Validação do currículo (src/review/ValidationPanel.tsx, LAT-25): resumo,
-   pílulas de filtro e linhas como as do ⌘K, com os achados embaixo. */
-.validation-summary {
+/* Achados do diagnóstico (src/review/Findings.tsx, LAT-25): linhas como as do
+   ⌘K e do "Enviar ao Lattes", retas, de ponta a ponta, com fio entre elas; o
+   achado é a etiqueta da linha, no desenho das de "novo" e "removido". Uma
+   etiqueta longa quebra dentro dela, para o texto ficar inteiro. */
+.findings-summary {
   margin: 0 0 12px;
   font-size: 13px;
 }
 
-.validation-summary strong {
+.findings-summary strong {
   font-weight: 600;
 }
 
-.validation-filter {
+.findings-filter {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin: 0 0 14px;
+  margin: 0 0 6px;
 }
 
 button.filter-pill {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: 6px;
-  height: var(--pill-h);
-  padding: 0 10px;
+  height: auto;
+  padding: 2px 10px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: transparent;
   color: var(--text);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   transition:
     border-color 200ms ease,
     color 200ms ease,
@@ -5627,41 +5620,69 @@ button.filter-pill[aria-pressed='true'] .count {
   opacity: 0.8;
 }
 
-.validation-list {
+.findings-group-label {
+  margin: 0;
+  padding: 14px 0 6px;
+  font-size: 15px;
+  font-weight: 550;
+}
+
+.findings-group + .findings-group .findings-group-label {
+  border-top: 1px solid var(--divider, var(--border));
+}
+
+.findings-list {
   list-style: none;
-  margin: 0 0 6px;
+  margin: 0;
   padding: 0;
 }
 
-button.validation-row {
+.findings-list li + li {
+  border-top: 1px solid var(--divider, var(--border));
+}
+
+button.finding-row {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 2px;
+  gap: 4px;
   width: 100%;
   height: auto;
-  padding: 6px 8px;
+  padding: 8px 12px;
   border: 0;
-  border-radius: var(--radius);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
   text-align: left;
+  transition: background-color 200ms ease;
 }
 
-button.validation-row:hover:not(:disabled) {
-  background: var(--surface-2);
+button.finding-row:hover:not(:disabled),
+button.finding-row:focus-visible {
+  background: var(--accent-soft);
 }
 
-.validation-head {
+button.finding-row:focus-visible {
+  outline-offset: -2px;
+}
+
+.finding-head {
   display: flex;
   align-items: baseline;
   gap: 10px;
   min-width: 0;
+  font-size: 13px;
 }
 
-.validation-head .tag {
-  margin-right: 0;
+.finding-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.validation-group {
+.finding-group {
   flex-shrink: 0;
   max-width: 40%;
   overflow: hidden;
@@ -5671,26 +5692,50 @@ button.validation-row:hover:not(:disabled) {
   white-space: nowrap;
 }
 
-.validation-checks {
+.finding-badges {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
-  color: var(--muted);
-  font-size: 12px;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
-.validation-check.erro {
+.finding-badge {
+  display: inline-block;
+  max-width: 100%;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: 0.02em;
+  line-height: 18px;
+}
+
+.finding-badge.erro,
+.finding-badge.aviso {
+  background: var(--warn-bg);
   color: var(--warn-text);
 }
 
+.diagnosis-lattes {
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.diagnosis-subhead {
+  margin-top: 16px;
+  color: var(--muted);
+}
+
 @media (max-width: 640px) {
-  .validation-group {
+  .finding-group {
     display: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  button.filter-pill {
+  button.filter-pill,
+  button.finding-row {
     transition: none;
   }
 }

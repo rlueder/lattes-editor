@@ -68,8 +68,8 @@ originais, em `docs/lattes_implementation_guide.md` e
 - Tela de primeiro uso explicando o ciclo: exportar no Lattes, editar aqui,
   enviar ao Lattes.
 - Painel de validação do currículo inteiro: obrigatórios, enums, anos,
-  autores, DOI (LAT-25). Feito: "Validação do currículo", no ⚙ e no
-  diagnóstico, com os achados da revisão de consistência junto.
+  autores, DOI (LAT-25). Feito, no "Diagnóstico do currículo", numa lista
+  só com os achados da revisão de consistência e filtros por tipo.
 - README também em inglês.
 - **Teclado e acessibilidade.** Tudo operável só pelo teclado: navegar nas
   listas com as setas (e J/K), abrir e fechar itens, editar campos e voltar
@@ -84,7 +84,7 @@ originais, em `docs/lattes_implementation_guide.md` e
   (serve também para importar no ORCID).
 - **Exportar em DOCX** para editais que pedem arquivo editável.
 - **Revisão de consistência** do currículo inteiro, sem IA (LAT-29). Feito,
-  na "Validação do currículo" (LAT-25), com um resumo no diagnóstico: produções repetidas, autor repetido no
+  no "Diagnóstico do currículo": produções repetidas, autor repetido no
   mesmo item, nome de citação fora da sua lista, ISSN com dígito errado,
   artigo sem DOI, ano no futuro, fim antes do início, vínculo "atual" há
   mais de 10 anos e curso em andamento há mais de 8. Falta: períodos que se
