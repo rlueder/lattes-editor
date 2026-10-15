@@ -15,6 +15,13 @@ import {
   type EventoOp,
   planEvento,
 } from './edit-items.ts';
+import {
+  EDIT_FORMACAO_COMPL_ENABLED,
+  EDIT_PREMIO_ENABLED,
+  type ListEditKind,
+  type ListEditOp,
+  planListEdit,
+} from './edit-lists.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
 import { stavincFromFlag } from './vinculo-flag.ts';
 
@@ -58,6 +65,7 @@ export type BridgeOp =
   | DeleteOp
   | EventoOp
   | IdiomaOp
+  | ListEditOp
   | ResumoOp
   | VinculoOp;
 
@@ -71,6 +79,8 @@ export interface PlanOptions {
    * (EDIT_EVENTO_ENABLED). Sem valor, desligada, como editOuvinte.
    */
   editEvento?: boolean;
+  /** Formação complementar (edit-lists.ts, EDIT_FORMACAO_COMPL_ENABLED). */
+  editFormacaoComplementar?: boolean;
   /**
    * Alteração de evento de ouvinte (edit-items.ts). Sem valor, fica
    * desligada: só planOptionsFor liga, com as capacidades da extensão. Assim,
@@ -78,6 +88,8 @@ export interface PlanOptions {
    * extensão que gravaria sem conferir.
    */
   editOuvinte?: boolean;
+  /** Prêmios e títulos (edit-lists.ts, EDIT_PREMIO_ENABLED). */
+  editPremio?: boolean;
 }
 
 /**
@@ -94,6 +106,12 @@ export const GATED_EDITS: readonly {
 }[] = [
   { enabled: EDIT_OUVINTE_ENABLED, feature: 'alterar-evento', option: 'editOuvinte' },
   { enabled: EDIT_EVENTO_ENABLED, feature: 'alterar-evento-completo', option: 'editEvento' },
+  { enabled: EDIT_PREMIO_ENABLED, feature: 'alterar-premio', option: 'editPremio' },
+  {
+    enabled: EDIT_FORMACAO_COMPL_ENABLED,
+    feature: 'alterar-formacao-complementar',
+    option: 'editFormacaoComplementar',
+  },
 ];
 
 /**
@@ -200,7 +218,9 @@ export function planChange(
     createItems = CREATE_ITEMS_ENABLED,
     deleteItems = DELETE_ITEMS_ENABLED,
     editEvento = false,
+    editFormacaoComplementar = false,
     editOuvinte = false,
+    editPremio = false,
   }: PlanOptions = {},
 ): BridgeOp | Unsupported {
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.
@@ -279,6 +299,14 @@ export function planChange(
     }
     return { expect, key: change.key, kind: 'resumo', label, set };
   }
+
+  // Prêmios e formação complementar (edit-lists.ts), cada um com a chave própria.
+  const lists = new Set<ListEditKind>();
+  if (editPremio) lists.add('premio');
+  if (editFormacaoComplementar) lists.add('formacao-complementar');
+  const listEdit = planListEdit(change, chain, label, lists);
+  if (listEdit)
+    return 'reason' in listEdit ? unsupported(change, label, listEdit.reason) : listEdit;
 
   // Formação, endereço e identificação: desligados até o teste no Lattes real (biographic.ts).
   const biographic = biographicOps ? planBiographic(change, chain, label) : undefined;

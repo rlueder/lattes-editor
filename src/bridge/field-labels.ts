@@ -4,6 +4,7 @@
 import { BIOGRAPHIC_FIELD_LABELS, BIOGRAPHIC_VALUE_LABELS } from './biographic.ts';
 import { CREATE_FIELD_LABELS, CREATE_VALUE_LABELS } from './create-labels.ts';
 import { EDIT_FIELD_LABELS, EDIT_VALUE_LABELS } from './edit-items.ts';
+import { LIST_EDIT_FIELD_LABELS, LIST_EDIT_VALUE_LABELS } from './edit-lists.ts';
 
 export const FIELD_LABELS: Record<string, string> = {
   ...BIOGRAPHIC_FIELD_LABELS,
@@ -35,7 +36,7 @@ export const FIELD_LABELS: Record<string, string> = {
  * diferentes em telas diferentes (f_titulo é o título do evento e o nome do
  * prêmio). Por tipo de operação; o que não estiver aqui cai em FIELD_LABELS.
  */
-const KIND_FIELD_LABELS: Record<string, Record<string, string>> = {};
+const KIND_FIELD_LABELS: Record<string, Record<string, string>> = { ...LIST_EDIT_FIELD_LABELS };
 
 export function fieldLabel(name: string, kind?: string): string {
   return (kind ? KIND_FIELD_LABELS[kind]?.[name] : undefined) ?? FIELD_LABELS[name] ?? name;
@@ -53,7 +54,9 @@ const VALUE_LABELS: Record<string, Record<string, string>> = {
 const LEVELS: Record<string, string> = { B: 'Bem', P: 'Pouco', R: 'Razoavelmente' };
 
 /** Valores codificados que dependem do formulário, como KIND_FIELD_LABELS. */
-const KIND_VALUE_LABELS: Record<string, Record<string, Record<string, string>>> = {};
+const KIND_VALUE_LABELS: Record<string, Record<string, Record<string, string>>> = {
+  ...LIST_EDIT_VALUE_LABELS,
+};
 
 function valueLabel(name: string, value: string | null | undefined, kind?: string): string {
   const level = /^F_(LE|CONVERSA|ESCREVE|COMPR)$/.test(name);

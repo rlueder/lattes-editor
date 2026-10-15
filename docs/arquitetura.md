@@ -160,6 +160,12 @@ de alteração dessas tem uma capacidade da extensão (`GATED_EDITS`, em
 Quando a operação não muda nada no formulário (a natureza de um evento, que só
 se confere), o conector confere o "antes" e não envia.
 
+Prêmios e formação complementar seguem o mesmo caminho em
+`src/bridge/edit-lists.ts`, cada um com a própria chave, desligada. Como a
+linha da lista não se acha pelo número, a operação abre o formulário de cada
+linha e fica com a única cujos valores são os do item (`match`, comparado sem
+acento nem caixa), antes da conferência estrita do "antes".
+
 A decisão de 13/10/2026 sobre duplicatas (só o que é novo vai pelo Importar;
 alteração no lugar; exclusão pelo formulário) está no
 [guia de implementação](lattes_implementation_guide.md), seção 1, e nos

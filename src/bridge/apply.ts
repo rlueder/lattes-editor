@@ -15,6 +15,7 @@ import { applyCreateAtuacao } from './create.ts';
 import { applyCreateFormacao, applyCreateProjeto } from './create-items.ts';
 import { applyDelete, type DeleteOp, isDeleteOp } from './delete.ts';
 import { EVENTO_SPEC, type EventoOp, isEventoOp, locateEvento } from './edit-items.ts';
+import { isListEditOp, type ListEditOp, listEditSpec, locateListEdit } from './edit-lists.ts';
 import { fieldLabel } from './field-labels.ts';
 import {
   encodeLatin1Form,
@@ -54,6 +55,7 @@ type EditOp = Exclude<
   | BiographicOp
   | DeleteOp
   | EventoOp
+  | ListEditOp
   | { kind: 'criar-atuacao' | 'criar-formacao' | 'criar-projeto' }
 >;
 
@@ -179,22 +181,30 @@ export async function applyOp(op: BridgeOp, port: LattesPort): Promise<OpResult>
     status,
   });
   try {
-    // Formação, endereço e identificação (biographic.ts) e participação em
-    // eventos (edit-items.ts): formulários e caminhos próprios.
-    const { action, name } = isBiographicOp(op)
+    // Formação, endereço e identificação (biographic.ts), participação em
+    // eventos (edit-items.ts) e as listas sem número (edit-lists.ts):
+    // formulários e caminhos próprios.
+    const spec: { action: string; mode?: string; name: string } = isBiographicOp(op)
       ? BIOGRAPHIC_SPECS[op.kind]
       : isEventoOp(op)
         ? EVENTO_SPEC
-        : FORMS[op.kind];
+        : isListEditOp(op)
+          ? listEditSpec(op.kind)
+          : FORMS[op.kind];
+    const { action, name } = spec;
     const menu = await port.menuHtml();
+    const get = (p: string) => getChecked(port, p);
     const path = isBiographicOp(op)
-      ? await locateBiographic(op, menu, (p) => getChecked(port, p))
+      ? await locateBiographic(op, menu, get)
       : isEventoOp(op)
-        ? await locateEvento(op, menu, (p) => getChecked(port, p))
-        : await locate(op, port, menu);
+        ? await locateEvento(op, menu, get)
+        : isListEditOp(op)
+          ? await locateListEdit(op, menu, get, async (p) => (await readPairs(port, p, name)).pairs)
+          : await locate(op, port, menu);
     const before = await readPairs(port, path, name);
 
-    if (pairValue(before.pairs, 'f_ctr') !== 'U') {
+    // O f_ctr da edição é U; o da formação complementar vem vazio (seção 15).
+    if (pairValue(before.pairs, 'f_ctr') !== (spec.mode ?? 'U')) {
       return result('erro', 'O formulário não está em modo de alteração');
     }
     const labels = (names: string[]) => names.map((n) => fieldLabel(n, op.kind)).join(', ');

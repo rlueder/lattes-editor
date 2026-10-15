@@ -983,6 +983,40 @@ ocultas. **Observado.**
 `f_tipo_privacidade` e os ocultos `f_ctr` (`U`), `f_cod`, `f_seq`.
 `check()` exige nome e ano. **Observado.**
 
+**No conector (LAT-58, 15/10/2026, desligado).** Prêmios e formação
+complementar estão escritos em `src/bridge/edit-lists.ts`, cada um atrás da
+própria chave (`EDIT_PREMIO_ENABLED`, `EDIT_FORMACAO_COMPL_ENABLED`),
+desligada até um teste acompanhado, e cobertos no Lattes simulado. Nos dois, a
+linha não se acha pelo número: o prêmio não tem número na exportação, e o
+`f_seq` da formação complementar não bateu com `SEQUENCIA-FORMACAO` num dos
+itens do censo. O conector abre o formulário de cada linha da lista (pelo link
+da linha) e fica com o único cujos valores, sem acento nem caixa, são os do
+item; depois confere o "antes" estrito, envia o formulário como veio, com só
+os campos alterados trocados, e lê de volta.
+
+- Prêmio: nome, entidade promotora e ano, ligações **observadas** no censo
+  (cinco itens). Que o POST com `f_ctr=U` grave é **inferido**. O nome em
+  inglês não tem campo.
+- Formação complementar: carga horária e status, com o nível na conferência
+  e o curso e a instituição (os ocultos `f_curso_old` e `f_inst_old`) para
+  achar a linha, ligações **observadas**. O envio vai para `FORM2` com o
+  `f_ctr` vazio que a página traz (**inferido** que grave assim), e N e I do
+  status como `EM_ANDAMENTO` e `INCOMPLETO` vêm do rótulo (**inferido**; só
+  "concluído" foi visto). Instituição e curso mudam só pelas buscas, e o
+  formulário não tem os anos nem o nome do curso em inglês: ficam à mão.
+
+No teste acompanhado: num prêmio de teste, trocar a entidade promotora e
+conferir a releitura e a exportação; numa formação complementar de teste,
+trocar a carga horária e o status para "em andamento", conferir a releitura,
+a exportação (`STATUS-DO-CURSO`) e que o curso e a instituição não mudaram.
+
+Ficam fora, sem caminho: as áreas de atuação (`prc_area_atuacao` serializa a
+grade em `f_area_l`, e o sentido das chaves `r` e `p` não foi lido) e as
+atividades da atuação (o link de edição é montado por JavaScript, seção 8; a
+recaptura em `lattes-formularios/recaptura-edicao.md` mostra onde ele está).
+Nos idiomas, as quatro proficiências já vão, e o código do idioma é do
+sistema no editor, com o nome atrelado a ele: não sobra campo a enviar.
+
 ### As grades de autores, palavras-chave, áreas e setores
 
 Os formulários de produção com autores (trabalhos técnicos, editoração,
