@@ -26,6 +26,7 @@ import { CommandPalette } from './CommandPalette.tsx';
 import { HistoryDialog, ReloadConfirm } from './dialogs.tsx';
 import { EditorContext } from './editor-context.ts';
 import { parseHash } from './hash-route.ts';
+import { type ReloadFailure, reloadNotice } from './lattes-reload.ts';
 import { connectionOf, noticesFor } from './notifications.ts';
 import { allEntries, type PaletteEntry } from './palette-search.ts';
 import { PendingBanner } from './PendingBanner.tsx';
@@ -45,9 +46,11 @@ import { useChanges } from './use-changes.ts';
 import { useFocusShell } from './use-focus-mode.ts';
 import { useHistoryDialog } from './use-history-dialog.ts';
 import { useLattesOpen } from './use-lattes-open.ts';
+import { useLattesReload } from './use-lattes-reload.ts';
 import { useNavigate, useScrollToPendingAnchor } from './use-navigate.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
 import { usePhotoChange } from './use-photo-change.tsx';
+import { useOpenStoredVersion } from './use-stored-version.ts';
 import { useTopbarHeight } from './use-topbar-height.ts';
 import { useUpdates } from './use-updates.ts';
 import { useVersions } from './use-versions.ts';
@@ -165,6 +168,9 @@ export function App() {
   const lattesOpen = useLattesOpen(Boolean(session), booting, bridge, openFile);
 
   /** Nova exportação do Lattes: itens novos que ainda não foram importados se perdem. */
+  const openVersion = useOpenStoredVersion(openFile, bridge, () => setDiagnosisOpen(true));
+  const lattesReload = useLattesReload(bridge, cvId(session), (file) => reload(file));
+
   const reload = (file: File) => {
     if (production.pending.length > 0) setReloadFile(file);
     else void openFile(file);
@@ -196,6 +202,7 @@ export function App() {
           link={bridge.link}
           theme={theme}
           onFile={openFile}
+          onOpenVersion={openVersion}
           onReloadLattes={bridge.reloadLattes}
           onTheme={setTheme}
         />
@@ -216,7 +223,7 @@ export function App() {
         ref={topbarRef}
         focus={focusShell.menuItem}
         modified={modified}
-        notices={noticesOf(bridge, update, devExtensionFolder)}
+        notices={noticesOf(bridge, update, devExtensionFolder, lattesReload.failure)}
         pendingCount={production.pending.length + changes.open}
         saveState={saveState}
         theme={theme}
@@ -228,6 +235,7 @@ export function App() {
         onPalette={togglePalette}
         onPrint={print.show}
         onReload={reload}
+        onReloadFromLattes={lattesReload.available ? lattesReload.start : undefined}
         onSave={() =>
           void saveBytes(encodeCv(session.doc, session.meta.encoding), session.meta.fileName)
         }
@@ -390,6 +398,11 @@ function countPendingIn(pending: XElement[]): (els: XElement[]) => number {
   };
 }
 
+/** O NUMERO-IDENTIFICADOR do currículo aberto. */
+function cvId(session: Session | null): string | undefined {
+  return session ? getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR') : undefined;
+}
+
 /** A faixa do cabeçalho: alterações do editor, mais o que o conector sabe do Lattes. */
 function stripFor(editorChanges: number, bridge: { lattes?: LattesStatus; sent: SentEntry[] }) {
   return statusStrip({ editorChanges, lattes: bridge.lattes, sent: bridge.sent });
@@ -400,11 +413,13 @@ function noticesOf(
   bridge: { lattes?: LattesStatus; link: Link; sent: SentEntry[] },
   update: UpdateState,
   devExtensionFolder?: string,
+  reloadFailure?: ReloadFailure,
 ) {
   return noticesFor({
     appVersion: __APP_VERSION__,
     connection: connectionOf(bridge.link, Boolean(bridge.lattes)),
     devExtensionFolder,
+    reload: reloadFailure && reloadNotice(reloadFailure),
     storage: storageStatus().status,
     unknownPending: stripFor(0, bridge).segments.some((x) => x.kind === 'pendencia-desconhecida'),
     update,

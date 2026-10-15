@@ -234,7 +234,16 @@ pelo `window.postMessage` da própria página, por um content script
 ### O que a extensão faz sozinha
 
 - **Abrir do Lattes** (`src/bridge/export.ts`): pede o mesmo ZIP do "Exportar"
-  na sessão da pessoa e o entrega ao editor.
+  na sessão da pessoa e o entrega ao editor. O mesmo pedido serve ao
+  "Recarregar do Lattes…" do ⚙ (`src/ui/use-lattes-reload.ts`, LAT-46), que
+  só aceita o ZIP do currículo aberto, passa pela confirmação de sempre
+  quando há itens novos não importados e deixa a falha no sino, com a
+  escolha do arquivo exportado. Sem a extensão, o menu pede o arquivo. Com o
+  Exportar bloqueado por pendência, a tela inicial oferece a última versão
+  deste currículo guardada no app (`src/ui/use-stored-version.ts`), que abre
+  como cópia de trabalho com o diagnóstico já comparando com a página de
+  conferência; a página de conferência é texto, e não vira currículo
+  editável.
 - **Estado do Lattes** (`src/bridge/lattes-status.ts`): lê do menu a data da
   última publicação e se há alteração pendente de envio ao CNPq.
 - **Conferência do contrato** (`src/bridge/contract.ts`): só com leituras,
