@@ -54,10 +54,14 @@ Nenhuma destas coisas é pergunta ou chave para a pessoa decidir:
 - **Ponto no histórico antes de cada envio** e a cada currículo aberto,
   guardado no app (cifrado, LAT-39). Quem quer um arquivo usa "Salvar cópia"
   no histórico.
-- **Ponto zero** (LAT-59): a primeira exportação de cada currículo, aberta
-  de um arquivo ou pelo conector, fica byte a byte numa pasta da pessoa,
-  `Documentos/LattesEditor/Cópias de segurança/<id>/`, sem cifra. O app nunca
-  sobrescreve nem apaga esse arquivo, e nenhum "Limpar" chega nele.
+- **Ponto zero** (LAT-59): a primeira exportação de cada currículo fica byte
+  a byte numa pasta da pessoa, `Documentos/LattesEditor/Cópias de
+segurança/<id>/`, sem cifra. Vale a que vem pelo conector e o ZIP aberto de
+  um arquivo quando ele é exatamente o que o Exportar dá (o nome
+  `CV_<id>.zip` e um único `<id>.xml` dentro). Um XML solto ou um ZIP
+  refeito abre normalmente, mas não vira ponto zero; o primeiro ponto de
+  restauração faz esse papel. O app nunca sobrescreve nem apaga esse arquivo,
+  e nenhum "Limpar" chega nele.
 - **Ponto de restauração antes de cada rodada de escrita** (LAT-59): ao
   confirmar a fila em "Enviar ao Lattes", e antes da primeira gravação, o
   conector exporta o Lattes como está e guarda o ZIP ao lado do ponto zero.

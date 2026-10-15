@@ -77,8 +77,9 @@ mão com os valores ao lado.
 
 Cada exportação aberta vira uma versão, e o app diz o que mudou desde a
 anterior ("Versões do Lattes", no ⚙), inclusive o que foi editado direto no
-Lattes. A primeira exportação de cada currículo e uma cópia do Lattes antes de
-cada envio pelo conector ficam em `Documentos/LattesEditor/Cópias de
+Lattes. A primeira exportação de cada currículo (pelo conector, ou o ZIP do
+Exportar como veio) e uma cópia do Lattes antes de cada envio pelo conector
+ficam em `Documentos/LattesEditor/Cópias de
 segurança`, e o app nunca as apaga. O **Diagnóstico do currículo** mostra a data da última publicação, o
 que mudou no Lattes desde a exportação e o que vale conferir no currículo
 inteiro: duplicatas, ISSN, DOI, datas e vínculos antigos ainda marcados como

@@ -17,6 +17,7 @@ import { loadCv } from '../model/document.ts';
 import { getAttr } from '../model/xml.ts';
 import { type ExportFailure, fromBase64 } from './export.ts';
 import { sameCv } from './lattes-html.ts';
+import type { BridgeMessage } from './protocol.ts';
 
 /** A resposta da exportação: o ZIP, ou por que o Lattes não entregou. */
 export type ExportReply =
@@ -34,6 +35,74 @@ export function exportReplyOf(msg: {
     return { bytes: fromBase64(msg.zip), ok: true };
   } catch {
     return { detail: 'O arquivo chegou corrompido', ok: false, reason: 'erro' };
+  }
+}
+
+/** O id dos pedidos do ponto de restauração; nenhuma abertura de arquivo usa este prefixo. */
+export const RESTORE_REQUEST_PREFIX = 'restauracao-';
+/** Quantos pedidos vencidos lembrar, para engolir a resposta que chegar atrasada. */
+export const EXPIRED_LIMIT = 20;
+
+/**
+ * Os pedidos de exportação do ponto de restauração em aberto. A resposta
+ * ("curriculo", com o mesmo id) resolve o pedido; a que chega depois do prazo
+ * ou depois de a extensão desligar é engolida: um ZIP velho de ponto de
+ * restauração nunca pode virar abertura de arquivo e substituir a cópia de
+ * trabalho.
+ */
+export class ExportRequests {
+  private readonly waiters = new Map<string, (reply: ExportReply) => void>();
+  /** Pedidos vencidos, do mais antigo ao mais novo, no máximo EXPIRED_LIMIT. */
+  private readonly expired: string[] = [];
+  private count = 0;
+
+  private expire(id: string): void {
+    this.waiters.delete(id);
+    this.expired.push(id);
+    if (this.expired.length > EXPIRED_LIMIT) this.expired.shift();
+  }
+
+  /** Manda o pedido e espera a resposta, ou o prazo. */
+  request(post: (id: string) => void, timeoutMs: number): Promise<ExportReply> {
+    this.count += 1;
+    const id = `${RESTORE_REQUEST_PREFIX}${Date.now()}-${this.count}`;
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        this.expire(id);
+        resolve({ ok: false, reason: 'sem-resposta' });
+      }, timeoutMs);
+      this.waiters.set(id, (reply) => {
+        clearTimeout(timer);
+        resolve(reply);
+      });
+      post(id);
+    });
+  }
+
+  /**
+   * Uma mensagem da extensão. true quando a resposta é de um pedido do ponto
+   * (em aberto, vencido ou só pelo prefixo do id): quem chama não a trata
+   * como abertura de arquivo.
+   */
+  take(msg: BridgeMessage): boolean {
+    if (msg.type !== 'curriculo' || !msg.id) return false;
+    const waiter = this.waiters.get(msg.id);
+    if (waiter) {
+      this.waiters.delete(msg.id);
+      waiter(exportReplyOf(msg));
+      return true;
+    }
+    const late = this.expired.indexOf(msg.id);
+    if (late >= 0) this.expired.splice(late, 1);
+    return late >= 0 || msg.id.startsWith(RESTORE_REQUEST_PREFIX);
+  }
+
+  /** A extensão desligou: os pedidos em aberto não vão ter resposta. */
+  dropAll(): void {
+    for (const [id, resolve] of [...this.waiters]) {
+      this.expire(id);
+      resolve({ ok: false, reason: 'sem-resposta' });
+    }
   }
 }
 

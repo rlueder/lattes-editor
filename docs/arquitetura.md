@@ -106,10 +106,15 @@ segurança ficam fora dele, sem cifra, com os bytes que o Lattes entregou
 (é o mesmo arquivo que o Exportar dá):
 
 - **Ponto zero**: a primeira exportação de cada currículo (pelo
-  `NUMERO-IDENTIFICADOR`), aberta de um arquivo ou pelo conector, como
-  `ponto-zero-<AAAA-MM-DD>.zip` (ou `.xml`, se a pessoa abriu um XML solto).
-  Se já existe um ponto zero daquele currículo, de qualquer data, nada é
-  gravado.
+  `NUMERO-IDENTIFICADOR`), como `ponto-zero-<AAAA-MM-DD>.zip`. Só uma
+  exportação que ninguém mexeu entra (`isBaselineCandidate`, em
+  `src/model/backups.ts`): a que veio pelo conector, sempre; um ZIP aberto de
+  um arquivo, só com o nome do Exportar (`CV_<id>.zip` ou `<id>.zip`, com o
+  " (1)" de um download repetido), uma única entrada `<id>.xml` e a raiz
+  `CURRICULO-VITAE` com `SISTEMA-ORIGEM-XML` e o mesmo
+  `NUMERO-IDENTIFICADOR`; um XML solto, nunca. O que não passa abre igual,
+  só não vira ponto zero. Se já existe um ponto zero daquele currículo, de
+  qualquer data, nada é gravado.
 - **Ponto de restauração**: antes da primeira gravação de cada rodada do
   conector, `restauracao-<AAAA-MM-DD-HHMM>.zip`, com `-2`, `-3` no mesmo
   minuto. O sidecar leva a contagem da fila por tipo de operação, sem valores.
@@ -128,7 +133,11 @@ Quem grava é o Rust (`src-tauri/src/copias.rs`), sempre com `create_new`,
 que falha se o nome existe e nunca trunca; o ponto zero confere a pasta e
 cria sob uma trava. Os comandos só criam, listam e mostram na pasta: não há
 comando que apague, renomeie ou reescreva um arquivo dali. O identificador
-só aceita dígitos e o nome é montado no Rust, então nada sai da pasta. No
+só aceita dígitos e o nome é montado no Rust, então nada sai da pasta. O
+ZIP vai do editor ao Rust cru, no corpo do `invoke` (um `Uint8Array`, que o
+Rust lê como `InvokeBody::Raw`), e o identificador, a data e o sidecar em
+uma linha vão em cabeçalhos (`x-lattes-id`, `x-stamp`, `x-sidecar`); o Rust
+grava o sidecar formatado, com o nome final do arquivo. No
 macOS, a primeira gravação pede acesso a Documentos
 (`NSDocumentsFolderUsageDescription`, em `src-tauri/Info.plist`).
 
@@ -147,6 +156,10 @@ O ponto de restauração segue `src/bridge/restore-point.ts`, chamado por
 `src/ui/use-restore-point.ts` antes do `enviar`: o editor pede o ZIP à
 extensão (`pedir-curriculo`, o mesmo do Abrir do Lattes), confere que o
 `NUMERO-IDENTIFICADOR` de dentro do ZIP é o do currículo aberto e guarda.
+Os pedidos levam o prefixo `restauracao-` no id (`ExportRequests`, no mesmo
+arquivo); a resposta que chega depois do prazo de 30 segundos, ou depois de
+a extensão desligar, é engolida, para um ZIP velho nunca virar abertura de
+arquivo e substituir a cópia de trabalho.
 Como o Exportar recusa com pendência (`lattes_internals.md`, seção 10), a
 segunda rodada antes de "Enviar ao CNPq" nunca tem ponto novo: o app diz
 por quê, mostra a cópia mais recente e pede "Continuar sem ponto de

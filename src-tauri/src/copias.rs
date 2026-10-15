@@ -18,6 +18,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::UNIX_EPOCH;
 
+use serde_json::Value;
+use tauri::http::HeaderMap;
+use tauri::ipc::{InvokeBody, Request};
 use tauri::{AppHandle, Manager};
 
 /// A pasta dentro de Documentos.
@@ -92,6 +95,16 @@ fn io_message(e: &io::Error) -> String {
     format!("Não deu para gravar a cópia de segurança: {e}")
 }
 
+/// O sidecar como fica no disco: o JSON que o editor mandou, citando o nome
+/// final do arquivo, legível por quem abrir a pasta.
+fn sidecar_text(sidecar: &Value, name: &str) -> String {
+    let mut value = sidecar.clone();
+    value["arquivo"] = Value::String(name.to_owned());
+    let mut text = serde_json::to_string_pretty(&value).unwrap_or_default();
+    text.push('\n');
+    text
+}
+
 /// Grava o ponto zero do currículo, se ainda não houver um. Devolve o nome
 /// do arquivo criado, ou None quando já existia um ponto zero (de qualquer
 /// data): esse fica como está.
@@ -99,12 +112,10 @@ pub fn write_baseline(
     root: &Path,
     lattes_id: &str,
     stamp: &str,
-    ext: &str,
     bytes: &[u8],
-    sidecar: &str,
+    sidecar: &Value,
 ) -> Result<Option<String>, String> {
-    if !valid_stamp(stamp, false) || !matches!(ext, "zip" | "xml") || sidecar.len() > SIDECAR_LIMIT
-    {
+    if !valid_stamp(stamp, false) {
         return Err("Pedido de cópia de segurança inválido.".into());
     }
     let dir = cv_dir(root, lattes_id)?;
@@ -113,7 +124,7 @@ pub fn write_baseline(
         return Ok(None);
     }
     fs::create_dir_all(&dir).map_err(|e| io_message(&e))?;
-    let name = format!("{BASELINE_PREFIX}{stamp}.{ext}");
+    let name = format!("{BASELINE_PREFIX}{stamp}.zip");
     match create_new(&dir.join(&name), bytes) {
         Ok(()) => {}
         Err(e) if e.kind() == io::ErrorKind::AlreadyExists => return Ok(None),
@@ -122,7 +133,7 @@ pub fn write_baseline(
     // O sidecar é auxiliar: se já houver um com o nome, o que está lá fica.
     let _ = create_new(
         &dir.join(format!("{BASELINE_PREFIX}{stamp}.json")),
-        sidecar.as_bytes(),
+        sidecar_text(sidecar, &name).as_bytes(),
     );
     Ok(Some(name))
 }
@@ -134,9 +145,9 @@ pub fn write_restore_point(
     lattes_id: &str,
     stamp: &str,
     bytes: &[u8],
-    sidecar: &str,
+    sidecar: &Value,
 ) -> Result<String, String> {
-    if !valid_stamp(stamp, true) || sidecar.len() > SIDECAR_LIMIT {
+    if !valid_stamp(stamp, true) {
         return Err("Pedido de cópia de segurança inválido.".into());
     }
     let dir = cv_dir(root, lattes_id)?;
@@ -151,9 +162,7 @@ pub fn write_restore_point(
         let name = format!("{base}.zip");
         match create_new(&dir.join(&name), bytes) {
             Ok(()) => {
-                // O editor monta o sidecar com o primeiro nome; aqui ele passa a citar o final.
-                let first = format!("\"{RESTORE_PREFIX}{stamp}.zip\"");
-                let text = sidecar.replace(&first, &format!("\"{name}\""));
+                let text = sidecar_text(sidecar, &name);
                 let _ = create_new(&dir.join(format!("{base}.json")), text.as_bytes());
                 return Ok(name);
             }
@@ -162,6 +171,50 @@ pub fn write_restore_point(
         }
     }
     Err("Restaurações demais no mesmo minuto.".into())
+}
+
+/// Cabeçalhos do pedido de gravação; o arquivo vem no corpo, em binário.
+const HEADER_ID: &str = "x-lattes-id";
+const HEADER_STAMP: &str = "x-stamp";
+const HEADER_SIDECAR: &str = "x-sidecar";
+
+/// Um pedido de gravação já lido: o ZIP como veio e o resto dos cabeçalhos.
+#[derive(Debug)]
+pub struct Upload {
+    bytes: Vec<u8>,
+    lattes_id: String,
+    sidecar: Value,
+    stamp: String,
+}
+
+/// Lê o pedido do editor. O ZIP vem no corpo cru (`InvokeBody::Raw`, um
+/// `Uint8Array` no `invoke`), sem passar por JSON; o identificador, a data e
+/// o sidecar (JSON numa linha, só ASCII) vêm nos cabeçalhos.
+pub fn parse_upload(body: &InvokeBody, headers: &HeaderMap) -> Result<Upload, String> {
+    let InvokeBody::Raw(bytes) = body else {
+        return Err("O arquivo da cópia não veio em binário.".into());
+    };
+    let header = |name: &str| {
+        headers
+            .get(name)
+            .and_then(|v| v.to_str().ok())
+            .map(str::to_owned)
+            .ok_or_else(|| format!("Pedido de cópia de segurança sem {name}."))
+    };
+    let sidecar_raw = header(HEADER_SIDECAR)?;
+    if sidecar_raw.len() > SIDECAR_LIMIT {
+        return Err("Pedido de cópia de segurança inválido.".into());
+    }
+    let sidecar: Value = serde_json::from_str(&sidecar_raw)
+        .ok()
+        .filter(Value::is_object)
+        .ok_or("O sidecar da cópia não é um objeto JSON.")?;
+    Ok(Upload {
+        bytes: bytes.clone(),
+        lattes_id: header(HEADER_ID)?,
+        sidecar,
+        stamp: header(HEADER_STAMP)?,
+    })
 }
 
 #[derive(Debug, PartialEq)]
@@ -254,26 +307,22 @@ pub fn backup_list(app: AppHandle, lattes_id: String) -> Result<Vec<serde_json::
 #[tauri::command]
 pub async fn backup_save_baseline(
     app: AppHandle,
-    lattes_id: String,
-    stamp: String,
-    ext: String,
-    bytes: Vec<u8>,
-    sidecar: String,
+    request: Request<'_>,
 ) -> Result<Option<String>, String> {
     let root = root(&app)?;
-    blocking(move || write_baseline(&root, &lattes_id, &stamp, &ext, &bytes, &sidecar)).await
+    let up = parse_upload(request.body(), request.headers())?;
+    blocking(move || write_baseline(&root, &up.lattes_id, &up.stamp, &up.bytes, &up.sidecar)).await
 }
 
 #[tauri::command]
 pub async fn backup_save_restore_point(
     app: AppHandle,
-    lattes_id: String,
-    stamp: String,
-    bytes: Vec<u8>,
-    sidecar: String,
+    request: Request<'_>,
 ) -> Result<String, String> {
     let root = root(&app)?;
-    blocking(move || write_restore_point(&root, &lattes_id, &stamp, &bytes, &sidecar)).await
+    let up = parse_upload(request.body(), request.headers())?;
+    blocking(move || write_restore_point(&root, &up.lattes_id, &up.stamp, &up.bytes, &up.sidecar))
+        .await
 }
 
 /// "Mostrar na pasta": o arquivo no Finder, no Explorer ou no gerenciador de
@@ -300,6 +349,7 @@ pub fn backup_reveal(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tauri::http::HeaderValue;
 
     fn temp(name: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!("lattes-copias-{name}-{}", std::process::id()));
@@ -309,18 +359,26 @@ mod tests {
 
     const ID: &str = "1234567890123456";
 
+    fn sidecar() -> Value {
+        serde_json::json!({ "arquivo": "x", "origem": "conector", "tipo": "ponto-zero" })
+    }
+
+    fn sidecar_on_disk(path: &Path) -> Value {
+        serde_json::from_slice(&fs::read(path).unwrap()).unwrap()
+    }
+
     #[test]
     fn ponto_zero_nunca_e_sobrescrito() {
         let root = temp("ponto-zero");
-        let first = write_baseline(&root, ID, "2026-10-15", "zip", b"PK primeiro", "{}").unwrap();
+        let first = write_baseline(&root, ID, "2026-10-15", b"PK primeiro", &sidecar()).unwrap();
         assert_eq!(first.as_deref(), Some("ponto-zero-2026-10-15.zip"));
         // O mesmo dia e outro dia: nada é gravado, e o primeiro fica intacto.
         assert_eq!(
-            write_baseline(&root, ID, "2026-10-15", "zip", b"PK segundo", "{}").unwrap(),
+            write_baseline(&root, ID, "2026-10-15", b"PK segundo", &sidecar()).unwrap(),
             None
         );
         assert_eq!(
-            write_baseline(&root, ID, "2026-11-01", "xml", b"<outro/>", "{}").unwrap(),
+            write_baseline(&root, ID, "2026-11-01", b"PK outro", &sidecar()).unwrap(),
             None
         );
         let dir = root.join(ID);
@@ -328,17 +386,14 @@ mod tests {
             fs::read(dir.join("ponto-zero-2026-10-15.zip")).unwrap(),
             b"PK primeiro"
         );
-        assert_eq!(
-            fs::read(dir.join("ponto-zero-2026-10-15.json")).unwrap(),
-            b"{}"
-        );
-        assert!(!dir.join("ponto-zero-2026-11-01.xml").exists());
+        let json = sidecar_on_disk(&dir.join("ponto-zero-2026-10-15.json"));
+        assert_eq!(json["arquivo"], "ponto-zero-2026-10-15.zip");
+        assert_eq!(json["origem"], "conector");
+        assert!(!dir.join("ponto-zero-2026-11-01.zip").exists());
         // Outro currículo tem o seu.
-        assert!(
-            write_baseline(&root, "99", "2026-10-15", "zip", b"PK", "{}")
-                .unwrap()
-                .is_some()
-        );
+        assert!(write_baseline(&root, "99", "2026-10-15", b"PK", &sidecar())
+            .unwrap()
+            .is_some());
         let _ = fs::remove_dir_all(&root);
     }
 
@@ -357,21 +412,21 @@ mod tests {
     #[test]
     fn restauracao_no_mesmo_minuto_ganha_outro_nome() {
         let root = temp("restauracao");
-        let sidecar = "{\"arquivo\": \"restauracao-2026-10-15-1432.zip\"}";
-        let a = write_restore_point(&root, ID, "2026-10-15-1432", b"PK a", sidecar).unwrap();
-        let b = write_restore_point(&root, ID, "2026-10-15-1432", b"PK b", sidecar).unwrap();
+        let a = write_restore_point(&root, ID, "2026-10-15-1432", b"PK a", &sidecar()).unwrap();
+        let b = write_restore_point(&root, ID, "2026-10-15-1432", b"PK b", &sidecar()).unwrap();
         assert_eq!(a, "restauracao-2026-10-15-1432.zip");
         assert_eq!(b, "restauracao-2026-10-15-1432-2.zip");
         let dir = root.join(ID);
         assert_eq!(fs::read(dir.join(&a)).unwrap(), b"PK a");
         assert_eq!(fs::read(dir.join(&b)).unwrap(), b"PK b");
+        // Cada sidecar cita o próprio arquivo.
         assert_eq!(
-            fs::read(dir.join("restauracao-2026-10-15-1432-2.json")).unwrap(),
-            b"{\"arquivo\": \"restauracao-2026-10-15-1432-2.zip\"}"
+            sidecar_on_disk(&dir.join("restauracao-2026-10-15-1432.json"))["arquivo"],
+            a.as_str()
         );
         assert_eq!(
-            fs::read(dir.join("restauracao-2026-10-15-1432.json")).unwrap(),
-            sidecar.as_bytes()
+            sidecar_on_disk(&dir.join("restauracao-2026-10-15-1432-2.json"))["arquivo"],
+            b.as_str()
         );
         let names: Vec<String> = list(&root, ID)
             .unwrap()
@@ -386,11 +441,10 @@ mod tests {
     #[test]
     fn recusa_identificador_data_e_nome_que_sairiam_da_pasta() {
         let root = temp("validacao");
-        assert!(write_baseline(&root, "../x", "2026-10-15", "zip", b"PK", "{}").is_err());
-        assert!(write_baseline(&root, ID, "2026/10/15", "zip", b"PK", "{}").is_err());
-        assert!(write_baseline(&root, ID, "2026-10-15", "exe", b"PK", "{}").is_err());
-        assert!(write_restore_point(&root, ID, "2026-10-15", b"PK", "{}").is_err());
-        assert!(write_restore_point(&root, "", "2026-10-15-1432", b"PK", "{}").is_err());
+        assert!(write_baseline(&root, "../x", "2026-10-15", b"PK", &sidecar()).is_err());
+        assert!(write_baseline(&root, ID, "2026/10/15", b"PK", &sidecar()).is_err());
+        assert!(write_restore_point(&root, ID, "2026-10-15", b"PK", &sidecar()).is_err());
+        assert!(write_restore_point(&root, "", "2026-10-15-1432", b"PK", &sidecar()).is_err());
         assert!(entry_path(&root, ID, "../ponto-zero-x.zip").is_err());
         assert!(entry_path(&root, ID, "outro.zip").is_err());
         assert!(entry_path(&root, ID, "ponto-zero-2026-10-15.zip").is_ok());
@@ -401,12 +455,58 @@ mod tests {
     fn lista_vazia_sem_pasta_e_sem_os_sidecars() {
         let root = temp("lista");
         assert!(list(&root, ID).unwrap().is_empty());
-        write_baseline(&root, ID, "2026-10-15", "zip", b"PK", "{}").unwrap();
+        write_baseline(&root, ID, "2026-10-15", b"PK", &sidecar()).unwrap();
         fs::write(root.join(ID).join("anotacao.txt"), b"da pessoa").unwrap();
         let entries = list(&root, ID).unwrap();
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].name, "ponto-zero-2026-10-15.zip");
         assert_eq!(entries[0].size, 2);
         let _ = fs::remove_dir_all(&root);
+    }
+
+    fn headers(pairs: &[(&'static str, &str)]) -> HeaderMap {
+        let mut map = HeaderMap::new();
+        for (name, value) in pairs {
+            map.insert(*name, HeaderValue::from_str(value).unwrap());
+        }
+        map
+    }
+
+    #[test]
+    fn pedido_em_binario_com_os_cabecalhos() {
+        let zip = vec![0x50, 0x4b, 3, 4, 0xff, 0];
+        let full = headers(&[
+            (HEADER_ID, ID),
+            (HEADER_STAMP, "2026-10-15"),
+            (
+                HEADER_SIDECAR,
+                r#"{"origem":"conector","tipo":"ponto-zero"}"#,
+            ),
+        ]);
+        let up = parse_upload(&InvokeBody::Raw(zip.clone()), &full).unwrap();
+        assert_eq!(up.bytes, zip);
+        assert_eq!(up.lattes_id, ID);
+        assert_eq!(up.stamp, "2026-10-15");
+        assert_eq!(up.sidecar["origem"], "conector");
+
+        // Bytes como JSON (o caminho antigo, número a número) não valem.
+        let json = InvokeBody::Json(serde_json::json!([0x50, 0x4b]));
+        assert!(parse_upload(&json, &full).is_err());
+        // Sem cabeçalho, ou sidecar que não é objeto JSON.
+        let missing = headers(&[(HEADER_ID, ID), (HEADER_SIDECAR, "{}")]);
+        assert!(parse_upload(&InvokeBody::Raw(zip.clone()), &missing).is_err());
+        let not_object = headers(&[
+            (HEADER_ID, ID),
+            (HEADER_STAMP, "2026-10-15"),
+            (HEADER_SIDECAR, "[1]"),
+        ]);
+        assert!(parse_upload(&InvokeBody::Raw(zip.clone()), &not_object).is_err());
+        let huge = "x".repeat(SIDECAR_LIMIT + 1);
+        let too_big = headers(&[
+            (HEADER_ID, ID),
+            (HEADER_STAMP, "2026-10-15"),
+            (HEADER_SIDECAR, &huge),
+        ]);
+        assert!(parse_upload(&InvokeBody::Raw(zip), &too_big).is_err());
     }
 }

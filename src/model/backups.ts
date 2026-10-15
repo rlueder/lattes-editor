@@ -8,7 +8,11 @@
 // IndexedDB, numa tabela que nenhum "Limpar" alcança (backup-store.ts).
 // Nos dois, só se cria: nada sobrescreve nem apaga uma cópia.
 //
-// Aqui fica o que é igual nos dois: nomes, o sidecar e a interface.
+// Aqui fica o que é igual nos dois: nomes, o sidecar, a interface e o que
+// pode virar ponto zero.
+
+import { isZip, readZip } from '../import-export/zip.ts';
+import { getAttr, type XElement } from './xml.ts';
 
 export type BackupKind = 'ponto-zero' | 'restauracao';
 
@@ -81,13 +85,52 @@ export function minuteStamp(d: Date): string {
   return `${dayStamp(d)}-${pad(d.getHours())}${pad(d.getMinutes())}`;
 }
 
-/** O Exportar dá um ZIP; quem abre um .xml solto guarda o .xml como veio. */
-export function backupExt(bytes: Uint8Array): 'xml' | 'zip' {
-  return bytes.length >= 2 && bytes[0] === 0x50 && bytes[1] === 0x4b ? 'zip' : 'xml';
+export function baselineName(now: Date): string {
+  return `ponto-zero-${dayStamp(now)}.zip`;
 }
 
-export function baselineName(bytes: Uint8Array, now: Date): string {
-  return `ponto-zero-${dayStamp(now)}.${backupExt(bytes)}`;
+/**
+ * O nome que o Exportar dá ao ZIP: `CV_<16 dígitos>.zip`, no
+ * Content-Disposition (lattes_internals.md, seção 12). Vale também
+ * `<id>.zip`, e o " (1)" que o navegador acrescenta a um download repetido.
+ */
+export function isLattesZipName(fileName: string, lattesId: string): boolean {
+  const m = /^(?:CV_)?(\d+)(?: \(\d+\))?\.zip$/i.exec(fileName.trim());
+  return m?.[1] === lattesId;
+}
+
+/**
+ * Só uma exportação do Lattes que ninguém mexeu vira o ponto zero. Pedida pelo
+ * conector, sempre. Aberta de um arquivo, só o ZIP como o Exportar entrega: o
+ * nome do Lattes, uma única entrada `<id>.xml` e a raiz CURRICULO-VITAE com
+ * SISTEMA-ORIGEM-XML e o mesmo NUMERO-IDENTIFICADOR. Um XML solto nunca: pode
+ * ter sido editado. O que não passa abre igual, só não vira ponto zero; o
+ * primeiro ponto de restauração (pelo conector) preenche depois.
+ */
+export async function isBaselineCandidate({
+  bytes,
+  fileName,
+  origin,
+  root,
+}: {
+  bytes: Uint8Array;
+  fileName: string;
+  origin: BackupSource;
+  root: XElement;
+}): Promise<boolean> {
+  if (!isZip(bytes)) return false;
+  if (origin === 'conector') return true;
+  const lattesId = getAttr(root, 'NUMERO-IDENTIFICADOR');
+  if (root.name !== 'CURRICULO-VITAE' || !lattesId || !getAttr(root, 'SISTEMA-ORIGEM-XML')) {
+    return false;
+  }
+  if (!isLattesZipName(fileName, lattesId)) return false;
+  try {
+    const entries = await readZip(bytes);
+    return entries.length === 1 && entries[0]?.name === `${lattesId}.xml`;
+  } catch {
+    return false;
+  }
 }
 
 export function restorePointName(now: Date, n = 1): string {
@@ -116,6 +159,7 @@ export function sidecarJson(
   bytes: Uint8Array,
   now: Date,
   sha256: string,
+  { header = false }: { header?: boolean } = {},
 ): string {
   const sidecar: BackupSidecar = {
     ...fields,
@@ -123,7 +167,13 @@ export function sidecarJson(
     data: now.toISOString(),
     sha256,
   };
-  return `${JSON.stringify(sidecar, null, 2)}\n`;
+  if (!header) return `${JSON.stringify(sidecar, null, 2)}\n`;
+  // Para um cabeçalho do invoke (backup-folder.ts): uma linha e só ASCII; o
+  // Rust grava o arquivo formatado.
+  return JSON.stringify(sidecar).replace(
+    /[^\x20-\x7e]/g,
+    (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`,
+  );
 }
 
 /** Quantas operações de cada tipo a fila tem. */

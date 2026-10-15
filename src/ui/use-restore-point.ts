@@ -10,7 +10,7 @@ import type { BridgeMessage } from '../bridge/protocol.ts';
 import {
   beginSendSession,
   type ExportReply,
-  exportReplyOf,
+  ExportRequests,
   makeRestorePoint,
   type RestoreOutcome,
 } from '../bridge/restore-point.ts';
@@ -28,45 +28,23 @@ export function useRestorePoint(
   post: (msg: { id: string; type: 'pedir-curriculo' }) => void,
 ) {
   const [restore, setRestore] = useState<RestoreState | undefined>();
-  /** Os pedidos de exportação do ponto de restauração, pelo id. */
-  const waiters = useRef(new Map<string, (reply: ExportReply) => void>());
+  /** Os pedidos de exportação do ponto de restauração (src/bridge/restore-point.ts). */
+  const requests = useRef(new ExportRequests());
   /** A confirmação em aberto, quando não houve ponto de restauração. */
   const answerRef = useRef<((go: boolean) => void) | undefined>(undefined);
   /** Uma rodada começando (ponto em andamento ou pergunta aberta). */
   const starting = useRef(false);
 
-  /** A resposta "curriculo" de um pedido do ponto; true quando era dele. */
-  const takeReply = useCallback((msg: BridgeMessage): boolean => {
-    const waiter = msg.type === 'curriculo' && msg.id ? waiters.current.get(msg.id) : undefined;
-    if (msg.type !== 'curriculo' || !waiter) return false;
-    waiters.current.delete(msg.id!);
-    waiter(exportReplyOf(msg));
-    return true;
-  }, []);
+  /** A resposta "curriculo" de um pedido do ponto, mesmo atrasada; true quando era dele. */
+  const takeReply = useCallback((msg: BridgeMessage) => requests.current.take(msg), []);
 
   /** A extensão desligou: os pedidos em aberto não vão ter resposta. */
-  const dropAll = useCallback(() => {
-    for (const resolve of waiters.current.values()) resolve({ ok: false, reason: 'sem-resposta' });
-    waiters.current.clear();
-  }, []);
+  const dropAll = useCallback(() => requests.current.dropAll(), []);
 
-  const exportNow = (): Promise<ExportReply> => {
-    if (!features.includes('curriculo')) {
-      return Promise.resolve({ ok: false, reason: 'sem-exportar' });
-    }
-    const id = `restauracao-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    return new Promise((resolve) => {
-      const timer = setTimeout(() => {
-        waiters.current.delete(id);
-        resolve({ ok: false, reason: 'sem-resposta' });
-      }, OPEN_TIMEOUT_MS);
-      waiters.current.set(id, (reply) => {
-        clearTimeout(timer);
-        resolve(reply);
-      });
-      post({ id, type: 'pedir-curriculo' });
-    });
-  };
+  const exportNow = (): Promise<ExportReply> =>
+    features.includes('curriculo')
+      ? requests.current.request((id) => post({ id, type: 'pedir-curriculo' }), OPEN_TIMEOUT_MS)
+      : Promise.resolve({ ok: false, reason: 'sem-exportar' });
 
   /** O começo da rodada: true quando pode gravar. Uma rodada de cada vez. */
   const begin = async (lattesId: string | undefined, ops: BridgeOp[]): Promise<boolean> => {

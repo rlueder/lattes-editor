@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LattesStatus } from '../bridge/lattes-status.ts';
 import type { Link } from '../bridge/link.ts';
 import type { SentEntry } from '../bridge/sent-log.ts';
-import { keepBaseline } from '../desktop/backup-folder.ts';
+import { keepPristineBaseline } from '../desktop/backup-folder.ts';
 import { useDevExtensionFolder } from '../desktop/dev-channel.ts';
 import { saveBytes } from '../desktop/native.ts';
 import type { UpdateState } from '../desktop/update.ts';
@@ -24,7 +24,7 @@ import {
   saveWorkingCopy,
   storageStatus,
 } from '../model/store.ts';
-import { getAttr, parseXml, serializeXml, walk, type XElement } from '../model/xml.ts';
+import { parseXml, serializeXml, walk, type XElement } from '../model/xml.ts';
 import { PrintDialog } from '../print/PrintDialog.tsx';
 import { usePrint } from '../print/use-print.ts';
 import { DiagnosisPanel } from '../review/DiagnosisPanel.tsx';
@@ -195,9 +195,10 @@ export function App() {
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
       const cv = await loadCv(bytes, file.name);
-      // Ponto zero: a primeira exportação de cada currículo, byte a byte. Não
+      // Ponto zero: a primeira exportação de cada currículo, byte a byte, se
+      // for uma exportação do Lattes sem mexer (isBaselineCandidate). Não
       // atrasa nem impede a abertura.
-      if (origin) void keepBaseline(getAttr(cv.doc.root, 'NUMERO-IDENTIFICADOR'), bytes, origin);
+      if (origin) void keepPristineBaseline(cv.doc.root, bytes, file.name, origin);
       const copy = newWorkingCopy(cv, Date.now());
       await replaceWorkingCopy(copy);
       // A linha do tempo é auxiliar: se não gravar, o currículo abre igual.

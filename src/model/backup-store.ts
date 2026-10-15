@@ -56,7 +56,7 @@ export const browserBackupStore: BackupStore = {
   },
 
   saveBaseline: async (lattesId, bytes, source, now) => {
-    const name = baselineName(bytes, now);
+    const name = baselineName(now);
     const sha = await sha256Hex(bytes);
     // Conferir e gravar na mesma transação: duas aberturas ao mesmo tempo
     // não gravam dois pontos zero.

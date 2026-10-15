@@ -2,14 +2,16 @@
 // resultado da exportação e da gravação, e o que a pessoa lê. O caminho com o
 // Lattes simulado está em lattes-simulado-copias.test.ts.
 
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { zipOne } from '../scripts/lattes-simulado/exportar.ts';
 import {
   beginSendSession,
   doneText,
+  EXPIRED_LIMIT,
   type ExportReply,
   exportReplyOf,
+  ExportRequests,
   latestText,
   makeRestorePoint,
   noRestoreText,
@@ -216,5 +218,57 @@ describe('resposta da extensão ao pedido do ponto', () => {
     });
     expect(exportReplyOf({ detail: 'x' })).toMatchObject({ ok: false, reason: 'erro' });
     expect(exportReplyOf({ zip: '%%%' })).toMatchObject({ ok: false, reason: 'erro' });
+  });
+});
+
+describe('pedidos de exportação do ponto de restauração', () => {
+  const curriculo = (id: string, zip = 'UEsDBA==') => ({ id, type: 'curriculo' as const, zip });
+
+  afterEach(() => vi.useRealTimers());
+
+  it('a resposta no prazo resolve o pedido com o ZIP', async () => {
+    const requests = new ExportRequests();
+    const sent: string[] = [];
+    const reply = requests.request((id) => sent.push(id), 1000);
+    expect(sent[0]).toMatch(/^restauracao-/);
+    expect(requests.take(curriculo(sent[0]!))).toBe(true);
+    expect(await reply).toMatchObject({ ok: true });
+  });
+
+  it('a resposta atrasada, depois do prazo, é engolida e nunca vira abertura de arquivo', async () => {
+    vi.useFakeTimers();
+    const requests = new ExportRequests();
+    let id = '';
+    const reply = requests.request((sentId) => (id = sentId), 1000);
+    vi.advanceTimersByTime(1000);
+    expect(await reply).toEqual({ ok: false, reason: 'sem-resposta' });
+    // O ZIP velho chega agora: é do ponto (true), e quem chama não faz setCurriculo.
+    expect(requests.take(curriculo(id))).toBe(true);
+    // Uma abertura de verdade (outro id) continua sendo dela.
+    expect(requests.take(curriculo('abrir-123'))).toBe(false);
+    expect(requests.take({ type: 'fim' })).toBe(false);
+    expect(requests.take({ type: 'curriculo' })).toBe(false);
+  });
+
+  it('a lista de vencidos tem teto, e o prefixo ainda segura a resposta mais antiga', async () => {
+    vi.useFakeTimers();
+    const requests = new ExportRequests();
+    const ids: string[] = [];
+    const replies = Array.from({ length: EXPIRED_LIMIT + 5 }, () =>
+      requests.request((id) => ids.push(id), 10),
+    );
+    vi.advanceTimersByTime(10);
+    await Promise.all(replies);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.every((id) => requests.take(curriculo(id)))).toBe(true);
+  });
+
+  it('a extensão desligou: os pedidos em aberto respondem sem resposta, e a tardia é engolida', async () => {
+    const requests = new ExportRequests();
+    let id = '';
+    const reply = requests.request((sentId) => (id = sentId), 60_000);
+    requests.dropAll();
+    expect(await reply).toEqual({ ok: false, reason: 'sem-resposta' });
+    expect(requests.take(curriculo(id))).toBe(true);
   });
 });

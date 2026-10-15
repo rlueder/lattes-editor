@@ -7,12 +7,14 @@ import 'fake-indexeddb/auto';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { zipOne } from '../scripts/lattes-simulado/exportar.ts';
 import { sentEntry } from '../src/bridge/sent-log.ts';
 import { backupDb, browserBackupBytes, browserBackupStore } from '../src/model/backup-store.ts';
 import {
-  backupExt,
   baselineName,
   dayStamp,
+  isBaselineCandidate,
+  isLattesZipName,
   kindOfName,
   latestBackup,
   minuteStamp,
@@ -21,13 +23,15 @@ import {
   sha256Hex,
   sidecarJson,
 } from '../src/model/backups.ts';
+import { loadCv } from '../src/model/document.ts';
+import { encodeLatin1 } from '../src/model/latin1.ts';
 import { importStorageKey, randomKeyBytes } from '../src/model/seal.ts';
 import * as store from '../src/model/store.ts';
 
 const invoke = vi.fn();
 vi.mock('@tauri-apps/api/core', () => ({ invoke }));
 
-const { backupStore, folderBackupStore, keepBaseline, revealBackup } =
+const { backupStore, folderBackupStore, keepBaseline, keepPristineBaseline, revealBackup } =
   await import('../src/desktop/backup-folder.ts');
 
 afterEach(() => {
@@ -48,13 +52,9 @@ describe('cópias de segurança: nomes e sidecar', () => {
     expect(restorePointName(d, 3)).toBe('restauracao-2026-01-05-0907-3.zip');
   });
 
-  it('o ponto zero guarda o ZIP como .zip e um XML solto como .xml', () => {
+  it('o ponto zero é sempre o ZIP do Lattes', () => {
     const d = new Date(2026, 9, 15);
-    expect(backupExt(ZIP)).toBe('zip');
-    expect(backupExt(XML)).toBe('xml');
-    expect(backupExt(new Uint8Array([0x50]))).toBe('xml');
-    expect(baselineName(ZIP, d)).toBe('ponto-zero-2026-10-15.zip');
-    expect(baselineName(XML, d)).toBe('ponto-zero-2026-10-15.xml');
+    expect(baselineName(d)).toBe('ponto-zero-2026-10-15.zip');
     expect(kindOfName('ponto-zero-2026-10-15.zip')).toBe('ponto-zero');
     expect(kindOfName('restauracao-2026-10-15-1200.zip')).toBe('restauracao');
     expect(kindOfName('anotacao.txt')).toBeUndefined();
@@ -173,23 +173,32 @@ describe('cópias de segurança no desktop (pasta)', () => {
     expect(await folderBackupStore.saveBaseline('1', ZIP, 'conector', now)).toBe(
       'ponto-zero-2026-10-15.zip',
     );
-    const [cmd, args] = invoke.mock.calls[0]!;
+    // O ZIP vai cru, como Uint8Array (InvokeBody::Raw no Rust), nunca como vetor de números.
+    const [cmd, body, options] = invoke.mock.calls[0]!;
     expect(cmd).toBe('backup_save_baseline');
-    expect(args).toMatchObject({ bytes: [...ZIP], ext: 'zip', lattesId: '1', stamp: '2026-10-15' });
-    expect(JSON.parse(args.sidecar)).toMatchObject({ origem: 'conector', tipo: 'ponto-zero' });
+    expect(body).toBeInstanceOf(Uint8Array);
+    expect([...body]).toEqual([...ZIP]);
+    expect(options.headers).toMatchObject({ 'x-lattes-id': '1', 'x-stamp': '2026-10-15' });
+    expect(JSON.parse(options.headers['x-sidecar'])).toMatchObject({
+      origem: 'conector',
+      tipo: 'ponto-zero',
+    });
 
     invoke.mockResolvedValueOnce(null);
-    expect(await folderBackupStore.saveBaseline('1', XML, 'arquivo', now)).toBeUndefined();
-    expect(invoke.mock.calls[1]![1]).toMatchObject({ ext: 'xml' });
+    expect(await folderBackupStore.saveBaseline('1', ZIP, 'arquivo', now)).toBeUndefined();
 
     invoke.mockResolvedValueOnce('restauracao-2026-10-15-0805.zip');
     expect(await folderBackupStore.saveRestorePoint('1', ZIP, { idioma: 1 }, now)).toBe(
       'restauracao-2026-10-15-0805.zip',
     );
-    const [cmd2, args2] = invoke.mock.calls[2]!;
+    const [cmd2, body2, options2] = invoke.mock.calls[2]!;
     expect(cmd2).toBe('backup_save_restore_point');
-    expect(args2).toMatchObject({ lattesId: '1', stamp: '2026-10-15-0805' });
-    expect(JSON.parse(args2.sidecar)).toMatchObject({ fila: { idioma: 1 }, tipo: 'restauracao' });
+    expect(body2).toBeInstanceOf(Uint8Array);
+    expect(options2.headers).toMatchObject({ 'x-lattes-id': '1', 'x-stamp': '2026-10-15-0805' });
+    expect(JSON.parse(options2.headers['x-sidecar'])).toMatchObject({
+      fila: { idioma: 1 },
+      tipo: 'restauracao',
+    });
   });
 
   it('lista só os arquivos do app, da mais antiga à mais recente, e mostra a pasta', async () => {
@@ -230,5 +239,97 @@ describe('cópias de segurança no desktop (pasta)', () => {
     };
     expect(await keepBaseline('1', ZIP, 'conector', ok)).toBe('ponto-zero-x.zip');
     warn.mockRestore();
+  });
+});
+
+describe('o que vira ponto zero', () => {
+  const ID = '1234567890123456';
+  const cvXml = (attrs: string) =>
+    encodeLatin1(
+      `<?xml version="1.0" encoding="ISO-8859-1"?>\n<CURRICULO-VITAE ${attrs}><DADOS-GERAIS NOME-COMPLETO="Pessoa"/></CURRICULO-VITAE>`,
+    );
+  const PRISTINE = `SISTEMA-ORIGEM-XML="LATTES_OFFLINE" NUMERO-IDENTIFICADOR="${ID}"`;
+  const pristineZip = zipOne(`${ID}.xml`, cvXml(PRISTINE));
+  const check = async (bytes: Uint8Array, fileName: string, origin: 'arquivo' | 'conector') =>
+    isBaselineCandidate({
+      bytes,
+      fileName,
+      origin,
+      root: (await loadCv(bytes, fileName)).doc.root,
+    });
+
+  it('reconhece o nome do Exportar: CV_<id>.zip, <id>.zip e o download repetido', () => {
+    expect(isLattesZipName(`CV_${ID}.zip`, ID)).toBe(true);
+    expect(isLattesZipName(`${ID}.zip`, ID)).toBe(true);
+    expect(isLattesZipName(`CV_${ID} (1).zip`, ID)).toBe(true);
+    expect(isLattesZipName(`cv_${ID}.ZIP`, ID)).toBe(true);
+    expect(isLattesZipName('CV_9999999999999999.zip', ID)).toBe(false);
+    expect(isLattesZipName(`meu-curriculo.zip`, ID)).toBe(false);
+    expect(isLattesZipName(`CV_${ID}-editado.zip`, ID)).toBe(false);
+    expect(isLattesZipName(`CV_${ID}.xml`, ID)).toBe(false);
+  });
+
+  it('pelo conector, sempre', async () => {
+    expect(await check(pristineZip, 'qualquer.zip', 'conector')).toBe(true);
+  });
+
+  it('de um arquivo, só o ZIP como o Exportar entrega', async () => {
+    expect(await check(pristineZip, `CV_${ID}.zip`, 'arquivo')).toBe(true);
+    expect(await check(pristineZip, `${ID}.zip`, 'arquivo')).toBe(true);
+    // Nome que não é o do Lattes.
+    expect(await check(pristineZip, 'curriculo.zip', 'arquivo')).toBe(false);
+    // Sem SISTEMA-ORIGEM-XML, ou com o identificador de outro currículo no nome.
+    const noOrigin = zipOne(`${ID}.xml`, cvXml(`NUMERO-IDENTIFICADOR="${ID}"`));
+    expect(await check(noOrigin, `CV_${ID}.zip`, 'arquivo')).toBe(false);
+    expect(await check(pristineZip, 'CV_1111111111111111.zip', 'arquivo')).toBe(false);
+    // A entrada do ZIP com outro nome (alguém recompactou).
+    const renamed = zipOne('curriculo.xml', cvXml(PRISTINE));
+    expect(await check(renamed, `CV_${ID}.zip`, 'arquivo')).toBe(false);
+    // ZIP que não abre na leitura das entradas.
+    expect(
+      await isBaselineCandidate({
+        bytes: new Uint8Array([0x50, 0x4b, 1]),
+        fileName: `CV_${ID}.zip`,
+        origin: 'arquivo',
+        root: (await loadCv(pristineZip, 'x.zip')).doc.root,
+      }),
+    ).toBe(false);
+  });
+
+  it('XML solto, nunca, nem com tudo certo', async () => {
+    const loose = cvXml(PRISTINE);
+    expect(await check(loose, `${ID}.xml`, 'arquivo')).toBe(false);
+    expect(await check(loose, `CV_${ID}.zip`, 'arquivo')).toBe(false);
+  });
+
+  it('o que não passa abre igual e só não é guardado', async () => {
+    const store = {
+      ...folderBackupStore,
+      saveBaseline: vi.fn().mockResolvedValue('ponto-zero-x.zip'),
+    };
+    const root = (await loadCv(pristineZip, 'x.zip')).doc.root;
+    expect(await keepPristineBaseline(root, pristineZip, 'curriculo.zip', 'arquivo', store)).toBe(
+      undefined,
+    );
+    expect(store.saveBaseline).not.toHaveBeenCalled();
+    expect(await keepPristineBaseline(root, pristineZip, `CV_${ID}.zip`, 'arquivo', store)).toBe(
+      'ponto-zero-x.zip',
+    );
+    expect(store.saveBaseline).toHaveBeenCalledWith(ID, pristineZip, 'arquivo', expect.any(Date));
+  });
+});
+
+describe('sidecar no cabeçalho do invoke', () => {
+  it('uma linha, só ASCII, e o mesmo JSON depois de lido', () => {
+    const text = sidecarJson(
+      { arquivo: 'a.zip', origem: 'arquivo', tipo: 'ponto-zero', versao: 'versão-ç' },
+      ZIP,
+      at('2026-10-15T12:00:00Z'),
+      'abc',
+      { header: true },
+    );
+    expect(text).not.toMatch(/\n/);
+    expect(text).toMatch(/^[\x20-\x7e]+$/);
+    expect(JSON.parse(text)).toMatchObject({ versao: 'versão-ç' });
   });
 });

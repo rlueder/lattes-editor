@@ -3,24 +3,36 @@
 // (src-tauri/src/copias.rs), que só cria arquivos novos e nunca sobrescreve.
 // Fora do desktop, as cópias ficam no IndexedDB (src/model/backup-store.ts).
 
+import type { InvokeArgs, InvokeOptions } from '@tauri-apps/api/core';
+
 import { browserBackupStore } from '../model/backup-store.ts';
 import {
-  backupExt,
   type BackupFile,
   type BackupStore,
   baselineName,
   dayStamp,
+  isBaselineCandidate,
   kindOfName,
   minuteStamp,
   restorePointName,
   sha256Hex,
   sidecarJson,
 } from '../model/backups.ts';
+import { getAttr, type XElement } from '../model/xml.ts';
 import { isDesktop } from './native.ts';
 
-async function invoke<T>(cmd: string, args: Record<string, unknown>): Promise<T> {
+async function invoke<T>(cmd: string, args: InvokeArgs, options?: InvokeOptions): Promise<T> {
   const core = await import('@tauri-apps/api/core');
-  return core.invoke<T>(cmd, args);
+  return options ? core.invoke<T>(cmd, args, options) : core.invoke<T>(cmd, args);
+}
+
+/**
+ * O arquivo vai cru no corpo do invoke (Uint8Array, InvokeBody::Raw no Rust),
+ * sem virar um vetor de números em JSON; o resto vai nos cabeçalhos
+ * (src-tauri/src/copias.rs, parse_upload).
+ */
+function upload(lattesId: string, stamp: string, sidecar: string): InvokeOptions {
+  return { headers: { 'x-lattes-id': lattesId, 'x-sidecar': sidecar, 'x-stamp': stamp } };
 }
 
 interface FolderEntry {
@@ -43,25 +55,23 @@ export const folderBackupStore: BackupStore = {
   },
 
   saveBaseline: async (lattesId, bytes, source, now) => {
-    const name = baselineName(bytes, now);
     const sidecar = sidecarJson(
-      { arquivo: name, origem: source, tipo: 'ponto-zero', versao: __APP_VERSION__ },
+      { arquivo: baselineName(now), origem: source, tipo: 'ponto-zero', versao: __APP_VERSION__ },
       bytes,
       now,
       await sha256Hex(bytes),
+      { header: true },
     );
-    const written = await invoke<string | null>('backup_save_baseline', {
-      bytes: Array.from(bytes),
-      ext: backupExt(bytes),
-      lattesId,
-      sidecar,
-      stamp: dayStamp(now),
-    });
+    const written = await invoke<string | null>(
+      'backup_save_baseline',
+      bytes,
+      upload(lattesId, dayStamp(now), sidecar),
+    );
     return written ?? undefined;
   },
 
   saveRestorePoint: async (lattesId, bytes, queue, now) => {
-    // O Rust escolhe o nome final (-2, -3… no mesmo minuto); o sidecar cita o primeiro.
+    // O Rust escolhe o nome final (-2, -3… no mesmo minuto) e o põe no sidecar.
     const sidecar = sidecarJson(
       {
         arquivo: restorePointName(now),
@@ -73,13 +83,13 @@ export const folderBackupStore: BackupStore = {
       bytes,
       now,
       await sha256Hex(bytes),
+      { header: true },
     );
-    return invoke<string>('backup_save_restore_point', {
-      bytes: Array.from(bytes),
-      lattesId,
-      sidecar,
-      stamp: minuteStamp(now),
-    });
+    return invoke<string>(
+      'backup_save_restore_point',
+      bytes,
+      upload(lattesId, minuteStamp(now), sidecar),
+    );
   },
 
   where: 'pasta',
@@ -113,4 +123,20 @@ export async function keepBaseline(
     console.warn('O ponto zero não foi guardado:', err);
     return undefined;
   }
+}
+
+/**
+ * O ponto zero de um currículo recém-aberto, só quando ele é uma exportação
+ * do Lattes sem mexer (pelo conector, ou o ZIP do Exportar); o resto abre
+ * igual, sem virar ponto zero. Devolve o nome gravado, se gravou.
+ */
+export async function keepPristineBaseline(
+  root: XElement,
+  bytes: Uint8Array,
+  fileName: string,
+  origin: 'arquivo' | 'conector',
+  store: BackupStore = backupStore(),
+): Promise<string | undefined> {
+  if (!(await isBaselineCandidate({ bytes, fileName, origin, root }))) return undefined;
+  return keepBaseline(getAttr(root, 'NUMERO-IDENTIFICADOR'), bytes, origin, store);
 }

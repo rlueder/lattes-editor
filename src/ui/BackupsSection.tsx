@@ -97,8 +97,9 @@ export function BackupsSection({ lattesId, open }: { lattesId?: string; open: bo
       {error && <p className="error">{error}</p>}
       {files && files.length === 0 && !error && (
         <p className="muted">
-          Nenhuma cópia ainda. A primeira exportação aberta deste currículo vira o ponto zero, e
-          cada envio pelo conector guarda um ponto de restauração antes de gravar.
+          Nenhuma cópia ainda. A primeira exportação deste currículo pelo conector, ou o ZIP do
+          Exportar como o Lattes entrega, vira o ponto zero, e cada envio pelo conector guarda um
+          ponto de restauração antes de gravar.
         </p>
       )}
       {files && files.length > 0 && (
