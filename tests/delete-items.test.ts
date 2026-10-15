@@ -92,8 +92,8 @@ const vinculo = (seqHist: string) => (el: XElement) =>
   el.name === 'VINCULOS' && getAttr(el, 'SEQUENCIA-HISTORICO') === seqHist;
 
 describe('planejar a exclusão', () => {
-  it('fica desligada por padrão até o teste no Lattes real', () => {
-    expect(DELETE_ITEMS_ENABLED).toBe(false);
+  it('ligada na montagem; sem a opção do plano (a capacidade da extensão), fica à mão', () => {
+    expect(DELETE_ITEMS_ENABLED).toBe(true);
     const original = parseXml(XML).root;
     const working = parseXml(XML).root;
     const ingles = all(working).find(idioma('EN'))!;
@@ -193,7 +193,7 @@ describe('planejar a exclusão', () => {
       reason: expect.stringMatching(/ainda existe/),
     });
     expect(planDelete(change, [], 'Idioma', true)).toHaveProperty('reason');
-    expect(planDelete(change, resolvePath(working, change.path), 'Idioma')).toMatchObject({
+    expect(planDelete(change, resolvePath(working, change.path), 'Idioma', false)).toMatchObject({
       reason: DELETE_OFF_REASON,
     });
   });

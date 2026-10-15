@@ -29,15 +29,14 @@ import { decodeHtmlEntities, foldText, plainText } from './html-text.ts';
 import { isLogonPage } from './lattes-html.ts';
 
 /**
- * Desligado. O teste acompanhado de 14/10/2026 (lattes_internals.md, seção
- * 13) mostrou que não pode ser ligado como está: o Lattes recusa o arquivo
- * mínimo no passo 1, e um Confirmar do passo 3 com mensagem de sucesso não
- * pôs o item no currículo. Ligar pede, antes, um arquivo que o Lattes aceite
- * sem levar dados pessoais e a conferência por uma exportação nova depois do
- * Confirmar. Enquanto for false, o editor não dispara o fluxo e a extensão
- * recusa o pedido; as instruções do Importar à mão seguem.
+ * Ligado para o teste ao vivo, a pedido do dono. O teste acompanhado de
+ * 14/10/2026 (lattes_internals.md, seção 13) mostrou o risco: o Lattes recusa
+ * o arquivo mínimo no passo 1, e um Confirmar do passo 3 com mensagem de
+ * sucesso não pôs o item no currículo. Cada importação pede, depois, a
+ * conferência por uma exportação nova. Com false, o editor não dispara o
+ * fluxo e a extensão recusa o pedido; as instruções do Importar à mão seguem.
  */
-export const IMPORT_ENABLED = false;
+export const IMPORT_ENABLED = true;
 
 /** Valor da caixa f_chkp de cada módulo (src/import-export/importable.ts), na ordem da tela. */
 export const STEP2_MODULE_VALUES: Readonly<Record<string, number>> = {

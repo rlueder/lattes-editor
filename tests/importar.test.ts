@@ -181,10 +181,13 @@ describe('arquivo mínimo (opção 1 do guia, 3.3)', () => {
 });
 
 describe('pedido do editor (importMessage)', () => {
-  it('desligado (padrão), nada sai', async () => {
-    expect(IMPORT_ENABLED).toBe(false);
+  it('ligado na montagem; forçado a desligar, nada sai', async () => {
+    expect(IMPORT_ENABLED).toBe(true);
     const { cv, loadedMax } = await cvWithEvent();
-    expect(importMessage(cv.doc, cv.encoding, loadedMax, { id: 'a' })).toBeUndefined();
+    expect(importMessage(cv.doc, cv.encoding, loadedMax, { id: 'a' }, false)).toBeUndefined();
+    expect(importMessage(cv.doc, cv.encoding, loadedMax, { id: 'a' })).toMatchObject({
+      type: 'importar',
+    });
   });
 
   it('ligado: o arquivo mínimo em base64, a caixa 16 (Eventos) e o ano', async () => {
@@ -209,7 +212,8 @@ describe('pedido do editor (importMessage)', () => {
 
   it('o botão só aparece ligado, com extensão que importa e leitura do Lattes', () => {
     const lido = { features: ['importar'], state: { kind: 'lido' as const, version: '1' } };
-    expect(canImportByConnector(lido)).toBe(false);
+    expect(canImportByConnector(lido, false)).toBe(false);
+    expect(canImportByConnector(lido)).toBe(true);
     expect(canImportByConnector(lido, true)).toBe(true);
     expect(canImportByConnector({ ...lido, features: ['foto'] }, true)).toBe(false);
     expect(canImportByConnector({ ...lido, features: undefined }, true)).toBe(false);
@@ -326,9 +330,9 @@ const REQ: ImportRequest = {
 };
 
 describe('Importar pelo conector contra o Lattes simulado', () => {
-  it('desligado (padrão): nem abre a tela do Importar', async () => {
+  it('desligado (forçado): nem abre a tela do Importar', async () => {
     const { calls, port } = await fakeLattes();
-    const r = await importItems(port, CODE, REQ);
+    const r = await importItems(port, CODE, REQ, false);
     expect(r.reason).toBe('desligado');
     expect(calls).toEqual([]);
   });
@@ -743,7 +747,7 @@ describe('Importar no service worker (extensão)', () => {
   it('desligado: responde "desligado" sem tocar na aba', async () => {
     const exec = stubChrome();
     const reply = vi.fn(async () => undefined);
-    expect(await runImport(CALL, IDLE, reply)).toBe(false);
+    expect(await runImport(CALL, IDLE, reply, false)).toBe(false);
     expect(reply).toHaveBeenCalledWith(expect.objectContaining({ reason: 'desligado' }));
     expect(exec).not.toHaveBeenCalled();
   });

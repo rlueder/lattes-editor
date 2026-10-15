@@ -107,8 +107,8 @@ const detailIn = (lattes: LattesSimuladoNoTeste, seq: string) =>
   );
 
 describe('alteração de evento completa: chave', () => {
-  it('fica desligada até o teste acompanhado; desligada, convidado segue à mão', () => {
-    expect(EDIT_EVENTO_ENABLED).toBe(false);
+  it('ligada na montagem; com a opção desligada, convidado segue à mão', () => {
+    expect(EDIT_EVENTO_ENABLED).toBe(true);
     const edit = (root: XElement) => setAttr(basics(root, '13'), 'TITULO', 'Outra palestra');
     expect(planAfter(edit, false).unsupported[0]!.reason).toMatch(
       /só a participação como ouvinte; a edição como Convidado/,

@@ -1,11 +1,12 @@
 // Estado e ações dos itens de produção novos: abrir formulário, salvar,
 // remover, listar pendentes e montar o arquivo de importação.
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 
 import type { PendingSummary } from '../import-export/ExportPanel.tsx';
 import { buildImportFile, type ImportFile } from '../import-export/import-file.ts';
 import { applyCrossref, crossrefAuthors, type CrossrefWork } from '../lookups/crossref.ts';
+import { includeCapability, subscribeIncludeCapability } from '../model/direct-inclusion.ts';
 import {
   addProduction,
   authorElementName,
@@ -52,11 +53,13 @@ export function useProduction(
   const [form, setForm] = useState<FormState | null>(null);
   const loadedMax = session?.meta.loadedMaxSequencia ?? Number.POSITIVE_INFINITY;
 
+  // Os eventos saem do Importar quando a extensão anuncia 'incluir-itens'.
+  const canInclude = useSyncExternalStore(subscribeIncludeCapability, includeCapability);
   const pending = useMemo(
     () => (session ? pendingItems(session.doc, loadedMax) : []),
     // O documento é mutado no lugar; `version` avisa a mudança.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [session, version, loadedMax],
+    [session, version, loadedMax, canInclude],
   );
 
   const summaries: PendingSummary[] = useMemo(

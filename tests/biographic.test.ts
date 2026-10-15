@@ -75,15 +75,16 @@ const editMestrado = (attrs: Record<string, string>) => (root: XElement) => {
 // ---------------------------------------------------------------- planejar
 
 describe('dados gerais: chave desligada', () => {
-  it('fica desligada por padrão e manda tudo à mão', () => {
-    expect(BIOGRAPHIC_OPS_ENABLED).toBe(false);
+  it('ligada na montagem, entra no contrato; desligada, manda tudo à mão', () => {
+    expect(BIOGRAPHIC_OPS_ENABLED).toBe(true);
     for (const kind of ['formacao', 'endereco', 'identificacao'] as const) {
-      expect(LATTES_CONTRACT.forms[kind]).toBeUndefined();
+      expect(LATTES_CONTRACT.forms[kind]).toBeDefined();
     }
     for (const proc of ['pkg_formacao.lista', 'prc_endereco', 'prc_ident']) {
-      expect(LATTES_CONTRACT.menu).not.toContain(proc);
+      expect(LATTES_CONTRACT.menu).toContain(proc);
     }
-    expect(biographicContract()).toEqual({ forms: {}, menu: [] });
+    // A chave forçada a desligar: nada no contrato.
+    expect(biographicContract(false)).toEqual({ forms: {}, menu: [] });
     const edit = (root: XElement) => {
       setAttr(find(root, 'MESTRADO'), 'ANO-DE-CONCLUSAO', '2007');
       setAttr(find(root, 'ENDERECO-RESIDENCIAL'), 'BAIRRO', 'Centro');
@@ -96,7 +97,7 @@ describe('dados gerais: chave desligada', () => {
       'Formulário não suportado ainda',
       'Formulário não suportado ainda',
     ]);
-    // Sem a opção, vale a chave do módulo (desligada).
+    // Sem a opção, fica desligada: só planOptionsFor liga, com a capacidade.
     const original = parseXml(XML).root;
     const working = parseXml(XML).root;
     edit(working);
@@ -487,35 +488,10 @@ describe('dados gerais no contrato', () => {
       expect(report.forms.find((f) => f.kind === kind)).toMatchObject({ status: 'ok' });
     }
     // O contrato da formação é parcial: ano de obtenção, título e os outros
-    // campos do formulário (seção 17) aparecem como campo novo, que não trava.
+    // campos do formulário (seção 17) não entram na conferência, e com a
+    // chave ligada a verificação não acusa mudança por causa deles.
     const formacao = report.forms.find((f) => f.kind === 'formacao')!;
-    expect(formacao.drifts.every((d) => d.kind === 'campo-novo')).toBe(true);
-    expect(formacao.drifts.map((d) => d.field)).toEqual([
-      'f_tpo_doutorado',
-      'f_inst',
-      'f_curso',
-      'f_mes_obten',
-      'f_ano_obten',
-      'F_BOLSA',
-      'f_nme_agencia',
-      'f_titulo',
-      'f_orient',
-      'f_coorient',
-      'f_plv_l',
-      'f_setor_l',
-      'f_area_l',
-      'f_tipo_privacidade',
-      'f_cod_inst',
-      'f_cod_inst2',
-      'f_inst_old',
-      'f_cod_curso',
-      'f_cod_curso2',
-      'f_curso_old',
-      'f_agencia',
-      'f_id_orientador',
-      'f_seq_orientacao',
-      'f_carga',
-    ]);
+    expect(formacao).toMatchObject({ drifts: [], status: 'ok' });
     expect(blocksKind(report, 'formacao')).toEqual([]);
     expect(report.menu.every((m) => m.found)).toBe(true);
     expect(report.menu.map((m) => m.proc)).toEqual(contractOn().menu);

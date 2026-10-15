@@ -103,10 +103,14 @@ const isIdioma = (code: string) => (el: XElement) =>
   el.name === 'IDIOMA' && getAttr(el, 'IDIOMA') === code;
 
 describe('Lattes simulado: o conector de ponta a ponta', () => {
-  it('o contrato fixo bate sem diferença, e o das chaves desligadas não tem nada que quebre', async () => {
+  it('o contrato da montagem bate sem diferença, e o de tudo ligado não tem nada que quebre', async () => {
     const lattes = await start();
     const fixed = await checkContract(lattes.port);
     expect(fixed.status).toBe('ok');
+    // O currículo de exemplo não tem formação complementar: esse fica sem amostra.
+    expect(fixed.forms.filter((f) => f.status !== 'ok').map((f) => [f.kind, f.status])).toEqual([
+      ['formacao-complementar', 'sem-amostra'],
+    ]);
     expect(fixed.lists?.every((l) => l.status === 'ok')).toBe(true);
 
     const gated = await checkContract(lattes.port, {
@@ -120,7 +124,11 @@ describe('Lattes simulado: o conector de ponta a ponta', () => {
     });
     expect(gated.menu.every((m) => m.found)).toBe(true);
     expect(gated.forms.flatMap((f) => f.drifts).filter(isBreaking)).toEqual([]);
-    expect(gated.forms.every((f) => f.status === 'ok' || f.status === 'mudou')).toBe(true);
+    expect(
+      gated.forms.every(
+        (f) => f.status === 'ok' || f.status === 'mudou' || f.kind === 'formacao-complementar',
+      ),
+    ).toBe(true);
   });
 
   it('exporta o currículo publicado, igual ao de partida', async () => {

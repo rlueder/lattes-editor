@@ -32,6 +32,7 @@ import { isDesktop } from '../desktop/native.ts';
 import type { Session } from '../forms/use-production.ts';
 import { importMessage } from '../import-export/import-request.ts';
 import type { Change } from '../model/changes.ts';
+import { setIncludeCapability } from '../model/direct-inclusion.ts';
 import { addHistoryPoint, addSent, clearSent, listSent } from '../model/store.ts';
 import { getAttr } from '../model/xml.ts';
 import type { ChangeGroup } from './changes-view.ts';
@@ -317,6 +318,7 @@ export function useBridge(
       if (msg.type === 'ola') {
         setAvailable(true);
         setFeatures(msg.features ?? []);
+        setIncludeCapability((msg.features ?? []).includes('incluir-itens'));
       }
       if (msg.type === 'resultado') {
         setResults((r) => ({ ...r, [msg.result.key]: msg.result }));

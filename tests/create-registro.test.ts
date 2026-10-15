@@ -154,7 +154,8 @@ function findAll(root: XElement, name: string): XElement[] {
 
 describe('planejar a inclusão de um registro', () => {
   it('com a chave ligada o registro vira inclusão; a patente vai à mão pelo titular', async () => {
-    expect(LATTES_CONTRACT.forms['criar-registro']).toBeUndefined();
+    // Ligada na montagem: o formulário entra no contrato.
+    expect(LATTES_CONTRACT.forms['criar-registro']).toBeDefined();
     const edit = (doc: XDocument) => addRegistro(doc, 'DESENHO-INDUSTRIAL', desenho);
     expect((await plan(edit, false)).planned.ops).toEqual([]);
     const { planned } = await plan(edit);

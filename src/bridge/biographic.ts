@@ -22,11 +22,12 @@ import { findLinks } from './lattes-html.ts';
 import type { BridgeOp, FieldValues, OpBase } from './plan.ts';
 
 /**
- * Fica false até um teste acompanhado num Lattes real. Desligada, o
- * planejamento manda essas mudanças para o caminho à mão e o contrato não
- * confere esses formulários; os testes ligam com `biographicOps: true`.
+ * Ligada para o teste ao vivo, antes de um teste acompanhado num Lattes real.
+ * O plano só a usa com a capacidade `alterar-dados-gerais` da extensão
+ * (plan.ts). Desligada, o planejamento manda essas mudanças para o caminho à
+ * mão e o contrato não confere esses formulários.
  */
-export const BIOGRAPHIC_OPS_ENABLED = false;
+export const BIOGRAPHIC_OPS_ENABLED = true;
 
 /**
  * Formação acadêmica: o formulário se abre pelo link da lista com f_seq =
@@ -316,6 +317,8 @@ export const BIOGRAPHIC_SPECS: Record<BiographicKind, FormSpec> = {
       f_tipo: hidden,
     },
     name: 'GN_FORMACAO2',
+    // Só estes campos vão no envio; os outros do formulário seguem como estão.
+    partial: true,
   },
   identificacao: {
     action: 'PRC_IDENT',

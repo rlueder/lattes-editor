@@ -9,11 +9,21 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { DEMO_XML } from '../scripts/lattes-simulado/estado.ts';
 import { applyAll, applyOp } from '../src/bridge/apply.ts';
 import { checkContract, isBreaking, LATTES_CONTRACT } from '../src/bridge/contract.ts';
-import { EVENT_ELEMENTS, TYPE_UNREAD } from '../src/bridge/create-evento.ts';
+import {
+  EVENT_ELEMENTS,
+  eventCarriedByImport,
+  eventoProblem,
+  TYPE_UNREAD,
+} from '../src/bridge/create-evento.ts';
 import { CREATE_SPECS } from '../src/bridge/create-items.ts';
 import { planChanges } from '../src/bridge/plan.ts';
 import { diffDocuments } from '../src/model/changes.ts';
-import { DIRECT_INCLUSION_TYPES, directInclusion } from '../src/model/direct-inclusion.ts';
+import {
+  DIRECT_INCLUSION_TYPES,
+  directInclusion,
+  setIncludeCapability,
+  subscribeIncludeCapability,
+} from '../src/model/direct-inclusion.ts';
 import { loadCv } from '../src/model/document.ts';
 import { goesByChanges, isNewProduction, isPendingImport } from '../src/model/production.ts';
 import { element, getAttr, walk, type XElement } from '../src/model/xml.ts';
@@ -84,6 +94,54 @@ async function plan(item: XElement) {
   }));
   return planChanges(entries, working.root, { createItems: true });
 }
+
+describe('evento: a extensão e o Importar decidem o caminho', () => {
+  afterEach(() => setIncludeCapability(false));
+
+  it('só sai do Importar com a extensão que anuncia incluir-itens', () => {
+    const item = congresso();
+    setIncludeCapability(false);
+    expect(directInclusion()).toEqual(new Set());
+    expect(isPendingImport(item, 33)).toBe(true);
+    setIncludeCapability(true);
+    expect(directInclusion()).toEqual(DIRECT_INCLUSION_TYPES);
+    expect(isPendingImport(item, 33)).toBe(false);
+    // Avisa quem acompanha, uma vez por troca.
+    let calls = 0;
+    const stop = subscribeIncludeCapability(() => (calls += 1));
+    setIncludeCapability(true);
+    setIncludeCapability(false);
+    stop();
+    setIncludeCapability(true);
+    expect(calls).toBe(1);
+  });
+
+  it('o que o formulário de eventos não leva volta ao Importar, quando o Importar leva', async () => {
+    const root = (await loadCv(DEMO, 'demo.xml')).doc.root;
+    const on = directInclusion(true);
+    const coauthor = element('PARTICIPANTE-DE-EVENTOS-CONGRESSOS', {
+      'NOME-COMPLETO-DO-PARTICIPANTE-DE-EVENTOS-CONGRESSOS': 'Outra Pessoa',
+      'ORDEM-PARTICIPANTE': '2',
+    });
+    const owner = element('PARTICIPANTE-DE-EVENTOS-CONGRESSOS', OWNER);
+    // O formulário leva: vai pela lista de alterações.
+    expect(isPendingImport(congresso(), 33, on, root)).toBe(false);
+    // Outro participante: o formulário não leva, o Importar leva (a pessoa está lá).
+    const withCoauthor = congresso({}, {}, [owner, coauthor]);
+    expect(eventoProblem(withCoauthor, root)).toMatch(/Participantes além de você/);
+    expect(isPendingImport(withCoauthor, 33, on, root)).toBe(true);
+    expect(goesByChanges(withCoauthor, 33, on, root)).toBe(false);
+    // Campo que o formulário não tem, com a pessoa entre os participantes: Importar.
+    const withDoi = congresso({ DOI: '10.1/x' });
+    expect(isPendingImport(withDoi, 33, on, root)).toBe(true);
+    // Sem a pessoa entre os participantes, o Importar descartaria: fica à mão.
+    const orphan = congresso({ DOI: '10.1/x' }, {}, [coauthor]);
+    expect(eventCarriedByImport(orphan, root)).toBe(false);
+    expect(isPendingImport(orphan, 33, on, root)).toBe(false);
+    // Sem a raiz (texto de um cartão), vale o tipo.
+    expect(goesByChanges(withCoauthor, 33, on)).toBe(true);
+  });
+});
 
 describe('evento em contêiner novo', () => {
   it('currículo sem DADOS-COMPLEMENTARES: o congresso novo vira inclusão', async () => {
@@ -249,7 +307,7 @@ describe('incluir evento no Lattes simulado', () => {
     // Outro trabalho no mesmo evento, com outro título: não é duplicata.
     const other = await plan(congresso({ TITULO: 'Outro trabalho' }));
     expect(await applyOp(other.ops[0]!, lattes.port)).toMatchObject({
-      detail: expect.stringMatching(/^Criada no Lattes, com os campos conferidos/),
+      detail: expect.stringMatching(/^Criada no Lattes, com os outros campos conferidos/),
     });
     // Ouvinte não tem título: a chave fica no evento, no ano e na forma.
     const ouvinte = await plan(

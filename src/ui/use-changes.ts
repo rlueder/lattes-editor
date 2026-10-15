@@ -1,7 +1,7 @@
 // Lista de alterações a levar ao Lattes, recalculada a cada edição, e a
 // marcação de "feito", guardada com a cópia de trabalho.
 
-import { type Dispatch, type SetStateAction, useMemo } from 'react';
+import { type Dispatch, type SetStateAction, useMemo, useSyncExternalStore } from 'react';
 
 import type { Session } from '../forms/use-production.ts';
 import {
@@ -13,6 +13,7 @@ import {
   revertChange,
   revertField,
 } from '../model/changes.ts';
+import { includeCapability, subscribeIncludeCapability } from '../model/direct-inclusion.ts';
 import { isPendingImport } from '../model/production.ts';
 import { insertInSchemaOrder } from '../model/schema-order.ts';
 import { parseXml, serializeXml, type XElement } from '../model/xml.ts';
@@ -42,16 +43,18 @@ export function useChanges(
     [originalXml],
   );
 
+  // Os eventos saem do Importar quando a extensão anuncia 'incluir-itens'.
+  const canInclude = useSyncExternalStore(subscribeIncludeCapability, includeCapability);
   const groups = useMemo(() => {
     if (!session || !original) return [];
     const loadedMax = session.meta.loadedMaxSequencia;
     // Produção nova vai pelo Importar, não por esta lista.
-    const skip = (el: XElement) => isPendingImport(el, loadedMax);
+    const skip = (el: XElement) => isPendingImport(el, loadedMax, undefined, session.doc.root);
     const changes = diffDocuments(original, session.doc.root, { skip });
     return groupChanges(changes, original, session.doc.root, sections);
     // O documento é mutado no lugar; `version` avisa a mudança.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, original, sections, version]);
+  }, [session, original, sections, version, canInclude]);
 
   /** Volta a mudança ao valor da exportação, na cópia de trabalho. */
   const discard = (entry: ChangeEntry) => {

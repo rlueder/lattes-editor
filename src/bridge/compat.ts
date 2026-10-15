@@ -10,7 +10,7 @@
 //   pelos dois lados;
 // - nenhuma sai, mesmo que deixe de ser usada: um lado mais novo sem ela
 //   pareceria o mais antigo;
-// - a exceção são as capacidades das alterações atrás de chave (GATED_EDITS,
+// - a exceção são as capacidades das operações atrás de chave (GATED_EDITS,
 //   em plan.ts): entram quando a chave liga e saem se ela voltar a desligar,
 //   porque anunciá-las com a chave desligada levaria o app a mandar operações
 //   que a extensão não tem no contrato. tests/edit-flags.test.ts cobra isso.
@@ -34,6 +34,18 @@ export const BRIDGE_FEATURES = [
   'listas-lattes',
   /** Alteração de evento de ouvinte, com o formulário de eventos no contrato (src/bridge/edit-items.ts). */
   'alterar-evento',
+  /** Inclusão de itens pelos formulários do Lattes (create.ts, create-items.ts). */
+  'incluir-itens',
+  /** Exclusão de itens que já estão no Lattes (delete.ts). */
+  'excluir-itens',
+  /** Formação, endereço e identificação pelo conector (biographic.ts). */
+  'alterar-dados-gerais',
+  /** Eventos de convidado e participante: forma, tipo, natureza e cidade (edit-items.ts). */
+  'alterar-evento-completo',
+  /** Prêmios e títulos (edit-lists.ts). */
+  'alterar-premio',
+  /** Formação complementar (edit-lists.ts). */
+  'alterar-formacao-complementar',
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];
