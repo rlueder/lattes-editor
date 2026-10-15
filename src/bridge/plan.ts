@@ -23,6 +23,14 @@ export interface OpBase {
    * Lattes não é a que o editor pensa, e nada é enviado.
    */
   expect: FieldValues;
+  /**
+   * Campos que confirmam que o formulário aberto é o do item, além do
+   * expect, nas listas em que o número do link não basta (evento, formação):
+   * o valor do Lattes, sem acento, caixa nem espaço nas pontas, precisa ser um
+   * dos listados (o antes e o depois, quando outra operação da fila troca o
+   * campo). Ausente nas operações que não precisam.
+   */
+  identity?: Record<string, string[]>;
   /** Chave da mudança no editor (Change.key). */
   key: string;
   label: string;
@@ -214,12 +222,26 @@ export function planChange(
       set.f_status = set.f_ano_fim ? 'N' : 'S';
       expect.f_status = expect.f_ano_fim ? 'N' : 'S';
     }
-    // Conferência de identidade: o início do vínculo tem de bater.
+    // Conferência de identidade: o início do vínculo tem de bater. Além da
+    // instituição no link da lista (que não confere nada quando o XML vem sem
+    // CODIGO-INSTITUICAO) e dos números da atuação e do vínculo, o fim e a
+    // carga horária que a operação não troca também conferem, sem acento,
+    // caixa nem espaço (identity): ligações observadas nos 8 vínculos do
+    // censo de 15/10/2026, sem divergência.
     if (!('f_ano_ini' in expect)) expect.f_ano_ini = getAttr(el, 'ANO-INICIO') ?? '';
     if (!('f_mes_ini' in expect)) expect.f_mes_ini = getAttr(el, 'MES-INICIO') ?? '';
+    const identity: Record<string, string[]> = {};
+    for (const [field, attr] of [
+      ['f_ano_fim', 'ANO-FIM'],
+      ['f_mes_fim', 'MES-FIM'],
+      ['f_carga', 'CARGA-HORARIA-SEMANAL'],
+    ] as const) {
+      if (!(field in expect)) identity[field] = [getAttr(el, attr) ?? ''];
+    }
     return {
       codInst: getAttr(atuacao, 'CODIGO-INSTITUICAO') || undefined,
       expect,
+      identity,
       key: change.key,
       kind: 'vinculo',
       label,

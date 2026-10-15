@@ -18,7 +18,7 @@ import {
   lattesIdFrom,
   sameCv,
 } from '../src/bridge/lattes-html.ts';
-import { type BridgeOp, planChange, planChanges } from '../src/bridge/plan.ts';
+import { type BridgeOp, planChange, planChanges, type VinculoOp } from '../src/bridge/plan.ts';
 import {
   bridgeMessage,
   editorMessage,
@@ -383,6 +383,27 @@ describe('conector: aplicar no Lattes simulado', () => {
       status: 'divergente',
     });
     expect(postsOf(lattes)).toHaveLength(0);
+  });
+
+  it('vínculo de mesmo início com outro fim ou outra carga não recebe a gravação', async () => {
+    for (const [attr, value, field] of [
+      ['ANO-FIM', '2015', 'f_ano_fim'],
+      ['MES-FIM', '06', 'f_mes_fim'],
+      ['CARGA-HORARIA-SEMANAL', '20', 'f_carga'],
+    ]) {
+      const lattes = await lattesFor();
+      setAttr(vinculoIn(lattes.state), attr!, value!);
+      const op = vinculoOp((v) => setAttr(v, 'OUTRAS-INFORMACOES-INGLES', 'x'));
+      expect(await applyOp(op, lattes.port)).toMatchObject({
+        detail: `O Lattes não está como o editor espera: ${field}`,
+        status: 'divergente',
+      });
+      expect(postsOf(lattes)).toHaveLength(0);
+    }
+    // O fim alterado pela própria operação sai da identidade e vai no antes.
+    const op = vinculoOp((v) => setAttr(v, 'ANO-FIM', '2013')) as VinculoOp;
+    expect(op.identity).not.toHaveProperty('f_ano_fim');
+    expect(op.identity).toMatchObject({ f_carga: ['40'], f_mes_fim: ['12'] });
   });
 
   it('recusa valor acima do limite do campo', async () => {

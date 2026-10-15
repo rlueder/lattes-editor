@@ -54,24 +54,8 @@ export const EDIT_OUVINTE_ENABLED = true;
  * f_seq sozinho não basta; ver planEvento).
  */
 export interface EventoOp extends OpBase {
-  /**
-   * Campos que confirmam que o formulário aberto pelo f_seq é o do item, além
-   * do expect: o valor do Lattes, sem acento, caixa nem espaço nas pontas,
-   * precisa ser um dos listados (o antes e o depois, quando outra operação da
-   * fila troca o campo). Ausente nas operações de antes desta conferência.
-   */
-  identity?: Record<string, string[]>;
   kind: 'evento';
   seq: string;
-}
-
-const folded = (value: string | null) => (value === null ? '' : foldText(value.trim()));
-
-/** Os campos de identidade (EventoOp.identity) que o formulário não confirma. */
-export function identityMismatches(op: EventoOp, value: (name: string) => string | null): string[] {
-  return Object.entries(op.identity ?? {})
-    .filter(([name, ok]) => !ok.some((v) => folded(v) === folded(value(name))))
-    .map(([name]) => name);
 }
 
 export function isEventoOp(op: BridgeOp): op is EventoOp {

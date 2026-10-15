@@ -124,11 +124,11 @@ describe('dados gerais: formação acadêmica', () => {
       expect: {
         F_STATUS: 'N',
         f_ano_fim: '',
-        f_ano_ini: '2006',
         f_ano_obten: '',
         f_nivel: '3',
         f_titulo: 'Dissertação',
       },
+      identity: { f_ano_ini: ['2006'], f_curso_old: [''], f_inst_old: ['PUCRS'] },
       kind: 'formacao',
       seq: '1',
       set: {
@@ -142,6 +142,7 @@ describe('dados gerais: formação acadêmica', () => {
     const start = onlyOp(editMestrado({ 'ANO-DE-INICIO': '2005' }));
     expect(start.expect.f_ano_ini).toBe('2006');
     expect(start.set.f_ano_ini).toBe('2005');
+    expect(start.identity).not.toHaveProperty('f_ano_ini');
     // Graduação: o título é o do trabalho de conclusão.
     const grad = onlyOp((root) =>
       setAttr(find(root, 'GRADUACAO'), 'TITULO-DO-TRABALHO-DE-CONCLUSAO-DE-CURSO', 'Novo TCC'),
@@ -346,6 +347,35 @@ describe('dados gerais no Lattes simulado', () => {
     expect(getAttr(mestrado, 'ANO-DE-CONCLUSAO')).toBe('');
     expect(getAttr(mestrado, 'TITULO-DA-DISSERTACAO-TESE')).toBe('Dissertação');
     expect(getAttr(mestrado, 'STATUS-DO-CURSO')).toBe('EM_ANDAMENTO');
+  });
+
+  it('formação: não grava noutra formação do mesmo nível e ano quando o f_seq é de outro item', async () => {
+    // No editor, o mestrado 1 é da PUCRS. No Lattes, o f_seq=1 é outro mestrado
+    // do mesmo ano, noutra instituição e curso: o f_seq não é sempre o número
+    // do item (censo de 15/10/2026), e só nível e ano não separam os dois.
+    const other =
+      '<MESTRADO SEQUENCIA-FORMACAO="1" NIVEL="3" NOME-INSTITUICAO="UFRGS" NOME-CURSO="Física" STATUS-DO-CURSO="EM_ANDAMENTO" ANO-DE-INICIO="2006" ANO-DE-CONCLUSAO="" ANO-DE-OBTENCAO-DO-TITULO="" TITULO-DA-DISSERTACAO-TESE="Dissertação" NOME-COMPLETO-DO-ORIENTADOR="Orientador"/>';
+    const inLattes = XML.replace(/<MESTRADO SEQUENCIA-FORMACAO="1"[^>]*\/>/, other);
+    expect(inLattes).toContain('UFRGS');
+    await open?.close();
+    open = await withLattesSimulado({
+      xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${inLattes}`),
+    });
+    for (const edit of [
+      editMestrado({ 'STATUS-DO-CURSO': 'CONCLUIDO' }),
+      editMestrado({ 'ANO-DE-INICIO': '2005' }),
+    ]) {
+      const r = await applyOp(onlyOp(edit), open.port);
+      expect(r.status).toBe('divergente');
+      expect(r.detail).toMatch(/f_inst_old/);
+    }
+    expect(posts(open)).toEqual([]);
+  });
+
+  it('formação: instituição com outra caixa e acento ainda é a mesma', async () => {
+    const lattes = await lattesFor();
+    setAttr(inState(lattes, 'MESTRADO'), 'NOME-INSTITUICAO', ' pucrs ');
+    expect(await applyOp(mestradoOp(), lattes.port)).toMatchObject({ status: 'conferido' });
   });
 
   it('formação: para antes de enviar quando algo não confere', async () => {

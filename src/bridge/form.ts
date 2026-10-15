@@ -2,6 +2,8 @@
 // "bem-sucedidos" (com nome, habilitados, caixas marcadas), em Latin-1, do
 // jeito que o POST clássico de enviar() mandaria.
 
+import { foldText } from '../model/fold-text.ts';
+
 export interface FormControl {
   checked?: boolean;
   disabled?: boolean;
@@ -110,4 +112,19 @@ function encodeValue(value: string): string {
 
 export function encodeLatin1Form(pairs: Pairs): string {
   return pairs.map(([k, v]) => `${encodeValue(k)}=${encodeValue(v)}`).join('&');
+}
+
+const folded = (value: string | null) => (value === null ? '' : foldText(value.trim()));
+
+/**
+ * Os campos de identidade (OpBase.identity) que o formulário não confirma:
+ * sem acento, caixa nem espaço nas pontas, o valor precisa ser um dos aceitos.
+ */
+export function identityMismatches(
+  identity: Record<string, string[]> | undefined,
+  value: (name: string) => string | null,
+): string[] {
+  return Object.entries(identity ?? {})
+    .filter(([name, ok]) => !ok.some((v) => folded(v) === folded(value(name))))
+    .map(([name]) => name);
 }
