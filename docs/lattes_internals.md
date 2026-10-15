@@ -273,6 +273,15 @@ Lidos nos formulários, sem gravar nada:
 - Formação acadêmica: `f_nivel` vem oculto no formulário (3 no mestrado, 1 na
   graduação, 7 no curso técnico, conforme a exportação); o nível é o próprio
   tipo do item.
+- Pós-doutorado e livre-docência (`pkg_formacao.form` com `f_tipo=AP`, lido
+  em 15/10/2026): `f_nivel` 5 é pós-doutorado e 6 livre-docência. O
+  formulário de inclusão do pós-doutorado mostra só instituição, rádio
+  `F_STATUS` do status do curso (`N` em andamento, `S` concluído, `I`
+  incompleto), início e conclusão (ano), rádio `F_BOLSA`, agência financiadora
+  e áreas. Título do trabalho (`f_titulo`), ano e mês de obtenção
+  (`f_ano_obten`, `f_mes_obten`), orientador e curso vão ocultos. Status do
+  estágio, título em inglês e nome do curso em inglês não aparecem. O valor de
+  `F_STATUS` no XML não foi conferido numa exportação.
 - `NIVEL-CURSO="OT"` da tabela de cursos: sentido não encontrado. O XSD tem
   `OT` e `OUTRO` como valores distintos.
 
@@ -1035,6 +1044,25 @@ cotutela, as três grades (`f_plv_l`, `f_setor_l`, `f_area_l`) e
 Na graduação, mestrado e doutorado os campos do sanduíche e da cotutela
 estão no HTML, dentro de blocos escondidos (`lblDoutorado`, `lblMesesSW1`,
 `lblDoutoradoCT`) que `f_tpo_doutorado` mostra. **Observado.**
+
+No XML, `TIPO-DOUTORADO` guarda o código da opção de `f_tpo_doutorado`.
+**Observado** para `N` e `S` em quatro exportações reais publicadas no
+GitHub (arquivos LATTES_OFFLINE): `N` em RafaelQSantos-RQS/LattesHub
+`database/data/lattes/3633682231940138.xml`, NARizzardi/UFPR
+`1002/lattes/lattes-cvs/algoritmos/kohayakawa.xml` e
+LiaCasatiRamaldes/vira-lattes-db `cv/mock_jean.xml` (este talvez simulado),
+todos com os campos `-DOUT`, `-SANDUICHE` e `-CO-TUTELA` vazios; `S` em
+RafaelQSantos-RQS/LattesHub `database/data/lattes/5601958689947032.xml`, com
+`NOME-INSTITUICAO-DOUT` e `NOME-ORIENTADOR-DOUT` preenchidos e
+`NOME-INSTITUICAO-OUTRA-DOUT`, `NOME-DO-ORIENTADOR-SANDUICHE` e
+`NOME-DO-ORIENTADOR-CO-TUTELA` vazios. Ou seja, no doutorado sanduíche os
+campos `-DOUT` são os do sanduíche. `C` (co-tutela) e `CS`
+(co-tutela/sanduíche) não apareceram em nenhuma exportação: **inferidos**
+pelas opções do formulário. O editor mostra o tipo como lista
+(`src/ui/field-kind.ts`) e rotula os dois campos `-DOUT` do doutorado como
+"Instituição do sanduíche" e "Orientador no sanduíche"
+(`src/labels/labels.ts`); `NOME-DO-ORIENTADOR-SANDUICHE`, sem exemplo
+preenchido, fica "Nome do orientador sanduíche".
 
 A instituição, o curso e a agência só entram pelas buscas (seção 18):
 `sele_inst(1)` abre `prc_inst_form?f_cod=…&f_nivel=<nível>`;

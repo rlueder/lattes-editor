@@ -66,6 +66,17 @@ As listas grandes demais ou que dependem de uma escolha (áreas do
 conhecimento, agências, instituições, cursos) não vêm no código: a extensão as
 lê no Lattes, e o editor guarda uma cópia (`src/ui/live-lists.ts`).
 
+Uma marca sim/não vem invertida na exportação: `FLAG-VINCULO-EMPREGATICIO`,
+nos `VINCULOS` da atuação. Onde a tela do Lattes diz "Possui vínculo
+empregatício: Sim", o XML traz `NAO`, e vice-versa (observado em 8 de 8
+vínculos no censo LAT-55 e conferido na tela em 15/10/2026; a
+`FLAG-DEDICACAO-EXCLUSIVA` não troca). O editor mostra e edita essa marca no
+sentido da tela e grava no arquivo o valor invertido, para o arquivo manter a
+convenção da exportação. A troca mora num lugar só (`flagAsShown` em
+`src/ui/field-kind.ts`), que o interruptor, a prévia, a lista de alterações e
+os filtros usam. Que o Importar leia o arquivo de volta com a mesma convenção
+é inferido, não testado: só o caminho exportação → tela foi observado.
+
 ## O que o app guarda
 
 Tudo fica no IndexedDB do WebView (`src/model/store.ts`, com Dexie), cifrado
@@ -103,25 +114,25 @@ que o painel "Enviar ao Lattes" mostra item por item:
   é o inverso do `FLAG-VINCULO-EMPREGATICIO` da exportação, e a tradução dos
   dois sentidos fica em `src/bridge/vinculo-flag.ts`. Formação, endereço e identificação têm as
   operações em `src/bridge/biographic.ts`, desligadas até o teste no Lattes
-  real (`BIOGRAPHIC_OPS_ENABLED`); enquanto isso, seguem à mão.
+  real (`BIOGRAPHIC_OPS_ENABLED`); enquanto isso, ficam em "Não enviado".
 - **Item removido no editor** pode ir pela extensão com
   `src/bridge/delete.ts`, que posta o formulário de edição do item com
   `f_ctr=E`, como o botão "Excluir" do Lattes, e confere lendo a lista de
   novo (o item sumiu, nada mais mudou), sem depender da resposta do Lattes.
   Hoje só idioma e vínculo, e desligado (`DELETE_ITEMS_ENABLED`) até um teste
-  acompanhado; desligado, a remoção fica à mão. A atuação inteira e as
-  formações ficam sempre à mão: a primeira apaga em cascata, e excluir uma
+  acompanhado; desligado, a remoção fica em "Não enviado". A atuação inteira
+  e as formações não vão pela extensão: a primeira apaga em cascata, e excluir uma
   formação pode tornar outra pública. Uma exclusão não tem "Desfazer no
   Lattes" no registro do enviado.
-- **O resto** fica **à mão**, campo a campo, com o valor antigo e o novo lado a
-  lado.
+- **O resto** fica em **"Não enviado"**, campo a campo, com o valor antigo e o
+  novo lado a lado, até o editor saber levar; dá para descartar.
 
 Formação acadêmica, atuação profissional, projeto e patente também se criam no
 editor (`src/model/general-items.ts`, formulário em
 `src/forms/GeneralItemForm.tsx`), mas nenhum módulo do Importar lê essas
 seções. O item novo é uma alteração como as outras: o conector o inclui quando
 souber (a inclusão de atuação existe em `src/bridge/create.ts`, desligada), e
-fora isso ele vai à mão. Por isso "item novo de produção" quer dizer item com
+fora isso fica em "Não enviado". Por isso "item novo de produção" quer dizer item com
 `SEQUENCIA-PRODUCAO` nova **e** tipo que um módulo do Importar lê
 (`isPendingImport`, em `src/model/production.ts`): a patente usa o contador
 global, mas não vai pelo Importar. As sequências biográficas
@@ -135,13 +146,13 @@ pode ir pelo conector, no próprio formulário do evento
 `SEQUENCIA-PRODUCAO`, e a operação confere antes que o formulário é de
 ouvinte, do mesmo tipo de evento e com o mesmo ano ou nome. Vão título, ano,
 país, home page, divulgação científica, título em inglês e nome do evento.
-Ficam à mão os eventos de convidado e participante, a forma, o tipo, a
+Não vão pela extensão os eventos de convidado e participante, a forma, o tipo, a
 natureza, a cidade e o que o formulário não tem (idioma, palavras-chave,
 áreas). O caminho está ligado (`EDIT_OUVINTE_ENABLED`) desde o teste
 acompanhado de 14/10/2026 no Lattes real, e o contrato confere o formulário de
 eventos antes de cada fila. O app só manda essas operações a uma extensão que
 anuncia a capacidade `alterar-evento` (`src/bridge/compat.ts`); com uma
-extensão mais antiga, o evento segue à mão. Convidado, participante e os
+extensão mais antiga, o evento fica em "Não enviado". Convidado, participante e os
 outros tipos de produção, quando ganharem caminho, entram com chave própria,
 desligada até o teste deles.
 

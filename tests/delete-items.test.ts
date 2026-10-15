@@ -20,6 +20,7 @@ import { opRows } from '../src/bridge/field-labels.ts';
 import { planChanges } from '../src/bridge/plan.ts';
 import {
   noUndoReason,
+  opBadge,
   sentEntry,
   sentLogText,
   UNDO_KEY_PREFIX,
@@ -255,6 +256,15 @@ describe('a exclusão e o resto do conector', () => {
     const edit = { ...sentEntry(resumo, '1', 0), id: 8 };
     expect(noUndoReason(edit.op)).toBeUndefined();
     expect(undoOp(edit)?.key).toBe(`${UNDO_KEY_PREFIX}8`);
+  });
+
+  it('selo no registro do enviado: "removido" na exclusão, "novo" na criação, nada na alteração', () => {
+    expect(opBadge(idiomaOp)).toBe('removido');
+    expect(opBadge({ ...idiomaOp, kind: 'criar-atuacao' } as unknown as typeof idiomaOp)).toBe(
+      'novo',
+    );
+    const resumo = { expect: {}, key: 'r', kind: 'resumo' as const, label: 'Resumo', set: {} };
+    expect(opBadge(resumo)).toBeUndefined();
   });
 
   it('conferida, tira o item do original, e a mudança sai da lista', () => {

@@ -58,11 +58,164 @@ O modal "New issue" do Linear é o modelo para "Novo item":
   branco do mesmo tipo, para quem lança várias produções seguidas. A
   escolha fica lembrada no navegador.
 
+## Dois registros: interface densa e texto de leitura
+
+A escala do Linear serve ao que se opera: menu lateral, cabeçalho, painel
+"Nesta seção", filtro, linhas compactas e formulários. O conteúdo de uma
+seção é outra coisa, porque a maior parte do tempo a pessoa lê o próprio
+currículo e só às vezes muda um dado. Para esse texto a referência é o
+[Typography for Lawyers](https://typographyforlawyers.com/), de Matthew
+Butterick, adaptado à tela.
+
+Todas as seções aparecem compostas
+como texto, sem borda de campo, sem rótulo que repete o título do grupo e
+sem a caixa branca sobre o fundo cinza: os grupos se separam pelo espaço.
+A leitura mostra todo campo preenchido: o que não cabe na frase (o status
+do curso, o ISSN, o idioma de um artigo) fica logo abaixo numa grade de três
+colunas (duas em tela estreita), com o rótulo pequeno acima do valor; um
+valor de mais de 24 caracteres ocupa duas colunas, e um de mais de 48, a linha
+inteira. A grade segue a ordem de leitura, sem reacomodar valores curtos nos
+buracos. Campo vazio não aparece.
+
+Atuação, projetos, orientações, bancas e eventos leem como registro: período
+ou ano, título, uma linha de onde e de que forma ("69º Congresso Brasileiro
+de Genética · Convidado · Conferencista"), quem o item envolve ("Orientado:",
+"Candidato:") e o resto em grade. O que se repete dentro do item (vínculos,
+atividades, integrantes, participantes) vira uma lista recuada, cada item
+como um registro pequeno. As produções com autores leem como referência da
+NBR 6023. As tabelas de apoio de "Outros dados" (instituições, cursos)
+continuam como cartões, por causa do "Onde aparece".
+
+Na edição, o texto do bloco fica no topo como prévia, igual ao que estava
+na tela e na mesma tipografia de leitura, e acompanha o que se digita. Abaixo
+dele, depois de um fio, vêm os campos, na Plex Sans e na escala densa do
+resto do editor, todos eles, inclusive os vazios, que ficam no fim de cada
+grupo. Nas produções, a prévia é a referência da NBR 6023.
+
+Clique no texto, o botão "Editar" (à vista no foco do teclado, no passar do
+mouse e sempre no toque) ou E com o botão focado abrem a edição; dois ou
+três cliques selecionam texto. Esc ou "Concluir" voltam ao texto. O modo de
+privacidade continua valendo, e os dados escondidos viram uma linha só
+("12 dados pessoais ocultos…") na leitura e na edição.
+
+O texto de leitura usa a IBM Plex Serif (regular, itálica e seminegrito,
+embutidas como a Plex Sans); os campos ficam na Plex Sans.
+
+Os números escolhidos, com a regra de onde saíram:
+
+| Medida                | Valor                                          | Regra do Typography for Lawyers                                |
+| --------------------- | ---------------------------------------------- | -------------------------------------------------------------- |
+| Corpo                 | 17px, IBM Plex Serif, peso 400                 | Na web, 15 a 25px ("Point size")                               |
+| Entrelinha            | 1,5                                            | 120 a 145% no papel; na tela, um pouco acima ("Line spacing")  |
+| Medida                | 60ch, de 67 a 73 caracteres por linha          | Média de 45 a 90 caracteres ("Line length")                    |
+| Entre parágrafos      | 0,65em (11px, perto de 8pt), sem recuo         | 4 a 10pt de espaço ou recuo, nunca os dois                     |
+| Título da página      | 26px, peso 600                                 |                                                                |
+| Título de grupo       | 19px, peso 600, 3rem acima e 0,75rem abaixo    | Degrau pequeno de tamanho e espaço acima e abaixo ("Headings") |
+| Subtítulo             | 17px, peso 600                                 | No máximo dois níveis dentro do conteúdo                       |
+| Rótulo curto (versal) | 12px na sans, 8% de espaçamento                | Caixa alta só em texto curto, com 5 a 12% ("All caps")         |
+| Metadado e rótulo     | 15px na cor secundária                         | Hierarquia por cor e tamanho                                   |
+| Coluna de anos        | Largura do texto mais longo da lista e 1,1rem  | Anos alinhados, perto do texto                                 |
+| Coluna de rótulos     | 13rem; em tela estreita, rótulo acima do valor |                                                                |
+
+Cores do texto de leitura, um pouco abaixo do preto e do branco do cromo,
+em tons quentes:
+
+| Tema   | Texto             | Secundário                                       |
+| ------ | ----------------- | ------------------------------------------------ |
+| Claro  | `#2a2824`, 14,0:1 | `#5f5c55`, 6,3:1 (5,9:1 sobre o realce do mouse) |
+| Escuro | `#d9d4ca`, 11,9:1 | `#9b968c`, 6,0:1 (5,5:1 sobre o realce do mouse) |
+
+Mais algumas decisões do mesmo lado:
+
+- Aspas e apóstrofos curvos na tela; o dado no XML não muda.
+- Sublinhado só em link.
+- Seminegrito (600) só nos títulos e na primeira linha de cada formação;
+  nunca 700 no conteúdo. Na formação: o grau em seminegrito, a instituição
+  no corpo, o título do trabalho em itálico, orientação e bolsa em cor
+  secundária, um ponto menor.
+- Produções saem como referência da NBR 6023, a mesma da impressão
+  (`src/print/references.ts`), com o destaque (periódico, anais, livro) em
+  itálico, que pesa menos que o negrito na serifa. A norma aceita um ou
+  outro, desde que o documento use um só; a impressão continua em negrito.
+- O ano aparece na primeira linha de cada sequência e fica em branco nas
+  seguintes, como num índice impresso; o leitor de tela continua ouvindo o ano.
+- O botão "Editar" fica numa margem reservada à direita do bloco e nunca
+  cobre o texto.
+- No tema escuro, o item ativo do menu lateral e do "Nesta seção" usa um
+  fundo neutro em vez do azul saturado.
+- Não há mais o ⚙ "Mostrar campos vazios": a leitura sempre esconde os
+  vazios e a edição sempre os mostra.
+
+### Ordem dos campos
+
+No modo de leitura, os campos do bloco em edição seguem, por padrão, a ordem
+da prévia acima deles (`src/ui/preview-order.ts`): cada campo fica onde o
+valor dele aparece no texto, primeiro o texto do item (período, grau e
+curso, instituição, trabalho, orientação, bolsa) e depois os valores da
+grade, em "Detalhes". Um campo vazio já fica onde vai aparecer quando for
+preenchido, então preencher não o muda de lugar. Nas produções, cuja prévia é
+a referência, os campos da referência vêm na ordem da citação e o resto em
+"Detalhes". O ⚙ tem "Ordem dos campos: como na prévia / como no Lattes".
+
+Como no Lattes (a outra opção do ⚙), os campos de um item
+seguem a ordem do formulário do próprio Lattes quando
+ela é conhecida (`src/ui/form-order.ts`, a partir das seções 5, 16 e 17 de
+`docs/lattes_internals.md`): participação em evento, formação acadêmica (por
+nível), prêmio, idioma, endereço, identificação, vínculo da atuação, projeto
+e resumo. Os grupos (Principal, Local, Curso, Situação e período…) são
+trechos seguidos desse formulário; um campo do XML que o Lattes não pede
+fica em "Outros dados", e não num grupo por semelhança de nome. Nos outros
+itens vale a ordem por assunto de antes, com os erros óbvios corrigidos (o
+nome e a cidade do evento iam para "Publicação").
+
+Nas duas ordens, um campo que decide as opções de outros vem antes deles,
+logo antes do primeiro que depende dele: a grande área antes da área (e esta
+antes da subárea e da especialidade), a forma de participação antes do tipo,
+o tipo de mestrado ou doutorado antes dos campos do sanduíche e da cotutela
+(`src/ui/field-dependencies.ts`).
+
+### Um bloco de cada vez
+
+Só um bloco fica em edição. Abrir outro (clique, "Editar" ou E) fecha o que
+estava aberto, gravando antes o campo em foco, como o "Concluir"; as
+mudanças valem na hora, como no resto do editor.
+
+### Modo foco
+
+Inspirado no modo foco do iA Writer: fica só o conteúdo e o índice "Nesta
+seção". O menu de seções (com foto e nome) e o cabeçalho (⌘K, novo item,
+enviar, sino, ⚙) saem de cena. O conteúdo não anda para o lado: a coluna do
+menu fica vazia, com o fundo do conteúdo, e a janela inteira vira uma folha
+só, sem borda nem canto em volta. Em cima, o lugar do cabeçalho fecha e a
+página começa no alto da janela. Em tela estreita, onde o menu fica em cima
+do conteúdo, o conteúdo sobe também o tanto da lista de seções, sem mudar de
+largura nem de margem.
+
+- Liga e desliga com ⌘⇧F (Ctrl+Shift+F fora do Mac) ou pelo item "Modo
+  foco" do ⚙ (com o atalho ao lado). A escolha fica lembrada neste aparelho.
+- O ponteiro na borda esquerda (faixa de 16px, espera de 150ms) traz o menu
+  por cima do conteúdo, sem empurrá-lo; sair dele com 24px de folga o
+  esconde. A borda de cima faz o mesmo com o cabeçalho.
+- Pelo teclado: G mostra o menu enquanto espera a letra da seção, o ⌘K
+  mostra o cabeçalho, e o Tab alcança os dois painéis, que aparecem quando o
+  foco entra neles. Nada prende o foco.
+- Em tela de toque, sem o passar do mouse, um puxador discreto na borda
+  esquerda abre e fecha o menu.
+- Editar um bloco funciona igual.
+
 ## Teclado
 
 O Linear trata o teclado como caminho principal, e vale estudar o
 conjunto inteiro antes de inventar atalhos nossos. Já temos ⌘K, G e uma letra para cada seção e
-⌘Enter para salvar o formulário. Falta levantar o que
+⌘Enter para salvar o formulário; o protótipo de leitura acrescenta E para editar o bloco
+focado e ⌘⇧F para o modo foco. Nas seções com o índice "Nesta seção", ↓ e ↑
+pulam para o grupo seguinte e o anterior, como o clique no índice, e o
+leitor de tela ouve o nome do grupo. A tecla só vale fora de campos, listas
+e menus, sem modificador (⌥, ⌘ e Shift com seta continuam do navegador) e
+sem janela ou menu aberto; no primeiro e no último grupo, ela segue para a
+rolagem normal. O custo: dentro de um grupo mais alto que a janela, a seta
+não rola mais linha a linha; espaço, Page Up, Page Down e a roda continuam
+rolando. Falta levantar o que
 o Linear faz para criar item (tecla única), navegar em lista (setas, J/K),
 abrir e fechar detalhes, e como ele mostra o atalho junto de cada ação
 (na dica e no menu), e decidir quais fazem sentido aqui.
@@ -76,8 +229,8 @@ e não como acabamento.
 - Meta de acessibilidade: WCAG 2.1 nível AA, e conferir o que o eMAG
   (modelo de acessibilidade do governo federal) acrescenta.
 - Todo controle alcançável e operável só pelo teclado, com foco visível.
-  Nada de ação que só exista no passar do mouse (o botão de copiar hoje
-  aparece no hover; precisa aparecer também no foco, e no toque).
+  Nada de ação que só exista no passar do mouse (o descartar dos campos
+  alterados aparece no hover, e também no foco e no toque).
 - Contraste AA nos dois temas, inclusive no cinza secundário que a
   escala nova usa mais.
 - Alvos de toque de pelo menos 24px (AA), e 44px no celular, onde a

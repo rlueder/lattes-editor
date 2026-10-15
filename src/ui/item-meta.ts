@@ -26,9 +26,9 @@ export interface YearMonth {
   year: number;
 }
 
-const START_ATTRS = ['ANO-INICIO', 'ANO-DE-INICIO'];
-const END_ATTRS = ['ANO-FIM', 'ANO-DE-CONCLUSAO'];
-const POINT_ATTRS = [
+export const START_ATTRS = ['ANO-INICIO', 'ANO-DE-INICIO'];
+export const END_ATTRS = ['ANO-FIM', 'ANO-DE-CONCLUSAO'];
+export const POINT_ATTRS = [
   'ANO-DO-TRABALHO',
   'ANO-DO-ARTIGO',
   'ANO-DO-TEXTO',
@@ -40,7 +40,7 @@ const POINT_ATTRS = [
   'ANO-DA-OBRA',
   'ANO-DE-OBTENCAO-DO-TITULO',
 ];
-const TITLE_ORDER: ((n: string) => boolean)[] = [
+export const TITLE_ORDER: ((n: string) => boolean)[] = [
   (n) =>
     n.startsWith('TITULO') &&
     !n.endsWith('INGLES') &&
@@ -52,7 +52,7 @@ const TITLE_ORDER: ((n: string) => boolean)[] = [
   (n) => n.startsWith('NOME') && !n.endsWith('INGLES') && !n.includes('CITACAO'),
   (n) => n.startsWith('DESCRICAO'),
 ];
-const SUBTITLE_ATTRS = [
+export const SUBTITLE_ATTRS = [
   'NOME-DO-EVENTO',
   'TITULO-DO-PERIODICO-OU-REVISTA',
   'TITULO-DOS-ANAIS-OU-PROCEEDINGS',

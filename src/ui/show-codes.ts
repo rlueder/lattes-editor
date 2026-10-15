@@ -37,5 +37,7 @@ export function useShowCodes(): boolean {
       return () => listeners.delete(listener);
     },
     () => showCodes,
+    // Fora do navegador (testes com renderToStaticMarkup), o mesmo valor.
+    () => showCodes,
   );
 }

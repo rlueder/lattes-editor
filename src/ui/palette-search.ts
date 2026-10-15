@@ -72,7 +72,11 @@ const action = (id: string, label: string, context: string): PaletteEntry => ({
   sectionId: '',
 });
 
-/** Ações do ⌘K: criar itens dos tipos mais usados, gerar a importação e o diagnóstico. */
+/**
+ * Ações do ⌘K: só criar itens dos tipos mais usados. O resto do ⌘K é ir a
+ * seções e grupos; enviar ao Lattes, diagnóstico, versões e modo foco ficam
+ * no cabeçalho e no ⚙.
+ */
 export function paletteActions(): PaletteEntry[] {
   return [
     // Título do grupo (abre a escolha de todos os tipos), com os tipos mais
@@ -81,8 +85,10 @@ export function paletteActions(): PaletteEntry[] {
     ...[...FORM_SPECS]
       .sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'))
       .map((f) => action(`novo:${f.itemName}`, f.title, 'Novo item')),
-    action('exportar', 'Enviar ao Lattes (importar e alterações)', ''),
-    action('diagnostico', 'Diagnóstico do currículo', ''),
-    action('versoes', 'Versões do Lattes (o que mudou entre exportações)', ''),
   ];
+}
+
+/** As seções, os grupos e as ações de criar item do ⌘K. */
+export function allEntries(sections: Section[]): PaletteEntry[] {
+  return [...paletteEntries(sections), ...paletteActions()];
 }

@@ -24,20 +24,22 @@ nos dois primeiros sem esforço:
    currículo público mostra a alteração, e a próxima exportação vira o novo
    original.
 
-### No cabeçalho
+### Onde aparecem
 
-O cabeçalho mostra esses quatro estados numa faixa discreta, com a contagem
-de cada um, por exemplo `Original · 5 alterações · 3 no Lattes · publicado
-em 17/08/2026`. O estado que pede ação fica em destaque, e cada contagem
-abre a lista correspondente: alterações do editor, registro do enviado,
-página de envio do Lattes. Sem nada pendente, a faixa se resume à data da
-última publicação.
+A contagem das alterações do editor fica no selo do botão "Enviar ao
+Lattes", no cabeçalho, e no aviso de pendências no alto da página. O que
+está no Lattes e ainda não foi publicado e a data da última publicação ficam
+numa linha discreta no alto do painel "Enviar ao Lattes", por exemplo `3 no
+Lattes · publicado em 17/08/2026`; a contagem do Lattes abre o registro do
+enviado (aba "Enviado"). O canto esquerdo do cabeçalho mostra o símbolo e o
+nome do app.
 
 As contagens de 2 e 3 o app já sabe (lista de alterações e registro do
 enviado). A data de publicação e a pendência no Lattes vêm da extensão, que
 lê o menu do Lattes na sessão aberta. Pendência que o app não gravou (feita
 direto no Lattes, ou por outro aparelho) aparece como "pendências que o
-editor não conhece".
+editor não conhece", na mesma linha do painel e como aviso no sino, e os
+dois abrem o diagnóstico.
 
 Sem leitura do Lattes, o sino ao lado das configurações diz o motivo
 (extensão ausente ou desatualizada, aviso da extensão não aceito, Lattes
@@ -86,7 +88,8 @@ Já tem um currículo grande; acrescenta poucas produções e corrige detalhes.
 1. Abre o app, que já tem a versão do mês passado. "Recarregar do Lattes"
    traz a de agora e diz, numa faixa, quantos itens são novos, alterados e
    removidos desde a anterior, inclusive o que foi editado direto no Lattes;
-   "Versões do Lattes" mostra o detalhe de cada exportação (LAT-12, feito).
+   "Versões do Lattes", no ⚙, mostra o detalhe de cada exportação (LAT-12,
+   feito).
 2. Acrescenta produções pelo DOI (LAT-30) e ajusta o que precisa.
 3. Manda, confere a faixa e publica.
 
@@ -104,8 +107,9 @@ antes (o caso que originou este documento).
 2. Mostra um diagnóstico antes de tudo: data da última publicação, o que está
    pendente e o que provavelmente envelheceu, como vínculos ainda "Atual" e
    períodos antigos (revisão de consistência, LAT-29). Feito em 13/10/2026
-   como "Diagnóstico do currículo", com a comparação por títulos das
-   produções e dos eventos (`src/review/espelho-diff.ts`).
+   como "Diagnóstico do currículo" (no ⚙ e no aviso do sino), com a
+   comparação por títulos das produções e dos eventos
+   (`src/review/espelho-diff.ts`).
 3. A pessoa decide o que mantém e o que desfaz, trabalha em lotes ao longo de
    dias (o app guarda tudo) e publica no fim.
 

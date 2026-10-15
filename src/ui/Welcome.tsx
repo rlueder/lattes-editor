@@ -9,6 +9,7 @@ import { useDevExtensionFolder } from '../desktop/dev-channel.ts';
 import { isDesktop, pickFileNative } from '../desktop/native.ts';
 import { onboardingPreview } from '../dev/onboarding-preview.ts';
 import { parseXml } from '../model/xml.ts';
+import { Brand } from './Brand.tsx';
 import { CheckIcon, PlusIcon, SearchIcon, SpinnerIcon, UploadIcon } from './icons.tsx';
 import { onboardingSteps, type Step } from './onboarding.ts';
 import { buildSections } from './sections.ts';
@@ -150,7 +151,9 @@ export function Welcome({ error, lattes, link, onFile, onReloadLattes, onTheme, 
       onDrop={onDrop}
     >
       <header data-tauri-drag-region className="topbar">
-        <div data-tauri-drag-region className="topbar-identity" />
+        <div data-tauri-drag-region className="topbar-identity">
+          <Brand />
+        </div>
         <div data-tauri-drag-region className="topbar-center">
           <button disabled className="ghost search-btn" type="button">
             <SearchIcon />

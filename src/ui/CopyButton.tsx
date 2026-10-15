@@ -4,7 +4,7 @@ import { copyText } from './clipboard.ts';
 import { CheckIcon, CopyIcon } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
 
-/** Botão "copiar" de um valor, para colar no formulário do Lattes. */
+/** Botão "copiar" do endereço do currículo, no compartilhar. */
 export function CopyButton({ label, value }: { label: string; value: string }) {
   const [copied, setCopied] = useState(false);
   return (

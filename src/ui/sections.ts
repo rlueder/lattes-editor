@@ -339,6 +339,17 @@ export function groupItemList(g: SectionGroup): GroupItems | null {
 }
 
 /** Quantos itens de lista um grupo tem (para o ⌘K e a navegação). */
+/**
+ * O número no selo do menu lateral: os registros que a página da seção
+ * mostra, com qualquer quantidade a partir de um (Projetos, com um projeto,
+ * mostra 1). Dados gerais é o perfil, não uma lista: somar Identificação,
+ * Resumo e endereços não conta nada, então fica sem selo.
+ */
+export function navCount(section: Pick<Section, 'groups' | 'id'>): number {
+  if (section.id === 'dados-gerais') return 0;
+  return section.groups.reduce((n, g) => n + countItems(g), 0);
+}
+
 export function countItems(g: SectionGroup): number {
   if (g.elements.length !== 1) return g.elements.length;
   const only = g.elements[0]!;

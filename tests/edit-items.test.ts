@@ -222,7 +222,7 @@ describe('alteração de evento: chave', () => {
     expect(routed.conector[0]!.entries.map((e) => e.change.element)).toEqual([
       'DADOS-BASICOS-DA-PARTICIPACAO-EM-CONGRESSO',
     ]);
-    expect(routed.mao[0]!.entries.map((e) => e.change.element)).toEqual([
+    expect(routed.pendente[0]!.entries.map((e) => e.change.element)).toEqual([
       'DETALHAMENTO-DA-PARTICIPACAO-EM-CONGRESSO',
     ]);
     const off = planAfter(edit, false).plan;

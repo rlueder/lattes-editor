@@ -77,4 +77,10 @@ describe('⌘K: ações de novo item', () => {
     expect(types).toEqual([...types].sort((a, b) => a.localeCompare(b, 'pt-BR')));
     expect(types.length).toBeGreaterThan(1);
   });
+
+  it('só criar item: enviar, diagnóstico, versões e modo foco ficam no cabeçalho e no ⚙', async () => {
+    const { paletteActions } = await import('../src/ui/palette-search.ts');
+    const ids = paletteActions().map((a) => a.action);
+    expect(ids.every((id) => id === 'novo' || id?.startsWith('novo:'))).toBe(true);
+  });
 });
