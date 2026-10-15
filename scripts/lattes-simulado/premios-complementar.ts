@@ -13,6 +13,7 @@
 
 import { childElements, element, getAttr, type XElement } from '../../src/model/xml.ts';
 import { applyFields, attr, type Binding, fixed, renderFields } from './campos.ts';
+import { complementaryInclusion, isComplementaryInclusion } from './censo.ts';
 import type { LattesState } from './estado.ts';
 import { deleteScript, setaUltimoPublico } from './formacao.ts';
 import * as h from './html.ts';
@@ -118,6 +119,7 @@ function complLista(state: LattesState): SimResponse {
 }
 
 function complForm(req: SimRequest, state: LattesState): SimResponse {
+  if (isComplementaryInclusion(req)) return complementaryInclusion(state);
   const el = complBySeq(state, req.get('f_seq'));
   if (!el) return html(h.page('Formação complementar', '<p>Registro não encontrado.</p>'));
   const fields: Binding[] = [

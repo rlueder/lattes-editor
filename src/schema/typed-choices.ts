@@ -23,6 +23,14 @@ const asChoices = (values: readonly string[]): Choice[] =>
 const COUNTRY_ATTRS = new Set(['PAIS', 'PAIS-DE-NASCIMENTO', 'PAIS-DE-PUBLICACAO', 'PAIS-DO-EVENTO']);
 const LANGUAGE_ATTRS = new Set(['IDIOMA', 'IDIOMA-DA-OBRA-ORIGINAL']);
 const COUNTRIES = asChoices(listas.paises);
+
+/**
+ * UF de nascimento e do órgão emissor: as listas f_uf_nasc e f_uf_rg do
+ * formulário de identificação (censo de 15/10/2026), com a sigla como valor;
+ * a exportação real guarda a sigla nos dois atributos.
+ */
+const UF_ATTRS = new Set(['UF-NASCIMENTO', 'UF-ORGAO-EMISSOR']);
+const UFS = asChoices(listas.ufs);
 const LANGUAGES = asChoices(listas.idiomas);
 
 /**
@@ -102,6 +110,7 @@ export function typedChoices(el: XElement, attr: string): Choice[] | undefined {
   const derived = derivedValue(el.name, attr);
   if (derived !== undefined) return asChoices([derived]);
   if (COUNTRY_ATTRS.has(attr)) return COUNTRIES;
+  if (UF_ATTRS.has(attr) && el.name === 'DADOS-GERAIS') return UFS;
   if (LANGUAGE_ATTRS.has(attr) && el.name !== 'IDIOMA') return LANGUAGES;
   if (!isEventBasics(el.name)) return undefined;
   if (attr === 'FORMA-PARTICIPACAO') return asChoices(PARTICIPATION_FORMS);

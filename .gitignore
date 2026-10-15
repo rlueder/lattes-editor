@@ -2,6 +2,7 @@ node_modules/
 dist/
 dist-extension/
 dist-extension-loja/
+dist-censo/
 coverage/
 playwright-report/
 test-results/

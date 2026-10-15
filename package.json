@@ -8,10 +8,12 @@
   "type": "module",
   "scripts": {
     "build": "tsc && vite build",
+    "build:censo": "node scripts/build-censo.ts",
     "build:extension": "node scripts/build-extension.ts",
     "build:extension:loja": "node scripts/build-extension.ts --loja",
     "capture:screenshots": "node scripts/capture-screenshots.ts",
     "capture:store": "node scripts/capture-store.ts",
+    "censo:relatorio": "node scripts/censo-relatorio.ts",
     "desktop:build": "tauri build --bundles app",
     "desktop:dev": "tauri dev --config src-tauri/tauri.dev.conf.json",
     "dev": "vite",
