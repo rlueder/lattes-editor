@@ -73,8 +73,9 @@ describe('fixture completa: anos e filtros variados', () => {
     const sections = buildSections(await root());
     const facets = (id: string) => {
       const section = sections.find((s) => s.id === id)!;
+      // "Faltando" (campos vazios) tem teste próprio em panorama-filters.test.ts.
       return buildFacets(section.groups.flatMap(listItems))
-        .filter((f) => f.id !== 'tipo')
+        .filter((f) => f.id !== 'tipo' && f.id !== 'faltando')
         .map((f) => f.label);
     };
     expect(facets('formacao')).toEqual(['Situação', 'Status do curso']);

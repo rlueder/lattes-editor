@@ -103,6 +103,24 @@ a exportação. Só aponta; nada muda sem você.
 Também dá para imprimir ou salvar em PDF nas regras da NBR 14724, com
 referências na NBR 6023, e compartilhar o currículo por um código QR.
 
+O **Panorama** mostra o currículo em números e gráficos, calculados só com o
+que está no XML: produções por ano (com os anos vazios marcados), contagens
+por quadriênio da CAPES, linha do tempo da carreira, as pessoas com quem
+você trabalha (coautores, orientandos, orientadores e bancas), posição de
+autoria, onde publica, temas e o que falta preencher. Ele fica no controle
+"Currículo | Panorama", logo abaixo da sua foto, e cada gráfico tem um item
+no menu. Clicar num número abre a
+seção do currículo já filtrada por tipo, período ou campo que falta; clicar
+numa pessoa mostra, no painel, o que ela tem em cada seção. A tabela de
+quadriênios sai também como planilha (CSV); nela, o quadriênio que ainda não
+terminou vem marcado "(em curso)", e o Total conta todos os itens, inclusive
+os sem ano, que nenhum quadriênio pega.
+
+As seções do currículo também filtram por período (com atalhos para os
+últimos 5 anos e os quadriênios da CAPES) e por campo que falta ("Sem DOI",
+"Sem palavras-chave", "Sem agência"), com as mesmas contagens da Saúde do
+currículo.
+
 ## Privacidade
 
 Não há servidor nem conta. O currículo é lido e guardado no próprio

@@ -4,8 +4,9 @@
 
 import { type MutableRefObject, useCallback, useEffect, useRef } from 'react';
 
-import { type HashRoute, writeHash } from './hash-route.ts';
+import { type HashRoute, parseHash, writeHash } from './hash-route.ts';
 import { withSectionTransition } from './section-transition.ts';
+import type { Section } from './sections.ts';
 
 export function useNavigate(
   sectionId: string,
@@ -40,4 +41,28 @@ export function useScrollToPendingAnchor(pendingAnchor: MutableRefObject<string 
     pendingAnchor.current = null;
     document.getElementById(anchor)?.scrollIntoView({ block: 'start' });
   });
+}
+
+/**
+ * Um link "#atuacao/atuacao-profissional/2020", aberto ou editado à mão, leva
+ * direto lá, quando a seção existe no currículo aberto.
+ */
+export function useFollowHash(
+  sections: Section[],
+  navigate: (route: HashRoute, write?: boolean) => void,
+): void {
+  const sectionsRef = useRef(sections);
+  sectionsRef.current = sections;
+  const hasSections = sections.length > 0;
+  useEffect(() => {
+    if (!hasSections) return;
+    const follow = () => {
+      const route = parseHash(location.hash);
+      if (route && sectionsRef.current.some((s) => s.id === route.sectionId))
+        navigate(route, false);
+    };
+    follow();
+    window.addEventListener('hashchange', follow);
+    return () => window.removeEventListener('hashchange', follow);
+  }, [hasSections, navigate]);
 }

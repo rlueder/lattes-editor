@@ -3,6 +3,7 @@
 // para que todo elemento do arquivo apareça em algum lugar.
 
 import { elementLabel, slugify } from '../labels/labels.ts';
+import { type OwnerTest, ownerTest } from '../model/missing.ts';
 import { childElements, firstChild, getAttr, walk, type XElement } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 import { isListItem } from './item-meta.ts';
@@ -30,6 +31,8 @@ export interface Section {
    * recebê-la (onde o atributo existe), para marcar daqui mesmo.
    */
   mark?: { attr: string; items: XElement[]; label: string };
+  /** A dona do currículo entre autores e participantes, para o filtro "Faltando". */
+  owner?: OwnerTest;
 }
 
 const PATENT_FAMILY = [
@@ -298,6 +301,8 @@ export function buildSections(root: XElement): Section[] {
       if (n > 1) g.id = `${g.id}-${n}`;
     }
   }
+  const owner = ownerTest(dg);
+  for (const section of sections) section.owner = owner;
   return sections;
 }
 

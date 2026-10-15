@@ -31,8 +31,14 @@ import { NEW_GENERAL_LABELS } from './section-types.ts';
 import { countItems, groupItemList, type Section, type SectionGroup } from './sections.ts';
 import { StickyTitle } from './StickyTitle.tsx';
 import { useOpenItem } from './use-open-item.ts';
+import { yearBounds } from './year-filter.ts';
+
+/** O ano corrente, lido na hora: um app aberto na virada do ano não fica no ano anterior. */
+const thisYear = () => new Date().getFullYear();
 
 interface Props {
+  /** Filtro com que a seção abre (vindo de um clique no Panorama). */
+  initialFilter?: FilterState;
   section: Section;
   onEdit: EditFn;
   /** Item novo de formação, atuação, projeto ou patente, pela seção. */
@@ -59,9 +65,16 @@ export function SectionView(props: Props) {
   return <SectionBody key={props.section.id} {...props} />;
 }
 
-function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section }: Props) {
+function SectionBody({
+  initialFilter,
+  onEdit,
+  onNewGeneral,
+  onNewItem,
+  onOpenPicker,
+  section,
+}: Props) {
   const index = useReferenceIndex();
-  const [state, setState] = useState<FilterState>(NO_FILTER);
+  const [state, setState] = useState<FilterState>(initialFilter ?? NO_FILTER);
   const rootRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const itemOutline = useOpenItem(rootRef);
@@ -110,7 +123,11 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section }:
   const allItems = lists.flatMap((l) => l?.items ?? []);
   // Recalcula só quando os itens da seção mudam de identidade.
   const facets = useMemo(
-    () => buildFacets(allItems, { typesInPageOrder: section.id === 'dados-gerais' }),
+    () =>
+      buildFacets(allItems, {
+        owner: section.owner,
+        typesInPageOrder: section.id === 'dados-gerais',
+      }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [section, allItems.length],
   );
@@ -128,7 +145,7 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section }:
         recordSearchText(list.view.card(el), el),
       ).length;
     // Grupo de campos (Identificação, Resumo): só a busca de texto vale, sem facetas.
-    if (Object.keys(state.selected).length > 0) return 0;
+    if (Object.keys(state.selected).length > 0 || state.years) return 0;
     return g.elements.some((el) => elementMatchesText(el, state.query)) ? 1 : 0;
   };
   const counts = section.groups.map(shownIn);
@@ -248,6 +265,7 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section }:
               shown={shownTotal}
               state={state}
               total={allItems.length}
+              years={yearBounds(allItems, thisYear())}
               onChange={setState}
             />
           )}
