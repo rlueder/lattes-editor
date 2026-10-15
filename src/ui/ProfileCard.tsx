@@ -25,8 +25,10 @@ interface Props {
   /** Muda depois de uma troca de foto, para buscar a nova em vez da guardada. */
   photoVersion?: number;
   profile: Profile;
-  /** Sem ela, não há lápis: a extensão não sabe trocar a foto deste currículo agora. */
-  /** Abre a troca da foto, com a foto de agora. */
+  /**
+   * Abre a troca da foto, com a foto de agora. Sem ela, não há lápis: a
+   * extensão não sabe trocar a foto deste currículo agora.
+   */
   onChangePhoto?: (current?: string) => void;
 }
 
