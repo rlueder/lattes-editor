@@ -4,6 +4,7 @@
 import { BIOGRAPHIC_FIELD_LABELS, BIOGRAPHIC_VALUE_LABELS } from './biographic.ts';
 import { CREATE_FIELD_LABELS, CREATE_VALUE_LABELS } from './create-labels.ts';
 import { EDIT_FIELD_LABELS, EDIT_VALUE_LABELS } from './edit-items.ts';
+import { LIST_EDIT_FIELD_LABELS, LIST_EDIT_VALUE_LABELS } from './edit-lists.ts';
 
 export const FIELD_LABELS: Record<string, string> = {
   ...BIOGRAPHIC_FIELD_LABELS,
@@ -30,8 +31,15 @@ export const FIELD_LABELS: Record<string, string> = {
   f_vinc: 'Tipo de vínculo',
 };
 
-export function fieldLabel(name: string): string {
-  return FIELD_LABELS[name] ?? name;
+/**
+ * Rótulos que dependem do formulário: o mesmo nome de campo quer dizer coisas
+ * diferentes em telas diferentes (f_titulo é o título do evento e o nome do
+ * prêmio). Por tipo de operação; o que não estiver aqui cai em FIELD_LABELS.
+ */
+const KIND_FIELD_LABELS: Record<string, Record<string, string>> = { ...LIST_EDIT_FIELD_LABELS };
+
+export function fieldLabel(name: string, kind?: string): string {
+  return (kind ? KIND_FIELD_LABELS[kind]?.[name] : undefined) ?? FIELD_LABELS[name] ?? name;
 }
 
 /** Valores codificados nos formulários, por campo. */
@@ -45,29 +53,44 @@ const VALUE_LABELS: Record<string, Record<string, string>> = {
 };
 const LEVELS: Record<string, string> = { B: 'Bem', P: 'Pouco', R: 'Razoavelmente' };
 
-function valueLabel(name: string, value: string | null | undefined): string {
+/** Valores codificados que dependem do formulário, como KIND_FIELD_LABELS. */
+const KIND_VALUE_LABELS: Record<string, Record<string, Record<string, string>>> = {
+  ...LIST_EDIT_VALUE_LABELS,
+};
+
+function valueLabel(name: string, value: string | null | undefined, kind?: string): string {
   const level = /^F_(LE|CONVERSA|ESCREVE|COMPR)$/.test(name);
   // Caixa desmarcada some do envio: no regime quer dizer "não".
   if (!value) return level ? 'Não informado' : name === 'f_regime' ? 'Não' : '(vazio)';
-  return (level ? LEVELS : VALUE_LABELS[name])?.[value] ?? value;
+  const table = level
+    ? LEVELS
+    : ((kind ? KIND_VALUE_LABELS[kind]?.[name] : undefined) ?? VALUE_LABELS[name]);
+  return table?.[value] ?? value;
 }
+
+/** Campos que vão no envio só para não se perder; sem mudança, não aparecem. */
+const CARRIED = new Set(['F_TPO']);
 
 /**
  * Linhas "campo: antes → depois" de uma operação, para quem confere o envio.
- * As caixas FC_* do idioma só acompanham o nível e não aparecem.
+ * As caixas FC_* do idioma só acompanham o nível e não aparecem, nem os
+ * campos que vão só para não se perder (o tipo de participação de um evento,
+ * quando não muda).
  */
 export function opRows(op: {
   expect: Record<string, string | null>;
+  kind?: string;
   set: Record<string, string | null>;
 }): { after: string; before: string; label: string; name: string }[] {
   return (
     Object.entries(op.set)
       // As caixas FC_* acompanham o nível; f_vinculo repete f_vinc.
       .filter(([name]) => !name.startsWith('FC_') && name !== 'f_vinculo')
+      .filter(([name, value]) => !(CARRIED.has(name) && op.expect[name] === value))
       .map(([name, value]) => ({
-        after: valueLabel(name, value),
-        before: valueLabel(name, op.expect[name]),
-        label: fieldLabel(name),
+        after: valueLabel(name, value, op.kind),
+        before: valueLabel(name, op.expect[name], op.kind),
+        label: fieldLabel(name, op.kind),
         name,
       }))
   );

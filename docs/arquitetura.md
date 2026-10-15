@@ -144,7 +144,8 @@ Uma alteração num item de **participação em eventos** que já está no Latte
 pode ir pelo conector, no próprio formulário do evento
 (`src/bridge/edit-items.ts`): a linha da lista se acha pelo
 `SEQUENCIA-PRODUCAO`, e a operação confere antes que o formulário é de
-ouvinte, do mesmo tipo de evento e com o mesmo ano ou nome. Vão título, ano,
+ouvinte, do mesmo tipo de evento e com o mesmo ano, nome do evento e cidade,
+qualquer que seja a parte alterada: o `f_seq` sozinho não identifica o item. Vão título, ano,
 país, home page, divulgação científica, título em inglês e nome do evento.
 Não vão pela extensão os eventos de convidado e participante, a forma, o tipo, a
 natureza, a cidade e o que o formulário não tem (idioma, palavras-chave,
@@ -152,9 +153,22 @@ natureza, a cidade e o que o formulário não tem (idioma, palavras-chave,
 acompanhado de 14/10/2026 no Lattes real, e o contrato confere o formulário de
 eventos antes de cada fila. O app só manda essas operações a uma extensão que
 anuncia a capacidade `alterar-evento` (`src/bridge/compat.ts`); com uma
-extensão mais antiga, o evento fica em "Não enviado". Convidado, participante e os
-outros tipos de produção, quando ganharem caminho, entram com chave própria,
-desligada até o teste deles.
+extensão mais antiga, o evento fica em "Não enviado". Convidado, participante,
+a forma, o tipo, a natureza e a cidade já têm caminho no mesmo arquivo, atrás
+da chave `EDIT_EVENTO_ENABLED`, desligada até o teste acompanhado. Cada chave
+de alteração dessas tem uma capacidade da extensão (`GATED_EDITS`, em
+`src/bridge/plan.ts`), que só entra em `BRIDGE_FEATURES` quando a chave liga.
+Quando uma operação de evento não muda nada no formulário (a natureza, que só
+se confere), o conector confere o "antes" e não envia; os outros tipos
+sempre enviam. A extensão também confere as chaves da própria montagem
+(`ApplyGates`, em `src/bridge/apply.ts`): uma operação de tipo desligado
+nela para sem enviar.
+
+Prêmios e formação complementar seguem o mesmo caminho em
+`src/bridge/edit-lists.ts`, cada um com a própria chave, desligada. Como a
+linha da lista não se acha pelo número, a operação abre o formulário de cada
+linha e fica com a única cujos valores são os do item (`match`, comparado sem
+acento nem caixa), antes da conferência estrita do "antes".
 
 A decisão de 13/10/2026 sobre duplicatas (só o que é novo vai pelo Importar;
 alteração no lugar; exclusão pelo formulário) está no

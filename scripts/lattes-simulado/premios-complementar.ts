@@ -7,12 +7,14 @@
 //
 // Formação complementar (seções 5 e 15): lista pkg_formacao_compl.lista,
 // formulário GN_FORMACAO2 aberto por PKG_FORMACAO_COMPL.form e postado para
-// PKG_FORMACAO_COMPL.FORM2, com f_ctr sem valor. Do formulário só se anotou a
-// lista f_nivel e os ocultos da exclusão; o simulado não tem outros campos, e
-// a inclusão (cujo link não foi lido) não existe aqui.
+// PKG_FORMACAO_COMPL.FORM2, com f_ctr sem valor. Os campos são os do censo de
+// 15/10/2026 (observados: nomes, tipos, limites e opções; a passada de edição
+// viu f_carga, F_STATUS, f_curso_old e f_inst_old com os valores do XML). A
+// gravação de carga e status pelo FORM2 é inferida, e a inclusão (sem f_seq)
+// está em censo.ts.
 
 import { childElements, element, getAttr, type XElement } from '../../src/model/xml.ts';
-import { applyFields, attr, type Binding, fixed, renderFields } from './campos.ts';
+import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
 import { complementaryInclusion, isComplementaryInclusion } from './censo.ts';
 import type { LattesState } from './estado.ts';
 import { deleteScript, setaUltimoPublico } from './formacao.ts';
@@ -118,33 +120,59 @@ function complLista(state: LattesState): SimResponse {
   return html(h.page('Formação complementar', `<table>${rows}</table>`));
 }
 
-function complForm(req: SimRequest, state: LattesState): SimResponse {
-  if (isComplementaryInclusion(req)) return complementaryInclusion(state);
-  const el = complBySeq(state, req.get('f_seq'));
-  if (!el) return html(h.page('Formação complementar', '<p>Registro não encontrado.</p>'));
-  const fields: Binding[] = [
+/**
+ * Os campos do formulário de edição. Instituição e curso vêm desabilitados,
+ * escolhidos pelas buscas; os nomes voltam nos ocultos *_old e os códigos em
+ * f_cod_inst e f_cod_curso2 (em qual dos dois ocultos cada código volta é
+ * inferido).
+ */
+function complBindings(state: LattesState, el: XElement): Binding[] {
+  return [
     {
       kind: 'select',
       name: 'f_nivel',
       options: h.capturedList('L26'),
       read: (x) => getAttr(x, 'NIVEL') ?? '',
     },
+    attr('f_inst', 'NOME-INSTITUICAO', 'text', { disabled: true, maxLength: 75 }),
+    attr('f_curso', 'NOME-CURSO', 'text', { disabled: true, maxLength: 50 }),
+    attr('f_carga', 'CARGA-HORARIA', 'text', { maxLength: 4 }),
+    mapped(
+      'F_STATUS',
+      'STATUS-DO-CURSO',
+      'radio',
+      { CONCLUIDO: 'S', EM_ANDAMENTO: 'N', INCOMPLETO: 'I' },
+      { options: h.capturedList('L27') },
+    ),
     // O f_ctr deste formulário vem sem valor (seção 15, observado).
     fixed('f_ctr', ''),
     fixed('f_cod', state.code),
     fixed('f_seq', getAttr(el, 'SEQUENCIA-FORMACAO') ?? ''),
-    // O valor de f_tipo aqui não foi anotado (inferido: vazio).
-    fixed('f_tipo', ''),
+    fixed('f_cod_inst', getAttr(el, 'CODIGO-INSTITUICAO') ?? ''),
+    fixed('f_cod_curso', ''),
+    fixed('f_cod_inst2', ''),
+    fixed('f_cod_curso2', getAttr(el, 'CODIGO-CURSO') ?? ''),
+    fixed('f_inst_old', getAttr(el, 'NOME-INSTITUICAO') ?? ''),
+    fixed('f_curso_old', getAttr(el, 'NOME-CURSO') ?? ''),
+    // FA, como no formulário capturado no censo de 15/10/2026 (a inclusão); que
+    // a edição traga o mesmo é inferido.
+    fixed('f_tipo', 'FA'),
   ];
+}
+
+function complForm(req: SimRequest, state: LattesState): SimResponse {
+  if (isComplementaryInclusion(req)) return complementaryInclusion(state);
+  const el = complBySeq(state, req.get('f_seq'));
+  if (!el) return html(h.page('Formação complementar', '<p>Registro não encontrado.</p>'));
   const body = `<form name="GN_FORMACAO2" method="post" action="PKG_FORMACAO_COMPL.FORM2">
-${renderFields(fields, el)}
+${renderFields(complBindings(state, el), el)}
 ${h.formButtons(true)}
 </form>
 ${h.formScripts('GN_FORMACAO2')}${deleteScript(state, el, 'PKG_FORMACAO_COMPL.SETA_ULTIMO_PUBLICO', 'Você realmente deseja excluir esta formação acadêmica?')}`;
   return html(h.page('Formação complementar', body));
 }
 
-/** FORM2: f_ctr=E exclui; sem valor (o do formulário) ou U grava o nível (inferido). */
+/** FORM2: f_ctr=E exclui; sem valor (o do formulário) ou U grava nível, carga e status (inferido). */
 function complPost(req: SimRequest, state: LattesState): SimResponse {
   const el = complBySeq(state, req.get('f_seq'));
   const back = h.savedScript(`pkg_formacao_compl.lista?f_cod=${state.code}`);
@@ -158,6 +186,7 @@ function complPost(req: SimRequest, state: LattesState): SimResponse {
     if (!name) return html('<script>alert("Informe o nível.");</script>');
     el.name = name;
     el.attrs = el.attrs.map((a) => (a.name === 'NIVEL' ? { ...a, value: nivel } : a));
+    applyFields(complBindings(state, el), el, req);
   } else return html(back);
   state.touch();
   return html(back);

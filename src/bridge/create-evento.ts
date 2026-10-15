@@ -173,6 +173,10 @@ export function planCreateEvento(
 
 const EVENTO_FORM = 'GN_TEC';
 
+/** Por que o evento de quem apresenta fica divergente: o tipo não volta na releitura. */
+export const TYPE_UNREAD =
+  'Criada no Lattes, com os campos conferidos; confira o tipo da participação no Lattes, que a releitura não vê';
+
 const eventRows = (html: string) =>
   findLinks(html, 'PKG_EVENTO.form').filter((l) => l.params.f_seq);
 
@@ -246,12 +250,16 @@ export async function applyCreateEvento(op: CreateEventoOp, port: LattesPort): P
       const seq = created[0]!.params.f_seq!;
       const assigned = { 'SEQUENCIA-PRODUCAO': seq };
       const saved = await readPairs(port, created[0]!.path, EVENTO_FORM);
+      // A lista F_TPO é montada por script, e o HTML relido não traz o tipo
+      // gravado (LAT-58): o tipo de quem apresenta fica sem conferir.
+      const { F_TPO: tipo, ...checked } = op.set;
       const problem = readBackProblem(
         `Criada no Lattes (evento ${seq})`,
         true,
-        readBack(saved, op.set),
+        readBack(saved, tipo ? checked : op.set),
       );
       if (problem) return { ...result('divergente', problem), assigned };
+      if (tipo) return { ...result('divergente', `${TYPE_UNREAD} (evento ${seq})`), assigned };
       return { ...result('conferido', `Criada e conferida no Lattes (evento ${seq})`), assigned };
     } catch (err) {
       const why = err instanceof Error ? err.message : 'falha inesperada';

@@ -15,9 +15,15 @@ import {
   isBiographicKind,
 } from './biographic.ts';
 import { CREATE_ITEMS_ENABLED } from './create.ts';
-import { CREATE_SPECS, createFormPath } from './create-items.ts';
+import { CREATE_SPECS, createFormPath, isCreateItemKind } from './create-items.ts';
 import { contractKind, type DeleteOp } from './delete.ts';
 import { editContract, eventoSample } from './edit-items.ts';
+import {
+  isListEditKind,
+  listEditContract,
+  type ListEditKind,
+  listEditSample,
+} from './edit-lists.ts';
 import type { FormControl } from './form.ts';
 import { cvCodeFrom, findLinks, isLogonPage } from './lattes-html.ts';
 import {
@@ -69,7 +75,7 @@ type CreateKind =
  * (create.ts, create-items.ts, biographic.ts, edit-items.ts) e a exclusão, que não tem
  * formulário próprio (delete.ts usa o de edição e a conferência dele).
  */
-type GatedKind = CreateKind | 'evento' | BiographicKind | DeleteOp['kind'];
+type GatedKind = CreateKind | 'evento' | BiographicKind | DeleteOp['kind'] | ListEditKind;
 
 export interface Contract {
   /**
@@ -99,6 +105,7 @@ export const LATTES_CONTRACT: Contract = {
     ...(CREATE_ITEMS_ENABLED ? CREATE_SPECS : {}),
     ...biographicContract().forms,
     ...editContract().forms,
+    ...listEditContract().forms,
     idioma: {
       action: 'PKG_IDIOMA.FORM',
       fields: {
@@ -164,6 +171,7 @@ export const LATTES_CONTRACT: Contract = {
     'pkg_resume.',
     ...biographicContract().menu,
     ...editContract().menu,
+    ...listEditContract().menu,
   ],
 };
 
@@ -383,25 +391,20 @@ async function locateAndCheck(
     const link = findLinks(menu, 'pkg_resume.')[0];
     return link ? checkForm(port, kind, spec, link.path) : noLink(kind, spec.name, 'pkg_resume.');
   }
-  if (
-    kind === 'criar-formacao' ||
-    kind === 'criar-projeto' ||
-    kind === 'criar-registro' ||
-    kind === 'criar-atividade' ||
-    kind === 'criar-dado' ||
-    kind === 'criar-evento' ||
-    kind === 'criar-vinculo'
-  ) {
+  if (isCreateItemKind(kind)) {
     // Formulários de inclusão: abrem vazios, não precisam de amostra.
     const found = await createFormPath(kind, (path) => getChecked(port, path), menu);
     return 'path' in found
       ? checkForm(port, kind, spec, found.path)
       : noLink(kind, spec.name, found.missing);
   }
-  if (kind === 'evento' || isBiographicKind(kind)) {
+  if (kind === 'evento' || isBiographicKind(kind) || isListEditKind(kind)) {
+    const get = (path: string) => getChecked(port, path);
     const found = isBiographicKind(kind)
-      ? await biographicSample(kind, menu, (path) => getChecked(port, path))
-      : await eventoSample(menu, (path) => getChecked(port, path));
+      ? await biographicSample(kind, menu, get)
+      : isListEditKind(kind)
+        ? await listEditSample(kind, menu, get)
+        : await eventoSample(menu, get);
     if ('path' in found) return checkForm(port, kind, spec, found.path);
     return 'link' in found
       ? noLink(kind, spec.name, found.link)

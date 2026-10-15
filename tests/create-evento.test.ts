@@ -9,7 +9,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { DEMO_XML } from '../scripts/lattes-simulado/estado.ts';
 import { applyAll, applyOp } from '../src/bridge/apply.ts';
 import { checkContract, isBreaking, LATTES_CONTRACT } from '../src/bridge/contract.ts';
-import { EVENT_ELEMENTS } from '../src/bridge/create-evento.ts';
+import { EVENT_ELEMENTS, TYPE_UNREAD } from '../src/bridge/create-evento.ts';
 import { CREATE_SPECS } from '../src/bridge/create-items.ts';
 import { planChanges } from '../src/bridge/plan.ts';
 import { diffDocuments } from '../src/model/changes.ts';
@@ -227,8 +227,10 @@ describe('incluir evento no Lattes simulado', () => {
     const lattes = await start();
     const { ops } = await plan(congresso());
     const [r] = await applyAll(ops, lattes.port);
-    expect(r).toMatchObject({ status: 'conferido' });
-    expect(r!.detail).toMatch(/^Criada e conferida no Lattes \(evento \d+\)$/);
+    // O tipo de quem apresenta não volta na releitura (a página o monta por
+    // script): os outros campos conferem, e o evento fica divergente.
+    expect(r).toMatchObject({ status: 'divergente' });
+    expect(r!.detail).toBe(`${TYPE_UNREAD} (evento ${r!.assigned!['SEQUENCIA-PRODUCAO']})`);
     const novo = find(
       lattes.state.root,
       (el) =>
@@ -246,7 +248,9 @@ describe('incluir evento no Lattes simulado', () => {
     expect(lattes.state.log.filter((l) => l.method === 'POST').length).toBe(posts);
     // Outro trabalho no mesmo evento, com outro título: não é duplicata.
     const other = await plan(congresso({ TITULO: 'Outro trabalho' }));
-    expect(await applyOp(other.ops[0]!, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(await applyOp(other.ops[0]!, lattes.port)).toMatchObject({
+      detail: expect.stringMatching(/^Criada no Lattes, com os campos conferidos/),
+    });
     // Ouvinte não tem título: a chave fica no evento, no ano e na forma.
     const ouvinte = await plan(
       congresso({ 'FORMA-PARTICIPACAO': 'Ouvinte', 'TIPO-PARTICIPACAO': '', TITULO: '' }),

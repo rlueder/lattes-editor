@@ -12,12 +12,15 @@ import {
   finishLinks,
   itemValues,
   linkFields,
+  linkOnlyFile,
   matchScore,
 } from '../src/census/link.ts';
+import { coverage } from '../src/census/report.ts';
 import type { CensusPort } from '../src/census/run.ts';
+import { CENSUS_TARGETS } from '../src/census/targets-production.ts';
 import { decodeLatin1, encodeLatin1 } from '../src/model/latin1.ts';
 import { element, parseXml, walk } from '../src/model/xml.ts';
-import { withLattesSimulado } from './helpers/lattes-simulado.ts';
+import { faults, withLattesSimulado } from './helpers/lattes-simulado.ts';
 
 async function simulado(options: ServerOptions = {}) {
   const lattes = await withLattesSimulado(options);
@@ -93,7 +96,14 @@ describe('censo, passada de edição', () => {
         only: ['trabalho-tecnico'],
       });
       expect(summary).toEqual([
-        { ambiguous: 0, matched: 2, read: 2, status: 'ok', target: 'trabalho-tecnico' },
+        expect.objectContaining({
+          ambiguous: 0,
+          listed: 2,
+          matched: 2,
+          read: 2,
+          status: 'ok',
+          target: 'trabalho-tecnico',
+        }),
       ]);
       expect(find(links, 'f_titulo', 'TITULO-DO-TRABALHO-TECNICO')?.matches).toBe(2);
       expect(find(links, 'f_pais', 'PAIS')).toMatchObject({
@@ -113,6 +123,9 @@ describe('censo, passada de edição', () => {
         spelling: { dobrado: 2 },
       });
       expect(find(links, 'f_inst', 'INSTITUICAO-FINANCIADORA')?.matches).toBe(2);
+      // As grades do trabalho técnico: o simulado traz os ocultos vazios.
+      const tech = summary[0]!;
+      expect(tech.grids).toMatchObject({ f_autores_l: { empty: 2, filled: 0 } });
       const text = JSON.stringify(links);
       for (const value of personalValues(TECH_CV)) expect(text).not.toContain(value);
     } finally {
@@ -139,6 +152,105 @@ describe('censo, passada de edição', () => {
       await expect(
         linkFields(lost, lattes.state.code, TECH_CV, { delayMs: 0, only: ['trabalho-tecnico'] }),
       ).rejects.toThrow('sessão');
+    } finally {
+      await lattes.close();
+    }
+  });
+});
+
+describe('censo, passada de edição sozinha', () => {
+  it('vira um arquivo do censo sem formulários, e o relatório usa as ligações dele', async () => {
+    const { lattes, port } = await simulado({ xml: encodeLatin1(TECH_CV) });
+    try {
+      const result = await linkFields(port, lattes.state.code, TECH_CV, {
+        delayMs: 0,
+        only: ['trabalho-tecnico'],
+      });
+      const file = linkOnlyFile(result, 'teste', () => new Date('2026-10-16T10:00:00Z'));
+      expect(file).toMatchObject({
+        capturedAt: '2026-10-16T10:00:00.000Z',
+        entries: [],
+        format: 1,
+        linkSummary: result.summary,
+        links: result.links,
+        lists: {},
+      });
+      const cov = coverage({ files: [file], targets: CENSUS_TARGETS });
+      expect(cov).toBeDefined();
+    } finally {
+      await lattes.close();
+    }
+  });
+});
+
+describe('censo, o que a lista diz além da exportação', () => {
+  /** A demonstração sem os eventos: a exportação não os tem, o Lattes simulado tem. */
+  const withoutEvents = DEMO.replace(
+    /<PARTICIPACAO-EM-EVENTOS-CONGRESSOS>[\s\S]*?<\/PARTICIPACAO-EM-EVENTOS-CONGRESSOS>/,
+    '',
+  );
+
+  it('item só na lista do Lattes: conta os links, sem abrir formulário', async () => {
+    expect(withoutEvents).not.toContain('PARTICIPACAO-EM-CONGRESSO');
+    const { lattes, port } = await simulado();
+    try {
+      const { links, summary } = await linkFields(port, lattes.state.code, withoutEvents, {
+        delayMs: 0,
+        only: ['evento'],
+      });
+      const evento = summary.find((s) => s.target === 'evento')!;
+      expect(evento.status).toBe('so-na-lista');
+      expect(evento.listed).toBeGreaterThan(0);
+      expect(evento.read).toBe(0);
+      expect(links).toEqual([]);
+      expect(lattes.state.log.some((l) => /^pkg_evento\.form$/i.test(l.proc))).toBe(false);
+    } finally {
+      await lattes.close();
+    }
+  });
+
+  it('o limite de itens lidos aparece: listed maior que read', async () => {
+    const { lattes, port } = await simulado();
+    try {
+      const { summary } = await linkFields(port, lattes.state.code, DEMO, {
+        delayMs: 0,
+        maxItems: 1,
+        only: ['evento'],
+      });
+      const evento = summary.find((s) => s.target === 'evento')!;
+      expect(evento.read).toBe(1);
+      expect(evento.listed).toBeGreaterThan(1);
+    } finally {
+      await lattes.close();
+    }
+  });
+
+  it('lista sem link de edição reconhecível: sem-link, com a forma da página e sem valores', async () => {
+    // A lista passa a abrir o formulário por uma função da página, como a grade
+    // de atividades da atuação (seção 8 de lattes_internals.md).
+    const { lattes, port } = await simulado({
+      intercept: faults.rewritePages(/^pkg_evento\.lista$/i, (html) =>
+        html
+          .replace(/setarUrl\('PKG_EVENTO\.form\?[^']*f_seq=(\d+)',true\)/g, 'abre($1)')
+          .replace(
+            '</body>',
+            "<script>function abre(n){ go('PKG_EVENTO.form', n); }</script></body>",
+          ),
+      ),
+    });
+    try {
+      const { summary } = await linkFields(port, lattes.state.code, DEMO, {
+        delayMs: 0,
+        only: ['evento'],
+      });
+      const evento = summary.find((s) => s.target === 'evento')!;
+      expect(evento).toMatchObject({ listed: 0, read: 0, status: 'sem-link' });
+      expect(evento.listShape!.mentions).toBeGreaterThan(0);
+      // O "Incluir novo item" segue como link, e só os nomes dos parâmetros ficam.
+      expect(evento.listShape!.procs).toContain(
+        'PKG_EVENTO.form?f_cod&f_sta_divulgacao_cientifica',
+      );
+      expect(JSON.stringify(evento)).not.toContain(lattes.state.code);
     } finally {
       await lattes.close();
     }

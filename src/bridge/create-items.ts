@@ -207,3 +207,7 @@ export const CREATE_SPECS: Record<'criar-atuacao' | CreateItemOp['kind'], FormSp
   'criar-registro': CREATE_REGISTRO_SPEC,
   'criar-vinculo': CREATE_VINCULO_SPEC,
 };
+
+/** As inclusões de create-items.ts (a da atuação fica em create.ts). */
+export const isCreateItemKind = (kind: string): kind is CreateItemOp['kind'] =>
+  kind !== 'criar-atuacao' && kind in CREATE_SPECS;

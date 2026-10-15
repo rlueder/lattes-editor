@@ -9,7 +9,19 @@ import { BIOGRAPHIC_OPS_ENABLED, type BiographicOp, planBiographic } from './bio
 import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
 import { type CreateItemOp, planCreateItem } from './create-items.ts';
 import { DELETE_ITEMS_ENABLED, type DeleteOp, planDelete } from './delete.ts';
-import { EDIT_OUVINTE_ENABLED, type EventoOp, planEvento } from './edit-items.ts';
+import {
+  EDIT_EVENTO_ENABLED,
+  EDIT_OUVINTE_ENABLED,
+  type EventoOp,
+  planEvento,
+} from './edit-items.ts';
+import {
+  EDIT_FORMACAO_COMPL_ENABLED,
+  EDIT_PREMIO_ENABLED,
+  type ListEditKind,
+  type ListEditOp,
+  planListEdit,
+} from './edit-lists.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
 import { stavincFromFlag } from './vinculo-flag.ts';
 
@@ -53,6 +65,7 @@ export type BridgeOp =
   | DeleteOp
   | EventoOp
   | IdiomaOp
+  | ListEditOp
   | ResumoOp
   | VinculoOp;
 
@@ -62,27 +75,63 @@ export interface PlanOptions {
   createItems?: boolean;
   deleteItems?: boolean;
   /**
+   * Convidado, participante, forma, tipo, natureza e cidade do evento
+   * (EDIT_EVENTO_ENABLED). Sem valor, desligada, como editOuvinte.
+   */
+  editEvento?: boolean;
+  /** Formação complementar (edit-lists.ts, EDIT_FORMACAO_COMPL_ENABLED). */
+  editFormacaoComplementar?: boolean;
+  /**
    * Alteração de evento de ouvinte (edit-items.ts). Sem valor, fica
    * desligada: só planOptionsFor liga, com as capacidades da extensão. Assim,
    * esquecer as opções deixa o evento à mão, em vez de mandá-lo a uma
    * extensão que gravaria sem conferir.
    */
   editOuvinte?: boolean;
+  /** Prêmios e títulos (edit-lists.ts, EDIT_PREMIO_ENABLED). */
+  editPremio?: boolean;
 }
 
 /**
- * As chaves do plano para a extensão ligada: a alteração de evento de ouvinte
- * só vai a uma extensão que anuncia 'alterar-evento' (compat.ts), porque uma
- * mais antiga não tem o formulário de eventos no contrato e gravaria sem
- * conferir. Sem ela, essas mudanças ficam à mão.
+ * Chaves de alteração que dependem de uma capacidade da extensão. Cada uma
+ * entra em BRIDGE_FEATURES (compat.ts) no mesmo commit em que a chave liga, e
+ * só então, e sai no commit em que ela voltar a desligar (a exceção à regra
+ * de compat.ts de que capacidade não sai): uma extensão que anunciasse a
+ * capacidade com a chave desligada não teria o formulário no contrato. Mesmo
+ * assim, applyOp recusa o tipo desligado na montagem dela (apply.ts,
+ * ApplyGates). O teste tests/edit-flags.test.ts cobra chave e capacidade
+ * juntas.
+ */
+export const GATED_EDITS: readonly {
+  enabled: boolean;
+  feature: string;
+  option: keyof PlanOptions;
+}[] = [
+  { enabled: EDIT_OUVINTE_ENABLED, feature: 'alterar-evento', option: 'editOuvinte' },
+  { enabled: EDIT_EVENTO_ENABLED, feature: 'alterar-evento-completo', option: 'editEvento' },
+  { enabled: EDIT_PREMIO_ENABLED, feature: 'alterar-premio', option: 'editPremio' },
+  {
+    enabled: EDIT_FORMACAO_COMPL_ENABLED,
+    feature: 'alterar-formacao-complementar',
+    option: 'editFormacaoComplementar',
+  },
+];
+
+/**
+ * As chaves do plano para a extensão ligada: cada alteração de GATED_EDITS
+ * só vai a uma extensão que anuncia a capacidade dela (compat.ts), porque uma
+ * mais antiga não tem o formulário no contrato e gravaria sem conferir. Sem
+ * ela, essas mudanças ficam à mão.
  */
 export function planOptionsFor(features: readonly string[]): PlanOptions {
   return {
+    ...Object.fromEntries(
+      GATED_EDITS.map((g) => [g.option, g.enabled && features.includes(g.feature)]),
+    ),
     // A inclusão pelo conector só vai a uma extensão que anuncia 'incluir-itens':
     // as operações de inclusão são mensagens que uma extensão antiga não conhece.
     // A capacidade entra em BRIDGE_FEATURES junto com a chave ligada.
     createItems: CREATE_ITEMS_ENABLED && features.includes('incluir-itens'),
-    editOuvinte: EDIT_OUVINTE_ENABLED && features.includes('alterar-evento'),
   };
 }
 
@@ -177,8 +226,12 @@ export function planChange(
     biographicOps = BIOGRAPHIC_OPS_ENABLED,
     createItems = CREATE_ITEMS_ENABLED,
     deleteItems = DELETE_ITEMS_ENABLED,
+    editEvento = false,
+    editFormacaoComplementar = false,
     editOuvinte = false,
+    editPremio = false,
   }: PlanOptions = {},
+  siblings: readonly Change[] = [],
 ): BridgeOp | Unsupported {
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.
   if (change.kind === 'novo' && createItems && change.element === 'ATUACAO-PROFISSIONAL') {
@@ -257,13 +310,25 @@ export function planChange(
     return { expect, key: change.key, kind: 'resumo', label, set };
   }
 
+  // Prêmios e formação complementar (edit-lists.ts), cada um com a chave própria.
+  const lists = new Set<ListEditKind>();
+  if (editPremio) lists.add('premio');
+  if (editFormacaoComplementar) lists.add('formacao-complementar');
+  const listEdit = planListEdit(change, chain, label, lists);
+  if (listEdit)
+    return 'reason' in listEdit ? unsupported(change, label, listEdit.reason) : listEdit;
+
   // Formação, endereço e identificação: desligados até o teste no Lattes real (biographic.ts).
   const biographic = biographicOps ? planBiographic(change, chain, label) : undefined;
   if (biographic) {
     return 'reason' in biographic ? unsupported(change, label, biographic.reason) : biographic;
   }
-  // Participação em eventos como ouvinte (edit-items.ts), testada no Lattes real em 14/10/2026.
-  const evento = editOuvinte ? planEvento(change, chain, label) : undefined;
+  // Participação em eventos (edit-items.ts): ouvinte testado no Lattes real em
+  // 14/10/2026; o resto, com a chave própria.
+  const evento =
+    editOuvinte || editEvento
+      ? planEvento(change, chain, label, { full: editEvento, siblings })
+      : undefined;
   if (evento) return 'reason' in evento ? unsupported(change, label, evento.reason) : evento;
 
   return unsupported(change, label, 'Formulário não suportado ainda');
@@ -281,9 +346,12 @@ export function planChanges(
 ): { ops: BridgeOp[]; unsupported: Unsupported[] } {
   const ops: BridgeOp[] = [];
   const skipped: Unsupported[] = [];
+  // As outras mudanças da fila, para uma operação saber o que muda na outra
+  // parte do mesmo item (edit-items.ts).
+  const all = entries.map((e) => e.change);
   for (const { change, itemTitle } of entries) {
     const label = itemTitle ? `${change.form} · ${itemTitle}` : change.form;
-    const planned = planChange(change, resolvePath(root, change.path), label, options);
+    const planned = planChange(change, resolvePath(root, change.path), label, options, all);
     if (isOp(planned)) ops.push(planned);
     else skipped.push(planned);
   }
