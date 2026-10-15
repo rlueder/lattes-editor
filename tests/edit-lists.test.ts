@@ -221,7 +221,7 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
     setAttr(premioIn(lattes, 2), 'ANO-DA-PREMIACAO', '2020');
     const op = onlyOp((root) => setAttr(premios(root)[1]!, 'NOME-DA-ENTIDADE-PROMOTORA', 'SBX'));
     expect(await applyOp(op, lattes.port)).toMatchObject({
-      detail: 'Mais de um item de prêmios e títulos igual no Lattes (2)',
+      detail: 'Mais de um item de prêmios e títulos igual no Lattes',
       status: 'erro',
     });
     setAttr(premioIn(lattes, 1), 'NOME-DA-ENTIDADE-PROMOTORA', 'Outra');
@@ -244,6 +244,23 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
       status: 'divergente',
     });
     expect(postsOf(lattes)).toEqual([]);
+  });
+
+  it('fora do evento, o formulário vai mesmo quando o valor já é o do Lattes', async () => {
+    const lattes = await lattesFor();
+    const op: ListEditOp = {
+      expect: { f_ano: '2018' },
+      key: 'k',
+      kind: 'premio',
+      label: 'Prêmio',
+      match: { f_agencia: 'Fundação Exemplo', f_titulo: 'Prêmio Jovem Pesquisador' },
+      set: { f_ano: '2018' },
+    };
+    expect(await applyOp(op, lattes.port)).toMatchObject({
+      detail: 'Gravado e conferido no Lattes',
+      status: 'conferido',
+    });
+    expect(postsOf(lattes)).toHaveLength(1);
   });
 
   it('sem a lista no menu, para antes de ler', async () => {

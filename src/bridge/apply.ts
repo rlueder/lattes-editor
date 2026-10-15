@@ -221,9 +221,10 @@ export async function applyOp(op: BridgeOp, port: LattesPort): Promise<OpResult>
         );
       }
     }
-    // Nada a trocar (a natureza de um evento, que só se confere): o "antes"
-    // já bateu, e enviar o formulário igual só acenderia a pendência.
-    if (mismatches(before.pairs, op.set).length === 0) {
+    // Nada a trocar: só no evento, onde a natureza vai para ser conferida e
+    // não trocada (edit-items.ts). O "antes" já bateu, e enviar o formulário
+    // igual só acenderia a pendência. Os outros tipos seguem enviando sempre.
+    if (isEventoOp(op) && mismatches(before.pairs, op.set).length === 0) {
       return result('conferido', 'O Lattes já estava assim; nada foi enviado');
     }
 

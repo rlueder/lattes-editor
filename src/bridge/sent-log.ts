@@ -95,6 +95,8 @@ export function undoOp(entry: SentEntry): BridgeOp | undefined {
   if (noUndoReason(op)) return undefined;
   const fields = Object.keys(op.set);
   if (fields.length === 0 || fields.some((f) => !(f in op.expect))) return undefined;
+  // Nada mudou (a natureza do evento, só conferida): não há o que desfazer.
+  if (fields.every((f) => op.set[f] === op.expect[f])) return undefined;
   const set = Object.fromEntries(fields.map((f) => [f, op.expect[f] ?? null]));
   const expect = { ...op.expect, ...op.set };
   return {

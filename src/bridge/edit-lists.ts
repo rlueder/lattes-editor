@@ -341,15 +341,18 @@ export async function locateListEdit(
   if (!links) throw new Error(`Lista de ${NAMES[op.kind]} não encontrada no menu do Lattes`);
   const want = Object.entries({ ...op.match, ...op.expect });
   const hits: string[] = [];
+  // Lê todas as linhas para provar que só uma é a do item, mas para no
+  // segundo achado: aí já não há como seguir, e o resto seria pedido à toa.
   for (const path of links) {
     const pairs = await read(path);
     if (want.every(([k, v]) => folded(pairValue(pairs, k)) === folded(v))) hits.push(path);
+    if (hits.length > 1) break;
   }
   if (hits.length !== 1) {
     throw new Error(
       hits.length === 0
         ? `Item de ${NAMES[op.kind]} não encontrado no Lattes`
-        : `Mais de um item de ${NAMES[op.kind]} igual no Lattes (${hits.length})`,
+        : `Mais de um item de ${NAMES[op.kind]} igual no Lattes`,
     );
   }
   return hits[0]!;

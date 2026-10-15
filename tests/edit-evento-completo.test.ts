@@ -306,6 +306,8 @@ describe('alteração de evento completa: aplicar no Lattes simulado', () => {
       status: 'conferido',
     });
     expect(postsOf(lattes)).toEqual([]);
+    // Nada foi trocado: o registro do enviado não oferece desfazer.
+    expect(undoOp({ ...sentEntry(op, '1', 1000), id: 4 })).toBeUndefined();
   });
 
   it('para sem enviar quando a página não mostra o tipo gravado', async () => {
