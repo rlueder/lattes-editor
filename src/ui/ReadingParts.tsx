@@ -61,6 +61,8 @@ export function LineView({ line }: { line: Line }) {
   );
 }
 
+const labelOf = (p: Part) => attributeLabelIn(p.el.name, p.attr);
+
 /** Até quantos caracteres um valor ainda cabe numa coluna da grade. */
 const GRID_VALUE_MAX = 24;
 
@@ -79,7 +81,8 @@ export function Rows({ parts, quiet }: { parts: Part[]; quiet: boolean }) {
     <dl className={classes}>
       {parts.map((p) => (
         <div key={p.key} className="reading-field" data-part={p.key}>
-          <dt>{attributeLabelIn(p.el.name, p.attr)}</dt>
+          {/* Rótulo numa linha só; o nome inteiro no passar do mouse. */}
+          <dt title={labelOf(p)}>{labelOf(p)}</dt>
           <dd>
             <PartText part={p} text={partText(p)} />
           </dd>

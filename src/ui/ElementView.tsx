@@ -2,7 +2,7 @@
 // campos, filhos como blocos recolhíveis. Serve a cauda longa de seções; as
 // mais usadas ganham formulários próprios no marco 2.
 
-import { Fragment, useId, useState } from 'react';
+import { Fragment, useId, useRef, useState } from 'react';
 
 import { attributeLabel, elementLabel } from '../labels/labels.ts';
 import { childElements, getAttr, type XElement, type XText } from '../model/xml.ts';
@@ -38,6 +38,7 @@ function FieldsBlock({
   onEdit: EditFn;
 }) {
   const showCodes = useShowCodes();
+  const openedEmpty = useRef(new Map<string, boolean>());
   const main = sources[0]!;
   const specs = sources.map(
     (src) => new Map(lattesSchema.elements[src.name]?.attributes.map((a) => [a.name, a])),
@@ -61,12 +62,22 @@ function FieldsBlock({
   const sourceOf = (key: string) => Number(key.slice(0, key.indexOf(':')));
   const valueOf = (e: { attr: string; key: string }) =>
     getAttr(sources[sourceOf(e.key)]!, e.attr) ?? '';
+  // Com os vazios à mostra, eles ficam no fim de cada grupo. Vazio é o que
+  // estava vazio quando o bloco abriu: preencher um campo não o tira do lugar
+  // enquanto a pessoa ainda está nele.
+  const emptyAtOpen = (e: { attr: string; key: string }) => {
+    let empty = openedEmpty.current.get(e.key);
+    if (empty === undefined) {
+      empty = valueOf(e).trim() === '';
+      openedEmpty.current.set(e.key, empty);
+    }
+    return empty;
+  };
   const groups = groupFields(
     entries,
     attributeLabel,
     (e) => isBooleanAttr(e.attr, specs[sourceOf(e.key)]!.get(e.attr), valueOf(e)),
-    // Com os vazios à mostra, eles ficam no fim de cada grupo.
-    (e) => valueOf(e).trim() === '',
+    emptyAtOpen,
   );
   // Com poucos campos, os títulos de grupo pesam mais do que ajudam.
   const titled = entries.length >= 6 && groups.length > 1;

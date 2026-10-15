@@ -6627,7 +6627,10 @@ main.content {
 }
 
 .reading-field dt {
+  overflow: hidden;
   color: var(--read-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: var(--edit-font);
   font-size: 13px;
   line-height: 1.4;
@@ -6652,7 +6655,7 @@ main.content {
 /* Valores curtos em grade: três colunas, o rótulo acima do valor. */
 .reading-fields.is-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.5em var(--read-tab-gap);
+  gap: 0.9em var(--read-tab-gap);
   max-width: var(--read-measure);
 }
 
