@@ -258,10 +258,12 @@ describe('alteração de evento: plano', () => {
     });
     expect(op.expect).toEqual({
       f_ano: '2019',
+      f_cidade: 'Porto Alegre',
       F_COD_PROD: 'A31',
       F_FORMA: '40',
       f_homepage: '',
       f_pais: 'BRA',
+      f_nme_evento: 'Congresso Brasileiro de Exemplo',
       F_STA_DIVULGACAO_CIENTIFICA: 'N',
       f_titulo: '',
       f_titulo_en: '',
@@ -275,6 +277,8 @@ describe('alteração de evento: plano', () => {
     const nome = onlyOp((root) => setAttr(detail(root), 'NOME-DO-EVENTO', 'Congresso Novo'));
     expect(nome.set).toEqual({ f_nme_evento: 'Congresso Novo' });
     expect(nome.expect).toEqual({
+      f_ano: '2019',
+      f_cidade: 'Porto Alegre',
       F_COD_PROD: 'A31',
       F_FORMA: '40',
       f_nme_evento: 'Congresso Brasileiro de Exemplo',
@@ -454,6 +458,35 @@ describe('alteração de evento: aplicar no Lattes simulado', () => {
       expect(r.detail).toMatch(/^O Lattes não está como o editor espera: /);
       expect(postsOf(lattes)).toEqual([]);
     }
+  });
+
+  it('não grava em outro congresso do mesmo ano quando o f_seq do Lattes é de outro item', async () => {
+    // No editor, o 12 é o Congresso Brasileiro. No Lattes, o f_seq=12 é outro
+    // congresso de ouvinte do mesmo ano, com nome e cidade diferentes: o f_seq
+    // não é sempre o SEQUENCIA-PRODUCAO (censo de 15/10/2026), e só forma,
+    // natureza e ano não separam os dois.
+    const other = ouvinte('12', 'PARTICIPACAO-EM-CONGRESSO', 'DA-PARTICIPACAO-EM-CONGRESSO')
+      .replace('Congresso Brasileiro de Exemplo', 'Congresso Gaúcho de Exemplo')
+      .replace('CIDADE-DO-EVENTO="Porto Alegre"', 'CIDADE-DO-EVENTO="Pelotas"');
+    const inLattes = XML.replace(
+      ouvinte('12', 'PARTICIPACAO-EM-CONGRESSO', 'DA-PARTICIPACAO-EM-CONGRESSO'),
+      `${other}\n${ouvinte('16', 'PARTICIPACAO-EM-CONGRESSO', 'DA-PARTICIPACAO-EM-CONGRESSO')}`,
+    );
+    expect(inLattes).toContain('Congresso Gaúcho de Exemplo');
+    await open?.close();
+    open = await withLattesSimulado({
+      xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${inLattes}`),
+    });
+    for (const edit of [
+      (root: XElement) => setAttr(basics(root), 'TITULO', 'Novo'),
+      (root: XElement) => setAttr(basics(root), 'PAIS', 'Alemanha'),
+      (root: XElement) => setAttr(detail(root), 'NOME-DO-EVENTO', 'Outro nome'),
+    ]) {
+      const r = await applyOp(opFor(edit), open.port);
+      expect(r.status).toBe('divergente');
+      expect(r.detail).toMatch(/f_nme_evento|f_cidade/);
+    }
+    expect(postsOf(open)).toEqual([]);
   });
 
   it('acusa evento, lista ou formulário que não acha, sem enviar', async () => {
