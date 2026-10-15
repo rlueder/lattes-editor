@@ -187,3 +187,13 @@ export function yearColumn(values: string[]): YearCell[] {
 export function tabWidth(values: string[]): number {
   return Math.max(4, ...values.map((v) => v.length));
 }
+
+/**
+ * Quantas colunas da grade de rótulos um valor ocupa: até 24 caracteres
+ * cabe numa; até 48, em duas; mais que isso (as formas de citação, um título
+ * em inglês, um endereço na web), na linha inteira.
+ */
+export function cellSpan(text: string): 1 | 2 | 3 {
+  if (text.length > 48) return 3;
+  return text.length > 24 ? 2 : 1;
+}

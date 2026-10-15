@@ -6,6 +6,7 @@ import { Menu } from '@base-ui/react/menu';
 import { type CSSProperties, type ReactNode, useState } from 'react';
 
 import { PrinterIcon } from '../print/PrinterIcon.tsx';
+import { FIELD_ORDERS, type FieldOrder, setFieldOrder, useFieldOrder } from './field-order.ts';
 import {
   CheckIcon,
   CloseIcon,
@@ -60,6 +61,7 @@ export function SettingsMenu({ file, focus, onTheme, theme }: Props) {
   const showCodes = useShowCodes();
   const update = useManualUpdateCheck();
   const [readingMode] = useState(readingModeOn);
+  const fieldOrder = useFieldOrder();
   return (
     <Menu.Root>
       <Tip label="Configurações e arquivo">
@@ -101,6 +103,38 @@ export function SettingsMenu({ file, focus, onTheme, theme }: Props) {
                 ))}
               </Menu.RadioGroup>
             </Menu.Group>
+
+            {readingMode && (
+              <>
+                <Menu.Separator className="menu-sep" />
+                <Menu.Group>
+                  <Menu.GroupLabel className="menu-heading">Ordem dos campos</Menu.GroupLabel>
+                  <Menu.RadioGroup
+                    className="menu-segment"
+                    style={
+                      {
+                        '--seg-count': FIELD_ORDERS.length,
+                        '--seg-index': FIELD_ORDERS.findIndex((o) => o.value === fieldOrder),
+                      } as CSSProperties
+                    }
+                    value={fieldOrder}
+                    onValueChange={(v) => setFieldOrder(v as FieldOrder)}
+                  >
+                    <span aria-hidden="true" className="menu-seg-indicator" />
+                    {FIELD_ORDERS.map((o) => (
+                      <Menu.RadioItem
+                        key={o.value}
+                        className="menu-seg"
+                        closeOnClick={false}
+                        value={o.value}
+                      >
+                        {o.label}
+                      </Menu.RadioItem>
+                    ))}
+                  </Menu.RadioGroup>
+                </Menu.Group>
+              </>
+            )}
 
             <Menu.Separator className="menu-sep" />
 

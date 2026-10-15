@@ -3,18 +3,21 @@
 // texto fica no topo como prévia e os campos vêm abaixo (ReadingBlock.tsx).
 // A composição sem React está em reading-layout.ts e reading-reference.ts.
 
-import type { CSSProperties } from 'react';
+import { type CSSProperties, useMemo } from 'react';
 
 import { elementLabel } from '../labels/labels.ts';
 import { isPendingImport, SEQ_ATTR } from '../model/production.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import { referenceText } from '../print/abnt.ts';
 import { hasReference, referenceFor } from '../print/references.ts';
+import { FieldSlotContext } from './draft-context.ts';
 import { useEditor } from './editor-context.ts';
 import { type EditFn, ElementView } from './ElementView.tsx';
 import { applyFilter, cardText, type SectionFilter } from './facets.ts';
+import { useFieldOrder } from './field-order.ts';
 import { formatPeriod, itemMeta } from './item-meta.ts';
 import { elementKey, type ListView } from './list-view.ts';
+import { type PreviewKind, previewSlots } from './preview-order.ts';
 import { tabWidth, yearColumn } from './reading.ts';
 import {
   addressLayout,
@@ -22,16 +25,44 @@ import {
   type LayoutOptions,
   lineText,
   recordLayout,
+  recordWhen,
   resumoLayout,
 } from './reading-layout.ts';
 import { EditableBlock } from './ReadingBlock.tsx';
 import { CitationReading } from './ReadingCitation.tsx';
-import { Sections, SectionView } from './ReadingParts.tsx';
+import { LineView, Sections, SectionView } from './ReadingParts.tsx';
 import { useLayoutOptions } from './use-reading-options.ts';
 
 /** O formulário de hoje com todos os campos; ainda serve aos testes e ao "Editar no formulário". */
 export function EditForm({ depth, el, onEdit }: { depth?: number; el: XElement; onEdit: EditFn }) {
   return <ElementView depth={depth} el={el} showEmpty={true} onEdit={onEdit} />;
+}
+
+/**
+ * Os campos do bloco em edição, na ordem que o ⚙ pede: como na prévia (o
+ * padrão, preview-order.ts) ou como no formulário do Lattes (form-order.ts).
+ */
+function OrderedForm({
+  depth,
+  el,
+  kind,
+  onEdit,
+}: {
+  depth?: number;
+  el: XElement;
+  kind: PreviewKind;
+  onEdit: EditFn;
+}) {
+  const order = useFieldOrder();
+  const slots = useMemo(
+    () => (order === 'previa' ? previewSlots(el, kind) : null),
+    [el, kind, order],
+  );
+  return (
+    <FieldSlotContext.Provider value={slots}>
+      <EditForm depth={depth} el={el} onEdit={onEdit} />
+    </FieldSlotContext.Provider>
+  );
 }
 
 /** Bloco de campos (resumo, identificação, endereço, outras informações). */
@@ -51,7 +82,13 @@ function FieldsBlock({ el, label, onEdit }: { el: XElement; label: string; onEdi
     <EditableBlock
       addLabel={missingEnglish}
       className={el.name === 'RESUMO-CV' ? 'reading-prose' : undefined}
-      form={() => <EditForm el={el} onEdit={onEdit} />}
+      form={() => (
+        <OrderedForm
+          el={el}
+          kind={el.name === 'RESUMO-CV' ? 'resumo' : el.name === 'ENDERECO' ? 'address' : 'fields'}
+          onEdit={onEdit}
+        />
+      )}
       label={label}
       read={(x) => <Sections sections={sectionsOf(x)} />}
       root={el}
@@ -70,9 +107,8 @@ interface ListProps {
 
 /** O texto da coluna da esquerda de um registro: período, ano ou idioma. */
 function whenOf(el: XElement, academic: boolean, opts: LayoutOptions): string {
-  if (hasReference(el)) return formatPeriod(itemMeta(el));
-  const layout = recordLayout(el, academic, opts);
-  return layout.when ? lineText(layout.when) : formatPeriod(itemMeta(el));
+  const when = recordWhen(el, academic, opts);
+  return (when && lineText(when)) || formatPeriod(itemMeta(el));
 }
 
 /** Um registro lido: a coluna da esquerda e o texto ao lado. */
@@ -93,9 +129,14 @@ function RecordRead({
   const opts = useLayoutOptions();
   const citation = hasReference(el);
   const layout = citation ? undefined : recordLayout(el, academic, opts);
+  // Cada ano com a chave do campo dele, para acender quando o campo está em foco.
+  const when = recordWhen(el, academic, opts);
+  const shownWhen = when && lineText(when) === cell.shown ? <LineView line={when} /> : cell.shown;
   return (
     <>
-      <span className="rr-when">{cell.shown || <span className="sr-only">{cell.value}</span>}</span>
+      <span className="rr-when">
+        {cell.shown ? shownWhen : <span className="sr-only">{cell.value}</span>}
+      </span>
       <div className="rr-body">
         {isNew && <span className="tag new">novo</span>}
         {citation ? (
@@ -149,7 +190,14 @@ function RecordList({ academic, filter, items, onEdit, view }: ListProps) {
                   </button>
                 )
               }
-              form={() => <EditForm depth={1} el={el} onEdit={onEdit} />}
+              form={() => (
+                <OrderedForm
+                  depth={1}
+                  el={el}
+                  kind={hasReference(el) ? 'citation' : academic ? 'academic' : 'record'}
+                  onEdit={onEdit}
+                />
+              )}
               label={title}
               read={(x, editing) => (
                 <RecordRead

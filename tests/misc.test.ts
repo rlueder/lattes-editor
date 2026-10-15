@@ -490,3 +490,17 @@ describe('código QR', () => {
     expect(qrSvg('x')).toContain('<svg');
   });
 });
+
+describe('rótulos legíveis', () => {
+  it('versão em inglês e nomes da formação', () => {
+    expect(attributeLabel('TITULO-DO-TRABALHO-DE-CONCLUSAO-DE-CURSO-INGLES')).toBe(
+      'Título do trabalho de conclusão de curso em inglês',
+    );
+    expect(attributeLabel('NOME-CURSO-INGLES')).toBe('Nome do curso em inglês');
+    expect(attributeLabel('TITULO-INGLES')).toBe('Título em inglês');
+    expect(attributeLabel('NOME-DO-CO-ORIENTADOR')).toBe('Nome do coorientador');
+    expect(attributeLabel('TIPO-GRADUACAO')).toBe('Tipo de graduação');
+    expect(attributeLabel('NOME-DO-ORIENTADOR-SANDUICHE')).toBe('Orientador no sanduíche');
+    expect(attributeLabel('NOME-DO-PREMIO-OU-TITULO')).toBe('Nome do prêmio ou título');
+  });
+});

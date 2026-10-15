@@ -3,7 +3,7 @@
 // do bloco em edição, que é a mesma composição com os rascunhos dos campos.
 
 import { attributeLabelIn } from '../labels/labels.ts';
-import { curlyQuotes, hiddenNote, paragraphs } from './reading.ts';
+import { cellSpan, curlyQuotes, hiddenNote, paragraphs } from './reading.ts';
 import {
   type Line,
   lineVisible,
@@ -63,31 +63,31 @@ export function LineView({ line }: { line: Line }) {
 
 const labelOf = (p: Part) => attributeLabelIn(p.el.name, p.attr);
 
-/** Até quantos caracteres um valor ainda cabe numa coluna da grade. */
-const GRID_VALUE_MAX = 24;
-
 /**
- * Rótulo e valor: o rótulo pequeno, na sans, na coluna da esquerda. Quando
- * todos os valores são curtos (situação, ano, "Sim"), viram uma grade de três
- * colunas com o rótulo acima do valor, que se lê de uma vez.
+ * Rótulo e valor em grade de três colunas (duas em tela estreita), o rótulo
+ * pequeno, na sans, acima do valor. Um valor longo ocupa mais colunas em vez
+ * de se espremer (cellSpan); a grade segue a ordem de leitura, sem
+ * reacomodar valores curtos nos buracos que um longo deixa.
  */
 export function Rows({ parts, quiet }: { parts: Part[]; quiet: boolean }) {
   if (parts.length === 0) return null;
-  const grid = parts.length > 1 && parts.every((p) => partText(p).length <= GRID_VALUE_MAX);
-  const classes = ['reading-fields', quiet && 'is-quiet', grid && 'is-grid']
-    .filter(Boolean)
-    .join(' ');
   return (
-    <dl className={classes}>
-      {parts.map((p) => (
-        <div key={p.key} className="reading-field" data-part={p.key}>
-          {/* Rótulo numa linha só; o nome inteiro no passar do mouse. */}
-          <dt title={labelOf(p)}>{labelOf(p)}</dt>
-          <dd>
-            <PartText part={p} text={partText(p)} />
-          </dd>
-        </div>
-      ))}
+    <dl className={quiet ? 'reading-fields is-quiet' : 'reading-fields'}>
+      {parts.map((p) => {
+        const span = cellSpan(partText(p));
+        const classes = ['reading-field', span === 2 && 'span-2', span === 3 && 'span-all']
+          .filter(Boolean)
+          .join(' ');
+        return (
+          <div key={p.key} className={classes} data-part={p.key}>
+            {/* Rótulo numa linha só; o nome inteiro no passar do mouse. */}
+            <dt title={labelOf(p)}>{labelOf(p)}</dt>
+            <dd>
+              <PartText part={p} text={partText(p)} />
+            </dd>
+          </div>
+        );
+      })}
     </dl>
   );
 }

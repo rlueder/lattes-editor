@@ -185,7 +185,9 @@ export function groupFields(
   labelOf: (attr: string) => string,
   isBoolean: (entry: FieldEntry) => boolean,
   isEmpty: (entry: FieldEntry) => boolean = () => false,
+  previewSlot?: (entry: FieldEntry) => FieldSlot | undefined,
 ): FieldGroup[] {
+  if (previewSlot) return groupByPreview(entries, labelOf, previewSlot);
   const buckets = new Map<string, FieldEntry[]>();
   const mapped = (e: FieldEntry) => formLayout(e.element) !== undefined;
   const formLabels = [
@@ -203,21 +205,12 @@ export function groupFields(
       'Códigos do Lattes',
     ]),
   ];
-  const rankOf = (e: FieldEntry) => formSlot(e.element, e.attr)?.rank;
-  // Código com o nome dele no bloco vai logo depois do nome, lado a lado.
-  const pairedCodes = new Map<string, FieldEntry>();
-  for (const entry of entries) {
-    const code = codeAttrFor(entry.element, entry.attr);
-    const codeEntry = code && entries.find((e) => e.attr === code && e.element === entry.element);
-    if (codeEntry && !formSlot(codeEntry.element, codeEntry.attr)) {
-      pairedCodes.set(entry.key, codeEntry);
-    }
-  }
-  const paired = new Set([...pairedCodes.values()].map((e) => e.key));
+  const slotOf = (e: FieldEntry) => formSlot(e.element, e.attr);
+  const { paired, pairedCodes } = pairCodes(entries, slotOf);
   for (const entry of entries) {
     if (paired.has(entry.key)) continue;
     const label =
-      formSlot(entry.element, entry.attr)?.label ??
+      slotOf(entry)?.label ??
       (isSystemAttr(entry.element, entry.attr)
         ? 'Códigos do Lattes'
         : mapped(entry)
@@ -232,19 +225,85 @@ export function groupFields(
   return order
     .filter((label) => buckets.has(label))
     .map((label) => ({
-      entries: buckets
-        .get(label)!
-        .sort(
-          (a, b) =>
-            Number(isEmpty(a)) - Number(isEmpty(b)) ||
-            (rankOf(a) ?? 999) - (rankOf(b) ?? 999) ||
-            (label === 'Período' ? periodRank(a.attr) - periodRank(b.attr) : 0) ||
-            labelOf(a.attr).localeCompare(labelOf(b.attr), 'pt-BR'),
-        )
-        .flatMap((e) => {
-          const code = pairedCodes.get(e.key);
-          return code ? [e, code] : [e];
-        }),
+      entries: withCodes(
+        buckets
+          .get(label)!
+          .sort(
+            (a, b) =>
+              Number(isEmpty(a)) - Number(isEmpty(b)) ||
+              (slotOf(a)?.rank ?? 999) - (slotOf(b)?.rank ?? 999) ||
+              (label === 'Período' ? periodRank(a.attr) - periodRank(b.attr) : 0) ||
+              labelOf(a.attr).localeCompare(labelOf(b.attr), 'pt-BR'),
+          ),
+        pairedCodes,
+      ),
+      label,
+      system: label === 'Códigos do Lattes',
+    }));
+}
+
+/** Grupo e posição de um campo: no formulário do Lattes ou na prévia. */
+export interface FieldSlot {
+  label: string;
+  rank: number;
+}
+
+/** Código com o nome dele no bloco vai logo depois do nome, lado a lado. */
+function pairCodes(entries: FieldEntry[], slotOf: (e: FieldEntry) => FieldSlot | undefined) {
+  const pairedCodes = new Map<string, FieldEntry>();
+  for (const entry of entries) {
+    const code = codeAttrFor(entry.element, entry.attr);
+    const codeEntry = code && entries.find((e) => e.attr === code && e.element === entry.element);
+    if (codeEntry && !slotOf(codeEntry)) pairedCodes.set(entry.key, codeEntry);
+  }
+  return { paired: new Set([...pairedCodes.values()].map((e) => e.key)), pairedCodes };
+}
+
+function withCodes(entries: FieldEntry[], pairedCodes: Map<string, FieldEntry>): FieldEntry[] {
+  return entries.flatMap((e) => {
+    const code = pairedCodes.get(e.key);
+    return code ? [e, code] : [e];
+  });
+}
+
+/**
+ * Na ordem da prévia (modo de leitura): cada campo no lugar em que aparece
+ * ou apareceria, preenchido, no texto acima dele, com os grupos dos blocos
+ * da prévia. Vazio não vai para o fim: preenchê-lo não o muda de lugar. O que
+ * a prévia nunca mostra fica em "Outros dados" e os códigos no fim.
+ */
+function groupByPreview(
+  entries: FieldEntry[],
+  labelOf: (attr: string) => string,
+  previewSlot: (entry: FieldEntry) => FieldSlot | undefined,
+): FieldGroup[] {
+  const { paired, pairedCodes } = pairCodes(entries, previewSlot);
+  const buckets = new Map<string, FieldEntry[]>();
+  for (const entry of entries) {
+    if (paired.has(entry.key)) continue;
+    const label =
+      previewSlot(entry)?.label ??
+      (isSystemAttr(entry.element, entry.attr) ? 'Códigos do Lattes' : OTHER_DATA);
+    buckets.set(label, [...(buckets.get(label) ?? []), entry]);
+  }
+  const first = (label: string) =>
+    Math.min(...buckets.get(label)!.map((e) => previewSlot(e)?.rank ?? Infinity));
+  const order = [...buckets.keys()]
+    .filter((l) => l !== OTHER_DATA && l !== 'Códigos do Lattes')
+    .sort((a, b) => first(a) - first(b));
+  return [...order, OTHER_DATA, 'Códigos do Lattes']
+    .filter((label) => buckets.has(label))
+    .map((label) => ({
+      entries: withCodes(
+        buckets
+          .get(label)!
+          .sort(
+            (a, b) =>
+              (previewSlot(a)?.rank ?? 999) - (previewSlot(b)?.rank ?? 999) ||
+              labelOf(a.attr).localeCompare(labelOf(b.attr), 'pt-BR'),
+          ),
+        pairedCodes,
+      ),
       label,
       system: label === 'Códigos do Lattes',
     }));

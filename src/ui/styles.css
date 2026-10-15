@@ -6451,8 +6451,6 @@ main.content {
   /* Coluna de anos: a largura do texto mais longo da lista (ReadingView). */
   --read-tab: 4ch;
   --read-tab-gap: 1.1rem;
-  /* Coluna de rótulos da identificação e dos contatos. */
-  --read-label: 13rem;
   /* 0,65em de 17px: 11px, perto de 8pt (4 a 10pt entre parágrafos). */
   --read-para: 0.65em;
   --read-small: 15px;
@@ -6611,19 +6609,30 @@ main.content {
   margin-top: var(--read-para);
 }
 
-/* Rótulo e valor. O rótulo é pequeno, na sans, na coluna da esquerda; em
-   tela estreita, fica acima do valor. Nos registros, a lista é mais miúda. */
+/* Rótulo e valor em grade de três colunas, o rótulo acima do valor; o valor
+   longo ocupa duas colunas ou a linha inteira (cellSpan em reading.ts). Sem
+   grid-auto-flow: dense, para a grade seguir a ordem de leitura. */
 .reading-fields {
   display: grid;
-  gap: 0.3em 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9em var(--read-tab-gap);
+  max-width: var(--read-measure);
   margin: 0;
 }
 
 .reading-field {
   display: grid;
-  grid-template-columns: var(--read-label) minmax(0, var(--read-measure));
-  gap: 0 var(--read-tab-gap);
-  align-items: baseline;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.1em;
+  min-width: 0;
+}
+
+.reading-field.span-2 {
+  grid-column: span 2;
+}
+
+.reading-field.span-all {
+  grid-column: 1 / -1;
 }
 
 .reading-field dt {
@@ -6643,25 +6652,12 @@ main.content {
 }
 
 .reading-fields.is-quiet {
-  --read-label: 11rem;
-  gap: 0.15em 0;
+  gap: 0.7em var(--read-tab-gap);
   font-size: var(--read-small);
 }
 
 .reading-fields.is-quiet dt {
   font-size: 12px;
-}
-
-/* Valores curtos em grade: três colunas, o rótulo acima do valor. */
-.reading-fields.is-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.9em var(--read-tab-gap);
-  max-width: var(--read-measure);
-}
-
-.reading-fields.is-grid .reading-field {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.1em;
 }
 
 .reading-block a {
@@ -6819,12 +6815,14 @@ main.content {
 }
 
 @media (max-width: 760px) {
-  .reading-block.rr .reading-content,
-  .reading-field {
+  .reading-block.rr .reading-content {
     grid-template-columns: minmax(0, 1fr);
   }
-  .reading-fields.is-grid {
+  .reading-fields {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .reading-field.span-2 {
+    grid-column: 1 / -1;
   }
 }
 
@@ -6905,6 +6903,10 @@ main.content {
   left: 0;
   width: 240px;
   max-height: none;
+  /* O align-self: start do menu na grade vale também para caixa fixa: sem
+     isto, o painel encolhe à altura do conteúdo em vez de ir até o fim da
+     janela. */
+  align-self: stretch;
   transform: translateX(-100%);
 }
 

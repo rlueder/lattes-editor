@@ -220,6 +220,8 @@ function humanize(xmlName: string): string {
   if (out.length === 0) return xmlName;
   const first = out[0]!;
   out[0] = ACRONYMS[words[0]!] ? first : first.charAt(0).toUpperCase() + first.slice(1);
+  // -INGLES é a versão em inglês do campo: "Título do trabalho em inglês".
+  if (out.length > 1 && words.at(-1) === 'ingles') out.splice(-1, 1, 'em', 'inglês');
   return out.join(' ');
 }
 

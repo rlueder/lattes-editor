@@ -8,6 +8,7 @@ import { attributeLabel, elementLabel } from '../labels/labels.ts';
 import { childElements, getAttr, type XElement, type XText } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 import { AttributeField, type EditFn } from './AttributeField.tsx';
+import { useFieldSlot } from './draft-context.ts';
 import type { SectionFilter } from './facets.ts';
 import { groupFields, isBooleanAttr, isSystemAttr } from './field-kind.ts';
 import { offForm } from './form-order.ts';
@@ -38,6 +39,7 @@ function FieldsBlock({
   onEdit: EditFn;
 }) {
   const showCodes = useShowCodes();
+  const fieldSlot = useFieldSlot();
   const openedEmpty = useRef(new Map<string, boolean>());
   const main = sources[0]!;
   const specs = sources.map(
@@ -73,11 +75,17 @@ function FieldsBlock({
     }
     return empty;
   };
+  // "Como na prévia" (modo de leitura): vale quando a prévia dá lugar a algum
+  // campo deste bloco; partes que ela não mostra (autores) seguem a do Lattes.
+  const previewSlot = fieldSlot
+    ? (e: { attr: string; key: string }) => fieldSlot(sources[sourceOf(e.key)]!, e.attr)
+    : undefined;
   const groups = groupFields(
     entries,
     attributeLabel,
     (e) => isBooleanAttr(e.attr, specs[sourceOf(e.key)]!.get(e.attr), valueOf(e)),
     emptyAtOpen,
+    previewSlot && entries.some((e) => previewSlot(e)) ? previewSlot : undefined,
   );
   // Com poucos campos, os títulos de grupo pesam mais do que ajudam.
   const titled = entries.length >= 6 && groups.length > 1;

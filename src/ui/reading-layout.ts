@@ -415,6 +415,20 @@ function areaRecord(keys: Keys, el: XElement, opts: LayoutOptions): Section {
   return finish(keys, [el], { lines, quietRows: true }, opts);
 }
 
+/**
+ * A coluna da esquerda de um registro como linha, com a chave de cada ano
+ * (para o ano em foco acender na prévia). Na produção, o ano dos dados
+ * básicos; nos outros, o período ou o ano do próprio registro.
+ */
+export function recordWhen(el: XElement, academic: boolean, opts: LayoutOptions): Line | undefined {
+  const basics = childElements(el).find((c) => c.name.startsWith('DADOS-BASICOS'));
+  if (basics) {
+    const line = whenLine(new Keys(el), basics);
+    return line.parts.length > 0 ? line : undefined;
+  }
+  return recordLayout(el, academic, opts).when;
+}
+
 export type RecordKind = 'area' | 'formation' | 'generic' | 'language';
 
 export function recordKind(el: XElement, academic: boolean): RecordKind {

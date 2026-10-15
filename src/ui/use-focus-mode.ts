@@ -116,6 +116,34 @@ export function useEdgeReveal(on: boolean): EdgeState {
   return state;
 }
 
+/**
+ * Um menu ou painel aberto a partir do cabeçalho (⚙, sino) ou do menu de
+ * seções: o Base UI marca o gatilho com data-popup-open ou aria-expanded. Com
+ * ele aberto, o painel de onde saiu continua à mostra no modo foco, mesmo com
+ * o ponteiro e o foco já dentro do menu, fora do painel.
+ */
+function usePopupOpen(selector: string, on: boolean): boolean {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const host = on ? document.querySelector(selector) : null;
+    if (!host) {
+      setOpen(false);
+      return;
+    }
+    const check = () =>
+      setOpen(host.querySelector('[data-popup-open], [aria-expanded="true"]') !== null);
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(host, {
+      attributeFilter: ['data-popup-open', 'aria-expanded'],
+      attributes: true,
+      subtree: true,
+    });
+    return () => observer.disconnect();
+  }, [selector, on]);
+  return open;
+}
+
 export interface FocusShell {
   /** Classes da moldura. */
   className: string;
@@ -136,14 +164,16 @@ export function useFocusShell(paletteOpen: boolean, sectionId: string): FocusShe
   const [readingMode] = useState(readingModeOn);
   const focus = useFocusMode(readingMode);
   const edge = useEdgeReveal(focus.on);
+  const topMenu = usePopupOpen('.topbar', focus.on);
+  const sideMenu = usePopupOpen('.sidebar', focus.on);
   const [menuPinned, setMenuPinned] = useState(false);
   // O menu aberto pelo puxador fecha ao sair do modo foco ou ao escolher seção.
   useEffect(() => setMenuPinned(false), [focus.on, sectionId]);
   const label = focus.available ? focusShortcutLabel(IS_MAC) : undefined;
   return {
     className: shellClass(focus.on, {
-      left: edge.left || menuPinned,
-      top: edge.top || paletteOpen,
+      left: edge.left || menuPinned || sideMenu,
+      top: edge.top || paletteOpen || topMenu,
     }),
     focus,
     label,

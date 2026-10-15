@@ -68,7 +68,19 @@
     "HOME-PAGE": "Página na web",
     "DESCRICAO-DO-IDIOMA": "Idioma",
     "TEXTO-RESUMO-CV-RH": "Resumo",
-    "TEXTO-RESUMO-CV-RH-EN": "Resumo em inglês"
+    "TEXTO-RESUMO-CV-RH-EN": "Resumo em inglês",
+    "NOME-CURSO-INGLES": "Nome do curso em inglês",
+    "TIPO-GRADUACAO": "Tipo de graduação",
+    "TIPO-MESTRADO": "Tipo de mestrado",
+    "TIPO-DOUTORADO": "Tipo de doutorado",
+    "TITULO-DA-DISSERTACAO-TESE": "Título da dissertação ou tese",
+    "TITULO-DA-DISSERTACAO-TESE-INGLES": "Título da dissertação ou tese em inglês",
+    "NOME-DO-CO-ORIENTADOR": "Nome do coorientador",
+    "NOME-DO-ORIENTADOR-SANDUICHE": "Orientador no sanduíche",
+    "NOME-DO-ORIENTADOR-CO-TUTELA": "Orientador na cotutela",
+    "NOME-CURSO": "Nome do curso",
+    "NOME-INSTITUICAO": "Nome da instituição",
+    "NOME-AGENCIA": "Nome da agência"
   },
   "enums": {
     "SIM": "Sim",

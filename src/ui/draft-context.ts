@@ -24,3 +24,18 @@ export const PartKeyContext = createContext<PartKeyFn | null>(null);
 export function usePartKey(): PartKeyFn | null {
   return useContext(PartKeyContext);
 }
+
+/**
+ * Lugar de cada campo na ordem da prévia (preview-order.ts), quando o ⚙ pede
+ * "Ordem dos campos: como na prévia". Sem provedor, a ordem do Lattes.
+ */
+export type FieldSlotFn = (
+  el: XElement,
+  attr: string,
+) => { label: string; rank: number } | undefined;
+
+export const FieldSlotContext = createContext<FieldSlotFn | null>(null);
+
+export function useFieldSlot(): FieldSlotFn | null {
+  return useContext(FieldSlotContext);
+}

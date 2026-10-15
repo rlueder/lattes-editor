@@ -81,18 +81,24 @@ export function referenceCandidates(item: XElement, opts: LayoutOptions): Candid
 }
 
 /** Ordem da citação: título, onde saiu, lugar, ano, volume, páginas, DOI. */
+const CITATION_ORDER: RegExp[] = [
+  /^TITULO-(?!.*(PERIODICO|ANAIS|LIVRO|JORNAL)).*(?<!INGLES)$/,
+  /^(NOME-DO-EVENTO|TITULO-DO-PERIODICO|TITULO-DOS-ANAIS|TITULO-DO-LIVRO|TITULO-DO-JORNAL|NOME-DA-EDITORA|NOME-DOS-ORGANIZADORES)/,
+  /^(CIDADE|LOCAL|PAIS)/,
+  /^ANO/,
+  /^(VOLUME|FASCICULO|SERIE|NUMERO-DA-EDICAO|NUMERO-DE-VOLUMES)/,
+  /^PAGINA/,
+  /^DOI$/,
+];
+
+/** Campo que entra na referência da NBR 6023 (título, onde saiu, lugar, ano, volume, páginas, DOI). */
+export function isCitationAttr(attr: string): boolean {
+  return CITATION_ORDER.some((re) => re.test(attr));
+}
+
 export function citationRank(attr: string): number {
-  const order: RegExp[] = [
-    /^TITULO-(?!.*(PERIODICO|ANAIS|LIVRO|JORNAL)).*(?<!INGLES)$/,
-    /^(NOME-DO-EVENTO|TITULO-DO-PERIODICO|TITULO-DOS-ANAIS|TITULO-DO-LIVRO|TITULO-DO-JORNAL|NOME-DA-EDITORA|NOME-DOS-ORGANIZADORES)/,
-    /^(CIDADE|LOCAL|PAIS)/,
-    /^ANO/,
-    /^(VOLUME|FASCICULO|SERIE|NUMERO-DA-EDICAO|NUMERO-DE-VOLUMES)/,
-    /^PAGINA/,
-    /^DOI$/,
-  ];
-  const i = order.findIndex((re) => re.test(attr));
-  return i < 0 ? order.length * 10 + rowRank(attr) : i;
+  const i = CITATION_ORDER.findIndex((re) => re.test(attr));
+  return i < 0 ? CITATION_ORDER.length * 10 + rowRank(attr) : i;
 }
 
 /** Os campos preenchidos de uma produção, sem os autores, na ordem da citação. */
