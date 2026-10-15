@@ -184,7 +184,11 @@ export function cardText(card: { subtitle: string; title: string }): string {
 /** Busca de texto em grupos que não são lista (Identificação, Resumo): valores dos atributos. */
 export function elementMatchesText(el: XElement, query: string): boolean {
   if (!effectiveQuery(query)) return true;
-  // Junta todos os valores: um termo pode estar num campo e o outro em outro.
+  return matchesQuery(elementText(el), query);
+}
+
+/** Todos os valores do elemento e dos filhos: um termo pode estar num campo e o outro em outro. */
+function elementText(el: XElement): string {
   const values: string[] = [];
   const visit = (node: XElement) => {
     for (const a of node.attrs) values.push(a.value);
@@ -194,5 +198,15 @@ export function elementMatchesText(el: XElement, query: string): boolean {
     }
   };
   visit(el);
-  return matchesQuery(values.join(' '), query);
+  return values.join(' ');
+}
+
+/**
+ * Texto que a busca considera num registro da leitura: o do cartão e todos os
+ * valores do item, inclusive os das listas dentro dele (o projeto de uma
+ * atividade, a equipe do projeto). A lista fechada que tem o resultado abre
+ * (nested-collapse.ts).
+ */
+export function recordSearchText(card: { subtitle: string; title: string }, el: XElement): string {
+  return `${cardText(card)} ${elementText(el)}`;
 }

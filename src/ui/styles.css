@@ -6692,8 +6692,7 @@ main.content {
 
 .reading-nested ul {
   margin: 0;
-  padding: 0 0 0 0.9em;
-  border-left: 1px solid var(--border);
+  padding: 0 0 0 1.75em;
   list-style: none;
 }
 
@@ -7161,4 +7160,52 @@ main.content {
   .disclosure-chevron {
     transition: none;
   }
+}
+
+/* Listas dentro de listas: só o recuo marca o nível, sem fio à esquerda. Na
+   tela estreita, o passo é menor, para o texto do nível fundo não espremer. */
+@media (max-width: 759px) {
+  .reading-nested ul {
+    padding-left: 0.9em;
+  }
+}
+
+/* Lista do segundo nível para baixo, fechada numa linha de texto pequena e
+   apagada ("Equipe do projeto · 4 pessoas · mostrar"). Ao passar o mouse,
+   muda a cor e a palavra de ação ganha sublinhado. */
+.reading-nested-toggle {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--read-muted, var(--muted));
+  font: 12px/1.5 var(--font);
+  text-align: left;
+}
+
+.reading-nested-toggle:hover {
+  color: var(--text);
+}
+
+.reading-nested-text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.reading-nested-action {
+  flex: none;
+  white-space: pre;
+}
+
+.reading-nested-toggle:hover .reading-nested-verb {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.reading-nested.is-open > .reading-nested-toggle {
+  margin-bottom: 0.3em;
 }

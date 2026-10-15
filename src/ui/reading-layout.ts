@@ -40,8 +40,16 @@ export interface Line {
 
 /** Uma lista dentro de um registro (vínculos, integrantes, participantes). */
 export interface NestedGroup {
+  /**
+   * A posição do primeiro elemento da lista no bloco (a mesma conta das
+   * chaves dos campos): igual na leitura e na prévia com rascunhos, para a
+   * lista lembrar se estava aberta (nested-collapse.ts).
+   */
+  id?: string;
   items: Section[];
   label: string;
+  /** Pessoas (equipe, integrantes, participantes) ou itens, para a contagem. */
+  people?: boolean;
 }
 
 export interface Section {
@@ -87,6 +95,10 @@ export class Keys {
   private readonly index = new Map<XElement, number>();
   constructor(root: XElement) {
     flatten(root).forEach((el, i) => this.index.set(el, i));
+  }
+  /** A posição do elemento no bloco, em ordem de documento. */
+  indexOf(el: XElement): number {
+    return this.index.get(el) ?? 0;
   }
   part(el: XElement, attr: string, extra: Partial<Part> = {}): Part {
     return { attr, el, key: `${this.index.get(el) ?? 0}:${attr}`, ...extra };

@@ -2,10 +2,19 @@
 // compostas a partir de reading-layout.ts. Servem à leitura e à prévia no topo
 // do bloco em edição, que é a mesma composição com os rascunhos dos campos.
 
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 
 import { attributeLabelIn } from '../labels/labels.ts';
 import { isDoiAttr, linkHref, linkPieces, shortUrl } from './link-fields.ts';
+import {
+  actionWord,
+  collapsedText,
+  mustExpand,
+  rememberedNested,
+  rememberNested,
+  startsCollapsed,
+  useNestedContext,
+} from './nested-collapse.ts';
 import { cellSpan, curlyQuotes, hiddenNote, paragraphs } from './reading.ts';
 import {
   type Line,
@@ -134,32 +143,92 @@ function hasContent(s: Section): boolean {
 /**
  * As listas de filhos de um registro (vínculos, integrantes, participantes):
  * um rótulo curto e cada item como um registro pequeno, recuado, com o
- * período antes do título.
+ * período antes do título. Do segundo nível para baixo, a lista começa
+ * fechada numa linha de texto que abre no lugar (nested-collapse.ts).
  */
-function NestedList({ group }: { group: NestedGroup }) {
+function NestedList({ group, level }: { group: NestedGroup; level: number }) {
   const items = group.items.filter(hasContent);
+  const { focusPart, query, scope } = useNestedContext();
+  const collapsible = startsCollapsed(level);
+  const [open, setOpen] = useState(
+    () => !collapsible || (rememberedNested(scope, group.id) ?? false),
+  );
+  const bodyId = useId();
+  const bodyRef = useRef<HTMLUListElement>(null);
+  const forced = collapsible && !open && mustExpand(group, focusPart, query);
+  const shown = open || forced;
+  // Fechada, a lista fica no documento, escondida até a busca do navegador
+  // (⌘F) achar algo nela: hidden="until-found". O React só escreve hidden
+  // vazio; o valor muda antes da pintura. Onde não há until-found, vale como
+  // hidden.
+  useLayoutEffect(() => {
+    if (!shown) bodyRef.current?.setAttribute('hidden', 'until-found');
+  }, [shown]);
+  // A busca do navegador achou texto na lista fechada: ela abre.
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!body || shown) return;
+    const onMatch = () => {
+      rememberNested(scope, group.id, true);
+      setOpen(true);
+    };
+    body.addEventListener('beforematch', onMatch);
+    return () => body.removeEventListener('beforematch', onMatch);
+  }, [shown, scope, group.id]);
   if (items.length === 0) return null;
+  const list = (
+    <ul ref={bodyRef} hidden={!shown} id={bodyId}>
+      {items.map((item, i) => (
+        <li key={i}>
+          {item.when && lineVisible(item.when) && (
+            <p className="rl rl-meta rl-nested-when">
+              <LineView line={item.when} />
+            </p>
+          )}
+          <SectionView level={level} section={{ ...item, when: undefined }} />
+        </li>
+      ))}
+    </ul>
+  );
+  if (!collapsible) {
+    return (
+      <div className="reading-nested">
+        <p className="reading-nested-label">{group.label}</p>
+        {list}
+      </div>
+    );
+  }
+  const text = shown ? group.label : collapsedText(group, items);
+  const hasTitle = text.startsWith(`${group.label}: `);
   return (
-    <div className="reading-nested">
-      <p className="reading-nested-label">{group.label}</p>
-      <ul>
-        {items.map((item, i) => (
-          <li key={i}>
-            {item.when && lineVisible(item.when) && (
-              <p className="rl rl-meta rl-nested-when">
-                <LineView line={item.when} />
-              </p>
-            )}
-            <SectionView section={{ ...item, when: undefined }} />
-          </li>
-        ))}
-      </ul>
+    <div className={`reading-nested is-collapsible${shown ? ' is-open' : ''}`}>
+      {/* Botão de verdade: Enter e espaço abrem, e o clique não abre a edição do bloco. */}
+      <button
+        aria-controls={bodyId}
+        aria-expanded={shown}
+        className="reading-nested-toggle"
+        type="button"
+        onClick={() => {
+          rememberNested(scope, group.id, !shown);
+          setOpen(!shown);
+        }}
+      >
+        <span className="reading-nested-text">{text}</span>
+        <span className="reading-nested-action">
+          {' · '}
+          <span className="reading-nested-verb">{actionWord(shown, items, hasTitle)}</span>
+        </span>
+      </button>
+      {list}
     </div>
   );
 }
 
-/** Uma seção do bloco: título, linhas e rótulos. */
-export function SectionView({ section }: { section: Section }) {
+/**
+ * Uma seção do bloco: título, linhas e rótulos. `level` conta as listas por
+ * cima dela: 0 no registro, 1 num item de uma lista dele, e assim por diante.
+ */
+export function SectionView({ level = 0, section }: { level?: number; section: Section }) {
   if (!hasContent(section)) return null;
   const body = section.hidden ? (
     <p className="reading-none">Oculto pelo modo de privacidade.</p>
@@ -170,7 +239,7 @@ export function SectionView({ section }: { section: Section }) {
       ))}
       <Rows parts={section.rows} quiet={section.quietRows} />
       {section.nested.map((g, i) => (
-        <NestedList key={i} group={g} />
+        <NestedList key={i} group={g} level={level + 1} />
       ))}
       {section.masked > 0 && (
         <p className="reading-none reading-hidden">{hiddenNote(section.masked)}</p>

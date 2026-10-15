@@ -13,11 +13,12 @@ import { hasReference, referenceFor } from '../print/references.ts';
 import { FieldSlotContext } from './draft-context.ts';
 import { useEditor } from './editor-context.ts';
 import { type EditFn, ElementView } from './ElementView.tsx';
-import { applyFilter, cardText, type SectionFilter } from './facets.ts';
+import { applyFilter, recordSearchText, type SectionFilter } from './facets.ts';
 import { useFieldOrder } from './field-order.ts';
 import { formatPeriod, itemMeta } from './item-meta.ts';
 import { ItemList } from './ItemList.tsx';
 import { elementKey, type ListView, yearView } from './list-view.ts';
+import { ReadingQueryContext } from './nested-collapse.ts';
 import { type PreviewKind, previewSlots } from './preview-order.ts';
 import { tabWidth, yearColumn } from './reading.ts';
 import {
@@ -165,7 +166,7 @@ function RecordList({ academic, filter, items, onEdit, view }: ListProps) {
   const { loadedMax, openItem } = useEditor();
   const opts = useLayoutOptions();
   const visible = filter
-    ? applyFilter(items, filter.facets, filter.state, (el) => cardText(view.card(el)))
+    ? applyFilter(items, filter.facets, filter.state, (el) => recordSearchText(view.card(el), el))
     : items;
   if (visible.length === 0) return null;
   const sorted = [...visible]
@@ -178,55 +179,57 @@ function RecordList({ academic, filter, items, onEdit, view }: ListProps) {
   // A coluna da esquerda tem a largura do texto mais longo dela.
   const tab = { '--read-tab': `${tabWidth(when)}ch` } as CSSProperties;
   return (
-    <ol className="reading-records" style={tab}>
-      {sorted.map((el, i) => {
-        const seq = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
-        const isNew = isPendingImport(el, loadedMax);
-        // Na formação, o grau já diz o tipo do item.
-        const kind = showKind && !academic ? elementLabel(el.name) : undefined;
-        const title = isCitation(el)
-          ? referenceText(referenceFor(el)).slice(0, 80)
-          : lineText(recordLayout(el, academic, opts).lines[0]!) || elementLabel(el.name);
-        return (
-          <li key={elementKey(el)} className="reading-record">
-            <EditableBlock
-              className="rr"
-              editExtra={
-                isNew && (
-                  <button className="ghost" type="button" onClick={() => openItem(seq)}>
-                    Editar no formulário
-                  </button>
-                )
-              }
-              form={() => (
-                <OrderedForm
-                  depth={1}
-                  el={el}
-                  kind={isCitation(el) ? 'citation' : academic ? 'academic' : 'record'}
-                  onEdit={onEdit}
-                />
-              )}
-              label={title}
-              read={(x, editing) => (
-                <RecordRead
-                  academic={academic}
-                  // Na edição, a prévia mostra o ano inteiro, com o rascunho.
-                  cell={
-                    editing
-                      ? { shown: whenOf(x, academic, opts), value: whenOf(x, academic, opts) }
-                      : column[i]!
-                  }
-                  el={x}
-                  isNew={isNew}
-                  kind={kind}
-                />
-              )}
-              root={el}
-            />
-          </li>
-        );
-      })}
-    </ol>
+    <ReadingQueryContext.Provider value={filter?.state.query ?? ''}>
+      <ol className="reading-records" style={tab}>
+        {sorted.map((el, i) => {
+          const seq = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
+          const isNew = isPendingImport(el, loadedMax);
+          // Na formação, o grau já diz o tipo do item.
+          const kind = showKind && !academic ? elementLabel(el.name) : undefined;
+          const title = isCitation(el)
+            ? referenceText(referenceFor(el)).slice(0, 80)
+            : lineText(recordLayout(el, academic, opts).lines[0]!) || elementLabel(el.name);
+          return (
+            <li key={elementKey(el)} className="reading-record">
+              <EditableBlock
+                className="rr"
+                editExtra={
+                  isNew && (
+                    <button className="ghost" type="button" onClick={() => openItem(seq)}>
+                      Editar no formulário
+                    </button>
+                  )
+                }
+                form={() => (
+                  <OrderedForm
+                    depth={1}
+                    el={el}
+                    kind={isCitation(el) ? 'citation' : academic ? 'academic' : 'record'}
+                    onEdit={onEdit}
+                  />
+                )}
+                label={title}
+                read={(x, editing) => (
+                  <RecordRead
+                    academic={academic}
+                    // Na edição, a prévia mostra o ano inteiro, com o rascunho.
+                    cell={
+                      editing
+                        ? { shown: whenOf(x, academic, opts), value: whenOf(x, academic, opts) }
+                        : column[i]!
+                    }
+                    el={x}
+                    isNew={isNew}
+                    kind={kind}
+                  />
+                )}
+                root={el}
+              />
+            </li>
+          );
+        })}
+      </ol>
+    </ReadingQueryContext.Provider>
   );
 }
 

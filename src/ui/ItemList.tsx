@@ -9,7 +9,7 @@ import { isPendingImport, SEQ_ATTR } from '../model/production.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import { useEditor } from './editor-context.ts';
 import { type EditFn, ElementView } from './ElementView.tsx';
-import { applyFilter, cardText, type SectionFilter } from './facets.ts';
+import { applyFilter, recordSearchText, type SectionFilter } from './facets.ts';
 import { ChevronIcon } from './icons.tsx';
 import { JumpBar } from './JumpBar.tsx';
 import { type CardInfo, elementKey, type ListView, type Usage, yearView } from './list-view.ts';
@@ -38,7 +38,7 @@ export function ItemList({
   const listId = useId();
   // O filtro mora na seção (barra única no topo); a lista só aplica.
   const visible = filter
-    ? applyFilter(items, filter.facets, filter.state, (el) => cardText(view.card(el)))
+    ? applyFilter(items, filter.facets, filter.state, (el) => recordSearchText(view.card(el), el))
     : items;
   const groups = view.groups(visible);
   const mixedKinds = new Set(items.map((el) => el.name)).size > 1;

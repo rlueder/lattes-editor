@@ -12,11 +12,11 @@ import { EmptySection } from './EmptySection.tsx';
 import {
   applyFilter,
   buildFacets,
-  cardText,
   elementMatchesText,
   type FilterState,
   isFiltering,
   NO_FILTER,
+  recordSearchText,
 } from './facets.ts';
 import { FilterBar } from './FilterBar.tsx';
 import { EyeIcon, EyeOffIcon, PlusIcon } from './icons.tsx';
@@ -127,7 +127,9 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section }:
     if (g.elements.every(isBlank)) return 0;
     if (!filtering) return countItems(g);
     if (list)
-      return applyFilter(list.items, facets, state, (el) => cardText(list.view.card(el))).length;
+      return applyFilter(list.items, facets, state, (el) =>
+        recordSearchText(list.view.card(el), el),
+      ).length;
     // Grupo de campos (Identificação, Resumo): só a busca de texto vale, sem facetas.
     if (Object.keys(state.selected).length > 0) return 0;
     return g.elements.some((el) => elementMatchesText(el, state.query)) ? 1 : 0;

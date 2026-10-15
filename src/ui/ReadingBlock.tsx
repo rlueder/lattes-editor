@@ -18,6 +18,7 @@ import type { XElement } from '../model/xml.ts';
 import { DraftContext, PartKeyContext, TargetPartContext } from './draft-context.ts';
 import { type OpenEditor, openOnly, registerOpen, unregister } from './edit-session.ts';
 import { PencilIcon } from './icons.tsx';
+import { FocusPartContext, NestedScopeContext } from './nested-collapse.ts';
 import { clickOpensEditor, readingKeyAction } from './reading.ts';
 import { partKeys } from './reading-layout.ts';
 import { addDraft, type Drafts, withDrafts } from './reading-preview.ts';
@@ -243,7 +244,13 @@ export function EditableBlock({
     >
       <div className="reading-head">
         <div className="reading-content">
-          {read(editing ? withDrafts(root, drafts) : root, editing)}
+          {/* As listas fechadas lembram o estado pelo item (o mesmo na leitura
+              e na prévia da edição) e abrem para o campo em foco. */}
+          <NestedScopeContext.Provider value={root}>
+            <FocusPartContext.Provider value={editing ? focusPart : null}>
+              {read(editing ? withDrafts(root, drafts) : root, editing)}
+            </FocusPartContext.Provider>
+          </NestedScopeContext.Provider>
         </div>
         <span className="reading-actions">
           {editing ? (

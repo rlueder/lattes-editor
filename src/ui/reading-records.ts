@@ -160,6 +160,9 @@ function genericRecord(keys: Keys, el: XElement, opts: LayoutOptions, depth = 0)
 
 const capital = (t: string) => t.charAt(0).toLocaleUpperCase('pt-BR') + t.slice(1);
 
+/** Listas de pessoas: a linha da lista fechada conta "4 pessoas", não "4 itens". */
+const PEOPLE_LIST = /(EQUIPE|INTEGRANTE|PARTICIPANTE|AUTOR|MEMBRO)/;
+
 /** Até onde os filhos de filhos viram listas; mais fundo, tudo vira grade. */
 const MAX_DEPTH = 3;
 
@@ -188,7 +191,14 @@ function nestedGroups(
     );
     const last = groups.at(-1);
     if (last && last.label === label) last.items.push(...sections);
-    else groups.push({ items: sections, label });
+    else {
+      groups.push({
+        id: String(keys.indexOf(c)),
+        items: sections,
+        label,
+        people: PEOPLE_LIST.test(c.name),
+      });
+    }
   }
   return groups;
 }
