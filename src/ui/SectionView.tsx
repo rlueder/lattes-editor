@@ -185,15 +185,20 @@ function SectionBody({ onEdit, onNewGeneral, onNewItem, onOpenPicker, section }:
   );
 
   if (!hasPanel) {
+    // Mesmas colunas das outras seções: título, texto e estado vazio na
+    // coluna de leitura, e a do painel lateral reservada, mesmo vazia.
     return (
-      <div className="section-main section-main-empty">
-        {head}
-        <EmptySection
-          action={markButton || newButton(true)}
-          section={section}
-          onNewItem={onNewItem}
-          onOpenPicker={onOpenPicker}
-        />
+      <div className="section-layout reading">
+        <div className="section-title">{head}</div>
+        <div className="section-main section-main-empty">
+          <EmptySection
+            action={markButton || newButton(true)}
+            section={section}
+            onNewItem={onNewItem}
+            onOpenPicker={onOpenPicker}
+          />
+        </div>
+        <div aria-hidden="true" className="section-panel-space" />
         {markDialog}
       </div>
     );

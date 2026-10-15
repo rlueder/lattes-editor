@@ -3231,13 +3231,25 @@ body {
   }
 }
 
-/* Seção vazia: sem painel lateral, o bloco fica no centro do painel de
-   conteúdo inteiro, na horizontal e na vertical. */
+/* Seção vazia: as mesmas colunas das outras seções, com a do painel
+   reservada; o bloco fica no centro da coluna de leitura, na horizontal e
+   na vertical. */
 .section-main-empty {
   display: flex;
   flex-direction: column;
-  max-width: none;
-  min-height: calc(100vh - var(--topbar-h) - 120px);
+  min-height: calc(100vh - var(--topbar-h) - 180px);
+}
+
+@media (max-width: 1180px) {
+  .section-panel-space {
+    display: none;
+  }
+}
+
+/* A nota sob o título (seções-filtro) quebra na medida da leitura: 50em de
+   12px dá os ~600px dos 60ch do texto de leitura a 17px. */
+.section-layout.reading .section-note {
+  max-width: 50em;
 }
 
 .section-main-empty .empty-section {
