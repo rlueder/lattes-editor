@@ -66,6 +66,17 @@ As listas grandes demais ou que dependem de uma escolha (áreas do
 conhecimento, agências, instituições, cursos) não vêm no código: a extensão as
 lê no Lattes, e o editor guarda uma cópia (`src/ui/live-lists.ts`).
 
+Uma marca sim/não vem invertida na exportação: `FLAG-VINCULO-EMPREGATICIO`,
+nos `VINCULOS` da atuação. Onde a tela do Lattes diz "Possui vínculo
+empregatício: Sim", o XML traz `NAO`, e vice-versa (observado em 8 de 8
+vínculos no censo LAT-55 e conferido na tela em 15/10/2026; a
+`FLAG-DEDICACAO-EXCLUSIVA` não troca). O editor mostra e edita essa marca no
+sentido da tela e grava no arquivo o valor invertido, para o arquivo manter a
+convenção da exportação. A troca mora num lugar só (`flagAsShown` em
+`src/ui/field-kind.ts`), que o interruptor, a prévia, a lista de alterações e
+os filtros usam. Que o Importar leia o arquivo de volta com a mesma convenção
+é inferido, não testado: só o caminho exportação → tela foi observado.
+
 ## O que o app guarda
 
 Tudo fica no IndexedDB do WebView (`src/model/store.ts`, com Dexie), cifrado

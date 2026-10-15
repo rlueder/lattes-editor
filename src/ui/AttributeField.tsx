@@ -21,6 +21,8 @@ import {
   codeAttrFor,
   codeChoices,
   codeValueLabel,
+  flagAsShown,
+  flagToXml,
   isBooleanAttr,
   isSystemAttr,
 } from './field-kind.ts';
@@ -220,6 +222,8 @@ export function AttributeField({
   }
 
   const boolean = isBooleanAttr(name, spec, value);
+  // No sentido da tela do Lattes (marcas que a exportação grava ao contrário).
+  const shownFlag = flagAsShown(el.name, name, value);
   // Lista do Lattes: códigos conhecidos (field-kind) ou campos tipados (LAT-48).
   const choices = codeChoices(el.name, name) ?? typedChoices(el, name);
   // Data em DDMMAAAA vira campo de data; valor que não é data válida fica texto, intacto.
@@ -242,12 +246,12 @@ export function AttributeField({
         <Switch
           aria-describedby={common['aria-describedby']}
           aria-labelledby={labelId}
-          checked={value === 'SIM'}
+          checked={shownFlag === 'SIM'}
           id={id}
-          onChange={(on) => commit(on ? 'SIM' : 'NAO')}
+          onChange={(on) => commit(flagToXml(el.name, name, on ? 'SIM' : 'NAO'))}
         />
         <span aria-hidden="true" className="switch-text">
-          {value === 'SIM' ? 'Sim' : value === 'NAO' ? 'Não' : 'Não informado'}
+          {shownFlag === 'SIM' ? 'Sim' : shownFlag === 'NAO' ? 'Não' : 'Não informado'}
         </span>
       </span>
     );

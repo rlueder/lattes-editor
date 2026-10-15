@@ -6,6 +6,7 @@
 import { attributeLabel, elementLabel, enumLabel, fold } from '../labels/labels.ts';
 import { childElements, type XElement } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
+import { flagAsShown } from './field-kind.ts';
 import { itemMeta } from './item-meta.ts';
 import { effectiveQuery } from './query.ts';
 
@@ -50,7 +51,8 @@ function candidateAttrs(el: XElement): { attr: string; enumerated: boolean; valu
   for (const src of sources(el)) {
     const spec = lattesSchema.elements[src.name];
     for (const a of src.attrs) {
-      const value = a.value.trim();
+      // Marcas que a exportação grava ao contrário filtram no sentido da tela.
+      const value = flagAsShown(src.name, a.name, a.value.trim());
       if (!value || SKIP.test(a.name)) continue;
       const enumerated =
         Boolean(spec?.attributes.find((s) => s.name === a.name)?.enum) ||

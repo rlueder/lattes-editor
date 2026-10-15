@@ -107,6 +107,33 @@ export function isSystemAttr(element: string, attr: string): boolean {
 }
 
 /**
+ * Marcas sim/não que a exportação do Lattes grava ao contrário do que a tela
+ * do Lattes mostra. FLAG-VINCULO-EMPREGATICIO dos VINCULOS: a tela diz
+ * "Possui vínculo empregatício: Sim" onde a exportação traz NAO, e vice-versa
+ * (8 de 8 vínculos no censo LAT-55, conferido na tela em 15/10/2026). A
+ * FLAG-DEDICACAO-EXCLUSIVA do mesmo vínculo não troca. Que o Importar leia o
+ * arquivo com a mesma convenção é inferido, não testado.
+ */
+const INVERTED_FLAGS = new Set(['VINCULOS FLAG-VINCULO-EMPREGATICIO']);
+
+export function isInvertedFlag(element: string, attr: string): boolean {
+  return INVERTED_FLAGS.has(`${element} ${attr}`);
+}
+
+/**
+ * O valor de uma marca sim/não no sentido da tela do Lattes. Nas marcas
+ * invertidas, SIM e NAO trocam; o resto passa igual. A troca é a própria
+ * volta: aplicada ao valor da tela, devolve o do XML (flagToXml).
+ */
+export function flagAsShown(element: string, attr: string, value: string): string {
+  if (!isInvertedFlag(element, attr)) return value;
+  return value === 'SIM' ? 'NAO' : value === 'NAO' ? 'SIM' : value;
+}
+
+/** O valor a gravar no XML para uma escolha feita no sentido da tela. */
+export const flagToXml = flagAsShown;
+
+/**
  * Sim/não: enum que só tem SIM e NAO, ou FLAG-* em texto livre que guarda
  * SIM/NAO (FLAG-BOLSA, por exemplo). FLAG-* com outros valores (FLAG-PERIODO:
  * ANTERIOR/ATUAL) continua lista.
