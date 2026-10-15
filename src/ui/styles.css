@@ -6913,36 +6913,54 @@ main.content {
   border-color: var(--border-focus);
 }
 
-/* Modo foco (protótipo, com ?leitura; focus-mode.ts). Só o conteúdo e o
-   índice "Nesta seção": o menu de seções e o cabeçalho saem de cena e voltam
-   por cima do conteúdo, sem empurrá-lo, quando o ponteiro encosta na borda,
-   quando o foco do teclado entra neles, no G (menu) e no ⌘K (cabeçalho). O
-   conteúdo fica centrado na mesma medida; a troca é animada no JavaScript
-   (FLIP, 200ms), sem salto. */
+/* Modo foco (focus-mode.ts). O menu de seções e o cabeçalho saem de cena e
+   voltam por cima do conteúdo, sem empurrá-lo, quando o ponteiro encosta na
+   borda, quando o foco do teclado entra neles, no G (menu) e no ⌘K
+   (cabeçalho). O conteúdo não sai do lugar: a grade continua a mesma, a
+   coluna do menu e a altura do cabeçalho ficam reservadas e vazias. */
 .shell.is-focus {
+  /* As barras que grudam no alto (título da seção) sobem até a borda. */
   --topbar-h: 0px;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr);
+  /* A largura da coluna do menu, para o aviso de pendências ir até a borda. */
+  --focus-pad: 220px;
 }
 
-.shell.is-focus {
-  /* A margem da coluna centrada, medida na largura da janela de conteúdo
-     (cqw), para o aviso de pendências poder voltar até a borda. */
-  container-type: inline-size;
-  --focus-pad: max(40px, calc((100cqw - 1128px) / 2));
+/* O lugar do cabeçalho, com a altura dele (medida em use-focus-mode.ts). */
+.shell.is-focus::before {
+  content: '';
+  grid-row: 1;
+  grid-column: 1 / -1;
+  height: var(--topbar-real-h, 61px);
 }
 
 .shell.is-focus .content {
-  margin: 0;
-  border-radius: 0;
-  /* A coluna de leitura (820px) e o painel (260px, 48px de intervalo) no centro. */
-  padding-left: var(--focus-pad);
+  grid-row: 2;
+  grid-column: -2 / -1;
 }
 
-/* O aviso de pendências vai de uma borda à outra, também no modo foco. */
+/* O aviso de pendências vai de uma borda à outra, também no modo foco: passa
+   por cima da coluna vazia do menu e da margem de 8px à direita do
+   conteúdo, com o texto no mesmo lugar. */
 .shell.is-focus .pending-banner {
-  margin-left: calc(-1 * var(--focus-pad));
-  padding-left: var(--focus-pad);
+  margin-right: -48px;
+  margin-left: calc(-40px - var(--focus-pad));
+  padding-right: 36px;
+  padding-left: calc(40px + var(--focus-pad));
+}
+
+/* Tela estreita: o menu fica em cima do conteúdo, numa coluna só. Guardar o
+   lugar dele deixaria um vazio da altura da lista de seções; aí o conteúdo
+   sobe, sem mudar de largura nem de margem. */
+@media (max-width: 760px) {
+  .shell.is-focus {
+    --focus-pad: 0px;
+  }
+  .shell.is-focus .pending-banner {
+    margin-right: -16px;
+    margin-left: -16px;
+    padding-right: 12px;
+    padding-left: 16px;
+  }
 }
 
 .shell.is-focus .topbar,

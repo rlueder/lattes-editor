@@ -184,9 +184,10 @@ mudanças valem na hora, como no resto do editor.
 
 Inspirado no modo foco do iA Writer: fica só o conteúdo e o índice "Nesta
 seção". O menu de seções (com foto e nome) e o cabeçalho (⌘K, novo item,
-enviar, sino, ⚙) saem de cena, e o conteúdo fica centrado na mesma medida.
-Ao entrar e ao sair, o conteúdo desliza do lugar antigo para o novo em
-200ms, sem salto; com movimento reduzido, a troca é direta.
+enviar, sino, ⚙) saem de cena e o lugar deles fica vazio: o conteúdo não se
+move ao entrar nem ao sair, nem para o lado nem para cima. Em tela estreita,
+onde o menu fica em cima do conteúdo, o conteúdo sobe o tanto da lista de
+seções, sem mudar de largura nem de margem.
 
 - Liga e desliga com ⌘⇧F (Ctrl+Shift+F fora do Mac), pelo item "Modo foco"
   do ⚙ (com o atalho ao lado) ou pelo ⌘K. A escolha fica lembrada neste

@@ -1,7 +1,8 @@
 // Modo foco (focus-mode.ts): a escolha guardada, o atalho, a borda que revela
-// os painéis e a transição sem salto do conteúdo ao entrar e ao sair.
+// os painéis e a altura do cabeçalho, que fica reservada para o conteúdo não
+// sair do lugar ao entrar e ao sair.
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   type EdgeState,
@@ -17,14 +18,6 @@ import {
 
 const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
-const reducedMotion = () =>
-  typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-/** O bloco de conteúdo que não pode pular na troca. */
-const contentNode = () =>
-  document.querySelector<HTMLElement>('.section-layout') ??
-  document.querySelector<HTMLElement>('.content');
-
 export interface FocusMode {
   available: boolean;
   on: boolean;
@@ -32,37 +25,33 @@ export interface FocusMode {
 }
 
 /**
- * Liga e desliga o modo foco (⌘⇧F, ⚙ e ⌘K), lembrado neste aparelho. Ao
- * trocar, o conteúdo sai do lugar antigo para o novo em 200ms (FLIP), em vez
- * de pular; com movimento reduzido, troca direto.
+ * Liga e desliga o modo foco (⌘⇧F, ⚙ e ⌘K), lembrado neste aparelho. O
+ * conteúdo fica onde estava: a coluna do menu e a altura do cabeçalho ficam
+ * reservadas (styles.css, ".shell.is-focus"), então nada se move na troca.
  */
 export function useFocusMode(available: boolean): FocusMode {
   const [on, setOn] = useState(() => available && readFocusMode());
-  const before = useRef<DOMRect | null>(null);
 
   const toggle = useCallback(() => {
     if (!available) return;
-    before.current = contentNode()?.getBoundingClientRect() ?? null;
     setOn((v) => {
       writeFocusMode(!v);
       return !v;
     });
   }, [available]);
 
-  useLayoutEffect(() => {
-    const first = before.current;
-    before.current = null;
-    const node = contentNode();
-    if (!first || !node || reducedMotion() || typeof node.animate !== 'function') return;
-    const last = node.getBoundingClientRect();
-    const dx = first.left - last.left;
-    const dy = first.top - last.top;
-    if (dx === 0 && dy === 0) return;
-    node.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], {
-      duration: 200,
-      easing: 'cubic-bezier(0.645, 0.045, 0.355, 1)',
-    });
-  }, [on]);
+  // A altura do cabeçalho, para o modo foco guardar o lugar dele e o menu
+  // revelado começar logo abaixo. Medida sempre que muda (fonte, largura).
+  useEffect(() => {
+    const bar = document.querySelector<HTMLElement>('.topbar');
+    if (!bar || typeof ResizeObserver === 'undefined') return;
+    const root = document.documentElement;
+    const write = () => root.style.setProperty('--topbar-real-h', `${bar.offsetHeight}px`);
+    write();
+    const observer = new ResizeObserver(write);
+    observer.observe(bar);
+    return () => observer.disconnect();
+  }, [available]);
 
   useEffect(() => {
     if (!available) return;
