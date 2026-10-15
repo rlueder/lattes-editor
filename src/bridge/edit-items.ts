@@ -205,6 +205,8 @@ type Planned = EventoOp | { reason: string };
 export interface PlanEventoOptions {
   /** EDIT_EVENTO_ENABLED: convidado, participante, forma, tipo, natureza e cidade. */
   full?: boolean;
+  /** As outras mudanças da fila (planChanges), para a conferência de identidade. */
+  siblings?: readonly Change[];
 }
 
 /** Forma e tipo antes e depois da mudança, dos dados básicos do evento. */
@@ -232,7 +234,7 @@ export function planEvento(
   change: Change,
   chain: XElement[],
   label: string,
-  { full = false }: PlanEventoOptions = {},
+  { full = false, siblings = [] }: PlanEventoOptions = {},
 ): Planned | undefined {
   // Só alteração: item novo vai pelo Importar, e a exclusão tem caminho próprio.
   if (change.kind !== 'alterado') return undefined;
@@ -318,14 +320,25 @@ export function planEvento(
   // partes.
   expect.F_FORMA ??= formaCode(shape.formaBefore) ?? OUVINTE;
   expect.F_COD_PROD = EVENT_CODES[item.name]!;
+  //
+  // A outra parte do item pode ter alteração própria na mesma fila (o ano nos
+  // dados básicos e a cidade no detalhamento): um campo dela que muda fica de
+  // fora daqui, porque o Lattes pode estar com o antes ou com o depois,
+  // conforme a ordem dos envios. A operação da outra parte confere esse campo.
+  const pending = new Set(
+    siblings
+      .filter((c) => c !== change && c.kind === 'alterado' && c.element !== el.name)
+      .filter((c) => c.path.slice(0, -1).join('/') === change.path.slice(0, -1).join('/'))
+      .flatMap((c) => c.fields.map((f) => `${c.element}@${f.attr}`)),
+  );
+  const identity = (part: XElement | undefined, attr: string, field: string) => {
+    if (field in expect || !part || pending.has(`${part.name}@${attr}`)) return;
+    expect[field] = getAttr(part, attr) ?? '';
+  };
   const detail = isDetail ? el : childElements(item, detailOf(item.name))[0];
-  if (!('f_ano' in expect)) expect.f_ano = (basics && getAttr(basics, 'ANO')) ?? '';
-  if (!('f_nme_evento' in expect)) {
-    expect.f_nme_evento = (detail && getAttr(detail, 'NOME-DO-EVENTO')) ?? '';
-  }
-  if (!('f_cidade' in expect)) {
-    expect.f_cidade = (detail && getAttr(detail, 'CIDADE-DO-EVENTO')) ?? '';
-  }
+  identity(basics, 'ANO', 'f_ano');
+  identity(detail, 'NOME-DO-EVENTO', 'f_nme_evento');
+  identity(detail, 'CIDADE-DO-EVENTO', 'f_cidade');
   return { expect, key: change.key, kind: 'evento', label, seq, set };
 }
 

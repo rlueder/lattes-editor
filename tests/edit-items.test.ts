@@ -492,6 +492,24 @@ describe('alteração de evento: aplicar no Lattes simulado', () => {
     expect(postsOf(open)).toEqual([]);
   });
 
+  it('as duas partes do mesmo item alteradas na mesma fila vão em qualquer ordem', async () => {
+    for (const reverse of [false, true]) {
+      const lattes = await lattesFor();
+      const { plan } = planAfter((root) => {
+        setAttr(basics(root), 'ANO', '2018');
+        setAttr(detail(root), 'NOME-DO-EVENTO', 'Congresso Novo');
+      });
+      expect(plan.ops).toHaveLength(2);
+      // Cada uma deixa de fora o campo que a outra troca.
+      expect(plan.ops[0]!.expect).not.toHaveProperty('f_nme_evento');
+      expect(plan.ops[1]!.expect).not.toHaveProperty('f_ano');
+      const ops = reverse ? [...plan.ops].reverse() : plan.ops;
+      for (const op of ops) expect((await applyOp(op, lattes.port)).status).toBe('conferido');
+      expect(getAttr(basicsIn(lattes), 'ANO')).toBe('2018');
+      expect(getAttr(detailIn(lattes), 'NOME-DO-EVENTO')).toBe('Congresso Novo');
+    }
+  });
+
   it('acusa evento, lista ou formulário que não acha, sem enviar', async () => {
     const op = opFor((root) => setAttr(basics(root), 'TITULO', 'Novo'));
     const semEvento = await lattesFor();
