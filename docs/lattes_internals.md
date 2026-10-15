@@ -260,6 +260,15 @@ Lidos nos formulários, sem gravar nada:
 - Formação acadêmica: `f_nivel` vem oculto no formulário (3 no mestrado, 1 na
   graduação, 7 no curso técnico, conforme a exportação); o nível é o próprio
   tipo do item.
+- Pós-doutorado e livre-docência (`pkg_formacao.form` com `f_tipo=AP`, lido
+  em 15/10/2026): `f_nivel` 5 é pós-doutorado e 6 livre-docência. O
+  formulário de inclusão do pós-doutorado mostra só instituição, rádio
+  `F_STATUS` do status do curso (`N` em andamento, `S` concluído, `I`
+  incompleto), início e conclusão (ano), rádio `F_BOLSA`, agência financiadora
+  e áreas. Título do trabalho (`f_titulo`), ano e mês de obtenção
+  (`f_ano_obten`, `f_mes_obten`), orientador e curso vão ocultos. Status do
+  estágio, título em inglês e nome do curso em inglês não aparecem. O valor de
+  `F_STATUS` no XML não foi conferido numa exportação.
 - `NIVEL-CURSO="OT"` da tabela de cursos: sentido não encontrado. O XSD tem
   `OT` e `OUTRO` como valores distintos.
 

@@ -219,3 +219,17 @@ describe('campos tipados: validação da participação em evento', () => {
     expect(titleRequired(basics('DADOS-BASICOS-DO-ARTIGO'))).toBe(true);
   });
 });
+
+describe('campos tipados: status do curso do pós-doutorado', () => {
+  it('oferece as três opções do rádio do Lattes, com o valor dos outros níveis', () => {
+    const postdoc = basics('POS-DOUTORADO', { 'STATUS-DO-CURSO': 'CONCLUIDO' });
+    expect(typedChoices(postdoc, 'STATUS-DO-CURSO')).toEqual([
+      { label: 'Em andamento', value: 'EM_ANDAMENTO' },
+      { label: 'Concluído', value: 'CONCLUIDO' },
+      { label: 'Incompleto', value: 'INCOMPLETO' },
+    ]);
+    expect(outOfList(postdoc, 'STATUS-DO-CURSO')).toBe(false);
+    expect(typedChoices(postdoc, 'STATUS-DO-ESTAGIO')).toBeUndefined();
+    expect(typedChoices(basics('DOUTORADO'), 'STATUS-DO-CURSO')).toBeUndefined();
+  });
+});

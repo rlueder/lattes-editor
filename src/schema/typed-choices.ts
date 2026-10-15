@@ -62,6 +62,19 @@ const PARTICIPATION_TYPES: Record<string, readonly string[]> = {
   Participante: ['Poster / Painel', 'Apresentação oral', 'Outras formas'],
 };
 
+/**
+ * Status do curso do pós-doutorado. O formulário do Lattes (pkg_formacao.form,
+ * f_tipo=AP, f_nivel=5, lido em 15/10/2026) tem o rádio F_STATUS com "em
+ * andamento" (N), "concluído" (S) e "incompleto" (I). O schema não enumera o
+ * atributo nesse nível; o valor no XML é inferido dos outros níveis, que
+ * enumeram EM_ANDAMENTO, CONCLUIDO e INCOMPLETO.
+ */
+const POSTDOC_STATUS: Choice[] = [
+  { label: 'Em andamento', value: 'EM_ANDAMENTO' },
+  { label: 'Concluído', value: 'CONCLUIDO' },
+  { label: 'Incompleto', value: 'INCOMPLETO' },
+];
+
 const EVENT_BASICS =
   /^DADOS-BASICOS-(?:DA-PARTICIPACAO-EM-([A-Z]+)|DE-OUTRAS-PARTICIPACOES-EM-EVENTOS-CONGRESSOS)$/;
 
@@ -101,6 +114,7 @@ export function typedChoices(el: XElement, attr: string): Choice[] | undefined {
   // Valor derivado fora do lugar (vazio ou outro): uma opção só, a certa.
   const derived = derivedValue(el.name, attr);
   if (derived !== undefined) return asChoices([derived]);
+  if (el.name === 'POS-DOUTORADO' && attr === 'STATUS-DO-CURSO') return POSTDOC_STATUS;
   if (COUNTRY_ATTRS.has(attr)) return COUNTRIES;
   if (LANGUAGE_ATTRS.has(attr) && el.name !== 'IDIOMA') return LANGUAGES;
   if (!isEventBasics(el.name)) return undefined;
