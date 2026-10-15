@@ -52,8 +52,9 @@ atualizações" no menu ⚙.
    Cada edição fica salva no app.
 4. **Envie ao Lattes.** O painel "Enviar ao Lattes" mostra cada alteração e
    como ela vai: produções novas pelo Importar do próprio Lattes, com o
-   arquivo que o app gera; o resumo, os vínculos de atuação e a foto pela
-   extensão, gravados e conferidos um a um (os idiomas ainda em teste); o resto campo a campo, com o valor antigo e
+   arquivo que o app gera; o resumo, os vínculos de atuação, a foto e as
+   alterações em eventos de que você participou como ouvinte pela extensão,
+   gravados e conferidos um a um (os idiomas ainda em teste); o resto campo a campo, com o valor antigo e
    o novo lado a lado. A aba "Enviado" guarda o que já foi, com o antes e o
    depois, e deixa desfazer.
 

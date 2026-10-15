@@ -18,7 +18,7 @@ import { sameCv } from '../bridge/lattes-html.ts';
 import type { LattesStatus } from '../bridge/lattes-status.ts';
 import { INITIAL_LINK, type Link, nextLink } from '../bridge/link.ts';
 import type { PhotoFailure } from '../bridge/photo.ts';
-import { type BridgeOp, planChanges } from '../bridge/plan.ts';
+import { type BridgeOp, planChanges, planOptionsFor } from '../bridge/plan.ts';
 import {
   type BridgeMessage,
   type EditorMessage,
@@ -406,9 +406,10 @@ export function useBridge(
         ? planChanges(
             groups.flatMap((g) => g.entries),
             session.doc.root,
+            planOptionsFor(features),
           )
         : { ops: [], unsupported: [] },
-    [session, groups],
+    [session, groups, features],
   );
 
   return {

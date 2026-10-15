@@ -137,9 +137,13 @@ ouvinte, do mesmo tipo de evento e com o mesmo ano ou nome. Vão título, ano,
 país, home page, divulgação científica, título em inglês e nome do evento.
 Ficam à mão os eventos de convidado e participante, a forma, o tipo, a
 natureza, a cidade e o que o formulário não tem (idioma, palavras-chave,
-áreas). O caminho está desligado (`EDIT_ITEMS_ENABLED` em `false`) até um
-teste acompanhado num Lattes real; desligado, o evento segue à mão e o
-contrato não confere o formulário.
+áreas). O caminho está ligado (`EDIT_OUVINTE_ENABLED`) desde o teste
+acompanhado de 14/10/2026 no Lattes real, e o contrato confere o formulário de
+eventos antes de cada fila. O app só manda essas operações a uma extensão que
+anuncia a capacidade `alterar-evento` (`src/bridge/compat.ts`); com uma
+extensão mais antiga, o evento segue à mão. Convidado, participante e os
+outros tipos de produção, quando ganharem caminho, entram com chave própria,
+desligada até o teste deles.
 
 A decisão de 13/10/2026 sobre duplicatas (só o que é novo vai pelo Importar;
 alteração no lugar; exclusão pelo formulário) está no

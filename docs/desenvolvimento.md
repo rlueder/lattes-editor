@@ -70,8 +70,9 @@ Para usar com o app e a extensão:
 
 As chaves das operações ainda não testadas no Lattes real
 (`BIOGRAPHIC_OPS_ENABLED`, `CREATE_ITEMS_ENABLED`, `DELETE_ITEMS_ENABLED`,
-`EDIT_ITEMS_ENABLED`, `IMPORT_ENABLED`) continuam desligadas no app; o
-simulado não muda isso. Os testes de ponta a ponta as ligam só para eles
+`IMPORT_ENABLED`) continuam desligadas no app; o simulado não muda isso. A
+alteração de evento de ouvinte (`EDIT_OUVINTE_ENABLED`) já vem ligada desde o
+teste de 14/10/2026. Os testes de ponta a ponta as ligam só para eles
 (`tests/lattes-simulado.test.ts`), com o servidor dentro do próprio teste
 (`tests/helpers/lattes-simulado.ts`).
 

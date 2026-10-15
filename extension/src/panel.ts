@@ -85,6 +85,7 @@ const VIGIA_HEADING: Record<ContractReport['status'], string> = {
 const FORM_TITLE: Record<string, string> = {
   GN_ATIV_VINC: 'Vínculo',
   GN_IDIOMA: 'Idioma',
+  GN_TEC: 'Participação em eventos',
   RES: 'Resumo',
 };
 
