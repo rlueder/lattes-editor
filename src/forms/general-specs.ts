@@ -182,11 +182,126 @@ const PATENTE: GeneralPart[] = [
   },
 ];
 
+/** Um vínculo novo numa atuação que já existe: os campos do vínculo da atuação. */
+const VINCULO: GeneralPart[] = [{ ...ATUACAO[1]!, part: self }];
+
+/**
+ * Os dados gerais, na ordem dos formulários do Lattes (seções 5 e 16; censo de
+ * 15/10/2026). O prêmio exige nome e ano (check(), seção 16).
+ */
+const IDIOMA: GeneralPart[] = [
+  {
+    fields: [
+      required('IDIOMA'),
+      f('PROFICIENCIA-DE-LEITURA'),
+      f('PROFICIENCIA-DE-FALA'),
+      f('PROFICIENCIA-DE-ESCRITA'),
+      f('PROFICIENCIA-DE-COMPREENSAO'),
+    ],
+    legend: 'Idioma',
+    part: self,
+  },
+];
+
+const PREMIO: GeneralPart[] = [
+  {
+    fields: [
+      f('NOME-DO-PREMIO-OU-TITULO', { required: true, wide: true }),
+      wide('NOME-DA-ENTIDADE-PROMOTORA'),
+      required('ANO-DA-PREMIACAO'),
+      wide('NOME-DO-PREMIO-OU-TITULO-INGLES'),
+    ],
+    legend: 'Prêmio ou título',
+    part: self,
+  },
+];
+
+const LICENCA: GeneralPart[] = [
+  {
+    fields: [required('TIPO-LICENCA'), required('DATA-INICIO-LICENCA'), f('DATA-FIM-LICENCA')],
+    legend: 'Licença',
+    part: self,
+  },
+];
+
+const AREA: GeneralPart[] = [
+  {
+    fields: [
+      required('NOME-GRANDE-AREA-DO-CONHECIMENTO'),
+      wide('NOME-DA-AREA-DO-CONHECIMENTO'),
+      wide('NOME-DA-SUB-AREA-DO-CONHECIMENTO'),
+      wide('NOME-DA-ESPECIALIDADE'),
+    ],
+    legend: 'Área',
+    part: self,
+  },
+];
+
+/** As atividades de uma atuação: o período, e o que cada natureza tem a mais. */
+const ATIVIDADE: GeneralPart[] = [
+  {
+    fields: [
+      f('TIPO-ENSINO'),
+      wide('NOME-CURSO'),
+      f('FORMATO-CARGO-OU-FUNCAO'),
+      wide('CARGO-OU-FUNCAO'),
+      wide('NOME-ORGAO'),
+      wide('NOME-UNIDADE'),
+      wide('ESPECIFICACAO'),
+    ],
+    legend: 'Atividade',
+    part: self,
+  },
+  {
+    fields: [f('MES-INICIO'), required('ANO-INICIO'), f('MES-FIM'), f('ANO-FIM')],
+    legend: 'Período',
+    part: self,
+  },
+];
+
+const LINHA: GeneralPart[] = [
+  {
+    fields: [
+      f('TITULO-DA-LINHA-DE-PESQUISA', { required: true, wide: true }),
+      f('FLAG-LINHA-DE-PESQUISA-ATIVA'),
+      f('OBJETIVOS-LINHA-DE-PESQUISA', { multiline: true, wide: true }),
+    ],
+    legend: 'Linha de pesquisa',
+    part: self,
+  },
+];
+
+/** Financiador, produção e orientação de um projeto: cada um tem os seus. */
+const PARTE_PROJETO: GeneralPart[] = [
+  {
+    fields: [
+      f('NOME-INSTITUICAO', { required: true, wide: true }),
+      f('NATUREZA'),
+      f('TITULO-DA-PRODUCAO-CT', { required: true, wide: true }),
+      f('TIPO-PRODUCAO-CT'),
+      f('TITULO-ORIENTACAO', { required: true, wide: true }),
+      f('TIPO-ORIENTACAO'),
+    ],
+    legend: 'No projeto',
+    part: self,
+  },
+];
+
 const PARTS: Record<GeneralKind, GeneralPart[]> = {
+  area: AREA,
+  atividade: ATIVIDADE,
   atuacao: ATUACAO,
   formacao: FORMATION,
+  idioma: IDIOMA,
+  licenca: LICENCA,
+  linha: LINHA,
+  'parte-projeto': PARTE_PROJETO,
   patente: PATENTE,
+  premio: PREMIO,
   projeto: PROJETO,
+  // Disciplina e treinamento são só um nome: o formulário próprio é TextItemForm.
+  texto: [],
+  vinculo: VINCULO,
 };
 
 export interface ShownPart {

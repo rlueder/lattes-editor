@@ -9,7 +9,7 @@
 
 import type { CensusFile, EntryStatus } from '../census/run.ts';
 import { CENSUS_TARGETS } from '../census/targets-production.ts';
-import { generalTypes } from '../model/general-items.ts';
+import { CREATED_WITH, generalTypes } from '../model/general-items.ts';
 import { productionType } from '../model/production.ts';
 import type { LattesSchema } from '../schema/types.ts';
 import { CONNECTOR_CREATES } from './create-items.ts';
@@ -21,7 +21,7 @@ import { CONNECTOR_CREATES } from './create-items.ts';
 const WITHOUT_SEQUENCE = ['IDIOMA', 'LICENCA', 'PREMIO-TITULO'];
 
 /** As seções do editor com item novo fora da produção (NEW_GENERAL_LABELS). */
-const GENERAL_SECTIONS = ['formacao', 'atuacao', 'projetos', 'patentes'];
+const GENERAL_SECTIONS = ['formacao', 'atuacao', 'projetos', 'patentes', 'dados-gerais'];
 
 export type CreateRoute = 'conector' | 'importar' | 'nenhum';
 
@@ -71,9 +71,14 @@ export function createRoute(schema: LattesSchema, name: string): CreateRoute {
   return 'nenhum';
 }
 
-/** O editor oferece criar o tipo: no "Novo item" da produção ou no botão da seção. */
+/**
+ * O editor oferece criar o tipo: no "Novo item" da produção, no botão da seção
+ * ou junto com outro item (a participação nasce com o projeto).
+ */
 export function editorCreates(schema: LattesSchema, name: string): boolean {
   if (productionType(schema, name)) return true;
+  const host = CREATED_WITH[name];
+  if (host) return editorCreates(schema, host);
   return GENERAL_SECTIONS.some((s) =>
     generalTypes(schema, s, (n) => n).some((t) => t.itemName === name),
   );

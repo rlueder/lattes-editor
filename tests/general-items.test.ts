@@ -60,14 +60,19 @@ const type = (sectionId: string, itemName?: string) => {
 
 describe('tipos de item novo fora da produção', () => {
   it('cada seção tem os seus; a formação tem um tipo por nível, na ordem do Lattes', () => {
-    const levels = typesFor('formacao');
-    expect(levels).toHaveLength(12);
+    const all = typesFor('formacao');
+    // Os 12 níveis da formação acadêmica e os 4 da formação complementar.
+    expect(all).toHaveLength(16);
+    const levels = all.slice(0, 12);
     expect(levels.slice(0, 3).map((t) => t.label)).toEqual([
       'Doutorado',
       'Mestrado',
       'Mestrado Profissional',
     ]);
     expect(levels.at(-1)!.itemName).toMatch(/POS-DOUTORADO|LIVRE-DOCENCIA/);
+    expect(all.slice(12).map((t) => t.containerPath.at(-1))).toEqual(
+      Array(4).fill('FORMACAO-COMPLEMENTAR'),
+    );
     expect(levels.every((t) => t.seqAttr === 'SEQUENCIA-FORMACAO')).toBe(true);
     expect(type('atuacao').itemName).toBe('ATUACAO-PROFISSIONAL');
     expect(type('projetos').kind).toBe('projeto');
@@ -86,9 +91,33 @@ describe('tipos de item novo fora da produção', () => {
     expect(generalTypes(schema, 'formacao', () => 'x').some((t) => t.label === 'x')).toBe(true);
     expect(Object.keys(NEW_GENERAL_LABELS).sort()).toEqual([
       'atuacao',
+      'dados-gerais',
       'formacao',
       'patentes',
       'projetos',
+    ]);
+    expect(typesFor('dados-gerais').map((t) => t.itemName)).toEqual([
+      'IDIOMA',
+      'PREMIO-TITULO',
+      'LICENCA',
+      'AREA-DE-ATUACAO',
+    ]);
+    // Na atuação, o que entra numa atuação que já existe pede onde entrar.
+    const atuacao = typesFor('atuacao');
+    expect(atuacao[0]!.itemName).toBe('ATUACAO-PROFISSIONAL');
+    expect(atuacao.slice(1).every((t) => t.host)).toBe(true);
+    expect(atuacao.find((t) => t.itemName === 'DISCIPLINA')).toMatchObject({
+      host: 'ENSINO',
+      text: true,
+    });
+    expect(
+      typesFor('projetos')
+        .slice(1)
+        .map((t) => [t.itemName, t.host]),
+    ).toEqual([
+      ['FINANCIADOR-DO-PROJETO', 'PROJETO-DE-PESQUISA'],
+      ['PRODUCAO-CT-DO-PROJETO', 'PROJETO-DE-PESQUISA'],
+      ['ORIENTACAO', 'PROJETO-DE-PESQUISA'],
     ]);
   });
 });

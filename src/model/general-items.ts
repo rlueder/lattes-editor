@@ -9,6 +9,7 @@
 // é dado ao salvar e nunca reaproveita um que a exportação já usou.
 
 import type { LattesSchema } from '../schema/types.ts';
+import type { GeneralType } from './general-types.ts';
 import { type Author, emptyAttrs, nextSequencia, readAuthor, SEQ_ATTR } from './production.ts';
 import { insertInSchemaOrder } from './schema-order.ts';
 import {
@@ -22,135 +23,7 @@ import {
   type XElement,
 } from './xml.ts';
 
-/** `patente` cobre a patente e os outros registros, que têm a mesma forma. */
-export type GeneralKind = 'atuacao' | 'formacao' | 'patente' | 'projeto';
-
-export interface GeneralType {
-  /** Contêineres da raiz até o pai do item; o projeto entra dentro de uma atuação. */
-  containerPath: string[];
-  itemName: string;
-  kind: GeneralKind;
-  /** Rótulo no singular, como o Lattes chama o item. */
-  label: string;
-  /** Atributo de sequência do próprio item. */
-  seqAttr: string;
-}
-
-/**
- * Os níveis do "Incluir novo item" da formação acadêmica, com o texto do combo
- * do Lattes (reconhecimento de 10/10/2026, seção 4.2). Pós-doutorado e
- * livre-docência não estão nesse combo; ficam no fim, com o rótulo gerado.
- */
-const FORMATION_LABELS: Record<string, string> = {
-  APERFEICOAMENTO: 'Aperfeiçoamento',
-  'CURSO-TECNICO-PROFISSIONALIZANTE': 'Ensino Profissional de nível técnico',
-  DOUTORADO: 'Doutorado',
-  'ENSINO-FUNDAMENTAL-PRIMEIRO-GRAU': 'Ensino Fundamental',
-  'ENSINO-MEDIO-SEGUNDO-GRAU': 'Ensino Médio',
-  ESPECIALIZACAO: 'Especialização',
-  GRADUACAO: 'Graduação',
-  MESTRADO: 'Mestrado',
-  'MESTRADO-PROFISSIONALIZANTE': 'Mestrado Profissional',
-  'RESIDENCIA-MEDICA': 'Especialização - Residência médica',
-};
-
-/** Ordem do combo do Lattes: doutorado, mestrado, mestrado profissional… */
-const FORMATION_ORDER = [
-  'DOUTORADO',
-  'MESTRADO',
-  'MESTRADO-PROFISSIONALIZANTE',
-  'ESPECIALIZACAO',
-  'RESIDENCIA-MEDICA',
-  'GRADUACAO',
-  'CURSO-TECNICO-PROFISSIONALIZANTE',
-  'ENSINO-MEDIO-SEGUNDO-GRAU',
-  'ENSINO-FUNDAMENTAL-PRIMEIRO-GRAU',
-  'APERFEICOAMENTO',
-];
-
-/**
- * A patente e os registros da seção "Patentes e Registros", na ordem e com os
- * nomes das listas do Lattes (docs/lattes_internals.md, seção 17; censo de
- * 15/10/2026, src/census/targets-production.ts). Todos são inclusões de
- * PKG_PATENTE_REGISTRO e têm a mesma forma no XML: dados básicos,
- * detalhamento com um REGISTRO-OU-PATENTE e autores. O programa de computador
- * fica em Produções (SOFTWARE, pelo Importar).
- */
-const REGISTRIES: [string, string][] = [
-  ['PATENTE', 'Patente'],
-  ['CULTIVAR-PROTEGIDA', 'Cultivar protegida'],
-  ['CULTIVAR-REGISTRADA', 'Cultivar registrada'],
-  ['DESENHO-INDUSTRIAL', 'Desenho industrial'],
-  ['MARCA', 'Marca'],
-  ['TOPOGRAFIA-DE-CIRCUITO-INTEGRADO', 'Topografia de circuito integrado'],
-];
-
-const FORMATION_PATH = ['DADOS-GERAIS', 'FORMACAO-ACADEMICA-TITULACAO'];
-const ATUACAO_PATH = ['DADOS-GERAIS', 'ATUACOES-PROFISSIONAIS'];
-
-/**
- * Os tipos que cada seção cria, a partir do schema: todo filho de
- * FORMACAO-ACADEMICA-TITULACAO é um nível. `labelOf` dá o rótulo dos níveis
- * que não estão no combo do Lattes.
- */
-export function generalTypes(
-  schema: LattesSchema,
-  sectionId: string,
-  labelOf: (itemName: string) => string,
-): GeneralType[] {
-  if (sectionId === 'formacao') {
-    const levels = (schema.elements['FORMACAO-ACADEMICA-TITULACAO']?.children ?? []).map(
-      (c) => c.name,
-    );
-    const rank = (n: string) => {
-      const i = FORMATION_ORDER.indexOf(n);
-      return i < 0 ? FORMATION_ORDER.length : i;
-    };
-    return [...levels]
-      .sort((a, b) => rank(a) - rank(b))
-      .map((itemName) => ({
-        containerPath: FORMATION_PATH,
-        itemName,
-        kind: 'formacao' as const,
-        label: FORMATION_LABELS[itemName] ?? labelOf(itemName),
-        seqAttr: 'SEQUENCIA-FORMACAO',
-      }));
-  }
-  if (sectionId === 'atuacao') {
-    return [
-      {
-        containerPath: ATUACAO_PATH,
-        itemName: 'ATUACAO-PROFISSIONAL',
-        kind: 'atuacao',
-        label: 'Atuação profissional',
-        seqAttr: 'SEQUENCIA-ATIVIDADE',
-      },
-    ];
-  }
-  if (sectionId === 'projetos') {
-    return [
-      {
-        containerPath: [...ATUACAO_PATH, 'ATUACAO-PROFISSIONAL'],
-        itemName: 'PROJETO-DE-PESQUISA',
-        kind: 'projeto',
-        label: 'Projeto',
-        seqAttr: 'SEQUENCIA-PROJETO',
-      },
-    ];
-  }
-  if (sectionId === 'patentes') {
-    return REGISTRIES.filter(([itemName]) => schema.elements[itemName]).map(
-      ([itemName, label]) => ({
-        containerPath: ['PRODUCAO-TECNICA'],
-        itemName,
-        kind: 'patente' as const,
-        label,
-        seqAttr: SEQ_ATTR,
-      }),
-    );
-  }
-  return [];
-}
+export { CREATED_WITH, type GeneralKind, type GeneralType, generalTypes } from './general-types.ts';
 
 /** Elemento vazio com os atributos do schema e as partes estruturais que o schema lista. */
 function blank(schema: LattesSchema, name: string): XElement {
@@ -304,9 +177,37 @@ export function nextGeneralSequence(roots: XElement[], attr: string): number {
   return maxOf(roots, attr) + 1;
 }
 
+/**
+ * Os itens do currículo que podem receber um item do tipo (`GeneralType.host`):
+ * as atuações pelo nome da instituição, as atividades com a instituição e o
+ * período, os projetos pelo nome.
+ */
+export function hostChoices(doc: XDocument, host: string): AtuacaoChoice[] {
+  if (host === 'ATUACAO-PROFISSIONAL') return atuacaoChoices(doc);
+  const out: AtuacaoChoice[] = [];
+  walk(doc.root, (el, ancestors) => {
+    if (el.name !== host) return;
+    const atuacao = ancestors.find((a) => a.name === 'ATUACAO-PROFISSIONAL');
+    const inst = (atuacao && getAttr(atuacao, 'NOME-INSTITUICAO')?.trim()) || '';
+    const start = getAttr(el, 'ANO-INICIO') ?? '';
+    const end = getAttr(el, 'ANO-FIM') ?? '';
+    const period = start ? ` (${start}${end ? `–${end}` : ', atual'})` : '';
+    const name =
+      getAttr(el, 'NOME-DO-PROJETO') ||
+      getAttr(el, 'NOME-CURSO') ||
+      getAttr(el, 'NOME-ORGAO') ||
+      '';
+    const label = [inst, name].filter(Boolean).join(' · ') || `${host} ${out.length + 1}`;
+    out.push({ el, key: `#${out.length + 1}`, label: `${label}${period}` });
+  });
+  return out;
+}
+
 export interface InsertContext {
   /** Projeto: a atuação onde ele entra. */
   atuacao?: XElement;
+  /** Tipo com `host`: o item que recebe o novo (a atuação do vínculo, a atividade da disciplina…). */
+  host?: XElement;
   /** Exportação carregada: os números dela nunca se repetem. */
   original?: XElement;
   /** Contador salvo do SEQUENCIA-PRODUCAO (WorkingCopy.nextSequencia). */
@@ -347,8 +248,12 @@ export function insertGeneralItem(
     const seq = nextSequencia(doc, counter);
     setAttr(item, SEQ_ATTR, String(seq));
     counter = seq + 1;
-  } else {
+  } else if (type.seqAttr) {
     setAttr(item, type.seqAttr, String(nextGeneralSequence(roots, type.seqAttr)));
+  }
+  // Atividade: atual sem ano de fim, como a participação do projeto.
+  if (type.kind === 'atividade') {
+    setAttr(item, 'FLAG-PERIODO', getAttr(item, 'ANO-FIM') ? 'ANTERIOR' : 'ATUAL');
   }
 
   if (type.kind === 'projeto') {
@@ -372,6 +277,12 @@ export function insertGeneralItem(
     return counter;
   }
 
+  if (type.host) {
+    if (ctx.host?.name !== type.host)
+      throw new Error(`O item precisa de onde entrar (${type.host})`);
+    insertInSchemaOrder(schema, ensurePath(schema, ctx.host, type.containerPath), item);
+    return counter;
+  }
   insertInSchemaOrder(schema, ensurePath(schema, doc.root, type.containerPath), item);
   return counter;
 }

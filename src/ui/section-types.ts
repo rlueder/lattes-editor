@@ -65,8 +65,9 @@ export const EMPTY_NOTES: Record<string, string> = {
 
 /** O botão de item novo das seções que não vão pelo Importar (src/model/general-items.ts). */
 export const NEW_GENERAL_LABELS: Record<string, string> = {
-  atuacao: 'Nova atuação',
+  atuacao: 'Nova atuação ou atividade',
+  'dados-gerais': 'Novo item',
   formacao: 'Nova formação',
   patentes: 'Nova patente ou registro',
-  projetos: 'Novo projeto',
+  projetos: 'Novo projeto ou parte',
 };

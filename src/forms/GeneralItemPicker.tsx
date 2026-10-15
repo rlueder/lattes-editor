@@ -6,6 +6,7 @@
 import type { GeneralType } from '../model/general-items.ts';
 import { Modal } from '../ui/Modal.tsx';
 import { GeneralItemForm } from './GeneralItemForm.tsx';
+import { TextItemForm } from './TextItemForm.tsx';
 import type { useGeneralItem } from './use-general-item.ts';
 
 interface Props {
@@ -34,7 +35,37 @@ export function GeneralItemPicker({ onClose, onPick, open, title, types }: Props
   );
 }
 
-/** O seletor de nível e o formulário do item novo, como o App os mostra. */
+/** A escolha de onde o item entra: a atuação, a atividade ou o projeto. */
+function HostPicker({
+  hostPicker,
+  onClose,
+}: {
+  hostPicker: NonNullable<ReturnType<typeof useGeneralItem>['hostPicker']>;
+  onClose: () => void;
+}) {
+  const title = `${hostPicker.title}: onde entra`;
+  return (
+    <Modal open className="picker" label={title} title={title} onClose={onClose}>
+      <section className="picker-section">
+        {hostPicker.choices.length === 0 ? (
+          <p className="muted">{hostPicker.empty}</p>
+        ) : (
+          <ul className="picker-grid">
+            {hostPicker.choices.map((c) => (
+              <li key={c.key}>
+                <button className="picker-item" type="button" onClick={() => hostPicker.pick(c)}>
+                  {c.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </Modal>
+  );
+}
+
+/** O seletor de tipo, o de lugar e o formulário do item novo, como o App os mostra. */
 export function GeneralItemDialogs({
   general,
   sectionLabel,
@@ -42,15 +73,25 @@ export function GeneralItemDialogs({
   general: ReturnType<typeof useGeneralItem>;
   sectionLabel: string;
 }) {
+  const draft = general.draft;
   return (
     <>
-      {general.draft && (
+      {draft && draft.type.text && (
+        <TextItemForm
+          hostLabel={draft.hostLabel}
+          item={draft.item}
+          type={draft.type}
+          onCancel={general.cancel}
+          onSave={(item) => general.save(item)}
+        />
+      )}
+      {draft && !draft.type.text && (
         <GeneralItemForm
           atuacoes={general.atuacoes}
-          item={general.draft.item}
+          item={draft.item}
           knownAuthors={general.authors}
           sectionLabel={sectionLabel}
-          type={general.draft.type}
+          type={draft.type}
           onCancel={general.cancel}
           onSave={general.save}
         />
@@ -62,6 +103,9 @@ export function GeneralItemDialogs({
         onClose={general.closePicker}
         onPick={general.start}
       />
+      {general.hostPicker && (
+        <HostPicker hostPicker={general.hostPicker} onClose={general.closePicker} />
+      )}
     </>
   );
 }
