@@ -77,7 +77,7 @@ export default defineConfig({
   plugins: [react(), inlineBundle()],
   test: {
     coverage: {
-      exclude: ['src/**/*.tsx', 'src/schema/**', 'src/ui/use-*.ts'],
+      exclude: ['src/**/*.tsx', 'src/schema/**', 'src/ui/use-*.ts', 'src/panorama/use-*.ts'],
       // Lógica pura: modelo, ZIP, seções, busca do ⌘K e rótulos, mais o banco
       // local, testado com o fake-indexeddb. Componentes React ficam para os
       // testes de fluxo com Playwright.
