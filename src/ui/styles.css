@@ -3209,9 +3209,15 @@ body {
 }
 
 /* O menu lateral no fundo do conteúdo; o fio da esquerda do conteúdo os
-   separa. O cabeçalho fica no cromo. */
+   separa. O cabeçalho fica no cromo. A moldura inteira também usa o fundo do
+   conteúdo: o menu gruda e para na altura da lista, e abaixo dele aparece a
+   moldura, da mesma cor, em qualquer altura de janela e de rolagem. */
 .sidebar {
   border-right: 0;
+  background: var(--bg);
+}
+
+.shell {
   background: var(--bg);
 }
 
