@@ -178,6 +178,20 @@ alteração no lugar; exclusão pelo formulário) está no
 [guia de implementação](lattes_implementation_guide.md), seção 1, e nos
 tickets LAT-50, LAT-51 e LAT-49.
 
+Antes de virar alteração, o que vem de fora passa por um pré-diff
+(`src/review/dedup.ts`, LAT-45): cada item é comparado com as produções do
+currículo por título, DOI ou ISBN, autores, ano, tipo e veículo, com pesos
+declarados (título 45, identificador 15 e autores 10, como no CIÊNCIAVITAE;
+ano 15, tipo 10 e veículo 5, escolha do editor) e o motivo de cada parte. O
+mesmo DOI decide sozinho; títulos com menos da metade das palavras em comum
+nunca viram candidato; dois DOIs diferentes ficam no máximo em "parecido".
+Hoje passam por ele os itens de outro XML ("Trazer itens de outro XML…", no
+⚙, com a revisão em `src/import-export/IncomingReview.tsx`: só entra o que a
+pessoa marcar, como item novo) e o formulário de produção nova, inclusive o
+preenchido pelo DOI, que avisa quando o item se parece com um do currículo.
+Planilha, ORCID, OpenAlex e foto de certificado (LAT-43, LAT-8, LAT-10)
+entram pelo mesmo `preDiff` quando existirem.
+
 A inclusão de itens pelo conector (`CREATE_ITEMS_ENABLED`, em
 `src/bridge/create.ts`) cobre a atuação com o primeiro vínculo (`create.ts`), formação
 acadêmica nos dez níveis do "Incluir novo item" (`create-formacao.ts`) e

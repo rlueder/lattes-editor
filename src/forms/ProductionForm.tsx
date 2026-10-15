@@ -32,6 +32,7 @@ import { Tip } from '../ui/primitives/Tip.tsx';
 import { useGroupStarts } from '../ui/use-group-starts.ts';
 import { AreasEditor } from './AreasEditor.tsx';
 import { AuthorsEditor } from './AuthorsEditor.tsx';
+import { DuplicateNotice } from './DuplicateNotice.tsx';
 import { sectionFacts } from './form-sections.ts';
 import { FormSection } from './FormSection.tsx';
 import { formSpec, missingRequired } from './specs.ts';
@@ -48,6 +49,11 @@ const DOI_TYPES = new Set([
 interface Props {
   /** O item vai por "Enviar ao Lattes" (inclusão pelo conector), e não pelo Importar. */
   byChanges?: boolean;
+  /**
+   * O currículo aberto, para avisar quando um item novo se parece com um que
+   * já está nele (LAT-45); a pessoa decide se salva.
+   */
+  duplicateIn?: XElement;
   isNew: boolean;
   item: XElement;
   knownAreas: KnowledgeArea[];
@@ -67,6 +73,7 @@ const footText = (byChanges: boolean) =>
 
 export function ProductionForm({
   byChanges = false,
+  duplicateIn,
   isNew,
   item,
   knownAreas,
@@ -336,6 +343,7 @@ export function ProductionForm({
           )}
         </div>
 
+        <DuplicateNotice item={item} root={isNew ? duplicateIn : undefined} version={version} />
         <footer className="modal-foot form-foot">
           {problems.length > 0 ? (
             <details className="form-problems">

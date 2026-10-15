@@ -4700,13 +4700,33 @@ button.primary:hover:not(:disabled) {
   margin-top: 12px;
 }
 
-/* Arquivo arrastado sobre a janela: o painel principal acende. */
+/* Primeiro uso: o bloco (desenho, título, passos, arquivo) fica no centro da
+   altura do painel de conteúdo, abaixo do cabeçalho. Em janela baixa, uma
+   margem mínima em cima e embaixo, e a página rola quando ele não cabe. */
 .welcome-shell .content {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  /* A linha da grade (100vh menos o cabeçalho de verdade) dá a altura: a
+     variável --topbar-h ainda não foi medida nesta tela. */
+  min-height: 0;
+  padding-bottom: 16px;
   transition:
     border-color var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) var(--ease-out);
 }
 
+.welcome-shell .section-main-empty {
+  flex: 1;
+  min-height: 0;
+  padding: 24px 0;
+}
+
+.welcome-shell .onboarding-layout {
+  padding-bottom: 0;
+}
+
+/* Arquivo arrastado sobre a janela: o painel principal acende. */
 .welcome-shell.over .content {
   border-color: var(--accent-text);
   border-style: dashed;
@@ -5818,6 +5838,98 @@ blockquote.publish-declaration {
 .publish-done {
   color: var(--ok);
   font-weight: 500;
+}
+
+/* Itens de outro arquivo: o resumo da leva e o tipo e o ano de cada item, à
+   direita da linha. */
+.incoming-summary {
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+
+.incoming-summary strong {
+  font-weight: 600;
+}
+
+.incoming-meta {
+  flex-shrink: 0;
+  max-width: 40%;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Itens de outro arquivo (src/import-export/IncomingReview.tsx, LAT-45) e o
+   aviso de duplicata no formulário de item novo. */
+.incoming-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.incoming-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background-color 200ms ease;
+}
+
+.incoming-row:hover {
+  background: var(--surface-2);
+}
+
+.incoming-row input {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.incoming-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.incoming-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.incoming-match {
+  color: var(--warn-text);
+  font-size: 12px;
+}
+
+.incoming-row.parecido .incoming-match {
+  color: var(--text);
+}
+
+.incoming-reasons {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.form-duplicate {
+  margin: 0;
+  padding: 8px 16px;
+  border-top: 1px solid var(--border);
+  color: var(--warn-text);
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .incoming-row {
+    transition: none;
+  }
 }
 
 /* Versões do Lattes (LAT-12): exportações à esquerda, o que mudou à direita. */
