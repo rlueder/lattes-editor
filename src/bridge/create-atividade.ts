@@ -130,6 +130,12 @@ export function planCreateAtividade(
   }
   const disciplines = childElements(item, 'DISCIPLINA').map(text).filter(Boolean);
   if (disciplines.length === 0) return { reason: 'O Lattes exige ao menos uma disciplina' };
+  // A grade não escapa os separadores (o check() do Lattes junta o nome como
+  // está): um nome com @, ? ou ! partiria a linha, e as disciplinas não são
+  // relidas para conferir.
+  if (disciplines.some((d) => /[@?!]/.test(d))) {
+    return { reason: 'Nome de disciplina com @, ? ou !, que a grade do Lattes usa como separador' };
+  }
   const start = getAttr(item, 'ANO-INICIO') ?? '';
   const end = getAttr(item, 'ANO-FIM') ?? '';
   if (!start) return { reason: 'A atividade precisa do ano de início' };

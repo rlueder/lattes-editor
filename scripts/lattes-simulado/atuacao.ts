@@ -158,7 +158,9 @@ function cargosVinculos(req: SimRequest, state: LattesState): SimResponse {
   const dele = `<script>function dele(){ if (confirm('Esta operação apagará: Todas as atividades; Vínculos; Projetos; Linhas de pesquisa. Deseja continuar?') && confirm('Confirmar exclusão?')) location = 'pkg_ativ.form?f_cod=${state.code}&f_seq_ativ=${seqAtiv}&f_ctr=E2'; }</script>`;
   // selecionarNatureza() abre o combo de naturezas e o formulário pkg_ativ.cargo
   // (seção 17); o endereço com f_natur_ativ vazio é o que o censo leu na tela.
-  const cargo = `pkg_ativ.cargo?f_cod=${state.code}&amp;f_codinst=${inst}&amp;f_seq_ativ=${seqAtiv}&amp;f_natur_ativ=`;
+  // No atributo onclick o & vai como &amp;; dentro do <script>, literal.
+  const cargoUrl = `pkg_ativ.cargo?f_cod=${state.code}&f_codinst=${inst}&f_seq_ativ=${seqAtiv}&f_natur_ativ=`;
+  const cargo = cargoUrl.replaceAll('&', '&amp;');
   // As atividades de ensino, cada uma com f_seq_funcao (link inferido).
   const activities = teaching(a)
     .map(
@@ -168,7 +170,7 @@ function cargosVinculos(req: SimRequest, state: LattesState): SimResponse {
     .join('\n');
   const body = `<table>${rows}${activities}</table>
 <p><a href="${base}">Incluir vínculo</a> <a href="#" onclick="selecionarNatureza(); return false;">Incluir atividade</a> <a href="#" onclick="dele(); return false;">Excluir atuação</a></p>${dele}
-<script>function selecionarNatureza(){ self.parent.modalCV2.setarUrl('${cargo}', true); }</script>`;
+<script>function selecionarNatureza(){ self.parent.modalCV2.setarUrl('${cargoUrl}', true); }</script>`;
   return html(h.page(getAttr(a, 'NOME-INSTITUICAO') ?? 'Atuação', body));
 }
 

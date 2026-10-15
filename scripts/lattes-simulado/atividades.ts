@@ -10,7 +10,7 @@
 // naturezas respondem que o envio não é simulado.
 
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
-import { childElements, element, getAttr, type XElement } from '../../src/model/xml.ts';
+import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
 import { COURSES } from './buscas.ts';
 import { notSimulated } from './censo.ts';
@@ -96,8 +96,8 @@ export function cargoPost(req: SimRequest, state: LattesState, atuacao?: XElemen
     const hit = Object.values(COURSES)
       .flat()
       .find(([value]) => value.trim().slice(1) === code);
-    item.attrs.push({ name: 'CODIGO-CURSO', value: code });
-    if (hit) item.attrs.push({ name: 'NOME-CURSO', value: hit[1] });
+    setAttr(item, 'CODIGO-CURSO', code);
+    if (hit) setAttr(item, 'NOME-CURSO', hit[1]);
   }
   for (const [, n, name] of (req.get('f_espec_l') ?? '').matchAll(/(\d+)@[^?]*\?([^!]*)!/g)) {
     if (!name) continue;

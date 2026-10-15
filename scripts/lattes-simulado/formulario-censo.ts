@@ -44,7 +44,7 @@ export interface CapturedForm {
 
 interface CensusJson {
   entries: { id: string; page?: { forms?: CapturedForm[] } }[];
-  lists: Record<string, CapturedOption[]>;
+  lists?: Record<string, CapturedOption[]>;
 }
 
 /** As capturas versionadas, da mais recente para a mais antiga (as recapturas trazem só algumas entradas). */
@@ -63,7 +63,7 @@ export function capturedForm(entry: string): CapturedForm {
 export function capturedOptions(field: CapturedField): [string, string][] {
   const list =
     typeof field.options === 'string'
-      ? CAPTURES.map((f) => f.lists[field.options as string]).find(Boolean)
+      ? CAPTURES.map((f) => f.lists?.[field.options as string]).find(Boolean)
       : field.options;
   return (list ?? []).map((o) => [o.value, o.label]);
 }

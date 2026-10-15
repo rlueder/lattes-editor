@@ -119,6 +119,9 @@ describe('atividade de ensino', () => {
     const reason = async (item: XElement) =>
       (await plan((doc) => ufrgs(doc.root).children.push(item))).unsupported[0]?.reason;
     expect(await reason(ensino({}, []))).toMatch(/ao menos uma disciplina/);
+    expect(await reason(ensino({}, [disciplina('Genética: por quê?', '1')]))).toMatch(
+      /usa como separador/,
+    );
     expect(await reason(ensino({ 'TIPO-ENSINO': '' }))).toMatch(/tipo de ensino/);
     expect(await reason(ensino({ 'CODIGO-CURSO': '' }))).toMatch(/exige o curso/);
     expect(await reason(ensino({ 'TIPO-ENSINO': 'ENSINO-MEDIO' }))).toMatch(/não aceita curso/);
