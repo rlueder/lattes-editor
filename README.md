@@ -75,7 +75,7 @@ mão com os valores ao lado.
 </picture>
 
 Cada exportação aberta vira uma versão, e o app diz o que mudou desde a
-anterior ("Versões do Lattes", no ⌘K), inclusive o que foi editado direto no
+anterior ("Versões do Lattes", no ⚙), inclusive o que foi editado direto no
 Lattes. O **Diagnóstico do currículo** mostra a data da última publicação, o
 que mudou no Lattes desde a exportação e o que vale conferir no currículo
 inteiro: duplicatas, ISSN, DOI, datas e vínculos antigos ainda marcados como

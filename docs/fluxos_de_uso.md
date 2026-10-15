@@ -88,7 +88,8 @@ Já tem um currículo grande; acrescenta poucas produções e corrige detalhes.
 1. Abre o app, que já tem a versão do mês passado. "Recarregar do Lattes"
    traz a de agora e diz, numa faixa, quantos itens são novos, alterados e
    removidos desde a anterior, inclusive o que foi editado direto no Lattes;
-   "Versões do Lattes" mostra o detalhe de cada exportação (LAT-12, feito).
+   "Versões do Lattes", no ⚙, mostra o detalhe de cada exportação (LAT-12,
+   feito).
 2. Acrescenta produções pelo DOI (LAT-30) e ajusta o que precisa.
 3. Manda, confere a faixa e publica.
 
@@ -106,8 +107,9 @@ antes (o caso que originou este documento).
 2. Mostra um diagnóstico antes de tudo: data da última publicação, o que está
    pendente e o que provavelmente envelheceu, como vínculos ainda "Atual" e
    períodos antigos (revisão de consistência, LAT-29). Feito em 13/10/2026
-   como "Diagnóstico do currículo", com a comparação por títulos das
-   produções e dos eventos (`src/review/espelho-diff.ts`).
+   como "Diagnóstico do currículo" (no ⚙ e no aviso do sino), com a
+   comparação por títulos das produções e dos eventos
+   (`src/review/espelho-diff.ts`).
 3. A pessoa decide o que mantém e o que desfaz, trabalha em lotes ao longo de
    dias (o app guarda tudo) e publica no fim.
 

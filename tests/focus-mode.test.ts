@@ -87,11 +87,9 @@ describe('modo foco: atalho', () => {
     expect(isFocusShortcut(key('f', { metaKey: true, shiftKey: true }), false)).toBe(false);
   });
 
-  it('entra no ⌘K só quando existe', () => {
+  it('não entra no ⌘K: fica no ⚙ e no atalho', () => {
     expect(paletteActions().some((a) => a.action === 'foco')).toBe(false);
-    const foco = paletteActions({ focus: '⌘⇧F' }).find((a) => a.action === 'foco');
-    expect(foco?.label).toContain('⌘⇧F');
-    expect(allEntries([], '⌘⇧F').some((a) => a.action === 'foco')).toBe(true);
+    expect(allEntries([]).some((a) => a.action === 'foco')).toBe(false);
   });
 });
 

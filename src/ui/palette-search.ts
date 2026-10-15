@@ -72,9 +72,12 @@ const action = (id: string, label: string, context: string): PaletteEntry => ({
   sectionId: '',
 });
 
-/** Ações do ⌘K: criar itens dos tipos mais usados, gerar a importação e o diagnóstico. */
-/** `focus`: o atalho do modo foco, quando ele existe (com ?leitura). */
-export function paletteActions({ focus }: { focus?: string } = {}): PaletteEntry[] {
+/**
+ * Ações do ⌘K: só criar itens dos tipos mais usados. O resto do ⌘K é ir a
+ * seções e grupos; enviar ao Lattes, diagnóstico, versões e modo foco ficam
+ * no cabeçalho e no ⚙.
+ */
+export function paletteActions(): PaletteEntry[] {
   return [
     // Título do grupo (abre a escolha de todos os tipos), com os tipos mais
     // usados embaixo, em ordem alfabética.
@@ -82,14 +85,10 @@ export function paletteActions({ focus }: { focus?: string } = {}): PaletteEntry
     ...[...FORM_SPECS]
       .sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'))
       .map((f) => action(`novo:${f.itemName}`, f.title, 'Novo item')),
-    action('exportar', 'Enviar ao Lattes (importar e alterações)', ''),
-    action('diagnostico', 'Diagnóstico do currículo', ''),
-    action('versoes', 'Versões do Lattes (o que mudou entre exportações)', ''),
-    ...(focus ? [action('foco', `Modo foco: só o conteúdo (${focus})`, '')] : []),
   ];
 }
 
-/** As seções e as ações do ⌘K; `focus` é o atalho do modo foco, quando ele existe. */
-export function allEntries(sections: Section[], focus?: string): PaletteEntry[] {
-  return [...paletteEntries(sections), ...paletteActions({ focus })];
+/** As seções, os grupos e as ações de criar item do ⌘K. */
+export function allEntries(sections: Section[]): PaletteEntry[] {
+  return [...paletteEntries(sections), ...paletteActions()];
 }

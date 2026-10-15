@@ -42,6 +42,8 @@ interface Props {
   onReload: (file: File) => void;
   onSave: () => void;
   onTheme: (theme: ThemePref) => void;
+  /** ⚙ › Versões do Lattes: o que mudou entre as exportações. */
+  onVersions: () => void;
 }
 
 const SAVE_TIP: Record<SaveState, string> = {
@@ -70,6 +72,7 @@ export function Topbar({
   onReload,
   onSave,
   onTheme,
+  onVersions,
   pendingCount,
   ref,
   saveState,
@@ -152,6 +155,7 @@ export function Topbar({
           file={{
             modified,
             onClose: () => setClosing(true),
+            onDiagnosis,
             onHistory,
             onPrint,
             onReload: () => {
@@ -159,6 +163,7 @@ export function Topbar({
               else reloadInput.current?.click();
             },
             onSave,
+            onVersions,
           }}
           focus={focus}
           theme={theme}

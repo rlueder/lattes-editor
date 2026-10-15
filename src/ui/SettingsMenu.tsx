@@ -10,6 +10,7 @@ import { FIELD_ORDERS, type FieldOrder, setFieldOrder, useFieldOrder } from './f
 import {
   CheckIcon,
   CloseIcon,
+  DiagnosisIcon,
   DownloadIcon,
   FocusIcon,
   HashIcon,
@@ -21,6 +22,7 @@ import {
   SpinnerIcon,
   SunIcon,
   UpdateIcon,
+  VersionsIcon,
 } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { setShowCodes, useShowCodes } from './show-codes.ts';
@@ -31,10 +33,14 @@ import { checkUpdatesNow, useManualUpdateCheck } from './use-updates.ts';
 interface FileActions {
   modified: boolean;
   onClose: () => void;
+  /** Diagnóstico do currículo: comparação com o Lattes e revisão de consistência. */
+  onDiagnosis: () => void;
   onHistory: () => void;
   onPrint: () => void;
   onReload: () => void;
   onSave: () => void;
+  /** Versões do Lattes: o que mudou entre as exportações guardadas. */
+  onVersions: () => void;
 }
 
 interface Props {
@@ -203,6 +209,18 @@ export function SettingsMenu({ file, focus, onTheme, theme }: Props) {
                   <HistoryIcon />
                 </span>
                 <span className="menu-label">Histórico de alterações</span>
+              </Menu.Item>
+              <Menu.Item className="menu-item" disabled={!file} onClick={() => file?.onVersions()}>
+                <span className="menu-icon">
+                  <VersionsIcon />
+                </span>
+                <span className="menu-label">Versões do Lattes</span>
+              </Menu.Item>
+              <Menu.Item className="menu-item" disabled={!file} onClick={() => file?.onDiagnosis()}>
+                <span className="menu-icon">
+                  <DiagnosisIcon />
+                </span>
+                <span className="menu-label">Diagnóstico do currículo</span>
               </Menu.Item>
             </Menu.Group>
 

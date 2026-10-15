@@ -136,8 +136,7 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [session, version],
   );
-  const focusLabel = focusShell.label;
-  const entries = useMemo(() => allEntries(sections, focusLabel), [sections, focusLabel]);
+  const entries = useMemo(() => allEntries(sections), [sections]);
   const referenceIndex = useMemo(
     () => (session ? buildReferenceIndex(session.doc.root) : undefined),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -176,11 +175,7 @@ export function App() {
 
   const jump = (entry: PaletteEntry) => {
     if (entry.action) {
-      if (entry.action === 'exportar') setExportOpen(true);
-      else if (entry.action === 'diagnostico') setDiagnosisOpen(true);
-      else if (entry.action === 'novo') setPickerOpen(true);
-      else if (entry.action === 'versoes') void versions.show();
-      else if (entry.action === 'foco') focusShell.focus.toggle();
+      if (entry.action === 'novo') setPickerOpen(true);
       else startNewItem(entry.action, production.startNew);
       return;
     }
@@ -276,6 +271,7 @@ export function App() {
           void saveBytes(encodeCv(session.doc, session.meta.encoding), session.meta.fileName)
         }
         onTheme={setTheme}
+        onVersions={() => void versions.show()}
       />
 
       <Sidebar

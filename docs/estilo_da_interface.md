@@ -191,9 +191,8 @@ página começa no alto da janela. Em tela estreita, onde o menu fica em cima
 do conteúdo, o conteúdo sobe também o tanto da lista de seções, sem mudar de
 largura nem de margem.
 
-- Liga e desliga com ⌘⇧F (Ctrl+Shift+F fora do Mac), pelo item "Modo foco"
-  do ⚙ (com o atalho ao lado) ou pelo ⌘K. A escolha fica lembrada neste
-  aparelho.
+- Liga e desliga com ⌘⇧F (Ctrl+Shift+F fora do Mac) ou pelo item "Modo
+  foco" do ⚙ (com o atalho ao lado). A escolha fica lembrada neste aparelho.
 - O ponteiro na borda esquerda (faixa de 16px, espera de 150ms) traz o menu
   por cima do conteúdo, sem empurrá-lo; sair dele com 24px de folga o
   esconde. A borda de cima faz o mesmo com o cabeçalho.

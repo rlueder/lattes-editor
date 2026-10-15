@@ -218,3 +218,20 @@ export const FocusIcon = () => (
     <path d="M3 8v8M21 8v8" />
   </Icon>
 );
+
+/** Versões: duas folhas sobrepostas (o que mudou entre exportações). */
+export const VersionsIcon = () => (
+  <Icon>
+    <rect height="13" rx="1.5" width="11" x="8" y="7" />
+    <path d="M5 16V5.5A1.5 1.5 0 0 1 6.5 4H15" />
+  </Icon>
+);
+
+/** Diagnóstico: prancheta com um visto. */
+export const DiagnosisIcon = () => (
+  <Icon>
+    <path d="M9 4h6v3H9z" />
+    <path d="M15 5.5h2A1.5 1.5 0 0 1 18.5 7v12a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 19V7A1.5 1.5 0 0 1 7 5.5h2" />
+    <path d="m9 14 2 2 4-4" />
+  </Icon>
+);
