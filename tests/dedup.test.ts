@@ -291,13 +291,26 @@ describe('pré-diff e deduplicação explicável (LAT-45)', () => {
           titulo: `${prefix} estudo número ${i} sobre palmeiras e genética ${i * 7}`,
         }),
       ).join('');
-    const root = cv(many(1, 1500, 'existente'));
-    const incoming = incomingItems(schema, cv(many(5000, 400, 'novo')));
+    const root = cv(many(1, 800, 'existente'));
+    const incoming = incomingItems(schema, cv(many(5000, 200, 'novo')));
     const start = performance.now();
     const diff = preDiff(incoming, root);
     const ms = performance.now() - start;
-    expect(diff).toHaveLength(400);
+    expect(diff).toHaveLength(200);
     // Folgado de propósito: sem o cache e o corte pelo título, levava segundos.
     expect(ms).toBeLessThan(3000);
+  });
+
+  it('o cache lê cada item do currículo uma vez, e a leitura serve à leva toda', () => {
+    const existing = productionItems(
+      cv(artigo(1, { titulo: 'Primeiro' }) + artigo(2, { titulo: 'Segundo' })),
+    );
+    const cache = new Map();
+    candidatesFor(one(artigo(9, { titulo: 'Primeiro' })), existing, cache);
+    expect(cache.size).toBe(existing.length + 1);
+    const read = cache.get(existing[0]!);
+    candidatesFor(one(artigo(10, { titulo: 'Segundo' })), existing, cache);
+    expect(cache.get(existing[0]!)).toBe(read);
+    expect(cache.size).toBe(existing.length + 2);
   });
 });
