@@ -31,6 +31,11 @@ export interface FieldLink {
   field: string;
   /** Itens em que o valor do campo era o do atributo. */
   matches: number;
+  /**
+   * Num campo de opções ligado por valor: em quantos itens o XML trazia o
+   * código da opção, o rótulo exato, ou o rótulo só com outra caixa ou acento.
+   */
+  spelling?: Partial<Record<'dobrado' | 'rotulo' | 'valor', number>>;
   target: string;
   /** Opção do formulário → valor enumerado do XML, quando a ligação vem da enumeração. */
   valueMap?: Record<string, string>;
@@ -159,6 +164,13 @@ export function collectLinks(
       if (sameValue(f, v.value)) {
         link.matches++;
         link.by = 'valor';
+        if (f.options) {
+          // Como o XML grafa o valor: igual ao código da opção, igual ao rótulo,
+          // ou só sem acento e caixa. Diz se a lista pode gravar o rótulo como está.
+          const { label } = fieldValue(f);
+          const how = v.value === value ? 'valor' : v.value === label ? 'rotulo' : 'dobrado';
+          link.spelling = { ...link.spelling, [how]: (link.spelling?.[how] ?? 0) + 1 };
+        }
         continue;
       }
       // Só códigos curtos de opção (S, 243, BRA) entram no mapa: um texto longo

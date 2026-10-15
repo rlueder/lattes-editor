@@ -223,13 +223,12 @@ describe('censo: cobertura e divergências', () => {
     expect(row('TIPO-LICENCA').group).toBe('sem-captura');
     expect(cov.captured.get('premio')!.at).toBe('2026-10-15T00:00:00Z');
     expect(cov.disagreements.map((d) => d.key)).toEqual([
-      // IDIOMA guarda o código (EN) e o editor não tem lista para ele.
-      'lista-nao-ligada:idioma:IDIOMA@IDIOMA:F_COD_IDIOMA',
+      // IDIOMA@IDIOMA é código do Lattes no editor (só leitura): não conta.
       'lista-nao-ligada:premio:PREMIO-TITULO@NOME-DA-ENTIDADE-PROMOTORA:f_agencia',
       'ordem:premio:PREMIO-TITULO',
     ]);
-    const md = renderReport(targets, cov, ['ordem:premio:PREMIO-TITULO']);
-    expect(md).toContain('(aceita em pendencias.json)');
+    const md = renderReport(targets, cov, [{ key: 'ordem:premio:PREMIO-TITULO', reason: 'teste' }]);
+    expect(md).toContain('(aceita: teste)');
     expect(md).toContain('<details><summary>premio (premio)</summary>');
     expect(md).toContain('`PREMIO-TITULO@ANO-DA-PREMIACAO` ← `f_ano` (observado)');
 

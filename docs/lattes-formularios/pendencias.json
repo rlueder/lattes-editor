@@ -1,1 +1,28 @@
-{ "pendencias": [] }
+{
+  "pendencias": [
+    {
+      "key": "lista-diferente:tec-2D:DADOS-BASICOS-DE-EDITORACAO@MEIO-DE-DIVULGACAO",
+      "reason": "a opção V (impresso e mídia eletrônica) não apareceu em nenhum item da exportação; VARIOS seria palpite, então o editor fica com o XSD até um item com V mostrar o valor"
+    },
+    {
+      "key": "lista-diferente:tec-2D:DADOS-BASICOS-DE-EDITORACAO@NATUREZA",
+      "reason": "2D9 é \"Outro\" no Lattes e o XSD tem OUTRA; nenhum item com 2D9 mostrou o valor gravado"
+    },
+    {
+      "key": "lista-diferente:trabalho-tecnico:DADOS-BASICOS-DO-TRABALHO-TECNICO@MEIO-DE-DIVULGACAO",
+      "reason": "a opção V (impresso e mídia eletrônica) não apareceu em nenhum item da exportação; VARIOS seria palpite"
+    },
+    {
+      "key": "lista-nao-ligada:formacao-AP-5:POS-DOUTORADO@STATUS-DO-CURSO:F_STATUS",
+      "reason": "ligado em typed-choices.ts no #81 (POSTDOC_STATUS), ainda fora da main"
+    },
+    {
+      "key": "lista-nao-ligada:trabalho-tecnico:DETALHAMENTO-DO-TRABALHO-TECNICO@DISPONIBILIDADE:f_disp",
+      "reason": "o XML guarda o texto da opção (Restrita, Irrestrita), mas a grafia exata não foi registrada na captura de 15/10/2026; a próxima registra em spelling"
+    },
+    {
+      "key": "valor-contrariado:vinculo:VINCULOS@FLAG-VINCULO-EMPREGATICIO:f_stavinc",
+      "reason": "a conferir: nos 8 vínculos lidos, f_stavinc 0 (Não) veio com SIM e 1 (Sim) com NAO, e f_stavinc bateu com FLAG-DEDICACAO-EXCLUSIVA; a seção 5 e plan.ts usam 1 = SIM. Pode ser a exportação (versão publicada) ou o mapa da seção 5"
+    }
+  ]
+}

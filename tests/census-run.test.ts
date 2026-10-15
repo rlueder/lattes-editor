@@ -10,6 +10,7 @@ import {
   inclusionLink,
   isSafeGet,
   listPath,
+  pageShape,
   pathKey,
   publicOf,
   runCensus,
@@ -61,6 +62,17 @@ describe('censo: caminhos', () => {
       'p.form?f_cod=K&a=1&b=',
     );
     expect(publicOf('p.form?f_cod=K&f_seq=3&f_tipo=FA')).toBe('p.form?f_tipo=FA');
+    expect(buildPath('K', { noCode: true, params: { ftipo: 'PP' }, proc: 'j' })).toBe('j?ftipo=PP');
+    expect(buildPath('K', { noCode: true, params: {}, proc: 'j' })).toBe('j');
+    expect(pageShape('<html><script></script><frameset><frame src="a"><iframe></iframe>')).toEqual({
+      bytes: 65,
+      form: 0,
+      frame: 2,
+      iframe: 1,
+      input: 0,
+      script: 1,
+      select: 0,
+    });
     expect(pathKey('P.FORM?f_cod=K&b=2&A=1')).toBe(pathKey('p.form?a=1&b=2'));
     const links: LattesLink[] = [
       { params: { f_seq_hist: '2' }, path: 'x?f_seq_hist=2', proc: 'x' },
@@ -139,7 +151,14 @@ describe('censo contra o Lattes simulado', () => {
         status: 'ok',
       });
       expect(byId(file.entries, 'licenca').status).toBe('ok');
-      expect(byId(file.entries, 'artigo-aceito').status).toBe('nao-encontrado');
+      expect(byId(file.entries, 'artigo-aceito')).toMatchObject({
+        shape: { form: 0 },
+        status: 'nao-encontrado',
+      });
+      expect(byId(file.entries, 'patente-janela')).toMatchObject({
+        path: 'pkg_patente_registro.informar_dados_patente?ftipo=PP',
+        status: 'ok',
+      });
       expect(byId(file.entries, 'atividade').status).toBe('sem-link');
       expect(byId(file.entries, 'prefacio-outras')).toMatchObject({ status: 'desconhecido' });
 
@@ -193,6 +212,21 @@ describe('censo contra o Lattes simulado', () => {
   it('only escolhe as entradas; erro de rede vira status; descoberta acha inclusão nova', async () => {
     const { lattes, port } = await simulado();
     try {
+      // Falha uma vez só: a segunda tentativa lê o formulário.
+      let once = true;
+      const blip: CensusPort = {
+        ...port,
+        get: (path) => {
+          if (path.startsWith('pkg_idioma.form') && once) {
+            once = false;
+            return Promise.reject(new Error('Failed to fetch'));
+          }
+          return port.get(path);
+        },
+      };
+      const retried = await runCensus(blip, lattes.state.code, { delayMs: 0, only: ['idioma'] });
+      expect(retried.entries[0]!.status).toBe('ok');
+
       const flaky: CensusPort = {
         ...port,
         get: (path) =>

@@ -8,13 +8,11 @@
 // lista que o formulário tem e o editor não oferece, uma lista com opções
 // diferentes, ou a ordem dos campos diferente de form-order.ts.
 
-import { compareList } from '../bridge/list-watch.ts';
-import { element } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
-import { derivedValue, typedChoices } from '../schema/typed-choices.ts';
 import type { CensusField, CensusOption } from './census-page.ts';
 import { GRID_FIELDS, guessByName, knownLinks, type LinkSource } from './known-links.ts';
 import type { FieldLink } from './link.ts';
+import { checkOptions, type EditorControl } from './option-check.ts';
 import type { CensusEntry, CensusFile } from './run.ts';
 import type { CensusTarget } from './targets.ts';
 
@@ -22,11 +20,19 @@ export type Group = 'fora' | 'oculto' | 'opcoes' | 'sem-captura' | 'texto';
 
 export interface AttributeRow {
   attribute: string;
+  /** O controle que o editor mostra (só nos atributos ligados a um campo de opções). */
+  control?: EditorControl;
   element: string;
   field?: string;
   group: Group;
   link?: LinkSource;
   target: string;
+}
+
+/** Uma divergência conhecida, aceita em pendencias.json com o motivo. */
+export interface AcceptedGap {
+  key: string;
+  reason: string;
 }
 
 export interface Disagreement {
@@ -48,6 +54,11 @@ export interface Coverage {
   /** A captura usada por entrada (a mais recente com o formulário lido). */
   captured: Map<string, { at: string; entry: CensusEntry; lists: CensusFile['lists'] }>;
   disagreements: Disagreement[];
+  /**
+   * O mesmo que as divergências, mas com a ligação campo ↔ atributo inferida:
+   * lacunas prováveis, que o teste não cobra até a ligação ser observada.
+   */
+  inferredGaps: Disagreement[];
   rows: AttributeRow[];
   /** Elementos do schema com atributos que nenhuma entrada cobre. */
   uncovered: string[];
@@ -141,8 +152,9 @@ function groupOf(info: FieldInfo): Group {
 }
 
 /** Uma ligação observada que conta: mais itens a favor que contra, ou um mapa de opções firme. */
-function trusted(l: FieldLink): boolean {
-  if (l.by === 'valor') return l.matches > l.conflicts;
+function trusted(l: FieldLink, info: FieldInfo | undefined): boolean {
+  // Num campo de opções, um item só não basta: "Não" bate com qualquer FLAG-* vazia.
+  if (l.by === 'valor') return l.matches > l.conflicts && (!info?.field?.options || l.matches >= 2);
   const map = Object.entries(l.valueMap ?? {});
   const injective = new Set(map.map(([, v]) => v)).size === map.length;
   return l.matches >= 2 && l.conflicts === 0 && map.length >= 2 && injective;
@@ -158,7 +170,9 @@ export function observedChoice(
   links: FieldLink[],
   fields: Map<string, FieldInfo>,
 ): Map<string, string> {
-  const usable = links.filter((l) => trusted(l) && fields.has(l.field.toLowerCase()));
+  const usable = links.filter(
+    (l) => fields.has(l.field.toLowerCase()) && trusted(l, fields.get(l.field.toLowerCase())),
+  );
   const rank = (l: FieldLink) => (l.by === 'valor' ? 1000 : 0) + l.matches;
   const bestOfField = new Map<string, number>();
   for (const l of usable)
@@ -194,15 +208,26 @@ function linkFor(
   guesses: Map<string, string>,
 ): { info: FieldInfo; link: LinkSource } | undefined {
   const present = (name: string) => fields.get(name.toLowerCase());
+  const split = (a: string) => (a.includes('@') ? a.split('@') : [undefined, a]);
+  const known = knownLinks(t.id);
   const seen = observed.get(`${el}@${attr}`);
-  if (seen) return { info: present(seen)!, link: 'observado' };
-  const known = knownLinks(t.id).find((k) => {
-    const [kEl, kAttr] = k.attribute.includes('@')
-      ? k.attribute.split('@')
-      : [undefined, k.attribute];
+  // Uma coincidência de valores não desfaz o que foi lido no código do
+  // formulário: campo documentado para outro atributo não liga a este.
+  const elsewhere =
+    seen &&
+    known.some(
+      (k) =>
+        k.source === 'documentado' &&
+        k.field.toLowerCase() === seen.toLowerCase() &&
+        split(k.attribute)[1] !== attr,
+    );
+  if (seen && !elsewhere) return { info: present(seen)!, link: 'observado' };
+  const hitKnown = known.find((k) => {
+    const [kEl, kAttr] = split(k.attribute);
     return kAttr === attr && (!kEl || kEl === el) && present(k.field);
   });
-  if (known) return { info: present(known.field)!, link: known.source };
+  const knownHit = hitKnown;
+  if (knownHit) return { info: present(knownHit.field)!, link: knownHit.source };
   const grid = GRID_FIELDS[el];
   if (grid && present(grid)) return { info: present(grid)!, link: 'inferido' };
   const guessed = guesses.get(`${el}@${attr}`);
@@ -225,48 +250,6 @@ function nameGuesses(elements: string[], fields: Map<string, FieldInfo>): Map<st
   }
   for (const key of clash) out.delete(key);
   return out;
-}
-
-const SHOWN = 5;
-const names = (list: string[]) =>
-  list.length > SHOWN
-    ? `${list.slice(0, SHOWN).join(', ')} e mais ${list.length - SHOWN}`
-    : list.join(', ');
-
-function listDisagreement(
-  row: AttributeRow,
-  info: FieldInfo,
-  lists: Record<string, CensusOption[]>,
-): Disagreement | undefined {
-  if (row.group !== 'opcoes' || !info.field) return undefined;
-  if (row.link !== 'observado' && row.link !== 'documentado') return undefined;
-  const spec = lattesSchema.elements[row.element]?.attributes.find((a) => a.name === row.attribute);
-  const choices = typedChoices(element(row.element), row.attribute);
-  const where = `${row.target}:${row.element}@${row.attribute}`;
-  if (!choices && !spec?.enum) {
-    return {
-      detail: `${row.element}@${row.attribute}: o campo ${row.field} tem opções no Lattes e o editor mostra texto livre`,
-      key: `lista-nao-ligada:${where}:${row.field}`,
-    };
-  }
-  // Valor que segue do tipo do item (a natureza do evento): uma opção só, de propósito.
-  if (!choices?.length || derivedValue(row.element, row.attribute) !== undefined) return undefined;
-  const observed = optionsOf(info.field, lists)
-    .map((o) => o.label)
-    .filter(Boolean);
-  const { added, removed } = compareList(
-    choices.map((c) => c.label),
-    observed,
-  );
-  if (!added.length && !removed.length) return undefined;
-  const parts = [
-    added.length ? `novas no Lattes: ${names(added)}` : '',
-    removed.length ? `só no editor: ${names(removed)}` : '',
-  ].filter(Boolean);
-  return {
-    detail: `${row.element}@${row.attribute}: ${parts.join('; ')}`,
-    key: `lista-diferente:${where}`,
-  };
 }
 
 /** A ordem do formulário capturado contra a de form-order.ts, por elemento. */
@@ -306,6 +289,7 @@ export function coverage(input: CoverageInput): Coverage {
   const trees = subtrees(input.targets);
   const rows: AttributeRow[] = [];
   const disagreements: Disagreement[] = [];
+  const inferredGaps: Disagreement[] = [];
   const fieldMaps = new Map<string, Map<string, FieldInfo>>();
   for (const t of input.targets) {
     const elements = trees.get(t.id) ?? [];
@@ -335,8 +319,21 @@ export function coverage(input: CoverageInput): Coverage {
           link: hit.link,
         };
         rows.push(row);
-        const d = listDisagreement(row, hit.info, cap.lists);
-        if (d) disagreements.push(d);
+        if (row.group !== 'opcoes' || !hit.info.field) continue;
+        const check = checkOptions(
+          `${t.id}:${el}@${attr}`,
+          hit.info.field,
+          optionsOf(hit.info.field, cap.lists),
+          (observed.get(t.id) ?? []).filter(
+            (l) =>
+              l.element === el &&
+              l.attribute === attr &&
+              l.field.toLowerCase() === hit.info.name.toLowerCase(),
+          ),
+        );
+        row.control = check.control;
+        const sure = row.link === 'observado' || row.link === 'documentado';
+        (sure ? disagreements : inferredGaps).push(...check.found);
       }
     }
   }
@@ -347,7 +344,8 @@ export function coverage(input: CoverageInput): Coverage {
     .map(([name]) => name)
     .sort();
   disagreements.sort((a, b) => a.key.localeCompare(b.key));
-  return { captured, disagreements, rows, uncovered };
+  inferredGaps.sort((a, b) => a.key.localeCompare(b.key));
+  return { captured, disagreements, inferredGaps, rows, uncovered };
 }
 
 /** O que mudou em relação às pendências aceitas: novas reprovam, resolvidas também (para limpar). */

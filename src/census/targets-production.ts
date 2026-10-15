@@ -37,10 +37,11 @@ function production(
   };
 }
 
-const at = (proc: string, params: Record<string, string> = {}): Locate => ({
+const at = (proc: string, params: Record<string, string> = {}, noCode = false): Locate => ({
   kind: 'fixed',
   params,
   proc,
+  ...(noCode ? { noCode } : {}),
 });
 
 /** prc_tec_demais_lista: um procedimento por tipo (seção 17), elemento pelo nome do tipo. */
@@ -180,7 +181,8 @@ const TECHNICAL: CensusTarget[] = [
   production(
     'patente-janela',
     'Patente: janela "Incluir nova patente"',
-    at('pkg_patente_registro.informar_dados_patente', { ftipo: 'PP' }),
+    // Aberta por $.win sem f_cod (seção 17); com f_cod, 404.
+    at('pkg_patente_registro.informar_dados_patente', { ftipo: 'PP' }, true),
     [],
     undefined,
     { source: 'lattes_internals.md, seção 17' },
@@ -341,10 +343,42 @@ const OTHERS: CensusTarget[] = [
   ),
 ];
 
+/**
+ * Entradas cujos formulários de edição a passada de edição de 15/10/2026
+ * casou com itens da exportação (docs/lattes-formularios/censo-2026-10-15.json,
+ * linkSummary): a ligação do formulário com esses elementos é observada.
+ */
+const LINKED_ON_2026_10_15 = new Set([
+  'areas-de-atuacao',
+  'endereco',
+  'evento',
+  'formacao-complementar',
+  'formacao-FA-1',
+  'formacao-FA-3',
+  'formacao-FA-7',
+  'identificacao',
+  'idioma',
+  'outras-informacoes',
+  'premio',
+  'resumo',
+  'tec-2D',
+  'trabalho-tecnico',
+  'vinculo',
+]);
+
+const observed = (t: CensusTarget): CensusTarget =>
+  LINKED_ON_2026_10_15.has(t.id)
+    ? {
+        ...t,
+        elementsProvenance: 'observado',
+        source: `${t.source}; ligação com o XML observada em 15/10/2026`,
+      }
+    : t;
+
 /** Todos os formulários do censo, na ordem do menu do Lattes. */
 export const CENSUS_TARGETS: CensusTarget[] = [
   ...BASE_TARGETS,
   ...BIBLIOGRAPHIC,
   ...TECHNICAL,
   ...OTHERS,
-];
+].map(observed);

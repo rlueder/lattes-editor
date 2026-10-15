@@ -88,15 +88,30 @@ A ligação vem, nesta ordem, da passada de edição (**observado**), das tabela
 de `lattes_internals.md` (**documentado**, ou **inferido** quando a própria
 seção marca assim) e de um palpite pelo nome do campo (**inferido**). Ligação
 observada ambígua (o mesmo ano em conclusão e em obtenção do título) não
-conta; vale a seguinte da lista.
+conta; vale a seguinte da lista. Num campo de opções, a ligação observada
+precisa de dois itens, e um campo que o código do formulário liga a outro
+atributo não vale por coincidência de valores.
 
-As divergências que o teste acompanha:
+As conferências abaixo, feitas em campos ligados só pelo nome, aparecem como
+"lacunas prováveis" no relatório e não reprovam o teste.
+
+As divergências que o teste acompanha saem de comparar as opções do campo do
+Lattes com o controle que o editor mostra para o atributo, decidido como em
+`src/ui/AttributeField.tsx` (`src/census/option-check.ts`): código do Lattes
+só de leitura (não conta), sim/não, lista de códigos de
+`src/ui/field-kind.ts`, nome que segue um código escolhido numa lista (não
+conta), lista de `src/schema/typed-choices.ts`, enumeração do XSD, texto.
 
 - `lista-nao-ligada`: o campo do Lattes tem opções, a ligação é observada ou
-  documentada, e o editor mostra texto livre (sem lista em
-  `src/schema/typed-choices.ts` nem enumeração no XSD);
-- `lista-diferente`: o editor tem a lista, e as opções não batem com as do
-  formulário;
+  documentada, e o editor mostra texto livre;
+- `lista-diferente`: o editor tem a lista, e as opções não batem: códigos ou
+  rótulos diferentes na lista de códigos, rótulos diferentes na lista tipada,
+  ou opção do Lattes sem valor do XSD (pelo rótulo, pelo código no fim do
+  valor, como `_PI`, ou pelo par observado nos itens da pessoa);
+- `booleano-diferente`: o editor mostra sim/não e o campo do Lattes tem
+  outras opções (uma caixa sozinha é sim/não);
+- `valor-contrariado`: nos itens da exportação, o código da opção veio com o
+  valor contrário ao que ele diz (S com NAO);
 - `ordem`: a ordem dos campos no formulário do Lattes é outra que a de
   `src/ui/form-order.ts` (só quando esse arquivo existe).
 

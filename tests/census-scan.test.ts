@@ -62,7 +62,7 @@ describe('censo: leitura dos formulários sem DOM', () => {
       ['f_email', 'E-mail'],
     ]);
     const radio = visible[0]!;
-    expect(radio.options).toEqual([
+    expect(radio.options!.map(({ chosen, label, value }) => ({ chosen, label, value }))).toEqual([
       { chosen: true, label: 'Normal', value: 'N' },
       { chosen: false, label: 'Sanduíche', value: 'S' },
     ]);
@@ -76,11 +76,39 @@ describe('censo: leitura dos formulários sem DOM', () => {
       ['Outro', 'Outro'],
     ]);
     expect(visible[6]!.value).toBe('Texto pessoal da pessoa');
-    expect(visible[8]!.options).toEqual([{ chosen: true, label: 'lê', value: 'on' }]);
+    expect(visible[8]!.options).toMatchObject([{ chosen: true, label: 'lê', value: 'on' }]);
     expect(visible[9]!.readOnly).toBe(true);
     // A caixa de busca sem name e o botão não são campos.
     expect(form!.unnamed).toBe(1);
     expect(forms[1]!.fields.map((f) => f.name)).toEqual(['fora_do_form']);
+  });
+
+  it('rádio com o texto antes ("Sim (o) Não (o)"), como nos projetos e patentes', () => {
+    const page = censusPage(`<form name="P"><table>
+<tr><td>Potencial de inovação</td><td>Sim <input type="radio" name="f_sta_inovacao" value="S"> Não <input type="radio" name="f_sta_inovacao" value="N"></td></tr>
+<tr><td>Sexo</td><td>Masculino <input type="radio" name="f_sexo" value="M"></td><td>Feminino <input type="radio" name="f_sexo" value="F"></td></tr>
+<tr><td>Classificação</td><td><input type="radio" name="f_c" value="I"> Internacional <input type="radio" name="f_c" value="N"></td></tr>
+</table></form>`);
+    const [inov, sexo, classif] = page.forms[0]!.fields;
+    expect(inov).toMatchObject({
+      label: 'Potencial de inovação',
+      options: [
+        { label: 'Sim', value: 'S' },
+        { label: 'Não', value: 'N' },
+      ],
+    });
+    expect(sexo).toMatchObject({
+      label: 'Sexo',
+      options: [
+        { label: 'Masculino', value: 'M' },
+        { label: 'Feminino', value: 'F' },
+      ],
+    });
+    // Misturado: fica o texto de depois onde há, e o de antes só onde não é o rótulo do campo.
+    expect(classif!.options).toEqual([
+      { label: 'Internacional', value: 'I' },
+      { label: 'Internacional', value: 'N' },
+    ]);
   });
 
   it('o registro não leva valor do currículo, só nomes, rótulos e opções', () => {

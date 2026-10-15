@@ -57,7 +57,10 @@ describe('censo versionado (docs/lattes-formularios/)', () => {
 
   it('nenhuma divergência nova entre o Lattes capturado e o editor', async () => {
     const cov = coverage({ files, formSlot: await loadFormSlot(), targets: CENSUS_TARGETS });
-    const { fresh, resolved } = compareWithAccepted(cov.disagreements, loadAccepted());
+    const { fresh, resolved } = compareWithAccepted(
+      cov.disagreements,
+      loadAccepted().map((a) => a.key),
+    );
     const missing = CENSUS_TARGETS.filter((t) => !cov.captured.has(t.id)).length;
     if (missing) {
       console.info(
@@ -72,6 +75,10 @@ describe('censo versionado (docs/lattes-formularios/)', () => {
       resolved,
       'resolvidas: tirar de pendencias.json (pnpm censo:relatorio --aceitar)',
     ).toEqual([]);
+  });
+
+  it('cada divergência aceita diz por quê', () => {
+    for (const a of loadAccepted()) expect(a.reason, a.key).not.toMatch(/^(a escrever)?$/);
   });
 
   it('o relatório está em dia com as capturas', async () => {

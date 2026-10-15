@@ -11,6 +11,8 @@
 import { decodeHtmlEntities } from '../bridge/html-text.ts';
 
 export interface ScannedOption {
+  /** Texto logo antes do rádio ou da caixa, para o desenho "Sim (o) Não (o)". */
+  before?: string;
   /** Marcado (rádio, caixa) ou escolhido (lista) na página. Só em memória. */
   chosen: boolean;
   label: string;
@@ -18,6 +20,8 @@ export interface ScannedOption {
 }
 
 export interface ScannedField {
+  /** O trecho antes do rótulo, caso o rótulo seja na verdade o da primeira opção. */
+  altLabel?: string;
   disabled: boolean;
   /** Dentro de um bloco com display:none, que o script da página mostra. */
   inHiddenBlock: boolean;
@@ -178,10 +182,20 @@ class Scanner {
 
   /** O trecho de texto mais recente com conteúdo: o rótulo do próximo campo. */
   takeLabel(): string {
+    return this.takeLabels()[0];
+  }
+
+  /** Os dois trechos mais recentes com conteúdo, do mais novo para o mais velho. */
+  takeLabels(): [string, string] {
     this.closePending();
-    const label = [...this.segments].reverse().map(cleanLabel).find(Boolean) ?? '';
+    const found = [...this.segments].reverse().map(cleanLabel).filter(Boolean);
     this.segments = [''];
-    return label;
+    return [found[0] ?? '', found[1] ?? ''];
+  }
+
+  /** O texto colado ao controle (sem quebra de célula ou linha no meio), sem consumir. */
+  private adjacentText(): string {
+    return cleanLabel(this.segments.at(-1) ?? '');
   }
 
   closePending(): void {
@@ -284,13 +298,16 @@ class Scanner {
       label: '',
       value: attrs.value ?? 'on',
     };
+    const adjacent = this.adjacentText();
     if (group) {
+      option.before = adjacent;
       this.closePending();
       this.segments = [''];
       group.options!.push(option);
     } else {
       const field = this.field(attrs, type, '');
       if (!field) return;
+      option.before = adjacent;
       field.options = [option];
     }
     this.pending = option;
@@ -307,9 +324,10 @@ class Scanner {
       if (type !== 'hidden') this.takeLabel();
       return undefined;
     }
-    const near = type === 'hidden' ? '' : this.takeLabel();
+    const [near, older] = type === 'hidden' ? ['', ''] : this.takeLabels();
     const max = Number(attrs.maxlength);
     const field: ScannedField = {
+      altLabel: older || undefined,
       disabled: 'disabled' in attrs,
       inHiddenBlock: this.hiddenBlock,
       label: (attrs.id && this.explicit.get(attrs.id)) || near,
@@ -322,6 +340,28 @@ class Scanner {
     this.form.fields.push(field);
     return field;
   }
+}
+
+/**
+ * Rádios e caixas com o texto antes delas ("Sim (o) Não (o)", visto nos
+ * projetos e patentes em 15/10/2026): se nem toda opção tem texto depois,
+ * mas toda tem texto antes, o rótulo de cada uma é o de antes, e o do campo
+ * passa a ser o trecho anterior ao da primeira opção.
+ */
+export function settleOptionLabels(f: ScannedField): void {
+  if ((f.type !== 'radio' && f.type !== 'checkbox') || !f.options?.length) return;
+  const opts = f.options;
+  const afterAll = opts.every((o) => o.label);
+  if (afterAll) return;
+  const fieldLabel = f.label;
+  if (opts.every((o) => o.before)) {
+    for (const o of opts) o.label = o.before!;
+    if (fieldLabel === opts[0]!.before) f.label = f.altLabel ?? '';
+    return;
+  }
+  opts.forEach((o, i) => {
+    if (!o.label && o.before && (i > 0 || o.before !== fieldLabel)) o.label = o.before;
+  });
 }
 
 /** Os formulários da página, na ordem do documento, com os controles fora de <form> por último. */
@@ -351,5 +391,6 @@ export function scanForms(html: string): { forms: ScannedForm[]; title: string }
   }
   s.closePending();
   const forms = s.loose.fields.length || s.loose.unnamed ? [...s.forms, s.loose] : s.forms;
+  for (const form of forms) for (const f of form.fields) settleOptionLabels(f);
   return { forms, title: s.title };
 }

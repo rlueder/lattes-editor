@@ -2,7 +2,7 @@
 // gerado por scripts/censo-relatorio.ts. Tudo pt-BR; só nomes de campo,
 // atributo e procedimento, nenhum valor do currículo.
 
-import type { AttributeRow, Coverage, Disagreement, Group } from './report.ts';
+import type { AcceptedGap, AttributeRow, Coverage, Disagreement, Group } from './report.ts';
 import type { CensusTarget } from './targets.ts';
 
 const GROUPS: [Group, string][] = [
@@ -83,10 +83,13 @@ function detail(t: CensusTarget, rows: AttributeRow[]): string[] {
   return lines;
 }
 
-function disagreementLines(list: Disagreement[], accepted: Set<string>): string[] {
+function disagreementLines(list: Disagreement[], accepted: Map<string, string>): string[] {
   if (!list.length) return ['Nenhuma.', ''];
   return [
-    ...list.map((d) => `- ${d.detail}${accepted.has(d.key) ? ' (aceita em pendencias.json)' : ''}`),
+    ...list.map((d) => {
+      const reason = accepted.get(d.key);
+      return `- ${d.detail}${reason !== undefined ? ` (aceita: ${reason})` : ''}`;
+    }),
     '',
   ];
 }
@@ -94,7 +97,7 @@ function disagreementLines(list: Disagreement[], accepted: Set<string>): string[
 export function renderReport(
   targets: CensusTarget[],
   cov: Coverage,
-  accepted: readonly string[] = [],
+  accepted: readonly AcceptedGap[] = [],
 ): string {
   const captured = targets.filter((t) => cov.captured.has(t.id));
   const missing = targets.filter((t) => !cov.captured.has(t.id));
@@ -120,7 +123,15 @@ export function renderReport(
     '',
     '## Divergências entre o Lattes capturado e o editor',
     '',
-    ...disagreementLines(cov.disagreements, new Set(accepted)),
+    ...disagreementLines(cov.disagreements, new Map(accepted.map((a) => [a.key, a.reason]))),
+    '## Lacunas prováveis de opções (ligação inferida)',
+    '',
+    'O mesmo conferido acima, para campos ligados ao atributo só pelo nome. O teste',
+    'não cobra estas até a passada de edição observar a ligação.',
+    '',
+    ...(cov.inferredGaps.length
+      ? [...cov.inferredGaps.map((d) => `- ${d.detail}`), '']
+      : ['Nenhuma.', '']),
     '## Lacunas',
     '',
     `Formulários sem captura: ${missing.map((t) => `\`${t.id}\``).join(', ') || 'nenhum'}.`,

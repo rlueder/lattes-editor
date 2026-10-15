@@ -35,6 +35,8 @@ export interface CensusEntry {
   /** Caminho aberto, sem o código do currículo nem números de item. */
   path?: string;
   provenance: Provenance;
+  /** Quando a página não trouxe formulário: tamanho e contagem de tags, sem texto. */
+  shape?: Record<string, number>;
   source: string;
   status: EntryStatus;
 }
@@ -89,9 +91,31 @@ export function isSafeGet(path: string): boolean {
 }
 
 export function buildPath(code: string, at: LattesPath): string {
-  const rest = Object.entries(at.params).map(([k, v]) => `&${k}=${v}`);
-  return `${at.proc}?f_cod=${code}${rest.join('')}`;
+  const params = [
+    ...(at.noCode ? [] : [`f_cod=${code}`]),
+    ...Object.entries(at.params).map(([k, v]) => `${k}=${v}`),
+  ];
+  return params.length ? `${at.proc}?${params.join('&')}` : at.proc;
 }
+
+/**
+ * A forma de uma página que não trouxe formulário, para entender depois o
+ * que veio: tamanho e contagem de algumas tags, sem texto nenhum.
+ */
+export function pageShape(html: string): Record<string, number> {
+  const count = (tag: string) => (html.match(new RegExp(`<${tag}\\b`, 'gi')) ?? []).length;
+  return {
+    bytes: html.length,
+    form: count('form'),
+    frame: count('frame') + count('frameset'),
+    iframe: count('iframe'),
+    input: count('input'),
+    script: count('script'),
+    select: count('select'),
+  };
+}
+
+const NETWORK_RETRY_MS = 2000;
 
 /** Links para o procedimento numa página, sem o próprio procedimento da lista. */
 function linksTo(html: string, proc: string, exclude: string[] = []): LattesLink[] {
@@ -132,6 +156,11 @@ export class CensusReader {
     this.port = port;
     this.code = code;
     this.delayMs = delayMs;
+  }
+
+  /** Pausa antes de repetir um pedido que falhou na rede (nada, quando não há pausa entre pedidos). */
+  get retryDelay(): number {
+    return this.delayMs > 0 ? NETWORK_RETRY_MS : 0;
   }
 
   async menuHtml(): Promise<string> {
@@ -220,11 +249,20 @@ async function readEntry(
       return { ...base, detail: note, status: where.status ?? 'sem-link' };
     }
     const path = publicOf(where.path);
-    const res = await reader.get(where.path);
-    if (res.status === 404) return { ...base, path, status: 'nao-encontrado' };
+    // Uma falha de rede isolada ("Failed to fetch" no aperfeiçoamento, 15/10/2026)
+    // ganha uma segunda tentativa; a sessão caída não.
+    const res = await reader.get(where.path).catch(async (err: unknown) => {
+      if (err instanceof SessionLost) throw err;
+      await sleep(reader.retryDelay);
+      return reader.get(where.path!);
+    });
+    if (res.status === 404) {
+      return { ...base, path, shape: pageShape(res.html), status: 'nao-encontrado' };
+    }
     const page = censusPage(res.html, redact);
     const fields = page.forms.reduce((n, f) => n + f.fields.length + f.hidden.length, 0);
-    return { ...base, page, path, status: fields ? 'ok' : 'sem-formulario' };
+    if (!fields) return { ...base, path, shape: pageShape(res.html), status: 'sem-formulario' };
+    return { ...base, page, path, status: 'ok' };
   } catch (err) {
     if (err instanceof SessionLost) throw err;
     return {

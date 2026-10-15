@@ -1323,5 +1323,39 @@ inferida.
 O código está em `src/census/`, a lista de formulários em
 `src/census/targets.ts` e `targets-production.ts` (com o que é observado e o
 que é inferido em cada entrada), e as capturas, o relatório de cobertura e o
-passo a passo em `docs/lattes-formularios/`. Nenhuma captura real foi feita
-ainda: até lá, o relatório só lista as lacunas.
+passo a passo em `docs/lattes-formularios/`.
+
+**Primeira captura (15/10/2026)**, na sessão do dono do currículo, cerca de
+13 minutos: 77 formulários, 72 lidos, 285 ligações observadas em 15 entradas
+com itens no currículo. **Observado**:
+
+- Confirmadas pela passada de edição, entre as que as seções acima marcavam
+  como inferidas: no evento, `F_FORMA` → `FORMA-PARTICIPACAO` e `f_cidade` →
+  `CIDADE-DO-EVENTO`; na formação (graduação, mestrado, técnico), `f_ano_ini`
+  → `ANO-DE-INICIO`, `f_ano_fim` → `ANO-DE-CONCLUSAO`, `f_inst` →
+  `NOME-INSTITUICAO`, `f_curso` → `NOME-CURSO`, `F_BOLSA` → `FLAG-BOLSA`,
+  `f_titulo` → título do trabalho e `f_orient` → orientador; no endereço
+  residencial, rua, bairro, município, UF, país, DDD, telefone e página; o
+  `f_seq` do evento, da editoração, do trabalho técnico e do mestrado é o
+  `SEQUENCIA-*` do item.
+- Contrariado: nos 8 vínculos lidos, `f_stavinc` ("Possui vínculo
+  empregatício") 0 veio com `FLAG-VINCULO-EMPREGATICIO="SIM"` e 1 com `NAO`,
+  ao contrário da tabela da seção 5 (1 = sim) e de `src/bridge/plan.ts`. A
+  exportação é a versão publicada (seção 10) e o formulário mostra a de
+  trabalho, então a causa não está isolada. **A conferir** antes de gravar o
+  vínculo pelo conector.
+- Os formulários de corpo editorial, revisão e assessoramento
+  (`PKG_REVISOR.inclui`, `f_natur` MB, MA, RV, RA) são `GN_ATIV`, POST
+  `PKG_REVISOR.INCLUI`, com os ocultos de uma atividade da atuação
+  (`f_codinst`, `f_seq_ativ`, `f_seq_funcao_ativ`) e 7 ou 8 campos (periódico
+  ou agência, comitê, mês e ano de início e fim, status). Que elemento do XML
+  gravam não se sabe.
+- A janela prévia da patente (`informar_dados_patente?ftipo=PP`) responde 404
+  com `f_cod`: o Lattes a abre sem ele, e o coletor passou a abrir assim.
+- A inclusão de artigos publicados (`PKG_ARTIGO.form`, do link da lista) veio
+  sem formulário nenhum; o coletor passou a guardar a forma da página (tamanho
+  e contagem de tags) para a próxima leitura dizer o que veio. A de linhas de
+  pesquisa não tem link na lista (**inferido**: sai de uma função da página).
+- Rádios com o texto antes ("Sim (o) Não (o)", nos projetos e patentes) saíram
+  com o rótulo deslocado nesta captura; o coletor foi corrigido, e a próxima
+  captura traz os rótulos certos.

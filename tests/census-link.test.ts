@@ -96,13 +96,22 @@ describe('censo, passada de edição', () => {
         { ambiguous: 0, matched: 2, read: 2, status: 'ok', target: 'trabalho-tecnico' },
       ]);
       expect(find(links, 'f_titulo', 'TITULO-DO-TRABALHO-TECNICO')?.matches).toBe(2);
-      expect(find(links, 'f_pais', 'PAIS')).toMatchObject({ by: 'valor', matches: 2 });
+      expect(find(links, 'f_pais', 'PAIS')).toMatchObject({
+        by: 'valor',
+        matches: 2,
+        spelling: { rotulo: 2 },
+      });
       // "meio digital" é MEIO_DIGITAL: o rótulo da opção bate com o valor do XML.
       expect(find(links, 'f_meio', 'MEIO-DE-DIVULGACAO')).toMatchObject({
         by: 'valor',
         matches: 2,
       });
-      expect(find(links, 'F_COD_PROD', 'NATUREZA')).toMatchObject({ by: 'valor', matches: 2 });
+      expect(find(links, 'F_COD_PROD', 'NATUREZA')).toMatchObject({
+        by: 'valor',
+        matches: 2,
+        // PARECER no XML, "Parecer" no rótulo: só sem caixa.
+        spelling: { dobrado: 2 },
+      });
       expect(find(links, 'f_inst', 'INSTITUICAO-FINANCIADORA')?.matches).toBe(2);
       const text = JSON.stringify(links);
       for (const value of personalValues(TECH_CV)) expect(text).not.toContain(value);

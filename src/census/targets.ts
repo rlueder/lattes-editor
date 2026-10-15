@@ -12,6 +12,12 @@
 export type Provenance = 'inferido' | 'observado';
 
 export interface LattesPath {
+  /**
+   * Abre sem f_cod: a página é chamada assim pelo próprio Lattes, e o gateway
+   * PL/SQL responde 404 a um parâmetro que o procedimento não declara (a
+   * janela prévia da patente, 404 com f_cod na captura de 15/10/2026).
+   */
+  noCode?: boolean;
   params: Record<string, string>;
   proc: string;
 }
@@ -247,8 +253,14 @@ const PROFESSIONAL: CensusTarget[] = [
       `revisor-${natur}`,
       `Corpo editorial, revisão e assessoramento (${natur})`,
       fixed('PKG_REVISOR.inclui', { f_natur: natur, f_origem: 'L' }),
+      // Lido em 15/10/2026: formulário GN_ATIV, POST PKG_REVISOR.INCLUI, com os
+      // ocultos de uma atividade (f_codinst, f_seq_ativ, f_seq_funcao_ativ). Que
+      // elemento do XML ele grava não se sabe: o currículo lido não tem item.
       [],
-      { list: list('pkg_revisor.lista', { f_natur: natur }) },
+      {
+        list: list('pkg_revisor.lista', { f_natur: natur }),
+        source: `${CAPTURE}; elemento do XML desconhecido`,
+      },
     ),
   ),
   form(

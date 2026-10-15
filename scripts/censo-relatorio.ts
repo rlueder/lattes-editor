@@ -1,6 +1,7 @@
 // Gera docs/lattes-formularios/relatorio.md a partir das capturas do censo
 // (docs/lattes-formularios/censo-*.json) e de src/schema/lattes.json (LAT-55).
-// Com --aceitar, grava em pendencias.json as divergências de agora, para o
+// Com --aceitar, grava em pendencias.json as divergências de agora (com o
+// motivo de cada uma, que se escreve à mão), para o
 // teste (tests/census-coverage.test.ts) só reprovar as que aparecerem depois.
 //
 //   pnpm censo:relatorio
@@ -11,7 +12,12 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { format, resolveConfig } from 'prettier';
 
-import { compareWithAccepted, coverage, type FormSlot } from '../src/census/report.ts';
+import {
+  type AcceptedGap,
+  compareWithAccepted,
+  coverage,
+  type FormSlot,
+} from '../src/census/report.ts';
 import { renderReport } from '../src/census/report-render.ts';
 import type { CensusFile } from '../src/census/run.ts';
 import { CENSUS_TARGETS } from '../src/census/targets-production.ts';
@@ -30,9 +36,10 @@ export function loadCensusFiles(dir = CENSUS_DIR): CensusFile[] {
     .map((f) => JSON.parse(readFileSync(`${dir}${f}`, 'utf8')) as CensusFile);
 }
 
-export function loadAccepted(path = ACCEPTED_PATH): string[] {
+/** As divergências aceitas, cada uma com o motivo. */
+export function loadAccepted(path = ACCEPTED_PATH): AcceptedGap[] {
   if (!existsSync(path)) return [];
-  return (JSON.parse(readFileSync(path, 'utf8')) as { pendencias: string[] }).pendencias;
+  return (JSON.parse(readFileSync(path, 'utf8')) as { pendencias: AcceptedGap[] }).pendencias;
 }
 
 /**
@@ -48,7 +55,7 @@ export async function loadFormSlot(): Promise<FormSlot | undefined> {
   return mod.formSlot;
 }
 
-export async function buildReport(): Promise<{ accepted: string[]; text: string }> {
+export async function buildReport(): Promise<{ accepted: AcceptedGap[]; text: string }> {
   const files = loadCensusFiles();
   const accepted = loadAccepted();
   const cov = coverage({ files, formSlot: await loadFormSlot(), targets: CENSUS_TARGETS });
@@ -61,7 +68,14 @@ async function main(): Promise<void> {
   const files = loadCensusFiles();
   const cov = coverage({ files, formSlot: await loadFormSlot(), targets: CENSUS_TARGETS });
   if (process.argv.includes('--aceitar')) {
-    const body = { pendencias: cov.disagreements.map((d) => d.key) };
+    // Mantém o motivo das que já estavam; as novas entram para alguém escrever o porquê.
+    const before = new Map(loadAccepted().map((a) => [a.key, a.reason]));
+    const body = {
+      pendencias: cov.disagreements.map((d) => ({
+        key: d.key,
+        reason: before.get(d.key) ?? 'a escrever',
+      })),
+    };
     const text = await format(JSON.stringify(body), {
       ...(await resolveConfig(ACCEPTED_PATH)),
       filepath: ACCEPTED_PATH,
@@ -71,7 +85,10 @@ async function main(): Promise<void> {
   }
   const { accepted, text } = await buildReport();
   writeFileSync(REPORT_PATH, text);
-  const { fresh, resolved } = compareWithAccepted(cov.disagreements, accepted);
+  const { fresh, resolved } = compareWithAccepted(
+    cov.disagreements,
+    accepted.map((a) => a.key),
+  );
   console.log(
     `relatorio.md: ${files.length} capturas, ${cov.captured.size} de ${CENSUS_TARGETS.length} formulários com captura, ${cov.disagreements.length} divergências`,
   );

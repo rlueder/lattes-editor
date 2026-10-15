@@ -25,8 +25,27 @@ const guess = (field: string, attribute: string): KnownLink => ({
   field,
   source: 'inferido',
 });
+/** Confirmada pela passada de edição de 15/10/2026 (docs/lattes-formularios/). */
+const seen = (field: string, attribute: string): KnownLink => ({
+  attribute,
+  field,
+  source: 'observado',
+});
 
-/** Endereço (seção 19): sufixo _i no profissional, _r no residencial; ligação inferida. */
+/** Os do endereço residencial que a passada de edição de 15/10/2026 confirmou. */
+const RESIDENTIAL_SEEN = new Set([
+  'f_bairro',
+  'f_ddd',
+  'f_estado',
+  'f_fone',
+  'f_homepage',
+  'f_munic',
+]);
+
+/**
+ * Endereço (seção 19): sufixo _i no profissional, _r no residencial; ligação
+ * inferida, menos a confirmada em 15/10/2026.
+ */
 function address(): KnownLink[] {
   const pairs: [string, string][] = [
     ['f_cep', 'CEP'],
@@ -43,11 +62,12 @@ function address(): KnownLink[] {
   ];
   return [
     ...pairs.flatMap(([f, a]) => [
-      guess(`${f}_i`, `ENDERECO-PROFISSIONAL@${a}`),
-      guess(`${f}_r`, `ENDERECO-RESIDENCIAL@${a}`),
+      (f === 'f_email' ? seen : guess)(`${f}_i`, `ENDERECO-PROFISSIONAL@${a}`),
+      (RESIDENTIAL_SEEN.has(f) ? seen : guess)(`${f}_r`, `ENDERECO-RESIDENCIAL@${a}`),
     ]),
     guess('f_rua_i', 'ENDERECO-PROFISSIONAL@LOGRADOURO-COMPLEMENTO'),
-    guess('f_rua_r', 'ENDERECO-RESIDENCIAL@LOGRADOURO'),
+    seen('f_rua_r', 'ENDERECO-RESIDENCIAL@LOGRADOURO'),
+    seen('f_pais_r', 'ENDERECO-RESIDENCIAL@PAIS'),
     guess('f_inst', 'ENDERECO-PROFISSIONAL@NOME-INSTITUICAO-EMPRESA'),
     guess('f_orgao', 'ENDERECO-PROFISSIONAL@NOME-ORGAO'),
   ];
@@ -58,17 +78,18 @@ const FORMATION: KnownLink[] = [
   doc('F_STATUS', 'STATUS-DO-CURSO'),
   doc('f_tpo_doutorado', 'TIPO-MESTRADO'),
   guess('f_tpo_doutorado', 'TIPO-DOUTORADO'),
-  guess('f_ano_ini', 'ANO-DE-INICIO'),
-  guess('f_ano_fim', 'ANO-DE-CONCLUSAO'),
+  seen('f_ano_ini', 'ANO-DE-INICIO'),
+  seen('f_ano_fim', 'ANO-DE-CONCLUSAO'),
   guess('f_ano_obten', 'ANO-DE-OBTENCAO-DO-TITULO'),
-  guess('f_inst', 'NOME-INSTITUICAO'),
-  guess('f_curso', 'NOME-CURSO'),
+  seen('f_inst', 'NOME-INSTITUICAO'),
+  seen('f_curso', 'NOME-CURSO'),
   guess('f_nme_agencia', 'NOME-AGENCIA'),
-  guess('F_BOLSA', 'FLAG-BOLSA'),
+  seen('F_BOLSA', 'FLAG-BOLSA'),
   guess('f_titulo', 'TITULO-DA-DISSERTACAO-TESE'),
-  guess('f_titulo', 'TITULO-DO-TRABALHO-DE-CONCLUSAO-DE-CURSO'),
+  seen('f_titulo', 'TITULO-DO-TRABALHO-DE-CONCLUSAO-DE-CURSO'),
   guess('f_titulo', 'TITULO-DA-MONOGRAFIA'),
-  guess('f_orient', 'NOME-COMPLETO-DO-ORIENTADOR'),
+  seen('f_orient', 'NOME-COMPLETO-DO-ORIENTADOR'),
+  seen('f_orient', 'NOME-DO-ORIENTADOR'),
   guess('f_coorient', 'NOME-DO-CO-ORIENTADOR'),
 ];
 
@@ -79,11 +100,11 @@ const FORMATION: KnownLink[] = [
 export const KNOWN_LINKS: Record<string, KnownLink[]> = {
   endereco: address(),
   evento: [
-    guess('F_FORMA', 'FORMA-PARTICIPACAO'),
+    seen('F_FORMA', 'FORMA-PARTICIPACAO'),
     guess('F_TPO', 'TIPO-PARTICIPACAO'),
     doc('f_nme_evento', 'NOME-DO-EVENTO'),
     doc('f_ano', 'ANO'),
-    guess('f_cidade', 'CIDADE-DO-EVENTO'),
+    seen('f_cidade', 'CIDADE-DO-EVENTO'),
     doc('f_pais', 'PAIS'),
     doc('f_homepage', 'HOME-PAGE-DO-TRABALHO'),
     doc('f_titulo', 'TITULO'),
@@ -102,20 +123,20 @@ export const KNOWN_LINKS: Record<string, KnownLink[]> = {
     doc('F_COMPR', 'PROFICIENCIA-DE-COMPREENSAO'),
   ],
   projeto: [
-    doc('f_titulo', 'NOME-DO-PROJETO'),
-    doc('f_titulo_en', 'NOME-DO-PROJETO-INGLES'),
-    doc('f_ref', 'DESCRICAO-DO-PROJETO'),
-    doc('f_ref_en', 'DESCRICAO-DO-PROJETO-INGLES'),
-    doc('F_TPO_NATUREZA', 'NATUREZA'),
-    doc('F_TPO_SITUACAO', 'SITUACAO'),
-    doc('F_ANO_INIC', 'ANO-INICIO'),
-    doc('F_ANO_FIM', 'ANO-FIM'),
-    doc('F_NRO_GRADUACAO', 'NUMERO-GRADUACAO'),
-    guess('F_NRO_ESPECIALIZACAO', 'NUMERO-ESPECIALIZACAO'),
-    guess('F_NRO_MESTRADO_ACAD', 'NUMERO-MESTRADO-ACADEMICO'),
-    guess('F_NRO_MESTRADO_PROF', 'NUMERO-MESTRADO-PROF'),
-    guess('F_NRO_DOUTORADO', 'NUMERO-DOUTORADO'),
-    doc('f_sta_inovacao', 'FLAG-POTENCIAL-INOVACAO'),
+    doc('f_titulo', 'PROJETO-DE-PESQUISA@NOME-DO-PROJETO'),
+    doc('f_titulo_en', 'PROJETO-DE-PESQUISA@NOME-DO-PROJETO-INGLES'),
+    doc('f_ref', 'PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO'),
+    doc('f_ref_en', 'PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO-INGLES'),
+    doc('F_TPO_NATUREZA', 'PROJETO-DE-PESQUISA@NATUREZA'),
+    doc('F_TPO_SITUACAO', 'PROJETO-DE-PESQUISA@SITUACAO'),
+    doc('F_ANO_INIC', 'PROJETO-DE-PESQUISA@ANO-INICIO'),
+    doc('F_ANO_FIM', 'PROJETO-DE-PESQUISA@ANO-FIM'),
+    doc('F_NRO_GRADUACAO', 'PROJETO-DE-PESQUISA@NUMERO-GRADUACAO'),
+    guess('F_NRO_ESPECIALIZACAO', 'PROJETO-DE-PESQUISA@NUMERO-ESPECIALIZACAO'),
+    guess('F_NRO_MESTRADO_ACAD', 'PROJETO-DE-PESQUISA@NUMERO-MESTRADO-ACADEMICO'),
+    guess('F_NRO_MESTRADO_PROF', 'PROJETO-DE-PESQUISA@NUMERO-MESTRADO-PROF'),
+    guess('F_NRO_DOUTORADO', 'PROJETO-DE-PESQUISA@NUMERO-DOUTORADO'),
+    doc('f_sta_inovacao', 'PROJETO-DE-PESQUISA@FLAG-POTENCIAL-INOVACAO'),
   ],
   resumo: [doc('F_TEXTO', 'TEXTO-RESUMO-CV-RH'), doc('F_TEXTO_EN', 'TEXTO-RESUMO-CV-RH-EN')],
   vinculo: [

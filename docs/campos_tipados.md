@@ -106,6 +106,10 @@ real que a exerça, ou de um teste pelo Importar.
   envia para cada país (`codigosDosPaises`, BRA para Brasil), que o conector
   usa para gravar o país de um evento; a República Tcheca, que aparece com
   dois códigos no Lattes (RTC e TCH), fica sem código.
+- **UF de nascimento e do órgão emissor** (`UF-NASCIMENTO`,
+  `UF-ORGAO-EMISSOR`), pelas 27 siglas das listas `f_uf_nasc` e `f_uf_rg` do
+  formulário de identificação, lidas no censo de 15/10/2026
+  (`docs/lattes-formularios/`); a exportação real guarda a sigla nos dois.
 - **Valor fora da lista** continua visível no campo e aparece como pendência
   ("não está na lista do Lattes"), sem ser apagado.
 
