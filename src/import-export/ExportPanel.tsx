@@ -1,27 +1,24 @@
-// "Enviar ao Lattes": o que espera ir ao Lattes e o que já foi, em duas abas.
-// "A enviar" é uma lista só, com itens novos e alterações, e cada coisa diz como
-// vai hoje: pelo conector (a extensão grava e confere), pelo Importar (no
-// arquivo de importação, com os passos na tela) ou ainda não ("Não enviado":
-// o editor ainda não leva). O objetivo é que tudo vá sozinho; sem nada
-// pendente, essa parte some.
-// "Enviado" é o registro do que o conector gravou.
+// "Enviar ao Lattes", em três passos um embaixo do outro (SendSteps.tsx):
+// ① revisar, ② gravar no Lattes, ③ publicar no CNPq. O passo ① é uma lista
+// só, com itens novos e alterações, e cada coisa diz como vai hoje: pelo
+// conector (a extensão grava e confere), pelo Importar (no arquivo de
+// importação, com os passos na tela) ou ainda não ("O editor ainda não envia
+// estes"). O histórico do que o conector gravou fica no fim, fechado.
 // As instruções do Importar importam tanto quanto o arquivo (guia, seção 6): o
 // Lattes pré-marca tudo nos Passos 2 e 3, e confirmar um item vermelho duplica.
 
-import { Tabs } from '@base-ui/react/tabs';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { failed } from '../bridge/sent-log.ts';
 import { elementLabel } from '../labels/labels.ts';
 import type { Problem } from '../model/validate.ts';
 import type { ChangeEntry, ChangeGroup } from '../ui/changes-view.ts';
 import { ChangesList } from '../ui/ChangesList.tsx';
-import { DownloadIcon } from '../ui/icons.tsx';
+import { DownloadIcon, UploadIcon } from '../ui/icons.tsx';
 import { Modal } from '../ui/Modal.tsx';
 import type { StripState } from '../ui/status-strip.ts';
 import { StatusStrip } from '../ui/StatusStrip.tsx';
 import type { BridgeState } from '../ui/use-bridge.ts';
-import { BridgeBlock } from './BridgeBlock.tsx';
 import type { ImportFile } from './import-file.ts';
 import {
   canImportByConnector,
@@ -29,15 +26,10 @@ import {
   type ImportAttempt,
   importStatus,
 } from './import-request.ts';
-import { RestorePointDialog } from './RestorePointDialog.tsx';
-import {
-  initialTab,
-  listenTabRequests,
-  type PanelTab,
-  splitByRoute,
-  takeRequestedTab,
-  toSendCount,
-} from './send-routes.ts';
+import { PublishPanel } from './PublishPanel.tsx';
+import { listenTabRequests, splitByRoute, takeRequestedTab, toSendCount } from './send-routes.ts';
+import { stepStates } from './send-steps.ts';
+import { Step, StepHeader, WriteStep } from './SendSteps.tsx';
 import { SentList } from './SentList.tsx';
 
 export interface PendingSummary {
@@ -55,6 +47,12 @@ interface Props {
   file?: ImportFile;
   open: boolean;
   pending: PendingSummary[];
+  /** O passo ③, publicar no CNPq (LAT-54): o que o painel de envio precisa. */
+  publish: {
+    checks?: { count: number; onOpen: () => void };
+    lattesId?: string;
+    originalXml?: string;
+  };
   /**
    * Estado do currículo no Lattes (status-strip.ts): gravado e não publicado,
    * alterações que não passaram por aqui e a data da última publicação. Fica
@@ -67,8 +65,6 @@ interface Props {
   onDiscardField: (entry: ChangeEntry, attr: string) => void;
   onDownload: () => void;
   onOpenItem: (sequencia: number) => void;
-  /** Abre o "Enviar ao CNPq" (LAT-54), quando o Lattes tem algo a publicar. */
-  onPublish: () => void;
 }
 
 export function ExportPanel({
@@ -81,9 +77,9 @@ export function ExportPanel({
   onDiscardField,
   onDownload,
   onOpenItem,
-  onPublish,
   open,
   pending,
+  publish,
   strip,
 }: Props) {
   const blocked = pending.filter((p) => p.problems.length > 0);
@@ -99,32 +95,24 @@ export function ExportPanel({
   const toSend = toSendCount(pending.length, changes);
   // As tentativas que não deram certo ficam no registro, mas não contam como enviadas.
   const sent = bridge?.sent.filter((e) => !failed(e)).length ?? 0;
-  const [tab, setTab] = useState<PanelTab>(() => initialTab(toSend, sent));
-  // A aba foi escolhida (pela pessoa ou por um pedido): a escolha automática para.
-  const chosen = useRef(false);
-  const choose = (next: PanelTab) => {
-    chosen.current = true;
-    setTab(next);
-  };
-  // Ao abrir: a aba pedida, se houver; e, enquanto aberto, os pedidos novos.
-  // Ao fechar, um pedido que sobrou é descartado e não vale numa abertura
-  // qualquer depois.
+  // O histórico do enviado: fechado, a não ser que alguém peça (a faixa de
+  // estado, "Enviado").
+  const [history, setHistory] = useState(false);
   useEffect(() => {
     if (!open) return;
-    chosen.current = false;
-    const requestedTab = takeRequestedTab();
-    if (requestedTab) choose(requestedTab);
-    const stopListening = listenTabRequests(choose);
+    setHistory(takeRequestedTab() === 'enviado');
+    const stopListening = listenTabRequests((t) => setHistory(t === 'enviado'));
     return () => {
       stopListening();
       takeRequestedTab();
     };
   }, [open]);
-  // Sem escolha ainda, segue o que faz sentido agora: o registro do enviado
-  // pode chegar um instante depois de o painel abrir.
-  useEffect(() => {
-    if (open && !chosen.current) setTab(initialTab(toSend, sent));
-  }, [open, toSend, sent]);
+
+  const toWrite = connectorOps?.length ?? 0;
+  const writing = !!bridge && isWriting(bridge);
+  const toPublish = !!bridge?.lattes?.pending;
+  const steps = stepStates({ toPublish, toWrite, writing });
+  const plural = (n: number) => (n === 1 ? '1 alteração' : `${n} alterações`);
 
   return (
     <Modal
@@ -144,7 +132,7 @@ export function ExportPanel({
       }
       label="Enviar ao Lattes"
       open={open}
-      subtitle="O que espera ir ao Lattes, e como vai; e o que já foi."
+      subtitle="Revise, grave no Lattes e publique no CNPq."
       title="Enviar ao Lattes"
       onClose={onClose}
     >
@@ -153,126 +141,160 @@ export function ExportPanel({
           ...strip,
           segments: strip.segments.filter((x) => x.kind !== 'original' && x.kind !== 'alteracoes'),
         }}
-        onOpen={(kind) => (kind === 'pendencia-desconhecida' ? onDiagnosis() : choose('enviado'))}
+        onOpen={(kind) => (kind === 'pendencia-desconhecida' ? onDiagnosis() : setHistory(true))}
       />
-      {bridge?.lattes?.pending && (
-        <div className="publish-cta">
-          <span className="muted">
-            O que está gravado no Lattes só aparece no currículo público depois do envio ao CNPq.
-          </span>
-          <button type="button" onClick={onPublish}>
-            Enviar ao CNPq…
-          </button>
-        </div>
-      )}
-      <Tabs.Root className="send-tabs" value={tab} onValueChange={(v) => choose(v as PanelTab)}>
-        <Tabs.List aria-label="Enviar ao Lattes" className="send-tab-list">
-          <Tabs.Tab className="send-tab" value="a-enviar">
-            A enviar
-            {toSend > 0 && <span className="count">{toSend}</span>}
-          </Tabs.Tab>
-          <Tabs.Tab className="send-tab" value="enviado">
-            Enviado
-            {sent > 0 && <span className="count">{sent}</span>}
-          </Tabs.Tab>
-        </Tabs.List>
+      {bridge?.available && <StepHeader steps={steps} />}
 
-        <Tabs.Panel className="send-tab-panel" value="a-enviar">
-          {toSend === 0 && !(bridge?.confirmed ?? 0) ? (
-            <p className="empty">
-              Nada esperando para ir ao Lattes. Itens novos e alterações aparecem aqui, cada um com
-              o caminho que vai seguir.
-            </p>
-          ) : (
-            <>
-              {bridge && (routed.conector.length > 0 || bridge.confirmed > 0) && (
-                <section className="panel-section">
-                  <h3 className="panel-section-head">Pela extensão, conferindo cada um</h3>
-                  <BridgeBlock bridge={bridge} />
-                  {routed.conector.length > 0 && (
-                    <ChangesList
-                      groups={routed.conector}
-                      onDiscard={onDiscard}
-                      onDiscardField={onDiscardField}
-                    />
-                  )}
-                </section>
-              )}
+      <Step n={1} title="Revisar">
+        {toSend === 0 ? (
+          <p className="empty">
+            Nada esperando para ir ao Lattes. Itens novos e alterações aparecem aqui, cada um com o
+            caminho que vai seguir.
+          </p>
+        ) : (
+          <>
+            {bridge && routed.conector.length > 0 && (
+              <>
+                <ChangesList
+                  groups={routed.conector}
+                  onDiscard={onDiscard}
+                  onDiscardField={onDiscardField}
+                />
+                <div className="step-actions">
+                  <span className="muted">
+                    A extensão grava cada uma no Lattes e lê de volta para conferir.
+                  </span>
+                  <button
+                    className="primary"
+                    disabled={writing || toWrite === 0}
+                    type="button"
+                    onClick={() => void bridge.send()}
+                  >
+                    <UploadIcon /> Gravar {plural(toWrite)} no Lattes
+                  </button>
+                </div>
+              </>
+            )}
 
-              {pending.length > 0 && (
-                <section className="panel-section">
-                  <h3 className="panel-section-head">Itens novos, no arquivo de importação</h3>
-                  <ul className="pending-list">
-                    {pending.map((p) => (
-                      <li key={p.sequencia}>
-                        <button
-                          className="ghost pending-item"
-                          type="button"
-                          onClick={() => onOpenItem(p.sequencia)}
-                        >
-                          <span className="item-kind">{elementLabel(p.type)}</span>
-                          <span className="pending-title">{p.title || '(sem título)'}</span>
-                          {p.problems.length > 0 ? (
-                            <span className="tag warn">
-                              {p.problems.length === 1
-                                ? '1 pendência'
-                                : `${p.problems.length} pendências`}
-                            </span>
-                          ) : (
-                            <span className="tag ok">pronto</span>
-                          )}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                  {blocked.length > 0 ? (
-                    <p className="export-blocked">
-                      Corrija as pendências antes de gerar o arquivo. O Lattes descarta itens
-                      incompletos sem avisar.
-                    </p>
-                  ) : (
-                    file && (
-                      <>
-                        <ImportSteps file={file} minYear={minYear} />
-                        {bridge && canImportByConnector(bridge.link) && (
-                          <ConnectorImport bridge={bridge} />
+            {pending.length > 0 && (
+              <section className="panel-section">
+                <h4 className="panel-section-head">Itens novos, no arquivo de importação</h4>
+                <ul className="pending-list">
+                  {pending.map((p) => (
+                    <li key={p.sequencia}>
+                      <button
+                        className="ghost pending-item"
+                        type="button"
+                        onClick={() => onOpenItem(p.sequencia)}
+                      >
+                        <span className="item-kind">{elementLabel(p.type)}</span>
+                        <span className="pending-title">{p.title || '(sem título)'}</span>
+                        {p.problems.length > 0 ? (
+                          <span className="tag warn">
+                            {p.problems.length === 1
+                              ? '1 pendência'
+                              : `${p.problems.length} pendências`}
+                          </span>
+                        ) : (
+                          <span className="tag ok">pronto</span>
                         )}
-                      </>
-                    )
-                  )}
-                </section>
-              )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {blocked.length > 0 ? (
+                  <p className="export-blocked">
+                    Corrija as pendências antes de gerar o arquivo. O Lattes descarta itens
+                    incompletos sem avisar.
+                  </p>
+                ) : (
+                  file && (
+                    <>
+                      <ImportSteps file={file} minYear={minYear} />
+                      {bridge && canImportByConnector(bridge.link) && (
+                        <ConnectorImport bridge={bridge} />
+                      )}
+                    </>
+                  )
+                )}
+              </section>
+            )}
 
-              {routed.pendente.length > 0 && (
-                // O resto da aba: o que o editor ainda não envia, depois de um fio
-                // (sem fio quando é a única parte).
-                <section className="panel-section pending-unsupported">
-                  <p className="muted changes-how">O editor ainda não envia estes</p>
-                  <ChangesList
-                    groups={routed.pendente}
-                    onDiscard={onDiscard}
-                    onDiscardField={onDiscardField}
-                  />
-                </section>
-              )}
-            </>
-          )}
-        </Tabs.Panel>
+            {routed.pendente.length > 0 && (
+              <section className="panel-section pending-unsupported">
+                <p className="muted changes-how">O editor ainda não envia estes</p>
+                <ChangesList
+                  groups={routed.pendente}
+                  onDiscard={onDiscard}
+                  onDiscardField={onDiscardField}
+                />
+              </section>
+            )}
+          </>
+        )}
+      </Step>
 
-        <Tabs.Panel className="send-tab-panel" value="enviado">
-          {/* O registro aparece mesmo só com tentativas que falharam: é delas que sai o texto para o recurso. */}
-          {bridge && bridge.sent.length > 0 ? (
-            <SentList bridge={bridge} />
-          ) : (
-            <p className="empty">
-              Nada enviado pelo conector ainda. O que a extensão gravar e conferir no Lattes fica
-              registrado aqui, com o valor de antes e o de depois.
-            </p>
-          )}
-        </Tabs.Panel>
-      </Tabs.Root>
-      {bridge && <RestorePointDialog bridge={bridge} />}
+      {bridge?.available && (
+        <Step
+          locked={
+            bridge.round || writing
+              ? undefined
+              : 'Depois de revisar, a gravação aparece aqui, alteração por alteração.'
+          }
+          n={2}
+          title="Gravar no Lattes"
+        >
+          <WriteStep bridge={bridge} />
+        </Step>
+      )}
+
+      {bridge?.available && (
+        <Step locked={publishLock(writing, toWrite, toPublish)} n={3} title="Publicar no CNPq">
+          <PublishPanel
+            inline
+            bridge={bridge}
+            checks={publish.checks}
+            lattesId={publish.lattesId}
+            open={open && !publishLock(writing, toWrite, toPublish)}
+            originalXml={publish.originalXml}
+            onClose={onClose}
+          />
+        </Step>
+      )}
+
+      {bridge && bridge.sent.length > 0 && (
+        <details
+          className="send-history"
+          open={history}
+          onToggle={(e) => setHistory(e.currentTarget.open)}
+        >
+          <summary>Histórico do que foi enviado{sent > 0 ? ` (${sent})` : ''}</summary>
+          <SentList bridge={bridge} />
+        </details>
+      )}
     </Modal>
+  );
+}
+
+/**
+ * Por que o passo ③ ainda não abre: publicar no meio da gravação, ou com
+ * alteração ainda por gravar, deixaria de fora o que falta.
+ */
+function publishLock(writing: boolean, toWrite: number, toPublish: boolean): string | undefined {
+  if (writing) return 'Fica disponível quando a gravação terminar.';
+  if (toWrite > 0) return 'Grave antes as alterações do passo 1, ou descarte as que não vão agora.';
+  return toPublish ? undefined : 'Nada gravado no Lattes esperando publicação.';
+}
+
+/** Uma rodada em andamento: a cópia de antes, a pergunta sem cópia, gravando ou em pausa. */
+function isWriting(bridge: BridgeState): boolean {
+  const kind = bridge.restore?.kind;
+  return (
+    bridge.running ||
+    !!bridge.pause ||
+    kind === 'fazendo' ||
+    kind === 'sem-ponto' ||
+    kind === 'parar'
   );
 }
 

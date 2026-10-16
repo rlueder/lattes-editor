@@ -359,6 +359,11 @@ export function App() {
         file={exportFile}
         open={exportOpen}
         pending={production.summaries}
+        publish={{
+          checks,
+          lattesId: getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR'),
+          originalXml: session.meta.originalXml,
+        }}
         strip={stripFor(production.pending.length + changes.open, bridge)}
         onClose={() => setExportOpen(false)}
         onDiagnosis={() => setDiagnosisOpen(true)}
@@ -369,16 +374,6 @@ export function App() {
           setExportOpen(false);
           production.openItem(seq);
         }}
-        onPublish={() => setPublishOpen(true)}
-      />
-
-      <PublishPanel
-        bridge={bridge}
-        checks={checks}
-        lattesId={getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR')}
-        open={publishOpen}
-        originalXml={session.meta.originalXml}
-        onClose={() => setPublishOpen(false)}
       />
 
       {reloadDialog}

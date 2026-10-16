@@ -33,11 +33,6 @@ export function toSendCount(newItems: number, groups: ChangeGroup[]): number {
   return newItems + changeCount(groups);
 }
 
-/** A aba que abre: "A enviar" quando há algo esperando; senão o registro, se houver. */
-export function initialTab(toSend: number, sent: number): PanelTab {
-  return toSend === 0 && sent > 0 ? 'enviado' : 'a-enviar';
-}
-
 let requested: PanelTab | undefined;
 let openPanel: ((tab: PanelTab) => void) | undefined;
 

@@ -164,8 +164,9 @@ a extensão desligar, é engolida, para um ZIP velho nunca virar abertura de
 arquivo e substituir a cópia de trabalho.
 Como o Exportar recusa com pendência (`lattes_internals.md`, seção 10), a
 segunda rodada antes de "Enviar ao CNPq" nunca tem ponto novo: o app diz
-por quê, mostra a cópia mais recente e pede "Continuar sem ponto de
-restauração" (`src/import-export/RestorePointDialog.tsx`). A cópia que não
+por quê, mostra a cópia mais recente e pede "Gravar sem ponto de
+restauração", numa linha do passo ② da janela de envio
+(`src/import-export/SendSteps.tsx`), sem modal por cima. A cópia que não
 grava (disco cheio, acesso negado a Documentos) também cai nessa pergunta.
 Sessão caída, Lattes fechado, extensão sem resposta ou sessão de outro
 currículo param a rodada, sem gravar nada. Nunca se grava sem um ponto novo

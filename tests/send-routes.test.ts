@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  initialTab,
   requestTab,
   splitByRoute,
   takeRequestedTab,
@@ -51,12 +50,6 @@ describe('enviar ao Lattes: como cada coisa vai', () => {
   it('conta itens novos e alterações juntos', () => {
     expect(toSendCount(2, [group('Atuação', ['a', 'b']), group('Formação', ['c'])])).toBe(5);
     expect(toSendCount(0, [])).toBe(0);
-  });
-
-  it('abre em "A enviar", ou no registro quando não há nada esperando', () => {
-    expect(initialTab(3, 5)).toBe('a-enviar');
-    expect(initialTab(0, 5)).toBe('enviado');
-    expect(initialTab(0, 0)).toBe('a-enviar');
   });
 
   it('a aba pedida vale para uma abertura só', () => {

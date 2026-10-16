@@ -212,6 +212,8 @@ export interface BridgeState {
   results: Record<string, OpResult>;
   /** Segue com o resto da fila depois da pausa no teto da rodada. */
   resume: () => void;
+  /** As operações da rodada atual (use-write-brake.ts); antes do primeiro envio, nenhuma. */
+  round?: BridgeOp[];
   running: boolean;
   /**
    * Antes de mandar, exporta o Lattes e guarda um ponto de restauração; sem
@@ -283,7 +285,7 @@ export function useBridge(
   }, [lattesId]);
   useEffect(reloadSent, [reloadSent]);
   const brake = useWriteBrake(reloadSent, post, setRunning);
-  const { setPause } = brake;
+  const { setPause, startRound } = brake;
 
   /**
    * Toda resposta da fila entra no registro: a conferida, a criada no Lattes
@@ -482,7 +484,7 @@ export function useBridge(
         ]),
       );
       setResults({});
-      setPause(undefined);
+      startRound(ops);
       setConfirmed(0);
       setRunning(true);
       post({ lattesId, ops, start: drivesWrites, type: 'enviar' });

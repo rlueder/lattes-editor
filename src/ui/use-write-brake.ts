@@ -6,6 +6,7 @@
 
 import { useCallback, useState } from 'react';
 
+import type { BridgeOp } from '../bridge/plan.ts';
 import type { EditorMessage } from '../bridge/protocol.ts';
 import type { SentEntry } from '../bridge/sent-log.ts';
 import type { RoundPause } from '../bridge/write-brake.ts';
@@ -17,6 +18,9 @@ export function useWriteBrake(
   setRunning: (running: boolean) => void,
 ) {
   const [pause, setPause] = useState<RoundPause | undefined>();
+  // As operações da rodada atual, para o passo ② mostrar o andamento de cada
+  // uma: as conferidas saem do plano assim que entram na cópia.
+  const [round, setRound] = useState<BridgeOp[] | undefined>();
 
   const resume = useCallback(() => {
     setPause(undefined);
@@ -34,5 +38,11 @@ export function useWriteBrake(
   );
 
   // fields entra direto no BridgeState.
-  return { fields: { checkSent, pause, resume }, setPause };
+  /** Uma rodada nova: sem pausa, com estas operações. */
+  const startRound = useCallback((ops: BridgeOp[]) => {
+    setPause(undefined);
+    setRound(ops);
+  }, []);
+
+  return { fields: { checkSent, pause, resume, round }, setPause, startRound };
 }

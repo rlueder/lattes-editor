@@ -52,16 +52,18 @@ atualizações" no menu ⚙.
    agência de fomento da lista de agências. O app guarda uma cópia das áreas e
    das agências; sem cópia e sem extensão, esses campos continuam texto livre.
    Cada edição fica salva no app.
-4. **Envie ao Lattes.** O painel "Enviar ao Lattes" mostra cada alteração e
-   como ela vai: produções novas pelo Importar do próprio Lattes, com o
+4. **Envie ao Lattes.** O painel "Enviar ao Lattes" vai em três passos:
+   revisar, gravar no Lattes e publicar no CNPq. O primeiro mostra cada
+   alteração e como ela vai: produções novas pelo Importar do próprio Lattes, com o
    arquivo que o app gera; o resumo, os vínculos de atuação, a foto e as
    alterações em eventos de que você participou como ouvinte pela extensão,
    gravados e conferidos um a um (os idiomas ainda em teste); o resto campo a campo, com o valor antigo e
-   o novo lado a lado. A aba "Enviado" guarda o que já foi, com o antes e o
-   depois, e deixa desfazer. Quando o Lattes tem algo a publicar, o "Enviar
-   ao CNPq" mostra o que vai ser publicado e a declaração do CNPq como está na
-   tela do Lattes; por enquanto, o envio em si continua sendo feito no
-   Lattes.
+   o novo lado a lado. Na gravação, cada alteração mostra o andamento
+   no lugar, e o histórico no fim do painel guarda o que já foi, com o antes
+   e o depois, e deixa desfazer. Quando tudo foi gravado e o Lattes tem algo a
+   publicar, o terceiro passo mostra o que vai ser publicado e a declaração
+   do CNPq como está na tela do Lattes; por enquanto, o envio em si continua
+   sendo feito no Lattes.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/ir-para-escuro.jpg" />

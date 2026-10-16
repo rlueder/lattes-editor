@@ -6440,52 +6440,153 @@ button.ghost.icon {
   border-radius: 999px;
 }
 
-/* Enviar ao Lattes: abas "A enviar" e "Enviado" no alto do painel, em pílula. */
-.send-tab-list {
-  display: inline-flex;
-  gap: 2px;
+/* Enviar ao Lattes em três passos (SendSteps.tsx): os passos no alto, em
+   pílulas, com o atual em destaque e os feitos com o visto. */
+.send-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   margin: 0 0 18px;
-  padding: 3px;
-  border-radius: 999px;
-  background: var(--surface-2);
+  padding: 0;
+  list-style: none;
 }
 
-.send-tab {
+.send-step {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 32px;
-  padding: 0 16px;
-  border: 0;
+  gap: 8px;
+  min-height: var(--pill-h);
+  padding: 0 12px 0 4px;
   border-radius: 999px;
-  background: transparent;
+  background: var(--surface-2);
   color: var(--muted);
-  font: inherit;
   font-size: 13px;
-  cursor: pointer;
-  transition:
-    background-color 150ms var(--ease-out),
-    color 150ms var(--ease-out);
 }
 
-.send-tab:hover {
-  color: var(--text);
-}
-
-.send-tab[data-active] {
+.send-step-n {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
   background: var(--surface);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.send-step.atual {
+  background: var(--accent-soft);
   color: var(--text);
   font-weight: 550;
-  box-shadow: inset 0 0 0 1px var(--border);
 }
 
-.send-tab:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+.send-step.atual .send-step-n {
+  background: var(--accent);
+  color: var(--accent-contrast);
 }
 
-.send-tab-panel {
-  outline: none;
+.send-step.feito .send-step-n {
+  color: var(--ok);
+}
+
+/* Um passo travado mostra só o motivo, apagado. */
+.send-step-body.locked .panel-section-head {
+  color: var(--muted);
+}
+
+.step-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.step-actions .muted {
+  margin-right: auto;
+  font-size: 12px;
+}
+
+.step-notice {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+}
+
+.step-notice.warn {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+
+.step-notice p {
+  margin: 0 0 6px;
+}
+
+/* O andamento de cada alteração da rodada: marca, nome, estado e, quando não
+   conferiu, o motivo embaixo. */
+.write-rows {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.write-row {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.write-mark {
+  text-align: center;
+}
+
+.write-state {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.write-detail {
+  grid-column: 2 / -1;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.write-row.conferido .write-mark,
+.write-row.conferido .write-state {
+  color: var(--ok);
+}
+
+.write-row.gravando .write-mark {
+  color: var(--accent);
+}
+
+.write-row.divergente .write-mark,
+.write-row.divergente .write-state,
+.write-row.erro .write-mark,
+.write-row.erro .write-state,
+.write-row.sessao .write-mark,
+.write-row.sessao .write-state {
+  color: var(--danger);
+}
+
+/* O histórico do enviado, no fim e fechado. */
+.send-history {
+  margin-top: 18px;
+}
+
+.send-history > summary {
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.publish-inline .panel-section:first-child {
+  margin-top: 0;
 }
 
 /* Registro do enviado: rótulo em cima, valor de antes riscado e o de depois
