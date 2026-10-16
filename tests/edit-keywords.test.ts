@@ -11,6 +11,7 @@ import {
 } from '../src/bridge/edit-keywords.ts';
 import { opRows } from '../src/bridge/field-labels.ts';
 import { planChanges, type PlanOptions, planOptionsFor } from '../src/bridge/plan.ts';
+import { sentEntry, undoOp } from '../src/bridge/sent-log.ts';
 import { diffDocuments } from '../src/model/changes.ts';
 import { encodeLatin1 } from '../src/model/latin1.ts';
 import { readKeywords, setKeywords } from '../src/model/production.ts';
@@ -233,6 +234,18 @@ describe('palavras-chave no Lattes simulado', () => {
     expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
     expect(postsOf(lattes)[0]).toMatchObject({ proc: 'PRC_BIB_OUTRAPROD' });
     expect(readKeywords(bySeq(lattes.state.root, '33'))).toEqual(['Tipografia', 'Grid']);
+  });
+
+  it('desfazer volta as palavras de antes, conferindo as de depois', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp(words('32', ['design', 'web', 'portal']));
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    // Conferido não guarda outcome no registro: só os que não conferiram.
+    const entry = { ...sentEntry(op, 'cv', Date.now()), id: 1 };
+    const undo = undoOp(entry) as KeywordsOp;
+    expect(undo).toMatchObject({ after: ['design', 'web'], before: ['design', 'web', 'portal'] });
+    expect(await applyOp(undo, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(readKeywords(bySeq(lattes.state.root, '32'))).toEqual(['design', 'web']);
   });
 
   it('o Lattes com outras palavras: nada é enviado', async () => {
