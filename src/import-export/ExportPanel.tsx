@@ -294,7 +294,7 @@ export function ExportPanel({
           onToggle={(e) => setHistory(e.currentTarget.open)}
         >
           <summary>Histórico do que foi enviado{sent > 0 ? ` (${sent})` : ''}</summary>
-          <SentList bridge={bridge} />
+          <SentList bridge={bridge} onUndo={() => setHistory(false)} />
         </details>
       )}
     </Modal>
