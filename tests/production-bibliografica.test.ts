@@ -406,12 +406,12 @@ describe('produções bibliográficas: o que fica à mão', () => {
   it('capítulo e prefácio: o formulário não foi lido', () => {
     expect(
       reasonOf((root) => setAttr(partOf(root, '49', 'DADOS-BASICOS-DO-CAPITULO'), 'ANO', '2013')),
-    ).toEqual(['Formulário não suportado ainda']);
+    ).toEqual([expect.stringMatching(/^O formulário de edição deste tipo ainda não foi lido/)]);
     expect(
       reasonOf((root) =>
         setAttr(partOf(root, '50', 'DADOS-BASICOS-DO-PREFACIO-POSFACIO'), 'ANO', '2018'),
       ),
-    ).toEqual(['Formulário não suportado ainda']);
+    ).toEqual([expect.stringMatching(/^O formulário de edição deste tipo ainda não foi lido/)]);
   });
 
   it('o DOI, com o motivo', () => {
