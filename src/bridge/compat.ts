@@ -60,6 +60,11 @@ export const BRIDGE_FEATURES = [
   'gravar-pelo-editor',
   /** Alterar no lugar produções, orientações e bancas (production/). */
   'alterar-producao',
+  /**
+   * Formação pelas buscas de instituição, curso e agência, pós-doutorado,
+   * livre-docência e outras informações relevantes (biographic.ts).
+   */
+  'alterar-dados-gerais-completo',
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

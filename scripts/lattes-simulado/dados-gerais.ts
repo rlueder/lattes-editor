@@ -8,6 +8,7 @@ import { childElements, element, getAttr, setAttr, type XElement } from '../../s
 import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
+import { IDENTIFICACAO_ROUTES } from './identificacao.ts';
 import type { SimRequest } from './pedido.ts';
 import { html, type Routes, type SimResponse } from './tipos.ts';
 
@@ -184,6 +185,14 @@ function addressBindings(suffix: string, element: string): Binding[] {
   const street = element === 'ENDERECO-PROFISSIONAL' ? 'LOGRADOURO-COMPLEMENTO' : 'LOGRADOURO';
   return [
     attr(`f_rua${suffix}`, street, 'text', { maxLength: 180 }),
+    // País pelo nome no XML, código na lista (a do residencial sem opção vazia).
+    {
+      kind: 'select',
+      name: `f_pais${suffix}`,
+      options: suffix === '_r' ? h.COUNTRIES : [['', ''], ...h.COUNTRIES],
+      read: (el) => h.countryCode(getAttr(el, 'PAIS')),
+      write: (el, value) => setAttr(el, 'PAIS', h.countryName(value)),
+    },
     ...ADDRESS_FIELDS.map(([field, attrName, max]) =>
       attr(`${field}${suffix}`, attrName, 'text', max ? { maxLength: max } : {}),
     ),
@@ -202,7 +211,6 @@ const PRIVACY: [string, string][] = [
  */
 function addressExtras(suffix: string): string {
   return [
-    h.select(`f_pais${suffix}`, [['BRA', 'Brasil']], 'BRA'),
     h.text(`f_ddd_cel${suffix}`, '', { maxLength: 5 }),
     h.text(`f_fone_cel${suffix}`, '', { maxLength: 10 }),
     h.select(`f_priv_email${suffix}`, PRIVACY, '1'),
@@ -211,15 +219,21 @@ function addressExtras(suffix: string): string {
   ].join('\n');
 }
 
-const FORM_EXTRAS = [
-  h.radios(
-    'f_end_corr',
-    [
+/** O endereço de correspondência: ENDERECO@FLAG-DE-PREFERENCIA (R observado, I inferido). */
+const preference = mapped(
+  'f_end_corr',
+  'FLAG-DE-PREFERENCIA',
+  'radio',
+  { ENDERECO_INSTITUCIONAL: 'I', ENDERECO_RESIDENCIAL: 'R' },
+  {
+    options: [
       ['R', 'utilizar este endereço para correspondência'],
       ['I', 'utilizar este endereço para correspondência'],
     ],
-    'I',
-  ),
+  },
+);
+
+const FORM_EXTRAS = [
   h.select('f_priv_residencial', PRIVACY, '2', { disabled: true }),
   h.select('f_priv_profissional', PRIVACY, '1'),
   h.text('f_inst', '', { disabled: true, maxLength: 75 }),
@@ -247,6 +261,7 @@ function enderecoForm(_req: SimRequest, state: LattesState): SimResponse {
   }).join('\n');
   const body = `<form name="GN_ENDERECO" method="post" action="PRC_ENDERECO">
 ${blocks}
+${renderFields([preference], container ?? element('ENDERECO'))}
 ${FORM_EXTRAS}
 ${h.hidden('f_ctr', 'U')}
 ${h.formButtons(false)}
@@ -265,74 +280,12 @@ function enderecoPost(req: SimRequest, state: LattesState): SimResponse {
     el ??= state.ensure(state.ensurePath(['DADOS-GERAIS', 'ENDERECO']), name);
     applyFields(bindings, el, req);
   }
+  const corr = state.find(['DADOS-GERAIS', 'ENDERECO']);
+  if (corr || req.get('f_end_corr')) {
+    applyFields([preference], corr ?? state.ensurePath(['DADOS-GERAIS', 'ENDERECO']), req);
+  }
   state.touch();
   return html(h.savedScript(`prc_endereco?f_cod=${state.code}`));
-}
-
-// ---------------------------------------------------------------- identificação
-
-/**
- * Só os campos com nome lido no HTML (seção 5): o nome, a nacionalidade, que
- * a página preenche por JavaScript, e f_ctr. Os outros (CPF, nome em
- * citações, nascimento, documentos) existem no Lattes com nomes não anotados e
- * ficam de fora do simulado.
- */
-function identBindings(): Binding[] {
-  return [
-    attr('f_nome', 'NOME-COMPLETO', 'text', { maxLength: 60 }),
-    attr('f_nacionalidade', 'NACIONALIDADE', 'hidden'),
-    fixed('f_ctr', 'U'),
-  ];
-}
-
-/**
- * Os outros controles da identificação, como o censo de 15/10/2026 os leu,
- * vazios: o simulado não os liga ao XML. O oculto f_pcd vem antes da caixa de
- * mesmo nome, como no Lattes.
- */
-const IDENT_EXTRAS = [
-  ...['f_priv_foto', 'f_pais_nacio', 'f_priv_nacionalidade', 'fnro_id_raca_cor', 'f_priv_cor'],
-  ...['f_pais_nasc', 'f_uf_nasc', 'f_priv_nascimento', 'f_uf_rg', 'f_priv_identidade'],
-  ...['fpaispassaporte', 'f_priv_passaporte', 'f_priv_pcd'],
-]
-  .map((n) => h.select(n, PRIVACY, '1'))
-  .concat(
-    h.radios('f_nome_social_r', [['N', 'Não']], 'N'),
-    h.text('f_nome_social', '', { maxLength: 60 }),
-    h.radios('f_sexo', [['M', 'Masculino']], ''),
-    h.text('f_cidade_nasc', '', { maxLength: 30 }),
-    h.text('f_dta_nasc', '', { maxLength: 10 }),
-    h.text('f_rg_nro', '', { maxLength: 15 }),
-    h.text('f_orgao_rg', '', { maxLength: 8 }),
-    h.text('f_dta_rg', '', { maxLength: 10 }),
-    h.text('f_passaporte', '', { maxLength: 20 }),
-    h.text('f_dta_val_passaporte', '', { maxLength: 10 }),
-    h.text('f_dta_emissao_doc', '', { maxLength: 10 }),
-    h.radios('f_pcd_r', [['N', 'Não']], 'N'),
-    h.hidden('f_pcd', ''),
-    h.checkbox('f_pcd', 'S', false),
-    ...['f_dados_grid', 'f_nome_citacao', 'f_nome_citacao_h', 'fdados_new', 'f_cpf'].map((n) =>
-      h.hidden(n, ''),
-    ),
-    ...['f_nome_pai', 'f_nome_mae', 'f_cod', 'f_nme_old'].map((n) => h.hidden(n, '')),
-  )
-  .join('\n');
-
-function identForm(_req: SimRequest, state: LattesState): SimResponse {
-  const body = `<form name="GN_IDENT" method="post" action="PRC_IDENT">
-${renderFields(identBindings(), state.general)}
-${IDENT_EXTRAS}
-${h.formButtons(false)}
-</form>${h.formScripts('GN_IDENT')}`;
-  return html(h.page('Identificação', body));
-}
-
-function identPost(req: SimRequest, state: LattesState): SimResponse {
-  if (req.get('f_ctr') === 'U') {
-    applyFields(identBindings(), state.general, req);
-    state.touch();
-  }
-  return html(h.savedScript(`prc_ident?f_cod=${state.code}`));
 }
 
 export const DADOS_GERAIS_ROUTES: Routes = {
@@ -344,6 +297,5 @@ export const DADOS_GERAIS_ROUTES: Routes = {
   'pkg_resume.prc_resume': resumoForm,
   prc_endereco: (req, state) =>
     req.method === 'POST' ? enderecoPost(req, state) : enderecoForm(req, state),
-  prc_ident: (req, state) =>
-    req.method === 'POST' ? identPost(req, state) : identForm(req, state),
+  ...IDENTIFICACAO_ROUTES,
 };

@@ -6,7 +6,12 @@
 import { type Change, resolvePath } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import { atuacaoByHand, vinculoByHand } from './atuacao-by-hand.ts';
-import { BIOGRAPHIC_OPS_ENABLED, type BiographicOp, planBiographic } from './biographic.ts';
+import {
+  BIOGRAPHIC_FULL_ENABLED,
+  BIOGRAPHIC_OPS_ENABLED,
+  type BiographicOp,
+  planBiographic,
+} from './biographic.ts';
 import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
 import { type CreateItemOp, planCreateItem } from './create-items.ts';
 import { DELETE_ITEMS_ENABLED, type DeleteOp, planDelete } from './delete.ts';
@@ -23,6 +28,7 @@ import {
   type ListEditOp,
   planListEdit,
 } from './edit-lists.ts';
+import { idiomaHandReason } from './hand-reasons.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
 import { manualReason } from './production/manual.ts';
 import {
@@ -92,6 +98,12 @@ export type BridgeOp =
  * chave da montagem e a capacidade da extensão.
  */
 export interface PlanOptions {
+  /**
+   * Formação pelas buscas, pós-doutorado, livre-docência e outras
+   * informações relevantes (biographic.ts, BIOGRAPHIC_FULL_ENABLED). Sem
+   * valor, desligada, como as outras.
+   */
+  biographicFull?: boolean;
   biographicOps?: boolean;
   createItems?: boolean;
   deleteItems?: boolean;
@@ -134,6 +146,11 @@ export const GATED_EDITS: readonly {
   { enabled: CREATE_ITEMS_ENABLED, feature: 'incluir-itens', option: 'createItems' },
   { enabled: DELETE_ITEMS_ENABLED, feature: 'excluir-itens', option: 'deleteItems' },
   { enabled: BIOGRAPHIC_OPS_ENABLED, feature: 'alterar-dados-gerais', option: 'biographicOps' },
+  {
+    enabled: BIOGRAPHIC_FULL_ENABLED,
+    feature: 'alterar-dados-gerais-completo',
+    option: 'biographicFull',
+  },
   { enabled: EDIT_OUVINTE_ENABLED, feature: 'alterar-evento', option: 'editOuvinte' },
   { enabled: EDIT_EVENTO_ENABLED, feature: 'alterar-evento-completo', option: 'editEvento' },
   { enabled: EDIT_PREMIO_ENABLED, feature: 'alterar-premio', option: 'editPremio' },
@@ -245,6 +262,7 @@ export function planChange(
   chain: XElement[],
   label: string,
   {
+    biographicFull = false,
     biographicOps = false,
     createItems = false,
     deleteItems = false,
@@ -335,6 +353,8 @@ export function planChange(
     const code = getAttr(el, 'IDIOMA');
     if (!code) return unsupported(change, label, 'Idioma sem código');
     const { expect, missing, set } = idiomaFields(change);
+    const hand = idiomaHandReason(change);
+    if (hand) return unsupported(change, label, hand);
     if (missing.length > 0) {
       return unsupported(change, label, `Campos não suportados ainda: ${missing.join(', ')}`);
     }
@@ -363,7 +383,9 @@ export function planChange(
     return 'reason' in listEdit ? unsupported(change, label, listEdit.reason) : listEdit;
 
   // Formação, endereço e identificação: desligados até o teste no Lattes real (biographic.ts).
-  const biographic = biographicOps ? planBiographic(change, chain, label) : undefined;
+  const biographic = biographicOps
+    ? planBiographic(change, chain, label, biographicFull)
+    : undefined;
   if (biographic) {
     return 'reason' in biographic ? unsupported(change, label, biographic.reason) : biographic;
   }

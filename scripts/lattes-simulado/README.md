@@ -22,25 +22,26 @@ não grava um campo, efeito colateral, página em outro modo).
 
 ## Como está montado
 
-| Arquivo                      | O que tem                                                                                                     |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `servidor.ts`                | `node:http`, as rotas por procedimento, as duas bases, a sessão, `/__simulado/`                               |
-| `estado.ts`                  | O currículo (versão de trabalho e versão publicada), pendência, sessão, Importar, foto                        |
-| `pedido.ts`                  | Leitura do pedido: URL, corpo urlencoded em Latin-1, multipart                                                |
-| `campos.ts`                  | A ligação entre um campo de formulário e o XML: desenhar e gravar saem da mesma lista                         |
-| `html.ts`                    | Pedaços de HTML, listas capturadas do Lattes (`docs/lattes-listas/`), scripts das telas                       |
-| `menu.ts`                    | Menu, login, envio ao CNPq, página de conferência, aviso de pendências, foto                                  |
-| `dados-gerais.ts`            | Idiomas, resumo, endereço e identificação                                                                     |
-| `atuacao.ts`                 | Atuações, vínculos e a inclusão de atuação                                                                    |
-| `formacao.ts`                | Formação acadêmica e o `SETA_ULTIMO_PUBLICO` da exclusão                                                      |
-| `premios-complementar.ts`    | Prêmios e títulos, formação complementar                                                                      |
-| `projeto.ts`                 | Projetos, a lista de instituições das atuações e a busca de órgão                                             |
-| `patente.ts`                 | Patente, com a janela prévia e a consulta do número                                                           |
-| `eventos.ts`                 | Participação em eventos e o formulário só de leitura com as listas de país e idioma                           |
-| `buscas.ts`                  | Instituição, curso, agência e a tabela de áreas                                                               |
-| `censo.ts`                   | Só para o censo (LAT-55): trabalhos técnicos, a inclusão da formação complementar e a de licenças, só com GET |
-| `exportar.ts`, `importar.ts` | Exportar e os três passos do Importar                                                                         |
-| `cli.ts`                     | O `pnpm dev:lattes`                                                                                           |
+| Arquivo                      | O que tem                                                                                                                       |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `servidor.ts`                | `node:http`, as rotas por procedimento, as duas bases, a sessão, `/__simulado/`                                                 |
+| `estado.ts`                  | O currículo (versão de trabalho e versão publicada), pendência, sessão, Importar, foto                                          |
+| `pedido.ts`                  | Leitura do pedido: URL, corpo urlencoded em Latin-1, multipart                                                                  |
+| `campos.ts`                  | A ligação entre um campo de formulário e o XML: desenhar e gravar saem da mesma lista                                           |
+| `html.ts`                    | Pedaços de HTML, listas capturadas do Lattes (`docs/lattes-listas/`), scripts das telas                                         |
+| `menu.ts`                    | Menu, login, envio ao CNPq, página de conferência, aviso de pendências, foto                                                    |
+| `dados-gerais.ts`            | Idiomas, resumo e endereço                                                                                                      |
+| `identificacao.ts`           | Identificação e outras informações relevantes, com os campos do censo                                                           |
+| `atuacao.ts`                 | Atuações, vínculos e a inclusão de atuação                                                                                      |
+| `formacao.ts`                | Formação acadêmica, pós-doutorado e livre-docência, com os campos de cada nível do censo, e o `SETA_ULTIMO_PUBLICO` da exclusão |
+| `premios-complementar.ts`    | Prêmios e títulos, formação complementar                                                                                        |
+| `projeto.ts`                 | Projetos, a lista de instituições das atuações e a busca de órgão                                                               |
+| `patente.ts`                 | Patente, com a janela prévia e a consulta do número                                                                             |
+| `eventos.ts`                 | Participação em eventos e o formulário só de leitura com as listas de país e idioma                                             |
+| `buscas.ts`                  | Instituição, curso, agência e a tabela de áreas                                                                                 |
+| `censo.ts`                   | Só para o censo (LAT-55): trabalhos técnicos, a inclusão da formação complementar e a de licenças, só com GET                   |
+| `exportar.ts`, `importar.ts` | Exportar e os três passos do Importar                                                                                           |
+| `cli.ts`                     | O `pnpm dev:lattes`                                                                                                             |
 
 Nos testes, o servidor aceita `intercept`, um intermediário em volta de cada
 pedido para simular falhas, e `institutions`, instituições a mais na busca. O

@@ -69,7 +69,8 @@ export const CREATE_VALUE_LABELS: Record<string, Record<string, string>> = {
     MU: 'Patente de Modelo de Utilidade',
     PI: 'Patente de Invenção',
   },
-  f_tpo_doutorado: { N: 'Normal', S: 'Sanduíche' },
+  // Doutorado: também co-tutela e co-tutela/sanduíche (censo de 15/10/2026).
+  f_tpo_doutorado: { C: 'Co-tutela', CS: 'Co-tutela/sanduíche', N: 'Normal', S: 'Sanduíche' },
   F_TPO_NATUREZA: {
     D: 'Desenvolvimento',
     E: 'Extensão',

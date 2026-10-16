@@ -101,6 +101,8 @@ function menuItems(code: string): [string, string][] {
       `PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=${tipo}&f_cod=${code}`,
     ]),
     ['Resumo', `pkg_resume.prc_resume?f_cod=${code}`],
+    // Catálogo de menus do reconhecimento de 10/10/2026 e censo de 15/10/2026.
+    ['Outras informações relevantes', `prc_outras_inf?f_cod=${code}`],
     ['Participação em eventos', `pkg_evento.lista?f_cod=${code}`],
     [
       'Eventos de divulgação científica',

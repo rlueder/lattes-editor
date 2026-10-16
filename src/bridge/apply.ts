@@ -6,10 +6,12 @@
 // um Lattes falso: o acesso à rede e ao DOM entra pela porta (LattesPort).
 
 import {
+  BIOGRAPHIC_FULL_ENABLED,
   BIOGRAPHIC_SPECS,
   type BiographicOp,
   isBiographicOp,
   locateBiographic,
+  needsFullBiographic,
 } from './biographic.ts';
 import { applyCreateAtuacao } from './create.ts';
 import {
@@ -52,6 +54,7 @@ import {
   successfulPairs,
   withCheckRules,
 } from './form.ts';
+import { resolveFormacao } from './formacao-lookups.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
 import type { BridgeOp, FieldValues } from './plan.ts';
 import { applyProduction } from './production/apply.ts';
@@ -215,11 +218,14 @@ function changedNames(a: Pairs, b: Pairs): string[] {
  * operação de um tipo cuja chave ela tem desligada para sem enviar nada.
  */
 export interface ApplyGates {
+  /** BIOGRAPHIC_FULL_ENABLED; sem valor, desligada. */
+  biographicFull?: boolean;
   editEvento: boolean;
   lists: ReadonlySet<ListEditKind>;
 }
 
 export const BUILD_GATES: ApplyGates = {
+  biographicFull: BIOGRAPHIC_FULL_ENABLED,
   editEvento: EDIT_EVENTO_ENABLED,
   lists: enabledListEdits(),
 };
@@ -228,6 +234,9 @@ export const BUILD_GATES: ApplyGates = {
 function gatedOut(op: BridgeOp, gates: ApplyGates): string | undefined {
   if (isListEditOp(op) && !gates.lists.has(op.kind)) {
     return 'Esta extensão não tem o formulário deste tipo no contrato; a alteração fica à mão';
+  }
+  if (isBiographicOp(op) && !gates.biographicFull && needsFullBiographic(op)) {
+    return 'Esta extensão não grava instituição, curso e agência pelas buscas, pós-doutorado, livre-docência nem outras informações; a alteração fica à mão';
   }
   if (isEventoOp(op) && !gates.editEvento && isFullEvento(op)) {
     return 'Esta extensão só altera eventos de ouvinte; a alteração fica à mão';
@@ -303,7 +312,18 @@ export async function applyOp(
     if (wrong.length > 0) {
       return result('divergente', `O Lattes não está como o editor espera: ${labels(wrong)}`);
     }
-    for (const [field, value] of Object.entries(op.set)) {
+    // Formação com instituição, curso ou agência trocados: as buscas do Lattes
+    // dão os ocultos que vão junto (formacao-lookups.ts). `check` é o que a
+    // releitura espera onde difere do enviado.
+    let set = op.set;
+    let check: FieldValues = {};
+    if (op.kind === 'formacao' && op.lookups) {
+      const resolved = await resolveFormacao(op, port, before.pairs);
+      if ('status' in resolved) return result(resolved.status, resolved.detail);
+      set = { ...op.set, ...resolved.set };
+      check = resolved.check;
+    }
+    for (const [field, value] of Object.entries(set)) {
       const limit = before.controls.find((c) => c.name === field)?.maxLength;
       if (value && limit && limit > 0 && value.length > limit) {
         return result(
@@ -319,7 +339,7 @@ export async function applyOp(
       return result('conferido', 'O Lattes já estava assim; nada foi enviado');
     }
 
-    const next = setPairs(before.pairs, op.set);
+    const next = setPairs(before.pairs, set);
     const response = await port.post(action, encodeLatin1Form(next));
     if (isLogonPage(response)) return result('sessao', 'A sessão do Lattes expirou; entre de novo');
 
@@ -337,13 +357,13 @@ export async function applyOp(
     }
 
     const after = await readPairs(port, path, name);
-    const notSaved = mismatches(after.pairs, op.set);
+    const notSaved = mismatches(after.pairs, { ...set, ...check });
     if (notSaved.length > 0) {
       return result('divergente', `O Lattes não gravou: ${labels(notSaved)}`);
     }
     // f_vinculo é preenchido no envio (check()); a página sempre o traz vazio.
     const unexpected = changedNames(before.pairs, after.pairs).filter(
-      (n) => !(n in op.set) && n !== 'f_vinculo',
+      (n) => !(n in set) && n !== 'f_vinculo',
     );
     // Campos desabilitados não vão nos pares; os que identificam o item
     // (instituição e curso da formação complementar) se conferem à parte.

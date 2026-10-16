@@ -172,10 +172,13 @@ describe('formação complementar: plano', () => {
       'O formulário de formação complementar do Lattes não tem os anos',
     );
     expect(onlyReason((root) => setAttr(compl(root, '4'), 'CARGA-HORARIA', 'vinte'))).toMatch(
-      /^Campos não suportados ainda: /,
+      /^Valor que o formulário de formação complementar do Lattes não aceita: .*só com dígitos/,
     );
     expect(onlyReason((root) => setAttr(compl(root, '4'), 'NOME-CURSO', 'Outro curso'))).toMatch(
-      /^Campos não suportados ainda: /,
+      /só mudam pelas buscas do Lattes/,
+    );
+    expect(onlyReason((root) => setAttr(compl(root, '4'), 'NIVEL', 'E'))).toMatch(
+      /^O nível é o tipo da formação complementar/,
     );
   });
 

@@ -326,6 +326,14 @@ privacidade são foto, nacionalidade, raça ou cor, nascimento, identidade,
 passaporte e deficiência (`f_priv_*`, `1` público, `2` privado).
 **Observado** (11/10/2026).
 
+### Outras informações relevantes: `GN_OUTRA_INF_RELEV`, POST `PRC_OUTRAS_INF`
+
+Aberto por GET `prc_outras_inf` no menu. Um texto só, `F_TEXTO` (área de
+2000 caracteres), e os ocultos `f_cod` e `f_ctr` (`U`). **Observado** no
+censo de 15/10/2026. Que o texto seja o atributo `OUTRAS-INFORMACOES-RELEVANTES`
+do elemento de mesmo nome é **inferido**: o censo ligou o formulário ao
+elemento só pelo nome, e o currículo lido não tinha o texto preenchido.
+
 ## 6. Primeiro envio (11/10/2026)
 
 Um POST montado fora do formulário, com a autorização do dono do
@@ -1467,53 +1475,80 @@ instituição e curso são GETs cujos resultados se leem nos links
 `seleciona(…)` e nas opções da lista. Nenhuma das três buscas precisa de
 POST. A única consulta por POST encontrada é a de patente já cadastrada.
 
-## 19. Dados gerais pelo conector (LAT-23, 14/10/2026)
+## 19. Dados gerais pelo conector (LAT-23, 14/10/2026; LAT-58, 16/10/2026)
 
-Formação acadêmica, endereço e identificação têm operação escrita em
-`src/bridge/biographic.ts`, testada só contra o Lattes falso dos testes e
-desligada (`BIOGRAPHIC_OPS_ENABLED`). Nada foi enviado a um Lattes real.
-Desligada, a mudança segue à mão e o contrato não confere esses formulários.
+Formação acadêmica, pós-doutorado e livre-docência, endereço, identificação e
+outras informações relevantes têm operação escrita em `src/bridge/biographic.ts`
+(o caminho e o contrato) e em `formacao-edit.ts`, `formacao-lookups.ts` e
+`dados-gerais-edit.ts` (que atributo vai em que campo, e o porquê do que fica
+à mão), testada contra o Lattes simulado e ligada para o teste ao vivo
+(`BIOGRAPHIC_OPS_ENABLED`; o que a LAT-58 acrescentou e uma extensão antiga
+gravaria errado, também `BIOGRAPHIC_FULL_ENABLED`, com a capacidade
+`alterar-dados-gerais-completo`). Nada disso foi enviado a um Lattes real.
 
-O que cada operação grava, e de onde vem cada parte:
-
-| Seção         | Formulário e POST                   | Como o conector acha                                                                                                          | Atributo do XML → campo                                                                                                                                                                                                                                    |
-| ------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Formação      | `GN_FORMACAO2`, `pkg_formacao.FORM` | `pkg_formacao.lista` com `f_tipo=FA` no menu, e na lista o único `pkg_formacao.form` com `f_seq` igual a `SEQUENCIA-FORMACAO` | `ANO-DE-INICIO` → `f_ano_ini`, `ANO-DE-CONCLUSAO` → `f_ano_fim`, `ANO-DE-OBTENCAO-DO-TITULO` → `f_ano_obten`, `STATUS-DO-CURSO` → `F_STATUS` (`N`, `S`, `I`), título do trabalho (dissertação, TCC, monografia, residência) → `f_titulo`                   |
-| Endereço      | `GN_ENDERECO`, `PRC_ENDERECO`       | `prc_endereco` no menu                                                                                                        | `ENDERECO-PROFISSIONAL` nos campos `_i` e `ENDERECO-RESIDENCIAL` nos `_r`: logradouro → `f_rua`, `CEP` → `f_cep`, `BAIRRO` → `f_bairro`, `CIDADE` → `f_munic`, `UF` → `f_estado`, `DDD`, `TELEFONE`, `RAMAL`, `FAX`, `CAIXA-POSTAL`, `E-MAIL`, `HOME-PAGE` |
-| Identificação | `GN_IDENT`, `PRC_IDENT`             | `prc_ident` no menu                                                                                                           | `NOME-COMPLETO` → `f_nome`                                                                                                                                                                                                                                 |
+| Seção              | Formulário e POST                      | Como o conector acha                                                                                                                                                         | Atributo do XML → campo                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------ | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Formação           | `GN_FORMACAO2`, `pkg_formacao.FORM`    | `pkg_formacao.lista` com `f_tipo=FA` (ou `AP`, para pós-doutorado e livre-docência) no menu, e na lista o único `pkg_formacao.form` com `f_seq` igual a `SEQUENCIA-FORMACAO` | anos (`f_ano_ini`, `f_ano_fim`, `f_ano_obten`), `STATUS-DO-CURSO` → `F_STATUS`, título → `f_titulo`, orientador → `f_orient`, coorientador → `f_coorient`, tipo do curso → `f_tpo_doutorado`, `FLAG-BOLSA` → `F_BOLSA`, `CARGA-HORARIA` → `f_carga`, orientadores do sanduíche e da cotutela → `f_orient_dout`, `f_orient_dout_sw`, `f_orient_dout_ct`; instituição, curso e agência pelas buscas da seção 18 |
+| Endereço           | `GN_ENDERECO`, `PRC_ENDERECO`          | `prc_endereco` no menu                                                                                                                                                       | `ENDERECO-PROFISSIONAL` nos campos `_i` e `ENDERECO-RESIDENCIAL` nos `_r`: logradouro → `f_rua`, `CEP` → `f_cep`, `BAIRRO` → `f_bairro`, `CIDADE` → `f_munic`, `UF` → `f_estado`, `PAIS` → `f_pais` (código do país), `DDD`, `TELEFONE`, `RAMAL`, `FAX`, `CAIXA-POSTAL`, `E-MAIL`, `HOME-PAGE`; `ENDERECO@FLAG-DE-PREFERENCIA` → `f_end_corr` (`R`, `I`)                                                      |
+| Identificação      | `GN_IDENT`, `PRC_IDENT`                | `prc_ident` no menu                                                                                                                                                          | `NOME-COMPLETO` → `f_nome`, nome em citações → `f_nome_citacao` e `f_nome_citacao_h`, país de nacionalidade → `f_pais_nacio` (com `f_nacionalidade`), nascimento → `f_pais_nasc`, `f_uf_nasc`, `f_cidade_nasc`, `f_dta_nasc`, `SEXO` → `f_sexo`, identidade → `f_rg_nro`, `f_orgao_rg`, `f_uf_rg`, `f_dta_rg`, passaporte → `f_passaporte`, `RACA-OU-COR` → `fnro_id_raca_cor`                                |
+| Outras informações | `GN_OUTRA_INF_RELEV`, `PRC_OUTRAS_INF` | `prc_outras_inf` no menu                                                                                                                                                     | `OUTRAS-INFORMACOES-RELEVANTES` → `F_TEXTO`                                                                                                                                                                                                                                                                                                                                                                   |
 
 - **Observado**: os nomes dos formulários, dos POSTs, dos links do menu e dos
-  campos (seções 4 e 5 e o reconhecimento de 10/10/2026, seção 4.2), os
-  códigos de `F_STATUS` e o `f_nivel` oculto igual ao `NIVEL` da exportação
-  no mestrado, na graduação e no curso técnico.
-- **Inferido**: a correspondência de cada atributo com cada campo (pelo nome
-  e pelo rótulo), que `f_seq` da formação é `SEQUENCIA-FORMACAO`, que os
-  campos de formação lidos no mestrado profissional existem nos outros
-  níveis, e o tipo "texto" dos campos sem tipo anotado nas seções acima.
+  campos, e o que cada nível da formação mostra, traz oculto ou não tem (censo
+  de 15/10/2026, entradas `formacao-FA-*` e `formacao-AP-*`); os códigos de
+  `F_STATUS`; o `f_nivel` oculto igual ao `NIVEL` da exportação no mestrado,
+  na graduação e no curso técnico; e, pela passada de edição do censo,
+  `f_ano_ini`, `f_ano_fim`, `F_BOLSA`, `f_orient`, `f_titulo` (graduação),
+  `f_inst_old`, `f_curso_old`, `f_nome_citacao`, `f_cidade_nasc`, `f_uf_nasc`,
+  `f_uf_rg`, `f_rg_nro`, `f_orgao_rg`, `f_pais_nacio` ↔
+  `SIGLA-PAIS-NACIONALIDADE`, `f_pais_nasc`, `f_sexo` `M`, `f_pais_r` e
+  `f_end_corr` `R`.
+- **Inferido**: as outras ligações, pelo nome e pelo rótulo do campo. Os
+  comentários do começo de `formacao-edit.ts` e `dados-gerais-edit.ts`
+  listam uma por uma; as que mais pedem o teste acompanhado são as datas em
+  `DD/MM/AAAA`, a cor ou raça pelo rótulo da opção, o `f_nacionalidade` `B`
+  só para o Brasil, os orientadores do sanduíche e da cotutela e o
+  `f_agencia` igual ao `CODIGO-AGENCIA-FINANCIADORA`.
+- **Buscas**: instituição, curso e agência só mudam com o código novo no XML
+  (o editor grava código e nome juntos, `src/ui/live-lists.ts`). Na hora de
+  gravar, depois de conferir o "antes", o conector faz as mesmas buscas da
+  inclusão (`PRC_INST_FORM`, com `F_STA_OUTRA` `N` ou `S`, `prc_curso_form` e
+  `prc_agencia`) e manda os ocultos que a página escreveria (`f_cod_inst` ou
+  `f_cod_inst2`, `f_inst_old`, `f_cod_curso` ou `f_cod_curso2`,
+  `f_curso_old`, `f_agencia`, e os `_dout` do sanduíche); os campos
+  desabilitados não vão. A releitura compara o curso sem o código CAPES.
+  Uma alteração assim não tem "Desfazer" no registro do enviado.
 - **Travas**: além das de toda alteração (o "antes" de cada campo tem de
   bater, só os campos da operação podem mudar depois do envio), a formação
-  confere o `f_nivel` e, qualquer que seja o campo alterado, a instituição, o
-  curso (os ocultos `f_inst_old` e `f_curso_old`, ligação observada no censo
-  de 15/10/2026) e o ano de início, sem acento, caixa nem espaço nas pontas:
-  o `f_seq` sozinho não identifica o item (seção 16); a identificação confere o
-  `f_nacionalidade` com o `NACIONALIDADE` do XML, porque esse oculto é
-  preenchido pelo JavaScript da página e um GET que o traga vazio mandaria
-  vazio. Sem `B` ou `E` no XML, a mudança de identificação segue à mão. Dois
-  atributos que cairiam no mesmo campo (o logradouro de um endereço no do
-  outro, dois títulos na mesma formação) também mandam a mudança à mão.
-- **Fora**: o que só entra por busca (instituição, curso, agência,
-  orientador), o país e as listas cujos códigos não foram lidos (sexo, raça
-  ou cor, nascimento, documentos), a preferência de correspondência
-  (`f_end_corr`), as grades de contatos e redes sociais
-  (`f_dados_grid`, `f_dados_grid_contatos`) e a lista de pós-doutorado e
-  livre-docência (`f_tipo=AP`).
+  confere o `f_nivel`, o `f_tipo` e, qualquer que seja o campo alterado, a
+  instituição, o curso (os ocultos `f_inst_old` e `f_curso_old`) e o ano de
+  início, sem acento, caixa nem espaço nas pontas: o `f_seq` sozinho não
+  identifica o item (seção 16). Com a instituição trocada, o código de antes
+  tem de ser o do Lattes, e a busca precisa achar exatamente um resultado com
+  o código novo. A identificação confere o `f_nacionalidade` com o
+  `NACIONALIDADE` do XML, porque esse oculto é preenchido pelo JavaScript da
+  página e um GET que o traga vazio mandaria vazio. Sem `B` ou `E` no XML, a
+  mudança de identificação segue à mão. Dois atributos que cairiam no mesmo
+  campo também mandam a mudança à mão.
+- **Fora, com o motivo na tela**: o que o formulário do nível não mostra (o
+  título e o ano de obtenção do pós-doutorado, por exemplo), os nomes em
+  inglês, o órgão, o número do orientador e os dados do Oasisbr da
+  formação; a instituição "outra" e as do sanduíche e da cotutela, que a
+  exportação traz só pelo código; o CPF e os nomes dos pais (ocultos na
+  página); formato das datas, permissão de divulgação, foto, falecimento,
+  ORCID e pessoa com deficiência (o formulário tem uma caixa por tipo e um
+  oculto de mesmo nome, e o formato na exportação não foi visto); a
+  instituição, o órgão e a unidade do endereço profissional; as grades de
+  contatos e redes sociais (`f_dados_grid`, `f_dados_grid_contatos`); o
+  tipo de vínculo e o enquadramento funcional enumerado; os dados da raiz
+  `CURRICULO-VITAE`, que o Lattes gera.
 
-O contrato desses três formulários é parcial: lista os campos que as
-operações gravam e os de controle, menos o ano de obtenção e o título da
-formação, que pelo XSD não existem em todos os níveis (a amostra é a
-primeira formação da lista, de qualquer nível). Os outros aparecem como "campo novo" na
-verificação, que só avisa. O teste acompanhado completa a lista com o que a
-verificação mostrar.
+O contrato da formação é parcial: lista os campos que as operações gravam e
+os de controle, menos o ano de obtenção e o título, que não existem em todos
+os níveis (a amostra é a primeira formação da lista `FA`, de qualquer nível).
+Os outros aparecem como "campo novo" na verificação, que só avisa. O
+endereço, a identificação e as outras informações têm o formulário inteiro,
+como o censo o leu.
 
 ## 20. Censo dos formulários (LAT-55, 15/10/2026)
 
