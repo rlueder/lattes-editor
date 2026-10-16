@@ -32,6 +32,7 @@ import {
   enqueue,
   NO_CONSENT_TEXT,
   refuseRun,
+  replayResults,
   waitWhile,
 } from './editor-run.ts';
 import { importRunning, runImport } from './import-run.ts';
@@ -177,6 +178,7 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
       type: 'ola',
       version: ownVersion(),
     });
+    await replayResults(await readState(), (m) => toEditor(editor, m));
     await sendSession(editor);
     return;
   }

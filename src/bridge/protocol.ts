@@ -93,7 +93,8 @@ export type BridgeMessage =
   | { code: string; lattesId?: string; type: 'codigo-cv' }
   /** O que o menu do Lattes mostra: data da última publicação e pendência. */
   | { lattesId?: string; status: LattesStatus; type: 'estado-lattes' }
-  | { result: OpResult; type: 'resultado' }
+  /** replay: repetido na reconexão do editor (o original pode ter se perdido). */
+  | { replay?: boolean; result: OpResult; type: 'resultado' }
   /**
    * Os itens da página de conferência do Lattes, ou o motivo de não ter
    * lido; lattesId diz de qual currículo é a sessão.

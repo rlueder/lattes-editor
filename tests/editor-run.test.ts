@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { endDeadRound, refuseRun, waitWhile } from '../extension/src/editor-run.ts';
+import { endDeadRound, refuseRun, replayResults, waitWhile } from '../extension/src/editor-run.ts';
 import type { QueueState } from '../extension/src/state.ts';
 import type { BridgeMessage } from '../src/bridge/protocol.ts';
 
@@ -84,5 +84,23 @@ describe('gravação pedida pelo editor que não começa', () => {
     expect((sent[0] as { result: { detail: string } }).result.detail).toMatch(
       /^O conector reiniciou no meio da gravação; /,
     );
+  });
+});
+
+describe('editor que reconecta no meio da fila', () => {
+  it('recebe de novo cada resultado, marcado como repetição', async () => {
+    const sent: BridgeMessage[] = [];
+    const a = { detail: '', key: 'a', status: 'conferido' } as const;
+    const b = { detail: 'não gravou', key: 'b', status: 'divergente' } as const;
+    await replayResults(
+      { ops: [op('a'), op('b')], results: { a, b }, running: true },
+      async (m) => {
+        sent.push(m);
+      },
+    );
+    expect(sent).toEqual([
+      { replay: true, result: a, type: 'resultado' },
+      { replay: true, result: b, type: 'resultado' },
+    ]);
   });
 });

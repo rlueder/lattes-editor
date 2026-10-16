@@ -39,6 +39,7 @@ import type {
   PhotoUploadReading,
 } from './bridge-readings.ts';
 import type { ChangeGroup } from './changes-view.ts';
+import { loadOutgoing, type Outgoing, saveOutgoing } from './outgoing-store.ts';
 import { writeCvCode } from './profile.ts';
 import { type RestoreState, useRestorePoint } from './use-restore-point.ts';
 import { useWriteBrake } from './use-write-brake.ts';
@@ -239,13 +240,6 @@ export interface BridgeState {
   stop: () => void;
 }
 
-/** O que foi mandado em cada chave da fila, para registrar quando voltar conferido. */
-interface Outgoing {
-  change?: Change;
-  op: BridgeOp;
-  undoOf?: number;
-}
-
 export function useBridge(
   session: Session | null,
   groups: ChangeGroup[],
@@ -284,6 +278,7 @@ export function useBridge(
       .catch(() => setSent([]));
   }, [lattesId]);
   useEffect(reloadSent, [reloadSent]);
+  useEffect(() => void (outgoing.current = loadOutgoing(lattesId)), [lattesId]);
   const brake = useWriteBrake(reloadSent, post, setRunning, confirmedRef);
   const { setPause, startRound } = brake;
 
@@ -297,6 +292,7 @@ export function useBridge(
       const item = outgoing.current.get(result.key);
       if (!item || !lattesId) return;
       outgoing.current.delete(result.key);
+      saveOutgoing(lattesId, outgoing.current);
       const { assigned, detail, status } = result;
       const ok = status === 'conferido';
       const entry = sentEntry(item.op, lattesId, Date.now(), {
@@ -321,6 +317,8 @@ export function useBridge(
         setAvailable(true);
         setFeatures(msg.features ?? []);
       }
+      // A repetição da reconexão só conta para o que este editor ainda esperava.
+      if (msg.type === 'resultado' && msg.replay && !outgoing.current.has(msg.result.key)) return;
       if (msg.type === 'resultado') {
         setPause(undefined);
         setResults((r) => ({ ...r, [msg.result.key]: msg.result }));
@@ -483,6 +481,7 @@ export function useBridge(
             : { change: changes.get(op.key), op },
         ]),
       );
+      saveOutgoing(lattesId, outgoing.current);
       setResults({});
       startRound(ops);
       setConfirmed(0);

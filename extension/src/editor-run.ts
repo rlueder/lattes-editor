@@ -91,3 +91,17 @@ export async function endDeadRound(
   if (result) await send({ result, type: 'resultado' });
   await send({ pause: state.pausa, type: 'fim' });
 }
+
+/**
+ * Os resultados da última fila de novo, para o editor que recarregou no meio
+ * dela: o que chegou com a página fechando se perdeu. O editor só registra os
+ * que ainda esperava (src/ui/outgoing-store.ts).
+ */
+export async function replayResults(
+  { results }: QueueState,
+  send: (m: BridgeMessage) => Promise<void>,
+): Promise<void> {
+  for (const result of Object.values(results)) {
+    await send({ replay: true, result, type: 'resultado' });
+  }
+}
