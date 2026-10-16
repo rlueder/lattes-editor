@@ -229,6 +229,17 @@ button.status-seg:hover,
   opacity: 0.6;
 }
 
+/* Na janela de envio, a faixa fica acima das pílulas dos passos: mais ar
+   entre o selo, a data e a linha de baixo. */
+.export .status-strip {
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.export .status-seg.action {
+  padding: 3px 8px;
+}
+
 .topbar-title {
   flex-direction: column;
   gap: 0;
