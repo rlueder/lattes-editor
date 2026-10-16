@@ -23,6 +23,8 @@ const KIND_BADGE = { alterado: undefined, novo: 'novo', removido: 'removido' } a
 
 interface Props {
   groups: ChangeGroup[];
+  /** Por que cada alteração não vai pelo conector, pela chave dela. */
+  reasons?: ReadonlyMap<string, string>;
   onDiscard: (entry: ChangeEntry) => void;
   onDiscardField: (entry: ChangeEntry, attr: string) => void;
 }
@@ -34,7 +36,7 @@ interface Discarding {
   field?: { attr: string; label: string };
 }
 
-export function ChangesList({ groups, onDiscard, onDiscardField }: Props) {
+export function ChangesList({ groups, onDiscard, onDiscardField, reasons }: Props) {
   const showCodes = useShowCodes();
   // O pedido fica guardado ao fechar, para o texto não trocar durante a saída do diálogo.
   const [discarding, setDiscarding] = useState<Discarding | undefined>();
@@ -60,6 +62,7 @@ export function ChangesList({ groups, onDiscard, onDiscardField }: Props) {
             {g.entries.map((entry) => {
               const { change } = entry;
               const context = [entry.itemTitle, change.form].filter(Boolean);
+              const reason = reasons?.get(change.key);
               return (
                 <li key={change.key} className="change">
                   <div className="change-head">
@@ -82,6 +85,7 @@ export function ChangesList({ groups, onDiscard, onDiscardField }: Props) {
                       </span>
                     )}
                   </div>
+                  {reason && <p className="change-reason">{reason}</p>}
                   <div className="change-fields">
                     {visibleFields(change, showCodes).map((f) => {
                       // Código de enum aparece (e é copiado) como o rótulo do formulário do Lattes.

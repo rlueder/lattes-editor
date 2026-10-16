@@ -2540,6 +2540,13 @@ button.primary:hover {
   font-size: 12px;
 }
 
+/* Por que a alteração não vai pelo conector, logo abaixo do título dela. */
+.change-reason {
+  margin: 2px 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .field-actions {
   display: inline-flex;
   gap: 2px;

@@ -27,7 +27,13 @@ import {
   importStatus,
 } from './import-request.ts';
 import { PublishPanel } from './PublishPanel.tsx';
-import { listenTabRequests, splitByRoute, takeRequestedTab, toSendCount } from './send-routes.ts';
+import {
+  listenTabRequests,
+  splitByRoute,
+  splitPending,
+  takeRequestedTab,
+  toSendCount,
+} from './send-routes.ts';
 import { stepStates } from './send-steps.ts';
 import { Notice, Step, StepHeader, WriteStep } from './SendSteps.tsx';
 import { SentList } from './SentList.tsx';
@@ -92,6 +98,12 @@ export function ExportPanel({
     [connectorOps],
   );
   const routed = useMemo(() => splitByRoute(changes, connectorKeys), [changes, connectorKeys]);
+  const unsupported = bridge?.available ? bridge.plan.unsupported : undefined;
+  const reasons = useMemo(
+    () => new Map((unsupported ?? []).map((u) => [u.key, u.reason])),
+    [unsupported],
+  );
+  const pendingBy = useMemo(() => splitPending(routed.pendente, reasons), [routed, reasons]);
   const toSend = toSendCount(pending.length, changes);
   // As tentativas que não deram certo ficam no registro, mas não contam como enviadas.
   const sent = bridge?.sent.filter((e) => !failed(e)).length ?? 0;
@@ -263,11 +275,26 @@ export function ExportPanel({
                 </section>
               )}
 
-              {routed.pendente.length > 0 && (
+              {pendingBy.editor.length > 0 && (
                 <section className="panel-section pending-unsupported">
                   <p className="muted changes-how">O editor ainda não envia estes</p>
                   <ChangesList
-                    groups={routed.pendente}
+                    groups={pendingBy.editor}
+                    reasons={reasons}
+                    onDiscard={onDiscard}
+                    onDiscardField={onDiscardField}
+                  />
+                </section>
+              )}
+              {pendingBy.lattes.length > 0 && (
+                <section className="panel-section pending-unsupported">
+                  <p className="muted changes-how">
+                    O formulário do Lattes não tem onde gravar estes. Eles ficam no seu XML, mas não
+                    chegam ao Lattes; descarte para tirar da lista.
+                  </p>
+                  <ChangesList
+                    groups={pendingBy.lattes}
+                    reasons={reasons}
                     onDiscard={onDiscard}
                     onDiscardField={onDiscardField}
                   />

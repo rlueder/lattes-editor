@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  lattesLacks,
   requestTab,
   splitByRoute,
+  splitPending,
   takeRequestedTab,
   toSendCount,
 } from '../src/import-export/send-routes.ts';
@@ -57,5 +59,33 @@ describe('enviar ao Lattes: como cada coisa vai', () => {
     requestTab('enviado');
     expect(takeRequestedTab()).toBe('enviado');
     expect(takeRequestedTab()).toBeUndefined();
+  });
+});
+
+describe('enviar ao Lattes: o que fica fora do conector', () => {
+  it('reconhece o motivo que é do Lattes, e não do editor', () => {
+    expect(lattesLacks('O formulário de eventos do Lattes não tem: Idioma')).toBe(true);
+    expect(lattesLacks('País que o formulário do Lattes não tem: Atlântida')).toBe(true);
+    expect(lattesLacks('Forma de participação que o Lattes não tem: Outra')).toBe(true);
+    expect(lattesLacks('Divulgação científica: o formulário do Lattes não volta para vazio')).toBe(
+      true,
+    );
+    expect(lattesLacks('O Lattes não aceita título vazio')).toBe(true);
+    expect(lattesLacks('Campos não suportados ainda: Nível')).toBe(false);
+    expect(lattesLacks('Formulário não suportado ainda')).toBe(false);
+    expect(lattesLacks('')).toBe(false);
+  });
+
+  it('separa por motivo; sem motivo, fica com o editor', () => {
+    const reasons = new Map([
+      ['idioma', 'O formulário de eventos do Lattes não tem: Idioma'],
+      ['nivel', 'Campos não suportados ainda: Nível'],
+    ]);
+    const { editor, lattes } = splitPending(
+      [group('Eventos', ['idioma', 'nivel', 'sem-motivo'])],
+      reasons,
+    );
+    expect(lattes[0]?.entries.map((e) => e.change.key)).toEqual(['idioma']);
+    expect(editor[0]?.entries.map((e) => e.change.key)).toEqual(['nivel', 'sem-motivo']);
   });
 });
