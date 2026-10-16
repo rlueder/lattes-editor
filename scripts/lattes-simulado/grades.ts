@@ -15,7 +15,9 @@
 // acontecer quando a operação erra. As áreas e os setores ficam só na
 // memória do simulado (não vão para a exportação).
 
+import { AUTHOR_PART } from '../../src/bridge/production/grids.ts';
 import { PRODUCTION_TARGETS } from '../../src/bridge/production/targets/index.ts';
+import type { AuthorPart } from '../../src/bridge/production/types.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
@@ -68,12 +70,13 @@ const ordered = (...entries: [string, boolean | string][]): Row => Object.fromEn
 /** Uma linha de área ou setor: l, c, editable. */
 const labelRow = (l: string, c: string) => ordered(['l', l], ['c', c], ['editable', false]);
 
-function authorRows(item: XElement): Row[] {
-  return childElements(item, 'AUTORES').map((a) =>
+/** A grade de autores, ou de participantes da banca (o elemento que part diz). */
+function authorRows(item: XElement, part: AuthorPart): Row[] {
+  return childElements(item, part.element).map((a) =>
     ordered(
-      ['l', getAttr(a, 'NOME-COMPLETO-DO-AUTOR') ?? ''],
-      ['c', getAttr(a, 'NRO-ID-CNPQ') ?? ''],
-      ['t', getAttr(a, 'NOME-PARA-CITACAO') ?? ''],
+      ['l', getAttr(a, part.name) ?? ''],
+      ['c', getAttr(a, part.cnpq) ?? ''],
+      ['t', getAttr(a, part.citation) ?? ''],
       ['editable', false],
       ['deletable', true],
     ),
@@ -93,10 +96,10 @@ const provider = (decl: string, rows: Row[]) =>
   `<script>\n${decl} = \n${JSON.stringify([...rows, {}])};\n</script>`;
 
 /** Os quatro vetores da página de edição de um item. */
-export function gridScripts(item: XElement | undefined): string {
+export function gridScripts(item: XElement | undefined, part: AuthorPart = AUTHOR_PART): string {
   const g = item ? gridsOf(item) : { areas: [], setores: [] };
   return [
-    provider('var autorProvider', item ? authorRows(item) : []),
+    provider('var autorProvider', item ? authorRows(item, part) : []),
     provider('palavraProvider', item ? keywordRows(item) : []),
     provider('areaProvider', g.areas),
     provider('var setorProvider', g.setores),
@@ -114,20 +117,20 @@ const rowsOf = (grid: string) =>
     .map((r) => r.split('|'));
 
 /** Grava as quatro grades do POST no item, como chegaram. */
-export function applyGrids(item: XElement, req: SimRequest): void {
+export function applyGrids(item: XElement, req: SimRequest, part: AuthorPart = AUTHOR_PART): void {
   // Autores: l|c|t, a ordem das chaves do autorProvider desta página.
-  for (const a of childElements(item, 'AUTORES')) {
+  for (const a of childElements(item, part.element)) {
     item.children = item.children.filter((c) => c !== a);
   }
   rowsOf(req.get('f_autores_l') ?? '').forEach(([l = '', c = '', t = ''], i) => {
     insertInSchemaOrder(
       lattesSchema,
       item,
-      element('AUTORES', {
-        'NOME-COMPLETO-DO-AUTOR': l,
-        'NOME-PARA-CITACAO': t,
-        'NRO-ID-CNPQ': c,
-        'ORDEM-DE-AUTORIA': String(i + 1),
+      element(part.element, {
+        [part.citation]: t,
+        [part.cnpq]: c,
+        [part.name]: l,
+        [part.order]: String(i + 1),
       }),
     );
   });

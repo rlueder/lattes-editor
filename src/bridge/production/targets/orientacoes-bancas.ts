@@ -1,6 +1,300 @@
 // Orientações e participações em banca. Campos e opções: censo de 15/10/2026
-// (docs/lattes-formularios/); ver tecnica.ts para a fonte das ligações.
+// (docs/lattes-formularios/), formulário de inclusão de cada lista, e a
+// captura das listas de 13/10/2026 (docs/lattes-listas/), que tem o f_ref e
+// os caminhos das listas. O currículo do censo não tinha orientação nem
+// banca: nada aqui foi visto em modo de alteração. Inferido, então, para
+// todos os tipos: que a lista leve ao formulário com f_seq e f_ctr U, como o
+// trabalho técnico, e que cada campo guarde o atributo do mesmo sentido (pelo
+// rótulo do censo).
+//
+// À mão, com o motivo em manual (o plano o mostra):
+// - instituição e curso: f_inst e f_curso vêm desabilitados e são preenchidos
+//   pelas buscas prc_inst_form e prc_curso_form, que gravam os códigos em
+//   ocultos (f_cod_inst, f_cod_curso);
+// - agência: o texto f_nme_agencia anda junto do código oculto f_agencia, que
+//   sai da busca prc_agencia; trocar só o nome deixaria o código antigo;
+// - instituição da banca julgadora: o f_inst é texto, mas com o código oculto
+//   f_cod_inst ao lado, pelo mesmo motivo;
+// - natureza e tipo da orientação (mestrado acadêmico ou profissional, outra
+//   natureza): a página os grava em ocultos (f_sub_prod, f_dsc_outra) pelo
+//   atribui(), com códigos que não foram lidos todos;
+// - identificador do orientando: o oculto f_id_orientado (inferido pelo nome).
+// Sem campo no formulário (o plano diz "não tem"): DOI, órgão, número de
+// páginas, nome do curso em inglês e o tipo de outra banca.
 
-import type { ProductionTarget } from '../types.ts';
+import { lattesSchema } from '../../../schema/lattes.ts';
+import { BANCA_PARTICIPANTS } from '../grids.ts';
+import { byTable, country, language, yesNo } from '../mappers.ts';
+import type { FieldMap, GridField, ProductionTarget } from '../types.ts';
 
-export const ORIENTACOES_BANCAS_TARGETS: ProductionTarget[] = [];
+const ORIENT_GRIDS: GridField[] = ['f_plv_l', 'f_setor_l', 'f_area_l'];
+const BANCA_GRIDS: GridField[] = ['f_autores_l', 'f_plv_l', 'f_setor_l', 'f_area_l'];
+
+/** f_tpo_orient: O "Orientador principal", C "coorientador" (lista L57). */
+const ADVISOR_ROLE = byTable({ CO_ORIENTADOR: 'C', ORIENTADOR_PRINCIPAL: 'O' });
+
+/**
+ * f_sub_prod da banca, "(apenas para mestrado)": 34 Acadêmico, 35
+ * Profissional, com o espaço no fim do valor como o censo registrou.
+ * Inferido pelo rótulo.
+ */
+const MASTERS_KIND = byTable({ ACADEMICO: '34 ', NAO_INFORMADO: '', PROFISSIONALIZANTE: '35 ' });
+
+const BACK = 'troque no Lattes';
+const WHY = {
+  agency: `a agência sai de uma busca do Lattes, que grava o código dela num campo oculto; ${BACK}`,
+  course: `o curso sai de uma busca do Lattes, que grava o código dele num campo oculto; ${BACK}`,
+  institution: `a instituição sai de uma busca do Lattes, que grava o código dela num campo oculto; ${BACK}`,
+  judgingInstitution: `o Lattes guarda o código da instituição num campo oculto ao lado do nome, e trocar só o nome deixaria o código antigo; ${BACK}`,
+  kind: `o Lattes guarda o tipo num campo oculto que a página preenche pela natureza; ${BACK}`,
+  nature: `a natureza muda o tipo do item, e a página do Lattes preenche outros campos por ela; ${BACK}`,
+  studentId: 'o Lattes guarda o identificador num campo oculto que só a página dele preenche',
+};
+
+/** Os atributos à mão de um tipo: atributo do filho → motivo. */
+const manualOf = (entries: [string, string[], string][]): Record<string, string> =>
+  inSchema(
+    Object.fromEntries(
+      entries.flatMap(([child, attrs, why]) => attrs.map((a) => [`${child}@${a}`, why])),
+    ),
+  );
+
+const INSTITUTION = ['CODIGO-INSTITUICAO', 'NOME-DA-INSTITUICAO', 'NOME-INSTITUICAO'];
+const COURSE = ['CODIGO-CURSO', 'NOME-CURSO', 'NOME-DO-CURSO'];
+
+/** Só as chaves cujo atributo o XSD tem no elemento (o andamento não tem FLAG-RELEVANCIA). */
+function inSchema<T>(fields: Record<string, T>): Record<string, T> {
+  return Object.fromEntries(
+    Object.entries(fields).filter(([key]) => {
+      const [child, attr] = key.split('@') as [string, string];
+      return lattesSchema.elements[child]?.attributes.some((a) => a.name === attr) ?? false;
+    }),
+  );
+}
+
+/** Os campos que as quatro telas têm iguais: título, ano, país, idioma, home page, inglês e f_ref. */
+function common(basics: string, title: string): Record<string, FieldMap | string> {
+  return {
+    [`${basics}@${title}-INGLES`]: 'f_titulo_en',
+    [`${basics}@${title}`]: 'f_titulo',
+    [`${basics}@ANO`]: 'f_ano',
+    [`${basics}@HOME-PAGE`]: 'f_homepage',
+    [`${basics}@IDIOMA`]: { field: 'F_IDIOMA', toForm: language },
+    [`${basics}@PAIS`]: { field: 'f_pais', toForm: country },
+    'INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS': 'f_ref',
+    'INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES': 'f_ref_en',
+  };
+}
+
+interface Orientation {
+  /** Sufixo dos filhos (PARA-MESTRADO, DA-ORIENTACAO-EM-ANDAMENTO-DE-MESTRADO...). */
+  basics: string;
+  detail: string;
+  element: string;
+  id: string;
+  nature: string[];
+  /** Mestrado e doutorado: o rádio f_tpo_orient. */
+  role?: boolean;
+}
+
+/**
+ * Uma orientação (PKG_ORIENT, POST PKG_ORIENT.FORM): a lista
+ * pkg_orient.lista com f_tipo C (concluídas) ou A (em andamento), observada
+ * no menu em 13/10/2026; o formulário pkg_orient.form com o mesmo f_tipo.
+ * A natureza é o rádio F_COD_PROD (listas L56 e L58).
+ */
+function orientation(o: Orientation, done: boolean): ProductionTarget {
+  const title = done ? 'TITULO' : 'TITULO-DO-TRABALHO';
+  const student = done ? 'NOME-DO-ORIENTADO' : 'NOME-DO-ORIENTANDO';
+  const fields: Record<string, FieldMap | string> = {
+    ...common(o.basics, title),
+    [`${o.basics}@FLAG-RELEVANCIA`]: { field: 'F_RELEV', toForm: yesNo },
+    [`${o.detail}@${student}`]: 'f_nme_orient',
+    [`${o.detail}@FLAG-BOLSA`]: { field: 'F_BOLSA', toForm: yesNo },
+  };
+  if (o.role)
+    fields[`${o.detail}@TIPO-DE-ORIENTACAO`] = { field: 'f_tpo_orient', toForm: ADVISOR_ROLE };
+  const tipo = done ? 'C' : 'A';
+  return {
+    element: o.element,
+    fields: inSchema(fields),
+    form: { action: 'PKG_ORIENT.FORM', name: 'PKG_ORIENT' },
+    grids: [...ORIENT_GRIDS],
+    id: o.id,
+    list: { formProc: 'pkg_orient.form', params: { f_tipo: tipo }, proc: 'pkg_orient.lista' },
+    manual: manualOf([
+      [o.basics, ['NATUREZA'], WHY.nature],
+      [o.basics, ['TIPO'], WHY.kind],
+      [o.detail, INSTITUTION, WHY.institution],
+      [o.detail, COURSE, WHY.course],
+      [o.detail, ['CODIGO-AGENCIA-FINANCIADORA', 'NOME-DA-AGENCIA'], WHY.agency],
+      [o.detail, ['NUMERO-ID-ORIENTADO', 'NUMERO-ID-ORIENTANDO'], WHY.studentId],
+    ]),
+    nature: { field: 'F_COD_PROD', values: o.nature },
+    title: { attr: title, child: o.basics },
+    year: { attr: 'ANO', child: o.basics },
+  };
+}
+
+const CONCLUDED: ProductionTarget[] = (
+  [
+    ['PARA-MESTRADO', 'mestrado', ['41'], true],
+    ['PARA-DOUTORADO', 'doutorado', ['42'], true],
+    ['PARA-POS-DOUTORADO', 'pos-doutorado', ['46'], false],
+  ] as const
+)
+  .map(([suffix, id, nature, role]) =>
+    orientation(
+      {
+        basics: `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-${suffix}`,
+        detail: `DETALHAMENTO-DE-ORIENTACOES-CONCLUIDAS-${suffix}`,
+        element: `ORIENTACOES-CONCLUIDAS-${suffix}`,
+        id: `orientacao-concluida-${id}`,
+        nature: [...nature],
+        role,
+      },
+      true,
+    ),
+  )
+  .concat(
+    // Aperfeiçoamento, graduação, iniciação científica e outra natureza
+    // concluídas ficam todas neste elemento (o NATUREZA do XML diz qual).
+    orientation(
+      {
+        basics: 'DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS',
+        detail: 'DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS',
+        element: 'OUTRAS-ORIENTACOES-CONCLUIDAS',
+        id: 'orientacao-concluida-outra',
+        nature: ['43', '44', '45', '49'],
+      },
+      true,
+    ),
+  );
+
+const ONGOING: ProductionTarget[] = (
+  [
+    ['MESTRADO', 'mestrado', 'A41', true],
+    ['DOUTORADO', 'doutorado', 'A42', true],
+    ['POS-DOUTORADO', 'pos-doutorado', 'A46', false],
+    ['APERFEICOAMENTO-ESPECIALIZACAO', 'aperfeicoamento', 'A43', false],
+    ['GRADUACAO', 'graduacao', 'A44', false],
+    ['INICIACAO-CIENTIFICA', 'iniciacao-cientifica', 'A45', false],
+  ] as const
+)
+  .map(([suffix, id, nature, role]) =>
+    orientation(
+      {
+        basics: `DADOS-BASICOS-DA-ORIENTACAO-EM-ANDAMENTO-DE-${suffix}`,
+        detail: `DETALHAMENTO-DA-ORIENTACAO-EM-ANDAMENTO-DE-${suffix}`,
+        element: `ORIENTACAO-EM-ANDAMENTO-DE-${suffix}`,
+        id: `orientacao-andamento-${id}`,
+        nature: [nature],
+        role,
+      },
+      false,
+    ),
+  )
+  .concat(
+    orientation(
+      {
+        basics: 'DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-EM-ANDAMENTO',
+        detail: 'DETALHAMENTO-DE-OUTRAS-ORIENTACOES-EM-ANDAMENTO',
+        element: 'OUTRAS-ORIENTACOES-EM-ANDAMENTO',
+        id: 'orientacao-andamento-outra',
+        nature: ['A49'],
+      },
+      false,
+    ),
+  );
+
+/**
+ * Banca de trabalho de conclusão (PKG_BANCA_TRAB, POST PKG_BANCA_TRAB.FORM),
+ * da lista pkg_banca_trab.lista; o candidato é f_nme_orient, os
+ * participantes vão na grade f_autores_l. A natureza é o rádio F_COD_PROD
+ * (lista L60), que não tem opção para "outras participações": esse tipo se
+ * acha só pelo título e pelo ano.
+ */
+function thesisBoard(suffix: string, id: string, nature?: string[]): ProductionTarget {
+  const de =
+    suffix === 'OUTRAS'
+      ? 'DE-OUTRAS-PARTICIPACOES-EM-BANCA'
+      : `DA-PARTICIPACAO-EM-BANCA-DE-${suffix}`;
+  const basics = `DADOS-BASICOS-${de}`;
+  return {
+    authors: BANCA_PARTICIPANTS,
+    element:
+      suffix === 'OUTRAS' ? 'OUTRAS-PARTICIPACOES-EM-BANCA' : `PARTICIPACAO-EM-BANCA-DE-${suffix}`,
+    fields: inSchema({
+      ...common(basics, 'TITULO'),
+      // O TIPO do mestrado; o das outras participações é texto sem campo.
+      ...(suffix === 'MESTRADO'
+        ? { [`${basics}@TIPO`]: { field: 'f_sub_prod', toForm: MASTERS_KIND } }
+        : {}),
+      [`DETALHAMENTO-${de}@NOME-DO-CANDIDATO`]: 'f_nme_orient',
+    }),
+    form: { action: 'PKG_BANCA_TRAB.FORM', name: 'PKG_BANCA_TRAB' },
+    grids: [...BANCA_GRIDS],
+    id: `banca-trabalho-${id}`,
+    list: { formProc: 'PKG_BANCA_TRAB.form', proc: 'pkg_banca_trab.lista' },
+    manual: manualOf([
+      [basics, ['NATUREZA'], WHY.nature],
+      [`DETALHAMENTO-${de}`, INSTITUTION, WHY.institution],
+      [`DETALHAMENTO-${de}`, COURSE, WHY.course],
+    ]),
+    ...(nature ? { nature: { field: 'F_COD_PROD', values: nature } } : {}),
+    title: { attr: 'TITULO', child: basics },
+    year: { attr: 'ANO', child: basics },
+  };
+}
+
+const THESIS_BOARDS: ProductionTarget[] = [
+  thesisBoard('MESTRADO', 'mestrado', ['A11']),
+  thesisBoard('DOUTORADO', 'doutorado', ['A12']),
+  // Qualificação de doutorado (A13) e de mestrado (A16) são o mesmo elemento.
+  thesisBoard('EXAME-QUALIFICACAO', 'qualificacao', ['A13', 'A16']),
+  thesisBoard('APERFEICOAMENTO-ESPECIALIZACAO', 'aperfeicoamento', ['A14']),
+  thesisBoard('GRADUACAO', 'graduacao', ['A15']),
+  thesisBoard('OUTRAS', 'outra'),
+];
+
+/**
+ * Banca julgadora (PKG_BANCA_JULG, POST PKG_BANCA_JULG.FORM), da lista
+ * pkg_banca_julg.lista; a natureza é o rádio F_COD_PROD (lista L61).
+ */
+function judgingBoard(suffix: string, id: string, nature: string): ProductionTarget {
+  const outras = suffix === 'OUTRAS';
+  const de = outras ? 'DE-OUTRAS-BANCAS-JULGADORAS' : `DA-BANCA-JULGADORA-PARA-${suffix}`;
+  const basics = `DADOS-BASICOS-${de}`;
+  const detail = `DETALHAMENTO-${de}`;
+  return {
+    authors: BANCA_PARTICIPANTS,
+    element: outras ? 'OUTRAS-BANCAS-JULGADORAS' : `BANCA-JULGADORA-PARA-${suffix}`,
+    fields: inSchema(common(basics, 'TITULO')),
+    form: { action: 'PKG_BANCA_JULG.FORM', name: 'PKG_BANCA_JULG' },
+    grids: [...BANCA_GRIDS],
+    id: `banca-julgadora-${id}`,
+    list: { formProc: 'PKG_BANCA_JULG.form', proc: 'pkg_banca_julg.lista' },
+    manual: manualOf([
+      [basics, ['NATUREZA'], WHY.nature],
+      [detail, INSTITUTION, WHY.judgingInstitution],
+    ]),
+    nature: { field: 'F_COD_PROD', values: [nature] },
+    title: { attr: 'TITULO', child: basics },
+    year: { attr: 'ANO', child: basics },
+  };
+}
+
+const JUDGING_BOARDS: ProductionTarget[] = [
+  judgingBoard('PROFESSOR-TITULAR', 'professor-titular', 'A21'),
+  judgingBoard('CONCURSO-PUBLICO', 'concurso-publico', 'A22'),
+  judgingBoard('LIVRE-DOCENCIA', 'livre-docencia', 'A23'),
+  judgingBoard('AVALIACAO-CURSOS', 'avaliacao-cursos', 'A24'),
+  judgingBoard('OUTRAS', 'outra', 'A29'),
+];
+
+export const ORIENTACOES_BANCAS_TARGETS: ProductionTarget[] = [
+  ...CONCLUDED,
+  ...ONGOING,
+  ...THESIS_BOARDS,
+  ...JUDGING_BOARDS,
+];

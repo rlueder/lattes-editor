@@ -17,7 +17,7 @@
 import { foldText } from '../../model/fold-text.ts';
 import { decodeHtmlEntities } from '../html-text.ts';
 import { parseJsLiteral } from '../lattes-lists.ts';
-import type { GridField } from './types.ts';
+import type { AuthorPart, GridField } from './types.ts';
 
 export type GridRow = Record<string, unknown>;
 export type Grids = Partial<Record<GridField, GridRow[]>>;
@@ -35,6 +35,34 @@ export const GRID_LABELS: Record<GridField, string> = {
   f_autores_l: 'Autores',
   f_plv_l: 'Palavras-chave',
   f_setor_l: 'Setores de atividade',
+};
+
+/** Os autores de uma produção. */
+export const AUTHOR_PART: AuthorPart = {
+  citation: 'NOME-PARA-CITACAO',
+  cnpq: 'NRO-ID-CNPQ',
+  element: 'AUTORES',
+  label: 'Autores',
+  name: 'NOME-COMPLETO-DO-AUTOR',
+  order: 'ORDEM-DE-AUTORIA',
+};
+
+/**
+ * Os participantes de uma banca, na mesma grade f_autores_l (seção 21 de
+ * docs/lattes_internals.md: o check() das bancas exige o próprio nome nela).
+ * Inferido: que a página escreva o vetor como autorProvider, igual ao do
+ * trabalho técnico; o censo não guardou os scripts das bancas. A grade não
+ * tem CPF, e a citação de quem já está na grade segue a da linha dela, então
+ * só o nome e a ordem vão.
+ */
+export const BANCA_PARTICIPANTS: AuthorPart = {
+  citation: 'NOME-PARA-CITACAO-DO-PARTICIPANTE-DA-BANCA',
+  cnpq: 'NRO-ID-CNPQ',
+  element: 'PARTICIPANTE-BANCA',
+  label: 'Participantes da banca',
+  name: 'NOME-COMPLETO-DO-PARTICIPANTE-DA-BANCA',
+  order: 'ORDEM-PARTICIPANTE',
+  sent: ['NOME-COMPLETO-DO-PARTICIPANTE-DA-BANCA', 'ORDEM-PARTICIPANTE'],
 };
 
 /** Máximo de palavras da grade (palavraNumMaxRegistros). */

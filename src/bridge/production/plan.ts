@@ -8,9 +8,9 @@ import { foldText } from '../../model/fold-text.ts';
 import { childElements, element, getAttr, type XElement } from '../../model/xml.ts';
 import { lattesSchema } from '../../schema/lattes.ts';
 import type { BridgeOp, OpBase } from '../plan.ts';
-import { type AuthorSpec, MAX_KEYWORDS } from './grids.ts';
+import { AUTHOR_PART, type AuthorSpec, MAX_KEYWORDS } from './grids.ts';
 import { PRODUCTION_TARGETS } from './targets/index.ts';
-import type { FieldMap, ProductionTarget } from './types.ts';
+import type { AuthorPart, FieldMap, ProductionTarget } from './types.ts';
 
 /** Alterar no lugar produções, orientações e bancas. Ligada para o teste ao vivo. */
 export const EDIT_PRODUCTION_ENABLED = true;
@@ -81,17 +81,14 @@ function shown(value: string): string {
   return isEnum ? enumLabel(value) : value;
 }
 
-/** Os autores de um item, na ordem de autoria. */
-function authorsOf(els: XElement[]): AuthorSpec[] {
+/** Os autores (ou participantes) de um item, na ordem de autoria. */
+function authorsOf(els: XElement[], part: AuthorPart = AUTHOR_PART): AuthorSpec[] {
   return [...els]
-    .sort(
-      (a, b) =>
-        Number(getAttr(a, 'ORDEM-DE-AUTORIA') ?? 0) - Number(getAttr(b, 'ORDEM-DE-AUTORIA') ?? 0),
-    )
+    .sort((a, b) => Number(getAttr(a, part.order) ?? 0) - Number(getAttr(b, part.order) ?? 0))
     .map((a) => ({
-      citation: getAttr(a, 'NOME-PARA-CITACAO') ?? '',
-      cnpq: getAttr(a, 'NRO-ID-CNPQ') ?? '',
-      name: getAttr(a, 'NOME-COMPLETO-DO-AUTOR') ?? '',
+      citation: getAttr(a, part.citation) ?? '',
+      cnpq: getAttr(a, part.cnpq) ?? '',
+      name: getAttr(a, part.name) ?? '',
     }));
 }
 
@@ -165,12 +162,20 @@ export function planProduction(
     };
   }
 
-  if (change.element === 'AUTORES') {
+  const part = target.authors ?? AUTHOR_PART;
+  if (change.element === part.element) {
     if (!target.grids.includes('f_autores_l')) {
       return { reason: 'O formulário deste tipo no Lattes não tem a lista de autores' };
     }
-    const current = childElements(item, 'AUTORES');
-    const after = authorsOf(current);
+    const kept = part.sent;
+    const notSent = kept ? change.fields.filter((f) => !kept.includes(f.attr)) : [];
+    if (change.kind === 'alterado' && notSent.length > 0) {
+      return {
+        reason: `A grade de ${part.label.toLowerCase()} do Lattes não leva: ${notSent.map((f) => f.label).join(', ')}`,
+      };
+    }
+    const current = childElements(item, part.element);
+    const after = authorsOf(current, part);
     // O antes: a lista de agora com esta mudança desfeita.
     const revert = (a: XElement) => ({
       ...a,
@@ -185,10 +190,13 @@ export function planProduction(
         : change.kind === 'removido'
           ? [
               ...current,
-              element('AUTORES', Object.fromEntries(change.fields.map((f) => [f.attr, f.before]))),
+              element(
+                part.element,
+                Object.fromEntries(change.fields.map((f) => [f.attr, f.before])),
+              ),
             ]
           : current.map((a) => (a === el ? revert(a) : a));
-    const authors = { after, before: authorsOf(beforeEls) };
+    const authors = { after, before: authorsOf(beforeEls, part) };
     const names = (list: AuthorSpec[]) => list.map((a) => a.name).join('; ');
     return {
       ...base,
@@ -198,7 +206,7 @@ export function planProduction(
         {
           after: names(after),
           before: names(authors.before),
-          label: 'Autores',
+          label: part.label,
           name: 'f_autores_l',
         },
       ],
@@ -214,14 +222,14 @@ export function planProduction(
   const rows: ProductionRow[] = [];
   const unknown: string[] = [];
   const unmapped: string[] = [];
-  const manual: string[] = [];
+  const manual = new Map<string, string[]>();
   for (const f of change.fields) {
     const key = `${change.element}@${f.attr}`;
     const m = target.fields[key];
     const why = target.manual?.[key];
+    if (!m && why) manual.set(why, [...(manual.get(why) ?? []), f.label]);
     if (!m) {
-      if (why) manual.push(`${f.label}: ${why}`);
-      else unknown.push(f.label);
+      if (!why) unknown.push(f.label);
       continue;
     }
     const { field, toForm } = mapOf(m);
@@ -238,7 +246,11 @@ export function planProduction(
   if (unknown.length > 0) {
     return { reason: `O formulário deste tipo no Lattes não tem: ${unknown.join(', ')}` };
   }
-  if (manual.length > 0) return { reason: `Fica à mão. ${manual.join('; ')}` };
+  if (manual.size > 0) {
+    return {
+      reason: [...manual].map(([why, labels]) => `${labels.join(', ')}: ${why}`).join('; '),
+    };
+  }
   if (unmapped.length > 0) {
     return { reason: `Valor sem correspondência no formulário do Lattes: ${unmapped.join(', ')}` };
   }

@@ -18,7 +18,28 @@ export interface FieldMap {
 /** As grades que o check() de cada página serializa nos ocultos. */
 export type GridField = 'f_area_l' | 'f_autores_l' | 'f_plv_l' | 'f_setor_l';
 
+/**
+ * O elemento do XML que a grade f_autores_l guarda (AUTORES na produção,
+ * PARTICIPANTE-BANCA nas bancas) e os atributos de cada linha.
+ */
+export interface AuthorPart {
+  citation: string;
+  cnpq: string;
+  element: string;
+  /** Como a grade se chama no painel. */
+  label: string;
+  name: string;
+  order: string;
+  /**
+   * Os atributos que a grade leva de volta ao Lattes. Trocar outro (a
+   * citação, o CPF) fica à mão; sem a lista, qualquer troca vira envio.
+   */
+  sent?: string[];
+}
+
 export interface ProductionTarget {
+  /** O elemento da grade de autores, quando não é AUTORES (grids.ts). */
+  authors?: AuthorPart;
   /** O elemento do item no XML (ARTIGO-PUBLICADO, TRABALHO-TECNICO…). */
   element: string;
   /**
@@ -35,10 +56,16 @@ export interface ProductionTarget {
   /** A lista do menu (com os parâmetros que a distinguem) e o procedimento do formulário de cada linha. */
   list: { formProc: string; params?: Record<string, string>; proc: string };
   /**
-   * Atributos que o formulário tem, mas que ficam à mão, com o motivo
-   * ("FILHO@ATRIBUTO" → motivo): o campo existe e não se sabe gravá-lo.
+   * Atributos que o formulário tem mas o envio não troca, com o motivo
+   * (a instituição que sai de uma busca), na mesma chave de fields.
    */
   manual?: Record<string, string>;
+  /**
+   * O campo da natureza e os valores dela que são deste tipo, quando a mesma
+   * lista tem vários tipos: a linha cuja natureza é de outro tipo não conta
+   * (a banca de mestrado e a qualificação com o mesmo título e ano).
+   */
+  nature?: { field: string; values: string[] };
   /** Título e ano do item, para achar a linha da lista; os campos do formulário são f_titulo e f_ano se não disser. */
   title: { attr: string; child: string; field?: string };
   year: { attr: string; child: string; field?: string };

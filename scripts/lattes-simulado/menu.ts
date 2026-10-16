@@ -45,6 +45,11 @@ function menuItems(code: string): [string, string][] {
     ['Tradução', `prc_bib_demais_lista?f_cod_tipo=1A&f_cod=${code}`],
     ['Partitura musical', `prc_bib_demais_lista?f_cod_tipo=1B&f_cod=${code}`],
     ['Patentes', `PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=PP&f_cod=${code}`],
+    // As listas de orientações e bancas, como na captura de 13/10/2026 (docs/lattes-listas/).
+    ['Orientações concluídas', `pkg_orient.lista?f_tipo=C&f_cod=${code}`],
+    ['Orientações em andamento', `pkg_orient.lista?f_tipo=A&f_cod=${code}`],
+    ['Bancas de trabalhos de conclusão', `pkg_banca_trab.lista?f_cod=${code}`],
+    ['Bancas julgadoras', `pkg_banca_julg.lista?f_cod=${code}`],
     // Os outros registros: a mesma lista com outro f_cod_tipo (reconhecimento,
     // catálogo de menus; o parâmetro de cada um no menu é inferido).
     ...(

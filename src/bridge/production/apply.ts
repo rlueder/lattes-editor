@@ -37,6 +37,18 @@ import type { GridField, ProductionTarget } from './types.ts';
 const valueOf = (controls: FormControl[], name: string) =>
   controls.find((c) => c.name === name)?.value ?? '';
 
+/**
+ * A natureza da linha não é de outro tipo? Lida do rádio marcado mesmo que
+ * desabilitado (inferido: a edição pode travar a natureza). Sem campo ou sem
+ * rádio marcado, a linha conta, e o título e o ano decidem.
+ */
+function sameNature(controls: FormControl[], t: ProductionTarget): boolean {
+  if (!t.nature) return true;
+  const { field, values } = t.nature;
+  const value = controls.find((c) => c.name === field && (c.type !== 'radio' || c.checked))?.value;
+  return value === undefined || values.includes(value.trim());
+}
+
 /** O formulário do item: o único da lista com o título e o ano dele. */
 async function locate(
   op: ProductionOp,
@@ -60,7 +72,8 @@ async function locate(
     if (!controls) continue;
     if (
       folded(valueOf(controls, titleField)) === folded(op.match.title) &&
-      valueOf(controls, yearField).trim() === op.match.year
+      valueOf(controls, yearField).trim() === op.match.year &&
+      sameNature(controls, t)
     ) {
       found.push({ controls, html, path: link.path });
     }

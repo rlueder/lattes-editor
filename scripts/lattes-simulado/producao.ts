@@ -81,6 +81,11 @@ function form(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
     const raw = getAttr(partOf(item, child) ?? element(''), attr) ?? '';
     return h.text(field, (toForm ? toForm(raw) : raw) ?? '');
   });
+  // A natureza, que a especificação usa para achar a linha (inferido: um
+  // campo de texto com o primeiro valor do tipo, no lugar do rádio).
+  if (t.nature && !controls.some((c) => c.includes(`name="${t.nature!.field}"`))) {
+    controls.push(h.text(t.nature.field, t.nature.values[0] ?? ''));
+  }
   // Dois atributos no mesmo campo: o controle sai uma vez só.
   const unique = [...new Set(controls)].join('\n');
   const body = `<form name="${t.form.name}" method="post" action="${t.form.action}">
@@ -88,7 +93,7 @@ ${unique}
 ${h.hidden('f_ctr', 'U')}${h.hidden('f_cod', state.code)}${h.hidden('f_seq', req.get('f_seq') ?? '')}${GRID_HIDDEN}
 ${h.formButtons(true)}
 </form>
-${gridScripts(item)}
+${gridScripts(item, t.authors)}
 ${h.formScripts(t.form.name, 'Deseja realmente excluir esta produção?')}`;
   return html(h.page(t.id, body));
 }
@@ -99,7 +104,7 @@ function post(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
   const item = itemsOf(state, t).find((i) => seqOf(i) === req.get('f_seq'));
   if (!item) return html(h.page(t.id, '<p>Registro não encontrado.</p>'));
   writeFields(t, item, req);
-  applyGrids(item, req);
+  applyGrids(item, req, t.authors);
   state.touch();
   return html(back);
 }
@@ -121,12 +126,19 @@ export function productionRoutes(): Routes {
         return html(h.page(t.id, `<table>${rows}</table>`));
       };
     }
-    routes[t.list.formProc.toLowerCase()] = (req, state) =>
-      req.method === 'POST' ? post(req, state, t) : form(req, state, t);
+    // O mesmo formulário pode servir a vários tipos (as orientações): vale o
+    // tipo do item do f_seq.
+    const formKey = t.list.formProc.toLowerCase();
+    const sharing = targets.filter((x) => x.list.formProc.toLowerCase() === formKey);
+    const targetOf = (req: SimRequest, state: LattesState) =>
+      sharing.find((x) => itemsOf(state, x).some((i) => seqOf(i) === req.get('f_seq'))) ?? t;
+    routes[formKey] = (req, state) =>
+      req.method === 'POST'
+        ? post(req, state, targetOf(req, state))
+        : form(req, state, targetOf(req, state));
     // O POST costuma ir ao mesmo procedimento do formulário, que já responde aos dois.
     const action = t.form.action.toLowerCase();
-    if (action !== t.list.formProc.toLowerCase())
-      routes[action] = (req, state) => post(req, state, t);
+    if (action !== formKey) routes[action] = (req, state) => post(req, state, targetOf(req, state));
   }
   return routes;
 }

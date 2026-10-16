@@ -418,7 +418,7 @@ describe('produções bibliográficas: o que fica à mão', () => {
     const [reason] = reasonOf((root) =>
       setAttr(partOf(root, '41', 'DADOS-BASICOS-DO-ARTIGO'), 'DOI', '10.1000/x'),
     );
-    expect(reason).toMatch(/^Fica à mão\. DOI: o campo do DOI no Lattes/);
+    expect(reason).toMatch(/^DOI: o campo do DOI no Lattes/);
   });
 
   it('o que o formulário do artigo aceito não tem', () => {
