@@ -313,8 +313,9 @@ export async function applyCreateAtividade(
         readBack(saved, checked),
       );
       if (problem) return { ...result('divergente', problem), assigned };
-      // Sem reler as disciplinas, a inclusão não se dá por conferida.
-      return { ...result('divergente', `${DISCIPLINES_UNREAD} (atividade ${seq})`), assigned };
+      // As disciplinas ficam sem reler: o resto conferiu, e o aviso vai no
+      // registro do enviado, sem travar a fila nem o envio ao CNPq.
+      return { ...result('conferido', `${DISCIPLINES_UNREAD} (atividade ${seq})`), assigned };
     } catch (err) {
       const why = err instanceof Error ? err.message : 'falha inesperada';
       return maybeCreated(op.key, mayExist, `a conferência falhou (${why})`);

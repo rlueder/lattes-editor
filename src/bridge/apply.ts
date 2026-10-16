@@ -326,7 +326,7 @@ export async function applyOp(
       const now = await countListEdits(op.kind, menu, get);
       if (now > listed) {
         return result(
-          'erro',
+          'divergente',
           `O Lattes incluiu uma linha nova em vez de alterar (${listed} antes, ${now} depois): confira a lista no Lattes e exclua a cópia`,
         );
       }
@@ -335,7 +335,7 @@ export async function applyOp(
     const after = await readPairs(port, path, name);
     const notSaved = mismatches(after.pairs, op.set);
     if (notSaved.length > 0) {
-      return result('erro', `O Lattes não gravou: ${labels(notSaved)}`);
+      return result('divergente', `O Lattes não gravou: ${labels(notSaved)}`);
     }
     // f_vinculo é preenchido no envio (check()); a página sempre o traz vazio.
     const unexpected = changedNames(before.pairs, after.pairs).filter(
@@ -349,7 +349,7 @@ export async function applyOp(
       if (!same(value(before.controls, n), value(after.controls, n))) unexpected.push(n);
     }
     if (unexpected.length > 0) {
-      return result('erro', `Outros campos mudaram no Lattes: ${labels(unexpected)}`);
+      return result('divergente', `Outros campos mudaram no Lattes: ${labels(unexpected)}`);
     }
     return result('conferido', 'Gravado e conferido no Lattes');
   } catch (err) {

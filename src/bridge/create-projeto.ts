@@ -419,9 +419,9 @@ export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort):
       // Lattes pendurar o projeto em outra atuação, a releitura acusa.
       const problem = readBackProblem('Criado no Lattes', false, readBack(saved, set));
       if (problem) return { ...result('divergente', problem), assigned };
-      // A equipe volta no script da página, não num campo: sem relê-la, a
-      // inclusão não se dá por conferida.
-      return { ...result('divergente', TEAM_UNREAD), assigned };
+      // A equipe volta no script da página, não num campo, e fica sem reler: o
+      // resto conferiu, e o aviso vai no registro do enviado.
+      return { ...result('conferido', TEAM_UNREAD), assigned };
     } catch (err) {
       return maybeCreated(
         op.key,

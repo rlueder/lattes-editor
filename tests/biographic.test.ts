@@ -435,7 +435,7 @@ describe('dados gerais no Lattes simulado', () => {
     });
     expect(await applyOp(op, side.port)).toMatchObject({
       detail: 'Outros campos mudaram no Lattes: Logradouro (profissional)',
-      status: 'erro',
+      status: 'divergente',
     });
     const noMenu = { ...side.port, menuHtml: () => '<p>menu</p>' };
     expect(await applyOp(op, noMenu)).toMatchObject({

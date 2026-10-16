@@ -436,7 +436,7 @@ describe('conector: aplicar no Lattes simulado', () => {
     });
     expect(await applyOp(op, dropped.port)).toMatchObject({
       detail: expect.stringMatching(/não gravou/),
-      status: 'erro',
+      status: 'divergente',
     });
     await dropped.close();
     const side = await lattesFor({
@@ -446,7 +446,7 @@ describe('conector: aplicar no Lattes simulado', () => {
     });
     expect(await applyOp(op, side.port)).toMatchObject({
       detail: 'Outros campos mudaram no Lattes: Carga horária',
-      status: 'erro',
+      status: 'divergente',
     });
   });
 

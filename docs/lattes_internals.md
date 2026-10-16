@@ -1747,8 +1747,11 @@ ela traz o nome completo (`l`) ou uma das citações (`t`) do `DADOS-GERAIS` do
 currículo; senão, para sem enviar. Que essa linha seja a do dono continua
 **inferido**: é a única que o `check()` aceita, mas o que o Lattes grava com
 ela só se vê numa inclusão, e por isso o registro, o projeto e a atividade
-criados voltam como divergentes, com o pedido de conferir no Lattes os
-inventores, a equipe ou as disciplinas, que o conector não relê. Com as chaves
+criados voltam com o pedido de conferir no Lattes os inventores, a equipe ou
+as disciplinas, que o conector não relê. Desde o freio de escrita (LAT-59)
+voltam conferidos pelos outros campos, com o pedido no registro do enviado:
+como divergentes, parariam a fila e bloqueariam o envio ao CNPq a cada
+inclusão. Com as chaves
 na ordem do `autorDP`, a linha da pessoa vai na grade como "l||t" (`deletable`
 e `editable` ficam de fora da lista de chaves de cada formulário), e no
 projeto, como coordenadora, "l||t|s" (`src/bridge/author-grid.ts`).

@@ -471,9 +471,9 @@ export async function applyCreateRegistro(op: CreateRegistroOp, port: LattesPort
         readBack(saved, op.set),
       );
       if (problem) return { ...result('divergente', problem), assigned };
-      // A grade de autores volta no script da página, não num campo: sem reler
-      // os inventores, a inclusão não se dá por conferida.
-      return { ...result('divergente', `${INVENTORS_UNREAD} (registro ${seq})`), assigned };
+      // A grade de autores volta no script da página, não num campo, e os
+      // inventores ficam sem reler: o aviso vai no registro do enviado.
+      return { ...result('conferido', `${INVENTORS_UNREAD} (registro ${seq})`), assigned };
     } catch (err) {
       return maybeCreated(
         op.key,

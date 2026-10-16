@@ -298,7 +298,7 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
     expect(await applyOp(op, lattes.port, GATES)).toMatchObject({
       detail:
         'O Lattes incluiu uma linha nova em vez de alterar (3 antes, 4 depois): confira a lista no Lattes e exclua a cópia',
-      status: 'erro',
+      status: 'divergente',
     });
   });
 
@@ -384,7 +384,7 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
     });
     const op = onlyOp((root) => setAttr(compl(root, '5'), 'CARGA-HORARIA', '60'));
     const r = await applyOp(op, lattes.port, GATES);
-    expect(r.status).toBe('erro');
+    expect(r.status).toBe('divergente');
     expect(r.detail).toMatch(/^Outros campos mudaram no Lattes: .*Instituição/);
   });
 
