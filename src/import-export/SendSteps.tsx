@@ -23,42 +23,53 @@ const MARK: Record<string, string> = {
   sessao: '!',
 };
 
-/** Os três passos no alto, com o atual marcado. */
-export function StepHeader({ steps }: { steps: StepState[] }) {
+/**
+ * Os três passos no alto, com o atual marcado e o que está à vista
+ * destacado. Um passo feito (ou o atual) abre pelo clique; o que vem depois
+ * ainda não.
+ */
+export function StepHeader({
+  onSelect,
+  shown,
+  steps,
+}: {
+  shown: number;
+  steps: StepState[];
+  onSelect: (step: number) => void;
+}) {
   const labels = ['Revisar', 'Gravar no Lattes', 'Publicar no CNPq'];
   return (
     <ol aria-label="Passos do envio" className="send-steps">
       {labels.map((label, i) => (
-        <li
-          key={label}
-          aria-current={steps[i] === 'atual' ? 'step' : undefined}
-          className={`send-step ${steps[i]}`}
-        >
-          <span className="send-step-n">{steps[i] === 'feito' ? '✓' : i + 1}</span>
-          {label}
+        <li key={label}>
+          <button
+            aria-current={i === shown ? 'step' : undefined}
+            className={`send-step ${steps[i]}${i === shown ? ' shown' : ''}`}
+            disabled={steps[i] === 'depois'}
+            type="button"
+            onClick={() => onSelect(i)}
+          >
+            <span className="send-step-n">{steps[i] === 'feito' ? '✓' : i + 1}</span>
+            {label}
+          </button>
         </li>
       ))}
     </ol>
   );
 }
 
-/** Um passo da janela: título numerado e o conteúdo; travado, só o motivo. */
+/** O conteúdo de um passo; travado, só o motivo. O nome dele já está na pílula. */
 export function Step({
   children,
   locked,
-  n,
   title,
 }: {
   children: ReactNode;
   locked?: string;
-  n: number;
   title: string;
 }) {
   return (
-    <section className={`panel-section send-step-body${locked ? ' locked' : ''}`}>
-      <h3 className="panel-section-head">
-        {n}. {title}
-      </h3>
+    <section aria-label={title} className="panel-section send-step-body">
       {locked ? <p className="muted">{locked}</p> : children}
     </section>
   );

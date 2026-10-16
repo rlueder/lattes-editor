@@ -112,6 +112,20 @@ export function ExportPanel({
   const writing = !!bridge && isWriting(bridge);
   const toPublish = !!bridge?.lattes?.pending;
   const steps = stepStates({ toPublish, toWrite, writing });
+  // Só o passo atual aparece; um passo já feito abre pelo clique na pílula, e
+  // a janela volta a seguir o passo atual quando ele muda.
+  const current = Math.max(0, steps.indexOf('atual'));
+  const [viewing, setViewing] = useState<number | undefined>();
+  useEffect(() => setViewing(undefined), [current]);
+  const shown = bridge?.available ? (viewing ?? current) : 0;
+  // A última rodada parou com alteração que não conferiu: o passo 1 avisa.
+  const stopped =
+    bridge?.round && !writing
+      ? bridge.round.filter((op) => {
+          const r = bridge.results[op.key];
+          return r && r.status !== 'conferido';
+        }).length
+      : 0;
   const plural = (n: number) => (n === 1 ? '1 alteração' : `${n} alterações`);
 
   return (
@@ -143,113 +157,124 @@ export function ExportPanel({
         }}
         onOpen={(kind) => (kind === 'pendencia-desconhecida' ? onDiagnosis() : setHistory(true))}
       />
-      {bridge?.available && <StepHeader steps={steps} />}
+      {bridge?.available && <StepHeader shown={shown} steps={steps} onSelect={setViewing} />}
 
-      <Step n={1} title="Revisar">
-        {toSend === 0 ? (
-          <p className="empty">
-            Nada esperando para ir ao Lattes. Itens novos e alterações aparecem aqui, cada um com o
-            caminho que vai seguir.
-          </p>
-        ) : (
-          <>
-            {bridge && routed.conector.length > 0 && (
-              <>
-                <ChangesList
-                  groups={routed.conector}
-                  onDiscard={onDiscard}
-                  onDiscardField={onDiscardField}
-                />
-                <div className="step-actions">
-                  <span className="muted">
-                    A extensão grava cada uma no Lattes e lê de volta para conferir.
-                  </span>
-                  <button
-                    className="primary"
-                    disabled={writing || toWrite === 0}
-                    type="button"
-                    onClick={() => void bridge.send()}
-                  >
-                    <UploadIcon /> Gravar {plural(toWrite)} no Lattes
-                  </button>
-                </div>
-              </>
-            )}
+      {shown === 0 && (
+        <Step title="Revisar">
+          {stopped > 0 && (
+            <div className="step-notice warn" role="status">
+              <p>
+                {stopped === 1
+                  ? 'A última gravação parou numa alteração que não conferiu.'
+                  : `A última gravação parou com ${stopped} alterações que não conferiram.`}
+              </p>
+              <div className="step-actions">
+                <button type="button" onClick={() => setViewing(1)}>
+                  Ver a gravação
+                </button>
+              </div>
+            </div>
+          )}
+          {toSend === 0 ? (
+            <p className="empty">
+              Nada esperando para ir ao Lattes. Itens novos e alterações aparecem aqui, cada um com
+              o caminho que vai seguir.
+            </p>
+          ) : (
+            <>
+              {bridge && routed.conector.length > 0 && (
+                <>
+                  <ChangesList
+                    groups={routed.conector}
+                    onDiscard={onDiscard}
+                    onDiscardField={onDiscardField}
+                  />
+                  <div className="step-actions">
+                    <span className="muted">
+                      A extensão grava cada uma no Lattes e lê de volta para conferir.
+                    </span>
+                    <button
+                      className="primary"
+                      disabled={writing || toWrite === 0}
+                      type="button"
+                      onClick={() => void bridge.send()}
+                    >
+                      <UploadIcon /> Gravar {plural(toWrite)} no Lattes
+                    </button>
+                  </div>
+                </>
+              )}
 
-            {pending.length > 0 && (
-              <section className="panel-section">
-                <h4 className="panel-section-head">Itens novos, no arquivo de importação</h4>
-                <ul className="pending-list">
-                  {pending.map((p) => (
-                    <li key={p.sequencia}>
-                      <button
-                        className="ghost pending-item"
-                        type="button"
-                        onClick={() => onOpenItem(p.sequencia)}
-                      >
-                        <span className="item-kind">{elementLabel(p.type)}</span>
-                        <span className="pending-title">{p.title || '(sem título)'}</span>
-                        {p.problems.length > 0 ? (
-                          <span className="tag warn">
-                            {p.problems.length === 1
-                              ? '1 pendência'
-                              : `${p.problems.length} pendências`}
-                          </span>
-                        ) : (
-                          <span className="tag ok">pronto</span>
+              {pending.length > 0 && (
+                <section className="panel-section">
+                  <h4 className="panel-section-head">Itens novos, no arquivo de importação</h4>
+                  <ul className="pending-list">
+                    {pending.map((p) => (
+                      <li key={p.sequencia}>
+                        <button
+                          className="ghost pending-item"
+                          type="button"
+                          onClick={() => onOpenItem(p.sequencia)}
+                        >
+                          <span className="item-kind">{elementLabel(p.type)}</span>
+                          <span className="pending-title">{p.title || '(sem título)'}</span>
+                          {p.problems.length > 0 ? (
+                            <span className="tag warn">
+                              {p.problems.length === 1
+                                ? '1 pendência'
+                                : `${p.problems.length} pendências`}
+                            </span>
+                          ) : (
+                            <span className="tag ok">pronto</span>
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  {blocked.length > 0 ? (
+                    <p className="export-blocked">
+                      Corrija as pendências antes de gerar o arquivo. O Lattes descarta itens
+                      incompletos sem avisar.
+                    </p>
+                  ) : (
+                    file && (
+                      <>
+                        <ImportSteps file={file} minYear={minYear} />
+                        {bridge && canImportByConnector(bridge.link) && (
+                          <ConnectorImport bridge={bridge} />
                         )}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                {blocked.length > 0 ? (
-                  <p className="export-blocked">
-                    Corrija as pendências antes de gerar o arquivo. O Lattes descarta itens
-                    incompletos sem avisar.
-                  </p>
-                ) : (
-                  file && (
-                    <>
-                      <ImportSteps file={file} minYear={minYear} />
-                      {bridge && canImportByConnector(bridge.link) && (
-                        <ConnectorImport bridge={bridge} />
-                      )}
-                    </>
-                  )
-                )}
-              </section>
-            )}
+                      </>
+                    )
+                  )}
+                </section>
+              )}
 
-            {routed.pendente.length > 0 && (
-              <section className="panel-section pending-unsupported">
-                <p className="muted changes-how">O editor ainda não envia estes</p>
-                <ChangesList
-                  groups={routed.pendente}
-                  onDiscard={onDiscard}
-                  onDiscardField={onDiscardField}
-                />
-              </section>
-            )}
-          </>
-        )}
-      </Step>
+              {routed.pendente.length > 0 && (
+                <section className="panel-section pending-unsupported">
+                  <p className="muted changes-how">O editor ainda não envia estes</p>
+                  <ChangesList
+                    groups={routed.pendente}
+                    onDiscard={onDiscard}
+                    onDiscardField={onDiscardField}
+                  />
+                </section>
+              )}
+            </>
+          )}
+        </Step>
+      )}
 
-      {bridge?.available && (
+      {bridge?.available && shown === 1 && (
         <Step
-          locked={
-            bridge.round || writing
-              ? undefined
-              : 'Depois de revisar, a gravação aparece aqui, alteração por alteração.'
-          }
-          n={2}
+          locked={bridge.round || writing ? undefined : 'Nenhuma gravação nesta sessão ainda.'}
           title="Gravar no Lattes"
         >
           <WriteStep bridge={bridge} />
         </Step>
       )}
 
-      {bridge?.available && (
-        <Step locked={publishLock(writing, toWrite, toPublish)} n={3} title="Publicar no CNPq">
+      {bridge?.available && shown === 2 && (
+        <Step locked={publishLock(writing, toWrite, toPublish)} title="Publicar no CNPq">
           <PublishPanel
             inline
             bridge={bridge}

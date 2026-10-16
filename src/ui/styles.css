@@ -6451,6 +6451,10 @@ button.ghost.icon {
   list-style: none;
 }
 
+.send-steps > li {
+  display: contents;
+}
+
 .send-step {
   display: inline-flex;
   align-items: center;
@@ -6474,7 +6478,18 @@ button.ghost.icon {
   font-weight: 600;
 }
 
-.send-step.atual {
+.send-step {
+  border: 0;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.send-step:disabled {
+  cursor: default;
+}
+
+.send-step.shown {
   background: var(--accent-soft);
   color: var(--text);
   font-weight: 550;
@@ -6487,11 +6502,6 @@ button.ghost.icon {
 
 .send-step.feito .send-step-n {
   color: var(--ok);
-}
-
-/* Um passo travado mostra só o motivo, apagado. */
-.send-step-body.locked .panel-section-head {
-  color: var(--muted);
 }
 
 .step-actions {
@@ -6574,15 +6584,24 @@ button.ghost.icon {
   color: var(--danger);
 }
 
-/* O histórico do enviado, no fim e fechado. */
+/* O histórico do enviado, no fim e fechado: a caixa de details de sempre,
+   com o conteúdo no mesmo recuo do título. */
 .send-history {
   margin-top: 18px;
 }
 
 .send-history > summary {
+  padding: 12px 16px;
   color: var(--muted);
   font-size: 13px;
-  cursor: pointer;
+}
+
+.send-history[open] > summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.send-history > :not(summary) {
+  padding: 4px 16px 12px;
 }
 
 .publish-inline .panel-section:first-child {
