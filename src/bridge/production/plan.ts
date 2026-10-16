@@ -214,10 +214,14 @@ export function planProduction(
   const rows: ProductionRow[] = [];
   const unknown: string[] = [];
   const unmapped: string[] = [];
+  const manual: string[] = [];
   for (const f of change.fields) {
-    const m = target.fields[`${change.element}@${f.attr}`];
+    const key = `${change.element}@${f.attr}`;
+    const m = target.fields[key];
+    const why = target.manual?.[key];
     if (!m) {
-      unknown.push(f.label);
+      if (why) manual.push(`${f.label}: ${why}`);
+      else unknown.push(f.label);
       continue;
     }
     const { field, toForm } = mapOf(m);
@@ -234,6 +238,7 @@ export function planProduction(
   if (unknown.length > 0) {
     return { reason: `O formulário deste tipo no Lattes não tem: ${unknown.join(', ')}` };
   }
+  if (manual.length > 0) return { reason: `Fica à mão. ${manual.join('; ')}` };
   if (unmapped.length > 0) {
     return { reason: `Valor sem correspondência no formulário do Lattes: ${unmapped.join(', ')}` };
   }

@@ -35,6 +35,15 @@ function menuItems(code: string): [string, string][] {
     // Observados no menu real em 16/10/2026.
     ['Trabalhos técnicos', `pkg_relatorio.lista?f_cod=${code}`],
     ['Outra produção bibliográfica', `prc_bib_demais_lista?f_cod_tipo=1Z&f_cod=${code}`],
+    // As outras listas bibliográficas: as da captura de 13/10/2026 e, para
+    // artigos publicados e livros, as do catálogo de menus do reconhecimento.
+    ['Artigos completos publicados', `pkg_artigo.lista?f_cod=${code}`],
+    ['Artigos aceitos para publicação', `pkg_artigo_pr.lista?f_cod=${code}`],
+    ['Livros e capítulos', `pkg_lvr_cap.lista?f_cod=${code}`],
+    ['Trabalhos em anais', `pkg_trabalho.lista?f_cod=${code}`],
+    ['Textos em jornais ou revistas', `pkg_texto.lista?f_cod=${code}`],
+    ['Tradução', `prc_bib_demais_lista?f_cod_tipo=1A&f_cod=${code}`],
+    ['Partitura musical', `prc_bib_demais_lista?f_cod_tipo=1B&f_cod=${code}`],
     ['Patentes', `PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=PP&f_cod=${code}`],
     // Os outros registros: a mesma lista com outro f_cod_tipo (reconhecimento,
     // catálogo de menus; o parâmetro de cada um no menu é inferido).

@@ -115,6 +115,16 @@ export async function applyProduction(op: ProductionOp, port: LattesPort): Promi
     if (pairValue(pairs, 'f_ctr') !== 'U') {
       return result('erro', 'O formulário não está em modo de alteração');
     }
+    // Um campo da especificação que a página não tem (ligação inferida que
+    // não confere): nada vai, em vez de um POST com um parâmetro a mais.
+    const fields = Object.keys(op.set).filter((f) => !(f in GRID_SPECS));
+    const absent = fields.filter((f) => !controls.some((c) => c.name === f));
+    if (absent.length > 0) {
+      return result(
+        'erro',
+        `O formulário do Lattes não tem o campo de ${absent.map((f) => labelOf(op, f)).join(', ')}; nada foi enviado`,
+      );
+    }
     const grids = readGrids(html, t.grids);
     if ('missing' in grids) {
       return result(
@@ -124,7 +134,6 @@ export async function applyProduction(op: ProductionOp, port: LattesPort): Promi
     }
 
     // O antes: os campos que a alteração troca, e as grades que ela mexe.
-    const fields = Object.keys(op.set).filter((f) => !(f in GRID_SPECS));
     const wrong = fields.filter((f) => folded(pairValue(pairs, f)) !== folded(op.expect[f]));
     if (op.keywords && !sameWords(keywordLabels(grids.f_plv_l ?? []), op.keywords.before)) {
       wrong.push('f_plv_l');

@@ -10,7 +10,7 @@
 // cada família conferem a especificação contra ele.
 
 import idiomas from '../../src/bridge/production/idiomas-lattes.json' with { type: 'json' };
-import { country, language } from '../../src/bridge/production/mappers.ts';
+import { country, date, language } from '../../src/bridge/production/mappers.ts';
 import { PRODUCTION_TARGETS } from '../../src/bridge/production/targets/index.ts';
 import type { FieldMap, ProductionTarget } from '../../src/bridge/production/types.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
@@ -20,7 +20,7 @@ import type { LattesState } from './estado.ts';
 import { applyGrids, GRID_HIDDEN, gridScripts } from './grades.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
-import { html, type Routes, type SimResponse } from './tipos.ts';
+import { html, notFound, type Routes, type SimResponse } from './tipos.ts';
 
 /** Os tipos com tela própria no simulado (censo.ts, grades.ts), fora daqui. */
 const CUSTOM = new Set(['trabalho-tecnico']);
@@ -49,6 +49,7 @@ function fromForm(element: string, attr: string, map: FieldMap, value: string): 
   if (!map.toForm) return value;
   if (value === '') return '';
   if (map.toForm === country) return h.countryName(value);
+  if (map.toForm === date) return value.replace(/\//g, '');
   if (map.toForm === language) {
     return Object.entries(idiomas as Record<string, string>).find(([, c]) => c === value)?.[0];
   }
@@ -70,6 +71,8 @@ function list(state: LattesState, t: ProductionTarget): string {
 }
 
 function form(req: SimRequest, state: LattesState, t: ProductionTarget): SimResponse {
+  // Sem f_seq é a inclusão, que este arquivo não simula (o censo a lê como ausente).
+  if (!req.get('f_seq')) return notFound(t.list.formProc);
   const item = itemsOf(state, t).find((i) => seqOf(i) === req.get('f_seq'));
   if (!item) return html(h.page(t.id, '<p>Registro não encontrado.</p>'));
   const controls = Object.entries(t.fields).map(([key, m]) => {

@@ -34,6 +34,11 @@ export interface ProductionTarget {
   id: string;
   /** A lista do menu (com os parâmetros que a distinguem) e o procedimento do formulário de cada linha. */
   list: { formProc: string; params?: Record<string, string>; proc: string };
+  /**
+   * Atributos que o formulário tem, mas que ficam à mão, com o motivo
+   * ("FILHO@ATRIBUTO" → motivo): o campo existe e não se sabe gravá-lo.
+   */
+  manual?: Record<string, string>;
   /** Título e ano do item, para achar a linha da lista; os campos do formulário são f_titulo e f_ano se não disser. */
   title: { attr: string; child: string; field?: string };
   year: { attr: string; child: string; field?: string };

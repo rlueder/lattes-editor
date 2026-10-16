@@ -4,6 +4,7 @@
 // (inferido onde o censo não tinha um item de cada valor).
 
 import { foldText } from '../../model/fold-text.ts';
+import { formDate } from '../create-registro-rules.ts';
 import { countryCode } from '../edit-items.ts';
 import idiomas from './idiomas-lattes.json' with { type: 'json' };
 
@@ -42,3 +43,9 @@ export const byTable =
   (table: Record<string, string>) =>
   (v: string): string | undefined =>
     v ? table[v] : '';
+
+/**
+ * Data do XML (DDMMAAAA) → dd/mm/aaaa, como o check_data() dos formulários
+ * pede (seção 21 de lattes_internals.md); fora desse formato, à mão.
+ */
+export const date = (v: string): string | undefined => (v ? formDate(v) : '');
