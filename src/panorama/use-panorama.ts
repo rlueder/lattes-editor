@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { pushHash, replaceHash } from '../ui/history-nav.ts';
 import { DEFAULT_CHART } from './catalog.ts';
 import { panoramaHash, parsePanoramaHash } from './route.ts';
 
@@ -24,8 +25,7 @@ export function usePanorama(): PanoramaMode {
     const sync = () => {
       const id = parsePanoramaHash(location.hash);
       // Endereço antigo ou desconhecido: a URL passa a dizer o gráfico aberto.
-      if (id && location.hash !== panoramaHash(id))
-        history.replaceState(null, '', panoramaHash(id));
+      if (id && location.hash !== panoramaHash(id)) replaceHash(panoramaHash(id));
       setChart(id);
     };
     sync();
@@ -39,13 +39,13 @@ export function usePanorama(): PanoramaMode {
 
   const open = useCallback((id: string) => {
     const hash = panoramaHash(id);
-    if (location.hash !== hash) history.pushState(null, '', hash);
+    if (location.hash !== hash) pushHash(hash);
     setChart(parsePanoramaHash(hash));
     window.scrollTo({ top: 0 });
   }, []);
 
   const exit = useCallback((hash: string) => {
-    if (location.hash !== hash) history.pushState(null, '', hash);
+    if (location.hash !== hash) pushHash(hash);
     setChart(undefined);
   }, []);
 

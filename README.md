@@ -43,7 +43,9 @@ atualizações" no menu ⚙.
    (Ferramentas › Exportar) e solte o `CV_<id>.zip` na janela.
 3. **Edite.** O menu lateral leva às seções, e <kbd>⌘K</kbd>
    (<kbd>Ctrl</kbd>+<kbd>K</kbd> fora do Mac) acha qualquer seção, grupo ou tipo
-   de item. Os campos que no Lattes são listas (país, idioma, natureza e forma
+   de item. No app de desktop, as setas ao lado do <kbd>⌘K</kbd> voltam e
+   avançam entre as seções e os gráficos do Panorama, como no navegador, também
+   com <kbd>⌘</kbd>+<kbd>[</kbd> e <kbd>⌘</kbd>+<kbd>]</kbd>. Os campos que no Lattes são listas (país, idioma, natureza e forma
    de participação) são listas aqui também. Com a extensão ligada, a área do
    conhecimento vira a tabela de áreas do Lattes, e na formação acadêmica a
    instituição sai da busca do Lattes, o curso da lista da instituição e a

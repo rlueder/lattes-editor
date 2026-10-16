@@ -2405,6 +2405,14 @@ button.primary:hover {
   align-items: center;
 }
 
+/* Voltar e avançar (só no app de desktop), à esquerda do "Ir para". */
+.topbar-history {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  margin-right: 8px;
+}
+
 .topbar-actions {
   justify-content: flex-end;
 }

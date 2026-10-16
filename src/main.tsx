@@ -8,6 +8,7 @@ import { openExternalLinksNatively } from './desktop/external-links.ts';
 import { isDesktop } from './desktop/native.ts';
 import { initStorage } from './desktop/storage-key.ts';
 import { App } from './ui/App.tsx';
+import { startHistoryNav } from './ui/history-nav.ts';
 import { TipProvider } from './ui/primitives/Tip.tsx';
 import { applyTheme, readTheme } from './ui/theme.ts';
 import { Toaster } from './ui/Toaster.tsx';
@@ -29,6 +30,10 @@ if (isDesktop()) openExternalLinksNatively();
 if (/^#_r_/.test(location.hash)) {
   history.replaceState(null, '', location.pathname + location.search);
 }
+
+// O app de desktop tem voltar e avançar no cabeçalho: cada entrada do
+// histórico passa a levar a própria posição (history-nav.ts).
+if (isDesktop()) startHistoryNav();
 
 const root = createRoot(document.getElementById('root')!);
 

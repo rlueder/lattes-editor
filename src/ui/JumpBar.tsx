@@ -8,6 +8,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { replaceHash } from './history-nav.ts';
 import { arrowJumpAllowed, nextJump } from './jump-keys.ts';
 import { Tip } from './primitives/Tip.tsx';
 import { activeGroup, atPageBottom, headTops, spyEdge } from './scroll-spy.ts';
@@ -35,7 +36,7 @@ function scrollMargin(head: HTMLElement): number {
 
 /** Atualiza a URL sem criar entrada no histórico do navegador. */
 function setHash(id: string): void {
-  history.replaceState(null, '', `#${id}`);
+  replaceHash(`#${id}`);
 }
 
 export function JumpBar({
