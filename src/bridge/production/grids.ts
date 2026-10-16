@@ -37,7 +37,12 @@ export const GRID_LABELS: Record<GridField, string> = {
   f_setor_l: 'Setores de atividade',
 };
 
-/** Os autores de uma produção. */
+/**
+ * Os autores de uma produção. Só o nome e a ordem vão: o autor que já está
+ * na grade segue com a citação da linha dele, e a conferência compara os
+ * nomes. Sem isso, trocar só a citação voltava "conferido" com o Lattes
+ * guardando a antiga.
+ */
 export const AUTHOR_PART: AuthorPart = {
   citation: 'NOME-PARA-CITACAO',
   cnpq: 'NRO-ID-CNPQ',
@@ -45,6 +50,7 @@ export const AUTHOR_PART: AuthorPart = {
   label: 'Autores',
   name: 'NOME-COMPLETO-DO-AUTOR',
   order: 'ORDEM-DE-AUTORIA',
+  sent: ['NOME-COMPLETO-DO-AUTOR', 'ORDEM-DE-AUTORIA'],
 };
 
 /**

@@ -407,4 +407,15 @@ describe('alterar autores de uma produção no Lattes simulado', () => {
     expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
     expect(authorsOf(lattes.state.root, '33')).toEqual(['Pessoa Sintética', 'Coautora de Exemplo']);
   });
+
+  it('trocar só a citação de um autor fica à mão: a grade não leva', () => {
+    const plan = planAfter((root) => {
+      const author = childElements(bySeq(root, '31'), 'AUTORES')[1]!;
+      setAttr(author, 'NOME-PARA-CITACAO', 'ÁVILA, C. D.');
+    });
+    expect(plan.ops).toEqual([]);
+    expect(plan.unsupported[0]?.reason).toBe(
+      'A grade de autores do Lattes não leva: Nome para citação',
+    );
+  });
 });
