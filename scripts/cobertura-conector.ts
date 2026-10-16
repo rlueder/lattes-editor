@@ -36,9 +36,11 @@ const flatten = (root: XElement): XElement[] => {
   return out;
 };
 
-/** Outro valor para o atributo, do tipo dele. */
-function changed(value: string, choices: string[] | undefined): string {
+/** Outro valor para o atributo, do tipo dele; país e idioma, um que o Lattes tem. */
+function changed(attr: string, value: string, choices: string[] | undefined): string {
   if (choices) return choices.find((v) => v !== value) ?? 'X';
+  if (/^PAIS|-PAIS$|^PAIS-/.test(attr)) return value === 'Argentina' ? 'Brasil' : 'Argentina';
+  if (/^IDIOMA$/.test(attr)) return value === 'Inglês' ? 'Português' : 'Inglês';
   if (value === 'SIM') return 'NAO';
   if (value === 'NAO') return 'SIM';
   if (/^\d{4}$/.test(value)) return String(Number(value) - 1);
@@ -55,7 +57,7 @@ flatten(base).forEach((el, index) => {
     const work = parseXml(raw).root;
     const target = flatten(work)[index]!;
     const attr = target.attrs.find((x) => x.name === a.name)!;
-    attr.value = changed(a.value, spec.attributes.find((x) => x.name === a.name)?.enum);
+    attr.value = changed(a.name, a.value, spec.attributes.find((x) => x.name === a.name)?.enum);
     const changes = diffDocuments(base, work);
     const plan = planChanges(
       changes.map((change) => ({ change, itemTitle: '' })),

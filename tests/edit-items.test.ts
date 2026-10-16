@@ -333,10 +333,10 @@ describe('alteração de evento: plano', () => {
       /^Campos não suportados ainda: /,
     );
     expect(onlyReason((root) => setAttr(basics(root), 'PAIS', 'Atlântida'))).toMatch(
-      /^Campos não suportados ainda: /,
+      'País que o formulário do Lattes não tem: Atlântida',
     );
-    expect(onlyReason((root) => setAttr(basics(root), 'FLAG-DIVULGACAO-CIENTIFICA', ''))).toMatch(
-      /^Campos não suportados ainda: /,
+    expect(onlyReason((root) => setAttr(basics(root), 'FLAG-DIVULGACAO-CIENTIFICA', ''))).toBe(
+      'Divulgação científica: o formulário do Lattes não volta para vazio',
     );
     expect(
       onlyReason((root) =>

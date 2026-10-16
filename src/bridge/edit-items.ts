@@ -304,8 +304,12 @@ export function planEvento(
     // O "antes" vazio de um campo opcional também é valor (rádio sem marca = null).
     const before = f.before === '' && map === yesNo ? null : map(f.before);
     if (after === undefined || before === undefined) {
-      missing.push(f.label);
-      continue;
+      const value = after === undefined ? f.after : f.before;
+      return {
+        reason: value
+          ? `${f.label} que o formulário do Lattes não tem: ${value}`
+          : `${f.label}: o formulário do Lattes não volta para vazio`,
+      };
     }
     if (REQUIRED.has(field) && !after?.trim()) {
       return { reason: `O Lattes não aceita ${f.label.toLowerCase()} vazio` };
