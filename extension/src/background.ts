@@ -26,7 +26,14 @@ import {
 import { contractStop, type RoundPause, runRound } from '../../src/bridge/write-brake.ts';
 import { CONSENT_KEY, hasConsent, isConsentCurrent } from './consent.ts';
 import { ownVersion, reloadForApp } from './dev-reload.ts';
-import { BUSY_TEXT, enqueue, NO_CONSENT_TEXT, refuseRun, waitWhile } from './editor-run.ts';
+import {
+  BUSY_TEXT,
+  endDeadRound,
+  enqueue,
+  NO_CONSENT_TEXT,
+  refuseRun,
+  waitWhile,
+} from './editor-run.ts';
 import { importRunning, runImport } from './import-run.ts';
 import { isLattesMenu, isRealLattesMenu } from './lattes-hosts.ts';
 import {
@@ -173,12 +180,10 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     await sendSession(editor);
     return;
   }
-  if (msg.type === 'parar') {
-    stopRequested = true;
-    return;
-  }
-  if (msg.type === 'continuar') {
-    void run(undefined, true);
+  // Parar a rodada, ou seguir com o resto depois da pausa (editor-run.ts).
+  if (msg.type === 'parar' || msg.type === 'continuar') {
+    if (msg.type === 'parar') stopRequested = true;
+    else void run(undefined, true);
     return;
   }
   if (msg.type === 'recarregar-lattes') {
@@ -473,9 +478,14 @@ chrome.tabs.onUpdated.addListener((_tabId, info, tab) => {
 connectApp();
 // Se o worker morreu no meio de uma verificação, o "verificando" ficou gravado
 // e travaria o botão do painel para sempre. Ao acordar, nada está verificando.
-void readState().then((s) => {
-  if (s.verificando) void writeState({ ...s, verificando: false });
+// Morto no meio de uma rodada, o "correndo" também ficou: a rodada termina
+// aqui, e a primeira que faltava vira divergente, porque não dá para saber se
+// ela gravou. O editor recebe o resultado e o fim, e sai do "gravando".
+void readState().then(async (s) => {
+  if (s.verificando) await writeState({ ...s, verificando: false });
+  if (s.running) await endDeadRound(await readState(), writeState, (m) => toEditor(s.editor, m));
 });
+
 void chrome.alarms.create('conector', { periodInMinutes: 1 });
 chrome.alarms.onAlarm.addListener(() => connectApp());
 chrome.runtime.onStartup.addListener(() => connectApp());

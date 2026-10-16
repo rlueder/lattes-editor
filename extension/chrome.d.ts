@@ -45,6 +45,11 @@ declare namespace chrome {
     const onUpdated: {
       addListener(cb: (tabId: number, info: { status?: string }, tab: Tab) => void): void;
     };
+    /** Sem a permissão "tabs": o evento só traz o id da aba que fechou. */
+    const onRemoved: {
+      addListener(cb: (tabId: number) => void): void;
+      removeListener(cb: (tabId: number) => void): void;
+    };
   }
 
   namespace scripting {

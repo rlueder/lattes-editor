@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { refuseRun, waitWhile } from '../extension/src/editor-run.ts';
+import { endDeadRound, refuseRun, waitWhile } from '../extension/src/editor-run.ts';
 import type { QueueState } from '../extension/src/state.ts';
 import type { BridgeMessage } from '../src/bridge/protocol.ts';
 
@@ -61,5 +61,28 @@ describe('gravação pedida pelo editor que não começa', () => {
       1,
     );
     expect(forever).toBeGreaterThan(1);
+  });
+
+  it('rodada que o worker deixou correndo termina ao acordar, divergente', async () => {
+    const written: QueueState[] = [];
+    const sent: BridgeMessage[] = [];
+    await endDeadRound(
+      {
+        ops: [op('a'), op('b')],
+        results: { a: { detail: '', key: 'a', status: 'conferido' } },
+        running: true,
+      },
+      async (next) => {
+        written.push(next);
+      },
+      async (msg) => {
+        sent.push(msg);
+      },
+    );
+    expect(written[0]).toMatchObject({ running: false, results: { b: { status: 'divergente' } } });
+    expect(sent.map((m) => m.type)).toEqual(['resultado', 'fim']);
+    expect((sent[0] as { result: { detail: string } }).result.detail).toMatch(
+      /^O conector reiniciou no meio da gravação; /,
+    );
   });
 });

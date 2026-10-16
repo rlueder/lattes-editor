@@ -46,6 +46,9 @@ import { getAttr, parseXml, serializeXml, setAttr, type XElement } from '../src/
 import { lattesSchema as schema } from '../src/schema/lattes.ts';
 import { type LattesSimuladoNoTeste, withLattesSimulado } from './helpers/lattes-simulado.ts';
 
+/** O chrome.tabs.onRemoved dos stubs: nenhuma aba fecha nestes testes (tab-guard.ts). */
+const NO_TAB_EVENTS = { addListener: () => undefined, removeListener: () => undefined };
+
 const ROOT = join(import.meta.dirname, '..');
 const XSD = join(ROOT, 'schema/CurriculoLattes_2022_patched.xsd');
 const CODE = 'K1234567A8';
@@ -681,7 +684,7 @@ describe('Importar no service worker (extensão)', () => {
         },
         session: { get: async () => ({ fila: fila ?? undefined }) },
       },
-      tabs: { query: async () => tabs },
+      tabs: { onRemoved: NO_TAB_EVENTS, query: async () => tabs },
     });
     return executeScript;
   }
@@ -709,7 +712,7 @@ describe('Importar no service worker (extensão)', () => {
         local: { get: async () => ({ [CONSENT_KEY]: consentRecord() }) },
         session: { get: async () => ({}) },
       },
-      tabs: { query: async () => [{ id: 3 }] },
+      tabs: { onRemoved: NO_TAB_EVENTS, query: async () => [{ id: 3 }] },
     });
     const replies: string[] = [];
     const reply = async (r: { reason: string }) => void replies.push(r.reason);
@@ -789,7 +792,7 @@ describe('Importar no service worker (extensão)', () => {
     vi.stubGlobal('chrome', {
       scripting: { executeScript: async () => Promise.reject(new Error('fechou')) },
       storage: { local: { get: async () => ({ [CONSENT_KEY]: consentRecord() }) } },
-      tabs: { query: async () => [{ id: 3 }] },
+      tabs: { onRemoved: NO_TAB_EVENTS, query: async () => [{ id: 3 }] },
     });
     const failed = await sendImport(CALL, '1');
     expect(failed).toMatchObject({ reason: 'erro' });

@@ -5,6 +5,7 @@
 
 import type { OpResult } from '../../src/bridge/apply.ts';
 import type { BridgeMessage, EditorMessage } from '../../src/bridge/protocol.ts';
+import { UNKNOWN_WRITE } from '../../src/bridge/write-brake.ts';
 import { type EditorEndpoint, type QueueState, readState, writeState } from './state.ts';
 
 /** Quanto a gravação pedida pelo editor espera uma verificação em curso terminar. */
@@ -66,4 +67,27 @@ export async function enqueue(
   });
   await chrome.action.setBadgeText({ text: msg.ops.length ? String(msg.ops.length) : '' });
   return true;
+}
+
+/**
+ * A rodada que ficou "correndo" porque o service worker morreu no meio dela:
+ * termina aqui, ao acordar. A primeira que faltava vira divergente, porque não
+ * dá para saber se ela gravou; o editor recebe o resultado e o fim, e sai do
+ * "gravando".
+ */
+export async function endDeadRound(
+  state: QueueState,
+  write: (next: QueueState) => Promise<void>,
+  send: (msg: BridgeMessage) => Promise<void>,
+): Promise<void> {
+  const first = state.ops.find((op) => state.results[op.key]?.status !== 'conferido');
+  const result: OpResult | undefined = first && {
+    detail: `O conector reiniciou no meio da gravação; ${UNKNOWN_WRITE}`,
+    key: first.key,
+    status: 'divergente',
+  };
+  const results = result ? { ...state.results, [result.key]: result } : state.results;
+  await write({ ...state, results, running: false });
+  if (result) await send({ result, type: 'resultado' });
+  await send({ pause: state.pausa, type: 'fim' });
 }

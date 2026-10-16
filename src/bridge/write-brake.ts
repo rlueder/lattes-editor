@@ -81,7 +81,7 @@ export type RoundEnd =
 
 const STATUSES = new Set<ResultStatus>(['conferido', 'divergente', 'erro', 'sessao']);
 
-const UNKNOWN_WRITE =
+export const UNKNOWN_WRITE =
   'não dá para saber se gravou. Confira esta alteração no Lattes antes de mandar de novo';
 
 /**
