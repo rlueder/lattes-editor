@@ -5,6 +5,7 @@
 
 import { type Change, resolvePath } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
+import { atuacaoByHand, vinculoByHand } from './atuacao-by-hand.ts';
 import { BIOGRAPHIC_OPS_ENABLED, type BiographicOp, planBiographic } from './biographic.ts';
 import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
 import { type CreateItemOp, planCreateItem } from './create-items.ts';
@@ -257,7 +258,7 @@ export function planChange(
 ): BridgeOp | Unsupported {
   // Produção, orientação ou banca que já está no Lattes (production/).
   if (editProduction && isProductionChange(change, chain)) {
-    const planned = planProduction(change, chain, label);
+    const planned = planProduction(change, chain, label, siblings);
     return 'reason' in planned ? unsupported(change, label, planned.reason) : planned;
   }
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.
@@ -290,6 +291,8 @@ export function planChange(
     if (atuacao?.name !== 'ATUACAO-PROFISSIONAL' || !seqAtiv || !seqHist) {
       return unsupported(change, label, 'Vínculo sem número de sequência');
     }
+    const byHand = vinculoByHand(change);
+    if (byHand) return unsupported(change, label, byHand);
     const { expect, missing, set } = mapFields(change, VINCULO_FIELDS);
     if (missing.length > 0) {
       return unsupported(change, label, `Campos não suportados ainda: ${missing.join(', ')}`);
@@ -372,6 +375,10 @@ export function planChange(
       : undefined;
   if (evento) return 'reason' in evento ? unsupported(change, label, evento.reason) : evento;
 
+  // Atuação, atividades, participação em projeto e áreas de atuação
+  // (atuacao-by-hand.ts), antes do motivo genérico de cada família (manual.ts).
+  const atuacao = atuacaoByHand(change, chain);
+  if (atuacao) return unsupported(change, label, atuacao);
   return unsupported(change, label, manualReason(chain) ?? 'Formulário não suportado ainda');
 }
 

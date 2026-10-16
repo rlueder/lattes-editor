@@ -122,12 +122,22 @@ export function serializeGrid(rows: readonly GridRow[], keys: readonly string[])
   return lines.join('@');
 }
 
+/** As chaves que o check() serializa na grade, com as do tipo no lugar das comuns. */
+export const gridKeysOf = (
+  field: GridField,
+  keys: Partial<Record<GridField, readonly string[]>> = {},
+): readonly string[] => keys[field] ?? GRID_SPECS[field].keys;
+
 /** Os ocultos das grades, com as que a alteração troca no lugar das lidas. */
-export function gridPairs(grids: Grids, replace: Grids = {}): Record<string, string> {
+export function gridPairs(
+  grids: Grids,
+  replace: Grids = {},
+  keys: Partial<Record<GridField, readonly string[]>> = {},
+): Record<string, string> {
   return Object.fromEntries(
     (Object.keys(grids) as GridField[]).map((f) => [
       f,
-      serializeGrid(replace[f] ?? grids[f] ?? [], GRID_SPECS[f].keys),
+      serializeGrid(replace[f] ?? grids[f] ?? [], gridKeysOf(f, keys)),
     ]),
   );
 }
@@ -166,6 +176,8 @@ export function keywordRows(current: readonly GridRow[], after: readonly string[
 export interface AuthorSpec {
   citation: string;
   cnpq: string;
+  /** Na grade com a marca de responsável (a equipe do projeto): se é o responsável. */
+  lead?: boolean;
   name: string;
 }
 

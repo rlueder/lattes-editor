@@ -18,10 +18,10 @@ import {
 } from '../form.ts';
 import { findLinks, isLogonPage } from '../lattes-html.ts';
 import {
-  authorNames,
   authorRows,
   GRID_LABELS,
   GRID_SPECS,
+  gridKeysOf,
   gridPairs,
   type Grids,
   keywordLabels,
@@ -31,6 +31,8 @@ import {
   sameWords,
   serializeGrid,
 } from './grids.ts';
+import { sameAuthors, withLeads } from './members.ts';
+import { opaquePairs, readOpaque } from './opaque.ts';
 import { EDIT_PRODUCTION_ENABLED, folded, type ProductionOp, productionTarget } from './plan.ts';
 import type { GridField, ProductionTarget } from './types.ts';
 
@@ -56,8 +58,9 @@ async function locate(
   port: LattesPort,
   menu: string,
 ): Promise<{ controls: FormControl[]; html: string; path: string }> {
+  const params = { ...t.list.params, ...op.listParams };
   const lists = findLinks(menu, t.list.proc).filter((l) =>
-    Object.entries(t.list.params ?? {}).every(([k, v]) => l.params[k] === v),
+    Object.entries(params).every(([k, v]) => l.params[k] === v),
   );
   // A mesma lista aparece às vezes também com f_sta_divulgacao_cientifica.
   const list = lists.find((l) => !('f_sta_divulgacao_cientifica' in l.params)) ?? lists[0];
@@ -66,7 +69,8 @@ async function locate(
   const titleField = t.title.field ?? 'f_titulo';
   const yearField = t.year.field ?? 'f_ano';
   const found: { controls: FormControl[]; html: string; path: string }[] = [];
-  for (const link of findLinks(listHtml, t.list.formProc).filter((l) => l.params.f_seq)) {
+  const isRow = t.list.isRow ?? ((p: Record<string, string>) => Boolean(p.f_seq));
+  for (const link of findLinks(listHtml, t.list.formProc).filter((l) => isRow(l.params))) {
     const html = await getChecked(port, link.path);
     const controls = port.readForm(html, t.form.name);
     if (!controls) continue;
@@ -145,19 +149,36 @@ export async function applyProduction(op: ProductionOp, port: LattesPort): Promi
         `A página do Lattes não tem a grade ${grids.missing}; nada foi enviado`,
       );
     }
+    const opaque = readOpaque(html, t.opaqueGrids ?? []);
+    if ('missing' in opaque) {
+      return result(
+        'erro',
+        `A página do Lattes não tem a grade ${opaque.missing}; nada foi enviado`,
+      );
+    }
+    if (opaque.filled.length > 0) {
+      return result(
+        'erro',
+        `O item tem no Lattes ${opaque.filled.map((g) => g.label).join(', ')}, que o conector não sabe reenviar; nada foi enviado`,
+      );
+    }
 
     // O antes: os campos que a alteração troca, e as grades que ela mexe.
+    // Duas mudanças na mesma grade viram operações iguais (members.ts): a
+    // segunda acha o Lattes já como o editor quer e não envia nada.
+    if (
+      op.authors &&
+      !op.keywords &&
+      fields.length === 0 &&
+      sameAuthors(grids.f_autores_l ?? [], op.authors.after)
+    ) {
+      return result('conferido', 'O Lattes já estava assim; nada foi enviado');
+    }
     const wrong = fields.filter((f) => folded(pairValue(pairs, f)) !== folded(op.expect[f]));
     if (op.keywords && !sameWords(keywordLabels(grids.f_plv_l ?? []), op.keywords.before)) {
       wrong.push('f_plv_l');
     }
-    if (
-      op.authors &&
-      !sameWords(
-        authorNames(grids.f_autores_l ?? []),
-        op.authors.before.map((a) => a.name),
-      )
-    ) {
+    if (op.authors && !sameAuthors(grids.f_autores_l ?? [], op.authors.before)) {
       wrong.push('f_autores_l');
     }
     if (wrong.length > 0) {
@@ -182,13 +203,19 @@ export async function applyProduction(op: ProductionOp, port: LattesPort): Promi
           `Autor que não está na lista do Lattes: ${missing.join(', ')}. Inclua-o no Lattes uma vez; depois o editor consegue mandar`,
         );
       }
-      replace.f_autores_l = rows;
+      replace.f_autores_l = withLeads(rows, op.authors.after);
     }
     const set = Object.fromEntries(fields.map((f) => [f, op.set[f] ?? '']));
     posted = true;
     const response = await port.post(
       t.form.action,
-      encodeLatin1Form(setPairs(pairs, { ...set, ...gridPairs(grids, replace) })),
+      encodeLatin1Form(
+        setPairs(pairs, {
+          ...set,
+          ...gridPairs(grids, replace, t.gridKeys),
+          ...opaquePairs(t.opaqueGrids ?? []),
+        }),
+      ),
     );
     if (isLogonPage(response)) return result('sessao', 'A sessão do Lattes expirou; entre de novo');
 
@@ -196,7 +223,8 @@ export async function applyProduction(op: ProductionOp, port: LattesPort): Promi
     const afterHtml = await getChecked(port, path);
     const afterControls = port.readForm(afterHtml, t.form.name);
     const afterGrids = readGrids(afterHtml, t.grids);
-    if (!afterControls || 'missing' in afterGrids) {
+    const afterOpaque = readOpaque(afterHtml, t.opaqueGrids ?? []);
+    if (!afterControls || 'missing' in afterGrids || 'missing' in afterOpaque) {
       return result(
         'divergente',
         'Depois do envio, a página do item não pôde ser relida; confira no Lattes',
@@ -207,13 +235,7 @@ export async function applyProduction(op: ProductionOp, port: LattesPort): Promi
     if (op.keywords && !sameWords(keywordLabels(afterGrids.f_plv_l ?? []), op.keywords.after)) {
       notSaved.push('f_plv_l');
     }
-    if (
-      op.authors &&
-      !sameWords(
-        authorNames(afterGrids.f_autores_l ?? []),
-        op.authors.after.map((a) => a.name),
-      )
-    ) {
+    if (op.authors && !sameAuthors(afterGrids.f_autores_l ?? [], op.authors.after)) {
       notSaved.push('f_autores_l');
     }
     if (notSaved.length > 0) {
@@ -225,11 +247,20 @@ export async function applyProduction(op: ProductionOp, port: LattesPort): Promi
     const untouched = t.grids.filter((g) => !(g in replace));
     const lost = untouched.filter(
       (g: GridField) =>
-        serializeGrid(grids[g] ?? [], GRID_SPECS[g].keys) !==
-        serializeGrid(afterGrids[g] ?? [], GRID_SPECS[g].keys),
+        serializeGrid(grids[g] ?? [], gridKeysOf(g, t.gridKeys)) !==
+        serializeGrid(afterGrids[g] ?? [], gridKeysOf(g, t.gridKeys)),
     );
-    const others = otherChanges(pairs, afterPairs, new Set([...fields, ...t.grids]));
-    const changed = [...lost.map((g) => GRID_LABELS[g]), ...others];
+    const opaqueFields = (t.opaqueGrids ?? []).map((g) => g.field);
+    const others = otherChanges(
+      pairs,
+      afterPairs,
+      new Set([...fields, ...t.grids, ...opaqueFields]),
+    );
+    const changed = [
+      ...lost.map((g) => GRID_LABELS[g]),
+      ...afterOpaque.filled.map((g) => g.label),
+      ...others,
+    ];
     if (changed.length > 0) {
       return result(
         'divergente',

@@ -5,6 +5,7 @@ import type { ProductionTarget } from '../types.ts';
 import { ARTISTICA_TARGETS } from './artistica.ts';
 import { BIBLIOGRAFICA_TARGETS } from './bibliografica.ts';
 import { ORIENTACOES_BANCAS_TARGETS } from './orientacoes-bancas.ts';
+import { PROJETO_TARGETS } from './projetos.ts';
 import { TECNICA_TARGETS } from './tecnica.ts';
 
 export const PRODUCTION_TARGETS: ProductionTarget[] = [
@@ -12,4 +13,5 @@ export const PRODUCTION_TARGETS: ProductionTarget[] = [
   ...TECNICA_TARGETS,
   ...ARTISTICA_TARGETS,
   ...ORIENTACOES_BANCAS_TARGETS,
+  ...PROJETO_TARGETS,
 ];

@@ -315,11 +315,11 @@ describe('conector: plano', () => {
       ).unsupported.map((u) => u.reason);
     };
     expect(reasons((r) => setAttr(find(r, 'VINCULOS'), 'TIPO-DE-VINCULO', 'OUTRO'))[0]).toMatch(
-      /Campos não suportados/,
+      /tipo do vínculo vem desabilitado/,
     );
     expect(
       reasons((r) => setAttr(find(r, 'ATUACAO-PROFISSIONAL'), 'NOME-INSTITUICAO', 'Y'))[0],
-    ).toMatch(/Formulário não suportado/);
+    ).toMatch(/não altera a instituição de uma atuação/);
     expect(reasons((r) => setAttr(find(r, 'RESUMO-CV'), 'OUTRO', 'x'))[0]).toMatch(
       /Campos não suportados/,
     );

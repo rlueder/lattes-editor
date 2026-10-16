@@ -9,6 +9,7 @@ import { childElements, element, getAttr, type XElement } from '../../model/xml.
 import { lattesSchema } from '../../schema/lattes.ts';
 import type { BridgeOp, OpBase } from '../plan.ts';
 import { AUTHOR_PART, type AuthorSpec, MAX_KEYWORDS } from './grids.ts';
+import { planMembers } from './members.ts';
 import { PRODUCTION_TARGETS } from './targets/index.ts';
 import type { AuthorPart, FieldMap, ProductionTarget } from './types.ts';
 
@@ -29,6 +30,8 @@ export interface ProductionOp extends OpBase {
   /** Palavras-chave antes e depois, na ordem, quando a mudança é delas. */
   keywords?: { after: string[]; before: string[] };
   kind: 'producao';
+  /** Parâmetros da lista que saem do item (ProductionTarget.list.paramsBy), com os valores de antes. */
+  listParams?: Record<string, string>;
   /** Título e ano do item no Lattes (os de antes, se a mudança troca um deles), para achar a linha. */
   match: { title: string; year: string };
   /** O que muda, com rótulos e valores como se leem. */
@@ -56,7 +59,10 @@ function itemOf(
 ): { item: XElement; target: ProductionTarget } | undefined {
   const removedPart =
     change.kind === 'removido' && !PRODUCTION_TARGETS.some((t) => t.element === change.element);
-  for (let i = chain.length - (removedPart ? 1 : 2); i >= 0; i--) {
+  // Um atributo do próprio item (o projeto guarda os campos nele, e não numa
+  // parte) também conta; o item novo, não, que é inclusão.
+  const start = removedPart || change.kind === 'alterado' ? 1 : 2;
+  for (let i = chain.length - start; i >= 0; i--) {
     const target = PRODUCTION_TARGETS.find((t) => t.element === chain[i]!.name);
     if (target) return { item: chain[i]!, target };
   }
@@ -99,6 +105,7 @@ export function planProduction(
   change: Change,
   chain: XElement[],
   label: string,
+  siblings: readonly Change[] = [],
 ): ProductionOp | { reason: string } {
   const found = itemOf(change, chain);
   const el = chain.at(-1);
@@ -106,11 +113,13 @@ export function planProduction(
     return { reason: 'O item não existe mais na cópia de trabalho' };
   }
   const { item, target } = found;
+  const byHand = target.byHand?.[change.element];
+  if (byHand) return { reason: byHand };
   // Título e ano do Lattes: os de antes, quando a própria mudança os troca.
   const before = (child: string, attr: string) => {
     const f = change.element === child ? change.fields.find((x) => x.attr === attr) : undefined;
     if (f) return f.before;
-    const part = childElements(item, child)[0];
+    const part = child === item.name ? item : childElements(item, child)[0];
     return (part && getAttr(part, attr)) ?? '';
   };
   const match = {
@@ -120,15 +129,43 @@ export function planProduction(
   if (!match.title || !match.year) {
     return { reason: 'O item não tem título ou ano para achar a linha no Lattes' };
   }
+  // Uma grade que o conector não sabe montar: com conteúdo no editor, o
+  // Lattes também tem, e o envio a apagaria.
+  const filled = (target.opaqueGrids ?? []).filter((g) =>
+    childElements(item, g.element).some((c) => childElements(c).length > 0 || c.attrs.length > 0),
+  );
+  if (filled.length > 0) {
+    return {
+      reason: `O item tem ${filled.map((g) => g.label).join(', ')}, que o conector não sabe reenviar ao Lattes; alterar este item vai à mão`,
+    };
+  }
+  const by = target.list.paramsBy;
+  const listParam = by && by.values[before(by.child, by.attr)];
+  if (by && !listParam) return { reason: 'O item não diz em que lista do Lattes ele está' };
   const base = {
     expect: {},
     key: change.key,
     kind: 'producao' as const,
     label,
+    ...(by && listParam ? { listParams: { [by.param]: listParam } } : {}),
     match,
     set: {},
     target: target.id,
   };
+
+  // A equipe do projeto: as pessoas num contêiner e com a marca de
+  // coordenador, com as outras mudanças da fila na mesma grade (members.ts).
+  const team = target.authors;
+  if (team?.container && (change.element === team.element || change.element === team.container)) {
+    return planMembers(
+      change,
+      item,
+      { ...team, container: team.container },
+      base,
+      chain[0],
+      siblings,
+    );
+  }
 
   if (change.element === 'PALAVRAS-CHAVE') {
     if (!target.grids.includes('f_plv_l')) {
@@ -232,10 +269,11 @@ export function planProduction(
       if (!why) unknown.push(f.label);
       continue;
     }
-    const { field, toForm } = mapOf(m);
-    const after = toForm ? toForm(f.after) : f.after;
-    const was = toForm ? toForm(f.before) : f.before;
+    const { field, toForm, unmapped: noValue } = mapOf(m);
+    const after = toForm ? toForm(f.after, 'after') : f.after;
+    const was = toForm ? toForm(f.before, 'before') : f.before;
     if (after === undefined || was === undefined) {
+      if (noValue) return { reason: noValue };
       unmapped.push(f.label);
       continue;
     }

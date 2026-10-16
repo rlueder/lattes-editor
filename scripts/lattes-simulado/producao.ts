@@ -23,7 +23,7 @@ import type { SimRequest } from './pedido.ts';
 import { html, notFound, type Routes, type SimResponse } from './tipos.ts';
 
 /** Os tipos com tela própria no simulado (censo.ts, grades.ts), fora daqui. */
-const CUSTOM = new Set(['trabalho-tecnico']);
+const CUSTOM = new Set(['projeto', 'trabalho-tecnico']);
 
 const mapOf = (m: FieldMap | string): FieldMap => (typeof m === 'string' ? { field: m } : m);
 
