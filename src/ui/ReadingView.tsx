@@ -18,6 +18,8 @@ import { useFieldOrder } from './field-order.ts';
 import { formatPeriod, groupByYear, itemMeta } from './item-meta.ts';
 import { ItemList } from './ItemList.tsx';
 import { JumpBar } from './JumpBar.tsx';
+import { canAddKeywords } from './keywords-inline.ts';
+import { KeywordsInline } from './KeywordsInline.tsx';
 import { elementKey, type ListView, yearView } from './list-view.ts';
 import { ReadingQueryContext } from './nested-collapse.ts';
 import { type PreviewKind, previewSlots } from './preview-order.ts';
@@ -35,9 +37,17 @@ import { CitationReading } from './ReadingCitation.tsx';
 import { LineView, Sections, SectionView } from './ReadingParts.tsx';
 import { useLayoutOptions } from './use-reading-options.ts';
 
-/** O formulário de hoje com todos os campos; ainda serve aos testes e ao "Editar no formulário". */
+/**
+ * O formulário de hoje com todos os campos; ainda serve aos testes e ao
+ * "Editar no formulário". Item sem palavras-chave ganha o campo delas no fim.
+ */
 export function EditForm({ depth, el, onEdit }: { depth?: number; el: XElement; onEdit: EditFn }) {
-  return <ElementView depth={depth} el={el} showEmpty={true} onEdit={onEdit} />;
+  return (
+    <>
+      <ElementView depth={depth} el={el} showEmpty={true} onEdit={onEdit} />
+      {canAddKeywords(el) && <KeywordsInline el={el} onEdit={onEdit} />}
+    </>
+  );
 }
 
 /**

@@ -4,12 +4,14 @@
 import { BIOGRAPHIC_FIELD_LABELS, BIOGRAPHIC_VALUE_LABELS } from './biographic.ts';
 import { CREATE_FIELD_LABELS, CREATE_VALUE_LABELS } from './create-labels.ts';
 import { EDIT_FIELD_LABELS, EDIT_VALUE_LABELS } from './edit-items.ts';
+import { KEYWORDS_FIELD_LABELS } from './edit-keywords.ts';
 import { LIST_EDIT_FIELD_LABELS, LIST_EDIT_VALUE_LABELS } from './edit-lists.ts';
 
 export const FIELD_LABELS: Record<string, string> = {
   ...BIOGRAPHIC_FIELD_LABELS,
   ...CREATE_FIELD_LABELS,
   ...EDIT_FIELD_LABELS,
+  ...KEYWORDS_FIELD_LABELS,
   f_ano_fim: 'Ano de fim',
   f_ano_ini: 'Ano de início',
   f_carga: 'Carga horária',

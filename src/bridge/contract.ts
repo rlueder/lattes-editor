@@ -77,7 +77,10 @@ type CreateKind =
  * (create.ts, create-items.ts, biographic.ts, edit-items.ts) e a exclusão, que não tem
  * formulário próprio (delete.ts usa o de edição e a conferência dele).
  */
-type GatedKind = CreateKind | 'evento' | BiographicKind | DeleteOp['kind'] | ListEditKind;
+// As palavras-chave (edit-keywords.ts) não têm formulário aqui: a operação
+// confere o formulário e as quatro grades do próprio item na hora de gravar.
+type GatedKind =
+  CreateKind | 'evento' | 'palavras-chave' | BiographicKind | DeleteOp['kind'] | ListEditKind;
 
 export interface Contract {
   /**

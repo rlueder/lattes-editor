@@ -22,6 +22,7 @@ import { type ImportOutcome, LattesState, type SimuladoOptions } from './estado.
 import { EVENTOS_ROUTES } from './eventos.ts';
 import { EXPORTAR_ROUTES } from './exportar.ts';
 import { FORMACAO_ROUTES } from './formacao.ts';
+import { GRADES_ROUTES } from './grades.ts';
 import { LOGON_REDIRECT } from './html.ts';
 import { IMPORTAR_ROUTES } from './importar.ts';
 import { MENU_ROUTES } from './menu.ts';
@@ -39,6 +40,7 @@ export const ROUTES: Routes = {
   ...EVENTOS_ROUTES,
   ...EXPORTAR_ROUTES,
   ...FORMACAO_ROUTES,
+  ...GRADES_ROUTES,
   ...IMPORTAR_ROUTES,
   ...MENU_ROUTES,
   ...PATENTE_ROUTES,

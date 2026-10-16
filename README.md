@@ -172,7 +172,8 @@ está desatualizada, troque a pasta pela do zip novo e clique em recarregar.
 Nesta versão de desenvolvimento, todas as ações do conector estão ligadas
 para teste: inclusão de itens, exclusão de idioma e vínculo, formação,
 endereço e identificação, eventos de convidado e participante, prêmios,
-formação complementar e o Importar. Algumas ainda não tiveram um envio real
+formação complementar, as palavras-chave de trabalhos técnicos e outras
+produções bibliográficas e o Importar. Algumas ainda não tiveram um envio real
 acompanhado; o que cada uma precisa mostrar está na seção "Ações ligadas" de
 [`docs/arquitetura.md`](docs/arquitetura.md).
 

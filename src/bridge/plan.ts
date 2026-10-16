@@ -16,6 +16,12 @@ import {
   planEvento,
 } from './edit-items.ts';
 import {
+  EDIT_KEYWORDS_ENABLED,
+  isKeywordsChange,
+  type KeywordsOp,
+  planKeywords,
+} from './edit-keywords.ts';
+import {
   EDIT_FORMACAO_COMPL_ENABLED,
   EDIT_PREMIO_ENABLED,
   type ListEditKind,
@@ -73,6 +79,7 @@ export type BridgeOp =
   | DeleteOp
   | EventoOp
   | IdiomaOp
+  | KeywordsOp
   | ListEditOp
   | ResumoOp
   | VinculoOp;
@@ -93,6 +100,8 @@ export interface PlanOptions {
   editEvento?: boolean;
   /** Formação complementar (edit-lists.ts, EDIT_FORMACAO_COMPL_ENABLED). */
   editFormacaoComplementar?: boolean;
+  /** Palavras-chave de trabalho técnico e outra produção bibliográfica (edit-keywords.ts). */
+  editKeywords?: boolean;
   /**
    * Alteração de evento de ouvinte (edit-items.ts). Sem valor, fica
    * desligada: só planOptionsFor liga, com as capacidades da extensão. Assim,
@@ -131,6 +140,7 @@ export const GATED_EDITS: readonly {
     feature: 'alterar-formacao-complementar',
     option: 'editFormacaoComplementar',
   },
+  { enabled: EDIT_KEYWORDS_ENABLED, feature: 'alterar-palavras-chave', option: 'editKeywords' },
 ];
 
 /**
@@ -238,11 +248,17 @@ export function planChange(
     deleteItems = false,
     editEvento = false,
     editFormacaoComplementar = false,
+    editKeywords = false,
     editOuvinte = false,
     editPremio = false,
   }: PlanOptions = {},
   siblings: readonly Change[] = [],
 ): BridgeOp | Unsupported {
+  // Palavras-chave de um item que já está no Lattes (edit-keywords.ts).
+  if (editKeywords && isKeywordsChange(change, chain)) {
+    const planned = planKeywords(change, chain, label);
+    return 'reason' in planned ? unsupported(change, label, planned.reason) : planned;
+  }
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.
   if (change.kind === 'novo' && createItems && change.element === 'ATUACAO-PROFISSIONAL') {
     const el = chain.at(-1);

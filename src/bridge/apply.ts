@@ -30,6 +30,7 @@ import {
   isFullEvento,
   locateEvento,
 } from './edit-items.ts';
+import { applyKeywords, isKeywordsOp, type KeywordsOp } from './edit-keywords.ts';
 import {
   countListEdits,
   enabledListEdits,
@@ -80,6 +81,7 @@ type EditOp = Exclude<
   | BiographicOp
   | DeleteOp
   | EventoOp
+  | KeywordsOp
   | ListEditOp
   | {
       kind:
@@ -244,6 +246,7 @@ export async function applyOp(
   if (op.kind === 'criar-dado') return applyCreateGeneral(op, port);
   if (op.kind === 'criar-atividade') return applyCreateAtividade(op, port);
   if (op.kind === 'criar-evento') return applyCreateEvento(op, port);
+  if (isKeywordsOp(op)) return applyKeywords(op, port);
   if (op.kind === 'criar-vinculo') return applyCreateVinculo(op, port);
   if (isDeleteOp(op)) return applyDelete(op, port);
   const result = (status: ResultStatus, detail: string): OpResult => ({

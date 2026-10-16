@@ -1113,6 +1113,26 @@ tem `l` (nome) e `c` (código de 8 dígitos); uma palavra-chave nova, `l`,
 **Lacuna.** Antes de enviar, se a privacidade mudou, `verificaPriv()` abre
 uma confirmação do `caixaMsg` do menu; se não mudou, envia direto.
 
+Na edição (16/10/2026, só GET no Lattes real, em dois trabalhos técnicos e
+numa outra produção bibliográfica): o formulário vem com `f_ctr` U e com os
+quatro ocultos vazios, como na inclusão; os vetores trazem as linhas
+gravadas, cada um terminado por um objeto vazio. O autor vem com `l`, `c`,
+`t`, `editable` e `deletable` nessa ordem (por isso a linha da própria pessoa
+vira `l||t`); a palavra-chave gravada vem com `l`, `c` e `editable`, e o `c`
+dela é a posição (1, 2, 3...); a área, com `l`, `c` de oito dígitos e
+`editable`. O nome e a citação do autor passam por um decodificador de
+entidades antes da grade; as outras grades, não. **Observado.** Os
+formulários: trabalho técnico `GN_RELATORIO`, aberto por
+`pkg_relatorio.form?f_cod=…&f_seq=N` na lista `pkg_relatorio.lista`, POST
+`PKG_RELATORIO.FORM`; outra produção bibliográfica `GN_BIB`, aberto por
+`prc_bib_outraprod?f_cod=…&f_seq=N` na lista `prc_bib_demais_lista` com
+`f_cod_tipo=1Z`, POST `PRC_BIB_OUTRAPROD` (1A, 1B e 1C são as outras listas
+de demais tipos). **Observado.** O conector grava as palavras-chave desses
+dois por `src/bridge/edit-keywords.ts`, refazendo as quatro grades como o
+`check()` faria; um envio com o formulário como veio do GET mandaria as
+grades vazias. **Inferido**, até o primeiro envio acompanhado: que o POST
+grave cada grade como chega, e que a palavra nova vá com `c=-1`.
+
 ## 17. Formulários de inclusão (LAT-52, 14/10/2026)
 
 Lidos por GET, sem enviar. O mapa de onde fica o "Incluir novo item" de

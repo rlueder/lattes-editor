@@ -58,6 +58,8 @@ export const BRIDGE_FEATURES = [
    * todas" no painel.
    */
   'gravar-pelo-editor',
+  /** Palavras-chave de trabalho técnico e outra produção bibliográfica (edit-keywords.ts). */
+  'alterar-palavras-chave',
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];
