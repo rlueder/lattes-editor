@@ -96,6 +96,10 @@ export function ProductionForm({
       if (e.key !== 'Enter' || !(e.metaKey || e.ctrlKey)) return;
       const form = formRef.current;
       if (!form) return;
+      // Numa confirmação aberta por cima do formulário ("Remover o item?"), o
+      // atalho não salva o item.
+      const dialog = (e.target as Element | null)?.closest?.('[role="dialog"]');
+      if (dialog && !dialog.contains(form)) return;
       e.preventDefault();
       (document.activeElement as HTMLElement | null)?.blur();
       setTimeout(() => form.requestSubmit(), 0);

@@ -33,6 +33,7 @@ import { lattesSchema } from '../schema/lattes.ts';
 import { CommandPalette } from './CommandPalette.tsx';
 import { HistoryDialog } from './dialogs.tsx';
 import { EditorContext } from './editor-context.ts';
+import { DEFAULT_SECTION } from './hash-route.ts';
 import { type ReloadFailure, reloadNotice } from './lattes-reload.ts';
 import { connectionOf, noticesFor } from './notifications.ts';
 import type { PaletteEntry } from './palette-search.ts';
@@ -74,7 +75,7 @@ export function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [version, setVersion] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [sectionId, setSectionId] = useState('dados-gerais');
+  const [sectionId, setSectionId] = useState(DEFAULT_SECTION);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [theme, setTheme] = useTheme();
   const [pickerOpen, setPickerOpen] = useState(false);

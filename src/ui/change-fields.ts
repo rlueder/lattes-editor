@@ -26,6 +26,24 @@ export function visibleFields(change: Change, showCodes: boolean): Change['field
   return shown.length > 0 ? shown : change.fields;
 }
 
+/** O que o nome e o código têm em comum: INSTITUICAO, CURSO (também o CAPES). */
+function pairStem(attr: string): string | undefined {
+  const m = /^(?:NOME|CODIGO)-(.+?)(?:-CAPES)?$/.exec(attr);
+  return m?.[1];
+}
+
+/**
+ * Os outros campos da alteração que andam com este: o nome e o código da
+ * mesma instituição ou curso, que a busca grava juntos (live-lists.ts).
+ * Descartar só um deixaria o item com o nome de um e o código de outro, e o
+ * código pode nem estar à vista.
+ */
+export function pairedAttrs(change: Change, attr: string): string[] {
+  const stem = pairStem(attr);
+  if (!stem) return [];
+  return change.fields.map((f) => f.attr).filter((a) => a !== attr && pairStem(a) === stem);
+}
+
 /**
  * Quantas colunas da grade um campo ocupa, pelo valor mais longo que mostra:
  * a regra da grade do modo de leitura (cellSpan), e texto longo (resumo,

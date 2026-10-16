@@ -1,6 +1,7 @@
 // A posição no histórico para os botões de voltar e avançar do app de
 // desktop (history-nav.ts), e os atalhos de teclado deles. Fora de um campo
-// de texto, para ⌘← e ⌘→ continuarem andando na linha enquanto se digita.
+// de texto, para ⌘← e ⌘→ continuarem andando na linha enquanto se digita, e
+// sem janela aberta, para a seção não trocar por trás dela.
 
 import { useEffect, useSyncExternalStore } from 'react';
 
@@ -15,6 +16,7 @@ export function useHistoryNav(enabled: boolean) {
     if (!enabled) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented || isTyping(e.target)) return;
+      if (document.querySelector('[role="dialog"]')) return;
       const dir = navShortcut(e, IS_MAC);
       if (!dir) return;
       e.preventDefault();

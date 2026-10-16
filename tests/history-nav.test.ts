@@ -94,8 +94,8 @@ describe('atalhos de voltar e avançar', () => {
 });
 
 /** Histórico de uma janela, com voltar e avançar disparando popstate. */
-function fakeWindow() {
-  const entries: { state: unknown; url: string }[] = [{ state: null, url: 'app:/#producoes' }];
+function fakeWindow(start = 'app:/#producoes') {
+  const entries: { state: unknown; url: string }[] = [{ state: null, url: start }];
   let at = 0;
   const listeners: Record<string, (() => void)[]> = {};
   const fire = (type: string) => listeners[type]?.forEach((l) => l());
@@ -231,5 +231,23 @@ describe('histórico da janela', () => {
     expect(nav.navPosition().index).toBe(1);
     writeHash({ sectionId: 'formacao' });
     expect(nav.navPosition().index).toBe(1);
+  });
+
+  it('a URL sem âncora é a seção de abertura: nomeá-la não cria entrada, e voltar a ela a mostra', async () => {
+    const win = fakeWindow('app:/');
+    for (const [k, v] of Object.entries(win.globals)) vi.stubGlobal(k, v);
+    const nav = await import('../src/ui/history-nav.ts');
+    const { DEFAULT_SECTION, routeOf, writeHash } = await import('../src/ui/hash-route.ts');
+    nav.startHistoryNav();
+    expect(routeOf('')).toEqual({ sectionId: DEFAULT_SECTION });
+    expect(routeOf('#formacao/x')).toEqual({ anchor: 'formacao/x', sectionId: 'formacao' });
+    writeHash({ sectionId: 'producoes' });
+    expect(nav.navPosition().index).toBe(1);
+    win.history.back();
+    expect(win.globals.location.hash).toBe('');
+    expect(routeOf(win.globals.location.hash)).toEqual({ sectionId: DEFAULT_SECTION });
+    writeHash({ sectionId: DEFAULT_SECTION });
+    expect(nav.navPosition()).toEqual({ index: 0, max: 1 });
+    expect(win.globals.location.hash).toBe('#dados-gerais');
   });
 });

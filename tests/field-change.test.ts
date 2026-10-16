@@ -9,7 +9,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import type { Change } from '../src/model/changes.ts';
-import { fieldSpan, isLongText, visibleFields } from '../src/ui/change-fields.ts';
+import { fieldSpan, isLongText, pairedAttrs, visibleFields } from '../src/ui/change-fields.ts';
 import { FieldChange } from '../src/ui/FieldChange.tsx';
 
 const render = (props: Parameters<typeof FieldChange>[0]) =>
@@ -116,6 +116,13 @@ describe('campos que aparecem na lista', () => {
       'ANO-DE-INICIO',
       'FLAG-BOLSA',
     ]);
+  });
+
+  it('descartar o nome leva o código junto, e o contrário também', () => {
+    expect(pairedAttrs(mestrado, 'NOME-INSTITUICAO')).toEqual(['CODIGO-INSTITUICAO']);
+    expect(pairedAttrs(mestrado, 'NOME-CURSO')).toEqual(['CODIGO-CURSO', 'CODIGO-CURSO-CAPES']);
+    expect(pairedAttrs(mestrado, 'CODIGO-CURSO-CAPES')).toEqual(['CODIGO-CURSO', 'NOME-CURSO']);
+    expect(pairedAttrs(mestrado, 'ANO-DE-INICIO')).toEqual([]);
   });
 
   it('com "Mostrar códigos do Lattes" ligado, todos', () => {
