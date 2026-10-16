@@ -428,7 +428,9 @@ describe('incluir registros no Lattes simulado', () => {
     const { ops } = await plan((doc) => addRegistro(doc, 'DESENHO-INDUSTRIAL', desenho));
     const [r] = await applyAll(ops, lattes.port);
     expect(r).toMatchObject({ status: 'divergente' });
-    expect(r!.detail).toMatch(/^Criado no Lattes \(registro \d+\), mas gravado diferente: Título$/);
+    expect(r!.detail).toMatch(
+      /^Criado no Lattes \(registro \d+\), mas o Lattes guardou outro valor em: Título\. Confira no Lattes$/,
+    );
 
     const twice = await start({
       intercept: async (req, _state, next) => {

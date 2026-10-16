@@ -283,7 +283,7 @@ describe('incluir o projeto no Lattes falso', () => {
       await applyCreateProjeto(op(), fakeProjeto({ tamper: { f_titulo: 'Outro' } }).port),
     ).toMatchObject({
       assigned: { 'SEQUENCIA-PROJETO': '1' },
-      detail: expect.stringMatching(/gravado diferente: Título/),
+      detail: expect.stringMatching(/outro valor em: Título/),
       status: 'divergente',
     });
     // A instituição e o vínculo da atuação também são relidos: projeto
@@ -294,14 +294,14 @@ describe('incluir o projeto no Lattes falso', () => {
         fakeProjeto({ tamper: { f_cod_inst2: '009', f_vinc: 'Outro' } }).port,
       ),
     ).toMatchObject({
-      detail: expect.stringMatching(/gravado diferente: f_vinc, f_cod_inst2/),
+      detail: expect.stringMatching(/outro valor em: Vínculo, Instituição/),
       status: 'divergente',
     });
     expect(
       await applyCreateProjeto(op(), fakeProjeto({ unread: ['f_vinc', 'f_regime'] }).port),
     ).toMatchObject({
       assigned: { 'SEQUENCIA-PROJETO': '1' },
-      detail: expect.stringMatching(/não conferido: o formulário relido não traz/),
+      detail: expect.stringMatching(/não deu para reler: /),
       status: 'divergente',
     });
     expect(await applyCreateProjeto(op(), fakeProjeto({ logonOnPost: true }).port)).toMatchObject({

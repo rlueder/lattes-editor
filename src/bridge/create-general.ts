@@ -321,7 +321,7 @@ async function confirmNew(
       return maybeCreated(key, mayExist, `a lista mostra ${created.length} itens novos`);
     }
     const saved = await readPairs(port, created[0]!.path, spec.name);
-    const problem = readBackProblem('Criado no Lattes', false, readBack(saved, set));
+    const problem = readBackProblem('Criado no Lattes', readBack(saved, set));
     return problem
       ? result('divergente', problem)
       : result('conferido', 'Criado e conferido no Lattes');
@@ -410,7 +410,6 @@ export async function applyCreateVinculo(op: CreateVinculoOp, port: LattesPort):
       const { f_vinculo: _copy, ...checked } = op.set;
       const problem = readBackProblem(
         `Criado no Lattes (vínculo ${seq})`,
-        false,
         readBack(saved, checked),
       );
       if (problem) return { ...result('divergente', problem), assigned };

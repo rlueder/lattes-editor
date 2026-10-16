@@ -6,7 +6,7 @@
 // andamento de cada alteração fica no lugar, e o que antes era pergunta em
 // modal vira uma linha com os botões ao lado.
 
-import { type ReactNode, useEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
 
 import { doneText, latestText, noRestoreText, stopText } from '../bridge/restore-point.ts';
 import { pauseText } from '../bridge/write-brake.ts';
@@ -78,11 +78,6 @@ export function Step({
 /** ② Gravar no Lattes: a cópia antes, o andamento de cada alteração, a pausa. */
 export function WriteStep({ bridge }: { bridge: BridgeState }) {
   const { restore } = bridge;
-  const dismiss = useRef(bridge.dismissRestore);
-  dismiss.current = bridge.dismissRestore;
-  // A janela fechou com a cópia ainda sendo feita ou com a pergunta aberta:
-  // vale como cancelar, nada é gravado e o aviso não volta ao reabrir.
-  useEffect(() => () => dismiss.current(), []);
   const rows = writeRows(bridge.round ?? [], bridge.results, bridge.running, !!bridge.pause);
   return (
     <>

@@ -294,7 +294,6 @@ export async function applyCreateEvento(op: CreateEventoOp, port: LattesPort): P
       const { F_TPO: tipo, ...checked } = op.set;
       const problem = readBackProblem(
         `Criada no Lattes (evento ${seq})`,
-        true,
         readBack(saved, tipo ? checked : op.set),
       );
       if (problem) return { ...result('divergente', problem), assigned };

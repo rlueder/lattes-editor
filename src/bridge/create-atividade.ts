@@ -309,7 +309,6 @@ export async function applyCreateAtividade(
       const { f_curso_old: _old, f_espec_l: _spec, ...checked } = set;
       const problem = readBackProblem(
         `Criada no Lattes (atividade ${seq})`,
-        true,
         readBack(saved, checked),
       );
       if (problem) return { ...result('divergente', problem), assigned };

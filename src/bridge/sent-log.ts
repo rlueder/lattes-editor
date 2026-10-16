@@ -37,7 +37,16 @@ export interface SentEntry {
    * caída, ou criado no Lattes com divergência na conferência. Ausente é
    * gravado e conferido (e todas as entradas de antes deste campo).
    */
-  outcome?: { detail: string; status: Exclude<ResultStatus, 'conferido'> };
+  outcome?: {
+    /**
+     * Números que o Lattes deu ao item criado, mesmo sem conferir
+     * (OpResult.assigned): com "Já conferi no Lattes", o item entra na cópia
+     * com eles, como entraria conferido.
+     */
+    assigned?: Record<string, string>;
+    detail: string;
+    status: Exclude<ResultStatus, 'conferido'>;
+  };
   /** Linhas "antes → depois", guardadas prontas para mostrar. */
   rows: SentRow[];
   sentAt: number;

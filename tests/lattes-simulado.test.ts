@@ -432,7 +432,9 @@ describe('Lattes simulado: o conector de ponta a ponta', () => {
       assigned: { 'SEQUENCIA-FORMACAO': '5' },
       status: 'divergente',
     });
-    expect(r!.detail).toMatch(/^Criada no Lattes \(formação 5\), mas gravada diferente: /);
+    expect(r!.detail).toMatch(
+      /^Criada no Lattes \(formação 5\), mas o Lattes guardou outro valor em: /,
+    );
     expect(r!.detail).toContain(CREATE_FIELD_LABELS.f_nme_agencia ?? 'f_nme_agencia');
   });
 

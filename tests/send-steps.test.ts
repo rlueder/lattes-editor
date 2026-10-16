@@ -45,7 +45,7 @@ describe('andamento de cada alteração da rodada', () => {
   it('parada num problema: o motivo aparece, e as que sobraram não foram enviadas', () => {
     const rows = writeRows(round, { a: result('a', 'divergente', 'não dá para saber') }, false);
     expect(rows.map((r) => r.state)).toEqual(['divergente', 'parada', 'parada']);
-    expect(rows[0]).toMatchObject({ detail: 'não dá para saber', text: 'diferente do esperado' });
+    expect(rows[0]).toMatchObject({ detail: 'não dá para saber', text: 'confira no Lattes' });
     expect(rows[1]!.text).toBe('não enviada');
   });
 

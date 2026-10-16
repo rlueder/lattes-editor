@@ -16,6 +16,12 @@ export function useWriteBrake(
   reloadSent: () => void,
   post: (msg: EditorMessage) => void,
   setRunning: (running: boolean) => void,
+  /**
+   * Aceitar na cópia uma alteração gravada (use-bridge.ts). Depois do "Já
+   * conferi no Lattes" num item criado com divergência, ele entra com o
+   * número que o Lattes deu, como entraria conferido.
+   */
+  accept: { current: (key: string, assigned?: Record<string, string>) => void },
 ) {
   const [pause, setPause] = useState<RoundPause | undefined>();
   // As operações da rodada atual, para o passo ② mostrar o andamento de cada
@@ -33,8 +39,9 @@ export function useWriteBrake(
       if (entry.id === undefined) return;
       await markSentChecked(entry.id, Date.now());
       reloadSent();
+      if (entry.outcome?.assigned) accept.current(entry.op.key, entry.outcome.assigned);
     },
-    [reloadSent],
+    [reloadSent, accept],
   );
 
   // fields entra direto no BridgeState.

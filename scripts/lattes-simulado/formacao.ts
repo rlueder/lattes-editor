@@ -167,10 +167,12 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
       (el) => (courseLetter(el) === 'V' ? '' : (getAttr(el, 'CODIGO-CURSO') ?? '')),
       (el, v) => setIfKnown(el, 'CODIGO-CURSO', v),
     ),
+    // O Lattes guarda o nome do curso sem o código CAPES que o texto da opção
+    // traz entre parênteses (observado em 16/10/2026).
     hiddenFrom(
       'f_curso_old',
       (el) => getAttr(el, 'NOME-CURSO') ?? '',
-      (el, v) => setIfKnown(el, 'NOME-CURSO', v),
+      (el, v) => setIfKnown(el, 'NOME-CURSO', v.replace(/\s*\([^()]*\)\s*$/, '').trim()),
     ),
     // atribuir() grava o código; o nome, o servidor tira da lista (inferido).
     hiddenFrom(

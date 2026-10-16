@@ -22,7 +22,7 @@ import { toolbarTheme } from './toolbar-icon.ts';
 
 const STATUS: Record<OpResult['status'], string> = {
   conferido: 'Conferido',
-  divergente: 'Diferente no Lattes',
+  divergente: 'Confira no Lattes',
   erro: 'Erro',
   sessao: 'Sessão expirada',
 };

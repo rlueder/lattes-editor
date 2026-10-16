@@ -252,13 +252,15 @@ export function readBack(
 /** O motivo de uma inclusão feita mas não conferida, ou undefined se tudo voltou igual. */
 export function readBackProblem(
   created: string,
-  feminine: boolean,
   { differ, unread }: { differ: string[]; unread: string[] },
 ): string | undefined {
-  const end = feminine ? 'a' : 'o';
-  if (differ.length > 0) return `${created}, mas gravad${end} diferente: ${differ.join(', ')}`;
+  // Rótulos, sem repetir: nome e código do mesmo campo dizem a mesma coisa.
+  const list = (names: string[]) => [...new Set(names)].join(', ');
+  if (differ.length > 0) {
+    return `${created}, mas o Lattes guardou outro valor em: ${list(differ)}. Confira no Lattes`;
+  }
   if (unread.length > 0) {
-    return `${created}, mas não conferid${end}: o formulário relido não traz ${unread.join(', ')}`;
+    return `${created}, mas não deu para reler: ${list(unread)}. Confira no Lattes`;
   }
   return undefined;
 }

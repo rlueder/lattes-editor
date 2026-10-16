@@ -417,7 +417,7 @@ export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort):
       const saved = await readPairs(port, created[0]!.path, PROJETO_FORM);
       // Tudo o que foi enviado, com a instituição e o vínculo da atuação: se o
       // Lattes pendurar o projeto em outra atuação, a releitura acusa.
-      const problem = readBackProblem('Criado no Lattes', false, readBack(saved, set));
+      const problem = readBackProblem('Criado no Lattes', readBack(saved, set));
       if (problem) return { ...result('divergente', problem), assigned };
       // A equipe volta no script da página, não num campo, e fica sem reler: o
       // resto conferiu, e o aviso vai no registro do enviado.

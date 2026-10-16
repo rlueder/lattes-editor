@@ -7,7 +7,7 @@
 // As instruções do Importar importam tanto quanto o arquivo (guia, seção 6): o
 // Lattes pré-marca tudo nos Passos 2 e 3, e confirmar um item vermelho duplica.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { failed } from '../bridge/sent-log.ts';
 import { elementLabel } from '../labels/labels.ts';
@@ -108,6 +108,18 @@ export function ExportPanel({
     };
   }, [open]);
 
+  // A janela fechou com a cópia ainda sendo feita ou com a pergunta aberta:
+  // vale como cancelar, nada é gravado e o aviso não volta ao reabrir. Fica
+  // aqui, preso ao abrir e fechar da janela, e não no passo 2: ele só monta
+  // quando a rodada começa, e o modo estrito do React roda a limpeza logo na
+  // montagem, o que cancelava a rodada que acabava de começar.
+  const dismissRestore = useRef(bridge?.dismissRestore);
+  dismissRestore.current = bridge?.dismissRestore;
+  useEffect(() => {
+    if (!open) return;
+    return () => dismissRestore.current?.();
+  }, [open]);
+
   const toWrite = connectorOps?.length ?? 0;
   const writing = !!bridge && isWriting(bridge);
   const toPublish = !!bridge?.lattes?.pending;
@@ -165,8 +177,8 @@ export function ExportPanel({
             <div className="step-notice warn" role="status">
               <p>
                 {stopped === 1
-                  ? 'A última gravação parou numa alteração que não conferiu.'
-                  : `A última gravação parou com ${stopped} alterações que não conferiram.`}
+                  ? 'A última gravação parou numa alteração que precisa ser conferida no Lattes.'
+                  : `A última gravação parou com ${stopped} alterações que precisam ser conferidas no Lattes.`}
               </p>
               <div className="step-actions">
                 <button type="button" onClick={() => setViewing(1)}>

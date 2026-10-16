@@ -284,7 +284,7 @@ export function useBridge(
       .catch(() => setSent([]));
   }, [lattesId]);
   useEffect(reloadSent, [reloadSent]);
-  const brake = useWriteBrake(reloadSent, post, setRunning);
+  const brake = useWriteBrake(reloadSent, post, setRunning, confirmedRef);
   const { setPause, startRound } = brake;
 
   /**
@@ -297,11 +297,11 @@ export function useBridge(
       const item = outgoing.current.get(result.key);
       if (!item || !lattesId) return;
       outgoing.current.delete(result.key);
-      const { detail, status } = result;
+      const { assigned, detail, status } = result;
       const ok = status === 'conferido';
       const entry = sentEntry(item.op, lattesId, Date.now(), {
         change: item.change,
-        outcome: status === 'conferido' ? undefined : { detail, status },
+        outcome: status === 'conferido' ? undefined : { assigned, detail, status },
         undoOf: item.undoOf,
       });
       void addSent(entry)

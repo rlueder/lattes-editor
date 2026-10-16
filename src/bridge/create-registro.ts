@@ -467,7 +467,6 @@ export async function applyCreateRegistro(op: CreateRegistroOp, port: LattesPort
       const saved = await readPairs(port, created[0]!.path, REGISTRO_FORM);
       const problem = readBackProblem(
         `Criado no Lattes (registro ${seq})`,
-        false,
         readBack(saved, op.set),
       );
       if (problem) return { ...result('divergente', problem), assigned };

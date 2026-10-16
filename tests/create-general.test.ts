@@ -346,7 +346,7 @@ describe('incluir no Lattes simulado', () => {
     const r = await applyOp(vinculo('1'), lattes.port);
     expect(r.status).toBe('divergente');
     expect(r.detail).toMatch(
-      /^Criado no Lattes \(vínculo 2\), mas gravado diferente: Ano de início/,
+      /^Criado no Lattes \(vínculo 2\), mas o Lattes guardou outro valor em: Ano de início/,
     );
   });
 

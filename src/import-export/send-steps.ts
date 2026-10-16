@@ -35,7 +35,7 @@ export interface WriteRow {
 
 const TEXT: Record<RowState, string> = {
   conferido: 'gravada e conferida',
-  divergente: 'diferente do esperado',
+  divergente: 'confira no Lattes',
   erro: 'não gravada',
   fila: 'na fila',
   gravando: 'gravando…',
