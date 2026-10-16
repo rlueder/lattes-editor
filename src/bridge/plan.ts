@@ -16,12 +16,6 @@ import {
   planEvento,
 } from './edit-items.ts';
 import {
-  EDIT_KEYWORDS_ENABLED,
-  isKeywordsChange,
-  type KeywordsOp,
-  planKeywords,
-} from './edit-keywords.ts';
-import {
   EDIT_FORMACAO_COMPL_ENABLED,
   EDIT_PREMIO_ENABLED,
   type ListEditKind,
@@ -29,6 +23,12 @@ import {
   planListEdit,
 } from './edit-lists.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
+import {
+  EDIT_PRODUCTION_ENABLED,
+  isProductionChange,
+  planProduction,
+  type ProductionOp,
+} from './production/plan.ts';
 import { stavincFromFlag } from './vinculo-flag.ts';
 
 /** Valor de campo; null tira o campo do envio (caixa desmarcada). */
@@ -79,7 +79,7 @@ export type BridgeOp =
   | DeleteOp
   | EventoOp
   | IdiomaOp
-  | KeywordsOp
+  | ProductionOp
   | ListEditOp
   | ResumoOp
   | VinculoOp;
@@ -100,8 +100,6 @@ export interface PlanOptions {
   editEvento?: boolean;
   /** Formação complementar (edit-lists.ts, EDIT_FORMACAO_COMPL_ENABLED). */
   editFormacaoComplementar?: boolean;
-  /** Palavras-chave de trabalho técnico e outra produção bibliográfica (edit-keywords.ts). */
-  editKeywords?: boolean;
   /**
    * Alteração de evento de ouvinte (edit-items.ts). Sem valor, fica
    * desligada: só planOptionsFor liga, com as capacidades da extensão. Assim,
@@ -111,6 +109,8 @@ export interface PlanOptions {
   editOuvinte?: boolean;
   /** Prêmios e títulos (edit-lists.ts, EDIT_PREMIO_ENABLED). */
   editPremio?: boolean;
+  /** Alterar no lugar produções, orientações e bancas (production/). */
+  editProduction?: boolean;
 }
 
 /**
@@ -140,7 +140,7 @@ export const GATED_EDITS: readonly {
     feature: 'alterar-formacao-complementar',
     option: 'editFormacaoComplementar',
   },
-  { enabled: EDIT_KEYWORDS_ENABLED, feature: 'alterar-palavras-chave', option: 'editKeywords' },
+  { enabled: EDIT_PRODUCTION_ENABLED, feature: 'alterar-producao', option: 'editProduction' },
 ];
 
 /**
@@ -248,15 +248,15 @@ export function planChange(
     deleteItems = false,
     editEvento = false,
     editFormacaoComplementar = false,
-    editKeywords = false,
     editOuvinte = false,
     editPremio = false,
+    editProduction = false,
   }: PlanOptions = {},
   siblings: readonly Change[] = [],
 ): BridgeOp | Unsupported {
-  // Palavras-chave de um item que já está no Lattes (edit-keywords.ts).
-  if (editKeywords && isKeywordsChange(change, chain)) {
-    const planned = planKeywords(change, chain, label);
+  // Produção, orientação ou banca que já está no Lattes (production/).
+  if (editProduction && isProductionChange(change, chain)) {
+    const planned = planProduction(change, chain, label);
     return 'reason' in planned ? unsupported(change, label, planned.reason) : planned;
   }
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.

@@ -2,20 +2,22 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { seedGrids, storedGrids } from '../scripts/lattes-simulado/grades.ts';
 import { applyOp } from '../src/bridge/apply.ts';
-import {
-  EDIT_KEYWORDS_ENABLED,
-  keywordRows,
-  type KeywordsOp,
-  readGrids,
-  serializeGrid,
-} from '../src/bridge/edit-keywords.ts';
 import { opRows } from '../src/bridge/field-labels.ts';
 import { planChanges, type PlanOptions, planOptionsFor } from '../src/bridge/plan.ts';
+import { keywordRows, readGrids, serializeGrid } from '../src/bridge/production/grids.ts';
+import { EDIT_PRODUCTION_ENABLED, type ProductionOp } from '../src/bridge/production/plan.ts';
 import { sentEntry, undoOp } from '../src/bridge/sent-log.ts';
 import { diffDocuments } from '../src/model/changes.ts';
 import { encodeLatin1 } from '../src/model/latin1.ts';
 import { readKeywords, setKeywords } from '../src/model/production.ts';
-import { childElements, getAttr, parseXml, type XElement } from '../src/model/xml.ts';
+import {
+  childElements,
+  element,
+  getAttr,
+  parseXml,
+  setAttr,
+  type XElement,
+} from '../src/model/xml.ts';
 import { lattesSchema } from '../src/schema/lattes.ts';
 import { canAddKeywords, parseKeywords } from '../src/ui/keywords-inline.ts';
 import {
@@ -35,7 +37,8 @@ const XML = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS NOME-COMPLE
 <TRABALHO-TECNICO SEQUENCIA-PRODUCAO="32"><DADOS-BASICOS-DO-TRABALHO-TECNICO NATUREZA="ELABORACAO_DE_PROJETO" TITULO-DO-TRABALHO-TECNICO="Portal de Exemplo" ANO="2006"/><AUTORES NOME-COMPLETO-DO-AUTOR="Pessoa Sintética" NOME-PARA-CITACAO="SINTÉTICA, P." ORDEM-DE-AUTORIA="1"/><PALAVRAS-CHAVE PALAVRA-CHAVE-1="design" PALAVRA-CHAVE-2="web" PALAVRA-CHAVE-3="" PALAVRA-CHAVE-4="" PALAVRA-CHAVE-5="" PALAVRA-CHAVE-6=""/></TRABALHO-TECNICO>
 </PRODUCAO-TECNICA></CURRICULO-VITAE>`;
 
-const ON: PlanOptions = { editKeywords: true };
+const ON: PlanOptions = { editProduction: true };
+const ALL_GRIDS = ['f_autores_l', 'f_plv_l', 'f_setor_l', 'f_area_l'] as const;
 
 const bySeq = (root: XElement, seq: string) =>
   findIn(root, (el) => getAttr(el, 'SEQUENCIA-PRODUCAO') === seq)!;
@@ -51,11 +54,11 @@ function planAfter(edit: (root: XElement) => void, options: PlanOptions = ON) {
   );
 }
 
-function onlyOp(edit: (root: XElement) => void): KeywordsOp {
+function onlyOp(edit: (root: XElement) => void): ProductionOp {
   const plan = planAfter(edit);
   expect(plan.unsupported).toEqual([]);
   expect(plan.ops).toHaveLength(1);
-  return plan.ops[0] as KeywordsOp;
+  return plan.ops[0] as ProductionOp;
 }
 
 const words = (seq: string, list: string[]) => (root: XElement) =>
@@ -116,12 +119,12 @@ areaProvider =
 var setorProvider =
 [{}];
 </script>`;
-    const grids = readGrids(page);
+    const grids = readGrids(page, ALL_GRIDS);
     expect('missing' in grids).toBe(false);
     if ('missing' in grids) return;
-    expect(grids.f_autores_l[0]).toMatchObject({ l: 'Coautora D&Ávila', t: "D'ÁVILA, C." });
-    expect(grids.f_plv_l[0]).toMatchObject({ c: '1', l: 'design' });
-    expect(readGrids(page.replace('palavraProvider', 'outroProvider'))).toEqual({
+    expect(grids.f_autores_l?.[0]).toMatchObject({ l: 'Coautora D&Ávila', t: "D'ÁVILA, C." });
+    expect(grids.f_plv_l?.[0]).toMatchObject({ c: '1', l: 'design' });
+    expect(readGrids(page.replace('palavraProvider', 'outroProvider'), ALL_GRIDS)).toEqual({
       missing: 'palavraProvider',
     });
   });
@@ -154,21 +157,20 @@ describe('palavras-chave: o campo do formulário da linha', () => {
 
 describe('palavras-chave: plano', () => {
   it('ligada, as palavras novas de um trabalho técnico viram a operação', () => {
-    expect(EDIT_KEYWORDS_ENABLED).toBe(true);
-    expect(planOptionsFor(['alterar-palavras-chave']).editKeywords).toBe(true);
-    expect(planOptionsFor([]).editKeywords).toBe(false);
+    expect(EDIT_PRODUCTION_ENABLED).toBe(true);
+    expect(planOptionsFor(['alterar-producao']).editProduction).toBe(true);
+    expect(planOptionsFor([]).editProduction).toBe(false);
     const op = onlyOp(words('31', ['Design de interface', 'Website']));
     expect(op).toMatchObject({
-      after: ['Design de interface', 'Website'],
-      before: [],
-      kind: 'palavras-chave',
+      keywords: { after: ['Design de interface', 'Website'], before: [] },
+      kind: 'producao',
       match: { title: 'Sistema de Exemplo', year: '2005' },
       target: 'trabalho-tecnico',
     });
     expect(opRows(op)).toEqual([
       {
         after: 'Design de interface, Website',
-        before: '(vazio)',
+        before: '',
         label: 'Palavras-chave',
         name: 'f_plv_l',
       },
@@ -177,7 +179,9 @@ describe('palavras-chave: plano', () => {
 
   it('nas que já tinham palavras, o antes vem do original', () => {
     const op = onlyOp(words('32', ['design', 'web', 'portal']));
-    expect(op).toMatchObject({ after: ['design', 'web', 'portal'], before: ['design', 'web'] });
+    expect(op).toMatchObject({
+      keywords: { after: ['design', 'web', 'portal'], before: ['design', 'web'] },
+    });
   });
 
   it('a outra produção bibliográfica também; desligada, fica à mão', () => {
@@ -242,8 +246,10 @@ describe('palavras-chave no Lattes simulado', () => {
     expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
     // Conferido não guarda outcome no registro: só os que não conferiram.
     const entry = { ...sentEntry(op, 'cv', Date.now()), id: 1 };
-    const undo = undoOp(entry) as KeywordsOp;
-    expect(undo).toMatchObject({ after: ['design', 'web'], before: ['design', 'web', 'portal'] });
+    const undo = undoOp(entry) as ProductionOp;
+    expect(undo).toMatchObject({
+      keywords: { after: ['design', 'web'], before: ['design', 'web', 'portal'] },
+    });
     expect(await applyOp(undo, lattes.port)).toMatchObject({ status: 'conferido' });
     expect(readKeywords(bySeq(lattes.state.root, '32'))).toEqual(['design', 'web']);
   });
@@ -289,7 +295,7 @@ describe('palavras-chave no Lattes simulado', () => {
     });
     const op = onlyOp(words('31', ['Website']));
     expect(await applyOp(op, lattes.port)).toMatchObject({
-      detail: 'Outros campos mudaram no Lattes: Autores',
+      detail: 'Outros campos mudaram no Lattes: Autores. Confira no Lattes',
       status: 'divergente',
     });
   });
@@ -298,7 +304,7 @@ describe('palavras-chave no Lattes simulado', () => {
     const lattes = await lattesFor({ intercept: faults.ignorePost() });
     const op = onlyOp(words('31', ['Website']));
     expect(await applyOp(op, lattes.port)).toMatchObject({
-      detail: 'O Lattes não gravou: Palavras-chave',
+      detail: 'O Lattes não gravou: Palavras-chave. Confira no Lattes',
       status: 'divergente',
     });
   });
@@ -320,5 +326,85 @@ describe('palavras-chave no Lattes simulado', () => {
       status: 'divergente',
     });
     expect(postsOf(lattes)).toEqual([]);
+  });
+});
+
+const basicsOf = (root: XElement, seq: string) =>
+  childElements(bySeq(root, seq)).find((c) => c.name.startsWith('DADOS-BASICOS'))!;
+
+const setBasic = (seq: string, attr: string, value: string) => (root: XElement) =>
+  setAttr(basicsOf(root, seq), attr, value);
+
+const authorsOf = (root: XElement, seq: string) =>
+  childElements(bySeq(root, seq), 'AUTORES').map((a) => getAttr(a, 'NOME-COMPLETO-DO-AUTOR'));
+
+describe('alterar campos de uma produção no Lattes simulado', () => {
+  it('título e natureza de um trabalho técnico: grava e confere', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp((root) => {
+      setBasic('31', 'TITULO-DO-TRABALHO-TECNICO', 'Sistema Revisto')(root);
+      setBasic('31', 'NATUREZA', 'PARECER')(root);
+    });
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes)[0]!.fields).toMatchObject({ f_titulo: 'Sistema Revisto' });
+    const basics = basicsOf(lattes.state.root, '31');
+    expect(getAttr(basics, 'TITULO-DO-TRABALHO-TECNICO')).toBe('Sistema Revisto');
+    expect(getAttr(basics, 'NATUREZA')).toBe('PARECER');
+    // As grades seguem como estavam.
+    expect(authorsOf(lattes.state.root, '31')).toHaveLength(2);
+  });
+
+  it('título de uma outra produção bibliográfica', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp(setBasic('33', 'TITULO', 'Ensaio Revisto'));
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(getAttr(basicsOf(lattes.state.root, '33'), 'TITULO')).toBe('Ensaio Revisto');
+  });
+
+  it('o Lattes com outro valor no campo: nada é enviado', async () => {
+    const lattes = await lattesFor();
+    setAttr(basicsOf(lattes.state.root, '31'), 'NATUREZA', 'RELATORIO_TECNICO');
+    const op = onlyOp(setBasic('31', 'NATUREZA', 'PARECER'));
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'divergente' });
+    expect(postsOf(lattes)).toEqual([]);
+  });
+
+  it('campo que o formulário não tem fica à mão, com o motivo', () => {
+    const plan = planAfter((root) => {
+      const item = bySeq(root, '33');
+      const extra = element('INFORMACOES-ADICIONAIS', { 'DESCRICAO-INFORMACOES-ADICIONAIS': 'x' });
+      item.children.push(extra);
+    });
+    expect(plan.ops).toEqual([]);
+    expect(plan.unsupported.length).toBeGreaterThan(0);
+  });
+});
+
+describe('alterar autores de uma produção no Lattes simulado', () => {
+  it('tirar um coautor: a grade vai sem ele, e confere', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp((root) => {
+      const item = bySeq(root, '31');
+      item.children = item.children.filter(
+        (c) => !(c.kind === 'element' && getAttr(c, 'ORDEM-DE-AUTORIA') === '2'),
+      );
+    });
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(authorsOf(lattes.state.root, '31')).toEqual(['Pessoa Sintética']);
+  });
+
+  it('pôr um coautor que já está na lista de autores do Lattes', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp((root) => {
+      bySeq(root, '33').children.push(
+        element('AUTORES', {
+          'NOME-COMPLETO-DO-AUTOR': 'Coautora de Exemplo',
+          'NOME-PARA-CITACAO': 'EXEMPLO, C.',
+          'ORDEM-DE-AUTORIA': '2',
+        }),
+      );
+    });
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(authorsOf(lattes.state.root, '33')).toEqual(['Pessoa Sintética', 'Coautora de Exemplo']);
   });
 });

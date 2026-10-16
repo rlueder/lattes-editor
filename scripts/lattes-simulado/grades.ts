@@ -1,7 +1,6 @@
 // As grades de autores, áreas, palavras-chave e setores dos formulários de
-// produção no Lattes simulado (seção 16 de docs/lattes_internals.md), e a
-// outra produção bibliográfica (prc_bib_outraprod, lista
-// prc_bib_demais_lista com f_cod_tipo=1Z).
+// produção no Lattes simulado (seção 16 de docs/lattes_internals.md). As
+// telas de cada tipo saem da especificação dele (producao.ts).
 //
 // Observado no Lattes real em 16/10/2026, só por GET: a página escreve cada
 // grade como um vetor em script (`var autorProvider = [...]`,
@@ -16,13 +15,15 @@
 // acontecer quando a operação erra. As áreas e os setores ficam só na
 // memória do simulado (não vão para a exportação).
 
+import { PRODUCTION_TARGETS } from '../../src/bridge/production/targets/index.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
-import { html, type Routes, type SimResponse } from './tipos.ts';
+import { writeFields } from './producao.ts';
+import { html, type SimResponse } from './tipos.ts';
 
 type Row = Record<string, string | boolean>;
 
@@ -155,64 +156,12 @@ export function techWorkPost(req: SimRequest, state: LattesState): SimResponse {
   if (req.get('f_ctr') !== 'U') return html(back);
   const item = techWorks(state).find((t) => getAttr(t, 'SEQUENCIA-PRODUCAO') === req.get('f_seq'));
   if (!item) return html(h.page('Trabalhos técnicos', '<p>Registro não encontrado.</p>'));
+  writeFields(
+    PRODUCTION_TARGETS.find((t) => t.id === 'trabalho-tecnico')!,
+    item,
+    req,
+  );
   applyGrids(item, req);
   state.touch();
   return html(back);
 }
-
-// Outra produção bibliográfica ---------------------------------------------------
-
-const BIB_PATH = ['PRODUCAO-BIBLIOGRAFICA', 'DEMAIS-TIPOS-DE-PRODUCAO-BIBLIOGRAFICA'];
-
-function otherBibs(state: LattesState): XElement[] {
-  const container = state.find(BIB_PATH);
-  return container ? childElements(container, 'OUTRA-PRODUCAO-BIBLIOGRAFICA') : [];
-}
-
-const basicsOf = (item: XElement) => childElements(item, 'DADOS-BASICOS-DE-OUTRA-PRODUCAO')[0];
-
-function otherBibList(state: LattesState): SimResponse {
-  const rows = otherBibs(state)
-    .map((t) => {
-      const seq = getAttr(t, 'SEQUENCIA-PRODUCAO') ?? '';
-      const b = basicsOf(t);
-      return `<tr><td><a href="#" onclick="self.parent.modalCV2.setarUrl('prc_bib_outraprod?f_cod=${state.code}&amp;f_seq=${seq}',true); return false;">${h.esc((b && getAttr(b, 'TITULO')) ?? '')}</a></td></tr>`;
-    })
-    .join('\n');
-  return html(h.page('Outra produção bibliográfica', `<table>${rows}</table>`));
-}
-
-/** GN_BIB com os campos que a operação de palavras-chave lê; os outros ficam de fora. */
-function otherBibForm(req: SimRequest, state: LattesState): SimResponse {
-  const item = otherBibs(state).find((t) => getAttr(t, 'SEQUENCIA-PRODUCAO') === req.get('f_seq'));
-  if (!item) return html(h.page('Outra produção bibliográfica', '<p>Registro não encontrado.</p>'));
-  const b = basicsOf(item);
-  const body = `<form name="GN_BIB" method="post" action="PRC_BIB_OUTRAPROD">
-${h.text('f_titulo', (b && getAttr(b, 'TITULO')) ?? '', { maxLength: 400 })}
-${h.text('f_ano', (b && getAttr(b, 'ANO')) ?? '', { maxLength: 4 })}
-${h.hidden('f_ctr', 'U')}${h.hidden('f_cod', state.code)}${h.hidden('f_seq', req.get('f_seq') ?? '')}${GRID_HIDDEN}
-${h.formButtons(true)}
-</form>
-${gridScripts(item)}
-${h.formScripts('GN_BIB', 'Deseja realmente excluir esta produção?')}`;
-  return html(h.page('Outra produção bibliográfica', body));
-}
-
-function otherBibPost(req: SimRequest, state: LattesState): SimResponse {
-  const back = h.savedScript(`prc_bib_demais_lista?f_cod_tipo=1Z&f_cod=${state.code}`);
-  if (req.get('f_ctr') !== 'U') return html(back);
-  const item = otherBibs(state).find((t) => getAttr(t, 'SEQUENCIA-PRODUCAO') === req.get('f_seq'));
-  if (!item) return html(h.page('Outra produção bibliográfica', '<p>Registro não encontrado.</p>'));
-  applyGrids(item, req);
-  state.touch();
-  return html(back);
-}
-
-export const GRADES_ROUTES: Routes = {
-  prc_bib_demais_lista: (req, state) =>
-    req.get('f_cod_tipo') === '1Z'
-      ? otherBibList(state)
-      : html(h.page('Produção bibliográfica', '<table></table>')),
-  prc_bib_outraprod: (req, state) =>
-    req.method === 'POST' ? otherBibPost(req, state) : otherBibForm(req, state),
-};

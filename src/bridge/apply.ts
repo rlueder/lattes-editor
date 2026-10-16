@@ -30,7 +30,6 @@ import {
   isFullEvento,
   locateEvento,
 } from './edit-items.ts';
-import { applyKeywords, isKeywordsOp, type KeywordsOp } from './edit-keywords.ts';
 import {
   countListEdits,
   enabledListEdits,
@@ -55,6 +54,8 @@ import {
 } from './form.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
 import type { BridgeOp, FieldValues } from './plan.ts';
+import { applyProduction } from './production/apply.ts';
+import { isProductionOp, type ProductionOp } from './production/plan.ts';
 
 export interface LattesPort {
   /** GET de um caminho relativo a /cvlattesweb/; texto já decodificado de Latin-1. */
@@ -81,7 +82,7 @@ type EditOp = Exclude<
   | BiographicOp
   | DeleteOp
   | EventoOp
-  | KeywordsOp
+  | ProductionOp
   | ListEditOp
   | {
       kind:
@@ -246,7 +247,7 @@ export async function applyOp(
   if (op.kind === 'criar-dado') return applyCreateGeneral(op, port);
   if (op.kind === 'criar-atividade') return applyCreateAtividade(op, port);
   if (op.kind === 'criar-evento') return applyCreateEvento(op, port);
-  if (isKeywordsOp(op)) return applyKeywords(op, port);
+  if (isProductionOp(op)) return applyProduction(op, port);
   if (op.kind === 'criar-vinculo') return applyCreateVinculo(op, port);
   if (isDeleteOp(op)) return applyDelete(op, port);
   const result = (status: ResultStatus, detail: string): OpResult => ({

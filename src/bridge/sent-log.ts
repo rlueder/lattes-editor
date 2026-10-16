@@ -8,9 +8,9 @@
 import type { Change } from '../model/changes.ts';
 import type { ResultStatus } from './apply.ts';
 import { isDeleteOp } from './delete.ts';
-import { isKeywordsOp } from './edit-keywords.ts';
 import { opRows } from './field-labels.ts';
 import type { BridgeOp } from './plan.ts';
+import { isProductionOp } from './production/plan.ts';
 
 export interface SentRow {
   after: string;
@@ -121,8 +121,14 @@ export function undoOp(entry: SentEntry): BridgeOp | undefined {
   const expect = { ...op.expect, ...op.set };
   return {
     ...op,
-    // As palavras-chave conferem e gravam pelas listas, não por set e expect.
-    ...(isKeywordsOp(op) ? { after: op.before, before: op.after } : {}),
+    // Palavras-chave e autores conferem e gravam pelas listas; as linhas mostram o desfazer.
+    ...(isProductionOp(op)
+      ? {
+          authors: op.authors && { after: op.authors.before, before: op.authors.after },
+          keywords: op.keywords && { after: op.keywords.before, before: op.keywords.after },
+          rows: op.rows.map((r) => ({ ...r, after: r.before, before: r.after })),
+        }
+      : {}),
     expect,
     key: `${UNDO_KEY_PREFIX}${entry.id}`,
     label: `Desfazer: ${op.label}`,

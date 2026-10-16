@@ -267,9 +267,9 @@ function render(state: QueueState): void {
       opRows(op).flatMap((row) => [
         el('dt', { textContent: row.label }),
         el('dd', {}, [
-          el('span', { className: 'antes', textContent: row.before }),
+          el('span', { className: 'antes', textContent: row.before || '(vazio)' }),
           ' → ',
-          el('span', { textContent: row.after }),
+          el('span', { textContent: row.after || '(vazio)' }),
         ]),
       ]),
     );
