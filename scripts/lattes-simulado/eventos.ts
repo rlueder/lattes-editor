@@ -11,6 +11,7 @@ import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
+import { productionRoutes } from './producao.ts';
 import { html, type Routes, type SimResponse } from './tipos.ts';
 
 export const EVENTS_PATH = ['DADOS-COMPLEMENTARES', 'PARTICIPACAO-EM-EVENTOS-CONGRESSOS'];
@@ -254,5 +255,9 @@ ${h.hidden('f_ctr', 'I')}${h.hidden('f_cod', state.code)}
 export const EVENTOS_ROUTES: Routes = {
   'pkg_evento.form': (req, state) => (req.method === 'POST' ? post(req, state) : form(req, state)),
   'pkg_evento.lista': lista,
-  prc_midias_sociais: midiasSociais,
+  // Com f_seq (e no POST), a alteração de uma rede social, site ou blog (producao.ts).
+  prc_midias_sociais: (req, state) =>
+    req.get('f_seq') || req.method === 'POST'
+      ? productionRoutes().prc_midias_sociais!(req, state)
+      : midiasSociais(req, state),
 };

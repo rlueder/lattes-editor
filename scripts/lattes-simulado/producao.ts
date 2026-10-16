@@ -54,7 +54,9 @@ function fromForm(element: string, attr: string, map: FieldMap, value: string): 
     return Object.entries(idiomas as Record<string, string>).find(([, c]) => c === value)?.[0];
   }
   const spec = lattesSchema.elements[element]?.attributes.find((a) => a.name === attr);
-  const candidates = [...(spec?.enum ?? []), 'SIM', 'NAO'];
+  // Por último, o próprio valor (lista cujo valor é o rótulo) e a data sem as
+  // barras (dd/mm/aaaa do formulário, DDMMAAAA do XML).
+  const candidates = [...(spec?.enum ?? []), 'SIM', 'NAO', value.replace(/\//g, ''), value];
   return candidates.find((c) => map.toForm!(c) === value);
 }
 

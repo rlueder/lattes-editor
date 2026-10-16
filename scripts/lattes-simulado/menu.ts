@@ -50,6 +50,42 @@ function menuItems(code: string): [string, string][] {
     ['Orientações em andamento', `pkg_orient.lista?f_tipo=A&f_cod=${code}`],
     ['Bancas de trabalhos de conclusão', `pkg_banca_trab.lista?f_cod=${code}`],
     ['Bancas julgadoras', `pkg_banca_julg.lista?f_cod=${code}`],
+    // Produções técnicas e artísticas: as listas da captura de 13/10/2026
+    // (docs/lattes-listas/), de onde se abriu cada inclusão. Inferido: que o
+    // menu as abra com esses parâmetros (a das artísticas foi vista só com
+    // f_sta_divulgacao_cientifica=S).
+    ['Produtos tecnológicos', `pkg_produto.lista?f_cod=${code}`],
+    ['Processos ou técnicas', `pkg_processo.lista?f_cod=${code}`],
+    ...(
+      [
+        ['Apresentação de trabalho', '2J'],
+        ['Cartas, mapas ou similares', '2A'],
+        ['Curso de curta duração ministrado', '2B'],
+        ['Desenvolvimento de material didático ou instrucional', '2C'],
+        ['Editoração', '2D'],
+        ['Manutenção de obra artística', '2E'],
+        ['Maquete', '2F'],
+        ['Organização de evento', '2G'],
+        ['Programa de rádio ou TV', '2H'],
+        ['Relatório de pesquisa', '2I'],
+        ['Redes sociais, websites e blogs', '2L'],
+        ['Outra produção técnica', '2Z'],
+      ] as const
+    ).map(([label, tipo]): [string, string] => [
+      label,
+      `prc_tec_demais_lista?f_cod_tipo=${tipo}&f_cod=${code}`,
+    ]),
+    ...(
+      [
+        ['Artes cênicas', 'AC'],
+        ['Música', 'MU'],
+        ['Artes visuais', 'AV'],
+        ['Outra produção artística/cultural', 'OU'],
+      ] as const
+    ).map(([label, tipo]): [string, string] => [
+      label,
+      `pkg_arte_nova.lista?f_cod_tipo=${tipo}&f_cod=${code}`,
+    ]),
     // Os outros registros: a mesma lista com outro f_cod_tipo (reconhecimento,
     // catálogo de menus; o parâmetro de cada um no menu é inferido).
     ...(

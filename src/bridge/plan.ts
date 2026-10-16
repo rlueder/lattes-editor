@@ -23,6 +23,7 @@ import {
   planListEdit,
 } from './edit-lists.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
+import { manualReason } from './production/manual.ts';
 import {
   EDIT_PRODUCTION_ENABLED,
   isProductionChange,
@@ -371,7 +372,7 @@ export function planChange(
       : undefined;
   if (evento) return 'reason' in evento ? unsupported(change, label, evento.reason) : evento;
 
-  return unsupported(change, label, 'Formulário não suportado ainda');
+  return unsupported(change, label, manualReason(chain) ?? 'Formulário não suportado ainda');
 }
 
 export function isOp(p: BridgeOp | Unsupported): p is BridgeOp {
