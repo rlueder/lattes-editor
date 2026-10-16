@@ -1,8 +1,11 @@
+import { readFileSync } from 'node:fs';
+
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { applyOp } from '../src/bridge/apply.ts';
 import {
   BIOGRAPHIC_OPS_ENABLED,
+  BIOGRAPHIC_SPECS,
   biographicContract,
   type BiographicOp,
   biographicSample,
@@ -480,6 +483,12 @@ const contractOn = (): Contract => {
   };
 };
 
+interface CensusForm {
+  fields: { maxLength?: number; name: string; type: string }[];
+  hidden: string[];
+  name: string;
+}
+
 describe('dados gerais no contrato', () => {
   it('com a chave ligada, confere os três formulários só lendo', async () => {
     const lattes = await lattesFor();
@@ -496,6 +505,27 @@ describe('dados gerais no contrato', () => {
     expect(report.menu.every((m) => m.found)).toBe(true);
     expect(report.menu.map((m) => m.proc)).toEqual(contractOn().menu);
     expect(postsOf(lattes)).toEqual([]);
+  });
+
+  it.each([
+    ['endereco', 'GN_ENDERECO'],
+    ['identificacao', 'GN_IDENT'],
+  ] as const)('%s confere todos os campos que o censo leu no Lattes', (kind, name) => {
+    // Campo do formulário fora da especificação aparece no painel como
+    // "campo novo" toda vez que a verificação roda.
+    const census = JSON.parse(
+      readFileSync('docs/lattes-formularios/censo-2026-10-15.json', 'utf8'),
+    ) as { entries: { page?: { forms?: CensusForm[] } }[] };
+    const form = census.entries.flatMap((e) => e.page?.forms ?? []).find((f) => f.name === name)!;
+    const observed = [...new Set([...form.fields.map((f) => f.name), ...form.hidden])].sort();
+    const spec = BIOGRAPHIC_SPECS[kind].fields;
+    expect(Object.keys(spec).sort()).toEqual(observed);
+    for (const field of form.fields) {
+      expect(spec[field.name], field.name).toMatchObject({
+        type: field.type,
+        ...(field.maxLength ? { maxLength: field.maxLength } : {}),
+      });
+    }
   });
 
   it('aponta modo errado, formação sem exemplar e link sumido', async () => {
