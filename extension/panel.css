@@ -299,15 +299,23 @@ button:focus-visible {
 
 .vigia-topo {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+/* O botão fica numa linha só; quem quebra é o título. */
+.vigia-topo button {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .vigia-titulo {
   margin: 0;
+  padding-top: 6px;
   font-size: 13px;
+  line-height: 1.4;
   font-weight: 600;
 }
 
@@ -337,14 +345,25 @@ button:focus-visible {
 }
 
 .vigia-lista {
-  margin: 0 0 10px;
+  margin: 12px 0 14px;
   padding-left: 18px;
   font: 12px/1.5 var(--mono);
 }
 
+.vigia-lista li + li {
+  margin-top: 6px;
+}
+
+#vigia-resultado .detalhe {
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
 .vigia-acoes {
   display: flex;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
 }
 
 .vigia-acoes a {

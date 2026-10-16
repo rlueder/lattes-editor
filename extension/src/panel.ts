@@ -111,7 +111,9 @@ function renderReport(report: ContractReport | undefined): void {
       el('span', { className: 'detalhe', textContent: `em ${when}` }),
     ]),
   );
-  if (report.detail) root.append(el('p', { className: 'detalhe', textContent: report.detail }));
+  // Na sessão vencida o título já diz o que houve; o detalhe repetiria.
+  if (report.detail && report.status !== 'sessao')
+    root.append(el('p', { className: 'detalhe', textContent: report.detail }));
   const lines = [
     ...report.menu.filter((m) => !m.found).map((m) => `Menu: link ${m.proc} sumiu`),
     ...report.forms.flatMap((f) =>
@@ -159,7 +161,7 @@ function renderReport(report: ContractReport | undefined): void {
         className: 'detalhe',
         textContent: 'A aba ainda mostra o currículo, mas pede login de novo.',
       }),
-      el('div', { className: 'acoes' }, [reload]),
+      el('div', { className: 'vigia-acoes' }, [reload]),
     );
     return;
   }

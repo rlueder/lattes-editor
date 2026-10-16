@@ -47,7 +47,7 @@ export function BridgeBlock({ bridge }: { bridge: BridgeState }) {
           </button>
         ) : bridge.running ? (
           <button className="bridge-btn" type="button" onClick={bridge.stop}>
-            Parar
+            Cancelar
           </button>
         ) : (
           <button className="bridge-btn primary" type="button" onClick={() => setConfirming(true)}>
