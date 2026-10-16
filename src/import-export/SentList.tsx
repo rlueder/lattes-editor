@@ -108,7 +108,7 @@ export function SentList({ bridge, onUndo }: { bridge: BridgeState; onUndo?: () 
                         {entry.checkedAt === undefined ? (
                           <span className="tag warn">{OUTCOME_LABEL[entry.outcome.status]}</span>
                         ) : (
-                          <span className="tag ok">Conferido por você</span>
+                          <span className="tag ok">Conferido</span>
                         )}
                         {blocking.has(entry) && entry.checkedAt === undefined && (
                           <button
