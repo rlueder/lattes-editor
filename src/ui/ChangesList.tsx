@@ -83,13 +83,14 @@ export function ChangesList({ groups, onDiscard, onDiscardField }: Props) {
                     )}
                   </div>
                   <div className="change-fields">
-                    {visibleFields(change, showCodes).map((f, i) => {
+                    {visibleFields(change, showCodes).map((f) => {
                       // Código de enum aparece (e é copiado) como o rótulo do formulário do Lattes.
                       const show = (v: string) => displayValue(change.element, f.attr, v);
                       const after = change.kind === 'removido' ? show(f.before) : show(f.after);
                       return (
                         <FieldChange
                           key={f.attr}
+                          captions
                           actions={
                             change.kind === 'alterado' && (
                               <DiscardButton
@@ -102,7 +103,6 @@ export function ChangesList({ groups, onDiscard, onDiscardField }: Props) {
                           }
                           after={after}
                           before={change.kind === 'alterado' ? show(f.before) : undefined}
-                          captions={i === 0}
                           label={f.label}
                         />
                       );

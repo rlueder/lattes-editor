@@ -184,12 +184,12 @@ export function SentList({ bridge, onUndo }: { bridge: BridgeState; onUndo?: () 
                   )}
                   {noUndo && !failed(entry) && <p className="muted sent-outcome">{noUndo}</p>}
                   <div className="sent-fields">
-                    {entry.rows.map((row, i) => (
+                    {entry.rows.map((row) => (
                       <FieldChange
                         key={row.name}
+                        captions
                         after={row.after}
                         before={row.before}
-                        captions={i === 0}
                         label={row.label}
                       />
                     ))}
