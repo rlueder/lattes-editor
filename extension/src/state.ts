@@ -11,6 +11,12 @@ export type EditorEndpoint = 'app' | number;
 
 export interface QueueState {
   editor?: EditorEndpoint;
+  /**
+   * O editor é que começa e continua a gravação ('gravar-pelo-editor'); o
+   * painel só acompanha e pode parar. Sem isso (app antigo), a fila espera o
+   * "Aplicar todas" do painel.
+   */
+  fromEditor?: boolean;
   /** Currículo aberto no editor quando a fila foi enviada. */
   lattesId?: string;
   ops: BridgeOp[];

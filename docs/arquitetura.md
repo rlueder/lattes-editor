@@ -178,14 +178,25 @@ As regras estão em `src/bridge/write-brake.ts`, sem chrome nem React, e a
 extensão roda a fila por elas (`runRound`, chamado por `run` em
 `extension/src/background.ts`):
 
-- **Teto por rodada.** Cada clique em "Aplicar todas" (ou em "Continuar")
-  grava no máximo `WRITES_PER_ROUND` (20) operações. Passou disso, a fila
-  pausa: o estado da extensão guarda `pausa` com quantas gravou e quantas
-  faltam, o painel troca o botão por "Continuar" com o aviso, e o `fim` que
-  vai ao editor leva a mesma pausa, que o "Enviar ao Lattes" mostra
-  (`src/ui/use-write-brake.ts`). Só o clique no painel retoma; o editor não
-  tem mensagem que faça a extensão gravar. "Limpar fila" tira a pausa e avisa
-  o editor.
+- **Quem começa.** Com a capacidade `gravar-pelo-editor` dos dois lados, o
+  `enviar` do editor leva `start` e a extensão começa a rodada sem clique no
+  painel; o "Continuar" da pausa também sai do editor, pela mensagem
+  `continuar`. O estado da fila guarda `fromEditor`, e com ele o painel só
+  acompanha: esconde "Aplicar todas" e os "Aplicar" de cada item e mostra o
+  botão só para parar. A rodada pedida pelo editor espera até 60 s uma
+  verificação em curso (a automática roda quando o menu do Lattes carrega);
+  sem o "ok" do aviso de uso, ou com o conector ocupado em outra tarefa, a
+  primeira da fila volta como `erro` com o motivo, seguida de `fim`, para o
+  editor não ficar preso em "gravando". Um app sem a capacidade manda o
+  `enviar` sem `start`, e a fila espera o "Aplicar todas" do painel, como
+  antes.
+- **Teto por rodada.** Cada rodada (o envio, o "Continuar" ou, com app
+  antigo, o "Aplicar todas") grava no máximo `WRITES_PER_ROUND` (20)
+  operações. Passou disso, a fila pausa: o estado da extensão guarda `pausa`
+  com quantas gravou e quantas faltam, e o `fim` que vai ao editor leva a
+  mesma pausa, que o "Enviar ao Lattes" mostra com o botão "Continuar"
+  (`src/ui/use-write-brake.ts`). "Limpar fila" tira a pausa e avisa o
+  editor.
 - **Parada na primeira surpresa.** A fila para no primeiro resultado que não
   é conferido (divergente, erro, sessão caída), como já parava. A falha que
   estoura no meio da operação (a aba fechou, a página mudou) e a resposta

@@ -56,9 +56,6 @@ function emptyState(): HTMLElement {
   ]);
 }
 
-// O teto da rodada vem do mesmo número que a fila usa.
-document.getElementById('teto')!.textContent = String(WRITES_PER_ROUND);
-
 const VERSION = chrome.runtime.getManifest().version_name ?? chrome.runtime.getManifest().version;
 
 // A extensão do canal Dev se anuncia no topo, para não ser confundida com a outra.
@@ -195,6 +192,9 @@ function renderReport(report: ContractReport | undefined): void {
   root.append(el('div', { className: 'vigia-acoes' }, [copy, issue]));
 }
 
+const HELP_BY_PANEL = `Cada alteração é gravada no Lattes, lida de volta e conferida. A fila para no primeiro problema e pausa a cada ${WRITES_PER_ROUND} gravações. Deixe o currículo aberto numa aba.`;
+const HELP_BY_EDITOR = `O editor está gravando estas alterações no Lattes: cada uma é lida de volta e conferida. A fila para no primeiro problema e pausa a cada ${WRITES_PER_ROUND} gravações. Deixe o currículo aberto numa aba.`;
+
 function render(state: QueueState): void {
   const root = document.getElementById('fila')!;
   const action = document.getElementById('acao') as HTMLButtonElement;
@@ -208,6 +208,10 @@ function render(state: QueueState): void {
   action.dataset.modo = mode;
   action.className = mode === 'parar' ? 'parar' : mode === 'ok' ? 'conferido' : 'principal';
   action.disabled = mode === 'ok' || state.ops.length === 0;
+  // Quando o editor conduz a gravação, o painel só acompanha: o botão
+  // aparece para parar, e começar ou continuar fica com o editor.
+  const byEditor = state.fromEditor === true;
+  action.hidden = byEditor && mode !== 'parar';
   // Em pausa no teto da rodada, o mesmo botão segue com o resto (write-brake.ts).
   const paused = mode === 'aplicar' && state.pausa !== undefined;
   action.textContent =
@@ -219,7 +223,8 @@ function render(state: QueueState): void {
           ? 'Continuar'
           : 'Aplicar todas';
   const pauseNote = document.getElementById('pausa')!;
-  pauseNote.textContent = paused && state.pausa ? pauseText(state.pausa, 'painel') : '';
+  pauseNote.textContent =
+    paused && state.pausa ? pauseText(state.pausa, byEditor ? 'no-editor' : 'aqui') : '';
   pauseNote.hidden = !paused;
   root.replaceChildren();
   const verify = document.getElementById('verificar') as HTMLButtonElement;
@@ -235,7 +240,9 @@ function render(state: QueueState): void {
   renderReport(state.verificacao);
   // Sem fila, sem botões: o estado vazio fala sozinho.
   document.querySelector<HTMLElement>('.acoes')!.hidden = state.ops.length === 0;
-  document.querySelector<HTMLElement>('.ajuda')!.hidden = state.ops.length === 0;
+  const help = document.querySelector<HTMLElement>('.ajuda')!;
+  help.hidden = state.ops.length === 0;
+  help.textContent = byEditor ? HELP_BY_EDITOR : HELP_BY_PANEL;
   // Fila parada com algo conferido: lembra que nada está público ainda.
   const reminder = document.querySelector<HTMLElement>('.lembrete')!;
   reminder.textContent = PUBLISH_REMINDER;
@@ -276,7 +283,7 @@ function render(state: QueueState): void {
         ]),
         fields,
         detail,
-        status === 'conferido' ? '' : el('div', { className: 'item-acoes' }, [button]),
+        status === 'conferido' || byEditor ? '' : el('div', { className: 'item-acoes' }, [button]),
       ]),
     );
   }

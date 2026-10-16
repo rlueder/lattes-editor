@@ -145,11 +145,11 @@ describe('freio de escrita: a rodada', () => {
   });
 
   it('o aviso da pausa diz onde continuar', () => {
-    expect(pauseText({ done: 20, left: 12 }, 'painel')).toBe(
+    expect(pauseText({ done: 20, left: 12 }, 'aqui')).toBe(
       'Pausa depois de 20 gravações nesta rodada. Confira no Lattes o que já foi gravado e clique em "Continuar" para gravar as 12 que faltam.',
     );
-    expect(pauseText({ done: 1, left: 1 }, 'editor')).toBe(
-      'Pausa depois de 1 gravação nesta rodada. Confira no Lattes o que já foi gravado e clique em "Continuar" no painel da extensão para gravar a que falta.',
+    expect(pauseText({ done: 1, left: 1 }, 'no-editor')).toBe(
+      'Pausa depois de 1 gravação nesta rodada. Confira no Lattes o que já foi gravado e clique em "Continuar" no editor para gravar a que falta.',
     );
   });
 });

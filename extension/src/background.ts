@@ -26,6 +26,7 @@ import {
 import { contractStop, type RoundPause, runRound } from '../../src/bridge/write-brake.ts';
 import { CONSENT_KEY, hasConsent, isConsentCurrent } from './consent.ts';
 import { ownVersion, reloadForApp } from './dev-reload.ts';
+import { BUSY_TEXT, enqueue, NO_CONSENT_TEXT, refuseRun, waitWhile } from './editor-run.ts';
 import { importRunning, runImport } from './import-run.ts';
 import { isLattesMenu, isRealLattesMenu } from './lattes-hosts.ts';
 import {
@@ -42,7 +43,14 @@ import {
   verifyOn,
 } from './lattes-tab.ts';
 import { answerPublishRequest, publishRunning } from './publish-run.ts';
-import { APP_KEY, type EditorEndpoint, type PanelCommand, readState, writeState } from './state.ts';
+import {
+  APP_KEY,
+  type EditorEndpoint,
+  type PanelCommand,
+  type QueueState,
+  readState,
+  writeState,
+} from './state.ts';
 import { isToolbarThemeMessage } from './toolbar-icon.ts';
 import { restoreToolbarTheme, setToolbarTheme } from './toolbar-theme.ts';
 
@@ -169,6 +177,10 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     stopRequested = true;
     return;
   }
+  if (msg.type === 'continuar') {
+    void run(undefined, true);
+    return;
+  }
   if (msg.type === 'recarregar-lattes') {
     await reloadLattesTab();
     return;
@@ -228,17 +240,7 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     if (await runImport(msg, busy, (m) => toEditor(editor, m))) await sendSession(editor, true);
     return;
   }
-  if (msg.type !== 'enviar') return;
-  const state = await readState();
-  if (state.running) return;
-  await writeState({
-    editor,
-    lattesId: msg.lattesId,
-    ops: msg.ops,
-    results: {},
-    running: false,
-  });
-  await chrome.action.setBadgeText({ text: msg.ops.length ? String(msg.ops.length) : '' });
+  if (msg.type === 'enviar' && (await enqueue(msg, editor)) && msg.start) void run(undefined, true);
 }
 
 /**
@@ -306,11 +308,17 @@ async function verifyOnce(auto: boolean): Promise<void> {
   }
 }
 
-async function run(keys?: string[]): Promise<void> {
-  if (!(await hasConsent())) return;
+async function run(keys?: string[], fromEditor = false): Promise<void> {
+  const refuse = async (s: QueueState, detail: string) =>
+    fromEditor ? refuseRun(s, detail, writeState, (m) => toEditor(s.editor, m)) : undefined;
+  if (!(await hasConsent())) return refuse(await readState(), NO_CONSENT_TEXT);
+  if (fromEditor) {
+    await waitWhile(async () => verifyInFlight || Boolean((await readState()).verificando));
+  }
   const state = await readState();
-  if (state.running || state.verificando || photoInFlight || importRunning() || publishRunning()) {
-    return;
+  if (state.running) return;
+  if (state.verificando || photoInFlight || importRunning() || publishRunning()) {
+    return refuse(state, BUSY_TEXT);
   }
   queueActive = true;
   const queue = state.ops.filter(

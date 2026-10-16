@@ -174,6 +174,8 @@ export interface BridgeState {
   curriculo?: CurriculoReading;
   /** O painel fechou: cancela a rodada que ainda faz o ponto ou pergunta. */
   dismissRestore: () => void;
+  /** A extensão grava a pedido do editor: o envio e o "Continuar" saem daqui. */
+  drivesWrites: boolean;
   /**
    * A versão atual do Lattes, lida da página de conferência a pedido do
    * diagnóstico: os itens, ou o motivo de não ter lido.
@@ -191,8 +193,8 @@ export interface BridgeState {
   /** Em que pé está a ligação com o Lattes, para o cabeçalho explicar a falta de leitura. */
   link: Link;
   /**
-   * A rodada parou no teto de gravações e o resto espera o "Continuar" no
-   * painel da extensão (src/bridge/write-brake.ts).
+   * A rodada parou no teto de gravações e o resto espera o "Continuar"
+   * (src/bridge/write-brake.ts).
    */
   pause?: RoundPause;
   /** A resposta do último pedido de troca da foto. */
@@ -208,6 +210,8 @@ export interface BridgeState {
   /** O ponto de restauração da última rodada de escrita (LAT-59). */
   restore?: RestoreState;
   results: Record<string, OpResult>;
+  /** Segue com o resto da fila depois da pausa no teto da rodada. */
+  resume: () => void;
   running: boolean;
   /**
    * Antes de mandar, exporta o Lattes e guarda um ponto de restauração; sem
@@ -265,6 +269,7 @@ export function useBridge(
   const [photoUpload, setPhotoUpload] = useState<PhotoUploadReading | undefined>();
   const [importResult, setImportResult] = useState<ImportReading | undefined>();
   const restorePoint = useRestorePoint(features, post);
+  const drivesWrites = features.includes('gravar-pelo-editor');
   const { dropAll: dropRestoreRequests, takeReply: takeRestoreReply } = restorePoint;
 
   const reloadSent = useCallback(() => {
@@ -277,7 +282,7 @@ export function useBridge(
       .catch(() => setSent([]));
   }, [lattesId]);
   useEffect(reloadSent, [reloadSent]);
-  const brake = useWriteBrake(reloadSent);
+  const brake = useWriteBrake(reloadSent, post, setRunning);
   const { setPause } = brake;
 
   /**
@@ -433,6 +438,7 @@ export function useBridge(
     },
     confirmed,
     curriculo,
+    drivesWrites,
     espelho,
     features,
     importResult,
@@ -479,7 +485,7 @@ export function useBridge(
       setPause(undefined);
       setConfirmed(0);
       setRunning(true);
-      post({ lattesId, ops, type: 'enviar' });
+      post({ lattesId, ops, start: drivesWrites, type: 'enviar' });
     },
     sendImport: () => {
       if (!session) return undefined;

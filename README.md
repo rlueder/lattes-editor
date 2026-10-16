@@ -149,10 +149,12 @@ até você clicar no olho, ao lado do título.
 
 A extensão para Chrome e Brave é o que deixa o app abrir o currículo do Lattes
 e enviar as alterações direto ao Lattes. Ela trabalha na aba do Lattes em que
-você já está logado; nenhuma senha passa por ela nem pelo app. Cada alteração
-é gravada, lida de volta e conferida, e a fila para no primeiro problema. A
-cada 20 gravações seguidas a extensão faz uma pausa, para você olhar o Lattes,
-e só segue com um novo clique em "Continuar" no painel dela.
+você já está logado; nenhuma senha passa por ela nem pelo app. O envio
+começa no editor, em "Enviar ao Lattes": a extensão grava em segundo plano,
+lê cada alteração de volta e confere, e a fila para no primeiro problema. A
+cada 20 gravações seguidas ela faz uma pausa, para você olhar o Lattes, e só
+segue com um novo clique em "Continuar" no editor. O painel da extensão
+mostra a fila, a verificação do Lattes e um botão para parar.
 
 Enquanto a extensão não está na Chrome Web Store, instale assim:
 

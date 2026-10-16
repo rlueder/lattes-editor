@@ -1,6 +1,7 @@
 // Envio pela extensão, dentro de "Enviar ao Lattes". O próprio botão mostra o
-// estado: enviar, parar enquanto a fila corre, e conferido (verde, com o
-// visto) quando tudo foi gravado e lido de volta. O que foi conferido sai da
+// estado: enviar, cancelar enquanto a fila corre, continuar depois da pausa
+// do freio de escrita e conferido (verde, com o visto) quando tudo foi
+// gravado e lido de volta. O que foi conferido sai da
 // lista de alterações, porque o Lattes já está igual à cópia de trabalho.
 // Antes da primeira gravação, o editor guarda um ponto de restauração
 // (src/bridge/restore-point.ts); o aviso curto fica aqui.
@@ -50,6 +51,10 @@ export function BridgeBlock({ bridge }: { bridge: BridgeState }) {
           <button className="bridge-btn" type="button" onClick={bridge.stop}>
             Cancelar
           </button>
+        ) : bridge.pause && bridge.drivesWrites ? (
+          <button className="bridge-btn primary" type="button" onClick={bridge.resume}>
+            <UploadIcon /> Continuar
+          </button>
         ) : (
           <button className="bridge-btn primary" type="button" onClick={() => setConfirming(true)}>
             <UploadIcon /> Enviar pela extensão
@@ -69,12 +74,14 @@ export function BridgeBlock({ bridge }: { bridge: BridgeState }) {
       )}
       {bridge.pause && !bridge.running && (
         <p className="bridge-note bridge-publish" role="status">
-          {pauseText(bridge.pause, 'editor')}
+          {pauseText(bridge.pause, bridge.drivesWrites ? 'aqui' : 'no-editor')}
         </p>
       )}
       {bridge.running && (
         <p className="muted bridge-note">
-          A fila está no painel da extensão: clique no ícone dela e em &quot;Aplicar todas&quot;.
+          {bridge.drivesWrites
+            ? `Gravando no Lattes pela extensão, ${bridge.confirmed === 0 ? 'nenhuma conferida ainda' : `${plural(bridge.confirmed)} ${bridge.confirmed === 1 ? 'conferida' : 'conferidas'} até agora`}. Deixe a aba do Lattes aberta.`
+            : 'A fila está no painel da extensão: clique no ícone dela e em "Aplicar todas".'}
         </p>
       )}
       {failed.length > 0 && (
