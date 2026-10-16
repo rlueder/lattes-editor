@@ -108,6 +108,17 @@ describe('modo de leitura: todo campo preenchido aparece na leitura', () => {
     }
   });
 
+  it('palavra-chave que também está no título segue na leitura', () => {
+    const item = el(`<TRABALHO-TECNICO SEQUENCIA-PRODUCAO="1">
+<DADOS-BASICOS-DO-TRABALHO-TECNICO NATUREZA="OUTRA" TITULO-DO-TRABALHO-TECNICO="Design de interface" ANO="2005"/>
+<PALAVRAS-CHAVE PALAVRA-CHAVE-1="Design" PALAVRA-CHAVE-2="Web"/>
+</TRABALHO-TECNICO>`);
+    const words = outsideReference(item, opts)
+      .filter((p) => p.el.name === 'PALAVRAS-CHAVE')
+      .map((p) => p.attr);
+    expect(words).toEqual(['PALAVRA-CHAVE-1', 'PALAVRA-CHAVE-2']);
+  });
+
   it('a privacidade esconde os sensíveis na leitura, contando quantos', () => {
     const dg = el(
       '<DADOS-GERAIS NOME-COMPLETO="Ana" NOME-DA-MAE="Marta" DATA-NASCIMENTO="03051986" NOME-DO-PAI=""/>',
