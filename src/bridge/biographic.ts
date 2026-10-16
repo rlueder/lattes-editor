@@ -323,7 +323,8 @@ const ENDERECO_EXTRA: Record<string, FieldSpec> = {
 /**
  * O formulário de identificação inteiro, como o censo de 15/10/2026 o leu.
  * f_pcd aparece duas vezes, como caixa e como oculto; a impressão digital fica
- * com o primeiro, que pela ordem da verificação de 16/10/2026 é a caixa.
+ * com o primeiro, que na página é o oculto: a verificação de 16/10/2026 no
+ * Lattes real acusou "f_pcd era checkbox, agora hidden".
  */
 const IDENT_FIELDS: Record<string, FieldSpec> = {
   f_cidade_nasc: text(30),
@@ -348,7 +349,7 @@ const IDENT_FIELDS: Record<string, FieldSpec> = {
   f_pais_nacio: select,
   f_pais_nasc: select,
   f_passaporte: text(20),
-  f_pcd: { type: 'checkbox' },
+  f_pcd: hidden,
   f_pcd_r: { type: 'radio' },
   f_priv_cor: select,
   f_priv_foto: select,

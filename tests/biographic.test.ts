@@ -521,8 +521,11 @@ describe('dados gerais no contrato', () => {
     const spec = BIOGRAPHIC_SPECS[kind].fields;
     expect(Object.keys(spec).sort()).toEqual(observed);
     for (const field of form.fields) {
+      // Nome que aparece também como oculto (f_pcd): o censo não diz qual vem
+      // primeiro, e no Lattes real é o oculto (verificação de 16/10/2026).
+      const type = form.hidden.includes(field.name) ? 'hidden' : field.type;
       expect(spec[field.name], field.name).toMatchObject({
-        type: field.type,
+        type,
         ...(field.maxLength ? { maxLength: field.maxLength } : {}),
       });
     }

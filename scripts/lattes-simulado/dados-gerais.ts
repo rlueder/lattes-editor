@@ -287,7 +287,7 @@ function identBindings(): Binding[] {
 
 /**
  * Os outros controles da identificação, como o censo de 15/10/2026 os leu,
- * vazios: o simulado não os liga ao XML. A caixa f_pcd vem antes do oculto de
+ * vazios: o simulado não os liga ao XML. O oculto f_pcd vem antes da caixa de
  * mesmo nome, como no Lattes.
  */
 const IDENT_EXTRAS = [
@@ -309,11 +309,12 @@ const IDENT_EXTRAS = [
     h.text('f_dta_val_passaporte', '', { maxLength: 10 }),
     h.text('f_dta_emissao_doc', '', { maxLength: 10 }),
     h.radios('f_pcd_r', [['N', 'Não']], 'N'),
+    h.hidden('f_pcd', ''),
     h.checkbox('f_pcd', 'S', false),
     ...['f_dados_grid', 'f_nome_citacao', 'f_nome_citacao_h', 'fdados_new', 'f_cpf'].map((n) =>
       h.hidden(n, ''),
     ),
-    ...['f_nome_pai', 'f_nome_mae', 'f_pcd', 'f_cod', 'f_nme_old'].map((n) => h.hidden(n, '')),
+    ...['f_nome_pai', 'f_nome_mae', 'f_cod', 'f_nme_old'].map((n) => h.hidden(n, '')),
   )
   .join('\n');
 
