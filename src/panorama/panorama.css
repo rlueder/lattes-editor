@@ -739,17 +739,6 @@ button.pano-chip:hover {
 }
 
 /* Painel à direita */
-.pano-period {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.pano-year-label {
-  font-size: 11px;
-  color: var(--muted);
-}
-
 .pano-selection-head {
   display: flex;
   align-items: center;

@@ -22,7 +22,7 @@ import { uniqueProblems, validateItem } from '../model/validate.ts';
 import type { XElement } from '../model/xml.ts';
 import { lattesSchema as schema } from '../schema/lattes.ts';
 import { AttributeField } from '../ui/AttributeField.tsx';
-import { DiscardConfirm } from '../ui/dialogs.tsx';
+import { DiscardConfirm, RemoveItemButton } from '../ui/dialogs.tsx';
 import { Attributes } from '../ui/ElementView.tsx';
 import { ChevronIcon, CloseIcon, CollapseIcon, ExpandIcon } from '../ui/icons.tsx';
 import { isRedundantDateFormat } from '../ui/lattes-date.ts';
@@ -374,11 +374,7 @@ export function ProductionForm({
                 <span id={createMoreId}>Criar outro</span>
               </span>
             )}
-            {onRemove && (
-              <button className="ghost danger" type="button" onClick={onRemove}>
-                Remover item
-              </button>
-            )}
+            {onRemove && <RemoveItemButton onRemove={onRemove} />}
             <Tip label="⌘Enter">
               <button className="primary" type="submit">
                 {attempted && problems.length > 0 ? 'Salvar com pendências' : 'Salvar'}

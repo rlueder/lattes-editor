@@ -51,16 +51,12 @@ export const SECTION_DESCRIPTIONS: Record<string, string> = {
   projetos: 'Projetos de pesquisa, extensão e desenvolvimento, dentro de uma atuação.',
 };
 
-/** O que acontece com o item novo destas seções (src/model/general-items.ts). */
-const BY_CHANGES = 'O item novo vai ao Lattes por "Enviar ao Lattes".';
-
+/** Nota sob o estado vazio, só nas seções que pedem uma explicação. */
 export const EMPTY_NOTES: Record<string, string> = {
-  atuacao: BY_CHANGES,
   educacao: 'Para um item aparecer aqui, ligue "Divulgação científica" ao editá-lo.',
-  formacao: BY_CHANGES,
   inovacao: 'Para um item aparecer aqui, ligue "Potencial inovação" ao editá-lo.',
-  patentes: `O programa de computador fica em Produções, como software. ${BY_CHANGES}`,
-  projetos: `Projetos ficam dentro de uma atuação profissional. ${BY_CHANGES}`,
+  patentes: 'O programa de computador fica em Produções, como software.',
+  projetos: 'Projetos ficam dentro de uma atuação profissional.',
 };
 
 /** O botão de item novo das seções que não vão pelo Importar (src/model/general-items.ts). */

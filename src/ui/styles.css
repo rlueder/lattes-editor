@@ -3237,6 +3237,18 @@ body {
   padding-bottom: 8vh;
 }
 
+/* Fora do modo foco, a seção vazia não tem painel lateral: o estado vazio
+   fica no centro da área de conteúdo inteira, sem a coluna reservada. No modo
+   foco, a coluna do índice continua reservada, como nas outras seções. O
+   título da seção não muda de lugar. */
+.shell:not(.is-focus) .section-main-empty {
+  grid-column: 1 / -1;
+}
+
+.shell:not(.is-focus) .section-panel-space {
+  display: none;
+}
+
 /* Envio pela extensão do conector, em "Enviar ao Lattes". */
 .bridge-block {
   margin: 0 0 14px;
@@ -5507,6 +5519,13 @@ b {
   gap: 8px;
 }
 
+/* "Período" sobre o atalho e o campo, nas seções e no Panorama. */
+.year-range-label {
+  margin-bottom: -6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .year-range-hint {
   margin: 0 0 6px;
   font-size: 12px;
@@ -5607,9 +5626,11 @@ b {
 }
 
 /* Filtros do painel lateral na altura e no corpo dos campos do conteúdo
-   (35px de altura, texto de 14px), em vez da altura das pílulas. */
+   (35px de altura, texto de 14px), em vez da altura das pílulas. O campo do
+   período entra junto, para ter a altura das listas acima dele. */
 .filter-search,
-.filter-facet.select-trigger {
+.filter-facet.select-trigger,
+.year-range-field input {
   height: auto;
   min-height: 35px;
   font-size: 14px;
@@ -7540,6 +7561,60 @@ main.content {
   margin-bottom: 0.3em;
 }
 
+/* Texto longo na leitura (ReadingClamp, reading-clamp.ts): seis linhas
+   (--clamp-lines, posto pelo componente) e um esmaecido na última quando o
+   texto continua. Sem animação: abrir e fechar mudam a altura na hora. Na
+   impressão, o texto vai inteiro e o link some. */
+.reading-clamp.is-clamped {
+  max-height: calc(var(--clamp-lines, 6) * 1.5em);
+  max-height: calc(var(--clamp-lines, 6) * 1lh);
+  overflow: hidden;
+}
+
+.reading-clamp.is-cut {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 1.5em), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 1.5em), transparent);
+}
+
+.reading-more {
+  display: inline;
+  margin-top: 0.2em;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--accent-text);
+  font: 13px/1.5 var(--font);
+  text-underline-offset: 0.18em;
+  cursor: pointer;
+  transition: color 200ms ease;
+}
+
+.reading-more:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reading-more {
+    transition: none;
+  }
+}
+
+@media print {
+  .reading-clamp.is-clamped {
+    max-height: none;
+    overflow: visible;
+  }
+  .reading-clamp.is-cut {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .reading-more {
+    display: none;
+  }
+}
+
 /* Lista "Enviar ao Lattes" no desenho do ⌘K: os grupos (Dados gerais,
    Formação) com o título dos grupos da paleta, cada alteração numa linha sem
    caixa, com fio fino entre uma e a próxima. O título do item manda; o tipo
@@ -7676,57 +7751,82 @@ main.content {
   }
 }
 
-/* Campo alterado (FieldChange.tsx), nas abas "A enviar" e "Enviado": o
-   rótulo em cima, pequeno e apagado como na grade da prévia; embaixo, duas
-   colunas iguais, "Antes" riscado e "Depois". Texto longo para em quatro
-   linhas. Abaixo de 600px as colunas empilham. */
+/* Campos de um item (FieldChange.tsx), nas abas "A enviar" e "Enviado": uma
+   grade de duas ou três colunas, conforme a largura do painel, cada campo uma
+   célula com o rótulo em cima, pequeno e apagado como na grade do modo de
+   leitura. Num campo alterado, o valor de antes vem riscado e o de depois
+   logo abaixo. Valor de 25 a 48 letras ocupa duas colunas, mais que isso a
+   linha inteira (cellSpan), e texto longo para em quatro linhas. Abaixo de
+   600px, uma coluna só. */
 .change-fields,
 .sent-fields {
   display: grid;
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px 20px;
   margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.fc {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 1px;
+  min-width: 0;
+}
+
+.fc.span-2 {
+  grid-column: span 2;
+}
+
+.fc.span-all {
+  grid-column: 1 / -1;
+}
+
+.fc-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 20px;
 }
 
 .fc-label {
+  flex: 0 1 auto;
+  min-width: 0;
   overflow: hidden;
-  margin-bottom: 4px;
   color: var(--muted);
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.fc-cols {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  gap: 16px;
-  align-items: start;
-  font-size: 13px;
-  line-height: 1.5;
+.fc-actions {
+  display: inline-flex;
+  flex: none;
+  margin-left: auto;
 }
 
-.fc-cols.is-single {
-  grid-template-columns: minmax(0, 1fr) auto;
+/* A lixeira ao lado do rótulo, sem aumentar a altura da linha dele. */
+.fc-actions .discard-btn {
+  margin: -3px -4px -3px 0;
+  padding: 2px 4px;
 }
 
-.fc-col {
+.fc-value {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
+/* "Antes" e "Depois" à vista no primeiro campo de cada item, antes do valor. */
 .fc-caption {
-  display: block;
-  margin-bottom: 2px;
+  margin-right: 6px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 550;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-}
-
-.fc-more {
-  display: block;
-  margin-top: 2px;
 }
 
 .fc-before .fc-text {
@@ -7752,6 +7852,8 @@ main.content {
 }
 
 .fc-more {
+  display: block;
+  margin-top: 2px;
   padding: 0;
   border: 0;
   background: none;
@@ -7764,20 +7866,17 @@ main.content {
 }
 
 .sent-undone .fc-after,
-.sent-failed .fc-col {
+.sent-failed .fc-value {
   color: var(--muted);
 }
 
 @media (max-width: 600px) {
-  .fc-cols {
-    grid-template-columns: minmax(0, 1fr) auto;
+  .change-fields,
+  .sent-fields {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .fc-col {
-    grid-column: 1;
-  }
-  .fc-actions {
-    grid-row: 1;
-    grid-column: 2;
+  .fc.span-2 {
+    grid-column: auto;
   }
 }
 

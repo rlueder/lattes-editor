@@ -13,16 +13,22 @@ describe('typesForSection', () => {
     expect(typesForSection(schema, 'producoes')[0]?.itemName).toBe('TRABALHO-EM-EVENTOS');
   });
 
-  it('seções que o Importar não preenche: nenhum tipo, com nota', () => {
+  it('seções que o Importar não preenche: nenhum tipo; nota só onde explica algo', () => {
     for (const id of ['patentes', 'projetos', 'inovacao', 'educacao', 'formacao', 'atuacao']) {
       expect(typesForSection(schema, id)).toEqual([]);
+    }
+    for (const id of ['patentes', 'projetos', 'inovacao', 'educacao']) {
       expect(EMPTY_NOTES[id]).toBeTruthy();
     }
+    // Sem a frase de que o item novo vai por "Enviar ao Lattes": nota vazia some.
+    expect(EMPTY_NOTES.formacao).toBeUndefined();
+    expect(EMPTY_NOTES.atuacao).toBeUndefined();
+    expect(EMPTY_NOTES.projetos).toBe('Projetos ficam dentro de uma atuação profissional.');
   });
 
   it('Patentes cria todos os registros: sem o aviso de "só a patente"', () => {
     expect(EMPTY_NOTES.patentes).not.toMatch(/só a patente|ainda não/);
-    expect(EMPTY_NOTES.patentes).toMatch(/Enviar ao Lattes/);
+    expect(EMPTY_NOTES.patentes).not.toMatch(/Enviar ao Lattes/);
     expect(NEW_GENERAL_LABELS.patentes).toBe('Nova patente ou registro');
   });
 });
