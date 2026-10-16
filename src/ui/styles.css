@@ -1821,6 +1821,18 @@ a.menu-item.notice {
   font-size: 12px;
 }
 
+/* O selo de não conferido e, logo abaixo, "Já conferi no Lattes". */
+.sent-side {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.sent-head {
+  align-items: flex-start;
+}
+
 .sent-undo {
   height: 26px;
   padding: 0 8px;
@@ -6529,11 +6541,18 @@ button.ghost.icon {
   font-size: 12px;
 }
 
+/* Um aviso numa linha: ícone, texto e botões à direita, alinhados ao
+   centro; com pouco espaço, os botões descem para baixo do texto. */
 .step-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
   margin: 10px 0;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: var(--radius);
   background: var(--accent-soft);
+  font-size: 13px;
 }
 
 .step-notice.warn {
@@ -6541,8 +6560,29 @@ button.ghost.icon {
   color: var(--warn-text);
 }
 
-.step-notice p {
-  margin: 0 0 6px;
+.step-notice-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.step-notice-text {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.step-notice-text p {
+  margin: 0;
+}
+
+.step-notice-text p + p {
+  margin-top: 4px;
+}
+
+.step-notice-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  margin-left: auto;
 }
 
 /* O andamento de cada alteração da rodada: marca, nome, estado e, quando não

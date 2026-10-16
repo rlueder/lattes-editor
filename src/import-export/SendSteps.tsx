@@ -10,6 +10,7 @@ import type { ReactNode } from 'react';
 
 import { doneText, latestText, noRestoreText, stopText } from '../bridge/restore-point.ts';
 import { pauseText } from '../bridge/write-brake.ts';
+import { AlertIcon } from '../ui/icons.tsx';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { type StepState, writeRows } from './send-steps.ts';
 
@@ -75,6 +76,35 @@ export function Step({
   );
 }
 
+/**
+ * Um aviso da janela de envio numa linha: o ícone, o texto e os botões à
+ * direita, alinhados ao centro. warn é o amarelo do que pede atenção; sem
+ * ele, o azul do que só informa.
+ */
+export function Notice({
+  actions,
+  children,
+  role = 'status',
+  warn,
+}: {
+  actions?: ReactNode;
+  children: ReactNode;
+  role?: 'alert' | 'group' | 'status';
+  warn?: boolean;
+}) {
+  return (
+    <div className={`step-notice${warn ? ' warn' : ''}`} role={role}>
+      {warn && (
+        <span className="step-notice-icon">
+          <AlertIcon />
+        </span>
+      )}
+      <div className="step-notice-text">{children}</div>
+      {actions && <div className="step-notice-actions">{actions}</div>}
+    </div>
+  );
+}
+
 /** ② Gravar no Lattes: a cópia antes, o andamento de cada alteração, a pausa. */
 export function WriteStep({ bridge }: { bridge: BridgeState }) {
   const { restore } = bridge;
@@ -87,28 +117,36 @@ export function WriteStep({ bridge }: { bridge: BridgeState }) {
         </p>
       )}
       {restore?.kind === 'sem-ponto' && (
-        <div className="step-notice warn" role="alert">
+        <Notice
+          warn
+          actions={
+            <>
+              <button type="button" onClick={() => bridge.answerRestore(false)}>
+                Cancelar
+              </button>
+              <button className="danger" type="button" onClick={() => bridge.answerRestore(true)}>
+                Gravar sem ponto de restauração
+              </button>
+            </>
+          }
+          role="alert"
+        >
           <p>{noRestoreText(restore)}</p>
           <p>{latestText(restore.latest)}</p>
-          <div className="step-actions">
-            <button type="button" onClick={() => bridge.answerRestore(false)}>
-              Cancelar
-            </button>
-            <button className="danger" type="button" onClick={() => bridge.answerRestore(true)}>
-              Gravar sem ponto de restauração
-            </button>
-          </div>
-        </div>
+        </Notice>
       )}
       {restore?.kind === 'parar' && (
-        <div className="step-notice warn" role="alert">
-          <p>{stopText(restore)}</p>
-          <div className="step-actions">
+        <Notice
+          warn
+          actions={
             <button type="button" onClick={() => bridge.answerRestore(false)}>
               Entendi
             </button>
-          </div>
-        </div>
+          }
+          role="alert"
+        >
+          <p>{stopText(restore)}</p>
+        </Notice>
       )}
       {restore?.kind === 'feito' && <p className="muted">{doneText(restore)}</p>}
 
@@ -128,14 +166,15 @@ export function WriteStep({ bridge }: { bridge: BridgeState }) {
       )}
 
       {bridge.pause && !bridge.running && (
-        <div className="step-notice" role="status">
-          <p>{pauseText(bridge.pause, 'aqui')}</p>
-          <div className="step-actions">
+        <Notice
+          actions={
             <button className="primary" type="button" onClick={bridge.resume}>
               Continuar
             </button>
-          </div>
-        </div>
+          }
+        >
+          <p>{pauseText(bridge.pause, 'aqui')}</p>
+        </Notice>
       )}
       {bridge.running && (
         <div className="step-actions">

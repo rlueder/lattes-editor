@@ -29,7 +29,7 @@ import {
 import { PublishPanel } from './PublishPanel.tsx';
 import { listenTabRequests, splitByRoute, takeRequestedTab, toSendCount } from './send-routes.ts';
 import { stepStates } from './send-steps.ts';
-import { Step, StepHeader, WriteStep } from './SendSteps.tsx';
+import { Notice, Step, StepHeader, WriteStep } from './SendSteps.tsx';
 import { SentList } from './SentList.tsx';
 
 export interface PendingSummary {
@@ -174,18 +174,20 @@ export function ExportPanel({
       {shown === 0 && (
         <Step title="Revisar">
           {stopped > 0 && (
-            <div className="step-notice warn" role="status">
+            <Notice
+              warn
+              actions={
+                <button type="button" onClick={() => setViewing(1)}>
+                  Ver a gravação
+                </button>
+              }
+            >
               <p>
                 {stopped === 1
                   ? 'A última gravação parou numa alteração que precisa ser conferida no Lattes.'
                   : `A última gravação parou com ${stopped} alterações que precisam ser conferidas no Lattes.`}
               </p>
-              <div className="step-actions">
-                <button type="button" onClick={() => setViewing(1)}>
-                  Ver a gravação
-                </button>
-              </div>
-            </div>
+            </Notice>
           )}
           {toSend === 0 ? (
             <p className="empty">

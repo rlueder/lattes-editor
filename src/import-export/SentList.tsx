@@ -26,6 +26,7 @@ import { FieldChange } from '../ui/FieldChange.tsx';
 import { MoreIcon } from '../ui/icons.tsx';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { publishBlockers } from './publish-view.ts';
+import { Notice } from './SendSteps.tsx';
 
 const dayLabel = (day: string) =>
   new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', {
@@ -102,7 +103,19 @@ export function SentList({ bridge, onUndo }: { bridge: BridgeState; onUndo?: () 
                     )}
                     <span className="muted sent-time">{timeLabel(entry.sentAt)}</span>
                     {entry.outcome && (
-                      <span className="tag warn">{OUTCOME_LABEL[entry.outcome.status]}</span>
+                      <span className="sent-side">
+                        <span className="tag warn">{OUTCOME_LABEL[entry.outcome.status]}</span>
+                        {blocking.has(entry) && entry.checkedAt === undefined && (
+                          <button
+                            className="primary sent-check"
+                            disabled={entry.id === undefined}
+                            type="button"
+                            onClick={() => void bridge.checkSent(entry)}
+                          >
+                            Já conferi no Lattes
+                          </button>
+                        )}
+                      </span>
                     )}
                     {entry.undoOf === undefined &&
                       !failed(entry) &&
@@ -126,51 +139,42 @@ export function SentList({ bridge, onUndo }: { bridge: BridgeState; onUndo?: () 
                       )}
                   </div>
                   {undoing === entry && (
-                    <div className="step-notice" role="group">
+                    <Notice
+                      actions={
+                        <>
+                          <button type="button" onClick={() => setUndoing(undefined)}>
+                            Cancelar
+                          </button>
+                          <button
+                            className="primary"
+                            disabled={!canUndo}
+                            type="button"
+                            onClick={() => {
+                              setUndoing(undefined);
+                              void bridge.send({ undo: entry });
+                              onUndo?.();
+                            }}
+                          >
+                            Desfazer no Lattes
+                          </button>
+                        </>
+                      }
+                      role="group"
+                    >
                       <p>
                         Gravar de volta no Lattes o valor de antes? A extensão confere que o Lattes
                         está com o de depois, grava e lê de volta, como em qualquer envio.
                       </p>
-                      <div className="step-actions">
-                        <button type="button" onClick={() => setUndoing(undefined)}>
-                          Cancelar
-                        </button>
-                        <button
-                          className="primary"
-                          disabled={!canUndo}
-                          type="button"
-                          onClick={() => {
-                            setUndoing(undefined);
-                            void bridge.send({ undo: entry });
-                            onUndo?.();
-                          }}
-                        >
-                          Desfazer no Lattes
-                        </button>
-                      </div>
-                    </div>
+                    </Notice>
                   )}
                   {entry.outcome?.detail && (
                     <p className="muted sent-outcome">{entry.outcome.detail}</p>
                   )}
                   {(blocking.has(entry) || entry.checkedAt !== undefined) && (
                     <p className="muted sent-outcome">
-                      {entry.checkedAt === undefined ? (
-                        <>
-                          Enquanto não for conferida, esta gravação bloqueia o envio ao CNPq pelo
-                          editor.{' '}
-                          <button
-                            className="ghost sent-check"
-                            disabled={entry.id === undefined}
-                            type="button"
-                            onClick={() => void bridge.checkSent(entry)}
-                          >
-                            Já conferi no Lattes
-                          </button>
-                        </>
-                      ) : (
-                        `Você conferiu no Lattes em ${checkedLabel(entry.checkedAt)}.`
-                      )}
+                      {entry.checkedAt === undefined
+                        ? 'Enquanto não for conferida no Lattes, esta gravação bloqueia o envio ao CNPq pelo editor.'
+                        : `Você conferiu no Lattes em ${checkedLabel(entry.checkedAt)}.`}
                     </p>
                   )}
                   {noUndo && !failed(entry) && <p className="muted sent-outcome">{noUndo}</p>}
