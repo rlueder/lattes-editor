@@ -104,7 +104,12 @@ export function SentList({ bridge, onUndo }: { bridge: BridgeState; onUndo?: () 
                     <span className="muted sent-time">{timeLabel(entry.sentAt)}</span>
                     {entry.outcome && (
                       <span className="sent-side">
-                        <span className="tag warn">{OUTCOME_LABEL[entry.outcome.status]}</span>
+                        {/* Conferida à mão: o selo passa a dizer isso, em verde. */}
+                        {entry.checkedAt === undefined ? (
+                          <span className="tag warn">{OUTCOME_LABEL[entry.outcome.status]}</span>
+                        ) : (
+                          <span className="tag ok">Conferido por você</span>
+                        )}
                         {blocking.has(entry) && entry.checkedAt === undefined && (
                           <button
                             className="primary sent-check"
