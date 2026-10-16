@@ -1,4 +1,7 @@
-// Diálogos simples do App: histórico de estados e confirmação de recarga.
+// Diálogos simples do App: histórico de estados, confirmação de recarga e as
+// confirmações antes de descartar ou remover.
+
+import { type ReactNode, useState } from 'react';
 
 import type { PendingSummary } from '../import-export/ExportPanel.tsx';
 import type { HistoryEntry } from '../model/store.ts';
@@ -210,5 +213,72 @@ export function DiscardConfirm({
     >
       <p>O que você preencheu ou mudou neste item se perde.</p>
     </Modal>
+  );
+}
+
+/**
+ * Confirmação antes de uma ação que apaga algo sem volta direta (descartar
+ * uma alteração na lista do "Enviar ao Lattes", remover um item). Cancelar
+ * recebe o foco, para um Enter sem querer não apagar nada.
+ */
+export function RemoveConfirm({
+  children,
+  confirmLabel,
+  onCancel,
+  onConfirm,
+  open,
+  title,
+}: {
+  children: ReactNode;
+  confirmLabel: string;
+  open: boolean;
+  title: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Modal
+      className="confirm"
+      footer={
+        <>
+          <button autoFocus className="text-btn" type="button" onClick={onCancel}>
+            Cancelar
+          </button>
+          <button className="primary danger-fill" type="button" onClick={onConfirm}>
+            {confirmLabel}
+          </button>
+        </>
+      }
+      label={title}
+      open={open}
+      title={title}
+      onClose={onCancel}
+    >
+      {children}
+    </Modal>
+  );
+}
+
+/** "Remover item", com a pergunta antes: a cópia de trabalho não tem desfazer. */
+export function RemoveItemButton({ onRemove }: { onRemove: () => void }) {
+  const [asking, setAsking] = useState(false);
+  return (
+    <>
+      <button className="ghost danger" type="button" onClick={() => setAsking(true)}>
+        Remover item
+      </button>
+      <RemoveConfirm
+        confirmLabel="Remover item"
+        open={asking}
+        title="Remover o item?"
+        onCancel={() => setAsking(false)}
+        onConfirm={() => {
+          setAsking(false);
+          onRemove();
+        }}
+      >
+        <p>O item sai da cópia de trabalho. O currículo no Lattes não muda.</p>
+      </RemoveConfirm>
+    </>
   );
 }

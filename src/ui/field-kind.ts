@@ -153,6 +153,16 @@ export function flagAsShown(element: string, attr: string, value: string): strin
 export const flagToXml = flagAsShown;
 
 /**
+ * Uma marca sim/não como se lê, "Sim" ou "Não", no sentido da tela do Lattes
+ * (flagAsShown). Outro valor passa igual. Serve a todo atributo que
+ * isBooleanAttr reconhece, com ou sem enum no schema (FLAG-BOLSA não tem).
+ */
+export function flagLabel(element: string, attr: string, value: string): string {
+  const shown = flagAsShown(element, attr, value);
+  return shown === 'SIM' ? 'Sim' : shown === 'NAO' ? 'Não' : shown;
+}
+
+/**
  * Sim/não: enum que só tem SIM e NAO, ou FLAG-* em texto livre que guarda
  * SIM/NAO (FLAG-BOLSA, por exemplo). FLAG-* com outros valores (FLAG-PERIODO:
  * ANTERIOR/ATUAL) continua lista.

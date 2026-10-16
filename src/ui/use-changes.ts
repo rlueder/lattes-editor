@@ -18,6 +18,7 @@ import { isPendingImport } from '../model/production.ts';
 import { insertInSchemaOrder } from '../model/schema-order.ts';
 import { parseXml, serializeXml, type XElement } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
+import { pairedAttrs } from './change-fields.ts';
 import { changeCount, type ChangeEntry, type ChangeGroup, groupChanges } from './changes-view.ts';
 import type { Section } from './sections.ts';
 
@@ -69,7 +70,8 @@ export function useChanges(
   /** Volta um campo só de uma mudança "alterado". */
   const discardField = (entry: ChangeEntry, attr: string) => {
     if (!session || !original) return;
-    if (!revertField(original, session.doc.root, entry.change, attr)) return;
+    const attrs = [attr, ...pairedAttrs(entry.change, attr)];
+    if (!attrs.every((a) => revertField(original, session.doc.root, entry.change, a))) return;
     const label = entry.change.fields.find((f) => f.attr === attr)?.label ?? attr;
     onEdit(`Campo descartado: ${entry.itemTitle || entry.change.form} · ${label}`);
   };

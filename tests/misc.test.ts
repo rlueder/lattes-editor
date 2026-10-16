@@ -29,6 +29,7 @@ import {
   codeChoices,
   codeValueLabel,
   flagAsShown,
+  flagLabel,
   flagToXml,
   groupFields,
   isBooleanAttr,
@@ -319,6 +320,28 @@ describe('displayValue', () => {
     );
     expect(displayValue('DADOS-BASICOS-DO-TRABALHO', 'TITULO-DO-TRABALHO', 'A_B')).toBe('A_B');
     expect(displayValue('X', 'Y', '')).toBe('');
+  });
+
+  it('marca sim/não sem enum no schema (FLAG-BOLSA) vira "Sim" e "Não", como na leitura', () => {
+    expect(displayValue('MESTRADO-PROFISSIONALIZANTE', 'FLAG-BOLSA', 'NAO')).toBe('Não');
+    expect(displayValue('MESTRADO-PROFISSIONALIZANTE', 'FLAG-BOLSA', 'SIM')).toBe('Sim');
+    const mestrado = parseXml('<MESTRADO-PROFISSIONALIZANTE FLAG-BOLSA="NAO"/>').root;
+    expect(readingValue(mestrado, 'FLAG-BOLSA', 'NAO')).toBe('Não');
+    // FLAG-* com outros valores continua como veio.
+    expect(displayValue('X', 'FLAG-PERIODO', 'ATUAL')).toBe('ATUAL');
+  });
+
+  it('código escrito por extenso no Lattes, como na leitura', () => {
+    expect(displayValue('MESTRADO', 'TIPO-MESTRADO', 'S')).toBe('Sanduíche');
+  });
+});
+
+describe('flagLabel', () => {
+  it('"Sim" e "Não" no sentido da tela; outro valor passa igual', () => {
+    expect(flagLabel('X', 'FLAG-BOLSA', 'SIM')).toBe('Sim');
+    expect(flagLabel('X', 'FLAG-BOLSA', 'NAO')).toBe('Não');
+    expect(flagLabel('X', 'FLAG-BOLSA', '')).toBe('');
+    expect(flagLabel('VINCULOS', 'FLAG-VINCULO-EMPREGATICIO', 'NAO')).toBe('Sim');
   });
 });
 

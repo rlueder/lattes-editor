@@ -9,16 +9,52 @@ import { type Ref, useRef, useState } from 'react';
 import { isDesktop, pickFileNative } from '../desktop/native.ts';
 import { Brand } from './Brand.tsx';
 import { CloseConfirm } from './dialogs.tsx';
-import { AlertIcon, PlusIcon, SearchIcon, UploadIcon } from './icons.tsx';
+import { AlertIcon, BackIcon, ForwardIcon, PlusIcon, SearchIcon, UploadIcon } from './icons.tsx';
 import type { Notice } from './notifications.ts';
 import { NotificationsMenu } from './NotificationsMenu.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { SettingsMenu } from './SettingsMenu.tsx';
 import type { ThemePref } from './theme.ts';
+import { backShortcutLabel, forwardShortcutLabel, useHistoryNav } from './use-history-nav.ts';
 
 export type SaveState = 'salvo' | 'salvando' | 'erro';
 
 const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
+const DESKTOP = isDesktop();
+
+/**
+ * Voltar e avançar, só no app de desktop (o navegador já tem os dele). Sem
+ * para onde ir, o botão fica desligado; a posição vem de history-nav.ts.
+ */
+function HistoryButtons() {
+  const can = useHistoryNav(true);
+  return (
+    <span className="topbar-history">
+      <Tip label={`Voltar (${backShortcutLabel})`}>
+        <button
+          aria-label="Voltar"
+          className="ghost icon-btn"
+          disabled={!can.back}
+          type="button"
+          onClick={() => history.back()}
+        >
+          <BackIcon />
+        </button>
+      </Tip>
+      <Tip label={`Avançar (${forwardShortcutLabel})`}>
+        <button
+          aria-label="Avançar"
+          className="ghost icon-btn"
+          disabled={!can.forward}
+          type="button"
+          onClick={() => history.forward()}
+        >
+          <ForwardIcon />
+        </button>
+      </Tip>
+    </span>
+  );
+}
 
 interface Props {
   /** Modo foco (com ?leitura): estado, atalho e troca, para o ⚙. */
@@ -101,8 +137,9 @@ export function Topbar({
         <Brand />
       </div>
 
-      {/* Encontrar: centralizado na página. */}
+      {/* Encontrar: centralizado na página; no app de desktop, voltar e avançar antes. */}
       <div data-tauri-drag-region className="topbar-center">
+        {DESKTOP && <HistoryButtons />}
         <button className="ghost search-btn" type="button" onClick={onPalette}>
           <SearchIcon />
           <span>Ir para</span>

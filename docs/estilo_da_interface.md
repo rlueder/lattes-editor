@@ -208,7 +208,9 @@ largura nem de margem.
 O Linear trata o teclado como caminho principal, e vale estudar o
 conjunto inteiro antes de inventar atalhos nossos. Já temos ⌘K, G e uma letra para cada seção e
 ⌘Enter para salvar o formulário; o protótipo de leitura acrescenta E para editar o bloco
-focado e ⌘⇧F para o modo foco. Nas seções com o índice "Nesta seção", ↓ e ↑
+focado e ⌘⇧F para o modo foco. No app de desktop, ⌘[ e ⌘] (ou ⌘← e ⌘→, fora
+de campos de texto) voltam e avançam, como os botões ao lado do "Ir para";
+fora do Mac, Ctrl+[ e Ctrl+], Alt+← e Alt+→. Nas seções com o índice "Nesta seção", ↓ e ↑
 pulam para o grupo seguinte e o anterior, como o clique no índice, e o
 leitor de tela ouve o nome do grupo. A tecla só vale fora de campos, listas
 e menus, sem modificador (⌥, ⌘ e Shift com seta continuam do navegador) e

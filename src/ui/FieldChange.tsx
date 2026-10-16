@@ -1,31 +1,30 @@
-// Um campo alterado nas listas do "Enviar ao Lattes" (a enviar e enviado):
-// o rótulo em cima, como na grade da prévia, e embaixo duas colunas iguais,
-// "Antes" (riscado e apagado) e "Depois". Texto longo (resumo, descrição)
-// para em quatro linhas, com "mostrar tudo". Valor vazio aparece como
-// "(vazio)", sem risco. Em tela estreita, as colunas empilham.
+// Um campo alterado nas listas do "Enviar ao Lattes" (a enviar e enviado),
+// como uma célula da grade de campos do item: o rótulo em cima, como na grade
+// do modo de leitura, e embaixo o valor. Num campo alterado, o de antes vem
+// riscado e apagado, e o de depois logo abaixo dele. Texto longo (resumo,
+// descrição) ocupa a linha inteira e para em quatro linhas, com "Ler mais",
+// como no modo de leitura. Valor vazio aparece como "(vazio)", sem risco. A grade e o
+// empilhamento em tela estreita estão em styles.css (".change-fields").
 
 import { type ReactNode, useState } from 'react';
 
-/** Acima disto (ou com quebra de linha), o valor para em quatro linhas e ganha "mostrar tudo". */
-const LONG_TEXT = 240;
-
-function isLong(text: string): boolean {
-  return text.length > LONG_TEXT || text.includes('\n');
-}
+import { fieldSpan, isLongText } from './change-fields.ts';
 
 function Value({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   if (!text) return <span className="fc-empty">(vazio)</span>;
-  if (!isLong(text)) return <span className="fc-text">{text}</span>;
+  if (!isLongText(text)) return <span className="fc-text">{text}</span>;
   return (
     <>
       <span className={`fc-text${open ? '' : ' is-clamped'}`}>{text}</span>
-      <button className="fc-more" type="button" onClick={() => setOpen(!open)}>
-        {open ? 'mostrar menos' : 'mostrar tudo'}
+      <button aria-expanded={open} className="fc-more" type="button" onClick={() => setOpen(!open)}>
+        {open ? 'Ler menos' : 'Ler mais'}
       </button>
     </>
   );
 }
+
+const SPAN_CLASS = { 1: '', 2: ' span-2', 3: ' span-all' } as const;
 
 export function FieldChange({
   actions,
@@ -37,7 +36,7 @@ export function FieldChange({
   /** Ações do campo (descartar), à mostra no passar do mouse ou com foco. */
   actions?: ReactNode;
   after: string;
-  /** Sem `before`, uma coluna só (item novo, ou o valor que sai). */
+  /** Sem `before`, só o valor (item novo, ou o valor que sai). */
   before?: string;
   /** "Antes" e "Depois" à vista: no primeiro campo de cada item. */
   captions?: boolean;
@@ -50,21 +49,25 @@ export function FieldChange({
     ) : (
       <span className="sr-only">{text}: </span>
     );
+  const span = fieldSpan(two ? [before, after] : [after]);
   return (
-    <div className="fc">
-      <div className="fc-label">{label}</div>
-      <div className={`fc-cols${two ? '' : ' is-single'}`}>
-        {two && (
-          <div className="fc-col fc-before">
-            {caption('Antes')}
-            <Value text={before} />
-          </div>
-        )}
-        <div className="fc-col fc-after">
-          {two && caption('Depois')}
-          <Value text={after} />
+    <div className={`fc${two ? ' is-edit' : ''}${SPAN_CLASS[span]}`}>
+      <div className="fc-head">
+        {/* Rótulo numa linha só; o nome inteiro no passar do mouse. */}
+        <span className="fc-label" title={label}>
+          {label}
+        </span>
+        {actions && <span className="fc-actions">{actions}</span>}
+      </div>
+      {two && (
+        <div className="fc-value fc-before">
+          {caption('Antes')}
+          <Value text={before} />
         </div>
-        {actions && <div className="fc-actions">{actions}</div>}
+      )}
+      <div className="fc-value fc-after">
+        {two && caption('Depois')}
+        <Value text={after} />
       </div>
     </div>
   );
