@@ -150,15 +150,19 @@ export function lookupValues(donor: Record<string, string>): Record<string, stri
 
 /**
  * O que o check() das formações pede em função das escolhas da variante:
- * término e obtenção só com o curso concluído; agência só com bolsa.
+ * término só fora do andamento, obtenção só com o curso concluído, agência
+ * só com bolsa.
  */
 export function consistencyFixes(
   values: Record<string, string>,
   agency?: { code: string; name: string },
 ): Record<string, string> {
   const fixes: Record<string, string> = {};
+  // Em andamento: sem término nem obtenção. Incompleto: o término é o ano de
+  // interrupção (obrigatório), e a obtenção sai.
+  if (values.F_STATUS === 'N') Object.assign(fixes, { f_ano_fim: '' });
   if (values.F_STATUS && values.F_STATUS !== 'S') {
-    Object.assign(fixes, { f_ano_fim: '', f_ano_obten: '', f_mes_obten: '' });
+    Object.assign(fixes, { f_ano_obten: '', f_mes_obten: '' });
   }
   if ('F_BOLSA' in values) {
     const on = values.F_BOLSA === 'S' && agency;

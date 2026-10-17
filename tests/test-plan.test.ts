@@ -101,6 +101,7 @@ describe('itens de teste: o que o check() das formações pede', () => {
       f_nme_agencia: '',
     });
     expect(consistencyFixes({ F_BOLSA: 'S' })).toEqual({ f_agencia: '', f_nme_agencia: '' });
+    expect(consistencyFixes({ F_STATUS: 'I' })).toEqual({ f_ano_obten: '', f_mes_obten: '' });
     expect(consistencyFixes({ f_titulo: 'x' })).toEqual({});
   });
 

@@ -245,6 +245,13 @@ async function prepareContext(code: string, get: (path: string) => Promise<{ htm
   if (first) context.agency = { code: first[1]!, name: first[2]! };
 }
 
+/** O "Salvar" da página, como a pessoa clicaria. */
+function saveButton(doc: Document): HTMLElement | undefined {
+  return [...doc.querySelectorAll<HTMLElement>('input[type=button], button, a')].find((b) =>
+    /^\s*salvar\s*$/i.test((b as HTMLInputElement).value || b.textContent || ''),
+  );
+}
+
 async function createOne(job: TestJob, code: string): Promise<TestResult> {
   const base = {
     id: job.id,
@@ -262,7 +269,13 @@ async function createOne(job: TestJob, code: string): Promise<TestResult> {
     if (!form) return { ...base, msgs: [`A página não tem o formulário ${job.form}`] };
     addOwner(w);
     const values = fill(w, form, job);
-    const msgs = await submit(frame, (fw) => fw.check?.());
+    const msgs = await submit(frame, (fw) => {
+      // O botão da própria página: em alguns formulários (formação) o check()
+      // só valida, e é o clique que chama o envio.
+      const save = saveButton(fw.document);
+      if (save) save.click();
+      else fw.check?.();
+    });
     const ok = msgs.some((m) => /sucesso/i.test(m));
     return { ...base, msgs: msgs.filter((m) => !/sucesso/i.test(m)), ok, values };
   } catch (err) {
