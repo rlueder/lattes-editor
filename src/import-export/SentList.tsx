@@ -26,6 +26,7 @@ import { FieldChange } from '../ui/FieldChange.tsx';
 import { MoreIcon } from '../ui/icons.tsx';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { publishBlockers } from './publish-view.ts';
+import { timeLabel } from './send-steps.ts';
 import { Notice } from './SendSteps.tsx';
 
 const dayLabel = (day: string) =>
@@ -34,9 +35,6 @@ const dayLabel = (day: string) =>
     month: 'long',
     weekday: 'long',
   });
-
-const timeLabel = (ms: number) =>
-  new Date(ms).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
 const checkedLabel = (ms: number) =>
   new Date(ms).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });

@@ -10,12 +10,11 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 
 import { requestProblem } from '../bridge/publish.ts';
-import { failed, type SentEntry } from '../bridge/sent-log.ts';
-import { openExternal } from '../desktop/external-links.ts';
+import { failed } from '../bridge/sent-log.ts';
 import { parseXml } from '../model/xml.ts';
 import { diffEspelho } from '../review/espelho-diff.ts';
 import { Modal } from '../ui/Modal.tsx';
-import { dateLabel, unpublishedEntries } from '../ui/status-strip.ts';
+import { unpublishedEntries } from '../ui/status-strip.ts';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { usePublish } from '../ui/use-publish.ts';
 import {
@@ -32,6 +31,7 @@ import {
   sendScreenStatus,
 } from './publish-view.ts';
 import { PublishBlockers } from './PublishBlockers.tsx';
+import { WhatPublishes } from './WhatPublishes.tsx';
 
 interface Props {
   bridge: BridgeState;
@@ -190,7 +190,11 @@ function PublishPanelBody(props: Props) {
       )}
 
       {screen && form && (
-        <>
+        <div className="lattes-form-box">
+          <h3 className="lattes-form-head">Tela de envio do Lattes</h3>
+          <p className="muted lattes-form-sub">
+            Os mesmos campos e a mesma declaração da tela &quot;Enviar&quot; do Lattes.
+          </p>
           <section className="panel-section">
             <h3 className="panel-section-head">Dados do envio</h3>
             <div className="fields publish-fields">
@@ -278,7 +282,7 @@ function PublishPanelBody(props: Props) {
             )}
             {enabled && problem && declared && <p className="export-blocked">{problem}</p>}
           </section>
-        </>
+        </div>
       )}
 
       {status.text && (
@@ -326,95 +330,5 @@ function PublishPanelBody(props: Props) {
     >
       {body}
     </Modal>
-  );
-}
-
-/** O que vai ser publicado: a última publicação, o que o editor gravou e a comparação dos títulos. */
-function WhatPublishes({
-  bridge,
-  diff,
-  pending,
-  previews,
-}: {
-  bridge: BridgeState;
-  diff: ReturnType<typeof diffEspelho> | undefined;
-  pending: SentEntry[];
-  previews?: { en: string; pt: string };
-}) {
-  return (
-    <section className="panel-section">
-      <h3 className="panel-section-head">O que vai ser publicado</h3>
-      <ul className="diagnosis-facts">
-        <li>
-          Última publicação:{' '}
-          <strong>
-            {bridge.lattes?.lastPublished
-              ? dateLabel(bridge.lattes.lastPublished)
-              : 'não informada'}
-          </strong>
-        </li>
-        {pending.length > 0 && (
-          <li>
-            {pending.length === 1
-              ? '1 gravação do editor desde então:'
-              : `${pending.length} gravações do editor desde então:`}
-            <ul className="diagnosis-lines">
-              {pending.map((e, i) => (
-                <li key={e.id ?? i}>{e.op.label}</li>
-              ))}
-            </ul>
-          </li>
-        )}
-        {bridge.lattes?.pending && pending.length === 0 && (
-          <li>Há alterações no Lattes que não passaram pelo editor.</li>
-        )}
-        {bridge.lattes && !bridge.lattes.pending && pending.length === 0 && (
-          <li>O Lattes não mostra nada pendente de publicação.</li>
-        )}
-      </ul>
-      {diff && !diff.unreadable && (
-        <p className="muted">
-          Comparando os títulos com a última versão publicada:{' '}
-          {diff.onlyInLattes.length === 0 && diff.onlyInExport.length === 0
-            ? 'nenhuma produção ou evento entra ou sai.'
-            : `${[
-                diff.onlyInLattes.length ? `${diff.onlyInLattes.length} entram` : '',
-                diff.onlyInExport.length
-                  ? `${diff.onlyInExport.length} saem ou mudam de título`
-                  : '',
-              ]
-                .filter(Boolean)
-                .join(', ')}.`}
-        </p>
-      )}
-      {diff && diff.onlyInLattes.length > 0 && (
-        <ul className="diagnosis-lines">
-          {diff.onlyInLattes.map((item, i) => (
-            <li key={i}>
-              <span className="muted">{item.group ?? item.section}</span> {item.text}
-            </li>
-          ))}
-        </ul>
-      )}
-      {diff && diff.onlyInExport.length > 0 && (
-        <ul className="diagnosis-lines">
-          {diff.onlyInExport.map(({ title }, i) => (
-            <li key={i}>
-              <span className="muted">Sai ou muda de título</span> {title}
-            </li>
-          ))}
-        </ul>
-      )}
-      {previews && (
-        <div className="publish-previews">
-          <button type="button" onClick={() => previews && openExternal(previews.pt)}>
-            Ver a versão em português
-          </button>
-          <button type="button" onClick={() => previews && openExternal(previews.en)}>
-            Ver a versão em inglês
-          </button>
-        </div>
-      )}
-    </section>
   );
 }

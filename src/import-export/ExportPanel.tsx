@@ -26,7 +26,7 @@ import {
   type ImportAttempt,
   importStatus,
 } from './import-request.ts';
-import { PublishPanel } from './PublishPanel.tsx';
+import { type PublishContext, PublishStep } from './PublishStep.tsx';
 import {
   listenTabRequests,
   splitByRoute,
@@ -34,7 +34,7 @@ import {
   takeRequestedTab,
   toSendCount,
 } from './send-routes.ts';
-import { stepStates } from './send-steps.ts';
+import { currentStep, stepStates } from './send-steps.ts';
 import { Notice, Step, StepHeader, WriteStep } from './SendSteps.tsx';
 import { SentList } from './SentList.tsx';
 
@@ -54,11 +54,7 @@ interface Props {
   open: boolean;
   pending: PendingSummary[];
   /** O passo ③, publicar no CNPq (LAT-54): o que o painel de envio precisa. */
-  publish: {
-    checks?: { count: number; onOpen: () => void };
-    lattesId?: string;
-    originalXml?: string;
-  };
+  publish: PublishContext;
   /**
    * Estado do currículo no Lattes (status-strip.ts): gravado e não publicado,
    * alterações que não passaram por aqui e a data da última publicação. Fica
@@ -135,10 +131,16 @@ export function ExportPanel({
   const toWrite = connectorOps?.length ?? 0;
   const writing = !!bridge && isWriting(bridge);
   const toPublish = !!bridge?.lattes?.pending;
-  const steps = stepStates({ toPublish, toWrite, writing });
+  // Publicado por esta janela: o passo ③ fica com a confirmação, em vez de a
+  // janela voltar ao passo ① sem dizer nada. Some ao fechar ou ao gravar de novo.
+  const [publishedAt, setPublishedAt] = useState<number | undefined>();
+  useEffect(() => {
+    if (!open || writing) setPublishedAt(undefined);
+  }, [open, writing]);
+  const steps = stepStates({ published: !!publishedAt, toPublish, toWrite, writing });
   // Só o passo atual aparece; um passo já feito abre pelo clique na pílula, e
   // a janela volta a seguir o passo atual quando ele muda.
-  const current = Math.max(0, steps.indexOf('atual'));
+  const current = currentStep(steps);
   const [viewing, setViewing] = useState<number | undefined>();
   useEffect(() => setViewing(undefined), [current]);
   const shown = bridge?.available ? (viewing ?? current) : 0;
@@ -315,17 +317,17 @@ export function ExportPanel({
       )}
 
       {bridge?.available && shown === 2 && (
-        <Step locked={publishLock(writing, toWrite, toPublish)} title="Publicar no CNPq">
-          <PublishPanel
-            inline
-            bridge={bridge}
-            checks={publish.checks}
-            lattesId={publish.lattesId}
-            open={open && !publishLock(writing, toWrite, toPublish)}
-            originalXml={publish.originalXml}
-            onClose={onClose}
-          />
-        </Step>
+        <PublishStep
+          bridge={bridge}
+          open={open}
+          publish={publish}
+          publishedAt={publishedAt}
+          toPublish={toPublish}
+          toWrite={toWrite}
+          writing={writing}
+          onClose={onClose}
+          onPublished={() => setPublishedAt(Date.now())}
+        />
       )}
 
       {bridge && bridge.sent.length > 0 && (
@@ -340,16 +342,6 @@ export function ExportPanel({
       )}
     </Modal>
   );
-}
-
-/**
- * Por que o passo ③ ainda não abre: publicar no meio da gravação, ou com
- * alteração ainda por gravar, deixaria de fora o que falta.
- */
-function publishLock(writing: boolean, toWrite: number, toPublish: boolean): string | undefined {
-  if (writing) return 'Fica disponível quando a gravação terminar.';
-  if (toWrite > 0) return 'Grave antes as alterações do passo 1, ou descarte as que não vão agora.';
-  return toPublish ? undefined : 'Nada gravado no Lattes esperando publicação.';
 }
 
 /** Uma rodada em andamento: a cópia de antes, a pergunta sem cópia, gravando ou em pausa. */

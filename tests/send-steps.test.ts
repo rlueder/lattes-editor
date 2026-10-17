@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import type { OpResult } from '../src/bridge/apply.ts';
 import type { BridgeOp } from '../src/bridge/plan.ts';
-import { stepStates, writeRows } from '../src/import-export/send-steps.ts';
+import {
+  currentStep,
+  publishLock,
+  stepStates,
+  writeRows,
+} from '../src/import-export/send-steps.ts';
 
 const op = (key: string) => ({ key, label: `Item ${key}` }) as BridgeOp;
 const result = (key: string, status: OpResult['status'], detail = ''): OpResult => ({
@@ -29,6 +34,24 @@ describe('passos da janela de envio', () => {
       'atual',
     ]);
     expect(stepStates({ toPublish: false, toWrite: 0, writing: false })[0]).toBe('atual');
+  });
+
+  it('depois de publicar, os três feitos e a confirmação no passo ③', () => {
+    const done = stepStates({ published: true, toPublish: false, toWrite: 0, writing: false });
+    expect(done).toEqual(['feito', 'feito', 'feito']);
+    expect(currentStep(done)).toBe(2);
+    // Alteração nova depois de publicar volta ao passo ①.
+    expect(
+      currentStep(stepStates({ published: true, toPublish: false, toWrite: 1, writing: false })),
+    ).toBe(0);
+    expect(currentStep(['feito', 'atual', 'depois'])).toBe(1);
+  });
+
+  it('o passo ③ diz por que ainda não abre', () => {
+    expect(publishLock(true, 0, true)).toMatch(/quando a gravação terminar/);
+    expect(publishLock(false, 2, true)).toMatch(/^Grave antes/);
+    expect(publishLock(false, 0, false)).toMatch(/^Nada gravado/);
+    expect(publishLock(false, 0, true)).toBeUndefined();
   });
 });
 

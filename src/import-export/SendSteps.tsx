@@ -10,7 +10,7 @@ import type { ReactNode } from 'react';
 
 import { doneText, latestText, noRestoreText, stopText } from '../bridge/restore-point.ts';
 import { pauseText } from '../bridge/write-brake.ts';
-import { AlertIcon } from '../ui/icons.tsx';
+import { AlertIcon, CheckIcon } from '../ui/icons.tsx';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { type StepState, writeRows } from './send-steps.ts';
 
@@ -78,26 +78,27 @@ export function Step({
 
 /**
  * Um aviso da janela de envio numa linha: o ícone, o texto e os botões à
- * direita, alinhados ao centro. warn é o amarelo do que pede atenção; sem
- * ele, o azul do que só informa.
+ * direita, alinhados ao centro. warn é o amarelo do que pede atenção, ok o
+ * verde do que deu certo; sem os dois, o azul do que só informa.
  */
 export function Notice({
   actions,
   children,
+  ok,
   role = 'status',
   warn,
 }: {
   actions?: ReactNode;
   children: ReactNode;
+  /** O verde do que deu certo, com a marca de conferido. */
+  ok?: boolean;
   role?: 'alert' | 'group' | 'status';
   warn?: boolean;
 }) {
   return (
-    <div className={`step-notice${warn ? ' warn' : ''}`} role={role}>
-      {warn && (
-        <span className="step-notice-icon">
-          <AlertIcon />
-        </span>
+    <div className={`step-notice${warn ? ' warn' : ok ? ' ok' : ''}`} role={role}>
+      {(warn || ok) && (
+        <span className="step-notice-icon">{warn ? <AlertIcon /> : <CheckIcon />}</span>
       )}
       <div className="step-notice-text">{children}</div>
       {actions && <div className="step-notice-actions">{actions}</div>}
