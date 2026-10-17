@@ -4,6 +4,7 @@
 import { type ReactNode, useEffect, useId, useState } from 'react';
 
 import { attributeLabelIn, elementLabel, enumLabel } from '../labels/labels.ts';
+import { applyLinkedAttrs } from '../model/linked-attrs.ts';
 import { repairMojibake } from '../model/mojibake.ts';
 import { getAttr, setAttr, type XElement } from '../model/xml.ts';
 import {
@@ -92,6 +93,7 @@ export function AttributeField({
     change(next);
     if (next === (getAttr(el, name) ?? '')) return;
     setAttr(el, name, next);
+    applyLinkedAttrs(el, name);
     onEdit(`${elementLabel(el.name)} · ${text}`);
   };
   const shownError = error ?? linkError(name, value);

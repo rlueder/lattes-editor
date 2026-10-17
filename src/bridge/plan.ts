@@ -413,6 +413,12 @@ export function planChanges(
   entries: { change: Change; itemTitle: string }[],
   root: XElement,
   options: PlanOptions = {},
+  /**
+   * As opções vêm das capacidades da extensão ligada (planOptionsFor): o que
+   * uma extensão em dia enviaria diz para atualizar a extensão, e não o motivo
+   * do caminho desligado.
+   */
+  fromExtension = false,
 ): { ops: BridgeOp[]; unsupported: Unsupported[] } {
   const ops: BridgeOp[] = [];
   const skipped: Unsupported[] = [];
@@ -421,9 +427,19 @@ export function planChanges(
   const all = entries.map((e) => e.change);
   for (const { change, itemTitle } of entries) {
     const label = itemTitle ? `${change.form} · ${itemTitle}` : change.form;
-    const planned = planChange(change, resolvePath(root, change.path), label, options, all);
+    const chain = resolvePath(root, change.path);
+    const planned = planChange(change, chain, label, options, all);
     if (isOp(planned)) ops.push(planned);
-    else skipped.push(planned);
+    else if (fromExtension && isOp(planChange(change, chain, label, ALL_ON, all))) {
+      // O editor sabe enviar; quem não sabe é a extensão instalada.
+      skipped.push({ ...planned, reason: OLD_EXTENSION });
+    } else skipped.push(planned);
   }
   return { ops, unsupported: skipped };
 }
+
+/** Todas as alterações ligadas, como numa extensão em dia. */
+const ALL_ON: PlanOptions = Object.fromEntries(GATED_EDITS.map((g) => [g.option, g.enabled]));
+
+export const OLD_EXTENSION =
+  'A extensão do conector instalada ainda não envia esta alteração: atualize a extensão e recarregue esta página';

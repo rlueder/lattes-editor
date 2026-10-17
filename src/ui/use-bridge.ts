@@ -415,16 +415,13 @@ export function useBridge(
   useEffect(() => syncIncludeCapability(features), [features]);
   useEffect(() => () => setIncludeCapability(false), []);
 
+  const entries = useMemo(() => groups.flatMap((g) => g.entries), [groups]);
   const plan = useMemo(
     () =>
       session
-        ? planChanges(
-            groups.flatMap((g) => g.entries),
-            session.doc.root,
-            planOptionsFor(features),
-          )
+        ? planChanges(entries, session.doc.root, planOptionsFor(features), true)
         : { ops: [], unsupported: [] },
-    [session, groups, features],
+    [session, entries, features],
   );
 
   return {

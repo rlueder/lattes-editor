@@ -9,6 +9,7 @@ import { planChanges } from '../src/bridge/plan.ts';
 import { noUndoReason, sentEntry, undoOp } from '../src/bridge/sent-log.ts';
 import { diffDocuments } from '../src/model/changes.ts';
 import { encodeLatin1 } from '../src/model/latin1.ts';
+import { applyLinkedAttrs } from '../src/model/linked-attrs.ts';
 import { getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
 import {
   faults,
@@ -350,6 +351,27 @@ describe('formação no Lattes simulado', () => {
     expect(getAttr(el, 'FLAG-BOLSA')).toBe('NAO');
     expect(getAttr(el, 'CODIGO-AGENCIA-FINANCIADORA')).toBe('');
     expect(gets(none)).not.toContain('prc_agencia');
+  });
+
+  it('agência só com o nome sai junto com a bolsa', async () => {
+    const xml = XML.replace(
+      'FLAG-BOLSA="NAO" CODIGO-AGENCIA-FINANCIADORA="" NOME-AGENCIA="" STATUS-DO-ESTAGIO=""',
+      'FLAG-BOLSA="SIM" CODIGO-AGENCIA-FINANCIADORA="" NOME-AGENCIA="Fundação de Amparo" STATUS-DO-ESTAGIO=""',
+    );
+    const lattes = await lattesFor({
+      xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${xml}`),
+    });
+    const plan = planned((root) => {
+      const el = byName(root, 'POS-DOUTORADO');
+      setAttr(el, 'FLAG-BOLSA', 'NAO');
+      expect(applyLinkedAttrs(el, 'FLAG-BOLSA')).toEqual(['NOME-AGENCIA']);
+    }, xml);
+    expect(plan.unsupported).toEqual([]);
+    const op = plan.ops[0] as FormacaoOp;
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    const el = inState(lattes, 'POS-DOUTORADO');
+    expect(getAttr(el, 'FLAG-BOLSA')).toBe('NAO');
+    expect(getAttr(el, 'NOME-AGENCIA')).toBe('');
   });
 
   it('doutorado: instituição e orientador do sanduíche', async () => {

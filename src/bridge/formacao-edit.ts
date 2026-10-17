@@ -434,7 +434,10 @@ function planAgency(
   }
   if (!touched && !v.touched(['FLAG-BOLSA'])) return undefined;
   const before = v.before('CODIGO-AGENCIA-FINANCIADORA');
-  if (touched && code === before) {
+  // Tirar a agência junto com a bolsa: vai o código vazio, mesmo quando a
+  // exportação só tinha o nome.
+  const removing = touched && !code && !v.after('NOME-AGENCIA') && bolsa !== 'SIM';
+  if (touched && code === before && !removing) {
     return {
       reason: code
         ? 'A agência só muda pela lista de agências do Lattes, que grava o código e o nome juntos: escolha a agência pela lista'

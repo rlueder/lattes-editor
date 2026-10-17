@@ -8,7 +8,10 @@ import { BUILD_GATES } from '../src/bridge/apply.ts';
 import { BRIDGE_FEATURES } from '../src/bridge/compat.ts';
 import { LATTES_CONTRACT } from '../src/bridge/contract.ts';
 import { EDIT_EVENTO_ENABLED } from '../src/bridge/edit-items.ts';
-import { GATED_EDITS, planOptionsFor } from '../src/bridge/plan.ts';
+import { GATED_EDITS, OLD_EXTENSION, planChanges, planOptionsFor } from '../src/bridge/plan.ts';
+import { diffDocuments } from '../src/model/changes.ts';
+import { parseXml, setAttr } from '../src/model/xml.ts';
+import { findIn } from './helpers/lattes-simulado.ts';
 
 describe('chaves de alteração e capacidades da extensão', () => {
   it('cada chave ligada tem a capacidade anunciada, e cada desligada não', () => {
@@ -52,5 +55,25 @@ describe('chaves do lado da extensão', () => {
     expect([...BUILD_GATES.lists].sort()).toEqual(['formacao-complementar', 'premio']);
     const all = planOptionsFor(BRIDGE_FEATURES);
     for (const g of GATED_EDITS) expect(all[g.option]).toBe(true);
+  });
+});
+
+describe('extensão anterior a uma alteração', () => {
+  it('o motivo diz para atualizar a extensão, só quando o plano vem dela', () => {
+    const xml = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS NOME-COMPLETO="P"/>
+<PRODUCAO-BIBLIOGRAFICA><DEMAIS-TIPOS-DE-PRODUCAO-BIBLIOGRAFICA>
+<OUTRA-PRODUCAO-BIBLIOGRAFICA SEQUENCIA-PRODUCAO="3"><DADOS-BASICOS-DE-OUTRA-PRODUCAO NATUREZA="OUTRA" TITULO="Ensaio" ANO="2004"/></OUTRA-PRODUCAO-BIBLIOGRAFICA>
+</DEMAIS-TIPOS-DE-PRODUCAO-BIBLIOGRAFICA></PRODUCAO-BIBLIOGRAFICA></CURRICULO-VITAE>`;
+    const original = parseXml(xml).root;
+    const working = parseXml(xml).root;
+    const basics = findIn(working, (el) => el.name === 'DADOS-BASICOS-DE-OUTRA-PRODUCAO')!;
+    setAttr(basics, 'TITULO', 'Ensaio revisto');
+    const entries = diffDocuments(original, working).map((change) => ({ change, itemTitle: '' }));
+    const old = planOptionsFor(['alterar-dados-gerais']);
+    expect(planChanges(entries, working, old, true).unsupported[0]?.reason).toBe(OLD_EXTENSION);
+    expect(planChanges(entries, working, old).unsupported[0]?.reason).not.toBe(OLD_EXTENSION);
+    expect(
+      planChanges(entries, working, planOptionsFor([...BRIDGE_FEATURES]), true).ops,
+    ).toHaveLength(1);
   });
 });
