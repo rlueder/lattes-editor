@@ -103,4 +103,16 @@ describe('editor que reconecta no meio da fila', () => {
       { replay: true, result: b, type: 'resultado' },
     ]);
   });
+
+  it('com a fila parada, repete também o fim, com a pausa', async () => {
+    const sent: BridgeMessage[] = [];
+    const a = { detail: '', key: 'a', status: 'conferido' } as const;
+    await replayResults(
+      { ops: [op('a'), op('b')], pausa: { done: 1, left: 1 }, results: { a }, running: false },
+      async (m) => {
+        sent.push(m);
+      },
+    );
+    expect(sent.at(-1)).toEqual({ pause: { done: 1, left: 1 }, type: 'fim' });
+  });
 });

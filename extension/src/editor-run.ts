@@ -95,13 +95,18 @@ export async function endDeadRound(
 /**
  * Os resultados da última fila de novo, para o editor que recarregou no meio
  * dela: o que chegou com a página fechando se perdeu. O editor só registra os
- * que ainda esperava (src/ui/outgoing-store.ts).
+ * que ainda esperava (src/ui/outgoing-store.ts). Com a fila parada, o fim
+ * também.
  */
 export async function replayResults(
-  { results }: QueueState,
+  { pausa, results, running }: QueueState,
   send: (m: BridgeMessage) => Promise<void>,
 ): Promise<void> {
   for (const result of Object.values(results)) {
     await send({ replay: true, result, type: 'resultado' });
   }
+  // A fila já parou: o fim também pode ter se perdido (o editor que recarregou,
+  // ou o service worker que acordou e encerrou a rodada antes de o editor
+  // conectar), e sem ele o editor fica "gravando".
+  if (!running) await send({ pause: pausa, type: 'fim' });
 }

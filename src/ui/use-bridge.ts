@@ -297,6 +297,7 @@ export function useBridge(
       const ok = status === 'conferido';
       const entry = sentEntry(item.op, lattesId, Date.now(), {
         change: item.change,
+        note: result.partial ? detail : undefined,
         outcome: status === 'conferido' ? undefined : { assigned, detail, status },
         undoOf: item.undoOf,
       });

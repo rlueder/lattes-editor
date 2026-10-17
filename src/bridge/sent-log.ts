@@ -30,6 +30,8 @@ export interface SentEntry {
   id?: number;
   /** NUMERO-IDENTIFICADOR do currículo. */
   lattesId: string;
+  /** Conferido com uma parte que o conector não relê: o aviso (OpResult.partial). */
+  note?: string;
   /** A operação exatamente como foi enviada e conferida. */
   op: BridgeOp;
   /**
@@ -61,7 +63,7 @@ export function sentEntry(
   op: BridgeOp,
   lattesId: string,
   sentAt: number,
-  extra: Pick<SentEntry, 'change' | 'outcome' | 'undoOf'> = {},
+  extra: Pick<SentEntry, 'change' | 'note' | 'outcome' | 'undoOf'> = {},
 ): SentEntry {
   return { ...extra, lattesId, op, rows: opRows(op), sentAt };
 }

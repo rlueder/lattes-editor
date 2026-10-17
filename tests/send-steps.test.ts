@@ -81,4 +81,17 @@ describe('andamento de cada alteração da rodada', () => {
     );
     expect(rows.map((r) => r.state)).toEqual(['conferido', 'conferido', 'fila']);
   });
+
+  it('conferida com uma parte sem reler mostra o aviso', () => {
+    const [row] = writeRows(
+      [op('a')],
+      { a: { detail: 'confira a equipe', key: 'a', partial: true, status: 'conferido' } },
+      false,
+    );
+    expect(row).toMatchObject({
+      detail: 'confira a equipe',
+      state: 'conferido',
+      text: 'gravada; confira uma parte',
+    });
+  });
 });

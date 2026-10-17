@@ -421,7 +421,7 @@ export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort):
       if (problem) return { ...result('divergente', problem), assigned };
       // A equipe volta no script da página, não num campo, e fica sem reler: o
       // resto conferiu, e o aviso vai no registro do enviado.
-      return { ...result('conferido', TEAM_UNREAD), assigned };
+      return { ...result('conferido', TEAM_UNREAD), assigned, partial: true };
     } catch (err) {
       return maybeCreated(
         op.key,

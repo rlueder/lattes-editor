@@ -77,11 +77,11 @@ export function writeRows(
       current = false;
     } else state = running || paused ? 'fila' : 'parada';
     return {
-      detail: r && r.status !== 'conferido' ? r.detail : undefined,
+      detail: r && (r.status !== 'conferido' || r.partial) ? r.detail : undefined,
       key: op.key,
       label: op.label,
       state,
-      text: TEXT[state],
+      text: r?.partial ? 'gravada; confira uma parte' : TEXT[state],
     };
   });
 }

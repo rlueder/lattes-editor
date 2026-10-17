@@ -10,7 +10,7 @@ import type { BridgeMessage, EditorMessage } from '../../src/bridge/protocol.ts'
 import type { PublishRequest, PublishResult } from '../../src/bridge/publish.ts';
 import { hasConsent } from './consent.ts';
 import { LATTES_MENU, lattesMenus } from './lattes-hosts.ts';
-import { untilTabCloses } from './tab-guard.ts';
+import { tabReloaded, untilTabCloses } from './tab-guard.ts';
 
 export async function lattesTab(): Promise<number | undefined> {
   // Escolha na montagem: na extensão publicada, o simulado não entra no código.
@@ -19,12 +19,20 @@ export async function lattesTab(): Promise<number | undefined> {
 }
 
 /** Uma chamada à aba que desiste se ela fechar ou não responder (tab-guard.ts). */
-const guarded = <T>(tabId: number, work: Promise<T>) =>
-  untilTabCloses(tabId, work, chrome.tabs.onRemoved);
-
+let watchingReloads = false;
+const guarded = <T>(tabId: number, start: () => Promise<T>) => {
+  // A página que recarrega solta a aba travada por uma chamada que passou do
+  // prazo (tab-guard.ts). Registrado na primeira chamada, com o chrome à mão.
+  if (!watchingReloads) {
+    watchingReloads = true;
+    chrome.tabs.onUpdated?.addListener((id, info) => {
+      if (info.status === 'loading') tabReloaded(id);
+    });
+  }
+  return untilTabCloses(tabId, start, chrome.tabs.onRemoved);
+};
 export async function injectRunner(tabId: number): Promise<void> {
-  await guarded(
-    tabId,
+  await guarded(tabId, () =>
     chrome.scripting.executeScript({ files: ['lattes-runner.js'], target: { tabId } }),
   );
 }
@@ -45,8 +53,7 @@ async function runInTab<T>(
   ...args: string[]
 ): Promise<T | undefined> {
   await injectRunner(tabId);
-  const [res] = await guarded(
-    tabId,
+  const [res] = await guarded(tabId, () =>
     chrome.scripting.executeScript({
       args: [name, args] as [string, string[]],
       func: (fn: string, fnArgs: string[]) =>
@@ -261,8 +268,7 @@ export async function answerListRequest(
  * (checkedResult, em src/bridge/write-brake.ts).
  */
 export async function applyInTab(tabId: number, op: BridgeOp): Promise<unknown> {
-  const [res] = await guarded(
-    tabId,
+  const [res] = await guarded(tabId, () =>
     chrome.scripting.executeScript({
       args: [op] as [BridgeOp],
       func: (o: BridgeOp) =>
@@ -287,8 +293,7 @@ export const failedReport = (detail: string): ContractReport => ({
 export async function verifyOn(tabId: number): Promise<ContractReport> {
   try {
     await injectRunner(tabId);
-    const [res] = await guarded(
-      tabId,
+    const [res] = await guarded(tabId, () =>
       chrome.scripting.executeScript({
         func: () =>
           (
@@ -312,8 +317,7 @@ export interface Identity {
 /** Quem é o currículo aberto na sessão do Lattes: código interno e identificador público. */
 export async function sessionIdentity(tabId: number, fresh = false): Promise<Identity> {
   await injectRunner(tabId);
-  const [res] = await guarded(
-    tabId,
+  const [res] = await guarded(tabId, () =>
     chrome.scripting.executeScript({
       args: [fresh],
       func: (f: boolean) =>

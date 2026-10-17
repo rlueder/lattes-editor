@@ -297,7 +297,12 @@ export async function applyCreateEvento(op: CreateEventoOp, port: LattesPort): P
         readBack(saved, tipo ? checked : op.set),
       );
       if (problem) return { ...result('divergente', problem), assigned };
-      if (tipo) return { ...result('conferido', `${TYPE_UNREAD} (evento ${seq})`), assigned };
+      if (tipo)
+        return {
+          ...result('conferido', `${TYPE_UNREAD} (evento ${seq})`),
+          assigned,
+          partial: true,
+        };
       return { ...result('conferido', `Criada e conferida no Lattes (evento ${seq})`), assigned };
     } catch (err) {
       const why = err instanceof Error ? err.message : 'falha inesperada';

@@ -77,6 +77,13 @@ export interface OpResult {
   assigned?: Record<string, string>;
   detail: string;
   key: string;
+  /**
+   * Conferido, menos uma parte que o conector não relê (a equipe de um
+   * projeto, as disciplinas de uma atividade): o item foi criado e repetir
+   * duplicaria, então a fila segue, mas o aviso em detail fica à vista no
+   * andamento e no registro do enviado.
+   */
+  partial?: boolean;
   status: ResultStatus;
 }
 

@@ -1840,6 +1840,13 @@ a.menu-item.notice {
   align-items: flex-start;
 }
 
+/* Conferido com uma parte que o conector não relê: o aviso, em amarelo. */
+.sent-note {
+  margin: 4px 0 0;
+  color: var(--warn-text);
+  font-size: 12px;
+}
+
 .sent-undo {
   height: 26px;
   padding: 0 8px;

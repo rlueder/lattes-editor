@@ -141,6 +141,7 @@ export function SentList({ bridge, onUndo }: { bridge: BridgeState; onUndo?: () 
                         </button>
                       )}
                   </div>
+                  {entry.note && <p className="sent-note">{entry.note}</p>}
                   {undoing === entry && (
                     <Notice
                       actions={
