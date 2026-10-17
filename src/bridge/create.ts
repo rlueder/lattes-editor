@@ -16,6 +16,7 @@ import type { Change } from '../model/changes.ts';
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
 import type { FieldSpec, FormSpec } from './contract.ts';
+import { CREATE_FIELD_LABELS } from './create-labels.ts';
 import {
   encodeLatin1Form,
   type FormControl,
@@ -361,7 +362,7 @@ export async function applyCreateAtuacao(
         return {
           ...result(
             'divergente',
-            `Criada no Lattes (atuação ${seqAtiv}), mas gravada diferente: ${wrong.join(', ')}`,
+            `Criada no Lattes (atuação ${seqAtiv}), mas o Lattes guardou outro valor em: ${wrong.map((f) => CREATE_FIELD_LABELS[f] ?? f).join(', ')}. Confira no Lattes`,
           ),
           assigned,
         };

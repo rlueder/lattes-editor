@@ -19,6 +19,7 @@ import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
+import { applyProjectTeam, projectGridScripts } from './projeto-grades.ts';
 import { html, type Routes, type SimResponse } from './tipos.ts';
 
 const NATURE: Record<string, string> = {
@@ -210,6 +211,7 @@ ${renderFields(bindings(state, ids), placed?.projeto)}
 <p><a href="#" onclick="self.parent.modalCV3.setarUrl('PKG_PROJETO.pp_lista_inst?f_pgm=INSTVINCULO&amp;f_cod=${state.code}',true); return false;">Instituição</a></p>
 ${h.formButtons(Boolean(placed))}
 </form>
+${placed ? projectGridScripts(placed.projeto) : ''}
 ${h.formScripts('GN_PROJETO', placed ? 'Deseja realmente excluir esta produção?' : undefined)}`;
   return html(h.page('Projeto', body));
 }
@@ -263,8 +265,10 @@ function post(req: SimRequest, state: LattesState): SimResponse {
   if (ctr === 'E') {
     const atividades = childElements(placed.atuacao, 'ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO')[0]!;
     state.remove(atividades, placed.participacao);
-  } else if (ctr === 'U') applyFields(bindings(state, {}), placed.projeto, req);
-  else return html(back);
+  } else if (ctr === 'U') {
+    applyFields(bindings(state, {}), placed.projeto, req);
+    applyProjectTeam(state, placed.projeto, req);
+  } else return html(back);
   state.touch();
   return html(back);
 }

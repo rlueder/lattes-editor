@@ -37,7 +37,7 @@ import {
   Stop,
   text,
 } from './create-shared.ts';
-import { encodeLatin1Form, type Pairs, pairValue, setPairs } from './form.ts';
+import { encodeLatin1Form, type FormControl, type Pairs, pairValue, setPairs } from './form.ts';
 import { findLinks, isLogonPage, type LattesLink } from './lattes-html.ts';
 import type { FieldValues } from './plan.ts';
 
@@ -226,6 +226,26 @@ export const CREATE_FORMACAO_SPEC: FormSpec & { mode: string; partial: true } = 
 const FORMACAO_FORM = 'GN_FORMACAO2';
 
 /** As formações da lista: links de alteração, com f_seq (seção 5). */
+/** O curso como o Lattes o guarda: o texto da opção sem o código CAPES no fim. */
+export function courseName(text: string): string {
+  return text.replace(/\s*\([^()]*\)\s*$/, '').trim();
+}
+
+const isCourse = (name: string) => name === 'f_curso' || name === 'f_curso_old';
+
+/** Os dois lados da releitura com o curso pelo nome: o enviado e o gravado. */
+const withCourseName = (set: FieldValues): FieldValues =>
+  Object.fromEntries(
+    Object.entries(set).map(([k, v]) => [k, isCourse(k) && v ? courseName(v) : v]),
+  );
+
+const savedCourseName = (saved: { controls: FormControl[]; pairs: Pairs }) => ({
+  controls: saved.controls.map((c) =>
+    isCourse(c.name) ? { ...c, value: courseName(c.value) } : c,
+  ),
+  pairs: saved.pairs.map(([k, v]): [string, string] => [k, isCourse(k) ? courseName(v) : v]),
+});
+
 const formacoes = (html: string): LattesLink[] =>
   findLinks(html, 'pkg_formacao.form').filter((l) => l.params.f_seq);
 
@@ -382,11 +402,14 @@ export async function applyCreateFormacao(op: CreateFormacaoOp, port: LattesPort
       const assigned = { 'SEQUENCIA-FORMACAO': seq };
       const saved = await readPairs(port, created[0]!.path, FORMACAO_FORM);
       // Tudo o que foi enviado, com instituição, curso e agência das buscas.
-      const check = readBack(saved, set);
+      // O curso vai com o texto da opção, "Design(42007011021P4)", e o Lattes
+      // guarda só o nome, sem o código CAPES entre parênteses (observado em
+      // 16/10/2026, formação de mestrado): a releitura compara pelo nome.
+      const check = readBack(savedCourseName(saved), withCourseName(set));
       if (!sameCode(formationInstitution(saved.pairs), op.institutionCode)) {
         check.differ.push('Instituição');
       }
-      const problem = readBackProblem(`Criada no Lattes (formação ${seq})`, true, check);
+      const problem = readBackProblem(`Criada no Lattes (formação ${seq})`, check);
       if (problem) return { ...result('divergente', problem), assigned };
       return { ...result('conferido', `Criada e conferida no Lattes (formação ${seq})`), assigned };
     } catch (err) {

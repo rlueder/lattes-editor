@@ -52,6 +52,19 @@ export const BRIDGE_FEATURES = [
    * em si só sai com PUBLISH_ENABLED, e sem ela a extensão responde "desligado".
    */
   'enviar-cnpq',
+  /**
+   * O editor começa a gravação e segue depois da pausa ("continuar"); o
+   * painel da extensão só acompanha. Sem ela, a fila espera o "Aplicar
+   * todas" no painel.
+   */
+  'gravar-pelo-editor',
+  /** Alterar no lugar produções, orientações e bancas (production/). */
+  'alterar-producao',
+  /**
+   * Formação pelas buscas de instituição, curso e agência, pós-doutorado,
+   * livre-docência e outras informações relevantes (biographic.ts).
+   */
+  'alterar-dados-gerais-completo',
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

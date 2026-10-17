@@ -353,8 +353,8 @@ describe('incluir registros no Lattes simulado', () => {
     });
     expect(unsupported).toEqual([]);
     const results = await applyAll(ops, lattes.port);
-    // Os campos voltam conferidos, mas os inventores não são relidos: fica divergente.
-    expect(results.map((r) => r.status)).toEqual(['divergente']);
+    // Os campos voltam conferidos; os inventores não são relidos e ficam no aviso.
+    expect(results.map((r) => r.status)).toEqual(['conferido']);
     expect(results[0]!.detail).toBe(
       `${INVENTORS_UNREAD} (registro ${results[0]!.assigned!['SEQUENCIA-PRODUCAO']})`,
     );
@@ -428,7 +428,9 @@ describe('incluir registros no Lattes simulado', () => {
     const { ops } = await plan((doc) => addRegistro(doc, 'DESENHO-INDUSTRIAL', desenho));
     const [r] = await applyAll(ops, lattes.port);
     expect(r).toMatchObject({ status: 'divergente' });
-    expect(r!.detail).toMatch(/^Criado no Lattes \(registro \d+\), mas gravado diferente: Título$/);
+    expect(r!.detail).toMatch(
+      /^Criado no Lattes \(registro \d+\), mas o Lattes guardou outro valor em: Título\. Confira no Lattes$/,
+    );
 
     const twice = await start({
       intercept: async (req, _state, next) => {
@@ -587,7 +589,7 @@ describe('incluir registros no Lattes simulado', () => {
       },
       lattes.port,
     );
-    expect(r.status).toBe('divergente');
+    expect(r.status).toBe('conferido');
     expect(r.detail).toMatch(
       /^Criado no Lattes, com os campos conferidos; confira a lista de inventores/,
     );

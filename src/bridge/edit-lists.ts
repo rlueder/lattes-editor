@@ -91,6 +91,8 @@ interface Target {
   fields: Record<string, [string, Mapper]>;
   /** Procedimento do link de edição em cada linha da lista. */
   form: string;
+  /** Atributos que só mudam por outro caminho, com o porquê para a pessoa. */
+  hand?: Record<string, string>;
   /** Campos que identificam a linha e sempre vão em match, se a operação não os troca. */
   identity(el: XElement): FieldValues;
   /** O item da operação, pelo elemento alterado e o pai. */
@@ -157,6 +159,10 @@ const COMPL_LEVELS: Record<string, string> = {
   OUTROS: 'Y',
 };
 
+/** Instituição, órgão e curso: os campos vêm desabilitados e só mudam pela busca. */
+const COMPL_LOOKUP =
+  'Instituição e curso da formação complementar só mudam pelas buscas do Lattes (campos desabilitados no formulário), que o conector ainda não faz nesse formulário';
+
 const TARGETS: Record<ListEditKind, Target> = {
   'formacao-complementar': {
     absent: {
@@ -174,6 +180,16 @@ const TARGETS: Record<ListEditKind, Target> = {
       'STATUS-DO-CURSO': ['F_STATUS', status],
     },
     form: 'PKG_FORMACAO_COMPL.form',
+    hand: {
+      'CODIGO-CURSO': COMPL_LOOKUP,
+      'CODIGO-INSTITUICAO': COMPL_LOOKUP,
+      'CODIGO-ORGAO': COMPL_LOOKUP,
+      NIVEL:
+        'O nível é o tipo da formação complementar no Lattes: para trocar, inclua de novo no nível certo',
+      'NOME-CURSO': COMPL_LOOKUP,
+      'NOME-INSTITUICAO': COMPL_LOOKUP,
+      'NOME-ORGAO': COMPL_LOOKUP,
+    },
     identity: (el) => ({
       f_curso_old: getAttr(el, 'NOME-CURSO') ?? '',
       f_inst_old: getAttr(el, 'NOME-INSTITUICAO') ?? '',
@@ -228,8 +244,11 @@ export function planListEdit(
   const set: FieldValues = {};
   const expect: FieldValues = {};
   const missing: string[] = [];
+  const invalid: string[] = [];
   const absent = new Set<string>();
   for (const f of change.fields) {
+    const hand = t.hand?.[f.attr];
+    if (hand) return { reason: hand };
     const entry = t.fields[f.attr];
     if (!entry) {
       if (t.absent[f.attr]) absent.add(t.absent[f.attr]!);
@@ -240,7 +259,7 @@ export function planListEdit(
     const after = map(f.after);
     const before = map(f.before);
     if (after === undefined || before === undefined) {
-      missing.push(f.label);
+      invalid.push(f.attr === 'CARGA-HORARIA' ? `${f.label} (em horas, só com dígitos)` : f.label);
       continue;
     }
     if (t.required.includes(field) && !after.trim()) {
@@ -259,6 +278,11 @@ export function planListEdit(
   }
   if (missing.length > 0) {
     return { reason: `Campos não suportados ainda: ${missing.join(', ')}` };
+  }
+  if (invalid.length > 0) {
+    return {
+      reason: `Valor que o formulário de ${NAMES[kind]} do Lattes não aceita: ${invalid.join(', ')}`,
+    };
   }
 
   // O que acha a linha: os campos do item que a operação não troca.

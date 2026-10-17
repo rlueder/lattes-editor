@@ -78,7 +78,11 @@ describe('censo, passada de edição', () => {
         target: 'evento',
       });
       expect(find(links, 'F_FORMA', 'FORMA-PARTICIPACAO')?.by).toBe('valor');
-      expect(find(links, 'f_seq', 'SEQUENCIA-PRODUCAO')?.matches).toBe(evento.matched);
+      // Orientações e bancas também têm f_seq no simulado: o do evento.
+      const seq = links.filter((l) => l.field === 'f_seq' && l.target === 'evento');
+      expect(seq.map((l) => [l.attribute, l.matches])).toEqual([
+        ['SEQUENCIA-PRODUCAO', evento.matched],
+      ]);
       expect(summary.find((s) => s.target === 'vinculo')?.status).toBe('ok');
       expect(summary.find((s) => s.target === 'licenca')?.status).toBe('sem-itens');
       const text = JSON.stringify({ links, summary });

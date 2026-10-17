@@ -30,8 +30,8 @@ A contagem das alterações do editor fica no selo do botão "Enviar ao
 Lattes", no cabeçalho, e no aviso de pendências no alto da página. O que
 está no Lattes e ainda não foi publicado e a data da última publicação ficam
 numa linha discreta no alto do painel "Enviar ao Lattes", por exemplo `3 no
-Lattes · publicado em 17/08/2026`; a contagem do Lattes abre o registro do
-enviado (aba "Enviado"). O canto esquerdo do cabeçalho mostra o símbolo e o
+Lattes · publicado em 17/08/2026`; a contagem do Lattes abre o histórico do
+enviado, no fim do painel. O canto esquerdo do cabeçalho mostra o símbolo e o
 nome do app.
 
 As contagens de 2 e 3 o app já sabe (lista de alterações e registro do

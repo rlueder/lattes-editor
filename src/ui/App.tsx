@@ -52,6 +52,7 @@ import { Topbar } from './Topbar.tsx';
 import { useBridge } from './use-bridge.ts';
 import { useChanges } from './use-changes.ts';
 import { useFocusShell } from './use-focus-mode.ts';
+import { useFormLacksFor } from './use-form-lacks.ts';
 import { useHistoryDialog } from './use-history-dialog.ts';
 import { useLattesOpen } from './use-lattes-open.ts';
 import { useLattesReload } from './use-lattes-reload.ts';
@@ -103,6 +104,7 @@ export function App() {
   const incoming = useIncoming(session, setSession, onEdit);
   // Data da exportação carregada, lida uma vez por arquivo.
   const originalXml = session?.meta.originalXml;
+  const formLacksFor = useFormLacksFor(originalXml, session?.doc.root);
   const exportedOn = useMemo(() => exportDateOf(originalXml), [originalXml]);
 
   // O documento é mutado no lugar; `version` é o que avisa que ele mudou.
@@ -248,7 +250,7 @@ export function App() {
   const profile = profileOf(session.doc, session.meta.fileName, exportedOn);
 
   return (
-    <ShellWithLists features={bridge.features} focus={focusShell}>
+    <ShellWithLists features={bridge.features} focus={focusShell} formLacks={formLacksFor}>
       <Topbar
         ref={topbarRef}
         focus={focusShell.menuItem}
@@ -359,6 +361,11 @@ export function App() {
         file={exportFile}
         open={exportOpen}
         pending={production.summaries}
+        publish={{
+          checks,
+          lattesId: getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR'),
+          originalXml: session.meta.originalXml,
+        }}
         strip={stripFor(production.pending.length + changes.open, bridge)}
         onClose={() => setExportOpen(false)}
         onDiagnosis={() => setDiagnosisOpen(true)}
@@ -369,16 +376,6 @@ export function App() {
           setExportOpen(false);
           production.openItem(seq);
         }}
-        onPublish={() => setPublishOpen(true)}
-      />
-
-      <PublishPanel
-        bridge={bridge}
-        checks={checks}
-        lattesId={getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR')}
-        open={publishOpen}
-        originalXml={session.meta.originalXml}
-        onClose={() => setPublishOpen(false)}
       />
 
       {reloadDialog}

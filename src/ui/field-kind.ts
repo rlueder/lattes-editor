@@ -1,6 +1,7 @@
 // Que tipo de controle um atributo merece na tela.
 
 import { elementLabel } from '../labels/labels.ts';
+import { lattesSchema } from '../schema/lattes.ts';
 import type { AttributeSpec } from '../schema/types.ts';
 import { controllersFirst } from './field-dependencies.ts';
 import { formLayout, formSlot, IN_ENGLISH, isEnglishAttr, OTHER_DATA } from './form-order.ts';
@@ -367,4 +368,16 @@ function groupByPreview(
       label,
       system: label === 'Códigos do Lattes',
     }));
+}
+
+/**
+ * O schema não enumera alguns atributos que outros elementos enumeram com o
+ * mesmo nome (o STATUS-DO-CURSO do pós-doutorado é texto livre, mas vem
+ * "CONCLUIDO" como nos outros níveis): o valor que é de um desses enumerados
+ * se lê pelo mesmo rótulo.
+ */
+export function enumElsewhere(attr: string, value: string): boolean {
+  return Object.values(lattesSchema.elements).some((e) =>
+    e.attributes.some((a) => a.name === attr && a.enum?.includes(value)),
+  );
 }

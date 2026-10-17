@@ -28,14 +28,38 @@ export function splitByRoute(
   return { conector: pick(true), pendente: pick(false) };
 }
 
+/**
+ * O motivo é do Lattes (o formulário não tem o campo, ou não aceita o valor),
+ * e não trabalho que falta no editor. Os motivos seguem duas formas: "O
+ * formulário de X do Lattes não tem: …" e "… que o (formulário do) Lattes não
+ * tem: …", mais o rádio que não volta a vazio e o valor que o Lattes não aceita.
+ */
+export function lattesLacks(reason: string): boolean {
+  return /(formulário|Lattes)[^.;]* não (tem|aceita|volta)/.test(reason);
+}
+
+/**
+ * Separa o que fica fora do conector: o que o formulário do Lattes não tem
+ * onde gravar e o que o editor ainda não envia. Cada alteração leva o motivo
+ * do plano; sem motivo (não entrou no plano), fica com o editor.
+ */
+export function splitPending(
+  groups: ChangeGroup[],
+  reasons: ReadonlyMap<string, string>,
+): { editor: ChangeGroup[]; lattes: ChangeGroup[] } {
+  const pick = (byLattes: boolean) =>
+    groups
+      .map((g) => ({
+        ...g,
+        entries: g.entries.filter((e) => lattesLacks(reasons.get(e.change.key) ?? '') === byLattes),
+      }))
+      .filter((g) => g.entries.length > 0);
+  return { editor: pick(false), lattes: pick(true) };
+}
+
 /** Quantas coisas esperam ir ao Lattes: itens novos mais alterações. */
 export function toSendCount(newItems: number, groups: ChangeGroup[]): number {
   return newItems + changeCount(groups);
-}
-
-/** A aba que abre: "A enviar" quando há algo esperando; senão o registro, se houver. */
-export function initialTab(toSend: number, sent: number): PanelTab {
-  return toSend === 0 && sent > 0 ? 'enviado' : 'a-enviar';
 }
 
 let requested: PanelTab | undefined;

@@ -1,7 +1,8 @@
 // Formulários que só entram no simulado para o censo (LAT-55): trabalhos
 // técnicos (lista, inclusão e edição), a inclusão da formação complementar e
 // a de licenças. Só GET: o censo nunca envia, e um POST aqui responde que não
-// é simulado.
+// é simulado. A exceção é a alteração de trabalho técnico, que grava as
+// grades (grades.ts) para o conector de palavras-chave.
 //
 // Nomes, tipos, limites e opções dos campos são os observados: a seção 16 de
 // docs/lattes_internals.md e a captura de 13/10/2026 (docs/lattes-listas/).
@@ -11,6 +12,7 @@
 
 import { childElements, getAttr, type XElement } from '../../src/model/xml.ts';
 import type { LattesState } from './estado.ts';
+import { GRID_HIDDEN, gridScripts, techWorkPost } from './grades.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
 import { html, type Routes, type SimResponse } from './tipos.ts';
@@ -103,13 +105,14 @@ function techWorkForm(req: SimRequest, state: LattesState): SimResponse {
     h.hidden('f_ctr', item ? 'U' : 'I'),
     h.hidden('f_cod', state.code),
     h.hidden('f_seq', seq ?? ''),
-    ...['f_autores_l', 'f_plv_l', 'f_setor_l', 'f_area_l'].map((n) => h.hidden(n, '')),
+    GRID_HIDDEN,
   ].join('');
   const body = `<form name="GN_RELATORIO" method="post" action="PKG_RELATORIO.FORM">
 <table>${rows}</table>
 ${hidden}
 ${h.formButtons(Boolean(item))}
 </form>
+${gridScripts(item)}
 ${h.formScripts('GN_RELATORIO', item ? 'Deseja realmente excluir esta produção?' : undefined)}`;
   return html(h.page('Trabalhos técnicos', body));
 }
@@ -186,6 +189,6 @@ export const CENSO_ROUTES: Routes = {
       ),
     ),
   'pkg_relatorio.form': (req, state) =>
-    req.method === 'POST' ? notSimulated() : techWorkForm(req, state),
+    req.method === 'POST' ? techWorkPost(req, state) : techWorkForm(req, state),
   'pkg_relatorio.lista': (_req, state) => techWorkList(state),
 };

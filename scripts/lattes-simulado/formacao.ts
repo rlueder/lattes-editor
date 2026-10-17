@@ -1,16 +1,17 @@
 // Formação acadêmica no Lattes simulado: a lista (pkg_formacao.lista, com
 // f_tipo), o formulário GN_FORMACAO2 de alteração e de inclusão, e o POST
 // pkg_formacao.FORM com f_ctr U, I ou E. Campos da seção 17 de
-// docs/lattes_internals.md (observados no mestrado); o simulado usa os mesmos
-// campos em todos os níveis, o que o Lattes não faz (a tabela da seção 17
-// mostra o que muda por nível).
+// docs/lattes_internals.md; o que cada nível mostra, traz oculto ou não tem
+// sai do censo de 15/10/2026 (entradas formacao-FA-* e formacao-AP-*), com as
+// opções dos rádios de lá.
 
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
-import { AGENCIES, COURSES, withLetter } from './buscas.ts';
+import { AGENCIES, COURSES, institutionsOf, withLetter } from './buscas.ts';
 import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
 import type { LattesState } from './estado.ts';
+import { type CapturedField, capturedForm, capturedOptions } from './formulario-censo.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
 import { html, notFound, type Routes, type SimResponse } from './tipos.ts';
@@ -43,6 +44,9 @@ const TITLES = [
   'TITULO-DO-TRABALHO',
 ];
 const ADVISORS = ['NOME-COMPLETO-DO-ORIENTADOR', 'NOME-DO-ORIENTADOR'];
+/** A instituição do doutorado (ou da graduação) sanduíche, pela busca com f_sta_outra=S. */
+const DOUT_INST = ['CODIGO-INSTITUICAO-DOUT', 'CODIGO-INSTITUICAO-GRAD'];
+const DOUT_INST_NAME = ['NOME-INSTITUICAO-DOUT', 'NOME-INSTITUICAO-GRAD'];
 
 /** O atributo que o elemento tem, entre os candidatos, pelo schema. */
 function attrOf(el: XElement, candidates: string[]): string | undefined {
@@ -98,9 +102,26 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
   const inst = (el: XElement) => withLetter(state, getAttr(el, 'CODIGO-INSTITUICAO') ?? '');
   const instWrite: Binding['write'] = (el, value) =>
     setIfKnown(el, 'CODIGO-INSTITUICAO', value.replace(/^[A-Za-z]/, ''));
+  // A do sanduíche: o servidor tira o nome do código (inferido, como a agência).
+  const doutInst = (el: XElement) => {
+    const a = attrOf(el, DOUT_INST);
+    return a ? withLetter(state, getAttr(el, a) ?? '') : '';
+  };
+  const doutWrite: Binding['write'] = (el, value) => {
+    const a = attrOf(el, DOUT_INST);
+    const n = attrOf(el, DOUT_INST_NAME);
+    if (!value || !a || !n) return;
+    setAttr(el, a, value.replace(/^[A-Za-z]/, ''));
+    setAttr(el, n, institutionsOf(state).find((i) => i.code === value)?.name ?? '');
+  };
   return [
     {
-      ...oneOf('f_tpo_doutorado', ['TIPO-MESTRADO', 'TIPO-DOUTORADO'], undefined, 'radio'),
+      ...oneOf(
+        'f_tpo_doutorado',
+        ['TIPO-MESTRADO', 'TIPO-DOUTORADO', 'TIPO-GRADUACAO'],
+        undefined,
+        'radio',
+      ),
       options: [
         ['N', 'Normal'],
         ['S', 'Sanduíche'],
@@ -137,6 +158,15 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
     oneOf('f_titulo', TITLES, 254),
     oneOf('f_orient', ADVISORS, 60),
     attr('f_coorient', 'NOME-DO-CO-ORIENTADOR', 'text', { maxLength: 60 }),
+    // Os blocos do sanduíche e da cotutela (ligação pelo nome, inferida).
+    oneOf('f_orient_dout', ['NOME-ORIENTADOR-DOUT', 'NOME-ORIENTADOR-GRAD'], 60),
+    { ...oneOf('f_inst_dout', DOUT_INST_NAME, 75), disabled: true },
+    none('f_meses_sw', 'text'),
+    oneOf('f_orient_dout_sw', ['NOME-DO-ORIENTADOR-SANDUICHE'], 60),
+    none('f_inst_dout_sw', 'text'),
+    none('f_meses_sw_aux', 'text'),
+    oneOf('f_orient_dout_ct', ['NOME-DO-ORIENTADOR-CO-TUTELA'], 60),
+    none('f_inst_dout_ct', 'text'),
     none('f_plv_l'),
     none('f_setor_l'),
     none('f_area_l'),
@@ -150,6 +180,22 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
     // A busca grava o código com a letra: V em f_cod_inst, as outras em f_cod_inst2.
     hiddenFrom('f_cod_inst', (el) => (inst(el).startsWith('V') ? inst(el) : ''), instWrite),
     hiddenFrom('f_cod_inst2', (el) => (inst(el).startsWith('V') ? '' : inst(el)), instWrite),
+    hiddenFrom(
+      'f_cod_inst_dout',
+      (el) => (doutInst(el).startsWith('V') ? doutInst(el) : ''),
+      doutWrite,
+    ),
+    hiddenFrom(
+      'f_cod_inst2_dout',
+      (el) => (doutInst(el).startsWith('V') ? '' : doutInst(el)),
+      doutWrite,
+    ),
+    ...[
+      'f_cod_inst_dout_sw',
+      'f_cod_inst2_dout_sw',
+      'f_cod_inst_dout_ct',
+      'f_cod_inst2_dout_ct',
+    ].map((n) => none(n)),
     hiddenFrom(
       'f_inst_old',
       (el) => getAttr(el, 'NOME-INSTITUICAO') ?? '',
@@ -167,18 +213,22 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
       (el) => (courseLetter(el) === 'V' ? '' : (getAttr(el, 'CODIGO-CURSO') ?? '')),
       (el, v) => setIfKnown(el, 'CODIGO-CURSO', v),
     ),
+    // O Lattes guarda o nome do curso sem o código CAPES que o texto da opção
+    // traz entre parênteses (observado em 16/10/2026).
     hiddenFrom(
       'f_curso_old',
       (el) => getAttr(el, 'NOME-CURSO') ?? '',
-      (el, v) => setIfKnown(el, 'NOME-CURSO', v),
+      (el, v) => setIfKnown(el, 'NOME-CURSO', v.replace(/\s*\([^()]*\)\s*$/, '').trim()),
     ),
     // atribuir() grava o código; o nome, o servidor tira da lista (inferido).
     hiddenFrom(
       'f_agencia',
       (el) => getAttr(el, 'CODIGO-AGENCIA-FINANCIADORA') ?? '',
       (el, v) => {
-        setIfKnown(el, 'CODIGO-AGENCIA-FINANCIADORA', v);
-        setIfKnown(el, 'NOME-AGENCIA', AGENCIES.find(([c]) => c === v)?.[1] ?? '');
+        // Vazio tira a agência (o agnull() da página, inferido).
+        if (!attrOf(el, ['CODIGO-AGENCIA-FINANCIADORA'])) return;
+        setAttr(el, 'CODIGO-AGENCIA-FINANCIADORA', v);
+        setAttr(el, 'NOME-AGENCIA', AGENCIES.find(([c]) => c === v)?.[1] ?? '');
       },
     ),
     none('f_id_orientador'),
@@ -194,6 +244,34 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
     fixed('f_tipo', ids.f_tipo ?? 'FA'),
     fixed('f_nivel', ids.f_nivel ?? ''),
   ];
+}
+
+/** O código de f_nivel de cada elemento. */
+const CODES = Object.fromEntries(Object.entries(LEVELS).map(([code, name]) => [name, code]));
+
+/**
+ * Os campos do formulário do nível como o censo os leu: o que a página mostra
+ * fica com o tipo, as opções e o desabilitado da captura; o que ela traz oculto
+ * vira oculto; o que ela não tem sai.
+ */
+export function levelBindings(all: Binding[], element: string): Binding[] {
+  const code = CODES[element];
+  if (!code) return all;
+  const form = capturedForm(`formacao-${AP_ELEMENTS.has(element) ? 'AP' : 'FA'}-${code}`);
+  const shown = new Map(
+    form.fields.map((f) => [f.name, f as CapturedField & { disabled?: boolean }]),
+  );
+  const hiddenNames = new Set(form.hidden);
+  return all.flatMap((b): Binding[] => {
+    const f = shown.get(b.name);
+    if (f) {
+      const options = f.type === 'radio' ? capturedOptions(f) : b.options;
+      return [
+        { ...b, disabled: f.disabled ?? false, maxLength: f.maxLength ?? b.maxLength, options },
+      ];
+    }
+    return hiddenNames.has(b.name) ? [{ ...b, disabled: false, kind: 'hidden' }] : [];
+  });
 }
 
 function items(state: LattesState, tipo: string): XElement[] {
@@ -241,8 +319,9 @@ function form(req: SimRequest, state: LattesState): SimResponse {
     f_seq: seq ?? '',
     f_tipo: req.get('f_tipo') ?? 'FA',
   };
+  const name = el?.name ?? LEVELS[nivel] ?? '';
   const body = `<form name="GN_FORMACAO2" method="post" action="pkg_formacao.FORM">
-${renderFields(bindings(state, ids), el)}
+${renderFields(levelBindings(bindings(state, ids), name), el)}
 <p><a href="#" onclick="self.parent.modalCV3.setarUrl('prc_inst_form?f_cod=${state.code}&amp;f_nivel=${nivel}',true); return false;">Buscar instituição</a></p>
 ${h.formButtons(Boolean(el))}
 </form>
@@ -324,7 +403,7 @@ function post(req: SimRequest, state: LattesState): SimResponse {
     );
     // A instituição, o curso e a agência vêm das buscas, pelos ocultos.
     const el = element(name, { NIVEL: nivel, 'SEQUENCIA-FORMACAO': seq });
-    applyFields(bindings(state, {}), el, req);
+    applyFields(levelBindings(bindings(state, {}), name), el, req);
     insertInSchemaOrder(lattesSchema, container, el);
     state.touch();
     return html(back);
@@ -332,7 +411,7 @@ function post(req: SimRequest, state: LattesState): SimResponse {
   const el = bySeq(state, req.get('f_seq'));
   if (!el) return html(h.page('Formação', '<p>Registro não encontrado.</p>'));
   if (ctr === 'E') state.remove(container, el);
-  else if (ctr === 'U') applyFields(bindings(state, {}), el, req);
+  else if (ctr === 'U') applyFields(levelBindings(bindings(state, {}), el.name), el, req);
   else return html(back);
   state.touch();
   return html(back);

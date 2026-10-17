@@ -3,6 +3,7 @@
 // field-labels.ts; ficam aqui para o módulo da inclusão não depender dele.
 
 export const CREATE_FIELD_LABELS: Record<string, string> = {
+  f_agencia: 'Agência',
   f_ano: 'Ano',
   f_ano_fim: 'Ano de fim',
   F_ANO_FIM: 'Ano de fim',
@@ -11,15 +12,26 @@ export const CREATE_FIELD_LABELS: Record<string, string> = {
   f_ano_obten: 'Ano de obtenção do título',
   F_BOLSA: 'Bolsa',
   f_carga: 'Carga horária',
+  f_cod_curso: 'Curso',
+  f_cod_curso2: 'Curso',
+  f_cod_inst: 'Instituição',
+  f_cod_inst2: 'Instituição',
   f_cod_reg: 'Número do registro',
   f_coorient: 'Coorientador',
+  f_curso: 'Curso',
+  f_curso_old: 'Curso',
   f_dta_conc: 'Data de concessão',
   f_dta_dep: 'Data de depósito ou do registro',
+  f_enqua: 'Enquadramento funcional',
   f_finalidade: 'Finalidade',
   f_home_page: 'Home page',
   f_inst: 'Instituição',
   f_inst_financ: 'Instituição financiadora',
+  f_inst_old: 'Instituição',
+  f_mes_fim: 'Mês de fim',
+  f_mes_ini: 'Mês de início',
   f_natureza: 'Natureza',
+  f_nme_agencia: 'Agência',
   f_nro_deposito_pct: 'Número do depósito PCT',
   F_NRO_DOUTORADO: 'Alunos de doutorado',
   F_NRO_ESPECIALIZACAO: 'Alunos de especialização',
@@ -30,14 +42,17 @@ export const CREATE_FIELD_LABELS: Record<string, string> = {
   f_pais: 'País',
   f_ref: 'Descrição',
   f_ref_en: 'Descrição (inglês)',
+  f_regime: 'Regime de trabalho',
   f_sta_inovacao: 'Potencial de inovação',
   F_STATUS: 'Situação do curso',
+  f_stavinc: 'Vínculo empregatício',
   f_tipo: 'Tipo',
   f_titulo: 'Título',
   f_titulo_en: 'Título (inglês)',
   f_tpo_doutorado: 'Tipo',
   F_TPO_NATUREZA: 'Natureza',
   F_TPO_SITUACAO: 'Situação',
+  f_vinc: 'Vínculo',
 };
 
 /** Os códigos de rádio e de lista, com o texto dos formulários (docs/lattes_internals.md, seções 5 e 17). */
@@ -54,7 +69,8 @@ export const CREATE_VALUE_LABELS: Record<string, Record<string, string>> = {
     MU: 'Patente de Modelo de Utilidade',
     PI: 'Patente de Invenção',
   },
-  f_tpo_doutorado: { N: 'Normal', S: 'Sanduíche' },
+  // Doutorado: também co-tutela e co-tutela/sanduíche (censo de 15/10/2026).
+  f_tpo_doutorado: { C: 'Co-tutela', CS: 'Co-tutela/sanduíche', N: 'Normal', S: 'Sanduíche' },
   F_TPO_NATUREZA: {
     D: 'Desenvolvimento',
     E: 'Extensão',

@@ -11,14 +11,21 @@ import type { LattesStatus } from './lattes-status.ts';
 import type { PhotoFailure } from './photo.ts';
 import type { BridgeOp } from './plan.ts';
 import type { PublishRequest, PublishResult, SendScreen } from './publish.ts';
+import type { RoundPause } from './write-brake.ts';
 
 export const PROTOCOL_VERSION = 1;
 export const EDITOR_SOURCE = 'lattes-editor';
 export const BRIDGE_SOURCE = 'lattes-conector';
 
 export type EditorMessage =
-  /** lattesId: o currículo aberto no editor; o conector só grava se a sessão do Lattes for dele. */
-  | { lattesId?: string; ops: BridgeOp[]; type: 'enviar' }
+  /**
+   * lattesId: o currículo aberto no editor; o conector só grava se a sessão
+   * do Lattes for dele. start: a gravação começa já, sem o "Aplicar todas"
+   * do painel (capacidade 'gravar-pelo-editor'); sem ele, a fila só espera.
+   */
+  | { lattesId?: string; ops: BridgeOp[]; start?: boolean; type: 'enviar' }
+  /** Segue com o resto da fila depois da pausa no teto da rodada (write-brake.ts). */
+  | { type: 'continuar' }
   /** version e features: do app (src/bridge/compat.ts); versões antigas mandam só o tipo. */
   | { features?: string[]; type: 'ola'; version?: string }
   | { type: 'parar' }
@@ -86,7 +93,8 @@ export type BridgeMessage =
   | { code: string; lattesId?: string; type: 'codigo-cv' }
   /** O que o menu do Lattes mostra: data da última publicação e pendência. */
   | { lattesId?: string; status: LattesStatus; type: 'estado-lattes' }
-  | { result: OpResult; type: 'resultado' }
+  /** replay: repetido na reconexão do editor (o original pode ter se perdido). */
+  | { replay?: boolean; result: OpResult; type: 'resultado' }
   /**
    * Os itens da página de conferência do Lattes, ou o motivo de não ter
    * lido; lattesId diz de qual currículo é a sessão.
@@ -106,7 +114,11 @@ export type BridgeMessage =
       type: 'curriculo';
       zip?: string;
     }
-  | { type: 'fim' }
+  /**
+   * A fila parou. pause: parou no teto de gravações da rodada
+   * (src/bridge/write-brake.ts) e o resto espera o "Continuar".
+   */
+  | { pause?: RoundPause; type: 'fim' }
   /** O resultado da troca da foto pedida com o mesmo id. */
   | { detail?: string; id: string; ok: boolean; reason?: PhotoFailure; type: 'foto' }
   /**

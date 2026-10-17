@@ -172,10 +172,13 @@ describe('formação complementar: plano', () => {
       'O formulário de formação complementar do Lattes não tem os anos',
     );
     expect(onlyReason((root) => setAttr(compl(root, '4'), 'CARGA-HORARIA', 'vinte'))).toMatch(
-      /^Campos não suportados ainda: /,
+      /^Valor que o formulário de formação complementar do Lattes não aceita: .*só com dígitos/,
     );
     expect(onlyReason((root) => setAttr(compl(root, '4'), 'NOME-CURSO', 'Outro curso'))).toMatch(
-      /^Campos não suportados ainda: /,
+      /só mudam pelas buscas do Lattes/,
+    );
+    expect(onlyReason((root) => setAttr(compl(root, '4'), 'NIVEL', 'E'))).toMatch(
+      /^O nível é o tipo da formação complementar/,
     );
   });
 
@@ -298,7 +301,7 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
     expect(await applyOp(op, lattes.port, GATES)).toMatchObject({
       detail:
         'O Lattes incluiu uma linha nova em vez de alterar (3 antes, 4 depois): confira a lista no Lattes e exclua a cópia',
-      status: 'erro',
+      status: 'divergente',
     });
   });
 
@@ -384,7 +387,7 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
     });
     const op = onlyOp((root) => setAttr(compl(root, '5'), 'CARGA-HORARIA', '60'));
     const r = await applyOp(op, lattes.port, GATES);
-    expect(r.status).toBe('erro');
+    expect(r.status).toBe('divergente');
     expect(r.detail).toMatch(/^Outros campos mudaram no Lattes: .*Instituição/);
   });
 

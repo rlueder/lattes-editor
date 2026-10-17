@@ -6,10 +6,12 @@
 // um Lattes falso: o acesso à rede e ao DOM entra pela porta (LattesPort).
 
 import {
+  BIOGRAPHIC_FULL_ENABLED,
   BIOGRAPHIC_SPECS,
   type BiographicOp,
   isBiographicOp,
   locateBiographic,
+  needsFullBiographic,
 } from './biographic.ts';
 import { applyCreateAtuacao } from './create.ts';
 import {
@@ -52,8 +54,11 @@ import {
   successfulPairs,
   withCheckRules,
 } from './form.ts';
+import { resolveFormacao } from './formacao-lookups.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
 import type { BridgeOp, FieldValues } from './plan.ts';
+import { applyProduction } from './production/apply.ts';
+import { isProductionOp, type ProductionOp } from './production/plan.ts';
 
 export interface LattesPort {
   /** GET de um caminho relativo a /cvlattesweb/; texto já decodificado de Latin-1. */
@@ -72,6 +77,13 @@ export interface OpResult {
   assigned?: Record<string, string>;
   detail: string;
   key: string;
+  /**
+   * Conferido, menos uma parte que o conector não relê (a equipe de um
+   * projeto, as disciplinas de uma atividade): o item foi criado e repetir
+   * duplicaria, então a fila segue, mas o aviso em detail fica à vista no
+   * andamento e no registro do enviado.
+   */
+  partial?: boolean;
   status: ResultStatus;
 }
 
@@ -80,6 +92,7 @@ type EditOp = Exclude<
   | BiographicOp
   | DeleteOp
   | EventoOp
+  | ProductionOp
   | ListEditOp
   | {
       kind:
@@ -212,11 +225,14 @@ function changedNames(a: Pairs, b: Pairs): string[] {
  * operação de um tipo cuja chave ela tem desligada para sem enviar nada.
  */
 export interface ApplyGates {
+  /** BIOGRAPHIC_FULL_ENABLED; sem valor, desligada. */
+  biographicFull?: boolean;
   editEvento: boolean;
   lists: ReadonlySet<ListEditKind>;
 }
 
 export const BUILD_GATES: ApplyGates = {
+  biographicFull: BIOGRAPHIC_FULL_ENABLED,
   editEvento: EDIT_EVENTO_ENABLED,
   lists: enabledListEdits(),
 };
@@ -225,6 +241,9 @@ export const BUILD_GATES: ApplyGates = {
 function gatedOut(op: BridgeOp, gates: ApplyGates): string | undefined {
   if (isListEditOp(op) && !gates.lists.has(op.kind)) {
     return 'Esta extensão não tem o formulário deste tipo no contrato; a alteração fica à mão';
+  }
+  if (isBiographicOp(op) && !gates.biographicFull && needsFullBiographic(op)) {
+    return 'Esta extensão não grava instituição, curso e agência pelas buscas, pós-doutorado, livre-docência nem outras informações; a alteração fica à mão';
   }
   if (isEventoOp(op) && !gates.editEvento && isFullEvento(op)) {
     return 'Esta extensão só altera eventos de ouvinte; a alteração fica à mão';
@@ -244,6 +263,7 @@ export async function applyOp(
   if (op.kind === 'criar-dado') return applyCreateGeneral(op, port);
   if (op.kind === 'criar-atividade') return applyCreateAtividade(op, port);
   if (op.kind === 'criar-evento') return applyCreateEvento(op, port);
+  if (isProductionOp(op)) return applyProduction(op, port);
   if (op.kind === 'criar-vinculo') return applyCreateVinculo(op, port);
   if (isDeleteOp(op)) return applyDelete(op, port);
   const result = (status: ResultStatus, detail: string): OpResult => ({
@@ -299,7 +319,18 @@ export async function applyOp(
     if (wrong.length > 0) {
       return result('divergente', `O Lattes não está como o editor espera: ${labels(wrong)}`);
     }
-    for (const [field, value] of Object.entries(op.set)) {
+    // Formação com instituição, curso ou agência trocados: as buscas do Lattes
+    // dão os ocultos que vão junto (formacao-lookups.ts). `check` é o que a
+    // releitura espera onde difere do enviado.
+    let set = op.set;
+    let check: FieldValues = {};
+    if (op.kind === 'formacao' && op.lookups) {
+      const resolved = await resolveFormacao(op, port, before.pairs);
+      if ('status' in resolved) return result(resolved.status, resolved.detail);
+      set = { ...op.set, ...resolved.set };
+      check = resolved.check;
+    }
+    for (const [field, value] of Object.entries(set)) {
       const limit = before.controls.find((c) => c.name === field)?.maxLength;
       if (value && limit && limit > 0 && value.length > limit) {
         return result(
@@ -315,7 +346,7 @@ export async function applyOp(
       return result('conferido', 'O Lattes já estava assim; nada foi enviado');
     }
 
-    const next = setPairs(before.pairs, op.set);
+    const next = setPairs(before.pairs, set);
     const response = await port.post(action, encodeLatin1Form(next));
     if (isLogonPage(response)) return result('sessao', 'A sessão do Lattes expirou; entre de novo');
 
@@ -326,20 +357,20 @@ export async function applyOp(
       const now = await countListEdits(op.kind, menu, get);
       if (now > listed) {
         return result(
-          'erro',
+          'divergente',
           `O Lattes incluiu uma linha nova em vez de alterar (${listed} antes, ${now} depois): confira a lista no Lattes e exclua a cópia`,
         );
       }
     }
 
     const after = await readPairs(port, path, name);
-    const notSaved = mismatches(after.pairs, op.set);
+    const notSaved = mismatches(after.pairs, { ...set, ...check });
     if (notSaved.length > 0) {
-      return result('erro', `O Lattes não gravou: ${labels(notSaved)}`);
+      return result('divergente', `O Lattes não gravou: ${labels(notSaved)}`);
     }
     // f_vinculo é preenchido no envio (check()); a página sempre o traz vazio.
     const unexpected = changedNames(before.pairs, after.pairs).filter(
-      (n) => !(n in op.set) && n !== 'f_vinculo',
+      (n) => !(n in set) && n !== 'f_vinculo',
     );
     // Campos desabilitados não vão nos pares; os que identificam o item
     // (instituição e curso da formação complementar) se conferem à parte.
@@ -349,7 +380,7 @@ export async function applyOp(
       if (!same(value(before.controls, n), value(after.controls, n))) unexpected.push(n);
     }
     if (unexpected.length > 0) {
-      return result('erro', `Outros campos mudaram no Lattes: ${labels(unexpected)}`);
+      return result('divergente', `Outros campos mudaram no Lattes: ${labels(unexpected)}`);
     }
     return result('conferido', 'Gravado e conferido no Lattes');
   } catch (err) {

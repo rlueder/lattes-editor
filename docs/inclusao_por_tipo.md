@@ -253,10 +253,10 @@ linha (`src/bridge/author-grid.ts`), mas só quando ela traz o nome completo
 ou uma das citações do currículo; senão, para sem enviar. A linha não tem o
 número do Lattes, e a sessão já é conferida pelo número antes da fila. Com
 isso, cinco registros voltaram a ir pelo conector: a cultivar protegida e a
-registrada, o desenho industrial, a marca e a topografia de circuito. Como a
-lista de inventores não é relida depois do envio, a inclusão volta como
-divergente, com o pedido de conferir os inventores no Lattes, e não como
-conferida. A patente continua à mão: exige também o titular ou depositante,
+registrada, o desenho industrial, a marca e a topografia de circuito. A
+lista de inventores não é relida depois do envio: a inclusão volta conferida
+pelos outros campos, com o pedido de conferir os inventores no Lattes no
+registro do enviado. A patente continua à mão: exige também o titular ou depositante,
 que vem do vetor `titularPessoaDP`, cuja forma não foi lida.
 
 O programa de computador registrado é um `SOFTWARE` com registro: a lista de

@@ -4,6 +4,7 @@
 import { type ReactNode, useEffect, useId, useState } from 'react';
 
 import { attributeLabelIn, elementLabel, enumLabel } from '../labels/labels.ts';
+import { applyLinkedAttrs } from '../model/linked-attrs.ts';
 import { repairMojibake } from '../model/mojibake.ts';
 import { getAttr, setAttr, type XElement } from '../model/xml.ts';
 import {
@@ -15,6 +16,7 @@ import {
 import type { AttributeSpec } from '../schema/types.ts';
 import { parseEmails, parseSocial } from './contacts.ts';
 import { DateField } from './DateField.tsx';
+import { displayValue } from './display.ts';
 import { useDraft, usePartKey } from './draft-context.ts';
 import {
   codeAttrFor,
@@ -25,6 +27,7 @@ import {
   isBooleanAttr,
   isSystemAttr,
 } from './field-kind.ts';
+import { useFormLacks } from './form-lacks-context.ts';
 import { LockIcon } from './icons.tsx';
 import { displayLattesDate, isLattesDateAttr, isValidLattesDate } from './lattes-date.ts';
 import { useLattesListsContext } from './lattes-lists-context.ts';
@@ -72,6 +75,7 @@ export function AttributeField({
 }: Props) {
   const hideSensitive = useHideSensitive();
   const lists = useLattesListsContext();
+  const formLacks = useFormLacks();
   // Prévia do modo de leitura: acompanha o texto antes de gravar.
   const onDraft = useDraft();
   const partKey = usePartKey()?.(el, name);
@@ -92,6 +96,7 @@ export function AttributeField({
     change(next);
     if (next === (getAttr(el, name) ?? '')) return;
     setAttr(el, name, next);
+    applyLinkedAttrs(el, name);
     onEdit(`${elementLabel(el.name)} · ${text}`);
   };
   const shownError = error ?? linkError(name, value);
@@ -145,6 +150,21 @@ export function AttributeField({
         </div>
       );
     }
+  }
+
+  // Item que já está no Lattes, campo que o formulário do Lattes não tem:
+  // alterar aqui não chegaria lá, então fica só para ler.
+  const lacks = formLacks?.field(el, name);
+  if (lacks) {
+    return (
+      <div className="field field-readonly field-locked">
+        <ReadonlyLabel text={text} why={`${lacks}. Alterar aqui não chega ao Lattes.`} />
+        <span className="locked-value">
+          {value ? displayValue(el.name, name, value) : '(vazio)'}
+        </span>
+        <span className="muted field-note">Não existe no formulário do Lattes</span>
+      </div>
+    );
   }
 
   // Listas lidas no Lattes pelo conector (LAT-48): sem elas, o campo de sempre.

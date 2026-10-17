@@ -208,7 +208,7 @@ describe('incluir o projeto no Lattes falso', () => {
     expect(result).toMatchObject({
       assigned: { 'SEQUENCIA-PROJETO': '1' },
       detail: TEAM_UNREAD,
-      status: 'divergente',
+      status: 'conferido',
     });
     expect(fake.posts.map((p) => p.path)).toEqual(['PKG_PROJETO.FORM']);
     expect(fake.posts[0]!.body).toMatchObject({
@@ -236,7 +236,7 @@ describe('incluir o projeto no Lattes falso', () => {
   it('código com V vai em f_cod_inst', async () => {
     const fake = fakeProjeto();
     const v = { ...op(), institutionCode: '007900000004' };
-    expect(await applyCreateProjeto(v, fake.port)).toMatchObject({ status: 'divergente' });
+    expect(await applyCreateProjeto(v, fake.port)).toMatchObject({ status: 'conferido' });
     // O vínculo dessa atuação terminou em 2018; o projeto em andamento vai sem fim.
     expect(fake.posts[0]!.body).toMatchObject({
       F_ANO_FIM: '',
@@ -283,7 +283,7 @@ describe('incluir o projeto no Lattes falso', () => {
       await applyCreateProjeto(op(), fakeProjeto({ tamper: { f_titulo: 'Outro' } }).port),
     ).toMatchObject({
       assigned: { 'SEQUENCIA-PROJETO': '1' },
-      detail: expect.stringMatching(/gravado diferente: Título/),
+      detail: expect.stringMatching(/outro valor em: Título/),
       status: 'divergente',
     });
     // A instituição e o vínculo da atuação também são relidos: projeto
@@ -294,14 +294,14 @@ describe('incluir o projeto no Lattes falso', () => {
         fakeProjeto({ tamper: { f_cod_inst2: '009', f_vinc: 'Outro' } }).port,
       ),
     ).toMatchObject({
-      detail: expect.stringMatching(/gravado diferente: f_vinc, f_cod_inst2/),
+      detail: expect.stringMatching(/outro valor em: Vínculo, Instituição/),
       status: 'divergente',
     });
     expect(
       await applyCreateProjeto(op(), fakeProjeto({ unread: ['f_vinc', 'f_regime'] }).port),
     ).toMatchObject({
       assigned: { 'SEQUENCIA-PROJETO': '1' },
-      detail: expect.stringMatching(/não conferido: o formulário relido não traz/),
+      detail: expect.stringMatching(/não deu para reler: /),
       status: 'divergente',
     });
     expect(await applyCreateProjeto(op(), fakeProjeto({ logonOnPost: true }).port)).toMatchObject({

@@ -32,7 +32,60 @@ function menuItems(code: string): [string, string][] {
     ['Projetos de ensino', `pkg_projeto.lista?f_cod_tipo=N&f_cod=${code}`],
     ['Outros projetos', `pkg_projeto.lista?f_cod_tipo=O&f_cod=${code}`],
     ['Prêmios e títulos', `pkg_premio.lista?f_cod=${code}`],
+    // Observados no menu real em 16/10/2026.
+    ['Trabalhos técnicos', `pkg_relatorio.lista?f_cod=${code}`],
+    ['Outra produção bibliográfica', `prc_bib_demais_lista?f_cod_tipo=1Z&f_cod=${code}`],
+    // As outras listas bibliográficas: as da captura de 13/10/2026 e, para
+    // artigos publicados e livros, as do catálogo de menus do reconhecimento.
+    ['Artigos completos publicados', `pkg_artigo.lista?f_cod=${code}`],
+    ['Artigos aceitos para publicação', `pkg_artigo_pr.lista?f_cod=${code}`],
+    ['Livros e capítulos', `pkg_lvr_cap.lista?f_cod=${code}`],
+    ['Trabalhos em anais', `pkg_trabalho.lista?f_cod=${code}`],
+    ['Textos em jornais ou revistas', `pkg_texto.lista?f_cod=${code}`],
+    ['Tradução', `prc_bib_demais_lista?f_cod_tipo=1A&f_cod=${code}`],
+    ['Partitura musical', `prc_bib_demais_lista?f_cod_tipo=1B&f_cod=${code}`],
     ['Patentes', `PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=PP&f_cod=${code}`],
+    // As listas de orientações e bancas, como na captura de 13/10/2026 (docs/lattes-listas/).
+    ['Orientações concluídas', `pkg_orient.lista?f_tipo=C&f_cod=${code}`],
+    ['Orientações em andamento', `pkg_orient.lista?f_tipo=A&f_cod=${code}`],
+    ['Bancas de trabalhos de conclusão', `pkg_banca_trab.lista?f_cod=${code}`],
+    ['Bancas julgadoras', `pkg_banca_julg.lista?f_cod=${code}`],
+    // Produções técnicas e artísticas: as listas da captura de 13/10/2026
+    // (docs/lattes-listas/), de onde se abriu cada inclusão. Inferido: que o
+    // menu as abra com esses parâmetros (a das artísticas foi vista só com
+    // f_sta_divulgacao_cientifica=S).
+    ['Produtos tecnológicos', `pkg_produto.lista?f_cod=${code}`],
+    ['Processos ou técnicas', `pkg_processo.lista?f_cod=${code}`],
+    ...(
+      [
+        ['Apresentação de trabalho', '2J'],
+        ['Cartas, mapas ou similares', '2A'],
+        ['Curso de curta duração ministrado', '2B'],
+        ['Desenvolvimento de material didático ou instrucional', '2C'],
+        ['Editoração', '2D'],
+        ['Manutenção de obra artística', '2E'],
+        ['Maquete', '2F'],
+        ['Organização de evento', '2G'],
+        ['Programa de rádio ou TV', '2H'],
+        ['Relatório de pesquisa', '2I'],
+        ['Redes sociais, websites e blogs', '2L'],
+        ['Outra produção técnica', '2Z'],
+      ] as const
+    ).map(([label, tipo]): [string, string] => [
+      label,
+      `prc_tec_demais_lista?f_cod_tipo=${tipo}&f_cod=${code}`,
+    ]),
+    ...(
+      [
+        ['Artes cênicas', 'AC'],
+        ['Música', 'MU'],
+        ['Artes visuais', 'AV'],
+        ['Outra produção artística/cultural', 'OU'],
+      ] as const
+    ).map(([label, tipo]): [string, string] => [
+      label,
+      `pkg_arte_nova.lista?f_cod_tipo=${tipo}&f_cod=${code}`,
+    ]),
     // Os outros registros: a mesma lista com outro f_cod_tipo (reconhecimento,
     // catálogo de menus; o parâmetro de cada um no menu é inferido).
     ...(
@@ -48,6 +101,8 @@ function menuItems(code: string): [string, string][] {
       `PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=${tipo}&f_cod=${code}`,
     ]),
     ['Resumo', `pkg_resume.prc_resume?f_cod=${code}`],
+    // Catálogo de menus do reconhecimento de 10/10/2026 e censo de 15/10/2026.
+    ['Outras informações relevantes', `prc_outras_inf?f_cod=${code}`],
     ['Participação em eventos', `pkg_evento.lista?f_cod=${code}`],
     [
       'Eventos de divulgação científica',

@@ -1,13 +1,16 @@
 // A aba do menu do Lattes: achar, injetar o núcleo do conector (lattes-runner.ts)
 // e as leituras que o editor pede, com o motivo quando não dá.
 
+import type { OpResult } from '../../src/bridge/apply.ts';
 import type { ContractReport } from '../../src/bridge/contract.ts';
 import type { ImportResult } from '../../src/bridge/importar.ts';
 import type { LattesStatus } from '../../src/bridge/lattes-status.ts';
+import type { BridgeOp } from '../../src/bridge/plan.ts';
 import type { BridgeMessage, EditorMessage } from '../../src/bridge/protocol.ts';
 import type { PublishRequest, PublishResult } from '../../src/bridge/publish.ts';
 import { hasConsent } from './consent.ts';
 import { LATTES_MENU, lattesMenus } from './lattes-hosts.ts';
+import { tabReloaded, untilTabCloses } from './tab-guard.ts';
 
 export async function lattesTab(): Promise<number | undefined> {
   // Escolha na montagem: na extensão publicada, o simulado não entra no código.
@@ -15,8 +18,23 @@ export async function lattesTab(): Promise<number | undefined> {
   return tab?.id;
 }
 
+/** Uma chamada à aba que desiste se ela fechar ou não responder (tab-guard.ts). */
+let watchingReloads = false;
+const guarded = <T>(tabId: number, start: () => Promise<T>) => {
+  // A página que recarrega solta a aba travada por uma chamada que passou do
+  // prazo (tab-guard.ts). Registrado na primeira chamada, com o chrome à mão.
+  if (!watchingReloads) {
+    watchingReloads = true;
+    chrome.tabs.onUpdated?.addListener((id, info) => {
+      if (info.status === 'loading') tabReloaded(id);
+    });
+  }
+  return untilTabCloses(tabId, start, chrome.tabs.onRemoved);
+};
 export async function injectRunner(tabId: number): Promise<void> {
-  await chrome.scripting.executeScript({ files: ['lattes-runner.js'], target: { tabId } });
+  await guarded(tabId, () =>
+    chrome.scripting.executeScript({ files: ['lattes-runner.js'], target: { tabId } }),
+  );
 }
 
 /** Roda uma função do núcleo do conector na aba; undefined se a aba não respondeu. */
@@ -35,16 +53,18 @@ async function runInTab<T>(
   ...args: string[]
 ): Promise<T | undefined> {
   await injectRunner(tabId);
-  const [res] = await chrome.scripting.executeScript({
-    args: [name, args] as [string, string[]],
-    func: (fn: string, fnArgs: string[]) =>
-      (
-        globalThis as unknown as {
-          __conector: Record<string, (...a: string[]) => Promise<unknown>>;
-        }
-      ).__conector[fn]!(...fnArgs),
-    target: { tabId },
-  });
+  const [res] = await guarded(tabId, () =>
+    chrome.scripting.executeScript({
+      args: [name, args] as [string, string[]],
+      func: (fn: string, fnArgs: string[]) =>
+        (
+          globalThis as unknown as {
+            __conector: Record<string, (...a: string[]) => Promise<unknown>>;
+          }
+        ).__conector[fn]!(...fnArgs),
+      target: { tabId },
+    }),
+  );
   return res?.result as T | undefined;
 }
 
@@ -242,7 +262,25 @@ export async function answerListRequest(
   return undefined;
 }
 
-/** Relatório de conferência que não chegou a ler o Lattes. */
+/**
+ * Uma operação da fila na aba do Lattes, pelo núcleo do conector injetado
+ * (lattes-runner.ts). A resposta volta crua: quem chama confere
+ * (checkedResult, em src/bridge/write-brake.ts).
+ */
+export async function applyInTab(tabId: number, op: BridgeOp): Promise<unknown> {
+  const [res] = await guarded(tabId, () =>
+    chrome.scripting.executeScript({
+      args: [op] as [BridgeOp],
+      func: (o: BridgeOp) =>
+        (
+          globalThis as unknown as { __conector: { apply(op: BridgeOp): Promise<OpResult> } }
+        ).__conector.apply(o),
+      target: { tabId },
+    }),
+  );
+  return res?.result;
+}
+
 export const failedReport = (detail: string): ContractReport => ({
   checkedAt: new Date().toISOString(),
   detail,
@@ -255,13 +293,15 @@ export const failedReport = (detail: string): ContractReport => ({
 export async function verifyOn(tabId: number): Promise<ContractReport> {
   try {
     await injectRunner(tabId);
-    const [res] = await chrome.scripting.executeScript({
-      func: () =>
-        (
-          globalThis as unknown as { __conector: { verificar(): Promise<ContractReport> } }
-        ).__conector.verificar(),
-      target: { tabId },
-    });
+    const [res] = await guarded(tabId, () =>
+      chrome.scripting.executeScript({
+        func: () =>
+          (
+            globalThis as unknown as { __conector: { verificar(): Promise<ContractReport> } }
+          ).__conector.verificar(),
+        target: { tabId },
+      }),
+    );
     return res?.result ?? failedReport('A aba do Lattes não respondeu');
   } catch (err) {
     return failedReport(err instanceof Error ? err.message : 'Falha inesperada');
@@ -277,14 +317,16 @@ export interface Identity {
 /** Quem é o currículo aberto na sessão do Lattes: código interno e identificador público. */
 export async function sessionIdentity(tabId: number, fresh = false): Promise<Identity> {
   await injectRunner(tabId);
-  const [res] = await chrome.scripting.executeScript({
-    args: [fresh],
-    func: (f: boolean) =>
-      (
-        globalThis as unknown as { __conector: { identity(fresh: boolean): Promise<Identity> } }
-      ).__conector.identity(f),
-    target: { tabId },
-  });
+  const [res] = await guarded(tabId, () =>
+    chrome.scripting.executeScript({
+      args: [fresh],
+      func: (f: boolean) =>
+        (
+          globalThis as unknown as { __conector: { identity(fresh: boolean): Promise<Identity> } }
+        ).__conector.identity(f),
+      target: { tabId },
+    }),
+  );
   return res?.result ?? {};
 }
 

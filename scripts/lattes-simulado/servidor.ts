@@ -28,10 +28,12 @@ import { MENU_ROUTES } from './menu.ts';
 import { PATENTE_ROUTES } from './patente.ts';
 import { buildRequest, type SimRequest } from './pedido.ts';
 import { PREMIOS_COMPLEMENTAR_ROUTES } from './premios-complementar.ts';
+import { productionRoutes } from './producao.ts';
 import { PROJETO_ROUTES } from './projeto.ts';
 import { notFound, type Routes, type SimResponse } from './tipos.ts';
 
 export const ROUTES: Routes = {
+  ...productionRoutes(),
   ...ATUACAO_ROUTES,
   ...BUSCAS_ROUTES,
   ...CENSO_ROUTES,
