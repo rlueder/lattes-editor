@@ -1810,15 +1810,19 @@ a.menu-item.notice {
 }
 
 .sent-head strong {
+  flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
+/* O título quebra em mais linhas; a hora e os botões ficam inteiros. */
 .sent-time {
   margin-left: auto;
   font-size: 12px;
+}
+
+.sent-head > :not(strong) {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* O selo de não conferido e, logo abaixo, "Já conferi no Lattes". */
