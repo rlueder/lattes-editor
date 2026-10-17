@@ -250,19 +250,21 @@ export function planEvento(
   label: string,
   { full = false, siblings = [] }: PlanEventoOptions = {},
 ): Planned | undefined {
-  // Só alteração: item novo vai pelo Importar, e a exclusão tem caminho próprio.
-  if (change.kind !== 'alterado') return undefined;
   const el = chain.at(-1);
   const item = chain.at(-2);
   if (!el || !item || !(item.name in EVENT_CODES)) return undefined;
   const isBasics = el.name === basicsOf(item.name);
   const isDetail = el.name === detailOf(item.name);
+  // Palavras-chave e as outras partes, alteradas ou incluídas num evento que
+  // já está no Lattes: o formulário não tem onde guardá-las.
   if (!isBasics && !isDetail) {
     return {
       reason:
         'O formulário de participação em eventos do Lattes não tem palavras-chave, áreas, setores, participantes nem informações adicionais',
     };
   }
+  // Só alteração: item novo vai pelo Importar, e a exclusão tem caminho próprio.
+  if (change.kind !== 'alterado') return undefined;
   const seq = getAttr(item, 'SEQUENCIA-PRODUCAO');
   if (!seq) return { reason: 'Evento sem número de sequência' };
 

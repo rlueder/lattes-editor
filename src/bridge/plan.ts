@@ -294,6 +294,14 @@ export function planChange(
   if (created) return 'reason' in created ? unsupported(change, label, created.reason) : created;
   // Exclusão: desligada até o teste no Lattes real (delete.ts).
   if (change.kind === 'removido') return planDelete(change, chain, label, deleteItems);
+  // Palavras-chave e outras partes novas num evento: o formulário não tem.
+  const eventPart =
+    change.kind === 'novo' && (editOuvinte || editEvento)
+      ? planEvento(change, chain, label, { full: editEvento, siblings })
+      : undefined;
+  if (eventPart) {
+    return 'reason' in eventPart ? unsupported(change, label, eventPart.reason) : eventPart;
+  }
   if (change.kind !== 'alterado') {
     return unsupported(change, label, 'Incluir ou excluir pelo conector: não suportado ainda');
   }
@@ -439,7 +447,9 @@ export function planChanges(
 }
 
 /** Todas as alterações ligadas, como numa extensão em dia. */
-const ALL_ON: PlanOptions = Object.fromEntries(GATED_EDITS.map((g) => [g.option, g.enabled]));
+export const ALL_ON: PlanOptions = Object.fromEntries(
+  GATED_EDITS.map((g) => [g.option, g.enabled]),
+);
 
 export const OLD_EXTENSION =
   'A extensão do conector instalada ainda não envia esta alteração: atualize a extensão e recarregue esta página';

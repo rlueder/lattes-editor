@@ -15,6 +15,7 @@ import { useEditor } from './editor-context.ts';
 import { type EditFn, ElementView } from './ElementView.tsx';
 import { applyFilter, recordSearchText, type SectionFilter } from './facets.ts';
 import { useFieldOrder } from './field-order.ts';
+import { useFormLacks } from './form-lacks-context.ts';
 import { formatPeriod, groupByYear, itemMeta } from './item-meta.ts';
 import { ItemList } from './ItemList.tsx';
 import { JumpBar } from './JumpBar.tsx';
@@ -42,10 +43,15 @@ import { useLayoutOptions } from './use-reading-options.ts';
  * "Editar no formulário". Item sem palavras-chave ganha o campo delas no fim.
  */
 export function EditForm({ depth, el, onEdit }: { depth?: number; el: XElement; onEdit: EditFn }) {
+  // Item que já está no Lattes num tipo cujo formulário não tem palavras-chave
+  // (os eventos): o campo delas não aparece.
+  const lacks = useFormLacks();
   return (
     <>
       <ElementView depth={depth} el={el} showEmpty={true} onEdit={onEdit} />
-      {canAddKeywords(el) && <KeywordsInline el={el} onEdit={onEdit} />}
+      {canAddKeywords(el) && !lacks?.child(el, 'PALAVRAS-CHAVE') && (
+        <KeywordsInline el={el} onEdit={onEdit} />
+      )}
     </>
   );
 }
