@@ -8,7 +8,16 @@
 // em "Salvar". As mensagens que ela mostraria na caixa do Lattes voltam no
 // resultado em vez de aparecer na tela.
 
-import { pickOption, TEST_MARK, type TestJob, textValue } from '../../src/census/test-plan.ts';
+import {
+  consistencyFixes,
+  LOOKUP_FIELDS,
+  lookupValues,
+  matchesCreated,
+  pickOption,
+  TEST_MARK,
+  type TestJob,
+  textValue,
+} from '../../src/census/test-plan.ts';
 
 export interface TestResult {
   id: string;
@@ -191,7 +200,49 @@ function fill(w: FrameWindow, form: HTMLFormElement, job: TestJob): Record<strin
     el.value = textValue(el.name, el.maxLength, job.variant, job.tag);
     values[el.name] = el.value;
   }
+  setFields(form, { ...context.lookups, ...consistencyFixes(values, context.agency) });
   return values;
+}
+
+/** Grava valores nos campos que existirem, ocultos e desabilitados também. */
+function setFields(form: HTMLFormElement, values: Record<string, string>): void {
+  for (const [name, value] of Object.entries(values)) {
+    const el = form.elements.namedItem(name) as HTMLInputElement | null;
+    if (el && 'value' in el) el.value = value;
+  }
+}
+
+interface Context {
+  agency?: { code: string; name: string };
+  lookups: Record<string, string>;
+}
+
+const context: Context = { lookups: {} };
+
+/**
+ * Instituição e curso de uma formação sua (o check() exige, e a página só os
+ * preenche pela busca) e a primeira agência da lista do Lattes, lidos uma vez.
+ */
+async function prepareContext(code: string, get: (path: string) => Promise<{ html: string }>) {
+  const list = (await get(`pkg_formacao.lista?f_tipo=FA&f_cod=${code}`)).html;
+  for (const path of editLinks(list)) {
+    const doc = new DOMParser().parseFromString((await get(path)).html, 'text/html');
+    const form = doc.forms.namedItem('GN_FORMACAO2');
+    if (!form) continue;
+    const donor = Object.fromEntries(
+      LOOKUP_FIELDS.map((n) => [
+        n,
+        (form.elements.namedItem(n) as HTMLInputElement | null)?.value ?? '',
+      ]),
+    );
+    if ((donor.f_cod_inst || donor.f_cod_inst2) && (donor.f_cod_curso || donor.f_cod_curso2)) {
+      context.lookups = lookupValues(donor);
+      break;
+    }
+  }
+  const agencies = (await get(`prc_agencia?f_cod=${code}`)).html;
+  const first = /atribuir\(\s*'([^']*)'\s*,\s*'([^']*)'/.exec(agencies);
+  if (first) context.agency = { code: first[1]!, name: first[2]! };
 }
 
 async function createOne(job: TestJob, code: string): Promise<TestResult> {
@@ -225,8 +276,10 @@ async function createOne(job: TestJob, code: string): Promise<TestResult> {
 export async function createTestItems(
   jobs: TestJob[],
   code: string,
+  get: (path: string) => Promise<{ html: string }>,
   { batch = 10, delayMs = [3000, 6000], receiver, retryFailed = false }: BatchOptions = {},
 ) {
+  if (Object.keys(context.lookups).length === 0) await prepareContext(code, get);
   const progress = load();
   const tried = new Map(progress.results.map((r) => [r.tag, r]));
   const next = jobs
@@ -289,7 +342,10 @@ export async function removeTestItems(
     const items = editLinks((await get(list)).html).map(withoutCode);
     for (const path of items) {
       if (removed.length >= batch) break;
-      if (!(await get(path)).html.includes(TEST_MARK)) continue;
+      const html = (await get(path)).html;
+      const created = progress.results.filter((r) => r.ok && r.id !== 'idioma');
+      if (!html.includes(TEST_MARK) && !created.some((r) => matchesCreated(html, r.values)))
+        continue;
       const frame = await openFrame(path, code);
       try {
         const w = frame.contentWindow as FrameWindow;

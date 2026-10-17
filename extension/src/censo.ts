@@ -223,9 +223,9 @@ function summary(file: CensusFile) {
  * roda, na aba do menu.
  */
 let captured: CensusFile | undefined;
-async function testItems(options: Parameters<typeof createTestItems>[2] = {}) {
+async function testItems(options: Parameters<typeof createTestItems>[3] = {}) {
   captured ??= await capture({ download: false });
-  return createTestItems(testJobs(captured), await code(), options);
+  return createTestItems(testJobs(captured), await code(), get, options);
 }
 
 async function removeTests(options: Parameters<typeof removeTestItems>[2] = {}) {

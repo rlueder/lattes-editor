@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import type { CensusEntry, CensusFile } from '../src/census/run.ts';
 import {
+  consistencyFixes,
+  lookupValues,
+  matchesCreated,
   pickOption,
   TEST_MARK,
   testJobs,
@@ -80,5 +83,42 @@ describe('itens de teste: o plano', () => {
       )?.value,
     ).toBe('2');
     expect(pickOption('f_meio', opts(''), 0)).toBeUndefined();
+  });
+});
+
+describe('itens de teste: o que o check() das formações pede', () => {
+  it('término e obtenção só com o curso concluído; agência só com bolsa', () => {
+    const agency = { code: '0001', name: 'Agência' };
+    expect(consistencyFixes({ F_BOLSA: 'S', F_STATUS: 'N' }, agency)).toEqual({
+      f_agencia: '0001',
+      f_ano_fim: '',
+      f_ano_obten: '',
+      f_mes_obten: '',
+      f_nme_agencia: 'Agência',
+    });
+    expect(consistencyFixes({ F_BOLSA: 'N', F_STATUS: 'S' }, agency)).toEqual({
+      f_agencia: '',
+      f_nme_agencia: '',
+    });
+    expect(consistencyFixes({ F_BOLSA: 'S' })).toEqual({ f_agencia: '', f_nme_agencia: '' });
+    expect(consistencyFixes({ f_titulo: 'x' })).toEqual({});
+  });
+
+  it('a instituição de uma formação sua vale também para o sanduíche e a cotutela', () => {
+    const out = lookupValues({ f_cod_curso: '9', f_cod_inst: '7', f_inst: 'Universidade' });
+    expect(out).toMatchObject({
+      f_cod_inst_dout: '7',
+      f_cod_inst_dout_ct: '7',
+      f_cod_inst_dout_sw: '7',
+      f_inst_dout_sw: 'Universidade',
+    });
+  });
+
+  it('item sem texto marcado se reconhece pelas datas que levou', () => {
+    const values = { f_dta_fim: '10/01/2005', f_dta_inicio: '10/01/2005', f_tipo_licenca: '2' };
+    expect(matchesCreated('<input value="10/01/2005">', values)).toBe(true);
+    expect(matchesCreated('<input value="11/02/2006">', values)).toBe(false);
+    expect(matchesCreated('qualquer', { f_tipo_licenca: '2' })).toBe(false);
+    expect(matchesCreated(`x ${TEST_MARK} a`, { f_titulo: `${TEST_MARK} a` })).toBe(true);
   });
 });

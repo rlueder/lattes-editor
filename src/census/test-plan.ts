@@ -24,9 +24,14 @@ export const BIG_LISTS = new Set([
   'f_uf',
 ]);
 
-/** Formulários de registro único ou que dependem de outra tela: fora da passada. */
+/**
+ * Formulários de registro único ou que dependem de outra tela: fora da
+ * passada. O idioma também: a língua é a chave do item, e a variante trocaria
+ * o nível de uma língua que a pessoa já tem.
+ */
 export const NOT_CREATABLE = new Set([
   'areas-de-atuacao',
+  'idioma',
   'atividade',
   'endereco',
   'identificacao',
@@ -117,4 +122,60 @@ export function pickOption<T extends { text: string; value: string }>(
     );
   }
   return real[variant % real.length];
+}
+
+/** Os campos de busca que a página preenche (instituição, curso), copiados de um item seu. */
+export const LOOKUP_FIELDS = [
+  'f_cod_curso',
+  'f_cod_curso2',
+  'f_cod_inst',
+  'f_cod_inst2',
+  'f_curso',
+  'f_curso_old',
+  'f_inst',
+  'f_inst_old',
+];
+
+/** Os mesmos códigos nas instituições do doutorado sanduíche e da cotutela. */
+export function lookupValues(donor: Record<string, string>): Record<string, string> {
+  const inst = donor.f_cod_inst || donor.f_cod_inst2 || '';
+  const name = donor.f_inst ?? '';
+  const out: Record<string, string> = { ...donor };
+  for (const suffix of ['', '_sw', '_ct']) {
+    out[`f_cod_inst_dout${suffix}`] = inst;
+    out[`f_inst_dout${suffix}`] = name;
+  }
+  return out;
+}
+
+/**
+ * O que o check() das formações pede em função das escolhas da variante:
+ * término e obtenção só com o curso concluído; agência só com bolsa.
+ */
+export function consistencyFixes(
+  values: Record<string, string>,
+  agency?: { code: string; name: string },
+): Record<string, string> {
+  const fixes: Record<string, string> = {};
+  if (values.F_STATUS && values.F_STATUS !== 'S') {
+    Object.assign(fixes, { f_ano_fim: '', f_ano_obten: '', f_mes_obten: '' });
+  }
+  if ('F_BOLSA' in values) {
+    const on = values.F_BOLSA === 'S' && agency;
+    fixes.f_agencia = on ? agency.code : '';
+    fixes.f_nme_agencia = on ? agency.name : '';
+  }
+  return fixes;
+}
+
+/**
+ * Um item criado sem campo de texto para o marcador (licença, idioma) se
+ * reconhece pelos valores que levou: todos aparecem na página de edição.
+ */
+export function matchesCreated(html: string, values: Record<string, string>): boolean {
+  const own = Object.entries(values).filter(
+    ([k, v]) =>
+      v && v !== 'on' && !BIG_LISTS.has(k) && (/dta|data/i.test(k) || v.includes(TEST_MARK)),
+  );
+  return own.length > 0 && own.every(([, v]) => html.includes(v));
 }
