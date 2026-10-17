@@ -29,7 +29,7 @@ import { ownVersion, reloadForApp } from './dev-reload.ts';
 import {
   BUSY_TEXT,
   endDeadRound,
-  enqueue,
+  handleSend,
   NO_CONSENT_TEXT,
   refuseRun,
   replayResults,
@@ -247,7 +247,7 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     if (await runImport(msg, busy, (m) => toEditor(editor, m))) await sendSession(editor, true);
     return;
   }
-  if (msg.type === 'enviar' && (await enqueue(msg, editor)) && msg.start) void run(undefined, true);
+  if (msg.type === 'enviar') await handleSend(msg, editor, run, (m) => toEditor(editor, m));
 }
 
 /**
@@ -323,7 +323,7 @@ async function run(keys?: string[], fromEditor = false): Promise<void> {
     await waitWhile(async () => verifyInFlight || Boolean((await readState()).verificando));
   }
   const state = await readState();
-  if (state.running) return;
+  if (state.running || queueActive) return; // queueActive: sem await até ele virar true
   if (state.verificando || photoInFlight || importRunning() || publishRunning()) {
     return refuse(state, BUSY_TEXT);
   }

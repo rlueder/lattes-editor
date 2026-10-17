@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { endDeadRound, refuseRun, replayResults, waitWhile } from '../extension/src/editor-run.ts';
+import {
+  endDeadRound,
+  refuseBusy,
+  refuseRun,
+  replayResults,
+  RUNNING_TEXT,
+  waitWhile,
+} from '../extension/src/editor-run.ts';
 import type { QueueState } from '../extension/src/state.ts';
 import type { BridgeMessage } from '../src/bridge/protocol.ts';
 
@@ -114,5 +121,18 @@ describe('editor que reconecta no meio da fila', () => {
       },
     );
     expect(sent.at(-1)).toEqual({ pause: { done: 1, left: 1 }, type: 'fim' });
+  });
+});
+
+describe('pedido de gravação com outra rodada correndo', () => {
+  it('o editor recebe o porquê e o fim, e o estado não muda', async () => {
+    const sent: BridgeMessage[] = [];
+    await refuseBusy([op('x'), op('y')], async (m) => {
+      sent.push(m);
+    });
+    expect(sent).toEqual([
+      { result: { detail: RUNNING_TEXT, key: 'x', status: 'erro' }, type: 'resultado' },
+      { type: 'fim' },
+    ]);
   });
 });

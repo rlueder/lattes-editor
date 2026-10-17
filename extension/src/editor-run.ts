@@ -4,6 +4,7 @@
 // ficaria em "gravando".
 
 import type { OpResult } from '../../src/bridge/apply.ts';
+import type { BridgeOp } from '../../src/bridge/plan.ts';
 import type { BridgeMessage, EditorMessage } from '../../src/bridge/protocol.ts';
 import { UNKNOWN_WRITE } from '../../src/bridge/write-brake.ts';
 import { type EditorEndpoint, type QueueState, readState, writeState } from './state.ts';
@@ -109,4 +110,38 @@ export async function replayResults(
   // ou o service worker que acordou e encerrou a rodada antes de o editor
   // conectar), e sem ele o editor fica "gravando".
   if (!running) await send({ pause: pausa, type: 'fim' });
+}
+
+/** Uma gravação ainda corre na extensão quando o editor pede outra. */
+export const RUNNING_TEXT =
+  'A extensão ainda está gravando a rodada anterior; espere ela terminar e envie de novo';
+
+/**
+ * O pedido de gravação que chega com outra rodada correndo: a fila dela fica
+ * como está, e o editor recebe o porquê e o fim, em vez de ficar "gravando"
+ * sem resposta. Nada vai para o estado guardado.
+ */
+export async function refuseBusy(
+  ops: readonly BridgeOp[],
+  send: (m: BridgeMessage) => Promise<void>,
+): Promise<void> {
+  const first = ops[0];
+  if (first)
+    await send({
+      result: { detail: RUNNING_TEXT, key: first.key, status: 'erro' },
+      type: 'resultado',
+    });
+  await send({ type: 'fim' });
+}
+
+/** O pedido de gravação do editor: entra na fila e começa, ou volta recusado com o porquê. */
+export async function handleSend(
+  msg: Extract<EditorMessage, { type: 'enviar' }>,
+  editor: EditorEndpoint,
+  run: (keys: undefined, fromEditor: true) => Promise<void>,
+  send: (m: BridgeMessage) => Promise<void>,
+): Promise<void> {
+  if (await enqueue(msg, editor)) {
+    if (msg.start) void run(undefined, true);
+  } else if (msg.start) await refuseBusy(msg.ops, send);
 }
