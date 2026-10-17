@@ -112,7 +112,15 @@ function post(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
 }
 
 /** As rotas de cada tipo: a lista (escolhida pelos parâmetros), o formulário e o POST. */
+let built: Routes | undefined;
+
+/** As rotas montadas uma vez só (servidor.ts e a rede social de eventos.ts usam as mesmas). */
 export function productionRoutes(): Routes {
+  built ??= buildRoutes();
+  return built;
+}
+
+function buildRoutes(): Routes {
   const routes: Routes = {};
   const targets = PRODUCTION_TARGETS.filter((t) => !CUSTOM.has(t.id));
   for (const t of targets) {

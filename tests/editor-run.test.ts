@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   endDeadRound,
+  handleSend,
   refuseBusy,
   refuseRun,
   replayResults,
@@ -134,5 +135,43 @@ describe('pedido de gravação com outra rodada correndo', () => {
       { result: { detail: RUNNING_TEXT, key: 'x', status: 'erro' }, type: 'resultado' },
       { type: 'fim' },
     ]);
+  });
+});
+
+describe('pedido do editor enquanto a rodada anterior ainda não começou', () => {
+  it('o segundo volta recusado, e a fila do primeiro fica', async () => {
+    let stored: QueueState = { ops: [], results: {}, running: false };
+    vi.stubGlobal('chrome', {
+      action: { setBadgeText: async () => undefined },
+      storage: {
+        session: {
+          get: async () => ({ fila: stored }),
+          set: async (v: { fila: QueueState }) => {
+            stored = v.fila;
+          },
+        },
+      },
+    });
+    let release: () => void = () => undefined;
+    const run = vi.fn(() => new Promise<void>((r) => (release = r)));
+    const sent: BridgeMessage[] = [];
+    const send = async (m: BridgeMessage) => {
+      sent.push(m);
+    };
+    await handleSend({ ops: [op('a')], start: true, type: 'enviar' }, 7, run, send);
+    await handleSend({ ops: [op('b')], start: true, type: 'enviar' }, 7, run, send);
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(stored.ops.map((o) => o.key)).toEqual(['a']);
+    expect(sent).toEqual([
+      { result: { detail: RUNNING_TEXT, key: 'b', status: 'erro' }, type: 'resultado' },
+      { type: 'fim' },
+    ]);
+    release();
+    await Promise.resolve();
+    await Promise.resolve();
+    // Terminada a primeira, o próximo pedido entra.
+    await handleSend({ ops: [op('c')], start: false, type: 'enviar' }, 7, run, send);
+    expect(stored.ops.map((o) => o.key)).toEqual(['c']);
+    vi.unstubAllGlobals();
   });
 });

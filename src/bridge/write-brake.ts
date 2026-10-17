@@ -161,11 +161,12 @@ const writes = (n: number) => (n === 1 ? '1 gravação' : `${n} gravações`);
 
 /**
  * O aviso da pausa. 'aqui': o botão "Continuar" está ao lado do aviso;
- * 'no-editor': o aviso está no painel da extensão e quem continua é o editor.
+ * 'painel': o painel da rodada que o editor conduz, com o botão aqui e no
+ * editor (o editor pode ter fechado).
  */
-export function pauseText(pause: RoundPause, where: 'aqui' | 'no-editor'): string {
+export function pauseText(pause: RoundPause, where: 'aqui' | 'painel'): string {
   const left = pause.left === 1 ? 'a que falta' : `as ${pause.left} que faltam`;
-  const button = where === 'aqui' ? '"Continuar"' : '"Continuar" no editor';
+  const button = where === 'aqui' ? '"Continuar"' : '"Continuar" (aqui ou no editor)';
   return `Pausa depois de ${writes(pause.done)} nesta rodada. Confira no Lattes o que já foi gravado e clique em ${button} para gravar ${left}.`;
 }
 

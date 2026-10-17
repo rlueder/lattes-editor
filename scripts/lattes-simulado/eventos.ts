@@ -256,8 +256,10 @@ export const EVENTOS_ROUTES: Routes = {
   'pkg_evento.form': (req, state) => (req.method === 'POST' ? post(req, state) : form(req, state)),
   'pkg_evento.lista': lista,
   // Com f_seq (e no POST), a alteração de uma rede social, site ou blog (producao.ts).
-  prc_midias_sociais: (req, state) =>
-    req.get('f_seq') || req.method === 'POST'
-      ? productionRoutes().prc_midias_sociais!(req, state)
-      : midiasSociais(req, state),
+  prc_midias_sociais: (req, state) => {
+    const edit = productionRoutes().prc_midias_sociais;
+    return (req.get('f_seq') || req.method === 'POST') && edit
+      ? edit(req, state)
+      : midiasSociais(req, state);
+  },
 };

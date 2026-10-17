@@ -53,11 +53,18 @@ export async function refuseRun(
  * Guarda a fila que o editor mandou, no lugar da anterior, se nenhuma estiver
  * correndo. Devolve se guardou.
  */
+/**
+ * Uma rodada pedida pelo editor que ainda não marcou running: run() pode
+ * esperar até um minuto por uma verificação antes de começar, e um segundo
+ * pedido nesse meio trocaria a fila da primeira.
+ */
+let editorRunPending = false;
+
 export async function enqueue(
   msg: Extract<EditorMessage, { type: 'enviar' }>,
   editor: EditorEndpoint,
 ): Promise<boolean> {
-  if ((await readState()).running) return false;
+  if (editorRunPending || (await readState()).running) return false;
   await writeState({
     editor,
     fromEditor: msg.start,
@@ -142,6 +149,10 @@ export async function handleSend(
   send: (m: BridgeMessage) => Promise<void>,
 ): Promise<void> {
   if (await enqueue(msg, editor)) {
-    if (msg.start) void run(undefined, true);
+    if (!msg.start) return;
+    editorRunPending = true;
+    void run(undefined, true).finally(() => {
+      editorRunPending = false;
+    });
   } else if (msg.start) await refuseBusy(msg.ops, send);
 }

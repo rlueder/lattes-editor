@@ -209,11 +209,12 @@ function render(state: QueueState): void {
   action.className = mode === 'parar' ? 'parar' : mode === 'ok' ? 'conferido' : 'principal';
   action.disabled = mode === 'ok' || state.ops.length === 0;
   // Quando o editor conduz a gravação, o painel só acompanha: o botão
-  // aparece para parar, e começar ou continuar fica com o editor.
+  // aparece para parar, e começar fica com o editor. Na pausa, o "Continuar"
+  // aparece aqui também, para o caso de o editor ter fechado.
   const byEditor = state.fromEditor === true;
-  action.hidden = byEditor && mode !== 'parar';
   // Em pausa no teto da rodada, o mesmo botão segue com o resto (write-brake.ts).
   const paused = mode === 'aplicar' && state.pausa !== undefined;
+  action.hidden = byEditor && mode !== 'parar' && !paused;
   action.textContent =
     mode === 'parar'
       ? 'Parar'
@@ -224,7 +225,7 @@ function render(state: QueueState): void {
           : 'Aplicar todas';
   const pauseNote = document.getElementById('pausa')!;
   pauseNote.textContent =
-    paused && state.pausa ? pauseText(state.pausa, byEditor ? 'no-editor' : 'aqui') : '';
+    paused && state.pausa ? pauseText(state.pausa, byEditor ? 'painel' : 'aqui') : '';
   pauseNote.hidden = !paused;
   root.replaceChildren();
   const verify = document.getElementById('verificar') as HTMLButtonElement;
