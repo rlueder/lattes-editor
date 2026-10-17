@@ -11,9 +11,10 @@
 //   __lattesCensus.authorShape(['Nome Completo', 'NOME, N.']) // forma das linhas de autor
 //   __lattesCensus.vectorShape('titularPessoaDP', 'Nome') // o mesmo, para outro vetor do menu
 //
-// Só GET de formulário e de lista. A única exceção é link() sem XML, que
-// pede a exportação pelo mesmo POST de leitura do "Exportar" (o conector já
-// faz o mesmo, docs/lattes_internals.md, seção 12). Nada é enviado ao Lattes.
+// Só GET de formulário e de lista. As exceções: link() sem XML, que pede a
+// exportação pelo mesmo POST de leitura do "Exportar" (o conector já faz o
+// mesmo, docs/lattes_internals.md, seção 12), e testItems() e
+// removeTestItems(), que gravam no currículo e só a pessoa roda.
 
 import { exportCv, type ExportPort } from '../../src/bridge/export.ts';
 import { cvCodeFrom, isLogonPage, lattesIdFrom } from '../../src/bridge/lattes-html.ts';
@@ -26,8 +27,10 @@ import {
   type CensusPort,
   runCensus,
 } from '../../src/census/run.ts';
+import { testJobs } from '../../src/census/test-plan.ts';
 import { readZip } from '../../src/import-export/zip.ts';
 import { decodeLatin1, decodeXmlBytes } from '../../src/model/latin1.ts';
+import { createTestItems, removeTestItems, resetTestItems } from './censo-test-items.ts';
 
 declare const __CENSO_VERSAO__: string;
 
@@ -214,6 +217,21 @@ function summary(file: CensusFile) {
   };
 }
 
+/**
+ * Os itens de teste da passada completa (docs/lattes-formularios/
+ * itens-de-teste.md), um lote por chamada. Grava no currículo: só a pessoa
+ * roda, na aba do menu.
+ */
+let captured: CensusFile | undefined;
+async function testItems(options: Parameters<typeof createTestItems>[2] = {}) {
+  captured ??= await capture({ download: false });
+  return createTestItems(testJobs(captured), await code(), options);
+}
+
+async function removeTests(options: Parameters<typeof removeTestItems>[2] = {}) {
+  return removeTestItems(await code(), get, options);
+}
+
 (globalThis as unknown as { __lattesCensus: unknown }).__lattesCensus = {
   activities,
   authorShape,
@@ -222,7 +240,10 @@ function summary(file: CensusFile) {
   download,
   inspect,
   link,
+  removeTestItems: removeTests,
+  resetTestItems,
   summary,
+  testItems,
   vectorShape,
   version: __CENSO_VERSAO__,
 };
