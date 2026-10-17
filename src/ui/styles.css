@@ -8234,3 +8234,41 @@ html {
     min-width: 0;
   }
 }
+
+/* O painel dos itens de teste do censo (só em desenvolvimento, ?itens-teste). */
+.test-items-panel {
+  position: fixed;
+  z-index: 60;
+  bottom: 16px;
+  left: 16px;
+  width: 360px;
+  max-height: 70vh;
+  overflow: auto;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 25%);
+  font-size: 13px;
+}
+
+.test-items-panel h2 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.test-items-batch input {
+  width: 64px;
+  margin-left: 8px;
+}
+
+.test-items-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.test-items-error {
+  color: var(--danger);
+}

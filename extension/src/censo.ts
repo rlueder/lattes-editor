@@ -30,7 +30,12 @@ import {
 import { testJobs } from '../../src/census/test-plan.ts';
 import { readZip } from '../../src/import-export/zip.ts';
 import { decodeLatin1, decodeXmlBytes } from '../../src/model/latin1.ts';
-import { createTestItems, removeTestItems, resetTestItems } from './censo-test-items.ts';
+import {
+  createTestItems,
+  removeTestItems,
+  resetTestItems,
+  testProgress,
+} from './censo-test-items.ts';
 
 declare const __CENSO_VERSAO__: string;
 
@@ -223,7 +228,8 @@ function summary(file: CensusFile) {
  * roda, na aba do menu.
  */
 let captured: CensusFile | undefined;
-async function testItems(options: Parameters<typeof createTestItems>[3] = {}) {
+/** Lê os formulários uma vez (alguns minutos); os lotes seguintes usam a leitura. */
+async function prepareTestItems() {
   if (!captured || captured.interrupted) captured = await capture({ download: false });
   // Sessão caída no meio da leitura: nenhum formulário foi lido, e o lote
   // sairia vazio como se não faltasse nada.
@@ -234,7 +240,17 @@ async function testItems(options: Parameters<typeof createTestItems>[3] = {}) {
       `A leitura dos formulários parou (${lost.entries.filter((e) => e.status === 'nao-lido').length} sem ler): a sessão do Lattes pode ter caído. Entre de novo e rode outra vez.`,
     );
   }
-  return createTestItems(testJobs(captured), await code(), get, options);
+  return testProgress(testJobs(captured));
+}
+
+async function testItems(options: Parameters<typeof createTestItems>[3] = {}) {
+  await prepareTestItems();
+  return createTestItems(testJobs(captured!), await code(), get, options);
+}
+
+/** O andamento guardado, sem tocar no Lattes. */
+function progress() {
+  return testProgress(captured ? testJobs(captured) : undefined);
 }
 
 async function removeTests(options: Parameters<typeof removeTestItems>[2] = {}) {
@@ -249,10 +265,12 @@ async function removeTests(options: Parameters<typeof removeTestItems>[2] = {}) 
   download,
   inspect,
   link,
+  prepareTestItems,
   removeTestItems: removeTests,
   resetTestItems,
   summary,
   testItems,
+  testProgress: progress,
   vectorShape,
   version: __CENSO_VERSAO__,
 };

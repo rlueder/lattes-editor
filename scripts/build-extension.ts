@@ -74,6 +74,28 @@ for (const name of ENTRIES) {
   });
 }
 
+// No canal Dev, também o censo dos formulários (scripts/build-censo.ts), que o
+// service worker injeta na página do Lattes para os itens de teste
+// (extension/src/test-items-run.ts). A extensão publicada não leva.
+if (devChannel) {
+  await build({
+    build: {
+      emptyOutDir: false,
+      lib: {
+        entry: `${root}extension/src/censo.ts`,
+        fileName: () => 'censo-lattes.js',
+        formats: ['iife'],
+        name: 'censo_lattes',
+      },
+      minify: false,
+      outDir: out,
+    },
+    configFile: false,
+    define: { __CENSO_VERSAO__: JSON.stringify(version) },
+    logLevel: 'warn',
+  });
+}
+
 const ICONS = Object.fromEntries([16, 32, 48, 128].map((n) => [n, `icons/icon-${n}.png`]));
 // Na barra, a variante monocromática (brand/extension-toolbar); o service worker troca
 // para a branca quando o tema é escuro (extension/src/toolbar-icon.ts).

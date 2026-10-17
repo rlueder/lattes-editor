@@ -80,6 +80,18 @@ export type EditorMessage =
    */
   | { id: string; type: 'ler-envio' }
   /**
+   * Itens de teste da passada completa (só no canal Dev,
+   * docs/lattes-formularios/itens-de-teste.md): ler os formulários, criar ou
+   * remover um lote, ou só o andamento.
+   */
+  | {
+      acao: TestItemsAction;
+      batch?: number;
+      id: string;
+      retryFailed?: boolean;
+      type: 'itens-teste';
+    }
+  /**
    * Envia ao CNPq (src/bridge/publish.ts), só com PUBLISH_ENABLED e depois de
    * a pessoa marcar a declaração no editor (request.declarationAccepted).
    * lattesId: o currículo aberto no editor, e a extensão só envia se a sessão
@@ -159,7 +171,11 @@ export type BridgeMessage =
       type: 'tela-envio';
     }
   /** O resultado do envio ao CNPq pedido com o mesmo id. */
-  | { id: string; result: PublishResult; type: 'publicacao' };
+  | { id: string; result: PublishResult; type: 'publicacao' }
+  /** A resposta de um pedido de itens de teste: o resumo, ou o porquê de não ter rodado. */
+  | { error?: string; id: string; result?: unknown; type: 'itens-teste' };
+
+export type TestItemsAction = 'andamento' | 'criar' | 'preparar' | 'remover';
 
 /** Por que a tela de envio não foi lida. */
 export type SendScreenFailure =

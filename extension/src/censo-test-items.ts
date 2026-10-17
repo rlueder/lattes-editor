@@ -312,13 +312,19 @@ export async function createTestItems(
       () => undefined,
     );
   }
-  const ok = progress.results.filter((r) => r.ok).length;
+  return { ...testProgress(jobs), lote: next.map((j) => j.tag) };
+}
+
+/** Quantos foram criados, quais falharam (com a mensagem do Lattes) e quantos faltam. */
+export function testProgress(jobs?: TestJob[]) {
+  const progress = load();
   const failed = progress.results.filter((r) => !r.ok);
   return {
-    criados: ok,
+    criados: progress.results.filter((r) => r.ok).length,
     falharam: failed.map((r) => ({ msgs: r.msgs, tag: r.tag })),
-    faltam: jobs.filter((j) => !progress.results.some((r) => r.tag === j.tag)).length,
-    lote: next.map((j) => j.tag),
+    faltam: jobs ? jobs.filter((j) => !progress.results.some((r) => r.tag === j.tag)).length : null,
+    removidos: progress.removed.length,
+    total: jobs?.length ?? null,
   };
 }
 

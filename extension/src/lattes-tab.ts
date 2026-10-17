@@ -346,3 +346,70 @@ export async function reloadLattesTab(): Promise<boolean> {
     return false;
   }
 }
+
+/** A aba do Lattes de verdade, mesmo no canal Dev: os itens de teste não vão ao simulado. */
+export async function realLattesTab(): Promise<number | undefined> {
+  const [tab] = await chrome.tabs.query({ url: [LATTES_MENU] });
+  return tab?.id;
+}
+
+/** Prazo dos itens de teste: a leitura dos formulários leva alguns minutos. */
+const TEST_ITEMS_TIMEOUT_MS = 10 * 60_000;
+
+type CensusAction = 'andamento' | 'criar' | 'preparar' | 'remover';
+
+/**
+ * Os itens de teste no mundo da página (test-items-run.ts, só no canal Dev):
+ * injeta o censo uma vez por carregamento do menu e roda a ação pedida.
+ */
+export async function runCensusInPage(
+  tabId: number,
+  action: CensusAction,
+  options: { batch?: number; retryFailed?: boolean },
+): Promise<{ error?: string; result?: unknown }> {
+  const long = <T>(start: () => Promise<T>) =>
+    untilTabCloses(tabId, start, chrome.tabs.onRemoved, TEST_ITEMS_TIMEOUT_MS);
+  const [loaded] = await long(() =>
+    chrome.scripting.executeScript({
+      func: () =>
+        typeof (globalThis as { __lattesCensus?: { prepareTestItems?: unknown } }).__lattesCensus
+          ?.prepareTestItems === 'function',
+      target: { tabId },
+      world: 'MAIN',
+    }),
+  );
+  if (!loaded?.result) {
+    await long(() =>
+      chrome.scripting.executeScript({
+        files: ['censo-lattes.js'],
+        target: { tabId },
+        world: 'MAIN',
+      }),
+    );
+  }
+  const [res] = await long(() =>
+    chrome.scripting.executeScript({
+      args: [action, options] as [CensusAction, typeof options],
+      func: async (acao: CensusAction, opts: typeof options) => {
+        type Fn = (o?: unknown) => unknown;
+        const c = (globalThis as unknown as { __lattesCensus: Record<string, Fn> }).__lattesCensus;
+        try {
+          const run =
+            acao === 'preparar'
+              ? c.prepareTestItems!()
+              : acao === 'criar'
+                ? c.testItems!(opts)
+                : acao === 'remover'
+                  ? c.removeTestItems!(opts)
+                  : c.testProgress!();
+          return { result: JSON.parse(JSON.stringify(await run)) as unknown };
+        } catch (err) {
+          return { error: err instanceof Error ? err.message : String(err) };
+        }
+      },
+      target: { tabId },
+      world: 'MAIN',
+    }),
+  );
+  return res?.result ?? { error: 'A aba do Lattes não respondeu' };
+}

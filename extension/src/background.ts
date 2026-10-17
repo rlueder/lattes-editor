@@ -59,6 +59,7 @@ import {
   readState,
   writeState,
 } from './state.ts';
+import { answerTestItems, testItemsRunning } from './test-items-run.ts';
 import { isToolbarThemeMessage } from './toolbar-icon.ts';
 import { restoreToolbarTheme, setToolbarTheme } from './toolbar-theme.ts';
 
@@ -84,6 +85,8 @@ let manualQueued = false;
 let photoInFlight = false;
 /** A fila passou da trava e vai gravar: marcado antes de qualquer await, para o Importar ver. */
 let queueActive = false;
+/** A foto, o Importar, o envio ao CNPq ou os itens de teste estão usando a aba do Lattes. */
+const tabInUse = () => photoInFlight || importRunning() || publishRunning() || testItemsRunning();
 let appPort: chrome.runtime.Port | undefined;
 
 /**
@@ -197,8 +200,7 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     return;
   }
   // Listas do Lattes: só leituras, e nunca durante uma gravação (lattes-tab.ts).
-  const busy = async () =>
-    (await readState()).running || photoInFlight || importRunning() || publishRunning();
+  const busy = async () => (await readState()).running || tabInUse();
   const listReply = await answerListRequest(msg, busy);
   if (listReply) return toEditor(editor, listReply);
   if (msg.type === 'pedir-curriculo') {
@@ -218,10 +220,7 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     return;
   }
   if (msg.type === 'enviar-foto') {
-    const busy = photoBusy(
-      (await readState()).running,
-      photoInFlight || importRunning() || publishRunning(),
-    );
+    const busy = photoBusy((await readState()).running, tabInUse());
     if (busy) return toEditor(editor, { ...busy, id: msg.id, type: 'foto' });
     // A pessoa já viu a foto e confirmou no editor; depois, o menu relido
     // mostra se o Lattes ficou com alteração a enviar ao CNPq.
@@ -247,6 +246,8 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     if (await runImport(msg, busy, (m) => toEditor(editor, m))) await sendSession(editor, true);
     return;
   }
+  if (msg.type === 'itens-teste')
+    await answerTestItems(msg, await busy(), (m) => toEditor(editor, m));
   if (msg.type === 'enviar') await handleSend(msg, editor, run, (m) => toEditor(editor, m));
 }
 
@@ -288,7 +289,7 @@ async function verifyOnce(auto: boolean): Promise<void> {
   // Sem o "ok" do aviso, nada é lido do Lattes; o painel mostra o aviso no lugar do botão.
   if (!(await hasConsent())) return;
   const state = await readState();
-  if (state.running || state.verificando || importRunning() || publishRunning()) return;
+  if (state.running || state.verificando || tabInUse()) return;
   if (auto) {
     if (!shouldAutoVerify(state.verificacao, Date.now())) return;
     if ((await lattesTab()) === undefined) return;
@@ -324,7 +325,7 @@ async function run(keys?: string[], fromEditor = false): Promise<void> {
   }
   const state = await readState();
   if (state.running || queueActive) return; // queueActive: sem await até ele virar true
-  if (state.verificando || photoInFlight || importRunning() || publishRunning()) {
+  if (state.verificando || tabInUse()) {
     return refuse(state, BUSY_TEXT);
   }
   queueActive = true;

@@ -61,6 +61,8 @@ declare namespace chrome {
       files?: string[];
       func?: (...args: A) => T | Promise<T>;
       target: { tabId: number };
+      /** MAIN: no mundo da página, com os objetos e funções dela. */
+      world?: 'ISOLATED' | 'MAIN';
     }): Promise<InjectionResult<Awaited<T>>[]>;
   }
 

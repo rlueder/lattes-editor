@@ -47,6 +47,7 @@ import { ShellWithLists } from './ShellWithLists.tsx';
 import { Sidebar } from './Sidebar.tsx';
 import { statusStrip } from './status-strip.ts';
 import { StorageNotice } from './StorageNotice.tsx';
+import { TestItemsPanel } from './TestItemsPanel.tsx';
 import { useTheme } from './theme.ts';
 import { Topbar } from './Topbar.tsx';
 import { useBridge } from './use-bridge.ts';
@@ -68,6 +69,10 @@ import { useUpdates } from './use-updates.ts';
 import { useVersions } from './use-versions.ts';
 import { useAutosave, useRestoreWorkingCopy } from './use-working-copy.ts';
 import { exportDateOf } from './version-diff.ts';
+
+/** O painel dos itens de teste do censo, só em desenvolvimento e com ?itens-teste. */
+const TEST_ITEMS_ON =
+  import.meta.env.DEV && new URLSearchParams(location.search).has('itens-teste');
 import { Welcome } from './Welcome.tsx';
 
 const EMPTY_INDEX: ReferenceIndex = { courses: new Map(), institutions: new Map() };
@@ -251,6 +256,7 @@ export function App() {
 
   return (
     <ShellWithLists features={bridge.features} focus={focusShell} formLacks={formLacksFor}>
+      {TEST_ITEMS_ON && <TestItemsPanel />}
       <Topbar
         ref={topbarRef}
         focus={focusShell.menuItem}
