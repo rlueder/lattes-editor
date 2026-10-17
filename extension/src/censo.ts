@@ -224,7 +224,16 @@ function summary(file: CensusFile) {
  */
 let captured: CensusFile | undefined;
 async function testItems(options: Parameters<typeof createTestItems>[3] = {}) {
-  captured ??= await capture({ download: false });
+  if (!captured || captured.interrupted) captured = await capture({ download: false });
+  // Sessão caída no meio da leitura: nenhum formulário foi lido, e o lote
+  // sairia vazio como se não faltasse nada.
+  if (captured.interrupted) {
+    const lost = captured;
+    captured = undefined;
+    throw new Error(
+      `A leitura dos formulários parou (${lost.entries.filter((e) => e.status === 'nao-lido').length} sem ler): a sessão do Lattes pode ter caído. Entre de novo e rode outra vez.`,
+    );
+  }
   return createTestItems(testJobs(captured), await code(), get, options);
 }
 
