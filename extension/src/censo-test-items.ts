@@ -250,7 +250,15 @@ function fill(w: FrameWindow, form: HTMLFormElement, job: TestJob): Record<strin
     ...donor,
     ...consistencyFixes(values, context.agency),
   });
-  return { ...values, ...pageValues(w, form, job) };
+  const page = pageValues(w, form, job);
+  // A instituição e o curso como foram enviados: vêm de cópias e trocas, e
+  // um erro de chave no Lattes só se explica por eles.
+  const sent: Record<string, string> = {};
+  for (const name of ['f_cod_inst', 'f_cod_inst2', 'f_inst', 'f_cod_curso', 'f_cod_curso2']) {
+    const el = form.elements.namedItem(name) as HTMLInputElement | null;
+    if (el?.value) sent[`enviado:${name}`] = el.value;
+  }
+  return { ...values, ...page, ...sent };
 }
 
 /**
