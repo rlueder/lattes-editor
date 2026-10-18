@@ -28,7 +28,9 @@ export function removal(
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const own = [...doc.forms].some(
     (form) =>
+      // O formulário de inclusão (f_ctr I) vem com o periódico do grupo preenchido.
       !!form.elements.namedItem('f_ctr') &&
+      (form.elements.namedItem('f_ctr') as HTMLInputElement).value !== 'I' &&
       [...form.elements].some((el) => {
         const field = el as HTMLInputElement;
         // As listas de outros itens (_l) levam nomes de itens relacionados.

@@ -99,6 +99,8 @@ const pause = ([min, max]: [number, number]) =>
   new Promise((r) => setTimeout(r, min + Math.random() * (max - min)));
 
 interface MsgBox {
+  /** O "Confirmar" da caixa, onde algumas páginas penduram a ação. */
+  btnConfirmar?: HTMLElement;
   exibir: (p: { conteudo?: string; fnConfirmar?: string; tipo?: string }) => unknown;
 }
 
@@ -146,9 +148,16 @@ function submit(frame: HTMLIFrameElement, start: (w: FrameWindow) => void): Prom
     };
     if (box) {
       box.exibir = (p) => {
-        // A pergunta da privacidade, ou outra confirmação: confirma.
+        // A confirmação: a função que ela chamaria (fnConfirmar, como a da
+        // privacidade), ou o botão da caixa, onde o del() do registro pendura
+        // a exclusão. Antes ia sempre para enviar(), e o registro era salvo
+        // de novo em vez de excluído.
         if (p.tipo === 'confirm') {
-          w.enviar?.();
+          const fn = /getDocument\(\)\.(\w+)\(/.exec(String(p.fnConfirmar ?? ''))?.[1];
+          const target = fn ? (w as unknown as Record<string, unknown>)[fn] : undefined;
+          if (typeof target === 'function') (target as () => void).call(w);
+          else if (box.btnConfirmar) setTimeout(() => box.btnConfirmar!.click(), 0);
+          else w.enviar?.();
           return;
         }
         msgs.push(
@@ -421,8 +430,15 @@ export async function removeTestItems(
     if (removed.length >= batch) break;
     // A leitura vai com o f_cod (sem ele o Lattes responde 404, e a remoção
     // achava zero itens); o quadro põe o f_cod sozinho (openFrame).
-    const items = editLinks((await get(list)).html);
-    for (const path of items) {
+    const listHtml = (await get(list)).html;
+    // O revisor agrupa por periódico: os itens ficam numa lista dentro da lista.
+    const nested = [...listHtml.matchAll(/setarUrl\('([^']*lista_periodico[^']*)'/gi)].map((m) =>
+      m[1]!.replace(/&amp;/g, '&'),
+    );
+    const items = [editLinks(listHtml)];
+    for (const inner of nested) items.push(editLinks((await get(inner)).html));
+    // Um link com f_ctr é ação ("Incluir novo" leva f_ctr=I), não um item.
+    for (const path of items.flat().filter((p) => !/[?&]f_ctr=/i.test(p))) {
       if (removed.length >= batch) break;
       const html = (await get(path)).html;
       const how = removal(path, html, created);

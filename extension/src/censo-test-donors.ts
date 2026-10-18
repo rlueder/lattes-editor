@@ -12,7 +12,8 @@ import {
 
 /** Os links de edição de todas as listas do menu. */
 export function editLinks(html: string): string[] {
-  return [...html.matchAll(/setarUrl\('([^']+)'/g)]
+  // O artigo abre por abreUrlModal, os outros por setarUrl.
+  return [...html.matchAll(/(?:setarUrl|abreUrlModal)\('([^']+)'/g)]
     .map((m) => m[1]!.replace(/&amp;/g, '&'))
     .filter((p) => /[?&]f_seq[a-z_]*=\d/i.test(p));
 }
