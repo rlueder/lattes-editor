@@ -128,7 +128,13 @@ alvo `capitulo` (`bibliografica-livros.ts`) foi gravado no Lattes real num
 capítulo de teste: editora, páginas, cidade, título do capítulo e título do
 livro, todos conferidos, e a remoção pelo registro deixou as listas iguais à
 base. O título do capítulo é `f_titulo_cap`; `f_titulo` é o do livro. A
-cobertura foi a 428 de 640. Falta o prefácio.
+cobertura foi a 428 de 640.
+
+Prefácio feito em 18/10/2026: a lista é `prc_bib_demais_lista` com
+`f_cod_tipo=1C` (link do menu "Prefácio, posfácio") e o formulário `GN_BIB` de
+`prc_bib_prefacio`. Num prefácio de teste no Lattes real, título, editora,
+cidade, volume, autor da publicação, tipo (prefácio para posfácio) e natureza
+foram gravados e conferidos, e a remoção deixou as listas iguais à base.
 
 O formulário de edição do capítulo nunca foi lido; a captura só tem o do
 livro (`PKG_LVR_CAP.FORM_LVR`, sem opção de capítulo). O currículo não tem
