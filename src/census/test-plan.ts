@@ -37,6 +37,9 @@ export const NOT_CREATABLE = new Set([
   'identificacao',
   'linha-de-pesquisa',
   'outras-informacoes',
+  // A patente pede um depositante com código de pessoa: só os seus coautores
+  // têm, e pôr um deles numa patente de teste poderia pedir validação a ele.
+  'patente',
   'patente-janela',
   'prefacio-outras',
   'resumo',
