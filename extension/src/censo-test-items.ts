@@ -37,6 +37,8 @@ export interface BatchOptions {
   receiver?: string;
   /** Tenta de novo os que falharam (depois de ajustar o que faltava). */
   retryFailed?: boolean;
+  /** Só estes tipos (o id do censo: orientacao-concluida, banca-julgadora...). */
+  only?: string[];
 }
 
 const STORE = 'lattes-editor:itens-de-teste';
@@ -359,13 +361,14 @@ export async function createTestItems(
   jobs: TestJob[],
   code: string,
   get: (path: string) => Promise<{ html: string }>,
-  { batch = 10, delayMs = [3000, 6000], receiver, retryFailed = false }: BatchOptions = {},
+  { batch = 10, delayMs = [3000, 6000], only, receiver, retryFailed = false }: BatchOptions = {},
 ) {
   if (!loadBase()) throw new Error('Sem a base das listas: rode "Ler formulários" antes de criar.');
   await ensureContext(code, get);
   const progress = load();
   const tried = new Map(progress.results.map((r) => [r.tag, r]));
   const next = jobs
+    .filter((j) => !only || only.includes(j.id))
     .filter((j) => {
       const r = tried.get(j.tag);
       return !r || (!r.ok && retryFailed);

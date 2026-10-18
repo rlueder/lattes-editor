@@ -73,7 +73,16 @@ escolha na lista (`src/bridge/production/lookups.ts`, o seletor em
 `src/ui/live-lists.ts`), e a instituição do sanduíche e da cotutela na
 formação. 399 → 410 de 663. Falta: o ID do orientando, o órgão do projeto (a busca `PKG_PROJETO.pp_orgao_cargo` foi lida em 18/10/2026: `atribuir(código, nome, tipo)` grava `f_codorgao` com tipo 0 e `f_codorgao2` nos outros, e o nome em `f_orgao` e `f_orgao_old`; os órgãos se abrem em árvore pelo `f_cod_inst2`), o
 curso dos tipos com mais de uma natureza (outras orientações concluídas,
-qualificação) e a gravação acompanhada de cada tipo no Lattes real.
+qualificação).
+
+Gravação no Lattes real em 18/10/2026, com base e registro da Fase 0: quatro
+itens de teste (orientação concluída e em andamento de mestrado, banca de
+mestrado, banca julgadora de professor titular) tiveram instituição, curso e
+agência trocados pelo `apply` do conector, com as buscas refeitas na hora.
+Os quatro voltaram "conferido" na releitura (instituição V0192…, curso
+42000254, agência K4WU…). Os 6 itens registrados (o lote de andamento criou 3
+variantes) foram removidos pelo registro, e a releitura de todas as listas
+ficou igual à base, sem linha a mais nem a menos.
 
 ### Fase 3: capítulo de livro e prefácio
 
