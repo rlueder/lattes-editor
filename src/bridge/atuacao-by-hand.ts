@@ -48,9 +48,13 @@ const AREA =
 /** Os campos da participação que dizem o órgão ou a unidade. */
 const ORGAO = new Set(['CODIGO-ORGAO', 'CODIGO-UNIDADE', 'NOME-ORGAO', 'NOME-UNIDADE']);
 
-/** Seção 17: f_orgao vem desabilitado e só se preenche pela busca pp_orgao_cargo. */
+/**
+ * Seção 18 ("Órgão e unidade do projeto"): no teste de 18/10/2026 o Lattes
+ * recebeu o órgão novo pelo formulário de alteração do projeto e manteve o de
+ * antes (production/organ.ts, desligado).
+ */
 const PARTICIPATION_ORGAO =
-  'O órgão ou unidade do projeto só entra pela busca de órgão do Lattes, cuja resposta ainda não foi lida';
+  'O conector não troca o órgão de um projeto: no teste de 18/10/2026 o Lattes recebeu o órgão novo e manteve o de antes. Troque no próprio Lattes';
 
 /** O formulário de projeto (GN_PROJETO) tem só os anos do próprio projeto (seção 17). */
 export const PARTICIPATION_PERIOD =

@@ -218,11 +218,18 @@ describe('orientações no Lattes simulado', () => {
       }),
     );
     expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
-    const [post] = postsOf(lattes);
+    // Como o Salvar da página: primeiro a validação do nome, depois o formulário.
+    const [check, post] = postsOf(lattes);
+    expect(check).toMatchObject({
+      fields: { f_nivel: '41', f_nme: 'Aluna%20Revista' },
+      proc: 'pkg_orient.valida_orientador_ajax',
+    });
     expect(post).toMatchObject({ proc: 'PKG_ORIENT.FORM' });
     expect(post!.fields).toMatchObject({
       F_BOLSA: 'N',
       f_ctr: 'U',
+      // O nome não valida: o identificador fica como a página trouxe.
+      f_id_orientado: '',
       f_nme_orient: 'Aluna Revista',
       f_tpo_orient: 'C',
     });
@@ -230,6 +237,26 @@ describe('orientações no Lattes simulado', () => {
     expect(getAttr(detail, 'NOME-DO-ORIENTADO')).toBe('Aluna Revista');
     expect(getAttr(detail, 'TIPO-DE-ORIENTACAO')).toBe('CO_ORIENTADOR');
     expect(getAttr(detail, 'FLAG-BOLSA')).toBe('NAO');
+  });
+
+  it('orientando com currículo no Lattes: o identificador da validação vai junto', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp(
+      set('41', 'DETALHAMENTO', { 'NOME-DO-ORIENTADO': 'Aluna Sintética de Exemplo' }),
+    );
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    const post = postsOf(lattes).at(-1)!;
+    expect(post.fields).toMatchObject({
+      f_id_orientado: '0000000000000001',
+      f_seq_form_orientado: '1',
+    });
+    expect(getAttr(partOf(lattes.state.root, '41', 'DETALHAMENTO'), 'NUMERO-ID-ORIENTADO')).toBe(
+      '0000000000000001',
+    );
+    // Sem trocar o nome, nenhuma validação.
+    const other = await lattesFor();
+    await applyOp(onlyOp(set('41', 'DETALHAMENTO', { 'FLAG-BOLSA': 'NAO' })), other.port);
+    expect(postsOf(other).map((p) => p.proc)).toEqual(['PKG_ORIENT.FORM']);
   });
 
   it('outra orientação concluída (iniciação científica), pela mesma lista', async () => {

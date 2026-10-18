@@ -1469,8 +1469,9 @@ de alteração.
   chamada de teste (18/10/2026, nome inexistente) devolveu
   `{"sta_validado":false,"mensagem":"Orientador não encontrado","idOrientado":"","seqFormOrientado":""}`
   e nenhuma lista do currículo mudou: **observado** que só consulta. O
-  conector ainda não faz a chamada: o identificador fica como a página o
-  trouxe, o que coincide com a página quando o nome não valida.
+  conector faz a mesma chamada antes de enviar uma orientação com o nome do
+  orientando trocado, e só manda os dois ocultos quando o nome valida
+  (`src/bridge/production/student.ts`).
 
 ### Órgão e unidade do projeto (lido em 18/10/2026)
 

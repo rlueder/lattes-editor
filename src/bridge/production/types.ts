@@ -123,6 +123,11 @@ export interface ProductionTarget {
    */
   organ?: { periodReason: string };
   /**
+   * O orientando: com o nome trocado, o envio refaz a validação que o Salvar
+   * da página faz (student.ts). idAttr: onde o XML guarda o identificador.
+   */
+  student?: { child: string; idAttr: string };
+  /**
    * Título e ano do item, para achar a linha da lista; os campos do
    * formulário são f_titulo e f_ano se não disser. `child` pode ser o
    * próprio elemento do item, quando o atributo é dele.

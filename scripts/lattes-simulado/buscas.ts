@@ -134,7 +134,29 @@ function agencies(): SimResponse {
   return html(h.page('Agência de fomento', links));
 }
 
+/** Orientandos com currículo no Lattes simulado: nome → identificador (sintéticos). */
+export const STUDENTS: Record<string, { id: string; seq: string }> = {
+  'Aluna Sintética de Exemplo': { id: '0000000000000001', seq: '1' },
+};
+
+/**
+ * A validação do nome do orientando (pkg_orient.valida_orientador_ajax), na
+ * forma da resposta real de 18/10/2026. O f_nme chega como o escape() da
+ * página o deixou.
+ */
+function studentCheck(req: SimRequest): SimResponse {
+  const name = (req.get('f_nme') ?? '').replace(/%([0-9A-F]{2})/gi, (_, hex: string) =>
+    String.fromCharCode(parseInt(hex, 16)),
+  );
+  const hit = STUDENTS[name.trim()];
+  const body = hit
+    ? `{"sta_validado":true ,"mensagem":"","idOrientado":"${hit.id}","seqFormOrientado":"${hit.seq}"}`
+    : '{"sta_validado":false ,"mensagem":"Orientador não encontrado","idOrientado":"","seqFormOrientado":""}';
+  return { contentType: 'application/json', html: body, status: 200 };
+}
+
 export const BUSCAS_ROUTES: Routes = {
+  'pkg_orient.valida_orientador_ajax': studentCheck,
   prc_agencia: () => agencies(),
   prc_curso_form: courses,
   prc_inst_form: institutions,

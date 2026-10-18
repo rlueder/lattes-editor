@@ -122,6 +122,16 @@ function post(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
  * no texto f_nme_agencia.
  */
 function lookupHidden(state: LattesState, item: XElement, t: ProductionTarget): string {
+  const student = t.student
+    ? h.hidden(
+        'f_id_orientado',
+        getAttr(partOf(item, t.student.child) ?? element(''), t.student.idAttr) ?? '',
+      ) + h.hidden('f_seq_form_orientado', '')
+    : '';
+  return student + lookupFields(state, item, t);
+}
+
+function lookupFields(state: LattesState, item: XElement, t: ProductionTarget): string {
   const spec = t.lookups;
   if (!spec) return '';
   const part = partOf(item, spec.child) ?? element('');
@@ -152,6 +162,9 @@ function lookupHidden(state: LattesState, item: XElement, t: ProductionTarget): 
 
 /** Os ocultos das buscas de volta para o XML; o que não chegou fica como está. */
 function writeLookups(state: LattesState, item: XElement, t: ProductionTarget, req: SimRequest) {
+  const id = req.get('f_id_orientado');
+  const holder = t.student && partOf(item, t.student.child);
+  if (t.student && holder && id !== null && id !== undefined) setAttr(holder, t.student.idAttr, id);
   const spec = t.lookups;
   const part = spec && partOf(item, spec.child);
   if (!spec || !part) return;

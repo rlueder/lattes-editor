@@ -89,10 +89,9 @@ buscas):
   **desligada**. No teste ao vivo de 18/10/2026 (projeto de teste na atuação
   da Campanha Nacional de Escolas da Comunidade), o Lattes recebeu o envio e
   continuou com o órgão de antes, tanto para uma unidade quanto para outro
-  órgão. Falta ver se a página do próprio Lattes troca o órgão na alteração:
-  a tentativa de rodar o Salvar da página num quadro foi barrada. Se ela
-  também não trocar, o órgão vai para "fica à mão" (excluir e incluir o
-  projeto).
+  órgão. A tentativa de rodar o Salvar da página num quadro foi barrada, e o
+  teste à mão ficou para depois: por ora o órgão fica à mão, com esse motivo
+  (`src/bridge/atuacao-by-hand.ts`).
 - O mesmo teste achou o motivo de nenhuma alteração de projeto ir: o
   conector procurava os vetores `financiadorProvider`, `producaoProvider` e
   `orientacaoProvider`, que a página real não tem. As grades são as tabelas
@@ -106,8 +105,11 @@ buscas):
   nome não valida. Mandar o ID novo quando o nome muda pede chamar
   `pkg_orient.valida_orientador_ajax`, um POST. Testado em 18/10/2026 com um
   nome de teste: devolve JSON (`sta_validado`, `mensagem`, `idOrientado`,
-  `seqFormOrientado`) e nenhuma lista mudou, ou seja, só consulta. Falta
-  ligar no envio da orientação quando o nome do orientando muda.
+  `seqFormOrientado`) e nenhuma lista mudou, ou seja, só consulta. Ligado
+  no envio da orientação (`src/bridge/production/student.ts`): com o nome do
+  orientando trocado, o conector faz a mesma validação antes do envio e,
+  como a página, só manda o identificador quando o nome valida. Testado no
+  Lattes simulado.
 
 Gravação no Lattes real em 18/10/2026, com base e registro da Fase 0: quatro
 itens de teste (orientação concluída e em andamento de mestrado, banca de

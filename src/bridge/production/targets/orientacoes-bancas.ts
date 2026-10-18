@@ -159,6 +159,7 @@ interface Orientation {
 function orientation(o: Orientation, done: boolean): ProductionTarget {
   const title = done ? 'TITULO' : 'TITULO-DO-TRABALHO';
   const student = done ? 'NOME-DO-ORIENTADO' : 'NOME-DO-ORIENTANDO';
+  const studentId = done ? 'NUMERO-ID-ORIENTADO' : 'NUMERO-ID-ORIENTANDO';
   const fields: Record<string, FieldMap | string> = {
     ...common(o.basics, title),
     [`${o.basics}@FLAG-RELEVANCIA`]: { field: 'F_RELEV', toForm: yesNo },
@@ -204,6 +205,10 @@ function orientation(o: Orientation, done: boolean): ProductionTarget {
       [o.detail, ['NUMERO-ID-ORIENTADO', 'NUMERO-ID-ORIENTANDO'], WHY.studentId],
     ]),
     nature: { field: 'F_COD_PROD', values: o.nature },
+    // O identificador do orientando sai da validação do nome (student.ts).
+    ...(lattesSchema.elements[o.detail]?.attributes.some((a) => a.name === studentId)
+      ? { student: { child: o.detail, idAttr: studentId } }
+      : {}),
     title: { attr: title, child: o.basics },
     year: { attr: 'ANO', child: o.basics },
   };

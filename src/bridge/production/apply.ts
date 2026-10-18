@@ -44,6 +44,7 @@ import {
   productionTarget,
   PROJECT_ORGAN_ENABLED,
 } from './plan.ts';
+import { resolveStudent } from './student.ts';
 import type { GridField, ProductionTarget } from './types.ts';
 
 const valueOf = (controls: FormControl[], name: string) =>
@@ -234,6 +235,12 @@ export async function applyProduction(
       if ('status' in resolved) return result(resolved.status, resolved.detail);
       chosen = resolved.set;
       chosenCheck = resolved.check;
+    }
+    // O orientando com nome novo: a validação que o Salvar da página faz (student.ts).
+    if (t.student && 'f_nme_orient' in set) {
+      const student = await resolveStudent(set.f_nme_orient ?? '', port, pairs);
+      chosen = { ...chosen, ...student.set };
+      chosenCheck = { ...chosenCheck, ...student.check };
     }
     let organShown: string | undefined;
     if (op.organ) {

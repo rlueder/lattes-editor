@@ -552,7 +552,7 @@ describe('atuação, atividades e áreas: o motivo de ficar à mão', () => {
         const p = findIn(root, (el) => el.name === 'PARTICIPACAO-EM-PROJETO')!;
         setAttr(p, 'NOME-ORGAO', 'Outro');
       })[0],
-    ).toMatch(/busca de órgão/);
+    ).toMatch(/não troca o órgão/);
     expect(
       reasonOf((root) => {
         const v = findIn(root, (el) => el.name === 'VINCULOS')!;

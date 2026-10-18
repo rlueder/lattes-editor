@@ -111,7 +111,7 @@ describe('órgão do projeto: o plano', () => {
     // Uma extensão sem a janela de órgãos: o motivo de antes.
     expect(
       reasons(unit('000001001004', 'Departamento de Genética'), { editProduction: true })[0],
-    ).toMatch(/busca de órgão/);
+    ).toMatch(/não troca o órgão/);
   });
 
   it('o texto da janela junta órgão e unidade', () => {
