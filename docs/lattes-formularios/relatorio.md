@@ -4,7 +4,7 @@ Gerado por `pnpm censo:relatorio` a partir das capturas em `docs/lattes-formular
 e de `src/schema/lattes.json`. Não editar à mão. Como capturar e o que cada
 grupo quer dizer está no `README.md` desta pasta.
 
-Formulários no censo: 88, com captura: 85, sem captura: 3.
+Formulários no censo: 89, com captura: 85, sem captura: 4.
 
 ## Atributos por grupo
 
@@ -14,8 +14,8 @@ Formulários no censo: 88, com captura: 85, sem captura: 3.
 | texto livre        |                     738 |               606 |
 | oculto             |                    1297 |               193 |
 | fora do formulário |                     920 |               635 |
-| sem captura        |                     143 |                44 |
-| total              |                    3441 |              1798 |
+| sem captura        |                     171 |                44 |
+| total              |                    3469 |              1798 |
 
 ## Formulários
 
@@ -75,7 +75,8 @@ ligação do formulário com os elementos do XML foi conferida.
 | Textos em jornais ou revistas (`texto-jornal`)                               | endereço conhecido    | observado | inferido  | 2026-10-15 |      6 |    10 |     27 |    5 |
 | Tradução (`traducao`)                                                        | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    15 |     27 |    3 |
 | Partitura musical (`partitura`)                                              | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    10 |     27 |    2 |
-| Prefácio, posfácio e outra produção bibliográfica (`prefacio-outras`)        | endereço desconhecido | inferido  | inferido  | falta      |        |       |        |      |
+| Prefácio, posfácio (`prefacio`)                                              | endereço conhecido    | observado | inferido  | falta      |        |       |        |      |
+| Outra produção bibliográfica (`prefacio-outras`)                             | endereço desconhecido | inferido  | inferido  | falta      |        |       |        |      |
 | Patente: janela "Incluir nova patente" (`patente-janela`)                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
 | Patente (`patente`)                                                          | endereço conhecido    | observado | observado | 2026-10-15 |      3 |     9 |     27 |   19 |
 | Programa de computador (`registro-PC`)                                       | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     8 |     28 |   19 |
@@ -144,7 +145,7 @@ não cobra estas até a passada de edição observar a ligação.
 
 ## Lacunas
 
-Formulários sem captura: `linha-de-pesquisa`, `capitulo`, `prefacio-outras`.
+Formulários sem captura: `linha-de-pesquisa`, `capitulo`, `prefacio`, `prefacio-outras`.
 
 Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA-ARTISTICA`, `APRESENTACAO-EM-RADIO-OU-TV`, `ARRANJO-MUSICAL`, `COMPOSICAO-MUSICAL`, `CURRICULO-VITAE`, `CURSO-DE-CURTA-DURACAO`, `DADOS-BASICOS-DA-APRESENTACAO-DE-OBRA-ARTISTICA`, `DADOS-BASICOS-DA-APRESENTACAO-EM-RADIO-OU-TV`, `DADOS-BASICOS-DA-COMPOSICAO-MUSICAL`, `DADOS-BASICOS-DA-OBRA-DE-ARTES-VISUAIS`, `DADOS-BASICOS-DE-SONOPLASTIA`, `DADOS-BASICOS-DO-ARRANJO-MUSICAL`, `DADOS-BASICOS-DO-CURSO-DE-CURTA-DURACAO`, `DETALHAMENTO-DA-APRESENTACAO-DE-OBRA-ARTISTICA`, `DETALHAMENTO-DA-APRESENTACAO-EM-RADIO-OU-TV`, `DETALHAMENTO-DA-COMPOSICAO-MUSICAL`, `DETALHAMENTO-DA-OBRA-DE-ARTES-VISUAIS`, `DETALHAMENTO-DE-SONOPLASTIA`, `DETALHAMENTO-DO-ARRANJO-MUSICAL`, `DETALHAMENTO-DO-CURSO-DE-CURTA-DURACAO`, `INFORMACAO-ADICIONAL-CURSO`, `INFORMACAO-ADICIONAL-INSTITUICAO`, `OBRA-DE-ARTES-VISUAIS`, `SONOPLASTIA`.
 

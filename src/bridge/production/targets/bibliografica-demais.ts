@@ -5,9 +5,8 @@
 // Inferido pelo rótulo (nenhum item na exportação do dono), e o link de
 // edição de cada linha também (o formulário de inclusão com f_seq).
 //
-// O prefácio e o posfácio ficam fora: o f_cod_tipo da lista deles e o
-// formulário não foram lidos, e a leitura das listas do menu só achou
-// inclusão de tradução e partitura.
+// O prefácio e o posfácio: a lista é f_cod_tipo=1C (link do menu "Prefácio,
+// posfácio") e o formulário, prc_bib_prefacio, lidos em 18/10/2026.
 
 import { byTable, country, language, media, yesNo } from '../mappers.ts';
 import type { ProductionTarget } from '../types.ts';
@@ -148,4 +147,75 @@ const OUTRA_BIBLIOGRAFICA: ProductionTarget = {
   year: { attr: 'ANO', child: 'DADOS-BASICOS-DE-OUTRA-PRODUCAO' },
 };
 
-export const DEMAIS_TARGETS: ProductionTarget[] = [TRADUCAO, PARTITURA, OUTRA_BIBLIOGRAFICA];
+/**
+ * Prefácio, posfácio, apresentação ou introdução (GN_BIB, POST
+ * PRC_BIB_PREFACIO), na lista prc_bib_demais_lista com f_cod_tipo=1C.
+ * Campos, limites e opções: o formulário de inclusão lido em 18/10/2026; o
+ * tipo e a natureza pelos rótulos das opções (F_COD_PROD 1C1 a 1C4, f_sub_tipo
+ * com o espaço no fim do valor). Inferido, como nas irmãs: a ligação de cada
+ * atributo pelo rótulo, que a alteração use o mesmo formulário com f_seq, e o
+ * link de cada linha. O formulário não tem DOI.
+ */
+const PREFACIO: ProductionTarget = {
+  element: 'PREFACIO-POSFACIO',
+  fields: {
+    ...under('DADOS-BASICOS-DO-PREFACIO-POSFACIO', {
+      ANO: 'f_ano',
+      'FLAG-RELEVANCIA': { field: 'F_RELEV', toForm: yesNo },
+      'HOME-PAGE-DO-TRABALHO': 'f_homepage',
+      IDIOMA: { field: 'F_IDIOMA', toForm: language },
+      'MEIO-DE-DIVULGACAO': { field: 'f_meio', toForm: media },
+      NATUREZA: {
+        field: 'f_sub_tipo',
+        toForm: byTable({
+          LIVRO: '31 ',
+          NAO_INFORMADO: '',
+          OUTRA: '33 ',
+          REVISTAS_OU_PERIODICOS: '32 ',
+        }),
+      },
+      'PAIS-DE-PUBLICACAO': { field: 'f_pais', toForm: country },
+      TIPO: {
+        field: 'F_COD_PROD',
+        toForm: byTable({
+          APRESENTACAO: '1C3',
+          INTRODUCAO: '1C4',
+          POSFACIO: '1C2',
+          PREFACIO: '1C1',
+        }),
+      },
+      TITULO: 'f_titulo',
+      'TITULO-INGLES': 'f_titulo_en',
+    }),
+    ...under('DETALHAMENTO-DO-PREFACIO-POSFACIO', {
+      'CIDADE-DA-EDITORA': 'f_cidade',
+      'EDITORA-DO-PREFACIO-POSFACIO': 'f_editora',
+      FASCICULO: 'f_fasciculo',
+      'ISSN-ISBN': 'f_issn',
+      'NOME-DO-AUTOR-DA-PUBLICACAO': 'f_autor_trad',
+      'NUMERO-DA-EDICAO-REVISAO': 'f_edicao',
+      SERIE: 'f_serie',
+      'TITULO-DA-PUBLICACAO': 'f_tit_obra',
+      VOLUME: 'f_volume',
+    }),
+    'INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS': 'f_ref',
+    ...INFO_EN,
+  },
+  form: { action: 'PRC_BIB_PREFACIO', name: 'GN_BIB' },
+  grids: [...ALL_GRIDS],
+  id: 'prefacio',
+  list: {
+    formProc: 'prc_bib_prefacio',
+    params: { f_cod_tipo: '1C' },
+    proc: 'prc_bib_demais_lista',
+  },
+  title: { attr: 'TITULO', child: 'DADOS-BASICOS-DO-PREFACIO-POSFACIO' },
+  year: { attr: 'ANO', child: 'DADOS-BASICOS-DO-PREFACIO-POSFACIO' },
+};
+
+export const DEMAIS_TARGETS: ProductionTarget[] = [
+  TRADUCAO,
+  PARTITURA,
+  PREFACIO,
+  OUTRA_BIBLIOGRAFICA,
+];

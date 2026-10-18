@@ -283,6 +283,21 @@ const CASES: Case[] = [
   },
   {
     edits: [
+      [
+        'DADOS-BASICOS-DO-PREFACIO-POSFACIO',
+        'HOME-PAGE-DO-TRABALHO',
+        'https://exemplo.org/prefacio',
+        'f_homepage',
+        'https://exemplo.org/prefacio',
+      ],
+      ['DADOS-BASICOS-DO-PREFACIO-POSFACIO', 'TIPO', 'POSFACIO', 'F_COD_PROD', '1C2'],
+    ],
+    id: 'prefacio',
+    proc: 'PRC_BIB_PREFACIO',
+    seq: '50',
+  },
+  {
+    edits: [
       ['DADOS-BASICOS-DO-LIVRO', 'TIPO', 'LIVRO_ORGANIZADO_OU_EDICAO', 'F_COD_PROD', '133'],
       [
         'DETALHAMENTO-DO-LIVRO',
@@ -418,7 +433,7 @@ describe('produções bibliográficas: o que fica à mão', () => {
     return plan.unsupported.map((u) => u.reason);
   };
 
-  it('capítulo pelo formulário lido em 18/10/2026; prefácio ainda não foi lido', () => {
+  it('capítulo e prefácio pelos formulários lidos em 18/10/2026', () => {
     const plan = planAfter((root) =>
       setAttr(partOf(root, '49', 'DADOS-BASICOS-DO-CAPITULO'), 'ANO', '2013'),
     );
@@ -428,11 +443,11 @@ describe('produções bibliográficas: o que fica à mão', () => {
       set: { f_ano: '2013' },
       target: 'capitulo',
     });
-    expect(
-      reasonOf((root) =>
-        setAttr(partOf(root, '50', 'DADOS-BASICOS-DO-PREFACIO-POSFACIO'), 'ANO', '2018'),
-      ),
-    ).toEqual([expect.stringMatching(/^O formulário de edição deste tipo ainda não foi lido/)]);
+    const prefacio = planAfter((root) =>
+      setAttr(partOf(root, '50', 'DADOS-BASICOS-DO-PREFACIO-POSFACIO'), 'ANO', '2018'),
+    );
+    expect(prefacio.unsupported).toEqual([]);
+    expect(prefacio.ops[0]).toMatchObject({ set: { f_ano: '2018' }, target: 'prefacio' });
   });
 
   it('o DOI, com o motivo', () => {

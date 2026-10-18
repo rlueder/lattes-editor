@@ -44,6 +44,8 @@ function menuItems(code: string): [string, string][] {
     ['Textos em jornais ou revistas', `pkg_texto.lista?f_cod=${code}`],
     ['Tradução', `prc_bib_demais_lista?f_cod_tipo=1A&f_cod=${code}`],
     ['Partitura musical', `prc_bib_demais_lista?f_cod_tipo=1B&f_cod=${code}`],
+    // Observado no menu real em 18/10/2026.
+    ['Prefácio, posfácio', `prc_bib_demais_lista?f_cod_tipo=1C&f_cod=${code}`],
     ['Patentes', `PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=PP&f_cod=${code}`],
     // As listas de orientações e bancas, como na captura de 13/10/2026 (docs/lattes-listas/).
     ['Orientações concluídas', `pkg_orient.lista?f_tipo=C&f_cod=${code}`],
