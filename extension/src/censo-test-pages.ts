@@ -6,9 +6,13 @@
 import { TEST_MARK, type TestJob } from '../../src/census/test-plan.ts';
 import { context } from './censo-test-donors.ts';
 
+type Grid = { getProvider: () => Record<string, unknown>[] };
+
 type PageWindow = Window & {
   dominio?: () => void;
-  gridDetAtiv?: { getProvider: () => Record<string, unknown>[] };
+  gridContatos?: Grid;
+  gridDetAtiv?: Grid;
+  titularPessoaGrid?: Grid;
   sele?: (txt: string) => void;
   seleDominio?: boolean;
 };
@@ -85,6 +89,23 @@ export function pageValues(w: Window, form: HTMLFormElement, job: TestJob): Reco
     const line = `${TEST_MARK} ${job.tag}`;
     grid.splice(0, grid.length, { c: 0, l: line }, {});
     values.cargo = line;
+  }
+
+  // Patente: o depositante e as datas são grades. Você como depositante (a
+  // sua linha do autorDP do menu) e a data de depósito (código 1).
+  const holders = page.titularPessoaGrid?.getProvider();
+  const owner = (window as unknown as { autorDP?: Record<string, string>[] }).autorDP?.find(
+    (r) => !r.c,
+  );
+  if (holders && owner && !holders.some((r) => r.l)) {
+    holders.splice(0, holders.length, { c: '', l: owner.l, t: owner.t });
+    values.depositante = owner.l ?? '';
+  }
+  const dates = page.gridContatos?.getProvider();
+  if (dates && !dates.some((r) => r.id)) {
+    const day = `${String(10 + (job.variant % 18)).padStart(2, '0')}/03/${2005 + (job.variant % 15)}`;
+    dates.unshift({ contato: 'Depósito', endereco: day, id: '1' });
+    values.deposito = day;
   }
 
   // Artigo: o periódico sai da busca, que grava título, ISSN e código.
