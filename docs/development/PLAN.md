@@ -1,0 +1,129 @@
+# Plano: o que ainda vai à mão no conector
+
+## Objetivo
+
+Levar ao envio pelo conector as trocas que hoje vão à mão por limitação do
+editor, e não do Lattes. A medida é `node scripts/cobertura-conector.ts`: no
+`fixtures/demo.xml`, 390 de 665 trocas de atributo viram envio (18/10/2026).
+Das 275 que não viram, 148 são limite do próprio Lattes (campo que o
+formulário não tem, dado que o Lattes gera, DOI) e ficam como estão. As
+outras 127 são o alvo deste plano.
+
+## Estado atual
+
+- 18/10/2026: passada completa no Lattes real terminada (PR #100). 340 itens de
+  teste criados e removidos, 2181 ligações campo ↔ atributo observadas, 13
+  divergências em `docs/lattes-formularios/pendencias.json`.
+- A limpeza dos itens de teste se apoiou na marca "TESTE EDITOR APAGAR" e
+  deixou 23 itens para trás (formações sem campo de texto e uma lista que o
+  menu abre por outro formato de link). Tudo removido e republicado; daqui em
+  diante vale a Fase 0.
+- Nenhuma fase abaixo começou.
+
+## Fases
+
+### Fase 0: base e registro dos itens de teste (só código)
+
+Antes de qualquer item de teste novo no Lattes real:
+
+1. "Ler formulários" guarda uma cópia de todas as listas que o menu abre, em
+   qualquer formato de link, com o texto e o link de cada linha. Sem essa
+   base, o lote não começa.
+2. Depois de cada lote, o registro guarda as linhas que apareceram, com o link.
+3. A remoção trabalha pelo registro: exclui só a linha registrada, e só se o
+   texto dela ainda bate.
+4. Fim só quando todas as listas voltam a ser iguais à base. O que sobrar, ou o
+   que faltar da base, aparece no painel.
+
+### Fase 1: o script de cobertura simula a escolha pela busca (só código)
+
+`scripts/cobertura-conector.ts` troca só o nome da instituição, do curso e da
+agência, sem o código, que é justamente o caso que o planejador recusa. Com a
+troca simulada como a escolha pela lista faz (código e nome juntos), as
+recusas da formação (cerca de 14) deixam de contar. Nenhuma mudança no envio.
+
+### Fase 2: buscas do Lattes em orientações e bancas
+
+O seletor e as buscas da formação já existem (`src/ui/LiveListField.tsx`,
+`src/ui/live-lists.ts`, `src/bridge/formacao-lookups.ts`, mensagens
+`buscar-instituicao` e `pedir-cursos`). Falta:
+
+- O seletor por par de atributos (`NOME-DA-INSTITUICAO`, `NOME-DO-CURSO`,
+  `NOME-DA-AGENCIA` das orientações concluídas; `NOME-INSTITUICAO` e
+  `NOME-CURSO` das em andamento e das bancas).
+- `pedir-cursos` com `f_pgm=TESE` e o nível da natureza (`retnivel()` da
+  página de orientação).
+- No envio, os ocultos `f_cod_inst`/`f_cod_inst2` (V no primeiro), `f_inst_old`,
+  `f_cod_curso`/`f_cod_curso2`, `f_curso_old`, `f_agencia`, `f_nme_agencia`.
+- ID do orientando: `pkg_orient.valida_orientador_ajax` preenche
+  `f_id_orientado` e `f_seq_form_orientado`. É um POST; conferir que só
+  consulta antes de usar.
+- Órgão do projeto: `PKG_PROJETO.pp_orgao_cargo` grava `f_codorgao`,
+  `f_codorgao2`, `f_orgao_old`. A resposta ainda não foi lida.
+
+No Lattes real: as buscas são só leitura; uma gravação acompanhada por tipo
+(orientação concluída, em andamento, banca, órgão do projeto).
+
+### Fase 3: capítulo de livro e prefácio
+
+O formulário de edição do capítulo nunca foi lido; a captura só tem o do
+livro (`PKG_LVR_CAP.FORM_LVR`, sem opção de capítulo). O currículo não tem
+capítulo, então a leitura pede um item de teste (com a Fase 0). Depois, um
+alvo `CAPITULO` em `src/bridge/production/targets/bibliografica-livros.ts`
+no molde do livro. Prefácio: confirmar o `f_cod_tipo` da lista (1C).
+
+### Fase 4: grades e o resto
+
+- Nacionalidade (só código): derivar do país de nacionalidade e deixar o campo
+  só para ler; E→B vira `f_pais_nacio=BRA`.
+- Coordenador do projeto (só código): escolha única de coordenador na equipe,
+  com o dono como padrão em projeto novo; recusa só quando ninguém fica.
+- Potencial de inovação: pedir o texto (até 400) ao passar de não para sim e
+  mandar com `f_sta_inovacao=S`.
+- Áreas de atuação: `f_area_l` como `l|c@…` e `f_privacidade` como `1@…`, com o
+  código de 8 dígitos tirado da árvore `areaDP`; até 6 áreas. Uma gravação de
+  teste confirma o formato sem a chave `r`.
+- Contatos do endereço (e-mails, redes sociais, outra forma): capturar os
+  scripts de `prc_endereco` e uma gravação de teste.
+- Pessoa com deficiência: capturar o script de `prc_ident` e uma gravação de
+  teste com um tipo e com dois.
+
+### Fase 5: nome para citação
+
+O `t` vai em cada linha de `f_autores_l`, mas uma troca só da citação já
+voltou "conferido" com o Lattes guardando a antiga. Uma gravação de teste
+decide entre mandar o `t` novo na linha ou alterar a entrada do dicionário de
+coautores (`pkg_dic_autor.lista`, 13 linhas no currículo), que muda a citação
+em todos os itens que a usam.
+
+### Fase 6: substituir (incluir o novo e excluir o antigo)
+
+Para trocas que mudam o tipo do item (nível da formação, natureza do evento):
+uma operação só, que inclui, confere e só então exclui. Se a inclusão falha,
+nada é excluído; se a exclusão falha, os dois ficam e o envio ao CNPq trava
+até a pessoa resolver. Começa por eventos e formação. A exclusão da formação
+ainda precisa ser vista no Lattes real.
+
+## Ficam à mão, com o motivo
+
+- Nome do pai e da mãe: o formulário de identificação só tem o oculto.
+- Substituir atuação: excluir a atuação apaga atividades, vínculos, projetos
+  e linhas de pesquisa, e quase nada disso se inclui de novo pelo conector.
+- Substituir orientação ou banca: o conector não inclui nem exclui produções,
+  e projetos apontam para elas.
+
+## Ordem
+
+0 e 1 (só código), as partes só de código da 4, depois 2, 3, o resto da 4, 5
+e 6. Cada sessão no Lattes real começa pela base da Fase 0.
+
+## Contexto
+
+- Relatórios dos quatro levantamentos de 18/10/2026: buscas (formação já tem
+  seletor; faltam orientações, bancas, ID do orientando e órgão), substituir
+  (inclusão existe para formação, eventos e parte da atuação; exclusão só de
+  idioma e vínculo), capítulo e citação, grades.
+- Páginas salvas da investigação: `orient.html`, `projeto-P.html`,
+  `inst-form.html`, `inst-ativ.html`, `revisor-agencia.html`, `periodico.html`
+  (fora do repositório).
+- `docs/lattes_internals.md`, seção 18, para as buscas.
