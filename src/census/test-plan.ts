@@ -94,6 +94,13 @@ export const VALID_ISSN = '0028-0836';
 export const VALID_ISBN = '9780306406157';
 
 /** O valor de teste de um campo de texto, dentro do limite dele. */
+/** Dígitos estáveis de uma etiqueta (registro-PC-v2), para um número único por item. */
+function uniqueDigits(tag: string): string {
+  let h = 0;
+  for (const ch of tag) h = (h * 31 + ch.charCodeAt(0)) % 1_000_000_007;
+  return String(h).padStart(10, '0');
+}
+
 export function textValue(name: string, maxLength: number, variant: number, tag: string): string {
   const max = maxLength > 0 ? maxLength : 200;
   // O artigo aceito tem o ano previsto, que não pode ser antes deste.
@@ -101,6 +108,9 @@ export function textValue(name: string, maxLength: number, variant: number, tag:
     ? String(new Date().getFullYear())
     : String(2005 + (variant % 15));
   if (/doi/i.test(name)) return '';
+  // O número do registro ou da patente é único por instituição: o marcador
+  // cortado em 16 caracteres repetia entre os itens.
+  if (/cod_reg/i.test(name)) return `TESTE${uniqueDigits(tag)}`.slice(0, max);
   if (/issn/i.test(name)) return VALID_ISSN.slice(0, max);
   if (/isbn/i.test(name)) return VALID_ISBN.slice(0, max);
   if (/ano/i.test(name) && max <= 4) return year;

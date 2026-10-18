@@ -64,6 +64,11 @@ describe('itens de teste: o plano', () => {
     expect(textValue('f_titulo', 400, 0, 'tec-v0')).toBe(`${TEST_MARK} tec-v0 f_titulo`);
     expect(textValue('f_cidade', 10, 0, 'tec-v0')).toHaveLength(10);
     expect(textValue('f_ano', 4, 3, 'x')).toBe('2008');
+    // Número de registro único por item, dentro do tamanho do campo.
+    const reg = textValue('f_cod_reg', 16, 0, 'patente-v0');
+    expect(reg).toMatch(/^TESTE\d+$/);
+    expect(reg.length).toBeLessThanOrEqual(16);
+    expect(textValue('f_cod_reg', 16, 0, 'patente-v1')).not.toBe(reg);
     expect(textValue('f_dta_ini', 10, 1, 'x')).toBe('11/02/2006');
     expect(textValue('f_mes_ini', 2, 11, 'x')).toBe('12');
     expect(textValue('f_duracao', 4, 2, 'x')).toBe('12');
