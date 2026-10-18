@@ -62,11 +62,14 @@ export function pageValues(w: Window, form: HTMLFormElement, job: TestJob): Reco
   const agency =
     context.agencies[job.variant % Math.max(1, context.agencies.length)] ?? context.agency;
 
-  // Fora da formação, o código de instituição copiado de uma formação sua
-  // não cabe (ORA-12899 na atuação, ORA-06502 no projeto): vale uma
+  // Fora da formação, a instituição copiada de uma formação sua não serve
+  // (ORA-12899 na atuação, ORA-06502 no projeto, FK na orientação): vale uma
   // instituição da lista de agências do Lattes, com código de 12.
+  const copied = (name: string) =>
+    !!context.lookups[name] && field(name)?.value === context.lookups[name];
+  const fromFormation = copied('f_cod_inst') || copied('f_cod_inst2');
   const code = field('f_cod_inst')?.value ?? '';
-  if (agency && code.length > 12 && !/FORMACAO/i.test(form.name)) {
+  if (agency && (code.length > 12 || fromFormation) && !/FORMACAO/i.test(form.name)) {
     write(institution(agency.code, agency.name));
     // A orientação liga o curso à instituição (FK_INST_TESE_ORIENTADA): o
     // curso da formação não serve, e o nome dele entra como texto.
