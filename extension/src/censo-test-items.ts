@@ -10,9 +10,7 @@
 
 import {
   consistencyFixes,
-  matchesCreated,
   pickOption,
-  TEST_MARK,
   type TestJob,
   textValue,
 } from '../../src/census/test-plan.ts';
@@ -25,6 +23,7 @@ import {
   setFields,
 } from './censo-test-donors.ts';
 import { pageValues, silenceDialogs } from './censo-test-pages.ts';
+import { pageTitle, removal } from './censo-test-removal.ts';
 
 export interface TestResult {
   id: string;
@@ -404,42 +403,45 @@ const withoutCode = (p: string) => p.replace(/([?&])f_cod=[A-Z0-9]+&?/, '$1').re
 export async function removeTestItems(
   code: string,
   get: (path: string) => Promise<{ html: string }>,
-  { batch = 10, delayMs = [3000, 6000] }: BatchOptions = {},
+  { batch = 10, delayMs = [3000, 6000], dryRun = false }: BatchOptions & { dryRun?: boolean } = {},
 ) {
   const menu = document.documentElement.outerHTML;
   const lists = [
     ...new Set(
       [...menu.matchAll(/setarUrl\('([^']+)'/g)]
-        .map((m) => withoutCode(m[1]!.replace(/&amp;/g, '&')))
+        .map((m) => m[1]!.replace(/&amp;/g, '&'))
         .filter((p) => /lista/i.test(p)),
     ),
   ];
   const progress = load();
   const removed: string[] = [];
   setLive({ done: 0, last: undefined, phase: 'removendo', total: batch });
+  const created = progress.results.filter((r) => r.ok && r.id !== 'idioma');
   for (const list of lists) {
     if (removed.length >= batch) break;
-    const items = editLinks((await get(list)).html).map(withoutCode);
+    // A leitura vai com o f_cod (sem ele o Lattes responde 404, e a remoção
+    // achava zero itens); o quadro põe o f_cod sozinho (openFrame).
+    const items = editLinks((await get(list)).html);
     for (const path of items) {
       if (removed.length >= batch) break;
       const html = (await get(path)).html;
-      const created = progress.results.filter((r) => r.ok && r.id !== 'idioma');
-      if (!html.includes(TEST_MARK) && !created.some((r) => matchesCreated(html, r.values)))
+      const how = removal(path, html, created);
+      if (!how) continue;
+      // Ensaio: só a lista do que sairia, sem abrir nem excluir nada.
+      if (dryRun) {
+        removed.push(`${how} ${path.split('?')[0]} ${pageTitle(html)}`);
         continue;
-      const frame = await openFrame(path, code);
+      }
+      const frame = await openFrame(withoutCode(path), code);
       try {
-        const w = frame.contentWindow as FrameWindow;
-        await submit(frame, (fw) => {
-          if (fw.del) fw.del();
-          else {
-            const form = fw.document.forms[0];
-            const ctr = form?.elements.namedItem('f_ctr') as HTMLInputElement | null;
-            if (!form || !ctr) throw new Error('Sem como excluir nesta página');
-            ctr.value = 'E';
-            form.submit();
-          }
+        const msgs = await submit(frame, (fw) => {
+          const page = fw as FrameWindow & { dele?: () => void };
+          if (how === 'atuacao') page.dele!();
+          else if (page.del) page.del();
+          else throw new Error('Sem como excluir nesta página');
         });
-        if (!w.document) continue;
+        // Só conta o que a página confirmou: antes, uma exceção também contava.
+        if (msgs.some((m) => /^exceção/.test(m))) continue;
         removed.push(path);
         progress.removed = [...progress.removed, path];
         save(progress);
@@ -451,6 +453,7 @@ export async function removeTestItems(
     }
   }
   setLive({ phase: 'parado' });
+  if (dryRun) return { ensaio: removed, removidos: 0, total: progress.removed.length };
   return { removidos: removed.length, total: progress.removed.length };
 }
 
