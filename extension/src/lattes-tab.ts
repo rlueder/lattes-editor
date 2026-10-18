@@ -366,7 +366,7 @@ type CensusAction = 'andamento' | 'criar' | 'preparar' | 'remover';
 export async function runCensusInPage(
   tabId: number,
   action: CensusAction,
-  options: { batch?: number; retryFailed?: boolean },
+  options: { batch?: number; dryRun?: boolean; retryFailed?: boolean },
 ): Promise<{ error?: string; result?: unknown }> {
   const long = <T>(start: () => Promise<T>) =>
     untilTabCloses(tabId, start, chrome.tabs.onRemoved, TEST_ITEMS_TIMEOUT_MS);

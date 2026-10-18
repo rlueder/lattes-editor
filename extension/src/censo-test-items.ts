@@ -8,22 +8,16 @@
 // em "Salvar". As mensagens que ela mostraria na caixa do Lattes voltam no
 // resultado em vez de aparecer na tela.
 
+import { type PlacedRow, removalOrder } from '../../src/census/test-ledger.ts';
 import {
   consistencyFixes,
   pickOption,
   type TestJob,
   textValue,
 } from '../../src/census/test-plan.ts';
-import {
-  context,
-  editLinks,
-  ensureContext,
-  placed,
-  PLACELESS,
-  setFields,
-} from './censo-test-donors.ts';
+import { context, ensureContext, placed, PLACELESS, setFields } from './censo-test-donors.ts';
+import { clearBase, ledgerNow, loadBase, newAtuacao } from './censo-test-ledger.ts';
 import { pageValues, silenceDialogs } from './censo-test-pages.ts';
-import { pageTitle, removal } from './censo-test-removal.ts';
 
 export interface TestResult {
   id: string;
@@ -73,6 +67,10 @@ export function live(): LiveProgress | undefined {
 }
 
 interface Progress {
+  /** O que as listas têm a mais que a base (o registro da Fase 0). */
+  added?: PlacedRow[];
+  /** O que sumiu da base: não pode acontecer, e aparece no resumo. */
+  missing?: PlacedRow[];
   removed: string[];
   results: TestResult[];
 }
@@ -363,6 +361,7 @@ export async function createTestItems(
   get: (path: string) => Promise<{ html: string }>,
   { batch = 10, delayMs = [3000, 6000], receiver, retryFailed = false }: BatchOptions = {},
 ) {
+  if (!loadBase()) throw new Error('Sem a base das listas: rode "Ler formulários" antes de criar.');
   await ensureContext(code, get);
   const progress = load();
   const tried = new Map(progress.results.map((r) => [r.tag, r]));
@@ -385,6 +384,12 @@ export async function createTestItems(
       () => undefined,
     );
   }
+  // O registro: o que as listas têm agora a mais que a base.
+  setLive({ phase: 'lendo' });
+  const ledger = await ledgerNow(document.documentElement.outerHTML, code, get);
+  progress.added = ledger.added;
+  progress.missing = ledger.missing;
+  save(progress);
   setLive({ phase: 'parado' });
   return { ...testProgress(jobs), lote: next.map((j) => j.tag) };
 }
@@ -395,9 +400,12 @@ export function testProgress(jobs?: TestJob[]) {
   const failed = progress.results.filter((r) => !r.ok);
   return {
     agora: live(),
+    base: loadBase()?.at ?? null,
     criados: progress.results.filter((r) => r.ok).length,
     falharam: failed.map((r) => ({ msgs: r.msgs, tag: r.tag })),
     faltam: jobs ? jobs.filter((j) => !progress.results.some((r) => r.tag === j.tag)).length : null,
+    faltandoDaBase: (progress.missing ?? []).map((r) => `${r.list} :: ${r.text}`),
+    registrados: progress.added?.length ?? 0,
     removidos: progress.removed.length,
     total: jobs?.length ?? null,
   };
@@ -406,8 +414,11 @@ export function testProgress(jobs?: TestJob[]) {
 const withoutCode = (p: string) => p.replace(/([?&])f_cod=[A-Z0-9]+&?/, '$1').replace(/[?&]$/, '');
 
 /**
- * Remove um lote dos itens de teste: percorre as listas do menu, abre cada
- * item cujo formulário tem o marcador e o exclui pelo próprio botão da página.
+ * Remove um lote dos itens de teste pelo registro: as linhas que não estavam
+ * na base das listas (Fase 0). Não depende da marca, que nem todo formulário
+ * tem onde levar. Uma atuação só sai inteira se a página dela não existia na
+ * base. No fim, o que ainda difere da base volta no resumo; com dryRun, só a
+ * lista do que sairia.
  */
 export async function removeTestItems(
   code: string,
@@ -415,62 +426,58 @@ export async function removeTestItems(
   { batch = 10, delayMs = [3000, 6000], dryRun = false }: BatchOptions & { dryRun?: boolean } = {},
 ) {
   const menu = document.documentElement.outerHTML;
-  const lists = [
-    ...new Set(
-      [...menu.matchAll(/setarUrl\('([^']+)'/g)]
-        .map((m) => m[1]!.replace(/&amp;/g, '&'))
-        .filter((p) => /lista/i.test(p)),
-    ),
-  ];
   const progress = load();
-  const removed: string[] = [];
-  setLive({ done: 0, last: undefined, phase: 'removendo', total: batch });
-  const created = progress.results.filter((r) => r.ok && r.id !== 'idioma');
-  for (const list of lists) {
-    if (removed.length >= batch) break;
-    // A leitura vai com o f_cod (sem ele o Lattes responde 404, e a remoção
-    // achava zero itens); o quadro põe o f_cod sozinho (openFrame).
-    const listHtml = (await get(list)).html;
-    // O revisor agrupa por periódico: os itens ficam numa lista dentro da lista.
-    const nested = [...listHtml.matchAll(/setarUrl\('([^']*lista_periodico[^']*)'/gi)].map((m) =>
-      m[1]!.replace(/&amp;/g, '&'),
-    );
-    const items = [editLinks(listHtml)];
-    for (const inner of nested) items.push(editLinks((await get(inner)).html));
-    // Um link com f_ctr é ação ("Incluir novo" leva f_ctr=I), não um item.
-    for (const path of items.flat().filter((p) => !/[?&]f_ctr=/i.test(p))) {
-      if (removed.length >= batch) break;
-      const html = (await get(path)).html;
-      const how = removal(path, html, created);
-      if (!how) continue;
-      // Ensaio: só a lista do que sairia, sem abrir nem excluir nada.
-      if (dryRun) {
-        removed.push(`${how} ${path.split('?')[0]} ${pageTitle(html)}`);
-        continue;
-      }
-      const frame = await openFrame(withoutCode(path), code);
-      try {
-        const msgs = await submit(frame, (fw) => {
-          const page = fw as FrameWindow & { dele?: () => void };
-          if (how === 'atuacao') page.dele!();
-          else if (page.del) page.del();
-          else throw new Error('Sem como excluir nesta página');
-        });
-        // Só conta o que a página confirmou: antes, uma exceção também contava.
-        if (msgs.some((m) => /^exceção/.test(m))) continue;
-        removed.push(path);
-        progress.removed = [...progress.removed, path];
-        save(progress);
-        setLive({ done: removed.length, last: path.split('?')[0] });
-      } finally {
-        frame.remove();
-      }
-      await pause(delayMs);
-    }
+  setLive({ done: 0, last: undefined, phase: 'lendo', total: undefined });
+  const { added } = await ledgerNow(menu, code, get);
+  // Um link com f_ctr é ação, nunca um item a abrir.
+  const plan = removalOrder(added)
+    .filter((r) => r.link && !/[?&]f_ctr=/i.test(r.link))
+    .filter((r) => !/cargos_vinculos/i.test(r.link) || newAtuacao(r))
+    .slice(0, batch);
+  if (dryRun) {
+    setLive({ phase: 'parado' });
+    return {
+      ensaio: plan.map((r) => `${r.list} :: ${r.text}`),
+      registrados: added.length,
+      removidos: 0,
+      total: progress.removed.length,
+    };
   }
+  const removed: string[] = [];
+  setLive({ done: 0, last: undefined, phase: 'removendo', total: plan.length });
+  for (const row of plan) {
+    const frame = await openFrame(withoutCode(row.link), code);
+    try {
+      const msgs = await submit(frame, (fw) => {
+        const page = fw as FrameWindow & { dele?: () => void };
+        if (/cargos_vinculos/i.test(row.link)) page.dele!();
+        else if (page.del) page.del();
+        else throw new Error('Sem como excluir nesta página');
+      });
+      // Só conta o que a página confirmou.
+      if (msgs.some((m) => /^exceção/.test(m))) continue;
+      removed.push(row.text);
+      progress.removed = [...progress.removed, `${row.list} :: ${row.text}`];
+      save(progress);
+      setLive({ done: removed.length, last: row.text.slice(0, 40) });
+    } finally {
+      frame.remove();
+    }
+    await pause(delayMs);
+  }
+  // A conferência: o que ainda difere da base, para mais e para menos.
+  setLive({ phase: 'lendo' });
+  const after = await ledgerNow(menu, code, get);
+  progress.added = after.added;
+  progress.missing = after.missing;
+  save(progress);
   setLive({ phase: 'parado' });
-  if (dryRun) return { ensaio: removed, removidos: 0, total: progress.removed.length };
-  return { removidos: removed.length, total: progress.removed.length };
+  return {
+    faltandoDaBase: after.missing.map((r) => `${r.list} :: ${r.text}`),
+    registrados: after.added.length,
+    removidos: removed.length,
+    total: progress.removed.length,
+  };
 }
 
 /** Esquece o andamento guardado (depois de remover tudo). */
@@ -480,4 +487,5 @@ export function resetTestItems(): void {
   } catch {
     // Nada guardado.
   }
+  clearBase();
 }

@@ -26,6 +26,23 @@ export function TestItemsPanel() {
           ? `Criados ${s.criados ?? 0}${s.total ? ` de ${s.total}` : ''} · faltam ${s.faltam ?? '?'} · falharam ${s.falharam?.length ?? 0} · removidos ${s.removidos ?? 0}`
           : 'Comece por "Ler formulários".'}
       </p>
+      {s && (
+        <p className="muted">
+          {s.base
+            ? `Base das listas de ${new Date(s.base).toLocaleString('pt-BR')} · a mais que a base: ${s.registrados ?? 0}`
+            : 'Sem base das listas: "Ler formulários" tira uma antes do primeiro item.'}
+        </p>
+      )}
+      {s?.faltandoDaBase && s.faltandoDaBase.length > 0 && (
+        <div className="test-items-error" role="alert">
+          <p>Sumiram da base ({s.faltandoDaBase.length}). Confira no Lattes:</p>
+          <ul>
+            {s.faltandoDaBase.map((r) => (
+              <li key={r}>{r}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       <label className="test-items-batch">
         Lote
         <input
@@ -55,6 +72,13 @@ export function TestItemsPanel() {
         >
           Tentar de novo os que falharam
         </button>
+        <button
+          disabled={!!pending}
+          type="button"
+          onClick={() => ask('remover', { batch, dryRun: true })}
+        >
+          Ver o que sai
+        </button>
         <button disabled={!!pending} type="button" onClick={() => ask('remover', { batch })}>
           Remover lote
         </button>
@@ -71,6 +95,16 @@ export function TestItemsPanel() {
         <p className="test-items-error" role="alert">
           {last.error}
         </p>
+      )}
+      {s?.ensaio && (
+        <details open>
+          <summary>Sairiam ({s.ensaio.length})</summary>
+          <ul>
+            {s.ensaio.map((r, i) => (
+              <li key={`${i}-${r}`}>{r}</li>
+            ))}
+          </ul>
+        </details>
       )}
       {s?.falharam && s.falharam.length > 0 && (
         <details>

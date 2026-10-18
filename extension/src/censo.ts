@@ -39,6 +39,7 @@ import {
   setLive,
   testProgress,
 } from './censo-test-items.ts';
+import { loadBase, saveBase, snapshotLists } from './censo-test-ledger.ts';
 
 declare const __CENSO_VERSAO__: string;
 declare const __CENSUS_BUILD__: string;
@@ -266,6 +267,23 @@ async function prepareTestItems() {
     throw new Error(
       `A leitura dos formulários parou (${lost.entries.filter((e) => e.status === 'nao-lido').length} sem ler): a sessão do Lattes pode ter caído. Entre de novo e rode outra vez.`,
     );
+  }
+  // A base das listas (Fase 0), antes do primeiro item: sem ela, a remoção
+  // não teria com o que comparar.
+  if (!loadBase()) {
+    if (testProgress().criados > 0) {
+      throw new Error(
+        'Há itens de teste criados sem a base das listas. Confira e remova-os à mão, rode resetTestItems() e comece de novo.',
+      );
+    }
+    setLive({ done: 0, last: undefined, phase: 'lendo', total: undefined });
+    reading = true;
+    try {
+      saveBase(await snapshotLists(await menuHtml(), await code(), get));
+    } finally {
+      reading = false;
+      setLive({ phase: 'parado' });
+    }
   }
   return testProgress(testJobs(captured));
 }

@@ -41,6 +41,7 @@ export async function answerTestItems(
     }
     const result = await runCensusInPage(tabId, msg.acao, {
       batch: msg.batch,
+      dryRun: msg.dryRun,
       retryFailed: msg.retryFailed,
     });
     await reply(result);

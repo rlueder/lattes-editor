@@ -87,6 +87,8 @@ export type EditorMessage =
   | {
       acao: TestItemsAction;
       batch?: number;
+      /** Na remoção: só a lista do que sairia, sem excluir. */
+      dryRun?: boolean;
       id: string;
       retryFailed?: boolean;
       type: 'itens-teste';

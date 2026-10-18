@@ -19,10 +19,18 @@ export interface TestItemsLive {
 
 export interface TestItemsSummary {
   agora?: TestItemsLive;
+  /** Quando a base das listas foi tirada (Fase 0); null sem base. */
+  base?: string | null;
   criados?: number;
+  /** No ensaio da remoção: as linhas que sairiam. */
+  ensaio?: string[];
   falharam?: { msgs: string[]; tag: string }[];
   faltam?: number | null;
+  /** Linhas da base que sumiram: não pode acontecer. */
+  faltandoDaBase?: string[];
   lote?: string[];
+  /** Linhas que as listas têm a mais que a base: o que o teste acrescentou. */
+  registrados?: number;
   removidos?: number;
   total?: number | null;
 }
@@ -83,7 +91,8 @@ export function useTestItems() {
             { acao: waiting.acao, at: Date.now(), error: msg.error, result: msg.result },
             ...s.log,
           ].slice(0, 20),
-          summary: summaryOf(msg.result) ?? s.summary,
+          // A remoção não traz os contadores da criação: junta com o resumo de antes.
+          summary: { ...s.summary, ensaio: undefined, ...summaryOf(msg.result) },
         }));
       }),
     [waiting],
@@ -107,7 +116,10 @@ export function useTestItems() {
     };
   }, [state, waiting]);
 
-  const ask = (acao: TestItemsAction, extra: { batch?: number; retryFailed?: boolean } = {}) => {
+  const ask = (
+    acao: TestItemsAction,
+    extra: { batch?: number; dryRun?: boolean; retryFailed?: boolean } = {},
+  ) => {
     if (waiting) return;
     const id = `itens-teste-${Date.now()}`;
     setWaiting({ acao, id });
