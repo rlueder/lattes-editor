@@ -67,7 +67,9 @@ export function pageValues(w: Window, form: HTMLFormElement, job: TestJob): Reco
   // instituição da lista de agências do Lattes, com código de 12.
   const copied = (name: string) =>
     !!context.lookups[name] && field(name)?.value === context.lookups[name];
-  const fromFormation = copied('f_cod_inst') || copied('f_cod_inst2');
+  // O curso também: a instituição pode vir de outro item (até de um de
+  // teste), e o curso da formação junto com ela viola a chave do curso.
+  const fromFormation = ['f_cod_inst', 'f_cod_inst2', 'f_cod_curso', 'f_cod_curso2'].some(copied);
   const code = field('f_cod_inst')?.value ?? '';
   if (agency && (code.length > 12 || fromFormation) && !/FORMACAO/i.test(form.name)) {
     write(institution(agency.code, agency.name));
