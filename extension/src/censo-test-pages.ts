@@ -89,6 +89,9 @@ export function pageValues(w: Window, form: HTMLFormElement, job: TestJob): Reco
     write(institution(agency.code, agency.name));
   }
 
+  // Projeto numa atuação escolhida (BatchOptions.project): por cima da instituição de agência.
+  if (form.name === 'GN_PROJETO' && context.project) write(context.project);
+
   // Atuação: o vínculo sai da janela da página (sele). Escolhido direto, o
   // onchange de f_stavinc volta a escolha para o vazio, e o check() reclama.
   if (field('f_stavinc') && page.sele && page.dominio) {

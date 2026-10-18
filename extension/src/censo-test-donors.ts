@@ -76,6 +76,11 @@ interface Context {
   /** Um periódico da busca do Lattes, como a janela dela grava (selecionar). */
   journal?: { issn: string; seq: string; title: string };
   lookups: Record<string, string>;
+  /**
+   * O projeto de teste numa atuação escolhida (BatchOptions.project): os
+   * campos que seleciona() e atribuir() das janelas gravariam.
+   */
+  project?: Record<string, string>;
 }
 
 /**
@@ -157,4 +162,47 @@ export function placed(job: TestJob): string {
   }
   const extra = `f_codinst=${donor.f_codinst ?? ''}&f_seq_ativ=${donor.f_seq_ativ}`;
   return `${job.path}${job.path.includes('?') ? '&' : '?'}${extra}`;
+}
+
+/**
+ * Os campos do projeto de teste numa atuação sua, como a página os grava:
+ * seleciona() da janela de instituições com vínculo (PKG_PROJETO.pp_lista_inst,
+ * lida em 18/10/2026: o código sem a letra em f_cod_inst com V, senão em
+ * f_cod_inst2, e o nome em f_inst e f_inst_old) e, com organ, o primeiro órgão
+ * da janela de órgãos (atribuir(), tipo 0 em f_codorgao). Só GET.
+ */
+export async function projectFields(
+  code: string,
+  get: (path: string) => Promise<{ html: string }>,
+  institution: string,
+  organ: boolean,
+): Promise<Record<string, string>> {
+  const list = (await get(`PKG_PROJETO.pp_lista_inst?f_pgm=INSTVINCULO&f_cod=${code}`)).html;
+  const hit = [...list.matchAll(/seleciona\('([^']*)'\s*,\s*'([^']*)'/g)].find(
+    (m) => m[1] === institution,
+  );
+  if (!hit) throw new Error(`A instituição ${institution} não está entre as das suas atuações`);
+  const rest = institution.slice(1);
+  const v = institution.startsWith('V');
+  const fields: Record<string, string> = {
+    f_cod_inst: v ? rest : '',
+    f_cod_inst2: v ? '' : rest,
+    f_inst: hit[2]!,
+    f_inst_old: hit[2]!,
+  };
+  if (!organ) return fields;
+  const window = (
+    await get(
+      `pkg_projeto.pp_orgao_cargo?f_origem=&f_modal_cv=2&f_cod=${code}&f_cod_inst=${institution}&f_cod_inst2=`,
+    )
+  ).html;
+  const first = /atribuir\('(\d{12})'\s*,\s*'([^']*)'\s*,\s*(\d+)/.exec(window);
+  if (!first) throw new Error('A janela de órgãos da instituição veio vazia');
+  return {
+    ...fields,
+    f_codorgao: first[3] === '0' ? first[1]! : '',
+    f_codorgao2: first[3] === '0' ? '' : first[1]!,
+    f_orgao: first[2]!,
+    f_orgao_old: first[2]!,
+  };
 }

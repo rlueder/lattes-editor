@@ -34,12 +34,12 @@ import { ensureContext } from './censo-test-donors.ts';
 import {
   createTestItems,
   live,
-  removeTestItems,
   resetTestItems,
   setLive,
   testProgress,
 } from './censo-test-items.ts';
 import { loadBase, saveBase, snapshotLists } from './censo-test-ledger.ts';
+import { removeTestItems } from './censo-test-removal.ts';
 
 declare const __CENSO_VERSAO__: string;
 declare const __CENSUS_BUILD__: string;

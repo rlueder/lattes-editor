@@ -1465,10 +1465,12 @@ de alteração.
   `pkg_orient.valida_orientador_ajax` (POST síncrono com `f_cod`, `f_nme` em
   `escape()` e `f_nivel`, o F_COD_PROD marcado) e, só com `sta_validado`
   verdadeiro, copia `idOrientado` e `seqFormOrientado` para `f_id_orientado` e
-  `f_seq_form_orientado`. Sem validação, os dois ficam como estavam. O
-  conector não faz essa chamada (é um POST, e não se confirmou que só
-  consulta): o identificador fica como a página o trouxe, o que coincide com a
-  página quando o nome não valida.
+  `f_seq_form_orientado`. Sem validação, os dois ficam como estavam. Uma
+  chamada de teste (18/10/2026, nome inexistente) devolveu
+  `{"sta_validado":false,"mensagem":"Orientador não encontrado","idOrientado":"","seqFormOrientado":""}`
+  e nenhuma lista do currículo mudou: **observado** que só consulta. O
+  conector ainda não faz a chamada: o identificador fica como a página o
+  trouxe, o que coincide com a página quando o nome não valida.
 
 ### Órgão e unidade do projeto (lido em 18/10/2026)
 
@@ -1490,6 +1492,22 @@ dele) com um dígito final que não segue a do pai. Em todos os órgãos vistos
 o tipo era 0. **Observado** numa universidade (`V000900000007`, 16 órgãos no
 topo). Das 18 instituições das atuações de quem capturou, só as de código V
 têm órgãos na janela.
+
+Na página de alteração (lida em 18/10/2026, num projeto de teste), `f_codorgao`,
+`f_codorgao2` e `f_orgao_old` vêm vazios e só o `f_orgao`, desabilitado,
+mostra o órgão gravado. O `seleciona()` da janela de instituições do projeto
+também limpa os quatro. Dois envios de alteração pelo conector, com o código
+e o texto que o `atribuir()` gravaria (uma unidade do mesmo órgão, depois
+outro órgão), voltaram com o órgão de antes, sem erro e sem mexer em mais
+nada. **Observado.** Se a própria página consegue trocar o órgão na
+alteração não foi visto.
+
+Os financiadores, as produções e as orientações ligadas são tabelas
+(`criarGrid`, ids `grid2`, `grid3` e `grid4`) que o servidor escreve com as
+linhas, e o `check()` as serializa em `f_inst_l`, `f_producoes_l` e
+`f_orientacoes_l` a partir de `valores`. Não há vetor `financiadorProvider`,
+`producaoProvider` nem `orientacaoProvider` na página, como a especificação
+supunha; a equipe, sim, é o `autorProvider`. **Observado.**
 
 **Inferido**: que a exportação ponha o órgão de cima em
 `PARTICIPACAO-EM-PROJETO@CODIGO-ORGAO`/`NOME-ORGAO` e a unidade em

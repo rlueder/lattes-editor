@@ -70,8 +70,7 @@ export const BRIDGE_FEATURES = [
    * Lattes, com a lista de cursos de tese (production/lookups.ts).
    */
   'buscas-producao',
-  /** Órgão e unidade do projeto pela janela de órgãos do Lattes (production/organ.ts). */
-  'orgao-projeto',
+  // 'orgao-projeto' (production/organ.ts) volta quando PROJECT_ORGAN_ENABLED ligar.
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

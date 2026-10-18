@@ -8,15 +8,22 @@
 // em "Salvar". As mensagens que ela mostraria na caixa do Lattes voltam no
 // resultado em vez de aparecer na tela.
 
-import { type PlacedRow, removalOrder } from '../../src/census/test-ledger.ts';
+import type { PlacedRow } from '../../src/census/test-ledger.ts';
 import {
   consistencyFixes,
   pickOption,
   type TestJob,
   textValue,
 } from '../../src/census/test-plan.ts';
-import { context, ensureContext, placed, PLACELESS, setFields } from './censo-test-donors.ts';
-import { clearBase, ledgerNow, loadBase, newAtuacao } from './censo-test-ledger.ts';
+import {
+  context,
+  ensureContext,
+  placed,
+  PLACELESS,
+  projectFields,
+  setFields,
+} from './censo-test-donors.ts';
+import { clearBase, ledgerNow, loadBase } from './censo-test-ledger.ts';
 import { pageValues, silenceDialogs } from './censo-test-pages.ts';
 
 export interface TestResult {
@@ -33,6 +40,11 @@ export interface BatchOptions {
   batch?: number;
   /** Pausa entre um envio e outro, sorteada entre os dois (padrão 3 a 6 s). */
   delayMs?: [number, number];
+  /**
+   * O projeto de teste na atuação desta instituição (código com a letra, como
+   * a janela de instituições o mostra) e, com organ, com o primeiro órgão dela.
+   */
+  project?: { institution: string; organ?: boolean };
   /** Endereço que recebe os resultados por POST, além do armazenamento local. */
   receiver?: string;
   /** Tenta de novo os que falharam (depois de ajustar o que faltava). */
@@ -77,7 +89,7 @@ interface Progress {
   results: TestResult[];
 }
 
-function load(): Progress {
+export function load(): Progress {
   try {
     const raw = localStorage.getItem(STORE);
     if (raw) return JSON.parse(raw) as Progress;
@@ -87,7 +99,7 @@ function load(): Progress {
   return { removed: [], results: [] };
 }
 
-function save(p: Progress): void {
+export function save(p: Progress): void {
   try {
     localStorage.setItem(STORE, JSON.stringify(p));
   } catch {
@@ -95,7 +107,7 @@ function save(p: Progress): void {
   }
 }
 
-const pause = ([min, max]: [number, number]) =>
+export const pause = ([min, max]: [number, number]) =>
   new Promise((r) => setTimeout(r, min + Math.random() * (max - min)));
 
 interface MsgBox {
@@ -105,7 +117,7 @@ interface MsgBox {
 }
 
 /** O formulário num quadro da página, já carregado. */
-function openFrame(path: string, code: string): Promise<HTMLIFrameElement> {
+export function openFrame(path: string, code: string): Promise<HTMLIFrameElement> {
   return new Promise((resolve, reject) => {
     const frame = document.createElement('iframe');
     frame.style.cssText = 'position:fixed;right:0;bottom:0;width:900px;height:600px;z-index:99999';
@@ -122,7 +134,7 @@ function openFrame(path: string, code: string): Promise<HTMLIFrameElement> {
   });
 }
 
-type FrameWindow = Window & {
+export type FrameWindow = Window & {
   autorGrid?: { getProvider: () => Record<string, unknown>[] };
   check?: () => void;
   del?: () => void;
@@ -133,7 +145,10 @@ type FrameWindow = Window & {
  * Envia pelo caminho da página e espera a resposta: a mensagem de sucesso, a
  * lista de problemas do check() ou a página nova no quadro.
  */
-function submit(frame: HTMLIFrameElement, start: (w: FrameWindow) => void): Promise<string[]> {
+export function submit(
+  frame: HTMLIFrameElement,
+  start: (w: FrameWindow) => void,
+): Promise<string[]> {
   return new Promise((resolve) => {
     const w = frame.contentWindow as FrameWindow;
     const box = (window as unknown as { caixaMsg?: MsgBox }).caixaMsg;
@@ -361,10 +376,20 @@ export async function createTestItems(
   jobs: TestJob[],
   code: string,
   get: (path: string) => Promise<{ html: string }>,
-  { batch = 10, delayMs = [3000, 6000], only, receiver, retryFailed = false }: BatchOptions = {},
+  {
+    batch = 10,
+    delayMs = [3000, 6000],
+    only,
+    project,
+    receiver,
+    retryFailed = false,
+  }: BatchOptions = {},
 ) {
   if (!loadBase()) throw new Error('Sem a base das listas: rode "Ler formulários" antes de criar.');
   await ensureContext(code, get);
+  context.project = project
+    ? await projectFields(code, get, project.institution, project.organ ?? false)
+    : undefined;
   const progress = load();
   const tried = new Map(progress.results.map((r) => [r.tag, r]));
   const next = jobs
@@ -411,75 +436,6 @@ export function testProgress(jobs?: TestJob[]) {
     registrados: progress.added?.length ?? 0,
     removidos: progress.removed.length,
     total: jobs?.length ?? null,
-  };
-}
-
-const withoutCode = (p: string) => p.replace(/([?&])f_cod=[A-Z0-9]+&?/, '$1').replace(/[?&]$/, '');
-
-/**
- * Remove um lote dos itens de teste pelo registro: as linhas que não estavam
- * na base das listas (Fase 0). Não depende da marca, que nem todo formulário
- * tem onde levar. Uma atuação só sai inteira se a página dela não existia na
- * base. No fim, o que ainda difere da base volta no resumo; com dryRun, só a
- * lista do que sairia.
- */
-export async function removeTestItems(
-  code: string,
-  get: (path: string) => Promise<{ html: string }>,
-  { batch = 10, delayMs = [3000, 6000], dryRun = false }: BatchOptions & { dryRun?: boolean } = {},
-) {
-  const menu = document.documentElement.outerHTML;
-  const progress = load();
-  setLive({ done: 0, last: undefined, phase: 'lendo', total: undefined });
-  const { added } = await ledgerNow(menu, code, get);
-  // Um link com f_ctr é ação, nunca um item a abrir.
-  const plan = removalOrder(added)
-    .filter((r) => r.link && !/[?&]f_ctr=/i.test(r.link))
-    .filter((r) => !/cargos_vinculos/i.test(r.link) || newAtuacao(r))
-    .slice(0, batch);
-  if (dryRun) {
-    setLive({ phase: 'parado' });
-    return {
-      ensaio: plan.map((r) => `${r.list} :: ${r.text}`),
-      registrados: added.length,
-      removidos: 0,
-      total: progress.removed.length,
-    };
-  }
-  const removed: string[] = [];
-  setLive({ done: 0, last: undefined, phase: 'removendo', total: plan.length });
-  for (const row of plan) {
-    const frame = await openFrame(withoutCode(row.link), code);
-    try {
-      const msgs = await submit(frame, (fw) => {
-        const page = fw as FrameWindow & { dele?: () => void };
-        if (/cargos_vinculos/i.test(row.link)) page.dele!();
-        else if (page.del) page.del();
-        else throw new Error('Sem como excluir nesta página');
-      });
-      // Só conta o que a página confirmou.
-      if (msgs.some((m) => /^exceção/.test(m))) continue;
-      removed.push(row.text);
-      progress.removed = [...progress.removed, `${row.list} :: ${row.text}`];
-      save(progress);
-      setLive({ done: removed.length, last: row.text.slice(0, 40) });
-    } finally {
-      frame.remove();
-    }
-    await pause(delayMs);
-  }
-  // A conferência: o que ainda difere da base, para mais e para menos.
-  setLive({ phase: 'lendo' });
-  const after = await ledgerNow(menu, code, get);
-  progress.added = after.added;
-  progress.missing = after.missing;
-  save(progress);
-  setLive({ phase: 'parado' });
-  return {
-    faltandoDaBase: after.missing.map((r) => `${r.list} :: ${r.text}`),
-    registrados: after.added.length,
-    removidos: removed.length,
-    total: progress.removed.length,
   };
 }
 

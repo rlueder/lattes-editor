@@ -3,9 +3,9 @@
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { applyOp } from '../src/bridge/apply.ts';
 import { PARTICIPATION_PERIOD } from '../src/bridge/atuacao-by-hand.ts';
 import { planChanges, type PlanOptions } from '../src/bridge/plan.ts';
+import { applyProduction } from '../src/bridge/production/apply.ts';
 import { organText } from '../src/bridge/production/organ.ts';
 import type { ProductionOp } from '../src/bridge/production/plan.ts';
 import { diffDocuments } from '../src/model/changes.ts';
@@ -14,6 +14,7 @@ import { getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
 import {
   findIn,
   type LattesSimuladoNoTeste,
+  postsOf,
   withLattesSimulado,
 } from './helpers/lattes-simulado.ts';
 
@@ -90,7 +91,11 @@ describe('órgão do projeto: o plano', () => {
 
   it('outro órgão, sem unidade, vai sem o de cima', () => {
     const op = planAfter(organ('000002000004', 'Instituto de Informática')).ops[0] as ProductionOp;
-    expect(op.organ).toEqual({ before: '000001000008', code: '000002000004' });
+    expect(op.organ).toEqual({
+      before: '000001000008',
+      beforeText: 'Instituto de Biociências',
+      code: '000002000004',
+    });
   });
 
   it('nome sem código, órgão vazio e o período ficam à mão, com o motivo', () => {
@@ -119,7 +124,7 @@ describe('órgão do projeto: o envio', () => {
   it('grava a unidade pela janela de órgãos e confere na releitura', async () => {
     const sim = await lattes();
     const op = planAfter(unit('000001001004', 'Departamento de Genética')).ops[0]!;
-    const r = await applyOp(op, sim.port);
+    const r = await applyProduction(op as ProductionOp, sim.port, { projectOrgan: true });
     expect(r).toMatchObject({ status: 'conferido' });
     const p = participation(sim.state.root);
     expect([
@@ -127,6 +132,15 @@ describe('órgão do projeto: o envio', () => {
       getAttr(p, 'CODIGO-UNIDADE'),
       getAttr(p, 'NOME-UNIDADE'),
     ]).toEqual(['000001000008', '000001001004', 'Departamento de Genética']);
+    // O que foi: o código da unidade e o texto da janela; a página relida mostra o texto.
+    expect(postsOf(sim).at(-1)?.fields).toMatchObject({
+      f_codorgao: '000001001004',
+      f_codorgao2: '',
+      // A quebra de linha vai como o formulário a codifica.
+      f_orgao_old: expect.stringMatching(
+        /^Instituto de Biociências\/\r?\nDepartamento de Genética$/,
+      ),
+    });
     // O resto do projeto ficou como estava.
     const projeto = findIn(sim.state.root, (el) => el.name === 'PROJETO-DE-PESQUISA')!;
     expect(getAttr(projeto, 'NOME-DO-PROJETO')).toBe('Projeto de Exemplo');
@@ -135,13 +149,19 @@ describe('órgão do projeto: o envio', () => {
   it('código que a janela não tem não vai; o Lattes com outro órgão também não', async () => {
     const sim = await lattes();
     const missing = planAfter(unit('000001009999', 'Inexistente')).ops[0]!;
-    expect(await applyOp(missing, sim.port)).toMatchObject({
+    expect(
+      await applyProduction(missing as ProductionOp, sim.port, { projectOrgan: true }),
+    ).toMatchObject({
       detail: expect.stringMatching(/não encontrado/),
       status: 'erro',
     });
+    // A página de alteração só mostra o texto do órgão: é ele que se confere.
     setAttr(participation(sim.state.root), 'CODIGO-ORGAO', '000002000004');
+    setAttr(participation(sim.state.root), 'NOME-ORGAO', 'Instituto de Informática');
     const stale = planAfter(unit('000001001004', 'Departamento de Genética')).ops[0]!;
-    expect(await applyOp(stale, sim.port)).toMatchObject({ status: 'divergente' });
+    expect(
+      await applyProduction(stale as ProductionOp, sim.port, { projectOrgan: true }),
+    ).toMatchObject({ status: 'divergente' });
     expect(getAttr(participation(sim.state.root), 'CODIGO-UNIDADE')).toBe('');
   });
 });

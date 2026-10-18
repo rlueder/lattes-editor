@@ -13,6 +13,7 @@
 // não for assim, a conferência do código de antes falha e nada vai.
 
 import type { Change } from '../../model/changes.ts';
+import { foldText } from '../../model/fold-text.ts';
 import { getAttr, type XElement } from '../../model/xml.ts';
 import type { LattesPort } from '../apply.ts';
 import { getChecked, Stop } from '../create-shared.ts';
@@ -36,9 +37,14 @@ const ATTRS: readonly string[] = [
   ORGAN_PARTS.unit.name,
 ];
 
-/** A escolha: o código que o Lattes tem agora e o novo, com o órgão de cima de uma unidade. */
+/**
+ * A escolha: o código e o texto que o Lattes tem agora, e o código novo, com
+ * o órgão de cima de uma unidade.
+ */
 export interface OrganChoice {
   before: string;
+  /** O texto de antes ("órgão/\nunidade"), que a página de alteração mostra em f_orgao. */
+  beforeText: string;
   code: string;
   /** O órgão de cima, quando a escolha é uma unidade. */
   parent?: string;
@@ -74,6 +80,7 @@ export function planOrgan(
   if (!code) return { reason: 'O órgão do projeto não fica vazio pelo conector; troque no Lattes' };
   const choice: OrganChoice = {
     before: was(unit.code) || was(organ.code),
+    beforeText: organText(was(organ.name), was(unit.name)),
     code,
     ...(now(unit.code) ? { parent: now(organ.code) } : {}),
   };
@@ -90,25 +97,39 @@ export function planOrgan(
   };
 }
 
+/** Para comparar textos de órgão: sem acento, caixa, nem diferença de espaço e quebra de linha. */
+export const organLoose = (v: string | null | undefined) =>
+  foldText((v ?? '').replace(/\s+/g, ' ')).replace(/\s*\/\s*/g, '/');
+
 /**
- * Os ocultos do órgão, para juntar ao set da operação. Antes de buscar,
- * confere que o Lattes tem o código que o editor tinha; depois refaz a
- * janela de órgãos (só GET) e fica com o único resultado de mesmo código.
+ * Os ocultos do órgão, para juntar ao set da operação, e o texto que a
+ * releitura deve mostrar. Na página de alteração real (lida em 18/10/2026),
+ * f_codorgao, f_codorgao2 e f_orgao_old vêm vazios e só o f_orgao,
+ * desabilitado, mostra o órgão: o de antes se confere por esse texto (ou
+ * pelo código, quando a página o traz). Vazio, o código não troca nada: é o
+ * que a própria página manda quando a pessoa não mexe no órgão. Depois
+ * refaz a janela de órgãos (só GET) e fica com o único resultado de mesmo código.
  */
 export async function resolveOrgan(
   choice: OrganChoice,
   port: LattesPort,
   pairs: Pairs,
-): Promise<Resolved> {
+  shown: string,
+): Promise<Resolved & { shown?: string }> {
   try {
-    return await resolve(choice, port, pairs);
+    return await resolve(choice, port, pairs, shown);
   } catch (err) {
     if (err instanceof Stop) return { detail: err.message, status: err.status };
     throw err;
   }
 }
 
-async function resolve(choice: OrganChoice, port: LattesPort, pairs: Pairs): Promise<Resolved> {
+async function resolve(
+  choice: OrganChoice,
+  port: LattesPort,
+  pairs: Pairs,
+  shown: string,
+): Promise<Resolved & { shown?: string }> {
   const missing = ['f_codorgao', 'f_codorgao2', 'f_orgao_old'].filter(
     (f) => !pairs.some(([k]) => k === f),
   );
@@ -119,7 +140,10 @@ async function resolve(choice: OrganChoice, port: LattesPort, pairs: Pairs): Pro
     };
   }
   const now = (pairValue(pairs, 'f_codorgao') || pairValue(pairs, 'f_codorgao2') || '').trim();
-  if (now !== choice.before.trim()) {
+  const same = now
+    ? now === choice.before.trim()
+    : organLoose(shown) === organLoose(choice.beforeText);
+  if (!same) {
     return {
       detail: 'O Lattes não está como o editor espera: Órgão/Unidade',
       status: 'divergente',
@@ -150,11 +174,14 @@ async function resolve(choice: OrganChoice, port: LattesPort, pairs: Pairs): Pro
     };
   }
   const hit = found[0]!;
+  const text = hit.parent ? organText(hit.parent, hit.name) : hit.name;
   const set: FieldValues = {
     f_codorgao: hit.kind === '0' ? hit.code : '',
     f_codorgao2: hit.kind === '0' ? '' : hit.code,
-    f_orgao_old: hit.parent ? organText(hit.parent, hit.name) : hit.name,
+    f_orgao_old: text,
   };
-  if (pairs.some(([k]) => k === 'f_orgao')) set.f_orgao = set.f_orgao_old!;
-  return { check: {}, set };
+  if (pairs.some(([k]) => k === 'f_orgao')) set.f_orgao = text;
+  // A releitura confere o texto de f_orgao; os ocultos voltam vazios na página real.
+  const check: FieldValues = Object.fromEntries(Object.keys(set).map((k) => [k, null]));
+  return { check, set, shown: text };
 }

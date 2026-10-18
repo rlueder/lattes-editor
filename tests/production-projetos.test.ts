@@ -332,15 +332,17 @@ describe('projeto: grades', () => {
 
   it('as grades que o conector não monta: a que falta e as preenchidas', () => {
     const grids = [
-      { element: 'X', field: 'f_x', label: 'xis', provider: 'xProvider' },
-      { element: 'Y', field: 'f_y', label: 'ípsilon', provider: 'yProvider' },
+      { element: 'X', field: 'f_x', label: 'xis', table: 'grid2' },
+      { element: 'Y', field: 'f_y', label: 'ípsilon', table: 'grid3' },
     ];
-    expect(readOpaque('<script>var xProvider = [{}];</script>', grids)).toEqual({
-      missing: 'yProvider',
-    });
+    const table = (id: string, rows: string) =>
+      `<table class="grid" id="${id}">\n<thead><tr><th>T</th></tr></thead>\n<tbody>\n${rows}\n</tbody></table>`;
+    expect(readOpaque(table('grid2', ''), grids)).toEqual({ missing: 'grid3' });
+    // Como na página real: o oculto dentro do corpo vazio não conta como linha.
     expect(
       readOpaque(
-        '<script>var xProvider = [{}];</script><script>var yProvider = [{"l":"a"},{}];</script>',
+        table('grid2', '<INPUT TYPE="hidden" NAME="f_producoes_d" VALUE="">') +
+          table('grid3', '<tr><td><span>a</span></td></tr>'),
         grids,
       ),
     ).toEqual({ filled: [grids[1]] });
@@ -407,15 +409,15 @@ describe('projeto no Lattes simulado', () => {
     expect(postsOf(lattes)).toEqual([]);
   });
 
-  it('página sem o vetor de uma grade: nada é enviado', async () => {
+  it('página sem a tabela de uma grade: nada é enviado', async () => {
     const lattes = await lattesFor({
       intercept: faults.rewritePages(/pkg_projeto\.form/i, (html) =>
-        html.replace('var orientacaoProvider', 'var outroProvider'),
+        html.replace('id="grid4"', 'id="outra"'),
       ),
     });
     const op = onlyOp(setProject('1', 'NOME-DO-PROJETO', 'Projeto Revisto'));
     expect(await applyOp(op, lattes.port)).toMatchObject({
-      detail: 'A página do Lattes não tem a grade orientacaoProvider; nada foi enviado',
+      detail: 'A página do Lattes não tem a grade grid4; nada foi enviado',
       status: 'erro',
     });
     expect(postsOf(lattes)).toEqual([]);
@@ -443,7 +445,7 @@ describe('projeto no Lattes simulado', () => {
     const lattes = await lattesFor({
       intercept: faults.rewritePages(/pkg_projeto\.form/i, (html) => {
         gets += 1;
-        return gets > 2 ? html.replace('var producaoProvider', 'var outroProvider') : html;
+        return gets > 2 ? html.replace('id="grid3"', 'id="outra"') : html;
       }),
     });
     const op = onlyOp(setProject('1', 'NOME-DO-PROJETO', 'Projeto Revisto'));

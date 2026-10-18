@@ -61,8 +61,11 @@ export interface OpaqueGrid {
   /** O oculto que o check() preenche com ela. */
   field: string;
   label: string;
-  /** O vetor que a página escreve para ela. */
-  provider: string;
+  /**
+   * O id da tabela da grade na página: o servidor escreve as linhas no
+   * corpo dela, e o check() as lê de lá (criarGrid, valores).
+   */
+  table: string;
 }
 
 export interface ProductionTarget {

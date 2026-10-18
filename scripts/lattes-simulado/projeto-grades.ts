@@ -4,12 +4,11 @@
 // Observado (seção 21 de docs/lattes_internals.md, no código do check()): a
 // equipe vai em f_autores_l com as chaves c, l, t, tit e add; os
 // financiadores em f_inst_l; as produções e orientações em f_producoes_l e
-// f_orientacoes_l. Inferido, como na especificação do conector
-// (src/bridge/production/targets/projetos.ts): os nomes dos vetores, a ordem
-// das chaves de cada linha (l, c, t, tit, como no autorProvider das
-// produções) e que o servidor grave a equipe como chegou. Os financiadores,
-// as produções e as orientações aparecem no vetor de cada uma e o POST não
-// as grava: o conector só envia quando elas estão vazias.
+// f_orientacoes_l. Observado na página de alteração real (18/10/2026): o
+// autorProvider da equipe e as tabelas grid2, grid3 e grid4 dos
+// financiadores, produções e orientações. Inferido: a ordem das chaves de
+// cada linha da equipe (l, c, t, tit) e que o servidor a grave como chegou.
+// O POST não grava as outras três: o conector só envia quando estão vazias.
 
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, type XElement } from '../../src/model/xml.ts';
@@ -52,13 +51,21 @@ export function projectGridScripts(projeto: XElement | undefined): string {
           ),
         )
     : [];
-  const linked = (container: string, attr: string) =>
-    projeto ? partsOf(projeto, container).map((p) => ordered(['l', getAttr(p, attr) ?? ''])) : [];
+  // Financiadores, produções e orientações: tabelas que o servidor escreve
+  // com as linhas (grid2, grid3 e grid4 da página real, 18/10/2026).
+  const table = (id: string, container: string, attr: string) => {
+    const rows = projeto
+      ? partsOf(projeto, container).map(
+          (p) => `<tr><td><span>${getAttr(p, attr) ?? ''}</span></td></tr>`,
+        )
+      : [];
+    return `<table class="grid" id="${id}">\n  <thead><tr><th>Título</th></tr></thead>\n  <tbody>\n${rows.join('\n')}\n</tbody></table>`;
+  };
   return [
     provider('var autorProvider', members),
-    provider('var financiadorProvider', linked('FINANCIADORES-DO-PROJETO', 'NOME-INSTITUICAO')),
-    provider('var producaoProvider', linked('PRODUCOES-CT-DO-PROJETO', 'TITULO-DA-PRODUCAO-CT')),
-    provider('var orientacaoProvider', linked('ORIENTACOES', 'TITULO-ORIENTACAO')),
+    table('grid2', 'FINANCIADORES-DO-PROJETO', 'NOME-INSTITUICAO'),
+    table('grid3', 'PRODUCOES-CT-DO-PROJETO', 'TITULO-DA-PRODUCAO-CT'),
+    table('grid4', 'ORIENTACOES', 'TITULO-ORIENTACAO'),
   ].join('\n');
 }
 

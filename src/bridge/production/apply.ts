@@ -35,7 +35,7 @@ import {
 import { resolveLookups } from './lookups.ts';
 import { sameAuthors, withLeads } from './members.ts';
 import { opaquePairs, readOpaque } from './opaque.ts';
-import { resolveOrgan } from './organ.ts';
+import { organLoose, resolveOrgan } from './organ.ts';
 import {
   EDIT_PRODUCTION_ENABLED,
   folded,
@@ -121,7 +121,11 @@ function otherChanges(a: Pairs, b: Pairs, skip: Set<string>): string[] {
 const labelOf = (op: ProductionOp, name: string) =>
   op.rows.find((r) => r.name === name)?.label ?? name;
 
-export async function applyProduction(op: ProductionOp, port: LattesPort): Promise<OpResult> {
+export async function applyProduction(
+  op: ProductionOp,
+  port: LattesPort,
+  { projectOrgan = PROJECT_ORGAN_ENABLED }: { projectOrgan?: boolean } = {},
+): Promise<OpResult> {
   const result = (status: OpResult['status'], detail: string): OpResult => ({
     detail,
     key: op.key,
@@ -134,7 +138,7 @@ export async function applyProduction(op: ProductionOp, port: LattesPort): Promi
   if (op.lookups && (!PRODUCTION_LOOKUPS_ENABLED || !t.lookups)) {
     return result('erro', 'Esta extensão não envia a escolha pelas buscas; a alteração fica à mão');
   }
-  if (op.organ && (!PROJECT_ORGAN_ENABLED || !t.organ)) {
+  if (op.organ && (!projectOrgan || !t.organ)) {
     return result('erro', 'Esta extensão não envia o órgão do projeto; a alteração fica à mão');
   }
   if (op.keywords && op.keywords.after.length > MAX_KEYWORDS) {
@@ -231,11 +235,14 @@ export async function applyProduction(op: ProductionOp, port: LattesPort): Promi
       chosen = resolved.set;
       chosenCheck = resolved.check;
     }
+    let organShown: string | undefined;
     if (op.organ) {
-      const resolved = await resolveOrgan(op.organ, port, pairs);
+      const shown = controls.find((c) => c.name === 'f_orgao')?.value ?? '';
+      const resolved = await resolveOrgan(op.organ, port, pairs, shown);
       if ('status' in resolved) return result(resolved.status, resolved.detail);
       chosen = { ...chosen, ...resolved.set };
       chosenCheck = { ...chosenCheck, ...resolved.check };
+      organShown = resolved.shown;
     }
     posted = true;
     const response = await port.post(
@@ -273,7 +280,13 @@ export async function applyProduction(op: ProductionOp, port: LattesPort): Promi
     // O texto do órgão leva uma quebra de linha, que a página pode devolver como \r\n.
     const loose = (v: string | null | undefined) => folded(v).replace(/\s+/g, ' ');
     for (const [f, v] of Object.entries(chosen)) {
+      if (chosenCheck[f] === null) continue;
       if (loose(pairValue(afterPairs, f)) !== loose(chosenCheck[f] ?? v)) notSaved.push(f);
+    }
+    // O órgão: o texto que a página mostra (f_orgao, desabilitado) depois de gravar.
+    const organNow = afterControls.find((c) => c.name === 'f_orgao')?.value;
+    if (organShown !== undefined && organLoose(organNow) !== organLoose(organShown)) {
+      notSaved.push('f_codorgao');
     }
     if (notSaved.length > 0) {
       return result(

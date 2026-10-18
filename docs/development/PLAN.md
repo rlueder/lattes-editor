@@ -85,20 +85,29 @@ buscas):
 
 - Órgão e unidade do projeto: seletor em dois passos no editor
   (`src/ui/OrganField.tsx`), mensagem `pedir-orgaos`, envio em
-  `src/bridge/production/organ.ts`. A janela de órgãos foi lida no Lattes
-  real; o envio só no Lattes simulado. Falta a gravação acompanhada: o
-  projeto de teste precisa estar numa atuação cuja instituição tenha órgãos
-  (das suas, só Campanha Nacional de Escolas da Comunidade e Dell), e uma
-  exportação depois dela para confirmar onde o Lattes põe órgão e unidade no
-  XML.
+  `src/bridge/production/organ.ts`, tudo atrás de `PROJECT_ORGAN_ENABLED`,
+  **desligada**. No teste ao vivo de 18/10/2026 (projeto de teste na atuação
+  da Campanha Nacional de Escolas da Comunidade), o Lattes recebeu o envio e
+  continuou com o órgão de antes, tanto para uma unidade quanto para outro
+  órgão. Falta ver se a página do próprio Lattes troca o órgão na alteração:
+  a tentativa de rodar o Salvar da página num quadro foi barrada. Se ela
+  também não trocar, o órgão vai para "fica à mão" (excluir e incluir o
+  projeto).
+- O mesmo teste achou o motivo de nenhuma alteração de projeto ir: o
+  conector procurava os vetores `financiadorProvider`, `producaoProvider` e
+  `orientacaoProvider`, que a página real não tem. As grades são as tabelas
+  `grid2`, `grid3` e `grid4`; corrigido. Uma alteração de campo de projeto
+  ainda não foi gravada no Lattes real.
 - Curso das orientações e bancas de várias naturezas (outras orientações
   concluídas, qualificação): o nível sai da NATUREZA do item, pela tabela da
   especificação (`natures`, ligações do censo de 18/10/2026).
 - ID do orientando: não é campo do editor (é de sistema, como o Lattes o
   trata). O conector manda o que a página trouxe, como a página faz quando o
   nome não valida. Mandar o ID novo quando o nome muda pede chamar
-  `pkg_orient.valida_orientador_ajax`, um POST; a chamada de teste foi barrada
-  e espera o seu aval.
+  `pkg_orient.valida_orientador_ajax`, um POST. Testado em 18/10/2026 com um
+  nome de teste: devolve JSON (`sta_validado`, `mensagem`, `idOrientado`,
+  `seqFormOrientado`) e nenhuma lista mudou, ou seja, só consulta. Falta
+  ligar no envio da orientação quando o nome do orientando muda.
 
 Gravação no Lattes real em 18/10/2026, com base e registro da Fase 0: quatro
 itens de teste (orientação concluída e em andamento de mestrado, banca de

@@ -116,25 +116,26 @@ const PROJETO: ProductionTarget = {
     proc: 'pkg_projeto.lista',
   },
   // Os ocultos são observados (censo); o formato de cada linha, não (seção
-  // 21). Inferido: o nome do vetor de cada grade na página.
+  // 21). As tabelas de cada grade, observadas na página de alteração real
+  // (18/10/2026), já vêm com as linhas que o servidor escreve.
   opaqueGrids: [
     {
       element: 'FINANCIADORES-DO-PROJETO',
       field: 'f_inst_l',
       label: 'financiadores',
-      provider: 'financiadorProvider',
+      table: 'grid2',
     },
     {
       element: 'PRODUCOES-CT-DO-PROJETO',
       field: 'f_producoes_l',
       label: 'produções ligadas',
-      provider: 'producaoProvider',
+      table: 'grid3',
     },
     {
       element: 'ORIENTACOES',
       field: 'f_orientacoes_l',
       label: 'orientações ligadas',
-      provider: 'orientacaoProvider',
+      table: 'grid4',
     },
   ],
   // O órgão fica na participação, pai do projeto (organ.ts); o período dela

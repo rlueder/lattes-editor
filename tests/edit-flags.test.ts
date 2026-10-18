@@ -49,12 +49,15 @@ describe('chaves do lado da extensão', () => {
   });
 
   it('esta montagem, com tudo ligado, deixa passar cada operação atrás de chave', () => {
-    // Para o teste ao vivo: todas as chaves ligadas, com a capacidade anunciada.
-    expect(GATED_EDITS.every((g) => g.enabled)).toBe(true);
+    // Para o teste ao vivo: todas as chaves ligadas, com a capacidade
+    // anunciada, menos a do órgão do projeto, que o Lattes não gravou no teste
+    // de 18/10/2026 (production/plan.ts).
+    const live = GATED_EDITS.filter((g) => g.feature !== 'orgao-projeto');
+    expect(live.every((g) => g.enabled)).toBe(true);
     expect(BUILD_GATES.editEvento).toBe(true);
     expect([...BUILD_GATES.lists].sort()).toEqual(['formacao-complementar', 'premio']);
     const all = planOptionsFor(BRIDGE_FEATURES);
-    for (const g of GATED_EDITS) expect(all[g.option]).toBe(true);
+    for (const g of live) expect(all[g.option]).toBe(true);
   });
 });
 

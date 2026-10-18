@@ -114,8 +114,8 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
     ...['f_cod_inst', 'f_cod_inst2', 'f_instold', 'f_inst_old', 'f_instituicoes'].map((n) =>
       fromIds(n),
     ),
-    { disabled: true, kind: 'text', name: 'f_orgao', read: () => ids.f_orgao_old ?? '' },
-    ...['f_codorgao', 'f_codorgao2', 'f_orgao_old'].map((n) => fromIds(n)),
+    { disabled: true, kind: 'text', name: 'f_orgao', read: () => ids.f_orgao ?? '' },
+    ...['f_codorgao', 'f_codorgao2', 'f_orgao_old'].map((n) => none(n)),
     ...['f_vinc', 'f_stavinc', 'f_enqua', 'f_carga', 'f_regime'].map((n) => fromIds(n)),
     fixed('f_tpo_cooperacao', 'X'),
     fixed('f_tpo_acao_inov', 'X'),
@@ -167,20 +167,14 @@ function vinculoCopy(atuacao: XElement) {
 }
 
 /**
- * O órgão da participação nos ocultos da página: o código mais fundo (a
- * unidade, se houver) em f_codorgao e o texto como o atribuir() da janela
- * monta, "órgão/\nunidade". Inferido: a exportação real nunca foi vista com
- * órgão.
+ * O órgão da participação na página de alteração, como a real (18/10/2026):
+ * os ocultos vêm vazios e só o f_orgao, desabilitado, mostra o texto que a
+ * janela gravou, "órgão/\nunidade".
  */
-function organFields(participacao: XElement): Record<string, string> {
+function organText(participacao: XElement): string {
   const organ = getAttr(participacao, 'NOME-ORGAO') ?? '';
   const unit = getAttr(participacao, 'NOME-UNIDADE') ?? '';
-  return {
-    f_codorgao:
-      getAttr(participacao, 'CODIGO-UNIDADE') || getAttr(participacao, 'CODIGO-ORGAO') || '',
-    f_codorgao2: '',
-    f_orgao_old: unit ? `${organ}/\n${unit}` : organ,
-  };
+  return unit ? `${organ}/\n${unit}` : organ;
 }
 
 /** O contrário de organFields: o órgão escolhido na janela, como a exportação o mostraria (inferido). */
@@ -224,7 +218,7 @@ function rowIds(state: LattesState, p: Placed, tipo: string): Record<string, str
     f_enqua: v.enqua,
     f_inst_old: name,
     f_instold: name,
-    ...organFields(p.participacao),
+    f_orgao: organText(p.participacao),
     f_regime: v.regime,
     f_seq_ativ: getAttr(p.atuacao, 'SEQUENCIA-ATIVIDADE') ?? '',
     f_seq_funcao: getAttr(p.participacao, 'SEQUENCIA-FUNCAO-ATIVIDADE') ?? '',
@@ -319,9 +313,9 @@ function post(req: SimRequest, state: LattesState): SimResponse {
   } else if (ctr === 'U') {
     applyFields(bindings(state, {}), placed.projeto, req);
     applyProjectTeam(state, placed.projeto, req);
-    // Só um órgão trocado mexe na participação: o de antes volta como veio.
+    // Código vazio deixa o órgão como está, como na página real.
     const organ = req.get('f_codorgao') || req.get('f_codorgao2') || '';
-    if (organ !== organFields(placed.participacao).f_codorgao) {
+    if (organ) {
       for (const [name, value] of Object.entries(organOf(placed.atuacao, organ))) {
         setAttr(placed.participacao, name, value);
       }
