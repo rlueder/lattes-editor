@@ -122,6 +122,14 @@ ficou igual à base, sem linha a mais nem a menos.
 
 ### Fase 3: capítulo de livro e prefácio
 
+Capítulo feito em 18/10/2026: o formulário `GN_CAP` (`PKG_LVR_CAP.FORM_CAP`,
+aberto pela escolha "Capitulo" da lista de livros e capítulos) foi lido, e o
+alvo `capitulo` (`bibliografica-livros.ts`) foi gravado no Lattes real num
+capítulo de teste: editora, páginas, cidade, título do capítulo e título do
+livro, todos conferidos, e a remoção pelo registro deixou as listas iguais à
+base. O título do capítulo é `f_titulo_cap`; `f_titulo` é o do livro. A
+cobertura foi a 428 de 640. Falta o prefácio.
+
 O formulário de edição do capítulo nunca foi lido; a captura só tem o do
 livro (`PKG_LVR_CAP.FORM_LVR`, sem opção de capítulo). O currículo não tem
 capítulo, então a leitura pede um item de teste (com a Fase 0). Depois, um
