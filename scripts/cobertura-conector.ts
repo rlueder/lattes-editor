@@ -7,7 +7,10 @@
 //
 // Sem arquivo, lê fixtures/demo.xml. A troca é sintética (outro valor do
 // enumerado, o ano anterior, o texto com " x"), e por isso um motivo do tipo
-// "valor sem correspondência" pode ser da troca e não do conector.
+// "valor sem correspondência" pode ser da troca e não do conector. Onde o
+// editor oferece a lista do Lattes (instituição, curso, agência), a troca é a
+// escolha nela, com código e nome juntos, como a pessoa faria: trocar só o
+// nome é o caso que o planejador recusa de propósito.
 
 import { readFileSync } from 'node:fs';
 
@@ -16,6 +19,7 @@ import { planChanges, planOptionsFor } from '../src/bridge/plan.ts';
 import { diffDocuments } from '../src/model/changes.ts';
 import { parseXml, type XElement } from '../src/model/xml.ts';
 import { lattesSchema } from '../src/schema/lattes.ts';
+import { applyAgency, applyCourse, applyInstitution, liveKind } from '../src/ui/live-lists.ts';
 
 const args = process.argv.slice(2);
 const file = args.find((a) => !a.startsWith('--')) ?? 'fixtures/demo.xml';
@@ -47,6 +51,23 @@ function changed(attr: string, value: string, choices: string[] | undefined): st
   return `${value} x`;
 }
 
+/** O editor com o conector que busca e lê cursos, e uma agência na cópia. */
+const LIVE = { agencies: [{ code: 'A0000000001', name: 'Agência' }], courses: true, search: true };
+
+/** A escolha na lista do Lattes, quando o editor oferece uma para o atributo; senão, false. */
+function picked(el: XElement, attr: string, value: string): boolean {
+  switch (liveKind(el, attr, LIVE)) {
+    case 'instituicao':
+      return applyInstitution(el, { code: 'V0000000001', label: `${value} x`, name: `${value} x` });
+    case 'curso':
+      return applyCourse(el, { label: `${value} x(00000000000P0)`, value: '0000000001' });
+    case 'agencia':
+      return applyAgency(el, { code: 'A0000000002', name: `${value} x` });
+    default:
+      return false;
+  }
+}
+
 const base = parseXml(raw).root;
 const stats = new Map<string, { no: number; ok: number; reasons: Map<string, number> }>();
 flatten(base).forEach((el, index) => {
@@ -57,7 +78,9 @@ flatten(base).forEach((el, index) => {
     const work = parseXml(raw).root;
     const target = flatten(work)[index]!;
     const attr = target.attrs.find((x) => x.name === a.name)!;
-    attr.value = changed(a.name, a.value, spec.attributes.find((x) => x.name === a.name)?.enum);
+    if (!picked(target, a.name, a.value)) {
+      attr.value = changed(a.name, a.value, spec.attributes.find((x) => x.name === a.name)?.enum);
+    }
     const changes = diffDocuments(base, work);
     const plan = planChanges(
       changes.map((change) => ({ change, itemTitle: '' })),

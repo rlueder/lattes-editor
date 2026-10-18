@@ -18,7 +18,7 @@ outras 127 são o alvo deste plano.
   deixou 23 itens para trás (formações sem campo de texto e uma lista que o
   menu abre por outro formato de link). Tudo removido e republicado; daqui em
   diante vale a Fase 0.
-- Nenhuma fase abaixo começou.
+- Fases 0 e 1 feitas em 18/10/2026 (commits locais no PR #100).
 
 ## Fases
 
@@ -40,7 +40,10 @@ Antes de qualquer item de teste novo no Lattes real:
 `scripts/cobertura-conector.ts` troca só o nome da instituição, do curso e da
 agência, sem o código, que é justamente o caso que o planejador recusa. Com a
 troca simulada como a escolha pela lista faz (código e nome juntos), as
-recusas da formação (cerca de 14) deixam de contar. Nenhuma mudança no envio.
+recusas da formação (cerca de 14) deixam de contar. Nenhuma mudança no envio. Feito em 18/10/2026: 390 → 394. O que sobra da
+formação é real: depois de trocar a instituição o curso precisa ser escolhido
+de novo, e a instituição do sanduíche e da cotutela (`NOME-INSTITUICAO-DOUT*`)
+não tem seletor no editor (entra na Fase 2).
 
 ### Fase 2: buscas do Lattes em orientações e bancas
 
