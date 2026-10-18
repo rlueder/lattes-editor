@@ -67,6 +67,8 @@ export function setFields(form: HTMLFormElement, values: Record<string, string>)
 }
 
 interface Context {
+  /** As agências da lista do Lattes: cada variante de teste fica com outra. */
+  agencies: { code: string; name: string }[];
   agency?: { code: string; name: string };
   /** Campos de busca e de lugar de um item seu, por nome de formulário (DONOR_FIELD). */
   donors: Record<string, Record<string, string>>;
@@ -89,7 +91,7 @@ async function findJournal(code: string, get: (path: string) => Promise<{ html: 
   return options.find((o) => o.issn === '0028-0836') ?? options[0];
 }
 
-export const context: Context = { donors: {}, lookups: {} };
+export const context: Context = { agencies: [], donors: {}, lookups: {} };
 
 /**
  * Instituição e curso de uma formação sua (o check() exige, e a página só os
@@ -117,8 +119,10 @@ export async function prepareContext(
   }
   context.donors = await collectDonors(get);
   const agencies = (await get(`prc_agencia?f_cod=${code}`)).html;
-  const first = /atribuir\(\s*'([^']*)'\s*,\s*'([^']*)'/.exec(agencies);
-  if (first) context.agency = { code: first[1]!, name: first[2]! };
+  context.agencies = [...agencies.matchAll(/atribuir\(\s*'([^']*)'\s*,\s*'([^']*)'/g)]
+    .slice(0, 40)
+    .map((m) => ({ code: m[1]!, name: m[2]!.trim() }));
+  context.agency = context.agencies[0];
   context.journal = await findJournal(code, get);
 }
 

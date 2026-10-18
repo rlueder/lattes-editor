@@ -53,7 +53,10 @@ export function pageValues(w: Window, form: HTMLFormElement, job: TestJob): Reco
     }
     Object.assign(values, fill);
   };
-  const agency = context.agency;
+  // Uma instituição por variante: duas atuações de teste na mesma faziam o
+  // Lattes avisar da duplicada num alert() da página de resposta, que trava a aba.
+  const agency =
+    context.agencies[job.variant % Math.max(1, context.agencies.length)] ?? context.agency;
 
   // Fora da formação, o código de instituição copiado de uma formação sua
   // não cabe (ORA-12899 na atuação, ORA-06502 no projeto): vale uma
