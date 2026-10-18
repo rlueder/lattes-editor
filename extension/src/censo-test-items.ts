@@ -17,6 +17,7 @@ import {
   textValue,
 } from '../../src/census/test-plan.ts';
 import { context, editLinks, ensureContext, placed, setFields } from './censo-test-donors.ts';
+import { pageValues, silenceDialogs } from './censo-test-pages.ts';
 
 export interface TestResult {
   id: string;
@@ -106,6 +107,7 @@ function openFrame(path: string, code: string): Promise<HTMLIFrameElement> {
     const timer = setTimeout(() => reject(new Error('O formulário não abriu')), 30_000);
     frame.onload = () => {
       clearTimeout(timer);
+      silenceDialogs(frame.contentWindow!);
       resolve(frame);
     };
     document.body.append(frame);
@@ -152,6 +154,7 @@ function submit(frame: HTMLIFrameElement, start: (w: FrameWindow) => void): Prom
       };
     }
     w.confirm = () => true;
+    silenceDialogs(w);
     frame.onload = () => setTimeout(finish, 1500);
     try {
       start(w);
@@ -217,6 +220,8 @@ function fill(w: FrameWindow, form: HTMLFormElement, job: TestJob): Record<strin
       values[el.name] = el.checked ? el.value || 'on' : '';
     } else if (el.tagName === 'SELECT' && el.type === 'select-one') {
       const opts = [...el.options].map((o) => ({ text: o.text, value: o.value }));
+      // O vínculo da atuação sai da janela da página (pageValues).
+      if (el.name === 'f_stavinc') continue;
       const pick = pickOption(el.name, opts, job.variant);
       if (!pick) continue;
       el.value = pick.value;
@@ -226,7 +231,8 @@ function fill(w: FrameWindow, form: HTMLFormElement, job: TestJob): Record<strin
   }
   for (const el of fields()) {
     const text = el.tagName === 'TEXTAREA' || isInput(el, '', 'text', 'email', 'url', 'number');
-    if (!text || el.readOnly) continue;
+    // A privacidade vira um campo de texto do ms-dropdown com o mesmo nome.
+    if (!text || el.readOnly || el.name === 'f_tipo_privacidade') continue;
     el.value = textValue(el.name, el.maxLength, job.variant, job.tag);
     values[el.name] = el.value;
   }
@@ -236,7 +242,7 @@ function fill(w: FrameWindow, form: HTMLFormElement, job: TestJob): Record<strin
     ...donor,
     ...consistencyFixes(values, context.agency),
   });
-  return values;
+  return { ...values, ...pageValues(w, form, job) };
 }
 
 /**
@@ -301,7 +307,10 @@ async function createOne(job: TestJob, code: string): Promise<TestResult> {
         (f) => f.action !== action && saveButton(f.ownerDocument),
       );
       if (!next) {
-        return { ...base, msgs: ['A página voltou sem mensagem e sem outro passo'], values };
+        // O texto da página que voltou: um erro do servidor aparece só ali.
+        const text = (fw.document.body?.innerText ?? '').replace(/\s+/g, ' ').trim();
+        const msg = `A página voltou sem mensagem e sem outro passo: ${text.slice(0, 300)}`;
+        return { ...base, msgs: [msg], values };
       }
       action = next.action;
       values = { ...values, ...fill(fw, next, job) };
