@@ -8,7 +8,17 @@ import { useEffect, useState } from 'react';
 import type { TestItemsAction } from '../bridge/protocol.ts';
 import { listenReplies, post } from './use-bridge.ts';
 
+/** O que a extensão está fazendo agora (extension/src/censo-test-items.ts, LiveProgress). */
+export interface TestItemsLive {
+  at: number;
+  done: number;
+  last?: string;
+  phase: 'criando' | 'lendo' | 'parado' | 'removendo';
+  total?: number;
+}
+
 export interface TestItemsSummary {
+  agora?: TestItemsLive;
   criados?: number;
   falharam?: { msgs: string[]; tag: string }[];
   faltam?: number | null;
@@ -25,17 +35,31 @@ export interface TestItemsLogLine {
 }
 
 export interface TestItemsState {
+  /** O andamento lido enquanto uma ação corre (de 5 em 5 s). */
+  live?: TestItemsLive;
   log: TestItemsLogLine[];
   /** A ação pedida que ainda não voltou. */
   pending?: TestItemsAction;
   summary?: TestItemsSummary;
 }
 
+const POLL_MS = 5000;
+const POLL_PREFIX = 'itens-teste-andamento-';
+
+/** "12 de 50 · último: tec-2A-v3 ok · há 4 s", do andamento lido. */
+export function liveLine(live: TestItemsLive | undefined, now = Date.now()): string {
+  if (!live || live.phase === 'parado') return 'Esperando a extensão começar.';
+  const count =
+    live.phase === 'lendo' ? `${live.done} páginas lidas` : `${live.done} de ${live.total ?? '?'}`;
+  const last = live.last ? ` · último: ${live.last}` : '';
+  return `${count}${last} · há ${Math.max(0, Math.round((now - live.at) / 1000))} s`;
+}
+
 /** O resumo dentro de uma resposta: o andamento, ou o de um lote (que traz o andamento junto). */
 export function summaryOf(result: unknown): TestItemsSummary | undefined {
   if (!result || typeof result !== 'object') return undefined;
   const r = result as Record<string, unknown>;
-  return 'criados' in r || 'removidos' in r ? (r as TestItemsSummary) : undefined;
+  return 'criados' in r || 'removidos' in r || 'agora' in r ? (r as TestItemsSummary) : undefined;
 }
 
 export function useTestItems() {
@@ -45,7 +69,14 @@ export function useTestItems() {
   useEffect(
     () =>
       listenReplies((msg) => {
-        if (msg.type !== 'itens-teste' || msg.id !== waiting?.id) return;
+        if (msg.type !== 'itens-teste') return;
+        // A leitura de andamento durante uma ação: só o "agora".
+        if (msg.id.startsWith(POLL_PREFIX)) {
+          const live = summaryOf(msg.result)?.agora;
+          if (live) setState((s) => ({ ...s, live }));
+          return;
+        }
+        if (msg.id !== waiting?.id) return;
         setWaiting(undefined);
         setState((s) => ({
           log: [
@@ -57,6 +88,16 @@ export function useTestItems() {
       }),
     [waiting],
   );
+
+  // Enquanto uma ação corre, o andamento de 5 em 5 s.
+  useEffect(() => {
+    if (!waiting) return;
+    const timer = setInterval(
+      () => post({ acao: 'andamento', id: `${POLL_PREFIX}${Date.now()}`, type: 'itens-teste' }),
+      POLL_MS,
+    );
+    return () => clearInterval(timer);
+  }, [waiting]);
 
   // Para acompanhar de fora (a automação do navegador lê daqui).
   useEffect(() => {

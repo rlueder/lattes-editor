@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 
-import { useTestItems } from './use-test-items.ts';
+import { liveLine, useTestItems } from './use-test-items.ts';
 
 const LABEL = {
   andamento: 'Atualizando',
@@ -62,7 +62,11 @@ export function TestItemsPanel() {
           Atualizar
         </button>
       </div>
-      {pending && <p role="status">{LABEL[pending]}…</p>}
+      {pending && (
+        <p role="status">
+          {LABEL[pending]}… {liveLine(state.live)}
+        </p>
+      )}
       {last?.error && (
         <p className="test-items-error" role="alert">
           {last.error}

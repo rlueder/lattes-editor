@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { summaryOf } from '../src/ui/use-test-items.ts';
+import { liveLine, summaryOf } from '../src/ui/use-test-items.ts';
 
 describe('itens de teste no editor: o resumo da resposta', () => {
   it('o andamento e o de um lote viram resumo; o resto, não', () => {
@@ -12,5 +12,18 @@ describe('itens de teste no editor: o resumo da resposta', () => {
     expect(summaryOf(undefined)).toBeUndefined();
     expect(summaryOf('x')).toBeUndefined();
     expect(summaryOf({ outro: 1 })).toBeUndefined();
+  });
+});
+
+describe('itens de teste no editor: a linha do andamento', () => {
+  it('lendo, criando e esperando', () => {
+    expect(liveLine({ at: 1000, done: 37, last: 'pkg_x.form', phase: 'lendo' }, 5000)).toBe(
+      '37 páginas lidas · último: pkg_x.form · há 4 s',
+    );
+    expect(liveLine({ at: 1000, done: 12, phase: 'criando', total: 50 }, 1000)).toBe(
+      '12 de 50 · há 0 s',
+    );
+    expect(liveLine(undefined)).toBe('Esperando a extensão começar.');
+    expect(liveLine({ at: 0, done: 0, phase: 'parado' })).toBe('Esperando a extensão começar.');
   });
 });

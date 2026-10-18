@@ -41,6 +41,31 @@ export interface BatchOptions {
 
 const STORE = 'lattes-editor:itens-de-teste';
 
+/** O que a passada está fazendo agora, para o editor mostrar enquanto espera. */
+export interface LiveProgress {
+  at: number;
+  /** Itens (ou páginas, na leitura) já feitos nesta chamada. */
+  done: number;
+  last?: string;
+  phase: 'criando' | 'lendo' | 'parado' | 'removendo';
+  total?: number;
+}
+
+export function setLive(patch: Partial<LiveProgress>): void {
+  const g = globalThis as unknown as { __lattesTestLive?: LiveProgress };
+  g.__lattesTestLive = {
+    done: 0,
+    phase: 'parado',
+    ...g.__lattesTestLive,
+    ...patch,
+    at: Date.now(),
+  };
+}
+
+export function live(): LiveProgress | undefined {
+  return (globalThis as unknown as { __lattesTestLive?: LiveProgress }).__lattesTestLive;
+}
+
 interface Progress {
   removed: string[];
   results: TestResult[];
@@ -301,8 +326,10 @@ export async function createTestItems(
       return !r || (!r.ok && retryFailed);
     })
     .slice(0, batch);
+  setLive({ done: 0, last: undefined, phase: 'criando', total: next.length });
   for (const job of next) {
     const result = await createOne(job, code);
+    setLive({ done: (live()?.done ?? 0) + 1, last: `${job.tag} ${result.ok ? 'ok' : 'falhou'}` });
     progress.results = [...progress.results.filter((r) => r.tag !== job.tag), result];
     save(progress);
     await pause(delayMs);
@@ -312,6 +339,7 @@ export async function createTestItems(
       () => undefined,
     );
   }
+  setLive({ phase: 'parado' });
   return { ...testProgress(jobs), lote: next.map((j) => j.tag) };
 }
 
@@ -320,6 +348,7 @@ export function testProgress(jobs?: TestJob[]) {
   const progress = load();
   const failed = progress.results.filter((r) => !r.ok);
   return {
+    agora: live(),
     criados: progress.results.filter((r) => r.ok).length,
     falharam: failed.map((r) => ({ msgs: r.msgs, tag: r.tag })),
     faltam: jobs ? jobs.filter((j) => !progress.results.some((r) => r.tag === j.tag)).length : null,
@@ -356,6 +385,7 @@ export async function removeTestItems(
   ];
   const progress = load();
   const removed: string[] = [];
+  setLive({ done: 0, last: undefined, phase: 'removendo', total: batch });
   for (const list of lists) {
     if (removed.length >= batch) break;
     const items = editLinks((await get(list)).html).map(withoutCode);
@@ -382,12 +412,14 @@ export async function removeTestItems(
         removed.push(path);
         progress.removed = [...progress.removed, path];
         save(progress);
+        setLive({ done: removed.length, last: path.split('?')[0] });
       } finally {
         frame.remove();
       }
       await pause(delayMs);
     }
   }
+  setLive({ phase: 'parado' });
   return { removidos: removed.length, total: progress.removed.length };
 }
 

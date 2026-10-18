@@ -4,7 +4,7 @@
 // "Salvar" e a caixa de mensagens dela), e roda uma ação por pedido.
 
 import type { BridgeMessage, EditorMessage } from '../../src/bridge/protocol.ts';
-import { realLattesTab, runCensusInPage } from './lattes-tab.ts';
+import { readCensusProgress, realLattesTab, runCensusInPage } from './lattes-tab.ts';
 
 type TestItemsCall = Extract<EditorMessage, { type: 'itens-teste' }>;
 
@@ -25,6 +25,13 @@ export async function answerTestItems(
   const reply = (r: { error?: string; result?: unknown }) =>
     send({ ...r, id: msg.id, type: 'itens-teste' });
   if (!__CANAL_DEV__) return reply({ error: 'Itens de teste só no canal Dev do conector' });
+  // O andamento só lê o que a página guardou: roda mesmo com um lote correndo.
+  if (msg.acao === 'andamento') {
+    const tabId = await realLattesTab();
+    if (tabId === undefined)
+      return reply({ error: 'Abra o menu do Lattes (wwws.cnpq.br) numa aba' });
+    return reply(await readCensusProgress(tabId));
+  }
   if (inFlight || busy) return reply({ error: 'A extensão está usando a aba do Lattes agora' });
   inFlight = true;
   try {

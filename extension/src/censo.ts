@@ -32,8 +32,10 @@ import { readZip } from '../../src/import-export/zip.ts';
 import { decodeLatin1, decodeXmlBytes } from '../../src/model/latin1.ts';
 import {
   createTestItems,
+  live,
   removeTestItems,
   resetTestItems,
+  setLive,
   testProgress,
 } from './censo-test-items.ts';
 
@@ -41,7 +43,11 @@ declare const __CENSO_VERSAO__: string;
 
 const base = () => new URL('/cvlattesweb/', location.origin);
 
+/** Na leitura dos formulários dos itens de teste: cada página lida conta no andamento. */
+let reading = false;
+
 async function get(path: string) {
+  if (reading) setLive({ done: (live()?.done ?? 0) + 1, last: path.split('?')[0] });
   const res = await fetch(new URL(path, base()), { credentials: 'include' });
   return {
     html: decodeLatin1(new Uint8Array(await res.arrayBuffer())),
@@ -230,7 +236,16 @@ function summary(file: CensusFile) {
 let captured: CensusFile | undefined;
 /** Lê os formulários uma vez (alguns minutos); os lotes seguintes usam a leitura. */
 async function prepareTestItems() {
-  if (!captured || captured.interrupted) captured = await capture({ download: false });
+  if (!captured || captured.interrupted) {
+    setLive({ done: 0, last: undefined, phase: 'lendo', total: undefined });
+    reading = true;
+    try {
+      captured = await capture({ download: false });
+    } finally {
+      reading = false;
+      setLive({ phase: 'parado' });
+    }
+  }
   // Sessão caída no meio da leitura: nenhum formulário foi lido, e o lote
   // sairia vazio como se não faltasse nada.
   if (captured.interrupted) {

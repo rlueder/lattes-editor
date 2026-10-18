@@ -413,3 +413,27 @@ export async function runCensusInPage(
   );
   return res?.result ?? { error: 'A aba do Lattes não respondeu' };
 }
+
+/**
+ * O andamento dos itens de teste, lido da página sem injetar nada: o que o
+ * censo guardou (se já foi injetado) e o que está fazendo agora.
+ */
+export async function readCensusProgress(
+  tabId: number,
+): Promise<{ error?: string; result?: unknown }> {
+  const [res] = await guarded(tabId, () =>
+    chrome.scripting.executeScript({
+      func: () => {
+        const g = globalThis as unknown as {
+          __lattesCensus?: { testProgress?: () => unknown };
+          __lattesTestLive?: unknown;
+        };
+        const summary = g.__lattesCensus?.testProgress?.() as Record<string, unknown> | undefined;
+        return JSON.parse(JSON.stringify(summary ?? { agora: g.__lattesTestLive })) as unknown;
+      },
+      target: { tabId },
+      world: 'MAIN',
+    }),
+  );
+  return res ? { result: res.result } : { error: 'A aba do Lattes não respondeu' };
+}
