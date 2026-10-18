@@ -114,6 +114,9 @@ export function textValue(name: string, maxLength: number, variant: number, tag:
   // O número do registro ou da patente é único por instituição: o marcador
   // cortado em 16 caracteres repetia entre os itens.
   if (/cod_reg/i.test(name)) return `TESTE${uniqueDigits(tag)}`.slice(0, max);
+  // Tipo de atividade dos autores (arte "outra"): sem limite na página, 23
+  // na coluna (ORA-12899). Só o marcador.
+  if (/^f_tpo_ativ$/i.test(name)) return TEST_MARK.slice(0, Math.min(max, 23));
   if (/issn/i.test(name)) return VALID_ISSN.slice(0, max);
   if (/isbn/i.test(name)) return VALID_ISBN.slice(0, max);
   if (/ano/i.test(name) && max <= 4) return year;

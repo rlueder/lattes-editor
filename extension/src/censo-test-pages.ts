@@ -68,6 +68,11 @@ export function pageValues(w: Window, form: HTMLFormElement, job: TestJob): Reco
   const code = field('f_cod_inst')?.value ?? '';
   if (agency && code.length > 12 && !/FORMACAO/i.test(form.name)) {
     write(institution(agency.code, agency.name));
+    // A orientação liga o curso à instituição (FK_INST_TESE_ORIENTADA): o
+    // curso da formação não serve, e o nome dele entra como texto.
+    if (field('f_cod_curso')) {
+      write({ f_cod_curso: '', f_cod_curso2: '', f_curso: `${TEST_MARK} ${job.tag}` });
+    }
   }
 
   // Atuação: o vínculo sai da janela da página (sele). Escolhido direto, o
