@@ -44,6 +44,9 @@ function institution(code: string, name: string): Record<string, string> {
   };
 }
 
+const pick = (from: Record<string, string>, names: string[]) =>
+  Object.fromEntries(names.filter((n) => from[n] !== undefined).map((n) => [n, from[n]!]));
+
 /** Os campos de cada página que fill() não alcança; devolve o que gravou. */
 export function pageValues(w: Window, form: HTMLFormElement, job: TestJob): Record<string, string> {
   const page = w as PageWindow;
@@ -71,13 +74,19 @@ export function pageValues(w: Window, form: HTMLFormElement, job: TestJob): Reco
   // teste), e o curso da formação junto com ela viola a chave do curso.
   const fromFormation = ['f_cod_inst', 'f_cod_inst2', 'f_cod_curso', 'f_cod_curso2'].some(copied);
   const code = field('f_cod_inst')?.value ?? '';
-  if (agency && (code.length > 12 || fromFormation) && !/FORMACAO/i.test(form.name)) {
+  if (field('f_cod_curso') && !/FORMACAO/i.test(form.name)) {
+    // Orientação e banca pedem instituição e curso juntos, e o par da sua
+    // formação serve. A janela delas grava o código V em f_cod_inst e os
+    // outros em f_cod_inst2 (FK_INST_TESE_ORIENTADA com ele no lugar errado).
+    const inst = context.lookups.f_cod_inst || context.lookups.f_cod_inst2 || '';
+    const v = /^V/.test(inst);
+    write({
+      ...pick(context.lookups, ['f_cod_curso', 'f_cod_curso2', 'f_curso', 'f_inst']),
+      f_cod_inst: v ? inst : '',
+      f_cod_inst2: v ? '' : inst,
+    });
+  } else if (agency && (code.length > 12 || fromFormation) && !/FORMACAO/i.test(form.name)) {
     write(institution(agency.code, agency.name));
-    // A orientação liga o curso à instituição (FK_INST_TESE_ORIENTADA): o
-    // curso da formação não serve, e o nome dele entra como texto.
-    if (field('f_cod_curso')) {
-      write({ f_cod_curso: '', f_cod_curso2: '', f_curso: `${TEST_MARK} ${job.tag}` });
-    }
   }
 
   // Atuação: o vínculo sai da janela da página (sele). Escolhido direto, o
