@@ -261,6 +261,12 @@ function anyDonor(): Record<string, string> {
   return merged;
 }
 
+/** Os nomes dos campos de um formulário: o mesmo passo de novo tem os mesmos. */
+const signature = (form: HTMLFormElement) =>
+  [...new Set([...form.elements].map((el) => (el as HTMLInputElement).name).filter(Boolean))]
+    .sort()
+    .join(',');
+
 /** O "Salvar" da página, como a pessoa clicaria. */
 function saveButton(doc: Document): HTMLElement | undefined {
   return [...doc.querySelectorAll<HTMLElement>('input[type=button], button, a')].find((b) =>
@@ -285,7 +291,7 @@ async function createOne(job: TestJob, code: string): Promise<TestResult> {
     if (!form) return { ...base, msgs: [`A página não tem o formulário ${job.form}`] };
     addOwner(w);
     let values = fill(w, form, job);
-    let action = form.action;
+    const seen = new Set([signature(form)]);
     // Alguns formulários têm um segundo passo (a formação complementar pede os
     // anos depois): a página nova, sem sucesso nem erro, é preenchida e salva.
     for (let step = 0; step < 3; step++) {
@@ -301,18 +307,21 @@ async function createOne(job: TestJob, code: string): Promise<TestResult> {
         const ok = msgs.some((m) => /sucesso/i.test(m));
         return { ...base, msgs: msgs.filter((m) => !/sucesso/i.test(m)), ok, values };
       }
-      // Só um formulário de outro passo (outra ação) segue: o mesmo de novo
-      // seria a página recarregada, e salvar de novo duplicaria o item.
+      // Só um formulário com outros campos segue (a formação complementar
+      // posta os dois passos na mesma ação): o mesmo de novo seria a página
+      // recarregada, e salvar de novo duplicaria o item.
       const next = [...fw.document.forms].find(
-        (f) => f.action !== action && saveButton(f.ownerDocument),
+        (f) => !seen.has(signature(f)) && saveButton(f.ownerDocument),
       );
       if (!next) {
         // O texto da página que voltou: um erro do servidor aparece só ali.
         const text = (fw.document.body?.innerText ?? '').replace(/\s+/g, ' ').trim();
-        const msg = `A página voltou sem mensagem e sem outro passo: ${text.slice(0, 300)}`;
+        const ctr = (fw.document.forms[0]?.elements.namedItem('f_ctr') as HTMLInputElement | null)
+          ?.value;
+        const msg = `A página voltou sem mensagem e sem outro passo (f_ctr ${ctr ?? '-'}): ${text.slice(0, 300)}`;
         return { ...base, msgs: [msg], values };
       }
-      action = next.action;
+      seen.add(signature(next));
       values = { ...values, ...fill(fw, next, job) };
     }
     return { ...base, msgs: ['Passos demais'], values };

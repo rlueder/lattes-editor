@@ -48,7 +48,16 @@ const base = () => new URL('/cvlattesweb/', location.origin);
 /** Na leitura dos formulários dos itens de teste: cada página lida conta no andamento. */
 let reading = false;
 
+/**
+ * No Lattes, um GET também executa: o link de exclusão de uma atuação é
+ * pkg_ativ.form com f_ctr=E2, e apagou a atuação inteira quando foi lido
+ * como página (18/10/2026). Leitura nunca leva f_ctr de exclusão.
+ */
+export const DELETE_GET = /[?&]f_ctr=E/i;
+
 async function get(path: string) {
+  if (DELETE_GET.test(path))
+    throw new Error(`Leitura recusada, o endereço exclui: ${path.split('?')[0]}`);
   if (reading) setLive({ done: (live()?.done ?? 0) + 1, last: path.split('?')[0] });
   const res = await fetch(new URL(path, base()), { credentials: 'include' });
   return {
