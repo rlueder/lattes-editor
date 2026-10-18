@@ -1549,7 +1549,16 @@ produção. **Observado.**
 
 "Áreas de atuação" (`prc_area_atuacao`, formulário `GN_AREA_ATU`, POST
 `prc_area_atuacao`) usa a mesma grade e serializa duas vezes: `f_area_l`
-com `l`, `c`, `r`, `p` e `f_privacidade` com `priv`, linha a linha. A página
+com `l`, `c`, `r`, `p` e `f_privacidade` com `priv`, linha a linha. Em
+18/10/2026: o `check()` junta, de cada linha de `areaProvider`, os valores de
+`l`, `c`, `r` e `p` que a linha tem, na ordem dela, com "|" (o `r` com a letra
+na frente), e as linhas com "@"; `f_privacidade` leva o `priv` de cada linha
+com "@", e o envio vai com `f_ctr=I`, a lista inteira. As linhas lidas têm
+`l`, `c`, `priv`, `vis` e `editable`, e as da árvore `l`, `n`, `c` e `b`: uma
+área escolhida vai como `nome|código`, e a criada à mão como
+`nome|-1|código do pai`. O limite da página é 6 (`areaNumMaxRegistros`). Uma
+área criada pela pessoa volta da página com código 9999xxxx. Gravado pelo
+conector no Lattes real (uma área a mais e a volta), **observado**. A página
 ainda tem `abrir_area()`, que abriria a janela antiga
 `pkg_area.pp_lista?f_cv_modal=modalCV1&f_origem=AA&f_max=6&f_cod_rh=…`; ela
 existe (GET responde 200, formulário `AREA` com `f_gr`, `f_ar`, `f_sb`,

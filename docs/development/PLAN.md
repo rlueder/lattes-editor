@@ -160,9 +160,13 @@ no molde do livro. Prefácio: confirmar o `f_cod_tipo` da lista (1C).
   um projeto novo.
 - Potencial de inovação: pedir o texto (até 400) ao passar de não para sim e
   mandar com `f_sta_inovacao=S`.
-- Áreas de atuação: `f_area_l` como `l|c@…` e `f_privacidade` como `1@…`, com o
-  código de 8 dígitos tirado da árvore `areaDP`; até 6 áreas. Uma gravação de
-  teste confirma o formato sem a chave `r`.
+- Áreas de atuação: feito em 18/10/2026 (`src/bridge/areas-atuacao.ts`,
+  capacidade `alterar-areas-atuacao`). A página `prc_area_atuacao` grava a
+  lista inteira: `f_area_l` com `nome|código` de cada área, `f_privacidade` e
+  `f_ctr=I`; a chave `r` não aparece nas linhas nem na árvore. No Lattes real,
+  uma terceira área (Desenho Industrial, 61200000) entrou e saiu pelo
+  conector, conferida nas duas vezes, e as duas suas voltaram com os mesmos
+  códigos e a mesma privacidade (a área criada por você, 99990007, inclusive).
 - Contatos do endereço (e-mails, redes sociais, outra forma): capturar os
   scripts de `prc_endereco` e uma gravação de teste.
 - Pessoa com deficiência: capturar o script de `prc_ident` e uma gravação de
