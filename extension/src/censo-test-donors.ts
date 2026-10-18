@@ -105,6 +105,21 @@ export async function prepareContext(
   if (first) context.agency = { code: first[1]!, name: first[2]! };
 }
 
+let prepared = false;
+
+/**
+ * O contexto, lido uma vez por carregamento do censo: sem a marca, uma
+ * formação sem instituição e curso fazia o lote reler tudo a cada vez.
+ */
+export async function ensureContext(
+  code: string,
+  get: (path: string) => Promise<{ html: string }>,
+) {
+  if (prepared) return;
+  await prepareContext(code, get);
+  prepared = true;
+}
+
 /** O caminho do formulário dentro de uma atuação sua, quando o formulário pede (atividade, projeto). */
 export function placed(job: TestJob): string {
   const donor = context.donors[job.form];

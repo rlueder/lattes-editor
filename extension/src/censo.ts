@@ -30,6 +30,7 @@ import {
 import { testJobs } from '../../src/census/test-plan.ts';
 import { readZip } from '../../src/import-export/zip.ts';
 import { decodeLatin1, decodeXmlBytes } from '../../src/model/latin1.ts';
+import { ensureContext } from './censo-test-donors.ts';
 import {
   createTestItems,
   live,
@@ -237,15 +238,16 @@ function summary(file: CensusFile) {
 let captured: CensusFile | undefined;
 /** Lê os formulários uma vez (alguns minutos); os lotes seguintes usam a leitura. */
 async function prepareTestItems() {
-  if (!captured || captured.interrupted) {
-    setLive({ done: 0, last: undefined, phase: 'lendo', total: undefined });
-    reading = true;
-    try {
-      captured = await capture({ download: false });
-    } finally {
-      reading = false;
-      setLive({ phase: 'parado' });
-    }
+  // A leitura inclui os seus itens de onde as buscas são copiadas: antes ela
+  // ficava para o começo do primeiro lote, que parecia parado sem andamento.
+  setLive({ done: 0, last: undefined, phase: 'lendo', total: undefined });
+  reading = true;
+  try {
+    if (!captured || captured.interrupted) captured = await capture({ download: false });
+    if (!captured.interrupted) await ensureContext(await code(), get);
+  } finally {
+    reading = false;
+    setLive({ phase: 'parado' });
   }
   // Sessão caída no meio da leitura: nenhum formulário foi lido, e o lote
   // sairia vazio como se não faltasse nada.

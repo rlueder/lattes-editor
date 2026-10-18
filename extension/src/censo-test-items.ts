@@ -16,7 +16,7 @@ import {
   type TestJob,
   textValue,
 } from '../../src/census/test-plan.ts';
-import { context, editLinks, placed, prepareContext, setFields } from './censo-test-donors.ts';
+import { context, editLinks, ensureContext, placed, setFields } from './censo-test-donors.ts';
 
 export interface TestResult {
   id: string;
@@ -321,7 +321,7 @@ export async function createTestItems(
   get: (path: string) => Promise<{ html: string }>,
   { batch = 10, delayMs = [3000, 6000], receiver, retryFailed = false }: BatchOptions = {},
 ) {
-  if (Object.keys(context.lookups).length === 0) await prepareContext(code, get);
+  await ensureContext(code, get);
   const progress = load();
   const tried = new Map(progress.results.map((r) => [r.tag, r]));
   const next = jobs
