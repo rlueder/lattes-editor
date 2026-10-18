@@ -6,11 +6,12 @@
 // O que é observado e o que é inferido no formato do XML está em
 // docs/campos_tipados.md ("Listas lidas pelo conector").
 
-import type { Agency, AreaNode, Course, Institution } from '../bridge/lattes-lists.ts';
+import type { Agency, AreaNode, Course, Institution, Organ } from '../bridge/lattes-lists.ts';
+import { ORGAN_PARTS } from '../bridge/production/organ.ts';
 import { PRODUCTION_TARGETS } from '../bridge/production/targets/index.ts';
 import { foldText } from '../model/fold-text.ts';
 import type { KnowledgeArea } from '../model/production.ts';
-import { getAttr, setAttr, type XElement } from '../model/xml.ts';
+import { getAttr, setAttr, walk, type XElement } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 
 /** Uma leitura por dia basta: as listas do Lattes mudam raramente. */
@@ -213,6 +214,11 @@ export interface CodeNameAttrs {
 export interface LivePairs {
   agency?: CodeNameAttrs & { flag?: string };
   course?: CodeNameAttrs & {
+    /**
+     * Num tipo com mais de uma natureza, o nível e o f_sta_area pela NATUREZA
+     * do XML (sem acento nem caixa); level e staArea ficam vazios.
+     */
+    byNature?: Record<string, { level: string; staArea: '' | 'N' }>;
     /** O código CAPES, que só a formação guarda à parte. */
     capes?: string;
     level: string;
@@ -261,11 +267,10 @@ const hasInSchema = (element: string, attr: string) =>
 
 /**
  * Orientação e banca: a especificação do conector. O nível do curso vem da
- * natureza do tipo; um tipo com várias naturezas (outras orientações
- * concluídas, a banca de qualificação) não tem um nível só, e o curso fica
- * como era. O mestrado profissional usa a lista do acadêmico aqui; na hora de
- * gravar, o conector refaz a busca pelo nível da página e recusa curso de
- * outra lista.
+ * natureza do tipo; num tipo com várias naturezas (outras orientações
+ * concluídas, a banca de qualificação), da NATUREZA do item (byNature). O
+ * mestrado profissional usa a lista do acadêmico aqui; na hora de gravar, o
+ * conector refaz a busca pelo nível da página e recusa curso de outra lista.
  */
 function productionPairs(element: string): LivePairs | undefined {
   const target = PRODUCTION_TARGETS.find((t) => t.lookups?.child === element);
@@ -274,6 +279,22 @@ function productionPairs(element: string): LivePairs | undefined {
   const natures = target.nature?.values ?? [];
   const nature = natures.length === 1 ? natures[0]! : undefined;
   const level = nature ? spec.course?.level[nature] : undefined;
+  const c = spec.course;
+  const byNature =
+    c?.natures && natures.length > 1
+      ? Object.fromEntries(
+          Object.entries(c.natures).flatMap(([xml, code]) =>
+            c.level[code]
+              ? [
+                  [
+                    foldText(xml),
+                    { level: c.level[code], staArea: c.noArea.includes(code) ? 'N' : '' } as const,
+                  ],
+                ]
+              : [],
+          ),
+        )
+      : undefined;
   return {
     ...(spec.agency
       ? {
@@ -291,6 +312,18 @@ function productionPairs(element: string): LivePairs | undefined {
             name: spec.course.name,
             program: 'TESE' as const,
             staArea: spec.course.noArea.includes(nature) ? ('N' as const) : ('' as const),
+          },
+        }
+      : {}),
+    ...(c && byNature
+      ? {
+          course: {
+            byNature,
+            code: c.code,
+            level: '',
+            name: c.name,
+            program: 'TESE' as const,
+            staArea: '' as const,
           },
         }
       : {}),
@@ -409,9 +442,65 @@ export function applyAgency(el: XElement, agency: Agency | undefined): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// O lugar do campo no currículo
+
+/** Os elementos acima de `el` na cópia, da raiz ao pai; vazio quando não está nela. */
+export function ancestorsOf(root: XElement | undefined, el: XElement): readonly XElement[] {
+  let found: readonly XElement[] = [];
+  if (root) walk(root, (node, ancestors) => node === el && (found = [...ancestors]));
+  return found;
+}
+
+/** O código da instituição da atuação que contém o elemento, como o XML o guarda. */
+export function institutionOf(root: XElement | undefined, el: XElement): string {
+  const atuacao = ancestorsOf(root, el).find((a) => a.name === 'ATUACAO-PROFISSIONAL');
+  return (atuacao && getAttr(atuacao, 'CODIGO-INSTITUICAO')) ?? '';
+}
+
+/** A NATUREZA do item a que o detalhe pertence (no DADOS-BASICOS irmão). */
+export function itemNature(root: XElement | undefined, el: XElement): string {
+  const item = ancestorsOf(root, el).at(-1);
+  const basics = item?.children.find(
+    (c): c is XElement => c.kind === 'element' && c.name.startsWith('DADOS-BASICOS'),
+  );
+  return (basics && getAttr(basics, 'NATUREZA')) ?? '';
+}
+
+// ---------------------------------------------------------------------------
+// Órgão e unidade do projeto (production/organ.ts)
+
+/**
+ * Órgão escolhido na janela de órgãos: código e nome juntos, e a unidade
+ * sai, porque a de antes era de outro órgão. Sem órgão, os quatro ficam vazios.
+ */
+export function applyOrgan(el: XElement, organ: Organ | undefined): boolean {
+  const { organ: o, unit: u } = ORGAN_PARTS;
+  return write(el, {
+    [o.code]: organ?.code ?? '',
+    [o.name]: organ?.name ?? '',
+    [u.code]: '',
+    [u.name]: '',
+  });
+}
+
+/** Unidade escolhida entre as do órgão do item; sem ela, só o órgão fica. */
+export function applyUnit(el: XElement, unit: Organ | undefined): boolean {
+  const { unit: u } = ORGAN_PARTS;
+  return write(el, { [u.code]: unit?.code ?? '', [u.name]: unit?.name ?? '' });
+}
+
+/** A escolha da lista que é a do item: pelo código, ou pelo nome quando não há código. */
+export function findOrgan(organs: readonly Organ[], code: string, name: string): Organ | undefined {
+  if (code) return organs.find((o) => o.code === code);
+  const folded = foldText(name);
+  return folded ? organs.find((o) => foldText(o.name) === folded) : undefined;
+}
+
+// ---------------------------------------------------------------------------
 // Que campo vira qual lista
 
-export type LiveKind = 'agencia' | 'area' | 'area-derivada' | 'curso' | 'instituicao';
+export type LiveKind =
+  'agencia' | 'area' | 'area-derivada' | 'curso' | 'instituicao' | 'orgao' | 'unidade';
 
 /** O que o editor tem em mãos agora: as cópias guardadas e o que o conector sabe fazer. */
 export interface LiveAvailability {
@@ -419,6 +508,8 @@ export interface LiveAvailability {
   areas?: readonly AreaNode[];
   /** O conector lê cursos (extensão com a capacidade 'listas-lattes'). */
   courses: boolean;
+  /** O conector lê a janela de órgãos do projeto ('orgao-projeto'). */
+  organs?: boolean;
   /** O conector faz as buscas de orientação e banca ('buscas-producao'). */
   production?: boolean;
   /** O conector busca instituição. */
@@ -439,6 +530,13 @@ export function liveKind(el: XElement, attr: string, live: LiveAvailability): Li
     // Só segue a área quando a combinação está na árvore (ou vazia); senão, à mão.
     const current = readArea(el);
     return isEmptyArea(current) || findArea(live.areas, current) ? 'area-derivada' : undefined;
+  }
+  if (el.name === ORGAN_PARTS.holder) {
+    if (!live.organs) return undefined;
+    if (attr === ORGAN_PARTS.organ.name) return 'orgao';
+    // A unidade é de um órgão: sem ele escolhido, não há lista.
+    if (attr === ORGAN_PARTS.unit.name && getAttr(el, ORGAN_PARTS.organ.code)) return 'unidade';
+    return undefined;
   }
   const pairs = livePairs(el.name);
   if (pairs?.production && !live.production) return undefined;

@@ -1435,11 +1435,15 @@ regrava a instituição como acima e grava o curso **sem** a letra em
 uma é um link `atribuir('<código>','<nome>')`, com código de 12 caracteres;
 `atribuir()` escreve `f_nme_agencia` e `f_agencia` e volta. **Observado.**
 
-### Orientações e bancas (lido em 18/10/2026, sem alteração vista)
+### Orientações e bancas (lido e gravado em 18/10/2026)
 
 As páginas `pkg_orient.form`, `PKG_BANCA_TRAB.form` e `PKG_BANCA_JULG.form`
-abrem as mesmas buscas, com outros parâmetros. **Lido no código das páginas;
-nenhuma alteração foi vista no Lattes real.**
+abrem as mesmas buscas, com outros parâmetros. **Lido no código das
+páginas.** Em 18/10/2026, quatro itens de teste (orientação concluída e em
+andamento de mestrado, banca de mestrado, banca julgadora de professor
+titular) tiveram instituição, curso e agência trocados pelo conector com os
+ocultos abaixo, e a releitura trouxe os códigos novos: **observado** em modo
+de alteração.
 
 - Instituição: `prc_inst_form?f_cod=…`, sem `f_nivel` na orientação e na banca
   julgadora; na banca de trabalho, `f_nivel` pela natureza (A11 GM, A12 e A13
@@ -1457,9 +1461,47 @@ nenhuma alteração foi vista no Lattes real.**
   supervisão de pós-doutorado não tem curso.
 - Agência (só orientação): `prc_agencia`, como na formação, para `f_agencia` e
   o texto `f_nme_agencia`.
-- Orientando: `pkg_orient.valida_orientador_ajax` (POST com `f_cod`, `f_nme`,
-  `f_nivel`) preenche `f_id_orientado` e `f_seq_form_orientado`. Não usado pelo
-  conector: falta confirmar que só consulta.
+- Orientando: o botão Salvar chama `pre_check()`, que depois do `check()` faz
+  `pkg_orient.valida_orientador_ajax` (POST síncrono com `f_cod`, `f_nme` em
+  `escape()` e `f_nivel`, o F_COD_PROD marcado) e, só com `sta_validado`
+  verdadeiro, copia `idOrientado` e `seqFormOrientado` para `f_id_orientado` e
+  `f_seq_form_orientado`. Sem validação, os dois ficam como estavam. O
+  conector não faz essa chamada (é um POST, e não se confirmou que só
+  consulta): o identificador fica como a página o trouxe, o que coincide com a
+  página quando o nome não valida.
+
+### Órgão e unidade do projeto (lido em 18/10/2026)
+
+O formulário do projeto (`GN_PROJETO`) guarda o órgão em `f_codorgao` ou
+`f_codorgao2` e o texto em `f_orgao` (desabilitado) e `f_orgao_old`. A lupa
+chama `orgao()`, que abre
+`PKG_PROJETO.pp_orgao_cargo?f_cod=…&f_cod_inst=<V e f_cod_inst, ou D e f_cod_inst2>`.
+No projeto, `f_cod_inst` vem com o código da atuação sem a letra da busca,
+inclusive os de letras (`KCLH00000006`). **Observado.**
+
+A janela lista os órgãos da instituição; cada um tem um link "Expandir
+itens" para a mesma janela com `f_origem=&f_modal_cv=2&f_cod_inst2=V<código>`,
+que lista o próprio órgão no topo e as unidades dele. A escolha é
+`atribuir('<12 dígitos>','<nome>',<tipo>[,'<órgão de cima>'])`: tipo 0 grava
+o código em `f_codorgao` (e limpa `f_codorgao2`), os outros em `f_codorgao2`,
+e o texto vira `"<órgão de cima>/\n<nome>"` em `f_orgao` e `f_orgao_old`. O
+código tem a hierarquia (`000903000008` o centro, `000903003007` uma área
+dele) com um dígito final que não segue a do pai. Em todos os órgãos vistos
+o tipo era 0. **Observado** numa universidade (`V000900000007`, 16 órgãos no
+topo). Das 18 instituições das atuações de quem capturou, só as de código V
+têm órgãos na janela.
+
+**Inferido**: que a exportação ponha o órgão de cima em
+`PARTICIPACAO-EM-PROJETO@CODIGO-ORGAO`/`NOME-ORGAO` e a unidade em
+`CODIGO-UNIDADE`/`NOME-UNIDADE`; nenhuma exportação com órgão foi vista. O
+conector confere o código de antes (o da unidade, senão o do órgão) contra
+`f_codorgao` da página antes de enviar, então uma inferência errada vira
+"divergente" e nada vai.
+
+Na lista de projetos real, o link de cada linha é
+`PKG_PROJETO.form?f_tpo_cooperacao=…&f_tpo_acao_inov=…&f_tematica=…&F_sta_inovacao=…&f_cod_tipo=…&f_cod=…&F_SEQ_ATIV=…&F_SEQ_FUNCAO=…&F_SEQ_PROJ=…&F_CODINST=…`,
+com os números em maiúsculas, e o mesmo projeto aparece também na lista com
+`f_sta_inovacao=S`. **Observado.**
 
 ### Área do conhecimento: no próprio menu, sem pedido ao servidor
 

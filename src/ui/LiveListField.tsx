@@ -10,6 +10,7 @@ import { type Course, type Institution, MIN_INSTITUTION_QUERY } from '../bridge/
 import { areaPath } from '../forms/area-path.ts';
 import type { KnowledgeArea } from '../model/production.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
+import { useEditor } from './editor-context.ts';
 import { CheckIcon, ChevronIcon } from './icons.tsx';
 import type { LattesLists } from './lattes-lists-context.ts';
 import {
@@ -25,11 +26,13 @@ import {
   findCourse,
   institutionAttrs,
   institutionPair,
+  itemNature,
   type LiveKind,
   livePairs,
   readArea,
   writeArea,
 } from './live-lists.ts';
+import { OrganControl } from './OrganField.tsx';
 import { ComboSelect } from './primitives/ComboSelect.tsx';
 
 /** Valor das opções "como está salvo": escolhê-las não muda nada. */
@@ -138,6 +141,9 @@ export function LiveListControl({ attr, common, el, kind, lists, onChanged }: Co
   }
   if (kind === 'curso') {
     return <CourseControl common={common} el={el} lists={lists} onChanged={onChanged} />;
+  }
+  if (kind === 'orgao' || kind === 'unidade') {
+    return <OrganControl common={common} el={el} kind={kind} lists={lists} onChanged={onChanged} />;
   }
   return null;
 }
@@ -265,6 +271,8 @@ type CourseState =
  * por item.
  */
 function CourseControl({ common, el, lists, onChanged }: Omit<ControlProps, 'kind'>) {
+  // Num tipo com várias naturezas, a lista de cursos é a da natureza do item.
+  const { root } = useEditor();
   const institution = getAttr(el, institutionAttrs(el).code) ?? '';
   const value = getAttr(el, courseAttrs(el).name) ?? '';
   const [state, setState] = useState<CourseState>({ kind: 'parado' });
@@ -288,7 +296,7 @@ function CourseControl({ common, el, lists, onChanged }: Omit<ControlProps, 'kin
     const n = ++latest.current;
     setState({ kind: 'carregando' });
     lists
-      .loadCourses(el)
+      .loadCourses(el, itemNature(root, el))
       .then((courses) => n === latest.current && setState({ courses, kind: 'pronto' }))
       .catch(
         (err: unknown) =>

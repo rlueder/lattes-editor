@@ -114,6 +114,12 @@ export interface ProductionTarget {
   /** As grades da página que o conector não sabe montar e só manda vazias. */
   opaqueGrids?: OpaqueGrid[];
   /**
+   * O órgão e a unidade, que o XML guarda no pai do item (a participação em
+   * projeto) e o formulário do item escolhe pela janela de órgãos (organ.ts).
+   * periodReason: por que o resto do pai fica à mão.
+   */
+  organ?: { periodReason: string };
+  /**
    * Título e ano do item, para achar a linha da lista; os campos do
    * formulário são f_titulo e f_ano se não disser. `child` pode ser o
    * próprio elemento do item, quando o atributo é dele.

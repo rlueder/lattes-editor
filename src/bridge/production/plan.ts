@@ -11,6 +11,7 @@ import type { BridgeOp, OpBase } from '../plan.ts';
 import { AUTHOR_PART, type AuthorSpec, MAX_KEYWORDS } from './grids.ts';
 import { lookupAttrs, planLookups, type ProductionLookups } from './lookups.ts';
 import { planMembers } from './members.ts';
+import { isOrganChange, type OrganChoice, planOrgan } from './organ.ts';
 import { PRODUCTION_TARGETS } from './targets/index.ts';
 import type { AuthorPart, FieldMap, ProductionTarget } from './types.ts';
 
@@ -23,6 +24,12 @@ export const EDIT_PRODUCTION_ENABLED = true;
  * alteração no Lattes real.
  */
 export const PRODUCTION_LOOKUPS_ENABLED = true;
+
+/**
+ * Órgão e unidade do projeto pela janela de órgãos do Lattes (organ.ts).
+ * Ligada para o teste ao vivo: nada disso foi visto em modo de alteração.
+ */
+export const PROJECT_ORGAN_ENABLED = true;
 
 /** Uma linha do que muda, como o painel e o editor mostram. */
 export interface ProductionRow {
@@ -44,6 +51,8 @@ export interface ProductionOp extends OpBase {
   lookups?: ProductionLookups;
   /** Título e ano do item no Lattes (os de antes, se a mudança troca um deles), para achar a linha. */
   match: { title: string; year: string };
+  /** Órgão ou unidade do projeto, pela janela de órgãos, resolvido na hora de gravar (organ.ts). */
+  organ?: OrganChoice;
   /** O que muda, com rótulos e valores como se leem. */
   rows: ProductionRow[];
   /** O tipo (ProductionTarget.id). */
@@ -71,6 +80,15 @@ function itemOf(
     change.kind === 'removido' && !PRODUCTION_TARGETS.some((t) => t.element === change.element);
   // Um atributo do próprio item (o projeto guarda os campos nele, e não numa
   // parte) também conta; o item novo, não, que é inclusão.
+  // O órgão do projeto fica na participação, que é o pai dele (organ.ts).
+  const holder = chain.at(-1);
+  if (change.kind === 'alterado' && holder && isOrganChange(change)) {
+    const item = childElements(holder).find((c) =>
+      PRODUCTION_TARGETS.some((t) => t.organ && t.element === c.name),
+    );
+    const target = item && PRODUCTION_TARGETS.find((t) => t.element === item.name);
+    return item && target ? { item, target } : undefined;
+  }
   const start = removedPart || change.kind === 'alterado' ? 1 : 2;
   for (let i = chain.length - start; i >= 0; i--) {
     const target = PRODUCTION_TARGETS.find((t) => t.element === chain[i]!.name);
@@ -123,7 +141,9 @@ export function planProduction(
     return { reason: 'O item não existe mais na cópia de trabalho' };
   }
   const { item, target } = found;
-  const byHand = target.byHand?.[change.element];
+  const organChange =
+    target.organ !== undefined && change.element !== item.name && isOrganChange(change);
+  const byHand = organChange ? undefined : target.byHand?.[change.element];
   if (byHand) return { reason: byHand };
   // Título e ano do Lattes: os de antes, quando a própria mudança os troca.
   const before = (child: string, attr: string) => {
@@ -162,6 +182,12 @@ export function planProduction(
     set: {},
     target: target.id,
   };
+
+  if (organChange) {
+    const planned = planOrgan(change, el, target.organ!.periodReason);
+    if ('reason' in planned) return planned;
+    return { ...base, organ: planned.choice, rows: planned.rows };
+  }
 
   // A equipe do projeto: as pessoas num contêiner e com a marca de
   // coordenador, com as outras mudanças da fila na mesma grade (members.ts).

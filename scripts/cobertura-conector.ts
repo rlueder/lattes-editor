@@ -20,7 +20,15 @@ import { diffDocuments } from '../src/model/changes.ts';
 import { applyLinkedAttrs, followsCountry } from '../src/model/linked-attrs.ts';
 import { getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
 import { lattesSchema } from '../src/schema/lattes.ts';
-import { applyAgency, applyCourse, applyInstitution, liveKind } from '../src/ui/live-lists.ts';
+import { isSystemAttr } from '../src/ui/field-kind.ts';
+import {
+  applyAgency,
+  applyCourse,
+  applyInstitution,
+  applyOrgan,
+  applyUnit,
+  liveKind,
+} from '../src/ui/live-lists.ts';
 
 const args = process.argv.slice(2);
 const file = args.find((a) => !a.startsWith('--')) ?? 'fixtures/demo.xml';
@@ -56,6 +64,7 @@ function changed(attr: string, value: string, choices: string[] | undefined): st
 const LIVE = {
   agencies: [{ code: 'A0000000001', name: 'Agência' }],
   courses: true,
+  organs: true,
   production: true,
   search: true,
 };
@@ -73,6 +82,10 @@ function picked(el: XElement, attr: string, value: string): boolean {
       return applyCourse(el, { label: `${value} x(00000000000P0)`, value: '0000000001' });
     case 'agencia':
       return applyAgency(el, { code: 'A0000000002', name: `${value} x` });
+    case 'orgao':
+      return applyOrgan(el, { code: '000000000002', kind: '0', name: `${value} x` });
+    case 'unidade':
+      return applyUnit(el, { code: '000000000003', kind: '0', name: `${value} x` });
     default:
       return false;
   }
@@ -102,7 +115,9 @@ flatten(base).forEach((el, index) => {
   const spec = lattesSchema.elements[el.name];
   if (!spec || (only && !only.includes(el.name))) return;
   for (const a of el.attrs) {
-    if (/^SEQUENCIA|^CODIGO|^NRO-ID|ORDEM/.test(a.name)) continue;
+    // O que o editor não deixa digitar (códigos, números de sistema, o ID
+    // Lattes do orientado, que o Lattes acha pelo nome): não é troca possível.
+    if (/^SEQUENCIA|^CODIGO|^NRO-ID|ORDEM/.test(a.name) || isSystemAttr(el.name, a.name)) continue;
     // Só para ler no editor: segue outro campo.
     if (followsCountry(el.name, a.name)) continue;
     const work = parseXml(raw).root;

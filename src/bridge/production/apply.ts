@@ -35,12 +35,14 @@ import {
 import { resolveLookups } from './lookups.ts';
 import { sameAuthors, withLeads } from './members.ts';
 import { opaquePairs, readOpaque } from './opaque.ts';
+import { resolveOrgan } from './organ.ts';
 import {
   EDIT_PRODUCTION_ENABLED,
   folded,
   PRODUCTION_LOOKUPS_ENABLED,
   type ProductionOp,
   productionTarget,
+  PROJECT_ORGAN_ENABLED,
 } from './plan.ts';
 import type { GridField, ProductionTarget } from './types.ts';
 
@@ -131,6 +133,9 @@ export async function applyProduction(op: ProductionOp, port: LattesPort): Promi
   }
   if (op.lookups && (!PRODUCTION_LOOKUPS_ENABLED || !t.lookups)) {
     return result('erro', 'Esta extensão não envia a escolha pelas buscas; a alteração fica à mão');
+  }
+  if (op.organ && (!PROJECT_ORGAN_ENABLED || !t.organ)) {
+    return result('erro', 'Esta extensão não envia o órgão do projeto; a alteração fica à mão');
   }
   if (op.keywords && op.keywords.after.length > MAX_KEYWORDS) {
     return result('erro', `O Lattes aceita até ${MAX_KEYWORDS} palavras-chave`);
@@ -226,6 +231,12 @@ export async function applyProduction(op: ProductionOp, port: LattesPort): Promi
       chosen = resolved.set;
       chosenCheck = resolved.check;
     }
+    if (op.organ) {
+      const resolved = await resolveOrgan(op.organ, port, pairs);
+      if ('status' in resolved) return result(resolved.status, resolved.detail);
+      chosen = { ...chosen, ...resolved.set };
+      chosenCheck = { ...chosenCheck, ...resolved.check };
+    }
     posted = true;
     const response = await port.post(
       t.form.action,
@@ -259,8 +270,10 @@ export async function applyProduction(op: ProductionOp, port: LattesPort): Promi
     if (op.authors && !sameAuthors(afterGrids.f_autores_l ?? [], op.authors.after)) {
       notSaved.push('f_autores_l');
     }
+    // O texto do órgão leva uma quebra de linha, que a página pode devolver como \r\n.
+    const loose = (v: string | null | undefined) => folded(v).replace(/\s+/g, ' ');
     for (const [f, v] of Object.entries(chosen)) {
-      if (folded(pairValue(afterPairs, f)) !== folded(chosenCheck[f] ?? v)) notSaved.push(f);
+      if (loose(pairValue(afterPairs, f)) !== loose(chosenCheck[f] ?? v)) notSaved.push(f);
     }
     if (notSaved.length > 0) {
       return result(

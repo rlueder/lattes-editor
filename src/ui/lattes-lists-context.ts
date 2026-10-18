@@ -4,13 +4,21 @@
 
 import { createContext, useContext } from 'react';
 
-import type { Course, Institution } from '../bridge/lattes-lists.ts';
+import type { Course, Institution, Organ } from '../bridge/lattes-lists.ts';
 import type { XElement } from '../model/xml.ts';
 import type { LiveAvailability } from './live-lists.ts';
 
 export interface LattesLists extends LiveAvailability {
-  /** Os cursos da instituição do item no nível dele; rejeita com o motivo. */
-  loadCourses: (el: XElement) => Promise<Course[]>;
+  /**
+   * Os cursos da instituição do item no nível dele (num tipo com várias
+   * naturezas, o da NATUREZA do item); rejeita com o motivo.
+   */
+  loadCourses: (el: XElement, nature?: string) => Promise<Course[]>;
+  /**
+   * Os órgãos da instituição (o código do XML, sem a letra) ou as unidades de
+   * um órgão, na janela de órgãos do projeto; rejeita com o motivo.
+   */
+  loadOrgans: (institution: string, parent?: string) => Promise<Organ[]>;
   /** Busca de instituição no Lattes (só com o conector ligado); rejeita com o motivo. */
   searchInstitutions: (query: string, level?: string) => Promise<Institution[]>;
 }
@@ -20,6 +28,7 @@ const unavailable = () => Promise.reject(new Error('O conector não está ligado
 export const NO_LISTS: LattesLists = {
   courses: false,
   loadCourses: unavailable,
+  loadOrgans: unavailable,
   search: false,
   searchInstitutions: unavailable,
 };

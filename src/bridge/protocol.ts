@@ -6,7 +6,7 @@ import type { OpResult } from './apply.ts';
 import type { EspelhoItem } from './espelho.ts';
 import type { ExportFailure } from './export.ts';
 import type { ImportStop, PageShape } from './importar.ts';
-import type { Agency, AreaNode, Course, Institution } from './lattes-lists.ts';
+import type { Agency, AreaNode, Course, Institution, Organ } from './lattes-lists.ts';
 import type { LattesStatus } from './lattes-status.ts';
 import type { PhotoFailure } from './photo.ts';
 import type { BridgeOp } from './plan.ts';
@@ -66,6 +66,11 @@ export type EditorMessage =
       staArea?: '' | 'N';
       type: 'pedir-cursos';
     }
+  /**
+   * Os órgãos de uma instituição (código com a letra), ou as unidades de um
+   * órgão (parent, código com a letra), na janela de órgãos do projeto. Só leitura.
+   */
+  | { id: string; institution: string; parent?: string; type: 'pedir-orgaos' }
   /**
    * Importa os itens novos pelo Importar do Lattes (src/bridge/importar.ts),
    * só com IMPORT_ENABLED. file: o arquivo mínimo (opção 1) em base64;
@@ -167,6 +172,8 @@ export type BridgeMessage =
   | { error?: string; id: string; results?: Institution[]; type: 'instituicoes' }
   /** Os cursos pedidos com o mesmo id. */
   | { courses?: Course[]; error?: string; id: string; type: 'cursos' }
+  /** Os órgãos pedidos com o mesmo id. */
+  | { error?: string; id: string; organs?: Organ[]; type: 'orgaos' }
   /**
    * A tela de envio ao CNPq pedida com o mesmo id, ou o motivo de não ter
    * lido; previews: os endereços da página de conferência em português e em

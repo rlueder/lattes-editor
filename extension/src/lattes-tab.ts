@@ -48,6 +48,7 @@ async function runInTab<T>(
     | 'importar'
     | 'instituicoes'
     | 'listas'
+    | 'orgaos'
     | 'publicar'
     | 'telaEnvio',
   ...args: string[]
@@ -208,7 +209,7 @@ export async function readEspelho(): Promise<Reply<'espelho'>> {
  * "ok" do aviso e na aba do menu; o motivo em error quando não dá.
  */
 async function readListReply<T extends { error?: string }>(
-  name: 'cursos' | 'instituicoes' | 'listas',
+  name: 'cursos' | 'instituicoes' | 'listas' | 'orgaos',
   ...args: string[]
 ): Promise<T> {
   if (!(await hasConsent())) {
@@ -235,13 +236,16 @@ export async function answerListRequest(
   msg: EditorMessage,
   busy: () => Promise<boolean>,
 ): Promise<BridgeMessage | undefined> {
-  const isList = ['pedir-listas', 'buscar-instituicao', 'pedir-cursos'].includes(msg.type);
+  const isList = ['pedir-listas', 'buscar-instituicao', 'pedir-cursos', 'pedir-orgaos'].includes(
+    msg.type,
+  );
   // Nada de leitura no meio de uma gravação: os formulários do Lattes seguem
   // a sessão, e um GET intercalado poderia atrapalhar a operação em curso.
   if (isList && (await busy())) {
     const error = 'O conector está gravando no Lattes; tente de novo quando terminar.';
     const id = (msg as { id: string }).id;
     if (msg.type === 'pedir-listas') return { error, id, type: 'listas' };
+    if (msg.type === 'pedir-orgaos') return { error, id, type: 'orgaos' };
     return { error, id, type: msg.type === 'pedir-cursos' ? 'cursos' : 'instituicoes' };
   }
   if (msg.type === 'pedir-listas') {
@@ -264,6 +268,10 @@ export async function answerListRequest(
       msg.staArea ?? '',
     );
     return { ...reply, id: msg.id, type: 'cursos' };
+  }
+  if (msg.type === 'pedir-orgaos') {
+    const reply = await readListReply<Reply<'orgaos'>>('orgaos', msg.institution, msg.parent ?? '');
+    return { ...reply, id: msg.id, type: 'orgaos' };
   }
   return undefined;
 }

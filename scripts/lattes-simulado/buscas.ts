@@ -41,6 +41,25 @@ export const COURSES: Record<string, [string, string][]> = {
   V000000000003: [['V00000004 ', 'Genética e Biologia Molecular']],
 };
 
+/**
+ * Órgãos por instituição (código sem a letra), com as unidades de cada um:
+ * códigos sintéticos de 12 dígitos no formato da janela de órgãos do projeto
+ * (pkg_projeto.pp_orgao_cargo, lida em 18/10/2026).
+ */
+export const ORGANS: Record<string, { code: string; name: string; units: [string, string][] }[]> = {
+  '000000000001': [
+    {
+      code: '000001000008',
+      name: 'Instituto de Biociências',
+      units: [
+        ['000001001004', 'Departamento de Genética'],
+        ['000001002000', 'Departamento de Botânica'],
+      ],
+    },
+    { code: '000002000004', name: 'Instituto de Informática', units: [] },
+  ],
+};
+
 export const AGENCIES: [string, string][] = [
   ['000000000001', 'Conselho Nacional de Desenvolvimento Científico e Tecnológico'],
   ['000000000002', 'Coordenação de Aperfeiçoamento de Pessoal de Nível Superior'],

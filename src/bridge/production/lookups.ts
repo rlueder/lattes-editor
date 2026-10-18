@@ -36,6 +36,12 @@ export interface LookupSpec {
     professional?: { nature: string; subProd: string };
     /** As naturezas que pedem f_sta_area=N. */
     noArea: string[];
+    /**
+     * Num tipo com mais de uma natureza, o F_COD_PROD de cada NATUREZA do XML,
+     * para o editor achar a lista de cursos do item (o envio lê a natureza na
+     * própria página).
+     */
+    natures?: Record<string, string>;
   };
   institution: CodeName;
   /** O F_NIVEL da busca de instituição pela natureza; sem a tabela, vazio. */

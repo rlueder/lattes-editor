@@ -8,14 +8,19 @@ import {
   applyAgency,
   applyCourse,
   applyInstitution,
+  applyOrgan,
+  applyUnit,
   areaOptions,
   bigAreaValue,
   EMPTY_AREA,
   findAgency,
   findArea,
   findCourse,
+  findOrgan,
   formationLevel,
+  institutionOf,
   isAreaElement,
+  itemNature,
   LISTS_MAX_AGE_MS,
   type LiveAvailability,
   liveKind,
@@ -275,11 +280,39 @@ describe('escolhas pela lista em orientações, bancas e no sanduíche (Fase 2)'
       institution: { name: 'NOME-DA-INSTITUICAO' },
       production: true,
     });
-    // Pós-doutorado não tem curso, e um tipo com várias naturezas não tem um nível só.
+    // Pós-doutorado não tem curso.
     expect(
       livePairs('DETALHAMENTO-DE-ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO')?.course,
     ).toBeUndefined();
-    expect(livePairs('DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS')?.course).toBeUndefined();
+  });
+
+  it('num tipo com várias naturezas, o nível do curso vem da natureza do item', () => {
+    expect(livePairs('DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS')?.course).toMatchObject({
+      byNature: {
+        iniciacao_cientifica: { level: '1', staArea: '' },
+        monografia_de_conclusao_de_curso_aperfeicoamento_e_especializacao: {
+          level: '2',
+          staArea: 'N',
+        },
+        'orientacao-de-outra-natureza': { level: '1', staArea: '' },
+        trabalho_de_conclusao_de_curso_graduacao: { level: '1', staArea: 'N' },
+      },
+      program: 'TESE',
+    });
+    expect(
+      livePairs('DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO')?.course?.byNature,
+    ).toEqual({
+      'exame de qualificacao de doutorado': { level: '4', staArea: 'N' },
+      'exame de qualificacao de mestrado': { level: '3', staArea: '' },
+    });
+    const root = parseXml(
+      '<OUTRAS-ORIENTACOES-CONCLUIDAS><DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NATUREZA="INICIACAO_CIENTIFICA"/><DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS CODIGO-INSTITUICAO="000000000001" CODIGO-CURSO="" NOME-DO-CURSO=""/></OUTRAS-ORIENTACOES-CONCLUIDAS>',
+    ).root;
+    const detail = root.children.find(
+      (c): c is XElement => c.kind === 'element' && c.name.startsWith('DETALHAMENTO'),
+    )!;
+    expect(itemNature(root, detail)).toBe('INICIACAO_CIENTIFICA');
+    expect(liveKind(detail, 'NOME-DO-CURSO', LIVE_ALL)).toBe('curso');
   });
 
   it('sem a capacidade buscas-producao, a orientação fica como era', () => {
@@ -316,5 +349,51 @@ describe('escolhas pela lista em orientações, bancas e no sanduíche (Fase 2)'
     expect(getAttr(el, 'CODIGO-INSTITUICAO-DOUT')).toBe('000000000002');
     expect(getAttr(el, 'NOME-INSTITUICAO-DOUT')).toBe('USP');
     expect(getAttr(el, 'NOME-CURSO')).toBe('Botânica');
+  });
+});
+
+describe('órgão e unidade do projeto (Fase 2)', () => {
+  const ORGANS: LiveAvailability = { courses: true, organs: true, search: true };
+  const cv = () =>
+    parseXml(
+      '<ATUACAO-PROFISSIONAL CODIGO-INSTITUICAO="000000000001"><ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO><PARTICIPACAO-EM-PROJETO CODIGO-ORGAO="" NOME-ORGAO="" CODIGO-UNIDADE="" NOME-UNIDADE=""/></ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO></ATUACAO-PROFISSIONAL>',
+    ).root;
+  const participationOf = (root: XElement) =>
+    (root.children[0] as XElement).children[0] as XElement;
+
+  it('o órgão se escolhe com o conector; a unidade, depois do órgão', () => {
+    const root = cv();
+    const p = participationOf(root);
+    expect(liveKind(p, 'NOME-ORGAO', ORGANS)).toBe('orgao');
+    expect(liveKind(p, 'NOME-UNIDADE', ORGANS)).toBeUndefined();
+    expect(liveKind(p, 'NOME-ORGAO', { ...ORGANS, organs: false })).toBeUndefined();
+    expect(institutionOf(root, p)).toBe('000000000001');
+    expect(institutionOf(undefined, p)).toBe('');
+
+    expect(applyOrgan(p, { code: '000001000008', kind: '0', name: 'Instituto' })).toBe(true);
+    expect(liveKind(p, 'NOME-UNIDADE', ORGANS)).toBe('unidade');
+    applyUnit(p, {
+      code: '000001001004',
+      kind: '0',
+      name: 'Departamento',
+      parent: 'Instituto',
+    });
+    expect(getAttr(p, 'CODIGO-UNIDADE')).toBe('000001001004');
+    // Outro órgão leva a unidade embora.
+    applyOrgan(p, { code: '000002000004', kind: '0', name: 'Outro' });
+    expect([getAttr(p, 'CODIGO-ORGAO'), getAttr(p, 'CODIGO-UNIDADE')]).toEqual([
+      '000002000004',
+      '',
+    ]);
+  });
+
+  it('acha o órgão salvo pelo código, ou pelo nome sem código', () => {
+    const organs = [
+      { code: '000001000008', kind: '0', name: 'Instituto de Biociências' },
+      { code: '000002000004', kind: '0', name: 'Instituto de Informática' },
+    ];
+    expect(findOrgan(organs, '000002000004', '')?.name).toBe('Instituto de Informática');
+    expect(findOrgan(organs, '', 'instituto de biociencias')?.code).toBe('000001000008');
+    expect(findOrgan(organs, '', '')).toBeUndefined();
   });
 });

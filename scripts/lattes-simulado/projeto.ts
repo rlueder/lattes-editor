@@ -6,15 +6,22 @@
 //
 // Observados: os nomes, tipos e limites dos campos, o link de inclusão, as
 // funções preencherOpener() e seleciona() da lista de instituições e o
-// endereço da busca de órgão. Inferidos: o link de cada linha da lista, o
-// formato da página da busca de órgão e onde o servidor pendura o projeto
-// novo (na atuação da instituição escolhida, numa participação em projeto
-// nova).
+// endereço e a página da busca de órgão (18/10/2026). Inferidos: o link de
+// cada linha da lista, onde o servidor pendura o projeto novo (na atuação da
+// instituição escolhida, numa participação em projeto nova) e como o órgão
+// escolhido vira CODIGO-ORGAO e CODIGO-UNIDADE da participação (organOf).
 
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
-import { childElements, element, getAttr, walk, type XElement } from '../../src/model/xml.ts';
+import {
+  childElements,
+  element,
+  getAttr,
+  setAttr,
+  walk,
+  type XElement,
+} from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
-import { withLetter } from './buscas.ts';
+import { ORGANS, withLetter } from './buscas.ts';
 import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
@@ -107,8 +114,8 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
     ...['f_cod_inst', 'f_cod_inst2', 'f_instold', 'f_inst_old', 'f_instituicoes'].map((n) =>
       fromIds(n),
     ),
-    { disabled: true, kind: 'text', name: 'f_orgao', read: () => '' },
-    ...['f_codorgao', 'f_codorgao2', 'f_orgao_old'].map((n) => none(n)),
+    { disabled: true, kind: 'text', name: 'f_orgao', read: () => ids.f_orgao_old ?? '' },
+    ...['f_codorgao', 'f_codorgao2', 'f_orgao_old'].map((n) => fromIds(n)),
     ...['f_vinc', 'f_stavinc', 'f_enqua', 'f_carga', 'f_regime'].map((n) => fromIds(n)),
     fixed('f_tpo_cooperacao', 'X'),
     fixed('f_tpo_acao_inov', 'X'),
@@ -159,6 +166,49 @@ function vinculoCopy(atuacao: XElement) {
   };
 }
 
+/**
+ * O órgão da participação nos ocultos da página: o código mais fundo (a
+ * unidade, se houver) em f_codorgao e o texto como o atribuir() da janela
+ * monta, "órgão/\nunidade". Inferido: a exportação real nunca foi vista com
+ * órgão.
+ */
+function organFields(participacao: XElement): Record<string, string> {
+  const organ = getAttr(participacao, 'NOME-ORGAO') ?? '';
+  const unit = getAttr(participacao, 'NOME-UNIDADE') ?? '';
+  return {
+    f_codorgao:
+      getAttr(participacao, 'CODIGO-UNIDADE') || getAttr(participacao, 'CODIGO-ORGAO') || '',
+    f_codorgao2: '',
+    f_orgao_old: unit ? `${organ}/\n${unit}` : organ,
+  };
+}
+
+/** O contrário de organFields: o órgão escolhido na janela, como a exportação o mostraria (inferido). */
+function organOf(atuacao: XElement, code: string): Record<string, string> {
+  const organs = ORGANS[getAttr(atuacao, 'CODIGO-INSTITUICAO') ?? ''] ?? [];
+  const top = organs.find((o) => o.code === code);
+  if (top) {
+    return {
+      'CODIGO-ORGAO': top.code,
+      'CODIGO-UNIDADE': '',
+      'NOME-ORGAO': top.name,
+      'NOME-UNIDADE': '',
+    };
+  }
+  for (const o of organs) {
+    const unit = o.units.find(([c]) => c === code);
+    if (unit) {
+      return {
+        'CODIGO-ORGAO': o.code,
+        'CODIGO-UNIDADE': unit[0],
+        'NOME-ORGAO': o.name,
+        'NOME-UNIDADE': unit[1],
+      };
+    }
+  }
+  return { 'CODIGO-ORGAO': '', 'CODIGO-UNIDADE': '', 'NOME-ORGAO': '', 'NOME-UNIDADE': '' };
+}
+
 function rowIds(state: LattesState, p: Placed, tipo: string): Record<string, string> {
   const code = getAttr(p.atuacao, 'CODIGO-INSTITUICAO') ?? '';
   const lettered = code ? withLetter(state, code) : '';
@@ -174,6 +224,7 @@ function rowIds(state: LattesState, p: Placed, tipo: string): Record<string, str
     f_enqua: v.enqua,
     f_inst_old: name,
     f_instold: name,
+    ...organFields(p.participacao),
     f_regime: v.regime,
     f_seq_ativ: getAttr(p.atuacao, 'SEQUENCIA-ATIVIDADE') ?? '',
     f_seq_funcao: getAttr(p.participacao, 'SEQUENCIA-FUNCAO-ATIVIDADE') ?? '',
@@ -268,6 +319,13 @@ function post(req: SimRequest, state: LattesState): SimResponse {
   } else if (ctr === 'U') {
     applyFields(bindings(state, {}), placed.projeto, req);
     applyProjectTeam(state, placed.projeto, req);
+    // Só um órgão trocado mexe na participação: o de antes volta como veio.
+    const organ = req.get('f_codorgao') || req.get('f_codorgao2') || '';
+    if (organ !== organFields(placed.participacao).f_codorgao) {
+      for (const [name, value] of Object.entries(organOf(placed.atuacao, organ))) {
+        setAttr(placed.participacao, name, value);
+      }
+    }
   } else return html(back);
   state.touch();
   return html(back);
@@ -308,24 +366,33 @@ function listaInst(req: SimRequest, state: LattesState): SimResponse {
   return html(h.page('Instituições', rows));
 }
 
-/** A busca de órgão (seção 17): o endereço é observado; a página e os órgãos, sintéticos. */
-function orgaos(req: SimRequest): SimResponse {
-  const inst = req.get('f_cod_inst') ?? '';
-  const list = inst
-    ? [
-        [`${inst}01`, 'Instituto de Biociências'],
-        [`${inst}02`, 'Faculdade de Agronomia'],
-      ]
-    : [];
+/**
+ * A janela de órgãos: no topo, os órgãos da instituição; aberta num órgão
+ * (f_cod_inst2 com a letra), ele mesmo e as unidades, com o nome dele no
+ * quarto argumento do atribuir(), como a página real.
+ */
+function organs(req: SimRequest, state: LattesState): SimResponse {
+  const inst = (req.get('f_cod_inst') ?? '').slice(1);
+  const parent = (req.get('f_cod_inst2') ?? '').slice(1);
+  const all = ORGANS[inst] ?? [];
+  const call = (code: string, name: string, above?: string) =>
+    `<a class="selecionaOrg" href="" onclick="atribuir('${code}','${h.jsString(name)}'\n,0${above ? `,'${h.jsString(above)}'` : ''});return false;">${h.esc(name)}</a><br>`;
+  const expand = (code: string) =>
+    `<a title="Expandir itens" href="pkg_projeto.pp_orgao_cargo?f_origem=&f_modal_cv=2&f_cod=${state.code}&f_cod_inst=V${inst}&f_cod_inst2=V${code}">+</a>`;
+  const top = all.find((o) => o.code === parent);
+  const links = parent
+    ? top
+      ? [call(top.code, top.name), ...top.units.map(([c, n]) => expand(c) + call(c, n, top.name))]
+      : []
+    : all.map((o) => expand(o.code) + call(o.code, o.name));
   return html(
     h.page(
-      'Órgão',
-      list
-        .map(
-          ([c, n]) =>
-            `<a href="javascript:seleciona('${c}','${h.jsString(n!)}')">${h.esc(n!)}</a><br>`,
-        )
-        .join('\n'),
+      'Órgãos',
+      `<form action="pkg_projeto.pp_orgao_cargo" name="ORGAO" method=GET>
+<script>function atribuir(cod,texto,tipo,texto2){ alert(cod); }</script>
+${links.join('\n')}
+${h.hidden('f_cod', state.code)}${h.hidden('f_cod_inst', req.get('f_cod_inst') ?? '')}${h.hidden('f_cod_inst2', '')}
+</form>`,
     ),
   );
 }
@@ -334,5 +401,5 @@ export const PROJETO_ROUTES: Routes = {
   'pkg_projeto.form': (req, state) => (req.method === 'POST' ? post(req, state) : form(req, state)),
   'pkg_projeto.lista': lista,
   'pkg_projeto.pp_lista_inst': listaInst,
-  'pkg_projeto.pp_orgao_cargo': (req) => orgaos(req),
+  'pkg_projeto.pp_orgao_cargo': organs,
 };

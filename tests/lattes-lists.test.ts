@@ -11,13 +11,17 @@ import {
   institutionSearchPath,
   latin1Param,
   type ListsPort,
+  organLetter,
+  organsPath,
   parseAgencies,
   parseAreaTree,
   parseCourses,
   parseInstitutions,
   parseJsLiteral,
+  parseOrgans,
   readCourses,
   readLists,
+  readOrgans,
   searchInstitutions,
   selectEntries,
 } from '../src/bridge/lattes-lists.ts';
@@ -318,6 +322,74 @@ describe('leituras pelo conector', () => {
     expect(
       (await readCourses((await lattesPort({ prc_curso_form: new Error('x') })).port, 'V1', '4'))
         .error,
+    ).toBe('A aba do Lattes não respondeu');
+  });
+});
+
+describe('janela de órgãos do projeto', () => {
+  it('lê os órgãos e as unidades num GET cada, com o órgão de cima tirado da lista', async () => {
+    const { code, gets, port } = await lattesPort();
+    const top = await readOrgans(port, 'V000000000001');
+    expect(top.organs?.map((o) => o.name)).toEqual([
+      'Instituto de Biociências',
+      'Instituto de Informática',
+    ]);
+    const units = await readOrgans(port, 'V000000000001', 'V000001000008');
+    expect(units.organs).toEqual([
+      {
+        code: '000001001004',
+        kind: '0',
+        name: 'Departamento de Genética',
+        parent: 'Instituto de Biociências',
+      },
+      {
+        code: '000001002000',
+        kind: '0',
+        name: 'Departamento de Botânica',
+        parent: 'Instituto de Biociências',
+      },
+    ]);
+    expect(gets).toEqual([
+      organsPath(code, 'V000000000001'),
+      organsPath(code, 'V000000000001', 'V000001000008'),
+    ]);
+  });
+
+  it('como a página real: número no tipo, quebra de linha antes dele, entidades no nome', () => {
+    const html = `<a onclick="atribuir('000903000008','Centro de Ci&ecirc;ncias'
+,0);return false;">x</a>
+<a onclick="atribuir('000903003007','&Aacute;rea de Comunica&ccedil;&atilde;o'
+,0,'Centro de Ci&ecirc;ncias');return false;">y</a>
+<a onclick="atribuir('000903009999','Cadastrado',1,'Centro de Ci&ecirc;ncias');">z</a>
+<a onclick="atribuir(cod,'Variável',0)">?</a>`;
+    expect(parseOrgans(html, '000903000008')).toEqual([
+      {
+        code: '000903003007',
+        kind: '0',
+        name: 'Área de Comunicação',
+        parent: 'Centro de Ciências',
+      },
+      { code: '000903009999', kind: '1', name: 'Cadastrado', parent: 'Centro de Ciências' },
+    ]);
+    expect(organLetter('0')).toBe('V');
+    expect(organLetter('1')).toBe('D');
+  });
+
+  it('diz por que não veio: sem código no menu, sessão caída, aba que não responde', async () => {
+    expect(await readOrgans((await lattesPort({}, '<p></p>')).port, 'V1')).toEqual({
+      error: 'O código do currículo não está no menu',
+    });
+    expect(
+      (await readOrgans((await lattesPort({ 'pkg_projeto.pp_orgao_cargo': LOGON })).port, 'V1'))
+        .error,
+    ).toMatch(/sessão/);
+    expect(
+      (
+        await readOrgans(
+          (await lattesPort({ 'pkg_projeto.pp_orgao_cargo': new Error('x') })).port,
+          'V1',
+        )
+      ).error,
     ).toBe('A aba do Lattes não respondeu');
   });
 });

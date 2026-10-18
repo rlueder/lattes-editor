@@ -6,6 +6,7 @@
 // formulário de alteração, e o que segue marcado "Inferido" precisa ser lido
 // no Lattes real antes de valer.
 
+import { PARTICIPATION_PERIOD } from '../../atuacao-by-hand.ts';
 import { byTable } from '../mappers.ts';
 import type { ProductionTarget } from '../types.ts';
 
@@ -136,6 +137,9 @@ const PROJETO: ProductionTarget = {
       provider: 'orientacaoProvider',
     },
   ],
+  // O órgão fica na participação, pai do projeto (organ.ts); o período dela
+  // não tem campo no formulário.
+  organ: { periodReason: PARTICIPATION_PERIOD },
   title: { attr: 'NOME-DO-PROJETO', child: PROJECT },
   year: { attr: 'ANO-INICIO', child: PROJECT, field: 'F_ANO_INIC' },
 };

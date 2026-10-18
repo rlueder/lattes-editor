@@ -144,6 +144,8 @@ interface Orientation {
   element: string;
   id: string;
   nature: string[];
+  /** Com mais de uma natureza: o F_COD_PROD de cada NATUREZA do XML (lookups.ts). */
+  natures?: Record<string, string>;
   /** Mestrado e doutorado: o rádio f_tpo_orient. */
   role?: boolean;
 }
@@ -180,6 +182,7 @@ function orientation(o: Orientation, done: boolean): ProductionTarget {
             code: 'CODIGO-CURSO',
             name: `NOME-${doo}CURSO`,
             ...ORIENT_COURSE[done ? 'done' : 'ongoing'],
+            ...(o.natures ? { natures: o.natures } : {}),
           },
         }),
     institution: { code: 'CODIGO-INSTITUICAO', name: `NOME-${da}INSTITUICAO` },
@@ -236,6 +239,14 @@ const CONCLUDED: ProductionTarget[] = (
         element: 'OUTRAS-ORIENTACOES-CONCLUIDAS',
         id: 'orientacao-concluida-outra',
         nature: ['43', '44', '45', '49'],
+        // NATUREZA ↔ F_COD_PROD: uma ligação por natureza no censo de
+        // 18/10/2026 (censo-2026-10-18-ligacoes.json, 4 itens de teste, sem conflito).
+        natures: {
+          INICIACAO_CIENTIFICA: '45',
+          MONOGRAFIA_DE_CONCLUSAO_DE_CURSO_APERFEICOAMENTO_E_ESPECIALIZACAO: '43',
+          'ORIENTACAO-DE-OUTRA-NATUREZA': '49',
+          TRABALHO_DE_CONCLUSAO_DE_CURSO_GRADUACAO: '44',
+        },
       },
       true,
     ),
@@ -284,7 +295,12 @@ const ONGOING: ProductionTarget[] = (
  * (lista L60), que não tem opção para "outras participações": esse tipo se
  * acha só pelo título e pelo ano.
  */
-function thesisBoard(suffix: string, id: string, nature?: string[]): ProductionTarget {
+function thesisBoard(
+  suffix: string,
+  id: string,
+  nature?: string[],
+  natures?: Record<string, string>,
+): ProductionTarget {
   const de =
     suffix === 'OUTRAS'
       ? 'DE-OUTRAS-PARTICIPACOES-EM-BANCA'
@@ -308,7 +324,12 @@ function thesisBoard(suffix: string, id: string, nature?: string[]): ProductionT
     list: { formProc: 'PKG_BANCA_TRAB.form', proc: 'pkg_banca_trab.lista' },
     lookups: specIn({
       child: `DETALHAMENTO-${de}`,
-      course: { code: 'CODIGO-CURSO', name: 'NOME-CURSO', ...BOARD_COURSE },
+      course: {
+        code: 'CODIGO-CURSO',
+        name: 'NOME-CURSO',
+        ...BOARD_COURSE,
+        ...(natures ? { natures } : {}),
+      },
       institution: { code: 'CODIGO-INSTITUICAO', name: 'NOME-INSTITUICAO' },
       institutionLevel: BOARD_INSTITUTION_LEVEL,
     }),
@@ -327,7 +348,12 @@ const THESIS_BOARDS: ProductionTarget[] = [
   thesisBoard('MESTRADO', 'mestrado', ['A11']),
   thesisBoard('DOUTORADO', 'doutorado', ['A12']),
   // Qualificação de doutorado (A13) e de mestrado (A16) são o mesmo elemento.
-  thesisBoard('EXAME-QUALIFICACAO', 'qualificacao', ['A13', 'A16']),
+  // A NATUREZA da qualificação é o rótulo do rádio (censo de 18/10/2026,
+  // escrita "rotulo", 2 itens de teste; listas-producao.json).
+  thesisBoard('EXAME-QUALIFICACAO', 'qualificacao', ['A13', 'A16'], {
+    'Exame de qualificação de doutorado': 'A13',
+    'Exame de qualificação de mestrado': 'A16',
+  }),
   thesisBoard('APERFEICOAMENTO-ESPECIALIZACAO', 'aperfeicoamento', ['A14']),
   thesisBoard('GRADUACAO', 'graduacao', ['A15']),
   thesisBoard('OUTRAS', 'outra'),

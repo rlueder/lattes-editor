@@ -53,7 +53,7 @@ const PARTICIPATION_ORGAO =
   'O órgão ou unidade do projeto só entra pela busca de órgão do Lattes, cuja resposta ainda não foi lida';
 
 /** O formulário de projeto (GN_PROJETO) tem só os anos do próprio projeto (seção 17). */
-const PARTICIPATION_PERIOD =
+export const PARTICIPATION_PERIOD =
   'O formulário de projeto do Lattes não tem o período da sua participação, só o ano de início e de fim do projeto';
 
 /** O motivo de uma alteração da atuação ficar à mão; undefined se não é destas. */

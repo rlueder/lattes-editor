@@ -31,12 +31,14 @@ import {
 import { idiomaHandReason } from './hand-reasons.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
 import { manualReason } from './production/manual.ts';
+import { isOrganChange } from './production/organ.ts';
 import {
   EDIT_PRODUCTION_ENABLED,
   isProductionChange,
   planProduction,
   PRODUCTION_LOOKUPS_ENABLED,
   type ProductionOp,
+  PROJECT_ORGAN_ENABLED,
 } from './production/plan.ts';
 import { stavincFromFlag } from './vinculo-flag.ts';
 
@@ -128,6 +130,8 @@ export interface PlanOptions {
   editProduction?: boolean;
   /** Instituição, curso e agência de orientações e bancas pelas buscas (production/lookups.ts). */
   productionLookups?: boolean;
+  /** Órgão e unidade do projeto pela janela de órgãos (production/organ.ts). */
+  projectOrgan?: boolean;
 }
 
 /**
@@ -168,6 +172,7 @@ export const GATED_EDITS: readonly {
     feature: 'buscas-producao',
     option: 'productionLookups',
   },
+  { enabled: PROJECT_ORGAN_ENABLED, feature: 'orgao-projeto', option: 'projectOrgan' },
 ];
 
 /**
@@ -280,11 +285,14 @@ export function planChange(
     editPremio = false,
     editProduction = false,
     productionLookups = false,
+    projectOrgan = false,
   }: PlanOptions = {},
   siblings: readonly Change[] = [],
 ): BridgeOp | Unsupported {
   // Produção, orientação ou banca que já está no Lattes (production/).
-  if (editProduction && isProductionChange(change, chain)) {
+  // Sem a janela de órgãos na extensão, o órgão do projeto fica com o motivo de sempre.
+  const organOff = !projectOrgan && isOrganChange(change);
+  if (editProduction && !organOff && isProductionChange(change, chain)) {
     const planned = planProduction(change, chain, label, siblings);
     if ('reason' in planned) return unsupported(change, label, planned.reason);
     // Uma extensão sem as buscas mandaria o formulário sem os ocultos, e a

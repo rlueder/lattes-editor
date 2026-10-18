@@ -11,6 +11,11 @@ outras 127 são o alvo deste plano.
 
 ## Estado atual
 
+- 18/10/2026, mais tarde: o script de cobertura passou a ignorar o que o
+  editor não deixa digitar (`isSystemAttr`: códigos, IDs do orientador e do
+  orientado, datas do Lattes, sigla do país), como o próprio editor. A conta
+  ficou em 409 de 640.
+
 - 18/10/2026: passada completa no Lattes real terminada (PR #100). 340 itens de
   teste criados e removidos, 2181 ligações campo ↔ atributo observadas, 13
   divergências em `docs/lattes-formularios/pendencias.json`.
@@ -74,6 +79,26 @@ escolha na lista (`src/bridge/production/lookups.ts`, o seletor em
 formação. 399 → 410 de 663. Falta: o ID do orientando, o órgão do projeto (a busca `PKG_PROJETO.pp_orgao_cargo` foi lida em 18/10/2026: `atribuir(código, nome, tipo)` grava `f_codorgao` com tipo 0 e `f_codorgao2` nos outros, e o nome em `f_orgao` e `f_orgao_old`; os órgãos se abrem em árvore pelo `f_cod_inst2`), o
 curso dos tipos com mais de uma natureza (outras orientações concluídas,
 qualificação).
+
+O resto, também em 18/10/2026 (capacidade `orgao-projeto` e `natures` nas
+buscas):
+
+- Órgão e unidade do projeto: seletor em dois passos no editor
+  (`src/ui/OrganField.tsx`), mensagem `pedir-orgaos`, envio em
+  `src/bridge/production/organ.ts`. A janela de órgãos foi lida no Lattes
+  real; o envio só no Lattes simulado. Falta a gravação acompanhada: o
+  projeto de teste precisa estar numa atuação cuja instituição tenha órgãos
+  (das suas, só Campanha Nacional de Escolas da Comunidade e Dell), e uma
+  exportação depois dela para confirmar onde o Lattes põe órgão e unidade no
+  XML.
+- Curso das orientações e bancas de várias naturezas (outras orientações
+  concluídas, qualificação): o nível sai da NATUREZA do item, pela tabela da
+  especificação (`natures`, ligações do censo de 18/10/2026).
+- ID do orientando: não é campo do editor (é de sistema, como o Lattes o
+  trata). O conector manda o que a página trouxe, como a página faz quando o
+  nome não valida. Mandar o ID novo quando o nome muda pede chamar
+  `pkg_orient.valida_orientador_ajax`, um POST; a chamada de teste foi barrada
+  e espera o seu aval.
 
 Gravação no Lattes real em 18/10/2026, com base e registro da Fase 0: quatro
 itens de teste (orientação concluída e em andamento de mestrado, banca de

@@ -37,6 +37,19 @@ export interface Institution {
   name: string;
 }
 
+/**
+ * Um órgão ou unidade da instituição, da janela de órgãos do projeto
+ * (pkg_projeto.pp_orgao_cargo, lida em 18/10/2026): o código de 12 dígitos
+ * sem letra, o nome, o tipo do atribuir() da página (0 vai em f_codorgao, os
+ * outros em f_codorgao2) e, numa unidade, o nome do órgão de cima.
+ */
+export interface Organ {
+  code: string;
+  kind: string;
+  name: string;
+  parent?: string;
+}
+
 /** Uma opção da lista de cursos (f_curso): o valor (letra e 8 dígitos) e o texto. */
 export interface Course {
   label: string;
@@ -228,9 +241,10 @@ export function countAreas(nodes: readonly AreaNode[]): number {
 
 // ---------------------------------------------------------------------------
 // Chamadas de função com textos como argumentos, nos links das janelas do
-// Lattes: atribuir('<código>','<nome>') na de agências.
+// Lattes: atribuir('<código>','<nome>') na de agências. Com `numbers`, um
+// número também vale e vem como texto (o tipo do atribuir da janela de órgãos).
 
-function quotedCalls(html: string, fn: string): string[][] {
+function quotedCalls(html: string, fn: string, numbers = false): string[][] {
   const out: string[][] = [];
   const re = new RegExp(`\\b${fn}\\(`, 'g');
   for (const m of html.matchAll(re)) {
@@ -239,8 +253,9 @@ function quotedCalls(html: string, fn: string): string[][] {
       let i = m.index + m[0].length;
       for (;;) {
         const { end, value } = parseJsLiteral(html, i);
-        if (typeof value !== 'string') break;
-        args.push(value);
+        if (typeof value === 'string') args.push(value);
+        else if (numbers && typeof value === 'number') args.push(String(value));
+        else break;
         const rest = /^\s*([,)])/.exec(html.slice(end, end + 32));
         if (!rest) break;
         i = end + rest[0].length;
@@ -274,6 +289,26 @@ export function parseAgencies(html: string): Agency[] {
     if (!code.trim() || !clean || seen.has(code)) continue;
     seen.add(code);
     out.push({ code: code.trim(), name: clean });
+  }
+  return out;
+}
+
+/**
+ * Os órgãos de um nível da janela de órgãos: cada link de escolha é
+ * `atribuir('<código>','<nome>',<tipo>[,'<órgão de cima>'])`. Aberta num
+ * órgão, a janela repete o próprio órgão no topo, sem o de cima: ele sai, e
+ * ficam só as unidades. Sem repetidos, na ordem da página.
+ */
+export function parseOrgans(html: string, parent?: string): Organ[] {
+  const seen = new Set<string>();
+  const out: Organ[] = [];
+  for (const [code = '', name = '', kind = '', above] of quotedCalls(html, 'atribuir', true)) {
+    const clean = cleanName(name);
+    const id = code.trim();
+    if (!/^\d{12}$/.test(id) || !clean || seen.has(id) || id === parent) continue;
+    seen.add(id);
+    const up = above === undefined ? '' : cleanName(above);
+    out.push({ code: id, kind: kind.trim(), name: clean, ...(up ? { parent: up } : {}) });
   }
   return out;
 }
@@ -373,6 +408,17 @@ export const coursesPath = (
   program === 'TESE'
     ? `prc_curso_form?f_pgm=TESE&f_cod=${cv}&f_inst=${encodeURIComponent(institution)}&f_nivel=${encodeURIComponent(level)}&f_sta_area=${encodeURIComponent(staArea)}`
     : `prc_curso_form?f_cod=${cv}&f_pgm=FORM&f_nivel=${encodeURIComponent(level)}&f_inst=${encodeURIComponent(institution)}`;
+
+/** A letra do código de um órgão no link da janela: V para o tipo 0, D para os outros (inferido). */
+export const organLetter = (kind: string) => (kind === '0' ? 'V' : 'D');
+
+/**
+ * A janela de órgãos de uma instituição (código com a letra, como o orgao()
+ * da página do projeto monta), no topo ou aberta num órgão (código com a
+ * letra). É o mesmo endereço que o "Expandir itens" da janela abre.
+ */
+export const organsPath = (cv: string, institution: string, parent = '') =>
+  `pkg_projeto.pp_orgao_cargo?f_origem=&f_modal_cv=2&f_cod=${cv}&f_cod_inst=${encodeURIComponent(institution)}&f_cod_inst2=${encodeURIComponent(parent)}`;
 
 // ---------------------------------------------------------------------------
 // Leituras, pelo mesmo tipo de porta da aba do Lattes que o resto do conector.
@@ -475,6 +521,25 @@ export async function readCourses(
       await getPage(port, coursesPath(cv, institution, level, program, staArea)),
     );
     return courses ? { courses } : { error: 'A lista de cursos não veio na página do Lattes' };
+  } catch (err) {
+    return { error: failure(err) };
+  }
+}
+
+/**
+ * Os órgãos de uma instituição (código com a letra), ou as unidades de um
+ * órgão (código com a letra), só leitura.
+ */
+export async function readOrgans(
+  port: ListsPort,
+  institution: string,
+  parent = '',
+): Promise<{ error?: string; organs?: Organ[] }> {
+  try {
+    const cv = cvCodeFrom(await port.menuHtml());
+    if (!cv) return { error: 'O código do currículo não está no menu' };
+    const html = await getPage(port, organsPath(cv, institution, parent));
+    return { organs: parseOrgans(html, parent.replace(/^[A-Z]/, '') || undefined) };
   } catch (err) {
     return { error: failure(err) };
   }
