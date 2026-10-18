@@ -70,7 +70,23 @@ interface Context {
   agency?: { code: string; name: string };
   /** Campos de busca e de lugar de um item seu, por nome de formulário (DONOR_FIELD). */
   donors: Record<string, Record<string, string>>;
+  /** Um periódico da busca do Lattes, como a janela dela grava (selecionar). */
+  journal?: { issn: string; seq: string; title: string };
   lookups: Record<string, string>;
+}
+
+/**
+ * A Nature pela busca de periódicos do Lattes (f_ctr=S, só consulta): o
+ * artigo pede o título, o ISSN e o código que a janela de busca grava.
+ */
+async function findJournal(code: string, get: (path: string) => Promise<{ html: string }>) {
+  const html = (await get(`PRC_PERIODICO?f_nome=nature&f_ctr=S&f_origem=R&f_cod=${code}`)).html;
+  const options = [...html.matchAll(/<option value="(\d+)#([^"]+)">([^<(]+)/g)].map((m) => ({
+    issn: m[2]!,
+    seq: m[1]!,
+    title: m[3]!.trim(),
+  }));
+  return options.find((o) => o.issn === '0028-0836') ?? options[0];
 }
 
 export const context: Context = { donors: {}, lookups: {} };
@@ -103,6 +119,7 @@ export async function prepareContext(
   const agencies = (await get(`prc_agencia?f_cod=${code}`)).html;
   const first = /atribuir\(\s*'([^']*)'\s*,\s*'([^']*)'/.exec(agencies);
   if (first) context.agency = { code: first[1]!, name: first[2]! };
+  context.journal = await findJournal(code, get);
 }
 
 let prepared = false;

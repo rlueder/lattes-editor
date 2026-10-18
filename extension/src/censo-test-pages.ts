@@ -84,22 +84,33 @@ export function pageValues(w: Window, form: HTMLFormElement, job: TestJob): Reco
     values.cargo = line;
   }
 
+  // Artigo: o periódico sai da busca, que grava título, ISSN e código.
+  const journal = context.journal;
+  const title = field('f_titulo_periodico');
+  if (title && !title.value && journal) {
+    write({
+      f_issn: journal.issn,
+      f_issn_h: journal.issn.replace('-', ''),
+      f_seq_per: journal.seq,
+      f_titulo_periodico: journal.title,
+      f_titulo_periodico_h: journal.title,
+    });
+  }
+
   // Revisor: o periódico ou a agência vêm de uma busca, e o check() só pede
-  // o nome. A agência é a primeira da lista; o periódico, o de um artigo seu.
+  // o nome. A agência é a primeira da lista; o periódico, o da busca.
   const name = field('f_nme_agencia');
   const nature = field('f_natur')?.value ?? '';
   if (name && !name.value && /^(MB|MA|RV|RA)$/.test(nature)) {
-    const journal = Object.values(context.donors).find((d) => d.f_seq_per);
     const fill: Record<string, string> = /A$/.test(nature)
       ? {
           ...(agency ? institution(agency.code, agency.name) : {}),
           f_nme_agencia: agency?.name ?? `${TEST_MARK} ${job.tag}`,
         }
       : {
-          f_issn: journal?.f_issn ?? '',
-          f_nme_agencia:
-            journal?.f_titulo_periodico ?? journal?.f_nme_agencia ?? `${TEST_MARK} ${job.tag}`,
-          f_seq_per: journal?.f_seq_per ?? '',
+          f_issn: journal?.issn ?? '',
+          f_nme_agencia: journal?.title ?? `${TEST_MARK} ${job.tag}`,
+          f_seq_per: journal?.seq ?? '',
         };
     fill.f_nme_agencia_h = fill.f_nme_agencia!;
     delete fill.f_inst;
