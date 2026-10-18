@@ -120,10 +120,19 @@ export async function ensureContext(
   prepared = true;
 }
 
+/**
+ * A atuação nova não fica dentro de outra: o formulário dela se chama GN_ATIV
+ * como o do revisor, e o lugar do revisor (f_codinst, f_seq_ativ) fazia o
+ * Lattes gravar o código da atuação doadora na coluna da instituição.
+ */
+export const PLACELESS = /^PKG_ATIV\.inclui/i;
+
 /** O caminho do formulário dentro de uma atuação sua, quando o formulário pede (atividade, projeto). */
 export function placed(job: TestJob): string {
   const donor = context.donors[job.form];
-  if (!donor?.f_seq_ativ || /f_seq_ativ=/.test(job.path)) return job.path;
+  if (!donor?.f_seq_ativ || /f_seq_ativ=/.test(job.path) || PLACELESS.test(job.path)) {
+    return job.path;
+  }
   const extra = `f_codinst=${donor.f_codinst ?? ''}&f_seq_ativ=${donor.f_seq_ativ}`;
   return `${job.path}${job.path.includes('?') ? '&' : '?'}${extra}`;
 }

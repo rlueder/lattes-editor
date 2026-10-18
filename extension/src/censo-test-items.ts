@@ -16,7 +16,14 @@ import {
   type TestJob,
   textValue,
 } from '../../src/census/test-plan.ts';
-import { context, editLinks, ensureContext, placed, setFields } from './censo-test-donors.ts';
+import {
+  context,
+  editLinks,
+  ensureContext,
+  placed,
+  PLACELESS,
+  setFields,
+} from './censo-test-donors.ts';
 import { pageValues, silenceDialogs } from './censo-test-pages.ts';
 
 export interface TestResult {
@@ -236,7 +243,8 @@ function fill(w: FrameWindow, form: HTMLFormElement, job: TestJob): Record<strin
     el.value = textValue(el.name, el.maxLength, job.variant, job.tag);
     values[el.name] = el.value;
   }
-  const donor = context.donors[job.form] ?? anyDonor();
+  const own = context.donors[job.form];
+  const donor = own && !PLACELESS.test(job.path) ? own : anyDonor();
   setFields(form, {
     ...context.lookups,
     ...donor,
