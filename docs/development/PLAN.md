@@ -3,13 +3,19 @@
 ## Objetivo
 
 Levar ao envio pelo conector as trocas que hoje vão à mão por limitação do
-editor, e não do Lattes. A medida é `node scripts/cobertura-conector.ts`: no
-`fixtures/demo.xml`, 390 de 665 trocas de atributo viram envio (18/10/2026).
+editor, e não do Lattes. A medida é `node scripts/cobertura-conector.ts`, nos
+dois currículos de exemplo: `fixtures/demo.xml` (o que uma pesquisadora teria)
+e `fixtures/synthetic_full.xml` (todos os elementos do schema, inclusive os
+tipos que o demo não tem). No começo do plano, 390 de 665 trocas do demo
+viravam envio (18/10/2026).
 Das 275 que não viram, 148 são limite do próprio Lattes (campo que o
 formulário não tem, dado que o Lattes gera, DOI) e ficam como estão. As
 outras 127 são o alvo deste plano.
 
 ## Estado atual
+
+- 18/10/2026, fim do dia: o demo ganhou um prefácio e a cobertura passou a
+  medir os dois currículos: demo 447 de 662, synthetic_full 1113 de 3748.
 
 - 18/10/2026, mais tarde: o script de cobertura passou a ignorar o que o
   editor não deixa digitar (`isSystemAttr`: códigos, IDs do orientador e do

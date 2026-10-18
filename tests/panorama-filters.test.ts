@@ -171,6 +171,7 @@ describe('filtro "Faltando", o mesmo da Saúde do currículo', () => {
     );
     expect(missingKw.map((x) => x.name).sort()).toEqual([
       'CAPITULO-DE-LIVRO-PUBLICADO',
+      'PREFACIO-POSFACIO',
       'TRABALHO-EM-EVENTOS',
       'TRABALHO-EM-EVENTOS',
       'TRABALHO-EM-EVENTOS',
@@ -284,7 +285,7 @@ describe('clique no Panorama: que lista abre e com que filtro', () => {
         NO_FILTER,
         NOW,
       ),
-    ).toHaveLength(10);
+    ).toHaveLength(11);
   });
 
   it('cada pessoa abre as seções onde aparece, pelo nome', async () => {

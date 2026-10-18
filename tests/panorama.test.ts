@@ -76,7 +76,7 @@ describe('readCv', () => {
   it('lê as listas do currículo de demonstração', async () => {
     const { cv } = await demo();
     expect(cv.name).toBe('Ana Beatriz Souza Lima');
-    expect(cv.productions).toHaveLength(10);
+    expect(cv.productions).toHaveLength(11);
     expect(cv.productions.filter((p) => p.group === 'artigos')).toHaveLength(6);
     expect(cv.productions.filter((p) => p.group === 'livros')).toHaveLength(1);
     expect(cv.productions.filter((p) => p.group === 'eventos')).toHaveLength(3);
@@ -178,7 +178,7 @@ describe('contagens', () => {
     const { cv } = await demo();
     const res = productionsByYear(cv, ALL, NOW);
     expect(res.bars[0]!.year).toBe(2009);
-    expect(res.max).toBe(2);
+    expect(res.max).toBe(3);
     expect(res.gaps).toEqual([2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2018, 2025]);
     const only = productionsByYear(cv, ALL, NOW, ['livros']);
     expect(only.bars.filter((b) => b.total > 0).map((b) => b.year)).toEqual([2020]);
@@ -246,7 +246,7 @@ describe('contagens', () => {
     const { cv } = await demo();
     const pts = authorship(cv, ALL);
     const count = (i: number) => pts.filter((p) => p.position === i).length;
-    expect([count(0), count(1), count(2), count(3)]).toEqual([1, 7, 1, 1]);
+    expect([count(0), count(1), count(2), count(3)]).toEqual([2, 7, 1, 1]);
     expect(authorship(cv, ALL, ['eventos'])).toHaveLength(3);
   });
 
@@ -313,8 +313,8 @@ describe('pessoas', () => {
     expect(list.some((p) => p.name === cv.name)).toBe(false);
 
     const stats = collaboration(cv, ALL, list);
-    expect(stats).toMatchObject({ solo: 1, students: 3, studentsCoauthoring: 3, withAuthors: 10 });
-    expect(stats.avgAuthors).toBeCloseTo(2.5);
+    expect(stats).toMatchObject({ solo: 2, students: 3, studentsCoauthoring: 3, withAuthors: 11 });
+    expect(stats.avgAuthors).toBeCloseTo(26 / 11);
 
     const keys = new Set(list.map((p) => p.key));
     const edges = coauthorEdges(cv, ALL, keys);
@@ -351,7 +351,7 @@ describe('veículos, temas e saúde', () => {
     expect(v.journals).toHaveLength(6);
     expect(v.journals[0]!.note).toMatch(/^ISSN /);
     expect(v.languages.map((l) => [l.label, l.items.length])).toEqual([
-      ['Português', 6],
+      ['Português', 7],
       ['Inglês', 4],
     ]);
     expect(v.countries[0]!.label).toBe('Brasil');
@@ -366,7 +366,7 @@ describe('veículos, temas e saúde', () => {
     const { cv } = await demo();
     const t = topics(cv, ALL);
     expect(t.withKeywords).toBe(6);
-    expect(t.total).toBe(10);
+    expect(t.total).toBe(11);
     expect(t.topics[0]).toMatchObject({ label: 'fluxo gênico', repeated: true });
     expect(topics(cv, ALL, true).topics).toHaveLength(1);
   });
@@ -380,8 +380,8 @@ describe('veículos, temas e saúde', () => {
       doi: [6, 6],
       'doi-eventos': [0, 3],
       isbn: [0, 1],
-      'palavras-chave': [6, 10],
-      'titulo-ingles': [0, 10],
+      'palavras-chave': [6, 11],
+      'titulo-ingles': [0, 11],
     });
     expect(healthChecks(cv, ALL, 'livros').map((c) => c.id)).toEqual([
       'isbn',

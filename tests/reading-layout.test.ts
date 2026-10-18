@@ -19,6 +19,7 @@ import {
   isFilled,
   isUsable,
   lineText,
+  partText,
   resumoLayout,
   rowRank,
   type Section,
@@ -101,8 +102,8 @@ describe('modo de leitura: todo campo preenchido aparece na leitura', () => {
       const text = referenceText(referenceFor(item));
       const outside = new Set(outsideReference(item, opts).map((p) => p.key));
       for (const p of citationFields(item, opts)) {
-        const shown =
-          outside.has(p.key) || appearsIn(text, p.el.attrs.find((a) => a.name === p.attr)!.value);
+        // O valor como a leitura o mostra (o rótulo de um enumerado: "Prefácio", não PREFACIO).
+        const shown = outside.has(p.key) || appearsIn(text, partText(p));
         expect(shown, `${item.name} ${p.key}`).toBe(true);
       }
     }
