@@ -4,7 +4,7 @@ Gerado por `pnpm censo:relatorio` a partir das capturas em `docs/lattes-formular
 e de `src/schema/lattes.json`. Não editar à mão. Como capturar e o que cada
 grupo quer dizer está no `README.md` desta pasta.
 
-Formulários no censo: 87, com captura: 85, sem captura: 2.
+Formulários no censo: 88, com captura: 85, sem captura: 3.
 
 ## Atributos por grupo
 
@@ -14,8 +14,8 @@ Formulários no censo: 87, com captura: 85, sem captura: 2.
 | texto livre        |                     738 |               606 |
 | oculto             |                    1297 |               193 |
 | fora do formulário |                     920 |               635 |
-| sem captura        |                      93 |                44 |
-| total              |                    3391 |              1798 |
+| sem captura        |                     143 |                44 |
+| total              |                    3441 |              1798 |
 
 ## Formulários
 
@@ -70,6 +70,7 @@ ligação do formulário com os elementos do XML foi conferida.
 | Artigos completos publicados (`artigo-publicado`)                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |    10 |     27 |    8 |
 | Artigos aceitos para publicação (`artigo-aceito`)                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      3 |     6 |     27 |   12 |
 | Livros e capítulos (`livro-capitulo`)                                        | link da lista         | inferido  | inferido  | 2026-10-15 |     11 |    19 |     27 |   13 |
+| Capítulo de livro (`capitulo`)                                               | endereço conhecido    | observado | inferido  | falta      |        |       |        |      |
 | Trabalhos em anais (`trabalho-em-eventos`)                                   | endereço conhecido    | observado | inferido  | 2026-10-15 |      7 |    14 |     27 |    6 |
 | Textos em jornais ou revistas (`texto-jornal`)                               | endereço conhecido    | observado | inferido  | 2026-10-15 |      6 |    10 |     27 |    5 |
 | Tradução (`traducao`)                                                        | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    15 |     27 |    3 |
@@ -143,7 +144,7 @@ não cobra estas até a passada de edição observar a ligação.
 
 ## Lacunas
 
-Formulários sem captura: `linha-de-pesquisa`, `prefacio-outras`.
+Formulários sem captura: `linha-de-pesquisa`, `capitulo`, `prefacio-outras`.
 
 Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA-ARTISTICA`, `APRESENTACAO-EM-RADIO-OU-TV`, `ARRANJO-MUSICAL`, `COMPOSICAO-MUSICAL`, `CURRICULO-VITAE`, `CURSO-DE-CURTA-DURACAO`, `DADOS-BASICOS-DA-APRESENTACAO-DE-OBRA-ARTISTICA`, `DADOS-BASICOS-DA-APRESENTACAO-EM-RADIO-OU-TV`, `DADOS-BASICOS-DA-COMPOSICAO-MUSICAL`, `DADOS-BASICOS-DA-OBRA-DE-ARTES-VISUAIS`, `DADOS-BASICOS-DE-SONOPLASTIA`, `DADOS-BASICOS-DO-ARRANJO-MUSICAL`, `DADOS-BASICOS-DO-CURSO-DE-CURTA-DURACAO`, `DETALHAMENTO-DA-APRESENTACAO-DE-OBRA-ARTISTICA`, `DETALHAMENTO-DA-APRESENTACAO-EM-RADIO-OU-TV`, `DETALHAMENTO-DA-COMPOSICAO-MUSICAL`, `DETALHAMENTO-DA-OBRA-DE-ARTES-VISUAIS`, `DETALHAMENTO-DE-SONOPLASTIA`, `DETALHAMENTO-DO-ARRANJO-MUSICAL`, `DETALHAMENTO-DO-CURSO-DE-CURTA-DURACAO`, `INFORMACAO-ADICIONAL-CURSO`, `INFORMACAO-ADICIONAL-INSTITUICAO`, `OBRA-DE-ARTES-VISUAIS`, `SONOPLASTIA`.
 

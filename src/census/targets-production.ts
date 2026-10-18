@@ -152,6 +152,14 @@ const BIBLIOGRAPHIC: CensusTarget[] = [
     { source: 'lattes_internals.md, seção 17 (lacuna: inclusão por função da página)' },
   ),
   production(
+    'capitulo',
+    'Capítulo de livro',
+    at('PKG_LVR_CAP.FORM_CAP'),
+    ['CAPITULO-DE-LIVRO-PUBLICADO'],
+    'pkg_lvr_cap.lista',
+    { source: 'escolha "Capitulo" da lista de livros e capítulos, lida em 18/10/2026' },
+  ),
+  production(
     'trabalho-em-eventos',
     'Trabalhos em anais',
     at('pkg_trabalho.form', { f_seq_ev: '', F_STA_DIVULGACAO_CIENTIFICA: '' }),

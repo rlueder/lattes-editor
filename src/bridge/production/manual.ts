@@ -24,9 +24,8 @@ const LEGACY_ART =
   'O censo dos formulários não achou no Lattes o formulário deste tipo de produção artística; altere no Lattes';
 
 /**
- * Capítulo e prefácio: o censo de 15/10/2026 leu só o formulário do livro
- * (PKG_LVR_CAP.FORM_LVR); o do capítulo e a lista do prefácio não foram
- * abertos.
+ * Prefácio: a lista dele não foi aberta no censo de 15/10/2026. (O capítulo
+ * tem alvo próprio desde 18/10/2026, bibliografica-livros.ts.)
  */
 const UNREAD =
   'O formulário de edição deste tipo ainda não foi lido no Lattes, e o conector não envia sem conhecê-lo; altere no Lattes por enquanto';
@@ -35,7 +34,6 @@ const REASONS: Record<string, string> = {
   'APRESENTACAO-DE-OBRA-ARTISTICA': LEGACY_ART,
   'APRESENTACAO-EM-RADIO-OU-TV': LEGACY_ART,
   'ARRANJO-MUSICAL': LEGACY_ART,
-  'CAPITULO-DE-LIVRO-PUBLICADO': UNREAD,
   'COMPOSICAO-MUSICAL': LEGACY_ART,
   'CULTIVAR-PROTEGIDA': REGISTRY,
   'CULTIVAR-REGISTRADA': REGISTRY,

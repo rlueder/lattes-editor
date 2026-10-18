@@ -5,9 +5,9 @@
 // pelo rótulo do campo no censo, e também o link de edição de cada linha da
 // lista (o formulário de inclusão com f_seq).
 //
-// O capítulo de livro fica fora: está na mesma lista dos livros, mas o censo
-// só capturou o formulário do livro (PKG_LVR_CAP.FORM_LVR), e o do capítulo
-// não foi lido.
+// O capítulo de livro está na mesma lista dos livros; o formulário dele
+// (PKG_LVR_CAP.FORM_CAP, GN_CAP) foi lido em 18/10/2026, na inclusão que a
+// escolha "Capítulo" da lista abre.
 
 import { byTable, country, date, language, media, yesNo } from '../mappers.ts';
 import type { ProductionTarget } from '../types.ts';
@@ -106,4 +106,58 @@ const TEXTO: ProductionTarget = {
   year: { attr: 'ANO-DO-TEXTO', child: 'DADOS-BASICOS-DO-TEXTO' },
 };
 
-export const LIVRO_TARGETS: ProductionTarget[] = [LIVRO, TEXTO];
+/**
+ * Capítulo de livro publicado (GN_CAP, POST PKG_LVR_CAP.FORM_CAP), na lista
+ * pkg_lvr_cap.lista. Campos e limites: o formulário de inclusão lido em
+ * 18/10/2026. Inferido, como no livro: a ligação de cada atributo pelo
+ * rótulo do campo, que a alteração use o mesmo formulário com f_seq, e o
+ * link de cada linha da lista. O tipo do capítulo vem num oculto
+ * (F_COD_PROD) e não se escolhe.
+ */
+const CAPITULO: ProductionTarget = {
+  element: 'CAPITULO-DE-LIVRO-PUBLICADO',
+  fields: {
+    ...under('DADOS-BASICOS-DO-CAPITULO', {
+      ANO: 'f_ano',
+      'FLAG-DIVULGACAO-CIENTIFICA': { field: 'F_STA_DIVULGACAO_CIENTIFICA', toForm: yesNo },
+      'FLAG-RELEVANCIA': { field: 'F_RELEV', toForm: yesNo },
+      'HOME-PAGE-DO-TRABALHO': 'f_homepage',
+      IDIOMA: { field: 'F_IDIOMA', toForm: language },
+      'MEIO-DE-DIVULGACAO': { field: 'f_meio', toForm: media },
+      'PAIS-DE-PUBLICACAO': { field: 'f_pais', toForm: country },
+      'TITULO-DO-CAPITULO-DO-LIVRO': 'f_titulo_cap',
+      'TITULO-DO-CAPITULO-DO-LIVRO-INGLES': 'f_titulo_cap_en',
+    }),
+    ...under('DETALHAMENTO-DO-CAPITULO', {
+      'CIDADE-DA-EDITORA': 'f_cidade_ed',
+      ISBN: 'f_isbn',
+      'NOME-DA-EDITORA': 'f_editora',
+      'NUMERO-DA-EDICAO-REVISAO': 'f_edicao',
+      'NUMERO-DA-SERIE': 'f_serie',
+      'NUMERO-DE-VOLUMES': 'f_volume_c',
+      ORGANIZADORES: 'f_organizadores',
+      'PAGINA-FINAL': 'f_pag_fim',
+      'PAGINA-INICIAL': 'f_pag_ini',
+      'TITULO-DO-LIVRO': 'f_titulo',
+    }),
+    'INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS': 'f_ref',
+    'INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES': 'f_ref_en',
+  },
+  form: { action: 'PKG_LVR_CAP.FORM_CAP', name: 'GN_CAP' },
+  grids: [...ALL_GRIDS],
+  id: 'capitulo',
+  list: { formProc: 'PKG_LVR_CAP.FORM_CAP', proc: 'pkg_lvr_cap.lista' },
+  manual: {
+    'DADOS-BASICOS-DO-CAPITULO@DOI': DOI_MANUAL,
+    'DADOS-BASICOS-DO-CAPITULO@TIPO': 'o tipo do capítulo vem fixo num oculto do formulário',
+  },
+  // f_titulo é o título do livro; o do capítulo é f_titulo_cap.
+  title: {
+    attr: 'TITULO-DO-CAPITULO-DO-LIVRO',
+    child: 'DADOS-BASICOS-DO-CAPITULO',
+    field: 'f_titulo_cap',
+  },
+  year: { attr: 'ANO', child: 'DADOS-BASICOS-DO-CAPITULO' },
+};
+
+export const LIVRO_TARGETS: ProductionTarget[] = [LIVRO, CAPITULO, TEXTO];

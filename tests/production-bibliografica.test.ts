@@ -268,6 +268,21 @@ const CASES: Case[] = [
   },
   {
     edits: [
+      [
+        'DADOS-BASICOS-DO-CAPITULO',
+        'HOME-PAGE-DO-TRABALHO',
+        'https://exemplo.org/capitulo',
+        'f_homepage',
+        'https://exemplo.org/capitulo',
+      ],
+      ['DADOS-BASICOS-DO-CAPITULO', 'ANO', '2013', 'f_ano', '2013'],
+    ],
+    id: 'capitulo',
+    proc: 'PKG_LVR_CAP.FORM_CAP',
+    seq: '49',
+  },
+  {
+    edits: [
       ['DADOS-BASICOS-DO-LIVRO', 'TIPO', 'LIVRO_ORGANIZADO_OU_EDICAO', 'F_COD_PROD', '133'],
       [
         'DETALHAMENTO-DO-LIVRO',
@@ -403,10 +418,16 @@ describe('produções bibliográficas: o que fica à mão', () => {
     return plan.unsupported.map((u) => u.reason);
   };
 
-  it('capítulo e prefácio: o formulário não foi lido', () => {
-    expect(
-      reasonOf((root) => setAttr(partOf(root, '49', 'DADOS-BASICOS-DO-CAPITULO'), 'ANO', '2013')),
-    ).toEqual([expect.stringMatching(/^O formulário de edição deste tipo ainda não foi lido/)]);
+  it('capítulo pelo formulário lido em 18/10/2026; prefácio ainda não foi lido', () => {
+    const plan = planAfter((root) =>
+      setAttr(partOf(root, '49', 'DADOS-BASICOS-DO-CAPITULO'), 'ANO', '2013'),
+    );
+    expect(plan.unsupported).toEqual([]);
+    expect(plan.ops[0]).toMatchObject({
+      expect: { f_ano: '2012' },
+      set: { f_ano: '2013' },
+      target: 'capitulo',
+    });
     expect(
       reasonOf((root) =>
         setAttr(partOf(root, '50', 'DADOS-BASICOS-DO-PREFACIO-POSFACIO'), 'ANO', '2018'),

@@ -10,7 +10,7 @@ describe('tipos de produção que ficam à mão de propósito', () => {
     expect(manualReason(chain('CURRICULO-VITAE', 'PATENTE', 'DADOS-BASICOS-DA-PATENTE'))).toMatch(
       /grades de titulares e de datas/,
     );
-    expect(manualReason(chain('CAPITULO-DE-LIVRO-PUBLICADO', 'AUTORES'))).toMatch(
+    expect(manualReason(chain('PREFACIO-POSFACIO', 'AUTORES'))).toMatch(
       /^O formulário de edição deste tipo ainda não foi lido no Lattes/,
     );
     expect(manualReason(chain('SONOPLASTIA'))).toMatch(/não achou no Lattes o formulário/);
