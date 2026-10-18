@@ -89,10 +89,20 @@ export function testJobs(file: CensusFile): TestJob[] {
 
 const NUMERIC = /(duracao|pag|^f_num|nro|qtd|volume|^f_vol|carga|fasc|serie|edic)/i;
 
+/** ISSN e ISBN válidos (o check() confere o dígito): os de exemplo das normas. */
+export const VALID_ISSN = '0028-0836';
+export const VALID_ISBN = '9780306406157';
+
 /** O valor de teste de um campo de texto, dentro do limite dele. */
 export function textValue(name: string, maxLength: number, variant: number, tag: string): string {
   const max = maxLength > 0 ? maxLength : 200;
-  const year = String(2005 + (variant % 15));
+  // O artigo aceito tem o ano previsto, que não pode ser antes deste.
+  const year = tag.startsWith('artigo-aceito')
+    ? String(new Date().getFullYear())
+    : String(2005 + (variant % 15));
+  if (/doi/i.test(name)) return '';
+  if (/issn/i.test(name)) return VALID_ISSN.slice(0, max);
+  if (/isbn/i.test(name)) return VALID_ISBN.slice(0, max);
   if (/ano/i.test(name) && max <= 4) return year;
   if (/dta|data/i.test(name) && max <= 10) {
     const day = String(10 + (variant % 18)).padStart(2, '0');
@@ -100,9 +110,9 @@ export function textValue(name: string, maxLength: number, variant: number, tag:
     return `${day}/${month}/${year}`;
   }
   if (/mes/i.test(name) && max <= 2) return String(1 + (variant % 12)).padStart(2, '0');
-  if (NUMERIC.test(name) && max <= 8) return String(10 + variant).slice(0, max);
   if (/home|url|site|link/i.test(name)) return `https://exemplo.org/${tag}/${name}`.slice(0, max);
   if (/mail/i.test(name)) return 'teste@exemplo.org';
+  if (NUMERIC.test(name)) return String(10 + variant).slice(0, max);
   return `${TEST_MARK} ${tag} ${name}`.slice(0, max);
 }
 
@@ -122,6 +132,19 @@ export function pickOption<T extends { text: string; value: string }>(
     );
   }
   return real[variant % real.length];
+}
+
+/**
+ * Campos que a página preenche por uma busca ou janela (instituição, curso,
+ * órgão, periódico, agência, vínculo) e o lugar do item na atuação: copiados
+ * de um item seu do mesmo formulário.
+ */
+export const DONOR_FIELD =
+  /^f_(cod_?inst2?|codinst|cod_curso2?|curso_old|inst_?old|instold|codorgao2?|orgao_old|inst|curso|orgao|agencia|nme_agencia(_h)?|seq_per|issn(_h)?|titulo_periodico(_h)?|vinc|vinculo|seq_ativ)$/i;
+
+/** O que copiar de um item seu: só os campos de busca e de lugar, com valor. */
+export function donorValues(fields: [string, string][]): Record<string, string> {
+  return Object.fromEntries(fields.filter(([n, v]) => v && DONOR_FIELD.test(n)));
 }
 
 /** Os campos de busca que a página preenche (instituição, curso), copiados de um item seu. */
@@ -164,6 +187,12 @@ export function consistencyFixes(
   if (values.F_STATUS && values.F_STATUS !== 'S') {
     Object.assign(fixes, { f_ano_obten: '', f_mes_obten: '' });
   }
+  // Atividade, atuação e revisor: o período atual não tem fim.
+  if (values.f_status === 'S') Object.assign(fixes, { f_ano_fim: '', f_mes_fim: '' });
+  // Projeto: o ano de fim só com a situação concluída.
+  if (values.F_TPO_SITUACAO && values.F_TPO_SITUACAO !== 'C') fixes.F_ANO_FIM = '';
+  // Projeto de empresa pede a empresa, por outra busca: o teste fica no "não".
+  if ('f_tpo_pesq_emp' in values) fixes.f_tpo_pesq_emp = 'N';
   if ('F_BOLSA' in values) {
     const on = values.F_BOLSA === 'S' && agency;
     fixes.f_agencia = on ? agency.code : '';

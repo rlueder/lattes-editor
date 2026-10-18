@@ -10,14 +10,13 @@
 
 import {
   consistencyFixes,
-  LOOKUP_FIELDS,
-  lookupValues,
   matchesCreated,
   pickOption,
   TEST_MARK,
   type TestJob,
   textValue,
 } from '../../src/census/test-plan.ts';
+import { context, editLinks, placed, prepareContext, setFields } from './censo-test-donors.ts';
 
 export interface TestResult {
   id: string;
@@ -174,10 +173,13 @@ function addOwner(w: FrameWindow): void {
   );
   const grid = w.autorGrid?.getProvider();
   if (!owner || !grid) return;
+  // Na equipe de um projeto, a coluna tit marca o coordenador (s).
+  const team = !!w.document.forms.namedItem('GN_PROJETO');
   const row = Object.fromEntries([
     ['l', owner.l],
     ['c', ''],
     ['t', owner.t],
+    ...(team ? [['tit', 's']] : []),
     ['editable', false],
     ['deletable', true],
   ]);
@@ -208,7 +210,10 @@ function fill(w: FrameWindow, form: HTMLFormElement, job: TestJob): Record<strin
   for (const el of fields()) {
     if (el.name === 'f_tipo_privacidade') continue;
     if (isInput(el, 'checkbox')) {
-      if (!el.checked && job.variant % 2 === 0) el.click();
+      // Num grupo de caixas, a primeira sempre marcada (o check() pede uma).
+      const group = fields().filter((x) => isInput(x, 'checkbox') && x.name === el.name);
+      const first = group.length > 1 && group[0] === el;
+      if (!el.checked && (first || job.variant % 2 === 0)) el.click();
       values[el.name] = el.checked ? el.value || 'on' : '';
     } else if (el.tagName === 'SELECT' && el.type === 'select-one') {
       const opts = [...el.options].map((o) => ({ text: o.text, value: o.value }));
@@ -225,49 +230,29 @@ function fill(w: FrameWindow, form: HTMLFormElement, job: TestJob): Record<strin
     el.value = textValue(el.name, el.maxLength, job.variant, job.tag);
     values[el.name] = el.value;
   }
-  setFields(form, { ...context.lookups, ...consistencyFixes(values, context.agency) });
+  const donor = context.donors[job.form] ?? anyDonor();
+  setFields(form, {
+    ...context.lookups,
+    ...donor,
+    ...consistencyFixes(values, context.agency),
+  });
   return values;
 }
 
-/** Grava valores nos campos que existirem, ocultos e desabilitados também. */
-function setFields(form: HTMLFormElement, values: Record<string, string>): void {
-  for (const [name, value] of Object.entries(values)) {
-    const el = form.elements.namedItem(name) as HTMLInputElement | null;
-    if (el && 'value' in el) el.value = value;
-  }
-}
-
-interface Context {
-  agency?: { code: string; name: string };
-  lookups: Record<string, string>;
-}
-
-const context: Context = { lookups: {} };
-
 /**
- * Instituição e curso de uma formação sua (o check() exige, e a página só os
- * preenche pela busca) e a primeira agência da lista do Lattes, lidos uma vez.
+ * Sem item seu do mesmo formulário (a atuação nova), os campos de busca de
+ * qualquer outro. Nunca os de lugar (f_seq_*, f_codinst): numa inclusão, eles
+ * fariam a página alterar um item que já existe.
  */
-async function prepareContext(code: string, get: (path: string) => Promise<{ html: string }>) {
-  const list = (await get(`pkg_formacao.lista?f_tipo=FA&f_cod=${code}`)).html;
-  for (const path of editLinks(list)) {
-    const doc = new DOMParser().parseFromString((await get(path)).html, 'text/html');
-    const form = doc.forms.namedItem('GN_FORMACAO2');
-    if (!form) continue;
-    const donor = Object.fromEntries(
-      LOOKUP_FIELDS.map((n) => [
-        n,
-        (form.elements.namedItem(n) as HTMLInputElement | null)?.value ?? '',
-      ]),
-    );
-    if ((donor.f_cod_inst || donor.f_cod_inst2) && (donor.f_cod_curso || donor.f_cod_curso2)) {
-      context.lookups = lookupValues(donor);
-      break;
+function anyDonor(): Record<string, string> {
+  const merged: Record<string, string> = {};
+  for (const donor of Object.values(context.donors)) {
+    for (const [name, value] of Object.entries(donor)) {
+      if (/^f_(seq_|codinst$)/i.test(name) || name in merged) continue;
+      merged[name] = value;
     }
   }
-  const agencies = (await get(`prc_agencia?f_cod=${code}`)).html;
-  const first = /atribuir\(\s*'([^']*)'\s*,\s*'([^']*)'/.exec(agencies);
-  if (first) context.agency = { code: first[1]!, name: first[2]! };
+  return merged;
 }
 
 /** O "Salvar" da página, como a pessoa clicaria. */
@@ -288,21 +273,40 @@ async function createOne(job: TestJob, code: string): Promise<TestResult> {
   };
   let frame: HTMLIFrameElement | undefined;
   try {
-    frame = await openFrame(job.path, code);
+    frame = await openFrame(placed(job), code);
     const w = frame.contentWindow as FrameWindow;
     const form = w.document.forms.namedItem(job.form);
     if (!form) return { ...base, msgs: [`A página não tem o formulário ${job.form}`] };
     addOwner(w);
-    const values = fill(w, form, job);
-    const msgs = await submit(frame, (fw) => {
-      // O botão da própria página: em alguns formulários (formação) o check()
-      // só valida, e é o clique que chama o envio.
-      const save = saveButton(fw.document);
-      if (save) save.click();
-      else fw.check?.();
-    });
-    const ok = msgs.some((m) => /sucesso/i.test(m));
-    return { ...base, msgs: msgs.filter((m) => !/sucesso/i.test(m)), ok, values };
+    let values = fill(w, form, job);
+    let action = form.action;
+    // Alguns formulários têm um segundo passo (a formação complementar pede os
+    // anos depois): a página nova, sem sucesso nem erro, é preenchida e salva.
+    for (let step = 0; step < 3; step++) {
+      const msgs = await submit(frame, (sw) => {
+        // O botão da própria página: em alguns formulários (formação) o check()
+        // só valida, e é o clique que chama o envio.
+        const save = saveButton(sw.document);
+        if (save) save.click();
+        else sw.check?.();
+      });
+      const fw = frame.contentWindow as FrameWindow;
+      if (msgs.length > 0 || step === 2) {
+        const ok = msgs.some((m) => /sucesso/i.test(m));
+        return { ...base, msgs: msgs.filter((m) => !/sucesso/i.test(m)), ok, values };
+      }
+      // Só um formulário de outro passo (outra ação) segue: o mesmo de novo
+      // seria a página recarregada, e salvar de novo duplicaria o item.
+      const next = [...fw.document.forms].find(
+        (f) => f.action !== action && saveButton(f.ownerDocument),
+      );
+      if (!next) {
+        return { ...base, msgs: ['A página voltou sem mensagem e sem outro passo'], values };
+      }
+      action = next.action;
+      values = { ...values, ...fill(fw, next, job) };
+    }
+    return { ...base, msgs: ['Passos demais'], values };
   } catch (err) {
     return { ...base, msgs: [err instanceof Error ? err.message : String(err)] };
   } finally {
@@ -355,13 +359,6 @@ export function testProgress(jobs?: TestJob[]) {
     removidos: progress.removed.length,
     total: jobs?.length ?? null,
   };
-}
-
-/** Os links de edição de todas as listas do menu. */
-function editLinks(html: string): string[] {
-  return [...html.matchAll(/setarUrl\('([^']+)'/g)]
-    .map((m) => m[1]!.replace(/&amp;/g, '&'))
-    .filter((p) => /[?&]f_seq[a-z_]*=\d/i.test(p));
 }
 
 const withoutCode = (p: string) => p.replace(/([?&])f_cod=[A-Z0-9]+&?/, '$1').replace(/[?&]$/, '');

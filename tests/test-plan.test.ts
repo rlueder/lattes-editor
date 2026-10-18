@@ -3,12 +3,15 @@ import { describe, expect, it } from 'vitest';
 import type { CensusEntry, CensusFile } from '../src/census/run.ts';
 import {
   consistencyFixes,
+  donorValues,
   lookupValues,
   matchesCreated,
   pickOption,
   TEST_MARK,
   testJobs,
   textValue,
+  VALID_ISBN,
+  VALID_ISSN,
   variantCount,
 } from '../src/census/test-plan.ts';
 
@@ -121,5 +124,40 @@ describe('itens de teste: o que o check() das formações pede', () => {
     expect(matchesCreated('<input value="11/02/2006">', values)).toBe(false);
     expect(matchesCreated('qualquer', { f_tipo_licenca: '2' })).toBe(false);
     expect(matchesCreated(`x ${TEST_MARK} a`, { f_titulo: `${TEST_MARK} a` })).toBe(true);
+  });
+});
+
+describe('itens de teste: o que as validações das produções e da atuação pedem', () => {
+  it('DOI vazio, ISSN e ISBN válidos, números só com dígitos, artigo aceito no ano atual', () => {
+    expect(textValue('f_cod_doi', 250, 0, 'artigo-v0')).toBe('');
+    expect(textValue('f_issn', 10, 0, 'x')).toBe(VALID_ISSN);
+    expect(textValue('f_isbn', 13, 0, 'x')).toBe(VALID_ISBN);
+    expect(textValue('f_fasciculo', 10, 3, 'x')).toBe('13');
+    expect(textValue('f_serie', 5, 0, 'x')).toBe('10');
+    expect(textValue('f_ano', 4, 0, 'artigo-aceito-v0')).toBe(String(new Date().getFullYear()));
+  });
+
+  it('período atual sem fim, projeto com fim só concluído, e sem empresa', () => {
+    expect(consistencyFixes({ f_status: 'S' })).toEqual({ f_ano_fim: '', f_mes_fim: '' });
+    expect(consistencyFixes({ f_status: 'N' })).toEqual({});
+    expect(consistencyFixes({ F_TPO_SITUACAO: 'A', f_tpo_pesq_emp: 'S' })).toEqual({
+      F_ANO_FIM: '',
+      f_tpo_pesq_emp: 'N',
+    });
+    expect(consistencyFixes({ F_TPO_SITUACAO: 'C' })).toEqual({});
+  });
+
+  it('de um item seu, só os campos de busca e de lugar com valor', () => {
+    expect(
+      donorValues([
+        ['f_codorgao', '12'],
+        ['f_seq_ativ', '3'],
+        ['f_codinst', '0001'],
+        ['f_titulo', 'Meu trabalho'],
+        ['f_seq', '9'],
+        ['f_cod', 'K000'],
+        ['f_issn_h', ''],
+      ]),
+    ).toEqual({ f_codinst: '0001', f_codorgao: '12', f_seq_ativ: '3' });
   });
 });
