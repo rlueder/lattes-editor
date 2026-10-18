@@ -71,7 +71,7 @@ Feito em 18/10/2026, só no código e no Lattes simulado (capacidade
 `buscas-producao`): instituição, curso e agência de orientações e bancas pela
 escolha na lista (`src/bridge/production/lookups.ts`, o seletor em
 `src/ui/live-lists.ts`), e a instituição do sanduíche e da cotutela na
-formação. 399 → 410 de 663. Falta: o ID do orientando, o órgão do projeto, o
+formação. 399 → 410 de 663. Falta: o ID do orientando, o órgão do projeto (a busca `PKG_PROJETO.pp_orgao_cargo` foi lida em 18/10/2026: `atribuir(código, nome, tipo)` grava `f_codorgao` com tipo 0 e `f_codorgao2` nos outros, e o nome em `f_orgao` e `f_orgao_old`; os órgãos se abrem em árvore pelo `f_cod_inst2`), o
 curso dos tipos com mais de uma natureza (outras orientações concluídas,
 qualificação) e a gravação acompanhada de cada tipo no Lattes real.
 
