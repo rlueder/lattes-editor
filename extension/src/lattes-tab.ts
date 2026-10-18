@@ -353,8 +353,8 @@ export async function realLattesTab(): Promise<number | undefined> {
   return tab?.id;
 }
 
-/** Prazo dos itens de teste: a leitura dos formulários leva alguns minutos. */
-const TEST_ITEMS_TIMEOUT_MS = 10 * 60_000;
+/** Prazo dos itens de teste: a leitura dos formulários leva alguns minutos, e um lote de 50, outros tantos. */
+const TEST_ITEMS_TIMEOUT_MS = 30 * 60_000;
 
 type CensusAction = 'andamento' | 'criar' | 'preparar' | 'remover';
 

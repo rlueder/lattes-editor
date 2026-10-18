@@ -29,11 +29,11 @@ export function TestItemsPanel() {
       <label className="test-items-batch">
         Lote
         <input
-          max={30}
+          max={50}
           min={1}
           type="number"
           value={batch}
-          onChange={(e) => setBatch(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
+          onChange={(e) => setBatch(Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
         />
       </label>
       <div className="test-items-actions">
