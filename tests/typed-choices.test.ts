@@ -245,4 +245,20 @@ describe('campos tipados: status do curso do pós-doutorado', () => {
     expect(typedChoices(postdoc, 'STATUS-DO-ESTAGIO')).toBeUndefined();
     expect(typedChoices(basics('DOUTORADO'), 'STATUS-DO-CURSO')).toBeUndefined();
   });
+
+  it('listas de produção conferidas no Lattes real, com o texto da opção como valor', () => {
+    const acting = typedChoices(element('DETALHAMENTO-DE-ARTES-CENICAS'), 'ATIVIDADE-DOS-AUTORES');
+    expect(acting?.map((c) => c.value)).toContain('Ator');
+    expect(acting?.every((c) => c.label === c.value)).toBe(true);
+    expect(
+      typedChoices(element('DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO'), 'UNIDADE')?.map(
+        (c) => c.value,
+      ),
+    ).toEqual(['horas', 'dias', 'semanas']);
+    expect(typedChoices(element('DETALHAMENTO-DA-MARCA'), 'NATUREZA')).toHaveLength(4);
+    // A disponibilidade ainda não: a grafia exata do XML não ficou firme.
+    expect(
+      typedChoices(element('DETALHAMENTO-DO-PRODUTO-TECNOLOGICO'), 'DISPONIBILIDADE'),
+    ).toBeUndefined();
+  });
 });

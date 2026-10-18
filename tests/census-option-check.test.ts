@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { knownOptionValue } from '../src/census/known-options.ts';
 import type { FieldLink } from '../src/census/link.ts';
 import { booleanOf, checkOptions, editorControl, observedMap } from '../src/census/option-check.ts';
 
@@ -134,5 +135,28 @@ describe('censo: opções do Lattes contra o controle do editor', () => {
     expect(
       checkOptions('t:IDIOMA@IDIOMA', radio('F_COD_IDIOMA'), [o('EN', 'Inglês')], []).found,
     ).toEqual([]);
+  });
+
+  it('o mapa de uma ligação por valor também vale como observado', () => {
+    expect(observedMap([enumLink({ '1B3': 'ORQUESTRA' }, { by: 'valor' })])).toEqual({
+      '1B3': 'ORQUESTRA',
+    });
+  });
+
+  it('valor conhecido de uma opção: pelo elemento e atributo ou só pelo atributo', () => {
+    expect(knownOptionValue('DADOS-BASICOS-DO-LIVRO', 'TIPO', '133')).toBe(
+      'LIVRO_ORGANIZADO_OU_EDICAO',
+    );
+    expect(knownOptionValue('DADOS-BASICOS-DO-TRABALHO', 'MEIO-DE-DIVULGACAO', 'V')).toBe('VARIOS');
+    expect(
+      knownOptionValue('DADOS-BASICOS-DO-TRABALHO', 'MEIO-DE-DIVULGACAO', 'X'),
+    ).toBeUndefined();
+    const check = checkOptions(
+      't:DADOS-BASICOS-DO-TRABALHO@MEIO-DE-DIVULGACAO',
+      { name: 'f_meio', type: 'select-one' },
+      [o('I', 'Impresso'), o('V', 'impresso e mídia eletrônica')],
+      [],
+    );
+    expect(check.found).toEqual([]);
   });
 });

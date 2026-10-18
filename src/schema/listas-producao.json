@@ -1,0 +1,82 @@
+{
+  "source": "censo dos formulários do Lattes real (cvlattesweb, 16/10/2026); grafia conferida na exportação de 18/10/2026 (itens de teste publicados): o XML guarda o texto da opção como está",
+  "capturedAt": "2026-10-18",
+  "listas": {
+    "DETALHAMENTO-DE-ARTES-CENICAS@ATIVIDADE-DOS-AUTORES": [
+      "Aderecista",
+      "Ator",
+      "Bonequeiro",
+      "Caracterizador",
+      "Cenógrafo",
+      "Coreógrafo",
+      "Dançarino",
+      "Diretor",
+      "Diretor Musical",
+      "Dramaturgista",
+      "Dramaturgo",
+      "Encenador",
+      "Figurinista",
+      "Iluminador",
+      "Maquiador",
+      "Preparador corporal",
+      "Preparador vocal",
+      "Outra"
+    ],
+    "DETALHAMENTO-DE-ARTES-CENICAS@TIPO-DE-EVENTO": [
+      "Apresentação única",
+      "Concurso",
+      "Festival",
+      "Teledrama",
+      "Temporada",
+      "Turnê",
+      "Outro"
+    ],
+    "DETALHAMENTO-DE-ARTES-VISUAIS@ATIVIDADE-DOS-AUTORES": [
+      "Aderecista",
+      "Animador",
+      "Artista Multimídia",
+      "Artista Plástico",
+      "Artista Visual",
+      "Cenógrafo",
+      "Cineasta",
+      "Curador",
+      "Desenhista",
+      "Escultor",
+      "Figurinista",
+      "Fotógrafo",
+      "Gravador",
+      "Ilustrador",
+      "Performer",
+      "Pintor",
+      "Programador visual",
+      "Roteirista",
+      "Vídeo Maker",
+      "Web artist",
+      "Outra"
+    ],
+    "DETALHAMENTO-DA-MUSICA@ATIVIDADE-DOS-AUTORES": [
+      "Arranjador",
+      "Cantor",
+      "Compositor",
+      "Instrumentista",
+      "Regente",
+      "Solista",
+      "Outra"
+    ],
+    "DETALHAMENTO-DA-MARCA@NATUREZA": [
+      "Figurativa",
+      "Nominativa",
+      "Mista",
+      "Tridimensional"
+    ],
+    "DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@UNIDADE": [
+      "horas",
+      "dias",
+      "semanas"
+    ],
+    "DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@NATUREZA": [
+      "Exame de qualificação de doutorado",
+      "Exame de qualificação de mestrado"
+    ]
+  }
+}

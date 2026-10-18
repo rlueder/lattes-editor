@@ -14,6 +14,7 @@ import { lattesSchema } from '../schema/lattes.ts';
 import { derivedValue, typedChoices } from '../schema/typed-choices.ts';
 import { codeAttrFor, codeChoices, isBooleanAttr, isSystemAttr } from '../ui/field-kind.ts';
 import type { CensusOption } from './census-page.ts';
+import { knownOptionValue } from './known-options.ts';
 import type { FieldLink } from './link.ts';
 
 export type EditorControl =
@@ -52,9 +53,15 @@ export function booleanOf(o: CensusOption): 'NAO' | 'SIM' | undefined {
 }
 
 /** O valor do XSD de uma opção: pelo rótulo, pelo código no fim do valor (…_PI), ou pelo observado. */
-function enumOf(o: CensusOption, values: string[], observed: Record<string, string>) {
+function enumOf(
+  o: CensusOption,
+  values: string[],
+  observed: Record<string, string>,
+  known?: string,
+) {
   return (
     values.find((v) => fold(v) === fold(o.label)) ??
+    (known && values.includes(known) ? known : undefined) ??
     values.find((v) => o.value && v.endsWith(`_${o.value.toUpperCase()}`)) ??
     (observed[o.value] && values.includes(observed[o.value]!) ? observed[o.value] : undefined)
   );
@@ -76,7 +83,9 @@ export const names = (list: string[]) =>
 export function observedMap(links: FieldLink[]): Record<string, string> {
   const out: Record<string, string> = {};
   for (const l of links) {
-    if (l.by !== 'enumeracao' || l.matches < 2 || l.conflicts > 0) continue;
+    // Uma ligação por valor também traz o mapa das opções que não bateram pelo
+    // rótulo (link.ts guarda os dois desde 18/10/2026).
+    if (!l.valueMap || l.matches < 2 || l.conflicts > 0) continue;
     Object.assign(out, l.valueMap);
   }
   return out;
@@ -172,7 +181,7 @@ export function checkOptions(
     }
   } else if (control === 'enum') {
     const values = specOf(el, attr)?.enum ?? [];
-    const loose = opts.filter((o) => !enumOf(o, values, seen));
+    const loose = opts.filter((o) => !enumOf(o, values, seen, knownOptionValue(el, attr, o.value)));
     if (loose.length) {
       add(
         'lista-diferente',

@@ -6,6 +6,7 @@
 import { foldText } from '../model/fold-text.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import listas from './listas-lattes.json' with { type: 'json' };
+import producao from './listas-producao.json' with { type: 'json' };
 
 export interface Choice {
   label: string;
@@ -71,6 +72,14 @@ const PARTICIPATION_TYPES: Record<string, readonly string[]> = {
 };
 
 /**
+ * Listas de produção (artes, marca, curso de curta duração, banca de
+ * qualificação) tiradas do censo do Lattes real. A exportação de 18/10/2026,
+ * com um item de teste em cada opção usada, mostrou que o XML guarda o texto
+ * da opção como está. Chave ELEMENTO@ATRIBUTO.
+ */
+const PRODUCTION_LISTS: Readonly<Record<string, readonly string[]>> = producao.listas;
+
+/**
  * Status do curso do pós-doutorado. O formulário do Lattes (pkg_formacao.form,
  * f_tipo=AP, f_nivel=5, lido em 15/10/2026) tem o rádio F_STATUS com "em
  * andamento" (N), "concluído" (S) e "incompleto" (I). O schema não enumera o
@@ -126,6 +135,8 @@ export function typedChoices(el: XElement, attr: string): Choice[] | undefined {
   if (COUNTRY_ATTRS.has(attr)) return COUNTRIES;
   if (UF_ATTRS.has(attr) && el.name === 'DADOS-GERAIS') return UFS;
   if (LANGUAGE_ATTRS.has(attr) && el.name !== 'IDIOMA') return LANGUAGES;
+  const production = PRODUCTION_LISTS[`${el.name}@${attr}`];
+  if (production) return asChoices(production);
   if (!isEventBasics(el.name)) return undefined;
   if (attr === 'FORMA-PARTICIPACAO') return asChoices(PARTICIPATION_FORMS);
   if (attr === 'TIPO-PARTICIPACAO') {

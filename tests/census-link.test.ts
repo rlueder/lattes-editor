@@ -323,4 +323,18 @@ describe('censo, casamento de itens', () => {
     // FLAG-BOLSA não tem enum no schema: texto diferente só conta contra.
     expect(finishLinks(out).some((l) => l.attribute === 'FLAG-BOLSA')).toBe(false);
   });
+
+  it('ligação por valor guarda também o mapa das opções que não bateram pelo rótulo', () => {
+    const out = new Map<string, FieldLink>();
+    const nature = (v: string, label: string) => [
+      field('F_COD_PROD', v, [{ chosen: true, label, value: v }]),
+    ];
+    const item = (v: string) => [
+      { attribute: 'NATUREZA', element: 'DADOS-BASICOS-DA-PARTITURA', value: v },
+    ];
+    collectLinks(out, 't', nature('1B1', 'Canto'), item('CANTO'));
+    collectLinks(out, 't', nature('1B3', 'Orquestral'), item('ORQUESTRA'));
+    const [link] = finishLinks(out);
+    expect(link).toMatchObject({ by: 'valor', matches: 2, valueMap: { '1B3': 'ORQUESTRA' } });
+  });
 });
