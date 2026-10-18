@@ -358,8 +358,21 @@ export const agenciesPath = (cv: string) => `prc_agencia?f_cod=${cv}`;
 export const institutionSearchPath = (cv: string, query: string, level = DEFAULT_SEARCH_LEVEL) =>
   `PRC_INST_FORM?F_CTR=C&F_COD=${cv}&F_NIVEL=${encodeURIComponent(level)}&F_STA_OUTRA=N&f_nome=${latin1Param(query)}`;
 
-export const coursesPath = (cv: string, institution: string, level: string) =>
-  `prc_curso_form?f_cod=${cv}&f_pgm=FORM&f_nivel=${encodeURIComponent(level)}&f_inst=${encodeURIComponent(institution)}`;
+/**
+ * A lista de cursos: a da formação (f_pgm FORM) ou a de orientação e banca
+ * (TESE, com o f_sta_area que a página manda; pkg_orient.form e
+ * PKG_BANCA_TRAB.form, lidas em 18/10/2026).
+ */
+export const coursesPath = (
+  cv: string,
+  institution: string,
+  level: string,
+  program: 'FORM' | 'TESE' = 'FORM',
+  staArea = '',
+) =>
+  program === 'TESE'
+    ? `prc_curso_form?f_pgm=TESE&f_cod=${cv}&f_inst=${encodeURIComponent(institution)}&f_nivel=${encodeURIComponent(level)}&f_sta_area=${encodeURIComponent(staArea)}`
+    : `prc_curso_form?f_cod=${cv}&f_pgm=FORM&f_nivel=${encodeURIComponent(level)}&f_inst=${encodeURIComponent(institution)}`;
 
 // ---------------------------------------------------------------------------
 // Leituras, pelo mesmo tipo de porta da aba do Lattes que o resto do conector.
@@ -452,11 +465,15 @@ export async function readCourses(
   port: ListsPort,
   institution: string,
   level: string,
+  program: 'FORM' | 'TESE' = 'FORM',
+  staArea = '',
 ): Promise<{ courses?: Course[]; error?: string }> {
   try {
     const cv = cvCodeFrom(await port.menuHtml());
     if (!cv) return { error: 'O código do currículo não está no menu' };
-    const courses = parseCourses(await getPage(port, coursesPath(cv, institution, level)));
+    const courses = parseCourses(
+      await getPage(port, coursesPath(cv, institution, level, program, staArea)),
+    );
     return courses ? { courses } : { error: 'A lista de cursos não veio na página do Lattes' };
   } catch (err) {
     return { error: failure(err) };

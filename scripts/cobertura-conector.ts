@@ -53,13 +53,22 @@ function changed(attr: string, value: string, choices: string[] | undefined): st
 }
 
 /** O editor com o conector que busca e lê cursos, e uma agência na cópia. */
-const LIVE = { agencies: [{ code: 'A0000000001', name: 'Agência' }], courses: true, search: true };
+const LIVE = {
+  agencies: [{ code: 'A0000000001', name: 'Agência' }],
+  courses: true,
+  production: true,
+  search: true,
+};
 
 /** A escolha na lista do Lattes, quando o editor oferece uma para o atributo; senão, false. */
 function picked(el: XElement, attr: string, value: string): boolean {
   switch (liveKind(el, attr, LIVE)) {
     case 'instituicao':
-      return applyInstitution(el, { code: 'V0000000001', label: `${value} x`, name: `${value} x` });
+      return applyInstitution(
+        el,
+        { code: 'V0000000001', label: `${value} x`, name: `${value} x` },
+        attr,
+      );
     case 'curso':
       return applyCourse(el, { label: `${value} x(00000000000P0)`, value: '0000000001' });
     case 'agencia':

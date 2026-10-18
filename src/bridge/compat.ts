@@ -65,6 +65,11 @@ export const BRIDGE_FEATURES = [
    * livre-docência e outras informações relevantes (biographic.ts).
    */
   'alterar-dados-gerais-completo',
+  /**
+   * Instituição, curso e agência de orientações e bancas pelas buscas do
+   * Lattes, com a lista de cursos de tese (production/lookups.ts).
+   */
+  'buscas-producao',
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

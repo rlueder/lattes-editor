@@ -186,6 +186,7 @@ export function AttributeField({
   if (live) {
     return wrap(
       <LiveListControl
+        attr={name}
         common={common}
         el={el}
         kind={live}

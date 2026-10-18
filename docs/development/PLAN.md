@@ -67,6 +67,14 @@ O seletor e as buscas da formação já existem (`src/ui/LiveListField.tsx`,
 No Lattes real: as buscas são só leitura; uma gravação acompanhada por tipo
 (orientação concluída, em andamento, banca, órgão do projeto).
 
+Feito em 18/10/2026, só no código e no Lattes simulado (capacidade
+`buscas-producao`): instituição, curso e agência de orientações e bancas pela
+escolha na lista (`src/bridge/production/lookups.ts`, o seletor em
+`src/ui/live-lists.ts`), e a instituição do sanduíche e da cotutela na
+formação. 399 → 410 de 663. Falta: o ID do orientando, o órgão do projeto, o
+curso dos tipos com mais de uma natureza (outras orientações concluídas,
+qualificação) e a gravação acompanhada de cada tipo no Lattes real.
+
 ### Fase 3: capítulo de livro e prefácio
 
 O formulário de edição do capítulo nunca foi lido; a captura só tem o do

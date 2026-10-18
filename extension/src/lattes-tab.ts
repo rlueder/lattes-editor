@@ -256,7 +256,13 @@ export async function answerListRequest(
     return { ...reply, id: msg.id, type: 'instituicoes' };
   }
   if (msg.type === 'pedir-cursos') {
-    const reply = await readListReply<Reply<'cursos'>>('cursos', msg.institution, msg.level);
+    const reply = await readListReply<Reply<'cursos'>>(
+      'cursos',
+      msg.institution,
+      msg.level,
+      msg.program ?? 'FORM',
+      msg.staArea ?? '',
+    );
     return { ...reply, id: msg.id, type: 'cursos' };
   }
   return undefined;

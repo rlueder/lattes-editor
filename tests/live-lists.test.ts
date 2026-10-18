@@ -19,6 +19,7 @@ import {
   LISTS_MAX_AGE_MS,
   type LiveAvailability,
   liveKind,
+  livePairs,
   needsRefresh,
   readArea,
   sameCode,
@@ -223,7 +224,8 @@ describe('que campo vira qual lista', () => {
     expect(liveKind(doc, 'NOME-CURSO', ALL)).toBe('curso');
     expect(liveKind(doc, 'NOME-AGENCIA', ALL)).toBe('agencia');
     expect(liveKind(doc, 'NOME-AGENCIA', { ...ALL, agencies: [] })).toBeUndefined();
-    expect(liveKind(doc, 'NOME-INSTITUICAO-DOUT', ALL)).toBeUndefined();
+    // O sanduíche e a cotutela também se escolhem na busca (Fase 2).
+    expect(liveKind(doc, 'NOME-INSTITUICAO-DOUT', ALL)).toBe('instituicao');
     const noInst = el('<DOUTORADO CODIGO-INSTITUICAO="" NOME-CURSO=""/>');
     expect(liveKind(noInst, 'NOME-CURSO', ALL)).toBeUndefined();
     const residency = el('<RESIDENCIA-MEDICA CODIGO-INSTITUICAO="1" NOME-INSTITUICAO="X"/>');
@@ -250,5 +252,69 @@ describe('cópia guardada no banco', () => {
     expect(await loadCachedList('agencias')).toBeUndefined();
     await store.db.lists.update('areas', { sealed: { ...row!.sealed, data: new ArrayBuffer(8) } });
     expect(await loadCachedList('areas')).toBeUndefined();
+  });
+});
+
+describe('escolhas pela lista em orientações, bancas e no sanduíche (Fase 2)', () => {
+  const LIVE_ALL: LiveAvailability = {
+    agencies: [{ code: '000000000001', name: 'CNPq' }],
+    courses: true,
+    production: true,
+    search: true,
+  };
+  const orientation = () =>
+    parseXml(
+      '<DETALHAMENTO-DE-ORIENTACOES-CONCLUIDAS-PARA-MESTRADO NOME-DA-INSTITUICAO="Antiga" CODIGO-INSTITUICAO="000000000009" NOME-DO-CURSO="Curso antigo" CODIGO-CURSO="00000009" FLAG-BOLSA="NAO" NOME-DA-AGENCIA="" CODIGO-AGENCIA-FINANCIADORA=""/>',
+    ).root;
+
+  it('a orientação usa os seus atributos e a lista de cursos TESE', () => {
+    const pairs = livePairs('DETALHAMENTO-DE-ORIENTACOES-CONCLUIDAS-PARA-MESTRADO');
+    expect(pairs).toMatchObject({
+      agency: { flag: 'FLAG-BOLSA', name: 'NOME-DA-AGENCIA' },
+      course: { level: '3', name: 'NOME-DO-CURSO', program: 'TESE', staArea: '' },
+      institution: { name: 'NOME-DA-INSTITUICAO' },
+      production: true,
+    });
+    // Pós-doutorado não tem curso, e um tipo com várias naturezas não tem um nível só.
+    expect(
+      livePairs('DETALHAMENTO-DE-ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO')?.course,
+    ).toBeUndefined();
+    expect(livePairs('DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS')?.course).toBeUndefined();
+  });
+
+  it('sem a capacidade buscas-producao, a orientação fica como era', () => {
+    const el = orientation();
+    expect(liveKind(el, 'NOME-DA-INSTITUICAO', LIVE_ALL)).toBe('instituicao');
+    expect(liveKind(el, 'NOME-DO-CURSO', LIVE_ALL)).toBe('curso');
+    expect(liveKind(el, 'NOME-DA-AGENCIA', LIVE_ALL)).toBe('agencia');
+    expect(liveKind(el, 'NOME-DA-INSTITUICAO', { ...LIVE_ALL, production: false })).toBeUndefined();
+  });
+
+  it('instituição nova limpa o curso; curso e agência gravam nos atributos da orientação', () => {
+    const el = orientation();
+    applyInstitution(el, { code: 'V000000000001', label: 'UFRGS', name: 'UFRGS' });
+    expect(getAttr(el, 'CODIGO-INSTITUICAO')).toBe('000000000001');
+    expect(getAttr(el, 'NOME-DO-CURSO')).toBe('');
+    applyCourse(el, { label: 'Botânica(42001013004P0)', value: 'V00000002 ' });
+    expect(getAttr(el, 'NOME-DO-CURSO')).toBe('Botânica');
+    expect(getAttr(el, 'CODIGO-CURSO')).toBe('00000002');
+    applyAgency(el, { code: '000000000001', name: 'CNPq' });
+    expect(getAttr(el, 'NOME-DA-AGENCIA')).toBe('CNPq');
+    expect(getAttr(el, 'FLAG-BOLSA')).toBe('SIM');
+  });
+
+  it('a instituição do sanduíche se escolhe na busca e não mexe no curso', () => {
+    const el = parseXml(
+      '<DOUTORADO CODIGO-INSTITUICAO="000000000001" NOME-INSTITUICAO="UFRGS" CODIGO-CURSO="00000001" NOME-CURSO="Botânica" CODIGO-INSTITUICAO-DOUT="" NOME-INSTITUICAO-DOUT=""/>',
+    ).root;
+    expect(liveKind(el, 'NOME-INSTITUICAO-DOUT', LIVE_ALL)).toBe('instituicao');
+    applyInstitution(
+      el,
+      { code: 'V000000000002', label: 'USP', name: 'USP' },
+      'NOME-INSTITUICAO-DOUT',
+    );
+    expect(getAttr(el, 'CODIGO-INSTITUICAO-DOUT')).toBe('000000000002');
+    expect(getAttr(el, 'NOME-INSTITUICAO-DOUT')).toBe('USP');
+    expect(getAttr(el, 'NOME-CURSO')).toBe('Botânica');
   });
 });

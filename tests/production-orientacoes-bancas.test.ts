@@ -191,11 +191,12 @@ describe('orientações: plano', () => {
   });
 
   it('instituição, agência e natureza ficam à mão, com o motivo', () => {
+    // Nome digitado sem o código: o Lattes não tem onde gravá-lo.
     expect(reasonOf(set('41', 'DETALHAMENTO', { 'NOME-DA-INSTITUICAO': 'Outra' }))).toMatch(
-      /instituição sai de uma busca do Lattes/,
+      /escolha a instituição pela lista do Lattes/,
     );
     expect(reasonOf(set('41', 'DETALHAMENTO', { 'NOME-DA-AGENCIA': 'Outra' }))).toMatch(
-      /agência sai de uma busca/,
+      /escolha a agência pela lista do Lattes/,
     );
     expect(reasonOf(set('41', 'DADOS-BASICOS', { NATUREZA: 'Outra' }))).toMatch(
       /natureza muda o tipo do item/,
@@ -282,7 +283,7 @@ describe('bancas: plano', () => {
 
   it('a instituição da banca julgadora fica à mão, com o motivo', () => {
     expect(reasonOf(set('46', 'DETALHAMENTO', { 'NOME-INSTITUICAO': 'Outra' }))).toMatch(
-      /trocar só o nome deixaria o código antigo/,
+      /escolha a instituição pela lista do Lattes/,
     );
   });
 });
@@ -411,5 +412,93 @@ describe('bancas no Lattes simulado', () => {
     expect(getAttr(partOf(lattes.state.root, '46', 'DADOS-BASICOS'), 'TITULO')).toBe(
       'Concurso Revisto',
     );
+  });
+});
+
+describe('instituição, curso e agência pelas buscas do Lattes (Fase 2)', () => {
+  const UFRGS = { 'CODIGO-INSTITUICAO': '000000000001' };
+  const lookupsPlan = (edit: (root: XElement) => void, productionLookups = true) => {
+    const original = parseXml(XML).root;
+    const working = parseXml(XML).root;
+    edit(working);
+    return planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Item' })),
+      working,
+      { editProduction: true, productionLookups },
+    );
+  };
+  const orientationPick = set('41', 'DETALHAMENTO', {
+    ...UFRGS,
+    'CODIGO-AGENCIA-FINANCIADORA': '000000000001',
+    'CODIGO-CURSO': '00000001',
+    'NOME-DA-AGENCIA': 'Conselho Nacional de Desenvolvimento Científico e Tecnológico',
+    'NOME-DA-INSTITUICAO': 'Universidade Federal do Rio Grande do Sul',
+    'NOME-DO-CURSO': 'Genética e Biologia Molecular',
+  });
+
+  it('a escolha na lista vira a busca na hora de gravar, com o código de antes', () => {
+    const plan = lookupsPlan(orientationPick);
+    expect(plan.unsupported).toEqual([]);
+    const op = plan.ops[0] as ProductionOp;
+    expect(op.lookups).toEqual({
+      agency: {
+        before: '',
+        code: '000000000001',
+        name: 'Conselho Nacional de Desenvolvimento Científico e Tecnológico',
+      },
+      course: { before: '', code: '00000001' },
+      institution: {
+        before: '',
+        code: '000000000001',
+        name: 'Universidade Federal do Rio Grande do Sul',
+      },
+    });
+  });
+
+  it('extensão sem as buscas: fica à mão, nunca vai sem os ocultos', () => {
+    const plan = lookupsPlan(orientationPick, false);
+    expect(plan.ops).toEqual([]);
+    expect(plan.unsupported[0]?.reason).toMatch(/buscas do Lattes/);
+  });
+
+  it('orientação: grava instituição, curso e agência pelos ocultos e confere', async () => {
+    const lattes = await lattesFor();
+    const op = lookupsPlan(orientationPick).ops[0] as ProductionOp;
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    const [post] = postsOf(lattes);
+    expect(post).toMatchObject({ proc: 'PKG_ORIENT.FORM' });
+    expect(post!.fields.f_cod_inst).toBe('V000000000001');
+    expect(post!.fields.f_cod_inst2).toBe('');
+    expect(post!.fields.f_agencia).toBe('000000000001');
+    const detail = partOf(lattes.state.root, '41', 'DETALHAMENTO');
+    expect(getAttr(detail, 'NOME-DA-INSTITUICAO')).toBe(
+      'Universidade Federal do Rio Grande do Sul',
+    );
+    expect(getAttr(detail, 'NOME-DO-CURSO')).toBe('Genética e Biologia Molecular');
+  });
+
+  it('código que a busca não acha: nada é enviado', async () => {
+    const lattes = await lattesFor();
+    const op = lookupsPlan(
+      set('46', 'DETALHAMENTO', {
+        'CODIGO-INSTITUICAO': '999999999999',
+        'NOME-INSTITUICAO': 'Universidade Federal do Rio Grande do Sul',
+      }),
+    ).ops[0] as ProductionOp;
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'erro' });
+    expect(postsOf(lattes)).toEqual([]);
+  });
+
+  it('banca julgadora: só a instituição, que grava e confere', async () => {
+    const lattes = await lattesFor();
+    const op = lookupsPlan(
+      set('46', 'DETALHAMENTO', {
+        'CODIGO-INSTITUICAO': '000000000002',
+        'NOME-INSTITUICAO': 'Universidade de São Paulo',
+      }),
+    ).ops[0] as ProductionOp;
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    const detail = partOf(lattes.state.root, '46', 'DETALHAMENTO');
+    expect(getAttr(detail, 'NOME-INSTITUICAO')).toBe('Universidade de São Paulo');
   });
 });

@@ -35,6 +35,7 @@ import {
   EDIT_PRODUCTION_ENABLED,
   isProductionChange,
   planProduction,
+  PRODUCTION_LOOKUPS_ENABLED,
   type ProductionOp,
 } from './production/plan.ts';
 import { stavincFromFlag } from './vinculo-flag.ts';
@@ -125,6 +126,8 @@ export interface PlanOptions {
   editPremio?: boolean;
   /** Alterar no lugar produções, orientações e bancas (production/). */
   editProduction?: boolean;
+  /** Instituição, curso e agência de orientações e bancas pelas buscas (production/lookups.ts). */
+  productionLookups?: boolean;
 }
 
 /**
@@ -160,6 +163,11 @@ export const GATED_EDITS: readonly {
     option: 'editFormacaoComplementar',
   },
   { enabled: EDIT_PRODUCTION_ENABLED, feature: 'alterar-producao', option: 'editProduction' },
+  {
+    enabled: PRODUCTION_LOOKUPS_ENABLED,
+    feature: 'buscas-producao',
+    option: 'productionLookups',
+  },
 ];
 
 /**
@@ -271,13 +279,24 @@ export function planChange(
     editOuvinte = false,
     editPremio = false,
     editProduction = false,
+    productionLookups = false,
   }: PlanOptions = {},
   siblings: readonly Change[] = [],
 ): BridgeOp | Unsupported {
   // Produção, orientação ou banca que já está no Lattes (production/).
   if (editProduction && isProductionChange(change, chain)) {
     const planned = planProduction(change, chain, label, siblings);
-    return 'reason' in planned ? unsupported(change, label, planned.reason) : planned;
+    if ('reason' in planned) return unsupported(change, label, planned.reason);
+    // Uma extensão sem as buscas mandaria o formulário sem os ocultos, e a
+    // releitura acharia tudo igual: nunca vai a ela.
+    if (planned.lookups && !productionLookups) {
+      return unsupported(
+        change,
+        label,
+        'Instituição, curso e agência pelas buscas do Lattes: desligado nesta montagem',
+      );
+    }
+    return planned;
   }
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.
   if (change.kind === 'novo' && createItems && change.element === 'ATUACAO-PROFISSIONAL') {

@@ -194,6 +194,10 @@ describe('agências, instituições e cursos', () => {
       'PRC_INST_FORM?F_CTR=C&F_COD=K000000000&F_NIVEL=4&F_STA_OUTRA=N&f_nome=Unicamp',
     );
     expect(institutionSearchPath('K000000000', 'X', '1')).toContain('F_NIVEL=1');
+    // Orientação e banca: a lista TESE, com o f_sta_area da página.
+    expect(coursesPath('K000000000', 'V007900000004', '2', 'TESE', 'N')).toBe(
+      'prc_curso_form?f_pgm=TESE&f_cod=K000000000&f_inst=V007900000004&f_nivel=2&f_sta_area=N',
+    );
     expect(coursesPath('K000000000', 'V007900000004', '4')).toBe(
       'prc_curso_form?f_cod=K000000000&f_pgm=FORM&f_nivel=4&f_inst=V007900000004',
     );

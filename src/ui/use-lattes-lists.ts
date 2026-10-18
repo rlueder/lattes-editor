@@ -12,7 +12,13 @@ import type { BridgeMessage, EditorMessage } from '../bridge/protocol.ts';
 import { type CachedList, loadCachedList, saveCachedList } from '../model/list-cache.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import type { LattesLists } from './lattes-lists-context.ts';
-import { formationLevel, needsRefresh, sameCode, withoutLetter } from './live-lists.ts';
+import {
+  institutionAttrs,
+  livePairs,
+  needsRefresh,
+  sameCode,
+  withoutLetter,
+} from './live-lists.ts';
 import { listenReplies, post } from './use-bridge.ts';
 
 const FEATURE = 'listas-lattes';
@@ -27,6 +33,8 @@ const nextId = (prefix: string) => `${prefix}-${Date.now()}-${++counter}`;
 
 export function useLattesLists(features: readonly string[]): LattesLists {
   const live = features.includes(FEATURE);
+  // As buscas de orientação e banca: lista de cursos TESE e os ocultos no envio.
+  const production = live && features.includes('buscas-producao');
   const [areas, setAreas] = useState<CachedList<AreaNode[]>>();
   const [agencies, setAgencies] = useState<CachedList<Agency[]>>();
   const waiting = useRef(new Map<string, (reply: Reply) => void>());
@@ -124,27 +132,32 @@ export function useLattesLists(features: readonly string[]): LattesLists {
     };
 
     /** O código com a letra da instituição do item: da busca desta sessão, ou de uma busca pelo nome. */
-    const fullCodeOf = async (el: XElement, level: string) => {
-      const code = getAttr(el, 'CODIGO-INSTITUICAO') ?? '';
+    const fullCodeOf = async (el: XElement, level?: string) => {
+      const attrs = institutionAttrs(el);
+      const code = getAttr(el, attrs.code) ?? '';
       const known = fullCodes.current.get(code);
       if (known) return known;
-      const name = getAttr(el, 'NOME-INSTITUICAO') ?? '';
+      const name = getAttr(el, attrs.name) ?? '';
       const found = (await searchInstitutions(name, level)).find((r) => sameCode(r.code, code));
       if (!found) throw new Error('A instituição do item não apareceu na busca do Lattes');
       return found.code;
     };
 
     const loadCourses = async (el: XElement) => {
-      const level = formationLevel(el.name);
-      if (!liveRef.current || !level) throw new Error('O conector não está ligado');
-      const institution = await fullCodeOf(el, level);
-      const cacheKey = `${institution}|${level}`;
+      const pairs = livePairs(el.name);
+      const course = pairs?.course;
+      if (!liveRef.current || !course) throw new Error('O conector não está ligado');
+      const { level, program, staArea } = course;
+      const institution = await fullCodeOf(el, pairs.searchLevel);
+      const cacheKey = `${institution}|${level}|${program}|${staArea}`;
       let pending = courseCache.current.get(cacheKey);
       if (!pending) {
         pending = ask<Extract<Reply, { type: 'cursos' }>>({
           id: nextId('cursos'),
           institution,
           level,
+          // A formação usa a lista FORM; orientação e banca, a TESE.
+          ...(program === 'FORM' ? {} : { program, staArea }),
           type: 'pedir-cursos',
         }).then((reply) => {
           if (reply.error || !reply.courses) throw new Error(reply.error ?? 'Sem cursos');
@@ -166,8 +179,9 @@ export function useLattesLists(features: readonly string[]): LattesLists {
       agencies: agencies?.items,
       areas: areas?.items,
       courses: live,
+      production,
       search: live,
     }),
-    [fetchers, live, areas, agencies],
+    [fetchers, live, production, areas, agencies],
   );
 }

@@ -17,6 +17,7 @@ import {
   successfulPairs,
 } from '../form.ts';
 import { findLinks, isLogonPage } from '../lattes-html.ts';
+import type { FieldValues } from '../plan.ts';
 import {
   authorRows,
   GRID_LABELS,
@@ -31,9 +32,16 @@ import {
   sameWords,
   serializeGrid,
 } from './grids.ts';
+import { resolveLookups } from './lookups.ts';
 import { sameAuthors, withLeads } from './members.ts';
 import { opaquePairs, readOpaque } from './opaque.ts';
-import { EDIT_PRODUCTION_ENABLED, folded, type ProductionOp, productionTarget } from './plan.ts';
+import {
+  EDIT_PRODUCTION_ENABLED,
+  folded,
+  PRODUCTION_LOOKUPS_ENABLED,
+  type ProductionOp,
+  productionTarget,
+} from './plan.ts';
 import type { GridField, ProductionTarget } from './types.ts';
 
 const valueOf = (controls: FormControl[], name: string) =>
@@ -121,6 +129,9 @@ export async function applyProduction(op: ProductionOp, port: LattesPort): Promi
   if (!EDIT_PRODUCTION_ENABLED || !t) {
     return result('erro', 'Esta extensão não altera este tipo de item; a alteração fica à mão');
   }
+  if (op.lookups && (!PRODUCTION_LOOKUPS_ENABLED || !t.lookups)) {
+    return result('erro', 'Esta extensão não envia a escolha pelas buscas; a alteração fica à mão');
+  }
   if (op.keywords && op.keywords.after.length > MAX_KEYWORDS) {
     return result('erro', `O Lattes aceita até ${MAX_KEYWORDS} palavras-chave`);
   }
@@ -206,12 +217,22 @@ export async function applyProduction(op: ProductionOp, port: LattesPort): Promi
       replace.f_autores_l = withLeads(rows, op.authors.after);
     }
     const set = Object.fromEntries(fields.map((f) => [f, op.set[f] ?? '']));
+    // As escolhas pelas buscas: os ocultos que a página escreveria (lookups.ts).
+    let chosen: FieldValues = {};
+    let chosenCheck: FieldValues = {};
+    if (op.lookups && t.lookups) {
+      const resolved = await resolveLookups(op.lookups, t.lookups, port, pairs);
+      if ('status' in resolved) return result(resolved.status, resolved.detail);
+      chosen = resolved.set;
+      chosenCheck = resolved.check;
+    }
     posted = true;
     const response = await port.post(
       t.form.action,
       encodeLatin1Form(
         setPairs(pairs, {
           ...set,
+          ...chosen,
           ...gridPairs(grids, replace, t.gridKeys),
           ...opaquePairs(t.opaqueGrids ?? []),
         }),
@@ -238,6 +259,9 @@ export async function applyProduction(op: ProductionOp, port: LattesPort): Promi
     if (op.authors && !sameAuthors(afterGrids.f_autores_l ?? [], op.authors.after)) {
       notSaved.push('f_autores_l');
     }
+    for (const [f, v] of Object.entries(chosen)) {
+      if (folded(pairValue(afterPairs, f)) !== folded(chosenCheck[f] ?? v)) notSaved.push(f);
+    }
     if (notSaved.length > 0) {
       return result(
         'divergente',
@@ -254,7 +278,7 @@ export async function applyProduction(op: ProductionOp, port: LattesPort): Promi
     const others = otherChanges(
       pairs,
       afterPairs,
-      new Set([...fields, ...t.grids, ...opaqueFields]),
+      new Set([...fields, ...Object.keys(chosen), ...t.grids, ...opaqueFields]),
     );
     const changed = [
       ...lost.map((g) => GRID_LABELS[g]),

@@ -4,6 +4,8 @@
 // atributo do XML. As especificações ficam em targets/, uma família por
 // arquivo.
 
+import type { LookupSpec } from './lookups.ts';
+
 /** Um campo do formulário que guarda um atributo do XML. */
 export interface FieldMap {
   field: string;
@@ -96,6 +98,8 @@ export interface ProductionTarget {
     paramsBy?: { attr: string; child: string; param: string; values: Record<string, string> };
     proc: string;
   };
+  /** Instituição, curso e agência escolhidos pelas buscas do Lattes (lookups.ts). */
+  lookups?: LookupSpec;
   /**
    * Atributos que o formulário tem mas o envio não troca, com o motivo
    * (a instituição que sai de uma busca), na mesma chave de fields.

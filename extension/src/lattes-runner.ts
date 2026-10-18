@@ -194,7 +194,8 @@ interface ExportReply {
 (globalThis as unknown as { __conector: unknown }).__conector = {
   apply: (op: BridgeOp) => applyOp(op, port),
   // Só leituras: os cursos de uma instituição num nível da formação.
-  cursos: (institution: string, level: string) => readCourses(listsPort, institution, level),
+  cursos: (institution: string, level: string, program?: 'FORM' | 'TESE', staArea?: string) =>
+    readCourses(listsPort, institution, level, program, staArea),
   // Só leitura: a página de conferência, com o que ainda não foi enviado ao
   // CNPq (docs/lattes_internals.md, seção 10). O código do currículo vem do
   // menu da aba.

@@ -16,6 +16,7 @@ import type { FieldMap, ProductionTarget } from '../../src/bridge/production/typ
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
+import { AGENCIES, COURSES, institutionsOf, withLetter } from './buscas.ts';
 import type { LattesState } from './estado.ts';
 import { applyGrids, GRID_HIDDEN, gridScripts } from './grades.ts';
 import * as h from './html.ts';
@@ -93,6 +94,7 @@ function form(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
   const body = `<form name="${t.form.name}" method="post" action="${t.form.action}">
 ${unique}
 ${h.hidden('f_ctr', 'U')}${h.hidden('f_cod', state.code)}${h.hidden('f_seq', req.get('f_seq') ?? '')}${GRID_HIDDEN}
+${lookupHidden(state, item, t)}
 ${h.formButtons(true)}
 </form>
 ${gridScripts(item, t.authors)}
@@ -106,9 +108,72 @@ function post(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
   const item = itemsOf(state, t).find((i) => seqOf(i) === req.get('f_seq'));
   if (!item) return html(h.page(t.id, '<p>Registro não encontrado.</p>'));
   writeFields(t, item, req);
+  writeLookups(state, item, t, req);
   applyGrids(item, req, t.authors);
   state.touch();
   return html(back);
+}
+
+/**
+ * Os ocultos das buscas (instituição, curso e agência) de um tipo com
+ * lookups, como as páginas de orientação e banca os trazem (lidas em
+ * 18/10/2026): o código da instituição com a letra (V em f_cod_inst), o do
+ * curso sem ela, o nome em f_inst_old e f_curso_old, a agência em f_agencia e
+ * no texto f_nme_agencia.
+ */
+function lookupHidden(state: LattesState, item: XElement, t: ProductionTarget): string {
+  const spec = t.lookups;
+  if (!spec) return '';
+  const part = partOf(item, spec.child) ?? element('');
+  const inst = withLetter(state, getAttr(part, spec.institution.code) ?? '');
+  const v = inst.startsWith('V');
+  let out =
+    h.hidden('f_cod_inst', v ? inst : '') +
+    h.hidden('f_cod_inst2', v ? '' : inst) +
+    h.hidden('f_inst_old', getAttr(part, spec.institution.name) ?? '');
+  if (spec.course) {
+    const code = getAttr(part, spec.course.code) ?? '';
+    const letter =
+      Object.values(COURSES)
+        .flat()
+        .find(([value]) => value.trim().slice(1) === code)?.[0][0] ?? 'D';
+    out +=
+      h.hidden('f_cod_curso', letter === 'V' ? code : '') +
+      h.hidden('f_cod_curso2', letter === 'V' ? '' : code) +
+      h.hidden('f_curso_old', getAttr(part, spec.course.name) ?? '');
+  }
+  if (spec.agency) {
+    out +=
+      h.hidden('f_agencia', getAttr(part, spec.agency.code) ?? '') +
+      h.text('f_nme_agencia', getAttr(part, spec.agency.name) ?? '');
+  }
+  return out;
+}
+
+/** Os ocultos das buscas de volta para o XML; o que não chegou fica como está. */
+function writeLookups(state: LattesState, item: XElement, t: ProductionTarget, req: SimRequest) {
+  const spec = t.lookups;
+  const part = spec && partOf(item, spec.child);
+  if (!spec || !part) return;
+  // O nome sai da lista pelo código (inferido); sem o código na lista, o texto que veio.
+  if (req.get('f_cod_inst') !== null) {
+    const inst = (req.get('f_cod_inst') || req.get('f_cod_inst2')) ?? '';
+    setAttr(part, spec.institution.code, inst.replace(/^[A-Za-z]/, ''));
+    const name = institutionsOf(state).find((i) => i.code === inst)?.name;
+    setAttr(part, spec.institution.name, name ?? req.get('f_inst_old') ?? '');
+  }
+  if (spec.course && req.get('f_cod_curso') !== null) {
+    const code = (req.get('f_cod_curso') || req.get('f_cod_curso2')) ?? '';
+    setAttr(part, spec.course.code, code.trim());
+    const name = (req.get('f_curso_old') ?? '').replace(/\s*\([^()]*\)\s*$/, '').trim();
+    setAttr(part, spec.course.name, name);
+  }
+  if (spec.agency && req.get('f_agencia') !== null) {
+    const code = req.get('f_agencia') ?? '';
+    setAttr(part, spec.agency.code, code);
+    const name = AGENCIES.find(([c]) => c === code)?.[1];
+    setAttr(part, spec.agency.name, name ?? req.get('f_nme_agencia') ?? '');
+  }
 }
 
 /** As rotas de cada tipo: a lista (escolhida pelos parâmetros), o formulário e o POST. */

@@ -9,12 +9,20 @@ import { childElements, element, getAttr, type XElement } from '../../model/xml.
 import { lattesSchema } from '../../schema/lattes.ts';
 import type { BridgeOp, OpBase } from '../plan.ts';
 import { AUTHOR_PART, type AuthorSpec, MAX_KEYWORDS } from './grids.ts';
+import { lookupAttrs, planLookups, type ProductionLookups } from './lookups.ts';
 import { planMembers } from './members.ts';
 import { PRODUCTION_TARGETS } from './targets/index.ts';
 import type { AuthorPart, FieldMap, ProductionTarget } from './types.ts';
 
 /** Alterar no lugar produções, orientações e bancas. Ligada para o teste ao vivo. */
 export const EDIT_PRODUCTION_ENABLED = true;
+
+/**
+ * Instituição, curso e agência de orientações e bancas pelas buscas do Lattes
+ * (lookups.ts). Ligada para o teste ao vivo: nada disso foi visto em modo de
+ * alteração no Lattes real.
+ */
+export const PRODUCTION_LOOKUPS_ENABLED = true;
 
 /** Uma linha do que muda, como o painel e o editor mostram. */
 export interface ProductionRow {
@@ -32,6 +40,8 @@ export interface ProductionOp extends OpBase {
   kind: 'producao';
   /** Parâmetros da lista que saem do item (ProductionTarget.list.paramsBy), com os valores de antes. */
   listParams?: Record<string, string>;
+  /** Instituição, curso e agência escolhidos pelas buscas, resolvidos na hora de gravar. */
+  lookups?: ProductionLookups;
   /** Título e ano do item no Lattes (os de antes, se a mudança troca um deles), para achar a linha. */
   match: { title: string; year: string };
   /** O que muda, com rótulos e valores como se leem. */
@@ -257,10 +267,20 @@ export function planProduction(
   const set: Record<string, string> = {};
   const expect: Record<string, string> = {};
   const rows: ProductionRow[] = [];
+  // Instituição, curso e agência: pela escolha na lista do Lattes (lookups.ts).
+  const spec = target.lookups;
+  const chosen = spec && change.element === spec.child ? new Set(lookupAttrs(spec)) : new Set();
+  let lookups: ProductionLookups | undefined;
+  if (spec && change.fields.some((f) => chosen.has(f.attr))) {
+    const planned = planLookups(change, spec, el);
+    if ('reason' in planned) return planned;
+    lookups = planned.lookups;
+    rows.push(...planned.rows);
+  }
   const unknown: string[] = [];
   const unmapped: string[] = [];
   const manual = new Map<string, string[]>();
-  for (const f of change.fields) {
+  for (const f of change.fields.filter((x) => !chosen.has(x.attr))) {
     const key = `${change.element}@${f.attr}`;
     const m = target.fields[key];
     const why = target.manual?.[key];
@@ -293,7 +313,7 @@ export function planProduction(
     return { reason: `Valor sem correspondência no formulário do Lattes: ${unmapped.join(', ')}` };
   }
   if (rows.length === 0) return { reason: 'Nada a enviar' };
-  return { ...base, expect, rows, set };
+  return { ...base, expect, ...(lookups ? { lookups } : {}), rows, set };
 }
 
 /** Para conferir sem acento, caixa nem espaço nas pontas. */

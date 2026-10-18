@@ -56,7 +56,16 @@ export type EditorMessage =
   /** Busca de instituição no diretório do Lattes, só leitura; level é o f_nivel da formação. */
   | { id: string; level?: string; query: string; type: 'buscar-instituicao' }
   /** Os cursos de uma instituição (código com a letra) num nível da formação, só leitura. */
-  | { id: string; institution: string; level: string; type: 'pedir-cursos' }
+  | {
+      id: string;
+      institution: string;
+      level: string;
+      /** A lista de cursos de orientação e banca (TESE); sem ele, a da formação (FORM). */
+      program?: 'TESE';
+      /** O f_sta_area da lista TESE (N em aperfeiçoamento e graduação). */
+      staArea?: '' | 'N';
+      type: 'pedir-cursos';
+    }
   /**
    * Importa os itens novos pelo Importar do Lattes (src/bridge/importar.ts),
    * só com IMPORT_ENABLED. file: o arquivo mínimo (opção 1) em base64;

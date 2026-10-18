@@ -24,8 +24,59 @@
 
 import { lattesSchema } from '../../../schema/lattes.ts';
 import { BANCA_PARTICIPANTS } from '../grids.ts';
+import type { LookupSpec } from '../lookups.ts';
 import { byTable, country, language, yesNo } from '../mappers.ts';
 import type { FieldMap, GridField, ProductionTarget } from '../types.ts';
+
+/**
+ * Nível da lista de cursos pela natureza, como o retnivel() de cada página
+ * (pkg_orient.form e PKG_BANCA_TRAB.form, lidas em 18/10/2026); o mestrado
+ * profissional (f_sub_prod 30, 37 ou "35 ") pede o 9. As naturezas que a
+ * página marca com f_sta_area=N são as do terceiro e do quarto rádio.
+ */
+const ORIENT_COURSE = {
+  done: {
+    level: { '41': '3', '42': '4', '43': '2', '44': '1', '45': '1', '49': '1' },
+    noArea: ['43', '44'],
+    professional: { nature: '41', subProd: '30' },
+  },
+  ongoing: {
+    level: { A41: '3', A42: '4', A43: '2', A44: '1', A45: '1', A49: '1' },
+    noArea: ['A43', 'A44'],
+    professional: { nature: 'A41', subProd: '37' },
+  },
+};
+const BOARD_COURSE = {
+  level: { A11: '3', A12: '4', A13: '4', A14: '2', A15: '1', A16: '3' },
+  noArea: ['A13', 'A14'],
+  professional: { nature: 'A11', subProd: '35 ' },
+};
+/** O f_nivel da busca de instituição da banca de trabalho, pela natureza (inst() da página). */
+const BOARD_INSTITUTION_LEVEL = {
+  A11: 'GM',
+  A12: 'GD',
+  A13: 'GD',
+  A14: 'AP',
+  A15: 'GG',
+  A16: 'GE',
+};
+
+/** Só os pares que o XSD tem no filho. */
+function specIn(spec: LookupSpec): LookupSpec {
+  const has = (attr: string) =>
+    lattesSchema.elements[spec.child]?.attributes.some((a) => a.name === attr) ?? false;
+  const keep = <T extends { code: string; name: string }>(p?: T) =>
+    p && has(p.code) && has(p.name) ? p : undefined;
+  const course = keep(spec.course);
+  const agency = keep(spec.agency);
+  return {
+    child: spec.child,
+    institution: spec.institution,
+    ...(course ? { course } : {}),
+    ...(agency ? { agency } : {}),
+    ...(spec.institutionLevel ? { institutionLevel: spec.institutionLevel } : {}),
+  };
+}
 
 const ORIENT_GRIDS: GridField[] = ['f_plv_l', 'f_setor_l', 'f_area_l'];
 const BANCA_GRIDS: GridField[] = ['f_autores_l', 'f_plv_l', 'f_setor_l', 'f_area_l'];
@@ -115,6 +166,24 @@ function orientation(o: Orientation, done: boolean): ProductionTarget {
   if (o.role)
     fields[`${o.detail}@TIPO-DE-ORIENTACAO`] = { field: 'f_tpo_orient', toForm: ADVISOR_ROLE };
   const tipo = done ? 'C' : 'A';
+  const da = done ? 'DA-' : '';
+  const doo = done ? 'DO-' : '';
+  const postdoc = o.nature.some((n) => n.endsWith('46'));
+  const lookups = specIn({
+    agency: { code: 'CODIGO-AGENCIA-FINANCIADORA', name: 'NOME-DA-AGENCIA' },
+    child: o.detail,
+    // "Não informe o curso para natureza Supervisão de pós-doutorado" (curso() da página).
+    ...(postdoc
+      ? {}
+      : {
+          course: {
+            code: 'CODIGO-CURSO',
+            name: `NOME-${doo}CURSO`,
+            ...ORIENT_COURSE[done ? 'done' : 'ongoing'],
+          },
+        }),
+    institution: { code: 'CODIGO-INSTITUICAO', name: `NOME-${da}INSTITUICAO` },
+  });
   return {
     element: o.element,
     fields: inSchema(fields),
@@ -122,6 +191,7 @@ function orientation(o: Orientation, done: boolean): ProductionTarget {
     grids: [...ORIENT_GRIDS],
     id: o.id,
     list: { formProc: 'pkg_orient.form', params: { f_tipo: tipo }, proc: 'pkg_orient.lista' },
+    lookups,
     manual: manualOf([
       [o.basics, ['NATUREZA'], WHY.nature],
       [o.basics, ['TIPO'], WHY.kind],
@@ -236,6 +306,12 @@ function thesisBoard(suffix: string, id: string, nature?: string[]): ProductionT
     grids: [...BANCA_GRIDS],
     id: `banca-trabalho-${id}`,
     list: { formProc: 'PKG_BANCA_TRAB.form', proc: 'pkg_banca_trab.lista' },
+    lookups: specIn({
+      child: `DETALHAMENTO-${de}`,
+      course: { code: 'CODIGO-CURSO', name: 'NOME-CURSO', ...BOARD_COURSE },
+      institution: { code: 'CODIGO-INSTITUICAO', name: 'NOME-INSTITUICAO' },
+      institutionLevel: BOARD_INSTITUTION_LEVEL,
+    }),
     manual: manualOf([
       [basics, ['NATUREZA'], WHY.nature],
       [`DETALHAMENTO-${de}`, INSTITUTION, WHY.institution],
@@ -274,6 +350,10 @@ function judgingBoard(suffix: string, id: string, nature: string): ProductionTar
     grids: [...BANCA_GRIDS],
     id: `banca-julgadora-${id}`,
     list: { formProc: 'PKG_BANCA_JULG.form', proc: 'pkg_banca_julg.lista' },
+    lookups: {
+      child: detail,
+      institution: { code: 'CODIGO-INSTITUICAO', name: 'NOME-INSTITUICAO' },
+    },
     manual: manualOf([
       [basics, ['NATUREZA'], WHY.nature],
       [detail, INSTITUTION, WHY.judgingInstitution],

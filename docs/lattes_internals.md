@@ -1435,6 +1435,32 @@ regrava a instituição como acima e grava o curso **sem** a letra em
 uma é um link `atribuir('<código>','<nome>')`, com código de 12 caracteres;
 `atribuir()` escreve `f_nme_agencia` e `f_agencia` e volta. **Observado.**
 
+### Orientações e bancas (lido em 18/10/2026, sem alteração vista)
+
+As páginas `pkg_orient.form`, `PKG_BANCA_TRAB.form` e `PKG_BANCA_JULG.form`
+abrem as mesmas buscas, com outros parâmetros. **Lido no código das páginas;
+nenhuma alteração foi vista no Lattes real.**
+
+- Instituição: `prc_inst_form?f_cod=…`, sem `f_nivel` na orientação e na banca
+  julgadora; na banca de trabalho, `f_nivel` pela natureza (A11 GM, A12 e A13
+  GD, A14 AP, A15 GG, A16 GE). O `seleciona()` grava como na formação: o
+  código com `V` em `f_cod_inst`, os outros em `f_cod_inst2`, e o nome em
+  `f_inst_old`. Na orientação e na banca de trabalho `f_inst` vem desabilitado;
+  na banca julgadora é texto.
+- Curso: `prc_curso_form?f_pgm=TESE&f_cod=…&f_inst=<código com a letra>&f_nivel=<retnivel()>&f_sta_area=<N ou vazio>`.
+  O `retnivel()` dá 3 para mestrado (9 com o `f_sub_prod` do profissional: 30
+  na orientação concluída, 37 na em andamento, "35 " na banca), 4 para
+  doutorado, pós-doutorado e qualificação de doutorado, 2 para aperfeiçoamento
+  e 1 para graduação, iniciação científica e outra natureza. `f_sta_area` é N
+  no terceiro e no quarto rádio da natureza (aperfeiçoamento e graduação na
+  orientação; qualificação de doutorado e aperfeiçoamento na banca). A
+  supervisão de pós-doutorado não tem curso.
+- Agência (só orientação): `prc_agencia`, como na formação, para `f_agencia` e
+  o texto `f_nme_agencia`.
+- Orientando: `pkg_orient.valida_orientador_ajax` (POST com `f_cod`, `f_nme`,
+  `f_nivel`) preenche `f_id_orientado` e `f_seq_form_orientado`. Não usado pelo
+  conector: falta confirmar que só consulta.
+
 ### Área do conhecimento: no próprio menu, sem pedido ao servidor
 
 A tabela de áreas não vem de uma busca. O `PKG_MENU.menu` declara em script
