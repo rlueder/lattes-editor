@@ -4,7 +4,7 @@
 import { type ReactNode, useEffect, useId, useState } from 'react';
 
 import { attributeLabelIn, elementLabel, enumLabel } from '../labels/labels.ts';
-import { applyLinkedAttrs } from '../model/linked-attrs.ts';
+import { applyLinkedAttrs, followsCountry, writesOwnCode } from '../model/linked-attrs.ts';
 import { repairMojibake } from '../model/mojibake.ts';
 import { getAttr, setAttr, type XElement } from '../model/xml.ts';
 import {
@@ -59,6 +59,16 @@ interface Props {
   spec?: AttributeSpec;
   wide?: boolean;
   onEdit: EditFn;
+}
+
+/** Campo que segue outro e só se lê, com o motivo ao lado do rótulo. */
+function LockedField({ text, value, why }: { text: string; value: string; why: string }) {
+  return (
+    <div className="field field-readonly field-locked">
+      <ReadonlyLabel text={text} why={why} />
+      <span className="locked-value">{value}</span>
+    </div>
+  );
 }
 
 export function AttributeField({
@@ -170,12 +180,8 @@ export function AttributeField({
   // Listas lidas no Lattes pelo conector (LAT-48): sem elas, o campo de sempre.
   const live = liveKind(el, name, lists);
   if (live === 'area-derivada') {
-    return (
-      <div className="field field-readonly field-locked">
-        <ReadonlyLabel text={text} why="Segue a área do conhecimento escolhida" />
-        <span className="locked-value">{value ? enumLabelOrValue(name, value) : '(vazio)'}</span>
-      </div>
-    );
+    const shown = value ? enumLabelOrValue(name, value) : '(vazio)';
+    return <LockedField text={text} value={shown} why="Segue a área do conhecimento escolhida" />;
   }
   if (live) {
     return wrap(
@@ -189,25 +195,22 @@ export function AttributeField({
     );
   }
 
+  if (followsCountry(el.name, name)) {
+    // Na página do Lattes a nacionalidade segue o país (B ou E): muda junto com ele.
+    const shown = value ? displayValue(el.name, name, value) : '(vazio)';
+    return <LockedField text={text} value={shown} why="Segue o país de nacionalidade" />;
+  }
+
   const lockedBy = codeAttrFor(el.name, name);
-  if (lockedBy && getAttr(el, lockedBy)) {
+  if (lockedBy && getAttr(el, lockedBy) && !writesOwnCode(el.name, name)) {
     // Escolhido numa lista do Lattes junto com o código ao lado: lido, não editado.
-    return (
-      <div className="field field-readonly field-locked">
-        <ReadonlyLabel text={text} why="Escolhido numa lista do Lattes; muda junto com o código" />
-        <span className="locked-value">{value || '(vazio)'}</span>
-      </div>
-    );
+    const why = 'Escolhido numa lista do Lattes; muda junto com o código';
+    return <LockedField text={text} value={value || '(vazio)'} why={why} />;
   }
 
   if (matchesDerived(el, name)) {
     // Segue outra escolha (a natureza segue o tipo de evento): lido, não editado.
-    return (
-      <div className="field field-readonly field-locked">
-        <ReadonlyLabel text={text} why="Segue o tipo de item escolhido" />
-        <span className="locked-value">{value}</span>
-      </div>
-    );
+    return <LockedField text={text} value={value} why="Segue o tipo de item escolhido" />;
   }
 
   const dateAttr = isLattesDateAttr(

@@ -4,6 +4,7 @@
 // docs/campos_tipados.md.
 
 import { foldText } from '../model/fold-text.ts';
+import { NATIONALITY_COUNTRIES, writesOwnCode } from '../model/linked-attrs.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import listas from './listas-lattes.json' with { type: 'json' };
 import producao from './listas-producao.json' with { type: 'json' };
@@ -135,6 +136,7 @@ export function typedChoices(el: XElement, attr: string): Choice[] | undefined {
   if (COUNTRY_ATTRS.has(attr)) return COUNTRIES;
   if (UF_ATTRS.has(attr) && el.name === 'DADOS-GERAIS') return UFS;
   if (LANGUAGE_ATTRS.has(attr) && el.name !== 'IDIOMA') return LANGUAGES;
+  if (writesOwnCode(el.name, attr)) return asChoices(NATIONALITY_COUNTRIES);
   const production = PRODUCTION_LISTS[`${el.name}@${attr}`];
   if (production) return asChoices(production);
   if (!isEventBasics(el.name)) return undefined;

@@ -17,7 +17,8 @@ import { readFileSync } from 'node:fs';
 import { BRIDGE_FEATURES } from '../src/bridge/compat.ts';
 import { planChanges, planOptionsFor } from '../src/bridge/plan.ts';
 import { diffDocuments } from '../src/model/changes.ts';
-import { parseXml, type XElement } from '../src/model/xml.ts';
+import { applyLinkedAttrs, followsCountry } from '../src/model/linked-attrs.ts';
+import { getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
 import { lattesSchema } from '../src/schema/lattes.ts';
 import { applyAgency, applyCourse, applyInstitution, liveKind } from '../src/ui/live-lists.ts';
 
@@ -68,6 +69,24 @@ function picked(el: XElement, attr: string, value: string): boolean {
   }
 }
 
+/**
+ * O coordenador do projeto troca de pessoa, nunca some nem dobra: o Lattes
+ * exige um só. Marcar outro integrante desmarca o de antes, como a pessoa
+ * faria com os dois botões; desmarcar o único não é uma troca possível.
+ */
+function swappedLead(work: XElement, member: XElement): boolean | undefined {
+  if (member.name !== 'INTEGRANTES-DO-PROJETO') return undefined;
+  if (getAttr(member, 'FLAG-RESPONSAVEL') === 'SIM') return false;
+  const team = flatten(work).find(
+    (e) => e.name === 'EQUIPE-DO-PROJETO' && e.children.includes(member),
+  );
+  for (const other of team?.children ?? []) {
+    if (other.kind === 'element' && other !== member) setAttr(other, 'FLAG-RESPONSAVEL', 'NAO');
+  }
+  setAttr(member, 'FLAG-RESPONSAVEL', 'SIM');
+  return true;
+}
+
 const base = parseXml(raw).root;
 const stats = new Map<string, { no: number; ok: number; reasons: Map<string, number> }>();
 flatten(base).forEach((el, index) => {
@@ -75,11 +94,17 @@ flatten(base).forEach((el, index) => {
   if (!spec || (only && !only.includes(el.name))) return;
   for (const a of el.attrs) {
     if (/^SEQUENCIA|^CODIGO|^NRO-ID|ORDEM/.test(a.name)) continue;
+    // Só para ler no editor: segue outro campo.
+    if (followsCountry(el.name, a.name)) continue;
     const work = parseXml(raw).root;
     const target = flatten(work)[index]!;
     const attr = target.attrs.find((x) => x.name === a.name)!;
-    if (!picked(target, a.name, a.value)) {
+    if (a.name === 'FLAG-RESPONSAVEL') {
+      if (!swappedLead(work, target)) continue;
+    } else if (!picked(target, a.name, a.value)) {
       attr.value = changed(a.name, a.value, spec.attributes.find((x) => x.name === a.name)?.enum);
+      // O que o editor muda junto ao gravar (AttributeField chama o mesmo).
+      applyLinkedAttrs(target, a.name);
     }
     const changes = diffDocuments(base, work);
     const plan = planChanges(

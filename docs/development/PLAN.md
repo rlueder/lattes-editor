@@ -77,10 +77,14 @@ no molde do livro. Prefácio: confirmar o `f_cod_tipo` da lista (1C).
 
 ### Fase 4: grades e o resto
 
-- Nacionalidade (só código): derivar do país de nacionalidade e deixar o campo
-  só para ler; E→B vira `f_pais_nacio=BRA`.
-- Coordenador do projeto (só código): escolha única de coordenador na equipe,
-  com o dono como padrão em projeto novo; recusa só quando ninguém fica.
+- Nacionalidade: feito em 18/10/2026. O país de nacionalidade virou lista
+  dos países do Lattes e leva a sigla e a nacionalidade (B para o Brasil, E
+  para os outros); a nacionalidade fica só para ler.
+- Coordenador do projeto: a regra é do Lattes (um e só um) e o editor já a
+  explica; a troca feita com os dois botões vai pelo conector. O script de
+  cobertura agora simula a troca em vez de virar um botão só (feito em
+  18/10/2026). Falta, se valer a pena, o coordenador no editor da equipe de
+  um projeto novo.
 - Potencial de inovação: pedir o texto (até 400) ao passar de não para sim e
   mandar com `f_sta_inovacao=S`.
 - Áreas de atuação: `f_area_l` como `l|c@…` e `f_privacidade` como `1@…`, com o

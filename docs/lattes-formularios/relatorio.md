@@ -135,6 +135,7 @@ ligação do formulário com os elementos do XML foi conferida.
 O mesmo conferido acima, para campos ligados ao atributo só pelo nome. O teste
 não cobra estas até a passada de edição observar a ligação.
 
+- DADOS-GERAIS@PAIS-DE-NACIONALIDADE: novas no Lattes: República Tcheca, República Tcheca
 - DADOS-GERAIS@SEXO: opções do Lattes sem valor conhecido no XSD (2 valores): M (), F ()
 - LICENCA@TIPO-LICENCA: opções do Lattes sem valor conhecido no XSD (1 valores): P (Paternidade), A (Adoção)
 - DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): O (Outrooutro)
