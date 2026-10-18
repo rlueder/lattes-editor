@@ -22,6 +22,7 @@ function menuItems(code: string): [string, string][] {
     ['Identificação', `prc_ident?f_cod=${code}&f_pcd=N`],
     ['Endereço', `prc_endereco?f_cod=${code}`],
     ['Idiomas', `pkg_idioma.lista?f_cod=${code}`],
+    ['Áreas de atuação', `prc_area_atuacao?f_cod=${code}`],
     ['Formação acadêmica/titulação', `pkg_formacao.lista?f_cod=${code}&f_tipo=FA`],
     ['Pós-doutorado e livre-docência', `pkg_formacao.lista?f_cod=${code}&f_tipo=AP`],
     ['Formação complementar', `pkg_formacao_compl.lista?f_cod=${code}`],

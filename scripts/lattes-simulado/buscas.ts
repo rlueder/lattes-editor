@@ -79,9 +79,26 @@ export const AREAS: [string, string][] = [
   ['90000005', 'Outra'],
 ];
 
-/** O script do menu com a tabela de áreas (só as grandes áreas). */
+/**
+ * Áreas abaixo de uma grande área, para escolher nas áreas de atuação:
+ * nomes da tabela do Lattes, códigos sintéticos de 8 dígitos.
+ */
+export const AREA_CHILDREN: Record<string, [string, string, [string, string][]][]> = {
+  '20000006': [
+    ['20200005', 'Genética', [['20201001', 'Genética Vegetal']]],
+    ['20300000', 'Botânica', []],
+  ],
+};
+
+/** O script do menu com a tabela de áreas (as grandes áreas e AREA_CHILDREN). */
 export function areaScript(): string {
-  const nodes = AREAS.map(([c, l]) => `{l:"${l}",n:1,c:"${c}"}`).join(',');
+  const nodes = AREAS.map(([c, l]) => {
+    const kids = (AREA_CHILDREN[c] ?? []).map(([cc, ll, subs]) => {
+      const leaves = subs.map(([sc, sl]) => `{l:"${sl}",n:3,c:"${sc}"}`).join(',');
+      return `{l:"${ll}",n:2,c:"${cc}"${subs.length ? `,b:[${leaves}]` : ''}}`;
+    });
+    return `{l:"${l}",n:1,c:"${c}"${kids.length ? `,b:[${kids.join(',')}]` : ''}}`;
+  }).join(',');
   return `<script>var areaDP = [${nodes}];</script>`;
 }
 

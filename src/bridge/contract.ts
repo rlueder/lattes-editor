@@ -80,8 +80,8 @@ type CreateKind =
 // A alteração no lugar de produções, orientações e bancas (production/) não
 // tem formulário aqui: a operação confere o formulário e as grades do próprio
 // item na hora de gravar.
-type GatedKind =
-  CreateKind | 'evento' | 'producao' | BiographicKind | DeleteOp['kind'] | ListEditKind;
+type OwnCheckKind = 'areas-atuacao' | 'evento' | 'producao';
+type GatedKind = CreateKind | OwnCheckKind | BiographicKind | DeleteOp['kind'] | ListEditKind;
 
 export interface Contract {
   /**

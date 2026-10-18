@@ -14,6 +14,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { join } from 'node:path';
 
 import { encodeLatin1 } from '../../src/model/latin1.ts';
+import { AREAS_ROUTES } from './areas.ts';
 import { ATUACAO_ROUTES } from './atuacao.ts';
 import { BUSCAS_ROUTES } from './buscas.ts';
 import { CENSO_ROUTES } from './censo.ts';
@@ -34,6 +35,7 @@ import { notFound, type Routes, type SimResponse } from './tipos.ts';
 
 export const ROUTES: Routes = {
   ...productionRoutes(),
+  ...AREAS_ROUTES,
   ...ATUACAO_ROUTES,
   ...BUSCAS_ROUTES,
   ...CENSO_ROUTES,

@@ -5,6 +5,7 @@
 // Roda dentro da aba do Lattes (sessão do próprio usuário) ou num teste, com
 // um Lattes falso: o acesso à rede e ao DOM entra pela porta (LattesPort).
 
+import { applyAreas, type AreasOp, isAreasOp } from './areas-atuacao.ts';
 import {
   BIOGRAPHIC_FULL_ENABLED,
   BIOGRAPHIC_SPECS,
@@ -89,6 +90,7 @@ export interface OpResult {
 
 type EditOp = Exclude<
   BridgeOp,
+  | AreasOp
   | BiographicOp
   | DeleteOp
   | EventoOp
@@ -264,6 +266,7 @@ export async function applyOp(
   if (op.kind === 'criar-atividade') return applyCreateAtividade(op, port);
   if (op.kind === 'criar-evento') return applyCreateEvento(op, port);
   if (isProductionOp(op)) return applyProduction(op, port);
+  if (isAreasOp(op)) return applyAreas(op, port);
   if (op.kind === 'criar-vinculo') return applyCreateVinculo(op, port);
   if (isDeleteOp(op)) return applyDelete(op, port);
   const result = (status: ResultStatus, detail: string): OpResult => ({

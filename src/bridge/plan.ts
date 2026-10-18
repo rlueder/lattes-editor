@@ -5,6 +5,7 @@
 
 import { type Change, resolvePath } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
+import { type AreasOp, EDIT_AREAS_ENABLED, planAreas } from './areas-atuacao.ts';
 import { atuacaoByHand, vinculoByHand } from './atuacao-by-hand.ts';
 import {
   BIOGRAPHIC_FULL_ENABLED,
@@ -84,6 +85,7 @@ export interface IdiomaOp extends OpBase {
 }
 
 export type BridgeOp =
+  | AreasOp
   | BiographicOp
   | CreateAtuacaoOp
   | CreateItemOp
@@ -110,6 +112,8 @@ export interface PlanOptions {
   biographicOps?: boolean;
   createItems?: boolean;
   deleteItems?: boolean;
+  /** Áreas de atuação (areas-atuacao.ts, EDIT_AREAS_ENABLED). */
+  editAreas?: boolean;
   /**
    * Convidado, participante, forma, tipo, natureza e cidade do evento
    * (EDIT_EVENTO_ENABLED). Sem valor, desligada, como editOuvinte.
@@ -173,6 +177,7 @@ export const GATED_EDITS: readonly {
     option: 'productionLookups',
   },
   { enabled: PROJECT_ORGAN_ENABLED, feature: 'orgao-projeto', option: 'projectOrgan' },
+  { enabled: EDIT_AREAS_ENABLED, feature: 'alterar-areas-atuacao', option: 'editAreas' },
 ];
 
 /**
@@ -279,6 +284,7 @@ export function planChange(
     biographicOps = false,
     createItems = false,
     deleteItems = false,
+    editAreas = false,
     editEvento = false,
     editFormacaoComplementar = false,
     editOuvinte = false,
@@ -305,6 +311,11 @@ export function planChange(
       );
     }
     return planned;
+  }
+  // Áreas de atuação: a lista inteira, com as outras mudanças da fila nela.
+  if (editAreas && change.element === 'AREA-DE-ATUACAO') {
+    const planned = planAreas(change, chain, label, siblings);
+    return 'reason' in planned ? unsupported(change, label, planned.reason) : planned;
   }
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.
   if (change.kind === 'novo' && createItems && change.element === 'ATUACAO-PROFISSIONAL') {
