@@ -25,6 +25,11 @@ const devChannel = process.argv.includes('--canal-dev');
 const out = `${root}${forStore ? 'dist-extension-loja' : devChannel ? 'dist-extension-dev' : 'dist-extension'}`;
 const pkg = JSON.parse(readFileSync(`${root}package.json`, 'utf8')) as { version: string };
 const version = process.env.LATTES_VERSAO || pkg.version;
+/**
+ * Marca desta montagem, no censo e no service worker: uma aba com o censo de
+ * uma montagem anterior recebe o novo em vez de seguir com o velho.
+ */
+const censusBuild = String(Date.now());
 /** O Chrome só aceita números na versão: 0.22.0-dev.42 vira 0.22.0.42 (o texto inteiro vai em version_name). */
 const manifestVersion = version.replace(/-[a-z]+\./i, '.');
 
@@ -68,6 +73,7 @@ for (const name of ENTRIES) {
     configFile: false,
     define: {
       __CANAL_DEV__: JSON.stringify(devChannel),
+      __CENSUS_BUILD__: JSON.stringify(censusBuild),
       __NATIVE_HOST__: JSON.stringify(NATIVE_HOST),
     },
     logLevel: 'warn',
@@ -91,7 +97,10 @@ if (devChannel) {
       outDir: out,
     },
     configFile: false,
-    define: { __CENSO_VERSAO__: JSON.stringify(version) },
+    define: {
+      __CENSO_VERSAO__: JSON.stringify(version),
+      __CENSUS_BUILD__: JSON.stringify(censusBuild),
+    },
     logLevel: 'warn',
   });
 }

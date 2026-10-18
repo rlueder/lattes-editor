@@ -73,6 +73,7 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(process.env.LATTES_VERSAO || pkg.version),
     __CANAL_DEV__: 'false',
+    __CENSUS_BUILD__: JSON.stringify('teste'),
   },
   plugins: [react(), inlineBundle()],
   test: {

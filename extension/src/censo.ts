@@ -40,6 +40,7 @@ import {
 } from './censo-test-items.ts';
 
 declare const __CENSO_VERSAO__: string;
+declare const __CENSUS_BUILD__: string;
 
 const base = () => new URL('/cvlattesweb/', location.origin);
 
@@ -275,6 +276,7 @@ async function removeTests(options: Parameters<typeof removeTestItems>[2] = {}) 
 (globalThis as unknown as { __lattesCensus: unknown }).__lattesCensus = {
   activities,
   authorShape,
+  build: __CENSUS_BUILD__,
   capture,
   captureAll,
   download,

@@ -107,3 +107,6 @@ declare const __NATIVE_HOST__: string;
 
 /** Montagem do canal Dev (scripts/build-extension.ts --canal-dev). */
 declare const __CANAL_DEV__: boolean;
+
+/** Marca da montagem do censo, a mesma no service worker (scripts/build-extension.ts). */
+declare const __CENSUS_BUILD__: string;

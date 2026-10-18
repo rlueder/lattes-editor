@@ -360,7 +360,8 @@ type CensusAction = 'andamento' | 'criar' | 'preparar' | 'remover';
 
 /**
  * Os itens de teste no mundo da página (test-items-run.ts, só no canal Dev):
- * injeta o censo uma vez por carregamento do menu e roda a ação pedida.
+ * injeta o censo uma vez por carregamento do menu (ou quando o da aba é de
+ * outra montagem) e roda a ação pedida.
  */
 export async function runCensusInPage(
   tabId: number,
@@ -369,11 +370,13 @@ export async function runCensusInPage(
 ): Promise<{ error?: string; result?: unknown }> {
   const long = <T>(start: () => Promise<T>) =>
     untilTabCloses(tabId, start, chrome.tabs.onRemoved, TEST_ITEMS_TIMEOUT_MS);
+  // Um censo de uma montagem anterior (a aba seguiu aberta enquanto a extensão
+  // recarregava) é trocado: antes ele ficava, e o lote corria com o código velho.
   const [loaded] = await long(() =>
     chrome.scripting.executeScript({
-      func: () =>
-        typeof (globalThis as { __lattesCensus?: { prepareTestItems?: unknown } }).__lattesCensus
-          ?.prepareTestItems === 'function',
+      args: [__CENSUS_BUILD__],
+      func: (build: string) =>
+        (globalThis as { __lattesCensus?: { build?: unknown } }).__lattesCensus?.build === build,
       target: { tabId },
       world: 'MAIN',
     }),
