@@ -26,15 +26,47 @@ export function silenceDialogs(w: Window): void {
   w.prompt = () => null;
 }
 
+/**
+ * A instituição como a janela de busca grava (atribuir da página da
+ * agência): o código com D vai sem ele para f_cod_inst2. O código de uma
+ * formação sua (13 caracteres, V...) não cabe na coluna da atuação (12).
+ */
+function institution(code: string, name: string): Record<string, string> {
+  const fake = /D/.test(code);
+  return {
+    f_cod_inst: fake ? '' : code,
+    f_cod_inst2: fake ? code.replace('D', '') : '',
+    f_inst: name,
+  };
+}
+
 /** Os campos de cada página que fill() não alcança; devolve o que gravou. */
 export function pageValues(w: Window, form: HTMLFormElement, job: TestJob): Record<string, string> {
   const page = w as PageWindow;
   const values: Record<string, string> = {};
   const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement | null;
 
+  const write = (fill: Record<string, string>) => {
+    for (const [n, v] of Object.entries(fill)) {
+      const el = field(n);
+      if (el) el.value = v;
+    }
+    Object.assign(values, fill);
+  };
+  const agency = context.agency;
+
+  // Fora da formação, o código de instituição copiado de uma formação sua
+  // não cabe (ORA-12899 na atuação, ORA-06502 no projeto): vale uma
+  // instituição da lista de agências do Lattes, com código de 12.
+  const code = field('f_cod_inst')?.value ?? '';
+  if (agency && code.length > 12 && !/FORMACAO/i.test(form.name)) {
+    write(institution(agency.code, agency.name));
+  }
+
   // Atuação: o vínculo sai da janela da página (sele). Escolhido direto, o
   // onchange de f_stavinc volta a escolha para o vazio, e o check() reclama.
   if (field('f_stavinc') && page.sele && page.dominio) {
+    if (agency) write(institution(agency.code, agency.name));
     page.seleDominio = true;
     const bond = BONDS[job.variant % BONDS.length]!;
     page.sele(bond);
@@ -59,7 +91,10 @@ export function pageValues(w: Window, form: HTMLFormElement, job: TestJob): Reco
   if (name && !name.value && /^(MB|MA|RV|RA)$/.test(nature)) {
     const journal = Object.values(context.donors).find((d) => d.f_seq_per);
     const fill: Record<string, string> = /A$/.test(nature)
-      ? { f_nme_agencia: context.agency?.name ?? `${TEST_MARK} ${job.tag}` }
+      ? {
+          ...(agency ? institution(agency.code, agency.name) : {}),
+          f_nme_agencia: agency?.name ?? `${TEST_MARK} ${job.tag}`,
+        }
       : {
           f_issn: journal?.f_issn ?? '',
           f_nme_agencia:
@@ -67,11 +102,8 @@ export function pageValues(w: Window, form: HTMLFormElement, job: TestJob): Reco
           f_seq_per: journal?.f_seq_per ?? '',
         };
     fill.f_nme_agencia_h = fill.f_nme_agencia!;
-    for (const [n, v] of Object.entries(fill)) {
-      const el = field(n);
-      if (el) el.value = v;
-    }
-    Object.assign(values, fill);
+    delete fill.f_inst;
+    write(fill);
   }
   return values;
 }
