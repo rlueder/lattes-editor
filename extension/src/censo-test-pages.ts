@@ -98,7 +98,10 @@ export function pageValues(w: Window, form: HTMLFormElement, job: TestJob): Reco
     (r) => !r.c,
   );
   if (holders && owner && !holders.some((r) => r.l)) {
-    holders.splice(0, holders.length, { c: '', l: owner.l, t: owner.t });
+    // A forma da linha que a própria página monta (c numérico: vazio dava
+    // ORA-06502 na conversão para número).
+    const row = { add: true, c: 0, l: owner.l, staValidado: 'N', t: owner.t, tit: 'n' };
+    holders.splice(0, holders.length, row);
     values.depositante = owner.l ?? '';
   }
   const dates = page.gridContatos?.getProvider();
