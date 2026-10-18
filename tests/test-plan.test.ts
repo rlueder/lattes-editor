@@ -113,6 +113,11 @@ describe('itens de teste: o que o check() das formações pede', () => {
     expect(consistencyFixes({ f_titulo: 'x' })).toEqual({});
   });
 
+  it('banca: o tipo acadêmico ou profissional só no mestrado', () => {
+    expect(consistencyFixes({ F_COD_PROD: 'A12', f_sub_prod: '34 ' })).toEqual({ f_sub_prod: '' });
+    expect(consistencyFixes({ F_COD_PROD: 'A11', f_sub_prod: '34 ' })).toEqual({});
+  });
+
   it('a instituição de uma formação sua vale também para o sanduíche e a cotutela', () => {
     const out = lookupValues({ f_cod_curso: '9', f_cod_inst: '7', f_inst: 'Universidade' });
     expect(out).toMatchObject({

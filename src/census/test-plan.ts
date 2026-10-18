@@ -207,6 +207,14 @@ export function consistencyFixes(
   if (values.f_status === 'S') Object.assign(fixes, { f_ano_fim: '', f_mes_fim: '' });
   // Projeto: o ano de fim só com a situação concluída.
   if (values.F_TPO_SITUACAO && values.F_TPO_SITUACAO !== 'C') fixes.F_ANO_FIM = '';
+  // Banca: o tipo (acadêmico ou profissional) só no mestrado (A11).
+  if (
+    'f_sub_prod' in values &&
+    /^A1/.test(values.F_COD_PROD ?? '') &&
+    values.F_COD_PROD !== 'A11'
+  ) {
+    fixes.f_sub_prod = '';
+  }
   // Projeto de empresa pede a empresa, por outra busca: o teste fica no "não".
   if ('f_tpo_pesq_emp' in values) fixes.f_tpo_pesq_emp = 'N';
   if ('F_BOLSA' in values) {
