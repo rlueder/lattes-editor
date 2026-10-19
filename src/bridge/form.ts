@@ -134,3 +134,38 @@ export function identityMismatches(
     .filter(([name, ok]) => !ok.some((v) => folded(v) === folded(value(name))))
     .map(([name]) => name);
 }
+
+/**
+ * Os valores que a página põe por script depois de carregar, num comando
+ * solto `$("[name=campo]").val("valor")`: as privacidades e o oculto da cor
+ * ou raça do formulário de identificação (lido em 18/10/2026) vêm assim, com
+ * o HTML no valor padrão. Lido só o HTML, o envio voltava os padrões
+ * (Privado virava Público). Só esse seletor exato, que a página usa fora de
+ * função; os $("input[name=…]") de dentro de cliques ficam de fora.
+ */
+export function scriptValues(html: string): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const m of html.matchAll(
+    /\$\(\s*"\[name=([A-Za-z0-9_]+)\]"\s*\)\.val\(\s*"([^"\\]*)"\s*\)/g,
+  )) {
+    out.set(m[1]!, m[2]!);
+  }
+  return out;
+}
+
+/** Os controles com os valores que a página põe por script (scriptValues). */
+export function withScriptValues(
+  html: string,
+  controls: FormControl[] | undefined,
+): FormControl[] | undefined {
+  if (!controls) return controls;
+  const values = scriptValues(html);
+  if (values.size === 0) return controls;
+  return controls.map((c) => {
+    const v = values.get(c.name);
+    if (v === undefined || c.type === 'radio' || c.type === 'checkbox') return c;
+    return c.type === 'select' || c.type.startsWith('select-')
+      ? { ...c, selected: [v], value: v }
+      : { ...c, value: v };
+  });
+}

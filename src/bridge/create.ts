@@ -24,6 +24,7 @@ import {
   pairValue,
   setPairs,
   successfulPairs,
+  withScriptValues,
 } from './form.ts';
 import { decodeHtmlEntities } from './html-text.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
@@ -249,7 +250,7 @@ function readPairs(
   html: string,
   form: string,
 ): { controls: FormControl[]; pairs: Pairs } {
-  const controls = port.readForm(html, form);
+  const controls = withScriptValues(html, port.readForm(html, form));
   if (!controls) {
     throw isLogonPage(html)
       ? new Stop('sessao', 'A sessão do Lattes caiu; entre de novo')

@@ -62,6 +62,7 @@ import {
   setPairs,
   successfulPairs,
   withCheckRules,
+  withScriptValues,
 } from './form.ts';
 import { resolveFormacao } from './formacao-lookups.ts';
 import { identGrids } from './ident-grids.ts';
@@ -206,7 +207,7 @@ async function readPairs(
   form: string,
 ): Promise<{ controls: FormControl[]; html: string; pairs: Pairs }> {
   const html = await getChecked(port, path);
-  const controls = port.readForm(html, form);
+  const controls = withScriptValues(html, port.readForm(html, form));
   if (!controls) {
     throw isLogonPage(html)
       ? new Stop('sessao', 'A sessão do Lattes expirou; entre de novo')

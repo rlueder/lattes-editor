@@ -14,6 +14,7 @@ import {
   type Pairs,
   pairValue,
   successfulPairs,
+  withScriptValues,
 } from './form.ts';
 import { decodeHtmlEntities } from './html-text.ts';
 import { isLogonPage } from './lattes-html.ts';
@@ -118,7 +119,7 @@ export async function readPairs(
   form: string,
 ): Promise<{ controls: FormControl[]; pairs: Pairs }> {
   const html = await getChecked(port, path);
-  const controls = port.readForm(html, form);
+  const controls = withScriptValues(html, port.readForm(html, form));
   if (!controls) throw new Stop('erro', `Formulário ${form} não encontrado`);
   return { controls, pairs: successfulPairs(controls) };
 }

@@ -15,6 +15,7 @@ import {
   pairValue,
   setPairs,
   successfulPairs,
+  withScriptValues,
 } from '../form.ts';
 import { findLinks, isLogonPage } from '../lattes-html.ts';
 import type { FieldValues } from '../plan.ts';
@@ -83,7 +84,7 @@ async function locate(
   const isRow = t.list.isRow ?? ((p: Record<string, string>) => Boolean(p.f_seq));
   for (const link of findLinks(listHtml, t.list.formProc).filter((l) => isRow(l.params))) {
     const html = await getChecked(port, link.path);
-    const controls = port.readForm(html, t.form.name);
+    const controls = withScriptValues(html, port.readForm(html, t.form.name));
     if (!controls) continue;
     if (
       folded(valueOf(controls, titleField)) === folded(op.match.title) &&
@@ -267,7 +268,7 @@ export async function applyProduction(
 
     // Releitura.
     const afterHtml = await getChecked(port, path);
-    const afterControls = port.readForm(afterHtml, t.form.name);
+    const afterControls = withScriptValues(afterHtml, port.readForm(afterHtml, t.form.name));
     const afterGrids = readGrids(afterHtml, t.grids);
     const afterOpaque = readOpaque(afterHtml, t.opaqueGrids ?? []);
     if (!afterControls || 'missing' in afterGrids || 'missing' in afterOpaque) {

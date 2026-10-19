@@ -43,7 +43,13 @@ import {
   selectEntries,
   Stop,
 } from './create-shared.ts';
-import { encodeLatin1Form, pairValue, setPairs, successfulPairs } from './form.ts';
+import {
+  encodeLatin1Form,
+  pairValue,
+  setPairs,
+  successfulPairs,
+  withScriptValues,
+} from './form.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
 import { findLinks, isLogonPage, type LattesLink } from './lattes-html.ts';
 import type { FieldValues } from './plan.ts';
@@ -270,7 +276,7 @@ export async function applyCreateGeneral(op: CreateGeneralOp, port: LattesPort):
     const inclusion = findLinks(listaHtml, spec.proc).find((l) => !l.params.f_seq);
     if (!inclusion) throw new Stop('erro', 'Inclusão não encontrada na lista do Lattes');
     const formHtml = await getChecked(port, inclusion.path);
-    const controls = port.readForm(formHtml, spec.name);
+    const controls = withScriptValues(formHtml, port.readForm(formHtml, spec.name));
     if (!controls) throw new Stop('erro', `Formulário ${spec.name} não encontrado`);
     const form = { controls, pairs: successfulPairs(controls) };
     if (pairValue(form.pairs, 'f_ctr') !== 'I') {

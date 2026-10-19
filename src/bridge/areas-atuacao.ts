@@ -17,7 +17,7 @@ import { foldText } from '../model/fold-text.ts';
 import { childElements, element, getAttr, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
 import { getChecked, Stop } from './create-shared.ts';
-import { encodeLatin1Form, setPairs, successfulPairs } from './form.ts';
+import { encodeLatin1Form, setPairs, successfulPairs, withScriptValues } from './form.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
 import { type AreaNode, parseAreaTree } from './lattes-lists.ts';
 import type { OpBase } from './plan.ts';
@@ -166,7 +166,7 @@ export async function applyAreas(op: AreasOp, port: LattesPort): Promise<OpResul
     const link = findLinks(menu, 'prc_area_atuacao')[0];
     if (!link) return result('erro', 'Áreas de atuação não encontradas no menu do Lattes');
     const html = await getChecked(port, link.path);
-    const controls = port.readForm(html, 'GN_AREA_ATU');
+    const controls = withScriptValues(html, port.readForm(html, 'GN_AREA_ATU'));
     const rows = pageRows(html);
     if (!controls || !rows) {
       return result(
