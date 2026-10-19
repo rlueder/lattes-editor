@@ -317,6 +317,10 @@ function post(req: SimRequest, state: LattesState): SimResponse {
   }
   const placed = bySeq(state, req.get('f_seq_proj'));
   if (!placed) return html(h.page('Projeto', '<p>Registro não encontrado.</p>'));
+  // Como o Lattes real (18/10/2026): sem o XML das instituições, recusa a alteração.
+  if (ctr === 'U' && !(req.get('f_instituicoes') ?? '').startsWith('<root>')) {
+    return html(h.page('Projeto', '<p>Erro. ORA-19032: Era esperado o identificador de XML</p>'));
+  }
   if (ctr === 'E') {
     const atividades = childElements(placed.atuacao, 'ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO')[0]!;
     state.remove(atividades, placed.participacao);

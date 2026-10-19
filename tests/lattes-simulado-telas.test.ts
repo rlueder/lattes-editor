@@ -165,7 +165,7 @@ describe('Lattes simulado: projetos e a busca de órgão', () => {
     expect(field(form, 'GN_PROJETO', 'f_cod_inst')?.value).toBe('000000000001');
     await lattes.port.post(
       'PKG_PROJETO.FORM',
-      `f_ctr=U&f_cod=${code}&f_seq_proj=${row.params.f_seq_proj}&f_titulo=Novo+nome&F_TPO_NATUREZA=E&F_TPO_SITUACAO=C&F_ANO_INIC=2026&F_ANO_FIM=2026`,
+      `f_ctr=U&f_cod=${code}&f_seq_proj=${row.params.f_seq_proj}&f_titulo=Novo+nome&F_TPO_NATUREZA=E&F_TPO_SITUACAO=C&F_ANO_INIC=2026&F_ANO_FIM=2026&f_instituicoes=%3Croot%3E%3C%2Froot%3E`,
     );
     expect(
       all(lattes.state.root, 'PROJETO-DE-PESQUISA').map((p) => getAttr(p, 'SITUACAO')),

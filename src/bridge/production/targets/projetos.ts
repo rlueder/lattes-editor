@@ -7,6 +7,7 @@
 // no Lattes real antes de valer.
 
 import { PARTICIPATION_PERIOD } from '../../atuacao-by-hand.ts';
+import { readProvider } from '../grids.ts';
 import { byTable } from '../mappers.ts';
 import type { ProductionTarget } from '../types.ts';
 
@@ -43,6 +44,23 @@ const innovation = (v: string, side?: 'after' | 'before'): string | undefined =>
 const PROJECT = 'PROJETO-DE-PESQUISA';
 
 /**
+ * O f_instituicoes que o configurarInstituicoes() da página monta das
+ * instituições do projeto (titularInstProvider), lido em 18/10/2026: sem ele,
+ * o Lattes recusava o envio inteiro (ORA-19032).
+ */
+function projectInstitutions(html: string): Record<string, string> | undefined {
+  const rows = readProvider(html, 'titularInstProvider');
+  if (!rows) return undefined;
+  const items = rows
+    .filter((r) => r.l !== undefined)
+    .map(
+      (r) => `<item><cod>${String(r.c)}</cod><tipo_inst>${String(r.tipoInst)}</tipo_inst></item>`,
+    )
+    .join('');
+  return { f_instituicoes: `<root>${items}</root>` };
+}
+
+/**
  * Projeto (GN_PROJETO, POST PKG_PROJETO.FORM). A lista é a da natureza
  * (pkg_projeto.lista com f_cod_tipo P, D, E, N ou O, links do menu observados
  * em 13/10/2026). Inferido: o link de cada linha da lista (a lista do
@@ -74,6 +92,7 @@ const PROJETO: ProductionTarget = {
     order: 'ORDEM-DE-INTEGRACAO',
     sent: ['NOME-COMPLETO', 'ORDEM-DE-INTEGRACAO', 'FLAG-RESPONSAVEL'],
   },
+  built: projectInstitutions,
   byHand: {
     'FINANCIADOR-DO-PROJETO':
       'Financiador vai à mão: os valores de cada linha da grade de financiadores vêm de uma janela que não foi lida',

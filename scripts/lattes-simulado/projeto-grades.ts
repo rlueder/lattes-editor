@@ -63,6 +63,8 @@ export function projectGridScripts(projeto: XElement | undefined): string {
   };
   return [
     provider('var autorProvider', members),
+    // As instituições do projeto, que o configurarInstituicoes() serializa em f_instituicoes.
+    '<script>\nvar titularInstProvider = \n[{}];\n</script>',
     table('grid2', 'FINANCIADORES-DO-PROJETO', 'NOME-INSTITUICAO'),
     table('grid3', 'PRODUCOES-CT-DO-PROJETO', 'TITULO-DA-PRODUCAO-CT'),
     table('grid4', 'ORIENTACOES', 'TITULO-ORIENTACAO'),

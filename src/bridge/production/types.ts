@@ -80,6 +80,12 @@ export interface ProductionTarget {
   >;
   /** O elemento da grade de autores, quando não é AUTORES (grids.ts). */
   authors?: AuthorPart;
+  /**
+   * Campos que o check() da página monta antes do envio a partir de vetores
+   * dela (o f_instituicoes do projeto): o conector os monta igual, da página
+   * lida; undefined quando a página não traz o vetor, e nada vai.
+   */
+  built?: (html: string) => Record<string, string> | undefined;
   /** Partes do item que ficam à mão, com o motivo (elemento → motivo). */
   byHand?: Record<string, string>;
   /**

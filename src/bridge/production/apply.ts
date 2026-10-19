@@ -256,6 +256,14 @@ export async function applyProduction(
       chosenCheck = { ...chosenCheck, ...resolved.check };
       organShown = resolved.shown;
     }
+    // O que o check() da página monta antes do envio (target.built).
+    const built = t.built ? t.built(html) : {};
+    if (!built) {
+      return result('erro', 'A página do Lattes não trouxe o que o envio monta; nada foi enviado');
+    }
+    chosen = { ...built, ...chosen };
+    // A página carrega esses campos vazios: a releitura não os confere.
+    for (const k of Object.keys(built)) chosenCheck[k] = null;
     posted = true;
     const response = await port.post(
       t.form.action,
