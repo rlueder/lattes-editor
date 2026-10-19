@@ -26,7 +26,10 @@ await build({
     outDir: `${root}dist-censo`,
   },
   configFile: false,
-  define: { __CENSO_VERSAO__: JSON.stringify(process.env.LATTES_VERSAO || pkg.version) },
+  define: {
+    __CENSO_VERSAO__: JSON.stringify(process.env.LATTES_VERSAO || pkg.version),
+    __CENSUS_BUILD__: JSON.stringify(String(Date.now())),
+  },
   logLevel: 'warn',
 });
 console.log('dist-censo/censo-lattes.js');

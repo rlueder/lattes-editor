@@ -5,7 +5,14 @@
 
 import { type Change, resolvePath } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
-import { BIOGRAPHIC_OPS_ENABLED, type BiographicOp, planBiographic } from './biographic.ts';
+import { type AreasOp, EDIT_AREAS_ENABLED, planAreas } from './areas-atuacao.ts';
+import { atuacaoByHand, vinculoByHand } from './atuacao-by-hand.ts';
+import {
+  BIOGRAPHIC_FULL_ENABLED,
+  BIOGRAPHIC_OPS_ENABLED,
+  type BiographicOp,
+  planBiographic,
+} from './biographic.ts';
 import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
 import { type CreateItemOp, planCreateItem } from './create-items.ts';
 import { DELETE_ITEMS_ENABLED, type DeleteOp, planDelete } from './delete.ts';
@@ -22,7 +29,18 @@ import {
   type ListEditOp,
   planListEdit,
 } from './edit-lists.ts';
+import { idiomaHandReason } from './hand-reasons.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
+import { manualReason } from './production/manual.ts';
+import { isOrganChange } from './production/organ.ts';
+import {
+  EDIT_PRODUCTION_ENABLED,
+  isProductionChange,
+  planProduction,
+  PRODUCTION_LOOKUPS_ENABLED,
+  type ProductionOp,
+  PROJECT_ORGAN_ENABLED,
+} from './production/plan.ts';
 import { stavincFromFlag } from './vinculo-flag.ts';
 
 /** Valor de campo; null tira o campo do envio (caixa desmarcada). */
@@ -67,12 +85,14 @@ export interface IdiomaOp extends OpBase {
 }
 
 export type BridgeOp =
+  | AreasOp
   | BiographicOp
   | CreateAtuacaoOp
   | CreateItemOp
   | DeleteOp
   | EventoOp
   | IdiomaOp
+  | ProductionOp
   | ListEditOp
   | ResumoOp
   | VinculoOp;
@@ -83,9 +103,17 @@ export type BridgeOp =
  * chave da montagem e a capacidade da extensão.
  */
 export interface PlanOptions {
+  /**
+   * Formação pelas buscas, pós-doutorado, livre-docência e outras
+   * informações relevantes (biographic.ts, BIOGRAPHIC_FULL_ENABLED). Sem
+   * valor, desligada, como as outras.
+   */
+  biographicFull?: boolean;
   biographicOps?: boolean;
   createItems?: boolean;
   deleteItems?: boolean;
+  /** Áreas de atuação (areas-atuacao.ts, EDIT_AREAS_ENABLED). */
+  editAreas?: boolean;
   /**
    * Convidado, participante, forma, tipo, natureza e cidade do evento
    * (EDIT_EVENTO_ENABLED). Sem valor, desligada, como editOuvinte.
@@ -102,6 +130,14 @@ export interface PlanOptions {
   editOuvinte?: boolean;
   /** Prêmios e títulos (edit-lists.ts, EDIT_PREMIO_ENABLED). */
   editPremio?: boolean;
+  /** Alterar no lugar produções, orientações e bancas (production/). */
+  editProduction?: boolean;
+  /** Textos que o envio pede e o XML não guarda, por Change.key (send-extras.ts no editor). */
+  extras?: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  /** Instituição, curso e agência de orientações e bancas pelas buscas (production/lookups.ts). */
+  productionLookups?: boolean;
+  /** Órgão e unidade do projeto pela janela de órgãos (production/organ.ts). */
+  projectOrgan?: boolean;
 }
 
 /**
@@ -123,6 +159,11 @@ export const GATED_EDITS: readonly {
   { enabled: CREATE_ITEMS_ENABLED, feature: 'incluir-itens', option: 'createItems' },
   { enabled: DELETE_ITEMS_ENABLED, feature: 'excluir-itens', option: 'deleteItems' },
   { enabled: BIOGRAPHIC_OPS_ENABLED, feature: 'alterar-dados-gerais', option: 'biographicOps' },
+  {
+    enabled: BIOGRAPHIC_FULL_ENABLED,
+    feature: 'alterar-dados-gerais-completo',
+    option: 'biographicFull',
+  },
   { enabled: EDIT_OUVINTE_ENABLED, feature: 'alterar-evento', option: 'editOuvinte' },
   { enabled: EDIT_EVENTO_ENABLED, feature: 'alterar-evento-completo', option: 'editEvento' },
   { enabled: EDIT_PREMIO_ENABLED, feature: 'alterar-premio', option: 'editPremio' },
@@ -131,6 +172,14 @@ export const GATED_EDITS: readonly {
     feature: 'alterar-formacao-complementar',
     option: 'editFormacaoComplementar',
   },
+  { enabled: EDIT_PRODUCTION_ENABLED, feature: 'alterar-producao', option: 'editProduction' },
+  {
+    enabled: PRODUCTION_LOOKUPS_ENABLED,
+    feature: 'buscas-producao',
+    option: 'productionLookups',
+  },
+  { enabled: PROJECT_ORGAN_ENABLED, feature: 'orgao-projeto', option: 'projectOrgan' },
+  { enabled: EDIT_AREAS_ENABLED, feature: 'alterar-areas-atuacao', option: 'editAreas' },
 ];
 
 /**
@@ -233,16 +282,44 @@ export function planChange(
   chain: XElement[],
   label: string,
   {
+    biographicFull = false,
     biographicOps = false,
     createItems = false,
     deleteItems = false,
+    editAreas = false,
     editEvento = false,
     editFormacaoComplementar = false,
     editOuvinte = false,
     editPremio = false,
+    editProduction = false,
+    extras = {},
+    productionLookups = false,
+    projectOrgan = false,
   }: PlanOptions = {},
   siblings: readonly Change[] = [],
 ): BridgeOp | Unsupported {
+  // Produção, orientação ou banca que já está no Lattes (production/).
+  // Sem a janela de órgãos na extensão, o órgão do projeto fica com o motivo de sempre.
+  const organOff = !projectOrgan && isOrganChange(change);
+  if (editProduction && !organOff && isProductionChange(change, chain)) {
+    const planned = planProduction(change, chain, label, siblings, extras);
+    if ('reason' in planned) return unsupported(change, label, planned.reason);
+    // Uma extensão sem as buscas mandaria o formulário sem os ocultos, e a
+    // releitura acharia tudo igual: nunca vai a ela.
+    if (planned.lookups && !productionLookups) {
+      return unsupported(
+        change,
+        label,
+        'Instituição, curso e agência pelas buscas do Lattes: desligado nesta montagem',
+      );
+    }
+    return planned;
+  }
+  // Áreas de atuação: a lista inteira, com as outras mudanças da fila nela.
+  if (editAreas && change.element === 'AREA-DE-ATUACAO') {
+    const planned = planAreas(change, chain, label, siblings);
+    return 'reason' in planned ? unsupported(change, label, planned.reason) : planned;
+  }
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.
   if (change.kind === 'novo' && createItems && change.element === 'ATUACAO-PROFISSIONAL') {
     const el = chain.at(-1);
@@ -258,6 +335,14 @@ export function planChange(
   if (created) return 'reason' in created ? unsupported(change, label, created.reason) : created;
   // Exclusão: desligada até o teste no Lattes real (delete.ts).
   if (change.kind === 'removido') return planDelete(change, chain, label, deleteItems);
+  // Palavras-chave e outras partes novas num evento: o formulário não tem.
+  const eventPart =
+    change.kind === 'novo' && (editOuvinte || editEvento)
+      ? planEvento(change, chain, label, { full: editEvento, siblings })
+      : undefined;
+  if (eventPart) {
+    return 'reason' in eventPart ? unsupported(change, label, eventPart.reason) : eventPart;
+  }
   if (change.kind !== 'alterado') {
     return unsupported(change, label, 'Incluir ou excluir pelo conector: não suportado ainda');
   }
@@ -273,6 +358,8 @@ export function planChange(
     if (atuacao?.name !== 'ATUACAO-PROFISSIONAL' || !seqAtiv || !seqHist) {
       return unsupported(change, label, 'Vínculo sem número de sequência');
     }
+    const byHand = vinculoByHand(change);
+    if (byHand) return unsupported(change, label, byHand);
     const { expect, missing, set } = mapFields(change, VINCULO_FIELDS);
     if (missing.length > 0) {
       return unsupported(change, label, `Campos não suportados ainda: ${missing.join(', ')}`);
@@ -315,6 +402,8 @@ export function planChange(
     const code = getAttr(el, 'IDIOMA');
     if (!code) return unsupported(change, label, 'Idioma sem código');
     const { expect, missing, set } = idiomaFields(change);
+    const hand = idiomaHandReason(change);
+    if (hand) return unsupported(change, label, hand);
     if (missing.length > 0) {
       return unsupported(change, label, `Campos não suportados ainda: ${missing.join(', ')}`);
     }
@@ -343,7 +432,9 @@ export function planChange(
     return 'reason' in listEdit ? unsupported(change, label, listEdit.reason) : listEdit;
 
   // Formação, endereço e identificação: desligados até o teste no Lattes real (biographic.ts).
-  const biographic = biographicOps ? planBiographic(change, chain, label) : undefined;
+  const biographic = biographicOps
+    ? planBiographic(change, chain, label, biographicFull)
+    : undefined;
   if (biographic) {
     return 'reason' in biographic ? unsupported(change, label, biographic.reason) : biographic;
   }
@@ -355,7 +446,11 @@ export function planChange(
       : undefined;
   if (evento) return 'reason' in evento ? unsupported(change, label, evento.reason) : evento;
 
-  return unsupported(change, label, 'Formulário não suportado ainda');
+  // Atuação, atividades, participação em projeto e áreas de atuação
+  // (atuacao-by-hand.ts), antes do motivo genérico de cada família (manual.ts).
+  const atuacao = atuacaoByHand(change, chain);
+  if (atuacao) return unsupported(change, label, atuacao);
+  return unsupported(change, label, manualReason(chain) ?? 'Formulário não suportado ainda');
 }
 
 export function isOp(p: BridgeOp | Unsupported): p is BridgeOp {
@@ -367,6 +462,12 @@ export function planChanges(
   entries: { change: Change; itemTitle: string }[],
   root: XElement,
   options: PlanOptions = {},
+  /**
+   * As opções vêm das capacidades da extensão ligada (planOptionsFor): o que
+   * uma extensão em dia enviaria diz para atualizar a extensão, e não o motivo
+   * do caminho desligado.
+   */
+  fromExtension = false,
 ): { ops: BridgeOp[]; unsupported: Unsupported[] } {
   const ops: BridgeOp[] = [];
   const skipped: Unsupported[] = [];
@@ -375,9 +476,21 @@ export function planChanges(
   const all = entries.map((e) => e.change);
   for (const { change, itemTitle } of entries) {
     const label = itemTitle ? `${change.form} · ${itemTitle}` : change.form;
-    const planned = planChange(change, resolvePath(root, change.path), label, options, all);
+    const chain = resolvePath(root, change.path);
+    const planned = planChange(change, chain, label, options, all);
     if (isOp(planned)) ops.push(planned);
-    else skipped.push(planned);
+    else if (fromExtension && isOp(planChange(change, chain, label, ALL_ON, all))) {
+      // O editor sabe enviar; quem não sabe é a extensão instalada.
+      skipped.push({ ...planned, reason: OLD_EXTENSION });
+    } else skipped.push(planned);
   }
   return { ops, unsupported: skipped };
 }
+
+/** Todas as alterações ligadas, como numa extensão em dia. */
+export const ALL_ON: PlanOptions = Object.fromEntries(
+  GATED_EDITS.map((g) => [g.option, g.enabled]),
+);
+
+export const OLD_EXTENSION =
+  'A extensão do conector instalada ainda não envia esta alteração: atualize a extensão e recarregue esta página';

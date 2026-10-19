@@ -60,7 +60,7 @@ function plan(edit: (root: XElement) => void, enabled = true, xml = XML) {
   const working = parseXml(xml).root;
   edit(working);
   const entries = diffDocuments(original, working).map((change) => ({ change, itemTitle: 'X' }));
-  return planChanges(entries, working, { biographicOps: enabled });
+  return planChanges(entries, working, { biographicFull: enabled, biographicOps: enabled });
 }
 
 function onlyOp(edit: (root: XElement) => void, xml = XML): BiographicOp {
@@ -166,10 +166,10 @@ describe('dados gerais: formação acadêmica', () => {
   it('recusa o que não sabe fazer, com o motivo', () => {
     const reasons = (edit: (root: XElement) => void) => plan(edit).unsupported.map((u) => u.reason);
     expect(reasons(editMestrado({ 'NOME-INSTITUICAO': 'Outra' }))).toEqual([
-      expect.stringMatching(/^Campos não suportados ainda: /),
+      expect.stringMatching(/^A instituição só muda pela busca do Lattes/),
     ]);
     expect(reasons(editMestrado({ 'STATUS-DO-CURSO': 'TRANCADO' }))).toEqual([
-      'Situação do curso não mapeada: TRANCADO',
+      expect.stringMatching(/^Valor que o formulário de mestrado do Lattes não tem: /),
     ]);
     expect(
       reasons((root) => {
@@ -177,11 +177,17 @@ describe('dados gerais: formação acadêmica', () => {
         setAttr(el, 'NIVEL', '');
         setAttr(el, 'ANO-DE-CONCLUSAO', '2007');
       }),
-    ).toEqual([expect.stringMatching(/sem número de sequência ou nível/)]);
-    // Pós-doutorado fica na outra lista (f_tipo=AP), que não foi lida.
-    expect(
-      reasons((root) => setAttr(find(root, 'POS-DOUTORADO'), 'ANO-DE-CONCLUSAO', '2012')),
-    ).toEqual(['Formulário não suportado ainda']);
+    ).toEqual([expect.stringMatching(/^O nível é o tipo da formação no Lattes/)]);
+    // Pós-doutorado: a outra lista (f_tipo=AP), com o nível do formulário.
+    const pos = plan((root) => setAttr(find(root, 'POS-DOUTORADO'), 'ANO-DE-CONCLUSAO', '2012'));
+    expect(pos.unsupported).toEqual([]);
+    expect(pos.ops[0]).toMatchObject({
+      expect: { f_ano_fim: '', f_nivel: '5', f_tipo: 'AP' },
+      kind: 'formacao',
+      list: 'AP',
+      seq: '9',
+      set: { f_ano_fim: '2012' },
+    });
   });
 });
 
@@ -229,18 +235,25 @@ describe('dados gerais: endereço e identificação', () => {
     expect(titles.ops).toEqual([]);
   });
 
-  it('país, instituição e preferência de endereço seguem à mão', () => {
-    const reasons = plan((root) => {
+  it('país e preferência de endereço vão; a instituição do profissional fica à mão', () => {
+    const planned = plan((root) => {
       setAttr(find(root, 'ENDERECO-RESIDENCIAL'), 'PAIS', 'Portugal');
       setAttr(find(root, 'ENDERECO'), 'FLAG-DE-PREFERENCIA', 'ENDERECO_RESIDENCIAL');
-    }).unsupported.map((u) => u.reason);
-    expect(reasons.sort()).toEqual([
-      expect.stringMatching(/^Campos não suportados ainda: /),
-      'Formulário não suportado ainda',
-    ]);
+    });
+    expect(planned.unsupported).toEqual([]);
+    expect(planned.ops.map((o) => [o.set, o.expect])).toEqual(
+      expect.arrayContaining([
+        [{ f_pais_r: 'POR' }, { f_pais_r: 'BRA' }],
+        [{ f_end_corr: 'R' }, { f_end_corr: 'I' }],
+      ]),
+    );
+    const reasons = plan((root) =>
+      setAttr(find(root, 'ENDERECO-PROFISSIONAL'), 'NOME-INSTITUICAO-EMPRESA', 'Outra'),
+    ).unsupported.map((u) => u.reason);
+    expect(reasons).toEqual([expect.stringMatching(/só se escolhem pela busca do Lattes/)]);
   });
 
-  it('identificação leva só o nome, conferindo a nacionalidade', () => {
+  it('identificação leva o nome e o sexo, conferindo a nacionalidade', () => {
     const op = onlyOp((root) => setAttr(find(root, 'DADOS-GERAIS'), 'NOME-COMPLETO', 'Outro Nome'));
     expect(op).toMatchObject({
       expect: { f_nacionalidade: 'B', f_nome: 'Pessoa de Teste' },
@@ -258,9 +271,12 @@ describe('dados gerais: endereço e identificação', () => {
         ).unsupported.map((u) => u.reason),
       ).toEqual(['Nacionalidade sem código B ou E no XML: não dá para conferir']);
     }
-    expect(
-      plan((root) => setAttr(find(root, 'DADOS-GERAIS'), 'SEXO', 'FEMININO')).unsupported,
-    ).toEqual([expect.objectContaining({ reason: expect.stringMatching(/não suportados ainda/) })]);
+    expect(onlyOp((root) => setAttr(find(root, 'DADOS-GERAIS'), 'SEXO', 'FEMININO'))).toMatchObject(
+      {
+        expect: { f_sexo: 'M' },
+        set: { f_sexo: 'F' },
+      },
+    );
   });
 
   it('só planeja alteração de um elemento que ainda existe', () => {
@@ -435,7 +451,7 @@ describe('dados gerais no Lattes simulado', () => {
     });
     expect(await applyOp(op, side.port)).toMatchObject({
       detail: 'Outros campos mudaram no Lattes: Logradouro (profissional)',
-      status: 'erro',
+      status: 'divergente',
     });
     const noMenu = { ...side.port, menuHtml: () => '<p>menu</p>' };
     expect(await applyOp(op, noMenu)).toMatchObject({
@@ -466,7 +482,7 @@ describe('dados gerais no Lattes simulado', () => {
     const empty = await lattesFor();
     setAttr(inState(empty, 'DADOS-GERAIS'), 'NACIONALIDADE', '');
     expect(await applyOp(op, empty.port)).toMatchObject({
-      detail: expect.stringMatching(/f_nacionalidade/),
+      detail: expect.stringMatching(/Nacionalidade/),
       status: 'divergente',
     });
     expect(posts(empty)).toEqual([]);
@@ -521,8 +537,11 @@ describe('dados gerais no contrato', () => {
     const spec = BIOGRAPHIC_SPECS[kind].fields;
     expect(Object.keys(spec).sort()).toEqual(observed);
     for (const field of form.fields) {
+      // Nome que aparece também como oculto (f_pcd): o censo não diz qual vem
+      // primeiro, e no Lattes real é o oculto (verificação de 16/10/2026).
+      const type = form.hidden.includes(field.name) ? 'hidden' : field.type;
       expect(spec[field.name], field.name).toMatchObject({
-        type: field.type,
+        type,
         ...(field.maxLength ? { maxLength: field.maxLength } : {}),
       });
     }

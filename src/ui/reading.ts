@@ -9,7 +9,7 @@ import { enumLabel } from '../labels/labels.ts';
 import { formatIssn } from '../model/standard-numbers.ts';
 import type { XElement } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
-import { codeValueLabel, flagLabel, isBooleanAttr } from './field-kind.ts';
+import { codeValueLabel, enumElsewhere, flagLabel, isBooleanAttr } from './field-kind.ts';
 import { displayLattesDate, isLattesDateAttr } from './lattes-date.ts';
 
 export type ReadingKeyAction = 'edit' | 'close';
@@ -73,18 +73,6 @@ export function paragraphs(text: string): string[] {
     .split(/\r?\n/)
     .map((p) => p.trim())
     .filter(Boolean);
-}
-
-/**
- * O schema não enumera alguns atributos que outros elementos enumeram com o
- * mesmo nome (o STATUS-DO-CURSO do pós-doutorado é texto livre, mas vem
- * "CONCLUIDO" como nos outros níveis): o valor que é de um desses enumerados
- * se lê pelo mesmo rótulo.
- */
-function enumElsewhere(attr: string, value: string): boolean {
-  return Object.values(lattesSchema.elements).some((e) =>
-    e.attributes.some((a) => a.name === attr && a.enum?.includes(value)),
-  );
 }
 
 /** Valor de um atributo como se lê: "Feminino", "03/05/1986", "Sim". */

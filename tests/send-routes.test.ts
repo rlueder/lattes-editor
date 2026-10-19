@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  initialTab,
+  lattesLacks,
   requestTab,
   splitByRoute,
+  splitPending,
   takeRequestedTab,
   toSendCount,
 } from '../src/import-export/send-routes.ts';
@@ -53,16 +54,38 @@ describe('enviar ao Lattes: como cada coisa vai', () => {
     expect(toSendCount(0, [])).toBe(0);
   });
 
-  it('abre em "A enviar", ou no registro quando não há nada esperando', () => {
-    expect(initialTab(3, 5)).toBe('a-enviar');
-    expect(initialTab(0, 5)).toBe('enviado');
-    expect(initialTab(0, 0)).toBe('a-enviar');
-  });
-
   it('a aba pedida vale para uma abertura só', () => {
     expect(takeRequestedTab()).toBeUndefined();
     requestTab('enviado');
     expect(takeRequestedTab()).toBe('enviado');
     expect(takeRequestedTab()).toBeUndefined();
+  });
+});
+
+describe('enviar ao Lattes: o que fica fora do conector', () => {
+  it('reconhece o motivo que é do Lattes, e não do editor', () => {
+    expect(lattesLacks('O formulário de eventos do Lattes não tem: Idioma')).toBe(true);
+    expect(lattesLacks('País que o formulário do Lattes não tem: Atlântida')).toBe(true);
+    expect(lattesLacks('Forma de participação que o Lattes não tem: Outra')).toBe(true);
+    expect(lattesLacks('Divulgação científica: o formulário do Lattes não volta para vazio')).toBe(
+      true,
+    );
+    expect(lattesLacks('O Lattes não aceita título vazio')).toBe(true);
+    expect(lattesLacks('Campos não suportados ainda: Nível')).toBe(false);
+    expect(lattesLacks('Formulário não suportado ainda')).toBe(false);
+    expect(lattesLacks('')).toBe(false);
+  });
+
+  it('separa por motivo; sem motivo, fica com o editor', () => {
+    const reasons = new Map([
+      ['idioma', 'O formulário de eventos do Lattes não tem: Idioma'],
+      ['nivel', 'Campos não suportados ainda: Nível'],
+    ]);
+    const { editor, lattes } = splitPending(
+      [group('Eventos', ['idioma', 'nivel', 'sem-motivo'])],
+      reasons,
+    );
+    expect(lattes[0]?.entries.map((e) => e.change.key)).toEqual(['idioma']);
+    expect(editor[0]?.entries.map((e) => e.change.key)).toEqual(['nivel', 'sem-motivo']);
   });
 });

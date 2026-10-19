@@ -13,6 +13,7 @@ import {
   type ListsPort,
   readCourses,
   readLists,
+  readOrgans,
   searchInstitutions,
 } from '../../src/bridge/lattes-lists.ts';
 import { lattesStatusFrom } from '../../src/bridge/lattes-status.ts';
@@ -194,7 +195,8 @@ interface ExportReply {
 (globalThis as unknown as { __conector: unknown }).__conector = {
   apply: (op: BridgeOp) => applyOp(op, port),
   // Só leituras: os cursos de uma instituição num nível da formação.
-  cursos: (institution: string, level: string) => readCourses(listsPort, institution, level),
+  cursos: (institution: string, level: string, program?: 'FORM' | 'TESE', staArea?: string) =>
+    readCourses(listsPort, institution, level, program, staArea),
   // Só leitura: a página de conferência, com o que ainda não foi enviado ao
   // CNPq (docs/lattes_internals.md, seção 10). O código do currículo vem do
   // menu da aba.
@@ -295,6 +297,8 @@ interface ExportReply {
     searchInstitutions(listsPort, query, level || undefined),
   // Só leituras: a tabela de áreas do menu e a lista de agências.
   listas: () => readLists(listsPort),
+  // Só leitura: os órgãos de uma instituição, ou as unidades de um órgão.
+  orgaos: (institution: string, parent?: string) => readOrgans(listsPort, institution, parent),
   // Enviar ao CNPq (src/bridge/publish.ts), só se a sessão desta aba for do
   // currículo do editor. A declaração vem marcada pela pessoa no editor; o
   // núcleo recusa sem ela.

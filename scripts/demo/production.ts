@@ -210,6 +210,32 @@ export function bibliography(): XElement {
   ]);
 }
 
+/**
+ * Um prefácio: a pesquisadora apresenta o livro de um colega. Gerado por
+ * último (gen-demo.ts) para não mudar a sequência dos outros itens.
+ */
+export function preface(): XElement {
+  return el('PREFACIO-POSFACIO', { 'SEQUENCIA-PRODUCAO': nextSeq() }, [
+    el('DADOS-BASICOS-DO-PREFACIO-POSFACIO', {
+      ANO: '2023',
+      IDIOMA: 'Português',
+      'MEIO-DE-DIVULGACAO': 'IMPRESSO',
+      NATUREZA: 'LIVRO',
+      'PAIS-DE-PUBLICACAO': 'Brasil',
+      TIPO: 'PREFACIO',
+      TITULO: 'Prefácio',
+    }),
+    el('DETALHAMENTO-DO-PREFACIO-POSFACIO', {
+      'CIDADE-DA-EDITORA': 'Porto Alegre',
+      'EDITORA-DO-PREFACIO-POSFACIO': 'Editora da UFRGS',
+      'NOME-DO-AUTOR-DA-PUBLICACAO': 'Paulo Roberto Mendes',
+      'NUMERO-DA-EDICAO-REVISAO': '1',
+      'TITULO-DA-PUBLICACAO': 'Palmeiras do Sul do Brasil: guia de campo',
+    }),
+    ...authors(['ana']),
+  ]);
+}
+
 function congress(
   title: string,
   year: string,

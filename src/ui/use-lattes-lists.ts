@@ -7,12 +7,19 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import type { Agency, AreaNode, Course } from '../bridge/lattes-lists.ts';
+import type { Agency, AreaNode, Course, Organ } from '../bridge/lattes-lists.ts';
 import type { BridgeMessage, EditorMessage } from '../bridge/protocol.ts';
+import { foldText } from '../model/fold-text.ts';
 import { type CachedList, loadCachedList, saveCachedList } from '../model/list-cache.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import type { LattesLists } from './lattes-lists-context.ts';
-import { formationLevel, needsRefresh, sameCode, withoutLetter } from './live-lists.ts';
+import {
+  institutionAttrs,
+  livePairs,
+  needsRefresh,
+  sameCode,
+  withoutLetter,
+} from './live-lists.ts';
 import { listenReplies, post } from './use-bridge.ts';
 
 const FEATURE = 'listas-lattes';
@@ -20,13 +27,17 @@ const FEATURE = 'listas-lattes';
 /** Quanto esperar uma resposta da extensão antes de desistir do pedido. */
 const REPLY_TIMEOUT_MS = 20_000;
 
-type Reply = Extract<BridgeMessage, { type: 'cursos' | 'instituicoes' | 'listas' }>;
+type Reply = Extract<BridgeMessage, { type: 'cursos' | 'instituicoes' | 'listas' | 'orgaos' }>;
 
 let counter = 0;
 const nextId = (prefix: string) => `${prefix}-${Date.now()}-${++counter}`;
 
 export function useLattesLists(features: readonly string[]): LattesLists {
   const live = features.includes(FEATURE);
+  // As buscas de orientação e banca: lista de cursos TESE e os ocultos no envio.
+  const production = live && features.includes('buscas-producao');
+  // A janela de órgãos do projeto, para o órgão e a unidade da participação.
+  const organs = live && features.includes('orgao-projeto');
   const [areas, setAreas] = useState<CachedList<AreaNode[]>>();
   const [agencies, setAgencies] = useState<CachedList<Agency[]>>();
   const waiting = useRef(new Map<string, (reply: Reply) => void>());
@@ -48,7 +59,14 @@ export function useLattesLists(features: readonly string[]): LattesLists {
   useEffect(
     () =>
       listenReplies((msg) => {
-        if (msg.type !== 'listas' && msg.type !== 'instituicoes' && msg.type !== 'cursos') return;
+        if (
+          msg.type !== 'listas' &&
+          msg.type !== 'instituicoes' &&
+          msg.type !== 'cursos' &&
+          msg.type !== 'orgaos'
+        ) {
+          return;
+        }
         const resolve = waiting.current.get(msg.id);
         if (!resolve) return;
         waiting.current.delete(msg.id);
@@ -124,27 +142,37 @@ export function useLattesLists(features: readonly string[]): LattesLists {
     };
 
     /** O código com a letra da instituição do item: da busca desta sessão, ou de uma busca pelo nome. */
-    const fullCodeOf = async (el: XElement, level: string) => {
-      const code = getAttr(el, 'CODIGO-INSTITUICAO') ?? '';
+    const fullCodeOf = async (el: XElement, level?: string) => {
+      const attrs = institutionAttrs(el);
+      const code = getAttr(el, attrs.code) ?? '';
       const known = fullCodes.current.get(code);
       if (known) return known;
-      const name = getAttr(el, 'NOME-INSTITUICAO') ?? '';
+      const name = getAttr(el, attrs.name) ?? '';
       const found = (await searchInstitutions(name, level)).find((r) => sameCode(r.code, code));
       if (!found) throw new Error('A instituição do item não apareceu na busca do Lattes');
       return found.code;
     };
 
-    const loadCourses = async (el: XElement) => {
-      const level = formationLevel(el.name);
-      if (!liveRef.current || !level) throw new Error('O conector não está ligado');
-      const institution = await fullCodeOf(el, level);
-      const cacheKey = `${institution}|${level}`;
+    const loadCourses = async (el: XElement, nature = '') => {
+      const pairs = livePairs(el.name);
+      const course = pairs?.course;
+      if (!liveRef.current || !course) throw new Error('O conector não está ligado');
+      const byNature = course.byNature?.[foldText(nature)];
+      if (course.byNature && !byNature) {
+        throw new Error('Escolha a natureza do item antes: a lista de cursos depende dela');
+      }
+      const { level, staArea } = byNature ?? course;
+      const { program } = course;
+      const institution = await fullCodeOf(el, pairs.searchLevel);
+      const cacheKey = `${institution}|${level}|${program}|${staArea}`;
       let pending = courseCache.current.get(cacheKey);
       if (!pending) {
         pending = ask<Extract<Reply, { type: 'cursos' }>>({
           id: nextId('cursos'),
           institution,
           level,
+          // A formação usa a lista FORM; orientação e banca, a TESE.
+          ...(program === 'FORM' ? {} : { program, staArea }),
           type: 'pedir-cursos',
         }).then((reply) => {
           if (reply.error || !reply.courses) throw new Error(reply.error ?? 'Sem cursos');
@@ -157,7 +185,44 @@ export function useLattesLists(features: readonly string[]): LattesLists {
       return pending;
     };
 
-    return { loadCourses, searchInstitutions };
+    const organCache = new Map<string, Promise<Organ[]>>();
+    /** Uma página da janela de órgãos, com a letra da instituição e a do órgão de cima. */
+    const askOrgans = (institution: string, parent: string) =>
+      ask<Extract<Reply, { type: 'orgaos' }>>({
+        id: nextId('orgaos'),
+        institution,
+        ...(parent ? { parent } : {}),
+        type: 'pedir-orgaos',
+      }).then((reply) => {
+        if (reply.error || !reply.organs) throw new Error(reply.error ?? 'Sem órgãos');
+        return reply.organs;
+      });
+    /**
+     * O XML guarda os códigos sem a letra. A janela os pede com ela: V para os
+     * da tabela do Lattes, D para os cadastrados à parte (inferido). Tenta V,
+     * e D quando V volta vazio.
+     */
+    const loadOrgans = async (institution: string, parent = '') => {
+      if (!liveRef.current) throw new Error('O conector não está ligado');
+      const cacheKey = `${institution}|${parent}`;
+      let pending = organCache.get(cacheKey);
+      if (!pending) {
+        pending = (async () => {
+          for (const inst of ['V', 'D'].map((l) => l + institution)) {
+            for (const up of parent ? ['V', 'D'].map((l) => l + parent) : ['']) {
+              const found = await askOrgans(inst, up);
+              if (found.length > 0) return found;
+            }
+          }
+          return [];
+        })();
+        organCache.set(cacheKey, pending);
+        pending.catch(() => organCache.delete(cacheKey));
+      }
+      return pending;
+    };
+
+    return { loadCourses, loadOrgans, searchInstitutions };
   }, [ask]);
 
   return useMemo(
@@ -166,8 +231,10 @@ export function useLattesLists(features: readonly string[]): LattesLists {
       agencies: agencies?.items,
       areas: areas?.items,
       courses: live,
+      organs,
+      production,
       search: live,
     }),
-    [fetchers, live, areas, agencies],
+    [fetchers, live, organs, production, areas, agencies],
   );
 }

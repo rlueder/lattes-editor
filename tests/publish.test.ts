@@ -33,6 +33,9 @@ import {
 } from '../src/bridge/publish.ts';
 import { type LattesSimuladoNoTeste, withLattesSimulado } from './helpers/lattes-simulado.ts';
 
+/** O chrome.tabs.onRemoved dos stubs: nenhuma aba fecha nestes testes (tab-guard.ts). */
+const NO_TAB_EVENTS = { addListener: () => undefined, removeListener: () => undefined };
+
 let open: LattesSimuladoNoTeste | undefined;
 afterEach(async () => {
   await open?.close();
@@ -500,7 +503,7 @@ describe('Enviar ao CNPq no service worker (extensão)', () => {
         local: { get: async () => (consent ? { [CONSENT_KEY]: consentRecord() } : {}) },
         session: { get: async () => ({ fila: fila ?? undefined }) },
       },
-      tabs: { query: async () => tabs },
+      tabs: { onRemoved: NO_TAB_EVENTS, query: async () => tabs },
     });
     return executeScript;
   }
@@ -577,7 +580,7 @@ describe('Enviar ao CNPq no service worker (extensão)', () => {
         local: { get: async () => ({ [CONSENT_KEY]: consentRecord() }) },
         session: { get: async () => ({}) },
       },
-      tabs: { query: async () => [{ id: 3 }] },
+      tabs: { onRemoved: NO_TAB_EVENTS, query: async () => [{ id: 3 }] },
     });
     const outcomes: string[] = [];
     const reply = async (m: { result: { outcome: string } }) =>
@@ -599,7 +602,7 @@ describe('Enviar ao CNPq no service worker (extensão)', () => {
         local: { get: async () => ({ [CONSENT_KEY]: consentRecord() }) },
         session: { get: async () => Promise.reject(new Error('sem estado')) },
       },
-      tabs: { query: async () => [{ id: 3 }] },
+      tabs: { onRemoved: NO_TAB_EVENTS, query: async () => [{ id: 3 }] },
     });
     const reply = vi.fn(async () => undefined);
     expect(await runPublish(CALL, IDLE, reply, true)).toBe(false);
@@ -630,7 +633,7 @@ describe('Enviar ao CNPq no service worker (extensão)', () => {
     vi.stubGlobal('chrome', {
       scripting: { executeScript: async () => Promise.reject(new Error('fechou')) },
       storage: { local: { get: async () => ({ [CONSENT_KEY]: consentRecord() }) } },
-      tabs: { query: async () => [{ id: 3 }] },
+      tabs: { onRemoved: NO_TAB_EVENTS, query: async () => [{ id: 3 }] },
     });
     expect((await sendPublish(CALL, '1')).detail).toContain('Última publicação');
   });
@@ -654,7 +657,7 @@ describe('Enviar ao CNPq no service worker (extensão)', () => {
     vi.stubGlobal('chrome', {
       scripting: { executeScript: async () => Promise.reject(new Error('fechou')) },
       storage: { local: { get: async () => ({ [CONSENT_KEY]: consentRecord() }) } },
-      tabs: { query: async () => [{ id: 3 }] },
+      tabs: { onRemoved: NO_TAB_EVENTS, query: async () => [{ id: 3 }] },
     });
     expect(await readSendScreenReply()).toMatchObject({ reason: 'erro' });
   });

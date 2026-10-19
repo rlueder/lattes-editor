@@ -165,6 +165,16 @@ export function resolvePath(root: XElement, path: string[]): XElement[] {
   return chain;
 }
 
+/** O caminho com as chaves de identidade (o de Change.path) até um elemento, ou undefined. */
+export function pathTo(root: XElement, target: XElement): string[] | undefined {
+  if (root === target) return [root.name];
+  for (const [key, child] of keyed(root)) {
+    const rest = pathTo(child, target);
+    if (rest) return [root.name, key, ...rest.slice(1)];
+  }
+  return undefined;
+}
+
 /**
  * Descarta uma mudança na cópia de trabalho, voltando ao que a exportação
  * tinha: atributos e texto restaurados, elemento novo removido, elemento

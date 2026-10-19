@@ -203,6 +203,13 @@ export const MoonIcon = () => (
   </Icon>
 );
 
+/** Mais ações: três pontos. */
+export const MoreIcon = () => (
+  <Icon>
+    <path d="M6 12h.01M12 12h.01M18 12h.01" strokeWidth={2.5} />
+  </Icon>
+);
+
 export const TrashIcon = () => (
   <Icon size={14}>
     <path d="M4 7h16M10 11v6M14 11v6" />

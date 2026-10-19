@@ -45,6 +45,11 @@ declare namespace chrome {
     const onUpdated: {
       addListener(cb: (tabId: number, info: { status?: string }, tab: Tab) => void): void;
     };
+    /** Sem a permissão "tabs": o evento só traz o id da aba que fechou. */
+    const onRemoved: {
+      addListener(cb: (tabId: number) => void): void;
+      removeListener(cb: (tabId: number) => void): void;
+    };
   }
 
   namespace scripting {
@@ -56,6 +61,8 @@ declare namespace chrome {
       files?: string[];
       func?: (...args: A) => T | Promise<T>;
       target: { tabId: number };
+      /** MAIN: no mundo da página, com os objetos e funções dela. */
+      world?: 'ISOLATED' | 'MAIN';
     }): Promise<InjectionResult<Awaited<T>>[]>;
   }
 
@@ -100,3 +107,6 @@ declare const __NATIVE_HOST__: string;
 
 /** Montagem do canal Dev (scripts/build-extension.ts --canal-dev). */
 declare const __CANAL_DEV__: boolean;
+
+/** Marca da montagem do censo, a mesma no service worker (scripts/build-extension.ts). */
+declare const __CENSUS_BUILD__: string;

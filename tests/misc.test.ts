@@ -9,6 +9,7 @@ import {
   isOpaqueCode,
   slugify,
 } from '../src/labels/labels.ts';
+import { formatPhone, parseEmails, parseSocial, socialName } from '../src/model/contacts.ts';
 import { repairMojibake } from '../src/model/mojibake.ts';
 import { findOrderViolations, insertInSchemaOrder } from '../src/model/schema-order.ts';
 import {
@@ -22,7 +23,6 @@ import {
   XmlParseError,
 } from '../src/model/xml.ts';
 import { lattesSchema } from '../src/schema/lattes.ts';
-import { formatPhone, parseEmails, parseSocial, socialName } from '../src/ui/contacts.ts';
 import { displayValue } from '../src/ui/display.ts';
 import {
   codeAttrFor,
@@ -322,13 +322,21 @@ describe('displayValue', () => {
     expect(displayValue('X', 'Y', '')).toBe('');
   });
 
+  it('enum de outro elemento (STATUS-DO-CURSO no pós-doutorado) vira rótulo, como na leitura', () => {
+    expect(displayValue('POS-DOUTORADO', 'STATUS-DO-CURSO', 'EM_ANDAMENTO')).toBe('Em andamento');
+    const pos = parseXml('<POS-DOUTORADO STATUS-DO-CURSO="CONCLUIDO"/>').root;
+    expect(displayValue('POS-DOUTORADO', 'STATUS-DO-CURSO', 'CONCLUIDO')).toBe(
+      readingValue(pos, 'STATUS-DO-CURSO', 'CONCLUIDO'),
+    );
+  });
+
   it('marca sim/não sem enum no schema (FLAG-BOLSA) vira "Sim" e "Não", como na leitura', () => {
     expect(displayValue('MESTRADO-PROFISSIONALIZANTE', 'FLAG-BOLSA', 'NAO')).toBe('Não');
     expect(displayValue('MESTRADO-PROFISSIONALIZANTE', 'FLAG-BOLSA', 'SIM')).toBe('Sim');
     const mestrado = parseXml('<MESTRADO-PROFISSIONALIZANTE FLAG-BOLSA="NAO"/>').root;
     expect(readingValue(mestrado, 'FLAG-BOLSA', 'NAO')).toBe('Não');
-    // FLAG-* com outros valores continua como veio.
-    expect(displayValue('X', 'FLAG-PERIODO', 'ATUAL')).toBe('ATUAL');
+    // FLAG-* com outros valores continua lista: vira o rótulo dela, não Sim/Não.
+    expect(displayValue('X', 'FLAG-PERIODO', 'ATUAL')).toBe('Atual');
   });
 
   it('código escrito por extenso no Lattes, como na leitura', () => {

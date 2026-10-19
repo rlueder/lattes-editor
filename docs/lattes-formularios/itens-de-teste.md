@@ -1,0 +1,77 @@
+# Itens de teste: a passada completa
+
+O censo lê os formulários de inclusão e, para os tipos que o currículo já
+tem, os de edição. Para os tipos sem item, a ligação entre campo do
+formulário e atributo do XML e o link de edição de cada lista ficam
+inferidos. Esta passada cria um item de teste por opção de cada escolha
+pequena de cada formulário de inclusão, lê o que voltou e remove tudo.
+
+Grava no currículo. Só a pessoa roda, na aba do menu do Lattes, um lote por
+vez.
+
+## A base e o registro
+
+A limpeza de 18/10/2026 achava os itens pela marca `TESTE EDITOR APAGAR` e
+deixou 23 itens no currículo: ensino fundamental, médio e técnico, pós-doutorado
+e formação complementar não têm campo de texto onde a marca vá, e uma lista
+(`pkg_demais.lista`) o menu abre por um formato de link que a varredura não
+pegava. Desde então a passada não depende da marca:
+
+- "Ler formulários" tira a base: todas as listas que o menu abre, em qualquer
+  formato de link, e as de dentro delas (a página de cada atuação, os grupos de
+  periódico do revisor), com o texto e o link de cada linha. Fica neste
+  navegador (`lattes-editor:itens-de-teste:base`). Sem base, nenhum item é
+  criado; com itens criados e sem base, a passada para e pede para conferir.
+- Cada lote termina lendo as listas de novo: o que está a mais que a base é o
+  registro do teste.
+- A remoção exclui as linhas do registro, e nada mais. Uma atuação só sai
+  inteira se a página dela não existia na base. "Ver o que sai" mostra a
+  lista antes.
+- No fim de cada remoção, o painel mostra o que ainda está a mais e o que
+  sumiu da base. Uma linha da base que sumiu é um erro a conferir no Lattes.
+  Acabou quando não há nada a mais nem a menos.
+- As listas não mostram tudo: as atividades de uma atuação aparecem na página
+  dela só pela natureza e pelo período, sem a descrição. Em 18/10/2026, 21
+  atividades de teste da primeira passada (anteriores à base) estavam no
+  currículo e na base, e por isso passaram por todas as conferências. Por
+  isso a base só se tira com a marca ausente do currículo inteiro (a versão
+  atual da tela de envio, `pkg_publicar.cv_espelho`, que mostra a descrição),
+  e toda remoção termina contando a marca nela (`marcaNoCurriculo`).
+
+As regras ficam em `src/census/test-ledger.ts`; a leitura e a conferência na
+página, em `extension/src/censo-test-ledger.ts`; a criação em
+`extension/src/censo-test-items.ts` e a exclusão em
+`extension/src/censo-test-removal.ts`.
+
+## Como rodar
+
+Pelo editor em desenvolvimento, com `?itens-teste` no endereço e a extensão
+Dev instalada, numa aba do menu do Lattes:
+
+1. "Ler formulários": lê os formulários e tira a base (alguns minutos).
+2. "Criar próximo lote", com o lote de até 50 e 3 a 6 s entre um envio e
+   outro. O resultado diz quantos foram criados, quantos faltam e o que
+   falhou, com a mensagem do Lattes. "Tentar de novo os que falharam" depois
+   de ajustar o que faltava.
+3. Com tudo criado, envie ao CNPq (a pessoa marca a declaração) e rode a
+   passada de edição com a exportação: `__lattesCensus.link(undefined, {
+maxItems: 50, download: true })`. Os marcadores casam campo e atributo.
+4. "Ver o que sai", depois "Remover lote" até o painel mostrar zero a mais
+   que a base e nada sumido. Envie ao CNPq de novo.
+5. Com tudo igual à base, `__lattesCensus.resetTestItems()` esquece o
+   andamento e a base.
+
+## Os valores
+
+Todo texto começa com `TESTE EDITOR APAGAR`, seguido do tipo, da variante e
+do nome do campo (`src/census/test-plan.ts`). Anos, datas, meses e números
+seguem o formato que o check() de cada página pede. Países e idiomas ficam no
+Brasil e no português; as outras escolhas variam uma opção por item.
+
+## Fora da passada
+
+Identificação, endereço, resumo, outras informações e áreas de atuação são
+de registro único (a edição deles já é lida). Vínculo e atividade dependem de
+uma atuação, e linha de pesquisa e prefácio não têm link de inclusão lido. O
+idioma fica de fora porque a língua é a chave do item. A patente pede um
+depositante com código de pessoa, e só os coautores têm um.

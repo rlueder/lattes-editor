@@ -5,11 +5,14 @@
 // Roda dentro da aba do Lattes (sessão do próprio usuário) ou num teste, com
 // um Lattes falso: o acesso à rede e ao DOM entra pela porta (LattesPort).
 
+import { applyAreas, type AreasOp, isAreasOp } from './areas-atuacao.ts';
 import {
+  BIOGRAPHIC_FULL_ENABLED,
   BIOGRAPHIC_SPECS,
   type BiographicOp,
   isBiographicOp,
   locateBiographic,
+  needsFullBiographic,
 } from './biographic.ts';
 import { applyCreateAtuacao } from './create.ts';
 import {
@@ -40,6 +43,14 @@ import {
   listEditSpec,
   locateListEdit,
 } from './edit-lists.ts';
+import {
+  array2xml,
+  enderecoGrids,
+  readContactGrids,
+  sameSocialSet,
+  socialOf,
+  type SocialRow,
+} from './endereco-contatos.ts';
 import { fieldLabel } from './field-labels.ts';
 import {
   encodeLatin1Form,
@@ -51,9 +62,15 @@ import {
   setPairs,
   successfulPairs,
   withCheckRules,
+  withScriptValues,
 } from './form.ts';
+import { resolveFormacao } from './formacao-lookups.ts';
+import { identGrids } from './ident-grids.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
+import { pcdChecked, withPcd } from './pcd.ts';
 import type { BridgeOp, FieldValues } from './plan.ts';
+import { applyProduction } from './production/apply.ts';
+import { isProductionOp, type ProductionOp } from './production/plan.ts';
 
 export interface LattesPort {
   /** GET de um caminho relativo a /cvlattesweb/; texto já decodificado de Latin-1. */
@@ -72,14 +89,23 @@ export interface OpResult {
   assigned?: Record<string, string>;
   detail: string;
   key: string;
+  /**
+   * Conferido, menos uma parte que o conector não relê (a equipe de um
+   * projeto, as disciplinas de uma atividade): o item foi criado e repetir
+   * duplicaria, então a fila segue, mas o aviso em detail fica à vista no
+   * andamento e no registro do enviado.
+   */
+  partial?: boolean;
   status: ResultStatus;
 }
 
 type EditOp = Exclude<
   BridgeOp,
+  | AreasOp
   | BiographicOp
   | DeleteOp
   | EventoOp
+  | ProductionOp
   | ListEditOp
   | {
       kind:
@@ -179,15 +205,15 @@ async function readPairs(
   port: LattesPort,
   path: string,
   form: string,
-): Promise<{ controls: FormControl[]; pairs: Pairs }> {
+): Promise<{ controls: FormControl[]; html: string; pairs: Pairs }> {
   const html = await getChecked(port, path);
-  const controls = port.readForm(html, form);
+  const controls = withScriptValues(html, port.readForm(html, form));
   if (!controls) {
     throw isLogonPage(html)
       ? new Stop('sessao', 'A sessão do Lattes expirou; entre de novo')
       : new Stop('erro', `Formulário ${form} não encontrado`);
   }
-  return { controls, pairs: withCheckRules(form, controls, successfulPairs(controls)) };
+  return { controls, html, pairs: withCheckRules(form, controls, successfulPairs(controls)) };
 }
 
 const same = (a: string | null, b: string | null) =>
@@ -212,11 +238,14 @@ function changedNames(a: Pairs, b: Pairs): string[] {
  * operação de um tipo cuja chave ela tem desligada para sem enviar nada.
  */
 export interface ApplyGates {
+  /** BIOGRAPHIC_FULL_ENABLED; sem valor, desligada. */
+  biographicFull?: boolean;
   editEvento: boolean;
   lists: ReadonlySet<ListEditKind>;
 }
 
 export const BUILD_GATES: ApplyGates = {
+  biographicFull: BIOGRAPHIC_FULL_ENABLED,
   editEvento: EDIT_EVENTO_ENABLED,
   lists: enabledListEdits(),
 };
@@ -225,6 +254,9 @@ export const BUILD_GATES: ApplyGates = {
 function gatedOut(op: BridgeOp, gates: ApplyGates): string | undefined {
   if (isListEditOp(op) && !gates.lists.has(op.kind)) {
     return 'Esta extensão não tem o formulário deste tipo no contrato; a alteração fica à mão';
+  }
+  if (isBiographicOp(op) && !gates.biographicFull && needsFullBiographic(op)) {
+    return 'Esta extensão não grava instituição, curso e agência pelas buscas, pós-doutorado, livre-docência nem outras informações; a alteração fica à mão';
   }
   if (isEventoOp(op) && !gates.editEvento && isFullEvento(op)) {
     return 'Esta extensão só altera eventos de ouvinte; a alteração fica à mão';
@@ -244,6 +276,8 @@ export async function applyOp(
   if (op.kind === 'criar-dado') return applyCreateGeneral(op, port);
   if (op.kind === 'criar-atividade') return applyCreateAtividade(op, port);
   if (op.kind === 'criar-evento') return applyCreateEvento(op, port);
+  if (isProductionOp(op)) return applyProduction(op, port);
+  if (isAreasOp(op)) return applyAreas(op, port);
   if (op.kind === 'criar-vinculo') return applyCreateVinculo(op, port);
   if (isDeleteOp(op)) return applyDelete(op, port);
   const result = (status: ResultStatus, detail: string): OpResult => ({
@@ -299,7 +333,40 @@ export async function applyOp(
     if (wrong.length > 0) {
       return result('divergente', `O Lattes não está como o editor espera: ${labels(wrong)}`);
     }
-    for (const [field, value] of Object.entries(op.set)) {
+    // Formação com instituição, curso ou agência trocados: as buscas do Lattes
+    // dão os ocultos que vão junto (formacao-lookups.ts). `check` é o que a
+    // releitura espera onde difere do enviado.
+    let set = op.set;
+    let check: FieldValues = {};
+    if (op.kind === 'formacao' && op.lookups) {
+      const resolved = await resolveFormacao(op, port, before.pairs);
+      if ('status' in resolved) return result(resolved.status, resolved.detail);
+      set = { ...op.set, ...resolved.set };
+      check = resolved.check;
+    }
+    // Endereço: as grades de contato vão como o check() da página as manda
+    // (endereco-contatos.ts), nunca os ocultos vazios com que a página carrega.
+    let contactGrids: ReturnType<typeof readContactGrids>;
+    let socialWanted: SocialRow[] | undefined;
+    if (op.kind === 'endereco') {
+      const grids = enderecoGrids(op, before.html);
+      if ('status' in grids) return result(grids.status, grids.detail);
+      set = { ...set, ...grids.set };
+      contactGrids = grids.read;
+      socialWanted = grids.wanted;
+    }
+    // Identificação: a grade do ORCID e os nomes em citação, como o check() (ident-grids.ts).
+    if (op.kind === 'identificacao') {
+      const grids = identGrids(before.html);
+      if (!grids) {
+        return result(
+          'erro',
+          'A página de identificação do Lattes não trouxe as grades; nada foi enviado',
+        );
+      }
+      set = { f_nome_citacao: grids.f_nome_citacao, ...set, f_dados_grid: grids.f_dados_grid };
+    }
+    for (const [field, value] of Object.entries(set)) {
       const limit = before.controls.find((c) => c.name === field)?.maxLength;
       if (value && limit && limit > 0 && value.length > limit) {
         return result(
@@ -315,7 +382,14 @@ export async function applyOp(
       return result('conferido', 'O Lattes já estava assim; nada foi enviado');
     }
 
-    const next = setPairs(before.pairs, op.set);
+    // A deficiência: os f_pcd repetidos vão à parte (pcd.ts).
+    const pcd = op.kind === 'identificacao' ? op.pcd : undefined;
+    if (pcd && pcdChecked(before.controls).join() !== pcd.before.join()) {
+      return result('divergente', 'O Lattes não está como o editor espera: Pessoa com deficiência');
+    }
+    const next = pcd
+      ? withPcd(setPairs(before.pairs, set), pcd.after)
+      : setPairs(before.pairs, set);
     const response = await port.post(action, encodeLatin1Form(next));
     if (isLogonPage(response)) return result('sessao', 'A sessão do Lattes expirou; entre de novo');
 
@@ -326,20 +400,36 @@ export async function applyOp(
       const now = await countListEdits(op.kind, menu, get);
       if (now > listed) {
         return result(
-          'erro',
+          'divergente',
           `O Lattes incluiu uma linha nova em vez de alterar (${listed} antes, ${now} depois): confira a lista no Lattes e exclua a cópia`,
         );
       }
     }
 
     const after = await readPairs(port, path, name);
-    const notSaved = mismatches(after.pairs, op.set);
+    if (pcd && pcdChecked(after.controls).join() !== pcd.after.join()) {
+      return result('divergente', 'O Lattes não gravou: Pessoa com deficiência');
+    }
+    // As grades de contato voltam como linhas da página, não nos ocultos.
+    const { f_dados_grid: _g, f_dados_grid_contatos: _c, ...plain } = set;
+    const { f_dados_grid: _ident, ...noGrid } = set;
+    const sent = contactGrids ? plain : op.kind === 'identificacao' ? noGrid : set;
+    const notSaved = mismatches(after.pairs, { ...sent, ...check });
+    if (contactGrids) {
+      const now = readContactGrids(after.html);
+      if (!now || !sameSocialSet(socialOf(now.social), socialWanted ?? [])) {
+        notSaved.push('f_dados_grid');
+      }
+      if (!now || array2xml(now.contacts) !== array2xml(contactGrids.contacts)) {
+        notSaved.push('f_dados_grid_contatos');
+      }
+    }
     if (notSaved.length > 0) {
-      return result('erro', `O Lattes não gravou: ${labels(notSaved)}`);
+      return result('divergente', `O Lattes não gravou: ${labels(notSaved)}`);
     }
     // f_vinculo é preenchido no envio (check()); a página sempre o traz vazio.
     const unexpected = changedNames(before.pairs, after.pairs).filter(
-      (n) => !(n in op.set) && n !== 'f_vinculo',
+      (n) => !(n in set) && n !== 'f_vinculo',
     );
     // Campos desabilitados não vão nos pares; os que identificam o item
     // (instituição e curso da formação complementar) se conferem à parte.
@@ -349,7 +439,7 @@ export async function applyOp(
       if (!same(value(before.controls, n), value(after.controls, n))) unexpected.push(n);
     }
     if (unexpected.length > 0) {
-      return result('erro', `Outros campos mudaram no Lattes: ${labels(unexpected)}`);
+      return result('divergente', `Outros campos mudaram no Lattes: ${labels(unexpected)}`);
     }
     return result('conferido', 'Gravado e conferido no Lattes');
   } catch (err) {

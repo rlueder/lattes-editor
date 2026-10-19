@@ -134,3 +134,76 @@ export function identityMismatches(
     .filter(([name, ok]) => !ok.some((v) => folded(v) === folded(value(name))))
     .map(([name]) => name);
 }
+
+/**
+ * Os valores que a página põe por script depois de carregar, num comando
+ * solto `$("[name=campo]").val("valor")`: as privacidades e o oculto da cor
+ * ou raça do formulário de identificação (lido em 18/10/2026) vêm assim, com
+ * o HTML no valor padrão. Lido só o HTML, o envio voltava os padrões
+ * (Privado virava Público). Só esse seletor exato, que a página usa fora de
+ * função; os $("input[name=…]") de dentro de cliques ficam de fora.
+ */
+export function scriptValues(html: string): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const m of html.matchAll(
+    /\$\(\s*"\[name=([A-Za-z0-9_]+)\]"\s*\)\.val\(\s*"([^"\\]*)"\s*\)/g,
+  )) {
+    out.set(m[1]!, m[2]!);
+  }
+  return out;
+}
+
+/** Um ramo de if: o bloco entre chaves, ou o comando até o ";". */
+function branch(text: string): { body: string; rest: string } {
+  const t = text.trimStart();
+  if (t.startsWith('{')) {
+    const end = t.indexOf('}');
+    return end < 0 ? { body: t, rest: '' } : { body: t.slice(1, end), rest: t.slice(end + 1) };
+  }
+  const end = t.indexOf(';');
+  return end < 0 ? { body: t, rest: '' } : { body: t.slice(0, end + 1), rest: t.slice(end + 1) };
+}
+
+/**
+ * Os rádios que a página marca por script, num if de dois textos que o
+ * servidor preenche: `if ("N" == "S") $("input[name=x][value=S]").attr("checked",
+ * …); else { $("input[name=x][value=N]").attr("checked", …) }` (o potencial de
+ * inovação do projeto, a pessoa com deficiência e o nome social da
+ * identificação, lidos em 18/10/2026). O HTML do potencial não marca nenhum, e
+ * sem isso o envio ia sem o rádio.
+ */
+export function scriptRadios(html: string): Map<string, string> {
+  const out = new Map<string, string>();
+  const pick = (body: string) =>
+    /\$\(\s*"input\[name=([A-Za-z0-9_]+)\]\[value=([^\]"]*)\]"\s*\)\.attr\(\s*"checked"/.exec(body);
+  for (const m of html.matchAll(/\bif\s*\(\s*"([^"\\]*)"\s*==\s*"([^"\\]*)"\s*\)/g)) {
+    const yes = branch(html.slice(m.index + m[0].length));
+    const after = yes.rest.trimStart();
+    const no = after.startsWith('else') ? branch(after.slice(4)).body : '';
+    const hit = pick(m[1] === m[2] ? yes.body : no);
+    if (hit) out.set(hit[1]!, hit[2]!);
+  }
+  return out;
+}
+
+/** Os controles com os valores que a página põe por script (scriptValues, scriptRadios). */
+export function withScriptValues(
+  html: string,
+  controls: FormControl[] | undefined,
+): FormControl[] | undefined {
+  if (!controls) return controls;
+  const values = scriptValues(html);
+  const radios = scriptRadios(html);
+  if (values.size === 0 && radios.size === 0) return controls;
+  return controls.map((c) => {
+    if (c.type === 'radio') {
+      const r = radios.get(c.name);
+      return r === undefined ? c : { ...c, checked: c.value === r };
+    }
+    const v = values.get(c.name);
+    if (v === undefined || c.type === 'checkbox') return c;
+    return c.type === 'select' || c.type.startsWith('select-')
+      ? { ...c, selected: [v], value: v }
+      : { ...c, value: v };
+  });
+}

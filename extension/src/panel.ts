@@ -13,6 +13,7 @@ import {
 import { opRows } from '../../src/bridge/field-labels.ts';
 import { PUBLISH_REMINDER } from '../../src/bridge/lattes-status.ts';
 import { listText } from '../../src/bridge/list-watch.ts';
+import { pauseText, WRITES_PER_ROUND } from '../../src/bridge/write-brake.ts';
 import { giveConsent, hasConsent, PRIVACY_URL } from './consent.ts';
 import { reloadLattesTab } from './lattes-tab.ts';
 import type { AppHello, PanelCommand, QueueState } from './state.ts';
@@ -21,7 +22,7 @@ import { toolbarTheme } from './toolbar-icon.ts';
 
 const STATUS: Record<OpResult['status'], string> = {
   conferido: 'Conferido',
-  divergente: 'Diferente no Lattes',
+  divergente: 'Confira no Lattes',
   erro: 'Erro',
   sessao: 'Sessão expirada',
 };
@@ -191,6 +192,9 @@ function renderReport(report: ContractReport | undefined): void {
   root.append(el('div', { className: 'vigia-acoes' }, [copy, issue]));
 }
 
+const HELP_BY_PANEL = `Cada alteração é gravada no Lattes, lida de volta e conferida. A fila para no primeiro problema e pausa a cada ${WRITES_PER_ROUND} gravações. Deixe o currículo aberto numa aba.`;
+const HELP_BY_EDITOR = `O editor está gravando estas alterações no Lattes: cada uma é lida de volta e conferida. A fila para no primeiro problema e pausa a cada ${WRITES_PER_ROUND} gravações. Deixe o currículo aberto numa aba.`;
+
 function render(state: QueueState): void {
   const root = document.getElementById('fila')!;
   const action = document.getElementById('acao') as HTMLButtonElement;
@@ -204,8 +208,25 @@ function render(state: QueueState): void {
   action.dataset.modo = mode;
   action.className = mode === 'parar' ? 'parar' : mode === 'ok' ? 'conferido' : 'principal';
   action.disabled = mode === 'ok' || state.ops.length === 0;
+  // Quando o editor conduz a gravação, o painel só acompanha: o botão
+  // aparece para parar, e começar fica com o editor. Na pausa, o "Continuar"
+  // aparece aqui também, para o caso de o editor ter fechado.
+  const byEditor = state.fromEditor === true;
+  // Em pausa no teto da rodada, o mesmo botão segue com o resto (write-brake.ts).
+  const paused = mode === 'aplicar' && state.pausa !== undefined;
+  action.hidden = byEditor && mode !== 'parar' && !paused;
   action.textContent =
-    mode === 'parar' ? 'Parar' : mode === 'ok' ? '✓ Tudo conferido' : 'Aplicar todas';
+    mode === 'parar'
+      ? 'Parar'
+      : mode === 'ok'
+        ? '✓ Tudo conferido'
+        : paused
+          ? 'Continuar'
+          : 'Aplicar todas';
+  const pauseNote = document.getElementById('pausa')!;
+  pauseNote.textContent =
+    paused && state.pausa ? pauseText(state.pausa, byEditor ? 'painel' : 'aqui') : '';
+  pauseNote.hidden = !paused;
   root.replaceChildren();
   const verify = document.getElementById('verificar') as HTMLButtonElement;
   verify.disabled = Boolean(state.running || state.verificando);
@@ -220,7 +241,9 @@ function render(state: QueueState): void {
   renderReport(state.verificacao);
   // Sem fila, sem botões: o estado vazio fala sozinho.
   document.querySelector<HTMLElement>('.acoes')!.hidden = state.ops.length === 0;
-  document.querySelector<HTMLElement>('.ajuda')!.hidden = state.ops.length === 0;
+  const help = document.querySelector<HTMLElement>('.ajuda')!;
+  help.hidden = state.ops.length === 0;
+  help.textContent = byEditor ? HELP_BY_EDITOR : HELP_BY_PANEL;
   // Fila parada com algo conferido: lembra que nada está público ainda.
   const reminder = document.querySelector<HTMLElement>('.lembrete')!;
   reminder.textContent = PUBLISH_REMINDER;
@@ -245,9 +268,9 @@ function render(state: QueueState): void {
       opRows(op).flatMap((row) => [
         el('dt', { textContent: row.label }),
         el('dd', {}, [
-          el('span', { className: 'antes', textContent: row.before }),
+          el('span', { className: 'antes', textContent: row.before || '(vazio)' }),
           ' → ',
-          el('span', { textContent: row.after }),
+          el('span', { textContent: row.after || '(vazio)' }),
         ]),
       ]),
     );
@@ -261,7 +284,7 @@ function render(state: QueueState): void {
         ]),
         fields,
         detail,
-        status === 'conferido' ? '' : el('div', { className: 'item-acoes' }, [button]),
+        status === 'conferido' || byEditor ? '' : el('div', { className: 'item-acoes' }, [button]),
       ]),
     );
   }

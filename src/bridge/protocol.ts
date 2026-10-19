@@ -6,19 +6,26 @@ import type { OpResult } from './apply.ts';
 import type { EspelhoItem } from './espelho.ts';
 import type { ExportFailure } from './export.ts';
 import type { ImportStop, PageShape } from './importar.ts';
-import type { Agency, AreaNode, Course, Institution } from './lattes-lists.ts';
+import type { Agency, AreaNode, Course, Institution, Organ } from './lattes-lists.ts';
 import type { LattesStatus } from './lattes-status.ts';
 import type { PhotoFailure } from './photo.ts';
 import type { BridgeOp } from './plan.ts';
 import type { PublishRequest, PublishResult, SendScreen } from './publish.ts';
+import type { RoundPause } from './write-brake.ts';
 
 export const PROTOCOL_VERSION = 1;
 export const EDITOR_SOURCE = 'lattes-editor';
 export const BRIDGE_SOURCE = 'lattes-conector';
 
 export type EditorMessage =
-  /** lattesId: o currículo aberto no editor; o conector só grava se a sessão do Lattes for dele. */
-  | { lattesId?: string; ops: BridgeOp[]; type: 'enviar' }
+  /**
+   * lattesId: o currículo aberto no editor; o conector só grava se a sessão
+   * do Lattes for dele. start: a gravação começa já, sem o "Aplicar todas"
+   * do painel (capacidade 'gravar-pelo-editor'); sem ele, a fila só espera.
+   */
+  | { lattesId?: string; ops: BridgeOp[]; start?: boolean; type: 'enviar' }
+  /** Segue com o resto da fila depois da pausa no teto da rodada (write-brake.ts). */
+  | { type: 'continuar' }
   /** version e features: do app (src/bridge/compat.ts); versões antigas mandam só o tipo. */
   | { features?: string[]; type: 'ola'; version?: string }
   | { type: 'parar' }
@@ -49,7 +56,21 @@ export type EditorMessage =
   /** Busca de instituição no diretório do Lattes, só leitura; level é o f_nivel da formação. */
   | { id: string; level?: string; query: string; type: 'buscar-instituicao' }
   /** Os cursos de uma instituição (código com a letra) num nível da formação, só leitura. */
-  | { id: string; institution: string; level: string; type: 'pedir-cursos' }
+  | {
+      id: string;
+      institution: string;
+      level: string;
+      /** A lista de cursos de orientação e banca (TESE); sem ele, a da formação (FORM). */
+      program?: 'TESE';
+      /** O f_sta_area da lista TESE (N em aperfeiçoamento e graduação). */
+      staArea?: '' | 'N';
+      type: 'pedir-cursos';
+    }
+  /**
+   * Os órgãos de uma instituição (código com a letra), ou as unidades de um
+   * órgão (parent, código com a letra), na janela de órgãos do projeto. Só leitura.
+   */
+  | { id: string; institution: string; parent?: string; type: 'pedir-orgaos' }
   /**
    * Importa os itens novos pelo Importar do Lattes (src/bridge/importar.ts),
    * só com IMPORT_ENABLED. file: o arquivo mínimo (opção 1) em base64;
@@ -73,6 +94,20 @@ export type EditorMessage =
    */
   | { id: string; type: 'ler-envio' }
   /**
+   * Itens de teste da passada completa (só no canal Dev,
+   * docs/lattes-formularios/itens-de-teste.md): ler os formulários, criar ou
+   * remover um lote, ou só o andamento.
+   */
+  | {
+      acao: TestItemsAction;
+      batch?: number;
+      /** Na remoção: só a lista do que sairia, sem excluir. */
+      dryRun?: boolean;
+      id: string;
+      retryFailed?: boolean;
+      type: 'itens-teste';
+    }
+  /**
    * Envia ao CNPq (src/bridge/publish.ts), só com PUBLISH_ENABLED e depois de
    * a pessoa marcar a declaração no editor (request.declarationAccepted).
    * lattesId: o currículo aberto no editor, e a extensão só envia se a sessão
@@ -86,7 +121,8 @@ export type BridgeMessage =
   | { code: string; lattesId?: string; type: 'codigo-cv' }
   /** O que o menu do Lattes mostra: data da última publicação e pendência. */
   | { lattesId?: string; status: LattesStatus; type: 'estado-lattes' }
-  | { result: OpResult; type: 'resultado' }
+  /** replay: repetido na reconexão do editor (o original pode ter se perdido). */
+  | { replay?: boolean; result: OpResult; type: 'resultado' }
   /**
    * Os itens da página de conferência do Lattes, ou o motivo de não ter
    * lido; lattesId diz de qual currículo é a sessão.
@@ -106,7 +142,11 @@ export type BridgeMessage =
       type: 'curriculo';
       zip?: string;
     }
-  | { type: 'fim' }
+  /**
+   * A fila parou. pause: parou no teto de gravações da rodada
+   * (src/bridge/write-brake.ts) e o resto espera o "Continuar".
+   */
+  | { pause?: RoundPause; type: 'fim' }
   /** O resultado da troca da foto pedida com o mesmo id. */
   | { detail?: string; id: string; ok: boolean; reason?: PhotoFailure; type: 'foto' }
   /**
@@ -132,6 +172,8 @@ export type BridgeMessage =
   | { error?: string; id: string; results?: Institution[]; type: 'instituicoes' }
   /** Os cursos pedidos com o mesmo id. */
   | { courses?: Course[]; error?: string; id: string; type: 'cursos' }
+  /** Os órgãos pedidos com o mesmo id. */
+  | { error?: string; id: string; organs?: Organ[]; type: 'orgaos' }
   /**
    * A tela de envio ao CNPq pedida com o mesmo id, ou o motivo de não ter
    * lido; previews: os endereços da página de conferência em português e em
@@ -147,7 +189,11 @@ export type BridgeMessage =
       type: 'tela-envio';
     }
   /** O resultado do envio ao CNPq pedido com o mesmo id. */
-  | { id: string; result: PublishResult; type: 'publicacao' };
+  | { id: string; result: PublishResult; type: 'publicacao' }
+  /** A resposta de um pedido de itens de teste: o resumo, ou o porquê de não ter rodado. */
+  | { error?: string; id: string; result?: unknown; type: 'itens-teste' };
+
+export type TestItemsAction = 'andamento' | 'criar' | 'preparar' | 'remover';
 
 /** Por que a tela de envio não foi lida. */
 export type SendScreenFailure =

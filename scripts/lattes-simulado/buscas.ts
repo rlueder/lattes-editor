@@ -41,6 +41,25 @@ export const COURSES: Record<string, [string, string][]> = {
   V000000000003: [['V00000004 ', 'Genética e Biologia Molecular']],
 };
 
+/**
+ * Órgãos por instituição (código sem a letra), com as unidades de cada um:
+ * códigos sintéticos de 12 dígitos no formato da janela de órgãos do projeto
+ * (pkg_projeto.pp_orgao_cargo, lida em 18/10/2026).
+ */
+export const ORGANS: Record<string, { code: string; name: string; units: [string, string][] }[]> = {
+  '000000000001': [
+    {
+      code: '000001000008',
+      name: 'Instituto de Biociências',
+      units: [
+        ['000001001004', 'Departamento de Genética'],
+        ['000001002000', 'Departamento de Botânica'],
+      ],
+    },
+    { code: '000002000004', name: 'Instituto de Informática', units: [] },
+  ],
+};
+
 export const AGENCIES: [string, string][] = [
   ['000000000001', 'Conselho Nacional de Desenvolvimento Científico e Tecnológico'],
   ['000000000002', 'Coordenação de Aperfeiçoamento de Pessoal de Nível Superior'],
@@ -60,9 +79,26 @@ export const AREAS: [string, string][] = [
   ['90000005', 'Outra'],
 ];
 
-/** O script do menu com a tabela de áreas (só as grandes áreas). */
+/**
+ * Áreas abaixo de uma grande área, para escolher nas áreas de atuação:
+ * nomes da tabela do Lattes, códigos sintéticos de 8 dígitos.
+ */
+export const AREA_CHILDREN: Record<string, [string, string, [string, string][]][]> = {
+  '20000006': [
+    ['20200005', 'Genética', [['20201001', 'Genética Vegetal']]],
+    ['20300000', 'Botânica', []],
+  ],
+};
+
+/** O script do menu com a tabela de áreas (as grandes áreas e AREA_CHILDREN). */
 export function areaScript(): string {
-  const nodes = AREAS.map(([c, l]) => `{l:"${l}",n:1,c:"${c}"}`).join(',');
+  const nodes = AREAS.map(([c, l]) => {
+    const kids = (AREA_CHILDREN[c] ?? []).map(([cc, ll, subs]) => {
+      const leaves = subs.map(([sc, sl]) => `{l:"${sl}",n:3,c:"${sc}"}`).join(',');
+      return `{l:"${ll}",n:2,c:"${cc}"${subs.length ? `,b:[${leaves}]` : ''}}`;
+    });
+    return `{l:"${l}",n:1,c:"${c}"${kids.length ? `,b:[${kids.join(',')}]` : ''}}`;
+  }).join(',');
   return `<script>var areaDP = [${nodes}];</script>`;
 }
 
@@ -115,7 +151,29 @@ function agencies(): SimResponse {
   return html(h.page('Agência de fomento', links));
 }
 
+/** Orientandos com currículo no Lattes simulado: nome → identificador (sintéticos). */
+export const STUDENTS: Record<string, { id: string; seq: string }> = {
+  'Aluna Sintética de Exemplo': { id: '0000000000000001', seq: '1' },
+};
+
+/**
+ * A validação do nome do orientando (pkg_orient.valida_orientador_ajax), na
+ * forma da resposta real de 18/10/2026. O f_nme chega como o escape() da
+ * página o deixou.
+ */
+function studentCheck(req: SimRequest): SimResponse {
+  const name = (req.get('f_nme') ?? '').replace(/%([0-9A-F]{2})/gi, (_, hex: string) =>
+    String.fromCharCode(parseInt(hex, 16)),
+  );
+  const hit = STUDENTS[name.trim()];
+  const body = hit
+    ? `{"sta_validado":true ,"mensagem":"","idOrientado":"${hit.id}","seqFormOrientado":"${hit.seq}"}`
+    : '{"sta_validado":false ,"mensagem":"Orientador não encontrado","idOrientado":"","seqFormOrientado":""}';
+  return { contentType: 'application/json', html: body, status: 200 };
+}
+
 export const BUSCAS_ROUTES: Routes = {
+  'pkg_orient.valida_orientador_ajax': studentCheck,
   prc_agencia: () => agencies(),
   prc_curso_form: courses,
   prc_inst_form: institutions,

@@ -12,7 +12,7 @@
 // leitor procura cada padrão no texto inteiro e, se nada casar, a tela mostra
 // o valor como veio.
 
-import { repairMojibake } from '../model/mojibake.ts';
+import { repairMojibake } from './mojibake.ts';
 
 export interface EmailContact {
   /** O campo do Lattes a que o e-mail pertence, quando o código é conhecido. */

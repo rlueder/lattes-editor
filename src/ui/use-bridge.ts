@@ -24,6 +24,7 @@ import {
   isIncompatibleHello,
 } from '../bridge/protocol.ts';
 import { type SentEntry, sentEntry, undoOp } from '../bridge/sent-log.ts';
+import type { RoundPause } from '../bridge/write-brake.ts';
 import { isDesktop } from '../desktop/native.ts';
 import type { Session } from '../forms/use-production.ts';
 import { importMessage } from '../import-export/import-request.ts';
@@ -38,8 +39,11 @@ import type {
   PhotoUploadReading,
 } from './bridge-readings.ts';
 import type { ChangeGroup } from './changes-view.ts';
+import { loadOutgoing, type Outgoing, saveOutgoing } from './outgoing-store.ts';
 import { writeCvCode } from './profile.ts';
+import { useSendExtras } from './send-extras.ts';
 import { type RestoreState, useRestorePoint } from './use-restore-point.ts';
+import { useWriteBrake } from './use-write-brake.ts';
 
 // As leituras das respostas da extensão moram em bridge-readings.ts; quem já
 // importava daqui segue igual.
@@ -162,6 +166,8 @@ export interface BridgeState {
    */
   answerRestore: (go: boolean) => void;
   available: boolean;
+  /** "Já conferi no Lattes" numa gravação divergente do registro (LAT-59). */
+  checkSent: (entry: SentEntry) => Promise<void>;
   /** Apaga o registro do enviado deste currículo (nada muda no Lattes). */
   clearSent: () => Promise<void>;
   /** Quantas alterações foram gravadas e conferidas desde o último envio. */
@@ -170,6 +176,8 @@ export interface BridgeState {
   curriculo?: CurriculoReading;
   /** O painel fechou: cancela a rodada que ainda faz o ponto ou pergunta. */
   dismissRestore: () => void;
+  /** A extensão grava a pedido do editor: o envio e o "Continuar" saem daqui. */
+  drivesWrites: boolean;
   /**
    * A versão atual do Lattes, lida da página de conferência a pedido do
    * diagnóstico: os itens, ou o motivo de não ter lido.
@@ -186,6 +194,11 @@ export interface BridgeState {
   lattes?: LattesStatus;
   /** Em que pé está a ligação com o Lattes, para o cabeçalho explicar a falta de leitura. */
   link: Link;
+  /**
+   * A rodada parou no teto de gravações e o resto espera o "Continuar"
+   * (src/bridge/write-brake.ts).
+   */
+  pause?: RoundPause;
   /** A resposta do último pedido de troca da foto. */
   photoUpload?: PhotoUploadReading;
   /** Alterações que a extensão sabe levar e as que ela ainda não leva. */
@@ -199,6 +212,10 @@ export interface BridgeState {
   /** O ponto de restauração da última rodada de escrita (LAT-59). */
   restore?: RestoreState;
   results: Record<string, OpResult>;
+  /** Segue com o resto da fila depois da pausa no teto da rodada. */
+  resume: () => void;
+  /** As operações da rodada atual (use-write-brake.ts); antes do primeiro envio, nenhuma. */
+  round?: BridgeOp[];
   running: boolean;
   /**
    * Antes de mandar, exporta o Lattes e guarda um ponto de restauração; sem
@@ -222,13 +239,6 @@ export interface BridgeState {
   /** O que o conector gravou e conferiu no Lattes para este currículo, do mais recente. */
   sent: SentEntry[];
   stop: () => void;
-}
-
-/** O que foi mandado em cada chave da fila, para registrar quando voltar conferido. */
-interface Outgoing {
-  change?: Change;
-  op: BridgeOp;
-  undoOf?: number;
 }
 
 export function useBridge(
@@ -256,6 +266,7 @@ export function useBridge(
   const [photoUpload, setPhotoUpload] = useState<PhotoUploadReading | undefined>();
   const [importResult, setImportResult] = useState<ImportReading | undefined>();
   const restorePoint = useRestorePoint(features, post);
+  const drivesWrites = features.includes('gravar-pelo-editor');
   const { dropAll: dropRestoreRequests, takeReply: takeRestoreReply } = restorePoint;
 
   const reloadSent = useCallback(() => {
@@ -268,6 +279,9 @@ export function useBridge(
       .catch(() => setSent([]));
   }, [lattesId]);
   useEffect(reloadSent, [reloadSent]);
+  useEffect(() => void (outgoing.current = loadOutgoing(lattesId)), [lattesId]);
+  const brake = useWriteBrake(reloadSent, post, setRunning, confirmedRef);
+  const { setPause, startRound } = brake;
 
   /**
    * Toda resposta da fila entra no registro: a conferida, a criada no Lattes
@@ -279,11 +293,13 @@ export function useBridge(
       const item = outgoing.current.get(result.key);
       if (!item || !lattesId) return;
       outgoing.current.delete(result.key);
-      const { detail, status } = result;
+      saveOutgoing(lattesId, outgoing.current);
+      const { assigned, detail, status } = result;
       const ok = status === 'conferido';
       const entry = sentEntry(item.op, lattesId, Date.now(), {
         change: item.change,
-        outcome: status === 'conferido' ? undefined : { detail, status },
+        note: result.partial ? detail : undefined,
+        outcome: status === 'conferido' ? undefined : { assigned, detail, status },
         undoOf: item.undoOf,
       });
       void addSent(entry)
@@ -303,7 +319,10 @@ export function useBridge(
         setAvailable(true);
         setFeatures(msg.features ?? []);
       }
+      // A repetição da reconexão só conta para o que este editor ainda esperava.
+      if (msg.type === 'resultado' && msg.replay && !outgoing.current.has(msg.result.key)) return;
       if (msg.type === 'resultado') {
+        setPause(undefined);
         setResults((r) => ({ ...r, [msg.result.key]: msg.result }));
         recordRef.current(msg.result);
         if (msg.result.status === 'conferido') {
@@ -311,7 +330,10 @@ export function useBridge(
           confirmedRef.current(msg.result.key, msg.result.assigned);
         }
       }
-      if (msg.type === 'fim') setRunning(false);
+      if (msg.type === 'fim') {
+        setRunning(false);
+        setPause(msg.pause);
+      }
       // Só guarda o código se ele for deste currículo (a sessão do Lattes pode ser de outro).
       if (msg.type === 'codigo-cv' && lattesId && sameCv(lattesId, msg.lattesId)) {
         writeCvCode(lattesId, msg.code);
@@ -368,6 +390,7 @@ export function useBridge(
       onMessage,
       () => {
         dropRestoreRequests();
+        setPause(undefined);
         setAvailable(false);
         setFeatures([]);
         setRunning(false);
@@ -386,7 +409,7 @@ export function useBridge(
       clearTimeout(timer);
       stopListening();
     };
-  }, [lattesId, takeRestoreReply, dropRestoreRequests]);
+  }, [lattesId, takeRestoreReply, dropRestoreRequests, setPause]);
 
   // Os eventos saem do Importar só com a extensão que anuncia 'incluir-itens'
   // (direct-inclusion.ts). Segue as capacidades: sem extensão (features
@@ -394,20 +417,20 @@ export function useBridge(
   useEffect(() => syncIncludeCapability(features), [features]);
   useEffect(() => () => setIncludeCapability(false), []);
 
+  const entries = useMemo(() => groups.flatMap((g) => g.entries), [groups]);
+  // Os textos que o envio pede e o XML não guarda (o potencial de inovação).
+  const extras = useSendExtras();
   const plan = useMemo(
     () =>
       session
-        ? planChanges(
-            groups.flatMap((g) => g.entries),
-            session.doc.root,
-            planOptionsFor(features),
-          )
+        ? planChanges(entries, session.doc.root, { ...planOptionsFor(features), extras }, true)
         : { ops: [], unsupported: [] },
-    [session, groups, features],
+    [session, entries, features, extras],
   );
 
   return {
     ...restorePoint.fields,
+    ...brake.fields,
     available,
     clearSent: async () => {
       if (!lattesId) return;
@@ -416,6 +439,7 @@ export function useBridge(
     },
     confirmed,
     curriculo,
+    drivesWrites,
     espelho,
     features,
     importResult,
@@ -458,10 +482,12 @@ export function useBridge(
             : { change: changes.get(op.key), op },
         ]),
       );
+      saveOutgoing(lattesId, outgoing.current);
       setResults({});
+      startRound(ops);
       setConfirmed(0);
       setRunning(true);
-      post({ lattesId, ops, type: 'enviar' });
+      post({ lattesId, ops, start: drivesWrites, type: 'enviar' });
     },
     sendImport: () => {
       if (!session) return undefined;

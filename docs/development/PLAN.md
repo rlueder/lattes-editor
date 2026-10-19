@@ -1,0 +1,249 @@
+# Plano: o que ainda vai à mão no conector
+
+## Objetivo
+
+Levar ao envio pelo conector as trocas que hoje vão à mão por limitação do
+editor, e não do Lattes. A medida é `node scripts/cobertura-conector.ts`, nos
+dois currículos de exemplo: `fixtures/demo.xml` (o que uma pesquisadora teria)
+e `fixtures/synthetic_full.xml` (todos os elementos do schema, inclusive os
+tipos que o demo não tem). No começo do plano, 390 de 665 trocas do demo
+viravam envio (18/10/2026).
+Das 275 que não viram, 148 são limite do próprio Lattes (campo que o
+formulário não tem, dado que o Lattes gera, DOI) e ficam como estão. As
+outras 127 são o alvo deste plano.
+
+## Estado atual
+
+- 18/10/2026, fim do dia: o demo ganhou um prefácio e a cobertura passou a
+  medir os dois currículos: demo 447 de 662, synthetic_full 1113 de 3748.
+
+- 18/10/2026, mais tarde: o script de cobertura passou a ignorar o que o
+  editor não deixa digitar (`isSystemAttr`: códigos, IDs do orientador e do
+  orientado, datas do Lattes, sigla do país), como o próprio editor. A conta
+  ficou em 409 de 640.
+
+- 18/10/2026: passada completa no Lattes real terminada (PR #100). 340 itens de
+  teste criados e removidos, 2181 ligações campo ↔ atributo observadas, 13
+  divergências em `docs/lattes-formularios/pendencias.json`.
+- A limpeza dos itens de teste se apoiou na marca "TESTE EDITOR APAGAR" e
+  deixou 23 itens para trás (formações sem campo de texto e uma lista que o
+  menu abre por outro formato de link). Tudo removido e republicado; daqui em
+  diante vale a Fase 0.
+- Fases 0 e 1 feitas em 18/10/2026 (commits locais no PR #100).
+
+## Fases
+
+### Fase 0: base e registro dos itens de teste (só código)
+
+Antes de qualquer item de teste novo no Lattes real:
+
+1. "Ler formulários" guarda uma cópia de todas as listas que o menu abre, em
+   qualquer formato de link, com o texto e o link de cada linha. Sem essa
+   base, o lote não começa.
+2. Depois de cada lote, o registro guarda as linhas que apareceram, com o link.
+3. A remoção trabalha pelo registro: exclui só a linha registrada, e só se o
+   texto dela ainda bate.
+4. Fim só quando todas as listas voltam a ser iguais à base. O que sobrar, ou o
+   que faltar da base, aparece no painel.
+
+### Fase 1: o script de cobertura simula a escolha pela busca (só código)
+
+`scripts/cobertura-conector.ts` troca só o nome da instituição, do curso e da
+agência, sem o código, que é justamente o caso que o planejador recusa. Com a
+troca simulada como a escolha pela lista faz (código e nome juntos), as
+recusas da formação (cerca de 14) deixam de contar. Nenhuma mudança no envio. Feito em 18/10/2026: 390 → 394. O que sobra da
+formação é real: depois de trocar a instituição o curso precisa ser escolhido
+de novo, e a instituição do sanduíche e da cotutela (`NOME-INSTITUICAO-DOUT*`)
+não tem seletor no editor (entra na Fase 2).
+
+### Fase 2: buscas do Lattes em orientações e bancas
+
+O seletor e as buscas da formação já existem (`src/ui/LiveListField.tsx`,
+`src/ui/live-lists.ts`, `src/bridge/formacao-lookups.ts`, mensagens
+`buscar-instituicao` e `pedir-cursos`). Falta:
+
+- O seletor por par de atributos (`NOME-DA-INSTITUICAO`, `NOME-DO-CURSO`,
+  `NOME-DA-AGENCIA` das orientações concluídas; `NOME-INSTITUICAO` e
+  `NOME-CURSO` das em andamento e das bancas).
+- `pedir-cursos` com `f_pgm=TESE` e o nível da natureza (`retnivel()` da
+  página de orientação).
+- No envio, os ocultos `f_cod_inst`/`f_cod_inst2` (V no primeiro), `f_inst_old`,
+  `f_cod_curso`/`f_cod_curso2`, `f_curso_old`, `f_agencia`, `f_nme_agencia`.
+- ID do orientando: `pkg_orient.valida_orientador_ajax` preenche
+  `f_id_orientado` e `f_seq_form_orientado`. É um POST; conferir que só
+  consulta antes de usar.
+- Órgão do projeto: `PKG_PROJETO.pp_orgao_cargo` grava `f_codorgao`,
+  `f_codorgao2`, `f_orgao_old`. A resposta ainda não foi lida.
+
+No Lattes real: as buscas são só leitura; uma gravação acompanhada por tipo
+(orientação concluída, em andamento, banca, órgão do projeto).
+
+Feito em 18/10/2026, só no código e no Lattes simulado (capacidade
+`buscas-producao`): instituição, curso e agência de orientações e bancas pela
+escolha na lista (`src/bridge/production/lookups.ts`, o seletor em
+`src/ui/live-lists.ts`), e a instituição do sanduíche e da cotutela na
+formação. 399 → 410 de 663. Falta: o ID do orientando, o órgão do projeto (a busca `PKG_PROJETO.pp_orgao_cargo` foi lida em 18/10/2026: `atribuir(código, nome, tipo)` grava `f_codorgao` com tipo 0 e `f_codorgao2` nos outros, e o nome em `f_orgao` e `f_orgao_old`; os órgãos se abrem em árvore pelo `f_cod_inst2`), o
+curso dos tipos com mais de uma natureza (outras orientações concluídas,
+qualificação).
+
+O resto, também em 18/10/2026 (capacidade `orgao-projeto` e `natures` nas
+buscas):
+
+- Órgão e unidade do projeto: seletor em dois passos no editor
+  (`src/ui/OrganField.tsx`), mensagem `pedir-orgaos`, envio em
+  `src/bridge/production/organ.ts`, tudo atrás de `PROJECT_ORGAN_ENABLED`,
+  **desligada**. No teste ao vivo de 18/10/2026 (projeto de teste na atuação
+  da Campanha Nacional de Escolas da Comunidade), o Lattes recebeu o envio e
+  continuou com o órgão de antes, tanto para uma unidade quanto para outro
+  órgão. A tentativa de rodar o Salvar da página num quadro foi barrada, e o
+  teste à mão ficou para depois (ver o ORA-19032 abaixo): por ora o órgão fica à mão, com esse motivo
+  (`src/bridge/atuacao-by-hand.ts`).
+- Toda alteração de projeto voltava do Lattes com "ORA-19032: Era esperado o
+  identificador de XML": o `check()` da página monta `f_instituicoes`
+  (`<root><item><cod>…</cod><tipo_inst>…</tipo_inst></item></root>`) a partir
+  de `titularInstProvider`, e o conector mandava o oculto vazio. Corrigido em
+  18/10/2026 com o gancho `built` do alvo, e conferido no Lattes real pelo
+  potencial de inovação. É provável que o órgão tenha falhado pelo mesmo
+  motivo; o reteste pede ligar `PROJECT_ORGAN_ENABLED`.
+- O mesmo teste achou outro motivo de nenhuma alteração de projeto ir: o
+  conector procurava os vetores `financiadorProvider`, `producaoProvider` e
+  `orientacaoProvider`, que a página real não tem. As grades são as tabelas
+  `grid2`, `grid3` e `grid4`; corrigido. Uma alteração de campo de projeto
+  ainda não foi gravada no Lattes real.
+- Curso das orientações e bancas de várias naturezas (outras orientações
+  concluídas, qualificação): o nível sai da NATUREZA do item, pela tabela da
+  especificação (`natures`, ligações do censo de 18/10/2026).
+- ID do orientando: não é campo do editor (é de sistema, como o Lattes o
+  trata). O conector manda o que a página trouxe, como a página faz quando o
+  nome não valida. Mandar o ID novo quando o nome muda pede chamar
+  `pkg_orient.valida_orientador_ajax`, um POST. Testado em 18/10/2026 com um
+  nome de teste: devolve JSON (`sta_validado`, `mensagem`, `idOrientado`,
+  `seqFormOrientado`) e nenhuma lista mudou, ou seja, só consulta. Ligado
+  no envio da orientação (`src/bridge/production/student.ts`): com o nome do
+  orientando trocado, o conector faz a mesma validação antes do envio e,
+  como a página, só manda o identificador quando o nome valida. Testado no
+  Lattes simulado.
+
+Gravação no Lattes real em 18/10/2026, com base e registro da Fase 0: quatro
+itens de teste (orientação concluída e em andamento de mestrado, banca de
+mestrado, banca julgadora de professor titular) tiveram instituição, curso e
+agência trocados pelo `apply` do conector, com as buscas refeitas na hora.
+Os quatro voltaram "conferido" na releitura (instituição V0192…, curso
+42000254, agência K4WU…). Os 6 itens registrados (o lote de andamento criou 3
+variantes) foram removidos pelo registro, e a releitura de todas as listas
+ficou igual à base, sem linha a mais nem a menos.
+
+### Fase 3: capítulo de livro e prefácio
+
+Capítulo feito em 18/10/2026: o formulário `GN_CAP` (`PKG_LVR_CAP.FORM_CAP`,
+aberto pela escolha "Capitulo" da lista de livros e capítulos) foi lido, e o
+alvo `capitulo` (`bibliografica-livros.ts`) foi gravado no Lattes real num
+capítulo de teste: editora, páginas, cidade, título do capítulo e título do
+livro, todos conferidos, e a remoção pelo registro deixou as listas iguais à
+base. O título do capítulo é `f_titulo_cap`; `f_titulo` é o do livro. A
+cobertura foi a 428 de 640.
+
+Prefácio feito em 18/10/2026: a lista é `prc_bib_demais_lista` com
+`f_cod_tipo=1C` (link do menu "Prefácio, posfácio") e o formulário `GN_BIB` de
+`prc_bib_prefacio`. Num prefácio de teste no Lattes real, título, editora,
+cidade, volume, autor da publicação, tipo (prefácio para posfácio) e natureza
+foram gravados e conferidos, e a remoção deixou as listas iguais à base.
+
+O formulário de edição do capítulo nunca foi lido; a captura só tem o do
+livro (`PKG_LVR_CAP.FORM_LVR`, sem opção de capítulo). O currículo não tem
+capítulo, então a leitura pede um item de teste (com a Fase 0). Depois, um
+alvo `CAPITULO` em `src/bridge/production/targets/bibliografica-livros.ts`
+no molde do livro. Prefácio: confirmar o `f_cod_tipo` da lista (1C).
+
+### Fase 4: grades e o resto
+
+- Nacionalidade: feito em 18/10/2026. O país de nacionalidade virou lista
+  dos países do Lattes e leva a sigla e a nacionalidade (B para o Brasil, E
+  para os outros); a nacionalidade fica só para ler.
+- Coordenador do projeto: a regra é do Lattes (um e só um) e o editor já a
+  explica; a troca feita com os dois botões vai pelo conector. O script de
+  cobertura agora simula a troca em vez de virar um botão só (feito em
+  18/10/2026). Falta, se valer a pena, o coordenador no editor da equipe de
+  um projeto novo.
+- Potencial de inovação: feito em 18/10/2026. Ao passar de não para sim, o
+  editor pede o texto (até 400, `src/ui/InnovationText.tsx`) e o envio leva
+  `f_sta_inovacao=S` com `f_txt_potencial`; ao passar para não, o texto vai
+  vazio, como a página faz. O rádio só é marcado por script na página
+  (`scriptRadios` em `src/bridge/form.ts`). No Lattes real, num projeto de
+  teste, sim para não e não para sim com texto voltaram "conferido", e a
+  página de depois só mudou nesses dois campos.
+- Áreas de atuação: feito em 18/10/2026 (`src/bridge/areas-atuacao.ts`,
+  capacidade `alterar-areas-atuacao`). A página `prc_area_atuacao` grava a
+  lista inteira: `f_area_l` com `nome|código` de cada área, `f_privacidade` e
+  `f_ctr=I`; a chave `r` não aparece nas linhas nem na árvore. No Lattes real,
+  uma terceira área (Desenho Industrial, 61200000) entrou e saiu pelo
+  conector, conferida nas duas vezes, e as duas suas voltaram com os mesmos
+  códigos e a mesma privacidade (a área criada por você, 99990007, inclusive).
+- Valores postos por script: as páginas marcam selects, ocultos e rádios por
+  script (`$("[name=X]").val("v")` e `if ("a" == "b") $("input[name=X]
+[value=V]").attr("checked")`), e o HTML sozinho traz o padrão. Um envio de
+  identificação lido só do HTML mandou as privacidades de nascimento,
+  identidade, passaporte e cor/raça como Público e a cor/raça vazia em
+  18/10/2026; foi desfeito na hora, sem publicação no meio. Desde então todo
+  `readForm` passa por `withScriptValues`.
+- Contatos do endereço: feito no envio em 18/10/2026
+  (`src/bridge/endereco-contatos.ts`). A página serializa as redes em
+  `f_dados_grid` e as outras formas de contato em `f_dados_grid_contatos`
+  com o `array2xml` dela; todo envio do endereço leva as duas grades, porque
+  os ocultos vazios poderiam apagá-las. Os e-mails são `f_email_i` e
+  `f_email_r`. No Lattes real, o GitHub entrou ao lado do LinkedIn pelo
+  conector. Falta ver na exportação o formato de `REDE-SOCIAL` com duas
+  redes (a exportação atrasa horas) e a tela de contatos no editor.
+- Identificação: o `check()` da página monta `f_dados_grid` (a grade do
+  ORCID, `provider2`) e o nome para citação vem da grade de citações. Sem
+  isso o Lattes recusava com ORA-19032, e nenhuma alteração de identificação
+  tinha sido gravada ao vivo antes de 18/10/2026 (`src/bridge/ident-grids.ts`).
+- Pessoa com deficiência: o script de `prc_ident` foi lido em 18/10/2026. O
+  formulário tem o rádio `f_pcd_r` (N/S), uma caixa `f_pcd` por tipo (A
+  auditiva, F física, I intelectual, V visual, E espectro autista, M
+  múltipla) mais um `f_pcd=DUMMY` oculto, e a privacidade `f_priv_pcd`; com
+  "Não", a exportação traz `PCD=""`. O envio foi feito em 18/10/2026
+  (`src/bridge/pcd.ts`): no Lattes real, PCD visual (privado) entrou pelo
+  conector, "conferido", e só as linhas de PCD da página mudaram. Falta ver
+  como a exportação grava o tipo, depois tirar a PCD de teste pelo conector
+  e republicar.
+
+### Fase 5: nome para citação
+
+O `t` vai em cada linha de `f_autores_l`, mas uma troca só da citação já
+voltou "conferido" com o Lattes guardando a antiga. Uma gravação de teste
+decide entre mandar o `t` novo na linha ou alterar a entrada do dicionário de
+coautores (`pkg_dic_autor.lista`, 13 linhas no currículo), que muda a citação
+em todos os itens que a usam.
+
+### Fase 6: substituir (incluir o novo e excluir o antigo)
+
+Para trocas que mudam o tipo do item (nível da formação, natureza do evento):
+uma operação só, que inclui, confere e só então exclui. Se a inclusão falha,
+nada é excluído; se a exclusão falha, os dois ficam e o envio ao CNPq trava
+até a pessoa resolver. Começa por eventos e formação. A exclusão da formação
+ainda precisa ser vista no Lattes real.
+
+## Ficam à mão, com o motivo
+
+- Nome do pai e da mãe: o formulário de identificação só tem o oculto.
+- Substituir atuação: excluir a atuação apaga atividades, vínculos, projetos
+  e linhas de pesquisa, e quase nada disso se inclui de novo pelo conector.
+- Substituir orientação ou banca: o conector não inclui nem exclui produções,
+  e projetos apontam para elas.
+
+## Ordem
+
+0 e 1 (só código), as partes só de código da 4, depois 2, 3, o resto da 4, 5
+e 6. Cada sessão no Lattes real começa pela base da Fase 0.
+
+## Contexto
+
+- Relatórios dos quatro levantamentos de 18/10/2026: buscas (formação já tem
+  seletor; faltam orientações, bancas, ID do orientando e órgão), substituir
+  (inclusão existe para formação, eventos e parte da atuação; exclusão só de
+  idioma e vínculo), capítulo e citação, grades.
+- Páginas salvas da investigação: `orient.html`, `projeto-P.html`,
+  `inst-form.html`, `inst-ativ.html`, `revisor-agencia.html`, `periodico.html`
+  (fora do repositório).
+- `docs/lattes_internals.md`, seção 18, para as buscas.

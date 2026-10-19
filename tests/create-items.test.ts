@@ -271,7 +271,7 @@ describe('incluir a atuação no Lattes simulado', () => {
     });
     expect(await applyCreateAtuacao(op(), different.port)).toMatchObject({
       assigned: { 'SEQUENCIA-ATIVIDADE': '7' },
-      detail: expect.stringMatching(/gravada diferente: f_ano_ini/),
+      detail: expect.stringMatching(/outro valor em: Ano de início/),
       status: 'divergente',
     });
     const logon = await lattesFor({

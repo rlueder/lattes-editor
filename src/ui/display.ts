@@ -6,7 +6,7 @@
 
 import { enumLabel } from '../labels/labels.ts';
 import { lattesSchema } from '../schema/lattes.ts';
-import { codeValueLabel, flagLabel, isBooleanAttr } from './field-kind.ts';
+import { codeValueLabel, enumElsewhere, flagLabel, isBooleanAttr } from './field-kind.ts';
 import { displayLattesDate, isLattesDateAttr } from './lattes-date.ts';
 
 export function displayValue(element: string, attr: string, value: string): string {
@@ -14,6 +14,8 @@ export function displayValue(element: string, attr: string, value: string): stri
   const spec = lattesSchema.elements[element]?.attributes.find((a) => a.name === attr);
   if (isBooleanAttr(attr, spec, value)) return flagLabel(element, attr, value);
   if (isLattesDateAttr(element, attr, [])) return displayLattesDate(value);
-  if (spec?.enum) return enumLabel(value);
+  // A mesma regra do modo de leitura (reading.ts): o valor de um enumerado de
+  // outro elemento (STATUS-DO-CURSO no pós-doutorado) também vira rótulo.
+  if (spec?.enum?.includes(value) || enumElsewhere(attr, value)) return enumLabel(value);
   return codeValueLabel(element, attr, value);
 }

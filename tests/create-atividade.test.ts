@@ -154,8 +154,8 @@ describe('incluir atividade de ensino no Lattes simulado', () => {
       ),
     );
     const [r] = await applyAll(ops, lattes.port);
-    // Os campos voltam conferidos, mas as disciplinas não são relidas: divergente.
-    expect(r).toMatchObject({ status: 'divergente' });
+    // Os campos voltam conferidos; as disciplinas não são relidas e ficam no aviso.
+    expect(r).toMatchObject({ status: 'conferido' });
     expect(r!.detail).toBe(
       `${DISCIPLINES_UNREAD} (atividade ${r!.assigned!['SEQUENCIA-FUNCAO-ATIVIDADE']})`,
     );

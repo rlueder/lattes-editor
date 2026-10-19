@@ -24,7 +24,7 @@ describe('selo do menu lateral', () => {
     expect(c.projetos).toBe(1);
     expect(c.formacao).toBe(4);
     expect(c.atuacao).toBe(2);
-    expect(c.producoes).toBe(10);
+    expect(c.producoes).toBe(11);
     expect(c['dados-gerais']).toBe(0);
     expect(c.inovacao).toBe(0);
   });

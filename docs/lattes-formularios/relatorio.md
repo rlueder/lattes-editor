@@ -4,18 +4,18 @@ Gerado por `pnpm censo:relatorio` a partir das capturas em `docs/lattes-formular
 e de `src/schema/lattes.json`. Não editar à mão. Como capturar e o que cada
 grupo quer dizer está no `README.md` desta pasta.
 
-Formulários no censo: 87, com captura: 85, sem captura: 2.
+Formulários no censo: 89, com captura: 85, sem captura: 4.
 
 ## Atributos por grupo
 
 | Grupo              | Atributo por formulário | Atributo distinto |
 | ------------------ | ----------------------: | ----------------: |
-| com opções         |                     315 |               292 |
-| texto livre        |                     707 |               577 |
-| oculto             |                    1243 |               139 |
-| fora do formulário |                    1033 |               746 |
-| sem captura        |                      93 |                44 |
-| total              |                    3391 |              1798 |
+| com opções         |                     343 |               320 |
+| texto livre        |                     738 |               606 |
+| oculto             |                    1297 |               193 |
+| fora do formulário |                     920 |               635 |
+| sem captura        |                     171 |                44 |
+| total              |                    3469 |              1798 |
 
 ## Formulários
 
@@ -32,18 +32,18 @@ ligação do formulário com os elementos do XML foi conferida.
 | Idiomas (`idioma`)                                                           | endereço conhecido    | observado | observado | 2026-10-15 |      5 |     0 |      0 |    1 |
 | Prêmios e títulos (`premio`)                                                 | endereço conhecido    | observado | observado | 2026-10-15 |      0 |     3 |      0 |    1 |
 | Licenças (`licenca`)                                                         | endereço conhecido    | observado | inferido  | 2026-10-15 |      1 |     0 |      0 |    4 |
-| Formação acadêmica: doutorado (`formacao-FA-4`)                              | endereço conhecido    | observado | inferido  | 2026-10-15 |      3 |    10 |     26 |   17 |
-| Formação acadêmica: mestrado (`formacao-FA-3`)                               | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    10 |     27 |   12 |
-| Formação acadêmica: mestrado profissional (`formacao-FA-9`)                  | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     9 |     25 |    8 |
-| Formação acadêmica: especialização (`formacao-FA-2`)                         | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     8 |      3 |    6 |
-| Formação acadêmica: residência médica (`formacao-FA-D`)                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     5 |     23 |    4 |
-| Formação acadêmica: graduação (`formacao-FA-1`)                              | endereço conhecido    | observado | observado | 2026-10-15 |      2 |     7 |      5 |   14 |
-| Formação acadêmica: ensino técnico (`formacao-FA-7`)                         | endereço conhecido    | observado | observado | 2026-10-15 |      2 |     5 |      3 |    5 |
-| Formação acadêmica: ensino médio (`formacao-FA-C`)                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      1 |     3 |      2 |    1 |
-| Formação acadêmica: ensino fundamental (`formacao-FA-B`)                     | endereço conhecido    | observado | inferido  | 2026-10-15 |      1 |     3 |      2 |    1 |
-| Formação acadêmica: aperfeiçoamento (`formacao-FA-X`)                        | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     8 |      3 |    7 |
-| Formação: pós-doutorado (`formacao-AP-5`)                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     4 |     26 |    6 |
-| Formação: livre-docência (`formacao-AP-6`)                                   | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     3 |     23 |    2 |
+| Formação acadêmica: doutorado (`formacao-FA-4`)                              | endereço conhecido    | observado | inferido  | 2026-10-15 |      3 |    12 |     28 |   13 |
+| Formação acadêmica: mestrado (`formacao-FA-3`)                               | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    10 |     28 |   11 |
+| Formação acadêmica: mestrado profissional (`formacao-FA-9`)                  | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     9 |     27 |    6 |
+| Formação acadêmica: especialização (`formacao-FA-2`)                         | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     8 |      5 |    4 |
+| Formação acadêmica: residência médica (`formacao-FA-D`)                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     6 |     25 |    1 |
+| Formação acadêmica: graduação (`formacao-FA-1`)                              | endereço conhecido    | observado | observado | 2026-10-15 |      2 |     8 |      7 |   11 |
+| Formação acadêmica: ensino técnico (`formacao-FA-7`)                         | endereço conhecido    | observado | observado | 2026-10-15 |      2 |     5 |      5 |    3 |
+| Formação acadêmica: ensino médio (`formacao-FA-C`)                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      1 |     3 |      3 |    0 |
+| Formação acadêmica: ensino fundamental (`formacao-FA-B`)                     | endereço conhecido    | observado | inferido  | 2026-10-15 |      1 |     3 |      3 |    0 |
+| Formação acadêmica: aperfeiçoamento (`formacao-FA-X`)                        | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     8 |      5 |    5 |
+| Formação: pós-doutorado (`formacao-AP-5`)                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     4 |     28 |    4 |
+| Formação: livre-docência (`formacao-AP-6`)                                   | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     3 |     24 |    1 |
 | Formação complementar (`formacao-complementar`)                              | endereço conhecido    | observado | observado | 2026-10-15 |      8 |     6 |      9 |   56 |
 | Atuação profissional (`atuacao`)                                             | endereço conhecido    | observado | observado | 2026-10-15 |      0 |     4 |      1 |    9 |
 | Vínculo de uma atuação (`vinculo`)                                           | link da lista         | observado | observado | 2026-10-15 |      2 |    10 |      0 |    3 |
@@ -67,56 +67,69 @@ ligação do formulário com os elementos do XML foi conferida.
 | Projeto de extensão (`projeto-E`)                                            | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    14 |      2 |   18 |
 | Projeto de ensino (`projeto-N`)                                              | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    14 |      2 |   18 |
 | Projeto de outros (`projeto-O`)                                              | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    14 |      2 |   18 |
-| Artigos completos publicados (`artigo-publicado`)                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     9 |     26 |   10 |
-| Artigos aceitos para publicação (`artigo-aceito`)                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      3 |     5 |     26 |   14 |
-| Livros e capítulos (`livro-capitulo`)                                        | link da lista         | inferido  | inferido  | 2026-10-15 |     10 |    17 |     26 |   17 |
-| Trabalhos em anais (`trabalho-em-eventos`)                                   | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |    12 |     26 |   12 |
-| Textos em jornais ou revistas (`texto-jornal`)                               | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    10 |     26 |    7 |
-| Tradução (`traducao`)                                                        | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |    13 |     26 |    7 |
-| Partitura musical (`partitura`)                                              | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     9 |     26 |    5 |
-| Prefácio, posfácio e outra produção bibliográfica (`prefacio-outras`)        | endereço desconhecido | inferido  | inferido  | falta      |        |       |        |      |
+| Artigos completos publicados (`artigo-publicado`)                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |    10 |     27 |    8 |
+| Artigos aceitos para publicação (`artigo-aceito`)                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      3 |     6 |     27 |   12 |
+| Livros e capítulos (`livro-capitulo`)                                        | link da lista         | inferido  | inferido  | 2026-10-15 |     11 |    19 |     27 |   13 |
+| Capítulo de livro (`capitulo`)                                               | endereço conhecido    | observado | inferido  | falta      |        |       |        |      |
+| Trabalhos em anais (`trabalho-em-eventos`)                                   | endereço conhecido    | observado | inferido  | 2026-10-15 |      7 |    14 |     27 |    6 |
+| Textos em jornais ou revistas (`texto-jornal`)                               | endereço conhecido    | observado | inferido  | 2026-10-15 |      6 |    10 |     27 |    5 |
+| Tradução (`traducao`)                                                        | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    15 |     27 |    3 |
+| Partitura musical (`partitura`)                                              | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    10 |     27 |    2 |
+| Prefácio, posfácio (`prefacio`)                                              | endereço conhecido    | observado | inferido  | falta      |        |       |        |      |
+| Outra produção bibliográfica (`prefacio-outras`)                             | endereço desconhecido | inferido  | inferido  | falta      |        |       |        |      |
 | Patente: janela "Incluir nova patente" (`patente-janela`)                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
 | Patente (`patente`)                                                          | endereço conhecido    | observado | observado | 2026-10-15 |      3 |     9 |     27 |   19 |
-| Programa de computador (`registro-PC`)                                       | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     8 |     27 |   20 |
+| Programa de computador (`registro-PC`)                                       | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     8 |     28 |   19 |
 | Programa de computador registrado (`registro-PC-S`)                          | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     9 |     28 |   18 |
-| Cultivar protegida (`registro-CP`)                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     6 |     26 |   17 |
-| Cultivar registrada (`registro-CR`)                                          | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     6 |     26 |   17 |
-| Desenho industrial (`registro-DI`)                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     7 |     27 |   15 |
-| Marca (`registro-MR`)                                                        | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     7 |     26 |   14 |
-| Topografia de circuito integrado (`registro-TC`)                             | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     8 |     26 |   15 |
-| Produtos tecnológicos (`produto`)                                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      6 |    10 |     26 |   17 |
-| Processos ou técnicas (`processo`)                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      6 |    10 |     26 |   16 |
+| Cultivar protegida (`registro-CP`)                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     7 |     27 |   15 |
+| Cultivar registrada (`registro-CR`)                                          | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     7 |     27 |   15 |
+| Desenho industrial (`registro-DI`)                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     8 |     28 |   13 |
+| Marca (`registro-MR`)                                                        | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     7 |     27 |   13 |
+| Topografia de circuito integrado (`registro-TC`)                             | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     9 |     27 |   13 |
+| Produtos tecnológicos (`produto`)                                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      8 |    10 |     27 |   14 |
+| Processos ou técnicas (`processo`)                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      7 |    10 |     27 |   14 |
 | Trabalhos técnicos (`trabalho-tecnico`)                                      | endereço conhecido    | observado | observado | 2026-10-15 |      6 |    10 |     27 |    3 |
 | Assessoria e consultoria (`assessoria`)                                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
 | Extensão tecnológica (`extensao-tecnologica`)                                | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
-| Apresentação de trabalho (`tec-2J`)                                          | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     8 |     26 |    5 |
-| Carta, mapa ou similar (`tec-2A`)                                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |    10 |     26 |    5 |
-| Curso de curta duração (`tec-2B`)                                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      7 |     8 |     26 |    6 |
-| Material didático (`tec-2C`)                                                 | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     7 |     26 |    5 |
+| Apresentação de trabalho (`tec-2J`)                                          | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     8 |     27 |    3 |
+| Carta, mapa ou similar (`tec-2A`)                                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    10 |     27 |    3 |
+| Curso de curta duração (`tec-2B`)                                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      8 |     8 |     27 |    4 |
+| Material didático (`tec-2C`)                                                 | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     7 |     27 |    4 |
 | Editoração (`tec-2D`)                                                        | endereço conhecido    | observado | observado | 2026-10-15 |      5 |     9 |     27 |    2 |
-| Manutenção de obra artística (`tec-2E`)                                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     7 |     26 |    7 |
-| Maquete (`tec-2F`)                                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     8 |     26 |    5 |
-| Organização de evento (`tec-2G`)                                             | endereço conhecido    | observado | inferido  | 2026-10-15 |      7 |     8 |     26 |    6 |
-| Programa de rádio ou TV (`tec-2H`)                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     9 |     26 |    7 |
-| Relatório de pesquisa (`tec-2I`)                                             | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     7 |     26 |    4 |
-| Redes sociais, sites e blogs (`tec-2L`)                                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     6 |     26 |    4 |
-| Outra produção técnica (`tec-2Z`)                                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    11 |     26 |   17 |
-| Artes cênicas (`arte-AC`)                                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    12 |     27 |   11 |
-| Música (`arte-MU`)                                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    12 |     26 |   13 |
-| Artes visuais (`arte-AV`)                                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    10 |     26 |    4 |
-| Outra produção artística (`arte-OU`)                                         | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    11 |     26 |    4 |
-| Orientações concluídas (`orientacao-concluida`)                              | endereço conhecido    | observado | inferido  | 2026-10-15 |     16 |    17 |     35 |   54 |
+| Manutenção de obra artística (`tec-2E`)                                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     8 |     27 |    4 |
+| Maquete (`tec-2F`)                                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     8 |     27 |    4 |
+| Organização de evento (`tec-2G`)                                             | endereço conhecido    | observado | inferido  | 2026-10-15 |      9 |     8 |     27 |    3 |
+| Programa de rádio ou TV (`tec-2H`)                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      6 |     9 |     27 |    5 |
+| Relatório de pesquisa (`tec-2I`)                                             | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     7 |     27 |    3 |
+| Redes sociais, sites e blogs (`tec-2L`)                                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     6 |     27 |    2 |
+| Outra produção técnica (`tec-2Z`)                                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    11 |     27 |   16 |
+| Artes cênicas (`arte-AC`)                                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      8 |    15 |     28 |    4 |
+| Música (`arte-MU`)                                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      8 |    16 |     27 |    5 |
+| Artes visuais (`arte-AV`)                                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      7 |    10 |     27 |    1 |
+| Outra produção artística (`arte-OU`)                                         | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    11 |     27 |    3 |
+| Orientações concluídas (`orientacao-concluida`)                              | endereço conhecido    | observado | inferido  | 2026-10-15 |     17 |    20 |     37 |   48 |
 | Orientações em andamento (`orientacao-andamento`)                            | endereço conhecido    | observado | inferido  | 2026-10-15 |     21 |    36 |     37 |   80 |
-| Bancas de trabalhos de conclusão (`banca-trabalho`)                          | endereço conhecido    | observado | inferido  | 2026-10-15 |     12 |    25 |     33 |   63 |
+| Bancas de trabalhos de conclusão (`banca-trabalho`)                          | endereço conhecido    | observado | inferido  | 2026-10-15 |     13 |    28 |     34 |   58 |
 | Bancas julgadoras (`banca-julgadora`)                                        | endereço conhecido    | observado | inferido  | 2026-10-15 |     10 |    21 |     26 |   28 |
 | Participação em eventos (`evento`)                                           | endereço conhecido    | observado | observado | 2026-10-15 |     37 |    54 |      1 |  116 |
-| Demais trabalhos (`demais-trabalhos`)                                        | link da lista         | inferido  | inferido  | 2026-10-15 |      4 |     8 |     26 |    4 |
+| Demais trabalhos (`demais-trabalhos`)                                        | link da lista         | inferido  | inferido  | 2026-10-15 |      4 |     8 |     27 |    3 |
 
 ## Divergências entre o Lattes capturado e o editor
 
-- DADOS-BASICOS-DE-EDITORACAO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica) (aceita: a opção V (impresso e mídia eletrônica) não apareceu em nenhum item da exportação; VARIOS seria palpite, então o editor fica com o XSD até um item com V mostrar o valor)
+- DADOS-BASICOS-DA-MUSICA@NATUREZA: opções do Lattes sem valor conhecido no XSD (10 valores): 3B1 (Apresentação de Obra (para compositores)), 3B4 (Composição (estréia)) (aceita: os itens de teste de 18/10/2026 deram dois valores para 3B1 (APRESENTACAO_DE_OBRA e COMPOSICAO) no cruzamento pelo índice da variante; sem um valor firme, o editor fica com o XSD)
+- DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@NATUREZA: novas no Lattes: Mestrado, Doutorado, Curso de aperfeiçoamento/especialização, Graduação (aceita: o F_COD_PROD da banca reúne todas as naturezas; só A13 e A16 são exame de qualificação, e as outras vão para os elementos de banca de mestrado, doutorado, aperfeiçoamento e graduação)
+- DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@NATUREZA: opções do Lattes sem valor conhecido no XSD (4 valores): 41 (Dissertação de mestrado), 42 (Tese de doutorado), 43 (Monografia de conclusão de curso de aperfeiçoamento/especialização), 44 (Trabalho de conclusão de curso de graduação), 46 (Supervisão de pós-doutorado) e mais 1 (aceita: 41, 42 e 46 vão para os elementos de orientação de mestrado, doutorado e pós-doutorado; 43, 44, 45 e 49 batem com o XSD pelo rótulo nos itens de teste de 18/10/2026, mas o mapa das que não bateram se perdia (link.ts, corrigido))
+- DADOS-BASICOS-DA-PARTITURA@NATUREZA: opções do Lattes sem valor conhecido no XSD (5 valores): 1B3 (Orquestral), 1B9 (Outra) (aceita: a ligação por valor bateu em todos os itens de teste de 18/10/2026, sem contradição, mas o mapa das opções que não bateram pelo rótulo se perdia (link.ts só guardava o mapa nas ligações por enumeração; corrigido): o valor exato fica para a próxima passada)
+- DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@NATUREZA: opções do Lattes sem valor conhecido no XSD (6 valores): 2A9 (Outro) (aceita: a ligação por valor bateu em todos os itens de teste de 18/10/2026, sem contradição, mas o mapa das opções que não bateram pelo rótulo se perdia (link.ts só guardava o mapa nas ligações por enumeração; corrigido): o valor exato fica para a próxima passada)
+- DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@NIVEL-DO-CURSO: opções do Lattes sem valor conhecido no XSD (5 valores): 2B9 (Outro) (aceita: a ligação por valor bateu em todos os itens de teste de 18/10/2026, sem contradição, mas o mapa das opções que não bateram pelo rótulo se perdia (link.ts só guardava o mapa nas ligações por enumeração; corrigido): o valor exato fica para a próxima passada)
 - DADOS-BASICOS-DE-EDITORACAO@NATUREZA: opções do Lattes sem valor conhecido no XSD (8 valores): 2D9 (Outro) (aceita: 2D9 é "Outro" no Lattes e o XSD tem OUTRA; nenhum item com 2D9 mostrou o valor gravado)
-- DADOS-BASICOS-DO-TRABALHO-TECNICO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica) (aceita: a opção V (impresso e mídia eletrônica) não apareceu em nenhum item da exportação; VARIOS seria palpite)
+- DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@NATUREZA: opções do Lattes sem valor conhecido no XSD (5 valores): 28 (Outra) (aceita: o XSD não tem valor para 28 (Outra); a ligação por valor bateu nos itens de teste, mas o valor gravado não ficou registrado (link.ts, corrigido))
+- DADOS-BASICOS-DA-APRESENTACAO-DE-TRABALHO@NATUREZA: opções do Lattes sem valor conhecido no XSD (7 valores): 2J2 (Conferência ou palestra) (aceita: a ligação por valor bateu em todos os itens de teste de 18/10/2026, sem contradição, mas o mapa das opções que não bateram pelo rótulo se perdia (link.ts só guardava o mapa nas ligações por enumeração; corrigido): o valor exato fica para a próxima passada)
+- DADOS-BASICOS-DA-TRADUCAO@NATUREZA: opções do Lattes sem valor conhecido no XSD (4 valores): 1A9 (Outra) (aceita: a ligação por valor bateu em todos os itens de teste de 18/10/2026, sem contradição, mas o mapa das opções que não bateram pelo rótulo se perdia (link.ts só guardava o mapa nas ligações por enumeração; corrigido): o valor exato fica para a próxima passada)
+- DETALHAMENTO-DA-MUSICA@TIPO-DE-EVENTO: o campo f_tpo_evento tem opções no Lattes e o editor mostra texto livre (aceita: nos itens de teste de 18/10/2026 o texto só bateu sem acento e caixa em 4 de 7, com 3 contradições: a grafia exata do XML não está firme para virar lista)
+- DETALHAMENTO-DO-PROCESSOS-OU-TECNICAS@DISPONIBILIDADE: o campo f_disp tem opções no Lattes e o editor mostra texto livre (aceita: o XML guarda o texto da opção (Restrita, Irrestrita), mas nos itens de teste de 18/10/2026 só bateu sem acento e caixa: a grafia exata não está firme para virar lista)
+- DETALHAMENTO-DO-PRODUTO-TECNOLOGICO@DISPONIBILIDADE: o campo f_disp tem opções no Lattes e o editor mostra texto livre (aceita: o XML guarda o texto da opção (Restrita, Irrestrita), mas nos itens de teste de 18/10/2026 só bateu sem acento e caixa: a grafia exata não está firme para virar lista)
+- DETALHAMENTO-DO-RELATORIO-DE-PESQUISA@DISPONIBILIDADE: o campo f_disp tem opções no Lattes e o editor mostra texto livre (aceita: o XML guarda o texto da opção (Restrita, Irrestrita), mas nos itens de teste de 18/10/2026 só bateu sem acento e caixa: a grafia exata não está firme para virar lista)
 - DETALHAMENTO-DO-TRABALHO-TECNICO@DISPONIBILIDADE: o campo f_disp tem opções no Lattes e o editor mostra texto livre (aceita: o XML guarda o texto da opção (Restrita, Irrestrita), mas a grafia exata não foi registrada na captura de 15/10/2026; a próxima registra em spelling)
 
 ## Lacunas prováveis de opções (ligação inferida)
@@ -124,40 +137,15 @@ ligação do formulário com os elementos do XML foi conferida.
 O mesmo conferido acima, para campos ligados ao atributo só pelo nome. O teste
 não cobra estas até a passada de edição observar a ligação.
 
-- DADOS-BASICOS-DE-ARTES-CENICAS@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DADOS-BASICOS-DE-ARTES-VISUAIS@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DADOS-BASICOS-DA-MUSICA@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DADOS-BASICOS-DO-ARTIGO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (Impresso e mídia eletrônica)
-- DADOS-BASICOS-DE-DEMAIS-TRABALHOS@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
+- DADOS-GERAIS@PAIS-DE-NACIONALIDADE: novas no Lattes: República Tcheca, República Tcheca
 - DADOS-GERAIS@SEXO: opções do Lattes sem valor conhecido no XSD (2 valores): M (), F ()
 - LICENCA@TIPO-LICENCA: opções do Lattes sem valor conhecido no XSD (1 valores): P (Paternidade), A (Adoção)
-- DADOS-BASICOS-DO-CAPITULO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DADOS-BASICOS-DO-LIVRO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DADOS-BASICOS-DA-PARTITURA@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DADOS-BASICOS-DA-MAQUETE@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
 - DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): O (Outrooutro)
-- DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DADOS-BASICOS-DO-TEXTO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DADOS-BASICOS-DO-TRABALHO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
-- DADOS-BASICOS-DA-TRADUCAO@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): V (impresso e mídia eletrônica)
 - DADOS-GERAIS@PCD: o campo f_pcd tem opções no Lattes e o editor mostra texto livre
-- DETALHAMENTO-DO-PROCESSOS-OU-TECNICAS@DISPONIBILIDADE: o campo f_disp tem opções no Lattes e o editor mostra texto livre
-- DETALHAMENTO-DO-PRODUTO-TECNOLOGICO@DISPONIBILIDADE: o campo f_disp tem opções no Lattes e o editor mostra texto livre
-- DETALHAMENTO-DA-MARCA@NATUREZA: o campo f_natureza tem opções no Lattes e o editor mostra texto livre
-- DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@UNIDADE: o campo f_unidade tem opções no Lattes e o editor mostra texto livre
-- DETALHAMENTO-DO-RELATORIO-DE-PESQUISA@DISPONIBILIDADE: o campo f_disp tem opções no Lattes e o editor mostra texto livre
 
 ## Lacunas
 
-Formulários sem captura: `linha-de-pesquisa`, `prefacio-outras`.
+Formulários sem captura: `linha-de-pesquisa`, `capitulo`, `prefacio`, `prefacio-outras`.
 
 Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA-ARTISTICA`, `APRESENTACAO-EM-RADIO-OU-TV`, `ARRANJO-MUSICAL`, `COMPOSICAO-MUSICAL`, `CURRICULO-VITAE`, `CURSO-DE-CURTA-DURACAO`, `DADOS-BASICOS-DA-APRESENTACAO-DE-OBRA-ARTISTICA`, `DADOS-BASICOS-DA-APRESENTACAO-EM-RADIO-OU-TV`, `DADOS-BASICOS-DA-COMPOSICAO-MUSICAL`, `DADOS-BASICOS-DA-OBRA-DE-ARTES-VISUAIS`, `DADOS-BASICOS-DE-SONOPLASTIA`, `DADOS-BASICOS-DO-ARRANJO-MUSICAL`, `DADOS-BASICOS-DO-CURSO-DE-CURTA-DURACAO`, `DETALHAMENTO-DA-APRESENTACAO-DE-OBRA-ARTISTICA`, `DETALHAMENTO-DA-APRESENTACAO-EM-RADIO-OU-TV`, `DETALHAMENTO-DA-COMPOSICAO-MUSICAL`, `DETALHAMENTO-DA-OBRA-DE-ARTES-VISUAIS`, `DETALHAMENTO-DE-SONOPLASTIA`, `DETALHAMENTO-DO-ARRANJO-MUSICAL`, `DETALHAMENTO-DO-CURSO-DE-CURTA-DURACAO`, `INFORMACAO-ADICIONAL-CURSO`, `INFORMACAO-ADICIONAL-INSTITUICAO`, `OBRA-DE-ARTES-VISUAIS`, `SONOPLASTIA`.
 
@@ -337,7 +325,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DOUTORADO@STATUS-DO-CURSO` ← `F_STATUS` (documentado)
+- `DOUTORADO@STATUS-DO-CURSO` ← `F_STATUS` (observado)
 - `DOUTORADO@FLAG-BOLSA` ← `F_BOLSA` (observado)
 - `DOUTORADO@TIPO-DOUTORADO` ← `f_tpo_doutorado` (observado)
 
@@ -349,16 +337,20 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DOUTORADO@ANO-DE-CONCLUSAO` ← `f_ano_fim` (observado)
 - `DOUTORADO@NOME-AGENCIA` ← `f_nme_agencia` (inferido)
 - `DOUTORADO@ANO-DE-OBTENCAO-DO-TITULO` ← `f_ano_obten` (inferido)
-- `DOUTORADO@TITULO-DA-DISSERTACAO-TESE` ← `f_titulo` (inferido)
+- `DOUTORADO@TITULO-DA-DISSERTACAO-TESE` ← `f_titulo` (observado)
 - `DOUTORADO@NOME-COMPLETO-DO-ORIENTADOR` ← `f_orient` (observado)
-- `DOUTORADO@NOME-ORIENTADOR-DOUT` ← `f_orient_dout` (inferido)
-- `DOUTORADO@NOME-DO-CO-ORIENTADOR` ← `f_coorient` (inferido)
+- `DOUTORADO@NOME-ORIENTADOR-DOUT` ← `f_orient_dout` (observado)
+- `DOUTORADO@NOME-DO-ORIENTADOR-CO-TUTELA` ← `f_orient_dout_ct` (observado)
+- `DOUTORADO@NOME-DO-ORIENTADOR-SANDUICHE` ← `f_orient_dout_sw` (observado)
+- `DOUTORADO@NOME-DO-CO-ORIENTADOR` ← `f_coorient` (observado)
 
 **oculto**
 
+- `DOUTORADO@SEQUENCIA-FORMACAO` ← `f_seq` (observado)
 - `DOUTORADO@NIVEL` ← `f_nivel` (inferido)
 - `DOUTORADO@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
-- `DOUTORADO@CODIGO-CURSO` ← `f_cod_curso` (inferido)
+- `DOUTORADO@CODIGO-CURSO` ← `f_cod_curso` (observado)
+- `DOUTORADO@CODIGO-AGENCIA-FINANCIADORA` ← `f_agencia` (observado)
 - `DOUTORADO@CODIGO-INSTITUICAO-DOUT` ← `f_cod_inst_dout` (inferido)
 - `DOUTORADO@NUMERO-ID-ORIENTADOR` ← `f_id_orientador` (inferido)
 - `PALAVRAS-CHAVE@PALAVRA-CHAVE-1` ← `f_plv_l` (inferido)
@@ -385,21 +377,17 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `DOUTORADO@SEQUENCIA-FORMACAO`
 - `DOUTORADO@CODIGO-ORGAO`
 - `DOUTORADO@NOME-ORGAO`
 - `DOUTORADO@CODIGO-AREA-CURSO`
-- `DOUTORADO@CODIGO-AGENCIA-FINANCIADORA`
 - `DOUTORADO@NOME-INSTITUICAO-DOUT`
 - `DOUTORADO@CODIGO-INSTITUICAO-OUTRA-DOUT`
 - `DOUTORADO@NOME-INSTITUICAO-OUTRA-DOUT`
 - `DOUTORADO@CODIGO-CURSO-CAPES`
 - `DOUTORADO@TITULO-DA-DISSERTACAO-TESE-INGLES`
 - `DOUTORADO@NOME-CURSO-INGLES`
-- `DOUTORADO@NOME-DO-ORIENTADOR-CO-TUTELA`
 - `DOUTORADO@CODIGO-INSTITUICAO-OUTRA-CO-TUTELA`
 - `DOUTORADO@CODIGO-INSTITUICAO-CO-TUTELA`
-- `DOUTORADO@NOME-DO-ORIENTADOR-SANDUICHE`
 - `DOUTORADO@CODIGO-INSTITUICAO-OUTRA-SANDUICHE`
 - `DOUTORADO@CODIGO-INSTITUICAO-SANDUICHE`
 
@@ -409,7 +397,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `MESTRADO@STATUS-DO-CURSO` ← `F_STATUS` (documentado)
+- `MESTRADO@STATUS-DO-CURSO` ← `F_STATUS` (observado)
 - `MESTRADO@FLAG-BOLSA` ← `F_BOLSA` (observado)
 - `MESTRADO@TIPO-MESTRADO` ← `f_tpo_doutorado` (documentado)
 
@@ -421,10 +409,10 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `MESTRADO@ANO-DE-CONCLUSAO` ← `f_ano_fim` (observado)
 - `MESTRADO@NOME-AGENCIA` ← `f_nme_agencia` (inferido)
 - `MESTRADO@ANO-DE-OBTENCAO-DO-TITULO` ← `f_ano_obten` (inferido)
-- `MESTRADO@TITULO-DA-DISSERTACAO-TESE` ← `f_titulo` (inferido)
+- `MESTRADO@TITULO-DA-DISSERTACAO-TESE` ← `f_titulo` (observado)
 - `MESTRADO@NOME-COMPLETO-DO-ORIENTADOR` ← `f_orient` (observado)
-- `MESTRADO@NOME-DO-CO-ORIENTADOR` ← `f_coorient` (inferido)
-- `MESTRADO@NOME-ORIENTADOR-DOUT` ← `f_orient_dout` (inferido)
+- `MESTRADO@NOME-DO-CO-ORIENTADOR` ← `f_coorient` (observado)
+- `MESTRADO@NOME-ORIENTADOR-DOUT` ← `f_orient_dout` (observado)
 
 **oculto**
 
@@ -432,6 +420,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `MESTRADO@NIVEL` ← `f_nivel` (inferido)
 - `MESTRADO@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
 - `MESTRADO@CODIGO-CURSO` ← `f_cod_curso` (observado)
+- `MESTRADO@CODIGO-AGENCIA-FINANCIADORA` ← `f_agencia` (observado)
 - `MESTRADO@NUMERO-ID-ORIENTADOR` ← `f_id_orientador` (inferido)
 - `MESTRADO@CODIGO-INSTITUICAO-DOUT` ← `f_cod_inst_dout` (inferido)
 - `PALAVRAS-CHAVE@PALAVRA-CHAVE-1` ← `f_plv_l` (inferido)
@@ -461,7 +450,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `MESTRADO@CODIGO-ORGAO`
 - `MESTRADO@NOME-ORGAO`
 - `MESTRADO@CODIGO-AREA-CURSO`
-- `MESTRADO@CODIGO-AGENCIA-FINANCIADORA`
 - `MESTRADO@CODIGO-CURSO-CAPES`
 - `MESTRADO@TITULO-DA-DISSERTACAO-TESE-INGLES`
 - `MESTRADO@NOME-CURSO-INGLES`
@@ -477,7 +465,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `MESTRADO-PROFISSIONALIZANTE@STATUS-DO-CURSO` ← `F_STATUS` (documentado)
+- `MESTRADO-PROFISSIONALIZANTE@STATUS-DO-CURSO` ← `F_STATUS` (observado)
 - `MESTRADO-PROFISSIONALIZANTE@FLAG-BOLSA` ← `F_BOLSA` (observado)
 
 **texto livre**
@@ -488,15 +476,17 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `MESTRADO-PROFISSIONALIZANTE@ANO-DE-CONCLUSAO` ← `f_ano_fim` (observado)
 - `MESTRADO-PROFISSIONALIZANTE@NOME-AGENCIA` ← `f_nme_agencia` (inferido)
 - `MESTRADO-PROFISSIONALIZANTE@ANO-DE-OBTENCAO-DO-TITULO` ← `f_ano_obten` (inferido)
-- `MESTRADO-PROFISSIONALIZANTE@TITULO-DA-DISSERTACAO-TESE` ← `f_titulo` (inferido)
+- `MESTRADO-PROFISSIONALIZANTE@TITULO-DA-DISSERTACAO-TESE` ← `f_titulo` (observado)
 - `MESTRADO-PROFISSIONALIZANTE@NOME-COMPLETO-DO-ORIENTADOR` ← `f_orient` (observado)
-- `MESTRADO-PROFISSIONALIZANTE@NOME-DO-CO-ORIENTADOR` ← `f_coorient` (inferido)
+- `MESTRADO-PROFISSIONALIZANTE@NOME-DO-CO-ORIENTADOR` ← `f_coorient` (observado)
 
 **oculto**
 
+- `MESTRADO-PROFISSIONALIZANTE@SEQUENCIA-FORMACAO` ← `f_seq` (observado)
 - `MESTRADO-PROFISSIONALIZANTE@NIVEL` ← `f_nivel` (inferido)
 - `MESTRADO-PROFISSIONALIZANTE@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
-- `MESTRADO-PROFISSIONALIZANTE@CODIGO-CURSO` ← `f_cod_curso` (inferido)
+- `MESTRADO-PROFISSIONALIZANTE@CODIGO-CURSO` ← `f_cod_curso` (observado)
+- `MESTRADO-PROFISSIONALIZANTE@CODIGO-AGENCIA-FINANCIADORA` ← `f_agencia` (observado)
 - `MESTRADO-PROFISSIONALIZANTE@NUMERO-ID-ORIENTADOR` ← `f_id_orientador` (inferido)
 - `PALAVRAS-CHAVE@PALAVRA-CHAVE-1` ← `f_plv_l` (inferido)
 - `PALAVRAS-CHAVE@PALAVRA-CHAVE-2` ← `f_plv_l` (inferido)
@@ -522,11 +512,9 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `MESTRADO-PROFISSIONALIZANTE@SEQUENCIA-FORMACAO`
 - `MESTRADO-PROFISSIONALIZANTE@CODIGO-ORGAO`
 - `MESTRADO-PROFISSIONALIZANTE@NOME-ORGAO`
 - `MESTRADO-PROFISSIONALIZANTE@CODIGO-AREA-CURSO`
-- `MESTRADO-PROFISSIONALIZANTE@CODIGO-AGENCIA-FINANCIADORA`
 - `MESTRADO-PROFISSIONALIZANTE@CODIGO-CURSO-CAPES`
 - `MESTRADO-PROFISSIONALIZANTE@TITULO-DA-DISSERTACAO-TESE-INGLES`
 - `MESTRADO-PROFISSIONALIZANTE@NOME-CURSO-INGLES`
@@ -537,32 +525,32 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `ESPECIALIZACAO@STATUS-DO-CURSO` ← `F_STATUS` (documentado)
+- `ESPECIALIZACAO@STATUS-DO-CURSO` ← `F_STATUS` (observado)
 - `ESPECIALIZACAO@FLAG-BOLSA` ← `F_BOLSA` (observado)
 
 **texto livre**
 
-- `ESPECIALIZACAO@TITULO-DA-MONOGRAFIA` ← `f_titulo` (inferido)
+- `ESPECIALIZACAO@TITULO-DA-MONOGRAFIA` ← `f_titulo` (observado)
 - `ESPECIALIZACAO@NOME-DO-ORIENTADOR` ← `f_orient` (observado)
 - `ESPECIALIZACAO@NOME-INSTITUICAO` ← `f_inst` (observado)
 - `ESPECIALIZACAO@NOME-CURSO` ← `f_curso` (observado)
 - `ESPECIALIZACAO@ANO-DE-INICIO` ← `f_ano_ini` (observado)
 - `ESPECIALIZACAO@ANO-DE-CONCLUSAO` ← `f_ano_fim` (observado)
 - `ESPECIALIZACAO@NOME-AGENCIA` ← `f_nme_agencia` (inferido)
-- `ESPECIALIZACAO@CARGA-HORARIA` ← `f_carga` (inferido)
+- `ESPECIALIZACAO@CARGA-HORARIA` ← `f_carga` (observado)
 
 **oculto**
 
+- `ESPECIALIZACAO@SEQUENCIA-FORMACAO` ← `f_seq` (observado)
 - `ESPECIALIZACAO@NIVEL` ← `f_nivel` (inferido)
 - `ESPECIALIZACAO@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
-- `ESPECIALIZACAO@CODIGO-CURSO` ← `f_cod_curso` (inferido)
+- `ESPECIALIZACAO@CODIGO-CURSO` ← `f_cod_curso` (observado)
+- `ESPECIALIZACAO@CODIGO-AGENCIA-FINANCIADORA` ← `f_agencia` (observado)
 
 **fora do formulário**
 
-- `ESPECIALIZACAO@SEQUENCIA-FORMACAO`
 - `ESPECIALIZACAO@CODIGO-ORGAO`
 - `ESPECIALIZACAO@NOME-ORGAO`
-- `ESPECIALIZACAO@CODIGO-AGENCIA-FINANCIADORA`
 - `ESPECIALIZACAO@TITULO-DA-MONOGRAFIA-INGLES`
 - `ESPECIALIZACAO@NOME-CURSO-INGLES`
 
@@ -572,7 +560,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `RESIDENCIA-MEDICA@STATUS-DO-CURSO` ← `F_STATUS` (documentado)
+- `RESIDENCIA-MEDICA@STATUS-DO-CURSO` ← `F_STATUS` (observado)
 - `RESIDENCIA-MEDICA@FLAG-BOLSA` ← `F_BOLSA` (observado)
 
 **texto livre**
@@ -581,12 +569,15 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `RESIDENCIA-MEDICA@ANO-DE-INICIO` ← `f_ano_ini` (observado)
 - `RESIDENCIA-MEDICA@ANO-DE-CONCLUSAO` ← `f_ano_fim` (observado)
 - `RESIDENCIA-MEDICA@NOME-AGENCIA` ← `f_nme_agencia` (inferido)
-- `RESIDENCIA-MEDICA@TITULO-DA-RESIDENCIA-MEDICA` ← `f_titulo` (inferido)
+- `RESIDENCIA-MEDICA@TITULO-DA-RESIDENCIA-MEDICA` ← `f_titulo` (observado)
+- `RESIDENCIA-MEDICA@NUMERO-DO-REGISTRO` ← `f_orient` (observado)
 
 **oculto**
 
+- `RESIDENCIA-MEDICA@SEQUENCIA-FORMACAO` ← `f_seq` (observado)
 - `RESIDENCIA-MEDICA@NIVEL` ← `f_nivel` (inferido)
 - `RESIDENCIA-MEDICA@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
+- `RESIDENCIA-MEDICA@CODIGO-AGENCIA-FINANCIADORA` ← `f_agencia` (observado)
 - `PALAVRAS-CHAVE@PALAVRA-CHAVE-1` ← `f_plv_l` (inferido)
 - `PALAVRAS-CHAVE@PALAVRA-CHAVE-2` ← `f_plv_l` (inferido)
 - `PALAVRAS-CHAVE@PALAVRA-CHAVE-3` ← `f_plv_l` (inferido)
@@ -611,9 +602,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `RESIDENCIA-MEDICA@SEQUENCIA-FORMACAO`
-- `RESIDENCIA-MEDICA@CODIGO-AGENCIA-FINANCIADORA`
-- `RESIDENCIA-MEDICA@NUMERO-DO-REGISTRO`
 - `RESIDENCIA-MEDICA@TITULO-DA-RESIDENCIA-MEDICA-INGLES`
 
 </details>
@@ -622,7 +610,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `GRADUACAO@STATUS-DO-CURSO` ← `F_STATUS` (documentado)
+- `GRADUACAO@STATUS-DO-CURSO` ← `F_STATUS` (observado)
 - `GRADUACAO@FLAG-BOLSA` ← `F_BOLSA` (observado)
 
 **texto livre**
@@ -634,22 +622,23 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `GRADUACAO@ANO-DE-INICIO` ← `f_ano_ini` (observado)
 - `GRADUACAO@ANO-DE-CONCLUSAO` ← `f_ano_fim` (observado)
 - `GRADUACAO@NOME-AGENCIA` ← `f_nme_agencia` (inferido)
+- `GRADUACAO@NOME-ORIENTADOR-GRAD` ← `f_orient_dout` (observado)
 
 **oculto**
 
+- `GRADUACAO@SEQUENCIA-FORMACAO` ← `f_seq` (observado)
 - `GRADUACAO@NIVEL` ← `f_nivel` (inferido)
 - `GRADUACAO@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
-- `GRADUACAO@CODIGO-CURSO` ← `f_cod_curso` (inferido)
+- `GRADUACAO@CODIGO-CURSO` ← `f_cod_curso` (observado)
+- `GRADUACAO@CODIGO-AGENCIA-FINANCIADORA` ← `f_agencia` (observado)
 - `GRADUACAO@NUMERO-ID-ORIENTADOR` ← `f_id_orientador` (inferido)
 - `GRADUACAO@TIPO-GRADUACAO` ← `f_tipo` (inferido)
 
 **fora do formulário**
 
-- `GRADUACAO@SEQUENCIA-FORMACAO`
 - `GRADUACAO@CODIGO-ORGAO`
 - `GRADUACAO@NOME-ORGAO`
 - `GRADUACAO@CODIGO-AREA-CURSO`
-- `GRADUACAO@CODIGO-AGENCIA-FINANCIADORA`
 - `GRADUACAO@CODIGO-CURSO-CAPES`
 - `GRADUACAO@TITULO-DO-TRABALHO-DE-CONCLUSAO-DE-CURSO-INGLES`
 - `GRADUACAO@NOME-CURSO-INGLES`
@@ -658,7 +647,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `GRADUACAO@NOME-INSTITUICAO-GRAD`
 - `GRADUACAO@CODIGO-INSTITUICAO-OUTRA-GRAD`
 - `GRADUACAO@NOME-INSTITUICAO-OUTRA-GRAD`
-- `GRADUACAO@NOME-ORIENTADOR-GRAD`
 
 </details>
 
@@ -666,7 +654,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `CURSO-TECNICO-PROFISSIONALIZANTE@STATUS-DO-CURSO` ← `F_STATUS` (documentado)
+- `CURSO-TECNICO-PROFISSIONALIZANTE@STATUS-DO-CURSO` ← `F_STATUS` (observado)
 - `CURSO-TECNICO-PROFISSIONALIZANTE@FLAG-BOLSA` ← `F_BOLSA` (observado)
 
 **texto livre**
@@ -679,16 +667,16 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **oculto**
 
+- `CURSO-TECNICO-PROFISSIONALIZANTE@SEQUENCIA-FORMACAO` ← `f_seq` (observado)
 - `CURSO-TECNICO-PROFISSIONALIZANTE@NIVEL` ← `f_nivel` (inferido)
 - `CURSO-TECNICO-PROFISSIONALIZANTE@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
-- `CURSO-TECNICO-PROFISSIONALIZANTE@CODIGO-CURSO` ← `f_cod_curso2` (observado)
+- `CURSO-TECNICO-PROFISSIONALIZANTE@CODIGO-CURSO` ← `f_cod_curso` (observado)
+- `CURSO-TECNICO-PROFISSIONALIZANTE@CODIGO-AGENCIA-FINANCIADORA` ← `f_agencia` (observado)
 
 **fora do formulário**
 
-- `CURSO-TECNICO-PROFISSIONALIZANTE@SEQUENCIA-FORMACAO`
 - `CURSO-TECNICO-PROFISSIONALIZANTE@CODIGO-ORGAO`
 - `CURSO-TECNICO-PROFISSIONALIZANTE@NOME-ORGAO`
-- `CURSO-TECNICO-PROFISSIONALIZANTE@CODIGO-AGENCIA-FINANCIADORA`
 - `CURSO-TECNICO-PROFISSIONALIZANTE@NOME-CURSO-INGLES`
 
 </details>
@@ -697,7 +685,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `ENSINO-MEDIO-SEGUNDO-GRAU@STATUS-DO-CURSO` ← `F_STATUS` (documentado)
+- `ENSINO-MEDIO-SEGUNDO-GRAU@STATUS-DO-CURSO` ← `F_STATUS` (observado)
 
 **texto livre**
 
@@ -707,12 +695,9 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **oculto**
 
+- `ENSINO-MEDIO-SEGUNDO-GRAU@SEQUENCIA-FORMACAO` ← `f_seq` (observado)
 - `ENSINO-MEDIO-SEGUNDO-GRAU@NIVEL` ← `f_nivel` (inferido)
 - `ENSINO-MEDIO-SEGUNDO-GRAU@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
-
-**fora do formulário**
-
-- `ENSINO-MEDIO-SEGUNDO-GRAU@SEQUENCIA-FORMACAO`
 
 </details>
 
@@ -720,7 +705,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `ENSINO-FUNDAMENTAL-PRIMEIRO-GRAU@STATUS-DO-CURSO` ← `F_STATUS` (documentado)
+- `ENSINO-FUNDAMENTAL-PRIMEIRO-GRAU@STATUS-DO-CURSO` ← `F_STATUS` (observado)
 
 **texto livre**
 
@@ -730,12 +715,9 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **oculto**
 
+- `ENSINO-FUNDAMENTAL-PRIMEIRO-GRAU@SEQUENCIA-FORMACAO` ← `f_seq` (observado)
 - `ENSINO-FUNDAMENTAL-PRIMEIRO-GRAU@NIVEL` ← `f_nivel` (inferido)
 - `ENSINO-FUNDAMENTAL-PRIMEIRO-GRAU@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
-
-**fora do formulário**
-
-- `ENSINO-FUNDAMENTAL-PRIMEIRO-GRAU@SEQUENCIA-FORMACAO`
 
 </details>
 
@@ -743,33 +725,33 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `APERFEICOAMENTO@STATUS-DO-CURSO` ← `F_STATUS` (documentado)
+- `APERFEICOAMENTO@STATUS-DO-CURSO` ← `F_STATUS` (observado)
 - `APERFEICOAMENTO@FLAG-BOLSA` ← `F_BOLSA` (observado)
 
 **texto livre**
 
-- `APERFEICOAMENTO@TITULO-DA-MONOGRAFIA` ← `f_titulo` (inferido)
+- `APERFEICOAMENTO@TITULO-DA-MONOGRAFIA` ← `f_titulo` (observado)
 - `APERFEICOAMENTO@NOME-DO-ORIENTADOR` ← `f_orient` (observado)
 - `APERFEICOAMENTO@NOME-INSTITUICAO` ← `f_inst` (observado)
 - `APERFEICOAMENTO@NOME-CURSO` ← `f_curso` (observado)
 - `APERFEICOAMENTO@ANO-DE-INICIO` ← `f_ano_ini` (observado)
 - `APERFEICOAMENTO@ANO-DE-CONCLUSAO` ← `f_ano_fim` (observado)
 - `APERFEICOAMENTO@NOME-AGENCIA` ← `f_nme_agencia` (inferido)
-- `APERFEICOAMENTO@CARGA-HORARIA` ← `f_carga` (inferido)
+- `APERFEICOAMENTO@CARGA-HORARIA` ← `f_carga` (observado)
 
 **oculto**
 
+- `APERFEICOAMENTO@SEQUENCIA-FORMACAO` ← `f_seq` (observado)
 - `APERFEICOAMENTO@NIVEL` ← `f_nivel` (inferido)
 - `APERFEICOAMENTO@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
-- `APERFEICOAMENTO@CODIGO-CURSO` ← `f_cod_curso` (inferido)
+- `APERFEICOAMENTO@CODIGO-CURSO` ← `f_cod_curso` (observado)
+- `APERFEICOAMENTO@CODIGO-AGENCIA-FINANCIADORA` ← `f_agencia` (observado)
 
 **fora do formulário**
 
-- `APERFEICOAMENTO@SEQUENCIA-FORMACAO`
 - `APERFEICOAMENTO@CODIGO-ORGAO`
 - `APERFEICOAMENTO@NOME-ORGAO`
 - `APERFEICOAMENTO@CODIGO-AREA-CURSO`
-- `APERFEICOAMENTO@CODIGO-AGENCIA-FINANCIADORA`
 - `APERFEICOAMENTO@TITULO-DA-MONOGRAFIA-INGLES`
 - `APERFEICOAMENTO@NOME-CURSO-INGLES`
 
@@ -780,7 +762,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 **com opções**
 
 - `POS-DOUTORADO@FLAG-BOLSA` ← `F_BOLSA` (observado)
-- `POS-DOUTORADO@STATUS-DO-CURSO` ← `F_STATUS` (documentado)
+- `POS-DOUTORADO@STATUS-DO-CURSO` ← `F_STATUS` (observado)
 
 **texto livre**
 
@@ -791,9 +773,11 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **oculto**
 
+- `POS-DOUTORADO@SEQUENCIA-FORMACAO` ← `f_seq` (observado)
 - `POS-DOUTORADO@NIVEL` ← `f_nivel` (inferido)
 - `POS-DOUTORADO@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
 - `POS-DOUTORADO@ANO-DE-OBTENCAO-DO-TITULO` ← `f_ano_obten` (inferido)
+- `POS-DOUTORADO@CODIGO-AGENCIA-FINANCIADORA` ← `f_agencia` (observado)
 - `POS-DOUTORADO@CODIGO-CURSO-CAPES` ← `f_cod_curso` (inferido)
 - `POS-DOUTORADO@TITULO-DO-TRABALHO` ← `f_titulo` (inferido)
 - `PALAVRAS-CHAVE@PALAVRA-CHAVE-1` ← `f_plv_l` (inferido)
@@ -820,8 +804,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `POS-DOUTORADO@SEQUENCIA-FORMACAO`
-- `POS-DOUTORADO@CODIGO-AGENCIA-FINANCIADORA`
 - `POS-DOUTORADO@STATUS-DO-ESTAGIO`
 - `POS-DOUTORADO@NUMERO-ID-ORIENTADOR`
 - `POS-DOUTORADO@TITULO-DO-TRABALHO-INGLES`
@@ -834,11 +816,12 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 **texto livre**
 
 - `LIVRE-DOCENCIA@NOME-INSTITUICAO` ← `f_inst` (observado)
-- `LIVRE-DOCENCIA@ANO-DE-OBTENCAO-DO-TITULO` ← `f_ano_obten` (inferido)
-- `LIVRE-DOCENCIA@TITULO-DO-TRABALHO` ← `f_titulo` (inferido)
+- `LIVRE-DOCENCIA@ANO-DE-OBTENCAO-DO-TITULO` ← `f_ano_obten` (observado)
+- `LIVRE-DOCENCIA@TITULO-DO-TRABALHO` ← `f_titulo` (observado)
 
 **oculto**
 
+- `LIVRE-DOCENCIA@SEQUENCIA-FORMACAO` ← `f_seq` (observado)
 - `LIVRE-DOCENCIA@NIVEL` ← `f_nivel` (inferido)
 - `LIVRE-DOCENCIA@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
 - `PALAVRAS-CHAVE@PALAVRA-CHAVE-1` ← `f_plv_l` (inferido)
@@ -865,7 +848,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `LIVRE-DOCENCIA@SEQUENCIA-FORMACAO`
 - `LIVRE-DOCENCIA@TITULO-DO-TRABALHO-INGLES`
 
 </details>
@@ -1239,22 +1221,22 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `PROJETO-DE-PESQUISA@SITUACAO` ← `F_TPO_SITUACAO` (documentado)
-- `PROJETO-DE-PESQUISA@NATUREZA` ← `F_TPO_NATUREZA` (documentado)
+- `PROJETO-DE-PESQUISA@SITUACAO` ← `F_TPO_SITUACAO` (observado)
+- `PROJETO-DE-PESQUISA@NATUREZA` ← `F_TPO_NATUREZA` (observado)
 - `PROJETO-DE-PESQUISA@FLAG-POTENCIAL-INOVACAO` ← `f_sta_inovacao` (documentado)
 
 **texto livre**
 
-- `PROJETO-DE-PESQUISA@ANO-INICIO` ← `F_ANO_INIC` (documentado)
+- `PROJETO-DE-PESQUISA@ANO-INICIO` ← `F_ANO_INIC` (observado)
 - `PROJETO-DE-PESQUISA@ANO-FIM` ← `F_ANO_FIM` (documentado)
-- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO` ← `f_titulo` (documentado)
+- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO` ← `f_titulo` (observado)
 - `PROJETO-DE-PESQUISA@NUMERO-GRADUACAO` ← `F_NRO_GRADUACAO` (documentado)
 - `PROJETO-DE-PESQUISA@NUMERO-ESPECIALIZACAO` ← `F_NRO_ESPECIALIZACAO` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-ACADEMICO` ← `F_NRO_MESTRADO_ACAD` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-PROF` ← `F_NRO_MESTRADO_PROF` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-DOUTORADO` ← `F_NRO_DOUTORADO` (inferido)
-- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO-INGLES` ← `f_ref_en` (documentado)
-- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO-INGLES` ← `f_titulo_en` (documentado)
+- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO-INGLES` ← `f_ref_en` (observado)
+- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO-INGLES` ← `f_titulo_en` (observado)
 - `PRODUCAO-CT-DO-PROJETO@TITULO-DA-PRODUCAO-CT` ← `f_titulo` (inferido)
 - `PRODUCAO-CT-DO-PROJETO@TITULO-DA-PRODUCAO-CT-INGLES` ← `f_titulo_en` (inferido)
 - `ORIENTACAO@TITULO-ORIENTACAO` ← `f_titulo` (inferido)
@@ -1292,22 +1274,22 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `PROJETO-DE-PESQUISA@SITUACAO` ← `F_TPO_SITUACAO` (documentado)
-- `PROJETO-DE-PESQUISA@NATUREZA` ← `F_TPO_NATUREZA` (documentado)
+- `PROJETO-DE-PESQUISA@SITUACAO` ← `F_TPO_SITUACAO` (observado)
+- `PROJETO-DE-PESQUISA@NATUREZA` ← `F_TPO_NATUREZA` (observado)
 - `PROJETO-DE-PESQUISA@FLAG-POTENCIAL-INOVACAO` ← `f_sta_inovacao` (documentado)
 
 **texto livre**
 
-- `PROJETO-DE-PESQUISA@ANO-INICIO` ← `F_ANO_INIC` (documentado)
+- `PROJETO-DE-PESQUISA@ANO-INICIO` ← `F_ANO_INIC` (observado)
 - `PROJETO-DE-PESQUISA@ANO-FIM` ← `F_ANO_FIM` (documentado)
-- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO` ← `f_titulo` (documentado)
+- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO` ← `f_titulo` (observado)
 - `PROJETO-DE-PESQUISA@NUMERO-GRADUACAO` ← `F_NRO_GRADUACAO` (documentado)
 - `PROJETO-DE-PESQUISA@NUMERO-ESPECIALIZACAO` ← `F_NRO_ESPECIALIZACAO` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-ACADEMICO` ← `F_NRO_MESTRADO_ACAD` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-PROF` ← `F_NRO_MESTRADO_PROF` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-DOUTORADO` ← `F_NRO_DOUTORADO` (inferido)
-- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO-INGLES` ← `f_ref_en` (documentado)
-- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO-INGLES` ← `f_titulo_en` (documentado)
+- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO-INGLES` ← `f_ref_en` (observado)
+- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO-INGLES` ← `f_titulo_en` (observado)
 - `PROJETO-DE-PESQUISA@NUMERO_TECNICO_NIVEL_MEDIO` ← `F_NRO_TEC_NIVEL_MEDIO` (inferido)
 - `PRODUCAO-CT-DO-PROJETO@TITULO-DA-PRODUCAO-CT` ← `f_titulo` (inferido)
 - `PRODUCAO-CT-DO-PROJETO@TITULO-DA-PRODUCAO-CT-INGLES` ← `f_titulo_en` (inferido)
@@ -1345,22 +1327,22 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `PROJETO-DE-PESQUISA@SITUACAO` ← `F_TPO_SITUACAO` (documentado)
-- `PROJETO-DE-PESQUISA@NATUREZA` ← `F_TPO_NATUREZA` (documentado)
+- `PROJETO-DE-PESQUISA@SITUACAO` ← `F_TPO_SITUACAO` (observado)
+- `PROJETO-DE-PESQUISA@NATUREZA` ← `F_TPO_NATUREZA` (observado)
 - `PROJETO-DE-PESQUISA@FLAG-POTENCIAL-INOVACAO` ← `f_sta_inovacao` (documentado)
 
 **texto livre**
 
 - `PROJETO-DE-PESQUISA@ANO-INICIO` ← `F_ANO_INIC` (documentado)
 - `PROJETO-DE-PESQUISA@ANO-FIM` ← `F_ANO_FIM` (documentado)
-- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO` ← `f_titulo` (documentado)
+- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO` ← `f_titulo` (observado)
 - `PROJETO-DE-PESQUISA@NUMERO-GRADUACAO` ← `F_NRO_GRADUACAO` (documentado)
 - `PROJETO-DE-PESQUISA@NUMERO-ESPECIALIZACAO` ← `F_NRO_ESPECIALIZACAO` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-ACADEMICO` ← `F_NRO_MESTRADO_ACAD` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-PROF` ← `F_NRO_MESTRADO_PROF` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-DOUTORADO` ← `F_NRO_DOUTORADO` (inferido)
-- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO-INGLES` ← `f_ref_en` (documentado)
-- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO-INGLES` ← `f_titulo_en` (documentado)
+- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO-INGLES` ← `f_ref_en` (observado)
+- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO-INGLES` ← `f_titulo_en` (observado)
 - `PRODUCAO-CT-DO-PROJETO@TITULO-DA-PRODUCAO-CT` ← `f_titulo` (inferido)
 - `PRODUCAO-CT-DO-PROJETO@TITULO-DA-PRODUCAO-CT-INGLES` ← `f_titulo_en` (inferido)
 - `ORIENTACAO@TITULO-ORIENTACAO` ← `f_titulo` (inferido)
@@ -1398,22 +1380,22 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `PROJETO-DE-PESQUISA@SITUACAO` ← `F_TPO_SITUACAO` (documentado)
-- `PROJETO-DE-PESQUISA@NATUREZA` ← `F_TPO_NATUREZA` (documentado)
+- `PROJETO-DE-PESQUISA@SITUACAO` ← `F_TPO_SITUACAO` (observado)
+- `PROJETO-DE-PESQUISA@NATUREZA` ← `F_TPO_NATUREZA` (observado)
 - `PROJETO-DE-PESQUISA@FLAG-POTENCIAL-INOVACAO` ← `f_sta_inovacao` (documentado)
 
 **texto livre**
 
-- `PROJETO-DE-PESQUISA@ANO-INICIO` ← `F_ANO_INIC` (documentado)
+- `PROJETO-DE-PESQUISA@ANO-INICIO` ← `F_ANO_INIC` (observado)
 - `PROJETO-DE-PESQUISA@ANO-FIM` ← `F_ANO_FIM` (documentado)
-- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO` ← `f_titulo` (documentado)
+- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO` ← `f_titulo` (observado)
 - `PROJETO-DE-PESQUISA@NUMERO-GRADUACAO` ← `F_NRO_GRADUACAO` (documentado)
 - `PROJETO-DE-PESQUISA@NUMERO-ESPECIALIZACAO` ← `F_NRO_ESPECIALIZACAO` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-ACADEMICO` ← `F_NRO_MESTRADO_ACAD` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-PROF` ← `F_NRO_MESTRADO_PROF` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-DOUTORADO` ← `F_NRO_DOUTORADO` (inferido)
-- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO-INGLES` ← `f_ref_en` (documentado)
-- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO-INGLES` ← `f_titulo_en` (documentado)
+- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO-INGLES` ← `f_ref_en` (observado)
+- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO-INGLES` ← `f_titulo_en` (observado)
 - `PRODUCAO-CT-DO-PROJETO@TITULO-DA-PRODUCAO-CT` ← `f_titulo` (inferido)
 - `PRODUCAO-CT-DO-PROJETO@TITULO-DA-PRODUCAO-CT-INGLES` ← `f_titulo_en` (inferido)
 - `ORIENTACAO@TITULO-ORIENTACAO` ← `f_titulo` (inferido)
@@ -1451,22 +1433,22 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `PROJETO-DE-PESQUISA@SITUACAO` ← `F_TPO_SITUACAO` (documentado)
-- `PROJETO-DE-PESQUISA@NATUREZA` ← `F_TPO_NATUREZA` (documentado)
+- `PROJETO-DE-PESQUISA@SITUACAO` ← `F_TPO_SITUACAO` (observado)
+- `PROJETO-DE-PESQUISA@NATUREZA` ← `F_TPO_NATUREZA` (observado)
 - `PROJETO-DE-PESQUISA@FLAG-POTENCIAL-INOVACAO` ← `f_sta_inovacao` (documentado)
 
 **texto livre**
 
 - `PROJETO-DE-PESQUISA@ANO-INICIO` ← `F_ANO_INIC` (documentado)
 - `PROJETO-DE-PESQUISA@ANO-FIM` ← `F_ANO_FIM` (documentado)
-- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO` ← `f_titulo` (documentado)
+- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO` ← `f_titulo` (observado)
 - `PROJETO-DE-PESQUISA@NUMERO-GRADUACAO` ← `F_NRO_GRADUACAO` (documentado)
 - `PROJETO-DE-PESQUISA@NUMERO-ESPECIALIZACAO` ← `F_NRO_ESPECIALIZACAO` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-ACADEMICO` ← `F_NRO_MESTRADO_ACAD` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-PROF` ← `F_NRO_MESTRADO_PROF` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-DOUTORADO` ← `F_NRO_DOUTORADO` (inferido)
-- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO-INGLES` ← `f_ref_en` (documentado)
-- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO-INGLES` ← `f_titulo_en` (documentado)
+- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO-INGLES` ← `f_ref_en` (observado)
+- `PROJETO-DE-PESQUISA@NOME-DO-PROJETO-INGLES` ← `f_titulo_en` (observado)
 - `PRODUCAO-CT-DO-PROJETO@TITULO-DA-PRODUCAO-CT` ← `f_titulo` (inferido)
 - `PRODUCAO-CT-DO-PROJETO@TITULO-DA-PRODUCAO-CT-INGLES` ← `f_titulo_en` (inferido)
 - `ORIENTACAO@TITULO-ORIENTACAO` ← `f_titulo` (inferido)
@@ -1504,25 +1486,27 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DO-ARTIGO@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DO-ARTIGO@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
+- `DADOS-BASICOS-DO-ARTIGO@IDIOMA` ← `F_IDIOMA` (observado)
+- `DADOS-BASICOS-DO-ARTIGO@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
 - `DADOS-BASICOS-DO-ARTIGO@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
 - `DADOS-BASICOS-DO-ARTIGO@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
 
 **texto livre**
 
-- `DADOS-BASICOS-DO-ARTIGO@TITULO-DO-ARTIGO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DO-ARTIGO@ANO-DO-ARTIGO` ← `f_ano` (inferido)
+- `DADOS-BASICOS-DO-ARTIGO@TITULO-DO-ARTIGO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DO-ARTIGO@ANO-DO-ARTIGO` ← `f_ano` (observado)
 - `DADOS-BASICOS-DO-ARTIGO@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (inferido)
-- `DADOS-BASICOS-DO-ARTIGO@TITULO-DO-ARTIGO-INGLES` ← `f_titulo_en` (inferido)
+- `DADOS-BASICOS-DO-ARTIGO@TITULO-DO-ARTIGO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DO-ARTIGO@TITULO-DO-PERIODICO-OU-REVISTA` ← `f_titulo_periodico` (observado)
 - `DETALHAMENTO-DO-ARTIGO@ISSN` ← `f_issn` (inferido)
 - `DETALHAMENTO-DO-ARTIGO@VOLUME` ← `f_volume` (inferido)
 - `DETALHAMENTO-DO-ARTIGO@SERIE` ← `f_serie` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `ARTIGO-PUBLICADO@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -1552,12 +1536,10 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `ARTIGO-PUBLICADO@SEQUENCIA-PRODUCAO`
 - `ARTIGO-PUBLICADO@ORDEM-IMPORTANCIA`
 - `DADOS-BASICOS-DO-ARTIGO@NATUREZA`
 - `DADOS-BASICOS-DO-ARTIGO@PAIS-DE-PUBLICACAO`
 - `DADOS-BASICOS-DO-ARTIGO@DOI`
-- `DETALHAMENTO-DO-ARTIGO@TITULO-DO-PERIODICO-OU-REVISTA`
 - `DETALHAMENTO-DO-ARTIGO@FASCICULO`
 - `DETALHAMENTO-DO-ARTIGO@PAGINA-INICIAL`
 - `DETALHAMENTO-DO-ARTIGO@PAGINA-FINAL`
@@ -1569,20 +1551,22 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DO-ARTIGO@IDIOMA` ← `F_IDIOMA` (inferido)
+- `DADOS-BASICOS-DO-ARTIGO@IDIOMA` ← `F_IDIOMA` (observado)
 - `DADOS-BASICOS-DO-ARTIGO@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
 - `DADOS-BASICOS-DO-ARTIGO@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
 
 **texto livre**
 
-- `DADOS-BASICOS-DO-ARTIGO@TITULO-DO-ARTIGO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DO-ARTIGO@ANO-DO-ARTIGO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DO-ARTIGO@TITULO-DO-ARTIGO-INGLES` ← `f_titulo_en` (inferido)
+- `DADOS-BASICOS-DO-ARTIGO@TITULO-DO-ARTIGO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DO-ARTIGO@ANO-DO-ARTIGO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DO-ARTIGO@TITULO-DO-ARTIGO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DO-ARTIGO@TITULO-DO-PERIODICO-OU-REVISTA` ← `f_titulo_periodico` (observado)
 - `DETALHAMENTO-DO-ARTIGO@ISSN` ← `f_issn` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `ARTIGO-ACEITO-PARA-PUBLICACAO@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -1612,13 +1596,11 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `ARTIGO-ACEITO-PARA-PUBLICACAO@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DO-ARTIGO@NATUREZA`
 - `DADOS-BASICOS-DO-ARTIGO@PAIS-DE-PUBLICACAO`
 - `DADOS-BASICOS-DO-ARTIGO@MEIO-DE-DIVULGACAO`
 - `DADOS-BASICOS-DO-ARTIGO@HOME-PAGE-DO-TRABALHO`
 - `DADOS-BASICOS-DO-ARTIGO@DOI`
-- `DETALHAMENTO-DO-ARTIGO@TITULO-DO-PERIODICO-OU-REVISTA`
 - `DETALHAMENTO-DO-ARTIGO@VOLUME`
 - `DETALHAMENTO-DO-ARTIGO@FASCICULO`
 - `DETALHAMENTO-DO-ARTIGO@SERIE`
@@ -1633,9 +1615,10 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DO-LIVRO@PAIS-DE-PUBLICACAO` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DO-LIVRO@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DO-LIVRO@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
+- `DADOS-BASICOS-DO-LIVRO@TIPO` ← `F_COD_PROD` (observado)
+- `DADOS-BASICOS-DO-LIVRO@PAIS-DE-PUBLICACAO` ← `f_pais` (observado)
+- `DADOS-BASICOS-DO-LIVRO@IDIOMA` ← `F_IDIOMA` (observado)
+- `DADOS-BASICOS-DO-LIVRO@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
 - `DADOS-BASICOS-DO-LIVRO@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
 - `DADOS-BASICOS-DO-LIVRO@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
 - `DADOS-BASICOS-DO-CAPITULO@PAIS-DE-PUBLICACAO` ← `f_pais` (inferido)
@@ -1646,15 +1629,17 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **texto livre**
 
-- `DADOS-BASICOS-DO-LIVRO@TITULO-DO-LIVRO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DO-LIVRO@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DO-LIVRO@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (inferido)
-- `DADOS-BASICOS-DO-LIVRO@TITULO-DO-LIVRO-INGLES` ← `f_titulo_en` (inferido)
+- `DADOS-BASICOS-DO-LIVRO@TITULO-DO-LIVRO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DO-LIVRO@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DO-LIVRO@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (observado)
+- `DADOS-BASICOS-DO-LIVRO@TITULO-DO-LIVRO-INGLES` ← `f_titulo_en` (observado)
 - `DETALHAMENTO-DO-LIVRO@NUMERO-DE-PAGINAS` ← `f_paginas` (inferido)
-- `DETALHAMENTO-DO-LIVRO@ISBN` ← `f_isbn` (inferido)
+- `DETALHAMENTO-DO-LIVRO@ISBN` ← `f_isbn` (observado)
 - `DETALHAMENTO-DO-LIVRO@NUMERO-DA-EDICAO-REVISAO` ← `f_edicao` (inferido)
 - `DETALHAMENTO-DO-LIVRO@NUMERO-DA-SERIE` ← `f_serie` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `DETALHAMENTO-DO-LIVRO@CIDADE-DA-EDITORA` ← `f_cidade_ed` (observado)
+- `DETALHAMENTO-DO-LIVRO@NOME-DA-EDITORA` ← `f_editora` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 - `DADOS-BASICOS-DO-CAPITULO@TITULO-DO-CAPITULO-DO-LIVRO` ← `f_titulo` (inferido)
 - `DADOS-BASICOS-DO-CAPITULO@ANO` ← `f_ano` (inferido)
 - `DADOS-BASICOS-DO-CAPITULO@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (inferido)
@@ -1666,6 +1651,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **oculto**
 
+- `LIVRO-PUBLICADO-OU-ORGANIZADO@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -1695,13 +1681,9 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `LIVRO-PUBLICADO-OU-ORGANIZADO@SEQUENCIA-PRODUCAO`
-- `DADOS-BASICOS-DO-LIVRO@TIPO`
 - `DADOS-BASICOS-DO-LIVRO@NATUREZA`
 - `DADOS-BASICOS-DO-LIVRO@DOI`
 - `DETALHAMENTO-DO-LIVRO@NUMERO-DE-VOLUMES`
-- `DETALHAMENTO-DO-LIVRO@CIDADE-DA-EDITORA`
-- `DETALHAMENTO-DO-LIVRO@NOME-DA-EDITORA`
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 - `CAPITULO-DE-LIVRO-PUBLICADO@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DO-CAPITULO@TIPO`
@@ -1719,28 +1701,34 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DO-TRABALHO@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DO-TRABALHO@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
+- `DADOS-BASICOS-DO-TRABALHO@NATUREZA` ← `F_COD_PROD` (observado)
+- `DADOS-BASICOS-DO-TRABALHO@PAIS-DO-EVENTO` ← `f_pais` (observado)
+- `DADOS-BASICOS-DO-TRABALHO@IDIOMA` ← `F_IDIOMA` (observado)
+- `DADOS-BASICOS-DO-TRABALHO@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
 - `DADOS-BASICOS-DO-TRABALHO@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
 - `DADOS-BASICOS-DO-TRABALHO@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
+- `DETALHAMENTO-DO-TRABALHO@CLASSIFICACAO-DO-EVENTO` ← `f_tipo_evento` (observado)
 
 **texto livre**
 
-- `DADOS-BASICOS-DO-TRABALHO@TITULO-DO-TRABALHO` ← `f_titulo` (inferido)
+- `DADOS-BASICOS-DO-TRABALHO@TITULO-DO-TRABALHO` ← `f_titulo` (observado)
 - `DADOS-BASICOS-DO-TRABALHO@ANO-DO-TRABALHO` ← `f_ano` (inferido)
 - `DADOS-BASICOS-DO-TRABALHO@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (inferido)
-- `DADOS-BASICOS-DO-TRABALHO@TITULO-DO-TRABALHO-INGLES` ← `f_titulo_en` (inferido)
+- `DADOS-BASICOS-DO-TRABALHO@TITULO-DO-TRABALHO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DO-TRABALHO@NOME-DO-EVENTO` ← `f_evento` (observado)
 - `DETALHAMENTO-DO-TRABALHO@CIDADE-DO-EVENTO` ← `f_cidade_evento` (inferido)
 - `DETALHAMENTO-DO-TRABALHO@ANO-DE-REALIZACAO` ← `f_ano` (inferido)
-- `DETALHAMENTO-DO-TRABALHO@TITULO-DOS-ANAIS-OU-PROCEEDINGS` ← `f_titulo` (inferido)
+- `DETALHAMENTO-DO-TRABALHO@TITULO-DOS-ANAIS-OU-PROCEEDINGS` ← `f_titulo_pub` (observado)
 - `DETALHAMENTO-DO-TRABALHO@VOLUME` ← `f_volume` (inferido)
 - `DETALHAMENTO-DO-TRABALHO@FASCICULO` ← `f_fasciculo` (inferido)
 - `DETALHAMENTO-DO-TRABALHO@SERIE` ← `f_serie` (inferido)
-- `DETALHAMENTO-DO-TRABALHO@ISBN` ← `f_isbn` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `DETALHAMENTO-DO-TRABALHO@ISBN` ← `f_isbn` (observado)
+- `DETALHAMENTO-DO-TRABALHO@NOME-DA-EDITORA` ← `f_editora` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `TRABALHO-EM-EVENTOS@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -1770,15 +1758,9 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `TRABALHO-EM-EVENTOS@SEQUENCIA-PRODUCAO`
-- `DADOS-BASICOS-DO-TRABALHO@NATUREZA`
-- `DADOS-BASICOS-DO-TRABALHO@PAIS-DO-EVENTO`
 - `DADOS-BASICOS-DO-TRABALHO@DOI`
-- `DETALHAMENTO-DO-TRABALHO@CLASSIFICACAO-DO-EVENTO`
-- `DETALHAMENTO-DO-TRABALHO@NOME-DO-EVENTO`
 - `DETALHAMENTO-DO-TRABALHO@PAGINA-INICIAL`
 - `DETALHAMENTO-DO-TRABALHO@PAGINA-FINAL`
-- `DETALHAMENTO-DO-TRABALHO@NOME-DA-EDITORA`
 - `DETALHAMENTO-DO-TRABALHO@CIDADE-DA-EDITORA`
 - `DETALHAMENTO-DO-TRABALHO@NOME-DO-EVENTO-INGLES`
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
@@ -1789,27 +1771,29 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DO-TEXTO@PAIS-DE-PUBLICACAO` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DO-TEXTO@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DO-TEXTO@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
+- `DADOS-BASICOS-DO-TEXTO@NATUREZA` ← `F_COD_PROD` (observado)
+- `DADOS-BASICOS-DO-TEXTO@PAIS-DE-PUBLICACAO` ← `f_pais` (observado)
+- `DADOS-BASICOS-DO-TEXTO@IDIOMA` ← `F_IDIOMA` (observado)
+- `DADOS-BASICOS-DO-TEXTO@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
 - `DADOS-BASICOS-DO-TEXTO@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
 - `DADOS-BASICOS-DO-TEXTO@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
 
 **texto livre**
 
-- `DADOS-BASICOS-DO-TEXTO@TITULO-DO-TEXTO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DO-TEXTO@ANO-DO-TEXTO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DO-TEXTO@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (inferido)
-- `DADOS-BASICOS-DO-TEXTO@TITULO-DO-TEXTO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DO-TEXTO@TITULO-DO-JORNAL-OU-REVISTA` ← `f_titulo` (inferido)
-- `DETALHAMENTO-DO-TEXTO@ISSN` ← `f_issn` (inferido)
+- `DADOS-BASICOS-DO-TEXTO@TITULO-DO-TEXTO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DO-TEXTO@ANO-DO-TEXTO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DO-TEXTO@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (observado)
+- `DADOS-BASICOS-DO-TEXTO@TITULO-DO-TEXTO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DO-TEXTO@TITULO-DO-JORNAL-OU-REVISTA` ← `f_titulo_periodico` (observado)
+- `DETALHAMENTO-DO-TEXTO@ISSN` ← `f_issn` (observado)
 - `DETALHAMENTO-DO-TEXTO@DATA-DE-PUBLICACAO` ← `f_data` (inferido)
 - `DETALHAMENTO-DO-TEXTO@VOLUME` ← `f_volume` (inferido)
-- `DETALHAMENTO-DO-TEXTO@LOCAL-DE-PUBLICACAO` ← `f_local` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `DETALHAMENTO-DO-TEXTO@LOCAL-DE-PUBLICACAO` ← `f_local` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `TEXTO-EM-JORNAL-OU-REVISTA@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -1839,8 +1823,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `TEXTO-EM-JORNAL-OU-REVISTA@SEQUENCIA-PRODUCAO`
-- `DADOS-BASICOS-DO-TEXTO@NATUREZA`
 - `DADOS-BASICOS-DO-TEXTO@DOI`
 - `DETALHAMENTO-DO-TEXTO@FORMATO-DATA-DE-PUBLICACAO`
 - `DETALHAMENTO-DO-TEXTO@PAGINA-INICIAL`
@@ -1853,29 +1835,33 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DA-TRADUCAO@PAIS-DE-PUBLICACAO` ← `f_pais` (inferido)
+- `DADOS-BASICOS-DA-TRADUCAO@NATUREZA` ← `F_COD_PROD` (observado)
+- `DADOS-BASICOS-DA-TRADUCAO@PAIS-DE-PUBLICACAO` ← `f_pais` (observado)
 - `DADOS-BASICOS-DA-TRADUCAO@IDIOMA` ← `F_IDIOMA` (inferido)
 - `DADOS-BASICOS-DA-TRADUCAO@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
-- `DADOS-BASICOS-DA-TRADUCAO@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
+- `DADOS-BASICOS-DA-TRADUCAO@FLAG-RELEVANCIA` ← `F_RELEV` (observado)
 
 **texto livre**
 
-- `DADOS-BASICOS-DA-TRADUCAO@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DA-TRADUCAO@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DA-TRADUCAO@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (inferido)
-- `DADOS-BASICOS-DA-TRADUCAO@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DA-TRADUCAO@NOME-DO-AUTOR-TRADUZIDO` ← `f_autor_trad` (inferido)
-- `DETALHAMENTO-DA-TRADUCAO@ISSN-ISBN` ← `f_issn` (inferido)
-- `DETALHAMENTO-DA-TRADUCAO@CIDADE-DA-EDITORA` ← `f_cidade` (inferido)
+- `DADOS-BASICOS-DA-TRADUCAO@TITULO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DA-TRADUCAO@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DA-TRADUCAO@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (observado)
+- `DADOS-BASICOS-DA-TRADUCAO@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DA-TRADUCAO@NOME-DO-AUTOR-TRADUZIDO` ← `f_autor_trad` (observado)
+- `DETALHAMENTO-DA-TRADUCAO@TITULO-DA-OBRA-ORIGINAL` ← `f_tit_obra` (observado)
+- `DETALHAMENTO-DA-TRADUCAO@ISSN-ISBN` ← `f_issn` (observado)
+- `DETALHAMENTO-DA-TRADUCAO@EDITORA-DA-TRADUCAO` ← `f_editora` (observado)
+- `DETALHAMENTO-DA-TRADUCAO@CIDADE-DA-EDITORA` ← `f_cidade` (observado)
 - `DETALHAMENTO-DA-TRADUCAO@NUMERO-DE-PAGINAS` ← `f_paginas` (inferido)
 - `DETALHAMENTO-DA-TRADUCAO@NUMERO-DA-EDICAO-REVISAO` ← `f_edicao` (inferido)
 - `DETALHAMENTO-DA-TRADUCAO@VOLUME` ← `f_volume` (inferido)
 - `DETALHAMENTO-DA-TRADUCAO@FASCICULO` ← `f_fasciculo` (inferido)
 - `DETALHAMENTO-DA-TRADUCAO@SERIE` ← `f_serie` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `TRADUCAO@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -1905,12 +1891,8 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `TRADUCAO@SEQUENCIA-PRODUCAO`
-- `DADOS-BASICOS-DA-TRADUCAO@NATUREZA`
 - `DADOS-BASICOS-DA-TRADUCAO@DOI`
-- `DETALHAMENTO-DA-TRADUCAO@TITULO-DA-OBRA-ORIGINAL`
 - `DETALHAMENTO-DA-TRADUCAO@IDIOMA-DA-OBRA-ORIGINAL`
-- `DETALHAMENTO-DA-TRADUCAO@EDITORA-DA-TRADUCAO`
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
@@ -1919,25 +1901,28 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DA-PARTITURA@PAIS-DE-PUBLICACAO` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DA-PARTITURA@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DA-PARTITURA@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
-- `DADOS-BASICOS-DA-PARTITURA@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
+- `DADOS-BASICOS-DA-PARTITURA@NATUREZA` ← `F_COD_PROD` (observado)
+- `DADOS-BASICOS-DA-PARTITURA@PAIS-DE-PUBLICACAO` ← `f_pais` (observado)
+- `DADOS-BASICOS-DA-PARTITURA@IDIOMA` ← `F_IDIOMA` (observado)
+- `DADOS-BASICOS-DA-PARTITURA@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
+- `DADOS-BASICOS-DA-PARTITURA@FLAG-RELEVANCIA` ← `F_RELEV` (observado)
 
 **texto livre**
 
-- `DADOS-BASICOS-DA-PARTITURA@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DA-PARTITURA@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DA-PARTITURA@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (inferido)
-- `DADOS-BASICOS-DA-PARTITURA@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DA-PARTITURA@FORMACAO-INSTRUMENTAL` ← `f_formacao` (inferido)
-- `DETALHAMENTO-DA-PARTITURA@EDITORA` ← `f_editora` (inferido)
-- `DETALHAMENTO-DA-PARTITURA@CIDADE-DA-EDITORA` ← `f_cidade` (inferido)
-- `DETALHAMENTO-DA-PARTITURA@NUMERO-DE-PAGINAS` ← `f_paginas` (inferido)
+- `DADOS-BASICOS-DA-PARTITURA@TITULO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DA-PARTITURA@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DA-PARTITURA@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (observado)
+- `DADOS-BASICOS-DA-PARTITURA@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DA-PARTITURA@FORMACAO-INSTRUMENTAL` ← `f_formacao` (observado)
+- `DETALHAMENTO-DA-PARTITURA@EDITORA` ← `f_editora` (observado)
+- `DETALHAMENTO-DA-PARTITURA@CIDADE-DA-EDITORA` ← `f_cidade` (observado)
+- `DETALHAMENTO-DA-PARTITURA@NUMERO-DE-PAGINAS` ← `f_paginas` (observado)
+- `DETALHAMENTO-DA-PARTITURA@NUMERO-DO-CATALOGO` ← `f_issn` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
 
 **oculto**
 
+- `PARTITURA-MUSICAL@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -1967,10 +1952,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `PARTITURA-MUSICAL@SEQUENCIA-PRODUCAO`
-- `DADOS-BASICOS-DA-PARTITURA@NATUREZA`
 - `DADOS-BASICOS-DA-PARTITURA@DOI`
-- `DETALHAMENTO-DA-PARTITURA@NUMERO-DO-CATALOGO`
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
@@ -2058,24 +2040,25 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 **com opções**
 
 - `DADOS-BASICOS-DO-SOFTWARE@NATUREZA` ← `f_natureza` (inferido)
-- `DADOS-BASICOS-DO-SOFTWARE@PAIS` ← `f_pais` (inferido)
+- `DADOS-BASICOS-DO-SOFTWARE@PAIS` ← `f_pais` (observado)
 - `DADOS-BASICOS-DO-SOFTWARE@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
 - `DADOS-BASICOS-DO-SOFTWARE@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
 - `DADOS-BASICOS-DO-SOFTWARE@FLAG-POTENCIAL-INOVACAO` ← `f_sta_inovacao` (inferido)
 
 **texto livre**
 
-- `DADOS-BASICOS-DO-SOFTWARE@TITULO-DO-SOFTWARE` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DO-SOFTWARE@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DO-SOFTWARE@TITULO-DO-SOFTWARE-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DO-SOFTWARE@FINALIDADE` ← `f_finalidade` (inferido)
-- `DETALHAMENTO-DO-SOFTWARE@PLATAFORMA` ← `f_plataforma` (inferido)
-- `DETALHAMENTO-DO-SOFTWARE@INSTITUICAO-FINANCIADORA` ← `f_inst_financ` (inferido)
+- `DADOS-BASICOS-DO-SOFTWARE@TITULO-DO-SOFTWARE` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DO-SOFTWARE@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DO-SOFTWARE@TITULO-DO-SOFTWARE-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DO-SOFTWARE@FINALIDADE` ← `f_finalidade` (observado)
+- `DETALHAMENTO-DO-SOFTWARE@PLATAFORMA` ← `f_plataforma` (observado)
+- `DETALHAMENTO-DO-SOFTWARE@INSTITUICAO-FINANCIADORA` ← `f_inst_financ` (observado)
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `SOFTWARE@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `DETALHAMENTO-DO-SOFTWARE@AMBIENTE` ← `f_ambiente` (inferido)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
@@ -2106,7 +2089,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `SOFTWARE@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DO-SOFTWARE@IDIOMA`
 - `DADOS-BASICOS-DO-SOFTWARE@MEIO-DE-DIVULGACAO`
 - `DADOS-BASICOS-DO-SOFTWARE@HOME-PAGE-DO-TRABALHO`
@@ -2209,20 +2191,22 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DA-CULTIVAR@PAIS` ← `f_pais` (inferido)
+- `DADOS-BASICOS-DA-CULTIVAR@PAIS` ← `f_pais` (observado)
 - `DADOS-BASICOS-DA-CULTIVAR@FLAG-POTENCIAL-INOVACAO` ← `f_sta_inovacao` (inferido)
 
 **texto livre**
 
-- `DADOS-BASICOS-DA-CULTIVAR@ANO-SOLICITACAO` ← `f_ano` (inferido)
+- `DADOS-BASICOS-DA-CULTIVAR@ANO-SOLICITACAO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DA-CULTIVAR@DENOMINACAO-INGLES` ← `f_titulo_en` (observado)
 - `DETALHAMENTO-DA-CULTIVAR@INSTITUICAO-FINANCIADORA` ← `f_inst` (inferido)
 - `REGISTRO-OU-PATENTE@CODIGO-DO-REGISTRO-OU-PATENTE` ← `f_cod_reg` (inferido)
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
-- `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `CULTIVAR-PROTEGIDA@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -2252,10 +2236,8 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `CULTIVAR-PROTEGIDA@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DA-CULTIVAR@DENOMINACAO`
 - `DADOS-BASICOS-DA-CULTIVAR@FLAG-RELEVANCIA`
-- `DADOS-BASICOS-DA-CULTIVAR@DENOMINACAO-INGLES`
 - `DETALHAMENTO-DA-CULTIVAR@FINALIDADE`
 - `DETALHAMENTO-DA-CULTIVAR@FINALIDADE-INGLES`
 - `REGISTRO-OU-PATENTE@TIPO-PATENTE`
@@ -2276,20 +2258,22 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DA-CULTIVAR@PAIS` ← `f_pais` (inferido)
+- `DADOS-BASICOS-DA-CULTIVAR@PAIS` ← `f_pais` (observado)
 - `DADOS-BASICOS-DA-CULTIVAR@FLAG-POTENCIAL-INOVACAO` ← `f_sta_inovacao` (inferido)
 
 **texto livre**
 
-- `DADOS-BASICOS-DA-CULTIVAR@ANO-SOLICITACAO` ← `f_ano` (inferido)
+- `DADOS-BASICOS-DA-CULTIVAR@ANO-SOLICITACAO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DA-CULTIVAR@DENOMINACAO-INGLES` ← `f_titulo_en` (observado)
 - `DETALHAMENTO-DA-CULTIVAR@INSTITUICAO-FINANCIADORA` ← `f_inst` (inferido)
-- `REGISTRO-OU-PATENTE@CODIGO-DO-REGISTRO-OU-PATENTE` ← `f_cod_reg` (inferido)
+- `REGISTRO-OU-PATENTE@CODIGO-DO-REGISTRO-OU-PATENTE` ← `f_cod_reg` (observado)
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
-- `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `CULTIVAR-REGISTRADA@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -2319,10 +2303,8 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `CULTIVAR-REGISTRADA@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DA-CULTIVAR@DENOMINACAO`
 - `DADOS-BASICOS-DA-CULTIVAR@FLAG-RELEVANCIA`
-- `DADOS-BASICOS-DA-CULTIVAR@DENOMINACAO-INGLES`
 - `DETALHAMENTO-DA-CULTIVAR@FINALIDADE`
 - `DETALHAMENTO-DA-CULTIVAR@FINALIDADE-INGLES`
 - `REGISTRO-OU-PATENTE@TIPO-PATENTE`
@@ -2343,21 +2325,23 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DO-DESENHO-INDUSTRIAL@PAIS` ← `f_pais` (inferido)
+- `DADOS-BASICOS-DO-DESENHO-INDUSTRIAL@PAIS` ← `f_pais` (observado)
 - `DADOS-BASICOS-DO-DESENHO-INDUSTRIAL@FLAG-POTENCIAL-INOVACAO` ← `f_sta_inovacao` (inferido)
 
 **texto livre**
 
 - `DADOS-BASICOS-DO-DESENHO-INDUSTRIAL@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DO-DESENHO-INDUSTRIAL@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DO-DESENHO-INDUSTRIAL@FINALIDADE` ← `f_finalidade` (inferido)
-- `REGISTRO-OU-PATENTE@CODIGO-DO-REGISTRO-OU-PATENTE` ← `f_cod_reg` (inferido)
+- `DADOS-BASICOS-DO-DESENHO-INDUSTRIAL@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DO-DESENHO-INDUSTRIAL@FINALIDADE` ← `f_finalidade` (observado)
+- `DETALHAMENTO-DO-DESENHO-INDUSTRIAL@INSTITUICAO-FINANCIADORA` ← `f_inst_financ` (observado)
+- `REGISTRO-OU-PATENTE@CODIGO-DO-REGISTRO-OU-PATENTE` ← `f_cod_reg` (observado)
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
-- `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `DESENHO-INDUSTRIAL@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `DADOS-BASICOS-DO-DESENHO-INDUSTRIAL@ANO-DESENVOLVIMENTO` ← `f_ano` (inferido)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
@@ -2388,9 +2372,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `DESENHO-INDUSTRIAL@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DO-DESENHO-INDUSTRIAL@FLAG-RELEVANCIA`
-- `DETALHAMENTO-DO-DESENHO-INDUSTRIAL@INSTITUICAO-FINANCIADORA`
 - `DETALHAMENTO-DO-DESENHO-INDUSTRIAL@FINALIDADE-INGLES`
 - `REGISTRO-OU-PATENTE@TIPO-PATENTE`
 - `REGISTRO-OU-PATENTE@FORMATO-DATA-PEDIDO`
@@ -2410,23 +2392,24 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DA-MARCA@PAIS` ← `f_pais` (inferido)
+- `DADOS-BASICOS-DA-MARCA@PAIS` ← `f_pais` (observado)
 - `DADOS-BASICOS-DA-MARCA@FLAG-POTENCIAL-INOVACAO` ← `f_sta_inovacao` (inferido)
-- `DETALHAMENTO-DA-MARCA@NATUREZA` ← `f_natureza` (inferido)
-- `REGISTRO-OU-PATENTE@TIPO-PATENTE` ← `f_tipo` (inferido)
+- `DETALHAMENTO-DA-MARCA@NATUREZA` ← `f_natureza` (observado)
+- `REGISTRO-OU-PATENTE@TIPO-PATENTE` ← `f_tipo` (observado)
 
 **texto livre**
 
 - `DADOS-BASICOS-DA-MARCA@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DA-MARCA@ANO-DESENVOLVIMENTO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DA-MARCA@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `REGISTRO-OU-PATENTE@CODIGO-DO-REGISTRO-OU-PATENTE` ← `f_cod_reg` (inferido)
+- `DADOS-BASICOS-DA-MARCA@ANO-DESENVOLVIMENTO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DA-MARCA@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `REGISTRO-OU-PATENTE@CODIGO-DO-REGISTRO-OU-PATENTE` ← `f_cod_reg` (observado)
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
-- `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `MARCA@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -2456,7 +2439,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `MARCA@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DA-MARCA@FLAG-RELEVANCIA`
 - `DETALHAMENTO-DA-MARCA@FINALIDADE`
 - `DETALHAMENTO-DA-MARCA@FINALIDADE-INGLES`
@@ -2477,22 +2459,24 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DA-TOPOGRAFIA-DE-CIRCUITO-INTEGRADO@PAIS` ← `f_pais` (inferido)
+- `DADOS-BASICOS-DA-TOPOGRAFIA-DE-CIRCUITO-INTEGRADO@PAIS` ← `f_pais` (observado)
 - `DADOS-BASICOS-DA-TOPOGRAFIA-DE-CIRCUITO-INTEGRADO@FLAG-POTENCIAL-INOVACAO` ← `f_sta_inovacao` (inferido)
 
 **texto livre**
 
 - `DADOS-BASICOS-DA-TOPOGRAFIA-DE-CIRCUITO-INTEGRADO@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DA-TOPOGRAFIA-DE-CIRCUITO-INTEGRADO@ANO-DESENVOLVIMENTO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DA-TOPOGRAFIA-DE-CIRCUITO-INTEGRADO@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DA-TOPOGRAFIA-DE-CIRCUITO-INTEGRADO@FINALIDADE` ← `f_finalidade` (inferido)
-- `REGISTRO-OU-PATENTE@CODIGO-DO-REGISTRO-OU-PATENTE` ← `f_cod_reg` (inferido)
+- `DADOS-BASICOS-DA-TOPOGRAFIA-DE-CIRCUITO-INTEGRADO@ANO-DESENVOLVIMENTO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DA-TOPOGRAFIA-DE-CIRCUITO-INTEGRADO@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DA-TOPOGRAFIA-DE-CIRCUITO-INTEGRADO@FINALIDADE` ← `f_finalidade` (observado)
+- `DETALHAMENTO-DA-TOPOGRAFIA-DE-CIRCUITO-INTEGRADO@INSTITUICAO-FINANCIADORA` ← `f_inst_financ` (observado)
+- `REGISTRO-OU-PATENTE@CODIGO-DO-REGISTRO-OU-PATENTE` ← `f_cod_reg` (observado)
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
-- `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `TOPOGRAFIA-DE-CIRCUITO-INTEGRADO@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -2522,9 +2506,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `TOPOGRAFIA-DE-CIRCUITO-INTEGRADO@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DA-TOPOGRAFIA-DE-CIRCUITO-INTEGRADO@FLAG-RELEVANCIA`
-- `DETALHAMENTO-DA-TOPOGRAFIA-DE-CIRCUITO-INTEGRADO@INSTITUICAO-FINANCIADORA`
 - `DETALHAMENTO-DA-TOPOGRAFIA-DE-CIRCUITO-INTEGRADO@FINALIDADE-INGLES`
 - `REGISTRO-OU-PATENTE@TIPO-PATENTE`
 - `REGISTRO-OU-PATENTE@FORMATO-DATA-PEDIDO`
@@ -2544,28 +2526,31 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
+- `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@TIPO-PRODUTO` ← `F_COD_PROD` (observado)
+- `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@NATUREZA` ← `F_SUB_PROD` (observado)
+- `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@IDIOMA` ← `F_IDIOMA` (observado)
+- `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
 - `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
 - `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@FLAG-POTENCIAL-INOVACAO` ← `f_sta_inovacao` (inferido)
-- `DETALHAMENTO-DO-PRODUTO-TECNOLOGICO@DISPONIBILIDADE` ← `f_disp` (inferido)
+- `DETALHAMENTO-DO-PRODUTO-TECNOLOGICO@DISPONIBILIDADE` ← `f_disp` (observado)
 
 **texto livre**
 
-- `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@TITULO-DO-PRODUTO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (inferido)
-- `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@TITULO-DO-PRODUTO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DO-PRODUTO-TECNOLOGICO@FINALIDADE` ← `f_finalidade` (inferido)
-- `DETALHAMENTO-DO-PRODUTO-TECNOLOGICO@CIDADE-DO-PRODUTO` ← `f_cidade` (inferido)
-- `DETALHAMENTO-DO-PRODUTO-TECNOLOGICO@INSTITUICAO-FINANCIADORA` ← `f_inst` (inferido)
+- `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@TITULO-DO-PRODUTO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (observado)
+- `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@TITULO-DO-PRODUTO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DO-PRODUTO-TECNOLOGICO@FINALIDADE` ← `f_finalidade` (observado)
+- `DETALHAMENTO-DO-PRODUTO-TECNOLOGICO@CIDADE-DO-PRODUTO` ← `f_cidade` (observado)
+- `DETALHAMENTO-DO-PRODUTO-TECNOLOGICO@INSTITUICAO-FINANCIADORA` ← `f_inst` (observado)
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
 - `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `PRODUTO-TECNOLOGICO@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -2595,9 +2580,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `PRODUTO-TECNOLOGICO@SEQUENCIA-PRODUCAO`
-- `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@TIPO-PRODUTO`
-- `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@NATUREZA`
 - `DADOS-BASICOS-DO-PRODUTO-TECNOLOGICO@DOI`
 - `DETALHAMENTO-DO-PRODUTO-TECNOLOGICO@FINALIDADE-INGLES`
 - `REGISTRO-OU-PATENTE@TIPO-PATENTE`
@@ -2619,28 +2601,30 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
+- `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@NATUREZA` ← `F_COD_PROD` (observado)
+- `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@IDIOMA` ← `F_IDIOMA` (observado)
+- `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
 - `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
 - `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@FLAG-POTENCIAL-INOVACAO` ← `f_sta_inovacao` (inferido)
-- `DETALHAMENTO-DO-PROCESSOS-OU-TECNICAS@DISPONIBILIDADE` ← `f_disp` (inferido)
+- `DETALHAMENTO-DO-PROCESSOS-OU-TECNICAS@DISPONIBILIDADE` ← `f_disp` (observado)
 
 **texto livre**
 
-- `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@TITULO-DO-PROCESSO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (inferido)
-- `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@TITULO-DO-PROCESSO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DO-PROCESSOS-OU-TECNICAS@FINALIDADE` ← `f_finalidade` (inferido)
-- `DETALHAMENTO-DO-PROCESSOS-OU-TECNICAS@INSTITUICAO-FINANCIADORA` ← `f_inst` (inferido)
-- `DETALHAMENTO-DO-PROCESSOS-OU-TECNICAS@CIDADE-DO-PROCESSO` ← `f_cidade` (inferido)
+- `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@TITULO-DO-PROCESSO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (observado)
+- `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@TITULO-DO-PROCESSO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DO-PROCESSOS-OU-TECNICAS@FINALIDADE` ← `f_finalidade` (observado)
+- `DETALHAMENTO-DO-PROCESSOS-OU-TECNICAS@INSTITUICAO-FINANCIADORA` ← `f_inst` (observado)
+- `DETALHAMENTO-DO-PROCESSOS-OU-TECNICAS@CIDADE-DO-PROCESSO` ← `f_cidade` (observado)
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
 - `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `PROCESSOS-OU-TECNICAS@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -2670,8 +2654,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `PROCESSOS-OU-TECNICAS@SEQUENCIA-PRODUCAO`
-- `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@NATUREZA`
 - `DADOS-BASICOS-DO-PROCESSOS-OU-TECNICAS@DOI`
 - `DETALHAMENTO-DO-PROCESSOS-OU-TECNICAS@FINALIDADE-INGLES`
 - `REGISTRO-OU-PATENTE@TIPO-PATENTE`
@@ -2705,13 +2687,13 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DO-TRABALHO-TECNICO@TITULO-DO-TRABALHO-TECNICO` ← `f_titulo` (observado)
 - `DADOS-BASICOS-DO-TRABALHO-TECNICO@ANO` ← `f_ano` (observado)
 - `DADOS-BASICOS-DO-TRABALHO-TECNICO@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (observado)
-- `DADOS-BASICOS-DO-TRABALHO-TECNICO@TITULO-DO-TRABALHO-TECNICO-INGLES` ← `f_titulo_en` (inferido)
+- `DADOS-BASICOS-DO-TRABALHO-TECNICO@TITULO-DO-TRABALHO-TECNICO-INGLES` ← `f_titulo_en` (observado)
 - `DETALHAMENTO-DO-TRABALHO-TECNICO@FINALIDADE` ← `f_finalidade` (observado)
 - `DETALHAMENTO-DO-TRABALHO-TECNICO@DURACAO-EM-MESES` ← `f_duracao` (inferido)
 - `DETALHAMENTO-DO-TRABALHO-TECNICO@NUMERO-DE-PAGINAS` ← `f_paginas` (inferido)
-- `DETALHAMENTO-DO-TRABALHO-TECNICO@INSTITUICAO-FINANCIADORA` ← `f_inst` (inferido)
-- `DETALHAMENTO-DO-TRABALHO-TECNICO@CIDADE-DO-TRABALHO` ← `f_cidade` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `DETALHAMENTO-DO-TRABALHO-TECNICO@INSTITUICAO-FINANCIADORA` ← `f_inst` (observado)
+- `DETALHAMENTO-DO-TRABALHO-TECNICO@CIDADE-DO-TRABALHO` ← `f_cidade` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
@@ -2763,24 +2745,26 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DA-APRESENTACAO-DE-TRABALHO@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DA-APRESENTACAO-DE-TRABALHO@IDIOMA` ← `F_IDIOMA` (inferido)
+- `DADOS-BASICOS-DA-APRESENTACAO-DE-TRABALHO@NATUREZA` ← `F_COD_PROD` (observado)
+- `DADOS-BASICOS-DA-APRESENTACAO-DE-TRABALHO@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DA-APRESENTACAO-DE-TRABALHO@IDIOMA` ← `F_IDIOMA` (observado)
 - `DADOS-BASICOS-DA-APRESENTACAO-DE-TRABALHO@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
 - `DADOS-BASICOS-DA-APRESENTACAO-DE-TRABALHO@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
 
 **texto livre**
 
-- `DADOS-BASICOS-DA-APRESENTACAO-DE-TRABALHO@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DA-APRESENTACAO-DE-TRABALHO@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DA-APRESENTACAO-DE-TRABALHO@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DA-APRESENTACAO-DE-TRABALHO@NOME-DO-EVENTO` ← `f_nme_evento` (inferido)
-- `DETALHAMENTO-DA-APRESENTACAO-DE-TRABALHO@INSTITUICAO-PROMOTORA` ← `f_inst` (inferido)
-- `DETALHAMENTO-DA-APRESENTACAO-DE-TRABALHO@LOCAL-DA-APRESENTACAO` ← `f_local` (inferido)
-- `DETALHAMENTO-DA-APRESENTACAO-DE-TRABALHO@CIDADE-DA-APRESENTACAO` ← `f_cidade` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `DADOS-BASICOS-DA-APRESENTACAO-DE-TRABALHO@TITULO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DA-APRESENTACAO-DE-TRABALHO@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DA-APRESENTACAO-DE-TRABALHO@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DA-APRESENTACAO-DE-TRABALHO@NOME-DO-EVENTO` ← `f_nme_evento` (observado)
+- `DETALHAMENTO-DA-APRESENTACAO-DE-TRABALHO@INSTITUICAO-PROMOTORA` ← `f_inst` (observado)
+- `DETALHAMENTO-DA-APRESENTACAO-DE-TRABALHO@LOCAL-DA-APRESENTACAO` ← `f_local` (observado)
+- `DETALHAMENTO-DA-APRESENTACAO-DE-TRABALHO@CIDADE-DA-APRESENTACAO` ← `f_cidade` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `APRESENTACAO-DE-TRABALHO@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -2810,8 +2794,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `APRESENTACAO-DE-TRABALHO@SEQUENCIA-PRODUCAO`
-- `DADOS-BASICOS-DA-APRESENTACAO-DE-TRABALHO@NATUREZA`
 - `DADOS-BASICOS-DA-APRESENTACAO-DE-TRABALHO@DOI`
 - `DETALHAMENTO-DA-APRESENTACAO-DE-TRABALHO@NOME-DO-EVENTO-INGLES`
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
@@ -2822,26 +2804,28 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
-- `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
+- `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@NATUREZA` ← `F_COD_PROD` (observado)
+- `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@IDIOMA` ← `F_IDIOMA` (observado)
+- `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
+- `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@FLAG-RELEVANCIA` ← `F_RELEV` (observado)
 
 **texto livre**
 
-- `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (inferido)
-- `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DE-CARTA-MAPA-OU-SIMILAR@TEMA-DA-CARTA-MAPA-OU-SIMILAR` ← `f_tema` (inferido)
-- `DETALHAMENTO-DE-CARTA-MAPA-OU-SIMILAR@TECNICA-UTILIZADA` ← `f_tecnica` (inferido)
-- `DETALHAMENTO-DE-CARTA-MAPA-OU-SIMILAR@FINALIDADE` ← `f_finalidade` (inferido)
-- `DETALHAMENTO-DE-CARTA-MAPA-OU-SIMILAR@AREA-REPRESENTADA` ← `f_area` (inferido)
-- `DETALHAMENTO-DE-CARTA-MAPA-OU-SIMILAR@INSTITUICAO-FINANCIADORA` ← `f_inst` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@TITULO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (observado)
+- `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DE-CARTA-MAPA-OU-SIMILAR@TEMA-DA-CARTA-MAPA-OU-SIMILAR` ← `f_tema` (observado)
+- `DETALHAMENTO-DE-CARTA-MAPA-OU-SIMILAR@TECNICA-UTILIZADA` ← `f_tecnica` (observado)
+- `DETALHAMENTO-DE-CARTA-MAPA-OU-SIMILAR@FINALIDADE` ← `f_finalidade` (observado)
+- `DETALHAMENTO-DE-CARTA-MAPA-OU-SIMILAR@AREA-REPRESENTADA` ← `f_area` (observado)
+- `DETALHAMENTO-DE-CARTA-MAPA-OU-SIMILAR@INSTITUICAO-FINANCIADORA` ← `f_inst` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `CARTA-MAPA-OU-SIMILAR@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -2871,8 +2855,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `CARTA-MAPA-OU-SIMILAR@SEQUENCIA-PRODUCAO`
-- `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@NATUREZA`
 - `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@DOI`
 - `DETALHAMENTO-DE-CARTA-MAPA-OU-SIMILAR@FINALIDADE-INGLES`
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
@@ -2883,27 +2865,29 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
+- `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@NIVEL-DO-CURSO` ← `F_COD_PROD` (observado)
+- `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@IDIOMA` ← `F_IDIOMA` (observado)
+- `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
 - `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
 - `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
-- `DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@PARTICIPACAO-DOS-AUTORES` ← `f_participacao` (inferido)
-- `DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@UNIDADE` ← `f_unidade` (inferido)
+- `DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@PARTICIPACAO-DOS-AUTORES` ← `f_participacao` (observado)
+- `DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@UNIDADE` ← `f_unidade` (observado)
 
 **texto livre**
 
-- `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@INSTITUICAO-PROMOTORA-DO-CURSO` ← `f_inst` (inferido)
-- `DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@LOCAL-DO-CURSO` ← `f_local` (inferido)
-- `DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@CIDADE` ← `f_cidade` (inferido)
-- `DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@DURACAO` ← `f_duracao` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@TITULO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@INSTITUICAO-PROMOTORA-DO-CURSO` ← `f_inst` (observado)
+- `DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@LOCAL-DO-CURSO` ← `f_local` (observado)
+- `DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@CIDADE` ← `f_cidade` (observado)
+- `DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@DURACAO` ← `f_duracao` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `CURSO-DE-CURTA-DURACAO-MINISTRADO@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -2933,8 +2917,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `CURSO-DE-CURTA-DURACAO-MINISTRADO@SEQUENCIA-PRODUCAO`
-- `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@NIVEL-DO-CURSO`
 - `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@HOME-PAGE-DO-TRABALHO`
 - `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@DOI`
 - `DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@UNIDADE-INGLES`
@@ -2946,24 +2928,25 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
+- `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@IDIOMA` ← `F_IDIOMA` (observado)
+- `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
 - `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
 - `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
 
 **texto livre**
 
-- `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@NATUREZA` ← `f_natureza` (inferido)
-- `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (inferido)
-- `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@FINALIDADE` ← `f_finalidade` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@NATUREZA` ← `f_natureza` (observado)
+- `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@TITULO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (observado)
+- `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@FINALIDADE` ← `f_finalidade` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `DESENVOLVIMENTO-DE-MATERIAL-DIDATICO-OU-INSTRUCIONAL@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -2993,7 +2976,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `DESENVOLVIMENTO-DE-MATERIAL-DIDATICO-OU-INSTRUCIONAL@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@DOI`
 - `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@NATUREZA-INGLES`
 - `DETALHAMENTO-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@FINALIDADE-INGLES`
@@ -3016,12 +2998,12 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DE-EDITORACAO@TITULO` ← `f_titulo` (observado)
 - `DADOS-BASICOS-DE-EDITORACAO@ANO` ← `f_ano` (observado)
 - `DADOS-BASICOS-DE-EDITORACAO@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (observado)
-- `DADOS-BASICOS-DE-EDITORACAO@TITULO-INGLES` ← `f_titulo_en` (inferido)
+- `DADOS-BASICOS-DE-EDITORACAO@TITULO-INGLES` ← `f_titulo_en` (observado)
 - `DETALHAMENTO-DE-EDITORACAO@NUMERO-DE-PAGINAS` ← `f_paginas` (observado)
 - `DETALHAMENTO-DE-EDITORACAO@INSTITUICAO-PROMOTORA` ← `f_inst` (observado)
 - `DETALHAMENTO-DE-EDITORACAO@EDITORA` ← `f_editora` (observado)
 - `DETALHAMENTO-DE-EDITORACAO@CIDADE` ← `f_cidade` (observado)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
@@ -3064,23 +3046,26 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DE-MANUTENCAO-DE-OBRA-ARTISTICA@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DE-MANUTENCAO-DE-OBRA-ARTISTICA@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DE-MANUTENCAO-DE-OBRA-ARTISTICA@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
+- `DADOS-BASICOS-DE-MANUTENCAO-DE-OBRA-ARTISTICA@NATUREZA` ← `F_SUB_PROD` (observado)
+- `DADOS-BASICOS-DE-MANUTENCAO-DE-OBRA-ARTISTICA@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DE-MANUTENCAO-DE-OBRA-ARTISTICA@IDIOMA` ← `F_IDIOMA` (observado)
+- `DADOS-BASICOS-DE-MANUTENCAO-DE-OBRA-ARTISTICA@FLAG-RELEVANCIA` ← `F_RELEV` (observado)
 - `DETALHAMENTO-DE-MANUTENCAO-DE-OBRA-ARTISTICA@ACERVO` ← `f_acervo` (inferido)
 
 **texto livre**
 
-- `DADOS-BASICOS-DE-MANUTENCAO-DE-OBRA-ARTISTICA@TITULO` ← `f_titulo` (inferido)
+- `DADOS-BASICOS-DE-MANUTENCAO-DE-OBRA-ARTISTICA@TITULO` ← `f_titulo` (observado)
 - `DADOS-BASICOS-DE-MANUTENCAO-DE-OBRA-ARTISTICA@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DE-MANUTENCAO-DE-OBRA-ARTISTICA@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DE-MANUTENCAO-DE-OBRA-ARTISTICA@AUTOR-DA-OBRA` ← `f_autor_obra` (inferido)
-- `DETALHAMENTO-DE-MANUTENCAO-DE-OBRA-ARTISTICA@LOCAL` ← `f_local` (inferido)
-- `DETALHAMENTO-DE-MANUTENCAO-DE-OBRA-ARTISTICA@CIDADE` ← `f_cidade` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `DADOS-BASICOS-DE-MANUTENCAO-DE-OBRA-ARTISTICA@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DE-MANUTENCAO-DE-OBRA-ARTISTICA@NOME-DA-OBRA` ← `f_obra` (observado)
+- `DETALHAMENTO-DE-MANUTENCAO-DE-OBRA-ARTISTICA@AUTOR-DA-OBRA` ← `f_autor_obra` (observado)
+- `DETALHAMENTO-DE-MANUTENCAO-DE-OBRA-ARTISTICA@LOCAL` ← `f_local` (observado)
+- `DETALHAMENTO-DE-MANUTENCAO-DE-OBRA-ARTISTICA@CIDADE` ← `f_cidade` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `MANUTENCAO-DE-OBRA-ARTISTICA@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -3110,11 +3095,8 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `MANUTENCAO-DE-OBRA-ARTISTICA@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DE-MANUTENCAO-DE-OBRA-ARTISTICA@TIPO`
-- `DADOS-BASICOS-DE-MANUTENCAO-DE-OBRA-ARTISTICA@NATUREZA`
 - `DADOS-BASICOS-DE-MANUTENCAO-DE-OBRA-ARTISTICA@DOI`
-- `DETALHAMENTO-DE-MANUTENCAO-DE-OBRA-ARTISTICA@NOME-DA-OBRA`
 - `DETALHAMENTO-DE-MANUTENCAO-DE-OBRA-ARTISTICA@ANO-DA-OBRA`
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
@@ -3124,24 +3106,25 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DA-MAQUETE@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DA-MAQUETE@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DA-MAQUETE@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
-- `DADOS-BASICOS-DA-MAQUETE@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
+- `DADOS-BASICOS-DA-MAQUETE@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DA-MAQUETE@IDIOMA` ← `F_IDIOMA` (observado)
+- `DADOS-BASICOS-DA-MAQUETE@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
+- `DADOS-BASICOS-DA-MAQUETE@FLAG-RELEVANCIA` ← `F_RELEV` (observado)
 
 **texto livre**
 
-- `DADOS-BASICOS-DA-MAQUETE@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DA-MAQUETE@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DA-MAQUETE@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DA-MAQUETE@FINALIDADE` ← `f_finalidade` (inferido)
-- `DETALHAMENTO-DA-MAQUETE@OBJETO-REPRESENTADO` ← `f_objeto` (inferido)
-- `DETALHAMENTO-DA-MAQUETE@MATERIAL-UTILIZADO` ← `f_material` (inferido)
-- `DETALHAMENTO-DA-MAQUETE@INSTITUICAO-FINANCIADORA` ← `f_inst` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `DADOS-BASICOS-DA-MAQUETE@TITULO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DA-MAQUETE@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DA-MAQUETE@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DA-MAQUETE@FINALIDADE` ← `f_finalidade` (observado)
+- `DETALHAMENTO-DA-MAQUETE@OBJETO-REPRESENTADO` ← `f_objeto` (observado)
+- `DETALHAMENTO-DA-MAQUETE@MATERIAL-UTILIZADO` ← `f_material` (observado)
+- `DETALHAMENTO-DA-MAQUETE@INSTITUICAO-FINANCIADORA` ← `f_inst` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `MAQUETE@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -3171,7 +3154,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `MAQUETE@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DA-MAQUETE@HOME-PAGE-DO-TRABALHO`
 - `DADOS-BASICOS-DA-MAQUETE@DOI`
 - `DETALHAMENTO-DA-MAQUETE@FINALIDADE-INGLES`
@@ -3183,9 +3165,11 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
+- `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@TIPO` ← `F_COD_PROD` (observado)
+- `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@NATUREZA` ← `F_SUB_PROD` (observado)
+- `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@IDIOMA` ← `F_IDIOMA` (observado)
+- `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
 - `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
 - `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
 - `DETALHAMENTO-DA-ORGANIZACAO-DE-EVENTO@FLAG-EVENTO-ITINERANTE` ← `f_itinerante` (inferido)
@@ -3193,17 +3177,18 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **texto livre**
 
-- `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DA-ORGANIZACAO-DE-EVENTO@INSTITUICAO-PROMOTORA` ← `f_inst` (inferido)
-- `DETALHAMENTO-DA-ORGANIZACAO-DE-EVENTO@DURACAO-EM-SEMANAS` ← `f_duracao` (inferido)
-- `DETALHAMENTO-DA-ORGANIZACAO-DE-EVENTO@LOCAL` ← `f_local` (inferido)
-- `DETALHAMENTO-DA-ORGANIZACAO-DE-EVENTO@CIDADE` ← `f_cidade` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@TITULO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DA-ORGANIZACAO-DE-EVENTO@INSTITUICAO-PROMOTORA` ← `f_inst` (observado)
+- `DETALHAMENTO-DA-ORGANIZACAO-DE-EVENTO@DURACAO-EM-SEMANAS` ← `f_duracao` (observado)
+- `DETALHAMENTO-DA-ORGANIZACAO-DE-EVENTO@LOCAL` ← `f_local` (observado)
+- `DETALHAMENTO-DA-ORGANIZACAO-DE-EVENTO@CIDADE` ← `f_cidade` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `ORGANIZACAO-DE-EVENTO@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -3233,9 +3218,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `ORGANIZACAO-DE-EVENTO@SEQUENCIA-PRODUCAO`
-- `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@TIPO`
-- `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@NATUREZA`
 - `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@HOME-PAGE-DO-TRABALHO`
 - `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@DOI`
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
@@ -3246,26 +3228,28 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@IDIOMA` ← `F_IDIOMA` (inferido)
+- `DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@NATUREZA` ← `F_COD_PROD` (observado)
+- `DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@IDIOMA` ← `F_IDIOMA` (observado)
 - `DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
 - `DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
 - `DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
 
 **texto livre**
 
-- `DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@HOME-PAGE` ← `F_HOMEPAGE` (inferido)
-- `DETALHAMENTO-DO-PROGRAMA-DE-RADIO-OU-TV@EMISSORA` ← `f_emissora` (inferido)
-- `DETALHAMENTO-DO-PROGRAMA-DE-RADIO-OU-TV@TEMA` ← `f_tema` (inferido)
+- `DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@TITULO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@HOME-PAGE` ← `F_HOMEPAGE` (observado)
+- `DETALHAMENTO-DO-PROGRAMA-DE-RADIO-OU-TV@EMISSORA` ← `f_emissora` (observado)
+- `DETALHAMENTO-DO-PROGRAMA-DE-RADIO-OU-TV@TEMA` ← `f_tema` (observado)
 - `DETALHAMENTO-DO-PROGRAMA-DE-RADIO-OU-TV@DATA-DA-APRESENTACAO` ← `f_data` (inferido)
-- `DETALHAMENTO-DO-PROGRAMA-DE-RADIO-OU-TV@DURACAO-EM-MINUTOS` ← `f_duracao` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `DETALHAMENTO-DO-PROGRAMA-DE-RADIO-OU-TV@DURACAO-EM-MINUTOS` ← `f_duracao` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `PROGRAMA-DE-RADIO-OU-TV@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -3295,8 +3279,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `PROGRAMA-DE-RADIO-OU-TV@SEQUENCIA-PRODUCAO`
-- `DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@NATUREZA`
 - `DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@DOI`
 - `DETALHAMENTO-DO-PROGRAMA-DE-RADIO-OU-TV@FORMATO-DATA-DA-APRESENTACAO`
 - `DETALHAMENTO-DO-PROGRAMA-DE-RADIO-OU-TV@CIDADE`
@@ -3309,24 +3291,25 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
-- `DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
-- `DETALHAMENTO-DO-RELATORIO-DE-PESQUISA@DISPONIBILIDADE` ← `f_disp` (inferido)
+- `DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@IDIOMA` ← `F_IDIOMA` (observado)
+- `DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
+- `DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@FLAG-RELEVANCIA` ← `F_RELEV` (observado)
+- `DETALHAMENTO-DO-RELATORIO-DE-PESQUISA@DISPONIBILIDADE` ← `f_disp` (observado)
 
 **texto livre**
 
-- `DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DO-RELATORIO-DE-PESQUISA@NOME-DO-PROJETO` ← `f_projeto` (inferido)
-- `DETALHAMENTO-DO-RELATORIO-DE-PESQUISA@NUMERO-DE-PAGINAS` ← `f_paginas` (inferido)
-- `DETALHAMENTO-DO-RELATORIO-DE-PESQUISA@INSTITUICAO-FINANCIADORA` ← `f_inst` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@TITULO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DO-RELATORIO-DE-PESQUISA@NOME-DO-PROJETO` ← `f_projeto` (observado)
+- `DETALHAMENTO-DO-RELATORIO-DE-PESQUISA@NUMERO-DE-PAGINAS` ← `f_paginas` (observado)
+- `DETALHAMENTO-DO-RELATORIO-DE-PESQUISA@INSTITUICAO-FINANCIADORA` ← `f_inst` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `RELATORIO-DE-PESQUISA@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -3356,7 +3339,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `RELATORIO-DE-PESQUISA@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@HOME-PAGE-DO-TRABALHO`
 - `DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@DOI`
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
@@ -3367,22 +3349,24 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@IDIOMA` ← `F_IDIOMA` (inferido)
+- `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@NATUREZA` ← `F_COD_PROD` (observado)
+- `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@IDIOMA` ← `F_IDIOMA` (observado)
 - `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
 - `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
 
 **texto livre**
 
-- `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@HOME-PAGE` ← `F_HOMEPAGE` (inferido)
-- `DETALHAMENTO-DA-MIDIA-SOCIAL-WEBSITE-BLOG@TEMA` ← `f_tema` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@TITULO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@HOME-PAGE` ← `F_HOMEPAGE` (observado)
+- `DETALHAMENTO-DA-MIDIA-SOCIAL-WEBSITE-BLOG@TEMA` ← `f_tema` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `MIDIA-SOCIAL-WEBSITE-BLOG@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -3412,8 +3396,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `MIDIA-SOCIAL-WEBSITE-BLOG@SEQUENCIA-PRODUCAO`
-- `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@NATUREZA`
 - `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@NATUREZA-INGLES`
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
@@ -3423,28 +3405,29 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
-- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@IDIOMA` ← `F_IDIOMA` (inferido)
+- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
+- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@IDIOMA` ← `F_IDIOMA` (observado)
 - `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
 - `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
 
 **texto livre**
 
-- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@NATUREZA` ← `f_natureza` (inferido)
-- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DE-OUTRA-PRODUCAO-TECNICA@FINALIDADE` ← `f_finalidade` (inferido)
-- `DETALHAMENTO-DE-OUTRA-PRODUCAO-TECNICA@INSTITUICAO-PROMOTORA` ← `f_inst` (inferido)
-- `DETALHAMENTO-DE-OUTRA-PRODUCAO-TECNICA@LOCAL` ← `f_local` (inferido)
-- `DETALHAMENTO-DE-OUTRA-PRODUCAO-TECNICA@CIDADE` ← `f_cidade` (inferido)
+- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@NATUREZA` ← `f_natureza` (observado)
+- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@TITULO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DE-OUTRA-PRODUCAO-TECNICA@FINALIDADE` ← `f_finalidade` (observado)
+- `DETALHAMENTO-DE-OUTRA-PRODUCAO-TECNICA@INSTITUICAO-PROMOTORA` ← `f_inst` (observado)
+- `DETALHAMENTO-DE-OUTRA-PRODUCAO-TECNICA@LOCAL` ← `f_local` (observado)
+- `DETALHAMENTO-DE-OUTRA-PRODUCAO-TECNICA@CIDADE` ← `f_cidade` (observado)
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
 - `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `OUTRA-PRODUCAO-TECNICA@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -3474,7 +3457,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `OUTRA-PRODUCAO-TECNICA@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@HOME-PAGE-DO-TRABALHO`
 - `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@DOI`
 - `DADOS-BASICOS-DE-OUTRA-PRODUCAO-TECNICA@NATUREZA-INGLES`
@@ -3498,29 +3480,36 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DE-ARTES-CENICAS@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DE-ARTES-CENICAS@IDIOMA` ← `F_IDIOMA` (inferido)
+- `DADOS-BASICOS-DE-ARTES-CENICAS@NATUREZA` ← `F_COD_PROD` (observado)
+- `DADOS-BASICOS-DE-ARTES-CENICAS@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DE-ARTES-CENICAS@IDIOMA` ← `F_IDIOMA` (observado)
 - `DADOS-BASICOS-DE-ARTES-CENICAS@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
-- `DADOS-BASICOS-DE-ARTES-CENICAS@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
+- `DADOS-BASICOS-DE-ARTES-CENICAS@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
 - `DADOS-BASICOS-DE-ARTES-CENICAS@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
+- `DETALHAMENTO-DE-ARTES-CENICAS@TIPO-DE-EVENTO` ← `f_tpo_evento` (observado)
+- `DETALHAMENTO-DE-ARTES-CENICAS@ATIVIDADE-DOS-AUTORES` ← `f_tpo_ativ` (observado)
 
 **texto livre**
 
-- `DADOS-BASICOS-DE-ARTES-CENICAS@TITULO` ← `f_titulo` (inferido)
+- `DADOS-BASICOS-DE-ARTES-CENICAS@TITULO` ← `f_titulo` (observado)
 - `DADOS-BASICOS-DE-ARTES-CENICAS@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DE-ARTES-CENICAS@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DADOS-BASICOS-DE-ARTES-CENICAS@HOME-PAGE` ← `f_homepage` (inferido)
-- `DETALHAMENTO-DE-ARTES-CENICAS@LOCAL-DE-ESTREIA` ← `f_local_estreia` (inferido)
-- `DETALHAMENTO-DE-ARTES-CENICAS@PREMIACAO` ← `f_premiacao` (inferido)
-- `DETALHAMENTO-DE-ARTES-CENICAS@INSTITUICAO-PROMOTORA-DO-PREMIO` ← `f_inst_premio` (inferido)
-- `DETALHAMENTO-DE-ARTES-CENICAS@AUTOR-DA-OBRA-DE-REFERENCIA` ← `f_autor_obra` (inferido)
-- `DETALHAMENTO-DE-ARTES-CENICAS@DURACAO` ← `f_duracao` (inferido)
-- `DETALHAMENTO-DE-ARTES-CENICAS@TEMPORADA` ← `f_temporada` (inferido)
-- `DETALHAMENTO-DE-ARTES-CENICAS@CIDADE-DO-EVENTO` ← `f_cidade` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `DADOS-BASICOS-DE-ARTES-CENICAS@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DADOS-BASICOS-DE-ARTES-CENICAS@HOME-PAGE` ← `f_homepage` (observado)
+- `DETALHAMENTO-DE-ARTES-CENICAS@LOCAL-DE-ESTREIA` ← `f_local_estreia` (observado)
+- `DETALHAMENTO-DE-ARTES-CENICAS@PREMIACAO` ← `f_premiacao` (observado)
+- `DETALHAMENTO-DE-ARTES-CENICAS@INSTITUICAO-PROMOTORA-DO-PREMIO` ← `f_inst_premio` (observado)
+- `DETALHAMENTO-DE-ARTES-CENICAS@OBRA-DE-REFERENCIA` ← `F_EXPOSICAO` (observado)
+- `DETALHAMENTO-DE-ARTES-CENICAS@AUTOR-DA-OBRA-DE-REFERENCIA` ← `f_autor_obra` (observado)
+- `DETALHAMENTO-DE-ARTES-CENICAS@DURACAO` ← `f_duracao` (observado)
+- `DETALHAMENTO-DE-ARTES-CENICAS@TEMPORADA` ← `f_temporada` (observado)
+- `DETALHAMENTO-DE-ARTES-CENICAS@INSTITUICAO-PROMOTORA-DO-EVENTO` ← `f_inst` (observado)
+- `DETALHAMENTO-DE-ARTES-CENICAS@LOCAL-DO-EVENTO` ← `f_local` (observado)
+- `DETALHAMENTO-DE-ARTES-CENICAS@CIDADE-DO-EVENTO` ← `f_cidade` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `ARTES-CENICAS@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `DETALHAMENTO-DE-ARTES-CENICAS@FLAG-ITINERANTE` ← `f_itinerante` (inferido)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
@@ -3551,16 +3540,9 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `ARTES-CENICAS@SEQUENCIA-PRODUCAO`
-- `DADOS-BASICOS-DE-ARTES-CENICAS@NATUREZA`
-- `DETALHAMENTO-DE-ARTES-CENICAS@TIPO-DE-EVENTO`
-- `DETALHAMENTO-DE-ARTES-CENICAS@ATIVIDADE-DOS-AUTORES`
 - `DETALHAMENTO-DE-ARTES-CENICAS@DATA-ESTREIA`
 - `DETALHAMENTO-DE-ARTES-CENICAS@DATA-ENCERRAMENTO`
-- `DETALHAMENTO-DE-ARTES-CENICAS@OBRA-DE-REFERENCIA`
 - `DETALHAMENTO-DE-ARTES-CENICAS@ANO-DA-OBRA-DE-REFERENCIA`
-- `DETALHAMENTO-DE-ARTES-CENICAS@INSTITUICAO-PROMOTORA-DO-EVENTO`
-- `DETALHAMENTO-DE-ARTES-CENICAS@LOCAL-DO-EVENTO`
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
@@ -3569,29 +3551,37 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DA-MUSICA@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DA-MUSICA@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DA-MUSICA@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
+- `DADOS-BASICOS-DA-MUSICA@NATUREZA` ← `F_COD_PROD` (observado)
+- `DADOS-BASICOS-DA-MUSICA@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DA-MUSICA@IDIOMA` ← `F_IDIOMA` (observado)
+- `DADOS-BASICOS-DA-MUSICA@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
 - `DADOS-BASICOS-DA-MUSICA@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
 - `DADOS-BASICOS-DA-MUSICA@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
+- `DETALHAMENTO-DA-MUSICA@TIPO-DE-EVENTO` ← `f_tpo_evento` (observado)
+- `DETALHAMENTO-DA-MUSICA@ATIVIDADE-DOS-AUTORES` ← `f_tpo_ativ` (observado)
 
 **texto livre**
 
-- `DADOS-BASICOS-DA-MUSICA@TITULO` ← `f_titulo` (inferido)
+- `DADOS-BASICOS-DA-MUSICA@TITULO` ← `f_titulo` (observado)
 - `DADOS-BASICOS-DA-MUSICA@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DA-MUSICA@HOME-PAGE` ← `f_homepage` (inferido)
-- `DADOS-BASICOS-DA-MUSICA@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DA-MUSICA@LOCAL-DE-ESTREIA` ← `f_local_estreia` (inferido)
-- `DETALHAMENTO-DA-MUSICA@PREMIACAO` ← `f_premiacao` (inferido)
-- `DETALHAMENTO-DA-MUSICA@INSTITUICAO-PROMOTORA-DO-PREMIO` ← `f_inst_premio` (inferido)
-- `DETALHAMENTO-DA-MUSICA@AUTOR-DA-OBRA-DE-REFERENCIA` ← `f_autor_obra` (inferido)
-- `DETALHAMENTO-DA-MUSICA@DURACAO` ← `f_duracao` (inferido)
-- `DETALHAMENTO-DA-MUSICA@TEMPORADA` ← `f_temporada` (inferido)
-- `DETALHAMENTO-DA-MUSICA@CIDADE-DO-EVENTO` ← `f_cidade` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `DADOS-BASICOS-DA-MUSICA@HOME-PAGE` ← `f_homepage` (observado)
+- `DADOS-BASICOS-DA-MUSICA@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DA-MUSICA@FORMACAO-INSTRUMENTAL` ← `f_form_instr` (observado)
+- `DETALHAMENTO-DA-MUSICA@LOCAL-DE-ESTREIA` ← `f_local_estreia` (observado)
+- `DETALHAMENTO-DA-MUSICA@PREMIACAO` ← `f_premiacao` (observado)
+- `DETALHAMENTO-DA-MUSICA@INSTITUICAO-PROMOTORA-DO-PREMIO` ← `f_inst_premio` (observado)
+- `DETALHAMENTO-DA-MUSICA@OBRA-DE-REFERENCIA` ← `F_EXPOSICAO` (observado)
+- `DETALHAMENTO-DA-MUSICA@AUTOR-DA-OBRA-DE-REFERENCIA` ← `f_autor_obra` (observado)
+- `DETALHAMENTO-DA-MUSICA@DURACAO` ← `f_duracao` (observado)
+- `DETALHAMENTO-DA-MUSICA@TEMPORADA` ← `f_temporada` (observado)
+- `DETALHAMENTO-DA-MUSICA@INSTITUICAO-PROMOTORA-DO-EVENTO` ← `f_inst` (observado)
+- `DETALHAMENTO-DA-MUSICA@LOCAL-DO-EVENTO` ← `f_local` (observado)
+- `DETALHAMENTO-DA-MUSICA@CIDADE-DO-EVENTO` ← `f_cidade` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `MUSICA@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -3621,18 +3611,10 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `MUSICA@SEQUENCIA-PRODUCAO`
-- `DADOS-BASICOS-DA-MUSICA@NATUREZA`
-- `DETALHAMENTO-DA-MUSICA@TIPO-DE-EVENTO`
-- `DETALHAMENTO-DA-MUSICA@ATIVIDADE-DOS-AUTORES`
-- `DETALHAMENTO-DA-MUSICA@FORMACAO-INSTRUMENTAL`
 - `DETALHAMENTO-DA-MUSICA@FLAG-INEDITISMO-DA-OBRA`
 - `DETALHAMENTO-DA-MUSICA@DATA-ESTREIA`
 - `DETALHAMENTO-DA-MUSICA@DATA-ENCERRAMENTO`
-- `DETALHAMENTO-DA-MUSICA@OBRA-DE-REFERENCIA`
 - `DETALHAMENTO-DA-MUSICA@ANO-DA-OBRA-DE-REFERENCIA`
-- `DETALHAMENTO-DA-MUSICA@INSTITUICAO-PROMOTORA-DO-EVENTO`
-- `DETALHAMENTO-DA-MUSICA@LOCAL-DO-EVENTO`
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
@@ -3641,27 +3623,30 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DE-ARTES-VISUAIS@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DE-ARTES-VISUAIS@IDIOMA` ← `F_IDIOMA` (inferido)
+- `DADOS-BASICOS-DE-ARTES-VISUAIS@NATUREZA` ← `F_COD_PROD` (observado)
+- `DADOS-BASICOS-DE-ARTES-VISUAIS@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DE-ARTES-VISUAIS@IDIOMA` ← `F_IDIOMA` (observado)
 - `DADOS-BASICOS-DE-ARTES-VISUAIS@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
-- `DADOS-BASICOS-DE-ARTES-VISUAIS@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
+- `DADOS-BASICOS-DE-ARTES-VISUAIS@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
 - `DADOS-BASICOS-DE-ARTES-VISUAIS@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
+- `DETALHAMENTO-DE-ARTES-VISUAIS@ATIVIDADE-DOS-AUTORES` ← `f_tpo_ativ` (observado)
 
 **texto livre**
 
-- `DADOS-BASICOS-DE-ARTES-VISUAIS@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DE-ARTES-VISUAIS@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DE-ARTES-VISUAIS@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DADOS-BASICOS-DE-ARTES-VISUAIS@HOME-PAGE` ← `f_homepage` (inferido)
-- `DETALHAMENTO-DE-ARTES-VISUAIS@PREMIACAO` ← `f_premiacao` (inferido)
-- `DETALHAMENTO-DE-ARTES-VISUAIS@INSTITUICAO-PROMOTORA-DO-EVENTO` ← `f_inst` (inferido)
-- `DETALHAMENTO-DE-ARTES-VISUAIS@LOCAL-DO-EVENTO` ← `f_local` (inferido)
-- `DETALHAMENTO-DE-ARTES-VISUAIS@CIDADE-DO-EVENTO` ← `f_cidade` (inferido)
-- `DETALHAMENTO-DE-ARTES-VISUAIS@TEMPORADA` ← `f_temporada` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `DADOS-BASICOS-DE-ARTES-VISUAIS@TITULO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DE-ARTES-VISUAIS@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DE-ARTES-VISUAIS@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DADOS-BASICOS-DE-ARTES-VISUAIS@HOME-PAGE` ← `f_homepage` (observado)
+- `DETALHAMENTO-DE-ARTES-VISUAIS@PREMIACAO` ← `f_premiacao` (observado)
+- `DETALHAMENTO-DE-ARTES-VISUAIS@INSTITUICAO-PROMOTORA-DO-EVENTO` ← `f_inst` (observado)
+- `DETALHAMENTO-DE-ARTES-VISUAIS@LOCAL-DO-EVENTO` ← `f_local` (observado)
+- `DETALHAMENTO-DE-ARTES-VISUAIS@CIDADE-DO-EVENTO` ← `f_cidade` (observado)
+- `DETALHAMENTO-DE-ARTES-VISUAIS@TEMPORADA` ← `f_temporada` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `ARTES-VISUAIS@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -3691,9 +3676,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `ARTES-VISUAIS@SEQUENCIA-PRODUCAO`
-- `DADOS-BASICOS-DE-ARTES-VISUAIS@NATUREZA`
-- `DETALHAMENTO-DE-ARTES-VISUAIS@ATIVIDADE-DOS-AUTORES`
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
@@ -3702,28 +3684,29 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
+- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@IDIOMA` ← `F_IDIOMA` (observado)
+- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
 - `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
 - `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
 
 **texto livre**
 
-- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@NATUREZA` ← `f_natureza` (inferido)
-- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@TITULO` ← `f_titulo` (inferido)
+- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@NATUREZA` ← `f_natureza` (observado)
+- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@TITULO` ← `f_titulo` (observado)
 - `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@HOME-PAGE` ← `f_homepage` (inferido)
-- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@INSTITUICAO-PROMOTORA-DO-EVENTO` ← `f_inst` (inferido)
-- `DETALHAMENTO-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@LOCAL-DO-EVENTO` ← `f_local` (inferido)
-- `DETALHAMENTO-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@CIDADE` ← `f_cidade` (inferido)
-- `DETALHAMENTO-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@EXPOSICAO` ← `F_EXPOSICAO` (inferido)
-- `DETALHAMENTO-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@PREMIACAO` ← `f_premiacao` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@HOME-PAGE` ← `f_homepage` (observado)
+- `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@INSTITUICAO-PROMOTORA-DO-EVENTO` ← `f_inst` (observado)
+- `DETALHAMENTO-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@LOCAL-DO-EVENTO` ← `f_local` (observado)
+- `DETALHAMENTO-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@CIDADE` ← `f_cidade` (observado)
+- `DETALHAMENTO-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@EXPOSICAO` ← `F_EXPOSICAO` (observado)
+- `DETALHAMENTO-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@PREMIACAO` ← `f_premiacao` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
 
+- `OUTRA-PRODUCAO-ARTISTICA-CULTURAL@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -3753,7 +3736,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `OUTRA-PRODUCAO-ARTISTICA-CULTURAL@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@DOI`
 - `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@NATUREZA-INGLES`
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
@@ -3776,9 +3758,10 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO@IDIOMA` ← `F_IDIOMA` (inferido)
 - `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
 - `DETALHAMENTO-DE-ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO@FLAG-BOLSA` ← `F_BOLSA` (inferido)
-- `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
+- `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@NATUREZA` ← `F_COD_PROD` (observado)
+- `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@IDIOMA` ← `F_IDIOMA` (observado)
+- `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@FLAG-RELEVANCIA` ← `F_RELEV` (observado)
 - `DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@FLAG-BOLSA` ← `F_BOLSA` (inferido)
 
 **texto livre**
@@ -3787,7 +3770,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-MESTRADO@ANO` ← `f_ano` (inferido)
 - `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-MESTRADO@HOME-PAGE` ← `f_homepage` (inferido)
 - `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-MESTRADO@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 - `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-DOUTORADO@TITULO` ← `f_titulo` (inferido)
 - `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-DOUTORADO@ANO` ← `f_ano` (inferido)
 - `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-DOUTORADO@HOME-PAGE` ← `f_homepage` (inferido)
@@ -3796,10 +3779,13 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO@ANO` ← `f_ano` (inferido)
 - `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO@HOME-PAGE` ← `f_homepage` (inferido)
 - `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@HOME-PAGE` ← `f_homepage` (inferido)
-- `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@TITULO-INGLES` ← `f_titulo_en` (inferido)
+- `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@TITULO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@HOME-PAGE` ← `f_homepage` (observado)
+- `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@NOME-DO-ORIENTADO` ← `f_nme_orient` (observado)
+- `DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@NOME-DA-INSTITUICAO` ← `f_inst` (observado)
+- `DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@NOME-DO-CURSO` ← `f_curso` (observado)
 
 **oculto**
 
@@ -3834,9 +3820,11 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DE-ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
 - `DETALHAMENTO-DE-ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO@CODIGO-CURSO` ← `f_cod_curso` (inferido)
 - `DETALHAMENTO-DE-ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO@NUMERO-ID-ORIENTADO` ← `f_id_orientado` (inferido)
+- `OUTRAS-ORIENTACOES-CONCLUIDAS@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@TIPO` ← `f_tipo` (inferido)
 - `DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
-- `DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@CODIGO-CURSO` ← `f_cod_curso` (inferido)
+- `DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@CODIGO-CURSO` ← `f_cod_curso` (observado)
+- `DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@CODIGO-AGENCIA-FINANCIADORA` ← `f_agencia` (observado)
 - `DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@NUMERO-ID-ORIENTADO` ← `f_id_orientado` (inferido)
 
 **fora do formulário**
@@ -3881,16 +3869,10 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DE-ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO@NOME-DA-AGENCIA`
 - `DETALHAMENTO-DE-ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO@NUMERO-DE-PAGINAS`
 - `DETALHAMENTO-DE-ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO@NOME-DO-CURSO-INGLES`
-- `OUTRAS-ORIENTACOES-CONCLUIDAS@SEQUENCIA-PRODUCAO`
-- `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@NATUREZA`
 - `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@DOI`
 - `DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@TIPO-INGLES`
-- `DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@NOME-DO-ORIENTADO`
-- `DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@NOME-DA-INSTITUICAO`
 - `DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@CODIGO-ORGAO`
 - `DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@NOME-ORGAO`
-- `DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@NOME-DO-CURSO`
-- `DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@CODIGO-AGENCIA-FINANCIADORA`
 - `DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@NOME-DA-AGENCIA`
 - `DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@TIPO-DE-ORIENTACAO-CONCLUIDA`
 - `DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@NUMERO-DE-PAGINAS`
@@ -3931,7 +3913,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DA-ORIENTACAO-EM-ANDAMENTO-DE-MESTRADO@HOME-PAGE` ← `f_homepage` (inferido)
 - `DADOS-BASICOS-DA-ORIENTACAO-EM-ANDAMENTO-DE-MESTRADO@TITULO-DO-TRABALHO-INGLES` ← `f_titulo_en` (inferido)
 - `DETALHAMENTO-DA-ORIENTACAO-EM-ANDAMENTO-DE-MESTRADO@NOME-DO-ORIENTANDO` ← `f_nme_orient` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 - `DADOS-BASICOS-DA-ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO@TITULO-DO-TRABALHO` ← `f_titulo` (inferido)
 - `DADOS-BASICOS-DA-ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO@ANO` ← `f_ano` (inferido)
 - `DADOS-BASICOS-DA-ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO@HOME-PAGE` ← `f_homepage` (inferido)
@@ -4096,8 +4078,9 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-MESTRADO@IDIOMA` ← `F_IDIOMA` (inferido)
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-DOUTORADO@PAIS` ← `f_pais` (inferido)
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-DOUTORADO@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@IDIOMA` ← `F_IDIOMA` (inferido)
+- `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@NATUREZA` ← `F_COD_PROD` (observado)
+- `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@IDIOMA` ← `F_IDIOMA` (observado)
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-APERFEICOAMENTO-ESPECIALIZACAO@PAIS` ← `f_pais` (inferido)
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-APERFEICOAMENTO-ESPECIALIZACAO@IDIOMA` ← `F_IDIOMA` (inferido)
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-GRADUACAO@PAIS` ← `f_pais` (inferido)
@@ -4111,15 +4094,18 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-MESTRADO@ANO` ← `f_ano` (inferido)
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-MESTRADO@HOME-PAGE` ← `f_homepage` (inferido)
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-MESTRADO@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-DOUTORADO@TITULO` ← `f_titulo` (inferido)
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-DOUTORADO@ANO` ← `f_ano` (inferido)
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-DOUTORADO@HOME-PAGE` ← `f_homepage` (inferido)
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-DOUTORADO@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@HOME-PAGE` ← `f_homepage` (inferido)
-- `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@TITULO-INGLES` ← `f_titulo_en` (inferido)
+- `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@TITULO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@HOME-PAGE` ← `f_homepage` (observado)
+- `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@NOME-DO-CANDIDATO` ← `f_nme_orient` (observado)
+- `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@NOME-INSTITUICAO` ← `f_inst` (observado)
+- `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@NOME-CURSO` ← `f_curso` (observado)
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-APERFEICOAMENTO-ESPECIALIZACAO@TITULO` ← `f_titulo` (inferido)
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-APERFEICOAMENTO-ESPECIALIZACAO@ANO` ← `f_ano` (inferido)
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-APERFEICOAMENTO-ESPECIALIZACAO@HOME-PAGE` ← `f_homepage` (inferido)
@@ -4160,8 +4146,9 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `SETORES-DE-ATIVIDADE@SETOR-DE-ATIVIDADE-3` ← `f_setor_l` (inferido)
 - `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-DOUTORADO@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
 - `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-DOUTORADO@CODIGO-CURSO` ← `f_cod_curso` (inferido)
+- `PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
-- `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@CODIGO-CURSO` ← `f_cod_curso` (inferido)
+- `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@CODIGO-CURSO` ← `f_cod_curso` (observado)
 - `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-APERFEICOAMENTO-ESPECIALIZACAO@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
 - `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-APERFEICOAMENTO-ESPECIALIZACAO@CODIGO-CURSO` ← `f_cod_curso` (inferido)
 - `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-GRADUACAO@CODIGO-INSTITUICAO` ← `f_cod_inst` (inferido)
@@ -4196,14 +4183,9 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-DOUTORADO@NOME-ORGAO`
 - `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-DOUTORADO@NOME-CURSO`
 - `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-DOUTORADO@NOME-CURSO-INGLES`
-- `PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@SEQUENCIA-PRODUCAO`
-- `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@NATUREZA`
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@DOI`
-- `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@NOME-DO-CANDIDATO`
-- `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@NOME-INSTITUICAO`
 - `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@CODIGO-ORGAO`
 - `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@NOME-ORGAO`
-- `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@NOME-CURSO`
 - `DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO@NOME-CURSO-INGLES`
 - `PARTICIPACAO-EM-BANCA-DE-APERFEICOAMENTO-ESPECIALIZACAO@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-APERFEICOAMENTO-ESPECIALIZACAO@NATUREZA`
@@ -4258,7 +4240,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DA-BANCA-JULGADORA-PARA-PROFESSOR-TITULAR@ANO` ← `f_ano` (inferido)
 - `DADOS-BASICOS-DA-BANCA-JULGADORA-PARA-PROFESSOR-TITULAR@HOME-PAGE` ← `f_homepage` (inferido)
 - `DADOS-BASICOS-DA-BANCA-JULGADORA-PARA-PROFESSOR-TITULAR@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 - `DADOS-BASICOS-DA-BANCA-JULGADORA-PARA-CONCURSO-PUBLICO@TITULO` ← `f_titulo` (inferido)
 - `DADOS-BASICOS-DA-BANCA-JULGADORA-PARA-CONCURSO-PUBLICO@ANO` ← `f_ano` (inferido)
 - `DADOS-BASICOS-DA-BANCA-JULGADORA-PARA-CONCURSO-PUBLICO@HOME-PAGE` ← `f_homepage` (inferido)
@@ -4566,24 +4548,25 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **com opções**
 
-- `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@PAIS` ← `f_pais` (inferido)
-- `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@IDIOMA` ← `F_IDIOMA` (inferido)
-- `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
-- `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
+- `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@PAIS` ← `f_pais` (observado)
+- `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@IDIOMA` ← `F_IDIOMA` (observado)
+- `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@MEIO-DE-DIVULGACAO` ← `f_meio` (observado)
+- `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@FLAG-RELEVANCIA` ← `F_RELEV` (observado)
 
 **texto livre**
 
-- `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@NATUREZA` ← `f_natureza` (inferido)
-- `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@TITULO` ← `f_titulo` (inferido)
-- `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@ANO` ← `f_ano` (inferido)
-- `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@HOME-PAGE` ← `f_homepage` (inferido)
-- `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@TITULO-INGLES` ← `f_titulo_en` (inferido)
-- `DETALHAMENTO-DE-DEMAIS-TRABALHOS@FINALIDADE` ← `f_finalidade` (inferido)
-- `DETALHAMENTO-DE-DEMAIS-TRABALHOS@LOCAL` ← `f_local` (inferido)
+- `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@NATUREZA` ← `f_natureza` (observado)
+- `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@TITULO` ← `f_titulo` (observado)
+- `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@ANO` ← `f_ano` (observado)
+- `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@HOME-PAGE` ← `f_homepage` (observado)
+- `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@TITULO-INGLES` ← `f_titulo_en` (observado)
+- `DETALHAMENTO-DE-DEMAIS-TRABALHOS@FINALIDADE` ← `f_finalidade` (observado)
+- `DETALHAMENTO-DE-DEMAIS-TRABALHOS@LOCAL` ← `f_local` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
 
 **oculto**
 
+- `DEMAIS-TRABALHOS@SEQUENCIA-PRODUCAO` ← `f_seq` (observado)
 - `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
 - `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
 - `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
@@ -4613,7 +4596,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 **fora do formulário**
 
-- `DEMAIS-TRABALHOS@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@DOI`
 - `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@NATUREZA-INGLES`
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`

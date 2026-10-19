@@ -4,8 +4,8 @@
 // A mesma composição é a prévia no topo do bloco em edição.
 
 import { elementLabel, enumLabel } from '../labels/labels.ts';
+import { formatPhone } from '../model/contacts.ts';
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
-import { formatPhone } from './contacts.ts';
 import { isSystemAttr } from './field-kind.ts';
 import { isRedundantDateFormat } from './lattes-date.ts';
 import { isSensitiveAttr } from './privacy.ts';

@@ -3,6 +3,7 @@
 // e o resumo da conferência do currículo antes de publicar. O painel está em
 // PublishPanel.tsx; o envio, em src/bridge/publish.ts.
 
+import type { LattesStatus } from '../bridge/lattes-status.ts';
 import {
   PUBLISH_ENABLED,
   publishMessage,
@@ -11,6 +12,9 @@ import {
   type PublishResult,
   type SendScreen,
 } from '../bridge/publish.ts';
+import type { SentEntry } from '../bridge/sent-log.ts';
+import { openDivergences } from '../bridge/write-brake.ts';
+import { unpublishedEntries } from '../ui/status-strip.ts';
 import type { PublishReading, SendScreenReading } from '../ui/use-publish.ts';
 
 /** O que a pessoa pode mudar antes de enviar; a declaração fica de fora, de propósito. */
@@ -193,4 +197,14 @@ export function sendScreenStatus({
     };
   }
   return { waiting: requestedAt !== undefined };
+}
+
+/**
+ * As gravações divergentes que bloqueiam o envio ao CNPq (LAT-59): as que
+ * ainda não foram publicadas e que ninguém resolveu (openDivergences, em
+ * src/bridge/write-brake.ts). Sem a leitura do menu do Lattes, não dá para
+ * saber o que já foi publicado, e todo o registro conta.
+ */
+export function publishBlockers(sent: SentEntry[], lattes: LattesStatus | undefined): SentEntry[] {
+  return openDivergences(lattes ? unpublishedEntries(sent, lattes) : sent);
 }

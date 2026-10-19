@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { jsCalls } from '../src/bridge/create-shared.ts';
 import { findLinks } from '../src/bridge/lattes-html.ts';
+import { parseOrgans } from '../src/bridge/lattes-lists.ts';
 import { getAttr, walk, type XElement } from '../src/model/xml.ts';
 import { readHtmlForm } from './helpers/html-form.ts';
 import { type LattesSimuladoNoTeste, withLattesSimulado } from './helpers/lattes-simulado.ts';
@@ -164,7 +165,7 @@ describe('Lattes simulado: projetos e a busca de órgão', () => {
     expect(field(form, 'GN_PROJETO', 'f_cod_inst')?.value).toBe('000000000001');
     await lattes.port.post(
       'PKG_PROJETO.FORM',
-      `f_ctr=U&f_cod=${code}&f_seq_proj=${row.params.f_seq_proj}&f_titulo=Novo+nome&F_TPO_NATUREZA=E&F_TPO_SITUACAO=C&F_ANO_INIC=2026&F_ANO_FIM=2026`,
+      `f_ctr=U&f_cod=${code}&f_seq_proj=${row.params.f_seq_proj}&f_titulo=Novo+nome&F_TPO_NATUREZA=E&F_TPO_SITUACAO=C&F_ANO_INIC=2026&F_ANO_FIM=2026&f_instituicoes=%3Croot%3E%3C%2Froot%3E`,
     );
     expect(
       all(lattes.state.root, 'PROJETO-DE-PESQUISA').map((p) => getAttr(p, 'SITUACAO')),
@@ -177,7 +178,18 @@ describe('Lattes simulado: projetos e a busca de órgão', () => {
     const orgaos = await lattes.port.get(
       `PKG_PROJETO.pp_orgao_cargo?f_cod=${code}&f_cod_inst=V000000000001`,
     );
-    expect(jsCalls(orgaos, 'seleciona').length).toBeGreaterThan(0);
+    // Como a janela real (18/10/2026): atribuir(código, nome, tipo[, órgão de cima]).
+    expect(parseOrgans(orgaos)).toEqual([
+      { code: '000001000008', kind: '0', name: 'Instituto de Biociências' },
+      { code: '000002000004', kind: '0', name: 'Instituto de Informática' },
+    ]);
+    const unidades = await lattes.port.get(
+      `PKG_PROJETO.pp_orgao_cargo?f_cod=${code}&f_cod_inst=V000000000001&f_cod_inst2=V000001000008`,
+    );
+    expect(parseOrgans(unidades, '000001000008').map((o) => [o.name, o.parent])).toEqual([
+      ['Departamento de Genética', 'Instituto de Biociências'],
+      ['Departamento de Botânica', 'Instituto de Biociências'],
+    ]);
   });
 });
 

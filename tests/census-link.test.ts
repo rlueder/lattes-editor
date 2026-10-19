@@ -78,7 +78,11 @@ describe('censo, passada de edição', () => {
         target: 'evento',
       });
       expect(find(links, 'F_FORMA', 'FORMA-PARTICIPACAO')?.by).toBe('valor');
-      expect(find(links, 'f_seq', 'SEQUENCIA-PRODUCAO')?.matches).toBe(evento.matched);
+      // Orientações e bancas também têm f_seq no simulado: o do evento.
+      const seq = links.filter((l) => l.field === 'f_seq' && l.target === 'evento');
+      expect(seq.map((l) => [l.attribute, l.matches])).toEqual([
+        ['SEQUENCIA-PRODUCAO', evento.matched],
+      ]);
       expect(summary.find((s) => s.target === 'vinculo')?.status).toBe('ok');
       expect(summary.find((s) => s.target === 'licenca')?.status).toBe('sem-itens');
       const text = JSON.stringify({ links, summary });
@@ -318,5 +322,19 @@ describe('censo, casamento de itens', () => {
     });
     // FLAG-BOLSA não tem enum no schema: texto diferente só conta contra.
     expect(finishLinks(out).some((l) => l.attribute === 'FLAG-BOLSA')).toBe(false);
+  });
+
+  it('ligação por valor guarda também o mapa das opções que não bateram pelo rótulo', () => {
+    const out = new Map<string, FieldLink>();
+    const nature = (v: string, label: string) => [
+      field('F_COD_PROD', v, [{ chosen: true, label, value: v }]),
+    ];
+    const item = (v: string) => [
+      { attribute: 'NATUREZA', element: 'DADOS-BASICOS-DA-PARTITURA', value: v },
+    ];
+    collectLinks(out, 't', nature('1B1', 'Canto'), item('CANTO'));
+    collectLinks(out, 't', nature('1B3', 'Orquestral'), item('ORQUESTRA'));
+    const [link] = finishLinks(out);
+    expect(link).toMatchObject({ by: 'valor', matches: 2, valueMap: { '1B3': 'ORQUESTRA' } });
   });
 });
