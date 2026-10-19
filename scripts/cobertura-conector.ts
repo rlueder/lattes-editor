@@ -301,6 +301,8 @@ function withListValues(raw: string): { rewritten: number; xml: string } {
           (x) => x.name === a.name,
         )?.enum;
         if (choices?.length && a.value && !choices.includes(a.value)) a.value = choices[0]!;
+        // A nacionalidade do XML é B ou E (linked-attrs.ts).
+        if (a.name === 'NACIONALIDADE' && !['B', 'E', ''].includes(a.value)) a.value = 'B';
         // FLAG-* sem enumerado guarda SIM ou NAO (field-kind.ts, isBooleanAttr).
         if (!choices && a.name.startsWith('FLAG-') && !['', 'SIM', 'NAO'].includes(a.value)) {
           a.value = 'NAO';

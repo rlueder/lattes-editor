@@ -73,4 +73,36 @@ const LICENCA: ProductionTarget = {
   },
 };
 
-export const DEMAIS_TARGETS: ProductionTarget[] = [DEMAIS_TRABALHOS, LICENCA];
+const LINHA = 'LINHA-DE-PESQUISA';
+
+/**
+ * Linha de pesquisa (GN_LINHA, POST PKG_LINHAPESQ.FORM), lida em 19/10/2026
+ * no Lattes real: a linha entra pela descrição de uma atividade de pesquisa e
+ * desenvolvimento, e a lista pkg_linhapesq.lista traz cada uma com
+ * F_SEQ_ATIV, F_SEQ_FUNCAO, F_SEQ_LINHA e F_CODINST. O formulário tem título,
+ * objetivos (f_ref), se está ativa (f_status S ou N), os mesmos em inglês e
+ * as grades de palavras-chave, áreas e setores. A linha não tem ano: a linha
+ * da lista se acha pelo título e pelo número dela (f_seq_linha).
+ */
+const LINHA_PESQUISA: ProductionTarget = {
+  element: LINHA,
+  fields: under(LINHA, {
+    'FLAG-LINHA-DE-PESQUISA-ATIVA': { field: 'f_status', toForm: yesNo },
+    'OBJETIVOS-LINHA-DE-PESQUISA': 'f_ref',
+    'OBJETIVOS-LINHA-DE-PESQUISA-INGLES': 'f_ref_en',
+    'TITULO-DA-LINHA-DE-PESQUISA': 'f_titulo',
+    'TITULO-DA-LINHA-DE-PESQUISA-INGLES': 'f_titulo_en',
+  }),
+  form: { action: 'PKG_LINHAPESQ.FORM', name: 'GN_LINHA' },
+  grids: ['f_plv_l', 'f_setor_l', 'f_area_l'],
+  id: 'linha-de-pesquisa',
+  list: {
+    formProc: 'pkg_linhapesq.form',
+    isRow: (params) => Boolean(params.F_SEQ_LINHA ?? params.f_seq_linha),
+    proc: 'pkg_linhapesq.lista',
+  },
+  title: { attr: 'TITULO-DA-LINHA-DE-PESQUISA', child: LINHA },
+  year: { attr: 'SEQUENCIA-LINHA', child: LINHA, field: 'f_seq_linha' },
+};
+
+export const DEMAIS_TARGETS: ProductionTarget[] = [DEMAIS_TRABALHOS, LICENCA, LINHA_PESQUISA];

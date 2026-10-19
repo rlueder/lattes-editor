@@ -14,12 +14,22 @@ import type { XElement } from '../../model/xml.ts';
 const LEGACY_ART =
   'O Lattes não tem mais formulário para este tipo de produção artística: o menu só tem artes cênicas, música, artes visuais e outra produção artística';
 
+/**
+ * As informações adicionais de cursos e de instituições (dados
+ * complementares): o menu do Lattes real de 19/10/2026 não tem tela para
+ * elas.
+ */
+const NO_SCREEN =
+  'O Lattes não tem mais formulário para este tipo: o menu não tem tela para as informações adicionais de cursos e de instituições';
+
 const REASONS: Record<string, string> = {
   'APRESENTACAO-DE-OBRA-ARTISTICA': LEGACY_ART,
   'APRESENTACAO-EM-RADIO-OU-TV': LEGACY_ART,
   'ARRANJO-MUSICAL': LEGACY_ART,
   'COMPOSICAO-MUSICAL': LEGACY_ART,
   'CURSO-DE-CURTA-DURACAO': LEGACY_ART,
+  'INFORMACOES-ADICIONAIS-CURSOS': NO_SCREEN,
+  'INFORMACOES-ADICIONAIS-INSTITUICOES': NO_SCREEN,
   'OBRA-DE-ARTES-VISUAIS': LEGACY_ART,
   SONOPLASTIA: LEGACY_ART,
 };
@@ -49,6 +59,11 @@ const ITEM_LISTS = new Set([
  */
 export function eventListReason(element: string, chain: readonly XElement[]): string | undefined {
   if (!ITEM_LISTS.has(element)) return undefined;
+  // A formação complementar (PKG_FORMACAO_COMPL.form): o censo de 15/10/2026
+  // leu o formulário sem as grades nem os ocultos delas.
+  if (chain.some((e) => e.name === 'FORMACAO-COMPLEMENTAR')) {
+    return 'O formulário de formação complementar do Lattes não tem: áreas do conhecimento, palavras-chave nem setores de atividade';
+  }
   const inEvent = chain.some(
     (e) =>
       e.name.startsWith('PARTICIPACAO-EM-') ||

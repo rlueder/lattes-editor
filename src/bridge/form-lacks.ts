@@ -20,7 +20,7 @@ export function fieldAbsent(reason: string): boolean {
   const tail = /^[^:]{1,60}: (O formulário.*)$/.exec(reason)?.[1];
   return [reason, ...(tail ? [tail] : [])].some(
     (r) =>
-      /^O formulário[^:]*? não tem(:| o | campo| palavras)/.test(r) ||
+      /^O formulário[^:]*? não tem(:| o | a | os | as | campo| palavras)/.test(r) ||
       /^A tela d[ae] [^:]* não tem:/.test(r) ||
       /^A grade d[ae] [^:]* do Lattes não tem:/.test(r) ||
       /^Dados que o próprio Lattes gera/.test(r) ||

@@ -18,6 +18,15 @@ outras 127 são o alvo deste plano.
 
 ## Estado atual
 
+- 19/10/2026, noite: demais trabalhos, licenças e linhas de pesquisa pelo
+  motor de produção (`targets/demais.ts`), testados no Lattes real com itens
+  de teste e removidos. A linha de pesquisa entra pela descrição de uma
+  atividade de pesquisa e desenvolvimento e se altera em `pkg_linhapesq.form`.
+  Passam a contar como campo que o Lattes não tem: as áreas, palavras-chave e
+  setores da formação complementar (o formulário não tem as grades) e as
+  informações adicionais de cursos e instituições (o menu não tem tela). 2569
+  de 2809 campos vão (91%).
+
 - 19/10/2026, fim da tarde: áreas do conhecimento e setores de atividade de
   produções, orientações e bancas pelo conector
   (`src/bridge/production/item-lists.ts`), e palavras-chave, áreas e setores da
