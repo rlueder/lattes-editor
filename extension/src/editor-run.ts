@@ -50,31 +50,42 @@ export async function refuseRun(
 }
 
 /**
- * Guarda a fila que o editor mandou, no lugar da anterior, se nenhuma estiver
- * correndo. Devolve se guardou.
- */
-/**
- * Uma rodada pedida pelo editor que ainda não marcou running: run() pode
- * esperar até um minuto por uma verificação antes de começar, e um segundo
- * pedido nesse meio trocaria a fila da primeira.
+ * Uma fila do editor sendo guardada, ou uma rodada pedida por ele que ainda
+ * não marcou running: run() pode esperar até um minuto por uma verificação
+ * antes de começar, e um segundo pedido nesse meio trocaria a fila da
+ * primeira. A trava é tomada antes do primeiro await, porque os awaits de
+ * dois pedidos quase juntos se intercalam.
  */
 let editorRunPending = false;
 
+/**
+ * Guarda a fila que o editor mandou, no lugar da anterior, se nenhuma estiver
+ * correndo. Devolve se guardou. Com true e `start`, a trava fica tomada para
+ * quem chamou soltar quando a rodada terminar.
+ */
 export async function enqueue(
   msg: Extract<EditorMessage, { type: 'enviar' }>,
   editor: EditorEndpoint,
 ): Promise<boolean> {
-  if (editorRunPending || (await readState()).running) return false;
-  await writeState({
-    editor,
-    fromEditor: msg.start,
-    lattesId: msg.lattesId,
-    ops: msg.ops,
-    results: {},
-    running: false,
-  });
-  await chrome.action.setBadgeText({ text: msg.ops.length ? String(msg.ops.length) : '' });
-  return true;
+  if (editorRunPending) return false;
+  editorRunPending = true;
+  let keep = false;
+  try {
+    if ((await readState()).running) return false;
+    await writeState({
+      editor,
+      fromEditor: msg.start,
+      lattesId: msg.lattesId,
+      ops: msg.ops,
+      results: {},
+      running: false,
+    });
+    await chrome.action.setBadgeText({ text: msg.ops.length ? String(msg.ops.length) : '' });
+    keep = msg.start === true;
+    return true;
+  } finally {
+    if (!keep) editorRunPending = false;
+  }
 }
 
 /**
@@ -150,7 +161,6 @@ export async function handleSend(
 ): Promise<void> {
   if (await enqueue(msg, editor)) {
     if (!msg.start) return;
-    editorRunPending = true;
     void run(undefined, true).finally(() => {
       editorRunPending = false;
     });

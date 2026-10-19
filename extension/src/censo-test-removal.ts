@@ -49,6 +49,7 @@ export async function removeTestItems(
     };
   }
   const removed: string[] = [];
+  const failed: string[] = [];
   setLive({ done: 0, last: undefined, phase: 'removendo', total: plan.length });
   for (const row of plan) {
     const frame = await openFrame(withoutCode(row.link), code);
@@ -59,8 +60,13 @@ export async function removeTestItems(
         else if (page.del) page.del();
         else throw new Error('Sem como excluir nesta página');
       });
-      // Só conta o que a página confirmou.
-      if (msgs.some((m) => /^exceção/.test(m))) continue;
+      // Só conta o que a página confirmou: nenhuma mensagem (a página nova
+      // carregou) ou só a de sucesso. O resto vai para as falhas, com a
+      // mensagem; a conferência pelas listas no fim diz o que de fato saiu.
+      if (msgs.some((m) => !/sucesso/i.test(m))) {
+        failed.push(`${row.list} :: ${row.text} :: ${msgs.join(' | ')}`);
+        continue;
+      }
       removed.push(row.text);
       progress.removed = [...progress.removed, `${row.list} :: ${row.text}`];
       save(progress);
@@ -80,6 +86,7 @@ export async function removeTestItems(
   // A conferência que as listas não fazem: a marca no currículo inteiro.
   const marca = await markInCv(code, get);
   return {
+    falhas: failed,
     faltandoDaBase: after.missing.map((r) => `${r.list} :: ${r.text}`),
     marcaNoCurriculo: marca,
     registrados: after.added.length,

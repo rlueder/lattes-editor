@@ -174,4 +174,44 @@ describe('pedido do editor enquanto a rodada anterior ainda não começou', () =
     expect(stored.ops.map((o) => o.key)).toEqual(['c']);
     vi.unstubAllGlobals();
   });
+
+  it('dois pedidos quase juntos: os awaits se intercalam e só o primeiro entra', async () => {
+    let stored: QueueState = { ops: [], results: {}, running: false };
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    vi.stubGlobal('chrome', {
+      action: { setBadgeText: async () => undefined },
+      storage: {
+        session: {
+          get: async () => {
+            await tick();
+            return { fila: stored };
+          },
+          set: async (v: { fila: QueueState }) => {
+            await tick();
+            stored = v.fila;
+          },
+        },
+      },
+    });
+    let release: () => void = () => undefined;
+    const run = vi.fn(() => new Promise<void>((r) => (release = r)));
+    const sent: BridgeMessage[] = [];
+    const send = async (m: BridgeMessage) => {
+      sent.push(m);
+    };
+    await Promise.all([
+      handleSend({ ops: [op('a')], start: true, type: 'enviar' }, 7, run, send),
+      handleSend({ ops: [op('b')], start: true, type: 'enviar' }, 7, run, send),
+    ]);
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(stored.ops.map((o) => o.key)).toEqual(['a']);
+    expect(sent[0]).toMatchObject({ result: { detail: RUNNING_TEXT, key: 'b' } });
+    release();
+    await tick();
+    // Sem start, a trava não fica tomada.
+    await handleSend({ ops: [op('c')], start: false, type: 'enviar' }, 7, run, send);
+    await handleSend({ ops: [op('d')], start: false, type: 'enviar' }, 7, run, send);
+    expect(stored.ops.map((o) => o.key)).toEqual(['d']);
+    vi.unstubAllGlobals();
+  });
 });
