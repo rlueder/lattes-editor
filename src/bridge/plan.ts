@@ -132,6 +132,8 @@ export interface PlanOptions {
   editPremio?: boolean;
   /** Alterar no lugar produções, orientações e bancas (production/). */
   editProduction?: boolean;
+  /** Textos que o envio pede e o XML não guarda, por Change.key (send-extras.ts no editor). */
+  extras?: Readonly<Record<string, Readonly<Record<string, string>>>>;
   /** Instituição, curso e agência de orientações e bancas pelas buscas (production/lookups.ts). */
   productionLookups?: boolean;
   /** Órgão e unidade do projeto pela janela de órgãos (production/organ.ts). */
@@ -290,6 +292,7 @@ export function planChange(
     editOuvinte = false,
     editPremio = false,
     editProduction = false,
+    extras = {},
     productionLookups = false,
     projectOrgan = false,
   }: PlanOptions = {},
@@ -299,7 +302,7 @@ export function planChange(
   // Sem a janela de órgãos na extensão, o órgão do projeto fica com o motivo de sempre.
   const organOff = !projectOrgan && isOrganChange(change);
   if (editProduction && !organOff && isProductionChange(change, chain)) {
-    const planned = planProduction(change, chain, label, siblings);
+    const planned = planProduction(change, chain, label, siblings, extras);
     if ('reason' in planned) return unsupported(change, label, planned.reason);
     // Uma extensão sem as buscas mandaria o formulário sem os ocultos, e a
     // releitura acharia tudo igual: nunca vai a ela.

@@ -29,6 +29,7 @@ import {
 } from './field-kind.ts';
 import { useFormLacks } from './form-lacks-context.ts';
 import { LockIcon } from './icons.tsx';
+import { InnovationText } from './InnovationText.tsx';
 import { displayLattesDate, isLattesDateAttr, isValidLattesDate } from './lattes-date.ts';
 import { useLattesListsContext } from './lattes-lists-context.ts';
 import { isFourDigitYear, isLattesYearAttr } from './lattes-year.ts';
@@ -350,6 +351,17 @@ export function AttributeField({
     );
   }
 
+  const changeKey = innovationKey(el, name, value, formLacks);
+  if (changeKey) {
+    return wrap(
+      <>
+        {control}
+        <InnovationText changeKey={changeKey} />
+      </>,
+      { textarea },
+    );
+  }
+
   return wrap(control, { textarea });
 
   /**
@@ -400,6 +412,21 @@ export function AttributeField({
       </div>
     );
   }
+}
+
+/** A mudança de um Sim novo do potencial de inovação, que pede o texto que vai só ao Lattes. */
+function innovationKey(
+  el: XElement,
+  name: string,
+  value: string,
+  lacks: ReturnType<typeof useFormLacks>,
+): string | undefined {
+  const asks =
+    el.name === 'PROJETO-DE-PESQUISA' &&
+    name === 'FLAG-POTENCIAL-INOVACAO' &&
+    value === 'SIM' &&
+    lacks?.original?.(el, name) !== 'SIM';
+  return asks ? lacks?.keyOf?.(el) : undefined;
 }
 
 /** A grande área é um valor do XSD (CIENCIAS_EXATAS_E_DA_TERRA): mostrada por extenso. */

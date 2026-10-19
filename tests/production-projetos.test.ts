@@ -161,8 +161,33 @@ describe('projeto: plano', () => {
       /não tem: Identificador/,
     );
     expect(reasonOf(setProject('1', 'FLAG-POTENCIAL-INOVACAO', 'SIM'))[0]).toMatch(
-      /texto do potencial/,
+      /escreva no editor qual é o potencial/,
     );
+  });
+
+  it('o Sim com o texto escrito no editor vai com f_sta_inovacao S e o texto', () => {
+    const original = parseXml(XML).root;
+    const working = parseXml(XML).root;
+    setAttr(projectOf(working, '1'), 'FLAG-POTENCIAL-INOVACAO', 'SIM');
+    const changes = diffDocuments(original, working);
+    const extras = { [changes[0]!.key]: { f_txt_potencial: '  Um processo novo  ' } };
+    const plan = planChanges(
+      changes.map((change) => ({ change, itemTitle: 'Item' })),
+      working,
+      { ...ON, extras },
+    );
+    expect(plan.unsupported).toEqual([]);
+    expect(plan.ops[0]).toMatchObject({
+      expect: { f_sta_inovacao: 'N' },
+      set: { f_sta_inovacao: 'S', f_txt_potencial: 'Um processo novo' },
+    });
+    const long = { [changes[0]!.key]: { f_txt_potencial: 'x'.repeat(401) } };
+    const tooLong = planChanges(
+      changes.map((change) => ({ change, itemTitle: 'Item' })),
+      working,
+      { ...ON, extras: long },
+    );
+    expect(tooLong.unsupported[0]?.reason).toMatch(/passa de 400 caracteres/);
   });
 
   it('voltar o potencial de inovação para Não vai', () => {

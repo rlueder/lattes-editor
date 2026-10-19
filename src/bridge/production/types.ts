@@ -69,6 +69,15 @@ export interface OpaqueGrid {
 }
 
 export interface ProductionTarget {
+  /**
+   * Atributo cujo valor pede um texto que o XML não guarda (o potencial de
+   * inovação do projeto): com o valor `when`, o envio leva `flag` e o texto que
+   * a pessoa escreveu no editor (PlanOptions.extras); sem o texto, `reason`.
+   */
+  asks?: Record<
+    string,
+    { field: string; flag: [string, string]; maxLength: number; reason: string; when: string }
+  >;
   /** O elemento da grade de autores, quando não é AUTORES (grids.ts). */
   authors?: AuthorPart;
   /** Partes do item que ficam à mão, com o motivo (elemento → motivo). */

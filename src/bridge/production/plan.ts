@@ -137,6 +137,7 @@ export function planProduction(
   chain: XElement[],
   label: string,
   siblings: readonly Change[] = [],
+  extras: Readonly<Record<string, Readonly<Record<string, string>>>> = {},
 ): ProductionOp | { reason: string } {
   const found = itemOf(change, chain);
   const el = chain.at(-1);
@@ -311,6 +312,28 @@ export function planProduction(
   const manual = new Map<string, string[]>();
   for (const f of change.fields.filter((x) => !chosen.has(x.attr))) {
     const key = `${change.element}@${f.attr}`;
+    // Um valor que pede texto fora do XML (target.asks): o que a pessoa escreveu.
+    const ask = target.asks?.[key];
+    if (ask && f.after === ask.when) {
+      const text = extras[change.key]?.[ask.field]?.trim() ?? '';
+      if (!text) return { reason: ask.reason };
+      if (text.length > ask.maxLength) {
+        return { reason: `${f.label}: o texto passa de ${ask.maxLength} caracteres` };
+      }
+      const m = target.fields[key];
+      const map = m ? mapOf(m) : undefined;
+      const was = map?.toForm ? map.toForm(f.before, 'before') : f.before;
+      set[ask.flag[0]] = ask.flag[1];
+      set[ask.field] = text;
+      if (was !== undefined) expect[ask.flag[0]] = was;
+      rows.push({
+        after: shown(f.after),
+        before: shown(f.before),
+        label: f.label,
+        name: ask.flag[0],
+      });
+      continue;
+    }
     const m = target.fields[key];
     const why = target.manual?.[key];
     if (!m && why) manual.set(why, [...(manual.get(why) ?? []), f.label]);

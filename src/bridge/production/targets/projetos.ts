@@ -51,6 +51,18 @@ const PROJECT = 'PROJETO-DE-PESQUISA';
  * de início), e que trocar a natureza no formulário mude o projeto de lista.
  */
 const PROJETO: ProductionTarget = {
+  // O Sim pede o texto do potencial (f_txt_potencial, até 400), que o XML não
+  // guarda: o editor o pede ao lado da troca (PlanOptions.extras).
+  asks: {
+    [`${PROJECT}@FLAG-POTENCIAL-INOVACAO`]: {
+      field: 'f_txt_potencial',
+      flag: ['f_sta_inovacao', 'S'],
+      maxLength: 400,
+      reason:
+        'Potencial de inovação Sim: escreva no editor qual é o potencial (o Lattes pede o texto, e o currículo não o guarda)',
+      when: 'SIM',
+    },
+  },
   authors: {
     citation: 'NOME-PARA-CITACAO',
     cnpq: 'NRO-ID-CNPQ',

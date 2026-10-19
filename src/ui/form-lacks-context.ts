@@ -11,6 +11,10 @@ export interface FormLacks {
   child: (item: XElement, name: string) => string | undefined;
   /** Um campo do elemento. */
   field: (el: XElement, attr: string) => string | undefined;
+  /** A chave da mudança do elemento (Change.key), para o que o envio pede fora do XML. */
+  keyOf?: (el: XElement) => string | undefined;
+  /** O valor do campo na exportação carregada; undefined num elemento novo. */
+  original?: (el: XElement, attr: string) => string | undefined;
 }
 
 export const FormLacksContext = createContext<FormLacks | undefined>(undefined);

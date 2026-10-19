@@ -1495,6 +1495,14 @@ a.menu-item.notice {
 }
 
 /* Curso antes de ler a lista no Lattes: o valor salvo e o botão de carregar. */
+/* O texto que um valor pede e o XML não guarda (InnovationText): logo abaixo do controle. */
+.field-follow-up {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
 .live-list-pending {
   display: flex;
   flex-wrap: wrap;

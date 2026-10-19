@@ -41,6 +41,7 @@ import type {
 import type { ChangeGroup } from './changes-view.ts';
 import { loadOutgoing, type Outgoing, saveOutgoing } from './outgoing-store.ts';
 import { writeCvCode } from './profile.ts';
+import { useSendExtras } from './send-extras.ts';
 import { type RestoreState, useRestorePoint } from './use-restore-point.ts';
 import { useWriteBrake } from './use-write-brake.ts';
 
@@ -417,12 +418,14 @@ export function useBridge(
   useEffect(() => () => setIncludeCapability(false), []);
 
   const entries = useMemo(() => groups.flatMap((g) => g.entries), [groups]);
+  // Os textos que o envio pede e o XML não guarda (o potencial de inovação).
+  const extras = useSendExtras();
   const plan = useMemo(
     () =>
       session
-        ? planChanges(entries, session.doc.root, planOptionsFor(features), true)
+        ? planChanges(entries, session.doc.root, { ...planOptionsFor(features), extras }, true)
         : { ops: [], unsupported: [] },
-    [session, entries, features],
+    [session, entries, features, extras],
   );
 
   return {
