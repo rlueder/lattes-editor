@@ -349,6 +349,28 @@ describe('projeto: grades', () => {
   });
 });
 
+describe('projeto: potencial de inovação', () => {
+  it('o Não apaga o texto do potencial, como a página', () => {
+    const withInnovation = XML.replace(
+      'FLAG-POTENCIAL-INOVACAO="NAO"',
+      'FLAG-POTENCIAL-INOVACAO="SIM"',
+    );
+    const original = parseXml(withInnovation).root;
+    const working = parseXml(withInnovation).root;
+    setAttr(projectOf(working, '1'), 'FLAG-POTENCIAL-INOVACAO', 'NAO');
+    const plan = planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Item' })),
+      working,
+      ON,
+    );
+    expect(plan.unsupported).toEqual([]);
+    expect(plan.ops[0]).toMatchObject({
+      expect: { f_sta_inovacao: 'S' },
+      set: { f_sta_inovacao: 'N', f_txt_potencial: '' },
+    });
+  });
+});
+
 describe('projeto no Lattes simulado', () => {
   it('nome e situação: grava, confere e deixa a equipe como estava', async () => {
     const lattes = await lattesFor();

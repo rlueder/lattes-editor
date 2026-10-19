@@ -73,6 +73,12 @@ export interface ProductionTarget {
   authors?: AuthorPart;
   /** Partes do item que ficam à mão, com o motivo (elemento → motivo). */
   byHand?: Record<string, string>;
+  /**
+   * Campos que a página limpa junto quando outro recebe um valor: "campo=valor"
+   * → os campos e o que eles levam (o potencial de inovação do projeto, que o
+   * Não apaga).
+   */
+  clears?: Record<string, Record<string, string>>;
   /** O elemento do item no XML (ARTIGO-PUBLICADO, TRABALHO-TECNICO…). */
   element: string;
   /**

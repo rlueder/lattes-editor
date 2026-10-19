@@ -232,7 +232,7 @@ export function planIdentificacaoEdit(
   if (change.fields.some((f) => f.attr === 'PCD')) {
     return {
       reason:
-        'Pessoa com deficiência: o formulário tem uma caixa por tipo e um oculto de mesmo nome, e como a exportação grava os tipos marcados não foi visto',
+        'Pessoa com deficiência: o formulário tem o rádio f_pcd_r e uma caixa f_pcd por tipo (A, F, I, V, E, M), mas como a exportação grava os tipos marcados não foi visto (sem nenhum, PCD vem vazio); altere no Lattes',
     };
   }
   const { expect, invalid, missing, set } = mapTable(change, IDENT_FIELDS, '', (a) =>

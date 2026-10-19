@@ -342,6 +342,11 @@ export function planProduction(
     return { reason: `Valor sem correspondência no formulário do Lattes: ${unmapped.join(', ')}` };
   }
   if (rows.length === 0) return { reason: 'Nada a enviar' };
+  // O que a página limpa junto (target.clears), sem conferir o antes.
+  for (const [when, also] of Object.entries(target.clears ?? {})) {
+    const [field, value] = when.split('=') as [string, string];
+    if (set[field] === value) Object.assign(set, also);
+  }
   return { ...base, expect, ...(lookups ? { lookups } : {}), rows, set };
 }
 

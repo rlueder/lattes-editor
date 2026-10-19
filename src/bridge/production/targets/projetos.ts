@@ -76,6 +76,9 @@ const PROJETO: ProductionTarget = {
     'PRODUCOES-CT-DO-PROJETO':
       'Produção do projeto vai à mão: ela se liga a uma produção do currículo pela janela de produções, que não foi lida',
   },
+  // O Não do potencial de inovação apaga o texto dele, como a página faz
+  // ($("input[name=f_txt_potencial]").val(""), lido em 18/10/2026).
+  clears: { 'f_sta_inovacao=N': { f_txt_potencial: '' } },
   element: PROJECT,
   fields: {
     [`${PROJECT}@ANO-FIM`]: 'F_ANO_FIM',

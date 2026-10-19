@@ -169,8 +169,14 @@ no molde do livro. Prefácio: confirmar o `f_cod_tipo` da lista (1C).
   códigos e a mesma privacidade (a área criada por você, 99990007, inclusive).
 - Contatos do endereço (e-mails, redes sociais, outra forma): capturar os
   scripts de `prc_endereco` e uma gravação de teste.
-- Pessoa com deficiência: capturar o script de `prc_ident` e uma gravação de
-  teste com um tipo e com dois.
+- Pessoa com deficiência: o script de `prc_ident` foi lido em 18/10/2026. O
+  formulário tem o rádio `f_pcd_r` (N/S), uma caixa `f_pcd` por tipo (A
+  auditiva, F física, I intelectual, V visual, E espectro autista, M
+  múltipla) mais um `f_pcd=DUMMY` oculto, e a privacidade `f_priv_pcd`; com
+  "Não", a exportação traz `PCD=""`. Como ela grava os tipos marcados não foi
+  visto, e ver pediria declarar uma deficiência no currículo real da pessoa,
+  publicar e exportar. Fica à mão até alguém com PCD declarada no Lattes
+  mandar uma exportação.
 
 ### Fase 5: nome para citação
 
