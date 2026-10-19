@@ -6,7 +6,12 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { applyOp } from '../src/bridge/apply.ts';
-import { type FormControl, scriptValues, withScriptValues } from '../src/bridge/form.ts';
+import {
+  type FormControl,
+  scriptRadios,
+  scriptValues,
+  withScriptValues,
+} from '../src/bridge/form.ts';
 import { planChanges } from '../src/bridge/plan.ts';
 import { diffDocuments } from '../src/model/changes.ts';
 import { encodeLatin1 } from '../src/model/latin1.ts';
@@ -30,6 +35,31 @@ describe('valores postos por script', () => {
       ['f_priv_cor', '2'],
       ['fnro_id_raca_cor', '1'],
     ]);
+  });
+
+  it('o rádio que a página marca num if de dois textos, sem ou com chaves', () => {
+    const html = `<script>
+if ("N" == "S")
+    $("input[name=f_sta_inovacao][value=S]").attr("checked", "true");
+else {
+    $("input[name=f_sta_inovacao][value=N]").attr("checked", "true");
+    $("#potencial").hide();
+    }
+            if ("checked" == "checked") {
+              $("input[name=f_pcd_r][value=S]").attr("checked", "true");
+            } else {
+              $("input[name=f_pcd_r][value=N]").attr("checked", "true");
+            }
+</script>`;
+    expect([...scriptRadios(html)]).toEqual([
+      ['f_sta_inovacao', 'N'],
+      ['f_pcd_r', 'S'],
+    ]);
+    const radios: FormControl[] = [
+      { name: 'f_sta_inovacao', type: 'radio', value: 'S' },
+      { name: 'f_sta_inovacao', type: 'radio', value: 'N' },
+    ];
+    expect(withScriptValues(html, radios)?.map((c) => c.checked)).toEqual([false, true]);
   });
 
   it('o select e o oculto ficam com o valor do script; rádio e caixa não', () => {
