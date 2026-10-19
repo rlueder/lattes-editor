@@ -36,10 +36,17 @@ interface Props {
   onDiagnosis: () => void;
   onExport: () => void;
   onHistory: () => void;
+  /** Um XML de outro programa (ou exportação antiga), para trazer produções dele (LAT-45). */
+  onIncoming: (file: File) => void;
   onNewItem: () => void;
   onPalette: () => void;
   onPrint: () => void;
   onReload: (file: File) => void;
+  /**
+   * Com a extensão sabendo exportar, "Recarregar do Lattes…" pede o ZIP pela
+   * ponte (use-lattes-reload.ts); sem ela, o menu pede o arquivo.
+   */
+  onReloadFromLattes?: () => void;
   onSave: () => void;
   onTheme: (theme: ThemePref) => void;
   /** ⚙ › Versões do Lattes: o que mudou entre as exportações. */
@@ -66,10 +73,12 @@ export function Topbar({
   onDiagnosis,
   onExport,
   onHistory,
+  onIncoming,
   onNewItem,
   onPalette,
   onPrint,
   onReload,
+  onReloadFromLattes,
   onSave,
   onTheme,
   onVersions,
@@ -79,7 +88,12 @@ export function Topbar({
   theme,
 }: Props) {
   const reloadInput = useRef<HTMLInputElement>(null);
+  const incomingInput = useRef<HTMLInputElement>(null);
   const [closing, setClosing] = useState(false);
+  const pickReloadFile = () => {
+    if (isDesktop()) void pickFileNative().then((file) => file && onReload(file));
+    else reloadInput.current?.click();
+  };
   return (
     <header ref={ref} data-tauri-drag-region className="topbar">
       {/* O símbolo e o nome do app (no app de macOS, depois dos botões da janela). */}
@@ -148,7 +162,11 @@ export function Topbar({
           </button>
         </Tip>
 
-        <NotificationsMenu notices={notices} onDiagnosis={onDiagnosis} />
+        <NotificationsMenu
+          notices={notices}
+          onDiagnosis={onDiagnosis}
+          onReloadFile={pickReloadFile}
+        />
 
         {/* Exibição e arquivo: o que se usa menos fica no menu. */}
         <SettingsMenu
@@ -157,11 +175,12 @@ export function Topbar({
             onClose: () => setClosing(true),
             onDiagnosis,
             onHistory,
-            onPrint,
-            onReload: () => {
-              if (isDesktop()) void pickFileNative().then((file) => file && onReload(file));
-              else reloadInput.current?.click();
+            onIncoming: () => {
+              if (isDesktop()) void pickFileNative().then((file) => file && onIncoming(file));
+              else incomingInput.current?.click();
             },
+            onPrint,
+            onReload: onReloadFromLattes ?? pickReloadFile,
             onSave,
             onVersions,
           }}
@@ -178,6 +197,17 @@ export function Topbar({
             onClose();
           }}
           onSave={onSave}
+        />
+        <input
+          ref={incomingInput}
+          hidden
+          accept=".zip,.xml,application/zip,application/xml,text/xml"
+          type="file"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) onIncoming(file);
+            e.target.value = '';
+          }}
         />
         <input
           ref={reloadInput}

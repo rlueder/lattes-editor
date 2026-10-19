@@ -124,31 +124,64 @@ function logon(req: SimRequest, state: LattesState): SimResponse {
 }
 
 /**
- * A tela de envio (observada em 14/10/2026): o formulário publicar só declara
- * f_chk, e o enviar() da página monta o resto e navega por GET para
- * pkg_publicar.enviar.
+ * A declaração do simulado. Não é o texto do CNPq, que não foi registrado:
+ * serve só para o editor ter o que mostrar ao lado da caixa.
+ */
+export const SIMULATED_DECLARATION =
+  'Declaro, para os fins do Lattes simulado, que as informações deste currículo de teste são fictícias.';
+
+/**
+ * A tela de envio. Observado em 14/10/2026: o formulário publicar só declara
+ * f_chk, o enviar() da página monta o resto e navega por GET para
+ * pkg_publicar.enviar, depois das consultas de raça ou cor e de e-mail.
+ * Inferido: o desenho da tela, o texto da declaração (SIMULATED_DECLARATION),
+ * o link do Termo de Uso e os controles de idioma, versão em inglês e e-mails
+ * com os nomes dos parâmetros do GET.
  */
 function sendScreen(state: LattesState): SimResponse {
   const body = `<p><a href="pkg_publicar.cv_espelho?f_cod=${state.code}&amp;f_idioma=1">Versão em Português</a></p>
+<table>
+<tr><td>Idioma principal:</td><td>${h.radios(
+    'f_idioma',
+    [
+      ['1', 'Português'],
+      ['2', 'Inglês'],
+    ],
+    '1',
+  )}</td></tr>
+<tr><td>Versão em inglês:</td><td><label>${h.checkbox('f_chk_en', '1', true)} Autorizo a publicação da versão em inglês</label></td></tr>
+<tr><td>E-mail de contato:</td><td>${h.text('f_email_contato', state.contactEmail)}</td></tr>
+<tr><td>E-mail alternativo:</td><td>${h.text('f_email_alternativo', '')}</td></tr>
+</table>
 <form name="publicar" method="get" action="pkg_publicar.enviar">
-<label>${h.checkbox('f_chk', '1', false)} Declaro que as informações são verdadeiras</label>
+<label>${h.checkbox('f_chk', '1', false)} ${h.esc(SIMULATED_DECLARATION)}</label>
+<p><a href="termo_de_uso_simulado" target="_blank">Termo de Uso</a></p>
 </form>
 <p><a href="#" onclick="enviar(); return false;">Enviar ao CNPq</a> <a href="#" onclick="self.parent.fecharModal(); return false;">Cancelar</a></p>
-<script>function enviar(){ if (!document.forms['publicar'].f_chk.checked) { alert('Marque a declaração.'); return; }
-location = 'pkg_publicar.enviar?f_chk=1&f_idioma=1&f_chk_en=1&f_email_contato=&f_email_alternativo=&f_cod=${state.code}&f_ctr=U'; }</script>`;
+<script>async function enviar(){ if (!document.forms['publicar'].f_chk.checked) { alert('Marque a declaração.'); return; }
+var post = function(proc, body){ return fetch(proc, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body }).then(function(r){ return r.json(); }); };
+var contato = document.querySelector('input[name=f_email_contato]').value, alternativo = document.querySelector('input[name=f_email_alternativo]').value;
+if (!(await post('pkg_publicar.racapreenchida_raca_cor', 'f_cod=${state.code}')).status) { alert('Preencha raça ou cor.'); return; }
+for (var e of [contato, alternativo]) { if ((await post('pkg_util.existe_email_cadastrado', 'f_email=' + encodeURIComponent(e) + '&f_cod=${state.code}')).existe) { alert('E-mail já cadastrado.'); return; } }
+var idioma = document.querySelector('input[name=f_idioma]:checked');
+location = 'pkg_publicar.enviar?f_chk=1&f_idioma=' + (idioma ? idioma.value : '1') + '&f_chk_en=1&f_email_contato=' + encodeURIComponent(contato) + '&f_email_alternativo=' + encodeURIComponent(alternativo) + '&f_cod=${state.code}&f_ctr=U'; }</script>`;
   return html(h.page('Enviar ao CNPq', body));
 }
 
 /**
  * O envio (observado em 14/10/2026): GET com f_chk=1 e f_ctr=U, resposta com
  * um alert nativo; depois, as duas datas do menu são as do dia, o aviso de
- * pendência some e o Exportar volta a exportar.
+ * pendência some e o Exportar volta a exportar. O simulado guarda o e-mail
+ * de contato que veio no pedido. As duas consultas de antes (raça ou cor e
+ * e-mail) ficam com o enviar() da tela, como na página observada; esta rota
+ * não as confere.
  */
 function send(req: SimRequest, state: LattesState): SimResponse {
   if (req.get('f_chk') !== '1' || req.get('f_ctr') !== 'U') return sendScreen(state);
   const now = new Date();
   state.publish(now);
   state.lastUpdate = now;
+  state.contactEmail = req.get('f_email_contato') ?? state.contactEmail;
   return html(
     h.page('Enviar ao CNPq', '<script>alert("O currículo foi enviado para publicação.");</script>'),
   );
@@ -256,4 +289,7 @@ export const MENU_ROUTES: Routes = {
   }),
   prc_upload_foto: (req, state) =>
     req.method === 'POST' ? photoUpload(req, state) : photoScreen(req, state),
+  // A página do link "Termo de Uso" da tela de envio do simulado.
+  termo_de_uso_simulado: () =>
+    html(h.page('Termo de Uso', '<p>Termo de Uso do Lattes simulado, só para testes.</p>')),
 };

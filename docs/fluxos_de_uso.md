@@ -54,6 +54,21 @@ Nenhuma destas coisas é pergunta ou chave para a pessoa decidir:
 - **Ponto no histórico antes de cada envio** e a cada currículo aberto,
   guardado no app (cifrado, LAT-39). Quem quer um arquivo usa "Salvar cópia"
   no histórico.
+- **Ponto zero** (LAT-59): a primeira exportação de cada currículo fica byte
+  a byte numa pasta da pessoa, `Documentos/LattesEditor/Cópias de
+segurança/<id>/`, sem cifra. Vale a que vem pelo conector e o ZIP aberto de
+  um arquivo quando ele é exatamente o que o Exportar dá (o nome
+  `CV_<id>.zip` e um único `<id>.xml` dentro). Um XML solto ou um ZIP
+  refeito abre normalmente, mas não vira ponto zero; o primeiro ponto de
+  restauração faz esse papel. O app nunca sobrescreve nem apaga esse arquivo,
+  e nenhum "Limpar" chega nele.
+- **Ponto de restauração antes de cada rodada de escrita** (LAT-59): ao
+  confirmar a fila em "Enviar ao Lattes", e antes da primeira gravação, o
+  conector exporta o Lattes como está e guarda o ZIP ao lado do ponto zero.
+  Se o Lattes já tem pendência, o Exportar recusa: o app diz que não houve
+  ponto, mostra a cópia mais recente e só grava depois de "Continuar sem ponto
+  de restauração". Se a sessão caiu, a rodada para sem gravar nada. As
+  cópias ficam em ⚙ › Versões do Lattes, em "Cópias de segurança".
 - **Registro do enviado**, com o antes e o depois de cada campo e o
   "Desfazer no Lattes".
 - **Leitura do estado do Lattes** pela extensão, ao abrir o app e depois de
@@ -86,7 +101,7 @@ produções.
 Já tem um currículo grande; acrescenta poucas produções e corrige detalhes.
 
 1. Abre o app, que já tem a versão do mês passado. "Recarregar do Lattes"
-   traz a de agora e diz, numa faixa, quantos itens são novos, alterados e
+   (pela extensão, sem escolher arquivo, LAT-46) traz a de agora e diz, numa faixa, quantos itens são novos, alterados e
    removidos desde a anterior, inclusive o que foi editado direto no Lattes;
    "Versões do Lattes", no ⚙, mostra o detalhe de cada exportação (LAT-12,
    feito).
@@ -102,29 +117,34 @@ O currículo está desatualizado, e a pessoa não sabe o que ficou pendente de
 antes (o caso que originou este documento).
 
 1. "Abrir do Lattes". Se o Exportar estiver bloqueado, o app não para: abre a
-   versão atual do Lattes (`pkg_publicar.cv_espelho`, que não pede código de
-   segurança) e compara com a última versão publicada que tiver.
+   última versão publicada que tiver deste currículo e compara com a versão
+   atual do Lattes (`pkg_publicar.cv_espelho`, que não pede código de
+   segurança), no diagnóstico. A página de conferência é texto, então ela
+   serve de comparação e não vira o currículo editável (LAT-46, feito).
 2. Mostra um diagnóstico antes de tudo: data da última publicação, o que está
    pendente e o que provavelmente envelheceu, como vínculos ainda "Atual" e
    períodos antigos (revisão de consistência, LAT-29). Feito em 13/10/2026
    como "Diagnóstico do currículo" (no ⚙ e no aviso do sino), com a
    comparação por títulos das produções e dos eventos
-   (`src/review/espelho-diff.ts`).
+   (`src/review/espelho-diff.ts`). Desde a LAT-25, o diagnóstico abre com
+   a conferência do currículo inteiro (obrigatórios, listas, anos, autores,
+   DOI e a revisão de consistência), e o que o Lattes diz vem logo abaixo.
 3. A pessoa decide o que mantém e o que desfaz, trabalha em lotes ao longo de
    dias (o app guarda tudo) e publica no fim.
 
-Sem nenhuma exportação anterior no app, a comparação precisa da versão
-pública, que pede o código de segurança; nesse caso o app explica o porquê e
-pede uma vez.
+Sem nenhuma exportação anterior no app, não há com o que comparar: a tela
+inicial diz que o app não guardou nenhuma versão e pede o envio ao CNPq, que
+libera o Exportar. Comparar com a versão pública, que pede o código de
+segurança, continua por fazer.
 
 ## Ordem sugerida
 
 1. O que acontece sozinho (já começou: o ponto de histórico substituiu a
    chave da cópia, e o registro do enviado existe).
 2. Faixa de estados no cabeçalho.
-3. Abrir do Lattes pelo conector (LAT-22). Feito, menos o caso do Exportar
-   bloqueado: hoje a tela inicial pede o envio ao CNPq em vez de abrir a
-   versão atual pela página de conferência.
+3. Abrir do Lattes pelo conector (LAT-22). Feito, com o caso do Exportar
+   bloqueado (LAT-46): a tela inicial abre a última versão guardada no app e
+   compara com a página de conferência.
 4. Diagnóstico para quem volta (comparação e revisão de consistência).
 5. Criar itens pelo conector (LAT-24).
 6. Linha do tempo de versões (LAT-12). Feito: até 24 exportações por

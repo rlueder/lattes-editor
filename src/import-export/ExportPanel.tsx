@@ -29,6 +29,7 @@ import {
   type ImportAttempt,
   importStatus,
 } from './import-request.ts';
+import { RestorePointDialog } from './RestorePointDialog.tsx';
 import {
   initialTab,
   listenTabRequests,
@@ -66,6 +67,8 @@ interface Props {
   onDiscardField: (entry: ChangeEntry, attr: string) => void;
   onDownload: () => void;
   onOpenItem: (sequencia: number) => void;
+  /** Abre o "Enviar ao CNPq" (LAT-54), quando o Lattes tem algo a publicar. */
+  onPublish: () => void;
 }
 
 export function ExportPanel({
@@ -78,6 +81,7 @@ export function ExportPanel({
   onDiscardField,
   onDownload,
   onOpenItem,
+  onPublish,
   open,
   pending,
   strip,
@@ -151,6 +155,16 @@ export function ExportPanel({
         }}
         onOpen={(kind) => (kind === 'pendencia-desconhecida' ? onDiagnosis() : choose('enviado'))}
       />
+      {bridge?.lattes?.pending && (
+        <div className="publish-cta">
+          <span className="muted">
+            O que está gravado no Lattes só aparece no currículo público depois do envio ao CNPq.
+          </span>
+          <button type="button" onClick={onPublish}>
+            Enviar ao CNPq…
+          </button>
+        </div>
+      )}
       <Tabs.Root className="send-tabs" value={tab} onValueChange={(v) => choose(v as PanelTab)}>
         <Tabs.List aria-label="Enviar ao Lattes" className="send-tab-list">
           <Tabs.Tab className="send-tab" value="a-enviar">
@@ -257,6 +271,7 @@ export function ExportPanel({
           )}
         </Tabs.Panel>
       </Tabs.Root>
+      {bridge && <RestorePointDialog bridge={bridge} />}
     </Modal>
   );
 }

@@ -59,7 +59,10 @@ atualizações" no menu ⚙.
    alterações em eventos de que você participou como ouvinte pela extensão,
    gravados e conferidos um a um (os idiomas ainda em teste); o resto campo a campo, com o valor antigo e
    o novo lado a lado. A aba "Enviado" guarda o que já foi, com o antes e o
-   depois, e deixa desfazer.
+   depois, e deixa desfazer. Quando o Lattes tem algo a publicar, o "Enviar
+   ao CNPq" mostra o que vai ser publicado e a declaração do CNPq como está na
+   tela do Lattes; por enquanto, o envio em si continua sendo feito no
+   Lattes.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/ir-para-escuro.jpg" />
@@ -73,6 +76,13 @@ da própria seção. Como o Importar do Lattes não lê essas seções, o item n
 entra na lista de alterações do painel "Enviar ao Lattes", para cadastrar à
 mão com os valores ao lado.
 
+Produções de outro arquivo XML (o de outro programa, ou uma exportação
+antiga) entram por "Trazer itens de outro XML…", no ⚙. Cada item é
+comparado com o seu currículo antes de entrar, e o editor diz com o que ele
+se parece e por quê ("parece duplicata de… (85%): título igual, mesmo ano");
+só entra o que você marcar. O formulário de produção nova avisa do mesmo
+jeito, inclusive quando o item vem do DOI.
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/novo-item-escuro.jpg" />
   <img src="docs/img/novo-item-claro.jpg" alt="O modal Novo item de produção com a busca de tipos e os tipos mais usados." />
@@ -80,13 +90,39 @@ mão com os valores ao lado.
 
 Cada exportação aberta vira uma versão, e o app diz o que mudou desde a
 anterior ("Versões do Lattes", no ⚙), inclusive o que foi editado direto no
-Lattes. O **Diagnóstico do currículo** mostra a data da última publicação, o
-que mudou no Lattes desde a exportação e o que vale conferir no currículo
-inteiro: duplicatas, ISSN, DOI, datas e vínculos antigos ainda marcados como
-atuais. Só aponta; nada muda sem você.
+Lattes. Com a extensão, "Recarregar do Lattes…" traz a exportação de agora
+sem escolher arquivo; se o Lattes tiver alterações ainda não enviadas ao
+CNPq, que bloqueiam o Exportar, o app abre a última versão que guardou e
+compara com o que está no Lattes. A primeira exportação de cada currículo
+(pelo conector, ou o ZIP do Exportar como veio) e uma cópia do Lattes antes de
+cada envio pelo conector ficam em `Documentos/LattesEditor/Cópias de
+segurança`, e o app nunca as apaga. O **Diagnóstico do currículo**, no ⚙,
+confere o currículo inteiro de uma vez, item por item: campos obrigatórios,
+valores fora das listas do Lattes, anos, autores, DOI e a revisão de
+consistência (duplicatas, ISSN, vínculos antigos ainda marcados como atuais).
+Logo abaixo, mostra a data da última publicação e o que mudou no Lattes desde
+a exportação. Só aponta; nada muda sem você.
 
 Também dá para imprimir ou salvar em PDF nas regras da NBR 14724, com
 referências na NBR 6023, e compartilhar o currículo por um código QR.
+
+O **Panorama** mostra o currículo em números e gráficos, calculados só com o
+que está no XML: produções por ano (com os anos vazios marcados), contagens
+por quadriênio da CAPES, linha do tempo da carreira, as pessoas com quem
+você trabalha (coautores, orientandos, orientadores e bancas), posição de
+autoria, onde publica, temas e o que falta preencher. Ele fica no controle
+"Currículo | Panorama", logo abaixo da sua foto, e cada gráfico tem um item
+no menu. Clicar num número abre a
+seção do currículo já filtrada por tipo, período ou campo que falta; clicar
+numa pessoa mostra, no painel, o que ela tem em cada seção. A tabela de
+quadriênios sai também como planilha (CSV); nela, o quadriênio que ainda não
+terminou vem marcado "(em curso)", e o Total conta todos os itens, inclusive
+os sem ano, que nenhum quadriênio pega.
+
+As seções do currículo também filtram por período (com atalhos para os
+últimos 5 anos e os quadriênios da CAPES) e por campo que falta ("Sem DOI",
+"Sem palavras-chave", "Sem agência"), com as mesmas contagens da Saúde do
+currículo.
 
 ## Privacidade
 

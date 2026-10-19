@@ -11,13 +11,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { OpResult } from '../bridge/apply.ts';
 import { BRIDGE_FEATURES } from '../bridge/compat.ts';
-import type { EspelhoItem } from '../bridge/espelho.ts';
-import type { ExportFailure } from '../bridge/export.ts';
-import type { ImportStop, PageShape } from '../bridge/importar.ts';
 import { sameCv } from '../bridge/lattes-html.ts';
 import type { LattesStatus } from '../bridge/lattes-status.ts';
 import { INITIAL_LINK, type Link, nextLink } from '../bridge/link.ts';
-import type { PhotoFailure } from '../bridge/photo.ts';
 import { type BridgeOp, planChanges, planOptionsFor } from '../bridge/plan.ts';
 import {
   type BridgeMessage,
@@ -35,8 +31,24 @@ import type { Change } from '../model/changes.ts';
 import { setIncludeCapability, syncIncludeCapability } from '../model/direct-inclusion.ts';
 import { addHistoryPoint, addSent, clearSent, listSent } from '../model/store.ts';
 import { getAttr } from '../model/xml.ts';
+import type {
+  CurriculoReading,
+  EspelhoReading,
+  ImportReading,
+  PhotoUploadReading,
+} from './bridge-readings.ts';
 import type { ChangeGroup } from './changes-view.ts';
 import { writeCvCode } from './profile.ts';
+import { type RestoreState, useRestorePoint } from './use-restore-point.ts';
+
+// As leituras das respostas da extensão moram em bridge-readings.ts; quem já
+// importava daqui segue igual.
+export type {
+  CurriculoReading,
+  EspelhoReading,
+  ImportReading,
+  PhotoUploadReading,
+} from './bridge-readings.ts';
 
 /** Evento da janela avisando que um novo código do currículo foi guardado. */
 export const CV_CODE_EVENT = 'lattes-editor:codigo-cv';
@@ -144,6 +156,11 @@ export function listenReplies(onMessage: (msg: BridgeMessage) => void): () => vo
 }
 
 export interface BridgeState {
+  /**
+   * A resposta da pessoa quando não houve ponto de restauração: true segue
+   * sem ele ("Continuar sem ponto de restauração"), false cancela.
+   */
+  answerRestore: (go: boolean) => void;
   available: boolean;
   /** Apaga o registro do enviado deste currículo (nada muda no Lattes). */
   clearSent: () => Promise<void>;
@@ -151,6 +168,8 @@ export interface BridgeState {
   confirmed: number;
   /** O ZIP do Exportar que a extensão trouxe do Lattes, ou o motivo de não ter vindo. */
   curriculo?: CurriculoReading;
+  /** O painel fechou: cancela a rodada que ainda faz o ponto ou pergunta. */
+  dismissRestore: () => void;
   /**
    * A versão atual do Lattes, lida da página de conferência a pedido do
    * diagnóstico: os itens, ou o motivo de não ter lido.
@@ -177,11 +196,14 @@ export interface BridgeState {
   requestCv: (id: string) => void;
   /** Pede a versão atual do Lattes à extensão; a resposta chega em espelho. */
   requestEspelho: () => void;
+  /** O ponto de restauração da última rodada de escrita (LAT-59). */
+  restore?: RestoreState;
   results: Record<string, OpResult>;
   running: boolean;
   /**
-   * Antes de mandar, guarda sozinho um ponto no histórico com o currículo
-   * como está no Lattes, sem perguntar nada.
+   * Antes de mandar, exporta o Lattes e guarda um ponto de restauração; sem
+   * ele, só segue com a confirmação da pessoa (answerRestore). Também guarda
+   * sozinho um ponto no histórico com o currículo como está no Lattes.
    * undo: em vez da fila planejada, manda só a operação que desfaz essa
    * entrada do registro.
    */
@@ -200,46 +222,6 @@ export interface BridgeState {
   /** O que o conector gravou e conferiu no Lattes para este currículo, do mais recente. */
   sent: SentEntry[];
   stop: () => void;
-}
-
-export interface CurriculoReading {
-  /** Quando a resposta chegou (ms). */
-  at: number;
-  detail?: string;
-  fileName?: string;
-  /** O id do pedido que a resposta atende. */
-  id?: string;
-  reason?: ExportFailure;
-  /** O ZIP em base64. */
-  zip?: string;
-}
-
-export interface PhotoUploadReading {
-  /** Quando a resposta chegou (ms). */
-  at: number;
-  detail?: string;
-  /** O id do pedido que a resposta atende. */
-  id: string;
-  ok: boolean;
-  reason?: PhotoFailure;
-}
-
-export interface ImportReading {
-  /** Quando a resposta chegou (ms). */
-  at: number;
-  detail?: string;
-  /** O id do pedido que a resposta atende. */
-  id: string;
-  page?: PageShape;
-  reason: ImportStop;
-  request?: string;
-}
-
-export interface EspelhoReading {
-  /** Quando a resposta chegou (ms). */
-  at: number;
-  error?: string;
-  items?: EspelhoItem[];
 }
 
 /** O que foi mandado em cada chave da fila, para registrar quando voltar conferido. */
@@ -273,6 +255,8 @@ export function useBridge(
   const [curriculo, setCurriculo] = useState<CurriculoReading | undefined>();
   const [photoUpload, setPhotoUpload] = useState<PhotoUploadReading | undefined>();
   const [importResult, setImportResult] = useState<ImportReading | undefined>();
+  const restorePoint = useRestorePoint(features, post);
+  const { dropAll: dropRestoreRequests, takeReply: takeRestoreReply } = restorePoint;
 
   const reloadSent = useCallback(() => {
     if (!lattesId) {
@@ -336,12 +320,14 @@ export function useBridge(
       if (msg.type === 'estado-lattes' && lattesId && sameCv(lattesId, msg.lattesId)) {
         setLattes({ ...msg.status, readAt: Date.now() });
       }
-      if (msg.type === 'curriculo') {
+      // O ZIP do ponto de restauração não é uma abertura de arquivo.
+      if (msg.type === 'curriculo' && !takeRestoreReply(msg)) {
         setCurriculo({
           at: Date.now(),
           detail: msg.detail,
           fileName: msg.fileName,
           id: msg.id,
+          lattesId: msg.lattesId,
           reason: msg.reason,
           zip: msg.zip,
         });
@@ -381,6 +367,7 @@ export function useBridge(
     const stopListening = listen(
       onMessage,
       () => {
+        dropRestoreRequests();
         setAvailable(false);
         setFeatures([]);
         setRunning(false);
@@ -399,7 +386,7 @@ export function useBridge(
       clearTimeout(timer);
       stopListening();
     };
-  }, [lattesId]);
+  }, [lattesId, takeRestoreReply, dropRestoreRequests]);
 
   // Os eventos saem do Importar só com a extensão que anuncia 'incluir-itens'
   // (direct-inclusion.ts). Segue as capacidades: sem extensão (features
@@ -420,6 +407,7 @@ export function useBridge(
   );
 
   return {
+    ...restorePoint.fields,
     available,
     clearSent: async () => {
       if (!lattesId) return;
@@ -443,6 +431,9 @@ export function useBridge(
     send: async ({ undo } = {}) => {
       const reverse = undo && undoOp(undo);
       if (undo && !reverse) return;
+      const ops = reverse ? [reverse] : plan.ops;
+      // O ponto de restauração vem antes de qualquer gravação (LAT-59).
+      if (!(await restorePoint.begin(lattesId, ops))) return;
       if (session) {
         // O currículo como o Lattes está antes deste envio (a exportação com o
         // que já foi conferido). Restaurar esse ponto põe as alterações de
@@ -459,7 +450,6 @@ export function useBridge(
       const changes = new Map(
         groups.flatMap((g) => g.entries).map((e) => [e.change.key, e.change]),
       );
-      const ops = reverse ? [reverse] : plan.ops;
       outgoing.current = new Map(
         ops.map((op) => [
           op.key,

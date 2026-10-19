@@ -58,7 +58,9 @@ que as exportações reais trazem e o XSD não declara) e gera
 A interface lê esse modelo para montar os campos e saber o que é obrigatório.
 O serializador o usa para pôr cada filho novo no lugar certo
 (`src/model/schema-order.ts`), e a validação, para conferir um item antes de ir
-ao Lattes (`src/model/validate.ts`). Por cima dele ficam as listas que o
+ao Lattes (`src/model/validate.ts`). A mesma conferência roda no currículo
+inteiro, item por item, junto com a revisão de consistência, no diagnóstico
+do currículo (`src/review/validation.ts`). Por cima dele ficam as listas que o
 próprio Lattes oferece nos formulários (país, idioma, natureza de evento),
 capturadas sem salvar nada: `src/schema/typed-choices.ts` e
 `src/schema/listas-lattes.json` (ver [`campos_tipados.md`](campos_tipados.md)).
@@ -79,7 +81,7 @@ os filtros usam. Que o Importar leia o arquivo de volta com a mesma convenção
 
 ## O que o app guarda
 
-Tudo fica no IndexedDB do WebView (`src/model/store.ts`, com Dexie), cifrado
+Tudo, menos as cópias de segurança (abaixo), fica no IndexedDB do WebView (`src/model/store.ts`, com Dexie), cifrado
 com AES-GCM (`src/model/seal.ts`). Em claro ficam só as chaves de busca: datas,
 o identificador público do currículo e marcas como "manter". A chave é gerada no primeiro uso e mora no
 chaveiro do sistema (`src-tauri/src/chave.rs`); sem chaveiro, o app não guarda
@@ -97,6 +99,78 @@ As três primeiras guardam XML serializado; `sent` guarda as operações do
 conector. As alterações a enviar não são guardadas: saem, a cada momento, da
 diferença entre a cópia de trabalho e a exportação carregada
 (`src/model/changes.ts`).
+
+### Cópias de segurança (LAT-59)
+
+Tudo acima mora no armazenamento interno do WebView, e perder esse
+armazenamento ou a chave do chaveiro leva tudo junto. Por isso as cópias de
+segurança ficam fora dele, sem cifra, com os bytes que o Lattes entregou
+(é o mesmo arquivo que o Exportar dá):
+
+- **Ponto zero**: a primeira exportação de cada currículo (pelo
+  `NUMERO-IDENTIFICADOR`), como `ponto-zero-<AAAA-MM-DD>.zip`. Só uma
+  exportação que ninguém mexeu entra (`isBaselineCandidate`, em
+  `src/model/backups.ts`): a que veio pelo conector, sempre; um ZIP aberto de
+  um arquivo, só com o nome do Exportar (`CV_<id>.zip` ou `<id>.zip`, com o
+  " (1)" de um download repetido), uma única entrada `<id>.xml` e a raiz
+  `CURRICULO-VITAE` com `SISTEMA-ORIGEM-XML` e o mesmo
+  `NUMERO-IDENTIFICADOR`; um XML solto, nunca. O que não passa abre igual,
+  só não vira ponto zero. Se já existe um ponto zero daquele currículo, de
+  qualquer data, nada é gravado.
+- **Ponto de restauração**: antes da primeira gravação de cada rodada do
+  conector, `restauracao-<AAAA-MM-DD-HHMM>.zip`, com `-2`, `-3` no mesmo
+  minuto. O sidecar leva a contagem da fila por tipo de operação, sem valores.
+  A primeira restauração também vale como ponto zero quando o currículo ainda
+  não tem um.
+
+Cada arquivo tem um `.json` ao lado com data, origem (`arquivo` ou
+`conector`), tamanho, versão do app e o SHA-256 do arquivo
+(`src/model/backups.ts`).
+
+No app de desktop, a pasta é
+`<Documentos>/LattesEditor/Cópias de segurança/<id>/`: no macOS,
+`~/Documents`, que o Finder mostra como "Documentos"; no Windows, a pasta
+Documentos; no Linux, a `XDG_DOCUMENTS_DIR`, ou a pasta pessoal sem ela.
+Quem grava é o Rust (`src-tauri/src/copias.rs`), sempre com `create_new`,
+que falha se o nome existe e nunca trunca; o ponto zero confere a pasta e
+cria sob uma trava. Os comandos só criam, listam e mostram na pasta: não há
+comando que apague, renomeie ou reescreva um arquivo dali. O identificador
+só aceita dígitos e o nome é montado no Rust, então nada sai da pasta. O
+ZIP vai do editor ao Rust cru, no corpo do `invoke` (um `Uint8Array`, que o
+Rust lê como `InvokeBody::Raw`), e o identificador, a data e o sidecar em
+uma linha vão em cabeçalhos (`x-lattes-id`, `x-stamp`, `x-sidecar`); o Rust
+grava o sidecar formatado, com o nome final do arquivo. No
+macOS, a primeira gravação pede acesso a Documentos
+(`NSDocumentsFolderUsageDescription`, em `src-tauri/Info.plist`).
+
+No navegador, sem acesso a pastas, as cópias ficam no IndexedDB, num banco à
+parte, `lattes-editor-copias` (`src/model/backup-store.ts`), também em claro.
+Nenhum "Limpar" do app (fechar o arquivo, apagar as versões, apagar o
+registro do enviado, o recomeço depois de perder a chave) alcança esse banco,
+e o módulo só tem `add`. A pessoa leva o arquivo para fora com "Baixar", e a
+interface diz que, no navegador, a cópia mora dentro do navegador.
+
+"Cópias de segurança", embaixo de ⚙ › Versões do Lattes
+(`src/ui/BackupsSection.tsx`), mostra a pasta e lista os arquivos com a data,
+com "Mostrar na pasta" no desktop e "Baixar" no navegador. Nada ali apaga.
+
+O ponto de restauração segue `src/bridge/restore-point.ts`, chamado por
+`src/ui/use-restore-point.ts` antes do `enviar`: o editor pede o ZIP à
+extensão (`pedir-curriculo`, o mesmo do Abrir do Lattes), confere que o
+`NUMERO-IDENTIFICADOR` de dentro do ZIP é o do currículo aberto e guarda.
+Os pedidos levam o prefixo `restauracao-` no id (`ExportRequests`, no mesmo
+arquivo); a resposta que chega depois do prazo de 30 segundos, ou depois de
+a extensão desligar, é engolida, para um ZIP velho nunca virar abertura de
+arquivo e substituir a cópia de trabalho.
+Como o Exportar recusa com pendência (`lattes_internals.md`, seção 10), a
+segunda rodada antes de "Enviar ao CNPq" nunca tem ponto novo: o app diz
+por quê, mostra a cópia mais recente e pede "Continuar sem ponto de
+restauração" (`src/import-export/RestorePointDialog.tsx`). A cópia que não
+grava (disco cheio, acesso negado a Documentos) também cai nessa pergunta.
+Sessão caída, Lattes fechado, extensão sem resposta ou sessão de outro
+currículo param a rodada, sem gravar nada. Nunca se grava sem um ponto novo
+ou essa confirmação. Desfazer pelo registro do enviado passa pelo mesmo
+caminho.
 
 ## Do editor ao Lattes
 
@@ -176,6 +250,20 @@ alteração no lugar; exclusão pelo formulário) está no
 [guia de implementação](lattes_implementation_guide.md), seção 1, e nos
 tickets LAT-50, LAT-51 e LAT-49.
 
+Antes de virar alteração, o que vem de fora passa por um pré-diff
+(`src/review/dedup.ts`, LAT-45): cada item é comparado com as produções do
+currículo por título, DOI ou ISBN, autores, ano, tipo e veículo, com pesos
+declarados (título 45, identificador 15 e autores 10, como no CIÊNCIAVITAE;
+ano 15, tipo 10 e veículo 5, escolha do editor) e o motivo de cada parte. O
+mesmo DOI decide sozinho; títulos com menos da metade das palavras em comum
+nunca viram candidato; dois DOIs diferentes ficam no máximo em "parecido".
+Hoje passam por ele os itens de outro XML ("Trazer itens de outro XML…", no
+⚙, com a revisão em `src/import-export/IncomingReview.tsx`: só entra o que a
+pessoa marcar, como item novo) e o formulário de produção nova, inclusive o
+preenchido pelo DOI, que avisa quando o item se parece com um do currículo.
+Planilha, ORCID, OpenAlex e foto de certificado (LAT-43, LAT-8, LAT-10)
+entram pelo mesmo `preDiff` quando existirem.
+
 A inclusão de itens pelo conector (`CREATE_ITEMS_ENABLED`, em
 `src/bridge/create.ts`) cobre a atuação com o primeiro vínculo (`create.ts`), formação
 acadêmica nos dez níveis do "Incluir novo item" (`create-formacao.ts`) e
@@ -190,7 +278,8 @@ diz para excluir no Lattes.
 ### Ações ligadas para o teste ao vivo
 
 Desde o PR "ligar as ações do conector", todas as chaves estão ligadas, para o
-dono testar no Lattes real. Cada uma tem a capacidade da extensão em
+dono testar no Lattes real, menos `PUBLISH_ENABLED` (o envio ao CNPq, LAT-54),
+que continua desligada até um envio acompanhado. Cada uma tem a capacidade da extensão em
 `BRIDGE_FEATURES`, e o app só manda a operação a uma extensão que a anuncia:
 com uma extensão mais antiga, a alteração fica em "Não enviado" e o evento
 novo fica no Importar. O release estável só leva isso se o dono gerar um.
@@ -232,7 +321,22 @@ pelo `window.postMessage` da própria página, por um content script
 ### O que a extensão faz sozinha
 
 - **Abrir do Lattes** (`src/bridge/export.ts`): pede o mesmo ZIP do "Exportar"
-  na sessão da pessoa e o entrega ao editor.
+  na sessão da pessoa e o entrega ao editor. O mesmo pedido serve ao
+  "Recarregar do Lattes…" do ⚙ (`src/ui/use-lattes-reload.ts`, LAT-46), que
+  só aceita o ZIP do currículo aberto, passa pela confirmação de sempre
+  quando há itens novos não importados e deixa a falha no sino, com a
+  escolha do arquivo exportado. Sem a extensão, o menu pede o arquivo. Com o
+  Exportar bloqueado por pendência, a tela inicial oferece a última versão
+  deste currículo guardada no app (`src/ui/use-stored-version.ts`), que abre
+  como cópia de trabalho com o diagnóstico já comparando com a página de
+  conferência; a página de conferência é texto, e não vira currículo
+  editável. O que se manda depois a partir dessa versão não sobrescreve o
+  que está pendente no Lattes: a alteração confere, antes do POST, os
+  valores de antes dos campos que muda e a identidade do item no formulário
+  lido agora (`src/bridge/apply.ts`), e para como "divergente" se não
+  baterem; o resto do formulário vai como foi lido; a inclusão confere que
+  não há item igual na lista. A mesma tela tem o link para o "Enviar ao CNPq", que libera o
+  Exportar; publicado, o editor pede o currículo de novo.
 - **Estado do Lattes** (`src/bridge/lattes-status.ts`): lê do menu a data da
   última publicação e se há alteração pendente de envio ao CNPq.
 - **Conferência do contrato** (`src/bridge/contract.ts`): só com leituras,
@@ -261,6 +365,21 @@ pelo `window.postMessage` da própria página, por um content script
   pendente no Importar também para o fluxo; o conector nunca descarta nada.
   Com a chave desligada, o editor não mostra o botão e a extensão recusa o
   pedido; o "Baixar arquivo" com os passos à mão continua igual.
+- **Enviar ao CNPq** (`src/bridge/publish.ts`, LAT-54), desligado por
+  `PUBLISH_ENABLED`. O painel "Enviar ao CNPq"
+  (`src/import-export/PublishPanel.tsx`), aberto pelo "Enviar ao Lattes"
+  quando o Lattes tem pendência, mostra o que vai ser publicado (as gravações
+  do editor desde a última publicação e a comparação de títulos com a
+  página de conferência), quantos achados o diagnóstico do currículo tem e a declaração do CNPq
+  lida da tela de envio, com o link do Termo de Uso. A caixa da declaração
+  começa desmarcada a cada abertura e só a pessoa a marca. Ligado, o conector
+  repete as consultas e o envio da tela e confere a publicação pelo menu
+  (`lattes_internals.md`, seção 10). A tela e o envio passam por
+  `src/ui/use-publish.ts` e, na extensão, por `extension/src/publish-run.ts`,
+  que nunca roda junto com a fila, a foto ou o Importar. Desligado, o painel
+  mostra a declaração como texto e manda a pessoa enviar pelo Lattes; em
+  `pnpm dev`, `?publicar` na URL mostra a caixa e o botão, e a extensão
+  continua recusando.
 
 ### O Lattes simulado
 
@@ -285,8 +404,9 @@ as chaves ligadas (`tests/lattes-simulado.test.ts`).
 | `src/forms/`         | Formulários de item novo: produção (autores, áreas, palavras-chave), formação, atuação, projeto e patente                                         |
 | `src/import-export/` | O painel "Enviar ao Lattes", o arquivo do Importar, o ZIP, o registro do enviado                                                                  |
 | `src/bridge/`        | O núcleo do conector, usado pela extensão e pelo editor: protocolo, plano, aplicação, leituras do Lattes                                          |
-| `src/review/`        | Diagnóstico do currículo e o que mudou no Lattes desde a exportação                                                                               |
+| `src/review/`        | Diagnóstico do currículo: a conferência do currículo inteiro (`validation.ts`) e o que mudou no Lattes desde a exportação                         |
 | `src/print/`         | Impressão e PDF (NBR 14724), referências na NBR 6023                                                                                              |
+| `src/panorama/`      | O Panorama: nove gráficos do currículo, só com o XML carregado; entra no editor por `index.ts` e pelo controle de modo                            |
 | `src/lookups/`       | Busca por DOI no Crossref                                                                                                                         |
 | `src/desktop/`       | O que só existe no app: arquivos nativos, chave do chaveiro, atualização automática, links externos                                               |
 | `src/labels/`        | Rótulos pt-BR de elementos, atributos e valores                                                                                                   |

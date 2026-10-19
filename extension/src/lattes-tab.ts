@@ -5,6 +5,7 @@ import type { ContractReport } from '../../src/bridge/contract.ts';
 import type { ImportResult } from '../../src/bridge/importar.ts';
 import type { LattesStatus } from '../../src/bridge/lattes-status.ts';
 import type { BridgeMessage, EditorMessage } from '../../src/bridge/protocol.ts';
+import type { PublishRequest, PublishResult } from '../../src/bridge/publish.ts';
 import { hasConsent } from './consent.ts';
 import { LATTES_MENU, lattesMenus } from './lattes-hosts.ts';
 
@@ -21,7 +22,16 @@ export async function injectRunner(tabId: number): Promise<void> {
 /** Roda uma função do núcleo do conector na aba; undefined se a aba não respondeu. */
 async function runInTab<T>(
   tabId: number,
-  name: 'cursos' | 'espelho' | 'exportar' | 'foto' | 'importar' | 'instituicoes' | 'listas',
+  name:
+    | 'cursos'
+    | 'espelho'
+    | 'exportar'
+    | 'foto'
+    | 'importar'
+    | 'instituicoes'
+    | 'listas'
+    | 'publicar'
+    | 'telaEnvio',
   ...args: string[]
 ): Promise<T | undefined> {
   await injectRunner(tabId);
@@ -109,6 +119,50 @@ export async function sendImport(
       oldestYear: req.oldestYear,
     });
     return (await runInTab<ImportResult>(tabId, 'importar', args, lattesId)) ?? failed;
+  } catch {
+    return failed;
+  }
+}
+
+/** A tela de envio ao CNPq (lattes-runner.ts, telaEnvio): só lê, e só com o "ok" do aviso. */
+export async function readSendScreenReply(): Promise<Omit<Reply<'tela-envio'>, 'id'>> {
+  if (!(await hasConsent())) return { reason: 'consentimento' };
+  const tabId = await lattesTab();
+  if (tabId === undefined) return { reason: 'sem-aba' };
+  const failed = { detail: 'A aba do Lattes não respondeu.', reason: 'erro' } as const;
+  try {
+    return (await runInTab<Omit<Reply<'tela-envio'>, 'id'>>(tabId, 'telaEnvio')) ?? failed;
+  } catch {
+    return failed;
+  }
+}
+
+/**
+ * Envia ao CNPq (lattes-runner.ts, publicar): só com o "ok" do aviso, e o
+ * núcleo na aba confere que a sessão é do currículo do editor.
+ */
+export async function sendPublish(
+  req: { request: PublishRequest; today: string },
+  lattesId?: string,
+): Promise<PublishResult> {
+  if (!lattesId) {
+    return {
+      detail: 'O editor não sabe de qual currículo é o envio; nada foi enviado.',
+      outcome: 'outro-cv',
+    };
+  }
+  if (!(await hasConsent())) return { outcome: 'consentimento' };
+  const tabId = await lattesTab();
+  if (tabId === undefined) return { outcome: 'sem-aba' };
+  const failed: PublishResult = {
+    detail:
+      'A aba do Lattes não respondeu. Confira a "Última publicação" no menu do Lattes antes de tentar de novo.',
+    outcome: 'erro',
+  };
+  try {
+    return (
+      (await runInTab<PublishResult>(tabId, 'publicar', JSON.stringify(req), lattesId)) ?? failed
+    );
   } catch {
     return failed;
   }

@@ -455,8 +455,9 @@ conector pode ler o HTML e reconhecer o aviso.
 
 Não há como descartar alterações pendentes. A tela de envio
 (`pkg_publicar.mostrar_cv`, aberta pelo "Enviar" e pelo aviso de pendências)
-só tem "Enviar ao CNPq" (formulário `publicar`, POST `pkg_publicar.enviar`,
-com a concordância no `f_chk`) e "Cancelar", que fecha a tela. Nenhuma das
+só tem "Enviar ao CNPq" (formulário `publicar`, com a concordância no
+`f_chk`; o `enviar()` da página navega por GET para `pkg_publicar.enviar`,
+ver abaixo) e "Cancelar", que fecha a tela. Nenhuma das
 nove ferramentas do menu secundário desfaz alterações. Os textos com "serão
 descartadas" no código da página são o aviso genérico de sair de um
 formulário sem gravar. **Observado.**
@@ -506,6 +507,35 @@ de produção" e o aviso "Este arquivo não foi gerado a partir do Currículo
 Lattes validado e disponível publicamente". **Observado** pelo texto da
 página; as tags que formam essas linhas são **inferidas**. O diagnóstico do
 editor lê essa página (`src/bridge/espelho.ts`).
+
+**No conector (15/10/2026, desligado).** `src/bridge/publish.ts` (LAT-54)
+repete o envio da tela, atrás de `PUBLISH_ENABLED = false`, e nunca rodou no
+Lattes real; os testes rodam contra o Lattes simulado. O caminho:
+
+1. GET de `pkg_publicar.mostrar_cv`, que o editor mostra antes do envio: o
+   texto ao lado da caixa `f_chk` como declaração, o link "Termo de Uso", e os
+   controles `f_idioma`, `f_chk_en`, `f_email_contato` e
+   `f_email_alternativo`, se a tela os tiver. Que a tela tenha controles com
+   os nomes dos parâmetros do GET, e que a declaração seja o texto ao lado da
+   caixa, é **inferido**. Sem declaração legível, o editor não envia; sem o
+   link do Termo de Uso, também não.
+2. A caixa da declaração começa desmarcada a cada abertura do painel, não é
+   guardada e só a pessoa a marca. Sem ela marcada, nem o editor, nem a
+   extensão, nem o núcleo na aba fazem pedido algum.
+3. Os dois POSTs ajax, na ordem da página. `{"status": false}` na consulta de
+   raça ou cor e `"existe": true` na de e-mail param o envio e mandam a pessoa
+   à tela do Lattes; o que cada um quer dizer é **inferido** do nome do
+   procedimento. Uma resposta que não é esse JSON também para.
+4. O GET de `pkg_publicar.enviar` com os parâmetros na ordem observada. Só o
+   que foi observado vai: `f_chk_en=1`. Para não autorizar a versão em inglês,
+   o editor manda a pessoa à tela do Lattes. `f_idioma` sai das opções da
+   própria tela; `2` para inglês continua **inferido**.
+5. A conferência é pelo menu (`PKG_MENU.menu`), relido até quatro vezes com 3
+   segundos entre elas: "Última publicação" de hoje e sem o aviso de
+   pendência. O alerta da resposta não conta como prova.
+
+Os links "Ver a versão em português" e "em inglês" do painel abrem a página de
+conferência com `f_idioma=1` e `f_idioma=2` (este **inferido**).
 
 ## 11. Inclusão (LAT-24, 13/10/2026)
 
