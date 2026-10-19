@@ -4,6 +4,7 @@
 import { type ReactNode, useEffect, useId, useState } from 'react';
 
 import { attributeLabelIn, elementLabel, enumLabel } from '../labels/labels.ts';
+import { parseEmails, parseSocial } from '../model/contacts.ts';
 import { applyLinkedAttrs, followsCountry, writesOwnCode } from '../model/linked-attrs.ts';
 import { repairMojibake } from '../model/mojibake.ts';
 import { getAttr, setAttr, type XElement } from '../model/xml.ts';
@@ -14,7 +15,6 @@ import {
   typedChoices,
 } from '../schema/typed-choices.ts';
 import type { AttributeSpec } from '../schema/types.ts';
-import { parseEmails, parseSocial } from './contacts.ts';
 import { DateField } from './DateField.tsx';
 import { displayValue } from './display.ts';
 import { useDraft, usePartKey } from './draft-context.ts';

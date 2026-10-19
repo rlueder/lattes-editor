@@ -13,8 +13,8 @@ import {
 } from 'react';
 
 import { attributeLabelIn } from '../labels/labels.ts';
+import { parseEmails, parseSocial } from '../model/contacts.ts';
 import { getAttr } from '../model/xml.ts';
-import { parseEmails, parseSocial } from './contacts.ts';
 import { isEnglishAttr } from './form-order.ts';
 import { isDoiAttr, linkHref, linkPieces, shortUrl } from './link-fields.ts';
 import {

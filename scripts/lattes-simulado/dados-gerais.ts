@@ -4,6 +4,7 @@
 // é a mesma que o conector usa (src/bridge/plan.ts e biographic.ts), em boa
 // parte inferida.
 
+import { parseSocial } from '../../src/model/contacts.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
 import type { LattesState } from './estado.ts';
@@ -253,6 +254,55 @@ const FORM_EXTRAS = [
   ].map((n) => h.hidden(n, '')),
 ].join('\n');
 
+/** Os tipos de rede social da página real (vetor redesSociais, 18/10/2026), em parte. */
+const SOCIAL_TYPES: [number, string][] = [
+  [1, 'Facebook'],
+  [2, 'Linkedin'],
+  [15, 'GitHub'],
+];
+
+/**
+ * As grades de contato da página de endereço, como a real (18/10/2026): o
+ * vetor provider das redes, o providerContatos das outras formas e a lista
+ * redesSociais. As redes saem de ENDERECO@REDE-SOCIAL.
+ */
+function contactScripts(container: XElement | undefined): string {
+  const social = parseSocial((container && getAttr(container, 'REDE-SOCIAL')) ?? '').map((r) => {
+    const type = SOCIAL_TYPES.find(([, n]) => n.toLowerCase() === r.name.toLowerCase());
+    return {
+      endereco: r.url,
+      id: type?.[0] ?? 1,
+      privacidade: '1',
+      redeSocial: type?.[1] ?? r.name,
+      visibilidade: 'Público',
+    };
+  });
+  const types = SOCIAL_TYPES.map(([id, redeSocial]) => ({ id, redeSocial }));
+  return `<script>
+var redesSociais = ${JSON.stringify([...types, {}])};
+var provider = ${JSON.stringify([...social, {}])};
+var providerContatos = [{}];
+</script>`;
+}
+
+/**
+ * f_dados_grid de volta para ENDERECO@REDE-SOCIAL. Inferido: o separador entre
+ * duas redes (uma só foi vista numa exportação, "ID Rede Social: …, Nome Rede
+ * Social: …, Endereço: …").
+ */
+function socialFromGrid(xml: string): string {
+  const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item >/g)].map((m) => {
+    const tag = (t: string) => new RegExp(`<${t}>([^<]*)</${t}>`).exec(m[1]!)?.[1] ?? '';
+    return { id: tag('id'), name: tag('redeSocial'), url: tag('endereco').replace(/&amp;/g, '&') };
+  });
+  return items
+    .map(
+      (r, i) =>
+        `ID Rede Social: ${1000000 + i + 1}, Nome Rede Social: ${r.name}, Endereço: ${r.url}`,
+    )
+    .join('; ');
+}
+
 function enderecoForm(_req: SimRequest, state: LattesState): SimResponse {
   const container = state.find(['DADOS-GERAIS', 'ENDERECO']);
   const blocks = ADDRESS.map(([suffix, name]) => {
@@ -265,7 +315,7 @@ ${renderFields([preference], container ?? element('ENDERECO'))}
 ${FORM_EXTRAS}
 ${h.hidden('f_ctr', 'U')}
 ${h.formButtons(false)}
-</form>${h.formScripts('GN_ENDERECO')}`;
+</form>${contactScripts(container)}${h.formScripts('GN_ENDERECO')}`;
   return html(h.page('Endereço', body));
 }
 
@@ -283,6 +333,13 @@ function enderecoPost(req: SimRequest, state: LattesState): SimResponse {
   const corr = state.find(['DADOS-GERAIS', 'ENDERECO']);
   if (corr || req.get('f_end_corr')) {
     applyFields([preference], corr ?? state.ensurePath(['DADOS-GERAIS', 'ENDERECO']), req);
+  }
+  // A grade vazia apaga as redes, como se supõe que o Lattes faria: é o caso
+  // que o conector evita mandando sempre a grade da página.
+  const grid = req.get('f_dados_grid');
+  if (grid !== null && grid !== undefined) {
+    const holder = state.ensurePath(['DADOS-GERAIS', 'ENDERECO']);
+    setAttr(holder, 'REDE-SOCIAL', socialFromGrid(grid));
   }
   state.touch();
   return html(h.savedScript(`prc_endereco?f_cod=${state.code}`));

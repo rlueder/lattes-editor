@@ -9,6 +9,7 @@ import {
   isOpaqueCode,
   slugify,
 } from '../src/labels/labels.ts';
+import { formatPhone, parseEmails, parseSocial, socialName } from '../src/model/contacts.ts';
 import { repairMojibake } from '../src/model/mojibake.ts';
 import { findOrderViolations, insertInSchemaOrder } from '../src/model/schema-order.ts';
 import {
@@ -22,7 +23,6 @@ import {
   XmlParseError,
 } from '../src/model/xml.ts';
 import { lattesSchema } from '../src/schema/lattes.ts';
-import { formatPhone, parseEmails, parseSocial, socialName } from '../src/ui/contacts.ts';
 import { displayValue } from '../src/ui/display.ts';
 import {
   codeAttrFor,

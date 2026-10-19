@@ -43,6 +43,14 @@ import {
   listEditSpec,
   locateListEdit,
 } from './edit-lists.ts';
+import {
+  array2xml,
+  enderecoGrids,
+  readContactGrids,
+  sameSocialSet,
+  socialOf,
+  type SocialRow,
+} from './endereco-contatos.ts';
 import { fieldLabel } from './field-labels.ts';
 import {
   encodeLatin1Form,
@@ -194,7 +202,7 @@ async function readPairs(
   port: LattesPort,
   path: string,
   form: string,
-): Promise<{ controls: FormControl[]; pairs: Pairs }> {
+): Promise<{ controls: FormControl[]; html: string; pairs: Pairs }> {
   const html = await getChecked(port, path);
   const controls = port.readForm(html, form);
   if (!controls) {
@@ -202,7 +210,7 @@ async function readPairs(
       ? new Stop('sessao', 'A sessão do Lattes expirou; entre de novo')
       : new Stop('erro', `Formulário ${form} não encontrado`);
   }
-  return { controls, pairs: withCheckRules(form, controls, successfulPairs(controls)) };
+  return { controls, html, pairs: withCheckRules(form, controls, successfulPairs(controls)) };
 }
 
 const same = (a: string | null, b: string | null) =>
@@ -333,6 +341,17 @@ export async function applyOp(
       set = { ...op.set, ...resolved.set };
       check = resolved.check;
     }
+    // Endereço: as grades de contato vão como o check() da página as manda
+    // (endereco-contatos.ts), nunca os ocultos vazios com que a página carrega.
+    let contactGrids: ReturnType<typeof readContactGrids>;
+    let socialWanted: SocialRow[] | undefined;
+    if (op.kind === 'endereco') {
+      const grids = enderecoGrids(op, before.html);
+      if ('status' in grids) return result(grids.status, grids.detail);
+      set = { ...set, ...grids.set };
+      contactGrids = grids.read;
+      socialWanted = grids.wanted;
+    }
     for (const [field, value] of Object.entries(set)) {
       const limit = before.controls.find((c) => c.name === field)?.maxLength;
       if (value && limit && limit > 0 && value.length > limit) {
@@ -367,7 +386,18 @@ export async function applyOp(
     }
 
     const after = await readPairs(port, path, name);
-    const notSaved = mismatches(after.pairs, { ...set, ...check });
+    // As grades de contato voltam como linhas da página, não nos ocultos.
+    const { f_dados_grid: _g, f_dados_grid_contatos: _c, ...plain } = set;
+    const notSaved = mismatches(after.pairs, { ...(contactGrids ? plain : set), ...check });
+    if (contactGrids) {
+      const now = readContactGrids(after.html);
+      if (!now || !sameSocialSet(socialOf(now.social), socialWanted ?? [])) {
+        notSaved.push('f_dados_grid');
+      }
+      if (!now || array2xml(now.contacts) !== array2xml(contactGrids.contacts)) {
+        notSaved.push('f_dados_grid_contatos');
+      }
+    }
     if (notSaved.length > 0) {
       return result('divergente', `O Lattes não gravou: ${labels(notSaved)}`);
     }

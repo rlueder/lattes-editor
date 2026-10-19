@@ -195,7 +195,9 @@ describe('endereço e outras informações: plano', () => {
         label: 'Endereço para correspondência',
       }),
     ]);
-    expect(reasonOf(edit('ENDERECO', { 'REDE-SOCIAL': 'x' }))).toMatch(/grades serializadas/);
+    expect(reasonOf(edit('ENDERECO', { 'REDE-SOCIAL': 'x' }))).toMatch(
+      /não está no formato do Lattes/,
+    );
     expect(reasonOf(edit('ENDERECO-PROFISSIONAL', { 'NOME-UNIDADE': 'Depto' }))).toBe(
       'O formulário de endereço do Lattes não tem campo próprio para: Unidade',
     );
