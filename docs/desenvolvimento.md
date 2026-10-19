@@ -110,7 +110,7 @@ no push, o conjunto todo com cobertura.
 | `node scripts/gen-listas.ts`             | `src/schema/listas-lattes.json`, das listas capturadas nos formulários do Lattes               |
 | `node scripts/inventario-campos.ts --md` | O inventário de [`campos_tipados.md`](campos_tipados.md)                                       |
 | `pnpm censo:relatorio`                   | O relatório de cobertura do censo, `docs/lattes-formularios/relatorio.md`                      |
-| `node scripts/cobertura-conector.ts`     | Quanto do currículo o conector envia, por elemento, e o motivo do que fica à mão               |
+| `node scripts/cobertura-conector.ts`     | Quantos campos do editor o conector envia, por seção, e o motivo do que falta no conector      |
 | `pnpm build:censo`                       | `dist-censo/censo-lattes.js`, o censo para rodar na aba do Lattes (`docs/lattes-formularios/`) |
 | `pnpm capture:screenshots`               | As imagens do README e do site                                                                 |
 | `pnpm capture:store`                     | As imagens da Chrome Web Store, em `docs/img/loja/`                                            |
