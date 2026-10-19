@@ -12,7 +12,8 @@
 // vira envio; senão, ou o formulário do Lattes não tem onde gravá-lo (fica só
 // para ler no editor, pelo mesmo fieldAbsent que o editor usa) ou falta no
 // conector. --resumo mostra só os totais; --lista=MESTRADO lista os campos que
-// faltam num tipo de item, com o motivo.
+// faltam num tipo de item, com o motivo, e --lista=motivo:Valor os que faltam
+// por um motivo que começa assim.
 //
 // --por-curriculo é a contagem antiga, por troca de atributo num currículo
 // (fixtures/demo.xml e fixtures/synthetic_full.xml sem arquivo): depende de
@@ -164,42 +165,65 @@ function cover(raw: string, trials: Trial[] = []): Stats {
         continue;
       // Só para ler no editor: segue outro campo.
       if (followsCountry(el.name, a.name)) continue;
-      const work = parseXml(raw).root;
-      const target = flatten(work)[index]!;
-      const attr = target.attrs.find((x) => x.name === a.name)!;
-      if (a.name === 'FLAG-RESPONSAVEL') {
-        if (!swappedLead(work, target)) continue;
-      } else if (!picked(target, a.name, a.value)) {
-        // A lista que o editor oferece no campo (a do schema, ou a do Lattes
-        // nos campos tipados): a troca é outra opção dela, como a pessoa faria.
-        // O tipo de um registro: só os do tipo de item (REGISTRY_KINDS).
-        const kinds =
-          a.name === 'TIPO-PATENTE'
-            ? Object.entries(REGISTRY_KINDS).find(([k]) =>
-                paths.get(el)!.split('/').includes(k),
-              )?.[1]
-            : undefined;
-        const choices =
-          kinds ??
-          spec.attributes.find((x) => x.name === a.name)?.enum ??
-          typedChoices(target, a.name)?.map((c) => c.value);
-        attr.value = changed(a.name, a.value, choices);
-        // O que o editor muda junto ao gravar (AttributeField chama o mesmo).
-        applyLinkedAttrs(target, a.name);
+      /** Planeja a troca do atributo para `value` (sem valor, a troca padrão). */
+      const attempt = (value?: string) => {
+        const work = parseXml(raw).root;
+        const target = flatten(work)[index]!;
+        const attr = target.attrs.find((x) => x.name === a.name)!;
+        let choices: string[] | undefined;
+        if (a.name === 'FLAG-RESPONSAVEL') {
+          if (!swappedLead(work, target)) return undefined;
+        } else if (value !== undefined || !picked(target, a.name, a.value)) {
+          // A lista que o editor oferece no campo (a do schema, ou a do Lattes
+          // nos campos tipados): a troca é outra opção dela, como a pessoa faria.
+          // O tipo de um registro: só os do tipo de item (REGISTRY_KINDS).
+          const kinds =
+            a.name === 'TIPO-PATENTE'
+              ? Object.entries(REGISTRY_KINDS).find(([k]) =>
+                  paths.get(el)!.split('/').includes(k),
+                )?.[1]
+              : undefined;
+          choices =
+            kinds ??
+            spec.attributes.find((x) => x.name === a.name)?.enum ??
+            typedChoices(target, a.name)?.map((c) => c.value);
+          attr.value = value ?? changed(a.name, a.value, choices);
+          // O que o editor muda junto ao gravar (AttributeField chama o mesmo).
+          applyLinkedAttrs(target, a.name);
+        }
+        const changes = diffDocuments(base, work);
+        // O texto que o editor pede quando o valor novo o exige (o potencial de
+        // inovação Sim): a pessoa o escreve ali.
+        const extras = Object.fromEntries(
+          changes.map((c) => [c.key, { f_txt_potencial: 'Texto de teste do potencial' }]),
+        );
+        const plan = planChanges(
+          changes.map((change) => ({ change, itemTitle: '' })),
+          work,
+          { ...options, extras },
+        );
+        return { choices, ok: plan.ops.length > 0 && plan.unsupported.length === 0, plan };
+      };
+      let tried = attempt();
+      if (!tried) continue;
+      // Uma opção que o formulário não oferece (o Lattes não tem aquele
+      // valor) não diz que o campo não vai: as outras opções da lista também
+      // são tentadas, e o campo vai se uma delas vai.
+      const valueMiss = (r: string) =>
+        /^(Valor sem correspondência|Valor que o formulário|Tipo que o Lattes não tem|Tipo de participação que o Lattes não tem|Forma de participação que o Lattes não tem)/.test(
+          r,
+        );
+      if (!tried.ok && tried.choices && tried.plan.unsupported.every((u) => valueMiss(u.reason))) {
+        for (const other of tried.choices.filter((c) => c !== a.value)) {
+          const next = attempt(other);
+          if (next?.ok) {
+            tried = next;
+            break;
+          }
+        }
       }
-      const changes = diffDocuments(base, work);
-      // O texto que o editor pede quando o valor novo o exige (o potencial de
-      // inovação Sim): a pessoa o escreve ali.
-      const extras = Object.fromEntries(
-        changes.map((c) => [c.key, { f_txt_potencial: 'Texto de teste do potencial' }]),
-      );
-      const plan = planChanges(
-        changes.map((change) => ({ change, itemTitle: '' })),
-        work,
-        { ...options, extras },
-      );
+      const { ok, plan } = tried;
       const s = stats.get(el.name) ?? { no: 0, ok: 0, reasons: new Map<string, number>() };
-      const ok = plan.ops.length > 0 && plan.unsupported.length === 0;
       trials.push({
         attr: a.name,
         element: el.name,
@@ -271,6 +295,16 @@ function withListValues(raw: string): { rewritten: number; xml: string } {
   for (let pass = 0; pass < 2; pass++) {
     for (const el of flatten(doc.root)) {
       for (const a of el.attrs) {
+        // Um valor fora do enumerado do schema (FLAG-BOLSA="Valor de teste"),
+        // que nenhuma exportação traria: a primeira opção dele.
+        const choices = lattesSchema.elements[el.name]?.attributes.find(
+          (x) => x.name === a.name,
+        )?.enum;
+        if (choices?.length && a.value && !choices.includes(a.value)) a.value = choices[0]!;
+        // FLAG-* sem enumerado guarda SIM ou NAO (field-kind.ts, isBooleanAttr).
+        if (!choices && a.name.startsWith('FLAG-') && !['', 'SIM', 'NAO'].includes(a.value)) {
+          a.value = 'NAO';
+        }
         if (!outOfList(el, a.name)) continue;
         const value = derivedValue(el.name, a.name) ?? typedChoices(el, a.name)?.[0]?.value;
         if (value !== undefined && value !== a.value) {
@@ -348,7 +382,11 @@ function fieldReport(file: string): void {
   if (dump) {
     for (const [key, ts] of fields) {
       const { kind, reason } = kindOf(ts);
-      if (kind === 'falta' && itemOf(key) === dump) console.log(`${key}\t${reason}`);
+      if (
+        kind === 'falta' &&
+        (itemOf(key) === dump || (dump.startsWith('motivo:') && reason?.startsWith(dump.slice(7))))
+      )
+        console.log(`${key}\t${reason}`);
     }
     return;
   }

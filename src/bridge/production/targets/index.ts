@@ -4,6 +4,7 @@
 import type { ProductionTarget } from '../types.ts';
 import { ARTISTICA_TARGETS } from './artistica.ts';
 import { BIBLIOGRAFICA_TARGETS } from './bibliografica.ts';
+import { DEMAIS_TARGETS } from './demais.ts';
 import { ORIENTACOES_BANCAS_TARGETS } from './orientacoes-bancas.ts';
 import { PROJETO_TARGETS } from './projetos.ts';
 import { REGISTRO_TARGETS } from './registros.ts';
@@ -16,4 +17,5 @@ export const PRODUCTION_TARGETS: ProductionTarget[] = [
   ...ORIENTACOES_BANCAS_TARGETS,
   ...PROJETO_TARGETS,
   ...REGISTRO_TARGETS,
+  ...DEMAIS_TARGETS,
 ];

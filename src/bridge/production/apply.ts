@@ -101,8 +101,10 @@ async function locate(
     const controls = withScriptValues(html, port.readForm(html, t.form.name));
     if (!controls) continue;
     if (
-      folded(valueOf(controls, titleField)) === folded(op.match.title) &&
-      shownYear(controls, yearField, t.year.fallback) === op.match.year &&
+      folded(valueOf(controls, titleField)) ===
+        folded(t.title.toForm ? t.title.toForm(op.match.title) : op.match.title) &&
+      shownYear(controls, yearField, t.year.fallback) ===
+        (t.year.toForm ? t.year.toForm(op.match.year) : op.match.year) &&
       sameNature(controls, t)
     ) {
       found.push({ controls, html, path: link.path });

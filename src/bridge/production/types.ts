@@ -165,7 +165,13 @@ export interface ProductionTarget {
    * formulário são f_titulo e f_ano se não disser. `child` pode ser o
    * próprio elemento do item, quando o atributo é dele.
    */
-  title: { attr: string; child: string; field?: string };
+  title: {
+    attr: string;
+    child: string;
+    field?: string;
+    /** O valor do XML como a página o mostra, quando difere (o tipo da licença: M). */
+    toForm?: (value: string) => string;
+  };
   /**
    * Campos que não são controles da página, mas linhas de um vetor dela (as
    * datas da patente, na grade de situações): o nome em `fields` tem ":" e a
@@ -188,5 +194,7 @@ export interface ProductionTarget {
      */
     fallback?: string;
     field?: string;
+    /** O valor do XML como a página o mostra (a data da licença: dd/mm/aaaa). */
+    toForm?: (value: string) => string;
   };
 }
