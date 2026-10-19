@@ -396,6 +396,27 @@ describe('projeto: potencial de inovação', () => {
   });
 });
 
+describe('projeto no Lattes simulado: potencial de inovação', () => {
+  it('o Sim com o texto vai e confere; o Não apaga o texto', async () => {
+    const lattes = await lattesFor();
+    const original = parseXml(XML).root;
+    const working = parseXml(XML).root;
+    setAttr(projectOf(working, '1'), 'FLAG-POTENCIAL-INOVACAO', 'SIM');
+    const changes = diffDocuments(original, working);
+    const extras = { [changes[0]!.key]: { f_txt_potencial: 'Um processo novo' } };
+    const [yes] = planChanges(
+      changes.map((change) => ({ change, itemTitle: 'Item' })),
+      working,
+      { ...ON, extras },
+    ).ops;
+    expect(await applyOp(yes!, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes).at(-1)?.fields).toMatchObject({
+      f_sta_inovacao: 'S',
+      f_txt_potencial: 'Um processo novo',
+    });
+  });
+});
+
 describe('projeto no Lattes simulado', () => {
   it('nome e situação: grava, confere e deixa a equipe como estava', async () => {
     const lattes = await lattesFor();

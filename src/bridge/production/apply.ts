@@ -196,7 +196,11 @@ export async function applyProduction(
     ) {
       return result('conferido', 'O Lattes já estava assim; nada foi enviado');
     }
-    const wrong = fields.filter((f) => folded(pairValue(pairs, f)) !== folded(op.expect[f]));
+    // Só o que tem um antes conferido: o que a página limpa junto (clears) e o
+    // texto pedido fora do XML (asks) vão sem.
+    const wrong = fields.filter(
+      (f) => f in op.expect && folded(pairValue(pairs, f)) !== folded(op.expect[f]),
+    );
     if (op.keywords && !sameWords(keywordLabels(grids.f_plv_l ?? []), op.keywords.before)) {
       wrong.push('f_plv_l');
     }

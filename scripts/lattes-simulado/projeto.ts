@@ -59,6 +59,9 @@ export function projetos(state: LattesState): Placed[] {
 const bySeq = (state: LattesState, seq: string | undefined) =>
   projetos(state).find((p) => getAttr(p.projeto, 'SEQUENCIA-PROJETO') === seq);
 
+/** O texto do potencial de inovação de cada projeto, que a exportação não traz. */
+const potencial = new WeakMap<XElement, string>();
+
 function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
   const none = (name: string, kind: Binding['kind'] = 'hidden', max?: number): Binding => ({
     kind,
@@ -101,7 +104,14 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
         options: yesNo,
       },
     ),
-    none('f_txt_potencial', 'text', 400),
+    // O texto do potencial fica no Lattes e não vai à exportação: guardado à parte.
+    {
+      kind: 'text',
+      maxLength: 400,
+      name: 'f_txt_potencial',
+      read: (el) => potencial.get(el) ?? '',
+      write: (el, value) => potencial.set(el, value),
+    },
     { ...none('f_tpo_pesq_emp', 'radio'), options: yesNo },
     none('f_cnpj_empresa', 'text', 18),
     none('f_txt_nme_empresa', 'text'),
