@@ -64,6 +64,7 @@ import {
   withCheckRules,
 } from './form.ts';
 import { resolveFormacao } from './formacao-lookups.ts';
+import { identGrids } from './ident-grids.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
 import { pcdChecked, withPcd } from './pcd.ts';
 import type { BridgeOp, FieldValues } from './plan.ts';
@@ -353,6 +354,17 @@ export async function applyOp(
       contactGrids = grids.read;
       socialWanted = grids.wanted;
     }
+    // Identificação: a grade do ORCID e os nomes em citação, como o check() (ident-grids.ts).
+    if (op.kind === 'identificacao') {
+      const grids = identGrids(before.html);
+      if (!grids) {
+        return result(
+          'erro',
+          'A página de identificação do Lattes não trouxe as grades; nada foi enviado',
+        );
+      }
+      set = { f_nome_citacao: grids.f_nome_citacao, ...set, f_dados_grid: grids.f_dados_grid };
+    }
     for (const [field, value] of Object.entries(set)) {
       const limit = before.controls.find((c) => c.name === field)?.maxLength;
       if (value && limit && limit > 0 && value.length > limit) {
@@ -399,7 +411,9 @@ export async function applyOp(
     }
     // As grades de contato voltam como linhas da página, não nos ocultos.
     const { f_dados_grid: _g, f_dados_grid_contatos: _c, ...plain } = set;
-    const notSaved = mismatches(after.pairs, { ...(contactGrids ? plain : set), ...check });
+    const { f_dados_grid: _ident, ...noGrid } = set;
+    const sent = contactGrids ? plain : op.kind === 'identificacao' ? noGrid : set;
+    const notSaved = mismatches(after.pairs, { ...sent, ...check });
     if (contactGrids) {
       const now = readContactGrids(after.html);
       if (!now || !sameSocialSet(socialOf(now.social), socialWanted ?? [])) {

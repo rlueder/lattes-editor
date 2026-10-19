@@ -150,16 +150,40 @@ const IDENT_EXTRAS = [
   )
   .join('\n');
 
+/**
+ * As grades que o check() da página real serializa (18/10/2026): a do ORCID
+ * (provider2, vazia aqui) e a dos nomes em citação (providerDetNmeCit), uma
+ * linha por nome de NOME-EM-CITACOES-BIBLIOGRAFICAS.
+ */
+function identScripts(general: XElement): string {
+  const names = (getAttr(general, 'NOME-EM-CITACOES-BIBLIOGRAFICAS') ?? '')
+    .split(';')
+    .map((n) => n.trim())
+    .filter(Boolean)
+    .map((l) => ({ c: l, l }));
+  return `<script>
+var provider2 = [{}];
+var providerDetNmeCit =
+${JSON.stringify([...names, {}])};
+</script>`;
+}
+
 function identForm(_req: SimRequest, state: LattesState): SimResponse {
   const body = `<form name="GN_IDENT" method="post" action="PRC_IDENT">
 ${renderFields(identBindings(), state.general)}
 ${IDENT_EXTRAS}
 ${h.formButtons(false)}
-</form>${h.formScripts('GN_IDENT')}`;
+</form>${identScripts(state.general)}${h.formScripts('GN_IDENT')}`;
   return html(h.page('Identificação', body));
 }
 
 function identPost(req: SimRequest, state: LattesState): SimResponse {
+  // Como o Lattes real (18/10/2026): sem o XML da grade do ORCID, recusa tudo.
+  if (req.get('f_ctr') === 'U' && !(req.get('f_dados_grid') ?? '').startsWith('<root>')) {
+    return html(
+      h.page('Identificação', '<p>erro. ORA-19032: Era esperado o identificador de XML</p>'),
+    );
+  }
   if (req.get('f_ctr') === 'U') {
     applyFields(identBindings(), state.general, req);
     state.touch();
