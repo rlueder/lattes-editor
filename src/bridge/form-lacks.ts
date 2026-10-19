@@ -23,7 +23,8 @@ export function fieldAbsent(reason: string): boolean {
       /^O formulário[^:]*? não tem(:| o | campo| palavras)/.test(r) ||
       /^A tela d[ae] [^:]* não tem:/.test(r) ||
       /^A grade d[ae] [^:]* do Lattes não tem:/.test(r) ||
-      /^Dados que o próprio Lattes gera/.test(r),
+      /^Dados que o próprio Lattes gera/.test(r) ||
+      /^O Lattes não tem mais formulário para este tipo/.test(r),
   );
 }
 

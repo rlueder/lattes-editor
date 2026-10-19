@@ -6,11 +6,13 @@ import type { XElement } from '../../model/xml.ts';
 /**
  * Os tipos de produção artística do XSD fora de artes cênicas, música, artes
  * visuais e outra produção artística: o censo de 15/10/2026 não achou
- * formulário do Lattes para eles. O catálogo de menus do reconhecimento cita
- * uma lista prc_arte_lista, que não foi aberta.
+ * formulário do Lattes para eles, e o menu do Lattes real de 19/10/2026 só
+ * tem as quatro listas novas (pkg_arte_nova.lista com AC e MU,
+ * prc_arte_lista com 36 e 3Z). Como um item antigo desses tipos aparece hoje
+ * no Lattes não foi visto: nenhum currículo lido tinha um.
  */
 const LEGACY_ART =
-  'O censo dos formulários não achou no Lattes o formulário deste tipo de produção artística; altere no Lattes';
+  'O Lattes não tem mais formulário para este tipo de produção artística: o menu só tem artes cênicas, música, artes visuais e outra produção artística';
 
 const REASONS: Record<string, string> = {
   'APRESENTACAO-DE-OBRA-ARTISTICA': LEGACY_ART,

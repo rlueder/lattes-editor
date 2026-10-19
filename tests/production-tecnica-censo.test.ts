@@ -202,7 +202,7 @@ describe('o que fica à mão, com o motivo', () => {
     const reasons = reasonOf((root) =>
       setAttr(part(root, '47', 'DADOS-BASICOS'), 'TITULO', 'Outra trilha'),
     );
-    expect(reasons[0]).toMatch(/não achou no Lattes o formulário deste tipo/);
+    expect(reasons[0]).toMatch(/não tem mais formulário para este tipo/);
   });
 
   it('campo oculto ou ambíguo no formulário do tipo', () => {

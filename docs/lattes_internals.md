@@ -1349,6 +1349,21 @@ endereco: "10/03/2005"`), e vão em `f_dados_grid_datas` pelo `array2xml`.
   uma entrada sem uso; a de palavras-chave (`PKG_DIC_PLV_NV.form`) tem
   `del()`.
 
+### Atividade de uma atuação: a edição (lida e gravada em 19/10/2026)
+
+A tela de cargos e vínculos traz cada atividade como um link
+`PKG_ATIV.cargo` com `f_natur_ativ`, `f_seq_ativ`, `f_codinst` e
+`f_seq_funcao`, que são a natureza, a `SEQUENCIA-ATIVIDADE` da atuação, o
+`CODIGO-INSTITUICAO` (com a letra) e a `SEQUENCIA-FUNCAO-ATIVIDADE` da
+atividade. A descrição é a grade `providerDetAtiv` (`{l, c}`), serializada em
+`f_espec_l` como `n@c?l!`, completada até 8 com `n@?!`; a linha digitada vai
+com `c` 0 e a excluída em `f_exc` (`c?`). O período é `f_status` (N anterior,
+S atual), `f_mes_ini`, `f_ano_ini`, `f_mes_fim`, `f_ano_fim`. Na exportação, a
+descrição é um atributo da atividade (`ESTAGIO-REALIZADO`,
+`SERVICO-REALIZADO`, `CARGO-OU-FUNCAO`…). **Observado:** uma atividade de
+teste teve descrição, ano de início e período trocados pelo conector,
+conferidos na releitura, sem outro campo mudar.
+
 ### Projeto de pesquisa: `GN_PROJETO`, POST `PKG_PROJETO.FORM`
 
 O projeto não se inclui pela atuação. A tela de cargos e vínculos de uma

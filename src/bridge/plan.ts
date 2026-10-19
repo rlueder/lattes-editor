@@ -16,6 +16,7 @@ import {
 import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
 import { type CreateItemOp, planCreateItem } from './create-items.ts';
 import { DELETE_ITEMS_ENABLED, type DeleteOp, planDelete } from './delete.ts';
+import { type AtividadeOp, EDIT_ATIVIDADES_ENABLED, planAtividade } from './edit-atividade.ts';
 import {
   EDIT_EVENTO_ENABLED,
   EDIT_OUVINTE_ENABLED,
@@ -86,6 +87,7 @@ export interface IdiomaOp extends OpBase {
 
 export type BridgeOp =
   | AreasOp
+  | AtividadeOp
   | BiographicOp
   | CreateAtuacaoOp
   | CreateItemOp
@@ -114,6 +116,8 @@ export interface PlanOptions {
   deleteItems?: boolean;
   /** Áreas de atuação (areas-atuacao.ts, EDIT_AREAS_ENABLED). */
   editAreas?: boolean;
+  /** Atividades das atuações (edit-atividade.ts, EDIT_ATIVIDADES_ENABLED). */
+  editAtividades?: boolean;
   /**
    * Convidado, participante, forma, tipo, natureza e cidade do evento
    * (EDIT_EVENTO_ENABLED). Sem valor, desligada, como editOuvinte.
@@ -180,6 +184,7 @@ export const GATED_EDITS: readonly {
   },
   { enabled: PROJECT_ORGAN_ENABLED, feature: 'orgao-projeto', option: 'projectOrgan' },
   { enabled: EDIT_AREAS_ENABLED, feature: 'alterar-areas-atuacao', option: 'editAreas' },
+  { enabled: EDIT_ATIVIDADES_ENABLED, feature: 'alterar-atividades', option: 'editAtividades' },
 ];
 
 /**
@@ -287,6 +292,7 @@ export function planChange(
     createItems = false,
     deleteItems = false,
     editAreas = false,
+    editAtividades = false,
     editEvento = false,
     editFormacaoComplementar = false,
     editOuvinte = false,
@@ -320,6 +326,10 @@ export function planChange(
     const planned = planAreas(change, chain, label, siblings);
     return 'reason' in planned ? unsupported(change, label, planned.reason) : planned;
   }
+  // Atividades das atuações (edit-atividade.ts).
+  const atividade = editAtividades ? planAtividade(change, chain, label) : undefined;
+  if (atividade)
+    return 'reason' in atividade ? unsupported(change, label, atividade.reason) : atividade;
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.
   if (change.kind === 'novo' && createItems && change.element === 'ATUACAO-PROFISSIONAL') {
     const el = chain.at(-1);

@@ -18,6 +18,17 @@ outras 127 são o alvo deste plano.
 
 ## Estado atual
 
+- 19/10/2026, à tarde: atividades das atuações pelo conector
+  (`src/bridge/edit-atividade.ts`, capacidade `alterar-atividades`): período e
+  descrição, testados no Lattes real com uma atividade de teste (descrição e
+  ano de início, depois anterior para atual) e removida pelo registro. O
+  órgão da atividade, as disciplinas e os treinamentos (filhos) e uma
+  descrição com mais de uma linha ficam à mão. Os tipos artísticos antigos
+  (apresentação de obra, composição, arranjo, sonoplastia, rádio e TV, curso
+  de curta duração artístico) contam como campo que o Lattes não tem: o menu
+  real de 19/10/2026 só tem artes cênicas, música, artes visuais e outra
+  produção artística. 1448 de 2092 campos vão (69%).
+
 - 19/10/2026, mais tarde: patentes e registros pelo motor de produção
   (`src/bridge/production/targets/registros.ts`). Os oito tipos foram
   alterados no Lattes real com itens de teste e conferidos, com depositantes,

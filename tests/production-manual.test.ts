@@ -11,7 +11,7 @@ describe('tipos de produção que ficam à mão de propósito', () => {
     expect(
       manualReason(chain('CURRICULO-VITAE', 'PATENTE', 'DADOS-BASICOS-DA-PATENTE')),
     ).toBeUndefined();
-    expect(manualReason(chain('SONOPLASTIA'))).toMatch(/não achou no Lattes o formulário/);
+    expect(manualReason(chain('SONOPLASTIA'))).toMatch(/não tem mais formulário para este tipo/);
     expect(manualReason(chain('CURRICULO-VITAE', 'TRABALHO-TECNICO'))).toBeUndefined();
   });
 });

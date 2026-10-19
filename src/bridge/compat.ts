@@ -73,6 +73,8 @@ export const BRIDGE_FEATURES = [
   // 'orgao-projeto' (production/organ.ts) volta quando PROJECT_ORGAN_ENABLED ligar.
   /** Áreas de atuação, a lista inteira (areas-atuacao.ts). */
   'alterar-areas-atuacao',
+  /** Período e descrição das atividades das atuações (edit-atividade.ts). */
+  'alterar-atividades',
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

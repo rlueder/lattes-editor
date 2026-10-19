@@ -25,6 +25,7 @@ import {
   applyCreateVinculo,
 } from './create-items.ts';
 import { applyDelete, type DeleteOp, isDeleteOp } from './delete.ts';
+import { applyAtividade, type AtividadeOp, isAtividadeOp } from './edit-atividade.ts';
 import {
   EDIT_EVENTO_ENABLED,
   EVENTO_SPEC,
@@ -102,6 +103,7 @@ export interface OpResult {
 type EditOp = Exclude<
   BridgeOp,
   | AreasOp
+  | AtividadeOp
   | BiographicOp
   | DeleteOp
   | EventoOp
@@ -278,6 +280,7 @@ export async function applyOp(
   if (op.kind === 'criar-evento') return applyCreateEvento(op, port);
   if (isProductionOp(op)) return applyProduction(op, port);
   if (isAreasOp(op)) return applyAreas(op, port);
+  if (isAtividadeOp(op)) return applyAtividade(op, port);
   if (op.kind === 'criar-vinculo') return applyCreateVinculo(op, port);
   if (isDeleteOp(op)) return applyDelete(op, port);
   const result = (status: ResultStatus, detail: string): OpResult => ({
