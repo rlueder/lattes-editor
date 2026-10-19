@@ -1640,12 +1640,38 @@ gravaria errado, também `BIOGRAPHIC_FULL_ENABLED`, com a capacidade
   formação; a instituição "outra" e as do sanduíche e da cotutela, que a
   exportação traz só pelo código; o CPF e os nomes dos pais (ocultos na
   página); formato das datas, permissão de divulgação, foto, falecimento,
-  ORCID e pessoa com deficiência (o formulário tem uma caixa por tipo e um
-  oculto de mesmo nome, e o formato na exportação não foi visto); a
-  instituição, o órgão e a unidade do endereço profissional; as grades de
-  contatos e redes sociais (`f_dados_grid`, `f_dados_grid_contatos`); o
+  e ORCID; a instituição, o órgão e a unidade do endereço profissional; o
   tipo de vínculo e o enquadramento funcional enumerado; os dados da raiz
   `CURRICULO-VITAE`, que o Lattes gera.
+
+Desde 18/10/2026 vão também a pessoa com deficiência (`f_pcd_r`, uma caixa
+`f_pcd` por tipo mais o `f_pcd=DUMMY` oculto, `f_priv_pcd`) e as redes
+sociais do endereço. **Observado** no Lattes real: PCD visual privada e uma
+segunda rede (GitHub) entraram e voltaram na releitura da página. O formato
+das duas na exportação ainda não foi visto.
+
+Três formulários montam ocultos em XML no `check()`, e o Lattes recusa o
+envio sem eles com "ORA-19032: Era esperado o identificador de XML":
+
+| Formulário    | Oculto                  | Montado de                                                                              |
+| ------------- | ----------------------- | --------------------------------------------------------------------------------------- |
+| identificação | `f_dados_grid`          | `provider2` (ORCID), pelo `array2xml` da página, com o corte do ORCID                   |
+| endereço      | `f_dados_grid`          | `provider` (redes sociais)                                                              |
+| endereço      | `f_dados_grid_contatos` | `providerContatos` (outras formas de contato)                                           |
+| projeto       | `f_instituicoes`        | `titularInstProvider`: `<root><item><cod>…</cod><tipo_inst>…</tipo_inst></item></root>` |
+
+**Observado** em 18/10/2026. Antes disso nenhuma alteração de identificação
+nem de projeto tinha sido gravada pelo conector, e um envio de endereço com
+as grades vazias poderia apagar as redes.
+
+As páginas também põem valores por script, depois do HTML:
+`$("[name=X]").val("v")` em selects e ocultos e, nos rádios,
+`if ("a" == "b") $("input[name=X][value=V]").attr("checked", "true") else {…}`.
+Lido só do HTML, o formulário traz o padrão: um envio de identificação assim
+mandou as privacidades de nascimento, identidade, passaporte e cor/raça como
+Público e a cor/raça vazia (desfeito na hora, conferido igual byte a byte).
+O conector aplica os dois (`scriptValues`, `scriptRadios` em
+`src/bridge/form.ts`) em toda leitura de formulário. **Observado.**
 
 O contrato da formação é parcial: lista os campos que as operações gravam e
 os de controle, menos o ano de obtenção e o título, que não existem em todos
