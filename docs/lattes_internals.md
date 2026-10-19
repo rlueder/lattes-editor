@@ -1311,6 +1311,44 @@ número do registro, não o do currículo); a resposta é JavaScript que a
 página roda com `eval`. Não foi chamado, porque leva o CPF. **Observado** no
 código.
 
+### Patentes e registros: a edição (lida e gravada em 19/10/2026)
+
+Uma patente de teste e um item de teste de cada registro (programa de
+computador com e sem registro, cultivar protegida e registrada, desenho
+industrial, marca, topografia) foram criados, alterados pelo conector e
+removidos. **Observado:**
+
+- A edição é `pkg_patente_registro.form` com `f_seq`, `f_ctr=U` e o
+  `f_cod_tipo` do tipo. A lista do programa de computador sem registro é
+  `PKG_PATENTE_REGISTRO.LISTA?f_reg=N&f_cod_tipo=PC`; a com registro é a de
+  PC sem `f_reg`.
+- O depositante ou titular é uma entrada do dicionário de coautores
+  (`titularPessoaProvider`, `c` é a sequência da entrada). Uma pessoa
+  digitada na janela "Inclusão de Depositante/Titular" vai com `c` 0, `add`
+  e `staValidado` N, e o Lattes cria a entrada no dicionário. O check()
+  serializa `titularPessoaProvider` em `f_depositante_pessoa_l` com as chaves
+  `c`, `l`, `t`, `pais`, `add`, `staValidado` e `titularInstProvider` em
+  `f_depositante_inst_l` com `c`, `l`, `t`, `tipoInst`, `staValidado`, na
+  ordem em que cada linha as tem; o servidor lê os valores pela posição. Com
+  as chaves fora da ordem da página, o gatilho
+  `FOMENTO.TRG_VER_RE_COAUTOR_PRODUCAO_RH` recusou com ORA-01403.
+- Os autores levam a coluna `tit` (`c`, `l`, `t`, `pais`, `add`, `tit`).
+- As datas da patente ficam em `providerContatos`, escrito pela página com
+  o id sem aspas e com zero à esquerda (`id: 01, contato: "Depósito",
+endereco: "10/03/2005"`), e vão em `f_dados_grid_datas` pelo `array2xml`.
+  O check() tira `f_ano` da data de depósito ou da do PCT, a que vier antes.
+- No desenho industrial, no programa de computador com registro e na
+  cultivar protegida, o check() põe em `f_ano` o ano de `f_dta_dep`
+  (`dc.f_ano.value = anoDep`). Sem esse ano o Lattes aceita o envio e não
+  grava nada. Nesses tipos o `f_ano` da página de edição vem vazio.
+- O programa de computador monta `f_ambiente` de `programaProvider`.
+- Marca e topografia não têm grade de depositantes.
+- O `del()` dos registros exibe a caixa de confirmação e pendura a exclusão
+  no botão Confirmar dela (`caixaMsg.btnConfirmar.addEventListener`).
+- O dicionário de coautores (`pkg_dic_autor.lista`) não tem exclusão para
+  uma entrada sem uso; a de palavras-chave (`PKG_DIC_PLV_NV.form`) tem
+  `del()`.
+
 ### Projeto de pesquisa: `GN_PROJETO`, POST `PKG_PROJETO.FORM`
 
 O projeto não se inclui pela atuação. A tela de cargos e vínculos de uma

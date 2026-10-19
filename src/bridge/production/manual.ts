@@ -4,17 +4,6 @@
 import type { XElement } from '../../model/xml.ts';
 
 /**
- * Patentes e registros: o formulário PKG_PATENTE_REGISTRO tem, além das
- * quatro grades de produção, as de titulares (f_depositante_pessoa_l,
- * f_depositante_inst_l), a de datas (f_dados_grid_datas) e a coluna tit na de
- * autores (seção 21 de docs/lattes_internals.md). O check() refaz todas antes
- * do envio, e a forma em que a página de edição as traz não foi lida: um envio
- * com elas como vieram poderia apagar titulares e datas.
- */
-const REGISTRY =
-  'Alterar patentes e registros pelo conector: não suportado ainda. O formulário do Lattes refaz as grades de titulares e de datas no envio, e a forma delas na edição não foi lida';
-
-/**
  * Os tipos de produção artística do XSD fora de artes cênicas, música, artes
  * visuais e outra produção artística: o censo de 15/10/2026 não achou
  * formulário do Lattes para eles. O catálogo de menus do reconhecimento cita
@@ -28,16 +17,9 @@ const REASONS: Record<string, string> = {
   'APRESENTACAO-EM-RADIO-OU-TV': LEGACY_ART,
   'ARRANJO-MUSICAL': LEGACY_ART,
   'COMPOSICAO-MUSICAL': LEGACY_ART,
-  'CULTIVAR-PROTEGIDA': REGISTRY,
-  'CULTIVAR-REGISTRADA': REGISTRY,
   'CURSO-DE-CURTA-DURACAO': LEGACY_ART,
-  'DESENHO-INDUSTRIAL': REGISTRY,
-  MARCA: REGISTRY,
   'OBRA-DE-ARTES-VISUAIS': LEGACY_ART,
-  PATENTE: REGISTRY,
-  SOFTWARE: REGISTRY,
   SONOPLASTIA: LEGACY_ART,
-  'TOPOGRAFIA-DE-CIRCUITO-INTEGRADO': REGISTRY,
 };
 
 /** O motivo de uma mudança num desses tipos ficar à mão, ou undefined. */

@@ -18,6 +18,17 @@ outras 127 são o alvo deste plano.
 
 ## Estado atual
 
+- 19/10/2026, mais tarde: patentes e registros pelo motor de produção
+  (`src/bridge/production/targets/registros.ts`). Os oito tipos foram
+  alterados no Lattes real com itens de teste e conferidos, com depositantes,
+  autores e datas mantidos; os itens foram removidos pelo registro. 1397 de
+  2382 campos vão (59%). Ficam à mão nesses tipos: o nome do titular e do
+  depositante, o histórico de situações da patente e o ambiente do programa
+  de computador (o formato deles na exportação não foi visto), e a citação
+  dos autores (Fase 5). Sobrou no dicionário de coautores a entrada
+  "TESTE EDITOR APAGAR Depositante", sem uso, que o Lattes não deixa excluir
+  pela página.
+
 - 19/10/2026: medida por campo. 1256 de 2582 campos que o Lattes aceita vão
   pelo conector (49%); outros 1166 o formulário do Lattes não tem. O que mais
   falta: patentes e registros (330 campos), os tipos de produção técnica sem

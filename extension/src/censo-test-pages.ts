@@ -113,18 +113,27 @@ export function pageValues(w: Window, form: HTMLFormElement, job: TestJob): Reco
     values.cargo = line;
   }
 
-  // Patente: o depositante e as datas são grades. Você como depositante (a
-  // sua linha do autorDP do menu) e a data de depósito (código 1).
+  // Patente: o depositante e as datas são grades. O depositante é uma pessoa
+  // digitada, como a janela "Inclusão de Depositante/Titular" da página monta
+  // a linha, e o Lattes cria a entrada dela no dicionário de coautores. As
+  // chaves na ordem da página: o check() manda os valores nessa ordem e o
+  // servidor os lê pela posição. Com as chaves ordenadas pelo lint, o gatilho
+  // TRG_VER_RE_COAUTOR_PRODUCAO_RH recusou (ORA-01403, 19/10/2026). c
+  // numérico: vazio dava ORA-06502 na conversão para número.
   const holders = page.titularPessoaGrid?.getProvider();
-  const owner = (window as unknown as { autorDP?: Record<string, string>[] }).autorDP?.find(
-    (r) => !r.c,
-  );
-  if (holders && owner && !holders.some((r) => r.l)) {
-    // A forma da linha que a própria página monta (c numérico: vazio dava
-    // ORA-06502 na conversão para número).
-    const row = { add: true, c: 0, l: owner.l, staValidado: 'N', t: owner.t, tit: 'n' };
-    holders.splice(0, holders.length, row);
-    values.depositante = owner.l ?? '';
+  if (holders && !holders.some((r) => r.l)) {
+    const row = Object.fromEntries([
+      ['l', `${TEST_MARK} Depositante`],
+      ['t', 'DEPOSITANTE, T. E. A.'],
+      ['c', 0],
+      ['tit', 'n'],
+      ['add', true],
+      ['editable', false],
+      ['deletable', true],
+      ['staValidado', 'N'],
+    ]);
+    holders.splice(0, holders.length, row, {});
+    values.depositante = String(row.l);
   }
   const dates = page.gridContatos?.getProvider();
   if (dates && !dates.some((r) => r.id)) {

@@ -187,11 +187,15 @@ describe('valores convertidos, no Lattes simulado', () => {
 });
 
 describe('o que fica à mão, com o motivo', () => {
-  it('programa de computador: patentes e registros não são alterados pelo conector', () => {
-    const reasons = reasonOf((root) =>
+  it('programa de computador: o título vai pelo motor', () => {
+    const plan = planAfter((root) =>
       setAttr(part(root, '40', 'DADOS-BASICOS'), 'TITULO-DO-SOFTWARE', 'Outro programa'),
     );
-    expect(reasons[0]).toMatch(/^Alterar patentes e registros pelo conector/);
+    expect(plan.unsupported).toEqual([]);
+    expect(plan.ops[0]).toMatchObject({
+      set: { f_titulo: 'Outro programa' },
+      target: 'registro-PC',
+    });
   });
 
   it('tipo artístico sem formulário no censo', () => {

@@ -153,7 +153,17 @@ export function planProduction(
   const before = (child: string, attr: string) => {
     const f = change.element === child ? change.fields.find((x) => x.attr === attr) : undefined;
     if (f) return f.before;
-    const part = child === item.name ? item : childElements(item, child)[0];
+    // O filho pode estar mais fundo (o REGISTRO-OU-PATENTE fica dentro do
+    // detalhamento do software).
+    const find = (el: XElement): XElement | undefined => {
+      for (const c of childElements(el)) {
+        if (c.name === child) return c;
+        const deep = find(c);
+        if (deep) return deep;
+      }
+      return undefined;
+    };
+    const part = child === item.name ? item : find(item);
     return (part && getAttr(part, attr)) ?? '';
   };
   const match = {
@@ -174,14 +184,18 @@ export function planProduction(
     };
   }
   const by = target.list.paramsBy;
-  const listParam = by && by.values[before(by.child, by.attr)];
-  if (by && !listParam) return { reason: 'O item não diz em que lista do Lattes ele está' };
+  const byValue = by && before(by.child, by.attr);
+  const listParam =
+    by && (typeof by.values === 'function' ? by.values(byValue ?? '') : by.values[byValue ?? '']);
+  if (by && listParam === undefined) {
+    return { reason: 'O item não diz em que lista do Lattes ele está' };
+  }
   const base = {
     expect: {},
     key: change.key,
     kind: 'producao' as const,
     label,
-    ...(by && listParam ? { listParams: { [by.param]: listParam } } : {}),
+    ...(by && listParam !== undefined ? { listParams: { [by.param]: listParam } } : {}),
     match,
     set: {},
     target: target.id,
@@ -247,8 +261,11 @@ export function planProduction(
     const kept = part.sent;
     const notSent = kept ? change.fields.filter((f) => !kept.includes(f.attr)) : [];
     if (change.kind === 'alterado' && notSent.length > 0) {
+      // O CPF não é coluna da grade (c, l, t, pais, add): o Lattes não tem
+      // onde gravá-lo. A citação é coluna, mas trocá-la não pegou (Fase 5).
+      const noColumn = notSent.every((f) => f.attr === 'CPF');
       return {
-        reason: `A grade de ${part.label.toLowerCase()} do Lattes não leva: ${notSent.map((f) => f.label).join(', ')}`,
+        reason: `A grade de ${part.label.toLowerCase()} do Lattes ${noColumn ? 'não tem' : 'não leva'}: ${notSent.map((f) => f.label).join(', ')}`,
       };
     }
     const current = childElements(item, part.element);

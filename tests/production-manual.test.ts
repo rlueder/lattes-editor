@@ -7,9 +7,10 @@ const chain = (...names: string[]) => names.map((n) => element(n));
 
 describe('tipos de produção que ficam à mão de propósito', () => {
   it('cada um diz por quê, pela parte mais perto da mudança', () => {
-    expect(manualReason(chain('CURRICULO-VITAE', 'PATENTE', 'DADOS-BASICOS-DA-PATENTE'))).toMatch(
-      /grades de titulares e de datas/,
-    );
+    // Patentes e registros vão pelo motor desde 19/10/2026 (targets/registros.ts).
+    expect(
+      manualReason(chain('CURRICULO-VITAE', 'PATENTE', 'DADOS-BASICOS-DA-PATENTE')),
+    ).toBeUndefined();
     expect(manualReason(chain('SONOPLASTIA'))).toMatch(/não achou no Lattes o formulário/);
     expect(manualReason(chain('CURRICULO-VITAE', 'TRABALHO-TECNICO'))).toBeUndefined();
   });

@@ -26,6 +26,17 @@ export type Grids = Partial<Record<GridField, GridRow[]>>;
 export const GRID_SPECS: Record<GridField, { keys: readonly string[]; provider: string }> = {
   f_area_l: { keys: ['l', 'c', 'r', 'p'], provider: 'areaProvider' },
   f_autores_l: { keys: ['c', 'l', 't', 'pais', 'add'], provider: 'autorProvider' },
+  // Os depositantes ou titulares de patentes e registros (lido em 19/10/2026
+  // na edição de uma patente e de cada registro de teste): o check() serializa
+  // titularPessoaProvider e titularInstProvider como as outras grades.
+  f_depositante_inst_l: {
+    keys: ['c', 'l', 't', 'tipoInst', 'staValidado'],
+    provider: 'titularInstProvider',
+  },
+  f_depositante_pessoa_l: {
+    keys: ['c', 'l', 't', 'pais', 'add', 'staValidado'],
+    provider: 'titularPessoaProvider',
+  },
   f_plv_l: { keys: ['l', 'c'], provider: 'palavraProvider' },
   f_setor_l: { keys: ['l', 'c'], provider: 'setorProvider' },
 };
@@ -33,6 +44,8 @@ export const GRID_SPECS: Record<GridField, { keys: readonly string[]; provider: 
 export const GRID_LABELS: Record<GridField, string> = {
   f_area_l: 'Áreas do conhecimento',
   f_autores_l: 'Autores',
+  f_depositante_inst_l: 'Depositantes ou titulares (instituições)',
+  f_depositante_pessoa_l: 'Depositantes ou titulares (pessoas)',
   f_plv_l: 'Palavras-chave',
   f_setor_l: 'Setores de atividade',
 };
