@@ -480,6 +480,14 @@ O Exportar entrega a versão publicada, não a de trabalho: um item que entrou
 pelo Importar, que não acende a pendência, não aparece numa exportação feita
 logo depois (seção 13, 14/10/2026). **Observado.**
 
+E não a última publicada, logo depois de publicar: em 18/10/2026, com o menu
+sem pendência depois de envios ao CNPq às ~21h, as exportações das 21h36 e
+das 22h03 vieram as duas com `HORA-ATUALIZACAO="190436"`, sem uma rede social
+incluída e com itens excluídos antes da publicação. A versão atual
+(`pkg_publicar.cv_espelho`) já mostrava tudo. Quanto tempo o Exportar leva
+para acompanhar não foi medido. **Observado.** Para o editor: uma exportação
+logo depois de publicar pode trazer um currículo atrasado.
+
 **Enviar ao CNPq** (14/10/2026, feito pela pessoa, com a página observada só
 lendo). **Observado.**
 

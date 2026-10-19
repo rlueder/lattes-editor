@@ -65,6 +65,7 @@ import {
 } from './form.ts';
 import { resolveFormacao } from './formacao-lookups.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
+import { pcdChecked, withPcd } from './pcd.ts';
 import type { BridgeOp, FieldValues } from './plan.ts';
 import { applyProduction } from './production/apply.ts';
 import { isProductionOp, type ProductionOp } from './production/plan.ts';
@@ -368,7 +369,14 @@ export async function applyOp(
       return result('conferido', 'O Lattes já estava assim; nada foi enviado');
     }
 
-    const next = setPairs(before.pairs, set);
+    // A deficiência: os f_pcd repetidos vão à parte (pcd.ts).
+    const pcd = op.kind === 'identificacao' ? op.pcd : undefined;
+    if (pcd && pcdChecked(before.controls).join() !== pcd.before.join()) {
+      return result('divergente', 'O Lattes não está como o editor espera: Pessoa com deficiência');
+    }
+    const next = pcd
+      ? withPcd(setPairs(before.pairs, set), pcd.after)
+      : setPairs(before.pairs, set);
     const response = await port.post(action, encodeLatin1Form(next));
     if (isLogonPage(response)) return result('sessao', 'A sessão do Lattes expirou; entre de novo');
 
@@ -386,6 +394,9 @@ export async function applyOp(
     }
 
     const after = await readPairs(port, path, name);
+    if (pcd && pcdChecked(after.controls).join() !== pcd.after.join()) {
+      return result('divergente', 'O Lattes não gravou: Pessoa com deficiência');
+    }
     // As grades de contato voltam como linhas da página, não nos ocultos.
     const { f_dados_grid: _g, f_dados_grid_contatos: _c, ...plain } = set;
     const notSaved = mismatches(after.pairs, { ...(contactGrids ? plain : set), ...check });

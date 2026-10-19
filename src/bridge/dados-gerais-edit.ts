@@ -47,6 +47,8 @@ export interface EnderecoOp extends OpBase {
 
 export interface IdentificacaoOp extends OpBase {
   kind: 'identificacao';
+  /** Os tipos de deficiência marcados antes e depois (pcd.ts), quando a mudança é deles. */
+  pcd?: { after: string[]; before: string[] };
 }
 
 /** Outras informações relevantes: um formulário com um texto só. */
