@@ -32,3 +32,29 @@ export function manualReason(chain: readonly XElement[]): string | undefined {
   }
   return undefined;
 }
+
+const ITEM_LISTS = new Set([
+  'AREAS-DO-CONHECIMENTO',
+  'AREA-DO-CONHECIMENTO-1',
+  'AREA-DO-CONHECIMENTO-2',
+  'AREA-DO-CONHECIMENTO-3',
+  'PALAVRAS-CHAVE',
+  'SETORES-DE-ATIVIDADE',
+]);
+
+/**
+ * As áreas, palavras-chave e setores de uma participação em evento: a página
+ * de edição do evento (PKG_EVENTO.form) não tem essas grades nem os ocultos
+ * delas (lido em 19/10/2026 no Lattes real, num evento do currículo).
+ */
+export function eventListReason(element: string, chain: readonly XElement[]): string | undefined {
+  if (!ITEM_LISTS.has(element)) return undefined;
+  const inEvent = chain.some(
+    (e) =>
+      e.name.startsWith('PARTICIPACAO-EM-') ||
+      e.name === 'OUTRAS-PARTICIPACOES-EM-EVENTOS-CONGRESSOS',
+  );
+  return inEvent
+    ? 'O formulário de eventos do Lattes não tem: áreas do conhecimento, palavras-chave nem setores de atividade'
+    : undefined;
+}

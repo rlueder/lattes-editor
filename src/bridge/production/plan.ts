@@ -7,8 +7,16 @@ import type { Change } from '../../model/changes.ts';
 import { foldText } from '../../model/fold-text.ts';
 import { childElements, element, getAttr, type XElement } from '../../model/xml.ts';
 import { lattesSchema } from '../../schema/lattes.ts';
+import { areaLabel, type AreaRow } from '../areas-atuacao.ts';
 import type { BridgeOp, OpBase } from '../plan.ts';
 import { AUTHOR_PART, type AuthorSpec, MAX_KEYWORDS } from './grids.ts';
+import {
+  type AreaList,
+  isAreaChange,
+  type LabelList,
+  planAreaList,
+  planSetorList,
+} from './item-lists.ts';
 import { lookupAttrs, planLookups, type ProductionLookups } from './lookups.ts';
 import { planMembers } from './members.ts';
 import { isOrganChange, type OrganChoice, planOrgan } from './organ.ts';
@@ -43,6 +51,8 @@ export interface ProductionRow {
 }
 
 export interface ProductionOp extends OpBase {
+  /** Áreas do conhecimento antes e depois, quando a mudança é delas (item-lists.ts). */
+  areas?: AreaList;
   /** Autores antes e depois, na ordem, quando a mudança é deles. */
   authors?: { after: AuthorSpec[]; before: AuthorSpec[] };
   /** Palavras-chave antes e depois, na ordem, quando a mudança é delas. */
@@ -58,6 +68,8 @@ export interface ProductionOp extends OpBase {
   organ?: OrganChoice;
   /** O que muda, com rótulos e valores como se leem. */
   rows: ProductionRow[];
+  /** Setores de atividade antes e depois, quando a mudança é deles. */
+  setores?: LabelList;
   /** O tipo (ProductionTarget.id). */
   target: string;
 }
@@ -219,6 +231,50 @@ export function planProduction(
       chain[0],
       siblings,
     );
+  }
+
+  // Áreas e setores: a lista inteira, como as palavras-chave (item-lists.ts).
+  if (isAreaChange(change)) {
+    if (!target.grids.includes('f_area_l')) {
+      return { reason: 'O formulário deste tipo no Lattes não tem áreas do conhecimento' };
+    }
+    const areas = planAreaList(change, item);
+    if ('reason' in areas) return areas;
+    const text = (rows: AreaRow[]) => rows.map(areaLabel).join('; ');
+    return {
+      ...base,
+      areas,
+      expect: { f_area_l: text(areas.before) },
+      rows: [
+        {
+          after: text(areas.after),
+          before: text(areas.before),
+          label: 'Áreas do conhecimento',
+          name: 'f_area_l',
+        },
+      ],
+      set: { f_area_l: text(areas.after) },
+    };
+  }
+  if (change.element === 'SETORES-DE-ATIVIDADE') {
+    if (!target.grids.includes('f_setor_l')) {
+      return { reason: 'O formulário deste tipo no Lattes não tem setores de atividade' };
+    }
+    const setores = planSetorList(change, el);
+    return {
+      ...base,
+      expect: { f_setor_l: setores.before.join('; ') },
+      rows: [
+        {
+          after: setores.after.join('; '),
+          before: setores.before.join('; '),
+          label: 'Setores de atividade',
+          name: 'f_setor_l',
+        },
+      ],
+      set: { f_setor_l: setores.after.join('; ') },
+      setores,
+    };
   }
 
   if (change.element === 'PALAVRAS-CHAVE') {

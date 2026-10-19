@@ -4,7 +4,7 @@
 
 import { IMPORT_MODULES } from '../../src/import-export/importable.ts';
 import { childElements, getAttr, type XElement } from '../../src/model/xml.ts';
-import { areaScript } from './buscas.ts';
+import { areaScript, sectorScript } from './buscas.ts';
 import { brDate, type LattesState } from './estado.ts';
 import { eventItems } from './eventos.ts';
 import * as h from './html.ts';
@@ -163,6 +163,7 @@ function menu(state: LattesState): SimResponse {
 <iframe id="camada" style="flex:1;height:70vh;border:1px solid #ccc"></iframe></div>
 ${MENU_SCRIPT.replace('__COD__', state.code)}
 ${areaScript()}
+${sectorScript()}
 ${authorScript(state)}`;
   return html(h.page('Currículo Lattes', body));
 }

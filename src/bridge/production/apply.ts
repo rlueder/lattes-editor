@@ -6,6 +6,7 @@
 // grades e todos os outros campos.
 
 import type { LattesPort, OpResult } from '../apply.ts';
+import { areaLabel } from '../areas-atuacao.ts';
 import { menuAuthors } from '../author-grid.ts';
 import { getChecked, Stop } from '../create-shared.ts';
 import {
@@ -33,6 +34,7 @@ import {
   sameWords,
   serializeGrid,
 } from './grids.ts';
+import { areaGridRows, gridLabels, sameLabels, setorGridRows } from './item-lists.ts';
 import { resolveLookups } from './lookups.ts';
 import { sameAuthors, withLeads } from './members.ts';
 import { opaquePairs, readOpaque } from './opaque.ts';
@@ -228,6 +230,12 @@ export async function applyProduction(
     if (op.authors && !sameAuthors(grids.f_autores_l ?? [], op.authors.before)) {
       wrong.push('f_autores_l');
     }
+    if (op.areas && !sameLabels(gridLabels(grids.f_area_l ?? []), op.areas.before.map(areaLabel))) {
+      wrong.push('f_area_l');
+    }
+    if (op.setores && !sameLabels(gridLabels(grids.f_setor_l ?? []), op.setores.before)) {
+      wrong.push('f_setor_l');
+    }
     for (const f of virtualFields) {
       if (f in op.expect && folded(virtualNow[f] ?? '') !== folded(op.expect[f])) wrong.push(f);
     }
@@ -241,6 +249,18 @@ export async function applyProduction(
     // As grades: as lidas, e no lugar delas as que a alteração troca.
     const replace: Grids = {};
     if (op.keywords) replace.f_plv_l = keywordRows(grids.f_plv_l ?? [], op.keywords.after);
+    if (op.areas || op.setores) {
+      const built = op.areas
+        ? areaGridRows(grids.f_area_l ?? [], menu, op.areas.after)
+        : setorGridRows(grids.f_setor_l ?? [], menu, op.setores!.after);
+      if ('unknown' in built) {
+        return result(
+          'erro',
+          `Fora da lista do Lattes: ${built.unknown.join(', ')}. Escolha pela lista do Lattes uma vez`,
+        );
+      }
+      replace[op.areas ? 'f_area_l' : 'f_setor_l'] = built.rows;
+    }
     if (op.authors) {
       const { missing, rows } = authorRows(
         grids.f_autores_l ?? [],
@@ -325,6 +345,15 @@ export async function applyProduction(
     }
     if (op.authors && !sameAuthors(afterGrids.f_autores_l ?? [], op.authors.after)) {
       notSaved.push('f_autores_l');
+    }
+    if (
+      op.areas &&
+      !sameLabels(gridLabels(afterGrids.f_area_l ?? []), op.areas.after.map(areaLabel))
+    ) {
+      notSaved.push('f_area_l');
+    }
+    if (op.setores && !sameLabels(gridLabels(afterGrids.f_setor_l ?? []), op.setores.after)) {
+      notSaved.push('f_setor_l');
     }
     // Os virtuais, lidos de novo do vetor da página.
     const virtualAfter = virtualFields.length > 0 ? t.virtual?.read(afterHtml) : {};

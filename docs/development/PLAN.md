@@ -18,6 +18,23 @@ outras 127 são o alvo deste plano.
 
 ## Estado atual
 
+- 19/10/2026, fim da tarde: áreas do conhecimento e setores de atividade de
+  produções, orientações e bancas pelo conector
+  (`src/bridge/production/item-lists.ts`), e palavras-chave, áreas e setores da
+  formação (`src/bridge/formacao-grids.ts`). Antes, uma troca de área ou setor
+  numa produção aparecia como campo que o Lattes não tem, o que não era
+  verdade: o formulário tem as grades. No Lattes real, um trabalho técnico de
+  teste recebeu uma área (Desenho Industrial, 61200000) e um setor
+  (Alimentação, 420228), e um mestrado de teste uma palavra-chave, todos
+  conferidos. **Erro corrigido:** desde a #100, todo envio de formação mandava
+  `f_plv_l`, `f_area_l` e `f_setor_l` vazios, como a página os carrega, e o
+  Lattes apagava as palavras-chave, áreas e setores da formação; o envio da
+  página tal como vinha apagou a palavra do mestrado de teste no Lattes real.
+  Agora todo envio de formação leva as três grades como a página as trouxe.
+  As áreas, palavras-chave e setores dos eventos contam como campo que o
+  Lattes não tem: a página de edição do evento não tem essas grades. 2444 de
+  2854 campos vão (86%).
+
 - 19/10/2026, à tarde: atividades das atuações pelo conector
   (`src/bridge/edit-atividade.ts`, capacidade `alterar-atividades`): período e
   descrição, testados no Lattes real com uma atividade de teste (descrição e

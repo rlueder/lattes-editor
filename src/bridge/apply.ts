@@ -5,6 +5,7 @@
 // Roda dentro da aba do Lattes (sessão do próprio usuário) ou num teste, com
 // um Lattes falso: o acesso à rede e ao DOM entra pela porta (LattesPort).
 
+import { changedNames, getChecked, mismatches, readPairs, same, Stop } from './apply-pairs.ts';
 import { applyAreas, type AreasOp, isAreasOp } from './areas-atuacao.ts';
 import {
   BIOGRAPHIC_FULL_ENABLED,
@@ -57,14 +58,10 @@ import {
   encodeLatin1Form,
   type FormControl,
   identityMismatches,
-  normalizeNewlines,
-  type Pairs,
   pairValue,
   setPairs,
-  successfulPairs,
-  withCheckRules,
-  withScriptValues,
 } from './form.ts';
+import { formacaoGridSend } from './formacao-grids.ts';
 import { resolveFormacao } from './formacao-lookups.ts';
 import { identGrids } from './ident-grids.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
@@ -128,21 +125,6 @@ const FORMS: Record<EditOp['kind'], { action: string; name: string }> = {
   vinculo: { action: 'PKG_ATIV.VINCULOS', name: 'GN_ATIV_VINC' },
 };
 
-class Stop extends Error {
-  status: ResultStatus;
-  constructor(status: ResultStatus, detail: string) {
-    super(detail);
-    this.status = status;
-  }
-}
-
-async function getChecked(port: LattesPort, path: string): Promise<string> {
-  const html = await port.get(path);
-  if (isLogonPage(html, path))
-    throw new Stop('sessao', 'A sessão do Lattes expirou; entre de novo');
-  return html;
-}
-
 /**
  * O XML traz CODIGO-INSTITUICAO sem a letra que o Lattes põe na frente no
  * f_codinst (001000000998 no XML, D001000000998 no link). Observado em
@@ -201,36 +183,6 @@ async function locate(op: EditOp, port: LattesPort, menu: string): Promise<strin
     throw new Stop('erro', `Vínculo ${op.seqHist} não encontrado no Lattes`);
   }
   return vinculos[0]!.path;
-}
-
-async function readPairs(
-  port: LattesPort,
-  path: string,
-  form: string,
-): Promise<{ controls: FormControl[]; html: string; pairs: Pairs }> {
-  const html = await getChecked(port, path);
-  const controls = withScriptValues(html, port.readForm(html, form));
-  if (!controls) {
-    throw isLogonPage(html)
-      ? new Stop('sessao', 'A sessão do Lattes expirou; entre de novo')
-      : new Stop('erro', `Formulário ${form} não encontrado`);
-  }
-  return { controls, html, pairs: withCheckRules(form, controls, successfulPairs(controls)) };
-}
-
-const same = (a: string | null, b: string | null) =>
-  a === b || (a !== null && b !== null && normalizeNewlines(a) === normalizeNewlines(b));
-
-function mismatches(pairs: Pairs, values: FieldValues): string[] {
-  return Object.entries(values)
-    .filter(([name, v]) => !same(pairValue(pairs, name), v))
-    .map(([name]) => name);
-}
-
-/** Campos que mudaram entre dois envios (por nome). */
-function changedNames(a: Pairs, b: Pairs): string[] {
-  const names = new Set([...a, ...b].map(([k]) => k));
-  return [...names].filter((n) => !same(pairValue(a, n), pairValue(b, n)));
 }
 
 /**
@@ -369,6 +321,15 @@ export async function applyOp(
       }
       set = { f_nome_citacao: grids.f_nome_citacao, ...set, f_dados_grid: grids.f_dados_grid };
     }
+    // Formação: palavras-chave, áreas e setores vão como a página os traz, com a
+    // mudança na grade dela; nunca os ocultos vazios (formacao-grids.ts).
+    let formGrids: ((afterHtml: string) => string[]) | undefined;
+    if (op.kind === 'formacao') {
+      const g = formacaoGridSend(op, before.html, menu);
+      if ('status' in g) return result(g.status, g.detail);
+      set = { ...set, ...g.set };
+      formGrids = g.check;
+    }
     for (const [field, value] of Object.entries(set)) {
       const limit = before.controls.find((c) => c.name === field)?.maxLength;
       if (value && limit && limit > 0 && value.length > limit) {
@@ -416,8 +377,18 @@ export async function applyOp(
     // As grades de contato voltam como linhas da página, não nos ocultos.
     const { f_dados_grid: _g, f_dados_grid_contatos: _c, ...plain } = set;
     const { f_dados_grid: _ident, ...noGrid } = set;
-    const sent = contactGrids ? plain : op.kind === 'identificacao' ? noGrid : set;
-    const notSaved = mismatches(after.pairs, { ...sent, ...check });
+    const { f_area_l: _a, f_plv_l: _p, f_setor_l: _s, ...noFormGrids } = set;
+    const sent = contactGrids
+      ? plain
+      : op.kind === 'identificacao'
+        ? noGrid
+        : formGrids
+          ? noFormGrids
+          : set;
+    const notSaved = [
+      ...mismatches(after.pairs, { ...sent, ...check }),
+      ...(formGrids?.(after.html) ?? []),
+    ];
     if (contactGrids) {
       const now = readContactGrids(after.html);
       if (!now || !sameSocialSet(socialOf(now.social), socialWanted ?? [])) {

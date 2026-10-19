@@ -30,9 +30,10 @@ import {
   type ListEditOp,
   planListEdit,
 } from './edit-lists.ts';
+import { planFormacaoGrids } from './formacao-grids.ts';
 import { idiomaHandReason } from './hand-reasons.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
-import { manualReason } from './production/manual.ts';
+import { eventListReason, manualReason } from './production/manual.ts';
 import { isOrganChange } from './production/organ.ts';
 import {
   EDIT_PRODUCTION_ENABLED,
@@ -326,6 +327,13 @@ export function planChange(
     const planned = planAreas(change, chain, label, siblings);
     return 'reason' in planned ? unsupported(change, label, planned.reason) : planned;
   }
+  // Palavras-chave, áreas e setores de uma formação (formacao-grids.ts).
+  const formacaoGrids = biographicOps ? planFormacaoGrids(change, chain, label) : undefined;
+  if (formacaoGrids) {
+    return 'reason' in formacaoGrids
+      ? unsupported(change, label, formacaoGrids.reason)
+      : formacaoGrids;
+  }
   // Atividades das atuações (edit-atividade.ts).
   const atividade = editAtividades ? planAtividade(change, chain, label) : undefined;
   if (atividade)
@@ -460,7 +468,13 @@ export function planChange(
   // (atuacao-by-hand.ts), antes do motivo genérico de cada família (manual.ts).
   const atuacao = atuacaoByHand(change, chain);
   if (atuacao) return unsupported(change, label, atuacao);
-  return unsupported(change, label, manualReason(chain) ?? 'Formulário não suportado ainda');
+  return unsupported(
+    change,
+    label,
+    eventListReason(change.element, chain) ??
+      manualReason(chain) ??
+      'Formulário não suportado ainda',
+  );
 }
 
 export function isOp(p: BridgeOp | Unsupported): p is BridgeOp {

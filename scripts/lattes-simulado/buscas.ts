@@ -102,6 +102,21 @@ export function areaScript(): string {
   return `<script>var areaDP = [${nodes}];</script>`;
 }
 
+/**
+ * Os setores de atividade do menu (setorDP), linhas {l, n, c}: dois dos
+ * observados no Lattes real em 19/10/2026.
+ */
+export const SECTORS: [string, string][] = [
+  ['420228', 'Alimentação'],
+  ['420225', 'Alojamento'],
+];
+
+/** O script do menu com a lista de setores. */
+export function sectorScript(): string {
+  const rows = SECTORS.map(([c, l]) => `{"l":"${l}","n":"1","c":"${c}"}`).join(',');
+  return `<script>var setorDP = [${rows}];</script>`;
+}
+
 const fold = (s: string) =>
   s
     .normalize('NFD')

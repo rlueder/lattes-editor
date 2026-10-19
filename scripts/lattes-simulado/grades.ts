@@ -146,6 +146,20 @@ export function applyGrids(item: XElement, req: SimRequest, part: AuthorPart = A
   g.setores = rowsOf(req.get('f_setor_l') ?? '').map(([l = '', c = '']) => labelRow(l, c));
 }
 
+/** As grades de uma formação: palavras-chave, áreas e setores, sem autores. */
+export function applyFormationGrids(item: XElement, req: SimRequest): void {
+  const words = rowsOf(req.get('f_plv_l') ?? '').map(([l = '']) => l);
+  let kw = childElements(item, 'PALAVRAS-CHAVE')[0];
+  if (words.length && !kw) {
+    kw = element('PALAVRAS-CHAVE', {});
+    insertInSchemaOrder(lattesSchema, item, kw);
+  }
+  if (kw) KEYWORD_ATTRS.forEach((a, i) => setAttr(kw!, a, words[i] ?? ''));
+  const g = gridsOf(item);
+  g.areas = rowsOf(req.get('f_area_l') ?? '').map(([l = '', c = '']) => labelRow(l, c));
+  g.setores = rowsOf(req.get('f_setor_l') ?? '').map(([l = '', c = '']) => labelRow(l, c));
+}
+
 // Trabalho técnico: o POST (o GET está em censo.ts) -------------------------------
 
 /** Os trabalhos técnicos do simulado (os mesmos da lista de censo.ts). */
