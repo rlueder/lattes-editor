@@ -15,7 +15,7 @@
 //   pnpm capture:screenshots [url] # padrão: http://localhost:5173/
 
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { assertRendered, openTab, sleep, withHeadlessBrowser } from './headless.ts';
@@ -32,7 +32,11 @@ interface Shot {
   /** Outra cópia, sem o "-<tema>.jpg" (caminho a partir da raiz do repositório). */
   alsoTo?: string;
   name: string;
-  /** Roda na página antes da captura. */
+  /**
+   * Roda na página antes da captura, dentro de uma função assíncrona.
+   * `await wait(seletor, texto?)` espera um elemento aparecer e falha se não
+   * vier, para uma captura errada não ir parar na página do projeto.
+   */
   prepare?: string;
   /**
    * Modo de privacidade (dados pessoais mascarados). Só Dados gerais o mostra
@@ -54,22 +58,22 @@ const SHOTS: Shot[] = [
   {
     name: 'ir-para',
     prepare: `location.hash = 'producoes';
-      setTimeout(() => document.querySelector('.search-btn')?.click(), 300);
-      setTimeout(() => {
-        const input = document.querySelector('.palette-input');
-        const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
-        set.call(input, 'artigo');
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-      }, 700)`,
+      (await wait('.search-btn')).click();
+      const input = await wait('.palette-input');
+      const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+      set.call(input, 'artigo');
+      input.dispatchEvent(new Event('input', { bubbles: true }))`,
     siteCopy: 'site/img/homepage/search',
   },
   {
     name: 'novo-item',
     prepare: `location.hash = 'producoes';
-      setTimeout(() => document.querySelector('[aria-label="Novo item"]')?.click(), 300)`,
+      (await wait('[aria-label="Novo item"]')).click()`,
     siteCopy: 'site/img/homepage/new',
   },
-  // O Panorama na página do projeto: três vistas e a passagem do gráfico ao item.
+  // O Panorama na página do projeto: três vistas e a passagem do gráfico ao
+  // item. A barra de 2023 tem um artigo só, e o filtro de Produções o
+  // reproduz, então o clique abre a seção direto, sem passar pela seleção.
   {
     name: 'panorama',
     prepare: `location.hash = 'panorama/producoes-por-ano'`,
@@ -78,7 +82,7 @@ const SHOTS: Shot[] = [
   {
     name: 'panorama-people',
     prepare: `location.hash = 'panorama/pessoas';
-      setTimeout(() => [...document.querySelectorAll('[role=radio]')].find((b) => b.textContent === 'Rede')?.click(), 600)`,
+      (await wait('[role=radio]', 'Rede')).click()`,
     site: 'site/img/homepage/panorama-people',
   },
   {
@@ -89,11 +93,28 @@ const SHOTS: Shot[] = [
   {
     name: 'panorama-item',
     prepare: `location.hash = 'panorama/producoes-por-ano';
-      setTimeout(() => document.querySelector('.pano-mark[aria-label="2023, Artigos: 1"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true })), 600);
-      setTimeout(() => document.querySelector('.pano-selection-list button')?.click(), 1000)`,
+      const mark = await wait('.pano-mark[aria-label="2023, Artigos: 1"]');
+      await settle();
+      mark.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await wait('.filter-status')`,
     site: 'site/img/homepage/panorama-item',
   },
 ];
+
+// Disponível nos `prepare`: `wait` espera um elemento (até 5 s), opcionalmente
+// pelo texto exato, e falha quando ele não aparece; `settle` dá meio segundo
+// para o gráfico terminar de montar (o Panorama mede a largura e redesenha).
+const WAIT = `const wait = async (selector, text) => {
+  for (let i = 0; i < 50; i++) {
+    const found = [...document.querySelectorAll(selector)].find(
+      (element) => !text || element.textContent.trim() === text,
+    );
+    if (found) return found;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error('Não apareceu: ' + selector + (text ? ' "' + text + '"' : ''));
+};
+const settle = () => new Promise((resolve) => setTimeout(resolve, 500));`;
 
 async function capture(theme: 'claro' | 'escuro'): Promise<void> {
   const cdp = await openTab();
@@ -118,11 +139,19 @@ async function capture(theme: 'claro' | 'escuro'): Promise<void> {
     if (shot.alsoTo) files.push(join(root, `${shot.alsoTo}-${theme}.jpg`));
     if (shot.siteCopy && theme === 'claro') files.push(join(root, `${shot.siteCopy}.jpg`));
     for (const file of files) {
+      mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, Buffer.from(data, 'base64'));
       console.log(file.replace(root, ''));
     }
   };
-  const evaluate = (expression: string) => cdp.send('Runtime.evaluate', { expression });
+  const evaluate = async (expression: string) => {
+    const { exceptionDetails } = await cdp.send<{
+      exceptionDetails?: { exception?: { description?: string }; text: string };
+    }>('Runtime.evaluate', { awaitPromise: true, expression });
+    if (exceptionDetails) {
+      throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);
+    }
+  };
 
   // Sem currículo guardado (o do tema anterior sai), a página abre na tela inicial.
   await cdp.send('Storage.clearDataForOrigin', {
@@ -158,7 +187,7 @@ async function capture(theme: 'claro' | 'escuro'): Promise<void> {
       `document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); scrollTo(0, 0)`,
     );
     await sleep(300);
-    if (shot.prepare) await evaluate(shot.prepare);
+    if (shot.prepare) await evaluate(`(async () => { ${WAIT} ${shot.prepare} })()`);
     await sleep(1500);
     await shoot(shot);
   }
