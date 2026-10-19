@@ -6,11 +6,12 @@
     <title>LattesEditor: edite o Currículo Lattes no seu computador</title>
     <meta
       name="description"
-      content="Edite o Currículo Lattes no seu computador: abra a exportação, cadastre produções pelo DOI e revise cada alteração antes de enviar ao Lattes."
+      content="Editor gratuito e de código aberto para o Currículo Lattes. O currículo abre direto do Lattes, você edita no computador e o app leva as mudanças de volta."
     />
     <meta name="color-scheme" content="light" />
     <link rel="canonical" href="https://rlueder.github.io/lattes-editor/" />
     <meta name="author" content="Rafael Lüder" />
+    <meta name="theme-color" content="#463c6d" />
 
     <!-- Prévia ao compartilhar (Open Graph e cartão do X/Twitter). -->
     <meta property="og:type" content="website" />
@@ -20,7 +21,7 @@
     <meta property="og:title" content="LattesEditor: edite o Currículo Lattes no seu computador" />
     <meta
       property="og:description"
-      content="Abra a exportação do Lattes, cadastre produções pelo DOI e revise cada alteração antes de enviar ao Lattes. Gratuito e de código aberto, para macOS, Windows e Linux."
+      content="O currículo abre direto do Lattes, você edita no computador e o app leva as mudanças de volta. Gratuito e de código aberto, para macOS, Windows e Linux."
     />
     <meta property="og:image" content="https://rlueder.github.io/lattes-editor/img/og.png" />
     <meta property="og:image:width" content="1200" />
@@ -41,7 +42,7 @@
         "description": "Editor local do Currículo Lattes: abre a exportação XML, edita e leva as mudanças de volta ao Lattes, pelo Importar ou pela extensão.",
         "url": "https://rlueder.github.io/lattes-editor/",
         "image": "https://rlueder.github.io/lattes-editor/img/og.png",
-        "screenshot": "https://rlueder.github.io/lattes-editor/img/homepage/panorama.jpg",
+        "screenshot": "https://rlueder.github.io/lattes-editor/img/editor-claro.jpg",
         "applicationCategory": "EducationalApplication",
         "operatingSystem": "macOS, Windows, Linux",
         "inLanguage": "pt-BR",
@@ -56,634 +57,990 @@
     <link rel="icon" href="favicon.ico" sizes="32x32" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+
+    <!-- Fontes da marca (Margem e Pausa), servidas pela landing da Precisa.
+         Os arquivos são licenciados e não entram neste repositório. -->
+    <link rel="preconnect" href="https://www.precisa-saude.com.br" crossorigin />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="https://www.precisa-saude.com.br/fonts/MargemVariable.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="https://www.precisa-saude.com.br/fonts/PausaVariable-Roman.woff2"
+      crossorigin
+    />
     <link rel="stylesheet" href="fonts/fonts.css" />
-    <meta name="theme-color" content="#eeece8" />
     <link rel="stylesheet" href="homepage.css" />
     <script src="homepage.js" defer></script>
   </head>
   <body>
     <a class="skip" href="#conteudo">Pular para o conteúdo</a>
-    <div id="homepage">
-      <header class="cp-top">
-        <a class="cp-brand" href="./"
-          ><svg
-            class="brand-mark"
-            aria-hidden="true"
-            viewBox="189 116 646 792"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <g transform="translate(234.346316986084 115.9707243347168) scale(0.91)">
-              <defs>
-                <clipPath id="l-cut">
-                  <path
-                    d="M-200 164.92645263671875H395.823486328125V696.4424743652344L278.81744384765625 813.4485168457031H-200Z"
-                  />
-                </clipPath>
-              </defs>
-              <g clip-path="url(#l-cut)">
-                <path
-                  fill="currentColor"
-                  d="M488.80535888671875 0H81.7197265625V698H213.660888671875V117.00604248046875H488.80535888671875Z"
-                  transform="translate(-81.7197265625 813.4485168457031) scale(1 -1)"
-                />
-              </g>
+
+    <!-- Desenhos reutilizados: o símbolo da marca e o fundo abstrato das
+         seções (platform/docs/design/linguagem-visual.md, seção 5). -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true" focusable="false">
+      <defs>
+        <clipPath id="l-cut">
+          <path
+            d="M-200 164.92645263671875H395.823486328125V696.4424743652344L278.81744384765625 813.4485168457031H-200Z"
+          />
+        </clipPath>
+        <symbol id="marca" viewBox="189 116 646 792">
+          <g transform="translate(234.346316986084 115.9707243347168) scale(0.91)">
+            <g clip-path="url(#l-cut)">
               <path
                 fill="currentColor"
-                fill-rule="evenodd"
-                d="M181.41909790039062 115.44851684570312a115.44851684570312 115.44851684570312 0 1 0 -230.89703369140625 0a115.44851684570312 115.44851684570312 0 1 0 230.89703369140625 0M115.44851684570312 115.44851684570312a49.477935791015625 49.477935791015625 0 1 0 -98.95587158203125 0a49.477935791015625 49.477935791015625 0 1 0 98.95587158203125 0"
+                d="M488.80535888671875 0H81.7197265625V698H213.660888671875V117.00604248046875H488.80535888671875Z"
+                transform="translate(-81.7197265625 813.4485168457031) scale(1 -1)"
               />
-              <path
-                fill="#9EF2E2"
-                d="M442.4717315507113 696.4424743652344H493.77935791015625V813.4485168457031H325.46568907024255Z"
-              />
-              <path
-                fill="#9EF2E2"
-                fill-rule="evenodd"
-                d="M659.705810546875 754.9454956054688a115.44851684570312 115.44851684570312 0 1 0 -230.89703369140625 0a115.44851684570312 115.44851684570312 0 1 0 230.89703369140625 0M593.7352294921875 754.9454956054688a49.477935791015625 49.477935791015625 0 1 0 -98.95587158203125 0a49.477935791015625 49.477935791015625 0 1 0 98.95587158203125 0"
-              />
-              <path fill="currentColor" d="M230 345H530V417H230Z M230 495H450V567H230Z" />
-            </g></svg
-          ><span><b>Lattes</b>Editor</span></a
-        >
-        <nav class="cp-nav" aria-label="Navegação">
-          <a href="#cp-panorama">Panorama</a><a href="#cp-workflow">Como funciona</a
-          ><a href="#cp-resources">Recursos</a><a href="#cp-privacy">Privacidade</a
-          ><a class="cp-button" href="#cp-download">Baixar ↗</a>
-        </nav>
-      </header>
-      <main id="conteudo">
-        <section class="cp-cover" aria-label="Capa">
-          <div class="cp-kicker">Editor gratuito de código aberto</div>
-          <div class="cp-intro">
-            <h1>Edite seu<br />currículo <em>Lattes.</em></h1>
-            <div>
-              <p>
-                Atualize publicações, formação e outros dados no computador. O Panorama, em
-                desenvolvimento, reúne gráficos de produção, pessoas e períodos da sua trajetória.
-              </p>
-              <div class="cp-actions">
-                <a class="cp-button cp-primary" href="#cp-download">Baixar o app ↗</a
-                ><a class="cp-button" href="#cp-panorama">Conhecer o Panorama ↓</a>
-              </div>
-              <p class="cp-small">Não é preciso criar uma conta.</p>
-            </div>
-          </div>
-        </section>
-        <figure class="cp-film" aria-label="Telas do LattesEditor com currículo de demonstração">
-          <div class="cp-screen">
-            <img
-              data-image="panorama"
-              src="img/homepage/panorama.jpg"
-              width="1280"
-              height="720"
-              decoding="async"
-              alt="Panorama do LattesEditor: produções por ano, com currículo fictício"
-            /><video
-              data-workflow-video
-              hidden
-              controls
-              playsinline
-              preload="none"
-              poster="img/homepage/panorama.jpg"
-              aria-label="Fluxo de edição no LattesEditor"
-            ></video>
-          </div>
-          <figcaption class="cp-filmbar">
-            <button class="cp-play" data-enhanced hidden>▶ Reproduzir prévia</button
-            ><span class="cp-scene-title" aria-live="polite">01 / Panorama: produções por ano</span>
-            <div class="cp-scenes" data-enhanced hidden aria-label="Cenas da prévia">
-              <button type="button" data-scene="0" aria-label="Cena: Panorama" aria-pressed="true">
-                01</button
-              ><button
-                type="button"
-                data-scene="1"
-                aria-label="Cena: artigo selecionado no currículo"
-                aria-pressed="false"
-              >
-                02</button
-              ><button
-                type="button"
-                data-scene="2"
-                aria-label="Cena: criar novo item"
-                aria-pressed="false"
-              >
-                03
-              </button>
-            </div>
-          </figcaption>
-        </figure>
-        <div class="cp-filmnote">
-          Prévia com dados fictícios: do Panorama ao item no currículo. Panorama em desenvolvimento.
-        </div>
-        <div class="cp-trust">
-          <span>macOS · Windows · Linux</span><span>Armazenamento local</span
-          ><span>Projeto independente · Licença MIT</span>
-        </div>
-        <section class="cp-section cp-panorama" id="cp-panorama">
-          <span id="em-breve" aria-hidden="true"></span>
-          <div class="cp-heading">
-            <div>
-              <div class="cp-kicker">01 / Panorama · Em desenvolvimento</div>
-              <h2>Explore os dados<br />do seu currículo.</h2>
-            </div>
-            <p>
-              Veja a produção de cada ano e as pessoas com quem trabalhou. Ao selecionar um número
-              no Panorama, você pode abrir os itens que compõem aquela contagem.
-            </p>
-          </div>
-          <div class="cp-pan-tabs" data-enhanced hidden aria-label="Prévias do Panorama">
-            <button type="button" class="" data-pan="production" aria-pressed="true">
-              Produções por ano
-            </button>
-            <button type="button" class="" data-pan="people" aria-pressed="false">Pessoas</button>
-            <button type="button" class="" data-pan="timeline" aria-pressed="false">
-              Linha do tempo
-            </button>
-          </div>
-          <figure class="cp-pan-figure">
-            <img
-              data-pan-image
-              data-image="panorama"
-              loading="lazy"
-              src="img/homepage/panorama.jpg"
-              width="1280"
-              height="720"
-              decoding="async"
-              alt="Panorama: produções por ano com filtros de período, usando um currículo fictício"
+            </g>
+            <path
+              fill="currentColor"
+              fill-rule="evenodd"
+              d="M181.41909790039062 115.44851684570312a115.44851684570312 115.44851684570312 0 1 0 -230.89703369140625 0a115.44851684570312 115.44851684570312 0 1 0 230.89703369140625 0M115.44851684570312 115.44851684570312a49.477935791015625 49.477935791015625 0 1 0 -98.95587158203125 0a49.477935791015625 49.477935791015625 0 1 0 98.95587158203125 0"
             />
-            <figcaption>
-              <div aria-live="polite">
-                <strong data-pan-title>Produções por ano</strong>
-                <p data-pan-description>
-                  Compare os tipos de produção ao longo dos anos. Os filtros permitem escolher um
-                  intervalo ou usar um período predefinido.
-                </p>
-              </div>
-              <button type="button" class="cp-button" data-pan-drill data-enhanced hidden>
-                Ver artigo de 2023 →
-              </button>
-            </figcaption>
-          </figure>
-          <p class="cp-note">
-            Capturas da versão em desenvolvimento com dados fictícios. Os botões acima alternam as
-            telas da prévia.
-          </p>
-          <div class="cp-pan-details">
-            <article>
-              <h3>Contagens por quadriênio</h3>
-              <p>
-                Consulte os períodos da CAPES ou os últimos cinco e dez anos. Exporte as contagens
-                em CSV para trabalhar com elas em uma planilha.
-              </p>
-            </article>
-            <article>
-              <h3>Campos que faltam preencher</h3>
-              <p>
-                “Saúde do currículo” reúne itens sem DOI, ISSN, palavras-chave ou título em inglês.
-                Abra a lista correspondente para revisar os campos.
-              </p>
-            </article>
-          </div>
-          <details class="cp-pan-all">
-            <summary>As nove vistas do Panorama</summary>
-            <p>
-              Em resumo · Saúde do currículo · Produções por ano · Quadriênios · Linha do tempo ·
-              Pessoas · Posição de autoria · Onde publica · Temas
-            </p>
-            <p>Os gráficos são calculados no computador a partir do currículo aberto.</p>
-          </details>
-          <a
-            class="cp-pan-status"
-            href="https://github.com/rlueder/lattes-editor/pull/92"
-            target="_blank"
-            rel="noopener"
-            >Acompanhar o desenvolvimento do Panorama ↗</a
-          >
-        </section>
+            <path
+              fill="var(--mark-accent, #9EF2E2)"
+              d="M442.4717315507113 696.4424743652344H493.77935791015625V813.4485168457031H325.46568907024255Z"
+            />
+            <path
+              fill="var(--mark-accent, #9EF2E2)"
+              fill-rule="evenodd"
+              d="M659.705810546875 754.9454956054688a115.44851684570312 115.44851684570312 0 1 0 -230.89703369140625 0a115.44851684570312 115.44851684570312 0 1 0 230.89703369140625 0M593.7352294921875 754.9454956054688a49.477935791015625 49.477935791015625 0 1 0 -98.95587158203125 0a49.477935791015625 49.477935791015625 0 1 0 98.95587158203125 0"
+            />
+            <path fill="currentColor" d="M230 345H530V417H230Z M230 495H450V567H230Z" />
+          </g>
+        </symbol>
+        <symbol id="fundo" viewBox="0 0 1440 700">
+          <circle cx="1210" cy="430" fill="var(--bd-a, #8e8bd8)" r="300" />
+          <path d="M1090 540h360v280h-180a180 180 0 0 1-180-180Z" fill="var(--bd-b, #9ef2e2)" />
+          <circle cx="1090" cy="455" fill="none" r="350" stroke="#8E8BD8" stroke-width="2" />
+          <g fill="#463C6D">
+            <circle cx="1320" cy="100" r="2.5" />
+            <circle cx="1335" cy="100" r="2.5" />
+            <circle cx="1350" cy="100" r="2.5" />
+            <circle cx="1365" cy="100" r="2.5" />
+            <circle cx="1320" cy="115" r="2.5" />
+            <circle cx="1335" cy="115" r="2.5" />
+            <circle cx="1350" cy="115" r="2.5" />
+            <circle cx="1365" cy="115" r="2.5" />
+            <circle cx="1320" cy="130" r="2.5" />
+            <circle cx="1335" cy="130" r="2.5" />
+            <circle cx="1350" cy="130" r="2.5" />
+            <circle cx="1365" cy="130" r="2.5" />
+            <circle cx="1320" cy="145" r="2.5" />
+            <circle cx="1335" cy="145" r="2.5" />
+            <circle cx="1350" cy="145" r="2.5" />
+            <circle cx="1365" cy="145" r="2.5" />
+            <circle cx="1320" cy="160" r="2.5" />
+            <circle cx="1335" cy="160" r="2.5" />
+            <circle cx="1350" cy="160" r="2.5" />
+            <circle cx="1365" cy="160" r="2.5" />
+          </g>
+          <g transform="translate(1022 178)">
+            <path d="M0 3h410" opacity=".2" stroke="#8E8BD8" stroke-width="1" />
+            <rect fill="#463C6D" height="2" opacity="0.45" width="8" x="-11" y="0" />
+            <rect fill="#8E8BD8" height="4" opacity="0.90" width="15" x="46" y="2" />
+            <rect fill="#9EF2E2" height="6" opacity="0.75" width="22" x="80" y="0" />
+            <rect fill="#463C6D" height="2" opacity="0.60" width="29" x="114" y="2" />
+            <rect fill="#8E8BD8" height="4" opacity="0.45" width="9" x="171" y="0" />
+            <rect fill="#9EF2E2" height="6" opacity="0.90" width="16" x="205" y="2" />
+            <rect fill="#463C6D" height="2" opacity="0.75" width="23" x="239" y="0" />
+            <rect fill="#8E8BD8" height="4" opacity="0.60" width="30" x="273" y="2" />
+            <rect fill="#9EF2E2" height="6" opacity="0.45" width="10" x="330" y="0" />
+            <rect fill="#463C6D" height="2" opacity="0.90" width="17" x="364" y="2" />
+          </g>
+          <g transform="translate(994 193)">
+            <path d="M0 3h410" opacity=".2" stroke="#8E8BD8" stroke-width="1" />
+            <rect fill="#9EF2E2" height="4" opacity="0.60" width="19" x="-11" y="0" />
+            <rect fill="#463C6D" height="6" opacity="0.45" width="26" x="30" y="2" />
+            <rect fill="#8E8BD8" height="2" opacity="0.90" width="33" x="71" y="0" />
+            <rect fill="#9EF2E2" height="4" opacity="0.75" width="13" x="112" y="2" />
+            <rect fill="#463C6D" height="6" opacity="0.60" width="20" x="153" y="0" />
+            <rect fill="#8E8BD8" height="2" opacity="0.45" width="27" x="194" y="2" />
+            <rect fill="#9EF2E2" height="4" opacity="0.90" width="34" x="235" y="0" />
+            <rect fill="#463C6D" height="6" opacity="0.75" width="14" x="276" y="2" />
+            <rect fill="#8E8BD8" height="2" opacity="0.60" width="21" x="317" y="0" />
+            <rect fill="#9EF2E2" height="4" opacity="0.45" width="28" x="358" y="2" />
+          </g>
+          <g transform="translate(1047 208)">
+            <path d="M0 3h410" opacity=".2" stroke="#8E8BD8" stroke-width="1" />
+            <rect fill="#8E8BD8" height="6" opacity="0.75" width="30" x="-11" y="0" />
+            <rect fill="#9EF2E2" height="2" opacity="0.60" width="10" x="37" y="2" />
+            <rect fill="#463C6D" height="4" opacity="0.45" width="17" x="85" y="0" />
+            <rect fill="#8E8BD8" height="6" opacity="0.90" width="24" x="110" y="2" />
+            <rect fill="#9EF2E2" height="2" opacity="0.75" width="31" x="158" y="0" />
+            <rect fill="#463C6D" height="4" opacity="0.60" width="11" x="206" y="2" />
+            <rect fill="#8E8BD8" height="6" opacity="0.45" width="18" x="231" y="0" />
+            <rect fill="#9EF2E2" height="2" opacity="0.90" width="25" x="279" y="2" />
+            <rect fill="#463C6D" height="4" opacity="0.75" width="32" x="327" y="0" />
+            <rect fill="#8E8BD8" height="6" opacity="0.60" width="12" x="352" y="2" />
+          </g>
+          <g transform="translate(1009 223)">
+            <path d="M0 3h410" opacity=".2" stroke="#8E8BD8" stroke-width="1" />
+            <rect fill="#463C6D" height="2" opacity="0.90" width="14" x="-11" y="0" />
+            <rect fill="#8E8BD8" height="4" opacity="0.75" width="21" x="44" y="2" />
+            <rect fill="#9EF2E2" height="6" opacity="0.60" width="28" x="76" y="0" />
+            <rect fill="#463C6D" height="2" opacity="0.45" width="8" x="131" y="2" />
+            <rect fill="#8E8BD8" height="4" opacity="0.90" width="15" x="163" y="0" />
+            <rect fill="#9EF2E2" height="6" opacity="0.75" width="22" x="195" y="2" />
+            <rect fill="#463C6D" height="2" opacity="0.60" width="29" x="250" y="0" />
+            <rect fill="#8E8BD8" height="4" opacity="0.45" width="9" x="282" y="2" />
+            <rect fill="#9EF2E2" height="6" opacity="0.90" width="16" x="314" y="0" />
+            <rect fill="#463C6D" height="2" opacity="0.75" width="23" x="369" y="2" />
+          </g>
+          <g transform="translate(1061 238)">
+            <path d="M0 3h410" opacity=".2" stroke="#8E8BD8" stroke-width="1" />
+            <rect fill="#9EF2E2" height="4" opacity="0.45" width="25" x="-11" y="0" />
+            <rect fill="#463C6D" height="6" opacity="0.90" width="32" x="51" y="2" />
+            <rect fill="#8E8BD8" height="2" opacity="0.75" width="12" x="90" y="0" />
+            <rect fill="#9EF2E2" height="4" opacity="0.60" width="19" x="129" y="2" />
+            <rect fill="#463C6D" height="6" opacity="0.45" width="26" x="168" y="0" />
+            <rect fill="#8E8BD8" height="2" opacity="0.90" width="33" x="207" y="2" />
+            <rect fill="#9EF2E2" height="4" opacity="0.75" width="13" x="246" y="0" />
+            <rect fill="#463C6D" height="6" opacity="0.60" width="20" x="285" y="2" />
+            <rect fill="#8E8BD8" height="2" opacity="0.45" width="27" x="324" y="0" />
+            <rect fill="#9EF2E2" height="4" opacity="0.90" width="34" x="363" y="2" />
+          </g>
+          <g transform="translate(990 253)">
+            <path d="M0 3h410" opacity=".2" stroke="#8E8BD8" stroke-width="1" />
+            <rect fill="#8E8BD8" height="6" opacity="0.60" width="9" x="-11" y="0" />
+            <rect fill="#9EF2E2" height="2" opacity="0.45" width="16" x="35" y="2" />
+            <rect fill="#463C6D" height="4" opacity="0.90" width="23" x="81" y="0" />
+            <rect fill="#8E8BD8" height="6" opacity="0.75" width="30" x="127" y="2" />
+            <rect fill="#9EF2E2" height="2" opacity="0.60" width="10" x="150" y="0" />
+            <rect fill="#463C6D" height="4" opacity="0.45" width="17" x="196" y="2" />
+            <rect fill="#8E8BD8" height="6" opacity="0.90" width="24" x="242" y="0" />
+            <rect fill="#9EF2E2" height="2" opacity="0.75" width="31" x="288" y="2" />
+            <rect fill="#463C6D" height="4" opacity="0.60" width="11" x="311" y="0" />
+            <rect fill="#8E8BD8" height="6" opacity="0.45" width="18" x="357" y="2" />
+          </g>
+          <g transform="translate(1033 268)">
+            <path d="M0 3h410" opacity=".2" stroke="#8E8BD8" stroke-width="1" />
+            <rect fill="#463C6D" height="2" opacity="0.75" width="20" x="-11" y="0" />
+            <rect fill="#8E8BD8" height="4" opacity="0.60" width="27" x="42" y="2" />
+            <rect fill="#9EF2E2" height="6" opacity="0.45" width="34" x="72" y="0" />
+            <rect fill="#463C6D" height="2" opacity="0.90" width="14" x="125" y="2" />
+            <rect fill="#8E8BD8" height="4" opacity="0.75" width="21" x="155" y="0" />
+            <rect fill="#9EF2E2" height="6" opacity="0.60" width="28" x="208" y="2" />
+            <rect fill="#463C6D" height="2" opacity="0.45" width="8" x="238" y="0" />
+            <rect fill="#8E8BD8" height="4" opacity="0.90" width="15" x="291" y="2" />
+            <rect fill="#9EF2E2" height="6" opacity="0.75" width="22" x="321" y="0" />
+            <rect fill="#463C6D" height="2" opacity="0.60" width="29" x="351" y="2" />
+          </g>
+          <circle cx="1400" cy="310" fill="#F47A5C" r="9" />
+        </symbol>
+      </defs>
+    </svg>
 
-        <section class="cp-section" id="cp-workflow">
-          <span id="como-funciona" aria-hidden="true"></span>
-          <div class="cp-heading">
-            <div>
-              <div class="cp-kicker">02 / Demonstração</div>
-              <h2>Teste a edição<br />de um item.</h2>
-            </div>
-            <p>
-              Escolha um artigo, evento ou projeto para ver como o tipo de item muda o envio ao
-              Lattes.
-            </p>
+    <div id="pagina">
+      <header class="top">
+        <div class="grid top-row">
+          <a class="brand" href="./">
+            <svg class="brand-mark" aria-hidden="true"><use href="#marca" /></svg>
+            <b>Lattes<span>Editor</span></b>
+          </a>
+          <nav class="top-nav" aria-label="Seções da página">
+            <a href="#como-funciona">Como funciona</a>
+            <a href="#panorama">Panorama</a>
+            <a href="#recursos">Recursos</a>
+            <a href="#privacidade">Privacidade</a>
+          </nav>
+          <div class="top-actions">
+            <a
+              class="top-github"
+              href="https://github.com/rlueder/lattes-editor"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path
+                  d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"
+                />
+              </svg>
+            </a>
+            <details class="menu">
+              <summary aria-label="Abrir o menu">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </summary>
+              <nav class="menu-panel" aria-label="Seções da página">
+                <a href="#como-funciona">Como funciona</a>
+                <a href="#panorama">Panorama</a>
+                <a href="#recursos">Recursos</a>
+                <a href="#enviar">Enviar ao Lattes</a>
+                <a href="#privacidade">Privacidade</a>
+                <a
+                  href="https://github.com/rlueder/lattes-editor"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >GitHub</a
+                >
+                <a class="menu-cta" href="#baixar"><span>Baixar o app</span></a>
+              </nav>
+            </details>
           </div>
-          <div class="cp-flow">
-            <nav class="cp-steps" data-enhanced hidden aria-label="Etapas do exemplo">
-              <button class="cp-step" data-step="0" aria-pressed="true"><span>01</span>Abrir</button
-              ><button class="cp-step" data-step="1" aria-pressed="false">
-                <span>02</span>Criar item</button
-              ><button class="cp-step" data-step="2" aria-pressed="false">
-                <span>03</span>Revisar</button
-              ><button class="cp-step" data-step="3" aria-pressed="false">
-                <span>04</span>Enviar ao Lattes
-              </button>
-            </nav>
-            <div class="cp-flowbody">
-              <div class="cp-form">
-                <h3>Abrir currículo</h3>
-                <p>
-                  Abra o currículo pela extensão ou use um ZIP/XML exportado do Lattes. O exemplo
-                  interativo usa dados fictícios e fica disponível com JavaScript.
-                </p>
-              </div>
-              <aside class="cp-preview">
-                <div class="cp-kicker">Prévia do item</div>
-                <div class="cp-leaf">
-                  <h3 data-live-title>Ciência aberta e colaboração no Brasil</h3>
-                  <p>Artigo de exemplo · 2026<br />Dados fictícios</p>
-                </div>
-                <div class="cp-route">
-                  <span>Forma de envio</span><b data-live-route>Importar</b>
-                </div>
-              </aside>
-            </div>
-            <div class="cp-flowfoot">
-              <span>LattesEditor / Exemplo interativo</span
-              ><span>Simulação local · Nenhum envio ao Lattes</span>
-            </div>
-          </div>
-          <p class="cp-note">
-            O app identifica os itens que a extensão consegue enviar. Para os demais, gera um
-            arquivo para o Importar do Lattes ou mostra os dados para copiar à mão.
-          </p>
-        </section>
-        <section class="cp-section cp-reading" id="cp-resources">
-          <span id="recursos" aria-hidden="true"></span>
-          <div class="cp-reading-grid">
-            <div>
-              <div class="cp-kicker">03 / Edição do currículo</div>
-              <h2>Navegue por seção<br />e por ano.</h2>
-              <p>
-                As produções aparecem agrupadas por tipo e ano, com filtros e um índice à direita.
-                Clique em um item para editar seus campos. A busca por atalho também encontra seções
-                e tipos de item.
+        </div>
+      </header>
+
+      <main id="conteudo">
+        <!-- Abertura: campo neutro, texto à esquerda, a tela do app à direita. -->
+        <section class="section hero" aria-labelledby="titulo">
+          <svg
+            class="backdrop"
+            style="--bd-opacity: 0.85"
+            viewBox="0 0 1440 700"
+            preserveAspectRatio="xMidYMax slice"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <use href="#fundo" />
+          </svg>
+          <div class="grid hero-grid">
+            <div class="hero-text">
+              <p class="kicker">Código aberto · Gratuito · Sem conta</p>
+              <h1 class="h1" id="titulo">
+                Edite o Currículo Lattes <em class="hl">no seu computador</em>
+              </h1>
+              <p class="lead">
+                O currículo abre direto do Lattes, você edita no app e as mudanças voltam para o
+                Lattes pela extensão ou pelo Importar.
               </p>
-              <div class="cp-tools">
-                <span>⌘K / Ctrl K · Ir para</span><span>Filtros por seção</span
-                ><span>Atalhos por ano</span><span>Salvamento automático</span>
-              </div>
+              <a class="btn" href="#baixar"
+                >Baixar o app <span class="arrow" aria-hidden="true">→</span></a
+              >
+              <a
+                class="link"
+                href="https://github.com/rlueder/lattes-editor"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Ver o código no GitHub</a
+              >
             </div>
-            <figure class="cp-reading-art">
-              <img
-                data-image="search"
-                loading="lazy"
-                src="img/homepage/search.jpg"
-                width="2880"
-                height="1720"
-                decoding="async"
-                alt="Busca Ir para no LattesEditor, com atalhos para tipos de produção"
-              />
-              <figcaption class="cp-art-label">Busca por atalho: ⌘K ou Ctrl K</figcaption>
+
+            <!-- Tela do app em superfície opaca sobre o fundo geométrico. -->
+            <figure
+              class="hero-shot panel"
+              data-shot
+              aria-label="Telas do LattesEditor com um currículo de demonstração"
+            >
+              <div class="shot-frame">
+                <img
+                  src="img/editor-claro.jpg"
+                  width="2880"
+                  height="1720"
+                  decoding="async"
+                  fetchpriority="high"
+                  alt="O editor aberto em Produções: seções à esquerda, itens por tipo e ano no centro, filtros e índice à direita."
+                />
+                <video
+                  hidden
+                  controls
+                  playsinline
+                  preload="none"
+                  poster="img/editor-claro.jpg"
+                  aria-label="O LattesEditor em uso, com um currículo de demonstração"
+                ></video>
+              </div>
+              <figcaption class="shot-bar">
+                <span class="meta" data-shot-caption>Produções, agrupadas por tipo e ano</span>
+                <div class="seg" data-enhanced hidden role="group" aria-label="Escolher a tela">
+                  <button type="button" data-scene="editor" aria-pressed="true">Produções</button>
+                  <button type="button" data-scene="panorama" aria-pressed="false">Panorama</button>
+                  <button type="button" data-scene="new" aria-pressed="false">Novo item</button>
+                </div>
+              </figcaption>
             </figure>
           </div>
-          <div class="cp-catalogue">
-            <div class="cp-count">
-              <div class="cp-number">114</div>
-              <p>
-                tipos disponíveis para criação, incluindo itens vinculados a uma atuação ou projeto.
-              </p>
-            </div>
-            <div class="cp-categories">
-              <span>Formação e cursos</span><span>Atuação e vínculos</span
-              ><span>Projetos e atividades</span><span>Artigos, livros e produções</span
-              ><span>Patentes e registros</span><span>Eventos e prêmios</span
-              ><span>Orientações e bancas</span><span>Idiomas e outros dados</span>
-            </div>
-          </div>
-          <p class="cp-note">
-            O editor permite criar todos os tipos de item do currículo. Publicações podem ser
-            preenchidas a partir de um DOI. As buscas de instituições, cursos, áreas e agências usam
-            as listas do Lattes. Parte dos itens novos ainda precisa ser copiada manualmente para a
-            plataforma.
-          </p>
-        </section>
-        <section class="cp-section" style="padding-top: 0">
-          <div class="cp-heading">
-            <div>
-              <div class="cp-kicker">04 / Revisão e exportação</div>
-              <h2>Diagnóstico, histórico<br />e PDF.</h2>
-            </div>
-          </div>
-          <div class="cp-trio">
-            <article>
-              <div class="cp-art" aria-label="Exemplo ilustrativo de diagnóstico">
-                <div class="cp-proof">
-                  <div class="cp-kicker">Diagnóstico / exemplo</div>
-                  <div class="cp-checkrow">
-                    <span class="cp-checkmark">!</span><span>Possível duplicata</span>
-                  </div>
-                  <div class="cp-checkrow">
-                    <span class="cp-checkmark">!</span><span>DOI a conferir</span>
-                  </div>
-                  <div class="cp-checkrow">
-                    <span class="cp-checkmark">!</span><span>Vínculo sem data final</span>
-                  </div>
-                  <div class="cp-checkrow">
-                    <span class="cp-checkmark">→</span><span>Revisar no currículo</span>
-                  </div>
-                </div>
-              </div>
-              <h3>Diagnóstico do currículo</h3>
-              <p>
-                Localize possíveis duplicatas, DOI e ISSN inválidos, datas inconsistentes e vínculos
-                que podem estar desatualizados. O relatório inclui a última publicação e as
-                alterações desde a exportação.
-              </p>
-              <p class="cp-small">As verificações não alteram os dados.</p>
-            </article>
-            <article>
-              <div class="cp-art" aria-label="Exemplo ilustrativo de histórico de versões">
-                <div class="cp-date">06 OUT → 15 OUT</div>
-                <div class="cp-history-sheet">
-                  <div class="cp-kicker">Versões do Lattes</div>
-                  <div class="cp-diff"><del>Título anterior</del><ins>Título revisado</ins></div>
-                  <div class="cp-small">Comparação entre exportações</div>
-                </div>
-              </div>
-              <h3>Histórico de alterações</h3>
-              <p>
-                Compare exportações para consultar mudanças feitas no editor ou no Lattes. O
-                registro de envios guarda os valores anteriores e oferece opções para desfazer
-                alterações.
-              </p>
-            </article>
-            <article>
-              <div class="cp-art" aria-label="Composição editorial de um currículo para impressão">
-                <div class="cp-print">
-                  <div class="cp-kicker">Currículo acadêmico</div>
-                  <strong>Ana Beatriz<br />Souza Lima</strong
-                  ><span>Formação acadêmica e titulação</span><span>Atuação profissional</span
-                  ><span>Produção bibliográfica</span><span>Referências · 2026</span>
-                </div>
-              </div>
-              <h3>Exportação em PDF</h3>
-              <p>
-                Selecione as seções que deseja imprimir ou salvar em PDF. A formatação segue a NBR
-                14724, com referências na NBR 6023. O app também gera um código QR para o currículo
-                público.
-              </p>
-            </article>
+          <div class="grid hero-badges">
+            <span>Licença MIT</span>
+            <span>macOS, Windows e Linux</span>
+            <span>Currículo guardado no computador</span>
+            <span>Extensão para Chrome e Brave</span>
           </div>
         </section>
-        <section class="cp-bridge" id="cp-connector">
-          <div class="cp-bridge-grid">
-            <div>
-              <div class="cp-kicker">05 / Extensão do navegador</div>
-              <h2>Envie alterações<br />ao Lattes.</h2>
-              <p>
-                O painel “Enviar ao Lattes” lista as alterações pendentes e mantém o registro dos
-                envios. A extensão usa a sessão já aberta no Chrome ou Brave, sem repassar sua senha
-                ao editor.
-              </p>
-              <p style="margin-top: 16px">
-                Depois de gravar uma alteração compatível, a extensão lê o formulário para conferir
-                os valores. Uma divergência interrompe o envio.
-              </p>
+
+        <!-- Como funciona: quatro passos numerados, sem grade de cartões. -->
+        <section class="section section-muted" id="como-funciona" aria-labelledby="t-como">
+          <div class="grid">
+            <div class="main inner">
+              <div class="section-head span-full">
+                <h2 class="h2" id="t-como">Como funciona</h2>
+                <p class="lead measure">
+                  A extensão liga o app à sua sessão do Lattes. Sem ela, o currículo entra e sai
+                  pelo arquivo do Exportar.
+                </p>
+              </div>
+              <div class="item span-6">
+                <span class="num" aria-hidden="true">01</span>
+                <h3 class="card-title">Instale a extensão</h3>
+                <p>
+                  A extensão para Chrome e Brave usa a aba do Lattes em que você já está logado.
+                  Nenhuma senha passa por ela nem pelo app. No primeiro uso, ela lista o que lê e
+                  grava e espera o seu ok.
+                </p>
+              </div>
+              <div class="item span-6">
+                <span class="num" aria-hidden="true">02</span>
+                <h3 class="card-title">Abra o currículo</h3>
+                <p>
+                  O app pede ao Lattes a mesma exportação do menu Exportar e abre o currículo. Sem a
+                  extensão, exporte no Lattes e solte o ZIP na janela do app. A edição, depois
+                  disso, não precisa de conexão.
+                </p>
+              </div>
+              <div class="item span-6">
+                <span class="num" aria-hidden="true">03</span>
+                <h3 class="card-title">Edite</h3>
+                <p>
+                  O menu lateral leva a cada seção. ⌘K (Ctrl K fora do Mac) encontra seções, grupos
+                  e tipos de item pelo nome. País, idioma, natureza e os outros campos de lista do
+                  Lattes são listas aqui também. O app salva cada edição na hora.
+                </p>
+              </div>
+              <div class="item span-6">
+                <span class="num" aria-hidden="true">04</span>
+                <h3 class="card-title">Envie ao Lattes</h3>
+                <p>
+                  O painel Enviar ao Lattes lista cada alteração com o caminho dela. Produções novas
+                  vão pelo Importar do Lattes, num arquivo que o app gera. Resumo, vínculos, foto e
+                  eventos vão pela extensão, que grava e confere um por um. O que sobra aparece
+                  campo a campo, com o valor antigo ao lado do novo, para copiar.
+                </p>
+              </div>
             </div>
-            <div class="cp-send" aria-label="Esquema do painel de envio, com itens fictícios">
-              <div class="cp-send-tabs">
-                <span>A enviar</span><span>Enviado</span><span>Não enviado</span>
-              </div>
-              <div class="cp-send-row">
-                <span>Resumo do currículo<small>Conferência após a gravação</small></span
-                ><span class="cp-send-label">Conector</span>
-              </div>
-              <div class="cp-send-row">
-                <span>Artigo novo<small>Arquivo para o Importar do Lattes</small></span
-                ><span class="cp-send-label">Importar</span>
-              </div>
-              <div class="cp-send-row">
-                <span>Projeto novo<small>Preenchimento manual no Lattes</small></span
-                ><span class="cp-send-label">À mão</span>
-              </div>
-              <div class="cp-send-end">
-                <span class="cp-checkmark">↗</span
-                ><span>Publique pelo botão “Enviar ao CNPq” no Lattes.</span>
-              </div>
-            </div>
-          </div>
-          <details class="cp-connector-detail">
-            <summary>Operações do conector em teste</summary>
-            <p>
-              Na versão de desenvolvimento, estão habilitadas para teste as inclusões de formação,
-              atuação, idiomas, prêmios, vínculos, registros, ensino e eventos. Também há operações
-              para excluir idiomas e vínculos, alterar dados de identificação e endereço, editar
-              formação, eventos e prêmios, e automatizar o Importar.
-            </p>
-            <p>
-              Essas operações ainda precisam de testes acompanhados no Lattes. A conferência de
-              alguns registros e atividades é incompleta; a automação do Importar ainda não teve uma
-              inclusão real confirmada. Patentes, projetos e outros tipos continuam com
-              preenchimento manual.
-            </p>
-            <p>
-              A versão instalada da extensão determina as operações disponíveis. Consulte as notas
-              da versão antes de usar os recursos em teste.
-            </p>
-          </details>
-        </section>
-        <section class="cp-section cp-privacy" id="cp-privacy">
-          <span id="privacidade" aria-hidden="true"></span>
-          <div>
-            <div class="cp-kicker">06 / Privacidade</div>
-            <h2>Dados salvos<br />no computador.</h2>
-            <p>
-              O editor salva uma cópia criptografada do currículo no computador. A chave fica no
-              cofre do sistema operacional. Não há conta de usuário nem armazenamento do currículo
-              em um servidor do app.
-            </p>
-            <p style="margin-top: 16px">
-              Os campos de dados pessoais ficam ocultos até você acionar o botão de exibição. O app
-              também permite consultar e trocar a foto do perfil.
-            </p>
-          </div>
-          <div class="cp-vault">
-            <div class="cp-kicker">Cópia de trabalho / local</div>
-            <div class="cp-vault-name">curriculo.xml</div>
-            <div class="cp-checkrow"><span>Conteúdo salvo</span><b>Criptografado</b></div>
-            <div class="cp-checkrow"><span>Chave de acesso</span><b>Cofre do sistema</b></div>
-            <div class="cp-checkrow">
-              <span>Dados pessoais</span><b class="cp-masked">••• ••• •••</b>
-            </div>
-            <div class="cp-checkrow"><span>Envio ao Lattes</span><b>Após confirmação</b></div>
           </div>
         </section>
-        <section class="cp-section" style="padding-top: 0">
-          <div class="cp-heading">
-            <div>
-              <div class="cp-kicker">07 / Uso do app</div>
-              <h2>Instalação e recursos</h2>
-            </div>
-          </div>
-          <div class="cp-details">
-            <details>
-              <summary>Abrir um currículo</summary>
-              <p>
-                A extensão pode solicitar a exportação na sua sessão do Lattes e abri-la no editor.
-                Outra opção é arrastar para o app um ZIP ou XML que você já exportou. Depois de
-                aberto, o currículo pode ser editado sem conexão.
-              </p>
-            </details>
-            <details>
-              <summary>Preenchimento por DOI e listas do Lattes</summary>
-              <p>
-                Ao colar um DOI, o app consulta os dados da publicação na Crossref. País, idioma,
-                natureza e participação são escolhidos em listas. A extensão consulta instituições,
-                cursos, áreas do conhecimento e agências no Lattes; as duas últimas listas ficam
-                guardadas para uso posterior. Se a consulta estiver indisponível, os campos aceitam
-                texto.
-              </p>
-            </details>
-            <details>
-              <summary>Navegação e preferências</summary>
-              <p>
-                O atalho ⌘K ou Ctrl K abre a busca de seções, grupos e tipos de item. Cada seção tem
-                filtros e atalhos por ano. Nas configurações, você pode escolher o tema claro ou
-                escuro. Avisos do app informam problemas de conexão e incompatibilidades com a
-                extensão.
-              </p>
-            </details>
-            <details>
-              <summary>Instalação e atualizações</summary>
-              <p>
-                O app verifica atualizações ao abrir e a cada 15 minutos. A consulta também está
-                disponível em “Verificar atualizações”, nas configurações. A extensão para Chrome e
-                Brave é instalada a partir de um ZIP. Para atualizá-la, substitua a pasta e
-                recarregue a extensão no navegador.
-              </p>
-            </details>
-            <details>
-              <summary>Acesso à internet</summary>
-              <p>
-                Esta página carrega as fontes tipográficas da Precisa. No app, a consulta de
-                publicações envia o DOI à Crossref. A foto é carregada do CNPq, e a extensão acessa
-                o Lattes pela sua sessão no navegador. O app também consulta a distribuição de novas
-                versões para verificar atualizações. O currículo não é enviado a um servidor do
-                editor.
-              </p>
-            </details>
-            <details>
-              <summary>Versões e desenvolvimento</summary>
-              <p>
-                As notas de versão listam os recursos de cada distribuição. O Panorama e as
-                operações indicadas como “em teste” nesta página pertencem ao código de
-                desenvolvimento de 15 de outubro de 2026 e podem não estar na versão disponível para
-                download. A exportação em BibTeX, RIS e Word ainda não está disponível.
-              </p>
-              <p>
-                <a
-                  href="https://github.com/rlueder/lattes-editor/commits/main/"
-                  target="_blank"
-                  rel="noopener"
-                  >Ver histórico do projeto ↗</a
+
+        <!-- Panorama: o currículo em números, com a passagem da contagem ao item. -->
+        <section class="section" id="panorama" aria-labelledby="t-pan">
+          <svg
+            class="backdrop backdrop-flip backdrop-mint"
+            style="--bd-opacity: 0.5"
+            viewBox="0 0 1440 700"
+            preserveAspectRatio="xMidYMax slice"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <use href="#fundo" transform="translate(1440 0) scale(-1 1) translate(80 320)" />
+          </svg>
+          <div class="grid">
+            <div class="main inner">
+              <div class="section-head span-full">
+                <p class="kicker">Panorama</p>
+                <h2 class="h2" id="t-pan">O currículo em números</h2>
+                <p class="lead measure">
+                  Nove gráficos calculados a partir do XML aberto, sem consulta externa. Um clique
+                  num número abre a seção do currículo filtrada por aquele tipo, período ou campo
+                  que falta.
+                </p>
+              </div>
+              <div class="span-full" data-pan>
+                <div
+                  class="seg"
+                  data-enhanced
+                  hidden
+                  role="group"
+                  aria-label="Escolher a vista do Panorama"
                 >
-              </p>
-            </details>
+                  <button type="button" data-view="production" aria-pressed="true">
+                    Produções por ano
+                  </button>
+                  <button type="button" data-view="people" aria-pressed="false">Pessoas</button>
+                  <button type="button" data-view="timeline" aria-pressed="false">
+                    Linha do tempo
+                  </button>
+                </div>
+                <figure class="pan-figure panel">
+                  <div class="shot-frame">
+                    <img
+                      src="img/homepage/panorama.jpg"
+                      width="2880"
+                      height="1720"
+                      loading="lazy"
+                      decoding="async"
+                      alt="Produções por ano no Panorama, com o currículo de demonstração."
+                    />
+                  </div>
+                  <figcaption class="pan-caption">
+                    <div aria-live="polite">
+                      <strong data-pan-title>Produções por ano</strong>
+                      <p data-pan-description>
+                        Um ano por coluna, uma cor por tipo de produção, e os anos sem nada
+                        marcados. O período pode ser um intervalo ou um atalho, como os quadriênios
+                        da CAPES.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn btn-outline btn-sm"
+                      data-drill
+                      data-enhanced
+                      hidden
+                    >
+                      Abrir o artigo de 2023
+                    </button>
+                  </figcaption>
+                </figure>
+                <p class="meta" style="margin-top: 0.75rem">
+                  Capturas do app com um currículo fictício de demonstração.
+                </p>
+              </div>
+              <div class="item span-6">
+                <span class="num" aria-hidden="true">01</span>
+                <h3 class="card-title">Quadriênios em planilha</h3>
+                <p>
+                  A tabela de quadriênios da CAPES sai como CSV. O quadriênio ainda aberto vem
+                  marcado "em curso". A coluna Total inclui os itens sem ano, que não caem em
+                  quadriênio nenhum.
+                </p>
+              </div>
+              <div class="item span-6">
+                <span class="num" aria-hidden="true">02</span>
+                <h3 class="card-title">Saúde do currículo</h3>
+                <p>
+                  Conta os itens sem DOI, sem ISSN, sem palavras-chave ou sem agência de fomento.
+                  Cada contagem abre a seção com o filtro "Faltando" aplicado. O mesmo filtro existe
+                  em cada seção do currículo, junto com o de período.
+                </p>
+              </div>
+              <div class="pan-views span-full">
+                <p class="meta">As nove vistas, cada uma com um item no menu do app:</p>
+                <div class="tags">
+                  <span class="tag">Em resumo</span><span class="tag">Saúde do currículo</span
+                  ><span class="tag">Produções por ano</span><span class="tag">Quadriênios</span
+                  ><span class="tag">Linha do tempo</span><span class="tag">Pessoas</span
+                  ><span class="tag">Posição de autoria</span><span class="tag">Onde publica</span
+                  ><span class="tag">Temas</span>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
-        <section class="cp-download" id="cp-download">
-          <span id="baixar" aria-hidden="true"></span>
-          <div>
-            <h2>Baixar o LattesEditor</h2>
-            <p>Escolha a versão para o seu sistema operacional.</p>
+
+        <!-- Exemplo de edição: simulação local, sem Crossref nem Lattes. -->
+        <section class="section section-muted" id="exemplo" aria-labelledby="t-exemplo">
+          <div class="grid">
+            <div class="main inner">
+              <div class="section-head span-full">
+                <p class="kicker">Exemplo interativo</p>
+                <h2 class="h2" id="t-exemplo">Teste a edição de um item</h2>
+                <p class="lead measure">
+                  Escolha artigo, evento ou projeto e acompanhe o caminho de cada um até o Lattes. A
+                  simulação roda nesta página, com dados fictícios.
+                </p>
+              </div>
+              <div class="flow surface span-full" data-flow>
+                <nav class="flow-steps" data-enhanced hidden aria-label="Passos do exemplo">
+                  <button type="button" data-step="0" aria-pressed="true">
+                    <span>01</span>Abrir
+                  </button>
+                  <button type="button" data-step="1" aria-pressed="false">
+                    <span>02</span>Criar item
+                  </button>
+                  <button type="button" data-step="2" aria-pressed="false">
+                    <span>03</span>Revisar
+                  </button>
+                  <button type="button" data-step="3" aria-pressed="false">
+                    <span>04</span>Enviar ao Lattes
+                  </button>
+                </nav>
+                <div class="flow-body">
+                  <div class="flow-form">
+                    <h3 class="h3">Abrir o currículo</h3>
+                    <p>
+                      No app, o currículo abre pela extensão ou por um ZIP ou XML do Exportar. Este
+                      exemplo precisa de JavaScript.
+                    </p>
+                  </div>
+                  <aside class="flow-preview" aria-label="Prévia do item">
+                    <p class="kicker">Prévia do item</p>
+                    <div class="leaf">
+                      <h3 data-live-title>Ciência aberta e colaboração no Brasil</h3>
+                      <p data-live-kind>Artigo de exemplo, 2026. Dados fictícios.</p>
+                    </div>
+                    <div class="route">
+                      <span>Caminho até o Lattes</span><b data-live-route>Importar do Lattes</b>
+                    </div>
+                  </aside>
+                </div>
+                <div class="flow-foot">
+                  <span>Exemplo interativo</span
+                  ><span>Simulação local. Nada é enviado ao Lattes.</span>
+                </div>
+              </div>
+              <p class="meta measure span-full">
+                O app sabe o que a extensão instalada consegue gravar. Para o resto, gera o arquivo
+                do Importar ou mostra os valores para copiar.
+              </p>
+            </div>
           </div>
-          <div class="cp-actions">
-            <a
-              class="cp-button"
-              href="https://github.com/rlueder/lattes-editor/releases/latest/download/LattesEditor-macOS.dmg"
-              >macOS ↗</a
-            ><a
-              class="cp-button"
-              href="https://github.com/rlueder/lattes-editor/releases/latest/download/LattesEditor-Windows-setup.exe"
-              >Windows ↗</a
-            ><a
-              class="cp-button"
-              href="https://github.com/rlueder/lattes-editor/releases/latest"
-              target="_blank"
-              rel="noopener"
-              >Linux (.deb / AppImage) ↗</a
-            >
+        </section>
+
+        <!-- Recursos: lista numerada com divisórias, a busca ao lado. -->
+        <section class="section" id="recursos" aria-labelledby="t-recursos">
+          <div class="grid">
+            <div class="main inner">
+              <div class="section-head span-6">
+                <p class="kicker">Recursos</p>
+                <h2 class="h2" id="t-recursos">O que o editor faz</h2>
+                <p class="lead">
+                  Cada seção lista os itens por tipo e ano, com filtros e um índice ao lado. Um
+                  clique abre o item para editar. A busca do ⌘K encontra seções e também tipos de
+                  item novo.
+                </p>
+              </div>
+              <figure class="shot-aside surface start-7">
+                <div class="shot-frame">
+                  <img
+                    src="img/homepage/search.jpg"
+                    width="2880"
+                    height="1720"
+                    loading="lazy"
+                    decoding="async"
+                    alt="A busca Ir para aberta com o termo artigo, listando seções e tipos de item novo."
+                  />
+                </div>
+                <figcaption>A busca do ⌘K (Ctrl K fora do Mac)</figcaption>
+              </figure>
+
+              <div class="item span-6">
+                <span class="num" aria-hidden="true">01</span>
+                <h3 class="card-title">Todo tipo de item</h3>
+                <p>
+                  O app cria qualquer item do currículo, de produções a patentes. Colar um DOI
+                  preenche a produção com os dados da Crossref. Com a extensão, instituição, curso,
+                  área do conhecimento e agência de fomento vêm das listas do próprio Lattes.
+                </p>
+              </div>
+              <div class="item span-6">
+                <span class="num" aria-hidden="true">02</span>
+                <h3 class="card-title">Trazer itens de outro XML</h3>
+                <p>
+                  Produções de uma exportação antiga ou do XML de outro programa entram pelo menu de
+                  configurações. Antes de entrar, cada item é comparado com o currículo, e o app
+                  aponta a duplicata provável e o motivo ("título igual, mesmo ano"). Só entra o que
+                  você marcar.
+                </p>
+              </div>
+              <div class="item span-6">
+                <span class="num" aria-hidden="true">03</span>
+                <h3 class="card-title">Diagnóstico do currículo</h3>
+                <p>
+                  Passa pelo currículo inteiro e lista campos obrigatórios vazios, valores fora das
+                  listas do Lattes, anos e autores inconsistentes, DOI e ISSN inválidos, duplicatas
+                  e vínculos antigos marcados como atuais. O diagnóstico não altera nada.
+                </p>
+              </div>
+              <div class="item span-6">
+                <span class="num" aria-hidden="true">04</span>
+                <h3 class="card-title">Versões e cópias de segurança</h3>
+                <p>
+                  Cada exportação aberta vira uma versão, e o app mostra o que mudou desde a
+                  anterior, inclusive edições feitas direto no Lattes. A primeira exportação de cada
+                  currículo e uma cópia antes de cada envio ficam na pasta Documentos. O app não
+                  apaga essas cópias.
+                </p>
+              </div>
+              <div class="item span-6">
+                <span class="num" aria-hidden="true">05</span>
+                <h3 class="card-title">Impressão e PDF</h3>
+                <p>
+                  Imprime ou salva em PDF seguindo a NBR 14724, com referências na NBR 6023. Também
+                  gera um código QR que leva ao currículo público.
+                </p>
+              </div>
+              <div class="item span-6">
+                <span class="num" aria-hidden="true">06</span>
+                <h3 class="card-title">Dados pessoais mascarados</h3>
+                <p>
+                  Em Dados gerais, documentos, nascimento, filiação e endereço ficam ocultos até
+                  você clicar no olho ao lado do título. A foto do perfil vem do CNPq, e o app troca
+                  a foto no Lattes pela extensão.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Enviar ao Lattes: o painel e o que a extensão grava. -->
+        <section class="section section-muted" id="enviar" aria-labelledby="t-enviar">
+          <div class="grid">
+            <div class="main inner">
+              <div class="span-5">
+                <p class="kicker" style="color: var(--primary); margin-bottom: 1rem">
+                  Extensão do conector
+                </p>
+                <h2 class="h2" id="t-enviar">Enviar ao Lattes</h2>
+                <p class="lead" style="margin-top: 1rem">
+                  O painel lista cada alteração pendente e o caminho dela. A extensão grava na sua
+                  sessão do Chrome ou Brave e lê o formulário de volta para conferir. Se um valor
+                  não bate, a fila para ali.
+                </p>
+                <p style="margin-top: 1rem; color: var(--fg-75)">
+                  A aba Enviado guarda o valor antigo e o novo de cada gravação e permite desfazer.
+                  O Lattes só publica depois do Enviar ao CNPq, e o app mostra o que vai ser
+                  publicado antes desse passo.
+                </p>
+              </div>
+              <div
+                class="send surface start-7"
+                aria-label="Esquema do painel de envio, com itens fictícios"
+              >
+                <div class="send-tabs">
+                  <span>A enviar</span><span>Enviado</span><span>Não enviado</span>
+                </div>
+                <div class="send-row">
+                  <span
+                    >Resumo do currículo<small>Gravado e lido de volta na sua sessão</small></span
+                  >
+                  <span class="send-label">Extensão</span>
+                </div>
+                <div class="send-row">
+                  <span>Artigo novo<small>Arquivo para o Importar do Lattes</small></span>
+                  <span class="send-label">Importar</span>
+                </div>
+                <div class="send-row">
+                  <span>Projeto novo<small>Valores lado a lado para cadastrar</small></span>
+                  <span class="send-label">À mão</span>
+                </div>
+                <div class="send-end">
+                  <span class="checkmark" aria-hidden="true">↗</span>
+                  <span>Publicação só pelo "Enviar ao CNPq", no Lattes.</span>
+                </div>
+              </div>
+              <div class="faq faq-compact span-full">
+                <details>
+                  <summary>O que a extensão já grava</summary>
+                  <p>
+                    Na versão publicada: o resumo, os vínculos de atuação, a foto e as alterações em
+                    eventos de que você participou como ouvinte. Os idiomas estão em teste.
+                  </p>
+                  <p>
+                    Na versão Dev, as demais ações estão ligadas para teste: inclusão de itens,
+                    exclusão de idioma e vínculo, formação, endereço, identificação, eventos,
+                    prêmios, formação complementar e o Importar. Algumas ainda não tiveram um envio
+                    real acompanhado. O app só oferece as ações que a extensão instalada anuncia.
+                  </p>
+                </details>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Privacidade: sem servidor, sem conta. -->
+        <section class="section" id="privacidade" aria-labelledby="t-priv">
+          <svg
+            class="backdrop"
+            style="--bd-opacity: 0.45"
+            viewBox="0 0 1440 700"
+            preserveAspectRatio="xMidYMax slice"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <use href="#fundo" transform="translate(120 200)" />
+          </svg>
+          <div class="grid">
+            <div class="main inner">
+              <div class="span-5">
+                <p class="kicker" style="color: var(--primary); margin-bottom: 1rem">Privacidade</p>
+                <h2 class="h2" id="t-priv">Tudo fica no seu computador</h2>
+                <p class="lead" style="margin-top: 1rem">
+                  Não há conta nem servidor. O currículo fica no seu computador, cifrado com
+                  AES-GCM, com a chave no chaveiro do sistema. Para fora vão só o DOI, quando você
+                  pede a busca na Crossref, e o código do currículo, para buscar a foto no CNPq.
+                </p>
+                <p style="margin-top: 1rem; color: var(--fg-75)">
+                  O envio ao Lattes passa pela sua sessão no navegador. Sem chaveiro disponível, o
+                  app avisa e não guarda nada naquela sessão, para o currículo não ficar legível no
+                  disco.
+                </p>
+                <a class="link" href="privacidade.html" style="margin-top: 1.5rem"
+                  >Política de privacidade da extensão</a
+                >
+              </div>
+              <div class="vault surface start-7" aria-label="O que fica no computador e como">
+                <p class="kicker">Cópia de trabalho</p>
+                <div class="vault-name">curriculo.xml</div>
+                <div class="checkrow"><span>Conteúdo guardado</span><b>Cifrado, AES-GCM</b></div>
+                <div class="checkrow"><span>Chave</span><b>Chaveiro do sistema</b></div>
+                <div class="checkrow"><span>Dados pessoais</span><b class="masked">•••••••</b></div>
+                <div class="checkrow">
+                  <span>Cópias de segurança</span><b>Documentos/LattesEditor</b>
+                </div>
+                <div class="checkrow"><span>Envio ao Lattes</span><b>Pela sua sessão</b></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Perguntas operacionais. -->
+        <section class="section section-muted" id="perguntas" aria-labelledby="t-perguntas">
+          <div class="grid">
+            <div class="main inner">
+              <div class="section-head span-full">
+                <h2 class="h2" id="t-perguntas">Perguntas</h2>
+              </div>
+              <div class="faq span-full">
+                <details>
+                  <summary>Como instalo a extensão?</summary>
+                  <p>
+                    Enquanto a extensão não está na Chrome Web Store, baixe o ZIP da página do
+                    último lançamento e descompacte. Em chrome://extensions (ou brave://extensions),
+                    ligue o "Modo do desenvolvedor" e use "Carregar sem compactação" na pasta. No
+                    primeiro uso, o painel mostra o que ela lê e envia e pede um "ok".
+                  </p>
+                  <p>
+                    Uma extensão carregada assim não se atualiza sozinha. Quando o app avisar que
+                    ela está desatualizada, troque a pasta pela do ZIP novo e recarregue a extensão.
+                  </p>
+                </details>
+                <details>
+                  <summary>O app se atualiza?</summary>
+                  <p>
+                    Sim. Ao abrir e a cada 15 minutos ele confere se saiu versão nova. Quando sai,
+                    um aviso no canto oferece Atualizar; o app baixa o pacote, confere a assinatura
+                    e reinicia. Para conferir na hora, use Verificar atualizações no menu de
+                    configurações.
+                  </p>
+                </details>
+                <details>
+                  <summary>Posso usar sem a extensão?</summary>
+                  <p>
+                    Sim. Exporte no Lattes (Ferramentas, Exportar) e solte o ZIP na janela do app.
+                    Sem a extensão, nada é gravado no Lattes pelo app: produções novas vão pelo
+                    arquivo do Importar, e o resto fica no painel, campo a campo, para copiar.
+                  </p>
+                </details>
+                <details>
+                  <summary>O que acessa a internet?</summary>
+                  <p>
+                    Esta página carrega as fontes tipográficas da Precisa. No app, a busca por DOI
+                    envia só o DOI à Crossref, e a foto vem do CNPq pelo código do currículo. A
+                    extensão fala com o Lattes pela sua sessão no navegador. O app consulta o GitHub
+                    para saber se há versão nova. O currículo em si não sai do computador.
+                  </p>
+                </details>
+                <details>
+                  <summary>O que é a versão Dev?</summary>
+                  <p>
+                    Uma montagem do app feita a cada mudança no código, publicada na pré-estreia
+                    "dev" do GitHub com a extensão Dev dentro. É o que entra na próxima versão. Tem
+                    outro nome e outro ícone, e pode ficar instalado ao lado do app publicado.
+                  </p>
+                </details>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Encerramento roxo, com a ação principal em menta. -->
+        <section class="section section-roxo download" id="baixar" aria-labelledby="t-baixar">
+          <svg
+            class="backdrop backdrop-mint"
+            style="--bd-opacity: 0.6"
+            viewBox="0 0 1440 700"
+            preserveAspectRatio="xMidYMax slice"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <use href="#fundo" transform="translate(0 40)" />
+          </svg>
+          <div class="grid">
+            <div class="main inner">
+              <div class="span-full">
+                <h2 class="h2" id="t-baixar">Baixar o LattesEditor</h2>
+                <p class="lead measure" style="margin-top: 1rem">
+                  Gratuito e de código aberto. No macOS, o app é assinado e notarizado pela Apple.
+                  No Windows, o SmartScreen avisa na primeira abertura: abra os detalhes do aviso e
+                  escolha executar.
+                </p>
+                <div class="actions">
+                  <a
+                    class="btn btn-white"
+                    href="https://github.com/rlueder/lattes-editor/releases/latest/download/LattesEditor-macOS.dmg"
+                    >macOS</a
+                  >
+                  <a
+                    class="btn btn-white"
+                    href="https://github.com/rlueder/lattes-editor/releases/latest/download/LattesEditor-Windows-setup.exe"
+                    >Windows</a
+                  >
+                  <a
+                    class="btn btn-white"
+                    href="https://github.com/rlueder/lattes-editor/releases/latest/download/LattesEditor-Linux.deb"
+                    >Linux (.deb)</a
+                  >
+                  <a
+                    class="btn btn-white"
+                    href="https://github.com/rlueder/lattes-editor/releases/latest/download/LattesEditor-Linux.AppImage"
+                    >Linux (AppImage)</a
+                  >
+                </div>
+                <div class="actions">
+                  <a
+                    class="btn btn-white"
+                    href="https://github.com/rlueder/lattes-editor/releases/latest/download/lattes-editor-extensao.zip"
+                    >Extensão (ZIP)</a
+                  >
+                  <a
+                    class="btn btn-white"
+                    href="https://github.com/rlueder/lattes-editor/releases/tag/dev"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >Versão Dev</a
+                  >
+                  <a
+                    class="btn btn-white"
+                    href="https://github.com/rlueder/lattes-editor/releases/latest"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >Notas da versão</a
+                  >
+                </div>
+                <p class="meta">
+                  Os recursos mais novos, como o Panorama, chegam primeiro à versão Dev e entram na
+                  versão publicada no lançamento seguinte. As notas de cada versão listam o que ela
+                  traz.
+                </p>
+              </div>
+            </div>
           </div>
         </section>
       </main>
-      <footer class="cp-footer">
-        <span
-          >LattesEditor ·
-          <a href="https://github.com/rlueder/lattes-editor" target="_blank" rel="noopener"
-            >Código aberto / MIT</a
-          ></span
-        ><a href="privacidade.html">Privacidade da extensão</a
-        ><span>Projeto independente, sem vínculo com o CNPq.</span>
+
+      <footer class="footer">
+        <div class="grid">
+          <div class="main">
+            <div class="footer-row">
+              <div class="footer-brand">
+                <small>Mantido por</small>
+                <a href="https://github.com/rlueder" target="_blank" rel="noopener noreferrer">
+                  <svg class="brand-mark" aria-hidden="true"><use href="#marca" /></svg>
+                  Rafael Lüder
+                </a>
+              </div>
+              <nav class="footer-social" aria-label="Links do projeto">
+                <a
+                  href="https://github.com/rlueder/lattes-editor"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="GitHub"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path
+                      d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2Z"
+                    />
+                  </svg>
+                </a>
+              </nav>
+            </div>
+            <p class="footer-note">
+              Projeto independente, sem vínculo com o CNPq ou com a Plataforma Lattes. Código aberto
+              sob licença MIT. O que a extensão lê e grava está na
+              <a href="privacidade.html">política de privacidade da extensão</a>. As capturas desta
+              página usam um currículo fictício.
+            </p>
+          </div>
+        </div>
       </footer>
     </div>
-    <template id="workflow-step-0">
-      <h3 tabindex="-1">Abrir currículo</h3>
+
+    <!-- Passos do exemplo interativo, montados pelo homepage.js. -->
+    <template id="passo-0">
+      <h3 class="h3" tabindex="-1">Abrir o currículo</h3>
       <p>
-        No app, você pode abrir o currículo pela extensão ou usar um ZIP/XML exportado do Lattes.
-        Esta demonstração usa dados fictícios.
+        Pela extensão, o app pede a exportação ao Lattes. Sem ela, você solta o ZIP ou XML do
+        Exportar na janela. Este exemplo usa dados fictícios.
       </p>
-      <div class="cp-checkrow">
-        <span class="cp-checkmark">↗</span><span>Conector no Chrome ou Brave</span>
+      <div class="checkrow">
+        <span class="checkmark" aria-hidden="true">↗</span
+        ><span>Pela extensão, na sua sessão do Lattes</span>
       </div>
-      <div class="cp-checkrow">
-        <span class="cp-checkmark">↳</span><span>Arquivo ZIP ou XML do Lattes</span>
+      <div class="checkrow">
+        <span class="checkmark" aria-hidden="true">↓</span
+        ><span>Pelo ZIP ou XML do "Exportar"</span>
       </div>
-      <button type="button" class="cp-button cp-primary cp-next" data-next>Abrir exemplo →</button>
+      <button type="button" class="btn" data-next>
+        Abrir o exemplo <span class="arrow" aria-hidden="true">→</span>
+      </button>
     </template>
-    <template id="workflow-step-1">
-      <h3 tabindex="-1">Criar item</h3>
+    <template id="passo-1">
+      <h3 class="h3" tabindex="-1">Criar o item</h3>
       <p>
-        Escolha o tipo de item e preencha o título. A prévia mostra a forma de envio correspondente.
+        Escolha o tipo e escreva o título. A prévia ao lado mostra por onde o item chega ao Lattes.
       </p>
-      <label class="cp-field"
-        >Tipo de item<select data-type aria-label="Tipo de item">
-          <option value="article">Artigo · preenchimento por DOI</option>
-          <option value="event">Evento · inclusão pelo conector</option>
-          <option value="project">Projeto · preenchimento manual</option>
+      <label class="field"
+        >Tipo de item
+        <select data-type aria-label="Tipo de item">
+          <option value="article">Artigo, preenchido pelo DOI</option>
+          <option value="event">Evento, gravado pela extensão</option>
+          <option value="project">Projeto, cadastrado à mão</option>
         </select></label
       >
-      <button type="button" class="cp-button cp-doi" data-doi>Preencher exemplo de DOI</button>
-      <label class="cp-field">Título<input data-title maxlength="300" /></label>
-      <button type="button" class="cp-button cp-primary" data-next>Revisar item →</button>
-      <div class="cp-result" aria-live="polite"></div>
-    </template>
-    <template id="workflow-step-2">
-      <h3 tabindex="-1">Revisar item</h3>
-      <p>Confira o título e a forma de envio na prévia. Use “Editar” se precisar mudar o texto.</p>
-      <div class="cp-checkrow">
-        <span class="cp-checkmark">✓</span><span data-review-title></span>
-      </div>
-      <div class="cp-checkrow">
-        <span class="cp-checkmark">→</span><span data-review-route></span>
-      </div>
-      <div class="cp-checkrow">
-        <span class="cp-checkmark">↺</span><span>Alterações registradas no app</span>
-      </div>
-      <div class="cp-actions cp-next">
-        <button type="button" class="cp-button" data-back>Editar</button
-        ><button type="button" class="cp-button cp-primary" data-next>Preparar envio →</button>
-      </div>
-      <div class="cp-result" aria-live="polite"></div>
-    </template>
-    <template id="workflow-step-3">
-      <h3 tabindex="-1">Preparar envio</h3>
-      <p data-delivery-description></p>
-      <div class="cp-checkrow">
-        <span class="cp-checkmark">1</span><span>Confira a alteração no Lattes.</span>
-      </div>
-      <div class="cp-checkrow">
-        <span class="cp-checkmark">2</span><span>Use “Enviar ao CNPq” para publicar.</span>
-      </div>
-      <button type="button" class="cp-button cp-primary cp-next" data-finish>
-        Concluir exemplo
+      <button type="button" class="btn btn-outline btn-sm" data-doi>
+        Preencher um DOI de exemplo
       </button>
-      <div class="cp-result" aria-live="polite"></div>
+      <label class="field">Título<input data-title maxlength="300" /></label>
+      <button type="button" class="btn" data-next>
+        Revisar o item <span class="arrow" aria-hidden="true">→</span>
+      </button>
+      <div class="result" aria-live="polite"></div>
+    </template>
+    <template id="passo-2">
+      <h3 class="h3" tabindex="-1">Revisar o item</h3>
+      <p>Confira o título e o caminho na prévia. "Editar" volta ao formulário.</p>
+      <div class="checkrow">
+        <span class="checkmark" aria-hidden="true">✓</span><span data-review-title></span>
+      </div>
+      <div class="checkrow">
+        <span class="checkmark" aria-hidden="true">✓</span
+        ><span>Nenhum item parecido no currículo</span>
+      </div>
+      <div class="checkrow">
+        <span class="checkmark" aria-hidden="true">→</span><span data-review-route></span>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn-outline" data-back>Editar</button>
+        <button type="button" class="btn" data-next>
+          Preparar o envio <span class="arrow" aria-hidden="true">→</span>
+        </button>
+      </div>
+      <div class="result" aria-live="polite"></div>
+    </template>
+    <template id="passo-3">
+      <h3 class="h3" tabindex="-1">Enviar ao Lattes</h3>
+      <p data-delivery></p>
+      <div class="checkrow">
+        <span class="checkmark" aria-hidden="true">1</span
+        ><span>Confira a alteração no Lattes.</span>
+      </div>
+      <div class="checkrow">
+        <span class="checkmark" aria-hidden="true">2</span
+        ><span>Publique pelo "Enviar ao CNPq".</span>
+      </div>
+      <button type="button" class="btn" data-finish>Concluir o exemplo</button>
+      <div class="result" aria-live="polite"></div>
     </template>
   </body>
 </html>

@@ -5,7 +5,9 @@
 // Usa um Brave ou Chrome sem janela, com perfil temporário, falando pelo
 // protocolo de depuração (sem Playwright nem outra dependência). Cada tela
 // sai nos temas claro e escuro, em docs/img/<nome>-<tema>.jpg. A de Produções
-// também vai para a página do projeto, em site/img/editor-<tema>.jpg. Por fim,
+// também vai para a página do projeto, em site/img/editor-<tema>.jpg; as da
+// busca, do novo item e do Panorama saem só no tema claro, em
+// site/img/homepage/. Por fim,
 // a imagem de prévia da página (site/img/og.png, 1200 × 630) sai de
 // scripts/og-card.html, servido pelo mesmo Vite.
 //
@@ -37,6 +39,10 @@ interface Shot {
    * ligado.
    */
   privacy?: boolean;
+  /** Só a página do projeto, só no tema claro (caminho a partir da raiz, sem ".jpg"). */
+  site?: string;
+  /** Cópia para a página do projeto, só no tema claro, sem o sufixo do tema. */
+  siteCopy?: string;
   /** Antes de abrir o currículo (a tela inicial). */
   welcome?: boolean;
 }
@@ -55,11 +61,37 @@ const SHOTS: Shot[] = [
         set.call(input, 'artigo');
         input.dispatchEvent(new Event('input', { bubbles: true }));
       }, 700)`,
+    siteCopy: 'site/img/homepage/search',
   },
   {
     name: 'novo-item',
     prepare: `location.hash = 'producoes';
       setTimeout(() => document.querySelector('[aria-label="Novo item"]')?.click(), 300)`,
+    siteCopy: 'site/img/homepage/new',
+  },
+  // O Panorama na página do projeto: três vistas e a passagem do gráfico ao item.
+  {
+    name: 'panorama',
+    prepare: `location.hash = 'panorama/producoes-por-ano'`,
+    site: 'site/img/homepage/panorama',
+  },
+  {
+    name: 'panorama-people',
+    prepare: `location.hash = 'panorama/pessoas';
+      setTimeout(() => [...document.querySelectorAll('[role=radio]')].find((b) => b.textContent === 'Rede')?.click(), 600)`,
+    site: 'site/img/homepage/panorama-people',
+  },
+  {
+    name: 'panorama-timeline',
+    prepare: `location.hash = 'panorama/linha-do-tempo'`,
+    site: 'site/img/homepage/panorama-timeline',
+  },
+  {
+    name: 'panorama-item',
+    prepare: `location.hash = 'panorama/producoes-por-ano';
+      setTimeout(() => document.querySelector('.pano-mark[aria-label="2023, Artigos: 1"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true })), 600);
+      setTimeout(() => document.querySelector('.pano-selection-list button')?.click(), 1000)`,
+    site: 'site/img/homepage/panorama-item',
   },
 ];
 
@@ -80,8 +112,11 @@ async function capture(theme: 'claro' | 'escuro'): Promise<void> {
       format: 'jpeg',
       quality: 80,
     });
-    const files = [join(outDir, `${shot.name}-${theme}.jpg`)];
+    const files = shot.site
+      ? [join(root, `${shot.site}.jpg`)]
+      : [join(outDir, `${shot.name}-${theme}.jpg`)];
     if (shot.alsoTo) files.push(join(root, `${shot.alsoTo}-${theme}.jpg`));
+    if (shot.siteCopy && theme === 'claro') files.push(join(root, `${shot.siteCopy}.jpg`));
     for (const file of files) {
       writeFileSync(file, Buffer.from(data, 'base64'));
       console.log(file.replace(root, ''));
@@ -109,7 +144,7 @@ async function capture(theme: 'claro' | 'escuro'): Promise<void> {
   // O modo de privacidade vem ligado; cada tela pede o seu. A troca recarrega
   // a página (o currículo fica no IndexedDB e volta aberto).
   let privacy: boolean | undefined;
-  for (const shot of SHOTS.filter((s) => !s.welcome)) {
+  for (const shot of SHOTS.filter((s) => !s.welcome && !(s.site && theme === 'escuro'))) {
     const want = shot.privacy ?? false;
     if (want !== privacy) {
       await evaluate(

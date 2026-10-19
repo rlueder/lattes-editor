@@ -214,31 +214,45 @@ python3 -m http.server 8858 --bind 127.0.0.1 --directory site
 Abra `http://127.0.0.1:8858/`. O site usa HTML, CSS e JavaScript sem etapa
 de build; `homepage.css` e `homepage.js` atendem a página inicial.
 `site.css` continua atendendo a política de privacidade da extensão.
-Os links de download apontam para os instaladores da última versão publicada.
+Os links de download apontam para os instaladores da última versão publicada
+e para a pré-estreia `dev`.
 
-A página inicial segue a direção Capa, com fundo claro, ameixa e lavanda.
-As fontes Margem e Pausa vêm do mesmo endereço usado pelo FHIR Brasil,
-sem incluir os arquivos licenciados no repositório. IBM Plex é a alternativa
-local quando as fontes remotas não carregam.
+A página inicial segue a linguagem visual dos projetos abertos da Precisa
+(fhir-brasil e medbench-brasil), descrita em
+`platform/docs/design/linguagem-visual.md`: grade de 14 colunas (16 a partir
+de 1440 px) com as colunas externas reservadas, cabeçalho roxo sólido com o
+GitHub em contorno branco, Pausa 300 nos títulos e Margem no resto, seções
+alternando fundo neutro e `muted` com divisória de 1 px, listas numeradas no
+lugar de grades de cartões e encerramento roxo com a ação em menta. Os tokens
+de cor são os de `@precisa-saude/themes`, copiados para `homepage.css`.
+As fontes Margem e Pausa vêm do mesmo endereço usado pelo FHIR Brasil, sem
+incluir os arquivos licenciados no repositório; IBM Plex, já no site, é a
+alternativa quando as fontes remotas não carregam.
 
-A demonstração de edição é uma simulação local, sem consulta à Crossref ou
-envio ao Lattes. A seção Panorama alterna capturas reais e mostra a passagem
-de uma contagem para o artigo correspondente no editor. O recurso permanece
-identificado como em desenvolvimento até ser incluído na versão pública.
+O fundo abstrato das seções é um `<symbol id="fundo">` no início do
+`index.html`, com a composição de 1440 × 700 do guia (círculo, bloco de canto
+arredondado, contorno, um conjunto de linhas, matriz de pontos e um ponto
+coral). Cada seção o usa com `<use>`, variando lado (`backdrop-flip`), cor
+(`backdrop-mint`), opacidade (`--bd-opacity`) e um `translate`. As linhas não
+devem cruzar títulos nem controles: seções de lista em duas colunas ficam sem
+fundo.
 
-As imagens em `site/img/homepage/` usam exclusivamente o currículo fictício
-`fixtures/demo.xml`. As capturas do Panorama foram feitas no código de
-desenvolvimento `b1bb89d`; os controles da prévia não executam o app.
-As imagens mantêm os arquivos originais, sem a redução e a recompressão usadas
-na proposta visual. Busca e novo item têm 2880 × 1720 pixels; as capturas do
-Panorama têm cerca de 1280 × 720. Preserve as dimensões de cada arquivo nos
-atributos `width` e `height`, inclusive quando trocar a imagem pelo JavaScript.
-O CSS mantém a proporção original e exibe toda a captura, sem recortar a interface.
+As demonstrações são locais, sem consulta à Crossref ou envio ao Lattes. A
+abertura alterna três telas do app; a seção Panorama alterna capturas reais e
+mostra a passagem de uma contagem para o artigo correspondente; o exemplo de
+edição percorre abrir, criar, revisar e enviar. Sem JavaScript, fica a
+primeira tela de cada prévia e o primeiro passo do exemplo.
 
-O destaque inicial reproduz uma sequência de três capturas, mediante clique.
-Com redução de movimento, o botão avança uma tela por vez. Para substituir
-a sequência por uma gravação, coloque o vídeo em `site/img/homepage/` e
-defina o atributo `src` do elemento `video[data-workflow-video]` em
-`site/index.html`. Use apenas o currículo fictício e inclua legendas caso
-haja fala. O vídeo usa controles nativos e não inicia automaticamente;
-se falhar, a sequência de capturas volta a aparecer.
+As imagens saem de `pnpm capture:screenshots`, sempre com o currículo
+fictício `fixtures/demo.xml`: `site/img/editor-claro.jpg` (a mesma do README)
+e, em `site/img/homepage/`, a busca, o novo item e as quatro capturas do
+Panorama, só no tema claro. Todas têm 2880 × 1720 pixels (1440 × 860 em 2x).
+Preserve as dimensões nos atributos `width` e `height` e na tabela `images`
+do `homepage.js`, que as aplica ao trocar a imagem. O CSS mostra a captura
+inteira, sem recorte.
+
+Para trocar a sequência de telas da abertura por uma gravação, coloque o
+vídeo em `site/img/homepage/` e defina o atributo `src` do elemento `video`
+dentro de `figure[data-shot]` em `site/index.html`. Use apenas o currículo
+fictício e inclua legendas caso haja fala. O vídeo usa controles nativos e
+não inicia automaticamente; se falhar, as telas voltam a aparecer.

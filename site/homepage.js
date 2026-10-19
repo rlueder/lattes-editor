@@ -1,34 +1,181 @@
-// Demonstrações locais com dados fictícios. Nenhuma ação consulta ou envia dados ao Lattes.
+// Demonstrações locais com dados fictícios. Nada aqui consulta a Crossref nem
+// envia ao Lattes. Sem JavaScript a página mostra a primeira tela de cada
+// prévia e o primeiro passo do exemplo.
 (() => {
-  const root = document.getElementById('homepage');
-  const form = root.querySelector('.cp-form');
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const root = document.getElementById('pagina');
+
+  // Dimensões reais dos arquivos em img/, para o navegador reservar o espaço
+  // antes de carregar (ver docs/desenvolvimento.md, "Página do projeto").
+  const images = {
+    editor: ['img/editor-claro.jpg', 2880, 1720],
+    new: ['img/homepage/new.jpg', 2880, 1720],
+    panorama: ['img/homepage/panorama.jpg', 2880, 1720],
+    'panorama-item': ['img/homepage/panorama-item.jpg', 2880, 1720],
+    'panorama-people': ['img/homepage/panorama-people.jpg', 2880, 1720],
+    'panorama-timeline': ['img/homepage/panorama-timeline.jpg', 2880, 1720],
+  };
+
+  function setImage(image, name, alt) {
+    const [src, width, height] = images[name];
+    image.width = width;
+    image.height = height;
+    image.src = src;
+    image.alt = alt;
+  }
+
+  function pressOnly(buttons, isPressed) {
+    buttons.forEach((button) => {
+      button.setAttribute('aria-pressed', String(isPressed(button)));
+    });
+  }
+
+  // ── Abertura: três telas do app ──
+  const scenes = {
+    editor: {
+      alt: 'O editor aberto em Produções: seções à esquerda, itens por tipo e ano no centro, filtros e índice à direita.',
+      caption: 'Produções, agrupadas por tipo e ano',
+    },
+    panorama: {
+      alt: 'Panorama: produções por ano em barras, com os anos vazios marcados e as faixas de formação e vínculo embaixo.',
+      caption: 'Panorama: produções por ano',
+    },
+    new: {
+      alt: 'O diálogo Novo item de produção, com a busca de tipos e os tipos mais usados.',
+      caption: 'Novo item, com busca de tipos',
+    },
+  };
+  const shot = root.querySelector('[data-shot]');
+  const shotImage = shot.querySelector('img');
+  const shotCaption = shot.querySelector('[data-shot-caption]');
+  const shotButtons = [...shot.querySelectorAll('[data-scene]')];
+
+  function drawScene(name) {
+    setImage(shotImage, name, scenes[name].alt);
+    shotCaption.textContent = scenes[name].caption;
+    pressOnly(shotButtons, (button) => button.dataset.scene === name);
+  }
+  shotButtons.forEach((button) => {
+    button.addEventListener('click', () => drawScene(button.dataset.scene));
+  });
+
+  // Uma gravação, quando houver, entra no lugar da sequência de telas
+  // (docs/desenvolvimento.md). Se não carregar, as telas voltam.
+  const video = shot.querySelector('video');
+  const shotBar = shot.querySelector('.shot-bar');
+  if (video.getAttribute('src')) {
+    video.hidden = false;
+    shotImage.hidden = true;
+    shotBar.hidden = true;
+    video.addEventListener('error', () => {
+      video.hidden = true;
+      shotImage.hidden = false;
+      shotBar.hidden = false;
+    });
+  }
+
+  // ── Panorama: três vistas e a passagem da contagem ao item ──
+  const views = {
+    production: {
+      image: 'panorama',
+      title: 'Produções por ano',
+      description:
+        'Um ano por coluna, uma cor por tipo de produção, e os anos sem nada marcados. O período pode ser um intervalo ou um atalho, como os quadriênios da CAPES.',
+      alt: 'Produções por ano no Panorama, com o currículo de demonstração.',
+    },
+    people: {
+      image: 'panorama-people',
+      title: 'Pessoas',
+      description:
+        'Coautores, orientandos, orientadores e bancas, em lista ou em rede. Ao clicar numa pessoa, o painel mostra em que seções ela aparece.',
+      alt: 'Pessoas no Panorama: a rede de coautoria, com o currículo de demonstração.',
+    },
+    timeline: {
+      image: 'panorama-timeline',
+      title: 'Linha do tempo',
+      description:
+        'Formação, vínculos, projetos, orientações e prêmios no mesmo eixo de anos. No app, ⌘ ou Ctrl com a roda do mouse aproxima um trecho.',
+      alt: 'Linha do tempo no Panorama, com o currículo de demonstração.',
+    },
+  };
+  const item = {
+    image: 'panorama-item',
+    title: 'O artigo, na seção Produções',
+    description:
+      'A barra de 2023 abriu a seção Produções filtrada para esse artigo, com o botão Editar ao lado.',
+    alt: 'O artigo de 2023 aberto na seção Produções, com o filtro vindo do Panorama.',
+  };
+  const pan = root.querySelector('[data-pan]');
+  const panImage = pan.querySelector('img');
+  const panTitle = pan.querySelector('[data-pan-title]');
+  const panDescription = pan.querySelector('[data-pan-description]');
+  const panButtons = [...pan.querySelectorAll('[data-view]')];
+  const drill = pan.querySelector('[data-drill]');
+  let view = 'production';
+  let showItem = false;
+
+  function drawPanorama() {
+    const current = showItem ? item : views[view];
+    setImage(panImage, current.image, current.alt);
+    panTitle.textContent = current.title;
+    panDescription.textContent = current.description;
+    pressOnly(panButtons, (button) => button.dataset.view === view);
+    drill.hidden = view !== 'production';
+    drill.textContent = showItem ? 'Voltar ao gráfico' : 'Abrir o artigo de 2023';
+  }
+  panButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      view = button.dataset.view;
+      showItem = false;
+      drawPanorama();
+    });
+  });
+  drill.addEventListener('click', () => {
+    showItem = !showItem;
+    drawPanorama();
+  });
+
+  // ── Exemplo de edição: abrir, criar, revisar, enviar ──
+  const flow = root.querySelector('[data-flow]');
+  const form = flow.querySelector('.flow-form');
+  const stepButtons = [...flow.querySelectorAll('[data-step]')];
   const initialTitle = 'Ciência aberta e colaboração no Brasil';
   const types = {
-    article: { name: 'Artigo', route: 'Importar', title: initialTitle },
-    event: { name: 'Evento', route: 'Conector · em teste', title: 'Encontro de ciência aberta' },
+    article: {
+      name: 'Artigo',
+      route: 'Importar do Lattes',
+      title: initialTitle,
+      delivery:
+        'O app põe o artigo no arquivo que o Importar do Lattes lê. Na versão Dev, a extensão aciona o Importar por você; esse passo ainda está em teste.',
+    },
+    event: {
+      name: 'Evento',
+      route: 'Extensão, em teste',
+      title: 'Encontro de ciência aberta',
+      delivery:
+        'Na versão Dev, a extensão grava o evento no Lattes, em teste. Na versão publicada, ele entra na lista do painel com os valores para copiar.',
+    },
     project: {
       name: 'Projeto',
-      route: 'Preenchimento manual',
+      route: 'À mão, no Lattes',
       title: 'Rede de pesquisa em ciência aberta',
+      delivery:
+        'O projeto fica salvo no app e entra na lista do painel, com cada valor pronto para copiar no formulário do Lattes.',
     },
   };
   const state = { step: 0, type: 'article', title: initialTitle, completed: false };
 
   function updatePreview() {
-    root.querySelector('[data-live-title]').textContent = state.title || 'Título do novo item';
-    root.querySelector('[data-live-route]').textContent = types[state.type].route;
-    root.querySelector('.cp-leaf p').textContent =
-      `${types[state.type].name} de exemplo · 2026. Dados fictícios.`;
+    flow.querySelector('[data-live-title]').textContent = state.title || 'Título do novo item';
+    flow.querySelector('[data-live-route]').textContent = types[state.type].route;
+    flow.querySelector('[data-live-kind]').textContent =
+      `${types[state.type].name} de exemplo, 2026. Dados fictícios.`;
   }
 
   function showStep(step, moveFocus = false) {
     state.step = step;
-    const template = document.getElementById(`workflow-step-${step}`);
+    const template = document.getElementById(`passo-${step}`);
     form.replaceChildren(template.content.cloneNode(true));
-    root.querySelectorAll('[data-step]').forEach((button) => {
-      button.setAttribute('aria-pressed', String(Number(button.dataset.step) === step));
-    });
+    pressOnly(stepButtons, (button) => Number(button.dataset.step) === step);
     const select = form.querySelector('[data-type]');
     if (select) {
       select.value = state.type;
@@ -39,35 +186,28 @@
       form.querySelector('[data-review-title]').textContent = state.title.trim()
         ? 'Título preenchido'
         : 'Título a preencher';
-      form.querySelector('[data-review-route]').textContent = `Envio: ${types[state.type].route}`;
+      form.querySelector('[data-review-route]').textContent = `Caminho: ${types[state.type].route}`;
     }
-    if (step === 3) prepareDelivery();
+    if (step === 3) {
+      form.querySelector('h3').textContent = types[state.type].route;
+      form.querySelector('[data-delivery]').textContent = types[state.type].delivery;
+      if (state.completed) {
+        form.querySelector('.result').textContent =
+          'Exemplo concluído. Nada foi enviado ao Lattes.';
+      }
+    }
     updatePreview();
     if (moveFocus) form.querySelector('h3').focus({ preventScroll: true });
   }
 
-  function prepareDelivery() {
-    const descriptions = {
-      article:
-        'O app inclui o artigo no arquivo de produções novas para o Importar do Lattes. A execução automática desse processo pela extensão ainda está em teste.',
-      event:
-        'A inclusão de eventos depende de uma versão da extensão que aceite essa operação. O recurso está em teste no Lattes.',
-      project:
-        'O projeto fica salvo no editor, mas precisa ser cadastrado manualmente no Lattes. O painel apresenta os dados para copiar.',
-    };
-    form.querySelector('h3').textContent = types[state.type].route;
-    form.querySelector('[data-delivery-description]').textContent = descriptions[state.type];
-    if (state.completed)
-      form.querySelector('.cp-result').textContent = 'Demonstração concluída, sem envio ao Lattes.';
-  }
-
-  function handleWorkflowClick(button) {
+  flow.addEventListener('click', (event) => {
+    const button = event.target.closest('button');
+    if (!button) return;
     if (button.hasAttribute('data-step')) showStep(Number(button.dataset.step));
     if (button.hasAttribute('data-back')) showStep(1, true);
     if (button.hasAttribute('data-next')) {
       if (state.step === 2 && !state.title.trim()) {
-        form.querySelector('.cp-result').textContent =
-          'Preencha o título antes de preparar o envio.';
+        form.querySelector('.result').textContent = 'Preencha o título antes de preparar o envio.';
         return;
       }
       showStep(Math.min(3, state.step + 1), true);
@@ -77,18 +217,13 @@
       state.completed = false;
       form.querySelector('[data-title]').value = state.title;
       updatePreview();
-      form.querySelector('.cp-result').textContent =
+      form.querySelector('.result').textContent =
         'Dados de exemplo preenchidos, sem consulta à Crossref.';
     }
     if (button.hasAttribute('data-finish')) {
       state.completed = true;
-      form.querySelector('.cp-result').textContent = 'Demonstração concluída, sem envio ao Lattes.';
+      form.querySelector('.result').textContent = 'Exemplo concluído. Nada foi enviado ao Lattes.';
     }
-  }
-
-  root.querySelector('.cp-flow').addEventListener('click', (event) => {
-    const button = event.target.closest('button');
-    if (button) handleWorkflowClick(button);
   });
   form.addEventListener('change', (event) => {
     if (!event.target.matches('[data-type]')) return;
@@ -105,164 +240,16 @@
     updatePreview();
   });
 
-  const imageSizes = {
-    panorama: [1280, 720],
-    'panorama-item': [1280, 720],
-    'panorama-people': [1265, 712],
-    'panorama-timeline': [1280, 720],
-    new: [2880, 1720],
-  };
-
-  function setImage(image, name, alt) {
-    const [width, height] = imageSizes[name];
-    image.width = width;
-    image.height = height;
-    image.src = `img/homepage/${name}.jpg`;
-    image.alt = alt;
-  }
-
-  const views = {
-    production: {
-      image: 'panorama',
-      title: 'Produções por ano',
-      description:
-        'Compare os tipos de produção ao longo dos anos. Os filtros permitem escolher um intervalo ou usar um período predefinido.',
-    },
-    people: {
-      image: 'panorama-people',
-      title: 'Pessoas',
-      description:
-        'Consulte coautores, orientadores, orientandos e participantes de bancas e projetos. A vista em rede mostra as relações de coautoria.',
-    },
-    timeline: {
-      image: 'panorama-timeline',
-      title: 'Linha do tempo',
-      description:
-        'Veja quando ocorreram a formação, os vínculos, os projetos, as orientações e os prêmios. No app, o zoom permite examinar um trecho da carreira.',
-    },
-  };
-  let selectedView = 'production';
-  let showItem = false;
-  const drillButton = root.querySelector('[data-pan-drill]');
-
-  function drawPanorama() {
-    const view = views[selectedView];
-    const image = root.querySelector('[data-pan-image]');
-    setImage(
-      image,
-      showItem ? 'panorama-item' : view.image,
-      showItem
-        ? 'Artigo de 2023 aberto no currículo a partir do Panorama'
-        : `${view.title} no Panorama, com currículo fictício`,
-    );
-    root.querySelector('[data-pan-title]').textContent = showItem
-      ? 'Artigo selecionado no currículo'
-      : view.title;
-    root.querySelector('[data-pan-description]').textContent = showItem
-      ? 'Ao selecionar o artigo de 2023 no gráfico, o app abre a seção Produções filtrada para esse item. A edição fica disponível na mesma tela.'
-      : view.description;
-    root.querySelectorAll('[data-pan]').forEach((button) => {
-      button.setAttribute('aria-pressed', String(button.dataset.pan === selectedView));
-    });
-    drillButton.hidden = selectedView !== 'production';
-    drillButton.textContent = showItem ? '← Voltar ao gráfico' : 'Ver artigo de 2023 →';
-  }
-
-  root.querySelector('.cp-pan-tabs').addEventListener('click', (event) => {
-    const button = event.target.closest('[data-pan]');
-    if (!button) return;
-    selectedView = button.dataset.pan;
-    showItem = false;
-    drawPanorama();
+  // Fecha o menu do cabeçalho ao escolher um destino.
+  const menu = root.querySelector('.menu');
+  menu.querySelectorAll('a').forEach((link) => {
+    link.addEventListener('click', () => menu.removeAttribute('open'));
   });
-  drillButton.addEventListener('click', () => {
-    showItem = !showItem;
-    drawPanorama();
-  });
-
-  const scenes = [
-    {
-      image: 'panorama',
-      title: '01 / Panorama: produções por ano',
-      alt: 'Produções por ano no Panorama em desenvolvimento',
-    },
-    {
-      image: 'panorama-item',
-      title: '02 / Artigo selecionado no currículo',
-      alt: 'Artigo de 2023 aberto a partir do Panorama',
-    },
-    { image: 'new', title: '03 / Novo item de produção', alt: 'Diálogo Novo item de produção' },
-  ];
-  let sceneIndex = 0;
-  let timer = null;
-  const playButton = root.querySelector('.cp-play');
-
-  function drawScene() {
-    const scene = scenes[sceneIndex];
-    const image = root.querySelector('.cp-screen img');
-    setImage(image, scene.image, scene.alt);
-    root.querySelector('.cp-scene-title').textContent = scene.title;
-    root.querySelectorAll('[data-scene]').forEach((button) => {
-      button.setAttribute('aria-pressed', String(Number(button.dataset.scene) === sceneIndex));
-    });
-  }
-
-  function stopPlayback() {
-    window.clearInterval(timer);
-    timer = null;
-    playButton.textContent = reducedMotion.matches ? 'Próxima tela →' : '▶ Reproduzir prévia';
-    playButton.setAttribute('aria-pressed', 'false');
-  }
-
-  playButton.addEventListener('click', () => {
-    if (reducedMotion.matches) {
-      sceneIndex = (sceneIndex + 1) % scenes.length;
-      drawScene();
-    } else if (timer) {
-      stopPlayback();
-    } else {
-      sceneIndex = 0;
-      drawScene();
-      playButton.textContent = 'Ⅱ Pausar prévia';
-      playButton.setAttribute('aria-pressed', 'true');
-      timer = window.setInterval(() => {
-        sceneIndex += 1;
-        drawScene();
-        if (sceneIndex === scenes.length - 1) stopPlayback();
-      }, 2800);
-    }
-  });
-  root.querySelector('.cp-scenes').addEventListener('click', (event) => {
-    const button = event.target.closest('[data-scene]');
-    if (!button) return;
-    stopPlayback();
-    sceneIndex = Number(button.dataset.scene);
-    drawScene();
-  });
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) stopPlayback();
-  });
-  reducedMotion.addEventListener('change', stopPlayback);
 
   root.querySelectorAll('[data-enhanced]').forEach((element) => {
     element.hidden = false;
   });
+  drawScene('editor');
+  drawPanorama();
   showStep(0);
-  stopPlayback();
-  const video = root.querySelector('[data-workflow-video]');
-  // Ao adicionar uma gravação, configure src no vídeo e mantenha a prévia como alternativa.
-  if (video.getAttribute('src')) {
-    video.hidden = false;
-    root.querySelector('.cp-screen img').hidden = true;
-    root.querySelector('.cp-filmbar').hidden = true;
-    root.querySelector('.cp-filmnote').textContent =
-      'Fluxo no app com currículo fictício. Panorama em desenvolvimento.';
-    video.addEventListener('error', () => {
-      video.hidden = true;
-      root.querySelector('.cp-screen img').hidden = false;
-      root.querySelector('.cp-filmbar').hidden = false;
-      root.querySelector('.cp-filmnote').textContent =
-        'O vídeo não carregou. Veja a sequência de telas do app na prévia.';
-    });
-  }
 })();
