@@ -13,7 +13,7 @@ import {
   setLive,
   submit,
 } from './censo-test-items.ts';
-import { ledgerNow, newAtuacao } from './censo-test-ledger.ts';
+import { ledgerNow, markInCv, newAtuacao } from './censo-test-ledger.ts';
 
 const withoutCode = (p: string) => p.replace(/([?&])f_cod=[A-Z0-9]+&?/, '$1').replace(/[?&]$/, '');
 
@@ -77,8 +77,11 @@ export async function removeTestItems(
   progress.missing = after.missing;
   save(progress);
   setLive({ phase: 'parado' });
+  // A conferência que as listas não fazem: a marca no currículo inteiro.
+  const marca = await markInCv(code, get);
   return {
     faltandoDaBase: after.missing.map((r) => `${r.list} :: ${r.text}`),
+    marcaNoCurriculo: marca,
     registrados: after.added.length,
     removidos: removed.length,
     total: progress.removed.length,

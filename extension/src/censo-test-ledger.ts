@@ -11,6 +11,7 @@ import {
   type PlacedRow,
   rowsOf,
 } from '../../src/census/test-ledger.ts';
+import { TEST_MARK } from '../../src/census/test-plan.ts';
 
 const BASE = 'lattes-editor:itens-de-teste:base';
 
@@ -81,4 +82,19 @@ export async function ledgerNow(
 export function newAtuacao(row: PlacedRow): boolean {
   const base = loadBase();
   return !!base && /cargos_vinculos/i.test(row.link) && !(listKey(row.link) in base.lists);
+}
+
+/**
+ * Quantas vezes a marca dos itens de teste aparece no currículo inteiro, pela
+ * versão atual da tela de envio (pkg_publicar.cv_espelho, só leitura). As
+ * listas não mostram tudo: as atividades de uma atuação aparecem nelas só
+ * pela natureza e pelo período, e 21 atividades de teste passaram assim pela
+ * base de 18/10/2026. A versão atual mostra a descrição de cada uma.
+ */
+export async function markInCv(
+  code: string,
+  get: (path: string) => Promise<{ html: string }>,
+): Promise<number> {
+  const { html } = await get(`pkg_publicar.cv_espelho?f_cod=${code}&f_idioma=1`);
+  return html.split(TEST_MARK).length - 1;
 }

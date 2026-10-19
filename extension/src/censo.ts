@@ -38,7 +38,7 @@ import {
   setLive,
   testProgress,
 } from './censo-test-items.ts';
-import { loadBase, saveBase, snapshotLists } from './censo-test-ledger.ts';
+import { loadBase, markInCv, saveBase, snapshotLists } from './censo-test-ledger.ts';
 import { removeTestItems } from './censo-test-removal.ts';
 
 declare const __CENSO_VERSAO__: string;
@@ -279,6 +279,13 @@ async function prepareTestItems() {
     setLive({ done: 0, last: undefined, phase: 'lendo', total: undefined });
     reading = true;
     try {
+      // Uma base com itens de teste dentro os tomaria por seus.
+      const marks = await markInCv(await code(), get);
+      if (marks > 0) {
+        throw new Error(
+          `O currículo já tem ${marks} ocorrências da marca dos itens de teste. Remova-as antes de tirar a base.`,
+        );
+      }
       saveBase(await snapshotLists(await menuHtml(), await code(), get));
     } finally {
       reading = false;

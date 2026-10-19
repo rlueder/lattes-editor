@@ -30,10 +30,18 @@ pegava. Desde então a passada não depende da marca:
 - No fim de cada remoção, o painel mostra o que ainda está a mais e o que
   sumiu da base. Uma linha da base que sumiu é um erro a conferir no Lattes.
   Acabou quando não há nada a mais nem a menos.
+- As listas não mostram tudo: as atividades de uma atuação aparecem na página
+  dela só pela natureza e pelo período, sem a descrição. Em 18/10/2026, 21
+  atividades de teste da primeira passada (anteriores à base) estavam no
+  currículo e na base, e por isso passaram por todas as conferências. Por
+  isso a base só se tira com a marca ausente do currículo inteiro (a versão
+  atual da tela de envio, `pkg_publicar.cv_espelho`, que mostra a descrição),
+  e toda remoção termina contando a marca nela (`marcaNoCurriculo`).
 
-As regras ficam em `src/census/test-ledger.ts`; a leitura e a exclusão na
-página, em `extension/src/censo-test-ledger.ts` e
-`extension/src/censo-test-items.ts`.
+As regras ficam em `src/census/test-ledger.ts`; a leitura e a conferência na
+página, em `extension/src/censo-test-ledger.ts`; a criação em
+`extension/src/censo-test-items.ts` e a exclusão em
+`extension/src/censo-test-removal.ts`.
 
 ## Como rodar
 
