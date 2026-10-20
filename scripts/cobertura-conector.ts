@@ -311,10 +311,7 @@ function withListValues(raw: string): { rewritten: number; xml: string } {
         }
         if (!outOfList(el, a.name)) continue;
         const value = derivedValue(el.name, a.name) ?? typedChoices(el, a.name)?.[0]?.value;
-        if (value !== undefined && value !== a.value) {
-          a.value = value;
-          changed.add(a);
-        }
+        if (value !== undefined) a.value = value;
       }
     }
   }
