@@ -77,11 +77,8 @@ export const BRIDGE_FEATURES = [
   'alterar-atividades',
   /** Citação de coautores pelo dicionário de coautores (edit-citacao.ts). */
   'alterar-citacoes',
-  /**
-   * Instituição e curso da formação complementar e instituição do endereço
-   * profissional pelas buscas do Lattes (edit-lists.ts, formacao-lookups.ts).
-   */
-  'buscas-complementar-endereco',
+  // 'buscas-complementar-endereco' (edit-lists.ts, formacao-lookups.ts) volta
+  // quando COMPL_ENDERECO_LOOKUPS_ENABLED ligar.
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

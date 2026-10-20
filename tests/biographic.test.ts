@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { LOGON_REDIRECT } from '../scripts/lattes-simulado/html.ts';
-import { applyOp } from '../src/bridge/apply.ts';
+import { applyOp, BUILD_GATES } from '../src/bridge/apply.ts';
 import {
   BIOGRAPHIC_OPS_ENABLED,
   BIOGRAPHIC_SPECS,
@@ -77,6 +77,9 @@ const editMestrado = (attrs: Record<string, string>) => (root: XElement) => {
 };
 
 // ---------------------------------------------------------------- planejar
+
+// As buscas do endereço estão desligadas na montagem (edit-lists.ts); os testes as ligam.
+const LOOKUPS_ON = { ...BUILD_GATES, complEnderecoLookups: true };
 
 describe('dados gerais: chave desligada', () => {
   it('ligada na montagem, entra no contrato; desligada, manda tudo à mão', () => {
@@ -496,7 +499,7 @@ describe('dados gerais no Lattes simulado', () => {
       ['Universidade', 'Universidade de São Paulo'],
     ]);
     expect(undoOp({ ...sentEntry(op, '1', 1000), id: 3 })).toBeUndefined();
-    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(await applyOp(op, lattes.port, LOOKUPS_ON)).toMatchObject({ status: 'conferido' });
     // A busca vai por POST, com os ocultos da janela do endereço.
     const search = postsOf(lattes).find((p) => p.proc === 'PRC_INST_ATIV')!;
     expect(search.pairs).toEqual([
@@ -524,7 +527,7 @@ describe('dados gerais no Lattes simulado', () => {
     const op = addressPlan(
       newInstitution('000000000004', 'Empresa Brasileira de Pesquisa Agropecuária'),
     ).ops[0]!;
-    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(await applyOp(op, lattes.port, LOOKUPS_ON)).toMatchObject({ status: 'conferido' });
     const sent = postsOf(lattes).find((p) => p.proc === 'PRC_ENDERECO')!.fields;
     expect(sent).toMatchObject({ f_cod_inst: '', f_cod_inst2: '000000000004' });
   });
@@ -533,14 +536,14 @@ describe('dados gerais no Lattes simulado', () => {
     const op = addressPlan(newInstitution('000000000002', 'Universidade de São Paulo')).ops[0]!;
     const other = await lattesFor();
     setAttr(inState(other, 'ENDERECO-PROFISSIONAL'), 'CODIGO-INSTITUICAO-EMPRESA', '000000000001');
-    expect(await applyOp(op, other.port)).toMatchObject({
+    expect(await applyOp(op, other.port, LOOKUPS_ON)).toMatchObject({
       detail: 'O Lattes não está como o editor espera: Instituição',
       status: 'divergente',
     });
     expect(posts(other)).toEqual([]);
     const missing = addressPlan(newInstitution('000000000099', 'Universidade Inexistente')).ops[0]!;
     const lattes = await lattesFor();
-    expect(await applyOp(missing, lattes.port)).toMatchObject({
+    expect(await applyOp(missing, lattes.port, LOOKUPS_ON)).toMatchObject({
       detail: 'Instituição não encontrada na busca do Lattes (0 resultados com o código)',
       status: 'erro',
     });
@@ -549,7 +552,7 @@ describe('dados gerais no Lattes simulado', () => {
       intercept: (req, _state, next) =>
         req.proc.toLowerCase() === 'prc_inst_ativ' ? { html: LOGON_REDIRECT } : next(),
     });
-    expect(await applyOp(op, logon.port)).toMatchObject({ status: 'sessao' });
+    expect(await applyOp(op, logon.port, LOOKUPS_ON)).toMatchObject({ status: 'sessao' });
   });
 
   it('endereço: o nome que a página não mostra depois de gravar é acusado', async () => {
@@ -564,7 +567,7 @@ describe('dados gerais no Lattes simulado', () => {
       }),
     });
     const op = addressPlan(newInstitution('000000000002', 'Universidade de São Paulo')).ops[0]!;
-    const r = await applyOp(op, lattes.port);
+    const r = await applyOp(op, lattes.port, LOOKUPS_ON);
     expect(r.status).toBe('divergente');
     expect(r.detail).toMatch(/^O Lattes não gravou/);
   });
@@ -632,7 +635,7 @@ describe('dados gerais no Lattes simulado', () => {
         code: '000002000004',
       },
     });
-    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(await applyOp(op, lattes.port, LOOKUPS_ON)).toMatchObject({ status: 'conferido' });
     // A janela com a letra da instituição, como o orgao() da página.
     expect(lattes.state.log.map((l) => l.path)).toEqual(
       expect.arrayContaining([
@@ -671,7 +674,7 @@ describe('dados gerais no Lattes simulado', () => {
       institution: { code: '000000000001' },
       organ: { code: '000002000004' },
     });
-    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(await applyOp(op, lattes.port, LOOKUPS_ON)).toMatchObject({ status: 'conferido' });
     const el = inState(lattes, 'ENDERECO-PROFISSIONAL');
     expect(getAttr(el, 'CODIGO-INSTITUICAO-EMPRESA')).toBe('000000000001');
     expect(getAttr(el, 'CODIGO-ORGAO')).toBe('000002000004');
@@ -680,14 +683,14 @@ describe('dados gerais no Lattes simulado', () => {
   it('endereço: órgão que não está na janela, ou outro no Lattes, nada é enviado', async () => {
     const missing = addressPlan(newOrgan('000099000000', 'Inexistente'), ufrgs).ops[0]!;
     const lattes = await lattesWith(ufrgs);
-    expect(await applyOp(missing, lattes.port)).toMatchObject({
+    expect(await applyOp(missing, lattes.port, LOOKUPS_ON)).toMatchObject({
       detail: expect.stringMatching(/^Órgão não encontrado na janela de órgãos/),
       status: 'erro',
     });
     const op = addressPlan(newOrgan('000002000004', 'Instituto de Informática'), ufrgs).ops[0]!;
     const other = await lattesWith(ufrgs);
     setAttr(inState(other, 'ENDERECO-PROFISSIONAL'), 'NOME-ORGAO', 'Outro órgão');
-    expect(await applyOp(op, other.port)).toMatchObject({
+    expect(await applyOp(op, other.port, LOOKUPS_ON)).toMatchObject({
       detail: 'O Lattes não está como o editor espera: Órgão/Unidade',
       status: 'divergente',
     });

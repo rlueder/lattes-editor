@@ -68,11 +68,16 @@ export const EDIT_FORMACAO_COMPL_ENABLED = true;
 
 /**
  * Instituição e curso da formação complementar e a instituição e o órgão do
- * endereço profissional pelas buscas do Lattes (endereco-buscas.ts). Ligada para o
- * teste ao vivo; nada disso foi gravado num Lattes real. O app só manda essas
- * operações a uma extensão que anuncia 'buscas-complementar-endereco'.
+ * endereço profissional pelas buscas do Lattes (endereco-buscas.ts). Desligada:
+ * no Lattes real (20/10/2026), num MBA de teste, o envio com a instituição e o
+ * curso que as janelas da página gravariam (instituição com a letra, curso
+ * sem ela, os textos em f_inst_old e f_curso_old) foi aceito e a releitura
+ * voltou com os de antes; o conector acusou divergente e nada mudou. Como a
+ * página troca a instituição e o curso de um item que já existe ainda não foi
+ * visto. O app só manda essas operações a uma extensão que anuncia
+ * 'buscas-complementar-endereco'.
  */
-export const COMPL_ENDERECO_LOOKUPS_ENABLED = true;
+export const COMPL_ENDERECO_LOOKUPS_ENABLED = false;
 
 export type ListEditKind = 'formacao-complementar' | 'premio';
 
