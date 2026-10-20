@@ -24,9 +24,17 @@ export interface MenuAuthor {
   t: string;
 }
 
-/** As linhas do vetor autorDP do menu (`autorDP = [...]`), lidas como literal. */
-export function menuAuthors(menuHtml: string): MenuAuthor[] | undefined {
-  const m = /\bautorDP\s*=\s*/.exec(menuHtml);
+/**
+ * As linhas do vetor autorDP do menu (`autorDP = [...]`), lidas como literal.
+ * `vector` lê outro vetor do menu com as mesmas chaves: titularPessoaDP, a
+ * sugestão de depositante ou titular pessoa (lido no código em 15/10/2026:
+ * `self.parent.titularPessoaDP`). Inferido: que ele tenha a forma do autorDP
+ * (l, c, t), com as entradas do dicionário de coautores, como a linha do
+ * titularPessoaProvider da patente de teste (20/10/2026), cujo c era o da
+ * entrada.
+ */
+export function menuAuthors(menuHtml: string, vector = 'autorDP'): MenuAuthor[] | undefined {
+  const m = new RegExp(`\\b${vector}\\s*=\\s*`).exec(menuHtml);
   if (!m) return undefined;
   try {
     const { value } = parseJsLiteral(menuHtml, m.index + m[0].length);

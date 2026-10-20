@@ -5,12 +5,24 @@
 // grade de situações (providerContatos, com o id sem aspas e com zero à
 // esquerda, como a página escreve).
 //
+// A exportação da patente de teste (20/10/2026) guarda a pessoa depositante em
+// NOME-DO-DEPOSITANTE, copia essa pessoa também nos AUTORES (com a ordem
+// contada à parte) e tem um HISTORICO-SITUACOES-PATENTE por linha da grade de
+// situações; o autorProvider da página não tem o depositante. O simulado faz
+// o mesmo: a página deixa de fora o autor que é depositante, e o envio grava o
+// NOME-DO-DEPOSITANTE, a cópia nos autores e o histórico.
+//
 // Inferido, como em grades.ts: que o servidor grave cada grade como chegou no
 // oculto. Um envio com a grade de depositantes vazia apaga os depositantes,
 // e é isso que o teste do conector precisa ver acontecer quando o envio erra.
+// Também inferidos: como a exportação junta mais de um depositante (aqui com
+// "; ") e o STATUS-SITUACAO-PATENTE de uma linha gravada (aqui SIM, como veio).
 
 import { PATENT_DATE_CODES } from '../../src/bridge/create-registro-rules.ts';
-import { childElements, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
+import { foldText } from '../../src/model/fold-text.ts';
+import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
+import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
+import { lattesSchema } from '../../src/schema/lattes.ts';
 import { applyGrids, gridScripts } from './grades.ts';
 import type { SimRequest } from './pedido.ts';
 
@@ -19,35 +31,16 @@ type Row = Record<string, string | boolean>;
 /** Os depositantes de cada item: o XML do simulado não guarda a grade. */
 const holders = new WeakMap<XElement, { inst: Row[]; pessoa: Row[] }>();
 
-const holdersOf = (item: XElement) => {
-  let h = holders.get(item);
-  if (!h) {
-    h = { inst: [], pessoa: [] };
-    holders.set(item, h);
-  }
-  return h;
-};
-
-/** Um depositante pessoa como a página o traz (entrada do dicionário: l, c, t). */
-export function seedHolder(item: XElement, name: string, citation: string, code: string): void {
-  holdersOf(item).pessoa = [
-    Object.fromEntries([
-      ['l', name],
-      ['c', code],
-      ['t', citation],
-      ['editable', false],
-      ['deletable', true],
-      ['staValidado', 'N'],
-    ]),
-  ];
-}
-
-/** Os nomes dos depositantes pessoas guardados para o item. */
-export const storedHolders = (item: XElement): string[] =>
-  holdersOf(item).pessoa.map((r) => String(r.l));
-
-const provider = (decl: string, rows: Row[]) =>
-  `<script>\n${decl} = \n${JSON.stringify([...rows, {}])};\n</script>`;
+/** Uma linha de depositante pessoa como a página a traz (entrada do dicionário: l, c, t). */
+const holderRow = (name: string, citation: string, code: string): Row =>
+  Object.fromEntries([
+    ['l', name],
+    ['c', code],
+    ['t', citation],
+    ['editable', false],
+    ['deletable', true],
+    ['staValidado', 'N'],
+  ]);
 
 const registryOf = (item: XElement): XElement | undefined => {
   for (const c of childElements(item)) {
@@ -56,6 +49,54 @@ const registryOf = (item: XElement): XElement | undefined => {
   }
   return undefined;
 };
+
+/**
+ * Sem grade guardada, a do NOME-DO-DEPOSITANTE do XML, com a citação do autor
+ * de mesmo nome. A entrada do dicionário não está no XML: c 0, o que a página
+ * dá a uma pessoa digitada na hora (observado em 19/10/2026).
+ */
+function holdersFromXml(item: XElement): Row[] {
+  const reg = registryOf(item);
+  const name = ((reg && getAttr(reg, 'NOME-DO-DEPOSITANTE')) ?? '').trim();
+  if (!name) return [];
+  const copy = childElements(item, 'AUTORES').find(
+    (a) => foldText(getAttr(a, 'NOME-COMPLETO-DO-AUTOR') ?? '') === foldText(name),
+  );
+  return [holderRow(name, (copy && getAttr(copy, 'NOME-PARA-CITACAO')) ?? '', '0')];
+}
+
+const holdersOf = (item: XElement) => {
+  let h = holders.get(item);
+  if (!h) {
+    h = { inst: [], pessoa: holdersFromXml(item) };
+    holders.set(item, h);
+  }
+  return h;
+};
+
+/** Um depositante pessoa como a página o traz (entrada do dicionário: l, c, t). */
+export function seedHolder(item: XElement, name: string, citation: string, code: string): void {
+  holdersOf(item).pessoa = [holderRow(name, citation, code)];
+}
+
+/** Põe mais um depositante pessoa no item. */
+export function addHolder(item: XElement, name: string, citation: string, code: string): void {
+  holdersOf(item).pessoa.push(holderRow(name, citation, code));
+}
+
+/** Os nomes dos depositantes pessoas guardados para o item. */
+export const storedHolders = (item: XElement): string[] =>
+  holdersOf(item).pessoa.map((r) => String(r.l));
+
+/** O autor do XML que é a cópia de um depositante: a página não o mostra. */
+const isHolderCopy = (item: XElement) => {
+  const names = new Set(storedHolders(item).map((n) => foldText(n.trim())));
+  return (author: XElement) =>
+    names.has(foldText((getAttr(author, 'NOME-COMPLETO-DO-AUTOR') ?? '').trim()));
+};
+
+const provider = (decl: string, rows: Row[]) =>
+  `<script>\n${decl} = \n${JSON.stringify([...rows, {}])};\n</script>`;
 
 const slash = (xml: string) =>
   /^\d{8}$/.test(xml) ? `${xml.slice(0, 2)}/${xml.slice(2, 4)}/${xml.slice(4)}` : '';
@@ -84,7 +125,7 @@ export function registryGridScripts(
 ): string {
   const h = item ? holdersOf(item) : { inst: [], pessoa: [] };
   return [
-    gridScripts(item),
+    gridScripts(item, undefined, item && withHolders ? isHolderCopy(item) : undefined),
     ...(withHolders
       ? [
           provider('var titularPessoaProvider', h.pessoa),
@@ -101,6 +142,58 @@ const rowsOf = (grid: string) =>
     .filter(Boolean)
     .map((r) => r.split('|'));
 
+/**
+ * Os depositantes no XML, como a exportação os escreve: NOME-DO-DEPOSITANTE
+ * e uma cópia de cada um nos AUTORES, antes dos autores e com a ordem contada
+ * à parte (observado em 20/10/2026).
+ */
+function writeHolders(item: XElement): void {
+  const names = storedHolders(item);
+  const reg = registryOf(item);
+  if (reg) setAttr(reg, 'NOME-DO-DEPOSITANTE', names.join('; '));
+  const authors = childElements(item, 'AUTORES');
+  item.children = item.children.filter((c) => !authors.includes(c as XElement));
+  holdersOf(item).pessoa.forEach((r, i) => {
+    insertInSchemaOrder(
+      lattesSchema,
+      item,
+      element('AUTORES', {
+        'NOME-COMPLETO-DO-AUTOR': String(r.l),
+        'NOME-PARA-CITACAO': String(r.t),
+        'NRO-ID-CNPQ': '',
+        'ORDEM-DE-AUTORIA': String(i + 1),
+      }),
+    );
+  });
+  for (const a of authors) insertInSchemaOrder(lattesSchema, item, a);
+}
+
+/**
+ * O histórico de situações da patente a partir da grade postada: um
+ * HISTORICO-SITUACOES-PATENTE por linha, com o rótulo e a data
+ * (observado na exportação de 20/10/2026).
+ */
+function writeHistory(reg: XElement, item: XElement, xml: string): void {
+  const detail = childElements(item).find((c) => childElements(c).includes(reg));
+  if (!detail) return;
+  detail.children = detail.children.filter(
+    (c) => c.kind !== 'element' || c.name !== 'HISTORICO-SITUACOES-PATENTE',
+  );
+  const re =
+    /<item>\s*<id>\d+<\/id>\s*<contato>([^<]*)<\/contato>\s*<endereco>(\d{2})\/(\d{2})\/(\d{4})<\/endereco>/g;
+  for (const m of xml.matchAll(re)) {
+    insertInSchemaOrder(
+      lattesSchema,
+      detail,
+      element('HISTORICO-SITUACOES-PATENTE', {
+        'DATA-SITUACAO-PATENTE': `${m[2]}${m[3]}${m[4]}`,
+        'DESCRICAO-SITUACAO-PATENTE': m[1]!,
+        'STATUS-SITUACAO-PATENTE': 'SIM',
+      }),
+    );
+  }
+}
+
 /** Grava as grades do POST no item, como chegaram. */
 export function applyRegistryGrids(
   item: XElement,
@@ -113,16 +206,9 @@ export function applyRegistryGrids(
     // titularPessoaProvider ({l, c, t, …}); GRID_SPECS lista quais chaves
     // vão, não a ordem (serializeGrid).
     holdersOf(item).pessoa = rowsOf(req.get('f_depositante_pessoa_l') ?? '').map(
-      ([l = '', c = '', t = '']) =>
-        Object.fromEntries([
-          ['l', l],
-          ['c', c],
-          ['t', t],
-          ['editable', false],
-          ['deletable', true],
-          ['staValidado', 'N'],
-        ]),
+      ([l = '', c = '', t = '']) => holderRow(l, t, c),
     );
+    writeHolders(item);
   }
   if (dates) {
     const reg = registryOf(item);
@@ -134,5 +220,6 @@ export function applyRegistryGrids(
       ).exec(xml);
       setAttr(reg, attr, m ? `${m[1]}${m[2]}${m[3]}` : '');
     }
+    writeHistory(reg, item, xml);
   }
 }

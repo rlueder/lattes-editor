@@ -115,7 +115,7 @@ export function AttributeField({
     change(next);
     if (next === (getAttr(el, name) ?? '')) return;
     setAttr(el, name, next);
-    applyLinkedAttrs(el, name);
+    applyLinkedAttrs(el, name, root);
     onEdit(`${elementLabel(el.name)} · ${text}`);
   };
   const shownError = error ?? linkError(name, value);

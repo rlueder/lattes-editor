@@ -15,6 +15,7 @@
 // como o check() faria e troca só a que a alteração mexe.
 
 import { foldText } from '../../model/fold-text.ts';
+import { getAttr, type XElement } from '../../model/xml.ts';
 import { decodeHtmlEntities } from '../html-text.ts';
 import { parseJsLiteral } from '../lattes-lists.ts';
 import type { AuthorPart, GridField } from './types.ts';
@@ -194,6 +195,17 @@ export interface AuthorSpec {
   name: string;
 }
 
+/** Os autores (ou participantes) de um item, na ordem de autoria. */
+export function authorsOf(els: XElement[], part: AuthorPart = AUTHOR_PART): AuthorSpec[] {
+  return [...els]
+    .sort((a, b) => Number(getAttr(a, part.order) ?? 0) - Number(getAttr(b, part.order) ?? 0))
+    .map((a) => ({
+      citation: getAttr(a, part.citation) ?? '',
+      cnpq: getAttr(a, part.cnpq) ?? '',
+      name: getAttr(a, part.name) ?? '',
+    }));
+}
+
 export const authorNames = (rows: readonly GridRow[]) =>
   rows.map((r) => r.l).filter((l): l is string => typeof l === 'string' && l.trim() !== '');
 
@@ -232,4 +244,38 @@ export function authorRows(
     );
   }
   return { missing, rows };
+}
+
+/**
+ * A grade de depositantes ou titulares pessoas depois do envio, com um nome
+ * só (vazio: a grade sem ninguém). Quem já está na grade segue com a linha
+ * dela; quem não está sai do vetor titularPessoaDP do menu, como a sugestão da
+ * página faria, numa linha como a do titularPessoaProvider da patente de teste
+ * (l, c, t, editable, deletable e staValidado N, lida em 20/10/2026). A linha
+ * sem código (a da própria pessoa no autorDP) não conta: a própria pessoa como
+ * depositante não foi vista. Inferido: que a linha escolhida na sugestão
+ * chegue ao servidor como a que a página traz gravada.
+ */
+export function holderRows(
+  current: readonly GridRow[],
+  known: readonly { c: string; l: string; t: string }[],
+  after: string,
+): { missing: string } | { rows: GridRow[] } {
+  if (!after.trim()) return { rows: [] };
+  const kept = current.find((r) => typeof r.l === 'string' && same(r.l, after));
+  if (kept) return { rows: [kept] };
+  const menu = known.find((k) => k.c.trim() !== '' && same(k.l, after));
+  if (!menu) return { missing: after };
+  return {
+    rows: [
+      Object.fromEntries([
+        ['l', menu.l],
+        ['c', menu.c],
+        ['t', menu.t],
+        ['editable', false],
+        ['deletable', true],
+        ['staValidado', 'N'],
+      ]),
+    ],
+  };
 }
