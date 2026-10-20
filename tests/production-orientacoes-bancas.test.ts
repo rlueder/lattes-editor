@@ -30,6 +30,8 @@ const XML = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS NOME-COMPLE
 <OUTRA-PRODUCAO><ORIENTACOES-CONCLUIDAS>
 <ORIENTACOES-CONCLUIDAS-PARA-MESTRADO SEQUENCIA-PRODUCAO="41"><DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-MESTRADO NATUREZA="Dissertação de mestrado" TIPO="ACADEMICO" TITULO="Orientação de Exemplo" ANO="2021" PAIS="Brasil" IDIOMA="Português" HOME-PAGE="" FLAG-RELEVANCIA="NAO" DOI="" TITULO-INGLES=""/><DETALHAMENTO-DE-ORIENTACOES-CONCLUIDAS-PARA-MESTRADO TIPO-DE-ORIENTACAO="ORIENTADOR_PRINCIPAL" NOME-DO-ORIENTADO="Aluna de Exemplo" NOME-DA-INSTITUICAO="Universidade de Exemplo" FLAG-BOLSA="SIM" NOME-DA-AGENCIA="Agência de Exemplo"/></ORIENTACOES-CONCLUIDAS-PARA-MESTRADO>
 <OUTRAS-ORIENTACOES-CONCLUIDAS SEQUENCIA-PRODUCAO="42"><DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NATUREZA="INICIACAO_CIENTIFICA" TITULO="Iniciação de Exemplo" ANO="2019" PAIS="Brasil" IDIOMA="Português" FLAG-RELEVANCIA="NAO"/><DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NOME-DO-ORIENTADO="Bolsista de Exemplo" FLAG-BOLSA="SIM"/></OUTRAS-ORIENTACOES-CONCLUIDAS>
+<OUTRAS-ORIENTACOES-CONCLUIDAS SEQUENCIA-PRODUCAO="47"><DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NATUREZA="TRABALHO_DE_CONCLUSAO_DE_CURSO_GRADUACAO" TITULO="Trabalho de Exemplo" ANO="2020" PAIS="Brasil" IDIOMA="Português" FLAG-RELEVANCIA="NAO"/><DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NOME-DO-ORIENTADO="Formanda de Exemplo" CODIGO-INSTITUICAO="000000000001" NOME-DA-INSTITUICAO="Universidade Federal do Rio Grande do Sul" CODIGO-CURSO="00000001" NOME-DO-CURSO="Genética e Biologia Molecular" FLAG-BOLSA="NAO"/></OUTRAS-ORIENTACOES-CONCLUIDAS>
+<OUTRAS-ORIENTACOES-CONCLUIDAS SEQUENCIA-PRODUCAO="48"><DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NATUREZA="MONOGRAFIA_DE_CONCLUSAO_DE_CURSO_APERFEICOAMENTO_E_ESPECIALIZACAO" TITULO="Monografia de Exemplo" ANO="2020" PAIS="Brasil" IDIOMA="Português" FLAG-RELEVANCIA="NAO"/><DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NOME-DO-ORIENTADO="Especialista de Exemplo" CODIGO-INSTITUICAO="000000000001" NOME-DA-INSTITUICAO="Universidade Federal do Rio Grande do Sul" CODIGO-CURSO="00000005" NOME-DO-CURSO="Especialização em Genética" FLAG-BOLSA="NAO"/></OUTRAS-ORIENTACOES-CONCLUIDAS>
 </ORIENTACOES-CONCLUIDAS></OUTRA-PRODUCAO>
 <DADOS-COMPLEMENTARES>
 <ORIENTACOES-EM-ANDAMENTO><ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO SEQUENCIA-PRODUCAO="43"><DADOS-BASICOS-DA-ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO NATUREZA="Tese de doutorado" TITULO-DO-TRABALHO="Tese de Exemplo" ANO="2022" PAIS="Brasil" IDIOMA="Português"/><DETALHAMENTO-DA-ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO TIPO-DE-ORIENTACAO="ORIENTADOR_PRINCIPAL" NOME-DO-ORIENTANDO="Doutorando de Exemplo" FLAG-BOLSA="NAO"/></ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO></ORIENTACOES-EM-ANDAMENTO>
@@ -198,8 +200,15 @@ describe('orientações: plano', () => {
     expect(reasonOf(set('41', 'DETALHAMENTO', { 'NOME-DA-AGENCIA': 'Outra' }))).toMatch(
       /escolha a agência pela lista do Lattes/,
     );
-    expect(reasonOf(set('41', 'DADOS-BASICOS', { NATUREZA: 'Outra' }))).toMatch(
-      /natureza muda o tipo do item/,
+    expect(reasonOf(set('41', 'DADOS-BASICOS', { NATUREZA: 'Outra' }))).toBe(
+      'Natureza: Dissertação de mestrado é o tipo do item no Lattes; para trocar, inclua o item de novo no tipo certo',
+    );
+    expect(reasonOf(set('43', 'DADOS-BASICOS', { NATUREZA: 'Outra' }))).toMatch(
+      /^Natureza: Tese de doutorado é o tipo do item no Lattes/,
+    );
+    // O tipo do mestrado sai da janela do subtipo, que não foi lida.
+    expect(reasonOf(set('41', 'DADOS-BASICOS', { TIPO: 'PROFISSIONALIZANTE' }))).toMatch(
+      /^Tipo: o tipo sai de uma janela do Lattes/,
     );
     expect(reasonOf(set('41', 'DADOS-BASICOS', { DOI: '10.1/x' }))).toMatch(
       /O formulário deste tipo no Lattes não tem: DOI/,
@@ -527,5 +536,171 @@ describe('instituição, curso e agência pelas buscas do Lattes (Fase 2)', () =
     expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
     const detail = partOf(lattes.state.root, '46', 'DETALHAMENTO');
     expect(getAttr(detail, 'NOME-INSTITUICAO')).toBe('Universidade de São Paulo');
+  });
+});
+
+describe('natureza das outras orientações concluídas (testa_nivel, lido em 20/10/2026)', () => {
+  const NATURE = {
+    graduacao: 'TRABALHO_DE_CONCLUSAO_DE_CURSO_GRADUACAO',
+    ic: 'INICIACAO_CIENTIFICA',
+    monografia: 'MONOGRAFIA_DE_CONCLUSAO_DE_CURSO_APERFEICOAMENTO_E_ESPECIALIZACAO',
+    outra: 'ORIENTACAO-DE-OUTRA-NATUREZA',
+  };
+  const plan = (edit: (root: XElement) => void, productionLookups = true) => {
+    const original = parseXml(XML).root;
+    const working = parseXml(XML).root;
+    edit(working);
+    return planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Item' })),
+      working,
+      { editProduction: true, productionLookups },
+    );
+  };
+  const nature = (seq: string, value: string) => set(seq, 'DADOS-BASICOS', { NATUREZA: value });
+  const reason = (edit: (root: XElement) => void) => {
+    const p = plan(edit);
+    expect(p.ops).toEqual([]);
+    return p.unsupported.map((u) => u.reason).join(' | ');
+  };
+
+  it('graduação para aperfeiçoamento: o rádio, os ocultos limpos e as escolhas de novo', () => {
+    const p = plan(nature('47', NATURE.monografia));
+    expect(p.unsupported).toEqual([]);
+    expect(p.ops[0]).toMatchObject({
+      expect: { F_COD_PROD: '44' },
+      lookups: {
+        course: { before: '00000001', code: '00000001' },
+        institution: {
+          before: '000000000001',
+          code: '000000000001',
+          name: 'Universidade Federal do Rio Grande do Sul',
+        },
+        nature: '43',
+      },
+      set: { F_COD_PROD: '43', f_dsc_outra: '', f_sub_prod: '' },
+      target: 'orientacao-concluida-outra',
+    });
+    // O antes dos ocultos limpos não se confere.
+    expect((p.ops[0] as ProductionOp).expect).not.toHaveProperty('f_dsc_outra');
+  });
+
+  it('de ou para outra natureza fica à mão: a janela do subtipo não foi lida', () => {
+    expect(reason(nature('47', NATURE.outra))).toMatch(
+      /^Natureza: a orientação de outra natureza pede o subtipo/,
+    );
+  });
+
+  it('sem a instituição ou sem o curso que a natureza nova exige: à mão, com o motivo', () => {
+    // A iniciação científica do exemplo não tem instituição.
+    expect(reason(nature('42', NATURE.graduacao))).toMatch(
+      /o item não tem o código dela; troque no Lattes$/,
+    );
+    const noCourse = (root: XElement) => {
+      set('42', 'DETALHAMENTO', {
+        'CODIGO-INSTITUICAO': '000000000001',
+        'NOME-DA-INSTITUICAO': 'Universidade Federal do Rio Grande do Sul',
+      })(root);
+    };
+    const base = parseXml(XML).root;
+    noCourse(base);
+    const working = parseXml(XML).root;
+    noCourse(working);
+    nature('42', NATURE.graduacao)(working);
+    const p = planChanges(
+      diffDocuments(base, working).map((change) => ({ change, itemTitle: 'Item' })),
+      working,
+      { editProduction: true, productionLookups: true },
+    );
+    expect(p.unsupported.map((u) => u.reason)).toEqual([
+      'Natureza: com a natureza nova, o Lattes exige o curso, e o item não tem; troque a natureza no Lattes e escolha o curso pela lista dele',
+    ]);
+    // A iniciação científica não exige o curso (o check() da página).
+    const toIc = plan(nature('47', NATURE.ic));
+    expect(toIc.unsupported).toEqual([]);
+  });
+
+  it('com o curso trocado na mesma fila: natureza e curso vão em envios separados', () => {
+    const p = plan((root) => {
+      nature('47', NATURE.monografia)(root);
+      set('47', 'DETALHAMENTO', {
+        'CODIGO-CURSO': '00000005',
+        'NOME-DO-CURSO': 'Especialização em Genética',
+      })(root);
+    });
+    expect(p.unsupported.map((u) => u.reason)).toContain(
+      'Natureza: troque a natureza num envio e a instituição ou o curso em outro',
+    );
+  });
+
+  it('extensão sem as buscas: a troca fica à mão', () => {
+    const p = plan(nature('47', NATURE.monografia), false);
+    expect(p.ops).toEqual([]);
+    expect(p.unsupported[0]?.reason).toMatch(/desligado nesta montagem/);
+  });
+
+  it('no Lattes simulado: grava, com o curso buscado no nível da natureza nova', async () => {
+    const lattes = await lattesFor();
+    const op = plan(nature('47', NATURE.monografia)).ops[0] as ProductionOp;
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    // retnivel(): 43 pede o nível 2, e o aperfeiçoamento f_sta_area=N.
+    const searches = lattes.state.log.filter((l) => /^prc_curso_form/i.test(l.path));
+    expect(searches.map((l) => l.path)).toEqual([
+      expect.stringMatching(/f_inst=V000000000001&f_nivel=2&f_sta_area=N$/),
+    ]);
+    const post = postsOf(lattes).at(-1)!;
+    expect(post.fields).toMatchObject({
+      F_COD_PROD: '43',
+      f_cod_curso: '00000001',
+      f_cod_inst: 'V000000000001',
+      f_dsc_outra: '',
+      f_sub_prod: '',
+    });
+    expect(getAttr(partOf(lattes.state.root, '47', 'DADOS-BASICOS'), 'NATUREZA')).toBe(
+      NATURE.monografia,
+    );
+    const detail = partOf(lattes.state.root, '47', 'DETALHAMENTO');
+    expect(getAttr(detail, 'CODIGO-CURSO')).toBe('00000001');
+    expect(getAttr(detail, 'CODIGO-INSTITUICAO')).toBe('000000000001');
+  });
+
+  it('curso que não está na lista do nível novo: nada é enviado', async () => {
+    const lattes = await lattesFor();
+    // A especialização só aparece no nível 2; a graduação pede o 1.
+    const op = plan(nature('48', NATURE.graduacao)).ops[0] as ProductionOp;
+    expect(await applyOp(op, lattes.port)).toMatchObject({
+      detail: expect.stringMatching(/^Com a natureza nova, o curso do item não está na lista/),
+      status: 'erro',
+    });
+    expect(postsOf(lattes)).toEqual([]);
+  });
+
+  it('o Lattes com outra natureza: nada é enviado', async () => {
+    const lattes = await lattesFor();
+    setAttr(partOf(lattes.state.root, '47', 'DADOS-BASICOS'), 'NATUREZA', NATURE.ic);
+    const op = plan(nature('47', NATURE.monografia)).ops[0] as ProductionOp;
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'divergente' });
+    expect(postsOf(lattes)).toEqual([]);
+  });
+});
+
+describe('natureza das bancas: sem envio, a página não foi lida', () => {
+  const manualOf = (id: string) =>
+    Object.entries(ORIENTACOES_BANCAS_TARGETS.find((t) => t.id === id)!.manual ?? {}).find(
+      ([key]) => key.endsWith('@NATUREZA'),
+    )?.[1];
+
+  it('cada tipo com uma natureza diz que ela é o tipo do item', () => {
+    expect(manualOf('banca-trabalho-mestrado')).toMatch(/^Mestrado é o tipo do item no Lattes/);
+    expect(manualOf('banca-julgadora-outra')).toMatch(/^Outra é o tipo do item no Lattes/);
+    expect(reasonOf(set('46', 'DADOS-BASICOS', { NATUREZA: 'Outra' }))).toMatch(
+      /^Natureza: Concurso público é o tipo do item no Lattes/,
+    );
+  });
+
+  it('a qualificação (A13 e A16) e as outras participações ficam à mão, com o motivo', () => {
+    expect(
+      reasonOf(set('45', 'DADOS-BASICOS', { NATUREZA: 'Exame de qualificação de doutorado' })),
+    ).toMatch(/qualificação de mestrado e de doutorado/);
+    expect(manualOf('banca-trabalho-outra')).toMatch(/não tem opção para outras participações/);
   });
 });

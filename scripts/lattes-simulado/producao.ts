@@ -89,6 +89,9 @@ function form(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
   if (t.nature && !controls.some((c) => c.includes(`name="${t.nature!.field}"`))) {
     controls.push(h.text(t.nature.field, t.nature.values[0] ?? ''));
   }
+  // Os ocultos que a troca da natureza limpa (f_dsc_outra e f_sub_prod da
+  // orientação, lidos em 20/10/2026), vazios: o simulado não guarda o subtipo.
+  for (const name of t.natureSwap?.clears ?? []) controls.push(h.hidden(name, ''));
   // Dois atributos no mesmo campo: o controle sai uma vez só.
   const unique = [...new Set(controls)].join('\n');
   const body = `<form name="${t.form.name}" method="post" action="${t.form.action}">

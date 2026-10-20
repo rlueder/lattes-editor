@@ -19,6 +19,7 @@ import {
 } from './item-lists.ts';
 import { lookupAttrs, planLookups, type ProductionLookups } from './lookups.ts';
 import { planMembers } from './members.ts';
+import { planNatureSwap } from './nature.ts';
 import { isOrganChange, type OrganChoice, planOrgan } from './organ.ts';
 import { PRODUCTION_TARGETS } from './targets/index.ts';
 import type { AuthorPart, FieldMap, ProductionTarget } from './types.ts';
@@ -450,6 +451,11 @@ export function planProduction(
     return { reason: `Valor sem correspondência no formulário do Lattes: ${unmapped.join(', ')}` };
   }
   if (rows.length === 0) return { reason: 'Nada a enviar' };
+  // A natureza trocada no lugar: os ocultos limpos e a instituição e o curso
+  // escolhidos de novo com o nível dela (nature.ts).
+  const swapped = planNatureSwap(target, change, item, set, expect, siblings);
+  if (swapped && 'reason' in swapped) return swapped;
+  if (swapped?.lookups) lookups = swapped.lookups;
   // O que a página limpa junto (target.clears), sem conferir o antes.
   for (const [when, also] of Object.entries(target.clears ?? {})) {
     const [field, value] = when.split('=') as [string, string];

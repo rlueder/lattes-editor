@@ -150,6 +150,15 @@ export interface ProductionTarget {
    * (a banca de mestrado e a qualificação com o mesmo título e ano).
    */
   nature?: { field: string; values: string[] };
+  /**
+   * A natureza que se troca no lugar, num elemento que tem mais de uma (as
+   * outras orientações concluídas): o atributo, na chave de fields, que a
+   * liga ao rádio de `nature.field`. A troca limpa os ocultos `clears` e
+   * escolhe de novo a instituição e o curso com o nível da natureza nova,
+   * como o testa_nivel() da página pede (nature.ts). De ou para um código de
+   * `byHand`, a troca fica à mão com o motivo dele.
+   */
+  natureSwap?: { byHand: Record<string, string>; clears: string[]; key: string };
   /** As grades da página que o conector não sabe montar e só manda vazias. */
   opaqueGrids?: OpaqueGrid[];
   /**
