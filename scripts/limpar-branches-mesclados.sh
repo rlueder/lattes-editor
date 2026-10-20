@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
 #
-# Remove os worktrees e as branches locais cujo PR já foi mesclado ou fechado
-# no GitHub. O GitHub apaga a branch remota no merge, mas a local e o
+# Remove os worktrees e as branches locais cujo PR já foi mesclado no
+# GitHub (e, com --incluir-fechados, os de PR fechado sem merge). O GitHub apaga a branch remota no merge, mas a local e o
 # worktree ficam: em 20/10/2026 eram 58 branches e uns 50 worktrees parados.
 #
 # Uso:
 #   scripts/limpar-branches-mesclados.sh          # ensaio: só lista
 #   scripts/limpar-branches-mesclados.sh --yes    # remove
+#   ... --incluir-fechados                        # também PR fechado sem merge
+#
+# Cada remoção imprime o commit da ponta, para recuperar a branch com
+# `git branch <nome> <commit>` se preciso.
 #
 # Nunca mexe em:
 #   - main, nem na branch em que o checkout principal está;
-#   - branch com PR aberto;
+#   - branch com PR aberto, ou fechado sem merge (sem --incluir-fechados);
 #   - branch sem PR (pode ser trabalho que ainda não foi enviado);
 #   - branch cuja ponta não é a do PR (commit local depois do merge, ou o
 #     nome reaproveitado para outro trabalho);
@@ -26,14 +30,17 @@ set -euo pipefail
 PROTEGIDAS=('test/criar-item')
 
 APPLY=0
-case "${1:-}" in
-  --yes) APPLY=1 ;;
-  '') ;;
-  *)
-    echo "opção desconhecida: $1 (--yes para remover, nada para o ensaio)" >&2
-    exit 2
-    ;;
-esac
+CLOSED_TOO=0
+for arg in "$@"; do
+  case "$arg" in
+    --yes) APPLY=1 ;;
+    --incluir-fechados) CLOSED_TOO=1 ;;
+    *)
+      echo "opção desconhecida: $arg (--yes para remover, --incluir-fechados para PR fechado)" >&2
+      exit 2
+      ;;
+  esac
+done
 
 # O checkout principal é o primeiro de `git worktree list`.
 main_wt=$(git worktree list --porcelain | awk '/^worktree / { print substr($0, 10); exit }')
@@ -44,12 +51,13 @@ current=$(git branch --show-current)
 # que podem ter o nome de uma branch daqui; a busca por branch é local.
 LIMIT=500
 repo=$(gh repo view --json nameWithOwner -q .nameWithOwner)
-prs=$(gh pr list --repo "$repo" --state all --limit "$LIMIT" \
+all=$(gh pr list --repo "$repo" --state all --limit "$LIMIT" \
   --json headRefName,state,number,headRefOid,isCrossRepository \
-  --jq '.[] | select(.isCrossRepository | not) | "\(.headRefName)\t\(.state)\t\(.number)\t\(.headRefOid)"')
-if [[ $(gh pr list --repo "$repo" --state all --limit "$LIMIT" --json number --jq length) -ge $LIMIT ]]; then
+  --jq '.[] | "\(.headRefName)\t\(.state)\t\(.number)\t\(.headRefOid)\t\(.isCrossRepository)"')
+if [[ $(grep -c . <<<"$all") -ge $LIMIT ]]; then
   echo "aviso: o gh devolveu $LIMIT PRs, o limite; os mais antigos aparecem como sem PR" >&2
 fi
+prs=$(awk -F'\t' '$5 == "false"' <<<"$all")
 
 # branch -> caminho do worktree, de `git worktree list --porcelain`.
 worktrees=$(git worktree list --porcelain | awk '
@@ -64,13 +72,20 @@ while IFS= read -r br; do
   if [[ "$br" == "main" || "$br" == "$current" ]]; then continue; fi
   for p in "${PROTEGIDAS[@]}"; do [[ "$br" == "$p" ]] && continue 2; done
   # O PR mais recente com o nome da branch (o gh lista do mais novo).
-  line=$(printf '%s\n' "$prs" | awk -F'\t' -v b="$br" '$1 == b { print $2 " #" $3 " " $4; exit }')
+  line=$(awk -F'\t' -v b="$br" '!seen && $1 == b { print $2 " #" $3 " " $4; seen = 1 }' <<<"$prs")
   state=${line%% *}
   oid=${line##* }
   line=${line% *}
-  wt=$(printf '%s\n' "$worktrees" | awk -F'\t' -v b="$br" '$1 == b { print $2; exit }')
+  wt=$(awk -F'\t' -v b="$br" '!seen && $1 == b { print $2; seen = 1 }' <<<"$worktrees")
   case "$state" in
-    MERGED | CLOSED) ;;
+    MERGED) ;;
+    CLOSED)
+      if [[ $CLOSED_TOO -eq 0 ]]; then
+        echo "mantém    $br (PR ${line#* } fechado sem merge: --incluir-fechados para remover)"
+        kept=$((kept + 1))
+        continue
+      fi
+      ;;
     OPEN)
       echo "mantém    $br (PR ${line#* } aberto)"
       kept=$((kept + 1))
@@ -100,18 +115,24 @@ while IFS= read -r br; do
       continue
     fi
   fi
+  tip=${oid:0:7}
   if [[ $APPLY -eq 0 ]]; then
-    echo "removeria $br (PR ${line#* } $state)${wt:+ e $wt}"
+    echo "removeria $br (PR ${line#* } $state, ponta $tip)${wt:+ e $wt}"
     removed=$((removed + 1))
     continue
   fi
-  if { [[ -z "$wt" ]] || git worktree remove "$wt"; } && git branch -D "$br" >/dev/null; then
-    echo "removido  $br (PR ${line#* } $state)${wt:+ e $wt}"
-    removed=$((removed + 1))
-  else
-    echo "FALHOU    $br: remova à mão"
+  if [[ -n "$wt" ]] && ! git worktree remove "$wt"; then
+    echo "FALHOU    $br: o worktree $wt não saiu; nada foi removido"
     failed=$((failed + 1))
+    continue
   fi
+  if ! git branch -D "$br" >/dev/null; then
+    echo "FALHOU    $br: ${wt:+o worktree saiu, mas }a branch não saiu (git branch -D $br)"
+    failed=$((failed + 1))
+    continue
+  fi
+  echo "removido  $br (PR ${line#* } $state, ponta $tip)${wt:+ e $wt}"
+  removed=$((removed + 1))
 done < <(git for-each-ref --format='%(refname:short)' refs/heads/)
 
 echo
