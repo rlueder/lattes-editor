@@ -13,7 +13,7 @@ import { ACTIVITY_TYPES } from '../../src/bridge/edit-atividade.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
-import { COURSES } from './buscas.ts';
+import { COURSES, ORGANS } from './buscas.ts';
 import { notSimulated } from './censo.ts';
 import type { LattesState } from './estado.ts';
 import { applyCensusForm, type FieldLink, renderCensusForm } from './formulario-censo.ts';
@@ -227,6 +227,16 @@ function cargoUpdate(req: SimRequest, state: LattesState, atuacao: XElement): Si
     setAttr(found.el, 'CODIGO-UNIDADE', picked);
     setAttr(found.el, 'NOME-UNIDADE', unitName);
     setAttr(found.el, 'NOME-ORGAO', organName);
+    // O órgão de cima não vem no POST: o servidor o sabe pela unidade, na
+    // instituição da atuação (inferido). Unidade fora da tabela do simulado é
+    // erro do teste, não do conector: falha alto.
+    const institution = (req.get('f_codinst') ?? '').replace(/^[A-Za-z]/, '');
+    const unit = picked.trim();
+    const above = (ORGANS[institution] ?? []).find((o) =>
+      o.units.some(([code]) => code.trim() === unit),
+    );
+    if (!above) throw new Error(`Simulado: unidade ${unit} sem órgão em ${institution}`);
+    setAttr(found.el, 'CODIGO-ORGAO', above.code);
   } else if (picked) {
     setAttr(found.el, 'CODIGO-ORGAO', picked);
     setAttr(found.el, 'NOME-ORGAO', organName);

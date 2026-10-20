@@ -165,6 +165,7 @@ describe('atividade: o envio', () => {
     const saved = estagio(open.state.root);
     expect(getAttr(saved, 'CODIGO-UNIDADE')).toBe('000001001004');
     expect(getAttr(saved, 'NOME-UNIDADE')).toBe('Departamento de Genética');
+    expect(getAttr(saved, 'CODIGO-ORGAO')).toBe('000001000008');
   });
 
   it('o órgão fora da janela, ou outro no Lattes: nada vai', async () => {
