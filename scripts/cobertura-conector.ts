@@ -3,17 +3,18 @@
 // com todas as funções do conector ligadas e anota o que vira operação e o
 // que fica à mão, com o motivo. Uso:
 //
-//   node scripts/cobertura-conector.ts [--resumo] [--lista=TIPO-DE-ITEM]
+//   node scripts/cobertura-conector.ts [arquivo.xml] [--so=ELEMENTO,...] [--resumo] [--lista=TIPO-DE-ITEM]
 //   node scripts/cobertura-conector.ts --por-curriculo [arquivo.xml] [--so=ELEMENTO,...]
 //
 // O padrão conta campos: cada campo do editor (o caminho do elemento no XML e
-// o atributo) uma vez só, de fixtures/synthetic_full.xml, que tem todos os
-// elementos do schema. Um campo vai pelo conector quando toda troca nele
-// vira envio; senão, ou o formulário do Lattes não tem onde gravá-lo (fica só
-// para ler no editor, pelo mesmo fieldAbsent que o editor usa) ou falta no
-// conector. --resumo mostra só os totais; --lista=MESTRADO lista os campos que
-// faltam num tipo de item, com o motivo, e --lista=motivo:Valor os que faltam
-// por um motivo que começa assim.
+// o atributo) uma vez só, de fixtures/synthetic_full.xml (que tem todos os
+// elementos do schema) ou do arquivo dado. Um campo vai pelo conector quando
+// toda troca nele vira envio. O Lattes não o tem quando nenhuma troca vai e
+// todas dão só motivos de campo ausente (o mesmo fieldAbsent que o editor
+// usa): fica só para ler no editor. O resto falta no conector, inclusive o
+// campo em que parte das trocas vai. --resumo mostra só os totais;
+// --lista=MESTRADO lista os campos que faltam num tipo de item, com o motivo,
+// e --lista=motivo:Valor os que faltam por um motivo que começa assim.
 //
 // --por-curriculo é a contagem antiga, por troca de atributo num currículo
 // (fixtures/demo.xml e fixtures/synthetic_full.xml sem arquivo): depende de
@@ -327,9 +328,7 @@ const PARTIAL = 'Vai em parte: nas outras trocas o formulário do Lattes não te
 /** Os campos do editor, cada um uma vez: vai, o Lattes não tem, falta no conector. */
 function fieldReport(file: string): void {
   const trials: Trial[] = [];
-  const raw = readFileSync(file, 'latin1');
-  const { rewritten, xml } = file === SYNTHETIC ? withListValues(raw) : { rewritten: 0, xml: raw };
-  cover(xml, trials);
+  cover(withListValues(readFileSync(file, 'latin1')), trials);
   const fields = new Map<string, Trial[]>();
   for (const t of trials) {
     const key = `${t.path} @${t.attr}`;
@@ -344,10 +343,10 @@ function fieldReport(file: string): void {
     const absent = (t: Trial) => t.reasons.length > 0 && t.reasons.every(fieldAbsent);
     if (failed.length === ts.length && failed.every(absent)) return { kind: 'sem-campo' };
     const reasons = failed.flatMap((t) => t.reasons);
-    const own = reasons.find((r) => !fieldAbsent(r));
-    if (own) return { kind: 'falta', reason: own };
-    // Toda troca que falhou tem motivo e é de campo ausente: as outras foram.
-    return { kind: 'falta', reason: failed.every(absent) ? PARTIAL : 'sem motivo' };
+    return {
+      kind: 'falta',
+      reason: reasons.find((r) => !fieldAbsent(r)) ?? reasons[0] ?? 'sem motivo',
+    };
   };
   const sections = new Map<string, Record<Kind, number>>();
   const missing = new Map<string, Set<string>>();
@@ -424,7 +423,7 @@ function fieldReport(file: string): void {
 }
 
 if (byCv) cvReport();
-else fieldReport(named ?? SYNTHETIC);
+else fieldReport(named ?? 'fixtures/synthetic_full.xml');
 
 /** A contagem antiga, por troca de atributo em cada currículo. */
 function cvReport(): void {
