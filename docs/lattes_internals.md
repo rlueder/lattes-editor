@@ -1383,6 +1383,31 @@ descrição é um atributo da atividade (`ESTAGIO-REALIZADO`,
 teste teve descrição, ano de início e período trocados pelo conector,
 conferidos na releitura, sem outro campo mudar.
 
+**Ensino (lido e gravado em 20/10/2026, numa atuação de teste).** Na edição
+de uma atividade de ensino, a `providerDetAtiv` são as disciplinas (`{l, c}`,
+o `c` a `SEQUENCIA-ESPECIFICACAO` delas). O mês de fim trocado pelo conector,
+com a grade mandada como veio, voltou conferido e com as duas disciplinas; o
+Lattes as renumerou pela posição na grade (a que era `c` 2 virou 1), como o
+Salvar da página faria. Por isso a pesquisa e desenvolvimento, cuja grade são
+as linhas de pesquisa, com objetivo e palavras-chave ligados a cada uma,
+continua à mão até ser vista numa atividade de teste: a renumeração poderia
+descolar os detalhes da linha. O treinamento ministrado também espera.
+
+**O código da instituição no link.** É o do XML com uma letra na frente (`D`
+ou `V`), e o do XML pode começar por letra também: `K4WU00000006` vira
+`VK4WU00000006`. Tirar a primeira letra dos dois lados desencontra os dois.
+
+**O órgão da atividade.** A janela é
+`prc_orgao_cargo?f_origem=&f_modal_cv=9&f_cod=…&f_cod_inst=<f_codinst>&f_cod_inst2=<órgão de cima>`,
+com as mesmas linhas `atribuir(código, nome, tipo, órgão de cima)` da janela
+do projeto; o `atribuir()` grava em `f_orgao`, `f_orgao_old` e em
+`f_codorgao` (tipo 0) ou `f_codorgao2`. A instituição precisa da letra que o
+link da atuação traz: a PUCRS (`000600000001`) lista 44 órgãos com `V` e
+nenhum com `D`. Instituição sem órgão só oferece "Cadastrar novo Órgão"
+(`prc_outro_orgao`), que grava na base de instituições do Lattes.
+**Observado** só por GET; que a gravação do órgão na atividade siga a do
+projeto é **inferido**.
+
 ### Projeto de pesquisa: `GN_PROJETO`, POST `PKG_PROJETO.FORM`
 
 O projeto não se inclui pela atuação. A tela de cargos e vínculos de uma

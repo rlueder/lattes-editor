@@ -51,9 +51,13 @@ const LINKS: Record<string, FieldLink> = {
 };
 
 /** O período, que todas as naturezas têm (edição lida em 19/10/2026). */
-const PERIOD_LINKS: Record<string, FieldLink> = Object.fromEntries(
-  ['f_ano_fim', 'f_ano_ini', 'f_mes_fim', 'f_mes_ini', 'f_status'].map((f) => [f, LINKS[f]!]),
-);
+const PERIOD_LINKS: Record<string, FieldLink> = {
+  ...Object.fromEntries(
+    ['f_ano_fim', 'f_ano_ini', 'f_mes_fim', 'f_mes_ini', 'f_status'].map((f) => [f, LINKS[f]!]),
+  ),
+  // O texto do órgão, desabilitado na página (inferido: só o órgão, sem unidade).
+  f_orgao: { attr: 'NOME-ORGAO' },
+};
 
 /** Todas as atividades da atuação, com a natureza de cada uma. */
 export function activities(atuacao: XElement): { el: XElement; natur: string }[] {
@@ -67,8 +71,20 @@ export function activities(atuacao: XElement): { el: XElement; natur: string }[]
   return out;
 }
 
-/** A grade de descrições da edição: a descrição do XML numa linha, com c 1. */
+/**
+ * A grade de descrições da edição: a descrição do XML numa linha, com c 1; no
+ * ensino, as disciplinas, com o c da sequência delas (lido em 20/10/2026).
+ */
 function descriptionScript(item: XElement): string {
+  if (item.name === 'ENSINO') {
+    const rows = childElements(item, 'DISCIPLINA').map((d) =>
+      Object.fromEntries([
+        ['l', textOf(d)],
+        ['c', getAttr(d, 'SEQUENCIA-ESPECIFICACAO') ?? ''],
+      ]),
+    );
+    return `<script>\nvar providerDetAtiv = \n${JSON.stringify([...rows, {}])};\n</script>`;
+  }
   const attr = ACTIVITY_TYPES[item.name]?.description;
   const text = attr ? getAttr(item, attr) : '';
   const rows = text
@@ -166,6 +182,15 @@ export function cargoPost(req: SimRequest, state: LattesState, atuacao?: XElemen
  * descrição pela primeira linha de f_espec_l. Sem descrição o check() da
  * página não envia; o simulado não grava nada nesse caso.
  */
+/** As linhas preenchidas de f_espec_l ("n@c?nome!"). */
+const specRows = (spec: string) =>
+  [...spec.matchAll(/\d+@([^?]*)\?([^!]*)!/g)]
+    .map((m) => ({ c: m[1]!, l: m[2]! }))
+    .filter((r) => r.l !== '');
+
+const textOf = (el: XElement) =>
+  el.children.map((c) => (c.kind === 'text' ? c.value : '')).join('');
+
 function cargoUpdate(req: SimRequest, state: LattesState, atuacao: XElement): SimResponse {
   const found = activities(atuacao).find(
     (a) => getAttr(a.el, 'SEQUENCIA-FUNCAO-ATIVIDADE') === req.get('f_seq_funcao'),
@@ -179,6 +204,21 @@ function cargoUpdate(req: SimRequest, state: LattesState, atuacao: XElement): Si
   applyCensusForm({ entry: entryFor(found.natur), links: PERIOD_LINKS }, found.el, req, state);
   const attr = ACTIVITY_TYPES[found.el.name]?.description;
   if (attr) setAttr(found.el, attr, first);
+  // O órgão escolhido na janela: o código em f_codorgao, o texto em f_orgao_old.
+  const organCode = req.get('f_codorgao');
+  if (organCode) {
+    setAttr(found.el, 'CODIGO-ORGAO', organCode);
+    setAttr(found.el, 'NOME-ORGAO', req.get('f_orgao_old') ?? '');
+  }
+  // No ensino, a grade inteira são as disciplinas: o servidor grava como chegou.
+  if (found.el.name === 'ENSINO') {
+    found.el.children = specRows(req.get('f_espec_l') ?? '').map(({ c, l }, i) =>
+      element('DISCIPLINA', { 'SEQUENCIA-ESPECIFICACAO': c && c !== '0' ? c : String(i + 1) }, [
+        { kind: 'text', value: l },
+      ]),
+    );
+    found.el.selfClosing = found.el.children.length === 0;
+  }
   state.touch();
   return html(back);
 }
