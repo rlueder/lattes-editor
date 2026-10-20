@@ -55,9 +55,19 @@ const PERIOD_LINKS: Record<string, FieldLink> = {
   ...Object.fromEntries(
     ['f_ano_fim', 'f_ano_ini', 'f_mes_fim', 'f_mes_ini', 'f_status'].map((f) => [f, LINKS[f]!]),
   ),
-  // O texto do órgão, desabilitado na página (inferido: só o órgão, sem unidade).
+  // O texto do órgão, desabilitado na página, como o atribuir() da janela o
+  // escreve ("órgão/\nunidade"); a unidade sai na leitura do item (cargoForm).
   f_orgao: { attr: 'NOME-ORGAO' },
 };
+
+/** Os campos da alteração, com o texto do órgão como a página o mostra (com a unidade). */
+function withOrganText(item: XElement): Record<string, FieldLink> {
+  const unit = getAttr(item, 'NOME-UNIDADE') ?? '';
+  return {
+    ...PERIOD_LINKS,
+    f_orgao: { attr: 'NOME-ORGAO', toForm: (v) => (unit ? `${v}/\n${unit}` : v) },
+  };
+}
 
 /** Todas as atividades da atuação, com a natureza de cada uma. */
 export function activities(atuacao: XElement): { el: XElement; natur: string }[] {
@@ -135,7 +145,7 @@ export function cargoForm(req: SimRequest, state: LattesState, atuacao?: XElemen
   };
   const screen = {
     entry: entryFor(nature),
-    links: nature === '4' ? LINKS : item ? PERIOD_LINKS : {},
+    links: nature === '4' ? LINKS : item ? withOrganText(item) : {},
   };
   return html(
     h.page(
@@ -177,11 +187,6 @@ export function cargoPost(req: SimRequest, state: LattesState, atuacao?: XElemen
   );
 }
 
-/**
- * A alteração de uma atividade (19/10/2026): o período pelos campos e a
- * descrição pela primeira linha de f_espec_l. Sem descrição o check() da
- * página não envia; o simulado não grava nada nesse caso.
- */
 /** As linhas preenchidas de f_espec_l ("n@c?nome!"). */
 const specRows = (spec: string) =>
   [...spec.matchAll(/\d+@([^?]*)\?([^!]*)!/g)]
@@ -191,6 +196,12 @@ const specRows = (spec: string) =>
 const textOf = (el: XElement) =>
   el.children.map((c) => (c.kind === 'text' ? c.value : '')).join('');
 
+/**
+ * A alteração de uma atividade (19/10/2026): o período pelos campos, o
+ * órgão ou a unidade pelos ocultos da janela de órgãos e a descrição pela
+ * primeira linha de f_espec_l (no ensino, a grade inteira são as disciplinas). Sem descrição o check() da
+ * página não envia; o simulado não grava nada nesse caso.
+ */
 function cargoUpdate(req: SimRequest, state: LattesState, atuacao: XElement): SimResponse {
   const found = activities(atuacao).find(
     (a) => getAttr(a.el, 'SEQUENCIA-FUNCAO-ATIVIDADE') === req.get('f_seq_funcao'),
@@ -205,10 +216,22 @@ function cargoUpdate(req: SimRequest, state: LattesState, atuacao: XElement): Si
   const attr = ACTIVITY_TYPES[found.el.name]?.description;
   if (attr) setAttr(found.el, attr, first);
   // O órgão escolhido na janela: o código em f_codorgao, o texto em f_orgao_old.
+  // O órgão (tipo 0) em f_codorgao; a unidade em f_codorgao2, com o texto
+  // "órgão/\nunidade" que o atribuir() da janela monta.
   const organCode = req.get('f_codorgao');
-  if (organCode) {
-    setAttr(found.el, 'CODIGO-ORGAO', organCode);
-    setAttr(found.el, 'NOME-ORGAO', req.get('f_orgao_old') ?? '');
+  const unitCode = req.get('f_codorgao2');
+  const [organName = '', unitName = ''] = (req.get('f_orgao_old') ?? '').split(/\/\r?\n/);
+  // A janela do simulado dá tipo 0 também às unidades: vale o texto.
+  const picked = unitCode || organCode;
+  if (picked && unitName) {
+    setAttr(found.el, 'CODIGO-UNIDADE', picked);
+    setAttr(found.el, 'NOME-UNIDADE', unitName);
+    setAttr(found.el, 'NOME-ORGAO', organName);
+  } else if (picked) {
+    setAttr(found.el, 'CODIGO-ORGAO', picked);
+    setAttr(found.el, 'NOME-ORGAO', organName);
+    setAttr(found.el, 'CODIGO-UNIDADE', '');
+    setAttr(found.el, 'NOME-UNIDADE', '');
   }
   // No ensino, a grade inteira são as disciplinas: o servidor grava como chegou.
   if (found.el.name === 'ENSINO') {

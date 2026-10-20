@@ -145,6 +145,28 @@ describe('atividade: o envio', () => {
     expect(postsOf(open).at(-1)!.fields.f_codorgao).toBe('000001000008');
   });
 
+  it('a unidade vai com o órgão de cima, e a releitura confere "órgão/unidade"', async () => {
+    open = await withLattesSimulado({
+      xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${ORGAN_XML}`),
+    });
+    const original = parseXml(ORGAN_XML).root;
+    const working = parseXml(ORGAN_XML).root;
+    setAttr(estagio(working), 'CODIGO-ORGAO', '000001000008');
+    setAttr(estagio(working), 'NOME-ORGAO', 'Instituto de Biociências');
+    setAttr(estagio(working), 'CODIGO-UNIDADE', '000001001004');
+    setAttr(estagio(working), 'NOME-UNIDADE', 'Departamento de Genética');
+    const { ops, unsupported } = planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Atividade' })),
+      working,
+      { editAtividades: true },
+    );
+    expect(unsupported).toEqual([]);
+    expect(await applyOp(ops[0]!, open.port)).toMatchObject({ status: 'conferido' });
+    const saved = estagio(open.state.root);
+    expect(getAttr(saved, 'CODIGO-UNIDADE')).toBe('000001001004');
+    expect(getAttr(saved, 'NOME-UNIDADE')).toBe('Departamento de Genética');
+  });
+
   it('o órgão fora da janela, ou outro no Lattes: nada vai', async () => {
     open = await withLattesSimulado({
       xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${ORGAN_XML}`),
