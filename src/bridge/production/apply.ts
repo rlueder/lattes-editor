@@ -304,7 +304,9 @@ export async function applyProduction(
       organShown = resolved.shown;
     }
     // As conferências do DOI que o check() da página faz (doi.ts).
-    const doi = set.f_cod_doi?.trim();
+    // O DOI vai como foi conferido: sem espaço nas pontas.
+    if (set.f_cod_doi !== undefined) set.f_cod_doi = set.f_cod_doi.trim();
+    const doi = set.f_cod_doi;
     if (t.doi && doi) {
       const problem = await doiProblem(doi, t.doi, html, port);
       if (problem) return result('erro', problem);

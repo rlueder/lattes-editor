@@ -459,6 +459,10 @@ describe('produções bibliográficas: o que fica à mão', () => {
       '10.1000/xyz',
     );
     expect(postsOf(lattes).at(-1)!.fields.f_cod_doi).toBe('10.1000/xyz');
+    // Com espaço nas pontas, vai o DOI conferido.
+    const fresh = await lattesFor();
+    expect(await applyOp(doi(' 10.1000/abc '), fresh.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(fresh).at(-1)!.fields.f_cod_doi).toBe('10.1000/abc');
   });
 
   it('o DOI fora do formato, de outro tipo ou já no currículo: nada vai', async () => {
