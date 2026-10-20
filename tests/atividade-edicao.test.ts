@@ -68,22 +68,22 @@ describe('atividade: o plano', () => {
   it('o órgão fica à mão, e sem a chave tudo fica', () => {
     expect(
       plan((root) => setAttr(estagio(root), 'NOME-ORGAO', 'Outra')).unsupported[0]?.reason,
-    ).toMatch(/busca de órgãos/);
+    ).toMatch(/lista do Lattes/);
     expect(
       plan((root) => setAttr(estagio(root), 'ANO-INICIO', '2001'), { editAtividades: false })
         .unsupported[0]?.reason,
     ).toMatch(/atividade da atuação vai à mão/);
   });
 
-  it('ensino, pesquisa e treinamento ficam à mão: a grade deles não foi lida', () => {
+  it('pesquisa e treinamento ficam à mão: a grade deles não foi lida na edição', () => {
     const xml = XML.replace(
       /<ATIVIDADES-DE-ESTAGIO>.*<\/ATIVIDADES-DE-ESTAGIO>/,
-      '<ATIVIDADES-DE-ENSINO><ENSINO SEQUENCIA-FUNCAO-ATIVIDADE="1" FLAG-PERIODO="ANTERIOR" ANO-INICIO="2002" ANO-FIM="2004"/></ATIVIDADES-DE-ENSINO>',
+      '<ATIVIDADES-DE-PESQUISA-E-DESENVOLVIMENTO><PESQUISA-E-DESENVOLVIMENTO SEQUENCIA-FUNCAO-ATIVIDADE="1" FLAG-PERIODO="ANTERIOR" ANO-INICIO="2002" ANO-FIM="2004"/></ATIVIDADES-DE-PESQUISA-E-DESENVOLVIMENTO>',
     );
     const original = parseXml(xml).root;
     const working = parseXml(xml).root;
     setAttr(
-      findIn(working, (e) => e.name === 'ENSINO')!,
+      findIn(working, (e) => e.name === 'PESQUISA-E-DESENVOLVIMENTO')!,
       'ANO-FIM',
       '2005',
     );
@@ -112,7 +112,110 @@ describe('atividade: o plano', () => {
   });
 });
 
+const ENSINO_XML = XML.replace(
+  /<ATIVIDADES-DE-ESTAGIO>.*<\/ATIVIDADES-DE-ESTAGIO>/,
+  '<ATIVIDADES-DE-ENSINO><ENSINO SEQUENCIA-FUNCAO-ATIVIDADE="1" FLAG-PERIODO="ANTERIOR" MES-INICIO="02" ANO-INICIO="2002" MES-FIM="03" ANO-FIM="2004" TIPO-ENSINO="OUTRO"><DISCIPLINA SEQUENCIA-ESPECIFICACAO="1">Disciplina um</DISCIPLINA><DISCIPLINA SEQUENCIA-ESPECIFICACAO="2">Disciplina dois</DISCIPLINA></ENSINO></ATIVIDADES-DE-ENSINO>',
+);
+
+const ORGAN_XML = XML.replace(
+  'CODIGO-INSTITUICAO="000300000995"',
+  'CODIGO-INSTITUICAO="000000000001"',
+).replace(
+  'CODIGO-ORGAO="000300000995" NOME-ORGAO="Empresa"',
+  'CODIGO-ORGAO="000002000004" NOME-ORGAO="Instituto de Informática"',
+);
+
 describe('atividade: o envio', () => {
+  it('o órgão novo vai pela janela de órgãos da atividade, com o código', async () => {
+    open = await withLattesSimulado({
+      xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${ORGAN_XML}`),
+    });
+    const original = parseXml(ORGAN_XML).root;
+    const working = parseXml(ORGAN_XML).root;
+    setAttr(estagio(working), 'CODIGO-ORGAO', '000001000008');
+    setAttr(estagio(working), 'NOME-ORGAO', 'Instituto de Biociências');
+    const { ops, unsupported } = planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Atividade' })),
+      working,
+      { editAtividades: true },
+    );
+    expect(unsupported).toEqual([]);
+    expect(await applyOp(ops[0]!, open.port)).toMatchObject({ status: 'conferido' });
+    expect(getAttr(estagio(open.state.root), 'CODIGO-ORGAO')).toBe('000001000008');
+    expect(postsOf(open).at(-1)!.fields.f_codorgao).toBe('000001000008');
+  });
+
+  it('a unidade vai com o órgão de cima, e a releitura confere "órgão/unidade"', async () => {
+    open = await withLattesSimulado({
+      xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${ORGAN_XML}`),
+    });
+    const original = parseXml(ORGAN_XML).root;
+    const working = parseXml(ORGAN_XML).root;
+    setAttr(estagio(working), 'CODIGO-ORGAO', '000001000008');
+    setAttr(estagio(working), 'NOME-ORGAO', 'Instituto de Biociências');
+    setAttr(estagio(working), 'CODIGO-UNIDADE', '000001001004');
+    setAttr(estagio(working), 'NOME-UNIDADE', 'Departamento de Genética');
+    const { ops, unsupported } = planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Atividade' })),
+      working,
+      { editAtividades: true },
+    );
+    expect(unsupported).toEqual([]);
+    expect(await applyOp(ops[0]!, open.port)).toMatchObject({ status: 'conferido' });
+    const saved = estagio(open.state.root);
+    expect(getAttr(saved, 'CODIGO-UNIDADE')).toBe('000001001004');
+    expect(getAttr(saved, 'NOME-UNIDADE')).toBe('Departamento de Genética');
+  });
+
+  it('o órgão fora da janela, ou outro no Lattes: nada vai', async () => {
+    open = await withLattesSimulado({
+      xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${ORGAN_XML}`),
+    });
+    const opFor = (code: string) => {
+      const original = parseXml(ORGAN_XML).root;
+      const working = parseXml(ORGAN_XML).root;
+      setAttr(estagio(working), 'CODIGO-ORGAO', code);
+      setAttr(estagio(working), 'NOME-ORGAO', 'Outro');
+      return planChanges(
+        diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Atividade' })),
+        working,
+        { editAtividades: true },
+      ).ops[0]!;
+    };
+    expect(await applyOp(opFor('999999999999'), open.port)).toMatchObject({ status: 'erro' });
+    setAttr(estagio(open.state.root), 'NOME-ORGAO', 'Mudou no Lattes');
+    expect(await applyOp(opFor('000001000008'), open.port)).toMatchObject({
+      status: 'divergente',
+    });
+    expect(postsOf(open)).toEqual([]);
+  });
+
+  it('o período do ensino vai, e as disciplinas voltam como estavam', async () => {
+    open = await withLattesSimulado({
+      xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${ENSINO_XML}`),
+    });
+    const original = parseXml(ENSINO_XML).root;
+    const working = parseXml(ENSINO_XML).root;
+    const ensino = (root: XElement) => findIn(root, (e) => e.name === 'ENSINO')!;
+    setAttr(ensino(working), 'ANO-FIM', '2005');
+    const { ops, unsupported } = planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Atividade' })),
+      working,
+      { editAtividades: true },
+    );
+    expect(unsupported).toEqual([]);
+    expect(await applyOp(ops[0]!, open.port)).toMatchObject({ status: 'conferido' });
+    const saved = ensino(open.state.root);
+    expect(getAttr(saved, 'ANO-FIM')).toBe('2005');
+    expect(
+      saved.children.flatMap((c) =>
+        c.kind === 'element'
+          ? [c.children.map((t) => (t.kind === 'text' ? t.value : '')).join('')]
+          : [],
+      ),
+    ).toEqual(['Disciplina um', 'Disciplina dois']);
+  });
+
   it('grava a descrição na mesma linha e o período, e confere', async () => {
     const sim = await lattes();
     const { ops } = plan((root) => {

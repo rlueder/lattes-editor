@@ -208,8 +208,7 @@ export async function applyCreateAtividade(
     }
     const cv = lista.params.f_cod;
     // A atuação pelo número e, com o código da instituição no XML, também por ele.
-    const sameInst = (code: string | undefined) =>
-      (code ?? '').replace(/^[A-Za-z]/, '') === (op.codInst ?? '').replace(/^[A-Za-z]/, '');
+    const sameInst = (code: string | undefined) => sameCode(code, op.codInst ?? '');
     const grids = findLinks(await getChecked(port, lista.path), 'pkg_ativ.cargos_vinculos').filter(
       (l) => l.params.f_seq_ativ === op.seqAtiv && (!op.codInst || sameInst(l.params.f_codinst)),
     );

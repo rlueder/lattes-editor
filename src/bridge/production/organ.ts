@@ -110,14 +110,22 @@ export const organLoose = (v: string | null | undefined) =>
  * que a própria página manda quando a pessoa não mexe no órgão. Depois
  * refaz a janela de órgãos (só GET) e fica com o único resultado de mesmo código.
  */
+/** Onde fica a janela de órgãos, quando não é a do projeto (a da atividade). */
+export interface OrganWindow {
+  /** A instituição como a janela a quer, com a letra. */
+  institution: string;
+  path: (cv: string, institution: string, parent: string) => string;
+}
+
 export async function resolveOrgan(
   choice: OrganChoice,
   port: LattesPort,
   pairs: Pairs,
   shown: string,
+  where?: OrganWindow,
 ): Promise<Resolved & { shown?: string }> {
   try {
-    return await resolve(choice, port, pairs, shown);
+    return await resolve(choice, port, pairs, shown, where);
   } catch (err) {
     if (err instanceof Stop) return { detail: err.message, status: err.status };
     throw err;
@@ -129,6 +137,7 @@ async function resolve(
   port: LattesPort,
   pairs: Pairs,
   shown: string,
+  where?: OrganWindow,
 ): Promise<Resolved & { shown?: string }> {
   const missing = ['f_codorgao', 'f_codorgao2', 'f_orgao_old'].filter(
     (f) => !pairs.some(([k]) => k === f),
@@ -153,15 +162,16 @@ async function resolve(
   // Como o orgao() da página: V com f_cod_inst, D com f_cod_inst2.
   const v = pairValue(pairs, 'f_cod_inst')?.trim() ?? '';
   const d = pairValue(pairs, 'f_cod_inst2')?.trim() ?? '';
-  const institution = v ? `V${v}` : d ? `D${d}` : '';
+  const institution = where?.institution || (v ? `V${v}` : d ? `D${d}` : '');
   if (!cv || !institution) {
-    return { detail: 'O projeto no Lattes está sem instituição', status: 'erro' };
+    return { detail: 'O item no Lattes está sem instituição', status: 'erro' };
   }
+  const windowPath = where?.path ?? organsPath;
   // A letra do órgão de cima no link não está no XML: V (tipo 0) e, sem ele, D.
   const parents = choice.parent ? ['0', '1'].map((k) => organLetter(k) + choice.parent) : [''];
   let found: ReturnType<typeof parseOrgans> = [];
   for (const parent of parents) {
-    const html = await getChecked(port, organsPath(cv, institution, parent));
+    const html = await getChecked(port, windowPath(cv, institution, parent));
     found = parseOrgans(html, choice.parent).filter(
       (o) => o.code === choice.code && Boolean(o.parent) === Boolean(choice.parent),
     );

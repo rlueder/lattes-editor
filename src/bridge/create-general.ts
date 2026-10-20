@@ -40,6 +40,7 @@ import {
   readBackProblem,
   readPairs,
   type Result,
+  sameCode,
   selectEntries,
   Stop,
 } from './create-shared.ts';
@@ -344,9 +345,7 @@ async function vinculosGrid(op: CreateVinculoOp, port: LattesPort) {
   const grids = findLinks(await getChecked(port, lista.path), 'pkg_ativ.cargos_vinculos').filter(
     (l) =>
       l.params.f_seq_ativ === op.seqAtiv &&
-      (!op.codInst ||
-        (l.params.f_codinst ?? '').replace(/^[A-Za-z]/, '') ===
-          op.codInst.replace(/^[A-Za-z]/, '')),
+      (!op.codInst || sameCode(l.params.f_codinst, op.codInst)),
   );
   if (grids.length !== 1) {
     throw new Stop(

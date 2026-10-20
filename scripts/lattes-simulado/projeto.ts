@@ -410,4 +410,6 @@ export const PROJETO_ROUTES: Routes = {
   'pkg_projeto.lista': lista,
   'pkg_projeto.pp_lista_inst': listaInst,
   'pkg_projeto.pp_orgao_cargo': organs,
+  // A janela de órgãos das atividades da atuação: as mesmas linhas (lida em 20/10/2026).
+  prc_orgao_cargo: organs,
 };
