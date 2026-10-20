@@ -33,6 +33,8 @@ function menuItems(code: string): [string, string][] {
     ['Projetos de ensino', `pkg_projeto.lista?f_cod_tipo=N&f_cod=${code}`],
     ['Outros projetos', `pkg_projeto.lista?f_cod_tipo=O&f_cod=${code}`],
     ['Prêmios e títulos', `pkg_premio.lista?f_cod=${code}`],
+    // Observado no menu real em 19/10/2026.
+    ['Coautores', `pkg_dic_autor.lista?f_cod=${code}`],
     // Observados no menu real em 16/10/2026.
     ['Trabalhos técnicos', `pkg_relatorio.lista?f_cod=${code}`],
     ['Outra produção bibliográfica', `prc_bib_demais_lista?f_cod_tipo=1Z&f_cod=${code}`],

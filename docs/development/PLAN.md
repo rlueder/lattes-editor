@@ -274,6 +274,13 @@ decide entre mandar o `t` novo na linha ou alterar a entrada do dicionário de
 coautores (`pkg_dic_autor.lista`, 13 linhas no currículo), que muda a citação
 em todos os itens que a usam.
 
+Decidido em 19/10/2026: pelo dicionário (`src/bridge/edit-citacao.ts`, chave
+`alterar-citacoes`). A troca só da citação de um coautor confere a entrada,
+pergunta se há produção validada, grava e relê; a linha do painel avisa que a
+citação muda em todas as produções do coautor. A própria citação fica à mão
+(a pessoa não está no dicionário). Feito no simulado; falta a gravação de
+teste no Lattes real, num item de teste com um coautor de teste.
+
 ### Fase 6: substituir (incluir o novo e excluir o antigo)
 
 Para trocas que mudam o tipo do item (nível da formação, natureza do evento):

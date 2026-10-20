@@ -27,6 +27,7 @@ import {
 } from './create-items.ts';
 import { applyDelete, type DeleteOp, isDeleteOp } from './delete.ts';
 import { applyAtividade, type AtividadeOp, isAtividadeOp } from './edit-atividade.ts';
+import { applyCitacao, type CitacaoOp, isCitacaoOp } from './edit-citacao.ts';
 import {
   EDIT_EVENTO_ENABLED,
   EVENTO_SPEC,
@@ -102,6 +103,7 @@ type EditOp = Exclude<
   | AreasOp
   | AtividadeOp
   | BiographicOp
+  | CitacaoOp
   | DeleteOp
   | EventoOp
   | ProductionOp
@@ -233,6 +235,7 @@ export async function applyOp(
   if (isProductionOp(op)) return applyProduction(op, port);
   if (isAreasOp(op)) return applyAreas(op, port);
   if (isAtividadeOp(op)) return applyAtividade(op, port);
+  if (isCitacaoOp(op)) return applyCitacao(op, port);
   if (op.kind === 'criar-vinculo') return applyCreateVinculo(op, port);
   if (isDeleteOp(op)) return applyDelete(op, port);
   const result = (status: ResultStatus, detail: string): OpResult => ({

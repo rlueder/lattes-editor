@@ -17,6 +17,7 @@ import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from '.
 import { type CreateItemOp, planCreateItem } from './create-items.ts';
 import { DELETE_ITEMS_ENABLED, type DeleteOp, planDelete } from './delete.ts';
 import { type AtividadeOp, EDIT_ATIVIDADES_ENABLED, planAtividade } from './edit-atividade.ts';
+import { type CitacaoOp, EDIT_CITACOES_ENABLED, planCitacao } from './edit-citacao.ts';
 import {
   EDIT_EVENTO_ENABLED,
   EDIT_OUVINTE_ENABLED,
@@ -90,6 +91,7 @@ export type BridgeOp =
   | AreasOp
   | AtividadeOp
   | BiographicOp
+  | CitacaoOp
   | CreateAtuacaoOp
   | CreateItemOp
   | DeleteOp
@@ -119,6 +121,8 @@ export interface PlanOptions {
   editAreas?: boolean;
   /** Atividades das atuações (edit-atividade.ts, EDIT_ATIVIDADES_ENABLED). */
   editAtividades?: boolean;
+  /** Citação de coautores pelo dicionário de coautores (edit-citacao.ts, EDIT_CITACOES_ENABLED). */
+  editCitacoes?: boolean;
   /**
    * Convidado, participante, forma, tipo, natureza e cidade do evento
    * (EDIT_EVENTO_ENABLED). Sem valor, desligada, como editOuvinte.
@@ -186,6 +190,7 @@ export const GATED_EDITS: readonly {
   { enabled: PROJECT_ORGAN_ENABLED, feature: 'orgao-projeto', option: 'projectOrgan' },
   { enabled: EDIT_AREAS_ENABLED, feature: 'alterar-areas-atuacao', option: 'editAreas' },
   { enabled: EDIT_ATIVIDADES_ENABLED, feature: 'alterar-atividades', option: 'editAtividades' },
+  { enabled: EDIT_CITACOES_ENABLED, feature: 'alterar-citacoes', option: 'editCitacoes' },
 ];
 
 /**
@@ -294,6 +299,7 @@ export function planChange(
     deleteItems = false,
     editAreas = false,
     editAtividades = false,
+    editCitacoes = false,
     editEvento = false,
     editFormacaoComplementar = false,
     editOuvinte = false,
@@ -305,6 +311,9 @@ export function planChange(
   }: PlanOptions = {},
   siblings: readonly Change[] = [],
 ): BridgeOp | Unsupported {
+  // A citação de um coautor, pelo dicionário de coautores (edit-citacao.ts).
+  const citacao = editCitacoes ? planCitacao(change, chain, label) : undefined;
+  if (citacao) return 'reason' in citacao ? unsupported(change, label, citacao.reason) : citacao;
   // Produção, orientação ou banca que já está no Lattes (production/).
   // Sem a janela de órgãos na extensão, o órgão do projeto fica com o motivo de sempre.
   const organOff = !projectOrgan && isOrganChange(change);

@@ -1349,6 +1349,24 @@ endereco: "10/03/2005"`), e vão em `f_dados_grid_datas` pelo `array2xml`.
   uma entrada sem uso; a de palavras-chave (`PKG_DIC_PLV_NV.form`) tem
   `del()`.
 
+### Dicionário de coautores: a edição (lida em 19/10/2026)
+
+- A lista (`pkg_dic_autor.lista?f_cod=…`, linkada no menu) traz uma linha
+  por coautor, `<tr onclick="pp_autor(n)">`, com o nome, o nome em citações e
+  quantas produções e projetos o usam. `pp_autor` abre
+  `pkg_dic_autor.form?f_cod=…&f_seq=n`.
+- O formulário `GN_AUTOR` (POST `PKG_DIC_AUTOR.FORM`) tem `f_nome` e
+  `f_nome_cit` (até 60 letras cada), `f_cod`, `f_seq`, `f_tipo` (A), `f_ctr`
+  (U na alteração), `f_id`, `f_sta_old` e a caixa `f_chk`.
+- Quando a citação muda, o check() pergunta a
+  `pkg_dic_autor.existe_prod_validada` (POST com `f_cod` e `f_seq`, resposta
+  S ou N); com S, mostra as produções validadas e não envia.
+- A linha de autor de cada produção aponta para a entrada pelo `c`. Trocar o
+  `t` na linha não pega: a releitura volta com a citação antiga. Trocar a
+  entrada muda a citação em todas as produções do coautor.
+- A própria pessoa não está no dicionário: a linha dela no `autorDP` do menu
+  tem o `c` vazio.
+
 ### Atividade de uma atuação: a edição (lida e gravada em 19/10/2026)
 
 A tela de cargos e vínculos traz cada atividade como um link

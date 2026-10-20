@@ -75,6 +75,8 @@ export const BRIDGE_FEATURES = [
   'alterar-areas-atuacao',
   /** Período e descrição das atividades das atuações (edit-atividade.ts). */
   'alterar-atividades',
+  /** Citação de coautores pelo dicionário de coautores (edit-citacao.ts). */
+  'alterar-citacoes',
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

@@ -112,6 +112,17 @@ function itemOf(
   return undefined;
 }
 
+/** Os autores ou participantes do item, quando a mudança é numa linha deles. */
+export function authorPartOf(
+  change: Change,
+  chain: XElement[],
+): { item: XElement; part: AuthorPart } | undefined {
+  const found = itemOf(change, chain);
+  if (!found || !found.target.grids.includes('f_autores_l')) return undefined;
+  const part = found.target.authors ?? AUTHOR_PART;
+  return change.element === part.element ? { item: found.item, part } : undefined;
+}
+
 /** A mudança é de um item que o motor altera (e não a inclusão ou exclusão do item)? */
 export function isProductionChange(change: Change, chain: XElement[]): boolean {
   return itemOf(change, chain) !== undefined;
@@ -318,8 +329,9 @@ export function planProduction(
     const notSent = kept ? change.fields.filter((f) => !kept.includes(f.attr)) : [];
     if (change.kind === 'alterado' && notSent.length > 0) {
       // O CPF não é coluna da grade (c, l, t, pais, add): o Lattes não tem
-      // onde gravá-lo. A citação é coluna, mas trocá-la não pegou (Fase 5).
-      const noColumn = notSent.every((f) => f.attr === 'CPF');
+      // onde gravá-lo. A citação é coluna, mas a da linha não pega: ela vai
+      // pelo dicionário de coautores (edit-citacao.ts).
+      const noColumn = notSent.every((f) => f.attr.startsWith('CPF'));
       return {
         reason: `A grade de ${part.label.toLowerCase()} do Lattes ${noColumn ? 'não tem' : 'não leva'}: ${notSent.map((f) => f.label).join(', ')}`,
       };
