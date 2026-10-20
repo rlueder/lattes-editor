@@ -101,6 +101,13 @@ export function planOrgan(
 export const organLoose = (v: string | null | undefined) =>
   foldText((v ?? '').replace(/\s+/g, ' ')).replace(/\s*\/\s*/g, '/');
 
+/** Onde fica a janela de órgãos, quando não é a do projeto (a da atividade). */
+export interface OrganWindow {
+  /** A instituição como a janela a quer, com a letra. */
+  institution: string;
+  path: (cv: string, institution: string, parent: string) => string;
+}
+
 /**
  * Os ocultos do órgão, para juntar ao set da operação, e o texto que a
  * releitura deve mostrar. Na página de alteração real (lida em 18/10/2026),
@@ -110,13 +117,6 @@ export const organLoose = (v: string | null | undefined) =>
  * que a própria página manda quando a pessoa não mexe no órgão. Depois
  * refaz a janela de órgãos (só GET) e fica com o único resultado de mesmo código.
  */
-/** Onde fica a janela de órgãos, quando não é a do projeto (a da atividade). */
-export interface OrganWindow {
-  /** A instituição como a janela a quer, com a letra. */
-  institution: string;
-  path: (cv: string, institution: string, parent: string) => string;
-}
-
 export async function resolveOrgan(
   choice: OrganChoice,
   port: LattesPort,
