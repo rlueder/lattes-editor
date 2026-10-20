@@ -2,6 +2,7 @@ import 'fake-indexeddb/auto';
 
 import { describe, expect, it } from 'vitest';
 
+import { isComplementaryItem } from '../src/bridge/edit-lists.ts';
 import type { AreaNode, Course } from '../src/bridge/lattes-lists.ts';
 import { getAttr, parseXml, type XElement } from '../src/model/xml.ts';
 import {
@@ -239,6 +240,50 @@ describe('que campo vira qual lista', () => {
     const work = el('<ATUACAO-PROFISSIONAL CODIGO-INSTITUICAO="1" NOME-INSTITUICAO="X"/>');
     expect(liveKind(work, 'NOME-INSTITUICAO', ALL)).toBeUndefined();
     expect(liveKind(doc, 'NOME-INSTITUICAO', { ...ALL, search: false })).toBeUndefined();
+  });
+});
+
+describe('formação complementar e endereço profissional', () => {
+  it('a complementar escolhe instituição e curso na lista FORM do nível dela', () => {
+    const mba = el(
+      '<MBA CODIGO-INSTITUICAO="000000000001" NOME-INSTITUICAO="X" CODIGO-CURSO="1" NOME-CURSO="C"/>',
+    );
+    const inside = { ...ALL, parentOf: () => 'FORMACAO-COMPLEMENTAR' };
+    expect(liveKind(mba, 'NOME-INSTITUICAO', inside)).toBe('instituicao');
+    expect(liveKind(mba, 'NOME-CURSO', inside)).toBe('curso');
+    // OUTROS e MBA são nomes genéricos: fora da formação complementar, ou sem
+    // saber o pai, nenhuma busca.
+    expect(liveKind(mba, 'NOME-INSTITUICAO', { ...ALL, parentOf: () => 'OUTRA-COISA' })).toBe(
+      undefined,
+    );
+    expect(liveKind(mba, 'NOME-CURSO', ALL)).toBeUndefined();
+    expect(isComplementaryItem('OUTROS', 'FORMACAO-COMPLEMENTAR')).toBe(true);
+    expect(isComplementaryItem('OUTROS', 'AREA-DE-ATUACAO')).toBe(false);
+    expect(isComplementaryItem('OUTROS', undefined)).toBe(false);
+    expect(isComplementaryItem('GRADUACAO', 'FORMACAO-COMPLEMENTAR')).toBe(false);
+    expect(livePairs('MBA')).toMatchObject({
+      course: { level: 'E', program: 'FORM' },
+      searchLevel: 'E',
+    });
+    expect(livePairs('OUTROS')?.searchLevel).toBe('Y');
+    // Outra instituição limpa o curso, como o seleciona() do Lattes.
+    expect(applyInstitution(mba, { code: 'V000000000002', label: 'USP (SP)', name: 'USP' })).toBe(
+      true,
+    );
+    expect(getAttr(mba, 'CODIGO-INSTITUICAO')).toBe('000000000002');
+    expect(getAttr(mba, 'CODIGO-CURSO')).toBe('');
+    expect(getAttr(mba, 'NOME-CURSO')).toBe('');
+  });
+
+  it('o endereço escolhe só a instituição, nos atributos dele', () => {
+    const address = el(
+      '<ENDERECO-PROFISSIONAL CODIGO-INSTITUICAO-EMPRESA="" NOME-INSTITUICAO-EMPRESA="X" NOME-ORGAO=""/>',
+    );
+    expect(liveKind(address, 'NOME-INSTITUICAO-EMPRESA', ALL)).toBe('instituicao');
+    expect(liveKind(address, 'NOME-ORGAO', ALL)).toBeUndefined();
+    applyInstitution(address, { code: 'M000000000004', label: 'Embrapa (DF)', name: 'Embrapa' });
+    expect(getAttr(address, 'CODIGO-INSTITUICAO-EMPRESA')).toBe('000000000004');
+    expect(getAttr(address, 'NOME-INSTITUICAO-EMPRESA')).toBe('Embrapa');
   });
 });
 

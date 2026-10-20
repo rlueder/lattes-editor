@@ -1,17 +1,21 @@
 // As buscas do Lattes na hora de gravar uma formação alterada (formacao-edit.ts):
 // instituição, curso e agência, pelos mesmos GETs da inclusão
-// (create-formacao.ts; docs/lattes_internals.md, seção 18). Nenhuma busca
-// grava nada. O resultado são os ocultos que o seleciona(), o selecionar() e o
-// atribuir() da página escreveriam; os campos desabilitados (f_inst, f_curso,
-// f_nme_agencia) não vão, como num envio do navegador.
+// (create-formacao.ts; docs/lattes_internals.md, seção 18). A formação
+// complementar (edit-lists.ts) usa as mesmas buscas de instituição e curso, e
+// o endereço profissional as dele (endereco-buscas.ts); resolveOpLookups junta
+// as três para apply.ts. Nenhuma busca grava nada. O resultado são os ocultos que o seleciona(), o
+// selecionar() e o atribuir() da página escreveriam; os campos desabilitados
+// (f_inst, f_curso, f_nme_agencia) não vão, como num envio do navegador.
 
 import type { LattesPort, ResultStatus } from './apply.ts';
 import { institutionResults } from './create.ts';
 import { courseName } from './create-formacao.ts';
 import { getChecked, jsCalls, sameCode, selectEntries, Stop } from './create-shared.ts';
-import { encodeLatin1Form, type Pairs, pairValue } from './form.ts';
-import type { FormacaoOp, InstitutionSlot } from './formacao-edit.ts';
-import type { FieldValues } from './plan.ts';
+import { isListEditOp } from './edit-lists.ts';
+import { resolveEnderecoLookups } from './endereco-buscas.ts';
+import { encodeLatin1Form, type FormControl, type Pairs, pairValue } from './form.ts';
+import type { FormacaoLookups, InstitutionSlot } from './formacao-edit.ts';
+import type { BridgeOp, FieldValues } from './plan.ts';
 
 /** Os ocultos de cada instituição: V vai no primeiro, as outras letras no segundo (seção 18). */
 const SLOTS: Record<InstitutionSlot, { name?: string; other: string; outra: string; v: string }> = {
@@ -37,12 +41,12 @@ const codeIn = (pairs: Pairs, a: string, b: string) =>
  * e a instituição atual (para a lista de cursos quando a instituição não muda).
  */
 export async function resolveFormacao(
-  op: FormacaoOp,
+  lookups: FormacaoLookups,
   port: LattesPort,
   pairs: Pairs,
 ): Promise<Resolved> {
   try {
-    return await resolve(op, port, pairs);
+    return await resolve(lookups, port, pairs);
   } catch (err) {
     // A sessão que caiu no meio de uma busca para a fila como sessão.
     if (err instanceof Stop) return { detail: err.message, status: err.status };
@@ -50,8 +54,11 @@ export async function resolveFormacao(
   }
 }
 
-async function resolve(op: FormacaoOp, port: LattesPort, pairs: Pairs): Promise<Resolved> {
-  const lookups = op.lookups ?? {};
+async function resolve(
+  lookups: FormacaoLookups,
+  port: LattesPort,
+  pairs: Pairs,
+): Promise<Resolved> {
   const cv = pairValue(pairs, 'f_cod') ?? '';
   const level = pairValue(pairs, 'f_nivel') ?? '';
   const set: FieldValues = {};
@@ -132,4 +139,48 @@ async function resolve(op: FormacaoOp, port: LattesPort, pairs: Pairs): Promise<
     }
   }
   return { check, set };
+}
+
+/** O que as buscas de uma operação acrescentam ao envio e à releitura (apply.ts). */
+export interface OpLookups {
+  /** O que a releitura espera nos pares, quando difere do enviado. */
+  check: FieldValues;
+  set: FieldValues;
+  /** O texto que os campos desabilitados têm de mostrar na releitura. */
+  shown: FieldValues;
+  /** Ocultos enviados que a releitura não confere: a página os traz vazios. */
+  unchecked: string[];
+}
+
+/**
+ * As buscas de qualquer operação que as pede: formação, formação
+ * complementar e endereço profissional. Sem busca, tudo vazio. `before` é o
+ * formulário como veio, já conferido.
+ */
+export async function resolveOpLookups(
+  op: BridgeOp,
+  port: LattesPort,
+  before: { controls: FormControl[]; pairs: Pairs },
+): Promise<OpLookups | { detail: string; status: ResultStatus }> {
+  const out: OpLookups = { check: {}, set: {}, shown: {}, unchecked: [] };
+  const lookups = op.kind === 'formacao' ? op.lookups : isListEditOp(op) ? op.lookups : undefined;
+  if (lookups) {
+    const r = await resolveFormacao(lookups, port, before.pairs);
+    if ('status' in r) return r;
+    Object.assign(out.set, r.set);
+    Object.assign(out.check, r.check);
+    // Na formação complementar, instituição e curso desabilitados mostram a escolha.
+    if (isListEditOp(op)) {
+      if (r.set.f_inst_old) out.shown.f_inst = r.set.f_inst_old;
+      if (r.set.f_curso_old) out.shown.f_curso = r.check.f_curso_old ?? r.set.f_curso_old;
+    }
+  }
+  if (op.kind === 'endereco' && (op.institution || op.organ)) {
+    const r = await resolveEnderecoLookups(op, port, before.pairs, before.controls);
+    if ('status' in r) return r;
+    Object.assign(out.set, r.set);
+    Object.assign(out.shown, r.shown);
+    out.unchecked.push(...r.unchecked);
+  }
+  return out;
 }

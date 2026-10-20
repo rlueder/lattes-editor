@@ -30,6 +30,7 @@ import {
   planOutrasInformacoes,
 } from './dados-gerais-edit.ts';
 import { countryName } from './edit-items.ts';
+import { LOOKUPS_OFF } from './edit-lists.ts';
 import { type FormacaoOp, type FormationList, planFormacaoEdit } from './formacao-edit.ts';
 import { findLinks } from './lattes-html.ts';
 import type { BridgeOp } from './plan.ts';
@@ -111,8 +112,12 @@ export function planBiographic(
   chain: XElement[],
   label: string,
   full = false,
+  /** Instituição e órgão do endereço pelas buscas (COMPL_ENDERECO_LOOKUPS_ENABLED, edit-lists.ts). */
+  lookups = false,
 ): BiographicOp | undefined | { reason: string } {
   const planned = planBiographicOp(change, chain, label);
+  const address = planned && 'kind' in planned && planned.kind === 'endereco' ? planned : undefined;
+  if (address && (address.institution || address.organ) && !lookups) return { reason: LOOKUPS_OFF };
   if (!full && planned && 'kind' in planned && needsFullBiographic(planned)) {
     return {
       reason:
@@ -133,7 +138,7 @@ function planBiographicOp(
     return planFormacaoEdit(change, el, label);
   }
   if (ENDERECO_SUFFIX[el.name] || el.name === 'ENDERECO') {
-    return planEnderecoEdit(change, el.name, label);
+    return planEnderecoEdit(change, el, label);
   }
   if (el.name === 'DADOS-GERAIS') return planIdentificacaoEdit(change, el, label);
   if (el.name === 'OUTRAS-INFORMACOES-RELEVANTES') return planOutrasInformacoes(change, label);

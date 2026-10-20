@@ -58,6 +58,15 @@ describe('campos que o formulário do Lattes não tem', () => {
       false,
     );
     expect(fieldAbsent('Campos não suportados ainda: Nível')).toBe(false);
+    // A instituição "outra" da formação e o órgão da formação complementar.
+    expect(
+      fieldAbsent(
+        'O formulário de doutorado do Lattes não tem campo para a instituição cadastrada fora da busca; escolha a instituição pela busca no próprio Lattes',
+      ),
+    ).toBe(true);
+    expect(fieldAbsent('O formulário de formação complementar do Lattes não tem o órgão')).toBe(
+      true,
+    );
   });
 
   it('palavras-chave novas num evento que já está no Lattes não entram', () => {

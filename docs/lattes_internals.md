@@ -311,6 +311,13 @@ correspondência); privacidade por bloco (`f_priv_residencial`,
 eletrônicos e redes sociais vão em grades serializadas nos ocultos
 `f_dados_grid` e `f_dados_grid_contatos` (formato não lido). **Lacuna.**
 
+A instituição e o órgão do endereço profissional vêm desabilitados (`f_inst`,
+`f_orgao`) e só mudam pelas janelas de busca da página, lidas em 20/10/2026
+(seção 18, "Endereço profissional"): a de instituição posta para
+`PRC_INST_ATIV` e grava `f_inst`, `f_inst_old`, `f_cod_inst` ou
+`f_cod_inst2`; a de órgão é `prc_orgao_cargo` e grava `f_orgao`,
+`f_orgao_old`, `f_codorgao` ou `f_codorgao2`. **Observado.**
+
 ### Identificação: `GN_IDENT`, POST `PRC_IDENT`
 
 Aberto por GET `prc_ident` com `f_cod` e `f_pcd`. Nome (`f_nome` 60), nome
@@ -1080,8 +1087,12 @@ os campos alterados trocados, e lê de volta.
   mudaram. O envio vai para `FORM2` com o
   `f_ctr` vazio que a página traz (**inferido** que grave assim), e N e I do
   status como `EM_ANDAMENTO` e `INCOMPLETO` vêm do rótulo (**inferido**; só
-  "concluído" foi visto). Instituição e curso mudam só pelas buscas, e o
-  formulário não tem os anos nem o nome do curso em inglês: ficam à mão.
+  "concluído" foi visto). O formulário não tem os anos, o órgão nem o nome do
+  curso em inglês: o editor mostra esses campos só para ler. Instituição e
+  curso mudam pelas buscas, como na formação acadêmica (seção 18, "Formação
+  complementar", desde 20/10/2026, atrás da capacidade
+  `buscas-complementar-endereco`); a releitura confere que `f_inst` e
+  `f_curso` mostram os nomes novos.
 
 Nos dois, o `f_ctr` não distingue sempre incluir de alterar (o da formação
 complementar vem vazio na inclusão e na edição). Depois do envio, o conector
@@ -1642,6 +1653,67 @@ Na lista de projetos real, o link de cada linha é
 com os números em maiúsculas, e o mesmo projeto aparece também na lista com
 `f_sta_inovacao=S`. **Observado.**
 
+### Formação complementar (lido em 20/10/2026)
+
+Num GET da página de edição de um curso de curta duração
+(`PKG_FORMACAO_COMPL.form?f_cod=…&f_seq=6`), sem enviar nada: a lupa da
+instituição chama `sele_inst()`, que abre
+`prc_inst_form?f_cod=…&f_nivel=<f_nivel>`, e a do curso chama `curso()`, que
+abre `prc_curso_form?f_cod=…&f_pgm=FORM&f_nivel=<f_nivel>&f_inst=<valor de
+f_cod_inst ou de f_cod_inst2>`. São as janelas da formação acadêmica. Os
+ocultos vieram assim: `f_cod_inst=V577000000000` (com a letra),
+`f_cod_inst2` vazio, `f_cod_curso` vazio, `f_cod_curso2=90000005` (sem a
+letra), e `f_inst_old` e `f_curso_old` com os nomes; `f_inst` é texto
+desabilitado. **Observado.**
+
+O conector troca instituição e curso com as regras da formação acadêmica
+(`src/bridge/formacao-edit.ts` e `formacao-lookups.ts`): a operação leva o
+código novo, e na hora de gravar faz a busca `PRC_INST_FORM` com o `f_nivel`
+do formulário e `F_STA_OUTRA=N`, fica com o único resultado do código, e pega
+o curso na lista da instituição. A instituição nova sem curso escolhido de
+novo fica à mão, como na formação. **Inferido**: que o `seleciona()` desta
+janela grave como o da formação (o código com a letra, V em `f_cod_inst`, as
+outras em `f_cod_inst2`), e que `PKG_FORMACAO_COMPL.FORM2` grave os ocultos.
+Nada disso foi enviado a um Lattes real.
+
+### Endereço profissional (lido em 20/10/2026)
+
+A instituição do endereço tem outra janela. O formulário dela, `instituicaoForm`,
+posta para `PRC_INST_ATIV` com os ocultos `F_CTR=C`, `F_COD=<código do
+currículo>`, `F_PGM` vazio e `F_MODAL_CV=1`, e o texto em `f_nome`. Um POST
+com `f_nome=Universidade Positivo` devolveu
+`seleciona('V577000000000','Universidade Positivo')`, no formato da busca da
+formação. O `seleciona(vlr, texto)` dessa janela escreve `texto` em `f_inst`
+e `f_inst_old` e grava o código **sem** a letra: com V, `f_cod_inst =
+vlr.substring(1)` e `f_cod_inst2` vazio; com outra letra, o contrário.
+**Observado.**
+
+O órgão sai de `orgao()`, que abre
+`prc_orgao_cargo?f_cod=…&f_cod_inst=<V e f_cod_inst, ou D e f_cod_inst2>`, a
+mesma janela do projeto e das atividades: `atribuir(cod, texto, tipo,
+texto2)` grava `f_orgao` e `f_orgao_old` e o código em `f_codorgao` (tipo 0)
+ou `f_codorgao2`. **Observado** no código da página.
+
+O conector troca a instituição pela busca `PRC_INST_ATIV` (por POST, como a
+página): confere antes que `f_cod_inst` ou `f_cod_inst2` tem o código de
+antes do XML, fica com o único resultado do código novo, manda os ocultos
+como o `seleciona()` os escreveria e, na releitura, confere os ocultos e o
+nome em `f_inst`. O órgão vai pela janela das atividades
+(`prc_orgao_cargo?f_origem=&f_modal_cv=9&…`, a mesma resolução do projeto e
+das atividades, `src/bridge/production/organ.ts`): o código de antes se
+confere pelo oculto ou pelo texto de `f_orgao`, e a releitura confere o texto
+novo em `f_orgao`. Com a instituição trocada, a janela abre na instituição
+nova, com a letra que a busca deu. Se o `seleciona()` limpa o órgão não foi
+visto: com órgão no item, a instituição nova só vai com o órgão escolhido de
+novo. A unidade não tem campo próprio no formulário: com unidade no item, a
+troca de órgão fica à mão. **Inferido**: que a página traga os ocultos da
+instituição preenchidos com o valor gravado, que os do órgão venham vazios
+(como na alteração do projeto), que `PRC_ENDERECO` grave os dois, e que a
+janela pelo endereço das atividades liste os mesmos órgãos que a do
+endereço. Nada disso foi enviado a um Lattes real. O editor ainda não oferece
+a lista de órgãos no endereço, como nas atividades: o órgão só vai quando o
+XML traz o código novo.
+
 ### Área do conhecimento: no próprio menu, sem pedido ao servidor
 
 A tabela de áreas não vem de uma busca. O `PKG_MENU.menu` declara em script
@@ -1689,7 +1761,9 @@ Consequência para o conector: a área se resolve sem rede, lendo `areaDP` do
 menu que já está na aba (ou guardando uma cópia da tabela no editor), e
 instituição e curso são GETs cujos resultados se leem nos links
 `seleciona(…)` e nas opções da lista. Nenhuma das três buscas precisa de
-POST. A única consulta por POST encontrada é a de patente já cadastrada.
+POST. As consultas por POST encontradas são a de patente já cadastrada e a
+busca de instituição do endereço (`PRC_INST_ATIV`, que o conector faz por
+POST como a página; se ela aceita GET não foi testado).
 
 ## 19. Dados gerais pelo conector (LAT-23, 14/10/2026; LAT-58, 16/10/2026)
 
@@ -1733,7 +1807,11 @@ gravaria errado, também `BIOGRAPHIC_FULL_ENABLED`, com a capacidade
   `f_cod_inst2`, `f_inst_old`, `f_cod_curso` ou `f_cod_curso2`,
   `f_curso_old`, `f_agencia`, e os `_dout` do sanduíche); os campos
   desabilitados não vão. A releitura compara o curso sem o código CAPES.
-  Uma alteração assim não tem "Desfazer" no registro do enviado.
+  Uma alteração assim não tem "Desfazer" no registro do enviado. A
+  instituição do endereço profissional vai pela busca `PRC_INST_ATIV` da
+  página de endereço (seção 18), e o órgão pela janela de órgãos, atrás da
+  capacidade `buscas-complementar-endereco`; com órgão no item, a instituição
+  nova só vai com o órgão novo.
 - **Travas**: além das de toda alteração (o "antes" de cada campo tem de
   bater, só os campos da operação podem mudar depois do envio), a formação
   confere o `f_nivel`, o `f_tipo` e, qualquer que seja o campo alterado, a
@@ -1749,12 +1827,14 @@ gravaria errado, também `BIOGRAPHIC_FULL_ENABLED`, com a capacidade
 - **Fora, com o motivo na tela**: o que o formulário do nível não mostra (o
   título e o ano de obtenção do pós-doutorado, por exemplo), os nomes em
   inglês, o órgão, o número do orientador e os dados do Oasisbr da
-  formação; a instituição "outra" e as do sanduíche e da cotutela, que a
-  exportação traz só pelo código; o CPF e os nomes dos pais (ocultos na
-  página); formato das datas, permissão de divulgação, foto, falecimento,
-  e ORCID; a instituição, o órgão e a unidade do endereço profissional; o
-  tipo de vínculo e o enquadramento funcional enumerado; os dados da raiz
-  `CURRICULO-VITAE`, que o Lattes gera.
+  formação; a instituição "outra" (cadastrada fora da busca), que o
+  formulário não tem e o editor mostra só para ler; as do sanduíche e da
+  cotutela, que a exportação traz só pelo código; o CPF e os nomes dos pais
+  (ocultos na página); formato das datas, permissão de divulgação, foto,
+  falecimento, e ORCID; a unidade do endereço profissional, e a instituição
+  nova dele sem o órgão escolhido de novo; o tipo de vínculo e o
+  enquadramento funcional enumerado; os dados da raiz `CURRICULO-VITAE`, que
+  o Lattes gera.
 
 Desde 18/10/2026 vão também a pessoa com deficiência (`f_pcd_r`, uma caixa
 `f_pcd` por tipo mais o `f_pcd=DUMMY` oculto, `f_priv_pcd`) e as redes

@@ -18,6 +18,7 @@ import type { AttributeSpec } from '../schema/types.ts';
 import { DateField } from './DateField.tsx';
 import { displayValue } from './display.ts';
 import { useDraft, usePartKey } from './draft-context.ts';
+import { useEditor } from './editor-context.ts';
 import {
   codeAttrFor,
   codeChoices,
@@ -34,7 +35,7 @@ import { displayLattesDate, isLattesDateAttr, isValidLattesDate } from './lattes
 import { useLattesListsContext } from './lattes-lists-context.ts';
 import { isFourDigitYear, isLattesYearAttr } from './lattes-year.ts';
 import { cleanLinkValue, linkError } from './link-fields.ts';
-import { liveKind } from './live-lists.ts';
+import { ancestorsOf, type LiveAvailability, liveKind } from './live-lists.ts';
 import { LiveListControl } from './LiveListField.tsx';
 import { ComboSelect } from './primitives/ComboSelect.tsx';
 import { Switch } from './primitives/Switch.tsx';
@@ -72,6 +73,12 @@ function LockedField({ text, value, why }: { text: string; value: string; why: s
   );
 }
 
+/** As listas com o pai do elemento, procurado na cópia só quando liveKind precisa dele. */
+const withParentIn = (live: LiveAvailability, root: XElement | undefined, el: XElement) => ({
+  ...live,
+  parentOf: () => ancestorsOf(root, el).at(-1)?.name,
+});
+
 export function AttributeField({
   el,
   error,
@@ -86,6 +93,7 @@ export function AttributeField({
 }: Props) {
   const hideSensitive = useHideSensitive();
   const lists = useLattesListsContext();
+  const { root } = useEditor();
   const formLacks = useFormLacks();
   // Prévia do modo de leitura: acompanha o texto antes de gravar.
   const onDraft = useDraft();
@@ -179,7 +187,7 @@ export function AttributeField({
   }
 
   // Listas lidas no Lattes pelo conector (LAT-48): sem elas, o campo de sempre.
-  const live = liveKind(el, name, lists);
+  const live = liveKind(el, name, withParentIn(lists, root, el));
   if (live === 'area-derivada') {
     const shown = value ? enumLabelOrValue(name, value) : '(vazio)';
     return <LockedField text={text} value={shown} why="Segue a área do conhecimento escolhida" />;
