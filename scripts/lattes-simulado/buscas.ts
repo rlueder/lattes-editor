@@ -37,20 +37,29 @@ export const COURSES: Record<string, [string, string][]> = {
   V000000000001: [
     ['V00000001 ', 'Genética e Biologia Molecular'],
     ['V00000002 ', 'Botânica'],
-    ['V00000005 ', 'Especialização em Genética'],
   ],
   V000000000002: [['V00000003 ', 'Ecologia']],
   V000000000003: [['V00000004 ', 'Genética e Biologia Molecular']],
 };
 
 /**
- * Os níveis (f_nivel) em que um curso aparece na busca das orientações e
- * bancas (f_pgm=TESE), que o retnivel() da página tira da natureza
- * (docs/lattes_internals.md, seção 18); um curso da tabela só aparece nessa
- * busca, e o que está fora dela aparece em todas. Inferido que a lista do
- * Lattes mude com o nível: os níveis daqui são sintéticos.
+ * Cursos a mais por instituição, só na busca das orientações e bancas
+ * (f_pgm=TESE) e só nos níveis (f_nivel) listados, que o retnivel() da página
+ * tira da natureza (docs/lattes_internals.md, seção 18). As outras buscas
+ * veem só COURSES, e os cursos de COURSES aparecem em todo nível. Inferido que
+ * a lista do Lattes mude com o nível: os níveis daqui são sintéticos.
  */
-export const TESE_LEVELS: Record<string, string[]> = { 'V00000005 ': ['2'] };
+export const TESE_COURSES: Record<string, [string, string, string[]][]> = {
+  V000000000001: [['V00000005 ', 'Especialização em Genética', ['2']]],
+};
+
+/** Todos os cursos do simulado, de qualquer busca: o valor e o nome. */
+export const allCourses = (): [string, string][] => [
+  ...Object.values(COURSES).flat(),
+  ...Object.values(TESE_COURSES)
+    .flat()
+    .map(([value, name]): [string, string] => [value, name]),
+];
 
 /**
  * Órgãos por instituição (código sem a letra), com as unidades de cada um:
@@ -169,9 +178,12 @@ function courses(req: SimRequest, state: LattesState): SimResponse {
   const inst = req.get('f_inst') ?? '';
   const level = req.get('f_nivel') ?? '';
   const tese = (req.get('f_pgm') ?? '').toUpperCase() === 'TESE';
-  const options = (COURSES[inst] ?? []).filter(
-    ([value]) => !TESE_LEVELS[value] || (tese && TESE_LEVELS[value].includes(level)),
-  );
+  const extra = tese
+    ? (TESE_COURSES[inst] ?? [])
+        .filter(([, , levels]) => levels.includes(level))
+        .map(([value, name]): [string, string] => [value, name])
+    : [];
+  const options = [...(COURSES[inst] ?? []), ...extra];
   const body = `<form name="GN_CURSO_FORM" method="post" action="PRC_CURSO_FORM">
 ${h.hidden('f_sta_area', 'S')}${h.hidden('f_cod_inst', inst)}${h.hidden('f_nme_inst', institutionsOf(state).find((i) => i.code === inst)?.name ?? '')}${h.hidden('f_cod', state.code)}
 <p>${h.select('f_curso', options, '')}</p>

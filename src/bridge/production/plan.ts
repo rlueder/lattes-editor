@@ -460,8 +460,8 @@ export function planProduction(
   if (left) return left;
   if (rows.length === 0) return { reason: 'Nada a enviar' };
   // A natureza trocada no lugar: os ocultos limpos e a instituição e o curso
-  // escolhidos de novo com o nível dela (nature.ts).
-  const swapped = planNatureSwap(target, change, item, set, expect, siblings);
+  // escolhidos de novo com o nível dela (nature.ts), que recusa se já há escolhas.
+  const swapped = planNatureSwap(target, change, item, set, expect, siblings, lookups);
   if (swapped && 'reason' in swapped) return swapped;
   if (swapped?.lookups) lookups = swapped.lookups;
   // O que a página limpa junto (target.clears), sem conferir o antes.

@@ -7,8 +7,15 @@
 // escolher os dois de novo. O nível da lista de cursos sai do retnivel() da
 // natureza nova. O envio faz o mesmo: o F_COD_PROD novo, os ocultos limpos e
 // a instituição e o curso do item escolhidos de novo pelas buscas
-// (lookups.ts), com o nível da natureza nova. Que o Lattes grave a troca
-// assim é inferido até o teste num item de teste.
+// (lookups.ts), com o nível da natureza nova.
+//
+// Observado no Lattes real em 20/10/2026, numa orientação de teste das outras
+// concluídas: a troca de graduação (44) para iniciação científica (45) primeiro
+// parou antes do envio, porque o curso do item não estava na lista de nível 1
+// da instituição; com o curso trocado pelo conector para um da lista (conferido),
+// 44 para 45 voltou conferido, com a instituição e o curso intactos, e 45 para
+// 44 também. A releitura confere a natureza, os ocultos limpos e os códigos, e
+// acusa divergente se algum não gravou.
 
 import type { Change } from '../../model/changes.ts';
 import { childElements, getAttr, type XElement } from '../../model/xml.ts';
@@ -26,6 +33,7 @@ export function planNatureSwap(
   set: Record<string, string>,
   expect: Record<string, string>,
   siblings: readonly Change[],
+  planned?: ProductionLookups,
 ): { lookups?: ProductionLookups } | { reason: string } | undefined {
   const swap = target.natureSwap;
   const field = target.nature?.field;
@@ -40,8 +48,11 @@ export function planNatureSwap(
   for (const c of swap.clears) set[c] = '';
   const spec = target.lookups;
   if (!spec) return {};
-  // A instituição ou o curso trocados na mesma fila: a página pede os dois de
-  // novo, e cada operação conferiria o que a outra mudou.
+  // A instituição ou o curso escolhidos na mesma mudança (planned) ou na mesma
+  // fila: a página pede os dois de novo, e as escolhas se atropelariam. Hoje a
+  // natureza e as buscas ficam em filhos diferentes, e planned vem vazio.
+  const reason = `${f.label}: troque a natureza num envio e a instituição ou o curso em outro`;
+  if (planned) return { reason };
   const where = change.path.slice(0, -1).join('/');
   const chosen = new Set(lookupAttrs(spec));
   const pending = siblings.some(
@@ -51,11 +62,7 @@ export function planNatureSwap(
       c.path.slice(0, -1).join('/') === where &&
       c.fields.some((x) => chosen.has(x.attr)),
   );
-  if (pending) {
-    return {
-      reason: `${f.label}: troque a natureza num envio e a instituição ou o curso em outro`,
-    };
-  }
+  if (pending) return { reason };
   const detail = childElements(item, spec.child)[0];
   const value = (a: string) => (detail && getAttr(detail, a)) ?? '';
   const institution = value(spec.institution.code);

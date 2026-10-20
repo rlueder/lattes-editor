@@ -1703,8 +1703,12 @@ O conector, com isso (`src/bridge/production/nature.ts`):
   curso do item buscados de novo com o nível da natureza nova, como o
   `testa_nivel()` pede. Curso fora da lista do nível novo, ou ausente numa
   natureza que o exige (43 e 44, pelo `check()`), para antes do envio. A
-  releitura confere o `F_COD_PROD` e os códigos. Que o Lattes grave a troca
-  assim é **inferido** até o envio num item de teste.
+  releitura confere o `F_COD_PROD` e os códigos. **Observado** em 20/10/2026,
+  numa orientação de teste das outras concluídas: de graduação (44) para
+  iniciação científica (45), o envio parou antes do POST porque o curso do item
+  não estava na lista de nível 1 da instituição; com o curso trocado pelo
+  conector para um da lista, 44 para 45 gravou e conferiu, com a instituição e
+  o curso intactos, e 45 para 44 também.
 - De ou para 49 fica à mão: a janela do subtipo não foi lida.
 - O conector não desmarca `f_tpo_orient`, que nas outras orientações não
   vem marcado (**inferido**: não visto num item dessas naturezas).
