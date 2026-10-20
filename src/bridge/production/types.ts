@@ -169,13 +169,16 @@ export interface ProductionTarget {
    * Partes do item cujo campo do formulário depende do conteúdo da própria
    * parte (a linha do histórico de situações da patente, cuja descrição diz
    * que data ela é): elemento → os campos de cada atributo da mudança, com a
-   * chave só do atributo, ou o motivo de ir à mão.
+   * chave só do atributo, ou o motivo de ir à mão. Um mapa vazio deixa os
+   * campos de `fields`, e o gancho só confere (a data do registro da patente
+   * contra a do histórico).
    */
   partFields?: Record<
     string,
     (
       change: Change,
       el: XElement,
+      item: XElement,
     ) => { fields: Record<string, FieldMap | string> } | { reason: string }
   >;
   /**

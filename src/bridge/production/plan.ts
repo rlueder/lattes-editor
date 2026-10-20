@@ -9,8 +9,8 @@ import { childElements, element, getAttr, type XElement } from '../../model/xml.
 import { lattesSchema } from '../../schema/lattes.ts';
 import { areaLabel, type AreaRow } from '../areas-atuacao.ts';
 import type { BridgeOp, OpBase } from '../plan.ts';
-import { AUTHOR_PART, type AuthorSpec, MAX_KEYWORDS } from './grids.ts';
-import { holderCopies, planHolder } from './holders.ts';
+import { AUTHOR_PART, authorsOf, type AuthorSpec, MAX_KEYWORDS } from './grids.ts';
+import { planHolder, withoutHolderCopies } from './holders.ts';
 import {
   type AreaList,
   isAreaChange,
@@ -147,17 +147,6 @@ function shown(value: string): string {
   return isEnum ? enumLabel(value) : value;
 }
 
-/** Os autores (ou participantes) de um item, na ordem de autoria. */
-function authorsOf(els: XElement[], part: AuthorPart = AUTHOR_PART): AuthorSpec[] {
-  return [...els]
-    .sort((a, b) => Number(getAttr(a, part.order) ?? 0) - Number(getAttr(b, part.order) ?? 0))
-    .map((a) => ({
-      citation: getAttr(a, part.citation) ?? '',
-      cnpq: getAttr(a, part.cnpq) ?? '',
-      name: getAttr(a, part.name) ?? '',
-    }));
-}
-
 const KEYWORD_ATTRS = Array.from({ length: MAX_KEYWORDS }, (_, i) => `PALAVRA-CHAVE-${i + 1}`);
 
 /** A operação, ou o motivo de ficar à mão. */
@@ -179,7 +168,7 @@ export function planProduction(
   const byHand = organChange ? undefined : target.byHand?.[change.element];
   if (byHand) return { reason: byHand };
   // O campo que depende da própria parte (a data do histórico da patente).
-  const partMap = organChange ? undefined : target.partFields?.[change.element]?.(change, el);
+  const partMap = organChange ? undefined : target.partFields?.[change.element]?.(change, el, item);
   if (partMap && 'reason' in partMap) return partMap;
   // Título e ano do Lattes: os de antes, quando a própria mudança os troca.
   const before = (child: string, attr: string) => {
@@ -345,11 +334,7 @@ export function planProduction(
         reason: `A grade de ${part.label.toLowerCase()} do Lattes ${noColumn ? 'não tem' : 'não leva'}: ${notSent.map((f) => f.label).join(', ')}`,
       };
     }
-    // Os depositantes que a exportação copia nos autores (holders.ts).
-    const copies = holderCopies(target, item, chain[0], siblings, change, part.name);
-    if ('reason' in copies) return copies;
-    const current = childElements(item, part.element).filter((a) => !copies.isCopy(a));
-    const after = authorsOf(current, part);
+    const current = childElements(item, part.element);
     // O antes: a lista de agora com esta mudança desfeita.
     const revert = (a: XElement) => ({
       ...a,
@@ -370,7 +355,14 @@ export function planProduction(
               ),
             ]
           : current.map((a) => (a === el ? revert(a) : a));
-    const authors = { after, before: authorsOf(beforeEls, part) };
+    // Os depositantes que a exportação copia nos autores ficam de fora (holders.ts).
+    const lists = withoutHolderCopies(target, item, chain[0], siblings, change, part.name, {
+      after: current,
+      before: beforeEls,
+    });
+    if ('reason' in lists) return lists;
+    const after = authorsOf(lists.after, part);
+    const authors = { after, before: authorsOf(lists.before, part) };
     const names = (list: AuthorSpec[]) => list.map((a) => a.name).join('; ');
     return {
       ...base,

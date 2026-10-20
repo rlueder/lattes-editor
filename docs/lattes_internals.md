@@ -1390,12 +1390,19 @@ O que o conector faz com isso (`src/bridge/production/holders.ts` e
   mão: sai da busca de instituições do Lattes (`pkg_titular_inst.sele_inst`).
 - A mudança de autores deixa de fora as linhas de `AUTORES` com o nome de um
   depositante, antes e depois, para conferir com o `autorProvider`, que não
-  as tem, e para nunca mandar o depositante como autor.
+  as tem, e para nunca mandar o depositante como autor. A cópia só se
+  reconhece pelo nome. Com mais linhas daquele nome do que depositantes (quem
+  inventa e também deposita), o conector não adivinha qual é a cópia, e a
+  mudança de autores fica à mão; mexer numa linha com o nome do depositante
+  também. O depositante novo de uma troca ainda não exportada não tem cópia.
 - A data de uma linha do histórico cuja descrição é uma das datas conhecidas
   (Depósito, Depósito PCT, Concessão, Pedido do Exame, comparadas sem acento
   nem caixa) vai pela grade de situações, como as datas do
-  `REGISTRO-OU-PATENTE`. Incluir ou tirar uma situação, trocar a descrição ou
-  o status, e as outras situações ficam à mão.
+  `REGISTRO-OU-PATENTE`. As duas datas são um campo só no Lattes: a troca só
+  vai quando a data do registro e a da situação estão iguais no editor, e as
+  duas mudanças vão ao mesmo campo (a segunda acha o Lattes já com a data e
+  não envia nada). Datas diferentes ficam à mão. Incluir ou tirar uma
+  situação, trocar a descrição ou o status, e as outras situações também.
 
 ### Dicionário de coautores: a edição (lida em 19/10/2026)
 

@@ -25,13 +25,12 @@
 // exportação do programa de computador de teste não trouxe o
 // REGISTRO-OU-PATENTE.
 
-import type { Change } from '../../../model/changes.ts';
 import { foldText } from '../../../model/fold-text.ts';
-import { getAttr, type XElement } from '../../../model/xml.ts';
 import { PATENT_DATE_CODES } from '../../create-registro-rules.ts';
 import { byTable, country, yesNo } from '../mappers.ts';
 import type { FieldMap, GridField, ProductionTarget } from '../types.ts';
 import { ALL_GRIDS, INFO, slashDate, under } from './comum-tecnica-artistica.ts';
+import { HISTORY, historyFields, registryDateFields } from './patente-historico.ts';
 import {
   dateKey,
   PATENT_DATES,
@@ -118,54 +117,6 @@ const registryManual = (fixedType?: string, holders = true): Record<string, stri
 
 const PATENTE_BASICS = 'DADOS-BASICOS-DA-PATENTE';
 
-const HISTORY = 'HISTORICO-SITUACOES-PATENTE';
-const HISTORY_DATE = 'DATA-SITUACAO-PATENTE';
-
-/** O código da data da patente (PATENT_DATE_CODES) pela descrição da situação, sem acento nem caixa. */
-const dateCodeOf = (description: string): string | undefined =>
-  Object.values(PATENT_DATE_CODES).find(
-    ([, label]) => foldText(label) === foldText(description.trim()),
-  )?.[0];
-
-/**
- * Uma linha do histórico de situações da patente. Observado em 20/10/2026:
- * cada HISTORICO-SITUACOES-PATENTE é uma linha da grade de situações
- * (providerContatos), com DESCRICAO-SITUACAO-PATENTE como o rótulo e
- * DATA-SITUACAO-PATENTE como a data; STATUS-SITUACAO-PATENTE veio "SIM", e o
- * sentido dele não foi visto. Só a data de uma linha que já existe, com uma
- * das descrições que o conector conhece, vai: pelo mesmo campo virtual das
- * datas do REGISTRO-OU-PATENTE.
- */
-function historyFields(
-  change: Change,
-  el: XElement,
-): { fields: Record<string, FieldMap> } | { reason: string } {
-  if (change.kind !== 'alterado') {
-    return {
-      reason:
-        'Incluir ou tirar uma situação do histórico da patente vai à mão: o conector só troca a data de uma situação que já está no Lattes',
-    };
-  }
-  const others = change.fields.filter((f) => f.attr !== HISTORY_DATE);
-  if (others.length > 0) {
-    return {
-      reason: `${others.map((f) => f.label).join(', ')}: a descrição e o status de uma situação da patente vão à mão (o status veio SIM na exportação, e o sentido dele não foi visto); troque no Lattes`,
-    };
-  }
-  const description = getAttr(el, 'DESCRICAO-SITUACAO-PATENTE') ?? '';
-  const code = dateCodeOf(description);
-  if (!code) {
-    const known = Object.values(PATENT_DATE_CODES)
-      .sort(([a], [b]) => Number(a) - Number(b))
-      .map(([, label]) => label)
-      .join(', ');
-    return {
-      reason: `A data da situação "${description}" vai à mão: o conector só troca as de ${known}`,
-    };
-  }
-  return { fields: { [HISTORY_DATE]: { field: dateKey(code), toForm: slashDate } } };
-}
-
 /** Patente (f_cod_tipo PP): as datas na grade de situações, o ano tirado delas. */
 const PATENTE: ProductionTarget = {
   asks: asksFor(PATENTE_BASICS),
@@ -215,7 +166,7 @@ const PATENTE: ProductionTarget = {
       'O formulário de patente do Lattes não tem campo para o ano: ele sai da data de depósito; troque a data',
     ...registryManual(),
   },
-  partFields: { [HISTORY]: historyFields },
+  partFields: { [HISTORY]: historyFields, [REG]: registryDateFields },
   title: { attr: 'TITULO', child: PATENTE_BASICS },
   virtual: PATENT_DATES,
   year: { attr: 'ANO-DESENVOLVIMENTO', child: PATENTE_BASICS },

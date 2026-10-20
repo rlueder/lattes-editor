@@ -28,7 +28,6 @@ import {
   gridKeysOf,
   gridPairs,
   type Grids,
-  holderRows,
   keywordLabels,
   keywordRows,
   MAX_KEYWORDS,
@@ -36,7 +35,7 @@ import {
   sameWords,
   serializeGrid,
 } from './grids.ts';
-import { SEVERAL_HOLDERS } from './holders.ts';
+import { holderReplace, sameHolder, SEVERAL_HOLDERS } from './holders.ts';
 import { areaGridRows, gridLabels, sameLabels, setorGridRows } from './item-lists.ts';
 import { resolveLookups } from './lookups.ts';
 import { sameAuthors, withLeads } from './members.ts';
@@ -138,9 +137,6 @@ function otherChanges(a: Pairs, b: Pairs, skip: Set<string>): string[] {
       .join('\n');
   return [...names].filter((n) => value(a, n) !== value(b, n));
 }
-
-/** O depositante como lista de nomes: um, ou nenhum. */
-const holderList = (name: string) => (name.trim() ? [name] : []);
 
 const labelOf = (op: ProductionOp, name: string) =>
   op.rows.find((r) => r.name === name)?.label ?? name;
@@ -246,17 +242,33 @@ export async function applyProduction(
     if (op.areas && !sameLabels(gridLabels(grids.f_area_l ?? []), op.areas.before.map(areaLabel))) {
       wrong.push('f_area_l');
     }
-    if (
-      op.holders &&
-      !sameWords(authorNames(grids.f_depositante_pessoa_l ?? []), holderList(op.holders.before))
-    ) {
+    const holderGrid = grids.f_depositante_pessoa_l ?? [];
+    if (op.holders && !sameHolder(holderGrid, op.holders.before))
       wrong.push('f_depositante_pessoa_l');
-    }
     if (op.setores && !sameLabels(gridLabels(grids.f_setor_l ?? []), op.setores.before)) {
       wrong.push('f_setor_l');
     }
+    // Um virtual que já tem o valor novo também confere: a data da patente vem
+    // de duas mudanças (a do registro e a do histórico, patente-historico.ts)
+    // para o mesmo campo, e a segunda acha o Lattes como a primeira deixou.
+    const virtualDone = (f: string) => folded(virtualNow[f] ?? '') === folded(op.set[f]);
     for (const f of virtualFields) {
-      if (f in op.expect && folded(virtualNow[f] ?? '') !== folded(op.expect[f])) wrong.push(f);
+      if (
+        f in op.expect &&
+        !virtualDone(f) &&
+        folded(virtualNow[f] ?? '') !== folded(op.expect[f])
+      ) {
+        wrong.push(f);
+      }
+    }
+    if (
+      virtualFields.length > 0 &&
+      Object.keys(op.set).every(isVirtual) &&
+      !op.lookups &&
+      !op.organ &&
+      virtualFields.every(virtualDone)
+    ) {
+      return result('conferido', 'O Lattes já estava assim; nada foi enviado');
     }
     if (wrong.length > 0) {
       return result(
@@ -295,17 +307,8 @@ export async function applyProduction(
       replace.f_autores_l = withLeads(rows, op.authors.after);
     }
     if (op.holders) {
-      const built = holderRows(
-        grids.f_depositante_pessoa_l ?? [],
-        menuAuthors(menu, 'titularPessoaDP') ?? [],
-        op.holders.after,
-      );
-      if ('missing' in built) {
-        return result(
-          'erro',
-          `Depositante que não está na lista de coautores do Lattes: ${built.missing}. Escolha-o no Lattes uma vez; depois o editor consegue mandar`,
-        );
-      }
+      const built = holderReplace(holderGrid, menu, op.holders.after);
+      if ('reason' in built) return result('erro', built.reason);
       replace.f_depositante_pessoa_l = built.rows;
     }
     const set = Object.fromEntries(fields.map((f) => [f, op.set[f] ?? '']));
@@ -388,10 +391,7 @@ export async function applyProduction(
     if (op.setores && !sameLabels(gridLabels(afterGrids.f_setor_l ?? []), op.setores.after)) {
       notSaved.push('f_setor_l');
     }
-    if (
-      op.holders &&
-      !sameWords(authorNames(afterGrids.f_depositante_pessoa_l ?? []), holderList(op.holders.after))
-    ) {
+    if (op.holders && !sameHolder(afterGrids.f_depositante_pessoa_l ?? [], op.holders.after)) {
       notSaved.push('f_depositante_pessoa_l');
     }
     // Os virtuais, lidos de novo do vetor da página.

@@ -228,23 +228,77 @@ describe('patente: o depositante pessoa', () => {
         (root) => setAttr(copy(root), 'NOME-COMPLETO-DO-AUTOR', 'Outro Nome'),
         HOLDER_XML,
       ),
-    ).toEqual([expect.stringMatching(/Esta linha de autor é o depositante/)]);
+    ).toEqual([expect.stringMatching(/Esta linha de autor tem o nome do depositante/)]);
+  });
+
+  it('um autor de verdade com o nome do depositante: a mudança de autores fica à mão', () => {
+    // Quem inventa e também deposita: duas linhas com o nome, um depositante.
+    const xml = HOLDER_XML.replace(
+      '</PATENTE>',
+      '<AUTORES NOME-COMPLETO-DO-AUTOR="Depositante Sintético" NOME-PARA-CITACAO="SINTÉTICO, D." ORDEM-DE-AUTORIA="2" NRO-ID-CNPQ=""/></PATENTE>',
+    );
+    const reasons = reasonsAfter((root) => {
+      byName(root, 'PATENTE').children.push(
+        element('AUTORES', {
+          'NOME-COMPLETO-DO-AUTOR': 'Coautora de Exemplo',
+          'NOME-PARA-CITACAO': 'EXEMPLO, C.',
+          'ORDEM-DE-AUTORIA': '3',
+        }),
+      );
+    }, xml);
+    expect(reasons).toEqual([
+      expect.stringMatching(/mais autores com o nome do depositante do que depositantes/),
+    ]);
+  });
+
+  it('o depositante novo, ainda não exportado, não tira um autor com o nome dele', () => {
+    // A Coautora é autora de verdade; com a troca na fila, ela passa a
+    // depositante, mas a exportação ainda não a copiou nos autores.
+    const xml = HOLDER_XML.replace(
+      '</PATENTE>',
+      '<AUTORES NOME-COMPLETO-DO-AUTOR="Coautora de Exemplo" NOME-PARA-CITACAO="EXEMPLO, C." ORDEM-DE-AUTORIA="2" NRO-ID-CNPQ="3"/></PATENTE>',
+    );
+    const ops = opsAfter((root) => {
+      depositor('Coautora de Exemplo')(root);
+      const patent = byName(root, 'PATENTE');
+      patent.children = patent.children.filter(
+        (c) => c.kind !== 'element' || getAttr(c, 'NOME-COMPLETO-DO-AUTOR') !== 'Pessoa Sintética',
+      );
+    }, xml);
+    const authors = ops.find((o) => o.authors)!.authors!;
+    expect(authors.before.map((a) => a.name)).toEqual(['Pessoa Sintética', 'Coautora de Exemplo']);
+    expect(authors.after.map((a) => a.name)).toEqual(['Coautora de Exemplo']);
   });
 });
 
 describe('patente: o histórico de situações', () => {
-  it('a data de uma situação conhecida vai pela grade de situações', async () => {
+  /** A data de depósito no registro e na situação "Depósito", as duas iguais. */
+  const bothDates = (date: string) => (root: XElement) => {
+    setAttr(registry(root), 'DATA-PEDIDO-DE-DEPOSITO', date);
+    setAttr(history(root), 'DATA-SITUACAO-PATENTE', date);
+  };
+
+  it('a data de uma situação conhecida vai pela grade de situações, uma vez só', async () => {
     const sim = await lattes(HOLDER_XML);
-    const ops = opsAfter(
-      (root) => setAttr(history(root), 'DATA-SITUACAO-PATENTE', '13032007'),
-      HOLDER_XML,
-    );
-    expect(ops[0]).toMatchObject({
-      expect: { 'datas:1': '12/03/2007' },
-      set: { 'datas:1': '13/03/2007' },
-    });
+    const ops = opsAfter(bothDates('13032007'), HOLDER_XML);
+    // Duas mudanças (o registro e o histórico) para o mesmo campo datas:1.
+    expect(ops).toHaveLength(2);
+    for (const op of ops) {
+      expect(op).toMatchObject({
+        expect: { 'datas:1': '12/03/2007' },
+        set: { 'datas:1': '13/03/2007' },
+      });
+    }
     expect(await applyOp(ops[0]!, sim.port)).toMatchObject({ status: 'conferido' });
-    expect(postsOf(sim).at(-1)!.fields.f_dados_grid_datas).toMatch(
+    // A segunda acha o Lattes já com a data nova e não envia nada.
+    expect(await applyOp(ops[1]!, sim.port)).toEqual(
+      expect.objectContaining({
+        detail: 'O Lattes já estava assim; nada foi enviado',
+        status: 'conferido',
+      }),
+    );
+    expect(postsOf(sim)).toHaveLength(1);
+    expect(postsOf(sim)[0]!.fields.f_dados_grid_datas).toMatch(
       /<contato>Depósito<\/contato>\r?\n\t<endereco>13\/03\/2007<\/endereco>/,
     );
     const patent = byName(sim.state.root, 'PATENTE');
@@ -252,16 +306,57 @@ describe('patente: o histórico de situações', () => {
     expect(getAttr(history(patent), 'DATA-SITUACAO-PATENTE')).toBe('13032007');
   });
 
+  it('com a data do registro e mais outro campo, a mudança do registro também confere depois', async () => {
+    const sim = await lattes(HOLDER_XML);
+    const ops = opsAfter((root) => {
+      bothDates('13032007')(root);
+      setAttr(registry(root), 'CODIGO-DO-REGISTRO-OU-PATENTE', 'BR41');
+    }, HOLDER_XML);
+    const historyOp = ops.find((o) => !('f_cod_reg' in o.set))!;
+    const registryOp = ops.find((o) => 'f_cod_reg' in o.set)!;
+    // O histórico primeiro: o registro acha a data já nova e manda o número.
+    expect(await applyOp(historyOp, sim.port)).toMatchObject({ status: 'conferido' });
+    expect(await applyOp(registryOp, sim.port)).toMatchObject({ status: 'conferido' });
+    const reg = registry(byName(sim.state.root, 'PATENTE'));
+    expect(getAttr(reg, 'CODIGO-DO-REGISTRO-OU-PATENTE')).toBe('BR41');
+    expect(getAttr(reg, 'DATA-PEDIDO-DE-DEPOSITO')).toBe('13032007');
+  });
+
+  it('a data do registro e a do histórico diferentes ficam à mão', () => {
+    const same = /são o mesmo campo no Lattes; deixe as duas iguais no editor/;
+    // Só o histórico muda: o registro fica com a data de antes.
+    expect(
+      reasonsAfter(
+        (root) => setAttr(history(root), 'DATA-SITUACAO-PATENTE', '13032007'),
+        HOLDER_XML,
+      ),
+    ).toEqual([expect.stringMatching(same)]);
+    // Só o registro muda: o histórico fica com a data de antes.
+    expect(
+      reasonsAfter(
+        (root) => setAttr(registry(root), 'DATA-PEDIDO-DE-DEPOSITO', '13032007'),
+        HOLDER_XML,
+      ),
+    ).toEqual([expect.stringMatching(same)]);
+    // Os dois mudam, cada um para uma data.
+    expect(
+      reasonsAfter((root) => {
+        setAttr(registry(root), 'DATA-PEDIDO-DE-DEPOSITO', '13032007');
+        setAttr(history(root), 'DATA-SITUACAO-PATENTE', '14032007');
+      }, HOLDER_XML),
+    ).toEqual([expect.stringMatching(same), expect.stringMatching(same)]);
+  });
+
   it('a descrição sem acento nem caixa ainda acha a data', () => {
     const xml = HOLDER_XML.replace(
       'DESCRICAO-SITUACAO-PATENTE="Depósito"',
       'DESCRICAO-SITUACAO-PATENTE="DEPOSITO"',
     );
-    const ops = opsAfter(
-      (root) => setAttr(history(root), 'DATA-SITUACAO-PATENTE', '13032007'),
-      xml,
-    );
-    expect(ops[0]!.set).toEqual({ 'datas:1': '13/03/2007' });
+    const ops = opsAfter(bothDates('13032007'), xml);
+    expect(ops.map((o) => o.set)).toEqual([
+      { 'datas:1': '13/03/2007' },
+      { 'datas:1': '13/03/2007' },
+    ]);
   });
 
   it('descrição, status, situação desconhecida, inclusão e exclusão ficam à mão', () => {

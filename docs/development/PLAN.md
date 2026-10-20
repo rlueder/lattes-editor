@@ -26,10 +26,13 @@ outras 127 são o alvo deste plano.
   a data de uma situação conhecida vai pela grade de situações; os autores
   copiados dos depositantes ficam fora da mudança de autores. Seguem à mão o
   titular instituição (busca de instituições), mais de um depositante e o
-  resto do histórico. O envio do depositante ainda não foi feito no Lattes
-  real, só no simulado. 2560 de 2801 campos vão (91%), eram 2554; um deles
-  veio da descrição da situação no `synthetic_full.xml`, que passou a ser
-  "Depósito", como na exportação.
+  resto do histórico. Na patente de teste do Lattes real, o depositante foi
+  tirado e posto de volta, e uma data do histórico foi trocada e desfeita. A
+  data do registro e a da situação são um campo só no Lattes, e a troca só vai
+  com as duas iguais no editor; a medida troca um atributo por vez, então as
+  duas datas de depósito do exemplo contam como falta. 2558 de 2801 campos vão
+  (91%), eram 2554. A descrição da situação no `synthetic_full.xml` passou a
+  ser "Depósito", como na exportação.
 
 - 19/10/2026, noite: demais trabalhos, licenças e linhas de pesquisa pelo
   motor de produção (`targets/demais.ts`), testados no Lattes real com itens

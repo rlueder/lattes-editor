@@ -15,6 +15,7 @@
 // como o check() faria e troca só a que a alteração mexe.
 
 import { foldText } from '../../model/fold-text.ts';
+import { getAttr, type XElement } from '../../model/xml.ts';
 import { decodeHtmlEntities } from '../html-text.ts';
 import { parseJsLiteral } from '../lattes-lists.ts';
 import type { AuthorPart, GridField } from './types.ts';
@@ -192,6 +193,17 @@ export interface AuthorSpec {
   /** Na grade com a marca de responsável (a equipe do projeto): se é o responsável. */
   lead?: boolean;
   name: string;
+}
+
+/** Os autores (ou participantes) de um item, na ordem de autoria. */
+export function authorsOf(els: XElement[], part: AuthorPart = AUTHOR_PART): AuthorSpec[] {
+  return [...els]
+    .sort((a, b) => Number(getAttr(a, part.order) ?? 0) - Number(getAttr(b, part.order) ?? 0))
+    .map((a) => ({
+      citation: getAttr(a, part.citation) ?? '',
+      cnpq: getAttr(a, part.cnpq) ?? '',
+      name: getAttr(a, part.name) ?? '',
+    }));
 }
 
 export const authorNames = (rows: readonly GridRow[]) =>
