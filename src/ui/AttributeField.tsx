@@ -35,7 +35,7 @@ import { displayLattesDate, isLattesDateAttr, isValidLattesDate } from './lattes
 import { useLattesListsContext } from './lattes-lists-context.ts';
 import { isFourDigitYear, isLattesYearAttr } from './lattes-year.ts';
 import { cleanLinkValue, linkError } from './link-fields.ts';
-import { liveKind } from './live-lists.ts';
+import { ancestorsOf, type LiveAvailability, liveKind } from './live-lists.ts';
 import { LiveListControl } from './LiveListField.tsx';
 import { ComboSelect } from './primitives/ComboSelect.tsx';
 import { Switch } from './primitives/Switch.tsx';
@@ -73,6 +73,12 @@ function LockedField({ text, value, why }: { text: string; value: string; why: s
   );
 }
 
+/** As listas com o pai do elemento, procurado na cópia só quando liveKind precisa dele. */
+const withParentIn = (live: LiveAvailability, root: XElement | undefined, el: XElement) => ({
+  ...live,
+  parentOf: () => ancestorsOf(root, el).at(-1)?.name,
+});
+
 export function AttributeField({
   el,
   error,
@@ -87,11 +93,11 @@ export function AttributeField({
 }: Props) {
   const hideSensitive = useHideSensitive();
   const lists = useLattesListsContext();
+  const { root } = useEditor();
   const formLacks = useFormLacks();
   // Prévia do modo de leitura: acompanha o texto antes de gravar.
   const onDraft = useDraft();
   const partKey = usePartKey()?.(el, name);
-  const { root } = useEditor();
   const value = getAttr(el, name) ?? '';
   const [draft, setDraft] = useState(value);
   // Valor mudou por fora (busca por DOI, restauração do histórico).
@@ -166,7 +172,8 @@ export function AttributeField({
   }
 
   // Item que já está no Lattes, campo que o formulário do Lattes não tem:
-  // alterar aqui não chegaria lá, então fica só para ler.
+  // alterar aqui não chegaria lá. O formulário do item nem o mostra
+  // (ElementView.tsx); aqui fica só para ler, para quem chegar por outro caminho.
   const lacks = formLacks?.field(el, name);
   if (lacks) {
     return (
@@ -175,13 +182,12 @@ export function AttributeField({
         <span className="locked-value">
           {value ? displayValue(el.name, name, value) : '(vazio)'}
         </span>
-        <span className="muted field-note">Não existe no formulário do Lattes</span>
       </div>
     );
   }
 
   // Listas lidas no Lattes pelo conector (LAT-48): sem elas, o campo de sempre.
-  const live = liveKind(el, name, lists);
+  const live = liveKind(el, name, withParentIn(lists, root, el));
   if (live === 'area-derivada') {
     const shown = value ? enumLabelOrValue(name, value) : '(vazio)';
     return <LockedField text={text} value={shown} why="Segue a área do conhecimento escolhida" />;

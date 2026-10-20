@@ -155,7 +155,7 @@ describe('formação: plano', () => {
       /exportação traz só o código/,
     );
     expect(reasonOf(edit('DOUTORADO', { 'NOME-INSTITUICAO-OUTRA-DOUT': 'Outra' }))).toMatch(
-      /^Instituição cadastrada fora da busca/,
+      /^O formulário de doutorado do Lattes não tem campo para a instituição cadastrada fora da busca/,
     );
     expect(reasonOf(edit('LIVRE-DOCENCIA', { 'NOME-CURSO': 'Curso' }))).toBeDefined();
   });

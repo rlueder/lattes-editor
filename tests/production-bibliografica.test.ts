@@ -450,11 +450,38 @@ describe('produções bibliográficas: o que fica à mão', () => {
     expect(prefacio.ops[0]).toMatchObject({ set: { f_ano: '2018' }, target: 'prefacio' });
   });
 
-  it('o DOI, com o motivo', () => {
-    const [reason] = reasonOf((root) =>
-      setAttr(partOf(root, '41', 'DADOS-BASICOS-DO-ARTIGO'), 'DOI', '10.1000/x'),
+  it('o DOI vai como texto, com as conferências do check() da página', async () => {
+    const doi = (value: string) =>
+      opsAfter((root) => setAttr(partOf(root, '41', 'DADOS-BASICOS-DO-ARTIGO'), 'DOI', value))[0]!;
+    const lattes = await lattesFor();
+    expect(await applyOp(doi('10.1000/xyz'), lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(getAttr(partOf(lattes.state.root, '41', 'DADOS-BASICOS-DO-ARTIGO'), 'DOI')).toBe(
+      '10.1000/xyz',
     );
-    expect(reason).toMatch(/^DOI: o campo do DOI no Lattes/);
+    expect(postsOf(lattes).at(-1)!.fields.f_cod_doi).toBe('10.1000/xyz');
+    // Com espaço nas pontas, vai o DOI conferido.
+    const fresh = await lattesFor();
+    expect(await applyOp(doi(' 10.1000/abc '), fresh.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(fresh).at(-1)!.fields.f_cod_doi).toBe('10.1000/abc');
+  });
+
+  it('o DOI fora do formato, de outro tipo ou já no currículo: nada vai', async () => {
+    const lattes = await lattesFor();
+    const doi = (seq: string, child: string, value: string) =>
+      opsAfter((root) => setAttr(partOf(root, seq, child), 'DOI', value))[0]!;
+    expect(await applyOp(doi('41', 'DADOS-BASICOS-DO-ARTIGO', 'x/1'), lattes.port)).toMatchObject({
+      detail: expect.stringMatching(/inválido/),
+      status: 'erro',
+    });
+    lattes.state.doiTypes.set('10.1000/livro', 'LIVRO');
+    expect(
+      await applyOp(doi('41', 'DADOS-BASICOS-DO-ARTIGO', '10.1000/livro'), lattes.port),
+    ).toMatchObject({ detail: expect.stringMatching(/não é de artigo/), status: 'erro' });
+    setAttr(partOf(lattes.state.root, '43', 'DADOS-BASICOS-DO-TRABALHO'), 'DOI', '10.1000/dup');
+    expect(
+      await applyOp(doi('41', 'DADOS-BASICOS-DO-ARTIGO', '10.1000/dup'), lattes.port),
+    ).toMatchObject({ detail: expect.stringMatching(/outra produção/), status: 'erro' });
+    expect(postsOf(lattes).filter((p) => p.fields.f_cod_doi !== undefined)).toEqual([]);
   });
 
   it('o que o formulário do artigo aceito não tem', () => {

@@ -82,7 +82,7 @@ function setIfKnown(el: XElement, name: string, value: string): void {
 }
 
 /** A letra do curso na lista do simulado (buscas.ts), pelo código sem ela. */
-function courseLetter(el: XElement): string {
+export function courseLetter(el: XElement): string {
   const code = getAttr(el, 'CODIGO-CURSO') ?? '';
   const hit = Object.values(COURSES)
     .flat()

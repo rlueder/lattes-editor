@@ -35,12 +35,25 @@ import { foldText } from '../model/fold-text.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import listas from '../schema/listas-lattes.json' with { type: 'json' };
 import { countryCode } from './edit-items.ts';
+import {
+  ENDERECO_LOOKUP_ATTRS,
+  type EnderecoInstitution,
+  planEnderecoLookups,
+} from './endereco-buscas.ts';
 import { MAX_SOCIAL, type SocialRow } from './endereco-contatos.ts';
+import type { LookupRow } from './formacao-edit.ts';
 import type { FieldValues, OpBase } from './plan.ts';
+import type { OrganChoice } from './production/organ.ts';
 
 /** Endereço: um formulário só para o profissional (_i) e o residencial (_r). */
 export interface EnderecoOp extends OpBase {
+  /** A instituição nova do endereço profissional, pela busca do Lattes (endereco-buscas.ts). */
+  institution?: EnderecoInstitution;
   kind: 'endereco';
+  /** As trocas das buscas, só para mostrar. */
+  lookupRows?: LookupRow[];
+  /** O órgão novo do endereço profissional, pela janela de órgãos (endereco-buscas.ts). */
+  organ?: OrganChoice;
   /** As redes sociais antes e depois, quando a mudança é delas (endereco-contatos.ts). */
   social?: { after: SocialRow[]; before: SocialRow[] };
 }
@@ -290,13 +303,7 @@ const ENDERECO_STREET: Record<string, string> = {
   'ENDERECO-RESIDENCIAL': 'LOGRADOURO',
 };
 
-/** A instituição do endereço profissional: campos desabilitados, só pela busca. */
-const PROFESSIONAL_LOOKUP = new Set([
-  'CODIGO-INSTITUICAO-EMPRESA',
-  'CODIGO-ORGAO',
-  'NOME-INSTITUICAO-EMPRESA',
-  'NOME-ORGAO',
-]);
+/** A unidade não tem campo próprio; instituição e órgão vão pelas buscas (endereco-buscas.ts). */
 const PROFESSIONAL_ABSENT = new Set(['CODIGO-UNIDADE', 'NOME-UNIDADE']);
 
 /** ENDERECO@FLAG-DE-PREFERENCIA → rádio f_end_corr; o resto do ENDERECO vai em grades. */
@@ -371,16 +378,13 @@ function planContacts(change: Change): {
   return { expect, set, ...(social ? { social } : {}) };
 }
 
-export function planEnderecoEdit(
-  change: Change,
-  element: string,
-  label: string,
-): Planned<EnderecoOp> {
+export function planEnderecoEdit(change: Change, el: XElement, label: string): Planned<EnderecoOp> {
+  const element = el.name;
   if (element === 'ENDERECO' && change.fields.some((f) => CONTACTS.has(f.attr))) {
     const contacts = planContacts(change);
     if (contacts.reason) return { reason: contacts.reason };
     const rest = { ...change, fields: change.fields.filter((f) => !CONTACTS.has(f.attr)) };
-    const others = rest.fields.length > 0 ? planEnderecoEdit(rest, element, label) : undefined;
+    const others = rest.fields.length > 0 ? planEnderecoEdit(rest, el, label) : undefined;
     if (others && 'reason' in others) return others;
     return {
       expect: { ...(others?.expect ?? {}), ...contacts.expect },
@@ -389,12 +393,6 @@ export function planEnderecoEdit(
       label,
       set: { ...(others?.set ?? {}), ...contacts.set },
       ...(contacts.social ? { social: contacts.social } : {}),
-    };
-  }
-  if (labelsOf(change, PROFESSIONAL_LOOKUP).length > 0) {
-    return {
-      reason:
-        'A instituição e o órgão do endereço profissional só se escolhem pela busca do Lattes (campos desabilitados no formulário de endereço), que o conector ainda não faz nesse formulário',
     };
   }
   const unit = labelsOf(change, PROFESSIONAL_ABSENT);
@@ -407,14 +405,30 @@ export function planEnderecoEdit(
     element === 'ENDERECO'
       ? PREFERENCE
       : { ...ENDERECO_FIELDS, [ENDERECO_STREET[element]!]: ['f_rua', same] as [string, Mapper] };
-  const { expect, invalid, missing, set } = mapTable(change, table, ENDERECO_SUFFIX[element] ?? '');
+  const lookups = element === 'ENDERECO-PROFISSIONAL' ? planEnderecoLookups(change, el) : undefined;
+  if (lookups && 'reason' in lookups) return lookups;
+  const { expect, invalid, missing, set } = mapTable(
+    change,
+    table,
+    ENDERECO_SUFFIX[element] ?? '',
+    (a) => lookups !== undefined && ENDERECO_LOOKUP_ATTRS.has(a),
+  );
   if (missing.length) return { reason: `Campos não suportados ainda: ${missing.join(', ')}` };
   if (invalid.length) {
     return {
       reason: `Valor que o formulário de endereço do Lattes não tem: ${invalid.join(', ')}`,
     };
   }
-  return { expect, key: change.key, kind: 'endereco', label, set };
+  return {
+    expect,
+    key: change.key,
+    kind: 'endereco',
+    label,
+    set,
+    ...(lookups?.institution ? { institution: lookups.institution } : {}),
+    ...(lookups?.organ ? { organ: lookups.organ } : {}),
+    ...(lookups ? { lookupRows: lookups.rows } : {}),
+  };
 }
 
 // ---------------------------------------------------------------- outros

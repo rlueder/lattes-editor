@@ -1,4 +1,5 @@
-// As buscas do Lattes simulado: instituição (PRC_INST_FORM), curso
+// As buscas do Lattes simulado: instituição (PRC_INST_FORM, e PRC_INST_ATIV na
+// página de endereço), curso
 // (prc_curso_form), agência (prc_agencia) e a tabela de áreas do menu
 // (areaDP), na forma de docs/lattes_internals.md, seção 18. Os nomes são de
 // instituições e agências reais; todos os códigos de instituição, curso e
@@ -125,8 +126,14 @@ const fold = (s: string) =>
 
 function institutions(req: SimRequest, state: LattesState): SimResponse {
   const query = (req.get('f_nome') ?? '').replace(/%/g, '').trim();
-  const form = `<form name="instituicaoForm" method="post" action="PRC_INST_FORM">
-${h.hidden('F_CTR', 'C')}${h.hidden('F_COD', state.code)}${h.hidden('F_NIVEL', req.get('f_nivel') ?? '')}${h.hidden('F_STA_OUTRA', req.get('f_sta_outra') ?? 'N')}
+  // A busca do endereço (observada em 20/10/2026) tem outros ocultos: F_PGM
+  // vazio e F_MODAL_CV=1, sem nível nem f_sta_outra.
+  const address = req.proc.toLowerCase() === 'prc_inst_ativ';
+  const hidden = address
+    ? `${h.hidden('F_CTR', 'C')}${h.hidden('F_COD', state.code)}${h.hidden('F_PGM', '')}${h.hidden('F_MODAL_CV', '1')}`
+    : `${h.hidden('F_CTR', 'C')}${h.hidden('F_COD', state.code)}${h.hidden('F_NIVEL', req.get('f_nivel') ?? '')}${h.hidden('F_STA_OUTRA', req.get('f_sta_outra') ?? 'N')}`;
+  const form = `<form name="instituicaoForm" method="post" action="${address ? 'PRC_INST_ATIV' : 'PRC_INST_FORM'}">
+${hidden}
 ${h.text('f_nome', query)} <input type="button" value="Buscar" onclick="recuperaInstMacro()">
 </form>
 <script>var dc = document.forms['instituicaoForm'];
@@ -191,5 +198,6 @@ export const BUSCAS_ROUTES: Routes = {
   'pkg_orient.valida_orientador_ajax': studentCheck,
   prc_agencia: () => agencies(),
   prc_curso_form: courses,
+  prc_inst_ativ: institutions,
   prc_inst_form: institutions,
 };

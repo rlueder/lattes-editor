@@ -23,7 +23,7 @@ import type { Change } from '../model/changes.ts';
 import { foldText } from '../model/fold-text.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
-import { getChecked, Stop } from './create-shared.ts';
+import { getChecked, sameCode, Stop } from './create-shared.ts';
 import {
   encodeLatin1Form,
   pairValue,
@@ -32,17 +32,33 @@ import {
   withScriptValues,
 } from './form.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
+import { activityOrgansPath } from './lattes-lists.ts';
 import type { FieldValues, OpBase } from './plan.ts';
 import { readProvider } from './production/grids.ts';
+import {
+  ORGAN_PARTS,
+  type OrganChoice,
+  organLoose,
+  organText,
+  resolveOrgan,
+} from './production/organ.ts';
 
 /** Alterar atividades pelo conector. */
 export const EDIT_ATIVIDADES_ENABLED = true;
 
-/** Cada atividade do XML: a natureza no Lattes e o atributo da descrição. */
-export const ACTIVITY_TYPES: Record<string, { description?: string; natur: string }> = {
+/**
+ * Cada atividade do XML: a natureza no Lattes, o atributo da descrição e, nas
+ * que guardam a grade em elementos filhos (as disciplinas do ensino), se a
+ * página de edição já foi lida (gridRead): só então o envio manda a grade
+ * como a página a trouxe.
+ */
+export const ACTIVITY_TYPES: Record<
+  string,
+  { description?: string; gridRead?: boolean; natur: string }
+> = {
   'CONSELHO-COMISSAO-E-CONSULTORIA': { description: 'ESPECIFICACAO', natur: 'B' },
   'DIRECAO-E-ADMINISTRACAO': { description: 'CARGO-OU-FUNCAO', natur: '1' },
-  ENSINO: { natur: '4' },
+  ENSINO: { gridRead: true, natur: '4' },
   ESTAGIO: { description: 'ESTAGIO-REALIZADO', natur: '5' },
   'EXTENSAO-UNIVERSITARIA': { description: 'ATIVIDADE-DE-EXTENSAO-REALIZADA', natur: '7' },
   'OUTRA-ATIVIDADE-TECNICO-CIENTIFICA': { description: 'ATIVIDADE-REALIZADA', natur: '9' },
@@ -57,6 +73,8 @@ export interface AtividadeOp extends OpBase {
   description?: { after: string; before: string };
   kind: 'atividade';
   natur: string;
+  /** O órgão ou a unidade novos, pela janela de órgãos da atividade (organ.ts). */
+  organ?: OrganChoice;
   seqAtiv: string;
   seqFuncao: string;
 }
@@ -73,8 +91,28 @@ const PERIOD: Record<string, [string, (v: string) => string | undefined]> = {
 
 const ORGAN = new Set(['CODIGO-ORGAO', 'NOME-ORGAO', 'CODIGO-UNIDADE', 'NOME-UNIDADE']);
 
-const ORGAN_REASON =
-  'O órgão e a unidade da atividade saem da busca de órgãos do Lattes, que o conector não faz neste formulário; troque no Lattes';
+/**
+ * O órgão ou a unidade da atividade, que o XML guarda na própria atividade e
+ * a página escolhe pela janela de órgãos (prc_orgao_cargo): como no projeto,
+ * a troca precisa do código, e o órgão não fica vazio pelo conector.
+ */
+function planActivityOrgan(change: Change, el: XElement): OrganChoice | { reason: string } {
+  const now = (attr: string) => getAttr(el, attr) ?? '';
+  const was = (attr: string) => change.fields.find((f) => f.attr === attr)?.before ?? now(attr);
+  const { organ, unit } = ORGAN_PARTS;
+  if (!change.fields.some((f) => f.attr === organ.code || f.attr === unit.code)) {
+    return { reason: 'Órgão e unidade: escolha pela lista do Lattes, que grava o código junto' };
+  }
+  const code = now(unit.code) || now(organ.code);
+  if (!code)
+    return { reason: 'O órgão da atividade não fica vazio pelo conector; troque no Lattes' };
+  return {
+    before: was(unit.code) || was(organ.code),
+    beforeText: organText(was(organ.name), was(unit.name)),
+    code,
+    ...(now(unit.code) ? { parent: now(organ.code) } : {}),
+  };
+}
 
 /** A atividade da mudança, ou o motivo de ficar à mão; undefined se não é de atividade. */
 export function planAtividade(
@@ -89,10 +127,11 @@ export function planAtividade(
   const seqAtiv = atuacao && getAttr(atuacao, 'SEQUENCIA-ATIVIDADE');
   const seqFuncao = el && getAttr(el, 'SEQUENCIA-FUNCAO-ATIVIDADE');
   if (change.kind !== 'alterado') return undefined;
-  // Ensino, pesquisa e desenvolvimento e treinamento não têm a descrição numa
-  // linha só, e a grade providerDetAtiv deles não foi lida no Lattes: o envio
-  // a reescreveria sem saber o que ela guarda.
-  if (!type.description) {
+  // Pesquisa e desenvolvimento e treinamento não têm a descrição numa linha
+  // só, e a grade providerDetAtiv deles não foi lida na edição: o envio a
+  // reescreveria sem saber o que ela guarda. A do ensino são as disciplinas
+  // ({l, c}, lidas em 20/10/2026 numa atividade de teste), que vão como vieram.
+  if (!type.description && !type.gridRead) {
     return {
       reason:
         'Alterar esta atividade vai à mão: o formulário dela no Lattes ainda não foi lido pelo conector',
@@ -103,6 +142,16 @@ export function planAtividade(
   const expect: FieldValues = {};
   const lacks: string[] = [];
   let description: AtividadeOp['description'];
+  let organ: OrganChoice | undefined;
+  if (change.fields.some((f) => ORGAN.has(f.attr))) {
+    // O ensino troca o órgão pelo nível e o curso (seção 22).
+    if (type.natur === '4') {
+      return { reason: 'O formulário de ensino do Lattes não tem órgão: tem o nível e o curso' };
+    }
+    const chosen = planActivityOrgan(change, el);
+    if ('reason' in chosen) return chosen;
+    organ = chosen;
+  }
   for (const f of change.fields) {
     const period = PERIOD[f.attr];
     if (period) {
@@ -114,7 +163,7 @@ export function planAtividade(
       }
       set[field] = after;
       expect[field] = before;
-    } else if (ORGAN.has(f.attr)) return { reason: `${f.label}: ${ORGAN_REASON}` };
+    } else if (ORGAN.has(f.attr)) continue;
     else if (type.description === f.attr) {
       // O check() da página exige ao menos uma descrição.
       if (!f.after.trim()) return { reason: `O Lattes exige a descrição da atividade: ${f.label}` };
@@ -134,14 +183,12 @@ export function planAtividade(
     kind: 'atividade',
     label,
     natur: type.natur,
+    ...(organ ? { organ } : {}),
     seqAtiv,
     seqFuncao,
     set,
   };
 }
-
-/** O código da instituição sem a letra da frente (o link traz D ou V). */
-const bareInst = (code: string | undefined) => (code ?? '').replace(/^[A-Za-z]/, '');
 
 interface Row {
   c: string;
@@ -172,7 +219,7 @@ async function locate(op: AtividadeOp, port: LattesPort): Promise<string> {
   const grids = findLinks(await getChecked(port, lista.path), 'pkg_ativ.cargos_vinculos').filter(
     (l) =>
       l.params.f_seq_ativ === op.seqAtiv &&
-      (!op.codInst || bareInst(l.params.f_codinst) === bareInst(op.codInst)),
+      (!op.codInst || sameCode(l.params.f_codinst, op.codInst)),
   );
   if (grids.length !== 1) {
     throw new Stop(
@@ -236,6 +283,19 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
         `O Lattes não está como o editor espera: ${wrong.map(([f]) => f).join(', ')}`,
       );
     }
+    // O órgão novo, pela janela de órgãos da atividade, só com GET.
+    let chosen: FieldValues = {};
+    let organShown: string | undefined;
+    if (op.organ) {
+      const shown = controls.find((c) => c.name === 'f_orgao')?.value ?? '';
+      const resolved = await resolveOrgan(op.organ, port, pairs, shown, {
+        institution: pairValue(pairs, 'f_codinst') ?? '',
+        path: activityOrgansPath,
+      });
+      if ('status' in resolved) return result(resolved.status, resolved.detail);
+      chosen = resolved.set;
+      organShown = resolved.shown;
+    }
     const action =
       /<form\b[^>]*name\s*=\s*["']?GN_ATIV_CARGO[^>]*action\s*=\s*["']?([^"'\s>]+)/i.exec(
         html,
@@ -243,7 +303,9 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
     posted = true;
     const response = await port.post(
       action,
-      encodeLatin1Form(setPairs(pairs, { ...op.set, f_espec_l: specFromRows(wanted), f_exc: '' })),
+      encodeLatin1Form(
+        setPairs(pairs, { ...op.set, ...chosen, f_espec_l: specFromRows(wanted), f_exc: '' }),
+      ),
     );
     if (isLogonPage(response)) return result('sessao', 'A sessão do Lattes expirou; entre de novo');
     const afterHtml = await getChecked(port, path);
@@ -261,6 +323,11 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
       .map(([f]) => f);
     if (afterRows.length !== wanted.length || afterRows.some((r, i) => !same(r.l, wanted[i]!.l))) {
       notSaved.push('descrição');
+    }
+    // O f_orgao vem desabilitado: a releitura confere o texto dele, não o par.
+    const organAfter = after.find((c) => c.name === 'f_orgao')?.value ?? '';
+    if (organShown !== undefined && organLoose(organAfter) !== organLoose(organShown)) {
+      notSaved.push('órgão');
     }
     if (notSaved.length > 0) {
       return result('divergente', `O Lattes não gravou: ${notSaved.join(', ')}. Confira no Lattes`);

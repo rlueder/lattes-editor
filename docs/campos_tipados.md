@@ -188,7 +188,12 @@ Como cada escolha vira XML (`src/ui/live-lists.ts`):
 - **Instituição.** O código vai sem a letra da busca (`V007900000004` vira
   `007900000004`), como a exportação guarda o da atuação (seção 3 do mapa);
   para a formação, inferido. Trocar por outra instituição limpa o curso, como
-  o `seleciona()` do Lattes faz.
+  o `seleciona()` do Lattes faz. A formação complementar usa a mesma busca e a
+  mesma lista de cursos, com o nível dela (`F`, `8`, `E`, `Y`), e o endereço
+  profissional escolhe na mesma busca a instituição de
+  `CODIGO-INSTITUICAO-EMPRESA` e `NOME-INSTITUICAO-EMPRESA`, sem curso
+  (desde 20/10/2026; na hora de gravar, o conector refaz a busca do próprio
+  endereço, `PRC_INST_ATIV`).
 - **Curso.** A opção traz o nome com o código CAPES entre parênteses
   ("Administração(33003025005P3)"). O nome vai para `NOME-CURSO`, o código sem
   a letra para `CODIGO-CURSO` e o CAPES para `CODIGO-CURSO-CAPES`. As três

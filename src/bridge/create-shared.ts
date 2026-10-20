@@ -124,11 +124,19 @@ export async function readPairs(
   return { controls, pairs: successfulPairs(controls) };
 }
 
-/** O código da busca (com a letra na frente) que corresponde ao do XML. */
+/**
+ * O código do Lattes (com a letra na frente, D ou V) que corresponde ao do
+ * XML. A letra é uma a mais: o código do XML pode começar por letra também
+ * (K4WU00000006, no link VK4WU00000006), e tirar a primeira letra dos dois
+ * lados os desencontraria.
+ */
 export function sameCode(fromLattes: string | null | undefined, fromXml: string): boolean {
   if (!fromLattes) return false;
   const a = fromLattes.trim();
-  return a === fromXml || a.replace(/^[A-Za-z]/, '') === fromXml.replace(/^[A-Za-z]/, '');
+  const b = fromXml.trim();
+  const lettered = (long: string, short: string) =>
+    long.length === short.length + 1 && /^[A-Za-z]/.test(long) && long.slice(1) === short;
+  return a === b || lettered(a, b) || lettered(b, a);
 }
 
 /** Os argumentos literais de cada chamada `fn(...)` na página, já decodificados. */

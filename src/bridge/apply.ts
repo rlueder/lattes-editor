@@ -37,6 +37,7 @@ import {
   locateEvento,
 } from './edit-items.ts';
 import {
+  COMPL_ENDERECO_LOOKUPS_ENABLED,
   countListEdits,
   enabledListEdits,
   isListEditOp,
@@ -63,12 +64,13 @@ import {
   setPairs,
 } from './form.ts';
 import { formacaoGridSend } from './formacao-grids.ts';
-import { resolveFormacao } from './formacao-lookups.ts';
+import { resolveOpLookups } from './formacao-lookups.ts';
 import { identGrids } from './ident-grids.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
 import { pcdChecked, withPcd } from './pcd.ts';
-import type { BridgeOp, FieldValues } from './plan.ts';
+import type { BridgeOp } from './plan.ts';
 import { applyProduction } from './production/apply.ts';
+import { organLoose } from './production/organ.ts';
 import { isProductionOp, type ProductionOp } from './production/plan.ts';
 
 export interface LattesPort {
@@ -196,12 +198,15 @@ async function locate(op: EditOp, port: LattesPort, menu: string): Promise<strin
 export interface ApplyGates {
   /** BIOGRAPHIC_FULL_ENABLED; sem valor, desligada. */
   biographicFull?: boolean;
+  /** COMPL_ENDERECO_LOOKUPS_ENABLED; sem valor, desligada. */
+  complEnderecoLookups?: boolean;
   editEvento: boolean;
   lists: ReadonlySet<ListEditKind>;
 }
 
 export const BUILD_GATES: ApplyGates = {
   biographicFull: BIOGRAPHIC_FULL_ENABLED,
+  complEnderecoLookups: COMPL_ENDERECO_LOOKUPS_ENABLED,
   editEvento: EDIT_EVENTO_ENABLED,
   lists: enabledListEdits(),
 };
@@ -213,6 +218,12 @@ function gatedOut(op: BridgeOp, gates: ApplyGates): string | undefined {
   }
   if (isBiographicOp(op) && !gates.biographicFull && needsFullBiographic(op)) {
     return 'Esta extensão não grava instituição, curso e agência pelas buscas, pós-doutorado, livre-docência nem outras informações; a alteração fica à mão';
+  }
+  const lookups =
+    (isListEditOp(op) && op.lookups !== undefined) ||
+    (op.kind === 'endereco' && (op.institution !== undefined || op.organ !== undefined));
+  if (lookups && !gates.complEnderecoLookups) {
+    return 'Esta extensão não grava instituição, curso e órgão pelas buscas neste formulário; a alteração fica à mão';
   }
   if (isEventoOp(op) && !gates.editEvento && isFullEvento(op)) {
     return 'Esta extensão só altera eventos de ouvinte; a alteração fica à mão';
@@ -291,17 +302,14 @@ export async function applyOp(
     if (wrong.length > 0) {
       return result('divergente', `O Lattes não está como o editor espera: ${labels(wrong)}`);
     }
-    // Formação com instituição, curso ou agência trocados: as buscas do Lattes
-    // dão os ocultos que vão junto (formacao-lookups.ts). `check` é o que a
-    // releitura espera onde difere do enviado.
-    let set = op.set;
-    let check: FieldValues = {};
-    if (op.kind === 'formacao' && op.lookups) {
-      const resolved = await resolveFormacao(op, port, before.pairs);
-      if ('status' in resolved) return result(resolved.status, resolved.detail);
-      set = { ...op.set, ...resolved.set };
-      check = resolved.check;
-    }
+    // Instituição, curso, órgão ou agência trocados: as buscas do Lattes dão
+    // os ocultos que vão junto (formacao-lookups.ts). `check` é o que a
+    // releitura espera onde difere do enviado, `shown` o texto dos campos
+    // desabilitados e `unchecked` os ocultos que a página traz vazios.
+    const resolved = await resolveOpLookups(op, port, before);
+    if ('status' in resolved) return result(resolved.status, resolved.detail);
+    let set = { ...op.set, ...resolved.set };
+    const { check, shown, unchecked } = resolved;
     // Endereço: as grades de contato vão como o check() da página as manda
     // (endereco-contatos.ts), nunca os ocultos vazios com que a página carrega.
     let contactGrids: ReturnType<typeof readContactGrids>;
@@ -388,8 +396,9 @@ export async function applyOp(
         : formGrids
           ? noFormGrids
           : set;
+    const compared = Object.entries({ ...sent, ...check }).filter(([n]) => !unchecked.includes(n));
     const notSaved = [
-      ...mismatches(after.pairs, { ...sent, ...check }),
+      ...mismatches(after.pairs, Object.fromEntries(compared)),
       ...(formGrids?.(after.html) ?? []),
     ];
     if (contactGrids) {
@@ -412,8 +421,17 @@ export async function applyOp(
     // (instituição e curso da formação complementar) se conferem à parte.
     const value = (controls: FormControl[], n: string) =>
       controls.find((c) => c.name === n)?.value ?? null;
+    // Os que uma busca trocou mostram o nome novo (shown).
     for (const n of isListEditOp(op) ? LIST_EDIT_WATCH[op.kind] : []) {
-      if (!same(value(before.controls, n), value(after.controls, n))) unexpected.push(n);
+      if (!(n in shown) && !same(value(before.controls, n), value(after.controls, n))) {
+        unexpected.push(n);
+      }
+    }
+    for (const [n, v] of Object.entries(shown)) {
+      if (organLoose(value(after.controls, n)) !== organLoose(v)) notSaved.push(n);
+    }
+    if (notSaved.length > 0) {
+      return result('divergente', `O Lattes não gravou: ${labels(notSaved)}`);
     }
     if (unexpected.length > 0) {
       return result('divergente', `Outros campos mudaram no Lattes: ${labels(unexpected)}`);

@@ -11,13 +11,16 @@
 // 15/10/2026 (observados: nomes, tipos, limites e opções; a passada de edição
 // viu f_carga, F_STATUS, f_curso_old e f_inst_old com os valores do XML). A
 // gravação de carga e status pelo FORM2 é inferida, e a inclusão (sem f_seq)
-// está em censo.ts.
+// está em censo.ts. Instituição e curso vêm dos ocultos que as buscas
+// escrevem, como na formação acadêmica (observado em 20/10/2026: f_cod_inst
+// com a letra, f_cod_curso2 sem ela); que o FORM2 os grave é inferido.
 
-import { childElements, element, getAttr, type XElement } from '../../src/model/xml.ts';
+import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
+import { withLetter } from './buscas.ts';
 import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
 import { complementaryInclusion, isComplementaryInclusion } from './censo.ts';
 import type { LattesState } from './estado.ts';
-import { deleteScript, setaUltimoPublico } from './formacao.ts';
+import { courseLetter, deleteScript, setaUltimoPublico } from './formacao.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
 import { html, type Routes, type SimResponse } from './tipos.ts';
@@ -122,11 +125,23 @@ function complLista(state: LattesState): SimResponse {
 
 /**
  * Os campos do formulário de edição. Instituição e curso vêm desabilitados,
- * escolhidos pelas buscas; os nomes voltam nos ocultos *_old e os códigos em
- * f_cod_inst e f_cod_curso2 (em qual dos dois ocultos cada código volta é
- * inferido).
+ * escolhidos pelas buscas; os nomes voltam nos ocultos *_old e os códigos nos
+ * ocultos da letra: a instituição com ela (V em f_cod_inst, as outras em
+ * f_cod_inst2) e o curso sem ela (V em f_cod_curso, as outras em
+ * f_cod_curso2), como a página de 20/10/2026 os trouxe.
  */
 function complBindings(state: LattesState, el: XElement): Binding[] {
+  const inst = (x: XElement) => withLetter(state, getAttr(x, 'CODIGO-INSTITUICAO') ?? '');
+  const instWrite = (x: XElement, v: string) => {
+    if (v) setAttr(x, 'CODIGO-INSTITUICAO', v.replace(/^[A-Za-z]/, ''));
+  };
+  const courseWrite = (x: XElement, v: string) => {
+    if (v) setAttr(x, 'CODIGO-CURSO', v);
+  };
+  const course = (x: XElement, letter: boolean) =>
+    (courseLetter(x) === 'V') === letter ? (getAttr(x, 'CODIGO-CURSO') ?? '') : '';
+  const hidden = (name: string, read: (x: XElement) => string, write: Binding['write']) =>
+    ({ kind: 'hidden', name, read, write }) as Binding;
   return [
     {
       kind: 'select',
@@ -148,12 +163,21 @@ function complBindings(state: LattesState, el: XElement): Binding[] {
     fixed('f_ctr', ''),
     fixed('f_cod', state.code),
     fixed('f_seq', getAttr(el, 'SEQUENCIA-FORMACAO') ?? ''),
-    fixed('f_cod_inst', getAttr(el, 'CODIGO-INSTITUICAO') ?? ''),
-    fixed('f_cod_curso', ''),
-    fixed('f_cod_inst2', ''),
-    fixed('f_cod_curso2', getAttr(el, 'CODIGO-CURSO') ?? ''),
-    fixed('f_inst_old', getAttr(el, 'NOME-INSTITUICAO') ?? ''),
-    fixed('f_curso_old', getAttr(el, 'NOME-CURSO') ?? ''),
+    hidden('f_cod_inst', (x) => (inst(x).startsWith('V') ? inst(x) : ''), instWrite),
+    hidden('f_cod_curso', (x) => course(x, true), courseWrite),
+    hidden('f_cod_inst2', (x) => (inst(x).startsWith('V') ? '' : inst(x)), instWrite),
+    hidden('f_cod_curso2', (x) => course(x, false), courseWrite),
+    hidden(
+      'f_inst_old',
+      (x) => getAttr(x, 'NOME-INSTITUICAO') ?? '',
+      (x, v) => setAttr(x, 'NOME-INSTITUICAO', v),
+    ),
+    // O nome do curso sem o código CAPES do texto da opção, como na formação.
+    hidden(
+      'f_curso_old',
+      (x) => getAttr(x, 'NOME-CURSO') ?? '',
+      (x, v) => setAttr(x, 'NOME-CURSO', v.replace(/\s*\([^()]*\)\s*$/, '').trim()),
+    ),
     // FA, como no formulário capturado no censo de 15/10/2026 (a inclusão); que
     // a edição traga o mesmo é inferido.
     fixed('f_tipo', 'FA'),

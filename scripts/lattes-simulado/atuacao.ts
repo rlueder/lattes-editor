@@ -251,16 +251,19 @@ ${h.formButtons(false)}
 
 function incluiPost(req: SimRequest, state: LattesState): SimResponse {
   if (req.get('f_ctr') !== 'I') return html(h.savedScript('pkg_ativ.lista'));
-  const withLetter = req.get('f_cod_inst') || req.get('f_cod_inst2') || '';
+  // O código vem sem a letra, como o seleciona() da busca o grava. Com a
+  // letra, o Lattes real aceita o envio e não cria a atuação (20/10/2026).
+  const code = req.get('f_cod_inst') || req.get('f_cod_inst2') || '';
   const name = req.get('f_inst') || req.get('f_inst_old') || '';
-  if (!withLetter || !name) {
+  if (!code || !name) {
     return html('<script>alert("Informe a instituição.");</script>');
   }
+  if (/^[A-Za-z].{12}$/.test(code)) return html(h.savedScript('pkg_ativ.lista'));
   const container = state.ensurePath(['DADOS-GERAIS', 'ATUACOES-PROFISSIONAIS']);
   const seq = state.nextSeq(container, 'ATUACAO-PROFISSIONAL', 'SEQUENCIA-ATIVIDADE');
   // O XML guarda o código sem a letra da busca (seção 3).
   const a = element('ATUACAO-PROFISSIONAL', {
-    'CODIGO-INSTITUICAO': withLetter.replace(/^[A-Za-z]/, ''),
+    'CODIGO-INSTITUICAO': code,
     'NOME-INSTITUICAO': name,
     'SEQUENCIA-ATIVIDADE': seq,
     'SEQUENCIA-IMPORTANCIA': seq,

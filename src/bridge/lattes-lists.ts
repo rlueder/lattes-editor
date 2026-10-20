@@ -420,6 +420,14 @@ export const organLetter = (kind: string) => (kind === '0' ? 'V' : 'D');
 export const organsPath = (cv: string, institution: string, parent = '') =>
   `pkg_projeto.pp_orgao_cargo?f_origem=&f_modal_cv=2&f_cod=${cv}&f_cod_inst=${encodeURIComponent(institution)}&f_cod_inst2=${encodeURIComponent(parent)}`;
 
+/**
+ * A janela de órgãos de uma atividade da atuação (prc_orgao_cargo, lida em
+ * 20/10/2026): as mesmas linhas atribuir() da do projeto. A instituição vai
+ * como o f_codinst da página, com a letra.
+ */
+export const activityOrgansPath = (cv: string, institution: string, parent = '') =>
+  `prc_orgao_cargo?f_origem=&f_modal_cv=9&f_cod=${cv}&f_cod_inst=${encodeURIComponent(institution)}&f_cod_inst2=${encodeURIComponent(parent)}`;
+
 // ---------------------------------------------------------------------------
 // Leituras, pelo mesmo tipo de porta da aba do Lattes que o resto do conector.
 

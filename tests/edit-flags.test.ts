@@ -52,7 +52,11 @@ describe('chaves do lado da extensão', () => {
     // Para o teste ao vivo: todas as chaves ligadas, com a capacidade
     // anunciada, menos a do órgão do projeto, que o Lattes não gravou no teste
     // de 18/10/2026 (production/plan.ts).
-    const live = GATED_EDITS.filter((g) => g.feature !== 'orgao-projeto');
+    // E menos as buscas da formação complementar e do endereço, que o Lattes
+    // também não gravou no teste de 20/10/2026 (edit-lists.ts).
+    const live = GATED_EDITS.filter(
+      (g) => g.feature !== 'orgao-projeto' && g.feature !== 'buscas-complementar-endereco',
+    );
     expect(live.every((g) => g.enabled)).toBe(true);
     expect(BUILD_GATES.editEvento).toBe(true);
     expect([...BUILD_GATES.lists].sort()).toEqual(['formacao-complementar', 'premio']);

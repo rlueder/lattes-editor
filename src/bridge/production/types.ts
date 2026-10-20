@@ -6,6 +6,7 @@
 
 import type { Change } from '../../model/changes.ts';
 import type { XElement } from '../../model/xml.ts';
+import type { DoiSpec } from './doi.ts';
 import type { LookupSpec } from './lookups.ts';
 
 /** Um campo do formulário que guarda um atributo do XML. */
@@ -102,6 +103,8 @@ export interface ProductionTarget {
    * Não apaga).
    */
   clears?: Record<string, Record<string, string>>;
+  /** As conferências do DOI que o check() da página faz antes do envio (doi.ts). */
+  doi?: DoiSpec;
   /** O elemento do item no XML (ARTIGO-PUBLICADO, TRABALHO-TECNICO…). */
   element: string;
   /**

@@ -25,8 +25,21 @@
 // f_curso_old ↔ NOME-CURSO e f_inst_old ↔ NOME-INSTITUICAO (censo). Inferido:
 // que FORM2 grave com o f_ctr vazio que a página traz; que "em andamento" e
 // "incompleto" gravem EM_ANDAMENTO e INCOMPLETO (pelo rótulo); que f_nivel
-// seja o NIVEL do XML. Instituição e curso só mudam pelas buscas do Lattes, e
-// o formulário não tem os anos nem o nome do curso em inglês: ficam à mão.
+// seja o NIVEL do XML. O formulário não tem os anos, o órgão nem o nome do
+// curso em inglês.
+//
+// Instituição e curso só mudam pelas buscas do Lattes. Observado em 20/10/2026,
+// na página de edição de um curso de curta duração: sele_inst() abre
+// prc_inst_form?f_cod=…&f_nivel=<f_nivel> e curso() abre
+// prc_curso_form?f_cod=…&f_pgm=FORM&f_nivel=<f_nivel>&f_inst=<f_cod_inst ou
+// f_cod_inst2>, as mesmas da formação acadêmica; os ocultos vieram com
+// f_cod_inst=V577000000000 (com a letra), f_cod_inst2 vazio, f_cod_curso
+// vazio e f_cod_curso2=90000005 (sem a letra), e f_inst desabilitado. A
+// operação leva o código novo e apply.ts faz as buscas na hora de gravar,
+// com as regras de formacao-edit.ts e formacao-lookups.ts; uma extensão só
+// as recebe com a capacidade buscas-complementar-endereco
+// (COMPL_ENDERECO_LOOKUPS_ENABLED). Inferido: que FORM2 grave os ocultos que
+// as buscas escrevem, como pkg_formacao.FORM grava os da formação.
 //
 // Ficam à mão, sem caminho ainda:
 // - áreas de atuação (prc_area_atuacao): a grade vai serializada em
@@ -43,6 +56,7 @@ import { foldText } from '../model/fold-text.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import type { FieldSpec, FormSpec } from './contract.ts';
 import { type Pairs, pairValue } from './form.ts';
+import { type FormacaoLookups, type Level, type LookupRow, planLookups } from './formacao-edit.ts';
 import { findLinks } from './lattes-html.ts';
 import type { BridgeOp, FieldValues, OpBase } from './plan.ts';
 
@@ -52,10 +66,27 @@ export const EDIT_PREMIO_ENABLED = true;
 /** Alteração de formação complementar. Ligada para o teste ao vivo, antes de um teste acompanhado. */
 export const EDIT_FORMACAO_COMPL_ENABLED = true;
 
+/**
+ * Instituição e curso da formação complementar e a instituição e o órgão do
+ * endereço profissional pelas buscas do Lattes (endereco-buscas.ts). Desligada:
+ * no Lattes real (20/10/2026), num MBA de teste, o envio com a instituição e o
+ * curso que as janelas da página gravariam (instituição com a letra, curso
+ * sem ela, os textos em f_inst_old e f_curso_old) foi aceito e a releitura
+ * voltou com os de antes; o conector acusou divergente e nada mudou. Como a
+ * página troca a instituição e o curso de um item que já existe ainda não foi
+ * visto. O app só manda essas operações a uma extensão que anuncia
+ * 'buscas-complementar-endereco'.
+ */
+export const COMPL_ENDERECO_LOOKUPS_ENABLED = false;
+
 export type ListEditKind = 'formacao-complementar' | 'premio';
 
 export interface ListEditOp extends OpBase {
   kind: ListEditKind;
+  /** As trocas que as buscas fazem, só para mostrar. */
+  lookupRows?: LookupRow[];
+  /** Instituição e curso pelas buscas, na formação complementar (formacao-lookups.ts). */
+  lookups?: FormacaoLookups;
   /**
    * Valores que acham a linha, além do "antes" (expect): os campos do item
    * que a operação não troca. Comparados sem acento nem caixa, só para achar;
@@ -93,12 +124,17 @@ interface Target {
   form: string;
   /** Atributos que só mudam por outro caminho, com o porquê para a pessoa. */
   hand?: Record<string, string>;
-  /** Campos que identificam a linha e sempre vão em match, se a operação não os troca. */
-  identity(el: XElement): FieldValues;
+  /**
+   * Campos que identificam a linha e sempre vão em match, com os valores de
+   * antes (`before` dá o do atributo antes da mudança).
+   */
+  identity(before: (attr: string) => string): FieldValues;
   /** O item da operação, pelo elemento alterado e o pai. */
   is(el: XElement, parent: XElement | undefined): boolean;
   /** Lista do menu. */
   list: string;
+  /** Os campos de busca que o formulário mostra, para as regras de formacao-edit.ts. */
+  lookup?: Level;
   /** Campos que o check() do formulário exige. */
   required: string[];
   spec: FormSpec;
@@ -151,17 +187,48 @@ export const FORMACAO_COMPL_SPEC: FormSpec = {
   name: 'GN_FORMACAO2',
 };
 
+/** As buscas da formação complementar e do endereço numa montagem ou extensão sem elas. */
+export const LOOKUPS_OFF =
+  'Instituição, curso e órgão pelas buscas do Lattes: desligado nesta montagem';
+
 /** Elementos da formação complementar → f_nivel (lista do formulário, censo de 15/10/2026). */
-const COMPL_LEVELS: Record<string, string> = {
+export const COMPL_LEVELS: Record<string, string> = {
   'FORMACAO-COMPLEMENTAR-CURSO-DE-CURTA-DURACAO': 'F',
   'FORMACAO-COMPLEMENTAR-DE-EXTENSAO-UNIVERSITARIA': '8',
   MBA: 'E',
   OUTROS: 'Y',
 };
 
-/** Instituição, órgão e curso: os campos vêm desabilitados e só mudam pela busca. */
-const COMPL_LOOKUP =
-  'Instituição e curso da formação complementar só mudam pelas buscas do Lattes (campos desabilitados no formulário), que o conector ainda não faz nesse formulário';
+/**
+ * Um item da formação complementar: o nome e o pai. OUTROS e MBA são nomes
+ * genéricos, então o pai decide (live-lists.ts usa o mesmo teste).
+ */
+export const isComplementaryItem = (name: string, parent: string | undefined) =>
+  parent === 'FORMACAO-COMPLEMENTAR' && name in COMPL_LEVELS;
+
+/**
+ * Os atributos de busca alterados que as buscas planejadas não cobrem: a
+ * instituição precisa da busca de instituição, o curso da lista de cursos.
+ * Algum que sobre não vai no envio, e a alteração fica à mão.
+ */
+export function uncoveredLookups(
+  attrs: readonly string[],
+  lookups: FormacaoLookups = {},
+): string[] {
+  const institution = lookups.institutions?.some((i) => i.slot === 'main') ?? false;
+  const course = lookups.course !== undefined;
+  return attrs.filter((a) =>
+    a.endsWith('-INSTITUICAO') ? !institution : a.endsWith('-CURSO') ? !course : false,
+  );
+}
+
+/** Instituição e curso: os campos vêm desabilitados e só mudam pelas buscas. */
+const COMPL_LOOKUP_ATTRS = new Set([
+  'CODIGO-CURSO',
+  'CODIGO-INSTITUICAO',
+  'NOME-CURSO',
+  'NOME-INSTITUICAO',
+]);
 
 const TARGETS: Record<ListEditKind, Target> = {
   'formacao-complementar': {
@@ -169,10 +236,12 @@ const TARGETS: Record<ListEditKind, Target> = {
       'ANO-DE-CONCLUSAO': 'os anos',
       'ANO-DE-INICIO': 'os anos',
       'ANO-DE-OBTENCAO-DO-TITULO': 'os anos',
+      'CODIGO-ORGAO': 'o órgão',
       'FLAG-BOLSA': 'a bolsa',
       'NOME-AGENCIA': 'a agência',
       'NOME-COMPLETO-DO-ORIENTADOR': 'o orientador',
       'NOME-CURSO-INGLES': 'o nome do curso em inglês',
+      'NOME-ORGAO': 'o órgão',
       'TITULO-DA-MONOGRAFIA': 'a monografia',
     },
     fields: {
@@ -181,21 +250,16 @@ const TARGETS: Record<ListEditKind, Target> = {
     },
     form: 'PKG_FORMACAO_COMPL.form',
     hand: {
-      'CODIGO-CURSO': COMPL_LOOKUP,
-      'CODIGO-INSTITUICAO': COMPL_LOOKUP,
-      'CODIGO-ORGAO': COMPL_LOOKUP,
       NIVEL:
         'O nível é o tipo da formação complementar no Lattes: para trocar, inclua de novo no nível certo',
-      'NOME-CURSO': COMPL_LOOKUP,
-      'NOME-INSTITUICAO': COMPL_LOOKUP,
-      'NOME-ORGAO': COMPL_LOOKUP,
     },
-    identity: (el) => ({
-      f_curso_old: getAttr(el, 'NOME-CURSO') ?? '',
-      f_inst_old: getAttr(el, 'NOME-INSTITUICAO') ?? '',
+    identity: (before) => ({
+      f_curso_old: before('NOME-CURSO'),
+      f_inst_old: before('NOME-INSTITUICAO'),
     }),
-    is: (el, parent) => parent?.name === 'FORMACAO-COMPLEMENTAR' && el.name in COMPL_LEVELS,
+    is: (el, parent) => isComplementaryItem(el.name, parent?.name),
     list: 'pkg_formacao_compl.lista',
+    lookup: { name: 'formação complementar', visible: ['f_inst', 'f_curso'] },
     required: [],
     spec: FORMACAO_COMPL_SPEC,
   },
@@ -231,6 +295,8 @@ export function planListEdit(
   chain: XElement[],
   label: string,
   enabled: ReadonlySet<ListEditKind>,
+  /** COMPL_ENDERECO_LOOKUPS_ENABLED com a capacidade da extensão. */
+  lookups = false,
 ): ListEditOp | { reason: string } | undefined {
   if (change.kind !== 'alterado') return undefined;
   const el = chain.at(-1);
@@ -249,6 +315,7 @@ export function planListEdit(
   for (const f of change.fields) {
     const hand = t.hand?.[f.attr];
     if (hand) return { reason: hand };
+    if (t.lookup && COMPL_LOOKUP_ATTRS.has(f.attr)) continue;
     const entry = t.fields[f.attr];
     if (!entry) {
       if (t.absent[f.attr]) absent.add(t.absent[f.attr]!);
@@ -285,8 +352,27 @@ export function planListEdit(
     };
   }
 
-  // O que acha a linha: os campos do item que a operação não troca.
-  const match: FieldValues = { ...t.identity(el) };
+  // Instituição e curso pelas buscas, com as regras da formação acadêmica.
+  const planned = t.lookup ? planLookups(change, el, t.lookup) : undefined;
+  if (planned && 'reason' in planned) return planned;
+  const found = planned && Object.keys(planned.lookups).length > 0 ? planned : undefined;
+  // Todo atributo de busca alterado tem de estar numa busca planejada; senão a
+  // operação iria sem ele e a releitura acharia tudo igual.
+  const looked = change.fields.map((f) => f.attr).filter((a) => COMPL_LOOKUP_ATTRS.has(a));
+  const missed = uncoveredLookups(looked, found?.lookups);
+  if (t.lookup && missed.length > 0) {
+    const labels = change.fields.filter((f) => missed.includes(f.attr)).map((f) => f.label);
+    return { reason: `Instituição e curso só mudam pelas buscas do Lattes: ${labels.join(', ')}` };
+  }
+  // Uma extensão sem as buscas mandaria o formulário sem os ocultos, e a
+  // releitura acharia tudo igual: nunca vai a ela.
+  if (found && !lookups) return { reason: LOOKUPS_OFF };
+
+  // O que acha a linha: os campos do item que a operação não troca, e os de
+  // identidade com o valor de antes.
+  const changed = new Map(change.fields.map((f) => [f.attr, f.before]));
+  const before = (attr: string) => changed.get(attr) ?? getAttr(el, attr) ?? '';
+  const match: FieldValues = { ...t.identity(before) };
   for (const [attr, [field, map]] of Object.entries(t.fields)) {
     if (field in set) continue;
     const value = map(getAttr(el, attr) ?? '');
@@ -296,7 +382,15 @@ export function planListEdit(
     // O nível é o tipo do item: confere estrito, como a natureza do evento.
     expect.f_nivel = getAttr(el, 'NIVEL') || COMPL_LEVELS[el.name]!;
   }
-  return { expect, key: change.key, kind, label, match, set };
+  return {
+    expect,
+    key: change.key,
+    kind,
+    label,
+    match,
+    set,
+    ...(found ? { lookupRows: found.rows, lookups: found.lookups } : {}),
+  };
 }
 
 // ---------------------------------------------------------------- contrato

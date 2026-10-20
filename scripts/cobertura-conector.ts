@@ -37,6 +37,7 @@ import { lattesSchema } from '../src/schema/lattes.ts';
 import { derivedValue, outOfList, typedChoices } from '../src/schema/typed-choices.ts';
 import { isSystemAttr } from '../src/ui/field-kind.ts';
 import {
+  ancestorsOf,
   applyAgency,
   applyCourse,
   applyInstitution,
@@ -89,8 +90,9 @@ const LIVE = {
 };
 
 /** A escolha na lista do Lattes, quando o editor oferece uma para o atributo; senão, false. */
-function picked(el: XElement, attr: string, value: string): boolean {
-  switch (liveKind(el, attr, LIVE)) {
+function picked(el: XElement, attr: string, value: string, root: XElement): boolean {
+  const parentOf = () => ancestorsOf(root, el).at(-1)?.name;
+  switch (liveKind(el, attr, { ...LIVE, parentOf })) {
     case 'instituicao':
       return applyInstitution(
         el,
@@ -174,7 +176,7 @@ function cover(raw: string, trials: Trial[] = []): Stats {
         let choices: string[] | undefined;
         if (a.name === 'FLAG-RESPONSAVEL') {
           if (!swappedLead(work, target)) return undefined;
-        } else if (value !== undefined || !picked(target, a.name, a.value)) {
+        } else if (value !== undefined || !picked(target, a.name, a.value, work)) {
           // A lista que o editor oferece no campo (a do schema, ou a do Lattes
           // nos campos tipados): a troca é outra opção dela, como a pessoa faria.
           // O tipo de um registro: só os do tipo de item (REGISTRY_KINDS).
