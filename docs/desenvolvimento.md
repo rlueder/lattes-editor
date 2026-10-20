@@ -101,19 +101,20 @@ no push, o conjunto todo com cobertura.
 
 ## Geradores
 
-| Comando                                  | Gera                                                                                           |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `pnpm gen:schema`                        | `src/schema/lattes.json` e os tipos, a partir do XSD do Lattes e de `schema/patch.json`        |
-| `pnpm gen:fixtures`                      | O currículo sintético em `fixtures/`                                                           |
-| `pnpm gen:demo`                          | O currículo de demonstração, `fixtures/demo.xml` (`scripts/demo/`)                             |
-| `pnpm validate:fixtures`                 | Confere as fixtures contra o XSD                                                               |
-| `node scripts/gen-listas.ts`             | `src/schema/listas-lattes.json`, das listas capturadas nos formulários do Lattes               |
-| `node scripts/inventario-campos.ts --md` | O inventário de [`campos_tipados.md`](campos_tipados.md)                                       |
-| `pnpm censo:relatorio`                   | O relatório de cobertura do censo, `docs/lattes-formularios/relatorio.md`                      |
-| `node scripts/cobertura-conector.ts`     | Quantos campos do editor o conector envia, por seção, e o motivo do que falta no conector      |
-| `pnpm build:censo`                       | `dist-censo/censo-lattes.js`, o censo para rodar na aba do Lattes (`docs/lattes-formularios/`) |
-| `pnpm capture:screenshots`               | As imagens do README e do site                                                                 |
-| `pnpm capture:store`                     | As imagens da Chrome Web Store, em `docs/img/loja/`                                            |
+| Comando                                  | Gera                                                                                                                   |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `pnpm gen:schema`                        | `src/schema/lattes.json` e os tipos, a partir do XSD do Lattes e de `schema/patch.json`                                |
+| `pnpm gen:fixtures`                      | O currículo sintético em `fixtures/`                                                                                   |
+| `pnpm gen:demo`                          | O currículo de demonstração, `fixtures/demo.xml` (`scripts/demo/`)                                                     |
+| `pnpm validate:fixtures`                 | Confere as fixtures contra o XSD                                                                                       |
+| `node scripts/gen-listas.ts`             | `src/schema/listas-lattes.json`, das listas capturadas nos formulários do Lattes                                       |
+| `node scripts/inventario-campos.ts --md` | O inventário de [`campos_tipados.md`](campos_tipados.md)                                                               |
+| `pnpm censo:relatorio`                   | O relatório de cobertura do censo, `docs/lattes-formularios/relatorio.md`                                              |
+| `node scripts/cobertura-conector.ts`     | Quantos campos do editor o conector envia, por seção, e o motivo do que falta no conector                              |
+| `scripts/limpar-branches-mesclados.sh`   | Ensaio dos worktrees e branches locais de PR mesclado; `--yes` os remove, `--incluir-fechados` também os de PR fechado |
+| `pnpm build:censo`                       | `dist-censo/censo-lattes.js`, o censo para rodar na aba do Lattes (`docs/lattes-formularios/`)                         |
+| `pnpm capture:screenshots`               | As imagens do README e do site                                                                                         |
+| `pnpm capture:store`                     | As imagens da Chrome Web Store, em `docs/img/loja/`                                                                    |
 
 Os arquivos gerados passam pelo Prettier no próprio gerador; senão, o
 `format:check` e o gerador se reprovam um ao outro.
