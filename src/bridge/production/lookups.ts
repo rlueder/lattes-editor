@@ -37,6 +37,11 @@ export interface LookupSpec {
     /** As naturezas que pedem f_sta_area=N. */
     noArea: string[];
     /**
+     * As naturezas em que o check() da página não exige o curso (pós-doutorado,
+     * iniciação científica e outra natureza, lido em 18/10/2026).
+     */
+    optional?: string[];
+    /**
      * Num tipo com mais de uma natureza, o F_COD_PROD de cada NATUREZA do XML,
      * para o editor achar a lista de cursos do item (o envio lê a natureza na
      * própria página).
@@ -53,6 +58,12 @@ export interface ProductionLookups {
   agency?: { before: string; code: string; name: string };
   course?: { before: string; code: string };
   institution?: { before: string; code: string; name: string };
+  /**
+   * A natureza nova (F_COD_PROD), quando a troca dela faz a página pedir de
+   * novo a instituição e o curso (testa_nivel(), nature.ts): a instituição e
+   * o curso são os de antes, escolhidos de novo com o nível dela.
+   */
+  nature?: string;
 }
 
 const field = (change: Change, attr: string) => change.fields.find((f) => f.attr === attr);
@@ -152,7 +163,10 @@ async function resolve(
   pairs: Pairs,
 ): Promise<Resolved> {
   const cv = pairValue(pairs, 'f_cod') ?? '';
-  const nature = checked(pairs, 'F_COD_PROD');
+  // Com a natureza trocada, o nível é o dela, e o f_sub_prod vai limpo (nature.ts).
+  const renatured = lookups.nature !== undefined;
+  const nature = lookups.nature ?? checked(pairs, 'F_COD_PROD');
+  const subProd = renatured ? '' : pairValue(pairs, 'f_sub_prod');
   const has = (name: string) => pairs.some(([k]) => k === name);
   const set: FieldValues = {};
   const check: FieldValues = {};
@@ -196,7 +210,13 @@ async function resolve(
     const want = lookups.course;
     const now = codeIn(pairs, 'f_cod_curso', 'f_cod_curso2');
     // Com a instituição trocada, o curso de antes já não vale (o editor o limpa).
-    if (!lookups.institution && (want.before ? !sameCode(now, want.before) : now !== '')) {
+    // Com a natureza trocada, a instituição é a mesma (conferida acima pelo
+    // antes, como sempre) e o curso também se confere: outro curso no Lattes é
+    // divergente, e não falta na lista do nível novo.
+    if (
+      (!lookups.institution || renatured) &&
+      (want.before ? !sameCode(now, want.before) : now !== '')
+    ) {
       return differs('Curso');
     }
     if (!want.code) {
@@ -204,9 +224,7 @@ async function resolve(
     } else {
       const pro = spec.course.professional;
       const level =
-        pro && nature === pro.nature && pairValue(pairs, 'f_sub_prod') === pro.subProd
-          ? '9'
-          : spec.course.level[nature];
+        pro && nature === pro.nature && subProd === pro.subProd ? '9' : spec.course.level[nature];
       if (!level) return { detail: 'Natureza sem nível de curso conhecido', status: 'erro' };
       const area = spec.course.noArea.includes(nature) ? 'N' : '';
       const courses = selectEntries(
@@ -218,7 +236,9 @@ async function resolve(
       ).filter((o) => sameCode(o.value, want.code));
       if (courses.length !== 1) {
         return {
-          detail: `Curso não encontrado na lista do Lattes (${courses.length} achados)`,
+          detail: renatured
+            ? `Com a natureza nova, o curso do item não está na lista do Lattes (${courses.length} achados): troque a natureza no Lattes e escolha o curso pela lista dele; nada foi enviado`
+            : `Curso não encontrado na lista do Lattes (${courses.length} achados)`,
           status: 'erro',
         };
       }

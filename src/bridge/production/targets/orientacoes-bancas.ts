@@ -15,9 +15,14 @@
 //   sai da busca prc_agencia; trocar só o nome deixaria o código antigo;
 // - instituição da banca julgadora: o f_inst é texto, mas com o código oculto
 //   f_cod_inst ao lado, pelo mesmo motivo;
-// - natureza e tipo da orientação (mestrado acadêmico ou profissional, outra
-//   natureza): a página os grava em ocultos (f_sub_prod, f_dsc_outra) pelo
-//   atribui(), com códigos que não foram lidos todos;
+// - natureza, onde o elemento do XML a fixa (mestrado, doutorado, as bancas):
+//   a natureza é o tipo do item, e trocá-la é incluir o item de novo no tipo
+//   certo. Nas outras orientações concluídas, que têm mais de uma, a troca
+//   entre aperfeiçoamento, graduação e iniciação científica vai pelo conector
+//   (nature.ts); de ou para outra natureza, fica à mão;
+// - tipo da orientação (mestrado acadêmico ou profissional, o tipo de outra
+//   natureza): a página o grava em ocultos (f_sub_prod, f_dsc_outra) pelo
+//   atribui(), de uma janela cujos códigos não foram lidos todos;
 // - identificador do orientando: o oculto f_id_orientado (inferido pelo nome).
 // Sem campo no formulário (o plano diz "não tem"): DOI, órgão, número de
 // páginas, nome do curso em inglês e o tipo de outra banca.
@@ -38,11 +43,13 @@ const ORIENT_COURSE = {
   done: {
     level: { '41': '3', '42': '4', '43': '2', '44': '1', '45': '1', '49': '1' },
     noArea: ['43', '44'],
+    optional: ['45', '46', '49'],
     professional: { nature: '41', subProd: '30' },
   },
   ongoing: {
     level: { A41: '3', A42: '4', A43: '2', A44: '1', A45: '1', A49: '1' },
     noArea: ['A43', 'A44'],
+    optional: ['A45', 'A46', 'A49'],
     professional: { nature: 'A41', subProd: '37' },
   },
 };
@@ -91,14 +98,50 @@ const ADVISOR_ROLE = byTable({ CO_ORIENTADOR: 'C', ORIENTADOR_PRINCIPAL: 'O' });
  */
 const MASTERS_KIND = byTable({ ACADEMICO: '34 ', NAO_INFORMADO: '', PROFISSIONALIZANTE: '35 ' });
 
+/**
+ * O rótulo de cada natureza no rádio F_COD_PROD (censo de 15/10/2026); as
+ * orientações em andamento usam os mesmos com A na frente do código.
+ */
+const NATURE_LABELS: Record<string, string> = {
+  '41': 'Dissertação de mestrado',
+  '42': 'Tese de doutorado',
+  '43': 'Monografia de conclusão de curso de aperfeiçoamento/especialização',
+  '44': 'Trabalho de conclusão de curso de graduação',
+  '45': 'Iniciação Científica',
+  '46': 'Supervisão de pós-doutorado',
+  '49': 'Orientação de outra natureza',
+  A11: 'Mestrado',
+  A12: 'Doutorado',
+  A14: 'Curso de aperfeiçoamento/especialização',
+  A15: 'Graduação',
+  A21: 'Professor titular',
+  A22: 'Concurso público',
+  A23: 'Livre-docência',
+  A24: 'Avaliação de cursos',
+  A29: 'Outra',
+};
+const natureLabel = (code: string) => NATURE_LABELS[code] ?? NATURE_LABELS[code.slice(1)] ?? code;
+
 const BACK = 'troque no Lattes';
 const WHY = {
   agency: `a agência sai de uma busca do Lattes, que grava o código dela num campo oculto; ${BACK}`,
   course: `o curso sai de uma busca do Lattes, que grava o código dele num campo oculto; ${BACK}`,
   institution: `a instituição sai de uma busca do Lattes, que grava o código dela num campo oculto; ${BACK}`,
   judgingInstitution: `o Lattes guarda o código da instituição num campo oculto ao lado do nome, e trocar só o nome deixaria o código antigo; ${BACK}`,
-  kind: `o Lattes guarda o tipo num campo oculto que a página preenche pela natureza; ${BACK}`,
-  nature: `a natureza muda o tipo do item, e a página do Lattes preenche outros campos por ela; ${BACK}`,
+  /** O tipo do mestrado (e, inferido, o de outra natureza): f_sub_prod, do atribui() da janela. */
+  kind: `o tipo sai de uma janela do Lattes que grava o código num campo oculto, e os códigos dela não foram lidos; ${BACK}`,
+  /**
+   * Natureza que o elemento do XML fixa: no Lattes a natureza é o tipo do item,
+   * e o XML guarda cada tipo num elemento.
+   */
+  nature: (code: string) =>
+    `${natureLabel(code)} é o tipo do item no Lattes; para trocar, inclua o item de novo no tipo certo`,
+  /** A banca de outras participações: o rádio do formulário de inclusão não tem a opção. */
+  otherBoard: `o rádio da natureza da banca não tem opção para outras participações, e a página de uma delas não foi lida; ${BACK}`,
+  /** De ou para 49: o atribui() da janela de outra natureza escreve f_sub_prod e f_dsc_outra. */
+  otherNature: `a orientação de outra natureza pede o subtipo numa janela do Lattes que não foi lida; ${BACK}`,
+  /** A13 e A16, no mesmo elemento: a busca de instituição e a de curso dependem da natureza. */
+  qualification: `a troca entre qualificação de mestrado e de doutorado muda a busca de instituição e a de curso, e o que a página da banca faz nessa troca não foi lido; ${BACK}`,
   studentId: 'o Lattes guarda o identificador num campo oculto que só a página dele preenche',
 };
 
@@ -162,6 +205,10 @@ function orientation(o: Orientation, done: boolean): ProductionTarget {
   const studentId = done ? 'NUMERO-ID-ORIENTADO' : 'NUMERO-ID-ORIENTANDO';
   const fields: Record<string, FieldMap | string> = {
     ...common(o.basics, title),
+    // A natureza que se escolhe no elemento (outras orientações concluídas).
+    ...(o.natures
+      ? { [`${o.basics}@NATUREZA`]: { field: 'F_COD_PROD', toForm: byTable(o.natures) } }
+      : {}),
     [`${o.basics}@FLAG-RELEVANCIA`]: { field: 'F_RELEV', toForm: yesNo },
     [`${o.detail}@${student}`]: 'f_nme_orient',
     [`${o.detail}@FLAG-BOLSA`]: { field: 'F_BOLSA', toForm: yesNo },
@@ -197,7 +244,9 @@ function orientation(o: Orientation, done: boolean): ProductionTarget {
     list: { formProc: 'pkg_orient.form', params: { f_tipo: tipo }, proc: 'pkg_orient.lista' },
     lookups,
     manual: manualOf([
-      [o.basics, ['NATUREZA'], WHY.nature],
+      ...(o.natures
+        ? []
+        : [[o.basics, ['NATUREZA'], WHY.nature(o.nature[0]!)] as [string, string[], string]]),
       [o.basics, ['TIPO'], WHY.kind],
       [o.detail, INSTITUTION, WHY.institution],
       [o.detail, COURSE, WHY.course],
@@ -205,6 +254,17 @@ function orientation(o: Orientation, done: boolean): ProductionTarget {
       [o.detail, ['NUMERO-ID-ORIENTADO', 'NUMERO-ID-ORIENTANDO'], WHY.studentId],
     ]),
     nature: { field: 'F_COD_PROD', values: o.nature },
+    // testa_nivel(): f_dsc_outra sempre, e f_sub_prod, que segue a natureza
+    // (lido em 20/10/2026); a outra natureza pede a janela do subtipo.
+    ...(o.natures
+      ? {
+          natureSwap: {
+            byHand: { [o.nature.find((n) => n.endsWith('49'))!]: WHY.otherNature },
+            clears: ['f_dsc_outra', 'f_sub_prod'],
+            key: `${o.basics}@NATUREZA`,
+          },
+        }
+      : {}),
     // O identificador do orientando sai da validação do nome (student.ts).
     ...(lattesSchema.elements[o.detail]?.attributes.some((a) => a.name === studentId)
       ? { student: { child: o.detail, idAttr: studentId } }
@@ -339,7 +399,11 @@ function thesisBoard(
       institutionLevel: BOARD_INSTITUTION_LEVEL,
     }),
     manual: manualOf([
-      [basics, ['NATUREZA'], WHY.nature],
+      [
+        basics,
+        ['NATUREZA'],
+        !nature ? WHY.otherBoard : nature.length > 1 ? WHY.qualification : WHY.nature(nature[0]!),
+      ],
       [`DETALHAMENTO-${de}`, INSTITUTION, WHY.institution],
       [`DETALHAMENTO-${de}`, COURSE, WHY.course],
     ]),
@@ -386,7 +450,7 @@ function judgingBoard(suffix: string, id: string, nature: string): ProductionTar
       institution: { code: 'CODIGO-INSTITUICAO', name: 'NOME-INSTITUICAO' },
     },
     manual: manualOf([
-      [basics, ['NATUREZA'], WHY.nature],
+      [basics, ['NATUREZA'], WHY.nature(nature)],
       [detail, INSTITUTION, WHY.judgingInstitution],
     ]),
     nature: { field: 'F_COD_PROD', values: [nature] },

@@ -16,7 +16,7 @@ import type { FieldMap, ProductionTarget } from '../../src/bridge/production/typ
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
-import { AGENCIES, COURSES, institutionsOf, withLetter } from './buscas.ts';
+import { AGENCIES, allCourses, institutionsOf, withLetter } from './buscas.ts';
 import type { LattesState } from './estado.ts';
 import { applyGrids, GRID_HIDDEN, gridScripts } from './grades.ts';
 import * as h from './html.ts';
@@ -88,6 +88,11 @@ function form(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
   // campo de texto com o primeiro valor do tipo, no lugar do rádio).
   if (t.nature && !controls.some((c) => c.includes(`name="${t.nature!.field}"`))) {
     controls.push(h.text(t.nature.field, t.nature.values[0] ?? ''));
+  }
+  // Os ocultos que a troca da natureza limpa (f_dsc_outra e f_sub_prod da
+  // orientação, lidos em 20/10/2026), vazios: o simulado não guarda o subtipo.
+  for (const name of t.natureSwap?.clears ?? []) {
+    if (!controls.some((c) => c.includes(`name="${name}"`))) controls.push(h.hidden(name, ''));
   }
   // Dois atributos no mesmo campo: o controle sai uma vez só.
   const unique = [...new Set(controls)].join('\n');
@@ -183,10 +188,7 @@ function lookupFields(state: LattesState, item: XElement, t: ProductionTarget): 
     h.hidden('f_inst_old', getAttr(part, spec.institution.name) ?? '');
   if (spec.course) {
     const code = getAttr(part, spec.course.code) ?? '';
-    const letter =
-      Object.values(COURSES)
-        .flat()
-        .find(([value]) => value.trim().slice(1) === code)?.[0][0] ?? 'D';
+    const letter = allCourses().find(([value]) => value.trim().slice(1) === code)?.[0][0] ?? 'D';
     out +=
       h.hidden('f_cod_curso', letter === 'V' ? code : '') +
       h.hidden('f_cod_curso2', letter === 'V' ? '' : code) +

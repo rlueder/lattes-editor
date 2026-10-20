@@ -9,6 +9,7 @@ import { childElements, element, getAttr, type XElement } from '../../model/xml.
 import { lattesSchema } from '../../schema/lattes.ts';
 import { areaLabel, type AreaRow } from '../areas-atuacao.ts';
 import type { BridgeOp, OpBase } from '../plan.ts';
+import { fieldsLeft } from './fields-left.ts';
 import { AUTHOR_PART, authorsOf, type AuthorSpec, MAX_KEYWORDS } from './grids.ts';
 import { planHolder, withoutHolderCopies } from './holders.ts';
 import {
@@ -20,6 +21,7 @@ import {
 } from './item-lists.ts';
 import { lookupAttrs, planLookups, type ProductionLookups } from './lookups.ts';
 import { planMembers } from './members.ts';
+import { planNatureSwap } from './nature.ts';
 import { opaqueReason } from './opaque.ts';
 import { isOrganChange, type OrganChoice, planOrgan } from './organ.ts';
 import { PRODUCTION_TARGETS } from './targets/index.ts';
@@ -448,18 +450,14 @@ export function planProduction(
     expect[field] = was;
     rows.push({ after: shown(f.after), before: shown(f.before), label: f.label, name: field });
   }
-  if (unknown.length > 0) {
-    return { reason: `O formulário deste tipo no Lattes não tem: ${unknown.join(', ')}` };
-  }
-  if (manual.size > 0) {
-    return {
-      reason: [...manual].map(([why, labels]) => `${labels.join(', ')}: ${why}`).join('; '),
-    };
-  }
-  if (unmapped.length > 0) {
-    return { reason: `Valor sem correspondência no formulário do Lattes: ${unmapped.join(', ')}` };
-  }
+  const left = fieldsLeft(unknown, manual, unmapped);
+  if (left) return left;
   if (rows.length === 0) return { reason: 'Nada a enviar' };
+  // A natureza trocada no lugar: os ocultos limpos e a instituição e o curso
+  // escolhidos de novo com o nível dela (nature.ts), que recusa se já há escolhas.
+  const swapped = planNatureSwap(target, change, item, set, expect, siblings, lookups);
+  if (swapped && 'reason' in swapped) return swapped;
+  if (swapped?.lookups) lookups = swapped.lookups;
   // O que a página limpa junto (target.clears), sem conferir o antes.
   for (const [when, also] of Object.entries(target.clears ?? {})) {
     const [field, value] = when.split('=') as [string, string];

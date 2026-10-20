@@ -1662,6 +1662,72 @@ de alteração.
   orientando trocado, e só manda os dois ocultos quando o nome valida
   (`src/bridge/production/student.ts`).
 
+### Natureza da orientação: a página de edição (lida em 20/10/2026)
+
+Um GET da página de edição de uma orientação de teste (mestrado, concluída;
+`pkg_orient.form`, formulário `PKG_ORIENT`), sem envio. **Observado:**
+
+- A natureza é o rádio `F_COD_PROD`: 41 Dissertação de mestrado, 42 Tese de
+  doutorado, 43 Monografia de conclusão de curso de
+  aperfeiçoamento/especialização, 44 Trabalho de conclusão de curso de
+  graduação, 45 Iniciação Científica, 46 Supervisão de pós-doutorado, 49
+  Orientação de outra natureza.
+- Ocultos: `f_tipo=C` (concluída), `f_ctr=U`, `f_ctr_natur` vazio,
+  `f_sub_prod` vazio, `f_cod_inst` com o código da instituição e a letra
+  (V e 12 dígitos), `f_cod_curso` com os 8 dígitos do curso, `f_inst_old` e
+  `f_curso_old`. O subtipo vai em
+  `f_sub_prod`, que `dominio()` e `atribui(txt)` escrevem como
+  `txt.substring(0, txt.indexOf("#"))`; a descrição vai em `f_dsc_outra`, só
+  de leitura.
+- `testa_nivel(arg)`, a cada clique na natureza: fora de mestrado e doutorado
+  (índices 0 e 1), desmarca `f_tpo_orient` (orientador principal O,
+  coorientador C, que só vale para 41 e 42); sempre limpa `f_dsc_outra`; no
+  pós-doutorado (índice 5), limpa `f_titulo` e os dois códigos de curso; e,
+  com uma instituição preenchida, pede para escolher de novo a instituição e o
+  curso e limpa `f_cod_inst`, `f_cod_inst2`, `f_cod_curso`, `f_cod_curso2`,
+  `f_inst` e `f_curso`.
+- `retnivel(vlr)`, o nível da busca de curso: 41 dá 3 (9 com `f_sub_prod` 30),
+  42 dá 4, 43 dá 2, 44, 45 e 49 dão 1, 46 dá 4. As em andamento (A41 a A45)
+  dão o mesmo, e A41 com `f_sub_prod` 37 dá 9.
+
+No XSD, só os dados básicos das outras orientações concluídas enumeram a
+NATUREZA, com as quatro opções de 43, 44, 45 e 49. As outras orientações em
+andamento guardam a natureza como texto, e o tipo só tem A49: cada uma das
+outras naturezas em andamento tem elemento próprio. Nos demais tipos, o
+elemento fixa a natureza.
+
+O conector, com isso (`src/bridge/production/nature.ts`):
+
+- Nas outras orientações concluídas, a troca entre 43, 44 e 45 vai com o
+  `F_COD_PROD` novo, `f_dsc_outra` e `f_sub_prod` vazios, e a instituição e o
+  curso do item buscados de novo com o nível da natureza nova, como o
+  `testa_nivel()` pede. Curso fora da lista do nível novo, ou ausente numa
+  natureza que o exige (43 e 44, pelo `check()`), para antes do envio. A
+  releitura confere o `F_COD_PROD` e os códigos. **Observado** em 20/10/2026,
+  numa orientação de teste das outras concluídas: de graduação (44) para
+  iniciação científica (45), o envio parou antes do POST porque o curso do item
+  não estava na lista de nível 1 da instituição; com o curso trocado pelo
+  conector para um da lista, 44 para 45 gravou e conferiu, com a instituição e
+  o curso intactos, e 45 para 44 também.
+- De ou para 49 fica à mão: a janela do subtipo não foi lida.
+- O conector não desmarca `f_tpo_orient`, que nas outras orientações não
+  vem marcado (**inferido**: não visto num item dessas naturezas).
+- Onde o elemento fixa a natureza, trocá-la é incluir o item de novo no tipo
+  certo, como o nível da formação complementar.
+- O tipo do mestrado (acadêmico ou profissional) e o de outra natureza vão em
+  `f_sub_prod`. Pelo `retnivel()`, 30 e 37 são o profissional; o código do
+  acadêmico não foi lido. Fica à mão.
+
+As páginas de edição das bancas não foram lidas. No censo de 15/10/2026, o
+rádio `F_COD_PROD` da banca de trabalho tem A11 Mestrado, A12 Doutorado, A13
+Exame de qualificação de doutorado, A14 Curso de aperfeiçoamento/especialização,
+A15 Graduação e A16 Exame de qualificação de mestrado, sem opção para as outras
+participações; o da banca julgadora tem A21 Professor titular, A22 Concurso
+público, A23 Livre-docência, A24 Avaliação de cursos e A29 Outra. O elemento
+fixa a natureza em todos menos na qualificação, que guarda A13 e A16 no mesmo
+elemento. A troca entre as duas muda a busca de instituição e a de curso, e
+fica à mão até a página ser lida.
+
 ### Órgão e unidade do projeto (lido em 18/10/2026)
 
 O formulário do projeto (`GN_PROJETO`) guarda o órgão em `f_codorgao` ou
