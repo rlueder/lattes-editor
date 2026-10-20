@@ -34,7 +34,7 @@ export function planNatureSwap(
   expect: Record<string, string>,
   siblings: readonly Change[],
   planned?: ProductionLookups,
-): { lookups?: ProductionLookups } | { reason: string } | undefined {
+): { lookups: ProductionLookups } | { reason: string } | undefined {
   const swap = target.natureSwap;
   const field = target.nature?.field;
   if (!swap || !field) return undefined;
@@ -45,9 +45,14 @@ export function planNatureSwap(
   if (!f || after === undefined || before === undefined || after === before) return undefined;
   const hand = swap.byHand[before] ?? swap.byHand[after];
   if (hand) return { reason: `${f.label}: ${hand}` };
-  for (const c of swap.clears) set[c] = '';
+  // Sem as buscas, o envio iria sem escolher de novo a instituição e o curso
+  // que a página pede depois da troca: não vai.
   const spec = target.lookups;
-  if (!spec) return {};
+  if (!spec) {
+    return {
+      reason: `${f.label}: com a natureza nova, o Lattes pede a instituição e o curso de novo, e o conector não os escolhe neste tipo; troque no Lattes`,
+    };
+  }
   // A instituição ou o curso escolhidos na mesma mudança (planned) ou na mesma
   // fila: a página pede os dois de novo, e as escolhas se atropelariam. Hoje a
   // natureza e as buscas ficam em filhos diferentes, e planned vem vazio.
@@ -88,5 +93,7 @@ export function planNatureSwap(
     }
     lookups.course = { before: course, code: course };
   }
+  // Só agora, com todas as conferências feitas: numa recusa, o set fica como veio.
+  for (const c of swap.clears) set[c] = '';
   return { lookups };
 }

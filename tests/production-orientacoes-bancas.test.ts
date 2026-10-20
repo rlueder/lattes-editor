@@ -718,11 +718,57 @@ describe('natureza das outras orientações concluídas (testa_nivel, lido em 20
       path: ['CURRICULO-VITAE', 'item', basics],
     };
     const planned = { institution: { before: '1', code: '2', name: 'Outra' } };
-    expect(
-      planNatureSwap(target, change, item, { F_COD_PROD: '43' }, { F_COD_PROD: '44' }, [], planned),
-    ).toEqual({
+    const sent = { F_COD_PROD: '43' };
+    expect(planNatureSwap(target, change, item, sent, { F_COD_PROD: '44' }, [], planned)).toEqual({
       reason: 'Natureza: troque a natureza num envio e a instituição ou o curso em outro',
     });
+    // Numa recusa, o set fica como veio: os ocultos só se limpam no sucesso.
+    expect(sent).toEqual({ F_COD_PROD: '43' });
+    // Um tipo sem as buscas não troca a natureza sem escolher de novo.
+    const bare = { ...target, lookups: undefined };
+    expect(planNatureSwap(bare, change, item, sent, { F_COD_PROD: '44' }, [])).toEqual({
+      reason:
+        'Natureza: com a natureza nova, o Lattes pede a instituição e o curso de novo, e o conector não os escolhe neste tipo; troque no Lattes',
+    });
+    expect(sent).toEqual({ F_COD_PROD: '43' });
+    // No sucesso, os dois ocultos vão vazios.
+    expect(planNatureSwap(target, change, item, sent, { F_COD_PROD: '44' }, [])).toHaveProperty(
+      'lookups',
+    );
+    expect(sent).toEqual({ F_COD_PROD: '43', f_dsc_outra: '', f_sub_prod: '' });
+  });
+
+  it('o Lattes com outro curso ou outra instituição: divergente, sem culpar a natureza', async () => {
+    const lattes = await lattesFor();
+    setAttr(partOf(lattes.state.root, '47', 'DETALHAMENTO'), 'CODIGO-CURSO', '00000002');
+    const op = plan(nature('47', NATURE.monografia)).ops[0] as ProductionOp;
+    expect(await applyOp(op, lattes.port)).toEqual(
+      expect.objectContaining({
+        detail: 'O Lattes não está como o editor espera: Curso',
+        status: 'divergente',
+      }),
+    );
+    const other = await lattesFor();
+    setAttr(partOf(other.state.root, '47', 'DETALHAMENTO'), 'CODIGO-INSTITUICAO', '000000000002');
+    expect(await applyOp(op, other.port)).toEqual(
+      expect.objectContaining({
+        detail: 'O Lattes não está como o editor espera: Instituição',
+        status: 'divergente',
+      }),
+    );
+    // Nenhuma busca de curso nem envio: a conferência vem antes.
+    expect(other.state.log.some((l) => /^prc_curso_form/i.test(l.path))).toBe(false);
+    expect([...postsOf(lattes), ...postsOf(other)]).toEqual([]);
+  });
+
+  it('a página do simulado traz cada oculto da troca uma vez só', async () => {
+    const lattes = await lattesFor();
+    const html = await lattes.port.get(
+      `pkg_orient.form?f_cod=${lattes.state.code}&f_tipo=C&f_seq=47`,
+    );
+    for (const name of ['f_sub_prod', 'f_dsc_outra']) {
+      expect(html.split(`name="${name}"`)).toHaveLength(2);
+    }
   });
 
   it('o Lattes com outra natureza: nada é enviado', async () => {

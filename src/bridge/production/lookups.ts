@@ -210,7 +210,9 @@ async function resolve(
     const want = lookups.course;
     const now = codeIn(pairs, 'f_cod_curso', 'f_cod_curso2');
     // Com a instituição trocada, o curso de antes já não vale (o editor o limpa).
-    // Com a natureza trocada, a instituição é a mesma, e o curso se confere.
+    // Com a natureza trocada, a instituição é a mesma (conferida acima pelo
+    // antes, como sempre) e o curso também se confere: outro curso no Lattes é
+    // divergente, e não falta na lista do nível novo.
     if (
       (!lookups.institution || renatured) &&
       (want.before ? !sameCode(now, want.before) : now !== '')
