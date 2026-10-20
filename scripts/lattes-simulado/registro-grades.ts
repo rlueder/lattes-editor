@@ -109,7 +109,9 @@ export function applyRegistryGrids(
 ): void {
   applyGrids(item, req);
   if (withHolders) {
-    // c|l|t|staValidado, a ordem das chaves do titularPessoaProvider.
+    // l|c|t|staValidado: o check() escreve as chaves na ordem da linha do
+    // titularPessoaProvider ({l, c, t, …}); GRID_SPECS lista quais chaves
+    // vão, não a ordem (serializeGrid).
     holdersOf(item).pessoa = rowsOf(req.get('f_depositante_pessoa_l') ?? '').map(
       ([l = '', c = '', t = '']) =>
         Object.fromEntries([

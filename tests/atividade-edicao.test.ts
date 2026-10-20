@@ -75,6 +75,27 @@ describe('atividade: o plano', () => {
     ).toMatch(/atividade da atuação vai à mão/);
   });
 
+  it('ensino, pesquisa e treinamento ficam à mão: a grade deles não foi lida', () => {
+    const xml = XML.replace(
+      /<ATIVIDADES-DE-ESTAGIO>.*<\/ATIVIDADES-DE-ESTAGIO>/,
+      '<ATIVIDADES-DE-ENSINO><ENSINO SEQUENCIA-FUNCAO-ATIVIDADE="1" FLAG-PERIODO="ANTERIOR" ANO-INICIO="2002" ANO-FIM="2004"/></ATIVIDADES-DE-ENSINO>',
+    );
+    const original = parseXml(xml).root;
+    const working = parseXml(xml).root;
+    setAttr(
+      findIn(working, (e) => e.name === 'ENSINO')!,
+      'ANO-FIM',
+      '2005',
+    );
+    const { ops, unsupported } = planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Atividade' })),
+      working,
+      { editAtividades: true },
+    );
+    expect(ops).toEqual([]);
+    expect(unsupported[0]?.reason).toMatch(/ainda não foi lido/);
+  });
+
   it('a grade de descrições como o check() a monta', () => {
     expect(
       specFromRows([

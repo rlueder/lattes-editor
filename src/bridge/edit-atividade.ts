@@ -89,6 +89,15 @@ export function planAtividade(
   const seqAtiv = atuacao && getAttr(atuacao, 'SEQUENCIA-ATIVIDADE');
   const seqFuncao = el && getAttr(el, 'SEQUENCIA-FUNCAO-ATIVIDADE');
   if (change.kind !== 'alterado') return undefined;
+  // Ensino, pesquisa e desenvolvimento e treinamento não têm a descrição numa
+  // linha só, e a grade providerDetAtiv deles não foi lida no Lattes: o envio
+  // a reescreveria sem saber o que ela guarda.
+  if (!type.description) {
+    return {
+      reason:
+        'Alterar esta atividade vai à mão: o formulário dela no Lattes ainda não foi lido pelo conector',
+    };
+  }
   if (!el || !seqAtiv || !seqFuncao) return { reason: 'Atividade sem número de sequência' };
   const set: FieldValues = {};
   const expect: FieldValues = {};
