@@ -26,7 +26,12 @@ import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
-import { applyProjectTeam, projectGridScripts } from './projeto-grades.ts';
+import {
+  applyProjectLinks,
+  applyProjectTeam,
+  linkedCodes,
+  projectGridScripts,
+} from './projeto-grades.ts';
 import { html, type Routes, type SimResponse } from './tipos.ts';
 
 const NATURE: Record<string, string> = {
@@ -130,14 +135,14 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
     fixed('f_tpo_cooperacao', 'X'),
     fixed('f_tpo_acao_inov', 'X'),
     fixed('f_tematica', 'X'),
-    ...[
-      'f_autores_l',
-      'f_inst_l',
-      'f_producoes_l',
-      'f_orientacoes_l',
-      'f_producoes_d',
-      'f_orientacoes_d',
-    ].map((n) => none(n)),
+    ...['f_autores_l', 'f_inst_l', 'f_producoes_l', 'f_orientacoes_l'].map((n) => none(n)),
+    // Os códigos ligados, como a página real os serve (34|39, 20/10/2026).
+    ...(['f_producoes_d', 'f_orientacoes_d'] as const).map((name): Binding => ({
+      kind: 'hidden',
+      name,
+      read: (el: XElement | undefined) =>
+        el ? linkedCodes(el, name === 'f_producoes_d' ? 'f_producoes_l' : 'f_orientacoes_l') : '',
+    })),
     {
       kind: 'select',
       name: 'f_tipo_privacidade',
@@ -327,6 +332,7 @@ function post(req: SimRequest, state: LattesState): SimResponse {
   } else if (ctr === 'U') {
     applyFields(bindings(state, {}), placed.projeto, req);
     applyProjectTeam(state, placed.projeto, req);
+    applyProjectLinks(placed.projeto, req);
     // Código vazio deixa o órgão como está, como na página real.
     const organ = req.get('f_codorgao') || req.get('f_codorgao2') || '';
     if (organ) {

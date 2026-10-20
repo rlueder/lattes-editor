@@ -6,7 +6,7 @@ import { applyOp } from '../src/bridge/apply.ts';
 import { atuacaoByHand, vinculoByHand } from '../src/bridge/atuacao-by-hand.ts';
 import { planChanges, type PlanOptions } from '../src/bridge/plan.ts';
 import { sameAuthors, withLeads } from '../src/bridge/production/members.ts';
-import { readOpaque } from '../src/bridge/production/opaque.ts';
+import { opaqueByHand, readOpaque } from '../src/bridge/production/opaque.ts';
 import type { ProductionOp } from '../src/bridge/production/plan.ts';
 import { PRODUCTION_TARGETS } from '../src/bridge/production/targets/index.ts';
 import { type Change, diffDocuments } from '../src/model/changes.ts';
@@ -29,6 +29,9 @@ import {
 
 const MEMBERS = `<EQUIPE-DO-PROJETO><INTEGRANTES-DO-PROJETO NOME-COMPLETO="Pessoa Sintética" NOME-PARA-CITACAO="SINTÉTICA, P." ORDEM-DE-INTEGRACAO="1" FLAG-RESPONSAVEL="SIM" NRO-ID-CNPQ=""/><INTEGRANTES-DO-PROJETO NOME-COMPLETO="Colega de Exemplo" NOME-PARA-CITACAO="COLEGA, E." ORDEM-DE-INTEGRACAO="2" FLAG-RESPONSAVEL="NAO" NRO-ID-CNPQ="7"/></EQUIPE-DO-PROJETO>`;
 
+// Um financiador e duas produções ligadas, como o projeto de teste do Lattes real (20/10/2026).
+const LINKS = `<FINANCIADORES-DO-PROJETO><FINANCIADOR-DO-PROJETO SEQUENCIA-FINANCIADOR="1" CODIGO-INSTITUICAO="000100000001" NOME-INSTITUICAO="Agência" NATUREZA="AUXILIO_FINANCEIRO"/></FINANCIADORES-DO-PROJETO><PRODUCOES-CT-DO-PROJETO><PRODUCAO-CT-DO-PROJETO SEQUENCIA-PRODUCAO-CT="34" TITULO-DA-PRODUCAO-CT="Evento &amp; Oficina" TIPO-PRODUCAO-CT="Participações em eventos"/><PRODUCAO-CT-DO-PROJETO SEQUENCIA-PRODUCAO-CT="39" TITULO-DA-PRODUCAO-CT="Programa de Exemplo" TIPO-PRODUCAO-CT="Software"/></PRODUCOES-CT-DO-PROJETO>`;
+
 const project = (seq: string, nature: string, name: string, extra = '') =>
   `<PARTICIPACAO-EM-PROJETO SEQUENCIA-FUNCAO-ATIVIDADE="${seq}" FLAG-PERIODO="ATUAL" MES-INICIO="3" ANO-INICIO="2020" MES-FIM="" ANO-FIM="" NOME-ORGAO="Instituto"><PROJETO-DE-PESQUISA SEQUENCIA-PROJETO="${seq}" ANO-INICIO="2020" ANO-FIM="" NOME-DO-PROJETO="${name}" SITUACAO="EM_ANDAMENTO" NATUREZA="${nature}" NUMERO-GRADUACAO="3" NUMERO-DOUTORADO="1" DESCRICAO-DO-PROJETO="Descrição" DESCRICAO-DO-PROJETO-INGLES="" NOME-DO-PROJETO-INGLES="" FLAG-POTENCIAL-INOVACAO="NAO" IDENTIFICADOR-PROJETO="">${MEMBERS}${extra}</PROJETO-DE-PESQUISA></PARTICIPACAO-EM-PROJETO>`;
 
@@ -40,7 +43,7 @@ const XML = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS NOME-COMPLE
 <ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO>
 ${project('1', 'PESQUISA', 'Projeto de Exemplo')}
 ${project('2', 'EXTENSAO', 'Projeto de Extensão')}
-${project('3', 'PESQUISA', 'Projeto Financiado', '<FINANCIADORES-DO-PROJETO><FINANCIADOR-DO-PROJETO SEQUENCIA-FINANCIADOR="1" NOME-INSTITUICAO="Agência" NATUREZA="AUXILIO_FINANCEIRO"/></FINANCIADORES-DO-PROJETO>')}
+${project('3', 'PESQUISA', 'Projeto Financiado', LINKS)}
 </ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO>
 </ATUACAO-PROFISSIONAL></ATUACOES-PROFISSIONAIS></DADOS-GERAIS></CURRICULO-VITAE>`;
 
@@ -209,16 +212,65 @@ describe('projeto: plano', () => {
     });
   });
 
-  it('projeto com financiador fica à mão, e o financiador também', () => {
-    expect(reasonOf(setProject('3', 'NOME-DO-PROJETO', 'Outro'))[0]).toMatch(
-      /tem financiadores, que o conector não sabe reenviar/,
-    );
+  it('projeto com financiador e produções ligadas vai; o financiador fica à mão', () => {
+    expect(onlyOp(setProject('3', 'NOME-DO-PROJETO', 'Outro'))).toMatchObject({
+      set: { f_titulo: 'Outro' },
+    });
     expect(
       reasonOf((root) => {
         const f = findIn(root, (el) => el.name === 'FINANCIADOR-DO-PROJETO')!;
         setAttr(f, 'NOME-INSTITUICAO', 'Outra agência');
       })[0],
     ).toMatch(/Financiador vai à mão/);
+  });
+
+  it('mexer nas produções ou orientações ligadas fica à mão, e o resto do item junto', () => {
+    const prods = (root: XElement) =>
+      childElements(projectOf(root, '3'), 'PRODUCOES-CT-DO-PROJETO')[0]!;
+    const removeOne = (root: XElement) => {
+      const c = prods(root);
+      c.children = childElements(c).slice(1);
+    };
+    const removeAll = (root: XElement) => {
+      const p = projectOf(root, '3');
+      p.children = p.children.filter((c) => c !== prods(root));
+    };
+    const retitle = (root: XElement) =>
+      setAttr(childElements(prods(root))[0]!, 'TITULO-DA-PRODUCAO-CT', 'Outro título');
+    const addOrientacao = (root: XElement) =>
+      projectOf(root, '3').children.push(
+        element('ORIENTACOES', {}, [
+          element('ORIENTACAO', { 'SEQUENCIA-ORIENTACAO': '7', 'TITULO-ORIENTACAO': 'Tese' }),
+        ]),
+      );
+    for (const edit of [removeOne, removeAll, retitle]) {
+      expect(reasonOf(edit)[0]).toMatch(/Produção do projeto vai à mão/);
+      // Com o título trocado na mesma fila: nada vai, nem o título.
+      expect(
+        reasonOf((root) => {
+          edit(root);
+          setProject('3', 'NOME-DO-PROJETO', 'Outro')(root);
+        }),
+      ).toContain(
+        'O item tem mudança em produções ligadas, que vai à mão, e o envio levaria de volta as do Lattes; alterar este item vai à mão junto',
+      );
+    }
+    expect(reasonOf(addOrientacao)[0]).toMatch(/Orientação do projeto vai à mão/);
+    expect(
+      reasonOf((root) => {
+        addOrientacao(root);
+        setProject('3', 'NOME-DO-PROJETO', 'Outro')(root);
+      }),
+    ).toContain(
+      'O item tem mudança em orientações ligadas, que vai à mão, e o envio levaria de volta as do Lattes; alterar este item vai à mão junto',
+    );
+    // A mudança nas ligações de outro projeto não segura este.
+    expect(
+      planAfter((root) => {
+        removeOne(root);
+        setProject('1', 'NOME-DO-PROJETO', 'Outro')(root);
+      }).ops,
+    ).toHaveLength(1);
   });
 
   it('desligada, o projeto fica à mão', () => {
@@ -370,7 +422,64 @@ describe('projeto: grades', () => {
           table('grid3', '<tr><td><span>a</span></td></tr>'),
         grids,
       ),
-    ).toEqual({ filled: [grids[1]] });
+    ).toEqual({ unsendable: [grids[1]], values: { f_x: '' } });
+  });
+
+  it('as grades do projeto como o check() as serializa, da página real (20/10/2026)', () => {
+    const t = PRODUCTION_TARGETS.find((x) => x.id === 'projeto')!;
+    const page = `<table id="grid2"> <thead><tr><th>Instituição</th></tr></thead> <tbody> <tr> <td>FAPESP_PPPROV<span id="cod_inst_aux">VJMOE00000002</span></td> <td>0000<span>0000;N;</span></td> <td>R$ 10,00<span>026|10,00</span></td> <td>Auxílio Financeiro<span>A</span></td> <td><img src="e.gif" onClick="editarLinhaTabela(this)"><img src="a.gif" onClick="apagaLinhaTabela(this)"></td> </tr> </tbody></table>
+<table id="grid3"> <thead><tr><th>Produção</th></tr></thead> <tbody> <tr> <td tabindex="0">Teste do LattesEditor (apagar)<SPAN>34</SPAN></td> <td tabindex="0">2026</td> <td tabindex="0">Participações em eventos</td> </tr> <tr> <td tabindex="0">TESTE EDITOR APAGAR registro-PC-v1 f_titulo<SPAN>39</SPAN></td> <td tabindex="0">2006</td> <td tabindex="0">Software</td> </tr> <INPUT TYPE="hidden" NAME="f_producoes_d" VALUE="34|39"> </tbody></table>
+<table id="grid4"> <thead><tr><th>Orientação</th></tr></thead> <tbody> <INPUT TYPE="hidden" NAME="f_orientacoes_d" VALUE=""> </tbody></table>`;
+    expect(readOpaque(page, t.opaqueGrids!)).toEqual({
+      unsendable: [],
+      values: {
+        f_inst_l: 'VJMOE00000002|0000;N;|026|10,00|A|@',
+        f_orientacoes_l: '',
+        f_producoes_l: '34@39@',
+      },
+    });
+  });
+
+  it('o valor do span como o innerHTML o devolve, e as linhas que não se leem', () => {
+    const grid = {
+      element: 'Y',
+      field: 'f_y',
+      label: 'ípsilon',
+      serialize: { cells: 2, end: '|@' },
+      table: 'g',
+    };
+    const read = (rows: string) =>
+      readOpaque(`<table id="g"><tbody>${rows}</tbody></table>`, [grid]);
+    expect(
+      read(
+        '<tr><td><span>a &amp; b&quot;&#39;</span></td><td>x<SPAN>c&nbsp;d\r\ne</SPAN></td></tr>',
+      ),
+    ).toEqual({ unsendable: [], values: { f_y: 'a &amp; b"\'|c&nbsp;d\ne|@' } });
+    for (const rows of [
+      '<tr><td><span>a</span></td><td>sem span</td></tr>',
+      '<tr><td><span>a</span></td></tr>',
+      '<tr><td><span><b>a</b></span></td><td><span>b</span></td></tr>',
+      '<tr><td><span>a</span></td><td><span>b</span></td>',
+    ]) {
+      expect(read(rows)).toEqual({ unsendable: [grid], values: {} });
+    }
+  });
+
+  it('no plano, só a grade preenchida sem serialização deixa o item à mão', () => {
+    const grids = [
+      { element: 'X', field: 'f_x', label: 'xis', table: 'grid2' },
+      {
+        element: 'Y',
+        field: 'f_y',
+        label: 'ípsilon',
+        serialize: { cells: 1, end: '@' },
+        table: 'grid3',
+      },
+    ];
+    expect(opaqueByHand(() => true, grids)).toBe(
+      'O item tem xis, que o conector não sabe reenviar ao Lattes; alterar este item vai à mão',
+    );
+    expect(opaqueByHand((g) => g.element === 'Y', grids)).toBeUndefined();
   });
 });
 
@@ -461,20 +570,83 @@ describe('projeto no Lattes simulado', () => {
     expect(postsOf(lattes)).toEqual([]);
   });
 
-  it('o Lattes com um financiador que o editor não tem: nada é enviado', async () => {
+  it('o Lattes com um financiador que o editor não tem: vai, e ele fica', async () => {
     const lattes = await lattesFor();
     projectOf(lattes.state.root, '1').children.push(
       element('FINANCIADORES-DO-PROJETO', {}, [
-        element('FINANCIADOR-DO-PROJETO', { 'NOME-INSTITUICAO': 'Agência' }),
+        element('FINANCIADOR-DO-PROJETO', { NATUREZA: 'BOLSA', 'NOME-INSTITUICAO': 'Agência' }),
       ]),
     );
     const op = onlyOp(setProject('1', 'NOME-DO-PROJETO', 'Projeto Revisto'));
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes)[0]!.fields.f_inst_l).toBe('|0000;N;|026|10,00|B|@');
+    expect(
+      findIn(projectOf(lattes.state.root, '1'), (el) => el.name === 'FINANCIADOR-DO-PROJETO'),
+    ).toBeDefined();
+  });
+
+  it('com financiador e produções ligadas: o título vai e as grades voltam iguais', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp(setProject('3', 'NOME-DO-PROJETO', 'Projeto Revisto'));
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes)[0]!.fields).toMatchObject({
+      f_inst_l: '000100000001|0000;N;|026|10,00|A|@',
+      f_orientacoes_d: '',
+      f_orientacoes_l: '',
+      f_producoes_d: '34|39',
+      f_producoes_l: '34@39@',
+      f_titulo: 'Projeto Revisto',
+    });
+    const p = projectOf(lattes.state.root, '3');
+    expect(getAttr(p, 'NOME-DO-PROJETO')).toBe('Projeto Revisto');
+    const links = (name: string, attr: string) =>
+      childElements(childElements(p, name)[0]!).map((c) => getAttr(c, attr));
+    expect(links('FINANCIADORES-DO-PROJETO', 'NOME-INSTITUICAO')).toEqual(['Agência']);
+    expect(links('PRODUCOES-CT-DO-PROJETO', 'SEQUENCIA-PRODUCAO-CT')).toEqual(['34', '39']);
+  });
+
+  it('uma linha que não se lê como o check() a serializa: nada é enviado', async () => {
+    const lattes = await lattesFor({
+      intercept: faults.rewritePages(/pkg_projeto\.form/i, (html) =>
+        html.replace(/<SPAN>39<\/SPAN>/, '39'),
+      ),
+    });
+    const op = onlyOp(setProject('3', 'NOME-DO-PROJETO', 'Projeto Revisto'));
     expect(await applyOp(op, lattes.port)).toMatchObject({
       detail:
-        'O item tem no Lattes financiadores, que o conector não sabe reenviar; nada foi enviado',
+        'O item tem no Lattes produções ligadas, que o conector não sabe reenviar; nada foi enviado',
       status: 'erro',
     });
     expect(postsOf(lattes)).toEqual([]);
+  });
+
+  it('com financiador, página sem a tabela dele: nada é enviado', async () => {
+    const lattes = await lattesFor({
+      intercept: faults.rewritePages(/pkg_projeto\.form/i, (html) =>
+        html.replace('id="grid2"', 'id="outra"'),
+      ),
+    });
+    const op = onlyOp(setProject('3', 'NOME-DO-PROJETO', 'Projeto Revisto'));
+    expect(await applyOp(op, lattes.port)).toMatchObject({
+      detail: 'A página do Lattes não tem a grade grid2; nada foi enviado',
+      status: 'erro',
+    });
+    expect(postsOf(lattes)).toEqual([]);
+  });
+
+  it('uma produção ligada que some no envio é acusada', async () => {
+    const lattes = await lattesFor({
+      intercept: faults.afterPost((_req, state) => {
+        const prods = childElements(projectOf(state.root, '3'), 'PRODUCOES-CT-DO-PROJETO')[0]!;
+        prods.children = childElements(prods).slice(0, 1);
+      }),
+    });
+    const op = onlyOp(setProject('3', 'NOME-DO-PROJETO', 'Projeto Revisto'));
+    expect(await applyOp(op, lattes.port)).toMatchObject({
+      detail:
+        'Outros campos mudaram no Lattes: produções ligadas, f_producoes_d. Confira no Lattes',
+      status: 'divergente',
+    });
   });
 
   it('página sem a tabela de uma grade: nada é enviado', async () => {
