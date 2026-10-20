@@ -4,7 +4,6 @@
 // tipo e o que o check() de cada tipo exige, e como achar as linhas e a
 // inclusão na lista de cada tipo. Usado por create-registro.ts.
 
-import { foldText } from '../model/fold-text.ts';
 import { findLinks, type LattesLink } from './lattes-html.ts';
 
 /**
@@ -19,27 +18,9 @@ export function formDate(xml: string): string | undefined {
     : undefined;
 }
 
-/**
- * Data do XML → situação da grade de datas da patente (seção 21): o código e o
- * rótulo da opção do combo.
- */
-export const PATENT_DATE_CODES: Record<string, [string, string]> = {
-  'DATA-DE-CONCESSAO': ['3', 'Concessão'],
-  'DATA-DE-PEDIDO-DE-EXAME': ['5', 'Pedido do Exame'],
-  'DATA-DEPOSITO-PCT': ['2', 'Depósito PCT'],
-  'DATA-PEDIDO-DE-DEPOSITO': ['1', 'Depósito'],
-};
-
-/**
- * O atributo do REGISTRO-OU-PATENTE cuja data é a de uma situação do
- * histórico da patente, pela descrição dela (o rótulo da linha da grade de
- * situações, observado em 20/10/2026), sem acento nem caixa.
- */
-export function patentDateAttrOf(description: string): string | undefined {
-  return Object.entries(PATENT_DATE_CODES).find(
-    ([, [, label]]) => foldText(label) === foldText(description),
-  )?.[0];
-}
+// As datas da patente e a ligação delas com o histórico de situações moram em
+// src/model/patent-dates.ts, que o editor também usa.
+export { PATENT_DATE_CODES, patentDateAttrOf } from '../model/patent-dates.ts';
 
 /**
  * O f_dados_grid_datas da patente como array2xml("item", "root", …) o monta a

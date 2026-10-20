@@ -190,6 +190,14 @@ export async function applyProduction(
         wrong.push(f);
       }
     }
+    if (wrong.length > 0) {
+      return result(
+        'divergente',
+        `O Lattes não está como o editor espera: ${wrong.map((f) => labelOf(op, f)).join(', ')}`,
+      );
+    }
+    // Só depois da conferência: um antes que não bate (uma grade, outro campo)
+    // segue divergente mesmo com os virtuais já no valor novo.
     if (
       virtualFields.length > 0 &&
       Object.keys(op.set).every(isVirtual) &&
@@ -198,12 +206,6 @@ export async function applyProduction(
       virtualFields.every(virtualDone)
     ) {
       return result('conferido', 'O Lattes já estava assim; nada foi enviado');
-    }
-    if (wrong.length > 0) {
-      return result(
-        'divergente',
-        `O Lattes não está como o editor espera: ${wrong.map((f) => labelOf(op, f)).join(', ')}`,
-      );
     }
 
     // As grades: as lidas, e no lugar delas as que a alteração troca.

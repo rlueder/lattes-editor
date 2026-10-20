@@ -100,8 +100,11 @@ export function planHolder(f: {
   before: string;
 }): { after: string; before: string } | { reason: string } {
   const value = { after: f.after.trim(), before: f.before.trim() };
-  // Nomes completos não têm vírgula nem ponto e vírgula: com eles, é mais de um.
-  if (/[;,]/.test(value.after) || /[;,]/.test(value.before)) return { reason: SEVERAL_HOLDERS };
+  // Só o ";" separa pessoas, como nas outras listas de nomes do currículo: a
+  // vírgula pode ser de um nome só ("SOBRENOME, Nome"). Como a exportação junta
+  // mais de um depositante não foi visto; a grade da página com mais de uma
+  // linha também fica à mão (apply.ts).
+  if (value.after.includes(';') || value.before.includes(';')) return { reason: SEVERAL_HOLDERS };
   return value;
 }
 

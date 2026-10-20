@@ -12,8 +12,8 @@
 // outra. Uma linha do histórico que não existe não se cria aqui: sem ela, só
 // o registro muda.
 
-import { PATENT_DATE_CODES, patentDateAttrOf } from '../bridge/create-registro-rules.ts';
 import listas from '../schema/listas-lattes.json' with { type: 'json' };
+import { PATENT_DATE_CODES, patentDateAttrOf } from './patent-dates.ts';
 import { childElements, getAttr, setAttr, type XElement } from './xml.ts';
 
 /** A formação guarda a agência em NOME-AGENCIA (a orientação usa outro nome e outro formulário). */

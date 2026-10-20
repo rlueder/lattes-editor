@@ -12,8 +12,8 @@
 // Sem a linha do histórico, a data do registro vai sozinha.
 
 import type { Change } from '../../../model/changes.ts';
+import { PATENT_DATE_CODES, patentDateAttrOf } from '../../../model/patent-dates.ts';
 import { childElements, getAttr, type XElement } from '../../../model/xml.ts';
-import { PATENT_DATE_CODES, patentDateAttrOf } from '../../create-registro-rules.ts';
 import type { FieldMap } from '../types.ts';
 import { slashDate } from './comum-tecnica-artistica.ts';
 import { dateKey } from './registros-paginas.ts';

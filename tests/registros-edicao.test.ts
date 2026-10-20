@@ -176,6 +176,14 @@ describe('patente: o depositante pessoa', () => {
     expect(postsOf(sim)).toEqual([]);
   });
 
+  it('a vírgula não quer dizer mais de um: "SOBRENOME, Nome" é uma pessoa', () => {
+    const ops = opsAfter(depositor('SINTÉTICO, Depositante'), HOLDER_XML);
+    expect(ops[0]!.holders).toEqual({
+      after: 'SINTÉTICO, Depositante',
+      before: 'Depositante Sintético',
+    });
+  });
+
   it('mais de um depositante fica à mão', async () => {
     expect(reasonsAfter(depositor('Uma Pessoa; Outra Pessoa'), HOLDER_XML)).toEqual([
       expect.stringMatching(/Mais de um depositante vai à mão/),
@@ -305,6 +313,17 @@ describe('patente: o histórico de situações', () => {
     const patent = byName(sim.state.root, 'PATENTE');
     expect(getAttr(registry(patent), 'DATA-PEDIDO-DE-DEPOSITO')).toBe('13032007');
     expect(getAttr(history(patent), 'DATA-SITUACAO-PATENTE')).toBe('13032007');
+  });
+
+  it('o virtual já no valor novo não esconde outro antes que não bate', async () => {
+    const sim = await lattes(HOLDER_XML);
+    const ops = opsAfter(bothDates('13032007'), HOLDER_XML);
+    expect(await applyOp(ops[0]!, sim.port)).toMatchObject({ status: 'conferido' });
+    // A segunda, com um antes que a página não tem (o depositante): a data já
+    // está como o editor quer, mas o antes divergente vem primeiro.
+    const r = await applyOp({ ...ops[1]!, holders: { after: 'Outra', before: 'Outra' } }, sim.port);
+    expect(r.status).toBe('divergente');
+    expect(postsOf(sim)).toHaveLength(1);
   });
 
   it('com a data do registro e mais outro campo, a mudança do registro também confere depois', async () => {
