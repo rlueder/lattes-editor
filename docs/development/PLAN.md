@@ -38,7 +38,7 @@ outras 127 são o alvo deste plano.
   `check()` faz, e confere depois que voltaram iguais
   (`src/bridge/production/opaque.ts`); antes, o projeto com qualquer uma
   delas ficava inteiro à mão. Incluir, tirar ou trocar uma linha dessas
-  grades continua à mão. 2579 de 2787 campos vão (93%); eram 2564 de 2791.
+  grades continua à mão, e leva junto o resto do projeto na mesma fila. 2579 de 2787 campos vão (93%); eram 2564 de 2791.
   Os 4 que saíram da conta passaram a "o formulário do Lattes não tem", o
   motivo que a recusa do projeto escondia.
 

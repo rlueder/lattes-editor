@@ -1730,7 +1730,9 @@ qualquer outra alteração do projeto; depois do envio, confere que voltaram
 iguais (`src/bridge/production/opaque.ts`). Quando a tabela falta, ou uma
 linha não se lê assim (célula sem o `<span>`, marcação dentro dele), nada é
 enviado. Incluir, tirar ou trocar um financiador, uma produção ou uma
-orientação ligada continua à mão.
+orientação ligada continua à mão, e com uma dessas mudanças na fila o resto
+do projeto vai à mão junto: o envio levaria de volta as linhas que o Lattes
+tem, e a mudança à mão ficaria para trás com o item conferido.
 
 **Inferido**: que a exportação ponha o órgão de cima em
 `PARTICIPACAO-EM-PROJETO@CODIGO-ORGAO`/`NOME-ORGAO` e a unidade em

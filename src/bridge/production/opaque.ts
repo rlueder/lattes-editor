@@ -12,6 +12,9 @@
 // elemento com essa tag. Uma grade sem serialização, ou uma linha que não se
 // lê assim, só deixa o envio ir vazia.
 
+import { type Change, resolvePath } from '../../model/changes.ts';
+import { childElements, type XElement } from '../../model/xml.ts';
+import { lattesSchema } from '../../schema/lattes.ts';
 import { decodeHtmlEntities } from '../html-text.ts';
 import type { OpaqueGrid } from './types.ts';
 
@@ -114,4 +117,41 @@ export function opaqueByHand(
   const filled = grids.filter((g) => !g.serialize && hasContent(g));
   if (filled.length === 0) return undefined;
   return `O item tem ${filled.map((g) => g.label).join(', ')}, que o conector não sabe reenviar ao Lattes; alterar este item vai à mão`;
+}
+
+/**
+ * Por que a mudança `change` no item fica à mão por causa das grades, ou
+ * undefined. Além da grade que o conector não sabe reenviar: uma mudança da
+ * fila numa dessas grades vai à mão (byHand do alvo), e o envio deste item
+ * levaria de volta a grade como o Lattes a tem, deixando a mudança à mão
+ * para trás com o item conferido. Então o item inteiro vai à mão.
+ */
+export function opaqueReason(
+  grids: readonly OpaqueGrid[],
+  item: XElement,
+  change: Change,
+  siblings: readonly Change[],
+  root: XElement | undefined,
+): string | undefined {
+  const byHand = opaqueByHand(
+    (g) =>
+      childElements(item, g.element).some((c) => childElements(c).length > 0 || c.attrs.length > 0),
+    grids,
+  );
+  if (byHand) return byHand;
+  const pending = grids.filter((g) => {
+    const names = new Set([
+      g.element,
+      ...(lattesSchema.elements[g.element]?.children.map((c) => c.name) ?? []),
+    ]);
+    return siblings.some(
+      (c) =>
+        c.key !== change.key &&
+        names.has(c.element) &&
+        !!root &&
+        resolvePath(root, c.path).includes(item),
+    );
+  });
+  if (pending.length === 0) return undefined;
+  return `O item tem mudança em ${pending.map((g) => g.label).join(', ')}, que vai à mão, e o envio levaria de volta as do Lattes; alterar este item vai à mão junto`;
 }

@@ -224,6 +224,55 @@ describe('projeto: plano', () => {
     ).toMatch(/Financiador vai à mão/);
   });
 
+  it('mexer nas produções ou orientações ligadas fica à mão, e o resto do item junto', () => {
+    const prods = (root: XElement) =>
+      childElements(projectOf(root, '3'), 'PRODUCOES-CT-DO-PROJETO')[0]!;
+    const removeOne = (root: XElement) => {
+      const c = prods(root);
+      c.children = childElements(c).slice(1);
+    };
+    const removeAll = (root: XElement) => {
+      const p = projectOf(root, '3');
+      p.children = p.children.filter((c) => c !== prods(root));
+    };
+    const retitle = (root: XElement) =>
+      setAttr(childElements(prods(root))[0]!, 'TITULO-DA-PRODUCAO-CT', 'Outro título');
+    const addOrientacao = (root: XElement) =>
+      projectOf(root, '3').children.push(
+        element('ORIENTACOES', {}, [
+          element('ORIENTACAO', { 'SEQUENCIA-ORIENTACAO': '7', 'TITULO-ORIENTACAO': 'Tese' }),
+        ]),
+      );
+    for (const edit of [removeOne, removeAll, retitle]) {
+      expect(reasonOf(edit)[0]).toMatch(/Produção do projeto vai à mão/);
+      // Com o título trocado na mesma fila: nada vai, nem o título.
+      expect(
+        reasonOf((root) => {
+          edit(root);
+          setProject('3', 'NOME-DO-PROJETO', 'Outro')(root);
+        }),
+      ).toContain(
+        'O item tem mudança em produções ligadas, que vai à mão, e o envio levaria de volta as do Lattes; alterar este item vai à mão junto',
+      );
+    }
+    expect(reasonOf(addOrientacao)[0]).toMatch(/Orientação do projeto vai à mão/);
+    expect(
+      reasonOf((root) => {
+        addOrientacao(root);
+        setProject('3', 'NOME-DO-PROJETO', 'Outro')(root);
+      }),
+    ).toContain(
+      'O item tem mudança em orientações ligadas, que vai à mão, e o envio levaria de volta as do Lattes; alterar este item vai à mão junto',
+    );
+    // A mudança nas ligações de outro projeto não segura este.
+    expect(
+      planAfter((root) => {
+        removeOne(root);
+        setProject('1', 'NOME-DO-PROJETO', 'Outro')(root);
+      }).ops,
+    ).toHaveLength(1);
+  });
+
   it('desligada, o projeto fica à mão', () => {
     const plan = planAfter(setProject('1', 'NOME-DO-PROJETO', 'Projeto Revisto'), {});
     expect(plan.ops).toEqual([]);
