@@ -20,6 +20,7 @@ import {
 } from '../form.ts';
 import { findLinks, isLogonPage } from '../lattes-html.ts';
 import type { FieldValues } from '../plan.ts';
+import { doiProblem } from './doi.ts';
 import {
   authorRows,
   GRID_LABELS,
@@ -301,6 +302,14 @@ export async function applyProduction(
       chosen = { ...chosen, ...resolved.set };
       chosenCheck = { ...chosenCheck, ...resolved.check };
       organShown = resolved.shown;
+    }
+    // As conferências do DOI que o check() da página faz (doi.ts).
+    // O DOI vai como foi conferido: sem espaço nas pontas.
+    if (set.f_cod_doi !== undefined) set.f_cod_doi = set.f_cod_doi.trim();
+    const doi = set.f_cod_doi;
+    if (t.doi && doi) {
+      const problem = await doiProblem(doi, t.doi, html, port);
+      if (problem) return result('erro', problem);
     }
     // O que o check() da página monta antes do envio (target.built).
     const built = t.built ? t.built(html, set) : {};

@@ -98,9 +98,49 @@ ${lookupHidden(state, item, t)}
 ${h.formButtons(true)}
 </form>
 ${gridScripts(item, t.authors)}
+${t.doi?.duplicate ? doiScript(state.code, req.get('f_seq') ?? '') : ''}
 ${h.formScripts(t.form.name, 'Deseja realmente excluir esta produção?')}`;
   return html(h.page(t.id, body));
 }
+
+/** A conferência de DOI duplicado como o check() da página a chama (lida em 20/10/2026). */
+const doiScript = (code: string, seq: string) =>
+  `<script>\nvar vres = vefificaDoiCadastrado(trim(dc.f_cod_doi.value),"${code}","${seq}")\n</script>`;
+
+/** Os DOIs das produções bibliográficas do simulado, com a sequência de cada uma. */
+function doisIn(state: LattesState): { doi: string; seq: string }[] {
+  const out: { doi: string; seq: string }[] = [];
+  for (const t of PRODUCTION_TARGETS.filter((x) => x.doi)) {
+    const key = Object.entries(t.fields).find(([, m]) => mapOf(m).field === 'f_cod_doi')?.[0];
+    if (!key) continue;
+    const [child, attr] = key.split('@') as [string, string];
+    for (const item of itemsOf(state, t)) {
+      const doi = getAttr(partOf(item, child) ?? element(''), attr) ?? '';
+      if (doi) out.push({ doi, seq: seqOf(item) ?? '' });
+    }
+  }
+  return out;
+}
+
+/** pkg_artigo.verifica_doi_duplicado e pkg_artigo.tipodoi, as conferências do DOI. */
+const DOI_ROUTES: Routes = {
+  'pkg_artigo.tipodoi': (req, state) => {
+    const raw = req.get('fcod') ?? '';
+    let doi = raw;
+    try {
+      doi = decodeURIComponent(raw);
+    } catch {
+      // Um % solto fica como veio.
+    }
+    return html(state.doiTypes.get(doi) ?? '');
+  },
+  'pkg_artigo.verifica_doi_duplicado': (req, state) => {
+    const doi = (req.get('f_doi') ?? '').toLowerCase();
+    const seq = req.get('f_seq') ?? '';
+    const dup = doisIn(state).some((d) => d.doi.toLowerCase() === doi && d.seq !== seq);
+    return html(`doiDup = ${dup ? 1 : 0};`);
+  },
+};
 
 function post(req: SimRequest, state: LattesState, t: ProductionTarget): SimResponse {
   const back = h.savedScript(`${t.list.proc}?f_cod=${state.code}`);
@@ -199,7 +239,7 @@ export function productionRoutes(): Routes {
 }
 
 function buildRoutes(): Routes {
-  const routes: Routes = {};
+  const routes: Routes = { ...DOI_ROUTES };
   const targets = PRODUCTION_TARGETS.filter((t) => !CUSTOM.has(t.id));
   for (const t of targets) {
     const listKey = t.list.proc.toLowerCase();
