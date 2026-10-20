@@ -278,8 +278,11 @@ Decidido em 19/10/2026: pelo dicionário (`src/bridge/edit-citacao.ts`, chave
 `alterar-citacoes`). A troca só da citação de um coautor confere a entrada,
 pergunta se há produção validada, grava e relê; a linha do painel avisa que a
 citação muda em todas as produções do coautor. A própria citação fica à mão
-(a pessoa não está no dicionário). Feito no simulado; falta a gravação de
-teste no Lattes real, num item de teste com um coautor de teste.
+(a pessoa não está no dicionário). Gravado e conferido no Lattes real em
+20/10/2026: num item de teste de demais trabalhos com o coautor de teste
+(entrada 14 do dicionário), a troca no dicionário mudou o `t` da linha do
+item; depois a citação voltou e o item saiu pelo registro (marca no espelho:
+0).
 
 ### Fase 6: substituir (incluir o novo e excluir o antigo)
 
