@@ -124,13 +124,20 @@ function doisIn(state: LattesState): { doi: string; seq: string }[] {
 
 /** pkg_artigo.verifica_doi_duplicado e pkg_artigo.tipodoi, as conferências do DOI. */
 const DOI_ROUTES: Routes = {
-  'pkg_artigo.tipodoi': (req, state) =>
-    html(state.doiTypes.get(decodeURIComponent(req.get('fcod') ?? '')) ?? ''),
+  'pkg_artigo.tipodoi': (req, state) => {
+    const raw = req.get('fcod') ?? '';
+    let doi = raw;
+    try {
+      doi = decodeURIComponent(raw);
+    } catch {
+      // Um % solto fica como veio.
+    }
+    return html(state.doiTypes.get(doi) ?? '');
+  },
   'pkg_artigo.verifica_doi_duplicado': (req, state) => {
     const doi = (req.get('f_doi') ?? '').toLowerCase();
-    const dup = doisIn(state).some(
-      (d) => d.doi.toLowerCase() === doi && d.seq !== req.get('f_seq'),
-    );
+    const seq = req.get('f_seq') ?? '';
+    const dup = doisIn(state).some((d) => d.doi.toLowerCase() === doi && d.seq !== seq);
     return html(`doiDup = ${dup ? 1 : 0};`);
   },
 };

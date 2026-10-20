@@ -60,7 +60,14 @@ export async function doiProblem(
         ]),
       )
     ).trim();
-    if (!/^[A-Z_ ]*$/.test(kind)) return 'O Lattes não respondeu o tipo do DOI; nada foi enviado';
+    if (!/^[A-Z_ ]*$/.test(kind)) {
+      const seen = kind
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 60);
+      return `O Lattes não respondeu o tipo do DOI (veio "${seen}"); nada foi enviado`;
+    }
     if (kind === 'INEXISTENTE') return `O Lattes não acha o DOI ${doi}`;
     if (kind && kind[0] !== spec.type.letter) {
       return `O DOI ${doi} não é de ${spec.type.label}: o Lattes diz que é de ${kind.toLowerCase()}`;
