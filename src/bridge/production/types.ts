@@ -59,8 +59,9 @@ export interface AuthorPart {
 }
 
 /**
- * Uma grade da página cujo formato o conector não conhece: o envio só vai
- * quando o Lattes e o editor a têm vazia, e então o oculto vai vazio.
+ * Uma grade da página que o conector não monta (opaque.ts). Com `serialize`,
+ * o envio a leva como a página a trouxe, como o check() a serializaria; sem,
+ * o envio só vai quando o Lattes e o editor a têm vazia, e o oculto vai vazio.
  */
 export interface OpaqueGrid {
   /** O elemento do XML que guarda o conteúdo dela, filho do item. */
@@ -68,6 +69,12 @@ export interface OpaqueGrid {
   /** O oculto que o check() preenche com ela. */
   field: string;
   label: string;
+  /**
+   * Como o check() serializa cada linha: o innerHTML do primeiro <span> de
+   * cada uma das `cells` primeiras células (as que têm tagValor 'span' no
+   * criarGrid), unidos por "|", e `end` no fim da linha.
+   */
+  serialize?: { cells: number; end: string };
   /**
    * O id da tabela da grade na página: o servidor escreve as linhas no
    * corpo dela, e o check() as lê de lá (criarGrid, valores).
@@ -150,7 +157,7 @@ export interface ProductionTarget {
    * (a banca de mestrado e a qualificação com o mesmo título e ano).
    */
   nature?: { field: string; values: string[] };
-  /** As grades da página que o conector não sabe montar e só manda vazias. */
+  /** As grades da página que o conector não monta: reenviadas como vieram, ou só vazias. */
   opaqueGrids?: OpaqueGrid[];
   /**
    * O órgão e a unidade, que o XML guarda no pai do item (a participação em

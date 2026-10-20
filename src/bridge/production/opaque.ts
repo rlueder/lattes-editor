@@ -3,39 +3,115 @@
 // projeto. Na página de alteração do projeto (lida em 18/10/2026) elas são
 // tabelas que o servidor já escreve com as linhas (grid2, grid3 e grid4, de
 // criarGrid), e o check() as serializa nos ocultos antes do envio; um envio
-// com o oculto vazio apagaria o que elas têm. Por isso o envio só vai quando
-// a página traz a tabela de cada uma, sem linha; então o oculto vai vazio,
-// como o check() o deixaria.
+// com o oculto vazio apagaria o que elas têm.
+//
+// Com a serialização da grade (OpaqueGrid.serialize, lida em 20/10/2026 num
+// projeto de teste com um financiador e duas produções ligadas), o conector
+// refaz o oculto como o check() o faria: o associarValores() da página toma,
+// em cada linha e em cada célula com tagValor, o innerHTML do primeiro
+// elemento com essa tag. Uma grade sem serialização, ou uma linha que não se
+// lê assim, só deixa o envio ir vazia.
 
+import { decodeHtmlEntities } from '../html-text.ts';
 import type { OpaqueGrid } from './types.ts';
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/** As linhas do corpo da tabela `id`, ou undefined sem a tabela. */
-export function tableRows(html: string, id: string): number | undefined {
+/** O corpo da tabela `id`, ou undefined sem a tabela. */
+function tableBody(html: string, id: string): string | undefined {
   const table = new RegExp(
     `<table\\b[^>]*\\bid\\s*=\\s*["']?${escape(id)}["'\\s>][\\s\\S]*?</table>`,
     'i',
   ).exec(html);
   if (!table) return undefined;
-  const body = /<tbody\b[^>]*>([\s\S]*?)<\/tbody>/i.exec(table[0]);
-  return [...(body?.[1] ?? '').matchAll(/<tr\b/gi)].length;
+  return /<tbody\b[^>]*>([\s\S]*?)<\/tbody>/i.exec(table[0])?.[1] ?? '';
 }
 
-/** As grades lidas: a que falta na página, ou as que têm linhas. */
+/** As linhas do corpo da tabela `id`, ou undefined sem a tabela. */
+export function tableRows(html: string, id: string): number | undefined {
+  const body = tableBody(html, id);
+  return body === undefined ? undefined : [...body.matchAll(/<tr\b/gi)].length;
+}
+
+/**
+ * O texto do <span> como o innerHTML o devolve: o parser decodifica as
+ * entidades e junta \r\n em \n, e a serialização volta a escrever &, <, > e o
+ * espaço sem quebra como entidades. Com outra marcação dentro, undefined.
+ */
+function innerHtml(raw: string): string | undefined {
+  if (raw.includes('<')) return undefined;
+  return decodeHtmlEntities(raw.replace(/\r\n?/g, '\n'))
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\u00a0/g, '&nbsp;');
+}
+
+/** Uma linha como o check() a serializa, ou undefined se ela não se lê assim. */
+function rowValue(row: string, spec: NonNullable<OpaqueGrid['serialize']>): string | undefined {
+  const cells = [...row.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map((m) => m[1] ?? '');
+  if (cells.length < spec.cells) return undefined;
+  const values: string[] = [];
+  for (const cell of cells.slice(0, spec.cells)) {
+    const span = /<span\b[^>]*>([\s\S]*?)<\/span>/i.exec(cell);
+    if (!span) return undefined;
+    const value = innerHtml(span[1] ?? '');
+    if (value === undefined) return undefined;
+    values.push(value);
+  }
+  return values.join('|') + spec.end;
+}
+
+/**
+ * O oculto da grade como o check() o montaria das linhas da tabela: '' sem
+ * linha, undefined sem a tabela, sem a serialização, ou com uma linha que não
+ * se lê.
+ */
+export function opaqueValue(html: string, grid: OpaqueGrid): string | undefined {
+  const body = tableBody(html, grid.table);
+  if (body === undefined) return undefined;
+  if (!/<tr\b/i.test(body)) return '';
+  if (!grid.serialize) return undefined;
+  const rows = [...body.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)];
+  // Uma linha sem o fecho não se separa das outras com segurança.
+  if (rows.length !== [...body.matchAll(/<tr\b/gi)].length) return undefined;
+  let out = '';
+  for (const row of rows) {
+    const value = rowValue(row[1] ?? '', grid.serialize);
+    if (value === undefined) return undefined;
+    out += value;
+  }
+  return out;
+}
+
+/**
+ * As grades lidas: a que falta na página, ou o oculto refeito de cada uma e
+ * as que têm linhas que o conector não sabe reenviar.
+ */
 export function readOpaque(
   html: string,
   grids: readonly OpaqueGrid[],
-): { filled: OpaqueGrid[] } | { missing: string } {
-  const filled: OpaqueGrid[] = [];
+): { missing: string } | { unsendable: OpaqueGrid[]; values: Record<string, string> } {
+  const unsendable: OpaqueGrid[] = [];
+  const values: Record<string, string> = {};
   for (const g of grids) {
-    const rows = tableRows(html, g.table);
-    if (rows === undefined) return { missing: g.table };
-    if (rows > 0) filled.push(g);
+    if (tableRows(html, g.table) === undefined) return { missing: g.table };
+    const value = opaqueValue(html, g);
+    if (value === undefined) unsendable.push(g);
+    else values[g.field] = value;
   }
-  return { filled };
+  return { unsendable, values };
 }
 
-/** Os ocultos das grades, vazios. */
-export const opaquePairs = (grids: readonly OpaqueGrid[]): Record<string, string> =>
-  Object.fromEntries(grids.map((g) => [g.field, '']));
+/**
+ * O motivo de o item ficar à mão no plano: uma grade com conteúdo no editor
+ * (então o Lattes também tem) que o conector não sabe reenviar.
+ */
+export function opaqueByHand(
+  hasContent: (grid: OpaqueGrid) => boolean,
+  grids: readonly OpaqueGrid[],
+): string | undefined {
+  const filled = grids.filter((g) => !g.serialize && hasContent(g));
+  if (filled.length === 0) return undefined;
+  return `O item tem ${filled.map((g) => g.label).join(', ')}, que o conector não sabe reenviar ao Lattes; alterar este item vai à mão`;
+}

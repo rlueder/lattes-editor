@@ -19,6 +19,7 @@ import {
 } from './item-lists.ts';
 import { lookupAttrs, planLookups, type ProductionLookups } from './lookups.ts';
 import { planMembers } from './members.ts';
+import { opaqueByHand } from './opaque.ts';
 import { isOrganChange, type OrganChoice, planOrgan } from './organ.ts';
 import { PRODUCTION_TARGETS } from './targets/index.ts';
 import type { AuthorPart, FieldMap, ProductionTarget } from './types.ts';
@@ -196,16 +197,15 @@ export function planProduction(
   if (!match.title || !match.year) {
     return { reason: 'O item não tem título ou ano para achar a linha no Lattes' };
   }
-  // Uma grade que o conector não sabe montar: com conteúdo no editor, o
-  // Lattes também tem, e o envio a apagaria.
-  const filled = (target.opaqueGrids ?? []).filter((g) =>
-    childElements(item, g.element).some((c) => childElements(c).length > 0 || c.attrs.length > 0),
+  // Uma grade que o conector não sabe reenviar: com conteúdo no editor, o
+  // Lattes também tem, e o envio a apagaria. As que têm a serialização vão
+  // como a página as trouxer (opaque.ts).
+  const opaque = opaqueByHand(
+    (g) =>
+      childElements(item, g.element).some((c) => childElements(c).length > 0 || c.attrs.length > 0),
+    target.opaqueGrids ?? [],
   );
-  if (filled.length > 0) {
-    return {
-      reason: `O item tem ${filled.map((g) => g.label).join(', ')}, que o conector não sabe reenviar ao Lattes; alterar este item vai à mão`,
-    };
-  }
+  if (opaque) return { reason: opaque };
   const by = target.list.paramsBy;
   const byValue = by && before(by.child, by.attr);
   const listParam =

@@ -38,7 +38,7 @@ import {
 import { areaGridRows, gridLabels, sameLabels, setorGridRows } from './item-lists.ts';
 import { resolveLookups } from './lookups.ts';
 import { sameAuthors, withLeads } from './members.ts';
-import { opaquePairs, readOpaque } from './opaque.ts';
+import { readOpaque } from './opaque.ts';
 import { organLoose, resolveOrgan } from './organ.ts';
 import {
   EDIT_PRODUCTION_ENABLED,
@@ -204,10 +204,10 @@ export async function applyProduction(
         `A página do Lattes não tem a grade ${opaque.missing}; nada foi enviado`,
       );
     }
-    if (opaque.filled.length > 0) {
+    if (opaque.unsendable.length > 0) {
       return result(
         'erro',
-        `O item tem no Lattes ${opaque.filled.map((g) => g.label).join(', ')}, que o conector não sabe reenviar; nada foi enviado`,
+        `O item tem no Lattes ${opaque.unsendable.map((g) => g.label).join(', ')}, que o conector não sabe reenviar; nada foi enviado`,
       );
     }
 
@@ -332,7 +332,8 @@ export async function applyProduction(
           ...set,
           ...chosen,
           ...gridPairs(grids, replace, t.gridKeys),
-          ...opaquePairs(t.opaqueGrids ?? []),
+          // As grades que o conector não monta vão como a página as trouxe.
+          ...opaque.values,
         }),
       ),
     );
@@ -400,9 +401,13 @@ export async function applyProduction(
       afterPairs,
       new Set([...fields, ...Object.keys(chosen), ...t.grids, ...opaqueFields]),
     );
+    // As grades que o conector não monta voltam como foram.
+    const opaqueChanged = (t.opaqueGrids ?? []).filter(
+      (g) => afterOpaque.values[g.field] !== opaque.values[g.field],
+    );
     const changed = [
       ...lost.map((g) => GRID_LABELS[g]),
-      ...afterOpaque.filled.map((g) => g.label),
+      ...opaqueChanged.map((g) => g.label),
       ...others,
     ];
     if (changed.length > 0) {

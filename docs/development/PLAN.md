@@ -18,6 +18,16 @@ outras 127 são o alvo deste plano.
 
 ## Estado atual
 
+- 20/10/2026: projeto com financiadores, produções ou orientações ligadas
+  pelo conector. O envio refaz `f_inst_l`, `f_producoes_l` e
+  `f_orientacoes_l` das tabelas `grid2`, `grid3` e `grid4` da página, como o
+  `check()` faz, e confere depois que voltaram iguais
+  (`src/bridge/production/opaque.ts`); antes, o projeto com qualquer uma
+  delas ficava inteiro à mão. Incluir, tirar ou trocar uma linha dessas
+  grades continua à mão. 2579 de 2787 campos vão (93%); eram 2564 de 2791.
+  Os 4 que saíram da conta passaram a "o formulário do Lattes não tem", o
+  motivo que a recusa do projeto escondia.
+
 - 19/10/2026, noite: demais trabalhos, licenças e linhas de pesquisa pelo
   motor de produção (`targets/demais.ts`), testados no Lattes real com itens
   de teste e removidos. A linha de pesquisa entra pela descrição de uma
