@@ -24,7 +24,3 @@ export const mediaAmong =
     const code = media(v);
     return code === undefined || code === '' || codes.includes(code) ? code : undefined;
   };
-
-/** O DOI fica à mão em todos os tipos que têm o campo (ver bibliografica-artigos.ts). */
-export const DOI_MANUAL =
-  'o campo do DOI no Lattes serve para recuperar os dados da produção pelo botão ao lado, e gravar só o texto não foi observado';

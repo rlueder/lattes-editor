@@ -6,7 +6,8 @@
 // é Inferido, pelo rótulo do campo no censo, e confere com a do relatório
 // onde ele tem uma.
 //
-// Ficam à mão de propósito o DOI (DOI_MANUAL) e o que o formulário não tem.
+// Fica à mão de propósito o que o formulário não tem. O DOI vai como texto,
+// com as conferências do check() (doi.ts).
 // Inferido também, para todos: que o link de cada linha da lista seja o
 // formulário de inclusão com f_seq, como no trabalho técnico; e que gravar o
 // título, o ano, o periódico ou o ISSN sem mexer nos ocultos f_*_h (o valor
@@ -15,7 +16,7 @@
 
 import { byTable, country, language, media, yesNo } from '../mappers.ts';
 import type { ProductionTarget } from '../types.ts';
-import { ALL_GRIDS, DOI_MANUAL, mediaAmong, under } from './bibliografica-comum.ts';
+import { ALL_GRIDS, mediaAmong, under } from './bibliografica-comum.ts';
 
 /**
  * Artigo publicado (GN_ARTIGO, POST PKG_ARTIGO.FORM). A lista é
@@ -24,10 +25,12 @@ import { ALL_GRIDS, DOI_MANUAL, mediaAmong, under } from './bibliografica-comum.
  * edição de cada linha (PKG_ARTIGO.form com f_seq).
  */
 const ARTIGO_PUBLICADO: ProductionTarget = {
+  doi: { duplicate: true, type: { ffun: 'ARTIGO', label: 'artigo', letter: 'A' } },
   element: 'ARTIGO-PUBLICADO',
   fields: {
     ...under('DADOS-BASICOS-DO-ARTIGO', {
       'ANO-DO-ARTIGO': 'f_ano',
+      DOI: 'f_cod_doi',
       'FLAG-DIVULGACAO-CIENTIFICA': { field: 'F_STA_DIVULGACAO_CIENTIFICA', toForm: yesNo },
       'FLAG-RELEVANCIA': { field: 'F_RELEV', toForm: yesNo },
       'HOME-PAGE-DO-TRABALHO': 'f_homepage',
@@ -54,7 +57,6 @@ const ARTIGO_PUBLICADO: ProductionTarget = {
   grids: [...ALL_GRIDS],
   id: 'artigo-publicado',
   list: { formProc: 'PKG_ARTIGO.form', proc: 'pkg_artigo.lista' },
-  manual: { 'DADOS-BASICOS-DO-ARTIGO@DOI': DOI_MANUAL },
   title: { attr: 'TITULO-DO-ARTIGO', child: 'DADOS-BASICOS-DO-ARTIGO' },
   year: { attr: 'ANO-DO-ARTIGO', child: 'DADOS-BASICOS-DO-ARTIGO' },
 };
@@ -66,11 +68,13 @@ const ARTIGO_PUBLICADO: ProductionTarget = {
  * informações" em português.
  */
 const ARTIGO_ACEITO: ProductionTarget = {
+  doi: { duplicate: true, type: { label: 'artigo', letter: 'A' } },
   element: 'ARTIGO-ACEITO-PARA-PUBLICACAO',
   fields: {
     ...under('DADOS-BASICOS-DO-ARTIGO', {
       // "Ano previsto para publicação".
       'ANO-DO-ARTIGO': 'f_ano',
+      DOI: 'f_cod_doi',
       'FLAG-DIVULGACAO-CIENTIFICA': { field: 'F_STA_DIVULGACAO_CIENTIFICA', toForm: yesNo },
       'FLAG-RELEVANCIA': { field: 'F_RELEV', toForm: yesNo },
       IDIOMA: { field: 'F_IDIOMA', toForm: language },
@@ -87,7 +91,6 @@ const ARTIGO_ACEITO: ProductionTarget = {
   grids: [...ALL_GRIDS],
   id: 'artigo-aceito',
   list: { formProc: 'PKG_ARTIGO_PR.form', proc: 'pkg_artigo_pr.lista' },
-  manual: { 'DADOS-BASICOS-DO-ARTIGO@DOI': DOI_MANUAL },
   title: { attr: 'TITULO-DO-ARTIGO', child: 'DADOS-BASICOS-DO-ARTIGO' },
   year: { attr: 'ANO-DO-ARTIGO', child: 'DADOS-BASICOS-DO-ARTIGO' },
 };
@@ -100,10 +103,12 @@ const ARTIGO_ACEITO: ProductionTarget = {
  * rótulo é "País de publicação" (o XML só tem esse país no trabalho).
  */
 const TRABALHO_EM_EVENTOS: ProductionTarget = {
+  doi: { duplicate: true, type: { label: 'trabalho', letter: 'T' } },
   element: 'TRABALHO-EM-EVENTOS',
   fields: {
     ...under('DADOS-BASICOS-DO-TRABALHO', {
       'ANO-DO-TRABALHO': 'f_ano',
+      DOI: 'f_cod_doi',
       'FLAG-DIVULGACAO-CIENTIFICA': { field: 'F_STA_DIVULGACAO_CIENTIFICA', toForm: yesNo },
       'FLAG-RELEVANCIA': { field: 'F_RELEV', toForm: yesNo },
       'HOME-PAGE-DO-TRABALHO': 'f_homepage',
@@ -142,7 +147,6 @@ const TRABALHO_EM_EVENTOS: ProductionTarget = {
   grids: [...ALL_GRIDS],
   id: 'trabalho-em-eventos',
   list: { formProc: 'pkg_trabalho.form', proc: 'pkg_trabalho.lista' },
-  manual: { 'DADOS-BASICOS-DO-TRABALHO@DOI': DOI_MANUAL },
   title: { attr: 'TITULO-DO-TRABALHO', child: 'DADOS-BASICOS-DO-TRABALHO' },
   year: { attr: 'ANO-DO-TRABALHO', child: 'DADOS-BASICOS-DO-TRABALHO' },
 };

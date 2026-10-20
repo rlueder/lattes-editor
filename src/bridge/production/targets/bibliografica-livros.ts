@@ -11,7 +11,7 @@
 
 import { byTable, country, date, language, media, yesNo } from '../mappers.ts';
 import type { ProductionTarget } from '../types.ts';
-import { ALL_GRIDS, DOI_MANUAL, under } from './bibliografica-comum.ts';
+import { ALL_GRIDS, under } from './bibliografica-comum.ts';
 
 /**
  * Livro publicado ou organizado (GN_LIVRO, POST PKG_LVR_CAP.FORM_LVR), na
@@ -21,10 +21,12 @@ import { ALL_GRIDS, DOI_MANUAL, under } from './bibliografica-comum.ts';
  * num oculto (f_cod_sub_prod), e as opções dele não foram lidas.
  */
 const LIVRO: ProductionTarget = {
+  doi: { duplicate: true },
   element: 'LIVRO-PUBLICADO-OU-ORGANIZADO',
   fields: {
     ...under('DADOS-BASICOS-DO-LIVRO', {
       ANO: 'f_ano',
+      DOI: 'f_cod_doi',
       'FLAG-DIVULGACAO-CIENTIFICA': { field: 'F_STA_DIVULGACAO_CIENTIFICA', toForm: yesNo },
       'FLAG-RELEVANCIA': { field: 'F_RELEV', toForm: yesNo },
       'HOME-PAGE-DO-TRABALHO': 'f_homepage',
@@ -54,7 +56,6 @@ const LIVRO: ProductionTarget = {
   id: 'livro',
   list: { formProc: 'PKG_LVR_CAP.FORM_LVR', proc: 'pkg_lvr_cap.lista' },
   manual: {
-    'DADOS-BASICOS-DO-LIVRO@DOI': DOI_MANUAL,
     'DADOS-BASICOS-DO-LIVRO@NATUREZA':
       'a natureza do livro no Lattes sai de uma escolha cujas opções o censo não leu',
   },
@@ -115,10 +116,13 @@ const TEXTO: ProductionTarget = {
  * (F_COD_PROD) e não se escolhe.
  */
 const CAPITULO: ProductionTarget = {
+  // O capítulo confere só o formato do DOI, num campo de texto.
+  doi: { duplicate: false },
   element: 'CAPITULO-DE-LIVRO-PUBLICADO',
   fields: {
     ...under('DADOS-BASICOS-DO-CAPITULO', {
       ANO: 'f_ano',
+      DOI: 'f_cod_doi',
       'FLAG-DIVULGACAO-CIENTIFICA': { field: 'F_STA_DIVULGACAO_CIENTIFICA', toForm: yesNo },
       'FLAG-RELEVANCIA': { field: 'F_RELEV', toForm: yesNo },
       'HOME-PAGE-DO-TRABALHO': 'f_homepage',
@@ -148,7 +152,6 @@ const CAPITULO: ProductionTarget = {
   id: 'capitulo',
   list: { formProc: 'PKG_LVR_CAP.FORM_CAP', proc: 'pkg_lvr_cap.lista' },
   manual: {
-    'DADOS-BASICOS-DO-CAPITULO@DOI': DOI_MANUAL,
     'DADOS-BASICOS-DO-CAPITULO@TIPO': 'o tipo do capítulo vem fixo num oculto do formulário',
   },
   // f_titulo é o título do livro; o do capítulo é f_titulo_cap.

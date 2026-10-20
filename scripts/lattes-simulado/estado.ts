@@ -115,6 +115,8 @@ export class LattesState {
   imported: { inserted: boolean; seq: string; title: string }[] = [];
   /** Coautores com produção validada: o dicionário não deixa trocar a citação deles. */
   validatedCoauthors = new Set<string>();
+  /** O tipo que pkg_artigo.tipodoi responde para um DOI (vazio quando não está aqui). */
+  doiTypes = new Map<string, string>();
   importOutcome: ImportOutcome;
   importRequest?: ImportRequest;
   /** As instituições a mais que a busca encontra. */

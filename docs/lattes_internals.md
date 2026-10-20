@@ -1368,6 +1368,21 @@ endereco: "10/03/2005"`), e vão em `f_dados_grid_datas` pelo `array2xml`.
 - A própria pessoa não está no dicionário: a linha dela no `autorDP` do menu
   tem o `c` vazio.
 
+### O DOI das produções bibliográficas (lido e gravado em 20/10/2026)
+
+O DOI vai no oculto `f_cod_doi` (no capítulo, um campo de texto); o botão
+"Verificar DOI" só recupera os dados da produção. Antes de enviar, o
+`check()` de cada página confere o formato (começa por `10.` e tem `/`), se o
+DOI já está em outra produção (`pkg_artigo.verifica_doi_duplicado`, POST
+`f_doi`, `f_cod`, `f_seq`, resposta `doiDup = 0` ou `1`; artigos, trabalho em
+eventos e livro) e o tipo (`pkg_artigo.tipodoi`, POST `fcod` e `ffun`, que
+responde `ARTIGO`, `LIVRO`, `CAPITULO`… ou `INEXISTENTE`; sem o `ffun`,
+mesmo vazio, um 404). O artigo pede um tipo que comece por A, o trabalho em
+eventos por T; o livro tem a conferência comentada e o capítulo não a tem.
+O tipo vem da base do Lattes: `10.1038/nature14539`, um artigo da Nature,
+volta `LIVRO`. **Observado:** num artigo de teste, o conector gravou
+`10.1590/S0034-89102009000500001` e a releitura o trouxe.
+
 ### Atividade de uma atuação: a edição (lida e gravada em 19/10/2026)
 
 A tela de cargos e vínculos traz cada atividade como um link
