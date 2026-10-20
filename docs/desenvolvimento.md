@@ -244,12 +244,15 @@ edição percorre abrir, criar, revisar e enviar. Sem JavaScript, fica a
 primeira tela de cada prévia e o primeiro passo do exemplo.
 
 As imagens saem de `pnpm capture:screenshots`, sempre com o currículo
-fictício `fixtures/demo.xml`: `site/img/editor-claro.jpg` (a mesma do README)
-e, em `site/img/homepage/`, a busca, o novo item e as quatro capturas do
-Panorama, só no tema claro. Todas têm 2880 × 1720 pixels (1440 × 860 em 2x).
-Preserve as dimensões nos atributos `width` e `height` e na tabela `images`
-do `homepage.js`, que as aplica ao trocar a imagem. O CSS mostra a captura
-inteira, sem recorte.
+fictício `fixtures/demo.xml`, só no tema claro, em `site/img/homepage/`. As
+quatro do Panorama vêm da janela de 1440 × 860 e têm 2880 × 1720 pixels (2x);
+as três da abertura (`hero-*.jpg`) e a da busca vêm de uma janela de
+1024 × 640 e têm 2048 × 1280, porque a página as mostra em meia coluna e,
+numa janela larga, o texto do app ficaria pequeno demais. Preserve as
+dimensões nos atributos `width` e `height` e na tabela `images` do
+`homepage.js`, que as aplica ao trocar a imagem. O CSS mostra a captura
+inteira, sem recorte. A prévia do vídeo e a imagem do schema.org continuam
+sendo `site/img/editor-claro.jpg`, a mesma do README.
 
 Para trocar a sequência de telas da abertura por uma gravação, coloque o
 vídeo em `site/img/homepage/` e defina o atributo `src` do elemento `video`

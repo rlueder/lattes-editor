@@ -4,11 +4,14 @@
 (() => {
   const root = document.getElementById('pagina');
 
-  // Dimensões reais dos arquivos em img/, para o navegador reservar o espaço
-  // antes de carregar (ver docs/desenvolvimento.md, "Página do projeto").
+  // Dimensões reais dos arquivos em img/homepage/, para o navegador reservar
+  // o espaço antes de carregar (ver docs/desenvolvimento.md, "Página do
+  // projeto"). As da abertura vêm de uma janela mais estreita, porque a
+  // página as mostra pequenas.
   const images = {
-    editor: ['img/editor-claro.jpg', 2880, 1720],
-    new: ['img/homepage/new.jpg', 2880, 1720],
+    'hero-editor': ['img/homepage/hero-editor.jpg', 2048, 1280],
+    'hero-new': ['img/homepage/hero-new.jpg', 2048, 1280],
+    'hero-panorama': ['img/homepage/hero-panorama.jpg', 2048, 1280],
     panorama: ['img/homepage/panorama.jpg', 2880, 1720],
     'panorama-item': ['img/homepage/panorama-item.jpg', 2880, 1720],
     'panorama-people': ['img/homepage/panorama-people.jpg', 2880, 1720],
@@ -32,14 +35,17 @@
   // ── Abertura: três telas do app ──
   const scenes = {
     editor: {
+      image: 'hero-editor',
       alt: 'O editor aberto em Produções: seções à esquerda, itens por tipo e ano no centro, filtros e índice à direita.',
       caption: 'Produções, agrupadas por tipo e ano',
     },
     panorama: {
+      image: 'hero-panorama',
       alt: 'Panorama: produções por ano em barras, com os anos vazios marcados e as faixas de formação e vínculo embaixo.',
       caption: 'Panorama: produções por ano',
     },
     new: {
+      image: 'hero-new',
       alt: 'O diálogo Novo item de produção, com a busca de tipos e os tipos mais usados.',
       caption: 'Novo item, com busca de tipos',
     },
@@ -50,7 +56,7 @@
   const shotButtons = [...shot.querySelectorAll('[data-scene]')];
 
   function drawScene(name) {
-    setImage(shotImage, name, scenes[name].alt);
+    setImage(shotImage, scenes[name].image, scenes[name].alt);
     shotCaption.textContent = scenes[name].caption;
     pressOnly(shotButtons, (button) => button.dataset.scene === name);
   }

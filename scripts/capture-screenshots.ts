@@ -4,11 +4,13 @@
 //
 // Usa um Brave ou Chrome sem janela, com perfil temporário, falando pelo
 // protocolo de depuração (sem Playwright nem outra dependência). Cada tela
-// sai nos temas claro e escuro, em docs/img/<nome>-<tema>.jpg. A de Produções
-// também vai para a página do projeto, em site/img/editor-<tema>.jpg; as da
-// busca, do novo item e do Panorama saem só no tema claro, em
-// site/img/homepage/. Por fim,
-// a imagem de prévia da página (site/img/og.png, 1200 × 630) sai de
+// sai nos temas claro e escuro, em docs/img/<nome>-<tema>.jpg, numa janela de
+// 1440 × 860 em 2x. A de Produções também vai para a página do projeto, em
+// site/img/editor-<tema>.jpg. As demais capturas da página saem só no tema
+// claro, em site/img/homepage/: as do Panorama na mesma janela e as da
+// abertura e da busca numa janela de 1024 × 640, porque a página as mostra
+// pequenas e numa janela larga o texto do app some. Por fim, a imagem de
+// prévia da página (site/img/og.png, 1200 × 630) sai de
 // scripts/og-card.html, servido pelo mesmo Vite.
 //
 //   pnpm dev                       # o editor em http://localhost:5173 (ou outra porta)
@@ -43,37 +45,37 @@ interface Shot {
    * ligado.
    */
   privacy?: boolean;
-  /** Só a página do projeto, só no tema claro (caminho a partir da raiz, sem ".jpg"). */
+  /** Só a página do projeto (caminho a partir da raiz, sem ".jpg"). */
   site?: string;
-  /** Cópia para a página do projeto, só no tema claro, sem o sufixo do tema. */
-  siteCopy?: string;
   /** Antes de abrir o currículo (a tela inicial). */
   welcome?: boolean;
 }
 
-const SHOTS: Shot[] = [
+const OPEN_SEARCH = `location.hash = 'producoes';
+  (await wait('.search-btn')).click();
+  const input = await wait('.palette-input');
+  const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+  set.call(input, 'artigo');
+  input.dispatchEvent(new Event('input', { bubbles: true }))`;
+const OPEN_NEW_ITEM = `location.hash = 'producoes';
+  (await wait('[aria-label="Novo item"]')).click()`;
+
+/** As telas do README, nos dois temas. */
+const DOC_SHOTS: Shot[] = [
   { name: 'inicio', welcome: true },
   { alsoTo: 'site/img/editor', name: 'producoes', prepare: `location.hash = 'producoes'` },
   { name: 'dados-gerais', prepare: `location.hash = 'dados-gerais'`, privacy: true },
-  {
-    name: 'ir-para',
-    prepare: `location.hash = 'producoes';
-      (await wait('.search-btn')).click();
-      const input = await wait('.palette-input');
-      const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
-      set.call(input, 'artigo');
-      input.dispatchEvent(new Event('input', { bubbles: true }))`,
-    siteCopy: 'site/img/homepage/search',
-  },
-  {
-    name: 'novo-item',
-    prepare: `location.hash = 'producoes';
-      (await wait('[aria-label="Novo item"]')).click()`,
-    siteCopy: 'site/img/homepage/new',
-  },
-  // O Panorama na página do projeto: três vistas e a passagem do gráfico ao
-  // item. A barra de 2023 tem um artigo só, e o filtro de Produções o
-  // reproduz, então o clique abre a seção direto, sem passar pela seleção.
+  { name: 'ir-para', prepare: OPEN_SEARCH },
+  { name: 'novo-item', prepare: OPEN_NEW_ITEM },
+];
+
+/**
+ * O Panorama na página do projeto, na janela larga: três vistas e a passagem
+ * do gráfico ao item. A barra de 2023 tem um artigo só, e o filtro de
+ * Produções o reproduz, então o clique abre a seção direto, sem passar pela
+ * seleção.
+ */
+const PANORAMA_SHOTS: Shot[] = [
   {
     name: 'panorama',
     prepare: `location.hash = 'panorama/producoes-por-ano'`,
@@ -101,6 +103,22 @@ const SHOTS: Shot[] = [
   },
 ];
 
+/** A abertura e a busca da página do projeto, na janela estreita. */
+const NARROW_SHOTS: Shot[] = [
+  {
+    name: 'hero-editor',
+    prepare: `location.hash = 'producoes'`,
+    site: 'site/img/homepage/hero-editor',
+  },
+  {
+    name: 'hero-panorama',
+    prepare: `location.hash = 'panorama/producoes-por-ano'`,
+    site: 'site/img/homepage/hero-panorama',
+  },
+  { name: 'hero-new', prepare: OPEN_NEW_ITEM, site: 'site/img/homepage/hero-new' },
+  { name: 'search', prepare: OPEN_SEARCH, site: 'site/img/homepage/search' },
+];
+
 // Disponível nos `prepare`: `wait` espera um elemento (até 5 s), opcionalmente
 // pelo texto exato, e falha quando ele não aparece; `settle` dá meio segundo
 // para o gráfico terminar de montar (o Panorama mede a largura e redesenha).
@@ -116,13 +134,23 @@ const WAIT = `const wait = async (selector, text) => {
 };
 const settle = () => new Promise((resolve) => setTimeout(resolve, 500));`;
 
-async function capture(theme: 'claro' | 'escuro'): Promise<void> {
+interface Viewport {
+  height: number;
+  width: number;
+}
+const WIDE: Viewport = { height: 860, width: 1440 };
+const NARROW: Viewport = { height: 640, width: 1024 };
+
+async function capture(
+  theme: 'claro' | 'escuro',
+  shots: Shot[],
+  viewport: Viewport,
+): Promise<void> {
   const cdp = await openTab();
   await cdp.send('Emulation.setDeviceMetricsOverride', {
     deviceScaleFactor: 2,
-    height: 860,
     mobile: false,
-    width: 1440,
+    ...viewport,
   });
   await cdp.send('Emulation.setEmulatedMedia', {
     features: [{ name: 'prefers-color-scheme', value: theme === 'claro' ? 'light' : 'dark' }],
@@ -137,7 +165,6 @@ async function capture(theme: 'claro' | 'escuro'): Promise<void> {
       ? [join(root, `${shot.site}.jpg`)]
       : [join(outDir, `${shot.name}-${theme}.jpg`)];
     if (shot.alsoTo) files.push(join(root, `${shot.alsoTo}-${theme}.jpg`));
-    if (shot.siteCopy && theme === 'claro') files.push(join(root, `${shot.siteCopy}.jpg`));
     for (const file of files) {
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, Buffer.from(data, 'base64'));
@@ -160,7 +187,7 @@ async function capture(theme: 'claro' | 'escuro'): Promise<void> {
   });
   await cdp.send('Page.navigate', { url });
   await sleep(1500);
-  for (const shot of SHOTS.filter((s) => s.welcome)) await shoot(shot);
+  for (const shot of shots.filter((s) => s.welcome)) await shoot(shot);
 
   const { root: doc } = await cdp.send<{ root: { nodeId: number } }>('DOM.getDocument');
   const { nodeId } = await cdp.send<{ nodeId: number }>('DOM.querySelector', {
@@ -173,7 +200,7 @@ async function capture(theme: 'claro' | 'escuro'): Promise<void> {
   // O modo de privacidade vem ligado; cada tela pede o seu. A troca recarrega
   // a página (o currículo fica no IndexedDB e volta aberto).
   let privacy: boolean | undefined;
-  for (const shot of SHOTS.filter((s) => !s.welcome && !(s.site && theme === 'escuro'))) {
+  for (const shot of shots.filter((s) => !s.welcome)) {
     const want = shot.privacy ?? false;
     if (want !== privacy) {
       await evaluate(
@@ -214,7 +241,8 @@ async function captureOgImage(): Promise<void> {
 
 mkdirSync(outDir, { recursive: true });
 await withHeadlessBrowser(async () => {
-  await capture('claro');
-  await capture('escuro');
+  await capture('claro', [...DOC_SHOTS, ...PANORAMA_SHOTS], WIDE);
+  await capture('escuro', DOC_SHOTS, WIDE);
+  await capture('claro', NARROW_SHOTS, NARROW);
   await captureOgImage();
 });
