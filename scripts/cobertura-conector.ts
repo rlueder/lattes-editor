@@ -284,6 +284,7 @@ const reasonKind = (r: string) => r.replace(/:.*$/, '').trim();
  */
 function withListValues(raw: string): { rewritten: number; xml: string } {
   const doc = parseXml(raw);
+  const was = new Map(flatten(doc.root).flatMap((el) => el.attrs.map((a) => [a, a.value])));
   // O tipo do registro, que o synthetic_full sorteia entre todos os do XSD: o
   // de cada tipo de item, como uma exportação traria.
   for (const item of flatten(doc.root)) {
@@ -317,7 +318,8 @@ function withListValues(raw: string): { rewritten: number; xml: string } {
       }
     }
   }
-  return { rewritten: changed.size, xml: serializeXml(doc) };
+  const rewritten = [...was].filter(([a, v]) => a.value !== v).length;
+  return { rewritten, xml: serializeXml(doc) };
 }
 
 const SYNTHETIC = 'fixtures/synthetic_full.xml';
@@ -328,7 +330,9 @@ const PARTIAL = 'Vai em parte: nas outras trocas o formulário do Lattes não te
 /** Os campos do editor, cada um uma vez: vai, o Lattes não tem, falta no conector. */
 function fieldReport(file: string): void {
   const trials: Trial[] = [];
-  cover(withListValues(readFileSync(file, 'latin1')), trials);
+  const raw = readFileSync(file, 'latin1');
+  const { rewritten, xml } = file === SYNTHETIC ? withListValues(raw) : { rewritten: 0, xml: raw };
+  cover(xml, trials);
   const fields = new Map<string, Trial[]>();
   for (const t of trials) {
     const key = `${t.path} @${t.attr}`;
@@ -343,13 +347,13 @@ function fieldReport(file: string): void {
     const absent = (t: Trial) => t.reasons.length > 0 && t.reasons.every(fieldAbsent);
     if (failed.length === ts.length && failed.every(absent)) return { kind: 'sem-campo' };
     const reasons = failed.flatMap((t) => t.reasons);
-    return {
-      kind: 'falta',
-      reason: reasons.find((r) => !fieldAbsent(r)) ?? reasons[0] ?? 'sem motivo',
-    };
+    const own = reasons.find((r) => !fieldAbsent(r));
+    if (own) return { kind: 'falta', reason: own };
+    // Toda troca que falhou tem motivo e é de campo ausente: as outras foram.
+    return { kind: 'falta', reason: failed.every(absent) ? PARTIAL : 'sem motivo' };
   };
   const sections = new Map<string, Record<Kind, number>>();
-  const missing = new Map<string, Set<string>>();
+  const missing = new Map<string, { els: Set<string>; n: number }>();
   const byItem = new Map<string, number>();
   const count = { falta: 0, 'sem-campo': 0, vai: 0 };
   for (const [key, ts] of fields) {
@@ -423,7 +427,7 @@ function fieldReport(file: string): void {
 }
 
 if (byCv) cvReport();
-else fieldReport(named ?? 'fixtures/synthetic_full.xml');
+else fieldReport(named ?? SYNTHETIC);
 
 /** A contagem antiga, por troca de atributo em cada currículo. */
 function cvReport(): void {
