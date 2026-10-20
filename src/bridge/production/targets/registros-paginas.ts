@@ -85,11 +85,17 @@ export const PATENT_DATES = {
  * em 19/10/2026); sem isso o Lattes não grava nada. Nos outros tipos, o ano
  * vai como está.
  */
-export function yearFromDate(html: string, set: Record<string, string>): Record<string, string> {
+export function yearFromDate(
+  html: string,
+  set: Record<string, string>,
+): Record<string, string> | undefined {
   if (!/^\s*dc\.f_ano\.value\s*=\s*anoDep;/m.test(html)) return {};
-  const shown = /name="f_dta_dep"[^>]*value="([^"]*)"/i.exec(html)?.[1] ?? '';
-  const date = set.f_dta_dep ?? shown;
-  return date ? { f_ano: date.slice(6, 10) } : {};
+  // O campo em qualquer ordem de atributos; sem a data o ano não sai, e o
+  // Lattes não gravaria nada: nada vai (undefined).
+  const tag = /<input\b[^>]*\bname\s*=\s*["']?f_dta_dep\b[^>]*>/i.exec(html)?.[0] ?? '';
+  const shown = /\bvalue\s*=\s*["']([^"']*)["']/i.exec(tag)?.[1] ?? '';
+  const year = (set.f_dta_dep ?? shown).slice(6, 10);
+  return /^\d{4}$/.test(year) ? { f_ano: year } : undefined;
 }
 
 /** As datas da patente como a página as manda, quando a alteração não mexe nelas. */
@@ -118,5 +124,6 @@ export function softwareBuilt(
       cn++;
     }
   }
-  return { f_ambiente: s.slice(0, -1), ...yearFromDate(html, set) };
+  const year = yearFromDate(html, set);
+  return year && { f_ambiente: s.slice(0, -1), ...year };
 }

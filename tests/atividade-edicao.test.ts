@@ -96,6 +96,12 @@ describe('atividade: o plano', () => {
     expect(unsupported[0]?.reason).toMatch(/ainda não foi lido/);
   });
 
+  it('a descrição apagada fica à mão: o Lattes exige uma', () => {
+    const { ops, unsupported } = plan((root) => setAttr(estagio(root), 'ESTAGIO-REALIZADO', ''));
+    expect(ops).toEqual([]);
+    expect(unsupported[0]?.reason).toMatch(/exige a descrição/);
+  });
+
   it('a grade de descrições como o check() a monta', () => {
     expect(
       specFromRows([
@@ -122,6 +128,14 @@ describe('atividade: o envio', () => {
   it('o Lattes com outra descrição: nada vai', async () => {
     const sim = await lattes();
     setAttr(estagio(sim.state.root), 'ESTAGIO-REALIZADO', 'Mudou no Lattes');
+    const { ops } = plan((root) => setAttr(estagio(root), 'ESTAGIO-REALIZADO', 'Outra'));
+    expect(await applyOp(ops[0]!, sim.port)).toMatchObject({ status: 'divergente' });
+    expect(postsOf(sim)).toEqual([]);
+  });
+
+  it('o Lattes sem descrição, e o editor com uma: nada vai', async () => {
+    const sim = await lattes();
+    setAttr(estagio(sim.state.root), 'ESTAGIO-REALIZADO', '');
     const { ops } = plan((root) => setAttr(estagio(root), 'ESTAGIO-REALIZADO', 'Outra'));
     expect(await applyOp(ops[0]!, sim.port)).toMatchObject({ status: 'divergente' });
     expect(postsOf(sim)).toEqual([]);

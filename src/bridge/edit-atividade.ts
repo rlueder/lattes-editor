@@ -115,8 +115,11 @@ export function planAtividade(
       set[field] = after;
       expect[field] = before;
     } else if (ORGAN.has(f.attr)) return { reason: `${f.label}: ${ORGAN_REASON}` };
-    else if (type.description === f.attr) description = { after: f.after, before: f.before };
-    else lacks.push(f.label);
+    else if (type.description === f.attr) {
+      // O check() da página exige ao menos uma descrição.
+      if (!f.after.trim()) return { reason: `O Lattes exige a descrição da atividade: ${f.label}` };
+      description = { after: f.after, before: f.before };
+    } else lacks.push(f.label);
   }
   if (lacks.length > 0) {
     return { reason: `O formulário de atividade do Lattes não tem: ${lacks.join(', ')}` };
@@ -223,7 +226,8 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
           'A atividade tem mais de uma descrição no Lattes, e como a exportação as junta não foi visto; troque no Lattes',
         );
       }
-      if (rows[0] && !same(rows[0].l, op.description.before)) wrong.push(['descrição', '']);
+      // A grade vazia com uma descrição no editor também é divergência.
+      if (!same(rows[0]?.l ?? '', op.description.before)) wrong.push(['descrição', '']);
       wanted = [{ c: rows[0]?.c ?? '0', l: op.description.after }];
     }
     if (wrong.length > 0) {

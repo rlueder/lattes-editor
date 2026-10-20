@@ -9,6 +9,7 @@ import { seedHolder, storedHolders } from '../scripts/lattes-simulado/registro-g
 import { applyOp } from '../src/bridge/apply.ts';
 import { planChanges } from '../src/bridge/plan.ts';
 import type { ProductionOp } from '../src/bridge/production/plan.ts';
+import { yearFromDate } from '../src/bridge/production/targets/registros-paginas.ts';
 import { diffDocuments } from '../src/model/changes.ts';
 import { encodeLatin1 } from '../src/model/latin1.ts';
 import { getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
@@ -119,5 +120,26 @@ describe('registros', () => {
     for (const op of ops)
       expect(await applyOp(op, sim.port)).toMatchObject({ status: 'conferido' });
     expect(postsOf(sim).at(-1)!.fields).toMatchObject({ f_natureza: 'Nominativa', f_tipo: 'MSV' });
+  });
+});
+
+describe('o ano que a página tira da data de depósito', () => {
+  const page = (input: string) => `<script>\n  dc.f_ano.value = anoDep;\n</script>${input}`;
+
+  it('acha a data em qualquer ordem de atributos', () => {
+    expect(
+      yearFromDate(page('<input value="11/03/2006" type="text" name="f_dta_dep">'), {}),
+    ).toEqual({
+      f_ano: '2006',
+    });
+    expect(yearFromDate(page('<input name="f_dta_dep" value="11/03/2006">'), {})).toEqual({
+      f_ano: '2006',
+    });
+    expect(yearFromDate(page(''), { f_dta_dep: '01/02/2010' })).toEqual({ f_ano: '2010' });
+  });
+
+  it('sem a data, nada vai; e a página sem anoDep não pede o ano', () => {
+    expect(yearFromDate(page('<input name="f_dta_dep" value="">'), {})).toBeUndefined();
+    expect(yearFromDate('<input name="f_dta_dep" value="">', {})).toEqual({});
   });
 });
