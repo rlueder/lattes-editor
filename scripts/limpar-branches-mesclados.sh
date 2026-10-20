@@ -12,7 +12,9 @@
 #   - main, nem na branch em que o checkout principal está;
 #   - branch com PR aberto;
 #   - branch sem PR (pode ser trabalho que ainda não foi enviado);
-#   - worktree com mudança não commitada;
+#   - branch cuja ponta não é a do PR (commit local depois do merge, ou o
+#     nome reaproveitado para outro trabalho);
+#   - worktree com mudança não commitada, ou cujo estado não se lê;
 #   - as branches de PROTEGIDAS (test/criar-item é o worktree
 #     lattes-editor-criar-teste, que fica).
 #
@@ -33,13 +35,21 @@ case "${1:-}" in
     ;;
 esac
 
-cd "$(git rev-parse --path-format=absolute --git-common-dir)/.."
+# O checkout principal é o primeiro de `git worktree list`.
+main_wt=$(git worktree list --porcelain | awk '/^worktree / { print substr($0, 10); exit }')
+cd "$main_wt"
 current=$(git branch --show-current)
 
-# Uma chamada só ao gh, escopada ao repositório; a busca por branch é local.
+# Uma chamada só ao gh, escopada ao repositório e sem os PRs vindos de fork,
+# que podem ter o nome de uma branch daqui; a busca por branch é local.
+LIMIT=500
 repo=$(gh repo view --json nameWithOwner -q .nameWithOwner)
-prs=$(gh pr list --repo "$repo" --state all --limit 500 --json headRefName,state,number \
-  --jq '.[] | "\(.headRefName)\t\(.state)\t\(.number)"')
+prs=$(gh pr list --repo "$repo" --state all --limit "$LIMIT" \
+  --json headRefName,state,number,headRefOid,isCrossRepository \
+  --jq '.[] | select(.isCrossRepository | not) | "\(.headRefName)\t\(.state)\t\(.number)\t\(.headRefOid)"')
+if [[ $(gh pr list --repo "$repo" --state all --limit "$LIMIT" --json number --jq length) -ge $LIMIT ]]; then
+  echo "aviso: o gh devolveu $LIMIT PRs, o limite; os mais antigos aparecem como sem PR" >&2
+fi
 
 # branch -> caminho do worktree, de `git worktree list --porcelain`.
 worktrees=$(git worktree list --porcelain | awk '
@@ -53,8 +63,11 @@ failed=0
 while IFS= read -r br; do
   if [[ "$br" == "main" || "$br" == "$current" ]]; then continue; fi
   for p in "${PROTEGIDAS[@]}"; do [[ "$br" == "$p" ]] && continue 2; done
-  line=$(printf '%s\n' "$prs" | awk -F'\t' -v b="$br" '$1 == b { print $2 " #" $3; exit }')
+  # O PR mais recente com o nome da branch (o gh lista do mais novo).
+  line=$(printf '%s\n' "$prs" | awk -F'\t' -v b="$br" '$1 == b { print $2 " #" $3 " " $4; exit }')
   state=${line%% *}
+  oid=${line##* }
+  line=${line% *}
   wt=$(printf '%s\n' "$worktrees" | awk -F'\t' -v b="$br" '$1 == b { print $2; exit }')
   case "$state" in
     MERGED | CLOSED) ;;
@@ -69,10 +82,23 @@ while IFS= read -r br; do
       continue
       ;;
   esac
-  if [[ -n "$wt" && -n "$(git -C "$wt" status --porcelain 2>/dev/null)" ]]; then
-    echo "mantém    $br (PR ${line#* } $state, mas $wt tem mudanças)"
+  # A ponta local tem de ser a do PR: senão há commit que o PR não leva.
+  if [[ "$(git rev-parse "refs/heads/$br")" != "$oid" ]]; then
+    echo "mantém    $br (PR ${line#* } $state, mas a ponta local não é a do PR)"
     kept=$((kept + 1))
     continue
+  fi
+  if [[ -n "$wt" ]]; then
+    if ! status=$(git -C "$wt" status --porcelain 2>/dev/null); then
+      echo "mantém    $br (PR ${line#* } $state, mas o estado de $wt não se lê)"
+      kept=$((kept + 1))
+      continue
+    fi
+    if [[ -n "$status" ]]; then
+      echo "mantém    $br (PR ${line#* } $state, mas $wt tem mudanças)"
+      kept=$((kept + 1))
+      continue
+    fi
   fi
   if [[ $APPLY -eq 0 ]]; then
     echo "removeria $br (PR ${line#* } $state)${wt:+ e $wt}"
