@@ -71,16 +71,18 @@ const ordered = (...entries: [string, boolean | string][]): Row => Object.fromEn
 const labelRow = (l: string, c: string) => ordered(['l', l], ['c', c], ['editable', false]);
 
 /** A grade de autores, ou de participantes da banca (o elemento que part diz). */
-function authorRows(item: XElement, part: AuthorPart): Row[] {
-  return childElements(item, part.element).map((a) =>
-    ordered(
-      ['l', getAttr(a, part.name) ?? ''],
-      ['c', getAttr(a, part.cnpq) ?? ''],
-      ['t', getAttr(a, part.citation) ?? ''],
-      ['editable', false],
-      ['deletable', true],
-    ),
-  );
+function authorRows(item: XElement, part: AuthorPart, skip?: (author: XElement) => boolean): Row[] {
+  return childElements(item, part.element)
+    .filter((a) => !skip?.(a))
+    .map((a) =>
+      ordered(
+        ['l', getAttr(a, part.name) ?? ''],
+        ['c', getAttr(a, part.cnpq) ?? ''],
+        ['t', getAttr(a, part.citation) ?? ''],
+        ['editable', false],
+        ['deletable', true],
+      ),
+    );
 }
 
 const KEYWORD_ATTRS = Array.from({ length: 6 }, (_, i) => `PALAVRA-CHAVE-${i + 1}`);
@@ -95,11 +97,19 @@ function keywordRows(item: XElement): Row[] {
 const provider = (decl: string, rows: Row[]) =>
   `<script>\n${decl} = \n${JSON.stringify([...rows, {}])};\n</script>`;
 
-/** Os quatro vetores da página de edição de um item. */
-export function gridScripts(item: XElement | undefined, part: AuthorPart = AUTHOR_PART): string {
+/**
+ * Os quatro vetores da página de edição de um item. `skip`: os autores do XML
+ * que a página não mostra (os depositantes que a exportação copia nos
+ * autores, registro-grades.ts).
+ */
+export function gridScripts(
+  item: XElement | undefined,
+  part: AuthorPart = AUTHOR_PART,
+  skip?: (author: XElement) => boolean,
+): string {
   const g = item ? gridsOf(item) : { areas: [], setores: [] };
   return [
-    provider('var autorProvider', item ? authorRows(item, part) : []),
+    provider('var autorProvider', item ? authorRows(item, part, skip) : []),
     provider('palavraProvider', item ? keywordRows(item) : []),
     provider('areaProvider', g.areas),
     provider('var setorProvider', g.setores),

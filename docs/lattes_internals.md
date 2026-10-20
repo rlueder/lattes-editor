@@ -1360,6 +1360,64 @@ endereco: "10/03/2005"`), e vão em `f_dados_grid_datas` pelo `array2xml`.
   uma entrada sem uso; a de palavras-chave (`PKG_DIC_PLV_NV.form`) tem
   `del()`.
 
+### Patente: exportação, depositante e histórico (lidos em 20/10/2026)
+
+Uma patente de teste (`f_seq` 40) foi exportada e a página de edição dela
+(`pkg_patente_registro.form?f_cod_tipo=PP&f_seq=40`) foi lida. **Observado:**
+
+- O `REGISTRO-OU-PATENTE` da exportação traz `NOME-DO-DEPOSITANTE` com o
+  nome da pessoa depositante e `NOME-DO-TITULAR` vazio. Na página, essa
+  pessoa é a única linha de `titularPessoaProvider` (`l` o nome, `c` 14, a
+  entrada dela no dicionário de coautores, `t` a citação, `editable` false,
+  `deletable` true, `staValidado` N), e `titularInstProvider` vem vazio
+  (`[{}]`).
+- A exportação copia a pessoa depositante também nos `AUTORES`, com
+  `NRO-ID-CNPQ` vazio e `ORDEM-DE-AUTORIA` 1, antes da própria pessoa, que
+  vem também com ordem 1: a ordem dos depositantes é contada à parte. O
+  `autorProvider` da página tem só a própria pessoa.
+- Cada `HISTORICO-SITUACOES-PATENTE` é uma linha da grade de situações
+  (`providerContatos`): `DESCRICAO-SITUACAO-PATENTE` é o rótulo da linha
+  ("Depósito", no `contato`) e `DATA-SITUACAO-PATENTE` a data em DDMMAAAA
+  (12032007 para `endereco` "12/03/2007"). `STATUS-SITUACAO-PATENTE` veio
+  `SIM`; o sentido dele não foi visto. A mesma data está também em
+  `DATA-PEDIDO-DE-DEPOSITO`.
+- O programa de computador de teste foi exportado como `SOFTWARE` simples,
+  sem `REGISTRO-OU-PATENTE`, então só a patente mostrou como a exportação
+  guarda os depositantes.
+
+O que o conector faz com isso (`src/bridge/production/holders.ts` e
+`targets/registros.ts`):
+
+- Troca o depositante quando o item tem no máximo uma pessoa depositante e o
+  valor novo é um nome só. A linha nova sai do vetor `titularPessoaDP` do
+  menu, com a mesma forma da linha gravada. **Inferido:** que
+  `titularPessoaDP` tenha a forma do `autorDP` (`l`, `c`, `t`) e as entradas
+  do dicionário de coautores; a forma dele não foi lida (seção 22). Como a
+  exportação junta mais de um depositante não foi visto, e isso fica à mão.
+  Nos outros registros com a grade de depositantes (programa de computador,
+  cultivares, desenho industrial) a ligação com `NOME-DO-DEPOSITANTE` é
+  inferida pela patente.
+- O titular instituição (`NOME-DO-TITULAR`, `titularInstProvider`) fica à
+  mão: sai da busca de instituições do Lattes (`pkg_titular_inst.sele_inst`).
+- A mudança de autores deixa de fora as linhas de `AUTORES` com o nome de um
+  depositante, antes e depois, para conferir com o `autorProvider`, que não
+  as tem, e para nunca mandar o depositante como autor. A cópia só se
+  reconhece pelo nome. Com mais linhas daquele nome do que depositantes (quem
+  inventa e também deposita), o conector não adivinha qual é a cópia, e a
+  mudança de autores fica à mão; mexer numa linha com o nome do depositante
+  também. O depositante novo de uma troca ainda não exportada não tem cópia.
+- A data de uma linha do histórico cuja descrição é uma das datas conhecidas
+  (Depósito, Depósito PCT, Concessão, Pedido do Exame, comparadas sem acento
+  nem caixa) vai pela grade de situações, como as datas do
+  `REGISTRO-OU-PATENTE`. As duas datas são um campo só no Lattes, e o editor
+  as mantém juntas (`src/model/linked-attrs.ts`): trocar a data do registro
+  troca a da situação com a mesma descrição, e o contrário. A linha do
+  histórico que não existe não se cria; sem ela, só o registro muda, e vai.
+  As duas mudanças vão ao mesmo campo (a segunda acha o Lattes já com a data
+  e não envia nada). Datas que ainda assim discordam (no XML carregado, por
+  exemplo) ficam à mão. Incluir ou tirar uma situação, trocar a descrição ou
+  o status, e as outras situações também.
+
 ### Dicionário de coautores: a edição (lida em 19/10/2026)
 
 - A lista (`pkg_dic_autor.lista?f_cod=…`, linkada no menu) traz uma linha
@@ -2176,7 +2234,8 @@ de instituição por nome que envia (POST) para `PRC_INST_FORM`, com `f_ctr` e
 `pkg_titular_inst.sele_inst?f_ctr=O` foi recusado pelo próprio censo, que não abre
 endereço com `f_ctr` preenchido (`isSafeGet`). A sugestão de titular
 pessoa vem de `self.parent.titularPessoaDP`, no menu, cuja forma não foi
-lida. **Lacuna.**
+lida. **Lacuna.** O conector o lê com a forma do `autorDP`, o que é
+inferido (seção 17, "Patente: exportação, depositante e histórico").
 
 **Financiador, produção e equipe do projeto (lote 5).**
 `PKG_PROJETO.pp_lista_inst?f_pgm=INSTFINANC` é uma busca por nome que envia

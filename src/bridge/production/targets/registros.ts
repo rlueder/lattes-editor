@@ -14,12 +14,23 @@
 // datas da patente (providerContatos → f_dados_grid_datas) e o ambiente do
 // programa de computador (programaProvider → f_ambiente). O motor manda todas
 // como a página as trouxe, e troca só o que a alteração mexe.
+//
+// Exportação e edição da mesma patente de teste, lidas em 20/10/2026
+// (docs/lattes_internals.md, seção 17): o NOME-DO-DEPOSITANTE do
+// REGISTRO-OU-PATENTE é a pessoa de titularPessoaProvider; a exportação copia
+// essa pessoa também nos AUTORES, e o autorProvider da página não a tem; cada
+// HISTORICO-SITUACOES-PATENTE é uma linha de providerContatos, com a
+// descrição como rótulo e a data em DDMMAAAA. Que os outros registros com a
+// grade de depositantes guardem a pessoa no mesmo atributo é inferido: a
+// exportação do programa de computador de teste não trouxe o
+// REGISTRO-OU-PATENTE.
 
 import { foldText } from '../../../model/fold-text.ts';
 import { PATENT_DATE_CODES } from '../../create-registro-rules.ts';
 import { byTable, country, yesNo } from '../mappers.ts';
 import type { FieldMap, GridField, ProductionTarget } from '../types.ts';
 import { ALL_GRIDS, INFO, slashDate, under } from './comum-tecnica-artistica.ts';
+import { HISTORY, historyFields, registryDateFields } from './patente-historico.ts';
 import {
   dateKey,
   PATENT_DATES,
@@ -69,8 +80,16 @@ const asksFor = (basics: string) => ({
 
 const CLEARS = { 'f_sta_inovacao=N': { f_txt_potencial: '' } };
 
-const HOLDER_REASON =
-  'O titular e o depositante saem do dicionário de coautores do Lattes, numa grade que o conector manda como está; troque no Lattes';
+/** A pessoa depositante ou titular, na grade f_depositante_pessoa_l (plan.ts). */
+const HOLDER = { attr: 'NOME-DO-DEPOSITANTE', child: REG };
+
+/**
+ * O titular instituição (titularInstProvider): a página o escolhe pela busca
+ * de instituições do Lattes (pkg_titular_inst.sele_inst, um POST cuja
+ * resposta não foi lida), que o conector não faz neste formulário.
+ */
+const INSTITUTION_HOLDER_REASON =
+  'O titular instituição sai da busca de instituições do Lattes, que o conector não faz neste formulário; troque no Lattes';
 
 /** O que o registro tem em comum entre os tipos: número, instituição, título e quem é o titular. */
 const registry = (): Record<string, FieldMap | string> =>
@@ -81,12 +100,11 @@ const registry = (): Record<string, FieldMap | string> =>
   });
 
 const registryManual = (fixedType?: string, holders = true): Record<string, string> => {
-  const holder = holders
-    ? HOLDER_REASON
-    : `O formulário de ${fixedType ?? 'marca'} do Lattes não tem campo para o titular nem para o depositante`;
+  const none = `O formulário de ${fixedType ?? 'marca'} do Lattes não tem campo para o titular nem para o depositante`;
   return {
-    [`${REG}@NOME-DO-DEPOSITANTE`]: holder,
-    [`${REG}@NOME-DO-TITULAR`]: holder,
+    // Com a grade, o depositante pessoa vai por ela (HOLDER, plan.ts).
+    ...(holders ? {} : { [`${REG}@NOME-DO-DEPOSITANTE`]: none }),
+    [`${REG}@NOME-DO-TITULAR`]: holders ? INSTITUTION_HOLDER_REASON : none,
     ...(fixedType
       ? {
           [`${REG}@TIPO-PATENTE`]: `O formulário de ${fixedType} do Lattes não tem campo para o tipo: ele é sempre ${fixedType}`,
@@ -103,10 +121,6 @@ const PATENTE_BASICS = 'DADOS-BASICOS-DA-PATENTE';
 const PATENTE: ProductionTarget = {
   asks: asksFor(PATENTE_BASICS),
   built: patentBuilt,
-  byHand: {
-    'HISTORICO-SITUACOES-PATENTE':
-      'O histórico de situações da patente vai à mão: como a exportação o guarda na grade de situações ainda não foi visto',
-  },
   clears: CLEARS,
   element: 'PATENTE',
   fields: {
@@ -144,6 +158,7 @@ const PATENTE: ProductionTarget = {
   form: FORM,
   gridKeys: AUTHOR_KEYS,
   grids: [...ALL_GRIDS, ...HOLDERS],
+  holders: HOLDER,
   id: 'patente',
   list: { ...LIST, params: { f_cod_tipo: 'PP' } },
   manual: {
@@ -151,6 +166,7 @@ const PATENTE: ProductionTarget = {
       'O formulário de patente do Lattes não tem campo para o ano: ele sai da data de depósito; troque a data',
     ...registryManual(),
   },
+  partFields: { [HISTORY]: historyFields, [REG]: registryDateFields },
   title: { attr: 'TITULO', child: PATENTE_BASICS },
   virtual: PATENT_DATES,
   year: { attr: 'ANO-DESENVOLVIMENTO', child: PATENTE_BASICS },
@@ -193,6 +209,7 @@ const SOFTWARE: ProductionTarget = {
   form: FORM,
   gridKeys: AUTHOR_KEYS,
   grids: [...ALL_GRIDS, ...HOLDERS],
+  holders: HOLDER,
   id: 'registro-PC',
   list: {
     ...LIST,
@@ -240,6 +257,7 @@ const cultivar = (element: string, tipo: 'CP' | 'CR', name: string): ProductionT
   form: FORM,
   gridKeys: AUTHOR_KEYS,
   grids: [...ALL_GRIDS, ...HOLDERS],
+  holders: HOLDER,
   id: `registro-${tipo}`,
   list: { ...LIST, params: { f_cod_tipo: tipo } },
   manual: {
@@ -320,6 +338,7 @@ function design(
     gridKeys: AUTHOR_KEYS,
     // Marca e topografia não têm grade de titulares na página.
     grids: tipo === 'DI' ? [...ALL_GRIDS, ...HOLDERS] : [...ALL_GRIDS],
+    ...(tipo === 'DI' ? { holders: HOLDER } : {}),
     id: `registro-${tipo}`,
     list: { ...LIST, params: { f_cod_tipo: tipo } },
     manual: {

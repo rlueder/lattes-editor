@@ -192,7 +192,7 @@ function cover(raw: string, trials: Trial[] = []): Stats {
             typedChoices(target, a.name)?.map((c) => c.value);
           attr.value = value ?? changed(a.name, a.value, choices);
           // O que o editor muda junto ao gravar (AttributeField chama o mesmo).
-          applyLinkedAttrs(target, a.name);
+          applyLinkedAttrs(target, a.name, work);
         }
         const changes = diffDocuments(base, work);
         // O texto que o editor pede quando o valor novo o exige (o potencial de

@@ -11,17 +11,17 @@ import { menuAuthors } from '../author-grid.ts';
 import { getChecked, Stop } from '../create-shared.ts';
 import {
   encodeLatin1Form,
-  type FormControl,
   type Pairs,
   pairValue,
   setPairs,
   successfulPairs,
   withScriptValues,
 } from '../form.ts';
-import { findLinks, isLogonPage } from '../lattes-html.ts';
+import { isLogonPage } from '../lattes-html.ts';
 import type { FieldValues } from '../plan.ts';
 import { doiProblem } from './doi.ts';
 import {
+  authorNames,
   authorRows,
   GRID_LABELS,
   GRID_SPECS,
@@ -35,7 +35,9 @@ import {
   sameWords,
   serializeGrid,
 } from './grids.ts';
+import { holderReplace, sameHolder, SEVERAL_HOLDERS } from './holders.ts';
 import { areaGridRows, gridLabels, sameLabels, setorGridRows } from './item-lists.ts';
+import { locate } from './locate.ts';
 import { resolveLookups } from './lookups.ts';
 import { sameAuthors, withLeads } from './members.ts';
 import { opaquePairs, readOpaque } from './opaque.ts';
@@ -49,82 +51,10 @@ import {
   PROJECT_ORGAN_ENABLED,
 } from './plan.ts';
 import { resolveStudent } from './student.ts';
-import type { GridField, ProductionTarget } from './types.ts';
-
-/** O ano do item na página: o do campo, ou o da data de t.year.fallback quando ele vem vazio. */
-function shownYear(controls: FormControl[], field: string, fallback?: string): string {
-  const year = valueOf(controls, field).trim();
-  if (year || !fallback) return year;
-  return /^\d{2}\/\d{2}\/(\d{4})$/.exec(valueOf(controls, fallback).trim())?.[1] ?? '';
-}
+import type { GridField } from './types.ts';
 
 /** Um campo de target.virtual: linha de um vetor da página, e não um controle. */
 const isVirtual = (field: string) => field.includes(':');
-
-const valueOf = (controls: FormControl[], name: string) =>
-  controls.find((c) => c.name === name)?.value ?? '';
-
-/**
- * A natureza da linha não é de outro tipo? Lida do rádio marcado mesmo que
- * desabilitado (inferido: a edição pode travar a natureza). Sem campo ou sem
- * rádio marcado, a linha conta, e o título e o ano decidem.
- */
-function sameNature(controls: FormControl[], t: ProductionTarget): boolean {
-  if (!t.nature) return true;
-  const { field, values } = t.nature;
-  const value = controls.find((c) => c.name === field && (c.type !== 'radio' || c.checked))?.value;
-  return value === undefined || values.includes(value.trim());
-}
-
-/** O formulário do item: o único da lista com o título e o ano dele. */
-async function locate(
-  op: ProductionOp,
-  t: ProductionTarget,
-  port: LattesPort,
-  menu: string,
-): Promise<{ controls: FormControl[]; html: string; path: string }> {
-  const params = { ...t.list.params, ...op.listParams };
-  // Parâmetro vazio: a lista que não o tem (o programa de computador com
-  // registro é a lista de PC sem f_reg; a sem registro tem f_reg=N).
-  const lists = findLinks(menu, t.list.proc).filter((l) =>
-    Object.entries(params).every(([k, v]) => (v === '' ? !l.params[k] : l.params[k] === v)),
-  );
-  // A mesma lista aparece às vezes também com f_sta_divulgacao_cientifica.
-  const list = lists.find((l) => !('f_sta_divulgacao_cientifica' in l.params)) ?? lists[0];
-  if (!list) throw new Stop('erro', `O menu do Lattes não tem a lista (${t.list.proc})`);
-  const listHtml = await getChecked(port, list.path);
-  const titleField = t.title.field ?? 'f_titulo';
-  const yearField = t.year.field ?? 'f_ano';
-  const found: { controls: FormControl[]; html: string; path: string }[] = [];
-  const isRow = t.list.isRow ?? ((p: Record<string, string>) => Boolean(p.f_seq));
-  for (const link of findLinks(listHtml, t.list.formProc).filter((l) => isRow(l.params))) {
-    const html = await getChecked(port, link.path);
-    const controls = withScriptValues(html, port.readForm(html, t.form.name));
-    if (!controls) continue;
-    if (
-      folded(valueOf(controls, titleField)) ===
-        folded(t.title.toForm ? t.title.toForm(op.match.title) : op.match.title) &&
-      shownYear(controls, yearField, t.year.fallback) ===
-        (t.year.toForm ? t.year.toForm(op.match.year) : op.match.year) &&
-      sameNature(controls, t)
-    ) {
-      found.push({ controls, html, path: link.path });
-    }
-  }
-  if (found.length === 0) {
-    throw new Stop(
-      'divergente',
-      'O Lattes não tem um item com esse título e esse ano; nada foi enviado',
-    );
-  }
-  if (found.length > 1) {
-    throw new Stop(
-      'divergente',
-      'O Lattes tem mais de um item com esse título e esse ano; nada foi enviado',
-    );
-  }
-  return found[0]!;
-}
 
 /** Os campos que mudaram entre dois envios, fora estes (os trocados e as grades). */
 function otherChanges(a: Pairs, b: Pairs, skip: Set<string>): string[] {
@@ -211,6 +141,11 @@ export async function applyProduction(
       );
     }
 
+    // Mais de um depositante na página: como a exportação os junta não foi visto.
+    if (op.holders && authorNames(grids.f_depositante_pessoa_l ?? []).length > 1) {
+      return result('erro', `${SEVERAL_HOLDERS}; nada foi enviado`);
+    }
+
     // O antes: os campos que a alteração troca, e as grades que ela mexe.
     // Duas mudanças na mesma grade viram operações iguais (members.ts): a
     // segunda acha o Lattes já como o editor quer e não envia nada.
@@ -236,17 +171,41 @@ export async function applyProduction(
     if (op.areas && !sameLabels(gridLabels(grids.f_area_l ?? []), op.areas.before.map(areaLabel))) {
       wrong.push('f_area_l');
     }
+    const holderGrid = grids.f_depositante_pessoa_l ?? [];
+    if (op.holders && !sameHolder(holderGrid, op.holders.before))
+      wrong.push('f_depositante_pessoa_l');
     if (op.setores && !sameLabels(gridLabels(grids.f_setor_l ?? []), op.setores.before)) {
       wrong.push('f_setor_l');
     }
+    // Um virtual que já tem o valor novo também confere: a data da patente vem
+    // de duas mudanças (a do registro e a do histórico, patente-historico.ts)
+    // para o mesmo campo, e a segunda acha o Lattes como a primeira deixou.
+    const virtualDone = (f: string) => folded(virtualNow[f] ?? '') === folded(op.set[f]);
     for (const f of virtualFields) {
-      if (f in op.expect && folded(virtualNow[f] ?? '') !== folded(op.expect[f])) wrong.push(f);
+      if (
+        f in op.expect &&
+        !virtualDone(f) &&
+        folded(virtualNow[f] ?? '') !== folded(op.expect[f])
+      ) {
+        wrong.push(f);
+      }
     }
     if (wrong.length > 0) {
       return result(
         'divergente',
         `O Lattes não está como o editor espera: ${wrong.map((f) => labelOf(op, f)).join(', ')}`,
       );
+    }
+    // Só depois da conferência: um antes que não bate (uma grade, outro campo)
+    // segue divergente mesmo com os virtuais já no valor novo.
+    if (
+      virtualFields.length > 0 &&
+      Object.keys(op.set).every(isVirtual) &&
+      !op.lookups &&
+      !op.organ &&
+      virtualFields.every(virtualDone)
+    ) {
+      return result('conferido', 'O Lattes já estava assim; nada foi enviado');
     }
 
     // As grades: as lidas, e no lugar delas as que a alteração troca.
@@ -277,6 +236,11 @@ export async function applyProduction(
         );
       }
       replace.f_autores_l = withLeads(rows, op.authors.after);
+    }
+    if (op.holders) {
+      const built = holderReplace(holderGrid, menu, op.holders.after);
+      if ('reason' in built) return result('erro', built.reason);
+      replace.f_depositante_pessoa_l = built.rows;
     }
     const set = Object.fromEntries(fields.map((f) => [f, op.set[f] ?? '']));
     // As escolhas pelas buscas: os ocultos que a página escreveria (lookups.ts).
@@ -365,6 +329,9 @@ export async function applyProduction(
     }
     if (op.setores && !sameLabels(gridLabels(afterGrids.f_setor_l ?? []), op.setores.after)) {
       notSaved.push('f_setor_l');
+    }
+    if (op.holders && !sameHolder(afterGrids.f_depositante_pessoa_l ?? [], op.holders.after)) {
+      notSaved.push('f_depositante_pessoa_l');
     }
     // Os virtuais, lidos de novo do vetor da página.
     const virtualAfter = virtualFields.length > 0 ? t.virtual?.read(afterHtml) : {};
