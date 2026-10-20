@@ -3,15 +3,16 @@
 // com todas as funções do conector ligadas e anota o que vira operação e o
 // que fica à mão, com o motivo. Uso:
 //
-//   node scripts/cobertura-conector.ts [--resumo]
+//   node scripts/cobertura-conector.ts [arquivo.xml] [--so=ELEMENTO,...] [--resumo]
 //   node scripts/cobertura-conector.ts --por-curriculo [arquivo.xml] [--so=ELEMENTO,...]
 //
 // O padrão conta campos: cada campo do editor (o caminho do elemento no XML e
-// o atributo) uma vez só, de fixtures/synthetic_full.xml, que tem todos os
-// elementos do schema. Um campo vai pelo conector quando toda troca nele
-// vira envio; senão, ou o formulário do Lattes não tem onde gravá-lo (fica só
-// para ler no editor, pelo mesmo fieldAbsent que o editor usa) ou falta no
-// conector. --resumo mostra só os totais.
+// o atributo) uma vez só, de fixtures/synthetic_full.xml (que tem todos os
+// elementos do schema) ou do arquivo dado. Um campo vai pelo conector quando
+// toda troca nele vira envio. O Lattes não o tem quando nenhuma troca vai e
+// todas dão só motivos de campo ausente (o mesmo fieldAbsent que o editor
+// usa): fica só para ler no editor. O resto falta no conector, inclusive o
+// campo em que parte das trocas vai. --resumo mostra só os totais.
 //
 // --por-curriculo é a contagem antiga, por troca de atributo num currículo
 // (fixtures/demo.xml e fixtures/synthetic_full.xml sem arquivo): depende de
@@ -228,9 +229,9 @@ function withListValues(raw: string): string {
 }
 
 /** Os campos do editor, cada um uma vez: vai, o Lattes não tem, falta no conector. */
-function fieldReport(): void {
+function fieldReport(file: string): void {
   const trials: Trial[] = [];
-  cover(withListValues(readFileSync('fixtures/synthetic_full.xml', 'latin1')), trials);
+  cover(withListValues(readFileSync(file, 'latin1')), trials);
   const fields = new Map<string, Trial[]>();
   for (const t of trials) {
     const key = `${t.path} @${t.attr}`;
@@ -239,9 +240,16 @@ function fieldReport(): void {
   type Kind = 'vai' | 'sem-campo' | 'falta';
   const kindOf = (ts: Trial[]): { kind: Kind; reason?: string } => {
     if (ts.every((t) => t.ok)) return { kind: 'vai' };
-    const reasons = ts.flatMap((t) => t.reasons);
-    if (reasons.length > 0 && reasons.every(fieldAbsent)) return { kind: 'sem-campo' };
-    return { kind: 'falta', reason: reasons.find((r) => !fieldAbsent(r)) ?? 'sem motivo' };
+    // Por troca: uma que falhou sem motivo, ou com outro motivo, ou outra que
+    // foi, tira o campo do "o Lattes não tem".
+    const failed = ts.filter((t) => !t.ok);
+    const absent = (t: Trial) => t.reasons.length > 0 && t.reasons.every(fieldAbsent);
+    if (failed.length === ts.length && failed.every(absent)) return { kind: 'sem-campo' };
+    const reasons = failed.flatMap((t) => t.reasons);
+    return {
+      kind: 'falta',
+      reason: reasons.find((r) => !fieldAbsent(r)) ?? reasons[0] ?? 'sem motivo',
+    };
   };
   const sections = new Map<string, Record<Kind, number>>();
   const missing = new Map<string, Set<string>>();
@@ -270,7 +278,7 @@ function fieldReport(): void {
   const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 100)}%` : '-');
   if (!summaryOnly) {
     console.log('Por seção (campos): vão / faltam no conector / o Lattes não tem');
-    for (const [name, r] of [...sections.entries()].sort()) {
+    for (const [name, r] of [...sections.entries()].sort(([a], [b]) => a.localeCompare(b))) {
       console.log(
         `  ${name.padEnd(56)} ${String(r.vai).padStart(4)} / ${String(r.falta).padStart(4)} / ${String(r['sem-campo']).padStart(4)}   ${pct(r.vai, r.vai + r.falta)}`,
       );
@@ -296,24 +304,25 @@ function fieldReport(): void {
   );
 }
 
-if (!byCv) {
-  fieldReport();
-  process.exit(0);
-}
+if (byCv) cvReport();
+else fieldReport(named ?? 'fixtures/synthetic_full.xml');
 
-const totals: string[] = [];
-for (const file of files) {
-  const stats = cover(readFileSync(file, 'latin1'));
-  let total = 0;
-  let sent = 0;
-  if (!summaryOnly && files.length > 1) console.log(`\n== ${file}`);
-  for (const [name, s] of [...stats.entries()].sort((a, b) => b[1].no - a[1].no)) {
-    total += s.ok + s.no;
-    sent += s.ok;
-    if (summaryOnly) continue;
-    const reasons = [...s.reasons.entries()].map(([r, n]) => `\n    ${n}× ${r}`).join('');
-    console.log(`${s.no ? '✗' : '✓'} ${name}  enviáveis ${s.ok}, à mão ${s.no}${reasons}`);
+/** A contagem antiga, por troca de atributo em cada currículo. */
+function cvReport(): void {
+  const totals: string[] = [];
+  for (const file of files) {
+    const stats = cover(readFileSync(file, 'latin1'));
+    let total = 0;
+    let sent = 0;
+    if (!summaryOnly && files.length > 1) console.log(`\n== ${file}`);
+    for (const [name, s] of [...stats.entries()].sort((a, b) => b[1].no - a[1].no)) {
+      total += s.ok + s.no;
+      sent += s.ok;
+      if (summaryOnly) continue;
+      const reasons = [...s.reasons.entries()].map(([r, n]) => `\n    ${n}× ${r}`).join('');
+      console.log(`${s.no ? '✗' : '✓'} ${name}  enviáveis ${s.ok}, à mão ${s.no}${reasons}`);
+    }
+    totals.push(`${file}: ${sent} de ${total} trocas de atributo viram envio.`);
   }
-  totals.push(`${file}: ${sent} de ${total} trocas de atributo viram envio.`);
+  console.log(`\n${totals.join('\n')}`);
 }
-console.log(`\n${totals.join('\n')}`);
