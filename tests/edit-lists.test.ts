@@ -43,6 +43,7 @@ const XML = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS NOME-COMPLE
 </FORMACAO-COMPLEMENTAR></DADOS-COMPLEMENTARES></CURRICULO-VITAE>`;
 
 const ON: PlanOptions = { editFormacaoComplementar: true, editPremio: true };
+const LOOKUPS_ON: PlanOptions = { ...ON, complEnderecoLookups: true };
 
 const premios = (root: XElement) =>
   childElements(
@@ -63,8 +64,8 @@ function planAfter(edit: (root: XElement) => void, options: PlanOptions = ON) {
   );
 }
 
-function onlyOp(edit: (root: XElement) => void): ListEditOp {
-  const plan = planAfter(edit);
+function onlyOp(edit: (root: XElement) => void, options: PlanOptions = ON): ListEditOp {
+  const plan = planAfter(edit, options);
   expect(plan.unsupported).toEqual([]);
   expect(plan.ops).toHaveLength(1);
   return plan.ops[0] as ListEditOp;
@@ -77,7 +78,11 @@ function onlyReason(edit: (root: XElement) => void, options: PlanOptions = ON): 
 }
 
 /** As chaves ligadas do lado da extensão, como numa montagem com elas ligadas. */
-const GATES: ApplyGates = { editEvento: true, lists: new Set(['formacao-complementar', 'premio']) };
+const GATES: ApplyGates = {
+  complEnderecoLookups: true,
+  editEvento: true,
+  lists: new Set(['formacao-complementar', 'premio']),
+};
 
 let open: LattesSimuladoNoTeste | undefined;
 afterEach(async () => {
@@ -174,12 +179,67 @@ describe('formação complementar: plano', () => {
     expect(onlyReason((root) => setAttr(compl(root, '4'), 'CARGA-HORARIA', 'vinte'))).toMatch(
       /^Valor que o formulário de formação complementar do Lattes não aceita: .*só com dígitos/,
     );
-    expect(onlyReason((root) => setAttr(compl(root, '4'), 'NOME-CURSO', 'Outro curso'))).toMatch(
-      /só mudam pelas buscas do Lattes/,
+    expect(onlyReason((root) => setAttr(compl(root, '4'), 'NOME-CURSO', 'Outro curso'))).toBe(
+      'Curso sem código do Lattes: escolha pela lista de cursos',
+    );
+    // O formulário não tem órgão: o Lattes não o tem para alterar.
+    expect(onlyReason((root) => setAttr(compl(root, '4'), 'NOME-ORGAO', 'Órgão'))).toBe(
+      'O formulário de formação complementar do Lattes não tem o órgão',
     );
     expect(onlyReason((root) => setAttr(compl(root, '4'), 'NIVEL', 'E'))).toMatch(
       /^O nível é o tipo da formação complementar/,
     );
+  });
+
+  it('instituição e curso pelas buscas, com os nomes de antes para achar a linha', () => {
+    const op = onlyOp((root) => {
+      const el = compl(root, '5');
+      setAttr(el, 'CODIGO-INSTITUICAO', '000000000002');
+      setAttr(el, 'NOME-INSTITUICAO', 'Universidade de São Paulo');
+      setAttr(el, 'CODIGO-CURSO', '00000003');
+      setAttr(el, 'NOME-CURSO', 'Ecologia');
+      setAttr(el, 'CARGA-HORARIA', '60');
+    }, LOOKUPS_ON);
+    expect(op.lookups).toEqual({
+      course: '00000003',
+      institutions: [
+        { before: '', code: '000000000002', name: 'Universidade de São Paulo', slot: 'main' },
+      ],
+    });
+    expect(op.set).toEqual({ f_carga: '60' });
+    expect(op.match).toEqual({
+      f_curso_old: 'Oficina de Exemplo',
+      f_inst_old: 'Instituto Fictício',
+      F_STATUS: 'N',
+    });
+    expect(opRows(op).map((r) => [r.label, r.before, r.after])).toEqual([
+      ['Carga horária', '40', '60'],
+      [expect.any(String), 'Instituto Fictício', 'Universidade de São Paulo'],
+      [expect.any(String), 'Oficina de Exemplo', 'Ecologia'],
+    ]);
+    // Trocado pela busca, não se desfaz pelo registro.
+    expect(undoOp({ ...sentEntry(op, '1', 1000), id: 5 })).toBeUndefined();
+  });
+
+  it('instituição nova sem curso escolhido, ou sem a capacidade das buscas, fica à mão', () => {
+    const institution = (root: XElement) => {
+      setAttr(compl(root, '5'), 'CODIGO-INSTITUICAO', '000000000002');
+      setAttr(compl(root, '5'), 'NOME-INSTITUICAO', 'Universidade de São Paulo');
+    };
+    expect(onlyReason(institution, LOOKUPS_ON)).toBe(
+      'Com a instituição nova, escolha o curso de novo pela lista de cursos do Lattes',
+    );
+    const both = (root: XElement) => {
+      institution(root);
+      setAttr(compl(root, '5'), 'CODIGO-CURSO', '00000003');
+      setAttr(compl(root, '5'), 'NOME-CURSO', 'Ecologia');
+    };
+    expect(onlyReason(both)).toBe(
+      'Instituição, curso e órgão pelas buscas do Lattes: desligado nesta montagem',
+    );
+    expect(
+      onlyReason((root) => setAttr(compl(root, '5'), 'NOME-INSTITUICAO', 'Outra'), LOOKUPS_ON),
+    ).toMatch(/^Instituição sem código do Lattes|^A instituição só muda pela busca/);
   });
 
   it('só alteração: item novo ou removido segue outros caminhos', () => {
@@ -358,6 +418,86 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
     const post = lattes.state.log.find((l) => l.method === 'POST')!;
     expect(post.proc).toBe('PKG_FORMACAO_COMPL.FORM2');
     expect(post.pairs).toContainEqual(['f_ctr', '']);
+  });
+
+  const lookupEdit = (root: XElement) => {
+    const el = compl(root, '5');
+    setAttr(el, 'CODIGO-INSTITUICAO', '000000000002');
+    setAttr(el, 'NOME-INSTITUICAO', 'Universidade de São Paulo');
+    setAttr(el, 'CODIGO-CURSO', '00000003');
+    setAttr(el, 'NOME-CURSO', 'Ecologia');
+  };
+
+  it('formação complementar: instituição e curso novos pelas buscas da página', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp(lookupEdit, LOOKUPS_ON);
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({ status: 'conferido' });
+    const el = compl(lattes.state.root, '5');
+    expect(getAttr(el, 'CODIGO-INSTITUICAO')).toBe('000000000002');
+    expect(getAttr(el, 'NOME-INSTITUICAO')).toBe('Universidade de São Paulo');
+    expect(getAttr(el, 'CODIGO-CURSO')).toBe('00000003');
+    expect(getAttr(el, 'NOME-CURSO')).toBe('Ecologia');
+    expect(getAttr(el, 'CARGA-HORARIA')).toBe('40');
+    // As buscas da formação, com o f_nivel do item (Y, outros).
+    const paths = lattes.state.log.filter((l) => l.method === 'GET').map((l) => l.path);
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/^PRC_INST_FORM\?F_CTR=C&F_COD=\w+&F_NIVEL=Y&F_STA_OUTRA=N&f_nome=/),
+        expect.stringMatching(
+          /^prc_curso_form\?f_cod=\w+&f_pgm=FORM&f_nivel=Y&f_inst=V000000000002$/,
+        ),
+      ]),
+    );
+    const sent = postsOf(lattes)[0]!;
+    expect(sent.proc).toBe('PKG_FORMACAO_COMPL.FORM2');
+    expect(sent.fields).toMatchObject({
+      f_cod_curso: '00000003',
+      f_cod_curso2: '',
+      f_cod_inst: 'V000000000002',
+      f_cod_inst2: '',
+      f_ctr: '',
+      f_inst_old: 'Universidade de São Paulo',
+    });
+    // Os desabilitados não vão, como num envio do navegador.
+    expect(sent.fields).not.toHaveProperty('f_inst');
+    expect(sent.fields).not.toHaveProperty('f_curso');
+  });
+
+  it('formação complementar: instituição de antes que não é a do Lattes, nada é enviado', async () => {
+    const lattes = await lattesFor();
+    setAttr(compl(lattes.state.root, '5'), 'CODIGO-INSTITUICAO', '000000000001');
+    const op = onlyOp(lookupEdit, LOOKUPS_ON);
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({
+      detail: 'O Lattes não está como o editor espera: Instituição',
+      status: 'divergente',
+    });
+    expect(postsOf(lattes)).toEqual([]);
+  });
+
+  it('formação complementar: o nome que o Lattes não mostrou depois é acusado', async () => {
+    const lattes = await lattesFor({
+      intercept: faults.afterPost((_req, state) =>
+        setAttr(
+          findIn(state.root, (el) => getAttr(el, 'SEQUENCIA-FORMACAO') === '5')!,
+          'NOME-INSTITUICAO',
+          'Universidade de Sao Paulo (antiga)',
+        ),
+      ),
+    });
+    const r = await applyOp(onlyOp(lookupEdit, LOOKUPS_ON), lattes.port, GATES);
+    expect(r.status).toBe('divergente');
+    expect(r.detail).toMatch(/^O Lattes não gravou: .*Instituição/);
+  });
+
+  it('formação complementar: a extensão sem as buscas recusa sem enviar', async () => {
+    const lattes = await lattesFor();
+    const r = await applyOp(onlyOp(lookupEdit, LOOKUPS_ON), lattes.port, {
+      ...GATES,
+      complEnderecoLookups: false,
+    });
+    expect(r).toMatchObject({ status: 'erro' });
+    expect(r.detail).toMatch(/não grava instituição, curso e órgão pelas buscas/);
+    expect(postsOf(lattes)).toEqual([]);
   });
 
   it('formação complementar: desfaz pelo registro', async () => {

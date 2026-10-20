@@ -242,6 +242,39 @@ describe('que campo vira qual lista', () => {
   });
 });
 
+describe('formação complementar e endereço profissional', () => {
+  it('a complementar escolhe instituição e curso na lista FORM do nível dela', () => {
+    const mba = el(
+      '<MBA CODIGO-INSTITUICAO="000000000001" NOME-INSTITUICAO="X" CODIGO-CURSO="1" NOME-CURSO="C"/>',
+    );
+    expect(liveKind(mba, 'NOME-INSTITUICAO', ALL)).toBe('instituicao');
+    expect(liveKind(mba, 'NOME-CURSO', ALL)).toBe('curso');
+    expect(livePairs('MBA')).toMatchObject({
+      course: { level: 'E', program: 'FORM' },
+      searchLevel: 'E',
+    });
+    expect(livePairs('OUTROS')?.searchLevel).toBe('Y');
+    // Outra instituição limpa o curso, como o seleciona() do Lattes.
+    expect(applyInstitution(mba, { code: 'V000000000002', label: 'USP (SP)', name: 'USP' })).toBe(
+      true,
+    );
+    expect(getAttr(mba, 'CODIGO-INSTITUICAO')).toBe('000000000002');
+    expect(getAttr(mba, 'CODIGO-CURSO')).toBe('');
+    expect(getAttr(mba, 'NOME-CURSO')).toBe('');
+  });
+
+  it('o endereço escolhe só a instituição, nos atributos dele', () => {
+    const address = el(
+      '<ENDERECO-PROFISSIONAL CODIGO-INSTITUICAO-EMPRESA="" NOME-INSTITUICAO-EMPRESA="X" NOME-ORGAO=""/>',
+    );
+    expect(liveKind(address, 'NOME-INSTITUICAO-EMPRESA', ALL)).toBe('instituicao');
+    expect(liveKind(address, 'NOME-ORGAO', ALL)).toBeUndefined();
+    applyInstitution(address, { code: 'M000000000004', label: 'Embrapa (DF)', name: 'Embrapa' });
+    expect(getAttr(address, 'CODIGO-INSTITUICAO-EMPRESA')).toBe('000000000004');
+    expect(getAttr(address, 'NOME-INSTITUICAO-EMPRESA')).toBe('Embrapa');
+  });
+});
+
 describe('cópia guardada no banco', () => {
   it('sem chave não guarda; com chave guarda cifrado e lê de volta', async () => {
     const { loadCachedList, saveCachedList } = await import('../src/model/list-cache.ts');

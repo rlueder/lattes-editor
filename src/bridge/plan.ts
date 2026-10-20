@@ -25,6 +25,7 @@ import {
   planEvento,
 } from './edit-items.ts';
 import {
+  COMPL_ENDERECO_LOOKUPS_ENABLED,
   EDIT_FORMACAO_COMPL_ENABLED,
   EDIT_PREMIO_ENABLED,
   type ListEditKind,
@@ -115,6 +116,11 @@ export interface PlanOptions {
    */
   biographicFull?: boolean;
   biographicOps?: boolean;
+  /**
+   * Instituição e curso da formação complementar e a instituição do endereço
+   * profissional pelas buscas (edit-lists.ts, COMPL_ENDERECO_LOOKUPS_ENABLED).
+   */
+  complEnderecoLookups?: boolean;
   createItems?: boolean;
   deleteItems?: boolean;
   /** Áreas de atuação (areas-atuacao.ts, EDIT_AREAS_ENABLED). */
@@ -180,6 +186,11 @@ export const GATED_EDITS: readonly {
     enabled: EDIT_FORMACAO_COMPL_ENABLED,
     feature: 'alterar-formacao-complementar',
     option: 'editFormacaoComplementar',
+  },
+  {
+    enabled: COMPL_ENDERECO_LOOKUPS_ENABLED,
+    feature: 'buscas-complementar-endereco',
+    option: 'complEnderecoLookups',
   },
   { enabled: EDIT_PRODUCTION_ENABLED, feature: 'alterar-producao', option: 'editProduction' },
   {
@@ -295,6 +306,7 @@ export function planChange(
   {
     biographicFull = false,
     biographicOps = false,
+    complEnderecoLookups = false,
     createItems = false,
     deleteItems = false,
     editAreas = false,
@@ -451,16 +463,15 @@ export function planChange(
   }
 
   // Prêmios e formação complementar (edit-lists.ts), cada um com a chave própria.
-  const lists = new Set<ListEditKind>();
-  if (editPremio) lists.add('premio');
+  const lists = new Set<ListEditKind>(editPremio ? ['premio'] : []);
   if (editFormacaoComplementar) lists.add('formacao-complementar');
-  const listEdit = planListEdit(change, chain, label, lists);
+  const listEdit = planListEdit(change, chain, label, lists, complEnderecoLookups);
   if (listEdit)
     return 'reason' in listEdit ? unsupported(change, label, listEdit.reason) : listEdit;
 
   // Formação, endereço e identificação: desligados até o teste no Lattes real (biographic.ts).
   const biographic = biographicOps
-    ? planBiographic(change, chain, label, biographicFull)
+    ? planBiographic(change, chain, label, biographicFull, complEnderecoLookups)
     : undefined;
   if (biographic) {
     return 'reason' in biographic ? unsupported(change, label, biographic.reason) : biographic;

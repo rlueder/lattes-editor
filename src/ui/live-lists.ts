@@ -6,6 +6,7 @@
 // O que é observado e o que é inferido no formato do XML está em
 // docs/campos_tipados.md ("Listas lidas pelo conector").
 
+import { COMPL_LEVELS } from '../bridge/edit-lists.ts';
 import type { Agency, AreaNode, Course, Institution, Organ } from '../bridge/lattes-lists.ts';
 import { ORGAN_PARTS } from '../bridge/production/organ.ts';
 import { PRODUCTION_TARGETS } from '../bridge/production/targets/index.ts';
@@ -337,9 +338,21 @@ function productionPairs(element: string): LivePairs | undefined {
 export const institutionAttrs = (el: XElement): CodeNameAttrs =>
   livePairs(el.name)?.institution ?? { code: 'CODIGO-INSTITUICAO', name: 'NOME-INSTITUICAO' };
 
+/**
+ * O endereço profissional: só a instituição, pela busca. O conector a refaz
+ * na busca da página de endereço (PRC_INST_ATIV) na hora de gravar.
+ */
+const ADDRESS_PAIRS: LivePairs = {
+  institution: { code: 'CODIGO-INSTITUICAO-EMPRESA', name: 'NOME-INSTITUICAO-EMPRESA' },
+  production: false,
+};
+
 /** Os atributos das escolhas do elemento, ou undefined quando ele não tem escolha pela lista. */
 export function livePairs(element: string): LivePairs | undefined {
-  const level = formationLevel(element);
+  if (element === 'ENDERECO-PROFISSIONAL') return ADDRESS_PAIRS;
+  // A formação complementar abre as mesmas buscas de instituição e curso da
+  // acadêmica (observado em 20/10/2026), com o f_nivel dela (edit-lists.ts).
+  const level = formationLevel(element) ?? COMPL_LEVELS[element];
   if (!level) return productionPairs(element);
   const others = DOUT_INSTITUTIONS.filter(
     (p) => hasInSchema(element, p.code) && hasInSchema(element, p.name),

@@ -6,6 +6,7 @@
 
 import { parseSocial } from '../../src/model/contacts.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
+import { withLetter } from './buscas.ts';
 import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
@@ -237,22 +238,51 @@ const preference = mapped(
 const FORM_EXTRAS = [
   h.select('f_priv_residencial', PRIVACY, '2', { disabled: true }),
   h.select('f_priv_profissional', PRIVACY, '1'),
-  h.text('f_inst', '', { disabled: true, maxLength: 75 }),
-  h.text('f_orgao', '', { disabled: true }),
-  ...[
-    'modal2',
-    'f_dados_grid',
-    'f_dados_grid_contatos',
-    'f_origem',
-    'f_cod',
-    'f_cod_inst',
-    'f_cod_inst2',
-    'f_codorgao',
-    'f_codorgao2',
-    'f_inst_old',
-    'f_orgao_old',
-  ].map((n) => h.hidden(n, '')),
+  ...['modal2', 'f_dados_grid', 'f_dados_grid_contatos', 'f_origem', 'f_cod'].map((n) =>
+    h.hidden(n, ''),
+  ),
 ].join('\n');
+
+/**
+ * A instituição do endereço profissional, como o seleciona() da busca a grava
+ * (observado em 20/10/2026): o nome em f_inst (desabilitado) e f_inst_old, o
+ * código sem a letra em f_cod_inst (letra V) ou f_cod_inst2 (as outras). Que a
+ * página traga esses ocultos preenchidos com o valor gravado, e que o
+ * PRC_ENDERECO os grave, é inferido. O órgão segue o atribuir() da janela de
+ * órgãos: o texto em f_orgao (desabilitado) e, como na alteração do projeto
+ * (18/10/2026), f_codorgao, f_codorgao2 e f_orgao_old vazios na página; o
+ * órgão escolhido volta neles e o simulado o grava (inferido).
+ */
+function institutionBindings(state: LattesState): Binding[] {
+  const code = (el: XElement) => getAttr(el, 'CODIGO-INSTITUICAO-EMPRESA') ?? '';
+  const isV = (el: XElement) => withLetter(state, code(el)).startsWith('V');
+  const write = (el: XElement, v: string) => {
+    if (v) setAttr(el, 'CODIGO-INSTITUICAO-EMPRESA', v);
+  };
+  return [
+    attr('f_inst', 'NOME-INSTITUICAO-EMPRESA', 'text', { disabled: true, maxLength: 75 }),
+    attr('f_orgao', 'NOME-ORGAO', 'text', { disabled: true }),
+    { kind: 'hidden', name: 'f_cod_inst', read: (el) => (isV(el) ? code(el) : ''), write },
+    { kind: 'hidden', name: 'f_cod_inst2', read: (el) => (isV(el) ? '' : code(el)), write },
+    attr('f_inst_old', 'NOME-INSTITUICAO-EMPRESA', 'hidden'),
+    ...['f_codorgao', 'f_codorgao2'].map((name): Binding => ({
+      kind: 'hidden',
+      name,
+      read: () => '',
+      write: (el, v) => {
+        if (v) setAttr(el, 'CODIGO-ORGAO', v);
+      },
+    })),
+    {
+      kind: 'hidden',
+      name: 'f_orgao_old',
+      read: () => '',
+      write: (el, v) => {
+        if (v) setAttr(el, 'NOME-ORGAO', v);
+      },
+    },
+  ];
+}
 
 /** Os tipos de rede social da página real (vetor redesSociais, 18/10/2026), em parte. */
 const SOCIAL_TYPES: [number, string][] = [
@@ -309,9 +339,11 @@ function enderecoForm(_req: SimRequest, state: LattesState): SimResponse {
     const el = container && childElements(container, name)[0];
     return `<fieldset><legend>${suffix === '_i' ? 'Profissional' : 'Residencial'}</legend>${renderFields(addressBindings(suffix, name), el ?? element(name))}\n${addressExtras(suffix)}</fieldset>`;
   }).join('\n');
+  const professional = container && childElements(container, 'ENDERECO-PROFISSIONAL')[0];
   const body = `<form name="GN_ENDERECO" method="post" action="PRC_ENDERECO">
 ${blocks}
 ${renderFields([preference], container ?? element('ENDERECO'))}
+${renderFields(institutionBindings(state), professional ?? element('ENDERECO-PROFISSIONAL'))}
 ${FORM_EXTRAS}
 ${h.hidden('f_ctr', 'U')}
 ${h.formButtons(false)}
@@ -330,6 +362,8 @@ function enderecoPost(req: SimRequest, state: LattesState): SimResponse {
     el ??= state.ensure(state.ensurePath(['DADOS-GERAIS', 'ENDERECO']), name);
     applyFields(bindings, el, req);
   }
+  const professional = state.find(['DADOS-GERAIS', 'ENDERECO', 'ENDERECO-PROFISSIONAL']);
+  if (professional) applyFields(institutionBindings(state), professional, req);
   const corr = state.find(['DADOS-GERAIS', 'ENDERECO']);
   if (corr || req.get('f_end_corr')) {
     applyFields([preference], corr ?? state.ensurePath(['DADOS-GERAIS', 'ENDERECO']), req);

@@ -86,7 +86,7 @@ export interface FormacaoOp extends OpBase {
   seq: string;
 }
 
-interface Level {
+export interface Level {
   name: string;
   /** Opções de f_tpo_doutorado, quando o nível mostra o rádio. */
   types?: readonly string[];
@@ -287,9 +287,10 @@ function plainFields(
       };
     }
     if (OTHER_INSTITUTION.test(f.attr)) {
+      // O formulário não tem campo para ela: o Lattes não a tem para alterar,
+      // como os outros campos ausentes (form-lacks.ts).
       return {
-        reason:
-          'Instituição cadastrada fora da busca: o formulário de formação do Lattes não tem campo para ela; escolha a instituição pela busca no próprio Lattes',
+        reason: `O formulário de ${level.name} do Lattes não tem campo para a instituição cadastrada fora da busca; escolha a instituição pela busca no próprio Lattes`,
       };
     }
     if (CODE_ONLY_INSTITUTION.has(f.attr)) {
@@ -331,7 +332,7 @@ function plainFields(
   return undefined;
 }
 
-interface LookupPlan {
+export interface LookupPlan {
   identity: Record<string, string[]>;
   lookups: FormacaoLookups;
   rows: LookupRow[];
@@ -465,6 +466,18 @@ function planAgency(
   return undefined;
 }
 
+/**
+ * Instituição, curso e, com `expect`, agência pelas buscas. A formação
+ * complementar usa as mesmas regras, sem a agência (edit-lists.ts): a página
+ * dela abre as mesmas janelas (observado em 20/10/2026).
+ */
+export function planLookups(change: Change, el: XElement, level: Level, expect?: FieldValues) {
+  const v = values(change, el);
+  const out: LookupPlan = { identity: {}, lookups: {}, rows: [] };
+  const agency = () => (expect ? planAgency(v, level, out, expect) : undefined);
+  return planInstitutions(v, level, out) ?? planCourse(v, level, out) ?? agency() ?? out;
+}
+
 /** Uma alteração numa formação já no Lattes como operação; o motivo, quando vai à mão. */
 export function planFormacaoEdit(change: Change, el: XElement, label: string): Planned {
   const seq = getAttr(el, 'SEQUENCIA-FORMACAO');
@@ -480,12 +493,8 @@ export function planFormacaoEdit(change: Change, el: XElement, label: string): P
   if (plain) return plain;
 
   const v = values(change, el);
-  const out: LookupPlan = { identity: {}, lookups: {}, rows: [] };
-  const lookup =
-    planInstitutions(v, level, out) ??
-    planCourse(v, level, out) ??
-    planAgency(v, level, out, expect);
-  if (lookup) return lookup;
+  const out = planLookups(change, el, level, expect);
+  if ('reason' in out) return out;
 
   // Conferência de identidade: a instituição, o curso e o ano de início
   // tinham de bater, qualquer que seja o campo alterado. O f_seq sozinho não
