@@ -16,6 +16,7 @@ import {
   listEditContract,
   type ListEditOp,
   PREMIO_SPEC,
+  uncoveredLookups,
 } from '../src/bridge/edit-lists.ts';
 import { opRows } from '../src/bridge/field-labels.ts';
 import { planChanges, type PlanOptions } from '../src/bridge/plan.ts';
@@ -219,6 +220,21 @@ describe('formação complementar: plano', () => {
     ]);
     // Trocado pela busca, não se desfaz pelo registro.
     expect(undoOp({ ...sentEntry(op, '1', 1000), id: 5 })).toBeUndefined();
+  });
+
+  it('todo atributo de busca alterado precisa de uma busca planejada', () => {
+    const institution = {
+      institutions: [{ before: '', code: '1', name: 'X', slot: 'main' as const }],
+    };
+    expect(uncoveredLookups(['NOME-INSTITUICAO', 'CODIGO-INSTITUICAO'], institution)).toEqual([]);
+    expect(uncoveredLookups(['NOME-CURSO'], institution)).toEqual(['NOME-CURSO']);
+    expect(uncoveredLookups(['CODIGO-CURSO', 'NOME-INSTITUICAO'], { course: '2' })).toEqual([
+      'NOME-INSTITUICAO',
+    ]);
+    expect(uncoveredLookups(['CODIGO-INSTITUICAO'])).toEqual(['CODIGO-INSTITUICAO']);
+    // A busca da instituição do doutorado não cobre a principal.
+    const dout = { institutions: [{ ...institution.institutions[0]!, slot: 'dout' as const }] };
+    expect(uncoveredLookups(['NOME-INSTITUICAO'], dout)).toEqual(['NOME-INSTITUICAO']);
   });
 
   it('instituição nova sem curso escolhido, ou sem a capacidade das buscas, fica à mão', () => {

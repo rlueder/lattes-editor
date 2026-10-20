@@ -6,7 +6,7 @@
 // O que é observado e o que é inferido no formato do XML está em
 // docs/campos_tipados.md ("Listas lidas pelo conector").
 
-import { COMPL_LEVELS } from '../bridge/edit-lists.ts';
+import { COMPL_LEVELS, isComplementaryItem } from '../bridge/edit-lists.ts';
 import type { Agency, AreaNode, Course, Institution, Organ } from '../bridge/lattes-lists.ts';
 import { ORGAN_PARTS } from '../bridge/production/organ.ts';
 import { PRODUCTION_TARGETS } from '../bridge/production/targets/index.ts';
@@ -523,6 +523,11 @@ export interface LiveAvailability {
   courses: boolean;
   /** O conector lê a janela de órgãos do projeto ('orgao-projeto'). */
   organs?: boolean;
+  /**
+   * O nome do pai do elemento do campo, pedido só quando o nome sozinho não
+   * basta (OUTROS e MBA, que só são formação complementar dentro dela).
+   */
+  parentOf?: () => string | undefined;
   /** O conector faz as buscas de orientação e banca ('buscas-producao'). */
   production?: boolean;
   /** O conector busca instituição. */
@@ -551,7 +556,9 @@ export function liveKind(el: XElement, attr: string, live: LiveAvailability): Li
     if (attr === ORGAN_PARTS.unit.name && getAttr(el, ORGAN_PARTS.organ.code)) return 'unidade';
     return undefined;
   }
-  const pairs = livePairs(el.name);
+  // OUTROS e MBA só são formação complementar dentro de FORMACAO-COMPLEMENTAR.
+  const misplaced = el.name in COMPL_LEVELS && !isComplementaryItem(el.name, live.parentOf?.());
+  const pairs = misplaced ? undefined : livePairs(el.name);
   if (pairs?.production && !live.production) return undefined;
   const agency = pairs?.agency ?? PLAIN_AGENCY;
   if (attr === agency.name && live.agencies?.length && hasAttr(el, agency.code)) {

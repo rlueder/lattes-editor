@@ -194,6 +194,29 @@ export const COMPL_LEVELS: Record<string, string> = {
   OUTROS: 'Y',
 };
 
+/**
+ * Um item da formação complementar: o nome e o pai. OUTROS e MBA são nomes
+ * genéricos, então o pai decide (live-lists.ts usa o mesmo teste).
+ */
+export const isComplementaryItem = (name: string, parent: string | undefined) =>
+  parent === 'FORMACAO-COMPLEMENTAR' && name in COMPL_LEVELS;
+
+/**
+ * Os atributos de busca alterados que as buscas planejadas não cobrem: a
+ * instituição precisa da busca de instituição, o curso da lista de cursos.
+ * Algum que sobre não vai no envio, e a alteração fica à mão.
+ */
+export function uncoveredLookups(
+  attrs: readonly string[],
+  lookups: FormacaoLookups = {},
+): string[] {
+  const institution = lookups.institutions?.some((i) => i.slot === 'main') ?? false;
+  const course = lookups.course !== undefined;
+  return attrs.filter((a) =>
+    a.endsWith('-INSTITUICAO') ? !institution : a.endsWith('-CURSO') ? !course : false,
+  );
+}
+
 /** Instituição e curso: os campos vêm desabilitados e só mudam pelas buscas. */
 const COMPL_LOOKUP_ATTRS = new Set([
   'CODIGO-CURSO',
@@ -229,7 +252,7 @@ const TARGETS: Record<ListEditKind, Target> = {
       f_curso_old: before('NOME-CURSO'),
       f_inst_old: before('NOME-INSTITUICAO'),
     }),
-    is: (el, parent) => parent?.name === 'FORMACAO-COMPLEMENTAR' && el.name in COMPL_LEVELS,
+    is: (el, parent) => isComplementaryItem(el.name, parent?.name),
     list: 'pkg_formacao_compl.lista',
     lookup: { name: 'formação complementar', visible: ['f_inst', 'f_curso'] },
     required: [],
@@ -328,6 +351,14 @@ export function planListEdit(
   const planned = t.lookup ? planLookups(change, el, t.lookup) : undefined;
   if (planned && 'reason' in planned) return planned;
   const found = planned && Object.keys(planned.lookups).length > 0 ? planned : undefined;
+  // Todo atributo de busca alterado tem de estar numa busca planejada; senão a
+  // operação iria sem ele e a releitura acharia tudo igual.
+  const looked = change.fields.map((f) => f.attr).filter((a) => COMPL_LOOKUP_ATTRS.has(a));
+  const missed = uncoveredLookups(looked, found?.lookups);
+  if (t.lookup && missed.length > 0) {
+    const labels = change.fields.filter((f) => missed.includes(f.attr)).map((f) => f.label);
+    return { reason: `Instituição e curso só mudam pelas buscas do Lattes: ${labels.join(', ')}` };
+  }
   // Uma extensão sem as buscas mandaria o formulário sem os ocultos, e a
   // releitura acharia tudo igual: nunca vai a ela.
   if (found && !lookups) return { reason: LOOKUPS_OFF };

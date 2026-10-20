@@ -2,6 +2,7 @@ import 'fake-indexeddb/auto';
 
 import { describe, expect, it } from 'vitest';
 
+import { isComplementaryItem } from '../src/bridge/edit-lists.ts';
 import type { AreaNode, Course } from '../src/bridge/lattes-lists.ts';
 import { getAttr, parseXml, type XElement } from '../src/model/xml.ts';
 import {
@@ -247,8 +248,19 @@ describe('formação complementar e endereço profissional', () => {
     const mba = el(
       '<MBA CODIGO-INSTITUICAO="000000000001" NOME-INSTITUICAO="X" CODIGO-CURSO="1" NOME-CURSO="C"/>',
     );
-    expect(liveKind(mba, 'NOME-INSTITUICAO', ALL)).toBe('instituicao');
-    expect(liveKind(mba, 'NOME-CURSO', ALL)).toBe('curso');
+    const inside = { ...ALL, parentOf: () => 'FORMACAO-COMPLEMENTAR' };
+    expect(liveKind(mba, 'NOME-INSTITUICAO', inside)).toBe('instituicao');
+    expect(liveKind(mba, 'NOME-CURSO', inside)).toBe('curso');
+    // OUTROS e MBA são nomes genéricos: fora da formação complementar, ou sem
+    // saber o pai, nenhuma busca.
+    expect(liveKind(mba, 'NOME-INSTITUICAO', { ...ALL, parentOf: () => 'OUTRA-COISA' })).toBe(
+      undefined,
+    );
+    expect(liveKind(mba, 'NOME-CURSO', ALL)).toBeUndefined();
+    expect(isComplementaryItem('OUTROS', 'FORMACAO-COMPLEMENTAR')).toBe(true);
+    expect(isComplementaryItem('OUTROS', 'AREA-DE-ATUACAO')).toBe(false);
+    expect(isComplementaryItem('OUTROS', undefined)).toBe(false);
+    expect(isComplementaryItem('GRADUACAO', 'FORMACAO-COMPLEMENTAR')).toBe(false);
     expect(livePairs('MBA')).toMatchObject({
       course: { level: 'E', program: 'FORM' },
       searchLevel: 'E',
