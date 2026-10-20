@@ -21,12 +21,14 @@ import {
 import { findLinks, isLogonPage } from '../lattes-html.ts';
 import type { FieldValues } from '../plan.ts';
 import {
+  authorNames,
   authorRows,
   GRID_LABELS,
   GRID_SPECS,
   gridKeysOf,
   gridPairs,
   type Grids,
+  holderRows,
   keywordLabels,
   keywordRows,
   MAX_KEYWORDS,
@@ -34,6 +36,7 @@ import {
   sameWords,
   serializeGrid,
 } from './grids.ts';
+import { SEVERAL_HOLDERS } from './holders.ts';
 import { areaGridRows, gridLabels, sameLabels, setorGridRows } from './item-lists.ts';
 import { resolveLookups } from './lookups.ts';
 import { sameAuthors, withLeads } from './members.ts';
@@ -136,6 +139,9 @@ function otherChanges(a: Pairs, b: Pairs, skip: Set<string>): string[] {
   return [...names].filter((n) => value(a, n) !== value(b, n));
 }
 
+/** O depositante como lista de nomes: um, ou nenhum. */
+const holderList = (name: string) => (name.trim() ? [name] : []);
+
 const labelOf = (op: ProductionOp, name: string) =>
   op.rows.find((r) => r.name === name)?.label ?? name;
 
@@ -210,6 +216,11 @@ export async function applyProduction(
       );
     }
 
+    // Mais de um depositante na página: como a exportação os junta não foi visto.
+    if (op.holders && authorNames(grids.f_depositante_pessoa_l ?? []).length > 1) {
+      return result('erro', `${SEVERAL_HOLDERS}; nada foi enviado`);
+    }
+
     // O antes: os campos que a alteração troca, e as grades que ela mexe.
     // Duas mudanças na mesma grade viram operações iguais (members.ts): a
     // segunda acha o Lattes já como o editor quer e não envia nada.
@@ -234,6 +245,12 @@ export async function applyProduction(
     }
     if (op.areas && !sameLabels(gridLabels(grids.f_area_l ?? []), op.areas.before.map(areaLabel))) {
       wrong.push('f_area_l');
+    }
+    if (
+      op.holders &&
+      !sameWords(authorNames(grids.f_depositante_pessoa_l ?? []), holderList(op.holders.before))
+    ) {
+      wrong.push('f_depositante_pessoa_l');
     }
     if (op.setores && !sameLabels(gridLabels(grids.f_setor_l ?? []), op.setores.before)) {
       wrong.push('f_setor_l');
@@ -276,6 +293,20 @@ export async function applyProduction(
         );
       }
       replace.f_autores_l = withLeads(rows, op.authors.after);
+    }
+    if (op.holders) {
+      const built = holderRows(
+        grids.f_depositante_pessoa_l ?? [],
+        menuAuthors(menu, 'titularPessoaDP') ?? [],
+        op.holders.after,
+      );
+      if ('missing' in built) {
+        return result(
+          'erro',
+          `Depositante que não está na lista de coautores do Lattes: ${built.missing}. Escolha-o no Lattes uma vez; depois o editor consegue mandar`,
+        );
+      }
+      replace.f_depositante_pessoa_l = built.rows;
     }
     const set = Object.fromEntries(fields.map((f) => [f, op.set[f] ?? '']));
     // As escolhas pelas buscas: os ocultos que a página escreveria (lookups.ts).
@@ -356,6 +387,12 @@ export async function applyProduction(
     }
     if (op.setores && !sameLabels(gridLabels(afterGrids.f_setor_l ?? []), op.setores.after)) {
       notSaved.push('f_setor_l');
+    }
+    if (
+      op.holders &&
+      !sameWords(authorNames(afterGrids.f_depositante_pessoa_l ?? []), holderList(op.holders.after))
+    ) {
+      notSaved.push('f_depositante_pessoa_l');
     }
     // Os virtuais, lidos de novo do vetor da página.
     const virtualAfter = virtualFields.length > 0 ? t.virtual?.read(afterHtml) : {};

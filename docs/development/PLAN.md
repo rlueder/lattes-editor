@@ -18,6 +18,19 @@ outras 127 são o alvo deste plano.
 
 ## Estado atual
 
+- 20/10/2026: o depositante pessoa e as datas do histórico de situações da
+  patente pelo conector (`src/bridge/production/holders.ts`,
+  `targets/registros.ts`), a partir da exportação e da página de edição de
+  uma patente de teste no Lattes real (`docs/lattes_internals.md`, seção 17).
+  O depositante vai com um nome só, escolhido do `titularPessoaDP` do menu;
+  a data de uma situação conhecida vai pela grade de situações; os autores
+  copiados dos depositantes ficam fora da mudança de autores. Seguem à mão o
+  titular instituição (busca de instituições), mais de um depositante e o
+  resto do histórico. O envio do depositante ainda não foi feito no Lattes
+  real, só no simulado. 2560 de 2801 campos vão (91%), eram 2554; um deles
+  veio da descrição da situação no `synthetic_full.xml`, que passou a ser
+  "Depósito", como na exportação.
+
 - 19/10/2026, noite: demais trabalhos, licenças e linhas de pesquisa pelo
   motor de produção (`targets/demais.ts`), testados no Lattes real com itens
   de teste e removidos. A linha de pesquisa entra pela descrição de uma

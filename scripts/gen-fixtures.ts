@@ -171,6 +171,9 @@ class Faker {
     if (n === 'CPF') return '00000000000';
     if (n === 'ORCID-ID') return 'https://orcid.org/0000-0000-0000-0000';
     if (n === 'DOI') return '10.0000/lattes-editor.teste';
+    // A descrição de uma situação da patente é o rótulo de uma linha da grade
+    // de situações do Lattes, como "Depósito" na exportação de 20/10/2026.
+    if (n === 'DESCRICAO-SITUACAO-PATENTE') return 'Depósito';
     if (n === 'ISSN') return '00000000';
     if (n === 'ISBN') return '0000000000';
     if (token(n, 'HORA')) return '101500';

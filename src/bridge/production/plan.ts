@@ -10,6 +10,7 @@ import { lattesSchema } from '../../schema/lattes.ts';
 import { areaLabel, type AreaRow } from '../areas-atuacao.ts';
 import type { BridgeOp, OpBase } from '../plan.ts';
 import { AUTHOR_PART, type AuthorSpec, MAX_KEYWORDS } from './grids.ts';
+import { holderCopies, planHolder } from './holders.ts';
 import {
   type AreaList,
   isAreaChange,
@@ -55,6 +56,11 @@ export interface ProductionOp extends OpBase {
   areas?: AreaList;
   /** Autores antes e depois, na ordem, quando a mudança é deles. */
   authors?: { after: AuthorSpec[]; before: AuthorSpec[] };
+  /**
+   * O depositante ou titular pessoa antes e depois (ProductionTarget.holders),
+   * quando a mudança é dele: um nome só, ou vazio.
+   */
+  holders?: { after: string; before: string };
   /** Palavras-chave antes e depois, na ordem, quando a mudança é delas. */
   keywords?: { after: string[]; before: string[] };
   kind: 'producao';
@@ -172,6 +178,9 @@ export function planProduction(
     target.organ !== undefined && change.element !== item.name && isOrganChange(change);
   const byHand = organChange ? undefined : target.byHand?.[change.element];
   if (byHand) return { reason: byHand };
+  // O campo que depende da própria parte (a data do histórico da patente).
+  const partMap = organChange ? undefined : target.partFields?.[change.element]?.(change, el);
+  if (partMap && 'reason' in partMap) return partMap;
   // Título e ano do Lattes: os de antes, quando a própria mudança os troca.
   const before = (child: string, attr: string) => {
     const f = change.element === child ? change.fields.find((x) => x.attr === attr) : undefined;
@@ -336,7 +345,10 @@ export function planProduction(
         reason: `A grade de ${part.label.toLowerCase()} do Lattes ${noColumn ? 'não tem' : 'não leva'}: ${notSent.map((f) => f.label).join(', ')}`,
       };
     }
-    const current = childElements(item, part.element);
+    // Os depositantes que a exportação copia nos autores (holders.ts).
+    const copies = holderCopies(target, item, chain[0], siblings, change, part.name);
+    if ('reason' in copies) return copies;
+    const current = childElements(item, part.element).filter((a) => !copies.isCopy(a));
     const after = authorsOf(current, part);
     // O antes: a lista de agora com esta mudança desfeita.
     const revert = (a: XElement) => ({
@@ -392,6 +404,8 @@ export function planProduction(
     lookups = planned.lookups;
     rows.push(...planned.rows);
   }
+  let holders: ProductionOp['holders'];
+  const holderKey = target.holders && `${target.holders.child}@${target.holders.attr}`;
   const unknown: string[] = [];
   const unmapped: string[] = [];
   const manual = new Map<string, string[]>();
@@ -419,7 +433,17 @@ export function planProduction(
       });
       continue;
     }
-    const m = target.fields[key];
+    // O depositante pessoa: a grade de depositantes, com um nome só (holders.ts).
+    if (key === holderKey) {
+      const value = planHolder(f);
+      if ('reason' in value) return value;
+      holders = value;
+      set.f_depositante_pessoa_l = value.after;
+      expect.f_depositante_pessoa_l = value.before;
+      rows.push({ ...value, label: f.label, name: 'f_depositante_pessoa_l' });
+      continue;
+    }
+    const m = partMap?.fields[f.attr] ?? target.fields[key];
     const why = target.manual?.[key];
     if (!m && why) manual.set(why, [...(manual.get(why) ?? []), f.label]);
     if (!m) {
@@ -455,7 +479,7 @@ export function planProduction(
     const [field, value] = when.split('=') as [string, string];
     if (set[field] === value) Object.assign(set, also);
   }
-  return { ...base, expect, ...(lookups ? { lookups } : {}), rows, set };
+  return { ...base, expect, ...(holders && { holders }), ...(lookups && { lookups }), rows, set };
 }
 
 /** Para conferir sem acento, caixa nem espaço nas pontas. */
