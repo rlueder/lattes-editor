@@ -1,15 +1,22 @@
-// Quanto do currículo o conector consegue enviar ao Lattes. Para cada
-// atributo de cada elemento de um currículo, troca o valor numa cópia, planeja
-// o envio com todas as funções do conector ligadas e conta o que vira operação
-// e o que fica à mão, com o motivo. Uso:
+// Quanto do editor o conector consegue enviar ao Lattes. Para cada atributo
+// de cada elemento de um currículo, troca o valor numa cópia, planeja o envio
+// com todas as funções do conector ligadas e anota o que vira operação e o
+// que fica à mão, com o motivo. Uso:
 //
 //   node scripts/cobertura-conector.ts [arquivo.xml] [--so=ELEMENTO,...] [--resumo]
+//   node scripts/cobertura-conector.ts --por-curriculo [arquivo.xml] [--so=ELEMENTO,...]
 //
-// Sem arquivo, mede os dois currículos de exemplo: fixtures/demo.xml, o de
-// uma pesquisadora com o que uma pessoa de verdade teria, e
-// fixtures/synthetic_full.xml, que tem todos os elementos do schema (os tipos
-// que o demo não tem, como livro, tradução e partitura, só aparecem nele).
-// --resumo mostra só os totais. A troca é sintética (outro valor do
+// O padrão conta campos: cada campo do editor (o caminho do elemento no XML e
+// o atributo) uma vez só, de fixtures/synthetic_full.xml (que tem todos os
+// elementos do schema) ou do arquivo dado. Um campo vai pelo conector quando
+// toda troca nele vira envio. O Lattes não o tem quando nenhuma troca vai e
+// todas dão só motivos de campo ausente (o mesmo fieldAbsent que o editor
+// usa): fica só para ler no editor. O resto falta no conector, inclusive o
+// campo em que parte das trocas vai. --resumo mostra só os totais.
+//
+// --por-curriculo é a contagem antiga, por troca de atributo num currículo
+// (fixtures/demo.xml e fixtures/synthetic_full.xml sem arquivo): depende de
+// quantos itens de cada tipo o exemplo tem. A troca é sintética (outro valor do
 // enumerado, o ano anterior, o texto com " x"), e por isso um motivo do tipo
 // "valor sem correspondência" pode ser da troca e não do conector. Onde o
 // editor oferece a lista do Lattes (instituição, curso, agência), a troca é a
@@ -19,11 +26,13 @@
 import { readFileSync } from 'node:fs';
 
 import { BRIDGE_FEATURES } from '../src/bridge/compat.ts';
+import { fieldAbsent } from '../src/bridge/form-lacks.ts';
 import { planChanges, planOptionsFor } from '../src/bridge/plan.ts';
 import { diffDocuments } from '../src/model/changes.ts';
 import { applyLinkedAttrs, followsCountry } from '../src/model/linked-attrs.ts';
-import { getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
+import { getAttr, parseXml, serializeXml, setAttr, type XElement } from '../src/model/xml.ts';
 import { lattesSchema } from '../src/schema/lattes.ts';
+import { derivedValue, outOfList, typedChoices } from '../src/schema/typed-choices.ts';
 import { isSystemAttr } from '../src/ui/field-kind.ts';
 import {
   applyAgency,
@@ -38,6 +47,7 @@ const args = process.argv.slice(2);
 const named = args.find((a) => !a.startsWith('--'));
 const files = named ? [named] : ['fixtures/demo.xml', 'fixtures/synthetic_full.xml'];
 const summaryOnly = args.includes('--resumo');
+const byCv = args.includes('--por-curriculo');
 const only = args
   .find((a) => a.startsWith('--so='))
   ?.slice(5)
@@ -116,9 +126,31 @@ function swappedLead(work: XElement, member: XElement): boolean | undefined {
 
 type Stats = Map<string, { no: number; ok: number; reasons: Map<string, number> }>;
 
+/** Uma troca de teste: o campo (caminho e atributo), se virou envio e os motivos. */
+interface Trial {
+  attr: string;
+  element: string;
+  ok: boolean;
+  path: string;
+  reasons: string[];
+}
+
+/** O caminho de cada elemento, pelos nomes desde a raiz. */
+const pathsOf = (root: XElement): Map<XElement, string> => {
+  const out = new Map<XElement, string>();
+  const walk = (e: XElement, prefix: string) => {
+    const path = prefix ? `${prefix}/${e.name}` : e.name;
+    out.set(e, path);
+    for (const c of e.children) if (c.kind === 'element') walk(c, path);
+  };
+  walk(root, '');
+  return out;
+};
+
 /** As trocas de um currículo, por elemento: quantas viram envio e por que as outras não. */
-function cover(raw: string): Stats {
+function cover(raw: string, trials: Trial[] = []): Stats {
   const base = parseXml(raw).root;
+  const paths = pathsOf(base);
   const stats: Stats = new Map();
   flatten(base).forEach((el, index) => {
     const spec = lattesSchema.elements[el.name];
@@ -136,7 +168,12 @@ function cover(raw: string): Stats {
       if (a.name === 'FLAG-RESPONSAVEL') {
         if (!swappedLead(work, target)) continue;
       } else if (!picked(target, a.name, a.value)) {
-        attr.value = changed(a.name, a.value, spec.attributes.find((x) => x.name === a.name)?.enum);
+        // A lista que o editor oferece no campo (a do schema, ou a do Lattes
+        // nos campos tipados): a troca é outra opção dela, como a pessoa faria.
+        const choices =
+          spec.attributes.find((x) => x.name === a.name)?.enum ??
+          typedChoices(target, a.name)?.map((c) => c.value);
+        attr.value = changed(a.name, a.value, choices);
         // O que o editor muda junto ao gravar (AttributeField chama o mesmo).
         applyLinkedAttrs(target, a.name);
       }
@@ -147,7 +184,15 @@ function cover(raw: string): Stats {
         options,
       );
       const s = stats.get(el.name) ?? { no: 0, ok: 0, reasons: new Map<string, number>() };
-      if (plan.ops.length > 0 && plan.unsupported.length === 0) s.ok++;
+      const ok = plan.ops.length > 0 && plan.unsupported.length === 0;
+      trials.push({
+        attr: a.name,
+        element: el.name,
+        ok,
+        path: paths.get(el)!,
+        reasons: plan.unsupported.map((u) => u.reason),
+      });
+      if (ok) s.ok++;
       else {
         s.no++;
         for (const u of plan.unsupported)
@@ -159,19 +204,137 @@ function cover(raw: string): Stats {
   return stats;
 }
 
-const totals: string[] = [];
-for (const file of files) {
-  const stats = cover(readFileSync(file, 'latin1'));
-  let total = 0;
-  let sent = 0;
-  if (!summaryOnly && files.length > 1) console.log(`\n== ${file}`);
-  for (const [name, s] of [...stats.entries()].sort((a, b) => b[1].no - a[1].no)) {
-    total += s.ok + s.no;
-    sent += s.ok;
-    if (summaryOnly) continue;
-    const reasons = [...s.reasons.entries()].map(([r, n]) => `\n    ${n}× ${r}`).join('');
-    console.log(`${s.no ? '✗' : '✓'} ${name}  enviáveis ${s.ok}, à mão ${s.no}${reasons}`);
+/** O motivo sem o que muda de item para item (o valor, o nome do campo). */
+const reasonKind = (r: string) => r.replace(/:.*$/, '').trim();
+
+/**
+ * O synthetic_full tem valores inventados também nos campos de lista (a forma
+ * de participação num evento, por exemplo), que nenhuma exportação traria; e
+ * com o "antes" fora da lista, toda troca no item fica à mão. Aqui cada um
+ * desses vira o valor que o Lattes deriva, ou a primeira opção da lista. Duas
+ * passadas, porque uma lista pode depender de outra (o tipo segue a forma).
+ * Só para o synthetic_full: um arquivo dado é medido como veio.
+ */
+function withListValues(raw: string): { rewritten: number; xml: string } {
+  const doc = parseXml(raw);
+  const changed = new Set<{ name: string }>();
+  for (let pass = 0; pass < 2; pass++) {
+    for (const el of flatten(doc.root)) {
+      for (const a of el.attrs) {
+        if (!outOfList(el, a.name)) continue;
+        const value = derivedValue(el.name, a.name) ?? typedChoices(el, a.name)?.[0]?.value;
+        if (value !== undefined && value !== a.value) {
+          a.value = value;
+          changed.add(a);
+        }
+      }
+    }
   }
-  totals.push(`${file}: ${sent} de ${total} trocas de atributo viram envio.`);
+  return { rewritten: changed.size, xml: serializeXml(doc) };
 }
-console.log(`\n${totals.join('\n')}`);
+
+const SYNTHETIC = 'fixtures/synthetic_full.xml';
+
+/** O motivo do campo em que parte das trocas vai e o resto o Lattes não tem. */
+const PARTIAL = 'Vai em parte: nas outras trocas o formulário do Lattes não tem o campo';
+
+/** Os campos do editor, cada um uma vez: vai, o Lattes não tem, falta no conector. */
+function fieldReport(file: string): void {
+  const trials: Trial[] = [];
+  const raw = readFileSync(file, 'latin1');
+  const { rewritten, xml } = file === SYNTHETIC ? withListValues(raw) : { rewritten: 0, xml: raw };
+  cover(xml, trials);
+  const fields = new Map<string, Trial[]>();
+  for (const t of trials) {
+    const key = `${t.path} @${t.attr}`;
+    fields.set(key, [...(fields.get(key) ?? []), t]);
+  }
+  type Kind = 'vai' | 'sem-campo' | 'falta';
+  const kindOf = (ts: Trial[]): { kind: Kind; reason?: string } => {
+    if (ts.every((t) => t.ok)) return { kind: 'vai' };
+    // Por troca: uma que falhou sem motivo, ou com outro motivo, ou outra que
+    // foi, tira o campo do "o Lattes não tem".
+    const failed = ts.filter((t) => !t.ok);
+    const absent = (t: Trial) => t.reasons.length > 0 && t.reasons.every(fieldAbsent);
+    if (failed.length === ts.length && failed.every(absent)) return { kind: 'sem-campo' };
+    const reasons = failed.flatMap((t) => t.reasons);
+    const own = reasons.find((r) => !fieldAbsent(r));
+    if (own) return { kind: 'falta', reason: own };
+    // Toda troca que falhou tem motivo e é de campo ausente: as outras foram.
+    return { kind: 'falta', reason: failed.every(absent) ? PARTIAL : 'sem motivo' };
+  };
+  const sections = new Map<string, Record<Kind, number>>();
+  const missing = new Map<string, { els: Set<string>; n: number }>();
+  const count = { falta: 0, 'sem-campo': 0, vai: 0 };
+  for (const [key, ts] of fields) {
+    const { kind, reason } = kindOf(ts);
+    count[kind]++;
+    // A seção e, dentro de dados gerais e complementares, a parte (formação,
+    // atuação, orientações…), que é como o editor as mostra.
+    const parts = key.split(' @')[0]!.split('/');
+    const section =
+      parts.length < 2
+        ? 'CURRICULO-VITAE'
+        : /^DADOS-(GERAIS|COMPLEMENTARES)$/.test(parts[1]!) && parts[2]
+          ? `${parts[1]} › ${parts[2]}`
+          : parts[1]!;
+    const row = sections.get(section) ?? { falta: 0, 'sem-campo': 0, vai: 0 };
+    row[kind]++;
+    sections.set(section, row);
+    if (reason) {
+      const r = reasonKind(reason);
+      const m = missing.get(r) ?? { els: new Set<string>(), n: 0 };
+      m.els.add(ts[0]!.element);
+      m.n++;
+      missing.set(r, m);
+    }
+  }
+  const editable = count.vai + count.falta;
+  const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 100)}%` : '-');
+  if (!summaryOnly) {
+    console.log('Por seção (campos): vão / faltam no conector / o Lattes não tem');
+    for (const [name, r] of [...sections.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+      console.log(
+        `  ${name.padEnd(56)} ${String(r.vai).padStart(4)} / ${String(r.falta).padStart(4)} / ${String(r['sem-campo']).padStart(4)}   ${pct(r.vai, r.vai + r.falta)}`,
+      );
+    }
+    console.log('\nO que falta no conector, por motivo (campos e tipos de item):');
+    const rows = [...missing.entries()].map(([r, m]) => ({ ...m, r }));
+    for (const { els, n, r } of rows.sort((a, b) => b.n - a.n)) {
+      const list = [...els].slice(0, 4).join(', ');
+      console.log(`  ${String(n).padStart(4)}  ${r}  (${list}${els.size > 4 ? ', …' : ''})`);
+    }
+  }
+  console.log(
+    `\n${count.vai} de ${editable} campos que o Lattes aceita vão pelo conector (${pct(count.vai, editable)}). ` +
+      `Outros ${count['sem-campo']} o formulário do Lattes não tem e ficam só para ler. ` +
+      `${fields.size} campos no total.${
+        rewritten > 0
+          ? ` No exemplo, ${rewritten} valores fora da lista do Lattes viraram o da lista antes da medição.`
+          : ''
+      }`,
+  );
+}
+
+if (byCv) cvReport();
+else fieldReport(named ?? SYNTHETIC);
+
+/** A contagem antiga, por troca de atributo em cada currículo. */
+function cvReport(): void {
+  const totals: string[] = [];
+  for (const file of files) {
+    const stats = cover(readFileSync(file, 'latin1'));
+    let total = 0;
+    let sent = 0;
+    if (!summaryOnly && files.length > 1) console.log(`\n== ${file}`);
+    for (const [name, s] of [...stats.entries()].sort((a, b) => b[1].no - a[1].no)) {
+      total += s.ok + s.no;
+      sent += s.ok;
+      if (summaryOnly) continue;
+      const reasons = [...s.reasons.entries()].map(([r, n]) => `\n    ${n}× ${r}`).join('');
+      console.log(`${s.no ? '✗' : '✓'} ${name}  enviáveis ${s.ok}, à mão ${s.no}${reasons}`);
+    }
+    totals.push(`${file}: ${sent} de ${total} trocas de atributo viram envio.`);
+  }
+  console.log(`\n${totals.join('\n')}`);
+}

@@ -3,16 +3,26 @@
 ## Objetivo
 
 Levar ao envio pelo conector as trocas que hoje vão à mão por limitação do
-editor, e não do Lattes. A medida é `node scripts/cobertura-conector.ts`, nos
-dois currículos de exemplo: `fixtures/demo.xml` (o que uma pesquisadora teria)
-e `fixtures/synthetic_full.xml` (todos os elementos do schema, inclusive os
-tipos que o demo não tem). No começo do plano, 390 de 665 trocas do demo
-viravam envio (18/10/2026).
+editor, e não do Lattes. A medida é `node scripts/cobertura-conector.ts`, que
+conta campos: cada campo do editor (o caminho do elemento e o atributo) uma
+vez só, de `fixtures/synthetic_full.xml`, que tem todos os elementos do
+schema. Cada campo vai pelo conector, falta no conector, ou o formulário do
+Lattes não tem onde gravá-lo (fica só para ler). O alvo é a segunda coluna.
+Até 19/10/2026 a medida era por troca de atributo em cada currículo de
+exemplo, o que dependia de quantos itens de cada tipo o exemplo tinha; ela
+segue em `--por-curriculo`, e os números abaixo de 19/10/2026 são dela. No
+começo do plano, 390 de 665 trocas do demo viravam envio (18/10/2026).
 Das 275 que não viram, 148 são limite do próprio Lattes (campo que o
 formulário não tem, dado que o Lattes gera, DOI) e ficam como estão. As
 outras 127 são o alvo deste plano.
 
 ## Estado atual
+
+- 19/10/2026: medida por campo. 1256 de 2582 campos que o Lattes aceita vão
+  pelo conector (49%); outros 1166 o formulário do Lattes não tem. O que mais
+  falta: patentes e registros (330 campos), os tipos de produção técnica sem
+  formulário ainda, como software e cultivar (306), os tipos artísticos que
+  o censo não achou no Lattes (286) e as atividades da atuação (98).
 
 - 18/10/2026, fim do dia: o demo ganhou um prefácio e a cobertura passou a
   medir os dois currículos: demo 447 de 662, synthetic_full 1113 de 3748.
