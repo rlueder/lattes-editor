@@ -1765,6 +1765,41 @@ linhas, e o `check()` as serializa em `f_inst_l`, `f_producoes_l` e
 `producaoProvider` nem `orientacaoProvider` na página, como a especificação
 supunha; a equipe, sim, é o `autorProvider`. **Observado.**
 
+Numa página de alteração lida em 20/10/2026 (um projeto de teste com um
+financiador e duas produções ligadas incluídos à mão), cada linha traz o
+valor que o `check()` envia num `<span>` da célula, ao lado do texto que a
+tela mostra (trecho copiado da página, sem formatar):
+
+```text
+<table id="grid2"> … <tbody> <tr> <td>FAPESP_PPPROV<span id="cod_inst_aux">VJMOE00000002</span></td> <td>0000<span>0000;N;</span></td> <td>R$ 10,00<span>026|10,00</span></td> <td>Auxílio Financeiro<span>A</span></td> <td><img … onClick="editarLinhaTabela(this)"><img … onClick="apagaLinhaTabela(this)"></td> </tr> </tbody>
+<table id="grid3"> … <tbody> <tr> <td tabindex="0">Teste do LattesEditor (apagar)<SPAN>34</SPAN></td> <td tabindex="0">2026</td> <td tabindex="0">Participações em eventos</td> </tr> <tr> <td tabindex="0">TESTE EDITOR APAGAR registro-PC-v1 f_titulo<SPAN>39</SPAN></td> <td tabindex="0">2006</td> <td tabindex="0">Software</td> </tr> <INPUT TYPE="hidden" NAME="f_producoes_d" VALUE="34|39"> </tbody>
+<table id="grid4"> … <tbody> <INPUT TYPE="hidden" NAME="f_orientacoes_d" VALUE=""> </tbody>
+```
+
+O `criarGrid` da página dá à `grid_2` o `tagValor`
+`['span','span','span','span',null]` e à `grid_3` e à `grid_4`
+`['span', null, null]`. O `associarValores()` toma, em cada linha e em cada
+célula com `tagValor`, o `innerHTML` do primeiro elemento com essa tag, e o
+`check()` junta os da `grid_2` como `v0|v1|v2|v3|@` por linha e os das outras
+como `v0@`. Neste projeto, então, `f_inst_l` vai
+`VJMOE00000002|0000;N;|026|10,00|A|@`, `f_producoes_l` vai `34@39@` e
+`f_orientacoes_l` vai vazio. Um valor pode ter `|` dentro (`026|10,00`), e
+o `check()` não o escapa. Os ocultos `f_producoes_d` e `f_orientacoes_d`
+ficam dentro do corpo das tabelas, com os códigos ligados unidos por `|`.
+**Observado.** O sentido de cada valor do financiador (`0000;N;`, a moeda e
+o valor) não foi lido, nem o que o servidor faz com os dois ocultos.
+
+O conector manda `f_producoes_d` e `f_orientacoes_d` como a página os serve
+e refaz os três ocultos das grades assim a partir da página, com as entidades
+como o `innerHTML` as deixa (`&amp;` continua `&amp;`), e os envia junto com
+qualquer outra alteração do projeto; depois do envio, confere que voltaram
+iguais (`src/bridge/production/opaque.ts`). Quando a tabela falta, ou uma
+linha não se lê assim (célula sem o `<span>`, marcação dentro dele), nada é
+enviado. Incluir, tirar ou trocar um financiador, uma produção ou uma
+orientação ligada continua à mão, e com uma dessas mudanças na fila o resto
+do projeto vai à mão junto: o envio levaria de volta as linhas que o Lattes
+tem, e a mudança à mão ficaria para trás com o item conferido.
+
 **Inferido**: que a exportação ponha o órgão de cima em
 `PARTICIPACAO-EM-PROJETO@CODIGO-ORGAO`/`NOME-ORGAO` e a unidade em
 `CODIGO-UNIDADE`/`NOME-UNIDADE`; nenhuma exportação com órgão foi vista. O
@@ -2136,7 +2171,9 @@ vão em `f_inst_l` com quatro valores da grade `grid_2` por linha, unidos por
 `|` e terminados em `|@`; os valores vêm da janela
 `pp_lista_inst?f_pgm=INSTFINANC`, e o sentido de cada um não foi lido. As
 produções e orientações ligadas vão em `f_producoes_l` e `f_orientacoes_l`, o
-primeiro valor de cada linha seguido de `@`.
+primeiro valor de cada linha seguido de `@`. Na página de alteração, cada
+valor é o `innerHTML` do `<span>` da célula (seção 18, "Órgão e unidade do
+projeto", **observado** em 20/10/2026).
 
 **Programa de computador registrado.** A lista de programas
 (`PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=PC`) abre a janela prévia

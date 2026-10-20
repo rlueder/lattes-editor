@@ -32,6 +32,15 @@ outras 127 são o alvo deste plano.
   troca juntas (`src/model/linked-attrs.ts`); datas que ainda discordam ficam
   à mão. 2560 de 2801 campos vão (91%), eram 2554. A descrição da situação no
   `synthetic_full.xml` passou a ser "Depósito", como na exportação.
+- 20/10/2026: projeto com financiadores, produções ou orientações ligadas
+  pelo conector. O envio refaz `f_inst_l`, `f_producoes_l` e
+  `f_orientacoes_l` das tabelas `grid2`, `grid3` e `grid4` da página, como o
+  `check()` faz, e confere depois que voltaram iguais
+  (`src/bridge/production/opaque.ts`); antes, o projeto com qualquer uma
+  delas ficava inteiro à mão. Incluir, tirar ou trocar uma linha dessas
+  grades continua à mão, e leva junto o resto do projeto na mesma fila. 2579 de 2787 campos vão (93%); eram 2564 de 2791.
+  Os 4 que saíram da conta passaram a "o formulário do Lattes não tem", o
+  motivo que a recusa do projeto escondia.
 
 - 19/10/2026, noite: demais trabalhos, licenças e linhas de pesquisa pelo
   motor de produção (`targets/demais.ts`), testados no Lattes real com itens

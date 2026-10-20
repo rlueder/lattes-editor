@@ -149,26 +149,34 @@ const PROJETO: ProductionTarget = {
     paramsBy: { attr: 'NATUREZA', child: PROJECT, param: 'f_cod_tipo', values: NATURE },
     proc: 'pkg_projeto.lista',
   },
-  // Os ocultos são observados (censo); o formato de cada linha, não (seção
-  // 21). As tabelas de cada grade, observadas na página de alteração real
-  // (18/10/2026), já vêm com as linhas que o servidor escreve.
+  // Os ocultos são observados (censo). As tabelas de cada grade, observadas
+  // na página de alteração real (18/10/2026), já vêm com as linhas que o
+  // servidor escreve. A serialização é a do check() e do criarGrid da página,
+  // lida em 20/10/2026 num projeto de teste com um financiador e duas
+  // produções ligadas: grid_2 com tagValor 'span' nas quatro primeiras
+  // células e cada linha "v0|v1|v2|v3|@"; grid_3 e grid_4 com 'span' só na
+  // primeira e "v0@". O sentido de cada valor do financiador não foi lido, e
+  // eles mesmos podem ter "|" (026|10,00): vão como estão.
   opaqueGrids: [
     {
       element: 'FINANCIADORES-DO-PROJETO',
       field: 'f_inst_l',
       label: 'financiadores',
+      serialize: { cells: 4, end: '|@' },
       table: 'grid2',
     },
     {
       element: 'PRODUCOES-CT-DO-PROJETO',
       field: 'f_producoes_l',
       label: 'produções ligadas',
+      serialize: { cells: 1, end: '@' },
       table: 'grid3',
     },
     {
       element: 'ORIENTACOES',
       field: 'f_orientacoes_l',
       label: 'orientações ligadas',
+      serialize: { cells: 1, end: '@' },
       table: 'grid4',
     },
   ],

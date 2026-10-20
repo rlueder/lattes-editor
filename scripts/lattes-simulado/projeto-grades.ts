@@ -8,12 +8,19 @@
 // autorProvider da equipe e as tabelas grid2, grid3 e grid4 dos
 // financiadores, produções e orientações. Inferido: a ordem das chaves de
 // cada linha da equipe (l, c, t, tit) e que o servidor a grave como chegou.
-// O POST não grava as outras três: o conector só envia quando estão vazias.
+//
+// As linhas das tabelas seguem as da página real de 20/10/2026 (um projeto
+// de teste com um financiador e duas produções ligadas): o valor que o
+// check() envia está num <span> de cada célula com tagValor. Inferido: que o
+// servidor grave as linhas na ordem em que chegam e tire as que não vêm. O
+// simulado não cria ligação nova: uma linha enviada que não é de nenhuma
+// ligação do projeto não entra.
 
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
 import type { LattesState } from './estado.ts';
+import { esc } from './html.ts';
 import type { SimRequest } from './pedido.ts';
 
 type Row = Record<string, boolean | string>;
@@ -53,22 +60,138 @@ export function projectGridScripts(projeto: XElement | undefined): string {
     : [];
   // Financiadores, produções e orientações: tabelas que o servidor escreve
   // com as linhas (grid2, grid3 e grid4 da página real, 18/10/2026).
-  const table = (id: string, container: string, attr: string) => {
+  const table = (grid: LinkGrid) => {
     const rows = projeto
-      ? partsOf(projeto, container).map(
-          (p) => `<tr><td><span>${getAttr(p, attr) ?? ''}</span></td></tr>`,
+      ? partsOf(projeto, grid.container).map(
+          (p) =>
+            `<tr> ${grid
+              .cells(p)
+              .map((c) => `<td tabindex="0">${c}</td>`)
+              .join(' ')} </tr>`,
         )
       : [];
-    return `<table class="grid" id="${id}">\n  <thead><tr><th>Título</th></tr></thead>\n  <tbody>\n${rows.join('\n')}\n</tbody></table>`;
+    return `<table class="grid" id="${grid.id}">\n  <thead><tr><th>Título</th></tr></thead>\n  <tbody>\n${rows.join('\n')}\n</tbody></table>`;
   };
   return [
     provider('var autorProvider', members),
     // As instituições do projeto, que o configurarInstituicoes() serializa em f_instituicoes.
     '<script>\nvar titularInstProvider = \n[{}];\n</script>',
-    table('grid2', 'FINANCIADORES-DO-PROJETO', 'NOME-INSTITUICAO'),
-    table('grid3', 'PRODUCOES-CT-DO-PROJETO', 'TITULO-DA-PRODUCAO-CT'),
-    table('grid4', 'ORIENTACOES', 'TITULO-ORIENTACAO'),
+    ...LINK_GRIDS.map(table),
   ].join('\n');
+}
+
+/** O texto como o innerHTML o devolve: só &, < e > viram entidade. */
+const inner = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/**
+ * NATUREZA do financiador → a quarta célula. Observado só o Auxílio
+ * Financeiro (A, 20/10/2026); as outras letras são inferidas.
+ */
+const FUNDER_NATURE: Record<string, [string, string]> = {
+  AUXILIO_FINANCEIRO: ['A', 'Auxílio Financeiro'],
+  BOLSA: ['B', 'Bolsa'],
+  COOPERACAO: ['C', 'Cooperação'],
+  OUTRO: ['O', 'Outro'],
+  REMUNERACAO: ['R', 'Remuneração'],
+};
+
+interface LinkGrid {
+  /** As células de uma linha, em HTML. */
+  cells: (part: XElement) => string[];
+  container: string;
+  /** O fim de cada linha no oculto. */
+  end: string;
+  field: string;
+  id: string;
+  /** Os valores dos <span>, como o check() os junta. */
+  values: (part: XElement) => string[];
+}
+
+const funderValues = (f: XElement) => [
+  getAttr(f, 'CODIGO-INSTITUICAO') ?? '',
+  // A exportação não traz o valor nem a moeda: o simulado repete os da linha
+  // observada, cujo sentido não foi lido.
+  '0000;N;',
+  '026|10,00',
+  FUNDER_NATURE[getAttr(f, 'NATUREZA') ?? '']?.[0] ?? '',
+];
+
+/** Uma ligação de produção ou orientação: título com o código, ano e tipo. */
+const linked = (seq: string, title: string, type: string): Omit<LinkGrid, 'field' | 'id'> => ({
+  cells: (p) => [
+    `${esc(getAttr(p, title) ?? '')}<SPAN>${inner(getAttr(p, seq) ?? '')}</SPAN>`,
+    '',
+    esc(getAttr(p, type) ?? ''),
+  ],
+  container: '',
+  end: '@',
+  values: (p) => [getAttr(p, seq) ?? ''],
+});
+
+const LINK_GRIDS: LinkGrid[] = [
+  {
+    cells: (f) => {
+      const [code = '', other = '', value = '', nature = ''] = funderValues(f).map(inner);
+      return [
+        `${esc(getAttr(f, 'NOME-INSTITUICAO') ?? '')}<span id="cod_inst_aux">${code}</span>`,
+        `0000<span>${other}</span>`,
+        `R$ 10,00<span>${value}</span>`,
+        `${esc(FUNDER_NATURE[getAttr(f, 'NATUREZA') ?? '']?.[1] ?? '')}<span>${nature}</span>`,
+        '<img src="editar.gif" onClick="editarLinhaTabela(this)"><img src="apagar.gif" onClick="apagaLinhaTabela(this)">',
+      ];
+    },
+    container: 'FINANCIADORES-DO-PROJETO',
+    end: '|@',
+    field: 'f_inst_l',
+    id: 'grid2',
+    values: funderValues,
+  },
+  {
+    ...linked('SEQUENCIA-PRODUCAO-CT', 'TITULO-DA-PRODUCAO-CT', 'TIPO-PRODUCAO-CT'),
+    container: 'PRODUCOES-CT-DO-PROJETO',
+    field: 'f_producoes_l',
+    id: 'grid3',
+  },
+  {
+    ...linked('SEQUENCIA-ORIENTACAO', 'TITULO-ORIENTACAO', 'TIPO-ORIENTACAO'),
+    container: 'ORIENTACOES',
+    field: 'f_orientacoes_l',
+    id: 'grid4',
+  },
+];
+
+/** Os códigos ligados, como o oculto f_producoes_d ou f_orientacoes_d (34|39). */
+export function linkedCodes(projeto: XElement, field: 'f_orientacoes_l' | 'f_producoes_l'): string {
+  const grid = LINK_GRIDS.find((g) => g.field === field)!;
+  return partsOf(projeto, grid.container)
+    .map((p) => grid.values(p)[0] ?? '')
+    .join('|');
+}
+
+/**
+ * Grava as ligações do POST: ficam, na ordem do envio, as linhas que vieram
+ * como a página as serializa; as outras saem. Sem o oculto, nada muda.
+ */
+export function applyProjectLinks(projeto: XElement, req: SimRequest): void {
+  for (const grid of LINK_GRIDS) {
+    const posted = req.get(grid.field);
+    if (posted === undefined || posted === null) continue;
+    const parts = partsOf(projeto, grid.container);
+    const kept: XElement[] = [];
+    for (const line of posted.split('@').filter(Boolean)) {
+      const part = parts.find(
+        (p) => !kept.includes(p) && grid.values(p).map(inner).join('|') + grid.end === `${line}@`,
+      );
+      if (part) kept.push(part);
+    }
+    const container = childElements(projeto, grid.container)[0];
+    if (!container) continue;
+    if (kept.length === 0) {
+      projeto.children = projeto.children.filter((c) => c !== container);
+    } else {
+      container.children = kept;
+    }
+  }
 }
 
 /** Grava a equipe do POST no projeto, como chegou (l|c|t|tit por linha). */
