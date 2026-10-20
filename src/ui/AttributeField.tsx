@@ -164,7 +164,8 @@ export function AttributeField({
   }
 
   // Item que já está no Lattes, campo que o formulário do Lattes não tem:
-  // alterar aqui não chegaria lá, então fica só para ler.
+  // alterar aqui não chegaria lá. O formulário do item nem o mostra
+  // (ElementView.tsx); aqui fica só para ler, para quem chegar por outro caminho.
   const lacks = formLacks?.field(el, name);
   if (lacks) {
     return (
@@ -173,7 +174,6 @@ export function AttributeField({
         <span className="locked-value">
           {value ? displayValue(el.name, name, value) : '(vazio)'}
         </span>
-        <span className="muted field-note">Não existe no formulário do Lattes</span>
       </div>
     );
   }

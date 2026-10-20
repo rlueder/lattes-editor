@@ -13,6 +13,7 @@ import { DisclosureGroup } from './DisclosureGroup.tsx';
 import { useFieldSlot, usePartKey, useTargetPart } from './draft-context.ts';
 import type { SectionFilter } from './facets.ts';
 import { type FieldGroup, groupFields, isBooleanAttr, isSystemAttr } from './field-kind.ts';
+import { type FormLacks, useFormLacks } from './form-lacks-context.ts';
 import { offForm } from './form-order.ts';
 import { isListItem } from './item-meta.ts';
 import { OUTLINE_HEAD_ATTR, outlineId } from './item-outline.ts';
@@ -44,6 +45,7 @@ function FieldsBlock({
   onEdit: EditFn;
 }) {
   const showCodes = useShowCodes();
+  const formLacks = useFormLacks();
   const fieldSlot = useFieldSlot();
   const partKey = usePartKey();
   const targetPart = useTargetPart();
@@ -61,6 +63,9 @@ function FieldsBlock({
       .filter((a) => showEmpty || a.value !== '')
       // Fora do formulário do Lattes (form-order.ts): só aparece preenchido.
       .filter((a) => a.value !== '' || !offForm(src.name, a.name))
+      // Num item que já está no Lattes, o campo que o formulário de lá não tem
+      // não aparece: alterá-lo aqui não chegaria lá.
+      .filter((a) => !formLacks?.field(src, a.name))
       // Códigos que o Lattes gera: só com "Mostrar códigos do Lattes" ligado.
       .filter((a) => showCodes || !isSystemAttr(src.name, a.name))
       // Sanduíche e cotutela só depois de o tipo do curso os escolher.
@@ -247,6 +252,7 @@ export function ElementView({
 }) {
   const children = childElements(el).filter((c) => c.attrs.length > 0 || c.children.length > 0);
   const index = useReferenceIndex();
+  const formLacks = useFormLacks();
   const container = el.attrs.length === 0 && children.length > 0;
 
   // Dentro de um item, um contêiner de sacos (ÁREAS-DO-CONHECIMENTO) vira linhas.
@@ -273,7 +279,8 @@ export function ElementView({
       childElements(c).length === 0 &&
       children.filter((x) => x.name === c.name).length === 1,
   );
-  const rest = children.filter((c) => !parts.includes(c));
+  // A parte em que nenhum campo existe no formulário do Lattes sai inteira, com o título.
+  const rest = children.filter((c) => !parts.includes(c) && !offLattesForm(c, formLacks));
   const fields = <FieldsBlock showEmpty={showEmpty} sources={[el, ...parts]} onEdit={onEdit} />;
   // No endereço, os endereços vêm primeiro; preferência e contatos depois.
   const fieldsLast = FIELDS_AFTER_PARTS.has(el.name);
@@ -309,6 +316,17 @@ export function ElementView({
 }
 
 const FIELDS_AFTER_PARTS = new Set(['ENDERECO']);
+
+/** Nenhum campo do elemento, nem dos filhos, existe no formulário do Lattes. */
+function offLattesForm(el: XElement, lacks: FormLacks | undefined): boolean {
+  if (!lacks) return false;
+  const kids = childElements(el);
+  if (el.attrs.length === 0 && kids.length === 0) return false;
+  return (
+    el.attrs.every((a) => lacks.field(el, a.name) !== undefined) &&
+    kids.every((k) => offLattesForm(k, lacks))
+  );
+}
 
 function Rows({ els, onEdit, showEmpty }: { els: XElement[]; showEmpty: boolean; onEdit: EditFn }) {
   return (
