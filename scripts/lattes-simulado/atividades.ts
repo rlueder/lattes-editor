@@ -227,11 +227,13 @@ function cargoUpdate(req: SimRequest, state: LattesState, atuacao: XElement): Si
     setAttr(found.el, 'CODIGO-UNIDADE', picked);
     setAttr(found.el, 'NOME-UNIDADE', unitName);
     setAttr(found.el, 'NOME-ORGAO', organName);
-    // O órgão de cima não vem no POST: o servidor o sabe pela unidade (inferido).
-    const above = Object.values(ORGANS)
-      .flat()
-      .find((o) => o.units.some(([code]) => code.trim() === picked));
-    if (above) setAttr(found.el, 'CODIGO-ORGAO', above.code);
+    // O órgão de cima não vem no POST: o servidor o sabe pela unidade, na
+    // instituição da atuação (inferido). Sem ele, o código antigo não fica.
+    const institution = (req.get('f_codinst') ?? '').replace(/^[A-Za-z]/, '');
+    const above = (ORGANS[institution] ?? []).find((o) =>
+      o.units.some(([code]) => code.trim() === picked),
+    );
+    setAttr(found.el, 'CODIGO-ORGAO', above?.code ?? '');
   } else if (picked) {
     setAttr(found.el, 'CODIGO-ORGAO', picked);
     setAttr(found.el, 'NOME-ORGAO', organName);
