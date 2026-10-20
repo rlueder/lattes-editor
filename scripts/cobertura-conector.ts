@@ -213,25 +213,37 @@ const reasonKind = (r: string) => r.replace(/:.*$/, '').trim();
  * com o "antes" fora da lista, toda troca no item fica à mão. Aqui cada um
  * desses vira o valor que o Lattes deriva, ou a primeira opção da lista. Duas
  * passadas, porque uma lista pode depender de outra (o tipo segue a forma).
+ * Só para o synthetic_full: um arquivo dado é medido como veio.
  */
-function withListValues(raw: string): string {
+function withListValues(raw: string): { rewritten: number; xml: string } {
   const doc = parseXml(raw);
+  const changed = new Set<{ name: string }>();
   for (let pass = 0; pass < 2; pass++) {
     for (const el of flatten(doc.root)) {
       for (const a of el.attrs) {
         if (!outOfList(el, a.name)) continue;
         const value = derivedValue(el.name, a.name) ?? typedChoices(el, a.name)?.[0]?.value;
-        if (value !== undefined) a.value = value;
+        if (value !== undefined && value !== a.value) {
+          a.value = value;
+          changed.add(a);
+        }
       }
     }
   }
-  return serializeXml(doc);
+  return { rewritten: changed.size, xml: serializeXml(doc) };
 }
+
+const SYNTHETIC = 'fixtures/synthetic_full.xml';
+
+/** O motivo do campo em que parte das trocas vai e o resto o Lattes não tem. */
+const PARTIAL = 'Vai em parte: nas outras trocas o formulário do Lattes não tem o campo';
 
 /** Os campos do editor, cada um uma vez: vai, o Lattes não tem, falta no conector. */
 function fieldReport(file: string): void {
   const trials: Trial[] = [];
-  cover(withListValues(readFileSync(file, 'latin1')), trials);
+  const raw = readFileSync(file, 'latin1');
+  const { rewritten, xml } = file === SYNTHETIC ? withListValues(raw) : { rewritten: 0, xml: raw };
+  cover(xml, trials);
   const fields = new Map<string, Trial[]>();
   for (const t of trials) {
     const key = `${t.path} @${t.attr}`;
@@ -246,13 +258,13 @@ function fieldReport(file: string): void {
     const absent = (t: Trial) => t.reasons.length > 0 && t.reasons.every(fieldAbsent);
     if (failed.length === ts.length && failed.every(absent)) return { kind: 'sem-campo' };
     const reasons = failed.flatMap((t) => t.reasons);
-    return {
-      kind: 'falta',
-      reason: reasons.find((r) => !fieldAbsent(r)) ?? reasons[0] ?? 'sem motivo',
-    };
+    const own = reasons.find((r) => !fieldAbsent(r));
+    if (own) return { kind: 'falta', reason: own };
+    // Toda troca que falhou tem motivo e é de campo ausente: as outras foram.
+    return { kind: 'falta', reason: failed.every(absent) ? PARTIAL : 'sem motivo' };
   };
   const sections = new Map<string, Record<Kind, number>>();
-  const missing = new Map<string, Set<string>>();
+  const missing = new Map<string, { els: Set<string>; n: number }>();
   const count = { falta: 0, 'sem-campo': 0, vai: 0 };
   for (const [key, ts] of fields) {
     const { kind, reason } = kindOf(ts);
@@ -271,7 +283,10 @@ function fieldReport(file: string): void {
     sections.set(section, row);
     if (reason) {
       const r = reasonKind(reason);
-      missing.set(r, (missing.get(r) ?? new Set()).add(ts[0]!.element));
+      const m = missing.get(r) ?? { els: new Set<string>(), n: 0 };
+      m.els.add(ts[0]!.element);
+      m.n++;
+      missing.set(r, m);
     }
   }
   const editable = count.vai + count.falta;
@@ -284,14 +299,7 @@ function fieldReport(file: string): void {
       );
     }
     console.log('\nO que falta no conector, por motivo (campos e tipos de item):');
-    const rows = [...missing.entries()].map(([r, els]) => ({
-      els,
-      n: [...fields.values()].filter((ts) => {
-        const k = kindOf(ts);
-        return k.reason && reasonKind(k.reason) === r;
-      }).length,
-      r,
-    }));
+    const rows = [...missing.entries()].map(([r, m]) => ({ ...m, r }));
     for (const { els, n, r } of rows.sort((a, b) => b.n - a.n)) {
       const list = [...els].slice(0, 4).join(', ');
       console.log(`  ${String(n).padStart(4)}  ${r}  (${list}${els.size > 4 ? ', …' : ''})`);
@@ -300,12 +308,16 @@ function fieldReport(file: string): void {
   console.log(
     `\n${count.vai} de ${editable} campos que o Lattes aceita vão pelo conector (${pct(count.vai, editable)}). ` +
       `Outros ${count['sem-campo']} o formulário do Lattes não tem e ficam só para ler. ` +
-      `${fields.size} campos no total.`,
+      `${fields.size} campos no total.${
+        rewritten > 0
+          ? ` No exemplo, ${rewritten} valores fora da lista do Lattes viraram o da lista antes da medição.`
+          : ''
+      }`,
   );
 }
 
 if (byCv) cvReport();
-else fieldReport(named ?? 'fixtures/synthetic_full.xml');
+else fieldReport(named ?? SYNTHETIC);
 
 /** A contagem antiga, por troca de atributo em cada currículo. */
 function cvReport(): void {
