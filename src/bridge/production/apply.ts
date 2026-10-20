@@ -6,6 +6,7 @@
 // grades e todos os outros campos.
 
 import type { LattesPort, OpResult } from '../apply.ts';
+import { areaLabel } from '../areas-atuacao.ts';
 import { menuAuthors } from '../author-grid.ts';
 import { getChecked, Stop } from '../create-shared.ts';
 import {
@@ -33,6 +34,7 @@ import {
   sameWords,
   serializeGrid,
 } from './grids.ts';
+import { areaGridRows, gridLabels, sameLabels, setorGridRows } from './item-lists.ts';
 import { resolveLookups } from './lookups.ts';
 import { sameAuthors, withLeads } from './members.ts';
 import { opaquePairs, readOpaque } from './opaque.ts';
@@ -47,6 +49,16 @@ import {
 } from './plan.ts';
 import { resolveStudent } from './student.ts';
 import type { GridField, ProductionTarget } from './types.ts';
+
+/** O ano do item na página: o do campo, ou o da data de t.year.fallback quando ele vem vazio. */
+function shownYear(controls: FormControl[], field: string, fallback?: string): string {
+  const year = valueOf(controls, field).trim();
+  if (year || !fallback) return year;
+  return /^\d{2}\/\d{2}\/(\d{4})$/.exec(valueOf(controls, fallback).trim())?.[1] ?? '';
+}
+
+/** Um campo de target.virtual: linha de um vetor da página, e não um controle. */
+const isVirtual = (field: string) => field.includes(':');
 
 const valueOf = (controls: FormControl[], name: string) =>
   controls.find((c) => c.name === name)?.value ?? '';
@@ -71,8 +83,10 @@ async function locate(
   menu: string,
 ): Promise<{ controls: FormControl[]; html: string; path: string }> {
   const params = { ...t.list.params, ...op.listParams };
+  // Parâmetro vazio: a lista que não o tem (o programa de computador com
+  // registro é a lista de PC sem f_reg; a sem registro tem f_reg=N).
   const lists = findLinks(menu, t.list.proc).filter((l) =>
-    Object.entries(params).every(([k, v]) => l.params[k] === v),
+    Object.entries(params).every(([k, v]) => (v === '' ? !l.params[k] : l.params[k] === v)),
   );
   // A mesma lista aparece às vezes também com f_sta_divulgacao_cientifica.
   const list = lists.find((l) => !('f_sta_divulgacao_cientifica' in l.params)) ?? lists[0];
@@ -87,8 +101,10 @@ async function locate(
     const controls = withScriptValues(html, port.readForm(html, t.form.name));
     if (!controls) continue;
     if (
-      folded(valueOf(controls, titleField)) === folded(op.match.title) &&
-      valueOf(controls, yearField).trim() === op.match.year &&
+      folded(valueOf(controls, titleField)) ===
+        folded(t.title.toForm ? t.title.toForm(op.match.title) : op.match.title) &&
+      shownYear(controls, yearField, t.year.fallback) ===
+        (t.year.toForm ? t.year.toForm(op.match.year) : op.match.year) &&
       sameNature(controls, t)
     ) {
       found.push({ controls, html, path: link.path });
@@ -156,7 +172,16 @@ export async function applyProduction(
     }
     // Um campo da especificação que a página não tem (ligação inferida que
     // não confere): nada vai, em vez de um POST com um parâmetro a mais.
-    const fields = Object.keys(op.set).filter((f) => !(f in GRID_SPECS));
+    const fields = Object.keys(op.set).filter((f) => !(f in GRID_SPECS) && !isVirtual(f));
+    // Os campos que são linhas de um vetor da página (target.virtual).
+    const virtualFields = Object.keys(op.set).filter(isVirtual);
+    const virtualNow = virtualFields.length > 0 ? t.virtual?.read(html) : {};
+    if (!virtualNow) {
+      return result(
+        'erro',
+        `A página do Lattes não trouxe ${virtualFields.map((f) => labelOf(op, f)).join(', ')}; nada foi enviado`,
+      );
+    }
     const absent = fields.filter((f) => !controls.some((c) => c.name === f));
     if (absent.length > 0) {
       return result(
@@ -207,6 +232,15 @@ export async function applyProduction(
     if (op.authors && !sameAuthors(grids.f_autores_l ?? [], op.authors.before)) {
       wrong.push('f_autores_l');
     }
+    if (op.areas && !sameLabels(gridLabels(grids.f_area_l ?? []), op.areas.before.map(areaLabel))) {
+      wrong.push('f_area_l');
+    }
+    if (op.setores && !sameLabels(gridLabels(grids.f_setor_l ?? []), op.setores.before)) {
+      wrong.push('f_setor_l');
+    }
+    for (const f of virtualFields) {
+      if (f in op.expect && folded(virtualNow[f] ?? '') !== folded(op.expect[f])) wrong.push(f);
+    }
     if (wrong.length > 0) {
       return result(
         'divergente',
@@ -217,6 +251,18 @@ export async function applyProduction(
     // As grades: as lidas, e no lugar delas as que a alteração troca.
     const replace: Grids = {};
     if (op.keywords) replace.f_plv_l = keywordRows(grids.f_plv_l ?? [], op.keywords.after);
+    if (op.areas || op.setores) {
+      const built = op.areas
+        ? areaGridRows(grids.f_area_l ?? [], menu, op.areas.after)
+        : setorGridRows(grids.f_setor_l ?? [], menu, op.setores!.after);
+      if ('unknown' in built) {
+        return result(
+          'erro',
+          `Fora da lista do Lattes: ${built.unknown.join(', ')}. Escolha pela lista do Lattes uma vez`,
+        );
+      }
+      replace[op.areas ? 'f_area_l' : 'f_setor_l'] = built.rows;
+    }
     if (op.authors) {
       const { missing, rows } = authorRows(
         grids.f_autores_l ?? [],
@@ -257,13 +303,18 @@ export async function applyProduction(
       organShown = resolved.shown;
     }
     // O que o check() da página monta antes do envio (target.built).
-    const built = t.built ? t.built(html) : {};
+    const built = t.built ? t.built(html, set) : {};
     if (!built) {
       return result('erro', 'A página do Lattes não trouxe o que o envio monta; nada foi enviado');
     }
-    chosen = { ...built, ...chosen };
+    const virtualSet = Object.fromEntries(virtualFields.map((f) => [f, op.set[f] ?? '']));
+    const virtualBuilt = virtualFields.length > 0 ? t.virtual?.build(html, virtualSet) : {};
+    if (!virtualBuilt) {
+      return result('erro', 'A página do Lattes não trouxe o que o envio monta; nada foi enviado');
+    }
+    chosen = { ...built, ...virtualBuilt, ...chosen };
     // A página carrega esses campos vazios: a releitura não os confere.
-    for (const k of Object.keys(built)) chosenCheck[k] = null;
+    for (const k of Object.keys({ ...built, ...virtualBuilt })) chosenCheck[k] = null;
     posted = true;
     const response = await port.post(
       t.form.action,
@@ -296,6 +347,20 @@ export async function applyProduction(
     }
     if (op.authors && !sameAuthors(afterGrids.f_autores_l ?? [], op.authors.after)) {
       notSaved.push('f_autores_l');
+    }
+    if (
+      op.areas &&
+      !sameLabels(gridLabels(afterGrids.f_area_l ?? []), op.areas.after.map(areaLabel))
+    ) {
+      notSaved.push('f_area_l');
+    }
+    if (op.setores && !sameLabels(gridLabels(afterGrids.f_setor_l ?? []), op.setores.after)) {
+      notSaved.push('f_setor_l');
+    }
+    // Os virtuais, lidos de novo do vetor da página.
+    const virtualAfter = virtualFields.length > 0 ? t.virtual?.read(afterHtml) : {};
+    for (const f of virtualFields) {
+      if (folded(virtualAfter?.[f] ?? '') !== folded(op.set[f])) notSaved.push(f);
     }
     // O texto do órgão leva uma quebra de linha, que a página pode devolver como \r\n.
     const loose = (v: string | null | undefined) => folded(v).replace(/\s+/g, ' ');

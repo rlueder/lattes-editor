@@ -29,6 +29,7 @@ import {
 } from './formulario-censo.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
+import { applyRegistryGrids, registryGridScripts } from './registro-grades.ts';
 import { html, type SimResponse } from './tipos.ts';
 
 const PATH = ['PRODUCAO-TECNICA'];
@@ -169,8 +170,21 @@ export function registroForm(req: SimRequest, state: LattesState, tipo: string):
     f_ctr: item ? 'U' : 'I',
     f_seq: seq ?? '',
   };
-  return html(h.page(label, renderCensusForm(screen(tipo), item, hidden, state)));
+  // A página que tira o ano da data do registro antes de enviar (lido em
+  // 19/10/2026): o desenho industrial e a cultivar protegida.
+  const derived =
+    item && DERIVED_YEAR.has(tipo) ? '<script>\n dc.f_ano.value = anoDep;\n</script>' : '';
+  const grids = item ? registryGridScripts(item, { withHolders: HOLDER_TYPES.has(tipo) }) : '';
+  return html(
+    h.page(label, `${renderCensusForm(screen(tipo), item, hidden, state)}\n${grids}${derived}`),
+  );
 }
+
+/** Os tipos com grade de depositantes ou titulares na página (marca e topografia não têm). */
+const HOLDER_TYPES = new Set(['CP', 'CR', 'DI']);
+
+/** Os tipos em que o check() põe em f_ano o ano de f_dta_dep. */
+const DERIVED_YEAR = new Set(['CP', 'DI']);
 
 export function registroPost(req: SimRequest, state: LattesState, tipo: string): SimResponse {
   const ctr = req.get('f_ctr');
@@ -191,8 +205,12 @@ export function registroPost(req: SimRequest, state: LattesState, tipo: string):
   );
   if (!item) return html(h.page(REGISTRY_ITEMS[tipo]![1], '<p>Registro não encontrado.</p>'));
   if (ctr === 'E') state.remove(state.find(PATH)!, item);
-  else if (ctr === 'U') applyCensusForm(screen(tipo), item, req, state);
-  else return html(back);
+  else if (ctr === 'U') {
+    // Sem o ano que o check() tira da data, o Lattes não grava nada (19/10/2026).
+    if (DERIVED_YEAR.has(tipo) && !req.get('f_ano')) return html(back);
+    applyCensusForm(screen(tipo), item, req, state);
+    applyRegistryGrids(item, req, { withHolders: HOLDER_TYPES.has(tipo) });
+  } else return html(back);
   state.touch();
   return html(back);
 }

@@ -34,6 +34,7 @@
 import type { Change } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import { AP_LEVELS, FORMATION_LEVELS } from './create-formacao.ts';
+import type { FormacaoGrids } from './formacao-grids.ts';
 import type { FieldValues, OpBase } from './plan.ts';
 
 export type FormationList = 'AP' | 'FA';
@@ -74,6 +75,8 @@ export interface LookupRow {
  * se é mesmo o item.
  */
 export interface FormacaoOp extends OpBase {
+  /** As palavras-chave, áreas ou setores que a mudança troca (formacao-grids.ts). */
+  grids?: FormacaoGrids;
   kind: 'formacao';
   /** A lista do menu: FA (formação acadêmica) ou AP (pós-doutorado e livre-docência). Sem valor, FA. */
   list?: FormationList;

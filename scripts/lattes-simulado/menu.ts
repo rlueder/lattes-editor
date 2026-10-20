@@ -4,7 +4,7 @@
 
 import { IMPORT_MODULES } from '../../src/import-export/importable.ts';
 import { childElements, getAttr, type XElement } from '../../src/model/xml.ts';
-import { areaScript } from './buscas.ts';
+import { areaScript, sectorScript } from './buscas.ts';
 import { brDate, type LattesState } from './estado.ts';
 import { eventItems } from './eventos.ts';
 import * as h from './html.ts';
@@ -33,6 +33,8 @@ function menuItems(code: string): [string, string][] {
     ['Projetos de ensino', `pkg_projeto.lista?f_cod_tipo=N&f_cod=${code}`],
     ['Outros projetos', `pkg_projeto.lista?f_cod_tipo=O&f_cod=${code}`],
     ['Prêmios e títulos', `pkg_premio.lista?f_cod=${code}`],
+    // Observado no menu real em 19/10/2026.
+    ['Coautores', `pkg_dic_autor.lista?f_cod=${code}`],
     // Observados no menu real em 16/10/2026.
     ['Trabalhos técnicos', `pkg_relatorio.lista?f_cod=${code}`],
     ['Outra produção bibliográfica', `prc_bib_demais_lista?f_cod_tipo=1Z&f_cod=${code}`],
@@ -163,6 +165,7 @@ function menu(state: LattesState): SimResponse {
 <iframe id="camada" style="flex:1;height:70vh;border:1px solid #ccc"></iframe></div>
 ${MENU_SCRIPT.replace('__COD__', state.code)}
 ${areaScript()}
+${sectorScript()}
 ${authorScript(state)}`;
   return html(h.page('Currículo Lattes', body));
 }

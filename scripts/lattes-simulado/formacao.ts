@@ -12,6 +12,7 @@ import { AGENCIES, COURSES, institutionsOf, withLetter } from './buscas.ts';
 import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
 import type { LattesState } from './estado.ts';
 import { type CapturedField, capturedForm, capturedOptions } from './formulario-censo.ts';
+import { applyFormationGrids, gridScripts } from './grades.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
 import { html, notFound, type Routes, type SimResponse } from './tipos.ts';
@@ -325,7 +326,8 @@ ${renderFields(levelBindings(bindings(state, ids), name), el)}
 <p><a href="#" onclick="self.parent.modalCV3.setarUrl('prc_inst_form?f_cod=${state.code}&amp;f_nivel=${nivel}',true); return false;">Buscar instituição</a></p>
 ${h.formButtons(Boolean(el))}
 </form>
-${h.formScripts('GN_FORMACAO2')}${el ? deleteScript(state, el, 'PKG_FORMACAO.SETA_ULTIMO_PUBLICO', 'Deseja realmente excluir esta formação acadêmica?') : ''}`;
+${h.formScripts('GN_FORMACAO2')}${el ? deleteScript(state, el, 'PKG_FORMACAO.SETA_ULTIMO_PUBLICO', 'Deseja realmente excluir esta formação acadêmica?') : ''}
+${gridScripts(el)}`;
   return html(h.page('Formação acadêmica/titulação', body));
 }
 
@@ -411,8 +413,12 @@ function post(req: SimRequest, state: LattesState): SimResponse {
   const el = bySeq(state, req.get('f_seq'));
   if (!el) return html(h.page('Formação', '<p>Registro não encontrado.</p>'));
   if (ctr === 'E') state.remove(container, el);
-  else if (ctr === 'U') applyFields(levelBindings(bindings(state, {}), el.name), el, req);
-  else return html(back);
+  else if (ctr === 'U') {
+    applyFields(levelBindings(bindings(state, {}), el.name), el, req);
+    // Palavras-chave, áreas e setores como chegaram (lido em 19/10/2026: a
+    // página traz os vetores e o check() os serializa).
+    applyFormationGrids(el, req);
+  } else return html(back);
   state.touch();
   return html(back);
 }

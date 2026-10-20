@@ -7,8 +7,16 @@ import type { Change } from '../../model/changes.ts';
 import { foldText } from '../../model/fold-text.ts';
 import { childElements, element, getAttr, type XElement } from '../../model/xml.ts';
 import { lattesSchema } from '../../schema/lattes.ts';
+import { areaLabel, type AreaRow } from '../areas-atuacao.ts';
 import type { BridgeOp, OpBase } from '../plan.ts';
 import { AUTHOR_PART, type AuthorSpec, MAX_KEYWORDS } from './grids.ts';
+import {
+  type AreaList,
+  isAreaChange,
+  type LabelList,
+  planAreaList,
+  planSetorList,
+} from './item-lists.ts';
 import { lookupAttrs, planLookups, type ProductionLookups } from './lookups.ts';
 import { planMembers } from './members.ts';
 import { isOrganChange, type OrganChoice, planOrgan } from './organ.ts';
@@ -43,6 +51,8 @@ export interface ProductionRow {
 }
 
 export interface ProductionOp extends OpBase {
+  /** Áreas do conhecimento antes e depois, quando a mudança é delas (item-lists.ts). */
+  areas?: AreaList;
   /** Autores antes e depois, na ordem, quando a mudança é deles. */
   authors?: { after: AuthorSpec[]; before: AuthorSpec[] };
   /** Palavras-chave antes e depois, na ordem, quando a mudança é delas. */
@@ -58,6 +68,8 @@ export interface ProductionOp extends OpBase {
   organ?: OrganChoice;
   /** O que muda, com rótulos e valores como se leem. */
   rows: ProductionRow[];
+  /** Setores de atividade antes e depois, quando a mudança é deles. */
+  setores?: LabelList;
   /** O tipo (ProductionTarget.id). */
   target: string;
 }
@@ -98,6 +110,17 @@ function itemOf(
     if (target) return { item: chain[i]!, target };
   }
   return undefined;
+}
+
+/** Os autores ou participantes do item, quando a mudança é numa linha deles. */
+export function authorPartOf(
+  change: Change,
+  chain: XElement[],
+): { item: XElement; part: AuthorPart } | undefined {
+  const found = itemOf(change, chain);
+  if (!found || !found.target.grids.includes('f_autores_l')) return undefined;
+  const part = found.target.authors ?? AUTHOR_PART;
+  return change.element === part.element ? { item: found.item, part } : undefined;
 }
 
 /** A mudança é de um item que o motor altera (e não a inclusão ou exclusão do item)? */
@@ -153,7 +176,17 @@ export function planProduction(
   const before = (child: string, attr: string) => {
     const f = change.element === child ? change.fields.find((x) => x.attr === attr) : undefined;
     if (f) return f.before;
-    const part = child === item.name ? item : childElements(item, child)[0];
+    // O filho pode estar mais fundo (o REGISTRO-OU-PATENTE fica dentro do
+    // detalhamento do software).
+    const find = (el: XElement): XElement | undefined => {
+      for (const c of childElements(el)) {
+        if (c.name === child) return c;
+        const deep = find(c);
+        if (deep) return deep;
+      }
+      return undefined;
+    };
+    const part = child === item.name ? item : find(item);
     return (part && getAttr(part, attr)) ?? '';
   };
   const match = {
@@ -174,14 +207,18 @@ export function planProduction(
     };
   }
   const by = target.list.paramsBy;
-  const listParam = by && by.values[before(by.child, by.attr)];
-  if (by && !listParam) return { reason: 'O item não diz em que lista do Lattes ele está' };
+  const byValue = by && before(by.child, by.attr);
+  const listParam =
+    by && (typeof by.values === 'function' ? by.values(byValue ?? '') : by.values[byValue ?? '']);
+  if (by && listParam === undefined) {
+    return { reason: 'O item não diz em que lista do Lattes ele está' };
+  }
   const base = {
     expect: {},
     key: change.key,
     kind: 'producao' as const,
     label,
-    ...(by && listParam ? { listParams: { [by.param]: listParam } } : {}),
+    ...(by && listParam !== undefined ? { listParams: { [by.param]: listParam } } : {}),
     match,
     set: {},
     target: target.id,
@@ -205,6 +242,50 @@ export function planProduction(
       chain[0],
       siblings,
     );
+  }
+
+  // Áreas e setores: a lista inteira, como as palavras-chave (item-lists.ts).
+  if (isAreaChange(change)) {
+    if (!target.grids.includes('f_area_l')) {
+      return { reason: 'O formulário deste tipo no Lattes não tem áreas do conhecimento' };
+    }
+    const areas = planAreaList(change, item);
+    if ('reason' in areas) return areas;
+    const text = (rows: AreaRow[]) => rows.map(areaLabel).join('; ');
+    return {
+      ...base,
+      areas,
+      expect: { f_area_l: text(areas.before) },
+      rows: [
+        {
+          after: text(areas.after),
+          before: text(areas.before),
+          label: 'Áreas do conhecimento',
+          name: 'f_area_l',
+        },
+      ],
+      set: { f_area_l: text(areas.after) },
+    };
+  }
+  if (change.element === 'SETORES-DE-ATIVIDADE') {
+    if (!target.grids.includes('f_setor_l')) {
+      return { reason: 'O formulário deste tipo no Lattes não tem setores de atividade' };
+    }
+    const setores = planSetorList(change, el);
+    return {
+      ...base,
+      expect: { f_setor_l: setores.before.join('; ') },
+      rows: [
+        {
+          after: setores.after.join('; '),
+          before: setores.before.join('; '),
+          label: 'Setores de atividade',
+          name: 'f_setor_l',
+        },
+      ],
+      set: { f_setor_l: setores.after.join('; ') },
+      setores,
+    };
   }
 
   if (change.element === 'PALAVRAS-CHAVE') {
@@ -247,8 +328,12 @@ export function planProduction(
     const kept = part.sent;
     const notSent = kept ? change.fields.filter((f) => !kept.includes(f.attr)) : [];
     if (change.kind === 'alterado' && notSent.length > 0) {
+      // O CPF não é coluna da grade (c, l, t, pais, add): o Lattes não tem
+      // onde gravá-lo. A citação é coluna, mas a da linha não pega: ela vai
+      // pelo dicionário de coautores (edit-citacao.ts).
+      const noColumn = notSent.every((f) => f.attr.startsWith('CPF'));
       return {
-        reason: `A grade de ${part.label.toLowerCase()} do Lattes não leva: ${notSent.map((f) => f.label).join(', ')}`,
+        reason: `A grade de ${part.label.toLowerCase()} do Lattes ${noColumn ? 'não tem' : 'não leva'}: ${notSent.map((f) => f.label).join(', ')}`,
       };
     }
     const current = childElements(item, part.element);

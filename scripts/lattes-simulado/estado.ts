@@ -113,6 +113,8 @@ export class LattesState {
   private ids = new WeakMap<XElement, string>();
   /** O que cada item confirmado no passo 3 virou: o número dado e se entrou. */
   imported: { inserted: boolean; seq: string; title: string }[] = [];
+  /** Coautores com produção validada: o dicionário não deixa trocar a citação deles. */
+  validatedCoauthors = new Set<string>();
   importOutcome: ImportOutcome;
   importRequest?: ImportRequest;
   /** As instituições a mais que a busca encontra. */

@@ -3,7 +3,7 @@
 // com todas as funções do conector ligadas e anota o que vira operação e o
 // que fica à mão, com o motivo. Uso:
 //
-//   node scripts/cobertura-conector.ts [arquivo.xml] [--so=ELEMENTO,...] [--resumo]
+//   node scripts/cobertura-conector.ts [arquivo.xml] [--so=ELEMENTO,...] [--resumo] [--lista=TIPO-DE-ITEM]
 //   node scripts/cobertura-conector.ts --por-curriculo [arquivo.xml] [--so=ELEMENTO,...]
 //
 // O padrão conta campos: cada campo do editor (o caminho do elemento no XML e
@@ -12,7 +12,9 @@
 // toda troca nele vira envio. O Lattes não o tem quando nenhuma troca vai e
 // todas dão só motivos de campo ausente (o mesmo fieldAbsent que o editor
 // usa): fica só para ler no editor. O resto falta no conector, inclusive o
-// campo em que parte das trocas vai. --resumo mostra só os totais.
+// campo em que parte das trocas vai. --resumo mostra só os totais;
+// --lista=MESTRADO lista os campos que faltam num tipo de item, com o motivo,
+// e --lista=motivo:Valor os que faltam por um motivo que começa assim.
 //
 // --por-curriculo é a contagem antiga, por troca de atributo num currículo
 // (fixtures/demo.xml e fixtures/synthetic_full.xml sem arquivo): depende de
@@ -72,6 +74,8 @@ function changed(attr: string, value: string, choices: string[] | undefined): st
   if (value === 'SIM') return 'NAO';
   if (value === 'NAO') return 'SIM';
   if (/^\d{4}$/.test(value)) return String(Number(value) - 1);
+  // Data do XML (DDMMAAAA): outro dia do mesmo mês.
+  if (/^\d{8}$/.test(value)) return `${value.startsWith('01') ? '02' : '01'}${value.slice(2)}`;
   return `${value} x`;
 }
 
@@ -162,29 +166,65 @@ function cover(raw: string, trials: Trial[] = []): Stats {
         continue;
       // Só para ler no editor: segue outro campo.
       if (followsCountry(el.name, a.name)) continue;
-      const work = parseXml(raw).root;
-      const target = flatten(work)[index]!;
-      const attr = target.attrs.find((x) => x.name === a.name)!;
-      if (a.name === 'FLAG-RESPONSAVEL') {
-        if (!swappedLead(work, target)) continue;
-      } else if (!picked(target, a.name, a.value)) {
-        // A lista que o editor oferece no campo (a do schema, ou a do Lattes
-        // nos campos tipados): a troca é outra opção dela, como a pessoa faria.
-        const choices =
-          spec.attributes.find((x) => x.name === a.name)?.enum ??
-          typedChoices(target, a.name)?.map((c) => c.value);
-        attr.value = changed(a.name, a.value, choices);
-        // O que o editor muda junto ao gravar (AttributeField chama o mesmo).
-        applyLinkedAttrs(target, a.name);
+      /** Planeja a troca do atributo para `value` (sem valor, a troca padrão). */
+      const attempt = (value?: string) => {
+        const work = parseXml(raw).root;
+        const target = flatten(work)[index]!;
+        const attr = target.attrs.find((x) => x.name === a.name)!;
+        let choices: string[] | undefined;
+        if (a.name === 'FLAG-RESPONSAVEL') {
+          if (!swappedLead(work, target)) return undefined;
+        } else if (value !== undefined || !picked(target, a.name, a.value)) {
+          // A lista que o editor oferece no campo (a do schema, ou a do Lattes
+          // nos campos tipados): a troca é outra opção dela, como a pessoa faria.
+          // O tipo de um registro: só os do tipo de item (REGISTRY_KINDS).
+          const kinds =
+            a.name === 'TIPO-PATENTE'
+              ? Object.entries(REGISTRY_KINDS).find(([k]) =>
+                  paths.get(el)!.split('/').includes(k),
+                )?.[1]
+              : undefined;
+          choices =
+            kinds ??
+            spec.attributes.find((x) => x.name === a.name)?.enum ??
+            typedChoices(target, a.name)?.map((c) => c.value);
+          attr.value = value ?? changed(a.name, a.value, choices);
+          // O que o editor muda junto ao gravar (AttributeField chama o mesmo).
+          applyLinkedAttrs(target, a.name);
+        }
+        const changes = diffDocuments(base, work);
+        // O texto que o editor pede quando o valor novo o exige (o potencial de
+        // inovação Sim): a pessoa o escreve ali.
+        const extras = Object.fromEntries(
+          changes.map((c) => [c.key, { f_txt_potencial: 'Texto de teste do potencial' }]),
+        );
+        const plan = planChanges(
+          changes.map((change) => ({ change, itemTitle: '' })),
+          work,
+          { ...options, extras },
+        );
+        return { choices, ok: plan.ops.length > 0 && plan.unsupported.length === 0, plan };
+      };
+      let tried = attempt();
+      if (!tried) continue;
+      // Uma opção que o formulário não oferece (o Lattes não tem aquele
+      // valor) não diz que o campo não vai: as outras opções da lista também
+      // são tentadas, e o campo vai se uma delas vai.
+      const valueMiss = (r: string) =>
+        /^(Valor sem correspondência|Valor que o formulário|Tipo que o Lattes não tem|Tipo de participação que o Lattes não tem|Forma de participação que o Lattes não tem)/.test(
+          r,
+        );
+      if (!tried.ok && tried.choices && tried.plan.unsupported.every((u) => valueMiss(u.reason))) {
+        for (const other of tried.choices.filter((c) => c !== a.value)) {
+          const next = attempt(other);
+          if (next?.ok) {
+            tried = next;
+            break;
+          }
+        }
       }
-      const changes = diffDocuments(base, work);
-      const plan = planChanges(
-        changes.map((change) => ({ change, itemTitle: '' })),
-        work,
-        options,
-      );
+      const { ok, plan } = tried;
       const s = stats.get(el.name) ?? { no: 0, ok: 0, reasons: new Map<string, number>() };
-      const ok = plan.ops.length > 0 && plan.unsupported.length === 0;
       trials.push({
         attr: a.name,
         element: el.name,
@@ -204,6 +244,33 @@ function cover(raw: string, trials: Trial[] = []): Stats {
   return stats;
 }
 
+/**
+ * O tipo de item de um campo: o primeiro elemento do caminho que é um item
+ * de lista no editor (o que vem logo abaixo de uma seção ou de um grupo).
+ */
+const itemOf = (key: string): string => {
+  const parts = key.split(' @')[0]!.split('/');
+  const groups =
+    /^(CURRICULO-VITAE|DADOS-GERAIS|DADOS-COMPLEMENTARES|PRODUCAO-BIBLIOGRAFICA|PRODUCAO-TECNICA|OUTRA-PRODUCAO|PRODUCAO-ARTISTICA-CULTURAL|DEMAIS-TIPOS-DE-PRODUCAO-TECNICA|DEMAIS-TIPOS-DE-PRODUCAO-BIBLIOGRAFICA|ORIENTACOES-CONCLUIDAS|ORIENTACOES-EM-ANDAMENTO|PARTICIPACAO-EM-BANCA-TRABALHOS-CONCLUSAO|PARTICIPACAO-EM-BANCA-JULGADORA|PARTICIPACAO-EM-EVENTOS-CONGRESSOS|FORMACAO-ACADEMICA-TITULACAO|FORMACAO-COMPLEMENTAR|ATUACOES-PROFISSIONAIS|[A-Z-]+S-PUBLICADOS|[A-Z-]+-ACEITOS-PARA-PUBLICACAO|LIVROS-E-CAPITULOS|LIVROS-PUBLICADOS-OU-ORGANIZADOS|CAPITULOS-DE-LIVROS-PUBLICADOS|TRABALHOS-EM-EVENTOS|TEXTOS-EM-JORNAIS-OU-REVISTAS)$/;
+  return parts.find((p) => !groups.test(p)) ?? parts.at(-1)!;
+};
+
+/** Os tipos de registro que cada tipo de item aceita (o formulário de cada um). */
+const REGISTRY_KINDS: Record<string, string[]> = {
+  'CULTIVAR-PROTEGIDA': ['CULTIVAR_PROTEGIDA_CTV'],
+  'CULTIVAR-REGISTRADA': ['CULTIVAR_PROTEGIDA_CTV'],
+  'DESENHO-INDUSTRIAL': ['DESENHO_INDUSTRIAL_DI'],
+  MARCA: [
+    'MARCA_REGISTRADA_DE_PRODUTO_MPD',
+    'MARCA_REGISTRADA_DE_SERVICO_MSV',
+    'MARCA_REGISTRADA_COLETIVA_MCL',
+    'MARCA_REGISTRADA_DE_CERTIFICACAO_MCT',
+  ],
+  PATENTE: ['PRIVILEGIO_DE_INOVACAO_PI', 'MODELO_DE_UTILIDADE_MU'],
+  SOFTWARE: ['PROGRAMA_DE_COMPUTADOR_PC'],
+  'TOPOGRAFIA-DE-CIRCUITO-INTEGRADO': ['TOPOGRAFIA_DE_CIRCUITO_INTEGRADO_REGISTRADA_TCI'],
+};
+
 /** O motivo sem o que muda de item para item (o valor, o nome do campo). */
 const reasonKind = (r: string) => r.replace(/:.*$/, '').trim();
 
@@ -217,20 +284,39 @@ const reasonKind = (r: string) => r.replace(/:.*$/, '').trim();
  */
 function withListValues(raw: string): { rewritten: number; xml: string } {
   const doc = parseXml(raw);
-  const changed = new Set<{ name: string }>();
+  const was = new Map(flatten(doc.root).flatMap((el) => el.attrs.map((a) => [a, a.value])));
+  // O tipo do registro, que o synthetic_full sorteia entre todos os do XSD: o
+  // de cada tipo de item, como uma exportação traria.
+  for (const item of flatten(doc.root)) {
+    const kind = REGISTRY_KINDS[item.name];
+    if (!kind) continue;
+    for (const reg of flatten(item).filter((e) => e.name === 'REGISTRO-OU-PATENTE')) {
+      setAttr(reg, 'TIPO-PATENTE', kind[0]!);
+    }
+  }
   for (let pass = 0; pass < 2; pass++) {
     for (const el of flatten(doc.root)) {
       for (const a of el.attrs) {
+        // Um valor fora do enumerado do schema (FLAG-BOLSA="Valor de teste"),
+        // que nenhuma exportação traria: a primeira opção dele.
+        const choices = lattesSchema.elements[el.name]?.attributes.find(
+          (x) => x.name === a.name,
+        )?.enum;
+        if (choices?.length && a.value && !choices.includes(a.value)) a.value = choices[0]!;
+        // A nacionalidade do XML é B ou E (linked-attrs.ts).
+        if (a.name === 'NACIONALIDADE' && !['B', 'E', ''].includes(a.value)) a.value = 'B';
+        // FLAG-* sem enumerado guarda SIM ou NAO (field-kind.ts, isBooleanAttr).
+        if (!choices && a.name.startsWith('FLAG-') && !['', 'SIM', 'NAO'].includes(a.value)) {
+          a.value = 'NAO';
+        }
         if (!outOfList(el, a.name)) continue;
         const value = derivedValue(el.name, a.name) ?? typedChoices(el, a.name)?.[0]?.value;
-        if (value !== undefined && value !== a.value) {
-          a.value = value;
-          changed.add(a);
-        }
+        if (value !== undefined) a.value = value;
       }
     }
   }
-  return { rewritten: changed.size, xml: serializeXml(doc) };
+  const rewritten = [...was].filter(([a, v]) => a.value !== v).length;
+  return { rewritten, xml: serializeXml(doc) };
 }
 
 const SYNTHETIC = 'fixtures/synthetic_full.xml';
@@ -265,6 +351,7 @@ function fieldReport(file: string): void {
   };
   const sections = new Map<string, Record<Kind, number>>();
   const missing = new Map<string, { els: Set<string>; n: number }>();
+  const byItem = new Map<string, number>();
   const count = { falta: 0, 'sem-campo': 0, vai: 0 };
   for (const [key, ts] of fields) {
     const { kind, reason } = kindOf(ts);
@@ -281,6 +368,10 @@ function fieldReport(file: string): void {
     const row = sections.get(section) ?? { falta: 0, 'sem-campo': 0, vai: 0 };
     row[kind]++;
     sections.set(section, row);
+    if (kind === 'falta') {
+      const item = itemOf(key);
+      byItem.set(item, (byItem.get(item) ?? 0) + 1);
+    }
     if (reason) {
       const r = reasonKind(reason);
       const m = missing.get(r) ?? { els: new Set<string>(), n: 0 };
@@ -288,6 +379,18 @@ function fieldReport(file: string): void {
       m.n++;
       missing.set(r, m);
     }
+  }
+  const dump = args.find((a) => a.startsWith('--lista='))?.slice(8);
+  if (dump) {
+    for (const [key, ts] of fields) {
+      const { kind, reason } = kindOf(ts);
+      if (
+        kind === 'falta' &&
+        (itemOf(key) === dump || (dump.startsWith('motivo:') && reason?.startsWith(dump.slice(7))))
+      )
+        console.log(`${key}\t${reason}`);
+    }
+    return;
   }
   const editable = count.vai + count.falta;
   const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 100)}%` : '-');
@@ -297,6 +400,10 @@ function fieldReport(file: string): void {
       console.log(
         `  ${name.padEnd(56)} ${String(r.vai).padStart(4)} / ${String(r.falta).padStart(4)} / ${String(r['sem-campo']).padStart(4)}   ${pct(r.vai, r.vai + r.falta)}`,
       );
+    }
+    console.log('\nO que falta no conector, por tipo de item (campos):');
+    for (const [item, n] of [...byItem.entries()].sort((a, b) => b[1] - a[1])) {
+      console.log(`  ${String(n).padStart(4)}  ${item}`);
     }
     console.log('\nO que falta no conector, por motivo (campos e tipos de item):');
     const rows = [...missing.entries()].map(([r, m]) => ({ ...m, r }));

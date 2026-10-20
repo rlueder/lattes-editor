@@ -18,6 +18,54 @@ outras 127 são o alvo deste plano.
 
 ## Estado atual
 
+- 19/10/2026, noite: demais trabalhos, licenças e linhas de pesquisa pelo
+  motor de produção (`targets/demais.ts`), testados no Lattes real com itens
+  de teste e removidos. A linha de pesquisa entra pela descrição de uma
+  atividade de pesquisa e desenvolvimento e se altera em `pkg_linhapesq.form`.
+  Passam a contar como campo que o Lattes não tem: as áreas, palavras-chave e
+  setores da formação complementar (o formulário não tem as grades) e as
+  informações adicionais de cursos e instituições (o menu não tem tela). 2569
+  de 2809 campos vão (91%).
+
+- 19/10/2026, fim da tarde: áreas do conhecimento e setores de atividade de
+  produções, orientações e bancas pelo conector
+  (`src/bridge/production/item-lists.ts`), e palavras-chave, áreas e setores da
+  formação (`src/bridge/formacao-grids.ts`). Antes, uma troca de área ou setor
+  numa produção aparecia como campo que o Lattes não tem, o que não era
+  verdade: o formulário tem as grades. No Lattes real, um trabalho técnico de
+  teste recebeu uma área (Desenho Industrial, 61200000) e um setor
+  (Alimentação, 420228), e um mestrado de teste uma palavra-chave, todos
+  conferidos. **Erro corrigido:** desde a #100, todo envio de formação mandava
+  `f_plv_l`, `f_area_l` e `f_setor_l` vazios, como a página os carrega, e o
+  Lattes apagava as palavras-chave, áreas e setores da formação; o envio da
+  página tal como vinha apagou a palavra do mestrado de teste no Lattes real.
+  Agora todo envio de formação leva as três grades como a página as trouxe.
+  As áreas, palavras-chave e setores dos eventos contam como campo que o
+  Lattes não tem: a página de edição do evento não tem essas grades. 2444 de
+  2854 campos vão (86%).
+
+- 19/10/2026, à tarde: atividades das atuações pelo conector
+  (`src/bridge/edit-atividade.ts`, capacidade `alterar-atividades`): período e
+  descrição, testados no Lattes real com uma atividade de teste (descrição e
+  ano de início, depois anterior para atual) e removida pelo registro. O
+  órgão da atividade, as disciplinas e os treinamentos (filhos) e uma
+  descrição com mais de uma linha ficam à mão. Os tipos artísticos antigos
+  (apresentação de obra, composição, arranjo, sonoplastia, rádio e TV, curso
+  de curta duração artístico) contam como campo que o Lattes não tem: o menu
+  real de 19/10/2026 só tem artes cênicas, música, artes visuais e outra
+  produção artística. 1448 de 2092 campos vão (69%).
+
+- 19/10/2026, mais tarde: patentes e registros pelo motor de produção
+  (`src/bridge/production/targets/registros.ts`). Os oito tipos foram
+  alterados no Lattes real com itens de teste e conferidos, com depositantes,
+  autores e datas mantidos; os itens foram removidos pelo registro. 1397 de
+  2382 campos vão (59%). Ficam à mão nesses tipos: o nome do titular e do
+  depositante, o histórico de situações da patente e o ambiente do programa
+  de computador (o formato deles na exportação não foi visto), e a citação
+  dos autores (Fase 5). Sobrou no dicionário de coautores a entrada
+  "TESTE EDITOR APAGAR Depositante", sem uso, que o Lattes não deixa excluir
+  pela página.
+
 - 19/10/2026: medida por campo. 1256 de 2582 campos que o Lattes aceita vão
   pelo conector (49%); outros 1166 o formulário do Lattes não tem. O que mais
   falta: patentes e registros (330 campos), os tipos de produção técnica sem
@@ -225,6 +273,13 @@ voltou "conferido" com o Lattes guardando a antiga. Uma gravação de teste
 decide entre mandar o `t` novo na linha ou alterar a entrada do dicionário de
 coautores (`pkg_dic_autor.lista`, 13 linhas no currículo), que muda a citação
 em todos os itens que a usam.
+
+Decidido em 19/10/2026: pelo dicionário (`src/bridge/edit-citacao.ts`, chave
+`alterar-citacoes`). A troca só da citação de um coautor confere a entrada,
+pergunta se há produção validada, grava e relê; a linha do painel avisa que a
+citação muda em todas as produções do coautor. A própria citação fica à mão
+(a pessoa não está no dicionário). Feito no simulado; falta a gravação de
+teste no Lattes real, num item de teste com um coautor de teste.
 
 ### Fase 6: substituir (incluir o novo e excluir o antigo)
 

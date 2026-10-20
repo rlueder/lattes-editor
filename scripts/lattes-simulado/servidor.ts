@@ -19,6 +19,7 @@ import { ATUACAO_ROUTES } from './atuacao.ts';
 import { BUSCAS_ROUTES } from './buscas.ts';
 import { CENSO_ROUTES } from './censo.ts';
 import { DADOS_GERAIS_ROUTES } from './dados-gerais.ts';
+import { DICIONARIO_ROUTES } from './dicionario.ts';
 import { type ImportOutcome, LattesState, type SimuladoOptions } from './estado.ts';
 import { EVENTOS_ROUTES } from './eventos.ts';
 import { EXPORTAR_ROUTES } from './exportar.ts';
@@ -40,6 +41,7 @@ export const ROUTES: Routes = {
   ...BUSCAS_ROUTES,
   ...CENSO_ROUTES,
   ...DADOS_GERAIS_ROUTES,
+  ...DICIONARIO_ROUTES,
   ...EVENTOS_ROUTES,
   ...EXPORTAR_ROUTES,
   ...FORMACAO_ROUTES,

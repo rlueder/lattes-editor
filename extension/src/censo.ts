@@ -300,6 +300,17 @@ async function testItems(options: Parameters<typeof createTestItems>[3] = {}) {
   return createTestItems(testJobs(captured!), await code(), get, options);
 }
 
+/** Como a leitura achou um formulário (estado, formulários, endereço), sem tocar no Lattes. */
+function entryOf(id: string) {
+  const e = captured?.entries.find((x) => x.id === id);
+  if (!e) return captured ? 'não está na leitura' : 'sem leitura';
+  return {
+    forms: e.page?.forms.map((f) => f.name),
+    jobs: testJobs(captured!).filter((j) => j.id === id).length,
+    status: e.status,
+  };
+}
+
 /** O andamento guardado, sem tocar no Lattes. */
 function progress() {
   return testProgress(captured ? testJobs(captured) : undefined);
@@ -316,6 +327,7 @@ async function removeTests(options: Parameters<typeof removeTestItems>[2] = {}) 
   capture,
   captureAll,
   download,
+  entryOf,
   inspect,
   link,
   prepareTestItems,

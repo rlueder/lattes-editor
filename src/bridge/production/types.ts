@@ -21,7 +21,13 @@ export interface FieldMap {
 }
 
 /** As grades que o check() de cada página serializa nos ocultos. */
-export type GridField = 'f_area_l' | 'f_autores_l' | 'f_plv_l' | 'f_setor_l';
+export type GridField =
+  | 'f_area_l'
+  | 'f_autores_l'
+  | 'f_depositante_inst_l'
+  | 'f_depositante_pessoa_l'
+  | 'f_plv_l'
+  | 'f_setor_l';
 
 /**
  * O elemento do XML que a grade f_autores_l guarda (AUTORES na produção,
@@ -85,7 +91,7 @@ export interface ProductionTarget {
    * dela (o f_instituicoes do projeto): o conector os monta igual, da página
    * lida; undefined quando a página não traz o vetor, e nada vai.
    */
-  built?: (html: string) => Record<string, string> | undefined;
+  built?: (html: string, set: Record<string, string>) => Record<string, string> | undefined;
   /** Partes do item que ficam à mão, com o motivo (elemento → motivo). */
   byHand?: Record<string, string>;
   /**
@@ -119,7 +125,13 @@ export interface ProductionTarget {
      * Um parâmetro da lista que sai de um atributo do item (a natureza do
      * projeto escolhe a lista): o valor de antes, pela tabela.
      */
-    paramsBy?: { attr: string; child: string; param: string; values: Record<string, string> };
+    paramsBy?: {
+      attr: string;
+      child: string;
+      param: string;
+      /** A tabela do valor ao parâmetro, ou a função (o software com ou sem registro). */
+      values: Record<string, string> | ((value: string) => string | undefined);
+    };
     proc: string;
   };
   /** Instituição, curso e agência escolhidos pelas buscas do Lattes (lookups.ts). */
@@ -153,6 +165,36 @@ export interface ProductionTarget {
    * formulário são f_titulo e f_ano se não disser. `child` pode ser o
    * próprio elemento do item, quando o atributo é dele.
    */
-  title: { attr: string; child: string; field?: string };
-  year: { attr: string; child: string; field?: string };
+  title: {
+    attr: string;
+    child: string;
+    field?: string;
+    /** O valor do XML como a página o mostra, quando difere (o tipo da licença: M). */
+    toForm?: (value: string) => string;
+  };
+  /**
+   * Campos que não são controles da página, mas linhas de um vetor dela (as
+   * datas da patente, na grade de situações): o nome em `fields` tem ":" e a
+   * especificação diz como ler o valor de cada um na página e como montar os
+   * campos reais com os valores novos.
+   */
+  virtual?: {
+    /** Os campos reais montados com os virtuais trocados; undefined sem o vetor. */
+    build: (html: string, set: Record<string, string>) => Record<string, string> | undefined;
+    /** O valor de cada campo virtual na página; undefined sem o vetor. */
+    read: (html: string) => Record<string, string> | undefined;
+  };
+  year: {
+    attr: string;
+    child: string;
+    /**
+     * O campo de data (dd/mm/aaaa) de onde tirar o ano quando o do ano vem
+     * vazio: no desenho industrial e no programa de computador com registro,
+     * f_ano chega vazio e o check() o tira de f_dta_dep.
+     */
+    fallback?: string;
+    field?: string;
+    /** O valor do XML como a página o mostra (a data da licença: dd/mm/aaaa). */
+    toForm?: (value: string) => string;
+  };
 }

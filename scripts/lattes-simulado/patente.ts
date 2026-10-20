@@ -21,6 +21,7 @@ import { applyFields, type Binding, fixed, renderFields } from './campos.ts';
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
+import { applyRegistryGrids, registryGridScripts } from './registro-grades.ts';
 import { registroForm, registroLista, registroPost, REGISTRY_ITEMS } from './registros.ts';
 import { html, type Routes, type SimResponse } from './tipos.ts';
 
@@ -145,12 +146,13 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
       write: (el, value) => state.privacy.set(el, value || '1'),
     },
     none('f_dados_grid_datas'),
+    // O ano, oculto, que o check() tira da data de depósito (lido em 19/10/2026).
+    on('basics', 'f_ano', 'ANO-DESENVOLVIMENTO', 'hidden'),
     ...[
       'F_COD_PROD',
       'f_sta_validado',
       'f_sta_validado_mapa',
       'f_origem',
-      'f_ano',
       'f_dta_dep',
       'f_dta_dep_pct',
       'f_dta_conc',
@@ -232,6 +234,7 @@ function form(req: SimRequest, state: LattesState): SimResponse {
 ${renderFields(bindings(state, ids), item ?? element(''))}
 ${h.formButtons(Boolean(item))}
 </form>
+${item ? registryGridScripts(item, { dates: true }) : ''}
 <script>var dc = document.forms[0]; function enviar(){ dc.submit(); }${item ? " function del(){ if (confirm('Deseja realmente excluir esta produção?')) { dc.f_ctr.value = 'E'; enviar(); } }" : ''}</script>`;
   return html(h.page('Patente', body));
 }
@@ -250,8 +253,10 @@ function post(req: SimRequest, state: LattesState): SimResponse {
   const item = bySeq(state, req.get('f_seq'));
   if (!item) return html(h.page('Patente', '<p>Registro não encontrado.</p>'));
   if (ctr === 'E') state.remove(state.find(PATH)!, item);
-  else if (ctr === 'U') applyFields(bindings(state, {}), item, req);
-  else return html(back);
+  else if (ctr === 'U') {
+    applyFields(bindings(state, {}), item, req);
+    applyRegistryGrids(item, req, { dates: true });
+  } else return html(back);
   state.touch();
   return html(back);
 }

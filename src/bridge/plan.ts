@@ -16,6 +16,8 @@ import {
 import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
 import { type CreateItemOp, planCreateItem } from './create-items.ts';
 import { DELETE_ITEMS_ENABLED, type DeleteOp, planDelete } from './delete.ts';
+import { type AtividadeOp, EDIT_ATIVIDADES_ENABLED, planAtividade } from './edit-atividade.ts';
+import { type CitacaoOp, EDIT_CITACOES_ENABLED, planCitacao } from './edit-citacao.ts';
 import {
   EDIT_EVENTO_ENABLED,
   EDIT_OUVINTE_ENABLED,
@@ -29,9 +31,10 @@ import {
   type ListEditOp,
   planListEdit,
 } from './edit-lists.ts';
+import { planFormacaoGrids } from './formacao-grids.ts';
 import { idiomaHandReason } from './hand-reasons.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
-import { manualReason } from './production/manual.ts';
+import { eventListReason, manualReason } from './production/manual.ts';
 import { isOrganChange } from './production/organ.ts';
 import {
   EDIT_PRODUCTION_ENABLED,
@@ -86,7 +89,9 @@ export interface IdiomaOp extends OpBase {
 
 export type BridgeOp =
   | AreasOp
+  | AtividadeOp
   | BiographicOp
+  | CitacaoOp
   | CreateAtuacaoOp
   | CreateItemOp
   | DeleteOp
@@ -114,6 +119,10 @@ export interface PlanOptions {
   deleteItems?: boolean;
   /** Áreas de atuação (areas-atuacao.ts, EDIT_AREAS_ENABLED). */
   editAreas?: boolean;
+  /** Atividades das atuações (edit-atividade.ts, EDIT_ATIVIDADES_ENABLED). */
+  editAtividades?: boolean;
+  /** Citação de coautores pelo dicionário de coautores (edit-citacao.ts, EDIT_CITACOES_ENABLED). */
+  editCitacoes?: boolean;
   /**
    * Convidado, participante, forma, tipo, natureza e cidade do evento
    * (EDIT_EVENTO_ENABLED). Sem valor, desligada, como editOuvinte.
@@ -180,6 +189,8 @@ export const GATED_EDITS: readonly {
   },
   { enabled: PROJECT_ORGAN_ENABLED, feature: 'orgao-projeto', option: 'projectOrgan' },
   { enabled: EDIT_AREAS_ENABLED, feature: 'alterar-areas-atuacao', option: 'editAreas' },
+  { enabled: EDIT_ATIVIDADES_ENABLED, feature: 'alterar-atividades', option: 'editAtividades' },
+  { enabled: EDIT_CITACOES_ENABLED, feature: 'alterar-citacoes', option: 'editCitacoes' },
 ];
 
 /**
@@ -287,6 +298,8 @@ export function planChange(
     createItems = false,
     deleteItems = false,
     editAreas = false,
+    editAtividades = false,
+    editCitacoes = false,
     editEvento = false,
     editFormacaoComplementar = false,
     editOuvinte = false,
@@ -298,6 +311,9 @@ export function planChange(
   }: PlanOptions = {},
   siblings: readonly Change[] = [],
 ): BridgeOp | Unsupported {
+  // A citação de um coautor, pelo dicionário de coautores (edit-citacao.ts).
+  const citacao = editCitacoes ? planCitacao(change, chain, label) : undefined;
+  if (citacao) return 'reason' in citacao ? unsupported(change, label, citacao.reason) : citacao;
   // Produção, orientação ou banca que já está no Lattes (production/).
   // Sem a janela de órgãos na extensão, o órgão do projeto fica com o motivo de sempre.
   const organOff = !projectOrgan && isOrganChange(change);
@@ -320,6 +336,17 @@ export function planChange(
     const planned = planAreas(change, chain, label, siblings);
     return 'reason' in planned ? unsupported(change, label, planned.reason) : planned;
   }
+  // Palavras-chave, áreas e setores de uma formação (formacao-grids.ts).
+  const formacaoGrids = biographicOps ? planFormacaoGrids(change, chain, label) : undefined;
+  if (formacaoGrids) {
+    return 'reason' in formacaoGrids
+      ? unsupported(change, label, formacaoGrids.reason)
+      : formacaoGrids;
+  }
+  // Atividades das atuações (edit-atividade.ts).
+  const atividade = editAtividades ? planAtividade(change, chain, label) : undefined;
+  if (atividade)
+    return 'reason' in atividade ? unsupported(change, label, atividade.reason) : atividade;
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.
   if (change.kind === 'novo' && createItems && change.element === 'ATUACAO-PROFISSIONAL') {
     const el = chain.at(-1);
@@ -450,7 +477,13 @@ export function planChange(
   // (atuacao-by-hand.ts), antes do motivo genérico de cada família (manual.ts).
   const atuacao = atuacaoByHand(change, chain);
   if (atuacao) return unsupported(change, label, atuacao);
-  return unsupported(change, label, manualReason(chain) ?? 'Formulário não suportado ainda');
+  return unsupported(
+    change,
+    label,
+    eventListReason(change.element, chain) ??
+      manualReason(chain) ??
+      'Formulário não suportado ainda',
+  );
 }
 
 export function isOp(p: BridgeOp | Unsupported): p is BridgeOp {

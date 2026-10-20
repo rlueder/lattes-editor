@@ -9,6 +9,7 @@
 // f_seq_funcao), o efeito do POST. Só a atividade de ensino grava; as outras
 // naturezas respondem que o envio não é simulado.
 
+import { ACTIVITY_TYPES } from '../../src/bridge/edit-atividade.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
@@ -49,6 +50,38 @@ const LINKS: Record<string, FieldLink> = {
   },
 };
 
+/** O período, que todas as naturezas têm (edição lida em 19/10/2026). */
+const PERIOD_LINKS: Record<string, FieldLink> = Object.fromEntries(
+  ['f_ano_fim', 'f_ano_ini', 'f_mes_fim', 'f_mes_ini', 'f_status'].map((f) => [f, LINKS[f]!]),
+);
+
+/** Todas as atividades da atuação, com a natureza de cada uma. */
+export function activities(atuacao: XElement): { el: XElement; natur: string }[] {
+  const out: { el: XElement; natur: string }[] = [];
+  for (const group of childElements(atuacao)) {
+    for (const el of childElements(group)) {
+      const type = ACTIVITY_TYPES[el.name];
+      if (type) out.push({ el, natur: type.natur });
+    }
+  }
+  return out;
+}
+
+/** A grade de descrições da edição: a descrição do XML numa linha, com c 1. */
+function descriptionScript(item: XElement): string {
+  const attr = ACTIVITY_TYPES[item.name]?.description;
+  const text = attr ? getAttr(item, attr) : '';
+  const rows = text
+    ? [
+        Object.fromEntries([
+          ['l', text],
+          ['c', '1'],
+        ]),
+      ]
+    : [];
+  return `<script>\nvar providerDetAtiv = \n${JSON.stringify([...rows, {}])};\n</script>`;
+}
+
 /** As atividades de ensino da atuação. */
 export function teaching(atuacao: XElement): XElement[] {
   const container = childElements(atuacao, 'ATIVIDADES-DE-ENSINO')[0];
@@ -63,11 +96,16 @@ const entryFor = (nature: string) =>
 
 export function cargoForm(req: SimRequest, state: LattesState, atuacao?: XElement): SimResponse {
   const seq = req.get('f_seq_funcao');
-  const item =
+  const asked = (req.get('f_natur_ativ') ?? '').toUpperCase();
+  const found =
     seq && atuacao
-      ? teaching(atuacao).find((e) => getAttr(e, 'SEQUENCIA-FUNCAO-ATIVIDADE') === seq)
+      ? activities(atuacao).find(
+          (a) =>
+            getAttr(a.el, 'SEQUENCIA-FUNCAO-ATIVIDADE') === seq && (!asked || a.natur === asked),
+        )
       : undefined;
-  const nature = item ? '4' : (req.get('f_natur_ativ') ?? '');
+  const item = found?.el;
+  const nature = found ? found.natur : asked;
   const codeOf = (el: XElement | undefined) => (el && getAttr(el, 'CODIGO-CURSO')) || '';
   const course = codeOf(item);
   const hidden = {
@@ -79,12 +117,21 @@ export function cargoForm(req: SimRequest, state: LattesState, atuacao?: XElemen
     f_seq_ativ: req.get('f_seq_ativ') ?? '',
     f_seq_funcao: seq ?? '',
   };
-  const screen = { entry: entryFor(nature), links: nature === '4' ? LINKS : {} };
-  return html(h.page('Atividade', renderCensusForm(screen, item, hidden, state)));
+  const screen = {
+    entry: entryFor(nature),
+    links: nature === '4' ? LINKS : item ? PERIOD_LINKS : {},
+  };
+  return html(
+    h.page(
+      'Atividade',
+      `${renderCensusForm(screen, item, hidden, state)}${item ? descriptionScript(item) : ''}`,
+    ),
+  );
 }
 
 /** Grava a atividade de ensino: os campos ligados, o curso pelo código e as disciplinas de f_espec_l. */
 export function cargoPost(req: SimRequest, state: LattesState, atuacao?: XElement): SimResponse {
+  if (atuacao && req.get('f_ctr') === 'U') return cargoUpdate(req, state, atuacao);
   if (!atuacao || req.get('f_natur_ativ') !== '4' || req.get('f_ctr') !== 'I')
     return notSimulated();
   const container = state.ensure(atuacao, 'ATIVIDADES-DE-ENSINO');
@@ -112,4 +159,26 @@ export function cargoPost(req: SimRequest, state: LattesState, atuacao?: XElemen
       `PKG_ATIV.cargos_vinculos?f_cod=${state.code}&f_seq_ativ=${getAttr(atuacao, 'SEQUENCIA-ATIVIDADE')}`,
     ),
   );
+}
+
+/**
+ * A alteração de uma atividade (19/10/2026): o período pelos campos e a
+ * descrição pela primeira linha de f_espec_l. Sem descrição o check() da
+ * página não envia; o simulado não grava nada nesse caso.
+ */
+function cargoUpdate(req: SimRequest, state: LattesState, atuacao: XElement): SimResponse {
+  const found = activities(atuacao).find(
+    (a) => getAttr(a.el, 'SEQUENCIA-FUNCAO-ATIVIDADE') === req.get('f_seq_funcao'),
+  );
+  if (!found) return html(h.page('Atividade', '<p>Registro não encontrado.</p>'));
+  const first = /^1@[^?]*\?([^!]*)!/.exec(req.get('f_espec_l') ?? '')?.[1] ?? '';
+  const back = h.savedScript(
+    `PKG_ATIV.cargos_vinculos?f_cod=${state.code}&f_seq_ativ=${getAttr(atuacao, 'SEQUENCIA-ATIVIDADE')}`,
+  );
+  if (!first) return html(back);
+  applyCensusForm({ entry: entryFor(found.natur), links: PERIOD_LINKS }, found.el, req, state);
+  const attr = ACTIVITY_TYPES[found.el.name]?.description;
+  if (attr) setAttr(found.el, attr, first);
+  state.touch();
+  return html(back);
 }

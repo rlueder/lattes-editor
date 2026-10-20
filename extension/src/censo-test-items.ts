@@ -112,7 +112,7 @@ export const pause = ([min, max]: [number, number]) =>
 
 interface MsgBox {
   /** O "Confirmar" da caixa, onde algumas páginas penduram a ação. */
-  btnConfirmar?: HTMLElement;
+  btnConfirmar?: Pick<HTMLElement, 'addEventListener' | 'click'>;
   exibir: (p: { conteudo?: string; fnConfirmar?: string; tipo?: string }) => unknown;
 }
 
@@ -153,12 +153,14 @@ export function submit(
     const w = frame.contentWindow as FrameWindow;
     const box = (window as unknown as { caixaMsg?: MsgBox }).caixaMsg;
     const original = box?.exibir;
+    const originalButton = box?.btnConfirmar;
     const msgs: string[] = [];
     let done = false;
     const finish = () => {
       if (done) return;
       done = true;
       if (box && original) box.exibir = original;
+      if (box) box.btnConfirmar = originalButton;
       resolve(msgs);
     };
     if (box) {
@@ -171,7 +173,17 @@ export function submit(
           const fn = /getDocument\(\)\.(\w+)\(/.exec(String(p.fnConfirmar ?? ''))?.[1];
           const target = fn ? (w as unknown as Record<string, unknown>)[fn] : undefined;
           if (typeof target === 'function') (target as () => void).call(w);
-          else if (box.btnConfirmar) setTimeout(() => box.btnConfirmar!.click(), 0);
+          else if (fn === undefined && /Confirma a exclus/i.test(String(p.conteudo ?? ''))) {
+            // O del() dos registros (lido em 19/10/2026) pendura a exclusão no
+            // botão da caixa depois de exibi-la; com a caixa interceptada o
+            // botão não existe, e um no lugar dele roda o que o del() pendurar.
+            box.btnConfirmar = {
+              addEventListener: (_type: string, run: unknown) => {
+                if (typeof run === 'function') setTimeout(() => (run as () => void)(), 0);
+              },
+              click: () => undefined,
+            } as MsgBox['btnConfirmar'];
+          } else if (box.btnConfirmar) setTimeout(() => box.btnConfirmar!.click(), 0);
           else w.enviar?.();
           return;
         }

@@ -86,7 +86,7 @@ export function isBiographicOp(op: BridgeOp): op is BiographicOp {
  * Os itens das listas de formação (pkg_formacao.lista): f_tipo=FA, e
  * pós-doutorado e livre-docência em f_tipo=AP (formacao-edit.ts).
  */
-const FORMACAO_ELEMENTS = new Set([
+export const FORMACAO_ELEMENTS = new Set([
   'APERFEICOAMENTO',
   'LIVRE-DOCENCIA',
   'POS-DOUTORADO',

@@ -346,9 +346,13 @@ export function shareLists(entries: CensusEntry[]): Record<string, CensusOption[
   return lists;
 }
 
-/** Links de setarUrl de uma página (o menu e as listas abrem tudo por eles). */
+/**
+ * Links de setarUrl de uma página (o menu e as listas abrem tudo por eles).
+ * O link que a página completa com um número na hora (`"…&f_seq=" + arg`,
+ * como o pp_autor do dicionário de coautores) é de alteração e fica de fora.
+ */
 function setarUrlPaths(html: string): string[] {
-  return [...html.matchAll(/setarUrl\(\s*['"]([^'"]+)['"]/g)].map((m) =>
+  return [...html.matchAll(/setarUrl\(\s*['"]([^'"]+)['"](?!\s*\+)/g)].map((m) =>
     m[1]!.replace(/&amp;/g, '&'),
   );
 }
