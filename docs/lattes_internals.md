@@ -1363,7 +1363,8 @@ endereco: "10/03/2005"`), e vão em `f_dados_grid_datas` pelo `array2xml`.
   S ou N); com S, mostra as produções validadas e não envia.
 - A linha de autor de cada produção aponta para a entrada pelo `c`. Trocar o
   `t` na linha não pega: a releitura volta com a citação antiga. Trocar a
-  entrada muda a citação em todas as produções do coautor.
+  entrada muda a citação em todas as produções do coautor (gravado em
+  20/10/2026 num item de teste: o `t` da linha do item seguiu a entrada).
 - A própria pessoa não está no dicionário: a linha dela no `autorDP` do menu
   tem o `c` vazio.
 

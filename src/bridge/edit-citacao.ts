@@ -12,7 +12,8 @@
 //   validadas e não envia.
 // - A linha de autor de cada produção aponta para a entrada do dicionário
 //   pelo c. Trocar o t na linha não pega (a releitura voltava com o antigo), e
-//   trocar a entrada muda a citação em todas as produções do coautor.
+//   trocar a entrada muda a citação em todas as produções do coautor
+//   (gravado em 20/10/2026 num item de teste: o t da linha seguiu a entrada).
 //
 // A própria pessoa não está no dicionário: a linha dela no autorDP do menu
 // tem o c vazio.
