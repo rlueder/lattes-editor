@@ -146,7 +146,11 @@ function authorScript(state: LattesState): string {
   ]
     .map((r) => `{l:'${h.jsString(r.l)}',c:'${r.c}',t:'${h.jsString(r.t)}',deletable:false}`)
     .join(',');
-  return `<script>var autorDP = [${rows}];</script>`;
+  // titularPessoaDP, a sugestão de depositante da patente e dos registros
+  // (self.parent.titularPessoaDP, lido no código em 15/10/2026): a forma dele
+  // não foi lida, e o simulado o escreve como o autorDP, com as mesmas
+  // linhas (inferido).
+  return `<script>var autorDP = [${rows}];\nvar titularPessoaDP = [${rows}];</script>`;
 }
 
 function menu(state: LattesState): SimResponse {

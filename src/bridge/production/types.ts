@@ -4,6 +4,8 @@
 // atributo do XML. As especificações ficam em targets/, uma família por
 // arquivo.
 
+import type { Change } from '../../model/changes.ts';
+import type { XElement } from '../../model/xml.ts';
 import type { DoiSpec } from './doi.ts';
 import type { LookupSpec } from './lookups.ts';
 
@@ -123,6 +125,14 @@ export interface ProductionTarget {
   gridKeys?: Partial<Record<GridField, readonly string[]>>;
   /** As grades que o formulário tem, e que o envio refaz. */
   grids: GridField[];
+  /**
+   * O atributo do XML que guarda os depositantes ou titulares pessoas da
+   * grade f_depositante_pessoa_l (NOME-DO-DEPOSITANTE, observado na
+   * exportação da patente de teste em 20/10/2026). A exportação copia essas
+   * pessoas também nos autores (AUTORES), e a grade de autores da página não
+   * as tem: a mudança de autores as deixa de fora.
+   */
+  holders?: { attr: string; child: string };
   /** Identificador do tipo (o mesmo do censo, docs/lattes-formularios/). */
   id: string;
   /** A lista do menu (com os parâmetros que a distinguem) e o procedimento do formulário de cada linha. */
@@ -165,6 +175,22 @@ export interface ProductionTarget {
    * periodReason: por que o resto do pai fica à mão.
    */
   organ?: { periodReason: string };
+  /**
+   * Partes do item cujo campo do formulário depende do conteúdo da própria
+   * parte (a linha do histórico de situações da patente, cuja descrição diz
+   * que data ela é): elemento → os campos de cada atributo da mudança, com a
+   * chave só do atributo, ou o motivo de ir à mão. Um mapa vazio deixa os
+   * campos de `fields`, e o gancho só confere (a data do registro da patente
+   * contra a do histórico).
+   */
+  partFields?: Record<
+    string,
+    (
+      change: Change,
+      el: XElement,
+      item: XElement,
+    ) => { fields: Record<string, FieldMap | string> } | { reason: string }
+  >;
   /**
    * O orientando: com o nome trocado, o envio refaz a validação que o Salvar
    * da página faz (student.ts). idAttr: onde o XML guarda o identificador.

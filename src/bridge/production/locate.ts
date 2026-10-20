@@ -1,0 +1,81 @@
+// O formulário de um item na lista do Lattes: o único com o título, o ano e
+// a natureza dele (applyProduction, apply.ts).
+
+import type { LattesPort } from '../apply.ts';
+import { getChecked, Stop } from '../create-shared.ts';
+import { type FormControl, withScriptValues } from '../form.ts';
+import { findLinks } from '../lattes-html.ts';
+import { folded, type ProductionOp } from './plan.ts';
+import type { ProductionTarget } from './types.ts';
+
+/** O ano do item na página: o do campo, ou o da data de t.year.fallback quando ele vem vazio. */
+function shownYear(controls: FormControl[], field: string, fallback?: string): string {
+  const year = valueOf(controls, field).trim();
+  if (year || !fallback) return year;
+  return /^\d{2}\/\d{2}\/(\d{4})$/.exec(valueOf(controls, fallback).trim())?.[1] ?? '';
+}
+
+const valueOf = (controls: FormControl[], name: string) =>
+  controls.find((c) => c.name === name)?.value ?? '';
+
+/**
+ * A natureza da linha não é de outro tipo? Lida do rádio marcado mesmo que
+ * desabilitado (inferido: a edição pode travar a natureza). Sem campo ou sem
+ * rádio marcado, a linha conta, e o título e o ano decidem.
+ */
+function sameNature(controls: FormControl[], t: ProductionTarget): boolean {
+  if (!t.nature) return true;
+  const { field, values } = t.nature;
+  const value = controls.find((c) => c.name === field && (c.type !== 'radio' || c.checked))?.value;
+  return value === undefined || values.includes(value.trim());
+}
+
+/** O formulário do item: o único da lista com o título e o ano dele. */
+export async function locate(
+  op: ProductionOp,
+  t: ProductionTarget,
+  port: LattesPort,
+  menu: string,
+): Promise<{ controls: FormControl[]; html: string; path: string }> {
+  const params = { ...t.list.params, ...op.listParams };
+  // Parâmetro vazio: a lista que não o tem (o programa de computador com
+  // registro é a lista de PC sem f_reg; a sem registro tem f_reg=N).
+  const lists = findLinks(menu, t.list.proc).filter((l) =>
+    Object.entries(params).every(([k, v]) => (v === '' ? !l.params[k] : l.params[k] === v)),
+  );
+  // A mesma lista aparece às vezes também com f_sta_divulgacao_cientifica.
+  const list = lists.find((l) => !('f_sta_divulgacao_cientifica' in l.params)) ?? lists[0];
+  if (!list) throw new Stop('erro', `O menu do Lattes não tem a lista (${t.list.proc})`);
+  const listHtml = await getChecked(port, list.path);
+  const titleField = t.title.field ?? 'f_titulo';
+  const yearField = t.year.field ?? 'f_ano';
+  const found: { controls: FormControl[]; html: string; path: string }[] = [];
+  const isRow = t.list.isRow ?? ((p: Record<string, string>) => Boolean(p.f_seq));
+  for (const link of findLinks(listHtml, t.list.formProc).filter((l) => isRow(l.params))) {
+    const html = await getChecked(port, link.path);
+    const controls = withScriptValues(html, port.readForm(html, t.form.name));
+    if (!controls) continue;
+    if (
+      folded(valueOf(controls, titleField)) ===
+        folded(t.title.toForm ? t.title.toForm(op.match.title) : op.match.title) &&
+      shownYear(controls, yearField, t.year.fallback) ===
+        (t.year.toForm ? t.year.toForm(op.match.year) : op.match.year) &&
+      sameNature(controls, t)
+    ) {
+      found.push({ controls, html, path: link.path });
+    }
+  }
+  if (found.length === 0) {
+    throw new Stop(
+      'divergente',
+      'O Lattes não tem um item com esse título e esse ano; nada foi enviado',
+    );
+  }
+  if (found.length > 1) {
+    throw new Stop(
+      'divergente',
+      'O Lattes tem mais de um item com esse título e esse ano; nada foi enviado',
+    );
+  }
+  return found[0]!;
+}
