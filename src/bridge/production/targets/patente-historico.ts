@@ -6,14 +6,14 @@
 // sentido dele não foi visto. A exportação guarda a mesma data também no
 // REGISTRO-OU-PATENTE (DATA-PEDIDO-DE-DEPOSITO 12032007 e a situação
 // "Depósito" 12032007): no Lattes as duas são um campo só, datas:N
-// (registros-paginas.ts). Por isso as duas precisam estar iguais no editor
-// para a troca ir, e duas mudanças com o mesmo valor vão ao mesmo campo (a
-// segunda acha o Lattes já com ele, apply.ts).
+// (registros-paginas.ts). O editor troca as duas juntas
+// (src/model/linked-attrs.ts); as duas mudanças vão ao mesmo campo (a segunda
+// acha o Lattes já com ele, apply.ts), e datas que ainda discordam ficam à mão.
+// Sem a linha do histórico, a data do registro vai sozinha.
 
 import type { Change } from '../../../model/changes.ts';
-import { foldText } from '../../../model/fold-text.ts';
 import { childElements, getAttr, type XElement } from '../../../model/xml.ts';
-import { PATENT_DATE_CODES } from '../../create-registro-rules.ts';
+import { PATENT_DATE_CODES, patentDateAttrOf } from '../../create-registro-rules.ts';
 import type { FieldMap } from '../types.ts';
 import { slashDate } from './comum-tecnica-artistica.ts';
 import { dateKey } from './registros-paginas.ts';
@@ -23,15 +23,11 @@ const HISTORY_DATE = 'DATA-SITUACAO-PATENTE';
 const DESCRIPTION = 'DESCRICAO-SITUACAO-PATENTE';
 const REG = 'REGISTRO-OU-PATENTE';
 
-/** O código da data da patente (PATENT_DATE_CODES) pela descrição da situação, sem acento nem caixa. */
-const dateCodeOf = (description: string): string | undefined =>
-  Object.values(PATENT_DATE_CODES).find(
-    ([, label]) => foldText(label) === foldText(description.trim()),
-  )?.[0];
-
-/** O atributo do REGISTRO-OU-PATENTE com a data de um código. */
-const registryAttrOf = (code: string): string | undefined =>
-  Object.entries(PATENT_DATE_CODES).find(([, [c]]) => c === code)?.[0];
+/** O código da data da patente (PATENT_DATE_CODES) pela descrição da situação. */
+const dateCodeOf = (description: string): string | undefined => {
+  const attr = patentDateAttrOf(description);
+  return attr ? PATENT_DATE_CODES[attr]?.[0] : undefined;
+};
 
 /** As partes do detalhamento da patente com esse nome (o registro, as situações). */
 const detailParts = (item: XElement, name: string): XElement[] =>
@@ -76,7 +72,7 @@ export function historyFields(
       reason: `A data da situação "${description}" vai à mão: o conector só troca as de ${known}`,
     };
   }
-  const attr = registryAttrOf(code)!;
+  const attr = patentDateAttrOf(description)!;
   const date = getAttr(el, HISTORY_DATE);
   if (detailParts(item, REG).some((reg) => !sameDate(getAttr(reg, attr), date))) {
     return { reason: conflict(change.fields[0]!.label, description) };

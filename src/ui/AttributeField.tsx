@@ -18,6 +18,7 @@ import type { AttributeSpec } from '../schema/types.ts';
 import { DateField } from './DateField.tsx';
 import { displayValue } from './display.ts';
 import { useDraft, usePartKey } from './draft-context.ts';
+import { useEditor } from './editor-context.ts';
 import {
   codeAttrFor,
   codeChoices,
@@ -90,6 +91,7 @@ export function AttributeField({
   // Prévia do modo de leitura: acompanha o texto antes de gravar.
   const onDraft = useDraft();
   const partKey = usePartKey()?.(el, name);
+  const { root } = useEditor();
   const value = getAttr(el, name) ?? '';
   const [draft, setDraft] = useState(value);
   // Valor mudou por fora (busca por DOI, restauração do histórico).
@@ -107,7 +109,7 @@ export function AttributeField({
     change(next);
     if (next === (getAttr(el, name) ?? '')) return;
     setAttr(el, name, next);
-    applyLinkedAttrs(el, name);
+    applyLinkedAttrs(el, name, root);
     onEdit(`${elementLabel(el.name)} · ${text}`);
   };
   const shownError = error ?? linkError(name, value);

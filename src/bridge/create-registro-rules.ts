@@ -4,6 +4,7 @@
 // tipo e o que o check() de cada tipo exige, e como achar as linhas e a
 // inclusão na lista de cada tipo. Usado por create-registro.ts.
 
+import { foldText } from '../model/fold-text.ts';
 import { findLinks, type LattesLink } from './lattes-html.ts';
 
 /**
@@ -28,6 +29,17 @@ export const PATENT_DATE_CODES: Record<string, [string, string]> = {
   'DATA-DEPOSITO-PCT': ['2', 'Depósito PCT'],
   'DATA-PEDIDO-DE-DEPOSITO': ['1', 'Depósito'],
 };
+
+/**
+ * O atributo do REGISTRO-OU-PATENTE cuja data é a de uma situação do
+ * histórico da patente, pela descrição dela (o rótulo da linha da grade de
+ * situações, observado em 20/10/2026), sem acento nem caixa.
+ */
+export function patentDateAttrOf(description: string): string | undefined {
+  return Object.entries(PATENT_DATE_CODES).find(
+    ([, [, label]]) => foldText(label) === foldText(description),
+  )?.[0];
+}
 
 /**
  * O f_dados_grid_datas da patente como array2xml("item", "root", …) o monta a

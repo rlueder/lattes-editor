@@ -1398,11 +1398,14 @@ O que o conector faz com isso (`src/bridge/production/holders.ts` e
 - A data de uma linha do histórico cuja descrição é uma das datas conhecidas
   (Depósito, Depósito PCT, Concessão, Pedido do Exame, comparadas sem acento
   nem caixa) vai pela grade de situações, como as datas do
-  `REGISTRO-OU-PATENTE`. As duas datas são um campo só no Lattes: a troca só
-  vai quando a data do registro e a da situação estão iguais no editor, e as
-  duas mudanças vão ao mesmo campo (a segunda acha o Lattes já com a data e
-  não envia nada). Datas diferentes ficam à mão. Incluir ou tirar uma
-  situação, trocar a descrição ou o status, e as outras situações também.
+  `REGISTRO-OU-PATENTE`. As duas datas são um campo só no Lattes, e o editor
+  as mantém juntas (`src/model/linked-attrs.ts`): trocar a data do registro
+  troca a da situação com a mesma descrição, e o contrário. A linha do
+  histórico que não existe não se cria; sem ela, só o registro muda, e vai.
+  As duas mudanças vão ao mesmo campo (a segunda acha o Lattes já com a data
+  e não envia nada). Datas que ainda assim discordam (no XML carregado, por
+  exemplo) ficam à mão. Incluir ou tirar uma situação, trocar a descrição ou
+  o status, e as outras situações também.
 
 ### Dicionário de coautores: a edição (lida em 19/10/2026)
 

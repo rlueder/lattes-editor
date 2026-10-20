@@ -16,6 +16,7 @@ import type { ProductionOp } from '../src/bridge/production/plan.ts';
 import { yearFromDate } from '../src/bridge/production/targets/registros-paginas.ts';
 import { diffDocuments } from '../src/model/changes.ts';
 import { encodeLatin1 } from '../src/model/latin1.ts';
+import { applyLinkedAttrs } from '../src/model/linked-attrs.ts';
 import {
   childElements,
   element,
@@ -345,6 +346,74 @@ describe('patente: o histórico de situações', () => {
         setAttr(history(root), 'DATA-SITUACAO-PATENTE', '14032007');
       }, HOLDER_XML),
     ).toEqual([expect.stringMatching(same), expect.stringMatching(same)]);
+  });
+
+  /** A troca como o editor a grava: o atributo e o que segue dele (linked-attrs.ts). */
+  const edit =
+    (pick: (root: XElement) => XElement, attr: string, value: string) => (root: XElement) => {
+      const el = pick(root);
+      setAttr(el, attr, value);
+      return applyLinkedAttrs(el, attr, root);
+    };
+
+  it('o editor leva a data do registro à situação do histórico, e ela vai', async () => {
+    let linked: string[] = [];
+    const ops = opsAfter((root) => {
+      linked = edit(registry, 'DATA-PEDIDO-DE-DEPOSITO', '13032007')(root);
+    }, HOLDER_XML);
+    expect(linked).toEqual(['HISTORICO-SITUACOES-PATENTE@DATA-SITUACAO-PATENTE']);
+    expect(ops.map((o) => o.set)).toEqual([
+      { 'datas:1': '13/03/2007' },
+      { 'datas:1': '13/03/2007' },
+    ]);
+    const sim = await lattes(HOLDER_XML);
+    for (const op of ops)
+      expect(await applyOp(op, sim.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(sim)).toHaveLength(1);
+    expect(getAttr(history(byName(sim.state.root, 'PATENTE')), 'DATA-SITUACAO-PATENTE')).toBe(
+      '13032007',
+    );
+  });
+
+  it('e a data da situação ao registro', () => {
+    let linked: string[] = [];
+    const ops = opsAfter((root) => {
+      linked = edit(history, 'DATA-SITUACAO-PATENTE', '13032007')(root);
+    }, HOLDER_XML);
+    expect(linked).toEqual(['REGISTRO-OU-PATENTE@DATA-PEDIDO-DE-DEPOSITO']);
+    expect(ops).toHaveLength(2);
+  });
+
+  it('sem a linha do histórico, só o registro muda, e a data vai', async () => {
+    // XML não tem histórico: a linha não se cria.
+    let linked: string[] = ['x'];
+    const ops = opsAfter((root) => {
+      linked = edit(registry, 'DATA-PEDIDO-DE-DEPOSITO', '11032006')(root);
+    });
+    expect(linked).toEqual([]);
+    expect(ops).toHaveLength(1);
+    const sim = await lattes();
+    expect(await applyOp(ops[0]!, sim.port)).toMatchObject({ status: 'conferido' });
+    expect(getAttr(registry(byName(sim.state.root, 'PATENTE')), 'DATA-PEDIDO-DE-DEPOSITO')).toBe(
+      '11032006',
+    );
+  });
+
+  it('a situação desconhecida e a data sem par no histórico não se ligam', () => {
+    const root = parseXml(
+      HOLDER_XML.replace(
+        'DESCRICAO-SITUACAO-PATENTE="Depósito"',
+        'DESCRICAO-SITUACAO-PATENTE="Expiração"',
+      ),
+    ).root;
+    expect(edit(history, 'DATA-SITUACAO-PATENTE', '13032007')(root)).toEqual([]);
+    expect(edit(registry, 'DATA-DE-CONCESSAO', '01012010')(root)).toEqual([]);
+    expect(getAttr(registry(root), 'DATA-PEDIDO-DE-DEPOSITO')).toBe('12032007');
+    // Sem a raiz, nada fora do elemento muda.
+    const other = parseXml(HOLDER_XML).root;
+    setAttr(registry(other), 'DATA-PEDIDO-DE-DEPOSITO', '13032007');
+    expect(applyLinkedAttrs(registry(other), 'DATA-PEDIDO-DE-DEPOSITO')).toEqual([]);
+    expect(getAttr(history(other), 'DATA-SITUACAO-PATENTE')).toBe('12032007');
   });
 
   it('a descrição sem acento nem caixa ainda acha a data', () => {
