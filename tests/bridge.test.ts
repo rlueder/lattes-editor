@@ -315,14 +315,14 @@ describe('conector: plano', () => {
       ).unsupported.map((u) => u.reason);
     };
     expect(reasons((r) => setAttr(find(r, 'VINCULOS'), 'TIPO-DE-VINCULO', 'OUTRO'))[0]).toMatch(
-      /tipo do vínculo vem desabilitado/,
+      /não tem: o tipo do vínculo \(vem desabilitado/,
     );
     expect(
       reasons((r) => setAttr(find(r, 'VINCULOS'), 'ENQUADRAMENTO-FUNCIONAL', 'OUTRO'))[0],
     ).toMatch(/^O formulário de vínculo do Lattes não tem o enquadramento da lista/);
     expect(
       reasons((r) => setAttr(find(r, 'ATUACAO-PROFISSIONAL'), 'NOME-INSTITUICAO', 'Y'))[0],
-    ).toMatch(/não altera a instituição de uma atuação/);
+    ).toMatch(/A tela da atuação do Lattes não tem: a instituição/);
     expect(reasons((r) => setAttr(find(r, 'RESUMO-CV'), 'OUTRO', 'x'))[0]).toMatch(
       /Campos não suportados/,
     );
@@ -580,7 +580,9 @@ describe('conector: idioma', () => {
     const last = idiomaOp('ES', (el) => setAttr(el, 'PROFICIENCIA-DE-LEITURA', ''));
     expect(last.unsupported[0]!.reason).toMatch(/ao menos uma/);
     const other = idiomaOp('ES', (el) => setAttr(el, 'DESCRICAO-DO-IDIOMA', 'Castelhano'));
-    expect(other.unsupported[0]!.reason).toBe('O nome do idioma segue o código no Lattes');
+    expect(other.unsupported[0]!.reason).toBe(
+      'O formulário de idioma do Lattes não tem: o nome do idioma, que segue o código',
+    );
     const { changes, working } = changesAfter((root) =>
       setAttr(find(root, 'IDIOMA'), 'PROFICIENCIA-DE-FALA', 'POUCO'),
     );

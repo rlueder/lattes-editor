@@ -768,7 +768,7 @@ describe('atuação, atividades e áreas: o motivo de ficar à mão', () => {
         const a = findIn(root, (el) => el.name === 'ATUACAO-PROFISSIONAL')!;
         setAttr(a, 'NOME-INSTITUICAO', 'Outra Universidade');
       })[0],
-    ).toMatch(/não altera a instituição de uma atuação/);
+    ).toMatch(/A tela da atuação do Lattes não tem: a instituição/);
     expect(
       reasonOf((root) => {
         const d = findIn(root, (el) => el.name === 'DIRECAO-E-ADMINISTRACAO')!;
@@ -798,7 +798,7 @@ describe('atuação, atividades e áreas: o motivo de ficar à mão', () => {
         const v = findIn(root, (el) => el.name === 'VINCULOS')!;
         setAttr(v, 'TIPO-DE-VINCULO', 'SERVIDOR_PUBLICO');
       })[0],
-    ).toMatch(/tipo do vínculo vem desabilitado/);
+    ).toMatch(/não tem: o tipo do vínculo/);
   });
 
   it('a ordem da atuação, a disciplina e o que não é destes', () => {

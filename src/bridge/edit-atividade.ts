@@ -156,7 +156,7 @@ export function planAtividade(
       return {
         reason:
           type.natur === '4'
-            ? 'O formulário de ensino do Lattes não tem órgão: tem o nível e o curso'
+            ? 'O formulário de ensino do Lattes não tem: órgão (tem o nível e o curso)'
             : 'O órgão desta atividade não vai pela lista do Lattes; troque no Lattes',
       };
     }

@@ -164,9 +164,9 @@ describe('identificação: plano', () => {
       /^O formulário de identificação do Lattes não tem: /,
     );
     expect(reasonOf(edit('DADOS-GERAIS', { 'NOME-DO-PAI': 'Outro' }))).toMatch(
-      /não deixa alterar: .*\(o campo é oculto na página\)$/,
+      /não tem: .*\(só um campo oculto, que a página não deixa alterar\)$/,
     );
-    expect(reasonOf(edit('DADOS-GERAIS', { CPF: '1' }))).toMatch(/não deixa alterar/);
+    expect(reasonOf(edit('DADOS-GERAIS', { CPF: '1' }))).toMatch(/campo oculto/);
     expect(reasonOf(edit('DADOS-GERAIS', { PCD: 'A' }))).toMatch(/^Pessoa com deficiência/);
     expect(reasonOf(edit('DADOS-GERAIS', { 'DATA-NASCIMENTO': '3/5/86' }))).toMatch(
       /^Valor que o formulário de identificação do Lattes não tem: /,
