@@ -186,7 +186,8 @@ function cover(raw: string, trials: Trial[] = []): Stats {
        * Com `from`, o item parte desse valor em vez do que o exemplo tem.
        */
       const attempt = (value?: string, from?: string) => {
-        const start = parseXml(raw).root;
+        // O ponto de partida é o exemplo; só com `from` ele é lido de novo.
+        const start = from === undefined ? base : parseXml(raw).root;
         const work = parseXml(raw).root;
         const target = flatten(work)[index]!;
         if (from !== undefined) {
@@ -264,8 +265,10 @@ function cover(raw: string, trials: Trial[] = []): Stats {
         choices.length > 1 &&
         tried.plan.unsupported.every((u) => valueMiss(u.reason))
       ) {
-        search: for (const from of choices.filter((c) => c !== a.value)) {
-          for (const to of choices.filter((c) => c !== from)) {
+        // Poucas partidas e destinos bastam: um valor que o formulário tem
+        // costuma ir para qualquer outro. O limite segura listas longas.
+        search: for (const from of choices.filter((c) => c !== a.value).slice(0, 6)) {
+          for (const to of choices.filter((c) => c !== from).slice(0, 3)) {
             const next = attempt(to, from);
             if (next?.ok) {
               tried = next;
