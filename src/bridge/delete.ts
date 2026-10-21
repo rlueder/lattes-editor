@@ -29,6 +29,7 @@ import {
   setPairs,
   successfulPairs,
   withCheckRules,
+  withScriptValues,
 } from './form.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
@@ -179,7 +180,7 @@ function sameInstitution(fromLattes: string | undefined, fromXml: string | undef
 }
 
 function formControls(port: LattesPort, html: string, form: string): FormControl[] {
-  const controls = port.readForm(html, form);
+  const controls = withScriptValues(html, port.readForm(html, form));
   if (!controls) {
     throw isLogonPage(html)
       ? new Stop('sessao', 'A sessão do Lattes caiu; entre de novo')

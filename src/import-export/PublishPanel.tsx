@@ -11,11 +11,10 @@ import { useEffect, useId, useMemo, useState } from 'react';
 
 import { requestProblem } from '../bridge/publish.ts';
 import { failed } from '../bridge/sent-log.ts';
-import { openExternal } from '../desktop/external-links.ts';
 import { parseXml } from '../model/xml.ts';
 import { diffEspelho } from '../review/espelho-diff.ts';
 import { Modal } from '../ui/Modal.tsx';
-import { dateLabel, unpublishedEntries } from '../ui/status-strip.ts';
+import { unpublishedEntries } from '../ui/status-strip.ts';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { usePublish } from '../ui/use-publish.ts';
 import {
@@ -23,6 +22,7 @@ import {
   checksLine,
   initialForm,
   type PublishAttempt,
+  publishBlockers,
   type PublishForm,
   publishRequest,
   publishStatus,
@@ -30,6 +30,8 @@ import {
   SCREEN_TIMEOUT_MS,
   sendScreenStatus,
 } from './publish-view.ts';
+import { PublishBlockers } from './PublishBlockers.tsx';
+import { WhatPublishes } from './WhatPublishes.tsx';
 
 interface Props {
   bridge: BridgeState;
@@ -38,6 +40,8 @@ interface Props {
    * abrir o diagnóstico. Sem currículo aberto (a tela inicial), não há.
    */
   checks?: { count: number; onOpen: () => void };
+  /** Dentro da janela de envio (passo ③), em vez de um modal próprio. */
+  inline?: boolean;
   /** NUMERO-IDENTIFICADOR do currículo aberto: a tela e o envio só valem para ele. */
   lattesId?: string;
   open: boolean;
@@ -65,7 +69,7 @@ export function PublishPanel(props: Props) {
 }
 
 function PublishPanelBody(props: Props) {
-  const { bridge, checks, lattesId, onClose, onPublished, open, originalXml } = props;
+  const { bridge, checks, inline, lattesId, onClose, onPublished, open, originalXml } = props;
   const cnpq = usePublish(lattesId);
   const enabled = publishUiEnabled(location.search, import.meta.env.DEV);
   const [screenRequest, setScreenRequest] = useState<{ at: number; id: string } | undefined>();
@@ -127,6 +131,8 @@ function PublishPanelBody(props: Props) {
   }, [status.busy, attempt, now]);
 
   const pending = unpublishedEntries(bridge.sent, bridge.lattes).filter((e) => !failed(e));
+  // Freio de escrita (LAT-59): gravação divergente sem conferência bloqueia o envio.
+  const blockers = publishBlockers(bridge.sent, bridge.lattes);
   const original = useMemo(
     () => (open && originalXml ? parseXml(originalXml).root : undefined),
     [open, originalXml],
@@ -139,7 +145,7 @@ function PublishPanelBody(props: Props) {
 
   const request = form && screen && publishRequest(form, declared, screen.declaration);
   const problem = request && requestProblem(request, screen);
-  const canSend = enabled && !!request && !problem && !status.locked;
+  const canSend = enabled && !!request && !problem && !status.locked && blockers.length === 0;
   const set = (patch: Partial<PublishForm>) => setForm((f) => f && { ...f, ...patch });
 
   const send = () => {
@@ -151,113 +157,18 @@ function PublishPanelBody(props: Props) {
     setDeclared(false);
   };
 
-  return (
-    <Modal
-      className="export publish"
-      footer={
-        <>
-          <button className="ghost" type="button" onClick={onClose}>
-            {status.done || !enabled ? 'Fechar' : 'Cancelar'}
-          </button>
-          {enabled && !status.locked && (
-            <button className="primary" disabled={!canSend} type="button" onClick={send}>
-              Enviar ao CNPq
-            </button>
-          )}
-        </>
-      }
-      label="Enviar ao CNPq"
-      open={open}
-      subtitle="Publica no currículo público o que está gravado no Lattes. Só você marca a declaração."
-      title="Enviar ao CNPq"
-      onClose={onClose}
-    >
+  const sendLabel = inline ? 'Publicar no CNPq' : 'Enviar ao CNPq';
+  const body = (
+    <>
       {!bridge.available && (
         <p className="export-blocked">
           O envio precisa da extensão e do seu currículo aberto no Lattes, neste navegador.
         </p>
       )}
 
-      <section className="panel-section">
-        <h3 className="panel-section-head">O que vai ser publicado</h3>
-        <ul className="diagnosis-facts">
-          <li>
-            Última publicação:{' '}
-            <strong>
-              {bridge.lattes?.lastPublished
-                ? dateLabel(bridge.lattes.lastPublished)
-                : 'não informada'}
-            </strong>
-          </li>
-          {pending.length > 0 && (
-            <li>
-              {pending.length === 1
-                ? '1 gravação do editor desde então:'
-                : `${pending.length} gravações do editor desde então:`}
-              <ul className="diagnosis-lines">
-                {pending.map((e, i) => (
-                  <li key={e.id ?? i}>{e.op.label}</li>
-                ))}
-              </ul>
-            </li>
-          )}
-          {bridge.lattes?.pending && pending.length === 0 && (
-            <li>Há alterações no Lattes que não passaram pelo editor.</li>
-          )}
-          {bridge.lattes && !bridge.lattes.pending && pending.length === 0 && (
-            <li>O Lattes não mostra nada pendente de publicação.</li>
-          )}
-        </ul>
-        {diff && !diff.unreadable && (
-          <p className="muted">
-            Comparando os títulos com a última versão publicada:{' '}
-            {diff.onlyInLattes.length === 0 && diff.onlyInExport.length === 0
-              ? 'nenhuma produção ou evento entra ou sai.'
-              : `${[
-                  diff.onlyInLattes.length ? `${diff.onlyInLattes.length} entram` : '',
-                  diff.onlyInExport.length
-                    ? `${diff.onlyInExport.length} saem ou mudam de título`
-                    : '',
-                ]
-                  .filter(Boolean)
-                  .join(', ')}.`}
-          </p>
-        )}
-        {diff && diff.onlyInLattes.length > 0 && (
-          <ul className="diagnosis-lines">
-            {diff.onlyInLattes.map((item, i) => (
-              <li key={i}>
-                <span className="muted">{item.group ?? item.section}</span> {item.text}
-              </li>
-            ))}
-          </ul>
-        )}
-        {diff && diff.onlyInExport.length > 0 && (
-          <ul className="diagnosis-lines">
-            {diff.onlyInExport.map(({ title }, i) => (
-              <li key={i}>
-                <span className="muted">Sai ou muda de título</span> {title}
-              </li>
-            ))}
-          </ul>
-        )}
-        {reading?.previews && (
-          <div className="publish-previews">
-            <button
-              type="button"
-              onClick={() => reading.previews && openExternal(reading.previews.pt)}
-            >
-              Ver a versão em português
-            </button>
-            <button
-              type="button"
-              onClick={() => reading.previews && openExternal(reading.previews.en)}
-            >
-              Ver a versão em inglês
-            </button>
-          </div>
-        )}
-      </section>
+      <WhatPublishes bridge={bridge} diff={diff} pending={pending} previews={reading?.previews} />
+
+      <PublishBlockers blockers={blockers} onCheck={bridge.checkSent} />
 
       {checks && (
         <section className="panel-section">
@@ -279,7 +190,11 @@ function PublishPanelBody(props: Props) {
       )}
 
       {screen && form && (
-        <>
+        <div className="lattes-form-box">
+          <h3 className="lattes-form-head">Tela de envio do Lattes</h3>
+          <p className="muted lattes-form-sub">
+            Os mesmos campos e a mesma declaração da tela &quot;Enviar&quot; do Lattes.
+          </p>
           <section className="panel-section">
             <h3 className="panel-section-head">Dados do envio</h3>
             <div className="fields publish-fields">
@@ -367,7 +282,7 @@ function PublishPanelBody(props: Props) {
             )}
             {enabled && problem && declared && <p className="export-blocked">{problem}</p>}
           </section>
-        </>
+        </div>
       )}
 
       {status.text && (
@@ -375,6 +290,45 @@ function PublishPanelBody(props: Props) {
           {status.text}
         </p>
       )}
+    </>
+  );
+  // No passo ③ da janela de envio (ExportPanel), sem modal: o botão fica no fim.
+  if (inline) {
+    return (
+      <div className="publish-inline">
+        {body}
+        {enabled && !status.locked && (
+          <div className="step-actions">
+            <button className="primary" disabled={!canSend} type="button" onClick={send}>
+              {sendLabel}
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+  return (
+    <Modal
+      className="export publish"
+      footer={
+        <>
+          <button className="ghost" type="button" onClick={onClose}>
+            {status.done || !enabled ? 'Fechar' : 'Cancelar'}
+          </button>
+          {enabled && !status.locked && (
+            <button className="primary" disabled={!canSend} type="button" onClick={send}>
+              {sendLabel}
+            </button>
+          )}
+        </>
+      }
+      label="Enviar ao CNPq"
+      open={open}
+      subtitle="Publica no currículo público o que está gravado no Lattes. Só você marca a declaração."
+      title="Enviar ao CNPq"
+      onClose={onClose}
+    >
+      {body}
     </Modal>
   );
 }

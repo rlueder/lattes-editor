@@ -122,6 +122,14 @@ export function citationFields(item: XElement, opts: LayoutOptions): Part[] {
     .sort((a, b) => citationRank(a.attr) - citationRank(b.attr));
 }
 
+/** Partes do item que nenhuma referência mostra. */
+const NEVER_IN_REFERENCE = new Set([
+  'AREAS-DO-CONHECIMENTO',
+  'INFORMACOES-ADICIONAIS',
+  'PALAVRAS-CHAVE',
+  'SETORES-DE-ATIVIDADE',
+]);
+
 /**
  * Campos preenchidos que a referência não mostra (ISSN, idioma, palavras-chave):
  * a leitura os mostra em linhas de rótulo e valor abaixo dela.
@@ -132,8 +140,10 @@ export function outsideReference(item: XElement, opts: LayoutOptions): Part[] {
     referenceHighlights(text, referenceCandidates(item, opts)).map((h) => h.key),
   );
   // Dois campos com o mesmo valor (o ano do trabalho e o de realização) aparecem
-  // juntos no mesmo trecho: os dois contam como mostrados.
-  const appears = (p: Part) => appearsIn(text, partText(p));
+  // juntos no mesmo trecho: os dois contam como mostrados. As partes que a
+  // referência nunca mostra ficam fora: a palavra-chave "design" sumia da
+  // leitura só porque o título tinha a palavra.
+  const appears = (p: Part) => !NEVER_IN_REFERENCE.has(p.el.name) && appearsIn(text, partText(p));
   return citationFields(item, opts).filter((p) => !shown.has(p.key) && !appears(p));
 }
 

@@ -52,6 +52,38 @@ export const BRIDGE_FEATURES = [
    * em si só sai com PUBLISH_ENABLED, e sem ela a extensão responde "desligado".
    */
   'enviar-cnpq',
+  /**
+   * O editor começa a gravação e segue depois da pausa ("continuar"); o
+   * painel da extensão só acompanha. Sem ela, a fila espera o "Aplicar
+   * todas" no painel.
+   */
+  'gravar-pelo-editor',
+  /** Alterar no lugar produções, orientações e bancas (production/). */
+  'alterar-producao',
+  /**
+   * Formação pelas buscas de instituição, curso e agência, pós-doutorado,
+   * livre-docência e outras informações relevantes (biographic.ts).
+   */
+  'alterar-dados-gerais-completo',
+  /**
+   * Instituição, curso e agência de orientações e bancas pelas buscas do
+   * Lattes, com a lista de cursos de tese (production/lookups.ts).
+   */
+  'buscas-producao',
+  // 'orgao-projeto' (production/organ.ts) volta quando PROJECT_ORGAN_ENABLED ligar.
+  /** Áreas de atuação, a lista inteira (areas-atuacao.ts). */
+  'alterar-areas-atuacao',
+  /** Período e descrição das atividades das atuações (edit-atividade.ts). */
+  'alterar-atividades',
+  /**
+   * A janela de órgãos da atividade (prc_orgao_cargo), para o editor escolher
+   * o órgão e a unidade de uma atividade pela lista (edit-atividade.ts).
+   */
+  'orgao-atividades',
+  /** Citação de coautores pelo dicionário de coautores (edit-citacao.ts). */
+  'alterar-citacoes',
+  // 'buscas-complementar-endereco' (edit-lists.ts, formacao-lookups.ts) volta
+  // quando COMPL_ENDERECO_LOOKUPS_ENABLED ligar.
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

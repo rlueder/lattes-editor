@@ -11,9 +11,10 @@
 //   __lattesCensus.authorShape(['Nome Completo', 'NOME, N.']) // forma das linhas de autor
 //   __lattesCensus.vectorShape('titularPessoaDP', 'Nome') // o mesmo, para outro vetor do menu
 //
-// Só GET de formulário e de lista. A única exceção é link() sem XML, que
-// pede a exportação pelo mesmo POST de leitura do "Exportar" (o conector já
-// faz o mesmo, docs/lattes_internals.md, seção 12). Nada é enviado ao Lattes.
+// Só GET de formulário e de lista. As exceções: link() sem XML, que pede a
+// exportação pelo mesmo POST de leitura do "Exportar" (o conector já faz o
+// mesmo, docs/lattes_internals.md, seção 12), e testItems() e
+// removeTestItems(), que gravam no currículo e só a pessoa roda.
 
 import { exportCv, type ExportPort } from '../../src/bridge/export.ts';
 import { cvCodeFrom, isLogonPage, lattesIdFrom } from '../../src/bridge/lattes-html.ts';
@@ -26,14 +27,39 @@ import {
   type CensusPort,
   runCensus,
 } from '../../src/census/run.ts';
+import { testJobs } from '../../src/census/test-plan.ts';
 import { readZip } from '../../src/import-export/zip.ts';
 import { decodeLatin1, decodeXmlBytes } from '../../src/model/latin1.ts';
+import { ensureContext } from './censo-test-donors.ts';
+import {
+  createTestItems,
+  live,
+  resetTestItems,
+  setLive,
+  testProgress,
+} from './censo-test-items.ts';
+import { loadBase, markInCv, saveBase, snapshotLists } from './censo-test-ledger.ts';
+import { removeTestItems } from './censo-test-removal.ts';
 
 declare const __CENSO_VERSAO__: string;
+declare const __CENSUS_BUILD__: string;
 
 const base = () => new URL('/cvlattesweb/', location.origin);
 
+/** Na leitura dos formulários dos itens de teste: cada página lida conta no andamento. */
+let reading = false;
+
+/**
+ * No Lattes, um GET também executa: o link de exclusão de uma atuação é
+ * pkg_ativ.form com f_ctr=E2, e apagou a atuação inteira quando foi lido
+ * como página (18/10/2026). Leitura nunca leva f_ctr de exclusão.
+ */
+export const DELETE_GET = /[?&]f_ctr=E/i;
+
 async function get(path: string) {
+  if (DELETE_GET.test(path))
+    throw new Error(`Leitura recusada, o endereço exclui: ${path.split('?')[0]}`);
+  if (reading) setLive({ done: (live()?.done ?? 0) + 1, last: path.split('?')[0] });
   const res = await fetch(new URL(path, base()), { credentials: 'include' });
   return {
     html: decodeLatin1(new Uint8Array(await res.arrayBuffer())),
@@ -214,15 +240,102 @@ function summary(file: CensusFile) {
   };
 }
 
+/**
+ * Os itens de teste da passada completa (docs/lattes-formularios/
+ * itens-de-teste.md), um lote por chamada. Grava no currículo: só a pessoa
+ * roda, na aba do menu.
+ */
+let captured: CensusFile | undefined;
+/** Lê os formulários uma vez (alguns minutos); os lotes seguintes usam a leitura. */
+async function prepareTestItems() {
+  // A leitura inclui os seus itens de onde as buscas são copiadas: antes ela
+  // ficava para o começo do primeiro lote, que parecia parado sem andamento.
+  setLive({ done: 0, last: undefined, phase: 'lendo', total: undefined });
+  reading = true;
+  try {
+    if (!captured || captured.interrupted) captured = await capture({ download: false });
+    if (!captured.interrupted) await ensureContext(await code(), get);
+  } finally {
+    reading = false;
+    setLive({ phase: 'parado' });
+  }
+  // Sessão caída no meio da leitura: nenhum formulário foi lido, e o lote
+  // sairia vazio como se não faltasse nada.
+  if (captured.interrupted) {
+    const lost = captured;
+    captured = undefined;
+    throw new Error(
+      `A leitura dos formulários parou (${lost.entries.filter((e) => e.status === 'nao-lido').length} sem ler): a sessão do Lattes pode ter caído. Entre de novo e rode outra vez.`,
+    );
+  }
+  // A base das listas (Fase 0), antes do primeiro item: sem ela, a remoção
+  // não teria com o que comparar.
+  if (!loadBase()) {
+    if (testProgress().criados > 0) {
+      throw new Error(
+        'Há itens de teste criados sem a base das listas. Confira e remova-os à mão, rode resetTestItems() e comece de novo.',
+      );
+    }
+    setLive({ done: 0, last: undefined, phase: 'lendo', total: undefined });
+    reading = true;
+    try {
+      // Uma base com itens de teste dentro os tomaria por seus.
+      const marks = await markInCv(await code(), get);
+      if (marks > 0) {
+        throw new Error(
+          `O currículo já tem ${marks} ocorrências da marca dos itens de teste. Remova-as antes de tirar a base.`,
+        );
+      }
+      saveBase(await snapshotLists(await menuHtml(), await code(), get));
+    } finally {
+      reading = false;
+      setLive({ phase: 'parado' });
+    }
+  }
+  return testProgress(testJobs(captured));
+}
+
+async function testItems(options: Parameters<typeof createTestItems>[3] = {}) {
+  await prepareTestItems();
+  return createTestItems(testJobs(captured!), await code(), get, options);
+}
+
+/** Como a leitura achou um formulário (estado, formulários, endereço), sem tocar no Lattes. */
+function entryOf(id: string) {
+  const e = captured?.entries.find((x) => x.id === id);
+  if (!e) return captured ? 'não está na leitura' : 'sem leitura';
+  return {
+    forms: e.page?.forms.map((f) => f.name),
+    jobs: testJobs(captured!).filter((j) => j.id === id).length,
+    status: e.status,
+  };
+}
+
+/** O andamento guardado, sem tocar no Lattes. */
+function progress() {
+  return testProgress(captured ? testJobs(captured) : undefined);
+}
+
+async function removeTests(options: Parameters<typeof removeTestItems>[2] = {}) {
+  return removeTestItems(await code(), get, options);
+}
+
 (globalThis as unknown as { __lattesCensus: unknown }).__lattesCensus = {
   activities,
   authorShape,
+  build: __CENSUS_BUILD__,
   capture,
   captureAll,
   download,
+  entryOf,
   inspect,
   link,
+  prepareTestItems,
+  removeTestItems: removeTests,
+  resetTestItems,
   summary,
+  testItems,
+  testProgress: progress,
   vectorShape,
   version: __CENSO_VERSAO__,
 };

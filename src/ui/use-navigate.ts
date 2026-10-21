@@ -4,7 +4,7 @@
 
 import { type MutableRefObject, useCallback, useEffect, useRef } from 'react';
 
-import { type HashRoute, parseHash, writeHash } from './hash-route.ts';
+import { type HashRoute, routeOf, writeHash } from './hash-route.ts';
 import { withSectionTransition } from './section-transition.ts';
 import type { Section } from './sections.ts';
 
@@ -57,7 +57,7 @@ export function useFollowHash(
   useEffect(() => {
     if (!hasSections) return;
     const follow = () => {
-      const route = parseHash(location.hash);
+      const route = routeOf(location.hash);
       if (route && sectionsRef.current.some((s) => s.id === route.sectionId))
         navigate(route, false);
     };

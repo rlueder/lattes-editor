@@ -40,10 +40,17 @@ import {
   readBackProblem,
   readPairs,
   type Result,
+  sameCode,
   selectEntries,
   Stop,
 } from './create-shared.ts';
-import { encodeLatin1Form, pairValue, setPairs, successfulPairs } from './form.ts';
+import {
+  encodeLatin1Form,
+  pairValue,
+  setPairs,
+  successfulPairs,
+  withScriptValues,
+} from './form.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
 import { findLinks, isLogonPage, type LattesLink } from './lattes-html.ts';
 import type { FieldValues } from './plan.ts';
@@ -270,7 +277,7 @@ export async function applyCreateGeneral(op: CreateGeneralOp, port: LattesPort):
     const inclusion = findLinks(listaHtml, spec.proc).find((l) => !l.params.f_seq);
     if (!inclusion) throw new Stop('erro', 'Inclusão não encontrada na lista do Lattes');
     const formHtml = await getChecked(port, inclusion.path);
-    const controls = port.readForm(formHtml, spec.name);
+    const controls = withScriptValues(formHtml, port.readForm(formHtml, spec.name));
     if (!controls) throw new Stop('erro', `Formulário ${spec.name} não encontrado`);
     const form = { controls, pairs: successfulPairs(controls) };
     if (pairValue(form.pairs, 'f_ctr') !== 'I') {
@@ -321,7 +328,7 @@ async function confirmNew(
       return maybeCreated(key, mayExist, `a lista mostra ${created.length} itens novos`);
     }
     const saved = await readPairs(port, created[0]!.path, spec.name);
-    const problem = readBackProblem('Criado no Lattes', false, readBack(saved, set));
+    const problem = readBackProblem('Criado no Lattes', readBack(saved, set));
     return problem
       ? result('divergente', problem)
       : result('conferido', 'Criado e conferido no Lattes');
@@ -338,9 +345,7 @@ async function vinculosGrid(op: CreateVinculoOp, port: LattesPort) {
   const grids = findLinks(await getChecked(port, lista.path), 'pkg_ativ.cargos_vinculos').filter(
     (l) =>
       l.params.f_seq_ativ === op.seqAtiv &&
-      (!op.codInst ||
-        (l.params.f_codinst ?? '').replace(/^[A-Za-z]/, '') ===
-          op.codInst.replace(/^[A-Za-z]/, '')),
+      (!op.codInst || sameCode(l.params.f_codinst, op.codInst)),
   );
   if (grids.length !== 1) {
     throw new Stop(
@@ -410,7 +415,6 @@ export async function applyCreateVinculo(op: CreateVinculoOp, port: LattesPort):
       const { f_vinculo: _copy, ...checked } = op.set;
       const problem = readBackProblem(
         `Criado no Lattes (vínculo ${seq})`,
-        false,
         readBack(saved, checked),
       );
       if (problem) return { ...result('divergente', problem), assigned };

@@ -63,6 +63,9 @@ const FORMATION: FormGroup[] = [
       'NOME-INSTITUICAO',
       'NOME-ORGAO',
       'NOME-CURSO',
+      // Especialização e aperfeiçoamento: no Lattes a carga horária vem logo
+      // depois do curso (censo de 18/10/2026).
+      'CARGA-HORARIA',
     ],
     label: 'Curso',
   },
@@ -73,7 +76,6 @@ const FORMATION: FormGroup[] = [
       'ANO-DE-INICIO',
       'ANO-DE-CONCLUSAO',
       'ANO-DE-OBTENCAO-DO-TITULO',
-      'CARGA-HORARIA',
     ],
     label: 'Situação e período',
   },

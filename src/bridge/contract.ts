@@ -77,7 +77,11 @@ type CreateKind =
  * (create.ts, create-items.ts, biographic.ts, edit-items.ts) e a exclusão, que não tem
  * formulário próprio (delete.ts usa o de edição e a conferência dele).
  */
-type GatedKind = CreateKind | 'evento' | BiographicKind | DeleteOp['kind'] | ListEditKind;
+// A alteração no lugar de produções, orientações e bancas (production/) não
+// tem formulário aqui: a operação confere o formulário e as grades do próprio
+// item na hora de gravar.
+type OwnCheckKind = 'areas-atuacao' | 'atividade' | 'citacao' | 'evento' | 'producao';
+type GatedKind = CreateKind | OwnCheckKind | BiographicKind | DeleteOp['kind'] | ListEditKind;
 
 export interface Contract {
   /**

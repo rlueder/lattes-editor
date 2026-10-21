@@ -4,10 +4,13 @@
 // é a mesma que o conector usa (src/bridge/plan.ts e biographic.ts), em boa
 // parte inferida.
 
+import { parseSocial } from '../../src/model/contacts.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
+import { withLetter } from './buscas.ts';
 import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
+import { IDENTIFICACAO_ROUTES } from './identificacao.ts';
 import type { SimRequest } from './pedido.ts';
 import { html, type Routes, type SimResponse } from './tipos.ts';
 
@@ -171,11 +174,11 @@ const ADDRESS_FIELDS: [string, string, number?][] = [
   ['f_bairro', 'BAIRRO', 255],
   ['f_munic', 'CIDADE', 45],
   ['f_estado', 'UF', 10],
-  ['f_ddd', 'DDD'],
-  ['f_fone', 'TELEFONE'],
-  ['f_ramal', 'RAMAL'],
-  ['f_fax', 'FAX'],
-  ['f_caixa', 'CAIXA-POSTAL'],
+  ['f_ddd', 'DDD', 5],
+  ['f_fone', 'TELEFONE', 10],
+  ['f_ramal', 'RAMAL', 5],
+  ['f_fax', 'FAX', 10],
+  ['f_caixa', 'CAIXA-POSTAL', 10],
   ['f_email', 'E-MAIL', 70],
   ['f_homepage', 'HOME-PAGE', 250],
 ];
@@ -184,23 +187,167 @@ function addressBindings(suffix: string, element: string): Binding[] {
   const street = element === 'ENDERECO-PROFISSIONAL' ? 'LOGRADOURO-COMPLEMENTO' : 'LOGRADOURO';
   return [
     attr(`f_rua${suffix}`, street, 'text', { maxLength: 180 }),
+    // País pelo nome no XML, código na lista (a do residencial sem opção vazia).
+    {
+      kind: 'select',
+      name: `f_pais${suffix}`,
+      options: suffix === '_r' ? h.COUNTRIES : [['', ''], ...h.COUNTRIES],
+      read: (el) => h.countryCode(getAttr(el, 'PAIS')),
+      write: (el, value) => setAttr(el, 'PAIS', h.countryName(value)),
+    },
     ...ADDRESS_FIELDS.map(([field, attrName, max]) =>
       attr(`${field}${suffix}`, attrName, 'text', max ? { maxLength: max } : {}),
     ),
   ];
 }
 
+const PRIVACY: [string, string][] = [
+  ['1', 'Público'],
+  ['2', 'Privado'],
+];
+
+/**
+ * Os controles do formulário que o simulado não liga ao XML, como o censo de
+ * 15/10/2026 os leu: o país, o celular, a visibilidade, o endereço de
+ * correspondência e os campos de controle da página.
+ */
+function addressExtras(suffix: string): string {
+  return [
+    h.text(`f_ddd_cel${suffix}`, '', { maxLength: 5 }),
+    h.text(`f_fone_cel${suffix}`, '', { maxLength: 10 }),
+    h.select(`f_priv_email${suffix}`, PRIVACY, '1'),
+    ...['f_cidade', 'f_cod_munic'].map((n) => h.hidden(`${n}${suffix}`, '')),
+    ...['f_munic', 'f_estado', 'f_pais'].map((n) => h.hidden(`${n}${suffix}_old`, '')),
+  ].join('\n');
+}
+
+/** O endereço de correspondência: ENDERECO@FLAG-DE-PREFERENCIA (R observado, I inferido). */
+const preference = mapped(
+  'f_end_corr',
+  'FLAG-DE-PREFERENCIA',
+  'radio',
+  { ENDERECO_INSTITUCIONAL: 'I', ENDERECO_RESIDENCIAL: 'R' },
+  {
+    options: [
+      ['R', 'utilizar este endereço para correspondência'],
+      ['I', 'utilizar este endereço para correspondência'],
+    ],
+  },
+);
+
+const FORM_EXTRAS = [
+  h.select('f_priv_residencial', PRIVACY, '2', { disabled: true }),
+  h.select('f_priv_profissional', PRIVACY, '1'),
+  ...['modal2', 'f_dados_grid', 'f_dados_grid_contatos', 'f_origem', 'f_cod'].map((n) =>
+    h.hidden(n, ''),
+  ),
+].join('\n');
+
+/**
+ * A instituição do endereço profissional, como o seleciona() da busca a grava
+ * (observado em 20/10/2026): o nome em f_inst (desabilitado) e f_inst_old, o
+ * código sem a letra em f_cod_inst (letra V) ou f_cod_inst2 (as outras). Que a
+ * página traga esses ocultos preenchidos com o valor gravado, e que o
+ * PRC_ENDERECO os grave, é inferido. O órgão segue o atribuir() da janela de
+ * órgãos: o texto em f_orgao (desabilitado) e, como na alteração do projeto
+ * (18/10/2026), f_codorgao, f_codorgao2 e f_orgao_old vazios na página; o
+ * órgão escolhido volta neles e o simulado o grava (inferido).
+ */
+function institutionBindings(state: LattesState): Binding[] {
+  const code = (el: XElement) => getAttr(el, 'CODIGO-INSTITUICAO-EMPRESA') ?? '';
+  const isV = (el: XElement) => withLetter(state, code(el)).startsWith('V');
+  const write = (el: XElement, v: string) => {
+    if (v) setAttr(el, 'CODIGO-INSTITUICAO-EMPRESA', v);
+  };
+  return [
+    attr('f_inst', 'NOME-INSTITUICAO-EMPRESA', 'text', { disabled: true, maxLength: 75 }),
+    attr('f_orgao', 'NOME-ORGAO', 'text', { disabled: true }),
+    { kind: 'hidden', name: 'f_cod_inst', read: (el) => (isV(el) ? code(el) : ''), write },
+    { kind: 'hidden', name: 'f_cod_inst2', read: (el) => (isV(el) ? '' : code(el)), write },
+    attr('f_inst_old', 'NOME-INSTITUICAO-EMPRESA', 'hidden'),
+    ...['f_codorgao', 'f_codorgao2'].map((name): Binding => ({
+      kind: 'hidden',
+      name,
+      read: () => '',
+      write: (el, v) => {
+        if (v) setAttr(el, 'CODIGO-ORGAO', v);
+      },
+    })),
+    {
+      kind: 'hidden',
+      name: 'f_orgao_old',
+      read: () => '',
+      write: (el, v) => {
+        if (v) setAttr(el, 'NOME-ORGAO', v);
+      },
+    },
+  ];
+}
+
+/** Os tipos de rede social da página real (vetor redesSociais, 18/10/2026), em parte. */
+const SOCIAL_TYPES: [number, string][] = [
+  [1, 'Facebook'],
+  [2, 'Linkedin'],
+  [15, 'GitHub'],
+];
+
+/**
+ * As grades de contato da página de endereço, como a real (18/10/2026): o
+ * vetor provider das redes, o providerContatos das outras formas e a lista
+ * redesSociais. As redes saem de ENDERECO@REDE-SOCIAL.
+ */
+function contactScripts(container: XElement | undefined): string {
+  const social = parseSocial((container && getAttr(container, 'REDE-SOCIAL')) ?? '').map((r) => {
+    const type = SOCIAL_TYPES.find(([, n]) => n.toLowerCase() === r.name.toLowerCase());
+    return {
+      endereco: r.url,
+      id: type?.[0] ?? 1,
+      privacidade: '1',
+      redeSocial: type?.[1] ?? r.name,
+      visibilidade: 'Público',
+    };
+  });
+  const types = SOCIAL_TYPES.map(([id, redeSocial]) => ({ id, redeSocial }));
+  return `<script>
+var redesSociais = ${JSON.stringify([...types, {}])};
+var provider = ${JSON.stringify([...social, {}])};
+var providerContatos = [{}];
+</script>`;
+}
+
+/**
+ * f_dados_grid de volta para ENDERECO@REDE-SOCIAL. Inferido: o separador entre
+ * duas redes (uma só foi vista numa exportação, "ID Rede Social: …, Nome Rede
+ * Social: …, Endereço: …").
+ */
+function socialFromGrid(xml: string): string {
+  const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item >/g)].map((m) => {
+    const tag = (t: string) => new RegExp(`<${t}>([^<]*)</${t}>`).exec(m[1]!)?.[1] ?? '';
+    return { id: tag('id'), name: tag('redeSocial'), url: tag('endereco').replace(/&amp;/g, '&') };
+  });
+  return items
+    .map(
+      (r, i) =>
+        `ID Rede Social: ${1000000 + i + 1}, Nome Rede Social: ${r.name}, Endereço: ${r.url}`,
+    )
+    .join('; ');
+}
+
 function enderecoForm(_req: SimRequest, state: LattesState): SimResponse {
   const container = state.find(['DADOS-GERAIS', 'ENDERECO']);
   const blocks = ADDRESS.map(([suffix, name]) => {
     const el = container && childElements(container, name)[0];
-    return `<fieldset><legend>${suffix === '_i' ? 'Profissional' : 'Residencial'}</legend>${renderFields(addressBindings(suffix, name), el ?? element(name))}</fieldset>`;
+    return `<fieldset><legend>${suffix === '_i' ? 'Profissional' : 'Residencial'}</legend>${renderFields(addressBindings(suffix, name), el ?? element(name))}\n${addressExtras(suffix)}</fieldset>`;
   }).join('\n');
+  const professional = container && childElements(container, 'ENDERECO-PROFISSIONAL')[0];
   const body = `<form name="GN_ENDERECO" method="post" action="PRC_ENDERECO">
 ${blocks}
+${renderFields([preference], container ?? element('ENDERECO'))}
+${renderFields(institutionBindings(state), professional ?? element('ENDERECO-PROFISSIONAL'))}
+${FORM_EXTRAS}
 ${h.hidden('f_ctr', 'U')}
 ${h.formButtons(false)}
-</form>${h.formScripts('GN_ENDERECO')}`;
+</form>${contactScripts(container)}${h.formScripts('GN_ENDERECO')}`;
   return html(h.page('Endereço', body));
 }
 
@@ -215,40 +362,21 @@ function enderecoPost(req: SimRequest, state: LattesState): SimResponse {
     el ??= state.ensure(state.ensurePath(['DADOS-GERAIS', 'ENDERECO']), name);
     applyFields(bindings, el, req);
   }
+  const professional = state.find(['DADOS-GERAIS', 'ENDERECO', 'ENDERECO-PROFISSIONAL']);
+  if (professional) applyFields(institutionBindings(state), professional, req);
+  const corr = state.find(['DADOS-GERAIS', 'ENDERECO']);
+  if (corr || req.get('f_end_corr')) {
+    applyFields([preference], corr ?? state.ensurePath(['DADOS-GERAIS', 'ENDERECO']), req);
+  }
+  // A grade vazia apaga as redes, como se supõe que o Lattes faria: é o caso
+  // que o conector evita mandando sempre a grade da página.
+  const grid = req.get('f_dados_grid');
+  if (grid !== null && grid !== undefined) {
+    const holder = state.ensurePath(['DADOS-GERAIS', 'ENDERECO']);
+    setAttr(holder, 'REDE-SOCIAL', socialFromGrid(grid));
+  }
   state.touch();
   return html(h.savedScript(`prc_endereco?f_cod=${state.code}`));
-}
-
-// ---------------------------------------------------------------- identificação
-
-/**
- * Só os campos com nome lido no HTML (seção 5): o nome, a nacionalidade, que
- * a página preenche por JavaScript, e f_ctr. Os outros (CPF, nome em
- * citações, nascimento, documentos) existem no Lattes com nomes não anotados e
- * ficam de fora do simulado.
- */
-function identBindings(): Binding[] {
-  return [
-    attr('f_nome', 'NOME-COMPLETO', 'text', { maxLength: 60 }),
-    attr('f_nacionalidade', 'NACIONALIDADE', 'hidden'),
-    fixed('f_ctr', 'U'),
-  ];
-}
-
-function identForm(_req: SimRequest, state: LattesState): SimResponse {
-  const body = `<form name="GN_IDENT" method="post" action="PRC_IDENT">
-${renderFields(identBindings(), state.general)}
-${h.formButtons(false)}
-</form>${h.formScripts('GN_IDENT')}`;
-  return html(h.page('Identificação', body));
-}
-
-function identPost(req: SimRequest, state: LattesState): SimResponse {
-  if (req.get('f_ctr') === 'U') {
-    applyFields(identBindings(), state.general, req);
-    state.touch();
-  }
-  return html(h.savedScript(`prc_ident?f_cod=${state.code}`));
 }
 
 export const DADOS_GERAIS_ROUTES: Routes = {
@@ -260,6 +388,5 @@ export const DADOS_GERAIS_ROUTES: Routes = {
   'pkg_resume.prc_resume': resumoForm,
   prc_endereco: (req, state) =>
     req.method === 'POST' ? enderecoPost(req, state) : enderecoForm(req, state),
-  prc_ident: (req, state) =>
-    req.method === 'POST' ? identPost(req, state) : identForm(req, state),
+  ...IDENTIFICACAO_ROUTES,
 };

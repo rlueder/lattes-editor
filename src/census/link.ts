@@ -232,7 +232,9 @@ export function finishLinks(out: Tally): FieldLink[] {
     .filter((l) => l.matches > 0)
     .map((l) => {
       const { valueMap, ...rest } = l;
-      return l.by === 'enumeracao' && valueMap ? { ...rest, valueMap } : rest;
+      // O mapa fica também numa ligação por valor: as opções cujo rótulo não
+      // bate (Orquestral, gravado como ORQUESTRA) só aparecem nele.
+      return valueMap && Object.keys(valueMap).length ? { ...rest, valueMap } : rest;
     })
     .sort(compareLinks);
 }

@@ -10,6 +10,7 @@ import type { ResultStatus } from './apply.ts';
 import { isDeleteOp } from './delete.ts';
 import { opRows } from './field-labels.ts';
 import type { BridgeOp } from './plan.ts';
+import { isProductionOp } from './production/plan.ts';
 
 export interface SentRow {
   after: string;
@@ -21,9 +22,16 @@ export interface SentRow {
 export interface SentEntry {
   /** Mudança do editor que gerou a operação, para reabri-la se for desfeita. */
   change?: Change;
+  /**
+   * Quando a pessoa marcou "Já conferi no Lattes" numa gravação divergente:
+   * a divergência deixa de bloquear o envio ao CNPq (src/bridge/write-brake.ts).
+   */
+  checkedAt?: number;
   id?: number;
   /** NUMERO-IDENTIFICADOR do currículo. */
   lattesId: string;
+  /** Conferido com uma parte que o conector não relê: o aviso (OpResult.partial). */
+  note?: string;
   /** A operação exatamente como foi enviada e conferida. */
   op: BridgeOp;
   /**
@@ -31,7 +39,16 @@ export interface SentEntry {
    * caída, ou criado no Lattes com divergência na conferência. Ausente é
    * gravado e conferido (e todas as entradas de antes deste campo).
    */
-  outcome?: { detail: string; status: Exclude<ResultStatus, 'conferido'> };
+  outcome?: {
+    /**
+     * Números que o Lattes deu ao item criado, mesmo sem conferir
+     * (OpResult.assigned): com "Já conferi no Lattes", o item entra na cópia
+     * com eles, como entraria conferido.
+     */
+    assigned?: Record<string, string>;
+    detail: string;
+    status: Exclude<ResultStatus, 'conferido'>;
+  };
   /** Linhas "antes → depois", guardadas prontas para mostrar. */
   rows: SentRow[];
   sentAt: number;
@@ -46,7 +63,7 @@ export function sentEntry(
   op: BridgeOp,
   lattesId: string,
   sentAt: number,
-  extra: Pick<SentEntry, 'change' | 'outcome' | 'undoOf'> = {},
+  extra: Pick<SentEntry, 'change' | 'note' | 'outcome' | 'undoOf'> = {},
 ): SentEntry {
   return { ...extra, lattesId, op, rows: opRows(op), sentAt };
 }
@@ -78,6 +95,12 @@ export function noUndoReason(op: BridgeOp): string | undefined {
   }
   // Desfazer a troca para ouvinte seria trocar a forma de ouvinte para outra,
   // que o conector ainda não faz (edit-items.ts, planShape).
+  if (
+    ((op.kind === 'formacao' || op.kind === 'formacao-complementar') && op.lookups) ||
+    (op.kind === 'endereco' && (op.institution || op.organ))
+  ) {
+    return 'Instituição, curso, órgão ou agência trocados pela busca do Lattes: para voltar, escolha de novo pela busca no editor e envie';
+  }
   if (op.kind === 'evento' && op.set.F_FORMA === '40' && (op.expect.F_FORMA ?? '40') !== '40') {
     return 'Voltar de ouvinte para convidado ou participante pelo conector espera o teste acompanhado; volte a forma no próprio Lattes';
   }
@@ -106,6 +129,14 @@ export function undoOp(entry: SentEntry): BridgeOp | undefined {
   const expect = { ...op.expect, ...op.set };
   return {
     ...op,
+    // Palavras-chave e autores conferem e gravam pelas listas; as linhas mostram o desfazer.
+    ...(isProductionOp(op)
+      ? {
+          authors: op.authors && { after: op.authors.before, before: op.authors.after },
+          keywords: op.keywords && { after: op.keywords.before, before: op.keywords.after },
+          rows: op.rows.map((r) => ({ ...r, after: r.before, before: r.after })),
+        }
+      : {}),
     expect,
     key: `${UNDO_KEY_PREFIX}${entry.id}`,
     label: `Desfazer: ${op.label}`,
@@ -194,8 +225,12 @@ export function sentLogText(
       day = date;
       lines.push('', date);
     }
+    const checked =
+      entry.checkedAt === undefined
+        ? ''
+        : `; conferido no Lattes pela pessoa em ${dateText(entry.checkedAt)} às ${timeText(entry.checkedAt)}`;
     const result = entry.outcome
-      ? `${OUTCOME_TEXT[entry.outcome.status]}${entry.outcome.detail ? `: ${entry.outcome.detail}` : ''}`
+      ? `${OUTCOME_TEXT[entry.outcome.status]}${entry.outcome.detail ? `: ${entry.outcome.detail}` : ''}${checked}`
       : entry.undoOf !== undefined
         ? 'desfeito e conferido'
         : isDeleteOp(entry.op)

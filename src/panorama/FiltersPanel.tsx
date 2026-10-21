@@ -95,26 +95,21 @@ export function FiltersPanel({ cv, filters, kinds, now, onChange }: Props) {
       />
     ),
     periodo: (
-      <div className="pano-period">
-        <label className="pano-year-label" htmlFor={`${id}-periodo`}>
-          Período
-        </label>
-        <YearRangeFilter
-          active={filters.from !== defaults.from || filters.to !== defaults.to}
-          id={`${id}-periodo`}
-          label="Período"
-          max={Math.max(cv.lastYear, now)}
-          min={cv.careerStart}
-          presets={periodPresets(cv, now).map((p) => ({
-            id: p.id,
-            label: p.label,
-            range: p.period,
-          }))}
-          today={now}
-          value={{ from: filters.from, to: filters.to }}
-          onChange={(r) => onChange({ ...filters, ...r })}
-        />
-      </div>
+      <YearRangeFilter
+        active={filters.from !== defaults.from || filters.to !== defaults.to}
+        id={`${id}-periodo`}
+        label="Período"
+        max={Math.max(cv.lastYear, now)}
+        min={cv.careerStart}
+        presets={periodPresets(cv, now).map((p) => ({
+          id: p.id,
+          label: p.label,
+          range: p.period,
+        }))}
+        today={now}
+        value={{ from: filters.from, to: filters.to }}
+        onChange={(r) => onChange({ ...filters, ...r })}
+      />
     ),
     repetidos: (
       <Select

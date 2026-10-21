@@ -14,6 +14,7 @@ import {
   type Pairs,
   pairValue,
   successfulPairs,
+  withScriptValues,
 } from './form.ts';
 import { decodeHtmlEntities } from './html-text.ts';
 import { isLogonPage } from './lattes-html.ts';
@@ -118,16 +119,24 @@ export async function readPairs(
   form: string,
 ): Promise<{ controls: FormControl[]; pairs: Pairs }> {
   const html = await getChecked(port, path);
-  const controls = port.readForm(html, form);
+  const controls = withScriptValues(html, port.readForm(html, form));
   if (!controls) throw new Stop('erro', `Formulário ${form} não encontrado`);
   return { controls, pairs: successfulPairs(controls) };
 }
 
-/** O código da busca (com a letra na frente) que corresponde ao do XML. */
+/**
+ * O código do Lattes (com a letra na frente, D ou V) que corresponde ao do
+ * XML. A letra é uma a mais: o código do XML pode começar por letra também
+ * (K4WU00000006, no link VK4WU00000006), e tirar a primeira letra dos dois
+ * lados os desencontraria.
+ */
 export function sameCode(fromLattes: string | null | undefined, fromXml: string): boolean {
   if (!fromLattes) return false;
   const a = fromLattes.trim();
-  return a === fromXml || a.replace(/^[A-Za-z]/, '') === fromXml.replace(/^[A-Za-z]/, '');
+  const b = fromXml.trim();
+  const lettered = (long: string, short: string) =>
+    long.length === short.length + 1 && /^[A-Za-z]/.test(long) && long.slice(1) === short;
+  return a === b || lettered(a, b) || lettered(b, a);
 }
 
 /** Os argumentos literais de cada chamada `fn(...)` na página, já decodificados. */
@@ -252,13 +261,15 @@ export function readBack(
 /** O motivo de uma inclusão feita mas não conferida, ou undefined se tudo voltou igual. */
 export function readBackProblem(
   created: string,
-  feminine: boolean,
   { differ, unread }: { differ: string[]; unread: string[] },
 ): string | undefined {
-  const end = feminine ? 'a' : 'o';
-  if (differ.length > 0) return `${created}, mas gravad${end} diferente: ${differ.join(', ')}`;
+  // Rótulos, sem repetir: nome e código do mesmo campo dizem a mesma coisa.
+  const list = (names: string[]) => [...new Set(names)].join(', ');
+  if (differ.length > 0) {
+    return `${created}, mas o Lattes guardou outro valor em: ${list(differ)}. Confira no Lattes`;
+  }
   if (unread.length > 0) {
-    return `${created}, mas não conferid${end}: o formulário relido não traz ${unread.join(', ')}`;
+    return `${created}, mas não deu para reler: ${list(unread)}. Confira no Lattes`;
   }
   return undefined;
 }

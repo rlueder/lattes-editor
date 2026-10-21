@@ -8,7 +8,10 @@ import { BUILD_GATES } from '../src/bridge/apply.ts';
 import { BRIDGE_FEATURES } from '../src/bridge/compat.ts';
 import { LATTES_CONTRACT } from '../src/bridge/contract.ts';
 import { EDIT_EVENTO_ENABLED } from '../src/bridge/edit-items.ts';
-import { GATED_EDITS, planOptionsFor } from '../src/bridge/plan.ts';
+import { GATED_EDITS, OLD_EXTENSION, planChanges, planOptionsFor } from '../src/bridge/plan.ts';
+import { diffDocuments } from '../src/model/changes.ts';
+import { parseXml, setAttr } from '../src/model/xml.ts';
+import { findIn } from './helpers/lattes-simulado.ts';
 
 describe('chaves de alteração e capacidades da extensão', () => {
   it('cada chave ligada tem a capacidade anunciada, e cada desligada não', () => {
@@ -46,11 +49,38 @@ describe('chaves do lado da extensão', () => {
   });
 
   it('esta montagem, com tudo ligado, deixa passar cada operação atrás de chave', () => {
-    // Para o teste ao vivo: todas as chaves ligadas, com a capacidade anunciada.
-    expect(GATED_EDITS.every((g) => g.enabled)).toBe(true);
+    // Para o teste ao vivo: todas as chaves ligadas, com a capacidade
+    // anunciada, menos a do órgão do projeto, que o Lattes não gravou no teste
+    // de 18/10/2026 (production/plan.ts).
+    // E menos as buscas da formação complementar e do endereço, que o Lattes
+    // também não gravou no teste de 20/10/2026 (edit-lists.ts).
+    const live = GATED_EDITS.filter(
+      (g) => g.feature !== 'orgao-projeto' && g.feature !== 'buscas-complementar-endereco',
+    );
+    expect(live.every((g) => g.enabled)).toBe(true);
     expect(BUILD_GATES.editEvento).toBe(true);
     expect([...BUILD_GATES.lists].sort()).toEqual(['formacao-complementar', 'premio']);
     const all = planOptionsFor(BRIDGE_FEATURES);
-    for (const g of GATED_EDITS) expect(all[g.option]).toBe(true);
+    for (const g of live) expect(all[g.option]).toBe(true);
+  });
+});
+
+describe('extensão anterior a uma alteração', () => {
+  it('o motivo diz para atualizar a extensão, só quando o plano vem dela', () => {
+    const xml = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS NOME-COMPLETO="P"/>
+<PRODUCAO-BIBLIOGRAFICA><DEMAIS-TIPOS-DE-PRODUCAO-BIBLIOGRAFICA>
+<OUTRA-PRODUCAO-BIBLIOGRAFICA SEQUENCIA-PRODUCAO="3"><DADOS-BASICOS-DE-OUTRA-PRODUCAO NATUREZA="OUTRA" TITULO="Ensaio" ANO="2004"/></OUTRA-PRODUCAO-BIBLIOGRAFICA>
+</DEMAIS-TIPOS-DE-PRODUCAO-BIBLIOGRAFICA></PRODUCAO-BIBLIOGRAFICA></CURRICULO-VITAE>`;
+    const original = parseXml(xml).root;
+    const working = parseXml(xml).root;
+    const basics = findIn(working, (el) => el.name === 'DADOS-BASICOS-DE-OUTRA-PRODUCAO')!;
+    setAttr(basics, 'TITULO', 'Ensaio revisto');
+    const entries = diffDocuments(original, working).map((change) => ({ change, itemTitle: '' }));
+    const old = planOptionsFor(['alterar-dados-gerais']);
+    expect(planChanges(entries, working, old, true).unsupported[0]?.reason).toBe(OLD_EXTENSION);
+    expect(planChanges(entries, working, old).unsupported[0]?.reason).not.toBe(OLD_EXTENSION);
+    expect(
+      planChanges(entries, working, planOptionsFor([...BRIDGE_FEATURES]), true).ops,
+    ).toHaveLength(1);
   });
 });

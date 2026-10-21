@@ -1,6 +1,7 @@
-// O filtro de período do painel: "Atalho", com os períodos prontos (todos os
-// anos, últimos 5, quadriênios da CAPES), e logo abaixo o campo de intervalo
-// de anos. Escolher um atalho põe o intervalo no campo; mudar o campo à mão
+// O filtro de período do painel, com o rótulo "Período" à vista sobre os dois
+// controles, igual nas seções e no Panorama: "Atalho", com os períodos prontos
+// (todos os anos, últimos 5, quadriênios da CAPES), e logo abaixo o campo de
+// intervalo de anos. Escolher um atalho põe o intervalo no campo; mudar o campo à mão
 // deixa o atalho em "Personalizado". Com seis ou sete opções, uma lista de
 // opções ocupa uma linha só no painel estreito, onde as pílulas quebrariam.
 
@@ -25,6 +26,9 @@ export function YearRangeFilter({ active, onChange, presets, value, ...field }: 
   const current = presets.find((p) => p.range.from === value.from && p.range.to === value.to);
   return (
     <div className="year-range-filter">
+      <label className="year-range-label" htmlFor={field.id}>
+        {field.label}
+      </label>
       <Select
         aria-label="Atalho de período"
         className={active ? 'filter-facet active' : 'filter-facet'}

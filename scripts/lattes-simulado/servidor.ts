@@ -14,10 +14,12 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { join } from 'node:path';
 
 import { encodeLatin1 } from '../../src/model/latin1.ts';
+import { AREAS_ROUTES } from './areas.ts';
 import { ATUACAO_ROUTES } from './atuacao.ts';
 import { BUSCAS_ROUTES } from './buscas.ts';
 import { CENSO_ROUTES } from './censo.ts';
 import { DADOS_GERAIS_ROUTES } from './dados-gerais.ts';
+import { DICIONARIO_ROUTES } from './dicionario.ts';
 import { type ImportOutcome, LattesState, type SimuladoOptions } from './estado.ts';
 import { EVENTOS_ROUTES } from './eventos.ts';
 import { EXPORTAR_ROUTES } from './exportar.ts';
@@ -28,14 +30,18 @@ import { MENU_ROUTES } from './menu.ts';
 import { PATENTE_ROUTES } from './patente.ts';
 import { buildRequest, type SimRequest } from './pedido.ts';
 import { PREMIOS_COMPLEMENTAR_ROUTES } from './premios-complementar.ts';
+import { productionRoutes } from './producao.ts';
 import { PROJETO_ROUTES } from './projeto.ts';
 import { notFound, type Routes, type SimResponse } from './tipos.ts';
 
 export const ROUTES: Routes = {
+  ...productionRoutes(),
+  ...AREAS_ROUTES,
   ...ATUACAO_ROUTES,
   ...BUSCAS_ROUTES,
   ...CENSO_ROUTES,
   ...DADOS_GERAIS_ROUTES,
+  ...DICIONARIO_ROUTES,
   ...EVENTOS_ROUTES,
   ...EXPORTAR_ROUTES,
   ...FORMACAO_ROUTES,

@@ -10,6 +10,7 @@ import type { WorkingCopy } from '../src/model/store.ts';
 
 type Store = typeof import('../src/model/store.ts');
 let store: Store;
+let markSentChecked: typeof import('../src/model/sent-checks.ts').markSentChecked;
 let key: CryptoKey;
 
 const copy = (xml: string, savedAt: number): WorkingCopy => ({
@@ -42,6 +43,7 @@ beforeAll(async () => {
   await v1.table('history').add({ note: 'Arquivo carregado', savedAt: 10, xml: '<v1/>' });
   v1.close();
   store = await import('../src/model/store.ts');
+  ({ markSentChecked } = await import('../src/model/sent-checks.ts'));
   key = await importStorageKey(randomKeyBytes());
 });
 
@@ -98,6 +100,20 @@ describe('banco local (IndexedDB)', () => {
         { after: 'antes', before: 'antes', label: 'Resumo', name: 'F_TEXTO' },
       ]);
       expect((await store.listSent('0000000000000002')).map((e) => e.op.label)).toEqual(['Resumo']);
+    });
+
+    it('"Já conferi no Lattes" fica guardado com a entrada e volta na leitura', async () => {
+      const id = await store.addSent(
+        sentEntry(resumo('conferir'), '0000000000000003', 500, {
+          outcome: { detail: 'diferente', status: 'divergente' },
+        }),
+      );
+      expect((await store.listSent('0000000000000003'))[0]?.checkedAt).toBeUndefined();
+      expect(await markSentChecked(id!, 600)).toBe(true);
+      expect(await store.listSent('0000000000000003')).toMatchObject([
+        { checkedAt: 600, outcome: { status: 'divergente' }, sentAt: 500 },
+      ]);
+      expect(await markSentChecked(99_999, 600)).toBe(false);
     });
 
     it('os pontos de antes do envio ficam fora da rotação das edições', async () => {

@@ -4,6 +4,8 @@
 import { type ReactNode, useEffect, useId, useState } from 'react';
 
 import { attributeLabelIn, elementLabel, enumLabel } from '../labels/labels.ts';
+import { parseEmails, parseSocial } from '../model/contacts.ts';
+import { applyLinkedAttrs, followsCountry, writesOwnCode } from '../model/linked-attrs.ts';
 import { repairMojibake } from '../model/mojibake.ts';
 import { getAttr, setAttr, type XElement } from '../model/xml.ts';
 import {
@@ -13,9 +15,10 @@ import {
   typedChoices,
 } from '../schema/typed-choices.ts';
 import type { AttributeSpec } from '../schema/types.ts';
-import { parseEmails, parseSocial } from './contacts.ts';
 import { DateField } from './DateField.tsx';
+import { displayValue } from './display.ts';
 import { useDraft, usePartKey } from './draft-context.ts';
+import { useEditor } from './editor-context.ts';
 import {
   codeAttrFor,
   codeChoices,
@@ -25,12 +28,14 @@ import {
   isBooleanAttr,
   isSystemAttr,
 } from './field-kind.ts';
+import { useFormLacks } from './form-lacks-context.ts';
 import { LockIcon } from './icons.tsx';
+import { InnovationText } from './InnovationText.tsx';
 import { displayLattesDate, isLattesDateAttr, isValidLattesDate } from './lattes-date.ts';
 import { useLattesListsContext } from './lattes-lists-context.ts';
 import { isFourDigitYear, isLattesYearAttr } from './lattes-year.ts';
 import { cleanLinkValue, linkError } from './link-fields.ts';
-import { liveKind } from './live-lists.ts';
+import { ancestorsOf, type LiveAvailability, liveKind } from './live-lists.ts';
 import { LiveListControl } from './LiveListField.tsx';
 import { ComboSelect } from './primitives/ComboSelect.tsx';
 import { Switch } from './primitives/Switch.tsx';
@@ -58,6 +63,22 @@ interface Props {
   onEdit: EditFn;
 }
 
+/** Campo que segue outro e só se lê, com o motivo ao lado do rótulo. */
+function LockedField({ text, value, why }: { text: string; value: string; why: string }) {
+  return (
+    <div className="field field-readonly field-locked">
+      <ReadonlyLabel text={text} why={why} />
+      <span className="locked-value">{value}</span>
+    </div>
+  );
+}
+
+/** As listas com o pai do elemento, procurado na cópia só quando liveKind precisa dele. */
+const withParentIn = (live: LiveAvailability, root: XElement | undefined, el: XElement) => ({
+  ...live,
+  parentOf: () => ancestorsOf(root, el).at(-1)?.name,
+});
+
 export function AttributeField({
   el,
   error,
@@ -72,6 +93,8 @@ export function AttributeField({
 }: Props) {
   const hideSensitive = useHideSensitive();
   const lists = useLattesListsContext();
+  const { root } = useEditor();
+  const formLacks = useFormLacks();
   // Prévia do modo de leitura: acompanha o texto antes de gravar.
   const onDraft = useDraft();
   const partKey = usePartKey()?.(el, name);
@@ -92,6 +115,7 @@ export function AttributeField({
     change(next);
     if (next === (getAttr(el, name) ?? '')) return;
     setAttr(el, name, next);
+    applyLinkedAttrs(el, name, root);
     onEdit(`${elementLabel(el.name)} · ${text}`);
   };
   const shownError = error ?? linkError(name, value);
@@ -147,19 +171,31 @@ export function AttributeField({
     }
   }
 
-  // Listas lidas no Lattes pelo conector (LAT-48): sem elas, o campo de sempre.
-  const live = liveKind(el, name, lists);
-  if (live === 'area-derivada') {
+  // Item que já está no Lattes, campo que o formulário do Lattes não tem:
+  // alterar aqui não chegaria lá. O formulário do item nem o mostra
+  // (ElementView.tsx); aqui fica só para ler, para quem chegar por outro caminho.
+  const lacks = formLacks?.field(el, name);
+  if (lacks) {
     return (
       <div className="field field-readonly field-locked">
-        <ReadonlyLabel text={text} why="Segue a área do conhecimento escolhida" />
-        <span className="locked-value">{value ? enumLabelOrValue(name, value) : '(vazio)'}</span>
+        <ReadonlyLabel text={text} why={`${lacks}. Alterar aqui não chega ao Lattes.`} />
+        <span className="locked-value">
+          {value ? displayValue(el.name, name, value) : '(vazio)'}
+        </span>
       </div>
     );
+  }
+
+  // Listas lidas no Lattes pelo conector (LAT-48): sem elas, o campo de sempre.
+  const live = liveKind(el, name, withParentIn(lists, root, el));
+  if (live === 'area-derivada') {
+    const shown = value ? enumLabelOrValue(name, value) : '(vazio)';
+    return <LockedField text={text} value={shown} why="Segue a área do conhecimento escolhida" />;
   }
   if (live) {
     return wrap(
       <LiveListControl
+        attr={name}
         common={common}
         el={el}
         kind={live}
@@ -169,25 +205,22 @@ export function AttributeField({
     );
   }
 
+  if (followsCountry(el.name, name)) {
+    // Na página do Lattes a nacionalidade segue o país (B ou E): muda junto com ele.
+    const shown = value ? displayValue(el.name, name, value) : '(vazio)';
+    return <LockedField text={text} value={shown} why="Segue o país de nacionalidade" />;
+  }
+
   const lockedBy = codeAttrFor(el.name, name);
-  if (lockedBy && getAttr(el, lockedBy)) {
+  if (lockedBy && getAttr(el, lockedBy) && !writesOwnCode(el.name, name)) {
     // Escolhido numa lista do Lattes junto com o código ao lado: lido, não editado.
-    return (
-      <div className="field field-readonly field-locked">
-        <ReadonlyLabel text={text} why="Escolhido numa lista do Lattes; muda junto com o código" />
-        <span className="locked-value">{value || '(vazio)'}</span>
-      </div>
-    );
+    const why = 'Escolhido numa lista do Lattes; muda junto com o código';
+    return <LockedField text={text} value={value || '(vazio)'} why={why} />;
   }
 
   if (matchesDerived(el, name)) {
     // Segue outra escolha (a natureza segue o tipo de evento): lido, não editado.
-    return (
-      <div className="field field-readonly field-locked">
-        <ReadonlyLabel text={text} why="Segue o tipo de item escolhido" />
-        <span className="locked-value">{value}</span>
-      </div>
-    );
+    return <LockedField text={text} value={value} why="Segue o tipo de item escolhido" />;
   }
 
   const dateAttr = isLattesDateAttr(
@@ -326,6 +359,17 @@ export function AttributeField({
     );
   }
 
+  const changeKey = innovationKey(el, name, value, formLacks);
+  if (changeKey) {
+    return wrap(
+      <>
+        {control}
+        <InnovationText changeKey={changeKey} />
+      </>,
+      { textarea },
+    );
+  }
+
   return wrap(control, { textarea });
 
   /**
@@ -376,6 +420,21 @@ export function AttributeField({
       </div>
     );
   }
+}
+
+/** A mudança de um Sim novo do potencial de inovação, que pede o texto que vai só ao Lattes. */
+function innovationKey(
+  el: XElement,
+  name: string,
+  value: string,
+  lacks: ReturnType<typeof useFormLacks>,
+): string | undefined {
+  const asks =
+    el.name === 'PROJETO-DE-PESQUISA' &&
+    name === 'FLAG-POTENCIAL-INOVACAO' &&
+    value === 'SIM' &&
+    lacks?.original?.(el, name) !== 'SIM';
+  return asks ? lacks?.keyOf?.(el) : undefined;
 }
 
 /** A grande área é um valor do XSD (CIENCIAS_EXATAS_E_DA_TERRA): mostrada por extenso. */

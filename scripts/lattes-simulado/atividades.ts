@@ -9,10 +9,11 @@
 // f_seq_funcao), o efeito do POST. Só a atividade de ensino grava; as outras
 // naturezas respondem que o envio não é simulado.
 
+import { ACTIVITY_TYPES } from '../../src/bridge/edit-atividade.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
-import { COURSES } from './buscas.ts';
+import { COURSES, ORGANS } from './buscas.ts';
 import { notSimulated } from './censo.ts';
 import type { LattesState } from './estado.ts';
 import { applyCensusForm, type FieldLink, renderCensusForm } from './formulario-censo.ts';
@@ -49,6 +50,67 @@ const LINKS: Record<string, FieldLink> = {
   },
 };
 
+/** O período, que todas as naturezas têm (edição lida em 19/10/2026). */
+const PERIOD_LINKS: Record<string, FieldLink> = {
+  ...Object.fromEntries(
+    ['f_ano_fim', 'f_ano_ini', 'f_mes_fim', 'f_mes_ini', 'f_status'].map((f) => [f, LINKS[f]!]),
+  ),
+  // O texto do órgão, desabilitado na página, como o atribuir() da janela o
+  // escreve ("órgão/\nunidade"); a unidade sai na leitura do item (cargoForm).
+  f_orgao: { attr: 'NOME-ORGAO' },
+};
+
+/**
+ * Os campos da alteração, com o texto do órgão como a página real o mostra
+ * (21/10/2026): "/ Órgão", ou só "/Unidade".
+ */
+function withOrganText(item: XElement): Record<string, FieldLink> {
+  const unit = getAttr(item, 'NOME-UNIDADE') ?? '';
+  return {
+    ...PERIOD_LINKS,
+    f_orgao: { attr: 'NOME-ORGAO', toForm: (v) => (unit ? `/${unit}` : `/ ${v}`) },
+  };
+}
+
+/** Todas as atividades da atuação, com a natureza de cada uma. */
+export function activities(atuacao: XElement): { el: XElement; natur: string }[] {
+  const out: { el: XElement; natur: string }[] = [];
+  for (const group of childElements(atuacao)) {
+    for (const el of childElements(group)) {
+      const type = ACTIVITY_TYPES[el.name];
+      if (type) out.push({ el, natur: type.natur });
+    }
+  }
+  return out;
+}
+
+/**
+ * A grade de descrições da edição: a descrição do XML numa linha, com c 1; no
+ * ensino, as disciplinas, com o c da sequência delas (lido em 20/10/2026).
+ */
+function descriptionScript(item: XElement): string {
+  if (item.name === 'ENSINO') {
+    const rows = childElements(item, 'DISCIPLINA').map((d) =>
+      Object.fromEntries([
+        ['l', textOf(d)],
+        ['c', getAttr(d, 'SEQUENCIA-ESPECIFICACAO') ?? ''],
+      ]),
+    );
+    return `<script>\nvar providerDetAtiv = \n${JSON.stringify([...rows, {}])};\n</script>`;
+  }
+  const attr = ACTIVITY_TYPES[item.name]?.description;
+  const text = attr ? getAttr(item, attr) : '';
+  const rows = text
+    ? [
+        Object.fromEntries([
+          ['l', text],
+          ['c', '1'],
+        ]),
+      ]
+    : [];
+  return `<script>\nvar providerDetAtiv = \n${JSON.stringify([...rows, {}])};\n</script>`;
+}
+
 /** As atividades de ensino da atuação. */
 export function teaching(atuacao: XElement): XElement[] {
   const container = childElements(atuacao, 'ATIVIDADES-DE-ENSINO')[0];
@@ -63,28 +125,47 @@ const entryFor = (nature: string) =>
 
 export function cargoForm(req: SimRequest, state: LattesState, atuacao?: XElement): SimResponse {
   const seq = req.get('f_seq_funcao');
-  const item =
+  const asked = (req.get('f_natur_ativ') ?? '').toUpperCase();
+  const found =
     seq && atuacao
-      ? teaching(atuacao).find((e) => getAttr(e, 'SEQUENCIA-FUNCAO-ATIVIDADE') === seq)
+      ? activities(atuacao).find(
+          (a) =>
+            getAttr(a.el, 'SEQUENCIA-FUNCAO-ATIVIDADE') === seq && (!asked || a.natur === asked),
+        )
       : undefined;
-  const nature = item ? '4' : (req.get('f_natur_ativ') ?? '');
+  const item = found?.el;
+  const nature = found ? found.natur : asked;
   const codeOf = (el: XElement | undefined) => (el && getAttr(el, 'CODIGO-CURSO')) || '';
   const course = codeOf(item);
+  // O código escolhido volta em f_codorgao, o da unidade quando há (21/10/2026).
+  const organCode = item
+    ? getAttr(item, 'CODIGO-UNIDADE') || getAttr(item, 'CODIGO-ORGAO') || ''
+    : '';
   const hidden = {
     f_cod: state.code,
     f_cod_curso: course,
     f_codinst: req.get('f_codinst') ?? '',
+    f_codorgao: nature === '4' ? '' : organCode,
     f_ctr: item ? 'U' : 'I',
     f_natur_ativ: nature,
     f_seq_ativ: req.get('f_seq_ativ') ?? '',
     f_seq_funcao: seq ?? '',
   };
-  const screen = { entry: entryFor(nature), links: nature === '4' ? LINKS : {} };
-  return html(h.page('Atividade', renderCensusForm(screen, item, hidden, state)));
+  const screen = {
+    entry: entryFor(nature),
+    links: nature === '4' ? LINKS : item ? withOrganText(item) : {},
+  };
+  return html(
+    h.page(
+      'Atividade',
+      `${renderCensusForm(screen, item, hidden, state)}${item ? descriptionScript(item) : ''}`,
+    ),
+  );
 }
 
 /** Grava a atividade de ensino: os campos ligados, o curso pelo código e as disciplinas de f_espec_l. */
 export function cargoPost(req: SimRequest, state: LattesState, atuacao?: XElement): SimResponse {
+  if (atuacao && req.get('f_ctr') === 'U') return cargoUpdate(req, state, atuacao);
   if (!atuacao || req.get('f_natur_ativ') !== '4' || req.get('f_ctr') !== 'I')
     return notSimulated();
   const container = state.ensure(atuacao, 'ATIVIDADES-DE-ENSINO');
@@ -112,4 +193,73 @@ export function cargoPost(req: SimRequest, state: LattesState, atuacao?: XElemen
       `PKG_ATIV.cargos_vinculos?f_cod=${state.code}&f_seq_ativ=${getAttr(atuacao, 'SEQUENCIA-ATIVIDADE')}`,
     ),
   );
+}
+
+/** As linhas preenchidas de f_espec_l ("n@c?nome!"). */
+const specRows = (spec: string) =>
+  [...spec.matchAll(/\d+@([^?]*)\?([^!]*)!/g)]
+    .map((m) => ({ c: m[1]!, l: m[2]! }))
+    .filter((r) => r.l !== '');
+
+const textOf = (el: XElement) =>
+  el.children.map((c) => (c.kind === 'text' ? c.value : '')).join('');
+
+/**
+ * A alteração de uma atividade (19/10/2026): o período pelos campos, o
+ * órgão ou a unidade pelos ocultos da janela de órgãos e a descrição pela
+ * primeira linha de f_espec_l (no ensino, a grade inteira são as disciplinas). Sem descrição o check() da
+ * página não envia; o simulado não grava nada nesse caso.
+ */
+function cargoUpdate(req: SimRequest, state: LattesState, atuacao: XElement): SimResponse {
+  const found = activities(atuacao).find(
+    (a) => getAttr(a.el, 'SEQUENCIA-FUNCAO-ATIVIDADE') === req.get('f_seq_funcao'),
+  );
+  if (!found) return html(h.page('Atividade', '<p>Registro não encontrado.</p>'));
+  const first = /^1@[^?]*\?([^!]*)!/.exec(req.get('f_espec_l') ?? '')?.[1] ?? '';
+  const back = h.savedScript(
+    `PKG_ATIV.cargos_vinculos?f_cod=${state.code}&f_seq_ativ=${getAttr(atuacao, 'SEQUENCIA-ATIVIDADE')}`,
+  );
+  if (!first) return html(back);
+  applyCensusForm({ entry: entryFor(found.natur), links: PERIOD_LINKS }, found.el, req, state);
+  const attr = ACTIVITY_TYPES[found.el.name]?.description;
+  if (attr) setAttr(found.el, attr, first);
+  // O órgão escolhido na janela: o código em f_codorgao, o texto em f_orgao_old.
+  // O órgão (tipo 0) em f_codorgao; a unidade em f_codorgao2, com o texto
+  // "órgão/\nunidade" que o atribuir() da janela monta.
+  const organCode = req.get('f_codorgao');
+  const unitCode = req.get('f_codorgao2');
+  const [organName = '', unitName = ''] = (req.get('f_orgao_old') ?? '').split(/\/\r?\n/);
+  // A janela do simulado dá tipo 0 também às unidades: vale o texto.
+  const picked = unitCode || organCode;
+  if (picked && unitName) {
+    setAttr(found.el, 'CODIGO-UNIDADE', picked);
+    setAttr(found.el, 'NOME-UNIDADE', unitName);
+    setAttr(found.el, 'NOME-ORGAO', organName);
+    // O órgão de cima não vem no POST: o servidor o sabe pela unidade, na
+    // instituição da atuação (inferido). Unidade fora da tabela do simulado é
+    // erro do teste, não do conector: falha alto.
+    const institution = (req.get('f_codinst') ?? '').replace(/^[A-Za-z]/, '');
+    const unit = picked.trim();
+    const above = (ORGANS[institution] ?? []).find((o) =>
+      o.units.some(([code]) => code.trim() === unit),
+    );
+    if (!above) throw new Error(`Simulado: unidade ${unit} sem órgão em ${institution}`);
+    setAttr(found.el, 'CODIGO-ORGAO', above.code);
+  } else if (picked) {
+    setAttr(found.el, 'CODIGO-ORGAO', picked);
+    setAttr(found.el, 'NOME-ORGAO', organName);
+    setAttr(found.el, 'CODIGO-UNIDADE', '');
+    setAttr(found.el, 'NOME-UNIDADE', '');
+  }
+  // No ensino, a grade inteira são as disciplinas: o servidor grava como chegou.
+  if (found.el.name === 'ENSINO') {
+    found.el.children = specRows(req.get('f_espec_l') ?? '').map(({ c, l }, i) =>
+      element('DISCIPLINA', { 'SEQUENCIA-ESPECIFICACAO': c && c !== '0' ? c : String(i + 1) }, [
+        { kind: 'text', value: l },
+      ]),
+    );
+    found.el.selfClosing = found.el.children.length === 0;
+  }
+  state.touch();
+  return html(back);
 }

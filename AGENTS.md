@@ -244,3 +244,13 @@ sentence rhythm doesn't fix it; rewrite at the sentence level.
 - Commits only with explicit approval from the user.
 - Work on branches and open PRs against `main` (remote:
   `github.com/rlueder/lattes-editor`).
+- Clean up merged work without being asked. The user merges PRs on GitHub
+  between turns, so no agent sees the merge happen. Whenever a PR you follow
+  shows as merged or closed, and before starting new work, run
+  `scripts/limpar-branches-mesclados.sh` (dry run) and then `--yes`. It removes
+  the worktree and the local branch only when the PR is merged, the local tip
+  is the PR's head and the worktree is clean (a PR closed without merge needs
+  `--incluir-fechados`, after the user agrees), and never touches `main`, open PRs, branches without a
+  PR, or `test/criar-item` (the `lattes-editor-criar-teste` worktree). A branch
+  without a PR is listed for the user to decide. If the command is denied,
+  give the user the exact command instead of skipping it.

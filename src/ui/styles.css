@@ -24,6 +24,7 @@
   --warn-text: #7a4b00;
   --danger: #a3261b;
   --ok: #2f6b3a;
+  --ok-bg: #e3f1e5;
   --radius: 6px;
   /* Altura real do cabeçalho; o App mede e atualiza quando ele quebra linha. */
   --topbar-h: 57px;
@@ -54,6 +55,7 @@
     --warn-text: #f0c776;
     --danger: #f08a7e;
     --ok: #8fcf98;
+    --ok-bg: #1c3322;
     color-scheme: dark;
   }
 }
@@ -73,6 +75,7 @@
   --warn-text: #f0c776;
   --danger: #f08a7e;
   --ok: #8fcf98;
+  --ok-bg: #1c3322;
   color-scheme: dark;
 }
 
@@ -227,6 +230,17 @@ button.status-seg:hover,
 
 .status-sep {
   opacity: 0.6;
+}
+
+/* Na janela de envio, a faixa fica acima das pílulas dos passos: mais ar
+   entre o selo, a data e a linha de baixo. */
+.export .status-strip {
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.export .status-seg.action {
+  padding: 3px 8px;
 }
 
 .topbar-title {
@@ -1481,6 +1495,14 @@ a.menu-item.notice {
 }
 
 /* Curso antes de ler a lista no Lattes: o valor salvo e o botão de carregar. */
+/* O texto que um valor pede e o XML não guarda (InnovationText): logo abaixo do controle. */
+.field-follow-up {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
 .live-list-pending {
   display: flex;
   flex-wrap: wrap;
@@ -1799,14 +1821,37 @@ a.menu-item.notice {
 }
 
 .sent-head strong {
+  flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+/* O título quebra em mais linhas; a hora e os botões ficam inteiros. */
+.sent-time {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+.sent-head > :not(strong) {
+  flex-shrink: 0;
   white-space: nowrap;
 }
 
-.sent-time {
-  margin-left: auto;
+/* O selo de não conferido e, logo abaixo, "Já conferi no Lattes". */
+.sent-side {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.sent-head {
+  align-items: flex-start;
+}
+
+/* Conferido com uma parte que o conector não relê: o aviso, em amarelo. */
+.sent-note {
+  margin: 4px 0 0;
+  color: var(--warn-text);
   font-size: 12px;
 }
 
@@ -2405,6 +2450,14 @@ button.primary:hover {
   align-items: center;
 }
 
+/* Voltar e avançar (só no app de desktop), à esquerda do "Ir para". */
+.topbar-history {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  margin-right: 8px;
+}
+
 .topbar-actions {
   justify-content: flex-end;
 }
@@ -2506,6 +2559,13 @@ button.primary:hover {
 
 .changes-how {
   margin: 0 0 10px;
+  font-size: 12px;
+}
+
+/* Por que a alteração não vai pelo conector, logo abaixo do título dela. */
+.change-reason {
+  margin: 2px 0 6px;
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -3227,6 +3287,18 @@ body {
 .section-main-empty .empty-section {
   margin: auto;
   padding-bottom: 8vh;
+}
+
+/* Fora do modo foco, a seção vazia não tem painel lateral: o estado vazio
+   fica no centro da área de conteúdo inteira, sem a coluna reservada. No modo
+   foco, a coluna do índice continua reservada, como nas outras seções. O
+   título da seção não muda de lugar. */
+.shell:not(.is-focus) .section-main-empty {
+  grid-column: 1 / -1;
+}
+
+.shell:not(.is-focus) .section-panel-space {
+  display: none;
 }
 
 /* Envio pela extensão do conector, em "Enviar ao Lattes". */
@@ -5499,6 +5571,13 @@ b {
   gap: 8px;
 }
 
+/* "Período" sobre o atalho e o campo, nas seções e no Panorama. */
+.year-range-label {
+  margin-bottom: -6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .year-range-hint {
   margin: 0 0 6px;
   font-size: 12px;
@@ -5599,9 +5678,11 @@ b {
 }
 
 /* Filtros do painel lateral na altura e no corpo dos campos do conteúdo
-   (35px de altura, texto de 14px), em vez da altura das pílulas. */
+   (35px de altura, texto de 14px), em vez da altura das pílulas. O campo do
+   período entra junto, para ter a altura das listas acima dele. */
 .filter-search,
-.filter-facet.select-trigger {
+.filter-facet.select-trigger,
+.year-range-field input {
   height: auto;
   min-height: 35px;
   font-size: 14px;
@@ -6411,52 +6492,233 @@ button.ghost.icon {
   border-radius: 999px;
 }
 
-/* Enviar ao Lattes: abas "A enviar" e "Enviado" no alto do painel, em pílula. */
-.send-tab-list {
-  display: inline-flex;
-  gap: 2px;
+/* Enviar ao Lattes em três passos (SendSteps.tsx): os passos no alto, em
+   pílulas, com o atual em destaque e os feitos com o visto. */
+.send-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   margin: 0 0 18px;
-  padding: 3px;
-  border-radius: 999px;
-  background: var(--surface-2);
+  padding: 0;
+  list-style: none;
 }
 
-.send-tab {
+.send-steps > li {
+  display: contents;
+}
+
+.send-step {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 32px;
-  padding: 0 16px;
-  border: 0;
+  gap: 8px;
+  min-height: var(--pill-h);
+  padding: 0 12px 0 4px;
   border-radius: 999px;
-  background: transparent;
+  background: var(--surface-2);
   color: var(--muted);
+  font-size: 13px;
+}
+
+.send-step-n {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.send-step {
+  border: 0;
   font: inherit;
   font-size: 13px;
   cursor: pointer;
-  transition:
-    background-color 150ms var(--ease-out),
-    color 150ms var(--ease-out);
 }
 
-.send-tab:hover {
-  color: var(--text);
+.send-step:disabled {
+  cursor: default;
 }
 
-.send-tab[data-active] {
-  background: var(--surface);
+.send-step.shown {
+  background: var(--accent-soft);
   color: var(--text);
   font-weight: 550;
-  box-shadow: inset 0 0 0 1px var(--border);
 }
 
-.send-tab:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+.send-step.atual .send-step-n {
+  background: var(--accent);
+  color: var(--accent-contrast);
 }
 
-.send-tab-panel {
-  outline: none;
+.send-step.feito .send-step-n {
+  color: var(--ok);
+}
+
+.step-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.step-actions .muted {
+  margin-right: auto;
+  font-size: 12px;
+}
+
+/* Um aviso numa linha: ícone, texto e botões à direita, alinhados ao
+   centro; com pouco espaço, os botões descem para baixo do texto. */
+.step-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 10px 0;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  font-size: 13px;
+}
+
+.step-notice.warn {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+
+.step-notice.ok {
+  background: var(--ok-bg);
+}
+
+.step-notice.ok .step-notice-icon {
+  color: var(--ok);
+}
+
+.step-notice-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+/* Os campos que repetem a tela "Enviar" do Lattes: numa caixa de fundo
+   próprio, com título, para não se confundirem com o resto da janela. */
+.lattes-form-box {
+  margin-top: 22px;
+  padding: 14px 16px 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.lattes-form-box > .lattes-form-head {
+  margin: 0 0 2px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.lattes-form-box > .lattes-form-sub {
+  margin: 0 0 12px;
+  font-size: 12px;
+}
+
+.lattes-form-box .panel-section + .panel-section {
+  margin-top: 16px;
+}
+
+.step-notice-text {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.step-notice-text p {
+  margin: 0;
+}
+
+.step-notice-text p + p {
+  margin-top: 4px;
+}
+
+.step-notice-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* O andamento de cada alteração da rodada: marca, nome, estado e, quando não
+   conferiu, o motivo embaixo. */
+.write-rows {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.write-row {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.write-mark {
+  text-align: center;
+}
+
+.write-state {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.write-detail {
+  grid-column: 2 / -1;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.write-row.conferido .write-mark,
+.write-row.conferido .write-state {
+  color: var(--ok);
+}
+
+.write-row.gravando .write-mark {
+  color: var(--accent);
+}
+
+.write-row.divergente .write-mark,
+.write-row.divergente .write-state,
+.write-row.erro .write-mark,
+.write-row.erro .write-state,
+.write-row.sessao .write-mark,
+.write-row.sessao .write-state {
+  color: var(--danger);
+}
+
+/* O histórico do enviado, no fim e fechado: a caixa de details de sempre,
+   com o conteúdo no mesmo recuo do título. */
+.send-history {
+  margin-top: 18px;
+}
+
+.send-history > summary {
+  padding: 12px 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.send-history[open] > summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.send-history > :not(summary) {
+  padding: 4px 16px 12px;
+}
+
+.publish-inline .panel-section:first-child {
+  margin-top: 0;
 }
 
 /* Registro do enviado: rótulo em cima, valor de antes riscado e o de depois
@@ -7532,6 +7794,60 @@ main.content {
   margin-bottom: 0.3em;
 }
 
+/* Texto longo na leitura (ReadingClamp, reading-clamp.ts): seis linhas
+   (--clamp-lines, posto pelo componente) e um esmaecido na última quando o
+   texto continua. Sem animação: abrir e fechar mudam a altura na hora. Na
+   impressão, o texto vai inteiro e o link some. */
+.reading-clamp.is-clamped {
+  max-height: calc(var(--clamp-lines, 6) * 1.5em);
+  max-height: calc(var(--clamp-lines, 6) * 1lh);
+  overflow: hidden;
+}
+
+.reading-clamp.is-cut {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 1.5em), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 1.5em), transparent);
+}
+
+.reading-more {
+  display: inline;
+  margin-top: 0.2em;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--accent-text);
+  font: 13px/1.5 var(--font);
+  text-underline-offset: 0.18em;
+  cursor: pointer;
+  transition: color 200ms ease;
+}
+
+.reading-more:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reading-more {
+    transition: none;
+  }
+}
+
+@media print {
+  .reading-clamp.is-clamped {
+    max-height: none;
+    overflow: visible;
+  }
+  .reading-clamp.is-cut {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .reading-more {
+    display: none;
+  }
+}
+
 /* Lista "Enviar ao Lattes" no desenho do ⌘K: os grupos (Dados gerais,
    Formação) com o título dos grupos da paleta, cada alteração numa linha sem
    caixa, com fio fino entre uma e a próxima. O título do item manda; o tipo
@@ -7668,57 +7984,82 @@ main.content {
   }
 }
 
-/* Campo alterado (FieldChange.tsx), nas abas "A enviar" e "Enviado": o
-   rótulo em cima, pequeno e apagado como na grade da prévia; embaixo, duas
-   colunas iguais, "Antes" riscado e "Depois". Texto longo para em quatro
-   linhas. Abaixo de 600px as colunas empilham. */
+/* Campos de um item (FieldChange.tsx), nas abas "A enviar" e "Enviado": uma
+   grade de duas ou três colunas, conforme a largura do painel, cada campo uma
+   célula com o rótulo em cima, pequeno e apagado como na grade do modo de
+   leitura. Num campo alterado, o valor de antes vem riscado e o de depois
+   logo abaixo. Valor de 25 a 48 letras ocupa duas colunas, mais que isso a
+   linha inteira (cellSpan), e texto longo para em quatro linhas. Abaixo de
+   600px, uma coluna só. */
 .change-fields,
 .sent-fields {
   display: grid;
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px 20px;
   margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.fc {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 1px;
+  min-width: 0;
+}
+
+.fc.span-2 {
+  grid-column: span 2;
+}
+
+.fc.span-all {
+  grid-column: 1 / -1;
+}
+
+.fc-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 20px;
 }
 
 .fc-label {
+  flex: 0 1 auto;
+  min-width: 0;
   overflow: hidden;
-  margin-bottom: 4px;
   color: var(--muted);
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.fc-cols {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  gap: 16px;
-  align-items: start;
-  font-size: 13px;
-  line-height: 1.5;
+.fc-actions {
+  display: inline-flex;
+  flex: none;
+  margin-left: auto;
 }
 
-.fc-cols.is-single {
-  grid-template-columns: minmax(0, 1fr) auto;
+/* A lixeira ao lado do rótulo, sem aumentar a altura da linha dele. */
+.fc-actions .discard-btn {
+  margin: -3px -4px -3px 0;
+  padding: 2px 4px;
 }
 
-.fc-col {
+.fc-value {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
+/* "Antes" e "Depois" à vista no primeiro campo de cada item, antes do valor. */
 .fc-caption {
-  display: block;
-  margin-bottom: 2px;
+  margin-right: 6px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 550;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-}
-
-.fc-more {
-  display: block;
-  margin-top: 2px;
 }
 
 .fc-before .fc-text {
@@ -7744,6 +8085,8 @@ main.content {
 }
 
 .fc-more {
+  display: block;
+  margin-top: 2px;
   padding: 0;
   border: 0;
   background: none;
@@ -7756,20 +8099,17 @@ main.content {
 }
 
 .sent-undone .fc-after,
-.sent-failed .fc-col {
+.sent-failed .fc-value {
   color: var(--muted);
 }
 
 @media (max-width: 600px) {
-  .fc-cols {
-    grid-template-columns: minmax(0, 1fr) auto;
+  .change-fields,
+  .sent-fields {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .fc-col {
-    grid-column: 1;
-  }
-  .fc-actions {
-    grid-row: 1;
-    grid-column: 2;
+  .fc.span-2 {
+    grid-column: auto;
   }
 }
 
@@ -7901,4 +8241,42 @@ html {
   .backups-kind {
     min-width: 0;
   }
+}
+
+/* O painel dos itens de teste do censo (só em desenvolvimento, ?itens-teste). */
+.test-items-panel {
+  position: fixed;
+  z-index: 60;
+  bottom: 16px;
+  left: 16px;
+  width: 360px;
+  max-height: 70vh;
+  overflow: auto;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 25%);
+  font-size: 13px;
+}
+
+.test-items-panel h2 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.test-items-batch input {
+  width: 64px;
+  margin-left: 8px;
+}
+
+.test-items-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.test-items-error {
+  color: var(--danger);
 }

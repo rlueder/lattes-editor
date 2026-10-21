@@ -24,7 +24,7 @@ import { insertInSchemaOrder } from '../src/model/schema-order.ts';
 import { element, serializeXml, type XElement, type XNode } from '../src/model/xml.ts';
 import { schema } from './demo/build.ts';
 import { generalData } from './demo/general-data.ts';
-import { bibliography, complementary, otherProduction } from './demo/production.ts';
+import { bibliography, complementary, otherProduction, preface } from './demo/production.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PROLOG = '<?xml version="1.0" encoding="ISO-8859-1" standalone="no"?>\n';
@@ -55,6 +55,18 @@ const root = element('CURRICULO-VITAE', [
 for (const part of [generalData(), bibliography(), otherProduction(), complementary()]) {
   insertInSchemaOrder(schema, root, part);
 }
+// O prefácio entra por último, com a sequência seguinte à de todos os outros.
+const bib = root.children.find(
+  (c): c is XElement => c.kind === 'element' && c.name === 'PRODUCAO-BIBLIOGRAFICA',
+)!;
+let others = bib.children.find(
+  (c): c is XElement => c.kind === 'element' && c.name === 'DEMAIS-TIPOS-DE-PRODUCAO-BIBLIOGRAFICA',
+);
+if (!others) {
+  others = element('DEMAIS-TIPOS-DE-PRODUCAO-BIBLIOGRAFICA');
+  insertInSchemaOrder(schema, bib, others);
+}
+insertInSchemaOrder(schema, others, preface());
 indent(root);
 const text = serializeXml({ epilog: '\n', prolog: PROLOG, root });
 writeFileSync(join(ROOT, 'fixtures/demo.xml'), encodeLatin1(text));

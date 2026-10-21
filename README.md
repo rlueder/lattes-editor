@@ -46,23 +46,27 @@ atualizações" no menu ⚙.
    (Ferramentas › Exportar) e solte o `CV_<id>.zip` na janela.
 3. **Edite.** O menu lateral leva às seções, e <kbd>⌘K</kbd>
    (<kbd>Ctrl</kbd>+<kbd>K</kbd> fora do Mac) acha qualquer seção, grupo ou tipo
-   de item. Os campos que no Lattes são listas (país, idioma, natureza e forma
+   de item. No app de desktop, as setas ao lado do <kbd>⌘K</kbd> voltam e
+   avançam entre as seções e os gráficos do Panorama, como no navegador, também
+   com <kbd>⌘</kbd>+<kbd>[</kbd> e <kbd>⌘</kbd>+<kbd>]</kbd>. Os campos que no Lattes são listas (país, idioma, natureza e forma
    de participação) são listas aqui também. Com a extensão ligada, a área do
    conhecimento vira a tabela de áreas do Lattes, e na formação acadêmica a
    instituição sai da busca do Lattes, o curso da lista da instituição e a
    agência de fomento da lista de agências. O app guarda uma cópia das áreas e
    das agências; sem cópia e sem extensão, esses campos continuam texto livre.
    Cada edição fica salva no app.
-4. **Envie ao Lattes.** O painel "Enviar ao Lattes" mostra cada alteração e
-   como ela vai: produções novas pelo Importar do próprio Lattes, com o
+4. **Envie ao Lattes.** O painel "Enviar ao Lattes" vai em três passos:
+   revisar, gravar no Lattes e publicar no CNPq. O primeiro mostra cada
+   alteração e como ela vai: produções novas pelo Importar do próprio Lattes, com o
    arquivo que o app gera; o resumo, os vínculos de atuação, a foto e as
    alterações em eventos de que você participou como ouvinte pela extensão,
    gravados e conferidos um a um (os idiomas ainda em teste); o resto campo a campo, com o valor antigo e
-   o novo lado a lado. A aba "Enviado" guarda o que já foi, com o antes e o
-   depois, e deixa desfazer. Quando o Lattes tem algo a publicar, o "Enviar
-   ao CNPq" mostra o que vai ser publicado e a declaração do CNPq como está na
-   tela do Lattes; por enquanto, o envio em si continua sendo feito no
-   Lattes.
+   o novo lado a lado. Na gravação, cada alteração mostra o andamento
+   no lugar, e o histórico no fim do painel guarda o que já foi, com o antes
+   e o depois, e deixa desfazer. Quando tudo foi gravado e o Lattes tem algo a
+   publicar, o terceiro passo mostra o que vai ser publicado e a declaração
+   do CNPq como está na tela do Lattes; por enquanto, o envio em si continua
+   sendo feito no Lattes.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/ir-para-escuro.jpg" />
@@ -150,8 +154,12 @@ até você clicar no olho, ao lado do título.
 
 A extensão para Chrome e Brave é o que deixa o app abrir o currículo do Lattes
 e enviar as alterações direto ao Lattes. Ela trabalha na aba do Lattes em que
-você já está logado; nenhuma senha passa por ela nem pelo app. Cada alteração
-é gravada, lida de volta e conferida, e a fila para no primeiro problema.
+você já está logado; nenhuma senha passa por ela nem pelo app. O envio
+começa no editor, em "Enviar ao Lattes": a extensão grava em segundo plano,
+lê cada alteração de volta e confere, e a fila para no primeiro problema. A
+cada 20 gravações seguidas ela faz uma pausa, para você olhar o Lattes, e só
+segue com um novo clique em "Continuar" no editor. O painel da extensão
+mostra a fila, a verificação do Lattes e um botão para parar.
 
 Enquanto a extensão não está na Chrome Web Store, instale assim:
 
@@ -169,14 +177,19 @@ está desatualizada, troque a pasta pela do zip novo e clique em recarregar.
 Nesta versão de desenvolvimento, todas as ações do conector estão ligadas
 para teste: inclusão de itens, exclusão de idioma e vínculo, formação,
 endereço e identificação, eventos de convidado e participante, prêmios,
-formação complementar e o Importar. Algumas ainda não tiveram um envio real
+formação complementar (com instituição e curso pelas buscas do Lattes), a
+instituição e o órgão do endereço profissional, as palavras-chave de trabalhos técnicos
+e outras produções bibliográficas e o Importar. Algumas ainda não tiveram um envio real
 acompanhado; o que cada uma precisa mostrar está na seção "Ações ligadas" de
 [`docs/arquitetura.md`](docs/arquitetura.md).
 
 O que o conector grava fica pendente no Lattes até você clicar em "Enviar ao
 CNPq", e o Lattes não mostra nem descarta essas pendências. Por isso o app
 guarda o registro do que foi gravado, com o valor de antes e o de depois, e
-pode desfazer. O que a extensão lê e envia está na
+pode desfazer. Uma gravação que não voltou conferida fica marcada no registro
+e bloqueia o "Enviar ao CNPq" do editor até você conferir o item no Lattes e
+clicar em "Já conferi no Lattes", ou mandar a alteração de novo até ela voltar
+conferida. O que a extensão lê e envia está na
 [política de privacidade da extensão](https://rlueder.github.io/lattes-editor/privacidade.html).
 
 ## Documentação

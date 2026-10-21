@@ -190,10 +190,10 @@ describe('incluir a atuação no Lattes simulado', () => {
       assigned: { 'SEQUENCIA-ATIVIDADE': '7' },
       status: 'conferido',
     });
-    expect(procs(lattes)).toEqual(['PRC_INST_FORM', 'PKG_ATIV.INCLUI']);
+    expect(procs(lattes)).toEqual(['PRC_INST_ATIV', 'PKG_ATIV.INCLUI']);
     // Código sem V: vai em f_cod_inst2, com o nome da busca.
     expect(postsOf(lattes)[1]!.fields).toMatchObject({
-      f_cod_inst2: 'D001000000998',
+      f_cod_inst2: '001000000998',
       f_ctr: 'I',
       f_inst: 'UNIVERSIDADE DE EXEMPLO',
     });
@@ -226,13 +226,13 @@ describe('incluir a atuação no Lattes simulado', () => {
     });
     const none = await lattesFor({
       intercept: (req, _state, next) =>
-        isProc(req, 'PRC_INST_FORM') ? { html: '<p>Nenhuma</p>' } : next(),
+        isProc(req, 'PRC_INST_ATIV') ? { html: '<p>Nenhuma</p>' } : next(),
     });
     expect(await applyCreateAtuacao(op(), none.port)).toMatchObject({
       detail: expect.stringMatching(/0 resultados/),
       status: 'erro',
     });
-    expect(procs(none)).toEqual(['PRC_INST_FORM']);
+    expect(procs(none)).toEqual(['PRC_INST_ATIV']);
     const long = { ...op(), set: { ...op().set, f_carga: '4000' } };
     expect(await applyCreateAtuacao(long, (await lattesFor()).port)).toMatchObject({
       detail: expect.stringMatching(/f_carga passa do limite/),
@@ -271,7 +271,7 @@ describe('incluir a atuação no Lattes simulado', () => {
     });
     expect(await applyCreateAtuacao(op(), different.port)).toMatchObject({
       assigned: { 'SEQUENCIA-ATIVIDADE': '7' },
-      detail: expect.stringMatching(/gravada diferente: f_ano_ini/),
+      detail: expect.stringMatching(/outro valor em: Ano de início/),
       status: 'divergente',
     });
     const logon = await lattesFor({

@@ -2,11 +2,19 @@
 // compostas a partir de reading-layout.ts. Servem à leitura e à prévia no topo
 // do bloco em edição, que é a mesma composição com os rascunhos dos campos.
 
-import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import {
+  type CSSProperties,
+  type ReactNode,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { attributeLabelIn } from '../labels/labels.ts';
+import { parseEmails, parseSocial } from '../model/contacts.ts';
 import { getAttr } from '../model/xml.ts';
-import { parseEmails, parseSocial } from './contacts.ts';
 import { isEnglishAttr } from './form-order.ts';
 import { isDoiAttr, linkHref, linkPieces, shortUrl } from './link-fields.ts';
 import {
@@ -20,6 +28,13 @@ import {
 } from './nested-collapse.ts';
 import { useHideSensitive } from './privacy.ts';
 import { cellSpan, curlyQuotes, hiddenNote, paragraphs } from './reading.ts';
+import {
+  CLAMP_LINES,
+  clampActionLabel,
+  clampMemoryId,
+  overflowsClamp,
+  showsWhole,
+} from './reading-clamp.ts';
 import {
   type Line,
   lineVisible,
@@ -111,6 +126,70 @@ function Contacts({ part }: { part: Part }) {
   );
 }
 
+/**
+ * Texto longo cortado em seis linhas (reading-clamp.ts), com "Ler mais" logo
+ * abaixo quando passa delas. A medida é refeita quando a caixa muda de
+ * largura e quando o texto muda (na prévia, durante a edição). Aberto
+ * ou fechado fica guardado por bloco, como as listas, enquanto a página
+ * estiver aberta. No campo em foco e com um resultado da busca, o texto vai
+ * inteiro.
+ */
+function ReadingClamp({ children, id, text }: { children: ReactNode; id: string; text: string }) {
+  const { focusPart, query, scope } = useNestedContext();
+  const memoryId = clampMemoryId(id);
+  const [open, setOpen] = useState(() => rememberedNested(scope, memoryId) ?? false);
+  // Aberto pela memória, já tinha passado do corte quando a pessoa abriu.
+  const [overflows, setOverflows] = useState(open);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const boxId = useId();
+  const whole = showsWhole(id, text, focusPart, query);
+  const clamped = !open && !whole;
+
+  useLayoutEffect(() => {
+    const box = boxRef.current;
+    // Aberto, a caixa não corta e não há o que medir: vale a última medida.
+    if (!box || !clamped) return;
+    setOverflows(overflowsClamp(box.scrollHeight, box.clientHeight));
+  }, [clamped, text]);
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box || !clamped || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() =>
+      setOverflows(overflowsClamp(box.scrollHeight, box.clientHeight)),
+    );
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [clamped]);
+
+  const toggle = () => {
+    rememberNested(scope, memoryId, !open);
+    setOpen(!open);
+  };
+  return (
+    <>
+      <div
+        ref={boxRef}
+        className={`reading-clamp${clamped ? ' is-clamped' : ''}${clamped && overflows ? ' is-cut' : ''}`}
+        id={boxId}
+        style={{ '--clamp-lines': CLAMP_LINES } as CSSProperties}
+      >
+        {children}
+      </div>
+      {overflows && !whole && (
+        <button
+          aria-controls={boxId}
+          aria-expanded={open}
+          className="reading-more"
+          type="button"
+          onClick={toggle}
+        >
+          {clampActionLabel(open)}
+        </button>
+      )}
+    </>
+  );
+}
+
 /** Uma linha de texto: prefixo, pedaços preenchidos com a ligação certa e sufixo. */
 export function LineView({ line }: { line: Line }) {
   const shown = shownParts(line);
@@ -123,11 +202,13 @@ export function LineView({ line }: { line: Line }) {
         lang={line.kind === 'translation' ? 'en' : undefined}
       >
         {line.label && <span className="reading-label">{line.label}</span>}
-        {paragraphs(shown[0]?.text ?? '').map((p, i) => (
-          <p key={i} className="reading-p">
-            {curlyQuotes(p)}
-          </p>
-        ))}
+        <ReadingClamp id={shown[0]?.part.key ?? ''} text={shown[0]?.text ?? ''}>
+          {paragraphs(shown[0]?.text ?? '').map((p, i) => (
+            <p key={i} className="reading-p">
+              {curlyQuotes(p)}
+            </p>
+          ))}
+        </ReadingClamp>
       </div>
     );
   }
@@ -171,7 +252,14 @@ export function Rows({ parts, quiet }: { parts: Part[]; quiet: boolean }) {
             <dt title={labelOf(p)}>{labelOf(p)}</dt>
             {/* Versão em inglês com o idioma certo: hifeniza em inglês. */}
             <dd lang={isEnglishAttr(p.attr) ? 'en' : undefined}>
-              <PartText part={p} text={partText(p)} />
+              {/* Na linha inteira, o valor pode ser uma descrição longa: corta em seis linhas. */}
+              {span === 3 ? (
+                <ReadingClamp id={p.key} text={partText(p)}>
+                  <PartText part={p} text={partText(p)} />
+                </ReadingClamp>
+              ) : (
+                <PartText part={p} text={partText(p)} />
+              )}
             </dd>
           </div>
         );

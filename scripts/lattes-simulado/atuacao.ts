@@ -7,7 +7,7 @@
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
-import { cargoForm, cargoPost, teaching } from './atividades.ts';
+import { activities, cargoForm, cargoPost } from './atividades.ts';
 import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
@@ -165,13 +165,13 @@ function cargosVinculos(req: SimRequest, state: LattesState): SimResponse {
   // Inferido: a forma do link de uma atividade na tela de cargos e vínculos
   // não foi lida (o lote 3 leu só a inclusão). O conector não confia nesses
   // parâmetros para conferir duplicata: lê a natureza no oculto do formulário.
-  const activities = teaching(a)
+  const rowsOfActivities = activities(a)
     .map(
-      (e) =>
-        `<tr><td><a href="#" onclick="self.parent.modalCV2.setarUrl('${cargo}4&amp;f_seq_funcao=${getAttr(e, 'SEQUENCIA-FUNCAO-ATIVIDADE')}',true); return false;">Ensino ${getAttr(e, 'ANO-INICIO') ?? ''}</a></td></tr>`,
+      ({ el: e, natur }) =>
+        `<tr><td><a href="#" onclick="self.parent.modalCV2.setarUrl('${cargo}${natur}&amp;f_seq_funcao=${getAttr(e, 'SEQUENCIA-FUNCAO-ATIVIDADE')}',true); return false;">${e.name} ${getAttr(e, 'ANO-INICIO') ?? ''}</a></td></tr>`,
     )
     .join('\n');
-  const body = `<table>${rows}${activities}</table>
+  const body = `<table>${rows}${rowsOfActivities}</table>
 <p><a href="${base}">Incluir vínculo</a> <a href="#" onclick="selecionarNatureza(); return false;">Incluir atividade</a> <a href="#" onclick="dele(); return false;">Excluir atuação</a></p>${dele}
 <script>function selecionarNatureza(){ self.parent.modalCV2.setarUrl('${cargoUrl}', true); }</script>`;
   return html(h.page(getAttr(a, 'NOME-INSTITUICAO') ?? 'Atuação', body));
@@ -251,16 +251,19 @@ ${h.formButtons(false)}
 
 function incluiPost(req: SimRequest, state: LattesState): SimResponse {
   if (req.get('f_ctr') !== 'I') return html(h.savedScript('pkg_ativ.lista'));
-  const withLetter = req.get('f_cod_inst') || req.get('f_cod_inst2') || '';
+  // O código vem sem a letra, como o seleciona() da busca o grava. Com a
+  // letra, o Lattes real aceita o envio e não cria a atuação (20/10/2026).
+  const code = req.get('f_cod_inst') || req.get('f_cod_inst2') || '';
   const name = req.get('f_inst') || req.get('f_inst_old') || '';
-  if (!withLetter || !name) {
+  if (!code || !name) {
     return html('<script>alert("Informe a instituição.");</script>');
   }
+  if (/^[A-Za-z].{12}$/.test(code)) return html(h.savedScript('pkg_ativ.lista'));
   const container = state.ensurePath(['DADOS-GERAIS', 'ATUACOES-PROFISSIONAIS']);
   const seq = state.nextSeq(container, 'ATUACAO-PROFISSIONAL', 'SEQUENCIA-ATIVIDADE');
   // O XML guarda o código sem a letra da busca (seção 3).
   const a = element('ATUACAO-PROFISSIONAL', {
-    'CODIGO-INSTITUICAO': withLetter.replace(/^[A-Za-z]/, ''),
+    'CODIGO-INSTITUICAO': code,
     'NOME-INSTITUICAO': name,
     'SEQUENCIA-ATIVIDADE': seq,
     'SEQUENCIA-IMPORTANCIA': seq,

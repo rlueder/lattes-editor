@@ -318,7 +318,7 @@ describe('alteração de evento completa: aplicar no Lattes simulado', () => {
     };
     expect(await applyOp(op, lattes.port, GATES)).toMatchObject({
       detail: 'O Lattes não gravou: Tipo de participação',
-      status: 'erro',
+      status: 'divergente',
     });
     expect(getAttr(basicsIn(lattes, '12'), 'FORMA-PARTICIPACAO')).toBe('Participante');
   });

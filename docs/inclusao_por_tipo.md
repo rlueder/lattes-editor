@@ -189,11 +189,11 @@ e treinamento são só um nome, que fica no texto do elemento.
 | `ARTIGO-PUBLICADO`                                     | Artigo publicado                                     |              | sim         | importar     | `artigo-publicado`             | lido                  | observado/inferido                     |
 | `ARTIGO-ACEITO-PARA-PUBLICACAO`                        | Artigo aceito para publicação                        |              | sim         | importar     | `artigo-aceito`                | lido                  | observado/inferido                     |
 | `LIVRO-PUBLICADO-OU-ORGANIZADO`                        | Livro publicado ou organizado                        |              | sim         | importar     | `livro-capitulo`               | lido                  | inferido/inferido                      |
-| `CAPITULO-DE-LIVRO-PUBLICADO`                          | Capítulo de livro publicado                          |              | sim         | importar     | `livro-capitulo`               | lido                  | inferido/inferido                      |
+| `CAPITULO-DE-LIVRO-PUBLICADO`                          | Capítulo de livro publicado                          |              | sim         | importar     | `livro-capitulo`, `capitulo`   | lido, não lido        | inferido/inferido, observado/inferido  |
 | `TEXTO-EM-JORNAL-OU-REVISTA`                           | Texto em jornal ou revista                           |              | sim         | importar     | `texto-jornal`                 | lido                  | observado/inferido                     |
 | `OUTRA-PRODUCAO-BIBLIOGRAFICA`                         | Outra produção bibliográfica                         |              | sim         | importar     | `prefacio-outras`              | endereço desconhecido | inferido/inferido                      |
 | `PARTITURA-MUSICAL`                                    | Partitura musical                                    |              | sim         | importar     | `partitura`                    | lido                  | observado/inferido                     |
-| `PREFACIO-POSFACIO`                                    | Prefácio, posfácio                                   |              | sim         | importar     | `prefacio-outras`              | endereço desconhecido | inferido/inferido                      |
+| `PREFACIO-POSFACIO`                                    | Prefácio, posfácio                                   |              | sim         | importar     | `prefacio`                     | não lido              | observado/inferido                     |
 | `TRADUCAO`                                             | Tradução                                             |              | sim         | importar     | `traducao`                     | lido                  | observado/inferido                     |
 | `SOFTWARE`                                             | Software                                             |              | sim         | importar     | `registro-PC`, `registro-PC-S` | lido, lido            | observado/inferido, observado/inferido |
 | `PRODUTO-TECNOLOGICO`                                  | Produto tecnológico                                  |              | sim         | importar     | `produto`                      | lido                  | observado/inferido                     |
@@ -253,10 +253,10 @@ linha (`src/bridge/author-grid.ts`), mas só quando ela traz o nome completo
 ou uma das citações do currículo; senão, para sem enviar. A linha não tem o
 número do Lattes, e a sessão já é conferida pelo número antes da fila. Com
 isso, cinco registros voltaram a ir pelo conector: a cultivar protegida e a
-registrada, o desenho industrial, a marca e a topografia de circuito. Como a
-lista de inventores não é relida depois do envio, a inclusão volta como
-divergente, com o pedido de conferir os inventores no Lattes, e não como
-conferida. A patente continua à mão: exige também o titular ou depositante,
+registrada, o desenho industrial, a marca e a topografia de circuito. A
+lista de inventores não é relida depois do envio: a inclusão volta conferida
+pelos outros campos, com o pedido de conferir os inventores no Lattes no
+registro do enviado. A patente continua à mão: exige também o titular ou depositante,
 que vem do vetor `titularPessoaDP`, cuja forma não foi lida.
 
 O programa de computador registrado é um `SOFTWARE` com registro: a lista de

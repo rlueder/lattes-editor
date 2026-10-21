@@ -315,11 +315,14 @@ describe('conector: plano', () => {
       ).unsupported.map((u) => u.reason);
     };
     expect(reasons((r) => setAttr(find(r, 'VINCULOS'), 'TIPO-DE-VINCULO', 'OUTRO'))[0]).toMatch(
-      /Campos não suportados/,
+      /tipo do vínculo vem desabilitado/,
     );
     expect(
+      reasons((r) => setAttr(find(r, 'VINCULOS'), 'ENQUADRAMENTO-FUNCIONAL', 'OUTRO'))[0],
+    ).toMatch(/^O formulário de vínculo do Lattes não tem o enquadramento da lista/);
+    expect(
       reasons((r) => setAttr(find(r, 'ATUACAO-PROFISSIONAL'), 'NOME-INSTITUICAO', 'Y'))[0],
-    ).toMatch(/Formulário não suportado/);
+    ).toMatch(/não altera a instituição de uma atuação/);
     expect(reasons((r) => setAttr(find(r, 'RESUMO-CV'), 'OUTRO', 'x'))[0]).toMatch(
       /Campos não suportados/,
     );
@@ -436,7 +439,7 @@ describe('conector: aplicar no Lattes simulado', () => {
     });
     expect(await applyOp(op, dropped.port)).toMatchObject({
       detail: expect.stringMatching(/não gravou/),
-      status: 'erro',
+      status: 'divergente',
     });
     await dropped.close();
     const side = await lattesFor({
@@ -446,7 +449,7 @@ describe('conector: aplicar no Lattes simulado', () => {
     });
     expect(await applyOp(op, side.port)).toMatchObject({
       detail: 'Outros campos mudaram no Lattes: Carga horária',
-      status: 'erro',
+      status: 'divergente',
     });
   });
 
@@ -577,7 +580,7 @@ describe('conector: idioma', () => {
     const last = idiomaOp('ES', (el) => setAttr(el, 'PROFICIENCIA-DE-LEITURA', ''));
     expect(last.unsupported[0]!.reason).toMatch(/ao menos uma/);
     const other = idiomaOp('ES', (el) => setAttr(el, 'DESCRICAO-DO-IDIOMA', 'Castelhano'));
-    expect(other.unsupported[0]!.reason).toMatch(/Campos não suportados/);
+    expect(other.unsupported[0]!.reason).toBe('O nome do idioma segue o código no Lattes');
     const { changes, working } = changesAfter((root) =>
       setAttr(find(root, 'IDIOMA'), 'PROFICIENCIA-DE-FALA', 'POUCO'),
     );

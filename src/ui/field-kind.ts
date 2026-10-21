@@ -1,6 +1,7 @@
 // Que tipo de controle um atributo merece na tela.
 
 import { elementLabel } from '../labels/labels.ts';
+import { lattesSchema } from '../schema/lattes.ts';
 import type { AttributeSpec } from '../schema/types.ts';
 import { controllersFirst } from './field-dependencies.ts';
 import { formLayout, formSlot, IN_ENGLISH, isEnglishAttr, OTHER_DATA } from './form-order.ts';
@@ -151,6 +152,16 @@ export function flagAsShown(element: string, attr: string, value: string): strin
 
 /** O valor a gravar no XML para uma escolha feita no sentido da tela. */
 export const flagToXml = flagAsShown;
+
+/**
+ * Uma marca sim/não como se lê, "Sim" ou "Não", no sentido da tela do Lattes
+ * (flagAsShown). Outro valor passa igual. Serve a todo atributo que
+ * isBooleanAttr reconhece, com ou sem enum no schema (FLAG-BOLSA não tem).
+ */
+export function flagLabel(element: string, attr: string, value: string): string {
+  const shown = flagAsShown(element, attr, value);
+  return shown === 'SIM' ? 'Sim' : shown === 'NAO' ? 'Não' : shown;
+}
 
 /**
  * Sim/não: enum que só tem SIM e NAO, ou FLAG-* em texto livre que guarda
@@ -357,4 +368,16 @@ function groupByPreview(
       label,
       system: label === 'Códigos do Lattes',
     }));
+}
+
+/**
+ * O schema não enumera alguns atributos que outros elementos enumeram com o
+ * mesmo nome (o STATUS-DO-CURSO do pós-doutorado é texto livre, mas vem
+ * "CONCLUIDO" como nos outros níveis): o valor que é de um desses enumerados
+ * se lê pelo mesmo rótulo.
+ */
+export function enumElsewhere(attr: string, value: string): boolean {
+  return Object.values(lattesSchema.elements).some((e) =>
+    e.attributes.some((a) => a.name === attr && a.enum?.includes(value)),
+  );
 }

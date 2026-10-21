@@ -164,13 +164,66 @@ a extensão desligar, é engolida, para um ZIP velho nunca virar abertura de
 arquivo e substituir a cópia de trabalho.
 Como o Exportar recusa com pendência (`lattes_internals.md`, seção 10), a
 segunda rodada antes de "Enviar ao CNPq" nunca tem ponto novo: o app diz
-por quê, mostra a cópia mais recente e pede "Continuar sem ponto de
-restauração" (`src/import-export/RestorePointDialog.tsx`). A cópia que não
+por quê, mostra a cópia mais recente e pede "Gravar sem ponto de
+restauração", numa linha do passo ② da janela de envio
+(`src/import-export/SendSteps.tsx`), sem modal por cima. A cópia que não
 grava (disco cheio, acesso negado a Documentos) também cai nessa pergunta.
 Sessão caída, Lattes fechado, extensão sem resposta ou sessão de outro
 currículo param a rodada, sem gravar nada. Nunca se grava sem um ponto novo
 ou essa confirmação. Desfazer pelo registro do enviado passa pelo mesmo
 caminho.
+
+### Freio de escrita (LAT-59)
+
+As regras estão em `src/bridge/write-brake.ts`, sem chrome nem React, e a
+extensão roda a fila por elas (`runRound`, chamado por `run` em
+`extension/src/background.ts`):
+
+- **Quem começa.** Com a capacidade `gravar-pelo-editor` dos dois lados, o
+  `enviar` do editor leva `start` e a extensão começa a rodada sem clique no
+  painel; o "Continuar" da pausa também sai do editor, pela mensagem
+  `continuar`. O estado da fila guarda `fromEditor`, e com ele o painel só
+  acompanha: esconde "Aplicar todas" e os "Aplicar" de cada item e mostra o
+  botão só para parar. A rodada pedida pelo editor espera até 60 s uma
+  verificação em curso (a automática roda quando o menu do Lattes carrega);
+  sem o "ok" do aviso de uso, ou com o conector ocupado em outra tarefa, a
+  primeira da fila volta como `erro` com o motivo, seguida de `fim`, para o
+  editor não ficar preso em "gravando". Um app sem a capacidade manda o
+  `enviar` sem `start`, e a fila espera o "Aplicar todas" do painel, como
+  antes.
+- **Teto por rodada.** Cada rodada (o envio, o "Continuar" ou, com app
+  antigo, o "Aplicar todas") grava no máximo `WRITES_PER_ROUND` (20)
+  operações. Passou disso, a fila pausa: o estado da extensão guarda `pausa`
+  com quantas gravou e quantas faltam, e o `fim` que vai ao editor leva a
+  mesma pausa, que o "Enviar ao Lattes" mostra com o botão "Continuar"
+  (`src/ui/use-write-brake.ts`). "Limpar fila" tira a pausa e avisa o
+  editor.
+- **Parada na primeira surpresa.** A fila para no primeiro resultado que não
+  é conferido (divergente, erro, sessão caída), como já parava. Gravar e não
+  ver o valor na releitura ("O Lattes não gravou"), ver outro campo mudar junto
+  ou uma linha nova no lugar da alteração são `divergente`, e não `erro`: o
+  envio chegou ao Lattes e algo ficou diferente do esperado. A inclusão que só
+  não relê uma parte montada por script (inventores, equipe, disciplinas, o
+  tipo do evento) volta `conferido`, com o pedido de conferir essa parte no
+  registro do enviado. A falha que
+  estoura no meio da operação (a aba fechou, a página mudou) e a resposta
+  ausente ou fora do formato viram resultado `divergente` com "não dá para
+  saber se gravou" (`checkedResult`, `unexpectedResult`): antes, a resposta
+  ausente era `erro` ("não gravado"), e uma exceção deixava a fila marcada
+  como correndo, sem `fim` para o editor. Agora o fim da rodada (estado,
+  selo, `fim`, menu relido) roda num `finally`. Tudo o que voltou, conferido
+  ou não, entra no registro do enviado como antes.
+- **"Enviar ao CNPq" bloqueado.** Uma entrada `divergente` do registro do
+  enviado bloqueia o botão do painel "Enviar ao CNPq" até se resolver
+  (`openDivergences`): a mesma alteração (a mesma chave) volta mais tarde
+  conferida, ou a pessoa clica em "Já conferi no Lattes", que grava
+  `checkedAt` na linha do registro (`src/model/sent-checks.ts`), em claro
+  como a hora do envio. O registro mora no IndexedDB por currículo, então
+  reabrir o app não desbloqueia nada. Contam só as entradas ainda não
+  publicadas, pela mesma janela de `unpublishedEntries`
+  (`src/ui/status-strip.ts`); sem a leitura do menu do Lattes, conta o
+  registro inteiro (`publishBlockers`, em
+  `src/import-export/publish-view.ts`). Erro e sessão caída não bloqueiam.
 
 ## Do editor ao Lattes
 
@@ -186,9 +239,14 @@ que o painel "Enviar ao Lattes" mostra item por item:
   que o formulário está como o editor espera; depois, lê de novo e confere que
   só os campos da operação mudaram. O "Possui vínculo empregatício" do Lattes
   é o inverso do `FLAG-VINCULO-EMPREGATICIO` da exportação, e a tradução dos
-  dois sentidos fica em `src/bridge/vinculo-flag.ts`. Formação, endereço e identificação têm as
-  operações em `src/bridge/biographic.ts`, ligadas para o teste ao vivo
-  (`BIOGRAPHIC_OPS_ENABLED`, seção "Ações ligadas" abaixo).
+  dois sentidos fica em `src/bridge/vinculo-flag.ts`. Formação (também pós-doutorado e
+  livre-docência), endereço, identificação e outras informações relevantes
+  têm as operações em `src/bridge/biographic.ts`, com o mapa de campos em
+  `formacao-edit.ts` e `dados-gerais-edit.ts`, as buscas de instituição,
+  curso e agência em `formacao-lookups.ts` e as da instituição e do órgão do
+  endereço profissional em `endereco-buscas.ts`, ligadas para o teste ao vivo
+  (`BIOGRAPHIC_OPS_ENABLED` e `BIOGRAPHIC_FULL_ENABLED`, seção "Ações
+  ligadas" abaixo).
 - **Item removido no editor** pode ir pela extensão com
   `src/bridge/delete.ts`, que posta o formulário de edição do item com
   `f_ctr=E`, como o botão "Excluir" do Lattes, e confere lendo a lista de
@@ -243,7 +301,14 @@ Prêmios e formação complementar seguem o mesmo caminho em
 `src/bridge/edit-lists.ts`, cada um com a própria chave. Como a
 linha da lista não se acha pelo número, a operação abre o formulário de cada
 linha e fica com a única cujos valores são os do item (`match`, comparado sem
-acento nem caixa), antes da conferência estrita do "antes".
+acento nem caixa), antes da conferência estrita do "antes". Instituição e
+curso da formação complementar vão pelas buscas da formação acadêmica
+(`planLookups` em `formacao-edit.ts`, `resolveFormacao` em
+`formacao-lookups.ts`), e a instituição e o órgão do endereço profissional
+pelas janelas da página de endereço, a busca `PRC_INST_ATIV` e a janela de
+órgãos `prc_orgao_cargo` (`src/bridge/endereco-buscas.ts`), os dois atrás de
+`COMPL_ENDERECO_LOOKUPS_ENABLED`. `resolveOpLookups` junta essas buscas para
+`apply.ts`.
 
 A decisão de 13/10/2026 sobre duplicatas (só o que é novo vai pelo Importar;
 alteração no lugar; exclusão pelo formulário) está no
@@ -284,15 +349,18 @@ que continua desligada até um envio acompanhado. Cada uma tem a capacidade da e
 com uma extensão mais antiga, a alteração fica em "Não enviado" e o evento
 novo fica no Importar. O release estável só leva isso se o dono gerar um.
 
-| Ação                                                                                                                                               | Chave e capacidade                                             | O que o teste ao vivo ainda precisa mostrar                                                                                                                                                                                                                                                        |
-| -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Inclusão de atuação, formação (dez níveis, pós-doutorado e livre-docência), idioma, prêmio, vínculo, cinco registros, atividade de ensino e evento | `CREATE_ITEMS_ENABLED`, `incluir-itens`                        | A primeira inclusão real de cada tipo. Registro e atividade voltam como divergentes porque inventores e disciplinas não são relidos; o evento de quem apresenta, porque o tipo não volta na releitura. Patente, projeto e as atividades que pedem órgão seguem à mão (`docs/inclusao_por_tipo.md`) |
-| Exclusão de idioma e vínculo                                                                                                                       | `DELETE_ITEMS_ENABLED`, `excluir-itens`                        | Que o item some da lista e nada mais muda (seção 15 de `lattes_internals.md`)                                                                                                                                                                                                                      |
-| Formação, endereço e identificação                                                                                                                 | `BIOGRAPHIC_OPS_ENABLED`, `alterar-dados-gerais`               | O primeiro envio de cada um, com a releitura                                                                                                                                                                                                                                                       |
-| Eventos de convidado e participante: forma, tipo, natureza e cidade                                                                                | `EDIT_EVENTO_ENABLED`, `alterar-evento-completo`               | Como a edição de um convidado traz o tipo, que a página monta por script (seção 16)                                                                                                                                                                                                                |
-| Prêmios e títulos                                                                                                                                  | `EDIT_PREMIO_ENABLED`, `alterar-premio`                        | Que a linha certa se acha pelos valores e o POST com U grava                                                                                                                                                                                                                                       |
-| Formação complementar                                                                                                                              | `EDIT_FORMACAO_COMPL_ENABLED`, `alterar-formacao-complementar` | O que `FORM2` grava com `f_ctr` vazio e o passo depois do envio                                                                                                                                                                                                                                    |
-| Importar dos itens novos                                                                                                                           | `IMPORT_ENABLED`, `importar`                                   | O arquivo mínimo foi recusado e um passo 3 com sucesso não pôs o item no currículo (seção 13): conferir o currículo depois de cada importação                                                                                                                                                      |
+| Ação                                                                                                                                               | Chave e capacidade                                               | O que o teste ao vivo ainda precisa mostrar                                                                                                                                                                                                                                                                                                             |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Inclusão de atuação, formação (dez níveis, pós-doutorado e livre-docência), idioma, prêmio, vínculo, cinco registros, atividade de ensino e evento | `CREATE_ITEMS_ENABLED`, `incluir-itens`                          | A primeira inclusão real de cada tipo. Registro e atividade voltam conferidos pelos outros campos, com o pedido de conferir inventores e disciplinas no Lattes, que não são relidos; o evento de quem apresenta, com o do tipo, que não volta na releitura. Patente, projeto e as atividades que pedem órgão seguem à mão (`docs/inclusao_por_tipo.md`) |
+| Exclusão de idioma e vínculo                                                                                                                       | `DELETE_ITEMS_ENABLED`, `excluir-itens`                          | Que o item some da lista e nada mais muda (seção 15 de `lattes_internals.md`)                                                                                                                                                                                                                                                                           |
+| Formação, endereço e identificação                                                                                                                 | `BIOGRAPHIC_OPS_ENABLED`, `alterar-dados-gerais`                 | O primeiro envio de cada um, com a releitura                                                                                                                                                                                                                                                                                                            |
+| Formação pelas buscas de instituição, curso e agência, pós-doutorado, livre-docência e outras informações relevantes                               | `BIOGRAPHIC_FULL_ENABLED`, `alterar-dados-gerais-completo`       | Que o POST com os ocultos das buscas grava a instituição, o curso e a agência; as datas em DD/MM/AAAA e a cor ou raça na identificação (seção 19 de `lattes_internals.md`)                                                                                                                                                                              |
+| Eventos de convidado e participante: forma, tipo, natureza e cidade                                                                                | `EDIT_EVENTO_ENABLED`, `alterar-evento-completo`                 | Como a edição de um convidado traz o tipo, que a página monta por script (seção 16)                                                                                                                                                                                                                                                                     |
+| Prêmios e títulos                                                                                                                                  | `EDIT_PREMIO_ENABLED`, `alterar-premio`                          | Que a linha certa se acha pelos valores e o POST com U grava                                                                                                                                                                                                                                                                                            |
+| Palavras-chave de trabalho técnico e de outra produção bibliográfica                                                                               | `EDIT_KEYWORDS_ENABLED`, `alterar-palavras-chave`                | Que o POST grave as palavras e mantenha autores, áreas e setores: a operação refaz as quatro grades como o `check()` da página (seção 16 de `lattes_internals.md`) e as relê depois                                                                                                                                                                     |
+| Formação complementar                                                                                                                              | `EDIT_FORMACAO_COMPL_ENABLED`, `alterar-formacao-complementar`   | O que `FORM2` grava com `f_ctr` vazio e o passo depois do envio                                                                                                                                                                                                                                                                                         |
+| Instituição e curso da formação complementar, instituição e órgão do endereço profissional pelas buscas                                            | `COMPL_ENDERECO_LOOKUPS_ENABLED`, `buscas-complementar-endereco` | Que `FORM2` e `PRC_ENDERECO` gravem os ocultos que as buscas escrevem, e se o `seleciona()` do endereço limpa o órgão (seção 18 de `lattes_internals.md`)                                                                                                                                                                                               |
+| Importar dos itens novos                                                                                                                           | `IMPORT_ENABLED`, `importar`                                     | O arquivo mínimo foi recusado e um passo 3 com sucesso não pôs o item no currículo (seção 13): conferir o currículo depois de cada importação                                                                                                                                                                                                           |
 
 ### O caminho de uma mensagem
 

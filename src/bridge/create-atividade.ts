@@ -208,8 +208,7 @@ export async function applyCreateAtividade(
     }
     const cv = lista.params.f_cod;
     // A atuação pelo número e, com o código da instituição no XML, também por ele.
-    const sameInst = (code: string | undefined) =>
-      (code ?? '').replace(/^[A-Za-z]/, '') === (op.codInst ?? '').replace(/^[A-Za-z]/, '');
+    const sameInst = (code: string | undefined) => sameCode(code, op.codInst ?? '');
     const grids = findLinks(await getChecked(port, lista.path), 'pkg_ativ.cargos_vinculos').filter(
       (l) => l.params.f_seq_ativ === op.seqAtiv && (!op.codInst || sameInst(l.params.f_codinst)),
     );
@@ -309,12 +308,16 @@ export async function applyCreateAtividade(
       const { f_curso_old: _old, f_espec_l: _spec, ...checked } = set;
       const problem = readBackProblem(
         `Criada no Lattes (atividade ${seq})`,
-        true,
         readBack(saved, checked),
       );
       if (problem) return { ...result('divergente', problem), assigned };
-      // Sem reler as disciplinas, a inclusão não se dá por conferida.
-      return { ...result('divergente', `${DISCIPLINES_UNREAD} (atividade ${seq})`), assigned };
+      // As disciplinas ficam sem reler: o resto conferiu, e o aviso vai no
+      // registro do enviado, sem travar a fila nem o envio ao CNPq.
+      return {
+        ...result('conferido', `${DISCIPLINES_UNREAD} (atividade ${seq})`),
+        assigned,
+        partial: true,
+      };
     } catch (err) {
       const why = err instanceof Error ? err.message : 'falha inesperada';
       return maybeCreated(op.key, mayExist, `a conferência falhou (${why})`);

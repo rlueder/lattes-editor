@@ -333,10 +333,10 @@ describe('alteração de evento: plano', () => {
       /^Campos não suportados ainda: /,
     );
     expect(onlyReason((root) => setAttr(basics(root), 'PAIS', 'Atlântida'))).toMatch(
-      /^Campos não suportados ainda: /,
+      'País que o formulário do Lattes não tem: Atlântida',
     );
-    expect(onlyReason((root) => setAttr(basics(root), 'FLAG-DIVULGACAO-CIENTIFICA', ''))).toMatch(
-      /^Campos não suportados ainda: /,
+    expect(onlyReason((root) => setAttr(basics(root), 'FLAG-DIVULGACAO-CIENTIFICA', ''))).toBe(
+      'Divulgação científica: o formulário do Lattes não volta para vazio',
     );
     expect(
       onlyReason((root) =>
@@ -614,7 +614,7 @@ describe('alteração de evento: aplicar no Lattes simulado', () => {
     });
     expect(await applyOp(op(), naoGravou.port)).toMatchObject({
       detail: 'O Lattes não gravou: Título',
-      status: 'erro',
+      status: 'divergente',
     });
     const colateral = await lattesFor({
       intercept: faults.afterPost((_req, state) =>
@@ -630,7 +630,7 @@ describe('alteração de evento: aplicar no Lattes simulado', () => {
     });
     expect(await applyOp(op(), colateral.port)).toMatchObject({
       detail: 'Outros campos mudaram no Lattes: Cidade',
-      status: 'erro',
+      status: 'divergente',
     });
   });
 

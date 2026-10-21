@@ -311,6 +311,13 @@ correspondência); privacidade por bloco (`f_priv_residencial`,
 eletrônicos e redes sociais vão em grades serializadas nos ocultos
 `f_dados_grid` e `f_dados_grid_contatos` (formato não lido). **Lacuna.**
 
+A instituição e o órgão do endereço profissional vêm desabilitados (`f_inst`,
+`f_orgao`) e só mudam pelas janelas de busca da página, lidas em 20/10/2026
+(seção 18, "Endereço profissional"): a de instituição posta para
+`PRC_INST_ATIV` e grava `f_inst`, `f_inst_old`, `f_cod_inst` ou
+`f_cod_inst2`; a de órgão é `prc_orgao_cargo` e grava `f_orgao`,
+`f_orgao_old`, `f_codorgao` ou `f_codorgao2`. **Observado.**
+
 ### Identificação: `GN_IDENT`, POST `PRC_IDENT`
 
 Aberto por GET `prc_ident` com `f_cod` e `f_pcd`. Nome (`f_nome` 60), nome
@@ -325,6 +332,14 @@ CPF e RG) e `E` como estrangeira. É o `NACIONALIDADE` do XML. Os grupos de
 privacidade são foto, nacionalidade, raça ou cor, nascimento, identidade,
 passaporte e deficiência (`f_priv_*`, `1` público, `2` privado).
 **Observado** (11/10/2026).
+
+### Outras informações relevantes: `GN_OUTRA_INF_RELEV`, POST `PRC_OUTRAS_INF`
+
+Aberto por GET `prc_outras_inf` no menu. Um texto só, `F_TEXTO` (área de
+2000 caracteres), e os ocultos `f_cod` e `f_ctr` (`U`). **Observado** no
+censo de 15/10/2026. Que o texto seja o atributo `OUTRAS-INFORMACOES-RELEVANTES`
+do elemento de mesmo nome é **inferido**: o censo ligou o formulário ao
+elemento só pelo nome, e o currículo lido não tinha o texto preenchido.
 
 ## 6. Primeiro envio (11/10/2026)
 
@@ -471,6 +486,14 @@ acendem a pendência (seção 16, 14/10/2026). **Observado.**
 O Exportar entrega a versão publicada, não a de trabalho: um item que entrou
 pelo Importar, que não acende a pendência, não aparece numa exportação feita
 logo depois (seção 13, 14/10/2026). **Observado.**
+
+E não a última publicada, logo depois de publicar: em 18/10/2026, com o menu
+sem pendência depois de envios ao CNPq às ~21h, as exportações das 21h36 e
+das 22h03 vieram as duas com `HORA-ATUALIZACAO="190436"`, sem uma rede social
+incluída e com itens excluídos antes da publicação. A versão atual
+(`pkg_publicar.cv_espelho`) já mostrava tudo. Quanto tempo o Exportar leva
+para acompanhar não foi medido. **Observado.** Para o editor: uma exportação
+logo depois de publicar pode trazer um currículo atrasado.
 
 **Enviar ao CNPq** (14/10/2026, feito pela pessoa, com a página observada só
 lendo). **Observado.**
@@ -1064,8 +1087,12 @@ os campos alterados trocados, e lê de volta.
   mudaram. O envio vai para `FORM2` com o
   `f_ctr` vazio que a página traz (**inferido** que grave assim), e N e I do
   status como `EM_ANDAMENTO` e `INCOMPLETO` vêm do rótulo (**inferido**; só
-  "concluído" foi visto). Instituição e curso mudam só pelas buscas, e o
-  formulário não tem os anos nem o nome do curso em inglês: ficam à mão.
+  "concluído" foi visto). O formulário não tem os anos, o órgão nem o nome do
+  curso em inglês: o editor mostra esses campos só para ler. Instituição e
+  curso mudam pelas buscas, como na formação acadêmica (seção 18, "Formação
+  complementar", desde 20/10/2026, atrás da capacidade
+  `buscas-complementar-endereco`); a releitura confere que `f_inst` e
+  `f_curso` mostram os nomes novos.
 
 Nos dois, o `f_ctr` não distingue sempre incluir de alterar (o da formação
 complementar vem vazio na inclusão e na edição). Depois do envio, o conector
@@ -1112,6 +1139,26 @@ tem `l` (nome) e `c` (código de 8 dígitos); uma palavra-chave nova, `l`,
 `c=-1` e `add`. **Observado.** O sentido de `r` e de `pais` não foi visto.
 **Lacuna.** Antes de enviar, se a privacidade mudou, `verificaPriv()` abre
 uma confirmação do `caixaMsg` do menu; se não mudou, envia direto.
+
+Na edição (16/10/2026, só GET no Lattes real, em dois trabalhos técnicos e
+numa outra produção bibliográfica): o formulário vem com `f_ctr` U e com os
+quatro ocultos vazios, como na inclusão; os vetores trazem as linhas
+gravadas, cada um terminado por um objeto vazio. O autor vem com `l`, `c`,
+`t`, `editable` e `deletable` nessa ordem (por isso a linha da própria pessoa
+vira `l||t`); a palavra-chave gravada vem com `l`, `c` e `editable`, e o `c`
+dela é a posição (1, 2, 3...); a área, com `l`, `c` de oito dígitos e
+`editable`. O nome e a citação do autor passam por um decodificador de
+entidades antes da grade; as outras grades, não. **Observado.** Os
+formulários: trabalho técnico `GN_RELATORIO`, aberto por
+`pkg_relatorio.form?f_cod=…&f_seq=N` na lista `pkg_relatorio.lista`, POST
+`PKG_RELATORIO.FORM`; outra produção bibliográfica `GN_BIB`, aberto por
+`prc_bib_outraprod?f_cod=…&f_seq=N` na lista `prc_bib_demais_lista` com
+`f_cod_tipo=1Z`, POST `PRC_BIB_OUTRAPROD` (1A, 1B e 1C são as outras listas
+de demais tipos). **Observado.** O conector grava as palavras-chave desses
+dois por `src/bridge/edit-keywords.ts`, refazendo as quatro grades como o
+`check()` faria; um envio com o formulário como veio do GET mandaria as
+grades vazias. **Inferido**, até o primeiro envio acompanhado: que o POST
+grave cada grade como chega, e que a palavra nova vá com `c=-1`.
 
 ## 17. Formulários de inclusão (LAT-52, 14/10/2026)
 
@@ -1275,6 +1322,176 @@ número do registro, não o do currículo); a resposta é JavaScript que a
 página roda com `eval`. Não foi chamado, porque leva o CPF. **Observado** no
 código.
 
+### Patentes e registros: a edição (lida e gravada em 19/10/2026)
+
+Uma patente de teste e um item de teste de cada registro (programa de
+computador com e sem registro, cultivar protegida e registrada, desenho
+industrial, marca, topografia) foram criados, alterados pelo conector e
+removidos. **Observado:**
+
+- A edição é `pkg_patente_registro.form` com `f_seq`, `f_ctr=U` e o
+  `f_cod_tipo` do tipo. A lista do programa de computador sem registro é
+  `PKG_PATENTE_REGISTRO.LISTA?f_reg=N&f_cod_tipo=PC`; a com registro é a de
+  PC sem `f_reg`.
+- O depositante ou titular é uma entrada do dicionário de coautores
+  (`titularPessoaProvider`, `c` é a sequência da entrada). Uma pessoa
+  digitada na janela "Inclusão de Depositante/Titular" vai com `c` 0, `add`
+  e `staValidado` N, e o Lattes cria a entrada no dicionário. O check()
+  serializa `titularPessoaProvider` em `f_depositante_pessoa_l` com as chaves
+  `c`, `l`, `t`, `pais`, `add`, `staValidado` e `titularInstProvider` em
+  `f_depositante_inst_l` com `c`, `l`, `t`, `tipoInst`, `staValidado`, na
+  ordem em que cada linha as tem; o servidor lê os valores pela posição. Com
+  as chaves fora da ordem da página, o gatilho
+  `FOMENTO.TRG_VER_RE_COAUTOR_PRODUCAO_RH` recusou com ORA-01403.
+- Os autores levam a coluna `tit` (`c`, `l`, `t`, `pais`, `add`, `tit`).
+- As datas da patente ficam em `providerContatos`, escrito pela página com
+  o id sem aspas e com zero à esquerda (`id: 01, contato: "Depósito",
+endereco: "10/03/2005"`), e vão em `f_dados_grid_datas` pelo `array2xml`.
+  O check() tira `f_ano` da data de depósito ou da do PCT, a que vier antes.
+- No desenho industrial, no programa de computador com registro e na
+  cultivar protegida, o check() põe em `f_ano` o ano de `f_dta_dep`
+  (`dc.f_ano.value = anoDep`). Sem esse ano o Lattes aceita o envio e não
+  grava nada. Nesses tipos o `f_ano` da página de edição vem vazio.
+- O programa de computador monta `f_ambiente` de `programaProvider`.
+- Marca e topografia não têm grade de depositantes.
+- O `del()` dos registros exibe a caixa de confirmação e pendura a exclusão
+  no botão Confirmar dela (`caixaMsg.btnConfirmar.addEventListener`).
+- O dicionário de coautores (`pkg_dic_autor.lista`) não tem exclusão para
+  uma entrada sem uso; a de palavras-chave (`PKG_DIC_PLV_NV.form`) tem
+  `del()`.
+
+### Patente: exportação, depositante e histórico (lidos em 20/10/2026)
+
+Uma patente de teste (`f_seq` 40) foi exportada e a página de edição dela
+(`pkg_patente_registro.form?f_cod_tipo=PP&f_seq=40`) foi lida. **Observado:**
+
+- O `REGISTRO-OU-PATENTE` da exportação traz `NOME-DO-DEPOSITANTE` com o
+  nome da pessoa depositante e `NOME-DO-TITULAR` vazio. Na página, essa
+  pessoa é a única linha de `titularPessoaProvider` (`l` o nome, `c` 14, a
+  entrada dela no dicionário de coautores, `t` a citação, `editable` false,
+  `deletable` true, `staValidado` N), e `titularInstProvider` vem vazio
+  (`[{}]`).
+- A exportação copia a pessoa depositante também nos `AUTORES`, com
+  `NRO-ID-CNPQ` vazio e `ORDEM-DE-AUTORIA` 1, antes da própria pessoa, que
+  vem também com ordem 1: a ordem dos depositantes é contada à parte. O
+  `autorProvider` da página tem só a própria pessoa.
+- Cada `HISTORICO-SITUACOES-PATENTE` é uma linha da grade de situações
+  (`providerContatos`): `DESCRICAO-SITUACAO-PATENTE` é o rótulo da linha
+  ("Depósito", no `contato`) e `DATA-SITUACAO-PATENTE` a data em DDMMAAAA
+  (12032007 para `endereco` "12/03/2007"). `STATUS-SITUACAO-PATENTE` veio
+  `SIM`; o sentido dele não foi visto. A mesma data está também em
+  `DATA-PEDIDO-DE-DEPOSITO`.
+- O programa de computador de teste foi exportado como `SOFTWARE` simples,
+  sem `REGISTRO-OU-PATENTE`, então só a patente mostrou como a exportação
+  guarda os depositantes.
+
+O que o conector faz com isso (`src/bridge/production/holders.ts` e
+`targets/registros.ts`):
+
+- Troca o depositante quando o item tem no máximo uma pessoa depositante e o
+  valor novo é um nome só. A linha nova sai do vetor `titularPessoaDP` do
+  menu, com a mesma forma da linha gravada. **Inferido:** que
+  `titularPessoaDP` tenha a forma do `autorDP` (`l`, `c`, `t`) e as entradas
+  do dicionário de coautores; a forma dele não foi lida (seção 22). Como a
+  exportação junta mais de um depositante não foi visto, e isso fica à mão.
+  Nos outros registros com a grade de depositantes (programa de computador,
+  cultivares, desenho industrial) a ligação com `NOME-DO-DEPOSITANTE` é
+  inferida pela patente.
+- O titular instituição (`NOME-DO-TITULAR`, `titularInstProvider`) fica à
+  mão: sai da busca de instituições do Lattes (`pkg_titular_inst.sele_inst`).
+- A mudança de autores deixa de fora as linhas de `AUTORES` com o nome de um
+  depositante, antes e depois, para conferir com o `autorProvider`, que não
+  as tem, e para nunca mandar o depositante como autor. A cópia só se
+  reconhece pelo nome. Com mais linhas daquele nome do que depositantes (quem
+  inventa e também deposita), o conector não adivinha qual é a cópia, e a
+  mudança de autores fica à mão; mexer numa linha com o nome do depositante
+  também. O depositante novo de uma troca ainda não exportada não tem cópia.
+- A data de uma linha do histórico cuja descrição é uma das datas conhecidas
+  (Depósito, Depósito PCT, Concessão, Pedido do Exame, comparadas sem acento
+  nem caixa) vai pela grade de situações, como as datas do
+  `REGISTRO-OU-PATENTE`. As duas datas são um campo só no Lattes, e o editor
+  as mantém juntas (`src/model/linked-attrs.ts`): trocar a data do registro
+  troca a da situação com a mesma descrição, e o contrário. A linha do
+  histórico que não existe não se cria; sem ela, só o registro muda, e vai.
+  As duas mudanças vão ao mesmo campo (a segunda acha o Lattes já com a data
+  e não envia nada). Datas que ainda assim discordam (no XML carregado, por
+  exemplo) ficam à mão. Incluir ou tirar uma situação, trocar a descrição ou
+  o status, e as outras situações também.
+
+### Dicionário de coautores: a edição (lida em 19/10/2026)
+
+- A lista (`pkg_dic_autor.lista?f_cod=…`, linkada no menu) traz uma linha
+  por coautor, `<tr onclick="pp_autor(n)">`, com o nome, o nome em citações e
+  quantas produções e projetos o usam. `pp_autor` abre
+  `pkg_dic_autor.form?f_cod=…&f_seq=n`.
+- O formulário `GN_AUTOR` (POST `PKG_DIC_AUTOR.FORM`) tem `f_nome` e
+  `f_nome_cit` (até 60 letras cada), `f_cod`, `f_seq`, `f_tipo` (A), `f_ctr`
+  (U na alteração), `f_id`, `f_sta_old` e a caixa `f_chk`.
+- Quando a citação muda, o check() pergunta a
+  `pkg_dic_autor.existe_prod_validada` (POST com `f_cod` e `f_seq`, resposta
+  S ou N); com S, mostra as produções validadas e não envia.
+- A linha de autor de cada produção aponta para a entrada pelo `c`. Trocar o
+  `t` na linha não pega: a releitura volta com a citação antiga. Trocar a
+  entrada muda a citação em todas as produções do coautor (gravado em
+  20/10/2026 num item de teste: o `t` da linha do item seguiu a entrada).
+- A própria pessoa não está no dicionário: a linha dela no `autorDP` do menu
+  tem o `c` vazio.
+
+### O DOI das produções bibliográficas (lido e gravado em 20/10/2026)
+
+O DOI vai no oculto `f_cod_doi` (no capítulo, um campo de texto); o botão
+"Verificar DOI" só recupera os dados da produção. Antes de enviar, o
+`check()` de cada página confere o formato (começa por `10.` e tem `/`), se o
+DOI já está em outra produção (`pkg_artigo.verifica_doi_duplicado`, POST
+`f_doi`, `f_cod`, `f_seq`, resposta `doiDup = 0` ou `1`; artigos, trabalho em
+eventos e livro) e o tipo (`pkg_artigo.tipodoi`, POST `fcod` e `ffun`, que
+responde `ARTIGO`, `LIVRO`, `CAPITULO`… ou `INEXISTENTE`; sem o `ffun`,
+mesmo vazio, um 404). O artigo pede um tipo que comece por A, o trabalho em
+eventos por T; o livro tem a conferência comentada e o capítulo não a tem.
+O tipo vem da base do Lattes: `10.1038/nature14539`, um artigo da Nature,
+volta `LIVRO`. **Observado:** num artigo de teste, o conector gravou
+`10.1590/S0034-89102009000500001` e a releitura o trouxe.
+
+### Atividade de uma atuação: a edição (lida e gravada em 19/10/2026)
+
+A tela de cargos e vínculos traz cada atividade como um link
+`PKG_ATIV.cargo` com `f_natur_ativ`, `f_seq_ativ`, `f_codinst` e
+`f_seq_funcao`, que são a natureza, a `SEQUENCIA-ATIVIDADE` da atuação, o
+`CODIGO-INSTITUICAO` (com a letra) e a `SEQUENCIA-FUNCAO-ATIVIDADE` da
+atividade. A descrição é a grade `providerDetAtiv` (`{l, c}`), serializada em
+`f_espec_l` como `n@c?l!`, completada até 8 com `n@?!`; a linha digitada vai
+com `c` 0 e a excluída em `f_exc` (`c?`). O período é `f_status` (N anterior,
+S atual), `f_mes_ini`, `f_ano_ini`, `f_mes_fim`, `f_ano_fim`. Na exportação, a
+descrição é um atributo da atividade (`ESTAGIO-REALIZADO`,
+`SERVICO-REALIZADO`, `CARGO-OU-FUNCAO`…). **Observado:** uma atividade de
+teste teve descrição, ano de início e período trocados pelo conector,
+conferidos na releitura, sem outro campo mudar.
+
+**Ensino (lido e gravado em 20/10/2026, numa atuação de teste).** Na edição
+de uma atividade de ensino, a `providerDetAtiv` são as disciplinas (`{l, c}`,
+o `c` a `SEQUENCIA-ESPECIFICACAO` delas). O mês de fim trocado pelo conector,
+com a grade mandada como veio, voltou conferido e com as duas disciplinas; o
+Lattes as renumerou pela posição na grade (a que era `c` 2 virou 1), como o
+Salvar da página faria. Por isso a pesquisa e desenvolvimento, cuja grade são
+as linhas de pesquisa, com objetivo e palavras-chave ligados a cada uma,
+continua à mão até ser vista numa atividade de teste: a renumeração poderia
+descolar os detalhes da linha. O treinamento ministrado também espera.
+
+**O código da instituição no link.** É o do XML com uma letra na frente (`D`
+ou `V`), e o do XML pode começar por letra também: `K4WU00000006` vira
+`VK4WU00000006`. Tirar a primeira letra dos dois lados desencontra os dois.
+
+**O órgão da atividade.** A janela é
+`prc_orgao_cargo?f_origem=&f_modal_cv=9&f_cod=…&f_cod_inst=<f_codinst>&f_cod_inst2=<órgão de cima>`,
+com as mesmas linhas `atribuir(código, nome, tipo, órgão de cima)` da janela
+do projeto; o `atribuir()` grava em `f_orgao`, `f_orgao_old` e em
+`f_codorgao` (tipo 0) ou `f_codorgao2`. A instituição precisa da letra que o
+link da atuação traz: a PUCRS (`000600000001`) lista 44 órgãos com `V` e
+nenhum com `D`. Instituição sem órgão só oferece "Cadastrar novo Órgão"
+(`prc_outro_orgao`), que grava na base de instituições do Lattes.
+**Observado** só por GET; que a gravação do órgão na atividade siga a do
+projeto é **inferido**.
+
 ### Projeto de pesquisa: `GN_PROJETO`, POST `PKG_PROJETO.FORM`
 
 O projeto não se inclui pela atuação. A tela de cargos e vínculos de uma
@@ -1407,6 +1624,255 @@ regrava a instituição como acima e grava o curso **sem** a letra em
 uma é um link `atribuir('<código>','<nome>')`, com código de 12 caracteres;
 `atribuir()` escreve `f_nme_agencia` e `f_agencia` e volta. **Observado.**
 
+### Orientações e bancas (lido e gravado em 18/10/2026)
+
+As páginas `pkg_orient.form`, `PKG_BANCA_TRAB.form` e `PKG_BANCA_JULG.form`
+abrem as mesmas buscas, com outros parâmetros. **Lido no código das
+páginas.** Em 18/10/2026, quatro itens de teste (orientação concluída e em
+andamento de mestrado, banca de mestrado, banca julgadora de professor
+titular) tiveram instituição, curso e agência trocados pelo conector com os
+ocultos abaixo, e a releitura trouxe os códigos novos: **observado** em modo
+de alteração.
+
+- Instituição: `prc_inst_form?f_cod=…`, sem `f_nivel` na orientação e na banca
+  julgadora; na banca de trabalho, `f_nivel` pela natureza (A11 GM, A12 e A13
+  GD, A14 AP, A15 GG, A16 GE). O `seleciona()` grava como na formação: o
+  código com `V` em `f_cod_inst`, os outros em `f_cod_inst2`, e o nome em
+  `f_inst_old`. Na orientação e na banca de trabalho `f_inst` vem desabilitado;
+  na banca julgadora é texto.
+- Curso: `prc_curso_form?f_pgm=TESE&f_cod=…&f_inst=<código com a letra>&f_nivel=<retnivel()>&f_sta_area=<N ou vazio>`.
+  O `retnivel()` dá 3 para mestrado (9 com o `f_sub_prod` do profissional: 30
+  na orientação concluída, 37 na em andamento, "35 " na banca), 4 para
+  doutorado, pós-doutorado e qualificação de doutorado, 2 para aperfeiçoamento
+  e 1 para graduação, iniciação científica e outra natureza. `f_sta_area` é N
+  no terceiro e no quarto rádio da natureza (aperfeiçoamento e graduação na
+  orientação; qualificação de doutorado e aperfeiçoamento na banca). A
+  supervisão de pós-doutorado não tem curso.
+- Agência (só orientação): `prc_agencia`, como na formação, para `f_agencia` e
+  o texto `f_nme_agencia`.
+- Orientando: o botão Salvar chama `pre_check()`, que depois do `check()` faz
+  `pkg_orient.valida_orientador_ajax` (POST síncrono com `f_cod`, `f_nme` em
+  `escape()` e `f_nivel`, o F_COD_PROD marcado) e, só com `sta_validado`
+  verdadeiro, copia `idOrientado` e `seqFormOrientado` para `f_id_orientado` e
+  `f_seq_form_orientado`. Sem validação, os dois ficam como estavam. Uma
+  chamada de teste (18/10/2026, nome inexistente) devolveu
+  `{"sta_validado":false,"mensagem":"Orientador não encontrado","idOrientado":"","seqFormOrientado":""}`
+  e nenhuma lista do currículo mudou: **observado** que só consulta. O
+  conector faz a mesma chamada antes de enviar uma orientação com o nome do
+  orientando trocado, e só manda os dois ocultos quando o nome valida
+  (`src/bridge/production/student.ts`).
+
+### Natureza da orientação: a página de edição (lida em 20/10/2026)
+
+Um GET da página de edição de uma orientação de teste (mestrado, concluída;
+`pkg_orient.form`, formulário `PKG_ORIENT`), sem envio. **Observado:**
+
+- A natureza é o rádio `F_COD_PROD`: 41 Dissertação de mestrado, 42 Tese de
+  doutorado, 43 Monografia de conclusão de curso de
+  aperfeiçoamento/especialização, 44 Trabalho de conclusão de curso de
+  graduação, 45 Iniciação Científica, 46 Supervisão de pós-doutorado, 49
+  Orientação de outra natureza.
+- Ocultos: `f_tipo=C` (concluída), `f_ctr=U`, `f_ctr_natur` vazio,
+  `f_sub_prod` vazio, `f_cod_inst` com o código da instituição e a letra
+  (V e 12 dígitos), `f_cod_curso` com os 8 dígitos do curso, `f_inst_old` e
+  `f_curso_old`. O subtipo vai em
+  `f_sub_prod`, que `dominio()` e `atribui(txt)` escrevem como
+  `txt.substring(0, txt.indexOf("#"))`; a descrição vai em `f_dsc_outra`, só
+  de leitura.
+- `testa_nivel(arg)`, a cada clique na natureza: fora de mestrado e doutorado
+  (índices 0 e 1), desmarca `f_tpo_orient` (orientador principal O,
+  coorientador C, que só vale para 41 e 42); sempre limpa `f_dsc_outra`; no
+  pós-doutorado (índice 5), limpa `f_titulo` e os dois códigos de curso; e,
+  com uma instituição preenchida, pede para escolher de novo a instituição e o
+  curso e limpa `f_cod_inst`, `f_cod_inst2`, `f_cod_curso`, `f_cod_curso2`,
+  `f_inst` e `f_curso`.
+- `retnivel(vlr)`, o nível da busca de curso: 41 dá 3 (9 com `f_sub_prod` 30),
+  42 dá 4, 43 dá 2, 44, 45 e 49 dão 1, 46 dá 4. As em andamento (A41 a A45)
+  dão o mesmo, e A41 com `f_sub_prod` 37 dá 9.
+
+No XSD, só os dados básicos das outras orientações concluídas enumeram a
+NATUREZA, com as quatro opções de 43, 44, 45 e 49. As outras orientações em
+andamento guardam a natureza como texto, e o tipo só tem A49: cada uma das
+outras naturezas em andamento tem elemento próprio. Nos demais tipos, o
+elemento fixa a natureza.
+
+O conector, com isso (`src/bridge/production/nature.ts`):
+
+- Nas outras orientações concluídas, a troca entre 43, 44 e 45 vai com o
+  `F_COD_PROD` novo, `f_dsc_outra` e `f_sub_prod` vazios, e a instituição e o
+  curso do item buscados de novo com o nível da natureza nova, como o
+  `testa_nivel()` pede. Curso fora da lista do nível novo, ou ausente numa
+  natureza que o exige (43 e 44, pelo `check()`), para antes do envio. A
+  releitura confere o `F_COD_PROD` e os códigos. **Observado** em 20/10/2026,
+  numa orientação de teste das outras concluídas: de graduação (44) para
+  iniciação científica (45), o envio parou antes do POST porque o curso do item
+  não estava na lista de nível 1 da instituição; com o curso trocado pelo
+  conector para um da lista, 44 para 45 gravou e conferiu, com a instituição e
+  o curso intactos, e 45 para 44 também.
+- De ou para 49 fica à mão: a janela do subtipo não foi lida.
+- O conector não desmarca `f_tpo_orient`, que nas outras orientações não
+  vem marcado (**inferido**: não visto num item dessas naturezas).
+- Onde o elemento fixa a natureza, trocá-la é incluir o item de novo no tipo
+  certo, como o nível da formação complementar.
+- O tipo do mestrado (acadêmico ou profissional) e o de outra natureza vão em
+  `f_sub_prod`. Pelo `retnivel()`, 30 e 37 são o profissional; o código do
+  acadêmico não foi lido. Fica à mão.
+
+As páginas de edição das bancas não foram lidas. No censo de 15/10/2026, o
+rádio `F_COD_PROD` da banca de trabalho tem A11 Mestrado, A12 Doutorado, A13
+Exame de qualificação de doutorado, A14 Curso de aperfeiçoamento/especialização,
+A15 Graduação e A16 Exame de qualificação de mestrado, sem opção para as outras
+participações; o da banca julgadora tem A21 Professor titular, A22 Concurso
+público, A23 Livre-docência, A24 Avaliação de cursos e A29 Outra. O elemento
+fixa a natureza em todos menos na qualificação, que guarda A13 e A16 no mesmo
+elemento. A troca entre as duas muda a busca de instituição e a de curso, e
+fica à mão até a página ser lida.
+
+### Órgão e unidade do projeto (lido em 18/10/2026)
+
+O formulário do projeto (`GN_PROJETO`) guarda o órgão em `f_codorgao` ou
+`f_codorgao2` e o texto em `f_orgao` (desabilitado) e `f_orgao_old`. A lupa
+chama `orgao()`, que abre
+`PKG_PROJETO.pp_orgao_cargo?f_cod=…&f_cod_inst=<V e f_cod_inst, ou D e f_cod_inst2>`.
+No projeto, `f_cod_inst` vem com o código da atuação sem a letra da busca,
+inclusive os de letras (`KCLH00000006`). **Observado.**
+
+A janela lista os órgãos da instituição; cada um tem um link "Expandir
+itens" para a mesma janela com `f_origem=&f_modal_cv=2&f_cod_inst2=V<código>`,
+que lista o próprio órgão no topo e as unidades dele. A escolha é
+`atribuir('<12 dígitos>','<nome>',<tipo>[,'<órgão de cima>'])`: tipo 0 grava
+o código em `f_codorgao` (e limpa `f_codorgao2`), os outros em `f_codorgao2`,
+e o texto vira `"<órgão de cima>/\n<nome>"` em `f_orgao` e `f_orgao_old`. O
+código tem a hierarquia (`000903000008` o centro, `000903003007` uma área
+dele) com um dígito final que não segue a do pai. Em todos os órgãos vistos
+o tipo era 0. **Observado** numa universidade (`V000900000007`, 16 órgãos no
+topo). Das 18 instituições das atuações de quem capturou, só as de código V
+têm órgãos na janela.
+
+Na página de alteração (lida em 18/10/2026, num projeto de teste), `f_codorgao`,
+`f_codorgao2` e `f_orgao_old` vêm vazios e só o `f_orgao`, desabilitado,
+mostra o órgão gravado. O `seleciona()` da janela de instituições do projeto
+também limpa os quatro. Dois envios de alteração pelo conector, com o código
+e o texto que o `atribuir()` gravaria (uma unidade do mesmo órgão, depois
+outro órgão), voltaram com o órgão de antes, sem erro e sem mexer em mais
+nada. **Observado.** Se a própria página consegue trocar o órgão na
+alteração não foi visto.
+
+Os financiadores, as produções e as orientações ligadas são tabelas
+(`criarGrid`, ids `grid2`, `grid3` e `grid4`) que o servidor escreve com as
+linhas, e o `check()` as serializa em `f_inst_l`, `f_producoes_l` e
+`f_orientacoes_l` a partir de `valores`. Não há vetor `financiadorProvider`,
+`producaoProvider` nem `orientacaoProvider` na página, como a especificação
+supunha; a equipe, sim, é o `autorProvider`. **Observado.**
+
+Numa página de alteração lida em 20/10/2026 (um projeto de teste com um
+financiador e duas produções ligadas incluídos à mão), cada linha traz o
+valor que o `check()` envia num `<span>` da célula, ao lado do texto que a
+tela mostra (trecho copiado da página, sem formatar):
+
+```text
+<table id="grid2"> … <tbody> <tr> <td>FAPESP_PPPROV<span id="cod_inst_aux">VJMOE00000002</span></td> <td>0000<span>0000;N;</span></td> <td>R$ 10,00<span>026|10,00</span></td> <td>Auxílio Financeiro<span>A</span></td> <td><img … onClick="editarLinhaTabela(this)"><img … onClick="apagaLinhaTabela(this)"></td> </tr> </tbody>
+<table id="grid3"> … <tbody> <tr> <td tabindex="0">Teste do LattesEditor (apagar)<SPAN>34</SPAN></td> <td tabindex="0">2026</td> <td tabindex="0">Participações em eventos</td> </tr> <tr> <td tabindex="0">TESTE EDITOR APAGAR registro-PC-v1 f_titulo<SPAN>39</SPAN></td> <td tabindex="0">2006</td> <td tabindex="0">Software</td> </tr> <INPUT TYPE="hidden" NAME="f_producoes_d" VALUE="34|39"> </tbody>
+<table id="grid4"> … <tbody> <INPUT TYPE="hidden" NAME="f_orientacoes_d" VALUE=""> </tbody>
+```
+
+O `criarGrid` da página dá à `grid_2` o `tagValor`
+`['span','span','span','span',null]` e à `grid_3` e à `grid_4`
+`['span', null, null]`. O `associarValores()` toma, em cada linha e em cada
+célula com `tagValor`, o `innerHTML` do primeiro elemento com essa tag, e o
+`check()` junta os da `grid_2` como `v0|v1|v2|v3|@` por linha e os das outras
+como `v0@`. Neste projeto, então, `f_inst_l` vai
+`VJMOE00000002|0000;N;|026|10,00|A|@`, `f_producoes_l` vai `34@39@` e
+`f_orientacoes_l` vai vazio. Um valor pode ter `|` dentro (`026|10,00`), e
+o `check()` não o escapa. Os ocultos `f_producoes_d` e `f_orientacoes_d`
+ficam dentro do corpo das tabelas, com os códigos ligados unidos por `|`.
+**Observado.** O sentido de cada valor do financiador (`0000;N;`, a moeda e
+o valor) não foi lido, nem o que o servidor faz com os dois ocultos.
+
+O conector manda `f_producoes_d` e `f_orientacoes_d` como a página os serve
+e refaz os três ocultos das grades assim a partir da página, com as entidades
+como o `innerHTML` as deixa (`&amp;` continua `&amp;`), e os envia junto com
+qualquer outra alteração do projeto; depois do envio, confere que voltaram
+iguais (`src/bridge/production/opaque.ts`). Quando a tabela falta, ou uma
+linha não se lê assim (célula sem o `<span>`, marcação dentro dele), nada é
+enviado. Incluir, tirar ou trocar um financiador, uma produção ou uma
+orientação ligada continua à mão, e com uma dessas mudanças na fila o resto
+do projeto vai à mão junto: o envio levaria de volta as linhas que o Lattes
+tem, e a mudança à mão ficaria para trás com o item conferido.
+
+**Inferido**: que a exportação ponha o órgão de cima em
+`PARTICIPACAO-EM-PROJETO@CODIGO-ORGAO`/`NOME-ORGAO` e a unidade em
+`CODIGO-UNIDADE`/`NOME-UNIDADE`; nenhuma exportação com órgão foi vista. O
+conector confere o código de antes (o da unidade, senão o do órgão) contra
+`f_codorgao` da página antes de enviar, então uma inferência errada vira
+"divergente" e nada vai.
+
+Na lista de projetos real, o link de cada linha é
+`PKG_PROJETO.form?f_tpo_cooperacao=…&f_tpo_acao_inov=…&f_tematica=…&F_sta_inovacao=…&f_cod_tipo=…&f_cod=…&F_SEQ_ATIV=…&F_SEQ_FUNCAO=…&F_SEQ_PROJ=…&F_CODINST=…`,
+com os números em maiúsculas, e o mesmo projeto aparece também na lista com
+`f_sta_inovacao=S`. **Observado.**
+
+### Formação complementar (lido em 20/10/2026)
+
+Num GET da página de edição de um curso de curta duração
+(`PKG_FORMACAO_COMPL.form?f_cod=…&f_seq=6`), sem enviar nada: a lupa da
+instituição chama `sele_inst()`, que abre
+`prc_inst_form?f_cod=…&f_nivel=<f_nivel>`, e a do curso chama `curso()`, que
+abre `prc_curso_form?f_cod=…&f_pgm=FORM&f_nivel=<f_nivel>&f_inst=<valor de
+f_cod_inst ou de f_cod_inst2>`. São as janelas da formação acadêmica. Os
+ocultos vieram assim: `f_cod_inst=V577000000000` (com a letra),
+`f_cod_inst2` vazio, `f_cod_curso` vazio, `f_cod_curso2=90000005` (sem a
+letra), e `f_inst_old` e `f_curso_old` com os nomes; `f_inst` é texto
+desabilitado. **Observado.**
+
+O conector troca instituição e curso com as regras da formação acadêmica
+(`src/bridge/formacao-edit.ts` e `formacao-lookups.ts`): a operação leva o
+código novo, e na hora de gravar faz a busca `PRC_INST_FORM` com o `f_nivel`
+do formulário e `F_STA_OUTRA=N`, fica com o único resultado do código, e pega
+o curso na lista da instituição. A instituição nova sem curso escolhido de
+novo fica à mão, como na formação. **Inferido**: que o `seleciona()` desta
+janela grave como o da formação (o código com a letra, V em `f_cod_inst`, as
+outras em `f_cod_inst2`), e que `PKG_FORMACAO_COMPL.FORM2` grave os ocultos.
+Nada disso foi enviado a um Lattes real.
+
+### Endereço profissional (lido em 20/10/2026)
+
+A instituição do endereço tem outra janela. O formulário dela, `instituicaoForm`,
+posta para `PRC_INST_ATIV` com os ocultos `F_CTR=C`, `F_COD=<código do
+currículo>`, `F_PGM` vazio e `F_MODAL_CV=1`, e o texto em `f_nome`. Um POST
+com `f_nome=Universidade Positivo` devolveu
+`seleciona('V577000000000','Universidade Positivo')`, no formato da busca da
+formação. O `seleciona(vlr, texto)` dessa janela escreve `texto` em `f_inst`
+e `f_inst_old` e grava o código **sem** a letra: com V, `f_cod_inst =
+vlr.substring(1)` e `f_cod_inst2` vazio; com outra letra, o contrário.
+**Observado.**
+
+O órgão sai de `orgao()`, que abre
+`prc_orgao_cargo?f_cod=…&f_cod_inst=<V e f_cod_inst, ou D e f_cod_inst2>`, a
+mesma janela do projeto e das atividades: `atribuir(cod, texto, tipo,
+texto2)` grava `f_orgao` e `f_orgao_old` e o código em `f_codorgao` (tipo 0)
+ou `f_codorgao2`. **Observado** no código da página.
+
+O conector troca a instituição pela busca `PRC_INST_ATIV` (por POST, como a
+página): confere antes que `f_cod_inst` ou `f_cod_inst2` tem o código de
+antes do XML, fica com o único resultado do código novo, manda os ocultos
+como o `seleciona()` os escreveria e, na releitura, confere os ocultos e o
+nome em `f_inst`. O órgão vai pela janela das atividades
+(`prc_orgao_cargo?f_origem=&f_modal_cv=9&…`, a mesma resolução do projeto e
+das atividades, `src/bridge/production/organ.ts`): o código de antes se
+confere pelo oculto ou pelo texto de `f_orgao`, e a releitura confere o texto
+novo em `f_orgao`. Com a instituição trocada, a janela abre na instituição
+nova, com a letra que a busca deu. Se o `seleciona()` limpa o órgão não foi
+visto: com órgão no item, a instituição nova só vai com o órgão escolhido de
+novo. A unidade não tem campo próprio no formulário: com unidade no item, a
+troca de órgão fica à mão. **Inferido**: que a página traga os ocultos da
+instituição preenchidos com o valor gravado, que os do órgão venham vazios
+(como na alteração do projeto), que `PRC_ENDERECO` grave os dois, e que a
+janela pelo endereço das atividades liste os mesmos órgãos que a do
+endereço. Nada disso foi enviado a um Lattes real. O editor ainda não oferece
+a lista de órgãos no endereço, como nas atividades: o órgão só vai quando o
+XML traz o código novo.
+
 ### Área do conhecimento: no próprio menu, sem pedido ao servidor
 
 A tabela de áreas não vem de uma busca. O `PKG_MENU.menu` declara em script
@@ -1434,7 +1900,16 @@ produção. **Observado.**
 
 "Áreas de atuação" (`prc_area_atuacao`, formulário `GN_AREA_ATU`, POST
 `prc_area_atuacao`) usa a mesma grade e serializa duas vezes: `f_area_l`
-com `l`, `c`, `r`, `p` e `f_privacidade` com `priv`, linha a linha. A página
+com `l`, `c`, `r`, `p` e `f_privacidade` com `priv`, linha a linha. Em
+18/10/2026: o `check()` junta, de cada linha de `areaProvider`, os valores de
+`l`, `c`, `r` e `p` que a linha tem, na ordem dela, com "|" (o `r` com a letra
+na frente), e as linhas com "@"; `f_privacidade` leva o `priv` de cada linha
+com "@", e o envio vai com `f_ctr=I`, a lista inteira. As linhas lidas têm
+`l`, `c`, `priv`, `vis` e `editable`, e as da árvore `l`, `n`, `c` e `b`: uma
+área escolhida vai como `nome|código`, e a criada à mão como
+`nome|-1|código do pai`. O limite da página é 6 (`areaNumMaxRegistros`). Uma
+área criada pela pessoa volta da página com código 9999xxxx. Gravado pelo
+conector no Lattes real (uma área a mais e a volta), **observado**. A página
 ainda tem `abrir_area()`, que abriria a janela antiga
 `pkg_area.pp_lista?f_cv_modal=modalCV1&f_origem=AA&f_max=6&f_cod_rh=…`; ela
 existe (GET responde 200, formulário `AREA` com `f_gr`, `f_ar`, `f_sb`,
@@ -1445,55 +1920,116 @@ Consequência para o conector: a área se resolve sem rede, lendo `areaDP` do
 menu que já está na aba (ou guardando uma cópia da tabela no editor), e
 instituição e curso são GETs cujos resultados se leem nos links
 `seleciona(…)` e nas opções da lista. Nenhuma das três buscas precisa de
-POST. A única consulta por POST encontrada é a de patente já cadastrada.
+POST. As consultas por POST encontradas são a de patente já cadastrada e a
+busca de instituição do endereço (`PRC_INST_ATIV`, que o conector faz por
+POST como a página; se ela aceita GET não foi testado).
 
-## 19. Dados gerais pelo conector (LAT-23, 14/10/2026)
+## 19. Dados gerais pelo conector (LAT-23, 14/10/2026; LAT-58, 16/10/2026)
 
-Formação acadêmica, endereço e identificação têm operação escrita em
-`src/bridge/biographic.ts`, testada só contra o Lattes falso dos testes e
-desligada (`BIOGRAPHIC_OPS_ENABLED`). Nada foi enviado a um Lattes real.
-Desligada, a mudança segue à mão e o contrato não confere esses formulários.
+Formação acadêmica, pós-doutorado e livre-docência, endereço, identificação e
+outras informações relevantes têm operação escrita em `src/bridge/biographic.ts`
+(o caminho e o contrato) e em `formacao-edit.ts`, `formacao-lookups.ts` e
+`dados-gerais-edit.ts` (que atributo vai em que campo, e o porquê do que fica
+à mão), testada contra o Lattes simulado e ligada para o teste ao vivo
+(`BIOGRAPHIC_OPS_ENABLED`; o que a LAT-58 acrescentou e uma extensão antiga
+gravaria errado, também `BIOGRAPHIC_FULL_ENABLED`, com a capacidade
+`alterar-dados-gerais-completo`). Nada disso foi enviado a um Lattes real.
 
-O que cada operação grava, e de onde vem cada parte:
-
-| Seção         | Formulário e POST                   | Como o conector acha                                                                                                          | Atributo do XML → campo                                                                                                                                                                                                                                    |
-| ------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Formação      | `GN_FORMACAO2`, `pkg_formacao.FORM` | `pkg_formacao.lista` com `f_tipo=FA` no menu, e na lista o único `pkg_formacao.form` com `f_seq` igual a `SEQUENCIA-FORMACAO` | `ANO-DE-INICIO` → `f_ano_ini`, `ANO-DE-CONCLUSAO` → `f_ano_fim`, `ANO-DE-OBTENCAO-DO-TITULO` → `f_ano_obten`, `STATUS-DO-CURSO` → `F_STATUS` (`N`, `S`, `I`), título do trabalho (dissertação, TCC, monografia, residência) → `f_titulo`                   |
-| Endereço      | `GN_ENDERECO`, `PRC_ENDERECO`       | `prc_endereco` no menu                                                                                                        | `ENDERECO-PROFISSIONAL` nos campos `_i` e `ENDERECO-RESIDENCIAL` nos `_r`: logradouro → `f_rua`, `CEP` → `f_cep`, `BAIRRO` → `f_bairro`, `CIDADE` → `f_munic`, `UF` → `f_estado`, `DDD`, `TELEFONE`, `RAMAL`, `FAX`, `CAIXA-POSTAL`, `E-MAIL`, `HOME-PAGE` |
-| Identificação | `GN_IDENT`, `PRC_IDENT`             | `prc_ident` no menu                                                                                                           | `NOME-COMPLETO` → `f_nome`                                                                                                                                                                                                                                 |
+| Seção              | Formulário e POST                      | Como o conector acha                                                                                                                                                         | Atributo do XML → campo                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------ | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Formação           | `GN_FORMACAO2`, `pkg_formacao.FORM`    | `pkg_formacao.lista` com `f_tipo=FA` (ou `AP`, para pós-doutorado e livre-docência) no menu, e na lista o único `pkg_formacao.form` com `f_seq` igual a `SEQUENCIA-FORMACAO` | anos (`f_ano_ini`, `f_ano_fim`, `f_ano_obten`), `STATUS-DO-CURSO` → `F_STATUS`, título → `f_titulo`, orientador → `f_orient`, coorientador → `f_coorient`, tipo do curso → `f_tpo_doutorado`, `FLAG-BOLSA` → `F_BOLSA`, `CARGA-HORARIA` → `f_carga`, orientadores do sanduíche e da cotutela → `f_orient_dout`, `f_orient_dout_sw`, `f_orient_dout_ct`; instituição, curso e agência pelas buscas da seção 18 |
+| Endereço           | `GN_ENDERECO`, `PRC_ENDERECO`          | `prc_endereco` no menu                                                                                                                                                       | `ENDERECO-PROFISSIONAL` nos campos `_i` e `ENDERECO-RESIDENCIAL` nos `_r`: logradouro → `f_rua`, `CEP` → `f_cep`, `BAIRRO` → `f_bairro`, `CIDADE` → `f_munic`, `UF` → `f_estado`, `PAIS` → `f_pais` (código do país), `DDD`, `TELEFONE`, `RAMAL`, `FAX`, `CAIXA-POSTAL`, `E-MAIL`, `HOME-PAGE`; `ENDERECO@FLAG-DE-PREFERENCIA` → `f_end_corr` (`R`, `I`)                                                      |
+| Identificação      | `GN_IDENT`, `PRC_IDENT`                | `prc_ident` no menu                                                                                                                                                          | `NOME-COMPLETO` → `f_nome`, nome em citações → `f_nome_citacao` e `f_nome_citacao_h`, país de nacionalidade → `f_pais_nacio` (com `f_nacionalidade`), nascimento → `f_pais_nasc`, `f_uf_nasc`, `f_cidade_nasc`, `f_dta_nasc`, `SEXO` → `f_sexo`, identidade → `f_rg_nro`, `f_orgao_rg`, `f_uf_rg`, `f_dta_rg`, passaporte → `f_passaporte`, `RACA-OU-COR` → `fnro_id_raca_cor`                                |
+| Outras informações | `GN_OUTRA_INF_RELEV`, `PRC_OUTRAS_INF` | `prc_outras_inf` no menu                                                                                                                                                     | `OUTRAS-INFORMACOES-RELEVANTES` → `F_TEXTO`                                                                                                                                                                                                                                                                                                                                                                   |
 
 - **Observado**: os nomes dos formulários, dos POSTs, dos links do menu e dos
-  campos (seções 4 e 5 e o reconhecimento de 10/10/2026, seção 4.2), os
-  códigos de `F_STATUS` e o `f_nivel` oculto igual ao `NIVEL` da exportação
-  no mestrado, na graduação e no curso técnico.
-- **Inferido**: a correspondência de cada atributo com cada campo (pelo nome
-  e pelo rótulo), que `f_seq` da formação é `SEQUENCIA-FORMACAO`, que os
-  campos de formação lidos no mestrado profissional existem nos outros
-  níveis, e o tipo "texto" dos campos sem tipo anotado nas seções acima.
+  campos, e o que cada nível da formação mostra, traz oculto ou não tem (censo
+  de 15/10/2026, entradas `formacao-FA-*` e `formacao-AP-*`); os códigos de
+  `F_STATUS`; o `f_nivel` oculto igual ao `NIVEL` da exportação no mestrado,
+  na graduação e no curso técnico; e, pela passada de edição do censo,
+  `f_ano_ini`, `f_ano_fim`, `F_BOLSA`, `f_orient`, `f_titulo` (graduação),
+  `f_inst_old`, `f_curso_old`, `f_nome_citacao`, `f_cidade_nasc`, `f_uf_nasc`,
+  `f_uf_rg`, `f_rg_nro`, `f_orgao_rg`, `f_pais_nacio` ↔
+  `SIGLA-PAIS-NACIONALIDADE`, `f_pais_nasc`, `f_sexo` `M`, `f_pais_r` e
+  `f_end_corr` `R`.
+- **Inferido**: as outras ligações, pelo nome e pelo rótulo do campo. Os
+  comentários do começo de `formacao-edit.ts` e `dados-gerais-edit.ts`
+  listam uma por uma; as que mais pedem o teste acompanhado são as datas em
+  `DD/MM/AAAA`, a cor ou raça pelo rótulo da opção, o `f_nacionalidade` `B`
+  só para o Brasil, os orientadores do sanduíche e da cotutela e o
+  `f_agencia` igual ao `CODIGO-AGENCIA-FINANCIADORA`.
+- **Buscas**: instituição, curso e agência só mudam com o código novo no XML
+  (o editor grava código e nome juntos, `src/ui/live-lists.ts`). Na hora de
+  gravar, depois de conferir o "antes", o conector faz as mesmas buscas da
+  inclusão (`PRC_INST_FORM`, com `F_STA_OUTRA` `N` ou `S`, `prc_curso_form` e
+  `prc_agencia`) e manda os ocultos que a página escreveria (`f_cod_inst` ou
+  `f_cod_inst2`, `f_inst_old`, `f_cod_curso` ou `f_cod_curso2`,
+  `f_curso_old`, `f_agencia`, e os `_dout` do sanduíche); os campos
+  desabilitados não vão. A releitura compara o curso sem o código CAPES.
+  Uma alteração assim não tem "Desfazer" no registro do enviado. A
+  instituição do endereço profissional vai pela busca `PRC_INST_ATIV` da
+  página de endereço (seção 18), e o órgão pela janela de órgãos, atrás da
+  capacidade `buscas-complementar-endereco`; com órgão no item, a instituição
+  nova só vai com o órgão novo.
 - **Travas**: além das de toda alteração (o "antes" de cada campo tem de
   bater, só os campos da operação podem mudar depois do envio), a formação
-  confere o `f_nivel` e, qualquer que seja o campo alterado, a instituição, o
-  curso (os ocultos `f_inst_old` e `f_curso_old`, ligação observada no censo
-  de 15/10/2026) e o ano de início, sem acento, caixa nem espaço nas pontas:
-  o `f_seq` sozinho não identifica o item (seção 16); a identificação confere o
-  `f_nacionalidade` com o `NACIONALIDADE` do XML, porque esse oculto é
-  preenchido pelo JavaScript da página e um GET que o traga vazio mandaria
-  vazio. Sem `B` ou `E` no XML, a mudança de identificação segue à mão. Dois
-  atributos que cairiam no mesmo campo (o logradouro de um endereço no do
-  outro, dois títulos na mesma formação) também mandam a mudança à mão.
-- **Fora**: o que só entra por busca (instituição, curso, agência,
-  orientador), o país e as listas cujos códigos não foram lidos (sexo, raça
-  ou cor, nascimento, documentos), a preferência de correspondência
-  (`f_end_corr`), as grades de contatos e redes sociais
-  (`f_dados_grid`, `f_dados_grid_contatos`) e a lista de pós-doutorado e
-  livre-docência (`f_tipo=AP`).
+  confere o `f_nivel`, o `f_tipo` e, qualquer que seja o campo alterado, a
+  instituição, o curso (os ocultos `f_inst_old` e `f_curso_old`) e o ano de
+  início, sem acento, caixa nem espaço nas pontas: o `f_seq` sozinho não
+  identifica o item (seção 16). Com a instituição trocada, o código de antes
+  tem de ser o do Lattes, e a busca precisa achar exatamente um resultado com
+  o código novo. A identificação confere o `f_nacionalidade` com o
+  `NACIONALIDADE` do XML, porque esse oculto é preenchido pelo JavaScript da
+  página e um GET que o traga vazio mandaria vazio. Sem `B` ou `E` no XML, a
+  mudança de identificação segue à mão. Dois atributos que cairiam no mesmo
+  campo também mandam a mudança à mão.
+- **Fora, com o motivo na tela**: o que o formulário do nível não mostra (o
+  título e o ano de obtenção do pós-doutorado, por exemplo), os nomes em
+  inglês, o órgão, o número do orientador e os dados do Oasisbr da
+  formação; a instituição "outra" (cadastrada fora da busca), que o
+  formulário não tem e o editor mostra só para ler; as do sanduíche e da
+  cotutela, que a exportação traz só pelo código; o CPF e os nomes dos pais
+  (ocultos na página); formato das datas, permissão de divulgação, foto,
+  falecimento, e ORCID; a unidade do endereço profissional, e a instituição
+  nova dele sem o órgão escolhido de novo; o tipo de vínculo e o
+  enquadramento funcional enumerado; os dados da raiz `CURRICULO-VITAE`, que
+  o Lattes gera.
 
-O contrato desses três formulários é parcial: lista os campos que as
-operações gravam e os de controle, menos o ano de obtenção e o título da
-formação, que pelo XSD não existem em todos os níveis (a amostra é a
-primeira formação da lista, de qualquer nível). Os outros aparecem como "campo novo" na
-verificação, que só avisa. O teste acompanhado completa a lista com o que a
-verificação mostrar.
+Desde 18/10/2026 vão também a pessoa com deficiência (`f_pcd_r`, uma caixa
+`f_pcd` por tipo mais o `f_pcd=DUMMY` oculto, `f_priv_pcd`) e as redes
+sociais do endereço. **Observado** no Lattes real: PCD visual privada e uma
+segunda rede (GitHub) entraram e voltaram na releitura da página. O formato
+das duas na exportação ainda não foi visto.
+
+Três formulários montam ocultos em XML no `check()`, e o Lattes recusa o
+envio sem eles com "ORA-19032: Era esperado o identificador de XML":
+
+| Formulário    | Oculto                  | Montado de                                                                              |
+| ------------- | ----------------------- | --------------------------------------------------------------------------------------- |
+| identificação | `f_dados_grid`          | `provider2` (ORCID), pelo `array2xml` da página, com o corte do ORCID                   |
+| endereço      | `f_dados_grid`          | `provider` (redes sociais)                                                              |
+| endereço      | `f_dados_grid_contatos` | `providerContatos` (outras formas de contato)                                           |
+| projeto       | `f_instituicoes`        | `titularInstProvider`: `<root><item><cod>…</cod><tipo_inst>…</tipo_inst></item></root>` |
+
+**Observado** em 18/10/2026. Antes disso nenhuma alteração de identificação
+nem de projeto tinha sido gravada pelo conector, e um envio de endereço com
+as grades vazias poderia apagar as redes.
+
+As páginas também põem valores por script, depois do HTML:
+`$("[name=X]").val("v")` em selects e ocultos e, nos rádios,
+`if ("a" == "b") $("input[name=X][value=V]").attr("checked", "true") else {…}`.
+Lido só do HTML, o formulário traz o padrão: um envio de identificação assim
+mandou as privacidades de nascimento, identidade, passaporte e cor/raça como
+Público e a cor/raça vazia (desfeito na hora, conferido igual byte a byte).
+O conector aplica os dois (`scriptValues`, `scriptRadios` em
+`src/bridge/form.ts`) em toda leitura de formulário. **Observado.**
+
+O contrato da formação é parcial: lista os campos que as operações gravam e
+os de controle, menos o ano de obtenção e o título, que não existem em todos
+os níveis (a amostra é a primeira formação da lista `FA`, de qualquer nível).
+Os outros aparecem como "campo novo" na verificação, que só avisa. O
+endereço, a identificação e as outras informações têm o formulário inteiro,
+como o censo o leu.
 
 ## 20. Censo dos formulários (LAT-55, 15/10/2026)
 
@@ -1635,7 +2171,9 @@ vão em `f_inst_l` com quatro valores da grade `grid_2` por linha, unidos por
 `|` e terminados em `|@`; os valores vêm da janela
 `pp_lista_inst?f_pgm=INSTFINANC`, e o sentido de cada um não foi lido. As
 produções e orientações ligadas vão em `f_producoes_l` e `f_orientacoes_l`, o
-primeiro valor de cada linha seguido de `@`.
+primeiro valor de cada linha seguido de `@`. Na página de alteração, cada
+valor é o `innerHTML` do `<span>` da célula (seção 18, "Órgão e unidade do
+projeto", **observado** em 20/10/2026).
 
 **Programa de computador registrado.** A lista de programas
 (`PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=PC`) abre a janela prévia
@@ -1747,8 +2285,11 @@ ela traz o nome completo (`l`) ou uma das citações (`t`) do `DADOS-GERAIS` do
 currículo; senão, para sem enviar. Que essa linha seja a do dono continua
 **inferido**: é a única que o `check()` aceita, mas o que o Lattes grava com
 ela só se vê numa inclusão, e por isso o registro, o projeto e a atividade
-criados voltam como divergentes, com o pedido de conferir no Lattes os
-inventores, a equipe ou as disciplinas, que o conector não relê. Com as chaves
+criados voltam com o pedido de conferir no Lattes os inventores, a equipe ou
+as disciplinas, que o conector não relê. Desde o freio de escrita (LAT-59)
+voltam conferidos pelos outros campos, com o pedido no registro do enviado:
+como divergentes, parariam a fila e bloqueariam o envio ao CNPq a cada
+inclusão. Com as chaves
 na ordem do `autorDP`, a linha da pessoa vai na grade como "l||t" (`deletable`
 e `editable` ficam de fora da lista de chaves de cada formulário), e no
 projeto, como coordenadora, "l||t|s" (`src/bridge/author-grid.ts`).
@@ -1796,7 +2337,8 @@ de instituição por nome que envia (POST) para `PRC_INST_FORM`, com `f_ctr` e
 `pkg_titular_inst.sele_inst?f_ctr=O` foi recusado pelo próprio censo, que não abre
 endereço com `f_ctr` preenchido (`isSafeGet`). A sugestão de titular
 pessoa vem de `self.parent.titularPessoaDP`, no menu, cuja forma não foi
-lida. **Lacuna.**
+lida. **Lacuna.** O conector o lê com a forma do `autorDP`, o que é
+inferido (seção 17, "Patente: exportação, depositante e histórico").
 
 **Financiador, produção e equipe do projeto (lote 5).**
 `PKG_PROJETO.pp_lista_inst?f_pgm=INSTFINANC` é uma busca por nome que envia

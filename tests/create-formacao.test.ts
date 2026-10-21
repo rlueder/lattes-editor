@@ -293,7 +293,7 @@ describe('incluir a formação no Lattes falso', () => {
       await applyCreateFormacao(op(), fakeFormacao({ tamper: { f_ano_ini: '1999' } }).port),
     ).toMatchObject({
       assigned: { 'SEQUENCIA-FORMACAO': '1' },
-      detail: expect.stringMatching(/gravada diferente: Ano de início/),
+      detail: expect.stringMatching(/outro valor em: Ano de início/),
       status: 'divergente',
     });
     expect(
@@ -303,18 +303,30 @@ describe('incluir a formação no Lattes falso', () => {
     expect(
       await applyCreateFormacao(op(), fakeFormacao({ tamper: { f_cod_curso2: '99999999' } }).port),
     ).toMatchObject({
-      detail: expect.stringMatching(/gravada diferente: f_cod_curso2/),
+      detail: expect.stringMatching(/outro valor em: Curso/),
       status: 'divergente',
     });
     expect(
       await applyCreateFormacao(op(), fakeFormacao({ tamper: { f_nme_agencia: 'Outra' } }).port),
-    ).toMatchObject({ detail: expect.stringMatching(/gravada diferente: f_nme_agencia/) });
+    ).toMatchObject({ detail: expect.stringMatching(/outro valor em: Agência/) });
+    // O curso vai com o texto da opção, com o código CAPES entre parênteses, e
+    // o Lattes guarda só o nome (16/10/2026): confere. Outro nome, não.
+    const course = 'Genética e Biologia Molecular';
+    expect(
+      await applyCreateFormacao(
+        op(),
+        fakeFormacao({ tamper: { f_curso: course, f_curso_old: course } }).port,
+      ),
+    ).toMatchObject({ status: 'conferido' });
+    expect(
+      await applyCreateFormacao(op(), fakeFormacao({ tamper: { f_curso: 'Outro curso' } }).port),
+    ).toMatchObject({ status: 'divergente' });
     // Campo enviado que a releitura não traz fica sem conferir, nunca conferido.
     expect(
       await applyCreateFormacao(op(), fakeFormacao({ unread: ['f_agencia', 'f_curso'] }).port),
     ).toMatchObject({
       assigned: { 'SEQUENCIA-FORMACAO': '1' },
-      detail: expect.stringMatching(/não conferida: o formulário relido não traz .*f_agencia/),
+      detail: expect.stringMatching(/não deu para reler: .*Agência/),
       status: 'divergente',
     });
     expect(await applyCreateFormacao(op(), fakeFormacao({ logonOnPost: true }).port)).toMatchObject(
@@ -403,11 +415,10 @@ describe('releitura de campo desabilitado', () => {
     expect(readBack(saved, { f_curso: 'V1' })).toEqual({ differ: [label('f_curso')], unread: [] });
     const problem = readBackProblem(
       'Criada no Lattes (formação 5)',
-      true,
       readBack(saved, { f_inst: 'UNIVERSIDADE DE EXEMPLO' }),
     );
     expect(problem).toBe(
-      `Criada no Lattes (formação 5), mas gravada diferente: ${label('f_inst')}`,
+      `Criada no Lattes (formação 5), mas o Lattes guardou outro valor em: ${label('f_inst')}. Confira no Lattes`,
     );
   });
 

@@ -295,8 +295,8 @@ describe('incluir evento no Lattes simulado', () => {
     const { ops } = await plan(congresso());
     const [r] = await applyAll(ops, lattes.port);
     // O tipo de quem apresenta não volta na releitura (a página o monta por
-    // script): os outros campos conferem, e o evento fica divergente.
-    expect(r).toMatchObject({ status: 'divergente' });
+    // script): os outros campos conferem, e o tipo fica no aviso.
+    expect(r).toMatchObject({ status: 'conferido' });
     expect(r!.detail).toBe(`${TYPE_UNREAD} (evento ${r!.assigned!['SEQUENCIA-PRODUCAO']})`);
     const novo = find(
       lattes.state.root,

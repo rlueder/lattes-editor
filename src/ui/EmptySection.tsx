@@ -57,9 +57,6 @@ export function EmptySection({ action, onNewItem, onOpenPicker, section }: Props
               </button>
             ))}
           </div>
-          <p className="empty-caption">
-            O item novo vai ao Lattes por &quot;Enviar ao Lattes&quot;.
-          </p>
         </>
       )}
     </div>

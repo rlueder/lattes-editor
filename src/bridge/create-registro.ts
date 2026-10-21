@@ -467,13 +467,16 @@ export async function applyCreateRegistro(op: CreateRegistroOp, port: LattesPort
       const saved = await readPairs(port, created[0]!.path, REGISTRO_FORM);
       const problem = readBackProblem(
         `Criado no Lattes (registro ${seq})`,
-        false,
         readBack(saved, op.set),
       );
       if (problem) return { ...result('divergente', problem), assigned };
-      // A grade de autores volta no script da página, não num campo: sem reler
-      // os inventores, a inclusão não se dá por conferida.
-      return { ...result('divergente', `${INVENTORS_UNREAD} (registro ${seq})`), assigned };
+      // A grade de autores volta no script da página, não num campo, e os
+      // inventores ficam sem reler: o aviso vai no registro do enviado.
+      return {
+        ...result('conferido', `${INVENTORS_UNREAD} (registro ${seq})`),
+        assigned,
+        partial: true,
+      };
     } catch (err) {
       return maybeCreated(
         op.key,

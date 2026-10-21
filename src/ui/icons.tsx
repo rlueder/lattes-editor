@@ -155,6 +155,19 @@ export const ChevronIcon = () => (
   </Icon>
 );
 
+/** Voltar e avançar no cabeçalho do app de desktop. */
+export const BackIcon = () => (
+  <Icon>
+    <path d="m15 18-6-6 6-6" />
+  </Icon>
+);
+
+export const ForwardIcon = () => (
+  <Icon>
+    <path d="m9 18 6-6-6-6" />
+  </Icon>
+);
+
 export const LockIcon = () => (
   <Icon size={13}>
     <rect height="10" rx="2" width="14" x="5" y="11" />
@@ -187,6 +200,13 @@ export const SunIcon = () => (
 export const MoonIcon = () => (
   <Icon size={14}>
     <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" />
+  </Icon>
+);
+
+/** Mais ações: três pontos. */
+export const MoreIcon = () => (
+  <Icon>
+    <path d="M6 12h.01M12 12h.01M18 12h.01" strokeWidth={2.5} />
   </Icon>
 );
 

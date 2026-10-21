@@ -10,22 +10,29 @@ import { type Course, type Institution, MIN_INSTITUTION_QUERY } from '../bridge/
 import { areaPath } from '../forms/area-path.ts';
 import type { KnowledgeArea } from '../model/production.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
+import { useEditor } from './editor-context.ts';
 import { CheckIcon, ChevronIcon } from './icons.tsx';
 import type { LattesLists } from './lattes-lists-context.ts';
 import {
+  agencyAttrs,
   applyAgency,
   applyCourse,
   applyInstitution,
   areaOptions,
+  courseAttrs,
   EMPTY_AREA,
   findAgency,
   findArea,
   findCourse,
-  formationLevel,
+  institutionAttrs,
+  institutionPair,
+  itemNature,
   type LiveKind,
+  livePairs,
   readArea,
   writeArea,
 } from './live-lists.ts';
+import { OrganControl } from './OrganField.tsx';
 import { ComboSelect } from './primitives/ComboSelect.tsx';
 
 /** Valor das opções "como está salvo": escolhê-las não muda nada. */
@@ -71,6 +78,8 @@ export function AreaPicker({ area, areas, onChange, ...common }: AreaPickerProps
 }
 
 interface ControlProps {
+  /** O atributo do campo: a instituição principal ou a do sanduíche e da cotutela. */
+  attr?: string;
   common: Common;
   el: XElement;
   kind: Exclude<LiveKind, 'area-derivada'>;
@@ -80,7 +89,7 @@ interface ControlProps {
 }
 
 /** O controle do campo, sem rótulo: AttributeField põe o rótulo e o resto. */
-export function LiveListControl({ common, el, kind, lists, onChanged }: ControlProps) {
+export function LiveListControl({ attr, common, el, kind, lists, onChanged }: ControlProps) {
   const done = (changed: boolean) => changed && onChanged();
   if (kind === 'area' && lists.areas) {
     return (
@@ -94,7 +103,7 @@ export function LiveListControl({ common, el, kind, lists, onChanged }: ControlP
   }
   if (kind === 'agencia' && lists.agencies) {
     const agencies = lists.agencies;
-    const value = getAttr(el, 'NOME-AGENCIA') ?? '';
+    const value = getAttr(el, agencyAttrs(el).name) ?? '';
     const match = findAgency(agencies, el);
     const saved = !match && value !== '';
     return (
@@ -121,21 +130,26 @@ export function LiveListControl({ common, el, kind, lists, onChanged }: ControlP
   if (kind === 'instituicao') {
     return (
       <InstitutionSearch
+        attr={attr}
         common={common}
         el={el}
-        level={formationLevel(el.name)}
+        level={livePairs(el.name)?.searchLevel}
         search={lists.searchInstitutions}
-        onPick={(inst) => done(applyInstitution(el, inst))}
+        onPick={(inst) => done(applyInstitution(el, inst, attr))}
       />
     );
   }
   if (kind === 'curso') {
     return <CourseControl common={common} el={el} lists={lists} onChanged={onChanged} />;
   }
+  if (kind === 'orgao' || kind === 'unidade') {
+    return <OrganControl common={common} el={el} kind={kind} lists={lists} onChanged={onChanged} />;
+  }
   return null;
 }
 
 interface SearchProps {
+  attr?: string;
   common: Common;
   el: XElement;
   level?: string;
@@ -157,9 +171,10 @@ const SEARCH_DELAY_MS = 400;
  * Lattes: a partir de 3 letras, depois de uma pausa na digitação. Texto que
  * não vira escolha volta ao nome salvo ao sair do campo.
  */
-function InstitutionSearch({ common, el, level, onPick, search }: SearchProps) {
-  const name = getAttr(el, 'NOME-INSTITUICAO') ?? '';
-  const code = getAttr(el, 'CODIGO-INSTITUICAO') ?? '';
+function InstitutionSearch({ attr, common, el, level, onPick, search }: SearchProps) {
+  const attrs = institutionPair(el, attr);
+  const name = getAttr(el, attrs.name) ?? '';
+  const code = getAttr(el, attrs.code) ?? '';
   const current = useMemo<Institution | null>(
     () => (name ? { code: code || SAVED, label: name, name } : null),
     [code, name],
@@ -256,8 +271,10 @@ type CourseState =
  * por item.
  */
 function CourseControl({ common, el, lists, onChanged }: Omit<ControlProps, 'kind'>) {
-  const institution = getAttr(el, 'CODIGO-INSTITUICAO') ?? '';
-  const value = getAttr(el, 'NOME-CURSO') ?? '';
+  // Num tipo com várias naturezas, a lista de cursos é a da natureza do item.
+  const { root } = useEditor();
+  const institution = getAttr(el, institutionAttrs(el).code) ?? '';
+  const value = getAttr(el, courseAttrs(el).name) ?? '';
   const [state, setState] = useState<CourseState>({ kind: 'parado' });
   // Cada leitura leva um número; a resposta de uma leitura que ficou para trás
   // (outra instituição, outro clique, campo fechado) é ignorada, para nunca
@@ -279,7 +296,7 @@ function CourseControl({ common, el, lists, onChanged }: Omit<ControlProps, 'kin
     const n = ++latest.current;
     setState({ kind: 'carregando' });
     lists
-      .loadCourses(el)
+      .loadCourses(el, itemNature(root, el))
       .then((courses) => n === latest.current && setState({ courses, kind: 'pronto' }))
       .catch(
         (err: unknown) =>

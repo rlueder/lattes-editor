@@ -16,6 +16,7 @@ import type { Change } from '../model/changes.ts';
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
 import type { FieldSpec, FormSpec } from './contract.ts';
+import { CREATE_FIELD_LABELS } from './create-labels.ts';
 import {
   encodeLatin1Form,
   type FormControl,
@@ -23,6 +24,7 @@ import {
   pairValue,
   setPairs,
   successfulPairs,
+  withScriptValues,
 } from './form.ts';
 import { decodeHtmlEntities } from './html-text.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
@@ -248,7 +250,7 @@ function readPairs(
   html: string,
   form: string,
 ): { controls: FormControl[]; pairs: Pairs } {
-  const controls = port.readForm(html, form);
+  const controls = withScriptValues(html, port.readForm(html, form));
   if (!controls) {
     throw isLogonPage(html)
       ? new Stop('sessao', 'A sessão do Lattes caiu; entre de novo')
@@ -290,16 +292,18 @@ export async function applyCreateAtuacao(
       return result('erro', 'O formulário não está em modo de inclusão');
     }
 
-    // Busca de instituição, como o seletor do formulário faz (seção 4.3). Os
-    // valores de F_COD e F_NIVEL nesta tela são inferidos.
+    // Busca de instituição, como o sele_inst() do formulário (lido em
+    // 20/10/2026): prc_inst_ativ?f_modal_cv=2&f_pgm=ATIVP, e não a busca da
+    // formação. A janela grava o código sem a letra (seleciona()); com a
+    // letra, o Lattes aceitava o envio e não criava a atuação.
     const search = encodeLatin1Form([
-      ['f_nome', op.institutionName],
       ['F_CTR', 'C'],
       ['F_COD', pairValue(form.pairs, 'f_cod') ?? ''],
-      ['F_NIVEL', ''],
-      ['F_STA_OUTRA', 'N'],
+      ['F_PGM', 'ATIVP'],
+      ['F_MODAL_CV', '2'],
+      ['f_nome', op.institutionName],
     ]);
-    const found = institutionResults(await port.post('PRC_INST_FORM', search)).filter((r) =>
+    const found = institutionResults(await port.post('PRC_INST_ATIV', search)).filter((r) =>
       sameCode(r.code, op.institutionCode),
     );
     if (found.length !== 1) {
@@ -309,10 +313,12 @@ export async function applyCreateAtuacao(
       );
     }
     const { code, name } = found[0]!;
-    // A busca preenche f_cod_inst quando o código começa com V, f_cod_inst2 nos outros casos.
+    // O seleciona() da janela: V em f_cod_inst, as outras letras em
+    // f_cod_inst2, os dois sem a letra.
+    const bare = code.slice(1);
     const institution: FieldValues = code.startsWith('V')
-      ? { f_cod_inst: code, f_inst: name, f_inst_old: name }
-      : { f_cod_inst2: code, f_inst: name, f_inst_old: name };
+      ? { f_cod_inst: bare, f_inst: name, f_inst_old: name }
+      : { f_cod_inst2: bare, f_inst: name, f_inst_old: name };
 
     const set = { ...op.set, ...institution };
     for (const [field, value] of Object.entries(set)) {
@@ -361,7 +367,7 @@ export async function applyCreateAtuacao(
         return {
           ...result(
             'divergente',
-            `Criada no Lattes (atuação ${seqAtiv}), mas gravada diferente: ${wrong.join(', ')}`,
+            `Criada no Lattes (atuação ${seqAtiv}), mas o Lattes guardou outro valor em: ${wrong.map((f) => CREATE_FIELD_LABELS[f] ?? f).join(', ')}. Confira no Lattes`,
           ),
           assigned,
         };

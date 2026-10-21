@@ -356,8 +356,8 @@ describe('Lattes simulado: o conector de ponta a ponta', () => {
     );
     if ('reason' in projetoNovo) throw new Error(projetoNovo.reason);
     const results = await applyAll([...plan.ops, projetoNovo], lattes.port);
-    // A formação confere; o projeto fica divergente porque a equipe não é relida.
-    expect(results.map((r) => r.status)).toEqual(['conferido', 'divergente']);
+    // Os dois conferem; a equipe do projeto não é relida e fica no aviso.
+    expect(results.map((r) => r.status)).toEqual(['conferido', 'conferido']);
     expect(results[1]!.detail).toBe(TEAM_UNREAD);
     expect(results.map((r) => r.assigned)).toEqual(
       expect.arrayContaining([{ 'SEQUENCIA-FORMACAO': '5' }, { 'SEQUENCIA-PROJETO': '2' }]),
@@ -432,7 +432,9 @@ describe('Lattes simulado: o conector de ponta a ponta', () => {
       assigned: { 'SEQUENCIA-FORMACAO': '5' },
       status: 'divergente',
     });
-    expect(r!.detail).toMatch(/^Criada no Lattes \(formação 5\), mas gravada diferente: /);
+    expect(r!.detail).toMatch(
+      /^Criada no Lattes \(formação 5\), mas o Lattes guardou outro valor em: /,
+    );
     expect(r!.detail).toContain(CREATE_FIELD_LABELS.f_nme_agencia ?? 'f_nme_agencia');
   });
 

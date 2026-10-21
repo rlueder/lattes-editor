@@ -1,8 +1,12 @@
+import { readFileSync } from 'node:fs';
+
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { applyOp } from '../src/bridge/apply.ts';
+import { LOGON_REDIRECT } from '../scripts/lattes-simulado/html.ts';
+import { applyOp, BUILD_GATES } from '../src/bridge/apply.ts';
 import {
   BIOGRAPHIC_OPS_ENABLED,
+  BIOGRAPHIC_SPECS,
   biographicContract,
   type BiographicOp,
   biographicSample,
@@ -57,7 +61,7 @@ function plan(edit: (root: XElement) => void, enabled = true, xml = XML) {
   const working = parseXml(xml).root;
   edit(working);
   const entries = diffDocuments(original, working).map((change) => ({ change, itemTitle: 'X' }));
-  return planChanges(entries, working, { biographicOps: enabled });
+  return planChanges(entries, working, { biographicFull: enabled, biographicOps: enabled });
 }
 
 function onlyOp(edit: (root: XElement) => void, xml = XML): BiographicOp {
@@ -73,6 +77,9 @@ const editMestrado = (attrs: Record<string, string>) => (root: XElement) => {
 };
 
 // ---------------------------------------------------------------- planejar
+
+// As buscas do endereço estão desligadas na montagem (edit-lists.ts); os testes as ligam.
+const LOOKUPS_ON = { ...BUILD_GATES, complEnderecoLookups: true };
 
 describe('dados gerais: chave desligada', () => {
   it('ligada na montagem, entra no contrato; desligada, manda tudo à mão', () => {
@@ -163,10 +170,10 @@ describe('dados gerais: formação acadêmica', () => {
   it('recusa o que não sabe fazer, com o motivo', () => {
     const reasons = (edit: (root: XElement) => void) => plan(edit).unsupported.map((u) => u.reason);
     expect(reasons(editMestrado({ 'NOME-INSTITUICAO': 'Outra' }))).toEqual([
-      expect.stringMatching(/^Campos não suportados ainda: /),
+      expect.stringMatching(/^A instituição só muda pela busca do Lattes/),
     ]);
     expect(reasons(editMestrado({ 'STATUS-DO-CURSO': 'TRANCADO' }))).toEqual([
-      'Situação do curso não mapeada: TRANCADO',
+      expect.stringMatching(/^Valor que o formulário de mestrado do Lattes não tem: /),
     ]);
     expect(
       reasons((root) => {
@@ -174,11 +181,17 @@ describe('dados gerais: formação acadêmica', () => {
         setAttr(el, 'NIVEL', '');
         setAttr(el, 'ANO-DE-CONCLUSAO', '2007');
       }),
-    ).toEqual([expect.stringMatching(/sem número de sequência ou nível/)]);
-    // Pós-doutorado fica na outra lista (f_tipo=AP), que não foi lida.
-    expect(
-      reasons((root) => setAttr(find(root, 'POS-DOUTORADO'), 'ANO-DE-CONCLUSAO', '2012')),
-    ).toEqual(['Formulário não suportado ainda']);
+    ).toEqual([expect.stringMatching(/^O nível é o tipo da formação no Lattes/)]);
+    // Pós-doutorado: a outra lista (f_tipo=AP), com o nível do formulário.
+    const pos = plan((root) => setAttr(find(root, 'POS-DOUTORADO'), 'ANO-DE-CONCLUSAO', '2012'));
+    expect(pos.unsupported).toEqual([]);
+    expect(pos.ops[0]).toMatchObject({
+      expect: { f_ano_fim: '', f_nivel: '5', f_tipo: 'AP' },
+      kind: 'formacao',
+      list: 'AP',
+      seq: '9',
+      set: { f_ano_fim: '2012' },
+    });
   });
 });
 
@@ -226,18 +239,25 @@ describe('dados gerais: endereço e identificação', () => {
     expect(titles.ops).toEqual([]);
   });
 
-  it('país, instituição e preferência de endereço seguem à mão', () => {
-    const reasons = plan((root) => {
+  it('país e preferência de endereço vão; a instituição do profissional fica à mão', () => {
+    const planned = plan((root) => {
       setAttr(find(root, 'ENDERECO-RESIDENCIAL'), 'PAIS', 'Portugal');
       setAttr(find(root, 'ENDERECO'), 'FLAG-DE-PREFERENCIA', 'ENDERECO_RESIDENCIAL');
-    }).unsupported.map((u) => u.reason);
-    expect(reasons.sort()).toEqual([
-      expect.stringMatching(/^Campos não suportados ainda: /),
-      'Formulário não suportado ainda',
-    ]);
+    });
+    expect(planned.unsupported).toEqual([]);
+    expect(planned.ops.map((o) => [o.set, o.expect])).toEqual(
+      expect.arrayContaining([
+        [{ f_pais_r: 'POR' }, { f_pais_r: 'BRA' }],
+        [{ f_end_corr: 'R' }, { f_end_corr: 'I' }],
+      ]),
+    );
+    const reasons = plan((root) =>
+      setAttr(find(root, 'ENDERECO-PROFISSIONAL'), 'NOME-INSTITUICAO-EMPRESA', 'Outra'),
+    ).unsupported.map((u) => u.reason);
+    expect(reasons).toEqual([expect.stringMatching(/^A instituição só muda pela busca do Lattes/)]);
   });
 
-  it('identificação leva só o nome, conferindo a nacionalidade', () => {
+  it('identificação leva o nome e o sexo, conferindo a nacionalidade', () => {
     const op = onlyOp((root) => setAttr(find(root, 'DADOS-GERAIS'), 'NOME-COMPLETO', 'Outro Nome'));
     expect(op).toMatchObject({
       expect: { f_nacionalidade: 'B', f_nome: 'Pessoa de Teste' },
@@ -255,9 +275,12 @@ describe('dados gerais: endereço e identificação', () => {
         ).unsupported.map((u) => u.reason),
       ).toEqual(['Nacionalidade sem código B ou E no XML: não dá para conferir']);
     }
-    expect(
-      plan((root) => setAttr(find(root, 'DADOS-GERAIS'), 'SEXO', 'FEMININO')).unsupported,
-    ).toEqual([expect.objectContaining({ reason: expect.stringMatching(/não suportados ainda/) })]);
+    expect(onlyOp((root) => setAttr(find(root, 'DADOS-GERAIS'), 'SEXO', 'FEMININO'))).toMatchObject(
+      {
+        expect: { f_sexo: 'M' },
+        set: { f_sexo: 'F' },
+      },
+    );
   });
 
   it('só planeja alteração de um elemento que ainda existe', () => {
@@ -432,13 +455,256 @@ describe('dados gerais no Lattes simulado', () => {
     });
     expect(await applyOp(op, side.port)).toMatchObject({
       detail: 'Outros campos mudaram no Lattes: Logradouro (profissional)',
-      status: 'erro',
+      status: 'divergente',
     });
     const noMenu = { ...side.port, menuHtml: () => '<p>menu</p>' };
     expect(await applyOp(op, noMenu)).toMatchObject({
       detail: 'Endereço não encontrado no menu do Lattes',
       status: 'erro',
     });
+  });
+
+  const addressPlan = (edit: (root: XElement) => void, xml = XML, lookups = true) => {
+    const original = parseXml(xml).root;
+    const working = parseXml(xml).root;
+    edit(working);
+    const entries = diffDocuments(original, working).map((change) => ({ change, itemTitle: 'X' }));
+    return planChanges(entries, working, {
+      biographicFull: true,
+      biographicOps: true,
+      complEnderecoLookups: lookups,
+    });
+  };
+  const newInstitution = (code: string, name: string) => (root: XElement) => {
+    const el = find(root, 'ENDERECO-PROFISSIONAL');
+    setAttr(el, 'CODIGO-INSTITUICAO-EMPRESA', code);
+    setAttr(el, 'NOME-INSTITUICAO-EMPRESA', name);
+  };
+  const withOrgan = XML.replace(
+    'NOME-INSTITUICAO-EMPRESA="Universidade"',
+    'NOME-INSTITUICAO-EMPRESA="Universidade" CODIGO-ORGAO="000001000008" NOME-ORGAO="Instituto de Biociências"',
+  );
+
+  it('endereço: a instituição nova pela busca da página de endereço', async () => {
+    const lattes = await lattesFor();
+    const planned = addressPlan(newInstitution('000000000002', 'Universidade de São Paulo'));
+    expect(planned.unsupported).toEqual([]);
+    const op = planned.ops[0] as BiographicOp;
+    expect(op).toMatchObject({
+      institution: { before: '', code: '000000000002', name: 'Universidade de São Paulo' },
+      kind: 'endereco',
+      set: {},
+    });
+    expect(opRows(op).map((r) => [r.before, r.after])).toEqual([
+      ['Universidade', 'Universidade de São Paulo'],
+    ]);
+    expect(undoOp({ ...sentEntry(op, '1', 1000), id: 3 })).toBeUndefined();
+    expect(await applyOp(op, lattes.port, LOOKUPS_ON)).toMatchObject({ status: 'conferido' });
+    // A busca vai por POST, com os ocultos da janela do endereço.
+    const search = postsOf(lattes).find((p) => p.proc === 'PRC_INST_ATIV')!;
+    expect(search.pairs).toEqual([
+      ['F_CTR', 'C'],
+      ['F_COD', expect.any(String)],
+      ['F_PGM', ''],
+      ['F_MODAL_CV', '1'],
+      ['f_nome', 'Universidade de São Paulo'],
+    ]);
+    const sent = postsOf(lattes).find((p) => p.proc === 'PRC_ENDERECO')!.fields;
+    // O seleciona() dessa janela tira a letra do código.
+    expect(sent).toMatchObject({
+      f_cod_inst: '000000000002',
+      f_cod_inst2: '',
+      f_inst_old: 'Universidade de São Paulo',
+    });
+    expect(sent).not.toHaveProperty('f_inst');
+    const el = inState(lattes, 'ENDERECO-PROFISSIONAL');
+    expect(getAttr(el, 'CODIGO-INSTITUICAO-EMPRESA')).toBe('000000000002');
+    expect(getAttr(el, 'NOME-INSTITUICAO-EMPRESA')).toBe('Universidade de São Paulo');
+  });
+
+  it('endereço: instituição de letra que não é V vai em f_cod_inst2', async () => {
+    const lattes = await lattesFor();
+    const op = addressPlan(
+      newInstitution('000000000004', 'Empresa Brasileira de Pesquisa Agropecuária'),
+    ).ops[0]!;
+    expect(await applyOp(op, lattes.port, LOOKUPS_ON)).toMatchObject({ status: 'conferido' });
+    const sent = postsOf(lattes).find((p) => p.proc === 'PRC_ENDERECO')!.fields;
+    expect(sent).toMatchObject({ f_cod_inst: '', f_cod_inst2: '000000000004' });
+  });
+
+  it('endereço: o Lattes com outra instituição, ou a busca sem ela, nada é enviado', async () => {
+    const op = addressPlan(newInstitution('000000000002', 'Universidade de São Paulo')).ops[0]!;
+    const other = await lattesFor();
+    setAttr(inState(other, 'ENDERECO-PROFISSIONAL'), 'CODIGO-INSTITUICAO-EMPRESA', '000000000001');
+    expect(await applyOp(op, other.port, LOOKUPS_ON)).toMatchObject({
+      detail: 'O Lattes não está como o editor espera: Instituição',
+      status: 'divergente',
+    });
+    expect(posts(other)).toEqual([]);
+    const missing = addressPlan(newInstitution('000000000099', 'Universidade Inexistente')).ops[0]!;
+    const lattes = await lattesFor();
+    expect(await applyOp(missing, lattes.port, LOOKUPS_ON)).toMatchObject({
+      detail: 'Instituição não encontrada na busca do Lattes (0 resultados com o código)',
+      status: 'erro',
+    });
+    expect(posts(lattes)).toEqual(['PRC_INST_ATIV']);
+    const logon = await lattesFor({
+      intercept: (req, _state, next) =>
+        req.proc.toLowerCase() === 'prc_inst_ativ' ? { html: LOGON_REDIRECT } : next(),
+    });
+    expect(await applyOp(op, logon.port, LOOKUPS_ON)).toMatchObject({ status: 'sessao' });
+  });
+
+  it('endereço: o nome que a página não mostra depois de gravar é acusado', async () => {
+    const lattes = await lattesFor({
+      intercept: faults.afterPost((req, state) => {
+        if (req.proc.toLowerCase() !== 'prc_endereco') return;
+        setAttr(
+          findIn(state.root, (el) => el.name === 'ENDERECO-PROFISSIONAL')!,
+          'NOME-INSTITUICAO-EMPRESA',
+          'Universidade',
+        );
+      }),
+    });
+    const op = addressPlan(newInstitution('000000000002', 'Universidade de São Paulo')).ops[0]!;
+    const r = await applyOp(op, lattes.port, LOOKUPS_ON);
+    expect(r.status).toBe('divergente');
+    expect(r.detail).toMatch(/^O Lattes não gravou/);
+  });
+
+  it('endereço: com órgão no item, ou sem a capacidade das buscas, fica à mão', async () => {
+    const reasons = (edit: (root: XElement) => void, xml = XML, lookups = true) =>
+      addressPlan(edit, xml, lookups).unsupported.map((u) => u.reason);
+    expect(reasons(newInstitution('000000000002', 'Universidade de São Paulo'), withOrgan)).toEqual(
+      [expect.stringMatching(/^Com órgão no endereço profissional/)],
+    );
+    expect(
+      reasons(
+        (root) => setAttr(find(root, 'ENDERECO-PROFISSIONAL'), 'NOME-ORGAO', 'Outro'),
+        withOrgan,
+      ),
+    ).toEqual(['Órgão: escolha pela lista do Lattes, que grava o código junto']);
+    expect(
+      reasons(newInstitution('000000000002', 'Universidade de São Paulo'), XML, false),
+    ).toEqual(['Instituição, curso e órgão pelas buscas do Lattes: desligado nesta montagem']);
+    expect(
+      reasons(
+        (root) => setAttr(find(root, 'ENDERECO-PROFISSIONAL'), 'CODIGO-INSTITUICAO-EMPRESA', ''),
+        XML.replace(
+          'NOME-INSTITUICAO-EMPRESA=',
+          'CODIGO-INSTITUICAO-EMPRESA="000000000001" NOME-INSTITUICAO-EMPRESA=',
+        ),
+      ),
+    ).toEqual(['Instituição sem código do Lattes: escolha pela busca de instituições']);
+    // A extensão sem a capacidade recusa sem enviar.
+    const lattes = await lattesFor();
+    const op = addressPlan(newInstitution('000000000002', 'Universidade de São Paulo')).ops[0]!;
+    expect(await applyOp(op, lattes.port, { editEvento: true, lists: new Set() })).toMatchObject({
+      status: 'erro',
+    });
+    expect(posts(lattes)).toEqual([]);
+  });
+
+  const ufrgs = XML.replace(
+    'NOME-INSTITUICAO-EMPRESA="Universidade"',
+    'CODIGO-INSTITUICAO-EMPRESA="000000000001" NOME-INSTITUICAO-EMPRESA="Universidade Federal do Rio Grande do Sul" CODIGO-ORGAO="000001000008" NOME-ORGAO="Instituto de Biociências" CODIGO-UNIDADE="" NOME-UNIDADE=""',
+  );
+  const lattesWith = async (xml: string) => {
+    await open?.close();
+    open = await withLattesSimulado({
+      xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${xml}`),
+    });
+    return open;
+  };
+  const newOrgan = (code: string, name: string) => (root: XElement) => {
+    const el = find(root, 'ENDERECO-PROFISSIONAL');
+    setAttr(el, 'CODIGO-ORGAO', code);
+    setAttr(el, 'NOME-ORGAO', name);
+  };
+
+  it('endereço: o órgão novo pela janela de órgãos da instituição', async () => {
+    const lattes = await lattesWith(ufrgs);
+    const planned = addressPlan(newOrgan('000002000004', 'Instituto de Informática'), ufrgs);
+    expect(planned.unsupported).toEqual([]);
+    const op = planned.ops[0] as BiographicOp;
+    expect(op).toMatchObject({
+      kind: 'endereco',
+      organ: {
+        before: '000001000008',
+        beforeText: 'Instituto de Biociências',
+        code: '000002000004',
+      },
+    });
+    expect(await applyOp(op, lattes.port, LOOKUPS_ON)).toMatchObject({ status: 'conferido' });
+    // A janela com a letra da instituição, como o orgao() da página.
+    expect(lattes.state.log.map((l) => l.path)).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/^prc_orgao_cargo\?.*f_cod_inst=V000000000001/),
+      ]),
+    );
+    const sent = postsOf(lattes).find((p) => p.proc === 'PRC_ENDERECO')!.fields;
+    expect(sent).toMatchObject({
+      f_codorgao: '000002000004',
+      f_codorgao2: '',
+      f_orgao_old: 'Instituto de Informática',
+    });
+    expect(sent).not.toHaveProperty('f_orgao');
+    const el = inState(lattes, 'ENDERECO-PROFISSIONAL');
+    expect(getAttr(el, 'CODIGO-ORGAO')).toBe('000002000004');
+    expect(getAttr(el, 'NOME-ORGAO')).toBe('Instituto de Informática');
+  });
+
+  it('endereço: instituição nova com o órgão dela, na janela da instituição nova', async () => {
+    const usp = ufrgs
+      .replace(
+        'CODIGO-INSTITUICAO-EMPRESA="000000000001"',
+        'CODIGO-INSTITUICAO-EMPRESA="000000000002"',
+      )
+      .replace('Universidade Federal do Rio Grande do Sul', 'Universidade de São Paulo')
+      .replace(
+        'CODIGO-ORGAO="000001000008" NOME-ORGAO="Instituto de Biociências"',
+        'CODIGO-ORGAO="000009000001" NOME-ORGAO="Órgão de outra"',
+      );
+    const lattes = await lattesWith(usp);
+    const op = addressPlan((root) => {
+      newInstitution('000000000001', 'Universidade Federal do Rio Grande do Sul')(root);
+      newOrgan('000002000004', 'Instituto de Informática')(root);
+    }, usp).ops[0]!;
+    expect(op).toMatchObject({
+      institution: { code: '000000000001' },
+      organ: { code: '000002000004' },
+    });
+    expect(await applyOp(op, lattes.port, LOOKUPS_ON)).toMatchObject({ status: 'conferido' });
+    const el = inState(lattes, 'ENDERECO-PROFISSIONAL');
+    expect(getAttr(el, 'CODIGO-INSTITUICAO-EMPRESA')).toBe('000000000001');
+    expect(getAttr(el, 'CODIGO-ORGAO')).toBe('000002000004');
+  });
+
+  it('endereço: órgão que não está na janela, ou outro no Lattes, nada é enviado', async () => {
+    const missing = addressPlan(newOrgan('000099000000', 'Inexistente'), ufrgs).ops[0]!;
+    const lattes = await lattesWith(ufrgs);
+    expect(await applyOp(missing, lattes.port, LOOKUPS_ON)).toMatchObject({
+      detail: expect.stringMatching(/^Órgão não encontrado na janela de órgãos/),
+      status: 'erro',
+    });
+    const op = addressPlan(newOrgan('000002000004', 'Instituto de Informática'), ufrgs).ops[0]!;
+    const other = await lattesWith(ufrgs);
+    setAttr(inState(other, 'ENDERECO-PROFISSIONAL'), 'NOME-ORGAO', 'Outro órgão');
+    expect(await applyOp(op, other.port, LOOKUPS_ON)).toMatchObject({
+      detail: 'O Lattes não está como o editor espera: Órgão/Unidade',
+      status: 'divergente',
+    });
+    expect(posts(other)).toEqual([]);
+    // O órgão não fica vazio, nem troca com unidade no item.
+    const reasons = (edit: (root: XElement) => void, xml = ufrgs) =>
+      addressPlan(edit, xml).unsupported.map((u) => u.reason);
+    expect(reasons(newOrgan('', ''))).toEqual([expect.stringMatching(/não fica vazio/)]);
+    expect(
+      reasons(
+        newOrgan('000002000004', 'Instituto de Informática'),
+        ufrgs.replace('CODIGO-UNIDADE=""', 'CODIGO-UNIDADE="000001001004"'),
+      ),
+    ).toEqual([expect.stringMatching(/^Com unidade no endereço profissional/)]);
   });
 
   it('endereço: o limite do campo vale antes de enviar', async () => {
@@ -463,7 +729,7 @@ describe('dados gerais no Lattes simulado', () => {
     const empty = await lattesFor();
     setAttr(inState(empty, 'DADOS-GERAIS'), 'NACIONALIDADE', '');
     expect(await applyOp(op, empty.port)).toMatchObject({
-      detail: expect.stringMatching(/f_nacionalidade/),
+      detail: expect.stringMatching(/Nacionalidade/),
       status: 'divergente',
     });
     expect(posts(empty)).toEqual([]);
@@ -479,6 +745,12 @@ const contractOn = (): Contract => {
     menu: [...LATTES_CONTRACT.menu, ...extra.menu],
   };
 };
+
+interface CensusForm {
+  fields: { maxLength?: number; name: string; type: string }[];
+  hidden: string[];
+  name: string;
+}
 
 describe('dados gerais no contrato', () => {
   it('com a chave ligada, confere os três formulários só lendo', async () => {
@@ -496,6 +768,30 @@ describe('dados gerais no contrato', () => {
     expect(report.menu.every((m) => m.found)).toBe(true);
     expect(report.menu.map((m) => m.proc)).toEqual(contractOn().menu);
     expect(postsOf(lattes)).toEqual([]);
+  });
+
+  it.each([
+    ['endereco', 'GN_ENDERECO'],
+    ['identificacao', 'GN_IDENT'],
+  ] as const)('%s confere todos os campos que o censo leu no Lattes', (kind, name) => {
+    // Campo do formulário fora da especificação aparece no painel como
+    // "campo novo" toda vez que a verificação roda.
+    const census = JSON.parse(
+      readFileSync('docs/lattes-formularios/censo-2026-10-15.json', 'utf8'),
+    ) as { entries: { page?: { forms?: CensusForm[] } }[] };
+    const form = census.entries.flatMap((e) => e.page?.forms ?? []).find((f) => f.name === name)!;
+    const observed = [...new Set([...form.fields.map((f) => f.name), ...form.hidden])].sort();
+    const spec = BIOGRAPHIC_SPECS[kind].fields;
+    expect(Object.keys(spec).sort()).toEqual(observed);
+    for (const field of form.fields) {
+      // Nome que aparece também como oculto (f_pcd): o censo não diz qual vem
+      // primeiro, e no Lattes real é o oculto (verificação de 16/10/2026).
+      const type = form.hidden.includes(field.name) ? 'hidden' : field.type;
+      expect(spec[field.name], field.name).toMatchObject({
+        type,
+        ...(field.maxLength ? { maxLength: field.maxLength } : {}),
+      });
+    }
   });
 
   it('aponta modo errado, formação sem exemplar e link sumido', async () => {
