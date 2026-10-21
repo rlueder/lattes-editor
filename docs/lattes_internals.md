@@ -1481,10 +1481,22 @@ de uma atividade de ensino, a `providerDetAtiv` são as disciplinas (`{l, c}`,
 o `c` a `SEQUENCIA-ESPECIFICACAO` delas). O mês de fim trocado pelo conector,
 com a grade mandada como veio, voltou conferido e com as duas disciplinas; o
 Lattes as renumerou pela posição na grade (a que era `c` 2 virou 1), como o
-Salvar da página faria. Por isso a pesquisa e desenvolvimento, cuja grade são
-as linhas de pesquisa, com objetivo e palavras-chave ligados a cada uma,
-continua à mão até ser vista numa atividade de teste: a renumeração poderia
-descolar os detalhes da linha. O treinamento ministrado também espera.
+Salvar da página faria.
+
+**Pesquisa e desenvolvimento e treinamento ministrado (lidos e gravados em
+21/10/2026, na atuação da Campanha Nacional de Escolas da Comunidade).** Os
+dois têm o mesmo formulário `GN_ATIV_CARGO`, com órgão ou unidade pela janela
+de órgãos da atividade. Na pesquisa e desenvolvimento, a `providerDetAtiv` são
+as linhas de pesquisa (`{l, c}`), e o `c` é o `f_seq_linha` da linha no
+formulário dela (`PKG_LINHAPESQ.FORM`, `GN_LINHA`, que exige o campo Ativa);
+no treinamento, os treinamentos (`{l, c}`). Numa atividade de teste de cada
+tipo, com uma linha e um treinamento, o mês de fim e o órgão trocados pelo
+conector, com a grade mandada como veio, voltaram conferidos, e a linha de
+pesquisa ficou com o título, o objetivo e o `f_seq_linha` de antes.
+**Observado** com uma linha só. Com várias linhas e um `c` fora da posição, a
+renumeração do Lattes poderia descolar o objetivo de uma linha; o conector
+manda a grade como o Salvar da própria página mandaria, então não é pior que
+salvar no Lattes, mas isso não foi visto.
 
 **O código da instituição no link.** É o do XML com uma letra na frente (`D`
 ou `V`), e o do XML pode começar por letra também: `K4WU00000006` vira

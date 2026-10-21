@@ -69,9 +69,9 @@ export const ACTIVITY_TYPES: Record<
     description: 'ATIVIDADE-REALIZADA',
     natur: '9',
   },
-  'PESQUISA-E-DESENVOLVIMENTO': { natur: '2' },
+  'PESQUISA-E-DESENVOLVIMENTO': { gridRead: true, natur: '2' },
   'SERVICO-TECNICO-ESPECIALIZADO': { description: 'SERVICO-REALIZADO', natur: '6' },
-  'TREINAMENTO-MINISTRADO': { natur: '8' },
+  'TREINAMENTO-MINISTRADO': { gridRead: true, natur: '8' },
 };
 
 export interface AtividadeOp extends OpBase {
@@ -134,10 +134,13 @@ export function planAtividade(
   const seqAtiv = atuacao && getAttr(atuacao, 'SEQUENCIA-ATIVIDADE');
   const seqFuncao = el && getAttr(el, 'SEQUENCIA-FUNCAO-ATIVIDADE');
   if (change.kind !== 'alterado') return undefined;
-  // Pesquisa e desenvolvimento e treinamento não têm a descrição numa linha
-  // só, e a grade providerDetAtiv deles não foi lida na edição: o envio a
-  // reescreveria sem saber o que ela guarda. A do ensino são as disciplinas
-  // ({l, c}, lidas em 20/10/2026 numa atividade de teste), que vão como vieram.
+  // As atividades sem descrição numa linha só guardam a grade providerDetAtiv
+  // em elementos filhos, e o envio a manda como a página a trouxe, só depois
+  // de lida na edição: as disciplinas do ensino ({l, c}, 20/10/2026) e as
+  // linhas de pesquisa da pesquisa e desenvolvimento ({l, c}, o c é o
+  // f_seq_linha da linha) e os treinamentos ministrados ({l, c}), os dois
+  // lidos e gravados em 21/10/2026. Com a grade como veio, a linha de
+  // pesquisa de teste ficou com o objetivo no Lattes real (uma linha só).
   if (!type.description && !type.gridRead) {
     return {
       reason:

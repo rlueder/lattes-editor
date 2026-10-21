@@ -24,7 +24,12 @@ outras 127 são o alvo deste plano.
   identificação), tipo do vínculo (desabilitado no formulário), a instituição
   da atuação, o órgão do ensino e o nome do idioma (segue o código). Os
   motivos de valor (tipo de participação, tipo de graduação) ficaram: ali
-  outros valores vão. 2605 de 2731 (95%).
+  outros valores vão. 2619 de 2731 (96%).
+- 21/10/2026, à noite: período e órgão da pesquisa e desenvolvimento e do
+  treinamento ministrado pelo conector, gravados no Lattes real com uma
+  atividade de teste de cada tipo e removidos pelo registro. A grade (linhas
+  de pesquisa, treinamentos) vai como a página a trouxe, e a linha de
+  pesquisa de teste ficou com o objetivo. 2619 de 2738 campos (96%), eram 2605.
 - 21/10/2026, à noite: a própria citação nos itens segue a identificação, e
   o Lattes não guarda outra item a item (Fase 5). Passou a campo que o
   formulário não tem: 2605 de 2738 (95%).
