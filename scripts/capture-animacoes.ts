@@ -148,10 +148,14 @@ const SCENES: Scene[] = [
   {
     // Saúde do currículo: uma contagem do que falta abre a seção filtrada.
     name: 'panorama-health',
-    run: async ({ click, evaluate, hold }) => {
+    run: async ({ evaluate, hold }) => {
       await evaluate(`location.hash = 'panorama/saude-do-curriculo'; await settle()`);
       await hold(10);
-      await click('.pano-check');
+      // Uma linha com itens faltando: a de palavras-chave (6 de 10 no demo).
+      await evaluate(`await wait('.pano-check');
+        [...document.querySelectorAll('.pano-check')]
+          .find((line) => line.textContent.includes('palavras-chave'))
+          .click()`);
       await hold(16);
     },
   },
