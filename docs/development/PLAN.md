@@ -18,6 +18,13 @@ outras 127 são o alvo deste plano.
 
 ## Estado atual
 
+- 21/10/2026, à noite: a medida parte de um valor que o formulário tem. O
+  exemplo traz valores que o Lattes não oferece (WEB no meio de divulgação, a
+  carga horária como texto), e nenhuma troca a partir deles vai; o script
+  tentava só outras opções de destino. Agora, quando todas falham pelo valor,
+  o item parte de outra opção da lista (ou de 40 horas) e o campo conta se
+  alguma troca vai, como já se fazia com os 138 valores fora da lista do
+  Lattes. Um item real com WEB continua indo à mão. 2605 para 2631 de 2738.
 - 21/10/2026, à noite: a própria citação nos itens segue a identificação, e
   o Lattes não guarda outra item a item (Fase 5). Passou a campo que o
   formulário não tem: 2605 de 2738 (95%).

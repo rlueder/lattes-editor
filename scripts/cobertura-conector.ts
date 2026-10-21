@@ -76,6 +76,8 @@ function changed(attr: string, value: string, choices: string[] | undefined): st
   if (value === 'SIM') return 'NAO';
   if (value === 'NAO') return 'SIM';
   if (/^\d{4}$/.test(value)) return String(Number(value) - 1);
+  // A carga horária vai só com dígitos (o check() da formação complementar).
+  if (/CARGA-HORARIA/.test(attr)) return String((Number.parseInt(value, 10) || 0) + 1);
   // Data do XML (DDMMAAAA): outro dia do mesmo mês.
   if (/^\d{8}$/.test(value)) return `${value.startsWith('01') ? '02' : '01'}${value.slice(2)}`;
   return `${value} x`;
@@ -179,10 +181,18 @@ function cover(raw: string, trials: Trial[] = []): Stats {
         continue;
       // Só para ler no editor: segue outro campo.
       if (followsCountry(el.name, a.name)) continue;
-      /** Planeja a troca do atributo para `value` (sem valor, a troca padrão). */
-      const attempt = (value?: string) => {
+      /**
+       * Planeja a troca do atributo para `value` (sem valor, a troca padrão).
+       * Com `from`, o item parte desse valor em vez do que o exemplo tem.
+       */
+      const attempt = (value?: string, from?: string) => {
+        const start = parseXml(raw).root;
         const work = parseXml(raw).root;
         const target = flatten(work)[index]!;
+        if (from !== undefined) {
+          setAttr(flatten(start)[index]!, a.name, from);
+          setAttr(target, a.name, from);
+        }
         const attr = target.attrs.find((x) => x.name === a.name)!;
         let choices: string[] | undefined;
         if (a.name === 'FLAG-RESPONSAVEL') {
@@ -205,7 +215,7 @@ function cover(raw: string, trials: Trial[] = []): Stats {
           // O que o editor muda junto ao gravar (AttributeField chama o mesmo).
           applyLinkedAttrs(target, a.name, work);
         }
-        const changes = diffDocuments(base, work);
+        const changes = diffDocuments(start, work);
         // O texto que o editor pede quando o valor novo o exige (o potencial de
         // inovação Sim): a pessoa o escreve ali.
         const extras = Object.fromEntries(
@@ -233,6 +243,34 @@ function cover(raw: string, trials: Trial[] = []): Stats {
           if (next?.ok) {
             tried = next;
             break;
+          }
+        }
+      }
+      // O valor do exemplo pode ser um que o formulário não tem (WEB no meio
+      // de divulgação): aí nenhuma troca a partir dele vai, mas o campo vai
+      // num item que tenha um valor do formulário. Como os 138 valores fora
+      // da lista do Lattes, o item parte de um valor que o formulário tem.
+      // Um número que o exemplo traz como texto (a carga horária): parte de
+      // um número.
+      if (!tried.ok && /CARGA-HORARIA/.test(a.name)) {
+        if (tried.plan.unsupported.every((u) => valueMiss(u.reason))) {
+          const next = attempt('41', '40');
+          if (next?.ok) tried = next;
+        }
+      }
+      const choices = tried.choices ?? [];
+      if (
+        !tried.ok &&
+        choices.length > 1 &&
+        tried.plan.unsupported.every((u) => valueMiss(u.reason))
+      ) {
+        search: for (const from of choices.filter((c) => c !== a.value)) {
+          for (const to of choices.filter((c) => c !== from)) {
+            const next = attempt(to, from);
+            if (next?.ok) {
+              tried = next;
+              break search;
+            }
           }
         }
       }
