@@ -139,7 +139,8 @@ export function planAtividade(
   // de lida na edição: as disciplinas do ensino ({l, c}, 20/10/2026) e as
   // linhas de pesquisa da pesquisa e desenvolvimento ({l, c}, o c é o
   // f_seq_linha da linha) e os treinamentos ministrados ({l, c}), os dois
-  // lidos em 21/10/2026.
+  // lidos e gravados em 21/10/2026. Com a grade como veio, a linha de
+  // pesquisa de teste ficou com o objetivo no Lattes real (uma linha só).
   if (!type.description && !type.gridRead) {
     return {
       reason:

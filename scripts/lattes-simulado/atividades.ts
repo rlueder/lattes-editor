@@ -269,16 +269,20 @@ function cargoUpdate(req: SimRequest, state: LattesState, atuacao: XElement): Si
     setAttr(found.el, 'NOME-UNIDADE', '');
   }
   // Nas grades de elementos filhos, o servidor grava como chegou. Uma linha
-  // de pesquisa que já existia (pelo c) segue com o resto dela, como o
-  // objetivo; a que não veio sai.
+  // de pesquisa que já existia (pelo c que veio) segue com o resto dela, como
+  // o objetivo: observado no Lattes real em 21/10/2026, com o objetivo de uma
+  // linha de teste intacto depois do envio da atividade. A linha que não veio
+  // sai; a nova (sem c) ganha uma sequência que nenhuma outra usa.
   const grid = GRID_CHILDREN[found.el.name];
   if (grid) {
     const old = childElements(found.el, grid.child);
-    found.el.children = specRows(req.get('f_espec_l') ?? '').map(({ c, l }, i) => {
-      const seq = c && c !== '0' ? c : String(i + 1);
+    let next = Math.max(0, ...old.map((o) => Number(getAttr(o, grid.seq)) || 0));
+    found.el.children = specRows(req.get('f_espec_l') ?? '').map(({ c, l }) => {
+      const given = c && c !== '0' ? c : undefined;
+      const seq = given ?? String(++next);
       if (!grid.title)
         return element(grid.child, { [grid.seq]: seq }, [{ kind: 'text', value: l }]);
-      const kept = old.find((o) => getAttr(o, grid.seq) === seq);
+      const kept = given ? old.find((o) => getAttr(o, grid.seq) === given) : undefined;
       if (kept) {
         setAttr(kept, grid.title, l);
         return kept;
