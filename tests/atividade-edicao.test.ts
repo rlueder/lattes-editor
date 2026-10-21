@@ -168,6 +168,37 @@ describe('atividade: o envio', () => {
     expect(getAttr(saved, 'CODIGO-ORGAO')).toBe('000001000008');
   });
 
+  it('sem o código na volta, a unidade confere pelo texto que a página mostra', async () => {
+    open = await withLattesSimulado({
+      xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${ORGAN_XML}`),
+    });
+    const original = parseXml(ORGAN_XML).root;
+    const working = parseXml(ORGAN_XML).root;
+    setAttr(estagio(working), 'CODIGO-ORGAO', '000001000008');
+    setAttr(estagio(working), 'NOME-ORGAO', 'Instituto de Biociências');
+    setAttr(estagio(working), 'CODIGO-UNIDADE', '000001001004');
+    setAttr(estagio(working), 'NOME-UNIDADE', 'Departamento de Genética');
+    const { ops } = planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Atividade' })),
+      working,
+      { editAtividades: true },
+    );
+    // Uma página que, depois do envio, devolve o oculto vazio e só "/Unidade".
+    let posted = false;
+    const port = {
+      ...open.port,
+      get: async (path: string) => {
+        const html = await open!.port.get(path);
+        return posted ? html.replace(/(name="f_codorgao" value=")[^"]*/, '$1') : html;
+      },
+      post: async (path: string, body: string) => {
+        posted = true;
+        return open!.port.post(path, body);
+      },
+    };
+    expect(await applyOp(ops[0]!, port)).toMatchObject({ status: 'conferido' });
+  });
+
   it('o órgão fora da janela, ou outro no Lattes: nada vai', async () => {
     open = await withLattesSimulado({
       xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${ORGAN_XML}`),

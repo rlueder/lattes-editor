@@ -8,7 +8,7 @@ import type { ExportFailure } from './export.ts';
 import type { ImportStop, PageShape } from './importar.ts';
 import type { Agency, AreaNode, Course, Institution, Organ } from './lattes-lists.ts';
 import type { LattesStatus } from './lattes-status.ts';
-import type { OrganWindow } from './organ-windows.ts';
+import type { OrganWindowKind } from './organ-windows.ts';
 import type { PhotoFailure } from './photo.ts';
 import type { BridgeOp } from './plan.ts';
 import type { PublishRequest, PublishResult, SendScreen } from './publish.ts';
@@ -77,7 +77,7 @@ export type EditorMessage =
       institution: string;
       parent?: string;
       type: 'pedir-orgaos';
-      organWindow?: OrganWindow;
+      organWindow?: OrganWindowKind;
     }
   /**
    * Importa os itens novos pelo Importar do Lattes (src/bridge/importar.ts),

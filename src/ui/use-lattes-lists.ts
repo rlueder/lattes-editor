@@ -8,7 +8,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Agency, AreaNode, Course, Organ } from '../bridge/lattes-lists.ts';
-import type { OrganWindow } from '../bridge/organ-windows.ts';
+import type { OrganWindowKind } from '../bridge/organ-windows.ts';
 import type { BridgeMessage, EditorMessage } from '../bridge/protocol.ts';
 import { foldText } from '../model/fold-text.ts';
 import { type CachedList, loadCachedList, saveCachedList } from '../model/list-cache.ts';
@@ -190,7 +190,7 @@ export function useLattesLists(features: readonly string[]): LattesLists {
 
     const organCache = new Map<string, Promise<Organ[]>>();
     /** Uma página da janela de órgãos, com a letra da instituição e a do órgão de cima. */
-    const askOrgans = (institution: string, parent: string, organWindow?: OrganWindow) =>
+    const askOrgans = (institution: string, parent: string, organWindow?: OrganWindowKind) =>
       ask<Extract<Reply, { type: 'orgaos' }>>({
         id: nextId('orgaos'),
         institution,
@@ -206,7 +206,7 @@ export function useLattesLists(features: readonly string[]): LattesLists {
      * da tabela do Lattes, D para os cadastrados à parte (inferido). Tenta V,
      * e D quando V volta vazio.
      */
-    const loadOrgans = async (institution: string, parent = '', organWindow?: OrganWindow) => {
+    const loadOrgans = async (institution: string, parent = '', organWindow?: OrganWindowKind) => {
       if (!liveRef.current) throw new Error('O conector não está ligado');
       const cacheKey = `${organWindow ?? 'projeto'}|${institution}|${parent}`;
       let pending = organCache.get(cacheKey);

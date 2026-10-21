@@ -5,7 +5,7 @@
 import { createContext, useContext } from 'react';
 
 import type { Course, Institution, Organ } from '../bridge/lattes-lists.ts';
-import type { OrganWindow } from '../bridge/organ-windows.ts';
+import type { OrganWindowKind } from '../bridge/organ-windows.ts';
 import type { XElement } from '../model/xml.ts';
 import type { LiveAvailability } from './live-lists.ts';
 
@@ -20,7 +20,11 @@ export interface LattesLists extends LiveAvailability {
    * um órgão, na janela de órgãos do projeto ou na da atividade; rejeita com
    * o motivo.
    */
-  loadOrgans: (institution: string, parent?: string, organWindow?: OrganWindow) => Promise<Organ[]>;
+  loadOrgans: (
+    institution: string,
+    parent?: string,
+    organWindow?: OrganWindowKind,
+  ) => Promise<Organ[]>;
   /** Busca de instituição no Lattes (só com o conector ligado); rejeita com o motivo. */
   searchInstitutions: (query: string, level?: string) => Promise<Institution[]>;
 }

@@ -8,7 +8,7 @@
 import { institutionResults } from './create.ts';
 import { decodeHtmlEntities } from './html-text.ts';
 import { cvCodeFrom, isLogonPage } from './lattes-html.ts';
-import { type OrganWindow, organWindowPath } from './organ-windows.ts';
+import { type OrganWindowKind, organWindowPath } from './organ-windows.ts';
 
 /**
  * Um nó da árvore de áreas, compacto: nome, código de 8 dígitos e filhos. O
@@ -525,7 +525,7 @@ export async function readOrgans(
   port: ListsPort,
   institution: string,
   parent = '',
-  organWindow?: OrganWindow,
+  organWindow?: OrganWindowKind,
 ): Promise<{ error?: string; organs?: Organ[] }> {
   try {
     const cv = cvCodeFrom(await port.menuHtml());

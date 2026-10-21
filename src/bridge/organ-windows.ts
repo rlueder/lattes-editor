@@ -4,7 +4,7 @@
 // no envio, resolveOrgan (production/organ.ts).
 
 /** De qual janela de órgãos vem a lista: a do projeto (sem valor) ou a da atividade. */
-export type OrganWindow = 'atividade';
+export type OrganWindowKind = 'atividade';
 
 /** A letra do código de um órgão no link da janela: V para o tipo 0, D para os outros (inferido). */
 export const organLetter = (kind: string) => (kind === '0' ? 'V' : 'D');
@@ -25,6 +25,20 @@ export const organsPath = (cv: string, institution: string, parent = '') =>
 export const activityOrgansPath = (cv: string, institution: string, parent = '') =>
   `prc_orgao_cargo?f_origem=&f_modal_cv=9&f_cod=${cv}&f_cod_inst=${encodeURIComponent(institution)}&f_cod_inst2=${encodeURIComponent(parent)}`;
 
+/**
+ * As atividades cujo formulário tem o órgão, escolhido na janela de órgãos da
+ * atividade. O ensino guarda órgão no XML, mas o formulário dele não tem; a
+ * pesquisa e desenvolvimento e o treinamento vão inteiros à mão.
+ */
+export const ACTIVITY_ORGAN_ELEMENTS: ReadonlySet<string> = new Set([
+  'CONSELHO-COMISSAO-E-CONSULTORIA',
+  'DIRECAO-E-ADMINISTRACAO',
+  'ESTAGIO',
+  'EXTENSAO-UNIVERSITARIA',
+  'OUTRA-ATIVIDADE-TECNICO-CIENTIFICA',
+  'SERVICO-TECNICO-ESPECIALIZADO',
+]);
+
 /** O caminho da janela pedida. */
-export const organWindowPath = (organWindow?: OrganWindow) =>
+export const organWindowPath = (organWindow?: OrganWindowKind) =>
   organWindow === 'atividade' ? activityOrgansPath : organsPath;
