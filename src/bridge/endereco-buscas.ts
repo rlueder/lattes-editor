@@ -30,7 +30,7 @@ import { sameCode, SESSION } from './create-shared.ts';
 import { encodeLatin1Form, type FormControl, type Pairs, pairValue } from './form.ts';
 import type { LookupRow } from './formacao-edit.ts';
 import { isLogonPage } from './lattes-html.ts';
-import { activityOrgansPath } from './lattes-lists.ts';
+import { activityOrgansPath } from './organ-windows.ts';
 import type { FieldValues } from './plan.ts';
 import { type OrganChoice, resolveOrgan } from './production/organ.ts';
 

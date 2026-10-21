@@ -6,6 +6,7 @@
 // O que é observado e o que é inferido no formato do XML está em
 // docs/campos_tipados.md ("Listas lidas pelo conector").
 
+import { ACTIVITY_TYPES } from '../bridge/edit-atividade.ts';
 import { COMPL_LEVELS, isComplementaryItem } from '../bridge/edit-lists.ts';
 import type { Agency, AreaNode, Course, Institution, Organ } from '../bridge/lattes-lists.ts';
 import { ORGAN_PARTS } from '../bridge/production/organ.ts';
@@ -517,6 +518,8 @@ export type LiveKind =
 
 /** O que o editor tem em mãos agora: as cópias guardadas e o que o conector sabe fazer. */
 export interface LiveAvailability {
+  /** O conector lê a janela de órgãos da atividade ('orgao-atividades'). */
+  activityOrgans?: boolean;
   agencies?: readonly Agency[];
   areas?: readonly AreaNode[];
   /** O conector lê cursos (extensão com a capacidade 'listas-lattes'). */
@@ -549,8 +552,8 @@ export function liveKind(el: XElement, attr: string, live: LiveAvailability): Li
     const current = readArea(el);
     return isEmptyArea(current) || findArea(live.areas, current) ? 'area-derivada' : undefined;
   }
-  if (el.name === ORGAN_PARTS.holder) {
-    if (!live.organs) return undefined;
+  if (el.name === ORGAN_PARTS.holder || ACTIVITY_TYPES[el.name]?.organ) {
+    if (!(el.name === ORGAN_PARTS.holder ? live.organs : live.activityOrgans)) return undefined;
     if (attr === ORGAN_PARTS.organ.name) return 'orgao';
     // A unidade é de um órgão: sem ele escolhido, não há lista.
     if (attr === ORGAN_PARTS.unit.name && getAttr(el, ORGAN_PARTS.organ.code)) return 'unidade';

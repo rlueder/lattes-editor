@@ -19,7 +19,8 @@ import type { LattesPort } from '../apply.ts';
 import { getChecked, Stop } from '../create-shared.ts';
 import { type Pairs, pairValue } from '../form.ts';
 import { cvCodeFrom } from '../lattes-html.ts';
-import { organLetter, organsPath, parseOrgans } from '../lattes-lists.ts';
+import { parseOrgans } from '../lattes-lists.ts';
+import { organLetter, organsPath } from '../organ-windows.ts';
 import type { FieldValues } from '../plan.ts';
 import type { Resolved } from './lookups.ts';
 

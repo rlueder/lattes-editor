@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Agency, AreaNode, Course, Organ } from '../bridge/lattes-lists.ts';
+import type { OrganWindow } from '../bridge/organ-windows.ts';
 import type { BridgeMessage, EditorMessage } from '../bridge/protocol.ts';
 import { foldText } from '../model/fold-text.ts';
 import { type CachedList, loadCachedList, saveCachedList } from '../model/list-cache.ts';
@@ -38,6 +39,8 @@ export function useLattesLists(features: readonly string[]): LattesLists {
   const production = live && features.includes('buscas-producao');
   // A janela de órgãos do projeto, para o órgão e a unidade da participação.
   const organs = live && features.includes('orgao-projeto');
+  // A janela de órgãos da atividade, para o órgão e a unidade das atividades.
+  const activityOrgans = live && features.includes('orgao-atividades');
   const [areas, setAreas] = useState<CachedList<AreaNode[]>>();
   const [agencies, setAgencies] = useState<CachedList<Agency[]>>();
   const waiting = useRef(new Map<string, (reply: Reply) => void>());
@@ -187,10 +190,11 @@ export function useLattesLists(features: readonly string[]): LattesLists {
 
     const organCache = new Map<string, Promise<Organ[]>>();
     /** Uma página da janela de órgãos, com a letra da instituição e a do órgão de cima. */
-    const askOrgans = (institution: string, parent: string) =>
+    const askOrgans = (institution: string, parent: string, organWindow?: OrganWindow) =>
       ask<Extract<Reply, { type: 'orgaos' }>>({
         id: nextId('orgaos'),
         institution,
+        ...(organWindow ? { organWindow } : {}),
         ...(parent ? { parent } : {}),
         type: 'pedir-orgaos',
       }).then((reply) => {
@@ -202,15 +206,15 @@ export function useLattesLists(features: readonly string[]): LattesLists {
      * da tabela do Lattes, D para os cadastrados à parte (inferido). Tenta V,
      * e D quando V volta vazio.
      */
-    const loadOrgans = async (institution: string, parent = '') => {
+    const loadOrgans = async (institution: string, parent = '', organWindow?: OrganWindow) => {
       if (!liveRef.current) throw new Error('O conector não está ligado');
-      const cacheKey = `${institution}|${parent}`;
+      const cacheKey = `${organWindow ?? 'projeto'}|${institution}|${parent}`;
       let pending = organCache.get(cacheKey);
       if (!pending) {
         pending = (async () => {
           for (const inst of ['V', 'D'].map((l) => l + institution)) {
             for (const up of parent ? ['V', 'D'].map((l) => l + parent) : ['']) {
-              const found = await askOrgans(inst, up);
+              const found = await askOrgans(inst, up, organWindow);
               if (found.length > 0) return found;
             }
           }
@@ -228,6 +232,7 @@ export function useLattesLists(features: readonly string[]): LattesLists {
   return useMemo(
     () => ({
       ...fetchers,
+      activityOrgans,
       agencies: agencies?.items,
       areas: areas?.items,
       courses: live,
@@ -235,6 +240,6 @@ export function useLattesLists(features: readonly string[]): LattesLists {
       production,
       search: live,
     }),
-    [fetchers, live, organs, production, areas, agencies],
+    [fetchers, live, organs, activityOrgans, production, areas, agencies],
   );
 }

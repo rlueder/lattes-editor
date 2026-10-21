@@ -11,8 +11,6 @@ import {
   institutionSearchPath,
   latin1Param,
   type ListsPort,
-  organLetter,
-  organsPath,
   parseAgencies,
   parseAreaTree,
   parseCourses,
@@ -26,6 +24,12 @@ import {
   selectEntries,
 } from '../src/bridge/lattes-lists.ts';
 import { checkSources, listText, unreadSources } from '../src/bridge/list-watch.ts';
+import {
+  activityOrgansPath,
+  organLetter,
+  organsPath,
+  organWindowPath,
+} from '../src/bridge/organ-windows.ts';
 import { type LattesSimuladoNoTeste, withLattesSimulado } from './helpers/lattes-simulado.ts';
 
 // Fixtures feitas à mão, no formato descrito em docs/lattes_internals.md
@@ -353,6 +357,17 @@ describe('janela de órgãos do projeto', () => {
       organsPath(code, 'V000000000001'),
       organsPath(code, 'V000000000001', 'V000001000008'),
     ]);
+  });
+
+  it('na janela da atividade, o mesmo pedido vai a prc_orgao_cargo', async () => {
+    const { code, gets, port } = await lattesPort();
+    const top = await readOrgans(port, 'V000000000001', '', 'atividade');
+    expect(top.organs?.map((o) => o.name)).toEqual([
+      'Instituto de Biociências',
+      'Instituto de Informática',
+    ]);
+    expect(gets).toEqual([activityOrgansPath(code, 'V000000000001')]);
+    expect(organWindowPath()).toBe(organsPath);
   });
 
   it('como a página real: número no tipo, quebra de linha antes dele, entidades no nome', () => {

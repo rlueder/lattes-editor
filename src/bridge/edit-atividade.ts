@@ -32,7 +32,7 @@ import {
   withScriptValues,
 } from './form.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
-import { activityOrgansPath } from './lattes-lists.ts';
+import { activityOrgansPath } from './organ-windows.ts';
 import type { FieldValues, OpBase } from './plan.ts';
 import { readProvider } from './production/grids.ts';
 import {
@@ -50,20 +50,30 @@ export const EDIT_ATIVIDADES_ENABLED = true;
  * Cada atividade do XML: a natureza no Lattes, o atributo da descrição e, nas
  * que guardam a grade em elementos filhos (as disciplinas do ensino), se a
  * página de edição já foi lida (gridRead): só então o envio manda a grade
- * como a página a trouxe.
+ * como a página a trouxe. organ: o formulário tem o órgão, escolhido na
+ * janela de órgãos da atividade (o ensino guarda órgão no XML, mas o
+ * formulário dele não tem).
  */
 export const ACTIVITY_TYPES: Record<
   string,
-  { description?: string; gridRead?: boolean; natur: string }
+  { description?: string; gridRead?: boolean; natur: string; organ?: true }
 > = {
-  'CONSELHO-COMISSAO-E-CONSULTORIA': { description: 'ESPECIFICACAO', natur: 'B' },
-  'DIRECAO-E-ADMINISTRACAO': { description: 'CARGO-OU-FUNCAO', natur: '1' },
+  'CONSELHO-COMISSAO-E-CONSULTORIA': { description: 'ESPECIFICACAO', natur: 'B', organ: true },
+  'DIRECAO-E-ADMINISTRACAO': { description: 'CARGO-OU-FUNCAO', natur: '1', organ: true },
   ENSINO: { gridRead: true, natur: '4' },
-  ESTAGIO: { description: 'ESTAGIO-REALIZADO', natur: '5' },
-  'EXTENSAO-UNIVERSITARIA': { description: 'ATIVIDADE-DE-EXTENSAO-REALIZADA', natur: '7' },
-  'OUTRA-ATIVIDADE-TECNICO-CIENTIFICA': { description: 'ATIVIDADE-REALIZADA', natur: '9' },
+  ESTAGIO: { description: 'ESTAGIO-REALIZADO', natur: '5', organ: true },
+  'EXTENSAO-UNIVERSITARIA': {
+    description: 'ATIVIDADE-DE-EXTENSAO-REALIZADA',
+    natur: '7',
+    organ: true,
+  },
+  'OUTRA-ATIVIDADE-TECNICO-CIENTIFICA': {
+    description: 'ATIVIDADE-REALIZADA',
+    natur: '9',
+    organ: true,
+  },
   'PESQUISA-E-DESENVOLVIMENTO': { natur: '2' },
-  'SERVICO-TECNICO-ESPECIALIZADO': { description: 'SERVICO-REALIZADO', natur: '6' },
+  'SERVICO-TECNICO-ESPECIALIZADO': { description: 'SERVICO-REALIZADO', natur: '6', organ: true },
   'TREINAMENTO-MINISTRADO': { natur: '8' },
 };
 
@@ -145,7 +155,7 @@ export function planAtividade(
   let organ: OrganChoice | undefined;
   if (change.fields.some((f) => ORGAN.has(f.attr))) {
     // O ensino troca o órgão pelo nível e o curso (seção 22).
-    if (type.natur === '4') {
+    if (!type.organ) {
       return { reason: 'O formulário de ensino do Lattes não tem órgão: tem o nível e o curso' };
     }
     const chosen = planActivityOrgan(change, el);

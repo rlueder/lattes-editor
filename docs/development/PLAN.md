@@ -18,6 +18,18 @@ outras 127 são o alvo deste plano.
 
 ## Estado atual
 
+- 21/10/2026: órgão e unidade das atividades pela lista. O envio existia
+  desde a #106, mas o editor só oferecia a janela de órgãos no projeto, e
+  numa atividade só dava para digitar o nome, que o conector recusa sem o
+  código. Agora direção, estágio, serviço, extensão, outras atividades e
+  conselhos usam a janela da atividade (`prc_orgao_cargo`, capacidade
+  `orgao-atividades`, caminhos em `src/bridge/organ-windows.ts`); o ensino, a
+  pesquisa e desenvolvimento e o treinamento ficam sem a lista. O script de
+  cobertura também passou a escolher o curso de novo depois de trocar a
+  instituição da formação, como o painel pede: o editor já limpava o curso, e
+  as duas escolhas juntas vão. 2605 de 2787 campos vão (93%), eram 2586. A
+  instituição da formação complementar passou a aparecer com o motivo real (as
+  buscas dela estão desligadas, `COMPL_ENDERECO_LOOKUPS_ENABLED`).
 - 20/10/2026: o depositante pessoa e as datas do histórico de situações da
   patente pelo conector (`src/bridge/production/holders.ts`,
   `targets/registros.ts`), a partir da exportação e da página de edição de

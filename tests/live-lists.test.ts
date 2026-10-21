@@ -397,6 +397,32 @@ describe('escolhas pela lista em orientações, bancas e no sanduíche (Fase 2)'
   });
 });
 
+describe('órgão e unidade das atividades da atuação', () => {
+  const LIVE: LiveAvailability = { activityOrgans: true, courses: true, search: true };
+  const activity = (name: string) =>
+    parseXml(
+      `<${name} CODIGO-ORGAO="000001000008" NOME-ORGAO="Instituto" CODIGO-UNIDADE="" NOME-UNIDADE=""/>`,
+    ).root;
+
+  it('as atividades com órgão no formulário usam a janela da atividade', () => {
+    const el = activity('DIRECAO-E-ADMINISTRACAO');
+    expect(liveKind(el, 'NOME-ORGAO', LIVE)).toBe('orgao');
+    expect(liveKind(el, 'NOME-UNIDADE', LIVE)).toBe('unidade');
+    // A janela do projeto não serve a atividade, e vice-versa.
+    expect(liveKind(el, 'NOME-ORGAO', { ...LIVE, activityOrgans: false, organs: true })).toBe(
+      undefined,
+    );
+    const project = activity('PARTICIPACAO-EM-PROJETO');
+    expect(liveKind(project, 'NOME-ORGAO', LIVE)).toBeUndefined();
+  });
+
+  it('o ensino e as atividades que vão à mão ficam sem a lista', () => {
+    for (const name of ['ENSINO', 'PESQUISA-E-DESENVOLVIMENTO', 'TREINAMENTO-MINISTRADO']) {
+      expect(liveKind(activity(name), 'NOME-ORGAO', LIVE)).toBeUndefined();
+    }
+  });
+});
+
 describe('órgão e unidade do projeto (Fase 2)', () => {
   const ORGANS: LiveAvailability = { courses: true, organs: true, search: true };
   const cv = () =>
