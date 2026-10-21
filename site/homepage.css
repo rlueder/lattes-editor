@@ -853,6 +853,31 @@ a.tag:hover {
   left: 50%;
   transform: translateX(-50%);
 }
+/* Em telas estreitas, as opções que não cabem numa linha viram uma grade de
+   duas colunas da mesma largura, em vez de quebrar uma sozinha embaixo. */
+@media (max-width: 639px) {
+  .shot-switch .seg,
+  .seg.shot-switch {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    border-radius: 1rem;
+  }
+  .seg.shot-switch {
+    left: 0;
+    transform: none;
+  }
+  .shot-switch .seg button,
+  .seg.shot-switch button {
+    padding-inline: 0.5rem;
+    border-radius: 0.75rem;
+    white-space: normal;
+  }
+  /* Três opções cabem numa linha só. */
+  .shot-switch .seg:has(button:nth-child(3):last-child) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
 .shot-bar {
   display: flex;
   flex-wrap: wrap;
