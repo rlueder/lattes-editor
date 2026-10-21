@@ -130,7 +130,7 @@ export async function resolveOrgan(
   pairs: Pairs,
   shown: string,
   where?: OrganWindow,
-): Promise<Resolved & { shown?: string }> {
+): Promise<Resolved & { name?: string; shown?: string }> {
   try {
     return await resolve(choice, port, pairs, shown, where);
   } catch (err) {
@@ -145,7 +145,7 @@ async function resolve(
   pairs: Pairs,
   shown: string,
   where?: OrganWindow,
-): Promise<Resolved & { shown?: string }> {
+): Promise<Resolved & { name?: string; shown?: string }> {
   const missing = ['f_codorgao', 'f_codorgao2', 'f_orgao_old'].filter(
     (f) => !pairs.some(([k]) => k === f),
   );
@@ -200,5 +200,5 @@ async function resolve(
   if (pairs.some(([k]) => k === 'f_orgao')) set.f_orgao = text;
   // A releitura confere o texto de f_orgao; os ocultos voltam vazios na página real.
   const check: FieldValues = Object.fromEntries(Object.keys(set).map((k) => [k, null]));
-  return { check, set, shown: text };
+  return { check, name: hit.name, set, shown: text };
 }

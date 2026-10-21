@@ -153,7 +153,12 @@ export function planAtividade(
   if (change.fields.some((f) => ORGAN.has(f.attr))) {
     // O ensino troca o órgão pelo nível e o curso (seção 22).
     if (!ACTIVITY_ORGAN_ELEMENTS.has(change.element)) {
-      return { reason: 'O formulário de ensino do Lattes não tem órgão: tem o nível e o curso' };
+      return {
+        reason:
+          type.natur === '4'
+            ? 'O formulário de ensino do Lattes não tem órgão: tem o nível e o curso'
+            : 'O órgão desta atividade não vai pela lista do Lattes; troque no Lattes',
+      };
     }
     const chosen = planActivityOrgan(change, el);
     if ('reason' in chosen) return chosen;
@@ -293,6 +298,7 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
     // O órgão novo, pela janela de órgãos da atividade, só com GET.
     let chosen: FieldValues = {};
     let organShown: string | undefined;
+    let unitName: string | undefined;
     if (op.organ) {
       const shown = controls.find((c) => c.name === 'f_orgao')?.value ?? '';
       const resolved = await resolveOrgan(op.organ, port, pairs, shown, {
@@ -302,6 +308,7 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
       if ('status' in resolved) return result(resolved.status, resolved.detail);
       chosen = resolved.set;
       organShown = resolved.shown;
+      if (op.organ.parent) unitName = resolved.name;
     }
     const action =
       /<form\b[^>]*name\s*=\s*["']?GN_ATIV_CARGO[^>]*action\s*=\s*["']?([^"'\s>]+)/i.exec(
@@ -340,11 +347,12 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
         pairValue(afterPairs, 'f_codorgao') || pairValue(afterPairs, 'f_codorgao2') || '',
       );
       const organAfter = organLoose(after.find((c) => c.name === 'f_orgao')?.value);
-      // Sem código, o texto: "órgão/unidade", ou só a unidade, como a página mostra.
-      const unitOnly = organLoose(organShown.split('/').at(-1));
+      // Sem código, o texto: "órgão/unidade", ou só a unidade, como a página
+      // mostra. O nome da unidade vem da janela de órgãos, não do texto.
       const saved = codeAfter
         ? codeAfter === bare(op.organ.code)
-        : organAfter === organLoose(organShown) || (!!op.organ.parent && organAfter === unitOnly);
+        : organAfter === organLoose(organShown) ||
+          (unitName !== undefined && organAfter === organLoose(unitName));
       if (!saved) notSaved.push('órgão');
     }
     if (notSaved.length > 0) {
