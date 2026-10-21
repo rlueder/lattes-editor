@@ -52,12 +52,14 @@ interface Shot {
 }
 
 const OPEN_SEARCH = `location.hash = 'producoes';
+  await settle();
   (await wait('.search-btn')).click();
   const input = await wait('.palette-input');
   const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
   set.call(input, 'artigo');
   input.dispatchEvent(new Event('input', { bubbles: true }))`;
 const OPEN_NEW_ITEM = `location.hash = 'producoes';
+  await settle();
   (await wait('[aria-label="Novo item"]')).click()`;
 
 /** As telas do README, nos dois temas. */
@@ -69,17 +71,17 @@ const DOC_SHOTS: Shot[] = [
   { name: 'novo-item', prepare: OPEN_NEW_ITEM },
 ];
 
-/**
- * O Panorama na página do projeto, na janela larga: três vistas e a passagem
- * do gráfico ao item. A barra de 2023 tem um artigo só, e o filtro de
- * Produções o reproduz, então o clique abre a seção direto, sem passar pela
- * seleção.
- */
+/** O Panorama na página do projeto, na janela larga: as três vistas. */
 const PANORAMA_SHOTS: Shot[] = [
   {
     name: 'panorama',
     prepare: `location.hash = 'panorama/producoes-por-ano'`,
     site: 'site/img/homepage/panorama',
+  },
+  {
+    name: 'panorama-health',
+    prepare: `location.hash = 'panorama/saude-do-curriculo'`,
+    site: 'site/img/homepage/panorama-health',
   },
   {
     name: 'panorama-people',
@@ -92,19 +94,10 @@ const PANORAMA_SHOTS: Shot[] = [
     prepare: `location.hash = 'panorama/linha-do-tempo'`,
     site: 'site/img/homepage/panorama-timeline',
   },
-  {
-    name: 'panorama-item',
-    prepare: `location.hash = 'panorama/producoes-por-ano';
-      const mark = await wait('.pano-mark[aria-label="2023, Artigos: 1"]');
-      await settle();
-      mark.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      await wait('.filter-status')`,
-    site: 'site/img/homepage/panorama-item',
-  },
 ];
 
-/** A abertura e a busca da página do projeto, na janela estreita. */
-const NARROW_SHOTS: Shot[] = [
+/** A abertura e a busca da página do projeto, na mesma janela larga. */
+const SITE_SHOTS: Shot[] = [
   {
     name: 'hero-editor',
     prepare: `location.hash = 'producoes'`,
@@ -139,7 +132,6 @@ interface Viewport {
   width: number;
 }
 const WIDE: Viewport = { height: 860, width: 1440 };
-const NARROW: Viewport = { height: 640, width: 1024 };
 
 async function capture(
   theme: 'claro' | 'escuro',
@@ -243,6 +235,6 @@ mkdirSync(outDir, { recursive: true });
 await withHeadlessBrowser(async () => {
   await capture('claro', [...DOC_SHOTS, ...PANORAMA_SHOTS], WIDE);
   await capture('escuro', DOC_SHOTS, WIDE);
-  await capture('claro', NARROW_SHOTS, NARROW);
+  await capture('claro', SITE_SHOTS, WIDE);
   await captureOgImage();
 });

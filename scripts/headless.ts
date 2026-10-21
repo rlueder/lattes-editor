@@ -66,9 +66,21 @@ async function waitForBrowser(): Promise<void> {
   throw new Error('O navegador não abriu a porta de depuração');
 }
 
-/** Abre o navegador, roda `work` e fecha tudo, inclusive o perfil temporário. */
+/**
+ * Abre o navegador, roda `work` e fecha tudo, inclusive o perfil temporário.
+ *
+ * - `LATTES_EXTENSAO=<pasta>` (a `dist-extension/` do `pnpm build:extension`)
+ *   carrega a extensão do conector: o content script dela fala com o editor em
+ *   `localhost`, e o painel de envio mostra o caminho pela extensão.
+ * - `LATTES_PERFIL=<pasta>` usa esse perfil em vez de um temporário e não o
+ *   apaga: é onde fica o "ok" do aviso de uso da extensão, que o navegador sem
+ *   janela não consegue dar (ele não abre as páginas da extensão).
+ * - `LATTES_JANELA=1` abre o navegador com janela, para dar esse "ok".
+ */
 export async function withHeadlessBrowser(work: () => Promise<void>): Promise<void> {
-  const profile = mkdtempSync(join(tmpdir(), 'lattes-capturas-'));
+  const ownProfile = !process.env.LATTES_PERFIL;
+  const profile = process.env.LATTES_PERFIL ?? mkdtempSync(join(tmpdir(), 'lattes-capturas-'));
+  const extension = process.env.LATTES_EXTENSAO;
   const exe = BROWSERS.find((b) => {
     try {
       return statSync(b).isFile();
@@ -80,12 +92,15 @@ export async function withHeadlessBrowser(work: () => Promise<void>): Promise<vo
   const browser = spawn(
     exe,
     [
-      '--headless=new',
+      ...(process.env.LATTES_JANELA ? [] : ['--headless=new']),
       `--remote-debugging-port=${PORT}`,
       `--user-data-dir=${profile}`,
       '--hide-scrollbars',
       '--no-first-run',
       '--no-default-browser-check',
+      ...(extension
+        ? [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`]
+        : []),
     ],
     { stdio: 'ignore' },
   );
@@ -96,7 +111,9 @@ export async function withHeadlessBrowser(work: () => Promise<void>): Promise<vo
     const exited = new Promise((r) => browser.once('exit', r));
     browser.kill();
     await exited;
-    rmSync(profile, { force: true, maxRetries: 5, recursive: true, retryDelay: 200 });
+    if (ownProfile) {
+      rmSync(profile, { force: true, maxRetries: 5, recursive: true, retryDelay: 200 });
+    }
   }
 }
 

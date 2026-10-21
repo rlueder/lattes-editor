@@ -292,6 +292,10 @@ b {
 .btn:hover .arrow {
   transform: translateX(4px);
 }
+/* A maçã e o pinguim têm o peso embaixo: um pixel para cima alinha ao olho. */
+.btn > .btn-icon {
+  margin-top: -0.0625rem;
+}
 .btn-outline {
   background: transparent;
   color: var(--primary);
@@ -541,8 +545,9 @@ b {
     color: var(--primary);
   }
   .top-github svg {
-    width: 0.875rem;
-    height: 0.875rem;
+    width: 1rem;
+    height: 1rem;
+    fill: currentColor;
   }
   .menu {
     display: none;
@@ -744,13 +749,14 @@ a.tag:hover {
   max-width: 46ch;
   color: var(--primary);
 }
-.hero-text .link {
-  margin-top: 1.25rem;
+.hero-text .btn {
+  display: inline-flex;
 }
 .hero-shot {
   grid-column: 1 / -1;
 }
 .shot-frame {
+  position: relative;
   overflow: hidden;
   border-radius: 0.375rem;
   background: #fff;
@@ -759,6 +765,93 @@ a.tag:hover {
 .shot-frame img,
 .shot-frame video {
   width: 100%;
+}
+/* Botão transparente sobre a captura: abre a tela em tamanho maior. */
+.shot-open {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+.shot-open:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* Tela em tamanho maior */
+.lightbox {
+  width: min(100vw - 2rem, calc((100vh - 2rem) * 16 / 10));
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  border: 0;
+  border-radius: 0.375rem;
+  padding: 0;
+  background: #fff;
+  box-shadow: var(--surface-shadow);
+  overflow: visible;
+}
+.lightbox::backdrop {
+  background: color-mix(in oklch, var(--primary) 70%, black 30%);
+  opacity: 0.85;
+}
+.lightbox[open] {
+  animation: lightbox-in 200ms var(--ease-out);
+}
+@keyframes lightbox-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+.lightbox img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: inherit;
+  cursor: zoom-out;
+}
+.lightbox-close {
+  position: absolute;
+  top: -0.75rem;
+  right: -0.75rem;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: var(--surface-shadow);
+  cursor: pointer;
+}
+.lightbox-close svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.lightbox-close:focus-visible {
+  outline: 2px solid var(--primary-foreground);
+  outline-offset: 2px;
+}
+/* O seletor de telas fica centrado acima da captura. */
+.shot-switch {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+.seg.shot-switch {
+  display: inline-flex;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
 }
 .shot-bar {
   display: flex;
@@ -806,15 +899,16 @@ a.tag:hover {
   .hero {
     padding-block: 5rem 3rem;
   }
+  /* Centra texto e tela na primeira dobra, sem afastar demais a faixa de baixo. */
   .hero-grid {
-    min-height: calc(100svh - var(--header-h) - 8rem);
+    min-height: min(calc(100svh - var(--header-h) - 8rem), 40rem);
   }
   .hero-text {
     grid-column: 2 / span 6;
     padding-right: 2rem;
   }
   .hero-shot {
-    grid-column: 8 / span 6;
+    grid-column: 8 / -1;
   }
 }
 @media (min-width: 1440px) {
@@ -822,7 +916,7 @@ a.tag:hover {
     grid-column: 3 / span 6;
   }
   .hero-shot {
-    grid-column: 9 / span 6;
+    grid-column: 9 / -1;
   }
   .hero-badges span:nth-child(1) {
     grid-column: 3 / span 3;
@@ -878,137 +972,8 @@ a.tag:hover {
   margin-top: 0.75rem;
 }
 
-/* ─── Exemplo de edição ─── */
+/* ─── Linhas com marcador (cofre) ─── */
 
-.flow {
-  overflow: hidden;
-}
-.flow-steps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--muted);
-}
-.flow-steps button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  flex: 1 1 auto;
-  border: 0;
-  border-radius: 9999px;
-  padding: 0.625rem 0.875rem;
-  background: transparent;
-  color: var(--fg-70);
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition:
-    background-color 200ms ease,
-    color 200ms ease;
-}
-.flow-steps button span {
-  font-size: 0.75rem;
-  opacity: 0.7;
-}
-.flow-steps button:hover {
-  color: var(--foreground);
-}
-.flow-steps button[aria-pressed='true'] {
-  background: var(--primary);
-  color: var(--primary-foreground);
-}
-.flow-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-}
-.flow-form {
-  padding: 1.5rem;
-}
-.flow-form > p {
-  margin: 0.5rem 0 1.25rem;
-  color: var(--fg-75);
-}
-.field {
-  display: block;
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-.field input,
-.field select {
-  display: block;
-  width: 100%;
-  min-width: 0;
-  margin-top: 0.375rem;
-  padding: 0.625rem 0.75rem;
-  border: 1px solid var(--input);
-  border-radius: 0.375rem;
-  background: #fff;
-  font-size: 1rem;
-  font-weight: 400;
-}
-.flow-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 1.5rem;
-  border-top: 1px solid var(--border);
-  background: var(--panel);
-}
-.flow-preview .kicker {
-  font-size: 0.75rem;
-  color: var(--primary);
-}
-.leaf {
-  flex: 1;
-  padding: 1.375rem;
-  border-left: 3px solid var(--primary);
-  border-radius: 0.375rem;
-  background: #fff;
-  box-shadow: var(--surface-shadow);
-}
-.leaf h3 {
-  font-family: var(--font-serif);
-  font-size: 1.5rem;
-  font-weight: 300;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  color: var(--primary);
-  overflow-wrap: anywhere;
-}
-.leaf p {
-  margin-top: 0.75rem;
-  font-size: 0.875rem;
-  color: var(--fg-70);
-}
-.route {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  font-size: 0.875rem;
-}
-.route b {
-  color: var(--primary);
-}
-.flow-foot {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border-top: 1px solid var(--border);
-  font-size: 0.875rem;
-  color: var(--fg-70);
-}
-.result {
-  min-height: 1.5rem;
-  margin-top: 1rem;
-  font-size: 0.875rem;
-  color: var(--fg-75);
-}
 .checkrow {
   display: flex;
   align-items: start;
@@ -1033,35 +998,9 @@ a.tag:hover {
   font-size: 0.75rem;
   font-weight: 600;
 }
-.flow-form .btn,
-.flow-form .actions {
-  margin-top: 1.25rem;
-}
-.flow-form .actions .btn {
-  margin-top: 0;
-}
-.flow-form .btn-sm {
-  margin: 0 0 1rem;
-}
-@media (min-width: 768px) {
-  .flow-body {
-    grid-template-columns: 7fr 5fr;
-  }
-  .flow-preview {
-    border-top: 0;
-    border-left: 1px solid var(--border);
-  }
-  .flow-steps button {
-    flex: 1 1 0;
-  }
-}
-
 /* ─── Recursos ─── */
 
-.shot-aside {
-  padding: 1rem;
-  background: var(--panel);
-}
+/* Mesma moldura da abertura: só a sombra da captura, sem painel em volta. */
 .shot-aside figcaption {
   margin-top: 0.75rem;
   font-size: 0.875rem;
@@ -1070,50 +1009,10 @@ a.tag:hover {
 
 /* ─── Enviar ao Lattes ─── */
 
-.send {
-  padding: 1.5rem;
-}
-.send-tabs {
-  display: flex;
-  gap: 1.25rem;
-  padding-bottom: 0.875rem;
-  border-bottom: 1px solid var(--border);
+.send-figure figcaption {
+  margin-top: 0.75rem;
   font-size: 0.875rem;
-  color: var(--fg-70);
-}
-.send-tabs span:first-child {
-  font-weight: 600;
   color: var(--primary);
-}
-.send-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.75rem;
-  padding: 1rem 0;
-  border-bottom: 1px solid var(--border);
-}
-.send-row small {
-  display: block;
-  margin-top: 0.25rem;
-  font-size: 0.875rem;
-  color: var(--fg-70);
-}
-.send-label {
-  height: fit-content;
-  padding: 0.25rem 0.625rem;
-  border-radius: 9999px;
-  background: var(--accent);
-  color: var(--primary);
-  font-size: 0.75rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.send-end {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  margin-top: 1.125rem;
-  font-size: 0.875rem;
 }
 
 /* Abrir detalhes: altura e opacidade do navegador, sem salto. */
@@ -1197,15 +1096,48 @@ a.tag:hover {
 .download .h2 {
   color: var(--primary-foreground);
 }
-.download .actions {
-  margin-top: 2rem;
+.download-groups {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2rem;
+  margin-top: 2.5rem;
 }
-.download .actions + .actions {
+.download-group {
+  border-top: 1px solid color-mix(in oklch, var(--primary-foreground) 25%, transparent);
+  padding-top: 1.25rem;
+}
+.download-group .h3 {
+  color: var(--primary-foreground);
+}
+.download-group p {
   margin-top: 0.75rem;
+  max-width: 44ch;
+  font-size: 0.9375rem;
+  color: color-mix(in oklch, var(--primary-foreground) 80%, transparent);
 }
-.download .meta {
-  margin-top: 2rem;
-  max-width: 60ch;
+.download-group p a {
+  color: inherit;
+}
+/* Botões em duas colunas da mesma largura, com o ícone do sistema. */
+.download-group .actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+.download-group .btn {
+  padding-inline: 1rem;
+}
+.btn-icon {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  fill: currentColor;
+}
+@media (min-width: 768px) {
+  .download-groups {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 /* ─── Rodapé ─── */
@@ -1232,22 +1164,24 @@ a.tag:hover {
   letter-spacing: 0.025em;
   color: #463c6d66;
 }
+/* Como o rodapé dos projetos abertos da Precisa (OpenFooter): marca e nome
+   colados, em Pausa, no violeta claro. */
 .footer-brand a {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
   font-family: var(--font-serif);
   font-size: 1.25rem;
-  color: var(--ps-violet-hex);
+  color: var(--ps-violet);
   text-decoration: none;
   transition: opacity 200ms ease;
 }
 .footer-brand a:hover {
   opacity: 0.8;
 }
-.footer-brand .brand-mark {
-  color: var(--ps-violet-hex);
-  --mark-accent: #9ef2e2;
+.footer-brand .precisa-mark {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
 }
 .footer-social {
   display: flex;
@@ -1274,6 +1208,7 @@ a.tag:hover {
 .footer-social svg {
   width: 1.25rem;
   height: 1.25rem;
+  fill: currentColor;
 }
 .footer-note {
   margin-top: 2rem;
@@ -1307,5 +1242,8 @@ a.tag:hover {
   }
   .btn:hover .arrow {
     transform: none;
+  }
+  .lightbox[open] {
+    animation: none;
   }
 }

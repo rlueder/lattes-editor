@@ -5,8 +5,8 @@ abre direto do Lattes, você edita aqui com busca, atalhos e formulários que
 não se perdem, e o app leva as mudanças de volta ao Lattes. A página do
 projeto fica em
 [rlueder.github.io/lattes-editor](https://rlueder.github.io/lattes-editor/).
-A página mostra o Panorama e um exemplo de edição, com dados fictícios;
-para testá-la localmente, veja
+A página mostra o app e o Panorama com um currículo fictício; para testá-la
+localmente, veja
 [Página do projeto](docs/desenvolvimento.md#página-do-projeto).
 
 <picture>

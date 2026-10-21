@@ -112,6 +112,7 @@ no push, o conjunto todo com cobertura.
 | `pnpm censo:relatorio`                   | O relatório de cobertura do censo, `docs/lattes-formularios/relatorio.md`                      |
 | `pnpm build:censo`                       | `dist-censo/censo-lattes.js`, o censo para rodar na aba do Lattes (`docs/lattes-formularios/`) |
 | `pnpm capture:screenshots`               | As imagens do README e do site                                                                 |
+| `pnpm capture:animacoes`                 | As animações do site (`site/img/homepage/*.webp`); precisa do `img2webp` (`brew install webp`) |
 | `pnpm capture:store`                     | As imagens da Chrome Web Store, em `docs/img/loja/`                                            |
 
 Os arquivos gerados passam pelo Prettier no próprio gerador; senão, o
@@ -237,22 +238,48 @@ coral). Cada seção o usa com `<use>`, variando lado (`backdrop-flip`), cor
 devem cruzar títulos nem controles: seções de lista em duas colunas ficam sem
 fundo.
 
+O botão principal da abertura lê o sistema de quem visita
+(`navigator.userAgentData` ou `navigator.platform`) e aponta direto para o
+instalador dele, com o ícone; no Linux vai o `.deb`. Sem sistema reconhecido,
+ou sem JavaScript, ele leva à seção Baixar, que lista todos.
+
 As demonstrações são locais, sem consulta à Crossref ou envio ao Lattes. A
-abertura alterna três telas do app; a seção Panorama alterna capturas reais e
-mostra a passagem de uma contagem para o artigo correspondente; o exemplo de
-edição percorre abrir, criar, revisar e enviar. Sem JavaScript, fica a
-primeira tela de cada prévia e o primeiro passo do exemplo.
+abertura alterna três telas do app; a seção Panorama alterna as quatro vistas, cada uma com a sua animação. Sem
+JavaScript, fica a primeira tela de cada prévia.
 
 As imagens saem de `pnpm capture:screenshots`, sempre com o currículo
-fictício `fixtures/demo.xml`, só no tema claro, em `site/img/homepage/`. As
-quatro do Panorama vêm da janela de 1440 × 860 e têm 2880 × 1720 pixels (2x);
-as três da abertura (`hero-*.jpg`) e a da busca vêm de uma janela de
-1024 × 640 e têm 2048 × 1280, porque a página as mostra em meia coluna e,
-numa janela larga, o texto do app ficaria pequeno demais. Preserve as
+fictício `fixtures/demo.xml`, só no tema claro, em `site/img/homepage/`. Todas
+vêm da janela de 1440 × 860 e têm 2880 × 1720 pixels (2x). Preserve as
 dimensões nos atributos `width` e `height` e na tabela `images` do
 `homepage.js`, que as aplica ao trocar a imagem. O CSS mostra a captura
-inteira, sem recorte. A prévia do vídeo e a imagem do schema.org continuam
-sendo `site/img/editor-claro.jpg`, a mesma do README.
+inteira, sem recorte. Um clique numa captura a abre em tamanho maior, num
+`dialog`. A prévia do vídeo e a imagem do schema.org continuam sendo
+`site/img/editor-claro.jpg`, a mesma do README.
+
+Cada captura da abertura e do Panorama, a busca da seção Recursos e o envio
+têm uma animação com o mesmo nome (`hero-*.webp`, `panorama*.webp`,
+`busca.webp`, `enviar.webp`), gravada por `pnpm capture:animacoes` na mesma
+janela, em 2x e a 10 quadros por segundo, montada pelo `img2webp` como WebP
+animado com perdas. A abertura troca de grupo e de ano, passa ao Panorama e
+abre um item pela barra de 2023, e cria um artigo pelo Novo item; o Panorama abre a seção pela barra, abre uma seção por uma contagem da Saúde do currículo, passa da lista à rede de pessoas e aproxima a linha do tempo; a busca digita "artigo", entra na seção, abre a impressão e troca
+para o tema escuro. Quem pede movimento reduzido vê a captura parada no lugar.
+Para regravar uma só, passe o nome depois da URL
+(`pnpm capture:animacoes http://localhost:5173/ busca`).
+
+A cena `enviar` edita o nome de um prêmio e grava de verdade, no Lattes
+simulado, pela extensão do canal Dev carregada no navegador sem janela:
+
+1. `pnpm dev:lattes` e `node scripts/build-extension.ts --canal-dev`.
+2. Um perfil de navegador com o "ok" do aviso de uso da extensão. O navegador
+   sem janela não abre as páginas da extensão, então o "ok" não dá para ser
+   dado por ele: carregue `dist-extension-dev/` no seu Chrome ou Brave, aceite
+   o aviso no painel, e copie a pasta
+   `Local Extension Settings/<id da extensão>` do seu perfil para
+   `<perfil>/Default/` de uma pasta nova. Só o consentimento mora ali.
+3. `LATTES_EXTENSAO=dist-extension-dev LATTES_PERFIL=<perfil> pnpm capture:animacoes http://localhost:5173/ enviar`.
+
+A extensão grava no simulado, nunca no CNPq; `headless.ts` descreve as
+variáveis.
 
 Para trocar a sequência de telas da abertura por uma gravação, coloque o
 vídeo em `site/img/homepage/` e defina o atributo `src` do elemento `video`
