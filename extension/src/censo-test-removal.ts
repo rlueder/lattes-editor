@@ -2,7 +2,8 @@
 // só as linhas que não estavam na base das listas, conferidas no fim contra a
 // base inteira. Separada de censo-test-items.ts, que cria.
 
-import { removalOrder } from '../../src/census/test-ledger.ts';
+import { markedBatch, removalOrder } from '../../src/census/test-ledger.ts';
+import { TEST_MARK } from '../../src/census/test-plan.ts';
 import {
   type BatchOptions,
   type FrameWindow,
@@ -15,29 +16,46 @@ import {
 } from './censo-test-items.ts';
 import { ledgerNow, markInCv, newAtuacao } from './censo-test-ledger.ts';
 
+const withCode = (p: string, code: string) =>
+  /[?&]f_cod=/.test(p) ? p : `${p}${p.includes('?') ? '&' : '?'}f_cod=${code}`;
 const withoutCode = (p: string) => p.replace(/([?&])f_cod=[A-Z0-9]+&?/, '$1').replace(/[?&]$/, '');
 
 /**
  * Remove um lote dos itens de teste pelo registro: as linhas que não estavam
- * na base das listas (Fase 0). Não depende da marca, que nem todo formulário
- * tem onde levar. Uma atuação só sai inteira se a página dela não existia na
- * base. No fim, o que ainda difere da base volta no resumo; com dryRun, só a
- * lista do que sairia.
+ * na base das listas (Fase 0). Uma atuação só sai inteira se a página dela
+ * não existia na base. No fim, o que ainda difere da base volta no resumo;
+ * com dryRun, só a lista do que sairia.
+ *
+ * A linha só sai se a página do item tem a marca. Toda linha diferente da base
+ * vira candidata, e numa base antiga isso inclui item seu incluído ou
+ * alterado depois dela (21/10/2026). Como nem todo formulário tem onde levar a
+ * marca, a linha sem ela fica de fora e volta em semMarca; com unmarked, sai
+ * também, depois de a pessoa conferir a lista.
  */
 export async function removeTestItems(
   code: string,
   get: (path: string) => Promise<{ html: string }>,
-  { batch = 10, delayMs = [3000, 6000], dryRun = false }: BatchOptions & { dryRun?: boolean } = {},
+  {
+    batch = 10,
+    delayMs = [3000, 6000],
+    dryRun = false,
+    unmarked = false,
+  }: BatchOptions & { dryRun?: boolean; unmarked?: boolean } = {},
 ) {
   const menu = document.documentElement.outerHTML;
   const progress = load();
   setLive({ done: 0, last: undefined, phase: 'lendo', total: undefined });
   const { added, missing } = await ledgerNow(menu, code, get);
   // Um link com f_ctr é ação, nunca um item a abrir.
-  const plan = removalOrder(added)
+  const candidates = removalOrder(added)
     .filter((r) => r.link && !/[?&]f_ctr=/i.test(r.link))
-    .filter((r) => !/cargos_vinculos/i.test(r.link) || newAtuacao(r))
-    .slice(0, batch);
+    .filter((r) => !/cargos_vinculos/i.test(r.link) || newAtuacao(r));
+  const { noMark: rows, plan } = await markedBatch(
+    candidates,
+    async (link) => (await get(withCode(link, code))).html,
+    { batch, mark: TEST_MARK, unmarked },
+  );
+  const noMark = rows.map((r) => `${r.list} :: ${r.text}`);
   if (dryRun) {
     setLive({ phase: 'parado' });
     return {
@@ -45,6 +63,7 @@ export async function removeTestItems(
       faltandoDaBase: missing.map((r) => `${r.list} :: ${r.text}`),
       registrados: added.length,
       removidos: 0,
+      semMarca: noMark,
       total: progress.removed.length,
     };
   }
@@ -91,6 +110,7 @@ export async function removeTestItems(
     marcaNoCurriculo: marca,
     registrados: after.added.length,
     removidos: removed.length,
+    semMarca: noMark,
     total: progress.removed.length,
   };
 }

@@ -106,6 +106,8 @@ export type EditorMessage =
       id: string;
       retryFailed?: boolean;
       type: 'itens-teste';
+      /** Na remoção: tira também as linhas cuja página não tem a marca. */
+      unmarked?: boolean;
     }
   /**
    * Envia ao CNPq (src/bridge/publish.ts), só com PUBLISH_ENABLED e depois de

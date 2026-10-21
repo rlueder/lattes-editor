@@ -125,6 +125,8 @@ Antes de qualquer item de teste novo no Lattes real:
 2. Depois de cada lote, o registro guarda as linhas que apareceram, com o link.
 3. A remoção trabalha pelo registro: exclui só a linha registrada, e só se o
    texto dela ainda bate.
+   Desde 21/10/2026, também só se a página do item tem a marca; a linha sem
+   ela fica para a pessoa conferir (`markedBatch`, `src/census/test-ledger.ts`).
 4. Fim só quando todas as listas voltam a ser iguais à base. O que sobrar, ou o
    que faltar da base, aparece no painel.
 

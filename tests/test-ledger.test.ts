@@ -4,6 +4,7 @@ import {
   diffSnapshots,
   listKey,
   listUrls,
+  markedBatch,
   nestedUrls,
   removalOrder,
   rowsOf,
@@ -84,5 +85,38 @@ describe('itens de teste: base e registro (Fase 0)', () => {
       { link: 'b', list: 'pkg_ativ.cargos_vinculos?f_seq_ativ=22', text: 'Vínculo de teste' },
     ];
     expect(removalOrder(rows).map((r) => r.link)).toEqual(['b', 'a']);
+  });
+
+  describe('o lote da remoção pela marca na página', () => {
+    const MARK = 'TESTE EDITOR APAGAR';
+    const rows = [
+      { link: 'teste-1', list: 'pkg_demais.lista?', text: 'Item de teste' },
+      { link: 'seu', list: 'pkg_demais.lista?', text: 'Item incluído depois da base' },
+      { link: 'teste-2', list: 'pkg_demais.lista?', text: 'Outro item de teste' },
+    ];
+    const pages: Record<string, string> = {
+      seu: '<input value="Um item de verdade">',
+      'teste-1': `<input value="${MARK} demais-v0">`,
+      'teste-2': `<input value="${MARK} demais-v1">`,
+    };
+    const html = (link: string) => Promise.resolve(pages[link] ?? '');
+
+    it('sem a marca na página a linha fica, e volta para conferir', async () => {
+      const { noMark, plan } = await markedBatch(rows, html, {
+        batch: 10,
+        mark: MARK,
+        unmarked: false,
+      });
+      expect(plan.map((r) => r.link)).toEqual(['teste-1', 'teste-2']);
+      expect(noMark.map((r) => r.link)).toEqual(['seu']);
+    });
+
+    it('com unmarked sai também, e o lote para no tamanho pedido', async () => {
+      const all = await markedBatch(rows, html, { batch: 10, mark: MARK, unmarked: true });
+      expect(all.plan.map((r) => r.link)).toEqual(['teste-1', 'seu', 'teste-2']);
+      const one = await markedBatch(rows, html, { batch: 1, mark: MARK, unmarked: false });
+      expect(one.plan.map((r) => r.link)).toEqual(['teste-1']);
+      expect(one.noMark).toEqual([]);
+    });
   });
 });

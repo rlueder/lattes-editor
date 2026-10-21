@@ -32,6 +32,8 @@ export interface TestItemsSummary {
   /** Linhas que as listas têm a mais que a base: o que o teste acrescentou. */
   registrados?: number;
   removidos?: number;
+  /** Linhas a mais que a base cuja página não tem a marca: ficam sem unmarked. */
+  semMarca?: string[];
   total?: number | null;
 }
 
@@ -118,7 +120,7 @@ export function useTestItems() {
 
   const ask = (
     acao: TestItemsAction,
-    extra: { batch?: number; dryRun?: boolean; retryFailed?: boolean } = {},
+    extra: { batch?: number; dryRun?: boolean; retryFailed?: boolean; unmarked?: boolean } = {},
   ) => {
     if (waiting) return;
     const id = `itens-teste-${Date.now()}`;

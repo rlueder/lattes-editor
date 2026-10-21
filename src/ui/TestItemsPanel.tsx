@@ -106,6 +106,26 @@ export function TestItemsPanel() {
           </ul>
         </details>
       )}
+      {s?.semMarca && s.semMarca.length > 0 && (
+        <div className="test-items-error" role="alert">
+          <p>
+            Sem a marca na página ({s.semMarca.length}): ficaram. Podem ser itens seus incluídos ou
+            alterados depois da base. Confira cada um no Lattes antes de remover.
+          </p>
+          <ul>
+            {s.semMarca.map((r, i) => (
+              <li key={`${i}-${r}`}>{r}</li>
+            ))}
+          </ul>
+          <button
+            disabled={!!pending}
+            type="button"
+            onClick={() => ask('remover', { batch, unmarked: true })}
+          >
+            Remover também os sem marca
+          </button>
+        </div>
+      )}
       {s?.falharam && s.falharam.length > 0 && (
         <details>
           <summary>Falharam ({s.falharam.length})</summary>

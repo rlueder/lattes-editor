@@ -111,3 +111,25 @@ export function removalOrder(rows: PlacedRow[]): PlacedRow[] {
   const nested = (r: PlacedRow) => /cargos_vinculos|lista_periodico/.test(r.list);
   return [...rows.filter(nested), ...rows.filter((r) => !nested(r))];
 }
+
+/**
+ * O lote da remoção: até `batch` candidatas cuja página tem a marca (ou todas,
+ * com unmarked), e as sem marca, para a pessoa conferir. A linha diferente da
+ * base pode ser item seu incluído ou alterado depois dela; a marca na página
+ * é o que diz que é de teste (21/10/2026).
+ */
+export async function markedBatch(
+  candidates: readonly PlacedRow[],
+  pageHtml: (link: string) => Promise<string>,
+  { batch, mark, unmarked }: { batch: number; mark: string; unmarked: boolean },
+): Promise<{ noMark: PlacedRow[]; plan: PlacedRow[] }> {
+  const plan: PlacedRow[] = [];
+  const noMark: PlacedRow[] = [];
+  for (const row of candidates) {
+    if (plan.length >= batch) break;
+    const marked = (await pageHtml(row.link)).includes(mark);
+    if (marked || unmarked) plan.push(row);
+    if (!marked) noMark.push(row);
+  }
+  return { noMark, plan };
+}
