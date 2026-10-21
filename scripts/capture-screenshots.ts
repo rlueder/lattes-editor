@@ -4,16 +4,19 @@
 //
 // Usa um Brave ou Chrome sem janela, com perfil temporário, falando pelo
 // protocolo de depuração (sem Playwright nem outra dependência). Cada tela
-// sai nos temas claro e escuro, em docs/img/<nome>-<tema>.jpg. A de Produções
-// também vai para a página do projeto, em site/img/editor-<tema>.jpg. Por fim,
-// a imagem de prévia da página (site/img/og.png, 1200 × 630) sai de
+// sai nos temas claro e escuro, em docs/img/<nome>-<tema>.jpg, numa janela de
+// 1440 × 860 em 2x. A de Produções também vai para a página do projeto, em
+// site/img/editor-<tema>.jpg. As demais capturas da página saem só no tema
+// claro, na mesma janela, em site/img/homepage/: as da abertura, as do
+// Panorama e a da busca (a mesma do "Ir para" do README). Por fim, a imagem
+// de prévia da página (site/img/og.png, 1200 × 630) sai de
 // scripts/og-card.html, servido pelo mesmo Vite.
 //
 //   pnpm dev                       # o editor em http://localhost:5173 (ou outra porta)
 //   pnpm capture:screenshots [url] # padrão: http://localhost:5173/
 
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { assertRendered, openTab, sleep, withHeadlessBrowser } from './headless.ts';
@@ -30,46 +33,124 @@ interface Shot {
   /** Outra cópia, sem o "-<tema>.jpg" (caminho a partir da raiz do repositório). */
   alsoTo?: string;
   name: string;
-  /** Roda na página antes da captura. */
+  /**
+   * Roda na página antes da captura, dentro de uma função assíncrona.
+   * `await wait(seletor, texto?)` espera um elemento aparecer e falha se não
+   * vier, para uma captura errada não ir parar na página do projeto.
+   */
   prepare?: string;
   /**
    * Modo de privacidade (dados pessoais mascarados). Só Dados gerais o mostra
    * ligado.
    */
   privacy?: boolean;
+  /**
+   * Cópia para a página do projeto, só no tema claro (caminho a partir da
+   * raiz, sem ".jpg"). Com `siteOnly`, a captura não vai para docs/img.
+   */
+  site?: string;
+  siteOnly?: boolean;
   /** Antes de abrir o currículo (a tela inicial). */
   welcome?: boolean;
 }
 
-const SHOTS: Shot[] = [
+const OPEN_SEARCH = `location.hash = 'producoes';
+  await settle();
+  (await wait('.search-btn')).click();
+  const input = await wait('.palette-input');
+  const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+  set.call(input, 'artigo');
+  input.dispatchEvent(new Event('input', { bubbles: true }))`;
+const OPEN_NEW_ITEM = `location.hash = 'producoes';
+  await settle();
+  (await wait('[aria-label="Novo item"]')).click()`;
+
+/** As telas do README, nos dois temas. */
+const DOC_SHOTS: Shot[] = [
   { name: 'inicio', welcome: true },
   { alsoTo: 'site/img/editor', name: 'producoes', prepare: `location.hash = 'producoes'` },
   { name: 'dados-gerais', prepare: `location.hash = 'dados-gerais'`, privacy: true },
+  { name: 'ir-para', prepare: OPEN_SEARCH, site: 'site/img/homepage/search' },
+  { name: 'novo-item', prepare: OPEN_NEW_ITEM },
+];
+
+/** O Panorama na página do projeto, na janela larga: as três vistas. */
+const PANORAMA_SHOTS: Shot[] = [
   {
-    name: 'ir-para',
-    prepare: `location.hash = 'producoes';
-      setTimeout(() => document.querySelector('.search-btn')?.click(), 300);
-      setTimeout(() => {
-        const input = document.querySelector('.palette-input');
-        const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
-        set.call(input, 'artigo');
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-      }, 700)`,
+    name: 'panorama',
+    prepare: `location.hash = 'panorama/producoes-por-ano'`,
+    site: 'site/img/homepage/panorama',
+    siteOnly: true,
   },
   {
-    name: 'novo-item',
-    prepare: `location.hash = 'producoes';
-      setTimeout(() => document.querySelector('[aria-label="Novo item"]')?.click(), 300)`,
+    name: 'panorama-health',
+    prepare: `location.hash = 'panorama/saude-do-curriculo'`,
+    site: 'site/img/homepage/panorama-health',
+    siteOnly: true,
+  },
+  {
+    name: 'panorama-people',
+    prepare: `location.hash = 'panorama/pessoas';
+      (await wait('[role=radio]', 'Rede')).click()`,
+    site: 'site/img/homepage/panorama-people',
+    siteOnly: true,
+  },
+  {
+    name: 'panorama-timeline',
+    prepare: `location.hash = 'panorama/linha-do-tempo'`,
+    site: 'site/img/homepage/panorama-timeline',
+    siteOnly: true,
   },
 ];
 
-async function capture(theme: 'claro' | 'escuro'): Promise<void> {
+/** As telas da abertura da página do projeto, só nela. */
+const HERO_SHOTS: Shot[] = [
+  {
+    name: 'hero-editor',
+    prepare: `location.hash = 'producoes'`,
+    site: 'site/img/homepage/hero-editor',
+    siteOnly: true,
+  },
+  {
+    name: 'hero-panorama',
+    prepare: `location.hash = 'panorama/producoes-por-ano'`,
+    site: 'site/img/homepage/hero-panorama',
+    siteOnly: true,
+  },
+  { name: 'hero-new', prepare: OPEN_NEW_ITEM, site: 'site/img/homepage/hero-new', siteOnly: true },
+];
+
+// Disponível nos `prepare`: `wait` espera um elemento (até 5 s), opcionalmente
+// pelo texto exato, e falha quando ele não aparece; `settle` dá meio segundo
+// para o gráfico terminar de montar (o Panorama mede a largura e redesenha).
+const WAIT = `const wait = async (selector, text) => {
+  for (let i = 0; i < 50; i++) {
+    const found = [...document.querySelectorAll(selector)].find(
+      (element) => !text || element.textContent.trim() === text,
+    );
+    if (found) return found;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error('Não apareceu: ' + selector + (text ? ' "' + text + '"' : ''));
+};
+const settle = () => new Promise((resolve) => setTimeout(resolve, 500));`;
+
+interface Viewport {
+  height: number;
+  width: number;
+}
+const WIDE: Viewport = { height: 860, width: 1440 };
+
+async function capture(
+  theme: 'claro' | 'escuro',
+  shots: Shot[],
+  viewport: Viewport,
+): Promise<void> {
   const cdp = await openTab();
   await cdp.send('Emulation.setDeviceMetricsOverride', {
     deviceScaleFactor: 2,
-    height: 860,
     mobile: false,
-    width: 1440,
+    ...viewport,
   });
   await cdp.send('Emulation.setEmulatedMedia', {
     features: [{ name: 'prefers-color-scheme', value: theme === 'claro' ? 'light' : 'dark' }],
@@ -80,14 +161,23 @@ async function capture(theme: 'claro' | 'escuro'): Promise<void> {
       format: 'jpeg',
       quality: 80,
     });
-    const files = [join(outDir, `${shot.name}-${theme}.jpg`)];
+    const files = shot.siteOnly ? [] : [join(outDir, `${shot.name}-${theme}.jpg`)];
+    if (shot.site && theme === 'claro') files.push(join(root, `${shot.site}.jpg`));
     if (shot.alsoTo) files.push(join(root, `${shot.alsoTo}-${theme}.jpg`));
     for (const file of files) {
+      mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, Buffer.from(data, 'base64'));
       console.log(file.replace(root, ''));
     }
   };
-  const evaluate = (expression: string) => cdp.send('Runtime.evaluate', { expression });
+  const evaluate = async (expression: string) => {
+    const { exceptionDetails } = await cdp.send<{
+      exceptionDetails?: { exception?: { description?: string }; text: string };
+    }>('Runtime.evaluate', { awaitPromise: true, expression });
+    if (exceptionDetails) {
+      throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);
+    }
+  };
 
   // Sem currículo guardado (o do tema anterior sai), a página abre na tela inicial.
   await cdp.send('Storage.clearDataForOrigin', {
@@ -96,7 +186,7 @@ async function capture(theme: 'claro' | 'escuro'): Promise<void> {
   });
   await cdp.send('Page.navigate', { url });
   await sleep(1500);
-  for (const shot of SHOTS.filter((s) => s.welcome)) await shoot(shot);
+  for (const shot of shots.filter((s) => s.welcome)) await shoot(shot);
 
   const { root: doc } = await cdp.send<{ root: { nodeId: number } }>('DOM.getDocument');
   const { nodeId } = await cdp.send<{ nodeId: number }>('DOM.querySelector', {
@@ -109,7 +199,7 @@ async function capture(theme: 'claro' | 'escuro'): Promise<void> {
   // O modo de privacidade vem ligado; cada tela pede o seu. A troca recarrega
   // a página (o currículo fica no IndexedDB e volta aberto).
   let privacy: boolean | undefined;
-  for (const shot of SHOTS.filter((s) => !s.welcome)) {
+  for (const shot of shots.filter((s) => !s.welcome)) {
     const want = shot.privacy ?? false;
     if (want !== privacy) {
       await evaluate(
@@ -123,7 +213,7 @@ async function capture(theme: 'claro' | 'escuro'): Promise<void> {
       `document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); scrollTo(0, 0)`,
     );
     await sleep(300);
-    if (shot.prepare) await evaluate(shot.prepare);
+    if (shot.prepare) await evaluate(`(async () => { ${WAIT} ${shot.prepare} })()`);
     await sleep(1500);
     await shoot(shot);
   }
@@ -150,7 +240,7 @@ async function captureOgImage(): Promise<void> {
 
 mkdirSync(outDir, { recursive: true });
 await withHeadlessBrowser(async () => {
-  await capture('claro');
-  await capture('escuro');
+  await capture('claro', [...DOC_SHOTS, ...HERO_SHOTS, ...PANORAMA_SHOTS], WIDE);
+  await capture('escuro', DOC_SHOTS, WIDE);
   await captureOgImage();
 });

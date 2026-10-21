@@ -16,7 +16,14 @@
 //   (gravado em 20/10/2026 num item de teste: o t da linha seguiu a entrada).
 //
 // A própria pessoa não está no dicionário: a linha dela no autorDP do menu
-// tem o c vazio.
+// tem o c vazio. E a citação dela nos itens não se troca item a item: num
+// trabalho de teste (21/10/2026), o check() da própria página mandou a linha
+// com outro t, o Lattes respondeu sucesso e a releitura voltou com o nome em
+// citações da identificação. Observado na grade de autores de demais
+// trabalhos; inferido para a equipe do projeto e os participantes de banca,
+// que usam a mesma grade com o c vazio na linha da pessoa. Por isso a troca
+// conta como campo que o formulário não tem (form-lacks.ts), e o editor a
+// mostra sem edição, apontando para a identificação.
 
 import type { Change } from '../model/changes.ts';
 import { foldText } from '../model/fold-text.ts';
@@ -75,7 +82,7 @@ export function planCitacao(
   ) {
     return {
       reason:
-        'A sua própria citação: o conector troca só a de coautores, pelo dicionário de coautores do Lattes; troque no Lattes',
+        'O formulário do Lattes não tem: a sua citação em cada item, que segue o nome em citações bibliográficas da identificação; troque lá',
     };
   }
   if (!name) return { reason: 'Coautor sem nome completo, pelo qual o dicionário o acha' };

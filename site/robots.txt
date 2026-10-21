@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://rlueder.github.io/lattes-editor/sitemap.xml
