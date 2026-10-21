@@ -95,7 +95,8 @@ let appPort: chrome.runtime.Port | undefined;
  * próximo alarme.
  */
 function connectApp(): void {
-  if (appPort) return;
+  // Montagem sem host (--sem-app, para as gravações da página): não liga ao app.
+  if (appPort || !NATIVE_HOST) return;
   try {
     appPort = chrome.runtime.connectNative(NATIVE_HOST);
   } catch {

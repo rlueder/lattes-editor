@@ -114,6 +114,7 @@ no push, o conjunto todo com cobertura.
 | `scripts/limpar-branches-mesclados.sh`   | Ensaio dos worktrees e branches locais de PR mesclado; `--yes` os remove, `--incluir-fechados` também os de PR fechado |
 | `pnpm build:censo`                       | `dist-censo/censo-lattes.js`, o censo para rodar na aba do Lattes (`docs/lattes-formularios/`)                         |
 | `pnpm capture:screenshots`               | As imagens do README e do site                                                                                         |
+| `pnpm capture:animacoes`                 | As animações do site (`site/img/homepage/*.webp`); precisa do `img2webp` (`brew install webp`)                         |
 | `pnpm capture:store`                     | As imagens da Chrome Web Store, em `docs/img/loja/`                                                                    |
 
 Os arquivos gerados passam pelo Prettier no próprio gerador; senão, o
@@ -206,3 +207,88 @@ conferir a montagem antes do merge em outro caso:
 `site/` é publicada em [rlueder.github.io/lattes-editor](https://rlueder.github.io/lattes-editor/)
 pelo `pages.yml`, quando muda na `main`. A política de
 privacidade da extensão é `site/privacidade.html`.
+
+Para testar a página sem compilar o editor:
+
+```bash
+python3 -m http.server 8858 --bind 127.0.0.1 --directory site
+```
+
+Abra `http://127.0.0.1:8858/`. O site usa HTML, CSS e JavaScript sem etapa
+de build; `homepage.css` atende as duas páginas e `homepage.js`, só a
+inicial. A política de privacidade usa o mesmo cabeçalho e rodapé da página
+inicial, com o texto numa coluna de leitura (`.prose`).
+Os links de download apontam para os instaladores da última versão publicada
+e para a pré-estreia `dev`.
+
+A página inicial segue a linguagem visual dos projetos abertos da Precisa
+(fhir-brasil e medbench-brasil), descrita em
+`platform/docs/design/linguagem-visual.md`: grade de 14 colunas (16 a partir
+de 1440 px) com as colunas externas reservadas, cabeçalho roxo sólido com o
+GitHub em contorno branco, Pausa 300 nos títulos e Margem no resto, seções
+alternando fundo neutro e `muted` com divisória de 1 px, listas numeradas no
+lugar de grades de cartões e encerramento roxo com a ação em menta. Os tokens
+de cor são os de `@precisa-saude/themes`, copiados para `homepage.css`.
+As fontes Margem e Pausa vêm do mesmo endereço usado pelo FHIR Brasil, sem
+incluir os arquivos licenciados no repositório; IBM Plex, já no site, é a
+alternativa quando as fontes remotas não carregam.
+
+O fundo abstrato das seções é um `<symbol id="fundo">` no início do
+`index.html`, com a composição de 1440 × 700 do guia (círculo, bloco de canto
+arredondado, contorno, um conjunto de linhas, matriz de pontos e um ponto
+coral). Cada seção o usa com `<use>`, variando lado (`backdrop-flip`), cor
+(`backdrop-mint`), opacidade (`--bd-opacity`) e um `translate`. As linhas não
+devem cruzar títulos nem controles: seções de lista em duas colunas ficam sem
+fundo.
+
+O botão principal da abertura lê o sistema de quem visita
+(`navigator.userAgentData` ou `navigator.platform`) e aponta direto para o
+instalador dele, com o ícone; no Linux vai o `.deb`. Sem sistema reconhecido,
+ou sem JavaScript, ele leva à seção Baixar, que lista todos.
+
+As demonstrações são locais, sem consulta à Crossref ou envio ao Lattes. A
+abertura alterna três telas do app; a seção Panorama alterna as quatro vistas, cada uma com a sua animação. Sem
+JavaScript, fica a primeira tela de cada prévia.
+
+As imagens saem de `pnpm capture:screenshots`, sempre com o currículo
+fictício `fixtures/demo.xml`, só no tema claro, em `site/img/homepage/`. Todas
+vêm da janela de 1440 × 860 e têm 2880 × 1720 pixels (2x). Preserve as
+dimensões nos atributos `width` e `height` e na tabela `images` do
+`homepage.js`, que as aplica ao trocar a imagem. O CSS mostra a captura
+inteira, sem recorte. Um clique numa captura a abre em tamanho maior, num
+`dialog`. A prévia do vídeo e a imagem do schema.org continuam sendo
+`site/img/editor-claro.jpg`, a mesma do README.
+
+Cada captura da abertura e do Panorama, a busca da seção Recursos e o envio
+têm uma animação com o mesmo nome (`hero-*.webp`, `panorama*.webp`,
+`busca.webp`, `enviar.webp`), gravada por `pnpm capture:animacoes` na mesma
+janela, em 2x e a 10 quadros por segundo, montada pelo `img2webp` como WebP
+animado com perdas. A abertura troca de grupo e de ano, passa ao Panorama e
+abre um item pela barra de 2023, e cria um artigo pelo Novo item; o Panorama abre a seção pela barra, abre uma seção por uma contagem da Saúde do currículo, passa da lista à rede de pessoas e aproxima a linha do tempo; a busca digita "artigo", entra na seção, abre a impressão e troca
+para o tema escuro. Quem pede movimento reduzido vê a captura parada no lugar.
+Para regravar uma só, passe o nome depois da URL
+(`pnpm capture:animacoes http://localhost:5173/ busca`).
+
+A cena `enviar` edita o nome de um prêmio e grava de verdade, no Lattes
+simulado, pela extensão do canal Dev carregada no navegador sem janela:
+
+1. `pnpm dev:lattes` e `node scripts/build-extension.ts --canal-dev --sem-app`.
+   A montagem `--sem-app` (`dist-extension-gravacao/`) é a extensão Dev sem
+   o host nativo: a comum acordaria o LattesEditor Dev instalado na máquina e
+   mandaria a gravação para ele.
+2. Um perfil de navegador com o "ok" do aviso de uso da extensão. O navegador
+   sem janela não abre as páginas da extensão, então o "ok" não dá para ser
+   dado por ele: carregue `dist-extension-dev/` no seu Chrome ou Brave, aceite
+   o aviso no painel, e copie a pasta
+   `Local Extension Settings/<id da extensão>` do seu perfil para
+   `<perfil>/Default/` de uma pasta nova. Só o consentimento mora ali.
+3. `LATTES_EXTENSAO=dist-extension-gravacao LATTES_PERFIL=<perfil> pnpm capture:animacoes http://localhost:5173/ enviar`.
+
+A extensão grava no simulado, nunca no CNPq; `headless.ts` descreve as
+variáveis.
+
+Para trocar a sequência de telas da abertura por uma gravação, coloque o
+vídeo em `site/img/homepage/` e defina o atributo `src` do elemento `video`
+dentro de `figure[data-shot]` em `site/index.html`. Use apenas o currículo
+fictício e inclua legendas caso haja fala. O vídeo usa controles nativos e
+não inicia automaticamente; se falhar, as telas voltam a aparecer.

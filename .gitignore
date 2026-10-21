@@ -17,4 +17,5 @@ fixtures/real/
 release/
 # Canal Dev (.github/workflows/dev.yml)
 dist-extension-dev/
+dist-extension-gravacao/
 src-tauri/tauri.canal-dev.gerado.json

@@ -11,6 +11,7 @@
     "build:censo": "node scripts/build-censo.ts",
     "build:extension": "node scripts/build-extension.ts",
     "build:extension:loja": "node scripts/build-extension.ts --loja",
+    "capture:animacoes": "node scripts/capture-animacoes.ts",
     "capture:screenshots": "node scripts/capture-screenshots.ts",
     "capture:store": "node scripts/capture-store.ts",
     "censo:relatorio": "node scripts/censo-relatorio.ts",

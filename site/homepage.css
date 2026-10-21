@@ -1,0 +1,1360 @@
+/* Página do projeto, na linguagem visual dos projetos abertos da Precisa
+   (fhir-brasil, medbench-brasil): grade de 14/16 colunas, Pausa leve nos
+   títulos, Margem no resto, fundo geométrico nas aberturas e encerramento
+   roxo. Referência: platform/docs/design/linguagem-visual.md, v0.1. */
+
+/* Margem e Pausa, as fontes da marca, servidas pela landing da Precisa com
+   CORS aberto. Os arquivos são licenciados e não entram neste repositório;
+   IBM Plex, que já vem com o site, cobre a leitura sem rede. */
+@font-face {
+  font-family: Margem;
+  src: url('https://www.precisa-saude.com.br/fonts/MargemVariable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: Pausa;
+  src: url('https://www.precisa-saude.com.br/fonts/PausaVariable-Roman.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+
+  /* Paleta da marca */
+  --ps-violet: oklch(0.67 0.113 285);
+  --ps-violet-hex: #8e8bd8;
+  --ps-mint: oklch(0.9 0.085 181);
+  --ps-sand: #e5d7ca;
+
+  /* Tokens semânticos, os mesmos de @precisa-saude/themes */
+  --background: oklch(0.94 0.008 61);
+  --foreground: oklch(0.25 0.06 292);
+  --card: oklch(0.96 0.005 61);
+  --primary: oklch(0.39 0.082 292);
+  --primary-foreground: oklch(0.97 0.005 292);
+  --muted: oklch(0.92 0.012 61);
+  --accent: oklch(0.92 0.04 285);
+  --border: oklch(0.87 0.018 65);
+  --input: oklch(0.85 0.02 65);
+  --fg-75: color-mix(in oklch, var(--foreground) 75%, transparent);
+  --fg-70: color-mix(in oklch, var(--foreground) 70%, transparent);
+  --panel: #dedcf2;
+  --surface-shadow: 0 0 0 1px #463c6d24, 0 6px 16px #463c6d12;
+
+  --font-sans: Margem, 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-serif: Pausa, 'IBM Plex Serif', Georgia, serif;
+  --font-mono: ui-monospace, 'IBM Plex Mono', SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Grade: 14 colunas, 16 a partir de 1440 px; gutter de 1rem */
+  --grid-cols: 14;
+  --grid-max-w: calc(14 * 6rem - 1rem);
+  --header-h: 4rem;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (min-width: 1440px) {
+  :root {
+    --grid-cols: 16;
+    --grid-max-w: 1440px;
+  }
+}
+
+/* ─── Base ─── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  scroll-padding-top: calc(var(--header-h) + 1rem);
+}
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font: 400 1rem/1.6 var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+h1,
+h2,
+h3,
+p,
+figure {
+  margin: 0;
+}
+a {
+  color: inherit;
+}
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+}
+img,
+video {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+strong,
+b {
+  font-weight: 600;
+}
+[hidden] {
+  display: none !important;
+}
+:is(a, button, summary, input, select):focus-visible {
+  outline: 3px solid var(--ps-violet);
+  outline-offset: 3px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.skip {
+  position: absolute;
+  top: -100px;
+  left: 1rem;
+  z-index: 100;
+  padding: 0.625rem 1.125rem;
+  background: var(--primary);
+  color: #fff;
+  text-decoration: none;
+}
+.skip:focus {
+  top: calc(var(--header-h) + 0.75rem);
+}
+
+/* ─── Tipografia (guia, seção 4) ─── */
+
+.kicker {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.h1 {
+  font-family: var(--font-serif);
+  font-size: clamp(2.5rem, 4.4vw, 4rem);
+  font-weight: 300;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+.h2 {
+  font-family: var(--font-serif);
+  font-size: clamp(1.875rem, 3.2vw, 2.75rem);
+  font-weight: 300;
+  line-height: 1.15;
+  letter-spacing: -0.018em;
+  text-wrap: balance;
+}
+.h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.lead {
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: var(--fg-75);
+  text-wrap: pretty;
+}
+@media (min-width: 768px) {
+  .lead {
+    font-size: 1.25rem;
+  }
+}
+.meta {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--fg-70);
+}
+.hl {
+  font-style: normal;
+  background: linear-gradient(transparent 82%, var(--ps-mint) 82%);
+}
+.measure {
+  max-width: 60ch;
+}
+
+/* ─── Grade (guia, seção 5) ─── */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr));
+  gap: 1rem;
+  width: 100%;
+  max-width: var(--grid-max-w);
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+.main {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+.inner > * {
+  min-width: 0;
+}
+.span-full {
+  grid-column: 1 / -1;
+}
+@media (min-width: 768px) {
+  .grid {
+    padding-inline: 0;
+  }
+  .main {
+    grid-column: 2 / span 12;
+  }
+  .inner {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+  .span-5 {
+    grid-column: span 5;
+  }
+  .span-6 {
+    grid-column: span 6;
+  }
+  .start-7 {
+    grid-column: 7 / span 6;
+  }
+  .start-8 {
+    grid-column: 8 / span 5;
+  }
+}
+@media (min-width: 1440px) {
+  .main {
+    grid-column: 3 / span 12;
+  }
+}
+
+/* ─── Botões ─── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 3rem;
+  padding-inline: 2rem;
+  border: 1px solid var(--primary);
+  border-radius: 9999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease;
+}
+.btn:hover {
+  background: color-mix(in oklch, var(--primary) 90%, transparent);
+}
+.btn .arrow {
+  display: inline-block;
+  transition: transform 200ms var(--ease-out);
+}
+.btn:hover .arrow {
+  transform: translateX(4px);
+}
+/* A maçã e o pinguim têm o peso embaixo: um pixel para cima alinha ao olho. */
+.btn > .btn-icon {
+  margin-top: -0.0625rem;
+}
+.btn-outline {
+  background: transparent;
+  color: var(--primary);
+}
+.btn-outline:hover {
+  background: var(--accent);
+}
+.btn-white {
+  border-color: #fff;
+  background: transparent;
+  color: #fff;
+}
+.btn-white:hover {
+  border-color: var(--ps-mint);
+  background: var(--ps-mint);
+  color: var(--primary);
+}
+.btn-sm {
+  height: 2.5rem;
+  padding-inline: 1.25rem;
+}
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  text-decoration-thickness: 1px;
+  transition: text-decoration-thickness 200ms ease;
+}
+.link:hover {
+  text-decoration-thickness: 2px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* Seletor segmentado em pílula, como o "Hoje / Com fhir-brasil". */
+.seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 1.75rem;
+  background: var(--card);
+  box-shadow: 0 0 0 1px var(--border);
+}
+.seg button {
+  border: 0;
+  border-radius: 9999px;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  color: var(--fg-70);
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+.seg button:hover {
+  color: var(--foreground);
+}
+.seg button[aria-pressed='true'] {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* ─── Cabeçalho: roxo sólido, GitHub em contorno branco ─── */
+
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-bottom: 1px solid color-mix(in oklch, var(--primary-foreground) 20%, transparent);
+}
+.top-row {
+  height: var(--header-h);
+  align-items: center;
+}
+.brand {
+  grid-column: 1 / span 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 100%;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.brand-mark {
+  width: 1.5rem;
+  height: 2rem;
+  flex: none;
+  color: #fff;
+  --mark-accent: #fff;
+}
+.brand span {
+  font-weight: 400;
+}
+.top-nav {
+  display: none;
+}
+.top-nav a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--header-h);
+  border-bottom: 2px solid transparent;
+  font-weight: 500;
+  text-decoration: none;
+  transition: border-color 200ms ease;
+}
+.top-nav a:hover {
+  border-color: #fff;
+}
+.top-actions {
+  grid-column: 12 / span 3;
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  gap: 0.25rem;
+  height: 100%;
+}
+.top-github {
+  display: none;
+}
+.menu {
+  position: relative;
+}
+.menu summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.375rem;
+  list-style: none;
+  cursor: pointer;
+}
+.menu summary::-webkit-details-marker {
+  display: none;
+}
+.menu svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+.menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.75rem);
+  width: min(20rem, calc(100vw - 2rem));
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--surface-shadow);
+}
+.menu-panel a {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  text-decoration: none;
+  transition: background-color 200ms ease;
+}
+.menu-panel a:hover {
+  background: var(--muted);
+}
+.menu-panel .menu-cta {
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+}
+.menu-panel .menu-cta:hover {
+  background: transparent;
+}
+.menu-panel .menu-cta span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 2.5rem;
+  border-radius: 9999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+@media (min-width: 768px) {
+  .brand {
+    grid-column: 2 / span 2;
+  }
+  .top-actions {
+    grid-column: 11 / span 3;
+  }
+}
+@media (min-width: 1024px) {
+  .top-nav {
+    display: contents;
+  }
+  .top-nav a:nth-child(1) {
+    grid-column: 4 / span 2;
+  }
+  .top-nav a:nth-child(2) {
+    grid-column: 6 / span 2;
+  }
+  .top-nav a:nth-child(3) {
+    grid-column: 8 / span 2;
+  }
+  .top-nav a:nth-child(4) {
+    grid-column: 10 / span 2;
+  }
+  .top-actions {
+    grid-column: 12 / span 2;
+  }
+  .top-github {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    height: 2.5rem;
+    padding-inline: 0.875rem;
+    border: 1px solid #fff;
+    border-radius: 9999px;
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition:
+      background-color 200ms ease,
+      border-color 200ms ease,
+      color 200ms ease;
+  }
+  .top-github:hover {
+    border-color: var(--ps-mint);
+    background: var(--ps-mint);
+    color: var(--primary);
+  }
+  .top-github svg {
+    width: 1rem;
+    height: 1rem;
+    fill: currentColor;
+  }
+  .menu {
+    display: none;
+  }
+}
+@media (min-width: 1440px) {
+  .brand {
+    grid-column: 3 / span 2;
+  }
+  .top-nav a:nth-child(1) {
+    grid-column: 5 / span 2;
+  }
+  .top-nav a:nth-child(2) {
+    grid-column: 7 / span 2;
+  }
+  .top-nav a:nth-child(3) {
+    grid-column: 9 / span 2;
+  }
+  .top-nav a:nth-child(4) {
+    grid-column: 11 / span 2;
+  }
+  .top-actions {
+    grid-column: 13 / span 2;
+  }
+}
+
+/* ─── Seções: título à esquerda, divisória de 1px, neutro e muted ─── */
+
+.section {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+  padding-block: 4rem;
+  background: var(--background);
+}
+.section > .grid {
+  position: relative;
+}
+.section-muted {
+  background: var(--muted);
+}
+.section-roxo {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: color-mix(in oklch, var(--primary-foreground) 20%, transparent);
+}
+.section-roxo .lead,
+.section-roxo .meta {
+  color: color-mix(in oklch, var(--primary-foreground) 80%, transparent);
+}
+.section-head {
+  margin-bottom: 2rem;
+}
+.section-head .kicker {
+  margin-bottom: 1rem;
+  color: var(--primary);
+}
+.section-head .lead {
+  margin-top: 1rem;
+}
+@media (min-width: 768px) {
+  .section {
+    padding-block: 6rem;
+  }
+  .section-head {
+    margin-bottom: 2.5rem;
+  }
+}
+
+/* Fundo abstrato: campo de 1440 × 700, círculo preenchido, bloco de canto
+   arredondado, contorno, um conjunto de linhas, matriz de pontos e um ponto
+   coral (guia, seção 5). As cores do círculo e do bloco trocam por classe. */
+.backdrop {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  width: 100%;
+  height: min(100%, 52rem);
+  inset: auto 0 0;
+  opacity: var(--bd-opacity, 0.72);
+  --bd-a: #8e8bd8;
+  --bd-b: #9ef2e2;
+}
+.backdrop-mint {
+  --bd-a: #9ef2e2;
+  --bd-b: #8e8bd8;
+}
+@media (max-width: 1023px) {
+  .backdrop {
+    width: max(100%, 48rem);
+    height: auto;
+    aspect-ratio: 1440 / 700;
+    top: 6rem;
+    bottom: auto;
+    left: auto;
+    right: -2rem;
+    opacity: 0.4;
+  }
+  .backdrop-flip {
+    left: -2rem;
+    right: auto;
+  }
+  .section-roxo .backdrop {
+    opacity: 0.6;
+  }
+}
+
+/* Superfície opaca sobre o fundo: a captura, o painel, o formulário. */
+.surface {
+  background: #fff;
+  color: #30264f;
+  border-radius: 0.5rem;
+  box-shadow: var(--surface-shadow);
+}
+.panel {
+  padding: 1rem;
+  background: var(--panel);
+}
+@media (min-width: 768px) {
+  .panel {
+    padding: 1.5rem;
+  }
+}
+
+/* Lista numerada com divisórias, no lugar de grade de cartões. */
+.item {
+  position: relative;
+  border-top: 1px solid var(--border);
+  padding-block: 2rem;
+}
+.item .num {
+  display: block;
+  margin-bottom: 0.625rem;
+  font-size: 0.875rem;
+  color: var(--primary);
+}
+.item p {
+  margin-top: 1rem;
+  max-width: 54ch;
+  color: var(--fg-75);
+}
+.item .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  background: var(--card);
+  box-shadow: 0 0 0 1px var(--border);
+  color: var(--primary);
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: box-shadow 200ms ease;
+}
+a.tag:hover {
+  box-shadow: 0 0 0 1px var(--ps-violet);
+}
+@media (min-width: 768px) {
+  .item {
+    padding-left: 4rem;
+  }
+  .item .num {
+    position: absolute;
+    top: 2.25rem;
+    left: 0;
+    margin: 0;
+  }
+}
+
+/* ─── Abertura ─── */
+
+.hero {
+  padding-block: 4rem 3rem;
+  color: var(--primary);
+}
+.hero-grid {
+  position: relative;
+  align-items: center;
+  row-gap: 3rem;
+}
+.hero-text {
+  grid-column: 1 / -1;
+}
+.hero-text .kicker {
+  margin-bottom: 1.25rem;
+}
+.hero-text .h1 {
+  max-width: 19ch;
+}
+.hero-text .lead {
+  margin: 1.5rem 0 2rem;
+  max-width: 46ch;
+  color: var(--primary);
+}
+.hero-text .btn {
+  display: inline-flex;
+}
+.hero-shot {
+  grid-column: 1 / -1;
+}
+.shot-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.375rem;
+  background: #fff;
+  box-shadow: var(--surface-shadow);
+}
+.shot-frame img,
+.shot-frame video {
+  width: 100%;
+}
+/* Botão transparente sobre a captura: abre a tela em tamanho maior. */
+.shot-open {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+.shot-open:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* Tela em tamanho maior */
+.lightbox {
+  width: min(100vw - 2rem, calc((100vh - 2rem) * 16 / 10));
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  border: 0;
+  border-radius: 0.375rem;
+  padding: 0;
+  background: #fff;
+  box-shadow: var(--surface-shadow);
+  overflow: visible;
+}
+.lightbox::backdrop {
+  background: color-mix(in oklch, var(--primary) 70%, black 30%);
+  opacity: 0.85;
+}
+.lightbox[open] {
+  animation: lightbox-in 200ms var(--ease-out);
+}
+@keyframes lightbox-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+.lightbox img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: inherit;
+  cursor: zoom-out;
+}
+.lightbox-close {
+  position: absolute;
+  top: -0.75rem;
+  right: -0.75rem;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: var(--surface-shadow);
+  cursor: pointer;
+}
+.lightbox-close svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.lightbox-close:focus-visible {
+  outline: 2px solid var(--primary-foreground);
+  outline-offset: 2px;
+}
+/* O seletor de telas fica centrado acima da captura. */
+.shot-switch {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+.seg.shot-switch {
+  display: inline-flex;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+}
+/* Em telas estreitas, as opções que não cabem numa linha viram uma grade de
+   duas colunas da mesma largura, em vez de quebrar uma sozinha embaixo. */
+@media (max-width: 639px) {
+  .shot-switch .seg,
+  .seg.shot-switch {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    border-radius: 1rem;
+  }
+  .seg.shot-switch {
+    left: 0;
+    transform: none;
+  }
+  .shot-switch .seg button,
+  .seg.shot-switch button {
+    padding-inline: 0.5rem;
+    border-radius: 0.75rem;
+    white-space: normal;
+  }
+  /* Três opções cabem numa linha só. */
+  .shot-switch .seg:has(button:nth-child(3):last-child) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.shot-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+.shot-bar .meta {
+  color: var(--primary);
+}
+.hero-badges {
+  position: relative;
+  margin-top: 3rem;
+}
+.hero-badges span {
+  grid-column: span 7;
+  border-top: 1px solid color-mix(in oklch, var(--primary) 20%, transparent);
+  padding-top: 1rem;
+  font-size: 0.875rem;
+}
+@media (min-width: 768px) {
+  .hero-text,
+  .hero-shot {
+    grid-column: 2 / span 12;
+  }
+  .hero-badges span {
+    grid-column: span 3;
+  }
+  .hero-badges span:nth-child(1) {
+    grid-column: 2 / span 3;
+  }
+  .hero-badges span:nth-child(2) {
+    grid-column: 5 / span 3;
+  }
+  .hero-badges span:nth-child(3) {
+    grid-column: 8 / span 3;
+  }
+  .hero-badges span:nth-child(4) {
+    grid-column: 11 / span 3;
+  }
+}
+@media (min-width: 1024px) {
+  .hero {
+    padding-block: 5rem 3rem;
+  }
+  /* Centra texto e tela na primeira dobra, sem afastar demais a faixa de baixo. */
+  .hero-grid {
+    min-height: min(calc(100svh - var(--header-h) - 8rem), 40rem);
+  }
+  .hero-text {
+    grid-column: 2 / span 6;
+    padding-right: 2rem;
+  }
+  .hero-shot {
+    grid-column: 8 / -1;
+  }
+}
+@media (min-width: 1440px) {
+  .hero-text {
+    grid-column: 3 / span 6;
+  }
+  .hero-shot {
+    grid-column: 9 / -1;
+  }
+  .hero-badges span:nth-child(1) {
+    grid-column: 3 / span 3;
+  }
+  .hero-badges span:nth-child(2) {
+    grid-column: 6 / span 3;
+  }
+  .hero-badges span:nth-child(3) {
+    grid-column: 9 / span 3;
+  }
+  .hero-badges span:nth-child(4) {
+    grid-column: 12 / span 3;
+  }
+}
+
+/* ─── Panorama ─── */
+
+.pan-figure {
+  margin-top: 1.5rem;
+}
+.pan-figure img {
+  width: 100%;
+}
+.pan-caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  margin-top: 1rem;
+}
+.pan-caption > div {
+  max-width: 60ch;
+}
+.pan-caption strong {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+.pan-caption p {
+  margin-top: 0.375rem;
+  color: var(--fg-75);
+}
+.pan-views {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+.pan-views .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+/* ─── Linhas com marcador (cofre) ─── */
+
+.checkrow {
+  display: flex;
+  align-items: start;
+  gap: 0.625rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9375rem;
+}
+.checkrow:last-of-type {
+  border-bottom: 0;
+}
+.checkmark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+/* ─── Recursos ─── */
+
+/* Mesma moldura da abertura: só a sombra da captura, sem painel em volta. */
+.shot-aside figcaption {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--primary);
+}
+
+/* ─── Enviar ao Lattes ─── */
+
+.send-figure figcaption {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--primary);
+}
+
+/* Abrir detalhes: altura e opacidade do navegador, sem salto. */
+.faq {
+  border-top: 1px solid var(--border);
+}
+.faq details {
+  border-bottom: 1px solid var(--border);
+}
+.faq summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3.5rem;
+  padding: 1.25rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+.faq summary::after {
+  content: '+';
+  flex: none;
+  width: 1.5rem;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--primary);
+}
+.faq details[open] summary::after {
+  content: '−';
+}
+/* O que a extensão grava: um título e duas listas lado a lado. */
+.coverage {
+  margin-top: 1rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+.coverage .h3 {
+  margin-bottom: 1.25rem;
+}
+.cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem 3rem;
+}
+.cols-title {
+  margin-bottom: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+.cols ul {
+  margin: 0;
+  padding-left: 1.125rem;
+  color: var(--fg-75);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+.cols li + li {
+  margin-top: 0.375rem;
+}
+@media (min-width: 768px) {
+  .cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.faq p {
+  max-width: 70ch;
+  margin: 0 0 1.5rem;
+  color: var(--fg-75);
+}
+.faq p + p {
+  margin-top: -0.75rem;
+}
+.faq-compact {
+  margin-top: 2rem;
+}
+.faq-compact summary {
+  font-size: 1rem;
+}
+
+/* ─── Privacidade ─── */
+
+.vault {
+  padding: 1.5rem;
+}
+.vault .kicker {
+  font-size: 0.75rem;
+  color: var(--primary);
+}
+.vault-name {
+  margin: 1rem 0 1.25rem;
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  font-weight: 300;
+  color: var(--primary);
+}
+.vault .checkrow {
+  justify-content: space-between;
+}
+.vault .checkrow b {
+  color: var(--primary);
+}
+.masked {
+  font-family: var(--font-mono);
+  letter-spacing: 0.2em;
+}
+
+/* ─── Encerramento roxo, ação em menta ─── */
+
+.download .h2 {
+  color: var(--primary-foreground);
+}
+.download-groups {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2rem;
+  margin-top: 2.5rem;
+}
+.download-group {
+  border-top: 1px solid color-mix(in oklch, var(--primary-foreground) 25%, transparent);
+  padding-top: 1.25rem;
+}
+.download-group .h3 {
+  color: var(--primary-foreground);
+}
+.download-group p {
+  margin-top: 0.75rem;
+  max-width: 44ch;
+  font-size: 0.9375rem;
+  color: color-mix(in oklch, var(--primary-foreground) 80%, transparent);
+}
+.download-group p a {
+  color: inherit;
+}
+/* Botões em duas colunas da mesma largura, com o ícone do sistema. */
+.download-group .actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+.download-group .btn {
+  padding-inline: 1rem;
+}
+.btn-icon {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  fill: currentColor;
+}
+@media (min-width: 768px) {
+  .download-groups {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ─── Texto corrido (política de privacidade) ─── */
+
+.prose {
+  max-width: 68ch;
+}
+.prose .kicker {
+  margin-bottom: 1rem;
+}
+.prose h1 {
+  margin-bottom: 0.75rem;
+}
+.prose-date {
+  margin-bottom: 2.5rem;
+}
+.prose h2 {
+  margin: 2.5rem 0 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.prose p,
+.prose li {
+  line-height: 1.65;
+}
+.prose p + p {
+  margin-top: 1rem;
+}
+.prose ul {
+  margin: 0.75rem 0;
+  padding-left: 1.25rem;
+}
+.prose li + li {
+  margin-top: 0.5rem;
+}
+.prose a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  text-decoration-thickness: 1px;
+  transition: text-decoration-thickness 200ms ease;
+}
+.prose a:hover {
+  text-decoration-thickness: 2px;
+}
+.prose code {
+  padding: 0.1em 0.35em;
+  border-radius: 0.25rem;
+  background: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+/* ─── Rodapé ─── */
+
+.footer {
+  border-top: 1px solid #463c6d1a;
+  background: color-mix(in srgb, var(--ps-sand) 50%, transparent);
+  padding-block: 2.5rem;
+}
+.footer-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.footer-brand small {
+  font-size: 0.75rem;
+  letter-spacing: 0.025em;
+  color: #463c6d66;
+}
+/* Como o rodapé dos projetos abertos da Precisa (OpenFooter): marca e nome
+   colados, em Pausa, no violeta claro. */
+.footer-brand a {
+  display: flex;
+  align-items: center;
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  color: var(--ps-violet);
+  text-decoration: none;
+  transition: opacity 200ms ease;
+}
+.footer-brand a:hover {
+  opacity: 0.8;
+}
+.footer-brand .precisa-mark {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+}
+.footer-social {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.footer-social a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: #463c6d0d;
+  color: #463c6d80;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+.footer-social a:hover {
+  background: #463c6d1a;
+  color: #463c6d;
+}
+.footer-social svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: currentColor;
+}
+.footer-note {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #463c6d1a;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: #463c6d99;
+}
+.footer-note a {
+  color: inherit;
+}
+@media (min-width: 640px) {
+  .footer-row {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  .footer-brand {
+    align-items: start;
+  }
+}
+
+/* ─── Movimento reduzido: sem translação, animação ou rolagem suave ─── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+  .btn:hover .arrow {
+    transform: none;
+  }
+  .lightbox[open] {
+    animation: none;
+  }
+}
