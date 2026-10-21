@@ -60,12 +60,15 @@ const PERIOD_LINKS: Record<string, FieldLink> = {
   f_orgao: { attr: 'NOME-ORGAO' },
 };
 
-/** Os campos da alteração, com o texto do órgão como a página o mostra (com a unidade). */
+/**
+ * Os campos da alteração, com o texto do órgão como a página real o mostra
+ * (21/10/2026): "/ Órgão", ou só "/Unidade".
+ */
 function withOrganText(item: XElement): Record<string, FieldLink> {
   const unit = getAttr(item, 'NOME-UNIDADE') ?? '';
   return {
     ...PERIOD_LINKS,
-    f_orgao: { attr: 'NOME-ORGAO', toForm: (v) => (unit ? `${v}/\n${unit}` : v) },
+    f_orgao: { attr: 'NOME-ORGAO', toForm: (v) => (unit ? `/${unit}` : `/ ${v}`) },
   };
 }
 
@@ -134,10 +137,15 @@ export function cargoForm(req: SimRequest, state: LattesState, atuacao?: XElemen
   const nature = found ? found.natur : asked;
   const codeOf = (el: XElement | undefined) => (el && getAttr(el, 'CODIGO-CURSO')) || '';
   const course = codeOf(item);
+  // O código escolhido volta em f_codorgao, o da unidade quando há (21/10/2026).
+  const organCode = item
+    ? getAttr(item, 'CODIGO-UNIDADE') || getAttr(item, 'CODIGO-ORGAO') || ''
+    : '';
   const hidden = {
     f_cod: state.code,
     f_cod_curso: course,
     f_codinst: req.get('f_codinst') ?? '',
+    f_codorgao: nature === '4' ? '' : organCode,
     f_ctr: item ? 'U' : 'I',
     f_natur_ativ: nature,
     f_seq_ativ: req.get('f_seq_ativ') ?? '',

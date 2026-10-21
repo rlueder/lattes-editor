@@ -30,6 +30,16 @@ outras 127 são o alvo deste plano.
   as duas escolhas juntas vão. 2605 de 2787 campos vão (93%), eram 2586. A
   instituição da formação complementar passou a aparecer com o motivo real (as
   buscas dela estão desligadas, `COMPL_ENDERECO_LOOKUPS_ENABLED`).
+  No Lattes real, numa atividade de direção de teste na atuação da Campanha
+  Nacional de Escolas da Comunidade, o conector trocou o órgão, depois o órgão
+  por uma unidade, uma unidade por outra e a unidade de volta para um órgão,
+  com o período e o cargo mantidos; a atividade saiu pelo registro, com a base
+  tirada na hora. O teste achou dois erros na releitura, os dois corrigidos: a
+  página mostra o órgão sem unidade como "/ Órgão" e a unidade só como
+  "/Unidade", sem o órgão de cima, e o conector dava "não gravou" com o
+  Lattes já gravado. A releitura agora confere o código, que a página da
+  atividade devolve em `f_codorgao` (o da unidade, quando há), e o Lattes
+  simulado devolve como a página real.
 - 20/10/2026: o depositante pessoa e as datas do histórico de situações da
   patente pelo conector (`src/bridge/production/holders.ts`,
   `targets/registros.ts`), a partir da exportação e da página de edição de

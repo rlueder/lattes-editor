@@ -145,7 +145,7 @@ describe('atividade: o envio', () => {
     expect(postsOf(open).at(-1)!.fields.f_codorgao).toBe('000001000008');
   });
 
-  it('a unidade vai com o órgão de cima, e a releitura confere "órgão/unidade"', async () => {
+  it('a unidade vai com o órgão de cima, e a releitura confere o código dela', async () => {
     open = await withLattesSimulado({
       xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${ORGAN_XML}`),
     });
@@ -184,7 +184,8 @@ describe('atividade: o envio', () => {
       ).ops[0]!;
     };
     expect(await applyOp(opFor('999999999999'), open.port)).toMatchObject({ status: 'erro' });
-    setAttr(estagio(open.state.root), 'NOME-ORGAO', 'Mudou no Lattes');
+    // Outro órgão no Lattes: a página devolve o código dele, e é ele que confere.
+    setAttr(estagio(open.state.root), 'CODIGO-ORGAO', '000009000001');
     expect(await applyOp(opFor('000001000008'), open.port)).toMatchObject({
       status: 'divergente',
     });

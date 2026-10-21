@@ -334,10 +334,20 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
     if (afterRows.length !== wanted.length || afterRows.some((r, i) => !same(r.l, wanted[i]!.l))) {
       notSaved.push('descrição');
     }
-    // O f_orgao vem desabilitado: a releitura confere o texto dele, não o par.
-    const organAfter = after.find((c) => c.name === 'f_orgao')?.value ?? '';
-    if (organShown !== undefined && organLoose(organAfter) !== organLoose(organShown)) {
-      notSaved.push('órgão');
+    // A releitura confere o código, que a página da atividade devolve nos
+    // ocultos. O texto de f_orgao (desabilitado) só vale sem código: com uma
+    // unidade, a página mostra "/Unidade", sem o órgão de cima (21/10/2026).
+    if (op.organ && organShown !== undefined) {
+      const codeAfter = (
+        pairValue(afterPairs, 'f_codorgao') ||
+        pairValue(afterPairs, 'f_codorgao2') ||
+        ''
+      ).trim();
+      const organAfter = after.find((c) => c.name === 'f_orgao')?.value ?? '';
+      const saved = codeAfter
+        ? codeAfter === op.organ.code
+        : organLoose(organAfter) === organLoose(organShown);
+      if (!saved) notSaved.push('órgão');
     }
     if (notSaved.length > 0) {
       return result('divergente', `O Lattes não gravou: ${notSaved.join(', ')}. Confira no Lattes`);
