@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { applyOp } from '../src/bridge/apply.ts';
 import { dictionaryRows } from '../src/bridge/edit-citacao.ts';
+import { fieldAbsent } from '../src/bridge/form-lacks.ts';
 import { planChanges, type PlanOptions } from '../src/bridge/plan.ts';
 import { diffDocuments } from '../src/model/changes.ts';
 import { encodeLatin1 } from '../src/model/latin1.ts';
@@ -84,7 +85,10 @@ describe('citação de coautor: o plano', () => {
     const own = plan((root) =>
       setAttr(authorsIn(root, 'Sistema Um')[0]!, 'NOME-PARA-CITACAO', 'P. SINTÉTICA'),
     );
-    expect(own.unsupported[0]?.reason).toMatch(/sua própria citação/);
+    expect(own.unsupported[0]?.reason).toMatch(
+      /segue o nome em citações bibliográficas da identificação/,
+    );
+    expect(fieldAbsent(own.unsupported[0]!.reason)).toBe(true);
     const mixed = plan(
       coauthor('Sistema Um', {
         'NOME-COMPLETO-DO-AUTOR': 'Outra Pessoa',

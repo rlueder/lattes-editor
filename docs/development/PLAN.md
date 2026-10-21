@@ -18,6 +18,9 @@ outras 127 são o alvo deste plano.
 
 ## Estado atual
 
+- 21/10/2026, à noite: a própria citação nos itens segue a identificação, e
+  o Lattes não guarda outra item a item (Fase 5). Passou a campo que o
+  formulário não tem: 2605 de 2738 (95%).
 - 21/10/2026: órgão e unidade das atividades pela lista. O envio existia
   desde a #106, mas o editor só oferecia a janela de órgãos no projeto, e
   numa atividade só dava para digitar o nome, que o conector recusa sem o
@@ -331,6 +334,14 @@ citação muda em todas as produções do coautor. A própria citação fica à 
 (entrada 14 do dicionário), a troca no dicionário mudou o `t` da linha do
 item; depois a citação voltou e o item saiu pelo registro (marca no espelho:
 0).
+
+Fechado em 21/10/2026: a própria citação não tem como ir item a item. Num
+item de teste de demais trabalhos, o `check()` da própria página mandou a
+linha da pessoa com outra citação, o Lattes respondeu sucesso e guardou o nome
+em citações da identificação. As 49 trocas da própria citação passaram a
+"o formulário do Lattes não tem", e o editor mostra o campo sem edição,
+apontando para a identificação, que vai pelo conector. 2605 de 2738 campos vão
+(95%).
 
 ### Fase 6: substituir (incluir o novo e excluir o antigo)
 

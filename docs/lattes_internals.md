@@ -1436,6 +1436,15 @@ O que o conector faz com isso (`src/bridge/production/holders.ts` e
   20/10/2026 num item de teste: o `t` da linha do item seguiu a entrada).
 - A própria pessoa não está no dicionário: a linha dela no `autorDP` do menu
   tem o `c` vazio.
+- A citação da própria pessoa num item não se troca item a item. Num trabalho
+  de teste (21/10/2026, demais trabalhos), o `t` da linha dela (`c` vazio,
+  `editable: false`) foi trocado no `autorProvider` da página e o `check()`
+  da própria página enviou `f_autores_l` com o `t` novo; o Lattes respondeu
+  "A operação foi realizada com sucesso" e a releitura voltou com o nome em
+  citações da identificação (`providerDetNmeCit`, um nome só nesse
+  currículo). **Observado.** Que a equipe do projeto e os participantes de
+  banca façam o mesmo é **inferido**: usam a mesma grade, com a linha da
+  pessoa de `c` vazio.
 
 ### O DOI das produções bibliográficas (lido e gravado em 20/10/2026)
 
