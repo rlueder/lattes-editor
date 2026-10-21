@@ -33,7 +33,7 @@ pegava. Desde então a passada não depende da marca:
   painel a lista em "Sem a marca na página". Os itens sem campo de texto
   (ensino fundamental, médio e técnico, pós-doutorado, formação
   complementar) caem ali: confira cada um no Lattes e use "Remover também os
-  sem marca". A linha da atividade também não mostra a marca, mas a página
+  sem marca", que pede um segundo clique e só tira as linhas listadas. Uma página que não se lê conta como sem marca. A linha da atividade também não mostra a marca, mas a página
   dela mostra, na descrição.
 - No fim de cada remoção, o painel mostra o que ainda está a mais e o que
   sumiu da base. Uma linha da base que sumiu é um erro a conferir no Lattes.

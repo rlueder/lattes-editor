@@ -106,8 +106,11 @@ export type EditorMessage =
       id: string;
       retryFailed?: boolean;
       type: 'itens-teste';
-      /** Na remoção: tira também as linhas cuja página não tem a marca. */
-      unmarked?: boolean;
+      /**
+       * Na remoção: as linhas sem marca que a pessoa conferiu (a chave
+       * "lista :: texto" de semMarca); só elas saem sem a marca.
+       */
+      unmarked?: string[];
     }
   /**
    * Envia ao CNPq (src/bridge/publish.ts), só com PUBLISH_ENABLED e depois de

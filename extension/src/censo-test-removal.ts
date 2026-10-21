@@ -2,7 +2,7 @@
 // só as linhas que não estavam na base das listas, conferidas no fim contra a
 // base inteira. Separada de censo-test-items.ts, que cria.
 
-import { markedBatch, removalOrder } from '../../src/census/test-ledger.ts';
+import { markedBatch, removalOrder, rowKey } from '../../src/census/test-ledger.ts';
 import { TEST_MARK } from '../../src/census/test-plan.ts';
 import {
   type BatchOptions,
@@ -29,8 +29,8 @@ const withoutCode = (p: string) => p.replace(/([?&])f_cod=[A-Z0-9]+&?/, '$1').re
  * A linha só sai se a página do item tem a marca. Toda linha diferente da base
  * vira candidata, e numa base antiga isso inclui item seu incluído ou
  * alterado depois dela (21/10/2026). Como nem todo formulário tem onde levar a
- * marca, a linha sem ela fica de fora e volta em semMarca; com unmarked, sai
- * também, depois de a pessoa conferir a lista.
+ * marca, a linha sem ela fica de fora e volta em semMarca; as que a pessoa
+ * conferiu nessa lista voltam em unmarked e saem.
  */
 export async function removeTestItems(
   code: string,
@@ -39,8 +39,8 @@ export async function removeTestItems(
     batch = 10,
     delayMs = [3000, 6000],
     dryRun = false,
-    unmarked = false,
-  }: BatchOptions & { dryRun?: boolean; unmarked?: boolean } = {},
+    unmarked = [],
+  }: BatchOptions & { dryRun?: boolean; unmarked?: string[] } = {},
 ) {
   const menu = document.documentElement.outerHTML;
   const progress = load();
@@ -53,9 +53,9 @@ export async function removeTestItems(
   const { noMark: rows, plan } = await markedBatch(
     candidates,
     async (link) => (await get(withCode(link, code))).html,
-    { batch, mark: TEST_MARK, unmarked },
+    { allowed: unmarked, batch, between: () => pause([300, 800]), mark: TEST_MARK },
   );
-  const noMark = rows.map((r) => `${r.list} :: ${r.text}`);
+  const noMark = rows.map(rowKey);
   if (dryRun) {
     setLive({ phase: 'parado' });
     return {

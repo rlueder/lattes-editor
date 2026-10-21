@@ -7,6 +7,7 @@ import {
   markedBatch,
   nestedUrls,
   removalOrder,
+  rowKey,
   rowsOf,
 } from '../src/census/test-ledger.ts';
 
@@ -102,21 +103,41 @@ describe('itens de teste: base e registro (Fase 0)', () => {
     const html = (link: string) => Promise.resolve(pages[link] ?? '');
 
     it('sem a marca na página a linha fica, e volta para conferir', async () => {
-      const { noMark, plan } = await markedBatch(rows, html, {
-        batch: 10,
-        mark: MARK,
-        unmarked: false,
-      });
+      const { noMark, plan } = await markedBatch(rows, html, { batch: 10, mark: MARK });
       expect(plan.map((r) => r.link)).toEqual(['teste-1', 'teste-2']);
       expect(noMark.map((r) => r.link)).toEqual(['seu']);
     });
 
-    it('com unmarked sai também, e o lote para no tamanho pedido', async () => {
-      const all = await markedBatch(rows, html, { batch: 10, mark: MARK, unmarked: true });
-      expect(all.plan.map((r) => r.link)).toEqual(['teste-1', 'seu', 'teste-2']);
-      const one = await markedBatch(rows, html, { batch: 1, mark: MARK, unmarked: false });
+    it('a sem marca só sai se a pessoa a conferiu, e aí não volta como sem marca', async () => {
+      const allowed = [rowKey(rows[1]!)];
+      const r = await markedBatch(rows, html, { allowed, batch: 10, mark: MARK });
+      expect(r.plan.map((x) => x.link)).toEqual(['teste-1', 'seu', 'teste-2']);
+      expect(r.noMark).toEqual([]);
+      const other = await markedBatch(rows, html, {
+        allowed: ['outra lista :: outro texto'],
+        batch: 10,
+        mark: MARK,
+      });
+      expect(other.plan.map((x) => x.link)).toEqual(['teste-1', 'teste-2']);
+    });
+
+    it('o lote para no tamanho pedido, e espera entre uma leitura e outra', async () => {
+      let waits = 0;
+      const between = async () => void waits++;
+      const one = await markedBatch(rows, html, { batch: 1, between, mark: MARK });
       expect(one.plan.map((r) => r.link)).toEqual(['teste-1']);
       expect(one.noMark).toEqual([]);
+      expect(waits).toBe(0);
+      await markedBatch(rows, html, { batch: 10, between, mark: MARK });
+      expect(waits).toBe(2);
+    });
+
+    it('a página que não se lê conta como sem marca, e o resto segue', async () => {
+      const failing = (link: string) =>
+        link === 'teste-1' ? Promise.reject(new Error('sessão caiu')) : html(link);
+      const { noMark, plan } = await markedBatch(rows, failing, { batch: 10, mark: MARK });
+      expect(plan.map((r) => r.link)).toEqual(['teste-2']);
+      expect(noMark.map((r) => r.link)).toEqual(['teste-1', 'seu']);
     });
   });
 });

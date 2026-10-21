@@ -16,6 +16,8 @@ const LABEL = {
 export function TestItemsPanel() {
   const { ask, pending, state } = useTestItems();
   const [batch, setBatch] = useState(10);
+  // A remoção sem marca pede um segundo clique, e leva só as linhas listadas.
+  const [confirming, setConfirming] = useState(false);
   const s = state.summary;
   const last = state.log[0];
   return (
@@ -109,21 +111,37 @@ export function TestItemsPanel() {
       {s?.semMarca && s.semMarca.length > 0 && (
         <div className="test-items-error" role="alert">
           <p>
-            Sem a marca na página ({s.semMarca.length}): ficaram. Podem ser itens seus incluídos ou
-            alterados depois da base. Confira cada um no Lattes antes de remover.
+            Sem a marca na página ({s.semMarca.length}): não foram removidos. Podem ser itens seus
+            incluídos ou alterados depois da base. Confira cada um no Lattes antes de remover.
           </p>
           <ul>
             {s.semMarca.map((r, i) => (
               <li key={`${i}-${r}`}>{r}</li>
             ))}
           </ul>
-          <button
-            disabled={!!pending}
-            type="button"
-            onClick={() => ask('remover', { batch, unmarked: true })}
-          >
-            Remover também os sem marca
-          </button>
+          {confirming ? (
+            <p>
+              Remover só estes {s.semMarca.length}, sem a marca?{' '}
+              <button
+                className="danger"
+                disabled={!!pending}
+                type="button"
+                onClick={() => {
+                  setConfirming(false);
+                  ask('remover', { batch, unmarked: s.semMarca });
+                }}
+              >
+                Sim, remover estes
+              </button>{' '}
+              <button type="button" onClick={() => setConfirming(false)}>
+                Cancelar
+              </button>
+            </p>
+          ) : (
+            <button disabled={!!pending} type="button" onClick={() => setConfirming(true)}>
+              Remover também os sem marca
+            </button>
+          )}
         </div>
       )}
       {s?.falharam && s.falharam.length > 0 && (

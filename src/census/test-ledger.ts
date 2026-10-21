@@ -112,24 +112,43 @@ export function removalOrder(rows: PlacedRow[]): PlacedRow[] {
   return [...rows.filter(nested), ...rows.filter((r) => !nested(r))];
 }
 
+/** A chave de uma linha para a pessoa conferir: a lista e o texto. */
+export const rowKey = (r: PlacedRow) => `${r.list} :: ${r.text}`;
+
 /**
- * O lote da remoção: até `batch` candidatas cuja página tem a marca (ou todas,
- * com unmarked), e as sem marca, para a pessoa conferir. A linha diferente da
- * base pode ser item seu incluído ou alterado depois dela; a marca na página
- * é o que diz que é de teste (21/10/2026).
+ * O lote da remoção: até `batch` candidatas cuja página tem a marca, mais as
+ * sem marca que a pessoa conferiu (`allowed`, pela chave da linha), e as sem
+ * marca que ficaram. A linha diferente da base pode ser item seu incluído ou
+ * alterado depois dela; a marca na página é o que diz que é de teste
+ * (21/10/2026). Uma página que não se lê conta como sem marca. `between`
+ * espera entre uma leitura e a seguinte.
  */
 export async function markedBatch(
   candidates: readonly PlacedRow[],
   pageHtml: (link: string) => Promise<string>,
-  { batch, mark, unmarked }: { batch: number; mark: string; unmarked: boolean },
+  {
+    allowed = [],
+    batch,
+    between,
+    mark,
+  }: {
+    allowed?: readonly string[];
+    batch: number;
+    between?: () => Promise<unknown>;
+    mark: string;
+  },
 ): Promise<{ noMark: PlacedRow[]; plan: PlacedRow[] }> {
   const plan: PlacedRow[] = [];
   const noMark: PlacedRow[] = [];
-  for (const row of candidates) {
+  for (const [i, row] of candidates.entries()) {
     if (plan.length >= batch) break;
-    const marked = (await pageHtml(row.link)).includes(mark);
-    if (marked || unmarked) plan.push(row);
-    if (!marked) noMark.push(row);
+    if (i > 0) await between?.();
+    const marked = await pageHtml(row.link).then(
+      (html) => html.includes(mark),
+      () => false,
+    );
+    if (marked || allowed.includes(rowKey(row))) plan.push(row);
+    else noMark.push(row);
   }
   return { noMark, plan };
 }
