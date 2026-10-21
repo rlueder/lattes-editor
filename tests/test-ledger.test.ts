@@ -4,8 +4,10 @@ import {
   diffSnapshots,
   listKey,
   listUrls,
+  markedBatch,
   nestedUrls,
   removalOrder,
+  rowLabel,
   rowsOf,
 } from '../src/census/test-ledger.ts';
 
@@ -84,5 +86,80 @@ describe('itens de teste: base e registro (Fase 0)', () => {
       { link: 'b', list: 'pkg_ativ.cargos_vinculos?f_seq_ativ=22', text: 'Vínculo de teste' },
     ];
     expect(removalOrder(rows).map((r) => r.link)).toEqual(['b', 'a']);
+  });
+
+  describe('o lote da remoção pela marca na página', () => {
+    const MARK = 'TESTE EDITOR APAGAR';
+    const rows = [
+      { link: 'teste-1', list: 'pkg_demais.lista?', text: 'Item de teste' },
+      { link: 'seu', list: 'pkg_demais.lista?', text: 'Item incluído depois da base' },
+      { link: 'teste-2', list: 'pkg_demais.lista?', text: 'Outro item de teste' },
+    ];
+    const pages: Record<string, string> = {
+      seu: '<input value="Um item de verdade">',
+      'teste-1': `<input value="${MARK} demais-v0">`,
+      'teste-2': `<input value="${MARK} demais-v1">`,
+    };
+    const html = (link: string) => Promise.resolve(pages[link] ?? '');
+
+    it('sem a marca na página a linha fica, e volta para conferir', async () => {
+      const { noMark, plan } = await markedBatch(rows, html, { batch: 10, mark: MARK });
+      expect(plan.map((r) => r.link)).toEqual(['teste-1', 'teste-2']);
+      expect(noMark.map((r) => r.link)).toEqual(['seu']);
+    });
+
+    it('a sem marca só sai se a pessoa a conferiu, e aí não volta como sem marca', async () => {
+      const allowed = [rows[1]!.link];
+      const r = await markedBatch(rows, html, { allowed, batch: 10, mark: MARK });
+      expect(r.plan.map((x) => x.link)).toEqual(['teste-1', 'seu', 'teste-2']);
+      expect(r.noMark).toEqual([]);
+      const other = await markedBatch(rows, html, {
+        allowed: ['outro-link'],
+        batch: 10,
+        mark: MARK,
+      });
+      expect(other.plan.map((x) => x.link)).toEqual(['teste-1', 'teste-2']);
+    });
+
+    it('o lote para no tamanho pedido, e espera entre uma leitura e outra', async () => {
+      let waits = 0;
+      const between = async () => void waits++;
+      const one = await markedBatch(rows, html, { batch: 1, between, mark: MARK });
+      expect(one.plan.map((r) => r.link)).toEqual(['teste-1']);
+      expect(one.noMark).toEqual([]);
+      expect(waits).toBe(0);
+      await markedBatch(rows, html, { batch: 10, between, mark: MARK });
+      expect(waits).toBe(2);
+    });
+
+    it('a página que não se lê fica à parte, não sai nem conferida, e o resto segue', async () => {
+      const failing = (link: string) =>
+        link === 'seu' ? Promise.reject(new Error('sessão caiu')) : html(link);
+      const r = await markedBatch(rows, failing, { allowed: ['seu'], batch: 10, mark: MARK });
+      expect(r.plan.map((x) => x.link)).toEqual(['teste-1', 'teste-2']);
+      expect(r.noMark).toEqual([]);
+      expect(r.unreadable.map((x) => x.link)).toEqual(['seu']);
+    });
+
+    it('duas linhas iguais na tela: a conferência vale só para o link conferido', async () => {
+      const twins = [
+        { link: 'seu-a', list: 'pkg_demais.lista?', text: 'Mesmo texto' },
+        { link: 'seu-b', list: 'pkg_demais.lista?', text: 'Mesmo texto' },
+      ];
+      expect(rowLabel(twins[0]!)).toBe(rowLabel(twins[1]!));
+      const r = await markedBatch(twins, () => Promise.resolve(''), {
+        allowed: ['seu-a'],
+        batch: 10,
+        mark: MARK,
+      });
+      expect(r.plan.map((x) => x.link)).toEqual(['seu-a']);
+      expect(r.noMark.map((x) => x.link)).toEqual(['seu-b']);
+    });
+
+    it('conta as páginas lidas', async () => {
+      const seen: number[] = [];
+      await markedBatch(rows, html, { batch: 10, mark: MARK, onRead: (n) => seen.push(n) });
+      expect(seen).toEqual([1, 2, 3]);
+    });
   });
 });

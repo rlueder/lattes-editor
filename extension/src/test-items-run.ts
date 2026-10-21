@@ -43,6 +43,7 @@ export async function answerTestItems(
       batch: msg.batch,
       dryRun: msg.dryRun,
       retryFailed: msg.retryFailed,
+      unmarked: msg.unmarked,
     });
     await reply(result);
   } catch (err) {

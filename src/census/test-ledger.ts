@@ -111,3 +111,47 @@ export function removalOrder(rows: PlacedRow[]): PlacedRow[] {
   const nested = (r: PlacedRow) => /cargos_vinculos|lista_periodico/.test(r.list);
   return [...rows.filter(nested), ...rows.filter((r) => !nested(r))];
 }
+
+/** Como a linha aparece para a pessoa conferir: a lista e o texto. */
+export const rowLabel = (r: PlacedRow) => `${r.list} :: ${r.text}`;
+
+/**
+ * O lote da remoção: até `batch` candidatas cuja página tem a marca, mais as
+ * sem marca que a pessoa conferiu (`allowed`, pelo link de cada uma, que não
+ * repete), as sem marca que ficaram e as páginas que não se leram. A linha
+ * diferente da base pode ser item seu incluído ou alterado depois dela; a
+ * marca na página é o que diz que é de teste (21/10/2026). A página que não
+ * se lê não sai nem com a conferência. `between` espera entre uma leitura e a
+ * seguinte; `onRead` conta as lidas.
+ */
+export async function markedBatch(
+  candidates: readonly PlacedRow[],
+  pageHtml: (link: string) => Promise<string>,
+  {
+    allowed = [],
+    batch,
+    between,
+    mark,
+    onRead,
+  }: {
+    allowed?: readonly string[];
+    batch: number;
+    between?: () => Promise<unknown>;
+    mark: string;
+    onRead?: (done: number, row: PlacedRow) => void;
+  },
+): Promise<{ noMark: PlacedRow[]; plan: PlacedRow[]; unreadable: PlacedRow[] }> {
+  const plan: PlacedRow[] = [];
+  const noMark: PlacedRow[] = [];
+  const unreadable: PlacedRow[] = [];
+  for (const [i, row] of candidates.entries()) {
+    if (plan.length >= batch) break;
+    if (i > 0) await between?.();
+    const html = await pageHtml(row.link).catch(() => undefined);
+    onRead?.(i + 1, row);
+    if (html === undefined) unreadable.push(row);
+    else if (html.includes(mark) || allowed.includes(row.link)) plan.push(row);
+    else noMark.push(row);
+  }
+  return { noMark, plan, unreadable };
+}

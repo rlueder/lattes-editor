@@ -27,6 +27,14 @@ pegava. Desde então a passada não depende da marca:
 - A remoção exclui as linhas do registro, e nada mais. Uma atuação só sai
   inteira se a página dela não existia na base. "Ver o que sai" mostra a
   lista antes.
+- Toda linha diferente da base entra no registro, e numa base antiga isso
+  inclui um item seu incluído ou alterado depois dela. Por isso uma linha só
+  sai se a página do item tem a marca (21/10/2026). A sem marca fica, e o
+  painel a lista em "Sem a marca na página". Os itens sem campo de texto
+  (ensino fundamental, médio e técnico, pós-doutorado, formação
+  complementar) caem ali: confira cada um no Lattes e use "Remover também os
+  sem marca", que pede um segundo clique e só tira as linhas listadas, pelo link de cada uma. Uma página que não se lê fica em "Páginas que não se leram" e não sai, nem conferida. A linha da atividade também não mostra a marca, mas a página
+  dela mostra, na descrição.
 - No fim de cada remoção, o painel mostra o que ainda está a mais e o que
   sumiu da base. Uma linha da base que sumiu é um erro a conferir no Lattes.
   Acabou quando não há nada a mais nem a menos.
@@ -57,7 +65,8 @@ Dev instalada, numa aba do menu do Lattes:
    passada de edição com a exportação: `__lattesCensus.link(undefined, {
 maxItems: 50, download: true })`. Os marcadores casam campo e atributo.
 4. "Ver o que sai", depois "Remover lote" até o painel mostrar zero a mais
-   que a base e nada sumido. Envie ao CNPq de novo.
+   que a base e nada sumido. O que aparecer sem a marca, confira antes de
+   "Remover também os sem marca". Envie ao CNPq de novo.
 5. Com tudo igual à base, `__lattesCensus.resetTestItems()` esquece o
    andamento e a base.
 
