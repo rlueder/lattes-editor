@@ -213,8 +213,9 @@ python3 -m http.server 8858 --bind 127.0.0.1 --directory site
 ```
 
 Abra `http://127.0.0.1:8858/`. O site usa HTML, CSS e JavaScript sem etapa
-de build; `homepage.css` e `homepage.js` atendem a página inicial.
-`site.css` continua atendendo a política de privacidade da extensão.
+de build; `homepage.css` atende as duas páginas e `homepage.js`, só a
+inicial. A política de privacidade usa o mesmo cabeçalho e rodapé da página
+inicial, com o texto numa coluna de leitura (`.prose`).
 Os links de download apontam para os instaladores da última versão publicada
 e para a pré-estreia `dev`.
 
