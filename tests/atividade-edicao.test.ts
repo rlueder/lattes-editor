@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { applyOp } from '../src/bridge/apply.ts';
 import { specFromRows } from '../src/bridge/edit-atividade.ts';
+import { encodeLatin1Form, setPairs, successfulPairs } from '../src/bridge/form.ts';
 import { planChanges } from '../src/bridge/plan.ts';
 import { diffDocuments } from '../src/model/changes.ts';
 import { encodeLatin1 } from '../src/model/latin1.ts';
@@ -109,6 +110,38 @@ describe('atividade: o plano', () => {
     expect(postsOf(open).map((p) => p.fields.f_espec_l)).toEqual([
       '1@1?Interfaces!2@?!3@?!4@?!5@?!6@?!7@?!8@?!',
       '1@1?Oficina de design!2@?!3@?!4@?!5@?!6@?!7@?!8@?!',
+    ]);
+  });
+
+  it('o simulado grava a grade de linhas de pesquisa como chegou', async () => {
+    const xml = XML.replace(
+      /<ATIVIDADES-DE-ESTAGIO>.*<\/ATIVIDADES-DE-ESTAGIO>/,
+      '<ATIVIDADES-DE-PESQUISA-E-DESENVOLVIMENTO><PESQUISA-E-DESENVOLVIMENTO SEQUENCIA-FUNCAO-ATIVIDADE="1" FLAG-PERIODO="ANTERIOR" ANO-INICIO="2002" ANO-FIM="2004" CODIGO-ORGAO="000300000995" NOME-ORGAO="Empresa">' +
+        '<LINHA-DE-PESQUISA SEQUENCIA-LINHA="1" TITULO-DA-LINHA-DE-PESQUISA="Sai" OBJETIVOS-LINHA-DE-PESQUISA="Objetivo A"/>' +
+        '<LINHA-DE-PESQUISA SEQUENCIA-LINHA="3" TITULO-DA-LINHA-DE-PESQUISA="Fica" OBJETIVOS-LINHA-DE-PESQUISA="Objetivo B"/>' +
+        '</PESQUISA-E-DESENVOLVIMENTO></ATIVIDADES-DE-PESQUISA-E-DESENVOLVIMENTO>',
+    );
+    open = await withLattesSimulado({
+      xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${xml}`),
+    });
+    const path = `PKG_ATIV.cargo?f_cod=${open.state.code}&f_natur_ativ=2&f_seq_ativ=1&f_codinst=D000300000995&f_seq_funcao=1`;
+    const html = await open.port.get(path);
+    const pairs = successfulPairs(open.port.readForm(html, 'GN_ATIV_CARGO')!);
+    // A linha 3 renomeada, uma nova (c 0) e um c repetido no mesmo envio.
+    const grid = '1@3?Renomeada!2@0?Nova!3@3?Repetida!4@?!5@?!6@?!7@?!8@?!';
+    await open.port.post('PKG_ATIV.cargo', encodeLatin1Form(setPairs(pairs, { f_espec_l: grid })));
+    const pd = findIn(open.state.root, (e) => e.name === 'PESQUISA-E-DESENVOLVIMENTO')!;
+    const lines = pd.children
+      .filter((c): c is XElement => c.kind === 'element')
+      .map((l) => [
+        getAttr(l, 'SEQUENCIA-LINHA'),
+        getAttr(l, 'TITULO-DA-LINHA-DE-PESQUISA'),
+        getAttr(l, 'OBJETIVOS-LINHA-DE-PESQUISA'),
+      ]);
+    expect(lines).toEqual([
+      ['3', 'Renomeada', 'Objetivo B'],
+      ['4', 'Nova', undefined],
+      ['5', 'Repetida', undefined],
     ]);
   });
 

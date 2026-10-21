@@ -272,13 +272,17 @@ function cargoUpdate(req: SimRequest, state: LattesState, atuacao: XElement): Si
   // de pesquisa que já existia (pelo c que veio) segue com o resto dela, como
   // o objetivo: observado no Lattes real em 21/10/2026, com o objetivo de uma
   // linha de teste intacto depois do envio da atividade. A linha que não veio
-  // sai; a nova (sem c) ganha uma sequência que nenhuma outra usa.
+  // sai; a nova (sem c, ou com um c repetido no mesmo envio) ganha uma
+  // sequência que nenhuma outra usa. Visto com uma linha só: com várias, é
+  // inferido.
   const grid = GRID_CHILDREN[found.el.name];
   if (grid) {
     const old = childElements(found.el, grid.child);
     let next = Math.max(0, ...old.map((o) => Number(getAttr(o, grid.seq)) || 0));
+    const used = new Set<string>();
     found.el.children = specRows(req.get('f_espec_l') ?? '').map(({ c, l }) => {
-      const given = c && c !== '0' ? c : undefined;
+      const given = c && c !== '0' && !used.has(c) ? c : undefined;
+      if (given) used.add(given);
       const seq = given ?? String(++next);
       if (!grid.title)
         return element(grid.child, { [grid.seq]: seq }, [{ kind: 'text', value: l }]);
