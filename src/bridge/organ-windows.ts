@@ -27,8 +27,7 @@ export const activityOrgansPath = (cv: string, institution: string, parent = '')
 
 /**
  * As atividades cujo formulário tem o órgão, escolhido na janela de órgãos da
- * atividade. O ensino guarda órgão no XML, mas o formulário dele não tem; a
- * pesquisa e desenvolvimento e o treinamento vão inteiros à mão.
+ * atividade. O ensino guarda órgão no XML, mas o formulário dele não tem.
  */
 export const ACTIVITY_ORGAN_ELEMENTS: ReadonlySet<string> = new Set([
   'CONSELHO-COMISSAO-E-CONSULTORIA',
@@ -36,7 +35,9 @@ export const ACTIVITY_ORGAN_ELEMENTS: ReadonlySet<string> = new Set([
   'ESTAGIO',
   'EXTENSAO-UNIVERSITARIA',
   'OUTRA-ATIVIDADE-TECNICO-CIENTIFICA',
+  'PESQUISA-E-DESENVOLVIMENTO',
   'SERVICO-TECNICO-ESPECIALIZADO',
+  'TREINAMENTO-MINISTRADO',
 ]);
 
 /** O caminho da janela pedida. */

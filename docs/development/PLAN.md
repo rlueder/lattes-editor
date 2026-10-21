@@ -24,7 +24,12 @@ outras 127 são o alvo deste plano.
   tentava só outras opções de destino. Agora, quando todas falham pelo valor,
   o item parte de outra opção da lista (ou de 40 horas) e o campo conta se
   alguma troca vai, como já se fazia com os 138 valores fora da lista do
-  Lattes. Um item real com WEB continua indo à mão. 2605 para 2631 de 2738.
+  Lattes. Um item real com WEB continua indo à mão. 2619 para 2645 de 2738.
+- 21/10/2026, à noite: período e órgão da pesquisa e desenvolvimento e do
+  treinamento ministrado pelo conector, gravados no Lattes real com uma
+  atividade de teste de cada tipo e removidos pelo registro. A grade (linhas
+  de pesquisa, treinamentos) vai como a página a trouxe, e a linha de
+  pesquisa de teste ficou com o objetivo. 2619 de 2738 campos (96%), eram 2605.
 - 21/10/2026, à noite: a própria citação nos itens segue a identificação, e
   o Lattes não guarda outra item a item (Fase 5). Passou a campo que o
   formulário não tem: 2605 de 2738 (95%).

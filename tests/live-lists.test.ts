@@ -416,9 +416,10 @@ describe('órgão e unidade das atividades da atuação', () => {
     expect(liveKind(project, 'NOME-ORGAO', LIVE)).toBeUndefined();
   });
 
-  it('o ensino e as atividades que vão à mão ficam sem a lista', () => {
-    for (const name of ['ENSINO', 'PESQUISA-E-DESENVOLVIMENTO', 'TREINAMENTO-MINISTRADO']) {
-      expect(liveKind(activity(name), 'NOME-ORGAO', LIVE)).toBeUndefined();
+  it('o ensino fica sem a lista; pesquisa e treinamento usam a da atividade', () => {
+    expect(liveKind(activity('ENSINO'), 'NOME-ORGAO', LIVE)).toBeUndefined();
+    for (const name of ['PESQUISA-E-DESENVOLVIMENTO', 'TREINAMENTO-MINISTRADO']) {
+      expect(liveKind(activity(name), 'NOME-ORGAO', LIVE)).toBe('orgao');
     }
   });
 });
