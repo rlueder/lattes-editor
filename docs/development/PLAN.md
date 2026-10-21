@@ -18,6 +18,28 @@ outras 127 são o alvo deste plano.
 
 ## Estado atual
 
+- 21/10/2026: órgão e unidade das atividades pela lista. O envio existia
+  desde a #106, mas o editor só oferecia a janela de órgãos no projeto, e
+  numa atividade só dava para digitar o nome, que o conector recusa sem o
+  código. Agora direção, estágio, serviço, extensão, outras atividades e
+  conselhos usam a janela da atividade (`prc_orgao_cargo`, capacidade
+  `orgao-atividades`, caminhos em `src/bridge/organ-windows.ts`); o ensino, a
+  pesquisa e desenvolvimento e o treinamento ficam sem a lista. O script de
+  cobertura também passou a escolher o curso de novo depois de trocar a
+  instituição da formação, como o painel pede: o editor já limpava o curso, e
+  as duas escolhas juntas vão. 2605 de 2787 campos vão (93%), eram 2586. A
+  instituição da formação complementar passou a aparecer com o motivo real (as
+  buscas dela estão desligadas, `COMPL_ENDERECO_LOOKUPS_ENABLED`).
+  No Lattes real, numa atividade de direção de teste na atuação da Campanha
+  Nacional de Escolas da Comunidade, o conector trocou o órgão, depois o órgão
+  por uma unidade, uma unidade por outra e a unidade de volta para um órgão,
+  com o período e o cargo mantidos; a atividade saiu pelo registro, com a base
+  tirada na hora. O teste achou dois erros na releitura, os dois corrigidos: a
+  página mostra o órgão sem unidade como "/ Órgão" e a unidade só como
+  "/Unidade", sem o órgão de cima, e o conector dava "não gravou" com o
+  Lattes já gravado. A releitura agora confere o código, que a página da
+  atividade devolve em `f_codorgao` (o da unidade, quando há), e o Lattes
+  simulado devolve como a página real.
 - 20/10/2026: o depositante pessoa e as datas do histórico de situações da
   patente pelo conector (`src/bridge/production/holders.ts`,
   `targets/registros.ts`), a partir da exportação e da página de edição de

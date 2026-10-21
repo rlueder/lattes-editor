@@ -43,6 +43,7 @@ import {
   applyInstitution,
   applyOrgan,
   applyUnit,
+  courseAttrs,
   liveKind,
 } from '../src/ui/live-lists.ts';
 
@@ -82,6 +83,7 @@ function changed(attr: string, value: string, choices: string[] | undefined): st
 
 /** O editor com o conector que busca e lê cursos, e uma agência na cópia. */
 const LIVE = {
+  activityOrgans: true,
   agencies: [{ code: 'A0000000001', name: 'Agência' }],
   courses: true,
   organs: true,
@@ -93,12 +95,21 @@ const LIVE = {
 function picked(el: XElement, attr: string, value: string, root: XElement): boolean {
   const parentOf = () => ancestorsOf(root, el).at(-1)?.name;
   switch (liveKind(el, attr, { ...LIVE, parentOf })) {
-    case 'instituicao':
-      return applyInstitution(
+    case 'instituicao': {
+      const course = courseAttrs(el);
+      const hadCourse = (getAttr(el, course.code) ?? '') !== '';
+      const ok = applyInstitution(
         el,
         { code: 'V0000000001', label: `${value} x`, name: `${value} x` },
         attr,
       );
+      // A instituição nova limpa o curso, e o painel pede para escolher outro
+      // pela lista (formacao-edit.ts); a pessoa faz as duas escolhas.
+      if (ok && hadCourse && !getAttr(el, course.code)) {
+        applyCourse(el, { label: `Curso x(00000000000P0)`, value: '0000000001' });
+      }
+      return ok;
+    }
     case 'curso':
       return applyCourse(el, { label: `${value} x(00000000000P0)`, value: '0000000001' });
     case 'agencia':

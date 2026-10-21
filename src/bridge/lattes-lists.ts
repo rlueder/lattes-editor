@@ -8,6 +8,7 @@
 import { institutionResults } from './create.ts';
 import { decodeHtmlEntities } from './html-text.ts';
 import { cvCodeFrom, isLogonPage } from './lattes-html.ts';
+import { type OrganWindowKind, organWindowPath } from './organ-windows.ts';
 
 /**
  * Um nó da árvore de áreas, compacto: nome, código de 8 dígitos e filhos. O
@@ -409,25 +410,6 @@ export const coursesPath = (
     ? `prc_curso_form?f_pgm=TESE&f_cod=${cv}&f_inst=${encodeURIComponent(institution)}&f_nivel=${encodeURIComponent(level)}&f_sta_area=${encodeURIComponent(staArea)}`
     : `prc_curso_form?f_cod=${cv}&f_pgm=FORM&f_nivel=${encodeURIComponent(level)}&f_inst=${encodeURIComponent(institution)}`;
 
-/** A letra do código de um órgão no link da janela: V para o tipo 0, D para os outros (inferido). */
-export const organLetter = (kind: string) => (kind === '0' ? 'V' : 'D');
-
-/**
- * A janela de órgãos de uma instituição (código com a letra, como o orgao()
- * da página do projeto monta), no topo ou aberta num órgão (código com a
- * letra). É o mesmo endereço que o "Expandir itens" da janela abre.
- */
-export const organsPath = (cv: string, institution: string, parent = '') =>
-  `pkg_projeto.pp_orgao_cargo?f_origem=&f_modal_cv=2&f_cod=${cv}&f_cod_inst=${encodeURIComponent(institution)}&f_cod_inst2=${encodeURIComponent(parent)}`;
-
-/**
- * A janela de órgãos de uma atividade da atuação (prc_orgao_cargo, lida em
- * 20/10/2026): as mesmas linhas atribuir() da do projeto. A instituição vai
- * como o f_codinst da página, com a letra.
- */
-export const activityOrgansPath = (cv: string, institution: string, parent = '') =>
-  `prc_orgao_cargo?f_origem=&f_modal_cv=9&f_cod=${cv}&f_cod_inst=${encodeURIComponent(institution)}&f_cod_inst2=${encodeURIComponent(parent)}`;
-
 // ---------------------------------------------------------------------------
 // Leituras, pelo mesmo tipo de porta da aba do Lattes que o resto do conector.
 
@@ -536,17 +518,19 @@ export async function readCourses(
 
 /**
  * Os órgãos de uma instituição (código com a letra), ou as unidades de um
- * órgão (código com a letra), só leitura.
+ * órgão (código com a letra), só leitura, na janela do projeto ou na da
+ * atividade (organ-windows.ts).
  */
 export async function readOrgans(
   port: ListsPort,
   institution: string,
   parent = '',
+  organWindow?: OrganWindowKind,
 ): Promise<{ error?: string; organs?: Organ[] }> {
   try {
     const cv = cvCodeFrom(await port.menuHtml());
     if (!cv) return { error: 'O código do currículo não está no menu' };
-    const html = await getPage(port, organsPath(cv, institution, parent));
+    const html = await getPage(port, organWindowPath(organWindow)(cv, institution, parent));
     return { organs: parseOrgans(html, parent.replace(/^[A-Z]/, '') || undefined) };
   } catch (err) {
     return { error: failure(err) };

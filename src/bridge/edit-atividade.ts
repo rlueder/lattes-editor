@@ -32,7 +32,7 @@ import {
   withScriptValues,
 } from './form.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
-import { activityOrgansPath } from './lattes-lists.ts';
+import { ACTIVITY_ORGAN_ELEMENTS, activityOrgansPath } from './organ-windows.ts';
 import type { FieldValues, OpBase } from './plan.ts';
 import { readProvider } from './production/grids.ts';
 import {
@@ -50,7 +50,8 @@ export const EDIT_ATIVIDADES_ENABLED = true;
  * Cada atividade do XML: a natureza no Lattes, o atributo da descrição e, nas
  * que guardam a grade em elementos filhos (as disciplinas do ensino), se a
  * página de edição já foi lida (gridRead): só então o envio manda a grade
- * como a página a trouxe.
+ * como a página a trouxe. As que têm órgão estão em ACTIVITY_ORGAN_ELEMENTS
+ * (organ-windows.ts).
  */
 export const ACTIVITY_TYPES: Record<
   string,
@@ -60,8 +61,14 @@ export const ACTIVITY_TYPES: Record<
   'DIRECAO-E-ADMINISTRACAO': { description: 'CARGO-OU-FUNCAO', natur: '1' },
   ENSINO: { gridRead: true, natur: '4' },
   ESTAGIO: { description: 'ESTAGIO-REALIZADO', natur: '5' },
-  'EXTENSAO-UNIVERSITARIA': { description: 'ATIVIDADE-DE-EXTENSAO-REALIZADA', natur: '7' },
-  'OUTRA-ATIVIDADE-TECNICO-CIENTIFICA': { description: 'ATIVIDADE-REALIZADA', natur: '9' },
+  'EXTENSAO-UNIVERSITARIA': {
+    description: 'ATIVIDADE-DE-EXTENSAO-REALIZADA',
+    natur: '7',
+  },
+  'OUTRA-ATIVIDADE-TECNICO-CIENTIFICA': {
+    description: 'ATIVIDADE-REALIZADA',
+    natur: '9',
+  },
   'PESQUISA-E-DESENVOLVIMENTO': { natur: '2' },
   'SERVICO-TECNICO-ESPECIALIZADO': { description: 'SERVICO-REALIZADO', natur: '6' },
   'TREINAMENTO-MINISTRADO': { natur: '8' },
@@ -145,8 +152,13 @@ export function planAtividade(
   let organ: OrganChoice | undefined;
   if (change.fields.some((f) => ORGAN.has(f.attr))) {
     // O ensino troca o órgão pelo nível e o curso (seção 22).
-    if (type.natur === '4') {
-      return { reason: 'O formulário de ensino do Lattes não tem órgão: tem o nível e o curso' };
+    if (!ACTIVITY_ORGAN_ELEMENTS.has(change.element)) {
+      return {
+        reason:
+          type.natur === '4'
+            ? 'O formulário de ensino do Lattes não tem órgão: tem o nível e o curso'
+            : 'O órgão desta atividade não vai pela lista do Lattes; troque no Lattes',
+      };
     }
     const chosen = planActivityOrgan(change, el);
     if ('reason' in chosen) return chosen;
@@ -286,6 +298,7 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
     // O órgão novo, pela janela de órgãos da atividade, só com GET.
     let chosen: FieldValues = {};
     let organShown: string | undefined;
+    let unitName: string | undefined;
     if (op.organ) {
       const shown = controls.find((c) => c.name === 'f_orgao')?.value ?? '';
       const resolved = await resolveOrgan(op.organ, port, pairs, shown, {
@@ -295,6 +308,7 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
       if ('status' in resolved) return result(resolved.status, resolved.detail);
       chosen = resolved.set;
       organShown = resolved.shown;
+      if (op.organ.parent) unitName = resolved.name;
     }
     const action =
       /<form\b[^>]*name\s*=\s*["']?GN_ATIV_CARGO[^>]*action\s*=\s*["']?([^"'\s>]+)/i.exec(
@@ -324,10 +338,22 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
     if (afterRows.length !== wanted.length || afterRows.some((r, i) => !same(r.l, wanted[i]!.l))) {
       notSaved.push('descrição');
     }
-    // O f_orgao vem desabilitado: a releitura confere o texto dele, não o par.
-    const organAfter = after.find((c) => c.name === 'f_orgao')?.value ?? '';
-    if (organShown !== undefined && organLoose(organAfter) !== organLoose(organShown)) {
-      notSaved.push('órgão');
+    // A releitura confere o código, que a página da atividade devolve nos
+    // ocultos. O texto de f_orgao (desabilitado) só vale sem código: com uma
+    // unidade, a página mostra "/Unidade", sem o órgão de cima (21/10/2026).
+    if (op.organ && organShown !== undefined) {
+      const bare = (c: string) => c.trim().replace(/^[A-Z]/, '');
+      const codeAfter = bare(
+        pairValue(afterPairs, 'f_codorgao') || pairValue(afterPairs, 'f_codorgao2') || '',
+      );
+      const organAfter = organLoose(after.find((c) => c.name === 'f_orgao')?.value);
+      // Sem código, o texto: "órgão/unidade", ou só a unidade, como a página
+      // mostra. O nome da unidade vem da janela de órgãos, não do texto.
+      const saved = codeAfter
+        ? codeAfter === bare(op.organ.code)
+        : organAfter === organLoose(organShown) ||
+          (unitName !== undefined && organAfter === organLoose(unitName));
+      if (!saved) notSaved.push('órgão');
     }
     if (notSaved.length > 0) {
       return result('divergente', `O Lattes não gravou: ${notSaved.join(', ')}. Confira no Lattes`);

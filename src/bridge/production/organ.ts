@@ -19,7 +19,8 @@ import type { LattesPort } from '../apply.ts';
 import { getChecked, Stop } from '../create-shared.ts';
 import { type Pairs, pairValue } from '../form.ts';
 import { cvCodeFrom } from '../lattes-html.ts';
-import { organLetter, organsPath, parseOrgans } from '../lattes-lists.ts';
+import { parseOrgans } from '../lattes-lists.ts';
+import { organLetter, organsPath } from '../organ-windows.ts';
 import type { FieldValues } from '../plan.ts';
 import type { Resolved } from './lookups.ts';
 
@@ -97,9 +98,15 @@ export function planOrgan(
   };
 }
 
-/** Para comparar textos de órgão: sem acento, caixa, nem diferença de espaço e quebra de linha. */
+/**
+ * Para comparar textos de órgão: sem acento, caixa, nem diferença de espaço e
+ * quebra de linha. A página da atividade mostra o órgão sem unidade como
+ * "/ Órgão" (o de cima vazio, observado em 21/10/2026), e a barra da ponta sai.
+ */
 export const organLoose = (v: string | null | undefined) =>
-  foldText((v ?? '').replace(/\s+/g, ' ')).replace(/\s*\/\s*/g, '/');
+  foldText((v ?? '').replace(/\s+/g, ' '))
+    .replace(/\s*\/\s*/g, '/')
+    .replace(/^\/|\/$/g, '');
 
 /** Onde fica a janela de órgãos, quando não é a do projeto (a da atividade). */
 export interface OrganWindow {
@@ -123,7 +130,7 @@ export async function resolveOrgan(
   pairs: Pairs,
   shown: string,
   where?: OrganWindow,
-): Promise<Resolved & { shown?: string }> {
+): Promise<Resolved & { name?: string; shown?: string }> {
   try {
     return await resolve(choice, port, pairs, shown, where);
   } catch (err) {
@@ -138,7 +145,7 @@ async function resolve(
   pairs: Pairs,
   shown: string,
   where?: OrganWindow,
-): Promise<Resolved & { shown?: string }> {
+): Promise<Resolved & { name?: string; shown?: string }> {
   const missing = ['f_codorgao', 'f_codorgao2', 'f_orgao_old'].filter(
     (f) => !pairs.some(([k]) => k === f),
   );
@@ -193,5 +200,5 @@ async function resolve(
   if (pairs.some(([k]) => k === 'f_orgao')) set.f_orgao = text;
   // A releitura confere o texto de f_orgao; os ocultos voltam vazios na página real.
   const check: FieldValues = Object.fromEntries(Object.keys(set).map((k) => [k, null]));
-  return { check, set, shown: text };
+  return { check, name: hit.name, set, shown: text };
 }

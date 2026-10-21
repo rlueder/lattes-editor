@@ -1,7 +1,8 @@
-// Órgão e unidade da participação em projeto, escolhidos na janela de órgãos
-// do Lattes pelo conector (src/bridge/production/organ.ts). A lista é a da
-// instituição da atuação, e só é lida quando a pessoa pede, como a de cursos.
-// A unidade é uma das do órgão escolhido.
+// Órgão e unidade da participação em projeto ou de uma atividade da atuação,
+// escolhidos na janela de órgãos do Lattes pelo conector
+// (src/bridge/production/organ.ts, src/bridge/edit-atividade.ts). A lista é a
+// da instituição da atuação, e só é lida quando a pessoa pede, como a de
+// cursos. A unidade é uma das do órgão escolhido.
 
 import { useEffect, useRef, useState } from 'react';
 
@@ -36,6 +37,7 @@ export function OrganControl({ common, el, kind, lists, onChanged }: Props) {
   const { organ, unit } = ORGAN_PARTS;
   const parent = kind === 'unidade' ? (getAttr(el, organ.code) ?? '') : '';
   const pair = kind === 'orgao' ? organ : unit;
+  const organWindow = el.name === ORGAN_PARTS.holder ? undefined : 'atividade';
   const code = getAttr(el, pair.code) ?? '';
   const value = getAttr(el, pair.name) ?? '';
   const [state, setState] = useState<State>({ kind: 'parado' });
@@ -56,7 +58,7 @@ export function OrganControl({ common, el, kind, lists, onChanged }: Props) {
     const n = ++latest.current;
     setState({ kind: 'carregando' });
     lists
-      .loadOrgans(institution, parent)
+      .loadOrgans(institution, parent, organWindow)
       .then((organs) => n === latest.current && setState({ kind: 'pronto', organs }))
       .catch(
         (err: unknown) =>
@@ -74,7 +76,11 @@ export function OrganControl({ common, el, kind, lists, onChanged }: Props) {
         <span className="readonly-value" id={common.id}>
           {value || '(vazio)'}
         </span>
-        <span className="field-note">A atuação do projeto não tem instituição escolhida</span>
+        <span className="field-note">
+          {organWindow
+            ? 'A atuação da atividade não tem instituição escolhida'
+            : 'A atuação do projeto não tem instituição escolhida'}
+        </span>
       </span>
     );
   }

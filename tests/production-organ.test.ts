@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { PARTICIPATION_PERIOD } from '../src/bridge/atuacao-by-hand.ts';
 import { planChanges, type PlanOptions } from '../src/bridge/plan.ts';
 import { applyProduction } from '../src/bridge/production/apply.ts';
-import { organText } from '../src/bridge/production/organ.ts';
+import { organLoose, organText } from '../src/bridge/production/organ.ts';
 import type { ProductionOp } from '../src/bridge/production/plan.ts';
 import { diffDocuments } from '../src/model/changes.ts';
 import { encodeLatin1 } from '../src/model/latin1.ts';
@@ -117,6 +117,9 @@ describe('órgão do projeto: o plano', () => {
   it('o texto da janela junta órgão e unidade', () => {
     expect(organText('A', 'B')).toBe('A/\nB');
     expect(organText('A', '')).toBe('A');
+    // Como a página da atividade mostra um órgão sem unidade (21/10/2026).
+    expect(organLoose('/  Centro de Cultura Cristã')).toBe(organLoose('Centro de Cultura Cristã'));
+    expect(organLoose('Órgão/\n Unidade')).toBe('orgao/unidade');
   });
 });
 

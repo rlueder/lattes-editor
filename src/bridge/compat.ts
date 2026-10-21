@@ -75,6 +75,11 @@ export const BRIDGE_FEATURES = [
   'alterar-areas-atuacao',
   /** Período e descrição das atividades das atuações (edit-atividade.ts). */
   'alterar-atividades',
+  /**
+   * A janela de órgãos da atividade (prc_orgao_cargo), para o editor escolher
+   * o órgão e a unidade de uma atividade pela lista (edit-atividade.ts).
+   */
+  'orgao-atividades',
   /** Citação de coautores pelo dicionário de coautores (edit-citacao.ts). */
   'alterar-citacoes',
   // 'buscas-complementar-endereco' (edit-lists.ts, formacao-lookups.ts) volta

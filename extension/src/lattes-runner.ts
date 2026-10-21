@@ -297,8 +297,15 @@ interface ExportReply {
     searchInstitutions(listsPort, query, level || undefined),
   // Só leituras: a tabela de áreas do menu e a lista de agências.
   listas: () => readLists(listsPort),
-  // Só leitura: os órgãos de uma instituição, ou as unidades de um órgão.
-  orgaos: (institution: string, parent?: string) => readOrgans(listsPort, institution, parent),
+  // Só leitura: os órgãos de uma instituição, ou as unidades de um órgão, na
+  // janela do projeto ou na da atividade.
+  orgaos: (institution: string, parent?: string, organWindow?: string) =>
+    readOrgans(
+      listsPort,
+      institution,
+      parent,
+      organWindow === 'atividade' ? 'atividade' : undefined,
+    ),
   // Enviar ao CNPq (src/bridge/publish.ts), só se a sessão desta aba for do
   // currículo do editor. A declaração vem marcada pela pessoa no editor; o
   // núcleo recusa sem ela.

@@ -270,7 +270,12 @@ export async function answerListRequest(
     return { ...reply, id: msg.id, type: 'cursos' };
   }
   if (msg.type === 'pedir-orgaos') {
-    const reply = await readListReply<Reply<'orgaos'>>('orgaos', msg.institution, msg.parent ?? '');
+    const reply = await readListReply<Reply<'orgaos'>>(
+      'orgaos',
+      msg.institution,
+      msg.parent ?? '',
+      msg.organWindow ?? '',
+    );
     return { ...reply, id: msg.id, type: 'orgaos' };
   }
   return undefined;
