@@ -88,12 +88,29 @@ export function activities(atuacao: XElement): { el: XElement; natur: string }[]
  * A grade de descrições da edição: a descrição do XML numa linha, com c 1; no
  * ensino, as disciplinas, com o c da sequência delas (lido em 20/10/2026).
  */
+/**
+ * As atividades cuja grade de descrições são elementos filhos (lidas no
+ * Lattes real): as disciplinas do ensino e os treinamentos, com o nome no
+ * texto, e as linhas de pesquisa, com o título num atributo e o c igual ao
+ * f_seq_linha da linha (21/10/2026).
+ */
+const GRID_CHILDREN: Record<string, { child: string; seq: string; title?: string }> = {
+  ENSINO: { child: 'DISCIPLINA', seq: 'SEQUENCIA-ESPECIFICACAO' },
+  'PESQUISA-E-DESENVOLVIMENTO': {
+    child: 'LINHA-DE-PESQUISA',
+    seq: 'SEQUENCIA-LINHA',
+    title: 'TITULO-DA-LINHA-DE-PESQUISA',
+  },
+  'TREINAMENTO-MINISTRADO': { child: 'TREINAMENTO', seq: 'SEQUENCIA-ESPECIFICACAO' },
+};
+
 function descriptionScript(item: XElement): string {
-  if (item.name === 'ENSINO') {
-    const rows = childElements(item, 'DISCIPLINA').map((d) =>
+  const grid = GRID_CHILDREN[item.name];
+  if (grid) {
+    const rows = childElements(item, grid.child).map((d) =>
       Object.fromEntries([
-        ['l', textOf(d)],
-        ['c', getAttr(d, 'SEQUENCIA-ESPECIFICACAO') ?? ''],
+        ['l', grid.title ? (getAttr(d, grid.title) ?? '') : textOf(d)],
+        ['c', getAttr(d, grid.seq) ?? ''],
       ]),
     );
     return `<script>\nvar providerDetAtiv = \n${JSON.stringify([...rows, {}])};\n</script>`;
@@ -251,13 +268,23 @@ function cargoUpdate(req: SimRequest, state: LattesState, atuacao: XElement): Si
     setAttr(found.el, 'CODIGO-UNIDADE', '');
     setAttr(found.el, 'NOME-UNIDADE', '');
   }
-  // No ensino, a grade inteira são as disciplinas: o servidor grava como chegou.
-  if (found.el.name === 'ENSINO') {
-    found.el.children = specRows(req.get('f_espec_l') ?? '').map(({ c, l }, i) =>
-      element('DISCIPLINA', { 'SEQUENCIA-ESPECIFICACAO': c && c !== '0' ? c : String(i + 1) }, [
-        { kind: 'text', value: l },
-      ]),
-    );
+  // Nas grades de elementos filhos, o servidor grava como chegou. Uma linha
+  // de pesquisa que já existia (pelo c) segue com o resto dela, como o
+  // objetivo; a que não veio sai.
+  const grid = GRID_CHILDREN[found.el.name];
+  if (grid) {
+    const old = childElements(found.el, grid.child);
+    found.el.children = specRows(req.get('f_espec_l') ?? '').map(({ c, l }, i) => {
+      const seq = c && c !== '0' ? c : String(i + 1);
+      if (!grid.title)
+        return element(grid.child, { [grid.seq]: seq }, [{ kind: 'text', value: l }]);
+      const kept = old.find((o) => getAttr(o, grid.seq) === seq);
+      if (kept) {
+        setAttr(kept, grid.title, l);
+        return kept;
+      }
+      return element(grid.child, { [grid.seq]: seq, [grid.title]: l });
+    });
     found.el.selfClosing = found.el.children.length === 0;
   }
   state.touch();

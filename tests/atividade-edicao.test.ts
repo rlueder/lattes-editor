@@ -75,25 +75,41 @@ describe('atividade: o plano', () => {
     ).toMatch(/atividade da atuação vai à mão/);
   });
 
-  it('pesquisa e treinamento ficam à mão: a grade deles não foi lida na edição', () => {
+  it('pesquisa e treinamento: o período vai, e a grade volta como estava', async () => {
     const xml = XML.replace(
       /<ATIVIDADES-DE-ESTAGIO>.*<\/ATIVIDADES-DE-ESTAGIO>/,
-      '<ATIVIDADES-DE-PESQUISA-E-DESENVOLVIMENTO><PESQUISA-E-DESENVOLVIMENTO SEQUENCIA-FUNCAO-ATIVIDADE="1" FLAG-PERIODO="ANTERIOR" ANO-INICIO="2002" ANO-FIM="2004"/></ATIVIDADES-DE-PESQUISA-E-DESENVOLVIMENTO>',
+      '<ATIVIDADES-DE-PESQUISA-E-DESENVOLVIMENTO><PESQUISA-E-DESENVOLVIMENTO SEQUENCIA-FUNCAO-ATIVIDADE="1" FLAG-PERIODO="ANTERIOR" ANO-INICIO="2002" ANO-FIM="2004" CODIGO-ORGAO="000300000995" NOME-ORGAO="Empresa"><LINHA-DE-PESQUISA SEQUENCIA-LINHA="1" TITULO-DA-LINHA-DE-PESQUISA="Interfaces" OBJETIVOS-LINHA-DE-PESQUISA="Estudar interfaces"/></PESQUISA-E-DESENVOLVIMENTO></ATIVIDADES-DE-PESQUISA-E-DESENVOLVIMENTO>' +
+        '<ATIVIDADES-DE-TREINAMENTO-MINISTRADO><TREINAMENTO-MINISTRADO SEQUENCIA-FUNCAO-ATIVIDADE="2" FLAG-PERIODO="ANTERIOR" ANO-INICIO="2003" ANO-FIM="2003" CODIGO-ORGAO="000300000995" NOME-ORGAO="Empresa"><TREINAMENTO SEQUENCIA-ESPECIFICACAO="1">Oficina de design</TREINAMENTO></TREINAMENTO-MINISTRADO></ATIVIDADES-DE-TREINAMENTO-MINISTRADO>',
     );
+    open = await withLattesSimulado({
+      xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${xml}`),
+    });
     const original = parseXml(xml).root;
     const working = parseXml(xml).root;
-    setAttr(
-      findIn(working, (e) => e.name === 'PESQUISA-E-DESENVOLVIMENTO')!,
-      'ANO-FIM',
-      '2005',
-    );
+    const pd = (root: XElement) => findIn(root, (e) => e.name === 'PESQUISA-E-DESENVOLVIMENTO')!;
+    const tr = (root: XElement) => findIn(root, (e) => e.name === 'TREINAMENTO-MINISTRADO')!;
+    setAttr(pd(working), 'ANO-FIM', '2005');
+    setAttr(tr(working), 'ANO-FIM', '2004');
     const { ops, unsupported } = planChanges(
       diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Atividade' })),
       working,
       { editAtividades: true },
     );
-    expect(ops).toEqual([]);
-    expect(unsupported[0]?.reason).toMatch(/ainda não foi lido/);
+    expect(unsupported).toEqual([]);
+    expect(ops).toHaveLength(2);
+    for (const op of ops) {
+      expect(await applyOp(op, open.port)).toMatchObject({ status: 'conferido' });
+    }
+    expect(getAttr(pd(open.state.root), 'ANO-FIM')).toBe('2005');
+    const line = findIn(pd(open.state.root), (e) => e.name === 'LINHA-DE-PESQUISA')!;
+    expect(getAttr(line, 'TITULO-DA-LINHA-DE-PESQUISA')).toBe('Interfaces');
+    expect(getAttr(line, 'OBJETIVOS-LINHA-DE-PESQUISA')).toBe('Estudar interfaces');
+    expect(getAttr(tr(open.state.root), 'ANO-FIM')).toBe('2004');
+    expect(findIn(tr(open.state.root), (e) => e.name === 'TREINAMENTO')).toBeDefined();
+    expect(postsOf(open).map((p) => p.fields.f_espec_l)).toEqual([
+      '1@1?Interfaces!2@?!3@?!4@?!5@?!6@?!7@?!8@?!',
+      '1@1?Oficina de design!2@?!3@?!4@?!5@?!6@?!7@?!8@?!',
+    ]);
   });
 
   it('a descrição apagada fica à mão: o Lattes exige uma', () => {
