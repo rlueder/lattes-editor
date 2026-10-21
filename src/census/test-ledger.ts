@@ -112,16 +112,17 @@ export function removalOrder(rows: PlacedRow[]): PlacedRow[] {
   return [...rows.filter(nested), ...rows.filter((r) => !nested(r))];
 }
 
-/** A chave de uma linha para a pessoa conferir: a lista e o texto. */
-export const rowKey = (r: PlacedRow) => `${r.list} :: ${r.text}`;
+/** Como a linha aparece para a pessoa conferir: a lista e o texto. */
+export const rowLabel = (r: PlacedRow) => `${r.list} :: ${r.text}`;
 
 /**
  * O lote da remoção: até `batch` candidatas cuja página tem a marca, mais as
- * sem marca que a pessoa conferiu (`allowed`, pela chave da linha), e as sem
- * marca que ficaram. A linha diferente da base pode ser item seu incluído ou
- * alterado depois dela; a marca na página é o que diz que é de teste
- * (21/10/2026). Uma página que não se lê conta como sem marca. `between`
- * espera entre uma leitura e a seguinte.
+ * sem marca que a pessoa conferiu (`allowed`, pelo link de cada uma, que não
+ * repete), as sem marca que ficaram e as páginas que não se leram. A linha
+ * diferente da base pode ser item seu incluído ou alterado depois dela; a
+ * marca na página é o que diz que é de teste (21/10/2026). A página que não
+ * se lê não sai nem com a conferência. `between` espera entre uma leitura e a
+ * seguinte; `onRead` conta as lidas.
  */
 export async function markedBatch(
   candidates: readonly PlacedRow[],
@@ -131,24 +132,26 @@ export async function markedBatch(
     batch,
     between,
     mark,
+    onRead,
   }: {
     allowed?: readonly string[];
     batch: number;
     between?: () => Promise<unknown>;
     mark: string;
+    onRead?: (done: number, row: PlacedRow) => void;
   },
-): Promise<{ noMark: PlacedRow[]; plan: PlacedRow[] }> {
+): Promise<{ noMark: PlacedRow[]; plan: PlacedRow[]; unreadable: PlacedRow[] }> {
   const plan: PlacedRow[] = [];
   const noMark: PlacedRow[] = [];
+  const unreadable: PlacedRow[] = [];
   for (const [i, row] of candidates.entries()) {
     if (plan.length >= batch) break;
     if (i > 0) await between?.();
-    const marked = await pageHtml(row.link).then(
-      (html) => html.includes(mark),
-      () => false,
-    );
-    if (marked || allowed.includes(rowKey(row))) plan.push(row);
+    const html = await pageHtml(row.link).catch(() => undefined);
+    onRead?.(i + 1, row);
+    if (html === undefined) unreadable.push(row);
+    else if (html.includes(mark) || allowed.includes(row.link)) plan.push(row);
     else noMark.push(row);
   }
-  return { noMark, plan };
+  return { noMark, plan, unreadable };
 }

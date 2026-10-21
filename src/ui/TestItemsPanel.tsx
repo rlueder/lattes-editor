@@ -16,9 +16,13 @@ const LABEL = {
 export function TestItemsPanel() {
   const { ask, pending, state } = useTestItems();
   const [batch, setBatch] = useState(10);
-  // A remoção sem marca pede um segundo clique, e leva só as linhas listadas.
-  const [confirming, setConfirming] = useState(false);
   const s = state.summary;
+  // A remoção sem marca pede um segundo clique, e leva só as linhas listadas.
+  // A confirmação vale para a lista em que foi pedida: outra lista a desfaz.
+  const [confirmingFor, setConfirmingFor] = useState<string>();
+  const listKey = s?.semMarcaLinks?.join('\n');
+  const confirming = confirmingFor !== undefined && confirmingFor === listKey;
+  const setConfirming = (on: boolean) => setConfirmingFor(on ? listKey : undefined);
   const last = state.log[0];
   return (
     <aside aria-label="Itens de teste" className="test-items-panel">
@@ -108,6 +112,19 @@ export function TestItemsPanel() {
           </ul>
         </details>
       )}
+      {s?.naoLidas && s.naoLidas.length > 0 && (
+        <div className="test-items-error" role="alert">
+          <p>
+            Páginas que não se leram ({s.naoLidas.length}): não foram removidas nem entram na
+            remoção sem marca. Confira se a sessão do Lattes caiu e rode de novo.
+          </p>
+          <ul>
+            {s.naoLidas.map((r, i) => (
+              <li key={`${i}-${r}`}>{r}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       {s?.semMarca && s.semMarca.length > 0 && (
         <div className="test-items-error" role="alert">
           <p>
@@ -128,7 +145,7 @@ export function TestItemsPanel() {
                 type="button"
                 onClick={() => {
                   setConfirming(false);
-                  ask('remover', { batch, unmarked: s.semMarca });
+                  ask('remover', { batch, unmarked: s.semMarcaLinks ?? [] });
                 }}
               >
                 Sim, remover estes

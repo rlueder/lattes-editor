@@ -29,11 +29,15 @@ export interface TestItemsSummary {
   /** Linhas da base que sumiram: não pode acontecer. */
   faltandoDaBase?: string[];
   lote?: string[];
+  /** Linhas a mais que a base cuja página não se leu: não saem, nem conferidas. */
+  naoLidas?: string[];
   /** Linhas que as listas têm a mais que a base: o que o teste acrescentou. */
   registrados?: number;
   removidos?: number;
   /** Linhas a mais que a base cuja página não tem a marca: ficaram, para conferir. */
   semMarca?: string[];
+  /** O link de cada linha de semMarca, na mesma ordem: o que a conferência devolve. */
+  semMarcaLinks?: string[];
   total?: number | null;
 }
 

@@ -107,8 +107,8 @@ export type EditorMessage =
       retryFailed?: boolean;
       type: 'itens-teste';
       /**
-       * Na remoção: as linhas sem marca que a pessoa conferiu (a chave
-       * "lista :: texto" de semMarca); só elas saem sem a marca.
+       * Na remoção: as linhas sem marca que a pessoa conferiu, pelo link
+       * (semMarcaLinks); só elas saem sem a marca.
        */
       unmarked?: string[];
     }

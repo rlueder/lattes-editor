@@ -2,7 +2,7 @@
 // só as linhas que não estavam na base das listas, conferidas no fim contra a
 // base inteira. Separada de censo-test-items.ts, que cria.
 
-import { markedBatch, removalOrder, rowKey } from '../../src/census/test-ledger.ts';
+import { markedBatch, removalOrder, rowLabel } from '../../src/census/test-ledger.ts';
 import { TEST_MARK } from '../../src/census/test-plan.ts';
 import {
   type BatchOptions,
@@ -29,8 +29,9 @@ const withoutCode = (p: string) => p.replace(/([?&])f_cod=[A-Z0-9]+&?/, '$1').re
  * A linha só sai se a página do item tem a marca. Toda linha diferente da base
  * vira candidata, e numa base antiga isso inclui item seu incluído ou
  * alterado depois dela (21/10/2026). Como nem todo formulário tem onde levar a
- * marca, a linha sem ela fica de fora e volta em semMarca; as que a pessoa
- * conferiu nessa lista voltam em unmarked e saem.
+ * marca, a linha sem ela fica de fora e volta em semMarca, com o link em
+ * semMarcaLinks; as que a pessoa conferiu voltam pelo link em unmarked e saem.
+ * A página que não se lê volta em naoLidas e não sai.
  */
 export async function removeTestItems(
   code: string,
@@ -50,20 +51,33 @@ export async function removeTestItems(
   const candidates = removalOrder(added)
     .filter((r) => r.link && !/[?&]f_ctr=/i.test(r.link))
     .filter((r) => !/cargos_vinculos/i.test(r.link) || newAtuacao(r));
-  const { noMark: rows, plan } = await markedBatch(
+  setLive({ done: 0, last: undefined, phase: 'lendo', total: candidates.length });
+  const checked = await markedBatch(
     candidates,
     async (link) => (await get(withCode(link, code))).html,
-    { allowed: unmarked, batch, between: () => pause([300, 800]), mark: TEST_MARK },
+    {
+      allowed: unmarked,
+      batch,
+      between: () => pause([300, 800]),
+      mark: TEST_MARK,
+      onRead: (done, row) => setLive({ done, last: row.text.slice(0, 40) }),
+    },
   );
-  const noMark = rows.map(rowKey);
+  const { plan } = checked;
+  const noMark = checked.noMark.map(rowLabel);
+  // O link de cada sem marca, na mesma ordem: é o que a pessoa devolve ao conferir.
+  const noMarkLinks = checked.noMark.map((r) => r.link);
+  const unreadable = checked.unreadable.map(rowLabel);
   if (dryRun) {
     setLive({ phase: 'parado' });
     return {
       ensaio: plan.map((r) => `${r.list} :: ${r.text}`),
       faltandoDaBase: missing.map((r) => `${r.list} :: ${r.text}`),
+      naoLidas: unreadable,
       registrados: added.length,
       removidos: 0,
       semMarca: noMark,
+      semMarcaLinks: noMarkLinks,
       total: progress.removed.length,
     };
   }
@@ -108,9 +122,11 @@ export async function removeTestItems(
     falhas: failed,
     faltandoDaBase: after.missing.map((r) => `${r.list} :: ${r.text}`),
     marcaNoCurriculo: marca,
+    naoLidas: unreadable,
     registrados: after.added.length,
     removidos: removed.length,
     semMarca: noMark,
+    semMarcaLinks: noMarkLinks,
     total: progress.removed.length,
   };
 }
