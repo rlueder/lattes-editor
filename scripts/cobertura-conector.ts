@@ -75,9 +75,9 @@ function changed(attr: string, value: string, choices: string[] | undefined): st
   if (/^IDIOMA$/.test(attr)) return value === 'Inglês' ? 'Português' : 'Inglês';
   if (value === 'SIM') return 'NAO';
   if (value === 'NAO') return 'SIM';
-  if (/^\d{4}$/.test(value)) return String(Number(value) - 1);
   // A carga horária vai só com dígitos (o check() da formação complementar).
   if (/CARGA-HORARIA/.test(attr)) return String((Number.parseInt(value, 10) || 0) + 1);
+  if (/^\d{4}$/.test(value)) return String(Number(value) - 1);
   // Data do XML (DDMMAAAA): outro dia do mesmo mês.
   if (/^\d{8}$/.test(value)) return `${value.startsWith('01') ? '02' : '01'}${value.slice(2)}`;
   return `${value} x`;
@@ -186,14 +186,17 @@ function cover(raw: string, trials: Trial[] = []): Stats {
        * Com `from`, o item parte desse valor em vez do que o exemplo tem.
        */
       const attempt = (value?: string, from?: string) => {
-        // O ponto de partida é o exemplo; só com `from` ele é lido de novo.
-        const start = from === undefined ? base : parseXml(raw).root;
-        const work = parseXml(raw).root;
-        const target = flatten(work)[index]!;
+        // O ponto de partida é o exemplo; com `from`, uma cópia com o valor
+        // novo e o que o editor muda junto (o mesmo applyLinkedAttrs), para
+        // não partir de um item que o editor não teria.
+        let start = base;
         if (from !== undefined) {
+          start = parseXml(raw).root;
           setAttr(flatten(start)[index]!, a.name, from);
-          setAttr(target, a.name, from);
+          applyLinkedAttrs(flatten(start)[index]!, a.name, start);
         }
+        const work = from === undefined ? parseXml(raw).root : structuredClone(start);
+        const target = flatten(work)[index]!;
         const attr = target.attrs.find((x) => x.name === a.name)!;
         let choices: string[] | undefined;
         if (a.name === 'FLAG-RESPONSAVEL') {
