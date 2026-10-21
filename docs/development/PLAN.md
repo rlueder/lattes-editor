@@ -18,6 +18,13 @@ outras 127 são o alvo deste plano.
 
 ## Estado atual
 
+- 21/10/2026, à noite: a medida parte de um valor que o formulário tem. O
+  exemplo traz valores que o Lattes não oferece (WEB no meio de divulgação, a
+  carga horária como texto), e nenhuma troca a partir deles vai; o script
+  tentava só outras opções de destino. Agora, quando todas falham pelo valor,
+  o item parte de outra opção da lista (ou de 40 horas) e o campo conta se
+  alguma troca vai, como já se fazia com os 138 valores fora da lista do
+  Lattes. Um item real com WEB continua indo à mão. 2619 para 2645 de 2738.
 - 21/10/2026, à noite: período e órgão da pesquisa e desenvolvimento e do
   treinamento ministrado pelo conector, gravados no Lattes real com uma
   atividade de teste de cada tipo e removidos pelo registro. A grade (linhas

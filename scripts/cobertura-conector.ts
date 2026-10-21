@@ -75,6 +75,8 @@ function changed(attr: string, value: string, choices: string[] | undefined): st
   if (/^IDIOMA$/.test(attr)) return value === 'Inglês' ? 'Português' : 'Inglês';
   if (value === 'SIM') return 'NAO';
   if (value === 'NAO') return 'SIM';
+  // A carga horária vai só com dígitos (o check() da formação complementar).
+  if (/CARGA-HORARIA/.test(attr)) return String((Number.parseInt(value, 10) || 0) + 1);
   if (/^\d{4}$/.test(value)) return String(Number(value) - 1);
   // Data do XML (DDMMAAAA): outro dia do mesmo mês.
   if (/^\d{8}$/.test(value)) return `${value.startsWith('01') ? '02' : '01'}${value.slice(2)}`;
@@ -179,9 +181,21 @@ function cover(raw: string, trials: Trial[] = []): Stats {
         continue;
       // Só para ler no editor: segue outro campo.
       if (followsCountry(el.name, a.name)) continue;
-      /** Planeja a troca do atributo para `value` (sem valor, a troca padrão). */
-      const attempt = (value?: string) => {
-        const work = parseXml(raw).root;
+      /**
+       * Planeja a troca do atributo para `value` (sem valor, a troca padrão).
+       * Com `from`, o item parte desse valor em vez do que o exemplo tem.
+       */
+      const attempt = (value?: string, from?: string) => {
+        // O ponto de partida é o exemplo; com `from`, uma cópia com o valor
+        // novo e o que o editor muda junto (o mesmo applyLinkedAttrs), para
+        // não partir de um item que o editor não teria.
+        let start = base;
+        if (from !== undefined) {
+          start = parseXml(raw).root;
+          setAttr(flatten(start)[index]!, a.name, from);
+          applyLinkedAttrs(flatten(start)[index]!, a.name, start);
+        }
+        const work = from === undefined ? parseXml(raw).root : structuredClone(start);
         const target = flatten(work)[index]!;
         const attr = target.attrs.find((x) => x.name === a.name)!;
         let choices: string[] | undefined;
@@ -205,7 +219,7 @@ function cover(raw: string, trials: Trial[] = []): Stats {
           // O que o editor muda junto ao gravar (AttributeField chama o mesmo).
           applyLinkedAttrs(target, a.name, work);
         }
-        const changes = diffDocuments(base, work);
+        const changes = diffDocuments(start, work);
         // O texto que o editor pede quando o valor novo o exige (o potencial de
         // inovação Sim): a pessoa o escreve ali.
         const extras = Object.fromEntries(
@@ -233,6 +247,36 @@ function cover(raw: string, trials: Trial[] = []): Stats {
           if (next?.ok) {
             tried = next;
             break;
+          }
+        }
+      }
+      // O valor do exemplo pode ser um que o formulário não tem (WEB no meio
+      // de divulgação): aí nenhuma troca a partir dele vai, mas o campo vai
+      // num item que tenha um valor do formulário. Como os 138 valores fora
+      // da lista do Lattes, o item parte de um valor que o formulário tem.
+      // Um número que o exemplo traz como texto (a carga horária): parte de
+      // um número.
+      if (!tried.ok && /CARGA-HORARIA/.test(a.name)) {
+        if (tried.plan.unsupported.every((u) => valueMiss(u.reason))) {
+          const next = attempt('41', '40');
+          if (next?.ok) tried = next;
+        }
+      }
+      const choices = tried.choices ?? [];
+      if (
+        !tried.ok &&
+        choices.length > 1 &&
+        tried.plan.unsupported.every((u) => valueMiss(u.reason))
+      ) {
+        // Poucas partidas e destinos bastam: um valor que o formulário tem
+        // costuma ir para qualquer outro. O limite segura listas longas.
+        search: for (const from of choices.filter((c) => c !== a.value).slice(0, 6)) {
+          for (const to of choices.filter((c) => c !== from).slice(0, 3)) {
+            const next = attempt(to, from);
+            if (next?.ok) {
+              tried = next;
+              break search;
+            }
           }
         }
       }
