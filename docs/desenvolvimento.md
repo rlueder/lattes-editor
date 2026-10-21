@@ -272,14 +272,17 @@ Para regravar uma só, passe o nome depois da URL
 A cena `enviar` edita o nome de um prêmio e grava de verdade, no Lattes
 simulado, pela extensão do canal Dev carregada no navegador sem janela:
 
-1. `pnpm dev:lattes` e `node scripts/build-extension.ts --canal-dev`.
+1. `pnpm dev:lattes` e `node scripts/build-extension.ts --canal-dev --sem-app`.
+   A montagem `--sem-app` (`dist-extension-gravacao/`) é a extensão Dev sem
+   o host nativo: a comum acordaria o LattesEditor Dev instalado na máquina e
+   mandaria a gravação para ele.
 2. Um perfil de navegador com o "ok" do aviso de uso da extensão. O navegador
    sem janela não abre as páginas da extensão, então o "ok" não dá para ser
    dado por ele: carregue `dist-extension-dev/` no seu Chrome ou Brave, aceite
    o aviso no painel, e copie a pasta
    `Local Extension Settings/<id da extensão>` do seu perfil para
    `<perfil>/Default/` de uma pasta nova. Só o consentimento mora ali.
-3. `LATTES_EXTENSAO=dist-extension-dev LATTES_PERFIL=<perfil> pnpm capture:animacoes http://localhost:5173/ enviar`.
+3. `LATTES_EXTENSAO=dist-extension-gravacao LATTES_PERFIL=<perfil> pnpm capture:animacoes http://localhost:5173/ enviar`.
 
 A extensão grava no simulado, nunca no CNPq; `headless.ts` descreve as
 variáveis.

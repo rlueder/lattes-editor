@@ -7,10 +7,9 @@
 // sai nos temas claro e escuro, em docs/img/<nome>-<tema>.jpg, numa janela de
 // 1440 × 860 em 2x. A de Produções também vai para a página do projeto, em
 // site/img/editor-<tema>.jpg. As demais capturas da página saem só no tema
-// claro, em site/img/homepage/: as do Panorama na mesma janela e as da
-// abertura e da busca numa janela de 1024 × 640, porque a página as mostra
-// pequenas e numa janela larga o texto do app some. Por fim, a imagem de
-// prévia da página (site/img/og.png, 1200 × 630) sai de
+// claro, na mesma janela, em site/img/homepage/: as da abertura, as do
+// Panorama e a da busca (a mesma do "Ir para" do README). Por fim, a imagem
+// de prévia da página (site/img/og.png, 1200 × 630) sai de
 // scripts/og-card.html, servido pelo mesmo Vite.
 //
 //   pnpm dev                       # o editor em http://localhost:5173 (ou outra porta)
@@ -45,8 +44,12 @@ interface Shot {
    * ligado.
    */
   privacy?: boolean;
-  /** Só a página do projeto (caminho a partir da raiz, sem ".jpg"). */
+  /**
+   * Cópia para a página do projeto, só no tema claro (caminho a partir da
+   * raiz, sem ".jpg"). Com `siteOnly`, a captura não vai para docs/img.
+   */
   site?: string;
+  siteOnly?: boolean;
   /** Antes de abrir o currículo (a tela inicial). */
   welcome?: boolean;
 }
@@ -67,7 +70,7 @@ const DOC_SHOTS: Shot[] = [
   { name: 'inicio', welcome: true },
   { alsoTo: 'site/img/editor', name: 'producoes', prepare: `location.hash = 'producoes'` },
   { name: 'dados-gerais', prepare: `location.hash = 'dados-gerais'`, privacy: true },
-  { name: 'ir-para', prepare: OPEN_SEARCH },
+  { name: 'ir-para', prepare: OPEN_SEARCH, site: 'site/img/homepage/search' },
   { name: 'novo-item', prepare: OPEN_NEW_ITEM },
 ];
 
@@ -77,39 +80,44 @@ const PANORAMA_SHOTS: Shot[] = [
     name: 'panorama',
     prepare: `location.hash = 'panorama/producoes-por-ano'`,
     site: 'site/img/homepage/panorama',
+    siteOnly: true,
   },
   {
     name: 'panorama-health',
     prepare: `location.hash = 'panorama/saude-do-curriculo'`,
     site: 'site/img/homepage/panorama-health',
+    siteOnly: true,
   },
   {
     name: 'panorama-people',
     prepare: `location.hash = 'panorama/pessoas';
       (await wait('[role=radio]', 'Rede')).click()`,
     site: 'site/img/homepage/panorama-people',
+    siteOnly: true,
   },
   {
     name: 'panorama-timeline',
     prepare: `location.hash = 'panorama/linha-do-tempo'`,
     site: 'site/img/homepage/panorama-timeline',
+    siteOnly: true,
   },
 ];
 
-/** A abertura e a busca da página do projeto, na mesma janela larga. */
-const SITE_SHOTS: Shot[] = [
+/** As telas da abertura da página do projeto, só nela. */
+const HERO_SHOTS: Shot[] = [
   {
     name: 'hero-editor',
     prepare: `location.hash = 'producoes'`,
     site: 'site/img/homepage/hero-editor',
+    siteOnly: true,
   },
   {
     name: 'hero-panorama',
     prepare: `location.hash = 'panorama/producoes-por-ano'`,
     site: 'site/img/homepage/hero-panorama',
+    siteOnly: true,
   },
-  { name: 'hero-new', prepare: OPEN_NEW_ITEM, site: 'site/img/homepage/hero-new' },
-  { name: 'search', prepare: OPEN_SEARCH, site: 'site/img/homepage/search' },
+  { name: 'hero-new', prepare: OPEN_NEW_ITEM, site: 'site/img/homepage/hero-new', siteOnly: true },
 ];
 
 // Disponível nos `prepare`: `wait` espera um elemento (até 5 s), opcionalmente
@@ -153,9 +161,8 @@ async function capture(
       format: 'jpeg',
       quality: 80,
     });
-    const files = shot.site
-      ? [join(root, `${shot.site}.jpg`)]
-      : [join(outDir, `${shot.name}-${theme}.jpg`)];
+    const files = shot.siteOnly ? [] : [join(outDir, `${shot.name}-${theme}.jpg`)];
+    if (shot.site && theme === 'claro') files.push(join(root, `${shot.site}.jpg`));
     if (shot.alsoTo) files.push(join(root, `${shot.alsoTo}-${theme}.jpg`));
     for (const file of files) {
       mkdirSync(dirname(file), { recursive: true });
@@ -233,8 +240,7 @@ async function captureOgImage(): Promise<void> {
 
 mkdirSync(outDir, { recursive: true });
 await withHeadlessBrowser(async () => {
-  await capture('claro', [...DOC_SHOTS, ...PANORAMA_SHOTS], WIDE);
+  await capture('claro', [...DOC_SHOTS, ...HERO_SHOTS, ...PANORAMA_SHOTS], WIDE);
   await capture('escuro', DOC_SHOTS, WIDE);
-  await capture('claro', SITE_SHOTS, WIDE);
   await captureOgImage();
 });

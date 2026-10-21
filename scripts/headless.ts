@@ -32,10 +32,20 @@ export class Cdp {
       }
     });
   }
+  /** Um comando sem resposta em 30 s falha com o nome dele, em vez de travar a captura. */
   send<T = Record<string, unknown>>(method: string, params: object = {}): Promise<T> {
     const id = ++this.id;
     this.ws.send(JSON.stringify({ id, method, params }));
-    return new Promise((r) => this.pending.set(id, r as (v: unknown) => void));
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        reject(new Error(`O navegador não respondeu a ${method} em 30 s`));
+      }, 30_000);
+      this.pending.set(id, (v: unknown) => {
+        clearTimeout(timer);
+        resolve(v as T);
+      });
+    });
   }
   close(): void {
     this.ws.close();

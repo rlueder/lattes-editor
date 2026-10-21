@@ -13,10 +13,13 @@
 // A cena `enviar` grava de verdade, no Lattes simulado, pela extensão do canal
 // Dev carregada no navegador sem janela (ver LATTES_EXTENSAO e LATTES_PERFIL
 // em headless.ts):
-//   pnpm dev:lattes                                   # o simulado em 127.0.0.1:5197
-//   node scripts/build-extension.ts --canal-dev       # dist-extension-dev/
-//   LATTES_EXTENSAO=dist-extension-dev LATTES_PERFIL=<perfil> \
+//   pnpm dev:lattes                                        # o simulado em 127.0.0.1:5197
+//   node scripts/build-extension.ts --canal-dev --sem-app  # dist-extension-gravacao/
+//   LATTES_EXTENSAO=dist-extension-gravacao LATTES_PERFIL=<perfil> \
 //     pnpm capture:animacoes http://localhost:5173/ enviar
+// A montagem --sem-app não tem o host nativo: a extensão Dev comum acordaria o
+// LattesEditor Dev instalado na máquina de quem grava e mandaria a gravação
+// para ele.
 // O perfil precisa ter o "ok" do aviso de uso da extensão (docs/desenvolvimento.md).
 // A cena abre o menu do simulado numa segunda aba, que é onde a extensão grava.
 // Nada fala com o CNPq.
@@ -250,6 +253,9 @@ const SCENES: Scene[] = [
 async function record(scene: Scene): Promise<void> {
   const frames = mkdtempSync(join(tmpdir(), `lattes-${scene.name}-`));
   let frame = 0;
+  // O instante de cada quadro: a captura em 2x leva mais que os 100 ms do
+  // ritmo, então a duração de cada um no WebP vem do relógio, não do FPS.
+  const stamps: number[] = [];
   const cdp = await openTab();
   // A mesma janela larga das capturas (capture-screenshots.ts), em 2x.
   await cdp.send('Emulation.setDeviceMetricsOverride', {
@@ -263,6 +269,7 @@ async function record(scene: Scene): Promise<void> {
   });
 
   const evaluate = async (expression: string) => {
+    trace(`avalia ${expression.trim().slice(0, 60).replace(/\s+/g, ' ')}`);
     const { exceptionDetails } = await cdp.send<{
       exceptionDetails?: { exception?: { description?: string }; text: string };
     }>('Runtime.evaluate', {
@@ -276,17 +283,24 @@ async function record(scene: Scene): Promise<void> {
   // Guarda `count` quadros, um a cada 1/FPS s: a pausa que a pessoa vê.
   const hold = async (count: number) => {
     for (let i = 0; i < count; i++) {
+      const started = Date.now();
       const { data } = await cdp.send<{ data: string }>('Page.captureScreenshot', {
         format: 'png',
       });
+      stamps.push(started);
       writeFileSync(
         join(frames, `${String(frame++).padStart(4, '0')}.png`),
         Buffer.from(data, 'base64'),
       );
-      await sleep(1000 / FPS);
+      await sleep(Math.max(0, 1000 / FPS - (Date.now() - started)));
     }
   };
+  // LATTES_DEBUG=1 conta os passos no stderr, para achar onde uma cena para.
+  const trace = (what: string) => {
+    if (process.env.LATTES_DEBUG) console.error(`[${scene.name}] ${what} (quadro ${frame})`);
+  };
   const click = async (selector: string, text?: string) => {
+    trace(`clique ${selector} ${text ?? ''}`);
     await evaluate(
       `(await wait(${JSON.stringify(selector)}, ${JSON.stringify(text ?? '')})).click()`,
     );
@@ -342,8 +356,21 @@ async function record(scene: Scene): Promise<void> {
   if (nodeId) {
     await cdp.send('DOM.setFileInputFiles', { files: [fixture], nodeId });
   }
-  // Pelo conector, abrir o currículo leva mais tempo que soltar o arquivo.
-  await evaluate(`await wait('.mode-switch', '', 20000)`);
+  // Pelo conector, abrir o currículo leva mais tempo que soltar o arquivo, e a
+  // página pode recarregar no meio: uma espera longa dentro da página ficaria
+  // sem resposta, então a espera é daqui, em consultas curtas.
+  for (let i = 0; ; i++) {
+    const found = await cdp
+      .send<{ result: { value: boolean } }>('Runtime.evaluate', {
+        expression: `!!document.querySelector('.mode-switch')`,
+        returnByValue: true,
+      })
+      .then((r) => r.result.value)
+      .catch(() => false);
+    if (found) break;
+    if (i >= 60) throw new Error('O currículo não abriu em 30 s');
+    await sleep(500);
+  }
   await sleep(2000);
   await evaluate(`localStorage.setItem('lattes-editor:privacidade', '0'); location.reload()`);
   await sleep(2500);
@@ -364,11 +391,14 @@ async function record(scene: Scene): Promise<void> {
   const files = readdirSync(frames)
     .sort()
     .map((f) => join(frames, f));
-  execFileSync(
-    'img2webp',
-    ['-loop', '0', '-lossy', '-q', '72', '-m', '4', '-d', String(1000 / FPS), ...files, '-o', out],
-    { stdio: 'inherit' },
-  );
+  // `-d` vale para os quadros seguintes: cada um dura até o próximo instante.
+  const timed = files.flatMap((file, i) => {
+    const next = stamps[i + 1] ?? stamps[i]! + 1000 / FPS;
+    return ['-d', String(Math.max(20, Math.round(next - stamps[i]!))), file];
+  });
+  execFileSync('img2webp', ['-loop', '0', '-lossy', '-q', '72', '-m', '4', ...timed, '-o', out], {
+    stdio: 'inherit',
+  });
   rmSync(frames, { force: true, recursive: true });
   console.log(out.replace(root, ''), `(${frame} quadros)`);
 }
