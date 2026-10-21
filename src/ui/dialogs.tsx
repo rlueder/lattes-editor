@@ -4,7 +4,7 @@
 import { type ReactNode, useState } from 'react';
 
 import type { PendingSummary } from '../import-export/ExportPanel.tsx';
-import type { HistoryEntry } from '../model/store.ts';
+import type { HistoryInfo } from '../model/store.ts';
 import { AlertIcon } from './icons.tsx';
 import { Modal } from './Modal.tsx';
 
@@ -15,12 +15,12 @@ export function HistoryDialog({
   onSave,
   open,
 }: {
-  entries: HistoryEntry[];
+  entries: HistoryInfo[];
   open: boolean;
   onClose: () => void;
-  onRestore: (entry: HistoryEntry) => void;
+  onRestore: (entry: HistoryInfo) => void;
   /** Salva aquele ponto num arquivo XML, sem mudar a cópia de trabalho. */
-  onSave: (entry: HistoryEntry) => void;
+  onSave: (entry: HistoryInfo) => void;
 }) {
   return (
     <Modal

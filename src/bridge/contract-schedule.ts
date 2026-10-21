@@ -1,7 +1,9 @@
 // Quando a verificação automática do contrato (contract.ts) roda, e quando
 // tenta de novo antes de mostrar o resultado no painel.
 
-import type { ContractReport } from './contract.ts';
+import { type ContractReport, LATTES_CONTRACT } from './contract.ts';
+import { contractKind } from './delete.ts';
+import type { BridgeOp } from './plan.ts';
 
 /** Com o Lattes como esperado, a verificação automática se repete a cada meia hora. */
 export const AUTO_VERIFY_EVERY_MS = 30 * 60_000;
@@ -34,8 +36,26 @@ export function retryAutoVerify(report: ContractReport): boolean {
  * não precisa repetir a cada página.
  */
 export function shouldAutoVerify(report: ContractReport | undefined, now: number): boolean {
-  if (!report) return true;
+  if (!report || report.partial) return true;
   const age = now - Date.parse(report.checkedAt);
   if (!Number.isFinite(age)) return true;
   return age >= (report.status === 'ok' ? AUTO_VERIFY_EVERY_MS : AUTO_VERIFY_RETRY_MS);
+}
+
+/** Só reaproveita uma leitura recente que de fato cobriu os tipos da fila. */
+export function reusableVerification(
+  report: ContractReport | undefined,
+  kinds: BridgeOp['kind'][],
+  now: number,
+): boolean {
+  if (!report || report.status !== 'ok') return false;
+  const age = now - Date.parse(report.checkedAt);
+  if (!Number.isFinite(age) || age < 0 || age >= AUTO_VERIFY_EVERY_MS) return false;
+  return kinds.every((kind) => {
+    const mapped = contractKind(kind);
+    return (
+      !LATTES_CONTRACT.forms[mapped] ||
+      report.forms.some((f) => f.kind === mapped && f.status === 'ok')
+    );
+  });
 }

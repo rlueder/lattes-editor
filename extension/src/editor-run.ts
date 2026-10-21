@@ -71,7 +71,8 @@ export async function enqueue(
   editorRunPending = true;
   let keep = false;
   try {
-    if ((await readState()).running) return false;
+    const previous = await readState();
+    if (previous.running) return false;
     await writeState({
       editor,
       fromEditor: msg.start,
@@ -79,6 +80,9 @@ export async function enqueue(
       ops: msg.ops,
       results: {},
       running: false,
+      verificacao: previous.verificacao,
+      verificacaoCv: previous.verificacaoCv,
+      verificando: previous.verificando,
     });
     await chrome.action.setBadgeText({ text: msg.ops.length ? String(msg.ops.length) : '' });
     keep = msg.start === true;

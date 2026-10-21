@@ -109,3 +109,37 @@ describe('codificação declarada', () => {
     ).toContain('é');
   });
 });
+
+describe('orçamento do ZIP', () => {
+  it('seleciona o XML antes de descompactar uma entrada que nem é suportada', async () => {
+    const zip = await buildZip([
+      { data: latin1(CV), name: 'a.xml' },
+      { data: latin1('ignorar'), method: 99, name: 'extra.bin' },
+    ]);
+    expect((await loadCv(zip, 'a.zip')).doc.root.name).toBe('CURRICULO-VITAE');
+  });
+
+  it('recusa excesso de entrada, quantidade e saída declarada antes da expansão', async () => {
+    const zip = await buildZip([{ data: latin1('x'.repeat(1000)), name: 'a.xml' }]);
+    await expect(readZip(zip, { maxInputBytes: 10 })).rejects.toThrow('tamanho');
+    await expect(readZip(zip, { maxEntries: 0 })).rejects.toThrow('entradas demais');
+    await expect(readZip(zip, { maxOutputBytes: 100 })).rejects.toThrow('descompressão');
+  });
+
+  it('mede a saída real, mesmo com tamanho declarado falso', async () => {
+    const zip = await buildZip([{ data: latin1('x'.repeat(10_000)), name: 'a.xml' }]);
+    const view = new DataView(zip.buffer);
+    const central = view.getUint32(zip.length - 6, true);
+    view.setUint32(central + 24, 1, true);
+    await expect(readZip(zip, { maxOutputBytes: 100 })).rejects.toThrow('descompressão');
+    await expect(readZip(zip)).rejects.toThrow('Tamanho descomprimido');
+  });
+
+  it('recusa cabeçalhos truncados com um erro de ZIP', async () => {
+    const zip = await buildZip([{ data: latin1('x'), name: 'a.xml' }]);
+    const view = new DataView(zip.buffer);
+    const central = view.getUint32(zip.length - 6, true);
+    view.setUint32(central + 42, zip.length - 1, true);
+    await expect(readZip(zip)).rejects.toThrow(ZipError);
+  });
+});

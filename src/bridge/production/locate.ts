@@ -8,6 +8,9 @@ import { findLinks } from '../lattes-html.ts';
 import { folded, type ProductionOp } from './plan.ts';
 import type { ProductionTarget } from './types.ts';
 
+/** Índice de títulos, sem guardar valores dos formulários entre operações. */
+export type ProductionScans = Map<string, { html: string; titles: Map<string, string> }>;
+
 /** O ano do item na página: o do campo, ou o da data de t.year.fallback quando ele vem vazio. */
 function shownYear(controls: FormControl[], field: string, fallback?: string): string {
   const year = valueOf(controls, field).trim();
@@ -51,13 +54,31 @@ export async function locate(
   const yearField = t.year.field ?? 'f_ano';
   const found: { controls: FormControl[]; html: string; path: string }[] = [];
   const isRow = t.list.isRow ?? ((p: Record<string, string>) => Boolean(p.f_seq));
-  for (const link of findLinks(listHtml, t.list.formProc).filter((l) => isRow(l.params))) {
+  const links = findLinks(listHtml, t.list.formProc).filter((l) => isRow(l.params));
+  const scans = port.productionScans;
+  const scanKey = `${t.id}|${list.path}`;
+  let scan = scans?.get(scanKey);
+  if (!scan || scan.html !== listHtml) {
+    scan = { html: listHtml, titles: new Map() };
+    // Poucas categorias por vez; a cópia sai da memória ao recarregar a aba.
+    if (scans && scans.size >= 8) scans.clear();
+    scans?.set(scanKey, scan);
+  }
+  const title = folded(t.title.toForm ? t.title.toForm(op.match.title) : op.match.title);
+  for (const link of links) {
+    // Uma lista inalterada permite pular títulos diferentes, nunca reutilizar
+    // os controles de uma gravação. Todos os homônimos são relidos para
+    // conferir ano e natureza, inclusive quando já houve outra operação.
+    const known = scan.titles.get(link.path);
+    if (known !== undefined && known !== title) continue;
     const html = await getChecked(port, link.path);
     const controls = withScriptValues(html, port.readForm(html, t.form.name));
-    if (!controls) continue;
+    if (!controls)
+      throw new Stop('erro', 'Um formulário da lista não pôde ser lido; nada foi enviado');
+    const observed = folded(valueOf(controls, titleField));
+    scan.titles.set(link.path, observed);
     if (
-      folded(valueOf(controls, titleField)) ===
-        folded(t.title.toForm ? t.title.toForm(op.match.title) : op.match.title) &&
+      observed === title &&
       shownYear(controls, yearField, t.year.fallback) ===
         (t.year.toForm ? t.year.toForm(op.match.year) : op.match.year) &&
       sameNature(controls, t)

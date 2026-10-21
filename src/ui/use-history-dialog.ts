@@ -6,7 +6,12 @@ import { useCallback, useState } from 'react';
 import { saveBytes } from '../desktop/native.ts';
 import type { Session } from '../forms/use-production.ts';
 import { encodeCv } from '../model/document.ts';
-import { type HistoryEntry, listHistory } from '../model/store.ts';
+import {
+  getHistoryEntry,
+  type HistoryInfo,
+  listHistoryInfo,
+  workingGenerationToken,
+} from '../model/store.ts';
 import { parseXml, type XDocument } from '../model/xml.ts';
 import { copyFileName } from './copy-name.ts';
 
@@ -16,20 +21,26 @@ export function useHistoryDialog(
   onRestore: (doc: XDocument, note: string) => void,
 ) {
   const [open, setOpen] = useState(false);
-  const [entries, setEntries] = useState<HistoryEntry[]>([]);
+  const [entries, setEntries] = useState<HistoryInfo[]>([]);
   const close = useCallback(() => setOpen(false), []);
   return {
     close,
     entries,
     open,
-    restore: (entry: HistoryEntry) => {
+    restore: async (info: HistoryInfo) => {
+      const generation = workingGenerationToken();
+      const entry = info.id === undefined ? undefined : await getHistoryEntry(info.id);
+      if (!entry || generation !== workingGenerationToken()) return;
       onRestore(
         parseXml(entry.xml),
         `Restaurado: ${new Date(entry.savedAt).toLocaleString('pt-BR')}`,
       );
       setOpen(false);
     },
-    saveCopy: (entry: HistoryEntry) => {
+    saveCopy: async (info: HistoryInfo) => {
+      const generation = workingGenerationToken();
+      const entry = info.id === undefined ? undefined : await getHistoryEntry(info.id);
+      if (!entry || generation !== workingGenerationToken()) return;
       if (!session) return;
       void saveBytes(
         encodeCv(parseXml(entry.xml), session.meta.encoding),
@@ -37,7 +48,10 @@ export function useHistoryDialog(
       );
     },
     show: async () => {
-      setEntries(await listHistory());
+      const generation = workingGenerationToken();
+      const next = await listHistoryInfo();
+      if (generation !== workingGenerationToken()) return;
+      setEntries(next);
       setOpen(true);
     },
   };

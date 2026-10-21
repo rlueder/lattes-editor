@@ -5,7 +5,7 @@ import { type MutableRefObject, useEffect, useState } from 'react';
 
 import type { Session } from '../forms/use-production.ts';
 import { maxSequenciaProducao } from '../model/document.ts';
-import { loadWorkingCopy, saveWorkingCopy } from '../model/store.ts';
+import { loadWorkingCopy, saveWorkingCopy, workingGenerationToken } from '../model/store.ts';
 import { parseXml, serializeXml } from '../model/xml.ts';
 import type { SaveState } from './Topbar.tsx';
 
@@ -47,6 +47,8 @@ export function useAutosave(
   useEffect(() => {
     if (!session || version === 0) return;
     setSaveState('salvando');
+    let current = true;
+    const generation = workingGenerationToken();
     const timer = setTimeout(() => {
       const notes = pendingNotes.current.splice(0);
       const note =
@@ -54,11 +56,15 @@ export function useAutosave(
       saveWorkingCopy(
         { ...session.meta, savedAt: Date.now(), xml: serializeXml(session.doc) },
         note,
+        generation,
       )
-        .then(() => setSaveState('salvo'))
-        .catch(() => setSaveState('erro'));
+        .then(() => current && setSaveState('salvo'))
+        .catch(() => current && setSaveState('erro'));
     }, AUTOSAVE_MS);
-    return () => clearTimeout(timer);
+    return () => {
+      current = false;
+      clearTimeout(timer);
+    };
   }, [session, version, pendingNotes]);
   return [saveState, setSaveState];
 }

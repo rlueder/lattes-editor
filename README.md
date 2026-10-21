@@ -54,7 +54,7 @@ atualizações" no menu ⚙.
    instituição sai da busca do Lattes, o curso da lista da instituição e a
    agência de fomento da lista de agências. O app guarda uma cópia das áreas e
    das agências; sem cópia e sem extensão, esses campos continuam texto livre.
-   Cada edição fica salva no app.
+   Cada edição fica salva no app. O histórico abre as notas primeiro e carrega o XML apenas quando você escolhe um ponto para restaurar ou salvar.
 4. **Envie ao Lattes.** O painel "Enviar ao Lattes" vai em três passos:
    revisar, gravar no Lattes e publicar no CNPq. O primeiro mostra cada
    alteração e como ela vai: produções novas pelo Importar do próprio Lattes, com o
@@ -91,6 +91,8 @@ jeito, inclusive quando o item vem do DOI.
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/novo-item-escuro.jpg" />
   <img src="docs/img/novo-item-claro.jpg" alt="O modal Novo item de produção com a busca de tipos e os tipos mais usados." />
 </picture>
+
+O editor aceita ZIPs de até 32 MiB, com até 128 entradas, e limita a expansão dos XMLs a 64 MiB. Os demais arquivos dentro do ZIP não são descomprimidos.
 
 Cada exportação aberta vira uma versão, e o app diz o que mudou desde a
 anterior ("Versões do Lattes", no ⚙), inclusive o que foi editado direto no
@@ -160,6 +162,13 @@ lê cada alteração de volta e confere, e a fila para no primeiro problema. A
 cada 20 gravações seguidas ela faz uma pausa, para você olhar o Lattes, e só
 segue com um novo clique em "Continuar" no editor. O painel da extensão
 mostra a fila, a verificação do Lattes e um botão para parar.
+
+As leituras e gravações são espaçadas e têm um limite de pedidos. Quando o
+Lattes pede uma pausa, o conector para e respeita o tempo informado pelo
+servidor. Uma lista grande pode precisar de outra tentativa depois da pausa;
+o conector guarda os títulos que já conferiu para continuar a leitura.
+O botão de parar também interrompe uma leitura em andamento. Se uma gravação
+já começou, confira o resultado no Lattes antes de enviar outra vez.
 
 Enquanto a extensão não está na Chrome Web Store, instale assim:
 

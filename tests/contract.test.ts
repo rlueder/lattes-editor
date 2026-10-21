@@ -25,6 +25,7 @@ import {
   AUTO_VERIFY_EVERY_MS,
   AUTO_VERIFY_RETRY_MS,
   retryAutoVerify,
+  reusableVerification,
   shouldAutoVerify,
 } from '../src/bridge/contract-schedule.ts';
 import { LIVE_SOURCES, WATCHED_LISTS } from '../src/bridge/list-watch.ts';
@@ -481,5 +482,27 @@ describe('vigia: verificação automática', () => {
     expect(retryAutoVerify(report('sessao', 0))).toBe(true);
     expect(retryAutoVerify(report('mudou', 0))).toBe(false);
     expect(retryAutoVerify(report('ok', 0))).toBe(false);
+  });
+});
+
+describe('verificação econômica', () => {
+  it('confere só os tipos da fila e não busca as listas do catálogo', async () => {
+    const lattes = await lattesFor();
+    const report = await checkContract(lattes.port, undefined, ['resumo']);
+    expect(report.status).toBe('ok');
+    expect(report.partial).toBe(true);
+    expect(report.forms.map((f) => f.kind)).toEqual(['resumo']);
+    expect(gets(lattes)).toHaveLength(1);
+    expect(shouldAutoVerify(report, Date.now())).toBe(true);
+    expect(reusableVerification(report, ['resumo'], Date.now())).toBe(true);
+    expect(reusableVerification(report, ['idioma'], Date.now())).toBe(false);
+    expect(reusableVerification(report, ['resumo'], Date.now() + AUTO_VERIFY_EVERY_MS)).toBe(false);
+  });
+
+  it('cada caminho é lido só uma vez na verificação completa', async () => {
+    const lattes = await lattesFor();
+    await checkContract(lattes.port);
+    const paths = gets(lattes);
+    expect(paths.length).toBe(new Set(paths).size);
   });
 });

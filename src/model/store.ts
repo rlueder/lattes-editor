@@ -8,75 +8,31 @@
 // Sem chave, o editor não grava nada (modo "só nesta sessão"): guardar o
 // currículo em claro seria pior que perder o trabalho não enviado.
 
-import Dexie, { type Table } from 'dexie';
+import Dexie from 'dexie';
+
+import {
+  db,
+  type HistoryEntry,
+  type HistoryInfo,
+  type HistoryRow,
+  type LattesVersion,
+  type SentSealed,
+  type VersionRow,
+  type WorkingCopy,
+  type WorkingRow,
+} from './database.ts';
+export type { HistoryEntry, HistoryInfo, LattesVersion, WorkingCopy } from './database.ts';
+export { db } from './database.ts';
 
 import type { SentEntry } from '../bridge/sent-log.ts';
-import { type LoadedCv, maxSequenciaProducao } from './document.ts';
 import { isSealed, seal, type Sealed, unseal } from './seal.ts';
-import { serializeXml } from './xml.ts';
-
-export interface WorkingCopy {
-  encoding: string;
-  fileName: string;
-  id: 'current';
-  loadedAt: number;
-  /** Maior SEQUENCIA-PRODUCAO da exportação carregada; acima dele, item novo. */
-  loadedMaxSequencia: number;
-  /** Próximo SEQUENCIA-PRODUCAO livre: começa em max + 1 e só cresce (guia, 3.2). */
-  nextSequencia: number;
-  /** XML como foi carregado, para comparar e para "descartar alterações". */
-  originalXml: string;
-  savedAt: number;
-  /** XML serializado (string Unicode). */
-  xml: string;
-}
-
-export interface HistoryEntry {
-  id?: number;
-  /**
-   * Ponto de antes de um envio ao Lattes: fica fora da rotação das edições
-   * (KEPT_LIMIT próprio), para não sumir depois de 50 edições.
-   */
-  keep?: boolean;
-  /** Descrição curta da alteração, mostrada no painel de histórico. */
-  note: string;
-  savedAt: number;
-  xml: string;
-}
-
-/** Cópia de trabalho de um arquivo recém-carregado: a numeração do servidor vale a partir daqui (guia, 3.2). */
-export function newWorkingCopy(cv: LoadedCv, now: number): WorkingCopy {
-  const xml = serializeXml(cv.doc);
-  const max = maxSequenciaProducao(cv.doc);
-  return {
-    encoding: cv.encoding,
-    fileName: cv.fileName,
-    id: 'current',
-    loadedAt: now,
-    loadedMaxSequencia: max,
-    nextSequencia: max + 1,
-    originalXml: xml,
-    savedAt: now,
-    xml,
-  };
-}
+export { newWorkingCopy } from './working-copy.ts';
 
 /**
  * Uma exportação do Lattes como foi aberta: a linha do tempo de versões
  * (LAT-12). Cada abertura ou "Recarregar do Lattes" guarda uma, para mostrar
  * o que mudou de uma exportação para a outra.
  */
-export interface LattesVersion {
-  /** DATA-ATUALIZACAO + HORA-ATUALIZACAO da exportação (DDMMAAAA HHMMSS), quando há. */
-  exportedAt?: string;
-  id?: number;
-  /** NUMERO-IDENTIFICADOR do currículo. */
-  lattesId: string;
-  loadedAt: number;
-  /** XML da exportação, como foi carregado. */
-  xml: string;
-}
-
 /**
  * Quantas versões ficam por currículo. Para quem exporta uma vez por mês, dois
  * anos; as mais antigas saem primeiro.
@@ -89,81 +45,6 @@ export const HISTORY_LIMIT = 50;
 /** Quantos pontos de antes do envio ficam, à parte das edições. */
 export const KEPT_LIMIT = 20;
 
-/** Linhas como ficam no banco. Sem `sealed`, é uma linha antiga, em claro. */
-interface WorkingRow extends Partial<Omit<WorkingCopy, 'id'>> {
-  id: 'current';
-  sealed?: Sealed;
-}
-interface HistoryRow extends Partial<Pick<HistoryEntry, 'note' | 'xml'>> {
-  id?: number;
-  keep?: boolean;
-  savedAt: number;
-  sealed?: Sealed;
-}
-interface VersionRow {
-  /**
-   * SHA-256 do XML, em claro: compara a exportação nova com a última sem
-   * decifrar nada, dentro da transação. Só confirma um XML exato que alguém
-   * já tenha; não revela o conteúdo.
-   */
-  digest?: string;
-  exportedAt?: string;
-  id?: number;
-  lattesId: string;
-  loadedAt: number;
-  sealed: Sealed;
-}
-/** O que vai cifrado numa linha do registro do enviado. */
-type SentSealed = Pick<SentEntry, 'change' | 'op' | 'outcome' | 'rows'>;
-interface SentRow extends Partial<SentSealed> {
-  /** Em claro, como sentAt: só a hora em que a pessoa conferiu no Lattes. */
-  checkedAt?: number;
-  id?: number;
-  lattesId: string;
-  sealed?: Sealed;
-  sentAt: number;
-  undoOf?: number;
-}
-
-class LattesDb extends Dexie {
-  /** As listas do Lattes lidas pelo conector (src/model/list-cache.ts). */
-  lists!: Table<{ name: string; readAt: number; sealed: Sealed }, string>;
-  working!: Table<WorkingRow, 'current'>;
-  history!: Table<HistoryRow, number>;
-  sent!: Table<SentRow, number>;
-  versions!: Table<VersionRow, number>;
-
-  constructor() {
-    super('lattes-editor');
-    this.version(1).stores({ history: '++id, savedAt', working: 'id' });
-    // Versão 2 só acrescenta o registro do que foi gravado no Lattes; as
-    // tabelas da versão 1 ficam como estão.
-    this.version(2).stores({
-      history: '++id, savedAt',
-      sent: '++id, lattesId, sentAt',
-      working: 'id',
-    });
-    // Versão 3 só acrescenta as versões do Lattes (linha do tempo); nasce
-    // cifrada, então não há o que migrar.
-    this.version(3).stores({
-      history: '++id, savedAt',
-      sent: '++id, lattesId, sentAt',
-      versions: '++id, lattesId, loadedAt',
-      working: 'id',
-    });
-    // Versão 4 só acrescenta as listas do Lattes (cifradas desde o início).
-    this.version(4).stores({
-      history: '++id, savedAt',
-      lists: 'name',
-      sent: '++id, lattesId, sentAt',
-      versions: '++id, lattesId, loadedAt',
-      working: 'id',
-    });
-  }
-}
-
-export const db = new LattesDb();
-
 /**
  * cifrado: chave em mãos, tudo é gravado cifrado.
  * sem-chave: o chaveiro não respondeu; nada é gravado nesta sessão.
@@ -172,6 +53,9 @@ export const db = new LattesDb();
  */
 export type StorageStatus = 'cifrado' | 'chave-perdida' | 'sem-chave';
 
+// Fechar ou trocar o documento invalida gravações que ainda cifram o anterior.
+let workingGeneration = 0;
+let saveTail: Promise<void> = Promise.resolve();
 let key: CryptoKey | undefined;
 let pendingKey: CryptoKey | undefined;
 let status: StorageStatus = 'sem-chave';
@@ -183,6 +67,7 @@ export function storageStatus(): { reason?: string; status: StorageStatus } {
 
 /** O chaveiro não respondeu: o editor segue, sem gravar nada. */
 export function markStorageUnavailable(reason: string): StorageStatus {
+  workingGeneration++;
   key = undefined;
   pendingKey = undefined;
   status = 'sem-chave';
@@ -236,6 +121,7 @@ async function migratePlaintext(k: CryptoKey): Promise<void> {
   );
   const sealedHistory = await Promise.all(
     history.map(async ({ id, keep, note, savedAt, xml }) => ({
+      bucket: keep ? 1 : 0,
       id,
       keep,
       savedAt,
@@ -272,6 +158,8 @@ export async function openStorage(k: CryptoKey): Promise<StorageStatus> {
     return status;
   }
   await migratePlaintext(k);
+  await migrateHistoryNotes(k);
+  workingGeneration++;
   key = k;
   pendingKey = undefined;
   status = 'cifrado';
@@ -281,13 +169,19 @@ export async function openStorage(k: CryptoKey): Promise<StorageStatus> {
 /** Chave perdida: apaga tudo o que não dá mais para ler e segue com a chave nova. */
 export async function resetStorage(): Promise<void> {
   if (!pendingKey) return;
-  await db.transaction('rw', [db.working, db.history, db.sent, db.versions, db.lists], async () => {
-    await db.working.clear();
-    await db.history.clear();
-    await db.sent.clear();
-    await db.versions.clear();
-    await db.lists.clear();
-  });
+  workingGeneration++;
+  await db.transaction(
+    'rw',
+    [db.working, db.history, db.historyNotes, db.sent, db.versions, db.lists],
+    async () => {
+      await db.working.clear();
+      await db.history.clear();
+      await db.historyNotes.clear();
+      await db.sent.clear();
+      await db.versions.clear();
+      await db.lists.clear();
+    },
+  );
   key = pendingKey;
   pendingKey = undefined;
   status = 'cifrado';
@@ -323,7 +217,7 @@ async function workingRow(k: CryptoKey, copy: WorkingCopy): Promise<WorkingRow> 
 
 async function historyRow(k: CryptoKey, entry: Omit<HistoryEntry, 'id'>): Promise<HistoryRow> {
   const { keep, note, savedAt, xml } = entry;
-  return { keep, savedAt, sealed: await seal(k, { note, xml }) };
+  return { bucket: keep ? 1 : 0, keep, savedAt, sealed: await seal(k, { note, xml }) };
 }
 
 /**
@@ -331,42 +225,85 @@ async function historyRow(k: CryptoKey, entry: Omit<HistoryEntry, 'id'>): Promis
  * antes do envio, além dos últimos 20. Uma contagem não come a outra.
  */
 async function trimHistory(): Promise<void> {
-  const all = await db.history.orderBy('savedAt').toArray();
-  const stale = (entries: HistoryRow[], limit: number) =>
-    entries.slice(0, Math.max(0, entries.length - limit)).map((e) => e.id!);
-  await db.history.bulkDelete([
-    ...stale(
-      all.filter((e) => !e.keep),
-      HISTORY_LIMIT,
-    ),
-    ...stale(
-      all.filter((e) => e.keep),
-      KEPT_LIMIT,
-    ),
-  ]);
+  for (const [bucket, limit] of [
+    [0, HISTORY_LIMIT],
+    [1, KEPT_LIMIT],
+  ] as const) {
+    const ids = await db.history
+      .where('[bucket+savedAt]')
+      .between([bucket, Dexie.minKey], [bucket, Dexie.maxKey])
+      .primaryKeys();
+    const stale = ids.slice(0, Math.max(0, ids.length - limit));
+    await db.history.bulkDelete(stale);
+    await db.historyNotes.bulkDelete(stale);
+  }
+}
+
+/** Migração única dos pontos antigos; não mantém todos os XMLs decifrados em memória. */
+async function migrateHistoryNotes(k: CryptoKey): Promise<void> {
+  const ids = await db.history.toCollection().primaryKeys();
+  for (const id of ids) {
+    if (await db.historyNotes.get(id)) continue;
+    const row = await db.history.get(id);
+    if (!row?.sealed) continue;
+    const entry = await unsealRow<Pick<HistoryEntry, 'note' | 'xml'>>(k, row.sealed, 'histórico');
+    if (!entry) continue;
+    await db.historyNotes.put({
+      id,
+      keep: row.keep,
+      savedAt: row.savedAt,
+      sealed: await seal(k, { note: entry.note }),
+    });
+  }
+}
+
+async function addHistoryRow(point: HistoryRow, note: Sealed): Promise<void> {
+  const id = await db.history.add(point);
+  await db.historyNotes.put({ id, keep: point.keep, savedAt: point.savedAt, sealed: note });
 }
 
 // A cifra roda antes de cada transação: o IndexedDB fecha a transação quando
 // ela espera por algo que não é do próprio banco, como o crypto.subtle.
 
 /** Grava a cópia de trabalho e um ponto de histórico, mantendo os últimos 50. */
-export async function saveWorkingCopy(copy: WorkingCopy, note: string): Promise<void> {
-  if (!key) return;
-  const working = await workingRow(key, copy);
-  const point = await historyRow(key, { note, savedAt: copy.savedAt, xml: copy.xml });
-  await db.transaction('rw', db.working, db.history, async () => {
-    await db.working.put(working);
-    await db.history.add(point);
-    await trimHistory();
-  });
+export function workingGenerationToken(): number {
+  return workingGeneration;
+}
+
+export function saveWorkingCopy(
+  copy: WorkingCopy,
+  note: string,
+  generation = workingGeneration,
+): Promise<void> {
+  const k = key;
+  const save = async () => {
+    if (!k || k !== key || generation !== workingGeneration) return;
+    const working = await workingRow(k, copy);
+    const point = await historyRow(k, { note, savedAt: copy.savedAt, xml: copy.xml });
+    const sealedNote = await seal(k, { note });
+    if (k !== key || generation !== workingGeneration) return;
+    await db.transaction('rw', [db.working, db.history, db.historyNotes], async () => {
+      await db.working.put(working);
+      await addHistoryRow(point, sealedNote);
+      await trimHistory();
+    });
+  };
+  const pending = saveTail.then(save);
+  // Uma falha não impede a próxima edição de ser salva.
+  saveTail = pending.catch(() => undefined);
+  return pending;
 }
 
 /** Um ponto de histórico sem mexer na cópia de trabalho (o de antes de cada envio). */
 export async function addHistoryPoint(entry: Omit<HistoryEntry, 'id'>): Promise<void> {
   if (!key) return;
-  const point = await historyRow(key, entry);
-  await db.transaction('rw', db.history, async () => {
-    await db.history.add(point);
+  const k = key;
+  const generation = workingGeneration;
+  const point = await historyRow(k, entry);
+  const note = await seal(k, { note: entry.note });
+  if (k !== key || generation !== workingGeneration) return;
+  await db.transaction('rw', [db.history, db.historyNotes], async () => {
+    await addHistoryRow(point, note);
     await trimHistory();
   });
 }
@@ -377,18 +314,44 @@ export async function addHistoryPoint(entry: Omit<HistoryEntry, 'id'>): Promise<
  * cópia de antes, gravado antes de trocar.
  */
 export async function replaceWorkingCopy(copy: WorkingCopy, keepMarked = false): Promise<void> {
-  if (!key) return;
-  const working = await workingRow(key, copy);
-  const point = await historyRow(key, {
+  const generation = ++workingGeneration;
+  const k = key;
+  if (!k) return;
+  const working = await workingRow(k, copy);
+  const point = await historyRow(k, {
     note: 'Arquivo carregado',
     savedAt: copy.savedAt,
     xml: copy.xml,
   });
-  await db.transaction('rw', db.working, db.history, async () => {
+  const note = await seal(k, { note: 'Arquivo carregado' });
+  if (k !== key || generation !== workingGeneration) return;
+  await db.transaction('rw', [db.working, db.history, db.historyNotes], async () => {
     await (keepMarked ? db.history.filter((r) => !r.keep).delete() : db.history.clear());
+    await (keepMarked ? db.historyNotes.filter((r) => !r.keep).delete() : db.historyNotes.clear());
     await db.working.put(working);
-    await db.history.add(point);
+    await addHistoryRow(point, note);
   });
+}
+
+/** Metadados pequenos: a janela não carrega nem decifra as cópias de XML. */
+export async function listHistoryInfo(): Promise<HistoryInfo[]> {
+  const k = key;
+  if (!k) return [];
+  const out: HistoryInfo[] = [];
+  for (const row of await db.historyNotes.orderBy('savedAt').reverse().toArray()) {
+    const note = await unsealRow<{ note: string }>(k, row.sealed, 'notas do histórico');
+    if (note) out.push({ id: row.id, keep: row.keep, note: note.note, savedAt: row.savedAt });
+  }
+  return out;
+}
+
+export async function getHistoryEntry(id: number): Promise<HistoryEntry | undefined> {
+  const k = key;
+  if (!k) return undefined;
+  const row = await db.history.get(id);
+  if (!row?.sealed) return undefined;
+  const open = await unsealRow<Pick<HistoryEntry, 'note' | 'xml'>>(k, row.sealed, 'histórico');
+  return open && { ...open, id, keep: row.keep, savedAt: row.savedAt };
 }
 
 export async function listHistory(): Promise<HistoryEntry[]> {
@@ -546,9 +509,11 @@ export async function clearSent(lattesId: string): Promise<void> {
  * Lattes também ficam: a linha do tempo é justamente entre aberturas.
  */
 export async function clearAll(): Promise<void> {
-  await db.transaction('rw', db.working, db.history, async () => {
+  workingGeneration++;
+  await db.transaction('rw', [db.working, db.history, db.historyNotes], async () => {
     await db.working.clear();
     await db.history.clear();
+    await db.historyNotes.clear();
   });
 }
 

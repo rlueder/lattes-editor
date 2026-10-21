@@ -81,24 +81,35 @@ os filtros usam. Que o Importar leia o arquivo de volta com a mesma convenção
 
 ## O que o app guarda
 
-Tudo, menos as cópias de segurança (abaixo), fica no IndexedDB do WebView (`src/model/store.ts`, com Dexie), cifrado
+Tudo, menos as cópias de segurança (abaixo), fica no IndexedDB do WebView (`src/model/store.ts`, com a estrutura em `src/model/database.ts`, com Dexie), cifrado
 com AES-GCM (`src/model/seal.ts`). Em claro ficam só as chaves de busca: datas,
 o identificador público do currículo e marcas como "manter". A chave é gerada no primeiro uso e mora no
 chaveiro do sistema (`src-tauri/src/chave.rs`); sem chaveiro, o app não guarda
-nada naquela sessão. São cinco tabelas:
+nada naquela sessão. São seis tabelas:
 
-| Tabela     | O que guarda                                                                                                                             |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `working`  | A cópia de trabalho: o XML atual, o XML como foi carregado (base das diferenças e do "descartar") e o próximo `SEQUENCIA-PRODUCAO` livre |
-| `history`  | O histórico de alterações: cada ponto com o XML e uma nota, os marcados para não sair da lista                                           |
-| `versions` | Cada exportação aberta, por currículo: a linha do tempo do Lattes                                                                        |
-| `sent`     | O registro do que o conector gravou no Lattes, com o antes e o depois de cada campo                                                      |
-| `lists`    | A última leitura das listas do Lattes feita pelo conector (áreas do conhecimento e agências), com a data (`src/model/list-cache.ts`)     |
+| Tabela         | O que guarda                                                                                                                             |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `working`      | A cópia de trabalho: o XML atual, o XML como foi carregado (base das diferenças e do "descartar") e o próximo `SEQUENCIA-PRODUCAO` livre |
+| `history`      | O histórico de alterações: cada ponto com o XML e uma nota, os marcados para não sair da lista                                           |
+| `historyNotes` | Notas cifradas dos pontos do histórico, separadas do XML para abrir a lista sem decifrar as cópias                                       |
+| `versions`     | Cada exportação aberta, por currículo: a linha do tempo do Lattes                                                                        |
+| `sent`         | O registro do que o conector gravou no Lattes, com o antes e o depois de cada campo                                                      |
+| `lists`        | A última leitura das listas do Lattes feita pelo conector (áreas do conhecimento e agências), com a data (`src/model/list-cache.ts`)     |
 
-As três primeiras guardam XML serializado; `sent` guarda as operações do
+`working`, `history` e `versions` guardam XML serializado; `sent` guarda as operações do
 conector. As alterações a enviar não são guardadas: saem, a cada momento, da
 diferença entre a cópia de trabalho e a exportação carregada
 (`src/model/changes.ts`).
+
+O autosave guarda as edições em ordem, mesmo quando uma cifra demora mais
+que a seguinte. Fechar ou trocar o arquivo invalida a geração anterior,
+incluindo timers e cifras em andamento (`src/ui/use-working-copy.ts`). A
+rotação de `history` consulta só as chaves pelo índice de grupo e data, sem
+ler os XMLs. Na versão 5 do banco, as notas antigas são copiadas uma vez para
+`historyNotes`, um ponto por vez; no uso normal, a lista decifra só as notas,
+e a restauração ou o download decifra o ponto escolhido. A comparação que
+marca o arquivo como modificado também é calculada por revisão do documento,
+sem serializar outra vez a cada troca de estado da interface.
 
 ### Cópias de segurança (LAT-59)
 
@@ -224,6 +235,54 @@ extensão roda a fila por elas (`runRound`, chamado por `run` em
   (`src/ui/status-strip.ts`); sem a leitura do menu do Lattes, conta o
   registro inteiro (`publishBlockers`, em
   `src/import-export/publish-view.ts`). Erro e sessão caída não bloqueiam.
+
+### Orçamento de tráfego
+
+`src/bridge/transport.ts` concentra os pedidos da extensão normal. Os valores
+são uma política do editor, sem relação comprovada com limites do CNPq:
+
+- pelo menos 750 ms entre pedidos, inclusive entre tarefas;
+- no máximo 100 pedidos por tarefa e 80 numa janela de um minuto;
+- prazo de 20 s por pedido e 150 s por tarefa;
+- HTTP 403, 429 ou 503 impõe uma pausa de pelo menos um minuto, estendida por
+  `Retry-After` quando ele informa mais tempo, em segundos ou como data.
+
+Qualquer erro HTTP para a tarefa, sem repetição automática de POST. A pausa
+fica no `chrome.storage.session` da extensão, vale para as abas deste navegador e sobrevive a um recarregamento da página. A instância
+do transporte sobrevive à reinjeção do núcleo. A trava na aba impede que um
+worker reiniciado sobreponha outra tarefa à que ainda roda; a trava em
+`extension/src/session-task.ts` também impede outra injeção na mesma aba.
+Espelho, exportação e buscas participam da exclusão mútua. O botão de parar
+cancela o pedido atual e impede o próximo. Uma falha depois de iniciar um
+POST volta divergente, pois o cancelamento não desfaz o que o servidor já recebeu.
+
+A localização de produção (`production/locate.ts`) guarda só um índice de
+títulos enquanto o HTML da lista não mudar. Cada item com o título procurado
+é relido para conferir ano e natureza, preservando a recusa de homônimos
+ambíguos e usando controles novos para gravar. A varredura inicial ainda
+precisa ler a categoria inteira; ao atingir o orçamento, para antes de
+gravar e mantém o índice parcial para uma tentativa posterior. São guardadas
+no máximo oito listas; recarregar a aba descarta o índice.
+
+A verificação do contrato deduplica os caminhos de leitura. A fila confere
+só seus tipos, sem buscar todo o catálogo de listas, e pode aproveitar um
+relatório aprovado de menos de 30 minutos, do mesmo currículo e com amostra
+dos tipos necessários. Uma verificação parcial não substitui a completa do
+vigia automático. A especificação dos formulários fica em
+`src/bridge/contract-spec.ts` e o motor em `src/bridge/contract.ts`.
+
+O censo e os itens de teste do canal Dev usam o caminho separado de
+`extension/src/censo.ts`; esta política ainda não cobre esses procedimentos
+manuais. O vigia público semanal faz cinco leituras, sem repetição automática,
+por `scripts/vigia-lattes.ts`.
+
+### Limites da abertura de ZIP
+
+O leitor aceita no máximo 32 MiB comprimidos e 128 entradas. A seleção de
+arquivos XML acontece no diretório central, antes da descompressão. A soma
+de saída dos arquivos selecionados tem teto de 64 MiB, conferido tanto no
+tamanho declarado quanto nos bytes que o fluxo realmente produz. Cabeçalhos
+truncados e tamanhos incompatíveis são recusados com um erro de ZIP.
 
 ## Do editor ao Lattes
 
