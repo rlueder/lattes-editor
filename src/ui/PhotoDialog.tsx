@@ -9,6 +9,7 @@ import { toBase64 } from '../bridge/export.ts';
 import { photoFailureMessage } from '../bridge/photo.ts';
 import { Modal } from './Modal.tsx';
 import { preparePhoto } from './photo-image.ts';
+import { PixelPhoto } from './PixelPhoto.tsx';
 import { usePrivacyMode } from './privacy.ts';
 import type { PhotoUploadReading } from './use-bridge.ts';
 
@@ -45,9 +46,8 @@ export function PhotoDialog({
   onSent: () => void;
 }) {
   const [step, setStep] = useState<Step>({ kind: 'escolher' });
-  // No modo de privacidade a foto de agora não aparece, nem se ele mudar com o diálogo aberto.
+  // No modo de privacidade a foto de agora vira o mosaico do perfil, até a pessoa escolher outra.
   const [hidden] = usePrivacyMode();
-  const shown = hidden ? undefined : current;
   const input = useRef<HTMLInputElement>(null);
   // A prévia é uma URL de blob criada e revogada no mesmo efeito, presa aos
   // bytes: os passos que carregam a mesma foto reaproveitam a URL, e o
@@ -167,9 +167,13 @@ export function PhotoDialog({
         <div aria-hidden="true" className="photo-preview">
           {preview ? (
             <img alt="" src={preview} />
-          ) : (
-            shown && step.kind !== 'enviada' && <img alt="" src={shown} />
-          )}
+          ) : current && step.kind !== 'enviada' ? (
+            hidden ? (
+              <PixelPhoto src={current} />
+            ) : (
+              <img alt="" src={current} />
+            )
+          ) : null}
         </div>
         <div className="photo-text">
           {step.kind === 'enviada' ? (

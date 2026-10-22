@@ -8,7 +8,7 @@ import { formatPhone } from '../model/contacts.ts';
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
 import { isSystemAttr } from './field-kind.ts';
 import { isRedundantDateFormat } from './lattes-date.ts';
-import { isSensitiveAttr } from './privacy.ts';
+import { isSensitiveAttr, MASK } from './privacy.ts';
 import { displayValue, formatCep } from './reading.ts';
 
 export type PartFormat = 'cep' | 'ddd' | 'level' | 'month' | 'number' | 'phone';
@@ -22,6 +22,8 @@ export interface Part {
   format?: PartFormat;
   /** Chave estável no bloco: posição do elemento e nome do atributo. */
   key: string;
+  /** Valor sensível no modo de privacidade: o rótulo fica, o texto é a máscara. */
+  masked?: boolean;
 }
 
 export type LineKind = 'lead' | 'meta' | 'para' | 'text' | 'translation' | 'when' | 'work';
@@ -55,10 +57,10 @@ export interface NestedGroup {
 
 export interface Section {
   heading?: string;
-  /** Seção inteira escondida pelo modo de privacidade (endereço residencial). */
+  /** Seção inteira sensível (endereço residencial): no modo de privacidade, cada campo preenchido vira rótulo e máscara. */
   hidden: boolean;
   lines: Line[];
-  /** Campos preenchidos escondidos pelo modo de privacidade. */
+  /** Campos preenchidos mascarados pelo modo de privacidade (estão em `rows`, com `masked`). */
   masked: number;
   /** Título de terceiro nível em diante: rótulo, não título. */
   minor: boolean;
@@ -174,7 +176,8 @@ function byRank(a: Part, b: Part): number {
 
 /**
  * Fecha uma seção: as linhas guardam só pedaços de atributos que existem; os
- * preenchidos que sobram viram rótulo e valor.
+ * preenchidos que sobram viram rótulo e valor. No modo de privacidade, o
+ * sensível sai da linha de texto e vira rótulo e máscara, como no campo.
  */
 export function finish(
   keys: Keys,
@@ -185,7 +188,12 @@ export function finish(
   except: Set<string> = new Set(),
 ): Section {
   const exists = (p: Part) => has(p.el, p.attr) && isUsable(p.el, p.attr, opts);
-  const clean = (l: Line): Line => ({ ...l, parts: l.parts.filter(exists) });
+  const sensitive = (p: Part) =>
+    opts.hideSensitive && (base.hidden === true || isSensitiveAttr(p.el.name, p.attr));
+  const clean = (l: Line): Line => ({
+    ...l,
+    parts: l.parts.filter((p) => exists(p) && !sensitive(p)),
+  });
   const when = base.when && clean(base.when);
   const lines = base.lines.map(clean);
   const inLines = [...(when ? [when] : []), ...lines].flatMap((l) => l.parts);
@@ -195,9 +203,8 @@ export function finish(
       .map((a) => keys.part(el, a.name))
       .filter((p) => !used.has(p.key) && !except.has(p.attr) && isUsable(p.el, p.attr, opts)),
   );
-  const sensitive = (p: Part) => opts.hideSensitive && isSensitiveAttr(p.el.name, p.attr);
   const filledLoose = loose.filter(isFilled);
-  const rows = filledLoose.filter((p) => !sensitive(p)).sort(byRank);
+  const rows = filledLoose.map((p) => (sensitive(p) ? { ...p, masked: true } : p)).sort(byRank);
   const masked = filledLoose.filter(sensitive).length;
   return {
     ...base,
@@ -214,6 +221,7 @@ export function finish(
 
 /** Texto de um pedaço: valor por extenso, nível de idioma em minúsculas, CEP formatado. */
 export function partText(p: Part): string {
+  if (p.masked) return MASK;
   const v = value(p.el, p.attr);
   if (p.format === 'level') return LEVELS[v] ?? enumLabel(v).toLocaleLowerCase('pt-BR');
   if (p.format === 'cep') return formatCep(v);

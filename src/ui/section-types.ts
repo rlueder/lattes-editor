@@ -55,7 +55,8 @@ export const SECTION_DESCRIPTIONS: Record<string, string> = {
 export const EMPTY_NOTES: Record<string, string> = {
   educacao: 'Para um item aparecer aqui, ligue "Divulgação científica" ao editá-lo.',
   inovacao: 'Para um item aparecer aqui, ligue "Potencial inovação" ao editá-lo.',
-  patentes: 'O programa de computador fica em Produções, como software.',
+  patentes:
+    'O programa de computador, que o Lattes lista aqui, vem na exportação como software e fica em Produções.',
   projetos: 'Projetos ficam dentro de uma atuação profissional.',
 };
 
@@ -67,3 +68,15 @@ export const NEW_GENERAL_LABELS: Record<string, string> = {
   patentes: 'Nova patente ou registro',
   projetos: 'Novo projeto ou parte',
 };
+
+/**
+ * Os tipos de uma seção para o seletor de item novo aberto dela (o "Novo
+ * item" da seção vazia), com o nome dela; undefined se a seção não recebe itens.
+ */
+export function pickerTypes(
+  schema: LattesSchema,
+  section: { id: string; label: string },
+): { label: string; types: ProductionType[] } | undefined {
+  const types = typesForSection(schema, section.id);
+  return types.length > 0 ? { label: section.label, types } : undefined;
+}

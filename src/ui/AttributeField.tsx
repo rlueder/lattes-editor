@@ -40,7 +40,7 @@ import { LiveListControl } from './LiveListField.tsx';
 import { ComboSelect } from './primitives/ComboSelect.tsx';
 import { Switch } from './primitives/Switch.tsx';
 import { Tip } from './primitives/Tip.tsx';
-import { isSensitiveAttr, useHideSensitive } from './privacy.ts';
+import { isSensitiveAttr, MASK, useHideSensitive } from './privacy.ts';
 import { YearField } from './YearField.tsx';
 
 export type EditFn = (note: string) => void;
@@ -133,7 +133,7 @@ export function AttributeField({
     return (
       <div className="field field-readonly field-hidden">
         <span className="field-label">{text}</span>
-        <span className="readonly-value">{value ? '••••••' : '(vazio)'}</span>
+        <span className="readonly-value">{value ? MASK : '(vazio)'}</span>
       </div>
     );
   }
@@ -230,9 +230,10 @@ export function AttributeField({
   );
 
   if (isSystemAttr(el.name, name)) {
-    // Código ou sequência gerado pelo Lattes: texto, não campo.
+    // Código ou sequência gerado pelo Lattes: texto, não campo. O fundo cinza
+    // marca o que "Mostrar códigos do Lattes" acende.
     return (
-      <div className="field field-readonly">
+      <div className="field field-readonly field-code">
         <ReadonlyLabel text={text} why="Gerado pelo Lattes; não se edita aqui" />
         <span className="readonly-value">
           {value

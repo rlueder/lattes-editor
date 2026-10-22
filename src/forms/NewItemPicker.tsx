@@ -1,6 +1,7 @@
 // Escolha do tipo de item novo. Um campo só: filtra os tipos ou, se o texto
 // for um DOI, oferece começar por ele (o tipo vem do Crossref). Na abertura
-// aparecem só os mais usados; os outros tipos ficam recolhidos por módulo.
+// aparecem só os mais usados (ou, aberto de uma seção, os tipos dela); os
+// outros tipos ficam recolhidos por módulo.
 
 import { useId, useMemo, useRef, useState } from 'react';
 
@@ -23,13 +24,15 @@ import { FORM_SPECS } from './specs.ts';
 
 interface Props {
   open: boolean;
+  /** Aberto de uma seção (Bancas, Orientações): os tipos dela vêm primeiro, com o nome dela. */
+  section?: { label: string; types: ProductionType[] };
   onClose: () => void;
   onPick: (type: ProductionType, work?: CrossrefWork) => void;
 }
 
 type DoiState = { kind: 'idle' } | { kind: 'loading' } | { kind: 'error'; message: string };
 
-export function NewItemPicker({ onClose, onPick, open }: Props) {
+export function NewItemPicker({ onClose, onPick, open, section }: Props) {
   const [query, setQuery] = useState('');
   const queryRef = useRef<HTMLInputElement>(null);
   const [showAll, setShowAll] = useState(false);
@@ -45,10 +48,12 @@ export function NewItemPicker({ onClose, onPick, open }: Props) {
   const matches = (t: ProductionType) =>
     !searching || fold(`${labelOf(t)} ${t.module.label}`).includes(q);
 
-  const commonNames = new Set(FORM_SPECS.map((s) => s.itemName));
-  const common = FORM_SPECS.map((s) => types.find((t) => t.itemName === s.itemName)!).filter(
-    (t) => t && matches(t),
-  );
+  // Os primeiros: os tipos da seção que abriu o seletor, ou os mais usados.
+  const first = section
+    ? section.types
+    : FORM_SPECS.map((s) => types.find((t) => t.itemName === s.itemName)!).filter(Boolean);
+  const commonNames = new Set(first.map((t) => t.itemName));
+  const common = first.filter(matches);
   // Os mais usados não se repetem nos módulos; módulo que esvazia some.
   const byModule = new Map<string, ProductionType[]>();
   for (const t of types) {
@@ -114,13 +119,14 @@ export function NewItemPicker({ onClose, onPick, open }: Props) {
     );
   };
 
+  const title = section ? `Novo item em ${section.label}` : 'Novo item de produção';
   return (
     <Modal
       focusFirstField
       className="picker"
-      label="Novo item de produção"
+      label={title}
       open={open}
-      title="Novo item de produção"
+      title={title}
       onClose={() => {
         reset();
         onClose();
@@ -177,7 +183,7 @@ export function NewItemPicker({ onClose, onPick, open }: Props) {
         <>
           {common.length > 0 && (
             <section className="picker-section">
-              <h3>Mais usados</h3>
+              <h3>{section ? section.label : 'Mais usados'}</h3>
               <ul className="picker-grid">{common.map(item)}</ul>
             </section>
           )}

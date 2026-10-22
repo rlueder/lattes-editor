@@ -74,12 +74,35 @@ function codes(control: string): Record<string, string> {
   );
 }
 
+/** Os códigos de F_IDIOMA, conferidos contra os que F_COD_IDIOMA lista. */
+function languageCodes(): Record<string, string> {
+  const all = codes('F_IDIOMA');
+  const section = codes('F_COD_IDIOMA');
+  const different = Object.entries(section).filter(([name, code]) => all[name] !== code);
+  if (Object.keys(section).length === 0 || different.length > 0) {
+    throw new Error(
+      `F_COD_IDIOMA e F_IDIOMA discordam em ${JSON.stringify(different)}; confira a captura antes de gerar`,
+    );
+  }
+  return all;
+}
+
 const out = {
   capturedAt: capture.capturedAt,
   /**
    * f_pais: o código que o formulário envia para cada nome (BRA para Brasil),
    * para o conector gravar o país de um item (LAT-51).
    */
+  /**
+   * Nome e código de duas letras de cada idioma, para a seção Idiomas (o XML
+   * guarda o código em IDIOMA e o nome em DESCRICAO-DO-IDIOMA: EN Inglês, ES
+   * Espanhol na exportação real). Vem de F_IDIOMA, o combo das produções, que
+   * tem os 152; F_COD_IDIOMA, o combo do formulário de idioma, foi capturado
+   * num currículo que já tinha alemão, espanhol e inglês, e o Lattes tira do
+   * combo os idiomas já cadastrados. Os 149 que ele lista têm o mesmo código
+   * em F_IDIOMA (conferido abaixo).
+   */
+  codigosDosIdiomas: languageCodes(),
   codigosDosPaises: codes('f_pais'),
   /** F_IDIOMA: nas produções, o XML guarda o nome (Português na exportação real). */
   idiomas: names('F_IDIOMA'),
@@ -97,5 +120,5 @@ writeFileSync(
   await format(JSON.stringify(out), { ...(await resolveConfig(path)), filepath: path }),
 );
 console.log(
-  `src/schema/listas-lattes.json: ${out.paises.length} países (${Object.keys(out.codigosDosPaises).length} com código), ${out.idiomas.length} idiomas, ${out.ufs.length} UFs`,
+  `src/schema/listas-lattes.json: ${out.paises.length} países (${Object.keys(out.codigosDosPaises).length} com código), ${out.idiomas.length} idiomas (${Object.keys(out.codigosDosIdiomas).length} com código), ${out.ufs.length} UFs`,
 );

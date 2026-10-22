@@ -219,12 +219,23 @@ export function healthChecks(cv: CvData, p: Period, group?: ProductionGroup): Ch
 export interface Flag {
   hint: string;
   label: string;
+  /** Onde conseguir o que falta (a página de cadastro do ORCID); só com o campo vazio. */
+  link?: { href: string; label: string };
   ok: boolean;
 }
 
+/** A página de cadastro do ORCID, para quem ainda não tem o iD. */
+export const ORCID_REGISTER_URL = 'https://orcid.org/register';
+
 export function profileFlags(cv: CvData): Flag[] {
+  const hasOrcid = cv.orcid !== '';
   return [
-    { hint: 'Usado para buscar produções no OpenAlex.', label: 'ORCID iD', ok: cv.orcid !== '' },
+    {
+      hint: 'Usado para buscar produções no OpenAlex.',
+      label: 'ORCID iD',
+      link: hasOrcid ? undefined : { href: ORCID_REGISTER_URL, label: 'Criar um ORCID iD' },
+      ok: hasOrcid,
+    },
     {
       hint: 'Aparece na versão em inglês do currículo.',
       label: 'Resumo em inglês',

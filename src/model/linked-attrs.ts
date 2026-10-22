@@ -3,7 +3,9 @@
 // ficava à mão pedindo para a pessoa apagar o nome da agência também. O país
 // de nacionalidade leva a sigla e a nacionalidade: na página de identificação
 // do Lattes a nacionalidade segue o país (B para o Brasil, E para os outros),
-// e trocar só ela ia à mão.
+// e trocar só ela ia à mão. O idioma da seção Idiomas é o mesmo caso: a pessoa
+// escolhe o nome (DESCRICAO-DO-IDIOMA) e o código de duas letras (IDIOMA) vai
+// junto, da lista do formulário de idioma do Lattes.
 //
 // As datas da patente ficam em dois lugares da exportação (observado em
 // 20/10/2026): no REGISTRO-OU-PATENTE (DATA-PEDIDO-DE-DEPOSITO e as outras) e
@@ -20,15 +22,27 @@ import { childElements, getAttr, setAttr, type XElement } from './xml.ts';
 const FORMATION_AGENCY = ['CODIGO-AGENCIA-FINANCIADORA', 'NOME-AGENCIA'];
 
 const COUNTRY_CODES: Readonly<Record<string, string>> = listas.codigosDosPaises;
+const LANGUAGE_CODES: Readonly<Record<string, string>> = listas.codigosDosIdiomas;
+
+const sorted = (names: Iterable<string>) => [...names].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
 /** Os países que o Lattes tem para a nacionalidade, em ordem alfabética. */
-export const NATIONALITY_COUNTRIES: readonly string[] = Object.keys(COUNTRY_CODES).sort((a, b) =>
-  a.localeCompare(b, 'pt-BR'),
-);
+export const NATIONALITY_COUNTRIES: readonly string[] = sorted(Object.keys(COUNTRY_CODES));
+
+/** Os idiomas do formulário de idioma do Lattes (seção Idiomas), em ordem alfabética. */
+export const SECTION_LANGUAGES: readonly string[] = sorted(Object.keys(LANGUAGE_CODES));
 
 /** Atributo cujo código o editor escreve junto, e por isso não fica travado pelo código. */
 export function writesOwnCode(element: string, attr: string): boolean {
-  return element === 'DADOS-GERAIS' && attr === 'PAIS-DE-NACIONALIDADE';
+  return (
+    (element === 'DADOS-GERAIS' && attr === 'PAIS-DE-NACIONALIDADE') ||
+    (element === 'IDIOMA' && attr === 'DESCRICAO-DO-IDIOMA')
+  );
+}
+
+/** As opções de um campo que escreve o próprio código (writesOwnCode). */
+export function ownCodeChoices(element: string): readonly string[] {
+  return element === 'IDIOMA' ? SECTION_LANGUAGES : NATIONALITY_COUNTRIES;
 }
 
 /** A nacionalidade não se escolhe: segue o país de nacionalidade. */
@@ -91,6 +105,10 @@ export function applyLinkedAttrs(el: XElement, name: string, root?: XElement): s
   if (root) {
     const linked = linkPatentDate(el, name, root);
     if (linked.length > 0) return linked;
+  }
+  if (el.name === 'IDIOMA' && writesOwnCode(el.name, name)) {
+    const code = LANGUAGE_CODES[getAttr(el, name) ?? ''];
+    return code ? set(el, { IDIOMA: code }) : [];
   }
   if (writesOwnCode(el.name, name)) {
     const code = COUNTRY_CODES[getAttr(el, name) ?? ''];

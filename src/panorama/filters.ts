@@ -30,6 +30,8 @@ export function defaultFilters(cv: CvData): Filters {
 }
 
 export interface Preset {
+  /** O que o atalho cobre, na dica da opção. */
+  hint: string;
   id: string;
   label: string;
   period: Period;
@@ -38,7 +40,7 @@ export interface Preset {
 /** Atalhos de período: os do seletor de anos, com "Toda a carreira" no lugar de "Todos os anos". */
 export function periodPresets(cv: CvData, now: number): Preset[] {
   return yearPresets({ from: cv.careerStart, to: cv.lastYear }, now, 'Toda a carreira').map(
-    (p) => ({ id: p.id, label: p.label, period: p.range }),
+    (p) => ({ hint: p.hint, id: p.id, label: p.label, period: p.range }),
   );
 }
 

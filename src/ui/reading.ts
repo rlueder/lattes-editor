@@ -101,13 +101,6 @@ export function displayValue(el: XElement, attr: string, value: string): string 
   return coded === value ? curlyQuotes(value) : coded;
 }
 
-/** A linha que substitui os dados escondidos pelo modo de privacidade. */
-export function hiddenNote(count: number): string {
-  return count === 1
-    ? '1 dado pessoal oculto pelo modo de privacidade.'
-    : `${count} dados pessoais ocultos pelo modo de privacidade.`;
-}
-
 /** "91501-970" quando o CEP tem os oito dígitos; outro valor fica como veio. */
 export function formatCep(value: string): string {
   const digits = value.replace(/\D/g, '');
