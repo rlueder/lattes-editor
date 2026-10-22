@@ -138,20 +138,19 @@ function pairRecreated(
 /**
  * Os campos que mudaram no item e nos elementos de dentro dele (os dados de
  * um item do Lattes ficam num filho, como DADOS-BASICOS-DO-ARTIGO), pareando
- * os filhos de mesmo nome pela ordem. As sequências ficam de fora.
+ * os filhos de mesmo nome pela ordem. Um filho que só existe de um lado entra
+ * com tudo o que tem dentro. As sequências ficam de fora. Pela ordem, um filho
+ * inserido no meio aparece como mudança nos irmãos seguintes; para um item
+ * recriado, que é o caso daqui, a ordem costuma ser a mesma.
  */
-function deepFields(before: XElement, after: XElement): FieldChange[] {
+function deepFields(before: XElement | undefined, after: XElement | undefined): FieldChange[] {
   const fields = fieldDiff(before, after).filter((f) => !SEQUENCE.test(f.attr));
-  const names = new Set([...childElements(before), ...childElements(after)].map((c) => c.name));
+  const kids = (el: XElement | undefined, name?: string) => (el ? childElements(el, name) : []);
+  const names = new Set([...kids(before), ...kids(after)].map((c) => c.name));
   for (const name of names) {
-    const b = childElements(before, name);
-    const a = childElements(after, name);
-    for (let i = 0; i < Math.max(a.length, b.length); i++) {
-      const bi = b[i];
-      const ai = a[i];
-      if (bi && ai) fields.push(...deepFields(bi, ai));
-      else fields.push(...fieldDiff(bi, ai).filter((f) => !SEQUENCE.test(f.attr)));
-    }
+    const b = kids(before, name);
+    const a = kids(after, name);
+    for (let i = 0; i < Math.max(a.length, b.length); i++) fields.push(...deepFields(b[i], a[i]));
   }
   return fields;
 }
