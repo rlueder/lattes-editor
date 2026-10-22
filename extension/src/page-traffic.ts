@@ -1,3 +1,4 @@
+import { withPageTask } from '../../src/bridge/page-task.ts';
 import { LattesTransport } from '../../src/bridge/transport.ts';
 
 export function pageTraffic(): LattesTransport {
@@ -20,4 +21,12 @@ export async function syncTrafficPause(): Promise<void> {
   if (typeof reply?.until !== 'number')
     throw new Error('A pausa da sessão não pôde ser consultada');
   pageTraffic().respectPause(reply.until);
+}
+
+// A pausa é relida sob a trava: outra aba pode tê-la recebido durante a injeção.
+export function withTraffic<T>(work: () => Promise<T>): Promise<T> {
+  return withPageTask(async () => {
+    await syncTrafficPause();
+    return work();
+  });
 }

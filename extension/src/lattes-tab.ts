@@ -321,27 +321,32 @@ export async function applyInTab(tabId: number, op: BridgeOp): Promise<unknown> 
 
 /** Interrompe a tarefa na aba, inclusive uma varredura de formulários em curso. */
 export async function cancelInTab(): Promise<void> {
-  const tabId = await lattesTab();
-  if (tabId === undefined) return;
-  await chrome.scripting
-    .executeScript({
-      func: () => {
-        (globalThis as { __lattesCensus?: { cancel?(): void } }).__lattesCensus?.cancel?.();
-      },
-      target: { tabId },
-      world: 'MAIN',
-    })
-    .catch(() => undefined);
-  await chrome.scripting
-    .executeScript({
-      func: () => {
-        (
-          globalThis as unknown as { __conector?: { cancelar?: () => void } }
-        ).__conector?.cancelar?.();
-      },
-      target: { tabId },
-    })
-    .catch(() => undefined);
+  const tabs = await chrome.tabs.query({ url: __CANAL_DEV__ ? lattesMenus(true) : [LATTES_MENU] });
+  // No Dev, a aba do simulado pode vir antes da aba real usada pelos testes.
+  await Promise.all(
+    tabs.map(async ({ id: tabId }) => {
+      if (tabId === undefined) return;
+      await chrome.scripting
+        .executeScript({
+          func: () => {
+            (globalThis as { __lattesCensus?: { cancel?(): void } }).__lattesCensus?.cancel?.();
+          },
+          target: { tabId },
+          world: 'MAIN',
+        })
+        .catch(() => undefined);
+      await chrome.scripting
+        .executeScript({
+          func: () => {
+            (
+              globalThis as unknown as { __conector?: { cancelar?: () => void } }
+            ).__conector?.cancelar?.();
+          },
+          target: { tabId },
+        })
+        .catch(() => undefined);
+    }),
+  );
 }
 
 export const failedReport = (detail: string): ContractReport => ({

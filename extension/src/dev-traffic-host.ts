@@ -1,7 +1,6 @@
 // Ponte restrita à aba do menu Dev. O censo usa o transporte da extensão;
 // nenhum estado de tráfego é escrito no armazenamento do site do CNPq.
-import { withPageTask } from '../../src/bridge/page-task.ts';
-import { pageTraffic, syncTrafficPause } from './page-traffic.ts';
+import { pageTraffic, withTraffic } from './page-traffic.ts';
 
 export const DEV_TRAFFIC = 'lattes-editor:dev-traffic';
 const traffic = pageTraffic();
@@ -27,8 +26,7 @@ window.addEventListener('message', (event: MessageEvent) => {
   void (async () => {
     try {
       await ready;
-      await syncTrafficPause();
-      await withPageTask(async () => {
+      await withTraffic(async () => {
         try {
           await traffic.run(async () => {
             const guard = (await chrome.runtime.sendMessage({

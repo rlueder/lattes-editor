@@ -27,6 +27,7 @@ let fetchMock: ReturnType<typeof vi.fn<typeof fetch>>;
 
 beforeEach(async () => {
   vi.resetModules();
+  vi.stubGlobal('chrome', { runtime: { sendMessage: async () => ({ until: 0, ok: true }) } });
   state = await LattesState.create();
   const menu = await handle(state, {
     body: new Uint8Array(),
@@ -114,6 +115,7 @@ describe('transporte usado pelo núcleo injetado', () => {
   it('a reinjeção mantém a trava enquanto outra tarefa usa a página', async () => {
     const first = runner().verificar(['resumo']);
     vi.resetModules();
+    vi.stubGlobal('chrome', { runtime: { sendMessage: async () => ({ until: 0, ok: true }) } });
     await import('../extension/src/lattes-runner.ts');
     // A leitura já pode ter acabado durante o import; trava uma leitura explicitamente.
     await first;

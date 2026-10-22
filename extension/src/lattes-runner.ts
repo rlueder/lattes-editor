@@ -17,7 +17,6 @@ import {
   searchInstitutions,
 } from '../../src/bridge/lattes-lists.ts';
 import { lattesStatusFrom } from '../../src/bridge/lattes-status.ts';
-import { withPageTask } from '../../src/bridge/page-task.ts';
 import { type PhotoPort, type PhotoResult, uploadPhoto } from '../../src/bridge/photo.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
 import type { ProductionScans } from '../../src/bridge/production/locate.ts';
@@ -31,7 +30,7 @@ import {
   type SendScreen,
 } from '../../src/bridge/publish.ts';
 import { decodeLatin1 } from '../../src/model/latin1.ts';
-import { pageTraffic } from './page-traffic.ts';
+import { pageTraffic, withTraffic } from './page-traffic.ts';
 
 // A reinjeção troca o núcleo, mas preserva a trava e o histórico de tráfego da aba.
 const page = globalThis as unknown as {
@@ -369,13 +368,13 @@ const connector = {
     Object.entries(connector).map(([name, fn]) => [
       name,
       (...args: unknown[]) =>
-        withPageTask(() =>
+        withTraffic(() =>
           traffic.run(() => (fn as (...values: unknown[]) => Promise<unknown>)(...args)),
         ),
     ]),
   ),
   apply: (op: BridgeOp) =>
-    withPageTask(() =>
+    withTraffic(() =>
       traffic.run(
         () => connector.apply(op),
         (error, posted) => ({
@@ -387,6 +386,6 @@ const connector = {
     ),
   cancelar: () => traffic.cancel(),
   identity: (fresh = false) =>
-    fresh ? withPageTask(() => traffic.run(() => connector.identity(true))) : connector.identity(),
+    fresh ? withTraffic(() => traffic.run(() => connector.identity(true))) : connector.identity(),
   respeitarPausa: (until: number) => traffic.respectPause(until),
 };
