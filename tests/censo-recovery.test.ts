@@ -84,3 +84,16 @@ it('recusa reconciliação com HTML de erro e não perde o registro em falha de 
   });
   expect(() => save({ removed: [], results: [] })).toThrow('salvo');
 });
+
+it('mostra tags e links pendentes e impede apagar o registro incerto', async () => {
+  const { testProgress, resetTestItems } = await import('../extension/src/censo-test-items.ts');
+  const record = JSON.parse(value!);
+  record.pendingRemovals = ['pkg_a.form?f_seq=7'];
+  value = JSON.stringify(record);
+  expect(testProgress()).toMatchObject({
+    incertos: ['teste001'],
+    exclusoesIncertas: ['pkg_a.form?f_seq=7'],
+  });
+  expect(() => resetTestItems()).toThrow('reconcilie');
+  expect(JSON.parse(value!).pendingRemovals).toHaveLength(1);
+});

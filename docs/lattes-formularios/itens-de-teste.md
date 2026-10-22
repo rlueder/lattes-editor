@@ -106,7 +106,9 @@ await __lattesCensus.testItems({ retryFailed: true, confirmedPresent: ['tag-conf
 
 Se conferiu que não foi criado, use `confirmedAbsent` com as tags. O censo
 relê a página de conferência e recusa essa confirmação quando a tag ainda
-aparece. Uma exclusão incerta é conferida pelas listas na chamada seguinte;
+aparece. Os links das exclusões incertas ficam em
+`__lattesCensus.testProgress().exclusoesIncertas`. Uma exclusão incerta é
+conferida pelas listas na chamada seguinte;
 se a linha sumiu, o registro é reconciliado. Se continua lá, só uma nova
 conferência humana permite usar `confirmedPresent` com o link da linha em
 `removeTestItems()`. As verificações de base e marca continuam valendo.

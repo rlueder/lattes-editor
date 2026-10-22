@@ -418,6 +418,7 @@ export function testProgress(jobs?: TestJob[]) {
     agora: live(),
     base: loadBase()?.at ?? null,
     criados: progress.results.filter((r) => r.ok).length,
+    exclusoesIncertas: progress.pendingRemovals ?? [],
     falharam: failed.map((r) => ({ msgs: r.msgs, tag: r.tag })),
     faltam: jobs ? jobs.filter((j) => !progress.results.some((r) => r.tag === j.tag)).length : null,
     faltandoDaBase: (progress.missing ?? []).map((r) => `${r.list} :: ${r.text}`),
