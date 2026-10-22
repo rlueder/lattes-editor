@@ -152,20 +152,19 @@ describe('campos tipados: valor fora da lista', () => {
     expect(outOfList(basics(CONGRESS, { TITULO: 'Qualquer coisa' }), 'TITULO')).toBe(false);
   });
 
-  it('a natureza tem de ser a do tipo de evento', () => {
+  it('a natureza se escolhe entre as do Lattes, a do tipo de evento primeiro', () => {
     expect(outOfList(basics(CONGRESS, { NATUREZA: 'Congresso' }), 'NATUREZA')).toBe(false);
-    expect(outOfList(basics(CONGRESS, { NATUREZA: 'Encontro' }), 'NATUREZA')).toBe(true);
+    // Outra natureza do Lattes vale: a página de alteração troca no mesmo item.
+    expect(outOfList(basics(CONGRESS, { NATUREZA: 'Encontro' }), 'NATUREZA')).toBe(false);
+    expect(outOfList(basics(CONGRESS, { NATUREZA: 'Palestra' }), 'NATUREZA')).toBe(true);
     // Vazia conta: o Lattes nunca deixa a natureza vazia.
     expect(outOfList(basics(CONGRESS, { NATUREZA: '' }), 'NATUREZA')).toBe(true);
-    // Fora do lugar, a lista tem só a natureza certa, para corrigir num clique.
-    expect(values(typedChoices(basics(CONGRESS, { NATUREZA: 'Encontro' }), 'NATUREZA'))).toEqual([
-      'Congresso',
-    ]);
-    // Só o texto exato trava o campo; "congresso" fica editável para virar "Congresso".
-    expect(matchesDerived(basics(CONGRESS, { NATUREZA: 'Congresso' }), 'NATUREZA')).toBe(true);
-    expect(matchesDerived(basics(CONGRESS, { NATUREZA: 'congresso' }), 'NATUREZA')).toBe(false);
+    const list = values(typedChoices(basics(CONGRESS, { NATUREZA: 'Encontro' }), 'NATUREZA'));
+    expect(list?.[0]).toBe('Congresso');
+    expect(list).toHaveLength(9);
+    // O campo nunca trava; "congresso" fica dentro da lista, sem acento nem caixa.
+    expect(matchesDerived(basics(CONGRESS, { NATUREZA: 'Congresso' }), 'NATUREZA')).toBe(false);
     expect(outOfList(basics(CONGRESS, { NATUREZA: 'congresso' }), 'NATUREZA')).toBe(false);
-    expect(matchesDerived(basics(CONGRESS, { NATUREZA: '' }), 'NATUREZA')).toBe(false);
   });
 
   it('acento e maiúscula não contam na comparação com a lista', () => {

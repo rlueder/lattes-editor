@@ -975,9 +975,13 @@ teste acompanhado, e cobertos no Lattes simulado. O que cada um usa:
   vista com o valor do XML ("Ouvinte"); que 38 e 39 gravem "Convidado" e
   "Participante" vem do rótulo do rádio, **inferido**.
 - A natureza é o rótulo da opção de `F_COD_PROD` (**observado** no censo, nos
-  congressos e encontros). Ela segue o elemento do XML, e o editor não a deixa
-  trocar; o conector só confere que o Lattes tem a opção do elemento e não
-  envia nada quando é só isso.
+  congressos e encontros). A página de alteração a troca no mesmo item
+  (**observado** em 21/10/2026: num evento de teste, o `check()` da página
+  passou `A31` a `A32` e o conector o passou de volta, com o mesmo `f_seq` 36
+  e "conferido"). Que a exportação seguinte ponha o evento no elemento da
+  natureza nova é **inferido** pela forma do XML, um elemento por natureza.
+  O editor oferece as nove naturezas, e o conector confere a do elemento antes
+  de enviar a nova.
 - `F_TPO` leva o texto do tipo (o valor de cada opção é o rótulo). Como a
   edição de um convidado ou participante marca o tipo gravado continua sendo
   **lacuna**: por isso o tipo vai sempre na conferência do "antes". Se a

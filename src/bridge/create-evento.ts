@@ -32,7 +32,7 @@ import {
   type Result,
   Stop,
 } from './create-shared.ts';
-import { countryCode, EVENT_CODES } from './edit-items.ts';
+import { countryCode, EVENT_CODES, natureCode } from './edit-items.ts';
 import { encodeLatin1Form, pairValue, setPairs } from './form.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
 import type { FieldValues } from './plan.ts';
@@ -171,7 +171,8 @@ function eventoFields(
   const set: FieldValues = {
     f_ano: getAttr(basics, 'ANO') ?? '',
     f_cidade: getAttr(detail, 'CIDADE-DO-EVENTO') ?? '',
-    F_COD_PROD: EVENT_CODES[item.name]!,
+    // A natureza escolhida no editor; sem ela, a do tipo de evento.
+    F_COD_PROD: natureCode(getAttr(basics, 'NATUREZA') ?? '') ?? EVENT_CODES[item.name]!,
     F_FORMA: code,
     f_homepage: getAttr(basics, 'HOME-PAGE-DO-TRABALHO') ?? '',
     f_nme_evento: getAttr(detail, 'NOME-DO-EVENTO') ?? '',
