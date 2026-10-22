@@ -47,6 +47,9 @@ jobs:
   # só documentação e se o CI da main passou nele. Fora disso, o workflow
   # termina aqui, em segundos.
   topo:
+    # Só da main: o cron já roda nela, e um disparo à mão de outra branch
+    # rodaria o workflow daquela branch com permissão de escrita.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -61,16 +64,24 @@ jobs:
         run: |
           set -euo pipefail
           topo=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
-          # Sem página "dev" (a primeira vez), monta.
+          # O commit de que o Dev de agora foi montado: o alvo da página "dev",
+          # que o passo "Página dev" cria com --target no SHA. Sem página (a
+          # primeira vez), ou com um alvo que não é SHA, não dá para comparar:
+          # monta.
           base=$(gh release view dev --json targetCommitish --jq .targetCommitish 2>/dev/null || true)
+          if ! [[ "$base" =~ ^[0-9a-f]{40}$ ]]; then
+            base=""
+          fi
           if [ "$FORCAR" != true ]; then
             if [ "$base" = "$topo" ]; then
               echo "::notice::A main não mudou desde o último Dev (${topo:0:7}): nada a montar."
               exit 0
             fi
             if [ -n "$base" ]; then
-              # A comparação lista até 300 arquivos; mais que isso, monta.
-              arquivos=$(gh api "repos/$GITHUB_REPOSITORY/compare/$base...$topo" --jq '.files[].filename')
+              # Todas as páginas da comparação (ela vem paginada). Se a chamada
+              # falha (o commit de antes sumiu num rebase, por exemplo) ou não
+              # lista arquivo nenhum, fica "não sei": monta.
+              arquivos=$(gh api --paginate "repos/$GITHUB_REPOSITORY/compare/$base...$topo" --jq '.files[].filename' 2>/dev/null || true)
               if [ -n "$arquivos" ] && ! grep -qvE '^(docs/|site/|README\.md$|CHANGELOG\.md$|ROADMAP\.md$|LICENSE$|\.github/workflows/pages\.yml$)' <<<"$arquivos"; then
                 echo "::notice::Desde o último Dev (${base:0:7}) só mudou documentação: nada a montar."
                 exit 0
