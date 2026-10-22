@@ -267,6 +267,10 @@ describe('alteração de evento completa: plano', () => {
     const feira = onlyOp((root) => setAttr(basics(root, '12'), 'NATUREZA', 'Feira'));
     expect(feira.set).toMatchObject({ F_COD_PROD: 'A37' });
     expect(feira.expect).toMatchObject({ F_COD_PROD: 'A31' });
+    // Sem troca de natureza na operação, a conferência é a do elemento: uma
+    // segunda alteração antes da exportação seguinte para como divergente.
+    const titulo = onlyOp((root) => setAttr(basics(root, '12'), 'ANO', '2001'));
+    expect(titulo.expect).toMatchObject({ F_COD_PROD: 'A31' });
     expect(onlyReason((root) => setAttr(basics(root, '12'), 'NATUREZA', 'Palestra'))).toBe(
       'Natureza que o Lattes não tem: Palestra',
     );

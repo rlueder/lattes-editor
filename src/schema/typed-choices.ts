@@ -133,8 +133,10 @@ export function typedChoices(el: XElement, attr: string): Choice[] | undefined {
   // A página de alteração troca a natureza no mesmo item (21/10/2026), e a
   // exportação seguinte o põe no elemento da natureza nova.
   if (attr === 'NATUREZA' && isEventBasics(el.name)) {
-    const derived = derivedValue(el.name, attr)!;
-    return asChoices([derived, ...EVENT_NATURES.filter((n) => n !== derived)]);
+    const derived = derivedValue(el.name, attr);
+    return asChoices(
+      derived ? [derived, ...EVENT_NATURES.filter((n) => n !== derived)] : [...EVENT_NATURES],
+    );
   }
   // Valor derivado fora do lugar (vazio ou outro): uma opção só, a certa.
   const derived = derivedValue(el.name, attr);

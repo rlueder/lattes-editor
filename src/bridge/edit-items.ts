@@ -339,7 +339,12 @@ export function planEvento(
   // lugar de outro do mesmo ano. O formulário GN_TEC tem os campos das duas
   // partes.
   expect.F_FORMA ??= formaCode(shape.formaBefore) ?? OUVINTE;
-  expect.F_COD_PROD = EVENT_CODES[item.name]!;
+  // A natureza que o Lattes tem agora: a de antes, quando a troca é dela; senão
+  // a do elemento, a observada nas exportações. Uma segunda alteração antes
+  // da exportação seguinte (que move o item de elemento) não acha a natureza
+  // nova no Lattes e para como divergente, sem enviar nada.
+  const natureBefore = change.fields.find((f) => f.attr === 'NATUREZA')?.before ?? '';
+  expect.F_COD_PROD = natureCode(natureBefore) ?? EVENT_CODES[item.name]!;
   //
   // Os campos de identidade que a operação não troca vão em `identity`, e não
   // no expect: comparados sem acento, caixa nem espaço nas pontas (texto

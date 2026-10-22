@@ -266,6 +266,15 @@ describe('evento: Importar ou formulário', () => {
     expect(await reason(congresso({ ANO: '' }))).toMatch(/nome e do ano/);
     expect(await reason(congresso({ PAIS: 'Atlântida' }))).toMatch(/País sem código/);
     expect(await reason(congresso({ TITULO: '' }))).toMatch(/precisa do título/);
+    // Uma natureza que o Lattes não tem fica à mão, e não vira a do tipo de evento.
+    expect(await reason(congresso({ NATUREZA: 'Palestra' }))).toBe(
+      'Natureza que o Lattes não tem: Palestra',
+    );
+    // A escolhida no editor vai; vazia, a do tipo de evento.
+    const seminario = (await plan(congresso({ NATUREZA: 'Seminário' }))).ops[0] as {
+      set: Record<string, string>;
+    };
+    expect(seminario.set.F_COD_PROD).toBe('A32');
     expect(
       await reason(
         congresso({}, {}, [
