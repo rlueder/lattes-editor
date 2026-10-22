@@ -13,6 +13,7 @@ export function idiomaHandReason(change: Change): string | undefined {
   if (attrs.has('IDIOMA')) {
     return 'O idioma de uma linha não se troca pelo conector: inclua o idioma novo e exclua este';
   }
-  if (attrs.has('DESCRICAO-DO-IDIOMA')) return 'O nome do idioma segue o código no Lattes';
+  if (attrs.has('DESCRICAO-DO-IDIOMA'))
+    return 'O formulário de idioma do Lattes não tem: o nome do idioma, que segue o código';
   return undefined;
 }

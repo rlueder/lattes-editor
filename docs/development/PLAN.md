@@ -18,6 +18,13 @@ outras 127 são o alvo deste plano.
 
 ## Estado atual
 
+- 21/10/2026, à noite: sete campos que o Lattes não deixa alterar por
+  caminho nenhum passaram a "o formulário do Lattes não tem", e o editor os
+  mostra sem edição, com o motivo: nome do pai e da mãe (ocultos na
+  identificação), tipo do vínculo (desabilitado no formulário), a instituição
+  da atuação, o órgão do ensino e o nome do idioma (segue o código). Os
+  motivos de valor (tipo de participação, tipo de graduação) ficaram: ali
+  outros valores vão. 2645 de 2731 (97%).
 - 21/10/2026, à noite: a medida parte de um valor que o formulário tem. O
   exemplo traz valores que o Lattes não oferece (WEB no meio de divulgação, a
   carga horária como texto), e nenhuma troca a partir deles vai; o script

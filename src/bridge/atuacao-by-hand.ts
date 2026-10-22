@@ -29,7 +29,7 @@ const ACTIVITIES = new Set([
  * de inclusão (seção 17, observado).
  */
 const ATUACAO =
-  'O Lattes não altera a instituição de uma atuação: a tela da atuação só leva aos vínculos, às atividades e à exclusão. Inclua no Lattes a atuação com a outra instituição e exclua esta';
+  'A tela da atuação do Lattes não tem: a instituição (só leva aos vínculos, às atividades e à exclusão). Inclua no Lattes a atuação com a outra instituição e exclua esta';
 
 /**
  * O link de alteração de uma atividade é montado por JavaScript na tela de
@@ -89,9 +89,9 @@ const VINCULO_BY_HAND: Record<string, string> = {
   'ENQUADRAMENTO-FUNCIONAL':
     'O formulário de vínculo do Lattes não tem o enquadramento da lista, só o texto livre (Outro enquadramento)',
   'OUTRO-VINCULO-INFORMADO':
-    'No formulário de vínculo do Lattes o tipo do vínculo vem desabilitado: não se altera por ali',
+    'O formulário de vínculo do Lattes não tem: o tipo do vínculo (vem desabilitado e não se altera por ali)',
   'TIPO-DE-VINCULO':
-    'No formulário de vínculo do Lattes o tipo do vínculo vem desabilitado: não se altera por ali',
+    'O formulário de vínculo do Lattes não tem: o tipo do vínculo (vem desabilitado e não se altera por ali)',
 };
 
 /** O motivo de uma alteração de vínculo ficar à mão; undefined se todos os campos vão. */

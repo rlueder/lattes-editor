@@ -241,7 +241,7 @@ export function planIdentificacaoEdit(
   const hidden = labelsOf(change, IDENT_HIDDEN);
   if (hidden.length > 0) {
     return {
-      reason: `O formulário de identificação do Lattes não deixa alterar: ${hidden.join(', ')} (o campo é oculto na página)`,
+      reason: `O formulário de identificação do Lattes não tem: ${hidden.join(', ')} (só um campo oculto, que a página não deixa alterar)`,
     };
   }
   if (change.fields.some((f) => f.attr === 'PCD')) {
