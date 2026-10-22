@@ -1,5 +1,5 @@
 // Entrada usada só pelo teste de navegador, sem instalar capacidades de depuração no censo.
-import { frameState, openFrame } from '../extension/src/censo-frame.ts';
+import { frameCommand, frameState, openFrame } from '../extension/src/censo-frame.ts';
 import { fillFrame, inspectFrame, submit } from '../extension/src/censo-submit.ts';
 import { context } from '../extension/src/censo-test-donors.ts';
 import { censusTraffic } from '../extension/src/censo-traffic.ts';
@@ -21,12 +21,25 @@ async function run(mode: string) {
           await censusTraffic.wait(500);
           return { info, opaque, sandbox };
         }
-        if (mode !== 'delete')
-          await fillFrame(
-            frame,
-            { form: 'TEST', id: 'sintetico', path: '', tag: 'sintetico-v1', variant: 0 },
-            context,
-          );
+        context.donors = {
+          OTHER: { f_inst: 'Doador errado' },
+          TEST: { f_inst: 'Doador original' },
+        };
+        const job = { form: 'TEST', id: 'sintetico', path: '', tag: 'sintetico-v1', variant: 0 };
+        const owner = { l: 'Autor Sintético', t: 'SINTÉTICO, A.' };
+        if (mode === 'clone') {
+          try {
+            await frameCommand(frame, {
+              context,
+              owner: { l: () => undefined } as unknown as Record<string, string>,
+              type: 'configure',
+            });
+            throw new Error('Clonagem inválida foi aceita');
+          } catch (error) {
+            if (!(error instanceof DOMException) || error.name !== 'DataCloneError') throw error;
+          }
+        }
+        if (mode !== 'delete') await fillFrame(frame, job, context, owner);
         const pending = submit(frame, mode === 'delete' ? 'delete' : 'save');
         const timer =
           mode === 'cancel' ? setTimeout(() => censusTraffic.cancel(), 1100) : undefined;
@@ -36,15 +49,14 @@ async function run(mode: string) {
         } finally {
           clearTimeout(timer);
         }
-        if (mode === 'step') {
+        if (mode === 'step' || mode === 'unnamed') {
           const info = await inspectFrame(frame);
-          if (!info.forms.some((form) => form.name === 'STEP2'))
-            throw new Error('Segundo passo ausente');
-          await fillFrame(
-            frame,
-            { form: 'STEP2', id: 'sintetico', path: '', tag: 'sintetico-v1', variant: 0 },
-            context,
+          const target = info.forms.find(
+            (form) => form.name === (mode === 'unnamed' ? '' : 'STEP2'),
           );
+          if (!target) throw new Error('Segundo passo ausente');
+          context.donors.TEST!.f_inst = 'Alterado depois da configuração';
+          await fillFrame(frame, job, context, undefined, target.index);
           msgs = await submit(frame, 'save');
         }
         return { msgs, opaque, sandbox, submitted: frameState(frame).submitted };

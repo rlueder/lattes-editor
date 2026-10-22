@@ -325,5 +325,8 @@ compatível com extensões em modo headless pode ser indicado em
 A regressão confere origem opaca, tentativas de acesso ao pai, popups,
 navegação, mensagens forjadas e rede direta, além de salvar, excluir,
 formulários em dois passos, cancelamento e recusa de envio duplicado. O
-controlador do quadro é montado por `scripts/censo-runtime.ts`, tanto no
+segundo passo também é testado sem nome de formulário, preservando o doador e
+uma única linha de autor. Erros benignos da página e falhas de clonagem têm
+regressões próprias. A CI monta os canais normal e Dev, além do censo avulso.
+O controlador do quadro é montado por `scripts/censo-runtime.ts`, tanto no
 censo avulso quanto no canal Dev. A extensão publicada não carrega esse código.

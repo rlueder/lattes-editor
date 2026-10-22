@@ -128,7 +128,7 @@ try {
     false,
   );
   const results: Record<string, Result> = { escapes };
-  for (const mode of ['save', 'step', 'delete']) {
+  for (const mode of ['save', 'step', 'unnamed', 'benign', 'clone', 'delete']) {
     results[mode] = await run(mode);
     assert.deepEqual(results[mode]!.msgs, ['sucesso'], JSON.stringify(results[mode]));
     assert.equal(results[mode]!.opaque, true);
@@ -138,7 +138,16 @@ try {
       entry.pairs.some(([name, value]) => name === 'f_codigo' && value === 'ação'),
     ),
   );
-  assert.equal(writes.filter((entry) => entry.mode === 'step').length, 2);
+  for (const mode of ['step', 'unnamed']) {
+    const steps = writes.filter((entry) => entry.mode === mode);
+    assert.equal(steps.length, 2);
+    for (const step of steps) {
+      assert.ok(
+        step.pairs.some(([name, value]) => name === 'f_inst' && value === 'Doador original'),
+      );
+      assert.ok(step.pairs.some(([name, value]) => name === 'f_authors' && value === '1'));
+    }
+  }
   for (const mode of ['external', 'unsolicited', 'unsupported', 'duplicate', 'cancel']) {
     results[mode] = await run(mode);
     assert.ok(results[mode]!.error, `${mode}: ${JSON.stringify(results[mode])}`);

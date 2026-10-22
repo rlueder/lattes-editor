@@ -2,9 +2,10 @@ import type { SimRequest } from './lattes-simulado/pedido.ts';
 import type { SimResponse } from './lattes-simulado/tipos.ts';
 
 const form = (mode: string, second = false) =>
-  `<form name="${second ? 'STEP2' : 'TEST'}" action="${mode === 'external' ? 'https://fora.invalid/roubar' : `pkg_isolation.save?mode=${mode}${second ? '&step=2' : ''}`}" method="POST"><input type="hidden" name="f_codigo" value="ação"><input name="f_descricao"><input name="${second ? 'f_ano' : 'f_titulo'}"><button type="button" onclick="check()">Salvar</button></form>`;
+  `<form name="${second ? (mode === 'unnamed' ? '' : 'STEP2') : 'TEST'}" action="${mode === 'external' ? 'https://fora.invalid/roubar' : `pkg_isolation.save?mode=${mode}${second ? '&step=2' : ''}`}" method="POST"><input type="hidden" name="f_codigo" value="ação"><input type="hidden" name="f_inst"><input type="hidden" name="f_authors"><input name="f_descricao"><input name="${second ? 'f_ano' : 'f_titulo'}"><button type="button" onclick="check()">Salvar</button></form>`;
 const scripts = `<script>
-function check(){document.forms[0].submit()}
+var authors = []; var autorGrid = {getProvider:function(){return authors}};
+function check(){document.forms[0].elements.namedItem('f_authors').value=String(authors.length);document.forms[0].submit()}
 function confirmDel(){document.forms[0].submit()}
 function del(){self.parent.caixaMsg.exibir({tipo:'confirm',conteudo:'Confirma a exclusão?',fnConfirmar:'parent.modalCV2.getDocument().confirmDel()'})}
 </script>`;
@@ -41,9 +42,11 @@ export async function isolationResponse(req: SimRequest): Promise<SimResponse | 
             ? '<script>document.forms[0].submit()</script>'
             : mode === 'unsupported'
               ? '<script>parent.document.body.dataset.escaped="sim"</script>'
-              : mode === 'duplicate'
-                ? '<script>function check(){document.forms[0].submit();setTimeout(function(){document.forms[0].submit()},1100)}</script>'
-                : '';
+              : mode === 'benign'
+                ? '<script>throw new TypeError("Erro inofensivo de apresentação")</script>'
+                : mode === 'duplicate'
+                  ? '<script>function check(){document.forms[0].submit();setTimeout(function(){document.forms[0].submit()},1100)}</script>'
+                  : '';
     return {
       html: `<html><body><script>var BYPASS=${JSON.stringify(req.get('target'))}</script>${scripts}${form(mode)}<pre></pre>${extra}</body></html>`,
     };
@@ -51,10 +54,12 @@ export async function isolationResponse(req: SimRequest): Promise<SimResponse | 
   if (req.proc.toLowerCase() === 'pkg_isolation.save') {
     if (mode === 'cancel' || mode === 'duplicate')
       await new Promise((resolve) => setTimeout(resolve, 1800));
-    if (mode === 'step' && req.get('step') !== '2')
-      return { html: `<html><body>${scripts}${form(mode, true)}</body></html>` };
+    if ((mode === 'step' || mode === 'unnamed') && req.get('step') !== '2')
+      return {
+        html: `<html><body>${scripts}<script>authors=[{l:"Autor Sintético",t:"SINTÉTICO, A."}]</script>${form(mode, true)}</body></html>`,
+      };
     return {
-      html: `<html><body><script>self.parent.modalCV2.setarUrl('pkg_isolation.lista');self.parent.caixaMsg.exibir({conteudo:'sucesso'})</script></body></html>`,
+      html: `<html><body><script>self.parent.modalCV2.setarUrl('pkg_isolation.lista');self.parent.caixaMsg.exibir({conteudo:'sucesso'});${mode === 'benign' ? 'throw new TypeError("Erro inofensivo depois do envio")' : ''}</script></body></html>`,
     };
   }
   return undefined;

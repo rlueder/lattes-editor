@@ -12,11 +12,12 @@ export type FrameAction = 'save' | 'delete' | 'deleteAtuacao';
 export type FrameCommand =
   | { type: 'render'; html: string }
   | { type: 'inspect' }
-  | { type: 'fill'; job: TestJob; context: typeof context; owner?: Record<string, string> }
+  | { type: 'configure'; context: typeof context; owner?: Record<string, string> }
+  | { type: 'fill'; job: TestJob; formIndex?: number }
   | { type: 'action'; action: FrameAction };
 export interface FrameInfo {
   ctr?: string;
-  forms: { name: string; signature: string; savable: boolean }[];
+  forms: { index: number; name: string; signature: string; savable: boolean }[];
   text: string;
 }
 export interface FilledFrame {

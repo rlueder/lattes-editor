@@ -169,7 +169,7 @@ async function createOne(job: TestJob, code: string): Promise<TestResult> {
       seen.add(next.signature);
       values = {
         ...values,
-        ...(await fillFrame(frame, { ...job, form: next.name }, context, owner)).values,
+        ...(await fillFrame(frame, job, context, undefined, next.index)).values,
       };
     }
     return { ...base, msgs: ['Passos demais'], uncertain: true, values };

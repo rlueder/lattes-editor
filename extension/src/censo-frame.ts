@@ -3,6 +3,7 @@ import { encodeLatin1Form } from '../../src/bridge/form.ts';
 import { decodeLatin1 } from '../../src/model/latin1.ts';
 import { htmlFor } from './censo-frame-html.ts';
 import { FRAME_POLICY, type FrameCommand, framePost } from './censo-frame-protocol.ts';
+import { type FrameQueue, postFrameCommand } from './censo-frame-rpc.ts';
 import { clearCensusCache } from './censo-reading.ts';
 import { censusTraffic } from './censo-traffic.ts';
 
@@ -13,14 +14,7 @@ export interface FrameState {
   submitted: boolean;
   writing: boolean;
 }
-interface Session extends FrameState {
-  next: number;
-  pending?: {
-    id: number;
-    command: FrameCommand;
-    resolve(value: unknown): void;
-    reject(error: Error): void;
-  };
+interface Session extends FrameQueue, FrameState {
   port: MessagePort;
   posted: boolean;
   url: string;
@@ -31,30 +25,8 @@ export const frameState = (frame: HTMLIFrameElement): FrameState => states.get(f
 export function frameCommand<T>(frame: HTMLIFrameElement, command: FrameCommand): Promise<T> {
   const state = states.get(frame);
   censusTraffic.signal.throwIfAborted();
-  if (!state || state.error) return Promise.reject(state?.error ?? new Error('Quadro Dev fechado'));
-  if (state.pending) return Promise.reject(new Error('Comando concorrente no quadro Dev'));
-  const id = ++state.next;
-  state.posted = false;
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      state.error = new Error('Sem resposta em 30 s; confira no Lattes antes de repetir');
-      state.pending = undefined;
-      reject(state.error);
-    }, 30_000);
-    state.pending = {
-      command,
-      id,
-      reject: (error) => {
-        clearTimeout(timer);
-        reject(error);
-      },
-      resolve: (value) => {
-        clearTimeout(timer);
-        resolve(value as T);
-      },
-    };
-    state.port.postMessage({ command, id });
-  });
+  if (!state) return Promise.reject(new Error('Quadro Dev fechado'));
+  return postFrameCommand<T>(state, command);
 }
 
 async function receivePost(state: Session, raw: unknown): Promise<void> {

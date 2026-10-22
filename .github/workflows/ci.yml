@@ -37,6 +37,8 @@ jobs:
       - name: HTML sem marcadores do Vite
         run: "test -f dist/index.html && ! grep -o '__VITE_[A-Z_]*__' dist/index.html"
       - run: pnpm build:extension
+      - run: pnpm build:extension --canal-dev
+      - run: pnpm build:censo
 
   # Revisão automática do tooling da Precisa, em duas rodadas por PR. O que
   # vai para o provedor está em .github/review-policy.json, lido do commit

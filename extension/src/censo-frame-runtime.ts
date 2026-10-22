@@ -8,6 +8,11 @@ const host = window.parent;
 let port: MessagePort;
 let active: { id: number; msgs: string[]; posted: boolean } | undefined;
 let renderingResponse = false;
+let owner: Record<string, string> | undefined;
+let ownerAdded = false;
+class FrameGuardError extends Error {
+  override name = 'FrameGuardError';
+}
 const later = (work: () => void) => setTimeout(work, 0);
 const reply = (id: number, value?: unknown, error?: string) =>
   port.postMessage({ error, id, value });
@@ -42,7 +47,7 @@ const box = {
       if (typeof target === 'function') target.call(page);
       else if (!fn && /Confirma a exclus/i.test(String(p.conteudo ?? ''))) return;
       else if (!fn && page.enviar) page.enviar();
-      else throw new Error('Confirmação do formulário não suportada no quadro isolado');
+      else throw new FrameGuardError('Confirmação do formulário não suportada no quadro isolado');
       return;
     }
     active?.msgs.push(
@@ -58,7 +63,8 @@ const modal = {
   recarregar: () => undefined,
   setarTitulo: () => undefined,
   setarUrl: () => {
-    if (!renderingResponse) throw new Error('Navegação do formulário fora do transporte recusada');
+    if (!renderingResponse)
+      throw new FrameGuardError('Navegação do formulário fora do transporte recusada');
   },
 };
 Object.defineProperty(window, '__lattesFrameParent', {
@@ -75,10 +81,12 @@ Object.defineProperty(window, '__lattesFrameParent', {
 });
 
 function send(form: HTMLFormElement): void {
-  if (!active || active.posted) throw new Error('Envio do quadro sem uma ação autorizada');
+  if (!active || active.posted)
+    throw new FrameGuardError('Envio do quadro sem uma ação autorizada');
   const pairs: [string, string][] = [];
   for (const [name, value] of new FormData(form)) {
-    if (typeof value !== 'string') throw new Error('Arquivo em formulário Dev não suportado');
+    if (typeof value !== 'string')
+      throw new FrameGuardError('Arquivo em formulário Dev não suportado');
     pairs.push([name, value]);
   }
   active.posted = true;
@@ -114,8 +122,10 @@ function render(html: string): void {
     true,
   );
   window.addEventListener('error', (event) => {
-    event.preventDefault();
-    fail(event.error ?? event.message);
+    if (event.error instanceof FrameGuardError || event.error?.name === 'SecurityError') {
+      event.preventDefault();
+      fail(event.error);
+    }
   });
   // A política vem antes de qualquer script da página; a origem opaca permanece.
   document.write(html);
@@ -129,18 +139,28 @@ function run(id: number, command: FrameCommand): void {
   } else if (command.type === 'inspect') {
     reply(id, {
       ctr: (document.forms[0]?.elements.namedItem('f_ctr') as HTMLInputElement | null)?.value,
-      forms: [...document.forms].map((form) => ({
+      forms: [...document.forms].map((form, index) => ({
+        index,
         name: form.name,
         savable: !!saveButton(form.ownerDocument),
         signature: signature(form),
       })),
       text: (document.body?.innerText ?? '').replace(/\s+/g, ' ').trim(),
     });
-  } else if (command.type === 'fill') {
-    const form = document.forms.namedItem(command.job.form);
-    if (!form) throw new Error(`A página não tem o formulário ${command.job.form}`);
+  } else if (command.type === 'configure') {
     Object.assign(context, command.context);
-    addOwner(page, command.owner);
+    owner = command.owner;
+    reply(id);
+  } else if (command.type === 'fill') {
+    const form =
+      command.formIndex === undefined
+        ? document.forms.namedItem(command.job.form)
+        : document.forms[command.formIndex];
+    if (!form) throw new Error(`A página não tem o formulário ${command.job.form}`);
+    if (!ownerAdded) {
+      addOwner(page, owner);
+      ownerAdded = true;
+    }
     const values = fill(page, form, command.job);
     reply(id, { signature: signature(form), values });
   } else if (command.type === 'action') {

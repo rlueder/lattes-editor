@@ -307,6 +307,13 @@ mesma origem e encaminha o pedido ao transporte com seus orçamentos. Não há
 comando genérico para executar código no menu. O canal de tráfego da extensão
 recusa mensagens de subquadros.
 
+O contexto de preenchimento é copiado uma vez por quadro. Nos passos
+seguintes, o formulário de destino é identificado separadamente do tipo
+original, que continua determinando o doador dos campos. O autor é incluído
+apenas no primeiro preenchimento. Falhas de clonagem de mensagens liberam a
+reserva e o prazo; erros de apresentação da página não invalidam um envio
+confirmado. Violações de origem e das guardas do controlador continuam fatais.
+
 Os acessos conhecidos a caixas de mensagem e modais são adaptados para uma
 interface local ao quadro. Ela confirma ações e recolhe mensagens sem
 expor o menu real. Um formulário que precise de outro acesso ao pai para com
