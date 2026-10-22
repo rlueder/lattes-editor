@@ -241,6 +241,41 @@ describe('o que mudou entre duas exportações', () => {
     );
   });
 
+  it('item apagado e criado de novo no Lattes, com outro número, não aparece como removido e novo', async () => {
+    const older = await fixture();
+    const newer = await fixture();
+    const article = first(newer, 'ARTIGO-PUBLICADO');
+    setAttr(article, 'SEQUENCIA-PRODUCAO', '777');
+    expect(diffVersions(older, newer, buildSections(newer))).toMatchObject({
+      added: 0,
+      changed: 0,
+      removed: 0,
+    });
+
+    // Criado de novo com um campo diferente: um item alterado, sem a sequência entre os campos.
+    const basics = childElements(article, 'DADOS-BASICOS-DO-ARTIGO')[0]!;
+    setAttr(basics, 'ANO-DO-ARTIGO', '2031');
+    const diff = diffVersions(older, newer, buildSections(newer));
+    expect(diff).toMatchObject({ added: 0, changed: 1, removed: 0 });
+    const change = diff.groups.flatMap((g) => g.changes)[0]!.change;
+    expect(change.fields.map((f) => f.attr)).not.toContain('SEQUENCIA-PRODUCAO');
+  });
+
+  it('atuação recriada com outro número, junto com os vínculos, também não aparece', async () => {
+    const older = await fixture();
+    const newer = await fixture();
+    const work = first(newer, 'ATUACAO-PROFISSIONAL');
+    walk(work, (el) => {
+      for (const a of el.attrs)
+        if (a.name.startsWith('SEQUENCIA') && a.value) a.value = `9${a.value}`;
+    });
+    expect(diffVersions(older, newer, buildSections(newer))).toMatchObject({
+      added: 0,
+      changed: 0,
+      removed: 0,
+    });
+  });
+
   it('sem diferença, diz que nada mudou', async () => {
     const a = await fixture();
     const diff = diffVersions(a, await fixture(), buildSections(a));

@@ -3,8 +3,8 @@
 // novos, removidos e alterados, por seção, cada um com o caminho até o grupo
 // onde ele aparece no editor.
 
-import { type Change, diffDocuments, resolvePath } from '../model/changes.ts';
-import { getAttr, parseXml, type XElement } from '../model/xml.ts';
+import { type Change, diffDocuments, fieldDiff, resolvePath } from '../model/changes.ts';
+import { childElements, getAttr, parseXml, type XElement, type XText } from '../model/xml.ts';
 import { groupChanges } from './changes-view.ts';
 import type { HashRoute } from './hash-route.ts';
 import type { Section } from './sections.ts';
@@ -52,6 +52,67 @@ function itemOf(
   return undefined;
 }
 
+/** Número de sequência: identidade no Lattes, que muda quando o item é apagado e criado de novo. */
+const SEQUENCE = /^SEQUENCIA/;
+
+/** O conteúdo do item sem as sequências, para reconhecer o mesmo item com outro número. */
+function content(el: XElement): string {
+  const attrs = el.attrs
+    .filter((a) => !SEQUENCE.test(a.name))
+    .map((a) => `${a.name}=${a.value}`)
+    .join('\u0001');
+  const text = el.children
+    .filter((c): c is XText => c.kind === 'text')
+    .map((c) => c.value.trim())
+    .join('');
+  return `<${el.name} ${attrs}>${text}${childElements(el).map(content).join('')}</${el.name}>`;
+}
+
+/** O elemento que o caminho de uma mudança aponta, se ele existe inteiro. */
+function target(root: XElement, change: Change): XElement | undefined {
+  const chain = resolvePath(root, change.path);
+  return chain.length === change.path.length ? chain.at(-1) : undefined;
+}
+
+/**
+ * Um item apagado e criado de novo no Lattes volta com outro número de
+ * sequência, e a comparação por número mostra "removido" e "novo". Na mesma
+ * seção, com o mesmo tipo e o mesmo título, os dois viram uma coisa só: nada,
+ * quando o conteúdo é igual; "alterado", com os campos que mudaram, quando não.
+ */
+function pairRecreated(
+  entries: VersionChange[],
+  older: XElement,
+  newer: XElement,
+): VersionChange[] {
+  const out = [...entries];
+  const added = out.filter((e) => e.change.kind === 'novo');
+  for (const gone of out.filter((e) => e.change.kind === 'removido')) {
+    const before = target(older, gone.change);
+    if (!before || !gone.itemTitle.trim()) continue;
+    const match = added.find((n) => {
+      const after = target(newer, n.change);
+      return (
+        n.change.element === gone.change.element &&
+        !!after &&
+        (content(after) === content(before) || n.itemTitle === gone.itemTitle)
+      );
+    });
+    if (!match) continue;
+    added.splice(added.indexOf(match), 1);
+    const after = target(newer, match.change)!;
+    out.splice(out.indexOf(gone), 1);
+    const at = out.indexOf(match);
+    if (content(after) === content(before)) {
+      out.splice(at, 1);
+      continue;
+    }
+    const fields = fieldDiff(before, after).filter((f) => !SEQUENCE.test(f.attr));
+    out[at] = { ...match, change: { ...match.change, fields, kind: 'alterado' } };
+  }
+  return out;
+}
+
 /**
  * Compara a versão anterior com a seguinte. `sections` são as seções da
  * versão seguinte (buildSections dela): o caminho de um item removido
@@ -62,14 +123,17 @@ export function diffVersions(older: XElement, newer: XElement, sections: Section
   // O item de cada mudança, para contar um item alterado uma vez só, mesmo
   // com vários campos mudados ou com título igual ao de outro item.
   const itemByChange = new Map<Change, XElement | undefined>();
-  const groups = groupChanges(changes, older, newer, sections).map((g) => ({
-    changes: g.entries.map(({ change, itemTitle }) => {
-      const found = itemOf(resolvePath(newer, change.path), sections);
-      itemByChange.set(change, found?.item);
-      return { change, itemTitle, route: found?.route };
-    }),
-    label: g.label,
-  }));
+  const groups = groupChanges(changes, older, newer, sections)
+    .map((g) => ({
+      changes: g.entries.map(({ change, itemTitle }) => {
+        const found = itemOf(resolvePath(newer, change.path), sections);
+        itemByChange.set(change, found?.item);
+        return { change, itemTitle, route: found?.route };
+      }),
+      label: g.label,
+    }))
+    .map((g) => ({ ...g, changes: pairRecreated(g.changes, older, newer) }))
+    .filter((g) => g.changes.length > 0);
   const all = groups.flatMap((g) => g.changes);
   const changedItems = new Set<XElement | string>(
     all
