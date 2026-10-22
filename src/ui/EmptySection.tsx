@@ -1,4 +1,4 @@
-// Seção sem itens: no centro da coluna, um desenho em traço, o que a seção
+// Seção sem itens: no centro da coluna, uma ilustração da marca, o que a seção
 // guarda e o caminho para começar (como os estados vazios do Linear).
 
 import type { ReactNode } from 'react';

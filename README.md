@@ -80,6 +80,10 @@ da própria seção. Como o Importar do Lattes não lê essas seções, o item n
 entra na lista de alterações do painel "Enviar ao Lattes", para cadastrar à
 mão com os valores ao lado.
 
+Cada seção vazia tem uma ilustração construída na mesma grade do logo, em
+violeta e menta. No tema escuro, as formas violetas ficam brancas, como a
+assinatura do app.
+
 Produções de outro arquivo XML (o de outro programa, ou uma exportação
 antiga) entram por "Trazer itens de outro XML…", no ⚙. Cada item é
 comparado com o seu currículo antes de entrar, e o editor diz com o que ele

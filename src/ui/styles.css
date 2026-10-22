@@ -3112,7 +3112,7 @@ details > .element {
   font-size: 26px;
 }
 
-/* Estado vazio de seção: bloco centrado, desenho em traço, texto e ações. */
+/* Estado vazio de seção: bloco centrado, ilustração, texto e ações. */
 .empty-section {
   max-width: 440px;
   margin: 12vh auto 0;
@@ -3125,6 +3125,10 @@ details > .element {
   display: block;
   margin: 0 0 18px;
   color: var(--muted);
+}
+
+.empty-art.section-art {
+  color: var(--brand);
 }
 
 .empty-section .empty-title {
