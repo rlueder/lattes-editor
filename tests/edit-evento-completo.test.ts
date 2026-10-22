@@ -259,15 +259,20 @@ describe('alteração de evento completa: plano', () => {
     ]);
   });
 
-  it('natureza: só a que segue o tipo de evento, conferida sem trocar', () => {
+  it('natureza: a nova vai no mesmo item, e o antes segue o tipo de evento', () => {
     const op = onlyOp((root) => setAttr(basics(root, '15'), 'NATUREZA', 'Encontro'));
     expect(op.set).toEqual({ F_COD_PROD: 'A35', F_TPO: 'Poster / Painel' });
     expect(op.expect).toMatchObject({ F_COD_PROD: 'A35' });
-    expect(opRows(op)).toEqual([
-      { after: 'Encontro', before: 'Encontro', label: 'Natureza', name: 'F_COD_PROD' },
-    ]);
-    expect(onlyReason((root) => setAttr(basics(root, '12'), 'NATUREZA', 'Feira'))).toBe(
-      'A natureza segue o tipo de evento (Congresso); para trocar, inclua o evento de novo no tipo certo',
+    // Um congresso que passa a feira: o Lattes troca a natureza no mesmo f_seq.
+    const feira = onlyOp((root) => setAttr(basics(root, '12'), 'NATUREZA', 'Feira'));
+    expect(feira.set).toMatchObject({ F_COD_PROD: 'A37' });
+    expect(feira.expect).toMatchObject({ F_COD_PROD: 'A31' });
+    // Sem troca de natureza na operação, a conferência é a do elemento: uma
+    // segunda alteração antes da exportação seguinte para como divergente.
+    const titulo = onlyOp((root) => setAttr(basics(root, '12'), 'ANO', '2001'));
+    expect(titulo.expect).toMatchObject({ F_COD_PROD: 'A31' });
+    expect(onlyReason((root) => setAttr(basics(root, '12'), 'NATUREZA', 'Palestra'))).toBe(
+      'Natureza que o Lattes não tem: Palestra',
     );
   });
 

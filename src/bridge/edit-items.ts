@@ -326,7 +326,7 @@ export function planEvento(
     return { reason: `Campos não suportados ainda: ${missing.join(', ')}` };
   }
   if (full) {
-    const shaped = planShape(change, item, basics, shape, isBasics, set, expect);
+    const shaped = planShape(change, basics, shape, isBasics, set, expect);
     if (shaped) return shaped;
   }
 
@@ -339,7 +339,12 @@ export function planEvento(
   // lugar de outro do mesmo ano. O formulário GN_TEC tem os campos das duas
   // partes.
   expect.F_FORMA ??= formaCode(shape.formaBefore) ?? OUVINTE;
-  expect.F_COD_PROD = EVENT_CODES[item.name]!;
+  // A natureza que o Lattes tem agora: a de antes, quando a troca é dela; senão
+  // a do elemento, a observada nas exportações. Uma segunda alteração antes
+  // da exportação seguinte (que move o item de elemento) não acha a natureza
+  // nova no Lattes e para como divergente, sem enviar nada.
+  const natureBefore = change.fields.find((f) => f.attr === 'NATUREZA')?.before ?? '';
+  expect.F_COD_PROD = natureCode(natureBefore) ?? EVENT_CODES[item.name]!;
   //
   // Os campos de identidade que a operação não troca vão em `identity`, e não
   // no expect: comparados sem acento, caixa nem espaço nas pontas (texto
@@ -376,7 +381,6 @@ export function planEvento(
  */
 function planShape(
   change: Change,
-  item: XElement,
   basics: XElement | undefined,
   shape: ReturnType<typeof shapeOf>,
   isBasics: boolean,
@@ -387,14 +391,14 @@ function planShape(
   const changed = (attr: string) => isBasics && change.fields.some((f) => f.attr === attr);
 
   if (changed('NATUREZA')) {
+    // A página de alteração troca a natureza no mesmo item (observado em
+    // 21/10/2026: um congresso de teste passou a seminário com o mesmo f_seq),
+    // e a exportação seguinte o põe no elemento da natureza nova. O antes
+    // segue o tipo de evento do XML (a conferência de F_COD_PROD acima).
     const after = basics ? (getAttr(basics, 'NATUREZA') ?? '') : '';
-    if (foldText(after) !== foldText(derivedNature(item.name))) {
-      return {
-        reason: `A natureza segue o tipo de evento (${derivedNature(item.name)}); para trocar, inclua o evento de novo no tipo certo`,
-      };
-    }
-    // O Lattes já guarda a natureza pelo tipo de evento: confere, sem trocar.
-    set.F_COD_PROD = EVENT_CODES[item.name]!;
+    const code = natureCode(after);
+    if (!code) return { reason: `Natureza que o Lattes não tem: ${after || '(vazia)'}` };
+    set.F_COD_PROD = code;
   }
 
   const ouvinteAfter = shape.formaAfter === OUVINTE_XML;
@@ -452,9 +456,10 @@ const PARTICIPATION_TYPES: Record<string, readonly string[]> = {
   Participante: ['Poster / Painel', 'Apresentação oral', 'Outras formas'],
 };
 
-/** A natureza que o elemento do evento quer dizer: o rótulo da opção de F_COD_PROD. */
-function derivedNature(item: string): string {
-  return EVENT_NATURE_LABELS[EVENT_CODES[item]!]!;
+/** A opção de F_COD_PROD de uma natureza (o rótulo, sem acento nem caixa). */
+export function natureCode(nature: string): string | undefined {
+  const folded = foldText(nature);
+  return Object.entries(EVENT_NATURE_LABELS).find(([, l]) => foldText(l) === folded)?.[0];
 }
 
 /** Rótulos de F_COD_PROD, lidos no formulário (censo de 15/10/2026). */

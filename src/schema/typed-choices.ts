@@ -129,6 +129,15 @@ export function derivedValue(element: string, attr: string): string | undefined 
  * elemento do campo: o tipo de participação depende da forma escolhida nele.
  */
 export function typedChoices(el: XElement, attr: string): Choice[] | undefined {
+  // A natureza do evento: as do combo do Lattes, a do tipo de evento primeiro.
+  // A página de alteração troca a natureza no mesmo item (21/10/2026), e a
+  // exportação seguinte o põe no elemento da natureza nova.
+  if (attr === 'NATUREZA' && isEventBasics(el.name)) {
+    const derived = derivedValue(el.name, attr);
+    return asChoices(
+      derived ? [derived, ...EVENT_NATURES.filter((n) => n !== derived)] : [...EVENT_NATURES],
+    );
+  }
   // Valor derivado fora do lugar (vazio ou outro): uma opção só, a certa.
   const derived = derivedValue(el.name, attr);
   if (derived !== undefined) return asChoices([derived]);
@@ -164,8 +173,12 @@ export function emptyChoicesHint(el: XElement, attr: string): string | undefined
   return form === 'Ouvinte' ? 'Não se aplica a ouvinte' : 'Forma não reconhecida: escolha outra';
 }
 
-/** O valor salvo é exatamente o derivado: só então o campo fica só para leitura. */
+/**
+ * O valor salvo é exatamente o derivado: só então o campo fica só para
+ * leitura. A natureza do evento se escolhe (typedChoices), então nunca fica.
+ */
 export function matchesDerived(el: XElement, attr: string): boolean {
+  if (attr === 'NATUREZA' && isEventBasics(el.name)) return false;
   const derived = derivedValue(el.name, attr);
   return derived !== undefined && getAttr(el, attr) === derived;
 }
@@ -190,6 +203,10 @@ export function canonicalChoice(el: XElement, attr: string): string | undefined 
  * natureza da participação em evento nunca fica vazia no Lattes.
  */
 export function outOfList(el: XElement, attr: string): boolean {
+  if (attr === 'NATUREZA' && isEventBasics(el.name)) {
+    const value = foldText(getAttr(el, attr) ?? '');
+    return !EVENT_NATURES.some((n) => foldText(n) === value);
+  }
   const derived = derivedValue(el.name, attr);
   if (derived !== undefined) return foldText(getAttr(el, attr) ?? '') !== foldText(derived);
   const value = getAttr(el, attr) ?? '';

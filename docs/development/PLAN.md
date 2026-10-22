@@ -18,6 +18,14 @@ outras 127 são o alvo deste plano.
 
 ## Estado atual
 
+- 21/10/2026, à noite: a natureza da participação em evento pelo conector,
+  como alteração do mesmo item (Fase 6, sem substituir). Gravado no Lattes
+  real com um evento de teste, removido pelo registro. 2645 para 2654 de 2731.
+  Formação complementar e endereço profissional pelas buscas seguem
+  desligados: as listas de cursos de curta duração das instituições tentadas
+  vieram vazias (a troca pediria cadastrar um curso na tabela do Lattes), e o
+  endereço profissional do currículo não tem instituição para um teste
+  reversível.
 - 21/10/2026, à noite: sete campos que o Lattes não deixa alterar por
   caminho nenhum passaram a "o formulário do Lattes não tem", e o editor os
   mostra sem edição, com o motivo: nome do pai e da mãe (ocultos na
@@ -369,6 +377,13 @@ uma operação só, que inclui, confere e só então exclui. Se a inclusão falh
 nada é excluído; se a exclusão falha, os dois ficam e o envio ao CNPq trava
 até a pessoa resolver. Começa por eventos e formação. A exclusão da formação
 ainda precisa ser vista no Lattes real.
+
+Eventos resolvidos sem substituir, em 21/10/2026: a página de alteração do
+evento troca a natureza (`F_COD_PROD`) no mesmo item. Num evento de teste, o
+`check()` da própria página passou um congresso a seminário com o mesmo
+`f_seq`, e o conector o passou de volta a congresso, conferido. A exportação
+seguinte põe o evento no elemento da natureza nova. O editor oferece as nove
+naturezas do Lattes, e a troca vai como alteração.
 
 ## Ficam à mão, com o motivo
 
