@@ -263,6 +263,22 @@ describe('o que mudou entre duas exportações', () => {
     ]);
   });
 
+  it('item recriado com um filho a mais: os campos de dentro do filho novo aparecem', async () => {
+    const older = await fixture();
+    const newer = await fixture();
+    const article = first(newer, 'ARTIGO-PUBLICADO');
+    setAttr(article, 'SEQUENCIA-PRODUCAO', '777');
+    const extra = parseXml(
+      '<INFORMACOES-ADICIONAIS><DETALHE DESCRICAO="Nota nova"/></INFORMACOES-ADICIONAIS>',
+    ).root;
+    article.children.push(extra);
+    const diff = diffVersions(older, newer, buildSections(newer));
+    const fields = diff.groups.flatMap((g) => g.changes)[0]!.change.fields;
+    expect(fields).toContainEqual(
+      expect.objectContaining({ after: 'Nota nova', attr: 'DESCRICAO' }),
+    );
+  });
+
   it('com título repetido, o par de conteúdo igual vem antes do par só de título', async () => {
     const older = await fixture();
     const newer = await fixture();
