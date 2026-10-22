@@ -17,7 +17,9 @@ permissions:
 jobs:
   vigia:
     name: conferir o que o CNPq expõe
-    runs-on: ubuntu-latest
+    # PR de fork vai sempre para runner do GitHub; o resto segue RUNS_ON
+    # (ver ci/runner-efemero/README.md). Sem a variável, ubuntu-latest.
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.RUNS_ON || '"ubuntu-latest"') || 'ubuntu-latest' }}
     timeout-minutes: 10
     permissions:
       contents: read

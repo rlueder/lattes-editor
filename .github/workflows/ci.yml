@@ -17,7 +17,9 @@ permissions:
 jobs:
   checks:
     name: lint, tipos, testes e build
-    runs-on: ubuntu-latest
+    # PR de fork vai sempre para runner do GitHub; o resto segue RUNS_ON
+    # (ver ci/runner-efemero/README.md). Sem a variável, ubuntu-latest.
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(vars.RUNS_ON || '"ubuntu-latest"') || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
@@ -27,7 +29,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       # Os testes validam o XML gerado contra o XSD com o xmllint.
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq libxml2-utils
+      # O runner efêmero já traz o xmllint e não tem sudo.
+      - run: command -v xmllint >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq libxml2-utils)
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test:coverage
