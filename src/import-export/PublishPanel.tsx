@@ -11,12 +11,14 @@ import { useEffect, useId, useMemo, useState } from 'react';
 
 import { requestProblem } from '../bridge/publish.ts';
 import { failed } from '../bridge/sent-log.ts';
+import { simulatedSendScreen } from '../dev/send-screen-preview.ts';
 import { parseXml } from '../model/xml.ts';
 import { diffEspelho } from '../review/espelho-diff.ts';
 import { Modal } from '../ui/Modal.tsx';
 import { unpublishedEntries } from '../ui/status-strip.ts';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { usePublish } from '../ui/use-publish.ts';
+import { loadChoices, saveChoices } from './publish-memory.ts';
 import {
   canReadSendScreen,
   checksLine,
@@ -27,6 +29,7 @@ import {
   publishRequest,
   publishStatus,
   publishUiEnabled,
+  restoredFields,
   SCREEN_TIMEOUT_MS,
   sendScreenStatus,
 } from './publish-view.ts';
@@ -76,6 +79,8 @@ function PublishPanelBody(props: Props) {
   // A declaração: só o clique da pessoa muda isto, e o painel remontado volta a false.
   const [declared, setDeclared] = useState(false);
   const [form, setForm] = useState<PublishForm | undefined>();
+  /** Os campos que começaram com a escolha da última vez, ditos no painel. */
+  const [restored, setRestored] = useState<string[]>([]);
   const [attempt, setAttempt] = useState<PublishAttempt | undefined>();
   const [now, setNow] = useState(() => Date.now());
   const ids = useId();
@@ -83,29 +88,37 @@ function PublishPanelBody(props: Props) {
   // Ao abrir, com a extensão: a tela de envio e a versão atual do Lattes, só leituras.
   // Sem a capacidade enviar-cnpq, o pedido nem sai.
   const { available, features, requestEspelho } = bridge;
+  // No `pnpm dev`, ?simular-envio dá uma tela de exemplo, sem extensão.
+  const [fake] = useState(simulatedSendScreen);
   const readable = available && canReadSendScreen(features);
   useEffect(() => {
-    if (!open || !readable) return;
+    if (!open || !readable || fake) return;
     setScreenRequest({ at: Date.now(), id: cnpq.requestScreen() });
     requestEspelho();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, readable]);
 
-  const reading = cnpq.screen?.id === screenRequest?.id ? cnpq.screen : undefined;
+  const reading = fake ?? (cnpq.screen?.id === screenRequest?.id ? cnpq.screen : undefined);
   const screen = reading?.screen;
   // O formulário começa com o que o Lattes tem, uma vez por leitura; uma
   // leitura nova desmarca a declaração, que valia para o texto de antes.
   useEffect(() => {
     if (!reading) return;
-    setForm(initialForm(reading.screen));
+    const start = initialForm(reading.screen, loadChoices(lattesId));
+    setForm(start);
+    setRestored(restoredFields(reading.screen, start));
     setDeclared(false);
-  }, [reading]);
-  const screenStatus = sendScreenStatus({
-    features,
-    now,
-    reading,
-    requestedAt: screenRequest?.at,
-  });
+  }, [reading, lattesId]);
+  // As escolhas ficam guardadas para a próxima abertura, um instante depois da
+  // última mudança (não a cada tecla); a prévia do dev não grava nada.
+  useEffect(() => {
+    if (!form || fake) return;
+    const timer = setTimeout(() => saveChoices(lattesId, form), 600);
+    return () => clearTimeout(timer);
+  }, [form, fake, lattesId]);
+  const screenStatus = fake
+    ? { waiting: false }
+    : sendScreenStatus({ features, now, reading, requestedAt: screenRequest?.at });
   // Sem resposta, o prazo da leitura da tela também passa.
   useEffect(() => {
     if (!screenStatus.waiting || !screenRequest) return;
@@ -197,6 +210,11 @@ function PublishPanelBody(props: Props) {
           </p>
           <section className="panel-section">
             <h3 className="panel-section-head">Dados do envio</h3>
+            {restored.length > 0 && (
+              <p className="muted">
+                Da última vez neste currículo: {restored.join(', ')}. Confira antes de enviar.
+              </p>
+            )}
             <div className="fields publish-fields">
               <fieldset className="field publish-choices">
                 <legend>Idioma principal</legend>
@@ -251,18 +269,17 @@ function PublishPanelBody(props: Props) {
 
           <section className="panel-section">
             <h3 className="panel-section-head">Declaração</h3>
-            {enabled ? (
-              <label className="publish-declaration">
+            <blockquote className="publish-declaration">{screen.declaration}</blockquote>
+            {enabled && (
+              <label className="publish-agree">
                 <input
                   checked={declared}
                   disabled={status.locked}
                   type="checkbox"
                   onChange={(e) => setDeclared(e.target.checked)}
                 />
-                <span>{screen.declaration}</span>
+                <span>{screen.agree || 'Li e estou de acordo com a declaração acima'}</span>
               </label>
-            ) : (
-              <blockquote className="publish-declaration">{screen.declaration}</blockquote>
             )}
             <p className="muted">
               Texto lido da tela de envio do Lattes.{' '}

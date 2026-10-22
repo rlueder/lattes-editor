@@ -77,10 +77,15 @@ describe('Enviar ao CNPq pelo conector (LAT-54)', () => {
     const lattes = await start();
     const read = await readSendScreenFrom(lattes.publishPort, await code(lattes));
     expect(read.screen).toEqual({
+      agree: 'Li e estou de acordo com a declaração acima',
       declaration: SIMULATED_DECLARATION,
       emailAlternative: '',
       emailContact: SIMULATED_EMAIL,
-      english: { checked: true, label: 'Autorizo a publicação da versão em inglês', value: '1' },
+      english: {
+        checked: true,
+        label: 'Autorizo a publicação da versão em inglês do meu currículo',
+        value: '1',
+      },
       language: {
         options: [
           { label: 'Português', value: '1' },
@@ -311,7 +316,8 @@ describe('Enviar ao CNPq pelo conector (LAT-54)', () => {
           req.proc.toLowerCase() === 'pkg_publicar.mostrar_cv' && 'html' in out
             ? {
                 ...out,
-                html: out.html.replace(new RegExp(`<input[^>]*name="${control}"[^>]*>`), ''),
+                // Na tela real, o nome vem com ou sem aspas (name=f_chk_en).
+                html: out.html.replace(new RegExp(`<input[^>]*name="?${control}"?[^>]*>`), ''),
               }
             : out,
         ),
@@ -370,6 +376,31 @@ describe('Enviar ao CNPq: leituras e regras', () => {
       readSendScreen('<form name="publicar"><input type="checkbox" name="f_chk"> Sim</form>', page),
     ).toBeUndefined();
     expect(readSendScreen('<form name="outro"></form>', page)).toBeUndefined();
+  });
+
+  it('a legenda da caixa nunca passa por declaração, e os rótulos do idioma vêm do <label for>', () => {
+    // Só a legenda junto da caixa: a tela não é a esperada, nada vai.
+    expect(
+      readSendScreen(
+        `<form name="publicar"><input type="checkbox" name=f_chk value="1">Li e estou de acordo com a declaração acima</form>`,
+        page,
+      ),
+    ).toBeUndefined();
+    const screen = readSendScreen(
+      `<form name="publicar"><ul><li>Um texto de declaração comprido o bastante,   com   espaços.
+<a href="t.html">Termo de   Uso</a>
+<input type="checkbox" name=f_chk value="1">Li e estou de acordo com a declaração acima</li>
+<li>Pergunta: <input type="radio" name="f_idioma" data-id="b" id="a" value="1"><label data-for="b" for="a"><img src="x.png"></label>
+<input type="radio" name="f_idioma" id="b" value="2"><label for="b">Inglês</label></li></ul></form>`,
+      page,
+    )!;
+    expect(screen.declaration).toBe('Um texto de declaração comprido o bastante, com espaços.');
+    expect(screen.agree).toBe('Li e estou de acordo com a declaração acima');
+    // data-id e data-for não contam: o primeiro rádio não leva o rótulo do segundo, e o
+    // <label for> vazio não apaga o rótulo lido; o segundo leva o do seu <label for>.
+    const labels = screen.language?.options.map((o) => o.label);
+    expect(labels?.[0]).not.toBe('Inglês');
+    expect(labels?.[1]).toBe('Inglês');
   });
 
   it('o link do Termo de Uso, direto ou por script', () => {

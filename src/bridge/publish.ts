@@ -38,6 +38,7 @@ import { encodeLatin1Form, type Pairs } from './form.ts';
 import { decodeHtmlEntities, plainText } from './html-text.ts';
 import { isLogonPage } from './lattes-html.ts';
 import { lattesStatusFrom } from './lattes-status.ts';
+import { labelsFor, radioIdsOf, squash, termsText } from './send-screen-labels.ts';
 
 /**
  * Desligado até um envio acompanhado no Lattes real, como as outras
@@ -65,6 +66,11 @@ export interface ChoiceOption {
  * não envia (missingControls), porque mandaria um valor que não leu.
  */
 export interface SendScreen {
+  /**
+   * A legenda da caixa da declaração ("Li e estou de acordo com a declaração
+   * acima"), quando a tela a tem separada do texto.
+   */
+  agree?: string;
   /** O texto da declaração, como está na tela. */
   declaration: string;
   /** Os dois e-mails, como estão na tela; undefined quando a tela não tem o campo. */
@@ -130,6 +136,9 @@ export const SENT_ALERT = 'O currículo foi enviado para publicação.';
 export const OBSERVED_LANGUAGE = '1';
 export const OBSERVED_ENGLISH = '1';
 
+/** A legenda da caixa na tela real: "Li e estou de acordo com a declaração acima". */
+const AGREE = /^li e estou de acordo\b/i;
+
 /** Um texto de declaração tão curto não é a declaração (é um "Sim", um rótulo solto). */
 const MIN_DECLARATION = 20;
 
@@ -176,11 +185,21 @@ export function readSendScreen(html: string, pageUrl: string): SendScreen | unde
   const publicar = forms.find((f) => f.name.toLowerCase() === 'publicar');
   const chk = publicar?.fields.find((f) => f.name.toLowerCase() === 'f_chk');
   if (!chk) return undefined;
-  // O texto ao lado da caixa; se a tela o puser antes dela, é o rótulo.
-  const declaration = [chk.options?.[0]?.label ?? '', chk.label]
-    .map((t) => t.trim())
+  // A declaração é o texto mais longo junto da caixa: na tela real (lida em
+  // 21/10/2026) ela vem antes, e depois da caixa fica só a legenda "Li e estou
+  // de acordo com a declaração acima". A legenda nunca passa por declaração:
+  // sem outro texto, a tela não é a esperada e nada vai.
+  // O link do Termo de Uso vem no fim do texto; o editor o mostra à parte.
+  const link = termsText(html);
+  const texts = [chk.label, chk.options?.[0]?.label ?? '']
+    .map(squash)
+    .map((t) => (link && t.endsWith(link) ? t.slice(0, -link.length).trim() : t));
+  const declaration = texts
+    .filter((t) => !AGREE.test(t))
+    .sort((a, b) => b.length - a.length)
     .find((t) => t.length >= MIN_DECLARATION);
   if (!declaration) return undefined;
+  const agree = texts.find((t) => t && t !== declaration);
 
   const byName = (name: string) => fields.find((f) => f.name.toLowerCase() === name);
   const language = byName('f_idioma');
@@ -188,7 +207,12 @@ export function readSendScreen(html: string, pageUrl: string): SendScreen | unde
   const contact = byName('f_email_contato');
   const alternative = byName('f_email_alternativo');
   const englishOption = english?.options?.[0];
+  // Os rádios do idioma têm o rótulo num <label for>, depois de cada um; o
+  // texto antes deles é a pergunta da tela.
+  const labelFor = labelsFor(html);
+  const radioIds = radioIdsOf(html, 'f_idioma');
   return {
+    ...(agree ? { agree } : {}),
     declaration,
     emailAlternative: alternative?.value,
     emailContact: contact?.value,
@@ -202,7 +226,10 @@ export function readSendScreen(html: string, pageUrl: string): SendScreen | unde
         : undefined,
     language: language?.options?.length
       ? {
-          options: language.options.map((o) => ({ label: o.label, value: o.value })),
+          options: language.options.map((o) => ({
+            label: labelFor.get(radioIds.get(o.value) ?? '') || o.label,
+            value: o.value,
+          })),
           selected: language.options.find((o) => o.chosen)?.value,
         }
       : undefined,
