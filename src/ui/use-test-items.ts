@@ -132,5 +132,5 @@ export function useTestItems() {
     post({ acao, id, type: 'itens-teste', ...extra });
   };
 
-  return { ask, pending: waiting?.acao, state };
+  return { ask, pending: waiting?.acao, state, stop: () => post({ type: 'parar' }) };
 }

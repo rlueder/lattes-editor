@@ -32,3 +32,35 @@ describe('exclusão mútua da aba', () => {
     expect(sessionTaskRunning()).toBe(false);
   });
 });
+
+it('a leitura de identidade espera a tarefa anterior sem falso erro e mantém a reserva', async () => {
+  let finish!: () => void;
+  const order: string[] = [];
+  const first = withSessionTask(
+    8,
+    () =>
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const identity = withSessionTask(
+    8,
+    async () => {
+      order.push('identidade');
+    },
+    true,
+  );
+  const verify = withSessionTask(
+    8,
+    async () => {
+      order.push('verificação');
+    },
+    true,
+  );
+  await expect(withSessionTask(8, async () => undefined)).rejects.toThrow('ocupado');
+  expect(order).toEqual([]);
+  finish();
+  await Promise.all([first, identity, verify]);
+  expect(order).toEqual(['identidade', 'verificação']);
+  expect(sessionTaskRunning()).toBe(false);
+});

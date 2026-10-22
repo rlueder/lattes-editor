@@ -326,6 +326,15 @@ export async function cancelInTab(): Promise<void> {
   await chrome.scripting
     .executeScript({
       func: () => {
+        (globalThis as { __lattesCensus?: { cancel?(): void } }).__lattesCensus?.cancel?.();
+      },
+      target: { tabId },
+      world: 'MAIN',
+    })
+    .catch(() => undefined);
+  await chrome.scripting
+    .executeScript({
+      func: () => {
         (
           globalThis as unknown as { __conector?: { cancelar?: () => void } }
         ).__conector?.cancelar?.();
@@ -346,22 +355,26 @@ export const failedReport = (detail: string): ContractReport => ({
 /** Confere o Lattes contra o contrato do conector, só lendo, na aba do menu. */
 export async function verifyOn(tabId: number, kinds?: BridgeOp['kind'][]): Promise<ContractReport> {
   try {
-    return await withSessionTask(tabId, async () => {
-      await injectRunner(tabId);
-      const [res] = await guarded(tabId, () =>
-        chrome.scripting.executeScript({
-          args: [kinds ?? null],
-          func: (scope: BridgeOp['kind'][] | null) =>
-            (
-              globalThis as unknown as {
-                __conector: { verificar(kinds?: BridgeOp['kind'][]): Promise<ContractReport> };
-              }
-            ).__conector.verificar(scope ?? undefined),
-          target: { tabId },
-        }),
-      );
-      return res?.result ?? failedReport('A aba do Lattes não respondeu');
-    });
+    return await withSessionTask(
+      tabId,
+      async () => {
+        await injectRunner(tabId);
+        const [res] = await guarded(tabId, () =>
+          chrome.scripting.executeScript({
+            args: [kinds ?? null],
+            func: (scope: BridgeOp['kind'][] | null) =>
+              (
+                globalThis as unknown as {
+                  __conector: { verificar(kinds?: BridgeOp['kind'][]): Promise<ContractReport> };
+                }
+              ).__conector.verificar(scope ?? undefined),
+            target: { tabId },
+          }),
+        );
+        return res?.result ?? failedReport('A aba do Lattes não respondeu');
+      },
+      true,
+    );
   } catch (err) {
     return failedReport(err instanceof Error ? err.message : 'Falha inesperada');
   }
@@ -375,20 +388,26 @@ export interface Identity {
 
 /** Quem é o currículo aberto na sessão do Lattes: código interno e identificador público. */
 export async function sessionIdentity(tabId: number, fresh = false): Promise<Identity> {
-  return withSessionTask(tabId, async () => {
-    await injectRunner(tabId);
-    const [res] = await guarded(tabId, () =>
-      chrome.scripting.executeScript({
-        args: [fresh],
-        func: (f: boolean) =>
-          (
-            globalThis as unknown as { __conector: { identity(fresh: boolean): Promise<Identity> } }
-          ).__conector.identity(f),
-        target: { tabId },
-      }),
-    );
-    return res?.result ?? {};
-  });
+  return withSessionTask(
+    tabId,
+    async () => {
+      await injectRunner(tabId);
+      const [res] = await guarded(tabId, () =>
+        chrome.scripting.executeScript({
+          args: [fresh],
+          func: (f: boolean) =>
+            (
+              globalThis as unknown as {
+                __conector: { identity(fresh: boolean): Promise<Identity> };
+              }
+            ).__conector.identity(f),
+          target: { tabId },
+        }),
+      );
+      return res?.result ?? {};
+    },
+    true,
+  );
 }
 
 /**

@@ -9,12 +9,12 @@ import { liveLine, useTestItems } from './use-test-items.ts';
 const LABEL = {
   andamento: 'Atualizando',
   criar: 'Criando um lote',
-  preparar: 'Lendo os formulários (alguns minutos)',
+  preparar: 'Lendo os formulários',
   remover: 'Removendo um lote',
 } as const;
 
 export function TestItemsPanel() {
-  const { ask, pending, state } = useTestItems();
+  const { ask, pending, state, stop } = useTestItems();
   const [batch, setBatch] = useState(10);
   const s = state.summary;
   // A remoção sem marca pede um segundo clique, e leva só as linhas listadas.
@@ -60,6 +60,11 @@ export function TestItemsPanel() {
         />
       </label>
       <div className="test-items-actions">
+        {pending && (
+          <button className="danger" type="button" onClick={stop}>
+            Parar
+          </button>
+        )}
         <button disabled={!!pending} type="button" onClick={() => ask('preparar')}>
           Ler formulários
         </button>

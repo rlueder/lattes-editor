@@ -56,7 +56,7 @@ página, em `extension/src/censo-test-ledger.ts`; a criação em
 Pelo editor em desenvolvimento, com `?itens-teste` no endereço e a extensão
 Dev instalada, numa aba do menu do Lattes:
 
-1. "Ler formulários": lê os formulários e tira a base (alguns minutos).
+1. "Ler formulários": lê os formulários e tira a base. A coleta pode parar no orçamento de pedidos; aguarde a pausa e repita para aproveitar as páginas já lidas.
 2. "Criar próximo lote", com o lote de até 50 e 3 a 6 s entre um envio e
    outro. O resultado diz quantos foram criados, quantos faltam e o que
    falhou, com a mensagem do Lattes. "Tentar de novo os que falharam" depois
@@ -84,3 +84,32 @@ de registro único (a edição deles já é lida). Vínculo e atividade dependem
 uma atuação, e linha de pesquisa e prefácio não têm link de inclusão lido. O
 idioma fica de fora porque a língua é a chave do item. A patente pede um
 depositante com código de pessoa, e só os coautores têm um.
+
+## Interrupção e envio incerto
+
+As leituras, os recursos dos quadros e os envios usam o limite de tráfego da
+extensão Dev. Atualize a extensão e recarregue o menu antes de rodar, inclusive
+pelo console. O botão "Parar" e `__lattesCensus.cancel()` interrompem a tarefa. Uma gravação que
+já chegou ao servidor pode terminar mesmo depois do cancelamento.
+
+Antes de enviar, a inclusão salva uma marca de envio incerto. A confirmação
+exige encontrar a tag na página de conferência depois da gravação. Itens sem
+campo para levar a tag podem ficar incertos e exigem conferência manual. O
+lote para no primeiro envio incerto; `retryFailed` não o repete sozinho, e
+`resetTestItems()` recusa apagar o registro nesse estado.
+
+Depois de conferir a tag e o conteúdo no Lattes, use pelo console:
+
+```js
+await __lattesCensus.testItems({ retryFailed: true, confirmedPresent: ['tag-conferida'] });
+```
+
+Se conferiu que não foi criado, use `confirmedAbsent` com as tags. O censo
+relê a página de conferência e recusa essa confirmação quando a tag ainda
+aparece. Uma exclusão incerta é conferida pelas listas na chamada seguinte;
+se a linha sumiu, o registro é reconciliado. Se continua lá, só uma nova
+conferência humana permite usar `confirmedPresent` com o link da linha em
+`removeTestItems()`. As verificações de base e marca continuam valendo.
+
+Um receptor opcional de resultados (`receiver`) precisa ser local
+(`localhost` ou `127.0.0.1`) e também é cancelado com a tarefa.

@@ -225,3 +225,18 @@ describe('prazo e persistência do freio de tráfego', () => {
     expect(result.posted).toBe(true);
   });
 });
+
+it('limita Retry-After e pausas antigas a uma hora, inclusive em caso de overflow', async () => {
+  const { MAX_COOLDOWN_MS } = await import('../src/bridge/transport.ts');
+  const now = Date.parse('2026-10-21T12:00:00Z');
+  expect(retryAfterMs('9999999999999999999999999999', now)).toBe(MAX_COOLDOWN_MS);
+  expect(retryAfterMs('9'.repeat(400), now)).toBe(MAX_COOLDOWN_MS);
+  expect(retryAfterMs('Wed, 21 Oct 2099 12:00:00 GMT', now)).toBe(MAX_COOLDOWN_MS);
+  let time = now;
+  const fetch = vi.fn(ok);
+  const traffic = new LattesTransport({ now: () => time, fetch, loadCooldown: () => now + 1e12 });
+  await expect(traffic.run(() => traffic.request('a'))).rejects.toThrow('pausa');
+  time += MAX_COOLDOWN_MS;
+  await traffic.run(() => traffic.request('a'));
+  expect(fetch).toHaveBeenCalledTimes(1);
+});

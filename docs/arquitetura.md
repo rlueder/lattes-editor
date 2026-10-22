@@ -245,7 +245,8 @@ são uma política do editor, sem relação comprovada com limites do CNPq:
 - no máximo 100 pedidos por tarefa e 80 numa janela de um minuto;
 - prazo de 20 s por pedido e 150 s por tarefa;
 - HTTP 403, 429 ou 503 impõe uma pausa de pelo menos um minuto, estendida por
-  `Retry-After` quando ele informa mais tempo, em segundos ou como data.
+  `Retry-After` quando ele informa mais tempo, em segundos ou como data, até uma hora.
+  Pausas antigas acima desse teto também são limitadas ao serem lidas.
 
 Qualquer erro HTTP para a tarefa, sem repetição automática de POST. A pausa
 fica no `chrome.storage.session` da extensão, vale para as abas deste navegador e sobrevive a um recarregamento da página. A instância
@@ -271,10 +272,38 @@ dos tipos necessários. Uma verificação parcial não substitui a completa do
 vigia automático. A especificação dos formulários fica em
 `src/bridge/contract-spec.ts` e o motor em `src/bridge/contract.ts`.
 
-O censo e os itens de teste do canal Dev usam o caminho separado de
-`extension/src/censo.ts`; esta política ainda não cobre esses procedimentos
-manuais. O vigia público semanal faz cinco leituras, sem repetição automática,
-por `scripts/vigia-lattes.ts`.
+O censo e os itens de teste Dev também usam o transporte. O script isolado
+`extension/src/dev-traffic-host.ts` atende um MessageChannel da página,
+valida origem e método e consulta a pausa no worker. A tarefa mantém uma
+Web Lock da origem (`src/bridge/page-task.ts`), compartilhada com o conector
+normal, inclusive entre abas e depois de reiniciar o worker. Leituras de
+identidade aguardam a reserva anterior do worker, sem relatar falha de rede
+por uma disputa interna.
+
+Os quadros de teste são documentos locais: `censo-frame.ts` busca o HTML,
+os scripts e as folhas de estilo pelo transporte antes de executar. Envios
+passam pela mesma ponte, com codificação Latin-1. CSP bloqueia recursos e
+envios nativos; uma regra de sessão Dev bloqueia navegação HTTP dos quadros
+da aba durante a tarefa, para um script não contornar a ponte. A regra é
+removida antes de liberar a trava, e um recarregamento do menu limpa regras
+anteriores. A extensão publicada não pede a permissão dessa regra.
+
+O prazo do cliente Dev é 145 s, anterior ao do transporte. Cancelar aborta
+os pedidos, retira os quadros e impede novos passos. O registro de um envio
+incerto é salvo antes de iniciar a gravação e não pode ser apagado enquanto
+houver pendência. Inclusões confirmam a tag na página de conferência;
+exclusões releem as listas a cada item. Uma falha de gravação interrompe o
+lote. Repetir exige conferência humana e leitura atual do Lattes; falha em
+salvar o registro impede novas gravações.
+
+A coleta de leitura guarda até 512 páginas, somando até 32 MiB, para retomar
+uma coleta interrompida pelo orçamento. Gravar limpa essa cópia. Quadros de
+edição sempre leem o formulário novamente. Funções da página que tentam abrir
+recursos fora da ponte são recusadas; um formulário que dependa delas pode
+exigir adaptação antes de funcionar no censo protegido.
+
+O vigia público semanal faz cinco leituras, sem repetição automática, por
+`scripts/vigia-lattes.ts`.
 
 ### Limites da abertura de ZIP
 

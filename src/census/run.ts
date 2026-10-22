@@ -3,7 +3,6 @@
 // aba do Lattes, na sessão de quem está logado (extension/src/censo.ts), ou
 // contra o Lattes simulado nos testes. Nunca envia formulário: a porta só tem
 // GET, e cada caminho passa por isSafeGet antes.
-
 import { findLinks, isLogonPage, lattesIdFrom, type LattesLink } from '../bridge/lattes-html.ts';
 import {
   type CensusField,
@@ -15,6 +14,7 @@ import {
   publicPath,
 } from './census-page.ts';
 import type { FieldLink, LinkSummary } from './link.ts';
+import { CensusStopped } from './stop.ts';
 import type { CensusTarget, LattesPath, Provenance } from './targets.ts';
 import { CENSUS_TARGETS } from './targets-production.ts';
 
@@ -291,7 +291,7 @@ export async function readEntry(
     // Uma falha de rede isolada ("Failed to fetch" no aperfeiçoamento, 15/10/2026)
     // ganha uma segunda tentativa; a sessão caída não.
     const res = await reader.get(where.path).catch(async (err: unknown) => {
-      if (err instanceof SessionLost) throw err;
+      if (err instanceof SessionLost || err instanceof CensusStopped) throw err;
       await sleep(reader.retryDelay);
       return reader.get(where.path!);
     });
@@ -309,7 +309,7 @@ export async function readEntry(
     }
     return { ...base, ...more, page, path, status: 'ok' };
   } catch (err) {
-    if (err instanceof SessionLost) throw err;
+    if (err instanceof SessionLost || err instanceof CensusStopped) throw err;
     return {
       ...base,
       // O detalhe vai para o arquivo versionado: sem o código do currículo.
@@ -368,7 +368,7 @@ async function discover(reader: CensusReader, opened: Set<string>): Promise<stri
     try {
       html = (await reader.get(list)).html;
     } catch (err) {
-      if (err instanceof SessionLost) throw err;
+      if (err instanceof SessionLost || err instanceof CensusStopped) throw err;
       continue;
     }
     for (const path of setarUrlPaths(html)) {

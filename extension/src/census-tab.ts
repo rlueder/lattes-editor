@@ -1,8 +1,8 @@
 // Chamadas longas do censo Dev, separadas das operações do conector normal.
 import { untilTabCloses } from './tab-guard.ts';
 
-/** Prazo dos itens de teste: a leitura dos formulários leva alguns minutos, e um lote de 50, outros tantos. */
-const TEST_ITEMS_TIMEOUT_MS = 30 * 60_000;
+/** O prazo interno cancela rede e quadros antes de a chamada externa desistir. */
+const TEST_ITEMS_TIMEOUT_MS = 160_000;
 
 type CensusAction = 'andamento' | 'criar' | 'preparar' | 'remover';
 
@@ -16,8 +16,22 @@ export async function runCensusInPage(
   action: CensusAction,
   options: { batch?: number; dryRun?: boolean; retryFailed?: boolean; unmarked?: string[] },
 ): Promise<{ error?: string; result?: unknown }> {
-  const long = <T>(start: () => Promise<T>) =>
-    untilTabCloses(tabId, start, chrome.tabs.onRemoved, TEST_ITEMS_TIMEOUT_MS);
+  const long = async <T>(start: () => Promise<T>) => {
+    try {
+      return await untilTabCloses(tabId, start, chrome.tabs.onRemoved, TEST_ITEMS_TIMEOUT_MS);
+    } catch (err) {
+      await chrome.scripting
+        .executeScript({
+          func: () => {
+            (globalThis as { __lattesCensus?: { cancel?(): void } }).__lattesCensus?.cancel?.();
+          },
+          target: { tabId },
+          world: 'MAIN',
+        })
+        .catch(() => undefined);
+      throw err;
+    }
+  };
   // Um censo de uma montagem anterior (a aba seguiu aberta enquanto a extensão
   // recarregava) é trocado: antes ele ficava, e o lote corria com o código velho.
   const [loaded] = await long(() =>

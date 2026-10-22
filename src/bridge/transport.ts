@@ -6,6 +6,7 @@ export const REQUEST_TIMEOUT_MS = 20_000;
 export const REQUESTS_PER_TASK = 100;
 export const REQUESTS_PER_MINUTE = 80;
 export const HTTP_COOLDOWN_MS = 60_000;
+export const MAX_COOLDOWN_MS = 60 * 60_000;
 
 export class TransportStop extends Error {}
 
@@ -13,10 +14,10 @@ export function retryAfterMs(value: string | null, now: number): number {
   if (!value) return 0;
   if (/^\d+$/.test(value.trim())) {
     const ms = Number(value) * 1000;
-    return Number.isFinite(ms) ? ms : 0;
+    return Math.min(MAX_COOLDOWN_MS, ms);
   }
   const date = Date.parse(value);
-  return Number.isFinite(date) ? Math.max(0, date - now) : 0;
+  return Number.isFinite(date) ? Math.min(MAX_COOLDOWN_MS, Math.max(0, date - now)) : 0;
 }
 
 export interface TrafficPolicy {
@@ -53,7 +54,7 @@ export class LattesTransport {
       spacingMs: policy.spacingMs ?? REQUEST_SPACING_MS,
       wait: policy.wait ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms))),
     };
-    this.cooldownUntil = this.policy.loadCooldown();
+    this.respectPause(this.policy.loadCooldown());
   }
 
   async run<T>(
@@ -93,7 +94,11 @@ export class LattesTransport {
   }
 
   respectPause(until: number): void {
-    if (Number.isFinite(until)) this.cooldownUntil = Math.max(this.cooldownUntil, until);
+    if (Number.isFinite(until))
+      this.cooldownUntil = Math.max(
+        this.cooldownUntil,
+        Math.min(until, this.policy.now() + MAX_COOLDOWN_MS),
+      );
   }
 
   private async pause(until: number): Promise<void> {

@@ -17,6 +17,7 @@ import {
   searchInstitutions,
 } from '../../src/bridge/lattes-lists.ts';
 import { lattesStatusFrom } from '../../src/bridge/lattes-status.ts';
+import { withPageTask } from '../../src/bridge/page-task.ts';
 import { type PhotoPort, type PhotoResult, uploadPhoto } from '../../src/bridge/photo.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
 import type { ProductionScans } from '../../src/bridge/production/locate.ts';
@@ -29,23 +30,14 @@ import {
   readSendScreenFrom,
   type SendScreen,
 } from '../../src/bridge/publish.ts';
-import { LattesTransport } from '../../src/bridge/transport.ts';
 import { decodeLatin1 } from '../../src/model/latin1.ts';
+import { pageTraffic } from './page-traffic.ts';
 
 // A reinjeção troca o núcleo, mas preserva a trava e o histórico de tráfego da aba.
 const page = globalThis as unknown as {
-  __lattesTraffic?: LattesTransport;
   __lattesScans?: ProductionScans;
 };
-const traffic = (page.__lattesTraffic ??= new LattesTransport({
-  saveCooldown: async (until) => {
-    try {
-      await chrome.runtime.sendMessage({ type: 'traffic-pause', until });
-    } catch {
-      /* Sem worker, a pausa continua valendo nesta página. */
-    }
-  },
-}));
+const traffic = pageTraffic();
 const request = (path: string | URL, init?: RequestInit) =>
   traffic.request(new URL(path, location.href), init);
 
@@ -377,20 +369,24 @@ const connector = {
     Object.entries(connector).map(([name, fn]) => [
       name,
       (...args: unknown[]) =>
-        traffic.run(() => (fn as (...values: unknown[]) => Promise<unknown>)(...args)),
+        withPageTask(() =>
+          traffic.run(() => (fn as (...values: unknown[]) => Promise<unknown>)(...args)),
+        ),
     ]),
   ),
   apply: (op: BridgeOp) =>
-    traffic.run(
-      () => connector.apply(op),
-      (error, posted) => ({
-        detail: error.message,
-        key: op.key,
-        status: posted ? 'divergente' : 'erro',
-      }),
+    withPageTask(() =>
+      traffic.run(
+        () => connector.apply(op),
+        (error, posted) => ({
+          detail: error.message,
+          key: op.key,
+          status: posted ? 'divergente' : 'erro',
+        }),
+      ),
     ),
   cancelar: () => traffic.cancel(),
   identity: (fresh = false) =>
-    fresh ? traffic.run(() => connector.identity(true)) : connector.identity(),
+    fresh ? withPageTask(() => traffic.run(() => connector.identity(true))) : connector.identity(),
   respeitarPausa: (until: number) => traffic.respectPause(until),
 };

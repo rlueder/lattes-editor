@@ -21,6 +21,7 @@ import { type BridgeMessage, type EditorMessage } from '../../src/bridge/protoco
 import { contractStop, type RoundPause, runRound } from '../../src/bridge/write-brake.ts';
 import { AppPort } from './app-port.ts';
 import { CONSENT_KEY, hasConsent, isConsentCurrent } from './consent.ts';
+import { handleDevFrameGuard } from './dev-frame-guard.ts';
 import { ownVersion, reloadForApp } from './dev-reload.ts';
 import {
   BUSY_TEXT,
@@ -68,7 +69,6 @@ import { handleTrafficPause } from './traffic-pause.ts';
  * LattesEditor ou o do LattesEditor Dev, escolhido na montagem
  * (scripts/build-extension.ts).
  */
-const NATIVE_HOST = __NATIVE_HOST__;
 
 let stopRequested = false;
 /**
@@ -87,7 +87,7 @@ let photoInFlight = false;
 let queueActive = false;
 /** A foto, o Importar, o envio ao CNPq ou os itens de teste estão usando a aba do Lattes. */
 const tabInUse = () => photoInFlight || importRunning() || publishRunning() || testItemsRunning();
-const appConnection = new AppPort(NATIVE_HOST, (msg) => {
+const appConnection = new AppPort(__NATIVE_HOST__, (msg) => {
   void onEditor(msg, 'app');
 });
 const connectApp = () => appConnection.connect();
@@ -400,6 +400,7 @@ async function run(keys?: string[], fromEditor = false): Promise<void> {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (handleDevFrameGuard(message, sender, sendResponse)) return true;
   if (handleTrafficPause(message, sender, sendResponse)) return true;
   const m = message as { from?: string; msg?: EditorMessage } & Partial<PanelCommand>;
   if (isToolbarThemeMessage(message)) {
