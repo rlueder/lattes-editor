@@ -379,7 +379,7 @@ export function useBridge(
         setEspelho({
           at: Date.now(),
           error: other ? 'A sessão aberta no Lattes é de outro currículo.' : msg.error,
-          ...(other ? {} : { items: msg.items, lists: msg.lists }),
+          ...(other ? {} : { items: msg.items, lists: msg.lists, listsUnread: msg.listsUnread }),
         });
       }
     };

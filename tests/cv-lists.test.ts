@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { snapshotCvLists } from '../src/bridge/cv-lists.ts';
+import { cvListQueue, readListsPart, snapshotCvLists } from '../src/bridge/cv-lists.ts';
 
 const row = (link: string, text: string) =>
   `<tr onclick="self.parent.modalCV2.setarUrl('${link}',true);"><td>${text}</td></tr>`;
@@ -37,13 +37,30 @@ describe('listas do currículo no Lattes, só por GET', () => {
     );
   });
 
-  it('uma lista que falha fica de fora sem levar as outras', async () => {
+  it('em partes: lê até o máximo, devolve a fila, e a que falha fica como não lida', async () => {
     const menu = `<a onclick="setarUrl('pkg_premio.lista')">P</a>
-      <a onclick="setarUrl('pkg_idioma.lista')">I</a>`;
-    const lists = await snapshotCvLists(menu, 'K1', async (path) => {
+      <a onclick="setarUrl('pkg_idioma.lista')">I</a>
+      <a onclick="setarUrl('pkg_texto.lista')">T</a>`;
+    const get = async (path: string) => {
       if (path.startsWith('pkg_premio')) throw new Error('rede');
-      return row('x', 'Inglês');
+      return row('x', 'Linha');
+    };
+    const first = await readListsPart(cvListQueue(menu), 'K1', get, { max: 2, skipFailed: true });
+    expect(first).toMatchObject({
+      lists: { 'pkg_idioma.lista?': [{ text: 'Linha' }] },
+      queue: ['pkg_texto.lista'],
+      unread: ['pkg_premio.lista?'],
     });
-    expect(Object.keys(lists)).toEqual(['pkg_idioma.lista?']);
+    const rest = await readListsPart(first.queue, 'K1', get, { max: 2, skipFailed: true });
+    expect(rest).toMatchObject({ lists: { 'pkg_texto.lista?': [{ text: 'Linha' }] }, queue: [] });
+  });
+
+  it('de uma vez, um erro de leitura sobe: a base dos itens de teste não grava lista faltando', async () => {
+    const menu = `<a onclick="setarUrl('pkg_premio.lista')">P</a>`;
+    await expect(
+      snapshotCvLists(menu, 'K1', async () => {
+        throw new Error('rede');
+      }),
+    ).rejects.toThrow('rede');
   });
 });

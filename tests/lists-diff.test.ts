@@ -128,4 +128,52 @@ describe('comparação pelas listas do Lattes, todas as seções', () => {
     const xml = XML.replace('SEQUENCIA-ATIVIDADE="24"', 'SEQUENCIA-ATIVIDADE="2(4"');
     expect(() => diffLists(lattes(), parseXml(xml).root)).not.toThrow();
   });
+
+  it('lista que falhou na leitura deixa a seção como não comparada; "*" deixa todas', () => {
+    expect(diffLists(lattes(), root(), ['pkg_premio.lista?']).notCompared).toEqual([
+      'Prêmios e títulos',
+    ]);
+    expect(diffLists(lattes(), root(), ['*'])).toMatchObject({ unreadable: true });
+  });
+
+  it('atuação sem a página de vínculos entre as listas: os vínculos dela não são comparados', () => {
+    const lists = lattes();
+    delete lists['pkg_ativ.cargos_vinculos?f_codinst=V2&f_seq_ativ=3'];
+    const d = diffLists(lists, root());
+    expect(d.notCompared).toEqual(['Vínculos e atividades: Outra Empresa S.A.']);
+    expect(d.onlyInExport).toEqual([]);
+  });
+
+  it('prêmio sem nome não é comparado pelo ano sozinho', () => {
+    const xml = XML.replace(
+      'NOME-DO-PREMIO-OU-TITULO="Prêmio de Exemplo"',
+      'NOME-DO-PREMIO-OU-TITULO=""',
+    );
+    const lists = lattes();
+    lists['pkg_premio.lista?'] = [row('Outro Prêmio 2015')];
+    const d = diffLists(lists, parseXml(xml).root);
+    expect(d.skipped).toBe(1);
+    expect(d.onlyInLattes).toEqual([{ section: 'Prêmios e títulos', text: 'Outro Prêmio 2015' }]);
+  });
+
+  it('lista desconhecida com linhas não vira "só no Lattes": sai como não comparada', () => {
+    const lists = lattes();
+    lists['pkg_revisor.lista?f_natur=RV'] = [row('Revista de Exemplo 2019')];
+    const d = diffLists(lists, root());
+    expect(d.onlyInLattes).toEqual([]);
+    expect(d.notCompared).toEqual(['Outras listas do Lattes']);
+  });
+
+  it('banca entra como produção, não como evento', () => {
+    const xml = XML.replace(
+      '<DADOS-COMPLEMENTARES>',
+      '<DADOS-COMPLEMENTARES><PARTICIPACAO-EM-BANCA-TRABALHOS-CONCLUSAO><PARTICIPACAO-EM-BANCA-DE-MESTRADO SEQUENCIA-PRODUCAO="9"><DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-MESTRADO TITULO="Dissertação de Exemplo" ANO="2018"/></PARTICIPACAO-EM-BANCA-DE-MESTRADO></PARTICIPACAO-EM-BANCA-TRABALHOS-CONCLUSAO>',
+    );
+    const lists = lattes();
+    lists['pkg_banca_trab.lista?'] = [row('Aluno. Dissertação de Exemplo. 2018. Mestrado')];
+    expect(diffLists(lists, parseXml(xml).root)).toMatchObject({
+      onlyInExport: [],
+      onlyInLattes: [],
+    });
+  });
 });

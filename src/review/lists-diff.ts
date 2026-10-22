@@ -40,8 +40,19 @@ interface Group {
   section: string;
 }
 
-/** Listas que não são itens do currículo: dicionários e a importação. */
-const IGNORED = /^(pkg_dic_|pkg_import_cv|pkg_linhapesq)/;
+/** Listas que não são itens do currículo: dicionários, importação, histórico de periódicos. */
+const IGNORED = /^(pkg_dic_|pkg_import_|pkg_linhapesq|pkg_alteracao_periodico)/;
+
+/** As listas com grupo próprio acima. */
+const HANDLED = /^(pkg_ativ\.|pkg_formacao|pkg_evento\.lista|pkg_premio\.lista|pkg_idioma\.lista)/;
+
+/**
+ * As listas de produção, projeto, orientação, banca e afins, cujos itens a
+ * exportação traz com título (SEQUENCIA-PRODUCAO ou PROJETO-DE-PESQUISA).
+ * Nomes lidos no menu do Lattes real em 21/10/2026.
+ */
+const TITLED_LISTS =
+  /^(pkg_artigo|pkg_lvr_cap|pkg_texto|pkg_trabalho|pkg_demais|pkg_relatorio|pkg_arte_nova|pkg_patente_registro|pkg_processo|pkg_produto|pkg_projeto|pkg_orient|pkg_banca_|pkg_assessoria_consultoria|pkg_extensao_tecnologica|pkg_licenca|prc_bib_demais_lista|prc_tec_demais_lista|prc_arte_lista)/;
 
 const at = (root: XElement, ...path: string[]): XElement | undefined =>
   path.reduce<XElement | undefined>((el, name) => el && firstChild(el, name), root);
@@ -55,6 +66,12 @@ const norm = (text: string) => normalizeTitle(text);
 
 /** Os itens de uma seção; seção ausente na exportação, nenhum item. */
 const childrenOf = (el: XElement | undefined) => (el ? childElements(el) : []);
+
+/**
+ * O nome primeiro, sempre: sem nome, a chave principal fica vazia e o item não
+ * é comparado, em vez de o ano casar com qualquer linha daquele ano.
+ */
+const nameThenYear = (name: string, year: string) => [norm(name), ...(year ? [year] : [])];
 
 /** O começo do período como a lista o mostra: "01/2011", ou só o ano. */
 function period(el: XElement): string {
@@ -86,8 +103,9 @@ function atuacoes(root: XElement): XElement[] {
 }
 
 /** Os grupos de comparação: cada seção com as suas listas e os seus itens. */
-function groupsOf(lists: ListSnapshot, root: XElement): Group[] {
+function groupsOf(lists: ListSnapshot, root: XElement, unread: string[]): Group[] {
   const groups: Group[] = [];
+  const allUnread = unread.includes('*');
   const add = (
     section: string,
     test: (k: string) => boolean,
@@ -96,7 +114,8 @@ function groupsOf(lists: ListSnapshot, root: XElement): Group[] {
   ) =>
     groups.push({
       candidates,
-      read: Object.keys(lists).some(test),
+      // Lida: alguma lista da seção veio, e nenhuma dela falhou.
+      read: !allUnread && Object.keys(lists).some(test) && !unread.some(test),
       rows: rowsOf(lists, test),
       section,
       ...(group ? { group } : {}),
@@ -116,10 +135,6 @@ function groupsOf(lists: ListSnapshot, root: XElement): Group[] {
   for (const a of work) {
     const seq = attr(a, 'SEQUENCIA-ATIVIDADE');
     const name = attr(a, 'NOME-INSTITUICAO');
-    // O número vem da exportação: só dígitos entram no padrão.
-    if (!/^\d+$/.test(seq)) continue;
-    const page = new RegExp(`^pkg_ativ\\.cargos_vinculos\\?(.*&)?f_seq_ativ=${seq}(&|$)`);
-    if (!Object.keys(lists).some((k) => page.test(k))) continue;
     const candidates: Candidate[] = [];
     for (const v of childElements(a, 'VINCULOS')) {
       candidates.push({
@@ -138,14 +153,21 @@ function groupsOf(lists: ListSnapshot, root: XElement): Group[] {
         });
       }
     }
-    add('Atuação', (k) => page.test(k), candidates, `Vínculos e atividades: ${name}`);
+    if (candidates.length === 0) continue;
+    // O número vem da exportação: só dígitos entram no padrão. Sem número, ou
+    // sem a página dele entre as listas, os vínculos e as atividades dela não
+    // são comparados, e isso aparece.
+    const page = /^\d+$/.test(seq)
+      ? new RegExp(`^pkg_ativ\\.cargos_vinculos\\?(.*&)?f_seq_ativ=${seq}(&|$)`)
+      : undefined;
+    add('Atuação', (k) => !!page && page.test(k), candidates, `Vínculos e atividades: ${name}`);
   }
 
   // Formação: a instituição e o ano de início.
   const formation = (container: XElement | undefined) =>
     childrenOf(container).map((f) => ({
       item: f,
-      keys: [norm(attr(f, 'NOME-INSTITUICAO')), attr(f, 'ANO-DE-INICIO')].filter(Boolean),
+      keys: nameThenYear(attr(f, 'NOME-INSTITUICAO'), attr(f, 'ANO-DE-INICIO')),
       title: itemMeta(f).title || attr(f, 'NOME-INSTITUICAO'),
     }));
   add(
@@ -169,7 +191,7 @@ function groupsOf(lists: ListSnapshot, root: XElement): Group[] {
       const basics = childStartingWith(e, 'DADOS-BASICOS-');
       return {
         item: e,
-        keys: [norm(attr(detail, 'NOME-DO-EVENTO')), attr(basics, 'ANO')].filter(Boolean),
+        keys: nameThenYear(attr(detail, 'NOME-DO-EVENTO'), attr(basics, 'ANO')),
         title: attr(detail, 'NOME-DO-EVENTO'),
       };
     }),
@@ -181,9 +203,7 @@ function groupsOf(lists: ListSnapshot, root: XElement): Group[] {
     (k) => k.startsWith('pkg_premio.lista'),
     childrenOf(at(root, 'DADOS-GERAIS', 'PREMIOS-TITULOS')).map((p) => ({
       item: p,
-      keys: [norm(attr(p, 'NOME-DO-PREMIO-OU-TITULO')), attr(p, 'ANO-DA-PREMIACAO')].filter(
-        Boolean,
-      ),
+      keys: nameThenYear(attr(p, 'NOME-DO-PREMIO-OU-TITULO'), attr(p, 'ANO-DA-PREMIACAO')),
       title: attr(p, 'NOME-DO-PREMIO-OU-TITULO'),
     })),
   );
@@ -197,23 +217,25 @@ function groupsOf(lists: ListSnapshot, root: XElement): Group[] {
     })),
   );
 
-  // O resto (produções, projetos, orientações, bancas…): o título, em
-  // qualquer das outras listas.
-  const handled =
-    /^(pkg_ativ\.|pkg_formacao|pkg_evento\.lista|pkg_premio\.lista|pkg_idioma\.lista)/;
+  // O resto (produções, projetos, orientações, bancas…): o título, nas listas
+  // que guardam esses itens. Uma lista fora delas, com linhas, deixa a seção
+  // como não comparada em vez de dar as linhas como incluídas.
+  const eventItems = new Set(events);
   const titled: Candidate[] = [];
   walk(root, (el) => {
     const produced =
       getAttr(el, 'SEQUENCIA-PRODUCAO') !== undefined && childElements(el).length > 0;
-    const inEvents =
-      el.name.startsWith('PARTICIPACAO-EM-') ||
-      el.name.startsWith('OUTRAS-PARTICIPACOES-EM-EVENTOS');
-    if ((produced && !inEvents) || el.name === 'PROJETO-DE-PESQUISA') {
+    if ((produced && !eventItems.has(el)) || el.name === 'PROJETO-DE-PESQUISA') {
       const title = itemMeta(el).title || attr(el, 'NOME-DO-PROJETO');
       titled.push({ item: el, keys: [norm(title)], title });
     }
   });
-  add('Produção e outras listas', (k) => !handled.test(k) && !IGNORED.test(k), titled);
+  add('Produção e outras listas', (k) => TITLED_LISTS.test(k), titled);
+  const unknown = Object.entries(lists).filter(
+    ([k, rows]) => rows.length > 0 && !HANDLED.test(k) && !TITLED_LISTS.test(k) && !IGNORED.test(k),
+  );
+  if (unknown.length > 0)
+    groups.push({ candidates: [], read: false, rows: [], section: 'Outras listas do Lattes' });
   return groups;
 }
 
@@ -225,7 +247,7 @@ function matches(row: string, c: Candidate): boolean {
   );
 }
 
-export function diffLists(lists: ListSnapshot, root: XElement): EspelhoDiff {
+export function diffLists(lists: ListSnapshot, root: XElement, unread: string[] = []): EspelhoDiff {
   const onlyInExport: EspelhoDiff['onlyInExport'] = [];
   const onlyInLattes: EspelhoItem[] = [];
   let skipped = 0;
@@ -233,12 +255,14 @@ export function diffLists(lists: ListSnapshot, root: XElement): EspelhoDiff {
   let found = 0;
   let rowsSeen = 0;
   const notCompared = new Set<string>();
-  for (const g of groupsOf(lists, root)) {
+  for (const g of groupsOf(lists, root, unread)) {
     // A lista da seção não foi lida, ou veio vazia com itens na exportação: os
     // itens dela não "sumiram", só não foram vistos. A seção aparece como não
     // comparada, e a pessoa confere no Lattes.
     if (!g.read || (g.rows.length === 0 && g.candidates.length > 0)) {
-      if (g.candidates.length > 0) notCompared.add(g.section);
+      if (g.candidates.length > 0 || g.section === 'Outras listas do Lattes') {
+        notCompared.add(g.group ?? g.section);
+      }
       continue;
     }
     const rows = g.rows.map((r) => norm(r.text));
@@ -285,9 +309,9 @@ export function diffLists(lists: ListSnapshot, root: XElement): EspelhoDiff {
  * trouxe; senão pela página de conferência, que só vê produções e eventos.
  */
 export function compareWithLattes(
-  reading: { items?: EspelhoItem[]; lists?: ListSnapshot },
+  reading: { items?: EspelhoItem[]; lists?: ListSnapshot; listsUnread?: string[] },
   root: XElement,
 ): EspelhoDiff | undefined {
-  if (reading.lists) return diffLists(reading.lists, root);
+  if (reading.lists) return diffLists(reading.lists, root, reading.listsUnread);
   return reading.items ? diffEspelho(reading.items, root) : undefined;
 }

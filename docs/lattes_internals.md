@@ -546,11 +546,16 @@ no Lattes real, com dados trocados aqui:
   "Nome do Evento Ouvinte 2007 -";
 - produções: o título, o tipo e o ano.
 
-O diagnóstico compara por essas listas quando a extensão as traz
-(`src/review/lists-diff.ts`), procurando cada item pelo nome e pelo ano, em
-palavras inteiras. Lista que não abriu, ou que veio vazia com itens na
-exportação, deixa a seção como "não comparada" em vez de dar os itens como
-tirados. Extensão anterior a isso só manda a página de conferência, e o
+São mais de 120 listas, acima do limite de 100 pedidos por tarefa do
+conector (`src/bridge/transport.ts`), então a extensão lê a página de
+conferência numa tarefa e as listas em partes de 60
+(`extension/src/read-cv-lists.ts`), uma lista por vez. O diagnóstico compara
+por essas listas quando a extensão as traz (`src/review/lists-diff.ts`),
+procurando cada item pelo nome e pelo ano, em palavras inteiras. Lista que
+falhou, que não abriu ou que veio vazia com itens na exportação deixa a seção
+como "não comparada" em vez de dar os itens como tirados; o mesmo vale para
+os vínculos de uma atuação sem página e para lista que a comparação não
+conhece. Extensão anterior a isso só manda a página de conferência, e o
 diagnóstico diz que comparou só produções e eventos.
 
 **No conector (15/10/2026, desligado).** `src/bridge/publish.ts` (LAT-54)

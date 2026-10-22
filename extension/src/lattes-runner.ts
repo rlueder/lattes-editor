@@ -4,7 +4,12 @@
 
 import { applyOp, type LattesPort } from '../../src/bridge/apply.ts';
 import { checkContract } from '../../src/bridge/contract.ts';
-import { snapshotCvLists } from '../../src/bridge/cv-lists.ts';
+import {
+  cvListQueue,
+  LISTS_PER_TASK,
+  type ListsPart,
+  readListsPart,
+} from '../../src/bridge/cv-lists.ts';
 import { type EspelhoItem, isEspelhoPage, parseEspelho } from '../../src/bridge/espelho.ts';
 import { exportCv, type ExportPort, fromBase64, toBase64 } from '../../src/bridge/export.ts';
 import type { FormControl } from '../../src/bridge/form.ts';
@@ -30,7 +35,6 @@ import {
   readSendScreenFrom,
   type SendScreen,
 } from '../../src/bridge/publish.ts';
-import type { ListSnapshot } from '../../src/census/test-ledger.ts';
 import { decodeLatin1 } from '../../src/model/latin1.ts';
 import { pageTraffic, withTraffic } from './page-traffic.ts';
 
@@ -213,13 +217,10 @@ const connector = {
   // Só leitura: a página de conferência, com o que ainda não foi enviado ao
   // CNPq (docs/lattes_internals.md, seção 10). O código do currículo vem do
   // menu da aba.
-  // Junto, todas as listas do currículo (cv-lists.ts), também só GET, para a
-  // comparação de todas as seções; sem elas, a comparação fica na página.
   espelho: async (): Promise<{
     error?: string;
     items?: EspelhoItem[];
     lattesId?: string;
-    lists?: ListSnapshot;
   }> => {
     const menu = document.documentElement.outerHTML;
     const code = cvCodeFrom(menu);
@@ -234,11 +235,7 @@ const connector = {
       if (!res.ok || !isEspelhoPage(html)) {
         return { error: 'O Lattes não devolveu a página de conferência.', lattesId };
       }
-      // Lista que falha fica de fora e a seção sai como não comparada. Uma
-      // falha geral manda listas vazias, que o diagnóstico mostra como "não
-      // deu para ler", e não como extensão antiga (que não manda listas).
-      const lists = await snapshotCvLists(menu, code, (path) => port.get(path)).catch(() => ({}));
-      return { items: parseEspelho(html), lattesId, lists };
+      return { items: parseEspelho(html), lattesId };
     } catch {
       return { error: 'A aba do Lattes não respondeu.', lattesId };
     }
@@ -321,6 +318,19 @@ const connector = {
     searchInstitutions(listsPort, query, level || undefined),
   // Só leituras: a tabela de áreas do menu e a lista de agências.
   listas: () => readLists(listsPort),
+  // Só leitura: uma parte das listas do currículo (cv-lists.ts), para a
+  // comparação de todas as seções. A fila vem em JSON; sem fila, começa pelo
+  // menu. Uma parte por tarefa, abaixo do limite de pedidos do transporte.
+  listasCv: async (queueJson?: string): Promise<ListsPart | { error: string }> => {
+    const menu = document.documentElement.outerHTML;
+    const code = cvCodeFrom(menu);
+    if (!code) return { error: 'Não achei o código do currículo no menu do Lattes.' };
+    const queue = queueJson ? (JSON.parse(queueJson) as string[]) : cvListQueue(menu);
+    return readListsPart(queue, code, (path) => port.get(path), {
+      max: LISTS_PER_TASK,
+      skipFailed: true,
+    });
+  },
   // Só leitura: os órgãos de uma instituição, ou as unidades de um órgão, na
   // janela do projeto ou na da atividade.
   orgaos: (institution: string, parent?: string, organWindow?: string) =>

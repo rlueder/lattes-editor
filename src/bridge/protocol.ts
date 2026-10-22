@@ -147,6 +147,8 @@ export type BridgeMessage =
       lattesId?: string;
       /** Todas as listas do currículo (cv-lists.ts); ausentes numa extensão mais antiga. */
       lists?: ListSnapshot;
+      /** Chaves das listas que não deu para ler; "*" quando nenhuma foi lida. */
+      listsUnread?: string[];
       type: 'espelho';
     }
   /**
