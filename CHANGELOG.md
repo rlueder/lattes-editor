@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.24.1](https://github.com/rlueder/lattes-editor/compare/v0.24.0...v0.24.1) (2026-10-22)
+
+### Correções
+
+- **docs:** ícones da página de privacidade ([#132](https://github.com/rlueder/lattes-editor/issues/132)) ([f07fc75](https://github.com/rlueder/lattes-editor/commit/f07fc750f3f8f722ba5a79f0a9a2df3535bf7024))
+
 ## [0.24.0](https://github.com/rlueder/lattes-editor/compare/v0.23.0...v0.24.0) (2026-10-22)
 
 ### Novidades
