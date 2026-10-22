@@ -1,5 +1,5 @@
 // Órgão e unidade do projeto pela janela de órgãos do Lattes
-// (docs/development/PLAN.md, Fase 2). No XML, eles ficam na participação em
+// (docs/lattes_internals.md, seção 18). No XML, eles ficam na participação em
 // projeto (PARTICIPACAO-EM-PROJETO), que é o pai do projeto; no Lattes, no
 // formulário do próprio projeto (GN_PROJETO), em f_codorgao ou f_codorgao2,
 // com o texto em f_orgao e f_orgao_old.

@@ -1,6 +1,6 @@
 // A base das listas e o registro do que os itens de teste acrescentaram, na
-// página do Lattes (docs/development/PLAN.md, Fase 0). As regras puras ficam
-// em src/census/test-ledger.ts.
+// página do Lattes (docs/lattes-formularios/itens-de-teste.md). As regras
+// puras ficam em src/census/test-ledger.ts.
 
 import {
   diffSnapshots,

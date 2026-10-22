@@ -1,5 +1,5 @@
 // Instituição, curso e agência de orientações e bancas pelas buscas do Lattes
-// (docs/development/PLAN.md, Fase 2). O editor escolhe na lista do Lattes, e
+// (docs/lattes_internals.md, seção 18). O editor escolhe na lista do Lattes, e
 // a escolha traz o código e o nome juntos; na hora de gravar, o conector
 // refaz a mesma busca, fica com o único resultado de mesmo código e escreve
 // os ocultos que o seleciona() e o atribuir() da página escreveriam. Nenhuma

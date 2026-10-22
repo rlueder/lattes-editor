@@ -33,7 +33,7 @@ const ATUACAO =
 
 /**
  * O link de alteração de uma atividade é montado por JavaScript na tela de
- * cargos e vínculos e não foi lido (recaptura-edicao.md), e o formulário
+ * cargos e vínculos e não foi lido (seção 17), e o formulário
  * GN_ATIV_CARGO leva a grade de descrições em f_espec_l, que a página de
  * alteração escreve num vetor também não lido (seção 22): enviar sem ela
  * apagaria cargos, disciplinas e linhas de pesquisa.

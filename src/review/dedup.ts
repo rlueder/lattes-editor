@@ -5,7 +5,8 @@
 // e a pessoa decide: nada é mesclado nem descartado sozinho.
 //
 // Os pesos seguem o modelo do CIÊNCIAVITAE, que declara título 45%,
-// identificador 15% e autores 10% (docs/pesquisa_apps_lattes.md, seção 2).
+// identificador 15% e autores 10% (pesquisa de apps Lattes de 13/10/2026,
+// ticket LAT-45).
 // Os 30% restantes são escolha do editor, não do CIÊNCIAVITAE: ano 15%, tipo
 // do item 10% e veículo (periódico, evento, anais, editora) 5%. Os limites de
 // "parece duplicata" e "parecido" também são escolhas do editor.

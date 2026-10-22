@@ -2,23 +2,35 @@
 
 Um servidor local que imita o editor web do Lattes (`wwws.cnpq.br/cvlattesweb`)
 com o currículo em memória, para testar o app, o host nativo, a extensão e o
-núcleo do conector de ponta a ponta sem um currículo de verdade (LAT-53). Nada
-aqui fala com o CNPq.
+núcleo do conector de ponta a ponta sem um currículo de verdade. Nada aqui
+fala com o CNPq.
 
 ```bash
 pnpm dev:lattes                       # http://127.0.0.1:5197/cvlattesweb/PKG_MENU.menu
 pnpm dev:lattes --porta=5300 --importar=descartar
 ```
 
-O currículo de partida é `fixtures/demo.xml`, a pesquisadora fictícia. `--xml=`
-troca por outro arquivo, sempre sintético. O estado vive só enquanto o
-processo roda.
+O currículo de partida é `fixtures/demo.xml`; `--xml=` troca por outro
+arquivo, sempre sintético. O estado vive só enquanto o processo roda.
 
 Nos testes, `tests/helpers/lattes-simulado.ts` sobe o servidor numa porta livre
 e entrega as portas do conector (`LattesPort`, `ExportPort`, `ImportPort`,
 `PhotoPort`) feitas como as da extensão. `withSmallLattes` usa um currículo
-pequeno, e `faults` simula falhas do Lattes (sessão que cai no meio, POST que
-não grava um campo, efeito colateral, página em outro modo).
+pequeno, `faults` simula falhas do Lattes (sessão que cai no meio, POST que
+não grava um campo, efeito colateral, página em outro modo), `intercept`
+envolve cada pedido e `institutions` acrescenta instituições à busca. O
+registro dos pedidos (`state.log`) guarda o caminho, o corpo e o arquivo de
+cada um.
+
+Rotas de controle, fora do Lattes: `GET /__simulado/estado` mostra o estado
+em JSON; `POST /__simulado/expirar`, `/entrar`, `/publicar`, `/gravar` (acende
+a pendência) e `/importacao?resultado=participante|inserir|descartar`.
+
+Com `--gravadas=<pasta>` (ou `recordings` no código), um arquivo
+`<procedimento em minúsculas>.<get|post>.html` nessa pasta responde no lugar
+da página montada, com `{{f_cod}}` e `{{lattes_id}}` trocados pelos do
+currículo: é por onde pares de pedido e resposta gravados no Lattes de
+verdade podem ser repetidos.
 
 ## Como está montado
 
@@ -39,31 +51,15 @@ não grava um campo, efeito colateral, página em outro modo).
 | `patente.ts`                 | Patente, com a janela prévia e a consulta do número                                                                             |
 | `eventos.ts`                 | Participação em eventos e o formulário só de leitura com as listas de país e idioma                                             |
 | `buscas.ts`                  | Instituição, curso, agência e a tabela de áreas                                                                                 |
-| `censo.ts`                   | Só para o censo (LAT-55): trabalhos técnicos, a inclusão da formação complementar e a de licenças, só com GET                   |
+| `censo.ts`                   | Só para o censo: trabalhos técnicos, a inclusão da formação complementar e a de licenças, só com GET                            |
 | `exportar.ts`, `importar.ts` | Exportar e os três passos do Importar                                                                                           |
 | `cli.ts`                     | O `pnpm dev:lattes`                                                                                                             |
-
-Nos testes, o servidor aceita `intercept`, um intermediário em volta de cada
-pedido para simular falhas, e `institutions`, instituições a mais na busca. O
-registro dos pedidos (`state.log`) guarda o caminho, o corpo e o arquivo de
-cada um.
-
-Rotas de controle, fora do Lattes: `GET /__simulado/estado` mostra o estado em
-JSON; `POST /__simulado/expirar`, `/entrar`, `/publicar`, `/gravar` (acende a
-pendência) e `/importacao?resultado=participante|inserir|descartar`.
-
-**Respostas gravadas.** Com `--gravadas=<pasta>` (ou `recordings` no código),
-um arquivo `<procedimento em minúsculas>.<get|post>.html` nessa pasta responde
-no lugar da página montada, com `{{f_cod}}` e `{{lattes_id}}` trocados pelos do
-currículo. É por onde pares de pedido e resposta gravados no Lattes de verdade,
-pela extensão Dev (a parte 2 do LAT-53, outro ticket), podem ser repetidos.
 
 ## O que cada procedimento faz, e de onde veio
 
 **Observado** é o que foi visto no Lattes (HTML, scripts ou resposta do
 servidor), com a seção de `docs/lattes_internals.md` ou a data do teste
-acompanhado. **Inferido** é palpite do simulado, ainda não conferido. As seções
-são as de `lattes_internals.md`.
+acompanhado. **Inferido** é palpite do simulado, ainda não conferido.
 
 | Procedimento                                                                           | O que o simulado faz                                                                                                                                                                                         | Observado                                                                                                                                                                                                                                                                                                                                                                 | Inferido                                                                                                                                                                                                                                                                 |
 | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -109,31 +105,14 @@ item confirmado no passo 3 não entrou no currículo. No segundo, um evento sem
 a própria pessoa entre os participantes sumiu duas vezes, e uma cópia de um
 evento de ouvinte com ela entrou. O simulado segue esse palpite por padrão
 (`participante`); `--importar=inserir` põe todo item, e `--importar=descartar`
-reproduz o primeiro teste, em que nada entrou.
+reproduz o primeiro teste.
 
-## O que ainda não migrou para cá
+## Fora do simulado
 
-Usam o simulado os testes de alteração, exclusão, inclusão de atuação, dados
-gerais, eventos, Exportar, foto, contrato, listas ao vivo e o transporte do
-Importar (`tests/bridge.test.ts`, `delete-items`, `create-items`,
-`biographic`, `edit-items`, `export`, `photo`, `contract`, `lattes-lists` e
-`importar`). Seguem de fora, por ora:
-
-- `tests/create-formacao.test.ts` e `tests/create-projeto.test.ts`, com o
-  Lattes falso de `tests/helpers/fake-lattes-create.ts`: os testes deles
-  escondem campos por nível e trocam as buscas por respostas com códigos e
-  textos próprios, o que o simulado ainda não faz (os campos por nível da
-  seção 17 e tabelas de busca por teste). A inclusão de formação e de
-  projeto pelo conector já roda contra o simulado em
-  `tests/lattes-simulado.test.ts`;
-- as variações das páginas do Importar em `tests/importar.test.ts` (passos 2 e
-  3 com campos a mais ou a menos): continuam como páginas do próprio teste,
-  servidas pelo simulado no lugar das dele;
-- `tests/list-watch.test.ts`, que testa a comparação das listas com
-  definições de lista inventadas para o teste, sem Lattes nenhum;
-- `tests/helpers/html-form.ts` continua: é o leitor de formulário que faz o
-  papel do `DOMParser` da extensão.
-
-Fora do simulado, por ora: os demais formulários de produção (artigos, livros,
-trabalhos técnicos, editoração), as outras naturezas de patente e os campos de
-formação que mudam por nível.
+`tests/create-formacao.test.ts` e `tests/create-projeto.test.ts` usam o
+Lattes falso de `tests/helpers/fake-lattes-create.ts`, que esconde campos
+por nível e troca as buscas por respostas próprias; as variações das páginas
+do Importar em `tests/importar.test.ts` são páginas do próprio teste;
+`tests/list-watch.test.ts` usa definições de lista inventadas. Também ficam
+de fora os demais formulários de produção (artigos, livros), as outras
+naturezas de patente e os campos de formação que mudam por nível.

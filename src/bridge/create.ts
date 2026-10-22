@@ -1,13 +1,12 @@
 // Criar itens novos no Lattes pelo conector (LAT-24). Hoje só a atuação
 // profissional com um vínculo, pelo formulário de inclusão GN_ATIV
 // (PKG_ATIV.INCLUI, f_ctr=I), cujos campos estão em
-// docs/lattes_editor_reconnaissance.md, seção 4.1.
+// docs/lattes_internals.md, seção 11.
 //
-// DESLIGADO: nenhuma inclusão foi enviada a um Lattes de verdade. O que o
-// reconhecimento viu é o formulário vazio e a busca de instituição; a
-// resposta do POST de inclusão, o valor de F_COD e F_NIVEL na busca e o
-// texto exato de f_vinc para cada tipo de vínculo são inferidos. A chave só
-// liga depois de um teste acompanhado, no currículo do dono, com restauração.
+// O que o reconhecimento viu é o formulário vazio e a busca de instituição;
+// a resposta do POST de inclusão, o valor de F_COD e F_NIVEL na busca e o
+// texto exato de f_vinc para cada tipo de vínculo são inferidos até o
+// primeiro envio acompanhado por este caminho (CREATE_ITEMS_ENABLED, abaixo).
 //
 // Formação acadêmica e projeto estão em create-items.ts (LAT-52), com a mesma
 // chave; a patente continua à mão.

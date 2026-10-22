@@ -1,4 +1,4 @@
-// Remoção dos itens de teste pelo registro (Fase 0 de docs/development/PLAN.md):
+// Remoção dos itens de teste pelo registro (docs/lattes-formularios/itens-de-teste.md):
 // só as linhas que não estavam na base das listas, conferidas no fim contra a
 // base inteira. Separada de censo-test-items.ts, que cria.
 

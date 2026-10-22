@@ -3,9 +3,8 @@
 //                                   com anos, lugares e enumerados variando entre os itens
 //   fixtures/synthetic_minimal.xml  DADOS-GERAIS mínimo e um item por módulo do Passo 2
 //
-// O guia sugeria partir de docs/lattes_maximal_skeleton.xml, mas aquele arquivo
-// não é XML bem formado (tem comentários dentro das tags). O lattes.json vem do
-// mesmo XSD com o mesmo patch, então as fixtures cobrem o mesmo conteúdo.
+// As fixtures saem de src/schema/lattes.json, que vem do XSD com o patch,
+// e por isso cobrem todo elemento e atributo que o schema permite.
 //
 // Todos os valores são falsos. Uso: pnpm gen:fixtures
 

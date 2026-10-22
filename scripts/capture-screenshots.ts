@@ -1,16 +1,15 @@
-// Capturas do editor para o README e a página do projeto, sempre com o
-// currículo de demonstração (fixtures/demo.xml, uma pesquisadora fictícia,
-// pnpm gen:demo), nunca com um real.
+// Capturas do editor para a página do projeto, sempre com o currículo de
+// demonstração (fixtures/demo.xml, uma pesquisadora fictícia, pnpm gen:demo),
+// nunca com um real. O README usa as animações de site/img/homepage/
+// (pnpm capture:animacoes).
 //
 // Usa um Brave ou Chrome sem janela, com perfil temporário, falando pelo
-// protocolo de depuração (sem Playwright nem outra dependência). Cada tela
-// sai nos temas claro e escuro, em docs/img/<nome>-<tema>.jpg, numa janela de
-// 1440 × 860 em 2x. A de Produções também vai para a página do projeto, em
-// site/img/editor-<tema>.jpg. As demais capturas da página saem só no tema
-// claro, na mesma janela, em site/img/homepage/: as da abertura, as do
-// Panorama e a da busca (a mesma do "Ir para" do README). Por fim, a imagem
-// de prévia da página (site/img/og.png, 1200 × 630) sai de
-// scripts/og-card.html, servido pelo mesmo Vite.
+// protocolo de depuração (sem Playwright nem outra dependência). Tudo sai de
+// uma janela de 1440 × 860 em 2x. A de Produções sai nos dois temas, em
+// site/img/editor-<tema>.jpg (a prévia do vídeo e a imagem do schema.org); as
+// outras só no tema claro, em site/img/homepage/: a busca, as da abertura e as
+// do Panorama. Por fim, a imagem de prévia da página (site/img/og.png,
+// 1200 × 630) sai de scripts/og-card.html, servido pelo mesmo Vite.
 //
 //   pnpm dev                       # o editor em http://localhost:5173 (ou outra porta)
 //   pnpm capture:screenshots [url] # padrão: http://localhost:5173/
@@ -26,12 +25,11 @@ import { assertRendered, openTab, sleep, withHeadlessBrowser } from './headless.
 const root = fileURLToPath(new URL('../', import.meta.url));
 const url = process.argv[2] ?? 'http://localhost:5173/';
 const fixture = join(root, 'fixtures/demo.xml');
-const outDir = join(root, 'docs/img');
 
 /** Uma tela: como chegar nela a partir do editor aberto. */
 interface Shot {
-  /** Outra cópia, sem o "-<tema>.jpg" (caminho a partir da raiz do repositório). */
-  alsoTo?: string;
+  /** Sai também no tema escuro, com o sufixo "-<tema>". */
+  bothThemes?: boolean;
   name: string;
   /**
    * Roda na página antes da captura, dentro de uma função assíncrona.
@@ -39,17 +37,10 @@ interface Shot {
    * vier, para uma captura errada não ir parar na página do projeto.
    */
   prepare?: string;
-  /**
-   * Modo de privacidade (dados pessoais mascarados). Só Dados gerais o mostra
-   * ligado.
-   */
+  /** Modo de privacidade (dados pessoais mascarados). */
   privacy?: boolean;
-  /**
-   * Cópia para a página do projeto, só no tema claro (caminho a partir da
-   * raiz, sem ".jpg"). Com `siteOnly`, a captura não vai para docs/img.
-   */
-  site?: string;
-  siteOnly?: boolean;
+  /** O arquivo, a partir da raiz do repositório, sem ".jpg". */
+  site: string;
   /** Antes de abrir o currículo (a tela inicial). */
   welcome?: boolean;
 }
@@ -65,59 +56,55 @@ const OPEN_NEW_ITEM = `location.hash = 'producoes';
   await settle();
   (await wait('[aria-label="Novo item"]')).click()`;
 
-/** As telas do README, nos dois temas. */
-const DOC_SHOTS: Shot[] = [
-  { name: 'inicio', welcome: true },
-  { alsoTo: 'site/img/editor', name: 'producoes', prepare: `location.hash = 'producoes'` },
-  { name: 'dados-gerais', prepare: `location.hash = 'dados-gerais'`, privacy: true },
+/** A prévia do vídeo e a imagem do schema.org, nos dois temas, e a busca. */
+const SITE_SHOTS: Shot[] = [
+  {
+    bothThemes: true,
+    name: 'producoes',
+    prepare: `location.hash = 'producoes'`,
+    site: 'site/img/editor',
+  },
   { name: 'ir-para', prepare: OPEN_SEARCH, site: 'site/img/homepage/search' },
-  { name: 'novo-item', prepare: OPEN_NEW_ITEM },
 ];
 
-/** O Panorama na página do projeto, na janela larga: as três vistas. */
+/** O Panorama na página do projeto: as quatro vistas. */
 const PANORAMA_SHOTS: Shot[] = [
   {
     name: 'panorama',
     prepare: `location.hash = 'panorama/producoes-por-ano'`,
     site: 'site/img/homepage/panorama',
-    siteOnly: true,
   },
   {
     name: 'panorama-health',
     prepare: `location.hash = 'panorama/saude-do-curriculo'`,
     site: 'site/img/homepage/panorama-health',
-    siteOnly: true,
   },
   {
     name: 'panorama-people',
     prepare: `location.hash = 'panorama/pessoas';
       (await wait('[role=radio]', 'Rede')).click()`,
     site: 'site/img/homepage/panorama-people',
-    siteOnly: true,
   },
   {
     name: 'panorama-timeline',
     prepare: `location.hash = 'panorama/linha-do-tempo'`,
     site: 'site/img/homepage/panorama-timeline',
-    siteOnly: true,
   },
 ];
 
-/** As telas da abertura da página do projeto, só nela. */
+/** As telas da abertura da página do projeto. */
 const HERO_SHOTS: Shot[] = [
   {
     name: 'hero-editor',
     prepare: `location.hash = 'producoes'`,
     site: 'site/img/homepage/hero-editor',
-    siteOnly: true,
   },
   {
     name: 'hero-panorama',
     prepare: `location.hash = 'panorama/producoes-por-ano'`,
     site: 'site/img/homepage/hero-panorama',
-    siteOnly: true,
   },
-  { name: 'hero-new', prepare: OPEN_NEW_ITEM, site: 'site/img/homepage/hero-new', siteOnly: true },
+  { name: 'hero-new', prepare: OPEN_NEW_ITEM, site: 'site/img/homepage/hero-new' },
 ];
 
 // Disponível nos `prepare`: `wait` espera um elemento (até 5 s), opcionalmente
@@ -161,9 +148,11 @@ async function capture(
       format: 'jpeg',
       quality: 80,
     });
-    const files = shot.siteOnly ? [] : [join(outDir, `${shot.name}-${theme}.jpg`)];
-    if (shot.site && theme === 'claro') files.push(join(root, `${shot.site}.jpg`));
-    if (shot.alsoTo) files.push(join(root, `${shot.alsoTo}-${theme}.jpg`));
+    const files = shot.bothThemes
+      ? [join(root, `${shot.site}-${theme}.jpg`)]
+      : theme === 'claro'
+        ? [join(root, `${shot.site}.jpg`)]
+        : [];
     for (const file of files) {
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, Buffer.from(data, 'base64'));
@@ -238,9 +227,12 @@ async function captureOgImage(): Promise<void> {
   cdp.close();
 }
 
-mkdirSync(outDir, { recursive: true });
 await withHeadlessBrowser(async () => {
-  await capture('claro', [...DOC_SHOTS, ...HERO_SHOTS, ...PANORAMA_SHOTS], WIDE);
-  await capture('escuro', DOC_SHOTS, WIDE);
+  await capture('claro', [...SITE_SHOTS, ...HERO_SHOTS, ...PANORAMA_SHOTS], WIDE);
+  await capture(
+    'escuro',
+    SITE_SHOTS.filter((s) => s.bothThemes),
+    WIDE,
+  );
   await captureOgImage();
 });
