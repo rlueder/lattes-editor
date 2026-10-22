@@ -57,8 +57,10 @@ de 1 px para as formas; `Ring` e `Lines` já preservam as proporções dos anéi
 e das barras do logo. As dimensões das barras vêm de
 `brand/construction/proportions.json`, usado também para a espessura dos
 detalhes. Os anéis aceitam escalas fracionárias para ajustes ópticos, mantendo
-a relação entre os diâmetros. A cor principal vem de `currentColor`, que acompanha
-a assinatura nos dois temas; `MINT` guarda o destaque menta. Mantenha o SVG
+a relação entre os diâmetros. `Lines` aceita `widthScale` para ajustar a largura
+ao espaço disponível e `pitch` para alinhar as barras às linhas de uma lista.
+A cor principal vem de `currentColor`, que acompanha a assinatura nos dois temas;
+`MINT` usa `--section-art-accent`, com mais contraste no tema claro. Mantenha o SVG
 em 96 × 96 px, sem arquivos externos nem ids compartilhados entre desenhos.
 
 A prancha lista automaticamente as seções de `buildSections`. Selecione uma

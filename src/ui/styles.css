@@ -4291,6 +4291,7 @@ button.primary.danger-fill:hover {
   --accent-soft-strong: #d5efff; /* blue-4 */
   --accent-text: #326c99;
   --brand: #463c6d;
+  --section-art-accent: #2c8979;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -4315,6 +4316,7 @@ button.primary.danger-fill:hover {
     --accent-soft-strong: #003362; /* blue-dark-4 */
     --accent-text: #70b8ff; /* blue-dark-11 */
     --brand: #ffffff;
+    --section-art-accent: #9ef2e2;
   }
 }
 
@@ -4338,6 +4340,7 @@ button.primary.danger-fill:hover {
   --accent-soft-strong: #003362;
   --accent-text: #70b8ff;
   --brand: #ffffff;
+  --section-art-accent: #9ef2e2;
 }
 
 /* Controles com a borda de controle (passo 7) e foco na borda forte. */

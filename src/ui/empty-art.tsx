@@ -5,13 +5,18 @@
 
 import type { ReactNode } from 'react';
 
-import proportions from '../../brand/construction/proportions.json';
+import {
+  text_line_pitch_x as logoLinePitch,
+  text_stroke_x as logoStroke,
+  text_widths_x as logoLineWidths,
+} from '../../brand/construction/proportions.json';
 
-const MINT = '#9EF2E2';
+const MINT = 'var(--section-art-accent, #9EF2E2)';
 const MODULE = 8;
-const DETAIL = MODULE * proportions.text_stroke_x;
-const LINE_PITCH = MODULE * proportions.text_line_pitch_x;
-const LINE_WIDTHS = proportions.text_widths_x.map((width) => MODULE * width);
+const DETAIL = MODULE * logoStroke;
+const LINE_PITCH = MODULE * logoLinePitch;
+const LONG_LINE_WIDTH = MODULE * logoLineWidths[0]!;
+const SHORT_LINE_WIDTH = MODULE * logoLineWidths[1]!;
 
 function Art({ children }: { children: ReactNode }) {
   return (
@@ -51,12 +56,22 @@ function Ring({
   );
 }
 
-/** As duas barras do logo, com o mesmo ritmo e a mesma relação de larguras. */
-function Lines({ x, y }: { x: number; y: number }) {
+/** Barras do logo; o passo pode acompanhar as linhas de uma lista. */
+function Lines({
+  pitch = LINE_PITCH,
+  widthScale = 1,
+  x,
+  y,
+}: {
+  pitch?: number;
+  widthScale?: number;
+  x: number;
+  y: number;
+}) {
   return (
     <g transform={`translate(${x} ${y})`}>
-      <rect height={DETAIL} width={LINE_WIDTHS[0]} />
-      <rect height={DETAIL} width={LINE_WIDTHS[1]} y={LINE_PITCH} />
+      <rect height={DETAIL} width={LONG_LINE_WIDTH * widthScale} />
+      <rect height={DETAIL} width={SHORT_LINE_WIDTH * widthScale} y={pitch} />
     </g>
   );
 }
@@ -178,8 +193,7 @@ const ART: Record<string, () => ReactNode> = {
         fillRule="evenodd"
       />
       <Lines x={24} y={40} />
-      <rect height={DETAIL} width="12" x="60" y="40" />
-      <rect height={DETAIL} width="9" x="60" y="49" />
+      <Lines widthScale={2 / 3} x={60} y={40} />
       <path d="M68 64h16v8H60z" fill={MINT} />
     </Art>
   ),
@@ -189,8 +203,7 @@ const ART: Record<string, () => ReactNode> = {
       <path d="M24 22h48v42h-8V30H32v42h32l-8 8H24z" />
       <path d="M38 16h20v16H38z" fill={MINT} />
       <path d="m36 40 3 3 5-5 3 3-8 8-6-6zm0 17 3 3 5-5 3 3-8 8-6-6z" />
-      <rect height={DETAIL} width="12" x="52" y="41" />
-      <rect height={DETAIL} width="9" x="52" y="58" />
+      <Lines pitch={17} widthScale={2 / 3} x={52} y={41} />
       {/* Vão perpendicular de x/4 entre os cortes, como na marca. */}
       <path d="M66.8284 72H74v8H58.8284z" fill={MINT} />
       <Ring accent cx={78} cy={76} />

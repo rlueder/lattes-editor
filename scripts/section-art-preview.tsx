@@ -75,8 +75,8 @@ function Preview() {
         </p>
         <p>
           <strong>Cor e detalhes</strong>
-          Violeta #463C6D e menta #9EF2E2. No tema escuro, o violeta acompanha o branco da
-          assinatura. As barras mantêm a espessura e o ritmo do logo.
+          Violeta #463C6D. Menta #2C8979 no tema claro e #9EF2E2 no escuro. No tema escuro, o
+          violeta acompanha o branco da assinatura. As barras mantêm a espessura e o ritmo do logo.
         </p>
       </footer>
       <section className="art-preview-context" aria-label="Prévia de seção vazia">
