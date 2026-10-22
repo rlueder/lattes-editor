@@ -81,10 +81,15 @@ describe('idioma da seção Idiomas leva o código do formulário do Lattes', ()
     expect(getAttr(el, 'IDIOMA')).toBe('ES');
   });
 
-  it('nome fora da lista não mexe no código', () => {
+  it('nome vazio ou fora da lista leva o código junto', () => {
     const el = idioma({ 'DESCRICAO-DO-IDIOMA': 'Inglês', IDIOMA: 'EN' });
     setAttr(el, 'DESCRICAO-DO-IDIOMA', 'Élfico');
-    expect(applyLinkedAttrs(el, 'DESCRICAO-DO-IDIOMA')).toEqual([]);
-    expect(getAttr(el, 'IDIOMA')).toBe('EN');
+    expect(applyLinkedAttrs(el, 'DESCRICAO-DO-IDIOMA')).toEqual(['IDIOMA']);
+    expect(getAttr(el, 'IDIOMA')).toBe('');
+    setAttr(el, 'DESCRICAO-DO-IDIOMA', 'Inglês');
+    applyLinkedAttrs(el, 'DESCRICAO-DO-IDIOMA');
+    setAttr(el, 'DESCRICAO-DO-IDIOMA', '');
+    expect(applyLinkedAttrs(el, 'DESCRICAO-DO-IDIOMA')).toEqual(['IDIOMA']);
+    expect(getAttr(el, 'IDIOMA')).toBe('');
   });
 });

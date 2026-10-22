@@ -107,8 +107,8 @@ export function applyLinkedAttrs(el: XElement, name: string, root?: XElement): s
     if (linked.length > 0) return linked;
   }
   if (el.name === 'IDIOMA' && writesOwnCode(el.name, name)) {
-    const code = LANGUAGE_CODES[getAttr(el, name) ?? ''];
-    return code ? set(el, { IDIOMA: code }) : [];
+    // Nome vazio ou fora da lista: o código sai, para não ficar um EN sem Inglês ao lado.
+    return set(el, { IDIOMA: LANGUAGE_CODES[getAttr(el, name) ?? ''] ?? '' });
   }
   if (writesOwnCode(el.name, name)) {
     const code = COUNTRY_CODES[getAttr(el, name) ?? ''];
