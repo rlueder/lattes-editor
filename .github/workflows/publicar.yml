@@ -1,6 +1,6 @@
-name: Publicar versão
+name: 'PROD 2: publicar versão (o rascunho vira a mais recente)'
 
-# O portão dos lançamentos. O "Lançar versão" (release.yml), disparado à mão,
+# O portão dos lançamentos. O "PROD 1: lançar versão" (release.yml), disparado à mão,
 # gera a versão como rascunho: instaladores, extensão e latest.json ficam numa
 # página que só quem cuida do repositório vê. Depois de testar os instaladores do rascunho,
 # este workflow, disparado à mão, publica a página e a marca como a mais

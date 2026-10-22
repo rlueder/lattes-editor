@@ -1,9 +1,9 @@
-name: App de desktop
+name: 'App de desktop (montagem, chamada por DEV e PROD)'
 
 # Monta o app de desktop (Tauri) para macOS, Windows e Linux. Chamado pelo
-# Release com a tag recém-criada: os instaladores vão para a página daquele
-# lançamento com nomes fixos, para a página do projeto apontar sempre para
-# releases/latest/download/<nome>. Em PR que mexe no src-tauri (Rust,
+# "PROD 1: lançar versão" com a tag recém-criada: os instaladores vão para a
+# página daquele lançamento com nomes fixos, para a página do projeto apontar
+# sempre para releases/latest/download/<nome>. Em PR que mexe no src-tauri (Rust,
 # Cargo, configuração do Tauri), só monta, sem enviar: é onde uma quebra de
 # um sistema só aparece montando. O TypeScript de src/desktop já passa pelo
 # lint, pelos tipos e pelos testes do CI. Uma mudança só neste arquivo também

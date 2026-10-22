@@ -132,10 +132,17 @@ O CNPq não avisa quando muda o Lattes. Duas coisas olham por ele:
 
 ## Canal Dev
 
-A cada merge na `main`, depois do CI verde, o workflow `dev.yml` monta o
+De hora em hora, o workflow "DEV: montar o LattesEditor Dev" (`dev.yml`)
+olha a `main`: se ela mudou desde o último Dev, se a mudança não é só
+documentação (`docs/`, `site/`, README) e se o CI passou no topo, monta o
 **LattesEditor Dev** nos três sistemas, com a extensão Dev dentro, na
 pré-estreia [`dev`](https://github.com/rlueder/lattes-editor/releases/tag/dev).
-Para montar sem esperar um merge: `gh workflow run dev.yml`.
+Vários merges na mesma hora dão um build só. Para montar sem esperar a hora:
+
+```bash
+gh workflow run dev.yml                   # monta se a main mudou
+gh workflow run dev.yml -f forcar=true    # monta de qualquer jeito
+```
 
 O Dev convive com o app publicado: outro nome e ícone, identificador
 (`dev.lattes-editor.app.dev`), pasta de dados, chaveiro e host nativo
@@ -148,27 +155,29 @@ app, é refeita e a extensão se recarrega sozinha.
 
 ## Lançar uma versão
 
-Merge na `main` não lança nada. Os dois passos são manuais, em Actions ou
-pelo `gh`:
+Merge na `main` não lança nada. Os dois passos são manuais, em Actions (os
+workflows com prefixo PROD; "CI" e "App de desktop" servem aos dois canais)
+ou pelo `gh`:
 
 ```bash
-gh workflow run release.yml               # Lançar versão: cria o rascunho
-gh workflow run publicar.yml              # Publicar versão: o rascunho mais recente
+gh workflow run release.yml               # PROD 1: lançar versão, cria o rascunho
+gh workflow run publicar.yml              # PROD 2: publicar versão, o rascunho mais recente
 gh workflow run publicar.yml -f tag=v0.23.0
 ```
 
-1. **Lançar versão** (`release.yml`) confere que o CI passou no commit atual
-   da `main`. O semantic-release junta os commits desde a última tag `v*`:
-   `feat` sobe a menor; `fix`, `perf` e `refactor`, a correção; `docs`, `ci`,
-   `chore` e `test` não entram nas notas. Ele atualiza o `CHANGELOG.md`, cria
-   a tag e o lançamento como rascunho, e o app é montado nos três sistemas
-   (`desktop-build.yml`) dentro dele, com os pacotes de atualização assinados
-   e o `latest.json`. Cada PR entra na `main` em squash, e o título do PR
-   vira a linha das notas: precisa seguir o Conventional Commits.
+1. **"PROD 1: lançar versão"** (`release.yml`) confere que o CI passou no
+   commit atual da `main`. O semantic-release junta os commits desde a última
+   tag `v*`: `feat` sobe a menor; `fix`, `perf` e `refactor`, a correção;
+   `docs`, `ci`, `chore` e `test` não entram nas notas. Ele atualiza o
+   `CHANGELOG.md`, cria a tag e o lançamento como rascunho, e o app é montado
+   nos três sistemas (`desktop-build.yml`) dentro dele, com os pacotes de
+   atualização assinados e o `latest.json`. Cada PR entra na `main` em squash,
+   e o título do PR vira a linha das notas: precisa seguir o Conventional
+   Commits.
 2. **O rascunho é o portão.** Só quem cuida do repositório o vê; é dele que
    saem os instaladores para testar.
-3. **Publicar versão** (`publicar.yml`) confere que o rascunho tem os
-   instaladores, as duas extensões e um `latest.json` da mesma versão, e o
+3. **"PROD 2: publicar versão"** (`publicar.yml`) confere que o rascunho tem
+   os instaladores, as duas extensões e um `latest.json` da mesma versão, e o
    publica como o mais recente. Só então o app instalado oferece a
    atualização.
 

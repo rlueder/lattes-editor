@@ -1,4 +1,4 @@
-name: Vigia do Lattes
+name: 'Vigia do Lattes (toda segunda)'
 
 # O CNPq não publica roadmap nem changelog da Plataforma Lattes. Toda
 # segunda-feira, scripts/vigia-lattes.ts confere o que é público e de que o
