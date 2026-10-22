@@ -15,6 +15,7 @@ import {
 import { attributeLabelIn } from '../labels/labels.ts';
 import { parseEmails, parseSocial } from '../model/contacts.ts';
 import { getAttr } from '../model/xml.ts';
+import { isSystemAttr } from './field-kind.ts';
 import { isEnglishAttr } from './form-order.ts';
 import { isDoiAttr, linkHref, linkPieces, shortUrl } from './link-fields.ts';
 import {
@@ -26,8 +27,8 @@ import {
   startsCollapsed,
   useNestedContext,
 } from './nested-collapse.ts';
-import { useHideSensitive } from './privacy.ts';
-import { cellSpan, curlyQuotes, hiddenNote, paragraphs } from './reading.ts';
+import { MASK, useHideSensitive } from './privacy.ts';
+import { cellSpan, curlyQuotes, paragraphs } from './reading.ts';
 import {
   CLAMP_LINES,
   clampActionLabel,
@@ -93,17 +94,18 @@ function Contacts({ part }: { part: Part }) {
   if (part.attr === 'ELETRONICO') {
     const all = parseEmails(raw);
     if (all.length === 0) return <LinkedText text={raw} />;
-    // O modo de privacidade esconde todos: qual dos dois o Lattes publica é
+    // O modo de privacidade mascara todos: qual dos dois o Lattes publica é
     // inferido do nome do campo (contacts.ts), não observado.
-    const emails = hideSensitive ? [] : all;
-    const masked = all.length - emails.length;
     return (
       <span className="reading-contacts">
-        {masked > 0 && <span className="reading-none">{hiddenNote(masked)}</span>}
-        {emails.map((c, i) => (
+        {all.map((c, i) => (
           <span key={`${i}:${c.email}`} className="reading-contact">
             {c.address && <span className="reading-contact-kind">{c.address}: </span>}
-            <ExternalLink href={`mailto:${c.email}`}>{c.email}</ExternalLink>
+            {hideSensitive ? (
+              <span className="reading-masked">{MASK}</span>
+            ) : (
+              <ExternalLink href={`mailto:${c.email}`}>{c.email}</ExternalLink>
+            )}
           </span>
         ))}
       </span>
@@ -243,7 +245,13 @@ export function Rows({ parts, quiet }: { parts: Part[]; quiet: boolean }) {
     <dl className={quiet ? 'reading-fields is-quiet' : 'reading-fields'}>
       {parts.map((p) => {
         const span = cellSpan(partText(p));
-        const classes = ['reading-field', span === 2 && 'span-2', span === 3 && 'span-all']
+        // Código do Lattes (só com "Mostrar códigos"): o fundo cinza marca o que a opção acende.
+        const classes = [
+          'reading-field',
+          span === 2 && 'span-2',
+          span === 3 && 'span-all',
+          isSystemAttr(p.el.name, p.attr) && 'is-code',
+        ]
           .filter(Boolean)
           .join(' ');
         return (
@@ -253,7 +261,9 @@ export function Rows({ parts, quiet }: { parts: Part[]; quiet: boolean }) {
             {/* Versão em inglês com o idioma certo: hifeniza em inglês. */}
             <dd lang={isEnglishAttr(p.attr) ? 'en' : undefined}>
               {/* Na linha inteira, o valor pode ser uma descrição longa: corta em seis linhas. */}
-              {span === 3 ? (
+              {p.masked ? (
+                <span className="reading-masked">{MASK}</span>
+              ) : span === 3 ? (
                 <ReadingClamp id={p.key} text={partText(p)}>
                   <PartText part={p} text={partText(p)} />
                 </ReadingClamp>
@@ -270,11 +280,7 @@ export function Rows({ parts, quiet }: { parts: Part[]; quiet: boolean }) {
 
 function hasContent(s: Section): boolean {
   return (
-    s.hidden ||
-    s.masked > 0 ||
-    s.rows.length > 0 ||
-    s.lines.some(lineVisible) ||
-    s.nested.some((g) => g.items.some(hasContent))
+    s.rows.length > 0 || s.lines.some(lineVisible) || s.nested.some((g) => g.items.some(hasContent))
   );
 }
 
@@ -368,9 +374,8 @@ function NestedList({ group, level }: { group: NestedGroup; level: number }) {
  */
 export function SectionView({ level = 0, section }: { level?: number; section: Section }) {
   if (!hasContent(section)) return null;
-  const body = section.hidden ? (
-    <p className="reading-none">Oculto pelo modo de privacidade.</p>
-  ) : (
+  // Os campos mascarados pelo modo de privacidade estão em rows, com a máscara no lugar do valor.
+  const body = (
     <>
       {section.lines.map((line, i) => (
         <LineView key={i} line={line} />
@@ -379,9 +384,6 @@ export function SectionView({ level = 0, section }: { level?: number; section: S
       {section.nested.map((g, i) => (
         <NestedList key={i} group={g} level={level + 1} />
       ))}
-      {section.masked > 0 && (
-        <p className="reading-none reading-hidden">{hiddenNote(section.masked)}</p>
-      )}
     </>
   );
   if (!section.heading) return body;

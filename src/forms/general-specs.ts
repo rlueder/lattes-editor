@@ -189,10 +189,12 @@ const VINCULO: GeneralPart[] = [{ ...ATUACAO[1]!, part: self }];
  * Os dados gerais, na ordem dos formulários do Lattes (seções 5 e 16; censo de
  * 15/10/2026). O prêmio exige nome e ano (check(), seção 16).
  */
+// O idioma é escolhido pelo nome, na lista do formulário do Lattes; o código
+// (IDIOMA) vai junto (linked-attrs.ts) e fica entre os códigos do Lattes.
 const IDIOMA: GeneralPart[] = [
   {
     fields: [
-      required('IDIOMA'),
+      f('DESCRICAO-DO-IDIOMA', { required: true, wide: true }),
       f('PROFICIENCIA-DE-LEITURA'),
       f('PROFICIENCIA-DE-FALA'),
       f('PROFICIENCIA-DE-ESCRITA'),

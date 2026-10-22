@@ -36,6 +36,7 @@ export function YearRangeFilter({ active, onChange, presets, value, ...field }: 
           ...presets.map((p) => ({
             label: p.label,
             selectedLabel: `Atalho: ${p.label}`,
+            title: p.hint,
             value: p.id,
           })),
           ...(current

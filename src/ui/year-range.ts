@@ -45,6 +45,8 @@ export function formatRange(r: YearRange): string {
 }
 
 export interface YearPreset {
+  /** O que o atalho cobre, na dica da opção ("Quadriênio da avaliação CAPES"). */
+  hint: string;
   id: string;
   label: string;
   range: YearRange;
@@ -58,10 +60,25 @@ export function yearPresets(all: YearRange, now: number, allLabel = 'Todos os an
   const quads: YearPreset[] = [];
   for (let a = 2013; a <= now; a += 4)
     if (a + 3 >= all.from && a <= all.to)
-      quads.unshift({ id: `q${a}`, label: `${a}–${a + 3}`, range: { from: a, to: a + 3 } });
+      quads.unshift({
+        hint: `Quadriênio da avaliação CAPES (${a} a ${a + 3})`,
+        id: `q${a}`,
+        label: `${a}–${a + 3}`,
+        range: { from: a, to: a + 3 },
+      });
   return [
-    { id: 'tudo', label: allLabel, range: all },
-    { id: 'ultimos-5', label: 'Últimos 5 anos', range: { from: now - 4, to: now } },
+    {
+      hint: `Do primeiro ao último ano (${formatRange(all)})`,
+      id: 'tudo',
+      label: allLabel,
+      range: all,
+    },
+    {
+      hint: `De ${now - 4} a ${now}`,
+      id: 'ultimos-5',
+      label: 'Últimos 5 anos',
+      range: { from: now - 4, to: now },
+    },
     ...quads,
   ];
 }

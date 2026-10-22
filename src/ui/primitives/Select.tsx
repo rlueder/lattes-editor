@@ -9,6 +9,8 @@ export interface Option {
   label: string;
   /** O que o botão mostra com esta opção escolhida, quando difere da lista. */
   selectedLabel?: string;
+  /** Dica da opção, no passar do mouse (o período de um quadriênio). */
+  title?: string;
   value: string;
 }
 
@@ -58,7 +60,12 @@ export function Select({
           <SelectPrimitive.Popup className="select-popup">
             <SelectPrimitive.List>
               {options.map((o) => (
-                <SelectPrimitive.Item key={o.value} className="select-item" value={o.value}>
+                <SelectPrimitive.Item
+                  key={o.value}
+                  className="select-item"
+                  title={o.title}
+                  value={o.value}
+                >
                   <SelectPrimitive.ItemIndicator className="select-indicator">
                     <CheckIcon />
                   </SelectPrimitive.ItemIndicator>

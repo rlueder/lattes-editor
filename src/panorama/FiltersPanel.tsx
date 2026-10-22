@@ -102,6 +102,7 @@ export function FiltersPanel({ cv, filters, kinds, now, onChange }: Props) {
         max={Math.max(cv.lastYear, now)}
         min={cv.careerStart}
         presets={periodPresets(cv, now).map((p) => ({
+          hint: p.hint,
           id: p.id,
           label: p.label,
           range: p.period,

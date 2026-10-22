@@ -6,7 +6,6 @@ import {
   curlyQuotes,
   displayValue,
   formatCep,
-  hiddenNote,
   paragraphs,
   readingKeyAction,
   type ReadingKeyContext,
@@ -64,11 +63,6 @@ describe('modo de leitura: ler e editar', () => {
 });
 
 describe('modo de leitura: campos', () => {
-  it('resume os dados escondidos numa linha', () => {
-    expect(hiddenNote(1)).toBe('1 dado pessoal oculto pelo modo de privacidade.');
-    expect(hiddenNote(12)).toBe('12 dados pessoais ocultos pelo modo de privacidade.');
-  });
-
   it('escreve enum, sim/não, códigos e citações por extenso', () => {
     const dg = el(
       `<DADOS-GERAIS SEXO="FEMININO" NACIONALIDADE="B" NOME-EM-CITACOES-BIBLIOGRAFICAS="LIMA, A.;LIMA, ANA" PERMISSAO-DE-DIVULGACAO="NAO"/>`,

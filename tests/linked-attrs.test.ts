@@ -6,6 +6,7 @@ import {
   applyLinkedAttrs,
   followsCountry,
   NATIONALITY_COUNTRIES,
+  SECTION_LANGUAGES,
   writesOwnCode,
 } from '../src/model/linked-attrs.ts';
 import { element, getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
@@ -61,5 +62,34 @@ describe('país de nacionalidade leva a sigla e a nacionalidade', () => {
     expect(plan.ops[0]).toMatchObject({
       set: { f_nacionalidade: 'E', f_pais_nacio: 'POR' },
     });
+  });
+});
+
+describe('idioma da seção Idiomas leva o código do formulário do Lattes', () => {
+  const idioma = (attrs: Record<string, string> = {}) => element('IDIOMA', attrs);
+
+  it('o nome é uma lista do Lattes e o código de duas letras vai junto', () => {
+    expect(writesOwnCode('IDIOMA', 'DESCRICAO-DO-IDIOMA')).toBe(true);
+    const choices = typedChoices(idioma(), 'DESCRICAO-DO-IDIOMA');
+    expect(choices).toHaveLength(SECTION_LANGUAGES.length);
+    const el = idioma({ 'DESCRICAO-DO-IDIOMA': '', IDIOMA: '' });
+    setAttr(el, 'DESCRICAO-DO-IDIOMA', 'Inglês');
+    expect(applyLinkedAttrs(el, 'DESCRICAO-DO-IDIOMA')).toEqual(['IDIOMA']);
+    expect(getAttr(el, 'IDIOMA')).toBe('EN');
+    setAttr(el, 'DESCRICAO-DO-IDIOMA', 'Espanhol');
+    applyLinkedAttrs(el, 'DESCRICAO-DO-IDIOMA');
+    expect(getAttr(el, 'IDIOMA')).toBe('ES');
+  });
+
+  it('nome vazio ou fora da lista leva o código junto', () => {
+    const el = idioma({ 'DESCRICAO-DO-IDIOMA': 'Inglês', IDIOMA: 'EN' });
+    setAttr(el, 'DESCRICAO-DO-IDIOMA', 'Élfico');
+    expect(applyLinkedAttrs(el, 'DESCRICAO-DO-IDIOMA')).toEqual(['IDIOMA']);
+    expect(getAttr(el, 'IDIOMA')).toBe('');
+    setAttr(el, 'DESCRICAO-DO-IDIOMA', 'Inglês');
+    applyLinkedAttrs(el, 'DESCRICAO-DO-IDIOMA');
+    setAttr(el, 'DESCRICAO-DO-IDIOMA', '');
+    expect(applyLinkedAttrs(el, 'DESCRICAO-DO-IDIOMA')).toEqual(['IDIOMA']);
+    expect(getAttr(el, 'IDIOMA')).toBe('');
   });
 });

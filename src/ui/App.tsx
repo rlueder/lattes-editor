@@ -42,7 +42,8 @@ import { PendingBanner } from './PendingBanner.tsx';
 import { profileOf } from './profile.ts';
 import { ReferenceContext } from './reference-context.ts';
 import { buildReferenceIndex, type ReferenceIndex } from './reference-tables.ts';
-import { buildSections } from './sections.ts';
+import { pickerTypes } from './section-types.ts';
+import { buildSections, type Section } from './sections.ts';
 import { SectionView } from './SectionView.tsx';
 import { ShellWithLists } from './ShellWithLists.tsx';
 import { Sidebar } from './Sidebar.tsx';
@@ -85,7 +86,9 @@ export function App() {
   const [sectionId, setSectionId] = useState(DEFAULT_SECTION);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [theme, setTheme] = useTheme();
-  const [pickerOpen, setPickerOpen] = useState(false);
+  // Seletor de tipo de item novo; aberto de uma seção vazia, os tipos dela vêm primeiro.
+  const [picker, setPicker] = useState<{ open: boolean; section?: Section }>({ open: false });
+  const openPicker = (section?: Section) => setPicker({ open: true, section });
   const [exportOpen, setExportOpen] = useState(false);
   const [diagnosisOpen, setDiagnosisOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
@@ -152,7 +155,7 @@ export function App() {
   const jump = (entry: PaletteEntry) => {
     if (shell.jumpChart(entry)) return;
     if (entry.action) {
-      if (entry.action === 'novo') setPickerOpen(true);
+      if (entry.action === 'novo') openPicker();
       else startNewItem(entry.action, production.startNew);
       return;
     }
@@ -276,7 +279,7 @@ export function App() {
         onExport={openExport}
         onHistory={() => void history.show()}
         onIncoming={incoming.pick}
-        onNewItem={() => setPickerOpen(true)}
+        onNewItem={() => openPicker()}
         onPalette={togglePalette}
         onPrint={print.show}
         onReload={(file) => reload(file, 'arquivo')}
@@ -326,7 +329,7 @@ export function App() {
                   onEdit={onEdit}
                   onNewGeneral={general.open}
                   onNewItem={production.startNew}
-                  onOpenPicker={() => setPickerOpen(true)}
+                  onOpenPicker={() => openPicker(section)}
                 />
               ))}
           </ReferenceContext.Provider>
@@ -359,10 +362,12 @@ export function App() {
       <GeneralItemDialogs general={general} sectionLabel={section?.label ?? ''} />
 
       <NewItemPicker
-        open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
+        open={picker.open}
+        section={picker.section && pickerTypes(lattesSchema, picker.section)}
+        // A seção fica enquanto o modal sai de cena: o título não troca no meio da saída.
+        onClose={() => setPicker((p) => ({ ...p, open: false }))}
         onPick={(type, work) => {
-          setPickerOpen(false);
+          setPicker((p) => ({ ...p, open: false }));
           production.startNew(type, work);
         }}
       />

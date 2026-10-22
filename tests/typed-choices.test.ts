@@ -93,8 +93,14 @@ describe('campos tipados: listas', () => {
     );
   });
 
-  it('o idioma da seção Idiomas é código e fica de fora', () => {
+  it('na seção Idiomas, o código fica de fora e o nome vem da lista do formulário de idioma', () => {
     expect(typedChoices(basics('IDIOMA'), 'IDIOMA')).toBeUndefined();
+    const names = values(typedChoices(basics('IDIOMA'), 'DESCRICAO-DO-IDIOMA'));
+    expect(names).toEqual(
+      Object.keys(listas.codigosDosIdiomas).sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    );
+    expect(names).toContain('Inglês');
+    expect(names).toContain('Libras');
   });
 
   it('forma de participação e tipo conforme a forma', () => {

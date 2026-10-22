@@ -1,13 +1,13 @@
 // "Ordem dos campos" (⚙, com ?leitura): os campos do bloco em edição na
-// ordem da prévia, como se leem acima deles, ou na ordem do formulário do
-// Lattes (form-order.ts). A escolha fica neste navegador, como as outras do ⚙.
+// ordem da prévia, como se leem acima deles ("Padrão LattesEditor"), ou na
+// ordem do formulário do Lattes (form-order.ts). A escolha fica neste navegador, como as outras do ⚙.
 
 import { useSyncExternalStore } from 'react';
 
 export type FieldOrder = 'previa' | 'lattes';
 
 export const FIELD_ORDERS: { label: string; value: FieldOrder }[] = [
-  { label: 'Como na prévia', value: 'previa' },
+  { label: 'Padrão LattesEditor', value: 'previa' },
   { label: 'Como no Lattes', value: 'lattes' },
 ];
 

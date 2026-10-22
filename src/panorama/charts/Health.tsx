@@ -101,7 +101,17 @@ export function Health({ cv, group, period, whole }: Props) {
                 <StateIcon ok={f.ok} />
                 <span className="pano-check-text">
                   {f.label}
-                  <small>{f.hint}</small>
+                  <small>
+                    {f.hint}
+                    {f.link && (
+                      <>
+                        {' '}
+                        <a href={f.link.href} rel="noreferrer noopener" target="_blank">
+                          {f.link.label}
+                        </a>
+                      </>
+                    )}
+                  </small>
                 </span>
                 <span />
                 <span className="pano-check-frac">{f.ok ? 'preenchido' : 'vazio'}</span>

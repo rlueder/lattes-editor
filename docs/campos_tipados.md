@@ -100,8 +100,14 @@ real que a exerça, ou de um teste pelo Importar.
   participante, como no formulário do Lattes.
 - **País e idioma no editor inteiro**, pelo nome, nas listas do Lattes (243
   países e 152 idiomas), geradas da captura por `node scripts/gen-listas.ts`
-  em `src/schema/listas-lattes.json`. O idioma da seção Idiomas, que é
-  código, fica de fora. O mesmo arquivo guarda o código que o formulário
+  em `src/schema/listas-lattes.json`. Na seção Idiomas, o nome
+  (`DESCRICAO-DO-IDIOMA`) é escolhido na mesma lista e o código de duas
+  letras (`IDIOMA`, EN e ES na exportação real) vai junto, de
+  `codigosDosIdiomas` no mesmo arquivo. Os códigos vêm de `F_IDIOMA`, o
+  combo das produções; `F_COD_IDIOMA`, o combo do formulário de idioma, foi
+  capturado num currículo que já tinha três idiomas, e o Lattes tira do
+  combo os já cadastrados: os 149 que ele lista têm o mesmo código, e o
+  gerador confere isso. O mesmo arquivo guarda o código que o formulário
   envia para cada país (`codigosDosPaises`, BRA para Brasil), que o conector
   usa para gravar o país de um evento; a República Tcheca, que aparece com
   dois códigos no Lattes (RTC e TCH), fica sem código.
