@@ -46,3 +46,18 @@ export function postFrameCommand<T>(state: FrameQueue, command: FrameCommand): P
     }
   });
 }
+
+/** Erros do comando não inutilizam o quadro; violações fatais impedem novas ações. */
+export function receiveFrameReply(
+  state: FrameQueue,
+  message: { id?: number; error?: string; fatal?: boolean; value?: unknown },
+): void {
+  const pending = state.pending;
+  if (!pending || pending.id !== message.id) return;
+  state.pending = undefined;
+  if (message.error) {
+    const error = new Error(message.error);
+    if (message.fatal) state.error = error;
+    pending.reject(error);
+  } else pending.resolve(message.value);
+}

@@ -1,6 +1,10 @@
 import { afterEach, expect, it, vi } from 'vitest';
 
-import { type FrameQueue, postFrameCommand } from '../extension/src/censo-frame-rpc.ts';
+import {
+  type FrameQueue,
+  postFrameCommand,
+  receiveFrameReply,
+} from '../extension/src/censo-frame-rpc.ts';
 
 afterEach(() => vi.useRealTimers());
 it('libera reserva e timer após falha de clonagem e aceita o próximo comando', async () => {
@@ -24,4 +28,28 @@ it('libera reserva e timer após falha de clonagem e aceita o próximo comando',
   expect(vi.getTimerCount()).toBe(0);
   vi.advanceTimersByTime(30_001);
   expect(state.error).toBeUndefined();
+});
+
+it('permite inspecionar e continuar após erro comum de um comando', async () => {
+  vi.useFakeTimers();
+  const state: FrameQueue = { next: 0, port: { postMessage: vi.fn() }, posted: false };
+  const failed = postFrameCommand(state, { type: 'inspect' });
+  receiveFrameReply(state, { id: state.next, error: 'Formulário ausente', fatal: false });
+  await expect(failed).rejects.toThrow('Formulário ausente');
+  expect(state.error).toBeUndefined();
+  const retry = postFrameCommand<string>(state, { type: 'inspect' });
+  receiveFrameReply(state, { id: state.next, value: 'página atual' });
+  await expect(retry).resolves.toBe('página atual');
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+it('mantém o quadro bloqueado depois de uma violação fatal', async () => {
+  vi.useFakeTimers();
+  const state: FrameQueue = { next: 0, port: { postMessage: vi.fn() }, posted: false };
+  const failed = postFrameCommand(state, { type: 'inspect' });
+  receiveFrameReply(state, { id: state.next, error: 'Acesso ao pai recusado', fatal: true });
+  await expect(failed).rejects.toThrow('Acesso ao pai');
+  await expect(postFrameCommand(state, { type: 'inspect' })).rejects.toThrow('Acesso ao pai');
+  expect(state.port.postMessage).toHaveBeenCalledTimes(1);
+  expect(vi.getTimerCount()).toBe(0);
 });

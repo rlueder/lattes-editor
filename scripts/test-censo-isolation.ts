@@ -91,6 +91,7 @@ interface Result {
   msgs?: string[];
   opaque?: boolean;
   sandbox?: string;
+  sticky?: boolean;
   uncertain?: boolean;
 }
 try {
@@ -128,7 +129,18 @@ try {
     false,
   );
   const results: Record<string, Result> = { escapes };
-  for (const mode of ['save', 'step', 'unnamed', 'benign', 'clone', 'delete']) {
+  for (const mode of [
+    'save',
+    'step',
+    'unnamed',
+    'benign',
+    'clone',
+    'load-listener',
+    'confirm-load',
+    'confirm-late',
+    'recover',
+    'delete',
+  ]) {
     results[mode] = await run(mode);
     assert.deepEqual(results[mode]!.msgs, ['sucesso'], JSON.stringify(results[mode]));
     assert.equal(results[mode]!.opaque, true);
@@ -148,15 +160,23 @@ try {
       assert.ok(step.pairs.some(([name, value]) => name === 'f_authors' && value === '1'));
     }
   }
-  for (const mode of ['external', 'unsolicited', 'unsupported', 'duplicate', 'cancel']) {
+  for (const mode of [
+    'external',
+    'unsolicited',
+    'unsupported',
+    'duplicate',
+    'cancel',
+    'guard-sticky',
+  ]) {
     results[mode] = await run(mode);
     assert.ok(results[mode]!.error, `${mode}: ${JSON.stringify(results[mode])}`);
   }
   assert.equal(results.cancel!.uncertain, true);
+  assert.equal(results['guard-sticky']!.sticky, true);
   assert.equal(results.duplicate!.uncertain, true);
   assert.equal(writes.filter((entry) => entry.mode === 'duplicate').length, 1);
   assert.equal(writes.filter((entry) => entry.mode === 'cancel').length, 1);
-  for (const mode of ['external', 'unsolicited', 'unsupported'])
+  for (const mode of ['external', 'unsolicited', 'unsupported', 'guard-sticky'])
     assert.equal(writes.filter((entry) => entry.mode === mode).length, 0);
   results.navigate = await run('navigate');
   assert.equal(results.navigate.opaque, true, JSON.stringify(results.navigate));

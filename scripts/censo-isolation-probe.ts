@@ -39,8 +39,27 @@ async function run(mode: string) {
             if (!(error instanceof DOMException) || error.name !== 'DataCloneError') throw error;
           }
         }
-        if (mode !== 'delete') await fillFrame(frame, job, context, owner);
-        const pending = submit(frame, mode === 'delete' ? 'delete' : 'save');
+        const deletion = mode === 'delete' || mode.startsWith('confirm-');
+        if (mode === 'recover') {
+          try {
+            await fillFrame(frame, { ...job, form: 'AUSENTE' }, context, owner);
+            throw new Error('Formulário ausente foi aceito');
+          } catch (error) {
+            if (!(error instanceof Error) || !error.message.includes('A página não tem'))
+              throw error;
+          }
+          await inspectFrame(frame);
+          try {
+            await submit(frame, 'deleteAtuacao');
+            throw new Error('Exclusão ausente foi aceita');
+          } catch (error) {
+            if (!(error instanceof Error) || !error.message.includes('Sem como excluir'))
+              throw error;
+          }
+          await inspectFrame(frame);
+        }
+        if (!deletion) await fillFrame(frame, job, context, owner);
+        const pending = submit(frame, deletion ? 'delete' : 'save');
         const timer =
           mode === 'cancel' ? setTimeout(() => censusTraffic.cancel(), 1100) : undefined;
         let msgs: string[];
@@ -62,8 +81,18 @@ async function run(mode: string) {
         return { msgs, opaque, sandbox, submitted: frameState(frame).submitted };
       } catch (error) {
         uncertain = frame ? frameState(frame).submitted : false;
+        let sticky: boolean | undefined;
+        if (mode === 'guard-sticky' && frame) {
+          sticky = false;
+          try {
+            await inspectFrame(frame);
+          } catch {
+            sticky = true;
+          }
+        }
         return {
           error: error instanceof Error ? error.message : String(error),
+          sticky,
           uncertain: frame ? frameState(frame).submitted : false,
         };
       } finally {

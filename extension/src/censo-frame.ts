@@ -3,7 +3,7 @@ import { encodeLatin1Form } from '../../src/bridge/form.ts';
 import { decodeLatin1 } from '../../src/model/latin1.ts';
 import { htmlFor } from './censo-frame-html.ts';
 import { FRAME_POLICY, type FrameCommand, framePost } from './censo-frame-protocol.ts';
-import { type FrameQueue, postFrameCommand } from './censo-frame-rpc.ts';
+import { type FrameQueue, postFrameCommand, receiveFrameReply } from './censo-frame-rpc.ts';
 import { clearCensusCache } from './censo-reading.ts';
 import { censusTraffic } from './censo-traffic.ts';
 
@@ -104,21 +104,20 @@ export async function openFrame(path: string, code: string): Promise<HTMLIFrameE
           fail(new Error('Mensagem inválida do quadro Dev'));
           return;
         }
-        const m = event.data as { type?: string; id?: number; value?: unknown; error?: string };
+        const m = event.data as {
+          type?: string;
+          id?: number;
+          value?: unknown;
+          error?: string;
+          fatal?: boolean;
+        };
         if (m.type === 'ready') {
           clearTimeout(timer);
           signal.removeEventListener('abort', abort);
           resolve();
         } else if (m.type === 'post') void receivePost(state, m).catch(fail);
         else if (m.type === 'error') fail(new Error(m.error || 'Erro no quadro Dev'));
-        else if (state.pending && state.pending.id === m.id) {
-          const pending = state.pending;
-          state.pending = undefined;
-          if (m.error) {
-            fail(new Error(m.error));
-            pending.reject(state.error!);
-          } else pending.resolve(m.value);
-        }
+        else receiveFrameReply(state, m);
       };
       // A origem opaca exige "*"; a porta é transferida somente a este WindowProxy.
       frame.addEventListener(

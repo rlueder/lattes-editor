@@ -44,9 +44,15 @@ export async function isolationResponse(req: SimRequest): Promise<SimResponse | 
               ? '<script>parent.document.body.dataset.escaped="sim"</script>'
               : mode === 'benign'
                 ? '<script>throw new TypeError("Erro inofensivo de apresentação")</script>'
-                : mode === 'duplicate'
-                  ? '<script>function check(){document.forms[0].submit();setTimeout(function(){document.forms[0].submit()},1100)}</script>'
-                  : '';
+                : mode === 'confirm-load' || mode === 'load-listener'
+                  ? `<script>self.parent.caixaMsg.btnConfirmar.addEventListener('click',function(){document.forms[0].submit()});function del(){self.parent.caixaMsg.exibir({tipo:'confirm',conteudo:'Confirma a exclusão?'})}</script>`
+                  : mode === 'confirm-late'
+                    ? `<script>function del(){self.parent.caixaMsg.exibir({tipo:'confirm',conteudo:'Confirma a exclusão?'});self.parent.caixaMsg.btnConfirmar.addEventListener('click',function(){document.forms[0].submit()})}</script>`
+                    : mode === 'guard-sticky'
+                      ? '<script>function check(){parent.document.body.dataset.escaped="sim"}</script>'
+                      : mode === 'duplicate'
+                        ? '<script>function check(){document.forms[0].submit();setTimeout(function(){document.forms[0].submit()},1100)}</script>'
+                        : '';
     return {
       html: `<html><body><script>var BYPASS=${JSON.stringify(req.get('target'))}</script>${scripts}${form(mode)}<pre></pre>${extra}</body></html>`,
     };

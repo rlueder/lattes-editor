@@ -10,12 +10,16 @@ let active: { id: number; msgs: string[]; posted: boolean } | undefined;
 let renderingResponse = false;
 let owner: Record<string, string> | undefined;
 let ownerAdded = false;
+let confirmFor: number | undefined;
+let confirmEvents = new EventTarget();
 class FrameGuardError extends Error {
   override name = 'FrameGuardError';
 }
 const later = (work: () => void) => setTimeout(work, 0);
-const reply = (id: number, value?: unknown, error?: string) =>
-  port.postMessage({ error, id, value });
+const reply = (id: number, value?: unknown, error?: string, fatal = false) =>
+  port.postMessage({ error, fatal, id, value });
+const fatalError = (error: unknown) =>
+  error instanceof FrameGuardError || (error instanceof Error && error.name === 'SecurityError');
 const fail = (error: unknown) => {
   const text =
     error instanceof Error && error.name === 'SecurityError'
@@ -26,27 +30,43 @@ const fail = (error: unknown) => {
   if (active) {
     const id = active.id;
     active = undefined;
-    reply(id, undefined, text);
+    confirmFor = undefined;
+    reply(id, undefined, text, fatalError(error));
   } else port.postMessage({ error: text, type: 'error' });
 };
 const finish = () => {
   if (!active) return;
   const { id, msgs } = active;
   active = undefined;
+  confirmFor = undefined;
   reply(id, msgs);
+};
+const confirmClick = () => {
+  if (!active || confirmFor !== active.id) return;
+  confirmFor = undefined;
+  confirmEvents.dispatchEvent(new Event('click'));
 };
 const box = {
   btnConfirmar: {
-    addEventListener: (_type: string, run: () => void) => later(run),
-    click: () => undefined,
+    addEventListener: (...args: Parameters<EventTarget['addEventListener']>) =>
+      confirmEvents.addEventListener(...args),
+    click: confirmClick,
+    removeEventListener: (...args: Parameters<EventTarget['removeEventListener']>) =>
+      confirmEvents.removeEventListener(...args),
   },
   exibir: (p: { conteudo?: string; fnConfirmar?: string; tipo?: string }) => {
     if (p.tipo === 'confirm') {
+      if (!active) throw new FrameGuardError('Confirmação sem uma ação autorizada');
       const fn = /getDocument\(\)\.(\w+)\(/.exec(String(p.fnConfirmar ?? ''))?.[1];
       const target = fn ? (page as unknown as Record<string, unknown>)[fn] : undefined;
       if (typeof target === 'function') target.call(page);
-      else if (!fn && /Confirma a exclus/i.test(String(p.conteudo ?? ''))) return;
-      else if (!fn && page.enviar) page.enviar();
+      else if (!fn && /Confirma a exclus/i.test(String(p.conteudo ?? ''))) {
+        const id = active.id;
+        confirmFor = id;
+        later(() => {
+          if (active?.id === id && confirmFor === id) confirmClick();
+        });
+      } else if (!fn && page.enviar) page.enviar();
       else throw new FrameGuardError('Confirmação do formulário não suportada no quadro isolado');
       return;
     }
@@ -103,6 +123,8 @@ HTMLFormElement.prototype.submit = function () {
 };
 
 function render(html: string): void {
+  confirmFor = undefined;
+  confirmEvents = new EventTarget();
   document.open();
   window.alert = (text?: unknown) => {
     if (active) box.exibir({ conteudo: String(text ?? '') });
@@ -165,6 +187,7 @@ function run(id: number, command: FrameCommand): void {
     reply(id, { signature: signature(form), values });
   } else if (command.type === 'action') {
     if (active) throw new Error('Ação concorrente no quadro Dev');
+    confirmFor = undefined;
     active = { id, msgs: [], posted: false };
     if (command.action === 'save') {
       const button = saveButton(document);
@@ -205,7 +228,13 @@ const connect = (event: MessageEvent) => {
       } else if (m.command) run(m.id, m.command);
     } catch (error) {
       if (active) fail(error);
-      else reply(m.id, undefined, error instanceof Error ? error.message : String(error));
+      else
+        reply(
+          m.id,
+          undefined,
+          error instanceof Error ? error.message : String(error),
+          fatalError(error),
+        );
     }
   };
   port.postMessage({ type: 'ready' });
