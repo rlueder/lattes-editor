@@ -9,7 +9,6 @@ import { frameState } from './censo-frame.ts';
 import { clearCensusCache } from './censo-reading.ts';
 import {
   type BatchOptions,
-  type FrameWindow,
   load,
   openFrame,
   pause,
@@ -108,12 +107,10 @@ export async function removeTestItems(
     try {
       progress.pendingRemovals = [row.link];
       save(progress);
-      const msgs = await submit(frame, (fw) => {
-        const page = fw as FrameWindow & { dele?: () => void };
-        if (/cargos_vinculos/i.test(row.link)) page.dele!();
-        else if (page.del) page.del();
-        else throw new Error('Sem como excluir nesta página');
-      });
+      const msgs = await submit(
+        frame,
+        /cargos_vinculos/i.test(row.link) ? 'deleteAtuacao' : 'delete',
+      );
       // Só conta o que a página confirmou: nenhuma mensagem (a página nova
       // carregou) ou só a de sucesso. O resto vai para as falhas, com a
       // mensagem; a conferência pelas listas no fim diz o que de fato saiu.

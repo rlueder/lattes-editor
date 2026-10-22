@@ -10,6 +10,8 @@ import { fileURLToPath } from 'node:url';
 
 import { build } from 'vite';
 
+import { censusFrameRuntime } from './censo-runtime.ts';
+
 const root = fileURLToPath(new URL('../', import.meta.url));
 const pkg = JSON.parse(readFileSync(`${root}package.json`, 'utf8')) as { version: string };
 
@@ -29,6 +31,7 @@ await build({
   define: {
     __CENSO_VERSAO__: JSON.stringify(process.env.LATTES_VERSAO || pkg.version),
     __CENSUS_BUILD__: JSON.stringify(String(Date.now())),
+    __CENSUS_FRAME_RUNTIME__: JSON.stringify(await censusFrameRuntime()),
   },
   logLevel: 'warn',
 });

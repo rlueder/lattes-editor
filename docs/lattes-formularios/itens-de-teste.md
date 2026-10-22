@@ -122,7 +122,13 @@ permite apagar um registro ilegível; uma tarefa em curso ou um envio incerto
 legível continuam exigindo término e reconciliação. Falha do receptor local
 retorna em `receptorError`, depois de atualizar o registro pelas listas.
 
-Os quadros são da mesma origem do menu para executar os validadores do
-Lattes. As defesas de rede não são um sandbox para scripts arbitrários;
-referências antigas e alterações no DOM do pai podem contorná-las. Não se
-promete contabilizar esses caminhos externos ao transporte controlado.
+Os quadros usam uma origem opaca (`sandbox="allow-scripts"`, sem
+`allow-same-origin`). O navegador impede que scripts do formulário acessem
+funções, DOM ou armazenamento do menu, abram popups ou naveguem a janela
+principal. Preenchimento e validação executam no quadro; somente dados passam
+por uma porta privada. Cada ação autoriza um POST pelo transporte controlado.
+
+As caixas de mensagem e os modais conhecidos têm uma adaptação local. Se um
+formulário depender de outro acesso ao menu, a tarefa para com erro. Adapte e
+teste esse caso antes de repetir, sem habilitar mesma origem. Um POST já
+iniciado permanece incerto até a conferência, como nos demais erros.

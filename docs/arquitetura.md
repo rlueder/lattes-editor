@@ -290,17 +290,36 @@ passam pela mesma ponte, com codificação Latin-1. CSP bloqueia recursos e
 envios nativos; uma regra de sessão Dev bloqueia navegação HTTP dos quadros
 da aba durante a tarefa, para um script não contornar a ponte. A regra é
 removida antes de liberar a trava, e um recarregamento do menu limpa regras
-anteriores. A extensão publicada não pede a permissão dessa regra. Durante a tarefa,
-`censo-parent-guard.ts` também bloqueia fetch, criação de XHR e abertura de
-janelas pelo menu pai, restaurando as funções no fim.
+anteriores. A extensão publicada não pede a permissão dessa regra.
 
-O quadro mantém `allow-same-origin` para ler os formulários e executar os
-validadores observados. Isso não é isolamento de JavaScript arbitrário:
-referências nativas guardadas antes da tarefa, alterações no DOM do pai ou
-execução indireta no pai ainda podem contornar essas defesas. O orçamento
-cobre os caminhos controlados do censo; não promete contabilizar toda
-atividade que um script da página possa iniciar fora deles. Código de
-formulário que use esses caminhos exige adaptação antes da coleta.
+O quadro usa `sandbox="allow-scripts"`, sem `allow-same-origin`, e mantém uma
+origem opaca. O navegador impede acesso ao DOM, às funções e ao armazenamento
+do menu pai, inclusive a referências nativas guardadas antes da tarefa.
+Popups e navegação do topo também ficam desabilitados. Não é mais necessário
+substituir fetch ou XHR do menu.
+
+`censo-frame-runtime.ts` executa o preenchimento, os validadores e as
+confirmações dentro do quadro. A comunicação usa uma MessageChannel privada,
+transferida ao WindowProxy desse quadro antes de carregar o formulário.
+O controlador aceita a porta uma única vez e somente do pai. O pai autoriza
+um POST por ação de salvar ou excluir, valida campos de texto e destino da
+mesma origem e encaminha o pedido ao transporte com seus orçamentos. Não há
+comando genérico para executar código no menu. O canal de tráfego da extensão
+recusa mensagens de subquadros.
+
+O contexto de preenchimento é copiado uma vez por quadro. Nos passos
+seguintes, o formulário de destino é identificado separadamente do tipo
+original, que continua determinando o doador dos campos. O autor é incluído
+apenas no primeiro preenchimento. Falhas de clonagem de mensagens liberam a
+reserva e o prazo; erros de apresentação da página não invalidam um envio
+confirmado. Violações de origem e das guardas do controlador continuam fatais.
+
+Os acessos conhecidos a caixas de mensagem e modais são adaptados para uma
+interface local ao quadro. Ela confirma ações e recolhe mensagens sem
+expor o menu real. Um formulário que precise de outro acesso ao pai para com
+erro; não há retorno ao modo de mesma origem. Os validadores atuais de todos
+os formulários do CNPq ainda precisam de conferência específica, pois os
+testes de regressão usam páginas sintéticas.
 
 O prazo do cliente Dev é 145 s, anterior ao do transporte. Cancelar aborta
 os pedidos, retira os quadros e impede novos passos. O registro de um envio

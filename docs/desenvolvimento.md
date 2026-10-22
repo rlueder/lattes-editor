@@ -313,3 +313,20 @@ Um formulário que dependa de navegação ou recurso externo bloqueado para
 antes de gravar, ou deixa o envio como incerto se ele já começou. Confira o
 resultado no Lattes e adapte a integração antes de tentar outra vez. Os
 testes automatizados usam exclusivamente o servidor local e dados sintéticos.
+
+### Regressão do isolamento Dev
+
+`pnpm test:censo-isolation` monta a extensão Dev e testa os quadros em um
+perfil temporário do Brave, com servidor sintético local e DNS externo
+bloqueado. Requer o Brave em `/Applications/Brave Browser.app`; outro binário
+compatível com extensões em modo headless pode ser indicado em
+`LATTES_BROWSER`. O teste não usa sessões nem currículos reais.
+
+A regressão confere origem opaca, tentativas de acesso ao pai, popups,
+navegação, mensagens forjadas e rede direta, além de salvar, excluir,
+formulários em dois passos, cancelamento e recusa de envio duplicado. O
+segundo passo também é testado sem nome de formulário, preservando o doador e
+uma única linha de autor. Erros benignos da página e falhas de clonagem têm
+regressões próprias. A CI monta os canais normal e Dev, além do censo avulso.
+O controlador do quadro é montado por `scripts/censo-runtime.ts`, tanto no
+censo avulso quanto no canal Dev. A extensão publicada não carrega esse código.

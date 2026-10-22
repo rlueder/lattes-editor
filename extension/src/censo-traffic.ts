@@ -1,5 +1,4 @@
 import { CensusStopped } from '../../src/census/stop.ts';
-import { protectParent } from './censo-parent-guard.ts';
 // O canal é aberto pelo script isolado da extensão Dev, inclusive para chamadas
 // pelo console. Sem ele, o censo recusa rede em vez de contornar os limites.
 const CHANNEL = 'lattes-editor:dev-traffic';
@@ -40,7 +39,6 @@ export class CensusTraffic {
     const channel = new MessageChannel();
     this.port = channel.port1;
     this.controller = new AbortController();
-    let restoreNetwork: () => void = () => undefined;
     this.localFetch = globalThis.fetch.bind(globalThis);
     const deadline = setTimeout(() => this.cancel(), 145_000);
     try {
@@ -71,15 +69,10 @@ export class CensusTraffic {
         };
         window.postMessage(CHANNEL, location.origin, [channel.port2]);
       });
-      restoreNetwork = protectParent((error) => {
-        this.port?.postMessage({ type: 'cancel' });
-        this.fail(error);
-      });
       const result = await work();
       this.signal.throwIfAborted();
       return result;
     } finally {
-      restoreNetwork();
       this.localFetch = undefined;
       clearTimeout(deadline);
       await new Promise<void>((resolve) => {

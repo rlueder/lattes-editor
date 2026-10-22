@@ -1,122 +1,137 @@
-// Os quadros Dev não navegam nem enviam formulários por conta própria. O HTML,
-// seus scripts e as folhas de estilo passam pelo transporte antes de executar.
+// A página do formulário fica numa origem opaca. Só dados serializados cruzam a ponte.
 import { encodeLatin1Form } from '../../src/bridge/form.ts';
 import { decodeLatin1 } from '../../src/model/latin1.ts';
-import { censusGet, clearCensusCache } from './censo-reading.ts';
-import { silenceDialogs } from './censo-test-pages.ts';
+import { htmlFor } from './censo-frame-html.ts';
+import { FRAME_POLICY, type FrameCommand, framePost } from './censo-frame-protocol.ts';
+import { type FrameQueue, postFrameCommand, receiveFrameReply } from './censo-frame-rpc.ts';
+import { clearCensusCache } from './censo-reading.ts';
 import { censusTraffic } from './censo-traffic.ts';
+
+declare const __CENSUS_FRAME_RUNTIME__: string;
 
 export interface FrameState {
   error?: Error;
   submitted: boolean;
   writing: boolean;
 }
-const states = new WeakMap<HTMLIFrameElement, FrameState>();
-export const frameState = (frame: HTMLIFrameElement) => states.get(frame)!;
+interface Session extends FrameQueue, FrameState {
+  port: MessagePort;
+  posted: boolean;
+  url: string;
+}
+const states = new WeakMap<HTMLIFrameElement, Session>();
+export const frameState = (frame: HTMLIFrameElement): FrameState => states.get(frame)!;
 
-async function htmlFor(html: string, url: string): Promise<string> {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  doc
-    .querySelectorAll(
-      'base, meta[http-equiv], iframe, frame, object, embed, img, source, video, audio',
-    )
-    .forEach((el) => el.remove());
-  for (const script of doc.querySelectorAll<HTMLScriptElement>('script[src]')) {
-    const response = await censusGet(new URL(script.getAttribute('src')!, url));
-    script.removeAttribute('src');
-    script.textContent = decodeLatin1(response.bytes).replace(/<\/script/gi, '<\\/script');
-  }
-  for (const link of doc.querySelectorAll<HTMLLinkElement>('link')) {
-    if (link.rel === 'stylesheet' && link.getAttribute('href')) {
-      const response = await censusGet(new URL(link.getAttribute('href')!, url));
-      const style = doc.createElement('style');
-      style.textContent = decodeLatin1(response.bytes);
-      link.replaceWith(style);
-    } else link.remove();
-  }
-  const base = doc.createElement('base');
-  base.href = url;
-  doc.head.prepend(base);
-  const policy = doc.createElement('meta');
-  policy.httpEquiv = 'Content-Security-Policy';
-  policy.content =
-    "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; form-action 'none'; frame-src 'none'; connect-src 'none'";
-  doc.head.prepend(policy);
-  return `<!doctype html>${doc.documentElement.outerHTML}`;
+export function frameCommand<T>(frame: HTMLIFrameElement, command: FrameCommand): Promise<T> {
+  const state = states.get(frame);
+  censusTraffic.signal.throwIfAborted();
+  if (!state) return Promise.reject(new Error('Quadro Dev fechado'));
+  return postFrameCommand<T>(state, command);
 }
 
-async function render(frame: HTMLIFrameElement, html: string, url: string): Promise<void> {
-  const safe = await htmlFor(html, url);
-  censusTraffic.signal.throwIfAborted();
-  const doc = frame.contentDocument!;
-  doc.open();
-  doc.write(safe);
-  doc.close();
-  silenceDialogs(frame.contentWindow!);
-  doc.addEventListener('submit', (event) => {
-    event.preventDefault();
-    (event.target as HTMLFormElement).submit();
-  });
+async function receivePost(state: Session, raw: unknown): Promise<void> {
+  const m = raw as { id?: number };
+  if (
+    !state.pending ||
+    m.id !== state.pending.id ||
+    state.pending.command.type !== 'action' ||
+    state.posted
+  )
+    throw new Error('Envio do quadro sem uma ação autorizada');
+  const { pairs, url } = framePost(raw, state.url);
+  state.posted = true;
+  state.writing = true;
+  state.submitted = true;
+  try {
+    clearCensusCache();
+    const result = await censusTraffic.request(url, 'POST', encodeLatin1Form(pairs));
+    state.url = result.url || url.href;
+    const html = await htmlFor(decodeLatin1(result.bytes), state.url);
+    censusTraffic.signal.throwIfAborted();
+    state.port.postMessage({ id: m.id, response: html });
+  } finally {
+    state.writing = false;
+  }
 }
 
 export async function openFrame(path: string, code: string): Promise<HTMLIFrameElement> {
   const url = new URL(`/cvlattesweb/${path}`, location.origin);
   url.searchParams.set('f_cod', code);
   const response = await censusTraffic.request(url);
+  const base = response.url || url.href;
+  const html = await htmlFor(decodeLatin1(response.bytes), base);
+  censusTraffic.signal.throwIfAborted();
   const frame = document.createElement('iframe');
   frame.style.cssText = 'position:fixed;right:0;bottom:0;width:900px;height:600px;z-index:99999';
-  // Sem allow-forms: o navegador recusa o envio nativo de formulários neste quadro.
-  frame.setAttribute('sandbox', 'allow-scripts allow-same-origin');
-  document.body.append(frame);
-  const state: FrameState = { submitted: false, writing: false };
+  frame.setAttribute('sandbox', 'allow-scripts');
+  frame.referrerPolicy = 'no-referrer';
+  const signal = censusTraffic.signal;
+  const channel = new MessageChannel();
+  const state: Session = {
+    next: 0,
+    port: channel.port1,
+    posted: false,
+    submitted: false,
+    url: base,
+    writing: false,
+  };
   states.set(frame, state);
-  const abort = () => {
-    frame.contentWindow?.stop();
-    frame.remove();
+  const fail = (error: unknown) => {
+    state.error = error instanceof Error ? error : new Error(String(error));
+    state.pending?.reject(state.error);
+    state.pending = undefined;
   };
-  censusTraffic.signal.addEventListener('abort', abort, { once: true });
-  const w = frame.contentWindow! as Window & typeof globalThis;
-  const send = (form: HTMLFormElement) => {
-    if (state.writing) {
-      state.error = new Error('Envio duplicado no mesmo quadro');
-      return;
-    }
-    state.writing = true;
-    void (async () => {
-      try {
-        const action = new URL(form.getAttribute('action') || url.href, url);
-        const method = form.method.toUpperCase();
-        const pairs: [string, string][] = [];
-        for (const [name, value] of new w.FormData(form)) {
-          if (typeof value !== 'string') throw new Error('Arquivo em formulário Dev não suportado');
-          pairs.push([name, value]);
-        }
-        const body = encodeLatin1Form(pairs);
-        if (method !== 'POST') throw new Error('Formulário Dev sem POST recusado');
-        state.submitted = true;
-        clearCensusCache();
-        const result = await censusTraffic.request(action, 'POST', body);
-        await render(frame, decodeLatin1(result.bytes), result.url || action.href);
-      } catch (err) {
-        state.error = err instanceof Error ? err : new Error(String(err));
-      } finally {
-        state.writing = false;
-        frame.dispatchEvent(new Event('dev-response'));
-      }
-    })();
+  const remove = frame.remove.bind(frame);
+  const close = () => {
+    signal.removeEventListener('abort', close);
+    fail(new Error('Quadro Dev fechado; confira qualquer envio antes de repetir'));
+    channel.port1.close();
+    channel.port2.close();
+    remove();
   };
-  w.HTMLFormElement.prototype.submit = function () {
-    send(this);
-  };
-  frame.contentDocument!.addEventListener('submit', (event) => {
-    event.preventDefault();
-    send(event.target as HTMLFormElement);
-  });
+  frame.remove = close;
+  signal.addEventListener('abort', close, { once: true });
   try {
-    await render(frame, decodeLatin1(response.bytes), response.url || url.href);
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('O quadro Dev isolado não iniciou')), 5000);
+      const abort = () => {
+        clearTimeout(timer);
+        reject(signal.reason);
+      };
+      signal.addEventListener('abort', abort, { once: true });
+      channel.port1.onmessage = (event: MessageEvent) => {
+        if (!event.data || typeof event.data !== 'object') {
+          fail(new Error('Mensagem inválida do quadro Dev'));
+          return;
+        }
+        const m = event.data as {
+          type?: string;
+          id?: number;
+          value?: unknown;
+          error?: string;
+          fatal?: boolean;
+        };
+        if (m.type === 'ready') {
+          clearTimeout(timer);
+          signal.removeEventListener('abort', abort);
+          resolve();
+        } else if (m.type === 'post') void receivePost(state, m).catch(fail);
+        else if (m.type === 'error') fail(new Error(m.error || 'Erro no quadro Dev'));
+        else receiveFrameReply(state, m);
+      };
+      // A origem opaca exige "*"; a porta é transferida somente a este WindowProxy.
+      frame.addEventListener(
+        'load',
+        () => frame.contentWindow!.postMessage('lattes-editor:frame-init', '*', [channel.port2]),
+        { once: true },
+      );
+      frame.srcdoc = `<!doctype html><meta http-equiv="Content-Security-Policy" content="${FRAME_POLICY}"><script>${__CENSUS_FRAME_RUNTIME__.replace(/<\/script/gi, '<\\/script')}</script>`;
+      document.body.append(frame);
+    });
+    await frameCommand(frame, { html, type: 'render' });
     return frame;
-  } catch (err) {
-    frame.remove();
-    throw err;
+  } catch (error) {
+    close();
+    throw error;
   }
 }
