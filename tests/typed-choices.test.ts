@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { natureCode } from '../src/bridge/edit-items.ts';
 import { newItem } from '../src/model/production.ts';
 import { validateItem } from '../src/model/validate.ts';
 import { element, firstChild, setAttr } from '../src/model/xml.ts';
@@ -150,6 +151,14 @@ describe('campos tipados: valor fora da lista', () => {
     expect(outOfList(basics(CONGRESS, { PAIS: 'Alemanha' }), 'PAIS')).toBe(false);
     expect(outOfList(basics(CONGRESS, { PAIS: 'Germany' }), 'PAIS')).toBe(true);
     expect(outOfList(basics(CONGRESS, { TITULO: 'Qualquer coisa' }), 'TITULO')).toBe(false);
+  });
+
+  it('toda natureza que o editor oferece tem a opção do Lattes no envio', () => {
+    // As duas listas (a do campo e a de F_COD_PROD no conector) são do mesmo
+    // combo: uma natureza que o editor aceita e o conector não acha ficaria à mão.
+    expect(EVENT_NATURES).toHaveLength(9);
+    expect(EVENT_NATURES.map(natureCode)).toEqual(expect.not.arrayContaining([undefined]));
+    expect(new Set(EVENT_NATURES.map(natureCode)).size).toBe(9);
   });
 
   it('a natureza se escolhe entre as do Lattes, a do tipo de evento primeiro', () => {

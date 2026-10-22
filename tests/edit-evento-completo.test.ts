@@ -268,7 +268,7 @@ describe('alteração de evento completa: plano', () => {
     expect(feira.set).toMatchObject({ F_COD_PROD: 'A37' });
     expect(feira.expect).toMatchObject({ F_COD_PROD: 'A31' });
     expect(onlyReason((root) => setAttr(basics(root, '12'), 'NATUREZA', 'Palestra'))).toBe(
-      'Natureza que o Lattes não tem: Natureza',
+      'Natureza que o Lattes não tem: Palestra',
     );
   });
 

@@ -392,7 +392,7 @@ function planShape(
     // segue o tipo de evento do XML (a conferência de F_COD_PROD acima).
     const after = basics ? (getAttr(basics, 'NATUREZA') ?? '') : '';
     const code = natureCode(after);
-    if (!code) return { reason: `Natureza que o Lattes não tem: ${label('NATUREZA')}` };
+    if (!code) return { reason: `Natureza que o Lattes não tem: ${after || '(vazia)'}` };
     set.F_COD_PROD = code;
   }
 
