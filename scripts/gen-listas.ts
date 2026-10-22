@@ -90,10 +90,6 @@ function languageCodes(): Record<string, string> {
 const out = {
   capturedAt: capture.capturedAt,
   /**
-   * f_pais: o código que o formulário envia para cada nome (BRA para Brasil),
-   * para o conector gravar o país de um item (LAT-51).
-   */
-  /**
    * Nome e código de duas letras de cada idioma, para a seção Idiomas (o XML
    * guarda o código em IDIOMA e o nome em DESCRICAO-DO-IDIOMA: EN Inglês, ES
    * Espanhol na exportação real). Vem de F_IDIOMA, o combo das produções, que
@@ -103,6 +99,10 @@ const out = {
    * em F_IDIOMA (conferido abaixo).
    */
   codigosDosIdiomas: languageCodes(),
+  /**
+   * f_pais: o código que o formulário envia para cada nome (BRA para Brasil),
+   * para o conector gravar o país de um item (LAT-51).
+   */
   codigosDosPaises: codes('f_pais'),
   /** F_IDIOMA: nas produções, o XML guarda o nome (Português na exportação real). */
   idiomas: names('F_IDIOMA'),

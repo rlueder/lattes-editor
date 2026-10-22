@@ -364,9 +364,10 @@ export function App() {
       <NewItemPicker
         open={picker.open}
         section={picker.section && pickerTypes(lattesSchema, picker.section)}
-        onClose={() => setPicker({ open: false })}
+        // A seção fica enquanto o modal sai de cena: o título não troca no meio da saída.
+        onClose={() => setPicker((p) => ({ ...p, open: false }))}
         onPick={(type, work) => {
-          setPicker({ open: false });
+          setPicker((p) => ({ ...p, open: false }));
           production.startNew(type, work);
         }}
       />
