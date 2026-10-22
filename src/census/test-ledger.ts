@@ -1,4 +1,5 @@
-// A base e o registro dos itens de teste (docs/development/PLAN.md, Fase 0).
+// A base e o registro dos itens de teste
+// (docs/lattes-formularios/itens-de-teste.md).
 // A limpeza de 18/10/2026 confiou na marca "TESTE EDITOR APAGAR" e deixou 23
 // itens no currículo: formações sem campo de texto para a marca, e uma lista
 // que o menu abre por um formato de link que a varredura não pegava. Aqui o

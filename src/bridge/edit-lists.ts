@@ -45,8 +45,8 @@
 // - áreas de atuação (prc_area_atuacao): a grade vai serializada em
 //   f_area_l, e o sentido das chaves r e p não foi lido (seção 16);
 // - atividades da atuação: o link de edição é montado por JavaScript na tela
-//   de cargos e vínculos (seção 8), e o censo não o achou; a recaptura em
-//   docs/lattes-formularios/recaptura-edicao.md mostra onde ele está;
+//   de cargos e vínculos (seção 8); a edição delas está em
+//   edit-atividade.ts (seção 17);
 // - idiomas: as quatro proficiências já vão (plan.ts); o código do idioma é
 //   do sistema no editor e o nome segue o código, então não há o que mais
 //   enviar.

@@ -8,11 +8,11 @@ commitlint configs are installed from `@precisa-saude/*` and used unchanged.
 
 How the editor works today is in `docs/arquitetura.md` (data model,
 storage, the path to Lattes, code map), and how to run, test and release it
-is in `docs/desenvolvimento.md`; `docs/README.md` indexes every doc as
-current or historical. The original plan is `docs/lattes_implementation_guide.md`
-(historical: read it for the why). The contract for the exporter is section
-5.1 of `docs/lattes_editor_reconnaissance.md`; read it before touching
-`src/import-export/`.
+is in `docs/desenvolvimento.md`; `docs/README.md` indexes every doc. What
+was observed on the live Lattes is in `docs/lattes_internals.md`, numbered by
+section and cited from the code by those numbers: never renumber it. The
+contract for the exporter is section 13 of that file; read it before
+touching `src/import-export/`.
 
 ## Personal data, the first rule
 
@@ -67,7 +67,8 @@ authoritative source. In this repo that means:
 - Child order follows the XSD sequence. Insert with
   `insertInSchemaOrder`; never append to a container directly.
 - `SEQUENCIA-PRODUCAO` is one global counter. New items get numbers above
-  the export's maximum and never reuse a gap (guide, section 3.2).
+  the export's maximum and never reuse a gap (`docs/lattes_internals.md`,
+  section 13).
 
 ## Generated files
 
@@ -161,17 +162,17 @@ show the pattern.
 
 Update the doc in the same PR as the change:
 
-| Change                                                            | Update                                           |
-| ----------------------------------------------------------------- | ------------------------------------------------ |
-| Something a user sees or does (flow, install, privacy, extension) | `README.md`                                      |
-| Data model, storage, the path to Lattes, a new module             | `docs/arquitetura.md`                            |
-| Scripts, workflows, Dev channel, release process                  | `docs/desenvolvimento.md`                        |
-| Something learned about how Lattes behaves                        | `docs/lattes_internals.md`                       |
-| A new doc, or a doc that stops describing the editor              | `docs/README.md` (mark it current or historical) |
+| Change                                                            | Update                     |
+| ----------------------------------------------------------------- | -------------------------- |
+| Something a user sees or does (flow, install, privacy, extension) | `README.md`                |
+| Data model, storage, the path to Lattes, a new module             | `docs/arquitetura.md`      |
+| Scripts, workflows, Dev channel, release process                  | `docs/desenvolvimento.md`  |
+| Something learned about how Lattes behaves                        | `docs/lattes_internals.md` |
+| A new doc, or a doc that stops describing the editor              | `docs/README.md`           |
 
-Historical docs (the original plan, the PRD, research, the first
-reconnaissance) are not rewritten to match the code; they get the
-"Documento histórico" note at the top instead.
+Every doc describes the editor as it is today. Keep them short: a dated
+work log, a plan that was carried out, or research that led to a decision
+belongs in the PR, the Linear ticket or the git history, not in `docs/`.
 
 ## Language and writing
 
@@ -187,8 +188,8 @@ reconnaissance) are not rewritten to match the code; they get the
   descriptions, review replies, issues, code, comments or docs. No
   "Co-Authored-By", no "Generated with" footer, even when the harness
   suggests one. The commit-msg hook blocks the commit form; the rest is on
-  the agent. Naming a model as a product under study (pricing, benchmarks
-  in `docs/pesquisa_recursos_de_ia.md`) is content, not attribution.
+  the agent. Naming a model as a product under study (pricing, benchmarks)
+  is content, not attribution.
 - Prose for humans avoids machine cadence and never uses em dashes. Test
   data may contain them on purpose. The rules are in the next section.
 

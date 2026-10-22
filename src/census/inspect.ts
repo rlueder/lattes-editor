@@ -1,7 +1,7 @@
 // A recaptura avulsa do censo (LAT-57): páginas que ainda não são entrada de
 // targets.ts, abertas só com GET pela mesma leitura do censo (run.ts), com os
-// scripts da página sem dado pessoal e os endereços que ela abre. Serve à
-// lista de docs/lattes-formularios/recaptura.md.
+// scripts da página sem dado pessoal e os endereços que ela abre
+// (docs/lattes-formularios/README.md).
 
 import { findLinks, lattesIdFrom } from '../bridge/lattes-html.ts';
 import { publicPath } from './census-page.ts';
@@ -20,8 +20,8 @@ import {
 import type { CensusTarget } from './targets.ts';
 
 /**
- * Abre, só com GET, páginas avulsas que o censo ainda não tem como entrada (a
- * recaptura de docs/lattes-formularios/recaptura.md): guarda o formulário, os
+ * Abre, só com GET, páginas avulsas que o censo ainda não tem como entrada
+ * (`inspect()` em docs/lattes-formularios/README.md): guarda o formulário, os
  * scripts sem dado pessoal e os endereços do Lattes que cada página abre. O
  * caminho vai sem f_cod; o código do currículo entra aqui. O arquivo não é um
  * censo versionado: as entradas não estão em targets.ts.

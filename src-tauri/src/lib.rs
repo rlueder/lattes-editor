@@ -4,8 +4,8 @@
 //! currículo vão para uma pasta visível, em Documentos (copias.rs).
 //!
 //! O app nunca abre o Lattes por conta própria: as alterações vão para o
-//! Lattes pela extensão do navegador (ver docs/lattes_product_requirements.md,
-//! "Atualização de 11/10/2026"). A fila vai à extensão por mensagens nativas
+//! Lattes pela extensão do navegador (decisão de 11/10/2026, ver
+//! docs/arquitetura.md). A fila vai à extensão por mensagens nativas
 //! (ver conector.rs).
 
 mod chave;

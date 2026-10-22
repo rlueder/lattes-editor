@@ -310,8 +310,8 @@ nascimento ou adoção, que o XML da licença não guarda), as áreas de atuaç�
 complementar, as atividades que pedem órgão, a disciplina numa atividade que
 já existe, o treinamento, a linha de pesquisa e o financiador, a produção e a
 orientação do projeto (as buscas de onde vêm os valores dessas grades são POST
-e a resposta não foi lida). O que falta ler para cada um está
-em `lattes-formularios/recaptura.md`.
+e a resposta não foi lida). O que falta ler está no `README.md` de
+`lattes-formularios/`.
 
 **Produções, eventos, orientações e bancas.** A captura leu o formulário de
 inclusão de quase todos. Ficaram de fora o artigo publicado (a página veio sem
@@ -408,5 +408,5 @@ acompanhado de uma inclusão pelo conector.
 6. Para os tipos do Importar, decidir com evidência entre o Importar e a
    inclusão direta, e incluir direto onde o censo tem o formulário.
 
-O que ainda precisa ser lido no Lattes para fechar as lacunas está em
-`lattes-formularios/recaptura.md`.
+O que ainda precisa ser lido no Lattes para fechar as lacunas está no
+`README.md` de `lattes-formularios/`.

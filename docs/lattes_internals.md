@@ -1,19 +1,16 @@
 # Como o editor do Currículo Lattes funciona por dentro
 
-Notas de reconhecimento do editor web do Lattes (`wwws.cnpq.br/cvlattesweb`),
-para quem for escrever o conector com o navegador ou só tiver curiosidade. Tudo
-aqui foi observado numa sessão logada do próprio dono do currículo, só com
-leitura: as páginas de formulário foram baixadas por GET e analisadas, nenhum
-formulário foi enviado.
-
-Datas das observações: 10/10/2026 (primeiro reconhecimento, ver
-`lattes_editor_reconnaissance.md`), 11/10/2026 (formulários de edição, este
-documento) e as datas indicadas nas seções seguintes; as seções 16 a 18
-(edição de produções, inclusão e buscas) são de 14/10/2026.
+O editor web do Lattes (`wwws.cnpq.br/cvlattesweb`) por dentro, para quem
+mexe no conector. Tudo aqui foi visto numa sessão logada do próprio dono do
+currículo: quase sempre só com leitura (páginas baixadas por GET), e, onde a
+seção diz, com um envio acompanhado num item de teste. Cada seção traz a
+data; o primeiro reconhecimento é de 10/10/2026, os formulários de edição
+são de 11/10/2026, e as seções 16 a 22 vão de 14 a 21/10/2026.
 
 Cada afirmação vem marcada como **observado** (visto no HTML, nos scripts ou
 no comportamento do servidor) ou **inferido** (conclusão a partir do que foi
-observado, ainda não confirmada).
+observado, ainda não confirmada). O código cita estas seções pelo número:
+elas não são renumeradas.
 
 ## Visão geral: os componentes
 
@@ -69,8 +66,8 @@ flowchart TB
   inicia programas registrados, então o próprio executável do app, chamado
   com a origem da extensão, faz o papel de host e repassa as mensagens ao app
   aberto. O segredo impede que outro usuário da máquina se ligue à porta.
-- **Extensão** (`extension/`): o service worker guarda a fila; o envio só
-  começa por um clique no painel. O `lattes-runner` roda dentro da aba do
+- **Extensão** (`extension/`): o service worker guarda a fila, que o editor
+  inicia em "Enviar ao Lattes". O `lattes-runner` roda dentro da aba do
   Lattes e faz, para cada operação, o que a seção 6 descreve: acha o
   formulário pelos links do próprio Lattes, confere que ele está como o
   editor espera, envia e lê de volta (`src/bridge/apply.ts`).
@@ -187,6 +184,51 @@ O editor é uma página só (`PKG_MENU.menu`) com camadas modais em `iframe`
 
 **Observado.** Se o servidor repete as validações de `check()`, não se sabe.
 
+| Modal      | Papel                                 | Exemplo                                                    |
+| ---------- | ------------------------------------- | ---------------------------------------------------------- |
+| `modalCV1` | Lista da seção                        | `pkg_ativ.lista`, `pkg_formacao.lista?f_tipo=FA`           |
+| `modalCV2` | Formulário de inclusão ou edição      | `PKG_ATIV.inclui`, `pkg_formacao.form?f_tipo=FA&f_nivel=9` |
+| `modalCV3` | Buscas                                | `prc_inst_form`, `prc_inst_ativ`                           |
+| `caixaMsg` | Confirmação e combo da própria página | aviso de alterações não salvas, seletor de nível           |
+
+Abrir uma seção é `modalCVn.setarUrl(url, true)`; a página filha chama
+`self.parent.modalCVn.habilitaModal()` quando fica pronta e alcança o
+formulário pai por `self.parent.modalCV2.getDocument().document.forms[0]`.
+Há `alert()` e `confirm()` por toda parte (digitar uma instituição à mão,
+excluir, sair com alterações, o logout); eles travam automação que conduz a
+interface, e o conector os evita porque lê e envia por `fetch`, que não roda
+os scripts da página. **Observado** (10/10/2026).
+
+### Catálogo de procedimentos (10/10/2026)
+
+- Dados gerais: `prc_ident`, `prc_endereco`, `pkg_formacao.lista`
+  (`f_tipo=FA` acadêmica, `AP` pós-doutorado e livre-docência),
+  `pkg_formacao_compl.lista`, `pkg_idioma.lista`, `pkg_premio.lista`,
+  `prc_area_atuacao`, `pkg_resume.form`, `prc_outras_inf`,
+  `pkg_licenca.lista`.
+- Atuação: `pkg_ativ.lista`, `pkg_linhapesq.lista`, `pkg_revisor.lista`
+  (corpo editorial, revisor de periódico, comitê de assessoramento, revisor
+  de agência), `pkg_projeto.lista`.
+- Produção bibliográfica: `pkg_artigo.lista`, `pkg_artigo_pr.lista`
+  (aceitos), `pkg_lvr_cap.lista`, `pkg_trabalho.lista` (anais),
+  `pkg_texto.lista`, `prc_bib_demais_lista` (prefácio, tradução, partitura,
+  outras).
+- Produção técnica: `PKG_PATENTE_REGISTRO.LISTA` (patente, software,
+  cultivar, desenho industrial, marca, topografia), `pkg_produto.lista`,
+  `pkg_processo.lista`, `pkg_relatorio.lista` (trabalhos técnicos),
+  `prc_tec_demais_lista`, `PKG_ASSESSORIA_CONSULTORIA.lista`,
+  `PKG_EXTENSAO_TECNOLOGICA.lista`.
+- Artística: `pkg_arte_nova.lista`, `prc_arte_lista`. Orientações:
+  `pkg_orient.lista`. Bancas: `pkg_banca_trab.lista`, `pkg_banca_julg.lista`.
+  Eventos: `pkg_evento.lista`. Demais trabalhos: `pkg_demais.lista`.
+- Dicionários: `pkg_dic_autor.lista`, `pkg_identificacao_coautor.form`,
+  `pkg_dic_plv_nv.lista`, `pkg_dic_area.lista`,
+  `pkg_dic_instituicao_nova.lista`, `pkg_alteracao_periodico.lista`.
+- Ferramentas: `pkg_impcv.form` (Imprimir), `pkg_impcv.get_arquivo`
+  (Exportar), `pkg_importa_xml.inicio` (Importar), `pkg_import_cv.lista`
+  (cópia de item de coautor), `PKG_IMPORT_ASSISTENTE.lista` (só teses e
+  dissertações do Oasisbr), `pkg_publicar.mostrar_cv` (Enviar ao CNPq).
+
 ## 5. Formulários de edição (11/10/2026)
 
 Nomes, tipos e limites lidos do HTML. Campos ocultos de controle (`f_cod`,
@@ -247,9 +289,8 @@ seja o do item não leva a gravação para outro vínculo do mesmo início.
 ### Formação acadêmica: `GN_FORMACAO2`, POST `pkg_formacao.FORM`
 
 Aberto por GET `pkg_formacao.form` com `f_cod`, `f_seq` e `f_tipo` (`FA`).
-Mesmos campos do formulário de inclusão descrito no reconhecimento de
-10/10/2026, com `f_ctr=U`, `f_seq` preenchido e `f_nivel` com o código do
-nível (`3` = mestrado). `F_STATUS` usa `N` em andamento, `S` concluído, `I`
+Mesmos campos do formulário de inclusão (seção 17), com `f_ctr=U`, `f_seq`
+preenchido e `f_nivel` com o código do nível (`3` = mestrado). `F_STATUS` usa `N` em andamento, `S` concluído, `I`
 incompleto (rótulos lidos em 10/10/2026), que correspondem a
 `STATUS-DO-CURSO` `EM_ANDAMENTO`, `CONCLUIDO`, `INCOMPLETO`.
 
@@ -391,12 +432,12 @@ outra coisa: um `alert("Problemas na autenticação")` antes de mandar para
 ## 8. O que ainda não se sabe
 
 - Se o servidor revalida o que `check()` valida.
-- Como `f_vinc` vira `TIPO-DE-VINCULO`, e o formato das grades de contato
-  do endereço.
-- O formulário de edição de uma atividade existente (`pkg_ativ.cargo` com
-  `f_seq_funcao`, montado por JavaScript na grade da atuação).
+- Como `f_vinc` vira `TIPO-DE-VINCULO`.
 - Se o POST do Exportar funciona sem o GET da tela antes (seção 12).
-- Por que um item confirmado no passo 3 do Importar some (seção 13, item 8).
+- Por que um item confirmado no passo 3 do Importar some (seção 13, item 8),
+  e o limite superior de `SEQUENCIA-PRODUCAO`.
+- Como a exportação grava a PCD e duas redes sociais (seção 19), e mais de
+  um depositante numa patente (seção 17).
 
 ## 9. Vigia: saber quando o CNPq mudou algo
 
@@ -558,9 +599,9 @@ os vínculos de uma atuação sem página e para lista que a comparação não
 conhece. Extensão anterior a isso só manda a página de conferência, e o
 diagnóstico diz que comparou só produções e eventos.
 
-**No conector (15/10/2026, desligado).** `src/bridge/publish.ts` (LAT-54)
-repete o envio da tela, atrás de `PUBLISH_ENABLED = false`, e nunca rodou no
-Lattes real; os testes rodam contra o Lattes simulado. O caminho:
+**No conector** (`src/bridge/publish.ts`, desligado por `PUBLISH_ENABLED`,
+nunca rodou no Lattes real; os testes rodam contra o Lattes simulado), o
+caminho é:
 
 1. GET de `pkg_publicar.mostrar_cv`, que o editor mostra antes do envio: o
    texto ao lado da caixa `f_chk` como declaração, o link "Termo de Uso", e os
@@ -589,17 +630,35 @@ conferência com `f_idioma=1` e `f_idioma=2` (este **inferido**).
 
 ## 11. Inclusão (LAT-24, 13/10/2026)
 
-O que o conector usaria para criar uma atuação profissional nova, e de onde
-vem cada parte. Nada disso foi enviado a um Lattes real; o código está em
-`src/bridge/create.ts`, desligado.
+O que o conector usa para criar uma atuação profissional nova
+(`src/bridge/create.ts`), e de onde vem cada parte. A passada de itens de
+teste criou e removeu itens de cada formulário de inclusão no Lattes real
+(18/10/2026, `lattes-formularios/itens-de-teste.md`); a resposta do POST de
+inclusão e o número da atuação nova, lidos pelo conector, seguem inferidos.
 
-- **Observado** (reconhecimento de 10/10/2026, seção 4.1 e 4.3): o
-  formulário `GN_ATIV`, aberto por `PKG_ATIV.inclui` a partir da lista de
-  atuações, com `f_ctr=I` e POST para `PKG_ATIV.INCLUI`; os campos e
-  limites da tabela da seção 4.1; a busca de instituição por POST para
-  `PRC_INST_FORM`, cuja resposta traz `seleciona('<código>','<nome>')`; e a
-  regra de que o código vai em `f_cod_inst` quando começa com V e em
-  `f_cod_inst2` nos outros casos.
+- **Observado** (10/10/2026): o formulário `GN_ATIV`, aberto por
+  `PKG_ATIV.inclui` a partir da lista de atuações, com `f_ctr=I` e POST para
+  `PKG_ATIV.INCLUI`; a busca de instituição por POST para `PRC_INST_FORM`,
+  cuja resposta traz `seleciona('<código>','<nome>')`; e a regra de que o
+  código vai em `f_cod_inst` quando começa com V e em `f_cod_inst2` nos
+  outros casos (seção 18). Os campos:
+
+  | Campo                                                          | Tipo                           | Observações                                                                                                |
+  | -------------------------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+  | `f_inst`                                                       | texto 75                       | Só pela busca; digitar à mão dispara `alertainst()`, que restaura `f_inst_old`                             |
+  | `f_cod_inst`, `f_cod_inst2`, `f_instold`, `f_inst_old`         | ocultos                        | Código (V em `f_cod_inst`, os outros em `f_cod_inst2`) e valor anterior                                    |
+  | `f_vinc`, `f_vinculo`                                          | texto 30, oculto               | Tipo do vínculo pelo combo `dominio()` (Servidor público, Celetista, Professor Visitante, Bolsista, Outro) |
+  | `f_stavinc`                                                    | lista: vazio, `0` Não, `1` Sim | Possui vínculo empregatício (invertido na exportação, seção 5)                                             |
+  | `f_enqua`, `f_carga`, `f_regime`                               | texto 45, texto 3, caixa       | Enquadramento, carga horária semanal, dedicação exclusiva                                                  |
+  | `f_mes_ini`, `f_ano_ini`, `f_status`, `f_mes_fim`, `f_ano_fim` | texto 2 e 4, rádio S/N         | Ano de início obrigatório; S atual, N anterior                                                             |
+  | `f_outras_inf`                                                 | área 3950                      |                                                                                                            |
+  | `f_tipo_privacidade`                                           | lista 1/2                      | `verificaPriv()` força Público se for o único vínculo                                                      |
+  | `f_ctr`, `f_cod`, `f_codinst`, `f_seq_ativ`, `f_seq_hist`      | ocultos                        | Operação e chaves                                                                                          |
+
+  Editar uma linha existente abre
+  `PKG_ATIV.cargos_vinculos?f_cod=…&f_codinst=…&f_seq_ativ=N` no `modalCV2`;
+  reordenar é `PKG_ATIV.ordenar`.
+
 - **Inferido**: os valores de `F_COD` (o `f_cod` do formulário) e
   `F_NIVEL` (vazio) na busca feita fora do seletor; o texto de `f_vinc` para
   cada `TIPO-DE-VINCULO` (dos rótulos do combo; com
@@ -618,11 +677,10 @@ vem cada parte. Nada disso foi enviado a um Lattes real; o código está em
 - **Número do item**: a cópia de trabalho guarda o número que o editor deu.
   Até o conector reconciliar com o `SEQUENCIA-ATIVIDADE` que o Lattes devolve,
   o caminho é recarregar a exportação antes de alterar esse item pelo conector.
-- **Formação e projeto** (LAT-52): depois do mapa das seções 17 e 18, as
+- **Formação e projeto** (LAT-52): com o mapa das seções 17 e 18, as
   inclusões estão em `src/bridge/create-formacao.ts` e
-  `src/bridge/create-projeto.ts`, atrás da mesma chave, também sem envio
-  real. A patente continua fora: a consulta `verifica_cadastrado` e o
-  formulário com `f_ctr=R` não foram observados.
+  `src/bridge/create-projeto.ts`. A patente continua fora: a consulta
+  `verifica_cadastrado` e o formulário com `f_ctr=R` não foram enviados.
 
 ## 12. Exportar pelo conector (LAT-22, 13/10/2026)
 
@@ -654,6 +712,27 @@ faz os dois, e o GET ainda serve para reconhecer, sem `alert()`, a sessão
 caída e a pendência (seção 10). O caminho está em `src/bridge/export.ts`.
 
 ## 13. Importar pelo conector: passos 1 e 2 (13/10/2026)
+
+**O contrato do Importar (testado à mão em 10/10/2026, no currículo do dono,
+com itens falsos excluídos depois).** **Observado.**
+
+- O passo 1 aceita só um `.xml` puro; o ZIP que o Exportar gera é recusado.
+- O passo 2 tem uma caixa por módulo, todas marcadas, e o filtro "Produção
+  C&T a partir de", derivado do arquivo.
+- O passo 3 lista item a item, com um marcador verde ("não está cadastrada")
+  ou vermelho ("está cadastrada"), todos marcados. Confirmar um item
+  vermelho insere uma duplicata: o marcador é só aviso. Não existe
+  atualização no lugar pela importação.
+- A chave é `SEQUENCIA-PRODUCAO`, uma sequência global para todas as
+  produções. Um `TRABALHO-EM-EVENTOS` falso com sequência 1 (uma lacuna da
+  exportação) foi descartado em silêncio; com 33 (acima do máximo, 32), foi
+  listado em verde e aceito; sem o atributo, descartado em silêncio. As
+  lacunas da exportação são linhas excluídas ou ocultas no servidor.
+
+Regras para o editor: todo item novo recebe um número maior que o maior da
+exportação, nunca uma lacuna, nunca sem o atributo; duplicatas se eliminam
+do lado do editor; descompactar ao carregar e gravar `.xml` puro ao exportar.
+O limite superior da sequência não é conhecido.
 
 O menu leva ao Importar por `pkg_importa_xml.inicio?f_cod=<10 caracteres>`.
 **Observado.**
@@ -709,12 +788,10 @@ que o arquivo traz (`ImportFile.modules`) e o ano a partir do item novo mais
 antigo. O que vem depois do Confirmar (passo 3 e o resultado) ainda precisa
 ser observado com a pessoa acompanhando.
 
-**No conector (14/10/2026, desligado).** `src/bridge/importar.ts` faz os
-passos 1 e 2 com o arquivo da opção 1 (`buildMinimalImportFile`) e para na
-resposta do Confirmar do passo 2, sem nenhum POST a mais, devolvendo só a
-forma da página (formulários, campos, botões). Fica atrás de
-`IMPORT_ENABLED = false`; o teste acompanhado abaixo mostrou que a chave não
-pode ser ligada como está.
+**No conector** (`src/bridge/importar.ts`, `IMPORT_ENABLED`): faz os passos 1
+e 2 com o arquivo só dos itens novos (`buildMinimalImportFile`) e para na
+resposta do Confirmar do passo 2, sem nenhum POST a mais. Pelo teste abaixo,
+o currículo precisa ser conferido depois de cada importação.
 
 **Teste acompanhado (14/10/2026), a partir da aba do menu.** **Observado.**
 
@@ -790,12 +867,11 @@ Consequências:
 - A conferência de uma importação é pela lista ou por `cv_espelho`, nunca
   por uma exportação nova: o Exportar entrega a versão publicada (seção 10),
   e que o item apareça nele depois do envio ao CNPq é **inferido**. A
-  mensagem de sucesso não vale como conferência. Isso corrige o plano do
-  guia (seção 1) de conferir por uma exportação.
-- O arquivo mínimo, como o guia o descreve, não passa. Para passar do DTD
-  ele precisou de todos os atributos de `DADOS-GERAIS`, inclusive dados
-  pessoais, e ainda assim um arquivo só com evento foi recusado como sem
-  produções científicas.
+  mensagem de sucesso não vale como conferência.
+- O arquivo mínimo (só os itens novos e um `DADOS-GERAIS` com o que o XSD
+  exige) não passa. Para passar do DTD ele precisou de todos os atributos de
+  `DADOS-GERAIS`, inclusive dados pessoais, e ainda assim um arquivo só com
+  evento foi recusado como sem produções científicas.
 - Um evento importado precisa levar a própria pessoa entre os
   participantes (**inferido** do item 8).
 
@@ -914,11 +990,11 @@ pedem tratamento próprio. A resposta do servidor e a pendência foram vistas
 na exclusão de um evento (acima); nas outras telas, ainda só com a pessoa
 acompanhando, num item de teste.
 
-O conector já tem a exclusão do idioma e do vínculo em
-`src/bridge/delete.ts`, desligada (`DELETE_ITEMS_ENABLED = false`). Ela posta
-o formulário inteiro, como o `del()`, só com `f_ctr=E`, e não lê a resposta:
-confere relendo a lista e exigindo que só a linha do item tenha sumido. A
-atuação inteira e as duas formações ficam fora pelos motivos acima.
+O conector exclui idioma e vínculo (`src/bridge/delete.ts`,
+`DELETE_ITEMS_ENABLED`): posta o formulário inteiro, como o `del()`, só com
+`f_ctr=E`, e não lê a resposta; confere relendo a lista e exigindo que só a
+linha do item tenha sumido. A atuação inteira e as duas formações ficam fora
+pelos motivos acima.
 
 ## 16. Edição de produções existentes (LAT-51, 14/10/2026)
 
@@ -978,8 +1054,8 @@ mostrar a pendência e o Exportar recusa. O `f_seq` desse formulário é o
 de ouvinte passou a ir pela extensão (`src/bridge/edit-items.ts`, chave
 `EDIT_OUVINTE_ENABLED`), e o formulário `GN_TEC` e a lista `pkg_evento.lista`
 entraram no contrato fixo. Só o evento cuja `FORMA-PARTICIPACAO` é "Ouvinte";
-convidado e participante ficam à mão, porque a marcação do `F_TPO` já gravado
-não foi vista. Campos que vão: título, ano, país, home page, divulgação
+convidado e participante ficam atrás da chave seguinte, porque a marcação do
+`F_TPO` já gravado não foi vista. Campos que vão: título, ano, país, home page, divulgação
 científica, título em inglês e nome do evento. A correspondência de `F_FORMA`
 e `F_COD_PROD` com a forma e o elemento do XML continua **inferida**, e por
 isso os dois entram na conferência do "antes": se não baterem, nada é
@@ -993,9 +1069,9 @@ do mesmo ano. Esses três se comparam sem acento,
 caixa nem espaço nas pontas, e, quando a outra parte do item muda o campo na
 mesma fila, o antes e o depois valem. A exclusão de evento (`f_ctr=E`, seção 15) segue fora do conector.
 
-**Convidado, participante, forma, tipo, natureza e cidade (LAT-58, 15/10/2026,
-desligado).** Escritos atrás da chave `EDIT_EVENTO_ENABLED`, desligada até um
-teste acompanhado, e cobertos no Lattes simulado. O que cada um usa:
+**Convidado, participante, forma, tipo, natureza e cidade (LAT-58,
+15/10/2026).** Atrás da chave `EDIT_EVENTO_ENABLED`, cobertos no Lattes
+simulado. O que cada um usa:
 
 - `f_cidade` ↔ `CIDADE-DO-EVENTO` e `F_FORMA` ↔ `FORMA-PARTICIPACAO`,
   **observados** na passada de edição do censo (seção 20). Só a opção 40 foi
@@ -1024,7 +1100,7 @@ releitura do HTML não veria o tipo gravado, deixando o evento trocado com
 "não gravou". Pelo mesmo motivo, a troca de convidado ou participante para
 ouvinte não oferece "Desfazer".
 
-No teste acompanhado, nesta ordem:
+O que o teste acompanhado ainda precisa mostrar, nesta ordem:
 
 1. Num evento de teste de convidado, abrir o formulário pela lista e ver se o
    tipo gravado vem marcado no HTML. Se não vier, toda alteração de convidado
@@ -1095,11 +1171,10 @@ ocultas. **Observado.**
 `f_tipo_privacidade` e os ocultos `f_ctr` (`U`), `f_cod`, `f_seq`.
 `check()` exige nome e ano. **Observado.**
 
-**No conector (LAT-58, 15/10/2026, desligado).** Prêmios e formação
-complementar estão escritos em `src/bridge/edit-lists.ts`, cada um atrás da
-própria chave (`EDIT_PREMIO_ENABLED`, `EDIT_FORMACAO_COMPL_ENABLED`),
-desligada até um teste acompanhado, e cobertos no Lattes simulado. Nos dois, a
-linha não se acha pelo número: o prêmio não tem número na exportação, e o
+**No conector (LAT-58, 15/10/2026).** Prêmios e formação complementar estão
+em `src/bridge/edit-lists.ts`, cada um atrás da própria chave
+(`EDIT_PREMIO_ENABLED`, `EDIT_FORMACAO_COMPL_ENABLED`), cobertos no Lattes
+simulado. Nos dois, a linha não se acha pelo número: o prêmio não tem número na exportação, e o
 `f_seq` da formação complementar não bateu com `SEQUENCIA-FORMACAO` num dos
 itens do censo. O conector abre o formulário de cada linha da lista (pelo link
 da linha) e fica com o único cujos valores, sem acento nem caixa, são os do
@@ -1131,18 +1206,30 @@ conta de novo as linhas da lista e acusa se ela ganhou uma. Sem nenhuma linha
 com o "antes", ele tenta achar a linha só pelos outros valores, e uma única
 achada assim vira "divergente" na conferência, em vez de "não encontrado".
 
-No teste acompanhado: num prêmio de teste, trocar a entidade promotora,
+O que o teste acompanhado ainda precisa mostrar: num prêmio de teste, trocar a entidade promotora,
 conferir a releitura, que a lista não ganhou linha, e a exportação; numa
 formação complementar de teste, trocar a carga horária e o status para "em
 andamento", conferir a releitura, que a lista não ganhou linha, a exportação
 (`STATUS-DO-CURSO`) e que o curso e a instituição não mudaram.
 
-Ficam fora, sem caminho: as áreas de atuação (`prc_area_atuacao` serializa a
-grade em `f_area_l`, e o sentido das chaves `r` e `p` não foi lido) e as
-atividades da atuação (o link de edição é montado por JavaScript, seção 8; a
-recaptura em `lattes-formularios/recaptura-edicao.md` mostra onde ele está).
-Nos idiomas, as quatro proficiências já vão, e o código do idioma é do
-sistema no editor, com o nome atrelado a ele: não sobra campo a enviar.
+As áreas de atuação e as atividades da atuação, que no começo ficaram fora,
+têm caminho desde 18 e 19/10/2026 (seções 18 e 17). Nos idiomas, as quatro
+proficiências já vão, e o código do idioma é do sistema no editor, com o
+nome atrelado a ele: não sobra campo a enviar.
+
+### Capítulo de livro e prefácio (gravados em 18/10/2026)
+
+O capítulo é o formulário `GN_CAP` (POST `PKG_LVR_CAP.FORM_CAP`), aberto pela
+escolha "Capitulo" da lista de livros e capítulos; `f_titulo_cap` é o título
+do capítulo e `f_titulo`, o do livro. O alvo `capitulo`
+(`src/bridge/production/targets/bibliografica-livros.ts`) gravou num capítulo
+de teste editora, páginas, cidade e os dois títulos, conferidos na releitura.
+O prefácio está na lista `prc_bib_demais_lista` com `f_cod_tipo=1C` (link
+"Prefácio, posfácio" do menu), formulário `GN_BIB` de `prc_bib_prefacio`;
+título, editora, cidade, volume, autor da publicação, tipo (prefácio para
+posfácio) e natureza foram gravados e conferidos num prefácio de teste.
+**Observado.** O formulário de edição do capítulo foi lido só nesse item de
+teste; a captura do censo tem o do livro (`PKG_LVR_CAP.FORM_LVR`).
 
 ### As grades de autores, palavras-chave, áreas e setores
 
@@ -1186,10 +1273,15 @@ formulários: trabalho técnico `GN_RELATORIO`, aberto por
 `prc_bib_outraprod?f_cod=…&f_seq=N` na lista `prc_bib_demais_lista` com
 `f_cod_tipo=1Z`, POST `PRC_BIB_OUTRAPROD` (1A, 1B e 1C são as outras listas
 de demais tipos). **Observado.** O conector grava as palavras-chave desses
-dois por `src/bridge/edit-keywords.ts`, refazendo as quatro grades como o
-`check()` faria; um envio com o formulário como veio do GET mandaria as
-grades vazias. **Inferido**, até o primeiro envio acompanhado: que o POST
-grave cada grade como chega, e que a palavra nova vá com `c=-1`.
+dois pelo motor de produção (`src/bridge/production/grids.ts`), refazendo as
+quatro grades como o `check()` faria; um envio com o formulário como veio do GET mandaria as
+grades vazias. **Observado** em 19/10/2026: num trabalho técnico de teste,
+uma área (Desenho Industrial, 61200000) e um setor (Alimentação, 420228)
+gravados pelo conector pelas grades voltaram na releitura
+(`src/bridge/production/item-lists.ts`), e num mestrado de teste, uma
+palavra-chave (`src/bridge/formacao-grids.ts`). Todo envio de formação leva
+as três grades como a página as trouxe: o envio com elas vazias apagou a
+palavra-chave do mestrado de teste no Lattes real.
 
 ## 17. Formulários de inclusão (LAT-52, 14/10/2026)
 
@@ -1225,11 +1317,10 @@ foi lida em todas. **Lacuna** para artigos e livros.
 O "Incluir novo item" da lista `pkg_formacao.lista?f_tipo=FA` chama
 `selecionarNivel()`, que abre um combo do `caixaMsg` do menu. Cada opção é
 a URL do formulário, `pkg_formacao.form?f_cod=…&f_tipo=FA&f_nivel=<código>`,
-com os códigos da seção 4.2 do reconhecimento (4, 3, 9, 2, D, 1, 7, C, B,
-X). O formulário de cada nível foi lido; todos têm `f_ctr=I`, `f_tipo=FA`
-e `f_nivel` oculto com o código. **Observado.**
+com os códigos da tabela abaixo. O formulário de cada nível foi lido; todos
+têm `f_ctr=I`, `f_tipo=FA` e `f_nivel` oculto com o código. **Observado.**
 
-A base é a do mestrado (seção 4.2 do reconhecimento): `f_tpo_doutorado`,
+A base é a do mestrado (lido em 10/10/2026): `f_tpo_doutorado`,
 `f_inst` (75, desabilitado, só pela busca), `f_curso` (75, desabilitado, só
 pela busca), `F_STATUS` (`N` em andamento, `S` concluído, `I` incompleto),
 `f_ano_ini`, `f_ano_fim`, `f_mes_obten`, `f_ano_obten`, `F_BOLSA` (`S`, `N`),
@@ -1238,7 +1329,11 @@ pela busca), `F_STATUS` (`N` em andamento, `S` concluído, `I` incompleto),
 cotutela, as três grades (`f_plv_l`, `f_setor_l`, `f_area_l`) e
 `f_tipo_privacidade`; ocultos `f_cod_inst`, `f_cod_inst2`, `f_inst_old`,
 `f_cod_curso`, `f_cod_curso2`, `f_curso_old`, `f_agencia`,
-`f_id_orientador`, `f_seq_orientacao`, `f_carga`. O que muda por nível:
+`f_id_orientador`, `f_seq_orientacao`, `f_carga`. Um segundo formulário,
+`formchk`, sustenta a validação do orientador por
+`pkg_formacao.valida_orientador_lates` (POST com `f_cod`, `f_nme`,
+`f_nivel`), que preenche `f_id_orientador` e `f_seq_orientacao`. O que muda
+por nível:
 
 | Nível (`f_nivel`)                       | Diferença em relação ao mestrado                                                                                                |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
@@ -1982,10 +2077,12 @@ Formação acadêmica, pós-doutorado e livre-docência, endereço, identificaç
 outras informações relevantes têm operação escrita em `src/bridge/biographic.ts`
 (o caminho e o contrato) e em `formacao-edit.ts`, `formacao-lookups.ts` e
 `dados-gerais-edit.ts` (que atributo vai em que campo, e o porquê do que fica
-à mão), testada contra o Lattes simulado e ligada para o teste ao vivo
-(`BIOGRAPHIC_OPS_ENABLED`; o que a LAT-58 acrescentou e uma extensão antiga
-gravaria errado, também `BIOGRAPHIC_FULL_ENABLED`, com a capacidade
-`alterar-dados-gerais-completo`). Nada disso foi enviado a um Lattes real.
+à mão), testada contra o Lattes simulado, atrás de `BIOGRAPHIC_OPS_ENABLED`
+(e, para o que a LAT-58 acrescentou e uma extensão antiga gravaria errado,
+`BIOGRAPHIC_FULL_ENABLED`, capacidade `alterar-dados-gerais-completo`). No
+Lattes real, até 18/10/2026, foram gravados e conferidos a identificação
+(PCD e privacidades), o endereço (uma rede social) e as palavras-chave de
+um mestrado de teste; o resto segue como marcado abaixo.
 
 | Seção              | Formulário e POST                      | Como o conector acha                                                                                                                                                         | Atributo do XML → campo                                                                                                                                                                                                                                                                                                                                                                                       |
 | ------------------ | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -2141,20 +2238,16 @@ com itens no currículo. **Observado**:
   falta de link de edição reconhecível (a grade de atividades monta o link
   por JavaScript, seção 8). Corrigido na LAT-58: a passada conta os links da
   lista antes do limite, abre a lista mesmo sem item no XML e marca
-  `so-na-lista` e `sem-link`. O que rodar de novo está em
-  `lattes-formularios/recaptura-edicao.md`.
+  `so-na-lista` e `sem-link` (`lattes-formularios/README.md`).
 - Nos trabalhos técnicos, `f_seq` ↔ `SEQUENCIA-PRODUCAO` bateu em 5 itens e
   não bateu em 3, com os outros campos casando nos 8: o `f_seq` da lista não
   é sempre o número do item na exportação. **Observado**; o porquê não se sabe.
-- Rádios com o texto antes ("Sim (o) Não (o)", nos projetos e patentes) saíram
-  com o rótulo deslocado nesta captura; o coletor foi corrigido, e a próxima
-  captura traz os rótulos certos.
 
 ## 21. Recaptura de 15/10/2026 (LAT-57)
 
 Só leitura, na sessão do dono do currículo, com o `inspect()` e o
 `capture({ scripts: true, discover: true })` do censo
-(`lattes-formularios/recaptura.md`): 31 páginas, com os scripts da própria
+(`lattes-formularios/README.md`): 31 páginas, com os scripts da própria
 página sem dado pessoal. Os arquivos crus não são versionados; o que virou
 entrada do censo está em `lattes-formularios/censo-2026-10-15b.json`. Tudo
 abaixo foi lido no código das páginas, sem enviar nada. **Observado**, menos
@@ -2209,12 +2302,11 @@ melhoristas"). O formulário de inclusão abre com a grade vazia: o vetor
 `autorProvider` é `[{}]`, só a linha em branco do fim. A grade vai em
 `f_autores_l` com as chaves `c`, `l`, `t`, `pais` e `add` de cada linha, na
 ordem do objeto (nos registros, também `tit`), separadas por `|`, e as
-linhas por `@`; nos artigos, o que
-passa de 32.500 caracteres segue em `f_autores_l2` a `f_autores_l4`. Um autor
-digitado na hora vira `{l, t, c: " ", tit: "n", add: true, …}`; os sugeridos
-vêm do `autorDP` do menu (seção 18). Como é a linha do dono no `autorDP`, e o
-sentido de `pais`, não foram lidos. **Lacuna**: o lote 4 da recaptura
-(`authorShape`) responde sem nome nenhum.
+linhas por `@`; nos artigos, o que passa de 32.500 caracteres segue em
+`f_autores_l2` a `f_autores_l4`. Um autor digitado na hora vira
+`{l, t, c: " ", tit: "n", add: true, …}`; os sugeridos vêm do `autorDP` do
+menu (seção 18). A linha do dono no `autorDP` está na seção 22; o sentido de
+`pais` não foi lido.
 
 **Projeto.** A equipe usa a mesma grade, com as chaves `c`, `l`, `t`, `tit` e
 `add`; o `check()` exige o próprio nome, um coordenador (e só um) e, na
@@ -2282,13 +2374,10 @@ em outra natureza, o curso.
 de inclusão; o currículo não tem item, e o elemento do XML continua
 desconhecido.
 
-**Aperfeiçoamento.** O formulário do nível X, que deu erro de rede no censo,
-foi lido e entrou no censo.
-
 ## 22. Recaptura de 15/10/2026, lotes 3 a 5 (LAT-57)
 
 Só leitura, na sessão do dono do currículo, com os ajudantes `activities()`,
-`authorShape()` e `inspect()` do censo (`lattes-formularios/recaptura.md`).
+`authorShape()` e `inspect()` do censo (`lattes-formularios/README.md`).
 Os arquivos crus não são versionados; as nove telas de atividade viraram
 entradas do censo em `lattes-formularios/censo-2026-10-15c.json`.
 **Observado**, menos onde está marcado.
@@ -2296,13 +2385,9 @@ entradas do censo em `lattes-formularios/censo-2026-10-15c.json`.
 **A linha de autor do menu (lote 4).** O vetor `autorDP` do menu tem 14
 linhas, todas com as chaves `l`, `c`, `t` e `deletable`, nessa ordem. O código
 `c` é "9" em nove linhas, "99" em quatro e vazio em uma. O `authorShape()`
-dessa rodada comparou cada `l` com o nome completo do dono, sem devolvê-lo, e
-respondeu `matches: 2` com `codePattern: "99"`. Esse padrão é o da última
-linha que casou: o ajudante de então sobrescrevia o padrão a cada casamento,
-então a saída não diz o código da outra linha, nem se a linha com `c` vazio
-casou com o nome. O ajudante agora devolve cada casamento (pelo nome ou pela
-citação) e diz se a linha sem código é uma delas; a nova rodada do lote 4 está
-em `lattes-formularios/recaptura.md`. O que o código das páginas mostra:
+comparou cada `l` com o nome completo do dono, sem devolvê-lo, e achou duas
+linhas, com `codePattern: "99"` na última; se a linha com `c` vazio casou
+com o nome, essa rodada não disse. O que o código das páginas mostra:
 
 - o `check()` só reconhece a própria pessoa por uma linha com `c` vazio,
   começando com "-" ou igual a "D" (seção 21);
@@ -2318,10 +2403,11 @@ em `lattes-formularios/recaptura.md`. O que o código das páginas mostra:
   azul o código negativo e o esconde quando `ignoraUsuario` vale 1. Que o -1
   seja a própria pessoa é **inferido** do nome da variável.
 
-**Nenhum número do Lattes na grade.** Procurei o identificador do dono
-(`NUMERO-IDENTIFICADOR`, `f_id`, `id_usuario`, `nro_id_cnpq` e parecidos) nos
-scripts e ocultos das capturas de 15/10/2026 (`censo-2026-10-15.json`, `b`,
-`c` e os três arquivos crus da recaptura). Não aparece em linha nenhuma do
+**Nenhum número do Lattes na grade.** O identificador do dono
+(`NUMERO-IDENTIFICADOR`, `f_id`, `id_usuario`, `nro_id_cnpq` e parecidos) foi
+procurado nos scripts e ocultos das capturas de 15/10/2026
+(`censo-2026-10-15.json`, `b`, `c` e os três arquivos crus da recaptura).
+Não aparece em linha nenhuma do
 `autorDP`, em nenhuma chave serializada em `f_autores_l` nem em oculto dos
 formulários de registro, projeto e atividade. O único `f_id` é o parâmetro do
 Importar (`pkg_import_cv.form01`), e o redator troca qualquer número longo por
@@ -2402,10 +2488,3 @@ responde 404 sem parâmetros. `PKG_PROJETO.pp_lista_autores` tem um campo de
 busca, a lista de pessoas (cada uma como `p[i]="<código>#<nome>@<citação>"`)
 e o link `pkg_projeto.novo_equipe?f_tipo=A&f_nome=`
 para incluir quem não está na lista.
-
-**O redator do censo.** As páginas desses lotes trazem nomes em dois lugares
-que o redator não conhecia, os literais `"<código>#<nome>@<citação>"` e o
-texto depois do primeiro `<br>` em `setarTitulo(...)`. Os dois passaram a ser
-trocados por `[removido]` (`src/census/census-page.ts`), também com um
-apóstrofo no nome (D'Ávila, aspa escapada ou não) e com o `<br>` escapado
-(`&lt;br&gt;`).

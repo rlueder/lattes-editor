@@ -142,7 +142,7 @@ async function capture(options: Options = {}): Promise<CensusFile> {
 /**
  * Só a passada de edição. Com `download`, baixa um arquivo no formato do censo
  * (sem formulários), que o relatório lê junto com as capturas
- * (docs/lattes-formularios/recaptura-edicao.md).
+ * (docs/lattes-formularios/README.md).
  */
 async function link(xml?: string, options: LinkOptions & { download?: boolean } = {}) {
   const result = await linkFields(port, await code(), xml ?? (await exportedXml()), options);
@@ -182,7 +182,7 @@ async function captureAll(options: Options & { xml?: string } = {}): Promise<Cen
 }
 
 /**
- * Páginas avulsas, com scripts e links (docs/lattes-formularios/recaptura.md).
+ * Páginas avulsas, com scripts e links (docs/lattes-formularios/README.md).
  * Cada caminho vai sem f_cod; `{ path, noCode: true }` abre sem ele.
  */
 async function inspect(
