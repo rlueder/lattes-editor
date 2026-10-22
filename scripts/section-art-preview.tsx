@@ -17,7 +17,12 @@ import { buildSections } from '../src/ui/sections.ts';
 const SECTIONS = buildSections(parseXml('<CURRICULO-VITAE/>').root);
 
 function Preview() {
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(() => {
+    const theme = document.documentElement.dataset.theme;
+    return (
+      theme === 'dark' || (theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+    );
+  });
   const [grid, setGrid] = useState(false);
   const [selected, setSelected] = useState('projetos');
   const section = SECTIONS.find((s) => s.id === selected)!;

@@ -54,7 +54,10 @@ de `brand/construction/proportions.json`. O arquivo de entrada da prancha é
 Para criar outro ícone, adicione o id da seção ao mapa `ART` em
 `src/ui/empty-art.tsx`, dentro de `Art`. Use o módulo de 8 px e a subdivisão
 de 1 px para as formas; `Ring` e `Lines` já preservam as proporções dos anéis
-e das barras do logo. A cor principal vem de `currentColor`, que acompanha
+e das barras do logo. As dimensões das barras vêm de
+`brand/construction/proportions.json`, usado também para a espessura dos
+detalhes. Os anéis aceitam escalas fracionárias para ajustes ópticos, mantendo
+a relação entre os diâmetros. A cor principal vem de `currentColor`, que acompanha
 a assinatura nos dois temas; `MINT` guarda o destaque menta. Mantenha o SVG
 em 96 × 96 px, sem arquivos externos nem ids compartilhados entre desenhos.
 

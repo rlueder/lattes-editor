@@ -5,8 +5,13 @@
 
 import type { ReactNode } from 'react';
 
+import proportions from '../../brand/construction/proportions.json';
+
 const MINT = '#9EF2E2';
-const DETAIL = (8 * 72) / 131.941162109375;
+const MODULE = 8;
+const DETAIL = MODULE * proportions.text_stroke_x;
+const LINE_PITCH = MODULE * proportions.text_line_pitch_x;
+const LINE_WIDTHS = proportions.text_widths_x.map((width) => MODULE * width);
 
 function Art({ children }: { children: ReactNode }) {
   return (
@@ -24,7 +29,7 @@ function Art({ children }: { children: ReactNode }) {
   );
 }
 
-/** O anel da marca: raio externo de 7 e interno de 3, escalado por inteiro. */
+/** Anel da marca com escala uniforme; frações permitem ajustes ópticos. */
 function Ring({
   accent = false,
   cx,
@@ -50,8 +55,8 @@ function Ring({
 function Lines({ x, y }: { x: number; y: number }) {
   return (
     <g transform={`translate(${x} ${y})`}>
-      <rect height={DETAIL} width={(8 * 300) / 131.941162109375} />
-      <rect height={DETAIL} width={(8 * 220) / 131.941162109375} y={(8 * 150) / 131.941162109375} />
+      <rect height={DETAIL} width={LINE_WIDTHS[0]} />
+      <rect height={DETAIL} width={LINE_WIDTHS[1]} y={LINE_PITCH} />
     </g>
   );
 }
@@ -173,7 +178,8 @@ const ART: Record<string, () => ReactNode> = {
         fillRule="evenodd"
       />
       <Lines x={24} y={40} />
-      <path d="M60 40h12v4.3656H60zM60 49h9v4.3656h-9z" />
+      <rect height={DETAIL} width="12" x="60" y="40" />
+      <rect height={DETAIL} width="9" x="60" y="49" />
       <path d="M68 64h16v8H60z" fill={MINT} />
     </Art>
   ),
