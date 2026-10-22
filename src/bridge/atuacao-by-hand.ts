@@ -32,14 +32,15 @@ const ATUACAO =
   'A tela da atuação do Lattes não tem: a instituição (só leva aos vínculos, às atividades e à exclusão). Inclua no Lattes a atuação com a outra instituição e exclua esta';
 
 /**
- * O link de alteração de uma atividade é montado por JavaScript na tela de
- * cargos e vínculos e não foi lido (seção 17), e o formulário
- * GN_ATIV_CARGO leva a grade de descrições em f_espec_l, que a página de
- * alteração escreve num vetor também não lido (seção 22): enviar sem ela
- * apagaria cargos, disciplinas e linhas de pesquisa.
+ * A alteração de uma atividade vai pelo conector (edit-atividade.ts; o
+ * formulário GN_ATIV_CARGO e a grade de descrições f_espec_l estão em
+ * docs/lattes_internals.md, seção 17, lidos em 19/10/2026) quando
+ * EDIT_ATIVIDADES_ENABLED está ligada. O que chega aqui é o que ela não
+ * trata: um envio sem a grade apagaria cargos, disciplinas e linhas de
+ * pesquisa, então fica à mão.
  */
 const ACTIVITY =
-  'Alterar uma atividade da atuação vai à mão: o Lattes guarda o cargo, as disciplinas ou as linhas de pesquisa numa grade que a página de alteração monta de um jeito que ainda não foi lido, e um envio sem ela as apagaria';
+  'Alterar esta atividade da atuação vai à mão: o conector ainda não leva a grade de cargos, disciplinas ou linhas de pesquisa dela, e um envio sem a grade as apagaria';
 
 /** Seções 18 e 21: a chave r da grade de áreas não foi lida, nem como a página monta uma área nova. */
 const AREA =

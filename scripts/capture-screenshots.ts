@@ -37,12 +37,8 @@ interface Shot {
    * vier, para uma captura errada não ir parar na página do projeto.
    */
   prepare?: string;
-  /** Modo de privacidade (dados pessoais mascarados). */
-  privacy?: boolean;
   /** O arquivo, a partir da raiz do repositório, sem ".jpg". */
   site: string;
-  /** Antes de abrir o currículo (a tela inicial). */
-  welcome?: boolean;
 }
 
 const OPEN_SEARCH = `location.hash = 'producoes';
@@ -175,7 +171,6 @@ async function capture(
   });
   await cdp.send('Page.navigate', { url });
   await sleep(1500);
-  for (const shot of shots.filter((s) => s.welcome)) await shoot(shot);
 
   const { root: doc } = await cdp.send<{ root: { nodeId: number } }>('DOM.getDocument');
   const { nodeId } = await cdp.send<{ nodeId: number }>('DOM.querySelector', {
@@ -185,18 +180,12 @@ async function capture(
   await cdp.send('DOM.setFileInputFiles', { files: [fixture], nodeId });
   await sleep(2000);
 
-  // O modo de privacidade vem ligado; cada tela pede o seu. A troca recarrega
-  // a página (o currículo fica no IndexedDB e volta aberto).
-  let privacy: boolean | undefined;
-  for (const shot of shots.filter((s) => !s.welcome)) {
-    const want = shot.privacy ?? false;
-    if (want !== privacy) {
-      await evaluate(
-        `localStorage.setItem('lattes-editor:privacidade', '${want ? '1' : '0'}'); location.reload()`,
-      );
-      await sleep(2500);
-      privacy = want;
-    }
+  // O modo de privacidade vem ligado, e as telas do site saem com os dados à
+  // mostra (o currículo é o de demonstração). A troca recarrega a página; o
+  // currículo fica no IndexedDB e volta aberto.
+  await evaluate(`localStorage.setItem('lattes-editor:privacidade', '0'); location.reload()`);
+  await sleep(2500);
+  for (const shot of shots) {
     // Fecha o que a captura anterior abriu (⌘K, modal) e volta ao topo.
     await evaluate(
       `document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); scrollTo(0, 0)`,

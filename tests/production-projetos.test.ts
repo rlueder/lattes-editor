@@ -774,7 +774,7 @@ describe('atuação, atividades e áreas: o motivo de ficar à mão', () => {
         const d = findIn(root, (el) => el.name === 'DIRECAO-E-ADMINISTRACAO')!;
         setAttr(d, 'CARGO-OU-FUNCAO', 'Direção');
       })[0],
-    ).toMatch(/Alterar uma atividade da atuação vai à mão/);
+    ).toMatch(/Alterar esta atividade da atuação vai à mão/);
     expect(
       reasonOf((root) => {
         const a = findIn(root, (el) => el.name === 'AREA-DE-ATUACAO')!;

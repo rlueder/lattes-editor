@@ -5,8 +5,10 @@
 //
 // O que o reconhecimento viu é o formulário vazio e a busca de instituição;
 // a resposta do POST de inclusão, o valor de F_COD e F_NIVEL na busca e o
-// texto exato de f_vinc para cada tipo de vínculo são inferidos até o
-// primeiro envio acompanhado por este caminho (CREATE_ITEMS_ENABLED, abaixo).
+// texto exato de f_vinc para cada tipo de vínculo são inferidos: nenhuma
+// inclusão por este caminho foi acompanhada num Lattes real ainda. A chave
+// CREATE_ITEMS_ENABLED (abaixo) está ligada para o teste ao vivo; desligada,
+// o plano não produz inclusão.
 //
 // Formação acadêmica e projeto estão em create-items.ts (LAT-52), com a mesma
 // chave; a patente continua à mão.
