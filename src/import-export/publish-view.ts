@@ -21,16 +21,22 @@ import type { PublishReading, SendScreenReading } from '../ui/use-publish.ts';
 export type PublishForm = Omit<PublishRequest, 'declarationAccepted' | 'declarationText'>;
 
 /**
- * O formulário começa com o que a tela de envio do Lattes tem. Sem o
- * controle na tela, nada é presumido: o campo fica vazio ou desmarcado, e o
- * envio é recusado (missingControls, em src/bridge/publish.ts).
+ * O formulário começa com o que a tela de envio do Lattes tem e com as
+ * escolhas da última vez (publish-memory.ts): o idioma e a versão em inglês
+ * da última vez valem quando a tela tem o controle (o idioma, se ainda for
+ * uma das opções); os e-mails são os do Lattes, e os da última vez só entram
+ * no campo que o Lattes trouxe vazio. Sem o controle na tela, nada é
+ * presumido: o campo fica vazio ou desmarcado, e o envio é recusado
+ * (missingControls, em src/bridge/publish.ts). A declaração não está aqui.
  */
-export function initialForm(screen?: SendScreen): PublishForm {
+export function initialForm(screen?: SendScreen, last: Partial<PublishForm> = {}): PublishForm {
+  const options = screen?.language?.options ?? [];
+  const lastLanguage = options.some((o) => o.value === last.language) ? last.language : undefined;
   return {
-    emailAlternative: screen?.emailAlternative ?? '',
-    emailContact: screen?.emailContact ?? '',
-    english: screen?.english?.checked ?? false,
-    language: screen?.language?.selected ?? '',
+    emailAlternative: screen?.emailAlternative || (screen ? (last.emailAlternative ?? '') : ''),
+    emailContact: screen?.emailContact || (screen ? (last.emailContact ?? '') : ''),
+    english: screen?.english ? (last.english ?? screen.english.checked) : false,
+    language: lastLanguage ?? screen?.language?.selected ?? '',
   };
 }
 

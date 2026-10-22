@@ -11,12 +11,14 @@ import { useEffect, useId, useMemo, useState } from 'react';
 
 import { requestProblem } from '../bridge/publish.ts';
 import { failed } from '../bridge/sent-log.ts';
+import { simulatedSendScreen } from '../dev/send-screen-preview.ts';
 import { parseXml } from '../model/xml.ts';
 import { diffEspelho } from '../review/espelho-diff.ts';
 import { Modal } from '../ui/Modal.tsx';
 import { unpublishedEntries } from '../ui/status-strip.ts';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { usePublish } from '../ui/use-publish.ts';
+import { loadChoices, saveChoices } from './publish-memory.ts';
 import {
   canReadSendScreen,
   checksLine,
@@ -83,29 +85,28 @@ function PublishPanelBody(props: Props) {
   // Ao abrir, com a extensão: a tela de envio e a versão atual do Lattes, só leituras.
   // Sem a capacidade enviar-cnpq, o pedido nem sai.
   const { available, features, requestEspelho } = bridge;
+  // No `pnpm dev`, ?simular-envio dá uma tela de exemplo, sem extensão.
+  const [fake] = useState(simulatedSendScreen);
   const readable = available && canReadSendScreen(features);
   useEffect(() => {
-    if (!open || !readable) return;
+    if (!open || !readable || fake) return;
     setScreenRequest({ at: Date.now(), id: cnpq.requestScreen() });
     requestEspelho();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, readable]);
 
-  const reading = cnpq.screen?.id === screenRequest?.id ? cnpq.screen : undefined;
+  const reading = fake ?? (cnpq.screen?.id === screenRequest?.id ? cnpq.screen : undefined);
   const screen = reading?.screen;
   // O formulário começa com o que o Lattes tem, uma vez por leitura; uma
   // leitura nova desmarca a declaração, que valia para o texto de antes.
   useEffect(() => {
     if (!reading) return;
-    setForm(initialForm(reading.screen));
+    setForm(initialForm(reading.screen, loadChoices(lattesId)));
     setDeclared(false);
-  }, [reading]);
-  const screenStatus = sendScreenStatus({
-    features,
-    now,
-    reading,
-    requestedAt: screenRequest?.at,
-  });
+  }, [reading, lattesId]);
+  const screenStatus = fake
+    ? { waiting: false }
+    : sendScreenStatus({ features, now, reading, requestedAt: screenRequest?.at });
   // Sem resposta, o prazo da leitura da tela também passa.
   useEffect(() => {
     if (!screenStatus.waiting || !screenRequest) return;
@@ -146,7 +147,14 @@ function PublishPanelBody(props: Props) {
   const request = form && screen && publishRequest(form, declared, screen.declaration);
   const problem = request && requestProblem(request, screen);
   const canSend = enabled && !!request && !problem && !status.locked && blockers.length === 0;
-  const set = (patch: Partial<PublishForm>) => setForm((f) => f && { ...f, ...patch });
+  // Cada escolha fica guardada para a próxima abertura; a declaração, não.
+  const set = (patch: Partial<PublishForm>) =>
+    setForm((f) => {
+      if (!f) return f;
+      const next = { ...f, ...patch };
+      saveChoices(lattesId, next);
+      return next;
+    });
 
   const send = () => {
     if (!request || !canSend) return;
