@@ -20,12 +20,26 @@ outras 127 são o alvo deste plano.
 
 - 21/10/2026, à noite: a natureza da participação em evento pelo conector,
   como alteração do mesmo item (Fase 6, sem substituir). Gravado no Lattes
-  real com um evento de teste, removido pelo registro. 2619 para 2628 de 2738.
+  real com um evento de teste, removido pelo registro. 2645 para 2654 de 2731.
   Formação complementar e endereço profissional pelas buscas seguem
   desligados: as listas de cursos de curta duração das instituições tentadas
   vieram vazias (a troca pediria cadastrar um curso na tabela do Lattes), e o
   endereço profissional do currículo não tem instituição para um teste
   reversível.
+- 21/10/2026, à noite: sete campos que o Lattes não deixa alterar por
+  caminho nenhum passaram a "o formulário do Lattes não tem", e o editor os
+  mostra sem edição, com o motivo: nome do pai e da mãe (ocultos na
+  identificação), tipo do vínculo (desabilitado no formulário), a instituição
+  da atuação, o órgão do ensino e o nome do idioma (segue o código). Os
+  motivos de valor (tipo de participação, tipo de graduação) ficaram: ali
+  outros valores vão. 2645 de 2731 (97%).
+- 21/10/2026, à noite: a medida parte de um valor que o formulário tem. O
+  exemplo traz valores que o Lattes não oferece (WEB no meio de divulgação, a
+  carga horária como texto), e nenhuma troca a partir deles vai; o script
+  tentava só outras opções de destino. Agora, quando todas falham pelo valor,
+  o item parte de outra opção da lista (ou de 40 horas) e o campo conta se
+  alguma troca vai, como já se fazia com os 138 valores fora da lista do
+  Lattes. Um item real com WEB continua indo à mão. 2619 para 2645 de 2738.
 - 21/10/2026, à noite: período e órgão da pesquisa e desenvolvimento e do
   treinamento ministrado pelo conector, gravados no Lattes real com uma
   atividade de teste de cada tipo e removidos pelo registro. A grade (linhas
