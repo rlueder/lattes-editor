@@ -70,6 +70,7 @@ import { findLinks, isLogonPage } from './lattes-html.ts';
 import { pcdChecked, withPcd } from './pcd.ts';
 import type { BridgeOp } from './plan.ts';
 import { applyProduction } from './production/apply.ts';
+import type { ProductionScans } from './production/locate.ts';
 import { organLoose } from './production/organ.ts';
 import { isProductionOp, type ProductionOp } from './production/plan.ts';
 
@@ -79,6 +80,8 @@ export interface LattesPort {
   /** HTML do menu do editor (a página aberta na aba). */
   menuHtml(): Promise<string> | string;
   post(path: string, body: string): Promise<string>;
+  /** Títulos já conferidos na lista atual; controles sempre vêm de uma leitura nova. */
+  productionScans?: ProductionScans;
   /** Controles de um formulário pelo nome, ou undefined se a página não o tem. */
   readForm(html: string, formName: string): FormControl[] | undefined;
 }

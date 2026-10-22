@@ -66,6 +66,18 @@ declare namespace chrome {
     }): Promise<InjectionResult<Awaited<T>>[]>;
   }
 
+  namespace declarativeNetRequest {
+    function updateSessionRules(options: {
+      removeRuleIds: number[];
+      addRules: {
+        id: number;
+        priority: number;
+        action: { type: 'block' };
+        condition: { tabIds: number[]; resourceTypes: ['sub_frame']; urlFilter: string };
+      }[];
+    }): Promise<void>;
+  }
+
   namespace storage {
     interface Area {
       get(keys?: string | string[] | null): Promise<Record<string, unknown>>;

@@ -28,7 +28,7 @@ export async function loadCv(bytes: Uint8Array, sourceName: string): Promise<Loa
   let xmlBytes = bytes;
   let xmlName = sourceName;
   if (isZip(bytes)) {
-    const entries = (await readZip(bytes)).filter((e) => e.name.toLowerCase().endsWith('.xml'));
+    const entries = await readZip(bytes, { select: (name) => name.toLowerCase().endsWith('.xml') });
     if (entries.length !== 1) {
       throw new CvLoadError(
         `O ZIP deveria ter exatamente um arquivo .xml, e tem ${entries.length}.`,

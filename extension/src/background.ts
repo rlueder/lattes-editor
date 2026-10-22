@@ -12,19 +12,16 @@ import {
   AUTO_VERIFY_DELAY_MS,
   AUTO_VERIFY_RETRY_DELAY_MS,
   retryAutoVerify,
+  reusableVerification,
   shouldAutoVerify,
 } from '../../src/bridge/contract-schedule.ts';
 import { sameCv } from '../../src/bridge/lattes-html.ts';
 import { photoBusy } from '../../src/bridge/photo.ts';
-import {
-  type BridgeMessage,
-  bridgeMessage,
-  type EditorMessage,
-  isEditorMessage,
-  type NoReadingReason,
-} from '../../src/bridge/protocol.ts';
+import { type BridgeMessage, type EditorMessage } from '../../src/bridge/protocol.ts';
 import { contractStop, type RoundPause, runRound } from '../../src/bridge/write-brake.ts';
+import { AppPort } from './app-port.ts';
 import { CONSENT_KEY, hasConsent, isConsentCurrent } from './consent.ts';
+import { handleDevFrameGuard } from './dev-frame-guard.ts';
 import { ownVersion, reloadForApp } from './dev-reload.ts';
 import {
   BUSY_TEXT,
@@ -40,6 +37,7 @@ import { isLattesMenu, isRealLattesMenu } from './lattes-hosts.ts';
 import {
   answerListRequest,
   applyInTab,
+  cancelInTab,
   failedReport,
   type Identity,
   lattesTab,
@@ -51,6 +49,8 @@ import {
   verifyOn,
 } from './lattes-tab.ts';
 import { answerPublishRequest, publishRunning } from './publish-run.ts';
+import { readSession } from './session-reading.ts';
+import { sessionTaskRunning } from './session-task.ts';
 import {
   APP_KEY,
   type EditorEndpoint,
@@ -62,13 +62,13 @@ import {
 import { answerTestItems, testItemsRunning } from './test-items-run.ts';
 import { isToolbarThemeMessage } from './toolbar-icon.ts';
 import { restoreToolbarTheme, setToolbarTheme } from './toolbar-theme.ts';
+import { handleTrafficPause } from './traffic-pause.ts';
 
 /**
  * Nome do host nativo registrado pelo app (conector::HOST_NAME): o do
  * LattesEditor ou o do LattesEditor Dev, escolhido na montagem
  * (scripts/build-extension.ts).
  */
-const NATIVE_HOST = __NATIVE_HOST__;
 
 let stopRequested = false;
 /**
@@ -87,37 +87,15 @@ let photoInFlight = false;
 let queueActive = false;
 /** A foto, o Importar, o envio ao CNPq ou os itens de teste estão usando a aba do Lattes. */
 const tabInUse = () => photoInFlight || importRunning() || publishRunning() || testItemsRunning();
-let appPort: chrome.runtime.Port | undefined;
-
-/**
- * Liga ao app de desktop. O host fica de pé enquanto a porta existir e espera
- * o app abrir; sem app instalado, a conexão cai na hora e tenta de novo no
- * próximo alarme.
- */
-function connectApp(): void {
-  // Montagem sem host (--sem-app, para as gravações da página): não liga ao app.
-  if (appPort || !NATIVE_HOST) return;
-  try {
-    appPort = chrome.runtime.connectNative(NATIVE_HOST);
-  } catch {
-    return;
-  }
-  appPort.onMessage.addListener((data) => {
-    if (isEditorMessage(data)) void onEditor(data, 'app');
-  });
-  appPort.onDisconnect.addListener(() => {
-    // Ler lastError evita o aviso de erro não tratado no console.
-    void chrome.runtime.lastError;
-    appPort = undefined;
-    // Sem app ligado, o painel não compara versões com um app que já fechou.
-    void chrome.storage.session.remove(APP_KEY).catch(() => undefined);
-  });
-}
+const appConnection = new AppPort(__NATIVE_HOST__, (msg) => {
+  void onEditor(msg, 'app');
+});
+const connectApp = () => appConnection.connect();
 
 async function toEditor(editor: EditorEndpoint | undefined, msg: BridgeMessage): Promise<void> {
   if (editor === undefined) return;
   if (editor === 'app') {
-    appPort?.postMessage(bridgeMessage(msg));
+    appConnection.send(msg);
     return;
   }
   try {
@@ -127,43 +105,8 @@ async function toEditor(editor: EditorEndpoint | undefined, msg: BridgeMessage):
   }
 }
 
-/**
- * O que o editor sabe da sessão do Lattes: o código de 10 caracteres do
- * currículo, para a foto, e o estado do menu (última publicação e
- * pendência), sempre junto com de quem ele é.
- */
-async function sendSession(editor: EditorEndpoint, fresh = false): Promise<void> {
-  // Sem leitura, o editor recebe o porquê, para o cabeçalho explicar.
-  const none = (reason: NoReadingReason, lattesId?: string) =>
-    toEditor(editor, { lattesId, reason, type: 'sem-leitura' });
-  if (!(await hasConsent())) return none('consentimento');
-  const tabId = await lattesTab();
-  if (tabId === undefined) return none('sem-aba');
-  try {
-    const id = await sessionIdentity(tabId, fresh);
-    if (id.code) {
-      await toEditor(editor, { code: id.code, lattesId: id.lattesId, type: 'codigo-cv' });
-    }
-    if (id.status) {
-      await toEditor(editor, { lattesId: id.lattesId, status: id.status, type: 'estado-lattes' });
-    } else {
-      await none('sem-data', id.lattesId);
-    }
-  } catch {
-    // Sem permissão na aba ou aba recarregando: sem foto nem estado.
-    await none('erro');
-  }
-}
-
-/** Abrir do Lattes: o ZIP do Exportar (lattes-tab.ts). */
-async function sendCurriculo(editor: EditorEndpoint, id: string): Promise<void> {
-  await toEditor(editor, { ...(await readCurriculo()), id, type: 'curriculo' });
-}
-
-/** A versão atual do Lattes, para o diagnóstico (lattes-tab.ts). */
-async function sendEspelho(editor: EditorEndpoint): Promise<void> {
-  await toEditor(editor, { ...(await readEspelho()), type: 'espelho' });
-}
+const sendSession = (editor: EditorEndpoint, fresh = false) =>
+  readSession((msg) => toEditor(editor, msg), fresh);
 
 async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<void> {
   if (msg.type === 'ola') {
@@ -188,24 +131,34 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
   }
   // Parar a rodada, ou seguir com o resto depois da pausa (editor-run.ts).
   if (msg.type === 'parar' || msg.type === 'continuar') {
-    if (msg.type === 'parar') stopRequested = true;
-    else void run(undefined, true);
+    if (msg.type === 'parar') {
+      stopRequested = true;
+      void cancelInTab();
+    } else void run(undefined, true);
     return;
   }
   if (msg.type === 'recarregar-lattes') {
     await reloadLattesTab();
     return;
   }
+  const busy = async () =>
+    (await readState()).running ||
+    queueActive ||
+    verifyInFlight ||
+    sessionTaskRunning() ||
+    tabInUse();
   if (msg.type === 'pedir-espelho') {
-    await sendEspelho(editor);
+    if (await busy()) return toEditor(editor, { error: BUSY_TEXT, type: 'espelho' });
+    await toEditor(editor, { ...(await readEspelho()), type: 'espelho' });
     return;
   }
   // Listas do Lattes: só leituras, e nunca durante uma gravação (lattes-tab.ts).
-  const busy = async () => (await readState()).running || tabInUse();
   const listReply = await answerListRequest(msg, busy);
   if (listReply) return toEditor(editor, listReply);
   if (msg.type === 'pedir-curriculo') {
-    await sendCurriculo(editor, msg.id);
+    if (await busy())
+      return toEditor(editor, { detail: BUSY_TEXT, id: msg.id, reason: 'erro', type: 'curriculo' });
+    await toEditor(editor, { ...(await readCurriculo()), id: msg.id, type: 'curriculo' });
     return;
   }
   // A tela de envio ao CNPq e o envio (publish-run.ts).
@@ -221,7 +174,10 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     return;
   }
   if (msg.type === 'enviar-foto') {
-    const busy = photoBusy((await readState()).running, tabInUse());
+    const busy = photoBusy(
+      (await readState()).running || queueActive,
+      tabInUse() || verifyInFlight || sessionTaskRunning(),
+    );
     if (busy) return toEditor(editor, { ...busy, id: msg.id, type: 'foto' });
     // A pessoa já viu a foto e confirmou no editor; depois, o menu relido
     // mostra se o Lattes ficou com alteração a enviar ao CNPq.
@@ -290,7 +246,8 @@ async function verifyOnce(auto: boolean): Promise<void> {
   // Sem o "ok" do aviso, nada é lido do Lattes; o painel mostra o aviso no lugar do botão.
   if (!(await hasConsent())) return;
   const state = await readState();
-  if (state.running || state.verificando || tabInUse()) return;
+  if (state.running || state.verificando || queueActive || sessionTaskRunning() || tabInUse())
+    return;
   if (auto) {
     if (!shouldAutoVerify(state.verificacao, Date.now())) return;
     if ((await lattesTab()) === undefined) return;
@@ -300,8 +257,11 @@ async function verifyOnce(auto: boolean): Promise<void> {
   // O "verificando" fica gravado; se algo estourar aqui, precisa ser desfeito
   // mesmo assim, senão o botão do painel fica preso.
   let report = failedReport('Falha inesperada');
+  let verifiedCv: string | undefined;
   try {
     const tabId = await lattesTab();
+    const identity = tabId === undefined ? undefined : await sessionIdentity(tabId);
+    verifiedCv = identity?.lattesId;
     report =
       tabId === undefined
         ? failedReport('Abra o currículo no Lattes (a página do menu) numa aba e tente de novo')
@@ -313,7 +273,12 @@ async function verifyOnce(auto: boolean): Promise<void> {
   } catch (err) {
     if (err instanceof Error) report = failedReport(err.message);
   } finally {
-    await writeState({ ...(await readState()), verificacao: report, verificando: false });
+    await writeState({
+      ...(await readState()),
+      verificacao: report,
+      verificacaoCv: verifiedCv,
+      verificando: false,
+    });
   }
 }
 
@@ -326,7 +291,7 @@ async function run(keys?: string[], fromEditor = false): Promise<void> {
   }
   const state = await readState();
   if (state.running || queueActive) return; // queueActive: sem await até ele virar true
-  if (state.verificando || tabInUse()) {
+  if (state.verificando || verifyInFlight || sessionTaskRunning() || tabInUse()) {
     return refuse(state, BUSY_TEXT);
   }
   queueActive = true;
@@ -378,8 +343,17 @@ async function run(keys?: string[], fromEditor = false): Promise<void> {
       // mudança do CNPq num formulário da fila para tudo, com o campo apontado.
       // Se nem deu para conferir, também para: sem leitura, não há garantia.
       if (queue.length > 0) {
-        const report = await verifyOn(tabId);
-        await writeState({ ...(await readState()), verificacao: report });
+        const kinds = queue.map((op) => op.kind);
+        const report =
+          sameCv(state.verificacaoCv, session.lattesId) &&
+          reusableVerification(state.verificacao, kinds, Date.now())
+            ? state.verificacao!
+            : await verifyOn(tabId, kinds);
+        await writeState({
+          ...(await readState()),
+          verificacao: report,
+          verificacaoCv: session.lattesId,
+        });
         const stop = contractStop(report, queue);
         if (stop && first) {
           await record({ ...stop, key: first.key });
@@ -425,7 +399,9 @@ async function run(keys?: string[], fromEditor = false): Promise<void> {
   }
 }
 
-chrome.runtime.onMessage.addListener((message, sender) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (handleDevFrameGuard(message, sender, sendResponse)) return true;
+  if (handleTrafficPause(message, sender, sendResponse)) return true;
   const m = message as { from?: string; msg?: EditorMessage } & Partial<PanelCommand>;
   if (isToolbarThemeMessage(message)) {
     void setToolbarTheme(message.toolbar);
@@ -436,7 +412,10 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     return;
   }
   if (m.cmd === 'aplicar') void run(m.keys);
-  if (m.cmd === 'parar') stopRequested = true;
+  if (m.cmd === 'parar') {
+    stopRequested = true;
+    void cancelInTab();
+  }
   if (m.cmd === 'verificar') void verify(m.auto);
   if (m.cmd === 'limpar') {
     void readState().then(async (s) => {
@@ -453,6 +432,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     });
     void chrome.action.setBadgeText({ text: '' });
   }
+  return false;
 });
 
 // Ao acordar, volta ao último tema da barra e passa a acompanhar as trocas.
@@ -462,7 +442,7 @@ void restoreToolbarTheme();
 // ficou retido, sem esperar a próxima reconexão.
 chrome.storage.onChanged.addListener((changes, area) => {
   const change = (changes as Record<string, { newValue?: unknown }>)[CONSENT_KEY];
-  if (area === 'local' && change && isConsentCurrent(change.newValue) && appPort) {
+  if (area === 'local' && change && isConsentCurrent(change.newValue) && appConnection.connected) {
     void sendSession('app');
   }
 });
@@ -475,7 +455,7 @@ chrome.tabs.onUpdated.addListener((_tabId, info, tab) => {
   const menu = __CANAL_DEV__ ? isLattesMenu(tab.url, true) : isRealLattesMenu(tab.url);
   if (!menu) return;
   void verify(true);
-  if (appPort) void sendSession('app');
+  if (appConnection.connected) void sendSession('app');
 });
 
 // O service worker acorda por vários motivos; em todos, tenta ligar ao app.

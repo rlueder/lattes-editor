@@ -66,7 +66,7 @@ const EXTENSION_KEY =
   'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsto1W7uktgE8f/+ZTR490rR7dwCdDbM5nOzKzEBcxdZImC7VTwhKnKWrHzxB3GOHUcdMx7cgKjSsuOetyU0NNMVhtcqd5lCDBXv+QsRRkCCRvJi+00/bmpqYUPKWXq5s3UCLWmPkRcOdzR8VXVbyW6POdxB1A3+5R2HW6RvSpYxcEue8dF85o022CEhcalF/jyIjGio9TVRZyR6XzTPV+feYGithL5Ld5+ZzGIs5blEqIUqYavwSjpb3/yvDPx9LE1BSHyA244SdDmyBHqfPH5DE0fVon1FKE84vbXylNZbjJWB8DmIn51jYd8nRlbIzI16Q6nMIzz9pH07IItu8kQIDAQAB';
 
 mkdirSync(out, { recursive: true });
-for (const name of ENTRIES) {
+for (const name of [...ENTRIES, ...(devChannel ? ['dev-traffic-host'] : [])]) {
   await build({
     build: {
       emptyOutDir: false,
@@ -74,7 +74,7 @@ for (const name of ENTRIES) {
         entry: `${root}extension/src/${name}.ts`,
         fileName: () => `${name}.js`,
         formats: ['iife'],
-        name: `conector_${name.replace('-', '_')}`,
+        name: `conector_${name.replaceAll('-', '_')}`,
       },
       minify: false,
       outDir: out,
@@ -125,7 +125,23 @@ const TOOLBAR_ICONS = toolbarIconPaths(DEFAULT_TOOLBAR_THEME);
 const manifest = {
   action: { default_icon: TOOLBAR_ICONS, default_title: devChannel ? 'Conector Dev' : 'Conector' },
   background: { service_worker: 'background.js' },
-  content_scripts: [{ js: ['content.js'], matches: EDITOR_MATCHES, run_at: 'document_start' }],
+  content_scripts: [
+    { js: ['content.js'], matches: EDITOR_MATCHES, run_at: 'document_start' },
+    ...(devChannel
+      ? [
+          {
+            js: ['dev-traffic-host.js'],
+            matches: [
+              'https://wwws.cnpq.br/cvlattesweb/PKG_MENU.menu*',
+              'https://wwws.cnpq.br/curriculoweb/PKG_MENU.menu*',
+              'http://localhost/*',
+              'http://127.0.0.1/*',
+            ],
+            run_at: 'document_start',
+          },
+        ]
+      : []),
+  ],
   description:
     'Envia ao Lattes as alterações feitas no Editor do Currículo Lattes, a partir da sua própria sessão.',
   // No canal Dev, também o Lattes simulado em localhost (pnpm dev:lattes).
@@ -142,6 +158,7 @@ const manifest = {
   // lê o tema do navegador para o ícone da barra (o service worker não tem matchMedia).
   permissions: [
     'alarms',
+    ...(devChannel ? ['declarativeNetRequestWithHostAccess'] : []),
     ...(noApp ? [] : ['nativeMessaging']),
     'offscreen',
     'scripting',

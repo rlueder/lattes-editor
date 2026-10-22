@@ -26,6 +26,8 @@ export interface QueueState {
   running: boolean;
   /** Última verificação do Lattes contra o contrato do conector (src/bridge/contract.ts). */
   verificacao?: ContractReport;
+  /** Identidade da sessão em que a verificação foi feita. */
+  verificacaoCv?: string;
   verificando?: boolean;
 }
 

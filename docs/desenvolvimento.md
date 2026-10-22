@@ -293,3 +293,23 @@ vídeo em `site/img/homepage/` e defina o atributo `src` do elemento `video`
 dentro de `figure[data-shot]` em `site/index.html`. Use apenas o currículo
 fictício e inclua legendas caso haja fala. O vídeo usa controles nativos e
 não inicia automaticamente; se falhar, as telas voltam a aparecer.
+
+### Tráfego do censo Dev
+
+Depois de montar a extensão Dev, recarregue a extensão e a aba do menu. O
+censo pelo console também exige essa extensão: sem a ponte de tráfego,
+nenhum pedido é feito. A permissão `declarativeNetRequestWithHostAccess`
+existe só no canal Dev e bloqueia navegações HTTP de quadros na aba durante
+a tarefa. O conector normal continua sem essa permissão.
+
+A coleta respeita os mesmos tetos de pedidos e pausas do conector. Pode ser
+necessário aguardar a pausa e repetir a leitura; páginas já coletadas são
+reaproveitadas somente dentro da mesma tarefa. A cópia é liberada ao terminar,
+inclusive após erro ou cancelamento. Para reduzir uma coleta que excede o orçamento,
+passe os tipos em `only`. `__lattesCensus.cancel()` para a tarefa, inclusive
+os pedidos e quadros em andamento. Cancelar não desfaz POST já recebido.
+
+Um formulário que dependa de navegação ou recurso externo bloqueado para
+antes de gravar, ou deixa o envio como incerto se ele já começou. Confira o
+resultado no Lattes e adapte a integração antes de tentar outra vez. Os
+testes automatizados usam exclusivamente o servidor local e dados sintéticos.

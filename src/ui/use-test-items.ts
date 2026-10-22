@@ -31,6 +31,7 @@ export interface TestItemsSummary {
   lote?: string[];
   /** Linhas a mais que a base cuja página não se leu: não saem, nem conferidas. */
   naoLidas?: string[];
+  receptorError?: string;
   /** Linhas que as listas têm a mais que a base: o que o teste acrescentou. */
   registrados?: number;
   removidos?: number;
@@ -132,5 +133,5 @@ export function useTestItems() {
     post({ acao, id, type: 'itens-teste', ...extra });
   };
 
-  return { ask, pending: waiting?.acao, state };
+  return { ask, pending: waiting?.acao, state, stop: () => post({ type: 'parar' }) };
 }

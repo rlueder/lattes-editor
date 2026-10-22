@@ -18,12 +18,11 @@ import type { SentEntry } from './sent-log.ts';
 /**
  * Quantas gravações uma rodada faz antes de pedir confirmação de novo. Uma
  * rodada comum do editor tem de uma a dez operações (cada operação é um
- * item inteiro num formulário, com todos os campos alterados dele), e passa
- * sem pausa. As grandes vêm de itens trazidos de outro XML ou de uma
- * restauração; cada operação faz de três a cinco pedidos ao Lattes (ler o
- * formulário, gravar, ler de novo), e 20 seguidas já são uns cem pedidos
- * sem a pessoa olhar o Lattes. É também o tanto que dá para conferir à mão
- * numa olhada no currículo.
+ * item inteiro num formulário, com todos os campos alterados dele). As grandes
+ * vêm de itens trazidos de outro XML ou de uma restauração. A quantidade de
+ * pedidos varia: uma localização de produção pode ler a categoria inteira.
+ * Este teto limita quantas gravações a pessoa precisa conferir; o orçamento
+ * de rede e o espaçamento também das leituras ficam em transport.ts.
  */
 export const WRITES_PER_ROUND = 20;
 

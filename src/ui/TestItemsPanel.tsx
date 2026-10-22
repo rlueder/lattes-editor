@@ -9,13 +9,13 @@ import { liveLine, useTestItems } from './use-test-items.ts';
 const LABEL = {
   andamento: 'Atualizando',
   criar: 'Criando um lote',
-  preparar: 'Lendo os formulários (alguns minutos)',
+  preparar: 'Lendo os formulários',
   remover: 'Removendo um lote',
 } as const;
 
 export function TestItemsPanel() {
-  const { ask, pending, state } = useTestItems();
-  const [batch, setBatch] = useState(10);
+  const { ask, pending, state, stop } = useTestItems();
+  const [batch, setBatch] = useState(3);
   const s = state.summary;
   // A remoção sem marca pede um segundo clique, e leva só as linhas listadas.
   // A confirmação vale para a lista em que foi pedida: outra lista a desfaz.
@@ -52,14 +52,19 @@ export function TestItemsPanel() {
       <label className="test-items-batch">
         Lote
         <input
-          max={50}
+          max={3}
           min={1}
           type="number"
           value={batch}
-          onChange={(e) => setBatch(Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
+          onChange={(e) => setBatch(Math.max(1, Math.min(3, Number(e.target.value) || 1)))}
         />
       </label>
       <div className="test-items-actions">
+        {pending && (
+          <button className="danger" type="button" onClick={stop}>
+            Parar
+          </button>
+        )}
         <button disabled={!!pending} type="button" onClick={() => ask('preparar')}>
           Ler formulários
         </button>
@@ -97,6 +102,7 @@ export function TestItemsPanel() {
           {LABEL[pending]}… {liveLine(state.live)}
         </p>
       )}
+      {s?.receptorError && <p role="alert">{s.receptorError}</p>}
       {last?.error && (
         <p className="test-items-error" role="alert">
           {last.error}

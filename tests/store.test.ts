@@ -197,6 +197,98 @@ describe('banco local (IndexedDB)', () => {
       ]);
     });
 
+    it('ordena saves mesmo quando a cifra do primeiro demora', async () => {
+      let started!: () => void;
+      let finish!: () => void;
+      const began = new Promise<void>((r) => {
+        started = r;
+      });
+      const gate = new Promise<void>((r) => {
+        finish = r;
+      });
+      const encrypt = crypto.subtle.encrypt.bind(crypto.subtle);
+      const spy = vi.spyOn(crypto.subtle, 'encrypt').mockImplementationOnce(async (...args) => {
+        started();
+        await gate;
+        return encrypt(...args);
+      });
+      try {
+        const older = store.saveWorkingCopy(copy('<antigo/>', 1), 'primeiro');
+        await began;
+        const newer = store.saveWorkingCopy(copy('<novo/>', 2), 'segundo');
+        finish();
+        await Promise.all([older, newer]);
+        expect((await store.loadWorkingCopy())?.xml).toBe('<novo/>');
+      } finally {
+        finish();
+        spy.mockRestore();
+      }
+    });
+
+    it.each(['fechar', 'trocar'] as const)(
+      'save pendente não restaura o arquivo depois de %s',
+      async (action) => {
+        let started!: () => void;
+        let finish!: () => void;
+        const began = new Promise<void>((r) => {
+          started = r;
+        });
+        const gate = new Promise<void>((r) => {
+          finish = r;
+        });
+        const encrypt = crypto.subtle.encrypt.bind(crypto.subtle);
+        const spy = vi.spyOn(crypto.subtle, 'encrypt').mockImplementationOnce(async (...args) => {
+          started();
+          await gate;
+          return encrypt(...args);
+        });
+        try {
+          const pending = store.saveWorkingCopy(copy('<antigo/>', 1), 'antigo');
+          await began;
+          if (action === 'fechar') await store.clearAll();
+          else await store.replaceWorkingCopy(copy('<outro/>', 2));
+          finish();
+          await pending;
+          expect((await store.loadWorkingCopy())?.xml).toBe(
+            action === 'fechar' ? undefined : '<outro/>',
+          );
+          expect((await store.listHistory()).some((h) => h.xml === '<antigo/>')).toBe(false);
+        } finally {
+          finish();
+          spy.mockRestore();
+        }
+      },
+    );
+
+    it('um timer da geração antiga não salva depois de fechar', async () => {
+      const generation = store.workingGenerationToken();
+      await store.clearAll();
+      await store.saveWorkingCopy(copy('<antigo/>', 9), 'timer antigo', generation);
+      expect(await store.loadWorkingCopy()).toBeUndefined();
+    });
+
+    it('a rotação e a lista de notas não leem as cópias de XML', async () => {
+      await store.clearAll();
+      await store.saveWorkingCopy(copy('<primeiro/>', 1), 'primeiro');
+      let rowsRead = 0;
+      const reading = (row: unknown) => {
+        rowsRead++;
+        return row;
+      };
+      store.db.history.hook('reading', reading);
+      try {
+        await store.saveWorkingCopy(copy('<segundo/>', 2), 'segundo');
+        const infos = await store.listHistoryInfo();
+        expect(infos.map((h) => h.note)).toEqual(['segundo', 'primeiro']);
+        expect(infos.every((h) => !('xml' in h))).toBe(true);
+        expect(rowsRead).toBe(0);
+        expect((await store.getHistoryEntry(infos[0]!.id!))?.xml).toBe('<segundo/>');
+        expect(rowsRead).toBe(1);
+      } finally {
+        store.db.history.hook('reading').unsubscribe(reading);
+      }
+    });
+
     it('abrir outra exportação e fechar o arquivo não apagam o registro do enviado', async () => {
       await store.addSent(sentEntry(resumo('um'), '0000000000000001', 100));
       await store.saveWorkingCopy(copy('<editado/>', 5), 'edição');

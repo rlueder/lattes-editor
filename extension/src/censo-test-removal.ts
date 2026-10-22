@@ -2,8 +2,11 @@
 // só as linhas que não estavam na base das listas, conferidas no fim contra a
 // base inteira. Separada de censo-test-items.ts, que cria.
 
-import { markedBatch, removalOrder, rowLabel } from '../../src/census/test-ledger.ts';
+import { markedBatch, removalOrder, rowLabel, rowsOf } from '../../src/census/test-ledger.ts';
 import { TEST_MARK } from '../../src/census/test-plan.ts';
+import { TEST_BATCH_LIMIT, testBatchSize } from './censo-batch.ts';
+import { frameState } from './censo-frame.ts';
+import { clearCensusCache } from './censo-reading.ts';
 import {
   type BatchOptions,
   type FrameWindow,
@@ -15,6 +18,7 @@ import {
   submit,
 } from './censo-test-items.ts';
 import { ledgerNow, markInCv, newAtuacao } from './censo-test-ledger.ts';
+import { censusTraffic } from './censo-traffic.ts';
 
 const withCode = (p: string, code: string) =>
   /[?&]f_cod=/.test(p) ? p : `${p}${p.includes('?') ? '&' : '?'}f_cod=${code}`;
@@ -37,16 +41,30 @@ export async function removeTestItems(
   code: string,
   get: (path: string) => Promise<{ html: string }>,
   {
-    batch = 10,
+    batch = TEST_BATCH_LIMIT,
+    confirmedPresent = [],
     delayMs = [3000, 6000],
     dryRun = false,
     unmarked = [],
   }: BatchOptions & { dryRun?: boolean; unmarked?: string[] } = {},
 ) {
+  testBatchSize(batch);
   const menu = document.documentElement.outerHTML;
   const progress = load();
   setLive({ done: 0, last: undefined, phase: 'lendo', total: undefined });
   const { added, missing } = await ledgerNow(menu, code, get);
+  if (progress.pendingRemovals?.length) {
+    progress.pendingRemovals = progress.pendingRemovals.filter(
+      (link) => added.some((r) => r.link === link) && !confirmedPresent.includes(link),
+    );
+    save(progress);
+    if (progress.pendingRemovals.length)
+      throw new Error(
+        'Uma exclusão anterior ficou incerta e o item ainda aparece; confira no Lattes antes de continuar',
+      );
+  }
+  if (progress.results.some((r) => r.uncertain))
+    throw new Error('Há inclusões incertas; reconcilie o registro antes de remover');
   // Um link com f_ctr é ação, nunca um item a abrir.
   const candidates = removalOrder(added)
     .filter((r) => r.link && !/[?&]f_ctr=/i.test(r.link))
@@ -85,8 +103,11 @@ export async function removeTestItems(
   const failed: string[] = [];
   setLive({ done: 0, last: undefined, phase: 'removendo', total: plan.length });
   for (const row of plan) {
+    censusTraffic.signal.throwIfAborted();
     const frame = await openFrame(withoutCode(row.link), code);
     try {
+      progress.pendingRemovals = [row.link];
+      save(progress);
       const msgs = await submit(frame, (fw) => {
         const page = fw as FrameWindow & { dele?: () => void };
         if (/cargos_vinculos/i.test(row.link)) page.dele!();
@@ -97,9 +118,19 @@ export async function removeTestItems(
       // carregou) ou só a de sucesso. O resto vai para as falhas, com a
       // mensagem; a conferência pelas listas no fim diz o que de fato saiu.
       if (msgs.some((m) => !/sucesso/i.test(m))) {
+        if (frameState(frame).submitted)
+          throw new Error('O Lattes não confirmou a exclusão; confira antes de continuar');
+        progress.pendingRemovals = [];
+        save(progress);
         failed.push(`${row.list} :: ${row.text} :: ${msgs.join(' | ')}`);
         continue;
       }
+      clearCensusCache();
+      // Confere só a lista afetada; a leitura completa fica para o fim do lote.
+      const checked = rowsOf((await get(withCode(row.list, code))).html);
+      if (checked.some((r) => r.link === row.link))
+        throw new Error('O item ainda aparece depois da exclusão; a rodada parou');
+      progress.pendingRemovals = [];
       removed.push(row.text);
       progress.removed = [...progress.removed, `${row.list} :: ${row.text}`];
       save(progress);
@@ -111,6 +142,7 @@ export async function removeTestItems(
   }
   // A conferência: o que ainda difere da base, para mais e para menos.
   setLive({ phase: 'lendo' });
+  clearCensusCache();
   const after = await ledgerNow(menu, code, get);
   progress.added = after.added;
   progress.missing = after.missing;

@@ -7,13 +7,13 @@
 // resultado tem nomes de campo, nomes de atributo e contagens. A exceção são
 // os pares opção ↔ valor de atributo enumerado no schema (S ↔ CONCLUIDO), que
 // são do Lattes e do XSD, não da pessoa.
-
 import { foldText } from '../bridge/html-text.ts';
 import { findLinks } from '../bridge/lattes-html.ts';
 import { parseXml, walk, type XElement } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 import { scanForms, type ScannedField } from './html-scan.ts';
 import { type CensusFile, type CensusPort, CensusReader, listPath, SessionLost } from './run.ts';
+import { CensusStopped } from './stop.ts';
 import type { CensusTarget } from './targets.ts';
 import { CENSUS_TARGETS } from './targets-production.ts';
 
@@ -391,7 +391,7 @@ async function readGroup(
         if (listed > 0) s.status = 'so-na-lista';
       }
     } catch (err) {
-      if (err instanceof SessionLost) throw err;
+      if (err instanceof SessionLost || err instanceof CensusStopped) throw err;
     }
     return all;
   }
@@ -427,7 +427,7 @@ async function readGroup(
       collectLinks(out, s.target, fields, values);
     }
   } catch (err) {
-    if (err instanceof SessionLost) throw err;
+    if (err instanceof SessionLost || err instanceof CensusStopped) throw err;
     for (const s of all) s.status = 'erro';
   }
   for (const t of group.targets) {

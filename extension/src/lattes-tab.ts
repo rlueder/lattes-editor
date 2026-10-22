@@ -10,7 +10,9 @@ import type { BridgeMessage, EditorMessage } from '../../src/bridge/protocol.ts'
 import type { PublishRequest, PublishResult } from '../../src/bridge/publish.ts';
 import { hasConsent } from './consent.ts';
 import { LATTES_MENU, lattesMenus } from './lattes-hosts.ts';
+import { withSessionTask } from './session-task.ts';
 import { tabReloaded, untilTabCloses } from './tab-guard.ts';
+import { readTrafficPause } from './traffic-pause.ts';
 
 export async function lattesTab(): Promise<number | undefined> {
   // Escolha na montagem: na extensão publicada, o simulado não entra no código.
@@ -32,9 +34,22 @@ const guarded = <T>(tabId: number, start: () => Promise<T>) => {
   return untilTabCloses(tabId, start, chrome.tabs.onRemoved);
 };
 export async function injectRunner(tabId: number): Promise<void> {
+  const until = await readTrafficPause();
   await guarded(tabId, () =>
     chrome.scripting.executeScript({ files: ['lattes-runner.js'], target: { tabId } }),
   );
+  if (until > Date.now())
+    await guarded(tabId, () =>
+      chrome.scripting.executeScript({
+        args: [until],
+        func: (pause: number) => {
+          (
+            globalThis as unknown as { __conector: { respeitarPausa(until: number): void } }
+          ).__conector.respeitarPausa(pause);
+        },
+        target: { tabId },
+      }),
+    );
 }
 
 /** Roda uma função do núcleo do conector na aba; undefined se a aba não respondeu. */
@@ -53,20 +68,26 @@ async function runInTab<T>(
     | 'telaEnvio',
   ...args: string[]
 ): Promise<T | undefined> {
-  await injectRunner(tabId);
-  const [res] = await guarded(tabId, () =>
-    chrome.scripting.executeScript({
-      args: [name, args] as [string, string[]],
-      func: (fn: string, fnArgs: string[]) =>
-        (
-          globalThis as unknown as {
-            __conector: Record<string, (...a: string[]) => Promise<unknown>>;
-          }
-        ).__conector[fn]!(...fnArgs),
-      target: { tabId },
-    }),
+  return withSessionTask(
+    tabId,
+    async () => {
+      await injectRunner(tabId);
+      const [res] = await guarded(tabId, () =>
+        chrome.scripting.executeScript({
+          args: [name, args] as [string, string[]],
+          func: (fn: string, fnArgs: string[]) =>
+            (
+              globalThis as unknown as {
+                __conector: Record<string, (...a: string[]) => Promise<unknown>>;
+              }
+            ).__conector[fn]!(...fnArgs),
+          target: { tabId },
+        }),
+      );
+      return res?.result as T | undefined;
+    },
+    true,
   );
-  return res?.result as T | undefined;
 }
 
 type Reply<K extends BridgeMessage['type']> = Omit<Extract<BridgeMessage, { type: K }>, 'type'>;
@@ -287,17 +308,53 @@ export async function answerListRequest(
  * (checkedResult, em src/bridge/write-brake.ts).
  */
 export async function applyInTab(tabId: number, op: BridgeOp): Promise<unknown> {
-  const [res] = await guarded(tabId, () =>
-    chrome.scripting.executeScript({
-      args: [op] as [BridgeOp],
-      func: (o: BridgeOp) =>
-        (
-          globalThis as unknown as { __conector: { apply(op: BridgeOp): Promise<OpResult> } }
-        ).__conector.apply(o),
-      target: { tabId },
+  return withSessionTask(
+    tabId,
+    async () => {
+      const [res] = await guarded(tabId, () =>
+        chrome.scripting.executeScript({
+          args: [op] as [BridgeOp],
+          func: (o: BridgeOp) =>
+            (
+              globalThis as unknown as { __conector: { apply(op: BridgeOp): Promise<OpResult> } }
+            ).__conector.apply(o),
+          target: { tabId },
+        }),
+      );
+      return res?.result;
+    },
+    true,
+  );
+}
+
+/** Interrompe a tarefa na aba, inclusive uma varredura de formulários em curso. */
+export async function cancelInTab(): Promise<void> {
+  const tabs = await chrome.tabs.query({ url: __CANAL_DEV__ ? lattesMenus(true) : [LATTES_MENU] });
+  // No Dev, a aba do simulado pode vir antes da aba real usada pelos testes.
+  await Promise.all(
+    tabs.map(async ({ id: tabId }) => {
+      if (tabId === undefined) return;
+      await chrome.scripting
+        .executeScript({
+          func: () => {
+            (globalThis as { __lattesCensus?: { cancel?(): void } }).__lattesCensus?.cancel?.();
+          },
+          target: { tabId },
+          world: 'MAIN',
+        })
+        .catch(() => undefined);
+      await chrome.scripting
+        .executeScript({
+          func: () => {
+            (
+              globalThis as unknown as { __conector?: { cancelar?: () => void } }
+            ).__conector?.cancelar?.();
+          },
+          target: { tabId },
+        })
+        .catch(() => undefined);
     }),
   );
-  return res?.result;
 }
 
 export const failedReport = (detail: string): ContractReport => ({
@@ -309,19 +366,28 @@ export const failedReport = (detail: string): ContractReport => ({
 });
 
 /** Confere o Lattes contra o contrato do conector, só lendo, na aba do menu. */
-export async function verifyOn(tabId: number): Promise<ContractReport> {
+export async function verifyOn(tabId: number, kinds?: BridgeOp['kind'][]): Promise<ContractReport> {
   try {
-    await injectRunner(tabId);
-    const [res] = await guarded(tabId, () =>
-      chrome.scripting.executeScript({
-        func: () =>
-          (
-            globalThis as unknown as { __conector: { verificar(): Promise<ContractReport> } }
-          ).__conector.verificar(),
-        target: { tabId },
-      }),
+    return await withSessionTask(
+      tabId,
+      async () => {
+        await injectRunner(tabId);
+        const [res] = await guarded(tabId, () =>
+          chrome.scripting.executeScript({
+            args: [kinds ?? null],
+            func: (scope: BridgeOp['kind'][] | null) =>
+              (
+                globalThis as unknown as {
+                  __conector: { verificar(kinds?: BridgeOp['kind'][]): Promise<ContractReport> };
+                }
+              ).__conector.verificar(scope ?? undefined),
+            target: { tabId },
+          }),
+        );
+        return res?.result ?? failedReport('A aba do Lattes não respondeu');
+      },
+      true,
     );
-    return res?.result ?? failedReport('A aba do Lattes não respondeu');
   } catch (err) {
     return failedReport(err instanceof Error ? err.message : 'Falha inesperada');
   }
@@ -335,18 +401,26 @@ export interface Identity {
 
 /** Quem é o currículo aberto na sessão do Lattes: código interno e identificador público. */
 export async function sessionIdentity(tabId: number, fresh = false): Promise<Identity> {
-  await injectRunner(tabId);
-  const [res] = await guarded(tabId, () =>
-    chrome.scripting.executeScript({
-      args: [fresh],
-      func: (f: boolean) =>
-        (
-          globalThis as unknown as { __conector: { identity(fresh: boolean): Promise<Identity> } }
-        ).__conector.identity(f),
-      target: { tabId },
-    }),
+  return withSessionTask(
+    tabId,
+    async () => {
+      await injectRunner(tabId);
+      const [res] = await guarded(tabId, () =>
+        chrome.scripting.executeScript({
+          args: [fresh],
+          func: (f: boolean) =>
+            (
+              globalThis as unknown as {
+                __conector: { identity(fresh: boolean): Promise<Identity> };
+              }
+            ).__conector.identity(f),
+          target: { tabId },
+        }),
+      );
+      return res?.result ?? {};
+    },
+    true,
   );
-  return res?.result ?? {};
 }
 
 /**
@@ -372,69 +446,7 @@ export async function realLattesTab(): Promise<number | undefined> {
   return tab?.id;
 }
 
-/** Prazo dos itens de teste: a leitura dos formulários leva alguns minutos, e um lote de 50, outros tantos. */
-const TEST_ITEMS_TIMEOUT_MS = 30 * 60_000;
-
-type CensusAction = 'andamento' | 'criar' | 'preparar' | 'remover';
-
-/**
- * Os itens de teste no mundo da página (test-items-run.ts, só no canal Dev):
- * injeta o censo uma vez por carregamento do menu (ou quando o da aba é de
- * outra montagem) e roda a ação pedida.
- */
-export async function runCensusInPage(
-  tabId: number,
-  action: CensusAction,
-  options: { batch?: number; dryRun?: boolean; retryFailed?: boolean; unmarked?: string[] },
-): Promise<{ error?: string; result?: unknown }> {
-  const long = <T>(start: () => Promise<T>) =>
-    untilTabCloses(tabId, start, chrome.tabs.onRemoved, TEST_ITEMS_TIMEOUT_MS);
-  // Um censo de uma montagem anterior (a aba seguiu aberta enquanto a extensão
-  // recarregava) é trocado: antes ele ficava, e o lote corria com o código velho.
-  const [loaded] = await long(() =>
-    chrome.scripting.executeScript({
-      args: [__CENSUS_BUILD__],
-      func: (build: string) =>
-        (globalThis as { __lattesCensus?: { build?: unknown } }).__lattesCensus?.build === build,
-      target: { tabId },
-      world: 'MAIN',
-    }),
-  );
-  if (!loaded?.result) {
-    await long(() =>
-      chrome.scripting.executeScript({
-        files: ['censo-lattes.js'],
-        target: { tabId },
-        world: 'MAIN',
-      }),
-    );
-  }
-  const [res] = await long(() =>
-    chrome.scripting.executeScript({
-      args: [action, options] as [CensusAction, typeof options],
-      func: async (acao: CensusAction, opts: typeof options) => {
-        type Fn = (o?: unknown) => unknown;
-        const c = (globalThis as unknown as { __lattesCensus: Record<string, Fn> }).__lattesCensus;
-        try {
-          const run =
-            acao === 'preparar'
-              ? c.prepareTestItems!()
-              : acao === 'criar'
-                ? c.testItems!(opts)
-                : acao === 'remover'
-                  ? c.removeTestItems!(opts)
-                  : c.testProgress!();
-          return { result: JSON.parse(JSON.stringify(await run)) as unknown };
-        } catch (err) {
-          return { error: err instanceof Error ? err.message : String(err) };
-        }
-      },
-      target: { tabId },
-      world: 'MAIN',
-    }),
-  );
-  return res?.result ?? { error: 'A aba do Lattes não respondeu' };
-}
+export { runCensusInPage } from './census-tab.ts';
 
 /**
  * O andamento dos itens de teste, lido da página sem injetar nada: o que o

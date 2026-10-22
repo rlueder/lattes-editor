@@ -30,6 +30,7 @@ import {
 import { testJobs } from '../../src/census/test-plan.ts';
 import { readZip } from '../../src/import-export/zip.ts';
 import { decodeLatin1, decodeXmlBytes } from '../../src/model/latin1.ts';
+import { censusGet, clearCensusCache, withCensusCache } from './censo-reading.ts';
 import { ensureContext } from './censo-test-donors.ts';
 import {
   createTestItems,
@@ -40,6 +41,7 @@ import {
 } from './censo-test-items.ts';
 import { loadBase, markInCv, saveBase, snapshotLists } from './censo-test-ledger.ts';
 import { removeTestItems } from './censo-test-removal.ts';
+import { censusTraffic } from './censo-traffic.ts';
 
 declare const __CENSO_VERSAO__: string;
 declare const __CENSUS_BUILD__: string;
@@ -60,9 +62,9 @@ async function get(path: string) {
   if (DELETE_GET.test(path))
     throw new Error(`Leitura recusada, o endereço exclui: ${path.split('?')[0]}`);
   if (reading) setLive({ done: (live()?.done ?? 0) + 1, last: path.split('?')[0] });
-  const res = await fetch(new URL(path, base()), { credentials: 'include' });
+  const res = await censusGet(new URL(path, base()));
   return {
-    html: decodeLatin1(new Uint8Array(await res.arrayBuffer())),
+    html: decodeLatin1(res.bytes),
     status: res.status,
     url: res.url,
   };
@@ -82,16 +84,11 @@ const port: CensusPort = { get, menuHtml };
 const exportPort: ExportPort = {
   get,
   async postForBytes(path, body) {
-    const res = await fetch(new URL(path, base()), {
-      body,
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      method: 'POST',
-    });
+    const res = await censusTraffic.request(new URL(path, base()), 'POST', body);
     return {
-      bytes: new Uint8Array(await res.arrayBuffer()),
-      contentType: res.headers.get('content-type') ?? '',
-      disposition: res.headers.get('content-disposition') ?? '',
+      bytes: res.bytes,
+      contentType: new Headers(res.headers).get('content-type') ?? '',
+      disposition: new Headers(res.headers).get('content-disposition') ?? '',
       url: res.url,
     };
   },
@@ -297,6 +294,7 @@ async function prepareTestItems() {
 
 async function testItems(options: Parameters<typeof createTestItems>[3] = {}) {
   await prepareTestItems();
+  clearCensusCache();
   return createTestItems(testJobs(captured!), await code(), get, options);
 }
 
@@ -317,24 +315,36 @@ function progress() {
 }
 
 async function removeTests(options: Parameters<typeof removeTestItems>[2] = {}) {
+  clearCensusCache();
   return removeTestItems(await code(), get, options);
 }
 
+async function protectedRun<T>(work: () => Promise<T>): Promise<T> {
+  if (censusTraffic.running) throw new Error('O censo já está ocupado');
+  try {
+    return await censusTraffic.run(() => withCensusCache(work));
+  } finally {
+    setLive({ phase: 'parado' });
+  }
+}
+
 (globalThis as unknown as { __lattesCensus: unknown }).__lattesCensus = {
-  activities,
+  activities: (...args: Parameters<typeof activities>) => protectedRun(() => activities(...args)),
   authorShape,
   build: __CENSUS_BUILD__,
-  capture,
-  captureAll,
+  cancel: () => censusTraffic.cancel(),
+  capture: (...args: Parameters<typeof capture>) => protectedRun(() => capture(...args)),
+  captureAll: (...args: Parameters<typeof captureAll>) => protectedRun(() => captureAll(...args)),
   download,
   entryOf,
-  inspect,
-  link,
-  prepareTestItems,
-  removeTestItems: removeTests,
+  inspect: (...args: Parameters<typeof inspect>) => protectedRun(() => inspect(...args)),
+  link: (...args: Parameters<typeof link>) => protectedRun(() => link(...args)),
+  prepareTestItems: () => protectedRun(prepareTestItems),
+  removeTestItems: (...args: Parameters<typeof removeTests>) =>
+    protectedRun(() => removeTests(...args)),
   resetTestItems,
   summary,
-  testItems,
+  testItems: (...args: Parameters<typeof testItems>) => protectedRun(() => testItems(...args)),
   testProgress: progress,
   vectorShape,
   version: __CENSO_VERSAO__,

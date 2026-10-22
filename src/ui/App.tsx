@@ -25,7 +25,7 @@ import {
   replaceWorkingCopy,
   storageStatus,
 } from '../model/store.ts';
-import { getAttr, serializeXml, walk, type XElement } from '../model/xml.ts';
+import { getAttr, serializeXml } from '../model/xml.ts';
 import { PrintDialog } from '../print/PrintDialog.tsx';
 import { usePrint } from '../print/use-print.ts';
 import { DiagnosisPanel } from '../review/DiagnosisPanel.tsx';
@@ -37,6 +37,7 @@ import { DEFAULT_SECTION } from './hash-route.ts';
 import { type ReloadFailure, reloadNotice } from './lattes-reload.ts';
 import { connectionOf, noticesFor } from './notifications.ts';
 import type { PaletteEntry } from './palette-search.ts';
+import { countPendingIn } from './pending-count.ts';
 import { PendingBanner } from './PendingBanner.tsx';
 import { profileOf } from './profile.ts';
 import { ReferenceContext } from './reference-context.ts';
@@ -109,6 +110,12 @@ export function App() {
   const incoming = useIncoming(session, setSession, onEdit);
   // Data da exportação carregada, lida uma vez por arquivo.
   const originalXml = session?.meta.originalXml;
+  const modified = useMemo(
+    () => Boolean(session && serializeXml(session.doc) !== originalXml),
+    // O documento é mutado no lugar; version invalida a comparação.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [session, originalXml, version],
+  );
   const formLacksFor = useFormLacksFor(originalXml, session?.doc.root);
   const exportedOn = useMemo(() => exportDateOf(originalXml), [originalXml]);
 
@@ -248,7 +255,6 @@ export function App() {
     );
   }
 
-  const modified = serializeXml(session.doc) !== session.meta.originalXml;
   const pendingIn = countPendingIn(production.pending);
   const exportFile = exportOpen ? production.buildFile() : undefined;
   const openExport = () => setExportOpen(true);
@@ -414,16 +420,6 @@ export function App() {
       {storageNotice}
     </ShellWithLists>
   );
-}
-
-/** Conta, dentro de alguns elementos, quantos dos itens pendentes aparecem. */
-function countPendingIn(pending: XElement[]): (els: XElement[]) => number {
-  const set = new Set(pending);
-  return (els) => {
-    let n = 0;
-    for (const el of els) walk(el, (node) => void (set.has(node) && n++));
-    return n;
-  };
 }
 
 /** O NUMERO-IDENTIFICADOR do currículo aberto. */

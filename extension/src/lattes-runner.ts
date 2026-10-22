@@ -19,6 +19,7 @@ import {
 import { lattesStatusFrom } from '../../src/bridge/lattes-status.ts';
 import { type PhotoPort, type PhotoResult, uploadPhoto } from '../../src/bridge/photo.ts';
 import type { BridgeOp } from '../../src/bridge/plan.ts';
+import type { ProductionScans } from '../../src/bridge/production/locate.ts';
 import {
   PUBLISH_ENABLED,
   publishCv,
@@ -29,9 +30,18 @@ import {
   type SendScreen,
 } from '../../src/bridge/publish.ts';
 import { decodeLatin1 } from '../../src/model/latin1.ts';
+import { pageTraffic, withTraffic } from './page-traffic.ts';
+
+// A reinjeção troca o núcleo, mas preserva a trava e o histórico de tráfego da aba.
+const page = globalThis as unknown as {
+  __lattesScans?: ProductionScans;
+};
+const traffic = pageTraffic();
+const request = (path: string | URL, init?: RequestInit) =>
+  traffic.request(new URL(path, location.href), init);
 
 async function text(res: Response): Promise<string> {
-  return decodeLatin1(new Uint8Array(await res.arrayBuffer()));
+  return decodeLatin1(await traffic.bytes(res));
 }
 
 function controlsOf(form: HTMLFormElement): FormControl[] {
@@ -52,11 +62,11 @@ function controlsOf(form: HTMLFormElement): FormControl[] {
 
 const port: LattesPort = {
   async get(path) {
-    return text(await fetch(new URL(path, location.href), { credentials: 'include' }));
+    return text(await request(new URL(path, location.href), { credentials: 'include' }));
   },
   menuHtml: () => document.documentElement.outerHTML,
   async post(path, body) {
-    const res = await fetch(new URL(path, location.href), {
+    const res = await request(new URL(path, location.href), {
       body,
       credentials: 'include',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -64,6 +74,7 @@ const port: LattesPort = {
     });
     return text(res);
   },
+  productionScans: (page.__lattesScans ??= new Map()),
   readForm(html, formName) {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const form = doc.querySelector<HTMLFormElement>(`form[name="${formName}"]`);
@@ -73,18 +84,18 @@ const port: LattesPort = {
 
 const exportPort: ExportPort = {
   async get(path) {
-    const res = await fetch(new URL(path, location.href), { credentials: 'include' });
+    const res = await request(new URL(path, location.href), { credentials: 'include' });
     return { html: await text(res), url: res.url };
   },
   async postForBytes(path, body) {
-    const res = await fetch(new URL(path, location.href), {
+    const res = await request(new URL(path, location.href), {
       body,
       credentials: 'include',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       method: 'POST',
     });
     return {
-      bytes: new Uint8Array(await res.arrayBuffer()),
+      bytes: await traffic.bytes(res),
       contentType: res.headers.get('content-type') ?? '',
       disposition: res.headers.get('content-disposition') ?? '',
       url: res.url,
@@ -94,16 +105,16 @@ const exportPort: ExportPort = {
 
 const photoPort: PhotoPort = {
   async get(path) {
-    const res = await fetch(new URL(path, location.href), { credentials: 'include' });
+    const res = await request(new URL(path, location.href), { credentials: 'include' });
     return { html: await text(res), url: res.url };
   },
   async getBytes(path) {
-    const res = await fetch(new URL(path, location.href), {
+    const res = await request(new URL(path, location.href), {
       cache: 'no-store',
       credentials: 'include',
     });
     return {
-      bytes: new Uint8Array(await res.arrayBuffer()),
+      bytes: await traffic.bytes(res),
       contentType: res.headers.get('content-type') ?? '',
       url: res.url,
     };
@@ -113,7 +124,7 @@ const photoPort: PhotoPort = {
     const body = new FormData();
     body.append(file.field, new Blob([file.bytes as BlobPart], { type: file.type }), file.name);
     for (const [name, value] of fields) body.append(name, value);
-    const res = await fetch(new URL(path, location.href), {
+    const res = await request(new URL(path, location.href), {
       body,
       credentials: 'include',
       method: 'POST',
@@ -125,7 +136,7 @@ const photoPort: PhotoPort = {
 const importPort: ImportPort = {
   get: (path) => photoPort.get(path),
   async post(path, body) {
-    const res = await fetch(new URL(path, location.href), {
+    const res = await request(new URL(path, location.href), {
       body,
       credentials: 'include',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -151,7 +162,7 @@ interface ImportArgs {
  */
 const publishPort: PublishPort = {
   async get(path) {
-    const res = await fetch(new URL(path, location.href), {
+    const res = await request(new URL(path, location.href), {
       cache: 'no-store',
       credentials: 'include',
     });
@@ -192,7 +203,7 @@ interface ExportReply {
   zip?: string;
 }
 
-(globalThis as unknown as { __conector: unknown }).__conector = {
+const connector = {
   apply: (op: BridgeOp) => applyOp(op, port),
   // Só leituras: os cursos de uma instituição num nível da formação.
   cursos: (institution: string, level: string, program?: 'FORM' | 'TESE', staArea?: string) =>
@@ -206,7 +217,7 @@ interface ExportReply {
     const lattesId = lattesIdFrom(menu);
     if (!code) return { error: 'Não achei o código do currículo no menu do Lattes.', lattesId };
     try {
-      const res = await fetch(`pkg_publicar.cv_espelho?f_cod=${code}&f_idioma=1`, {
+      const res = await request(`pkg_publicar.cv_espelho?f_cod=${code}&f_idioma=1`, {
         credentials: 'include',
       });
       const html = await text(res);
@@ -257,7 +268,7 @@ interface ExportReply {
     let html = document.documentElement.outerHTML;
     if (fresh) {
       try {
-        const res = await fetch('PKG_MENU.menu', { credentials: 'include' });
+        const res = await request('PKG_MENU.menu', { credentials: 'include' });
         const menu = await text(res);
         if (res.ok && !isLogonPage(menu, res.url)) html = menu;
       } catch {
@@ -347,5 +358,34 @@ interface ExportReply {
     }
   },
   // Só leituras: o menu e um exemplar de cada formulário, comparados ao contrato.
-  verificar: () => checkContract(port),
+  verificar: (kinds?: BridgeOp['kind'][]) => checkContract(port, undefined, kinds),
+};
+
+// Toda entrada que pode pedir rede usa a mesma exclusão mútua. A leitura da
+// identidade já na página e o pedido de parar não precisam esperar por rede.
+(globalThis as unknown as { __conector: unknown }).__conector = {
+  ...Object.fromEntries(
+    Object.entries(connector).map(([name, fn]) => [
+      name,
+      (...args: unknown[]) =>
+        withTraffic(() =>
+          traffic.run(() => (fn as (...values: unknown[]) => Promise<unknown>)(...args)),
+        ),
+    ]),
+  ),
+  apply: (op: BridgeOp) =>
+    withTraffic(() =>
+      traffic.run(
+        () => connector.apply(op),
+        (error, posted) => ({
+          detail: error.message,
+          key: op.key,
+          status: posted ? 'divergente' : 'erro',
+        }),
+      ),
+    ),
+  cancelar: () => traffic.cancel(),
+  identity: (fresh = false) =>
+    fresh ? withTraffic(() => traffic.run(() => connector.identity(true))) : connector.identity(),
+  respeitarPausa: (until: number) => traffic.respectPause(until),
 };

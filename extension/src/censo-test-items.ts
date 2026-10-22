@@ -8,6 +8,14 @@
 // em "Salvar". As mensagens que ela mostraria na caixa do Lattes voltam no
 // resultado em vez de aparecer na tela.
 
+import { TEST_BATCH_LIMIT, testBatchSize } from './censo-batch.ts';
+import { frameState, openFrame } from './censo-frame.ts';
+import { type FrameWindow, submit } from './censo-submit.ts';
+import { censusTraffic } from './censo-traffic.ts';
+export { openFrame } from './censo-frame.ts';
+export { type FrameWindow, submit } from './censo-submit.ts';
+
+import { isEspelhoPage } from '../../src/bridge/espelho.ts';
 import type { PlacedRow } from '../../src/census/test-ledger.ts';
 import {
   consistencyFixes,
@@ -24,20 +32,26 @@ import {
   setFields,
 } from './censo-test-donors.ts';
 import { clearBase, ledgerNow, loadBase } from './censo-test-ledger.ts';
-import { pageValues, silenceDialogs } from './censo-test-pages.ts';
+import { pageValues } from './censo-test-pages.ts';
 
 export interface TestResult {
   id: string;
   msgs: string[];
   ok: boolean;
   tag: string;
+  /** Um envio pode ter chegado ao servidor, mas não foi confirmado. */
+  uncertain?: boolean;
   values: Record<string, string>;
   variant: number;
 }
 
 export interface BatchOptions {
-  /** Itens por chamada (padrão 10). */
+  /** Itens por chamada, de 1 a 3 (padrão 3). */
   batch?: number;
+  /** Tags cuja ausência a pessoa conferiu no Lattes antes de pedir nova tentativa. */
+  confirmedAbsent?: string[];
+  /** Tags cuja presença e conteúdo a pessoa conferiu no Lattes. */
+  confirmedPresent?: string[];
   /** Pausa entre um envio e outro, sorteada entre os dois (padrão 3 a 6 s). */
   delayMs?: [number, number];
   /**
@@ -85,6 +99,7 @@ interface Progress {
   added?: PlacedRow[];
   /** O que sumiu da base: não pode acontecer, e aparece no resumo. */
   missing?: PlacedRow[];
+  pendingRemovals?: string[];
   removed: string[];
   results: TestResult[];
 }
@@ -92,9 +107,20 @@ interface Progress {
 export function load(): Progress {
   try {
     const raw = localStorage.getItem(STORE);
-    if (raw) return JSON.parse(raw) as Progress;
+    if (raw) {
+      const value = JSON.parse(raw) as Progress;
+      if (
+        !value ||
+        !Array.isArray(value.results) ||
+        !Array.isArray(value.removed) ||
+        !value.results.every((r) => r && typeof r.tag === 'string' && typeof r.ok === 'boolean') ||
+        (value.pendingRemovals !== undefined && !Array.isArray(value.pendingRemovals))
+      )
+        throw new Error('Registro de teste inválido');
+      return value;
+    }
   } catch {
-    // Armazenamento bloqueado ou estragado: começa do zero.
+    throw new Error('O registro dos itens de teste não pôde ser lido; nenhum envio será iniciado');
   }
   return { removed: [], results: [] };
 }
@@ -103,113 +129,14 @@ export function save(p: Progress): void {
   try {
     localStorage.setItem(STORE, JSON.stringify(p));
   } catch {
-    // Sem armazenamento, o resultado ainda volta da chamada e vai ao receptor.
+    throw new Error(
+      'O registro dos itens de teste não pôde ser salvo; nenhum novo envio será iniciado',
+    );
   }
 }
 
 export const pause = ([min, max]: [number, number]) =>
-  new Promise((r) => setTimeout(r, min + Math.random() * (max - min)));
-
-interface MsgBox {
-  /** O "Confirmar" da caixa, onde algumas páginas penduram a ação. */
-  btnConfirmar?: Pick<HTMLElement, 'addEventListener' | 'click'>;
-  exibir: (p: { conteudo?: string; fnConfirmar?: string; tipo?: string }) => unknown;
-}
-
-/** O formulário num quadro da página, já carregado. */
-export function openFrame(path: string, code: string): Promise<HTMLIFrameElement> {
-  return new Promise((resolve, reject) => {
-    const frame = document.createElement('iframe');
-    frame.style.cssText = 'position:fixed;right:0;bottom:0;width:900px;height:600px;z-index:99999';
-    const url = new URL(`/cvlattesweb/${path}`, location.origin);
-    url.searchParams.set('f_cod', code);
-    frame.src = url.href;
-    const timer = setTimeout(() => reject(new Error('O formulário não abriu')), 30_000);
-    frame.onload = () => {
-      clearTimeout(timer);
-      silenceDialogs(frame.contentWindow!);
-      resolve(frame);
-    };
-    document.body.append(frame);
-  });
-}
-
-export type FrameWindow = Window & {
-  autorGrid?: { getProvider: () => Record<string, unknown>[] };
-  check?: () => void;
-  del?: () => void;
-  enviar?: () => void;
-};
-
-/**
- * Envia pelo caminho da página e espera a resposta: a mensagem de sucesso, a
- * lista de problemas do check() ou a página nova no quadro.
- */
-export function submit(
-  frame: HTMLIFrameElement,
-  start: (w: FrameWindow) => void,
-): Promise<string[]> {
-  return new Promise((resolve) => {
-    const w = frame.contentWindow as FrameWindow;
-    const box = (window as unknown as { caixaMsg?: MsgBox }).caixaMsg;
-    const original = box?.exibir;
-    const originalButton = box?.btnConfirmar;
-    const msgs: string[] = [];
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      if (box && original) box.exibir = original;
-      if (box) box.btnConfirmar = originalButton;
-      resolve(msgs);
-    };
-    if (box) {
-      box.exibir = (p) => {
-        // A confirmação: a função que ela chamaria (fnConfirmar, como a da
-        // privacidade), ou o botão da caixa, onde o del() do registro pendura
-        // a exclusão. Antes ia sempre para enviar(), e o registro era salvo
-        // de novo em vez de excluído.
-        if (p.tipo === 'confirm') {
-          const fn = /getDocument\(\)\.(\w+)\(/.exec(String(p.fnConfirmar ?? ''))?.[1];
-          const target = fn ? (w as unknown as Record<string, unknown>)[fn] : undefined;
-          if (typeof target === 'function') (target as () => void).call(w);
-          else if (fn === undefined && /Confirma a exclus/i.test(String(p.conteudo ?? ''))) {
-            // O del() dos registros (lido em 19/10/2026) pendura a exclusão no
-            // botão da caixa depois de exibi-la; com a caixa interceptada o
-            // botão não existe, e um no lugar dele roda o que o del() pendurar.
-            box.btnConfirmar = {
-              addEventListener: (_type: string, run: unknown) => {
-                if (typeof run === 'function') setTimeout(() => (run as () => void)(), 0);
-              },
-              click: () => undefined,
-            } as MsgBox['btnConfirmar'];
-          } else if (box.btnConfirmar) setTimeout(() => box.btnConfirmar!.click(), 0);
-          else w.enviar?.();
-          return;
-        }
-        msgs.push(
-          String(p.conteudo ?? '')
-            .replace(/<br\s*\/?>/gi, ' ')
-            .trim(),
-        );
-        finish();
-      };
-    }
-    w.confirm = () => true;
-    silenceDialogs(w);
-    frame.onload = () => setTimeout(finish, 1500);
-    try {
-      start(w);
-    } catch (err) {
-      msgs.push(`exceção: ${String(err)}`);
-      finish();
-    }
-    setTimeout(() => {
-      msgs.push('sem resposta em 30 s');
-      finish();
-    }, 30_000);
-  });
-}
+  censusTraffic.wait(min + Math.random() * (max - min));
 
 /** A sua linha na grade de autores (o check() exige), copiada do autorDP do menu. */
 function addOwner(w: FrameWindow): void {
@@ -356,7 +283,13 @@ async function createOne(job: TestJob, code: string): Promise<TestResult> {
       const fw = frame.contentWindow as FrameWindow;
       if (msgs.length > 0 || step === 2) {
         const ok = msgs.some((m) => /sucesso/i.test(m));
-        return { ...base, msgs: msgs.filter((m) => !/sucesso/i.test(m)), ok, values };
+        return {
+          ...base,
+          msgs: msgs.filter((m) => !/sucesso/i.test(m)),
+          ok,
+          uncertain: !ok && frameState(frame).submitted,
+          values,
+        };
       }
       // Só um formulário com outros campos segue (a formação complementar
       // posta os dois passos na mesma ação): o mesmo de novo seria a página
@@ -370,14 +303,18 @@ async function createOne(job: TestJob, code: string): Promise<TestResult> {
         const ctr = (fw.document.forms[0]?.elements.namedItem('f_ctr') as HTMLInputElement | null)
           ?.value;
         const msg = `A página voltou sem mensagem e sem outro passo (f_ctr ${ctr ?? '-'}): ${text.slice(0, 300)}`;
-        return { ...base, msgs: [msg], values };
+        return { ...base, msgs: [msg], uncertain: true, values };
       }
       seen.add(signature(next));
       values = { ...values, ...fill(fw, next, job) };
     }
-    return { ...base, msgs: ['Passos demais'], values };
+    return { ...base, msgs: ['Passos demais'], uncertain: true, values };
   } catch (err) {
-    return { ...base, msgs: [err instanceof Error ? err.message : String(err)] };
+    return {
+      ...base,
+      msgs: [err instanceof Error ? err.message : String(err)],
+      uncertain: frame ? frameState(frame).submitted : false,
+    };
   } finally {
     frame?.remove();
   }
@@ -389,7 +326,9 @@ export async function createTestItems(
   code: string,
   get: (path: string) => Promise<{ html: string }>,
   {
-    batch = 10,
+    batch = TEST_BATCH_LIMIT,
+    confirmedAbsent = [],
+    confirmedPresent = [],
     delayMs = [3000, 6000],
     only,
     project,
@@ -397,6 +336,9 @@ export async function createTestItems(
     retryFailed = false,
   }: BatchOptions = {},
 ) {
+  testBatchSize(batch);
+  if (receiver && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(receiver))
+    throw new Error('O receptor de resultados precisa ser local');
   if (!loadBase()) throw new Error('Sem a base das listas: rode "Ler formulários" antes de criar.');
   await ensureContext(code, get);
   context.project = project
@@ -404,25 +346,66 @@ export async function createTestItems(
     : undefined;
   const progress = load();
   const tried = new Map(progress.results.map((r) => [r.tag, r]));
+  if (retryFailed && progress.results.some((r) => r.uncertain)) {
+    const mirror = await get(`pkg_publicar.cv_espelho?f_cod=${code}&f_idioma=1`);
+    if (!isEspelhoPage(mirror.html))
+      throw new Error('Não foi possível conferir os envios incertos no Lattes');
+    for (const r of progress.results) {
+      if (!r.uncertain) continue;
+      if (confirmedPresent.includes(r.tag) && mirror.html.includes(r.tag)) {
+        r.uncertain = false;
+        r.ok = true;
+        continue;
+      }
+      if (!confirmedAbsent.includes(r.tag)) continue;
+      if (mirror.html.includes(r.tag))
+        throw new Error(`O item ${r.tag} já aparece no Lattes; não será repetido`);
+      r.uncertain = false;
+    }
+    save(progress);
+  }
+  if (progress.results.some((r) => r.uncertain) || progress.pendingRemovals?.length)
+    throw new Error(
+      'Há envios ou exclusões incertos; confira e reconcilie o registro antes de continuar',
+    );
   const next = jobs
     .filter((j) => !only || only.includes(j.id))
     .filter((j) => {
       const r = tried.get(j.tag);
-      return !r || (!r.ok && retryFailed);
+      return !r || (!r.ok && !r.uncertain && retryFailed);
     })
     .slice(0, batch);
   setLive({ done: 0, last: undefined, phase: 'criando', total: next.length });
   for (const job of next) {
+    censusTraffic.signal.throwIfAborted();
+    // Grava antes do envio: fechar a aba ou reiniciar o worker não libera repetição.
+    const marker: TestResult = {
+      id: job.id,
+      msgs: ['Envio iniciado; confira no Lattes antes de repetir'],
+      ok: false,
+      tag: job.tag,
+      uncertain: true,
+      values: {},
+      variant: job.variant,
+    };
+    progress.results = [...progress.results.filter((r) => r.tag !== job.tag), marker];
+    save(progress);
     const result = await createOne(job, code);
+    if (result.ok) {
+      const mirror = await get(`pkg_publicar.cv_espelho?f_cod=${code}&f_idioma=1`);
+      if (!isEspelhoPage(mirror.html) || !mirror.html.includes(job.tag)) {
+        result.ok = false;
+        result.uncertain = true;
+        result.msgs.push('O item não foi confirmado na leitura depois do envio');
+      }
+    }
     setLive({ done: (live()?.done ?? 0) + 1, last: `${job.tag} ${result.ok ? 'ok' : 'falhou'}` });
     progress.results = [...progress.results.filter((r) => r.tag !== job.tag), result];
     save(progress);
+    if (result.uncertain)
+      throw new Error(`O envio de ${job.tag} ficou incerto; confira no Lattes antes de continuar`);
+    censusTraffic.signal.throwIfAborted();
     await pause(delayMs);
-  }
-  if (receiver) {
-    await fetch(receiver, { body: JSON.stringify(progress.results), method: 'POST' }).catch(
-      () => undefined,
-    );
   }
   // O registro: o que as listas têm agora a mais que a base.
   setLive({ phase: 'lendo' });
@@ -431,7 +414,15 @@ export async function createTestItems(
   progress.missing = ledger.missing;
   save(progress);
   setLive({ phase: 'parado' });
-  return { ...testProgress(jobs), lote: next.map((j) => j.tag) };
+  let receiverError: string | undefined;
+  if (receiver) {
+    try {
+      await censusTraffic.sendResults(receiver, JSON.stringify(progress.results));
+    } catch {
+      receiverError = 'Os itens foram conferidos, mas o receptor local não recebeu o resultado';
+    }
+  }
+  return { ...testProgress(jobs), lote: next.map((j) => j.tag), receptorError: receiverError };
 }
 
 /** Quantos foram criados, quais falharam (com a mensagem do Lattes) e quantos faltam. */
@@ -442,9 +433,11 @@ export function testProgress(jobs?: TestJob[]) {
     agora: live(),
     base: loadBase()?.at ?? null,
     criados: progress.results.filter((r) => r.ok).length,
+    exclusoesIncertas: progress.pendingRemovals ?? [],
     falharam: failed.map((r) => ({ msgs: r.msgs, tag: r.tag })),
     faltam: jobs ? jobs.filter((j) => !progress.results.some((r) => r.tag === j.tag)).length : null,
     faltandoDaBase: (progress.missing ?? []).map((r) => `${r.list} :: ${r.text}`),
+    incertos: failed.filter((r) => r.uncertain).map((r) => r.tag),
     registrados: progress.added?.length ?? 0,
     removidos: progress.removed.length,
     total: jobs?.length ?? null,
@@ -452,11 +445,19 @@ export function testProgress(jobs?: TestJob[]) {
 }
 
 /** Esquece o andamento guardado (depois de remover tudo). */
-export function resetTestItems(): void {
+export function resetTestItems(options: { force?: boolean } = {}): void {
+  if (censusTraffic.running) throw new Error('Espere a tarefa terminar antes de apagar o registro');
+  let progress: Progress | undefined;
   try {
-    localStorage.removeItem(STORE);
+    progress = load();
   } catch {
-    // Nada guardado.
+    if (!options.force)
+      throw new Error(
+        'Registro ilegível: confira os itens no Lattes e use resetTestItems({force: true}) para apagar',
+      );
   }
+  if (progress && (progress.results.some((r) => r.uncertain) || progress.pendingRemovals?.length))
+    throw new Error('Confira e reconcilie os envios incertos antes de apagar o registro');
   clearBase();
+  localStorage.removeItem(STORE);
 }

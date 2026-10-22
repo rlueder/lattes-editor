@@ -7,25 +7,14 @@
 // formulário guarda nomes, tipos e limites dos campos, nunca valores: o
 // relatório pode ser colado numa issue pública sem expor o currículo.
 
+import { LATTES_CONTRACT } from './contract-spec.ts';
+export { buildContract, LATTES_CONTRACT } from './contract-spec.ts';
 import type { LattesPort } from './apply.ts';
-import {
-  BIOGRAPHIC_OPS_ENABLED,
-  biographicContract,
-  type BiographicKind,
-  biographicSample,
-  isBiographicKind,
-} from './biographic.ts';
-import { CREATE_ITEMS_ENABLED } from './create.ts';
-import { CREATE_SPECS, createFormPath, isCreateItemKind } from './create-items.ts';
+import { type BiographicKind, biographicSample, isBiographicKind } from './biographic.ts';
+import { createFormPath, isCreateItemKind } from './create-items.ts';
 import { contractKind, type DeleteOp } from './delete.ts';
-import { editContract, eventoSample } from './edit-items.ts';
-import {
-  enabledListEdits,
-  isListEditKind,
-  listEditContract,
-  type ListEditKind,
-  listEditSample,
-} from './edit-lists.ts';
+import { eventoSample } from './edit-items.ts';
+import { isListEditKind, type ListEditKind, listEditSample } from './edit-lists.ts';
 import type { FormControl } from './form.ts';
 import { cvCodeFrom, findLinks, isLogonPage } from './lattes-html.ts';
 import {
@@ -36,6 +25,7 @@ import {
   unreadSources,
 } from './list-watch.ts';
 import type { BridgeOp } from './plan.ts';
+import { TransportStop } from './transport.ts';
 
 // O texto do relatório mora em contract-report.ts; quem já importava daqui segue igual.
 export { driftText, ISSUES_URL, issueUrl, reportText } from './contract-report.ts';
@@ -92,105 +82,6 @@ export interface Contract {
   /** Procedimentos que precisam estar linkados no menu do currículo. */
   menu: string[];
 }
-
-const text = (maxLength: number): FieldSpec => ({ maxLength, type: 'text' });
-const textarea = (maxLength: number): FieldSpec => ({ maxLength, type: 'textarea' });
-const hidden: FieldSpec = { type: 'hidden' };
-const select: FieldSpec = { type: 'select-one' };
-const checkbox: FieldSpec = { type: 'checkbox' };
-const radio: FieldSpec = { type: 'radio' };
-
-/**
- * O que o conector viu no Lattes em 11/10/2026. Os limites vêm das tabelas de
- * docs/lattes_internals.md; um campo sem limite ali fica sem limite aqui.
- * Quando o Lattes mudar, a verificação aponta o campo e este contrato é
- * atualizado junto com o código que depende dele.
- */
-export const buildContract = ({
-  biographic = BIOGRAPHIC_OPS_ENABLED,
-  create = CREATE_ITEMS_ENABLED,
-  lists = enabledListEdits(),
-}: {
-  biographic?: boolean;
-  create?: boolean;
-  lists?: ReadonlySet<ListEditKind>;
-} = {}): Contract => ({
-  forms: {
-    ...(create ? CREATE_SPECS : {}),
-    ...biographicContract(biographic).forms,
-    ...editContract().forms,
-    ...listEditContract(lists).forms,
-    idioma: {
-      action: 'PKG_IDIOMA.FORM',
-      fields: {
-        f_cod: hidden,
-        F_COD_IDIOMA: select,
-        F_COMPR: radio,
-        F_CONVERSA: radio,
-        f_ctr: hidden,
-        F_ESCREVE: radio,
-        F_LE: radio,
-        f_seq: hidden,
-        f_tipo_privacidade: select,
-        FC_COMPR: checkbox,
-        FC_CONVERSA: checkbox,
-        FC_ESCREVE: checkbox,
-        FC_LE: checkbox,
-      },
-      name: 'GN_IDIOMA',
-    },
-    resumo: {
-      action: 'PKG_RESUME.FORM',
-      fields: {
-        f_cod: hidden,
-        f_ctr: hidden,
-        f_resume_auto: hidden,
-        f_resume_auto_en: hidden,
-        f_ret: hidden,
-        F_TEXTO: textarea(4000),
-        F_TEXTO_EN: textarea(4000),
-      },
-      name: 'RES',
-    },
-    vinculo: {
-      action: 'PKG_ATIV.VINCULOS',
-      fields: {
-        f_ano_fim: text(4),
-        f_ano_ini: text(4),
-        f_carga: text(3),
-        f_cod: hidden,
-        f_codinst: hidden,
-        f_ctr: hidden,
-        f_enqua: text(45),
-        f_enqua_en: text(45),
-        f_mes_fim: text(2),
-        f_mes_ini: text(2),
-        f_outras_inf: textarea(3950),
-        f_outras_inf_en: textarea(2000),
-        f_regime: checkbox,
-        f_seq_ativ: hidden,
-        f_seq_hist: hidden,
-        f_status: radio,
-        f_stavinc: select,
-        f_tipo_privacidade: select,
-        f_vinc: text(30),
-        f_vinculo: hidden,
-      },
-      name: 'GN_ATIV_VINC',
-    },
-  },
-  menu: [
-    'pkg_ativ.lista',
-    'pkg_idioma.lista',
-    'pkg_resume.',
-    ...biographicContract(biographic).menu,
-    ...editContract().menu,
-    ...listEditContract(lists).menu,
-  ],
-});
-
-/** O contrato com as chaves desta montagem. */
-export const LATTES_CONTRACT: Contract = buildContract();
 
 export type Fingerprint = Record<string, FieldSpec>;
 
@@ -294,6 +185,8 @@ export interface ContractReport {
   /** As listas dos campos tipados (list-watch.ts); ausente em relatórios de antes delas. */
   lists?: ListCheck[];
   menu: { found: boolean; proc: string }[];
+  /** Uma conferência só dos tipos da fila, sem o catálogo completo de listas. */
+  partial?: boolean;
   status: ReportStatus;
 }
 
@@ -430,8 +323,20 @@ async function locateAndCheck(
 export async function checkContract(
   port: LattesPort,
   contract: Contract = LATTES_CONTRACT,
+  kinds?: BridgeOp['kind'][],
 ): Promise<ContractReport> {
   const checkedAt = new Date().toISOString();
+  const source = port;
+  const pages = new Map<string, Promise<string>>();
+  // A mesma página pode conferir vários formulários ou listas nesta leitura.
+  port = {
+    ...source,
+    get: (path) => {
+      if (!pages.has(path)) pages.set(path, source.get(path));
+      return pages.get(path)!;
+    },
+  };
+  const wanted = kinds && new Set(kinds.map(contractKind));
   try {
     const menu = await port.menuHtml();
     if (isLogonPage(menu)) throw new Stop('sessao', 'A sessão do Lattes expirou; entre de novo');
@@ -441,7 +346,7 @@ export async function checkContract(
     }));
     const forms: FormCheck[] = [];
     for (const [kind, spec] of Object.entries(contract.forms) as [BridgeOp['kind'], FormSpec][]) {
-      forms.push(await locateAndCheck(port, kind, spec, menu));
+      if (!wanted || wanted.has(kind)) forms.push(await locateAndCheck(port, kind, spec, menu));
     }
     // As listas dos campos tipados (list-watch.ts), pelo código do currículo do
     // menu. Menu sem o código também é mudança do Lattes: as listas ficam como
@@ -450,19 +355,28 @@ export async function checkContract(
     const code = cvCodeFrom(menu);
     const listPort = {
       get: (path: string) => getChecked(port, path),
-      isFatal: (err: unknown) => err instanceof Stop,
+      isFatal: (err: unknown) => err instanceof Stop || err instanceof TransportStop,
     };
-    const lists = code
-      ? [...(await checkLists(listPort, code)), ...(await checkSources(listPort, code, menu))]
-      : [
-          ...unreadLists('O código do currículo não está no menu'),
-          ...unreadSources('O código do currículo não está no menu'),
-        ];
+    const lists = kinds
+      ? []
+      : code
+        ? [...(await checkLists(listPort, code)), ...(await checkSources(listPort, code, menu))]
+        : [
+            ...unreadLists('O código do currículo não está no menu'),
+            ...unreadSources('O código do currículo não está no menu'),
+          ];
     const changed =
       forms.some((f) => f.drifts.length > 0) ||
       menuChecks.some((m) => !m.found) ||
       lists.some((l) => l.status !== 'ok');
-    return { checkedAt, forms, lists, menu: menuChecks, status: changed ? 'mudou' : 'ok' };
+    return {
+      checkedAt,
+      forms,
+      lists,
+      menu: menuChecks,
+      partial: kinds ? true : undefined,
+      status: changed ? 'mudou' : 'ok',
+    };
   } catch (err) {
     if (err instanceof Stop)
       return { checkedAt, detail: err.message, forms: [], menu: [], status: err.status };
