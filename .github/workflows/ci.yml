@@ -1,4 +1,4 @@
-name: CI
+name: 'CI (PR e main)'
 
 on:
   pull_request:

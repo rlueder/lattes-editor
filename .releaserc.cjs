@@ -1,10 +1,10 @@
 /**
- * Lançamentos com semantic-release, pelo workflow "Lançar versão"
+ * Lançamentos com semantic-release, pelo workflow "PROD 1: lançar versão"
  * (.github/workflows/release.yml), disparado à mão: merge na main não lança
  * nada, e uma versão junta tudo o que entrou desde a anterior. A página do
  * lançamento nasce como rascunho: só quem cuida do repositório a vê e baixa os
  * instaladores para testar. Quem usa o app só recebe a versão depois do
- * workflow "Publicar versão" (.github/workflows/publicar.yml).
+ * workflow "PROD 2: publicar versão" (.github/workflows/publicar.yml).
  *
  * A versão sai dos tipos dos commits (Conventional Commits):
  *   - quebra (rodapé BREAKING CHANGE) → maior
@@ -93,7 +93,7 @@ module.exports = {
             path: 'release/lattes-editor-extensao-loja.zip',
           },
         ],
-        // Rascunho até o "Publicar versão": nem o atualizador do app nem os
+        // Rascunho até o "PROD 2: publicar versão": nem o atualizador do app nem os
         // links de releases/latest enxergam um rascunho.
         draftRelease: true,
         failComment: false,
