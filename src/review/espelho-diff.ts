@@ -64,6 +64,13 @@ function afterAuthors(text: string): string {
 const distinctive = (key: string) => key.length >= 8 || key.includes(' ');
 
 export interface EspelhoDiff {
+  /** Seções com itens na exportação cuja lista não foi lida ou veio vazia no Lattes: não comparadas. */
+  notCompared?: string[];
+  /**
+   * De onde veio a comparação: as listas do Lattes, de todas as seções
+   * (lists-diff.ts), ou a página de conferência, só produção e eventos.
+   */
+  scope?: 'listas' | 'pagina';
   /** Itens da exportação com título curto ou vazio demais para comparar. */
   skipped: number;
   /**
@@ -143,13 +150,14 @@ export function diffEspelho(lattes: EspelhoItem[], root: XElement): EspelhoDiff 
   }
   const skipped = exported.length - comparable.length;
   if (comparable.length > 0 && matched.size === 0) {
-    return { onlyInExport: [], onlyInLattes: [], skipped, unreadable: true };
+    return { onlyInExport: [], onlyInLattes: [], scope: 'pagina', skipped, unreadable: true };
   }
   return {
     onlyInExport: comparable
       .filter((_, i) => !matched.has(i))
       .map(({ item, title }) => ({ item, title })),
     onlyInLattes,
+    scope: 'pagina',
     skipped,
   };
 }

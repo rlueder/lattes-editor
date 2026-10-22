@@ -4,6 +4,12 @@
 
 import { applyOp, type LattesPort } from '../../src/bridge/apply.ts';
 import { checkContract } from '../../src/bridge/contract.ts';
+import {
+  cvListQueue,
+  LISTS_PER_TASK,
+  type ListsPart,
+  readListsPart,
+} from '../../src/bridge/cv-lists.ts';
 import { type EspelhoItem, isEspelhoPage, parseEspelho } from '../../src/bridge/espelho.ts';
 import { exportCv, type ExportPort, fromBase64, toBase64 } from '../../src/bridge/export.ts';
 import type { FormControl } from '../../src/bridge/form.ts';
@@ -211,7 +217,11 @@ const connector = {
   // Só leitura: a página de conferência, com o que ainda não foi enviado ao
   // CNPq (docs/lattes_internals.md, seção 10). O código do currículo vem do
   // menu da aba.
-  espelho: async (): Promise<{ error?: string; items?: EspelhoItem[]; lattesId?: string }> => {
+  espelho: async (): Promise<{
+    error?: string;
+    items?: EspelhoItem[];
+    lattesId?: string;
+  }> => {
     const menu = document.documentElement.outerHTML;
     const code = cvCodeFrom(menu);
     const lattesId = lattesIdFrom(menu);
@@ -308,6 +318,19 @@ const connector = {
     searchInstitutions(listsPort, query, level || undefined),
   // Só leituras: a tabela de áreas do menu e a lista de agências.
   listas: () => readLists(listsPort),
+  // Só leitura: uma parte das listas do currículo (cv-lists.ts), para a
+  // comparação de todas as seções. A fila vem em JSON; sem fila, começa pelo
+  // menu. Uma parte por tarefa, abaixo do limite de pedidos do transporte.
+  listasCv: async (queueJson?: string): Promise<ListsPart | { error: string }> => {
+    const menu = document.documentElement.outerHTML;
+    const code = cvCodeFrom(menu);
+    if (!code) return { error: 'Não achei o código do currículo no menu do Lattes.' };
+    const queue = queueJson ? (JSON.parse(queueJson) as string[]) : cvListQueue(menu);
+    return readListsPart(queue, code, (path) => port.get(path), {
+      max: LISTS_PER_TASK,
+      skipFailed: true,
+    });
+  },
   // Só leitura: os órgãos de uma instituição, ou as unidades de um órgão, na
   // janela do projeto ou na da atividade.
   orgaos: (institution: string, parent?: string, organWindow?: string) =>

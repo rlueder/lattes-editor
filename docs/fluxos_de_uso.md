@@ -126,7 +126,10 @@ antes (o caso que originou este documento).
    períodos antigos (revisão de consistência, LAT-29). Feito em 13/10/2026
    como "Diagnóstico do currículo" (no ⚙ e no aviso do sino), com a
    comparação por títulos das produções e dos eventos
-   (`src/review/espelho-diff.ts`). Desde a LAT-25, o diagnóstico abre com
+   (`src/review/espelho-diff.ts`). Desde 21/10/2026 a comparação cobre todas
+   as seções, pelas listas do currículo no Lattes
+   (`src/review/lists-diff.ts`, docs/lattes_internals.md, seção 10), e diz
+   quais seções não conseguiu ler. Desde a LAT-25, o diagnóstico abre com
    a conferência do currículo inteiro (obrigatórios, listas, anos, autores,
    DOI e a revisão de consistência), e o que o Lattes diz vem logo abaixo.
 3. A pessoa decide o que mantém e o que desfaz, trabalha em lotes ao longo de

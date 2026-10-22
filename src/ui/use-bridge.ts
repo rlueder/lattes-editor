@@ -375,11 +375,11 @@ export function useBridge(
       }
       if (msg.type === 'espelho') {
         // Itens de outro currículo nunca entram na comparação.
-        const other = msg.items && !(lattesId && sameCv(lattesId, msg.lattesId));
+        const other = (msg.items || msg.lists) && !(lattesId && sameCv(lattesId, msg.lattesId));
         setEspelho({
           at: Date.now(),
           error: other ? 'A sessão aberta no Lattes é de outro currículo.' : msg.error,
-          items: other ? undefined : msg.items,
+          ...(other ? {} : { items: msg.items, lists: msg.lists, listsUnread: msg.listsUnread }),
         });
       }
     };

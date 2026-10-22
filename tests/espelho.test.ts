@@ -161,7 +161,7 @@ describe('o que mudou no Lattes desde a exportação', () => {
       ],
       two,
     );
-    expect(diff).toEqual({ onlyInExport: [], onlyInLattes: [], skipped: 0 });
+    expect(diff).toEqual({ onlyInExport: [], onlyInLattes: [], scope: 'pagina', skipped: 0 });
   });
 
   it('página que não bate com nada não vira diferença: fica ilegível', () => {
@@ -243,7 +243,7 @@ describe('o que mudou no Lattes desde a exportação', () => {
         [{ section: 'Produção', text: 'TESTE, P. Outro Trabalho. Anais, 2005' }],
         xml(['Outro Trabalho']),
       ),
-    ).toEqual({ onlyInExport: [], onlyInLattes: [], skipped: 0 });
+    ).toEqual({ onlyInExport: [], onlyInLattes: [], scope: 'pagina', skipped: 0 });
     // O sobrenome do segundo autor não casa com o título.
     expect(
       diffEspelho(
@@ -253,11 +253,11 @@ describe('o que mudou no Lattes desde a exportação', () => {
         ],
         xml(['Anais de Exemplo', 'Titulo Qualquer']),
       ),
-    ).toEqual({ onlyInExport: [], onlyInLattes: [], skipped: 0 });
+    ).toEqual({ onlyInExport: [], onlyInLattes: [], scope: 'pagina', skipped: 0 });
     // Sem autores (evento), um título curto casa.
     expect(
       diffEspelho([{ section: 'Eventos', text: 'Fórum, 2007. (Congresso) .' }], xml(['Fórum'])),
-    ).toEqual({ onlyInExport: [], onlyInLattes: [], skipped: 0 });
+    ).toEqual({ onlyInExport: [], onlyInLattes: [], scope: 'pagina', skipped: 0 });
   });
 
   it('nada mudou quando cada linha tem o seu item', () => {
@@ -268,6 +268,6 @@ describe('o que mudou no Lattes desde a exportação', () => {
           <DADOS-BASICOS-DO-TRABALHO-TECNICO TITULO-DO-TRABALHO-TECNICO="Relatório Anual 2004 (hotsite)" ANO="2005"/>
         </TRABALHO-TECNICO></PRODUCAO-TECNICA></CURRICULO-VITAE>`).root,
     );
-    expect(diff).toEqual({ onlyInExport: [], onlyInLattes: [], skipped: 0 });
+    expect(diff).toEqual({ onlyInExport: [], onlyInLattes: [], scope: 'pagina', skipped: 0 });
   });
 });

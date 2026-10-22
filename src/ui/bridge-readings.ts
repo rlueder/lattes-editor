@@ -5,6 +5,7 @@ import type { EspelhoItem } from '../bridge/espelho.ts';
 import type { ExportFailure } from '../bridge/export.ts';
 import type { ImportStop, PageShape } from '../bridge/importar.ts';
 import type { PhotoFailure } from '../bridge/photo.ts';
+import type { ListSnapshot } from '../census/test-ledger.ts';
 
 export interface CurriculoReading {
   /** Quando a resposta chegou (ms). */
@@ -46,4 +47,11 @@ export interface EspelhoReading {
   at: number;
   error?: string;
   items?: EspelhoItem[];
+  /**
+   * Todas as listas do currículo no Lattes (src/bridge/cv-lists.ts), para a
+   * comparação de todas as seções; ausentes numa extensão mais antiga.
+   */
+  lists?: ListSnapshot;
+  /** Chaves das listas que não deu para ler; "*" quando nenhuma foi lida. */
+  listsUnread?: string[];
 }

@@ -13,7 +13,7 @@ import { requestProblem } from '../bridge/publish.ts';
 import { failed } from '../bridge/sent-log.ts';
 import { simulatedSendScreen } from '../dev/send-screen-preview.ts';
 import { parseXml } from '../model/xml.ts';
-import { diffEspelho } from '../review/espelho-diff.ts';
+import { compareWithLattes } from '../review/lists-diff.ts';
 import { Modal } from '../ui/Modal.tsx';
 import { unpublishedEntries } from '../ui/status-strip.ts';
 import type { BridgeState } from '../ui/use-bridge.ts';
@@ -151,8 +151,7 @@ function PublishPanelBody(props: Props) {
     [open, originalXml],
   );
   const diff = useMemo(
-    () =>
-      original && bridge.espelho?.items ? diffEspelho(bridge.espelho.items, original) : undefined,
+    () => (original && bridge.espelho ? compareWithLattes(bridge.espelho, original) : undefined),
     [original, bridge.espelho],
   );
 

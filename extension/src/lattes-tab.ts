@@ -10,6 +10,7 @@ import type { BridgeMessage, EditorMessage } from '../../src/bridge/protocol.ts'
 import type { PublishRequest, PublishResult } from '../../src/bridge/publish.ts';
 import { hasConsent } from './consent.ts';
 import { LATTES_MENU, lattesMenus } from './lattes-hosts.ts';
+import { readCvLists } from './read-cv-lists.ts';
 import { withSessionTask } from './session-task.ts';
 import { tabReloaded, untilTabCloses } from './tab-guard.ts';
 import { readTrafficPause } from './traffic-pause.ts';
@@ -63,6 +64,7 @@ async function runInTab<T>(
     | 'importar'
     | 'instituicoes'
     | 'listas'
+    | 'listasCv'
     | 'orgaos'
     | 'publicar'
     | 'telaEnvio',
@@ -217,12 +219,12 @@ export async function readEspelho(): Promise<Reply<'espelho'>> {
   if (tabId === undefined) {
     return { error: 'Abra o currículo no Lattes (a página do menu) numa aba.' };
   }
-  const failed = { error: 'A aba do Lattes não respondeu.' };
-  try {
-    return (await runInTab<Reply<'espelho'>>(tabId, 'espelho')) ?? failed;
-  } catch {
-    return failed;
-  }
+  const failed: Reply<'espelho'> = { error: 'A aba do Lattes não respondeu.' };
+  const page =
+    (await runInTab<Reply<'espelho'>>(tabId, 'espelho').catch(() => undefined)) ?? failed;
+  if (!page.items) return page;
+  // Depois da página, as listas, em partes (read-cv-lists.ts).
+  return { ...page, ...(await readCvLists((queue) => runInTab(tabId, 'listasCv', ...queue))) };
 }
 
 /**
