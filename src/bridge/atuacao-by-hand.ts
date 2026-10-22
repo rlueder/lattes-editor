@@ -40,7 +40,7 @@ const ATUACAO =
  * pesquisa, então fica à mão.
  */
 const ACTIVITY =
-  'Alterar esta atividade da atuação vai à mão: o conector ainda não leva a grade de cargos, disciplinas ou linhas de pesquisa dela, e um envio sem a grade as apagaria';
+  'Alterar esta atividade da atuação vai à mão: para esta alteração o conector não monta a grade de cargos, disciplinas ou linhas de pesquisa dela, e um envio sem a grade as apagaria';
 
 /** Seções 18 e 21: a chave r da grade de áreas não foi lida, nem como a página monta uma área nova. */
 const AREA =
