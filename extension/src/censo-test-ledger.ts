@@ -2,14 +2,12 @@
 // página do Lattes (docs/development/PLAN.md, Fase 0). As regras puras ficam
 // em src/census/test-ledger.ts.
 
+import { snapshotCvLists } from '../../src/bridge/cv-lists.ts';
 import {
   diffSnapshots,
   listKey,
   type ListSnapshot,
-  listUrls,
-  nestedUrls,
   type PlacedRow,
-  rowsOf,
 } from '../../src/census/test-ledger.ts';
 import { TEST_MARK } from '../../src/census/test-plan.ts';
 
@@ -38,25 +36,13 @@ export function clearBase(): void {
   localStorage.removeItem(BASE);
 }
 
-const withCode = (url: string, code: string) =>
-  /[?&]f_cod=/.test(url) ? url : `${url}${url.includes('?') ? '&' : '?'}f_cod=${code}`;
-
-/** Todas as listas que o menu abre, e as de dentro delas (atuação, periódico do revisor). */
+/** Todas as listas que o menu abre, e as de dentro delas (src/bridge/cv-lists.ts). */
 export async function snapshotLists(
   menuHtml: string,
   code: string,
   get: (path: string) => Promise<{ html: string }>,
 ): Promise<ListSnapshot> {
-  const out: ListSnapshot = {};
-  for (const url of listUrls(menuHtml)) {
-    const html = (await get(withCode(url, code))).html;
-    if (/404 Not Found|Bad Request/.test(html)) continue;
-    out[listKey(url)] = rowsOf(html);
-    for (const inner of nestedUrls(html)) {
-      out[listKey(inner)] = rowsOf((await get(withCode(inner, code))).html);
-    }
-  }
-  return out;
+  return snapshotCvLists(menuHtml, code, async (path) => (await get(path)).html);
 }
 
 /** O que mudou em relação à base agora: o registro do que entrou e o que sumiu. */

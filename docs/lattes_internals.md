@@ -531,6 +531,28 @@ Lattes validado e disponível publicamente". **Observado** pelo texto da
 página; as tags que formam essas linhas são **inferidas**. O diagnóstico do
 editor lê essa página (`src/bridge/espelho.ts`).
 
+**As listas como segunda leitura (21/10/2026).** A página de conferência só
+deixa casar produções e eventos com a exportação, porque as outras seções saem
+como texto corrido. As listas que o menu do currículo abre (as mesmas da base
+dos itens de teste, `src/bridge/cv-lists.ts`, só GET e nunca endereço com
+`f_ctr`) trazem uma linha por item em todas as seções. Formatos **observados**
+no Lattes real, com dados trocados aqui:
+
+- atuação (`pkg_ativ.lista`): "Empresa Exemplo Ltda. SIGLA De 2011 até 2012";
+- vínculos de uma atuação (`pkg_ativ.cargos_vinculos?f_seq_ativ=N`):
+  "01/2011 12/2012 Cargo", o período abrindo a linha;
+- formação (`pkg_formacao.lista`): "2006... 2007 Mestrado Universidade";
+- evento (`pkg_evento.lista`, que repete na lista de divulgação científica):
+  "Nome do Evento Ouvinte 2007 -";
+- produções: o título, o tipo e o ano.
+
+O diagnóstico compara por essas listas quando a extensão as traz
+(`src/review/lists-diff.ts`), procurando cada item pelo nome e pelo ano, em
+palavras inteiras. Lista que não abriu, ou que veio vazia com itens na
+exportação, deixa a seção como "não comparada" em vez de dar os itens como
+tirados. Extensão anterior a isso só manda a página de conferência, e o
+diagnóstico diz que comparou só produções e eventos.
+
 **No conector (15/10/2026, desligado).** `src/bridge/publish.ts` (LAT-54)
 repete o envio da tela, atrás de `PUBLISH_ENABLED = false`, e nunca rodou no
 Lattes real; os testes rodam contra o Lattes simulado. O caminho:

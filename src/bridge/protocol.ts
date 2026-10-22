@@ -2,6 +2,7 @@
 // window.postMessage na própria página do editor. Versionadas: um lado que
 // não conhece a versão do outro ignora a mensagem.
 
+import type { ListSnapshot } from '../census/test-ledger.ts';
 import type { OpResult } from './apply.ts';
 import type { EspelhoItem } from './espelho.ts';
 import type { ExportFailure } from './export.ts';
@@ -140,7 +141,14 @@ export type BridgeMessage =
    * Os itens da página de conferência do Lattes, ou o motivo de não ter
    * lido; lattesId diz de qual currículo é a sessão.
    */
-  | { error?: string; items?: EspelhoItem[]; lattesId?: string; type: 'espelho' }
+  | {
+      error?: string;
+      items?: EspelhoItem[];
+      lattesId?: string;
+      /** Todas as listas do currículo (cv-lists.ts); ausentes numa extensão mais antiga. */
+      lists?: ListSnapshot;
+      type: 'espelho';
+    }
   /**
    * O ZIP do Exportar em base64, ou o motivo de não ter vindo; lattesId diz
    * de qual currículo é a sessão.

@@ -4,6 +4,7 @@
 
 import { applyOp, type LattesPort } from '../../src/bridge/apply.ts';
 import { checkContract } from '../../src/bridge/contract.ts';
+import { snapshotCvLists } from '../../src/bridge/cv-lists.ts';
 import { type EspelhoItem, isEspelhoPage, parseEspelho } from '../../src/bridge/espelho.ts';
 import { exportCv, type ExportPort, fromBase64, toBase64 } from '../../src/bridge/export.ts';
 import type { FormControl } from '../../src/bridge/form.ts';
@@ -29,6 +30,7 @@ import {
   readSendScreenFrom,
   type SendScreen,
 } from '../../src/bridge/publish.ts';
+import type { ListSnapshot } from '../../src/census/test-ledger.ts';
 import { decodeLatin1 } from '../../src/model/latin1.ts';
 import { pageTraffic, withTraffic } from './page-traffic.ts';
 
@@ -211,7 +213,14 @@ const connector = {
   // Só leitura: a página de conferência, com o que ainda não foi enviado ao
   // CNPq (docs/lattes_internals.md, seção 10). O código do currículo vem do
   // menu da aba.
-  espelho: async (): Promise<{ error?: string; items?: EspelhoItem[]; lattesId?: string }> => {
+  // Junto, todas as listas do currículo (cv-lists.ts), também só GET, para a
+  // comparação de todas as seções; sem elas, a comparação fica na página.
+  espelho: async (): Promise<{
+    error?: string;
+    items?: EspelhoItem[];
+    lattesId?: string;
+    lists?: ListSnapshot;
+  }> => {
     const menu = document.documentElement.outerHTML;
     const code = cvCodeFrom(menu);
     const lattesId = lattesIdFrom(menu);
@@ -225,7 +234,10 @@ const connector = {
       if (!res.ok || !isEspelhoPage(html)) {
         return { error: 'O Lattes não devolveu a página de conferência.', lattesId };
       }
-      return { items: parseEspelho(html), lattesId };
+      const lists = await snapshotCvLists(menu, code, (path) => port.get(path)).catch(
+        () => undefined,
+      );
+      return { items: parseEspelho(html), lattesId, ...(lists ? { lists } : {}) };
     } catch {
       return { error: 'A aba do Lattes não respondeu.', lattesId };
     }
