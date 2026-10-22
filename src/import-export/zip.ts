@@ -132,10 +132,10 @@ export async function readZip(bytes: Uint8Array, options: ZipOptions = {}): Prom
   for (const { method, name, raw, size } of selected) {
     let data: Uint8Array;
     if (method === 0) {
-      if (raw.length > maxOutput - total)
+      if (raw.length > Math.min(size, maxOutput - total))
         throw new ZipError('O ZIP ultrapassa o limite de descompressão');
       data = raw.slice();
-    } else if (method === 8) data = await inflateRaw(raw, maxOutput - total);
+    } else if (method === 8) data = await inflateRaw(raw, Math.min(size, maxOutput - total));
     else throw new ZipError(`Método de compressão ${method} não suportado em ${name}`);
     if (data.length !== size) throw new ZipError(`Tamanho descomprimido inválido: ${name}`);
     total += data.length;

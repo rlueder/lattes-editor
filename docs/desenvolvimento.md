@@ -303,7 +303,8 @@ a tarefa. O conector normal continua sem essa permissão.
 
 A coleta respeita os mesmos tetos de pedidos e pausas do conector. Pode ser
 necessário aguardar a pausa e repetir a leitura; páginas já coletadas são
-reaproveitadas até recarregar a aba ou gravar. Para uma recaptura seletiva,
+reaproveitadas somente dentro da mesma tarefa. A cópia é liberada ao terminar,
+inclusive após erro ou cancelamento. Para reduzir uma coleta que excede o orçamento,
 passe os tipos em `only`. `__lattesCensus.cancel()` para a tarefa, inclusive
 os pedidos e quadros em andamento. Cancelar não desfaz POST já recebido.
 

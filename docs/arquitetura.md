@@ -306,14 +306,17 @@ O prazo do cliente Dev é 145 s, anterior ao do transporte. Cancelar aborta
 os pedidos, retira os quadros e impede novos passos. O registro de um envio
 incerto é salvo antes de iniciar a gravação e não pode ser apagado enquanto
 houver pendência. Inclusões confirmam a tag na página de conferência;
-exclusões releem as listas a cada item. Uma falha de gravação interrompe o
+exclusões releem apenas a lista afetada a cada item, com uma conferência de
+todas as listas no fim do lote. Uma falha de gravação interrompe o
 lote. Um registro ilegível só pode ser apagado após conferência manual e
 `resetTestItems({force: true})`; a opção não libera o reset de incertezas
 conhecidas nem de uma tarefa em curso. Repetir exige conferência humana e leitura atual do Lattes; falha em
 salvar o registro impede novas gravações.
 
-A coleta de leitura guarda até 512 páginas, somando até 32 MiB, para retomar
-uma coleta interrompida pelo orçamento. Gravar limpa essa cópia. Quadros de
+A coleta de leitura guarda até 512 páginas, somando até 32 MiB, durante uma
+tarefa. A cópia é limpa no início e no fim, inclusive após falha ou
+cancelamento, para outra coleta enxergar alterações recentes. Gravar também
+limpa essa cópia. Quadros de
 edição sempre leem o formulário novamente. Funções da página que tentam abrir
 recursos fora da ponte são recusadas; um formulário que dependa delas pode
 exigir adaptação antes de funcionar no censo protegido.
@@ -326,7 +329,9 @@ O vigia público semanal faz cinco leituras, sem repetição automática, por
 O leitor aceita no máximo 32 MiB comprimidos e 128 entradas. A seleção de
 arquivos XML acontece no diretório central, antes da descompressão. A soma
 de saída dos arquivos selecionados tem teto de 64 MiB, conferido tanto no
-tamanho declarado quanto nos bytes que o fluxo realmente produz. Cabeçalhos
+tamanho declarado quanto nos bytes que o fluxo realmente produz. Cada
+entrada também interrompe a expansão ao exceder o próprio tamanho declarado.
+Cabeçalhos
 truncados e tamanhos incompatíveis são recusados com um erro de ZIP.
 
 ## Do editor ao Lattes

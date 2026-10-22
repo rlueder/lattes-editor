@@ -92,7 +92,7 @@ jeito, inclusive quando o item vem do DOI.
   <img src="docs/img/novo-item-claro.jpg" alt="O modal Novo item de produção com a busca de tipos e os tipos mais usados." />
 </picture>
 
-O editor aceita ZIPs de até 32 MiB, com até 128 entradas, e limita a expansão dos XMLs a 64 MiB. Os demais arquivos dentro do ZIP não são descomprimidos.
+O editor aceita ZIPs de até 32 MiB, com até 128 entradas, e limita a expansão dos XMLs a 64 MiB. A expansão de cada entrada também para ao ultrapassar seu tamanho declarado. Os demais arquivos dentro do ZIP não são descomprimidos.
 
 Cada exportação aberta vira uma versão, e o app diz o que mudou desde a
 anterior ("Versões do Lattes", no ⚙), inclusive o que foi editado direto no

@@ -7,6 +7,15 @@ export function clearCensusCache(): void {
   pages.clear();
   size = 0;
 }
+/** A cópia só vale durante uma tarefa; outra leitura precisa ver as edições recentes. */
+export async function withCensusCache<T>(work: () => Promise<T>): Promise<T> {
+  clearCensusCache();
+  try {
+    return await work();
+  } finally {
+    clearCensusCache();
+  }
+}
 export async function censusGet(url: URL): Promise<CensusResponse> {
   censusTraffic.signal.throwIfAborted();
   const key = url.href;

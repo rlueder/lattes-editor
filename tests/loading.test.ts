@@ -132,6 +132,16 @@ describe('orçamento do ZIP', () => {
     const central = view.getUint32(zip.length - 6, true);
     view.setUint32(central + 24, 1, true);
     await expect(readZip(zip, { maxOutputBytes: 100 })).rejects.toThrow('descompressão');
+    await expect(readZip(zip)).rejects.toThrow('descompressão');
+  });
+
+  it('recusa a expansão acima do tamanho da entrada mesmo com orçamento global livre', async () => {
+    const zip = await buildZip([{ data: latin1('x'.repeat(200_000)), name: 'a.xml' }]);
+    const view = new DataView(zip.buffer);
+    const central = view.getUint32(zip.length - 6, true);
+    view.setUint32(central + 24, 0, true);
+    await expect(readZip(zip)).rejects.toThrow('descompressão');
+    view.setUint32(central + 24, 300_000, true);
     await expect(readZip(zip)).rejects.toThrow('Tamanho descomprimido');
   });
 

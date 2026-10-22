@@ -2,7 +2,7 @@
 // só as linhas que não estavam na base das listas, conferidas no fim contra a
 // base inteira. Separada de censo-test-items.ts, que cria.
 
-import { markedBatch, removalOrder, rowLabel } from '../../src/census/test-ledger.ts';
+import { markedBatch, removalOrder, rowLabel, rowsOf } from '../../src/census/test-ledger.ts';
 import { TEST_MARK } from '../../src/census/test-plan.ts';
 import { TEST_BATCH_LIMIT, testBatchSize } from './censo-batch.ts';
 import { frameState } from './censo-frame.ts';
@@ -126,8 +126,9 @@ export async function removeTestItems(
         continue;
       }
       clearCensusCache();
-      const checked = await ledgerNow(menu, code, get);
-      if (checked.added.some((r) => r.link === row.link))
+      // Confere só a lista afetada; a leitura completa fica para o fim do lote.
+      const checked = rowsOf((await get(withCode(row.list, code))).html);
+      if (checked.some((r) => r.link === row.link))
         throw new Error('O item ainda aparece depois da exclusão; a rodada parou');
       progress.pendingRemovals = [];
       removed.push(row.text);
@@ -141,6 +142,7 @@ export async function removeTestItems(
   }
   // A conferência: o que ainda difere da base, para mais e para menos.
   setLive({ phase: 'lendo' });
+  clearCensusCache();
   const after = await ledgerNow(menu, code, get);
   progress.added = after.added;
   progress.missing = after.missing;

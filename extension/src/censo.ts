@@ -30,7 +30,7 @@ import {
 import { testJobs } from '../../src/census/test-plan.ts';
 import { readZip } from '../../src/import-export/zip.ts';
 import { decodeLatin1, decodeXmlBytes } from '../../src/model/latin1.ts';
-import { censusGet, clearCensusCache } from './censo-reading.ts';
+import { censusGet, clearCensusCache, withCensusCache } from './censo-reading.ts';
 import { ensureContext } from './censo-test-donors.ts';
 import {
   createTestItems,
@@ -322,7 +322,7 @@ async function removeTests(options: Parameters<typeof removeTestItems>[2] = {}) 
 async function protectedRun<T>(work: () => Promise<T>): Promise<T> {
   if (censusTraffic.running) throw new Error('O censo já está ocupado');
   try {
-    return await censusTraffic.run(work);
+    return await censusTraffic.run(() => withCensusCache(work));
   } finally {
     setLive({ phase: 'parado' });
   }
