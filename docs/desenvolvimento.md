@@ -164,13 +164,19 @@ O CNPq não avisa quando muda o Lattes. Duas coisas olham por ele:
 
 ## Canal Dev
 
-A cada merge na `main`, depois do CI verde, o workflow "Versão Dev"
-(`dev.yml`) monta o **LattesEditor Dev** nos três sistemas, com a extensão Dev
-dentro, na pré-estreia
-[`dev`](https://github.com/rlueder/lattes-editor/releases/tag/dev). É o que vai
-entrar na próxima versão, para testar antes de lançar. Um build em andamento
-sempre termina; o merge que chega espera e monta o topo da `main`. Para montar
-sem esperar um merge: `gh workflow run dev.yml`.
+De hora em hora, o workflow "DEV: montar o LattesEditor Dev" (`dev.yml`)
+olha a `main`. Se ela mudou desde o último Dev, se a mudança não é só
+documentação (`docs/`, `site/`, README) e se o CI passou no topo, ele monta o
+**LattesEditor Dev** nos três sistemas, com a extensão Dev dentro, na
+pré-estreia [`dev`](https://github.com/rlueder/lattes-editor/releases/tag/dev).
+É o que vai entrar na próxima versão, para testar antes de lançar. Vários
+merges na mesma hora dão um build só, e um build em andamento sempre termina.
+Para montar sem esperar a hora:
+
+```bash
+gh workflow run dev.yml                   # monta se a main mudou
+gh workflow run dev.yml -f forcar=true    # monta de qualquer jeito
+```
 
 O LattesEditor Dev convive com o app publicado:
 
@@ -191,15 +197,16 @@ atualização do app, a pasta é refeita e a extensão se recarrega sozinha.
 ## Lançar uma versão
 
 Merge na `main` não lança nada: as mudanças se acumulam até você decidir. Os
-dois passos são manuais, em Actions ou pelo `gh`:
+dois passos são manuais, em Actions (os workflows com prefixo PROD; "CI" e
+"App de desktop" servem aos dois canais) ou pelo `gh`:
 
 ```bash
-gh workflow run release.yml               # Lançar versão: cria o rascunho
-gh workflow run publicar.yml              # Publicar versão: o rascunho mais recente
+gh workflow run release.yml               # PROD 1: lançar versão, cria o rascunho
+gh workflow run publicar.yml              # PROD 2: publicar versão, o rascunho mais recente
 gh workflow run publicar.yml -f tag=v0.23.0
 ```
 
-1. **"Lançar versão"** (`release.yml`) confere que o CI passou no commit atual
+1. **"PROD 1: lançar versão"** (`release.yml`) confere que o CI passou no commit atual
    da `main`. O semantic-release junta todos os commits desde a última tag
    `v*` numa versão só: `feat` sobe a menor; `fix`, `perf` e `refactor`, a
    correção; `docs`, `ci`, `chore` e `test` não entram nas notas. Ele atualiza
@@ -212,7 +219,7 @@ gh workflow run publicar.yml -f tag=v0.23.0
 2. **O rascunho é o portão.** Só quem cuida do repositório o vê; é dele que
    saem os instaladores para testar. O app instalado e a página do projeto
    continuam na versão publicada anterior.
-3. **"Publicar versão"** (`publicar.yml`) confere que o rascunho tem os
+3. **"PROD 2: publicar versão"** (`publicar.yml`) confere que o rascunho tem os
    instaladores, as duas extensões e um `latest.json` da mesma versão, com os
    endereços apontando para os arquivos dele, e o publica como o mais recente.
    Rascunhos mais antigos saem junto, sem essa marca. Só então o app instalado

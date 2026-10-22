@@ -1,9 +1,13 @@
-name: Versão Dev
+name: 'DEV: montar o LattesEditor Dev (de hora em hora)'
 
-# O canal Dev, como o Nightly do Firefox ou o Insiders do VS Code: a cada merge
-# na main (depois do CI verde), monta o LattesEditor Dev nos três sistemas e a
-# extensão "LattesEditor Dev: Conector", para testar o que vai entrar na
-# próxima versão antes do "Lançar versão".
+# O canal Dev, como o Nightly do Firefox ou o Insiders do VS Code. De hora em
+# hora, se a main mudou desde o último Dev e o CI dela passou, monta o
+# LattesEditor Dev nos três sistemas e a extensão "LattesEditor Dev:
+# Conector", para testar o que vai entrar na próxima versão antes do
+# "PROD 1: lançar versão". Vários merges na mesma hora dão um build só; um
+# merge que só muda documentação (docs/, site/, README) não dá nenhum. Para
+# montar sem esperar a hora: Actions, "Run workflow", ou
+# `gh workflow run dev.yml`; com `forcar` marcado, monta mesmo sem mudança.
 #
 # O LattesEditor Dev convive com o app publicado: outro nome, identificador,
 # ícone (com o selo DEV), pasta de dados e entrada no chaveiro, e outro host
@@ -12,22 +16,24 @@ name: Versão Dev
 #
 # A página "dev" é uma pré-estreia que se refaz a cada build: a anterior é
 # apagada com a tag, e a nova aponta para o commit do build. Não é rascunho
-# (o "Publicar versão" não a toca) nem a mais recente (releases/latest a
-# ignora). A versão é a do package.json com o número do build
+# (o "PROD 2: publicar versão" não a toca) nem a mais recente (releases/latest
+# a ignora). A versão é a do package.json com o número do build
 # (0.22.0-dev.42): sempre maior que a do build anterior.
 
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
-  # Refazer o Dev da main sem esperar um merge.
+  schedule:
+    - cron: '0 * * * *' # a cada hora cheia (UTC)
   workflow_dispatch:
+    inputs:
+      forcar:
+        description: Montar mesmo sem mudança na main desde o último Dev, ou só com documentação.
+        required: false
+        type: boolean
+        default: false
 
 # Um build em andamento sempre termina: cancelado no meio, ele deixaria a
-# página "dev" sem latest.json até o build seguinte. Os merges que chegam
-# nesse meio esperam; o GitHub guarda só o último na fila, e ele monta o topo
-# da main, que já inclui os outros.
+# página "dev" sem latest.json até o build seguinte. Um disparo à mão durante
+# um build espera por ele.
 concurrency:
   group: dev
   cancel-in-progress: false
@@ -36,16 +42,11 @@ permissions:
   contents: write
 
 jobs:
-  # O Dev é sempre o topo da main. O CI de cada commit leva o seu tempo, e o
-  # workflow_run de um commit pode chegar depois do de um mais novo. Então todo
-  # build monta o topo da main, se o CI dele já passou; se ainda não passou,
-  # este build não faz nada e o fim daquele CI dispara o Dev.
+  # Decide se há o que montar: o topo da main, se ele mudou desde o commit de
+  # que o Dev de agora foi montado (o alvo da página "dev"), se a mudança não é
+  # só documentação e se o CI da main passou nele. Fora disso, o workflow
+  # termina aqui, em segundos.
   topo:
-    if: >-
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_run' &&
-       github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -56,16 +57,30 @@ jobs:
       - id: topo
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          EVENTO: ${{ github.event_name }}
-          SHA: ${{ github.event.workflow_run.head_sha }}
+          FORCAR: ${{ inputs.forcar }}
         run: |
+          set -euo pipefail
           topo=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
-          if [ "$EVENTO" = workflow_run ] && [ "$topo" != "$SHA" ]; then
-            verdes=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$topo&event=push&status=success" --jq .total_count)
-            if [ "$verdes" = 0 ]; then
-              echo "::notice::${SHA:0:7} não é mais o topo da main, e o CI do topo (${topo:0:7}) ainda não passou: o fim dele monta o Dev."
+          # Sem página "dev" (a primeira vez), monta.
+          base=$(gh release view dev --json targetCommitish --jq .targetCommitish 2>/dev/null || true)
+          if [ "$FORCAR" != true ]; then
+            if [ "$base" = "$topo" ]; then
+              echo "::notice::A main não mudou desde o último Dev (${topo:0:7}): nada a montar."
               exit 0
             fi
+            if [ -n "$base" ]; then
+              # A comparação lista até 300 arquivos; mais que isso, monta.
+              arquivos=$(gh api "repos/$GITHUB_REPOSITORY/compare/$base...$topo" --jq '.files[].filename')
+              if [ -n "$arquivos" ] && ! grep -qvE '^(docs/|site/|README\.md$|CHANGELOG\.md$|ROADMAP\.md$|LICENSE$|\.github/workflows/pages\.yml$)' <<<"$arquivos"; then
+                echo "::notice::Desde o último Dev (${base:0:7}) só mudou documentação: nada a montar."
+                exit 0
+              fi
+            fi
+          fi
+          verdes=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$topo&event=push&status=success" --jq .total_count)
+          if [ "$verdes" = 0 ]; then
+            echo "::notice::O CI do topo da main (${topo:0:7}) ainda não passou: fica para a próxima hora."
+            exit 0
           fi
           echo "sha=$topo" >> "$GITHUB_OUTPUT"
 

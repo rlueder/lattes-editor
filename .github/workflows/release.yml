@@ -1,4 +1,4 @@
-name: Lançar versão
+name: 'PROD 1: lançar versão (cria o rascunho)'
 
 # Merge na main não lança nada: as mudanças se acumulam até este workflow,
 # disparado à mão (Actions, ou `gh workflow run release.yml`). Ele confere
@@ -9,7 +9,7 @@ name: Lançar versão
 # sistemas e entra no mesmo rascunho.
 #
 # O rascunho é o portão: o app instalado e a página do projeto só veem a
-# versão depois do workflow "Publicar versão" (publicar.yml), disparado à mão
+# versão depois do workflow "PROD 2: publicar versão" (publicar.yml), disparado à mão
 # depois de testar os instaladores do rascunho.
 
 on:
