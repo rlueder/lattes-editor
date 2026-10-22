@@ -5989,6 +5989,20 @@ blockquote.publish-declaration {
   color: var(--text);
 }
 
+/* A caixa da declaração, com a legenda da tela do Lattes, depois do texto. */
+.publish-agree {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+
+.publish-agree input {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
 .publish-done {
   color: var(--ok);
   font-weight: 500;

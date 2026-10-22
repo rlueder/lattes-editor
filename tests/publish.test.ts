@@ -77,10 +77,15 @@ describe('Enviar ao CNPq pelo conector (LAT-54)', () => {
     const lattes = await start();
     const read = await readSendScreenFrom(lattes.publishPort, await code(lattes));
     expect(read.screen).toEqual({
+      agree: 'Li e estou de acordo com a declaração acima',
       declaration: SIMULATED_DECLARATION,
       emailAlternative: '',
       emailContact: SIMULATED_EMAIL,
-      english: { checked: true, label: 'Autorizo a publicação da versão em inglês', value: '1' },
+      english: {
+        checked: true,
+        label: 'Autorizo a publicação da versão em inglês do meu currículo',
+        value: '1',
+      },
       language: {
         options: [
           { label: 'Português', value: '1' },
@@ -311,7 +316,8 @@ describe('Enviar ao CNPq pelo conector (LAT-54)', () => {
           req.proc.toLowerCase() === 'pkg_publicar.mostrar_cv' && 'html' in out
             ? {
                 ...out,
-                html: out.html.replace(new RegExp(`<input[^>]*name="${control}"[^>]*>`), ''),
+                // Na tela real, o nome vem com ou sem aspas (name=f_chk_en).
+                html: out.html.replace(new RegExp(`<input[^>]*name="?${control}"?[^>]*>`), ''),
               }
             : out,
         ),

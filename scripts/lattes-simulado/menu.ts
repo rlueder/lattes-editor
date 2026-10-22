@@ -196,32 +196,31 @@ export const SIMULATED_DECLARATION =
   'Declaro, para os fins do Lattes simulado, que as informações deste currículo de teste são fictícias.';
 
 /**
- * A tela de envio. Observado em 14/10/2026: o formulário publicar só declara
- * f_chk, o enviar() da página monta o resto e navega por GET para
- * pkg_publicar.enviar, depois das consultas de raça ou cor e de e-mail.
- * Inferido: o desenho da tela, o texto da declaração (SIMULATED_DECLARATION),
- * o link do Termo de Uso e os controles de idioma, versão em inglês e e-mails
- * com os nomes dos parâmetros do GET.
+ * A tela de envio. Observado em 14/10/2026: o enviar() da página monta o GET
+ * para pkg_publicar.enviar, depois das consultas de raça ou cor e de e-mail.
+ * O desenho é o da tela real lida em 21/10/2026 (pkg_publicar.mostrar_cv):
+ * dentro do formulário publicar, o texto da declaração e o link do Termo de
+ * Uso vêm antes da caixa f_chk, que tem a legenda "Li e estou de acordo com a
+ * declaração acima" depois dela; o idioma principal é uma pergunta seguida de
+ * dois rádios, cada um com um <label for> (Português, Inglês); a caixa
+ * f_chk_en tem a legenda depois; os e-mails são campos de texto. O texto da
+ * declaração do simulado não é o do CNPq (SIMULATED_DECLARATION).
  */
 function sendScreen(state: LattesState): SimResponse {
   const body = `<p><a href="pkg_publicar.cv_espelho?f_cod=${state.code}&amp;f_idioma=1">Versão em Português</a></p>
-<table>
-<tr><td>Idioma principal:</td><td>${h.radios(
-    'f_idioma',
-    [
-      ['1', 'Português'],
-      ['2', 'Inglês'],
-    ],
-    '1',
-  )}</td></tr>
-<tr><td>Versão em inglês:</td><td><label>${h.checkbox('f_chk_en', '1', true)} Autorizo a publicação da versão em inglês</label></td></tr>
-<tr><td>E-mail de contato:</td><td>${h.text('f_email_contato', state.contactEmail)}</td></tr>
-<tr><td>E-mail alternativo:</td><td>${h.text('f_email_alternativo', '')}</td></tr>
-</table>
-<form name="publicar" method="get" action="pkg_publicar.enviar">
-<label>${h.checkbox('f_chk', '1', false)} ${h.esc(SIMULATED_DECLARATION)}</label>
-<p><a href="termo_de_uso_simulado" target="_blank">Termo de Uso</a></p>
-</form>
+<form name="publicar" action="pkg_publicar.enviar"><ul><li>
+${h.esc(SIMULATED_DECLARATION)} <a href="termo_de_uso_simulado" target="_blank">Termo de Uso e Política de Privacidade</a>
+<input type="checkbox" name=f_chk value="1">Li e estou de acordo com a declaração acima
+</li>
+<li>Escolha o idioma principal do currículo:
+<input type="radio" name="f_idioma" id="idiomaPor" value="1" checked><label for="idiomaPor">Português</label><input type="radio" name="f_idioma" id="idiomaIng" value="2"><label for="idiomaIng">Inglês</label>
+</li>
+<li>Autorize a publicação também em inglês do currículo:
+<ul><li><input type="checkbox" name=f_chk_en value="1" checked>Autorizo a publicação da versão em inglês do meu currículo</li></ul></li>
+<li>Certifique-se de que seus e-mails estão atualizados:</li>
+<table><tr><td>e-mail para contato<br>${h.text('f_email_contato', state.contactEmail)}</td></tr>
+<tr><td>e-mail alternativo<br>${h.text('f_email_alternativo', '')}</td></tr></table>
+</ul></form>
 <p><a href="#" onclick="enviar(); return false;">Enviar ao CNPq</a> <a href="#" onclick="self.parent.fecharModal(); return false;">Cancelar</a></p>
 <script>async function enviar(){ if (!document.forms['publicar'].f_chk.checked) { alert('Marque a declaração.'); return; }
 var post = function(proc, body){ return fetch(proc, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body }).then(function(r){ return r.json(); }); };

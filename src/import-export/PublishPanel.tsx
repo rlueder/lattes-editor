@@ -251,18 +251,17 @@ function PublishPanelBody(props: Props) {
 
           <section className="panel-section">
             <h3 className="panel-section-head">Declaração</h3>
-            {enabled ? (
-              <label className="publish-declaration">
+            <blockquote className="publish-declaration">{screen.declaration}</blockquote>
+            {enabled && (
+              <label className="publish-agree">
                 <input
                   checked={declared}
                   disabled={status.locked}
                   type="checkbox"
                   onChange={(e) => setDeclared(e.target.checked)}
                 />
-                <span>{screen.declaration}</span>
+                <span>{screen.agree || 'Li e estou de acordo com a declaração acima'}</span>
               </label>
-            ) : (
-              <blockquote className="publish-declaration">{screen.declaration}</blockquote>
             )}
             <p className="muted">
               Texto lido da tela de envio do Lattes.{' '}
