@@ -123,4 +123,9 @@ describe('comparação pelas listas do Lattes, todas as seções', () => {
     expect(compareWithLattes({ items: [] }, root())?.scope).toBe('pagina');
     expect(compareWithLattes({}, root())).toBeUndefined();
   });
+
+  it('número de atuação que não é só dígito não vira padrão', () => {
+    const xml = XML.replace('SEQUENCIA-ATIVIDADE="24"', 'SEQUENCIA-ATIVIDADE="2(4"');
+    expect(() => diffLists(lattes(), parseXml(xml).root)).not.toThrow();
+  });
 });

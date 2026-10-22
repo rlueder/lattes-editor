@@ -234,10 +234,11 @@ const connector = {
       if (!res.ok || !isEspelhoPage(html)) {
         return { error: 'O Lattes não devolveu a página de conferência.', lattesId };
       }
-      const lists = await snapshotCvLists(menu, code, (path) => port.get(path)).catch(
-        () => undefined,
-      );
-      return { items: parseEspelho(html), lattesId, ...(lists ? { lists } : {}) };
+      // Lista que falha fica de fora e a seção sai como não comparada. Uma
+      // falha geral manda listas vazias, que o diagnóstico mostra como "não
+      // deu para ler", e não como extensão antiga (que não manda listas).
+      const lists = await snapshotCvLists(menu, code, (path) => port.get(path)).catch(() => ({}));
+      return { items: parseEspelho(html), lattesId, lists };
     } catch {
       return { error: 'A aba do Lattes não respondeu.', lattesId };
     }

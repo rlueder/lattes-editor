@@ -36,4 +36,14 @@ describe('listas do currículo no Lattes, só por GET', () => {
       '01/2011 12/2012 Designer',
     );
   });
+
+  it('uma lista que falha fica de fora sem levar as outras', async () => {
+    const menu = `<a onclick="setarUrl('pkg_premio.lista')">P</a>
+      <a onclick="setarUrl('pkg_idioma.lista')">I</a>`;
+    const lists = await snapshotCvLists(menu, 'K1', async (path) => {
+      if (path.startsWith('pkg_premio')) throw new Error('rede');
+      return row('x', 'Inglês');
+    });
+    expect(Object.keys(lists)).toEqual(['pkg_idioma.lista?']);
+  });
 });

@@ -116,8 +116,10 @@ function groupsOf(lists: ListSnapshot, root: XElement): Group[] {
   for (const a of work) {
     const seq = attr(a, 'SEQUENCIA-ATIVIDADE');
     const name = attr(a, 'NOME-INSTITUICAO');
+    // O número vem da exportação: só dígitos entram no padrão.
+    if (!/^\d+$/.test(seq)) continue;
     const page = new RegExp(`^pkg_ativ\\.cargos_vinculos\\?(.*&)?f_seq_ativ=${seq}(&|$)`);
-    if (!seq || !Object.keys(lists).some((k) => page.test(k))) continue;
+    if (!Object.keys(lists).some((k) => page.test(k))) continue;
     const candidates: Candidate[] = [];
     for (const v of childElements(a, 'VINCULOS')) {
       candidates.push({

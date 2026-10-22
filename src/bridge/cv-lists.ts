@@ -19,14 +19,18 @@ export async function snapshotCvLists(
 ): Promise<ListSnapshot> {
   // Endereço de ação nem é pedido: a lista fica de fora e a seção dela sai
   // como não comparada, em vez de a leitura inteira falhar.
-  const read = (url: string) => get(withCode(url, code));
+  // Uma lista que falha (rede, sessão caída no meio) fica de fora sem levar as
+  // já lidas: a seção dela sai como não comparada. Uma por vez, para não
+  // carregar o CNPq.
+  const read = (url: string) => get(withCode(url, code)).catch(() => undefined);
   const out: ListSnapshot = {};
   for (const url of listUrls(menuHtml).filter((u) => !ACTION.test(u))) {
     const html = await read(url);
-    if (/404 Not Found|Bad Request/.test(html)) continue;
+    if (html === undefined || /404 Not Found|Bad Request/.test(html)) continue;
     out[listKey(url)] = rowsOf(html);
     for (const inner of nestedUrls(html).filter((u) => !ACTION.test(u))) {
-      out[listKey(inner)] = rowsOf(await read(inner));
+      const innerHtml = await read(inner);
+      if (innerHtml !== undefined) out[listKey(inner)] = rowsOf(innerHtml);
     }
   }
   return out;
