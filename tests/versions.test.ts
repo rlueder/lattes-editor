@@ -258,7 +258,28 @@ describe('o que mudou entre duas exportações', () => {
     const diff = diffVersions(older, newer, buildSections(newer));
     expect(diff).toMatchObject({ added: 0, changed: 1, removed: 0 });
     const change = diff.groups.flatMap((g) => g.changes)[0]!.change;
-    expect(change.fields.map((f) => f.attr)).not.toContain('SEQUENCIA-PRODUCAO');
+    expect(change.fields).toEqual([
+      expect.objectContaining({ after: '2031', attr: 'ANO-DO-ARTIGO' }),
+    ]);
+  });
+
+  it('com título repetido, o par de conteúdo igual vem antes do par só de título', async () => {
+    const older = await fixture();
+    const newer = await fixture();
+    const article = first(newer, 'ARTIGO-PUBLICADO');
+    // O mesmo artigo recriado (outro número) e, antes dele na lista, um
+    // homônimo novo com outro ano.
+    const twin = cloneElement(article);
+    setAttr(twin, 'SEQUENCIA-PRODUCAO', '700');
+    setAttr(childElements(twin, 'DADOS-BASICOS-DO-ARTIGO')[0]!, 'ANO-DO-ARTIGO', '2031');
+    setAttr(article, 'SEQUENCIA-PRODUCAO', '777');
+    const container = first(newer, 'ARTIGOS-PUBLICADOS');
+    container.children.splice(container.children.indexOf(article), 0, twin);
+    expect(diffVersions(older, newer, buildSections(newer))).toMatchObject({
+      added: 1,
+      changed: 0,
+      removed: 0,
+    });
   });
 
   it('atuação recriada com outro número, junto com os vínculos, também não aparece', async () => {

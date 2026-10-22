@@ -3,7 +3,13 @@
 // novos, removidos e alterados, por seção, cada um com o caminho até o grupo
 // onde ele aparece no editor.
 
-import { type Change, diffDocuments, fieldDiff, resolvePath } from '../model/changes.ts';
+import {
+  type Change,
+  diffDocuments,
+  type FieldChange,
+  fieldDiff,
+  resolvePath,
+} from '../model/changes.ts';
 import { childElements, getAttr, parseXml, type XElement, type XText } from '../model/xml.ts';
 import { groupChanges } from './changes-view.ts';
 import type { HashRoute } from './hash-route.ts';
@@ -84,33 +90,70 @@ function pairRecreated(
   entries: VersionChange[],
   older: XElement,
   newer: XElement,
+  onReplace: (from: Change, to: Change) => void,
 ): VersionChange[] {
   const out = [...entries];
-  const added = out.filter((e) => e.change.kind === 'novo');
-  for (const gone of out.filter((e) => e.change.kind === 'removido')) {
-    const before = target(older, gone.change);
-    if (!before || !gone.itemTitle.trim()) continue;
-    const match = added.find((n) => {
-      const after = target(newer, n.change);
-      return (
-        n.change.element === gone.change.element &&
-        !!after &&
-        (content(after) === content(before) || n.itemTitle === gone.itemTitle)
-      );
-    });
-    if (!match) continue;
-    added.splice(added.indexOf(match), 1);
-    const after = target(newer, match.change)!;
-    out.splice(out.indexOf(gone), 1);
-    const at = out.indexOf(match);
-    if (content(after) === content(before)) {
-      out.splice(at, 1);
-      continue;
+  // O elemento e o conteúdo de cada candidato, calculados uma vez.
+  const side = (root: XElement, kind: Change['kind']) =>
+    out
+      .filter((e) => e.change.kind === kind)
+      .map((e) => ({ e, el: target(root, e.change) }))
+      .filter((x): x is { e: VersionChange; el: XElement } => !!x.el)
+      .map((x) => ({ ...x, body: content(x.el) }));
+  const gone = side(older, 'removido');
+  const added = side(newer, 'novo');
+  const sameKind = (a: (typeof gone)[number], b: (typeof added)[number]) =>
+    a.e.change.element === b.e.change.element;
+  // Primeiro o conteúdo igual, que não deixa dúvida; só depois o título, para
+  // um título repetido não tomar o par exato de outro item.
+  const rules = [
+    (a: (typeof gone)[number], b: (typeof added)[number]) => a.body === b.body,
+    (a: (typeof gone)[number], b: (typeof added)[number]) =>
+      !!a.e.itemTitle.trim() && a.e.itemTitle === b.e.itemTitle,
+  ];
+  for (const rule of rules) {
+    for (const before of [...gone]) {
+      const after = added.find((b) => sameKind(before, b) && rule(before, b));
+      if (!after) continue;
+      gone.splice(gone.indexOf(before), 1);
+      added.splice(added.indexOf(after), 1);
+      out.splice(out.indexOf(before.e), 1);
+      const at = out.indexOf(after.e);
+      if (before.body === after.body) {
+        out.splice(at, 1);
+        continue;
+      }
+      const change: Change = {
+        ...after.e.change,
+        fields: deepFields(before.el, after.el),
+        kind: 'alterado',
+      };
+      onReplace(after.e.change, change);
+      out[at] = { ...after.e, change };
     }
-    const fields = fieldDiff(before, after).filter((f) => !SEQUENCE.test(f.attr));
-    out[at] = { ...match, change: { ...match.change, fields, kind: 'alterado' } };
   }
   return out;
+}
+
+/**
+ * Os campos que mudaram no item e nos elementos de dentro dele (os dados de
+ * um item do Lattes ficam num filho, como DADOS-BASICOS-DO-ARTIGO), pareando
+ * os filhos de mesmo nome pela ordem. As sequências ficam de fora.
+ */
+function deepFields(before: XElement, after: XElement): FieldChange[] {
+  const fields = fieldDiff(before, after).filter((f) => !SEQUENCE.test(f.attr));
+  const names = new Set([...childElements(before), ...childElements(after)].map((c) => c.name));
+  for (const name of names) {
+    const b = childElements(before, name);
+    const a = childElements(after, name);
+    for (let i = 0; i < Math.max(a.length, b.length); i++) {
+      const bi = b[i];
+      const ai = a[i];
+      if (bi && ai) fields.push(...deepFields(bi, ai));
+      else fields.push(...fieldDiff(bi, ai).filter((f) => !SEQUENCE.test(f.attr)));
+    }
+  }
+  return fields;
 }
 
 /**
@@ -132,7 +175,12 @@ export function diffVersions(older: XElement, newer: XElement, sections: Section
       }),
       label: g.label,
     }))
-    .map((g) => ({ ...g, changes: pairRecreated(g.changes, older, newer) }))
+    .map((g) => ({
+      ...g,
+      changes: pairRecreated(g.changes, older, newer, (from, to) =>
+        itemByChange.set(to, itemByChange.get(from)),
+      ),
+    }))
     .filter((g) => g.changes.length > 0);
   const all = groups.flatMap((g) => g.changes);
   const changedItems = new Set<XElement | string>(
