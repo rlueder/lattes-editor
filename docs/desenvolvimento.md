@@ -96,6 +96,13 @@ simulado dentro do próprio teste (`tests/helpers/lattes-simulado.ts`), com
 as chaves das operações ligadas; os que cobrem o caminho desligado forçam a
 chave ou a opção.
 
+`pnpm audit` ignora o aviso GHSA-vfj7-8cjw-p6xm (`braces` 3.0.3, esgotamento
+de pilha com padrões aninhados). A lista fica em `pnpm.auditConfig.ignoreGhsas`
+no `package.json`. O pacote chega por `micromatch`, dentro do semantic-release,
+só roda no lançamento e só lê mensagens de commit do próprio repositório; não
+existe versão corrigida. Quando o semantic-release trocar de versão, tirar o
+aviso da lista e conferir se o audit volta a passar.
+
 ## Geradores
 
 | Comando                                  | Gera                                                                                                                   |
