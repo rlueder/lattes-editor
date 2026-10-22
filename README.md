@@ -168,7 +168,8 @@ Lattes pede uma pausa, o conector para e respeita o tempo informado pelo
 servidor. Uma lista grande pode precisar de outra tentativa depois da pausa;
 o conector guarda os títulos que já conferiu para continuar a leitura.
 Essas proteções também valem para o censo e os itens de teste do canal Dev.
-O censo exige a extensão Dev atualizada, inclusive quando chamado pelo console.
+O censo exige a extensão Dev atualizada, inclusive quando chamado pelo console,
+e cria ou remove no máximo três itens por lote.
 O botão de parar também interrompe uma leitura em andamento. Se uma gravação
 já começou, confira o resultado no Lattes antes de enviar outra vez.
 

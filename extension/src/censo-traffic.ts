@@ -1,4 +1,5 @@
 import { CensusStopped } from '../../src/census/stop.ts';
+import { protectParent } from './censo-parent-guard.ts';
 // O canal é aberto pelo script isolado da extensão Dev, inclusive para chamadas
 // pelo console. Sem ele, o censo recusa rede em vez de contornar os limites.
 const CHANNEL = 'lattes-editor:dev-traffic';
@@ -11,6 +12,7 @@ export interface CensusResponse {
 
 export class CensusTraffic {
   private port?: MessagePort;
+  private localFetch?: typeof fetch;
   private next = 0;
   private ended?: () => void;
   private pending = new Map<number, { resolve(v: CensusResponse): void; reject(e: Error): void }>();
@@ -38,6 +40,8 @@ export class CensusTraffic {
     const channel = new MessageChannel();
     this.port = channel.port1;
     this.controller = new AbortController();
+    let restoreNetwork: () => void = () => undefined;
+    this.localFetch = globalThis.fetch.bind(globalThis);
     const deadline = setTimeout(() => this.cancel(), 145_000);
     try {
       await new Promise<void>((resolve, reject) => {
@@ -67,10 +71,16 @@ export class CensusTraffic {
         };
         window.postMessage(CHANNEL, location.origin, [channel.port2]);
       });
+      restoreNetwork = protectParent((error) => {
+        this.port?.postMessage({ type: 'cancel' });
+        this.fail(error);
+      });
       const result = await work();
       this.signal.throwIfAborted();
       return result;
     } finally {
+      restoreNetwork();
+      this.localFetch = undefined;
       clearTimeout(deadline);
       await new Promise<void>((resolve) => {
         const timer = setTimeout(resolve, 2000);
@@ -94,6 +104,22 @@ export class CensusTraffic {
       this.pending.set(id, { reject, resolve });
       this.port!.postMessage({ body, id, method, type: 'request', url: String(url) });
     });
+  }
+  async sendResults(url: string, body: string): Promise<void> {
+    const target = new URL(url);
+    if (
+      !['http:', 'https:'].includes(target.protocol) ||
+      !['localhost', '127.0.0.1'].includes(target.hostname)
+    )
+      throw new Error('O receptor de resultados precisa ser local');
+    if (!this.localFetch) throw new CensusStopped('Receptor fora de uma tarefa protegida');
+    const response = await this.localFetch(target, {
+      body,
+      method: 'POST',
+      redirect: 'error',
+      signal: AbortSignal.any([this.signal, AbortSignal.timeout(20_000)]),
+    });
+    if (!response.ok) throw new Error(`O receptor respondeu HTTP ${response.status}`);
   }
   wait(ms: number): Promise<void> {
     const signal = this.signal;

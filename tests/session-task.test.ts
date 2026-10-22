@@ -64,3 +64,27 @@ it('a leitura de identidade espera a tarefa anterior sem falso erro e mantém a 
   expect(order).toEqual(['identidade', 'verificação']);
   expect(sessionTaskRunning()).toBe(false);
 });
+
+it('uma gravação aguarda a leitura que chegou entre duas operações', async () => {
+  let finish!: () => void;
+  let wrote = false;
+  const reading = withSessionTask(
+    12,
+    () =>
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+    true,
+  );
+  const writing = withSessionTask(
+    12,
+    async () => {
+      wrote = true;
+    },
+    true,
+  );
+  expect(wrote).toBe(false);
+  finish();
+  await Promise.all([reading, writing]);
+  expect(wrote).toBe(true);
+});

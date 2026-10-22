@@ -65,7 +65,7 @@ export async function openFrame(path: string, code: string): Promise<HTMLIFrameE
   const response = await censusTraffic.request(url);
   const frame = document.createElement('iframe');
   frame.style.cssText = 'position:fixed;right:0;bottom:0;width:900px;height:600px;z-index:99999';
-  // Sem allow-forms: um envio que não passe pela ponte é recusado pelo navegador.
+  // Sem allow-forms: o navegador recusa o envio nativo de formulários neste quadro.
   frame.setAttribute('sandbox', 'allow-scripts allow-same-origin');
   document.body.append(frame);
   const state: FrameState = { submitted: false, writing: false };

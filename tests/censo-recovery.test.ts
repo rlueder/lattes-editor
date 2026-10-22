@@ -1,7 +1,13 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 const { signal } = new AbortController();
 vi.mock('../extension/src/censo-traffic.ts', () => ({
-  censusTraffic: { signal, wait: async () => undefined },
+  censusTraffic: {
+    signal,
+    sendResults: async () => {
+      throw new Error('receptor indisponível');
+    },
+    wait: async () => undefined,
+  },
 }));
 vi.mock('../extension/src/censo-test-donors.ts', () => ({
   context: {},
@@ -96,4 +102,31 @@ it('mostra tags e links pendentes e impede apagar o registro incerto', async () 
   });
   expect(() => resetTestItems()).toThrow('reconcilie');
   expect(JSON.parse(value!).pendingRemovals).toHaveLength(1);
+});
+
+it('só apaga um registro corrompido com força explícita e mantém a proteção de incerteza conhecida', async () => {
+  const { resetTestItems } = await import('../extension/src/censo-test-items.ts');
+  expect(() => resetTestItems({ force: true })).toThrow('reconcilie');
+  value = '{json inválido';
+  vi.stubGlobal('localStorage', {
+    getItem: () => value,
+    removeItem: () => {
+      value = null;
+    },
+  });
+  expect(() => resetTestItems()).toThrow('force: true');
+  resetTestItems({ force: true });
+  expect(value).toBeNull();
+});
+it('falha no receptor opcional preserva a conferência e retorna aviso separado', async () => {
+  const { createTestItems } = await import('../extension/src/censo-test-items.ts');
+  value = JSON.stringify({ results: [], removed: [] });
+  const result = await createTestItems([], 'SINTETICO1', async () => ({ html: marker }), {
+    receiver: 'http://localhost:1234/resultados',
+  });
+  expect(result).toMatchObject({
+    lote: [],
+    receptorError: expect.stringContaining('receptor local'),
+  });
+  expect(JSON.parse(value!)).toMatchObject({ added: [], missing: [] });
 });

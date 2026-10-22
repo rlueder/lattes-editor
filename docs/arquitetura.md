@@ -280,20 +280,36 @@ normal, inclusive entre abas e depois de reiniciar o worker. Leituras de
 identidade aguardam a reserva anterior do worker, sem relatar falha de rede
 por uma disputa interna.
 
+Os lotes Dev têm de um a três itens, para reservar tempo para a conferência.
+Uma falha no receptor local de resultados volta como aviso separado, depois
+de atualizar o registro pelas listas; não invalida os itens já conferidos.
+
 Os quadros de teste são documentos locais: `censo-frame.ts` busca o HTML,
 os scripts e as folhas de estilo pelo transporte antes de executar. Envios
 passam pela mesma ponte, com codificação Latin-1. CSP bloqueia recursos e
 envios nativos; uma regra de sessão Dev bloqueia navegação HTTP dos quadros
 da aba durante a tarefa, para um script não contornar a ponte. A regra é
 removida antes de liberar a trava, e um recarregamento do menu limpa regras
-anteriores. A extensão publicada não pede a permissão dessa regra.
+anteriores. A extensão publicada não pede a permissão dessa regra. Durante a tarefa,
+`censo-parent-guard.ts` também bloqueia fetch, criação de XHR e abertura de
+janelas pelo menu pai, restaurando as funções no fim.
+
+O quadro mantém `allow-same-origin` para ler os formulários e executar os
+validadores observados. Isso não é isolamento de JavaScript arbitrário:
+referências nativas guardadas antes da tarefa, alterações no DOM do pai ou
+execução indireta no pai ainda podem contornar essas defesas. O orçamento
+cobre os caminhos controlados do censo; não promete contabilizar toda
+atividade que um script da página possa iniciar fora deles. Código de
+formulário que use esses caminhos exige adaptação antes da coleta.
 
 O prazo do cliente Dev é 145 s, anterior ao do transporte. Cancelar aborta
 os pedidos, retira os quadros e impede novos passos. O registro de um envio
 incerto é salvo antes de iniciar a gravação e não pode ser apagado enquanto
 houver pendência. Inclusões confirmam a tag na página de conferência;
 exclusões releem as listas a cada item. Uma falha de gravação interrompe o
-lote. Repetir exige conferência humana e leitura atual do Lattes; falha em
+lote. Um registro ilegível só pode ser apagado após conferência manual e
+`resetTestItems({force: true})`; a opção não libera o reset de incertezas
+conhecidas nem de uma tarefa em curso. Repetir exige conferência humana e leitura atual do Lattes; falha em
 salvar o registro impede novas gravações.
 
 A coleta de leitura guarda até 512 páginas, somando até 32 MiB, para retomar

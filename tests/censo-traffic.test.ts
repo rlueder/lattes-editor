@@ -61,3 +61,18 @@ it('parar rejeita o pedido e uma espera em andamento', async () => {
     }),
   ).rejects.toThrow('interrompido');
 });
+
+it('o receptor local usa o fetch reservado, recusa destino externo e não segue redirecionamento', async () => {
+  server();
+  const fetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response('ok'));
+  vi.stubGlobal('fetch', fetch);
+  const traffic = new CensusTraffic();
+  await traffic.run(async () => {
+    await expect(traffic.sendResults('https://wwws.cnpq.br/destino', '{}')).rejects.toThrow(
+      'local',
+    );
+    await traffic.sendResults('http://localhost:1234/resultados', '{}');
+  });
+  expect(fetch).toHaveBeenCalledTimes(1);
+  expect(fetch.mock.calls[0]?.[1]).toMatchObject({ redirect: 'error', method: 'POST' });
+});

@@ -68,22 +68,26 @@ async function runInTab<T>(
     | 'telaEnvio',
   ...args: string[]
 ): Promise<T | undefined> {
-  return withSessionTask(tabId, async () => {
-    await injectRunner(tabId);
-    const [res] = await guarded(tabId, () =>
-      chrome.scripting.executeScript({
-        args: [name, args] as [string, string[]],
-        func: (fn: string, fnArgs: string[]) =>
-          (
-            globalThis as unknown as {
-              __conector: Record<string, (...a: string[]) => Promise<unknown>>;
-            }
-          ).__conector[fn]!(...fnArgs),
-        target: { tabId },
-      }),
-    );
-    return res?.result as T | undefined;
-  });
+  return withSessionTask(
+    tabId,
+    async () => {
+      await injectRunner(tabId);
+      const [res] = await guarded(tabId, () =>
+        chrome.scripting.executeScript({
+          args: [name, args] as [string, string[]],
+          func: (fn: string, fnArgs: string[]) =>
+            (
+              globalThis as unknown as {
+                __conector: Record<string, (...a: string[]) => Promise<unknown>>;
+              }
+            ).__conector[fn]!(...fnArgs),
+          target: { tabId },
+        }),
+      );
+      return res?.result as T | undefined;
+    },
+    true,
+  );
 }
 
 type Reply<K extends BridgeMessage['type']> = Omit<Extract<BridgeMessage, { type: K }>, 'type'>;
@@ -304,19 +308,23 @@ export async function answerListRequest(
  * (checkedResult, em src/bridge/write-brake.ts).
  */
 export async function applyInTab(tabId: number, op: BridgeOp): Promise<unknown> {
-  return withSessionTask(tabId, async () => {
-    const [res] = await guarded(tabId, () =>
-      chrome.scripting.executeScript({
-        args: [op] as [BridgeOp],
-        func: (o: BridgeOp) =>
-          (
-            globalThis as unknown as { __conector: { apply(op: BridgeOp): Promise<OpResult> } }
-          ).__conector.apply(o),
-        target: { tabId },
-      }),
-    );
-    return res?.result;
-  });
+  return withSessionTask(
+    tabId,
+    async () => {
+      const [res] = await guarded(tabId, () =>
+        chrome.scripting.executeScript({
+          args: [op] as [BridgeOp],
+          func: (o: BridgeOp) =>
+            (
+              globalThis as unknown as { __conector: { apply(op: BridgeOp): Promise<OpResult> } }
+            ).__conector.apply(o),
+          target: { tabId },
+        }),
+      );
+      return res?.result;
+    },
+    true,
+  );
 }
 
 /** Interrompe a tarefa na aba, inclusive uma varredura de formulários em curso. */

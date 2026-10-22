@@ -8,6 +8,7 @@
 // em "Salvar". As mensagens que ela mostraria na caixa do Lattes voltam no
 // resultado em vez de aparecer na tela.
 
+import { TEST_BATCH_LIMIT, testBatchSize } from './censo-batch.ts';
 import { frameState, openFrame } from './censo-frame.ts';
 import { type FrameWindow, submit } from './censo-submit.ts';
 import { censusTraffic } from './censo-traffic.ts';
@@ -45,7 +46,7 @@ export interface TestResult {
 }
 
 export interface BatchOptions {
-  /** Itens por chamada (padrão 10). */
+  /** Itens por chamada, de 1 a 3 (padrão 3). */
   batch?: number;
   /** Tags cuja ausência a pessoa conferiu no Lattes antes de pedir nova tentativa. */
   confirmedAbsent?: string[];
@@ -106,7 +107,18 @@ interface Progress {
 export function load(): Progress {
   try {
     const raw = localStorage.getItem(STORE);
-    if (raw) return JSON.parse(raw) as Progress;
+    if (raw) {
+      const value = JSON.parse(raw) as Progress;
+      if (
+        !value ||
+        !Array.isArray(value.results) ||
+        !Array.isArray(value.removed) ||
+        !value.results.every((r) => r && typeof r.tag === 'string' && typeof r.ok === 'boolean') ||
+        (value.pendingRemovals !== undefined && !Array.isArray(value.pendingRemovals))
+      )
+        throw new Error('Registro de teste inválido');
+      return value;
+    }
   } catch {
     throw new Error('O registro dos itens de teste não pôde ser lido; nenhum envio será iniciado');
   }
@@ -314,7 +326,7 @@ export async function createTestItems(
   code: string,
   get: (path: string) => Promise<{ html: string }>,
   {
-    batch = 10,
+    batch = TEST_BATCH_LIMIT,
     confirmedAbsent = [],
     confirmedPresent = [],
     delayMs = [3000, 6000],
@@ -324,6 +336,7 @@ export async function createTestItems(
     retryFailed = false,
   }: BatchOptions = {},
 ) {
+  testBatchSize(batch);
   if (receiver && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(receiver))
     throw new Error('O receptor de resultados precisa ser local');
   if (!loadBase()) throw new Error('Sem a base das listas: rode "Ler formulários" antes de criar.');
@@ -394,12 +407,6 @@ export async function createTestItems(
     censusTraffic.signal.throwIfAborted();
     await pause(delayMs);
   }
-  if (receiver)
-    await fetch(receiver, {
-      body: JSON.stringify(progress.results),
-      method: 'POST',
-      signal: AbortSignal.any([censusTraffic.signal, AbortSignal.timeout(20_000)]),
-    });
   // O registro: o que as listas têm agora a mais que a base.
   setLive({ phase: 'lendo' });
   const ledger = await ledgerNow(document.documentElement.outerHTML, code, get);
@@ -407,7 +414,15 @@ export async function createTestItems(
   progress.missing = ledger.missing;
   save(progress);
   setLive({ phase: 'parado' });
-  return { ...testProgress(jobs), lote: next.map((j) => j.tag) };
+  let receiverError: string | undefined;
+  if (receiver) {
+    try {
+      await censusTraffic.sendResults(receiver, JSON.stringify(progress.results));
+    } catch {
+      receiverError = 'Os itens foram conferidos, mas o receptor local não recebeu o resultado';
+    }
+  }
+  return { ...testProgress(jobs), lote: next.map((j) => j.tag), receptorError: receiverError };
 }
 
 /** Quantos foram criados, quais falharam (com a mensagem do Lattes) e quantos faltam. */
@@ -430,18 +445,19 @@ export function testProgress(jobs?: TestJob[]) {
 }
 
 /** Esquece o andamento guardado (depois de remover tudo). */
-export function resetTestItems(): void {
-  const progress = load();
-  if (
-    censusTraffic.running ||
-    progress.results.some((r) => r.uncertain) ||
-    progress.pendingRemovals?.length
-  )
-    throw new Error('Confira e reconcilie os envios incertos antes de apagar o registro');
+export function resetTestItems(options: { force?: boolean } = {}): void {
+  if (censusTraffic.running) throw new Error('Espere a tarefa terminar antes de apagar o registro');
+  let progress: Progress | undefined;
   try {
-    localStorage.removeItem(STORE);
+    progress = load();
   } catch {
-    // Nada guardado.
+    if (!options.force)
+      throw new Error(
+        'Registro ilegível: confira os itens no Lattes e use resetTestItems({force: true}) para apagar',
+      );
   }
+  if (progress && (progress.results.some((r) => r.uncertain) || progress.pendingRemovals?.length))
+    throw new Error('Confira e reconcilie os envios incertos antes de apagar o registro');
   clearBase();
+  localStorage.removeItem(STORE);
 }

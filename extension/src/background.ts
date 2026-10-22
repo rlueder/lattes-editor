@@ -345,7 +345,7 @@ async function run(keys?: string[], fromEditor = false): Promise<void> {
       if (queue.length > 0) {
         const kinds = queue.map((op) => op.kind);
         const report =
-          state.verificacaoCv === session.lattesId &&
+          sameCv(state.verificacaoCv, session.lattesId) &&
           reusableVerification(state.verificacao, kinds, Date.now())
             ? state.verificacao!
             : await verifyOn(tabId, kinds);

@@ -6,7 +6,7 @@ formulário e atributo do XML e o link de edição de cada lista ficam
 inferidos. Esta passada cria um item de teste por opção de cada escolha
 pequena de cada formulário de inclusão, lê o que voltou e remove tudo.
 
-Grava no currículo. Só a pessoa roda, na aba do menu do Lattes, um lote por
+Grava no currículo. Só a pessoa roda, na aba do menu do Lattes, um lote de até três itens por
 vez.
 
 ## A base e o registro
@@ -57,7 +57,7 @@ Pelo editor em desenvolvimento, com `?itens-teste` no endereço e a extensão
 Dev instalada, numa aba do menu do Lattes:
 
 1. "Ler formulários": lê os formulários e tira a base. A coleta pode parar no orçamento de pedidos; aguarde a pausa e repita para aproveitar as páginas já lidas.
-2. "Criar próximo lote", com o lote de até 50 e 3 a 6 s entre um envio e
+2. "Criar próximo lote", com o lote de até 3 e 3 a 6 s entre um envio e
    outro. O resultado diz quantos foram criados, quantos faltam e o que
    falhou, com a mensagem do Lattes. "Tentar de novo os que falharam" depois
    de ajustar o que faltava.
@@ -115,3 +115,14 @@ conferência humana permite usar `confirmedPresent` com o link da linha em
 
 Um receptor opcional de resultados (`receiver`) precisa ser local
 (`localhost` ou `127.0.0.1`) e também é cancelado com a tarefa.
+
+Se o registro estiver corrompido, confira os itens diretamente no Lattes
+antes de usar `__lattesCensus.resetTestItems({ force: true })`. Essa opção só
+permite apagar um registro ilegível; uma tarefa em curso ou um envio incerto
+legível continuam exigindo término e reconciliação. Falha do receptor local
+retorna em `receptorError`, depois de atualizar o registro pelas listas.
+
+Os quadros são da mesma origem do menu para executar os validadores do
+Lattes. As defesas de rede não são um sandbox para scripts arbitrários;
+referências antigas e alterações no DOM do pai podem contorná-las. Não se
+promete contabilizar esses caminhos externos ao transporte controlado.

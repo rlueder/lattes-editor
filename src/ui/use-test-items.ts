@@ -31,6 +31,7 @@ export interface TestItemsSummary {
   lote?: string[];
   /** Linhas a mais que a base cuja página não se leu: não saem, nem conferidas. */
   naoLidas?: string[];
+  receptorError?: string;
   /** Linhas que as listas têm a mais que a base: o que o teste acrescentou. */
   registrados?: number;
   removidos?: number;

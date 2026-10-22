@@ -4,6 +4,7 @@
 
 import { markedBatch, removalOrder, rowLabel } from '../../src/census/test-ledger.ts';
 import { TEST_MARK } from '../../src/census/test-plan.ts';
+import { TEST_BATCH_LIMIT, testBatchSize } from './censo-batch.ts';
 import { frameState } from './censo-frame.ts';
 import { clearCensusCache } from './censo-reading.ts';
 import {
@@ -40,13 +41,14 @@ export async function removeTestItems(
   code: string,
   get: (path: string) => Promise<{ html: string }>,
   {
-    batch = 10,
+    batch = TEST_BATCH_LIMIT,
     confirmedPresent = [],
     delayMs = [3000, 6000],
     dryRun = false,
     unmarked = [],
   }: BatchOptions & { dryRun?: boolean; unmarked?: string[] } = {},
 ) {
+  testBatchSize(batch);
   const menu = document.documentElement.outerHTML;
   const progress = load();
   setLive({ done: 0, last: undefined, phase: 'lendo', total: undefined });

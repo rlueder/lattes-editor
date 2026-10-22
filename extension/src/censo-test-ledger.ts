@@ -35,11 +35,7 @@ export function saveBase(lists: ListSnapshot): void {
 }
 
 export function clearBase(): void {
-  try {
-    localStorage.removeItem(BASE);
-  } catch {
-    // Nada guardado.
-  }
+  localStorage.removeItem(BASE);
 }
 
 const withCode = (url: string, code: string) =>
