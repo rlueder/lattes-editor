@@ -170,6 +170,8 @@ o conector guarda os títulos que já conferiu para continuar a leitura.
 Essas proteções também valem para o censo e os itens de teste do canal Dev.
 O censo exige a extensão Dev atualizada, inclusive quando chamado pelo console,
 e cria ou remove no máximo três itens por lote.
+Os formulários Dev executam em quadros isolados, sem acesso ao menu pai.
+Se um formulário depender de um acesso ainda não adaptado, a tarefa para com erro.
 O botão de parar também interrompe uma leitura em andamento. Se uma gravação
 já começou, confira o resultado no Lattes antes de enviar outra vez.
 

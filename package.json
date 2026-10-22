@@ -32,6 +32,7 @@
     "release": "semantic-release",
     "tauri": "tauri",
     "test": "vitest run",
+    "test:censo-isolation": "pnpm build:extension --canal-dev && node scripts/test-censo-isolation.ts",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "typecheck": "tsc",

@@ -15,6 +15,7 @@ import { build } from 'vite';
 
 import { hostPermissions } from '../extension/src/lattes-hosts.ts';
 import { DEFAULT_TOOLBAR_THEME, toolbarIconPaths } from '../extension/src/toolbar-icon.ts';
+import { censusFrameRuntime } from './censo-runtime.ts';
 
 // fileURLToPath, não .pathname: no Windows, o pathname vem como /D:/a/... e
 // vira D:\D:\a\... ao abrir o arquivo.
@@ -109,6 +110,7 @@ if (devChannel) {
     define: {
       __CENSO_VERSAO__: JSON.stringify(version),
       __CENSUS_BUILD__: JSON.stringify(censusBuild),
+      __CENSUS_FRAME_RUNTIME__: JSON.stringify(await censusFrameRuntime()),
     },
     logLevel: 'warn',
   });

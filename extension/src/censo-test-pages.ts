@@ -21,16 +21,6 @@ type PageWindow = Window & {
 const BONDS = ['Servidor público', 'Celetista', 'Professor Visitante', 'Bolsista'];
 
 /**
- * alert() e prompt() do quadro abrem a caixa do navegador, que trava a aba
- * inteira até alguém clicar (o projeto avisa quem vai validar). O confirm()
- * segue em submit(), que responde sim.
- */
-export function silenceDialogs(w: Window): void {
-  w.alert = () => undefined;
-  w.prompt = () => null;
-}
-
-/**
  * A instituição como a janela de busca grava (atribuir da página da
  * agência): o código com D vai sem ele para f_cod_inst2. O código de uma
  * formação sua (13 caracteres, V...) não cabe na coluna da atuação (12).
