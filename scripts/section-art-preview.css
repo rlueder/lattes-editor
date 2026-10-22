@@ -1,0 +1,145 @@
+.section-art-preview {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 40px;
+}
+
+.art-preview-header,
+.art-preview-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.art-preview-controls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.section-art-preview h1 {
+  margin: 28px 0 8px;
+  font-size: 32px;
+}
+
+.art-preview-intro {
+  margin: 0 0 20px;
+  color: var(--muted);
+}
+
+.art-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  border: 1px solid var(--border);
+  background: var(--border);
+}
+
+.art-preview-card {
+  display: flex;
+  min-height: 164px;
+  height: auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px;
+  border: 0;
+  border-radius: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  white-space: normal;
+}
+
+.art-preview-card[aria-pressed='true'] {
+  box-shadow: inset 0 -3px var(--brand);
+}
+
+.art-preview-drawing {
+  display: block;
+  width: 96px;
+  height: 96px;
+}
+
+.show-grid .art-preview-drawing {
+  background-image:
+    linear-gradient(to right, #7eacbc30 1px, transparent 1px),
+    linear-gradient(to bottom, #7eacbc30 1px, transparent 1px),
+    linear-gradient(to right, #7eacbc12 0.25px, transparent 0.25px),
+    linear-gradient(to bottom, #7eacbc12 0.25px, transparent 0.25px);
+  background-size:
+    8px 8px,
+    8px 8px,
+    1px 1px,
+    1px 1px;
+}
+
+.art-preview-drawing .empty-art {
+  margin: 0;
+}
+
+.art-preview-rules {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin: 24px 0 48px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.art-preview-rules strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+
+.art-preview-context {
+  min-height: 580px;
+  padding: 32px;
+  border: 1px solid var(--border);
+}
+
+.art-preview-context > h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.art-preview-context .empty-section {
+  margin-top: 64px;
+}
+
+.art-preview-fallback {
+  margin-top: 32px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.art-preview-fallback .empty-art {
+  margin: 24px 0 0;
+}
+
+@media (max-width: 720px) {
+  .section-art-preview {
+    padding: 24px 16px;
+  }
+
+  .art-preview-header,
+  .art-preview-controls {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .art-preview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .art-preview-rules {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}

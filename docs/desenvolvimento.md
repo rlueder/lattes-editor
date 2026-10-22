@@ -44,6 +44,32 @@ extensão:
 | `?primeiro-uso=<estado>` | Um estado fixo da tela de primeiro uso (`src/dev/onboarding-preview.ts`)                                                    |
 | `?simular-envio`         | A janela "Enviar ao Lattes" com uma tela de envio de exemplo (`src/dev/send-screen-preview.ts`); `&publicar` mostra a caixa |
 
+Os ícones das seções podem ser revistos em `/brand/sections/`, com a grade
+de construção, troca de tema e o estado vazio de cada seção. A prancha usa
+os mesmos componentes do app (`src/ui/empty-art.tsx`), em 96 × 96 px. O módulo
+é x = 8 px; anéis, barras e a conexão diagonal de Projetos seguem as medidas
+de `brand/construction/proportions.json`. O arquivo de entrada da prancha é
+`scripts/section-art-preview.tsx`.
+
+Para criar outro ícone, adicione o id da seção ao mapa `ART` em
+`src/ui/empty-art.tsx`, dentro de `Art`. Use o módulo de 8 px e a subdivisão
+de 1 px para as formas; `Ring` e `Lines` já preservam as proporções dos anéis
+e das barras do logo. As dimensões das barras vêm de
+`brand/construction/proportions.json`, usado também para a espessura dos
+detalhes. Os anéis aceitam escalas fracionárias para ajustes ópticos, mantendo
+a relação entre os diâmetros. `Lines` aceita `widthScale` para ajustar a largura
+ao espaço disponível e `pitch` para alinhar as barras às linhas de uma lista.
+A cor principal vem de `currentColor`, que acompanha a assinatura nos dois temas;
+`MINT` usa `--section-art-accent`, com mais contraste no tema claro. Mantenha o SVG
+em 96 × 96 px, sem arquivos externos nem ids compartilhados entre desenhos.
+
+A prancha lista automaticamente as seções de `buildSections`. Selecione uma
+para conferir o desenho no estado vazio, ative a grade e revise os temas
+claro e escuro. O desenho de folhas, usado quando não há ícone próprio,
+fica no fim da página. A prancha e os componentes permanecem no repositório
+para a construção dos próximos ícones; `brand/rebuild.py` continua cuidando
+dos arquivos da marca e não altera esses desenhos.
+
 ## Lattes simulado
 
 ```bash
