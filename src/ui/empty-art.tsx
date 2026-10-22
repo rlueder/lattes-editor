@@ -1,19 +1,31 @@
-// Desenho em traço do estado vazio de cada seção, todos no mesmo estilo
-// (96 × 96, traço de 1,25, cor secundária), para cada seção ter o seu.
+// Família dos estados vazios, construída na malha da marca: x = 8 px,
+// subdivisão x/8 = 1 px. Hastes de x, anéis com diâmetros 1,75x e 0,75x,
+// detalhes com a espessura das barras do logo e cortes a 45°.
+// Referência: brand/construction/proportions.json. Tela de 12x = 96 px.
 
 import type { ReactNode } from 'react';
+
+import {
+  text_line_pitch_x as logoLinePitch,
+  text_stroke_x as logoStroke,
+  text_widths_x as logoLineWidths,
+} from '../../brand/construction/proportions.json';
+
+const MINT = 'var(--section-art-accent, #9EF2E2)';
+const MODULE = 8;
+const DETAIL = MODULE * logoStroke;
+const LINE_PITCH = MODULE * logoLinePitch;
+const LONG_LINE_WIDTH = MODULE * logoLineWidths[0]!;
+const SHORT_LINE_WIDTH = MODULE * logoLineWidths[1]!;
 
 function Art({ children }: { children: ReactNode }) {
   return (
     <svg
       aria-hidden="true"
-      className="empty-art"
-      fill="none"
+      className="empty-art section-art"
+      fill="currentColor"
+      focusable="false"
       height="96"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="1.25"
       viewBox="0 0 96 96"
       width="96"
     >
@@ -22,120 +34,179 @@ function Art({ children }: { children: ReactNode }) {
   );
 }
 
-/** Folhas de currículo empilhadas: o desenho de sempre, para o que não tem outro. */
+/** Anel da marca com escala uniforme; frações permitem ajustes ópticos. */
+function Ring({
+  accent = false,
+  cx,
+  cy,
+  scale = 1,
+}: {
+  accent?: boolean;
+  cx: number;
+  cy: number;
+  scale?: number;
+}) {
+  return (
+    <path
+      d="M7 0a7 7 0 1 0-14 0 7 7 0 1 0 14 0M3 0a3 3 0 1 0-6 0 3 3 0 1 0 6 0"
+      fill={accent ? MINT : 'currentColor'}
+      fillRule="evenodd"
+      transform={`translate(${cx} ${cy}) scale(${scale})`}
+    />
+  );
+}
+
+/** Barras do logo; o passo pode acompanhar as linhas de uma lista. */
+function Lines({
+  pitch = LINE_PITCH,
+  widthScale = 1,
+  x,
+  y,
+}: {
+  pitch?: number;
+  widthScale?: number;
+  x: number;
+  y: number;
+}) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <rect height={DETAIL} width={LONG_LINE_WIDTH * widthScale} />
+      <rect height={DETAIL} width={SHORT_LINE_WIDTH * widthScale} y={pitch} />
+    </g>
+  );
+}
+
+/** Folhas com canto recortado, para uma seção sem desenho próprio. */
 function Sheets() {
   return (
     <Art>
-      <path d="M22 70 48 84l26-14" />
-      <path d="M22 64 48 78l26-14" />
-      <path d="M22 58 48 72l26-14L48 44 22 58Z" />
-      <path d="M33 22h30l7 7v27H33V22Z" transform="rotate(-8 51 39)" />
-      <path d="M40 32h16M40 38h22M40 44h18" transform="rotate(-8 51 39)" />
+      <path d="M16 32h8v40h40v8H16z" />
+      <path d="M28 16h36l16 16v36H28zm8 8v36h36V36H60V24z" fillRule="evenodd" />
+      <path d="M68 16v12h12z" fill={MINT} />
+      <Lines x={44} y={40} />
     </Art>
   );
 }
 
 const ART: Record<string, () => ReactNode> = {
-  // Atuação: maleta.
+  // Atuação: maleta, com fecho formado pelo anel da marca.
   atuacao: () => (
     <Art>
-      <rect height="40" rx="4" width="60" x="18" y="34" />
-      <path d="M38 34v-6a4 4 0 0 1 4-4h12a4 4 0 0 1 4 4v6" />
-      <path d="M18 50h60M44 50v6h8v-6" />
+      <path d="M32 30V18h32v12h-8v-4H40v4z" />
+      <path d="M16 32h64v18H16zm0 22h28v8h8v-8h28v24H16z" />
+      <Ring accent cx={48} cy={51} />
     </Art>
   ),
-  // Bancas: três pessoas atrás de uma mesa.
+  // Bancas: três pessoas, com a pessoa central em destaque.
   bancas: () => (
     <Art>
-      <circle cx="30" cy="34" r="6" />
-      <circle cx="48" cy="30" r="6" />
-      <circle cx="66" cy="34" r="6" />
-      <path d="M22 54c0-6 4-10 8-10s8 4 8 10M40 50c0-7 4-12 8-12s8 5 8 12M58 54c0-6 4-10 8-10s8 4 8 10" />
-      <path d="M16 56h64v6H16zM24 62v14M72 62v14" />
+      <Ring cx={24} cy={31} />
+      <Ring accent cx={48} cy={23} />
+      <Ring cx={72} cy={31} />
+      <path d="M14 50a10 10 0 0 1 20 0v6H14zM38 44a10 10 0 0 1 20 0v12H38zM62 50a10 10 0 0 1 20 0v6H62z" />
+      <path d="M12 60h72v8H12zM20 72h8v8h-8zM68 72h8v8h-8z" />
     </Art>
   ),
-  // Dados gerais: cartão de identificação.
+  // Dados gerais: cartão com retrato e as duas barras do logo.
   'dados-gerais': () => (
     <Art>
-      <rect height="48" rx="5" width="68" x="14" y="24" />
-      <circle cx="34" cy="44" r="7" />
-      <path d="M24 62c1-6 5-9 10-9s9 3 10 9" />
-      <path d="M52 40h20M52 48h16M52 56h12" />
+      <path d="M12 24h64l8 8v40H12zm8 8v32h56V32z" fillRule="evenodd" />
+      <Ring accent cx={34} cy={42} />
+      <path d="M24 62v-2a10 10 0 0 1 20 0v2z" />
+      <Lines x={52} y={40} />
     </Art>
   ),
-  // Educação e popularização: alto-falante.
+  // Educação e popularização: megafone e ondas de divulgação.
   educacao: () => (
     <Art>
-      <path d="M22 42v12h10l20 12V30L32 42H22Z" />
-      <path d="M32 54v14h8V58" />
-      <path d="M62 40c3 2 4 5 4 8s-1 6-4 8M68 34c5 4 7 9 7 14s-2 10-7 14" />
+      <path
+        d="M12 36h20l28-16v56L32 60H12zm8 8v8h12l20 11V33L32 44zM24 64h8l8 16H28z"
+        fillRule="evenodd"
+      />
+      <path
+        d="M68 35a18 18 0 0 1 0 26l-5-5a11 11 0 0 0 0-16zM77 25a32 32 0 0 1 0 46l-5-5a25 25 0 0 0 0-36z"
+        fill={MINT}
+      />
     </Art>
   ),
-  // Eventos: calendário com um dia marcado.
+  // Eventos: calendário; o dia marcado usa o anel menta.
   eventos: () => (
     <Art>
-      <rect height="50" rx="5" width="60" x="18" y="24" />
-      <path d="M18 38h60M32 18v12M64 18v12" />
-      <path d="M30 50h6M45 50h6M60 50h6M30 62h6M45 62h6" />
-      <circle cx="63" cy="62" r="4" />
+      <path d="M16 24h64v56H16zm8 16v32h48V40z" fillRule="evenodd" />
+      <path d="M28 16h8v16h-8zM60 16h8v16h-8z" />
+      <path d="M30 48h8v6h-8zM46 48h8v6h-8zM30 62h8v6h-8zM46 62h8v6h-8z" />
+      <Ring accent cx={65} cy={61} />
     </Art>
   ),
-  // Formação: capelo.
+  // Formação: capelo geométrico, com borla em anel.
   formacao: () => (
     <Art>
-      <path d="M12 40 48 24l36 16-36 16-36-16Z" />
-      <path d="M28 47v14c0 4 9 8 20 8s20-4 20-8V47" />
-      <path d="M84 40v18" />
-      <circle cx="84" cy="61" r="2.5" />
+      <path d="m8 36 40-20 32 16-40 20zm16 18 16 8 24-12v18L40 80 24 72z" />
+      <path d="m48 24 32 16v20h-8V44L40 28z" fill={MINT} />
+      <Ring accent cx={76} cy={67} />
     </Art>
   ),
-  // Inovação: lâmpada.
+  // Inovação: lâmpada vazada e filamento menta.
   inovacao: () => (
     <Art>
-      <path d="M48 18a20 20 0 0 0-12 36c3 2 4 5 4 8v4h16v-4c0-3 1-6 4-8a20 20 0 0 0-12-36Z" />
-      <path d="M40 72h16M42 78h12" />
-      <path d="M44 50l4-8 4 8" />
+      <path
+        d="M48 12a24 24 0 0 0-16 42c4 3 4 5 4 10v4h24v-4c0-5 0-7 4-10a24 24 0 0 0-16-42zm0 8a16 16 0 0 1 11 28c-5 4-7 8-7 12h-8c0-4-2-8-7-12a16 16 0 0 1 11-28z"
+        fillRule="evenodd"
+      />
+      <Ring accent cx={48} cy={37} />
+      <path d="M45 44h6v12h-6z" fill={MINT} />
+      <path d="M36 72h24v4l-8 8h-8l-8-8z" />
     </Art>
   ),
-  // Orientações: duas pessoas, a que orienta e a orientada.
+  // Orientações: duas pessoas ligadas por um corte a 45°.
   orientacoes: () => (
     <Art>
-      <circle cx="36" cy="32" r="9" />
-      <path d="M20 70c0-12 7-20 16-20s16 8 16 20" />
-      <circle cx="62" cy="42" r="7" />
-      <path d="M50 74c1-9 6-15 12-15s11 6 12 15" />
+      <Ring cx={32} cy={30} scale={1.5} />
+      <path d="M16 76V64a16 16 0 0 1 32 0v12h-8V64a8 8 0 0 0-16 0v12z" />
+      <Ring accent cx={68} cy={44} />
+      <path d="M56 76V64a12 12 0 0 1 24 0v12h-8V64a4 4 0 0 0-8 0v12z" />
+      <path d="M43 38h12l8 8H51z" fill={MINT} />
     </Art>
   ),
-  // Outros dados: caixa de arquivo.
+  // Outros dados: arquivo com puxador circular.
   outros: () => (
     <Art>
-      <path d="M16 30h64v10H16zM20 40h56v34H20z" />
-      <path d="M40 50h16" />
+      <path d="M12 24h72v16H12zM20 44h56v36H20zm8 8v20h40V52z" fillRule="evenodd" />
+      <path d="M68 24h16v16H52z" fill={MINT} />
+      <Ring accent cx={48} cy={59} />
     </Art>
   ),
-  // Patentes e registros: certificado com selo.
+  // Patentes e registros: documento com selo e fitas.
   patentes: () => (
     <Art>
-      <rect height="48" rx="3" width="56" x="16" y="18" />
-      <path d="M26 30h36M26 38h28M26 46h20" />
-      <circle cx="64" cy="64" r="9" />
-      <path d="M58 71 55 82l9-5 9 5-3-11" />
+      <path d="M16 16h48l8 8v24h-8V24H24v40h24v8H16z" />
+      <Lines x={32} y={33} />
+      <path d="m54 71 8 3-6 10-4-6-7 1zM70 74l8-3 9 8-7-1-4 6z" />
+      <Ring accent cx={66} cy={60} scale={1.75} />
     </Art>
   ),
-  // Produções: livro aberto.
+  // Produções: livro aberto, com lombada e canto menta.
   producoes: () => (
     <Art>
-      <path d="M48 30c-8-6-20-8-32-6v46c12-2 24 0 32 6 8-6 20-8 32-6V24c-12-2-24 0-32 6Z" />
-      <path d="M48 30v46" />
-      <path d="M24 38h16M24 46h16M56 38h16M56 46h16" />
+      <path
+        d="M12 20h24l12 8 12-8h24v52H60L48 80l-12-8H12zm8 8v36h16l8 5V35l-10-7zm32 7v34l8-5h16V28H62z"
+        fillRule="evenodd"
+      />
+      <Lines x={24} y={40} />
+      <Lines widthScale={2 / 3} x={60} y={40} />
+      <path d="M68 64h16v8H60z" fill={MINT} />
     </Art>
   ),
-  // Projetos: prancheta com lista.
+  // Projetos: prancheta, com o recorte e a conexão menta do logo.
   projetos: () => (
     <Art>
-      <rect height="58" rx="4" width="48" x="24" y="20" />
-      <path d="M38 16h20v10H38z" />
-      <path d="m32 40 3 3 6-6M46 40h18M32 54l3 3 6-6M46 54h18M32 68h8M46 68h14" />
+      <path d="M24 22h48v42h-8V30H32v42h32l-8 8H24z" />
+      <path d="M38 16h20v16H38z" fill={MINT} />
+      <path d="m36 40 3 3 5-5 3 3-8 8-6-6zm0 17 3 3 5-5 3 3-8 8-6-6z" />
+      <Lines pitch={17} widthScale={2 / 3} x={52} y={41} />
+      {/* Vão perpendicular de x/4 entre os cortes, como na marca. */}
+      <path d="M66.8284 72H74v8H58.8284z" fill={MINT} />
+      <Ring accent cx={78} cy={76} />
     </Art>
   ),
 };

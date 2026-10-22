@@ -14,8 +14,9 @@ import { Modal } from '../ui/Modal.tsx';
 import type { Section } from '../ui/sections.ts';
 import { dateLabel } from '../ui/status-strip.ts';
 import type { EspelhoReading } from '../ui/use-bridge.ts';
-import { diffEspelho } from './espelho-diff.ts';
+import type { EspelhoDiff } from './espelho-diff.ts';
 import { Findings } from './Findings.tsx';
+import { compareWithLattes } from './lists-diff.ts';
 import { bySequencia, type Place, placeIndex, sequenciaKey } from './locate.ts';
 import { validateCv } from './validation.ts';
 
@@ -89,7 +90,7 @@ export function DiagnosisPanel(props: Props) {
     return parsed.current.root;
   }, [open, originalXml]);
   const diff = useMemo(
-    () => (open && original && espelho?.items ? diffEspelho(espelho.items, original) : undefined),
+    () => (open && original && espelho ? compareWithLattes(espelho, original) : undefined),
     [open, espelho, original],
   );
   // Os itens da exportação original levam ao mesmo item no documento aberto.
@@ -135,8 +136,10 @@ export function DiagnosisPanel(props: Props) {
           O que mudou no Lattes desde a sua exportação
         </h4>
         <p className="muted">
-          Compara os títulos das produções e dos eventos com a versão atual do Lattes, inclusive o
-          que ainda não foi enviado ao CNPq. Mudanças em outros campos (ano, autores) não aparecem.
+          Compara os itens de todas as seções com a versão atual do Lattes, inclusive o que ainda
+          não foi enviado ao CNPq: atuação (com vínculos e atividades), formação, eventos, prêmios,
+          idiomas e produção. Cada item é procurado pelo nome e pelo ano; mudanças em outros campos
+          (autores, descrição) não aparecem.
         </p>
         <div className="diagnosis-actions">
           <button
@@ -160,24 +163,30 @@ function EspelhoResult({
   onGo,
   placeOf,
 }: {
-  diff: ReturnType<typeof diffEspelho>;
+  diff: EspelhoDiff;
   placeOf: (item: XElement) => Place | undefined;
   onGo: (place?: Place) => void;
 }) {
   if (diff.unreadable) {
     return (
       <p className="empty">
-        Não deu para ler a página de conferência do Lattes: nenhuma produção da exportação apareceu
-        nela. O formato da página pode ter mudado, então nada foi comparado.
+        {diff.scope === 'listas'
+          ? 'Não deu para ler as listas do Lattes: nenhum item da exportação apareceu nelas. O formato das listas pode ter mudado, então nada foi comparado.'
+          : 'Não deu para ler a página de conferência do Lattes: nenhuma produção da exportação apareceu nela. O formato da página pode ter mudado, então nada foi comparado.'}
       </p>
     );
   }
+  const scope = <ScopeNote diff={diff} />;
   if (diff.onlyInLattes.length === 0 && diff.onlyInExport.length === 0) {
     return (
-      <p className="empty">
-        Os títulos batem: nenhuma produção ou evento incluído ou tirado no Lattes desde a
-        exportação.
-      </p>
+      <>
+        <p className="empty">
+          {diff.scope === 'listas'
+            ? 'Tudo bate: nenhum item incluído ou tirado no Lattes desde a exportação.'
+            : 'Os títulos batem: nenhuma produção ou evento incluído ou tirado no Lattes desde a exportação.'}
+        </p>
+        {scope}
+      </>
     );
   }
   return (
@@ -224,6 +233,26 @@ function EspelhoResult({
             : `${diff.skipped} itens têm título curto demais para comparar.`}
         </p>
       )}
+      {scope}
     </>
+  );
+}
+
+/** O que ficou de fora: seções cuja lista não foi lida, ou a extensão antiga que só lê a página de conferência. */
+function ScopeNote({ diff }: { diff: EspelhoDiff }) {
+  if (diff.scope === 'pagina') {
+    return (
+      <p className="muted">
+        Só produções e eventos foram comparados: esta versão da extensão não lê as outras listas.
+        Atualize a extensão para comparar todas as seções.
+      </p>
+    );
+  }
+  if (!diff.notCompared?.length) return null;
+  return (
+    <p className="muted">
+      Não comparado (a lista não abriu no Lattes): {diff.notCompared.join(', ')}. Confira essas
+      seções no Lattes.
+    </p>
   );
 }

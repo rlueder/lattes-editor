@@ -4,7 +4,7 @@
 
 import type { SentEntry } from '../bridge/sent-log.ts';
 import { openExternal } from '../desktop/external-links.ts';
-import type { diffEspelho } from '../review/espelho-diff.ts';
+import type { EspelhoDiff } from '../review/espelho-diff.ts';
 import { dateLabel } from '../ui/status-strip.ts';
 import type { BridgeState } from '../ui/use-bridge.ts';
 import { Notice } from './SendSteps.tsx';
@@ -17,7 +17,7 @@ export function WhatPublishes({
   previews,
 }: {
   bridge: BridgeState;
-  diff: ReturnType<typeof diffEspelho> | undefined;
+  diff: EspelhoDiff | undefined;
   pending: SentEntry[];
   previews?: { en: string; pt: string };
 }) {
@@ -56,9 +56,13 @@ export function WhatPublishes({
       {diff && !diff.unreadable && (
         <Notice ok={unchanged}>
           <p>
-            Comparando os títulos com a última versão publicada:{' '}
+            {diff.scope === 'listas'
+              ? 'Comparando todas as seções com a última versão publicada: '
+              : 'Comparando os títulos com a última versão publicada: '}
             {unchanged
-              ? 'nenhuma produção ou evento entra ou sai.'
+              ? diff.scope === 'listas'
+                ? 'nenhum item entra ou sai.'
+                : 'nenhuma produção ou evento entra ou sai.'
               : `${[
                   diff.onlyInLattes.length ? `${diff.onlyInLattes.length} entram` : '',
                   diff.onlyInExport.length
@@ -68,6 +72,9 @@ export function WhatPublishes({
                   .filter(Boolean)
                   .join(', ')}.`}
           </p>
+          {diff.notCompared?.length ? (
+            <p className="muted">Não comparado: {diff.notCompared.join(', ')}.</p>
+          ) : null}
         </Notice>
       )}
       {diff && diff.onlyInLattes.length > 0 && (
@@ -83,7 +90,7 @@ export function WhatPublishes({
         <ul className="diagnosis-lines">
           {diff.onlyInExport.map(({ title }, i) => (
             <li key={i}>
-              <span className="muted">Sai ou muda de título</span> {title}
+              <span className="muted">Sai ou muda</span> {title}
             </li>
           ))}
         </ul>

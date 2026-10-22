@@ -34,8 +34,9 @@ detalhes e escolha executar. O app confere se há versão nova ao abrir e a cada
 3. **Edite.** O menu lateral leva a cada seção; <kbd>⌘K</kbd>
    (<kbd>Ctrl</kbd>+<kbd>K</kbd> fora do Mac) acha seções, grupos e tipos de
    item. Os campos que no Lattes são listas (país, idioma, natureza, área do
-   conhecimento, instituição, curso, agência) são listas aqui também. Cada
-   edição fica salva no app.
+   conhecimento, instituição, curso, agência) são listas aqui também. Uma
+   seção vazia mostra uma ilustração na grade do logo. Cada edição fica
+   salva no app.
 4. **Envie ao Lattes.** O painel "Enviar ao Lattes" vai em três passos:
    revisar, gravar e publicar. Produções novas vão pelo Importar do próprio
    Lattes, num arquivo que o app gera. O resto vai pela extensão, que grava na

@@ -37,6 +37,17 @@ Prévias no `pnpm dev`, sem Lattes nem extensão:
 | `?simular-envio`         | A janela "Enviar ao Lattes" com uma tela de envio de exemplo (`src/dev/send-screen-preview.ts`); `&publicar` mostra a caixa |
 | `?itens-teste`           | O painel dos itens de teste do censo (`lattes-formularios/itens-de-teste.md`)                                               |
 
+## Ícones das seções
+
+A prancha `/brand/sections/` (no `pnpm dev`, entrada em
+`scripts/section-art-preview.tsx`) mostra o ícone do estado vazio de cada
+seção com a grade de construção e os dois temas. Os desenhos ficam no mapa
+`ART` de `src/ui/empty-art.tsx`, em 96 × 96 px, no módulo de 8 px, com as
+medidas de `brand/construction/proportions.json`; `Ring` e `Lines` guardam as
+proporções dos anéis e das barras do logo. A cor principal é `currentColor`
+e o menta é `--section-art-accent`. Sem arquivos externos nem ids repetidos
+entre desenhos. `brand/rebuild.py` não toca nesses desenhos.
+
 ## Lattes simulado
 
 ```bash

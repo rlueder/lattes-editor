@@ -73,7 +73,10 @@ function text(el: XElement): string {
     .trim();
 }
 
-function fieldDiff(before: XElement | undefined, after: XElement | undefined): FieldChange[] {
+export function fieldDiff(
+  before: XElement | undefined,
+  after: XElement | undefined,
+): FieldChange[] {
   const names = new Set([...(before?.attrs ?? []), ...(after?.attrs ?? [])].map((a) => a.name));
   const fields: FieldChange[] = [];
   for (const name of names) {

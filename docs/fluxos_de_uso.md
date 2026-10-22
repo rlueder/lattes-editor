@@ -88,7 +88,9 @@ O currículo está desatualizado, e a pessoa não sabe o que ficou pendente.
 2. O "Diagnóstico do currículo" (no ⚙ e no aviso do sino) confere o
    currículo inteiro (obrigatórios, listas, anos, autores, DOI, a revisão de
    consistência) e, logo abaixo, mostra a data da última publicação, o que
-   está pendente e o que mudou no Lattes desde a exportação
-   (`src/review/espelho-diff.ts`).
+   está pendente e o que mudou no Lattes desde a exportação. A comparação
+   cobre todas as seções, pelas listas do currículo no Lattes
+   (`src/review/lists-diff.ts`, `lattes_internals.md`, seção 10), e diz
+   quais não conseguiu ler.
 3. A pessoa decide o que mantém e o que desfaz, trabalha em lotes ao longo de
    dias e publica no fim.

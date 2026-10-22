@@ -10,7 +10,6 @@ pnpm-lock.yaml
 private
 fixtures
 schema
-docs/lattes_maximal_skeleton.xml
 src/schema/lattes.json
 src/schema/lattes.ts
 src-tauri/target

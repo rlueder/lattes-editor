@@ -3,8 +3,14 @@
 // novos, removidos e alterados, por seção, cada um com o caminho até o grupo
 // onde ele aparece no editor.
 
-import { type Change, diffDocuments, resolvePath } from '../model/changes.ts';
-import { getAttr, parseXml, type XElement } from '../model/xml.ts';
+import {
+  type Change,
+  diffDocuments,
+  type FieldChange,
+  fieldDiff,
+  resolvePath,
+} from '../model/changes.ts';
+import { childElements, getAttr, parseXml, type XElement, type XText } from '../model/xml.ts';
 import { groupChanges } from './changes-view.ts';
 import type { HashRoute } from './hash-route.ts';
 import type { Section } from './sections.ts';
@@ -52,6 +58,103 @@ function itemOf(
   return undefined;
 }
 
+/** Número de sequência: identidade no Lattes, que muda quando o item é apagado e criado de novo. */
+const SEQUENCE = /^SEQUENCIA/;
+
+/** O conteúdo do item sem as sequências, para reconhecer o mesmo item com outro número. */
+function content(el: XElement): string {
+  const attrs = el.attrs
+    .filter((a) => !SEQUENCE.test(a.name))
+    .map((a) => `${a.name}=${a.value}`)
+    .join('\u0001');
+  const text = el.children
+    .filter((c): c is XText => c.kind === 'text')
+    .map((c) => c.value.trim())
+    .join('');
+  return `<${el.name} ${attrs}>${text}${childElements(el).map(content).join('')}</${el.name}>`;
+}
+
+/** O elemento que o caminho de uma mudança aponta, se ele existe inteiro. */
+function target(root: XElement, change: Change): XElement | undefined {
+  const chain = resolvePath(root, change.path);
+  return chain.length === change.path.length ? chain.at(-1) : undefined;
+}
+
+/**
+ * Um item apagado e criado de novo no Lattes volta com outro número de
+ * sequência, e a comparação por número mostra "removido" e "novo". Na mesma
+ * seção, com o mesmo tipo e o mesmo título, os dois viram uma coisa só: nada,
+ * quando o conteúdo é igual; "alterado", com os campos que mudaram, quando não.
+ */
+function pairRecreated(
+  entries: VersionChange[],
+  older: XElement,
+  newer: XElement,
+  onReplace: (from: Change, to: Change) => void,
+): VersionChange[] {
+  const out = [...entries];
+  // O elemento e o conteúdo de cada candidato, calculados uma vez.
+  const side = (root: XElement, kind: Change['kind']) =>
+    out
+      .filter((e) => e.change.kind === kind)
+      .map((e) => ({ e, el: target(root, e.change) }))
+      .filter((x): x is { e: VersionChange; el: XElement } => !!x.el)
+      .map((x) => ({ ...x, body: content(x.el) }));
+  const gone = side(older, 'removido');
+  const added = side(newer, 'novo');
+  const sameKind = (a: (typeof gone)[number], b: (typeof added)[number]) =>
+    a.e.change.element === b.e.change.element;
+  // Primeiro o conteúdo igual, que não deixa dúvida; só depois o título, para
+  // um título repetido não tomar o par exato de outro item.
+  const rules = [
+    (a: (typeof gone)[number], b: (typeof added)[number]) => a.body === b.body,
+    (a: (typeof gone)[number], b: (typeof added)[number]) =>
+      !!a.e.itemTitle.trim() && a.e.itemTitle === b.e.itemTitle,
+  ];
+  for (const rule of rules) {
+    for (const before of [...gone]) {
+      const after = added.find((b) => sameKind(before, b) && rule(before, b));
+      if (!after) continue;
+      gone.splice(gone.indexOf(before), 1);
+      added.splice(added.indexOf(after), 1);
+      out.splice(out.indexOf(before.e), 1);
+      const at = out.indexOf(after.e);
+      if (before.body === after.body) {
+        out.splice(at, 1);
+        continue;
+      }
+      const change: Change = {
+        ...after.e.change,
+        fields: deepFields(before.el, after.el),
+        kind: 'alterado',
+      };
+      onReplace(after.e.change, change);
+      out[at] = { ...after.e, change };
+    }
+  }
+  return out;
+}
+
+/**
+ * Os campos que mudaram no item e nos elementos de dentro dele (os dados de
+ * um item do Lattes ficam num filho, como DADOS-BASICOS-DO-ARTIGO), pareando
+ * os filhos de mesmo nome pela ordem. Um filho que só existe de um lado entra
+ * com tudo o que tem dentro. As sequências ficam de fora. Pela ordem, um filho
+ * inserido no meio aparece como mudança nos irmãos seguintes; para um item
+ * recriado, que é o caso daqui, a ordem costuma ser a mesma.
+ */
+function deepFields(before: XElement | undefined, after: XElement | undefined): FieldChange[] {
+  const fields = fieldDiff(before, after).filter((f) => !SEQUENCE.test(f.attr));
+  const kids = (el: XElement | undefined, name?: string) => (el ? childElements(el, name) : []);
+  const names = new Set([...kids(before), ...kids(after)].map((c) => c.name));
+  for (const name of names) {
+    const b = kids(before, name);
+    const a = kids(after, name);
+    for (let i = 0; i < Math.max(a.length, b.length); i++) fields.push(...deepFields(b[i], a[i]));
+  }
+  return fields;
+}
+
 /**
  * Compara a versão anterior com a seguinte. `sections` são as seções da
  * versão seguinte (buildSections dela): o caminho de um item removido
@@ -62,14 +165,22 @@ export function diffVersions(older: XElement, newer: XElement, sections: Section
   // O item de cada mudança, para contar um item alterado uma vez só, mesmo
   // com vários campos mudados ou com título igual ao de outro item.
   const itemByChange = new Map<Change, XElement | undefined>();
-  const groups = groupChanges(changes, older, newer, sections).map((g) => ({
-    changes: g.entries.map(({ change, itemTitle }) => {
-      const found = itemOf(resolvePath(newer, change.path), sections);
-      itemByChange.set(change, found?.item);
-      return { change, itemTitle, route: found?.route };
-    }),
-    label: g.label,
-  }));
+  const groups = groupChanges(changes, older, newer, sections)
+    .map((g) => ({
+      changes: g.entries.map(({ change, itemTitle }) => {
+        const found = itemOf(resolvePath(newer, change.path), sections);
+        itemByChange.set(change, found?.item);
+        return { change, itemTitle, route: found?.route };
+      }),
+      label: g.label,
+    }))
+    .map((g) => ({
+      ...g,
+      changes: pairRecreated(g.changes, older, newer, (from, to) =>
+        itemByChange.set(to, itemByChange.get(from)),
+      ),
+    }))
+    .filter((g) => g.changes.length > 0);
   const all = groups.flatMap((g) => g.changes);
   const changedItems = new Set<XElement | string>(
     all

@@ -1,6 +1,7 @@
-// Modo de privacidade da página Dados gerais: esconde os dados pessoais
-// sensíveis (documentos, nascimento, filiação, endereço residencial) para
-// mostrar a tela a alguém ou compartilhá-la sem expor o currículo inteiro.
+// Modo de privacidade da página Dados gerais: mascara os dados pessoais
+// sensíveis (documentos, nascimento, filiação, endereço residencial), no
+// campo e na leitura, para mostrar a tela a alguém ou compartilhá-la sem
+// expor o currículo inteiro. O rótulo fica; o valor vira a máscara.
 
 import { createContext, useContext, useEffect, useState } from 'react';
 
@@ -33,6 +34,9 @@ export function isSensitiveAttr(element: string, attr: string): boolean {
   if (element === 'ENDERECO-RESIDENCIAL') return true;
   return element === 'DADOS-GERAIS' && SENSITIVE_PERSONAL.has(attr);
 }
+
+/** O que aparece no lugar de um valor sensível, no campo e na leitura. */
+export const MASK = '••••••';
 
 export const PrivacyContext = createContext(false);
 

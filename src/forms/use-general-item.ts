@@ -56,6 +56,7 @@ export function titleOf(item: XElement, type: GeneralType): string {
     'NOME-CURSO',
     'CARGO-OU-FUNCAO',
     'NOME-DA-AREA-DO-CONHECIMENTO',
+    'DESCRICAO-DO-IDIOMA',
     'IDIOMA',
   ]
     .map((attr) => getAttr(item, attr))

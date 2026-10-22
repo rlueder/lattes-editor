@@ -50,7 +50,7 @@ describe('ordem dos campos: ⚙', () => {
     expect(parseFieldOrder(null)).toBe('previa');
     expect(parseFieldOrder('qualquer')).toBe('previa');
     expect(parseFieldOrder('lattes')).toBe('lattes');
-    expect(FIELD_ORDERS.map((o) => o.label)).toEqual(['Como na prévia', 'Como no Lattes']);
+    expect(FIELD_ORDERS.map((o) => o.label)).toEqual(['Padrão LattesEditor', 'Como no Lattes']);
   });
 });
 

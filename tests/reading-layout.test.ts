@@ -13,6 +13,7 @@ import { childElements, firstChild, parseXml, walk, type XElement } from '../src
 import { referenceText } from '../src/print/abnt.ts';
 import { hasReference } from '../src/print/references.ts';
 import { referenceFor } from '../src/print/references.ts';
+import { MASK } from '../src/ui/privacy.ts';
 import {
   addressLayout,
   fieldsLayout,
@@ -120,13 +121,20 @@ describe('modo de leitura: todo campo preenchido aparece na leitura', () => {
     expect(words).toEqual(['PALAVRA-CHAVE-1', 'PALAVRA-CHAVE-2']);
   });
 
-  it('a privacidade esconde os sensíveis na leitura, contando quantos', () => {
+  it('a privacidade mascara os sensíveis na leitura: o rótulo fica, o valor vira a máscara', () => {
     const dg = el(
       '<DADOS-GERAIS NOME-COMPLETO="Ana" NOME-DA-MAE="Marta" DATA-NASCIMENTO="03051986" NOME-DO-PAI=""/>',
     );
     const [s] = fieldsLayout(dg, { ...opts, hideSensitive: true });
-    expect(s!.rows.map((p) => p.attr)).toEqual(['NOME-COMPLETO']);
+    expect(s!.rows.map((p) => [p.attr, p.masked ?? false])).toEqual([
+      ['NOME-COMPLETO', false],
+      ['DATA-NASCIMENTO', true],
+      ['NOME-DA-MAE', true],
+    ]);
+    expect(s!.rows.map(partText)).toEqual(['Ana', MASK, MASK]);
     expect(s!.masked).toBe(2);
+    // O vazio continua de fora, mascarado ou não.
+    expect(s!.rows.some((p) => p.attr === 'NOME-DO-PAI')).toBe(false);
   });
 });
 
@@ -203,6 +211,11 @@ describe('modo de leitura: composição dos registros', () => {
     );
     const [res] = addressLayout(end, { ...opts, hideSensitive: true });
     expect(res!.hidden).toBe(true);
+    // Nada em linha de texto: cada campo preenchido vira rótulo e máscara.
+    expect(res!.lines.map(lineText).filter(Boolean)).toEqual([]);
+    expect(res!.rows.map((p) => p.attr).sort()).toEqual(['CEP', 'CIDADE', 'LOGRADOURO', 'UF']);
+    expect(res!.rows.every((p) => p.masked)).toBe(true);
+    expect(res!.masked).toBe(4);
     const [shown] = addressLayout(end, opts);
     expect(shown!.lines.map(lineText).filter(Boolean)).toEqual([
       'Rua A',

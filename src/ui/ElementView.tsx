@@ -89,7 +89,7 @@ function FieldsBlock({
     }
     return empty;
   };
-  // "Como na prévia" (modo de leitura): vale quando a prévia dá lugar a algum
+  // "Padrão LattesEditor" (a ordem da prévia): vale quando a prévia dá lugar a algum
   // campo deste bloco; partes que ela não mostra (autores) seguem a do Lattes.
   const previewSlot = fieldSlot
     ? (e: { attr: string; key: string }) => fieldSlot(sources[sourceOf(e.key)]!, e.attr)

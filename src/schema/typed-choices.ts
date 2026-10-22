@@ -4,7 +4,7 @@
 // docs/campos_tipados.md.
 
 import { foldText } from '../model/fold-text.ts';
-import { NATIONALITY_COUNTRIES, writesOwnCode } from '../model/linked-attrs.ts';
+import { ownCodeChoices, writesOwnCode } from '../model/linked-attrs.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import listas from './listas-lattes.json' with { type: 'json' };
 import producao from './listas-producao.json' with { type: 'json' };
@@ -20,7 +20,9 @@ const asChoices = (values: readonly string[]): Choice[] =>
 /**
  * País e idioma pelo nome, como o XML guarda (exportação real de 13/10/2026:
  * PAIS="Brasil" em produções, eventos, endereço e nascimento; IDIOMA="Inglês"
- * nas produções). O idioma da seção Idiomas é código (EN) e fica de fora.
+ * nas produções). Na seção Idiomas o atributo IDIOMA é código (EN), gerado
+ * pelo Lattes: lá a pessoa escolhe o nome em DESCRICAO-DO-IDIOMA, na lista do
+ * formulário de idioma, e o código vai junto (linked-attrs.ts).
  */
 const COUNTRY_ATTRS = new Set(['PAIS', 'PAIS-DE-NASCIMENTO', 'PAIS-DE-PUBLICACAO', 'PAIS-DO-EVENTO']);
 const LANGUAGE_ATTRS = new Set(['IDIOMA', 'IDIOMA-DA-OBRA-ORIGINAL']);
@@ -145,7 +147,7 @@ export function typedChoices(el: XElement, attr: string): Choice[] | undefined {
   if (COUNTRY_ATTRS.has(attr)) return COUNTRIES;
   if (UF_ATTRS.has(attr) && el.name === 'DADOS-GERAIS') return UFS;
   if (LANGUAGE_ATTRS.has(attr) && el.name !== 'IDIOMA') return LANGUAGES;
-  if (writesOwnCode(el.name, attr)) return asChoices(NATIONALITY_COUNTRIES);
+  if (writesOwnCode(el.name, attr)) return asChoices(ownCodeChoices(el.name));
   const production = PRODUCTION_LISTS[`${el.name}@${attr}`];
   if (production) return asChoices(production);
   if (!isEventBasics(el.name)) return undefined;

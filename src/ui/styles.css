@@ -3112,7 +3112,7 @@ details > .element {
   font-size: 26px;
 }
 
-/* Estado vazio de seção: bloco centrado, desenho em traço, texto e ações. */
+/* Estado vazio de seção: bloco centrado, ilustração, texto e ações. */
 .empty-section {
   max-width: 440px;
   margin: 12vh auto 0;
@@ -3125,6 +3125,10 @@ details > .element {
   display: block;
   margin: 0 0 18px;
   color: var(--muted);
+}
+
+.empty-art.section-art {
+  color: var(--brand);
 }
 
 .empty-section .empty-title {
@@ -4287,6 +4291,7 @@ button.primary.danger-fill:hover {
   --accent-soft-strong: #d5efff; /* blue-4 */
   --accent-text: #326c99;
   --brand: #463c6d;
+  --section-art-accent: #2c8979;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -4311,6 +4316,7 @@ button.primary.danger-fill:hover {
     --accent-soft-strong: #003362; /* blue-dark-4 */
     --accent-text: #70b8ff; /* blue-dark-11 */
     --brand: #ffffff;
+    --section-art-accent: #9ef2e2;
   }
 }
 
@@ -4334,6 +4340,7 @@ button.primary.danger-fill:hover {
   --accent-soft-strong: #003362;
   --accent-text: #70b8ff;
   --brand: #ffffff;
+  --section-art-accent: #9ef2e2;
 }
 
 /* Controles com a borda de controle (passo 7) e foco na borda forte. */
@@ -7184,10 +7191,6 @@ main.content {
   font-style: italic;
 }
 
-.reading-fields + .reading-hidden {
-  margin-top: var(--read-para);
-}
-
 /* Rótulo e valor em grade de três colunas, o rótulo acima do valor; o valor
    longo ocupa duas colunas ou a linha inteira (cellSpan em reading.ts). Sem
    grid-auto-flow: dense, para a grade seguir a ordem de leitura. */
@@ -8293,4 +8296,88 @@ html {
 
 .test-items-error {
   color: var(--danger);
+}
+
+/* "Mostrar códigos do Lattes": os campos e os rótulos que a opção acende
+   ficam num fundo cinza leve, para se ver o que ela mostra e esconde. A
+   sombra faz o respiro sem mexer na grade. */
+.field.field-code,
+.reading-field.is-code {
+  border-radius: 3px;
+  background: var(--surface-2);
+  box-shadow: 0 0 0 6px var(--surface-2);
+}
+
+/* Modo de privacidade: o valor vira a máscara, no mesmo lugar e tom do campo. */
+.reading-masked {
+  color: var(--read-muted);
+  letter-spacing: 0.08em;
+}
+
+/* Respiro entre "Verificar atualizações" (ou o último separador) e a versão. */
+.menu .menu-version {
+  padding-top: 8px;
+}
+
+/* Título de notificação em mais de uma linha: o ícone acompanha a primeira
+   linha, não o meio do bloco. */
+.notice-title {
+  align-items: flex-start;
+  line-height: 1.4;
+}
+
+.notice-title > svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+/* No app de desktop, voltar e avançar ficam fora da medida do "Ir para":
+   ele continua centralizado na janela, com os dois à esquerda. */
+.topbar-center {
+  position: relative;
+}
+
+.topbar-history {
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  margin-right: 8px;
+  transform: translateY(-50%);
+}
+
+/* As duas teclas do atalho (⌘ e K) juntas, como se lê. */
+.topbar .search-btn kbd + kbd {
+  margin-left: -5px;
+}
+
+/* Controle que desliza (Currículo | Panorama, Tema, Ordem dos campos): o
+   passar do mouse só escurece o texto. Um fundo na opção cobriria o
+   destaque, que desliza por baixo dela. */
+.menu .menu-segment .menu-seg:hover,
+.menu .menu-segment .menu-seg[data-highlighted],
+.pano-segment .menu-seg:hover,
+.pano-segment .menu-seg:focus-visible {
+  background: transparent;
+  color: var(--text);
+}
+
+.pano-segment .menu-seg,
+.menu .menu-segment .menu-seg {
+  transition: color 200ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pano-segment .menu-seg,
+  .menu .menu-segment .menu-seg {
+    transition: none;
+  }
+}
+
+/* Trocar a foto no modo de privacidade: o mosaico do perfil no círculo,
+   em vez de um círculo vazio. */
+.photo-preview .pixel-photo {
+  width: 100%;
+  height: 100%;
+  filter: grayscale(1);
+  image-rendering: pixelated;
 }
