@@ -58,6 +58,7 @@ on:
   pull_request:
     paths:
       - 'src-tauri/**'
+      - '.github/workflows/desktop-build.yml'
   # Manual, com uma tag, refaz os instaladores de um lançamento que ficou sem
   # eles (o Release falhou depois de criar a tag); sem tag, só monta.
   workflow_dispatch:
@@ -88,12 +89,34 @@ jobs:
             args: --bundles nsis
             asset: -Windows[setup][ext]
           - name: Linux
-            # 22.04: glibc mais antiga, o AppImage abre em mais distribuições.
-            os: ubuntu-22.04
+            # Monta num container 22.04: a glibc mais antiga faz o AppImage
+            # abrir em mais distribuições. O runner ubuntu-22.04 do GitHub está
+            # obsoleto desde 17/09/2026 e fica em fila nos horários de pico
+            # (actions/runner-images#14254); o 24.04 só hospeda o container.
+            os: ubuntu-24.04
+            container: ubuntu:22.04@sha256:0a9887931b0e38af2e3487ed39e29436b0535c4f3f52e57745baaf79d1898956
             args: --bundles appimage,deb
             asset: -Linux[ext]
     runs-on: ${{ matrix.os }}
+    # Vazio no macOS e no Windows: o job roda direto no runner.
+    container: ${{ matrix.container }}
     steps:
+      # O container vem sem git (o checkout precisa), sem Rust, sem o gh (o
+      # passo do rascunho usa) e sem sudo; roda como root.
+      - name: Ferramentas do container (Linux)
+        if: matrix.container
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential ca-certificates curl file git gnupg xdg-utils
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+            -o /usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+            > /etc/apt/sources.list.d/github-cli.list
+          apt-get update
+          apt-get install -y --no-install-recommends gh
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ inputs.tag || github.sha }}
@@ -107,9 +130,11 @@ jobs:
         run: rustup target add ${{ matrix.rust-targets }}
       - name: Bibliotecas do WebView (Linux)
         if: runner.os == 'Linux'
+        # No container não há sudo, e já se é root.
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev libdbus-1-dev patchelf
+          SUDO=$(command -v sudo || true)
+          $SUDO apt-get update
+          $SUDO apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev libdbus-1-dev patchelf
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           workspaces: src-tauri
@@ -205,6 +230,9 @@ jobs:
           LATTES_VERSAO: ${{ inputs.versao }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # O linuxdeploy do AppImage é ele mesmo um AppImage, e o container não
+          # tem FUSE: ele se extrai e roda.
+          APPIMAGE_EXTRACT_AND_RUN: 1
         with:
           # Sem tag (PR, disparo manual sem tag), só monta e guarda como artefato do workflow.
           tagName: ${{ inputs.tag }}
