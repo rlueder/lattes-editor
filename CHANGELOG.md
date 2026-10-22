@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.24.0](https://github.com/rlueder/lattes-editor/compare/v0.23.0...v0.24.0) (2026-10-22)
+
+### Novidades
+
+- **forms:** natureza do evento pelo conector, no mesmo item ([#122](https://github.com/rlueder/lattes-editor/issues/122)) ([cee355c](https://github.com/rlueder/lattes-editor/commit/cee355c15dfe664c41070d291d90365c6bb0893c))
+- **forms:** pesquisa e desenvolvimento e treinamento pelo conector ([#117](https://github.com/rlueder/lattes-editor/issues/117)) ([c23b7e5](https://github.com/rlueder/lattes-editor/commit/c23b7e542d5f3fc260b5a218140d2fd3b9b64c6e))
+- **ui:** compara todas as seções pelas listas do Lattes ([#124](https://github.com/rlueder/lattes-editor/issues/124)) ([3d43bb0](https://github.com/rlueder/lattes-editor/commit/3d43bb04970e0033649b2164ceec50b044a7c70d))
+- **ui:** redesenha ícones das seções com a grade da marca ([#126](https://github.com/rlueder/lattes-editor/issues/126)) ([c1e5b72](https://github.com/rlueder/lattes-editor/commit/c1e5b72b63b44f0289b0fda20d34bb02459ec66b))
+
+### Correções
+
+- **forms:** cobertura parte de um valor que o formulário tem ([#118](https://github.com/rlueder/lattes-editor/issues/118)) ([e119efb](https://github.com/rlueder/lattes-editor/commit/e119efb768ec04db68a6c226ae25435606a1b210))
+- **forms:** o que o Lattes não deixa alterar conta como campo que ele não tem ([#119](https://github.com/rlueder/lattes-editor/issues/119)) ([0bfd251](https://github.com/rlueder/lattes-editor/commit/0bfd251ab021fc51259b20c3b5cfa4998060f5f9))
+- isola formulários Dev em quadros de origem opaca ([#123](https://github.com/rlueder/lattes-editor/issues/123)) ([da9d12f](https://github.com/rlueder/lattes-editor/commit/da9d12fca87bc1f26bc836b80ff5e8c0d1c9fd21))
+- limita tráfego ao CNPq e protege gravações locais ([#120](https://github.com/rlueder/lattes-editor/issues/120)) ([e102968](https://github.com/rlueder/lattes-editor/commit/e1029684829fb44bb4c74c5b37661b9b06758ab7))
+- **ui:** ajustes de interface e idioma pelo nome na seção Idiomas ([#125](https://github.com/rlueder/lattes-editor/issues/125)) ([57f67f7](https://github.com/rlueder/lattes-editor/commit/57f67f7dd362b4d5e10e483fcabe4b750bb32f1e))
+- **ui:** campos de dentro de um filho que só existe de um lado ([#129](https://github.com/rlueder/lattes-editor/issues/129)) ([733048a](https://github.com/rlueder/lattes-editor/commit/733048a2658959301722600059ea1280e7e66457)), closes [#127](https://github.com/rlueder/lattes-editor/issues/127)
+- **ui:** item recriado no Lattes não aparece como removido e novo ([#127](https://github.com/rlueder/lattes-editor/issues/127)) ([c3248f6](https://github.com/rlueder/lattes-editor/commit/c3248f62c33e105d7f11141b568cb1105e73114f))
+- **ui:** tela de envio com a declaração inteira e os rótulos do idioma ([#121](https://github.com/rlueder/lattes-editor/issues/121)) ([685c59d](https://github.com/rlueder/lattes-editor/commit/685c59d5193b97ff1e7e339780c9fc3d7515bb73))
+
 ## [0.23.0](https://github.com/rlueder/lattes-editor/compare/v0.22.0...v0.23.0) (2026-10-21)
 
 ### Novidades
