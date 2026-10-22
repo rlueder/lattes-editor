@@ -65,10 +65,19 @@ jobs:
           set -euo pipefail
           topo=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
           # O commit de que o Dev de agora foi montado: o alvo da página "dev",
-          # que o passo "Página dev" cria com --target no SHA. Sem página (a
-          # primeira vez), ou com um alvo que não é SHA, não dá para comparar:
-          # monta.
-          base=$(gh release view dev --json targetCommitish --jq .targetCommitish 2>/dev/null || true)
+          # que o passo "Página dev" cria com --target no SHA. Pela API, com o
+          # repositório no caminho: este job não faz checkout, e o gh sem
+          # repositório falharia. Sem página (404, a primeira vez), ou com um
+          # alvo que não é SHA, não dá para comparar: monta. Outra falha (rede,
+          # permissão) para aqui, à vista, em vez de montar de hora em hora.
+          if saida=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/dev" --jq .target_commitish 2>&1); then
+            base=$saida
+          elif grep -q 'HTTP 404' <<<"$saida"; then
+            base=""
+          else
+            echo "::error::Não consegui ler a página dev: $saida"
+            exit 1
+          fi
           if ! [[ "$base" =~ ^[0-9a-f]{40}$ ]]; then
             base=""
           fi
