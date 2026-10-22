@@ -41,6 +41,21 @@ export function initialForm(screen?: SendScreen, last: Partial<PublishForm> = {}
 }
 
 /**
+ * Os campos que começaram com a escolha da última vez, e não com o que o
+ * Lattes trouxe, para o painel dizer de onde vieram.
+ */
+export function restoredFields(screen: SendScreen | undefined, form: PublishForm): string[] {
+  const fromLattes = initialForm(screen);
+  const names: [keyof PublishForm, string][] = [
+    ['language', 'idioma principal'],
+    ['english', 'versão em inglês'],
+    ['emailContact', 'e-mail de contato'],
+    ['emailAlternative', 'e-mail alternativo'],
+  ];
+  return names.filter(([k]) => form[k] !== fromLattes[k]).map(([, label]) => label);
+}
+
+/**
  * O pedido que vai à extensão. declared vem da caixa que a pessoa marcou
  * neste painel, agora; nada mais a põe em true. declarationText é o texto
  * que ela leu ao marcar, conferido de novo com a tela no envio.

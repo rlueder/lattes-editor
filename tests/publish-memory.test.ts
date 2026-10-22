@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { loadChoices, saveChoices } from '../src/import-export/publish-memory.ts';
-import { initialForm } from '../src/import-export/publish-view.ts';
+import { initialForm, restoredFields } from '../src/import-export/publish-view.ts';
 
 function memoryStorage() {
   const data = new Map<string, string>();
@@ -79,5 +79,11 @@ describe('as escolhas da última vez na janela de envio', () => {
       english: false,
       language: '',
     });
+  });
+
+  it('o painel diz quais campos vieram da última vez', () => {
+    const form = initialForm(SCREEN, { emailAlternative: 'alt@example.org', english: true });
+    expect(restoredFields(SCREEN, form)).toEqual(['versão em inglês', 'e-mail alternativo']);
+    expect(restoredFields(SCREEN, initialForm(SCREEN))).toEqual([]);
   });
 });

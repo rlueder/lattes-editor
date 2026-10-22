@@ -38,7 +38,7 @@ import { encodeLatin1Form, type Pairs } from './form.ts';
 import { decodeHtmlEntities, plainText } from './html-text.ts';
 import { isLogonPage } from './lattes-html.ts';
 import { lattesStatusFrom } from './lattes-status.ts';
-import { labelsFor, radioIdsOf, termsText } from './send-screen-labels.ts';
+import { labelsFor, radioIdsOf, squash, termsText } from './send-screen-labels.ts';
 
 /**
  * Desligado até um envio acompanhado no Lattes real, como as outras
@@ -136,6 +136,9 @@ export const SENT_ALERT = 'O currículo foi enviado para publicação.';
 export const OBSERVED_LANGUAGE = '1';
 export const OBSERVED_ENGLISH = '1';
 
+/** A legenda da caixa na tela real: "Li e estou de acordo com a declaração acima". */
+const AGREE = /^li e estou de acordo\b/i;
+
 /** Um texto de declaração tão curto não é a declaração (é um "Sim", um rótulo solto). */
 const MIN_DECLARATION = 20;
 
@@ -184,13 +187,15 @@ export function readSendScreen(html: string, pageUrl: string): SendScreen | unde
   if (!chk) return undefined;
   // A declaração é o texto mais longo junto da caixa: na tela real (lida em
   // 21/10/2026) ela vem antes, e depois da caixa fica só a legenda "Li e estou
-  // de acordo com a declaração acima".
+  // de acordo com a declaração acima". A legenda nunca passa por declaração:
+  // sem outro texto, a tela não é a esperada e nada vai.
   // O link do Termo de Uso vem no fim do texto; o editor o mostra à parte.
   const link = termsText(html);
   const texts = [chk.label, chk.options?.[0]?.label ?? '']
-    .map((t) => t.trim())
+    .map(squash)
     .map((t) => (link && t.endsWith(link) ? t.slice(0, -link.length).trim() : t));
-  const declaration = [...texts]
+  const declaration = texts
+    .filter((t) => !AGREE.test(t))
     .sort((a, b) => b.length - a.length)
     .find((t) => t.length >= MIN_DECLARATION);
   if (!declaration) return undefined;
@@ -222,7 +227,7 @@ export function readSendScreen(html: string, pageUrl: string): SendScreen | unde
     language: language?.options?.length
       ? {
           options: language.options.map((o) => ({
-            label: labelFor.get(radioIds.get(o.value) ?? '') ?? o.label,
+            label: labelFor.get(radioIds.get(o.value) ?? '') || o.label,
             value: o.value,
           })),
           selected: language.options.find((o) => o.chosen)?.value,

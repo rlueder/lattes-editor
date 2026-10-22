@@ -29,6 +29,7 @@ import {
   publishRequest,
   publishStatus,
   publishUiEnabled,
+  restoredFields,
   SCREEN_TIMEOUT_MS,
   sendScreenStatus,
 } from './publish-view.ts';
@@ -78,6 +79,8 @@ function PublishPanelBody(props: Props) {
   // A declaração: só o clique da pessoa muda isto, e o painel remontado volta a false.
   const [declared, setDeclared] = useState(false);
   const [form, setForm] = useState<PublishForm | undefined>();
+  /** Os campos que começaram com a escolha da última vez, ditos no painel. */
+  const [restored, setRestored] = useState<string[]>([]);
   const [attempt, setAttempt] = useState<PublishAttempt | undefined>();
   const [now, setNow] = useState(() => Date.now());
   const ids = useId();
@@ -101,9 +104,18 @@ function PublishPanelBody(props: Props) {
   // leitura nova desmarca a declaração, que valia para o texto de antes.
   useEffect(() => {
     if (!reading) return;
-    setForm(initialForm(reading.screen, loadChoices(lattesId)));
+    const start = initialForm(reading.screen, loadChoices(lattesId));
+    setForm(start);
+    setRestored(restoredFields(reading.screen, start));
     setDeclared(false);
   }, [reading, lattesId]);
+  // As escolhas ficam guardadas para a próxima abertura, um instante depois da
+  // última mudança (não a cada tecla); a prévia do dev não grava nada.
+  useEffect(() => {
+    if (!form || fake) return;
+    const timer = setTimeout(() => saveChoices(lattesId, form), 600);
+    return () => clearTimeout(timer);
+  }, [form, fake, lattesId]);
   const screenStatus = fake
     ? { waiting: false }
     : sendScreenStatus({ features, now, reading, requestedAt: screenRequest?.at });
@@ -147,14 +159,7 @@ function PublishPanelBody(props: Props) {
   const request = form && screen && publishRequest(form, declared, screen.declaration);
   const problem = request && requestProblem(request, screen);
   const canSend = enabled && !!request && !problem && !status.locked && blockers.length === 0;
-  // Cada escolha fica guardada para a próxima abertura; a declaração, não.
-  const set = (patch: Partial<PublishForm>) =>
-    setForm((f) => {
-      if (!f) return f;
-      const next = { ...f, ...patch };
-      saveChoices(lattesId, next);
-      return next;
-    });
+  const set = (patch: Partial<PublishForm>) => setForm((f) => f && { ...f, ...patch });
 
   const send = () => {
     if (!request || !canSend) return;
@@ -205,6 +210,11 @@ function PublishPanelBody(props: Props) {
           </p>
           <section className="panel-section">
             <h3 className="panel-section-head">Dados do envio</h3>
+            {restored.length > 0 && (
+              <p className="muted">
+                Da última vez neste currículo: {restored.join(', ')}. Confira antes de enviar.
+              </p>
+            )}
             <div className="fields publish-fields">
               <fieldset className="field publish-choices">
                 <legend>Idioma principal</legend>
