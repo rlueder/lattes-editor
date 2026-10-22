@@ -19,6 +19,9 @@ Os instaladores ficam na
 | Linux       | `LattesEditor-Linux.deb` (Debian, Ubuntu, Mint)  |
 | Outro Linux | `LattesEditor-Linux.AppImage`                    |
 
+No Linux, o app pede Ubuntu 24.04, Debian 13, Mint 22 ou outra distribuição com
+glibc 2.39 ou mais nova.
+
 No macOS, o app é assinado e notarizado pela Apple. No Windows, o instalador
 ainda não tem assinatura: o SmartScreen avisa na primeira abertura; abra os
 detalhes e escolha executar. O app confere se há versão nova ao abrir e a cada
