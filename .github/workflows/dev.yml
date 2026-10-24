@@ -1,12 +1,12 @@
-name: 'DEV: montar o LattesEditor Dev (de hora em hora)'
+name: 'DEV: montar o LattesEditor Dev (duas vezes por dia)'
 
-# O canal Dev, como o Nightly do Firefox ou o Insiders do VS Code. De hora em
-# hora, se a main mudou desde o último Dev e o CI dela passou, monta o
+# O canal Dev, como o Nightly do Firefox ou o Insiders do VS Code. Às 9h17 e
+# 21h17 de Brasília, se a main mudou desde o último Dev e o CI dela passou, monta o
 # LattesEditor Dev nos três sistemas e a extensão "LattesEditor Dev:
 # Conector", para testar o que vai entrar na próxima versão antes do
-# "PROD 1: lançar versão". Vários merges na mesma hora dão um build só; um
+# "PROD 1: lançar versão". Vários merges entre verificações dão um build só; um
 # merge que só muda documentação (docs/, site/, README) não dá nenhum. Para
-# montar sem esperar a hora: Actions, "Run workflow", ou
+# montar sem esperar o horário: Actions, "Run workflow", ou
 # `gh workflow run dev.yml`; com `forcar` marcado, monta mesmo sem mudança.
 #
 # O LattesEditor Dev convive com o app publicado: outro nome, identificador,
@@ -22,7 +22,7 @@ name: 'DEV: montar o LattesEditor Dev (de hora em hora)'
 
 on:
   schedule:
-    - cron: '0 * * * *' # a cada hora cheia (UTC)
+    - cron: '17 0,12 * * *' # 9h17 e 21h17 de Brasília (UTC-3)
   workflow_dispatch:
     inputs:
       forcar:
@@ -69,7 +69,7 @@ jobs:
           # repositório no caminho: este job não faz checkout, e o gh sem
           # repositório falharia. Sem página (404, a primeira vez), ou com um
           # alvo que não é SHA, não dá para comparar: monta. Outra falha (rede,
-          # permissão) para aqui, à vista, em vez de montar de hora em hora.
+          # permissão) para aqui, à vista, em vez de montar a cada verificação.
           if saida=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/dev" --jq .target_commitish 2>&1); then
             base=$saida
           elif grep -q 'HTTP 404' <<<"$saida"; then
@@ -99,7 +99,7 @@ jobs:
           fi
           verdes=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$topo&event=push&status=success" --jq .total_count)
           if [ "$verdes" = 0 ]; then
-            echo "::notice::O CI do topo da main (${topo:0:7}) ainda não passou: fica para a próxima hora."
+            echo "::notice::O CI do topo da main (${topo:0:7}) ainda não passou: fica para a próxima verificação."
             exit 0
           fi
           echo "sha=$topo" >> "$GITHUB_OUTPUT"
