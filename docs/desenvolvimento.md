@@ -171,6 +171,7 @@ ou pelo `gh`:
 
 ```bash
 gh workflow run release.yml               # PROD 1: lançar versão, cria o rascunho
+gh workflow run release.yml -f primeira_estavel=true  # primeira estável: 1.0.0
 gh workflow run publicar.yml              # PROD 2: publicar versão, o rascunho mais recente
 gh workflow run publicar.yml -f tag=v0.23.0
 gh workflow run extensao-loja.yml -f tag=v1.0.0 -f confirmar=true
@@ -185,6 +186,11 @@ gh workflow run extensao-loja.yml -f tag=v1.0.0 -f confirmar=true
    atualização assinados e o `latest.json`. Cada PR entra na `main` em squash,
    e o título do PR vira a linha das notas: precisa seguir o Conventional
    Commits.
+   A opção **primeira_estavel**, desligada por padrão, escolhe `1.0.0`
+   quando o último lançamento ainda é `0.x`. Não exige um commit com quebra
+   fictícia. A configuração recusa a opção depois de uma versão `1.x` ou
+   maior e confere o resultado antes de preparar os pacotes ou criar a tag.
+   Os lançamentos seguintes continuam seguindo os tipos dos commits.
 2. **O rascunho é o portão.** Só quem cuida do repositório o vê; é dele que
    saem os instaladores para testar.
 3. **"PROD 2: publicar versão"** (`publicar.yml`) confere que o rascunho tem
