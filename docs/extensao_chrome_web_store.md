@@ -98,6 +98,13 @@ isso, não envie outro pacote pelo painel ou por outra ferramenta enquanto
 o workflow estiver rodando. O controle de concorrência do GitHub não
 impede esses envios externos.
 
+No caminho assíncrono, o script só aceita `SUCCEEDED` depois de observar
+`IN_PROGRESS` numa consulta ao `fetchStatus`. Um sucesso visto antes disso
+pode pertencer ao upload anterior e é ignorado. Se o processamento terminar
+entre consultas e essa transição não for observada, o workflow para sem
+pedir revisão; confira o pacote no painel e conclua o envio por lá. Essa
+restrição evita tratar um estado antigo como confirmação do upload atual.
+
 Referências: [configuração da API](https://developer.chrome.com/docs/webstore/using-api)
 e [envio à revisão pela API v2](https://developer.chrome.com/docs/webstore/api/reference/rest/v2/publishers.items/publish).
 

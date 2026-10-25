@@ -68,6 +68,38 @@ const EXTENSION_IDS: &[&str] = if DEV { &["${STORE_ITEM_ID}"] } else { &["outro-
     expect(() => validateStorePackage(manifest, 'v1.2.3', host)).toThrow('não autoriza');
     expect(() => validateStorePackage(manifest, 'v1.2.3', '')).toThrow('não autoriza');
   });
+
+  it.each([
+    `// "${STORE_ITEM_ID}",`,
+    `/* "${STORE_ITEM_ID}", */`,
+    `/* início /* "${STORE_ITEM_ID}" */ fim */`,
+    `"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", // TODO: "${STORE_ITEM_ID}"`,
+    `concat!("${STORE_ITEM_ID}")`,
+  ])('recusa comentários e expressões dentro da lista estável: %s', (entries) => {
+    const host = `const EXTENSION_IDS: &[&str] = if DEV { &[] } else { &[${entries}\n] };`;
+    expect(() => validateStorePackage(manifest, 'v1.2.3', host)).toThrow('não autoriza');
+  });
+
+  it('aceita uma entrada literal ativa entre comentários', () => {
+    const host = `const EXTENSION_IDS: &[&str] = if DEV { &[] } else { &[
+      // "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", /* outro ID */
+      "${STORE_ITEM_ID}", // loja
+    ] };`;
+    expect(validateStorePackage(manifest, 'v1.2.3', host)).toBe('1.2.3');
+  });
+
+  it('ignora uma declaração inteira dentro de comentário de bloco aninhado', () => {
+    const host = `/* comentário /* interno */
+const EXTENSION_IDS: &[&str] = if DEV { &[] } else { &["${STORE_ITEM_ID}"] };
+*/
+const EXTENSION_IDS: &[&str] = if DEV { &[] } else { &[] };`;
+    expect(() => validateStorePackage(manifest, 'v1.2.3', host)).toThrow('não autoriza');
+  });
+
+  it.each(['/* comentário aberto', '"string aberta'])('recusa fonte incompleta: %s', (source) => {
+    expect(() => validateStorePackage(manifest, 'v1.2.3', source)).toThrow('conferir');
+  });
 });
 
 describe('envio à API v2 da loja', () => {
@@ -116,6 +148,7 @@ describe('envio à API v2 da loja', () => {
       { access_token: 'acesso' },
       { ...item, submittedItemRevisionStatus: previousRevision },
       { ...item, crxVersion: options.version, uploadState: 'IN_PROGRESS' },
+      { ...item, lastAsyncUploadState: 'IN_PROGRESS' },
       {
         ...item,
         lastAsyncUploadState: 'SUCCEEDED',
@@ -124,7 +157,38 @@ describe('envio à API v2 da loja', () => {
       pending,
     ]);
     await expect(submitStorePackage(options, transport)).resolves.toBe('PENDING_REVIEW');
-    expect(transport.fetch).toHaveBeenCalledTimes(5);
+    expect(transport.fetch).toHaveBeenCalledTimes(6);
+  });
+
+  it('ignora o sucesso antigo até observar o upload novo em andamento', async () => {
+    const transport = setup([
+      { access_token: 'acesso' },
+      { ...item, lastAsyncUploadState: 'SUCCEEDED' },
+      { ...item, uploadState: 'IN_PROGRESS' },
+      { ...item, lastAsyncUploadState: 'SUCCEEDED' },
+      { ...item, lastAsyncUploadState: 'IN_PROGRESS' },
+      { ...item, lastAsyncUploadState: 'SUCCEEDED' },
+      pending,
+    ]);
+    await expect(submitStorePackage(options, transport)).resolves.toBe('PENDING_REVIEW');
+    expect(transport.pause).toHaveBeenCalledTimes(3);
+    expect(transport.fetch).toHaveBeenCalledTimes(7);
+    expect(String(transport.fetch.mock.calls[6]?.[0])).toMatch(/:publish$/);
+  });
+
+  it('não publica se só observar sucesso sem uma transição de upload em andamento', async () => {
+    const transport = setup([
+      { access_token: 'acesso' },
+      { ...item, lastAsyncUploadState: 'SUCCEEDED' },
+      { ...item, uploadState: 'IN_PROGRESS' },
+      ...Array.from({ length: 24 }, () => ({ ...item, lastAsyncUploadState: 'SUCCEEDED' })),
+    ]);
+    await expect(submitStorePackage(options, transport)).rejects.toThrow('sucesso confirmado');
+    expect(transport.pause).toHaveBeenCalledTimes(24);
+    expect(transport.fetch).toHaveBeenCalledTimes(27);
+    expect(transport.fetch.mock.calls.some(([url]) => String(url).endsWith(':publish'))).toBe(
+      false,
+    );
   });
 
   it.each([

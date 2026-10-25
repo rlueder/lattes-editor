@@ -29,6 +29,42 @@ function object(value: unknown): Json {
   return value as Json;
 }
 
+/** Preserva strings e quebras de linha; comentários de bloco Rust podem ser aninhados. */
+function withoutRustComments(source: string): string {
+  let result = '';
+  let depth = 0;
+  let quoted = false;
+  for (let i = 0; i < source.length; i++) {
+    const char = source[i]!;
+    const pair = source.slice(i, i + 2);
+    if (depth) {
+      if (pair === '/*') {
+        depth++;
+        i++;
+      } else if (pair === '*/') {
+        depth--;
+        i++;
+      } else if (char === '\n') result += '\n';
+    } else if (quoted) {
+      result += char;
+      if (char === '\\' && i + 1 < source.length) result += source[++i];
+      else if (char === '"') quoted = false;
+    } else if (pair === '//') {
+      while (i + 1 < source.length && source[i + 1] !== '\n') i++;
+      result += ' ';
+    } else if (pair === '/*') {
+      depth = 1;
+      result += ' ';
+      i++;
+    } else {
+      result += char;
+      if (char === '"') quoted = true;
+    }
+  }
+  if (depth || quoted) throw new Error('Não foi possível conferir o código do host nativo.');
+  return result;
+}
+
 export function validateStorePackage(manifest: unknown, tag: string, nativeHost: string): string {
   const data = object(manifest);
   if (tag.trim() !== tag || !/^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(tag)) {
@@ -46,8 +82,15 @@ export function validateStorePackage(manifest: unknown, tag: string, nativeHost:
   ) {
     throw new Error('O ZIP precisa ser o pacote da loja, sem key e com a versão da tag.');
   }
-  const stableIds = /const EXTENSION_IDS[^;]*?else\s*\{\s*&\[([^\]]*)\]/s.exec(nativeHost)?.[1];
-  if (!stableIds?.includes(`"${STORE_ITEM_ID}"`)) {
+  const source = withoutRustComments(nativeHost);
+  const stableIds = /^\s*const EXTENSION_IDS[^;]*?else\s*\{\s*&\[([^\]]*)\]/ms.exec(source)?.[1];
+  // Só aceita a lista literal usada pelo host. Uma expressão Rust pede conferência manual.
+  const literalList = /^\s*(?:"[a-p]{32}"\s*,\s*)*(?:"[a-p]{32}"\s*,?\s*)?$/;
+  if (
+    !stableIds ||
+    !literalList.test(stableIds) ||
+    ![...stableIds.matchAll(/"([a-p]{32})"/g)].some((match) => match[1] === STORE_ITEM_ID)
+  ) {
     throw new Error('O app deste lançamento ainda não autoriza o ID da extensão da loja.');
   }
   return version;
@@ -135,15 +178,20 @@ export async function submitStorePackage(
   // A versão vem do manifest validado antes da rede; não faça uploads pelo painel
   // durante este envio. A concorrência do workflow só serializa seus próprios runs.
   let state = upload.uploadState;
+  let observedInProgress = false;
   for (let attempt = 0; state === 'IN_PROGRESS' && attempt < 24; attempt++) {
     await transport.pause(5000);
     upload = await request(`${endpoint}:fetchStatus`, { headers });
     checkItem(upload);
-    state = upload.lastAsyncUploadState;
+    const next = upload.lastAsyncUploadState;
+    if (next === 'IN_PROGRESS') observedInProgress = true;
+    // SUCCEEDED pode ainda ser do upload anterior. Exige uma transição observada
+    // pelo fetchStatus; o IN_PROGRESS da resposta do POST não basta.
+    if (next !== 'SUCCEEDED' || observedInProgress) state = next;
   }
   if (state !== 'SUCCEEDED') {
     throw new Error(
-      'O upload não terminou com sucesso. Nada foi enviado à revisão. Confira a loja.',
+      'O upload não terminou com sucesso confirmado. Nada foi enviado à revisão. Confira a loja; no caso assíncrono, é preciso observar IN_PROGRESS antes de SUCCEEDED.',
     );
   }
   const submitted = await request(`${endpoint}:publish`, {
