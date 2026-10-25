@@ -24,11 +24,72 @@ falta para publicar e os textos do painel do desenvolvedor.
 - [ ] Conta de desenvolvedor na Chrome Web Store (taxa única de US$ 5).
 - [ ] Primeiro envio do `lattes-editor-extensao-loja.zip` como rascunho. A
       loja mostra o ID da extensão ao criar o item, antes da revisão.
-- [ ] O ID da loja em `EXTENSION_IDS` (`src-tauri/src/conector.rs`), ao lado
+- [ ] Lançar o app com o ID da loja em `EXTENSION_IDS` (`src-tauri/src/conector.rs`), ao lado
       do de desenvolvimento (`elkaiefkldcngjdgelfjhjbljefbemac`), num
       lançamento do app antes de a extensão ser publicada.
 - [ ] Preencher a página e a aba de privacidade com os textos abaixo e mandar
       para revisão.
+
+O item da loja é `kdebkpkdhgaeaaobcbgbckinocnlfbgg`. Esse ID já está no
+host nativo do código atual; o app instalado precisa vir de um lançamento
+que o inclua. O canal Dev continua autorizando só sua própria extensão.
+O nome da página vem do manifest do ZIP enviado, não de um campo editável
+da descrição. Envie o pacote `extensao-loja`, sem a chave da extensão de
+desenvolvimento.
+
+O e-mail de contato fica em **Publisher → Settings** no menu do painel.
+Salve o endereço e conclua a verificação pelo link enviado por e-mail.
+O endereço da conta Google e a URL de suporte do item não substituem isso.
+
+## Envio manual pelo GitHub Actions
+
+O workflow **PROD 3: enviar extensão à Chrome Web Store** pede a tag de um
+lançamento estável já publicado no GitHub e a confirmação do envio. Ele usa
+o ZIP daquele lançamento, não o código mais recente da `main`, e só aceita
+um app cujo host nativo já autorize o ID da loja. A primeira publicação e
+mudanças na visibilidade podem exigir envio pelo painel do Google.
+
+Configuração única:
+
+1. No Google Cloud, habilite a **Chrome Web Store API**, configure a tela
+   de consentimento OAuth e crie um cliente OAuth do tipo **Web application**.
+   Use `https://developers.google.com/oauthplayground` como URI de retorno.
+   Antes de fechar a janela de criação, guarde o Client ID e o Client secret
+   num gerenciador de senhas. Eles serão usados no GitHub e no Playground;
+   o GitHub não revela um segredo depois de salvo, e o Google pode não
+   mostrar novamente o Client secret.
+2. No OAuth Playground, selecione **Use your own OAuth credentials** e
+   preencha esses mesmos valores. Autorize o escopo
+   `https://www.googleapis.com/auth/chromewebstore` com a conta que pode
+   publicar esse item. Troque o código por tokens e guarde o refresh token
+   no gerenciador de senhas. Não use o access token no lugar dele nem cole
+   credenciais em issues ou logs. Antes de gerar o token definitivo, mude o
+   app OAuth externo de **Testing** para **In production**, em **Audience**.
+   No modo de teste, o refresh token desse escopo expira após sete dias.
+3. Em **Settings → Environments** do repositório no GitHub, crie
+   `chrome-web-store`, restrito à `main`. Se houver revisão obrigatória
+   disponível no plano, configure quem aprova os envios.
+4. Nesse ambiente, cadastre a variável `CWS_PUBLISHER_ID`, copiada de
+   **Publisher → Settings** no painel da loja. O workflow também aceita esse
+   ID como segredo; se ambos existirem, usa a variável. Cadastre os segredos
+   `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET` e `CWS_REFRESH_TOKEN`.
+
+Em Actions, escolha o PROD 3, selecione a `main`, informe a tag e marque a
+confirmação. Pelo terminal:
+
+```bash
+gh workflow run extensao-loja.yml --ref main -f tag=v1.0.0 -f confirmar=true
+```
+
+Um workflow aprovado significa que a API aceitou o envio, não que a análise
+do Google terminou. O resumo registra o estado devolvido pela loja. O
+processo não altera descrição, imagens, declarações de privacidade nem
+visibilidade, e não cancela uma revisão pendente. Esses ajustes ficam no
+painel. Credenciais ausentes, versão incompatível ou upload sem confirmação
+de sucesso interrompem o envio antes do pedido de revisão.
+
+Referências: [configuração da API](https://developer.chrome.com/docs/webstore/using-api)
+e [envio à revisão pela API v2](https://developer.chrome.com/docs/webstore/api/reference/rest/v2/publishers.items/publish).
 
 ## Textos para o painel
 
