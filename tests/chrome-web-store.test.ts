@@ -107,6 +107,26 @@ describe('envio à API v2 da loja', () => {
     expect(transport.fetch).toHaveBeenCalledTimes(6);
   });
 
+  it('não usa a revisão anterior como confirmação da versão do upload assíncrono', async () => {
+    const previousRevision = {
+      distributionChannels: [{ crxVersion: '1.2.2' }],
+      state: 'REJECTED',
+    };
+    const transport = setup([
+      { access_token: 'acesso' },
+      { ...item, submittedItemRevisionStatus: previousRevision },
+      { ...item, crxVersion: options.version, uploadState: 'IN_PROGRESS' },
+      {
+        ...item,
+        lastAsyncUploadState: 'SUCCEEDED',
+        submittedItemRevisionStatus: previousRevision,
+      },
+      pending,
+    ]);
+    await expect(submitStorePackage(options, transport)).resolves.toBe('PENDING_REVIEW');
+    expect(transport.fetch).toHaveBeenCalledTimes(5);
+  });
+
   it.each([
     { ...item, warned: true },
     { ...item, takenDown: true },
@@ -126,6 +146,8 @@ describe('envio à API v2 da loja', () => {
     { ...success, uploadState: 'NOT_FOUND' },
     { ...success, uploadState: 'desconhecido' },
     { ...success, crxVersion: '1.2.2' },
+    { ...success, crxVersion: undefined },
+    { ...item, crxVersion: '1.2.2', uploadState: 'IN_PROGRESS' },
     { ...success, itemId: 'outro' },
   ])('não pede revisão depois de upload incorreto: %j', async (upload) => {
     const transport = setup([{ access_token: 'acesso' }, item, upload]);

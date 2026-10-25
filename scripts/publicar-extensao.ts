@@ -124,9 +124,16 @@ export async function submitStorePackage(
     method: 'POST',
   });
   checkItem(upload);
-  if (upload.uploadState === 'SUCCEEDED' && upload.crxVersion !== options.version) {
+  if (
+    (upload.uploadState === 'SUCCEEDED' || Object.hasOwn(upload, 'crxVersion')) &&
+    upload.crxVersion !== options.version
+  ) {
     throw new Error('A versão recebida pela loja difere da versão do lançamento.');
   }
+  // No processamento assíncrono, fetchStatus não expõe a versão do rascunho.
+  // As revisões publicada/submetida podem ser antigas e não provam essa versão.
+  // A versão vem do manifest validado antes da rede; não faça uploads pelo painel
+  // durante este envio. A concorrência do workflow só serializa seus próprios runs.
   let state = upload.uploadState;
   for (let attempt = 0; state === 'IN_PROGRESS' && attempt < 24; attempt++) {
     await transport.pause(5000);

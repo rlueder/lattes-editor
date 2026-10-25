@@ -88,6 +88,16 @@ visibilidade, e não cancela uma revisão pendente. Esses ajustes ficam no
 painel. Credenciais ausentes, versão incompatível ou upload sem confirmação
 de sucesso interrompem o envio antes do pedido de revisão.
 
+A versão é conferida no manifest do ZIP antes de qualquer chamada à API.
+Quando o upload termina na resposta inicial, o script também exige que o
+`crxVersion` devolvido seja o esperado; se esse campo vier numa resposta de
+upload em andamento, ele é conferido também. No processamento assíncrono,
+`fetchStatus` só confirma o estado do upload. As versões que ele expõe são
+das revisões publicada e submetida, não do rascunho recém-carregado. Por
+isso, não envie outro pacote pelo painel ou por outra ferramenta enquanto
+o workflow estiver rodando. O controle de concorrência do GitHub não
+impede esses envios externos.
+
 Referências: [configuração da API](https://developer.chrome.com/docs/webstore/using-api)
 e [envio à revisão pela API v2](https://developer.chrome.com/docs/webstore/api/reference/rest/v2/publishers.items/publish).
 
