@@ -265,6 +265,9 @@ As mensagens têm envelope e versão (`src/bridge/protocol.ts`). No aperto de
 mão (`ola`), cada lado anuncia o que sabe fazer (`src/bridge/compat.ts`), e o
 editor e o painel dizem qual dos dois está desatualizado. Ao abrir, o app se
 registra como host nativo no Chrome, no Brave, no Edge e no Chromium.
+O host estável autoriza a extensão carregada sem compactação e o item
+`kdebkpkdhgaeaaobcbgbckinocnlfbgg` da Chrome Web Store. O host Dev autoriza
+só a extensão Dev; os canais não compartilham essa autorização.
 
 No `pnpm dev`, sem o app, o editor fala com a extensão pelo
 `window.postMessage` da página, por um content script

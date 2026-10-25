@@ -50,12 +50,14 @@ pub const IDENTIFIER: &str = if DEV {
 };
 
 /// Extensões que podem iniciar o host: a de desenvolvimento, com a chave
-/// fixa do manifest (scripts/build-extension.ts). A da Chrome Web Store
-/// entra aqui quando for publicada.
+/// fixa do manifest (scripts/build-extension.ts), e a da Chrome Web Store.
 const EXTENSION_IDS: &[&str] = if DEV {
     &["alopgghbefjbmjomhgoebbjnmppokkgi"]
 } else {
-    &["elkaiefkldcngjdgelfjhjbljefbemac"]
+    &[
+        "elkaiefkldcngjdgelfjhjbljefbemac",
+        "kdebkpkdhgaeaaobcbgbckinocnlfbgg",
+    ]
 };
 
 /// Mensagem maior que isso do navegador é recusada (a fila inteira cabe com folga).
@@ -401,9 +403,12 @@ mod tests {
         assert!(m.contains(r#""path": "C:\\Program Files\\LattesEditor\\app.exe""#));
         if DEV {
             assert!(m.contains("chrome-extension://alopgghbefjbmjomhgoebbjnmppokkgi/"));
+            assert!(!m.contains("chrome-extension://kdebkpkdhgaeaaobcbgbckinocnlfbgg/"));
             assert!(m.contains(r#""name": "lattes_editor.conector_dev""#));
         } else {
             assert!(m.contains("chrome-extension://elkaiefkldcngjdgelfjhjbljefbemac/"));
+            assert!(m.contains("chrome-extension://kdebkpkdhgaeaaobcbgbckinocnlfbgg/"));
+            assert!(!m.contains("chrome-extension://alopgghbefjbmjomhgoebbjnmppokkgi/"));
             assert!(m.contains(r#""name": "lattes_editor.conector""#));
         }
     }
