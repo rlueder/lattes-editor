@@ -139,12 +139,15 @@ O CNPq não avisa quando muda o Lattes. Duas coisas olham por ele:
 
 ## Canal Dev
 
-De hora em hora, o workflow "DEV: montar o LattesEditor Dev" (`dev.yml`)
+Às 9h17 e 21h17 de Brasília (0h17 e 12h17 UTC), o workflow
+"DEV: montar o LattesEditor Dev (duas vezes por dia)" (`dev.yml`)
 olha a `main`: se ela mudou desde o último Dev, se a mudança não é só
 documentação (`docs/`, `site/`, README) e se o CI passou no topo, monta o
 **LattesEditor Dev** nos três sistemas, com a extensão Dev dentro, na
 pré-estreia [`dev`](https://github.com/rlueder/lattes-editor/releases/tag/dev).
-Vários merges na mesma hora dão um build só. Para montar sem esperar a hora:
+Vários merges entre verificações dão um build só. O GitHub pode atrasar ou
+omitir execuções agendadas; os horários não garantem um intervalo exato de 12
+horas entre execuções. Para montar sem esperar o horário:
 
 ```bash
 gh workflow run dev.yml                   # monta se a main mudou
