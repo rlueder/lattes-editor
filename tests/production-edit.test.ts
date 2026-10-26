@@ -371,12 +371,16 @@ describe('alterar campos de uma produção no Lattes simulado', () => {
 
   it('campo que o formulário não tem fica à mão, com o motivo', () => {
     const plan = planAfter((root) => {
-      const item = bySeq(root, '33');
-      const extra = element('INFORMACOES-ADICIONAIS', { 'DESCRICAO-INFORMACOES-ADICIONAIS': 'x' });
-      item.children.push(extra);
+      // O formulário de outra produção bibliográfica não tem DOI (lido em 26/10/2026).
+      const basics = childElements(bySeq(root, '33')).find((c) =>
+        c.name.startsWith('DADOS-BASICOS'),
+      )!;
+      setAttr(basics, 'DOI', '10.1234/novo');
     });
     expect(plan.ops).toEqual([]);
-    expect(plan.unsupported.length).toBeGreaterThan(0);
+    expect(plan.unsupported.map((u) => u.reason)).toEqual([
+      expect.stringMatching(/não tem campo para DOI/),
+    ]);
   });
 });
 

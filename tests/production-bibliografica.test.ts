@@ -148,7 +148,7 @@ function xmlFor(coauthor: boolean): string {
 <CAPITULOS-DE-LIVROS-PUBLICADOS>${i('CAPITULO-DE-LIVRO-PUBLICADO', '49', `<DADOS-BASICOS-DO-CAPITULO TITULO-DO-CAPITULO-DO-LIVRO="Capítulo de Exemplo" ANO="2012"/>`)}</CAPITULOS-DE-LIVROS-PUBLICADOS></LIVROS-E-CAPITULOS>
 <TEXTOS-EM-JORNAIS-OU-REVISTAS>${i('TEXTO-EM-JORNAL-OU-REVISTA', '45', `<DADOS-BASICOS-DO-TEXTO NATUREZA="JORNAL_DE_NOTICIAS" TITULO-DO-TEXTO="Texto de Exemplo" ANO-DO-TEXTO="2013" ${COMMON} FLAG-DIVULGACAO-CIENTIFICA="NAO"/><DETALHAMENTO-DO-TEXTO TITULO-DO-JORNAL-OU-REVISTA="Jornal Exemplo" FORMATO-DATA-DE-PUBLICACAO="DDMMAAAA" DATA-DE-PUBLICACAO="15032013" LOCAL-DE-PUBLICACAO="Porto Alegre"/>`)}</TEXTOS-EM-JORNAIS-OU-REVISTAS>
 <DEMAIS-TIPOS-DE-PRODUCAO-BIBLIOGRAFICA>
-${i('OUTRA-PRODUCAO-BIBLIOGRAFICA', '48', `<DADOS-BASICOS-DE-OUTRA-PRODUCAO NATUREZA="Ensaio" TITULO="Outra de Exemplo" ANO="2016" ${COMMON}/><DETALHAMENTO-DE-OUTRA-PRODUCAO EDITORA="Editora Exemplo"/>`)}
+${i('OUTRA-PRODUCAO-BIBLIOGRAFICA', '48', `<DADOS-BASICOS-DE-OUTRA-PRODUCAO NATUREZA="Ensaio" TITULO="Outra de Exemplo" ANO="2016" ${COMMON} FLAG-DIVULGACAO-CIENTIFICA="NAO"/><DETALHAMENTO-DE-OUTRA-PRODUCAO EDITORA="Editora Exemplo"/>`)}
 ${i('PARTITURA-MUSICAL', '47', `<DADOS-BASICOS-DA-PARTITURA NATUREZA="CORAL" TITULO="Partitura de Exemplo" ANO="2015" ${COMMON}/><DETALHAMENTO-DA-PARTITURA FORMACAO-INSTRUMENTAL="Coro misto" EDITORA="Editora Exemplo" NUMERO-DO-CATALOGO="12"/>`)}
 ${i('PREFACIO-POSFACIO', '50', `<DADOS-BASICOS-DO-PREFACIO-POSFACIO TIPO="PREFACIO" TITULO="Prefácio de Exemplo" ANO="2017"/>`)}
 ${i('TRADUCAO', '46', `<DADOS-BASICOS-DA-TRADUCAO NATUREZA="LIVRO" TITULO="Tradução de Exemplo" ANO="2014" ${COMMON}/><DETALHAMENTO-DA-TRADUCAO NOME-DO-AUTOR-TRADUZIDO="Autor Original" TITULO-DA-OBRA-ORIGINAL="Original" IDIOMA-DA-OBRA-ORIGINAL="Inglês" EDITORA-DA-TRADUCAO="Editora Exemplo"/>`)}
@@ -175,7 +175,7 @@ function planAfter(edit: (root: XElement) => void, coauthor = false) {
 
 function opsAfter(edit: (root: XElement) => void, coauthor = false): ProductionOp[] {
   const plan = planAfter(edit, coauthor);
-  expect(plan.unsupported).toEqual([]);
+  expect(plan.unsupported.map((u) => u.reason)).toEqual([]);
   return plan.ops as ProductionOp[];
 }
 
@@ -299,6 +299,8 @@ const CASES: Case[] = [
   {
     edits: [
       ['DADOS-BASICOS-DO-LIVRO', 'TIPO', 'LIVRO_ORGANIZADO_OU_EDICAO', 'F_COD_PROD', '133'],
+      // A natureza tem código por tipo: texto integral só existe no livro publicado.
+      ['DADOS-BASICOS-DO-LIVRO', 'NATUREZA', 'LIVRO', 'f_cod_sub_prod', '5'],
       [
         'DETALHAMENTO-DO-LIVRO',
         'NOME-DA-EDITORA',
@@ -344,12 +346,65 @@ const CASES: Case[] = [
     edits: [
       ['DADOS-BASICOS-DE-OUTRA-PRODUCAO', 'TITULO', 'Outra Revista', 'f_titulo', 'Outra Revista'],
       ['DETALHAMENTO-DE-OUTRA-PRODUCAO', 'EDITORA', 'Editora Nova', 'f_editora', 'Editora Nova'],
+      // Natureza em texto livre e divulgação científica (formulário lido em 26/10/2026).
+      [
+        'DADOS-BASICOS-DE-OUTRA-PRODUCAO',
+        'FLAG-DIVULGACAO-CIENTIFICA',
+        'SIM',
+        'F_STA_DIVULGACAO_CIENTIFICA',
+        'S',
+      ],
+      ['DADOS-BASICOS-DE-OUTRA-PRODUCAO', 'NATUREZA', 'Resenha', 'f_natureza', 'Resenha'],
     ],
     id: 'outra-bibliografica',
     proc: 'PRC_BIB_OUTRAPROD',
     seq: '48',
   },
 ];
+
+describe('natureza do livro pelo tipo (dominio() de PKG_LVR_CAP.FORM_LVR, lido em 26/10/2026)', () => {
+  const book = (attrs: Record<string, string>) => (root: XElement) => {
+    for (const [k, v] of Object.entries(attrs))
+      setAttr(partOf(root, '44', 'DADOS-BASICOS-DO-LIVRO'), k, v);
+  };
+  const reasons = (edit: (root: XElement) => void) =>
+    planAfter(edit).unsupported.map((u) => u.reason);
+
+  it('a natureza vai pelo código do tipo do livro', () => {
+    const [op] = opsAfter(book({ NATUREZA: 'VERBETE' }));
+    expect(op).toMatchObject({ expect: { f_cod_sub_prod: '2' }, set: { f_cod_sub_prod: '3' } });
+  });
+
+  it('o tipo trocado leva o código da natureza do tipo novo', () => {
+    const [op] = opsAfter((root) => {
+      book({ NATUREZA: 'COLETANEA' })(root);
+    });
+    expect(op).toMatchObject({ set: { f_cod_sub_prod: '1' } });
+    const original = parseXml(xmlFor(false)).root;
+    book({ NATUREZA: 'COLETANEA' })(original);
+    const working = parseXml(xmlFor(false)).root;
+    book({ NATUREZA: 'COLETANEA', TIPO: 'LIVRO_ORGANIZADO_OU_EDICAO' })(working);
+    const plan = planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Item' })),
+      working,
+      { editProduction: true },
+    );
+    expect(plan.unsupported).toEqual([]);
+    expect(plan.ops[0]).toMatchObject({
+      expect: { F_COD_PROD: '131', f_cod_sub_prod: '1' },
+      set: { F_COD_PROD: '133', f_cod_sub_prod: '8' },
+    });
+  });
+
+  it('natureza sem código no tipo, ou tipo novo sem a natureza, fica à mão', () => {
+    expect(reasons(book({ TIPO: 'LIVRO_ORGANIZADO_OU_EDICAO' }))).toEqual([
+      expect.stringMatching(/escolha também uma natureza do tipo novo/),
+    ]);
+    expect(reasons(book({ NATUREZA: 'PERIODICO' }))).toEqual([
+      expect.stringMatching(/^Natureza: a natureza não tem código para este tipo de livro/),
+    ]);
+  });
+});
 
 const applyEdits = (c: Case) => (root: XElement) => {
   for (const [child, attr, value] of c.edits) setAttr(partOf(root, c.seq, child), attr, value);

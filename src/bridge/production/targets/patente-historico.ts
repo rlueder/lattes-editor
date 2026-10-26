@@ -88,8 +88,8 @@ export function historyFields(
  * Lattes a linha é identificada pelo código da situação, então a troca tira a
  * linha de antes e põe a nova com a data (PATENT_DATES.build). Só entre as
  * situações com atributo no registro, e com o registro já acompanhando a troca
- * (linked-attrs.ts). Inferido: que o Lattes aceite a troca assim, como a
- * página faria ao escolher outra situação na mesma linha.
+ * (linked-attrs.ts). É a lixeira e o "Incluir nova" da página (seção 24);
+ * inferido: que o Lattes aceite a troca assim.
  */
 function situationSwap(
   change: Change,

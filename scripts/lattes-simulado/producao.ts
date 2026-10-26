@@ -13,6 +13,7 @@ import idiomas from '../../src/bridge/production/idiomas-lattes.json' with { typ
 import { country, date, language } from '../../src/bridge/production/mappers.ts';
 import { PRODUCTION_TARGETS } from '../../src/bridge/production/targets/index.ts';
 import type { FieldMap, ProductionTarget } from '../../src/bridge/production/types.ts';
+import type { Change } from '../../src/model/changes.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { availabilityToForm } from '../../src/schema/availability.ts';
@@ -65,6 +66,40 @@ function fromForm(element: string, attr: string, map: FieldMap, value: string): 
   return candidates.find((c) => map.toForm!(c) === value);
 }
 
+/**
+ * Os campos dos ganchos de parte (partFields: o tipo do mestrado, a natureza
+ * do livro), com o valor do item como está: chave "FILHO@ATRIBUTO" e os campos
+ * a mais (also) com o valor de agora. Campos virtuais (datas:1) ficam de fora.
+ */
+function partMaps(t: ProductionTarget, item: XElement) {
+  const fields: [string, FieldMap][] = [];
+  const also: [string, string][] = [];
+  for (const [child, hook] of Object.entries(t.partFields ?? {})) {
+    const part = partOf(item, child);
+    if (!part) continue;
+    const change: Change = {
+      element: child,
+      fields: part.attrs.map((a) => ({
+        after: a.value,
+        attr: a.name,
+        before: a.value,
+        label: a.name,
+      })),
+      form: '',
+      key: '',
+      kind: 'alterado',
+      path: [],
+    };
+    const result = hook(change, part, item);
+    if ('reason' in result) continue;
+    for (const [attr, m] of Object.entries(result.fields)) {
+      if (!mapOf(m).field.includes(':')) fields.push([`${child}@${attr}`, mapOf(m)]);
+    }
+    for (const a of result.also ?? []) also.push([a.field, a.after]);
+  }
+  return { also, fields };
+}
+
 function list(state: LattesState, t: ProductionTarget): string {
   const extra = Object.entries(t.list.params ?? {})
     .map(([k, v]) => `&amp;${k}=${v}`)
@@ -82,7 +117,8 @@ function form(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
   if (!req.get('f_seq')) return notFound(t.list.formProc);
   const item = itemsOf(state, t).find((i) => seqOf(i) === req.get('f_seq'));
   if (!item) return html(h.page(t.id, '<p>Registro não encontrado.</p>'));
-  const controls = Object.entries(t.fields).map(([key, m]) => {
+  const parts = partMaps(t, item);
+  const controls = [...Object.entries(t.fields), ...parts.fields].map(([key, m]) => {
     const [child, attr] = key.split('@') as [string, string];
     const { field, toForm } = mapOf(m);
     const raw = getAttr(partOf(item, child) ?? element(''), attr) ?? '';
@@ -92,6 +128,9 @@ function form(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
   // campo de texto com o primeiro valor do tipo, no lugar do rádio).
   if (t.nature && !controls.some((c) => c.includes(`name="${t.nature!.field}"`))) {
     controls.push(h.text(t.nature.field, t.nature.values[0] ?? ''));
+  }
+  for (const [name, value] of parts.also) {
+    if (!controls.some((c) => c.includes(`name="${name}"`))) controls.push(h.hidden(name, value));
   }
   // Os ocultos que a troca da natureza limpa (f_dsc_outra e f_sub_prod da
   // orientação, lidos em 20/10/2026), vazios: o simulado não guarda o subtipo.
@@ -279,18 +318,21 @@ function buildRoutes(): Routes {
 
 /** Os campos da especificação, do POST de volta para o XML; o que não chegou fica como está. */
 export function writeFields(t: ProductionTarget, item: XElement, req: SimRequest): void {
-  for (const [key, m] of Object.entries(t.fields)) {
+  const write = ([key, m]: [string, FieldMap | string]) => {
     const [child, attr] = key.split('@') as [string, string];
     const map = mapOf(m);
     const value = req.get(map.field);
-    if (value === null || value === undefined) continue;
+    if (value === null || value === undefined) return;
     const saved = fromForm(child, attr, map, value);
-    if (saved === undefined) continue;
+    if (saved === undefined) return;
     let part = partOf(item, child);
     if (!part) {
       part = element(child, {});
       insertInSchemaOrder(lattesSchema, item, part);
     }
     setAttr(part, attr, saved);
-  }
+  };
+  Object.entries(t.fields).forEach(write);
+  // Os dos ganchos depois: o código da natureza do livro depende do tipo já gravado.
+  partMaps(t, item).fields.forEach(write);
 }

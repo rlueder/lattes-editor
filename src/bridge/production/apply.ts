@@ -285,6 +285,7 @@ export async function applyProduction(
     if (!virtualBuilt) {
       return result('erro', 'A página do Lattes não trouxe o que o envio monta; nada foi enviado');
     }
+    if ('reason' in virtualBuilt) return result('erro', `${virtualBuilt.reason}; nada foi enviado`);
     chosen = { ...built, ...virtualBuilt, ...chosen };
     // A página carrega esses campos vazios: a releitura não os confere.
     for (const k of Object.keys({ ...built, ...virtualBuilt })) chosenCheck[k] = null;

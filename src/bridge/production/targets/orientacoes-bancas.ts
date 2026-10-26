@@ -20,9 +20,7 @@
 //   certo. Nas outras orientações concluídas, que têm mais de uma, a troca
 //   entre aperfeiçoamento, graduação e iniciação científica vai pelo conector
 //   (nature.ts); de ou para outra natureza, fica à mão;
-// - tipo da orientação (mestrado acadêmico ou profissional, o tipo de outra
-//   natureza): a página o grava em ocultos (f_sub_prod, f_dsc_outra) pelo
-//   atribui(), de uma janela cujos códigos não foram lidos todos;
+// - tipo da orientação de outra natureza (o prompt() do atribui_ot);
 // - identificador do orientando: o oculto f_id_orientado (inferido pelo nome).
 // Sem campo no formulário (o plano diz "não tem"): DOI, órgão, número de
 // páginas, nome do curso em inglês e o tipo de outra banca.
@@ -32,6 +30,7 @@ import { BANCA_PARTICIPANTS } from '../grids.ts';
 import type { LookupSpec } from '../lookups.ts';
 import { byTable, country, language, yesNo } from '../mappers.ts';
 import type { FieldMap, GridField, ProductionTarget } from '../types.ts';
+import { masterKind } from './orientacao-tipo.ts';
 
 /**
  * Nível da lista de cursos pela natureza, como o retnivel() de cada página
@@ -261,6 +260,9 @@ function orientation(o: Orientation, done: boolean): ProductionTarget {
       [o.detail, ['NUMERO-ID-ORIENTADO', 'NUMERO-ID-ORIENTANDO'], WHY.studentId],
     ]),
     nature: { field: 'F_COD_PROD', values: o.nature },
+    ...(['41', 'A41'].includes(o.nature[0]!)
+      ? { partFields: { [o.basics]: masterKind(done) } }
+      : {}),
     // testa_nivel(): f_dsc_outra sempre, e f_sub_prod, que segue a natureza
     // (lido em 20/10/2026); a outra natureza pede a janela do subtipo.
     ...(o.natures

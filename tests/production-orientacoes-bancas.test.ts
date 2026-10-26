@@ -208,13 +208,54 @@ describe('orientações: plano', () => {
     expect(reasonOf(set('43', 'DADOS-BASICOS', { NATUREZA: 'Outra' }))).toMatch(
       /^Natureza: Tese de doutorado é o tipo do item no Lattes/,
     );
-    // O tipo do mestrado sai da janela do subtipo, que não foi lida.
-    expect(reasonOf(set('41', 'DADOS-BASICOS', { TIPO: 'PROFISSIONALIZANTE' }))).toMatch(
-      /^Tipo: o tipo sai de uma janela do Lattes/,
-    );
     expect(reasonOf(set('41', 'DADOS-BASICOS', { DOI: '10.1/x' }))).toMatch(
       /O formulário deste tipo no Lattes não tem: DOI/,
     );
+  });
+});
+
+describe('tipo do mestrado (dominio() de pkg_orient.form, lido em 26/10/2026)', () => {
+  it('acadêmico para profissional: o código em f_sub_prod e o rótulo em f_dsc_outra', () => {
+    const op = onlyOp(set('41', 'DADOS-BASICOS', { TIPO: 'PROFISSIONALIZANTE' }));
+    expect(op).toMatchObject({
+      expect: { f_dsc_outra: 'Acadêmico', f_sub_prod: '29' },
+      set: { f_dsc_outra: 'Profissional', f_sub_prod: '30' },
+    });
+    expect(op.lookups).toBeUndefined();
+  });
+
+  it('com curso no item, o curso é buscado de novo no nível do profissional', () => {
+    const withCourse = (root: XElement) => {
+      set('41', 'DETALHAMENTO', { 'CODIGO-CURSO': '00000001' })(root);
+    };
+    const original = parseXml(XML).root;
+    withCourse(original);
+    const working = parseXml(XML).root;
+    withCourse(working);
+    set('41', 'DADOS-BASICOS', { TIPO: 'PROFISSIONALIZANTE' })(working);
+    const plan = planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Item' })),
+      working,
+      { editProduction: true, productionLookups: true },
+    );
+    expect(plan.unsupported).toEqual([]);
+    expect((plan.ops[0] as ProductionOp).lookups).toEqual({
+      course: { before: '00000001', code: '00000001' },
+      subProd: '30',
+    });
+  });
+
+  it('valor fora do formulário fica à mão', () => {
+    expect(reasonOf(set('41', 'DADOS-BASICOS', { TIPO: 'OUTRO' }))).toMatch(
+      /^Tipo: valor que o formulário de orientação do Lattes não tem/,
+    );
+  });
+
+  it('no Lattes simulado: grava e confere', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp(set('41', 'DADOS-BASICOS', { TIPO: 'PROFISSIONALIZANTE' }));
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes).at(-1)!.fields).toMatchObject({ f_sub_prod: '30' });
   });
 });
 

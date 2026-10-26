@@ -84,9 +84,10 @@ const CLEARS = { 'f_sta_inovacao=N': { f_txt_potencial: '' } };
 const HOLDER = { attr: 'NOME-DO-DEPOSITANTE', child: REG };
 
 /**
- * O titular instituição (titularInstProvider): a página o escolhe pela busca
- * de instituições do Lattes (pkg_titular_inst.sele_inst, um POST cuja
- * resposta não foi lida), que o conector não faz neste formulário.
+ * O titular instituição (titularInstProvider): a página copia a linha do
+ * vetor titularInstDP do menu, ou a escolhe na janela
+ * PKG_TITULAR_INST_PATENTE.sele_inst (seção 24); tipoInst e staValidado não
+ * foram lidos, e o conector não monta a linha.
  */
 const INSTITUTION_HOLDER_REASON =
   'O titular instituição sai da busca de instituições do Lattes, que o conector não faz neste formulário; troque no Lattes';

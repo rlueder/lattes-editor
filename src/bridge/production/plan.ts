@@ -460,6 +460,10 @@ export function planProduction(
   if (rows.length === 0) return { reason: 'Nada a enviar' };
   // A natureza trocada no lugar: os ocultos limpos e a instituição e o curso
   // escolhidos de novo com o nível dela (nature.ts), que recusa se já há escolhas.
+  if (partMap?.lookups) {
+    if (lookups) return { reason: 'Troque o tipo num envio e a instituição ou o curso em outro' };
+    lookups = partMap.lookups;
+  }
   const swapped = planNatureSwap(target, change, item, set, expect, siblings, lookups);
   if (swapped && 'reason' in swapped) return swapped;
   if (swapped?.lookups) lookups = swapped.lookups;

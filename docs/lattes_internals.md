@@ -1530,7 +1530,9 @@ O que o conector faz com isso (`src/bridge/production/holders.ts` e
   cultivares, desenho industrial) a ligação com `NOME-DO-DEPOSITANTE` é
   inferida pela patente.
 - O titular instituição (`NOME-DO-TITULAR`, `titularInstProvider`) fica à
-  mão: sai da busca de instituições do Lattes (`pkg_titular_inst.sele_inst`).
+  mão: a linha da grade é a do vetor `titularInstDP` do menu, ou sai da
+  janela `PKG_TITULAR_INST_PATENTE.sele_inst` (seção 24), e a forma de
+  `tipoInst` e `staValidado` não foi lida.
 - A mudança de autores deixa de fora as linhas de `AUTORES` com o nome de um
   depositante, antes e depois, para conferir com o `autorProvider`, que não
   as tem, e para nunca mandar o depositante como autor. A cópia só se
@@ -1552,10 +1554,14 @@ O que o conector faz com isso (`src/bridge/production/holders.ts` e
 - A situação trocada por outra entre essas quatro (Depósito para Concessão,
   por exemplo) tira a linha do código de antes e põe a do código novo com a
   mesma data, num envio só. No editor, a data passa junto do atributo do
-  registro da situação de antes para o da nova. **Inferido**: que o Lattes
-  aceite a troca assim, como a página faria com outra opção no combo da
-  linha, e que a exportação grave a descrição com o rótulo do combo (só
-  "Depósito" foi conferida). A situação repetida em outra linha fica à mão.
+  registro da situação de antes para o da nova. É o que a página faz com a
+  lixeira e o "Incluir nova", que põe a linha no começo da grade só com
+  `id`, `contato` e `endereco` (o combo da própria linha monta as opções de
+  uma chave que não existe, seção 24). **Inferido**: que o Lattes aceite a
+  troca assim, e que a exportação grave a descrição com o rótulo do combo
+  (só "Depósito" foi conferida). A situação repetida em outra linha fica à
+  mão, e a linha com `deletable` "false" (a página esconde a lixeira dela,
+  menos na concessão) não se exclui: o envio para antes do POST.
 - O status da situação não tem controle na página: a grade guarda só a
   situação e a data. O editor o mostra só para ler.
 
@@ -1880,9 +1886,10 @@ O conector, com isso (`src/bridge/production/nature.ts`):
   responde "Não informe o curso para natureza Supervisão de pós-doutorado", e
   o `testa_nivel()` limpa os códigos do curso. O editor mostra esse curso só
   para ler.
-- O tipo do mestrado (acadêmico ou profissional) e o de outra natureza vão em
-  `f_sub_prod`. Pelo `retnivel()`, 30 e 37 são o profissional; o código do
-  acadêmico não foi lido. Fica à mão.
+- O tipo do mestrado vai em `f_sub_prod` com o rótulo em `f_dsc_outra`
+  (seção 24). Trocar entre acadêmico e profissional com curso no item busca
+  o curso de novo no nível do tipo novo. O tipo de outra natureza é texto
+  livre que a página pede num `prompt()` e fica à mão.
 
 As páginas de edição das bancas não foram lidas. No censo de 15/10/2026, o
 rádio `F_COD_PROD` da banca de trabalho tem A11 Mestrado, A12 Doutorado, A13
@@ -2561,3 +2568,49 @@ que o conector já usava. A lista da interface compartilha esses valores com
 o planejador; o tipo vazio é recusado antes do envio. Isso não libera a
 inclusão de licença, que ainda exige uma data de nascimento ou adoção fora
 do XML (seção 21).
+
+## 24. Recaptura de 26/10/2026
+
+Só leitura, por GET, com o `inspect()` do censo na sessão do dono (a opção
+`editOf` abre a alteração do primeiro item de uma lista). O currículo não
+tinha livros, orientações, bancas, projetos de pesquisa nem patentes: dessas,
+foram lidas as páginas de inclusão, com os scripts. Os arquivos crus não são
+versionados. **Observado**, menos onde está marcado.
+
+- **Natureza do livro** (`PKG_LVR_CAP.FORM_LVR`). O `dominio()` abre um combo
+  com as opções no próprio script, pelo tipo: 131 tem 1 Coletânea, 2 Texto
+  integral, 3 Verbete e 4 Outro; 133 tem 5 Livro, 6 Anais, 7 Catálogo,
+  8 Coletânea, 9 Enciclopédia, 10 Periódico e 11 Outro. O `atribui()` grava
+  em `f_cod_sub_prod` só o primeiro caractere do código (10 e 11 viram 1) e
+  o rótulo em `f_sub_prod`, desabilitado. O `check()` não exige a natureza.
+  O conector manda o código pelo tipo; Periódico e o Outro da organização
+  ficam à mão. **Inferido:** o valor do XML pelo rótulo.
+- **Outra produção bibliográfica** (`prc_bib_outraprod`, `GN_BIB`, lida na
+  inclusão e numa alteração). Natureza em texto livre (`f_natureza`, até
+  100; o `dominio()` só sugere "Trabalho de Conclusão de Curso"), título,
+  ano, país, idioma, meio, home page, `F_RELEV`,
+  `F_STA_DIVULGACAO_CIENTIFICA` (S/N), editora, cidade, páginas, ISSN/ISBN,
+  `f_ref` e os textos em inglês. Não há DOI nem natureza em inglês.
+- **Tipo da orientação** (`pkg_orient.form`). O `dominio()` do mestrado tem
+  29 Acadêmico e 30 Profissional nas concluídas, 36 e 37 nas em andamento; o
+  `atribui()` grava o código em `f_sub_prod` e o rótulo em `f_dsc_outra`. A
+  outra natureza abre "Outro Tipo" e pede o texto num `prompt()`, que vai em
+  `f_dsc_outra`. **Inferido:** `ACADEMICO` e `PROFISSIONALIZANTE` pelos
+  rótulos.
+- **Banca de trabalho** (`PKG_BANCA_TRAB.form`). O `testa_nivel()` da banca
+  limpa só a instituição e o curso (com confirmação); o `check()` aceita
+  `f_sub_prod` só no mestrado. Um script move um dos rádios de natureza na
+  carga da página, e a ordem que os índices de `sele_inst()` e `curso()` usam
+  depende disso: a troca entre qualificação de mestrado e de doutorado fica
+  à mão até a ordem ser lida com a página carregada.
+- **Patente e registros** (`pkg_patente_registro.form`). O titular instituição
+  sai de uma sugestão sobre o vetor `titularInstDP` do menu, cuja linha vai
+  inteira para a grade, ou da janela `PKG_TITULAR_INST_PATENTE.sele_inst`. O
+  combo da linha da grade de situações monta as opções da chave `contato`,
+  que as entradas não têm (elas têm `situacao`): trocar a situação na linha
+  mandaria o rótulo vazio. O "Incluir nova" usa `unshift` com `id`,
+  `contato` e `endereco`, recusa repetidas menos o licenciamento (7), e a
+  lixeira some na linha com `deletable` "false", menos na concessão (3). O
+  ambiente do programa de computador sai do vetor `programaDP` da página (97
+  entradas, `l`, `n` e `c`, até 3 por item); `f_ambiente` leva os `c`. Como a
+  exportação grava `AMBIENTE` não foi visto.

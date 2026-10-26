@@ -43,6 +43,9 @@ export function withListValues(raw: string): { rewritten: number; xml: string } 
         'ID Rede Social: 1, Nome Rede Social: GitHub, Endereço: https://example.org/teste',
       );
     }
+    // A natureza do livro tem código por tipo (bibliografica-livros.ts): com
+    // Coletânea, que os dois tipos têm, a troca do tipo também se mede.
+    if (item.name === 'DADOS-BASICOS-DO-LIVRO') setAttr(item, 'NATUREZA', 'COLETANEA');
     const kind = REGISTRY_KINDS[item.name];
     if (!kind) continue;
     for (const reg of elementsOf(item).filter((e) => e.name === 'REGISTRO-OU-PATENTE')) {

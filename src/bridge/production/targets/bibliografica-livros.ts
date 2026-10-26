@@ -9,16 +9,85 @@
 // (PKG_LVR_CAP.FORM_CAP, GN_CAP) foi lido em 18/10/2026, na inclusão que a
 // escolha "Capítulo" da lista abre.
 
+import type { Change } from '../../../model/changes.ts';
+import { getAttr, type XElement } from '../../../model/xml.ts';
 import { byTable, country, date, language, media, yesNo } from '../mappers.ts';
-import type { ProductionTarget } from '../types.ts';
+import type { FieldMap, ProductionTarget } from '../types.ts';
 import { ALL_GRIDS, under } from './bibliografica-comum.ts';
+
+/**
+ * A natureza do livro pelo tipo: o dominio() da página (lido em 26/10/2026)
+ * oferece, para 131, 1 Coletânea, 2 Texto integral, 3 Verbete e 4 Outro, e,
+ * para 133, 5 Livro, 6 Anais, 7 Catálogo, 8 Coletânea, 9 Enciclopédia,
+ * 10 Periódico e 11 Outro. O atribui() grava em f_cod_sub_prod só o primeiro
+ * caractere do código, então 10 e 11 chegam como 1: Periódico e o Outro da
+ * organização ficam à mão. Inferido: o valor do XML pelo rótulo da opção.
+ */
+const BOOK_NATURE: Record<string, Record<string, string>> = {
+  LIVRO_ORGANIZADO_OU_EDICAO: {
+    ANAIS: '6',
+    CATALOGO: '7',
+    COLETANEA: '8',
+    ENCICLOPEDIA: '9',
+    LIVRO: '5',
+    NAO_INFORMADO: '',
+  },
+  LIVRO_PUBLICADO: {
+    COLETANEA: '1',
+    NAO_INFORMADO: '',
+    OUTRA: '4',
+    TEXTO_INTEGRAL: '2',
+    VERBETE: '3',
+  },
+};
+
+const BOOK_NATURE_BY_HAND =
+  'a natureza não tem código para este tipo de livro no formulário do Lattes (Periódico e o Outro da organização chegam cortados); troque no Lattes';
+
+/**
+ * A natureza vai pelo código do tipo do livro, o de antes para conferir e o
+ * de agora para gravar. Trocar só o tipo leva junto o código da natureza.
+ */
+function bookNature(
+  change: Change,
+  el: XElement,
+):
+  | {
+      also: { after: string; before: string; field: string; label: string }[];
+      fields: Record<string, FieldMap>;
+    }
+  | { reason: string } {
+  const typeChange = change.fields.find((f) => f.attr === 'TIPO');
+  const natureChange = change.fields.find((f) => f.attr === 'NATUREZA');
+  const typeAfter = getAttr(el, 'TIPO') ?? '';
+  const typeBefore = typeChange?.before ?? typeAfter;
+  const code = (type: string, nature: string) => BOOK_NATURE[type]?.[nature];
+  const fields: Record<string, FieldMap> = {
+    NATUREZA: {
+      field: 'f_cod_sub_prod',
+      toForm: (v, side) => code(side === 'before' ? typeBefore : typeAfter, v),
+      unmapped: `Natureza: ${BOOK_NATURE_BY_HAND}`,
+    },
+  };
+  if (!typeChange || natureChange) return { also: [], fields };
+  const nature = getAttr(el, 'NATUREZA') ?? '';
+  const after = code(typeAfter, nature);
+  const before = code(typeBefore, nature);
+  if (after === undefined || before === undefined) {
+    return { reason: `Tipo: ${BOOK_NATURE_BY_HAND}; escolha também uma natureza do tipo novo` };
+  }
+  return {
+    also: after === before ? [] : [{ after, before, field: 'f_cod_sub_prod', label: 'Natureza' }],
+    fields,
+  };
+}
 
 /**
  * Livro publicado ou organizado (GN_LIVRO, POST PKG_LVR_CAP.FORM_LVR), na
  * lista pkg_lvr_cap.lista (catálogo de menus do reconhecimento). Inferido: o
  * tipo pelos rótulos de F_COD_PROD (131 "Livro publicado", 133 "Organização de
- * obra publicada"). A natureza fica à mão: o f_sub_prod é texto com o código
- * num oculto (f_cod_sub_prod), e as opções dele não foram lidas.
+ * obra publicada"). A natureza vai pelo código em f_cod_sub_prod
+ * (BOOK_NATURE); o texto dela (f_sub_prod) é desabilitado e não vai no envio.
  */
 const LIVRO: ProductionTarget = {
   doi: { duplicate: true },
@@ -55,10 +124,7 @@ const LIVRO: ProductionTarget = {
   grids: [...ALL_GRIDS],
   id: 'livro',
   list: { formProc: 'PKG_LVR_CAP.FORM_LVR', proc: 'pkg_lvr_cap.lista' },
-  manual: {
-    'DADOS-BASICOS-DO-LIVRO@NATUREZA':
-      'a natureza do livro no Lattes sai de uma escolha cujas opções o censo não leu',
-  },
+  partFields: { 'DADOS-BASICOS-DO-LIVRO': bookNature },
   title: { attr: 'TITULO-DO-LIVRO', child: 'DADOS-BASICOS-DO-LIVRO' },
   year: { attr: 'ANO', child: 'DADOS-BASICOS-DO-LIVRO' },
 };

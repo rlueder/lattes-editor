@@ -80,9 +80,10 @@ afterEach(async () => {
   open = undefined;
 });
 
-async function lattes(xml = XML) {
+async function lattes(xml = XML, options: Parameters<typeof withLattesSimulado>[0] = {}) {
   open = await withLattesSimulado({
     xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${xml}`),
+    ...options,
   });
   return open;
 }
@@ -470,6 +471,25 @@ describe('patente: o histórico de situações', () => {
     const grid = postsOf(sim)[0]!.fields.f_dados_grid_datas!;
     expect(grid).toMatch(/<contato>Concessão<\/contato>\r?\n\t<endereco>12\/03\/2007<\/endereco>/);
     expect(grid).not.toMatch(/<contato>Depósito<\/contato>/);
+  });
+
+  it('a linha que a página não deixa excluir: o envio para, sem POST', async () => {
+    const ops = opsAfter((root) => {
+      edit(history, 'DESCRICAO-SITUACAO-PATENTE', 'Concessão')(root);
+    }, HOLDER_XML);
+    const sim = await lattes(HOLDER_XML, {
+      intercept: async (req, _state, next) => {
+        const out = await next();
+        return /patente_registro\.form/i.test(req.proc) && req.method === 'GET' && 'html' in out
+          ? { ...out, html: out.html.replace('"deletable":"true"', '"deletable":"false"') }
+          : out;
+      },
+    });
+    expect(await applyOp(ops[0]!, sim.port)).toMatchObject({
+      detail: expect.stringMatching(/"Depósito" da patente não pode ser excluída no Lattes/),
+      status: 'erro',
+    });
+    expect(postsOf(sim)).toEqual([]);
   });
 
   it('a situação trocada sem o registro acompanhar, repetida ou sem data no registro fica à mão', () => {
