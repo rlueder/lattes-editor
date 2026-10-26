@@ -51,6 +51,7 @@ import {
   array2xml,
   enderecoGrids,
   readContactGrids,
+  sameSocialPrivacy,
   sameSocialSet,
   socialOf,
   type SocialRow,
@@ -317,12 +318,14 @@ export async function applyOp(
     // (endereco-contatos.ts), nunca os ocultos vazios com que a página carrega.
     let contactGrids: ReturnType<typeof readContactGrids>;
     let socialWanted: SocialRow[] | undefined;
+    let socialExpected: NonNullable<ReturnType<typeof readContactGrids>>['social'] | undefined;
     if (op.kind === 'endereco') {
       const grids = enderecoGrids(op, before.html);
       if ('status' in grids) return result(grids.status, grids.detail);
       set = { ...set, ...grids.set };
       contactGrids = grids.read;
       socialWanted = grids.wanted;
+      socialExpected = grids.socialRows;
     }
     // Identificação: a grade do ORCID e os nomes em citação, como o check() (ident-grids.ts).
     if (op.kind === 'identificacao') {
@@ -406,7 +409,11 @@ export async function applyOp(
     ];
     if (contactGrids) {
       const now = readContactGrids(after.html);
-      if (!now || !sameSocialSet(socialOf(now.social), socialWanted ?? [])) {
+      if (
+        !now ||
+        !sameSocialSet(socialOf(now.social), socialWanted ?? []) ||
+        !sameSocialPrivacy(now.social, socialExpected ?? [])
+      ) {
         notSaved.push('f_dados_grid');
       }
       if (!now || array2xml(now.contacts) !== array2xml(contactGrids.contacts)) {

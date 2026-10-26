@@ -1,9 +1,11 @@
 # Como o editor do Currículo Lattes funciona por dentro
 
 O editor web do Lattes (`wwws.cnpq.br/cvlattesweb`) por dentro, para quem
-mexe no conector. Tudo aqui foi visto numa sessão logada do próprio dono do
-currículo: quase sempre só com leitura (páginas baixadas por GET), e, onde a
-seção diz, com um envio acompanhado num item de teste. Cada seção traz a
+mexe no conector. O reconhecimento foi feito na sessão logada do próprio
+dono do currículo: quase sempre só com leitura (páginas baixadas por GET), e,
+onde a seção diz, com um envio acompanhado num item de teste. A seção 23
+também confere a estrutura de XMLs públicos, sem acessar sessão alguma.
+Cada seção traz a
 data; o primeiro reconhecimento é de 10/10/2026, os formulários de edição
 são de 11/10/2026, e as seções 16 a 22 vão de 14 a 21/10/2026.
 
@@ -599,9 +601,10 @@ os vínculos de uma atuação sem página e para lista que a comparação não
 conhece. Extensão anterior a isso só manda a página de conferência, e o
 diagnóstico diz que comparou só produções e eventos.
 
-**No conector** (`src/bridge/publish.ts`, desligado por `PUBLISH_ENABLED`,
-nunca rodou no Lattes real; os testes rodam contra o Lattes simulado), o
-caminho é:
+**No conector** (`src/bridge/publish.ts`, habilitado por `PUBLISH_ENABLED`),
+o caminho abaixo está coberto no Lattes simulado. A integração completa do
+app ao CNPq ainda não foi validada num envio acompanhado; essa validação
+continua pendente antes do lançamento.
 
 1. GET de `pkg_publicar.mostrar_cv`, que o editor mostra antes do envio: o
    texto ao lado da caixa `f_chk` como declaração, o link "Termo de Uso", e os
@@ -612,7 +615,7 @@ caminho é:
    link do Termo de Uso, também não.
 2. A caixa da declaração começa desmarcada a cada abertura do painel, não é
    guardada e só a pessoa a marca. Sem ela marcada, nem o editor, nem a
-   extensão, nem o núcleo na aba fazem pedido algum.
+   extensão, nem o núcleo na aba iniciam a publicação.
 3. Os dois POSTs ajax, na ordem da página. `{"status": false}` na consulta de
    raça ou cor e `"existe": true` na de e-mail param o envio e mandam a pessoa
    à tela do Lattes; o que cada um quer dizer é **inferido** do nome do
@@ -624,6 +627,9 @@ caminho é:
 5. A conferência é pelo menu (`PKG_MENU.menu`), relido até quatro vezes com 3
    segundos entre elas: "Última publicação" de hoje e sem o aviso de
    pendência. O alerta da resposta não conta como prova.
+   Mesmo sem resposta do pedido de envio, o núcleo tenta ler o menu, sem
+   repetir a publicação. Sem confirmação, o botão continua bloqueado até
+   reabrir o painel e conferir o estado no Lattes.
 
 Os links "Ver a versão em português" e "em inglês" do painel abrem a página de
 conferência com `f_idioma=1` e `f_idioma=2` (este **inferido**).
@@ -2488,3 +2494,48 @@ responde 404 sem parâmetros. `PKG_PROJETO.pp_lista_autores` tem um campo de
 busca, a lista de pessoas (cada uma como `p[i]="<código>#<nome>@<citação>"`)
 e o link `pkg_projeto.novo_equipe?f_tipo=A&f_nome=`
 para incluir quem não está na lista.
+
+## 23. Valores em XML público e opções capturadas (26/10/2026)
+
+Conferência estrutural, sem sessão do dono e sem enviar nada ao CNPq. Foram
+lidos em memória os oito XMLs de
+[`RafaelQSantos-RQS/LattesHub`, `database/data/lattes/`](https://github.com/RafaelQSantos-RQS/LattesHub/tree/HEAD/database/data/lattes).
+Nenhum currículo foi copiado para o repositório. **Observado nesses XMLs:**
+
+- `TIPO-GRADUACAO="N"` em duas exportações. A captura `formacao-FA-1`
+  oferece N (normal) e S (sanduíche).
+- `CATEGORIA` da patente como `Produto`, `Processo` e `Produto e Processo`.
+  `Outra` é a quarta opção da captura; sua grafia no XML segue **inferida**,
+  como já era no mapeamento do conector.
+- `DISPONIBILIDADE` de processos como `RESTRITA`, `IRRESTRITA` e
+  `NAO_INFORMADO`. Nos produtos foram encontrados os dois últimos. Os três
+  códigos também constam no enumerado do software no XSD.
+
+Nos XMLs públicos de
+[`LiaCasatiRamaldes/vira-lattes-db`, `cv/`](https://github.com/LiaCasatiRamaldes/vira-lattes-db/tree/a6bddccdbcf10e077f0f8f525f6e0ec2eb1cff69/cv)
+e [`NARizzardi/UFPR`, `1002/lattes/lattes-cvs/`](https://github.com/NARizzardi/UFPR/tree/37a78374e73a533a327f4aa8b79a17c6745d3730/1002/lattes/lattes-cvs),
+também foram encontrados S na graduação, `RESTRITA` e `IRRESTRITA` no
+relatório de pesquisa e os três códigos no trabalho técnico. Esses
+exemplos documentam a grafia; não substituem um teste de gravação atual.
+
+As capturas de produto, processo, relatório de pesquisa e trabalho técnico
+têm o mesmo select `f_disp`: vazio, `Restrita`, `Irrestrita`. A ligação por
+valor de 18/10/2026 confirmou os rótulos sem distinguir caixa. O editor
+oferece os códigos em maiúsculas e o conector os traduz para o select;
+`NAO_INFORMADO` corresponde à opção vazia. Esta última correspondência é
+**inferida**, conferida na releitura do formulário, mas ainda sem teste de
+gravação acompanhado.
+
+O XML de teste público
+[`nsi-iff/lattes_api`, `spec/resources/1234567890123456.xml`](https://github.com/nsi-iff/lattes_api/blob/HEAD/spec/resources/1234567890123456.xml)
+usa `RACA-OU-COR="Parda"`. Isso não comprova uma gravação atual no Lattes.
+A lista do editor vem das seis opções de `fnro_id_raca_cor` já capturadas;
+o conector mantém o mapeamento anterior por rótulo, sem acento nem caixa.
+
+O tipo de licença também usa as três opções capturadas (`f_tipo_licenca`):
+Maternidade (M), Paternidade (P) e Adoção (A). `MATERNIDADE` consta no XSD;
+`PATERNIDADE` e `ADOCAO` continuam **inferidos** do rótulo, como no mapeamento
+que o conector já usava. A lista da interface compartilha esses valores com
+o planejador; o tipo vazio é recusado antes do envio. Isso não libera a
+inclusão de licença, que ainda exige uma data de nascimento ou adoção fora
+do XML (seção 21).

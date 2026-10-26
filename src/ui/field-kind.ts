@@ -59,6 +59,9 @@ const CODE_VALUES: Record<string, Record<string, string>> = {
     N: 'Normal',
     S: 'Sanduíche',
   },
+  // N e S aparecem em XML público e nas opções capturadas do formulário de
+  // graduação (seção 23 de docs/lattes_internals.md).
+  'GRADUACAO TIPO-GRADUACAO': { N: 'Normal', S: 'Sanduíche' },
   'MESTRADO TIPO-MESTRADO': { N: 'Normal', S: 'Sanduíche' },
 };
 

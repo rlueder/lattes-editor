@@ -11,6 +11,7 @@
 // atributo, pelo nome e pelo rótulo do campo. As naturezas e os tipos (rádio
 // F_COD_PROD, lista F_SUB_PROD) se ligam ao enumerado pelo rótulo da opção.
 
+import { availabilityToForm } from '../../../schema/availability.ts';
 import { byTable } from '../mappers.ts';
 import type { FieldMap, ProductionTarget } from '../types.ts';
 import {
@@ -346,7 +347,7 @@ const RADIO_TV = demais({
 const RELATORIO_PESQUISA = demais({
   code: '2I',
   details: {
-    DISPONIBILIDADE: { field: 'f_disp', toForm: oneOf(['Restrita', 'Irrestrita']) },
+    DISPONIBILIDADE: { field: 'f_disp', toForm: availabilityToForm },
     'INSTITUICAO-FINANCIADORA': 'f_inst',
     'NOME-DO-PROJETO': 'f_projeto',
     'NUMERO-DE-PAGINAS': 'f_paginas',

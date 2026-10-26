@@ -193,7 +193,7 @@ própria montagem (`ApplyGates`, em `apply.ts`).
 | `IMPORT_ENABLED`                 | `importar`                      | Ligada; conferir o currículo depois de cada importação (`lattes_internals.md`, seção 13)                         |
 | `COMPL_ENDERECO_LOOKUPS_ENABLED` | `buscas-complementar-endereco`  | Desligada: as listas de cursos de curta duração vieram vazias nos testes, e o endereço não tinha caso reversível |
 | `PROJECT_ORGAN_ENABLED`          | `orgao-projeto`                 | Desligada: o Lattes recebeu o órgão novo e manteve o antigo (18/10/2026)                                         |
-| `PUBLISH_ENABLED`                | `enviar-cnpq`                   | Desligada até um envio acompanhado                                                                               |
+| `PUBLISH_ENABLED`                | `publicar-cnpq`                 | Ligada com declaração por tentativa; validação acompanhada do app ao CNPq pendente antes do lançamento           |
 
 Fica à mão, com o motivo na tela (`src/bridge/atuacao-by-hand.ts` e os
 `fieldAbsent` de cada alvo): o que o formulário do Lattes não tem (nome do
@@ -203,7 +203,10 @@ não a tem: inclui-se outra atuação); o órgão de um projeto; mais de um
 depositante de patente e o titular instituição; incluir, tirar ou trocar
 financiadores, produções ou orientações ligadas a um projeto.
 `node scripts/cobertura-conector.ts` mede quantos campos do editor vão pelo
-conector, com o motivo do que falta.
+conector, com o motivo do que falta. A medição testa o planejamento com dados
+sintéticos, não comprova gravações no Lattes real. As porcentagens são
+truncadas em uma casa decimal para não mostrar 100% onde ainda há lacunas.
+Ela também não esgota todas as opções e combinações de valores de cada campo.
 
 ### Freio de escrita
 
@@ -291,13 +294,42 @@ No `pnpm dev`, sem o app, o editor fala com a extensão pelo
 - **Listas** (`src/bridge/lattes-lists.ts`): só com GET. Áreas do conhecimento
   (o vetor `areaDP` do menu, lido como literal) e agências quando a cópia
   passou de um dia; instituições enquanto a pessoa digita; cursos de uma
-  instituição quando ela pede.
+  instituição quando ela pede. Pós-doutorado e livre-docência usam a busca
+  de instituição da lista AP, sem curso; só pós-doutorado oferece agência.
+  `src/ui/live-production-pairs.ts` liga as buscas de orientações e bancas à
+  especificação do conector, conforme a natureza do item.
+  `src/schema/availability.ts` mantém os códigos de disponibilidade e sua
+  conversão para o select dos formulários técnicos, inclusive o vazio.
+  `src/schema/license-types.ts` compartilha os tipos de licença entre a
+  lista da interface e o planejador.
+  `src/model/contact-edit.ts` localiza trechos de e-mail e URL em contatos
+  existentes e troca só o valor, sem reconstruir IDs, rótulos ou separadores.
+  `src/ui/ContactFields.tsx` oferece a edição; formatos desconhecidos e redes
+  repetidas ficam somente para leitura. O envio preserva a privacidade da
+  linha existente e recusa uma troca de URL ambígua entre redes repetidas.
+  A releitura compara também os IDs e a privacidade das redes; uma mudança
+  inesperada volta como divergência, mesmo que a URL nova tenha gravado.
 - **Importar** (`src/bridge/importar.ts`): envia um arquivo só com os itens
   novos, marca os módulos e o ano e para na resposta do passo 2.
 - **Enviar ao CNPq** (`src/bridge/publish.ts`, `src/import-export/PublishPanel.tsx`):
-  desligado. O painel mostra o que vai ser publicado e a declaração lida da
-  tela de envio; a caixa começa desmarcada a cada abertura. Em `pnpm dev`,
-  `?publicar` mostra a caixa e o botão, e a extensão continua recusando.
+  o painel mostra o que vai ser publicado e a declaração lida da tela de
+  envio; a caixa começa desmarcada a cada abertura. O pedido exige a mesma
+  declaração que foi marcada; uma nova leitura faz o aceite deixar de valer
+  já na renderização, sem esperar um efeito. O núcleo confere essa mesma
+  declaração na releitura, a sessão do currículo aberto confirmada pelo menu atual e as consultas de
+  raça ou cor e e-mail antes de um único envio. Pedidos malformados são
+  recusados antes de qualquer consulta. A ativação está coberta no simulado;
+  falta a validação acompanhada do app ao CNPq antes do lançamento.
+  `enviar-cnpq` permite ler a tela, inclusive com extensão antiga; o botão
+  exige a capacidade de escrita `publicar-cnpq` e a conexão ativa. Sem ela,
+  o painel pede para atualizar a extensão, sem tentar publicar.
+  A prévia de desenvolvimento não permite enviar, mesmo com a declaração
+  de exemplo marcada.
+  `src/bridge/publish-status.ts` reúne as mensagens, a checagem de ocupação
+  e a data local usada na confirmação da publicação.
+  Se a resposta do pedido de publicação se perde, o núcleo ainda confere o
+  menu. Só repete leituras, nunca o pedido de publicação; sem confirmação,
+  devolve `nao-confirmado` com `sent: true` e mantém o botão bloqueado.
 
 ### O Lattes simulado
 

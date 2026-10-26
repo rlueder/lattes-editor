@@ -13,6 +13,11 @@ pnpm dev:lattes --porta=5300 --importar=descartar
 O currículo de partida é `fixtures/demo.xml`; `--xml=` troca por outro
 arquivo, sempre sintético. O estado vive só enquanto o processo roda.
 
+A disponibilidade nas produções técnicas vai ao formulário como `Restrita`,
+`Irrestrita` ou vazio e volta ao XML como `RESTRITA`, `IRRESTRITA` ou
+`NAO_INFORMADO`. As fontes e as correspondências ainda inferidas estão na
+seção 23 de `docs/lattes_internals.md`.
+
 Nos testes, `tests/helpers/lattes-simulado.ts` sobe o servidor numa porta livre
 e entrega as portas do conector (`LattesPort`, `ExportPort`, `ImportPort`,
 `PhotoPort`) feitas como as da extensão. `withSmallLattes` usa um currículo

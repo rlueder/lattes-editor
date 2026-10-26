@@ -4,9 +4,10 @@
 // XML é a da seção "Atributos de cada formulário capturado" do relatório do
 // censo; "observado" quando o censo comparou com itens do currículo.
 
+import { availabilityToForm } from '../../../schema/availability.ts';
 import { byTable, country, language, media, yesNo } from '../mappers.ts';
 import type { ProductionTarget } from '../types.ts';
-import { ALL_GRIDS, basics, INFO, MEDIA, oneOf, under } from './comum-tecnica-artistica.ts';
+import { ALL_GRIDS, basics, INFO, MEDIA, under } from './comum-tecnica-artistica.ts';
 import { TECNICA_DEMAIS_TARGETS } from './tecnica-demais.ts';
 
 /**
@@ -38,7 +39,10 @@ const TRABALHO_TECNICO: ProductionTarget = {
     'DADOS-BASICOS-DO-TRABALHO-TECNICO@TITULO-DO-TRABALHO-TECNICO': 'f_titulo',
     'DADOS-BASICOS-DO-TRABALHO-TECNICO@TITULO-DO-TRABALHO-TECNICO-INGLES': 'f_titulo_en',
     'DETALHAMENTO-DO-TRABALHO-TECNICO@CIDADE-DO-TRABALHO': 'f_cidade',
-    'DETALHAMENTO-DO-TRABALHO-TECNICO@DISPONIBILIDADE': 'f_disp',
+    'DETALHAMENTO-DO-TRABALHO-TECNICO@DISPONIBILIDADE': {
+      field: 'f_disp',
+      toForm: availabilityToForm,
+    },
     'DETALHAMENTO-DO-TRABALHO-TECNICO@DURACAO-EM-MESES': 'f_duracao',
     'DETALHAMENTO-DO-TRABALHO-TECNICO@FINALIDADE': 'f_finalidade',
     'DETALHAMENTO-DO-TRABALHO-TECNICO@INSTITUICAO-FINANCIADORA': 'f_inst',
@@ -55,7 +59,7 @@ const TRABALHO_TECNICO: ProductionTarget = {
 };
 
 /** Disponibilidade (f_disp), com o valor de cada opção igual ao rótulo. */
-const AVAILABILITY = { field: 'f_disp', toForm: oneOf(['Restrita', 'Irrestrita']) };
+const AVAILABILITY = { field: 'f_disp', toForm: availabilityToForm };
 
 /** Potencial de inovação: o rádio f_sta_inovacao, S ou N (os rótulos vieram trocados no censo). */
 const INNOVATION = { field: 'f_sta_inovacao', toForm: yesNo };

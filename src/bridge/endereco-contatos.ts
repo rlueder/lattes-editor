@@ -88,14 +88,30 @@ export function socialGrid(
   current: readonly GridRow[],
   types: readonly GridRow[],
   after: readonly SocialRow[],
-): { rows: GridRow[] } | { unknown: string } {
+): { ambiguous: string } | { rows: GridRow[] } | { unknown: string } {
   const rows: GridRow[] = [];
   for (const r of after) {
-    const old = current.find((c) => c.id !== undefined && key(socialOf([c])[0]!) === key(r));
+    const old = current.find(
+      (c) => c.id !== undefined && c.id !== '' && key(socialOf([c])[0]!) === key(r),
+    );
     if (old) {
       rows.push(old);
       continue;
     }
+    // Ao editar só o endereço de uma rede já cadastrada, a privacidade e o id
+    // continuam os da linha. Não transforma uma rede privada em pública.
+    const sameNetwork = (name: unknown) =>
+      String(name ?? '')
+        .trim()
+        .toLowerCase() === r.name.trim().toLowerCase();
+    const prior = current.filter(
+      (c) => c.id !== undefined && c.id !== '' && sameNetwork(c.redeSocial),
+    );
+    if (prior.length === 1 && after.filter((a) => sameNetwork(a.name)).length === 1) {
+      rows.push({ ...prior[0], endereco: r.url });
+      continue;
+    }
+    if (prior.length > 0) return { ambiguous: r.name };
     const type = types.find(
       (t) =>
         String(t.redeSocial ?? '')
@@ -121,6 +137,25 @@ export function socialGrid(
 export const sameSocialSet = (a: readonly SocialRow[], b: readonly SocialRow[]) =>
   a.length === b.length && [...a].map(key).sort().join('\n') === [...b].map(key).sort().join('\n');
 
+/** A releitura também confere os IDs e a privacidade, sem depender da ordem das linhas. */
+export function sameSocialPrivacy(a: readonly GridRow[], b: readonly GridRow[]): boolean {
+  const signatures = (rows: readonly GridRow[]) =>
+    rows
+      .filter((row) => row.id !== undefined && row.id !== '')
+      .map((row) =>
+        JSON.stringify([
+          String(row.redeSocial ?? '')
+            .trim()
+            .toLowerCase(),
+          String(row.endereco ?? '').trim(),
+          String(row.id),
+          String(row.privacidade ?? ''),
+        ]),
+      )
+      .sort();
+  return JSON.stringify(signatures(a)) === JSON.stringify(signatures(b));
+}
+
 /** Os tipos de rede social que a página oferece (vetor redesSociais). */
 export const socialTypes = (html: string): GridRow[] =>
   (readProvider(html, 'redesSociais') ?? []).filter((t) => t.id !== undefined);
@@ -137,6 +172,7 @@ export function enderecoGrids(
   | {
       read: NonNullable<ReturnType<typeof readContactGrids>>;
       set: FieldValues;
+      socialRows: GridRow[];
       wanted: SocialRow[];
     } {
   const read = readContactGrids(html);
@@ -156,12 +192,19 @@ export function enderecoGrids(
   const social = op.social
     ? socialGrid(read.social, socialTypes(html), op.social.after)
     : { rows: read.social };
+  if ('ambiguous' in social) {
+    return {
+      detail: `Há mais de um registro da rede ${social.ambiguous}; edite no Lattes para preservar a privacidade de cada um.`,
+      status: 'erro',
+    };
+  }
   if ('unknown' in social) {
     return { detail: `Rede social que o Lattes não tem: ${social.unknown}`, status: 'erro' };
   }
   return {
     read,
     set: { f_dados_grid: array2xml(social.rows), f_dados_grid_contatos: array2xml(read.contacts) },
+    socialRows: social.rows,
     wanted: op.social?.after ?? current,
   };
 }

@@ -36,17 +36,19 @@
 import { scanForms } from '../census/html-scan.ts';
 import { encodeLatin1Form, type Pairs } from './form.ts';
 import { decodeHtmlEntities, plainText } from './html-text.ts';
-import { isLogonPage } from './lattes-html.ts';
+import { cvCodeFrom, isLogonPage, lattesIdFrom, sameCv } from './lattes-html.ts';
 import { lattesStatusFrom } from './lattes-status.ts';
 import { labelsFor, radioIdsOf, squash, termsText } from './send-screen-labels.ts';
 
+export { localDay, publishBusy, publishMessage } from './publish-status.ts';
+
 /**
- * Desligado até um envio acompanhado no Lattes real, como as outras
- * gravações do conector. Desligado, o editor mostra o que vai ser publicado e
- * a declaração, mas manda a pessoa enviar pelo Lattes, e a extensão recusa o
- * pedido.
+ * O envio exige a declaração marcada nesta tentativa e a releitura da tela.
+ * Esta chave permite desligar o caminho inteiro, inclusive na extensão.
+ * A sequência tem observação real (seção 10); a ativação no app ainda precisa
+ * de validação acompanhada antes do lançamento.
  */
-export const PUBLISH_ENABLED = false;
+export const PUBLISH_ENABLED = true;
 
 export interface PublishPort {
   /** GET de um caminho relativo a /cvlattesweb/; texto decodificado de Latin-1. */
@@ -102,6 +104,19 @@ export interface PublishRequest {
   english: boolean;
   /** Valor de f_idioma, uma das opções da tela (ou "1", o observado). */
   language: string;
+}
+
+/** A mensagem atravessa JSON; a tipagem sozinha não valida o que chegou. */
+export function isPublishRequest(value: unknown): value is PublishRequest {
+  if (!value || typeof value !== 'object') return false;
+  const request = value as Record<string, unknown>;
+  return (
+    typeof request.declarationAccepted === 'boolean' &&
+    typeof request.english === 'boolean' &&
+    ['declarationText', 'emailAlternative', 'emailContact', 'language'].every(
+      (field) => typeof request[field] === 'string',
+    )
+  );
 }
 
 /** Por que o envio parou, ou "publicado" quando o menu confirmou. */
@@ -254,6 +269,8 @@ export function missingControls(screen: SendScreen): string[] {
 
 /** O motivo de não poder enviar daqui com o que a tela tem e o que a pessoa escolheu. */
 export function requestProblem(req: PublishRequest, screen?: SendScreen): string | undefined {
+  if (!isPublishRequest(req))
+    return 'O pedido de envio está incompleto ou tem um valor inválido. Nada foi enviado.';
   if (req.declarationAccepted !== true) {
     return 'Marque a declaração para enviar.';
   }
@@ -323,6 +340,8 @@ export function publishedOn(menuHtml: string, today: string): boolean {
 export interface PublishOptions {
   /** A chave (PUBLISH_ENABLED); só os testes passam outro valor. */
   enabled?: boolean;
+  /** Identificador do currículo aberto no editor, conferido no menu atual. */
+  expectedLattesId?: string;
   /** AAAA-MM-DD de hoje, no fuso da pessoa (o do Lattes). */
   today: string;
   /** Quantas vezes reler o menu depois do envio, e quanto esperar entre elas. */
@@ -374,6 +393,12 @@ export async function publishCv(
   if (!(options.enabled ?? PUBLISH_ENABLED)) {
     return { detail: 'O envio ao CNPq pelo editor está desligado.', outcome: 'desligado' };
   }
+  if (!isPublishRequest(req)) {
+    return {
+      detail: 'O pedido de envio está incompleto ou tem um valor inválido. Nada foi enviado.',
+      outcome: 'erro',
+    };
+  }
   if (req.declarationAccepted !== true) {
     return { detail: 'A declaração não foi marcada; nada foi enviado.', outcome: 'declaracao' };
   }
@@ -388,6 +413,20 @@ export async function publishCv(
       outcome: 'mudou',
     };
   }
+  // O DOM da aba pode ser de uma sessão anterior. O identificador do menu
+  // atual confirma o currículo; f_cod sozinho não substitui essa identidade.
+  const menuCode = cvCodeFrom(menuBefore.html);
+  const wrongCv = options.expectedLattesId
+    ? !sameCv(options.expectedLattesId, lattesIdFrom(menuBefore.html))
+    : !!code && menuCode !== code;
+  if (wrongCv) {
+    return {
+      detail:
+        'O menu atual do Lattes não corresponde à sessão conferida. Reabra o painel antes de enviar.',
+      outcome: 'outro-cv',
+    };
+  }
+  const currentCode = options.expectedLattesId && code ? menuCode : code;
   if (!before.pending) {
     return {
       detail: 'O menu do Lattes não tem o aviso de alterações não enviadas: não há o que publicar.',
@@ -395,7 +434,7 @@ export async function publishCv(
       outcome: 'nada-a-publicar',
     };
   }
-  const read = await readSendScreenFrom(port, code);
+  const read = await readSendScreenFrom(port, currentCode);
   if (!read.screen) {
     return {
       detail: read.detail,
@@ -407,7 +446,7 @@ export async function publishCv(
     const changed = req.declarationText !== read.screen.declaration;
     return { detail: problem, outcome: changed ? 'mudou' : 'erro' };
   }
-  const cod = code!;
+  const cod = currentCode!;
 
   const race = await port.post(
     'pkg_publicar.racapreenchida_raca_cor',
@@ -450,17 +489,28 @@ export async function publishCv(
     }
   }
 
-  const sent = await port.get(`pkg_publicar.enviar?${encodeLatin1Form(sendPairs(cod, req))}`);
+  let answered = false;
+  try {
+    const sent = await port.get(`pkg_publicar.enviar?${encodeLatin1Form(sendPairs(cod, req))}`);
+    answered = sent.html.includes(SENT_ALERT);
+  } catch {
+    // A resposta perdida não diz se o CNPq recebeu o pedido. Só o menu é
+    // relido; o GET de envio nunca é repetido nesta tentativa.
+  }
   // O alerta da resposta não prova nada; a sessão caída na resposta também
   // não diz se o envio entrou. Nos dois casos, quem responde é o menu.
-  const answered = sent.html.includes(SENT_ALERT);
-
   const wait = options.wait ?? sleep;
   const attempts = options.verifyAttempts ?? 4;
   let menu = '';
   for (let i = 0; i < attempts; i++) {
     if (i > 0) await wait(options.verifyDelayMs ?? 3000);
-    const res = await port.get('PKG_MENU.menu');
+    let res: Awaited<ReturnType<PublishPort['get']>>;
+    try {
+      res = await port.get('PKG_MENU.menu');
+    } catch {
+      // Uma leitura perdida ainda pode ser conferida nas tentativas restantes.
+      continue;
+    }
     if (isLogonPage(res.html, res.url)) {
       return {
         detail:
@@ -493,51 +543,4 @@ export async function publishCv(
     outcome: 'nao-confirmado',
     sent: true,
   };
-}
-
-/** O que dizer depois de um envio, a partir do resultado. */
-export function publishMessage(result: PublishResult): string {
-  switch (result.outcome) {
-    case 'publicado':
-      return 'Publicado. O menu do Lattes mostra a publicação de hoje e não tem mais alterações pendentes.';
-    case 'consentimento':
-      return 'Aceite o aviso da extensão antes de enviar.';
-    case 'sem-aba':
-      return 'A extensão não achou o Lattes aberto. Entre no currículo numa aba do navegador e tente de novo.';
-    case 'sessao':
-      return result.detail ?? 'A sessão do Lattes caiu. Entre de novo e tente outra vez.';
-    case 'outro-cv':
-      return result.detail ?? 'A sessão aberta no Lattes é de outro currículo; nada foi enviado.';
-    case 'desligado':
-      return 'O envio ao CNPq pelo editor está desligado. Envie pela tela do Lattes.';
-    default:
-      return result.detail ?? 'O envio não foi feito.';
-  }
-}
-
-/**
- * O envio não começa com a fila, a conferência do contrato, a foto, o
- * Importar ou outro envio em andamento: todos usam a mesma sessão e a mesma
- * aba.
- */
-export function publishBusy(busy: {
-  importing: boolean;
-  photo: boolean;
-  publishing: boolean;
-  queue: boolean;
-  verifying: boolean;
-}): PublishResult | undefined {
-  if (Object.values(busy).some(Boolean)) {
-    return {
-      detail: 'A extensão já está enviando algo ao Lattes. Espere terminar e tente de novo.',
-      outcome: 'erro',
-    };
-  }
-  return undefined;
-}
-
-/** AAAA-MM-DD de uma data, no fuso local (o Lattes mostra a data sem hora). */
-export function localDay(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }

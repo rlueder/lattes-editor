@@ -11,6 +11,7 @@
 // ligação de cada campo do trabalho técnico com o atributo do XML.
 
 import { childElements, getAttr, type XElement } from '../../src/model/xml.ts';
+import { availabilityToForm } from '../../src/schema/availability.ts';
 import type { LattesState } from './estado.ts';
 import { GRID_HIDDEN, gridScripts, techWorkPost } from './grades.ts';
 import * as h from './html.ts';
@@ -87,7 +88,14 @@ function techWorkForm(req: SimRequest, state: LattesState): SimResponse {
     row('Finalidade', h.text('f_finalidade', value(d, 'FINALIDADE'), { maxLength: 255 })),
     row('Duração em meses', h.text('f_duracao', value(d, 'DURACAO-EM-MESES'), { maxLength: 5 })),
     row('Número de páginas', h.text('f_paginas', value(d, 'NUMERO-DE-PAGINAS'), { maxLength: 5 })),
-    row('Disponibilidade', h.select('f_disp', h.capturedList('L3'), value(d, 'DISPONIBILIDADE'))),
+    row(
+      'Disponibilidade',
+      h.select(
+        'f_disp',
+        h.capturedList('L3'),
+        availabilityToForm(value(d, 'DISPONIBILIDADE')) ?? '',
+      ),
+    ),
     row('Cidade', h.text('f_cidade', value(d, 'CIDADE-DO-TRABALHO'), { maxLength: 255 })),
     row(
       'Instituição promotora',

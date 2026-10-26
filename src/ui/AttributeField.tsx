@@ -4,7 +4,6 @@
 import { type ReactNode, useEffect, useId, useState } from 'react';
 
 import { attributeLabelIn, elementLabel, enumLabel } from '../labels/labels.ts';
-import { parseEmails, parseSocial } from '../model/contacts.ts';
 import { applyLinkedAttrs, followsCountry, writesOwnCode } from '../model/linked-attrs.ts';
 import { repairMojibake } from '../model/mojibake.ts';
 import { getAttr, setAttr, type XElement } from '../model/xml.ts';
@@ -15,6 +14,7 @@ import {
   typedChoices,
 } from '../schema/typed-choices.ts';
 import type { AttributeSpec } from '../schema/types.ts';
+import { ContactFields } from './ContactFields.tsx';
 import { DateField } from './DateField.tsx';
 import { displayValue } from './display.ts';
 import { useDraft, usePartKey } from './draft-context.ts';
@@ -138,37 +138,8 @@ export function AttributeField({
     );
   }
 
-  if (el.name === 'ENDERECO' && (name === 'ELETRONICO' || name === 'REDE-SOCIAL') && value) {
-    // Serializado pelo Lattes num texto só: mostrado lido, editado no próprio Lattes.
-    const emails = name === 'ELETRONICO' ? parseEmails(value) : [];
-    const social = name === 'REDE-SOCIAL' ? parseSocial(value) : [];
-    if (emails.length > 0 || social.length > 0) {
-      return (
-        <div className="field field-readonly" title="Vem da exportação; edite no Lattes">
-          <span className="field-label">{text}</span>
-          <ul className="contact-list">
-            {emails.map((c) => (
-              <li key={c.email}>
-                <span className="field-copy-row">
-                  <span className="contact-value">{c.email}</span>
-                  {c.address && <span className="muted contact-kind">{c.address}</span>}
-                </span>
-              </li>
-            ))}
-            {social.map((c) => (
-              <li key={c.url}>
-                <span className="field-copy-row">
-                  <a className="contact-value" href={c.url} rel="noreferrer" target="_blank">
-                    {c.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
-                  </a>
-                  <span className="muted contact-kind">{c.name}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      );
-    }
+  if (el.name === 'ENDERECO' && (name === 'ELETRONICO' || name === 'REDE-SOCIAL')) {
+    return <ContactFields attr={name} label={text} raw={value} onCommit={commit} />;
   }
 
   // Item que já está no Lattes, campo que o formulário do Lattes não tem:

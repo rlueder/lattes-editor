@@ -127,10 +127,6 @@ ligação do formulário com os elementos do XML foi conferida.
 - DADOS-BASICOS-DA-APRESENTACAO-DE-TRABALHO@NATUREZA: opções do Lattes sem valor conhecido no XSD (7 valores): 2J2 (Conferência ou palestra) (aceita: a ligação por valor bateu em todos os itens de teste de 18/10/2026, sem contradição, mas o mapa das opções que não bateram pelo rótulo se perdia (link.ts só guardava o mapa nas ligações por enumeração; corrigido): o valor exato fica para a próxima passada)
 - DADOS-BASICOS-DA-TRADUCAO@NATUREZA: opções do Lattes sem valor conhecido no XSD (4 valores): 1A9 (Outra) (aceita: a ligação por valor bateu em todos os itens de teste de 18/10/2026, sem contradição, mas o mapa das opções que não bateram pelo rótulo se perdia (link.ts só guardava o mapa nas ligações por enumeração; corrigido): o valor exato fica para a próxima passada)
 - DETALHAMENTO-DA-MUSICA@TIPO-DE-EVENTO: o campo f_tpo_evento tem opções no Lattes e o editor mostra texto livre (aceita: nos itens de teste de 18/10/2026 o texto só bateu sem acento e caixa em 4 de 7, com 3 contradições: a grafia exata do XML não está firme para virar lista)
-- DETALHAMENTO-DO-PROCESSOS-OU-TECNICAS@DISPONIBILIDADE: o campo f_disp tem opções no Lattes e o editor mostra texto livre (aceita: o XML guarda o texto da opção (Restrita, Irrestrita), mas nos itens de teste de 18/10/2026 só bateu sem acento e caixa: a grafia exata não está firme para virar lista)
-- DETALHAMENTO-DO-PRODUTO-TECNOLOGICO@DISPONIBILIDADE: o campo f_disp tem opções no Lattes e o editor mostra texto livre (aceita: o XML guarda o texto da opção (Restrita, Irrestrita), mas nos itens de teste de 18/10/2026 só bateu sem acento e caixa: a grafia exata não está firme para virar lista)
-- DETALHAMENTO-DO-RELATORIO-DE-PESQUISA@DISPONIBILIDADE: o campo f_disp tem opções no Lattes e o editor mostra texto livre (aceita: o XML guarda o texto da opção (Restrita, Irrestrita), mas nos itens de teste de 18/10/2026 só bateu sem acento e caixa: a grafia exata não está firme para virar lista)
-- DETALHAMENTO-DO-TRABALHO-TECNICO@DISPONIBILIDADE: o campo f_disp tem opções no Lattes e o editor mostra texto livre (aceita: o XML guarda o texto da opção (Restrita, Irrestrita), mas a grafia exata não foi registrada na captura de 15/10/2026; a próxima registra em spelling)
 
 ## Lacunas prováveis de opções (ligação inferida)
 
@@ -139,7 +135,6 @@ não cobra estas até a passada de edição observar a ligação.
 
 - DADOS-GERAIS@PAIS-DE-NACIONALIDADE: novas no Lattes: República Tcheca, República Tcheca
 - DADOS-GERAIS@SEXO: opções do Lattes sem valor conhecido no XSD (2 valores): M (), F ()
-- LICENCA@TIPO-LICENCA: opções do Lattes sem valor conhecido no XSD (1 valores): P (Paternidade), A (Adoção)
 - DADOS-BASICOS-DO-PROGRAMA-DE-RADIO-OU-TV@MEIO-DE-DIVULGACAO: opções do Lattes sem valor conhecido no XSD (9 valores): O (Outrooutro)
 - DADOS-GERAIS@PCD: o campo f_pcd tem opções no Lattes e o editor mostra texto livre
 

@@ -187,6 +187,10 @@ export const SCREEN_TIMEOUT_MS = 30_000;
 export const canReadSendScreen = (features: readonly string[]): boolean =>
   features.includes('enviar-cnpq');
 
+/** Extensões antigas anunciam a leitura, mas ainda recusam publicar. */
+export const canSendCv = (features: readonly string[]): boolean =>
+  features.includes('publicar-cnpq');
+
 /**
  * Em que pé está a leitura da tela de envio: esperando, ou o que dizer.
  * Sem a capacidade, o pedido nem sai; sem resposta no prazo, não fica

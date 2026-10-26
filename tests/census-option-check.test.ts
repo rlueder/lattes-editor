@@ -102,6 +102,15 @@ describe('censo: opções do Lattes contra o controle do editor', () => {
     );
   });
 
+  it('a opção vazia de disponibilidade corresponde a NAO_INFORMADO no XML', () => {
+    const where = 'produto:DETALHAMENTO-DO-PRODUTO-TECNOLOGICO@DISPONIBILIDADE';
+    const field = { name: 'f_disp', type: 'select-one' };
+    const opts = [o(''), o('Restrita', 'Restrita'), o('Irrestrita', 'Irrestrita')];
+    expect(checkOptions(where, field, opts, []).found).toEqual([]);
+    expect(checkOptions(where, field, opts.slice(1), []).found).not.toEqual([]);
+    expect(checkOptions(where, field, [...opts, o('Nova', 'Nova')], []).found).not.toEqual([]);
+  });
+
   it('enumeração do XSD: pelo rótulo, pelo código no fim do valor, ou pelo observado', () => {
     const status = 't:MESTRADO@STATUS-DO-CURSO';
     expect(

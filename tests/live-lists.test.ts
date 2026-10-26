@@ -241,6 +241,43 @@ describe('que campo vira qual lista', () => {
     expect(liveKind(work, 'NOME-INSTITUICAO', ALL)).toBeUndefined();
     expect(liveKind(doc, 'NOME-INSTITUICAO', { ...ALL, search: false })).toBeUndefined();
   });
+
+  it.each([
+    ['POS-DOUTORADO', '5'],
+    ['LIVRE-DOCENCIA', '6'],
+  ])('%s oferece a instituição da lista AP, sem inventar um curso', (name, level) => {
+    const item = el(
+      `<${name} CODIGO-INSTITUICAO="000000000001" NOME-INSTITUICAO="Instituição A"/>`,
+    );
+    expect(livePairs(name)).toMatchObject({
+      institution: { code: 'CODIGO-INSTITUICAO', name: 'NOME-INSTITUICAO' },
+      production: false,
+      searchLevel: level,
+    });
+    expect(livePairs(name)?.course).toBeUndefined();
+    expect(liveKind(item, 'NOME-INSTITUICAO', ALL)).toBe('instituicao');
+    expect(liveKind(item, 'NOME-INSTITUICAO', NONE)).toBeUndefined();
+    expect(liveKind(item, 'NOME-CURSO', ALL)).toBeUndefined();
+    expect(
+      applyInstitution(item, {
+        code: 'V000000000002',
+        label: 'Instituição B',
+        name: 'Instituição B',
+      }),
+    ).toBe(true);
+    expect(getAttr(item, 'CODIGO-INSTITUICAO')).toBe('000000000002');
+    expect(getAttr(item, 'NOME-INSTITUICAO')).toBe('Instituição B');
+    expect(getAttr(item, 'CODIGO-CURSO')).toBeUndefined();
+    expect(getAttr(item, 'NOME-CURSO')).toBeUndefined();
+  });
+
+  it('a livre-docência não oferece uma agência que o formulário AP não tem', () => {
+    expect(livePairs('LIVRE-DOCENCIA')?.agency).toBeUndefined();
+    expect(livePairs('POS-DOUTORADO')?.agency).toMatchObject({
+      code: 'CODIGO-AGENCIA-FINANCIADORA',
+      name: 'NOME-AGENCIA',
+    });
+  });
 });
 
 describe('formação complementar e endereço profissional', () => {

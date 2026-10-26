@@ -54,6 +54,18 @@ de outra exportação ou de outro programa; cada item é comparado com o
 currículo antes de entrar, e o app aponta a duplicata provável e o motivo.
 Use o botão circular × para fechar o histórico ou um formulário.
 
+Em pós-doutorado e livre-docência, a instituição também é escolhida pela
+busca do Lattes. Esses formulários não têm curso; a agência aparece só no
+pós-doutorado.
+
+Raça ou cor, tipo de graduação, tipo de licença e categoria da patente têm listas de opções.
+A disponibilidade de produtos, processos, relatórios de pesquisa e trabalhos
+técnicos também é escolhida por lista, inclusive quando não foi informada.
+
+Em Endereço, você pode editar e-mails e URLs das redes sociais já cadastradas,
+quando o formato da exportação é reconhecido. Incluir ou remover contatos
+continua no Lattes. A troca de URL mantém a privacidade que a rede já tinha.
+
 O **Diagnóstico do currículo**, no ⚙, confere o currículo inteiro: campos
 obrigatórios, valores fora das listas do Lattes, anos, autores, DOI, ISSN,
 duplicatas e vínculos antigos ainda marcados como atuais. Só aponta; nada muda
@@ -91,8 +103,11 @@ O que o conector grava fica pendente no Lattes até "Enviar ao CNPq", e o
 Lattes não mostra nem descarta essas pendências. Por isso o app guarda o
 registro do que gravou. Uma gravação que não voltou conferida bloqueia o
 "Enviar ao CNPq" do editor até você conferir o item no Lattes. O terceiro
-passo mostra o que vai ser publicado e a declaração do CNPq; por enquanto, o
-envio em si é feito no Lattes.
+passo mostra o que vai ser publicado e a declaração lida do CNPq. Confira os
+dados e marque a declaração para publicar pelo app. Ela começa desmarcada a
+cada abertura e não fica guardada. A extensão envia uma vez e confere o menu
+do Lattes; se a confirmação se perder, o app pede para conferir antes de
+tentar novamente.
 
 ## Privacidade
 

@@ -359,7 +359,10 @@ const connector = {
       return { detail: 'O pedido de envio chegou ilegível à aba do Lattes.', outcome: 'erro' };
     }
     try {
-      return await publishCv(publishPort, cvCodeFrom(menu), req.request, { today: req.today });
+      return await publishCv(publishPort, cvCodeFrom(menu), req.request, {
+        expectedLattesId: expected,
+        today: req.today,
+      });
     } catch {
       return {
         detail:

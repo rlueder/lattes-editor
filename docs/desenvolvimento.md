@@ -29,13 +29,13 @@ reais, os títulos não existem e os DOIs usam o prefixo de teste do Crossref
 
 Prévias no `pnpm dev`, sem Lattes nem extensão:
 
-| Endereço                 | Mostra                                                                                                                      |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `?simular-atualizacao`   | O aviso de versão nova e "Verificar atualizações" no ⚙ (`=nenhuma`, `=falha`)                                               |
-| `?simular-foto`          | O lápis da foto e a troca (`=falha` para o erro)                                                                            |
-| `?primeiro-uso=<estado>` | Um estado fixo da tela de primeiro uso (`src/dev/onboarding-preview.ts`)                                                    |
-| `?simular-envio`         | A janela "Enviar ao Lattes" com uma tela de envio de exemplo (`src/dev/send-screen-preview.ts`); `&publicar` mostra a caixa |
-| `?itens-teste`           | O painel dos itens de teste do censo (`lattes-formularios/itens-de-teste.md`)                                               |
+| Endereço                 | Mostra                                                                                                           |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `?simular-atualizacao`   | O aviso de versão nova e "Verificar atualizações" no ⚙ (`=nenhuma`, `=falha`)                                    |
+| `?simular-foto`          | O lápis da foto e a troca (`=falha` para o erro)                                                                 |
+| `?primeiro-uso=<estado>` | Um estado fixo da tela de primeiro uso (`src/dev/onboarding-preview.ts`)                                         |
+| `?simular-envio`         | A janela "Enviar ao Lattes" com uma tela de envio de exemplo (`src/dev/send-screen-preview.ts`), sem sessão real |
+| `?itens-teste`           | O painel dos itens de teste do censo (`lattes-formularios/itens-de-teste.md`)                                    |
 
 ## Ícones das seções
 
@@ -87,6 +87,8 @@ pnpm typecheck
 pnpm lint
 cd src-tauri && cargo test && cargo clippy -- -D warnings
 pnpm test:censo-isolation # os quadros do censo Dev num Brave sem janela (abaixo)
+pnpm test:contact-controls # e-mails e URLs: edição, validação e Escape, em perfil temporário sem janela
+pnpm test:publish-controls # painel de publicação com declaração e transporte sintéticos, sem sessão real
 pnpm test:modal-controls  # geometria de fechar e expandir, num Brave ou Chrome sem janela
 ```
 
@@ -99,12 +101,27 @@ simulado dentro do próprio teste (`tests/helpers/lattes-simulado.ts`), com
 as chaves das operações ligadas; os que cobrem o caminho desligado forçam a
 chave ou a opção.
 
+O CI também roda os controles de contatos e publicação num navegador sem
+janela, em perfis temporários e portas de depuração próprios. O teste de publicação usa declaração
+e transporte sintéticos; não acessa uma sessão real nem envia ao CNPq. Esses
+testes recusam `LATTES_PERFIL`, `LATTES_JANELA` e `LATTES_EXTENSAO` para não
+reutilizar a sessão de quem está desenvolvendo.
+As páginas de teste também bloqueiam HTTP e HTTPS.
+
 `pnpm audit` ignora o aviso GHSA-vfj7-8cjw-p6xm (`braces` 3.0.3, esgotamento
 de pilha com padrões aninhados). A lista fica em `pnpm.auditConfig.ignoreGhsas`
 no `package.json`. O pacote chega por `micromatch`, dentro do semantic-release,
 só roda no lançamento e só lê mensagens de commit do próprio repositório; não
 existe versão corrigida. Quando o semantic-release trocar de versão, tirar o
 aviso da lista e conferir se o audit volta a passar.
+
+`node scripts/cobertura-conector.ts --resumo` mede o planejamento de envio
+com o currículo sintético. `--lista=motivo:` lista cada lacuna; `--so=ELEMENTO`
+restringe os elementos avaliados. Os testes em `tests/cobertura-conector.test.ts`
+conferem as opções usadas na medição e impedem arredondar lacunas para 100%.
+`scripts/cobertura-exemplo.ts` prepara apenas `synthetic_full.xml` para essa
+medição, com opções válidas e contatos no formato serializado; um XML passado
+como argumento é avaliado sem esses ajustes.
 
 ## Geradores
 

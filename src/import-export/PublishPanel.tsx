@@ -17,10 +17,11 @@ import { compareWithLattes } from '../review/lists-diff.ts';
 import { Modal } from '../ui/Modal.tsx';
 import { unpublishedEntries } from '../ui/status-strip.ts';
 import type { BridgeState } from '../ui/use-bridge.ts';
-import { usePublish } from '../ui/use-publish.ts';
+import { type SendScreenReading, usePublish } from '../ui/use-publish.ts';
 import { loadChoices, saveChoices } from './publish-memory.ts';
 import {
   canReadSendScreen,
+  canSendCv,
   checksLine,
   initialForm,
   type PublishAttempt,
@@ -76,8 +77,12 @@ function PublishPanelBody(props: Props) {
   const cnpq = usePublish(lattesId);
   const enabled = publishUiEnabled(location.search, import.meta.env.DEV);
   const [screenRequest, setScreenRequest] = useState<{ at: number; id: string } | undefined>();
-  // A declaração: só o clique da pessoa muda isto, e o painel remontado volta a false.
-  const [declared, setDeclared] = useState(false);
+  // O aceite guarda a leitura e o texto que a pessoa marcou. Outra leitura
+  // já aparece desmarcada no render, sem esperar o efeito de reinicialização.
+  const [acceptedDeclaration, setAcceptedDeclaration] = useState<{
+    reading: SendScreenReading;
+    text: string;
+  }>();
   const [form, setForm] = useState<PublishForm | undefined>();
   /** Os campos que começaram com a escolha da última vez, ditos no painel. */
   const [restored, setRestored] = useState<string[]>([]);
@@ -100,6 +105,11 @@ function PublishPanelBody(props: Props) {
 
   const reading = fake ?? (cnpq.screen?.id === screenRequest?.id ? cnpq.screen : undefined);
   const screen = reading?.screen;
+  const declared =
+    !!screen &&
+    !!acceptedDeclaration &&
+    acceptedDeclaration.reading === reading &&
+    acceptedDeclaration.text === screen.declaration;
   // O formulário começa com o que o Lattes tem, uma vez por leitura; uma
   // leitura nova desmarca a declaração, que valia para o texto de antes.
   useEffect(() => {
@@ -107,7 +117,7 @@ function PublishPanelBody(props: Props) {
     const start = initialForm(reading.screen, loadChoices(lattesId));
     setForm(start);
     setRestored(restoredFields(reading.screen, start));
-    setDeclared(false);
+    setAcceptedDeclaration(undefined);
   }, [reading, lattesId]);
   // As escolhas ficam guardadas para a próxima abertura, um instante depois da
   // última mudança (não a cada tecla); a prévia do dev não grava nada.
@@ -157,7 +167,15 @@ function PublishPanelBody(props: Props) {
 
   const request = form && screen && publishRequest(form, declared, screen.declaration);
   const problem = request && requestProblem(request, screen);
-  const canSend = enabled && !!request && !problem && !status.locked && blockers.length === 0;
+  const canSend =
+    enabled &&
+    available &&
+    canSendCv(features) &&
+    !fake &&
+    !!request &&
+    !problem &&
+    !status.locked &&
+    blockers.length === 0;
   const set = (patch: Partial<PublishForm>) => setForm((f) => f && { ...f, ...patch });
 
   const send = () => {
@@ -166,12 +184,18 @@ function PublishPanelBody(props: Props) {
     setNow(at);
     setAttempt({ at, id: cnpq.publish(request) });
     // Um envio por declaração: a próxima tentativa pede a marca de novo.
-    setDeclared(false);
+    setAcceptedDeclaration(undefined);
   };
 
   const sendLabel = inline ? 'Publicar no CNPq' : 'Enviar ao CNPq';
   const body = (
     <>
+      {fake && (
+        <p className="muted">Prévia de desenvolvimento: nenhum pedido é enviado ao Lattes.</p>
+      )}
+      {enabled && bridge.available && !fake && !canSendCv(features) && (
+        <p className="export-blocked">Atualize a extensão do conector para publicar pelo app.</p>
+      )}
       {!bridge.available && (
         <p className="export-blocked">
           O envio precisa da extensão e do seu currículo aberto no Lattes, neste navegador.
@@ -275,7 +299,13 @@ function PublishPanelBody(props: Props) {
                   checked={declared}
                   disabled={status.locked}
                   type="checkbox"
-                  onChange={(e) => setDeclared(e.target.checked)}
+                  onChange={(e) =>
+                    setAcceptedDeclaration(
+                      e.target.checked && reading
+                        ? { reading, text: screen.declaration }
+                        : undefined,
+                    )
+                  }
                 />
                 <span>{screen.agree || 'Li e estou de acordo com a declaração acima'}</span>
               </label>

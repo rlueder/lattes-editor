@@ -30,6 +30,7 @@
 //   deixaria o outro mudar ou não na releitura sem que se saiba qual vale.
 
 import type { Change } from '../model/changes.ts';
+import { editableContacts } from '../model/contact-edit.ts';
 import { parseEmails, parseSocial } from '../model/contacts.ts';
 import { foldText } from '../model/fold-text.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
@@ -347,6 +348,14 @@ function planContacts(change: Change): {
       };
     }
     if (f.attr === 'ELETRONICO') {
+      if ([f.before, f.after].some((value) => value.trim() && !editableContacts(f.attr, value))) {
+        return {
+          expect,
+          reason:
+            'E-mails: cada um precisa dizer se é para contato (I:) ou alternativo (R:), sem trechos desconhecidos',
+          set,
+        };
+      }
       const of = (v: string) => {
         const all = parseEmails(v);
         const pick = (a: string) => all.find((e) => e.address === a)?.email ?? '';
@@ -364,6 +373,13 @@ function planContacts(change: Change): {
       Object.assign(expect, { f_email_i: was.i, f_email_r: was.r });
     }
     if (f.attr === 'REDE-SOCIAL') {
+      if ([f.before, f.after].some((value) => value.trim() && !editableContacts(f.attr, value))) {
+        return {
+          expect,
+          reason: 'Redes sociais: o texto não está no formato do Lattes ou tem registros ambíguos',
+          set,
+        };
+      }
       const before = parseSocial(f.before).map((r) => ({ name: r.name, url: r.url }));
       const after = parseSocial(f.after).map((r) => ({ name: r.name, url: r.url }));
       if (f.after.trim() && after.length === 0) {

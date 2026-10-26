@@ -43,22 +43,6 @@
     {
       "key": "lista-nao-ligada:arte-MU:DETALHAMENTO-DA-MUSICA@TIPO-DE-EVENTO:f_tpo_evento",
       "reason": "nos itens de teste de 18/10/2026 o texto só bateu sem acento e caixa em 4 de 7, com 3 contradições: a grafia exata do XML não está firme para virar lista"
-    },
-    {
-      "key": "lista-nao-ligada:processo:DETALHAMENTO-DO-PROCESSOS-OU-TECNICAS@DISPONIBILIDADE:f_disp",
-      "reason": "o XML guarda o texto da opção (Restrita, Irrestrita), mas nos itens de teste de 18/10/2026 só bateu sem acento e caixa: a grafia exata não está firme para virar lista"
-    },
-    {
-      "key": "lista-nao-ligada:produto:DETALHAMENTO-DO-PRODUTO-TECNOLOGICO@DISPONIBILIDADE:f_disp",
-      "reason": "o XML guarda o texto da opção (Restrita, Irrestrita), mas nos itens de teste de 18/10/2026 só bateu sem acento e caixa: a grafia exata não está firme para virar lista"
-    },
-    {
-      "key": "lista-nao-ligada:tec-2I:DETALHAMENTO-DO-RELATORIO-DE-PESQUISA@DISPONIBILIDADE:f_disp",
-      "reason": "o XML guarda o texto da opção (Restrita, Irrestrita), mas nos itens de teste de 18/10/2026 só bateu sem acento e caixa: a grafia exata não está firme para virar lista"
-    },
-    {
-      "key": "lista-nao-ligada:trabalho-tecnico:DETALHAMENTO-DO-TRABALHO-TECNICO@DISPONIBILIDADE:f_disp",
-      "reason": "o XML guarda o texto da opção (Restrita, Irrestrita), mas a grafia exata não foi registrada na captura de 15/10/2026; a próxima registra em spelling"
     }
   ]
 }

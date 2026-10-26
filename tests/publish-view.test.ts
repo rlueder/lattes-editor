@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { PUBLISH_ENABLED } from '../src/bridge/publish.ts';
 import {
   canReadSendScreen,
+  canSendCv,
   checksLine,
   initialForm,
   locksSending,
@@ -129,11 +130,15 @@ describe('painel Enviar ao CNPq (LAT-54)', () => {
     expect(sendScreenProblem({ reason: 'erro' })).toMatch(/não conseguiu/);
   });
 
-  it('o envio pelo editor fica desligado, menos com ?publicar em desenvolvimento', () => {
-    expect(PUBLISH_ENABLED).toBe(false);
-    expect(publishUiEnabled('', true)).toBe(false);
-    expect(publishUiEnabled('?publicar', false)).toBe(false);
+  it('o envio pelo editor está disponível sem parâmetro de desenvolvimento', () => {
+    expect(PUBLISH_ENABLED).toBe(true);
+    expect(publishUiEnabled('', false)).toBe(true);
+    expect(publishUiEnabled('', true)).toBe(true);
+    expect(publishUiEnabled('?publicar', false)).toBe(true);
     expect(publishUiEnabled('?exemplo=demo&publicar', true)).toBe(true);
+    expect(canSendCv(['enviar-cnpq'])).toBe(false);
+    expect(canSendCv(['enviar-cnpq', 'publicar-cnpq'])).toBe(true);
+    expect(canSendCv([])).toBe(false);
   });
 
   it('a linha da conferência', () => {

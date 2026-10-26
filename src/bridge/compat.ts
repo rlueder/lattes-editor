@@ -11,9 +11,12 @@
 // - nenhuma sai, mesmo que deixe de ser usada: um lado mais novo sem ela
 //   pareceria o mais antigo;
 // - a exceção são as capacidades das operações atrás de chave (GATED_EDITS,
-//   em plan.ts): entram quando a chave liga e saem se ela voltar a desligar,
+//   em plan.ts, e PUBLISH_ENABLED): entram quando a chave liga e saem se ela voltar a desligar,
 //   porque anunciá-las com a chave desligada levaria o app a mandar operações
-//   que a extensão não tem no contrato. tests/edit-flags.test.ts cobra isso.
+//   que a extensão não tem no contrato. Os testes edit-flags e compat-publish
+//   conferem essas chaves.
+
+import { PUBLISH_ENABLED } from './publish.ts';
 
 export const BRIDGE_FEATURES = [
   /** Data da última publicação e pendência, lidas do menu do Lattes. */
@@ -52,6 +55,9 @@ export const BRIDGE_FEATURES = [
    * em si só sai com PUBLISH_ENABLED, e sem ela a extensão responde "desligado".
    */
   'enviar-cnpq',
+  // A capacidade antiga também existe em extensões que só leem a tela.
+  // A escrita precisa de anúncio próprio para não oferecer um envio impossível.
+  ...(PUBLISH_ENABLED ? (['publicar-cnpq'] as const) : []),
   /**
    * O editor começa a gravação e segue depois da pausa ("continuar"); o
    * painel da extensão só acompanha. Sem ela, a fila espera o "Aplicar

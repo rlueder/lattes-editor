@@ -3,8 +3,9 @@
 // formulário de inclusão de cada uma, que é o mesmo da edição. A ligação com
 // o atributo do XML é pelo nome e pelo rótulo do campo (inferida).
 
+import { licenseToForm } from '../../../schema/license-types.ts';
 import { formDate } from '../../create-registro-rules.ts';
-import { byTable, country, language, media, yesNo } from '../mappers.ts';
+import { country, language, media, yesNo } from '../mappers.ts';
 import type { ProductionTarget } from '../types.ts';
 import { ALL_GRIDS, INFO, slashDate, under } from './comum-tecnica-artistica.ts';
 
@@ -37,13 +38,6 @@ const DEMAIS_TRABALHOS: ProductionTarget = {
 };
 
 /**
- * O tipo da licença no formulário (f_tipo_licenca: M, P, A, censo de
- * 15/10/2026). O XSD só tem MATERNIDADE; PATERNIDADE e ADOCAO são inferidos
- * pelo rótulo da opção.
- */
-const LICENSE_TYPES = { ADOCAO: 'A', MATERNIDADE: 'M', PATERNIDADE: 'P' };
-
-/**
  * Licença maternidade, paternidade e adoção (GN_LICENCA, POST
  * PKG_LICENCA.FORM, lista pkg_licenca.lista). O XML não traz número da
  * licença: a linha se acha pelo tipo e pela data de início.
@@ -53,7 +47,7 @@ const LICENCA: ProductionTarget = {
   fields: under('LICENCA', {
     'DATA-FIM-LICENCA': { field: 'f_dta_fim', toForm: slashDate },
     'DATA-INICIO-LICENCA': { field: 'f_dta_inicio', toForm: slashDate },
-    'TIPO-LICENCA': { field: 'f_tipo_licenca', toForm: byTable(LICENSE_TYPES) },
+    'TIPO-LICENCA': { field: 'f_tipo_licenca', toForm: licenseToForm },
   }),
   form: { action: 'PKG_LICENCA.FORM', name: 'GN_LICENCA' },
   grids: [],
@@ -63,7 +57,7 @@ const LICENCA: ProductionTarget = {
     attr: 'TIPO-LICENCA',
     child: 'LICENCA',
     field: 'f_tipo_licenca',
-    toForm: (v) => LICENSE_TYPES[v as keyof typeof LICENSE_TYPES] ?? v,
+    toForm: (v) => licenseToForm(v) ?? v,
   },
   year: {
     attr: 'DATA-INICIO-LICENCA',

@@ -15,6 +15,7 @@ import { PRODUCTION_TARGETS } from '../../src/bridge/production/targets/index.ts
 import type { FieldMap, ProductionTarget } from '../../src/bridge/production/types.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
+import { availabilityToForm } from '../../src/schema/availability.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
 import { AGENCIES, allCourses, institutionsOf, withLetter } from './buscas.ts';
 import type { LattesState } from './estado.ts';
@@ -48,6 +49,9 @@ const partOf = (item: XElement, child: string) => childElements(item, child)[0];
 /** O valor do formulário de volta para o XML: o candidato cujo toForm dá o mesmo valor. */
 function fromForm(element: string, attr: string, map: FieldMap, value: string): string | undefined {
   if (!map.toForm) return value;
+  if (map.toForm === availabilityToForm) {
+    return value === '' ? 'NAO_INFORMADO' : value.toUpperCase();
+  }
   if (value === '') return '';
   if (map.toForm === country) return h.countryName(value);
   if (map.toForm === date) return value.replace(/\//g, '');

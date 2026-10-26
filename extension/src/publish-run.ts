@@ -5,6 +5,7 @@
 
 import type { BridgeMessage, EditorMessage } from '../../src/bridge/protocol.ts';
 import {
+  isPublishRequest,
   PUBLISH_ENABLED,
   publishBusy,
   type PublishRequest,
@@ -41,6 +42,13 @@ export async function runPublish(
   const reply = (result: PublishResult) => send({ id: call.id, result, type: 'publicacao' });
   if (!enabled) {
     await reply({ detail: 'O envio ao CNPq pelo editor está desligado.', outcome: 'desligado' });
+    return false;
+  }
+  if (!isPublishRequest(call.request)) {
+    await reply({
+      detail: 'O pedido de envio está incompleto ou tem um valor inválido. Nada foi enviado.',
+      outcome: 'erro',
+    });
     return false;
   }
   // A declaração é da pessoa: sem ela marcada no editor, nem chega à aba.

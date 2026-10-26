@@ -64,6 +64,23 @@ describe('campos tipados: natureza da participação em evento', () => {
 });
 
 describe('campos tipados: listas', () => {
+  it('raça ou cor e categoria da patente usam os rótulos capturados', () => {
+    expect(values(typedChoices(basics('DADOS-GERAIS'), 'RACA-OU-COR'))).toEqual([
+      'Branca',
+      'Preta',
+      'Parda',
+      'Indígena',
+      'Amarela',
+      'Não desejo declarar',
+    ]);
+    expect(values(typedChoices(basics('DETALHAMENTO-DA-PATENTE'), 'CATEGORIA'))).toEqual([
+      'Produto',
+      'Processo',
+      'Produto e Processo',
+      'Outra',
+    ]);
+    expect(typedChoices(basics('DADOS-GERAIS'), 'CATEGORIA')).toBeUndefined();
+  });
   it('país e idioma pelo nome, nas listas do Lattes', () => {
     const countries = values(typedChoices(basics('DADOS-BASICOS-DO-ARTIGO'), 'PAIS'));
     expect(countries).toEqual(listas.paises);
@@ -270,9 +287,10 @@ describe('campos tipados: status do curso do pós-doutorado', () => {
       ),
     ).toEqual(['horas', 'dias', 'semanas']);
     expect(typedChoices(element('DETALHAMENTO-DA-MARCA'), 'NATUREZA')).toHaveLength(4);
-    // A disponibilidade ainda não: a grafia exata do XML não ficou firme.
     expect(
-      typedChoices(element('DETALHAMENTO-DO-PRODUTO-TECNOLOGICO'), 'DISPONIBILIDADE'),
-    ).toBeUndefined();
+      typedChoices(element('DETALHAMENTO-DO-PRODUTO-TECNOLOGICO'), 'DISPONIBILIDADE')?.map(
+        (c) => c.value,
+      ),
+    ).toEqual(['RESTRITA', 'IRRESTRITA', 'NAO_INFORMADO']);
   });
 });

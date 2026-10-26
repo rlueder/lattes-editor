@@ -6,6 +6,8 @@
 import { foldText } from '../model/fold-text.ts';
 import { ownCodeChoices, writesOwnCode } from '../model/linked-attrs.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
+import { availabilityChoices, hasAvailabilityChoices } from './availability.ts';
+import { licenseChoices } from './license-types.ts';
 import listas from './listas-lattes.json' with { type: 'json' };
 import producao from './listas-producao.json' with { type: 'json' };
 
@@ -24,7 +26,12 @@ const asChoices = (values: readonly string[]): Choice[] =>
  * pelo Lattes: lá a pessoa escolhe o nome em DESCRICAO-DO-IDIOMA, na lista do
  * formulário de idioma, e o código vai junto (linked-attrs.ts).
  */
-const COUNTRY_ATTRS = new Set(['PAIS', 'PAIS-DE-NASCIMENTO', 'PAIS-DE-PUBLICACAO', 'PAIS-DO-EVENTO']);
+const COUNTRY_ATTRS = new Set([
+  'PAIS',
+  'PAIS-DE-NASCIMENTO',
+  'PAIS-DE-PUBLICACAO',
+  'PAIS-DO-EVENTO',
+]);
 const LANGUAGE_ATTRS = new Set(['IDIOMA', 'IDIOMA-DA-OBRA-ORIGINAL']);
 const COUNTRIES = asChoices(listas.paises);
 
@@ -131,6 +138,17 @@ export function derivedValue(element: string, attr: string): string | undefined 
  * elemento do campo: o tipo de participação depende da forma escolhida nele.
  */
 export function typedChoices(el: XElement, attr: string): Choice[] | undefined {
+  if (el.name === 'LICENCA' && attr === 'TIPO-LICENCA') return licenseChoices;
+  if (hasAvailabilityChoices(el.name, attr)) return availabilityChoices;
+  // As opções vêm dos formulários capturados. Parda e as três primeiras
+  // categorias foram conferidas em XML público; as demais grafias seguem
+  // os mapeamentos já usados pelo conector (seção 23).
+  if (el.name === 'DADOS-GERAIS' && attr === 'RACA-OU-COR') {
+    return asChoices(['Branca', 'Preta', 'Parda', 'Indígena', 'Amarela', 'Não desejo declarar']);
+  }
+  if (el.name === 'DETALHAMENTO-DA-PATENTE' && attr === 'CATEGORIA') {
+    return asChoices(['Produto', 'Processo', 'Produto e Processo', 'Outra']);
+  }
   // A natureza do evento: as do combo do Lattes, a do tipo de evento primeiro.
   // A página de alteração troca a natureza no mesmo item (21/10/2026), e a
   // exportação seguinte o põe no elemento da natureza nova.
