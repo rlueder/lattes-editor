@@ -218,6 +218,28 @@ describe('recaptura avulsa contra o Lattes simulado', () => {
     }
   });
 
+  it('a página de alteração do primeiro item de uma lista, sem o número dele no arquivo', async () => {
+    const { lattes, port } = await simulado();
+    try {
+      const file = await inspectPages(
+        port,
+        lattes.state.code,
+        [
+          { editOf: { form: 'pkg_orient.form', list: 'pkg_orient.lista?f_tipo=C' } },
+          { editOf: { form: 'pkg_inexistente.form', list: 'pkg_orient.lista?f_tipo=A' } },
+        ],
+        { delayMs: 0 },
+      );
+      expect(file.entries[0]).toMatchObject({ status: 'ok' });
+      expect(file.entries[0]!.path).toMatch(/^pkg_orient\.form/i);
+      expect(file.entries[1]).toMatchObject({ status: 'sem-link' });
+      expect(JSON.stringify(file)).not.toMatch(/f_seq=\d/);
+      expect(JSON.stringify(file)).not.toContain(lattes.state.code);
+    } finally {
+      await lattes.close();
+    }
+  });
+
   it('as atividades de cada natureza, pelo link da tela de cargos e vínculos', async () => {
     const { lattes, port } = await simulado();
     try {
@@ -268,6 +290,7 @@ describe('recaptura avulsa contra o Lattes simulado', () => {
       );
       expect(file.interrupted).toBe(true);
       expect(file.entries.map((e) => e.status)).toEqual(['nao-lido', 'nao-lido']);
+      expect(file.entries[0]!.detail).toBe('A sessão do Lattes caiu');
       expect(file.scripts).toBeUndefined();
     } finally {
       await lattes.close();
