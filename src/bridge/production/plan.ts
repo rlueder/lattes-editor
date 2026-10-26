@@ -452,6 +452,11 @@ export function planProduction(
   }
   const left = fieldsLeft(unknown, manual, unmapped);
   if (left) return left;
+  for (const extra of partMap?.also ?? []) {
+    set[extra.field] = extra.after;
+    expect[extra.field] = extra.before;
+    rows.push({ after: extra.after, before: extra.before, label: extra.label, name: extra.field });
+  }
   if (rows.length === 0) return { reason: 'Nada a enviar' };
   // A natureza trocada no lugar: os ocultos limpos e a instituição e o curso
   // escolhidos de novo com o nível dela (nature.ts), que recusa se já há escolhas.

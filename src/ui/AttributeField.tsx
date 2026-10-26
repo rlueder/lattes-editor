@@ -113,9 +113,10 @@ export function AttributeField({
     // O campo mostra o valor limpo (cleanLinkValue) mesmo quando o gravado já
     // era ele e nada muda no elemento.
     change(next);
-    if (next === (getAttr(el, name) ?? '')) return;
+    const previous = getAttr(el, name) ?? '';
+    if (next === previous) return;
     setAttr(el, name, next);
-    applyLinkedAttrs(el, name, root);
+    applyLinkedAttrs(el, name, root, previous);
     onEdit(`${elementLabel(el.name)} · ${text}`);
   };
   const shownError = error ?? linkError(name, value);

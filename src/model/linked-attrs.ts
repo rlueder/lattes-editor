@@ -76,7 +76,10 @@ function parentOf(root: XElement, el: XElement): XElement | undefined {
  * histórico com a descrição da data do registro, ou o registro da data da
  * linha do histórico. Devolve "ELEMENTO@ATRIBUTO" de cada um que mudou.
  */
-function linkPatentDate(el: XElement, name: string, root: XElement): string[] {
+function linkPatentDate(el: XElement, name: string, root: XElement, previous?: string): string[] {
+  if (el.name === HISTORY && name === 'DESCRICAO-SITUACAO-PATENTE') {
+    return movePatentDate(el, root, previous);
+  }
   const isRegistry = el.name === 'REGISTRO-OU-PATENTE' && name in PATENT_DATE_CODES;
   const attr =
     el.name === HISTORY && name === HISTORY_DATE
@@ -96,14 +99,41 @@ function linkPatentDate(el: XElement, name: string, root: XElement): string[] {
 }
 
 /**
+ * A situação do histórico trocada por outra (Depósito → Concessão): no Lattes
+ * é a mesma linha da grade de datas com outro código, e a data passa do
+ * atributo do registro da situação de antes para o da nova. Só entre as
+ * situações que têm atributo no registro (PATENT_DATE_CODES).
+ */
+function movePatentDate(el: XElement, root: XElement, previous: string | undefined): string[] {
+  const from = patentDateAttrOf(previous ?? '');
+  const to = patentDateAttrOf(getAttr(el, 'DESCRICAO-SITUACAO-PATENTE') ?? '');
+  if (!from || !to || from === to) return [];
+  const detail = parentOf(root, el);
+  if (!detail) return [];
+  const date = getAttr(el, HISTORY_DATE) ?? '';
+  return childElements(detail, 'REGISTRO-OU-PATENTE').flatMap((reg) =>
+    set(reg, {
+      ...(getAttr(reg, from) === undefined ? {} : { [from]: '' }),
+      [to]: date,
+    }).map((a) => `${reg.name}@${a}`),
+  );
+}
+
+/**
  * Depois de gravar `name` em `el`, ajusta o que segue dele; devolve os
  * atributos alterados (os de outro elemento como "ELEMENTO@ATRIBUTO"). Com
  * `root`, a raiz da cópia de trabalho, segue também o que fica em outro
- * elemento (as datas da patente).
+ * elemento (as datas da patente). `previous` é o valor de antes de `name`,
+ * para o que depende da troca (a situação da patente que mudou).
  */
-export function applyLinkedAttrs(el: XElement, name: string, root?: XElement): string[] {
+export function applyLinkedAttrs(
+  el: XElement,
+  name: string,
+  root?: XElement,
+  previous?: string,
+): string[] {
   if (root) {
-    const linked = linkPatentDate(el, name, root);
+    const linked = linkPatentDate(el, name, root, previous);
     if (linked.length > 0) return linked;
   }
   if (el.name === 'IDIOMA' && writesOwnCode(el.name, name)) {

@@ -371,8 +371,9 @@ describe('patente: o histórico de situações', () => {
   const edit =
     (pick: (root: XElement) => XElement, attr: string, value: string) => (root: XElement) => {
       const el = pick(root);
+      const previous = getAttr(el, attr);
       setAttr(el, attr, value);
-      return applyLinkedAttrs(el, attr, root);
+      return applyLinkedAttrs(el, attr, root, previous);
     };
 
   it('o editor leva a data do registro à situação do histórico, e ela vai', async () => {
@@ -447,18 +448,66 @@ describe('patente: o histórico de situações', () => {
     ]);
   });
 
-  it('descrição, status, situação desconhecida, inclusão e exclusão ficam à mão', () => {
+  it('a situação trocada no editor leva a data do registro junto, e a linha muda na grade', async () => {
+    let linked: string[] = [];
+    const ops = opsAfter((root) => {
+      linked = edit(history, 'DESCRICAO-SITUACAO-PATENTE', 'Concessão')(root);
+    }, HOLDER_XML);
+    expect(linked.sort()).toEqual([
+      'REGISTRO-OU-PATENTE@DATA-DE-CONCESSAO',
+      'REGISTRO-OU-PATENTE@DATA-PEDIDO-DE-DEPOSITO',
+    ]);
+    for (const op of ops) {
+      expect(op).toMatchObject({
+        expect: { 'datas:1': '12/03/2007', 'datas:3': '' },
+        set: { 'datas:1': '', 'datas:3': '12/03/2007' },
+      });
+    }
+    const sim = await lattes(HOLDER_XML);
+    for (const op of ops)
+      expect(await applyOp(op, sim.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(sim)).toHaveLength(1);
+    const grid = postsOf(sim)[0]!.fields.f_dados_grid_datas!;
+    expect(grid).toMatch(/<contato>Concessão<\/contato>\r?\n\t<endereco>12\/03\/2007<\/endereco>/);
+    expect(grid).not.toMatch(/<contato>Depósito<\/contato>/);
+  });
+
+  it('a situação trocada sem o registro acompanhar, repetida ou sem data no registro fica à mão', () => {
+    // Sem o editor (linked-attrs), o registro ainda tem a data no depósito.
     expect(
       reasonsAfter(
         (root) => setAttr(history(root), 'DESCRICAO-SITUACAO-PATENTE', 'Concessão'),
         HOLDER_XML,
       ),
-    ).toEqual([
-      expect.stringMatching(/a descrição e o status de uma situação da patente vão à mão/),
-    ]);
+    ).toEqual([expect.stringMatching(/são o mesmo campo no Lattes/)]);
+    expect(
+      reasonsAfter(
+        (root) => setAttr(history(root), 'DESCRICAO-SITUACAO-PATENTE', 'Licenciamento'),
+        HOLDER_XML,
+      ),
+    ).toEqual([expect.stringMatching(/o conector só troca entre Concessão/)]);
+    expect(
+      reasonsAfter(
+        (root) => setAttr(history(root), 'DESCRICAO-SITUACAO-PATENTE', 'DEPOSITO'),
+        HOLDER_XML,
+      ),
+    ).toEqual([expect.stringMatching(/são a mesma situação no Lattes/)]);
+    const two = HOLDER_XML.replace(
+      '</DETALHAMENTO-DA-PATENTE>',
+      '<HISTORICO-SITUACOES-PATENTE DESCRICAO-SITUACAO-PATENTE="Concessão" DATA-SITUACAO-PATENTE="01012010" STATUS-SITUACAO-PATENTE="SIM"/></DETALHAMENTO-DA-PATENTE>',
+    );
+    expect(
+      reasonsAfter(
+        (root) => setAttr(history(root), 'DESCRICAO-SITUACAO-PATENTE', 'Concessão'),
+        two,
+      ),
+    ).toEqual([expect.stringMatching(/já está em outra linha do histórico/)]);
+  });
+
+  it('status, situação desconhecida, inclusão e exclusão ficam à mão', () => {
     expect(
       reasonsAfter((root) => setAttr(history(root), 'STATUS-SITUACAO-PATENTE', 'NAO'), HOLDER_XML),
-    ).toEqual([expect.stringMatching(/o sentido dele não foi visto/)]);
+    ).toEqual([expect.stringMatching(/^O formulário de patente do Lattes não tem: /)]);
     const unknown = HOLDER_XML.replace(
       'DESCRICAO-SITUACAO-PATENTE="Depósito"',
       'DESCRICAO-SITUACAO-PATENTE="Expiração"',

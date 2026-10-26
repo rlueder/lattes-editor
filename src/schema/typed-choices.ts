@@ -102,6 +102,18 @@ const POSTDOC_STATUS: Choice[] = [
   { label: 'Incompleto', value: 'INCOMPLETO' },
 ];
 
+const PATENT_SITUATIONS = [
+  'Depósito',
+  'Depósito PCT',
+  'Pedido do Exame',
+  'Licenciamento',
+  'Concessão',
+  'Comercialização',
+  'Cessão',
+  'Em Domínio Público',
+  'Aguardando Negociação',
+];
+
 const EVENT_BASICS =
   /^DADOS-BASICOS-(?:DA-PARTICIPACAO-EM-([A-Z]+)|DE-OUTRAS-PARTICIPACOES-EM-EVENTOS-CONGRESSOS)$/;
 
@@ -145,6 +157,12 @@ export function typedChoices(el: XElement, attr: string): Choice[] | undefined {
   // os mapeamentos já usados pelo conector (seção 23).
   if (el.name === 'DADOS-GERAIS' && attr === 'RACA-OU-COR') {
     return asChoices(['Branca', 'Preta', 'Parda', 'Indígena', 'Amarela', 'Não desejo declarar']);
+  }
+  // As situações do combo da grade de datas da patente, na ordem dele (seção
+  // 21). Só "Depósito" foi conferida numa exportação; nas outras, a grafia do
+  // XML é inferida do rótulo do combo.
+  if (el.name === 'HISTORICO-SITUACOES-PATENTE' && attr === 'DESCRICAO-SITUACAO-PATENTE') {
+    return asChoices(PATENT_SITUATIONS);
   }
   if (el.name === 'DETALHAMENTO-DA-PATENTE' && attr === 'CATEGORIA') {
     return asChoices(['Produto', 'Processo', 'Produto e Processo', 'Outra']);

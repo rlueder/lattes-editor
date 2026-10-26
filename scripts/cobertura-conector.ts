@@ -213,7 +213,7 @@ function cover(raw: string, trials: Trial[] = []): Stats {
         if (from !== undefined) {
           start = parseXml(raw).root;
           setAttr(flatten(start)[index]!, a.name, from);
-          applyLinkedAttrs(flatten(start)[index]!, a.name, start);
+          applyLinkedAttrs(flatten(start)[index]!, a.name, start, a.value);
         }
         const work = from === undefined ? parseXml(raw).root : structuredClone(start);
         const target = flatten(work)[index]!;
@@ -238,7 +238,7 @@ function cover(raw: string, trials: Trial[] = []): Stats {
             spec.attributes.find((x) => x.name === a.name)?.enum;
           attr.value = value ?? changed(a.name, a.value, choices);
           // O que o editor muda junto ao gravar (AttributeField chama o mesmo).
-          applyLinkedAttrs(target, a.name, work);
+          applyLinkedAttrs(target, a.name, work, from ?? a.value);
         }
         const changes = diffDocuments(start, work);
         // O texto que o editor pede quando o valor novo o exige (o potencial de

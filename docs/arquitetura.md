@@ -198,7 +198,8 @@ própria montagem (`ApplyGates`, em `apply.ts`).
 Fica à mão, com o motivo na tela (`src/bridge/atuacao-by-hand.ts` e os
 `fieldAbsent` de cada alvo): o que o formulário do Lattes não tem (nome do
 pai e da mãe, tipo do vínculo, a própria citação item a item, nomes em
-inglês de vários formulários); trocar a instituição de uma atuação (a tela
+inglês de vários formulários, e a natureza das orientações e bancas em que
+o elemento do XML é o próprio tipo do item); trocar a instituição de uma atuação (a tela
 não a tem: inclui-se outra atuação); o órgão de um projeto; mais de um
 depositante de patente e o titular instituição; incluir, tirar ou trocar
 financiadores, produções ou orientações ligadas a um projeto.

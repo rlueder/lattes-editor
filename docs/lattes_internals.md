@@ -1547,8 +1547,17 @@ O que o conector faz com isso (`src/bridge/production/holders.ts` e
   histórico que não existe não se cria; sem ela, só o registro muda, e vai.
   As duas mudanças vão ao mesmo campo (a segunda acha o Lattes já com a data
   e não envia nada). Datas que ainda assim discordam (no XML carregado, por
-  exemplo) ficam à mão. Incluir ou tirar uma situação, trocar a descrição ou
-  o status, e as outras situações também.
+  exemplo) ficam à mão. Incluir ou tirar uma situação, e as outras situações
+  também.
+- A situação trocada por outra entre essas quatro (Depósito para Concessão,
+  por exemplo) tira a linha do código de antes e põe a do código novo com a
+  mesma data, num envio só. No editor, a data passa junto do atributo do
+  registro da situação de antes para o da nova. **Inferido**: que o Lattes
+  aceite a troca assim, como a página faria com outra opção no combo da
+  linha, e que a exportação grave a descrição com o rótulo do combo (só
+  "Depósito" foi conferida). A situação repetida em outra linha fica à mão.
+- O status da situação não tem controle na página: a grade guarda só a
+  situação e a data. O editor o mostra só para ler.
 
 ### Dicionário de coautores: a edição (lida em 19/10/2026)
 
@@ -1867,6 +1876,10 @@ O conector, com isso (`src/bridge/production/nature.ts`):
   vem marcado (**inferido**: não visto num item dessas naturezas).
 - Onde o elemento fixa a natureza, trocá-la é incluir o item de novo no tipo
   certo, como o nível da formação complementar.
+- O curso da supervisão de pós-doutorado não se informa: a lupa (`curso()`)
+  responde "Não informe o curso para natureza Supervisão de pós-doutorado", e
+  o `testa_nivel()` limpa os códigos do curso. O editor mostra esse curso só
+  para ler.
 - O tipo do mestrado (acadêmico ou profissional) e o de outra natureza vão em
   `f_sub_prod`. Pelo `retnivel()`, 30 e 37 são o profissional; o código do
   acadêmico não foi lido. Fica à mão.
@@ -1986,7 +1999,16 @@ o curso na lista da instituição. A instituição nova sem curso escolhido de
 novo fica à mão, como na formação. **Inferido**: que o `seleciona()` desta
 janela grave como o da formação (o código com a letra, V em `f_cod_inst`, as
 outras em `f_cod_inst2`), e que `PKG_FORMACAO_COMPL.FORM2` grave os ocultos.
-Nada disso foi enviado a um Lattes real.
+
+Em 20/10/2026, num MBA de teste, o envio com a instituição e o curso como as
+janelas gravariam (instituição com a letra, curso sem ela, os textos em
+`f_inst_old` e `f_curso_old`) foi aceito, e a releitura voltou com os de
+antes. O conector acusou divergente e nada mudou. **Observado.** A causa não
+é conhecida: um envio simples do `FORM2` (só a carga horária) também não foi
+conferido no Lattes real. Por isso `COMPL_ENDERECO_LOOKUPS_ENABLED`
+(`src/bridge/edit-lists.ts`) fica desligada, junto com as buscas do endereço
+profissional, até um envio pelo próprio navegador ser registrado e comparado
+com o do conector.
 
 ### Endereço profissional (lido em 20/10/2026)
 

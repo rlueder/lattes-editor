@@ -152,7 +152,10 @@ const CAPITULO: ProductionTarget = {
   id: 'capitulo',
   list: { formProc: 'PKG_LVR_CAP.FORM_CAP', proc: 'pkg_lvr_cap.lista' },
   manual: {
-    'DADOS-BASICOS-DO-CAPITULO@TIPO': 'o tipo do capítulo vem fixo num oculto do formulário',
+    // F_COD_PROD oculto, sem controle na página (seção 16): o capítulo se
+    // inclui pela escolha "Capítulo" na lista de livros.
+    'DADOS-BASICOS-DO-CAPITULO@TIPO':
+      'o tipo vem fixo num oculto do formulário: é o tipo do item no Lattes; para trocar, inclua o item de novo no tipo certo',
   },
   // f_titulo é o título do livro; o do capítulo é f_titulo_cap.
   title: {

@@ -198,7 +198,13 @@ export interface ProductionTarget {
       change: Change,
       el: XElement,
       item: XElement,
-    ) => { fields: Record<string, FieldMap | string> } | { reason: string }
+    ) =>
+      | {
+          /** Campos do formulário que mudam sem atributo próprio na mudança. */
+          also?: { after: string; before: string; field: string; label: string }[];
+          fields: Record<string, FieldMap | string>;
+        }
+      | { reason: string }
   >;
   /**
    * O orientando: com o nome trocado, o envio refaz a validação que o Salvar

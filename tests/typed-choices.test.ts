@@ -292,5 +292,12 @@ describe('campos tipados: status do curso do pós-doutorado', () => {
         (c) => c.value,
       ),
     ).toEqual(['RESTRITA', 'IRRESTRITA', 'NAO_INFORMADO']);
+    // As situações do combo da grade de datas da patente (seção 21).
+    const situations = typedChoices(
+      element('HISTORICO-SITUACOES-PATENTE'),
+      'DESCRICAO-SITUACAO-PATENTE',
+    )?.map((c) => c.value);
+    expect(situations).toHaveLength(9);
+    expect(situations?.slice(0, 3)).toEqual(['Depósito', 'Depósito PCT', 'Pedido do Exame']);
   });
 });

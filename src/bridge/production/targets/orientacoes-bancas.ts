@@ -140,6 +140,13 @@ const WHY = {
   otherBoard: `o rádio da natureza da banca não tem opção para outras participações, e a página de uma delas não foi lida; ${BACK}`,
   /** De ou para 49: o atribui() da janela de outra natureza escreve f_sub_prod e f_dsc_outra. */
   otherNature: `a orientação de outra natureza pede o subtipo numa janela do Lattes que não foi lida; ${BACK}`,
+  /**
+   * Pós-doutorado: curso() responde "Não informe o curso para natureza
+   * Supervisão de pós-doutorado", e testa_nivel() limpa os códigos do curso
+   * (lattes_internals.md, seção 18).
+   */
+  postdocCourse:
+    'O formulário de orientação do Lattes não aceita curso na supervisão de pós-doutorado: a página pede para não informar e limpa o curso',
   /** A13 e A16, no mesmo elemento: a busca de instituição e a de curso dependem da natureza. */
   qualification: `a troca entre qualificação de mestrado e de doutorado muda a busca de instituição e a de curso, e o que a página da banca faz nessa troca não foi lido; ${BACK}`,
   studentId: 'o Lattes guarda o identificador num campo oculto que só a página dele preenche',
@@ -249,7 +256,7 @@ function orientation(o: Orientation, done: boolean): ProductionTarget {
         : [[o.basics, ['NATUREZA'], WHY.nature(o.nature[0]!)] as [string, string[], string]]),
       [o.basics, ['TIPO'], WHY.kind],
       [o.detail, INSTITUTION, WHY.institution],
-      [o.detail, COURSE, WHY.course],
+      [o.detail, COURSE, postdoc ? WHY.postdocCourse : WHY.course],
       [o.detail, ['CODIGO-AGENCIA-FINANCIADORA', 'NOME-DA-AGENCIA'], WHY.agency],
       [o.detail, ['NUMERO-ID-ORIENTADO', 'NUMERO-ID-ORIENTANDO'], WHY.studentId],
     ]),

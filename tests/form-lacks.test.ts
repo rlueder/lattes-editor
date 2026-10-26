@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import { describe, expect, it } from 'vitest';
 
 import { childLacks, fieldAbsent, formLacks } from '../src/bridge/form-lacks.ts';
@@ -67,6 +69,15 @@ describe('campos que o formulário do Lattes não tem', () => {
     expect(fieldAbsent('O formulário de formação complementar do Lattes não tem o órgão')).toBe(
       true,
     );
+    // A natureza que o elemento fixa (mestrado, doutorado): o campo é o tipo do item.
+    expect(
+      fieldAbsent(
+        'Natureza: Tese de doutorado é o tipo do item no Lattes; para trocar, inclua o item de novo no tipo certo',
+      ),
+    ).toBe(true);
+    expect(fieldAbsent('Natureza: a troca entre qualificação de mestrado e de doutorado')).toBe(
+      false,
+    );
   });
 
   it('palavras-chave novas num evento que já está no Lattes não entram', () => {
@@ -75,5 +86,22 @@ describe('campos que o formulário do Lattes não tem', () => {
     expect(childLacks(original, working, event, 'PALAVRAS-CHAVE')).toMatch(
       /não tem palavras-chave/,
     );
+  });
+
+  it('a natureza que o elemento fixa fica só para ler, e a da qualificação não', () => {
+    const xml = readFileSync('fixtures/synthetic_full.xml', 'latin1');
+    const original = parseXml(xml).root;
+    const working = parseXml(xml).root;
+    const masters = byName(working, 'DADOS-BASICOS-DA-ORIENTACAO-EM-ANDAMENTO-DE-MESTRADO');
+    expect(formLacks(original, working, masters, 'NATUREZA')).toMatch(/é o tipo do item/);
+    const board = byName(working, 'DADOS-BASICOS-DA-BANCA-JULGADORA-PARA-CONCURSO-PUBLICO');
+    expect(formLacks(original, working, board, 'NATUREZA')).toMatch(/é o tipo do item/);
+    const qualification = byName(
+      working,
+      'DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO',
+    );
+    expect(formLacks(original, working, qualification, 'NATUREZA')).toBeUndefined();
+    const postdoc = byName(working, 'DETALHAMENTO-DA-ORIENTACAO-EM-ANDAMENTO-DE-POS-DOUTORADO');
+    expect(formLacks(original, working, postdoc, 'NOME-CURSO')).toMatch(/não aceita curso/);
   });
 });
