@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { parse } from 'yaml';
 
 const require = createRequire(import.meta.url);
 const configPath = fileURLToPath(new URL('../.releaserc.cjs', import.meta.url));
@@ -11,6 +12,19 @@ type ReleaseConfig = { branches: string[]; plugins: unknown[] };
 type FirstStable = {
   analyzeCommits: (config: object, context: { lastRelease: { version?: string } }) => string;
   verifyRelease: (config: object, context: { nextRelease: { version: string } }) => void;
+};
+type ReleaseWorkflow = {
+  on: {
+    workflow_dispatch: {
+      inputs: Record<string, { default?: boolean; required?: boolean; type: string }>;
+    };
+  };
+  jobs: {
+    release: {
+      if: string;
+      steps: { env?: Record<string, string>; run?: string }[];
+    };
+  };
 };
 
 function loadConfig(flag?: string): ReleaseConfig {
@@ -84,16 +98,18 @@ describe('primeira versão estável', () => {
   });
 
   it('mantém a escolha manual, desligada por padrão e fora do comando shell', () => {
-    const workflow = readFileSync(
-      new URL('../.github/workflows/release.yml', import.meta.url),
-      'utf8',
-    );
-    expect(workflow).toContain('workflow_dispatch:');
-    expect(workflow).toContain('primeira_estavel:');
-    expect(workflow).toContain('default: false');
-    expect(workflow).toContain('LATTES_PRIMEIRA_ESTAVEL: ${{ inputs.primeira_estavel }}');
-    expect(workflow).toContain("if: github.ref == 'refs/heads/main'");
-    expect(workflow).toContain('run: pnpm release');
-    expect(workflow).not.toMatch(/^ {2}(push|pull_request|schedule):/m);
+    const workflow = parse(
+      readFileSync(new URL('../.github/workflows/release.yml', import.meta.url), 'utf8'),
+    ) as ReleaseWorkflow;
+    expect(Object.keys(workflow.on)).toEqual(['workflow_dispatch']);
+    expect(workflow.on.workflow_dispatch.inputs.primeira_estavel).toMatchObject({
+      default: false,
+      required: false,
+      type: 'boolean',
+    });
+    expect(workflow.jobs.release.if).toBe("github.ref == 'refs/heads/main'");
+    const releaseSteps = workflow.jobs.release.steps.filter((step) => step.run === 'pnpm release');
+    expect(releaseSteps).toHaveLength(1);
+    expect(releaseSteps[0]?.env?.LATTES_PRIMEIRA_ESTAVEL).toBe('${{ inputs.primeira_estavel }}');
   });
 });
