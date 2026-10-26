@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0](https://github.com/rlueder/lattes-editor/compare/v0.24.1...v1.0.0) (2026-10-26)
+
+### Novidades
+
+- **ci:** permite escolher a primeira versão estável 1.0.0 ([#138](https://github.com/rlueder/lattes-editor/issues/138)) ([68f49dd](https://github.com/rlueder/lattes-editor/commit/68f49dd8a20a59fd7b478e94bfee1b8cd71ba461))
+- **ci:** publica extensão na loja por disparo manual ([#137](https://github.com/rlueder/lattes-editor/issues/137)) ([5b15960](https://github.com/rlueder/lattes-editor/commit/5b15960cbf83b0545f6352bd47c7e321983bd496))
+
 ## [0.24.1](https://github.com/rlueder/lattes-editor/compare/v0.24.0...v0.24.1) (2026-10-22)
 
 ### Correções
