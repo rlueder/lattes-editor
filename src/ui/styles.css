@@ -1686,6 +1686,10 @@ a.menu-item.notice {
   font-size: 12px;
 }
 
+.modal-titles {
+  min-width: 0;
+}
+
 .modal-close {
   margin: -4px -6px 0 0;
 }
@@ -2421,9 +2425,10 @@ button.primary:hover {
   cursor: pointer;
 }
 
-/* Botão de fechar do modal: quadrado */
+/* Fechar e expandir mantêm o tamanho mesmo com títulos longos. */
 .modal-close {
   display: inline-grid;
+  flex-shrink: 0;
   place-items: center;
   width: 28px;
   height: 28px;

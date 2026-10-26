@@ -52,6 +52,7 @@ Para cadastrar um item, use **+** ao lado da busca. Colar um DOI preenche a
 produção pelo Crossref. "Trazer itens de outro XML…", no ⚙, importa produções
 de outra exportação ou de outro programa; cada item é comparado com o
 currículo antes de entrar, e o app aponta a duplicata provável e o motivo.
+Use o botão circular × para fechar o histórico ou um formulário.
 
 O **Diagnóstico do currículo**, no ⚙, confere o currículo inteiro: campos
 obrigatórios, valores fora das listas do Lattes, anos, autores, DOI, ISSN,

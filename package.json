@@ -34,6 +34,7 @@
     "test": "vitest run",
     "test:censo-isolation": "pnpm build:extension --canal-dev && node scripts/test-censo-isolation.ts",
     "test:coverage": "vitest run --coverage",
+    "test:modal-controls": "node scripts/test-modal-controls.ts",
     "test:watch": "vitest",
     "typecheck": "tsc",
     "validate:fixtures": "node scripts/validate-fixtures.ts"

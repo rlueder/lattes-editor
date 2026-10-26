@@ -87,9 +87,12 @@ pnpm typecheck
 pnpm lint
 cd src-tauri && cargo test && cargo clippy -- -D warnings
 pnpm test:censo-isolation # os quadros do censo Dev num Brave sem janela (abaixo)
+pnpm test:modal-controls  # geometria de fechar e expandir, num Brave ou Chrome sem janela
 ```
 
 O Rust do canal Dev passa pelos mesmos comandos com `--features canal-dev`.
+O teste dos controles usa o CSS do app com cabeçalhos fictícios, em três
+larguras e nos dois temas. Não abre currículos nem precisa de servidor local.
 Os hooks do Husky rodam formatação e lint no commit e, no push, o conjunto
 todo com cobertura. Os testes de ponta a ponta do conector sobem o Lattes
 simulado dentro do próprio teste (`tests/helpers/lattes-simulado.ts`), com
