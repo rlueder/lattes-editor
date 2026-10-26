@@ -121,10 +121,42 @@ item de teste e a base da passada de itens de teste:
   (`PKG_REVISOR.INCLUI`): o currículo não tem item desses;
 - a primeira inclusão real de cultivar protegida e registrada, desenho
   industrial, marca e topografia;
-- as páginas de edição das bancas, e a janela do subtipo das orientações de
-  outra natureza (`f_sub_prod`);
 - a licença: o Lattes exige a data de nascimento ou adoção, que o XML não
-  guarda, então ela não tem como ir pelo formulário.
+  guarda, então ela não tem como ir pelo formulário;
+- a troca de instituição e curso de uma formação complementar e a do órgão
+  de um projeto feitas pela própria página, com o corpo do POST registrado
+  para comparar com o do conector (os dois envios do conector voltaram com
+  os valores de antes, `lattes_internals.md`, seção 18);
+- a pessoa com deficiência com um ou dois tipos marcados e a "outra forma de
+  contato" incluída, cada uma seguida de uma exportação, para ver como o XML
+  grava `PCD` e `OUTRA-FORMA-DE-CONTATO`.
+
+Estas só pedem leitura (`inspect(caminhos, { scripts: true })`), quase
+todas na página de edição de um item de teste, com o `f_seq` dele:
+
+- a edição de um livro (`PKG_LVR_CAP.FORM_LVR`): o que preenche a natureza
+  (`f_sub_prod` e `f_cod_sub_prod`);
+- a edição de uma outra produção bibliográfica (`prc_bib_outraprod`), que
+  o censo nunca abriu;
+- a janela do tipo das orientações (o `dominio()` que escreve `f_sub_prod`),
+  aberta de uma de mestrado concluída, uma em andamento e uma de outra
+  natureza;
+- a edição de uma banca de qualificação e de uma "outra participação"
+  (`PKG_BANCA_TRAB.form`): o que o rádio da natureza limpa e o nível da busca
+  de curso;
+- as janelas do projeto: financiadores (`PKG_PROJETO.pp_lista_inst` com
+  `f_pgm=INSTFINANC`), produções (`pp_lista_prod`) e orientações, e a lista
+  de cargos da atuação que tem o projeto (`PKG_ATIV.cargos_vinculos`);
+- o endereço (`prc_endereco`): os tipos de "outra forma de contato";
+- a edição de um programa de computador com um ambiente (`programaProvider`
+  e a lista de ambientes);
+- a busca do titular instituição de uma patente (`pkg_titular_inst.sele_inst`),
+  que responde por POST e por isso fica fora do `inspect()`.
+
+Depois da leitura, uma exportação dos mesmos itens liga cada código ao valor
+do XML. As músicas de teste de 18/10/2026 também precisam do valor exportado
+de `TIPO-DE-EVENTO` ao lado do `f_tpo_evento` de cada uma: 3 das 7 não
+bateram.
 
 Os caminhos inferidos na lista de formulários são os de desenho industrial,
 marca e topografia (o `f_reg` não foi lido) e os que saem de um link da
