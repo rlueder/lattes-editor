@@ -85,13 +85,15 @@ const inner = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').repl
 
 /**
  * NATUREZA do financiador → a quarta célula. Observado só o Auxílio
- * Financeiro (A, 20/10/2026); as outras letras são inferidas.
+ * Financeiro (A, 20/10/2026). As outras letras são inferidas; os rótulos são
+ * os de verificaNaturFinacNula() da página (lida em 26/10/2026), que tem
+ * "Outra". As células 0000;N; e 026|10,00 também são inferidas.
  */
 const FUNDER_NATURE: Record<string, [string, string]> = {
   AUXILIO_FINANCEIRO: ['A', 'Auxílio Financeiro'],
   BOLSA: ['B', 'Bolsa'],
   COOPERACAO: ['C', 'Cooperação'],
-  OUTRO: ['O', 'Outro'],
+  OUTRO: ['O', 'Outra'],
   REMUNERACAO: ['R', 'Remuneração'],
 };
 

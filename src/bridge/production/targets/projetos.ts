@@ -95,9 +95,9 @@ const PROJETO: ProductionTarget = {
   built: projectInstitutions,
   byHand: {
     'FINANCIADOR-DO-PROJETO':
-      'Financiador vai à mão: os valores de cada linha da grade de financiadores vêm de uma janela que não foi lida',
+      'Financiador vai à mão: a natureza, a moeda e o valor de cada linha vêm da janela PKG_PROJETO.EDITAR_FINANCIAMENTO, que não foi lida',
     'FINANCIADORES-DO-PROJETO':
-      'Financiador vai à mão: os valores de cada linha da grade de financiadores vêm de uma janela que não foi lida',
+      'Financiador vai à mão: a natureza, a moeda e o valor de cada linha vêm da janela PKG_PROJETO.EDITAR_FINANCIAMENTO, que não foi lida',
     ORIENTACAO:
       'Orientação do projeto vai à mão: ela se liga a uma orientação do currículo pela janela de orientações, que não foi lida',
     ORIENTACOES:

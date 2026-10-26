@@ -91,7 +91,7 @@ export const GENERAL_BY_HAND: Record<string, string> = {
   DISCIPLINA:
     'Disciplina numa atividade que já está no Lattes vai à mão: a grade leva também as que já existem, que a página traz só em script (numa atividade de ensino nova, ela vai junto)',
   'FINANCIADOR-DO-PROJETO':
-    'Financiador vai à mão: os valores de cada linha da grade de financiadores vêm de uma janela que não foi lida',
+    'Financiador vai à mão: a natureza, a moeda e o valor de cada linha vêm da janela PKG_PROJETO.EDITAR_FINANCIAMENTO, que não foi lida',
   FORMACAO_COMPLEMENTAR:
     'Formação complementar vai à mão: o formulário de inclusão não tem os anos, e o passo depois dele só se vê enviando',
   LICENCA:

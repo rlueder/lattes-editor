@@ -109,9 +109,16 @@ export async function inspectPages(
     const { noCode, path } = resolved;
     const [proc, query] = splitAtQuery(path);
     const params = queryParams(query);
+    // As janelas do projeto pedem o código em P_COD (EDITAR_FINANCIAMENTO,
+    // lido em 26/10/2026): vazio no caminho, ele entra aqui, como o f_cod.
+    for (const k of Object.keys(params)) {
+      if (k.toLowerCase() === 'p_cod' && params[k] === '') params[k] = code;
+    }
     // Com f_cod no caminho (um link copiado do Lattes), ele não entra de novo:
     // o gateway responde com erro a um parâmetro repetido (15/10/2026).
-    const hasCode = Object.keys(params).some((k) => k.toLowerCase() === 'f_cod');
+    // Com P_COD, o f_cod não entra: o gateway recusa parâmetro que o
+    // procedimento não tem (inferido, como o repetido).
+    const hasCode = Object.keys(params).some((k) => ['f_cod', 'p_cod'].includes(k.toLowerCase()));
     const target: CensusTarget = {
       elements: [],
       elementsProvenance: 'inferido',

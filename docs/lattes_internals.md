@@ -2614,3 +2614,22 @@ versionados. **Observado**, menos onde está marcado.
   ambiente do programa de computador sai do vetor `programaDP` da página (97
   entradas, `l`, `n` e `c`, até 3 por item); `f_ambiente` leva os `c`. Como a
   exportação grava `AMBIENTE` não foi visto.
+- **Projeto** (`PKG_PROJETO.form`, inclusão). O financiador entra pela
+  busca `pp_lista_inst?f_pgm=INSTFINANC`, cujo `seleciona()` abre
+  `PKG_PROJETO.EDITAR_FINANCIAMENTO` com `P_COD`, `P_COD_INST` e `P_CTR`; a
+  linha existente se edita na mesma página, com `P_VALORES` e `P_INDICE`. A
+  natureza, a moeda e o valor saem dela, que sem uma linha real responde 404. Os rótulos de natureza que a página conhece são Auxílio Financeiro,
+  Bolsa, Remuneração, Cooperação e Outra; o código só foi visto para o
+  primeiro (A). As produções e orientações ligadas saem de
+  `PKG_PROJETO.pp_lista_prod` com `f_tpo=PROD` ou `f_tpo=TESE`, sem o
+  projeto, e cada linha escolhida entra com `importarDados1`; o `check()`
+  manda o primeiro valor de cada linha em `f_producoes_l` e
+  `f_orientacoes_l`. Que esse valor seja a `SEQUENCIA-PRODUCAO` do item não
+  foi conferido. O órgão e a instituição só são exigidos na inclusão
+  (`f_ctr` I), e `f_orgao` vai desabilitado.
+- **Endereço** (`prc_endereco`). Os tipos de outra forma de contato são
+  7 Telegram, 3 MSN e 6 WhatsApp, com a privacidade 1 Público ou 2 Privado;
+  o "Inserir nova" usa `unshift` com `id`, `contato`, `endereco`,
+  `privacidade` e `visibilidade`, recusa o mesmo tipo com o mesmo endereço e
+  aceita até 5. Vai em `f_dados_grid_contatos` pelo mesmo `array2xml` das
+  redes. Como a exportação grava `OUTRA-FORMA-DE-CONTATO` não foi visto.

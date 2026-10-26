@@ -131,32 +131,22 @@ item de teste e a base da passada de itens de teste:
   contato" incluída, cada uma seguida de uma exportação, para ver como o XML
   grava `PCD` e `OUTRA-FORMA-DE-CONTATO`.
 
-Estas só pedem leitura (`inspect(caminhos, { scripts: true })`), quase
-todas na página de edição de um item de teste, com o `f_seq` dele:
+Estas pedem um item de teste, e por isso também um envio acompanhado:
 
-- a edição de um livro (`PKG_LVR_CAP.FORM_LVR`): o que preenche a natureza
-  (`f_sub_prod` e `f_cod_sub_prod`);
-- a edição de uma outra produção bibliográfica (`prc_bib_outraprod`), que
-  o censo nunca abriu;
-- a janela do tipo das orientações (o `dominio()` que escreve `f_sub_prod`),
-  aberta de uma de mestrado concluída, uma em andamento e uma de outra
-  natureza;
-- a edição de uma banca de qualificação e de uma "outra participação"
-  (`PKG_BANCA_TRAB.form`): o que o rádio da natureza limpa e o nível da busca
-  de curso;
-- as janelas do projeto: financiadores (`PKG_PROJETO.pp_lista_inst` com
-  `f_pgm=INSTFINANC`), produções (`pp_lista_prod`) e orientações, e a lista
-  de cargos da atuação que tem o projeto (`PKG_ATIV.cargos_vinculos`);
-- o endereço (`prc_endereco`): os tipos de "outra forma de contato";
-- a edição de um programa de computador com um ambiente (`programaProvider`
-  e a lista de ambientes);
-- a busca do titular instituição de uma patente (`pkg_titular_inst.sele_inst`),
-  que responde por POST e por isso fica fora do `inspect()`.
+- uma exportação depois de ligar um financiador, uma produção e uma
+  orientação a um projeto de teste, para ver a linha de
+  `EDITAR_FINANCIAMENTO` e confirmar que a linha de `pp_lista_prod` leva a
+  `SEQUENCIA-PRODUCAO`;
+- o titular instituição de uma patente de teste e os ambientes de um
+  programa de computador de teste, com a exportação de cada um;
+- a natureza de uma banca de qualificação aberta na página carregada: a
+  ordem dos rádios depois dos scripts, que decide o nível das buscas.
 
-Depois da leitura, uma exportação dos mesmos itens liga cada código ao valor
-do XML. As músicas de teste de 18/10/2026 também precisam do valor exportado
-de `TIPO-DE-EVENTO` ao lado do `f_tpo_evento` de cada uma: 3 das 7 não
-bateram.
+Uma leitura sem envio ainda falta: o vetor `programaDP` do formulário do
+programa de computador sem o apagamento de nomes, que hoje leva os rótulos
+`l` e `n` dessa lista fixa junto com os dados pessoais. As músicas de teste de
+18/10/2026 também precisam do valor exportado de `TIPO-DE-EVENTO` ao lado do
+`f_tpo_evento` de cada uma: 3 das 7 não bateram.
 
 Os caminhos inferidos na lista de formulários são os de desenho industrial,
 marca e topografia (o `f_reg` não foi lido) e os que saem de um link da

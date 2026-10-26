@@ -190,7 +190,7 @@ describe('planejar idioma, prêmio e vínculo', () => {
       ['DISCIPLINA', /grade leva também as que já existem/],
       ['TREINAMENTO', /atividade de treinamento, que exige o órgão/],
       ['LINHA-DE-PESQUISA', /atividade de pesquisa e desenvolvimento/],
-      ['FINANCIADOR-DO-PROJETO', /janela que não foi lida/],
+      ['FINANCIADOR-DO-PROJETO', /EDITAR_FINANCIAMENTO, que não foi lida/],
       ['PRODUCAO-CT-DO-PROJETO', /janela de produções/],
       ['ORIENTACAO', /janela de orientações/],
       ['CONSELHO-COMISSAO-E-CONSULTORIA', /órgão ou unidade/],

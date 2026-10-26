@@ -30,6 +30,27 @@ async function simulado(options: ServerOptions = {}) {
 }
 
 describe('scripts da página, sem dado pessoal', () => {
+  it('uma lista de dados em várias linhas sai inteira, até fechar', () => {
+    const html = `<script>
+var redesSociais = [
+  { id: 2, redeSocial: "Linkedin" },{}];
+var provider = [{
+  id: 2,
+  redeSocial: "Linkedin",
+  endereco: "https://example.org/pessoa-sintetica",
+  privacidade: "1"
+}, {
+  id: 15,
+  endereco: "https://example.org/outra"
+}];
+if (provider == null) alerta();
+</script>`;
+    const [script] = pageScripts(html);
+    expect(script).not.toContain('example.org');
+    expect(script).toContain('redeSocial: "Linkedin" },{}];');
+    expect(script).toContain('if (provider == null) alerta();');
+  });
+
   it('tira e-mail, CPF, números longos, textos pedidos e as linhas de dados das grades', () => {
     const html = `<script src="jquery.js"></script>
 <script>
@@ -196,6 +217,24 @@ describe('recaptura avulsa contra o Lattes simulado', () => {
       const text = JSON.stringify(file);
       expect(text).not.toContain(lattes.state.code);
       expect(text).not.toMatch(/\d{16}/);
+    } finally {
+      await lattes.close();
+    }
+  });
+
+  it('P_COD vazio recebe o código e sai do arquivo', async () => {
+    const { lattes, port } = await simulado();
+    const asked: string[] = [];
+    try {
+      const file = await inspectPages(
+        { ...port, get: (path) => (asked.push(path), port.get(path)) },
+        lattes.state.code,
+        ['PKG_PROJETO.EDITAR_FINANCIAMENTO?P_COD=&P_CTR='],
+        { delayMs: 0 },
+      );
+      expect(asked.some((p) => p.includes(`P_COD=${lattes.state.code}`))).toBe(true);
+      expect(asked.some((p) => /[?&]f_cod=/i.test(p))).toBe(false);
+      expect(JSON.stringify(file)).not.toContain(lattes.state.code);
     } finally {
       await lattes.close();
     }
