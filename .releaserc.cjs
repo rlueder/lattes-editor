@@ -11,6 +11,7 @@
  *   - feat → menor
  *   - fix, perf, refactor, revert → correção
  *   - docs, style, test, ci, chore, build → sem lançamento
+ * A opção manual primeira_estavel escolhe 1.0.0, apenas depois de uma versão 0.x.
  *
  * Em cada lançamento: notas em pt-BR, CHANGELOG.md atualizado, versão no
  * package.json, tag, e a página do GitHub com a extensão em .zip, construída
@@ -63,10 +64,29 @@ const BUILD = [
   '(cd dist-extension-loja && zip -qr ../release/lattes-editor-extensao-loja.zip .)',
 ].join(' && ');
 
+// A primeira estável é uma decisão de lançamento, sem inventar uma quebra de API.
+const firstStable = {
+  analyzeCommits(_config, { lastRelease }) {
+    if (!/^0\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(lastRelease.version ?? '')) {
+      throw new Error(
+        'A opção primeira_estavel exige que o último lançamento seja uma versão 0.x estável.',
+      );
+    }
+    return 'major';
+  },
+  verifyRelease(_config, { nextRelease }) {
+    if (nextRelease.version !== '1.0.0') {
+      throw new Error('A opção primeira_estavel só pode criar a versão 1.0.0.');
+    }
+  },
+};
+
 module.exports = {
   branches: ['main'],
   plugins: [
-    ['@semantic-release/commit-analyzer', { preset: 'conventionalcommits', releaseRules }],
+    process.env.LATTES_PRIMEIRA_ESTAVEL === 'true'
+      ? firstStable
+      : ['@semantic-release/commit-analyzer', { preset: 'conventionalcommits', releaseRules }],
     ['@semantic-release/release-notes-generator', { preset: 'conventionalcommits', presetConfig }],
     [
       '@semantic-release/changelog',

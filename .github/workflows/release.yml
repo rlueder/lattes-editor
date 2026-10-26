@@ -14,6 +14,12 @@ name: 'PROD 1: lançar versão (cria o rascunho)'
 
 on:
   workflow_dispatch:
+    inputs:
+      primeira_estavel:
+        description: Criar a primeira versão estável (1.0.0); só se o último lançamento ainda for 0.x.
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: release
@@ -61,6 +67,7 @@ jobs:
       - run: pnpm release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LATTES_PRIMEIRA_ESTAVEL: ${{ inputs.primeira_estavel }}
           # O commit de lançamento não passa pelos hooks do Husky: o CI já rodou tudo.
           HUSKY: '0'
       # A tag que o semantic-release acabou de criar, ou vazio se não houve lançamento.
