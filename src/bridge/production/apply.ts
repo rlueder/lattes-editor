@@ -21,7 +21,6 @@ import { isLogonPage } from '../lattes-html.ts';
 import type { FieldValues } from '../plan.ts';
 import { doiProblem } from './doi.ts';
 import {
-  authorNames,
   authorRows,
   GRID_LABELS,
   GRID_SPECS,
@@ -35,8 +34,8 @@ import {
   sameWords,
   serializeGrid,
 } from './grids.ts';
-import { holderReplace, sameHolder, SEVERAL_HOLDERS } from './holders.ts';
-import { institutionMisses, institutionReplace } from './institution-holder.ts';
+import { SEVERAL_HOLDERS } from './holders.ts';
+import { depositorReplace, sameDepositor, severalDepositors } from './institution-holder.ts';
 import { areaGridRows, gridLabels, sameLabels, setorGridRows } from './item-lists.ts';
 import { locate } from './locate.ts';
 import { resolveLookups } from './lookups.ts';
@@ -143,7 +142,7 @@ export async function applyProduction(
     }
 
     // Mais de um depositante na página: como a exportação os junta não foi visto.
-    if (op.holders && authorNames(grids.f_depositante_pessoa_l ?? []).length > 1) {
+    if (op.holders && severalDepositors(grids)) {
       return result('erro', `${SEVERAL_HOLDERS}; nada foi enviado`);
     }
 
@@ -172,10 +171,8 @@ export async function applyProduction(
     if (op.areas && !sameLabels(gridLabels(grids.f_area_l ?? []), op.areas.before.map(areaLabel))) {
       wrong.push('f_area_l');
     }
-    const holderGrid = grids.f_depositante_pessoa_l ?? [];
-    if (op.holders && !sameHolder(holderGrid, op.holders.before))
+    if (op.holders && !sameDepositor(grids, op.holders.before))
       wrong.push('f_depositante_pessoa_l');
-    wrong.push(...institutionMisses(op, grids, 'before'));
     if (op.setores && !sameLabels(gridLabels(grids.f_setor_l ?? []), op.setores.before)) {
       wrong.push('f_setor_l');
     }
@@ -240,13 +237,10 @@ export async function applyProduction(
       replace.f_autores_l = withLeads(rows, op.authors.after);
     }
     if (op.holders) {
-      const built = holderReplace(holderGrid, menu, op.holders.after);
-      if ('reason' in built) return result('erro', built.reason);
-      replace.f_depositante_pessoa_l = built.rows;
+      const built = await depositorReplace(port, pairs, menu, grids, op.holders);
+      if ('status' in built) return result(built.status, built.detail);
+      Object.assign(replace, built.replace);
     }
-    const institution = await institutionReplace(port, pairs, op);
-    if ('status' in institution) return result(institution.status, institution.detail);
-    Object.assign(replace, institution.replace);
     const set = Object.fromEntries(fields.map((f) => [f, op.set[f] ?? '']));
     // As escolhas pelas buscas: os ocultos que a página escreveria (lookups.ts).
     let chosen: FieldValues = {};
@@ -337,10 +331,9 @@ export async function applyProduction(
     if (op.setores && !sameLabels(gridLabels(afterGrids.f_setor_l ?? []), op.setores.after)) {
       notSaved.push('f_setor_l');
     }
-    if (op.holders && !sameHolder(afterGrids.f_depositante_pessoa_l ?? [], op.holders.after)) {
+    if (op.holders && !sameDepositor(afterGrids, op.holders.after)) {
       notSaved.push('f_depositante_pessoa_l');
     }
-    notSaved.push(...institutionMisses(op, afterGrids, 'after'));
     // Os virtuais, lidos de novo do vetor da página.
     const virtualAfter = virtualFields.length > 0 ? t.virtual?.read(afterHtml) : {};
     for (const f of virtualFields) {

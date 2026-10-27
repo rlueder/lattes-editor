@@ -63,12 +63,15 @@ export interface ProductionOp extends OpBase {
    * O depositante ou titular pessoa antes e depois (ProductionTarget.holders),
    * quando a mudança é dele: um nome só, ou vazio.
    */
-  holders?: { after: string; before: string };
-  /**
-   * O titular instituição antes e depois (institution-holder.ts), quando a
-   * mudança é dele: um nome só, ou vazio; a busca é feita na hora de gravar.
-   */
-  institutionHolder?: { after: string; before: string };
+  holders?: {
+    after: string;
+    before: string;
+    /**
+     * O nome novo pode ser uma instituição, pela busca da janela de titulares
+     * (institution-holder.ts): só para uma extensão com 'titular-instituicao'.
+     */
+    institutions?: boolean;
+  };
   /** Palavras-chave antes e depois, na ordem, quando a mudança é delas. */
   keywords?: { after: string[]; before: string[] };
   kind: 'producao';
@@ -397,7 +400,7 @@ export function planProduction(
     lookups = planned.lookups;
     rows.push(...planned.rows);
   }
-  const people: Partial<Pick<ProductionOp, 'holders' | 'institutionHolder'>> = {};
+  const people: Partial<Pick<ProductionOp, 'holders'>> = {};
   const unknown: string[] = [];
   const unmapped: string[] = [];
   const manual = new Map<string, string[]>();

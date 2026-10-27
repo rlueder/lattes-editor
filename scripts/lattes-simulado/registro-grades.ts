@@ -59,7 +59,8 @@ const registryOf = (item: XElement): XElement | undefined => {
 function holdersFromXml(item: XElement): Row[] {
   const reg = registryOf(item);
   const name = ((reg && getAttr(reg, 'NOME-DO-DEPOSITANTE')) ?? '').trim();
-  if (!name) return [];
+  // Uma instituição da busca do simulado é titular instituição (institutionsFromXml).
+  if (!name || isInstitution(name)) return [];
   const copy = childElements(item, 'AUTORES').find(
     (a) => foldText(getAttr(a, 'NOME-COMPLETO-DO-AUTOR') ?? '') === foldText(name),
   );
@@ -80,13 +81,20 @@ const institutionRow = (name: string, code: string, letter: string): Row =>
     ['editable', false],
   ]);
 
-/** Sem grade guardada, a do NOME-DO-TITULAR do XML, com o código da busca do simulado. */
+const isInstitution = (name: string) =>
+  INSTITUTIONS.some((i) => foldText(i.name) === foldText(name.trim()));
+
+/**
+ * Sem grade guardada, a instituição do NOME-DO-DEPOSITANTE do XML, com o
+ * código da busca do simulado: a exportação de 27/10/2026 pôs a instituição
+ * titular nesse atributo, e não em NOME-DO-TITULAR.
+ */
 function institutionsFromXml(item: XElement): Row[] {
   const reg = registryOf(item);
-  const name = ((reg && getAttr(reg, 'NOME-DO-TITULAR')) ?? '').trim();
-  if (!name) return [];
-  const hit = INSTITUTIONS.find((i) => foldText(i.name) === foldText(name));
-  return [institutionRow(name, hit?.code.slice(1) ?? '', hit?.code.slice(0, 1) ?? 'D')];
+  const name = ((reg && getAttr(reg, 'NOME-DO-DEPOSITANTE')) ?? '').trim();
+  if (!name || !isInstitution(name)) return [];
+  const hit = INSTITUTIONS.find((i) => foldText(i.name) === foldText(name))!;
+  return [institutionRow(hit.name, hit.code.slice(1), hit.code.slice(0, 1))];
 }
 
 const holdersOf = (item: XElement) => {
@@ -174,10 +182,12 @@ const rowsOf = (grid: string) =>
 function writeHolders(item: XElement): void {
   const names = storedHolders(item);
   const reg = registryOf(item);
-  if (reg) setAttr(reg, 'NOME-DO-DEPOSITANTE', names.join('; '));
-  // Inferido: o nome da instituição titular em NOME-DO-TITULAR.
+  // Pessoas e instituições no mesmo atributo (exportação de 27/10/2026, com
+  // uma instituição só); NOME-DO-TITULAR fica vazio. Como várias se juntam é
+  // inferido.
   const institutions = holdersOf(item).inst.map((r) => String(r.l));
-  if (reg) setAttr(reg, 'NOME-DO-TITULAR', institutions.join('; '));
+  if (reg) setAttr(reg, 'NOME-DO-DEPOSITANTE', [...names, ...institutions].join('; '));
+  if (reg && getAttr(reg, 'NOME-DO-TITULAR') !== undefined) setAttr(reg, 'NOME-DO-TITULAR', '');
   const authors = childElements(item, 'AUTORES');
   item.children = item.children.filter((c) => !authors.includes(c as XElement));
   holdersOf(item).pessoa.forEach((r, i) => {

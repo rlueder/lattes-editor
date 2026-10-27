@@ -83,6 +83,14 @@ const CLEARS = { 'f_sta_inovacao=N': { f_txt_potencial: '' } };
 /** A pessoa depositante ou titular, na grade f_depositante_pessoa_l (plan.ts). */
 const HOLDER = { attr: 'NOME-DO-DEPOSITANTE', child: REG };
 
+/**
+ * NOME-DO-TITULAR: na exportação de 27/10/2026, a instituição titular veio em
+ * NOME-DO-DEPOSITANTE, e este atributo, vazio. O que o Lattes grava nele não
+ * foi visto.
+ */
+const TITULAR_REASON =
+  'O Lattes põe a instituição titular em "Depositante" na exportação, e deixa este campo vazio; troque o depositante';
+
 /** O que o registro tem em comum entre os tipos: número, instituição, título e quem é o titular. */
 const registry = (): Record<string, FieldMap | string> =>
   under(REG, {
@@ -96,9 +104,7 @@ const registryManual = (fixedType?: string, holders = true): Record<string, stri
   return {
     // Com a grade, o depositante pessoa vai por ela (HOLDER, plan.ts).
     ...(holders ? {} : { [`${REG}@NOME-DO-DEPOSITANTE`]: none }),
-    // Com a grade, o titular instituição vai pela busca da janela de
-    // titulares (institution-holder.ts).
-    ...(holders ? {} : { [`${REG}@NOME-DO-TITULAR`]: none }),
+    [`${REG}@NOME-DO-TITULAR`]: holders ? TITULAR_REASON : none,
     ...(fixedType
       ? {
           [`${REG}@TIPO-PATENTE`]: `O formulário de ${fixedType} do Lattes não tem campo para o tipo: ele é sempre ${fixedType}`,

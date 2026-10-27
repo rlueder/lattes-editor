@@ -163,8 +163,10 @@ describe('patente: o depositante pessoa', () => {
     const ops = opsAfter(depositor('Pessoa Fora da Lista'), HOLDER_XML);
     const r = await applyOp(ops[0]!, sim.port);
     expect(r.status).toBe('erro');
-    expect(r.detail).toMatch(/não está na lista de coautores do Lattes: Pessoa Fora da Lista/);
-    expect(postsOf(sim)).toEqual([]);
+    // Sem a pessoa no menu, a busca de instituições também não a acha.
+    expect(r.detail).toMatch(/Pessoa Fora da Lista não está na lista de coautores do Lattes/);
+    // A busca de instituições é um POST só de leitura; a patente não foi enviada.
+    expect(postsOf(sim).filter((p) => /^PKG_PATENTE_REGISTRO/i.test(p.proc))).toEqual([]);
   });
 
   it('o Lattes com outro depositante: divergente, e nada vai', async () => {
@@ -182,6 +184,7 @@ describe('patente: o depositante pessoa', () => {
     expect(ops[0]!.holders).toEqual({
       after: 'SINTÉTICO, Depositante',
       before: 'Depositante Sintético',
+      institutions: true,
     });
   });
 
@@ -199,58 +202,71 @@ describe('patente: o depositante pessoa', () => {
   });
 });
 
-describe('patente: o titular instituição (janela de titulares, lida em 27/10/2026)', () => {
+describe('patente: depositante instituição (exportação e janela de titulares, 27/10/2026)', () => {
   const UFRGS = 'Universidade Federal do Rio Grande do Sul';
-  const titular = (name: string) => (root: XElement) =>
-    setAttr(registry(root), 'NOME-DO-TITULAR', name);
+  const depositante = (name: string) => (root: XElement) =>
+    setAttr(registry(root), 'NOME-DO-DEPOSITANTE', name);
 
-  it('vira a troca da grade de titulares, com a busca na hora de gravar', () => {
-    const [op] = opsAfter(titular(UFRGS), HOLDER_XML);
-    expect(op?.institutionHolder).toEqual({ after: UFRGS, before: '' });
-    expect(planAfter(titular(UFRGS), HOLDER_XML, false).unsupported.map((u) => u.reason)).toEqual([
-      'Titular instituição pela busca do Lattes: desligado nesta montagem',
-    ]);
-    expect(reasonsAfter(titular(`${UFRGS}; Outra`), HOLDER_XML)).toEqual([
-      expect.stringMatching(/^Mais de uma instituição titular/),
-    ]);
+  it('a troca do depositante pode ir para uma instituição só com a capacidade', () => {
+    const [op] = opsAfter(depositante(UFRGS), HOLDER_XML);
+    expect(op?.holders).toEqual({
+      after: UFRGS,
+      before: 'Depositante Sintético',
+      institutions: true,
+    });
+    const [old] = planAfter(depositante(UFRGS), HOLDER_XML, false).ops as ProductionOp[];
+    expect(old?.holders?.institutions).toBeUndefined();
+    // NOME-DO-TITULAR: a exportação o deixa vazio e põe a instituição no depositante.
+    expect(
+      reasonsAfter((root) => setAttr(registry(root), 'NOME-DO-TITULAR', UFRGS), HOLDER_XML),
+    ).toEqual([expect.stringMatching(/põe a instituição titular em "Depositante"/)]);
   });
 
-  it('no Lattes simulado: a linha do seleciona(), gravada e conferida', async () => {
+  it('no Lattes simulado: a pessoa vira a instituição da busca, gravada e conferida', async () => {
     const sim = await lattes(HOLDER_XML);
-    const [op] = opsAfter(titular(UFRGS), HOLDER_XML);
+    const [op] = opsAfter(depositante(UFRGS), HOLDER_XML);
     expect(await applyOp(op!, sim.port)).toMatchObject({ status: 'conferido' });
     const post = postsOf(sim).at(-1)!.fields;
     expect(post.f_depositante_inst_l).toBe(`${UFRGS}|000000000001|V`);
-    expect(getAttr(registry(sim.state.root), 'NOME-DO-TITULAR')).toBe(UFRGS);
-    // A pessoa depositante segue como estava.
-    expect(getAttr(registry(sim.state.root), 'NOME-DO-DEPOSITANTE')).toBe('Depositante Sintético');
-    // E tirar o titular deixa a grade vazia.
-    const [clear] = opsAfter(
-      (root) => titular('')(root),
-      HOLDER_XML.replace('NOME-DO-TITULAR=""', `NOME-DO-TITULAR="${UFRGS}"`),
-    );
-    expect(await applyOp(clear!, sim.port)).toMatchObject({ status: 'conferido' });
+    expect(post.f_depositante_pessoa_l).toBe('');
+    expect(getAttr(registry(sim.state.root), 'NOME-DO-DEPOSITANTE')).toBe(UFRGS);
     expect(getAttr(registry(sim.state.root), 'NOME-DO-TITULAR')).toBe('');
+    // E tirar o depositante instituição deixa as duas grades vazias.
+    const withUfrgs = HOLDER_XML.replace(
+      'NOME-DO-DEPOSITANTE="Depositante Sintético"',
+      `NOME-DO-DEPOSITANTE="${UFRGS}"`,
+    );
+    const [clear] = opsAfter(depositante(''), withUfrgs);
+    expect(await applyOp(clear!, sim.port)).toMatchObject({ status: 'conferido' });
+    expect(getAttr(registry(sim.state.root), 'NOME-DO-DEPOSITANTE')).toBe('');
   });
 
   const saves = (sim: LattesSimuladoNoTeste) =>
     postsOf(sim).filter((p) => /^PKG_PATENTE_REGISTRO/i.test(p.proc));
 
-  it('nome que a busca não acha uma vez só: nada vai', async () => {
+  it('sem a capacidade, ou sem uma instituição só com o nome: nada vai', async () => {
     const sim = await lattes(HOLDER_XML);
-    const [missing] = opsAfter(titular('Universidade'), HOLDER_XML);
+    const [old] = planAfter(depositante(UFRGS), HOLDER_XML, false).ops as ProductionOp[];
+    expect(await applyOp(old!, sim.port)).toMatchObject({
+      detail: expect.stringMatching(/não está na lista de coautores/),
+      status: 'erro',
+    });
+    const [missing] = opsAfter(depositante('Universidade'), HOLDER_XML);
     expect(await applyOp(missing!, sim.port)).toMatchObject({
-      detail: expect.stringMatching(/^Titular instituição: 0 instituições/),
+      detail: expect.stringMatching(/0 instituições têm esse nome/),
       status: 'erro',
     });
     expect(saves(sim)).toEqual([]);
   });
 
-  it('outro titular no Lattes: divergente, sem busca nem envio', async () => {
+  it('outro depositante no Lattes: divergente, sem busca nem envio', async () => {
     const sim = await lattes(
-      HOLDER_XML.replace('NOME-DO-TITULAR=""', 'NOME-DO-TITULAR="Universidade de São Paulo"'),
+      HOLDER_XML.replace(
+        'NOME-DO-DEPOSITANTE="Depositante Sintético"',
+        'NOME-DO-DEPOSITANTE="Universidade de São Paulo"',
+      ),
     );
-    const [op] = opsAfter(titular(UFRGS), HOLDER_XML);
+    const [op] = opsAfter(depositante(UFRGS), HOLDER_XML);
     expect(await applyOp(op!, sim.port)).toMatchObject({ status: 'divergente' });
     expect(postsOf(sim)).toEqual([]);
   });

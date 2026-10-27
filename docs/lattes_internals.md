@@ -1548,19 +1548,23 @@ O que o conector faz com isso (`src/bridge/production/holders.ts` e
   Nos outros registros com a grade de depositantes (programa de computador,
   cultivares, desenho industrial) a ligação com `NOME-DO-DEPOSITANTE` é
   inferida pela patente.
-- O titular instituição (`NOME-DO-TITULAR`, `titularInstProvider`) vai pela
-  janela de titulares (`src/bridge/production/institution-holder.ts`). Em
-  27/10/2026, sem enviar: a janela `pkg_titular_inst.sele_inst` busca por
-  nome num POST com `f_cod`, `f_ctr=P` e `f_nome`, e responde com um
+- O depositante instituição (`titularInstProvider`) vai pela janela de
+  titulares (`src/bridge/production/institution-holder.ts`). Em 27/10/2026,
+  sem enviar: a janela `pkg_titular_inst.sele_inst` busca por nome num POST
+  com `f_cod`, `f_ctr=P` e `f_nome`, e responde com um
   `seleciona('<letra><código>', '<nome>')` por instituição; o `seleciona()`
   põe na grade `{l: nome, c: código sem a letra, tipoInst: a letra,
 deletable, editable}`, e o `check()` a serializa como `nome|código|letra`.
-  **Observado.** O conector refaz a busca com o nome do XML, fica com a única
-  instituição de mesmo nome (sem acento nem caixa) e escreve a linha assim;
-  mais de uma instituição fica à mão. **Inferido:** que a exportação guarde o
-  nome da instituição titular em `NOME-DO-TITULAR` e que a linha gravada volte
-  na edição com o mesmo `l`. O `titularInstDP` não existe na janela do menu.
-  A troca não foi enviada.
+  Uma patente de teste com a UFRGS como titular, gravada pela página e
+  exportada no mesmo dia, veio com `NOME-DO-DEPOSITANTE="Universidade Federal
+do Rio Grande do Sul"` e `NOME-DO-TITULAR` vazio, sem cópia nos `AUTORES`.
+  **Observado.** O XML não diz se o depositante é pessoa ou instituição: o
+  conector acha o nome de antes numa das duas grades da página e põe o nome
+  novo na pessoa do `titularPessoaDP` ou, com a capacidade
+  `titular-instituicao`, na única instituição de mesmo nome na busca (sem
+  acento nem caixa). Mais de uma, ou nenhuma, fica à mão; `NOME-DO-TITULAR`
+  também. **Inferido:** como a exportação junta pessoa e instituição juntas.
+  O `titularInstDP` não existe na janela do menu.
 - A mudança de autores deixa de fora as linhas de `AUTORES` com o nome de um
   depositante, antes e depois, para conferir com o `autorProvider`, que não
   as tem, e para nunca mandar o depositante como autor. A cópia só se

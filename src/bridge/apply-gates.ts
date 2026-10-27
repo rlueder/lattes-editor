@@ -12,8 +12,6 @@ import {
   type ListEditKind,
 } from './edit-lists.ts';
 import type { BridgeOp } from './plan.ts';
-import { INSTITUTION_HOLDERS_ENABLED } from './production/institution-holder.ts';
-import { isProductionOp } from './production/plan.ts';
 
 /**
  * As alterações atrás de chave que este lado grava: as que têm o formulário
@@ -29,8 +27,6 @@ export interface ApplyGates {
   /** COMPL_LOOKUPS_ENABLED; sem valor, desligada. */
   complLookups?: boolean;
   editEvento: boolean;
-  /** INSTITUTION_HOLDERS_ENABLED; sem valor, desligada. */
-  institutionHolders?: boolean;
   lists: ReadonlySet<ListEditKind>;
 }
 
@@ -39,7 +35,6 @@ export const BUILD_GATES: ApplyGates = {
   complEnderecoLookups: COMPL_ENDERECO_LOOKUPS_ENABLED,
   complLookups: COMPL_LOOKUPS_ENABLED,
   editEvento: EDIT_EVENTO_ENABLED,
-  institutionHolders: INSTITUTION_HOLDERS_ENABLED,
   lists: enabledListEdits(),
 };
 
@@ -60,9 +55,6 @@ export function gatedOut(op: BridgeOp, gates: ApplyGates): string | undefined {
       !gates.complEnderecoLookups);
   if (lookups) {
     return 'Esta extensão não grava instituição, curso e órgão pelas buscas neste formulário; a alteração fica à mão';
-  }
-  if (isProductionOp(op) && op.institutionHolder && !gates.institutionHolders) {
-    return 'Esta extensão não envia o titular instituição; a alteração fica à mão';
   }
   if (isEventoOp(op) && !gates.editEvento && isFullEvento(op)) {
     return 'Esta extensão só altera eventos de ouvinte; a alteração fica à mão';

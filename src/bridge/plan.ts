@@ -124,7 +124,7 @@ export interface PlanOptions {
   editProduction?: boolean;
   /** Textos que o envio pede e o XML não guarda, por Change.key (send-extras.ts no editor). */
   extras?: Readonly<Record<string, Readonly<Record<string, string>>>>;
-  /** Titular instituição de patentes e registros pela busca de titulares (production/institution-holder.ts). */
+  /** Depositante instituição de patentes e registros pela busca de titulares (production/institution-holder.ts). */
   institutionHolders?: boolean;
   /** Instituição, curso e agência de orientações e bancas pelas buscas (production/lookups.ts). */
   productionLookups?: boolean;
@@ -263,12 +263,9 @@ export function planChange(
         'Instituição, curso e agência pelas buscas do Lattes: desligado nesta montagem',
       );
     }
-    if (planned.institutionHolder && !institutionHolders) {
-      return unsupported(
-        change,
-        label,
-        'Titular instituição pela busca do Lattes: desligado nesta montagem',
-      );
+    // O depositante pode ser instituição só numa extensão que sabe buscá-la.
+    if (planned.holders && institutionHolders) {
+      return { ...planned, holders: { ...planned.holders, institutions: true } };
     }
     return planned;
   }

@@ -13,7 +13,6 @@ import { foldText } from '../../model/fold-text.ts';
 import { childElements, getAttr, type XElement } from '../../model/xml.ts';
 import { menuAuthors } from '../author-grid.ts';
 import { authorNames, type GridRow, holderRows, sameWords } from './grids.ts';
-import { INSTITUTION_HOLDER_ATTR, planInstitutionHolder } from './institution-holder.ts';
 import type { ProductionTarget } from './types.ts';
 
 export const SEVERAL_HOLDERS =
@@ -127,29 +126,21 @@ export function holderReplace(
 }
 
 /**
- * A mudança num depositante ou titular: a pessoa (target.holders) ou a
- * instituição (NOME-DO-TITULAR no mesmo elemento), com a grade e o campo da
- * operação; undefined quando o atributo não é deles.
+ * A mudança no depositante (target.holders), com a grade e o campo da
+ * operação; undefined quando o atributo não é ele. Pessoa ou instituição, a
+ * exportação põe as duas em NOME-DO-DEPOSITANTE (institution-holder.ts).
  */
 export function holderField(
   target: ProductionTarget,
   key: string,
   f: { after: string; before: string },
 ):
-  | {
-      grid: 'f_depositante_inst_l' | 'f_depositante_pessoa_l';
-      op: 'holders' | 'institutionHolder';
-      value: { after: string; before: string };
-    }
+  | { grid: 'f_depositante_pessoa_l'; op: 'holders'; value: { after: string; before: string } }
   | { reason: string }
   | undefined {
   const spec = target.holders;
-  if (!spec) return undefined;
-  const person = key === `${spec.child}@${spec.attr}`;
-  if (!person && key !== `${spec.child}@${INSTITUTION_HOLDER_ATTR}`) return undefined;
-  const value = person ? planHolder(f) : planInstitutionHolder(f);
+  if (!spec || key !== `${spec.child}@${spec.attr}`) return undefined;
+  const value = planHolder(f);
   if ('reason' in value) return value;
-  return person
-    ? { grid: 'f_depositante_pessoa_l', op: 'holders', value }
-    : { grid: 'f_depositante_inst_l', op: 'institutionHolder', value };
+  return { grid: 'f_depositante_pessoa_l', op: 'holders', value };
 }
