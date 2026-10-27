@@ -47,8 +47,18 @@ const seqOf = (item: XElement) =>
 
 const partOf = (item: XElement, child: string) => childElements(item, child)[0];
 
-/** O valor do formulário de volta para o XML: o candidato cujo toForm dá o mesmo valor. */
-function fromForm(element: string, attr: string, map: FieldMap, value: string): string | undefined {
+/**
+ * O valor do formulário de volta para o XML: o candidato cujo toForm dá o mesmo
+ * valor. `labels`: os valores de texto livre que o tipo conhece (a NATUREZA da
+ * qualificação, que o XSD não enumera).
+ */
+function fromForm(
+  element: string,
+  attr: string,
+  map: FieldMap,
+  value: string,
+  labels: readonly string[] = [],
+): string | undefined {
   if (!map.toForm) return value;
   if (map.toForm === availabilityToForm) {
     return value === '' ? 'NAO_INFORMADO' : value.toUpperCase();
@@ -62,7 +72,14 @@ function fromForm(element: string, attr: string, map: FieldMap, value: string): 
   const spec = lattesSchema.elements[element]?.attributes.find((a) => a.name === attr);
   // Por último, o próprio valor (lista cujo valor é o rótulo) e a data sem as
   // barras (dd/mm/aaaa do formulário, DDMMAAAA do XML).
-  const candidates = [...(spec?.enum ?? []), 'SIM', 'NAO', value.replace(/\//g, ''), value];
+  const candidates = [
+    ...(spec?.enum ?? []),
+    ...labels,
+    'SIM',
+    'NAO',
+    value.replace(/\//g, ''),
+    value,
+  ];
   return candidates.find((c) => map.toForm!(c) === value);
 }
 
@@ -323,7 +340,8 @@ export function writeFields(t: ProductionTarget, item: XElement, req: SimRequest
     const map = mapOf(m);
     const value = req.get(map.field);
     if (value === null || value === undefined) return;
-    const saved = fromForm(child, attr, map, value);
+    const labels = attr === 'NATUREZA' ? Object.keys(t.lookups?.course?.natures ?? {}) : [];
+    const saved = fromForm(child, attr, map, value, labels);
     if (saved === undefined) return;
     let part = partOf(item, child);
     if (!part) {

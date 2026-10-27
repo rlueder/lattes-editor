@@ -821,7 +821,7 @@ describe('natureza das outras orientações concluídas (testa_nivel, lido em 20
   });
 });
 
-describe('natureza das bancas: sem envio, a página não foi lida', () => {
+describe('natureza das bancas', () => {
   const manualOf = (id: string) =>
     Object.entries(ORIENTACOES_BANCAS_TARGETS.find((t) => t.id === id)!.manual ?? {}).find(
       ([key]) => key.endsWith('@NATUREZA'),
@@ -835,11 +835,67 @@ describe('natureza das bancas: sem envio, a página não foi lida', () => {
     );
   });
 
-  it('a qualificação (A13 e A16) e as outras participações ficam à mão, com o motivo', () => {
-    expect(
-      reasonOf(set('45', 'DADOS-BASICOS', { NATUREZA: 'Exame de qualificação de doutorado' })),
-    ).toMatch(/qualificação de mestrado e de doutorado/);
+  it('as outras participações ficam à mão, com o motivo', () => {
     expect(manualOf('banca-trabalho-outra')).toMatch(/não tem opção para outras participações/);
+  });
+
+  // testa_nivel() de PKG_BANCA_TRAB.form, lido em 27/10/2026 sem enviar.
+  const QUALIFIED = (root: XElement) =>
+    set('45', 'DETALHAMENTO', {
+      'CODIGO-CURSO': '00000001',
+      'CODIGO-INSTITUICAO': '000000000001',
+      'NOME-CURSO': 'Genética e Biologia Molecular',
+      'NOME-INSTITUICAO': 'Universidade Federal do Rio Grande do Sul',
+    })(root);
+  const toDoctorate = set('45', 'DADOS-BASICOS', {
+    NATUREZA: 'Exame de qualificação de doutorado',
+  });
+  const planQualification = (productionLookups = true) => {
+    const original = parseXml(XML).root;
+    QUALIFIED(original);
+    const working = parseXml(XML).root;
+    QUALIFIED(working);
+    toDoctorate(working);
+    return planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Item' })),
+      working,
+      { editProduction: true, productionLookups },
+    );
+  };
+
+  it('qualificação de mestrado para doutorado: o rádio e as escolhas de novo', () => {
+    const p = planQualification();
+    expect(p.unsupported).toEqual([]);
+    expect(p.ops[0]).toMatchObject({
+      expect: { F_COD_PROD: 'A16' },
+      lookups: {
+        course: { before: '00000001', code: '00000001' },
+        institution: { before: '000000000001', code: '000000000001' },
+        nature: 'A13',
+      },
+      set: { F_COD_PROD: 'A13' },
+      target: 'banca-trabalho-qualificacao',
+    });
+    expect(planQualification(false).unsupported[0]?.reason).toMatch(/desligado nesta montagem/);
+  });
+
+  it('qualificação sem a instituição no item: à mão, com o motivo', () => {
+    expect(reasonOf(toDoctorate)).toMatch(/o item não tem o código dela; troque no Lattes$/);
+  });
+
+  it('no Lattes simulado: grava, com as buscas no nível da natureza nova', async () => {
+    const lattes = await lattesFor();
+    QUALIFIED(lattes.state.root);
+    const op = planQualification().ops[0] as ProductionOp;
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    const paths = lattes.state.log.map((l) => l.path);
+    // inst() e curso() da página: GD e nível 4, sem área, para a de doutorado.
+    expect(paths.some((p) => /^PRC_INST_FORM\?.*F_NIVEL=GD/i.test(p))).toBe(true);
+    expect(paths.some((p) => /^prc_curso_form\?.*f_nivel=4&f_sta_area=N/i.test(p))).toBe(true);
+    expect(postsOf(lattes).at(-1)!.fields).toMatchObject({ F_COD_PROD: 'A13' });
+    expect(getAttr(partOf(lattes.state.root, '45', 'DADOS-BASICOS'), 'NATUREZA')).toBe(
+      'Exame de qualificação de doutorado',
+    );
   });
 });
 

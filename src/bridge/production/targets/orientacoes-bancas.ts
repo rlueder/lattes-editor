@@ -52,19 +52,25 @@ const ORIENT_COURSE = {
     professional: { nature: 'A41', subProd: '37' },
   },
 };
+// A banca de trabalho escolhe o nível das buscas pelo índice do rádio da
+// natureza, e um script da página, na carga, põe a qualificação de mestrado
+// (A16) logo depois da de doutorado (A13): a ordem viva é A11, A12, A13, A16,
+// A14, A15. Os níveis abaixo são os que o sele_inst() e o curso() da própria
+// página montaram com cada natureza marcada, numa página carregada em
+// 27/10/2026, sem enviar.
 const BOARD_COURSE = {
   level: { A11: '3', A12: '4', A13: '4', A14: '2', A15: '1', A16: '3' },
-  noArea: ['A13', 'A14'],
+  noArea: ['A13', 'A16'],
   professional: { nature: 'A11', subProd: '35 ' },
 };
-/** O f_nivel da busca de instituição da banca de trabalho, pela natureza (inst() da página). */
+/** O f_nivel da busca de instituição da banca de trabalho, pela natureza (sele_inst() da página). */
 const BOARD_INSTITUTION_LEVEL = {
   A11: 'GM',
   A12: 'GD',
   A13: 'GD',
-  A14: 'AP',
-  A15: 'GG',
-  A16: 'GE',
+  A14: 'GG',
+  A15: 'GE',
+  A16: 'AP',
 };
 
 /** Só os pares que o XSD tem no filho. */
@@ -146,8 +152,6 @@ const WHY = {
    */
   postdocCourse:
     'O formulário de orientação do Lattes não aceita curso na supervisão de pós-doutorado: a página pede para não informar e limpa o curso',
-  /** A13 e A16, no mesmo elemento: a busca de instituição e a de curso dependem da natureza. */
-  qualification: `a troca entre qualificação de mestrado e de doutorado muda a busca de instituição e a de curso, e o que a página da banca faz nessa troca não foi lido; ${BACK}`,
   studentId: 'o Lattes guarda o identificador num campo oculto que só a página dele preenche',
 };
 
@@ -390,6 +394,10 @@ function thesisBoard(
       ...(suffix === 'MESTRADO'
         ? { [`${basics}@TIPO`]: { field: 'f_sub_prod', toForm: MASTERS_KIND } }
         : {}),
+      // A natureza que se escolhe no elemento (qualificação de mestrado ou doutorado).
+      ...(natures
+        ? { [`${basics}@NATUREZA`]: { field: 'F_COD_PROD', toForm: byTable(natures) } }
+        : {}),
       [`DETALHAMENTO-${de}@NOME-DO-CANDIDATO`]: 'f_nme_orient',
     }),
     form: { action: 'PKG_BANCA_TRAB.FORM', name: 'PKG_BANCA_TRAB' },
@@ -408,15 +416,24 @@ function thesisBoard(
       institutionLevel: BOARD_INSTITUTION_LEVEL,
     }),
     manual: manualOf([
-      [
-        basics,
-        ['NATUREZA'],
-        !nature ? WHY.otherBoard : nature.length > 1 ? WHY.qualification : WHY.nature(nature[0]!),
-      ],
+      ...(natures
+        ? []
+        : [
+            [basics, ['NATUREZA'], !nature ? WHY.otherBoard : WHY.nature(nature[0]!)] as [
+              string,
+              string[],
+              string,
+            ],
+          ]),
       [`DETALHAMENTO-${de}`, INSTITUTION, WHY.institution],
       [`DETALHAMENTO-${de}`, COURSE, WHY.course],
     ]),
     ...(nature ? { nature: { field: 'F_COD_PROD', values: nature } } : {}),
+    // testa_nivel() da banca (lido em 27/10/2026, sem enviar): com a instituição
+    // preenchida, a troca do tipo limpa os códigos e os textos da instituição e
+    // do curso e pede os dois de novo; nada mais. As buscas os escolhem de novo
+    // com o nível da natureza nova (nature.ts).
+    ...(natures ? { natureSwap: { byHand: {}, clears: [], key: `${basics}@NATUREZA` } } : {}),
     title: { attr: 'TITULO', child: basics },
     year: { attr: 'ANO', child: basics },
   };

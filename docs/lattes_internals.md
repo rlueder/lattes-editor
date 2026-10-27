@@ -1907,8 +1907,20 @@ A15 Graduação e A16 Exame de qualificação de mestrado, sem opção para as o
 participações; o da banca julgadora tem A21 Professor titular, A22 Concurso
 público, A23 Livre-docência, A24 Avaliação de cursos e A29 Outra. O elemento
 fixa a natureza em todos menos na qualificação, que guarda A13 e A16 no mesmo
-elemento. A troca entre as duas muda a busca de instituição e a de curso, e
-fica à mão até a página ser lida.
+elemento.
+
+Em 27/10/2026, numa página da banca de trabalho carregada sem enviar, um
+script da carga (`$(".cod_proc:eq(2)").append($(".cod_proc:eq(5)"))`) põe a
+qualificação de mestrado logo depois da de doutorado, e a ordem viva dos
+rádios fica A11, A12, A13, A16, A14, A15. O `sele_inst()` e o `curso()` da
+página escolhem o nível pelo índice do rádio, então a busca de instituição sai
+com GM, GD, GD, AP, GG e GE nessa ordem viva (A16 com AP, A14 com GG, A15 com
+GE), e a de curso leva `f_sta_area=N` em A13 e A16; o nível do curso sai do
+valor (`retnivel()`). **Observado**: são os endereços que as duas funções da
+própria página montaram com cada natureza marcada. O `testa_nivel()` da troca
+de tipo limpa só a instituição e o curso, e o conector troca a qualificação
+de mestrado pela de doutorado (e o contrário) escolhendo os dois de novo com
+os níveis da natureza nova. A troca não foi enviada.
 
 ### Órgão e unidade do projeto (lido em 18/10/2026)
 
@@ -2632,9 +2644,8 @@ versionados. **Observado**, menos onde está marcado.
 - **Banca de trabalho** (`PKG_BANCA_TRAB.form`). O `testa_nivel()` da banca
   limpa só a instituição e o curso (com confirmação); o `check()` aceita
   `f_sub_prod` só no mestrado. Um script move um dos rádios de natureza na
-  carga da página, e a ordem que os índices de `sele_inst()` e `curso()` usam
-  depende disso: a troca entre qualificação de mestrado e de doutorado fica
-  à mão até a ordem ser lida com a página carregada.
+  carga da página, e os índices de `sele_inst()` e `curso()` seguem a ordem
+  viva, lida em 27/10/2026 (seção 18).
 - **Patente e registros** (`pkg_patente_registro.form`). O titular instituição
   sai de uma sugestão sobre o vetor `titularInstDP` do menu, cuja linha vai
   inteira para a grade, ou da janela `PKG_TITULAR_INST_PATENTE.sele_inst`. O

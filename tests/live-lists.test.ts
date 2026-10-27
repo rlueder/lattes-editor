@@ -385,7 +385,9 @@ describe('escolhas pela lista em orientações, bancas e no sanduíche (Fase 2)'
       livePairs('DETALHAMENTO-DA-PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO')?.course?.byNature,
     ).toEqual({
       'exame de qualificacao de doutorado': { level: '4', staArea: 'N' },
-      'exame de qualificacao de mestrado': { level: '3', staArea: '' },
+      // A ordem viva dos rádios põe A16 no índice 3, que o curso() da página
+      // manda com f_sta_area=N (observado em 27/10/2026).
+      'exame de qualificacao de mestrado': { level: '3', staArea: 'N' },
     });
     const root = parseXml(
       '<OUTRAS-ORIENTACOES-CONCLUIDAS><DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NATUREZA="INICIACAO_CIENTIFICA"/><DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS CODIGO-INSTITUICAO="000000000001" CODIGO-CURSO="" NOME-DO-CURSO=""/></OUTRAS-ORIENTACOES-CONCLUIDAS>',
