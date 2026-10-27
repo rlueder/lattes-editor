@@ -6,10 +6,10 @@
 // distinguir extensão ausente de navegador fechado, e o texto cobre os dois.
 
 import type { Link } from '../bridge/link.ts';
-import { isDevVersion } from '../desktop/dev-channel.ts';
+import { DEV_PAGE_URL, isDevVersion } from '../desktop/dev-channel.ts';
 import type { OpenState } from './lattes-open.ts';
 import { failureText } from './lattes-open.ts';
-import { devExtensionHowTo, EXTENSION_URL } from './notifications.ts';
+import { devExtensionSteps, EXTENSION_URL } from './notifications.ts';
 
 /**
  * O menu do currículo no Lattes. Com sessão, abre o currículo de quem está
@@ -48,23 +48,37 @@ function extensionStep(link: Link, open: OpenState, devFolder?: string): Step {
   // LattesEditor Dev: a extensão Dev vem no pacote do app e se carrega de uma pasta.
   if (state.kind === 'sem-extensao' && isDevVersion(__APP_VERSION__)) {
     return {
+      // Sem a pasta lida, a página do canal tem a extensão para baixar.
+      ...(devFolder
+        ? {}
+        : {
+            action: {
+              href: DEV_PAGE_URL,
+              kind: 'link' as const,
+              label: 'Abrir a página da extensão Dev',
+            },
+          }),
       status: 'agora',
-      text: devExtensionHowTo(devFolder),
+      text: devExtensionSteps(devFolder),
       title: 'Carregue a extensão Dev',
     };
   }
-  const download = { href: EXTENSION_URL, kind: 'link' as const, label: 'Baixar a extensão' };
+  const download = {
+    href: EXTENSION_URL,
+    kind: 'link' as const,
+    label: 'Instalar da Chrome Web Store',
+  };
   if (state.kind === 'sem-extensao') {
     return {
       action: download,
       status: 'agora',
-      text: 'Instale a extensão do LattesEditor no Chrome ou no Brave. Se já instalou, abra o navegador.',
+      text: 'A extensão do LattesEditor, no Chrome ou no Brave. Se já instalou, abra o navegador.',
       title,
     };
   }
   if (state.kind === 'incompativel' || !link.features?.includes('curriculo')) {
     return {
-      action: { ...download, label: 'Baixar a versão nova' },
+      action: { ...download, label: 'Atualizar na Chrome Web Store' },
       status: 'agora',
       text: 'A extensão instalada é de uma versão anterior e não abre o currículo. Atualize a extensão.',
       title: 'Atualize a extensão',

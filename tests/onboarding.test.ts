@@ -22,7 +22,12 @@ describe('primeiro uso: os três passos', () => {
 
   it('sem extensão: baixar, e o texto cobre o navegador fechado', () => {
     const [ext] = onboardingSteps({ state: { kind: 'sem-extensao' } }, parado);
-    expect(ext?.action).toEqual({ href: EXTENSION_URL, kind: 'link', label: 'Baixar a extensão' });
+    expect(ext?.action).toEqual({
+      href: EXTENSION_URL,
+      kind: 'link',
+      label: 'Instalar da Chrome Web Store',
+    });
+    expect(EXTENSION_URL).toMatch(/^https:\/\/chromewebstore\.google\.com\/detail\//);
     expect(ext?.text).toMatch(/Se já instalou, abra o navegador/);
   });
 
@@ -33,7 +38,7 @@ describe('primeiro uso: os três passos', () => {
     ]) {
       const [ext] = onboardingSteps(link, parado);
       expect(ext).toMatchObject({ status: 'agora', title: 'Atualize a extensão' });
-      expect(ext?.action?.label).toBe('Baixar a versão nova');
+      expect(ext?.action?.label).toBe('Atualizar na Chrome Web Store');
     }
   });
 

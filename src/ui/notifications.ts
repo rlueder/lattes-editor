@@ -55,11 +55,12 @@ export function connectionOf(link: Link | undefined, read: boolean): Connection 
 export const APP_DOWNLOAD_URL = 'https://github.com/rlueder/lattes-editor/releases/latest';
 
 /**
- * Onde atualizar a extensão. Enquanto ela não tem página na Chrome Web Store
- * (LAT-20), é o zip do último lançamento; com a página publicada, o endereço
- * dela entra aqui.
+ * Onde instalar e atualizar a extensão: a página dela na Chrome Web Store
+ * (o id é o de EXTENSION_IDS em src-tauri/src/conector.rs). O Brave instala
+ * da mesma loja.
  */
-export const EXTENSION_URL = APP_DOWNLOAD_URL;
+export const EXTENSION_URL =
+  'https://chromewebstore.google.com/detail/kdebkpkdhgaeaaobcbgbckinocnlfbgg';
 
 export interface NoticeLink {
   href: string;
@@ -118,6 +119,17 @@ export function connectionTitle(c: Connection): string {
  * O passo a passo para carregar a extensão Dev, uma vez só. Sem a pasta (ainda
  * não lida do app), aponta a página do canal Dev.
  */
+/**
+ * Os passos do passo 1 da tela inicial, mais curtos: a página do canal vem
+ * como link no botão, e não no texto.
+ */
+export function devExtensionSteps(folder: string | undefined): string {
+  const where = folder
+    ? `a pasta ${folder}`
+    : 'a pasta da extensão Dev, baixada da página do canal';
+  return `Em chrome://extensions, ligue o modo do desenvolvedor e use "Carregar sem compactação" com ${where}. É uma vez só; depois ela se atualiza com o app.`;
+}
+
 export function devExtensionHowTo(folder: string | undefined): string {
   const where = folder ? `a pasta ${folder}` : `a pasta da extensão Dev (página ${DEV_PAGE_URL})`;
   return `No Chrome ou no Brave, abra chrome://extensions, ligue o modo do desenvolvedor, clique em "Carregar sem compactação" e escolha ${where}. É uma vez só: depois a extensão se atualiza junto com o app. Ela procura o app a cada minuto, então pode levar até um minuto para aparecer aqui.`;

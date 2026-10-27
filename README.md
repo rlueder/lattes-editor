@@ -125,18 +125,11 @@ ficam mascarados até você clicar no olho ao lado do título.
 
 ## Extensão do conector
 
-Enquanto a extensão não está na Chrome Web Store:
+1. Instale a extensão pela
+   [Chrome Web Store](https://chromewebstore.google.com/detail/kdebkpkdhgaeaaobcbgbckinocnlfbgg). O Brave instala da mesma loja.
+2. No primeiro uso, o painel mostra o que ela lê e envia e pede um "ok".
 
-1. Baixe `lattes-editor-extensao.zip` da
-   [página do último lançamento](https://github.com/rlueder/lattes-editor/releases/latest)
-   e descompacte.
-2. Em `chrome://extensions` (ou `brave://extensions`), ligue o "Modo do
-   desenvolvedor" e use "Carregar sem compactação" na pasta.
-3. No primeiro uso, o painel mostra o que ela lê e envia e pede um "ok".
-
-Uma extensão carregada assim não se atualiza sozinha: quando o app avisar que
-ela está desatualizada, troque a pasta pela do zip novo e recarregue. O que
-ela lê e envia está na
+A loja atualiza a extensão sozinha. O que ela lê e envia está na
 [política de privacidade](https://rlueder.github.io/lattes-editor/privacidade.html).
 
 ## Documentação
