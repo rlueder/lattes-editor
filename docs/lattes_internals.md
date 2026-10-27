@@ -2731,7 +2731,8 @@ sintéticos:
   "Orientação de outra natureza", e não em `ORIENTACOES`.
 - **Outra forma de contato.** `OUTRA-FORMA-DE-CONTATO="ID Rede Social:
 7534948, Nome Rede Social: MSN, Endereço: <e-mail>"`, no mesmo formato de
-  `REDE-SOCIAL`. O `ELETRONICO` traz o e-mail alternativo da tela de envio
+  `REDE-SOCIAL`. Com dois contatos a junção não foi vista; o conector supõe
+  a das redes, sem separador (inferido). O `ELETRONICO` traz o e-mail alternativo da tela de envio
   como `R:`, depois de `I:` e um `;`.
 - **Pessoa com deficiência.** Com um tipo marcado, `PCD` é o rótulo da
   caixa (`"Deficiência Visual"`).

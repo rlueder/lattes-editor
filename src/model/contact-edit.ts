@@ -5,7 +5,8 @@ import { socialName } from './contacts.ts';
 
 export interface ContactField {
   end: number;
-  kind: 'email' | 'url';
+  /** e-mail, endereço da rede social, ou o texto de outra forma de contato (MSN, WhatsApp). */
+  kind: 'email' | 'text' | 'url';
   label: string;
   start: number;
   value: string;
@@ -14,7 +15,9 @@ export interface ContactField {
 /** Formato inteiro reconhecido, sem registros desconhecidos ou e-mails sem tipo. */
 export function editableContacts(attr: string, raw: string): ContactField[] | undefined {
   const email = attr === 'ELETRONICO';
-  if (!email && attr !== 'REDE-SOCIAL') return undefined;
+  // OUTRA-FORMA-DE-CONTATO tem o formato de REDE-SOCIAL (exportação de 27/10/2026).
+  const other = attr === 'OUTRA-FORMA-DE-CONTATO';
+  if (!email && !other && attr !== 'REDE-SOCIAL') return undefined;
   const pattern = email
     ? /\b([IR]):\s*([^\s,;:]+@[^\s,;]+)/g
     : /ID Rede Social:\s*\d+,\s*Nome Rede Social:\s*([^,]+?)\s*,\s*Endere\S*o:\s*(\S+?)(?=ID Rede Social:|[\s,;]|$)/g;
@@ -28,7 +31,7 @@ export function editableContacts(attr: string, raw: string): ContactField[] | un
     const start = m.index + m[0].lastIndexOf(value);
     return {
       end: start + value.length,
-      kind: email ? 'email' : 'url',
+      kind: email ? 'email' : other ? 'text' : 'url',
       label: email
         ? m[1] === 'I'
           ? 'E-mail para contato'
@@ -46,6 +49,11 @@ export function contactValueProblem(kind: ContactField['kind'], value: string): 
     return /^[^\s,;:@]+@[^\s,;:@]+\.[^\s,;:@]+$/.test(value)
       ? undefined
       : 'Informe um e-mail válido.';
+  }
+  if (kind === 'text') {
+    return /^[^\s,;]+$/.test(value)
+      ? undefined
+      : 'Informe o contato sem espaços, vírgula ou ponto e vírgula.';
   }
   if (/[\s,;]/.test(value))
     return 'Informe um endereço https:// ou http:// sem espaços, vírgula ou ponto e vírgula.';

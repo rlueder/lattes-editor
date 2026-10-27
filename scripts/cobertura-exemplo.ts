@@ -42,6 +42,11 @@ export function withListValues(raw: string): { rewritten: number; xml: string } 
         'REDE-SOCIAL',
         'ID Rede Social: 1, Nome Rede Social: GitHub, Endereço: https://example.org/teste',
       );
+      setAttr(
+        item,
+        'OUTRA-FORMA-DE-CONTATO',
+        'ID Rede Social: 1, Nome Rede Social: MSN, Endereço: teste@example.org',
+      );
     }
     // A natureza do livro tem código por tipo (bibliografica-livros.ts): com
     // Coletânea, que os dois tipos têm, a troca do tipo também se mede.

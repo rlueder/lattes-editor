@@ -99,7 +99,7 @@ function ContactInput({
         aria-invalid={error ? true : undefined}
         autoComplete="off"
         id={id}
-        type={field.kind === 'email' ? 'email' : 'url'}
+        type={field.kind === 'email' ? 'email' : field.kind === 'url' ? 'url' : 'text'}
         value={draft}
         onBlur={() => {
           const problem = contactValueProblem(field.kind, draft.trim());

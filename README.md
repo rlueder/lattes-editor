@@ -62,8 +62,9 @@ Raça ou cor, pessoa com deficiência, tipo de graduação, tipo de licença e c
 A disponibilidade de produtos, processos, relatórios de pesquisa e trabalhos
 técnicos também é escolhida por lista, inclusive quando não foi informada.
 
-Em Endereço, você pode editar e-mails e URLs das redes sociais já cadastradas,
-quando o formato da exportação é reconhecido. Incluir ou remover contatos
+Em Endereço, você pode editar e-mails, URLs das redes sociais e outras formas
+de contato (MSN, WhatsApp, Telegram) já cadastradas, quando o formato da
+exportação é reconhecido. Incluir ou remover contatos
 continua no Lattes. A troca de URL mantém a privacidade que a rede já tinha.
 
 O **Diagnóstico do currículo**, no ⚙, confere o currículo inteiro: campos

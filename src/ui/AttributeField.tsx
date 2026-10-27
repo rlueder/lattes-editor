@@ -141,7 +141,10 @@ export function AttributeField({
     );
   }
 
-  if (el.name === 'ENDERECO' && (name === 'ELETRONICO' || name === 'REDE-SOCIAL')) {
+  if (
+    el.name === 'ENDERECO' &&
+    (name === 'ELETRONICO' || name === 'REDE-SOCIAL' || name === 'OUTRA-FORMA-DE-CONTATO')
+  ) {
     return <ContactFields attr={name} label={text} raw={value} onCommit={commit} />;
   }
 

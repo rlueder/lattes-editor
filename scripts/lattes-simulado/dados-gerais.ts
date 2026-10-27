@@ -308,29 +308,54 @@ function contactScripts(container: XElement | undefined): string {
     };
   });
   const types = SOCIAL_TYPES.map(([id, redeSocial]) => ({ id, redeSocial }));
+  // As outras formas de contato saem de ENDERECO@OUTRA-FORMA-DE-CONTATO, no
+  // formato das redes (exportação de 27/10/2026).
+  const contacts = parseSocial(
+    (container && getAttr(container, 'OUTRA-FORMA-DE-CONTATO')) ?? '',
+  ).map((r) => {
+    const type = CONTACT_TYPES.find(([, n]) => n.toLowerCase() === r.name.toLowerCase());
+    // Na ordem das chaves da página real.
+    return Object.fromEntries([
+      ['id', type?.[0] ?? 3],
+      ['contato', type?.[1] ?? r.name],
+      ['endereco', r.url],
+      ['privacidade', '2'],
+      ['visibilidade', 'Privado'],
+    ]);
+  });
+  const contactTypes = CONTACT_TYPES.map(([id, contato]) => ({ contato, id }));
   return `<script>
 var redesSociais = ${JSON.stringify([...types, {}])};
 var provider = ${JSON.stringify([...social, {}])};
-var providerContatos = [{}];
+var contatos = ${JSON.stringify(contactTypes)};
+var providerContatos = ${JSON.stringify([...contacts, {}])};
 </script>`;
 }
 
+/** Os tipos de outra forma de contato da página real (lidos em 26/10/2026). */
+const CONTACT_TYPES: [number, string][] = [
+  [7, 'Telegram'],
+  [3, 'MSN'],
+  [6, 'WhatsApp'],
+];
+
 /**
- * f_dados_grid de volta para ENDERECO@REDE-SOCIAL. Inferido: o separador entre
- * duas redes (uma só foi vista numa exportação, "ID Rede Social: …, Nome Rede
- * Social: …, Endereço: …").
+ * Uma grade de f_dados_grid (redes) ou f_dados_grid_contatos (outras formas)
+ * de volta para o atributo do XML: as entradas coladas, sem separador, como
+ * a exportação de 27/10/2026 trouxe as duas redes ("…/in/nome/ID Rede
+ * Social: …"). nameTag: redeSocial ou contato.
  */
-function socialFromGrid(xml: string): string {
+function socialFromGrid(xml: string, nameTag = 'redeSocial'): string {
   const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item >/g)].map((m) => {
     const tag = (t: string) => new RegExp(`<${t}>([^<]*)</${t}>`).exec(m[1]!)?.[1] ?? '';
-    return { id: tag('id'), name: tag('redeSocial'), url: tag('endereco').replace(/&amp;/g, '&') };
+    return { id: tag('id'), name: tag(nameTag), url: tag('endereco').replace(/&amp;/g, '&') };
   });
   return items
     .map(
       (r, i) =>
         `ID Rede Social: ${1000000 + i + 1}, Nome Rede Social: ${r.name}, Endereço: ${r.url}`,
     )
-    .join('; ');
+    .join('');
 }
 
 function enderecoForm(_req: SimRequest, state: LattesState): SimResponse {
@@ -374,6 +399,11 @@ function enderecoPost(req: SimRequest, state: LattesState): SimResponse {
   if (grid !== null && grid !== undefined) {
     const holder = state.ensurePath(['DADOS-GERAIS', 'ENDERECO']);
     setAttr(holder, 'REDE-SOCIAL', socialFromGrid(grid));
+  }
+  const others = req.get('f_dados_grid_contatos');
+  if (others !== null && others !== undefined) {
+    const holder = state.ensurePath(['DADOS-GERAIS', 'ENDERECO']);
+    setAttr(holder, 'OUTRA-FORMA-DE-CONTATO', socialFromGrid(others, 'contato'));
   }
   state.touch();
   return html(h.savedScript(`prc_endereco?f_cod=${state.code}`));

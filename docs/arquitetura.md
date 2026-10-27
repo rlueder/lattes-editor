@@ -311,13 +311,15 @@ No `pnpm dev`, sem o app, o editor fala com a extensão pelo
   conversão para o select dos formulários técnicos, inclusive o vazio.
   `src/schema/license-types.ts` compartilha os tipos de licença entre a
   lista da interface e o planejador.
-  `src/model/contact-edit.ts` localiza trechos de e-mail e URL em contatos
-  existentes e troca só o valor, sem reconstruir IDs, rótulos ou separadores.
+  `src/model/contact-edit.ts` localiza trechos de e-mail, URL e outra forma
+  de contato em contatos existentes e troca só o valor, sem reconstruir IDs, rótulos ou separadores.
   `src/ui/ContactFields.tsx` oferece a edição; formatos desconhecidos e redes
   repetidas ficam somente para leitura. O envio preserva a privacidade da
   linha existente e recusa uma troca de URL ambígua entre redes repetidas.
   A releitura compara também os IDs e a privacidade das redes; uma mudança
   inesperada volta como divergência, mesmo que a URL nova tenha gravado.
+  Numa outra forma de contato só muda o contato: a linha de
+  `f_dados_grid_contatos` mantém id, tipo e privacidade.
 - **Importar** (`src/bridge/importar.ts`): envia um arquivo só com os itens
   novos, marca os módulos e o ano e para na resposta do passo 2.
 - **Enviar ao CNPq** (`src/bridge/publish.ts`, `src/import-export/PublishPanel.tsx`):

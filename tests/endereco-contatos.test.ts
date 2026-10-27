@@ -55,13 +55,16 @@ afterEach(async () => {
   open = undefined;
 });
 
-async function lattes(intercept?: Intercept) {
+async function lattes(intercept?: Intercept, xml = XML) {
   open = await withLattesSimulado({
     intercept,
-    xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${XML}`),
+    xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${xml}`),
   });
   return open;
 }
+
+const MSN = 'ID Rede Social: 1000001, Nome Rede Social: MSN, Endereço: a@example.org';
+const WHATSAPP = 'ID Rede Social: 1000002, Nome Rede Social: WhatsApp, Endereço: 5551999990000';
 
 const GITHUB = `${LINKEDIN}; ID Rede Social: 1000002, Nome Rede Social: GitHub, Endereço: https://github.com/exemplo`;
 
@@ -115,8 +118,28 @@ describe('contatos do endereço: o plano', () => {
       /para contato \(I:\) ou alternativo \(R:\)/,
     );
     expect(plan(set('ENDERECO', 'OUTRA-FORMA-DE-CONTATO', 'x')).unsupported[0]?.reason).toMatch(
-      /nunca foi vista/,
+      /não está no formato do Lattes/,
     );
+  });
+
+  it('outra forma de contato: só o contato de um tipo que já está muda', () => {
+    const xml = XML.replace('OUTRA-FORMA-DE-CONTATO=""', `OUTRA-FORMA-DE-CONTATO="${MSN}"`);
+    expect(
+      plan(
+        set('ENDERECO', 'OUTRA-FORMA-DE-CONTATO', MSN.replace('a@example.org', 'b@example.org')),
+        xml,
+      ).ops[0],
+    ).toMatchObject({
+      contacts: {
+        after: [{ name: 'MSN', url: 'b@example.org' }],
+        before: [{ name: 'MSN', url: 'a@example.org' }],
+      },
+    });
+    for (const value of [`${MSN}${WHATSAPP}`, WHATSAPP, '']) {
+      expect(
+        plan(set('ENDERECO', 'OUTRA-FORMA-DE-CONTATO', value), xml).unsupported[0]?.reason,
+      ).toMatch(/incluir, tirar ou trocar o tipo vai no Lattes/);
+    }
   });
 });
 
@@ -302,6 +325,36 @@ describe('contatos do endereço: o envio', () => {
     const sim = await lattes();
     setAttr(byName(sim.state.root, 'ENDERECO'), 'REDE-SOCIAL', '');
     const op = onlyOp(set('ENDERECO', 'REDE-SOCIAL', GITHUB));
+    expect(await applyOp(op, sim.port)).toMatchObject({ status: 'divergente' });
+    expect(postsOf(sim)).toEqual([]);
+  });
+
+  it('outra forma de contato: o contato novo vai na grade, com o tipo e a privacidade de antes', async () => {
+    const xml = XML.replace(
+      'OUTRA-FORMA-DE-CONTATO=""',
+      `OUTRA-FORMA-DE-CONTATO="${MSN}${WHATSAPP}"`,
+    );
+    const sim = await lattes(undefined, xml);
+    const original = getAttr(byName(parseXml(xml).root, 'ENDERECO'), 'OUTRA-FORMA-DE-CONTATO')!;
+    const edited = replaceContactValue(original, 'OUTRA-FORMA-DE-CONTATO', 1, '5551988880000')!;
+    const op = plan(set('ENDERECO', 'OUTRA-FORMA-DE-CONTATO', edited), xml).ops[0]!;
+    expect(await applyOp(op, sim.port)).toMatchObject({ status: 'conferido' });
+    const grid = postsOf(sim)[0]!.fields.f_dados_grid_contatos ?? '';
+    expect(grid).toMatch(
+      /<id>6<\/id>\r?\n\t<contato>WhatsApp<\/contato>\r?\n\t<endereco>5551988880000</,
+    );
+    expect(grid).toMatch(/<privacidade>2<\/privacidade>/);
+    expect(getAttr(byName(sim.state.root, 'ENDERECO'), 'OUTRA-FORMA-DE-CONTATO')).toBe(
+      `${MSN}${WHATSAPP.replace('5551999990000', '5551988880000')}`,
+    );
+  });
+
+  it('outra forma de contato: o Lattes com outro contato, nada vai', async () => {
+    const xml = XML.replace('OUTRA-FORMA-DE-CONTATO=""', `OUTRA-FORMA-DE-CONTATO="${MSN}"`);
+    const sim = await lattes(undefined, xml);
+    setAttr(byName(sim.state.root, 'ENDERECO'), 'OUTRA-FORMA-DE-CONTATO', WHATSAPP);
+    const edited = MSN.replace('a@example.org', 'b@example.org');
+    const op = plan(set('ENDERECO', 'OUTRA-FORMA-DE-CONTATO', edited), xml).ops[0]!;
     expect(await applyOp(op, sim.port)).toMatchObject({ status: 'divergente' });
     expect(postsOf(sim)).toEqual([]);
   });

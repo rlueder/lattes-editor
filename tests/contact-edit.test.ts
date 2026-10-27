@@ -88,6 +88,22 @@ describe('edição de contatos sem reconstruir a serialização', () => {
     expect(replaceContactValue(SOCIAL, 'REDE-SOCIAL', 0, value)).toBeUndefined();
   });
 
+  it('outra forma de contato: o contato é texto, sem espaço nem delimitador', () => {
+    const raw =
+      'ID Rede Social: 1000001, Nome Rede Social: MSN, Endereço: a@example.orgID Rede Social: 1000002, Nome Rede Social: WhatsApp, Endereço: 5551999990000';
+    const fields = editableContacts('OUTRA-FORMA-DE-CONTATO', raw)!;
+    expect(fields.map((f) => [f.kind, f.value])).toEqual([
+      ['text', 'a@example.org'],
+      ['text', '5551999990000'],
+    ]);
+    expect(replaceContactValue(raw, 'OUTRA-FORMA-DE-CONTATO', 1, '5551988880000')).toBe(
+      raw.replace('5551999990000', '5551988880000'),
+    );
+    for (const bad of ['', 'dois termos', 'a,b', 'a;b']) {
+      expect(contactValueProblem('text', bad)).toBeTruthy();
+    }
+  });
+
   it('índice inexistente não altera um contato diferente', () => {
     expect(replaceContactValue(EMAILS, 'ELETRONICO', -1, 'novo@example.org')).toBeUndefined();
     expect(replaceContactValue(EMAILS, 'ELETRONICO', 2, 'novo@example.org')).toBeUndefined();
