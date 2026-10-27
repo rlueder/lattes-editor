@@ -57,6 +57,8 @@ function HistoryButtons() {
 }
 
 interface Props {
+  /** Uma leitura do Lattes em andamento ("Recarregar do Lattes"): a barra fina embaixo. */
+  busy?: string;
   /** Modo foco (com ?leitura): estado, atalho e troca, para o ⚙. */
   focus?: { label: string; on: boolean; toggle: () => void };
   modified: boolean;
@@ -102,6 +104,7 @@ const SAVE_LABEL: Record<SaveState, string> = {
 };
 
 export function Topbar({
+  busy,
   focus,
   modified,
   notices,
@@ -132,6 +135,11 @@ export function Topbar({
   };
   return (
     <header ref={ref} data-tauri-drag-region className="topbar">
+      {busy && (
+        <div aria-label={busy} className="topbar-progress" role="progressbar">
+          <span />
+        </div>
+      )}
       {/* O símbolo e o nome do app (no app de macOS, depois dos botões da janela). */}
       <div data-tauri-drag-region className="topbar-identity">
         <Brand />

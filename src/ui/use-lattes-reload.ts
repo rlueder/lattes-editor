@@ -9,9 +9,14 @@ import { type ReloadFailure, reloadReply } from './lattes-reload.ts';
 import { toasts } from './toasts.ts';
 import type { BridgeState } from './use-bridge.ts';
 
+/** Quanto a barra de andamento fica visível, no mínimo. */
+const MIN_PROGRESS_MS = 800;
+
 export interface LattesReload {
   /** A extensão ligada sabe exportar: o menu pede o ZIP em vez de um arquivo. */
   available: boolean;
+  /** Um pedido em aberto, para a barra de andamento do cabeçalho. */
+  busy: boolean;
   failure?: ReloadFailure;
   start: () => void;
 }
@@ -27,6 +32,9 @@ export function useLattesReload(
   onFile: (file: File) => void,
 ): LattesReload {
   const [pending, setPending] = useState<string | undefined>();
+  /** A barra do cabeçalho fica até este instante, mesmo com a resposta antes. */
+  const [shownUntil, setShownUntil] = useState(0);
+  const [, setTick] = useState(0);
   const [failure, setFailure] = useState<ReloadFailure | undefined>();
   const toast = useRef<string | undefined>(undefined);
   const request = useRef(bridge.requestCv);
@@ -46,6 +54,7 @@ export function useLattesReload(
   const start = useCallback(() => {
     const id = crypto.randomUUID();
     setPending(id);
+    setShownUntil(Date.now() + MIN_PROGRESS_MS);
     setFailure(undefined);
     if (toast.current) toasts.close(toast.current);
     toast.current = toasts.add({
@@ -73,5 +82,18 @@ export function useLattesReload(
     return () => clearTimeout(timer);
   }, [finish, pending]);
 
-  return { available: canOpenFromLattes(bridge.link), failure, start };
+  // A exportação costuma voltar em menos de um segundo: a barra não pisca.
+  const lingering = !pending && shownUntil > Date.now();
+  useEffect(() => {
+    if (!lingering) return;
+    const timer = setTimeout(() => setTick((n) => n + 1), shownUntil - Date.now());
+    return () => clearTimeout(timer);
+  }, [lingering, shownUntil]);
+
+  return {
+    available: canOpenFromLattes(bridge.link),
+    busy: pending !== undefined || lingering,
+    failure,
+    start,
+  };
 }

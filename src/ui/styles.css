@@ -160,6 +160,44 @@ code {
   min-height: 100vh;
 }
 
+/* A barra fina de andamento sob o cabeçalho ("Recarregar do Lattes"). */
+.topbar-progress {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  overflow: hidden;
+  background: var(--accent-soft);
+  pointer-events: none;
+}
+
+.topbar-progress span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  background: var(--accent);
+  animation: topbar-progress 1.2s cubic-bezier(0.645, 0.045, 0.355, 1) infinite;
+  will-change: transform;
+}
+
+@keyframes topbar-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar-progress span {
+    width: 100%;
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
 .topbar {
   grid-column: 1 / -1;
   position: sticky;

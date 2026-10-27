@@ -262,6 +262,7 @@ export function App() {
       {TEST_ITEMS_ON && <TestItemsPanel />}
       <Topbar
         ref={topbarRef}
+        busy={lattesReload.busy ? 'Recarregando do Lattes' : undefined}
         focus={focusShell.menuItem}
         modified={modified}
         notices={noticesOf(
