@@ -278,12 +278,14 @@ describe('planejar a inclusão de um registro', () => {
       return r.unsupported[0]!;
     };
     // Marca e topografia: nenhum campo de data na tela (seção 21).
+    const left = async (itemName: string, fill: (item: XElement) => void) =>
+      (await plan((doc) => addRegistro(doc, itemName, fill))).planned.ops[0];
     expect(
-      await reason('MARCA', (item) => {
+      await left('MARCA', (item) => {
         marcaFill(item);
         setAttr(registry(item), 'DATA-PEDIDO-DE-DEPOSITO', '01022024');
       }),
-    ).toBe('Campos que o formulário de inclusão não tem: DATA-PEDIDO-DE-DEPOSITO');
+    ).toMatchObject({ left: ['DATA-PEDIDO-DE-DEPOSITO'] });
     expect(
       await reason('DESENHO-INDUSTRIAL', (item) => {
         desenho(item);
@@ -311,11 +313,11 @@ describe('planejar a inclusão de um registro', () => {
     ).toBe('O Lattes exige a natureza');
     // O desenho industrial não tem ano no formulário (o f_ano é oculto).
     expect(
-      await reason('DESENHO-INDUSTRIAL', (item) => {
+      await left('DESENHO-INDUSTRIAL', (item) => {
         desenho(item);
         setAttr(part(item, 'DADOS-BASICOS-'), 'ANO-DESENVOLVIMENTO', '2020');
       }),
-    ).toBe('Campos que o formulário de inclusão não tem: Ano de desenvolvimento');
+    ).toMatchObject({ left: ['Ano de desenvolvimento'] });
     expect(
       await reason('DESENHO-INDUSTRIAL', (item) => {
         desenho(item);
@@ -329,11 +331,11 @@ describe('planejar a inclusão de um registro', () => {
       }),
     ).toMatch(/MARCA_REGISTRADA_MISTA_MRM/);
     expect(
-      await reason('DESENHO-INDUSTRIAL', (item) => {
+      await left('DESENHO-INDUSTRIAL', (item) => {
         desenho(item);
         setAttr(part(item, 'DADOS-BASICOS-'), 'FLAG-RELEVANCIA', 'SIM');
       }),
-    ).toMatch(/Campos que o formulário de inclusão não tem/);
+    ).toMatchObject({ left: [expect.stringMatching(/Relev/)] });
     expect(
       await reason('DESENHO-INDUSTRIAL', (item) => {
         desenho(item);

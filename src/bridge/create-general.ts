@@ -33,6 +33,7 @@ import { CREATE_FIELD_LABELS } from './create-labels.ts';
 import {
   absentFields,
   getChecked,
+  leftOf,
   maybeCreated,
   overLimit,
   type Planned,
@@ -64,6 +65,8 @@ export interface CreateGeneralOp {
   key: string;
   kind: 'criar-dado';
   label: string;
+  /** Os campos que o formulário de inclusão não tem e ficam fora (create-shared.ts). */
+  left?: string[];
   set: FieldValues;
 }
 
@@ -156,9 +159,7 @@ function planIdioma(change: Change, el: XElement, label: string): Planned<Create
 
 /** Um prêmio novo: nome, entidade e ano (seção 16); o nome em inglês não tem campo. */
 function planPremio(change: Change, el: XElement, label: string): Planned<CreateGeneralOp> {
-  if (getAttr(el, 'NOME-DO-PREMIO-OU-TITULO-INGLES')?.trim()) {
-    return { reason: 'Campos que o formulário de inclusão não tem: Nome em inglês' };
-  }
+  const left = getAttr(el, 'NOME-DO-PREMIO-OU-TITULO-INGLES')?.trim() ? ['Nome em inglês'] : [];
   const set: FieldValues = {
     f_agencia: getAttr(el, 'NOME-DA-ENTIDADE-PROMOTORA') ?? '',
     f_ano: getAttr(el, 'ANO-DA-PREMIACAO') ?? '',
@@ -166,7 +167,15 @@ function planPremio(change: Change, el: XElement, label: string): Planned<Create
   };
   // check() do formulário exige nome e ano (seção 16).
   if (!set.f_titulo || !set.f_ano) return { reason: 'O prêmio precisa do nome e do ano' };
-  return { expect: {}, form: 'premio', key: change.key, kind: 'criar-dado', label, set };
+  return {
+    expect: {},
+    form: 'premio',
+    key: change.key,
+    kind: 'criar-dado',
+    label,
+    ...leftOf(left),
+    set,
+  };
 }
 
 /** Um vínculo novo numa atuação que já está no Lattes (com SEQUENCIA-ATIVIDADE). */

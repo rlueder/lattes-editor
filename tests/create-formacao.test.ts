@@ -148,9 +148,10 @@ describe('planejar a inclusão de uma formação', () => {
         '<AREAS-DO-CONHECIMENTO><AREA-DO-CONHECIMENTO-1 NOME-GRANDE-AREA-DO-CONHECIMENTO="X"/></AREAS-DO-CONHECIMENTO>',
       ),
     ).toMatch(/só a grande área/);
-    expect(reason(`${base} NOME-ORGAO="Instituto de Biociências"`)).toMatch(
-      /não tem: rótulo de NOME-ORGAO/,
-    );
+    // O que o formulário não tem fica fora, à vista, e a formação vai.
+    expect(plan(`${base} NOME-ORGAO="Instituto de Biociências"`, 'MESTRADO')).toMatchObject({
+      left: [expect.stringMatching(/NOME-ORGAO/)],
+    });
     expect(reason(`${base} TIPO-MESTRADO="X"`)).toMatch(/sem correspondência.*\(X\)/);
     expect(reason(`${base} STATUS-DO-CURSO="TRANCADO"`)).toMatch(/sem correspondência/);
     expect(reason('CODIGO-INSTITUICAO="1" NOME-INSTITUICAO="U"')).toMatch(/ano de início/);

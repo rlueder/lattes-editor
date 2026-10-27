@@ -183,6 +183,7 @@ async function locate(op: EditOp, port: LattesPort, menu: string): Promise<strin
 }
 
 import { type ApplyGates, BUILD_GATES, gatedOut } from './apply-gates.ts';
+import { leftNote } from './create-shared.ts';
 
 export { type ApplyGates, BUILD_GATES } from './apply-gates.ts';
 
@@ -191,6 +192,14 @@ export async function applyOp(
   port: LattesPort,
   gates: ApplyGates = BUILD_GATES,
 ): Promise<OpResult> {
+  const result = await applyAny(op, port, gates);
+  // A inclusão que foi sem os campos que o formulário não tem: o aviso fica no resultado.
+  const left = 'left' in op ? op.left : undefined;
+  if (!left?.length || result.status !== 'conferido') return result;
+  return { ...result, detail: `${result.detail}. ${leftNote(left)}`, partial: true };
+}
+
+async function applyAny(op: BridgeOp, port: LattesPort, gates: ApplyGates): Promise<OpResult> {
   if (op.kind === 'criar-atuacao') return applyCreateAtuacao(op, port);
   if (op.kind === 'criar-formacao') return applyCreateFormacao(op, port);
   if (op.kind === 'criar-projeto') return applyCreateProjeto(op, port);

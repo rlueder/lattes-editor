@@ -150,9 +150,10 @@ describe('atividade nova com órgão: o plano', () => {
     expect(await reason(direcao({ 'CODIGO-ORGAO': '' }))).toMatch(/escolha pela lista do Lattes/);
     expect(await reason(direcao({ 'CARGO-OU-FUNCAO': '' }))).toMatch(/ao menos uma descrição/);
     expect(await reason(direcao({ 'CARGO-OU-FUNCAO': 'a@b' }))).toMatch(/separador/);
-    expect(await reason(direcao({ 'CARGO-OU-FUNCAO-INGLES': 'Head' }))).toMatch(
-      /formulário de atividade não tem: CARGO-OU-FUNCAO-INGLES/,
+    const english = await plan((doc) =>
+      atuacao1(doc.root).children.push(direcao({ 'CARGO-OU-FUNCAO-INGLES': 'Head' })),
     );
+    expect(english.ops[0]).toMatchObject({ left: [expect.stringMatching(/ingl/i)] });
     expect(await reason(pesquisa({ 'OBJETIVOS-LINHA-DE-PESQUISA': 'Estudar' }))).toMatch(
       /tela de linhas de pesquisa depois de criar/,
     );

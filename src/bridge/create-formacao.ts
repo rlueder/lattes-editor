@@ -25,6 +25,8 @@ import {
   getChecked,
   hidden,
   jsCalls,
+  labelIn,
+  leftOf,
   mapAttrs,
   type Mapper,
   maybeCreated,
@@ -166,15 +168,11 @@ export function planCreateFormacao(
   if (agencyCode && bolsa !== 'SIM') return { reason: 'Agência informada sem bolsa' };
   if (bolsa === 'SIM' && !agencyCode) return { reason: 'Bolsa sem a agência do Lattes' };
   const filled = filledChildren(el, [...GRID_PARTS]);
-  if (filled.length > 0) {
-    return {
-      reason: `Partes que o formulário de formação não tem: ${filled.map((c) => c.name).join(', ')}`,
-    };
-  }
   const grids = newItemGrids(el);
   if (grids && 'reason' in grids) return grids;
   const { missing, set, wrong } = mapAttrs(change, el, FORMATION_FIELDS, FORMATION_HANDLED);
-  const reason = reasonFrom(missing, wrong);
+  const left = [...missing, ...filled.map((c) => labelIn(change, c.name))];
+  const reason = reasonFrom(wrong);
   if (reason) return { reason };
   // A livre-docência não tem início: tem o ano de obtenção.
   if (level === '6' ? !set.f_ano_obten : !set.f_ano_ini) {
@@ -196,6 +194,7 @@ export function planCreateFormacao(
     key: change.key,
     kind: 'criar-formacao',
     label,
+    ...leftOf(left),
     level,
     set,
   };

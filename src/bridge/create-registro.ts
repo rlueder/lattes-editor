@@ -56,6 +56,7 @@ import {
   filledChildren,
   getChecked,
   hidden,
+  leftOf,
   type Mapper,
   maybeCreated,
   overLimit,
@@ -84,6 +85,8 @@ export interface CreateRegistroOp {
   key: string;
   kind: 'criar-registro';
   label: string;
+  /** Os campos que o formulário de inclusão não tem e ficam fora (create-shared.ts). */
+  left?: string[];
   /** O nome completo e as citações do currículo, para conferir a linha de autor do menu. */
   owner: OwnerNames;
   set: FieldValues;
@@ -247,17 +250,13 @@ export function registroFields(
   change: Change,
   chain: XElement[],
   item: XElement,
-): { reason: string } | { extras: RegistroExtras; set: FieldValues; tipo: string } {
+):
+  { reason: string } | { extras: RegistroExtras; left?: string[]; set: FieldValues; tipo: string } {
   const type = REGISTRY_TYPES[item.name]!;
   const basics = childElements(item).find((c) => c.name.startsWith('DADOS-BASICOS-'));
   const detail = childElements(item).find((c) => c.name.startsWith('DETALHAMENTO-'));
   const registry = detail && firstChild(detail, 'REGISTRO-OU-PATENTE');
   const extra = filledChildren(item, [basics?.name ?? '', detail?.name ?? '', ...EXTRA_PARTS]);
-  if (extra.length > 0) {
-    return {
-      reason: `Partes que o formulário de registro não tem: ${extra.map((c) => c.name).join(', ')}`,
-    };
-  }
   const depositor = (registry && getAttr(registry, 'NOME-DO-DEPOSITANTE')) ?? '';
   const extras = planRegistroExtras(item, chain[0], depositor);
   if ('reason' in extras) return extras;
@@ -307,7 +306,7 @@ export function registroFields(
   map(basics, BASICS);
   map(detail, DETAIL);
   map(registry, REGISTRY);
-  const reason = reasonFrom(missing, wrong);
+  const reason = reasonFrom(wrong);
   if (reason) return { reason };
   if (grid.length > 0) set.f_dados_grid_datas = patentDateGrid(grid);
   // check() de todos os tipos: título, número, instituição de registro e país.
@@ -321,7 +320,8 @@ export function registroFields(
   if (type.tipo === 'PP' && !grid.some((g) => g.code === '1' || g.code === '2')) {
     return { reason: 'O Lattes exige a data de depósito ou a de depósito PCT' };
   }
-  return { extras, set, tipo: type.tipo };
+  const left = [...missing, ...extra.map((c) => labelOf(change, c.name))];
+  return { extras, ...leftOf(left), set, tipo: type.tipo };
 }
 
 /**

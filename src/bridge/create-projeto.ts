@@ -27,6 +27,7 @@ import {
   hidden,
   jsCalls,
   labelIn,
+  leftOf,
   mapAttrs,
   type Mapper,
   maybeCreated,
@@ -217,13 +218,9 @@ export function projetoOp(
   const extra = (participacao?.attrs ?? []).filter(
     (a) => a.value.trim() && !PARTICIPATION_FROM_PROJECT.has(a.name),
   );
-  if (extra.length > 0) {
-    return {
-      reason: `A participação no projeto tem campos que o formulário não leva: ${extra.map((a) => labelIn(change, a.name)).join(', ')}`,
-    };
-  }
   const { missing, set, wrong } = mapAttrs(change, projeto, PROJECT_FIELDS, PROJECT_HANDLED);
-  const reason = reasonFrom(missing, wrong);
+  const left = [...missing, ...extra.map((a) => labelIn(change, a.name))];
+  const reason = reasonFrom(wrong);
   if (reason) return { reason };
   // Sem ano de fim (projeto em andamento), o campo vai vazio: senão ficaria o
   // fim do vínculo, que preencherOpener copia para F_ANO_FIM.
@@ -252,6 +249,7 @@ export function projetoOp(
     key: change.key,
     kind: 'criar-projeto',
     label,
+    ...leftOf(left),
     nature,
     ...(organ ? { organ } : {}),
     owner,

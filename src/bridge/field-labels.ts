@@ -87,13 +87,26 @@ const CARRIED = new Set(['F_TPO']);
 export function opRows(op: {
   expect: Record<string, string | null>;
   kind?: string;
+  /** Na inclusão, os campos que o formulário não tem e ficam fora (create-shared.ts). */
+  left?: string[];
   /** As trocas que as buscas do Lattes fazem na formação (formacao-edit.ts), já legíveis. */
   lookupRows?: { after: string; before: string; label: string; name: string }[];
   /** Linhas prontas, com rótulos e valores como se leem (production/plan.ts). */
   rows?: { after: string; before: string; label: string; name: string }[];
   set: Record<string, string | null>;
 }): { after: string; before: string; label: string; name: string }[] {
-  if (op.rows) return op.rows;
+  // Os campos que ficam fora vão numa linha própria, à vista antes do envio.
+  const left = op.left?.length
+    ? [
+        {
+          after: op.left.join(', '),
+          before: '',
+          label: 'Fica fora (o Lattes não tem)',
+          name: '(fora)',
+        },
+      ]
+    : [];
+  if (op.rows) return [...op.rows, ...left];
   const lookups = (op.lookupRows ?? []).map((r) => ({
     ...r,
     after: r.after || '(vazio)',
@@ -114,5 +127,6 @@ export function opRows(op: {
         name,
       })),
     ...lookups,
+    ...left,
   ];
 }

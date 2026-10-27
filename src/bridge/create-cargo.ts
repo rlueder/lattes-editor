@@ -12,10 +12,11 @@
 // teste acompanhado: que a inclusão grave o órgão como a alteração, e a
 // descrição de cada natureza no atributo que a exportação mostra.
 
+import { attributeLabel } from '../labels/labels.ts';
 import type { Change } from '../model/changes.ts';
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
 import { type CreateAtividadeOp, specGrid } from './create-atividade.ts';
-import type { Planned } from './create-shared.ts';
+import { leftOf, type Planned } from './create-shared.ts';
 import { ACTIVITY_TYPES } from './edit-atividade.ts';
 import { ACTIVITY_ORGAN_ELEMENTS } from './organ-windows.ts';
 import { ORGAN_PARTS } from './production/organ.ts';
@@ -78,10 +79,9 @@ export function planCreateCargo(
     'FORMATO-CARGO-OU-FUNCAO',
     ...(type.description ? [type.description] : []),
   ]);
-  const extra = item.attrs.filter((a) => a.value.trim() && !own.has(a.name)).map((a) => a.name);
-  if (extra.length > 0) {
-    return { reason: `Campos que o formulário de atividade não tem: ${extra.join(', ')}` };
-  }
+  const left = item.attrs
+    .filter((a) => a.value.trim() && !own.has(a.name))
+    .map((a) => attributeLabel(a.name));
   // As descrições: o atributo da natureza numa linha, ou os filhos da grade.
   const grid = GRID_CHILDREN[item.name];
   const kids = grid ? childElements(item, grid.child) : [];
@@ -121,6 +121,7 @@ export function planCreateCargo(
     key: change.key,
     kind: 'criar-atividade',
     label,
+    ...leftOf(left),
     natur: type.natur,
     organ:
       unitCode && unitCode !== organCode

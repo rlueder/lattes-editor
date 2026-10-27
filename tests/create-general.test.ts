@@ -11,6 +11,7 @@ import { applyAll, applyOp } from '../src/bridge/apply.ts';
 import { checkContract, isBreaking, LATTES_CONTRACT } from '../src/bridge/contract.ts';
 import { byHandReason, type CreateGeneralOp } from '../src/bridge/create-general.ts';
 import { CREATE_SPECS } from '../src/bridge/create-items.ts';
+import { opRows } from '../src/bridge/field-labels.ts';
 import { planChanges } from '../src/bridge/plan.ts';
 import { diffDocuments } from '../src/model/changes.ts';
 import { loadCv } from '../src/model/document.ts';
@@ -140,19 +141,19 @@ describe('planejar idioma, prêmio e vínculo', () => {
         push(doc, 'PREMIOS-TITULOS', element('PREMIO-TITULO', { 'NOME-DO-PREMIO-OU-TITULO': 'X' })),
       ),
     ).toMatch(/nome e do ano/);
-    expect(
-      await reasonOf((doc) =>
-        push(
-          doc,
-          'PREMIOS-TITULOS',
-          element('PREMIO-TITULO', {
-            'ANO-DA-PREMIACAO': '2024',
-            'NOME-DO-PREMIO-OU-TITULO': 'X',
-            'NOME-DO-PREMIO-OU-TITULO-INGLES': 'X',
-          }),
-        ),
+    // O nome em inglês fica fora, à vista, e o prêmio vai.
+    const english = await plan((doc) =>
+      push(
+        doc,
+        'PREMIOS-TITULOS',
+        element('PREMIO-TITULO', {
+          'ANO-DA-PREMIACAO': '2024',
+          'NOME-DO-PREMIO-OU-TITULO': 'X',
+          'NOME-DO-PREMIO-OU-TITULO-INGLES': 'X',
+        }),
       ),
-    ).toMatch(/Nome em inglês/);
+    );
+    expect(english.ops[0]).toMatchObject({ left: ['Nome em inglês'] });
     // O vínculo novo leva "Outras informações" em português (censo de 27/10/2026).
     const withNote = await plan((doc) =>
       ufrgs(doc).children.push(element('VINCULOS', { ...VINCULO, 'OUTRAS-INFORMACOES': 'Nota' })),
@@ -316,6 +317,30 @@ describe('incluir no Lattes simulado', () => {
     ).toMatchObject({
       detail: 'Atuação profissional não encontrada no menu do Lattes',
       status: 'erro',
+    });
+  });
+
+  it('o que ficou fora vai no resultado e na linha da confirmação', async () => {
+    const lattes = await start();
+    const premio: CreateGeneralOp = {
+      expect: {},
+      form: 'premio',
+      key: 'k',
+      kind: 'criar-dado',
+      label: 'Prêmio',
+      left: ['Nome em inglês'],
+      set: { f_agencia: 'Sociedade', f_ano: '2024', f_titulo: 'Prêmio de teste' },
+    };
+    const r = await applyOp(premio, lattes.port);
+    expect(r).toMatchObject({ partial: true, status: 'conferido' });
+    expect(r.detail).toMatch(
+      /Ficou fora, porque o formulário de inclusão do Lattes não tem: Nome em inglês$/,
+    );
+    expect(opRows(premio).at(-1)).toEqual({
+      after: 'Nome em inglês',
+      before: '',
+      label: 'Fica fora (o Lattes não tem)',
+      name: '(fora)',
     });
   });
 

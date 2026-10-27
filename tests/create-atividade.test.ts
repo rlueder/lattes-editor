@@ -130,9 +130,12 @@ describe('atividade de ensino', () => {
     expect(await reason(ensino({ 'CODIGO-CURSO': '' }))).toMatch(/exige o curso/);
     expect(await reason(ensino({ 'TIPO-ENSINO': 'ENSINO-MEDIO' }))).toMatch(/não aceita curso/);
     expect(await reason(ensino({ 'ANO-INICIO': '' }))).toMatch(/ano de início/);
-    expect(await reason(ensino({ 'NOME-CURSO-INGLES': 'Genetics' }))).toMatch(
-      /formulário de atividade não tem: NOME-CURSO-INGLES/,
+    // O que o formulário não tem fica fora, à vista, e a atividade vai.
+    const english = await plan((doc) =>
+      ufrgs(doc.root).children.push(ensino({ 'NOME-CURSO-INGLES': 'Genetics' })),
     );
+    expect(english.unsupported).toEqual([]);
+    expect(english.ops[0]).toMatchObject({ left: [expect.stringMatching(/ingl/i)] });
     // Atuação nova: a atividade vai junto, à mão.
     const nova = await plan((doc) =>
       childElements(doc.root, 'DADOS-GERAIS')[0]!

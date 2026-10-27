@@ -20,6 +20,7 @@
 // As outras naturezas vão à mão: o check() exige o órgão ou unidade, que
 // entra pela busca prc_orgao_cargo, cuja resposta ainda não foi lida.
 
+import { attributeLabel } from '../labels/labels.ts';
 import type { Change } from '../model/changes.ts';
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
@@ -27,6 +28,7 @@ import { CREATE_FIELD_LABELS } from './create-labels.ts';
 import {
   absentFields,
   getChecked,
+  leftOf,
   maybeCreated,
   overLimit,
   type Planned,
@@ -54,6 +56,8 @@ export interface CreateAtividadeOp {
   key: string;
   kind: 'criar-atividade';
   label: string;
+  /** Os campos que o formulário de atividade não tem e ficam fora (create-shared.ts). */
+  left?: string[];
   /** f_natur_ativ: sem valor, o ensino (4); as outras naturezas em create-cargo.ts. */
   natur?: string;
   /** O órgão ou a unidade da janela de órgãos da atividade, com o órgão de cima de uma unidade. */
@@ -109,10 +113,9 @@ export function planCreateAtividade(
   const atuacao = chain.find((c) => c.name === 'ATUACAO-PROFISSIONAL');
   const seqAtiv = atuacao && getAttr(atuacao, 'SEQUENCIA-ATIVIDADE');
   if (!seqAtiv) return { reason: 'A atuação da atividade ainda não está no Lattes' };
-  const extra = item.attrs.filter((a) => a.value.trim() && !OWN.has(a.name)).map((a) => a.name);
-  if (extra.length > 0) {
-    return { reason: `Campos que o formulário de atividade não tem: ${extra.join(', ')}` };
-  }
+  const left = item.attrs
+    .filter((a) => a.value.trim() && !OWN.has(a.name))
+    .map((a) => attributeLabel(a.name));
   const level = TEACHING_LEVELS[getAttr(item, 'TIPO-ENSINO') ?? ''];
   if (!level) return { reason: 'Escolha o tipo de ensino' };
   const courseCode = getAttr(item, 'CODIGO-CURSO') || undefined;
@@ -141,6 +144,7 @@ export function planCreateAtividade(
     key: change.key,
     kind: 'criar-atividade',
     label,
+    ...leftOf(left),
     seqAtiv,
     set: {
       f_ano_fim: end,

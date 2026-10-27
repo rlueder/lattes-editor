@@ -140,9 +140,10 @@ describe('planejar a inclusão de um projeto', () => {
         ),
       ),
     ).toMatch(/Financiadores/);
+    // O que o formulário não tem fica fora, à vista, e o projeto vai.
     expect(
-      reason(projeto(PROJETO.replace('IDENTIFICADOR-PROJETO=""', 'IDENTIFICADOR-PROJETO="X1"'))),
-    ).toMatch(/não tem: Identificador projeto|não tem: IDENTIFICADOR-PROJETO|não tem:/);
+      planned(projeto(PROJETO.replace('IDENTIFICADOR-PROJETO=""', 'IDENTIFICADOR-PROJETO="X1"'))),
+    ).toMatchObject({ left: [expect.any(String)] });
     expect(
       reason(
         projeto(PROJETO.replace('FLAG-POTENCIAL-INOVACAO="NAO"', 'FLAG-POTENCIAL-INOVACAO="SIM"')),
@@ -194,8 +195,8 @@ describe('planejar a inclusão de um projeto', () => {
     expect(planCreateProjeto(change, chain, 'Projeto')).toEqual({ reason: TEAM_BY_HAND });
     const participacao = chain.at(-1)!.children.find((c): c is XElement => c.kind === 'element')!;
     participacao.attrs.push({ name: 'MES-INICIO', value: '3' });
-    expect(projetoOp(change, chain, 'Projeto')).toEqual({
-      reason: expect.stringMatching(/participação no projeto tem campos.*MES-INICIO/),
+    expect(projetoOp(change, chain, 'Projeto')).toMatchObject({
+      left: [expect.stringMatching(/MES-INICIO|Mês/)],
     });
   });
 
