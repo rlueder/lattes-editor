@@ -9,6 +9,7 @@
 //   node scripts/censo-ponte.ts chamar '<expr>'   # espera a Promise da expressão e imprime
 //   node scripts/censo-ponte.ts reanexar          # volta para a aba do menu depois de um login
 //   node scripts/censo-ponte.ts capturas          # os POSTs da aba ao Lattes desde a última consulta
+//   PONTE_ALVO=localhost:5173 node scripts/censo-ponte.ts avaliar '<expr>'  # em outra aba, pelo endereço
 //
 // Só escuta em 127.0.0.1, com um token num arquivo da pasta temporária. O
 // navegador precisa da depuração remota ligada (brave://inspect/#remote-debugging
@@ -78,24 +79,28 @@ async function serve(): Promise<void> {
   });
   console.log('conectado');
 
-  let session: string | undefined;
-  const attach = async () => {
+  // Uma sessão por aba: a do menu do Lattes, ou a de outro endereço (PONTE_ALVO).
+  const MENU = 'cvlattesweb/PKG_MENU';
+  const sessions = new Map<string, string>();
+  const attach = async (alvo: string) => {
     const { targetInfos } = (await send('Target.getTargets')) as {
       targetInfos: { targetId: string; type: string; url: string }[];
     };
-    // A aba aberta por último no menu: depois de um login, a nova.
+    // A aba aberta por último com o endereço: depois de um login, a nova.
+    // Um endereço chrome-extension:// também acha o worker da extensão.
     const tab = targetInfos.filter(
-      (t) => t.type === 'page' && t.url.includes('cvlattesweb/PKG_MENU'),
+      (t) => t.url.includes(alvo) && (t.type === 'page' || alvo.startsWith('chrome-extension')),
     )[0];
-    if (!tab) throw new Error('nenhuma aba no menu do Lattes');
+    if (!tab) throw new Error(`nenhuma aba com ${alvo}`);
     const { sessionId } = (await send('Target.attachToTarget', {
       flatten: true,
       targetId: tab.targetId,
     })) as { sessionId: string };
-    await send('Network.enable', { maxPostDataSize: 65_536 }, sessionId);
+    if (alvo === MENU) await send('Network.enable', { maxPostDataSize: 65_536 }, sessionId);
+    sessions.set(alvo, sessionId);
     return sessionId;
   };
-  const evaluate = (expression: string) =>
+  const evaluate = (expression: string, session: string) =>
     send('Runtime.evaluate', { awaitPromise: true, expression, returnByValue: true }, session);
 
   const token = randomBytes(16).toString('hex');
@@ -106,21 +111,27 @@ async function serve(): Promise<void> {
     let body = '';
     for await (const c of req) body += String(c);
     try {
-      const { capturas, expr, reattach } = JSON.parse(body) as {
+      const {
+        alvo = MENU,
+        capturas,
+        expr,
+        reattach,
+      } = JSON.parse(body) as {
+        alvo?: string;
         capturas?: boolean;
         expr: string;
         reattach?: boolean;
       };
-      if (!session || reattach) session = await attach();
+      let session = sessions.get(alvo);
+      if (!session || reattach) session = await attach(alvo);
       if (capturas) {
         res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(posts));
         posts.length = 0;
         return;
       }
-      const r = await evaluate(expr).catch(async () => {
+      const r = await evaluate(expr, session).catch(async () => {
         // A aba recarregou: anexa de novo, uma vez.
-        session = await attach();
-        return evaluate(expr);
+        return evaluate(expr, await attach(alvo));
       });
       const failed = r.exceptionDetails as
         { exception?: { description?: string }; text?: string } | undefined;
@@ -141,7 +152,7 @@ async function serve(): Promise<void> {
 
 async function ask(expr: string, reattach = false): Promise<{ erro?: string; valor?: unknown }> {
   const res = await fetch(`http://127.0.0.1:${PORT}/`, {
-    body: JSON.stringify({ expr, reattach }),
+    body: JSON.stringify({ alvo: process.env.PONTE_ALVO, expr, reattach }),
     headers: { 'x-token': readFileSync(TOKEN, 'utf8') },
     method: 'POST',
   });

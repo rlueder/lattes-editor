@@ -330,7 +330,11 @@ node scripts/censo-ponte.ts servir &        # mantém a conexão
 node scripts/censo-ponte.ts carregar        # põe o censo na aba do menu
 node scripts/censo-ponte.ts chamar '__lattesCensus.ledger()'
 node scripts/censo-ponte.ts reanexar        # depois de entrar de novo no Lattes
+PONTE_ALVO=localhost:5173 node scripts/censo-ponte.ts avaliar '<expr>'  # outra aba
 ```
+
+`PONTE_ALVO` escolhe a aba pelo endereço (a do editor em desenvolvimento, por
+exemplo); com `chrome-extension://<id>`, o worker da extensão Dev.
 
 O censo carregado some quando a aba recarrega; `carregar` de novo. Desligue a
 depuração remota ao terminar.
