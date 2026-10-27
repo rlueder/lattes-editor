@@ -27,6 +27,7 @@ import { ItemList } from './ItemList.tsx';
 import { isRedundantDateFormat } from './lattes-date.ts';
 import { linkError } from './link-fields.ts';
 import { lacksField, offLattesForm } from './off-lattes-form.ts';
+import { ProjectOrgan } from './ProjectOrgan.tsx';
 import { displayValue } from './reading.ts';
 import { useReferenceIndex } from './reference-context.ts';
 import { viewForContainer } from './reference-tables.ts';
@@ -298,6 +299,7 @@ export function ElementView({
   return (
     <div className={`element depth-${Math.min(depth, 3)}`}>
       {!fieldsLast && fields}
+      <ProjectOrgan el={el} onEdit={onEdit} />
       {byName(rest).map(([name, els], i) => (
         <section key={name} className="subsection">
           <h4 className="subsection-head" {...outlineHead(outlineBase, i, elementLabel(name))}>

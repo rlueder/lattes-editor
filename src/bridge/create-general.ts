@@ -86,8 +86,7 @@ export const GENERAL_CREATES = new Set(['IDIOMA', 'PREMIO-TITULO', 'VINCULOS']);
 export const GENERAL_BY_HAND: Record<string, string> = {
   'AREA-DE-ATUACAO':
     'Área de atuação vai à mão: a grade de áreas (f_area_l) tem a chave r, de sentido não lido',
-  ATIVIDADE:
-    'Atividade vai à mão: o Lattes exige o órgão ou unidade, que entra por uma busca cuja resposta ainda não foi lida (a de ensino já vai)',
+  ATIVIDADE: 'Atividade vai à mão: o Lattes exige o órgão ou unidade, escolhido na lista do Lattes',
   DISCIPLINA:
     'Disciplina numa atividade que já está no Lattes vai à mão: a grade leva também as que já existem, que a página traz só em script (numa atividade de ensino nova, ela vai junto)',
   'FINANCIADOR-DO-PROJETO':
@@ -97,13 +96,13 @@ export const GENERAL_BY_HAND: Record<string, string> = {
   LICENCA:
     'Licença vai à mão: o Lattes exige a data de nascimento ou adoção, que o currículo não guarda',
   'LINHA-DE-PESQUISA':
-    'Linha de pesquisa vai à mão: ela entra pela grade da atividade de pesquisa e desenvolvimento, que exige o órgão ou unidade, e a grade só leva o nome',
+    'Linha de pesquisa numa atividade que já está no Lattes vai à mão: a grade leva também as que já existem, que a página traz só em script (numa atividade nova, ela vai junto)',
   ORIENTACAO:
     'Orientação do projeto vai à mão: ela se liga a uma orientação do currículo pela janela de orientações, que não foi lida',
   'PRODUCAO-CT-DO-PROJETO':
     'Produção do projeto vai à mão: ela se liga a uma produção do currículo pela janela de produções, que não foi lida',
   TREINAMENTO:
-    'Treinamento vai à mão: ele entra pela grade da atividade de treinamento, que exige o órgão ou unidade',
+    'Treinamento numa atividade que já está no Lattes vai à mão: a grade leva também os que já existem, que a página traz só em script (numa atividade nova, ele vai junto)',
 };
 
 /** O motivo de ir à mão para um elemento novo, ou undefined quando não é destes. */

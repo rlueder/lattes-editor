@@ -153,11 +153,12 @@ describe('planejar idioma, prêmio e vínculo', () => {
         ),
       ),
     ).toMatch(/Nome em inglês/);
-    expect(
-      await reasonOf((doc) =>
-        ufrgs(doc).children.push(element('VINCULOS', { ...VINCULO, 'OUTRAS-INFORMACOES': 'Nota' })),
-      ),
-    ).toMatch(/Outras informações/);
+    // O vínculo novo leva "Outras informações" em português (censo de 27/10/2026).
+    const withNote = await plan((doc) =>
+      ufrgs(doc).children.push(element('VINCULOS', { ...VINCULO, 'OUTRAS-INFORMACOES': 'Nota' })),
+    );
+    expect(withNote.unsupported).toEqual([]);
+    expect(withNote.ops[0]).toMatchObject({ set: { f_outras_inf: 'Nota' } });
     expect(
       await reasonOf((doc) =>
         push(
@@ -178,7 +179,7 @@ describe('planejar idioma, prêmio e vínculo', () => {
           ]),
         ),
       ),
-    ).toMatch(/Atividade vai à mão/);
+    ).toMatch(/ao menos uma descrição/);
   });
 
   it('cada tipo à mão tem o seu motivo', () => {
@@ -188,8 +189,8 @@ describe('planejar idioma, prêmio e vínculo', () => {
       ['MBA', /passo depois/],
       ['OUTROS', /Formação complementar/],
       ['DISCIPLINA', /grade leva também as que já existem/],
-      ['TREINAMENTO', /atividade de treinamento, que exige o órgão/],
-      ['LINHA-DE-PESQUISA', /atividade de pesquisa e desenvolvimento/],
+      ['TREINAMENTO', /grade leva também os que já existem/],
+      ['LINHA-DE-PESQUISA', /grade leva também as que já existem/],
       ['FINANCIADOR-DO-PROJETO', /EDITAR_FINANCIAMENTO, que não foi lida/],
       ['PRODUCAO-CT-DO-PROJETO', /janela de produções/],
       ['ORIENTACAO', /janela de orientações/],

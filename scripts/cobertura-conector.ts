@@ -16,7 +16,8 @@
 // usa): fica só para ler no editor. O resto falta no conector, inclusive o
 // campo em que parte das trocas vai. --resumo mostra só os totais;
 // --lista=MESTRADO lista os campos que faltam num tipo de item, com o motivo,
-// e --lista=motivo:Valor os que faltam por um motivo que começa assim.
+// e --lista=motivo:Valor os que faltam por um motivo que começa assim;
+// --lista=sem-campo, os que ficam só para ler, com o motivo.
 //
 // --por-curriculo é a contagem antiga, por troca de atributo num currículo
 // (fixtures/demo.xml e fixtures/synthetic_full.xml sem arquivo): depende de
@@ -427,6 +428,11 @@ function fieldReport(file: string): void {
   if (dump) {
     for (const [key, ts] of fields) {
       const { kind, reason } = kindOf(ts);
+      // --lista=sem-campo: os que ficam só para ler, com o motivo da primeira troca.
+      if (dump === 'sem-campo' && kind === 'sem-campo') {
+        console.log(`${key}\t${ts.find((t) => !t.ok)?.reasons[0] ?? ''}`);
+        continue;
+      }
       if (
         kind === 'falta' &&
         (itemOf(key) === dump || (dump.startsWith('motivo:') && reason?.startsWith(dump.slice(7))))

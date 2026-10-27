@@ -52,18 +52,19 @@ interface CensusFile {
 
 const census = (name: string) =>
   JSON.parse(readFileSync(`docs/lattes-formularios/${name}`, 'utf8')) as CensusFile;
-const MAIN = census('censo-2026-10-15.json');
 const RECAPTURE = census('censo-2026-10-15b.json');
+/** A captura de 27/10/2026, a primeira com o f_ref das informações adicionais. */
+const LATEST = census('censo-2026-10-27.json');
 
 /** Tipo do motor → entrada do censo (o artigo publicado é da recaptura). */
 const CENSUS_ENTRY: Record<string, [CensusFile, string]> = {
-  'artigo-aceito': [MAIN, 'artigo-aceito'],
+  'artigo-aceito': [LATEST, 'artigo-aceito'],
   'artigo-publicado': [RECAPTURE, 'artigo-publicado'],
-  livro: [MAIN, 'livro-capitulo'],
-  partitura: [MAIN, 'partitura'],
-  'texto-jornal': [MAIN, 'texto-jornal'],
-  traducao: [MAIN, 'traducao'],
-  'trabalho-em-eventos': [MAIN, 'trabalho-em-eventos'],
+  livro: [LATEST, 'livro-capitulo'],
+  partitura: [LATEST, 'partitura'],
+  'texto-jornal': [LATEST, 'texto-jornal'],
+  traducao: [LATEST, 'traducao'],
+  'trabalho-em-eventos': [LATEST, 'trabalho-em-eventos'],
 };
 
 const BIB_IDS = [...Object.keys(CENSUS_ENTRY), 'outra-bibliografica'];

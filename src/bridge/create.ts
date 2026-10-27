@@ -68,9 +68,9 @@ type Planned = CreateAtuacaoOp | { reason: string };
 /**
  * Os campos do vínculo no formulário (GN_ATIV na inclusão da atuação,
  * GN_ATIV_VINC na inclusão de um vínculo numa atuação que já existe, LAT-57).
- * O formulário de vínculo novo não tem "Outras informações" em português,
- * só em inglês (censo de 15/10/2026): com `vinculo`, o texto em português vai
- * à mão, e o em inglês e o enquadramento em inglês entram.
+ * O formulário de vínculo novo tem "Outras informações" nos dois idiomas e o
+ * enquadramento em inglês (censo de 27/10/2026; a captura de 15/10/2026 não
+ * trouxe o texto em português).
  */
 export function vinculoFields(
   v: XElement,
@@ -87,11 +87,6 @@ export function vinculoFields(
     !getAttr(v, 'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO')
   ) {
     return { reason: 'Enquadramento da lista do Lattes ainda não mapeado; use o texto livre' };
-  }
-  if (vinculo && getAttr(v, 'OUTRAS-INFORMACOES')?.trim()) {
-    return {
-      reason: 'O formulário de vínculo novo não tem "Outras informações" em português: vai à mão',
-    };
   }
   const anoFim = getAttr(v, 'ANO-FIM') ?? '';
   const set: FieldValues = {
@@ -110,11 +105,10 @@ export function vinculoFields(
     // check() copia o texto de f_vinc para f_vinculo antes do envio.
     f_vinculo: vinc,
   };
+  set.f_outras_inf = getAttr(v, 'OUTRAS-INFORMACOES') ?? '';
   if (vinculo) {
     set.f_enqua_en = getAttr(v, 'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO-INGLES') ?? '';
     set.f_outras_inf_en = getAttr(v, 'OUTRAS-INFORMACOES-INGLES') ?? '';
-  } else {
-    set.f_outras_inf = getAttr(v, 'OUTRAS-INFORMACOES') ?? '';
   }
   return { set };
 }

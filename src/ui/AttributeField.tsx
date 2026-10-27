@@ -164,7 +164,10 @@ export function AttributeField({
   }
 
   // Listas lidas no Lattes pelo conector (LAT-48): sem elas, o campo de sempre.
-  const live = liveKind(el, name, withParentIn(lists, root, el));
+  const live = liveKind(el, name, {
+    ...withParentIn(lists, root, el),
+    newItem: formLacks?.isNew?.(el) ?? false,
+  });
   if (live === 'area-derivada') {
     const shown = value ? enumLabelOrValue(name, value) : '(vazio)';
     return <LockedField text={text} value={shown} why="Segue a área do conhecimento escolhida" />;

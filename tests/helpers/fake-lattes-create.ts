@@ -37,6 +37,7 @@ function controlsFrom(values: Record<string, string>, types: Record<string, stri
     const [t, max] = type.split(':');
     const value = values[name] ?? '';
     if (t === 'radio') return { ...control(name, value, 'radio'), checked: value !== '' };
+    if (t === 'disabled') return { ...control(name, value, 'text'), disabled: true };
     if (t === 'select-one')
       return { ...control(name, '', 'select-one'), selected: value ? [value] : [] };
     return control(name, value, t, max ? Number(max) : undefined);
@@ -207,6 +208,8 @@ export const PROJETO_TYPES: Record<string, string> = {
   f_cod_inst2: 'hidden',
   f_cod_tipo: 'hidden',
   f_codinst: 'hidden',
+  f_codorgao: 'hidden',
+  f_codorgao2: 'hidden',
   f_ctr: 'hidden',
   f_enqua: 'hidden',
   f_inst: 'text:75',
@@ -219,6 +222,8 @@ export const PROJETO_TYPES: Record<string, string> = {
   f_orientacoes_l: 'hidden',
   f_producoes_d: 'hidden',
   f_producoes_l: 'hidden',
+  f_orgao: 'disabled',
+  f_orgao_old: 'hidden',
   f_ref: 'textarea:3900',
   f_ref_en: 'textarea:3900',
   f_regime: 'hidden',
@@ -268,6 +273,12 @@ export function fakeProjeto(opts: FakeOpts & { noInclusion?: boolean } = {}) {
         const seq = /f_seq_proj=(\d+)/.exec(path)?.[1];
         return seq ? `FORM:GN_PROJETO:seq:${seq}` : 'FORM:GN_PROJETO:novo:P';
       }
+      // A janela de órgãos (27/10/2026): um órgão e, aberto nele, uma unidade.
+      if (path.startsWith('pkg_projeto.pp_orgao_cargo')) {
+        return path.includes('f_cod_inst2=V000000000101')
+          ? "<a onclick=\"atribuir('000000000102','Laboratório de Genética',0,'Instituto de Biociências')\">L</a>"
+          : "<a onclick=\"atribuir('000000000101',' Instituto de Biociências',0)\">I</a>";
+      }
       if (path.startsWith('PKG_PROJETO.pp_lista_inst')) {
         return (
           opts.pages?.vinculos ??
@@ -287,7 +298,17 @@ export function fakeProjeto(opts: FakeOpts & { noInclusion?: boolean } = {}) {
       posted = true;
       if (opts.logonOnPost) return LOGON;
       for (let i = 0; i < (opts.created ?? 1); i++) {
-        rows.push({ ...values, ...opts.tamper, f_ctr: 'U', f_seq_proj: String(rows.length + 1) });
+        rows.push({
+          ...values,
+          // Como a página de alteração real: o órgão só no texto de f_orgao.
+          f_codorgao: '',
+          f_codorgao2: '',
+          f_orgao: values.f_orgao_old ?? '',
+          f_orgao_old: '',
+          ...opts.tamper,
+          f_ctr: 'U',
+          f_seq_proj: String(rows.length + 1),
+        });
       }
       return '';
     },

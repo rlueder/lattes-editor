@@ -306,14 +306,17 @@ const ORGANIZACAO_EVENTO = demais({
 /**
  * A data de realização (f_data, texto 10) é dd/mm/aaaa. O meio de divulgação
  * tem opções próprias (I, M, W Web, O), ligadas ao enumerado pelo rótulo.
- * Fica à mão o campo f_emissora: pelo nome seria a EMISSORA, pelo rótulo
- * ("Veículo de divulgação") o VEICULO-DE-DIVULGACAO, e o XML tem os dois.
+ * O campo f_emissora tem o rótulo "Veículo de divulgação", mas é a EMISSORA:
+ * nas exportações públicas lidas em 27/10/2026, os 127 programas traziam a
+ * EMISSORA e nenhum o VEICULO-DE-DIVULGACAO (seção 23). Inferido até o teste
+ * acompanhado.
  */
 const RADIO_TV = demais({
   code: '2H',
   details: {
     'DATA-DA-APRESENTACAO': { field: 'f_data', toForm: slashDate },
     'DURACAO-EM-MINUTOS': 'f_duracao',
+    EMISSORA: 'f_emissora',
     TEMA: 'f_tema',
   },
   detailsChild: 'DETALHAMENTO-DO-PROGRAMA-DE-RADIO-OU-TV',

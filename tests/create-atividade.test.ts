@@ -173,7 +173,7 @@ describe('incluir atividade de ensino no Lattes simulado', () => {
 
     const posts = lattes.state.log.filter((l) => l.method === 'POST').length;
     expect(await applyOp(ops[0]!, lattes.port)).toMatchObject({
-      detail: 'A atuação já tem essa atividade de ensino (mesmo nível e início)',
+      detail: 'A atuação já tem essa atividade (mesma natureza e início)',
       status: 'divergente',
     });
     expect(lattes.state.log.filter((l) => l.method === 'POST').length).toBe(posts);
@@ -197,7 +197,7 @@ describe('incluir atividade de ensino no Lattes simulado', () => {
     // A linha sem f_natur_ativ no link: a natureza vem do oculto do formulário.
     edit = (html) => html.replace(/f_natur_ativ=4&amp;(f_seq_funcao=)/g, '$1');
     expect(await applyOp(ops[0]!, open.port)).toMatchObject({
-      detail: 'A atuação já tem essa atividade de ensino (mesmo nível e início)',
+      detail: 'A atuação já tem essa atividade (mesma natureza e início)',
       status: 'divergente',
     });
     // Uma atividade num link que o conector não reconhece: nada vai.

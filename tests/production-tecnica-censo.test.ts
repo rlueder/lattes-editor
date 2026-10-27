@@ -211,9 +211,10 @@ describe('o que fica à mão, com o motivo', () => {
         setAttr(part(root, '45', 'DETALHAMENTO'), 'DATA-ENCERRAMENTO', '05062017'),
       ),
     ).toEqual(['O formulário deste tipo no Lattes não tem: Data encerramento']);
-    expect(reasonOf((root) => setAttr(part(root, '44', 'DETALHAMENTO'), 'EMISSORA', 'TV'))).toEqual(
-      ['O formulário deste tipo no Lattes não tem: Emissora'],
-    );
+    // O f_emissora é a EMISSORA (exportações públicas, 27/10/2026); o veículo fica de fora.
+    expect(
+      reasonOf((root) => setAttr(part(root, '44', 'DETALHAMENTO'), 'VEICULO-DE-DIVULGACAO', 'TV')),
+    ).toEqual(['O formulário deste tipo no Lattes não tem: Veículo de divulgação']);
   });
 
   it('valor sem opção no formulário: meio WEB, unidade e tipo de evento fora da lista', () => {

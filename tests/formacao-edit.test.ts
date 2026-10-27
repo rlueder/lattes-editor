@@ -138,6 +138,16 @@ describe('formação: plano', () => {
     expect(op).not.toHaveProperty('list');
   });
 
+  it('residência médica: o número do registro vai no f_orient, o campo dela', () => {
+    const xml = XML.replace(
+      '</FORMACAO-ACADEMICA-TITULACAO>',
+      '<RESIDENCIA-MEDICA SEQUENCIA-FORMACAO="7" NIVEL="D" CODIGO-INSTITUICAO="000000000001" NOME-INSTITUICAO="Universidade Federal do Rio Grande do Sul" STATUS-DO-CURSO="CONCLUIDO" ANO-DE-INICIO="2012" ANO-DE-CONCLUSAO="2014" FLAG-BOLSA="NAO" CODIGO-AGENCIA-FINANCIADORA="" NOME-AGENCIA="" TITULO-DA-RESIDENCIA-MEDICA="Clínica médica" NUMERO-DO-REGISTRO="123"/></FORMACAO-ACADEMICA-TITULACAO>',
+    );
+    const plan = planned(edit('RESIDENCIA-MEDICA', { 'NUMERO-DO-REGISTRO': '456' }), xml);
+    expect(plan.unsupported).toEqual([]);
+    expect(plan.ops[0]).toMatchObject({ expect: { f_orient: '123' }, set: { f_orient: '456' } });
+  });
+
   it('o que o nível não mostra fica à mão, com o nome do nível', () => {
     expect(reasonOf(edit('POS-DOUTORADO', { 'TITULO-DO-TRABALHO': 'Projeto' }))).toBe(
       'O formulário de pós-doutorado do Lattes não tem: Título do trabalho',

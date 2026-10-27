@@ -25,7 +25,14 @@ const bibBasics = (child: string) =>
     'TITULO-INGLES': 'f_titulo_en',
   });
 
-const INFO_EN = { 'INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES': 'f_ref_en' };
+/**
+ * As informações adicionais, nos dois idiomas. O f_ref não estava na captura
+ * de 15/10/2026 e está na de 27/10/2026, em todos estes formulários.
+ */
+const INFO_EN = {
+  'INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS': 'f_ref',
+  'INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES': 'f_ref_en',
+};
 
 /**
  * Tradução (GN_BIB, POST PRC_BIB_TRADUCAO). Inferido: a natureza pelos
@@ -128,7 +135,6 @@ const OUTRA_BIBLIOGRAFICA: ProductionTarget = {
       'ISSN-ISBN': 'f_issn',
       'NUMERO-DE-PAGINAS': 'f_paginas',
     }),
-    'INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS': 'f_ref',
     ...INFO_EN,
   },
   form: { action: 'PRC_BIB_OUTRAPROD', name: 'GN_BIB' },
@@ -198,7 +204,6 @@ const PREFACIO: ProductionTarget = {
       'TITULO-DA-PUBLICACAO': 'f_tit_obra',
       VOLUME: 'f_volume',
     }),
-    'INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS': 'f_ref',
     ...INFO_EN,
   },
   form: { action: 'PRC_BIB_PREFACIO', name: 'GN_BIB' },

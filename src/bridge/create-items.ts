@@ -31,6 +31,7 @@ import {
   planCreateAtividade,
   teachingItem,
 } from './create-atividade.ts';
+import { cargoItem, planCreateCargo } from './create-cargo.ts';
 import {
   applyCreateEvento,
   type CreateEventoOp,
@@ -79,6 +80,7 @@ import { registryInclusion, registryList } from './create-registro-rules.ts';
 import type { Planned } from './create-shared.ts';
 import { EVENTO_SPEC } from './edit-items.ts';
 import { findLinks } from './lattes-html.ts';
+import { ACTIVITY_ORGAN_ELEMENTS } from './organ-windows.ts';
 
 export {
   applyCreateAtividade,
@@ -110,13 +112,16 @@ export const CONNECTOR_CREATES: ReadonlySet<string> = new Set([
   ...Object.keys(FORMATION_LEVELS),
   ...Object.keys(AP_LEVELS),
   // Registros: a própria pessoa entra na grade de inventores pelo autorDP do
-  // menu (seção 22). A patente e o projeto têm a operação (registroFields,
-  // projetoOp), mas o planejamento os manda à mão: o titular da patente e o
-  // órgão do projeto ainda não têm como ir.
+  // menu (seção 22). A patente tem a operação (registroFields), mas o
+  // planejamento a manda à mão: o titular ainda não tem como ir.
   ...Object.keys(REGISTRY_TYPES).filter((n) => n !== 'PATENTE'),
+  // O projeto, com o órgão escolhido na lista do Lattes (create-projeto.ts).
+  'PROJETO-DE-PESQUISA',
   ...GENERAL_CREATES,
-  // A atividade de ensino, com as disciplinas (create-atividade.ts).
+  // A atividade de ensino, com as disciplinas (create-atividade.ts), e as
+  // outras naturezas, com o órgão da janela de órgãos (create-cargo.ts).
   'ENSINO',
+  ...ACTIVITY_ORGAN_ELEMENTS,
   // Eventos: pelo formulário, no lugar do Importar, com a chave ligada (direct-inclusion.ts).
   ...EVENT_ELEMENTS,
 ]);
@@ -136,6 +141,8 @@ export function planCreateItem(
   if (registro) return planCreateRegistro(change, chain, registro, label);
   const ensino = teachingItem(el);
   if (ensino) return planCreateAtividade(change, chain, ensino, label);
+  const cargo = cargoItem(el);
+  if (cargo) return planCreateCargo(change, chain, cargo, label);
   const evento = eventItem(el);
   if (evento) return planCreateEvento(change, chain, evento, label);
   const general = planCreateGeneral(change, chain, label);

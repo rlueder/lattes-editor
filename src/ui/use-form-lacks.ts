@@ -22,6 +22,10 @@ export function useFormLacksFor(
         ? {
             child: (item: XElement, name: string) => childLacks(original, working, item, name),
             field: (el: XElement, attr: string) => formLacks(original, working, el, attr),
+            isNew: (el: XElement) => {
+              const path = pathTo(working, el);
+              return !!path && resolvePath(original, path).length !== path.length;
+            },
             keyOf: (el: XElement) => pathTo(working, el)?.join('/'),
             original: (el: XElement, attr: string) => {
               const path = pathTo(working, el);

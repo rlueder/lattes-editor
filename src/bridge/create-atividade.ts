@@ -41,7 +41,9 @@ import {
 } from './create-shared.ts';
 import { encodeLatin1Form, pairValue, setPairs } from './form.ts';
 import { findLinks, isLogonPage, type LattesLink } from './lattes-html.ts';
+import { activityOrgansPath } from './organ-windows.ts';
 import type { FieldValues } from './plan.ts';
+import { organLoose, resolveOrgan } from './production/organ.ts';
 
 export interface CreateAtividadeOp {
   /** CODIGO-INSTITUICAO da atuação, para conferir que a atuação achada é ela (como no vínculo). */
@@ -52,6 +54,10 @@ export interface CreateAtividadeOp {
   key: string;
   kind: 'criar-atividade';
   label: string;
+  /** f_natur_ativ: sem valor, o ensino (4); as outras naturezas em create-cargo.ts. */
+  natur?: string;
+  /** O órgão ou a unidade da janela de órgãos da atividade, com o órgão de cima de uma unidade. */
+  organ?: { code: string; parent?: string };
   /** SEQUENCIA-ATIVIDADE da atuação que recebe a atividade. */
   seqAtiv: string;
   set: FieldValues;
@@ -178,6 +184,10 @@ export const COURSE_BY_HAND =
 export const DISCIPLINES_UNREAD =
   'Criada no Lattes, com os campos conferidos; confira as disciplinas no Lattes, que o conector não relê';
 
+/** O mesmo, nas outras naturezas: a grade das descrições não é relida. */
+export const DESCRIPTION_UNREAD =
+  'Criada no Lattes, com os campos e o órgão conferidos; confira a descrição no Lattes, que o conector não relê';
+
 // Lattes ----------------------------------------------------------------------------
 
 const FORM = 'GN_ATIV_CARGO';
@@ -233,26 +243,24 @@ export async function applyCreateAtividade(
         'A tela de cargos e vínculos tem atividades que o conector não reconhece; nada foi enviado',
       );
     }
-    // Duplicata: atividade de ensino da atuação com o mesmo nível e o mesmo início.
+    const natur = op.natur ?? '4';
+    // Duplicata: atividade da mesma natureza com o mesmo início (no ensino, também o nível).
     // A natureza vem do oculto f_natur_ativ de cada formulário (observado), e
     // não do link da linha, cujos parâmetros são inferidos: assim uma linha sem
     // o parâmetro não escapa da conferência.
     for (const row of before) {
       const { pairs } = await readPairs(port, row.path, FORM);
-      if (pairValue(pairs, 'f_natur_ativ') !== '4') continue;
+      if (pairValue(pairs, 'f_natur_ativ') !== natur) continue;
       if (
-        pairValue(pairs, 'f_nivel') === op.set.f_nivel &&
+        (natur !== '4' || pairValue(pairs, 'f_nivel') === op.set.f_nivel) &&
         pairValue(pairs, 'f_ano_ini') === op.set.f_ano_ini
       ) {
-        return result(
-          'divergente',
-          'A atuação já tem essa atividade de ensino (mesmo nível e início)',
-        );
+        return result('divergente', 'A atuação já tem essa atividade (mesma natureza e início)');
       }
     }
-    const form = await readPairs(port, inclusionPath(inclusion, '4'), FORM);
-    if (pairValue(form.pairs, 'f_ctr') !== 'I' || pairValue(form.pairs, 'f_natur_ativ') !== '4') {
-      return result('erro', 'O formulário não é o de inclusão de atividade de ensino');
+    const form = await readPairs(port, inclusionPath(inclusion, natur), FORM);
+    if (pairValue(form.pairs, 'f_ctr') !== 'I' || pairValue(form.pairs, 'f_natur_ativ') !== natur) {
+      return result('erro', 'O formulário não é o de inclusão desta natureza de atividade');
     }
     const { f_espec_l: _grid, ...typed } = op.set;
     const absent = absentFields(form.controls, typed);
@@ -285,7 +293,25 @@ export async function applyCreateAtividade(
     }
     const limit = overLimit(form.controls, set);
     if (limit) return result('erro', limit);
-    const response = await port.post('PKG_ATIV.cargo', encodeLatin1Form(setPairs(form.pairs, set)));
+    // O órgão pela janela de órgãos da atividade, com a instituição do link
+    // (f_codinst, com a letra), como na alteração (seção 22). Fica fora da
+    // releitura dos campos: a página de alteração o mostra só em f_orgao.
+    let organ: { set: FieldValues; shown?: string } = { set: {} };
+    if (op.organ) {
+      const resolved = await resolveOrgan(
+        { before: '', beforeText: '', ...op.organ },
+        port,
+        form.pairs,
+        '',
+        { institution: inclusion.params.f_codinst ?? '', path: activityOrgansPath },
+      );
+      if ('status' in resolved) return result(resolved.status, resolved.detail);
+      organ = { set: resolved.set, shown: resolved.shown };
+    }
+    const response = await port.post(
+      'PKG_ATIV.cargo',
+      encodeLatin1Form(setPairs(form.pairs, { ...set, ...organ.set })),
+    );
     if (isLogonPage(response)) return result('sessao', SESSION);
     const mayExist = 'A atividade pode ter sido criada';
     try {
@@ -311,10 +337,17 @@ export async function applyCreateAtividade(
         readBack(saved, checked),
       );
       if (problem) return { ...result('divergente', problem), assigned };
+      const organNow = saved.controls.find((c) => c.name === 'f_orgao')?.value;
+      if (organ.shown !== undefined && organLoose(organNow) !== organLoose(organ.shown)) {
+        return { ...result('divergente', 'Criada no Lattes, mas o órgão não confere'), assigned };
+      }
       // As disciplinas ficam sem reler: o resto conferiu, e o aviso vai no
       // registro do enviado, sem travar a fila nem o envio ao CNPq.
       return {
-        ...result('conferido', `${DISCIPLINES_UNREAD} (atividade ${seq})`),
+        ...result(
+          'conferido',
+          `${natur === '4' ? DISCIPLINES_UNREAD : DESCRIPTION_UNREAD} (atividade ${seq})`,
+        ),
         assigned,
         partial: true,
       };

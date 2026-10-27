@@ -185,6 +185,9 @@ const FIELDS: Record<string, [string, Mapper]> = {
   'NOME-DO-ORIENTADOR-SANDUICHE': ['f_orient_dout_sw', same],
   'NOME-ORIENTADOR-DOUT': ['f_orient_dout', same],
   'NOME-ORIENTADOR-GRAD': ['f_orient_dout', same],
+  // Na residência médica, o f_orient é o "Número do registro" (rótulo no censo
+  // de 15/10/2026); ela não tem orientador.
+  'NUMERO-DO-REGISTRO': ['f_orient', same],
   'STATUS-DO-CURSO': ['F_STATUS', status],
   'TIPO-DOUTORADO': ['f_tpo_doutorado', same],
   'TIPO-GRADUACAO': ['f_tpo_doutorado', same],
@@ -210,7 +213,6 @@ const NO_FIELD = new Set([
   'ID-OASIS',
   'NOME-CURSO-INGLES',
   'NOME-ORGAO',
-  'NUMERO-DO-REGISTRO',
   'NUMERO-ID-ORIENTADOR',
   'STATUS-DO-ESTAGIO',
   'STATUS-OASISBR',

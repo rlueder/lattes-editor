@@ -469,6 +469,13 @@ export interface LiveAvailability {
   areas?: readonly AreaNode[];
   /** O conector lê cursos (extensão com a capacidade 'listas-lattes'). */
   courses: boolean;
+  /**
+   * O elemento do campo não estava na exportação: a participação de um
+   * projeto novo, cujo órgão vai na inclusão.
+   */
+  newItem?: boolean;
+  /** O conector inclui projeto com o órgão da janela de órgãos ('projeto-novo-orgao'). */
+  newProjectOrgans?: boolean;
   /** O conector lê a janela de órgãos do projeto ('orgao-projeto'). */
   organs?: boolean;
   /**
@@ -498,7 +505,10 @@ export function liveKind(el: XElement, attr: string, live: LiveAvailability): Li
     return isEmptyArea(current) || findArea(live.areas, current) ? 'area-derivada' : undefined;
   }
   if (el.name === ORGAN_PARTS.holder || ACTIVITY_ORGAN_ELEMENTS.has(el.name)) {
-    if (!(el.name === ORGAN_PARTS.holder ? live.organs : live.activityOrgans)) return undefined;
+    // A participação de um projeto novo: o órgão vai na inclusão, que o
+    // Lattes grava; o de um projeto que já existe, ele não troca (seção 21).
+    const holderOn = live.organs || (live.newProjectOrgans && live.newItem);
+    if (!(el.name === ORGAN_PARTS.holder ? holderOn : live.activityOrgans)) return undefined;
     if (attr === ORGAN_PARTS.organ.name) return 'orgao';
     // A unidade é de um órgão: sem ele escolhido, não há lista.
     if (attr === ORGAN_PARTS.unit.name && getAttr(el, ORGAN_PARTS.organ.code)) return 'unidade';

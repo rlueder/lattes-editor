@@ -1981,6 +1981,13 @@ respondeu "A operação foi realizada com sucesso" e a releitura voltou com o
 já existe, nem pela própria página. A atuação do projeto não lista a
 participação como atividade, então não há outra tela para isso.
 
+Na inclusão, o `check()` exige o órgão (`f_ctr` I), e o projeto de teste de
+27/10/2026, incluído pela página com um órgão, saiu na exportação com ele
+(seção 25). O conector inclui o projeto com o órgão escolhido no editor:
+`f_codorgao` (ou `f_codorgao2`) e `f_orgao_old` como o `atribuir()` os
+escreve, pela janela da instituição da atuação, e confere o texto de
+`f_orgao` depois de criar. **Inferido** até uma inclusão acompanhada.
+
 Os financiadores, as produções e as orientações ligadas são tabelas
 (`criarGrid`, ids `grid2`, `grid3` e `grid4`) que o servidor escreve com as
 linhas, e o `check()` as serializa em `f_inst_l`, `f_producoes_l` e
@@ -2764,3 +2771,42 @@ sintéticos:
   como `R:`, depois de `I:` e um `;`.
 - **Pessoa com deficiência.** Com um tipo marcado, `PCD` é o rótulo da
   caixa (`"Deficiência Visual"`).
+
+## 26. Recaptura dos formulários (27/10/2026)
+
+Só leitura, por GET, com o `capture()` do censo na sessão do dono
+(`lattes-formularios/censo-2026-10-27.json`): 87 dos 89 formulários lidos.
+Comparado com as capturas de 15/10/2026, nenhum campo saiu. **Observado**:
+
+- `f_ref` ("Informações adicionais", em português) está em 45 formulários de
+  produção, e `f_outras_inf` ("Outras informações") nos de atuação, vínculo e
+  revisor. A captura de 15/10/2026 não os trazia; se o Lattes os acrescentou
+  ou se a captura os perdeu não se sabe. O conector passou a mandar
+  `DESCRICAO-INFORMACOES-ADICIONAIS` em `f_ref` no artigo aceito, no
+  trabalho em eventos, no livro, no texto em jornal, na tradução e na
+  partitura, e `OUTRAS-INFORMACOES` no vínculo novo.
+- Na residência médica, `f_orient` tem o rótulo "Número do registro": é o
+  `NUMERO-DO-REGISTRO`, e não o orientador, que esse nível não tem.
+- Os rádios de cooperação e de potencial de inovação do projeto trocaram o
+  rótulo; os valores são os mesmos.
+
+Os outros menus do Lattes (dicionários de palavras-chave, de áreas, de
+instituições e de autores, identificação de coautor, alteração de periódico)
+renomeiam ou excluem o que os itens já têm, sem acrescentar campo que o
+formulário de algum item não tenha.
+
+Nas exportações públicas da seção 23, lidas de novo em 27/10/2026: os 127
+programas de rádio ou TV trazem `EMISSORA` e nenhum `VEICULO-DE-DIVULGACAO`,
+e os 8 pós-doutorados trazem `STATUS-DO-CURSO` e nenhum `STATUS-DO-ESTAGIO`.
+O conector liga o `f_emissora` (rótulo "Veículo de divulgação") à `EMISSORA`
+e o `F_STATUS` do pós-doutorado ao `STATUS-DO-CURSO`. **Inferido** das
+exportações, sem envio acompanhado.
+
+As atividades das naturezas que não são o ensino têm, na captura de
+27/10/2026, o mesmo formulário: órgão, período e a grade de descrições
+`f_espec_l`. O conector as inclui com a descrição na grade (o atributo da
+natureza numa linha; as linhas de pesquisa e os treinamentos, uma linha
+cada) e o órgão pela janela de órgãos da atividade, com a instituição do
+link. A linha de pesquisa nova leva só o título: o objetivo e o resto vão
+pela tela de linhas de pesquisa depois. **Inferido** até uma inclusão
+acompanhada.

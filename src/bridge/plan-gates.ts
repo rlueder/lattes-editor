@@ -5,6 +5,8 @@
 import { EDIT_AREAS_ENABLED } from './areas-atuacao.ts';
 import { BIOGRAPHIC_FULL_ENABLED, BIOGRAPHIC_OPS_ENABLED } from './biographic.ts';
 import { CREATE_ITEMS_ENABLED } from './create.ts';
+import { CREATE_ACTIVITY_ORGAN_ENABLED } from './create-cargo.ts';
+import { CREATE_PROJECT_ORGAN_ENABLED } from './create-projeto.ts';
 import { EDIT_PCD_ENABLED } from './dados-gerais-edit.ts';
 import { DELETE_ITEMS_ENABLED } from './delete.ts';
 import { EDIT_ATIVIDADES_ENABLED } from './edit-atividade.ts';
@@ -85,6 +87,16 @@ export const GATED_EDITS: readonly {
     option: 'editOtherContacts',
   },
   { enabled: EDIT_FUNDERS_ENABLED, feature: 'financiador-projeto', option: 'editFunders' },
+  {
+    enabled: CREATE_ACTIVITY_ORGAN_ENABLED,
+    feature: 'atividade-nova-orgao',
+    option: 'createActivities',
+  },
+  {
+    enabled: CREATE_PROJECT_ORGAN_ENABLED,
+    feature: 'projeto-novo-orgao',
+    option: 'createProjects',
+  },
 ];
 
 /**
@@ -102,6 +114,12 @@ export function partGate(op: BridgeOp, options: PlanOptions): string | undefined
   }
   if ('funder' in op && op.funder && !options.editFunders) {
     return 'Financiador do projeto pelo conector: desligado nesta montagem';
+  }
+  if (op.kind === 'criar-atividade' && (op.natur ?? '4') !== '4' && !options.createActivities) {
+    return 'Atividade nova pelo conector: desligado nesta montagem';
+  }
+  if (op.kind === 'criar-projeto' && !options.createProjects) {
+    return 'Projeto novo pelo conector: desligado nesta montagem';
   }
   return undefined;
 }

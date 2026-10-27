@@ -41,6 +41,8 @@ export function useLattesLists(features: readonly string[]): LattesLists {
   const organs = live && features.includes('orgao-projeto');
   // A janela de órgãos da atividade, para o órgão e a unidade das atividades.
   const activityOrgans = live && features.includes('orgao-atividades');
+  // A janela de órgãos do projeto para a participação de um projeto novo.
+  const newProjectOrgans = live && features.includes('projeto-novo-orgao');
   const [areas, setAreas] = useState<CachedList<AreaNode[]>>();
   const [agencies, setAgencies] = useState<CachedList<Agency[]>>();
   const waiting = useRef(new Map<string, (reply: Reply) => void>());
@@ -236,10 +238,11 @@ export function useLattesLists(features: readonly string[]): LattesLists {
       agencies: agencies?.items,
       areas: areas?.items,
       courses: live,
+      newProjectOrgans,
       organs,
       production,
       search: live,
     }),
-    [fetchers, live, organs, activityOrgans, production, areas, agencies],
+    [fetchers, live, organs, newProjectOrgans, activityOrgans, production, areas, agencies],
   );
 }

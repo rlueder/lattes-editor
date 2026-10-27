@@ -153,15 +153,27 @@ describe('planejar a inclusão de um projeto', () => {
     );
   });
 
-  it('órgão, unidade ou meses na participação não somem: o projeto vai à mão', () => {
+  it('o órgão escolhido na lista vai com o projeto; só o nome, ou sem órgão, não', () => {
     const before = cv('');
     const after = cv(projeto());
     const changes = diffDocuments(before, after).filter((c) => c.kind === 'novo');
     const chain = resolvePath(after, changes[0]!.path);
     const part = chain.find((c) => c.name === 'PARTICIPACAO-EM-PROJETO')!;
+    expect(planCreateProjeto(changes[0]!, chain, 'Projeto')).toEqual({ reason: TEAM_BY_HAND });
     part.attrs.push({ name: 'NOME-ORGAO', value: 'Instituto de Biociências' });
     expect(projetoOp(changes[0]!, chain, 'Projeto')).toEqual({
-      reason: expect.stringMatching(/participação no projeto tem campos.*NOME-ORGAO/),
+      reason: expect.stringMatching(/escolha pela lista do Lattes/),
+    });
+    part.attrs.push({ name: 'CODIGO-ORGAO', value: '000000000101' });
+    expect(planCreateProjeto(changes[0]!, chain, 'Projeto')).toMatchObject({
+      organ: { code: '000000000101' },
+    });
+    part.attrs.push(
+      { name: 'CODIGO-UNIDADE', value: '000000000102' },
+      { name: 'NOME-UNIDADE', value: 'Laboratório de Genética' },
+    );
+    expect(projetoOp(changes[0]!, chain, 'Projeto')).toMatchObject({
+      organ: { code: '000000000102', parent: '000000000101' },
     });
   });
 
@@ -231,6 +243,37 @@ describe('incluir o projeto no Lattes falso', () => {
       f_titulo: 'Genômica de palmeiras',
       f_vinc: 'Servidor público',
     });
+  });
+
+  it('o órgão sai da janela de órgãos da instituição e volta no texto de f_orgao', async () => {
+    const fake = fakeProjeto();
+    const withOrgan = { ...op(), organ: { code: '000000000101' } };
+    expect(await applyOp(withOrgan, fake.port)).toMatchObject({ status: 'conferido' });
+    expect(fake.posts[0]!.body).toMatchObject({
+      f_codorgao: '000000000101',
+      f_codorgao2: '',
+      f_orgao_old: 'Instituto de Biociências',
+    });
+    // Uma unidade: o código dela, e o texto com o órgão de cima.
+    const unitFake = fakeProjeto();
+    const unit = { ...op(), organ: { code: '000000000102', parent: '000000000101' } };
+    expect(await applyOp(unit, unitFake.port)).toMatchObject({ status: 'conferido' });
+    expect(unitFake.posts[0]!.body).toMatchObject({
+      f_codorgao: '000000000102',
+      // O envio do formulário leva a quebra de linha como CRLF.
+      f_orgao_old: expect.stringMatching(
+        /^Instituto de Biociências\/\r?\nLaboratório de Genética$/,
+      ),
+    });
+    // Órgão fora da janela: nada vai.
+    const missing = fakeProjeto();
+    expect(await applyOp({ ...op(), organ: { code: '000000000999' } }, missing.port)).toMatchObject(
+      { status: 'erro' },
+    );
+    expect(missing.posts).toEqual([]);
+    // O Lattes mostra outro órgão depois de criar.
+    const other = fakeProjeto({ tamper: { f_orgao: 'Outro órgão' } });
+    expect(await applyOp(withOrgan, other.port)).toMatchObject({ status: 'divergente' });
   });
 
   it('código com V vai em f_cod_inst', async () => {

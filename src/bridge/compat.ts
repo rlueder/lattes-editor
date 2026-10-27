@@ -16,6 +16,8 @@
 //   que a extensão não tem no contrato. Os testes edit-flags e compat-publish
 //   conferem essas chaves.
 
+import { CREATE_ACTIVITY_ORGAN_ENABLED } from './create-cargo.ts';
+import { CREATE_PROJECT_ORGAN_ENABLED } from './create-projeto.ts';
 import { EDIT_PCD_ENABLED } from './dados-gerais-edit.ts';
 import { COMPL_LOOKUPS_ENABLED } from './edit-lists.ts';
 import { EDIT_OTHER_CONTACTS_ENABLED } from './endereco-contatos.ts';
@@ -105,6 +107,13 @@ export const BRIDGE_FEATURES = [
   ...(EDIT_OTHER_CONTACTS_ENABLED ? (['outra-forma-contato'] as const) : []),
   /** Instituição e natureza de um financiador do projeto (production/financiador.ts). */
   ...(EDIT_FUNDERS_ENABLED ? (['financiador-projeto'] as const) : []),
+  /**
+   * Projeto novo com o órgão escolhido na janela de órgãos (create-projeto.ts),
+   * e a lista de órgãos da participação nova no editor.
+   */
+  ...(CREATE_PROJECT_ORGAN_ENABLED ? (['projeto-novo-orgao'] as const) : []),
+  /** Atividade nova das naturezas com órgão, pela janela de órgãos (create-cargo.ts). */
+  ...(CREATE_ACTIVITY_ORGAN_ENABLED ? (['atividade-nova-orgao'] as const) : []),
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

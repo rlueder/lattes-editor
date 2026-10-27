@@ -96,7 +96,11 @@ export interface PlanOptions {
   complEnderecoLookups?: boolean;
   /** Instituição e curso da formação complementar pelas buscas (edit-lists.ts, COMPL_LOOKUPS_ENABLED). */
   complLookups?: boolean;
+  /** Atividade nova de outra natureza que o ensino, com o órgão (create-cargo.ts). */
+  createActivities?: boolean;
   createItems?: boolean;
+  /** Projeto novo com o órgão pela lista do Lattes (create-projeto.ts). */
+  createProjects?: boolean;
   deleteItems?: boolean;
   /** Áreas de atuação (areas-atuacao.ts, EDIT_AREAS_ENABLED). */
   editAreas?: boolean;

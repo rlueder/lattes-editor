@@ -4,17 +4,17 @@ Gerado por `pnpm censo:relatorio` a partir das capturas em `docs/lattes-formular
 e de `src/schema/lattes.json`. Não editar à mão. Como capturar e o que cada
 grupo quer dizer está no `README.md` desta pasta.
 
-Formulários no censo: 89, com captura: 85, sem captura: 4.
+Formulários no censo: 89, com captura: 87, sem captura: 2.
 
 ## Atributos por grupo
 
 | Grupo              | Atributo por formulário | Atributo distinto |
 | ------------------ | ----------------------: | ----------------: |
-| com opções         |                     343 |               320 |
-| texto livre        |                     738 |               606 |
-| oculto             |                    1297 |               193 |
-| fora do formulário |                     920 |               635 |
-| sem captura        |                     171 |                44 |
+| com opções         |                     352 |               324 |
+| texto livre        |                     804 |               620 |
+| oculto             |                    1349 |               193 |
+| fora do formulário |                     892 |               638 |
+| sem captura        |                      72 |                23 |
 | total              |                    3469 |              1798 |
 
 ## Formulários
@@ -24,95 +24,95 @@ ligação do formulário com os elementos do XML foi conferida.
 
 | Formulário                                                                   | Como abre             | Endereço  | Elementos | Captura    | Opções | Texto | Oculto | Fora |
 | ---------------------------------------------------------------------------- | --------------------- | --------- | --------- | ---------- | -----: | ----: | -----: | ---: |
-| Identificação (`identificacao`)                                              | link do menu          | observado | observado | 2026-10-15 |      5 |     5 |      4 |   14 |
-| Endereço (`endereco`)                                                        | link do menu          | observado | observado | 2026-10-15 |      1 |    26 |      1 |    8 |
-| Resumo (`resumo`)                                                            | link do menu          | observado | observado | 2026-10-15 |      0 |     2 |      0 |    0 |
-| Outras informações relevantes (`outras-informacoes`)                         | link do menu          | observado | observado | 2026-10-15 |      0 |     0 |      0 |    1 |
-| Áreas de atuação (`areas-de-atuacao`)                                        | link do menu          | observado | observado | 2026-10-15 |      0 |     0 |      0 |    5 |
-| Idiomas (`idioma`)                                                           | endereço conhecido    | observado | observado | 2026-10-15 |      5 |     0 |      0 |    1 |
-| Prêmios e títulos (`premio`)                                                 | endereço conhecido    | observado | observado | 2026-10-15 |      0 |     3 |      0 |    1 |
-| Licenças (`licenca`)                                                         | endereço conhecido    | observado | inferido  | 2026-10-15 |      1 |     0 |      0 |    4 |
-| Formação acadêmica: doutorado (`formacao-FA-4`)                              | endereço conhecido    | observado | inferido  | 2026-10-15 |      3 |    12 |     28 |   13 |
-| Formação acadêmica: mestrado (`formacao-FA-3`)                               | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    10 |     28 |   11 |
-| Formação acadêmica: mestrado profissional (`formacao-FA-9`)                  | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     9 |     27 |    6 |
-| Formação acadêmica: especialização (`formacao-FA-2`)                         | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     8 |      5 |    4 |
-| Formação acadêmica: residência médica (`formacao-FA-D`)                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     6 |     25 |    1 |
-| Formação acadêmica: graduação (`formacao-FA-1`)                              | endereço conhecido    | observado | observado | 2026-10-15 |      2 |     8 |      7 |   11 |
-| Formação acadêmica: ensino técnico (`formacao-FA-7`)                         | endereço conhecido    | observado | observado | 2026-10-15 |      2 |     5 |      5 |    3 |
-| Formação acadêmica: ensino médio (`formacao-FA-C`)                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      1 |     3 |      3 |    0 |
-| Formação acadêmica: ensino fundamental (`formacao-FA-B`)                     | endereço conhecido    | observado | inferido  | 2026-10-15 |      1 |     3 |      3 |    0 |
-| Formação acadêmica: aperfeiçoamento (`formacao-FA-X`)                        | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     8 |      5 |    5 |
-| Formação: pós-doutorado (`formacao-AP-5`)                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     4 |     28 |    4 |
-| Formação: livre-docência (`formacao-AP-6`)                                   | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     3 |     24 |    1 |
-| Formação complementar (`formacao-complementar`)                              | endereço conhecido    | observado | observado | 2026-10-15 |      8 |     6 |      9 |   56 |
-| Atuação profissional (`atuacao`)                                             | endereço conhecido    | observado | observado | 2026-10-15 |      0 |     4 |      1 |    9 |
-| Vínculo de uma atuação (`vinculo`)                                           | link da lista         | observado | observado | 2026-10-15 |      2 |    10 |      0 |    3 |
-| Atividade de uma atuação (`atividade`)                                       | link da lista         | inferido  | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
-| Atividade de uma atuação: direção e administração (`atividade-1`)            | link da lista         | observado | inferido  | 2026-10-15 |      0 |     4 |      0 |    9 |
-| Atividade de uma atuação: pesquisa e desenvolvimento (`atividade-2`)         | link da lista         | observado | inferido  | 2026-10-15 |      0 |     4 |      0 |    6 |
-| Atividade de uma atuação: ensino (`atividade-4`)                             | link da lista         | observado | inferido  | 2026-10-15 |      0 |     4 |      1 |    8 |
-| Atividade de uma atuação: estágio (`atividade-5`)                            | link da lista         | observado | inferido  | 2026-10-15 |      0 |     4 |      0 |    7 |
-| Atividade de uma atuação: serviço técnico especializado (`atividade-6`)      | link da lista         | observado | inferido  | 2026-10-15 |      0 |     4 |      0 |    7 |
-| Atividade de uma atuação: extensão universitária (`atividade-7`)             | link da lista         | observado | inferido  | 2026-10-15 |      0 |     4 |      0 |    7 |
-| Atividade de uma atuação: treinamento (`atividade-8`)                        | link da lista         | observado | inferido  | 2026-10-15 |      0 |     4 |      0 |    7 |
-| Atividade de uma atuação: outra atividade técnico-científica (`atividade-9`) | link da lista         | observado | inferido  | 2026-10-15 |      0 |     4 |      0 |    7 |
-| Atividade de uma atuação: conselhos, comissões e consultoria (`atividade-B`) | link da lista         | observado | inferido  | 2026-10-15 |      0 |     4 |      0 |    7 |
-| Corpo editorial, revisão e assessoramento (MB) (`revisor-MB`)                | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
-| Corpo editorial, revisão e assessoramento (MA) (`revisor-MA`)                | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
-| Corpo editorial, revisão e assessoramento (RV) (`revisor-RV`)                | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
-| Corpo editorial, revisão e assessoramento (RA) (`revisor-RA`)                | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
+| Identificação (`identificacao`)                                              | link do menu          | observado | observado | 2026-10-27 |      5 |     5 |      4 |   14 |
+| Endereço (`endereco`)                                                        | link do menu          | observado | observado | 2026-10-27 |      1 |    26 |      1 |    8 |
+| Resumo (`resumo`)                                                            | link do menu          | observado | observado | 2026-10-27 |      0 |     2 |      0 |    0 |
+| Outras informações relevantes (`outras-informacoes`)                         | link do menu          | observado | observado | 2026-10-27 |      0 |     0 |      0 |    1 |
+| Áreas de atuação (`areas-de-atuacao`)                                        | link do menu          | observado | observado | 2026-10-27 |      0 |     0 |      0 |    5 |
+| Idiomas (`idioma`)                                                           | endereço conhecido    | observado | observado | 2026-10-27 |      5 |     0 |      0 |    1 |
+| Prêmios e títulos (`premio`)                                                 | endereço conhecido    | observado | observado | 2026-10-27 |      0 |     3 |      0 |    1 |
+| Licenças (`licenca`)                                                         | endereço conhecido    | observado | inferido  | 2026-10-27 |      1 |     0 |      0 |    4 |
+| Formação acadêmica: doutorado (`formacao-FA-4`)                              | endereço conhecido    | observado | inferido  | 2026-10-27 |      3 |    12 |     28 |   13 |
+| Formação acadêmica: mestrado (`formacao-FA-3`)                               | endereço conhecido    | observado | observado | 2026-10-27 |      3 |    10 |     28 |   11 |
+| Formação acadêmica: mestrado profissional (`formacao-FA-9`)                  | endereço conhecido    | observado | inferido  | 2026-10-27 |      2 |     9 |     27 |    6 |
+| Formação acadêmica: especialização (`formacao-FA-2`)                         | endereço conhecido    | observado | inferido  | 2026-10-27 |      2 |     8 |      5 |    4 |
+| Formação acadêmica: residência médica (`formacao-FA-D`)                      | endereço conhecido    | observado | inferido  | 2026-10-27 |      2 |     6 |     25 |    1 |
+| Formação acadêmica: graduação (`formacao-FA-1`)                              | endereço conhecido    | observado | observado | 2026-10-27 |      2 |     8 |      7 |   11 |
+| Formação acadêmica: ensino técnico (`formacao-FA-7`)                         | endereço conhecido    | observado | observado | 2026-10-27 |      2 |     5 |      5 |    3 |
+| Formação acadêmica: ensino médio (`formacao-FA-C`)                           | endereço conhecido    | observado | inferido  | 2026-10-27 |      1 |     3 |      3 |    0 |
+| Formação acadêmica: ensino fundamental (`formacao-FA-B`)                     | endereço conhecido    | observado | inferido  | 2026-10-27 |      1 |     3 |      3 |    0 |
+| Formação acadêmica: aperfeiçoamento (`formacao-FA-X`)                        | endereço conhecido    | observado | inferido  | 2026-10-27 |      2 |     8 |      5 |    5 |
+| Formação: pós-doutorado (`formacao-AP-5`)                                    | endereço conhecido    | observado | inferido  | 2026-10-27 |      2 |     4 |     28 |    4 |
+| Formação: livre-docência (`formacao-AP-6`)                                   | endereço conhecido    | observado | inferido  | 2026-10-27 |      0 |     3 |     24 |    1 |
+| Formação complementar (`formacao-complementar`)                              | endereço conhecido    | observado | observado | 2026-10-27 |      8 |     6 |      9 |   56 |
+| Atuação profissional (`atuacao`)                                             | endereço conhecido    | observado | observado | 2026-10-27 |      0 |     4 |      1 |    9 |
+| Vínculo de uma atuação (`vinculo`)                                           | link da lista         | observado | observado | 2026-10-27 |      2 |    11 |      0 |    2 |
+| Atividade de uma atuação (`atividade`)                                       | link da lista         | inferido  | inferido  | 2026-10-27 |      0 |     0 |      0 |    0 |
+| Atividade de uma atuação: direção e administração (`atividade-1`)            | link da lista         | observado | inferido  | 2026-10-27 |      0 |     4 |      0 |    9 |
+| Atividade de uma atuação: pesquisa e desenvolvimento (`atividade-2`)         | link da lista         | observado | inferido  | 2026-10-27 |      0 |     4 |      0 |    6 |
+| Atividade de uma atuação: ensino (`atividade-4`)                             | link da lista         | observado | inferido  | 2026-10-27 |      0 |     4 |      1 |    8 |
+| Atividade de uma atuação: estágio (`atividade-5`)                            | link da lista         | observado | inferido  | 2026-10-27 |      0 |     4 |      0 |    7 |
+| Atividade de uma atuação: serviço técnico especializado (`atividade-6`)      | link da lista         | observado | inferido  | 2026-10-27 |      0 |     4 |      0 |    7 |
+| Atividade de uma atuação: extensão universitária (`atividade-7`)             | link da lista         | observado | inferido  | 2026-10-27 |      0 |     4 |      0 |    7 |
+| Atividade de uma atuação: treinamento (`atividade-8`)                        | link da lista         | observado | inferido  | 2026-10-27 |      0 |     4 |      0 |    7 |
+| Atividade de uma atuação: outra atividade técnico-científica (`atividade-9`) | link da lista         | observado | inferido  | 2026-10-27 |      0 |     4 |      0 |    7 |
+| Atividade de uma atuação: conselhos, comissões e consultoria (`atividade-B`) | link da lista         | observado | inferido  | 2026-10-27 |      0 |     4 |      0 |    7 |
+| Corpo editorial, revisão e assessoramento (MB) (`revisor-MB`)                | endereço conhecido    | observado | inferido  | 2026-10-27 |      0 |     0 |      0 |    0 |
+| Corpo editorial, revisão e assessoramento (MA) (`revisor-MA`)                | endereço conhecido    | observado | inferido  | 2026-10-27 |      0 |     0 |      0 |    0 |
+| Corpo editorial, revisão e assessoramento (RV) (`revisor-RV`)                | endereço conhecido    | observado | inferido  | 2026-10-27 |      0 |     0 |      0 |    0 |
+| Corpo editorial, revisão e assessoramento (RA) (`revisor-RA`)                | endereço conhecido    | observado | inferido  | 2026-10-27 |      0 |     0 |      0 |    0 |
 | Linhas de pesquisa (`linha-de-pesquisa`)                                     | link da lista         | inferido  | inferido  | falta      |        |       |        |      |
-| Projeto de pesquisa (`projeto-P`)                                            | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    14 |      2 |   18 |
-| Projeto de desenvolvimento (`projeto-D`)                                     | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    15 |      1 |   18 |
-| Projeto de extensão (`projeto-E`)                                            | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    14 |      2 |   18 |
-| Projeto de ensino (`projeto-N`)                                              | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    14 |      2 |   18 |
-| Projeto de outros (`projeto-O`)                                              | endereço conhecido    | observado | observado | 2026-10-15 |      3 |    14 |      2 |   18 |
-| Artigos completos publicados (`artigo-publicado`)                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |    10 |     27 |    8 |
-| Artigos aceitos para publicação (`artigo-aceito`)                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      3 |     6 |     27 |   12 |
-| Livros e capítulos (`livro-capitulo`)                                        | link da lista         | inferido  | inferido  | 2026-10-15 |     11 |    19 |     27 |   13 |
-| Capítulo de livro (`capitulo`)                                               | endereço conhecido    | observado | inferido  | falta      |        |       |        |      |
-| Trabalhos em anais (`trabalho-em-eventos`)                                   | endereço conhecido    | observado | inferido  | 2026-10-15 |      7 |    14 |     27 |    6 |
-| Textos em jornais ou revistas (`texto-jornal`)                               | endereço conhecido    | observado | inferido  | 2026-10-15 |      6 |    10 |     27 |    5 |
-| Tradução (`traducao`)                                                        | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    15 |     27 |    3 |
-| Partitura musical (`partitura`)                                              | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    10 |     27 |    2 |
-| Prefácio, posfácio (`prefacio`)                                              | endereço conhecido    | observado | inferido  | falta      |        |       |        |      |
+| Projeto de pesquisa (`projeto-P`)                                            | endereço conhecido    | observado | observado | 2026-10-27 |      3 |    15 |      2 |   17 |
+| Projeto de desenvolvimento (`projeto-D`)                                     | endereço conhecido    | observado | observado | 2026-10-27 |      3 |    16 |      1 |   17 |
+| Projeto de extensão (`projeto-E`)                                            | endereço conhecido    | observado | observado | 2026-10-27 |      3 |    15 |      2 |   17 |
+| Projeto de ensino (`projeto-N`)                                              | endereço conhecido    | observado | observado | 2026-10-27 |      3 |    15 |      2 |   17 |
+| Projeto de outros (`projeto-O`)                                              | endereço conhecido    | observado | observado | 2026-10-27 |      3 |    15 |      2 |   17 |
+| Artigos completos publicados (`artigo-publicado`)                            | endereço conhecido    | observado | inferido  | 2026-10-27 |      4 |    10 |     27 |    8 |
+| Artigos aceitos para publicação (`artigo-aceito`)                            | endereço conhecido    | observado | inferido  | 2026-10-27 |      3 |     7 |     27 |   11 |
+| Livros e capítulos (`livro-capitulo`)                                        | link da lista         | inferido  | inferido  | 2026-10-27 |     11 |    20 |     27 |   12 |
+| Capítulo de livro (`capitulo`)                                               | endereço conhecido    | observado | inferido  | 2026-10-27 |      5 |    10 |     26 |    9 |
+| Trabalhos em anais (`trabalho-em-eventos`)                                   | endereço conhecido    | observado | inferido  | 2026-10-27 |      7 |    15 |     27 |    5 |
+| Textos em jornais ou revistas (`texto-jornal`)                               | endereço conhecido    | observado | inferido  | 2026-10-27 |      6 |    11 |     27 |    4 |
+| Tradução (`traducao`)                                                        | endereço conhecido    | observado | inferido  | 2026-10-27 |      5 |    16 |     27 |    2 |
+| Partitura musical (`partitura`)                                              | endereço conhecido    | observado | inferido  | 2026-10-27 |      5 |    11 |     27 |    1 |
+| Prefácio, posfácio (`prefacio`)                                              | endereço conhecido    | observado | inferido  | 2026-10-27 |      4 |    12 |     26 |    7 |
 | Outra produção bibliográfica (`prefacio-outras`)                             | endereço desconhecido | inferido  | inferido  | falta      |        |       |        |      |
-| Patente: janela "Incluir nova patente" (`patente-janela`)                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
-| Patente (`patente`)                                                          | endereço conhecido    | observado | observado | 2026-10-15 |      3 |     9 |     27 |   19 |
-| Programa de computador (`registro-PC`)                                       | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     8 |     28 |   19 |
-| Programa de computador registrado (`registro-PC-S`)                          | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     9 |     28 |   18 |
-| Cultivar protegida (`registro-CP`)                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     7 |     27 |   15 |
-| Cultivar registrada (`registro-CR`)                                          | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     7 |     27 |   15 |
-| Desenho industrial (`registro-DI`)                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     8 |     28 |   13 |
-| Marca (`registro-MR`)                                                        | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     7 |     27 |   13 |
-| Topografia de circuito integrado (`registro-TC`)                             | endereço conhecido    | observado | inferido  | 2026-10-15 |      2 |     9 |     27 |   13 |
-| Produtos tecnológicos (`produto`)                                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      8 |    10 |     27 |   14 |
-| Processos ou técnicas (`processo`)                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      7 |    10 |     27 |   14 |
-| Trabalhos técnicos (`trabalho-tecnico`)                                      | endereço conhecido    | observado | observado | 2026-10-15 |      6 |    10 |     27 |    3 |
-| Assessoria e consultoria (`assessoria`)                                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
-| Extensão tecnológica (`extensao-tecnologica`)                                | endereço conhecido    | observado | inferido  | 2026-10-15 |      0 |     0 |      0 |    0 |
-| Apresentação de trabalho (`tec-2J`)                                          | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     8 |     27 |    3 |
-| Carta, mapa ou similar (`tec-2A`)                                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    10 |     27 |    3 |
-| Curso de curta duração (`tec-2B`)                                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      8 |     8 |     27 |    4 |
-| Material didático (`tec-2C`)                                                 | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     7 |     27 |    4 |
-| Editoração (`tec-2D`)                                                        | endereço conhecido    | observado | observado | 2026-10-15 |      5 |     9 |     27 |    2 |
-| Manutenção de obra artística (`tec-2E`)                                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     8 |     27 |    4 |
-| Maquete (`tec-2F`)                                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      4 |     8 |     27 |    4 |
-| Organização de evento (`tec-2G`)                                             | endereço conhecido    | observado | inferido  | 2026-10-15 |      9 |     8 |     27 |    3 |
-| Programa de rádio ou TV (`tec-2H`)                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      6 |     9 |     27 |    5 |
-| Relatório de pesquisa (`tec-2I`)                                             | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     7 |     27 |    3 |
-| Redes sociais, sites e blogs (`tec-2L`)                                      | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |     6 |     27 |    2 |
-| Outra produção técnica (`tec-2Z`)                                            | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    11 |     27 |   16 |
-| Artes cênicas (`arte-AC`)                                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      8 |    15 |     28 |    4 |
-| Música (`arte-MU`)                                                           | endereço conhecido    | observado | inferido  | 2026-10-15 |      8 |    16 |     27 |    5 |
-| Artes visuais (`arte-AV`)                                                    | endereço conhecido    | observado | inferido  | 2026-10-15 |      7 |    10 |     27 |    1 |
-| Outra produção artística (`arte-OU`)                                         | endereço conhecido    | observado | inferido  | 2026-10-15 |      5 |    11 |     27 |    3 |
-| Orientações concluídas (`orientacao-concluida`)                              | endereço conhecido    | observado | inferido  | 2026-10-15 |     17 |    20 |     37 |   48 |
-| Orientações em andamento (`orientacao-andamento`)                            | endereço conhecido    | observado | inferido  | 2026-10-15 |     21 |    36 |     37 |   80 |
-| Bancas de trabalhos de conclusão (`banca-trabalho`)                          | endereço conhecido    | observado | inferido  | 2026-10-15 |     13 |    28 |     34 |   58 |
-| Bancas julgadoras (`banca-julgadora`)                                        | endereço conhecido    | observado | inferido  | 2026-10-15 |     10 |    21 |     26 |   28 |
-| Participação em eventos (`evento`)                                           | endereço conhecido    | observado | observado | 2026-10-15 |     37 |    54 |      1 |  116 |
-| Demais trabalhos (`demais-trabalhos`)                                        | link da lista         | inferido  | inferido  | 2026-10-15 |      4 |     8 |     27 |    3 |
+| Patente: janela "Incluir nova patente" (`patente-janela`)                    | endereço conhecido    | observado | inferido  | 2026-10-27 |      0 |     0 |      0 |    0 |
+| Patente (`patente`)                                                          | endereço conhecido    | observado | observado | 2026-10-27 |      3 |    11 |     27 |   17 |
+| Programa de computador (`registro-PC`)                                       | endereço conhecido    | observado | inferido  | 2026-10-27 |      5 |     9 |     28 |   18 |
+| Programa de computador registrado (`registro-PC-S`)                          | endereço conhecido    | observado | inferido  | 2026-10-27 |      5 |     9 |     28 |   18 |
+| Cultivar protegida (`registro-CP`)                                           | endereço conhecido    | observado | inferido  | 2026-10-27 |      2 |     8 |     27 |   14 |
+| Cultivar registrada (`registro-CR`)                                          | endereço conhecido    | observado | inferido  | 2026-10-27 |      2 |     8 |     27 |   14 |
+| Desenho industrial (`registro-DI`)                                           | endereço conhecido    | observado | inferido  | 2026-10-27 |      2 |     9 |     28 |   12 |
+| Marca (`registro-MR`)                                                        | endereço conhecido    | observado | inferido  | 2026-10-27 |      4 |     8 |     27 |   12 |
+| Topografia de circuito integrado (`registro-TC`)                             | endereço conhecido    | observado | inferido  | 2026-10-27 |      2 |    10 |     27 |   12 |
+| Produtos tecnológicos (`produto`)                                            | endereço conhecido    | observado | inferido  | 2026-10-27 |      8 |    11 |     27 |   13 |
+| Processos ou técnicas (`processo`)                                           | endereço conhecido    | observado | inferido  | 2026-10-27 |      7 |    11 |     27 |   13 |
+| Trabalhos técnicos (`trabalho-tecnico`)                                      | endereço conhecido    | observado | observado | 2026-10-27 |      6 |    11 |     27 |    2 |
+| Assessoria e consultoria (`assessoria`)                                      | endereço conhecido    | observado | inferido  | 2026-10-27 |      0 |     0 |      0 |    0 |
+| Extensão tecnológica (`extensao-tecnologica`)                                | endereço conhecido    | observado | inferido  | 2026-10-27 |      0 |     0 |      0 |    0 |
+| Apresentação de trabalho (`tec-2J`)                                          | endereço conhecido    | observado | inferido  | 2026-10-27 |      5 |     9 |     27 |    2 |
+| Carta, mapa ou similar (`tec-2A`)                                            | endereço conhecido    | observado | inferido  | 2026-10-27 |      5 |    11 |     27 |    2 |
+| Curso de curta duração (`tec-2B`)                                            | endereço conhecido    | observado | inferido  | 2026-10-27 |      8 |     9 |     27 |    3 |
+| Material didático (`tec-2C`)                                                 | endereço conhecido    | observado | inferido  | 2026-10-27 |      5 |     8 |     27 |    3 |
+| Editoração (`tec-2D`)                                                        | endereço conhecido    | observado | observado | 2026-10-27 |      5 |    10 |     27 |    1 |
+| Manutenção de obra artística (`tec-2E`)                                      | endereço conhecido    | observado | inferido  | 2026-10-27 |      5 |     9 |     27 |    3 |
+| Maquete (`tec-2F`)                                                           | endereço conhecido    | observado | inferido  | 2026-10-27 |      4 |     9 |     27 |    3 |
+| Organização de evento (`tec-2G`)                                             | endereço conhecido    | observado | inferido  | 2026-10-27 |      9 |     9 |     27 |    2 |
+| Programa de rádio ou TV (`tec-2H`)                                           | endereço conhecido    | observado | inferido  | 2026-10-27 |      6 |    10 |     27 |    4 |
+| Relatório de pesquisa (`tec-2I`)                                             | endereço conhecido    | observado | inferido  | 2026-10-27 |      5 |     8 |     27 |    2 |
+| Redes sociais, sites e blogs (`tec-2L`)                                      | endereço conhecido    | observado | inferido  | 2026-10-27 |      5 |     7 |     27 |    1 |
+| Outra produção técnica (`tec-2Z`)                                            | endereço conhecido    | observado | inferido  | 2026-10-27 |      5 |    12 |     27 |   15 |
+| Artes cênicas (`arte-AC`)                                                    | endereço conhecido    | observado | inferido  | 2026-10-27 |      8 |    16 |     28 |    3 |
+| Música (`arte-MU`)                                                           | endereço conhecido    | observado | inferido  | 2026-10-27 |      8 |    17 |     27 |    4 |
+| Artes visuais (`arte-AV`)                                                    | endereço conhecido    | observado | inferido  | 2026-10-27 |      7 |    11 |     27 |    0 |
+| Outra produção artística (`arte-OU`)                                         | endereço conhecido    | observado | inferido  | 2026-10-27 |      5 |    12 |     27 |    2 |
+| Orientações concluídas (`orientacao-concluida`)                              | endereço conhecido    | observado | inferido  | 2026-10-27 |     17 |    21 |     37 |   47 |
+| Orientações em andamento (`orientacao-andamento`)                            | endereço conhecido    | observado | inferido  | 2026-10-27 |     21 |    37 |     37 |   79 |
+| Bancas de trabalhos de conclusão (`banca-trabalho`)                          | endereço conhecido    | observado | inferido  | 2026-10-27 |     13 |    29 |     34 |   57 |
+| Bancas julgadoras (`banca-julgadora`)                                        | endereço conhecido    | observado | inferido  | 2026-10-27 |     10 |    22 |     26 |   27 |
+| Participação em eventos (`evento`)                                           | endereço conhecido    | observado | observado | 2026-10-27 |     37 |    54 |      1 |  116 |
+| Demais trabalhos (`demais-trabalhos`)                                        | link da lista         | inferido  | inferido  | 2026-10-27 |      4 |     9 |     27 |    2 |
 
 ## Divergências entre o Lattes capturado e o editor
 
@@ -140,7 +140,7 @@ não cobra estas até a passada de edição observar a ligação.
 
 ## Lacunas
 
-Formulários sem captura: `linha-de-pesquisa`, `capitulo`, `prefacio`, `prefacio-outras`.
+Formulários sem captura: `linha-de-pesquisa`, `prefacio-outras`.
 
 Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA-ARTISTICA`, `APRESENTACAO-EM-RADIO-OU-TV`, `ARRANJO-MUSICAL`, `COMPOSICAO-MUSICAL`, `CURRICULO-VITAE`, `CURSO-DE-CURTA-DURACAO`, `DADOS-BASICOS-DA-APRESENTACAO-DE-OBRA-ARTISTICA`, `DADOS-BASICOS-DA-APRESENTACAO-EM-RADIO-OU-TV`, `DADOS-BASICOS-DA-COMPOSICAO-MUSICAL`, `DADOS-BASICOS-DA-OBRA-DE-ARTES-VISUAIS`, `DADOS-BASICOS-DE-SONOPLASTIA`, `DADOS-BASICOS-DO-ARRANJO-MUSICAL`, `DADOS-BASICOS-DO-CURSO-DE-CURTA-DURACAO`, `DETALHAMENTO-DA-APRESENTACAO-DE-OBRA-ARTISTICA`, `DETALHAMENTO-DA-APRESENTACAO-EM-RADIO-OU-TV`, `DETALHAMENTO-DA-COMPOSICAO-MUSICAL`, `DETALHAMENTO-DA-OBRA-DE-ARTES-VISUAIS`, `DETALHAMENTO-DE-SONOPLASTIA`, `DETALHAMENTO-DO-ARRANJO-MUSICAL`, `DETALHAMENTO-DO-CURSO-DE-CURTA-DURACAO`, `INFORMACAO-ADICIONAL-CURSO`, `INFORMACAO-ADICIONAL-INSTITUICAO`, `OBRA-DE-ARTES-VISUAIS`, `SONOPLASTIA`.
 
@@ -985,6 +985,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `VINCULOS@ANO-INICIO` ← `f_ano_ini` (observado)
 - `VINCULOS@MES-FIM` ← `f_mes_fim` (observado)
 - `VINCULOS@ANO-FIM` ← `f_ano_fim` (observado)
+- `VINCULOS@OUTRAS-INFORMACOES` ← `f_outras_inf` (observado)
 - `VINCULOS@OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO` ← `f_enqua` (observado)
 - `VINCULOS@OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO-INGLES` ← `f_enqua_en` (documentado)
 - `VINCULOS@OUTRAS-INFORMACOES-INGLES` ← `f_outras_inf_en` (documentado)
@@ -992,7 +993,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 **fora do formulário**
 
 - `VINCULOS@SEQUENCIA-HISTORICO`
-- `VINCULOS@OUTRAS-INFORMACOES`
 - `VINCULOS@OUTRO-VINCULO-INFORMADO`
 
 </details>
@@ -1230,6 +1230,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-ACADEMICO` ← `F_NRO_MESTRADO_ACAD` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-PROF` ← `F_NRO_MESTRADO_PROF` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-DOUTORADO` ← `F_NRO_DOUTORADO` (inferido)
+- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO` ← `f_ref` (observado)
 - `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO-INGLES` ← `f_ref_en` (observado)
 - `PROJETO-DE-PESQUISA@NOME-DO-PROJETO-INGLES` ← `f_titulo_en` (observado)
 - `PRODUCAO-CT-DO-PROJETO@TITULO-DA-PRODUCAO-CT` ← `f_titulo` (inferido)
@@ -1245,7 +1246,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 **fora do formulário**
 
 - `PROJETO-DE-PESQUISA@SEQUENCIA-PROJETO`
-- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO`
 - `PROJETO-DE-PESQUISA@IDENTIFICADOR-PROJETO`
 - `PROJETO-DE-PESQUISA@NOME-COORDENADOR-CERTIFICACAO`
 - `PROJETO-DE-PESQUISA@FORMATO-DATA-CERTIFICACAO`
@@ -1283,6 +1283,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-ACADEMICO` ← `F_NRO_MESTRADO_ACAD` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-PROF` ← `F_NRO_MESTRADO_PROF` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-DOUTORADO` ← `F_NRO_DOUTORADO` (inferido)
+- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO` ← `f_ref` (observado)
 - `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO-INGLES` ← `f_ref_en` (observado)
 - `PROJETO-DE-PESQUISA@NOME-DO-PROJETO-INGLES` ← `f_titulo_en` (observado)
 - `PROJETO-DE-PESQUISA@NUMERO_TECNICO_NIVEL_MEDIO` ← `F_NRO_TEC_NIVEL_MEDIO` (inferido)
@@ -1298,7 +1299,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 **fora do formulário**
 
 - `PROJETO-DE-PESQUISA@SEQUENCIA-PROJETO`
-- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO`
 - `PROJETO-DE-PESQUISA@IDENTIFICADOR-PROJETO`
 - `PROJETO-DE-PESQUISA@NOME-COORDENADOR-CERTIFICACAO`
 - `PROJETO-DE-PESQUISA@FORMATO-DATA-CERTIFICACAO`
@@ -1336,6 +1336,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-ACADEMICO` ← `F_NRO_MESTRADO_ACAD` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-PROF` ← `F_NRO_MESTRADO_PROF` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-DOUTORADO` ← `F_NRO_DOUTORADO` (inferido)
+- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO` ← `f_ref` (observado)
 - `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO-INGLES` ← `f_ref_en` (observado)
 - `PROJETO-DE-PESQUISA@NOME-DO-PROJETO-INGLES` ← `f_titulo_en` (observado)
 - `PRODUCAO-CT-DO-PROJETO@TITULO-DA-PRODUCAO-CT` ← `f_titulo` (inferido)
@@ -1351,7 +1352,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 **fora do formulário**
 
 - `PROJETO-DE-PESQUISA@SEQUENCIA-PROJETO`
-- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO`
 - `PROJETO-DE-PESQUISA@IDENTIFICADOR-PROJETO`
 - `PROJETO-DE-PESQUISA@NOME-COORDENADOR-CERTIFICACAO`
 - `PROJETO-DE-PESQUISA@FORMATO-DATA-CERTIFICACAO`
@@ -1389,6 +1389,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-ACADEMICO` ← `F_NRO_MESTRADO_ACAD` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-PROF` ← `F_NRO_MESTRADO_PROF` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-DOUTORADO` ← `F_NRO_DOUTORADO` (inferido)
+- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO` ← `f_ref` (observado)
 - `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO-INGLES` ← `f_ref_en` (observado)
 - `PROJETO-DE-PESQUISA@NOME-DO-PROJETO-INGLES` ← `f_titulo_en` (observado)
 - `PRODUCAO-CT-DO-PROJETO@TITULO-DA-PRODUCAO-CT` ← `f_titulo` (inferido)
@@ -1404,7 +1405,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 **fora do formulário**
 
 - `PROJETO-DE-PESQUISA@SEQUENCIA-PROJETO`
-- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO`
 - `PROJETO-DE-PESQUISA@IDENTIFICADOR-PROJETO`
 - `PROJETO-DE-PESQUISA@NOME-COORDENADOR-CERTIFICACAO`
 - `PROJETO-DE-PESQUISA@FORMATO-DATA-CERTIFICACAO`
@@ -1442,6 +1442,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-ACADEMICO` ← `F_NRO_MESTRADO_ACAD` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-MESTRADO-PROF` ← `F_NRO_MESTRADO_PROF` (inferido)
 - `PROJETO-DE-PESQUISA@NUMERO-DOUTORADO` ← `F_NRO_DOUTORADO` (inferido)
+- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO` ← `f_ref` (observado)
 - `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO-INGLES` ← `f_ref_en` (observado)
 - `PROJETO-DE-PESQUISA@NOME-DO-PROJETO-INGLES` ← `f_titulo_en` (observado)
 - `PRODUCAO-CT-DO-PROJETO@TITULO-DA-PRODUCAO-CT` ← `f_titulo` (inferido)
@@ -1457,7 +1458,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 **fora do formulário**
 
 - `PROJETO-DE-PESQUISA@SEQUENCIA-PROJETO`
-- `PROJETO-DE-PESQUISA@DESCRICAO-DO-PROJETO`
 - `PROJETO-DE-PESQUISA@IDENTIFICADOR-PROJETO`
 - `PROJETO-DE-PESQUISA@NOME-COORDENADOR-CERTIFICACAO`
 - `PROJETO-DE-PESQUISA@FORMATO-DATA-CERTIFICACAO`
@@ -1557,6 +1557,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DO-ARTIGO@TITULO-DO-ARTIGO-INGLES` ← `f_titulo_en` (observado)
 - `DETALHAMENTO-DO-ARTIGO@TITULO-DO-PERIODICO-OU-REVISTA` ← `f_titulo_periodico` (observado)
 - `DETALHAMENTO-DO-ARTIGO@ISSN` ← `f_issn` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -1602,7 +1603,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DO-ARTIGO@PAGINA-INICIAL`
 - `DETALHAMENTO-DO-ARTIGO@PAGINA-FINAL`
 - `DETALHAMENTO-DO-ARTIGO@LOCAL-DE-PUBLICACAO`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -1634,6 +1634,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DO-LIVRO@NUMERO-DA-SERIE` ← `f_serie` (inferido)
 - `DETALHAMENTO-DO-LIVRO@CIDADE-DA-EDITORA` ← `f_cidade_ed` (observado)
 - `DETALHAMENTO-DO-LIVRO@NOME-DA-EDITORA` ← `f_editora` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 - `DADOS-BASICOS-DO-CAPITULO@TITULO-DO-CAPITULO-DO-LIVRO` ← `f_titulo` (inferido)
 - `DADOS-BASICOS-DO-CAPITULO@ANO` ← `f_ano` (inferido)
@@ -1679,7 +1680,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DO-LIVRO@NATUREZA`
 - `DADOS-BASICOS-DO-LIVRO@DOI`
 - `DETALHAMENTO-DO-LIVRO@NUMERO-DE-VOLUMES`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 - `CAPITULO-DE-LIVRO-PUBLICADO@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DO-CAPITULO@TIPO`
 - `DADOS-BASICOS-DO-CAPITULO@DOI`
@@ -1687,6 +1687,72 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DO-CAPITULO@PAGINA-INICIAL`
 - `DETALHAMENTO-DO-CAPITULO@PAGINA-FINAL`
 - `DETALHAMENTO-DO-CAPITULO@ORGANIZADORES`
+- `DETALHAMENTO-DO-CAPITULO@CIDADE-DA-EDITORA`
+- `DETALHAMENTO-DO-CAPITULO@NOME-DA-EDITORA`
+
+</details>
+
+<details><summary>Capítulo de livro (capitulo)</summary>
+
+**com opções**
+
+- `DADOS-BASICOS-DO-CAPITULO@PAIS-DE-PUBLICACAO` ← `f_pais` (inferido)
+- `DADOS-BASICOS-DO-CAPITULO@IDIOMA` ← `F_IDIOMA` (inferido)
+- `DADOS-BASICOS-DO-CAPITULO@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
+- `DADOS-BASICOS-DO-CAPITULO@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
+- `DADOS-BASICOS-DO-CAPITULO@FLAG-DIVULGACAO-CIENTIFICA` ← `F_STA_DIVULGACAO_CIENTIFICA` (inferido)
+
+**texto livre**
+
+- `DADOS-BASICOS-DO-CAPITULO@ANO` ← `f_ano` (inferido)
+- `DADOS-BASICOS-DO-CAPITULO@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (inferido)
+- `DADOS-BASICOS-DO-CAPITULO@TITULO-DO-CAPITULO-DO-LIVRO-INGLES` ← `f_titulo_cap_en` (inferido)
+- `DETALHAMENTO-DO-CAPITULO@TITULO-DO-LIVRO` ← `f_titulo` (inferido)
+- `DETALHAMENTO-DO-CAPITULO@ISBN` ← `f_isbn` (inferido)
+- `DETALHAMENTO-DO-CAPITULO@ORGANIZADORES` ← `f_organizadores` (inferido)
+- `DETALHAMENTO-DO-CAPITULO@NUMERO-DA-EDICAO-REVISAO` ← `f_edicao` (inferido)
+- `DETALHAMENTO-DO-CAPITULO@NUMERO-DA-SERIE` ← `f_serie` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+
+**oculto**
+
+- `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
+- `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
+- `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
+- `AUTORES@CPF` ← `f_autores_l` (inferido)
+- `AUTORES@NRO-ID-CNPQ` ← `f_autores_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-1` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-2` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-3` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-4` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-5` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-6` ← `f_plv_l` (inferido)
+- `AREA-DO-CONHECIMENTO-1@NOME-GRANDE-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-1@NOME-DA-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-1@NOME-DA-SUB-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-1@NOME-DA-ESPECIALIDADE` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-2@NOME-GRANDE-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-2@NOME-DA-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-2@NOME-DA-SUB-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-2@NOME-DA-ESPECIALIDADE` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-3@NOME-GRANDE-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-3@NOME-DA-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-3@NOME-DA-SUB-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-3@NOME-DA-ESPECIALIDADE` ← `f_area_l` (inferido)
+- `SETORES-DE-ATIVIDADE@SETOR-DE-ATIVIDADE-1` ← `f_setor_l` (inferido)
+- `SETORES-DE-ATIVIDADE@SETOR-DE-ATIVIDADE-2` ← `f_setor_l` (inferido)
+- `SETORES-DE-ATIVIDADE@SETOR-DE-ATIVIDADE-3` ← `f_setor_l` (inferido)
+
+**fora do formulário**
+
+- `CAPITULO-DE-LIVRO-PUBLICADO@SEQUENCIA-PRODUCAO`
+- `DADOS-BASICOS-DO-CAPITULO@TIPO`
+- `DADOS-BASICOS-DO-CAPITULO@TITULO-DO-CAPITULO-DO-LIVRO`
+- `DADOS-BASICOS-DO-CAPITULO@DOI`
+- `DETALHAMENTO-DO-CAPITULO@NUMERO-DE-VOLUMES`
+- `DETALHAMENTO-DO-CAPITULO@PAGINA-INICIAL`
+- `DETALHAMENTO-DO-CAPITULO@PAGINA-FINAL`
 - `DETALHAMENTO-DO-CAPITULO@CIDADE-DA-EDITORA`
 - `DETALHAMENTO-DO-CAPITULO@NOME-DA-EDITORA`
 
@@ -1719,6 +1785,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DO-TRABALHO@SERIE` ← `f_serie` (inferido)
 - `DETALHAMENTO-DO-TRABALHO@ISBN` ← `f_isbn` (observado)
 - `DETALHAMENTO-DO-TRABALHO@NOME-DA-EDITORA` ← `f_editora` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -1758,7 +1825,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DO-TRABALHO@PAGINA-FINAL`
 - `DETALHAMENTO-DO-TRABALHO@CIDADE-DA-EDITORA`
 - `DETALHAMENTO-DO-TRABALHO@NOME-DO-EVENTO-INGLES`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -1784,6 +1850,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DO-TEXTO@DATA-DE-PUBLICACAO` ← `f_data` (inferido)
 - `DETALHAMENTO-DO-TEXTO@VOLUME` ← `f_volume` (inferido)
 - `DETALHAMENTO-DO-TEXTO@LOCAL-DE-PUBLICACAO` ← `f_local` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -1822,7 +1889,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DO-TEXTO@FORMATO-DATA-DE-PUBLICACAO`
 - `DETALHAMENTO-DO-TEXTO@PAGINA-INICIAL`
 - `DETALHAMENTO-DO-TEXTO@PAGINA-FINAL`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -1852,6 +1918,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DA-TRADUCAO@VOLUME` ← `f_volume` (inferido)
 - `DETALHAMENTO-DA-TRADUCAO@FASCICULO` ← `f_fasciculo` (inferido)
 - `DETALHAMENTO-DA-TRADUCAO@SERIE` ← `f_serie` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -1888,7 +1955,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 - `DADOS-BASICOS-DA-TRADUCAO@DOI`
 - `DETALHAMENTO-DA-TRADUCAO@IDIOMA-DA-OBRA-ORIGINAL`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -1913,6 +1979,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DA-PARTITURA@CIDADE-DA-EDITORA` ← `f_cidade` (observado)
 - `DETALHAMENTO-DA-PARTITURA@NUMERO-DE-PAGINAS` ← `f_paginas` (observado)
 - `DETALHAMENTO-DA-PARTITURA@NUMERO-DO-CATALOGO` ← `f_issn` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (inferido)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
 
 **oculto**
@@ -1948,7 +2015,71 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 **fora do formulário**
 
 - `DADOS-BASICOS-DA-PARTITURA@DOI`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
+
+</details>
+
+<details><summary>Prefácio, posfácio (prefacio)</summary>
+
+**com opções**
+
+- `DADOS-BASICOS-DO-PREFACIO-POSFACIO@PAIS-DE-PUBLICACAO` ← `f_pais` (inferido)
+- `DADOS-BASICOS-DO-PREFACIO-POSFACIO@IDIOMA` ← `F_IDIOMA` (inferido)
+- `DADOS-BASICOS-DO-PREFACIO-POSFACIO@MEIO-DE-DIVULGACAO` ← `f_meio` (inferido)
+- `DADOS-BASICOS-DO-PREFACIO-POSFACIO@FLAG-RELEVANCIA` ← `F_RELEV` (inferido)
+
+**texto livre**
+
+- `DADOS-BASICOS-DO-PREFACIO-POSFACIO@TITULO` ← `f_titulo` (inferido)
+- `DADOS-BASICOS-DO-PREFACIO-POSFACIO@ANO` ← `f_ano` (inferido)
+- `DADOS-BASICOS-DO-PREFACIO-POSFACIO@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (inferido)
+- `DADOS-BASICOS-DO-PREFACIO-POSFACIO@TITULO-INGLES` ← `f_titulo_en` (inferido)
+- `DETALHAMENTO-DO-PREFACIO-POSFACIO@TITULO-DA-PUBLICACAO` ← `f_titulo` (inferido)
+- `DETALHAMENTO-DO-PREFACIO-POSFACIO@ISSN-ISBN` ← `f_issn` (inferido)
+- `DETALHAMENTO-DO-PREFACIO-POSFACIO@NUMERO-DA-EDICAO-REVISAO` ← `f_edicao` (inferido)
+- `DETALHAMENTO-DO-PREFACIO-POSFACIO@VOLUME` ← `f_volume` (inferido)
+- `DETALHAMENTO-DO-PREFACIO-POSFACIO@SERIE` ← `f_serie` (inferido)
+- `DETALHAMENTO-DO-PREFACIO-POSFACIO@FASCICULO` ← `f_fasciculo` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
+
+**oculto**
+
+- `AUTORES@NOME-COMPLETO-DO-AUTOR` ← `f_autores_l` (inferido)
+- `AUTORES@NOME-PARA-CITACAO` ← `f_autores_l` (inferido)
+- `AUTORES@ORDEM-DE-AUTORIA` ← `f_autores_l` (inferido)
+- `AUTORES@CPF` ← `f_autores_l` (inferido)
+- `AUTORES@NRO-ID-CNPQ` ← `f_autores_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-1` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-2` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-3` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-4` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-5` ← `f_plv_l` (inferido)
+- `PALAVRAS-CHAVE@PALAVRA-CHAVE-6` ← `f_plv_l` (inferido)
+- `AREA-DO-CONHECIMENTO-1@NOME-GRANDE-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-1@NOME-DA-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-1@NOME-DA-SUB-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-1@NOME-DA-ESPECIALIDADE` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-2@NOME-GRANDE-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-2@NOME-DA-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-2@NOME-DA-SUB-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-2@NOME-DA-ESPECIALIDADE` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-3@NOME-GRANDE-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-3@NOME-DA-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-3@NOME-DA-SUB-AREA-DO-CONHECIMENTO` ← `f_area_l` (inferido)
+- `AREA-DO-CONHECIMENTO-3@NOME-DA-ESPECIALIDADE` ← `f_area_l` (inferido)
+- `SETORES-DE-ATIVIDADE@SETOR-DE-ATIVIDADE-1` ← `f_setor_l` (inferido)
+- `SETORES-DE-ATIVIDADE@SETOR-DE-ATIVIDADE-2` ← `f_setor_l` (inferido)
+- `SETORES-DE-ATIVIDADE@SETOR-DE-ATIVIDADE-3` ← `f_setor_l` (inferido)
+
+**fora do formulário**
+
+- `PREFACIO-POSFACIO@SEQUENCIA-PRODUCAO`
+- `DADOS-BASICOS-DO-PREFACIO-POSFACIO@TIPO`
+- `DADOS-BASICOS-DO-PREFACIO-POSFACIO@NATUREZA`
+- `DADOS-BASICOS-DO-PREFACIO-POSFACIO@DOI`
+- `DETALHAMENTO-DO-PREFACIO-POSFACIO@NOME-DO-AUTOR-DA-PUBLICACAO`
+- `DETALHAMENTO-DO-PREFACIO-POSFACIO@EDITORA-DO-PREFACIO-POSFACIO`
+- `DETALHAMENTO-DO-PREFACIO-POSFACIO@CIDADE-DA-EDITORA`
 
 </details>
 
@@ -1974,6 +2105,8 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
 - `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (inferido)
 - `REGISTRO-OU-PATENTE@NUMERO-DEPOSITO-PCT` ← `f_nro_deposito_pct` (inferido)
+- `HISTORICO-SITUACOES-PATENTE@DESCRICAO-SITUACAO-PATENTE` ← `f_ref` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (inferido)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
 
 **oculto**
@@ -2022,11 +2155,9 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `REGISTRO-OU-PATENTE@DATA-DEPOSITO-PCT`
 - `REGISTRO-OU-PATENTE@NOME-DO-TITULAR`
 - `REGISTRO-OU-PATENTE@NOME-DO-DEPOSITANTE`
-- `HISTORICO-SITUACOES-PATENTE@DESCRICAO-SITUACAO-PATENTE`
 - `HISTORICO-SITUACOES-PATENTE@FORMATO-DATA-SITUACAO-PATENTE`
 - `HISTORICO-SITUACOES-PATENTE@DATA-SITUACAO-PATENTE`
 - `HISTORICO-SITUACOES-PATENTE@STATUS-SITUACAO-PATENTE`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -2049,6 +2180,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DO-SOFTWARE@PLATAFORMA` ← `f_plataforma` (observado)
 - `DETALHAMENTO-DO-SOFTWARE@INSTITUICAO-FINANCIADORA` ← `f_inst_financ` (observado)
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -2102,7 +2234,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `REGISTRO-OU-PATENTE@DATA-DEPOSITO-PCT`
 - `REGISTRO-OU-PATENTE@NOME-DO-TITULAR`
 - `REGISTRO-OU-PATENTE@NOME-DO-DEPOSITANTE`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -2197,6 +2328,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `REGISTRO-OU-PATENTE@CODIGO-DO-REGISTRO-OU-PATENTE` ← `f_cod_reg` (inferido)
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
 - `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -2245,7 +2377,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `REGISTRO-OU-PATENTE@DATA-DEPOSITO-PCT`
 - `REGISTRO-OU-PATENTE@NOME-DO-TITULAR`
 - `REGISTRO-OU-PATENTE@NOME-DO-DEPOSITANTE`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -2264,6 +2395,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `REGISTRO-OU-PATENTE@CODIGO-DO-REGISTRO-OU-PATENTE` ← `f_cod_reg` (observado)
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
 - `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -2312,7 +2444,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `REGISTRO-OU-PATENTE@DATA-DEPOSITO-PCT`
 - `REGISTRO-OU-PATENTE@NOME-DO-TITULAR`
 - `REGISTRO-OU-PATENTE@NOME-DO-DEPOSITANTE`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -2332,6 +2463,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `REGISTRO-OU-PATENTE@CODIGO-DO-REGISTRO-OU-PATENTE` ← `f_cod_reg` (observado)
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
 - `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -2379,7 +2511,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `REGISTRO-OU-PATENTE@DATA-DEPOSITO-PCT`
 - `REGISTRO-OU-PATENTE@NOME-DO-TITULAR`
 - `REGISTRO-OU-PATENTE@NOME-DO-DEPOSITANTE`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -2400,6 +2531,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `REGISTRO-OU-PATENTE@CODIGO-DO-REGISTRO-OU-PATENTE` ← `f_cod_reg` (observado)
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
 - `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -2446,7 +2578,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `REGISTRO-OU-PATENTE@DATA-DEPOSITO-PCT`
 - `REGISTRO-OU-PATENTE@NOME-DO-TITULAR`
 - `REGISTRO-OU-PATENTE@NOME-DO-DEPOSITANTE`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -2467,6 +2598,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `REGISTRO-OU-PATENTE@CODIGO-DO-REGISTRO-OU-PATENTE` ← `f_cod_reg` (observado)
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
 - `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -2513,7 +2645,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `REGISTRO-OU-PATENTE@DATA-DEPOSITO-PCT`
 - `REGISTRO-OU-PATENTE@NOME-DO-TITULAR`
 - `REGISTRO-OU-PATENTE@NOME-DO-DEPOSITANTE`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -2541,6 +2672,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DO-PRODUTO-TECNOLOGICO@INSTITUICAO-FINANCIADORA` ← `f_inst` (observado)
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
 - `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -2588,7 +2720,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `REGISTRO-OU-PATENTE@DATA-DEPOSITO-PCT`
 - `REGISTRO-OU-PATENTE@NOME-DO-TITULAR`
 - `REGISTRO-OU-PATENTE@NOME-DO-DEPOSITANTE`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -2615,6 +2746,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DO-PROCESSOS-OU-TECNICAS@CIDADE-DO-PROCESSO` ← `f_cidade` (observado)
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
 - `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -2662,7 +2794,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `REGISTRO-OU-PATENTE@DATA-DEPOSITO-PCT`
 - `REGISTRO-OU-PATENTE@NOME-DO-TITULAR`
 - `REGISTRO-OU-PATENTE@NOME-DO-DEPOSITANTE`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -2688,6 +2819,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DO-TRABALHO-TECNICO@NUMERO-DE-PAGINAS` ← `f_paginas` (inferido)
 - `DETALHAMENTO-DO-TRABALHO-TECNICO@INSTITUICAO-FINANCIADORA` ← `f_inst` (observado)
 - `DETALHAMENTO-DO-TRABALHO-TECNICO@CIDADE-DO-TRABALHO` ← `f_cidade` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -2724,7 +2856,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 - `DADOS-BASICOS-DO-TRABALHO-TECNICO@DOI`
 - `DETALHAMENTO-DO-TRABALHO-TECNICO@FINALIDADE-INGLES`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -2755,6 +2886,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DA-APRESENTACAO-DE-TRABALHO@INSTITUICAO-PROMOTORA` ← `f_inst` (observado)
 - `DETALHAMENTO-DA-APRESENTACAO-DE-TRABALHO@LOCAL-DA-APRESENTACAO` ← `f_local` (observado)
 - `DETALHAMENTO-DA-APRESENTACAO-DE-TRABALHO@CIDADE-DA-APRESENTACAO` ← `f_cidade` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -2791,7 +2923,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 - `DADOS-BASICOS-DA-APRESENTACAO-DE-TRABALHO@DOI`
 - `DETALHAMENTO-DA-APRESENTACAO-DE-TRABALHO@NOME-DO-EVENTO-INGLES`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -2816,6 +2947,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DE-CARTA-MAPA-OU-SIMILAR@FINALIDADE` ← `f_finalidade` (observado)
 - `DETALHAMENTO-DE-CARTA-MAPA-OU-SIMILAR@AREA-REPRESENTADA` ← `f_area` (observado)
 - `DETALHAMENTO-DE-CARTA-MAPA-OU-SIMILAR@INSTITUICAO-FINANCIADORA` ← `f_inst` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -2852,7 +2984,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 - `DADOS-BASICOS-DE-CARTA-MAPA-OU-SIMILAR@DOI`
 - `DETALHAMENTO-DE-CARTA-MAPA-OU-SIMILAR@FINALIDADE-INGLES`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -2878,6 +3009,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@LOCAL-DO-CURSO` ← `f_local` (observado)
 - `DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@CIDADE` ← `f_cidade` (observado)
 - `DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@DURACAO` ← `f_duracao` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -2915,7 +3047,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@HOME-PAGE-DO-TRABALHO`
 - `DADOS-BASICOS-DE-CURSOS-CURTA-DURACAO-MINISTRADO@DOI`
 - `DETALHAMENTO-DE-CURSOS-CURTA-DURACAO-MINISTRADO@UNIDADE-INGLES`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -2937,6 +3068,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@HOME-PAGE-DO-TRABALHO` ← `f_homepage` (observado)
 - `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@TITULO-INGLES` ← `f_titulo_en` (observado)
 - `DETALHAMENTO-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@FINALIDADE` ← `f_finalidade` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -2974,7 +3106,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@DOI`
 - `DADOS-BASICOS-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@NATUREZA-INGLES`
 - `DETALHAMENTO-DO-MATERIAL-DIDATICO-OU-INSTRUCIONAL@FINALIDADE-INGLES`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -2998,6 +3129,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DE-EDITORACAO@INSTITUICAO-PROMOTORA` ← `f_inst` (observado)
 - `DETALHAMENTO-DE-EDITORACAO@EDITORA` ← `f_editora` (observado)
 - `DETALHAMENTO-DE-EDITORACAO@CIDADE` ← `f_cidade` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -3033,7 +3165,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 **fora do formulário**
 
 - `DADOS-BASICOS-DE-EDITORACAO@DOI`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -3056,6 +3187,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DE-MANUTENCAO-DE-OBRA-ARTISTICA@AUTOR-DA-OBRA` ← `f_autor_obra` (observado)
 - `DETALHAMENTO-DE-MANUTENCAO-DE-OBRA-ARTISTICA@LOCAL` ← `f_local` (observado)
 - `DETALHAMENTO-DE-MANUTENCAO-DE-OBRA-ARTISTICA@CIDADE` ← `f_cidade` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -3093,7 +3225,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DE-MANUTENCAO-DE-OBRA-ARTISTICA@TIPO`
 - `DADOS-BASICOS-DE-MANUTENCAO-DE-OBRA-ARTISTICA@DOI`
 - `DETALHAMENTO-DE-MANUTENCAO-DE-OBRA-ARTISTICA@ANO-DA-OBRA`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -3115,6 +3246,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DA-MAQUETE@OBJETO-REPRESENTADO` ← `f_objeto` (observado)
 - `DETALHAMENTO-DA-MAQUETE@MATERIAL-UTILIZADO` ← `f_material` (observado)
 - `DETALHAMENTO-DA-MAQUETE@INSTITUICAO-FINANCIADORA` ← `f_inst` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -3152,7 +3284,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DA-MAQUETE@HOME-PAGE-DO-TRABALHO`
 - `DADOS-BASICOS-DA-MAQUETE@DOI`
 - `DETALHAMENTO-DA-MAQUETE@FINALIDADE-INGLES`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -3179,6 +3310,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DA-ORGANIZACAO-DE-EVENTO@DURACAO-EM-SEMANAS` ← `f_duracao` (observado)
 - `DETALHAMENTO-DA-ORGANIZACAO-DE-EVENTO@LOCAL` ← `f_local` (observado)
 - `DETALHAMENTO-DA-ORGANIZACAO-DE-EVENTO@CIDADE` ← `f_cidade` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -3215,7 +3347,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 - `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@HOME-PAGE-DO-TRABALHO`
 - `DADOS-BASICOS-DA-ORGANIZACAO-DE-EVENTO@DOI`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -3240,6 +3371,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DO-PROGRAMA-DE-RADIO-OU-TV@TEMA` ← `f_tema` (observado)
 - `DETALHAMENTO-DO-PROGRAMA-DE-RADIO-OU-TV@DATA-DA-APRESENTACAO` ← `f_data` (inferido)
 - `DETALHAMENTO-DO-PROGRAMA-DE-RADIO-OU-TV@DURACAO-EM-MINUTOS` ← `f_duracao` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -3278,7 +3410,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DO-PROGRAMA-DE-RADIO-OU-TV@FORMATO-DATA-DA-APRESENTACAO`
 - `DETALHAMENTO-DO-PROGRAMA-DE-RADIO-OU-TV@CIDADE`
 - `DETALHAMENTO-DO-PROGRAMA-DE-RADIO-OU-TV@VEICULO-DE-DIVULGACAO`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -3300,6 +3431,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DO-RELATORIO-DE-PESQUISA@NOME-DO-PROJETO` ← `f_projeto` (observado)
 - `DETALHAMENTO-DO-RELATORIO-DE-PESQUISA@NUMERO-DE-PAGINAS` ← `f_paginas` (observado)
 - `DETALHAMENTO-DO-RELATORIO-DE-PESQUISA@INSTITUICAO-FINANCIADORA` ← `f_inst` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -3336,7 +3468,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 - `DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@HOME-PAGE-DO-TRABALHO`
 - `DADOS-BASICOS-DO-RELATORIO-DE-PESQUISA@DOI`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -3357,6 +3488,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@ANO` ← `f_ano` (observado)
 - `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@HOME-PAGE` ← `F_HOMEPAGE` (observado)
 - `DETALHAMENTO-DA-MIDIA-SOCIAL-WEBSITE-BLOG@TEMA` ← `f_tema` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -3392,7 +3524,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 **fora do formulário**
 
 - `DADOS-BASICOS-DA-MIDIA-SOCIAL-WEBSITE-BLOG@NATUREZA-INGLES`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -3418,6 +3549,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DE-OUTRA-PRODUCAO-TECNICA@CIDADE` ← `f_cidade` (observado)
 - `REGISTRO-OU-PATENTE@TITULO-PATENTE` ← `f_titulo` (inferido)
 - `REGISTRO-OU-PATENTE@INSTITUICAO-DEPOSITO-REGISTRO` ← `f_inst` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -3467,7 +3599,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `REGISTRO-OU-PATENTE@DATA-DEPOSITO-PCT`
 - `REGISTRO-OU-PATENTE@NOME-DO-TITULAR`
 - `REGISTRO-OU-PATENTE@NOME-DO-DEPOSITANTE`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -3500,6 +3631,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DE-ARTES-CENICAS@INSTITUICAO-PROMOTORA-DO-EVENTO` ← `f_inst` (observado)
 - `DETALHAMENTO-DE-ARTES-CENICAS@LOCAL-DO-EVENTO` ← `f_local` (observado)
 - `DETALHAMENTO-DE-ARTES-CENICAS@CIDADE-DO-EVENTO` ← `f_cidade` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -3538,7 +3670,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DE-ARTES-CENICAS@DATA-ESTREIA`
 - `DETALHAMENTO-DE-ARTES-CENICAS@DATA-ENCERRAMENTO`
 - `DETALHAMENTO-DE-ARTES-CENICAS@ANO-DA-OBRA-DE-REFERENCIA`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -3572,6 +3703,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DA-MUSICA@INSTITUICAO-PROMOTORA-DO-EVENTO` ← `f_inst` (observado)
 - `DETALHAMENTO-DA-MUSICA@LOCAL-DO-EVENTO` ← `f_local` (observado)
 - `DETALHAMENTO-DA-MUSICA@CIDADE-DO-EVENTO` ← `f_cidade` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -3610,7 +3742,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DA-MUSICA@DATA-ESTREIA`
 - `DETALHAMENTO-DA-MUSICA@DATA-ENCERRAMENTO`
 - `DETALHAMENTO-DA-MUSICA@ANO-DA-OBRA-DE-REFERENCIA`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -3637,6 +3768,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DE-ARTES-VISUAIS@LOCAL-DO-EVENTO` ← `f_local` (observado)
 - `DETALHAMENTO-DE-ARTES-VISUAIS@CIDADE-DO-EVENTO` ← `f_cidade` (observado)
 - `DETALHAMENTO-DE-ARTES-VISUAIS@TEMPORADA` ← `f_temporada` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -3669,10 +3801,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `SETORES-DE-ATIVIDADE@SETOR-DE-ATIVIDADE-2` ← `f_setor_l` (inferido)
 - `SETORES-DE-ATIVIDADE@SETOR-DE-ATIVIDADE-3` ← `f_setor_l` (inferido)
 
-**fora do formulário**
-
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
-
 </details>
 
 <details><summary>Outra produção artística (arte-OU)</summary>
@@ -3697,6 +3825,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@CIDADE` ← `f_cidade` (observado)
 - `DETALHAMENTO-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@EXPOSICAO` ← `F_EXPOSICAO` (observado)
 - `DETALHAMENTO-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@PREMIACAO` ← `f_premiacao` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 
 **oculto**
@@ -3733,7 +3862,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 - `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@DOI`
 - `DADOS-BASICOS-DE-OUTRA-PRODUCAO-ARTISTICA-CULTURAL@NATUREZA-INGLES`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>
 
@@ -3765,6 +3893,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-MESTRADO@ANO` ← `f_ano` (inferido)
 - `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-MESTRADO@HOME-PAGE` ← `f_homepage` (inferido)
 - `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-MESTRADO@TITULO-INGLES` ← `f_titulo_en` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 - `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-DOUTORADO@TITULO` ← `f_titulo` (inferido)
 - `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-DOUTORADO@ANO` ← `f_ano` (inferido)
@@ -3837,7 +3966,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DE-ORIENTACOES-CONCLUIDAS-PARA-MESTRADO@NOME-DA-AGENCIA`
 - `DETALHAMENTO-DE-ORIENTACOES-CONCLUIDAS-PARA-MESTRADO@NUMERO-DE-PAGINAS`
 - `DETALHAMENTO-DE-ORIENTACOES-CONCLUIDAS-PARA-MESTRADO@NOME-DO-CURSO-INGLES`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 - `ORIENTACOES-CONCLUIDAS-PARA-DOUTORADO@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-DOUTORADO@NATUREZA`
 - `DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-DOUTORADO@DOI`
@@ -3908,6 +4036,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DA-ORIENTACAO-EM-ANDAMENTO-DE-MESTRADO@HOME-PAGE` ← `f_homepage` (inferido)
 - `DADOS-BASICOS-DA-ORIENTACAO-EM-ANDAMENTO-DE-MESTRADO@TITULO-DO-TRABALHO-INGLES` ← `f_titulo_en` (inferido)
 - `DETALHAMENTO-DA-ORIENTACAO-EM-ANDAMENTO-DE-MESTRADO@NOME-DO-ORIENTANDO` ← `f_nme_orient` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 - `DADOS-BASICOS-DA-ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO@TITULO-DO-TRABALHO` ← `f_titulo` (inferido)
 - `DADOS-BASICOS-DA-ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO@ANO` ← `f_ano` (inferido)
@@ -3993,7 +4122,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DETALHAMENTO-DA-ORIENTACAO-EM-ANDAMENTO-DE-MESTRADO@CODIGO-AGENCIA-FINANCIADORA`
 - `DETALHAMENTO-DA-ORIENTACAO-EM-ANDAMENTO-DE-MESTRADO@NOME-DA-AGENCIA`
 - `DETALHAMENTO-DA-ORIENTACAO-EM-ANDAMENTO-DE-MESTRADO@NOME-CURSO-INGLES`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 - `ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DA-ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO@NATUREZA`
 - `DADOS-BASICOS-DA-ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO@DOI`
@@ -4089,6 +4217,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-MESTRADO@ANO` ← `f_ano` (inferido)
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-MESTRADO@HOME-PAGE` ← `f_homepage` (inferido)
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-MESTRADO@TITULO-INGLES` ← `f_titulo_en` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-DOUTORADO@TITULO` ← `f_titulo` (inferido)
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-DOUTORADO@ANO` ← `f_ano` (inferido)
@@ -4168,7 +4297,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `PARTICIPANTE-BANCA@ORDEM-PARTICIPANTE`
 - `PARTICIPANTE-BANCA@CPF-DO-PARTICIPANTE-DA-BANCA`
 - `PARTICIPANTE-BANCA@NRO-ID-CNPQ`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 - `PARTICIPACAO-EM-BANCA-DE-DOUTORADO@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-DOUTORADO@NATUREZA`
 - `DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-DOUTORADO@DOI`
@@ -4235,6 +4363,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DA-BANCA-JULGADORA-PARA-PROFESSOR-TITULAR@ANO` ← `f_ano` (inferido)
 - `DADOS-BASICOS-DA-BANCA-JULGADORA-PARA-PROFESSOR-TITULAR@HOME-PAGE` ← `f_homepage` (inferido)
 - `DADOS-BASICOS-DA-BANCA-JULGADORA-PARA-PROFESSOR-TITULAR@TITULO-INGLES` ← `f_titulo_en` (inferido)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (observado)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (observado)
 - `DADOS-BASICOS-DA-BANCA-JULGADORA-PARA-CONCURSO-PUBLICO@TITULO` ← `f_titulo` (inferido)
 - `DADOS-BASICOS-DA-BANCA-JULGADORA-PARA-CONCURSO-PUBLICO@ANO` ← `f_ano` (inferido)
@@ -4293,7 +4422,6 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `PARTICIPANTE-BANCA@ORDEM-PARTICIPANTE`
 - `PARTICIPANTE-BANCA@CPF-DO-PARTICIPANTE-DA-BANCA`
 - `PARTICIPANTE-BANCA@NRO-ID-CNPQ`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 - `BANCA-JULGADORA-PARA-CONCURSO-PUBLICO@SEQUENCIA-PRODUCAO`
 - `DADOS-BASICOS-DA-BANCA-JULGADORA-PARA-CONCURSO-PUBLICO@NATUREZA`
 - `DADOS-BASICOS-DA-BANCA-JULGADORA-PARA-CONCURSO-PUBLICO@DOI`
@@ -4557,6 +4685,7 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 - `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@TITULO-INGLES` ← `f_titulo_en` (observado)
 - `DETALHAMENTO-DE-DEMAIS-TRABALHOS@FINALIDADE` ← `f_finalidade` (observado)
 - `DETALHAMENTO-DE-DEMAIS-TRABALHOS@LOCAL` ← `f_local` (observado)
+- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS` ← `f_ref` (inferido)
 - `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES` ← `f_ref_en` (inferido)
 
 **oculto**
@@ -4593,6 +4722,5 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 
 - `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@DOI`
 - `DADOS-BASICOS-DE-DEMAIS-TRABALHOS@NATUREZA-INGLES`
-- `INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS`
 
 </details>

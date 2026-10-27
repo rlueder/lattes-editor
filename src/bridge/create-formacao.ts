@@ -103,6 +103,9 @@ const FORMATION_FIELDS: Record<string, [string, Mapper]> = {
   'NOME-COMPLETO-DO-ORIENTADOR': ['f_orient', same],
   'NOME-DO-CO-ORIENTADOR': ['f_coorient', same],
   'NOME-DO-ORIENTADOR': ['f_orient', same],
+  // Na residência médica, o f_orient é o "Número do registro" (rótulo no censo
+  // de 15/10/2026); ela não tem orientador.
+  'NUMERO-DO-REGISTRO': ['f_orient', same],
   'STATUS-DO-CURSO': ['F_STATUS', (v) => COURSE_STATUS[v]],
   // Seção 5: o rádio normal/sanduíche do mestrado é o TIPO-MESTRADO do XML.
   'TIPO-MESTRADO': ['f_tpo_doutorado', (v) => (v === 'N' || v === 'S' ? v : undefined)],
