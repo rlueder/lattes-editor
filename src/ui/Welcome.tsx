@@ -76,11 +76,13 @@ const RELOAD_FEEDBACK_MS = 4000;
  */
 function StepAction({
   action,
+  onPublish,
   onReload,
   onRetry,
   onVersion,
 }: {
   action: NonNullable<Step['action']>;
+  onPublish: () => void;
   onReload: () => void;
   onRetry: () => void;
   onVersion: () => void;
@@ -118,7 +120,9 @@ function StepAction({
             }
           : action.kind === 'versao'
             ? onVersion
-            : onRetry
+            : action.kind === 'enviar'
+              ? onPublish
+              : onRetry
       }
     >
       {reloading ? 'Recarregando…' : action.label}
@@ -227,6 +231,7 @@ export function Welcome({
                       <StepAction
                         key={step.action.kind}
                         action={step.action}
+                        onPublish={onPublish}
                         onReload={onReloadLattes}
                         onRetry={lattes.open}
                         onVersion={() =>
@@ -239,13 +244,15 @@ export function Welcome({
               ))}
             </ol>
             <div className="onboarding-file">
-              {open.kind === 'falhou' && open.reason === 'pendente' && (
-                <p className="onboarding-manual">
-                  O envio ao CNPq libera o Exportar.{' '}
-                  <button className="link-button" type="button" onClick={onPublish}>
-                    Enviar ao CNPq…
-                  </button>
-                </p>
+              {/* O envio é o botão do passo 3; a versão guardada, a outra saída. */}
+              {steps[2]?.action?.kind === 'enviar' && stored && stored !== 'procurando' && (
+                <button
+                  className="link-button"
+                  type="button"
+                  onClick={() => onOpenVersion(stored.id)}
+                >
+                  Abrir a versão de {stored.date}, guardada no app
+                </button>
               )}
               <button className="link-button" type="button" onClick={pick}>
                 Prefiro abrir o arquivo exportado

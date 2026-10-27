@@ -283,10 +283,11 @@ No `pnpm dev`, sem o app, o editor fala com a extensão pelo
 
 - **Abrir do Lattes** (`src/bridge/export.ts`): pede o ZIP do Exportar na
   sessão da pessoa. O mesmo pedido serve ao "Recarregar do Lattes…"
-  (`src/ui/use-lattes-reload.ts`). Com o Exportar bloqueado por pendência, a
-  tela inicial oferece a última versão guardada
-  (`src/ui/use-stored-version.ts`), com o diagnóstico comparando com a página
-  de conferência.
+  (`src/ui/use-lattes-reload.ts`). Com o Exportar bloqueado por pendência, o
+  passo 3 da tela inicial é o "Enviar ao CNPq…", e o currículo abre depois
+  do envio; a última versão guardada (`src/ui/use-stored-version.ts`) fica
+  como a outra saída, com o diagnóstico comparando com a página de
+  conferência.
 - **Estado do Lattes** (`src/bridge/lattes-status.ts`): lê do menu a data da
   última publicação e se há pendência.
 - **Sessão viva** (`src/bridge/keepalive.ts`, `extension/src/keepalive-run.ts`):

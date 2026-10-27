@@ -138,7 +138,7 @@ export function publishStatus(
     busy: true,
     done: false,
     locked: true,
-    text: 'Enviando ao CNPq. O Lattes leva uns 20 segundos para responder; depois, o editor confere no menu.',
+    text: 'Leva uns 20 segundos. Quando o Lattes responder, o editor confirma que o currículo foi publicado.',
   };
 }
 
@@ -155,7 +155,7 @@ export function sendScreenProblem(
     case 'sessao':
       return 'A sessão do Lattes caiu. Entre de novo e reabra este painel.';
     case 'ocupado':
-      return 'A extensão está gravando no Lattes. Reabra este painel quando terminar.';
+      return 'A extensão continuou ocupada com outra tarefa no Lattes. Feche e abra este painel daqui a pouco.';
     case 'mudou':
       return `${reading.detail ?? 'A tela de envio do Lattes não está como o editor espera.'} Envie pelo Lattes.`;
     default:

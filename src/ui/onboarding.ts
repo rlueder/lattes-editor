@@ -25,7 +25,11 @@ export interface Step {
    * novo, recarregar a aba do Lattes (sessão vencida) ou, com o Exportar
    * bloqueado, abrir a última versão que o app guardou.
    */
-  action?: { href?: string; kind: 'link' | 'recarregar' | 'tentar' | 'versao'; label: string };
+  action?: {
+    href?: string;
+    kind: 'enviar' | 'link' | 'recarregar' | 'tentar' | 'versao';
+    label: string;
+  };
   /** Esperando a extensão ou o Lattes: o passo mostra que está andando. */
   busy?: boolean;
   status: StepStatus;
@@ -143,6 +147,17 @@ function openStep(open: OpenState, link: Link, stored?: StoredVersion | 'procura
           busy: true,
           status: 'agora',
           text: 'O seu Lattes tem alterações ainda não enviadas ao CNPq. Procurando uma versão deste currículo guardada no app…',
+          title,
+        };
+      }
+      // Com o envio pela extensão, ele é o passo: depois de enviado, o
+      // currículo abre sozinho (App.tsx, onPublished). A versão guardada fica
+      // como a outra saída, embaixo (Welcome.tsx).
+      if (open.reason === 'pendente' && link.features?.includes('publicar-cnpq')) {
+        return {
+          action: { kind: 'enviar', label: 'Enviar ao CNPq…' },
+          status: 'agora',
+          text: 'Há alterações não enviadas ao CNPq. Envie para abrir o currículo.',
           title,
         };
       }

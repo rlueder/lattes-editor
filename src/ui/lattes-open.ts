@@ -40,7 +40,7 @@ export function failureText(reason: OpenFailure, detail?: string): string {
     case 'sessao':
       return 'A sessão do Lattes expirou. Entre de novo; o currículo abre em seguida.';
     case 'pendente':
-      return 'O seu Lattes tem alterações ainda não enviadas ao CNPq, e o Lattes só exporta depois do envio. Use "Enviar" no Lattes e tente de novo. O app não guardou nenhuma versão deste currículo para abrir no lugar.';
+      return 'O seu Lattes tem alterações ainda não enviadas ao CNPq, e o Lattes só exporta depois do envio. Envie pelo Lattes e tente de novo. O app não guardou nenhuma versão deste currículo para abrir no lugar.';
     case 'sem-resposta':
       return 'A extensão não respondeu. Tente de novo, ou abra o arquivo exportado.';
     case 'erro':
