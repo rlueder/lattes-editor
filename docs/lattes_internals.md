@@ -447,8 +447,11 @@ outra coisa: um `alert("Problemas na autenticação")` antes de mandar para
 - Se o POST do Exportar funciona sem o GET da tela antes (seção 12).
 - Por que um item confirmado no passo 3 do Importar some (seção 13, item 8),
   e o limite superior de `SEQUENCIA-PRODUCAO`.
-- Como a exportação grava a PCD e duas redes sociais (seção 19), e mais de
-  um depositante numa patente (seção 17).
+- Como a exportação grava a PCD com mais de um tipo marcado, e mais de um
+  depositante numa patente (seção 17). Com um tipo só, a exportação de
+  27/10/2026 trouxe o rótulo da caixa (`PCD="Deficiência Visual"`), e duas
+  redes sociais vieram coladas em `REDE-SOCIAL`, sem separador: o "ID Rede
+  Social" da segunda começa logo depois do endereço da primeira. **Observado.**
 
 ## 9. Vigia: saber quando o CNPq mudou algo
 

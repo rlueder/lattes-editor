@@ -17,7 +17,7 @@ export function editableContacts(attr: string, raw: string): ContactField[] | un
   if (!email && attr !== 'REDE-SOCIAL') return undefined;
   const pattern = email
     ? /\b([IR]):\s*([^\s,;:]+@[^\s,;]+)/g
-    : /ID Rede Social:\s*\d+,\s*Nome Rede Social:\s*([^,]+?)\s*,\s*Endere\S*o:\s*(\S+?)(?=[\s,;]|$)/g;
+    : /ID Rede Social:\s*\d+,\s*Nome Rede Social:\s*([^,]+?)\s*,\s*Endere\S*o:\s*(\S+?)(?=ID Rede Social:|[\s,;]|$)/g;
   const matches = [...raw.matchAll(pattern)];
   if (!matches.length || raw.replace(pattern, '').replace(/[\s,;]/g, '') !== '') return undefined;
   if (email && new Set(matches.map((m) => m[1])).size !== matches.length) return undefined;

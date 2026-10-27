@@ -33,6 +33,18 @@ describe('edição de contatos sem reconstruir a serialização', () => {
     );
   });
 
+  it('entradas coladas sem separador, como na exportação real: troca só a URL escolhida', () => {
+    const raw = `ID Rede Social: 1, Nome Rede Social: Linkedin, Endereço: https://example.org/in/a/ID Rede Social: 2, Nome Rede Social: GitHub, Endereço: https://example.org/b`;
+    const fields = editableContacts('REDE-SOCIAL', raw)!;
+    expect(fields.map((f) => [f.label, f.value])).toEqual([
+      ['LinkedIn', 'https://example.org/in/a/'],
+      ['GitHub', 'https://example.org/b'],
+    ]);
+    expect(replaceContactValue(raw, 'REDE-SOCIAL', 0, 'https://example.org/in/c/')).toBe(
+      raw.replace('https://example.org/in/a/', 'https://example.org/in/c/'),
+    );
+  });
+
   it('não reescreve uma legenda com problema de codificação', () => {
     const raw = SOCIAL.replace('Endereço', 'EndereÃ§o');
     expect(replaceContactValue(raw, 'REDE-SOCIAL', 0, 'https://example.org/nova')).toBe(

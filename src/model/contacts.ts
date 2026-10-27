@@ -8,9 +8,12 @@
 //   REDE-SOCIAL: "ID Rede Social: 7442497, Nome Rede Social: Linkedin,
 //                 Endereço: https://..."
 //
-// O separador entre várias entradas não foi visto numa exportação real; o
-// leitor procura cada padrão no texto inteiro e, se nada casar, a tela mostra
-// o valor como veio.
+// Numa exportação real (27/10/2026), as entradas de REDE-SOCIAL vêm coladas,
+// sem separador: o "ID Rede Social" da seguinte começa logo depois do
+// endereço ("…/in/nome/ID Rede Social: 2, …"). O endereço termina no espaço,
+// na vírgula, no ponto e vírgula ou no começo da entrada seguinte. O leitor
+// procura cada padrão no texto inteiro e, se nada casar, a tela mostra o
+// valor como veio.
 
 import { repairMojibake } from './mojibake.ts';
 
@@ -40,7 +43,9 @@ export function parseEmails(value: string): EmailContact[] {
 export function parseSocial(value: string): SocialContact[] {
   const text = repairMojibake(value) ?? value;
   return [
-    ...text.matchAll(/Nome Rede Social:\s*([^,]+?)\s*,\s*Endere\S*o:\s*(\S+?)(?=[\s,;]|$)/g),
+    ...text.matchAll(
+      /Nome Rede Social:\s*([^,]+?)\s*,\s*Endere\S*o:\s*(\S+?)(?=ID Rede Social:|[\s,;]|$)/g,
+    ),
   ].map((m) => ({ name: socialName(m[1]!), url: m[2]! }));
 }
 
