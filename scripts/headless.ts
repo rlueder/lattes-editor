@@ -149,9 +149,23 @@ export async function withHeadlessBrowser(
       await exited;
     }
     activePort = previousPort;
-    if (ownProfile) {
-      rmSync(profile, { force: true, maxRetries: 5, recursive: true, retryDelay: 200 });
-    }
+    if (ownProfile) removeProfile(profile);
+  }
+}
+
+/**
+ * Apaga o perfil temporário. Os processos auxiliares do navegador podem
+ * seguir escrevendo nele um instante depois de o principal sair (ENOTEMPTY
+ * no CI, 27/10/2026): mais tentativas, e um perfil que ainda resiste fica
+ * para o sistema limpar, com um aviso, sem derrubar um teste que passou.
+ */
+function removeProfile(profile: string): void {
+  try {
+    rmSync(profile, { force: true, maxRetries: 20, recursive: true, retryDelay: 250 });
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code !== 'ENOTEMPTY' && code !== 'EBUSY') throw err;
+    console.warn(`Perfil temporário não apagado (${code}): ${profile}`);
   }
 }
 
