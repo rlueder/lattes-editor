@@ -10,9 +10,9 @@
 // Fica de fora, à mão:
 // - patente e registros: create-registro.ts (LAT-57);
 // - pós-doutorado e livre-docência, que não estão no combo de níveis;
-// - palavras-chave, áreas e setores (grades serializadas, seção 16), o
-//   sanduíche e a cotutela do doutorado, equipe além do dono, financiadores,
-//   produções e orientações do projeto.
+// - a instituição do sanduíche e a da cotutela, que a exportação guarda só
+//   pelo código, sem o nome que a busca pede (o tipo, os orientadores e a
+//   instituição do doutorado vão, create-formacao.ts).
 //
 // Cada operação confere antes de enviar (lista sem item igual, formulário em
 // modo de inclusão do nível ou da natureza certa, todos os campos presentes),

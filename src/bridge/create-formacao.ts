@@ -47,6 +47,7 @@ import {
   text,
 } from './create-shared.ts';
 import { encodeLatin1Form, type FormControl, type Pairs, pairValue, setPairs } from './form.ts';
+import { resolveFormacao } from './formacao-lookups.ts';
 import { findLinks, isLogonPage, type LattesLink } from './lattes-html.ts';
 import type { FieldValues } from './plan.ts';
 
@@ -55,6 +56,8 @@ export interface CreateFormacaoOp extends CreateOpBase {
   agencyCode?: string;
   /** CODIGO-CURSO do XML, nos níveis que têm curso. */
   courseCode?: string;
+  /** A outra instituição do doutorado ou da graduação, pela busca com f_sta_outra=S. */
+  doutInstitution?: { code: string; name: string };
   /** Palavras-chave, áreas e setores, nas grades do formulário (create-grids.ts). */
   grids?: NewItemGrids;
   kind: 'criar-formacao';
@@ -114,11 +117,19 @@ const FORMATION_FIELDS: Record<string, [string, Mapper]> = {
   'NOME-COMPLETO-DO-ORIENTADOR': ['f_orient', same],
   'NOME-DO-CO-ORIENTADOR': ['f_coorient', same],
   'NOME-DO-ORIENTADOR': ['f_orient', same],
+  // Os blocos que o tipo do doutorado e da graduação mostra (formacao-edit.ts).
+  'NOME-DO-ORIENTADOR-CO-TUTELA': ['f_orient_dout_ct', same],
+  'NOME-DO-ORIENTADOR-SANDUICHE': ['f_orient_dout_sw', same],
+  'NOME-ORIENTADOR-DOUT': ['f_orient_dout', same],
+  'NOME-ORIENTADOR-GRAD': ['f_orient_dout', same],
   // Na residência médica, o f_orient é o "Número do registro" (rótulo no censo
   // de 15/10/2026); ela não tem orientador.
   'NUMERO-DO-REGISTRO': ['f_orient', same],
   'STATUS-DO-CURSO': ['F_STATUS', (v) => COURSE_STATUS[v]],
-  // Seção 5: o rádio normal/sanduíche do mestrado é o TIPO-MESTRADO do XML.
+  // Seção 5: o rádio normal/sanduíche do mestrado é o TIPO-MESTRADO do XML; o
+  // do doutorado tem também a cotutela (C e CS, pelas opções, seção 17).
+  'TIPO-DOUTORADO': ['f_tpo_doutorado', (v) => (['C', 'CS', 'N', 'S'].includes(v) ? v : undefined)],
+  'TIPO-GRADUACAO': ['f_tpo_doutorado', (v) => (v === 'N' || v === 'S' ? v : undefined)],
   'TIPO-MESTRADO': ['f_tpo_doutorado', (v) => (v === 'N' || v === 'S' ? v : undefined)],
   'TITULO-DA-DISSERTACAO-TESE': ['f_titulo', same],
   'TITULO-DA-MONOGRAFIA': ['f_titulo', same],
@@ -131,6 +142,10 @@ const FORMATION_FIELDS: Record<string, [string, Mapper]> = {
 /** Do Lattes (número, nível, códigos que acompanham o curso) ou tratados à parte (buscas). */
 const FORMATION_HANDLED = new Set([
   'CODIGO-AGENCIA-FINANCIADORA',
+  'CODIGO-INSTITUICAO-DOUT',
+  'CODIGO-INSTITUICAO-GRAD',
+  'NOME-INSTITUICAO-DOUT',
+  'NOME-INSTITUICAO-GRAD',
   'CODIGO-AREA-CURSO',
   'CODIGO-CURSO',
   'CODIGO-CURSO-CAPES',
@@ -166,6 +181,15 @@ export function planCreateFormacao(
     return { reason: 'Agência sem código do Lattes: escolha pela lista de agências' };
   }
   if (agencyCode && bolsa !== 'SIM') return { reason: 'Agência informada sem bolsa' };
+  const dout = ['DOUT', 'GRAD']
+    .map((s) => ({
+      code: getAttr(el, `CODIGO-INSTITUICAO-${s}`) ?? '',
+      name: getAttr(el, `NOME-INSTITUICAO-${s}`) ?? '',
+    }))
+    .find((i) => i.code || i.name);
+  if (dout && !dout.code) {
+    return { reason: 'Instituição do doutorado sem código do Lattes: escolha pela busca' };
+  }
   if (bolsa === 'SIM' && !agencyCode) return { reason: 'Bolsa sem a agência do Lattes' };
   const filled = filledChildren(el, [...GRID_PARTS]);
   const grids = newItemGrids(el);
@@ -187,6 +211,7 @@ export function planCreateFormacao(
   return {
     agencyCode,
     courseCode,
+    ...(dout ? { doutInstitution: dout } : {}),
     expect: {},
     ...(grids ? { grids } : {}),
     institutionCode,
@@ -393,6 +418,16 @@ export async function applyCreateFormacao(op: CreateFormacaoOp, port: LattesPort
       lookups.f_nme_agencia = agencies[0]![1] ?? '';
     }
 
+    // A outra instituição do doutorado: a mesma busca, com f_sta_outra=S.
+    if (op.doutInstitution) {
+      const other = await resolveFormacao(
+        { institutions: [{ before: '', ...op.doutInstitution, slot: 'dout' }] },
+        port,
+        form.pairs,
+      );
+      if ('status' in other) return result(other.status, other.detail);
+      Object.assign(lookups, other.set);
+    }
     const set = { ...typed, ...lookups };
     const limit = overLimit(form.controls, set);
     if (limit) return result('erro', limit);
