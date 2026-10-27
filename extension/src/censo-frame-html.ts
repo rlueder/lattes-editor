@@ -14,7 +14,14 @@ export async function htmlFor(html: string, url: string): Promise<string> {
   // páginas do Lattes: sai do quadro, que continua sem rede (o programa de
   // computador carrega um, 26/10/2026).
   const origin = new URL(url).origin;
-  const local = (ref: string) => new URL(ref, url).origin === origin;
+  // Um endereço que nem se lê (src="http://") também fica de fora.
+  const local = (ref: string) => {
+    try {
+      return new URL(ref, url).origin === origin;
+    } catch {
+      return false;
+    }
+  };
   for (const script of doc.querySelectorAll<HTMLScriptElement>('script[src]')) {
     if (!local(script.getAttribute('src')!)) {
       script.remove();
