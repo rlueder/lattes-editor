@@ -37,7 +37,7 @@ export const FUNDER = 'FINANCIADOR-DO-PROJETO';
 export const FUNDERS = 'FINANCIADORES-DO-PROJETO';
 
 /** NATUREZA do XML → a letra do select da janela de edição (27/10/2026). */
-const FUNDER_NATURE: Record<string, string> = {
+export const FUNDER_NATURE: Record<string, string> = {
   AUXILIO_FINANCEIRO: 'A',
   BOLSA: 'B',
   COOPERACAO: 'C',
@@ -128,7 +128,7 @@ function pathParam(path: string, name: string): string {
  * O código (com a letra) da única instituição de mesmo nome na busca do
  * financiador; o motivo, quando a busca não a acha uma vez só.
  */
-async function searchFunder(
+export async function searchFunder(
   port: LattesPort,
   path: string,
   name: string,

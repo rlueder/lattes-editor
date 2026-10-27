@@ -2829,3 +2829,9 @@ conector inclui e tira ligações de um projeto que já está pelas duas
 grades, a de cada código pelo tipo do item com esse número no currículo
 (`production/project-links.ts`). **Inferido**: que o servidor grave a
 ligação nova só com o código, sem a janela de produções.
+
+Incluir e tirar financiadores de um projeto que já está: a linha que sai
+fica de fora de `f_inst_l`; a que entra acha a instituição pela busca do
+financiador e vai como `<código com a letra>|;N;|||<letra>|`, com o código
+do projeto e a moeda e o valor vazios (`production/financiador-lista.ts`).
+**Inferido**: só a linha com código do projeto e valor foi vista.

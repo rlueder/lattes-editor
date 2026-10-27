@@ -148,6 +148,10 @@ const OWN_EDITS = new Set([
   'novo:PRODUCAO-CT-DO-PROJETO',
   'removido:PRODUCAO-CT-DO-PROJETO',
   'novo:PRODUCOES-CT-DO-PROJETO',
+  // Incluir e tirar financiadores: cada operação relê a grade (financiador-lista.ts).
+  'novo:FINANCIADOR-DO-PROJETO',
+  'removido:FINANCIADOR-DO-PROJETO',
+  'novo:FINANCIADORES-DO-PROJETO',
 ]);
 
 /**

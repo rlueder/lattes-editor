@@ -16,6 +16,7 @@ import type { Change } from '../../model/changes.ts';
 import { childElements, getAttr, walk, type XElement } from '../../model/xml.ts';
 import type { LattesPort, ResultStatus } from '../apply.ts';
 import { type FunderEdit, funderValue, planFunder } from './financiador.ts';
+import { type FunderList, funderListValue, planFunderList } from './financiador-lista.ts';
 import { opaqueCells } from './opaque.ts';
 import type { ProductionRow } from './plan.ts';
 import type { OpaqueGrid, ProductionTarget } from './types.ts';
@@ -23,6 +24,16 @@ import type { OpaqueGrid, ProductionTarget } from './types.ts';
 const LINK = 'PRODUCAO-CT-DO-PROJETO';
 const LINKS = 'PRODUCOES-CT-DO-PROJETO';
 const CODE = 'SEQUENCIA-PRODUCAO-CT';
+
+/** O que a operação de um projeto troca nas grades de financiadores e de ligações. */
+export interface ProjectGridEdits {
+  /** A natureza ou a instituição de um financiador, na linha dele (financiador.ts). */
+  funder?: FunderEdit;
+  /** Os financiadores que entram e saem (financiador-lista.ts). */
+  funders?: FunderList;
+  /** As produções e orientações ligadas. */
+  links?: ProjectLinks;
+}
 
 /** As ligações do projeto, por grade: antes (como o Lattes tem) e depois. */
 export interface ProjectLinks {
@@ -169,11 +180,16 @@ export function planProjectEdit(
   siblings: readonly Change[],
 ):
   | { funder: FunderEdit; rows: ProductionRow[] }
+  | { funders: FunderList; rows: ProductionRow[] }
   | { links: ProjectLinks; rows: ProductionRow[] }
   | { reason: string }
   | undefined {
   if (!target.opaqueGrids?.length) return undefined;
-  return planFunder(change, chain, target) ?? planProjectLinks(change, item, chain[0], siblings);
+  return (
+    planFunder(change, chain, target) ??
+    planFunderList(change, chain) ??
+    planProjectLinks(change, item, chain[0], siblings)
+  );
 }
 
 /** Os ocultos das grades que a operação troca, ou o resultado sem envio. */
@@ -182,9 +198,13 @@ export async function projectGridValues(
   path: string,
   html: string,
   grids: readonly OpaqueGrid[],
-  op: { funder?: FunderEdit; links?: ProjectLinks },
+  op: ProjectGridEdits,
 ): Promise<{ values: Record<string, string> } | { detail: string; status: ResultStatus }> {
   if (op.links) return linkValues(html, grids, op.links);
+  if (op.funders) {
+    const list = await funderListValue(port, path, html, grids, op.funders);
+    return 'status' in list ? list : { values: { [list.field]: list.value } };
+  }
   if (!op.funder) return { values: {} };
   const funder = await funderValue(port, path, html, grids, op.funder);
   return 'status' in funder ? funder : { values: { [funder.field]: funder.value } };

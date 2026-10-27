@@ -977,3 +977,54 @@ describe('projeto: produções e orientações ligadas no Lattes simulado', () =
     expect(postsOf(lattes)).toHaveLength(posts);
   });
 });
+
+describe('projeto: incluir e tirar financiadores', () => {
+  const funders = (root: XElement) =>
+    childElements(projectOf(root, '3'), 'FINANCIADORES-DO-PROJETO')[0]!;
+
+  it('tirar deixa a linha de fora; incluir acha a instituição pela busca', async () => {
+    const lattes = await lattesFor();
+    const add = planAfter((root) =>
+      funders(root).children.push(
+        element('FINANCIADOR-DO-PROJETO', {
+          'CODIGO-INSTITUICAO': '',
+          NATUREZA: 'BOLSA',
+          'NOME-INSTITUICAO': 'Universidade de São Paulo',
+          'SEQUENCIA-FINANCIADOR': '2',
+        }),
+      ),
+    );
+    expect(add.unsupported).toEqual([]);
+    expect(add.ops[0]).toMatchObject({
+      funders: { add: [{ letter: 'B', name: 'Universidade de São Paulo' }], remove: [] },
+    });
+    expect(await applyOp(add.ops[0]!, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes).at(-1)!.fields.f_inst_l).toBe(
+      'V000100000001|0000;N;|026|10,00|A|@V000000000002|;N;|||B|@',
+    );
+    expect(
+      childElements(funders(lattes.state.root)).map((f) => getAttr(f, 'NOME-INSTITUICAO')),
+    ).toEqual(['Agência', 'Universidade de São Paulo']);
+
+    const remove = planAfter((root) => {
+      funders(root).children = [];
+      funders(root).children.push(element('FINANCIADOR-DO-PROJETO', {}));
+    });
+    expect(remove.ops[0]).toMatchObject({ funders: { remove: ['000100000001'] } });
+    expect(await applyOp(remove.ops[0]!, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes).at(-1)!.fields.f_inst_l).toBe('V000000000002|;N;|||B|@');
+  });
+
+  it('natureza fora da lista, sem instituição ou tirar todos: à mão', () => {
+    const reason = (attrs: Record<string, string>) =>
+      reasonOf((root) => funders(root).children.push(element('FINANCIADOR-DO-PROJETO', attrs)))[0];
+    expect(reason({ NATUREZA: 'NAO_INFORMADO', 'NOME-INSTITUICAO': 'X' })).toMatch(/o Lattes pede/);
+    expect(reason({ NATUREZA: 'BOLSA' })).toMatch(/sem a instituição/);
+    expect(
+      reasonOf((root) => {
+        const p = projectOf(root, '3');
+        p.children = p.children.filter((c) => c !== funders(root));
+      })[0],
+    ).toMatch(/um de cada vez/);
+  });
+});

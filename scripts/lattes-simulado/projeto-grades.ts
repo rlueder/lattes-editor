@@ -149,13 +149,15 @@ interface LinkGrid {
   values: (part: XElement) => string[];
 }
 
+/** O código do projeto e a moeda com o valor de cada financiador, como o POST os mandou. */
+const funderCells = new WeakMap<XElement, [string, string]>();
+
 const funderValues = (f: XElement) => [
   // A célula traz a letra da busca na frente do código (27/10/2026).
   getAttr(f, 'CODIGO-INSTITUICAO') ? `V${getAttr(f, 'CODIGO-INSTITUICAO')}` : '',
-  // A exportação não traz o valor nem a moeda: o simulado repete os da linha
-  // observada, cujo sentido não foi lido.
-  '0000;N;',
-  '026|10,00',
+  // A exportação não traz o valor nem a moeda: o simulado guarda os do envio
+  // ou repete os da linha observada.
+  ...(funderCells.get(f) ?? ['0000;N;', '026|10,00']),
   FUNDER_NATURE[getAttr(f, 'NATUREZA') ?? '']?.[0] ?? '',
 ];
 
@@ -248,6 +250,17 @@ function renatured(
   const nature = Object.entries(FUNDER_NATURE).find(([, [letter]]) => letter === cells.at(-2));
   const institution = institutionsOf(state).find((i) => i.code === cells[0]);
   const funder = parts[index];
+  // Uma linha a mais que as do projeto: um financiador novo, da busca (inferido).
+  if (!funder && nature && institution) {
+    const created = element('FINANCIADOR-DO-PROJETO', {
+      'CODIGO-INSTITUICAO': institution.code.slice(1),
+      NATUREZA: nature[0],
+      'NOME-INSTITUICAO': institution.name,
+    });
+    // As células do meio: o código do projeto e a moeda com o valor ("…|;N;||B|").
+    funderCells.set(created, [cells[1] ?? '', cells.slice(2, -2).join('|')]);
+    return created;
+  }
   const same = funder && funderValues(funder)[0] === cells[0];
   if (!funder || !nature || (!same && !institution)) return undefined;
   setAttr(funder, 'NATUREZA', nature[0]);
@@ -301,12 +314,10 @@ export function applyProjectLinks(state: LattesState, projeto: XElement, req: Si
       if (part) kept.push(part);
     }
     const container = childElements(projeto, grid.container)[0];
-    if (!container) continue;
     if (kept.length === 0) {
-      projeto.children = projeto.children.filter((c) => c !== container);
-    } else {
-      container.children = kept;
-    }
+      if (container) projeto.children = projeto.children.filter((c) => c !== container);
+    } else if (container) container.children = kept;
+    else insertInSchemaOrder(lattesSchema, projeto, element(grid.container, {}, kept));
   }
 }
 

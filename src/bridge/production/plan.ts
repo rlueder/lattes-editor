@@ -10,7 +10,6 @@ import { lattesSchema } from '../../schema/lattes.ts';
 import { areaLabel, type AreaRow } from '../areas-atuacao.ts';
 import type { BridgeOp, OpBase } from '../plan.ts';
 import { fieldsLeft } from './fields-left.ts';
-import type { FunderEdit } from './financiador.ts';
 import { AUTHOR_PART, authorsOf, type AuthorSpec, MAX_KEYWORDS } from './grids.ts';
 import { holderField, withoutHolderCopies } from './holders.ts';
 import {
@@ -25,7 +24,7 @@ import { planMembers } from './members.ts';
 import { planNatureSwap } from './nature.ts';
 import { opaqueReason } from './opaque.ts';
 import { isOrganChange, type OrganChoice, planOrgan } from './organ.ts';
-import { planProjectEdit, type ProjectLinks } from './project-links.ts';
+import { planProjectEdit, type ProjectGridEdits } from './project-links.ts';
 import { PRODUCTION_TARGETS } from './targets/index.ts';
 import type { AuthorPart, FieldMap, ProductionTarget } from './types.ts';
 
@@ -57,13 +56,12 @@ export interface ProductionRow {
   name: string;
 }
 
-export interface ProductionOp extends OpBase {
+/** A operação; os financiadores e as ligações de um projeto vêm de ProjectGridEdits. */
+export interface ProductionOp extends OpBase, ProjectGridEdits {
   /** Áreas do conhecimento antes e depois, quando a mudança é delas (item-lists.ts). */
   areas?: AreaList;
   /** Autores antes e depois, na ordem, quando a mudança é deles. */
   authors?: { after: AuthorSpec[]; before: AuthorSpec[] };
-  /** A natureza de um financiador do projeto, na linha dele da grade (financiador.ts). */
-  funder?: FunderEdit;
   /**
    * O depositante ou titular pessoa antes e depois (ProductionTarget.holders),
    * quando a mudança é dele: um nome só, ou vazio.
@@ -80,8 +78,6 @@ export interface ProductionOp extends OpBase {
   /** Palavras-chave antes e depois, na ordem, quando a mudança é delas. */
   keywords?: { after: string[]; before: string[] };
   kind: 'producao';
-  /** As produções e orientações ligadas ao projeto (project-links.ts). */
-  links?: ProjectLinks;
   /** Parâmetros da lista que saem do item (ProductionTarget.list.paramsBy), com os valores de antes. */
   listParams?: Record<string, string>;
   /** Instituição, curso e agência escolhidos pelas buscas, resolvidos na hora de gravar. */
