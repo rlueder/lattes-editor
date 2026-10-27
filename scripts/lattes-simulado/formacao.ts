@@ -407,6 +407,8 @@ function post(req: SimRequest, state: LattesState): SimResponse {
     const el = element(name, { NIVEL: nivel, 'SEQUENCIA-FORMACAO': seq });
     applyFields(levelBindings(bindings(state, {}), name), el, req);
     insertInSchemaOrder(lattesSchema, container, el);
+    // As grades da inclusão, como as da alteração (inferido).
+    applyFormationGrids(el, req);
     state.touch();
     return html(back);
   }

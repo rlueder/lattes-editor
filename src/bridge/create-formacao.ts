@@ -10,6 +10,13 @@ import { getAttr, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
 import type { FormSpec } from './contract.ts';
 import { institutionResults } from './create.ts';
+import {
+  GRID_PARTS,
+  newGridPairs,
+  newGridProblems,
+  type NewItemGrids,
+  newItemGrids,
+} from './create-grids.ts';
 import { CREATE_FIELD_LABELS } from './create-labels.ts';
 import {
   absentFields,
@@ -46,6 +53,8 @@ export interface CreateFormacaoOp extends CreateOpBase {
   agencyCode?: string;
   /** CODIGO-CURSO do XML, nos níveis que têm curso. */
   courseCode?: string;
+  /** Palavras-chave, áreas e setores, nas grades do formulário (create-grids.ts). */
+  grids?: NewItemGrids;
   kind: 'criar-formacao';
   /** f_nivel do formulário: 4 doutorado, 3 mestrado… */
   level: string;
@@ -156,10 +165,14 @@ export function planCreateFormacao(
   }
   if (agencyCode && bolsa !== 'SIM') return { reason: 'Agência informada sem bolsa' };
   if (bolsa === 'SIM' && !agencyCode) return { reason: 'Bolsa sem a agência do Lattes' };
-  const filled = filledChildren(el);
+  const filled = filledChildren(el, [...GRID_PARTS]);
   if (filled.length > 0) {
-    return { reason: 'Palavras-chave, áreas e setores da formação ainda vão à mão' };
+    return {
+      reason: `Partes que o formulário de formação não tem: ${filled.map((c) => c.name).join(', ')}`,
+    };
   }
+  const grids = newItemGrids(el);
+  if (grids && 'reason' in grids) return grids;
   const { missing, set, wrong } = mapAttrs(change, el, FORMATION_FIELDS, FORMATION_HANDLED);
   const reason = reasonFrom(missing, wrong);
   if (reason) return { reason };
@@ -177,6 +190,7 @@ export function planCreateFormacao(
     agencyCode,
     courseCode,
     expect: {},
+    ...(grids ? { grids } : {}),
     institutionCode,
     institutionName,
     key: change.key,
@@ -383,9 +397,12 @@ export async function applyCreateFormacao(op: CreateFormacaoOp, port: LattesPort
     const set = { ...typed, ...lookups };
     const limit = overLimit(form.controls, set);
     if (limit) return result('erro', limit);
+    // As grades: as palavras novas e as áreas e setores das listas do menu.
+    const grids = op.grids ? newGridPairs(op.grids, menu) : { set: {} };
+    if ('detail' in grids) return result('erro', grids.detail);
     const response = await port.post(
       CREATE_FORMACAO_SPEC.action,
-      encodeLatin1Form(setPairs(form.pairs, set)),
+      encodeLatin1Form(setPairs(form.pairs, { ...set, ...grids.set })),
     );
     if (isLogonPage(response)) return result('sessao', SESSION);
 
@@ -411,6 +428,9 @@ export async function applyCreateFormacao(op: CreateFormacaoOp, port: LattesPort
       const check = readBack(savedCourseName(saved), withCourseName(set));
       if (!sameCode(formationInstitution(saved.pairs), op.institutionCode)) {
         check.differ.push('Instituição');
+      }
+      if (op.grids) {
+        check.differ.push(...newGridProblems(await getChecked(port, created[0]!.path), op.grids));
       }
       const problem = readBackProblem(`Criada no Lattes (formação ${seq})`, check);
       if (problem) return { ...result('divergente', problem), assigned };

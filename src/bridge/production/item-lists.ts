@@ -84,6 +84,26 @@ export function planAreaList(change: Change, item: XElement): AreaList | { reaso
   return { after: after.filter(filled), before: before.filter(filled) };
 }
 
+/**
+ * As áreas e os setores de um item, como o XML os tem agora: as áreas nas
+ * posições 1 a 3, sem as vazias; o motivo, quando uma área tem só a grande área.
+ */
+export function itemAreasAndSetores(
+  item: XElement,
+): { areas: AreaRow[]; setores: string[] } | { reason: string } {
+  const container = childElements(item, 'AREAS-DO-CONHECIMENTO')[0];
+  const areas = AREA_SLOTS.map((name) => {
+    const el = container && childElements(container, name)[0];
+    return rowOf((a) => (el ? (getAttr(el, a) ?? '') : ''));
+  });
+  if (areas.some((r) => r.bigArea && !r.area)) {
+    return { reason: 'Área do conhecimento sem área: o Lattes não aceita só a grande área' };
+  }
+  const setor = childElements(item, 'SETORES-DE-ATIVIDADE')[0];
+  const setores = SETOR_ATTRS.map((a) => (setor ? (getAttr(setor, a) ?? '').trim() : ''));
+  return { areas: areas.filter(filled), setores: setores.filter(Boolean) };
+}
+
 /** Os setores antes e depois desta mudança. */
 export function planSetorList(change: Change, el: XElement): LabelList {
   const now = SETOR_ATTRS.map((a) => (change.kind === 'removido' ? '' : (getAttr(el, a) ?? '')));

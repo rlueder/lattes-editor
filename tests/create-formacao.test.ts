@@ -137,9 +137,17 @@ describe('planejar a inclusão de uma formação', () => {
     expect(reason(`${base} FLAG-BOLSA="SIM" NOME-AGENCIA="CNPq"`)).toMatch(/lista de agências/);
     expect(reason(`${base} CODIGO-AGENCIA-FINANCIADORA="1"`)).toMatch(/sem bolsa/);
     expect(reason(`${base} FLAG-BOLSA="SIM"`)).toMatch(/Bolsa sem a agência/);
-    expect(reason(base, 'MESTRADO', '<PALAVRAS-CHAVE PALAVRA-CHAVE-1="genética"/>')).toMatch(
-      /Palavras-chave/,
-    );
+    // As palavras-chave vão nas grades da inclusão (create-grids.ts).
+    expect(plan(base, 'MESTRADO', '<PALAVRAS-CHAVE PALAVRA-CHAVE-1="genética"/>')).toMatchObject({
+      grids: { areas: [], keywords: ['genética'], setores: [] },
+    });
+    expect(
+      reason(
+        base,
+        'MESTRADO',
+        '<AREAS-DO-CONHECIMENTO><AREA-DO-CONHECIMENTO-1 NOME-GRANDE-AREA-DO-CONHECIMENTO="X"/></AREAS-DO-CONHECIMENTO>',
+      ),
+    ).toMatch(/só a grande área/);
     expect(reason(`${base} NOME-ORGAO="Instituto de Biociências"`)).toMatch(
       /não tem: rótulo de NOME-ORGAO/,
     );

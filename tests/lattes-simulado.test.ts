@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { DEMO_XML } from '../scripts/lattes-simulado/estado.ts';
+import { storedGrids } from '../scripts/lattes-simulado/grades.ts';
 import {
   DONE_MESSAGE,
   DTD_ALERT,
@@ -305,21 +306,38 @@ describe('Lattes simulado: o conector de ponta a ponta', () => {
 
     const plan = await planEdits((doc) => {
       find(doc.root, (el) => el.name === 'FORMACAO-ACADEMICA-TITULACAO').children.push(
-        element('MESTRADO', {
-          'ANO-DE-INICIO': '2024',
-          'CODIGO-AGENCIA-FINANCIADORA': '000000000002',
-          'CODIGO-CURSO': '00000004',
-          'CODIGO-INSTITUICAO': '000000000003',
-          'FLAG-BOLSA': 'SIM',
-          NIVEL: '3',
-          'NOME-AGENCIA': 'Coordenação de Aperfeiçoamento de Pessoal de Nível Superior',
-          'NOME-COMPLETO-DO-ORIENTADOR': 'Orientadora de Teste',
-          'NOME-CURSO': 'Genética e Biologia Molecular',
-          'NOME-INSTITUICAO': 'Universidade Estadual de Campinas',
-          'SEQUENCIA-FORMACAO': '9',
-          'STATUS-DO-CURSO': 'EM_ANDAMENTO',
-          'TITULO-DA-DISSERTACAO-TESE': 'Genômica de populações de Butia',
-        }),
+        element(
+          'MESTRADO',
+          {
+            'ANO-DE-INICIO': '2024',
+            'CODIGO-AGENCIA-FINANCIADORA': '000000000002',
+            'CODIGO-CURSO': '00000004',
+            'CODIGO-INSTITUICAO': '000000000003',
+            'FLAG-BOLSA': 'SIM',
+            NIVEL: '3',
+            'NOME-AGENCIA': 'Coordenação de Aperfeiçoamento de Pessoal de Nível Superior',
+            'NOME-COMPLETO-DO-ORIENTADOR': 'Orientadora de Teste',
+            'NOME-CURSO': 'Genética e Biologia Molecular',
+            'NOME-INSTITUICAO': 'Universidade Estadual de Campinas',
+            'SEQUENCIA-FORMACAO': '9',
+            'STATUS-DO-CURSO': 'EM_ANDAMENTO',
+            'TITULO-DA-DISSERTACAO-TESE': 'Genômica de populações de Butia',
+          },
+          [
+            // As grades da inclusão (create-grids.ts): palavras novas, área e setor das listas do menu.
+            element('PALAVRAS-CHAVE', {
+              'PALAVRA-CHAVE-1': 'palmeiras',
+              'PALAVRA-CHAVE-2': 'genômica',
+            }),
+            element('AREAS-DO-CONHECIMENTO', {}, [
+              element('AREA-DO-CONHECIMENTO-1', {
+                'NOME-DA-AREA-DO-CONHECIMENTO': 'Genética',
+                'NOME-GRANDE-AREA-DO-CONHECIMENTO': 'CIENCIAS_BIOLOGICAS',
+              }),
+            ]),
+            element('SETORES-DE-ATIVIDADE', { 'SETOR-DE-ATIVIDADE-1': 'Alimentação' }),
+          ],
+        ),
       );
       const unicamp = find(
         doc.root,
@@ -382,6 +400,20 @@ describe('Lattes simulado: o conector de ponta a ponta', () => {
         ['TITULO-DA-DISSERTACAO-TESE', 'Genômica de populações de Butia'],
       ]),
     );
+    const plv = childElements(mestrado, 'PALAVRAS-CHAVE')[0]!;
+    expect([getAttr(plv, 'PALAVRA-CHAVE-1'), getAttr(plv, 'PALAVRA-CHAVE-2')]).toEqual([
+      'palmeiras',
+      'genômica',
+    ]);
+    // Áreas e setores ficam guardados à parte no simulado, com o código das listas do menu.
+    const saved = find(
+      lattes.state.root,
+      (el) => el.name === 'MESTRADO' && getAttr(el, 'SEQUENCIA-FORMACAO') === '5',
+    );
+    expect(storedGrids(saved)).toMatchObject({
+      areas: [{ c: '20200005', l: 'Genética' }],
+      setores: [{ c: '420228', l: 'Alimentação' }],
+    });
     const projeto = find(
       doc.root,
       (el) => el.name === 'PROJETO-DE-PESQUISA' && getAttr(el, 'SEQUENCIA-PROJETO') === '2',
