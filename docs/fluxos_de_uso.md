@@ -71,7 +71,10 @@ Já tem um currículo grande; acrescenta poucas produções e corrige detalhes.
 1. Abre o app, que já tem a versão do mês passado. "Recarregar do Lattes"
    traz a de agora e diz, numa faixa, quantos itens são novos, alterados e
    removidos, inclusive o que foi editado direto no Lattes; "Versões do
-   Lattes", no ⚙, mostra o detalhe de cada exportação.
+   Lattes", no ⚙, mostra o detalhe de cada exportação. Se o Lattes acabou de
+   publicar e o Exportar ainda entrega o arquivo antigo, o sino avisa e
+   oferece "Atualizar do Lattes", que lê pelos formulários as produções
+   novas ou com outro título.
 2. Acrescenta produções pelo DOI e ajusta o que precisa.
 3. Manda, confere a faixa e publica.
 

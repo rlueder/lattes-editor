@@ -12,6 +12,7 @@ import { type EditFn, ElementView } from './ElementView.tsx';
 import { applyFilter, recordSearchText, type SectionFilter } from './facets.ts';
 import { ChevronIcon } from './icons.tsx';
 import { JumpBar } from './JumpBar.tsx';
+import { formReadNote } from './lattes-refresh.ts';
 import { type CardInfo, elementKey, type ListView, type Usage, yearView } from './list-view.ts';
 import { groupUsages } from './reference-tables.ts';
 
@@ -112,13 +113,15 @@ function ItemCard({
   showEmpty: boolean;
   showKind: boolean;
 }) {
-  const { loadedMax, openItem, root } = useEditor();
+  const { formRead, loadedMax, openItem, root } = useEditor();
   // Ids dos títulos de subseção, para o índice do item no painel lateral.
   const outlineBase = useId();
   const seq = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
   // Novo também quando vai pela lista de alterações (inclusão pelo conector).
   const isNew = isNewProduction(el, loadedMax);
   const byChanges = goesByChanges(el, loadedMax, undefined, root);
+  // Lido dos formulários do Lattes, e não da exportação (form-read.ts).
+  const read = formRead?.get(getAttr(el, SEQ_ATTR) ?? '');
   return (
     <details className={isNew ? 'item card is-new' : 'item card'}>
       <summary>
@@ -126,6 +129,11 @@ function ItemCard({
           {showKind && <span className="item-kind">{elementLabel(el.name)}</span>}
           <span className="card-title">
             {isNew && <span className="tag new">novo</span>}
+            {read && (
+              <span className="tag warn" title={formReadNote(read)}>
+                lido do Lattes
+              </span>
+            )}
             {info.title || elementLabel(el.name)}
           </span>
           {info.subtitle && <span className="card-subtitle">{info.subtitle}</span>}

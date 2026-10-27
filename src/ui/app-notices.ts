@@ -7,7 +7,7 @@ import type { SentEntry } from '../bridge/sent-log.ts';
 import type { UpdateState } from '../desktop/update.ts';
 import { storageStatus } from '../model/store.ts';
 import { type ReloadFailure, reloadNotice } from './lattes-reload.ts';
-import { connectionOf, noticesFor, staleExportNotice } from './notifications.ts';
+import { connectionOf, type Notice, noticesFor, staleExportNotice } from './notifications.ts';
 import { statusStrip } from './status-strip.ts';
 
 /** A faixa do cabeçalho: alterações do editor, mais o que o conector sabe do Lattes. */
@@ -25,13 +25,16 @@ export function noticesOf(
   devExtensionFolder?: string,
   reloadFailure?: ReloadFailure,
   exported?: string,
+  /** "Atualizar do Lattes": se a extensão sabe, e o resultado que fica no sino. */
+  refresh?: { available: boolean; notice?: Notice },
 ) {
   return noticesFor({
     appVersion: __APP_VERSION__,
     connection: connectionOf(bridge.link, Boolean(bridge.lattes)),
     devExtensionFolder,
+    refresh: refresh?.notice,
     reload: reloadFailure && reloadNotice(reloadFailure),
-    stale: staleExportNotice(exported, bridge.lattes?.lastPublished),
+    stale: staleExportNotice(exported, bridge.lattes?.lastPublished, refresh?.available),
     storage: storageStatus().status,
     unknownPending: stripFor(0, bridge).segments.some((x) => x.kind === 'pendencia-desconhecida'),
     update,

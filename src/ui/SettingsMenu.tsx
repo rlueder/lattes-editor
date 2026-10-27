@@ -40,6 +40,8 @@ interface FileActions {
   /** Trazer produções de outro XML, com o pré-diff contra o currículo (LAT-45). */
   onIncoming: () => void;
   onPrint: () => void;
+  /** "Atualizar do Lattes" pelos formulários; ausente sem a extensão que sabe. */
+  onRefresh?: () => void;
   onReload: () => void;
   onSave: () => void;
   /** Versões do Lattes: o que mudou entre as exportações guardadas. */
@@ -213,6 +215,14 @@ export function SettingsMenu({ file, focus, onTheme, theme }: Props) {
                 </span>
                 <span className="menu-label">Recarregar do Lattes…</span>
               </Menu.Item>
+              {file?.onRefresh && (
+                <Menu.Item className="menu-item" onClick={() => file.onRefresh?.()}>
+                  <span className="menu-icon">
+                    <DownloadIcon />
+                  </span>
+                  <span className="menu-label">Atualizar do Lattes</span>
+                </Menu.Item>
+              )}
               <Menu.Item className="menu-item" disabled={!file} onClick={() => file?.onHistory()}>
                 <span className="menu-icon">
                   <HistoryIcon />

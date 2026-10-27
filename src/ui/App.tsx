@@ -52,6 +52,7 @@ import { useFocusShell } from './use-focus-mode.ts';
 import { useFormLacksFor } from './use-form-lacks.ts';
 import { useHistoryDialog } from './use-history-dialog.ts';
 import { useLattesOpen } from './use-lattes-open.ts';
+import { useLattesRefresh } from './use-lattes-refresh.ts';
 import { useLattesReload } from './use-lattes-reload.ts';
 import { useFollowHash, useNavigate, useScrollToPendingAnchor } from './use-navigate.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
@@ -201,6 +202,7 @@ export function App() {
     openFile,
   );
   const lattesReload = useLattesReload(bridge, cvId(session), (f) => reload(f, 'conector'));
+  const refresh = useLattesRefresh(bridge.features, session, setSession, onEdit);
 
   const closePalette = useCallback(() => setPaletteOpen(false), []);
   const history = useHistoryDialog(session, (doc, note) => {
@@ -262,7 +264,7 @@ export function App() {
       {TEST_ITEMS_ON && <TestItemsPanel />}
       <Topbar
         ref={topbarRef}
-        busy={lattesReload.busy ? 'Recarregando do Lattes' : undefined}
+        busy={busyLabel(lattesReload.busy, refresh.busy)}
         focus={focusShell.menuItem}
         modified={modified}
         notices={noticesOf(
@@ -271,6 +273,7 @@ export function App() {
           devExtensionFolder,
           lattesReload.failure,
           getAttr(session.doc.root, 'DATA-ATUALIZACAO'),
+          refresh,
         )}
         pendingCount={production.pending.length + changes.open}
         saveState={saveState}
@@ -283,6 +286,7 @@ export function App() {
         onNewItem={() => openPicker()}
         onPalette={togglePalette}
         onPrint={print.show}
+        onRefreshFromLattes={refresh.available ? refresh.start : undefined}
         onReload={(file) => reload(file, 'arquivo')}
         onReloadFromLattes={lattesReload.available ? lattesReload.start : undefined}
         onSave={() =>
@@ -306,13 +310,7 @@ export function App() {
       {photoChange.dialog}
 
       <main className="content">
-        <EditorContext.Provider
-          value={{
-            loadedMax: production.loadedMax,
-            openItem: production.openItem,
-            root: session?.doc.root,
-          }}
-        >
+        <EditorContext.Provider value={{ ...production.editor, root: session?.doc.root }}>
           <ReferenceContext.Provider value={referenceIndex ?? EMPTY_INDEX}>
             {versions.banner}
             <PendingBanner
@@ -427,6 +425,10 @@ export function App() {
     </ShellWithLists>
   );
 }
+
+/** A barra fina do cabeçalho: recarregando ou atualizando do Lattes. */
+const busyLabel = (reloading: boolean, refreshing: boolean) =>
+  reloading ? 'Recarregando do Lattes' : refreshing ? 'Atualizando do Lattes' : undefined;
 
 /** O NUMERO-IDENTIFICADOR do currículo aberto. */
 function cvId(session: Session | null): string | undefined {

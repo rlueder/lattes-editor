@@ -72,6 +72,14 @@ obrigatórios, valores fora das listas do Lattes, anos, autores, DOI, ISSN,
 duplicatas e vínculos antigos ainda marcados como atuais. Só aponta; nada muda
 sem você.
 
+Logo depois de "Enviar ao CNPq", o Exportar do Lattes ainda entrega a versão
+anterior por mais de uma hora. Nesse intervalo, "Atualizar do Lattes", no ⚙
+ou no aviso do sino, lê pelas listas e pelos formulários do Lattes, só
+lendo, as produções novas ou com outro título, e elas aparecem com a
+etiqueta "lido do Lattes" até a próxima exportação. Eventos, prêmios,
+formação, atuação, projetos, patentes e registros ainda não são lidos assim;
+o aviso diz quantas linhas ficaram de fora.
+
 Cada exportação aberta vira uma versão, e o app diz o que mudou desde a
 anterior, inclusive o que foi editado direto no Lattes. A primeira exportação
 de cada currículo e uma cópia antes de cada envio ficam em

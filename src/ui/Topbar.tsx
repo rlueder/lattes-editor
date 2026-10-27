@@ -57,7 +57,7 @@ function HistoryButtons() {
 }
 
 interface Props {
-  /** Uma leitura do Lattes em andamento ("Recarregar do Lattes"): a barra fina embaixo. */
+  /** Uma leitura do Lattes em andamento (recarregar ou atualizar): a barra fina embaixo. */
   busy?: string;
   /** Modo foco (com ?leitura): estado, atalho e troca, para o ⚙. */
   focus?: { label: string; on: boolean; toggle: () => void };
@@ -79,6 +79,11 @@ interface Props {
   onNewItem: () => void;
   onPalette: () => void;
   onPrint: () => void;
+  /**
+   * "Atualizar do Lattes": lê pelos formulários as produções que mudaram
+   * desde a exportação (use-lattes-refresh.ts); só com a extensão que sabe.
+   */
+  onRefreshFromLattes?: () => void;
   onReload: (file: File) => void;
   /**
    * Com a extensão sabendo exportar, "Recarregar do Lattes…" pede o ZIP pela
@@ -116,6 +121,7 @@ export function Topbar({
   onNewItem,
   onPalette,
   onPrint,
+  onRefreshFromLattes,
   onReload,
   onReloadFromLattes,
   onSave,
@@ -210,6 +216,7 @@ export function Topbar({
         <NotificationsMenu
           notices={notices}
           onDiagnosis={onDiagnosis}
+          onRefresh={onRefreshFromLattes}
           onReloadFile={pickReloadFile}
         />
 
@@ -225,6 +232,7 @@ export function Topbar({
               else incomingInput.current?.click();
             },
             onPrint,
+            onRefresh: onRefreshFromLattes,
             onReload: onReloadFromLattes ?? pickReloadFile,
             onSave,
             onVersions,

@@ -13,14 +13,24 @@ import { openStorageNotice } from './storage-notice-open.ts';
 export function NotificationsMenu({
   notices,
   onDiagnosis,
+  onRefresh,
   onReloadFile,
 }: {
   notices: Notice[];
   /** Alterações no Lattes que não passaram por aqui: abre o diagnóstico. */
   onDiagnosis?: () => void;
+  /** A exportação atrasada, ou a leitura que parou: "Atualizar do Lattes". */
+  onRefresh?: () => void;
   /** Recarregar pela extensão falhou: escolhe o arquivo exportado. */
   onReloadFile?: () => void;
 }) {
+  const handlers: Record<NonNullable<Notice['action']>, (() => void) | undefined> = {
+    armazenamento: openStorageNotice,
+    atualizacao: () => void installUpdate(),
+    'atualizar-lattes': onRefresh,
+    diagnostico: onDiagnosis,
+    'recarregar-arquivo': onReloadFile,
+  };
   const urgent = notices.some((n) => n.level === 'aviso');
   const label = notices.length ? `Notificações (${notices.length})` : 'Notificações';
   return (
@@ -42,15 +52,7 @@ export function NotificationsMenu({
                   <Menu.Item
                     key={n.id}
                     className={`menu-item notice ${n.level}`}
-                    onClick={
-                      n.action === 'armazenamento'
-                        ? openStorageNotice
-                        : n.action === 'diagnostico'
-                          ? onDiagnosis
-                          : n.action === 'recarregar-arquivo'
-                            ? onReloadFile
-                            : () => void installUpdate()
-                    }
+                    onClick={handlers[n.action]}
                   >
                     <NoticeBody notice={n} />
                   </Menu.Item>
