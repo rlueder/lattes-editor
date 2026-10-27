@@ -59,3 +59,29 @@ export const masterKind =
         : {}),
     };
   };
+
+/** A NATUREZA do XML da orientação de outra natureza (49). */
+const OTHER_NATURE = 'ORIENTACAO-DE-OUTRA-NATUREZA';
+
+/**
+ * O tipo da orientação de outra natureza (OUTRAS-ORIENTACOES-CONCLUIDAS@TIPO),
+ * pelo dominio() de pkg_orient.form lido em 27/10/2026: com a outra natureza
+ * marcada, a janela só oferece "Outro Tipo", e o atribui_ot() grava em
+ * f_dsc_outra (até 100 caracteres) o texto pedido num prompt(). As outras
+ * naturezas não têm tipo na página ("apenas para dissertação de mestrado e
+ * orientação de outra natureza"). Inferido: o TIPO do XML é esse texto.
+ */
+export function otherKind(change: Change, el: XElement): PartFieldsResult {
+  const f = change.fields.find((x) => x.attr === 'TIPO');
+  if (!f) return { fields: {} };
+  const nature = change.fields.find((x) => x.attr === 'NATUREZA');
+  // A troca da natureza limpa f_dsc_outra (testa_nivel()).
+  if (nature && nature.before !== nature.after) {
+    return { reason: 'Tipo: troque a natureza num envio e o tipo em outro' };
+  }
+  if ((getAttr(el, 'NATUREZA') ?? '') !== OTHER_NATURE) {
+    return { reason: 'Tipo: o Lattes só guarda o tipo na orientação de outra natureza' };
+  }
+  if (f.after.length > 100) return { reason: 'Tipo: o Lattes aceita até 100 caracteres' };
+  return { fields: { TIPO: 'f_dsc_outra' } };
+}

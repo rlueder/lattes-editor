@@ -30,7 +30,7 @@ import { BANCA_PARTICIPANTS } from '../grids.ts';
 import type { LookupSpec } from '../lookups.ts';
 import { byTable, country, language, yesNo } from '../mappers.ts';
 import type { FieldMap, GridField, ProductionTarget } from '../types.ts';
-import { masterKind } from './orientacao-tipo.ts';
+import { masterKind, otherKind } from './orientacao-tipo.ts';
 
 /**
  * Nível da lista de cursos pela natureza, como o retnivel() de cada página
@@ -266,7 +266,9 @@ function orientation(o: Orientation, done: boolean): ProductionTarget {
     nature: { field: 'F_COD_PROD', values: o.nature },
     ...(['41', 'A41'].includes(o.nature[0]!)
       ? { partFields: { [o.basics]: masterKind(done) } }
-      : {}),
+      : o.natures
+        ? { partFields: { [o.basics]: otherKind } }
+        : {}),
     // testa_nivel(): f_dsc_outra sempre, e f_sub_prod, que segue a natureza
     // (lido em 20/10/2026); a outra natureza pede a janela do subtipo.
     ...(o.natures

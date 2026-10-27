@@ -2639,8 +2639,10 @@ versionados. **Observado**, menos onde está marcado.
   29 Acadêmico e 30 Profissional nas concluídas, 36 e 37 nas em andamento; o
   `atribui()` grava o código em `f_sub_prod` e o rótulo em `f_dsc_outra`. A
   outra natureza abre "Outro Tipo" e pede o texto num `prompt()`, que vai em
-  `f_dsc_outra`. **Inferido:** `ACADEMICO` e `PROFISSIONALIZANTE` pelos
-  rótulos.
+  `f_dsc_outra`; as outras naturezas não têm tipo. **Inferido:** `ACADEMICO` e
+  `PROFISSIONALIZANTE` pelos rótulos, e que o `TIPO` das outras orientações
+  concluídas seja o texto de `f_dsc_outra`, que o conector manda só na outra
+  natureza (lido de novo em 27/10/2026).
 - **Banca de trabalho** (`PKG_BANCA_TRAB.form`). O `testa_nivel()` da banca
   limpa só a instituição e o curso (com confirmação); o `check()` aceita
   `f_sub_prod` só no mestrado. Um script move um dos rádios de natureza na

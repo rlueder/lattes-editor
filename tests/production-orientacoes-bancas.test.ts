@@ -34,6 +34,7 @@ const XML = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS NOME-COMPLE
 <OUTRAS-ORIENTACOES-CONCLUIDAS SEQUENCIA-PRODUCAO="47"><DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NATUREZA="TRABALHO_DE_CONCLUSAO_DE_CURSO_GRADUACAO" TITULO="Trabalho de Exemplo" ANO="2020" PAIS="Brasil" IDIOMA="Português" FLAG-RELEVANCIA="NAO"/><DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NOME-DO-ORIENTADO="Formanda de Exemplo" CODIGO-INSTITUICAO="000000000001" NOME-DA-INSTITUICAO="Universidade Federal do Rio Grande do Sul" CODIGO-CURSO="00000001" NOME-DO-CURSO="Genética e Biologia Molecular" FLAG-BOLSA="NAO"/></OUTRAS-ORIENTACOES-CONCLUIDAS>
 <OUTRAS-ORIENTACOES-CONCLUIDAS SEQUENCIA-PRODUCAO="48"><DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NATUREZA="MONOGRAFIA_DE_CONCLUSAO_DE_CURSO_APERFEICOAMENTO_E_ESPECIALIZACAO" TITULO="Monografia de Exemplo" ANO="2020" PAIS="Brasil" IDIOMA="Português" FLAG-RELEVANCIA="NAO"/><DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NOME-DO-ORIENTADO="Especialista de Exemplo" CODIGO-INSTITUICAO="000000000001" NOME-DA-INSTITUICAO="Universidade Federal do Rio Grande do Sul" CODIGO-CURSO="00000005" NOME-DO-CURSO="Especialização em Genética" FLAG-BOLSA="NAO"/></OUTRAS-ORIENTACOES-CONCLUIDAS>
 <OUTRAS-ORIENTACOES-CONCLUIDAS SEQUENCIA-PRODUCAO="49"><DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NATUREZA="TRABALHO_DE_CONCLUSAO_DE_CURSO_GRADUACAO" TITULO="Graduação de Exemplo" ANO="2021" PAIS="Brasil" IDIOMA="Português" FLAG-RELEVANCIA="NAO"/><DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NOME-DO-ORIENTADO="Formando de Exemplo" CODIGO-INSTITUICAO="000000000001" NOME-DA-INSTITUICAO="Universidade Federal do Rio Grande do Sul" CODIGO-CURSO="00000005" NOME-DO-CURSO="Especialização em Genética" FLAG-BOLSA="NAO"/></OUTRAS-ORIENTACOES-CONCLUIDAS>
+<OUTRAS-ORIENTACOES-CONCLUIDAS SEQUENCIA-PRODUCAO="50"><DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NATUREZA="ORIENTACAO-DE-OUTRA-NATUREZA" TIPO="Estágio" TITULO="Estágio de Exemplo" ANO="2022" PAIS="Brasil" IDIOMA="Português" FLAG-RELEVANCIA="NAO"/><DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NOME-DO-ORIENTADO="Estagiária de Exemplo" FLAG-BOLSA="NAO"/></OUTRAS-ORIENTACOES-CONCLUIDAS>
 </ORIENTACOES-CONCLUIDAS></OUTRA-PRODUCAO>
 <DADOS-COMPLEMENTARES>
 <ORIENTACOES-EM-ANDAMENTO><ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO SEQUENCIA-PRODUCAO="43"><DADOS-BASICOS-DA-ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO NATUREZA="Tese de doutorado" TITULO-DO-TRABALHO="Tese de Exemplo" ANO="2022" PAIS="Brasil" IDIOMA="Português"/><DETALHAMENTO-DA-ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO TIPO-DE-ORIENTACAO="ORIENTADOR_PRINCIPAL" NOME-DO-ORIENTANDO="Doutorando de Exemplo" FLAG-BOLSA="NAO"/></ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO></ORIENTACOES-EM-ANDAMENTO>
@@ -256,6 +257,38 @@ describe('tipo do mestrado (dominio() de pkg_orient.form, lido em 26/10/2026)', 
     const op = onlyOp(set('41', 'DADOS-BASICOS', { TIPO: 'PROFISSIONALIZANTE' }));
     expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
     expect(postsOf(lattes).at(-1)!.fields).toMatchObject({ f_sub_prod: '30' });
+  });
+});
+
+describe('tipo da orientação de outra natureza (dominio(), lido em 27/10/2026)', () => {
+  const kind = (seq: string, value: string) => set(seq, 'DADOS-BASICOS', { TIPO: value });
+
+  it('vai em f_dsc_outra, como o atribui_ot() grava', () => {
+    expect(onlyOp(kind('50', 'Monitoria'))).toMatchObject({
+      expect: { f_dsc_outra: 'Estágio' },
+      set: { f_dsc_outra: 'Monitoria' },
+    });
+  });
+
+  it('nas outras naturezas, e com a natureza trocada junto, fica à mão', () => {
+    expect(reasonOf(kind('42', 'Monitoria'))).toBe(
+      'Tipo: o Lattes só guarda o tipo na orientação de outra natureza',
+    );
+    expect(
+      reasonOf((root) => {
+        kind('50', 'Monitoria')(root);
+        set('50', 'DADOS-BASICOS', { NATUREZA: 'INICIACAO_CIENTIFICA' })(root);
+      }),
+    ).toContain('Tipo: troque a natureza num envio e o tipo em outro');
+    expect(reasonOf(kind('50', 'x'.repeat(101)))).toBe('Tipo: o Lattes aceita até 100 caracteres');
+  });
+
+  it('no Lattes simulado: grava e confere', async () => {
+    const lattes = await lattesFor();
+    expect(await applyOp(onlyOp(kind('50', 'Monitoria')), lattes.port)).toMatchObject({
+      status: 'conferido',
+    });
+    expect(getAttr(partOf(lattes.state.root, '50', 'DADOS-BASICOS'), 'TIPO')).toBe('Monitoria');
   });
 });
 

@@ -163,6 +163,17 @@ function swappedLead(work: XElement, member: XElement): boolean | undefined {
   return true;
 }
 
+/**
+ * Campos que o formulário do Lattes só tem com outro atributo do item num
+ * valor: elemento@atributo → [atributo, valor].
+ */
+const DEPENDS: Record<string, [string, string]> = {
+  'DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@TIPO': [
+    'NATUREZA',
+    'ORIENTACAO-DE-OUTRA-NATUREZA',
+  ],
+};
+
 type Stats = Map<string, { no: number; ok: number; reasons: Map<string, number> }>;
 
 /** Uma troca de teste: o campo (caminho e atributo), se virou envio e os motivos. */
@@ -205,17 +216,21 @@ function cover(raw: string, trials: Trial[] = []): Stats {
        * Planeja a troca do atributo para `value` (sem valor, a troca padrão).
        * Com `from`, o item parte desse valor em vez do que o exemplo tem.
        */
-      const attempt = (value?: string, from?: string) => {
+      const attempt = (value?: string, from?: string, setup?: (el: XElement) => void) => {
         // O ponto de partida é o exemplo; com `from`, uma cópia com o valor
         // novo e o que o editor muda junto (o mesmo applyLinkedAttrs), para
-        // não partir de um item que o editor não teria.
+        // não partir de um item que o editor não teria. `setup` muda outro
+        // atributo do item de partida (DEPENDS).
         let start = base;
-        if (from !== undefined) {
+        if (from !== undefined || setup) {
           start = parseXml(raw).root;
-          setAttr(flatten(start)[index]!, a.name, from);
-          applyLinkedAttrs(flatten(start)[index]!, a.name, start, a.value);
+          setup?.(flatten(start)[index]!);
+          if (from !== undefined) {
+            setAttr(flatten(start)[index]!, a.name, from);
+            applyLinkedAttrs(flatten(start)[index]!, a.name, start, a.value);
+          }
         }
-        const work = from === undefined ? parseXml(raw).root : structuredClone(start);
+        const work = from === undefined && !setup ? parseXml(raw).root : structuredClone(start);
         const target = flatten(work)[index]!;
         const attr = target.attrs.find((x) => x.name === a.name)!;
         let choices: string[] | undefined;
@@ -282,6 +297,13 @@ function cover(raw: string, trials: Trial[] = []): Stats {
           const next = attempt('41', '40');
           if (next?.ok) tried = next;
         }
+      }
+      // Um campo que o formulário só tem com outro valor no item (o tipo da
+      // orientação de outra natureza): parte de um item com esse valor.
+      const needs = DEPENDS[`${el.name}@${a.name}`];
+      if (!tried.ok && needs) {
+        const next = attempt(undefined, undefined, (t) => setAttr(t, needs[0], needs[1]));
+        if (next?.ok) tried = next;
       }
       const choices = tried.choices ?? [];
       if (
