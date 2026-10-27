@@ -231,6 +231,21 @@ function writeHistory(reg: XElement, item: XElement, xml: string): void {
   }
 }
 
+/** Os depositantes ou titulares do POST, pessoas e instituições. */
+export function applyRegistryHolders(item: XElement, req: SimRequest): void {
+  // l|c|t|staValidado: o check() escreve as chaves na ordem da linha do
+  // titularPessoaProvider ({l, c, t, …}); GRID_SPECS lista quais chaves
+  // vão, não a ordem (serializeGrid).
+  holdersOf(item).pessoa = rowsOf(req.get('f_depositante_pessoa_l') ?? '').map(
+    ([l = '', c = '', t = '']) => holderRow(l, t, c),
+  );
+  // l|c|tipoInst, na ordem da linha do seleciona().
+  holdersOf(item).inst = rowsOf(req.get('f_depositante_inst_l') ?? '').map(
+    ([l = '', c = '', letter = '']) => institutionRow(l, c, letter),
+  );
+  writeHolders(item);
+}
+
 /** Grava as grades do POST no item, como chegaram. */
 export function applyRegistryGrids(
   item: XElement,
@@ -238,19 +253,7 @@ export function applyRegistryGrids(
   { dates = false, withHolders = true } = {},
 ): void {
   applyGrids(item, req);
-  if (withHolders) {
-    // l|c|t|staValidado: o check() escreve as chaves na ordem da linha do
-    // titularPessoaProvider ({l, c, t, …}); GRID_SPECS lista quais chaves
-    // vão, não a ordem (serializeGrid).
-    holdersOf(item).pessoa = rowsOf(req.get('f_depositante_pessoa_l') ?? '').map(
-      ([l = '', c = '', t = '']) => holderRow(l, t, c),
-    );
-    // l|c|tipoInst, na ordem da linha do seleciona().
-    holdersOf(item).inst = rowsOf(req.get('f_depositante_inst_l') ?? '').map(
-      ([l = '', c = '', letter = '']) => institutionRow(l, c, letter),
-    );
-    writeHolders(item);
-  }
+  if (withHolders) applyRegistryHolders(item, req);
   if (dates) {
     const reg = registryOf(item);
     const xml = req.get('f_dados_grid_datas') ?? '';

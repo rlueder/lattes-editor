@@ -42,19 +42,19 @@ outro item.
 
 | Caminho hoje | Tipos | Editor cria |
 | ------------ | ----: | ----------: |
-| conector     |    40 |          40 |
+| conector     |    41 |          41 |
 | importar     |    60 |          60 |
-| nenhum       |    14 |          14 |
+| nenhum       |    13 |          13 |
 
-O editor cria todos os tipos. Os 14 sem caminho vão para "A enviar" com a
-rota "à mão", cada um com o motivo: a patente (o titular sai de um vetor do
-menu cuja forma ainda não foi lida), a formação complementar, a licença, as
+O editor cria todos os tipos. Os 13 sem caminho vão para "A enviar" com a
+rota "à mão", cada um com o motivo: a formação complementar, a licença, as
 áreas de atuação, a disciplina, o treinamento e a linha de pesquisa numa
 atividade que já existe, o financiador, a produção e a orientação de um
 projeto, e a participação em projeto (que nasce com o projeto). As nove
 naturezas de atividade vão pelo conector; as que não são o ensino levam o
 órgão escolhido na janela de órgãos da atividade (`create-cargo.ts`, atrás
-da capacidade `atividade-nova-orgao`).
+da capacidade `atividade-nova-orgao`). A patente vai com o depositante, pela
+mesma grade da alteração (`create-registro-extras.ts`).
 
 Os outros cinco registros (cultivar protegida, cultivar registrada, desenho
 industrial, marca e topografia de circuito) e a atividade
@@ -128,7 +128,7 @@ e treinamento são só um nome, que fica no texto do elemento.
 
 | Elemento                           | Item                             | Faz parte de | Editor cria | Caminho hoje | Formulário no censo | Captura | Endereço/ligação    |
 | ---------------------------------- | -------------------------------- | ------------ | ----------- | ------------ | ------------------- | ------- | ------------------- |
-| `PATENTE`                          | Patente                          |              | sim         | nenhum       | `patente`           | lido    | observado/observado |
+| `PATENTE`                          | Patente                          |              | sim         | conector     | `patente`           | lido    | observado/observado |
 | `CULTIVAR-PROTEGIDA`               | Cultivar protegida               |              | sim         | conector     | `registro-CP`       | lido    | observado/inferido  |
 | `CULTIVAR-REGISTRADA`              | Cultivar registrada              |              | sim         | conector     | `registro-CR`       | lido    | observado/inferido  |
 | `DESENHO-INDUSTRIAL`               | Desenho industrial               |              | sim         | conector     | `registro-DI`       | lido    | observado/inferido  |

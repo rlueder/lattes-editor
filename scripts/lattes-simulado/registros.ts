@@ -27,9 +27,14 @@ import {
   renderCensusForm,
   yesNo,
 } from './formulario-censo.ts';
+import { applyFormationGrids } from './grades.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
-import { applyRegistryGrids, registryGridScripts } from './registro-grades.ts';
+import {
+  applyRegistryGrids,
+  applyRegistryHolders,
+  registryGridScripts,
+} from './registro-grades.ts';
 import { html, type SimResponse } from './tipos.ts';
 
 const PATH = ['PRODUCAO-TECNICA'];
@@ -94,6 +99,16 @@ function links(tipo: string): Record<string, FieldLink> {
     out.f_ano = {
       attr: cultivar ? 'ANO-SOLICITACAO' : software ? 'ANO' : 'ANO-DESENVOLVIMENTO',
       under: BASICS,
+    };
+  }
+  // As informações adicionais (censo de 27/10/2026).
+  if (has('f_ref')) {
+    out.f_ref = { attr: 'DESCRICAO-INFORMACOES-ADICIONAIS', under: ['INFORMACOES-ADICIONAIS'] };
+  }
+  if (has('f_ref_en')) {
+    out.f_ref_en = {
+      attr: 'DESCRICAO-INFORMACOES-ADICIONAIS-INGLES',
+      under: ['INFORMACOES-ADICIONAIS'],
     };
   }
   if (has('f_plataforma')) out.f_plataforma = { attr: 'PLATAFORMA', under: DETAIL };
@@ -244,6 +259,9 @@ export function registroPost(req: SimRequest, state: LattesState, tipo: string):
     applyCensusForm(screen(tipo), item, req, state);
     writeAuthors(item, req.get('f_autores_l') ?? '');
     insertInSchemaOrder(lattesSchema, state.ensurePath(PATH), item);
+    // Palavras-chave, áreas, setores e depositantes, como na alteração (inferido).
+    applyFormationGrids(item, req);
+    if (HOLDER_TYPES.has(tipo)) applyRegistryHolders(item, req);
     state.touch();
     return html(back);
   }

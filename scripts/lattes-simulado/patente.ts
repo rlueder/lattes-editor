@@ -247,6 +247,8 @@ function post(req: SimRequest, state: LattesState): SimResponse {
     const item = element('PATENTE', { 'SEQUENCIA-PRODUCAO': String(state.nextProduction) });
     applyFields(bindings(state, {}), item, req);
     insertInSchemaOrder(lattesSchema, state.ensurePath(PATH), item);
+    // As grades, as datas e os depositantes, como na alteração (inferido).
+    applyRegistryGrids(item, req, { dates: true });
     state.touch();
     return html(back);
   }

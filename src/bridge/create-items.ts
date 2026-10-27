@@ -111,10 +111,10 @@ export const CONNECTOR_CREATES: ReadonlySet<string> = new Set([
   'ATUACAO-PROFISSIONAL',
   ...Object.keys(FORMATION_LEVELS),
   ...Object.keys(AP_LEVELS),
-  // Registros: a própria pessoa entra na grade de inventores pelo autorDP do
-  // menu (seção 22). A patente tem a operação (registroFields), mas o
-  // planejamento a manda à mão: o titular ainda não tem como ir.
-  ...Object.keys(REGISTRY_TYPES).filter((n) => n !== 'PATENTE'),
+  // Registros e patente: os autores pelo autorDP do menu (seção 22), e o
+  // depositante da patente pelo titularPessoaDP ou pela busca de titulares
+  // instituições (create-registro-extras.ts).
+  ...Object.keys(REGISTRY_TYPES),
   // O projeto, com o órgão escolhido na lista do Lattes (create-projeto.ts).
   'PROJETO-DE-PESQUISA',
   ...GENERAL_CREATES,
