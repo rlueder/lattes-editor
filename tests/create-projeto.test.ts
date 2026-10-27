@@ -120,9 +120,17 @@ describe('planejar a inclusão de um projeto', () => {
     );
     const other =
       '<EQUIPE-DO-PROJETO><INTEGRANTES-DO-PROJETO NOME-COMPLETO="Bruno" ORDEM-DE-INTEGRACAO="1"/></EQUIPE-DO-PROJETO>';
-    expect(reason(projeto(PROJETO, other))).toMatch(/Equipe além de você/);
+    expect(reason(projeto(PROJETO, other))).toMatch(/exige você na equipe/);
+    // Você e outro integrante: a equipe vai, pela lista de autores do menu (create-projeto-extras.ts).
     const two = `<EQUIPE-DO-PROJETO><INTEGRANTES-DO-PROJETO ${OWNER}/><INTEGRANTES-DO-PROJETO NOME-COMPLETO="Bruno"/></EQUIPE-DO-PROJETO>`;
-    expect(reason(projeto(PROJETO, two))).toMatch(/Equipe além de você/);
+    expect(planned(projeto(PROJETO, two))).toMatchObject({
+      extras: {
+        team: expect.arrayContaining([
+          expect.objectContaining({ owner: true }),
+          expect.objectContaining({ name: 'Bruno', owner: false }),
+        ]),
+      },
+    });
     const notOwner = OWNER.replace('1234567890123456', '9999999999999999');
     expect(
       reason(
@@ -131,7 +139,7 @@ describe('planejar a inclusão de um projeto', () => {
           `<EQUIPE-DO-PROJETO><INTEGRANTES-DO-PROJETO ${notOwner}/></EQUIPE-DO-PROJETO>`,
         ),
       ),
-    ).toMatch(/Equipe/);
+    ).toMatch(/exige você na equipe/);
     expect(
       reason(
         projeto(
@@ -139,7 +147,16 @@ describe('planejar a inclusão de um projeto', () => {
           '<FINANCIADORES-DO-PROJETO><FINANCIADOR-DO-PROJETO NOME-INSTITUICAO="CNPq"/></FINANCIADORES-DO-PROJETO>',
         ),
       ),
-    ).toMatch(/Financiadores/);
+    ).toMatch(/natureza que o Lattes não tem/);
+    // Com a natureza, o financiador vai na inclusão, pela busca (create-projeto-extras.ts).
+    expect(
+      planned(
+        projeto(
+          PROJETO,
+          '<FINANCIADORES-DO-PROJETO><FINANCIADOR-DO-PROJETO NOME-INSTITUICAO="CNPq" NATUREZA="BOLSA"/></FINANCIADORES-DO-PROJETO>',
+        ),
+      ),
+    ).toMatchObject({ extras: { funders: [{ letter: 'B', name: 'CNPq' }] } });
     // O que o formulário não tem fica fora, à vista, e o projeto vai.
     expect(
       planned(projeto(PROJETO.replace('IDENTIFICADOR-PROJETO=""', 'IDENTIFICADOR-PROJETO="X1"'))),

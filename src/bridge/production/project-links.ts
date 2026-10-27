@@ -44,7 +44,7 @@ export interface ProjectLinks {
 type Grid = 'orientacoes' | 'producoes';
 
 /** A grade de um código: a de orientações quando o item com esse número é uma orientação. */
-function gridOf(root: XElement, code: string): Grid | undefined {
+export function gridOf(root: XElement, code: string): Grid | undefined {
   let name: string | undefined;
   walk(root, (el) => {
     if (!name && getAttr(el, 'SEQUENCIA-PRODUCAO') === code && el.name !== LINK) name = el.name;

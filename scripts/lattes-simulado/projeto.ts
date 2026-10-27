@@ -325,6 +325,15 @@ function post(req: SimRequest, state: LattesState): SimResponse {
     );
     const atividades = state.ensure(atuacao, 'ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO');
     insertInSchemaOrder(lattesSchema, atividades, participacao);
+    // A equipe, os financiadores, as ligações e o órgão, como na alteração (inferido).
+    applyProjectTeam(state, projeto, req);
+    applyProjectLinks(state, projeto, req);
+    const organ = req.get('f_codorgao') || req.get('f_codorgao2') || '';
+    if (organ) {
+      for (const [name, value] of Object.entries(organOf(atuacao, organ))) {
+        setAttr(participacao, name, value);
+      }
+    }
     state.touch();
     return html(back);
   }

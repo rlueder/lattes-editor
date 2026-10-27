@@ -6,19 +6,18 @@
 // equipe leva a própria pessoa como coordenadora (seção 22).
 
 import type { Change } from '../model/changes.ts';
-import { childElements, firstChild, getAttr, walk, type XElement } from '../model/xml.ts';
+import { getAttr, walk, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
-import {
-  NO_OWNER_NAME,
-  ownerAuthor,
-  ownerGridRow,
-  type OwnerNames,
-  ownerNamesOf,
-  serializeGrid,
-  TEAM_KEYS,
-} from './author-grid.ts';
+import { NO_OWNER_NAME, type OwnerNames, ownerNamesOf } from './author-grid.ts';
 import type { FormSpec } from './contract.ts';
 import { CREATE_FIELD_LABELS } from './create-labels.ts';
+import {
+  planProjetoExtras,
+  PROJECT_EXTRA_PARTS,
+  type ProjetoExtras,
+  projetoExtrasProblems,
+  projetoExtrasSet,
+} from './create-projeto-extras.ts';
 import {
   absentFields,
   type CreateOpBase,
@@ -52,8 +51,11 @@ import { findLinks, isLogonPage, type LattesLink } from './lattes-html.ts';
 import { organsPath } from './organ-windows.ts';
 import type { FieldValues } from './plan.ts';
 import { ORGAN_PARTS, organLoose, resolveOrgan } from './production/organ.ts';
+import { PROJETO_TARGETS } from './production/targets/projetos.ts';
 
 export interface CreateProjetoOp extends CreateOpBase {
+  /** A equipe, os financiadores e as ligações (create-projeto-extras.ts). */
+  extras?: ProjetoExtras;
   kind: 'criar-projeto';
   /** f_cod_tipo da lista e do formulário: P pesquisa, D desenvolvimento… */
   nature: string;
@@ -131,24 +133,6 @@ export const PROJECT_CARRIERS = new Set([
   'PROJETO-DE-PESQUISA',
 ]);
 
-/** A equipe tem só o dono do currículo (pelo ID Lattes ou, sem ele, pelo nome)? */
-function onlyOwner(projeto: XElement, root: XElement | undefined): boolean {
-  const equipe = firstChild(projeto, 'EQUIPE-DO-PROJETO');
-  const members = equipe ? childElements(equipe, 'INTEGRANTES-DO-PROJETO') : [];
-  if (members.length === 0) return true;
-  if (members.length > 1 || !root) return false;
-  const member = members[0]!;
-  const ownerId = getAttr(root, 'NUMERO-IDENTIFICADOR') ?? '';
-  const memberId = getAttr(member, 'NRO-ID-CNPQ') ?? '';
-  if (ownerId && memberId) return ownerId === memberId;
-  const dg = firstChild(root, 'DADOS-GERAIS');
-  const ownerName = (dg && getAttr(dg, 'NOME-COMPLETO')) ?? '';
-  return (
-    foldText(ownerName) !== '' &&
-    foldText(ownerName) === foldText(getAttr(member, 'NOME-COMPLETO') ?? '')
-  );
-}
-
 /** Por que o projeto criado fica divergente: a equipe não é relida. */
 export const TEAM_UNREAD =
   'Criado no Lattes, com os campos conferidos; confira a equipe no Lattes, que o conector não relê';
@@ -203,14 +187,12 @@ export function projetoOp(
   }
   const nature = PROJECT_NATURE[getAttr(projeto, 'NATUREZA') ?? ''];
   if (!nature) return { reason: 'Escolha a natureza do projeto' };
-  if (!onlyOwner(projeto, chain[0])) {
-    return {
-      reason: 'Equipe além de você ainda vai à mão: o conector não monta a grade da equipe',
-    };
-  }
-  if (filledChildren(projeto, ['EQUIPE-DO-PROJETO']).length > 0) {
-    return { reason: 'Financiadores, produções e orientações do projeto ainda vão à mão' };
-  }
+  // A equipe, os financiadores e as ligações (create-projeto-extras.ts).
+  const extras = planProjetoExtras(projeto, chain[0]);
+  if ('reason' in extras) return extras;
+  const otherParts = filledChildren(projeto, PROJECT_EXTRA_PARTS).map((c) =>
+    labelIn(change, c.name),
+  );
   // A participação que embrulha o projeto: o editor só põe nela o número, o
   // período em ano e se é atual, que seguem o projeto. Órgão, unidade e meses
   // não têm lugar no formulário de projeto e não podem sumir sem aviso.
@@ -219,7 +201,7 @@ export function projetoOp(
     (a) => a.value.trim() && !PARTICIPATION_FROM_PROJECT.has(a.name),
   );
   const { missing, set, wrong } = mapAttrs(change, projeto, PROJECT_FIELDS, PROJECT_HANDLED);
-  const left = [...missing, ...extra.map((a) => labelIn(change, a.name))];
+  const left = [...missing, ...extra.map((a) => labelIn(change, a.name)), ...otherParts];
   const reason = reasonFrom(wrong);
   if (reason) return { reason };
   // Sem ano de fim (projeto em andamento), o campo vai vazio: senão ficaria o
@@ -244,6 +226,7 @@ export function projetoOp(
     : undefined;
   return {
     expect: {},
+    extras,
     institutionCode,
     institutionName,
     key: change.key,
@@ -256,6 +239,16 @@ export function projetoOp(
     set,
   };
 }
+
+/** Sem equipe no XML: a própria pessoa como coordenadora. */
+const EMPTY_EXTRAS: ProjetoExtras = {
+  funders: [],
+  links: { orientacoes: [], producoes: [] },
+  team: [{ citation: '', cnpq: '', lead: true, name: '', owner: true }],
+};
+
+/** As grades de financiadores e de ligações do projeto (production/targets/projetos.ts). */
+const PROJECT_GRIDS = PROJETO_TARGETS[0]!.opaqueGrids ?? [];
 
 /** O formulário de inclusão do projeto (tabela da seção 17). */
 export const CREATE_PROJETO_SPEC: FormSpec & { mode: string; partial: true } = {
@@ -439,12 +432,17 @@ export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort):
     }
     // A própria pessoa na equipe, como coordenadora (tit "s"): o check() exige
     // a pessoa e um coordenador, e a inclusão abre a grade vazia (seção 22).
-    const owner = ownerAuthor(menu, op.owner);
-    if ('reason' in owner) return result('erro', owner.reason);
-    const team = serializeGrid([ownerGridRow(owner.owner, { tit: 's' })], TEAM_KEYS);
+    const extras = await projetoExtrasSet(
+      op.extras ?? EMPTY_EXTRAS,
+      op.owner,
+      menu,
+      port,
+      inclusion.path,
+    );
+    if ('status' in extras) return result(extras.status, extras.detail);
     const response = await port.post(
       CREATE_PROJETO_SPEC.action,
-      encodeLatin1Form(setPairs(form.pairs, { ...set, ...organ.set, f_autores_l: team })),
+      encodeLatin1Form(setPairs(form.pairs, { ...set, ...organ.set, ...extras.set })),
     );
     if (isLogonPage(response)) return result('sessao', SESSION);
 
@@ -470,6 +468,15 @@ export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort):
       if (problem) return { ...result('divergente', problem), assigned };
       // O órgão volta só no texto de f_orgao, desabilitado (18/10/2026).
       const organNow = saved.controls.find((c) => c.name === 'f_orgao')?.value;
+      const grids = projetoExtrasProblems(
+        await getChecked(port, created[0]!.path),
+        PROJECT_GRIDS,
+        extras.set,
+      );
+      if (grids.length > 0) {
+        const detail = `Criado no Lattes, mas as grades não conferem: ${grids.join(', ')}`;
+        return { ...result('divergente', detail), assigned };
+      }
       if (organ.shown !== undefined && organLoose(organNow) !== organLoose(organ.shown)) {
         return { ...result('divergente', 'Criado no Lattes, mas o órgão não confere'), assigned };
       }
