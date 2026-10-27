@@ -30,6 +30,7 @@ import type { Session } from '../forms/use-production.ts';
 import { importMessage } from '../import-export/import-request.ts';
 import type { Change } from '../model/changes.ts';
 import { setIncludeCapability, syncIncludeCapability } from '../model/direct-inclusion.ts';
+import { loadedOf } from '../model/form-read.ts';
 import { addHistoryPoint, addSent, clearSent, listSent } from '../model/store.ts';
 import { getAttr } from '../model/xml.ts';
 import type {
@@ -482,12 +483,10 @@ export function useBridge(
     },
     sendImport: () => {
       if (!session) return undefined;
-      const msg = importMessage(
-        session.doc,
-        session.meta.encoding,
-        session.meta.loadedMaxSequencia,
-        { id: `importar-${Date.now()}`, lattesId },
-      );
+      const msg = importMessage(session.doc, session.meta.encoding, loadedOf(session.meta), {
+        id: `importar-${Date.now()}`,
+        lattesId,
+      });
       if (!msg) return undefined;
       post(msg);
       return msg.id;

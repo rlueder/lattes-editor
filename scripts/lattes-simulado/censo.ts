@@ -133,7 +133,9 @@ function techWorkList(state: LattesState): SimResponse {
         part(t, 'DADOS-BASICOS-DO-TRABALHO-TECNICO'),
         'TITULO-DO-TRABALHO-TECNICO',
       );
-      return `<tr><td><a href="#" onclick="self.parent.modalCV2.setarUrl('pkg_relatorio.form?f_cod=${state.code}&amp;f_seq=${seq}',true); return false;">${h.esc(title)}</a></td></tr>`;
+      const year = value(part(t, 'DADOS-BASICOS-DO-TRABALHO-TECNICO'), 'ANO');
+      // A linha inteira abre o formulário, como nas listas reais (producao.ts).
+      return `<tr onclick="self.parent.modalCV2.setarUrl('pkg_relatorio.form?f_cod=${state.code}&amp;f_seq=${seq}',true)"><td>${h.esc(title)}</td><td>${h.esc(year)}</td></tr>`;
     })
     .join('\n');
   const novo = `<a href="#" onclick="self.parent.modalCV2.setarUrl('pkg_relatorio.form?f_cod=${state.code}',true); return false;">Incluir novo item</a>`;

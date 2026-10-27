@@ -3,10 +3,14 @@
 
 import { createContext, useContext } from 'react';
 
+import type { FormReadMark } from '../model/form-read.ts';
+import type { Loaded } from '../model/production.ts';
 import type { XElement } from '../model/xml.ts';
 
 export interface EditorContextValue {
-  loadedMax: number;
+  /** Os itens lidos dos formulários do Lattes, pelo SEQUENCIA-PRODUCAO (form-read.ts). */
+  formRead?: ReadonlyMap<string, FormReadMark>;
+  loadedMax: Loaded;
   openItem: (sequencia: number) => void;
   /** A raiz da cópia de trabalho: decide se um evento novo vai pelo conector ou pelo Importar. */
   root?: XElement;

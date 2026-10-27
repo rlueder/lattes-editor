@@ -278,6 +278,19 @@ const isImportableName = (name: string): boolean => {
 };
 
 /**
+ * O que o Lattes já tem: o maior SEQUENCIA-PRODUCAO da exportação carregada,
+ * e os números acima dele dos itens novos lidos dos formulários do Lattes
+ * (form-read.ts), que já estão lá. Só o número basta quando não há leitura.
+ */
+export type Loaded = number | { inLattes: ReadonlySet<string>; max: number };
+
+/** O número está acima do que o Lattes tem? */
+function aboveLoaded(n: number, loaded: Loaded): boolean {
+  if (typeof loaded === 'number') return n > loaded;
+  return n > loaded.max && !loaded.inLattes.has(String(n));
+}
+
+/**
  * Item novo que vai pelo Importar: sequência acima do maior número da
  * exportação carregada e tipo que um módulo do Passo 2 lê. A patente também
  * tem SEQUENCIA-PRODUCAO, mas o Importar não a leva: ela segue com as outras
@@ -286,7 +299,7 @@ const isImportableName = (name: string): boolean => {
  */
 export function isPendingImport(
   el: XElement,
-  loadedMax: number,
+  loadedMax: Loaded,
   direct: ReadonlySet<string> = directInclusion(),
   root?: XElement,
 ): boolean {
@@ -298,15 +311,15 @@ export function isPendingImport(
  * com a inclusão pelo conector ligada, pela lista de alterações: as duas
  * guardam o "novo" e o "Editar no formulário".
  */
-export function isNewProduction(el: XElement, loadedMax: number): boolean {
+export function isNewProduction(el: XElement, loadedMax: Loaded): boolean {
   const n = Number.parseInt(getAttr(el, SEQ_ATTR) ?? '', 10);
-  return Number.isFinite(n) && n > loadedMax && isImportableName(el.name);
+  return Number.isFinite(n) && aboveLoaded(n, loadedMax) && isImportableName(el.name);
 }
 
 /** Produção nova que vai pela lista de alterações, e não pelo Importar. */
 export function goesByChanges(
   el: XElement,
-  loadedMax: number,
+  loadedMax: Loaded,
   direct: ReadonlySet<string> = directInclusion(),
   root?: XElement,
 ): boolean {
@@ -314,7 +327,7 @@ export function goesByChanges(
 }
 
 /** Itens criados no editor que vão pelo Importar (isPendingImport). */
-export function pendingItems(doc: XDocument, loadedMax: number): XElement[] {
+export function pendingItems(doc: XDocument, loadedMax: Loaded): XElement[] {
   const items: XElement[] = [];
   walk(doc.root, (el) => {
     if (isPendingImport(el, loadedMax, undefined, doc.root)) items.push(el);

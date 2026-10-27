@@ -11,7 +11,8 @@
 // - nenhuma sai, mesmo que deixe de ser usada: um lado mais novo sem ela
 //   pareceria o mais antigo;
 // - a exceção são as capacidades das operações atrás de chave (GATED_EDITS,
-//   em plan.ts, e PUBLISH_ENABLED): entram quando a chave liga e saem se ela voltar a desligar,
+//   em plan.ts, PUBLISH_ENABLED e LATTES_REFRESH_ENABLED): entram quando a
+//   chave liga e saem se ela voltar a desligar,
 //   porque anunciá-las com a chave desligada levaria o app a mandar operações
 //   que a extensão não tem no contrato. Os testes edit-flags e compat-publish
 //   conferem essas chaves.
@@ -27,6 +28,7 @@ import { EDIT_OTHER_CONTACTS_ENABLED } from './endereco-contatos.ts';
 import { EDIT_FUNDERS_ENABLED } from './production/financiador.ts';
 import { INSTITUTION_HOLDERS_ENABLED } from './production/institution-holder.ts';
 import { PUBLISH_ENABLED } from './publish.ts';
+import { LATTES_REFRESH_ENABLED } from './refresh/enabled.ts';
 
 export const BRIDGE_FEATURES = [
   /** Data da última publicação e pendência, lidas do menu do Lattes. */
@@ -123,6 +125,11 @@ export const BRIDGE_FEATURES = [
   ...(ACTIVITY_ROWS_ENABLED ? (['grade-atividade'] as const) : []),
   /** A exclusão de produções, formações, prêmios, eventos, atividades e da atuação (delete-items.ts). */
   ...(DELETE_MORE_ENABLED ? (['excluir-mais'] as const) : []),
+  /**
+   * "Atualizar do Lattes": as listas e os formulários das linhas novas, só
+   * com GET (src/bridge/refresh/). Entra e sai com LATTES_REFRESH_ENABLED.
+   */
+  ...(LATTES_REFRESH_ENABLED ? (['atualizar-do-lattes'] as const) : []),
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

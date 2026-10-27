@@ -3,12 +3,18 @@
 import Dexie, { type Table } from 'dexie';
 
 import type { SentEntry } from '../bridge/sent-log.ts';
+import type { FormReadMark } from './form-read.ts';
 import type { Sealed } from './seal.ts';
 
 export interface WorkingCopy {
   encoding: string;
   fileName: string;
   id: 'current';
+  /**
+   * Itens lidos dos formulários do Lattes ("Atualizar do Lattes",
+   * src/model/form-read.ts), e não da exportação; ausente nas cópias de antes.
+   */
+  lattesForms?: FormReadMark[];
   loadedAt: number;
   /** Maior SEQUENCIA-PRODUCAO da exportação carregada; acima dele, item novo. */
   loadedMaxSequencia: number;

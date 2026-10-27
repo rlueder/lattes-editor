@@ -51,6 +51,7 @@ import {
 } from './lattes-tab.ts';
 import { registerPanel } from './panel-open.ts';
 import { answerPublishRequest, publishRunning } from './publish-run.ts';
+import { answerRefresh } from './refresh-run.ts';
 import { readSession } from './session-reading.ts';
 import { sessionTaskRunning } from './session-task.ts';
 import {
@@ -158,6 +159,8 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
     await sendSession(editor, true);
     return;
   }
+  // "Atualizar do Lattes": só GET, nunca junto de outra tarefa (refresh-run.ts).
+  if (msg.type === 'ler-lattes') return answerRefresh(msg, busy, (m) => toEditor(editor, m));
   // Listas do Lattes: só leituras, e nunca durante uma gravação (lattes-tab.ts).
   const listReply = await answerListRequest(msg, busy);
   if (listReply) return toEditor(editor, listReply);

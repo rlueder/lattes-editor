@@ -153,6 +153,7 @@ Os módulos do conector, por assunto:
 | Exclusão (idioma e vínculo)                                      | `delete.ts`, que posta o formulário com `f_ctr=E` e confere relendo a lista                                                                                                                              |
 | Exclusão dos outros tipos                                        | `delete-items.ts`, pelo formulário de alteração de cada um, com o `del()` da página (nas formações, o `SETA_ULTIMO_PUBLICO` antes; na atuação inteira, o GET com `f_ctr=E2`), e a lista relida           |
 | Foto, Exportar, Importar, estado do Lattes, Enviar ao CNPq       | `photo.ts`, `export.ts`, `importar.ts`, `lattes-status.ts`, `publish.ts`                                                                                                                                 |
+| Atualizar do Lattes (leitura pelas listas e pelos formulários)   | `refresh/` (cobertura, leitura na aba, plano, volta do formulário ao XML, entrada no editor)                                                                                                             |
 
 Na inclusão, um campo que o formulário de inclusão do Lattes não tem não
 segura o item: ele vai com o resto, como iria pela própria página, e o que
@@ -371,6 +372,52 @@ vez mais. Gravação nunca repete.
   Se a resposta do pedido de publicação se perde, o núcleo ainda confere o
   menu. Só repete leituras, nunca o pedido de publicação; sem confirmação,
   devolve `nao-confirmado` com `sent: true` e mantém o botão bloqueado.
+
+### Atualizar do Lattes pelos formulários
+
+Depois de um "Enviar ao CNPq", o Exportar segue entregando a versão anterior
+por mais de uma hora (`lattes_internals.md`, seção 10). "Atualizar do Lattes",
+no ⚙ e no aviso do sino da exportação atrasada, traz o que mudou nas
+produções sem esperar por ela (`src/bridge/refresh/`,
+`src/ui/use-lattes-refresh.ts`). Só GET, por endereços que passam por
+`isSafeGet` (`src/census/run.ts`), em tarefas abaixo do teto do transporte:
+
+1. **Listas** (`read.ts`, a mesma fila de `cv-lists.ts`): as listas que o
+   menu abre, 60 por tarefa. No currículo do dono são 73, perto de 80 s.
+2. **Plano** (`plan.ts`, no editor): cada linha das listas de produção é
+   procurada nos itens do mesmo grupo (`coverage.ts`) pelo título e pelo ano,
+   em palavras inteiras, como no diagnóstico. A linha sem item vai ao
+   formulário: é um item novo no Lattes, ou um item cujo título ou ano mudou.
+   A linha de um item criado no editor que entrou pelo Importar também vai.
+   As linhas mostram título, tipo e ano: a mudança em outro campo de um item
+   que já estava na exportação não aparece e não é lida.
+3. **Formulários** (`read.ts`), até 80 por tarefa: o valor de cada campo como
+   a página mostra e as grades dos scripts da página.
+4. **Entrada no editor** (`merge.ts`, `apply-reading.ts`): o valor de cada
+   campo volta ao atributo pelo `toForm` da especificação do conector, ao
+   contrário (`from-form.ts`, o mesmo que o Lattes simulado usa para gravar
+   um POST). O valor que o formulário mostra igual ao do XML deixa o
+   atributo como está. O item lido entra na exportação carregada e na cópia
+   de trabalho; onde a pessoa já mudou o mesmo campo no editor, fica o valor
+   dela, que vira alteração a enviar. Item novo ganha `SEQUENCIA-PRODUCAO`
+   acima de todos os do editor e entra na ordem do schema. Cada parte de
+   formulários entra assim que chega, e rodar de novo lê só o que falta.
+
+O item lido fica marcado em `WorkingCopy.lattesForms`
+(`src/model/form-read.ts`), com a etiqueta "lido do Lattes" na lista: faltam
+a ele os atributos que só a exportação traz (códigos, números, marcas
+derivadas, as áreas do conhecimento). A marca também tira o item novo da
+conta do Importar (`Loaded`, em `src/model/production.ts`), porque ele já está
+no Lattes. A próxima exportação carregada substitui a cópia inteira, com as
+marcas.
+
+Ficam de fora, com as linhas contadas como "não lido" no resultado: eventos,
+prêmios, formação, atuação e idiomas (contados pela comparação do
+diagnóstico, `src/review/lists-diff.ts`) e, entre as produções, projetos,
+patentes, registros, licenças e linhas de pesquisa (o motivo de cada um em
+`coverage.ts`). Inferido, sem leitura acompanhada no Lattes real: que o
+formulário de alteração de cada tipo mostre o valor gravado em cada campo com
+os nomes que as especificações usam para gravar.
 
 ### O Lattes simulado
 

@@ -13,6 +13,7 @@ import type { OrganWindowKind } from './organ-windows.ts';
 import type { PhotoFailure } from './photo.ts';
 import type { BridgeOp } from './plan.ts';
 import type { PublishRequest, PublishResult, SendScreen } from './publish.ts';
+import type { RefreshPart, RefreshRequest } from './refresh/read.ts';
 import type { RoundPause } from './write-brake.ts';
 
 export const PROTOCOL_VERSION = 1;
@@ -128,7 +129,14 @@ export type EditorMessage =
    * do Lattes for dele. today: AAAA-MM-DD da pessoa, para conferir a
    * publicação no menu. id volta na resposta.
    */
-  | { id: string; lattesId?: string; request: PublishRequest; today: string; type: 'publicar' };
+  | { id: string; lattesId?: string; request: PublishRequest; today: string; type: 'publicar' }
+  /**
+   * "Atualizar do Lattes" (src/bridge/refresh/), só com a capacidade
+   * 'atualizar-do-lattes': uma parte da leitura, só GET. request diz a passada
+   * (as listas do menu, ou os formulários de algumas linhas). id volta na
+   * resposta.
+   */
+  | { id: string; request: RefreshRequest; type: 'ler-lattes' };
 
 export type BridgeMessage =
   /** lattesId: de qual currículo é o código, para o editor não guardar o de outro. */
@@ -214,7 +222,22 @@ export type BridgeMessage =
   /** O resultado do envio ao CNPq pedido com o mesmo id. */
   | { id: string; result: PublishResult; type: 'publicacao' }
   /** A resposta de um pedido de itens de teste: o resumo, ou o porquê de não ter rodado. */
-  | { error?: string; id: string; result?: unknown; type: 'itens-teste' };
+  | { error?: string; id: string; result?: unknown; type: 'itens-teste' }
+  /**
+   * A parte da leitura do Lattes pedida com o mesmo id, ou o motivo de não ter
+   * lido; lattesId diz de qual currículo é a sessão.
+   */
+  | {
+      error?: string;
+      id: string;
+      lattesId?: string;
+      part?: RefreshPart;
+      reason?: RefreshFailure;
+      type: 'leitura-lattes';
+    };
+
+/** Por que uma parte de "Atualizar do Lattes" não foi lida. */
+export type RefreshFailure = 'consentimento' | 'erro' | 'ocupado' | 'sem-aba';
 
 export type TestItemsAction = 'andamento' | 'criar' | 'preparar' | 'remover';
 

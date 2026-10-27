@@ -18,13 +18,13 @@
 import { AUTHOR_PART } from '../../src/bridge/production/grids.ts';
 import { PRODUCTION_TARGETS } from '../../src/bridge/production/targets/index.ts';
 import type { AuthorPart } from '../../src/bridge/production/types.ts';
+import { writeFields } from '../../src/bridge/refresh/from-form.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
-import { writeFields } from './producao.ts';
 import { html, type SimResponse } from './tipos.ts';
 
 type Row = Record<string, string | boolean>;
@@ -186,7 +186,7 @@ export function techWorkPost(req: SimRequest, state: LattesState): SimResponse {
   writeFields(
     PRODUCTION_TARGETS.find((t) => t.id === 'trabalho-tecnico')!,
     item,
-    req,
+    (field) => req.get(field),
   );
   applyGrids(item, req);
   state.touch();

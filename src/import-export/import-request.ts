@@ -11,6 +11,7 @@ import {
 } from '../bridge/importar.ts';
 import type { Link } from '../bridge/link.ts';
 import type { EditorMessage } from '../bridge/protocol.ts';
+import type { Loaded } from '../model/production.ts';
 import type { XDocument } from '../model/xml.ts';
 import { buildMinimalImportFile } from './import-file.ts';
 
@@ -24,7 +25,7 @@ export type ImportMessage = Extract<EditorMessage, { type: 'importar' }>;
 export function importMessage(
   doc: XDocument,
   encoding: string,
-  loadedMax: number,
+  loadedMax: Loaded,
   ids: { id: string; lattesId?: string },
   enabled = IMPORT_ENABLED,
   now = new Date(),

@@ -36,6 +36,7 @@ import {
   readSendScreenFrom,
   type SendScreen,
 } from '../../src/bridge/publish.ts';
+import { readRefreshPart, type RefreshRequest } from '../../src/bridge/refresh/read.ts';
 import { decodeLatin1 } from '../../src/model/latin1.ts';
 import { pageTraffic, withTraffic } from './page-traffic.ts';
 
@@ -317,6 +318,21 @@ const connector = {
   // Só leituras: a busca de instituição, como a janela do próprio Lattes.
   instituicoes: (query: string, level: string) =>
     searchInstitutions(listsPort, query, level || undefined),
+  // Só leitura: uma parte de "Atualizar do Lattes" (src/bridge/refresh/read.ts),
+  // as listas do menu ou os formulários de algumas linhas, uma parte por tarefa.
+  lerLattes: async (requestJson: string) => {
+    const menu = document.documentElement.outerHTML;
+    const lattesId = lattesIdFrom(menu);
+    const code = cvCodeFrom(menu);
+    if (!code) return { error: 'Não achei o código do currículo no menu do Lattes.', lattesId };
+    let request: RefreshRequest;
+    try {
+      request = JSON.parse(requestJson) as RefreshRequest;
+    } catch {
+      return { error: 'O pedido de leitura chegou ilegível à aba do Lattes.', lattesId };
+    }
+    return { lattesId, part: await readRefreshPart(port, menu, code, request) };
+  },
   // Só leituras: a tabela de áreas do menu e a lista de agências.
   listas: () => readLists(listsPort),
   // Só leitura: uma parte das listas do currículo (cv-lists.ts), para a

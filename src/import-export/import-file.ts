@@ -11,7 +11,7 @@
 // (lattes_internals.md, seção 13): ele confere contra o DTD, não contra o XSD.
 
 import { encodeCv } from '../model/document.ts';
-import { pendingItems } from '../model/production.ts';
+import { type Loaded, pendingItems } from '../model/production.ts';
 import { element, getAttr, setAttr, type XDocument, type XElement } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 import { IMPORT_MODULES, type ImportModule } from './importable.ts';
@@ -80,7 +80,7 @@ function stampRoot(root: XElement, now: Date): void {
 export function buildImportFile(
   doc: XDocument,
   encoding: string,
-  loadedMax: number,
+  loadedMax: Loaded,
   now = new Date(),
 ): ImportFile {
   const copy: XDocument = structuredClone(doc);
@@ -139,7 +139,7 @@ const GENERAL_ATTRS = new Set([
 export function buildMinimalImportFile(
   doc: XDocument,
   encoding: string,
-  loadedMax: number,
+  loadedMax: Loaded,
   now = new Date(),
 ): MinimalImportFile {
   const pending = new Set(pendingItems(doc, loadedMax));
