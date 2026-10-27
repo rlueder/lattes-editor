@@ -143,15 +143,22 @@ que o painel "Enviar ao Lattes" mostra item por item:
 
 Os módulos do conector, por assunto:
 
-| Assunto                                                          | Arquivos em `src/bridge/`                                                                                |
-| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Formação, endereço, identificação, outras informações            | `biographic.ts`, `formacao-edit.ts`, `dados-gerais-edit.ts`, `formacao-lookups.ts`, `endereco-buscas.ts` |
-| Eventos, prêmios, formação complementar                          | `edit-items.ts`, `edit-lists.ts`, `formacao-compl-steps.ts` (o segundo passo do `FORM2`)                 |
-| Produções, orientações, bancas, projetos, patentes e registros   | `production/` (um alvo por tipo em `targets/`, buscas em `lookups.ts`, órgão em `organ.ts`)              |
-| Atividades da atuação, áreas de atuação, dicionário de coautores | `edit-atividade.ts`, `areas-atuacao.ts`, `edit-citacao.ts`                                               |
-| Inclusão                                                         | `create.ts` (atuação), `create-formacao.ts`, `create-projeto.ts`, `create-evento.ts`, `create-items.ts`  |
-| Exclusão (idioma e vínculo)                                      | `delete.ts`, que posta o formulário com `f_ctr=E` e confere relendo a lista                              |
-| Foto, Exportar, Importar, estado do Lattes, Enviar ao CNPq       | `photo.ts`, `export.ts`, `importar.ts`, `lattes-status.ts`, `publish.ts`                                 |
+| Assunto                                                          | Arquivos em `src/bridge/`                                                                                                                                                                                |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Formação, endereço, identificação, outras informações            | `biographic.ts`, `formacao-edit.ts`, `dados-gerais-edit.ts`, `formacao-lookups.ts`, `endereco-buscas.ts`                                                                                                 |
+| Eventos, prêmios, formação complementar                          | `edit-items.ts`, `edit-lists.ts`, `formacao-compl-steps.ts` (o segundo passo do `FORM2`)                                                                                                                 |
+| Produções, orientações, bancas, projetos, patentes e registros   | `production/` (um alvo por tipo em `targets/`, buscas em `lookups.ts`, órgão em `organ.ts`)                                                                                                              |
+| Atividades da atuação, áreas de atuação, dicionário de coautores | `edit-atividade.ts`, `areas-atuacao.ts`, `edit-citacao.ts`                                                                                                                                               |
+| Inclusão                                                         | `create.ts` (atuação), `create-formacao.ts`, `create-projeto.ts`, `create-cargo.ts` e `create-atividade.ts` (atividades), `create-registro.ts`, `create-evento.ts`, `create-items.ts`, `create-grids.ts` |
+| Exclusão (idioma e vínculo)                                      | `delete.ts`, que posta o formulário com `f_ctr=E` e confere relendo a lista                                                                                                                              |
+| Foto, Exportar, Importar, estado do Lattes, Enviar ao CNPq       | `photo.ts`, `export.ts`, `importar.ts`, `lattes-status.ts`, `publish.ts`                                                                                                                                 |
+
+Na inclusão, um campo que o formulário de inclusão do Lattes não tem não
+segura o item: ele vai com o resto, como iria pela própria página, e o que
+ficou fora aparece na confirmação e no resultado (`left`, em
+`create-shared.ts`). A atuação nova vai com o primeiro vínculo; os outros
+vínculos, as atividades e os projetos dela vão no envio seguinte, já sob o
+número que o Lattes deu (`acceptCreated`, em `src/model/changes.ts`).
 
 Os itens de prêmio e formação complementar não se acham pelo número: o
 conector abre o formulário de cada linha da lista e fica com a única cujos

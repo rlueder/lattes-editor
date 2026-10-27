@@ -200,7 +200,7 @@ describe('planejar a inclusão de um projeto', () => {
     });
   });
 
-  it('a atuação nova com projeto não vai pela inclusão de atuação', () => {
+  it('a atuação nova com projeto vai antes; o projeto, no envio seguinte', () => {
     const atuacao = parseXml(
       `<ATUACAO-PROFISSIONAL CODIGO-INSTITUICAO="1" NOME-INSTITUICAO="U">
         <VINCULOS SEQUENCIA-HISTORICO="1" TIPO-DE-VINCULO="CELETISTA" ANO-INICIO="2020"/>
@@ -208,8 +208,9 @@ describe('planejar a inclusão de um projeto', () => {
       </ATUACAO-PROFISSIONAL>`,
     ).root;
     const change = { key: 'k', kind: 'novo' } as Change;
-    expect(planCreateAtuacao(change, atuacao, 'Atuação')).toEqual({
-      reason: expect.stringMatching(/atividades ou projetos/),
+    expect(planCreateAtuacao(change, atuacao, 'Atuação')).toMatchObject({
+      kind: 'criar-atuacao',
+      later: [expect.stringMatching(/projeto/i)],
     });
   });
 });

@@ -13,6 +13,7 @@
 // Formação acadêmica e projeto estão em create-items.ts (LAT-52), com a mesma
 // chave; a patente continua à mão.
 
+import { elementLabel } from '../labels/labels.ts';
 import type { Change } from '../model/changes.ts';
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
@@ -49,6 +50,8 @@ export interface CreateAtuacaoOp {
   key: string;
   kind: 'criar-atuacao';
   label: string;
+  /** O que a atuação nova tem e vai no envio seguinte, já sob o número do Lattes. */
+  later?: string[];
   set: FieldValues;
 }
 
@@ -125,18 +128,15 @@ export function planCreateAtuacao(change: Change, el: XElement, label: string): 
     return { reason: 'Instituição sem código do Lattes: escolha pela busca de instituições' };
   }
   const vinculos = childElements(el, 'VINCULOS');
-  if (vinculos.length !== 1) {
-    return { reason: 'A inclusão pelo conector cria a atuação com um vínculo só' };
-  }
-  // A inclusão leva só a atuação e o vínculo: atividades e projetos da atuação
-  // nova ficariam para trás sem aviso.
+  if (vinculos.length === 0) return { reason: 'O Lattes exige um vínculo na atuação nova' };
+  // A inclusão leva a atuação e o primeiro vínculo. Os outros vínculos, as
+  // atividades e os projetos ficam para o envio seguinte, quando a atuação já
+  // tem o número do Lattes (acceptCreated, src/model/changes.ts).
   const hasValue = (e: XElement): boolean =>
     e.attrs.some((a) => a.value.trim() !== '') || childElements(e).some(hasValue);
-  if (childElements(el).some((c) => c.name !== 'VINCULOS' && hasValue(c))) {
-    return {
-      reason: 'A atuação nova tem atividades ou projetos: inclua a atuação primeiro, à mão',
-    };
-  }
+  const later = childElements(el)
+    .filter((c) => c !== vinculos[0] && hasValue(c))
+    .map((c) => elementLabel(c.name));
   const fields = vinculoFields(vinculos[0]!, false);
   if ('reason' in fields) return fields;
   const { set } = fields;
@@ -147,6 +147,7 @@ export function planCreateAtuacao(change: Change, el: XElement, label: string): 
     key: change.key,
     kind: 'criar-atuacao',
     label,
+    ...(later.length > 0 ? { later: [...new Set(later)] } : {}),
     set,
   };
 }

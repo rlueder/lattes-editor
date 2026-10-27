@@ -318,9 +318,22 @@ export function acceptCreated(
     insert(parent, shell);
     parent = shell;
   }
-  insert(parent, structuredClone(el));
+  const copy = structuredClone(el);
+  const only = CREATED_PARTS[el.name];
+  if (only) copy.children = only(childElements(copy));
+  insert(parent, copy);
   return true;
 }
+
+/**
+ * O que a inclusão de um tipo leva junto, quando não é o item inteiro: a da
+ * atuação leva só o primeiro vínculo (src/bridge/create.ts). As atividades,
+ * os projetos e os outros vínculos ficam na cópia como itens novos, e vão no
+ * envio seguinte, já sob a atuação com o número que o Lattes deu.
+ */
+const CREATED_PARTS: Record<string, (children: XElement[]) => XElement[]> = {
+  'ATUACAO-PROFISSIONAL': (kids) => kids.filter((c) => c.name === 'VINCULOS').slice(0, 1),
+};
 
 /**
  * O contrário de `acceptChange`: depois que o conector desfaz uma gravação no

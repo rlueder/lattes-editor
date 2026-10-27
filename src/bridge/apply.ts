@@ -193,10 +193,17 @@ export async function applyOp(
   gates: ApplyGates = BUILD_GATES,
 ): Promise<OpResult> {
   const result = await applyAny(op, port, gates);
-  // A inclusão que foi sem os campos que o formulário não tem: o aviso fica no resultado.
+  if (result.status !== 'conferido') return result;
+  // A inclusão que foi sem os campos que o formulário não tem, e a atuação
+  // cujas partes vão no envio seguinte: o aviso fica no resultado.
   const left = 'left' in op ? op.left : undefined;
-  if (!left?.length || result.status !== 'conferido') return result;
-  return { ...result, detail: `${result.detail}. ${leftNote(left)}`, partial: true };
+  const later = 'later' in op ? op.later : undefined;
+  const notes = [
+    ...(left?.length ? [leftNote(left)] : []),
+    ...(later?.length ? [`No próximo envio, depois desta: ${later.join(', ')}`] : []),
+  ];
+  if (notes.length === 0) return result;
+  return { ...result, detail: [result.detail, ...notes].join('. '), partial: true };
 }
 
 async function applyAny(op: BridgeOp, port: LattesPort, gates: ApplyGates): Promise<OpResult> {
