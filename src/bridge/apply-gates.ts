@@ -47,7 +47,9 @@ export function gatedOut(op: BridgeOp, gates: ApplyGates): string | undefined {
     return 'Esta extensão não grava instituição, curso e agência pelas buscas, pós-doutorado, livre-docência nem outras informações; a alteração fica à mão';
   }
   const lookups =
-    (isListEditOp(op) && op.lookups !== undefined && !gates.complLookups) ||
+    (isListEditOp(op) &&
+      (op.lookups !== undefined || op.step2?.agency !== undefined) &&
+      !gates.complLookups) ||
     (op.kind === 'endereco' &&
       (op.institution !== undefined || op.organ !== undefined) &&
       !gates.complEnderecoLookups);

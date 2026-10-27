@@ -57,6 +57,7 @@ import { foldText } from '../model/fold-text.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import type { FieldSpec, FormSpec } from './contract.ts';
 import { type Pairs, pairValue } from './form.ts';
+import { AGENCY_CODE, AGENCY_NAME, planAgency } from './formacao-compl-steps.ts';
 import { type FormacaoLookups, type Level, type LookupRow, planLookups } from './formacao-edit.ts';
 import { findLinks } from './lattes-html.ts';
 import type { BridgeOp, FieldValues, OpBase } from './plan.ts';
@@ -107,7 +108,15 @@ export interface ListEditOp extends OpBase {
    */
   match: FieldValues;
   /** Os campos do segundo passo da formação complementar (formacao-compl-steps.ts). */
-  step2?: { expect: FieldValues; set: FieldValues };
+  step2?: Step2;
+}
+
+/** O segundo passo: os campos digitados e a agência pela busca de agências. */
+export interface Step2 {
+  /** Código da agência antes e depois, como no XML; vazio tira a agência. */
+  agency?: { before: string; code: string };
+  expect: FieldValues;
+  set: FieldValues;
 }
 
 const KINDS = new Set<string>(['formacao-complementar', 'premio']);
@@ -266,12 +275,8 @@ const TARGETS: Record<ListEditKind, Target> = {
     },
     form: 'PKG_FORMACAO_COMPL.form',
     hand: {
-      'CODIGO-AGENCIA-FINANCIADORA':
-        'A agência sai da busca de agências do Lattes no segundo passo, que o conector ainda não faz; troque no Lattes',
       NIVEL:
         'O nível é o tipo da formação complementar no Lattes: para trocar, inclua de novo no nível certo',
-      'NOME-AGENCIA':
-        'A agência sai da busca de agências do Lattes no segundo passo, que o conector ainda não faz; troque no Lattes',
     },
     identity: (before) => ({
       f_curso_old: before('NOME-CURSO'),
@@ -344,11 +349,12 @@ export function planListEdit(
   const missing: string[] = [];
   const invalid: string[] = [];
   const absent = new Set<string>();
-  const step2 = { expect: {} as FieldValues, set: {} as FieldValues };
+  const step2: Step2 = { expect: {}, set: {} };
   for (const f of change.fields) {
     const hand = t.hand?.[f.attr];
     if (hand) return { reason: hand };
     if (t.lookup && COMPL_LOOKUP_ATTRS.has(f.attr)) continue;
+    if (t.step2 && (f.attr === AGENCY_CODE || f.attr === AGENCY_NAME)) continue;
     const second = t.step2?.[f.attr];
     if (second) {
       const [field, map] = second;
@@ -397,6 +403,13 @@ export function planListEdit(
     };
   }
 
+  const agency = t.step2 ? planAgency(change) : undefined;
+  if (typeof agency === 'string') return { reason: agency };
+  if (agency) {
+    if (!lookups) return { reason: LOOKUPS_OFF };
+    step2.agency = agency;
+  }
+
   // Instituição e curso pelas buscas, com as regras da formação acadêmica.
   const planned = t.lookup ? planLookups(change, el, t.lookup) : undefined;
   if (planned && 'reason' in planned) return planned;
@@ -435,7 +448,7 @@ export function planListEdit(
     match,
     set,
     ...(found ? { lookupRows: found.rows, lookups: found.lookups } : {}),
-    ...(Object.keys(step2.set).length > 0 ? { step2 } : {}),
+    ...(Object.keys(step2.set).length > 0 || step2.agency ? { step2 } : {}),
   };
 }
 

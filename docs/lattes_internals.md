@@ -2042,8 +2042,11 @@ curso pelas buscas (`COMPL_LOOKUPS_ENABLED`, capacidade
 `buscas-complementar`) está ligada sem envio acompanhado: os cursos do
 currículo testado eram de cadastro manual e não havia como desfazer a troca.
 **Inferido** que o segundo passo leve os ocultos da instituição e do curso como
-vieram do primeiro. A agência financiadora fica à mão, porque a busca de
-agências do segundo passo não foi lida. As buscas do endereço profissional
+vieram do primeiro. A lupa da agência no segundo passo (`agencia()`) abre
+`prc_agencia?f_cod=<código do currículo>`, a mesma lista das orientações e
+bancas, e marca a bolsa como sim; o conector faz a mesma escolha em
+`f_agencia` (só o MBA tem agência no XSD). **Observado** o endereço e a
+função, em 27/10/2026, sem enviar; a troca de agência não foi enviada. As buscas do endereço profissional
 continuam desligadas (`COMPL_ENDERECO_LOOKUPS_ENABLED`), sem caso reversível.
 
 ### Endereço profissional (lido em 20/10/2026)

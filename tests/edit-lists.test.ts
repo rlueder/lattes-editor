@@ -41,6 +41,7 @@ const XML = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS NOME-COMPLE
 <DADOS-COMPLEMENTARES><FORMACAO-COMPLEMENTAR>
 <FORMACAO-COMPLEMENTAR-CURSO-DE-CURTA-DURACAO SEQUENCIA-FORMACAO="4" NIVEL="F" CARGA-HORARIA="20" CODIGO-INSTITUICAO="" NOME-INSTITUICAO="Escola Sintética" CODIGO-CURSO="" NOME-CURSO="Curso de Exemplo" STATUS-DO-CURSO="CONCLUIDO" ANO-DE-INICIO="2019" ANO-DE-CONCLUSAO="2019"/>
 <OUTROS SEQUENCIA-FORMACAO="5" NIVEL="Y" CARGA-HORARIA="40" CODIGO-INSTITUICAO="" NOME-INSTITUICAO="Instituto Fictício" CODIGO-CURSO="" NOME-CURSO="Oficina de Exemplo" STATUS-DO-CURSO="EM_ANDAMENTO" ANO-DE-INICIO="2022" ANO-DE-CONCLUSAO=""/>
+<MBA SEQUENCIA-FORMACAO="6" NIVEL="E" CARGA-HORARIA="360" CODIGO-INSTITUICAO="" NOME-INSTITUICAO="Faculdade Sintética" CODIGO-CURSO="" NOME-CURSO="MBA de Exemplo" STATUS-DO-CURSO="CONCLUIDO" ANO-DE-INICIO="2015" ANO-DE-CONCLUSAO="2016" FLAG-BOLSA="NAO" CODIGO-AGENCIA-FINANCIADORA="" NOME-AGENCIA=""/>
 </FORMACAO-COMPLEMENTAR></DADOS-COMPLEMENTARES></CURRICULO-VITAE>`;
 
 const ON: PlanOptions = { editFormacaoComplementar: true, editPremio: true };
@@ -466,6 +467,55 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
       detail: expect.stringMatching(/não mostrou o segundo passo/),
       status: 'divergente',
     });
+  });
+
+  const agencyEdit = (root: XElement) => {
+    const el = compl(root, '6');
+    setAttr(el, 'CODIGO-AGENCIA-FINANCIADORA', '000000000002');
+    setAttr(el, 'NOME-AGENCIA', 'Coordenação de Aperfeiçoamento de Pessoal de Nível Superior');
+  };
+
+  it('formação complementar: a agência vai pela busca de agências no segundo passo', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp(agencyEdit, LOOKUPS_ON);
+    expect(op.step2?.agency).toEqual({ before: '', code: '000000000002' });
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({ status: 'conferido' });
+    expect(getAttr(compl(lattes.state.root, '6'), 'CODIGO-AGENCIA-FINANCIADORA')).toBe(
+      '000000000002',
+    );
+    const saving = lattes.state.log.filter((l) => l.method === 'POST')[1]!;
+    expect(saving.pairs).toContainEqual(['f_agencia', '000000000002']);
+    expect(saving.pairs).toContainEqual(['F_BOLSA', 'S']);
+  });
+
+  it('formação complementar: a agência pede as buscas ligadas e o código junto do nome', async () => {
+    expect(onlyReason(agencyEdit)).toMatch(/desligado/);
+    expect(
+      onlyReason((root) => setAttr(compl(root, '6'), 'NOME-AGENCIA', 'Outra'), LOOKUPS_ON),
+    ).toMatch(/escolha a agência pela lista/);
+    const op = onlyOp(agencyEdit, LOOKUPS_ON);
+    expect(
+      await applyOp(op, (await lattesFor()).port, { ...GATES, complLookups: false }),
+    ).toMatchObject({ status: 'erro' });
+  });
+
+  it('formação complementar: agência fora da lista ou já trocada no Lattes não grava', async () => {
+    const lattes = await lattesFor();
+    const missing = onlyOp((root) => {
+      setAttr(compl(root, '6'), 'CODIGO-AGENCIA-FINANCIADORA', '000000000099');
+    }, LOOKUPS_ON);
+    expect(await applyOp(missing, lattes.port, GATES)).toMatchObject({
+      detail: expect.stringMatching(/Agência não encontrada/),
+      status: 'erro',
+    });
+    setAttr(compl(lattes.state.root, '6'), 'CODIGO-AGENCIA-FINANCIADORA', '000000000001');
+    expect(await applyOp(onlyOp(agencyEdit, LOOKUPS_ON), lattes.port, GATES)).toMatchObject({
+      status: 'divergente',
+    });
+    const saves = lattes.state.log.filter((l) =>
+      (l.pairs ?? []).some(([k, v]) => k === 'f_ctr' && v === 'U'),
+    );
+    expect(saves).toEqual([]);
   });
 
   const lookupEdit = (root: XElement) => {

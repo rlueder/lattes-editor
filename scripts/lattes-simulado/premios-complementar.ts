@@ -227,6 +227,8 @@ function complStep2Bindings(el: XElement): Binding[] {
         },
       ),
     ],
+    // A agência vem da busca de agências (prc_agencia), em f_agencia oculto.
+    ['CODIGO-AGENCIA-FINANCIADORA', attr('f_agencia', 'CODIGO-AGENCIA-FINANCIADORA', 'hidden')],
     ['TITULO-DA-MONOGRAFIA', attr('f_titulo', 'TITULO-DA-MONOGRAFIA', 'hidden')],
     ['NOME-COMPLETO-DO-ORIENTADOR', attr('f_orient', 'NOME-COMPLETO-DO-ORIENTADOR', 'hidden')],
   ];
