@@ -28,6 +28,8 @@ describe('cobertura do conector', () => {
     expect(coveragePercent(229, 230)).toBe('99,5%');
     expect(coveragePercent(9999, 10000)).toBe('99,9%');
     expect(coveragePercent(1, 1)).toBe('100%');
+    // Sem erro de ponto flutuante: (57 / 100) * 1000 dá 569,99…
+    expect(coveragePercent(57, 100)).toBe('57%');
     expect(coveragePercent(0, 1)).toBe('0%');
     expect(coveragePercent(0, 0)).toBe('-');
   });

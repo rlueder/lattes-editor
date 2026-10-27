@@ -365,7 +365,7 @@ const PARTIAL = 'Vai em parte: nas outras trocas o formulário do Lattes não te
 
 /** Trunca em uma casa: uma categoria com lacunas nunca aparece como 100%. */
 export const coveragePercent = (n: number, d: number): string =>
-  d ? `${(Math.floor((n / d) * 1000) / 10).toLocaleString('pt-BR')}%` : '-';
+  d ? `${(Math.floor((n * 1000) / d) / 10).toLocaleString('pt-BR')}%` : '-';
 
 /** Os campos do editor, cada um uma vez: vai, o Lattes não tem, falta no conector. */
 function fieldReport(file: string): void {

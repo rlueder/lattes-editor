@@ -39,7 +39,14 @@ import {
   setLive,
   testProgress,
 } from './censo-test-items.ts';
-import { ledgerNow, loadBase, markInCv, saveBase, snapshotLists } from './censo-test-ledger.ts';
+import {
+  clearBase,
+  ledgerNow,
+  loadBase,
+  markInCv,
+  saveBase,
+  snapshotLists,
+} from './censo-test-ledger.ts';
 import { removeTestItems } from './censo-test-removal.ts';
 import { censusTraffic } from './censo-traffic.ts';
 
@@ -303,7 +310,21 @@ async function prepareTestItems(options: { only?: string[] } = {}) {
   // de itens só sai numa tarefa sem leitura antes.
   if (fresh) return { ...testProgress(testJobs(captured)), preparando: true };
   // A base das listas (Fase 0), antes do primeiro item: sem ela, a remoção
-  // não teria com o que comparar.
+  // não teria com o que comparar. Uma base tirada para outros tipos (outro
+  // only) não tem as listas destes: com nada criado ainda, tira-se de novo;
+  // com itens criados, para, porque eles ficariam fora do registro.
+  const stored = loadBase();
+  const wanted = wantOf(captured, options.only)?.packages;
+  const uncovered =
+    stored?.packages && (!wanted || [...wanted].some((p) => !stored.packages!.includes(p)));
+  if (uncovered) {
+    if (testProgress().criados > 0) {
+      throw new Error(
+        'A base das listas foi tirada para outros tipos de item, e há itens de teste criados. Remova-os, rode resetTestItems() e comece de novo com estes tipos.',
+      );
+    }
+    clearBase();
+  }
   if (!loadBase()) {
     if (testProgress().criados > 0) {
       throw new Error(
@@ -320,8 +341,7 @@ async function prepareTestItems(options: { only?: string[] } = {}) {
           `O currículo já tem ${marks} ocorrências da marca dos itens de teste. Remova-as antes de tirar a base.`,
         );
       }
-      const packages = wantOf(captured, options.only)?.packages;
-      const list = packages && [...packages];
+      const list = wanted && [...wanted];
       saveBase(await snapshotLists(await menuHtml(), await code(), get, list), list);
     } finally {
       reading = false;
