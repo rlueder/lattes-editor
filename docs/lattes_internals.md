@@ -2019,12 +2019,32 @@ outras em `f_cod_inst2`), e que `PKG_FORMACAO_COMPL.FORM2` grave os ocultos.
 Em 20/10/2026, num MBA de teste, o envio com a instituição e o curso como as
 janelas gravariam (instituição com a letra, curso sem ela, os textos em
 `f_inst_old` e `f_curso_old`) foi aceito, e a releitura voltou com os de
-antes. O conector acusou divergente e nada mudou. **Observado.** A causa não
-é conhecida: um envio simples do `FORM2` (só a carga horária) também não foi
-conferido no Lattes real. Por isso `COMPL_ENDERECO_LOOKUPS_ENABLED`
-(`src/bridge/edit-lists.ts`) fica desligada, junto com as buscas do endereço
-profissional, até um envio pelo próprio navegador ser registrado e comparado
-com o do conector.
+antes. O conector acusou divergente e nada mudou. **Observado.**
+
+A causa apareceu em 27/10/2026, num envio pelo próprio navegador capturado
+pela ponte local: o `FORM2` tem dois passos. O primeiro POST (`f_ctr` vazio)
+não grava nada; devolve outra página `GN_FORMACAO2`, que repete os campos do
+primeiro passo como ocultos e traz `f_ctr=U`, `f_ano_ini`, `f_ano_fim`,
+`f_ano_obten` (desabilitado no tipo Outros), `F_BOLSA` (S ou N),
+`f_nme_agencia` (desabilitado, com o código em `f_agencia` oculto, vindo da
+busca de agências), `f_titulo` e `f_orient` ocultos, `f_tipo_privacidade` e as
+grades `f_plv_l`, `f_setor_l` e `f_area_l`. Só o POST desse segundo passo
+grava, e responde "A operação foi realizada com sucesso". **Observado.** Os
+anos de início, conclusão e obtenção e a bolsa saem desse passo, não do
+primeiro.
+
+O conector faz os dois passos (`src/bridge/formacao-compl-steps.ts`): manda o
+primeiro, lê o segundo, troca os campos que mudaram e confere o texto de
+sucesso; na releitura, refaz o primeiro passo sem gravar para conferir os do
+segundo. Num curso real, a carga horária foi de 36 para 37 e voltou para 36,
+as duas vezes gravada e conferida. **Observado.** A troca de instituição e
+curso pelas buscas (`COMPL_LOOKUPS_ENABLED`, capacidade
+`buscas-complementar`) está ligada sem envio acompanhado: os cursos do
+currículo testado eram de cadastro manual e não havia como desfazer a troca.
+**Inferido** que o segundo passo leve os ocultos da instituição e do curso como
+vieram do primeiro. A agência financiadora fica à mão, porque a busca de
+agências do segundo passo não foi lida. As buscas do endereço profissional
+continuam desligadas (`COMPL_ENDERECO_LOOKUPS_ENABLED`), sem caso reversível.
 
 ### Endereço profissional (lido em 20/10/2026)
 

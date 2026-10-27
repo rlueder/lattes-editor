@@ -44,7 +44,7 @@ const XML = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS NOME-COMPLE
 </FORMACAO-COMPLEMENTAR></DADOS-COMPLEMENTARES></CURRICULO-VITAE>`;
 
 const ON: PlanOptions = { editFormacaoComplementar: true, editPremio: true };
-const LOOKUPS_ON: PlanOptions = { ...ON, complEnderecoLookups: true };
+const LOOKUPS_ON: PlanOptions = { ...ON, complLookups: true };
 
 const premios = (root: XElement) =>
   childElements(
@@ -80,7 +80,7 @@ function onlyReason(edit: (root: XElement) => void, options: PlanOptions = ON): 
 
 /** As chaves ligadas do lado da extensão, como numa montagem com elas ligadas. */
 const GATES: ApplyGates = {
-  complEnderecoLookups: true,
+  complLookups: true,
   editEvento: true,
   lists: new Set(['formacao-complementar', 'premio']),
 };
@@ -174,8 +174,14 @@ describe('formação complementar: plano', () => {
   });
 
   it('o que o formulário não tem, ou o que não se converte, fica à mão', () => {
-    expect(onlyReason((root) => setAttr(compl(root, '4'), 'ANO-DE-INICIO', '2018'))).toBe(
-      'O formulário de formação complementar do Lattes não tem os anos',
+    // Os anos vão no segundo passo (formacao-compl-steps.ts).
+    expect(onlyOp((root) => setAttr(compl(root, '4'), 'ANO-DE-INICIO', '2018')).step2?.set).toEqual(
+      {
+        f_ano_ini: '2018',
+      },
+    );
+    expect(onlyReason((root) => setAttr(compl(root, '4'), 'ANO-DE-INICIO', '18'))).toMatch(
+      /^Valor que o formulário de formação complementar do Lattes não aceita/,
     );
     expect(onlyReason((root) => setAttr(compl(root, '4'), 'CARGA-HORARIA', 'vinte'))).toMatch(
       /^Valor que o formulário de formação complementar do Lattes não aceita: .*só com dígitos/,
@@ -431,9 +437,35 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
     expect(getAttr(el, 'CARGA-HORARIA')).toBe('60');
     expect(getAttr(el, 'STATUS-DO-CURSO')).toBe('CONCLUIDO');
     expect(getAttr(el, 'NOME-CURSO')).toBe('Oficina de Exemplo');
-    const post = lattes.state.log.find((l) => l.method === 'POST')!;
-    expect(post.proc).toBe('PKG_FORMACAO_COMPL.FORM2');
-    expect(post.pairs).toContainEqual(['f_ctr', '']);
+    const posts = lattes.state.log.filter((l) => l.method === 'POST');
+    expect(posts[0]!.proc).toBe('PKG_FORMACAO_COMPL.FORM2');
+    expect(posts[0]!.pairs).toContainEqual(['f_ctr', '']);
+    // O segundo passo, com f_ctr U, é o que grava (observado em 27/10/2026).
+    expect(posts[1]!.pairs).toContainEqual(['f_ctr', 'U']);
+  });
+
+  it('formação complementar: os anos vão no segundo passo e voltam na releitura', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp((root) => setAttr(compl(root, '5'), 'ANO-DE-INICIO', '2017'));
+    expect(op.set).toEqual({});
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({ status: 'conferido' });
+    expect(getAttr(compl(lattes.state.root, '5'), 'ANO-DE-INICIO')).toBe('2017');
+    const saving = lattes.state.log.filter((l) => l.method === 'POST')[1]!;
+    expect(saving.pairs).toContainEqual(['f_ano_ini', '2017']);
+  });
+
+  it('formação complementar: sem o segundo passo, nada é dado como gravado', async () => {
+    const lattes = await lattesFor({
+      intercept: async (req, _state, next) =>
+        req.method === 'POST' && /FORM2/i.test(req.proc) && !req.get('f_ctr')
+          ? { html: '<p>Erro</p>' }
+          : next(),
+    });
+    const op = onlyOp((root) => setAttr(compl(root, '5'), 'CARGA-HORARIA', '60'));
+    expect(await applyOp(op, lattes.port, GATES)).toMatchObject({
+      detail: expect.stringMatching(/não mostrou o segundo passo/),
+      status: 'divergente',
+    });
   });
 
   const lookupEdit = (root: XElement) => {
@@ -509,7 +541,7 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
     const lattes = await lattesFor();
     const r = await applyOp(onlyOp(lookupEdit, LOOKUPS_ON), lattes.port, {
       ...GATES,
-      complEnderecoLookups: false,
+      complLookups: false,
     });
     expect(r).toMatchObject({ status: 'erro' });
     expect(r.detail).toMatch(/não grava instituição, curso e órgão pelas buscas/);

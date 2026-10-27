@@ -5,46 +5,22 @@
 
 import { type Change, resolvePath } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
-import { type AreasOp, EDIT_AREAS_ENABLED, planAreas } from './areas-atuacao.ts';
+import { type AreasOp, planAreas } from './areas-atuacao.ts';
 import { atuacaoByHand, vinculoByHand } from './atuacao-by-hand.ts';
-import {
-  BIOGRAPHIC_FULL_ENABLED,
-  BIOGRAPHIC_OPS_ENABLED,
-  type BiographicOp,
-  planBiographic,
-} from './biographic.ts';
-import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
+import { type BiographicOp, planBiographic } from './biographic.ts';
+import { type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
 import { type CreateItemOp, planCreateItem } from './create-items.ts';
-import { DELETE_ITEMS_ENABLED, type DeleteOp, planDelete } from './delete.ts';
-import { type AtividadeOp, EDIT_ATIVIDADES_ENABLED, planAtividade } from './edit-atividade.ts';
-import { type CitacaoOp, EDIT_CITACOES_ENABLED, planCitacao } from './edit-citacao.ts';
-import {
-  EDIT_EVENTO_ENABLED,
-  EDIT_OUVINTE_ENABLED,
-  type EventoOp,
-  planEvento,
-} from './edit-items.ts';
-import {
-  COMPL_ENDERECO_LOOKUPS_ENABLED,
-  EDIT_FORMACAO_COMPL_ENABLED,
-  EDIT_PREMIO_ENABLED,
-  type ListEditKind,
-  type ListEditOp,
-  planListEdit,
-} from './edit-lists.ts';
+import { type DeleteOp, planDelete } from './delete.ts';
+import { type AtividadeOp, planAtividade } from './edit-atividade.ts';
+import { type CitacaoOp, planCitacao } from './edit-citacao.ts';
+import { type EventoOp, planEvento } from './edit-items.ts';
+import { type ListEditKind, type ListEditOp, planListEdit } from './edit-lists.ts';
 import { planFormacaoGrids } from './formacao-grids.ts';
 import { idiomaHandReason } from './hand-reasons.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
 import { eventListReason, manualReason } from './production/manual.ts';
 import { isOrganChange } from './production/organ.ts';
-import {
-  EDIT_PRODUCTION_ENABLED,
-  isProductionChange,
-  planProduction,
-  PRODUCTION_LOOKUPS_ENABLED,
-  type ProductionOp,
-  PROJECT_ORGAN_ENABLED,
-} from './production/plan.ts';
+import { isProductionChange, planProduction, type ProductionOp } from './production/plan.ts';
 import { stavincFromFlag } from './vinculo-flag.ts';
 
 /** Valor de campo; null tira o campo do envio (caixa desmarcada). */
@@ -116,11 +92,10 @@ export interface PlanOptions {
    */
   biographicFull?: boolean;
   biographicOps?: boolean;
-  /**
-   * Instituição e curso da formação complementar e a instituição do endereço
-   * profissional pelas buscas (edit-lists.ts, COMPL_ENDERECO_LOOKUPS_ENABLED).
-   */
+  /** A instituição e o órgão do endereço profissional pelas buscas (edit-lists.ts, COMPL_ENDERECO_LOOKUPS_ENABLED). */
   complEnderecoLookups?: boolean;
+  /** Instituição e curso da formação complementar pelas buscas (edit-lists.ts, COMPL_LOOKUPS_ENABLED). */
+  complLookups?: boolean;
   createItems?: boolean;
   deleteItems?: boolean;
   /** Áreas de atuação (areas-atuacao.ts, EDIT_AREAS_ENABLED). */
@@ -155,66 +130,9 @@ export interface PlanOptions {
   projectOrgan?: boolean;
 }
 
-/**
- * Chaves de inclusão, exclusão e alteração que dependem de uma capacidade da
- * extensão. Cada uma
- * entra em BRIDGE_FEATURES (compat.ts) no mesmo commit em que a chave liga, e
- * só então, e sai no commit em que ela voltar a desligar (a exceção à regra
- * de compat.ts de que capacidade não sai): uma extensão que anunciasse a
- * capacidade com a chave desligada não teria o formulário no contrato. Mesmo
- * assim, applyOp recusa o tipo desligado na montagem dela (apply.ts,
- * ApplyGates). O teste tests/edit-flags.test.ts cobra chave e capacidade
- * juntas.
- */
-export const GATED_EDITS: readonly {
-  enabled: boolean;
-  feature: string;
-  option: keyof PlanOptions;
-}[] = [
-  { enabled: CREATE_ITEMS_ENABLED, feature: 'incluir-itens', option: 'createItems' },
-  { enabled: DELETE_ITEMS_ENABLED, feature: 'excluir-itens', option: 'deleteItems' },
-  { enabled: BIOGRAPHIC_OPS_ENABLED, feature: 'alterar-dados-gerais', option: 'biographicOps' },
-  {
-    enabled: BIOGRAPHIC_FULL_ENABLED,
-    feature: 'alterar-dados-gerais-completo',
-    option: 'biographicFull',
-  },
-  { enabled: EDIT_OUVINTE_ENABLED, feature: 'alterar-evento', option: 'editOuvinte' },
-  { enabled: EDIT_EVENTO_ENABLED, feature: 'alterar-evento-completo', option: 'editEvento' },
-  { enabled: EDIT_PREMIO_ENABLED, feature: 'alterar-premio', option: 'editPremio' },
-  {
-    enabled: EDIT_FORMACAO_COMPL_ENABLED,
-    feature: 'alterar-formacao-complementar',
-    option: 'editFormacaoComplementar',
-  },
-  {
-    enabled: COMPL_ENDERECO_LOOKUPS_ENABLED,
-    feature: 'buscas-complementar-endereco',
-    option: 'complEnderecoLookups',
-  },
-  { enabled: EDIT_PRODUCTION_ENABLED, feature: 'alterar-producao', option: 'editProduction' },
-  {
-    enabled: PRODUCTION_LOOKUPS_ENABLED,
-    feature: 'buscas-producao',
-    option: 'productionLookups',
-  },
-  { enabled: PROJECT_ORGAN_ENABLED, feature: 'orgao-projeto', option: 'projectOrgan' },
-  { enabled: EDIT_AREAS_ENABLED, feature: 'alterar-areas-atuacao', option: 'editAreas' },
-  { enabled: EDIT_ATIVIDADES_ENABLED, feature: 'alterar-atividades', option: 'editAtividades' },
-  { enabled: EDIT_CITACOES_ENABLED, feature: 'alterar-citacoes', option: 'editCitacoes' },
-];
+import { GATED_EDITS } from './plan-gates.ts';
 
-/**
- * As chaves do plano para a extensão ligada: cada alteração de GATED_EDITS
- * só vai a uma extensão que anuncia a capacidade dela (compat.ts), porque uma
- * mais antiga não tem o formulário no contrato e gravaria sem conferir. Sem
- * ela, essas mudanças ficam à mão.
- */
-export function planOptionsFor(features: readonly string[]): PlanOptions {
-  return Object.fromEntries(
-    GATED_EDITS.map((g) => [g.option, g.enabled && features.includes(g.feature)]),
-  );
-}
+export { GATED_EDITS, planOptionsFor } from './plan-gates.ts';
 
 export interface Unsupported {
   key: string;
@@ -307,6 +225,7 @@ export function planChange(
     biographicFull = false,
     biographicOps = false,
     complEnderecoLookups = false,
+    complLookups = false,
     createItems = false,
     deleteItems = false,
     editAreas = false,
@@ -465,7 +384,7 @@ export function planChange(
   // Prêmios e formação complementar (edit-lists.ts), cada um com a chave própria.
   const lists = new Set<ListEditKind>(editPremio ? ['premio'] : []);
   if (editFormacaoComplementar) lists.add('formacao-complementar');
-  const listEdit = planListEdit(change, chain, label, lists, complEnderecoLookups);
+  const listEdit = planListEdit(change, chain, label, lists, complLookups);
   if (listEdit)
     return 'reason' in listEdit ? unsupported(change, label, listEdit.reason) : listEdit;
 

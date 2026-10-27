@@ -99,7 +99,7 @@ describe('Lattes simulado: formações e a visibilidade', () => {
     expect(all(lattes.state.root, 'DOUTORADO')).toHaveLength(0);
   });
 
-  it('formação complementar: nível pelo FORM2 com f_ctr vazio, e exclusão', async () => {
+  it('formação complementar: o FORM2 em dois passos, e exclusão', async () => {
     const lattes = await start();
     const code = lattes.state.code;
     const root = lattes.state.root;
@@ -122,8 +122,20 @@ describe('Lattes simulado: formações e a visibilidade', () => {
     expect(field(form, 'GN_FORMACAO2', 'f_nivel')?.selected).toEqual(['F']);
     expect(form).toContain('PKG_FORMACAO_COMPL.SETA_ULTIMO_PUBLICO');
 
-    await lattes.port.post('PKG_FORMACAO_COMPL.FORM2', `f_ctr=&f_cod=${code}&f_seq=7&f_nivel=E`);
+    // O primeiro passo (f_ctr vazio) só devolve o segundo, sem gravar (27/10/2026).
+    const step2 = await lattes.port.post(
+      'PKG_FORMACAO_COMPL.FORM2',
+      `f_ctr=&f_cod=${code}&f_seq=7&f_nivel=E`,
+    );
+    expect(field(step2, 'GN_FORMACAO2', 'f_ctr')?.value).toBe('U');
+    expect(all(root, 'MBA')).toHaveLength(0);
+    const saved = await lattes.port.post(
+      'PKG_FORMACAO_COMPL.FORM2',
+      `f_ctr=U&f_cod=${code}&f_seq=7&f_nivel=E&f_ano_ini=2018`,
+    );
+    expect(saved).toMatch(/realizada com sucesso/);
     expect(all(root, 'MBA').map((el) => getAttr(el, 'NIVEL'))).toEqual(['E']);
+    expect(getAttr(all(root, 'MBA')[0]!, 'ANO-DE-INICIO')).toBe('2018');
     await lattes.port.post('PKG_FORMACAO_COMPL.FORM2', `f_ctr=E&f_cod=${code}&f_seq=7&f_tipo=`);
     expect(all(root, 'MBA')).toHaveLength(0);
   });

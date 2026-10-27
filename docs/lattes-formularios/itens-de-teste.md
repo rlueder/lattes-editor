@@ -52,7 +52,8 @@ Em 27/10/2026, no quadro isolado, nenhum item foi criado: a orientação, a
 banca e outros formulários validam no salvar por uma chamada ajax síncrona
 (`pkg_orient.valida_orientador_ajax`, por exemplo), que o quadro sem rede não
 responde, e a formação complementar responde ao primeiro passo do `FORM2` com
-outro passo que o quadro não segue. Até um desses ser adaptado, a passada só
+um segundo passo que o quadro não segue (o conector já segue os dois na
+alteração). Até um desses ser adaptado, a passada só
 cria tipos sem validação de rede no salvar.
 
 ## Como rodar

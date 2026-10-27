@@ -334,3 +334,12 @@ node scripts/censo-ponte.ts reanexar        # depois de entrar de novo no Lattes
 
 O censo carregado some quando a aba recarrega; `carregar` de novo. Desligue a
 depuração remota ao terminar.
+
+A mesma ponte serve para um envio acompanhado com o núcleo do conector, sem a
+extensão: `node scripts/build-conector-ponte.ts` monta
+`dist-censo/conector-ponte.js`, `carregar dist-censo/conector-ponte.js` o põe
+na aba, e `chamar '__conectorPonte.apply(<operação>)'` roda o mesmo `applyOp`,
+com os tetos de pedidos. `capturas` lista os POSTs que a aba fez desde que a
+ponte subiu, com os textos mascarados e só os nomes e os campos de controle
+(`f_ctr`, os códigos e os `*_old`) à vista: é como se registra o envio feito
+pela própria página para comparar com o do conector.

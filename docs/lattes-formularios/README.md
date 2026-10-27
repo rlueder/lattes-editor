@@ -115,8 +115,6 @@ decidido como em `src/ui/AttributeField.tsx`):
 Tudo abaixo só se vê enviando, e por isso espera um teste acompanhado, com um
 item de teste e a base da passada de itens de teste:
 
-- o passo depois do envio da formação complementar (`FORM2`) e o que ele
-  grava com `f_ctr` vazio;
 - o elemento do XML que corpo editorial, revisão e assessoramento gravam
   (`PKG_REVISOR.INCLUI`): o currículo não tem item desses;
 - a primeira inclusão real de cultivar protegida e registrada, desenho

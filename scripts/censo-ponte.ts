@@ -4,10 +4,11 @@
 // expressões na aba do menu, sem foco, teclado nem área de transferência.
 //
 //   node scripts/censo-ponte.ts servir            # mantém a conexão (o navegador pede "Allow")
-//   node scripts/censo-ponte.ts carregar          # põe dist-censo/censo-lattes.js na aba
+//   node scripts/censo-ponte.ts carregar [pacote] # põe dist-censo/censo-lattes.js (ou o pacote) na aba
 //   node scripts/censo-ponte.ts avaliar '<expr>'  # avalia e imprime o valor
 //   node scripts/censo-ponte.ts chamar '<expr>'   # espera a Promise da expressão e imprime
 //   node scripts/censo-ponte.ts reanexar          # volta para a aba do menu depois de um login
+//   node scripts/censo-ponte.ts capturas          # os POSTs da aba ao Lattes desde a última consulta
 //
 // Só escuta em 127.0.0.1, com um token num arquivo da pasta temporária. O
 // navegador precisa da depuração remota ligada (brave://inspect/#remote-debugging
@@ -39,12 +40,28 @@ async function serve(): Promise<void> {
       pending.set(id, { reject, resolve: (v) => resolve(v as Record<string, unknown>) });
       ws.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) }));
     });
+  // Os POSTs da aba ao Lattes, só na memória desta ponte, para comparar o que a
+  // página manda com o que o conector manda. Sai pelo pedido "capturas".
+  const posts: { at: string; pairs: [string, string][]; url: string }[] = [];
   ws.onmessage = (e) => {
     const m = JSON.parse(String(e.data)) as {
       error?: { message: string };
       id?: number;
+      method?: string;
+      params?: { request?: { method: string; postData?: string; url: string } };
       result?: unknown;
     };
+    const request = m.params?.request;
+    if (m.method === 'Network.requestWillBeSent' && request?.method === 'POST') {
+      const url = new URL(request.url);
+      if (url.pathname.includes('/cvlattesweb/')) {
+        posts.push({
+          at: new Date().toISOString(),
+          pairs: [...new URLSearchParams(request.postData ?? '')],
+          url: url.pathname.split('/').pop() ?? '',
+        });
+      }
+    }
     const p = m.id !== undefined ? pending.get(m.id) : undefined;
     if (!p) return;
     pending.delete(m.id!);
@@ -75,6 +92,7 @@ async function serve(): Promise<void> {
       flatten: true,
       targetId: tab.targetId,
     })) as { sessionId: string };
+    await send('Network.enable', { maxPostDataSize: 65_536 }, sessionId);
     return sessionId;
   };
   const evaluate = (expression: string) =>
@@ -88,8 +106,17 @@ async function serve(): Promise<void> {
     let body = '';
     for await (const c of req) body += String(c);
     try {
-      const { expr, reattach } = JSON.parse(body) as { expr: string; reattach?: boolean };
+      const { capturas, expr, reattach } = JSON.parse(body) as {
+        capturas?: boolean;
+        expr: string;
+        reattach?: boolean;
+      };
       if (!session || reattach) session = await attach();
+      if (capturas) {
+        res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(posts));
+        posts.length = 0;
+        return;
+      }
       const r = await evaluate(expr).catch(async () => {
         // A aba recarregou: anexa de novo, uma vez.
         session = await attach();
@@ -146,15 +173,34 @@ async function call(expr: string): Promise<unknown> {
 const [cmd, arg] = process.argv.slice(2);
 if (cmd === 'servir') await serve();
 else if (cmd === 'carregar') {
-  const bundle = readFileSync(
-    fileURLToPath(new URL('../dist-censo/censo-lattes.js', import.meta.url)),
-    'utf8',
+  // Sem argumento, o censo; com um caminho, outro pacote (o conector-ponte.js).
+  const file = arg ?? fileURLToPath(new URL('../dist-censo/censo-lattes.js', import.meta.url));
+  const bundle = readFileSync(file, 'utf8');
+  console.log(
+    JSON.stringify(await ask(`${bundle}\n;typeof __lattesCensus + ' ' + typeof __conectorPonte`)),
   );
-  console.log(JSON.stringify(await ask(`${bundle}\n;__lattesCensus.build`)));
 } else if (cmd === 'avaliar' && arg) console.log(JSON.stringify(await ask(arg)));
 else if (cmd === 'chamar' && arg) console.log(JSON.stringify(await call(arg)));
 else if (cmd === 'reanexar') console.log(JSON.stringify(await ask('location.pathname', true)));
-else {
+else if (cmd === 'capturas') {
+  // Os POSTs da aba desde a última consulta. Os valores de texto saem como o
+  // tamanho; códigos, flags e os campos de busca (f_cod*, *_old) aparecem.
+  const res = await fetch(`http://127.0.0.1:${PORT}/`, {
+    body: JSON.stringify({ capturas: true, expr: '' }),
+    headers: { 'x-token': readFileSync(TOKEN, 'utf8') },
+    method: 'POST',
+  });
+  const posts = (await res.json()) as { at: string; pairs: [string, string][]; url: string }[];
+  const shown =
+    /^(f_ctr|f_cod_|f_cod$|f_codorgao|f_codinst|f_seq|f_nivel|f_tipo|f_sta|f_.*_old$|F_COD_PROD|f_sub_prod)/i;
+  for (const p of posts) {
+    console.log(`${p.at} ${p.url}`);
+    for (const [k, v] of p.pairs) {
+      const masked = /^f_cod$/i.test(k) ? '[código]' : shown.test(k) ? v : `(${v.length} car.)`;
+      console.log(`  ${k}=${masked}`);
+    }
+  }
+} else {
   console.error(
     'uso: node scripts/censo-ponte.ts servir | carregar | avaliar <expr> | chamar <expr> | reanexar',
   );

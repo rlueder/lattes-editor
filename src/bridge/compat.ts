@@ -16,6 +16,7 @@
 //   que a extensão não tem no contrato. Os testes edit-flags e compat-publish
 //   conferem essas chaves.
 
+import { COMPL_LOOKUPS_ENABLED } from './edit-lists.ts';
 import { PUBLISH_ENABLED } from './publish.ts';
 
 export const BRIDGE_FEATURES = [
@@ -88,8 +89,10 @@ export const BRIDGE_FEATURES = [
   'orgao-atividades',
   /** Citação de coautores pelo dicionário de coautores (edit-citacao.ts). */
   'alterar-citacoes',
-  // 'buscas-complementar-endereco' (edit-lists.ts, formacao-lookups.ts) volta
-  // quando COMPL_ENDERECO_LOOKUPS_ENABLED ligar.
+  /** Instituição e curso da formação complementar pelas buscas (edit-lists.ts). */
+  ...(COMPL_LOOKUPS_ENABLED ? (['buscas-complementar'] as const) : []),
+  // 'buscas-complementar-endereco' (endereco-buscas.ts) volta quando
+  // COMPL_ENDERECO_LOOKUPS_ENABLED ligar.
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

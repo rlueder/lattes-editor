@@ -16,6 +16,7 @@
 // com a letra, f_cod_curso2 sem ela); que o FORM2 os grave é inferido.
 
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
+import { lattesSchema } from '../../src/schema/lattes.ts';
 import { withLetter } from './buscas.ts';
 import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
 import { complementaryInclusion, isComplementaryInclusion } from './censo.ts';
@@ -196,7 +197,67 @@ ${h.formScripts('GN_FORMACAO2')}${deleteScript(state, el, 'PKG_FORMACAO_COMPL.SE
   return html(h.page('Formação complementar', body));
 }
 
-/** FORM2: f_ctr=E exclui; sem valor (o do formulário) ou U grava nível, carga e status (inferido). */
+/**
+ * Os campos do segundo passo, lidos em 27/10/2026 num curso "Outros": os
+ * anos, a bolsa e, ocultos ali, a monografia e o orientador. Só os que o
+ * elemento tem no XSD.
+ */
+function complStep2Bindings(el: XElement): Binding[] {
+  const has = (a: string) =>
+    lattesSchema.elements[el.name]?.attributes.some((x) => x.name === a) ?? false;
+  const all: [string, Binding][] = [
+    ['ANO-DE-INICIO', attr('f_ano_ini', 'ANO-DE-INICIO', 'text', { maxLength: 4 })],
+    ['ANO-DE-CONCLUSAO', attr('f_ano_fim', 'ANO-DE-CONCLUSAO', 'text', { maxLength: 4 })],
+    [
+      'ANO-DE-OBTENCAO-DO-TITULO',
+      attr('f_ano_obten', 'ANO-DE-OBTENCAO-DO-TITULO', 'text', { maxLength: 4 }),
+    ],
+    [
+      'FLAG-BOLSA',
+      mapped(
+        'F_BOLSA',
+        'FLAG-BOLSA',
+        'radio',
+        { NAO: 'N', SIM: 'S' },
+        {
+          options: [
+            ['S', 'Sim'],
+            ['N', 'Não'],
+          ],
+        },
+      ),
+    ],
+    ['TITULO-DA-MONOGRAFIA', attr('f_titulo', 'TITULO-DA-MONOGRAFIA', 'hidden')],
+    ['NOME-COMPLETO-DO-ORIENTADOR', attr('f_orient', 'NOME-COMPLETO-DO-ORIENTADOR', 'hidden')],
+  ];
+  return all.filter(([a]) => has(a)).map(([, b]) => b);
+}
+
+/**
+ * O segundo passo (observado em 27/10/2026): o mesmo GN_FORMACAO2, com f_ctr
+ * U, os valores do primeiro passo em ocultos e os campos do segundo.
+ */
+function complStep2(req: SimRequest, el: XElement): SimResponse {
+  const first = req.pairs
+    .filter(([k]) => !['f_ctr', 'f_inst', 'f_curso'].includes(k))
+    .map(([k, v]) => h.hidden(k, v))
+    .join('\n');
+  const body = `<form name="GN_FORMACAO2" method="post" action="PKG_FORMACAO_COMPL.FORM2">
+${first}
+${h.hidden('f_inst', '')}${h.hidden('f_curso', '')}
+${renderFields(complStep2Bindings(el), el)}
+${h.hidden('f_ctr', 'U')}${h.hidden('f_tipo_privacidade', '1')}
+${h.hidden('f_plv_l', '')}${h.hidden('f_setor_l', '')}${h.hidden('f_area_l', '')}
+${h.formButtons(true)}
+</form>`;
+  return html(h.page('Formação complementar', body));
+}
+
+/**
+ * FORM2: f_ctr=E exclui. Sem valor (o do formulário de edição), devolve o
+ * segundo passo sem gravar nada; U grava o primeiro e o segundo passo e
+ * responde com a mensagem de sucesso (observado em 27/10/2026).
+ */
 function complPost(req: SimRequest, state: LattesState): SimResponse {
   const el = complBySeq(state, req.get('f_seq'));
   const back = h.savedScript(`pkg_formacao_compl.lista?f_cod=${state.code}`);
@@ -204,16 +265,20 @@ function complPost(req: SimRequest, state: LattesState): SimResponse {
   const ctr = req.get('f_ctr') ?? '';
   if (ctr === 'E') {
     state.remove(state.find(['DADOS-COMPLEMENTARES', 'FORMACAO-COMPLEMENTAR'])!, el);
-  } else if (ctr === '' || ctr === 'U') {
-    const nivel = req.get('f_nivel') ?? '';
-    const name = COMPL_LEVELS[nivel];
-    if (!name) return html('<script>alert("Informe o nível.");</script>');
-    el.name = name;
-    el.attrs = el.attrs.map((a) => (a.name === 'NIVEL' ? { ...a, value: nivel } : a));
-    applyFields(complBindings(state, el), el, req);
-  } else return html(back);
+    state.touch();
+    return html(back);
+  }
+  if (ctr === '') return complStep2(req, el);
+  if (ctr !== 'U') return html(back);
+  const nivel = req.get('f_nivel') ?? '';
+  const name = COMPL_LEVELS[nivel];
+  if (!name) return html('<script>alert("Informe o nível.");</script>');
+  el.name = name;
+  el.attrs = el.attrs.map((a) => (a.name === 'NIVEL' ? { ...a, value: nivel } : a));
+  applyFields(complBindings(state, el), el, req);
+  applyFields(complStep2Bindings(el), el, req);
   state.touch();
-  return html(back);
+  return html(h.eventSavedScript());
 }
 
 export const PREMIOS_COMPLEMENTAR_ROUTES: Routes = {

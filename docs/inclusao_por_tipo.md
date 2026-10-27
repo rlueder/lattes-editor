@@ -272,8 +272,9 @@ abre vazia) e, na inclusão, o órgão ou unidade. A operação agora manda a
 equipe com a linha da própria pessoa como coordenadora (seção 22), mas não
 monta o órgão, e o planejamento manda o projeto à mão com esse motivo. Pós-doutorado e livre-docência entram pela lista
 `f_tipo=AP` (etapa 5). A formação complementar abre com nível, instituição,
-curso, carga horária e situação, sem os anos, e envia para `FORM2`, cujo passo
-seguinte só se vê enviando. Atividades de uma atuação usam `pkg_ativ.cargo`, que o lote 3 da recaptura
+curso, carga horária e situação, sem os anos, e envia para `FORM2`, que
+devolve um segundo passo com os anos, a bolsa e a agência
+(`lattes_internals.md`, seção 18). Atividades de uma atuação usam `pkg_ativ.cargo`, que o lote 3 da recaptura
 leu nas nove naturezas (censo `censo-2026-10-15c.json`). A de ensino é a única
 sem órgão: tem nível (`f_nivel`, de 401 a 409), curso, período e a grade de
 disciplinas em `f_espec_l`, e vai pelo conector

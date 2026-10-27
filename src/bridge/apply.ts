@@ -8,12 +8,10 @@
 import { changedNames, getChecked, mismatches, readPairs, same, Stop } from './apply-pairs.ts';
 import { applyAreas, type AreasOp, isAreasOp } from './areas-atuacao.ts';
 import {
-  BIOGRAPHIC_FULL_ENABLED,
   BIOGRAPHIC_SPECS,
   type BiographicOp,
   isBiographicOp,
   locateBiographic,
-  needsFullBiographic,
 } from './biographic.ts';
 import { applyCreateAtuacao } from './create.ts';
 import {
@@ -28,21 +26,11 @@ import {
 import { applyDelete, type DeleteOp, isDeleteOp } from './delete.ts';
 import { applyAtividade, type AtividadeOp, isAtividadeOp } from './edit-atividade.ts';
 import { applyCitacao, type CitacaoOp, isCitacaoOp } from './edit-citacao.ts';
+import { EVENTO_SPEC, type EventoOp, isEventoOp, locateEvento } from './edit-items.ts';
 import {
-  EDIT_EVENTO_ENABLED,
-  EVENTO_SPEC,
-  type EventoOp,
-  isEventoOp,
-  isFullEvento,
-  locateEvento,
-} from './edit-items.ts';
-import {
-  COMPL_ENDERECO_LOOKUPS_ENABLED,
   countListEdits,
-  enabledListEdits,
   isListEditOp,
   LIST_EDIT_WATCH,
-  type ListEditKind,
   type ListEditOp,
   listEditSpec,
   locateListEdit,
@@ -64,6 +52,7 @@ import {
   pairValue,
   setPairs,
 } from './form.ts';
+import { finishSecondStep, secondStepMisses } from './formacao-compl-steps.ts';
 import { formacaoGridSend } from './formacao-grids.ts';
 import { resolveOpLookups } from './formacao-lookups.ts';
 import { identGrids } from './ident-grids.ts';
@@ -193,47 +182,9 @@ async function locate(op: EditOp, port: LattesPort, menu: string): Promise<strin
   return vinculos[0]!.path;
 }
 
-/**
- * As alterações atrás de chave que este lado grava: as que têm o formulário
- * no contrato dele. O app só manda essas operações a uma extensão que anuncia
- * a capacidade (plan.ts, GATED_EDITS), mas a extensão não confia nisso: uma
- * operação de um tipo cuja chave ela tem desligada para sem enviar nada.
- */
-export interface ApplyGates {
-  /** BIOGRAPHIC_FULL_ENABLED; sem valor, desligada. */
-  biographicFull?: boolean;
-  /** COMPL_ENDERECO_LOOKUPS_ENABLED; sem valor, desligada. */
-  complEnderecoLookups?: boolean;
-  editEvento: boolean;
-  lists: ReadonlySet<ListEditKind>;
-}
+import { type ApplyGates, BUILD_GATES, gatedOut } from './apply-gates.ts';
 
-export const BUILD_GATES: ApplyGates = {
-  biographicFull: BIOGRAPHIC_FULL_ENABLED,
-  complEnderecoLookups: COMPL_ENDERECO_LOOKUPS_ENABLED,
-  editEvento: EDIT_EVENTO_ENABLED,
-  lists: enabledListEdits(),
-};
-
-/** Por que esta extensão não grava a operação; undefined quando grava. */
-function gatedOut(op: BridgeOp, gates: ApplyGates): string | undefined {
-  if (isListEditOp(op) && !gates.lists.has(op.kind)) {
-    return 'Esta extensão não tem o formulário deste tipo no contrato; a alteração fica à mão';
-  }
-  if (isBiographicOp(op) && !gates.biographicFull && needsFullBiographic(op)) {
-    return 'Esta extensão não grava instituição, curso e agência pelas buscas, pós-doutorado, livre-docência nem outras informações; a alteração fica à mão';
-  }
-  const lookups =
-    (isListEditOp(op) && op.lookups !== undefined) ||
-    (op.kind === 'endereco' && (op.institution !== undefined || op.organ !== undefined));
-  if (lookups && !gates.complEnderecoLookups) {
-    return 'Esta extensão não grava instituição, curso e órgão pelas buscas neste formulário; a alteração fica à mão';
-  }
-  if (isEventoOp(op) && !gates.editEvento && isFullEvento(op)) {
-    return 'Esta extensão só altera eventos de ouvinte; a alteração fica à mão';
-  }
-  return undefined;
-}
+export { type ApplyGates, BUILD_GATES } from './apply-gates.ts';
 
 export async function applyOp(
   op: BridgeOp,
@@ -373,7 +324,9 @@ export async function applyOp(
       : setPairs(before.pairs, set);
     const response = await port.post(action, encodeLatin1Form(next));
     if (isLogonPage(response)) return result('sessao', 'A sessão do Lattes expirou; entre de novo');
-
+    // Formação complementar: segundo passo e releitura dele (formacao-compl-steps.ts).
+    const stepped = await finishSecondStep(port, response, op);
+    if (!('ok' in stepped)) return result(stepped.status, stepped.detail);
     if (isListEditOp(op) && listed !== undefined) {
       // O f_ctr desses formulários não distingue sempre incluir de alterar (o
       // da formação complementar vem vazio nos dois): a lista não pode ter
@@ -406,6 +359,7 @@ export async function applyOp(
     const notSaved = [
       ...mismatches(after.pairs, Object.fromEntries(compared)),
       ...(formGrids?.(after.html) ?? []),
+      ...(isListEditOp(op) ? await secondStepMisses(port, after.pairs, op.step2) : []),
     ];
     if (contactGrids) {
       const now = readContactGrids(after.html);

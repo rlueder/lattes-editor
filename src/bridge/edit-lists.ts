@@ -25,8 +25,9 @@
 // f_curso_old ↔ NOME-CURSO e f_inst_old ↔ NOME-INSTITUICAO (censo). Inferido:
 // que FORM2 grave com o f_ctr vazio que a página traz; que "em andamento" e
 // "incompleto" gravem EM_ANDAMENTO e INCOMPLETO (pelo rótulo); que f_nivel
-// seja o NIVEL do XML. O formulário não tem os anos, o órgão nem o nome do
-// curso em inglês.
+// seja o NIVEL do XML. A gravação é em dois passos (formacao-compl-steps.ts):
+// os anos, a bolsa, a monografia e o orientador vão no segundo. O formulário
+// não tem o órgão nem o nome do curso em inglês.
 //
 // Instituição e curso só mudam pelas buscas do Lattes. Observado em 20/10/2026,
 // na página de edição de um curso de curta duração: sele_inst() abre
@@ -79,6 +80,18 @@ export const EDIT_FORMACAO_COMPL_ENABLED = true;
  */
 export const COMPL_ENDERECO_LOOKUPS_ENABLED = false;
 
+/**
+ * Instituição e curso da formação complementar pelas buscas. Ligada em
+ * 27/10/2026: o envio de 20/10/2026 voltou com os valores de antes porque o
+ * FORM2 grava em dois passos e o conector só mandava o primeiro
+ * (formacao-compl-steps.ts); com o segundo passo, uma alteração de carga
+ * horária gravou e conferiu no Lattes real. Inferido, sem envio acompanhado
+ * da troca: que os ocultos que as janelas gravam (observados) bastem com o
+ * segundo passo. O app só manda essas operações a uma extensão que anuncia
+ * 'buscas-complementar'.
+ */
+export const COMPL_LOOKUPS_ENABLED = true;
+
 export type ListEditKind = 'formacao-complementar' | 'premio';
 
 export interface ListEditOp extends OpBase {
@@ -93,6 +106,8 @@ export interface ListEditOp extends OpBase {
    * a conferência estrita é a do expect.
    */
   match: FieldValues;
+  /** Os campos do segundo passo da formação complementar (formacao-compl-steps.ts). */
+  step2?: { expect: FieldValues; set: FieldValues };
 }
 
 const KINDS = new Set<string>(['formacao-complementar', 'premio']);
@@ -111,6 +126,12 @@ const same: Mapper = (v) => v;
 /** Rádio F_STATUS: S concluído (observado), N em andamento e I incompleto (pelo rótulo). */
 const STATUS: Record<string, string> = { CONCLUIDO: 'S', EM_ANDAMENTO: 'N', INCOMPLETO: 'I' };
 const status: Mapper = (v) => STATUS[v];
+
+/** Ano com quatro dígitos, ou vazio (o check() do segundo passo, lido em 27/10/2026). */
+const year: Mapper = (v) => (/^(\d{4})?$/.test(v.trim()) ? v.trim() : undefined);
+
+/** Rádio F_BOLSA do segundo passo: S sim, N não (lido em 27/10/2026). */
+const bolsa: Mapper = (v) => ({ NAO: 'N', SIM: 'S' })[v] ?? (v === '' ? '' : undefined);
 
 /** Carga horária: campo de 4 caracteres, em horas; só dígitos (inferido). */
 const hours: Mapper = (v) => (/^\d*$/.test(v.trim()) ? v.trim() : undefined);
@@ -138,6 +159,8 @@ interface Target {
   /** Campos que o check() do formulário exige. */
   required: string[];
   spec: FormSpec;
+  /** Atributos que vão no segundo passo do formulário (formacao-compl-steps.ts). */
+  step2?: Record<string, [string, Mapper]>;
 }
 
 const text = (maxLength: number): FieldSpec => ({ maxLength, type: 'text' });
@@ -233,16 +256,9 @@ const COMPL_LOOKUP_ATTRS = new Set([
 const TARGETS: Record<ListEditKind, Target> = {
   'formacao-complementar': {
     absent: {
-      'ANO-DE-CONCLUSAO': 'os anos',
-      'ANO-DE-INICIO': 'os anos',
-      'ANO-DE-OBTENCAO-DO-TITULO': 'os anos',
       'CODIGO-ORGAO': 'o órgão',
-      'FLAG-BOLSA': 'a bolsa',
-      'NOME-AGENCIA': 'a agência',
-      'NOME-COMPLETO-DO-ORIENTADOR': 'o orientador',
       'NOME-CURSO-INGLES': 'o nome do curso em inglês',
       'NOME-ORGAO': 'o órgão',
-      'TITULO-DA-MONOGRAFIA': 'a monografia',
     },
     fields: {
       'CARGA-HORARIA': ['f_carga', hours],
@@ -250,8 +266,12 @@ const TARGETS: Record<ListEditKind, Target> = {
     },
     form: 'PKG_FORMACAO_COMPL.form',
     hand: {
+      'CODIGO-AGENCIA-FINANCIADORA':
+        'A agência sai da busca de agências do Lattes no segundo passo, que o conector ainda não faz; troque no Lattes',
       NIVEL:
         'O nível é o tipo da formação complementar no Lattes: para trocar, inclua de novo no nível certo',
+      'NOME-AGENCIA':
+        'A agência sai da busca de agências do Lattes no segundo passo, que o conector ainda não faz; troque no Lattes',
     },
     identity: (before) => ({
       f_curso_old: before('NOME-CURSO'),
@@ -262,6 +282,18 @@ const TARGETS: Record<ListEditKind, Target> = {
     lookup: { name: 'formação complementar', visible: ['f_inst', 'f_curso'] },
     required: [],
     spec: FORMACAO_COMPL_SPEC,
+    // Os campos do segundo passo, lidos em 27/10/2026 num curso "Outros".
+    // Inferido: a monografia e o orientador (ocultos nele) em f_titulo e
+    // f_orient, como no MBA, e que o ano de obtenção desabilitado ali grave
+    // onde a página o habilita.
+    step2: {
+      'ANO-DE-CONCLUSAO': ['f_ano_fim', year],
+      'ANO-DE-INICIO': ['f_ano_ini', year],
+      'ANO-DE-OBTENCAO-DO-TITULO': ['f_ano_obten', year],
+      'FLAG-BOLSA': ['F_BOLSA', bolsa],
+      'NOME-COMPLETO-DO-ORIENTADOR': ['f_orient', same],
+      'TITULO-DA-MONOGRAFIA': ['f_titulo', same],
+    },
   },
   premio: {
     absent: { 'NOME-DO-PREMIO-OU-TITULO-INGLES': 'o nome em inglês' },
@@ -295,7 +327,7 @@ export function planListEdit(
   chain: XElement[],
   label: string,
   enabled: ReadonlySet<ListEditKind>,
-  /** COMPL_ENDERECO_LOOKUPS_ENABLED com a capacidade da extensão. */
+  /** COMPL_LOOKUPS_ENABLED com a capacidade da extensão. */
   lookups = false,
 ): ListEditOp | { reason: string } | undefined {
   if (change.kind !== 'alterado') return undefined;
@@ -312,10 +344,23 @@ export function planListEdit(
   const missing: string[] = [];
   const invalid: string[] = [];
   const absent = new Set<string>();
+  const step2 = { expect: {} as FieldValues, set: {} as FieldValues };
   for (const f of change.fields) {
     const hand = t.hand?.[f.attr];
     if (hand) return { reason: hand };
     if (t.lookup && COMPL_LOOKUP_ATTRS.has(f.attr)) continue;
+    const second = t.step2?.[f.attr];
+    if (second) {
+      const [field, map] = second;
+      const after = map(f.after);
+      const before = map(f.before);
+      if (after === undefined || before === undefined) invalid.push(f.label);
+      else {
+        step2.set[field] = after;
+        step2.expect[field] = before;
+      }
+      continue;
+    }
     const entry = t.fields[f.attr];
     if (!entry) {
       if (t.absent[f.attr]) absent.add(t.absent[f.attr]!);
@@ -390,6 +435,7 @@ export function planListEdit(
     match,
     set,
     ...(found ? { lookupRows: found.rows, lookups: found.lookups } : {}),
+    ...(Object.keys(step2.set).length > 0 ? { step2 } : {}),
   };
 }
 
@@ -512,13 +558,19 @@ export const LIST_EDIT_WATCH: Record<ListEditKind, string[]> = {
 /** Rótulos do formulário de cada tipo (os da página, censo de 15/10/2026). */
 export const LIST_EDIT_FIELD_LABELS: Record<ListEditKind, Record<string, string>> = {
   'formacao-complementar': {
+    f_ano_fim: 'Ano de conclusão',
+    f_ano_ini: 'Ano de início',
+    f_ano_obten: 'Ano de obtenção do título',
+    F_BOLSA: 'Bolsa',
     f_carga: 'Carga horária',
     f_curso: 'Curso',
     f_curso_old: 'Curso',
     f_inst: 'Instituição',
     f_inst_old: 'Instituição',
     f_nivel: 'Nível',
+    f_orient: 'Orientador',
     F_STATUS: 'Status do curso',
+    f_titulo: 'Título da monografia',
   },
   premio: {
     f_agencia: 'Entidade promotora',
