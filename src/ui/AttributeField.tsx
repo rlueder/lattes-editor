@@ -27,6 +27,7 @@ import {
   flagToXml,
   isBooleanAttr,
   isSystemAttr,
+  LINKED_IN_LATTES,
 } from './field-kind.ts';
 import { useFormLacks } from './form-lacks-context.ts';
 import { LockIcon } from './icons.tsx';
@@ -37,6 +38,7 @@ import { isFourDigitYear, isLattesYearAttr } from './lattes-year.ts';
 import { cleanLinkValue, linkError } from './link-fields.ts';
 import { ancestorsOf, type LiveAvailability, liveKind } from './live-lists.ts';
 import { LiveListControl } from './LiveListField.tsx';
+import { LATTES_URL } from './onboarding.ts';
 import { ComboSelect } from './primitives/ComboSelect.tsx';
 import { Switch } from './primitives/Switch.tsx';
 import { Tip } from './primitives/Tip.tsx';
@@ -200,6 +202,8 @@ export function AttributeField({
     name,
     el.attrs.map((a) => a.name),
   );
+
+  if (LINKED_IN_LATTES.has(name)) return <LinkedField text={text} value={value} />;
 
   if (isSystemAttr(el.name, name)) {
     // Código ou sequência gerado pelo Lattes: texto, não campo. O fundo cinza
@@ -420,6 +424,31 @@ function enumLabelOrValue(attr: string, value: string): string {
  * não se edita (as duas espécies de campo travado usam o mesmo sinal). O
  * cadeado é um botão sem ação, para a dica valer também no teclado.
  */
+/**
+ * O ORCID: o Lattes só o recebe pela vinculação com o login no ORCID, na
+ * identificação, e não por um campo digitado (o formulário de identificação
+ * não tem o campo, censo de 15/10/2026). Vazio, diz onde vincular.
+ */
+function LinkedField({ text, value }: { text: string; value: string }) {
+  const why = 'Vem da vinculação com o ORCID, feita no Lattes';
+  return (
+    <div className="field field-readonly field-locked">
+      <ReadonlyLabel text={text} why={why} />
+      {value ? (
+        <span className="locked-value">{value}</span>
+      ) : (
+        <span className="field-note">
+          No Lattes, em Dados gerais › Identificação, vincule pelo login no ORCID. Depois de enviar
+          ao CNPq, ele aparece aqui.{' '}
+          <a className="notice-link" href={LATTES_URL} rel="noreferrer" target="_blank">
+            Abrir o Lattes
+          </a>
+        </span>
+      )}
+    </div>
+  );
+}
+
 function ReadonlyLabel({ text, why }: { text: string; why: string }) {
   return (
     <span className="field-label">

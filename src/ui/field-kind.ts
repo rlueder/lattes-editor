@@ -124,6 +124,13 @@ const LEVEL_FROM_TYPE =
  */
 const TYPED_CODES = new Set(['CODIGO-DO-REGISTRO-OU-PATENTE']);
 
+/**
+ * Atributos que só o Lattes preenche, por uma vinculação fora do formulário:
+ * o ORCID entra pelo login no próprio ORCID, na identificação do Lattes. O
+ * editor os mostra sempre, mesmo vazios, com o caminho para preencher lá.
+ */
+export const LINKED_IN_LATTES: ReadonlySet<string> = new Set(['ORCID-ID']);
+
 export function isSystemAttr(element: string, attr: string): boolean {
   if (TYPED_CODES.has(attr)) return false;
   return SYSTEM.test(attr) || OWNER_ONLY[attr] === element || LEVEL_CODES.test(attr);

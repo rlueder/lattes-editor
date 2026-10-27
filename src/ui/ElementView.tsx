@@ -12,7 +12,13 @@ import { groupSummary, switchedOff } from './disclosure.ts';
 import { DisclosureGroup } from './DisclosureGroup.tsx';
 import { useFieldSlot, usePartKey, useTargetPart } from './draft-context.ts';
 import type { SectionFilter } from './facets.ts';
-import { type FieldGroup, groupFields, isBooleanAttr, isSystemAttr } from './field-kind.ts';
+import {
+  type FieldGroup,
+  groupFields,
+  isBooleanAttr,
+  isSystemAttr,
+  LINKED_IN_LATTES,
+} from './field-kind.ts';
 import { useFormLacks } from './form-lacks-context.ts';
 import { offForm } from './form-order.ts';
 import { isListItem } from './item-meta.ts';
@@ -63,12 +69,13 @@ function FieldsBlock({
       .filter((a) => !isRedundantDateFormat(a.name, a.value))
       .filter((a) => showEmpty || a.value !== '')
       // Fora do formulário do Lattes (form-order.ts): só aparece preenchido.
-      .filter((a) => a.value !== '' || !offForm(src.name, a.name))
+      // O ORCID e afins (LINKED_IN_LATTES) aparecem sempre, com o caminho no Lattes.
+      .filter((a) => LINKED_IN_LATTES.has(a.name) || a.value !== '' || !offForm(src.name, a.name))
       // Num item que já está no Lattes, o campo que o formulário de lá não tem
       // não aparece: alterá-lo aqui não chegaria lá.
-      .filter((a) => !lacksField(formLacks, src, a.name))
+      .filter((a) => LINKED_IN_LATTES.has(a.name) || !lacksField(formLacks, src, a.name))
       // Códigos que o Lattes gera: só com "Mostrar códigos do Lattes" ligado.
-      .filter((a) => showCodes || !isSystemAttr(src.name, a.name))
+      .filter((a) => showCodes || LINKED_IN_LATTES.has(a.name) || !isSystemAttr(src.name, a.name))
       // Sanduíche e cotutela só depois de o tipo do curso os escolher.
       .filter((a) => !switchedOff(src, a.name))
       .map((a) => ({ attr: a.name, element: src.name, key: `${i}:${a.name}`, source: i })),
