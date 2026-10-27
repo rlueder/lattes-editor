@@ -499,6 +499,45 @@ describe('alteração em listas sem número: aplicar no Lattes simulado', () => 
     ).toMatchObject({ status: 'erro' });
   });
 
+  it('formação complementar: agência com bolsa Não fica à mão; a bolsa da mudança vale', async () => {
+    // O MBA de partida com bolsa Sim e a agência 2.
+    const base = (root: XElement) => {
+      setAttr(compl(root, '6'), 'CODIGO-AGENCIA-FINANCIADORA', '000000000002');
+      setAttr(compl(root, '6'), 'FLAG-BOLSA', 'SIM');
+    };
+    const planFrom = (edit: (root: XElement) => void) => {
+      const original = parseXml(XML).root;
+      base(original);
+      const working = parseXml(XML).root;
+      base(working);
+      edit(working);
+      return planChanges(
+        diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Item' })),
+        working,
+        LOOKUPS_ON,
+      );
+    };
+    // Outra agência com a bolsa Não na mesma mudança: contradiz a página.
+    const contradiction = planFrom((root) => {
+      setAttr(compl(root, '6'), 'CODIGO-AGENCIA-FINANCIADORA', '000000000001');
+      setAttr(compl(root, '6'), 'FLAG-BOLSA', 'NAO');
+    });
+    expect(contradiction.ops).toEqual([]);
+    expect(contradiction.unsupported[0]?.reason).toMatch(/Com bolsa Não, o Lattes não guarda/);
+    // Tirar a agência e a bolsa juntas: a bolsa Não da mudança vai como está.
+    const lattes = await lattesFor();
+    base(lattes.state.root);
+    const plan = planFrom((root) => {
+      setAttr(compl(root, '6'), 'CODIGO-AGENCIA-FINANCIADORA', '');
+      setAttr(compl(root, '6'), 'FLAG-BOLSA', 'NAO');
+    });
+    expect(plan.unsupported).toEqual([]);
+    expect(await applyOp(plan.ops[0]!, lattes.port, GATES)).toMatchObject({ status: 'conferido' });
+    const saving = lattes.state.log.filter((l) => l.method === 'POST')[1]!;
+    expect(saving.pairs).toContainEqual(['F_BOLSA', 'N']);
+    expect(saving.pairs).toContainEqual(['f_agencia', '']);
+  });
+
   it('formação complementar: agência fora da lista ou já trocada no Lattes não grava', async () => {
     const lattes = await lattesFor();
     const missing = onlyOp((root) => {

@@ -23,12 +23,12 @@ async function keepSessionAlive(tabId: number): Promise<boolean | undefined> {
       chrome.scripting.executeScript({
         func: () =>
           (
-            globalThis as unknown as { __conector: { manter(): Promise<{ viva: boolean }> } }
+            globalThis as unknown as { __conector: { manter(): Promise<{ viva?: boolean }> } }
           ).__conector.manter(),
         target: { tabId },
       }),
     );
-    return (res?.result as { viva: boolean } | undefined)?.viva;
+    return (res?.result as { viva?: boolean } | undefined)?.viva;
   }).catch(() => undefined);
 }
 

@@ -414,14 +414,17 @@ const connector = {
   cancelar: () => traffic.cancel(),
   identity: (fresh = false) =>
     fresh ? withTraffic(() => traffic.run(() => connector.identity(true))) : connector.identity(),
-  /** Um pedido pequeno à sessão (src/bridge/keepalive.ts): viva, ou caiu. */
+  /** Um pedido pequeno à sessão (src/bridge/keepalive.ts): viva, caiu, ou sem resposta. */
   manter: () =>
     withTraffic(() =>
       traffic.run(async () => {
         const code = cvCodeFrom(document.documentElement.outerHTML);
         const res = await request(`${KEEPALIVE_PAGE}?f_cod=${code}`, { credentials: 'include' });
         const html = await text(res);
-        return { viva: res.ok && !isLogonPage(html, res.url) };
+        // Só a tela de login é sessão caída. Outra falha (um 5xx, o gateway)
+        // fica sem resposta, e o próximo minuto tenta de novo.
+        if (isLogonPage(html, res.url)) return { viva: false };
+        return { viva: res.ok ? true : undefined };
       }),
     ),
   respeitarPausa: (until: number) => traffic.respectPause(until),

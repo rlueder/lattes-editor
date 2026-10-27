@@ -57,8 +57,11 @@ export function framePost(raw: unknown, base: string): { url: URL; pairs: [strin
 export function localFrameReferences(code: string): string {
   // Todo acesso ao pai ou ao topo vai às cópias locais: o que elas não têm
   // para com o nome pedido (censo-frame-runtime.ts), sem tocar o menu real.
+  // Só a cadeia da janela (parent, top, self.parent, window.top.parent...):
+  // depois de outro ponto é propriedade de um objeto da página
+  // (node.parent.children, el.style.top.length) e fica como está.
   return code.replace(
-    /\b(?:(?:self|window)\.)?(?:parent|top)\.(?=[A-Za-z_$])/g,
-    '__lattesFrameParent.',
+    /(?<![.\w$])(?:(?:self|window)\.)?((?:(?:parent|top)\.)+)(?=[A-Za-z_$])/g,
+    (_, chain: string) => '__lattesFrameParent.'.repeat(chain.split('.').length - 1),
   );
 }

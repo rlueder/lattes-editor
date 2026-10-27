@@ -51,4 +51,7 @@ it('todo acesso ao pai vai às cópias locais, sem referência ao menu real', ()
   ).toBe(
     '__lattesFrameParent.veriHelp("LIVROS"); __lattesFrameParent.palavraDP; __lattesFrameParent.areaDP; __lattesFrameParent.setorDP; __lattesFrameParent.titularInstDP; __lattesFrameParent.__lattesFrameParent.modalCV3;',
   );
+  // Propriedade de um objeto da página, depois de outro ponto: fica como está.
+  const own = 'node.parent.children; this.parent.x; el.style.top.length; a.$parent.b; myparent.x;';
+  expect(localFrameReferences(own)).toBe(own);
 });

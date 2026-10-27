@@ -407,6 +407,13 @@ export function planListEdit(
   if (typeof agency === 'string') return { reason: agency };
   if (agency) {
     if (!lookups) return { reason: LOOKUPS_OFF };
+    // A agência marca a bolsa como Sim na página (agencia()), e o Não a
+    // apaga (agnull(1)): as duas juntas não têm como ir.
+    if (agency.code && step2.set.F_BOLSA === 'N') {
+      return {
+        reason: 'Com bolsa Não, o Lattes não guarda a agência: tire a agência ou marque a bolsa',
+      };
+    }
     step2.agency = agency;
   }
 

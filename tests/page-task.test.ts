@@ -59,6 +59,13 @@ it('passado o prazo, diz que o conector está ocupado', async () => {
   void stuck;
 });
 
+it('um AbortError da própria tarefa sobe como veio, sem virar "ocupado"', async () => {
+  vi.stubGlobal('window', {});
+  vi.stubGlobal('navigator', { locks: fakeLocks() });
+  const aborted = Object.assign(new Error('cancelado'), { name: 'AbortError' });
+  await expect(withPageTask(() => Promise.reject(aborted))).rejects.toThrow('cancelado');
+});
+
 it('recusa rede no navegador sem a API de trava', async () => {
   vi.stubGlobal('window', {});
   vi.stubGlobal('navigator', {});

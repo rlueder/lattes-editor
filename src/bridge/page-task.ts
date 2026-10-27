@@ -14,15 +14,23 @@ export async function withPageTask<T>(
 ): Promise<T> {
   if (typeof window === 'undefined') return work();
   if (!navigator.locks) throw new Error('Este navegador não oferece a trava de sessão necessária');
+  // Só o prazo da espera vira "ocupado"; um AbortError da própria tarefa (um
+  // pedido cancelado por traffic.cancel(), por exemplo) sobe como veio.
+  let started = false;
   try {
     return await navigator.locks.request(
       'lattes-editor-session',
       { signal: AbortSignal.timeout(waitMs) },
-      () => work(),
+      () => {
+        started = true;
+        return work();
+      },
     );
   } catch (err) {
     const name = (err as { name?: string } | undefined)?.name;
-    if (name === 'TimeoutError' || name === 'AbortError') throw new Error(PAGE_TASK_BUSY);
+    if (!started && (name === 'TimeoutError' || name === 'AbortError')) {
+      throw new Error(PAGE_TASK_BUSY);
+    }
     throw err;
   }
 }

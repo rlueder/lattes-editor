@@ -76,7 +76,8 @@ export async function finishSecondStep(
   }
   const agency = step2.agency ? await agencyValues(port, pairs, step2.agency) : { set: {} };
   if (!('set' in agency)) return agency;
-  const set = { ...step2.set, ...agency.set };
+  // A bolsa da própria mudança vale sobre a que a busca de agências marca.
+  const set = { ...agency.set, ...step2.set };
   const response = await port.post(ACTION, encodeLatin1Form(setPairs(pairs, set)));
   if (isLogonPage(response)) {
     return {
