@@ -141,10 +141,17 @@ export function connectionText(c: Connection, appVersion: string, devFolder?: st
     return `A extensão Dev não respondeu. ${devExtensionHowTo(devFolder)}`;
   }
   switch (c.kind) {
+    // A comparação é pelos recursos que cada lado anuncia (compat.ts), não
+    // pelo número: com o mesmo número, uma montagem local mais nova ainda
+    // tem recursos que a outra não conhece.
     case 'app-antigo':
-      return `A extensão (v${c.version}) é mais nova do que o editor (v${appVersion}).`;
+      return c.version === appVersion
+        ? `A extensão sabe fazer coisas que este editor ainda não usa, embora os dois digam v${appVersion}.`
+        : `A extensão (v${c.version}) é mais nova do que o editor (v${appVersion}).`;
     case 'extensao-antiga':
-      return `A extensão (v${c.version}) é mais antiga do que o editor (v${appVersion}).`;
+      return c.version === appVersion
+        ? `O editor usa recursos que esta extensão ainda não tem, embora os dois digam v${appVersion}.`
+        : `A extensão (v${c.version}) é mais antiga do que o editor (v${appVersion}).`;
     case 'incompativel':
       return 'A extensão instalada fala outra versão do conector e é ignorada.';
     case 'lendo':
