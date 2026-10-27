@@ -55,6 +55,28 @@ describe('listas do currículo no Lattes, só por GET', () => {
     expect(rest).toMatchObject({ lists: { 'pkg_texto.lista?': [{ text: 'Linha' }] }, queue: [] });
   });
 
+  it('com filtro, só as listas pedidas e as de dentro delas', async () => {
+    const menu = `<a onclick="setarUrl('pkg_ativ.lista')">A</a>
+      <a onclick="setarUrl('pkg_premio.lista')">P</a>`;
+    const asked: string[] = [];
+    const lists = await snapshotCvLists(
+      menu,
+      'K1',
+      async (path) => {
+        asked.push(path);
+        return path.startsWith('pkg_ativ.lista')
+          ? row('PKG_ATIV.cargos_vinculos?f_seq_ativ=24', 'Empresa')
+          : row('x', 'Linha');
+      },
+      (url) => url.startsWith('pkg_ativ'),
+    );
+    expect(asked.some((p) => p.startsWith('pkg_premio'))).toBe(false);
+    expect(Object.keys(lists).sort()).toEqual([
+      'pkg_ativ.cargos_vinculos?f_seq_ativ=24',
+      'pkg_ativ.lista?',
+    ]);
+  });
+
   it('de uma vez, um erro de leitura sobe: a base dos itens de teste não grava lista faltando', async () => {
     const menu = `<a onclick="setarUrl('pkg_premio.lista')">P</a>`;
     await expect(

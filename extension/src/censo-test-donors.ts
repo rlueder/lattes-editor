@@ -18,21 +18,38 @@ export function editLinks(html: string): string[] {
     .filter((p) => /[?&]f_seq[a-z_]*=\d/i.test(p));
 }
 
+/** O pacote de um caminho do Lattes (pkg_orient.form → pkg_orient), sem caixa. */
+export const packageOf = (path: string) => path.split(/[.?]/)[0]!.toLowerCase();
+
+/** Os tipos da passada: os nomes de formulário e os pacotes das listas e páginas deles. */
+export interface DonorWant {
+  forms: Set<string>;
+  /** Os pacotes das listas a abrir (as atuações também, quando há projeto). */
+  packages: Set<string>;
+  /** Os pacotes dos formulários dos tipos: só essas páginas de item são lidas. */
+  pages: Set<string>;
+}
+
 /**
  * Um item seu de cada formulário que o currículo já tem: as listas do menu e,
  * dentro de cada atuação, a tela de cargos e vínculos (atividades, projetos,
  * revisor). Só os campos de busca e de lugar entram (donorValues).
  */
+
 async function collectDonors(
   get: (path: string) => Promise<{ html: string }>,
+  want?: DonorWant,
 ): Promise<Record<string, Record<string, string>>> {
   const donors: Record<string, Record<string, string>> = {};
   const menu = document.documentElement.outerHTML;
+  // Com want, só as listas dos pacotes dos tipos da passada: o teto de pedidos
+  // de cada tarefa (src/bridge/transport.ts) não comporta todas.
   const lists = [
     ...new Set(
       [...menu.matchAll(/setarUrl\('([^']+)'/g)]
         .map((m) => m[1]!.replace(/&amp;/g, '&'))
-        .filter((p) => /lista/i.test(p)),
+        .filter((p) => /lista/i.test(p))
+        .filter((p) => !want || want.packages.has(packageOf(p))),
     ),
   ];
   const pages: string[] = [];
@@ -44,7 +61,9 @@ async function collectDonors(
       pages.push(...editLinks((await get(m[1]!.replace(/&amp;/g, '&'))).html));
     }
   }
-  for (const path of pages.slice(0, 120)) {
+  const wanted = want ? pages.filter((p) => want.pages.has(packageOf(p))) : pages;
+  for (const path of wanted.slice(0, 120)) {
+    if (want && [...want.forms].every((f) => donors[f])) break;
     const doc = new DOMParser().parseFromString((await get(path)).html, 'text/html');
     for (const form of [...doc.forms]) {
       if (!form.name || donors[form.name]) continue;
@@ -106,6 +125,7 @@ export const context: Context = { agencies: [], donors: {}, lookups: {} };
 export async function prepareContext(
   code: string,
   get: (path: string) => Promise<{ html: string }>,
+  want?: DonorWant,
 ) {
   const list = (await get(`pkg_formacao.lista?f_tipo=FA&f_cod=${code}`)).html;
   for (const path of editLinks(list)) {
@@ -123,7 +143,7 @@ export async function prepareContext(
       break;
     }
   }
-  context.donors = await collectDonors(get);
+  context.donors = await collectDonors(get, want);
   const agencies = (await get(`prc_agencia?f_cod=${code}`)).html;
   context.agencies = [...agencies.matchAll(/atribuir\(\s*'([^']*)'\s*,\s*'([^']*)'/g)]
     .slice(0, 40)
@@ -132,7 +152,8 @@ export async function prepareContext(
   context.journal = await findJournal(code, get);
 }
 
-let prepared = false;
+/** Os pacotes do contexto já lido ('' para todos), para não reaproveitar o de outros tipos. */
+let prepared: string | undefined;
 
 /**
  * O contexto, lido uma vez por carregamento do censo: sem a marca, uma
@@ -141,10 +162,15 @@ let prepared = false;
 export async function ensureContext(
   code: string,
   get: (path: string) => Promise<{ html: string }>,
-) {
-  if (prepared) return;
-  await prepareContext(code, get);
-  prepared = true;
+  want?: DonorWant,
+): Promise<boolean> {
+  const key = want ? [...want.packages].sort().join(',') : '';
+  // Sem want (o lote), vale o contexto que a preparação leu, mesmo só de
+  // alguns tipos: o lote cria só os tipos de only.
+  if (prepared === key || (!want && prepared !== undefined)) return false;
+  await prepareContext(code, get, want);
+  prepared = key;
+  return true;
 }
 
 /**
