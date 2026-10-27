@@ -255,7 +255,9 @@ describe('projeto: plano', () => {
         'O item tem mudança em produções ligadas, que vai à mão, e o envio levaria de volta as do Lattes; alterar este item vai à mão junto',
       );
     }
-    expect(reasonOf(addOrientacao)[0]).toMatch(/Orientação do projeto vai à mão/);
+    expect(reasonOf(addOrientacao)[0]).toMatch(
+      /as orientações ligadas pela página voltam em Produções C&T/,
+    );
     expect(
       reasonOf((root) => {
         addOrientacao(root);

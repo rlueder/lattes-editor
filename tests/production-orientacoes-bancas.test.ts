@@ -869,7 +869,7 @@ describe('natureza das bancas', () => {
   });
 
   it('as outras participações ficam à mão, com o motivo', () => {
-    expect(manualOf('banca-trabalho-outra')).toMatch(/não tem opção para outras participações/);
+    expect(manualOf('banca-trabalho-outra')).toMatch(/não tem campo para outras participações/);
   });
 
   // testa_nivel() de PKG_BANCA_TRAB.form, lido em 27/10/2026 sem enviar.

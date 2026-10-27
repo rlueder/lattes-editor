@@ -280,7 +280,8 @@ export const PATENTE_ROUTES: Routes = {
   'pkg_patente_registro.informar_dados_patente': (_req, state) => prior(state),
   'pkg_patente_registro.lista': (req, state) => {
     const tipo = registryType(req);
-    return tipo ? registroLista(state, tipo) : lista(state);
+    // A lista do programa sem registro (f_reg=N) inclui com o mesmo f_reg (27/10/2026).
+    return tipo ? registroLista(state, tipo, req.get('f_reg') ?? '') : lista(state);
   },
   'pkg_patente_registro.verifica_cadastrado': verify,
 };

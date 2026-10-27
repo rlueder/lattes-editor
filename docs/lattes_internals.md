@@ -2681,7 +2681,7 @@ versionados. **Observado**, menos onde está marcado.
   lixeira some na linha com `deletable` "false", menos na concessão (3). O
   ambiente do programa de computador sai do vetor `programaDP` da página (97
   entradas, `l`, `n` e `c`, até 3 por item); `f_ambiente` leva os `c`. Como a
-  exportação grava `AMBIENTE` não foi visto.
+  exportação grava `AMBIENTE` está na seção 25.
 - **Projeto** (`PKG_PROJETO.form`, inclusão). O financiador entra pela
   busca `pp_lista_inst?f_pgm=INSTFINANC`, cujo `seleciona()` abre
   `PKG_PROJETO.EDITAR_FINANCIAMENTO` com `P_COD`, `P_COD_INST` e `P_CTR`; a
@@ -2700,4 +2700,38 @@ versionados. **Observado**, menos onde está marcado.
   o "Inserir nova" usa `unshift` com `id`, `contato`, `endereco`,
   `privacidade` e `visibilidade`, recusa o mesmo tipo com o mesmo endereço e
   aceita até 5. Vai em `f_dados_grid_contatos` pelo mesmo `array2xml` das
-  redes. Como a exportação grava `OUTRA-FORMA-DE-CONTATO` não foi visto.
+  redes. Como a exportação grava `OUTRA-FORMA-DE-CONTATO` está na seção 25.
+
+## 25. Exportação dos itens de teste (27/10/2026)
+
+Cinco itens de teste criados pela própria página do Lattes, o currículo
+enviado ao CNPq às 12h28 e exportado depois que o Exportar acompanhou (entre
+2h07 e 3h48 depois do envio, seção 10). **Observado**, com valores
+sintéticos:
+
+- **Programa de computador.** `AMBIENTE="Aplicativos|Automação bancária"`:
+  os `c` das linhas de `programaProvider`, unidos por `|`, o mesmo que o
+  `check()` manda em `f_ambiente`.
+- **Música.** Com "Récita Lírica" gravado em `f_tpo_evento` (a página de
+  alteração o mostra marcado), `TIPO-DE-EVENTO="NAO_INFORMADO"`. O tipo de
+  evento gravado não volta na exportação.
+- **Orientação de outra natureza.** `TIPO` é o texto do "Outro Tipo"
+  (`f_dsc_outra`).
+- **Patente com a instituição titular.** `NOME-DO-DEPOSITANTE` traz a
+  instituição, `NOME-DO-TITULAR` vem vazio, e a instituição não vai aos
+  `AUTORES`.
+- **Projeto.** O órgão escolhido vai em `CODIGO-ORGAO`/`NOME-ORGAO` e
+  também em `CODIGO-UNIDADE`/`NOME-UNIDADE`. O financiador traz
+  `CODIGO-INSTITUICAO` sem a letra da busca, `NOME-INSTITUICAO` e
+  `NATUREZA="BOLSA"` (a letra B da linha); o código do projeto, a moeda e o
+  valor não vão ao XML. Cada produção ligada é um `PRODUCAO-CT-DO-PROJETO`
+  com `SEQUENCIA-PRODUCAO-CT` igual à `SEQUENCIA-PRODUCAO` da produção, o
+  título e o tipo pelo rótulo da natureza ("Software", "Interpretação"). A
+  orientação ligada pela grade de orientações também veio aí, como
+  "Orientação de outra natureza", e não em `ORIENTACOES`.
+- **Outra forma de contato.** `OUTRA-FORMA-DE-CONTATO="ID Rede Social:
+7534948, Nome Rede Social: MSN, Endereço: <e-mail>"`, no mesmo formato de
+  `REDE-SOCIAL`. O `ELETRONICO` traz o e-mail alternativo da tela de envio
+  como `R:`, depois de `I:` e um `;`.
+- **Pessoa com deficiência.** Com um tipo marcado, `PCD` é o rótulo da
+  caixa (`"Deficiência Visual"`).

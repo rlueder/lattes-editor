@@ -98,10 +98,12 @@ const PROJETO: ProductionTarget = {
       'Financiador vai à mão: a natureza, a moeda e o valor de cada linha vêm da janela PKG_PROJETO.EDITAR_FINANCIAMENTO, que não foi lida',
     'FINANCIADORES-DO-PROJETO':
       'Financiador vai à mão: a natureza, a moeda e o valor de cada linha vêm da janela PKG_PROJETO.EDITAR_FINANCIAMENTO, que não foi lida',
+    // Uma orientação ligada pela página (grade de orientações) voltou na
+    // exportação de 27/10/2026 em PRODUCOES-CT-DO-PROJETO, e não em ORIENTACOES.
     ORIENTACAO:
-      'Orientação do projeto vai à mão: ela se liga a uma orientação do currículo pela janela de orientações, que não foi lida',
+      'O formulário de projeto do Lattes não tem campo para esta lista: as orientações ligadas pela página voltam em Produções C&T do projeto',
     ORIENTACOES:
-      'Orientação do projeto vai à mão: ela se liga a uma orientação do currículo pela janela de orientações, que não foi lida',
+      'O formulário de projeto do Lattes não tem campo para esta lista: as orientações ligadas pela página voltam em Produções C&T do projeto',
     'PRODUCAO-CT-DO-PROJETO':
       'Produção do projeto vai à mão: ela se liga a uma produção do currículo pela janela de produções, que não foi lida',
     'PRODUCOES-CT-DO-PROJETO':

@@ -15,7 +15,7 @@
 // atributo do XML é inferida pelo rótulo.
 
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
-import { childElements, element, getAttr, type XElement } from '../../src/model/xml.ts';
+import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
 import type { LattesState } from './estado.ts';
 import {
@@ -40,6 +40,7 @@ export const REGISTRY_ITEMS: Record<string, [string, string]> = {
   CR: ['CULTIVAR-REGISTRADA', 'Cultivar registrada'],
   DI: ['DESENHO-INDUSTRIAL', 'Desenho industrial'],
   MR: ['MARCA', 'Marca'],
+  PC: ['SOFTWARE', 'Programa de computador'],
   TC: ['TOPOGRAFIA-DE-CIRCUITO-INTEGRADO', 'Topografia de circuito integrado'],
 };
 
@@ -68,19 +69,34 @@ const brandType: Pick<FieldLink, 'toForm' | 'toXml'> = {
 function links(tipo: string): Record<string, FieldLink> {
   const entry = `registro-${tipo}`;
   const cultivar = tipo === 'CP' || tipo === 'CR';
+  const software = tipo === 'PC';
   const out: Record<string, FieldLink> = {
     f_cod_reg: { attr: 'CODIGO-DO-REGISTRO-OU-PATENTE', under: REGISTRY },
     f_inst: { attr: 'INSTITUICAO-DEPOSITO-REGISTRO', under: REGISTRY },
     f_pais: { attr: 'PAIS', under: BASICS, ...byLabel(field(entry, 'f_pais')) },
     f_sta_inovacao: { attr: 'FLAG-POTENCIAL-INOVACAO', under: BASICS, ...yesNo },
-    f_titulo: { attr: cultivar ? 'DENOMINACAO' : 'TITULO', under: BASICS },
-    f_titulo_en: { attr: cultivar ? 'DENOMINACAO-INGLES' : 'TITULO-INGLES', under: BASICS },
+    f_titulo: {
+      attr: cultivar ? 'DENOMINACAO' : software ? 'TITULO-DO-SOFTWARE' : 'TITULO',
+      under: BASICS,
+    },
+    f_titulo_en: {
+      attr: cultivar
+        ? 'DENOMINACAO-INGLES'
+        : software
+          ? 'TITULO-DO-SOFTWARE-INGLES'
+          : 'TITULO-INGLES',
+      under: BASICS,
+    },
   };
   const form = capturedForm(entry);
   const has = (name: string) => form.fields.some((f) => f.name === name);
   if (has('f_ano')) {
-    out.f_ano = { attr: cultivar ? 'ANO-SOLICITACAO' : 'ANO-DESENVOLVIMENTO', under: BASICS };
+    out.f_ano = {
+      attr: cultivar ? 'ANO-SOLICITACAO' : software ? 'ANO' : 'ANO-DESENVOLVIMENTO',
+      under: BASICS,
+    };
   }
+  if (has('f_plataforma')) out.f_plataforma = { attr: 'PLATAFORMA', under: DETAIL };
   if (has('f_finalidade')) out.f_finalidade = { attr: 'FINALIDADE', under: DETAIL };
   if (has('f_inst_financ')) out.f_inst_financ = { attr: 'INSTITUICAO-FINANCIADORA', under: DETAIL };
   // Datas em campo de texto, dd/mm/aaaa (recaptura de 15/10/2026); no XML, DDMMAAAA.
@@ -110,7 +126,13 @@ export function registros(state: LattesState, tipo: string): XElement[] {
 
 const titleOf = (item: XElement) => {
   const basics = childElements(item).find((c) => c.name.startsWith('DADOS-BASICOS-'));
-  return (basics && (getAttr(basics, 'TITULO') || getAttr(basics, 'DENOMINACAO'))) ?? '';
+  return (
+    (basics &&
+      (getAttr(basics, 'TITULO') ||
+        getAttr(basics, 'TITULO-DO-SOFTWARE') ||
+        getAttr(basics, 'DENOMINACAO'))) ??
+    ''
+  );
 };
 
 /**
@@ -138,7 +160,7 @@ function writeAuthors(item: XElement, grid: string): void {
     });
 }
 
-export function registroLista(state: LattesState, tipo: string): SimResponse {
+export function registroLista(state: LattesState, tipo: string, reg = ''): SimResponse {
   const [, label] = REGISTRY_ITEMS[tipo]!;
   const rows = registros(state, tipo)
     .map(
@@ -148,7 +170,7 @@ export function registroLista(state: LattesState, tipo: string): SimResponse {
     .join('\n');
   // O link de inclusão com os parâmetros da seção 17 (f_reg,
   // F_STA_DIVULGACAO_CIENTIFICA, f_cod, f_cod_tipo); a ordem deles é inferida.
-  const novo = `<a href="#" onclick="self.parent.modalCV2.setarUrl('PKG_PATENTE_REGISTRO.form?f_reg=&amp;F_STA_DIVULGACAO_CIENTIFICA=&amp;f_cod=${state.code}&amp;f_cod_tipo=${tipo}',true); return false;">Incluir novo item</a>`;
+  const novo = `<a href="#" onclick="self.parent.modalCV2.setarUrl('PKG_PATENTE_REGISTRO.form?f_reg=${reg}&amp;F_STA_DIVULGACAO_CIENTIFICA=&amp;f_cod=${state.code}&amp;f_cod_tipo=${tipo}',true); return false;">Incluir novo item</a>`;
   return html(
     h.page(
       label,
@@ -175,13 +197,38 @@ export function registroForm(req: SimRequest, state: LattesState, tipo: string):
   const derived =
     item && DERIVED_YEAR.has(tipo) ? '<script>\n dc.f_ano.value = anoDep;\n</script>' : '';
   const grids = item ? registryGridScripts(item, { withHolders: HOLDER_TYPES.has(tipo) }) : '';
+  const programs = item && tipo === 'PC' ? programScripts(item) : '';
   return html(
-    h.page(label, `${renderCensusForm(screen(tipo), item, hidden, state)}\n${grids}${derived}`),
+    h.page(
+      label,
+      `${renderCensusForm(screen(tipo), item, hidden, state)}\n${grids}${programs}${derived}`,
+    ),
   );
 }
 
+/** Alguns tipos de programa do programaDP real (lido em 27/10/2026). */
+const PROGRAM_TYPES = ['Aplicativos', 'Automação bancária', 'Utilitários'];
+
+const softwareDetail = (item: XElement) =>
+  childElements(item).find((c) => c.name === 'DETALHAMENTO-DO-SOFTWARE');
+
+/**
+ * Os vetores do ambiente do programa de computador: programaDP, a lista, e
+ * programaProvider, as linhas do item, com a linha vazia do fim, como a
+ * página. O AMBIENTE do XML une os c por "|" (exportação de 27/10/2026).
+ */
+function programScripts(item: XElement): string {
+  const dp = PROGRAM_TYPES.map((c) => ({ c, l: c, n: '1' }));
+  const ambiente = (softwareDetail(item) && getAttr(softwareDetail(item)!, 'AMBIENTE')) ?? '';
+  const rows = ambiente
+    .split('|')
+    .filter(Boolean)
+    .map((c) => ({ c, l: c, n: '1' }));
+  return `<script>\nvar programaDP = ${JSON.stringify(dp)};\nprogramaProvider = \n${JSON.stringify([...rows, {}])};\n</script>`;
+}
+
 /** Os tipos com grade de depositantes ou titulares na página (marca e topografia não têm). */
-const HOLDER_TYPES = new Set(['CP', 'CR', 'DI']);
+const HOLDER_TYPES = new Set(['CP', 'CR', 'DI', 'PC']);
 
 /** Os tipos em que o check() põe em f_ano o ano de f_dta_dep. */
 const DERIVED_YEAR = new Set(['CP', 'DI']);
@@ -210,6 +257,10 @@ export function registroPost(req: SimRequest, state: LattesState, tipo: string):
     if (DERIVED_YEAR.has(tipo) && !req.get('f_ano')) return html(back);
     applyCensusForm(screen(tipo), item, req, state);
     applyRegistryGrids(item, req, { withHolders: HOLDER_TYPES.has(tipo) });
+    const detail = tipo === 'PC' ? softwareDetail(item) : undefined;
+    const ambiente = req.get('f_ambiente');
+    if (detail && ambiente !== null && ambiente !== undefined)
+      setAttr(detail, 'AMBIENTE', ambiente);
   } else return html(back);
   state.touch();
   return html(back);

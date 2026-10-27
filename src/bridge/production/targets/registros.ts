@@ -32,9 +32,11 @@ import type { FieldMap, GridField, ProductionTarget } from '../types.ts';
 import { ALL_GRIDS, INFO, slashDate, under } from './comum-tecnica-artistica.ts';
 import { HISTORY, historyFields, registryDateFields } from './patente-historico.ts';
 import {
+  AMBIENTE_FIELD,
   dateKey,
   PATENT_DATES,
   patentBuilt,
+  SOFTWARE_AMBIENTE,
   softwareBuilt,
   yearFromDate,
 } from './registros-paginas.ts';
@@ -85,11 +87,11 @@ const HOLDER = { attr: 'NOME-DO-DEPOSITANTE', child: REG };
 
 /**
  * NOME-DO-TITULAR: na exportação de 27/10/2026, a instituição titular veio em
- * NOME-DO-DEPOSITANTE, e este atributo, vazio. O que o Lattes grava nele não
- * foi visto.
+ * NOME-DO-DEPOSITANTE (institution-holder.ts), e este atributo, vazio. O
+ * formulário não tem outro campo que o grave.
  */
-const TITULAR_REASON =
-  'O Lattes põe a instituição titular em "Depositante" na exportação, e deixa este campo vazio; troque o depositante';
+const titularReason = (type: string) =>
+  `O formulário de ${type} do Lattes não tem campo para o titular: a instituição titular vai em Depositante, e a exportação deixa este vazio`;
 
 /** O que o registro tem em comum entre os tipos: número, instituição, título e quem é o titular. */
 const registry = (): Record<string, FieldMap | string> =>
@@ -104,7 +106,7 @@ const registryManual = (fixedType?: string, holders = true): Record<string, stri
   return {
     // Com a grade, o depositante pessoa vai por ela (HOLDER, plan.ts).
     ...(holders ? {} : { [`${REG}@NOME-DO-DEPOSITANTE`]: none }),
-    [`${REG}@NOME-DO-TITULAR`]: holders ? TITULAR_REASON : none,
+    [`${REG}@NOME-DO-TITULAR`]: holders ? titularReason(fixedType ?? 'patente') : none,
     ...(fixedType
       ? {
           [`${REG}@TIPO-PATENTE`]: `O formulário de ${fixedType} do Lattes não tem campo para o tipo: ele é sempre ${fixedType}`,
@@ -195,6 +197,7 @@ const SOFTWARE: ProductionTarget = {
       'TITULO-DO-SOFTWARE-INGLES': 'f_titulo_en',
     }),
     ...under('DETALHAMENTO-DO-SOFTWARE', {
+      AMBIENTE: AMBIENTE_FIELD,
       FINALIDADE: 'f_finalidade',
       'INSTITUICAO-FINANCIADORA': 'f_inst_financ',
       PLATAFORMA: 'f_plataforma',
@@ -222,12 +225,9 @@ const SOFTWARE: ProductionTarget = {
       values: (code) => (code.trim() ? '' : 'N'),
     },
   },
-  manual: {
-    'DETALHAMENTO-DO-SOFTWARE@AMBIENTE':
-      'O ambiente sai da lista de ambientes da página, numa grade que o conector manda como está; troque no Lattes',
-    ...registryManual('programa de computador'),
-  },
+  manual: registryManual('programa de computador'),
   title: { attr: 'TITULO-DO-SOFTWARE', child: SOFTWARE_BASICS },
+  virtual: SOFTWARE_AMBIENTE,
   year: { attr: 'ANO', child: SOFTWARE_BASICS, fallback: 'f_dta_dep' },
 };
 

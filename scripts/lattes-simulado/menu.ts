@@ -105,6 +105,12 @@ function menuItems(code: string): [string, string][] {
       label,
       `PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=${tipo}&f_cod=${code}`,
     ]),
+    // O programa de computador sem registro tem lista própria no menu real
+    // (f_reg=N, lido em 19/10/2026).
+    [
+      'Programa de computador sem registro',
+      `PKG_PATENTE_REGISTRO.LISTA?f_reg=N&f_cod_tipo=PC&f_cod=${code}`,
+    ],
     ['Resumo', `pkg_resume.prc_resume?f_cod=${code}`],
     // Catálogo de menus do reconhecimento de 10/10/2026 e censo de 15/10/2026.
     ['Outras informações relevantes', `prc_outras_inf?f_cod=${code}`],

@@ -7,6 +7,7 @@
 import { PATENT_DATE_CODES } from '../../create-registro-rules.ts';
 import { array2xml } from '../../endereco-contatos.ts';
 import { readProvider } from '../grids.ts';
+import type { ProductionTarget } from '../types.ts';
 
 /** As linhas da grade de situações da patente, como a página as escreve (id: 01, sem aspas). */
 function readDateRows(html: string): Record<string, string>[] | undefined {
@@ -139,3 +140,47 @@ export function softwareBuilt(
   const year = yearFromDate(html, set);
   return year && { f_ambiente: s.slice(0, -1), ...year };
 }
+
+/** O campo virtual do ambiente: as linhas de programaProvider, não um controle da página. */
+export const AMBIENTE_FIELD = 'ambiente:programa';
+
+/** O programaNumMaxRegistros da página (lido em 27/10/2026). */
+const MAX_PROGRAM_TYPES = 3;
+
+/**
+ * O ambiente do programa de computador como campo virtual. A exportação de
+ * 27/10/2026 trouxe AMBIENTE="Aplicativos|Automação bancária": os c das
+ * linhas de programaProvider, unidos por "|", o mesmo que o check() manda em
+ * f_ambiente. Cada tipo novo precisa estar no programaDP da página.
+ */
+export const SOFTWARE_AMBIENTE: NonNullable<ProductionTarget['virtual']> = {
+  build(html, set) {
+    const wanted = (set[AMBIENTE_FIELD] ?? '')
+      .split('|')
+      .map((v) => v.trim())
+      .filter(Boolean);
+    const fail = (reason: string): { reason: string } => ({ reason });
+    if (wanted.length === 0) return fail('O Lattes exige ao menos um tipo de programa');
+    if (wanted.length > MAX_PROGRAM_TYPES) {
+      return fail(`O Lattes aceita até ${MAX_PROGRAM_TYPES} tipos de programa`);
+    }
+    const known = readProvider(html, 'programaDP');
+    if (!known) return undefined;
+    const fold = (v: unknown) =>
+      String(v ?? '')
+        .trim()
+        .toLowerCase();
+    const missing = wanted.filter((w) => !known.some((k) => fold(k.c) === fold(w)));
+    if (missing.length > 0) {
+      return fail(`Tipo de programa fora da lista do Lattes: ${missing.join(', ')}`);
+    }
+    const built: Record<string, string> = { f_ambiente: wanted.join('|') };
+    return built;
+  },
+  read(html) {
+    const rows = readProvider(html, 'programaProvider');
+    if (!rows) return undefined;
+    const values = rows.map((r) => String(r.c ?? '')).filter(Boolean);
+    return { [AMBIENTE_FIELD]: values.join('|') };
+  },
+};

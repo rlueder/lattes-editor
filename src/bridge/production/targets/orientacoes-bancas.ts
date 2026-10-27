@@ -142,7 +142,8 @@ const WHY = {
   nature: (code: string) =>
     `${natureLabel(code)} é o tipo do item no Lattes; para trocar, inclua o item de novo no tipo certo`,
   /** A banca de outras participações: o rádio do formulário de inclusão não tem a opção. */
-  otherBoard: `o rádio da natureza da banca não tem opção para outras participações, e a página de uma delas não foi lida; ${BACK}`,
+  otherBoard:
+    'O formulário de banca do Lattes não tem campo para outras participações: o rádio da natureza não tem a opção, e a página não cria esse tipo',
   /** De ou para 49: o atribui() da janela de outra natureza escreve f_sub_prod e f_dsc_outra. */
   otherNature: `a orientação de outra natureza pede o subtipo numa janela do Lattes que não foi lida; ${BACK}`,
   /**
@@ -408,12 +409,17 @@ function thesisBoard(
     list: { formProc: 'PKG_BANCA_TRAB.form', proc: 'pkg_banca_trab.lista' },
     lookups: specIn({
       child: `DETALHAMENTO-${de}`,
-      course: {
-        code: 'CODIGO-CURSO',
-        name: 'NOME-CURSO',
-        ...BOARD_COURSE,
-        ...(natures ? { natures } : {}),
-      },
+      // Sem natureza (outras participações), o curso() da página nem abre.
+      ...(nature
+        ? {
+            course: {
+              code: 'CODIGO-CURSO',
+              name: 'NOME-CURSO',
+              ...BOARD_COURSE,
+              ...(natures ? { natures } : {}),
+            },
+          }
+        : {}),
       institution: { code: 'CODIGO-INSTITUICAO', name: 'NOME-INSTITUICAO' },
       institutionLevel: BOARD_INSTITUTION_LEVEL,
     }),
@@ -428,7 +434,7 @@ function thesisBoard(
             ],
           ]),
       [`DETALHAMENTO-${de}`, INSTITUTION, WHY.institution],
-      [`DETALHAMENTO-${de}`, COURSE, WHY.course],
+      [`DETALHAMENTO-${de}`, COURSE, nature ? WHY.course : WHY.otherBoard],
     ]),
     ...(nature ? { nature: { field: 'F_COD_PROD', values: nature } } : {}),
     // testa_nivel() da banca (lido em 27/10/2026, sem enviar): com a instituição

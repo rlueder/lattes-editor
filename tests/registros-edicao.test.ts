@@ -38,6 +38,7 @@ const XML = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS NOME-COMPLE
 <PRODUCAO-TECNICA>
 <PATENTE SEQUENCIA-PRODUCAO="7"><DADOS-BASICOS-DA-PATENTE TITULO="Uma patente" ANO-DESENVOLVIMENTO="2005" PAIS="Brasil"/><DETALHAMENTO-DA-PATENTE FINALIDADE="antes"><REGISTRO-OU-PATENTE TIPO-PATENTE="PRIVILEGIO_DE_INOVACAO_PI" CODIGO-DO-REGISTRO-OU-PATENTE="BR1" DATA-PEDIDO-DE-DEPOSITO="10032005" INSTITUICAO-DEPOSITO-REGISTRO="INPI"/></DETALHAMENTO-DA-PATENTE>${AUTHOR}</PATENTE>
 <DESENHO-INDUSTRIAL SEQUENCIA-PRODUCAO="8"><DADOS-BASICOS-DO-DESENHO-INDUSTRIAL TITULO="Um desenho" ANO-DESENVOLVIMENTO="2005" PAIS="Brasil"/><DETALHAMENTO-DO-DESENHO-INDUSTRIAL FINALIDADE="antes" INSTITUICAO-FINANCIADORA="x"><REGISTRO-OU-PATENTE TIPO-PATENTE="DESENHO_INDUSTRIAL_DI" CODIGO-DO-REGISTRO-OU-PATENTE="DI1" DATA-PEDIDO-DE-DEPOSITO="10012005" INSTITUICAO-DEPOSITO-REGISTRO="INPI"/></DETALHAMENTO-DO-DESENHO-INDUSTRIAL>${AUTHOR}</DESENHO-INDUSTRIAL>
+<SOFTWARE SEQUENCIA-PRODUCAO="10"><DADOS-BASICOS-DO-SOFTWARE NATUREZA="COMPUTACIONAL" TITULO-DO-SOFTWARE="Um programa" ANO="2005" PAIS="Brasil"/><DETALHAMENTO-DO-SOFTWARE FINALIDADE="antes" PLATAFORMA="p" AMBIENTE="Aplicativos" INSTITUICAO-FINANCIADORA="x"/>${AUTHOR}</SOFTWARE>
 <MARCA SEQUENCIA-PRODUCAO="9"><DADOS-BASICOS-DA-MARCA TITULO="Uma marca" ANO-DESENVOLVIMENTO="2005" PAIS="Brasil"/><DETALHAMENTO-DA-MARCA NATUREZA="Figurativa"><REGISTRO-OU-PATENTE TIPO-PATENTE="MARCA_REGISTRADA_DE_PRODUTO_MPD" CODIGO-DO-REGISTRO-OU-PATENTE="MR1" INSTITUICAO-DEPOSITO-REGISTRO="INPI"/></DETALHAMENTO-DA-MARCA>${AUTHOR}</MARCA>
 </PRODUCAO-TECNICA></CURRICULO-VITAE>`;
 
@@ -202,6 +203,30 @@ describe('patente: o depositante pessoa', () => {
   });
 });
 
+describe('programa de computador: o ambiente (exportação de 27/10/2026)', () => {
+  const ambiente = (value: string) => (root: XElement) =>
+    setAttr(byName(root, 'DETALHAMENTO-DO-SOFTWARE'), 'AMBIENTE', value);
+
+  it('os tipos do programaDP vão em f_ambiente, unidos por "|", e conferem', async () => {
+    const sim = await lattes();
+    const [op] = opsAfter(ambiente('Aplicativos|Utilitários'));
+    expect(await applyOp(op!, sim.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(sim).at(-1)!.fields.f_ambiente).toBe('Aplicativos|Utilitários');
+    expect(getAttr(byName(sim.state.root, 'DETALHAMENTO-DO-SOFTWARE'), 'AMBIENTE')).toBe(
+      'Aplicativos|Utilitários',
+    );
+  });
+
+  it('tipo fora da lista, nenhum ou mais de três: nada vai', async () => {
+    const sim = await lattes();
+    for (const value of ['Inexistente', '', 'Aplicativos|Utilitários|Automação bancária|Outro']) {
+      const [op] = opsAfter(ambiente(value));
+      expect(await applyOp(op!, sim.port)).toMatchObject({ status: 'erro' });
+    }
+    expect(postsOf(sim).filter((p) => /^PKG_PATENTE_REGISTRO/i.test(p.proc))).toEqual([]);
+  });
+});
+
 describe('patente: depositante instituição (exportação e janela de titulares, 27/10/2026)', () => {
   const UFRGS = 'Universidade Federal do Rio Grande do Sul';
   const depositante = (name: string) => (root: XElement) =>
@@ -219,7 +244,7 @@ describe('patente: depositante instituição (exportação e janela de titulares
     // NOME-DO-TITULAR: a exportação o deixa vazio e põe a instituição no depositante.
     expect(
       reasonsAfter((root) => setAttr(registry(root), 'NOME-DO-TITULAR', UFRGS), HOLDER_XML),
-    ).toEqual([expect.stringMatching(/põe a instituição titular em "Depositante"/)]);
+    ).toEqual([expect.stringMatching(/a instituição titular vai em Depositante/)]);
   });
 
   it('no Lattes simulado: a pessoa vira a instituição da busca, gravada e conferida', async () => {
