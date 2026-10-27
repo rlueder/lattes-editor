@@ -2017,6 +2017,13 @@ orientação ligada continua à mão, e com uma dessas mudanças na fila o resto
 do projeto vai à mão junto: o envio levaria de volta as linhas que o Lattes
 tem, e a mudança à mão ficaria para trás com o item conferido.
 
+A natureza de um financiador que já está no projeto vai pela quarta célula
+da linha dele, a letra (A e B, as duas vistas: seção 25); a linha se acha
+pelo código da instituição, que na primeira célula vem com a letra da busca
+na frente. **Inferido**: que o Lattes grave a natureza nova só com a letra
+trocada, sem mexer em `0000;N;` nem na moeda com o valor. A releitura
+confere a grade inteira.
+
 **Inferido**: que a exportação ponha o órgão de cima em
 `PARTICIPACAO-EM-PROJETO@CODIGO-ORGAO`/`NOME-ORGAO` e a unidade em
 `CODIGO-UNIDADE`/`NOME-UNIDADE`; nenhuma exportação com órgão foi vista. O

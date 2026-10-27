@@ -20,6 +20,7 @@ import {
 import { isLogonPage } from '../lattes-html.ts';
 import type { FieldValues } from '../plan.ts';
 import { doiProblem } from './doi.ts';
+import { funderValue } from './financiador.ts';
 import {
   authorRows,
   GRID_LABELS,
@@ -140,6 +141,11 @@ export async function applyProduction(
         `O item tem no Lattes ${opaque.unsendable.map((g) => g.label).join(', ')}, que o conector não sabe reenviar; nada foi enviado`,
       );
     }
+
+    // A natureza de um financiador: a linha dele na grade, com a letra nova.
+    const funder = op.funder && funderValue(html, t.opaqueGrids ?? [], op.funder);
+    if (funder && 'status' in funder) return result(funder.status, funder.detail);
+    if (funder) opaque.values[funder.field] = funder.value;
 
     // Mais de um depositante na página: como a exportação os junta não foi visto.
     if (op.holders && severalDepositors(grids)) {

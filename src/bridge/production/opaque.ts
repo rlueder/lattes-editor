@@ -50,8 +50,8 @@ function innerHtml(raw: string): string | undefined {
     .replace(/\u00a0/g, '&nbsp;');
 }
 
-/** Uma linha como o check() a serializa, ou undefined se ela não se lê assim. */
-function rowValue(row: string, spec: NonNullable<OpaqueGrid['serialize']>): string | undefined {
+/** Os valores de uma linha como o check() os toma, ou undefined se ela não se lê assim. */
+function rowCells(row: string, spec: NonNullable<OpaqueGrid['serialize']>): string[] | undefined {
   const cells = [...row.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map((m) => m[1] ?? '');
   if (cells.length < spec.cells) return undefined;
   const values: string[] = [];
@@ -62,8 +62,35 @@ function rowValue(row: string, spec: NonNullable<OpaqueGrid['serialize']>): stri
     if (value === undefined) return undefined;
     values.push(value);
   }
-  return values.join('|') + spec.end;
+  return values;
 }
+
+/**
+ * Os valores de cada linha da tabela: [] sem linha, undefined sem a tabela,
+ * sem a serialização, ou com uma linha que não se lê.
+ */
+export function opaqueCells(html: string, grid: OpaqueGrid): string[][] | undefined {
+  const body = tableBody(html, grid.table);
+  if (body === undefined) return undefined;
+  if (!/<tr\b/i.test(body)) return [];
+  if (!grid.serialize) return undefined;
+  const rows = [...body.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)];
+  // Uma linha sem o fecho não se separa das outras com segurança.
+  if (rows.length !== [...body.matchAll(/<tr\b/gi)].length) return undefined;
+  const out: string[][] = [];
+  for (const row of rows) {
+    const values = rowCells(row[1] ?? '', grid.serialize);
+    if (values === undefined) return undefined;
+    out.push(values);
+  }
+  return out;
+}
+
+/** As linhas como o check() as junta no oculto. */
+export const serializeCells = (
+  rows: readonly string[][],
+  spec: NonNullable<OpaqueGrid['serialize']>,
+): string => rows.map((r) => r.join('|') + spec.end).join('');
 
 /**
  * O oculto da grade como o check() o montaria das linhas da tabela: '' sem
@@ -71,20 +98,9 @@ function rowValue(row: string, spec: NonNullable<OpaqueGrid['serialize']>): stri
  * se lê.
  */
 export function opaqueValue(html: string, grid: OpaqueGrid): string | undefined {
-  const body = tableBody(html, grid.table);
-  if (body === undefined) return undefined;
-  if (!/<tr\b/i.test(body)) return '';
-  if (!grid.serialize) return undefined;
-  const rows = [...body.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)];
-  // Uma linha sem o fecho não se separa das outras com segurança.
-  if (rows.length !== [...body.matchAll(/<tr\b/gi)].length) return undefined;
-  let out = '';
-  for (const row of rows) {
-    const value = rowValue(row[1] ?? '', grid.serialize);
-    if (value === undefined) return undefined;
-    out += value;
-  }
-  return out;
+  const rows = opaqueCells(html, grid);
+  if (!rows) return undefined;
+  return rows.length === 0 || !grid.serialize ? '' : serializeCells(rows, grid.serialize);
 }
 
 /**
@@ -120,6 +136,14 @@ export function opaqueByHand(
 }
 
 /**
+ * As mudanças numa linha das grades que não pesam nas outras do item: a
+ * natureza do financiador vai sozinha (financiador.ts), e o título e o tipo
+ * de uma produção ligada são do Lattes. Nenhuma das duas fica para trás
+ * quando outra mudança leva a grade como o Lattes a tem.
+ */
+const OWN_EDITS = new Set(['alterado:FINANCIADOR-DO-PROJETO', 'alterado:PRODUCAO-CT-DO-PROJETO']);
+
+/**
  * Por que a mudança `change` no item fica à mão por causa das grades, ou
  * undefined. Além da grade que o conector não sabe reenviar: uma mudança da
  * fila numa dessas grades vai à mão (byHand do alvo), e o envio deste item
@@ -148,6 +172,7 @@ export function opaqueReason(
       (c) =>
         c.key !== change.key &&
         names.has(c.element) &&
+        !OWN_EDITS.has(`${c.kind}:${c.element}`) &&
         !!root &&
         resolvePath(root, c.path).includes(item),
     );

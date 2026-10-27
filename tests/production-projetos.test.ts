@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { applyOp } from '../src/bridge/apply.ts';
 import { atuacaoByHand, vinculoByHand } from '../src/bridge/atuacao-by-hand.ts';
 import { planChanges, type PlanOptions } from '../src/bridge/plan.ts';
+import { funderValue } from '../src/bridge/production/financiador.ts';
 import { sameAuthors, withLeads } from '../src/bridge/production/members.ts';
 import { opaqueByHand, readOpaque } from '../src/bridge/production/opaque.ts';
 import type { ProductionOp } from '../src/bridge/production/plan.ts';
@@ -243,7 +244,15 @@ describe('projeto: plano', () => {
           element('ORIENTACAO', { 'SEQUENCIA-ORIENTACAO': '7', 'TITULO-ORIENTACAO': 'Tese' }),
         ]),
       );
-    for (const edit of [removeOne, removeAll, retitle]) {
+    // O título de uma produção ligada é do Lattes: fica só para ler, e não segura o resto.
+    expect(reasonOf(retitle)[0]).toMatch(/^Dados que o próprio Lattes gera: o título/);
+    expect(
+      planAfter((root) => {
+        retitle(root);
+        setProject('3', 'NOME-DO-PROJETO', 'Outro')(root);
+      }).ops,
+    ).toHaveLength(1);
+    for (const edit of [removeOne, removeAll]) {
       expect(reasonOf(edit)[0]).toMatch(/Produção do projeto vai à mão/);
       // Com o título trocado na mesma fila: nada vai, nem o título.
       expect(
@@ -813,5 +822,69 @@ describe('atuação, atividades e áreas: o motivo de ficar à mão', () => {
       /enquadramento da lista/,
     );
     expect(vinculoByHand(change('VINCULOS', ['ANO-FIM']))).toBeUndefined();
+  });
+});
+
+describe('projeto: natureza do financiador', () => {
+  const funderOf = (root: XElement) =>
+    findIn(projectOf(root, '3'), (el) => el.name === 'FINANCIADOR-DO-PROJETO')!;
+  const nature = (value: string) => (root: XElement) => setAttr(funderOf(root), 'NATUREZA', value);
+
+  it('Auxílio Financeiro e Bolsa vão pela linha; as outras e a instituição ficam à mão', () => {
+    expect(onlyOp(nature('BOLSA'))).toMatchObject({
+      funder: { after: 'B', before: 'A', code: '000100000001' },
+      rows: [{ after: 'Bolsa', name: 'f_inst_l' }],
+    });
+    expect(reasonOf(nature('REMUNERACAO'))[0]).toMatch(/só foram vistas a de Auxílio/);
+    expect(reasonOf((root) => setAttr(funderOf(root), 'NOME-INSTITUICAO', 'Outra'))[0]).toMatch(
+      /trocar a instituição pede a busca/,
+    );
+    // A natureza nova não segura outra mudança do projeto.
+    expect(
+      planAfter((root) => {
+        nature('BOLSA')(root);
+        setProject('3', 'NOME-DO-PROJETO', 'Outro')(root);
+      }).ops,
+    ).toHaveLength(2);
+  });
+
+  it('a linha da página real: o código com a letra da busca na frente', () => {
+    const html = `<table id="grid2"><tbody> <tr> <td>FAPESP<span id="cod_inst_aux">VJMOE00000002</span></td> <td>0000<span>0000;N;</span></td> <td>R$ 10,00<span>026|10,00</span></td> <td>Auxílio Financeiro<span>A</span></td> <td></td> </tr> </tbody></table>`;
+    const grid = PRODUCTION_TARGETS.find((t) => t.id === 'projeto')!.opaqueGrids!;
+    const edit = { after: 'B', before: 'A', code: 'JMOE00000002' };
+    expect(funderValue(html, grid, edit)).toEqual({
+      field: 'f_inst_l',
+      value: 'VJMOE00000002|0000;N;|026|10,00|B|@',
+    });
+    expect(funderValue(html, grid, { ...edit, after: 'A', before: 'B' })).toMatchObject({
+      status: 'conferido',
+    });
+    expect(funderValue(html, grid, { ...edit, before: 'C' })).toMatchObject({
+      status: 'divergente',
+    });
+    expect(funderValue(html, grid, { ...edit, code: 'OUTRO' })).toMatchObject({
+      status: 'divergente',
+    });
+    expect(funderValue('', grid, edit)).toMatchObject({ status: 'divergente' });
+  });
+
+  it('no Lattes simulado: a letra nova vai, e a releitura confere a grade', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp(nature('BOLSA'));
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes)[0]!.fields.f_inst_l).toBe('000100000001|0000;N;|026|10,00|B|@');
+    expect(getAttr(funderOf(lattes.state.root), 'NATUREZA')).toBe('BOLSA');
+    // De novo: o Lattes já está assim.
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes)).toHaveLength(1);
+  });
+
+  it('o Lattes com outra natureza: nada vai', async () => {
+    const lattes = await lattesFor();
+    setAttr(funderOf(lattes.state.root), 'NATUREZA', 'REMUNERACAO');
+    expect(await applyOp(onlyOp(nature('BOLSA')), lattes.port)).toMatchObject({
+      status: 'divergente',
+    });
+    expect(postsOf(lattes)).toEqual([]);
   });
 });

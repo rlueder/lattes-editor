@@ -5,11 +5,12 @@
 import { enumLabel } from '../../labels/labels.ts';
 import type { Change } from '../../model/changes.ts';
 import { foldText } from '../../model/fold-text.ts';
-import { childElements, element, getAttr, type XElement } from '../../model/xml.ts';
+import { childElements, element, getAttr, walk, type XElement } from '../../model/xml.ts';
 import { lattesSchema } from '../../schema/lattes.ts';
 import { areaLabel, type AreaRow } from '../areas-atuacao.ts';
 import type { BridgeOp, OpBase } from '../plan.ts';
 import { fieldsLeft } from './fields-left.ts';
+import { type FunderEdit, planFunder } from './financiador.ts';
 import { AUTHOR_PART, authorsOf, type AuthorSpec, MAX_KEYWORDS } from './grids.ts';
 import { holderField, withoutHolderCopies } from './holders.ts';
 import {
@@ -59,6 +60,8 @@ export interface ProductionOp extends OpBase {
   areas?: AreaList;
   /** Autores antes e depois, na ordem, quando a mudança é deles. */
   authors?: { after: AuthorSpec[]; before: AuthorSpec[] };
+  /** A natureza de um financiador do projeto, na linha dele da grade (financiador.ts). */
+  funder?: FunderEdit;
   /**
    * O depositante ou titular pessoa antes e depois (ProductionTarget.holders),
    * quando a mudança é dele: um nome só, ou vazio.
@@ -176,7 +179,10 @@ export function planProduction(
   const { item, target } = found;
   const organChange =
     target.organ !== undefined && change.element !== item.name && isOrganChange(change);
-  const byHand = organChange ? undefined : target.byHand?.[change.element];
+  // A natureza de um financiador vai pela linha dele na grade (financiador.ts).
+  const funder = planFunder(change, chain, target);
+  if (funder && 'reason' in funder) return funder;
+  const byHand = organChange || funder ? undefined : target.byHand?.[change.element];
   if (byHand) return { reason: byHand };
   // O campo que depende da própria parte (a data do histórico da patente).
   const partMap = organChange ? undefined : target.partFields?.[change.element]?.(change, el, item);
@@ -187,15 +193,10 @@ export function planProduction(
     if (f) return f.before;
     // O filho pode estar mais fundo (o REGISTRO-OU-PATENTE fica dentro do
     // detalhamento do software).
-    const find = (el: XElement): XElement | undefined => {
-      for (const c of childElements(el)) {
-        if (c.name === child) return c;
-        const deep = find(c);
-        if (deep) return deep;
-      }
-      return undefined;
-    };
-    const part = child === item.name ? item : find(item);
+    let part = child === item.name ? item : undefined;
+    walk(item, (n) => {
+      part ??= n !== item && n.name === child ? n : undefined;
+    });
     return (part && getAttr(part, attr)) ?? '';
   };
   const match = {
@@ -231,6 +232,7 @@ export function planProduction(
     if ('reason' in planned) return planned;
     return { ...base, organ: planned.choice, rows: planned.rows };
   }
+  if (funder) return { ...base, ...funder };
 
   // A equipe do projeto: as pessoas num contêiner e com a marca de
   // coordenador, com as outras mudanças da fila na mesma grade (members.ts).

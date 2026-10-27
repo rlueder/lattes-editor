@@ -17,7 +17,7 @@
 // ligação do projeto não entra.
 
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
-import { childElements, element, getAttr, type XElement } from '../../src/model/xml.ts';
+import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
 import type { LattesState } from './estado.ts';
 import { esc } from './html.ts';
@@ -171,6 +171,19 @@ export function linkedCodes(projeto: XElement, field: 'f_orientacoes_l' | 'f_pro
 }
 
 /**
+ * O financiador da linha com outra letra de natureza (a última célula): o do
+ * mesmo código, já com a natureza nova. Inferido, como as letras.
+ */
+function renatured(parts: XElement[], kept: XElement[], line: string): XElement | undefined {
+  const cells = line.split('|');
+  const nature = Object.entries(FUNDER_NATURE).find(([, [letter]]) => letter === cells.at(-2));
+  const funder = parts.find((p) => !kept.includes(p) && funderValues(p)[0] === cells[0]);
+  if (!funder || !nature) return undefined;
+  setAttr(funder, 'NATUREZA', nature[0]);
+  return funder;
+}
+
+/**
  * Grava as ligações do POST: ficam, na ordem do envio, as linhas que vieram
  * como a página as serializa; as outras saem. Sem o oculto, nada muda.
  */
@@ -181,9 +194,10 @@ export function applyProjectLinks(projeto: XElement, req: SimRequest): void {
     const parts = partsOf(projeto, grid.container);
     const kept: XElement[] = [];
     for (const line of posted.split('@').filter(Boolean)) {
-      const part = parts.find(
-        (p) => !kept.includes(p) && grid.values(p).map(inner).join('|') + grid.end === `${line}@`,
-      );
+      const part =
+        parts.find(
+          (p) => !kept.includes(p) && grid.values(p).map(inner).join('|') + grid.end === `${line}@`,
+        ) ?? (grid.field === 'f_inst_l' ? renatured(parts, kept, line) : undefined);
       if (part) kept.push(part);
     }
     const container = childElements(projeto, grid.container)[0];

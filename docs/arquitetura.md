@@ -204,7 +204,11 @@ inglês de vários formulários, e a natureza das orientações e bancas em que
 o elemento do XML é o próprio tipo do item); trocar a instituição de uma atuação (a tela
 não a tem: inclui-se outra atuação); o órgão de um projeto; mais de um
 depositante de patente ou mais de uma instituição titular; incluir, tirar ou trocar
-financiadores, produções ou orientações ligadas a um projeto.
+financiadores, produções ou orientações ligadas a um projeto. A natureza de
+um financiador que já está vai pela linha dele na grade
+(`src/bridge/production/financiador.ts`), só entre Auxílio Financeiro e
+Bolsa. O título e o tipo de uma produção ligada ficam só para ler: a
+exportação os copia da própria produção.
 `node scripts/cobertura-conector.ts` mede quantos campos do editor vão pelo
 conector, com o motivo do que falta. A medição testa o planejamento com dados
 sintéticos, não comprova gravações no Lattes real. As porcentagens são
