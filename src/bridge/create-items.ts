@@ -77,6 +77,7 @@ import {
   registryItem,
 } from './create-registro.ts';
 import { registryInclusion, registryList } from './create-registro-rules.ts';
+import type { SendExtras } from './create-shared.ts';
 import type { Planned } from './create-shared.ts';
 import { EVENTO_SPEC } from './edit-items.ts';
 import { findLinks } from './lattes-html.ts';
@@ -134,11 +135,12 @@ export function planCreateItem(
   change: Change,
   chain: XElement[],
   label: string,
+  extras: SendExtras = {},
 ): Planned<CreateItemOp> | undefined {
   const el = chain.at(-1);
   if (!el) return undefined;
   const registro = registryItem(el);
-  if (registro) return planCreateRegistro(change, chain, registro, label);
+  if (registro) return planCreateRegistro(change, chain, registro, label, extras);
   const ensino = teachingItem(el);
   if (ensino) return planCreateAtividade(change, chain, ensino, label);
   const cargo = cargoItem(el);
@@ -147,7 +149,7 @@ export function planCreateItem(
   if (evento) return planCreateEvento(change, chain, evento, label);
   const general = planCreateGeneral(change, chain, label);
   if (general) return general;
-  if (PROJECT_CARRIERS.has(el.name)) return planCreateProjeto(change, chain, label);
+  if (PROJECT_CARRIERS.has(el.name)) return planCreateProjeto(change, chain, label, extras);
   if (chain.at(-2)?.name === 'FORMACAO-ACADEMICA-TITULACAO') {
     return planCreateFormacao(change, el, label);
   }

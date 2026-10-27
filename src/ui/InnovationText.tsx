@@ -1,6 +1,7 @@
-// O texto do potencial de inovação de um projeto, que o Lattes pede ao marcar
-// Sim e a exportação não traz (src/bridge/production/targets/projetos.ts,
-// asks). Vai só no envio ao Lattes, guardado no editor por mudança.
+// O texto do potencial de inovação de um projeto ou registro, que o Lattes
+// pede ao marcar Sim e a exportação não traz (src/bridge/production/targets/
+// projetos.ts, asks, e a inclusão em create-shared.ts). Vai só no envio ao
+// Lattes, guardado no editor pela chave do elemento.
 
 import { useId } from 'react';
 
@@ -14,7 +15,7 @@ export function InnovationText({ changeKey }: { changeKey: string }) {
   const value = useSendExtras()[changeKey]?.f_txt_potencial ?? '';
   return (
     <span className="field-follow-up">
-      <label htmlFor={id}>Qual o potencial de inovação do projeto?</label>
+      <label htmlFor={id}>Qual o potencial de inovação?</label>
       <textarea
         id={id}
         maxLength={MAX}

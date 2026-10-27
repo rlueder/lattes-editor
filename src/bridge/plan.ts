@@ -319,7 +319,9 @@ function planAny(
   }
   // Formação e projeto (create-items.ts), com a mesma chave.
   const created =
-    change.kind === 'novo' && createItems ? planCreateItem(change, chain, label) : undefined;
+    change.kind === 'novo' && createItems
+      ? planCreateItem(change, chain, label, extras)
+      : undefined;
   if (created) return 'reason' in created ? unsupported(change, label, created.reason) : created;
   // Exclusão: desligada até o teste no Lattes real (delete.ts).
   if (change.kind === 'removido') return planDelete(change, chain, label, deleteItems);

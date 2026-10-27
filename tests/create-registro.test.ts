@@ -323,7 +323,7 @@ describe('planejar a inclusão de um registro', () => {
         desenho(item);
         setAttr(part(item, 'DADOS-BASICOS-'), 'FLAG-POTENCIAL-INOVACAO', 'SIM');
       }),
-    ).toMatch(/Valores sem correspondência no formulário: .*\(SIM\)/);
+    ).toMatch(/escreva no editor qual é o potencial/);
     expect(
       await reason('MARCA', (item) => {
         marcaFill(item);

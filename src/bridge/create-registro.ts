@@ -56,6 +56,7 @@ import {
   filledChildren,
   getChecked,
   hidden,
+  innovationFields,
   leftOf,
   type Mapper,
   maybeCreated,
@@ -68,6 +69,7 @@ import {
   type Result,
   same,
   select,
+  type SendExtras,
   SESSION,
   Stop,
   text,
@@ -191,7 +193,8 @@ const BRAND_NATURES = ['Figurativa', 'Nominativa', 'Mista', 'Tridimensional'];
 const brandNature: Mapper = (v) => BRAND_NATURES.find((n) => foldText(n) === foldText(v));
 
 /** Só "não" vai sem texto: com "sim", o formulário pede o potencial, que o XML não tem. */
-const noInnovation: Mapper = (v) => (v === 'NAO' ? 'N' : undefined);
+/** Com Sim, o formulário pede o texto do potencial, escrito no editor (innovationFields). */
+const noInnovation: Mapper = (v) => ({ NAO: 'N', SIM: 'S' })[v];
 
 const country: Mapper = (v) => countryCode(v);
 
@@ -250,6 +253,7 @@ export function registroFields(
   change: Change,
   chain: XElement[],
   item: XElement,
+  sendExtras: SendExtras = {},
 ):
   { reason: string } | { extras: RegistroExtras; left?: string[]; set: FieldValues; tipo: string } {
   const type = REGISTRY_TYPES[item.name]!;
@@ -308,6 +312,8 @@ export function registroFields(
   map(registry, REGISTRY);
   const reason = reasonFrom(wrong);
   if (reason) return { reason };
+  const innovation = innovationFields(set, chain[0], basics, sendExtras);
+  if (innovation) return innovation;
   if (grid.length > 0) set.f_dados_grid_datas = patentDateGrid(grid);
   // check() de todos os tipos: título, número, instituição de registro e país.
   if (!set.f_titulo || !set.f_cod_reg || !set.f_inst || !set.f_pais) {
@@ -336,8 +342,9 @@ export function planCreateRegistro(
   chain: XElement[],
   item: XElement,
   label: string,
+  extras: SendExtras = {},
 ): Planned<CreateRegistroOp> {
-  const fields = registroFields(change, chain, item);
+  const fields = registroFields(change, chain, item, extras);
   if ('reason' in fields) return fields;
   // O check() da patente exige o depositante ou titular.
   if (fields.tipo === 'PP' && !fields.extras.depositor) return { reason: PATENT_BY_HAND };

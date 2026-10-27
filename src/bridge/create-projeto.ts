@@ -24,6 +24,7 @@ import {
   filledChildren,
   getChecked,
   hidden,
+  innovationFields,
   jsCalls,
   labelIn,
   leftOf,
@@ -41,6 +42,7 @@ import {
   same,
   sameCode,
   select,
+  type SendExtras,
   SESSION,
   Stop,
   text,
@@ -93,7 +95,8 @@ const PROJECT_FIELDS: Record<string, [string, Mapper]> = {
   'DESCRICAO-DO-PROJETO': ['f_ref', same],
   'DESCRICAO-DO-PROJETO-INGLES': ['f_ref_en', same],
   // Com SIM, o formulário pede o texto do potencial (f_txt_potencial), que o XML não tem.
-  'FLAG-POTENCIAL-INOVACAO': ['f_sta_inovacao', (v) => (v === 'NAO' ? 'N' : undefined)],
+  // Com Sim, o formulário pede o texto do potencial, escrito no editor (innovationFields).
+  'FLAG-POTENCIAL-INOVACAO': ['f_sta_inovacao', (v) => ({ NAO: 'N', SIM: 'S' })[v]],
   NATUREZA: ['F_TPO_NATUREZA', (v) => PROJECT_NATURE[v]],
   'NOME-DO-PROJETO': ['f_titulo', same],
   'NOME-DO-PROJETO-INGLES': ['f_titulo_en', same],
@@ -152,8 +155,9 @@ export function planCreateProjeto(
   change: Change,
   chain: XElement[],
   label: string,
+  extras: SendExtras = {},
 ): Planned<CreateProjetoOp> {
-  const op = projetoOp(change, chain, label);
+  const op = projetoOp(change, chain, label, extras);
   if ('reason' in op) return op;
   return op.organ ? op : { reason: TEAM_BY_HAND };
 }
@@ -167,6 +171,7 @@ export function projetoOp(
   change: Change,
   chain: XElement[],
   label: string,
+  sendExtras: SendExtras = {},
 ): Planned<CreateProjetoOp> {
   const el = chain.at(-1)!;
   // Cada projeto com o caminho inteiro desde a raiz: a mudança pode ser o
@@ -204,6 +209,8 @@ export function projetoOp(
   const left = [...missing, ...extra.map((a) => labelIn(change, a.name)), ...otherParts];
   const reason = reasonFrom(wrong);
   if (reason) return { reason };
+  const innovation = innovationFields(set, chain[0], projeto, sendExtras);
+  if (innovation) return innovation;
   // Sem ano de fim (projeto em andamento), o campo vai vazio: senão ficaria o
   // fim do vínculo, que preencherOpener copia para F_ANO_FIM.
   set.F_ANO_FIM = getAttr(projeto, 'ANO-FIM') ?? '';

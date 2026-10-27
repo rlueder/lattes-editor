@@ -412,11 +412,12 @@ function innovationKey(
   value: string,
   lacks: ReturnType<typeof useFormLacks>,
 ): string | undefined {
+  if (name !== 'FLAG-POTENCIAL-INOVACAO' || value !== 'SIM') return undefined;
+  // No projeto que já está, ao ir para Sim; num projeto ou registro novo,
+  // sempre: a inclusão também pede o texto (create-shared.ts, innovationFields).
   const asks =
-    el.name === 'PROJETO-DE-PESQUISA' &&
-    name === 'FLAG-POTENCIAL-INOVACAO' &&
-    value === 'SIM' &&
-    lacks?.original?.(el, name) !== 'SIM';
+    (el.name === 'PROJETO-DE-PESQUISA' && lacks?.original?.(el, name) !== 'SIM') ||
+    lacks?.isNew?.(el) === true;
   return asks ? lacks?.keyOf?.(el) : undefined;
 }
 

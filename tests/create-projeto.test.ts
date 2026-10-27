@@ -15,8 +15,8 @@ import {
 } from '../src/bridge/create-projeto.ts';
 import { planChanges } from '../src/bridge/plan.ts';
 import { sentEntry, undoOp } from '../src/bridge/sent-log.ts';
-import { type Change, diffDocuments, resolvePath } from '../src/model/changes.ts';
-import { parseXml, type XElement } from '../src/model/xml.ts';
+import { type Change, diffDocuments, pathTo, resolvePath } from '../src/model/changes.ts';
+import { parseXml, walk, type XElement } from '../src/model/xml.ts';
 import { CV, fakeProjeto } from './helpers/fake-lattes-create.ts';
 
 const PROJETO =
@@ -46,7 +46,7 @@ const projeto = (
 ) => `<PROJETO-DE-PESQUISA ${attrs}>${children}</PROJETO-DE-PESQUISA>`;
 
 /** Planeja o projeto novo como a lista de alterações o entrega (a participação inteira é nova). */
-function planned(xml: string, inst?: string) {
+function planned(xml: string, inst?: string, text?: string) {
   const after = cv(xml, inst);
   const original = parseXml(
     `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1234567890123456"><DADOS-GERAIS NOME-COMPLETO="Ana Silva"><ATUACOES-PROFISSIONAIS>
@@ -57,7 +57,14 @@ function planned(xml: string, inst?: string) {
   ).root;
   const changes = diffDocuments(original, after).filter((c) => c.kind === 'novo');
   const change = changes[0]!;
-  return projetoOp(change, resolvePath(after, change.path), 'Projeto · Genômica');
+  const chain = resolvePath(after, change.path);
+  // O texto do potencial, escrito no editor para o elemento do projeto (InnovationText.tsx).
+  let key = '';
+  walk(after, (el) => {
+    if (el.name === 'PROJETO-DE-PESQUISA') key = pathTo(after, el)!.join('/');
+  });
+  const extras = text ? { [key]: { f_txt_potencial: text } } : {};
+  return projetoOp(change, chain, 'Projeto · Genômica', extras);
 }
 
 const op = () => planned(projeto()) as CreateProjetoOp;
@@ -165,7 +172,15 @@ describe('planejar a inclusão de um projeto', () => {
       reason(
         projeto(PROJETO.replace('FLAG-POTENCIAL-INOVACAO="NAO"', 'FLAG-POTENCIAL-INOVACAO="SIM"')),
       ),
-    ).toMatch(/sem correspondência/);
+    ).toMatch(/escreva no editor qual é o potencial/);
+    // Com o texto escrito no editor, o Sim vai com ele.
+    expect(
+      planned(
+        projeto(PROJETO.replace('FLAG-POTENCIAL-INOVACAO="NAO"', 'FLAG-POTENCIAL-INOVACAO="SIM"')),
+        undefined,
+        'Um processo novo',
+      ),
+    ).toMatchObject({ set: { f_sta_inovacao: 'S', f_txt_potencial: 'Um processo novo' } });
     expect(reason(projeto(PROJETO.replace('SITUACAO="EM_ANDAMENTO"', 'SITUACAO=""')))).toMatch(
       /nome, situação e ano/,
     );

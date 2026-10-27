@@ -4,6 +4,7 @@
 // Ver create-items.ts.
 
 import type { Change } from '../model/changes.ts';
+import { pathTo } from '../model/changes.ts';
 import { childElements, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
 import type { FieldSpec } from './contract.ts';
@@ -90,6 +91,32 @@ export function mapAttrs(
  */
 export function reasonFrom(wrong: string[]): string | undefined {
   if (wrong.length > 0) return `Valores sem correspondência no formulário: ${wrong.join(', ')}`;
+  return undefined;
+}
+
+/** Os textos que o envio pede e o XML não guarda, por chave do elemento (send-extras.ts). */
+export type SendExtras = Readonly<Record<string, Readonly<Record<string, string>>>>;
+
+/** O motivo de ir à mão quando o Sim do potencial de inovação vem sem o texto. */
+export const INNOVATION_TEXT =
+  'Potencial de inovação Sim: escreva no editor qual é o potencial (o Lattes pede o texto, e o currículo não o guarda)';
+
+/**
+ * O Sim do potencial de inovação de um item novo: o texto que a pessoa
+ * escreveu no editor para o elemento que tem a marca (InnovationText.tsx),
+ * ou o motivo de ir à mão sem ele. Sem o Sim, nada.
+ */
+export function innovationFields(
+  set: FieldValues,
+  root: XElement | undefined,
+  holder: XElement | undefined,
+  extras: SendExtras,
+): { reason: string } | undefined {
+  if (set.f_sta_inovacao !== 'S') return undefined;
+  const path = root && holder ? pathTo(root, holder) : undefined;
+  const text = (path && extras[path.join('/')]?.f_txt_potencial?.trim()) || '';
+  if (!text) return { reason: INNOVATION_TEXT };
+  set.f_txt_potencial = text;
   return undefined;
 }
 
