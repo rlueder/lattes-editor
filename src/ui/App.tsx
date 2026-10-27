@@ -1,12 +1,8 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 
-import type { LattesStatus } from '../bridge/lattes-status.ts';
-import type { Link } from '../bridge/link.ts';
-import type { SentEntry } from '../bridge/sent-log.ts';
 import { keepPristineBaseline } from '../desktop/backup-folder.ts';
 import { useDevExtensionFolder } from '../desktop/dev-channel.ts';
 import { saveBytes } from '../desktop/native.ts';
-import type { UpdateState } from '../desktop/update.ts';
 import { GeneralItemDialogs } from '../forms/GeneralItemPicker.tsx';
 import { NewItemPicker } from '../forms/NewItemPicker.tsx';
 import { ProductionForm } from '../forms/ProductionForm.tsx';
@@ -30,12 +26,11 @@ import { PrintDialog } from '../print/PrintDialog.tsx';
 import { usePrint } from '../print/use-print.ts';
 import { DiagnosisPanel } from '../review/DiagnosisPanel.tsx';
 import { lattesSchema } from '../schema/lattes.ts';
+import { noticesOf, stripFor } from './app-notices.ts';
 import { CommandPalette } from './CommandPalette.tsx';
 import { HistoryDialog } from './dialogs.tsx';
 import { EditorContext } from './editor-context.ts';
 import { DEFAULT_SECTION } from './hash-route.ts';
-import { type ReloadFailure, reloadNotice } from './lattes-reload.ts';
-import { connectionOf, noticesFor } from './notifications.ts';
 import type { PaletteEntry } from './palette-search.ts';
 import { countPendingIn } from './pending-count.ts';
 import { PendingBanner } from './PendingBanner.tsx';
@@ -47,7 +42,6 @@ import { buildSections, type Section } from './sections.ts';
 import { SectionView } from './SectionView.tsx';
 import { ShellWithLists } from './ShellWithLists.tsx';
 import { Sidebar } from './Sidebar.tsx';
-import { statusStrip } from './status-strip.ts';
 import { StorageNotice } from './StorageNotice.tsx';
 import { TestItemsPanel } from './TestItemsPanel.tsx';
 import { useTheme } from './theme.ts';
@@ -270,7 +264,13 @@ export function App() {
         ref={topbarRef}
         focus={focusShell.menuItem}
         modified={modified}
-        notices={noticesOf(bridge, update, devExtensionFolder, lattesReload.failure)}
+        notices={noticesOf(
+          bridge,
+          update,
+          devExtensionFolder,
+          lattesReload.failure,
+          getAttr(session.doc.root, 'DATA-ATUALIZACAO'),
+        )}
         pendingCount={production.pending.length + changes.open}
         saveState={saveState}
         theme={theme}
@@ -430,29 +430,6 @@ export function App() {
 /** O NUMERO-IDENTIFICADOR do currículo aberto. */
 function cvId(session: Session | null): string | undefined {
   return session ? getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR') : undefined;
-}
-
-/** A faixa do cabeçalho: alterações do editor, mais o que o conector sabe do Lattes. */
-function stripFor(editorChanges: number, bridge: { lattes?: LattesStatus; sent: SentEntry[] }) {
-  return statusStrip({ editorChanges, lattes: bridge.lattes, sent: bridge.sent });
-}
-
-/** O sino: por que o Lattes não foi lido, um lado desatualizado, armazenamento sem chave. */
-function noticesOf(
-  bridge: { lattes?: LattesStatus; link: Link; sent: SentEntry[] },
-  update: UpdateState,
-  devExtensionFolder?: string,
-  reloadFailure?: ReloadFailure,
-) {
-  return noticesFor({
-    appVersion: __APP_VERSION__,
-    connection: connectionOf(bridge.link, Boolean(bridge.lattes)),
-    devExtensionFolder,
-    reload: reloadFailure && reloadNotice(reloadFailure),
-    storage: storageStatus().status,
-    unknownPending: stripFor(0, bridge).segments.some((x) => x.kind === 'pendencia-desconhecida'),
-    update,
-  });
 }
 
 /** Ação "novo:<item>" do ⌘K: abre o formulário daquele tipo de item. */

@@ -10,7 +10,7 @@ import {
   reloadReply,
   versionBytes,
 } from '../src/ui/lattes-reload.ts';
-import { noticesFor } from '../src/ui/notifications.ts';
+import { noticesFor, staleExportNotice } from '../src/ui/notifications.ts';
 
 const ID = '0000000000000001';
 
@@ -101,5 +101,24 @@ describe('Recarregar do Lattes pela ponte (LAT-46)', () => {
       note: 'Cópia de trabalho antes de recarregar do Lattes',
       xml: '<a b="1"/>',
     });
+  });
+});
+
+describe('exportação anterior à última publicação (27/10/2026)', () => {
+  it('avisa quando o Lattes publicou depois da data do arquivo aberto', () => {
+    const notice = staleExportNotice('22102026', '2026-10-27');
+    expect(notice).toMatchObject({ id: 'exportacao-atrasada', level: 'aviso' });
+    expect(notice?.text).toMatch(
+      /publicou em 27\/10\/2026, mas ainda exporta o arquivo de 22\/10\/2026/,
+    );
+    const all = noticesFor({ appVersion: '1.0.0', stale: notice, storage: 'cifrado' });
+    expect(all.map((n) => n.id)).toContain('exportacao-atrasada');
+  });
+
+  it('sem aviso com o arquivo do mesmo dia ou mais novo, ou sem leitura do menu', () => {
+    expect(staleExportNotice('27102026', '2026-10-27')).toBeUndefined();
+    expect(staleExportNotice('28102026', '2026-10-27')).toBeUndefined();
+    expect(staleExportNotice('22102026', undefined)).toBeUndefined();
+    expect(staleExportNotice(undefined, '2026-10-27')).toBeUndefined();
   });
 });

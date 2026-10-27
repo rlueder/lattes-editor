@@ -197,12 +197,34 @@ const STORAGE: Record<Exclude<StorageStatus, 'cifrado'>, Omit<Notice, 'id' | 'le
   },
 };
 
+/**
+ * A exportação aberta é anterior à última publicação que o menu do Lattes
+ * mostra: o Exportar leva um tempo para acompanhar um envio ao CNPq (mais de
+ * uma hora em 18/10 e em 27/10/2026, docs/lattes_internals.md, seção 10).
+ * exported em DDMMAAAA (DATA-ATUALIZACAO); published em AAAA-MM-DD.
+ */
+export function staleExportNotice(
+  exported: string | undefined,
+  published: string | undefined,
+): Notice | undefined {
+  const m = /^(\d{2})(\d{2})(\d{4})$/.exec(exported ?? '');
+  if (!m || !published || `${m[3]}-${m[2]}-${m[1]}` >= published) return undefined;
+  const [y, mo, d] = published.split('-');
+  return {
+    id: 'exportacao-atrasada',
+    level: 'aviso',
+    text: `O Lattes publicou em ${d}/${mo}/${y}, mas ainda exporta o arquivo de ${m[1]}/${m[2]}/${m[3]}. Ele leva um tempo para atualizar; use "Recarregar do Lattes" mais tarde.`,
+    title: 'A exportação do Lattes ainda não acompanhou o envio',
+  };
+}
+
 /** As notificações do momento, as que pedem ação primeiro. */
 export function noticesFor({
   appVersion,
   connection,
   devExtensionFolder,
   reload,
+  stale,
   storage,
   unknownPending = false,
   update,
@@ -213,6 +235,8 @@ export function noticesFor({
   devExtensionFolder?: string;
   /** "Recarregar do Lattes" pela extensão que falhou (lattes-reload.ts, reloadNotice). */
   reload?: Notice;
+  /** A exportação aberta é anterior à última publicação (staleExportNotice). */
+  stale?: Notice;
   storage: StorageStatus;
   /** O Lattes tem alterações não enviadas que não passaram por este editor. */
   unknownPending?: boolean;
@@ -230,6 +254,7 @@ export function noticesFor({
     });
   }
   if (reload) notices.push(reload);
+  if (stale) notices.push(stale);
   if (unknownPending) {
     notices.push({
       action: 'diagnostico',

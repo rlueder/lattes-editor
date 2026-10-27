@@ -547,6 +547,13 @@ incluída e com itens excluídos antes da publicação. A versão atual
 para acompanhar não foi medido. **Observado.** Para o editor: uma exportação
 logo depois de publicar pode trazer um currículo atrasado.
 
+Em 27/10/2026, com um envio ao CNPq pelo editor por volta das 12h20 (o menu
+passou a mostrar "Última publicação: 27/10/2026"), o Exportar seguiu
+entregando o arquivo com `DATA-ATUALIZACAO="22102026"` em pedidos a cada 5
+minutos, até pelo menos as 13h51. **Observado.** O editor avisa no sino
+quando o arquivo aberto é anterior à última publicação do menu
+(`staleExportNotice`, `src/ui/notifications.ts`).
+
 **Enviar ao CNPq** (14/10/2026, feito pela pessoa, com a página observada só
 lendo). **Observado.**
 
