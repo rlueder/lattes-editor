@@ -36,6 +36,7 @@ import {
   serializeGrid,
 } from './grids.ts';
 import { holderReplace, sameHolder, SEVERAL_HOLDERS } from './holders.ts';
+import { institutionMisses, institutionReplace } from './institution-holder.ts';
 import { areaGridRows, gridLabels, sameLabels, setorGridRows } from './item-lists.ts';
 import { locate } from './locate.ts';
 import { resolveLookups } from './lookups.ts';
@@ -174,6 +175,7 @@ export async function applyProduction(
     const holderGrid = grids.f_depositante_pessoa_l ?? [];
     if (op.holders && !sameHolder(holderGrid, op.holders.before))
       wrong.push('f_depositante_pessoa_l');
+    wrong.push(...institutionMisses(op, grids, 'before'));
     if (op.setores && !sameLabels(gridLabels(grids.f_setor_l ?? []), op.setores.before)) {
       wrong.push('f_setor_l');
     }
@@ -242,6 +244,9 @@ export async function applyProduction(
       if ('reason' in built) return result('erro', built.reason);
       replace.f_depositante_pessoa_l = built.rows;
     }
+    const institution = await institutionReplace(port, pairs, op);
+    if ('status' in institution) return result(institution.status, institution.detail);
+    Object.assign(replace, institution.replace);
     const set = Object.fromEntries(fields.map((f) => [f, op.set[f] ?? '']));
     // As escolhas pelas buscas: os ocultos que a página escreveria (lookups.ts).
     let chosen: FieldValues = {};
@@ -335,6 +340,7 @@ export async function applyProduction(
     if (op.holders && !sameHolder(afterGrids.f_depositante_pessoa_l ?? [], op.holders.after)) {
       notSaved.push('f_depositante_pessoa_l');
     }
+    notSaved.push(...institutionMisses(op, afterGrids, 'after'));
     // Os virtuais, lidos de novo do vetor da página.
     const virtualAfter = virtualFields.length > 0 ? t.virtual?.read(afterHtml) : {};
     for (const f of virtualFields) {

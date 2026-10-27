@@ -23,6 +23,7 @@ import { foldText } from '../../src/model/fold-text.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
+import { INSTITUTIONS } from './buscas.ts';
 import { applyGrids, gridScripts } from './grades.ts';
 import type { SimRequest } from './pedido.ts';
 
@@ -65,10 +66,33 @@ function holdersFromXml(item: XElement): Row[] {
   return [holderRow(name, (copy && getAttr(copy, 'NOME-PARA-CITACAO')) ?? '', '0')];
 }
 
+/**
+ * Uma linha de titular instituição na ordem do seleciona() da janela de
+ * titulares (lido em 27/10/2026): l, c sem a letra, tipoInst a letra.
+ * Inferido: que a edição traga as linhas gravadas na mesma ordem.
+ */
+const institutionRow = (name: string, code: string, letter: string): Row =>
+  Object.fromEntries([
+    ['l', name],
+    ['c', code],
+    ['tipoInst', letter],
+    ['deletable', true],
+    ['editable', false],
+  ]);
+
+/** Sem grade guardada, a do NOME-DO-TITULAR do XML, com o código da busca do simulado. */
+function institutionsFromXml(item: XElement): Row[] {
+  const reg = registryOf(item);
+  const name = ((reg && getAttr(reg, 'NOME-DO-TITULAR')) ?? '').trim();
+  if (!name) return [];
+  const hit = INSTITUTIONS.find((i) => foldText(i.name) === foldText(name));
+  return [institutionRow(name, hit?.code.slice(1) ?? '', hit?.code.slice(0, 1) ?? 'D')];
+}
+
 const holdersOf = (item: XElement) => {
   let h = holders.get(item);
   if (!h) {
-    h = { inst: [], pessoa: holdersFromXml(item) };
+    h = { inst: institutionsFromXml(item), pessoa: holdersFromXml(item) };
     holders.set(item, h);
   }
   return h;
@@ -151,6 +175,9 @@ function writeHolders(item: XElement): void {
   const names = storedHolders(item);
   const reg = registryOf(item);
   if (reg) setAttr(reg, 'NOME-DO-DEPOSITANTE', names.join('; '));
+  // Inferido: o nome da instituição titular em NOME-DO-TITULAR.
+  const institutions = holdersOf(item).inst.map((r) => String(r.l));
+  if (reg) setAttr(reg, 'NOME-DO-TITULAR', institutions.join('; '));
   const authors = childElements(item, 'AUTORES');
   item.children = item.children.filter((c) => !authors.includes(c as XElement));
   holdersOf(item).pessoa.forEach((r, i) => {
@@ -207,6 +234,10 @@ export function applyRegistryGrids(
     // vão, não a ordem (serializeGrid).
     holdersOf(item).pessoa = rowsOf(req.get('f_depositante_pessoa_l') ?? '').map(
       ([l = '', c = '', t = '']) => holderRow(l, t, c),
+    );
+    // l|c|tipoInst, na ordem da linha do seleciona().
+    holdersOf(item).inst = rowsOf(req.get('f_depositante_inst_l') ?? '').map(
+      ([l = '', c = '', letter = '']) => institutionRow(l, c, letter),
     );
     writeHolders(item);
   }

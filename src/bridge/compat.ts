@@ -17,6 +17,7 @@
 //   conferem essas chaves.
 
 import { COMPL_LOOKUPS_ENABLED } from './edit-lists.ts';
+import { INSTITUTION_HOLDERS_ENABLED } from './production/institution-holder.ts';
 import { PUBLISH_ENABLED } from './publish.ts';
 
 export const BRIDGE_FEATURES = [
@@ -93,6 +94,8 @@ export const BRIDGE_FEATURES = [
   ...(COMPL_LOOKUPS_ENABLED ? (['buscas-complementar'] as const) : []),
   // 'buscas-complementar-endereco' (endereco-buscas.ts) volta quando
   // COMPL_ENDERECO_LOOKUPS_ENABLED ligar.
+  /** Titular instituição de patentes e registros pela busca de titulares (institution-holder.ts). */
+  ...(INSTITUTION_HOLDERS_ENABLED ? (['titular-instituicao'] as const) : []),
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

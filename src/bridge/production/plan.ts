@@ -11,7 +11,7 @@ import { areaLabel, type AreaRow } from '../areas-atuacao.ts';
 import type { BridgeOp, OpBase } from '../plan.ts';
 import { fieldsLeft } from './fields-left.ts';
 import { AUTHOR_PART, authorsOf, type AuthorSpec, MAX_KEYWORDS } from './grids.ts';
-import { planHolder, withoutHolderCopies } from './holders.ts';
+import { holderField, withoutHolderCopies } from './holders.ts';
 import {
   type AreaList,
   isAreaChange,
@@ -64,6 +64,11 @@ export interface ProductionOp extends OpBase {
    * quando a mudança é dele: um nome só, ou vazio.
    */
   holders?: { after: string; before: string };
+  /**
+   * O titular instituição antes e depois (institution-holder.ts), quando a
+   * mudança é dele: um nome só, ou vazio; a busca é feita na hora de gravar.
+   */
+  institutionHolder?: { after: string; before: string };
   /** Palavras-chave antes e depois, na ordem, quando a mudança é delas. */
   keywords?: { after: string[]; before: string[] };
   kind: 'producao';
@@ -392,8 +397,7 @@ export function planProduction(
     lookups = planned.lookups;
     rows.push(...planned.rows);
   }
-  let holders: ProductionOp['holders'];
-  const holderKey = target.holders && `${target.holders.child}@${target.holders.attr}`;
+  const people: Partial<Pick<ProductionOp, 'holders' | 'institutionHolder'>> = {};
   const unknown: string[] = [];
   const unmapped: string[] = [];
   const manual = new Map<string, string[]>();
@@ -421,14 +425,14 @@ export function planProduction(
       });
       continue;
     }
-    // O depositante pessoa: a grade de depositantes, com um nome só (holders.ts).
-    if (key === holderKey) {
-      const value = planHolder(f);
-      if ('reason' in value) return value;
-      holders = value;
-      set.f_depositante_pessoa_l = value.after;
-      expect.f_depositante_pessoa_l = value.before;
-      rows.push({ ...value, label: f.label, name: 'f_depositante_pessoa_l' });
+    // Os depositantes e titulares: as grades deles (holders.ts, institution-holder.ts).
+    const holder = holderField(target, key, f);
+    if (holder) {
+      if ('reason' in holder) return holder;
+      people[holder.op] = holder.value;
+      set[holder.grid] = holder.value.after;
+      expect[holder.grid] = holder.value.before;
+      rows.push({ ...holder.value, label: f.label, name: holder.grid });
       continue;
     }
     const m = partMap?.fields[f.attr] ?? target.fields[key];
@@ -472,7 +476,7 @@ export function planProduction(
     const [field, value] = when.split('=') as [string, string];
     if (set[field] === value) Object.assign(set, also);
   }
-  return { ...base, expect, ...(holders && { holders }), ...(lookups && { lookups }), rows, set };
+  return { ...base, expect, ...people, ...(lookups && { lookups }), rows, set };
 }
 
 /** Para conferir sem acento, caixa nem espaço nas pontas. */

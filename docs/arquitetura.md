@@ -175,26 +175,27 @@ para uma extensão que anuncia a capacidade; com uma extensão antiga, a
 alteração fica em "Não enviado". A extensão também confere as chaves na
 própria montagem (`ApplyGates`, em `apply-gates.ts`).
 
-| Chave                            | Capacidade                      | Estado                                                                                                     |
-| -------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `CREATE_ITEMS_ENABLED`           | `incluir-itens`                 | Ligada                                                                                                     |
-| `DELETE_ITEMS_ENABLED`           | `excluir-itens`                 | Ligada (idioma e vínculo)                                                                                  |
-| `BIOGRAPHIC_OPS_ENABLED`         | `alterar-dados-gerais`          | Ligada                                                                                                     |
-| `BIOGRAPHIC_FULL_ENABLED`        | `alterar-dados-gerais-completo` | Ligada                                                                                                     |
-| `EDIT_OUVINTE_ENABLED`           | `alterar-evento`                | Ligada, com envio acompanhado em 14/10/2026                                                                |
-| `EDIT_EVENTO_ENABLED`            | `alterar-evento-completo`       | Ligada                                                                                                     |
-| `EDIT_PREMIO_ENABLED`            | `alterar-premio`                | Ligada                                                                                                     |
-| `EDIT_FORMACAO_COMPL_ENABLED`    | `alterar-formacao-complementar` | Ligada                                                                                                     |
-| `EDIT_PRODUCTION_ENABLED`        | `alterar-producao`              | Ligada                                                                                                     |
-| `PRODUCTION_LOOKUPS_ENABLED`     | `buscas-producao`               | Ligada                                                                                                     |
-| `EDIT_AREAS_ENABLED`             | `alterar-areas-atuacao`         | Ligada                                                                                                     |
-| `EDIT_ATIVIDADES_ENABLED`        | `alterar-atividades`            | Ligada                                                                                                     |
-| `EDIT_CITACOES_ENABLED`          | `alterar-citacoes`              | Ligada                                                                                                     |
-| `IMPORT_ENABLED`                 | `importar`                      | Ligada; conferir o currículo depois de cada importação (`lattes_internals.md`, seção 13)                   |
-| `COMPL_LOOKUPS_ENABLED`          | `buscas-complementar`           | Ligada sem envio acompanhado da troca: o curso testado não tinha como ser desfeito (`lattes_internals.md`) |
-| `COMPL_ENDERECO_LOOKUPS_ENABLED` | `buscas-complementar-endereco`  | Desligada: o endereço profissional não tinha caso reversível                                               |
-| `PROJECT_ORGAN_ENABLED`          | `orgao-projeto`                 | Desligada: o Lattes recebeu o órgão novo e manteve o antigo (18/10/2026)                                   |
-| `PUBLISH_ENABLED`                | `publicar-cnpq`                 | Ligada com declaração por tentativa; validação acompanhada do app ao CNPq pendente antes do lançamento     |
+| Chave                            | Capacidade                      | Estado                                                                                                         |
+| -------------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `CREATE_ITEMS_ENABLED`           | `incluir-itens`                 | Ligada                                                                                                         |
+| `DELETE_ITEMS_ENABLED`           | `excluir-itens`                 | Ligada (idioma e vínculo)                                                                                      |
+| `BIOGRAPHIC_OPS_ENABLED`         | `alterar-dados-gerais`          | Ligada                                                                                                         |
+| `BIOGRAPHIC_FULL_ENABLED`        | `alterar-dados-gerais-completo` | Ligada                                                                                                         |
+| `EDIT_OUVINTE_ENABLED`           | `alterar-evento`                | Ligada, com envio acompanhado em 14/10/2026                                                                    |
+| `EDIT_EVENTO_ENABLED`            | `alterar-evento-completo`       | Ligada                                                                                                         |
+| `EDIT_PREMIO_ENABLED`            | `alterar-premio`                | Ligada                                                                                                         |
+| `EDIT_FORMACAO_COMPL_ENABLED`    | `alterar-formacao-complementar` | Ligada                                                                                                         |
+| `EDIT_PRODUCTION_ENABLED`        | `alterar-producao`              | Ligada                                                                                                         |
+| `PRODUCTION_LOOKUPS_ENABLED`     | `buscas-producao`               | Ligada                                                                                                         |
+| `EDIT_AREAS_ENABLED`             | `alterar-areas-atuacao`         | Ligada                                                                                                         |
+| `EDIT_ATIVIDADES_ENABLED`        | `alterar-atividades`            | Ligada                                                                                                         |
+| `EDIT_CITACOES_ENABLED`          | `alterar-citacoes`              | Ligada                                                                                                         |
+| `IMPORT_ENABLED`                 | `importar`                      | Ligada; conferir o currículo depois de cada importação (`lattes_internals.md`, seção 13)                       |
+| `COMPL_LOOKUPS_ENABLED`          | `buscas-complementar`           | Ligada sem envio acompanhado da troca: o curso testado não tinha como ser desfeito (`lattes_internals.md`)     |
+| `COMPL_ENDERECO_LOOKUPS_ENABLED` | `buscas-complementar-endereco`  | Desligada: o endereço profissional não tinha caso reversível                                                   |
+| `INSTITUTION_HOLDERS_ENABLED`    | `titular-instituicao`           | Ligada sem envio acompanhado: a busca e a linha da grade foram lidas, a exportação com titular instituição não |
+| `PROJECT_ORGAN_ENABLED`          | `orgao-projeto`                 | Desligada: o Lattes recebeu o órgão novo e manteve o antigo (18/10/2026)                                       |
+| `PUBLISH_ENABLED`                | `publicar-cnpq`                 | Ligada com declaração por tentativa; validação acompanhada do app ao CNPq pendente antes do lançamento         |
 
 Fica à mão, com o motivo na tela (`src/bridge/atuacao-by-hand.ts` e os
 `fieldAbsent` de cada alvo): o que o formulário do Lattes não tem (nome do
@@ -202,7 +203,7 @@ pai e da mãe, tipo do vínculo, a própria citação item a item, nomes em
 inglês de vários formulários, e a natureza das orientações e bancas em que
 o elemento do XML é o próprio tipo do item); trocar a instituição de uma atuação (a tela
 não a tem: inclui-se outra atuação); o órgão de um projeto; mais de um
-depositante de patente e o titular instituição; incluir, tirar ou trocar
+depositante de patente ou mais de uma instituição titular; incluir, tirar ou trocar
 financiadores, produções ou orientações ligadas a um projeto.
 `node scripts/cobertura-conector.ts` mede quantos campos do editor vão pelo
 conector, com o motivo do que falta. A medição testa o planejamento com dados

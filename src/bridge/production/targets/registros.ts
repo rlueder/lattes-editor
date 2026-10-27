@@ -83,15 +83,6 @@ const CLEARS = { 'f_sta_inovacao=N': { f_txt_potencial: '' } };
 /** A pessoa depositante ou titular, na grade f_depositante_pessoa_l (plan.ts). */
 const HOLDER = { attr: 'NOME-DO-DEPOSITANTE', child: REG };
 
-/**
- * O titular instituição (titularInstProvider): a página copia a linha do
- * vetor titularInstDP do menu, ou a escolhe na janela
- * PKG_TITULAR_INST_PATENTE.sele_inst (seção 24); tipoInst e staValidado não
- * foram lidos, e o conector não monta a linha.
- */
-const INSTITUTION_HOLDER_REASON =
-  'O titular instituição sai da busca de instituições do Lattes, que o conector não faz neste formulário; troque no Lattes';
-
 /** O que o registro tem em comum entre os tipos: número, instituição, título e quem é o titular. */
 const registry = (): Record<string, FieldMap | string> =>
   under(REG, {
@@ -105,7 +96,9 @@ const registryManual = (fixedType?: string, holders = true): Record<string, stri
   return {
     // Com a grade, o depositante pessoa vai por ela (HOLDER, plan.ts).
     ...(holders ? {} : { [`${REG}@NOME-DO-DEPOSITANTE`]: none }),
-    [`${REG}@NOME-DO-TITULAR`]: holders ? INSTITUTION_HOLDER_REASON : none,
+    // Com a grade, o titular instituição vai pela busca da janela de
+    // titulares (institution-holder.ts).
+    ...(holders ? {} : { [`${REG}@NOME-DO-TITULAR`]: none }),
     ...(fixedType
       ? {
           [`${REG}@TIPO-PATENTE`]: `O formulário de ${fixedType} do Lattes não tem campo para o tipo: ele é sempre ${fixedType}`,

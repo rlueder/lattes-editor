@@ -16,6 +16,7 @@ import {
   EDIT_PREMIO_ENABLED,
 } from './edit-lists.ts';
 import type { PlanOptions } from './plan.ts';
+import { INSTITUTION_HOLDERS_ENABLED } from './production/institution-holder.ts';
 import {
   EDIT_PRODUCTION_ENABLED,
   PRODUCTION_LOOKUPS_ENABLED,
@@ -66,6 +67,11 @@ export const GATED_EDITS: readonly {
     option: 'productionLookups',
   },
   { enabled: PROJECT_ORGAN_ENABLED, feature: 'orgao-projeto', option: 'projectOrgan' },
+  {
+    enabled: INSTITUTION_HOLDERS_ENABLED,
+    feature: 'titular-instituicao',
+    option: 'institutionHolders',
+  },
   { enabled: EDIT_AREAS_ENABLED, feature: 'alterar-areas-atuacao', option: 'editAreas' },
   { enabled: EDIT_ATIVIDADES_ENABLED, feature: 'alterar-atividades', option: 'editAtividades' },
   { enabled: EDIT_CITACOES_ENABLED, feature: 'alterar-citacoes', option: 'editCitacoes' },

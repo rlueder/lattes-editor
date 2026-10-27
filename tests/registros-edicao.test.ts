@@ -54,14 +54,14 @@ const HOLDER_XML = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS NOME
 
 const byName = (root: XElement, name: string) => findIn(root, (el) => el.name === name)!;
 
-function planAfter(edit: (root: XElement) => void, xml = XML) {
+function planAfter(edit: (root: XElement) => void, xml = XML, institutionHolders = true) {
   const original = parseXml(xml).root;
   const working = parseXml(xml).root;
   edit(working);
   return planChanges(
     diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Item' })),
     working,
-    { editProduction: true },
+    { editProduction: true, institutionHolders },
   );
 }
 
@@ -197,11 +197,62 @@ describe('patente: o depositante pessoa', () => {
     expect(r.detail).toMatch(/Mais de um depositante/);
     expect(postsOf(sim)).toEqual([]);
   });
+});
 
-  it('o titular instituição fica à mão, pela busca de instituições', () => {
-    expect(
-      reasonsAfter((root) => setAttr(registry(root), 'NOME-DO-TITULAR', 'Instituição'), HOLDER_XML),
-    ).toEqual([expect.stringMatching(/busca de instituições do Lattes/)]);
+describe('patente: o titular instituição (janela de titulares, lida em 27/10/2026)', () => {
+  const UFRGS = 'Universidade Federal do Rio Grande do Sul';
+  const titular = (name: string) => (root: XElement) =>
+    setAttr(registry(root), 'NOME-DO-TITULAR', name);
+
+  it('vira a troca da grade de titulares, com a busca na hora de gravar', () => {
+    const [op] = opsAfter(titular(UFRGS), HOLDER_XML);
+    expect(op?.institutionHolder).toEqual({ after: UFRGS, before: '' });
+    expect(planAfter(titular(UFRGS), HOLDER_XML, false).unsupported.map((u) => u.reason)).toEqual([
+      'Titular instituição pela busca do Lattes: desligado nesta montagem',
+    ]);
+    expect(reasonsAfter(titular(`${UFRGS}; Outra`), HOLDER_XML)).toEqual([
+      expect.stringMatching(/^Mais de uma instituição titular/),
+    ]);
+  });
+
+  it('no Lattes simulado: a linha do seleciona(), gravada e conferida', async () => {
+    const sim = await lattes(HOLDER_XML);
+    const [op] = opsAfter(titular(UFRGS), HOLDER_XML);
+    expect(await applyOp(op!, sim.port)).toMatchObject({ status: 'conferido' });
+    const post = postsOf(sim).at(-1)!.fields;
+    expect(post.f_depositante_inst_l).toBe(`${UFRGS}|000000000001|V`);
+    expect(getAttr(registry(sim.state.root), 'NOME-DO-TITULAR')).toBe(UFRGS);
+    // A pessoa depositante segue como estava.
+    expect(getAttr(registry(sim.state.root), 'NOME-DO-DEPOSITANTE')).toBe('Depositante Sintético');
+    // E tirar o titular deixa a grade vazia.
+    const [clear] = opsAfter(
+      (root) => titular('')(root),
+      HOLDER_XML.replace('NOME-DO-TITULAR=""', `NOME-DO-TITULAR="${UFRGS}"`),
+    );
+    expect(await applyOp(clear!, sim.port)).toMatchObject({ status: 'conferido' });
+    expect(getAttr(registry(sim.state.root), 'NOME-DO-TITULAR')).toBe('');
+  });
+
+  const saves = (sim: LattesSimuladoNoTeste) =>
+    postsOf(sim).filter((p) => /^PKG_PATENTE_REGISTRO/i.test(p.proc));
+
+  it('nome que a busca não acha uma vez só: nada vai', async () => {
+    const sim = await lattes(HOLDER_XML);
+    const [missing] = opsAfter(titular('Universidade'), HOLDER_XML);
+    expect(await applyOp(missing!, sim.port)).toMatchObject({
+      detail: expect.stringMatching(/^Titular instituição: 0 instituições/),
+      status: 'erro',
+    });
+    expect(saves(sim)).toEqual([]);
+  });
+
+  it('outro titular no Lattes: divergente, sem busca nem envio', async () => {
+    const sim = await lattes(
+      HOLDER_XML.replace('NOME-DO-TITULAR=""', 'NOME-DO-TITULAR="Universidade de São Paulo"'),
+    );
+    const [op] = opsAfter(titular(UFRGS), HOLDER_XML);
+    expect(await applyOp(op!, sim.port)).toMatchObject({ status: 'divergente' });
+    expect(postsOf(sim)).toEqual([]);
   });
 
   it('um autor novo não leva o depositante copiado nos autores', async () => {

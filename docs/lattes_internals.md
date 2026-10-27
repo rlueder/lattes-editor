@@ -1538,10 +1538,19 @@ O que o conector faz com isso (`src/bridge/production/holders.ts` e
   Nos outros registros com a grade de depositantes (programa de computador,
   cultivares, desenho industrial) a ligação com `NOME-DO-DEPOSITANTE` é
   inferida pela patente.
-- O titular instituição (`NOME-DO-TITULAR`, `titularInstProvider`) fica à
-  mão: a linha da grade é a do vetor `titularInstDP` do menu, ou sai da
-  janela `PKG_TITULAR_INST_PATENTE.sele_inst` (seção 24), e a forma de
-  `tipoInst` e `staValidado` não foi lida.
+- O titular instituição (`NOME-DO-TITULAR`, `titularInstProvider`) vai pela
+  janela de titulares (`src/bridge/production/institution-holder.ts`). Em
+  27/10/2026, sem enviar: a janela `pkg_titular_inst.sele_inst` busca por
+  nome num POST com `f_cod`, `f_ctr=P` e `f_nome`, e responde com um
+  `seleciona('<letra><código>', '<nome>')` por instituição; o `seleciona()`
+  põe na grade `{l: nome, c: código sem a letra, tipoInst: a letra,
+deletable, editable}`, e o `check()` a serializa como `nome|código|letra`.
+  **Observado.** O conector refaz a busca com o nome do XML, fica com a única
+  instituição de mesmo nome (sem acento nem caixa) e escreve a linha assim;
+  mais de uma instituição fica à mão. **Inferido:** que a exportação guarde o
+  nome da instituição titular em `NOME-DO-TITULAR` e que a linha gravada volte
+  na edição com o mesmo `l`. O `titularInstDP` não existe na janela do menu.
+  A troca não foi enviada.
 - A mudança de autores deixa de fora as linhas de `AUTORES` com o nome de um
   depositante, antes e depois, para conferir com o `autorProvider`, que não
   as tem, e para nunca mandar o depositante como autor. A cópia só se
@@ -2549,8 +2558,8 @@ pelo rótulo: o currículo de quem capturou não tem atividade de ensino. Os
 níveis de 401 a 409 seguem os rótulos das opções.
 
 **Titular da patente (lote 5).** `pkg_titular_inst.sele_inst` abre uma busca
-de instituição por nome que envia (POST) para `PRC_INST_FORM`, com `f_ctr` e
-`f_cod` ocultos; a resposta da busca não foi lida, porque é POST.
+de instituição por nome com `f_ctr` e `f_cod` ocultos; a resposta foi lida em
+27/10/2026 (seção 17, "Patente: exportação, depositante e histórico").
 `pkg_titular_inst.sele_inst?f_ctr=O` foi recusado pelo próprio censo, que não abre
 endereço com `f_ctr` preenchido (`isSafeGet`). A sugestão de titular
 pessoa vem de `self.parent.titularPessoaDP`, no menu, cuja forma não foi

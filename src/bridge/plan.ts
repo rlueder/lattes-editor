@@ -124,6 +124,8 @@ export interface PlanOptions {
   editProduction?: boolean;
   /** Textos que o envio pede e o XML não guarda, por Change.key (send-extras.ts no editor). */
   extras?: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  /** Titular instituição de patentes e registros pela busca de titulares (production/institution-holder.ts). */
+  institutionHolders?: boolean;
   /** Instituição, curso e agência de orientações e bancas pelas buscas (production/lookups.ts). */
   productionLookups?: boolean;
   /** Órgão e unidade do projeto pela janela de órgãos (production/organ.ts). */
@@ -237,6 +239,7 @@ export function planChange(
     editPremio = false,
     editProduction = false,
     extras = {},
+    institutionHolders = false,
     productionLookups = false,
     projectOrgan = false,
   }: PlanOptions = {},
@@ -258,6 +261,13 @@ export function planChange(
         change,
         label,
         'Instituição, curso e agência pelas buscas do Lattes: desligado nesta montagem',
+      );
+    }
+    if (planned.institutionHolder && !institutionHolders) {
+      return unsupported(
+        change,
+        label,
+        'Titular instituição pela busca do Lattes: desligado nesta montagem',
       );
     }
     return planned;
