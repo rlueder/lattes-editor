@@ -114,7 +114,9 @@ type EditOp = Exclude<
         | 'criar-formacao'
         | 'criar-projeto'
         | 'criar-registro'
-        | 'criar-vinculo';
+        | 'criar-vinculo'
+        | 'excluir-atuacao'
+        | 'excluir-item';
     }
 >;
 
@@ -186,6 +188,7 @@ async function locate(op: EditOp, port: LattesPort, menu: string): Promise<strin
 
 import { type ApplyGates, BUILD_GATES, gatedOut } from './apply-gates.ts';
 import { leftNote } from './create-shared.ts';
+import { applyDeleteAtuacao, applyDeleteItem } from './delete-items-apply.ts';
 
 export { type ApplyGates, BUILD_GATES } from './apply-gates.ts';
 
@@ -223,6 +226,8 @@ async function applyAny(op: BridgeOp, port: LattesPort, gates: ApplyGates): Prom
   if (isCitacaoOp(op)) return applyCitacao(op, port);
   if (op.kind === 'criar-vinculo') return applyCreateVinculo(op, port);
   if (isDeleteOp(op)) return applyDelete(op, port);
+  if (op.kind === 'excluir-atuacao') return applyDeleteAtuacao(op, port);
+  if (op.kind === 'excluir-item') return applyDeleteItem(op, port);
   const result = (status: ResultStatus, detail: string): OpResult => ({
     detail,
     key: op.key,

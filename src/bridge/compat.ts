@@ -21,6 +21,7 @@ import { CREATE_ACTIVITY_ORGAN_ENABLED } from './create-cargo.ts';
 import { CREATE_COMPL_ENABLED } from './create-complementar.ts';
 import { CREATE_PROJECT_ORGAN_ENABLED } from './create-projeto.ts';
 import { EDIT_PCD_ENABLED } from './dados-gerais-edit.ts';
+import { DELETE_MORE_ENABLED } from './delete-items.ts';
 import { COMPL_LOOKUPS_ENABLED } from './edit-lists.ts';
 import { EDIT_OTHER_CONTACTS_ENABLED } from './endereco-contatos.ts';
 import { EDIT_FUNDERS_ENABLED } from './production/financiador.ts';
@@ -120,6 +121,8 @@ export const BRIDGE_FEATURES = [
   ...(CREATE_COMPL_ENABLED ? (['complementar-nova'] as const) : []),
   /** Linhas da grade de uma atividade e o formulário da linha de pesquisa nova (atividade-grade.ts). */
   ...(ACTIVITY_ROWS_ENABLED ? (['grade-atividade'] as const) : []),
+  /** A exclusão de produções, formações, prêmios, eventos, atividades e da atuação (delete-items.ts). */
+  ...(DELETE_MORE_ENABLED ? (['excluir-mais'] as const) : []),
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

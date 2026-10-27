@@ -15,7 +15,14 @@ import { PRODUCTION_TARGETS } from '../../src/bridge/production/targets/index.ts
 import type { FieldMap, ProductionTarget } from '../../src/bridge/production/types.ts';
 import type { Change } from '../../src/model/changes.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
-import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
+import {
+  childElements,
+  element,
+  getAttr,
+  setAttr,
+  walk,
+  type XElement,
+} from '../../src/model/xml.ts';
 import { availabilityToForm } from '../../src/schema/availability.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
 import { AGENCIES, allCourses, institutionsOf, withLetter } from './buscas.ts';
@@ -209,9 +216,18 @@ const DOI_ROUTES: Routes = {
 
 function post(req: SimRequest, state: LattesState, t: ProductionTarget): SimResponse {
   const back = h.savedScript(`${t.list.proc}?f_cod=${state.code}`);
-  if (req.get('f_ctr') !== 'U') return html(back);
+  const ctr = req.get('f_ctr');
+  if (ctr !== 'U' && ctr !== 'E') return html(back);
   const item = itemsOf(state, t).find((i) => seqOf(i) === req.get('f_seq'));
   if (!item) return html(h.page(t.id, '<p>Registro não encontrado.</p>'));
+  // O del() da página: o mesmo formulário com f_ctr=E (seção 15).
+  if (ctr === 'E') {
+    walk(state.root, (el) => {
+      if (el.children.includes(item)) state.remove(el, item);
+    });
+    state.touch();
+    return html(back);
+  }
   writeFields(t, item, req);
   writeLookups(state, item, t, req);
   applyGrids(item, req, t.authors);

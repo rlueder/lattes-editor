@@ -12,6 +12,7 @@ import { type BiographicOp, planBiographic } from './biographic.ts';
 import { type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
 import { type CreateItemOp, planCreateItem } from './create-items.ts';
 import { type DeleteOp, planDelete } from './delete.ts';
+import { type DeleteAtuacaoOp, type DeleteItemOp, planDeleteItem } from './delete-items.ts';
 import { type AtividadeOp, planAtividade } from './edit-atividade.ts';
 import { type CitacaoOp, planCitacao } from './edit-citacao.ts';
 import { type EventoOp, planEvento } from './edit-items.ts';
@@ -73,6 +74,8 @@ export type BridgeOp =
   | CreateAtuacaoOp
   | CreateItemOp
   | DeleteOp
+  | DeleteAtuacaoOp
+  | DeleteItemOp
   | EventoOp
   | IdiomaOp
   | ProductionOp
@@ -105,6 +108,8 @@ export interface PlanOptions {
   /** Projeto novo com o órgão pela lista do Lattes (create-projeto.ts). */
   createProjects?: boolean;
   deleteItems?: boolean;
+  /** A exclusão dos tipos de delete-items.ts (produções, formações, prêmios, eventos…). */
+  deleteMore?: boolean;
   /** Linhas da grade de uma atividade e o formulário da linha de pesquisa nova (atividade-grade.ts). */
   editActivityRows?: boolean;
   /** Áreas de atuação (areas-atuacao.ts, EDIT_AREAS_ENABLED). */
@@ -141,6 +146,8 @@ export interface PlanOptions {
   extras?: Readonly<Record<string, Readonly<Record<string, string>>>>;
   /** Depositante instituição de patentes e registros pela busca de titulares (production/institution-holder.ts). */
   institutionHolders?: boolean;
+  /** A exportação carregada: a exclusão acha nela o item que a pessoa tirou. */
+  original?: XElement;
   /** Instituição, curso e agência de orientações e bancas pelas buscas (production/lookups.ts). */
   productionLookups?: boolean;
   /** Órgão e unidade do projeto pela janela de órgãos (production/organ.ts). */
@@ -258,6 +265,7 @@ function planAny(
     complLookups = false,
     createItems = false,
     deleteItems = false,
+    deleteMore = false,
     editAreas = false,
     editAtividades = false,
     editCitacoes = false,
@@ -268,6 +276,7 @@ function planAny(
     editProduction = false,
     extras = {},
     institutionHolders = false,
+    original,
     productionLookups = false,
     projectOrgan = false,
   }: PlanOptions = {},
@@ -330,8 +339,13 @@ function planAny(
       ? planCreateItem(change, chain, label, extras)
       : undefined;
   if (created) return 'reason' in created ? unsupported(change, label, created.reason) : created;
-  // Exclusão: desligada até o teste no Lattes real (delete.ts).
-  if (change.kind === 'removido') return planDelete(change, chain, label, deleteItems);
+  // Exclusão: o idioma e o vínculo (delete.ts) e, com a capacidade, os
+  // outros tipos, pelo item como estava na exportação (delete-items.ts).
+  if (change.kind === 'removido') {
+    const more = deleteItems && deleteMore && original;
+    const planned = more ? planDeleteItem(change, original, label) : undefined;
+    return planned ?? planDelete(change, chain, label, deleteItems);
+  }
   // Palavras-chave e outras partes novas num evento: o formulário não tem.
   const eventPart =
     change.kind === 'novo' && (editOuvinte || editEvento)
@@ -481,12 +495,28 @@ export function planChanges(
     const chain = resolvePath(root, change.path);
     const planned = planChange(change, chain, label, options, all);
     if (isOp(planned)) ops.push(planned);
-    else if (fromExtension && isOp(planChange(change, chain, label, ALL_ON, all))) {
+    else if (
+      fromExtension &&
+      isOp(
+        planChange(
+          change,
+          chain,
+          label,
+          { ...ALL_ON, extras: options.extras, original: options.original },
+          all,
+        ),
+      )
+    ) {
       // O editor sabe enviar; quem não sabe é a extensão instalada.
       skipped.push({ ...planned, reason: OLD_EXTENSION });
     } else skipped.push(planned);
   }
-  return { ops, unsupported: skipped };
+  // As exclusões vão antes. Num tipo sem número (o prêmio), tirar o primeiro
+  // item aparece como o primeiro trocado pelos valores do segundo e o segundo
+  // tirado: com a exclusão antes, o Lattes nunca fica com dois iguais, e a
+  // troca acha a linha que sobrou.
+  const first = (op: BridgeOp) => (op.kind.startsWith('excluir-') ? 0 : 1);
+  return { ops: [...ops].sort((a, b) => first(a) - first(b)), unsupported: skipped };
 }
 
 /** Todas as alterações ligadas, como numa extensão em dia. */

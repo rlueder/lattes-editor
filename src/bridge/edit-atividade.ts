@@ -289,7 +289,10 @@ export function specFromRows(rows: readonly Row[]): string {
 
 const same = (a: string, b: string) => foldText(a.trim()) === foldText(b.trim());
 
-async function locate(op: AtividadeOp, port: LattesPort): Promise<string> {
+export async function locateAtividade(
+  op: Pick<AtividadeOp, 'codInst' | 'natur' | 'seqAtiv' | 'seqFuncao'>,
+  port: LattesPort,
+): Promise<string> {
   const menu = await port.menuHtml();
   const lista = findLinks(menu, 'pkg_ativ.lista')[0];
   if (!lista) throw new Stop('erro', 'Atuação profissional não encontrada no menu do Lattes');
@@ -327,7 +330,7 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
   });
   let posted = false;
   try {
-    const path = await locate(op, port);
+    const path = await locateAtividade(op, port);
     const html = await getChecked(port, path);
     const controls = withScriptValues(html, port.readForm(html, 'GN_ATIV_CARGO'));
     const rows = rowsOf(html);

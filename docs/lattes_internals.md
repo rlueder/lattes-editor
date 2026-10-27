@@ -979,6 +979,14 @@ aceite só `f_ctr`, `f_cod` e `f_seq`, sem os outros campos do formulário.
 | Produção técnica, Editoração (`prc_tec_demais_lista`, `f_cod_tipo=2D`)        | formulário `prc_tec_edit`                        | POST `PRC_TEC_EDIT` (`GN_TEC`)                                                                                        | `f_ctr=E`, `f_cod`, `f_seq`                                                               | "Deseja realmente excluir esta produção?"                                                                                                        |
 | Participação em eventos (`pkg_evento.lista`)                                  | formulário `PKG_EVENTO.form`                     | POST `PKG_EVENTO.FORM` (`GN_TEC`)                                                                                     | `f_ctr=E`, `f_cod`, `f_seq`                                                               | "Deseja realmente excluir esta produção?"                                                                                                        |
 
+O conector exclui os tipos da tabela e os outros itens de produção, projeto,
+orientação, banca, licença e linha de pesquisa pelo mesmo caminho
+(`src/bridge/delete-items.ts`): acha o formulário de alteração como na
+alteração, confere que a página tem o `del()` com `f_ctr=E`, faz o ajax de
+`SETA_ULTIMO_PUBLICO` quando a página o faria, envia e relê a lista. A
+atuação inteira vai pelo GET com `E2`, só quando a pessoa tirou a atuação
+inteira no editor. Fora o evento, **inferido** até o teste acompanhado.
+
 Os textos dos `confirm()` estão sem as quebras de linha do original. Vários
 formulários guardam, comentada, uma versão antiga do texto ("Você realmente
 deseja excluir esta produção?"); a tabela traz a que está ativa.

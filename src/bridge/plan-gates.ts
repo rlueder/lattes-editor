@@ -11,6 +11,7 @@ import { CREATE_COMPL_ENABLED } from './create-complementar.ts';
 import { CREATE_PROJECT_ORGAN_ENABLED } from './create-projeto.ts';
 import { EDIT_PCD_ENABLED } from './dados-gerais-edit.ts';
 import { DELETE_ITEMS_ENABLED } from './delete.ts';
+import { DELETE_MORE_ENABLED } from './delete-items.ts';
 import { EDIT_ATIVIDADES_ENABLED } from './edit-atividade.ts';
 import { EDIT_CITACOES_ENABLED } from './edit-citacao.ts';
 import { EDIT_EVENTO_ENABLED, EDIT_OUVINTE_ENABLED } from './edit-items.ts';
@@ -105,6 +106,7 @@ export const GATED_EDITS: readonly {
     option: 'createComplementar',
   },
   { enabled: ACTIVITY_ROWS_ENABLED, feature: 'grade-atividade', option: 'editActivityRows' },
+  { enabled: DELETE_MORE_ENABLED, feature: 'excluir-mais', option: 'deleteMore' },
 ];
 
 /**

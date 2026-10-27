@@ -491,7 +491,7 @@ type Get = (path: string) => Promise<string>;
 type Read = (path: string) => Promise<Pairs>;
 
 /** Os links de edição da lista: os que levam f_seq. */
-async function editLinks(
+export async function editLinks(
   kind: ListEditKind,
   menu: string,
   get: Get,

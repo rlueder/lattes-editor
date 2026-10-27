@@ -4,7 +4,7 @@
 import type { LattesPort } from '../apply.ts';
 import { getChecked, Stop } from '../create-shared.ts';
 import { type FormControl, withScriptValues } from '../form.ts';
-import { findLinks } from '../lattes-html.ts';
+import { findLinks, type LattesLink } from '../lattes-html.ts';
 import { folded, type ProductionOp } from './plan.ts';
 import type { ProductionTarget } from './types.ts';
 
@@ -33,13 +33,13 @@ function sameNature(controls: FormControl[], t: ProductionTarget): boolean {
   return value === undefined || values.includes(value.trim());
 }
 
-/** O formulário do item: o único da lista com o título e o ano dele. */
-export async function locate(
-  op: ProductionOp,
+/** A lista do tipo no menu e as linhas dela (links de alteração). */
+export async function productionRows(
+  op: Pick<ProductionOp, 'listParams'>,
   t: ProductionTarget,
   port: LattesPort,
   menu: string,
-): Promise<{ controls: FormControl[]; html: string; path: string }> {
+): Promise<{ html: string; links: LattesLink[]; path: string }> {
   const params = { ...t.list.params, ...op.listParams };
   // Parâmetro vazio: a lista que não o tem (o programa de computador com
   // registro é a lista de PC sem f_reg; a sem registro tem f_reg=N).
@@ -49,14 +49,25 @@ export async function locate(
   // A mesma lista aparece às vezes também com f_sta_divulgacao_cientifica.
   const list = lists.find((l) => !('f_sta_divulgacao_cientifica' in l.params)) ?? lists[0];
   if (!list) throw new Stop('erro', `O menu do Lattes não tem a lista (${t.list.proc})`);
-  const listHtml = await getChecked(port, list.path);
+  const html = await getChecked(port, list.path);
+  const isRow = t.list.isRow ?? ((p: Record<string, string>) => Boolean(p.f_seq));
+  const links = findLinks(html, t.list.formProc).filter((l) => isRow(l.params));
+  return { html, links, path: list.path };
+}
+
+/** O formulário do item: o único da lista com o título e o ano dele. */
+export async function locate(
+  op: Pick<ProductionOp, 'listParams' | 'match'>,
+  t: ProductionTarget,
+  port: LattesPort,
+  menu: string,
+): Promise<{ controls: FormControl[]; html: string; path: string }> {
+  const { html: listHtml, links, path: listPath } = await productionRows(op, t, port, menu);
   const titleField = t.title.field ?? 'f_titulo';
   const yearField = t.year.field ?? 'f_ano';
   const found: { controls: FormControl[]; html: string; path: string }[] = [];
-  const isRow = t.list.isRow ?? ((p: Record<string, string>) => Boolean(p.f_seq));
-  const links = findLinks(listHtml, t.list.formProc).filter((l) => isRow(l.params));
   const scans = port.productionScans;
-  const scanKey = `${t.id}|${list.path}`;
+  const scanKey = `${t.id}|${listPath}`;
   let scan = scans?.get(scanKey);
   if (!scan || scan.html !== listHtml) {
     scan = { html: listHtml, titles: new Map() };

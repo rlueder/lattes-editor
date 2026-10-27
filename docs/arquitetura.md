@@ -151,6 +151,7 @@ Os módulos do conector, por assunto:
 | Atividades da atuação, áreas de atuação, dicionário de coautores | `edit-atividade.ts`, `areas-atuacao.ts`, `edit-citacao.ts`                                                                                                                                               |
 | Inclusão                                                         | `create.ts` (atuação), `create-formacao.ts`, `create-projeto.ts`, `create-cargo.ts` e `create-atividade.ts` (atividades), `create-registro.ts`, `create-evento.ts`, `create-items.ts`, `create-grids.ts` |
 | Exclusão (idioma e vínculo)                                      | `delete.ts`, que posta o formulário com `f_ctr=E` e confere relendo a lista                                                                                                                              |
+| Exclusão dos outros tipos                                        | `delete-items.ts`, pelo formulário de alteração de cada um, com o `del()` da página (nas formações, o `SETA_ULTIMO_PUBLICO` antes; na atuação inteira, o GET com `f_ctr=E2`), e a lista relida           |
 | Foto, Exportar, Importar, estado do Lattes, Enviar ao CNPq       | `photo.ts`, `export.ts`, `importar.ts`, `lattes-status.ts`, `publish.ts`                                                                                                                                 |
 
 Na inclusão, um campo que o formulário de inclusão do Lattes não tem não
@@ -208,6 +209,7 @@ própria montagem (`ApplyGates`, em `apply-gates.ts`).
 | `CREATE_ACTIVITY_ORGAN_ENABLED`  | `atividade-nova-orgao`          | Ligada: atividade nova das naturezas com órgão, pela janela de órgãos da atividade; nenhuma inclusão real acompanhada                                   |
 | `CREATE_COMPL_ENABLED`           | `complementar-nova`             | Ligada: formação complementar nova nos dois passos do `FORM2`; nenhuma inclusão real acompanhada                                                        |
 | `ACTIVITY_ROWS_ENABLED`          | `grade-atividade`               | Ligada: disciplinas, treinamentos e linhas de pesquisa numa atividade que já existe, e o formulário da linha de pesquisa nova; nenhum envio acompanhado |
+| `DELETE_MORE_ENABLED`            | `excluir-mais`                  | Ligada: exclusão de produções, projetos, eventos, prêmios, formações, atividades e da atuação inteira; observada só no evento                           |
 | `PROJECT_ORGAN_ENABLED`          | `orgao-projeto`                 | Desligada: o Lattes recebe o órgão novo e mantém o antigo, também pela própria página (27/10/2026)                                                      |
 | `PUBLISH_ENABLED`                | `publicar-cnpq`                 | Ligada com declaração por tentativa; validação acompanhada do app ao CNPq pendente antes do lançamento                                                  |
 

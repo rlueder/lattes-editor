@@ -336,7 +336,7 @@ const MENU_PROC: Record<BiographicKind, string> = {
 };
 
 /** Links de alteração de uma das listas de formação (os que têm f_seq). */
-async function formacaoLinks(menu: string, get: Get, list: FormationList = 'FA') {
+export async function formacaoLinks(menu: string, get: Get, list: FormationList = 'FA') {
   const lista = findLinks(menu, MENU_PROC.formacao).find(
     (l) => l.params.f_tipo?.toUpperCase() === list,
   );

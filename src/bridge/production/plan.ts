@@ -5,13 +5,14 @@
 import { enumLabel } from '../../labels/labels.ts';
 import type { Change } from '../../model/changes.ts';
 import { foldText } from '../../model/fold-text.ts';
-import { childElements, element, getAttr, walk, type XElement } from '../../model/xml.ts';
+import { childElements, element, getAttr, type XElement } from '../../model/xml.ts';
 import { lattesSchema } from '../../schema/lattes.ts';
 import { areaLabel, type AreaRow } from '../areas-atuacao.ts';
 import type { BridgeOp, OpBase } from '../plan.ts';
 import { fieldsLeft } from './fields-left.ts';
 import { AUTHOR_PART, authorsOf, type AuthorSpec, MAX_KEYWORDS } from './grids.ts';
 import { holderField, withoutHolderCopies } from './holders.ts';
+import { productionIdentity } from './identity.ts';
 import {
   type AreaList,
   isAreaChange,
@@ -188,41 +189,18 @@ export function planProduction(
   const partMap =
     organChange || project ? undefined : target.partFields?.[change.element]?.(change, el, item);
   if (partMap && 'reason' in partMap) return partMap;
-  // Título e ano do Lattes: os de antes, quando a própria mudança os troca.
-  const before = (child: string, attr: string) => {
-    const f = change.element === child ? change.fields.find((x) => x.attr === attr) : undefined;
-    if (f) return f.before;
-    // O filho pode estar mais fundo (o REGISTRO-OU-PATENTE fica dentro do
-    // detalhamento do software).
-    let part = child === item.name ? item : undefined;
-    walk(item, (n) => {
-      part ??= n !== item && n.name === child ? n : undefined;
-    });
-    return (part && getAttr(part, attr)) ?? '';
-  };
-  const match = {
-    title: before(target.title.child, target.title.attr).trim(),
-    year: before(target.year.child, target.year.attr).trim(),
-  };
-  if (!match.title || !match.year) {
-    return { reason: 'O item não tem título ou ano para achar a linha no Lattes' };
-  }
+  const located = productionIdentity(change, item, target);
+  if ('reason' in located) return located;
+  const { listParams, match } = located;
   // As grades que o conector não monta (opaque.ts).
   const opaque = opaqueReason(target.opaqueGrids ?? [], item, change, siblings, chain[0]);
   if (opaque) return { reason: opaque };
-  const by = target.list.paramsBy;
-  const byValue = by && before(by.child, by.attr);
-  const listParam =
-    by && (typeof by.values === 'function' ? by.values(byValue ?? '') : by.values[byValue ?? '']);
-  if (by && listParam === undefined) {
-    return { reason: 'O item não diz em que lista do Lattes ele está' };
-  }
   const base = {
     expect: {},
     key: change.key,
     kind: 'producao' as const,
     label,
-    ...(by && listParam !== undefined ? { listParams: { [by.param]: listParam } } : {}),
+    ...(listParams ? { listParams } : {}),
     match,
     set: {},
     target: target.id,

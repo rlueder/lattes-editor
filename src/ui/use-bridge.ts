@@ -7,14 +7,14 @@
 // e comando do próprio app, ver src-tauri/src/conector.rs). No navegador, em
 // desenvolvimento, por postMessage com o script de conteúdo.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { OpResult } from '../bridge/apply.ts';
 import { BRIDGE_FEATURES } from '../bridge/compat.ts';
 import { sameCv } from '../bridge/lattes-html.ts';
 import type { LattesStatus } from '../bridge/lattes-status.ts';
 import { INITIAL_LINK, type Link, nextLink } from '../bridge/link.ts';
-import { type BridgeOp, planChanges, planOptionsFor } from '../bridge/plan.ts';
+import type { BridgeOp, planChanges } from '../bridge/plan.ts';
 import {
   type BridgeMessage,
   type EditorMessage,
@@ -41,7 +41,7 @@ import type {
 import type { ChangeGroup } from './changes-view.ts';
 import { loadOutgoing, type Outgoing, saveOutgoing } from './outgoing-store.ts';
 import { writeCvCode } from './profile.ts';
-import { useSendExtras } from './send-extras.ts';
+import { usePlan } from './use-plan.ts';
 import { type RestoreState, useRestorePoint } from './use-restore-point.ts';
 import { useWriteBrake } from './use-write-brake.ts';
 
@@ -417,16 +417,7 @@ export function useBridge(
   useEffect(() => syncIncludeCapability(features), [features]);
   useEffect(() => () => setIncludeCapability(false), []);
 
-  const entries = useMemo(() => groups.flatMap((g) => g.entries), [groups]);
-  // Os textos que o envio pede e o XML não guarda (o potencial de inovação).
-  const extras = useSendExtras();
-  const plan = useMemo(
-    () =>
-      session
-        ? planChanges(entries, session.doc.root, { ...planOptionsFor(features), extras }, true)
-        : { ops: [], unsupported: [] },
-    [session, entries, features, extras],
-  );
+  const plan = usePlan(session, groups, features);
 
   return {
     ...restorePoint.fields,
