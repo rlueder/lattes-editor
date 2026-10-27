@@ -187,9 +187,9 @@ describe('planejar idioma, prêmio e vínculo', () => {
     for (const [name, pattern] of [
       ['LICENCA', /nascimento ou adoção/],
       ['AREA-DE-ATUACAO', /f_area_l/],
-      ['DISCIPLINA', /grade leva também as que já existem/],
-      ['TREINAMENTO', /grade leva também os que já existem/],
-      ['LINHA-DE-PESQUISA', /grade leva também as que já existem/],
+      ['DISCIPLINA', /vai junto com a atividade/],
+      ['TREINAMENTO', /vai junto com a atividade/],
+      ['LINHA-DE-PESQUISA', /vai junto com a atividade/],
       ['FINANCIADOR-DO-PROJETO', /EDITAR_FINANCIAMENTO, que não foi lida/],
       ['PRODUCAO-CT-DO-PROJETO', /janela de produções/],
       ['ORIENTACAO', /janela de orientações/],

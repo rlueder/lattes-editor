@@ -3,6 +3,7 @@
 // plan.ts para o plano caber no limite de tamanho dos arquivos.
 
 import { EDIT_AREAS_ENABLED } from './areas-atuacao.ts';
+import { ACTIVITY_ROWS_ENABLED } from './atividade-grade.ts';
 import { BIOGRAPHIC_FULL_ENABLED, BIOGRAPHIC_OPS_ENABLED } from './biographic.ts';
 import { CREATE_ITEMS_ENABLED } from './create.ts';
 import { CREATE_ACTIVITY_ORGAN_ENABLED } from './create-cargo.ts';
@@ -103,6 +104,7 @@ export const GATED_EDITS: readonly {
     feature: 'complementar-nova',
     option: 'createComplementar',
   },
+  { enabled: ACTIVITY_ROWS_ENABLED, feature: 'grade-atividade', option: 'editActivityRows' },
 ];
 
 /**
@@ -126,6 +128,13 @@ export function partGate(op: BridgeOp, options: PlanOptions): string | undefined
   }
   if (op.kind === 'criar-projeto' && !options.createProjects) {
     return 'Projeto novo pelo conector: desligado nesta montagem';
+  }
+  // Uma extensão sem a grade mandaria a atividade como veio, e a releitura acharia tudo certo.
+  if (
+    (('activityRows' in op && op.activityRows) || ('lines' in op && op.lines)) &&
+    !options.editActivityRows
+  ) {
+    return 'Linhas da atividade pelo conector: desligado nesta montagem';
   }
   if (op.kind === 'criar-complementar' && !options.createComplementar) {
     return 'Formação complementar nova pelo conector: desligado nesta montagem';

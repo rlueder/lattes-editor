@@ -91,19 +91,19 @@ export const GENERAL_BY_HAND: Record<string, string> = {
     'Área de atuação vai à mão: a grade de áreas (f_area_l) tem a chave r, de sentido não lido',
   ATIVIDADE: 'Atividade vai à mão: o Lattes exige o órgão ou unidade, escolhido na lista do Lattes',
   DISCIPLINA:
-    'Disciplina numa atividade que já está no Lattes vai à mão: a grade leva também as que já existem, que a página traz só em script (numa atividade de ensino nova, ela vai junto)',
+    'Disciplina: a atividade de ensino dela ainda não está no Lattes; a disciplina vai junto com a atividade',
   'FINANCIADOR-DO-PROJETO':
     'Financiador vai à mão: a natureza, a moeda e o valor de cada linha vêm da janela PKG_PROJETO.EDITAR_FINANCIAMENTO, que não foi lida',
   LICENCA:
     'Licença vai à mão: o Lattes exige a data de nascimento ou adoção, que o currículo não guarda',
   'LINHA-DE-PESQUISA':
-    'Linha de pesquisa numa atividade que já está no Lattes vai à mão: a grade leva também as que já existem, que a página traz só em script (numa atividade nova, ela vai junto)',
+    'Linha de pesquisa: a atividade de pesquisa e desenvolvimento dela ainda não está no Lattes; a linha vai junto com a atividade',
   ORIENTACAO:
     'Orientação do projeto vai à mão: ela se liga a uma orientação do currículo pela janela de orientações, que não foi lida',
   'PRODUCAO-CT-DO-PROJETO':
     'Produção do projeto vai à mão: ela se liga a uma produção do currículo pela janela de produções, que não foi lida',
   TREINAMENTO:
-    'Treinamento numa atividade que já está no Lattes vai à mão: a grade leva também os que já existem, que a página traz só em script (numa atividade nova, ele vai junto)',
+    'Treinamento: a atividade de treinamento dele ainda não está no Lattes; o treinamento vai junto com a atividade',
 };
 
 /** O motivo de ir à mão para um elemento novo, ou undefined quando não é destes. */

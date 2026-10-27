@@ -154,8 +154,9 @@ describe('atividade nova com órgão: o plano', () => {
       atuacao1(doc.root).children.push(direcao({ 'CARGO-OU-FUNCAO-INGLES': 'Head' })),
     );
     expect(english.ops[0]).toMatchObject({ left: [expect.stringMatching(/ingl/i)] });
+    // Os objetivos vão pelo formulário da linha, que exige o campo Ativa.
     expect(await reason(pesquisa({ 'OBJETIVOS-LINHA-DE-PESQUISA': 'Estudar' }))).toMatch(
-      /tela de linhas de pesquisa depois de criar/,
+      /está ativa/,
     );
     const old = planOptionsFor(['incluir-itens']);
     const fromOld = await plan((doc) => atuacao1(doc.root).children.push(direcao()), old, true);
@@ -188,6 +189,32 @@ describe('atividade nova com órgão no Lattes simulado', () => {
     expect(await applyOp(ops[0]!, lattes.port)).toMatchObject({ status: 'divergente' });
   });
 
+  it('a linha de pesquisa nova leva os objetivos pelo formulário dela, depois da grade', async () => {
+    const lattes = await start();
+    const linha = {
+      'FLAG-LINHA-DE-PESQUISA-ATIVA': 'SIM',
+      'OBJETIVOS-LINHA-DE-PESQUISA': 'Estudar a variação genética',
+      'TITULO-DA-LINHA-DE-PESQUISA-INGLES': 'Population genetics',
+    };
+    const { ops, unsupported } = await plan((doc) =>
+      atuacao1(doc.root).children.push(pesquisa(linha)),
+    );
+    expect(unsupported).toEqual([]);
+    expect(ops[0]).toMatchObject({
+      lines: [{ set: { f_ref: linha['OBJETIVOS-LINHA-DE-PESQUISA'], f_status: 'S' } }],
+    });
+    const [r] = await applyAll(ops, lattes.port);
+    expect(r).toMatchObject({ status: 'conferido' });
+    const saved = walkFind(lattes.state.root, 'LINHA-DE-PESQUISA');
+    expect(getAttr(saved!, 'OBJETIVOS-LINHA-DE-PESQUISA')).toBe('Estudar a variação genética');
+    expect(getAttr(saved!, 'FLAG-LINHA-DE-PESQUISA-ATIVA')).toBe('SIM');
+    expect(getAttr(saved!, 'TITULO-DA-LINHA-DE-PESQUISA-INGLES')).toBe('Population genetics');
+    // Uma extensão sem a grade não recebe a atividade com os objetivos.
+    const old = planOptionsFor(['incluir-itens', 'atividade-nova-orgao']);
+    const fromOld = await plan((doc) => atuacao1(doc.root).children.push(pesquisa(linha)), old);
+    expect(fromOld.unsupported[0]?.reason).toMatch(/Linhas da atividade/);
+  });
+
   it('órgão fora da janela da instituição: nada vai', async () => {
     const lattes = await start();
     const { ops } = await plan((doc) =>
@@ -198,3 +225,11 @@ describe('atividade nova com órgão no Lattes simulado', () => {
     expect(lattes.state.log.filter((l) => l.method === 'POST').length).toBe(posts);
   });
 });
+
+function walkFind(root: XElement, name: string): XElement | undefined {
+  let hit: XElement | undefined;
+  walk(root, (el) => {
+    if (!hit && el.name === name) hit = el;
+  });
+  return hit;
+}

@@ -16,6 +16,7 @@
 //   que a extensão não tem no contrato. Os testes edit-flags e compat-publish
 //   conferem essas chaves.
 
+import { ACTIVITY_ROWS_ENABLED } from './atividade-grade.ts';
 import { CREATE_ACTIVITY_ORGAN_ENABLED } from './create-cargo.ts';
 import { CREATE_COMPL_ENABLED } from './create-complementar.ts';
 import { CREATE_PROJECT_ORGAN_ENABLED } from './create-projeto.ts';
@@ -117,6 +118,8 @@ export const BRIDGE_FEATURES = [
   ...(CREATE_ACTIVITY_ORGAN_ENABLED ? (['atividade-nova-orgao'] as const) : []),
   /** Formação complementar nova, com o segundo passo do FORM2 (create-complementar.ts). */
   ...(CREATE_COMPL_ENABLED ? (['complementar-nova'] as const) : []),
+  /** Linhas da grade de uma atividade e o formulário da linha de pesquisa nova (atividade-grade.ts). */
+  ...(ACTIVITY_ROWS_ENABLED ? (['grade-atividade'] as const) : []),
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

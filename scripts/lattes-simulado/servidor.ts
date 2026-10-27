@@ -26,6 +26,7 @@ import { EXPORTAR_ROUTES } from './exportar.ts';
 import { FORMACAO_ROUTES } from './formacao.ts';
 import { LOGON_REDIRECT } from './html.ts';
 import { IMPORTAR_ROUTES } from './importar.ts';
+import { LINHAS_ROUTES } from './linhas.ts';
 import { MENU_ROUTES } from './menu.ts';
 import { PATENTE_ROUTES } from './patente.ts';
 import { buildRequest, type SimRequest } from './pedido.ts';
@@ -46,6 +47,7 @@ export const ROUTES: Routes = {
   ...EXPORTAR_ROUTES,
   ...FORMACAO_ROUTES,
   ...IMPORTAR_ROUTES,
+  ...LINHAS_ROUTES,
   ...MENU_ROUTES,
   ...PATENTE_ROUTES,
   ...PREMIOS_COMPLEMENTAR_ROUTES,

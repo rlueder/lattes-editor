@@ -27,6 +27,8 @@ function menuItems(code: string): [string, string][] {
     ['Pós-doutorado e livre-docência', `pkg_formacao.lista?f_cod=${code}&f_tipo=AP`],
     ['Formação complementar', `pkg_formacao_compl.lista?f_cod=${code}`],
     ['Atuação profissional', `pkg_ativ.lista?f_cod=${code}`],
+    // Observado no menu real (seção 2, e a página do keepalive).
+    ['Linhas de pesquisa', `pkg_linhapesq.lista?f_cod=${code}`],
     ['Projetos de pesquisa', `pkg_projeto.lista?f_cod_tipo=P&f_cod=${code}`],
     ['Projetos de desenvolvimento', `pkg_projeto.lista?f_cod_tipo=D&f_cod=${code}`],
     ['Projetos de extensão', `pkg_projeto.lista?f_cod_tipo=E&f_cod=${code}`],

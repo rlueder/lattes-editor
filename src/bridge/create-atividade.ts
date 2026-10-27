@@ -43,6 +43,7 @@ import {
 import { COURSE_LEVELS, TEACHING_LEVELS, teachingCourse } from './ensino-curso.ts';
 import { encodeLatin1Form, pairValue, setPairs } from './form.ts';
 import { findLinks, isLogonPage, type LattesLink } from './lattes-html.ts';
+import { fillLinhas, type LinhaDetails } from './linha-detalhes.ts';
 import { activityOrgansPath } from './organ-windows.ts';
 import type { FieldValues } from './plan.ts';
 import { organLoose, resolveOrgan } from './production/organ.ts';
@@ -58,6 +59,8 @@ export interface CreateAtividadeOp {
   label: string;
   /** Os campos que o formulário de atividade não tem e ficam fora (create-shared.ts). */
   left?: string[];
+  /** As linhas de pesquisa com objetivos e o resto, pelo formulário delas depois (linha-detalhes.ts). */
+  lines?: LinhaDetails[];
   /** f_natur_ativ: sem valor, o ensino (4); as outras naturezas em create-cargo.ts. */
   natur?: string;
   /** O órgão ou a unidade da janela de órgãos da atividade, com o órgão de cima de uma unidade. */
@@ -314,6 +317,8 @@ export async function applyCreateAtividade(
       if (organ.shown !== undefined && organLoose(organNow) !== organLoose(organ.shown)) {
         return { ...result('divergente', 'Criada no Lattes, mas o órgão não confere'), assigned };
       }
+      const lines = await linesOf(op, port, seq);
+      if (lines) return { ...lines, assigned };
       // As disciplinas ficam sem reler: o resto conferiu, e o aviso vai no
       // registro do enviado, sem travar a fila nem o envio ao CNPq.
       return {
@@ -331,6 +336,28 @@ export async function applyCreateAtividade(
   } catch (err) {
     if (err instanceof Stop) return result(err.status, err.message);
     return result('erro', err instanceof Error ? err.message : 'Falha inesperada');
+  }
+}
+
+/** O formulário de cada linha de pesquisa nova, depois da atividade criada; undefined se tudo voltou. */
+async function linesOf(
+  op: CreateAtividadeOp,
+  port: LattesPort,
+  seqFuncao: string,
+): Promise<OpResult | undefined> {
+  if (!op.lines?.length) return undefined;
+  const created = `Criada no Lattes (atividade ${seqFuncao})`;
+  try {
+    const problems = await fillLinhas(port, { seqAtiv: op.seqAtiv, seqFuncao }, op.lines);
+    if (problems.length === 0) return undefined;
+    return {
+      detail: `${created}, mas a linha de pesquisa não voltou como foi: ${problems.join(', ')}. Confira no Lattes`,
+      key: op.key,
+      status: 'divergente',
+    };
+  } catch (err) {
+    if (!(err instanceof Stop)) throw err;
+    return { detail: `${created}, mas ${err.message}`, key: op.key, status: err.status };
   }
 }
 

@@ -46,11 +46,15 @@ outro item.
 | importar     |    60 |          60 |
 | nenhum       |     9 |           9 |
 
-O editor cria todos os tipos. Os 9 sem caminho vão para "A enviar" com a
-rota "à mão", cada um com o motivo: a licença, as
-áreas de atuação, a disciplina, o treinamento e a linha de pesquisa numa
-atividade que já existe, o financiador, a produção e a orientação de um
-projeto, e a participação em projeto (que nasce com o projeto). As nove
+O editor cria todos os tipos. Os 9 sem inclusão própria são partes de outro
+item ou uma lista única. A disciplina, o treinamento e a linha de pesquisa
+entram pela grade da atividade: junto com uma atividade nova, ou numa que já
+está no Lattes pela alteração dela (`atividade-grade.ts`, capacidade
+`grade-atividade`), e a linha nova leva os objetivos pelo formulário dela
+(`linha-detalhes.ts`). O financiador e a produção ligada entram pelas grades
+da página do projeto, e as áreas de atuação pela grade única delas. Ficam à
+mão a licença, a orientação antiga sob o projeto e a participação em projeto,
+que nasce com o projeto. As nove
 naturezas de atividade vão pelo conector; as que não são o ensino levam o
 órgão escolhido na janela de órgãos da atividade (`create-cargo.ts`, atrás
 da capacidade `atividade-nova-orgao`). A patente vai com o depositante, pela
@@ -294,7 +298,9 @@ capacidade da inclusão. As outras oito
 pedem o órgão ou unidade por uma busca (`prc_orgao_cargo`) cuja resposta não
 foi lida, e vão à mão. Treinamento e linha de pesquisa entram pela grade da
 atividade de treinamento e da de pesquisa e desenvolvimento, e a lista de
-linhas de pesquisa não tem inclusão própria.
+linhas de pesquisa não tem inclusão própria: o conector inclui a linha pela
+grade e depois abre o formulário dela para os objetivos, o campo Ativa, o
+inglês e as grades.
 
 **Dados gerais.** Idioma, prêmio e licença têm formulário lido, simples, com
 `f_ctr=I`. Áreas de atuação são uma grade única em `prc_area_atuacao`.
@@ -311,10 +317,8 @@ só em inglês: com o texto em português, vai à mão.
 
 Ficam à mão, com o motivo de cada um: a licença (o `check()` exige a data de
 nascimento ou adoção, que o XML da licença não guarda), as áreas de atuação
-(a grade `f_area_l` tem a chave `r`, de sentido não lido), a disciplina numa atividade que
-já existe, o treinamento, a linha de pesquisa e o financiador, a produção e a
-orientação do projeto (as buscas de onde vêm os valores dessas grades são POST
-e a resposta não foi lida). O que falta ler está no `README.md` de
+(a grade `f_area_l` tem a chave `r`, de sentido não lido) e a orientação
+antiga sob o projeto. O que falta ler está no `README.md` de
 `lattes-formularios/`.
 
 **Produções, eventos, orientações e bancas.** A captura leu o formulário de

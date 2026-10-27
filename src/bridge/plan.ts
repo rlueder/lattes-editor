@@ -6,6 +6,7 @@
 import { type Change, resolvePath } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import { type AreasOp, planAreas } from './areas-atuacao.ts';
+import { planActivityRows } from './atividade-grade.ts';
 import { atuacaoByHand, vinculoByHand } from './atuacao-by-hand.ts';
 import { type BiographicOp, planBiographic } from './biographic.ts';
 import { type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
@@ -104,6 +105,8 @@ export interface PlanOptions {
   /** Projeto novo com o órgão pela lista do Lattes (create-projeto.ts). */
   createProjects?: boolean;
   deleteItems?: boolean;
+  /** Linhas da grade de uma atividade e o formulário da linha de pesquisa nova (atividade-grade.ts). */
+  editActivityRows?: boolean;
   /** Áreas de atuação (areas-atuacao.ts, EDIT_AREAS_ENABLED). */
   editAreas?: boolean;
   /** Atividades das atuações (edit-atividade.ts, EDIT_ATIVIDADES_ENABLED). */
@@ -306,8 +309,10 @@ function planAny(
       ? unsupported(change, label, formacaoGrids.reason)
       : formacaoGrids;
   }
-  // Atividades das atuações (edit-atividade.ts).
-  const atividade = editAtividades ? planAtividade(change, chain, label) : undefined;
+  // Atividades das atuações (edit-atividade.ts), e as linhas da grade delas.
+  const atividade = editAtividades
+    ? (planActivityRows(change, chain, label, siblings) ?? planAtividade(change, chain, label))
+    : undefined;
   if (atividade)
     return 'reason' in atividade ? unsupported(change, label, atividade.reason) : atividade;
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.

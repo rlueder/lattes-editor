@@ -23,6 +23,7 @@ import type { Change } from '../model/changes.ts';
 import { foldText } from '../model/fold-text.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
+import { type ActivityRows, rowsToSend } from './atividade-grade.ts';
 import { getChecked, sameCode, Stop } from './create-shared.ts';
 import { courseLevelOf, TEACHING_LEVELS, teachingCourse } from './ensino-curso.ts';
 import {
@@ -33,6 +34,7 @@ import {
   withScriptValues,
 } from './form.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
+import { fillLinhas, type LinhaDetails } from './linha-detalhes.ts';
 import { ACTIVITY_ORGAN_ELEMENTS, activityOrgansPath } from './organ-windows.ts';
 import type { FieldValues, OpBase } from './plan.ts';
 import { readProvider } from './production/grids.ts';
@@ -76,15 +78,21 @@ export const ACTIVITY_TYPES: Record<
 };
 
 export interface AtividadeOp extends OpBase {
+  /** A grade inteira, com linhas incluídas, tiradas ou renomeadas (atividade-grade.ts). */
+  activityRows?: ActivityRows;
   codInst?: string;
   /** O curso novo do ensino, pelo código, achado na lista de cursos ao gravar (ensino-curso.ts). */
   course?: { code: string };
   /** A descrição antes e depois, quando a mudança é dela (uma linha na grade). */
   description?: { after: string; before: string };
   kind: 'atividade';
+  /** As linhas de pesquisa novas com objetivos e o resto, pelo formulário delas depois. */
+  lines?: LinhaDetails[];
   natur: string;
   /** O órgão ou a unidade novos, pela janela de órgãos da atividade (organ.ts). */
   organ?: OrganChoice;
+  /** Como a grade se mostra antes do envio (field-labels.ts). */
+  rows?: { after: string; before: string; label: string; name: string }[];
   seqAtiv: string;
   seqFuncao: string;
 }
@@ -335,6 +343,14 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
     );
     // A descrição: a única linha da grade, no lugar dela, com o mesmo c.
     let wanted = rows;
+    let exc = '';
+    if (op.activityRows) {
+      const grid = rowsToSend(rows, op.activityRows);
+      if (grid === 'divergente') wrong.push(['linhas da atividade', '']);
+      else if (grid === 'feito' && Object.keys(op.set).length === 0) {
+        return await withLines(op, port, result('conferido', 'O Lattes já estava assim'));
+      } else if (grid !== 'feito') ({ exc, wanted } = grid);
+    }
     if (op.description) {
       if (rows.length > 1) {
         return result(
@@ -386,7 +402,7 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
     const response = await port.post(
       action,
       encodeLatin1Form(
-        setPairs(pairs, { ...op.set, ...chosen, f_espec_l: specFromRows(wanted), f_exc: '' }),
+        setPairs(pairs, { ...op.set, ...chosen, f_espec_l: specFromRows(wanted), f_exc: exc }),
       ),
     );
     if (isLogonPage(response)) return result('sessao', 'A sessão do Lattes expirou; entre de novo');
@@ -430,12 +446,30 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
     if (notSaved.length > 0) {
       return result('divergente', `O Lattes não gravou: ${notSaved.join(', ')}. Confira no Lattes`);
     }
-    return result('conferido', 'Gravado e conferido no Lattes');
+    return await withLines(op, port, result('conferido', 'Gravado e conferido no Lattes'));
   } catch (err) {
     if (err instanceof Stop) return result(err.status, err.message);
     const why = err instanceof Error ? err.message : String(err);
     return posted
       ? result('divergente', `Falha no meio do envio (${why}); confira no Lattes`)
       : result('erro', why);
+  }
+}
+
+/** Depois da grade, o formulário de cada linha de pesquisa nova (linha-detalhes.ts). */
+async function withLines(op: AtividadeOp, port: LattesPort, done: OpResult): Promise<OpResult> {
+  if (!op.lines?.length) return done;
+  try {
+    const problems = await fillLinhas(port, op, op.lines);
+    if (problems.length === 0) return done;
+    return {
+      ...done,
+      detail: `A grade gravou, mas a linha de pesquisa não voltou como foi: ${problems.join(', ')}. Confira no Lattes`,
+      status: 'divergente',
+    };
+  } catch (err) {
+    if (err instanceof Stop)
+      return { ...done, detail: `A grade gravou, mas ${err.message}`, status: err.status };
+    throw err;
   }
 }

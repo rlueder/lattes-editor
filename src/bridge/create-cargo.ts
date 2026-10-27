@@ -18,6 +18,7 @@ import { childElements, getAttr, type XElement } from '../model/xml.ts';
 import { type CreateAtividadeOp, specGrid } from './create-atividade.ts';
 import { leftOf, type Planned } from './create-shared.ts';
 import { ACTIVITY_TYPES } from './edit-atividade.ts';
+import { type LinhaDetails, planLinhaDetails } from './linha-detalhes.ts';
 import { ACTIVITY_ORGAN_ELEMENTS } from './organ-windows.ts';
 import { ORGAN_PARTS } from './production/organ.ts';
 
@@ -35,9 +36,6 @@ const GRID_CHILDREN: Record<string, { child: string; title?: string }> = {
   },
   'TREINAMENTO-MINISTRADO': { child: 'TREINAMENTO' },
 };
-
-/** O que a linha de pesquisa nova leva além do título; vai depois, pela tela de linhas. */
-const LINE_OWN = new Set(['SEQUENCIA-LINHA', 'TITULO-DA-LINHA-DE-PESQUISA']);
 
 const PERIOD = new Set(['ANO-FIM', 'ANO-INICIO', 'FLAG-PERIODO', 'MES-FIM', 'MES-INICIO']);
 const ORGAN = new Set([...Object.values(ORGAN_PARTS.organ), ...Object.values(ORGAN_PARTS.unit)]);
@@ -85,16 +83,13 @@ export function planCreateCargo(
   // As descrições: o atributo da natureza numa linha, ou os filhos da grade.
   const grid = GRID_CHILDREN[item.name];
   const kids = grid ? childElements(item, grid.child) : [];
-  if (grid?.title) {
-    const more = kids.flatMap((k) => [
-      ...k.attrs.filter((a) => a.value.trim() && !LINE_OWN.has(a.name)).map((a) => a.name),
-      ...childElements(k).map((c) => c.name),
-    ]);
-    if (more.length > 0) {
-      return {
-        reason: `A grade da atividade leva só o título da linha de pesquisa; o resto (${[...new Set(more)].join(', ')}) vai pela tela de linhas de pesquisa depois de criar`,
-      };
-    }
+  // A grade leva só o título da linha de pesquisa; o resto vai depois, pelo
+  // formulário da linha (linha-detalhes.ts).
+  const details: LinhaDetails[] = [];
+  for (const k of grid?.title ? kids : []) {
+    const d = planLinhaDetails(k);
+    if (d && 'reason' in d) return d;
+    if (d) details.push(d);
   }
   const lines = grid
     ? kids.map((k) => (grid.title ? (getAttr(k, grid.title) ?? '') : textOf(k)).trim())
@@ -122,6 +117,7 @@ export function planCreateCargo(
     kind: 'criar-atividade',
     label,
     ...leftOf(left),
+    ...(details.length ? { lines: details } : {}),
     natur: type.natur,
     organ:
       unitCode && unitCode !== organCode

@@ -1677,6 +1677,15 @@ renumeração do Lattes poderia descolar o objetivo de uma linha; o conector
 manda a grade como o Salvar da própria página mandaria, então não é pior que
 salvar no Lattes, mas isso não foi visto.
 
+O conector inclui, tira e renomeia linhas dessa grade numa atividade que já
+existe (`src/bridge/atividade-grade.ts`): a linha que fica vai com o `c`
+dela, a nova com `c` 0 e a que sai em `f_exc`, e as mudanças da fila na mesma
+atividade vão num envio só. A linha de pesquisa nova com objetivos segue pelo
+formulário dela, achada na lista `pkg_linhapesq.lista` pela atividade e pelo
+título (`src/bridge/linha-detalhes.ts`). **Inferido**, sem envio acompanhado:
+`f_exc` com mais de uma linha (`c?c?`), e que a linha criada pela grade
+apareça nessa lista com o título enviado.
+
 **O código da instituição no link.** É o do XML com uma letra na frente (`D`
 ou `V`), e o do XML pode começar por letra também: `K4WU00000006` vira
 `VK4WU00000006`. Tirar a primeira letra dos dois lados desencontra os dois.
