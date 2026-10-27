@@ -97,6 +97,10 @@ para você olhar o Lattes e só segue com "Continuar" no editor. O histórico no
 fim do painel guarda o valor antigo e o novo de cada gravação e deixa
 desfazer.
 
+Enquanto o app está aberto e ligado à extensão, a extensão abre uma página
+pequena do Lattes a cada 20 minutos, na sua sessão, para ela não cair por
+falta de uso. Com o app fechado, isso para.
+
 <img src="site/img/homepage/enviar.webp" width="1440" alt="O nome de um prêmio é editado; o painel Enviar ao Lattes mostra o antes e o depois na revisão e grava a alteração no Lattes pela extensão." />
 
 O que o conector grava fica pendente no Lattes até "Enviar ao CNPq", e o

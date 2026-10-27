@@ -33,6 +33,7 @@ import {
   waitWhile,
 } from './editor-run.ts';
 import { importRunning, runImport } from './import-run.ts';
+import { keepAlive, sessionLoaded } from './keepalive-run.ts';
 import { isLattesMenu, isRealLattesMenu } from './lattes-hosts.ts';
 import {
   answerListRequest,
@@ -48,6 +49,7 @@ import {
   sessionIdentity,
   verifyOn,
 } from './lattes-tab.ts';
+import { registerPanel } from './panel-open.ts';
 import { answerPublishRequest, publishRunning } from './publish-run.ts';
 import { readSession } from './session-reading.ts';
 import { sessionTaskRunning } from './session-task.ts';
@@ -454,6 +456,7 @@ chrome.tabs.onUpdated.addListener((_tabId, info, tab) => {
   if (info.status !== 'complete') return;
   const menu = __CANAL_DEV__ ? isLattesMenu(tab.url, true) : isRealLattesMenu(tab.url);
   if (!menu) return;
+  void sessionLoaded();
   void verify(true);
   if (appConnection.connected) void sendSession('app');
 });
@@ -471,29 +474,15 @@ void readState().then(async (s) => {
 });
 
 void chrome.alarms.create('conector', { periodInMinutes: 1 });
-chrome.alarms.onAlarm.addListener(() => connectApp());
+chrome.alarms.onAlarm.addListener(() => {
+  connectApp();
+  // A sessão do Lattes viva enquanto o app está aberto (keepalive-run.ts).
+  void keepAlive({
+    busy: () => queueActive || verifyInFlight || tabInUse(),
+    connected: () => appConnection.connected,
+    dropped: () => sendSession('app', true),
+  }).catch(() => undefined);
+});
 chrome.runtime.onStartup.addListener(() => connectApp());
 
-chrome.runtime.onInstalled.addListener((details) => {
-  // O aviso de uso abre numa aba (o painel lateral só abre com um clique) na
-  // instalação e na atualização de quem ainda não aceitou esta versão dele.
-  // Falha aqui não pode impedir o painel lateral, configurado logo abaixo.
-  void (async () => {
-    try {
-      const pending =
-        details.reason === 'install' || (details.reason === 'update' && !(await hasConsent()));
-      if (pending) await chrome.tabs.create({ url: chrome.runtime.getURL('panel.html') });
-    } catch {
-      // Sem a aba, o aviso aparece quando o painel for aberto.
-    }
-  })();
-  // Painel lateral onde existir (Chrome, Brave recente); senão o clique abre o painel numa aba.
-  if (chrome.sidePanel?.setPanelBehavior) {
-    void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
-  }
-});
-
-chrome.action.onClicked.addListener(() => {
-  if (!chrome.sidePanel?.setPanelBehavior)
-    void chrome.tabs.create({ url: chrome.runtime.getURL('panel.html') });
-});
+registerPanel();

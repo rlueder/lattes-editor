@@ -14,6 +14,7 @@ import { type EspelhoItem, isEspelhoPage, parseEspelho } from '../../src/bridge/
 import { exportCv, type ExportPort, fromBase64, toBase64 } from '../../src/bridge/export.ts';
 import type { FormControl } from '../../src/bridge/form.ts';
 import { importItems, type ImportPort, type ImportResult } from '../../src/bridge/importar.ts';
+import { KEEPALIVE_PAGE } from '../../src/bridge/keepalive.ts';
 import { cvCodeFrom, isLogonPage, lattesIdFrom, sameCv } from '../../src/bridge/lattes-html.ts';
 import {
   type ListsPort,
@@ -413,5 +414,15 @@ const connector = {
   cancelar: () => traffic.cancel(),
   identity: (fresh = false) =>
     fresh ? withTraffic(() => traffic.run(() => connector.identity(true))) : connector.identity(),
+  /** Um pedido pequeno à sessão (src/bridge/keepalive.ts): viva, ou caiu. */
+  manter: () =>
+    withTraffic(() =>
+      traffic.run(async () => {
+        const code = cvCodeFrom(document.documentElement.outerHTML);
+        const res = await request(`${KEEPALIVE_PAGE}?f_cod=${code}`, { credentials: 'include' });
+        const html = await text(res);
+        return { viva: res.ok && !isLogonPage(html, res.url) };
+      }),
+    ),
   respeitarPausa: (until: number) => traffic.respectPause(until),
 };

@@ -287,6 +287,11 @@ No `pnpm dev`, sem o app, o editor fala com a extensão pelo
   de conferência.
 - **Estado do Lattes** (`src/bridge/lattes-status.ts`): lê do menu a data da
   última publicação e se há pendência.
+- **Sessão viva** (`src/bridge/keepalive.ts`, `extension/src/keepalive-run.ts`):
+  com o app ligado, o aviso aceito e a aba do menu aberta, o alarme de cada
+  minuto da extensão pede `pkg_linhapesq.lista` a cada 20 minutos, pelo mesmo
+  transporte das leituras, e nunca com a aba em uso. Se a sessão caiu, para e
+  o app relê a sessão; o menu carregado de novo recomeça a contagem.
 - **Conferência do contrato** (`src/bridge/contract.ts`): só com leituras,
   compara o menu, um exemplar de cada formulário e as listas dos campos
   tipados (`list-watch.ts`) com o que o conector espera. Uma mudança que

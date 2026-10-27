@@ -410,7 +410,16 @@ A sessão do editor cai em poucos minutos (3 a 12 nos testes de 10/10/2026)
 e passa a responder com a página de `pkg_sec.logon`. Em 11/10/2026, com a
 aba aberta pelo próprio usuário, a sessão aguentou todas as leituras deste
 documento. **Observado.** Abrir um segundo editor do mesmo currículo parece
-derrubar o primeiro. **Inferido.**
+derrubar o primeiro, o que explicaria as quedas rápidas de 10/10; o dono do
+currículo vê a sessão durar horas. **Inferido.** Quanto ela dura parada não
+foi medido.
+
+Para a sessão não cair enquanto o app está aberto, a extensão pede uma
+página pequena a cada 20 minutos (`src/bridge/keepalive.ts`). As menores
+páginas da sessão medidas em 27/10/2026, por GET: `pkg_linhapesq.lista`
+(4.141 bytes), `pkg_demais.lista` (4.149), `pkg_texto.lista` (4.215) e
+`pkg_licenca.lista` (4.282), num currículo sem itens nessas listas; o tamanho
+cresce com os itens. **Observado.**
 
 A aba não percebe que a sessão venceu: o menu já carregado continua na tela, e
 só o próximo pedido mostra que acabou. Com a sessão vencida, cada página do
