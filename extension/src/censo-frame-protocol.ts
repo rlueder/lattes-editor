@@ -62,6 +62,8 @@ export function localFrameReferences(code: string): string {
   // (node.parent.children, el.style.top.length) e fica como está.
   return code.replace(
     /(?<![.\w$])(?:(?:self|window)\.)?((?:(?:parent|top)\.)+)(?=[A-Za-z_$])/g,
-    (_, chain: string) => '__lattesFrameParent.'.repeat(chain.split('.').length - 1),
+    // Uma cópia local só, e um .parent por salto a mais: a cópia responde
+    // parent com ela mesma (censo-frame-runtime.ts), e não conhece o próprio nome.
+    (_, chain: string) => `__lattesFrameParent${'.parent'.repeat(chain.split('.').length - 2)}.`,
   );
 }

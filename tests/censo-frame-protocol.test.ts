@@ -49,9 +49,13 @@ it('todo acesso ao pai vai às cópias locais, sem referência ao menu real', ()
       'self.parent.veriHelp("LIVROS"); self.parent.palavraDP; parent.areaDP; top.setorDP; self.parent.titularInstDP; self.parent.parent.modalCV3;',
     ),
   ).toBe(
-    '__lattesFrameParent.veriHelp("LIVROS"); __lattesFrameParent.palavraDP; __lattesFrameParent.areaDP; __lattesFrameParent.setorDP; __lattesFrameParent.titularInstDP; __lattesFrameParent.__lattesFrameParent.modalCV3;',
+    '__lattesFrameParent.veriHelp("LIVROS"); __lattesFrameParent.palavraDP; __lattesFrameParent.areaDP; __lattesFrameParent.setorDP; __lattesFrameParent.titularInstDP; __lattesFrameParent.parent.modalCV3;',
   );
   // Propriedade de um objeto da página, depois de outro ponto: fica como está.
+  // Cadeias da janela com mais de um salto: um .parent por salto a mais.
+  expect(localFrameReferences('top.parent.x; window.parent.top.y;')).toBe(
+    '__lattesFrameParent.parent.x; __lattesFrameParent.parent.y;',
+  );
   const own = 'node.parent.children; this.parent.x; el.style.top.length; a.$parent.b; myparent.x;';
   expect(localFrameReferences(own)).toBe(own);
 });
