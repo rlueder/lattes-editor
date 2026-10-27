@@ -42,8 +42,9 @@ export const PRODUCTION_LOOKUPS_ENABLED = true;
  * Órgão e unidade do projeto pela janela de órgãos do Lattes (organ.ts).
  * Desligada: no teste ao vivo de 18/10/2026 o Lattes recebeu o envio com o
  * código e o texto do órgão novo e continuou mostrando o de antes, tanto
- * para uma unidade quanto para outro órgão. Falta ver se a própria página
- * consegue trocar o órgão na alteração.
+ * para uma unidade quanto para outro órgão. Em 27/10/2026 a própria página
+ * fez a troca no projeto de teste, com os mesmos campos, e o Lattes também
+ * manteve o de antes: ele não troca o órgão de um projeto que já existe.
  */
 export const PROJECT_ORGAN_ENABLED = false;
 

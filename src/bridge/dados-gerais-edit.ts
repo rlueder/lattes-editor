@@ -277,6 +277,9 @@ export function planIdentificacaoEdit(
  * exportação de 27/10/2026, com uma caixa marcada, PCD foi o rótulo dela
  * ("Deficiência Visual"); que os outros tipos sigam o mesmo é inferido.
  */
+/** A deficiência pelo conector (op.pcd): só a uma extensão com 'pessoa-com-deficiencia'. */
+export const EDIT_PCD_ENABLED = true;
+
 const PCD_LABELS: Record<string, string> = {
   'deficiencia auditiva': 'A',
   'deficiencia fisica': 'F',

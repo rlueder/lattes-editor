@@ -1972,8 +1972,14 @@ mostra o órgão gravado. O `seleciona()` da janela de instituições do projeto
 também limpa os quatro. Dois envios de alteração pelo conector, com o código
 e o texto que o `atribuir()` gravaria (uma unidade do mesmo órgão, depois
 outro órgão), voltaram com o órgão de antes, sem erro e sem mexer em mais
-nada. **Observado.** Se a própria página consegue trocar o órgão na
-alteração não foi visto.
+nada. **Observado.** Em 27/10/2026, no projeto de teste, a própria página
+fez a troca: `orgao()`, o `atribuir()` da janela de órgãos e o Salvar
+(`check()`). O POST levou `f_codorgao` e `f_orgao_old` com o órgão novo e
+`f_instold`/`f_inst_old` vazios, os mesmos campos do conector; o Lattes
+respondeu "A operação foi realizada com sucesso" e a releitura voltou com o
+órgão de antes. **Observado**: o Lattes não troca o órgão de um projeto que
+já existe, nem pela própria página. A atuação do projeto não lista a
+participação como atividade, então não há outra tela para isso.
 
 Os financiadores, as produções e as orientações ligadas são tabelas
 (`criarGrid`, ids `grid2`, `grid3` e `grid4`) que o servidor escreve com as
@@ -2003,8 +2009,8 @@ como `v0@`. Neste projeto, então, `f_inst_l` vai
 `f_orientacoes_l` vai vazio. Um valor pode ter `|` dentro (`026|10,00`), e
 o `check()` não o escapa. Os ocultos `f_producoes_d` e `f_orientacoes_d`
 ficam dentro do corpo das tabelas, com os códigos ligados unidos por `|`.
-**Observado.** O sentido de cada valor do financiador (`0000;N;`, a moeda e
-o valor) não foi lido, nem o que o servidor faz com os dois ocultos.
+**Observado.** O que o servidor faz com os dois ocultos não foi lido. O
+sentido dos valores do financiador está no parágrafo seguinte.
 
 O conector manda `f_producoes_d` e `f_orientacoes_d` como a página os serve
 e refaz os três ocultos das grades assim a partir da página, com as entidades
@@ -2017,12 +2023,27 @@ orientação ligada continua à mão, e com uma dessas mudanças na fila o resto
 do projeto vai à mão junto: o envio levaria de volta as linhas que o Lattes
 tem, e a mudança à mão ficaria para trás com o item conferido.
 
-A natureza de um financiador que já está no projeto vai pela quarta célula
-da linha dele, a letra (A e B, as duas vistas: seção 25); a linha se acha
-pelo código da instituição, que na primeira célula vem com a letra da busca
-na frente. **Inferido**: que o Lattes grave a natureza nova só com a letra
-trocada, sem mexer em `0000;N;` nem na moeda com o valor. A releitura
-confere a grade inteira.
+Lido em 27/10/2026 no Lattes real, sem enviar, num projeto de teste com o
+CNPq como financiador: a linha manda `V002200000000|1234;N;|026|100,00|B|`,
+ou seja, o código da instituição com a letra da busca, o código do projeto
+com `;N;`, a moeda e o valor, e a letra da natureza. A janela
+`PKG_PROJETO.EDITAR_FINANCIAMENTO` (com `P_VALORES` e `P_INDICE` para a
+linha existente) tem `f_cod_proj`, `f_moeda`, `f_valor` e o select
+`f_natureza` com os valores `AAuxílio Financeiro`, `BBolsa`,
+`RRemuneração`, `CCooperação` e `OOutra`; o Confirmar posta em
+`PKG_PROJETO.SELECIONA_LISTA_INST_FINANC`, que não foi lido. A busca de
+instituições é um POST a `PKG_PROJETO.PP_LISTA_INST` com `F_CTR` C, `F_COD`,
+`F_PGM` INSTFINANC, `F_COD_INST` vazio, `F_SEQ_FUNCAO`, `F_SEQ_ATIV`,
+`F_SEQ_PROJ` e `f_nome`; responde com um `seleciona('<letra><código>',
+'<nome>', '<sigla>')` por instituição, e o nome completo, com acentos em
+Latin-1, acha a instituição. A exportação traz o nome (o segundo argumento)
+em `NOME-INSTITUICAO`.
+
+O conector troca a instituição e a natureza de um financiador que já está
+pela primeira e pela quarta célula da linha, achada pelo código da
+instituição de antes; a instituição nova é a única da busca com o mesmo
+nome. **Inferido**: que o Lattes grave a linha assim, sem passar pela janela
+de edição. A releitura confere a grade inteira.
 
 **Inferido**: que a exportação ponha o órgão de cima em
 `PARTICIPACAO-EM-PROJETO@CODIGO-ORGAO`/`NOME-ORGAO` e a unidade em
@@ -2592,7 +2613,7 @@ inferido (seção 17, "Patente: exportação, depositante e histórico").
 (POST) para `PKG_PROJETO.PP_LISTA_INST`, com `F_CTR`, `F_COD`, `F_PGM`,
 `F_COD_INST`, `F_SEQ_FUNCAO`, `F_SEQ_ATIV` e `F_SEQ_PROJ` ocultos, e um
 segundo formulário para `PKG_PROJETO.EDITAR_FINANCIAMENTO` (`P_COD`,
-`P_COD_INST`, `P_CTR`). A resposta não foi lida. `PKG_PROJETO.pp_lista_prod`
+`P_COD_INST`, `P_CTR`). A resposta está na seção 21 (27/10/2026). `PKG_PROJETO.pp_lista_prod`
 responde 404 sem parâmetros. `PKG_PROJETO.pp_lista_autores` tem um campo de
 busca, a lista de pessoas (cada uma como `p[i]="<código>#<nome>@<citação>"`)
 e o link `pkg_projeto.novo_equipe?f_tipo=A&f_nome=`
@@ -2694,8 +2715,8 @@ versionados. **Observado**, menos onde está marcado.
   `PKG_PROJETO.EDITAR_FINANCIAMENTO` com `P_COD`, `P_COD_INST` e `P_CTR`; a
   linha existente se edita na mesma página, com `P_VALORES` e `P_INDICE`. A
   natureza, a moeda e o valor saem dela, que sem uma linha real responde 404. Os rótulos de natureza que a página conhece são Auxílio Financeiro,
-  Bolsa, Remuneração, Cooperação e Outra; o código só foi visto para o
-  primeiro (A). As produções e orientações ligadas saem de
+  Bolsa, Remuneração, Cooperação e Outra, com as letras A, B, R, C e O
+  (seção 21). As produções e orientações ligadas saem de
   `PKG_PROJETO.pp_lista_prod` com `f_tpo=PROD` ou `f_tpo=TESE`, sem o
   projeto, e cada linha escolhida entra com `importarDados1`; o `check()`
   manda o primeiro valor de cada linha em `f_producoes_l` e

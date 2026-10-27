@@ -143,7 +143,8 @@ export async function applyProduction(
     }
 
     // A natureza de um financiador: a linha dele na grade, com a letra nova.
-    const funder = op.funder && funderValue(html, t.opaqueGrids ?? [], op.funder);
+    const funder =
+      op.funder && (await funderValue(port, path, html, t.opaqueGrids ?? [], op.funder));
     if (funder && 'status' in funder) return result(funder.status, funder.detail);
     if (funder) opaque.values[funder.field] = funder.value;
 

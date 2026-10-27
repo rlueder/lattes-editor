@@ -111,6 +111,10 @@ export interface PlanOptions {
   editEvento?: boolean;
   /** Formação complementar (edit-lists.ts, EDIT_FORMACAO_COMPL_ENABLED). */
   editFormacaoComplementar?: boolean;
+  /** Instituição e natureza de um financiador do projeto (production/financiador.ts). */
+  editFunders?: boolean;
+  /** Outra forma de contato do endereço (endereco-contatos.ts). */
+  editOtherContacts?: boolean;
   /**
    * Alteração de evento de ouvinte (edit-items.ts). Sem valor, fica
    * desligada: só planOptionsFor liga, com as capacidades da extensão. Assim,
@@ -118,6 +122,8 @@ export interface PlanOptions {
    * extensão que gravaria sem conferir.
    */
   editOuvinte?: boolean;
+  /** Pessoa com deficiência (dados-gerais-edit.ts). */
+  editPcd?: boolean;
   /** Prêmios e títulos (edit-lists.ts, EDIT_PREMIO_ENABLED). */
   editPremio?: boolean;
   /** Alterar no lugar produções, orientações e bancas (production/). */
@@ -132,7 +138,7 @@ export interface PlanOptions {
   projectOrgan?: boolean;
 }
 
-import { GATED_EDITS } from './plan-gates.ts';
+import { GATED_EDITS, partGate } from './plan-gates.ts';
 
 export { GATED_EDITS, planOptionsFor } from './plan-gates.ts';
 
@@ -220,6 +226,19 @@ function unsupported(change: Change, label: string, reason: string): Unsupported
  * (resolvePath), da raiz até o elemento alterado.
  */
 export function planChange(
+  change: Change,
+  chain: XElement[],
+  label: string,
+  options: PlanOptions = {},
+  siblings: readonly Change[] = [],
+): BridgeOp | Unsupported {
+  const planned = planAny(change, chain, label, options, siblings);
+  // A parte nova de uma operação, que uma extensão mais antiga ignoraria.
+  const part = isOp(planned) ? partGate(planned, options) : undefined;
+  return part ? unsupported(change, label, part) : planned;
+}
+
+function planAny(
   change: Change,
   chain: XElement[],
   label: string,

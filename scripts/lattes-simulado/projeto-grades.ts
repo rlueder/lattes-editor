@@ -19,6 +19,7 @@
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
+import { institutionsOf } from './buscas.ts';
 import type { LattesState } from './estado.ts';
 import { esc } from './html.ts';
 import type { SimRequest } from './pedido.ts';
@@ -84,10 +85,9 @@ export function projectGridScripts(projeto: XElement | undefined): string {
 const inner = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /**
- * NATUREZA do financiador → a quarta célula. Observado só o Auxílio
- * Financeiro (A, 20/10/2026). As outras letras são inferidas; os rótulos são
- * os de verificaNaturFinacNula() da página (lida em 26/10/2026), que tem
- * "Outra". As células 0000;N; e 026|10,00 também são inferidas.
+ * NATUREZA do financiador → a quarta célula. As letras e os rótulos são os do
+ * select da janela de edição (lida em 27/10/2026). O simulado repete o
+ * código do projeto, a moeda e o valor de uma linha de teste.
  */
 const FUNDER_NATURE: Record<string, [string, string]> = {
   AUXILIO_FINANCEIRO: ['A', 'Auxílio Financeiro'],
@@ -110,7 +110,8 @@ interface LinkGrid {
 }
 
 const funderValues = (f: XElement) => [
-  getAttr(f, 'CODIGO-INSTITUICAO') ?? '',
+  // A célula traz a letra da busca na frente do código (27/10/2026).
+  getAttr(f, 'CODIGO-INSTITUICAO') ? `V${getAttr(f, 'CODIGO-INSTITUICAO')}` : '',
   // A exportação não traz o valor nem a moeda: o simulado repete os da linha
   // observada, cujo sentido não foi lido.
   '0000;N;',
@@ -171,15 +172,27 @@ export function linkedCodes(projeto: XElement, field: 'f_orientacoes_l' | 'f_pro
 }
 
 /**
- * O financiador da linha com outra letra de natureza (a última célula): o do
- * mesmo código, já com a natureza nova. Inferido, como as letras.
+ * O financiador de uma linha com outra instituição ou outra natureza: o da
+ * mesma posição na grade, com a instituição da busca (pelo código) e a
+ * natureza da letra. Inferido, como o resto da gravação.
  */
-function renatured(parts: XElement[], kept: XElement[], line: string): XElement | undefined {
+function renatured(
+  state: LattesState,
+  parts: XElement[],
+  index: number,
+  line: string,
+): XElement | undefined {
   const cells = line.split('|');
   const nature = Object.entries(FUNDER_NATURE).find(([, [letter]]) => letter === cells.at(-2));
-  const funder = parts.find((p) => !kept.includes(p) && funderValues(p)[0] === cells[0]);
-  if (!funder || !nature) return undefined;
+  const institution = institutionsOf(state).find((i) => i.code === cells[0]);
+  const funder = parts[index];
+  const same = funder && funderValues(funder)[0] === cells[0];
+  if (!funder || !nature || (!same && !institution)) return undefined;
   setAttr(funder, 'NATUREZA', nature[0]);
+  if (institution) {
+    setAttr(funder, 'CODIGO-INSTITUICAO', institution.code.slice(1));
+    setAttr(funder, 'NOME-INSTITUICAO', institution.name);
+  }
   return funder;
 }
 
@@ -187,17 +200,17 @@ function renatured(parts: XElement[], kept: XElement[], line: string): XElement 
  * Grava as ligações do POST: ficam, na ordem do envio, as linhas que vieram
  * como a página as serializa; as outras saem. Sem o oculto, nada muda.
  */
-export function applyProjectLinks(projeto: XElement, req: SimRequest): void {
+export function applyProjectLinks(state: LattesState, projeto: XElement, req: SimRequest): void {
   for (const grid of LINK_GRIDS) {
     const posted = req.get(grid.field);
     if (posted === undefined || posted === null) continue;
     const parts = partsOf(projeto, grid.container);
     const kept: XElement[] = [];
-    for (const line of posted.split('@').filter(Boolean)) {
+    for (const [index, line] of posted.split('@').filter(Boolean).entries()) {
       const part =
         parts.find(
           (p) => !kept.includes(p) && grid.values(p).map(inner).join('|') + grid.end === `${line}@`,
-        ) ?? (grid.field === 'f_inst_l' ? renatured(parts, kept, line) : undefined);
+        ) ?? (grid.field === 'f_inst_l' ? renatured(state, parts, index, line) : undefined);
       if (part) kept.push(part);
     }
     const container = childElements(projeto, grid.container)[0];

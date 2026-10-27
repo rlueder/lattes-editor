@@ -29,6 +29,7 @@ export function fieldAbsent(reason: string): boolean {
       /^A grade d[ae] [^:]* do Lattes não tem:/.test(r) ||
       /^Dados que o próprio Lattes gera/.test(r) ||
       /^A exportação do Lattes não traz /.test(r) ||
+      /^O Lattes não troca /.test(r) ||
       /^O Lattes não tem mais formulário para este tipo/.test(r),
   );
 }

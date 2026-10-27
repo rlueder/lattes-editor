@@ -194,7 +194,10 @@ própria montagem (`ApplyGates`, em `apply-gates.ts`).
 | `COMPL_LOOKUPS_ENABLED`          | `buscas-complementar`           | Ligada sem envio acompanhado da troca: o curso testado não tinha como ser desfeito (`lattes_internals.md`)  |
 | `COMPL_ENDERECO_LOOKUPS_ENABLED` | `buscas-complementar-endereco`  | Desligada: o endereço profissional não tinha caso reversível                                                |
 | `INSTITUTION_HOLDERS_ENABLED`    | `titular-instituicao`           | Ligada: depositante instituição pela busca; a gravação pela página e a exportação foram vistas (27/10/2026) |
-| `PROJECT_ORGAN_ENABLED`          | `orgao-projeto`                 | Desligada: o Lattes recebeu o órgão novo e manteve o antigo (18/10/2026)                                    |
+| `EDIT_PCD_ENABLED`               | `pessoa-com-deficiencia`        | Ligada: um tipo, como a exportação de 27/10/2026                                                            |
+| `EDIT_OTHER_CONTACTS_ENABLED`    | `outra-forma-contato`           | Ligada: só o contato de uma linha que já está                                                               |
+| `EDIT_FUNDERS_ENABLED`           | `financiador-projeto`           | Ligada: instituição pela busca e natureza; a gravação pela linha da grade não foi vista                     |
+| `PROJECT_ORGAN_ENABLED`          | `orgao-projeto`                 | Desligada: o Lattes recebe o órgão novo e mantém o antigo, também pela própria página (27/10/2026)          |
 | `PUBLISH_ENABLED`                | `publicar-cnpq`                 | Ligada com declaração por tentativa; validação acompanhada do app ao CNPq pendente antes do lançamento      |
 
 Fica à mão, com o motivo na tela (`src/bridge/atuacao-by-hand.ts` e os
@@ -202,13 +205,14 @@ Fica à mão, com o motivo na tela (`src/bridge/atuacao-by-hand.ts` e os
 pai e da mãe, tipo do vínculo, a própria citação item a item, nomes em
 inglês de vários formulários, e a natureza das orientações e bancas em que
 o elemento do XML é o próprio tipo do item); trocar a instituição de uma atuação (a tela
-não a tem: inclui-se outra atuação); o órgão de um projeto; mais de um
+não a tem: inclui-se outra atuação); mais de um
 depositante de patente ou mais de uma instituição titular; incluir, tirar ou trocar
-financiadores, produções ou orientações ligadas a um projeto. A natureza de
-um financiador que já está vai pela linha dele na grade
-(`src/bridge/production/financiador.ts`), só entre Auxílio Financeiro e
-Bolsa. O título e o tipo de uma produção ligada ficam só para ler: a
-exportação os copia da própria produção.
+financiadores, produções ou orientações ligadas a um projeto. A instituição
+e a natureza de um financiador que já está vão pela linha dele na grade,
+com a instituição achada pela busca do Lattes
+(`src/bridge/production/financiador.ts`). O título e o tipo de uma produção ligada ficam só para ler: a
+exportação os copia da própria produção. O órgão de um projeto também: o
+próprio Lattes não o troca num projeto que já existe (27/10/2026).
 `node scripts/cobertura-conector.ts` mede quantos campos do editor vão pelo
 conector, com o motivo do que falta. A medição testa o planejamento com dados
 sintéticos, não comprova gravações no Lattes real. As porcentagens são

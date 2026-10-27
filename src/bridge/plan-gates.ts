@@ -5,6 +5,7 @@
 import { EDIT_AREAS_ENABLED } from './areas-atuacao.ts';
 import { BIOGRAPHIC_FULL_ENABLED, BIOGRAPHIC_OPS_ENABLED } from './biographic.ts';
 import { CREATE_ITEMS_ENABLED } from './create.ts';
+import { EDIT_PCD_ENABLED } from './dados-gerais-edit.ts';
 import { DELETE_ITEMS_ENABLED } from './delete.ts';
 import { EDIT_ATIVIDADES_ENABLED } from './edit-atividade.ts';
 import { EDIT_CITACOES_ENABLED } from './edit-citacao.ts';
@@ -15,7 +16,9 @@ import {
   EDIT_FORMACAO_COMPL_ENABLED,
   EDIT_PREMIO_ENABLED,
 } from './edit-lists.ts';
-import type { PlanOptions } from './plan.ts';
+import { EDIT_OTHER_CONTACTS_ENABLED } from './endereco-contatos.ts';
+import type { BridgeOp, PlanOptions } from './plan.ts';
+import { EDIT_FUNDERS_ENABLED } from './production/financiador.ts';
 import { INSTITUTION_HOLDERS_ENABLED } from './production/institution-holder.ts';
 import {
   EDIT_PRODUCTION_ENABLED,
@@ -75,7 +78,33 @@ export const GATED_EDITS: readonly {
   { enabled: EDIT_AREAS_ENABLED, feature: 'alterar-areas-atuacao', option: 'editAreas' },
   { enabled: EDIT_ATIVIDADES_ENABLED, feature: 'alterar-atividades', option: 'editAtividades' },
   { enabled: EDIT_CITACOES_ENABLED, feature: 'alterar-citacoes', option: 'editCitacoes' },
+  { enabled: EDIT_PCD_ENABLED, feature: 'pessoa-com-deficiencia', option: 'editPcd' },
+  {
+    enabled: EDIT_OTHER_CONTACTS_ENABLED,
+    feature: 'outra-forma-contato',
+    option: 'editOtherContacts',
+  },
+  { enabled: EDIT_FUNDERS_ENABLED, feature: 'financiador-projeto', option: 'editFunders' },
 ];
+
+/**
+ * Por que a operação não vai: ela tem uma parte que só uma extensão com a
+ * capacidade grava (a deficiência, outra forma de contato, o financiador).
+ * Uma extensão mais antiga ignoraria a parte, mandaria o formulário como o
+ * Lattes o tem, e a releitura acharia tudo certo.
+ */
+export function partGate(op: BridgeOp, options: PlanOptions): string | undefined {
+  if ('pcd' in op && op.pcd && !options.editPcd) {
+    return 'Pessoa com deficiência pelo conector: desligado nesta montagem';
+  }
+  if ('contacts' in op && op.contacts && !options.editOtherContacts) {
+    return 'Outra forma de contato pelo conector: desligado nesta montagem';
+  }
+  if ('funder' in op && op.funder && !options.editFunders) {
+    return 'Financiador do projeto pelo conector: desligado nesta montagem';
+  }
+  return undefined;
+}
 
 /**
  * As chaves do plano para a extensão ligada: cada alteração de GATED_EDITS

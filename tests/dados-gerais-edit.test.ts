@@ -34,7 +34,7 @@ function planned(edit: (root: XElement) => void) {
   return planChanges(
     diffDocuments(original, working).map((change) => ({ change, itemTitle: '' })),
     working,
-    { biographicFull: true, biographicOps: true },
+    { biographicFull: true, biographicOps: true, editPcd: true },
   );
 }
 

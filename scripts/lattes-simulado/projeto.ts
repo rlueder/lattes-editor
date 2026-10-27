@@ -11,6 +11,7 @@
 // instituição escolhida, numa participação em projeto nova) e como o órgão
 // escolhido vira CODIGO-ORGAO e CODIGO-UNIDADE da participação (organOf).
 
+import { foldText } from '../../src/model/fold-text.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import {
   childElements,
@@ -21,7 +22,7 @@ import {
   type XElement,
 } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
-import { ORGANS, withLetter } from './buscas.ts';
+import { institutionsOf, ORGANS, withLetter } from './buscas.ts';
 import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
@@ -332,7 +333,7 @@ function post(req: SimRequest, state: LattesState): SimResponse {
   } else if (ctr === 'U') {
     applyFields(bindings(state, {}), placed.projeto, req);
     applyProjectTeam(state, placed.projeto, req);
-    applyProjectLinks(placed.projeto, req);
+    applyProjectLinks(state, placed.projeto, req);
     // Código vazio deixa o órgão como está, como na página real.
     const organ = req.get('f_codorgao') || req.get('f_codorgao2') || '';
     if (organ) {
@@ -352,6 +353,9 @@ function post(req: SimRequest, state: LattesState): SimResponse {
  * são inferidos dos nomes dos ocultos que eles preenchem.
  */
 function listaInst(req: SimRequest, state: LattesState): SimResponse {
+  if (req.method === 'POST' && req.get('F_PGM')?.toUpperCase() === 'INSTFINANC') {
+    return funderSearch(req, state);
+  }
   const container = state.find(['DADOS-GERAIS', 'ATUACOES-PROFISSIONAIS']);
   const atuacoes = container ? childElements(container, 'ATUACAO-PROFISSIONAL') : [];
   const vinculo = req.get('f_pgm')?.toUpperCase() === 'INSTVINCULO';
@@ -378,6 +382,23 @@ function listaInst(req: SimRequest, state: LattesState): SimResponse {
     })
     .join('\n');
   return html(h.page('Instituições', rows));
+}
+
+/**
+ * A busca de instituições do financiador (POST a PKG_PROJETO.PP_LISTA_INST
+ * com F_PGM INSTFINANC e f_nome, lida em 27/10/2026): um seleciona() com o
+ * código com a letra, o nome e a sigla por instituição que contém o texto.
+ */
+function funderSearch(req: SimRequest, state: LattesState): SimResponse {
+  const query = foldText((req.get('f_nome') ?? '').trim());
+  const links = institutionsOf(state)
+    .filter((i) => query.length > 1 && foldText(i.name).includes(query))
+    .map(
+      (i) =>
+        `<a href="#" onclick="seleciona('${i.code}','${h.jsString(i.name)}','${i.uf}'); return false;">${h.esc(i.name)}</a><br>`,
+    )
+    .join('\n');
+  return html(h.page('Instituições', links));
 }
 
 /**

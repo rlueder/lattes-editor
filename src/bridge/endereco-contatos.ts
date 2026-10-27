@@ -29,6 +29,9 @@ export interface SocialRow {
 /** O Lattes aceita até cinco redes sociais (o "no máximo até 5 registros" da página). */
 export const MAX_SOCIAL = 5;
 
+/** Outra forma de contato pelo conector (op.contacts): só a uma extensão com 'outra-forma-contato'. */
+export const EDIT_OTHER_CONTACTS_ENABLED = true;
+
 function makeSafe(str: string): string {
   // Como a página: o < antes do &, e as quebras de linha à moda Unix.
   return str.replace(/</g, '&lt;').replace(/&/g, '&amp;').replace(/\r\n/g, '\n');

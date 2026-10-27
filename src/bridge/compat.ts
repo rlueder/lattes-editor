@@ -16,7 +16,10 @@
 //   que a extensão não tem no contrato. Os testes edit-flags e compat-publish
 //   conferem essas chaves.
 
+import { EDIT_PCD_ENABLED } from './dados-gerais-edit.ts';
 import { COMPL_LOOKUPS_ENABLED } from './edit-lists.ts';
+import { EDIT_OTHER_CONTACTS_ENABLED } from './endereco-contatos.ts';
+import { EDIT_FUNDERS_ENABLED } from './production/financiador.ts';
 import { INSTITUTION_HOLDERS_ENABLED } from './production/institution-holder.ts';
 import { PUBLISH_ENABLED } from './publish.ts';
 
@@ -96,6 +99,12 @@ export const BRIDGE_FEATURES = [
   // COMPL_ENDERECO_LOOKUPS_ENABLED ligar.
   /** Titular instituição de patentes e registros pela busca de titulares (institution-holder.ts). */
   ...(INSTITUTION_HOLDERS_ENABLED ? (['titular-instituicao'] as const) : []),
+  /** Pessoa com deficiência, com os f_pcd da página (dados-gerais-edit.ts). */
+  ...(EDIT_PCD_ENABLED ? (['pessoa-com-deficiencia'] as const) : []),
+  /** O contato de outra forma de contato do endereço (endereco-contatos.ts). */
+  ...(EDIT_OTHER_CONTACTS_ENABLED ? (['outra-forma-contato'] as const) : []),
+  /** Instituição e natureza de um financiador do projeto (production/financiador.ts). */
+  ...(EDIT_FUNDERS_ENABLED ? (['financiador-projeto'] as const) : []),
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

@@ -50,12 +50,12 @@ const AREA =
 const ORGAO = new Set(['CODIGO-ORGAO', 'CODIGO-UNIDADE', 'NOME-ORGAO', 'NOME-UNIDADE']);
 
 /**
- * Seção 18 ("Órgão e unidade do projeto"): no teste de 18/10/2026 o Lattes
- * recebeu o órgão novo pelo formulário de alteração do projeto e manteve o de
- * antes (production/organ.ts, desligado).
+ * Seção 21 ("Órgão e unidade do projeto"): o Lattes recebe o órgão novo pelo
+ * formulário de alteração do projeto e mantém o de antes, pelo conector
+ * (18/10/2026) e pela própria página (27/10/2026). Fica só para ler.
  */
 const PARTICIPATION_ORGAO =
-  'O conector não troca o órgão de um projeto: no teste de 18/10/2026 o Lattes recebeu o órgão novo e manteve o de antes. Troque no próprio Lattes';
+  'O Lattes não troca o órgão de um projeto que já existe: a própria página dele aceita a troca e mantém o de antes. Para outro órgão, inclua o projeto de novo';
 
 /** O formulário de projeto (GN_PROJETO) tem só os anos do próprio projeto (seção 17). */
 export const PARTICIPATION_PERIOD =
