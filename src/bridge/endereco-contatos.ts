@@ -104,14 +104,26 @@ export function socialGrid(
       String(name ?? '')
         .trim()
         .toLowerCase() === r.name.trim().toLowerCase();
-    const prior = current.filter(
-      (c) => c.id !== undefined && c.id !== '' && sameNetwork(c.redeSocial),
+    // As linhas desta rede que a mudança trocou (as que não voltam iguais em
+    // after) e as entradas novas dela: uma de cada é a troca do endereço;
+    // nenhuma trocada é uma inclusão (outro perfil na mesma rede); o resto
+    // não dá para saber qual linha virou qual.
+    const kept = (c: GridRow) => after.some((a) => key(a) === key(socialOf([c])[0]!));
+    const changed = current.filter(
+      (c) => c.id !== undefined && c.id !== '' && sameNetwork(c.redeSocial) && !kept(c),
     );
-    if (prior.length === 1 && after.filter((a) => sameNetwork(a.name)).length === 1) {
-      rows.push({ ...prior[0], endereco: r.url });
+    const fresh = after.filter(
+      (a) =>
+        sameNetwork(a.name) &&
+        !current.some(
+          (c) => c.id !== undefined && c.id !== '' && key(socialOf([c])[0]!) === key(a),
+        ),
+    );
+    if (changed.length === 1 && fresh.length === 1) {
+      rows.push({ ...changed[0], endereco: r.url });
       continue;
     }
-    if (prior.length > 0) return { ambiguous: r.name };
+    if (changed.length > 0) return { ambiguous: r.name };
     const type = types.find(
       (t) =>
         String(t.redeSocial ?? '')

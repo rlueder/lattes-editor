@@ -187,6 +187,37 @@ describe('contatos do endereço: as grades como a página as manda', () => {
     expect(existing.endereco).toBe('https://example.org/antes');
   });
 
+  it('outro perfil na mesma rede, com o de antes intacto, é uma inclusão', () => {
+    const existing = {
+      endereco: 'https://example.org/a',
+      id: 2,
+      privacidade: '2',
+      redeSocial: 'Linkedin',
+      visibilidade: 'Privado',
+    };
+    const out = socialGrid(
+      [existing, { id: '' }],
+      [{ id: 3, redeSocial: 'Linkedin' }],
+      [
+        { name: 'LinkedIn', url: 'https://example.org/a' },
+        { name: 'LinkedIn', url: 'https://example.org/b' },
+      ],
+    );
+    expect(out).toEqual({
+      rows: [
+        existing,
+        {
+          endereco: 'https://example.org/b',
+          id: '3',
+          privacidade: '1',
+          redeSocial: 'Linkedin',
+          visibilidade: 'Público',
+        },
+        {},
+      ],
+    });
+  });
+
   it('duas linhas da mesma rede não permitem adivinhar qual privacidade manter', () => {
     expect(
       socialGrid(
