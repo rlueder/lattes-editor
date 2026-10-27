@@ -8,6 +8,7 @@
 
 import { AP_LEVELS } from '../bridge/create-formacao.ts';
 import { COMPL_LEVELS, isComplementaryItem } from '../bridge/edit-lists.ts';
+import { courseLevelOf } from '../bridge/ensino-curso.ts';
 import type { Agency, AreaNode, Course, Institution, Organ } from '../bridge/lattes-lists.ts';
 import { ACTIVITY_ORGAN_ELEMENTS } from '../bridge/organ-windows.ts';
 import { ORGAN_PARTS } from '../bridge/production/organ.ts';
@@ -503,6 +504,12 @@ export function liveKind(el: XElement, attr: string, live: LiveAvailability): Li
     // Só segue a área quando a combinação está na árvore (ou vazia); senão, à mão.
     const current = readArea(el);
     return isEmptyArea(current) || findArea(live.areas, current) ? 'area-derivada' : undefined;
+  }
+  // O curso do ensino: a lista da instituição da atuação, no nível que o tipo
+  // de ensino dá (ensino-curso.ts); os níveis sem curso ficam com o campo de sempre.
+  if (el.name === 'ENSINO') {
+    const level = courseLevelOf(getAttr(el, 'TIPO-ENSINO') ?? '');
+    return attr === 'NOME-CURSO' && live.courses && level ? 'curso' : undefined;
   }
   if (el.name === ORGAN_PARTS.holder || ACTIVITY_ORGAN_ELEMENTS.has(el.name)) {
     // A participação de um projeto novo: o órgão vai na inclusão, que o

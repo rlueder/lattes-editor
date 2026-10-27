@@ -35,10 +35,10 @@ import {
   readPairs,
   type Result,
   sameCode,
-  selectEntries,
   SESSION,
   Stop,
 } from './create-shared.ts';
+import { COURSE_LEVELS, TEACHING_LEVELS, teachingCourse } from './ensino-curso.ts';
 import { encodeLatin1Form, pairValue, setPairs } from './form.ts';
 import { findLinks, isLogonPage, type LattesLink } from './lattes-html.ts';
 import { activityOrgansPath } from './organ-windows.ts';
@@ -62,20 +62,6 @@ export interface CreateAtividadeOp {
   seqAtiv: string;
   set: FieldValues;
 }
-
-/** TIPO-ENSINO do XML → f_nivel, pelo rótulo da opção (inferido). */
-const TEACHING_LEVELS: Record<string, string> = {
-  APERFEICOAMENTO: '404',
-  'ENSINO-FUNDAMENTAL': '405',
-  'ENSINO-MEDIO': '406',
-  ESPECIALIZACAO: '403',
-  GRADUACAO: '401',
-  OUTRO: '409',
-  'POS-GRADUACAO': '402',
-};
-
-/** O nível do curso na busca, pelo nível da atividade (curso() da página, observado). */
-const COURSE_LEVELS: Record<string, string> = { '401': '1', '402': '5', '403': '2', '404': '2' };
 
 /** A grade das disciplinas como o check() a monta (seção 22). */
 export function specGrid(names: string[]): string {
@@ -171,14 +157,11 @@ export function planCreateAtividade(
 
 /**
  * Por que a atividade de ensino de graduação, pós-graduação, especialização ou
- * aperfeiçoamento vai à mão quando o item não traz o código do curso: o Lattes
- * exige o curso da lista dele (prc_curso_form com f_pgm=ATIV e a instituição
- * da atuação, endereço lido no lote 3), e o formulário do editor ainda não
- * oferece essa lista. Ligá-la pede um parâmetro novo no pedido de cursos à
- * extensão, que uma extensão antiga ignoraria, devolvendo a lista da formação.
+ * aperfeiçoamento vai à mão sem o código do curso: o Lattes exige o curso da
+ * lista dele (ensino-curso.ts), que o editor oferece no campo Curso.
  */
 export const COURSE_BY_HAND =
-  'Vai à mão: neste nível o Lattes exige o curso da lista de cursos da instituição, que o editor ainda não oferece na atividade de ensino';
+  'O Lattes exige o curso neste nível de ensino: escolha na lista do Lattes, em Curso';
 
 /** Por que a atividade criada fica divergente: as disciplinas não são relidas. */
 export const DISCIPLINES_UNREAD =
@@ -273,23 +256,9 @@ export async function applyCreateAtividade(
     const set: FieldValues = { ...op.set };
     if (op.courseCode) {
       const inst = inclusion.params.f_codinst ?? '';
-      const courses = selectEntries(
-        await getChecked(
-          port,
-          `prc_curso_form?f_cod=${cv}&f_inst=${inst}&f_nivel=${COURSE_LEVELS[op.set.f_nivel ?? '']}&f_pgm=ATIV`,
-        ),
-        'f_curso',
-      ).filter((o) => sameCode(o.value, op.courseCode!));
-      if (courses.length !== 1) {
-        return result(
-          'erro',
-          `Curso não encontrado na lista do Lattes (${courses.length} achados)`,
-        );
-      }
-      const course = courses[0]!;
-      set[course.value.startsWith('V') ? 'f_cod_curso' : 'f_cod_curso2'] = course.value.slice(1);
-      set.f_curso = course.text;
-      set.f_curso_old = course.text;
+      const course = await teachingCourse(port, cv, inst, op.set.f_nivel ?? '', op.courseCode);
+      if ('reason' in course) return result('erro', course.reason);
+      Object.assign(set, course.set);
     }
     const limit = overLimit(form.controls, set);
     if (limit) return result('erro', limit);

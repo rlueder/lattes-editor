@@ -2810,3 +2810,12 @@ cada) e o órgão pela janela de órgãos da atividade, com a instituição do
 link. A linha de pesquisa nova leva só o título: o objetivo e o resto vão
 pela tela de linhas de pesquisa depois. **Inferido** até uma inclusão
 acompanhada.
+
+A lista de cursos da atividade de ensino (`prc_curso_form` com
+`f_pgm=ATIV`) é, opção a opção, a mesma da formação (`f_pgm=FORM`), nos
+níveis 1, 2 e 5, lida em 27/10/2026 numa universidade com 171 cursos de
+graduação. O editor oferece essa lista no curso do ensino, com a
+instituição da atuação, e o conector manda o nível e o curso também na
+alteração de uma atividade que já está (`ensino-curso.ts`). **Inferido** que
+a alteração grave o curso como a inclusão; a releitura confere o texto de
+`f_curso`.

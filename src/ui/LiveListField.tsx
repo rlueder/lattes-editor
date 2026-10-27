@@ -15,6 +15,7 @@ import { CheckIcon, ChevronIcon } from './icons.tsx';
 import type { LattesLists } from './lattes-lists-context.ts';
 import {
   agencyAttrs,
+  ancestorsOf,
   applyAgency,
   applyCourse,
   applyInstitution,
@@ -273,7 +274,12 @@ type CourseState =
 function CourseControl({ common, el, lists, onChanged }: Omit<ControlProps, 'kind'>) {
   // Num tipo com várias naturezas, a lista de cursos é a da natureza do item.
   const { root } = useEditor();
-  const institution = getAttr(el, institutionAttrs(el).code) ?? '';
+  // O ensino não tem instituição: a lista é a da atuação dele.
+  const holder =
+    el.name === 'ENSINO'
+      ? ancestorsOf(root, el).find((a) => a.name === 'ATUACAO-PROFISSIONAL')
+      : undefined;
+  const institution = getAttr(holder ?? el, institutionAttrs(holder ?? el).code) ?? '';
   const value = getAttr(el, courseAttrs(el).name) ?? '';
   const [state, setState] = useState<CourseState>({ kind: 'parado' });
   // Cada leitura leva um número; a resposta de uma leitura que ficou para trás
@@ -296,7 +302,7 @@ function CourseControl({ common, el, lists, onChanged }: Omit<ControlProps, 'kin
     const n = ++latest.current;
     setState({ kind: 'carregando' });
     lists
-      .loadCourses(el, itemNature(root, el))
+      .loadCourses(el, itemNature(root, el), holder)
       .then((courses) => n === latest.current && setState({ courses, kind: 'pronto' }))
       .catch(
         (err: unknown) =>

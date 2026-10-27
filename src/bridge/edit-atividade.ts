@@ -24,6 +24,7 @@ import { foldText } from '../model/fold-text.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
 import { getChecked, sameCode, Stop } from './create-shared.ts';
+import { courseLevelOf, TEACHING_LEVELS, teachingCourse } from './ensino-curso.ts';
 import {
   encodeLatin1Form,
   pairValue,
@@ -76,6 +77,8 @@ export const ACTIVITY_TYPES: Record<
 
 export interface AtividadeOp extends OpBase {
   codInst?: string;
+  /** O curso novo do ensino, pelo código, achado na lista de cursos ao gravar (ensino-curso.ts). */
+  course?: { code: string };
   /** A descrição antes e depois, quando a mudança é dela (uma linha na grade). */
   description?: { after: string; before: string };
   kind: 'atividade';
@@ -97,6 +100,48 @@ const PERIOD: Record<string, [string, (v: string) => string | undefined]> = {
 };
 
 const ORGAN = new Set(['CODIGO-ORGAO', 'NOME-ORGAO', 'CODIGO-UNIDADE', 'NOME-UNIDADE']);
+
+/** O nível e o curso do ensino, que vão pela lista de cursos (ensino-curso.ts). */
+const TEACHING = new Set(['TIPO-ENSINO', 'CODIGO-CURSO', 'NOME-CURSO']);
+
+/**
+ * O nível (f_nivel) e o curso do ensino: o curso só com o código novo da
+ * lista, e obrigatório nos níveis que têm curso, como o check() da página.
+ */
+function planTeaching(
+  change: Change,
+  el: XElement,
+): { course?: { code: string }; expect: FieldValues; set: FieldValues } | { reason: string } {
+  const field = (attr: string) => change.fields.find((f) => f.attr === attr);
+  const now = (attr: string) => getAttr(el, attr) ?? '';
+  const set: FieldValues = {};
+  const expect: FieldValues = {};
+  const tipo = field('TIPO-ENSINO');
+  if (tipo) {
+    const [after, before] = [TEACHING_LEVELS[tipo.after], TEACHING_LEVELS[tipo.before]];
+    if (!after || !before)
+      return { reason: 'Valor sem correspondência no formulário do Lattes: Tipo de ensino' };
+    set.f_nivel = after;
+    expect.f_nivel = before;
+  }
+  const code = field('CODIGO-CURSO');
+  if (field('NOME-CURSO') && !code) {
+    return { reason: 'Curso: escolha pela lista do Lattes, que grava o código junto' };
+  }
+  const needs = courseLevelOf(now('TIPO-ENSINO')) !== undefined;
+  if (code || tipo) {
+    if (needs && !now('CODIGO-CURSO')) {
+      return { reason: 'O Lattes exige o curso neste nível de ensino: escolha na lista do Lattes' };
+    }
+    if (!needs && now('CODIGO-CURSO')) {
+      return { reason: 'O Lattes não aceita curso neste nível de ensino' };
+    }
+  }
+  if (code) expect.f_curso = field('NOME-CURSO')?.before ?? now('NOME-CURSO');
+  // Com o nível trocado, o curso vai de novo: o da lista do nível novo.
+  const course = (code || tipo) && needs ? { code: now('CODIGO-CURSO') } : undefined;
+  return { ...(course ? { course } : {}), expect, set };
+}
 
 /**
  * O órgão ou a unidade da atividade, que o XML guarda na própria atividade e
@@ -179,6 +224,7 @@ export function planAtividade(
       set[field] = after;
       expect[field] = before;
     } else if (ORGAN.has(f.attr)) continue;
+    else if (type.natur === '4' && TEACHING.has(f.attr)) continue;
     else if (type.description === f.attr) {
       // O check() da página exige ao menos uma descrição.
       if (!f.after.trim()) return { reason: `O Lattes exige a descrição da atividade: ${f.label}` };
@@ -187,6 +233,13 @@ export function planAtividade(
   }
   if (lacks.length > 0) {
     return { reason: `O formulário de atividade do Lattes não tem: ${lacks.join(', ')}` };
+  }
+  // O nível e o curso do ensino (ensino-curso.ts).
+  const teaching = type.natur === '4' ? planTeaching(change, el) : undefined;
+  if (teaching && 'reason' in teaching) return teaching;
+  if (teaching) {
+    Object.assign(set, teaching.set);
+    Object.assign(expect, teaching.expect);
   }
   // O período anterior pede o fim; o atual, nenhum (o check() da página).
   if (set.f_status === 'S') Object.assign(set, { f_ano_fim: '', f_mes_fim: '' });
@@ -199,6 +252,7 @@ export function planAtividade(
     label,
     natur: type.natur,
     ...(organ ? { organ } : {}),
+    ...(teaching?.course ? { course: teaching.course } : {}),
     seqAtiv,
     seqFuncao,
     set,
@@ -300,6 +354,17 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
     }
     // O órgão novo, pela janela de órgãos da atividade, só com GET.
     let chosen: FieldValues = {};
+    if (op.course) {
+      const course = await teachingCourse(
+        port,
+        pairValue(pairs, 'f_cod') ?? '',
+        pairValue(pairs, 'f_codinst') ?? '',
+        op.set.f_nivel ?? pairValue(pairs, 'f_nivel') ?? '',
+        op.course.code,
+      );
+      if ('reason' in course) return result('erro', course.reason);
+      chosen = course.set;
+    }
     let organShown: string | undefined;
     let unitName: string | undefined;
     if (op.organ) {
@@ -309,7 +374,7 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
         path: activityOrgansPath,
       });
       if ('status' in resolved) return result(resolved.status, resolved.detail);
-      chosen = resolved.set;
+      chosen = { ...chosen, ...resolved.set };
       organShown = resolved.shown;
       if (op.organ.parent) unitName = resolved.name;
     }
@@ -338,6 +403,10 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
     const notSaved = Object.entries(op.set)
       .filter(([f, v]) => !same(pairValue(afterPairs, f) ?? '', v ?? ''))
       .map(([f]) => f);
+    // O curso: o texto que a página mostra em f_curso.
+    if (op.course && !same(pairValue(afterPairs, 'f_curso') ?? '', chosen.f_curso ?? '')) {
+      notSaved.push('curso');
+    }
     if (afterRows.length !== wanted.length || afterRows.some((r, i) => !same(r.l, wanted[i]!.l))) {
       notSaved.push('descrição');
     }

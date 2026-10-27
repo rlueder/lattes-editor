@@ -14,7 +14,7 @@ export interface LattesLists extends LiveAvailability {
    * Os cursos da instituição do item no nível dele (num tipo com várias
    * naturezas, o da NATUREZA do item); rejeita com o motivo.
    */
-  loadCourses: (el: XElement, nature?: string) => Promise<Course[]>;
+  loadCourses: (el: XElement, nature?: string, holder?: XElement) => Promise<Course[]>;
   /**
    * Os órgãos da instituição (o código do XML, sem a letra) ou as unidades de
    * um órgão, na janela de órgãos do projeto ou na da atividade; rejeita com
