@@ -141,7 +141,14 @@ export function opaqueByHand(
  * de uma produção ligada são do Lattes. Nenhuma das duas fica para trás
  * quando outra mudança leva a grade como o Lattes a tem.
  */
-const OWN_EDITS = new Set(['alterado:FINANCIADOR-DO-PROJETO', 'alterado:PRODUCAO-CT-DO-PROJETO']);
+const OWN_EDITS = new Set([
+  'alterado:FINANCIADOR-DO-PROJETO',
+  'alterado:PRODUCAO-CT-DO-PROJETO',
+  // Incluir e tirar ligações: as mudanças da fila viram uma operação só (project-links.ts).
+  'novo:PRODUCAO-CT-DO-PROJETO',
+  'removido:PRODUCAO-CT-DO-PROJETO',
+  'novo:PRODUCOES-CT-DO-PROJETO',
+]);
 
 /**
  * Por que a mudança `change` no item fica à mão por causa das grades, ou

@@ -20,7 +20,6 @@ import {
 import { isLogonPage } from '../lattes-html.ts';
 import type { FieldValues } from '../plan.ts';
 import { doiProblem } from './doi.ts';
-import { funderValue } from './financiador.ts';
 import {
   authorRows,
   GRID_LABELS,
@@ -51,6 +50,7 @@ import {
   productionTarget,
   PROJECT_ORGAN_ENABLED,
 } from './plan.ts';
+import { projectGridValues } from './project-links.ts';
 import { resolveStudent } from './student.ts';
 import type { GridField } from './types.ts';
 
@@ -143,10 +143,9 @@ export async function applyProduction(
     }
 
     // A natureza de um financiador: a linha dele na grade, com a letra nova.
-    const funder =
-      op.funder && (await funderValue(port, path, html, t.opaqueGrids ?? [], op.funder));
-    if (funder && 'status' in funder) return result(funder.status, funder.detail);
-    if (funder) opaque.values[funder.field] = funder.value;
+    const gridEdit = await projectGridValues(port, path, html, t.opaqueGrids ?? [], op);
+    if ('status' in gridEdit) return result(gridEdit.status, gridEdit.detail);
+    Object.assign(opaque.values, gridEdit.values);
 
     // Mais de um depositante na página: como a exportação os junta não foi visto.
     if (op.holders && severalDepositors(grids)) {
@@ -373,7 +372,13 @@ export async function applyProduction(
     const others = otherChanges(
       pairs,
       afterPairs,
-      new Set([...fields, ...Object.keys(chosen), ...t.grids, ...opaqueFields]),
+      new Set([
+        ...fields,
+        ...Object.keys(chosen),
+        ...t.grids,
+        ...opaqueFields,
+        ...Object.keys(gridEdit.values),
+      ]),
     );
     // As grades que o conector não monta voltam como foram.
     const opaqueChanged = (t.opaqueGrids ?? []).filter(

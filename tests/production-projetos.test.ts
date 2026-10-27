@@ -46,7 +46,9 @@ ${project('1', 'PESQUISA', 'Projeto de Exemplo')}
 ${project('2', 'EXTENSAO', 'Projeto de Extensão')}
 ${project('3', 'PESQUISA', 'Projeto Financiado', LINKS)}
 </ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO>
-</ATUACAO-PROFISSIONAL></ATUACOES-PROFISSIONAIS></DADOS-GERAIS></CURRICULO-VITAE>`;
+</ATUACAO-PROFISSIONAL></ATUACOES-PROFISSIONAIS></DADOS-GERAIS>
+<PRODUCAO-TECNICA><SOFTWARE SEQUENCIA-PRODUCAO="39"/><TRABALHO-TECNICO SEQUENCIA-PRODUCAO="34"/><TRABALHO-TECNICO SEQUENCIA-PRODUCAO="40"/></PRODUCAO-TECNICA>
+<OUTRA-PRODUCAO><ORIENTACOES-CONCLUIDAS><OUTRAS-ORIENTACOES-CONCLUIDAS SEQUENCIA-PRODUCAO="41"/></ORIENTACOES-CONCLUIDAS></OUTRA-PRODUCAO></CURRICULO-VITAE>`;
 
 const ON: PlanOptions = { editFunders: true, editProduction: true };
 
@@ -219,7 +221,7 @@ describe('projeto: plano', () => {
     });
   });
 
-  it('mexer nas produções ou orientações ligadas fica à mão, e o resto do item junto', () => {
+  it('as ligações vão pela grade; a orientação pelo projeto antigo e o tirar tudo ficam à mão', () => {
     const prods = (root: XElement) =>
       childElements(projectOf(root, '3'), 'PRODUCOES-CT-DO-PROJETO')[0]!;
     const removeOne = (root: XElement) => {
@@ -246,18 +248,39 @@ describe('projeto: plano', () => {
         setProject('3', 'NOME-DO-PROJETO', 'Outro')(root);
       }).ops,
     ).toHaveLength(1);
-    for (const edit of [removeOne, removeAll]) {
-      expect(reasonOf(edit)[0]).toMatch(/Produção do projeto vai à mão/);
-      // Com o título trocado na mesma fila: nada vai, nem o título.
-      expect(
-        reasonOf((root) => {
-          edit(root);
-          setProject('3', 'NOME-DO-PROJETO', 'Outro')(root);
-        }),
-      ).toContain(
-        'O item tem mudança em produções ligadas, que vai à mão, e o envio levaria de volta as do Lattes; alterar este item vai à mão junto',
+    // Tirar ou incluir uma ligação vai pela grade (project-links.ts), e não segura o resto.
+    expect(planAfter(removeOne).ops[0]).toMatchObject({
+      links: { producoes: { after: ['39'], before: ['39', '34'] } },
+    });
+    const addTwo = (root: XElement) =>
+      prods(root).children.push(
+        element('PRODUCAO-CT-DO-PROJETO', { 'SEQUENCIA-PRODUCAO-CT': '40' }),
+        element('PRODUCAO-CT-DO-PROJETO', { 'SEQUENCIA-PRODUCAO-CT': '41' }),
       );
-    }
+    // Duas na fila viram a mesma operação: produção e orientação, cada uma na sua grade.
+    const both = planAfter(addTwo).ops;
+    expect(both).toHaveLength(2);
+    expect(both[0]).toMatchObject({
+      links: {
+        orientacoes: { after: ['41'], before: [] },
+        producoes: { after: ['34', '39', '40'], before: ['34', '39'] },
+      },
+    });
+    expect((both[1] as ProductionOp).links).toEqual((both[0] as ProductionOp).links);
+    expect(
+      planAfter((root) => {
+        removeOne(root);
+        setProject('3', 'NOME-DO-PROJETO', 'Outro')(root);
+      }).ops,
+    ).toHaveLength(2);
+    expect(reasonOf(removeAll)[0]).toMatch(/tire uma de cada vez/);
+    expect(
+      reasonOf((root) => {
+        prods(root).children.push(
+          element('PRODUCAO-CT-DO-PROJETO', { 'SEQUENCIA-PRODUCAO-CT': '99' }),
+        );
+      })[0],
+    ).toMatch(/item ligado 99 não está no currículo/);
     expect(reasonOf(addOrientacao)[0]).toMatch(
       /as orientações ligadas pela página voltam em Produções C&T/,
     );
@@ -275,7 +298,7 @@ describe('projeto: plano', () => {
         removeOne(root);
         setProject('1', 'NOME-DO-PROJETO', 'Outro')(root);
       }).ops,
-    ).toHaveLength(1);
+    ).toHaveLength(2);
   });
 
   it('desligada, o projeto fica à mão', () => {
@@ -924,5 +947,33 @@ describe('projeto: financiador', () => {
       await applyOp(onlyOp(set('NOME-INSTITUICAO', 'Instituição Inexistente')), lattes.port),
     ).toMatchObject({ status: 'erro' });
     expect(postsOf(lattes).filter((p) => p.proc === 'PKG_PROJETO.FORM')).toEqual([]);
+  });
+});
+
+describe('projeto: produções e orientações ligadas no Lattes simulado', () => {
+  it('tira uma ligação e inclui outra, e a releitura confere as duas grades', async () => {
+    const lattes = await lattesFor();
+    const prods = (root: XElement) =>
+      childElements(projectOf(root, '3'), 'PRODUCOES-CT-DO-PROJETO')[0]!;
+    const plan = planAfter((root) => {
+      const c = prods(root);
+      c.children = childElements(c).slice(1);
+      c.children.push(element('PRODUCAO-CT-DO-PROJETO', { 'SEQUENCIA-PRODUCAO-CT': '41' }));
+    });
+    expect(plan.unsupported).toEqual([]);
+    expect(await applyOp(plan.ops[0]!, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes).at(-1)!.fields).toMatchObject({
+      f_orientacoes_d: '41',
+      f_orientacoes_l: '41@',
+      f_producoes_d: '39',
+      f_producoes_l: '39@',
+    });
+    expect(
+      childElements(prods(lattes.state.root)).map((p) => getAttr(p, 'SEQUENCIA-PRODUCAO-CT')),
+    ).toEqual(['39', '41']);
+    // A segunda operação da mesma fila acha o Lattes já assim.
+    const posts = postsOf(lattes).length;
+    expect(await applyOp(plan.ops[1]!, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes)).toHaveLength(posts);
   });
 });

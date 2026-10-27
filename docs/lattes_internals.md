@@ -2819,3 +2819,13 @@ instituição da atuação, e o conector manda o nível e o curso também na
 alteração de uma atividade que já está (`ensino-curso.ts`). **Inferido** que
 a alteração grave o curso como a inclusão; a releitura confere o texto de
 `f_curso`.
+
+No projeto de teste, lido em 27/10/2026 sem enviar: as linhas de `grid3`
+trazem no `<span>` o `SEQUENCIA-PRODUCAO` das produções ligadas (36 o
+programa de computador, 37 a música), e a de `grid4`, o da orientação (38).
+Os ocultos `f_producoes_d` e `f_orientacoes_d` trazem os mesmos códigos
+unidos por `|`. A exportação põe as três em `PRODUCOES-CT-DO-PROJETO`. O
+conector inclui e tira ligações de um projeto que já está pelas duas
+grades, a de cada código pelo tipo do item com esse número no currículo
+(`production/project-links.ts`). **Inferido**: que o servidor grave a
+ligação nova só com o código, sem a janela de produções.

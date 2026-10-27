@@ -31,6 +31,7 @@ import {
   applyProjectLinks,
   applyProjectTeam,
   linkedCodes,
+  orientationLookup,
   projectGridScripts,
 } from './projeto-grades.ts';
 import { html, type Routes, type SimResponse } from './tipos.ts';
@@ -142,7 +143,13 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
       kind: 'hidden',
       name,
       read: (el: XElement | undefined) =>
-        el ? linkedCodes(el, name === 'f_producoes_d' ? 'f_producoes_l' : 'f_orientacoes_l') : '',
+        el
+          ? linkedCodes(
+              el,
+              name === 'f_producoes_d' ? 'f_producoes_l' : 'f_orientacoes_l',
+              orientationLookup(state.root),
+            )
+          : '',
     })),
     {
       kind: 'select',
@@ -272,7 +279,7 @@ ${renderFields(bindings(state, ids), placed?.projeto)}
 <p><a href="#" onclick="self.parent.modalCV3.setarUrl('PKG_PROJETO.pp_lista_inst?f_pgm=INSTVINCULO&amp;f_cod=${state.code}',true); return false;">Instituição</a></p>
 ${h.formButtons(Boolean(placed))}
 </form>
-${placed ? projectGridScripts(placed.projeto) : ''}
+${placed ? projectGridScripts(placed.projeto, orientationLookup(state.root)) : ''}
 ${h.formScripts('GN_PROJETO', placed ? 'Deseja realmente excluir esta produção?' : undefined)}`;
   return html(h.page('Projeto', body));
 }

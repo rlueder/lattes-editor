@@ -10,7 +10,7 @@ import { lattesSchema } from '../../schema/lattes.ts';
 import { areaLabel, type AreaRow } from '../areas-atuacao.ts';
 import type { BridgeOp, OpBase } from '../plan.ts';
 import { fieldsLeft } from './fields-left.ts';
-import { type FunderEdit, planFunder } from './financiador.ts';
+import type { FunderEdit } from './financiador.ts';
 import { AUTHOR_PART, authorsOf, type AuthorSpec, MAX_KEYWORDS } from './grids.ts';
 import { holderField, withoutHolderCopies } from './holders.ts';
 import {
@@ -25,6 +25,7 @@ import { planMembers } from './members.ts';
 import { planNatureSwap } from './nature.ts';
 import { opaqueReason } from './opaque.ts';
 import { isOrganChange, type OrganChoice, planOrgan } from './organ.ts';
+import { planProjectEdit, type ProjectLinks } from './project-links.ts';
 import { PRODUCTION_TARGETS } from './targets/index.ts';
 import type { AuthorPart, FieldMap, ProductionTarget } from './types.ts';
 
@@ -79,6 +80,8 @@ export interface ProductionOp extends OpBase {
   /** Palavras-chave antes e depois, na ordem, quando a mudança é delas. */
   keywords?: { after: string[]; before: string[] };
   kind: 'producao';
+  /** As produções e orientações ligadas ao projeto (project-links.ts). */
+  links?: ProjectLinks;
   /** Parâmetros da lista que saem do item (ProductionTarget.list.paramsBy), com os valores de antes. */
   listParams?: Record<string, string>;
   /** Instituição, curso e agência escolhidos pelas buscas, resolvidos na hora de gravar. */
@@ -181,12 +184,13 @@ export function planProduction(
   const organChange =
     target.organ !== undefined && change.element !== item.name && isOrganChange(change);
   // A natureza de um financiador vai pela linha dele na grade (financiador.ts).
-  const funder = planFunder(change, chain, target);
-  if (funder && 'reason' in funder) return funder;
-  const byHand = organChange || funder ? undefined : target.byHand?.[change.element];
+  const project = planProjectEdit(change, chain, item, target, siblings);
+  if (project && 'reason' in project) return project;
+  const byHand = organChange || project ? undefined : target.byHand?.[change.element];
   if (byHand) return { reason: byHand };
   // O campo que depende da própria parte (a data do histórico da patente).
-  const partMap = organChange ? undefined : target.partFields?.[change.element]?.(change, el, item);
+  const partMap =
+    organChange || project ? undefined : target.partFields?.[change.element]?.(change, el, item);
   if (partMap && 'reason' in partMap) return partMap;
   // Título e ano do Lattes: os de antes, quando a própria mudança os troca.
   const before = (child: string, attr: string) => {
@@ -233,7 +237,7 @@ export function planProduction(
     if ('reason' in planned) return planned;
     return { ...base, organ: planned.choice, rows: planned.rows };
   }
-  if (funder) return { ...base, ...funder };
+  if (project) return { ...base, ...project };
 
   // A equipe do projeto: as pessoas num contêiner e com a marca de
   // coordenador, com as outras mudanças da fila na mesma grade (members.ts).
