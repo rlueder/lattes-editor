@@ -35,12 +35,20 @@ it.each([
 ])('recusa mensagem inválida ou destino externo (%#)', (message) => {
   expect(() => framePost(message, base)).toThrow();
 });
-it('adapta só acessos de interface conhecidos sem conceder referências ao pai', () => {
+it('todo acesso ao pai vai às cópias locais, sem referência ao menu real', () => {
   expect(
     localFrameReferences(
       "self.parent.caixaMsg.exibir({}); top.modalCV2.getDocument(); window.parent.autorDP; parent.fetch('/x'); parent.document.body;",
     ),
   ).toBe(
-    "__lattesFrameParent.caixaMsg.exibir({}); __lattesFrameParent.modalCV2.getDocument(); __lattesFrameParent.autorDP; parent.fetch('/x'); parent.document.body;",
+    "__lattesFrameParent.caixaMsg.exibir({}); __lattesFrameParent.modalCV2.getDocument(); __lattesFrameParent.autorDP; __lattesFrameParent.fetch('/x'); __lattesFrameParent.document.body;",
+  );
+  // A ajuda que quase todo formulário chama na carga e os vetores das sugestões.
+  expect(
+    localFrameReferences(
+      'self.parent.veriHelp("LIVROS"); self.parent.palavraDP; parent.areaDP; top.setorDP; self.parent.titularInstDP; self.parent.parent.modalCV3;',
+    ),
+  ).toBe(
+    '__lattesFrameParent.veriHelp("LIVROS"); __lattesFrameParent.palavraDP; __lattesFrameParent.areaDP; __lattesFrameParent.setorDP; __lattesFrameParent.titularInstDP; __lattesFrameParent.__lattesFrameParent.modalCV3;',
   );
 });

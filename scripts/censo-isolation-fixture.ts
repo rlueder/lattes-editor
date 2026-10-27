@@ -11,7 +11,7 @@ function del(){self.parent.caixaMsg.exibir({tipo:'confirm',conteudo:'Confirma a 
 </script>`;
 const escapeScript = `<script>
 var result = {};
-function blocked(name, action) { try {action(); result[name] = false} catch(e) {result[name] = e.name === 'SecurityError' || e.name === 'TypeError'} }
+function blocked(name, action) { try {action(); result[name] = false} catch(e) {result[name] = e.name === 'SecurityError' || e.name === 'TypeError' || e.name === 'FrameGuardError'} }
 blocked('fetch', function(){parent.fetch(BYPASS)});
 blocked('savedFetch', function(){parent.savedFetch(BYPASS)});
 blocked('xhr', function(){new parent.XMLHttpRequest()});
@@ -19,7 +19,8 @@ blocked('dom', function(){parent.document.body.dataset.escaped = 'sim'});
 blocked('eval', function(){parent.eval('window.escaped = true')});
 blocked('top', function(){top.location.href = BYPASS});
 blocked('sandbox', function(){frameElement.removeAttribute('sandbox')});
-blocked('storage', function(){localStorage.setItem('escape', 'sim')});
+// O armazenamento do quadro fica só na memória dele: gravar não chega ao do menu.
+result.storage = (function(){ try { localStorage.setItem('escape', 'sim'); return localStorage.getItem('escape') === 'sim' } catch(e) { return e.name === 'SecurityError' } })();
 result.popup = window.open(BYPASS) === null;
 var forged = new MessageChannel();
 parent.postMessage('lattes-editor:dev-traffic', '*', [forged.port2]); forged.port1.postMessage({id:1,type:'request',url:'http://127.0.0.1/bypass',method:'POST'}); forged.port1.close();

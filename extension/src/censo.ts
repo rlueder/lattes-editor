@@ -39,7 +39,7 @@ import {
   setLive,
   testProgress,
 } from './censo-test-items.ts';
-import { loadBase, markInCv, saveBase, snapshotLists } from './censo-test-ledger.ts';
+import { ledgerNow, loadBase, markInCv, saveBase, snapshotLists } from './censo-test-ledger.ts';
 import { removeTestItems } from './censo-test-removal.ts';
 import { censusTraffic } from './censo-traffic.ts';
 
@@ -380,6 +380,15 @@ async function protectedRun<T>(work: () => Promise<T>): Promise<T> {
   download,
   entryOf,
   inspect: (...args: Parameters<typeof inspect>) => protectedRun(() => inspect(...args)),
+  /**
+   * Só leitura: as linhas que as listas têm a mais e a menos que a base,
+   * para conferir um envio incerto (inclusive de tipo sem lugar para a marca).
+   */
+  ledger: () =>
+    protectedRun(async () => {
+      const { added, missing } = await ledgerNow(await menuHtml(), await code(), get);
+      return { added, missing };
+    }),
   link: (...args: Parameters<typeof link>) => protectedRun(() => link(...args)),
   prepareTestItems: (...args: Parameters<typeof prepareTestItems>) =>
     protectedRun(() => prepareTestItems(...args)),

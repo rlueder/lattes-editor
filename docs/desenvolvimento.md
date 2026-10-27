@@ -300,9 +300,11 @@ preenchimento, os validadores e as confirmações dentro do quadro; a
 comunicação é uma `MessageChannel` privada, aceita uma única vez e só do pai,
 e o pai autoriza um POST por ação de salvar ou excluir, validando campos e
 destino da mesma origem antes de passar ao transporte. As caixas de mensagem
-e os modais conhecidos têm uma adaptação local ao quadro; um formulário que
-dependa de outro acesso ao menu para a tarefa com erro, sem volta ao modo de
-mesma origem. O controlador é montado por `scripts/censo-runtime.ts`, no
+e os modais conhecidos têm uma adaptação local ao quadro, como a ajuda
+`veriHelp()`, os vetores de sugestão das grades, o armazenamento e o cookie,
+que no quadro ficam só na memória. Todo `parent.` e `top.` dos scripts vai a
+essas cópias, e o que elas não têm para a tarefa com o nome pedido, sem volta
+ao modo de mesma origem. Scripts e estilos de outro site saem do quadro. O controlador é montado por `scripts/censo-runtime.ts`, no
 censo avulso e no canal Dev; a extensão publicada não leva esse código.
 
 `pnpm test:censo-isolation` monta a extensão Dev e testa isso num perfil
@@ -313,3 +315,22 @@ forjadas, rede direta, salvar, excluir, formulários em dois passos,
 cancelamento e recusa de envio duplicado. Os validadores de cada formulário
 do CNPq ainda pedem conferência específica, porque a regressão usa páginas
 sintéticas.
+
+### Censo pela ponte local
+
+Para rodar o censo na aba do Lattes em segundo plano, sem colar no console:
+ligue a depuração remota do navegador (`brave://inspect/#remote-debugging`,
+"Allow remote debugging for this browser instance"), monte o censo e suba a
+ponte. Ela só escuta em `127.0.0.1`, com um token na pasta temporária, e o
+navegador pede "Allow" na primeira conexão.
+
+```bash
+pnpm build:censo
+node scripts/censo-ponte.ts servir &        # mantém a conexão
+node scripts/censo-ponte.ts carregar        # põe o censo na aba do menu
+node scripts/censo-ponte.ts chamar '__lattesCensus.ledger()'
+node scripts/censo-ponte.ts reanexar        # depois de entrar de novo no Lattes
+```
+
+O censo carregado some quando a aba recarrega; `carregar` de novo. Desligue a
+depuração remota ao terminar.

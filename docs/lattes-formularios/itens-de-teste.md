@@ -36,6 +36,25 @@ página, em `extension/src/censo-test-ledger.ts`; a criação em
 `extension/src/censo-test-items.ts` e a exclusão em
 `extension/src/censo-test-removal.ts`.
 
+## Poucos tipos, no teto de pedidos
+
+Cada tarefa do conector para em 100 pedidos. Com `only`, a preparação lê só os
+formulários desses tipos, os seus itens de onde as buscas são copiadas e as
+listas deles, cada etapa numa chamada que devolve `preparando`; a base guarda
+os pacotes lidos, e o registro de cada lote relê só esses:
+
+```js
+await __lattesCensus.testItems({ only: ['banca-trabalho'], batch: 1 }); // repita até sair do preparando
+await __lattesCensus.ledger(); // só leitura: o que as listas têm a mais e a menos que a base
+```
+
+Em 27/10/2026, no quadro isolado, nenhum item foi criado: a orientação, a
+banca e outros formulários validam no salvar por uma chamada ajax síncrona
+(`pkg_orient.valida_orientador_ajax`, por exemplo), que o quadro sem rede não
+responde, e a formação complementar responde ao primeiro passo do `FORM2` com
+outro passo que o quadro não segue. Até um desses ser adaptado, a passada só
+cria tipos sem validação de rede no salvar.
+
 ## Como rodar
 
 Pelo editor em desenvolvimento, com `?itens-teste` no endereço e a extensão

@@ -10,13 +10,26 @@ export async function htmlFor(html: string, url: string): Promise<string> {
       'base, meta[http-equiv], iframe, frame, object, embed, img, source, video, audio',
     )
     .forEach((el) => el.remove());
+  // Script ou estilo de outro site não passa pelo transporte, que só pede
+  // páginas do Lattes: sai do quadro, que continua sem rede (o programa de
+  // computador carrega um, 26/10/2026).
+  const origin = new URL(url).origin;
+  const local = (ref: string) => new URL(ref, url).origin === origin;
   for (const script of doc.querySelectorAll<HTMLScriptElement>('script[src]')) {
+    if (!local(script.getAttribute('src')!)) {
+      script.remove();
+      continue;
+    }
     const response = await censusGet(new URL(script.getAttribute('src')!, url));
     script.removeAttribute('src');
     script.textContent = decodeLatin1(response.bytes);
   }
   for (const link of doc.querySelectorAll<HTMLLinkElement>('link')) {
-    if (link.rel === 'stylesheet' && link.getAttribute('href')) {
+    if (
+      link.rel === 'stylesheet' &&
+      link.getAttribute('href') &&
+      local(link.getAttribute('href')!)
+    ) {
       const response = await censusGet(new URL(link.getAttribute('href')!, url));
       const style = doc.createElement('style');
       style.textContent = decodeLatin1(response.bytes);

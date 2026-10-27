@@ -125,7 +125,10 @@ try {
   assert.equal(Object.keys(flags).length, 9, JSON.stringify(escapes));
   assert.ok(Object.values(flags).every(Boolean), JSON.stringify(flags));
   assert.equal(
-    await evaluate(page, 'window.escaped || document.body.dataset.escaped === "sim"'),
+    await evaluate(
+      page,
+      'window.escaped || document.body.dataset.escaped === "sim" || localStorage.getItem("escape") !== null',
+    ),
     false,
   );
   const results: Record<string, Result> = { escapes };
