@@ -245,15 +245,15 @@ export function planIdentificacaoEdit(
       reason: `O formulário de identificação do Lattes não tem: ${hidden.join(', ')} (só um campo oculto, que a página não deixa alterar)`,
     };
   }
-  if (change.fields.some((f) => f.attr === 'PCD')) {
-    return {
-      reason:
-        'Pessoa com deficiência: o formulário tem o rádio f_pcd_r e uma caixa f_pcd por tipo (A, F, I, V, E, M), mas como a exportação grava os tipos marcados não foi visto (sem nenhum, PCD vem vazio); altere no Lattes',
-    };
-  }
-  const { expect, invalid, missing, set } = mapTable(change, IDENT_FIELDS, '', (a) =>
-    NATIONALITY.includes(a),
+  const pcd = planPcd(change);
+  if (pcd && 'reason' in pcd) return pcd;
+  const { expect, invalid, missing, set } = mapTable(
+    { ...change, fields: change.fields.filter((f) => f.attr !== 'PCD') },
+    IDENT_FIELDS,
+    '',
+    (a) => NATIONALITY.includes(a),
   );
+  if (pcd) set.f_pcd_r = pcd.after.length > 0 ? 'S' : 'N';
   if (missing.length) return { reason: `Campos não suportados ainda: ${missing.join(', ')}` };
   if (invalid.length) {
     return {
@@ -269,7 +269,48 @@ export function planIdentificacaoEdit(
   }
   const nationality = planNationality(change, el, set, expect);
   if (nationality) return nationality;
-  return { expect, key: change.key, kind: 'identificacao', label, set };
+  return { expect, key: change.key, kind: 'identificacao', label, set, ...(pcd ? { pcd } : {}) };
+}
+
+/**
+ * O rótulo de cada caixa de deficiência (prc_ident, lido em 27/10/2026). Na
+ * exportação de 27/10/2026, com uma caixa marcada, PCD foi o rótulo dela
+ * ("Deficiência Visual"); que os outros tipos sigam o mesmo é inferido.
+ */
+const PCD_LABELS: Record<string, string> = {
+  'deficiencia auditiva': 'A',
+  'deficiencia fisica': 'F',
+  'deficiencia intelectual': 'I',
+  'deficiencia multipla': 'M',
+  'deficiencia visual': 'V',
+  'transtorno do espectro autista': 'E',
+};
+
+/** Os tipos marcados que um PCD do XML quer dizer: nenhum, um só, ou undefined. */
+function pcdTypes(value: string): string[] | undefined {
+  if (!value.trim()) return [];
+  const code = PCD_LABELS[foldText(value.trim()).toLowerCase()];
+  return code ? [code] : undefined;
+}
+
+/**
+ * A troca da deficiência: as caixas de antes e de depois (pcd.ts) e o rádio
+ * f_pcd_r. Como a exportação junta mais de um tipo não foi visto: fica à mão.
+ */
+function planPcd(
+  change: Change,
+): { after: string[]; before: string[] } | { reason: string } | undefined {
+  const f = change.fields.find((x) => x.attr === 'PCD');
+  if (!f) return undefined;
+  const before = pcdTypes(f.before);
+  const after = pcdTypes(f.after);
+  if (!before || !after) {
+    return {
+      reason:
+        'Pessoa com deficiência: com mais de um tipo, como a exportação grava não foi visto; altere no Lattes',
+    };
+  }
+  return { after, before };
 }
 
 // ---------------------------------------------------------------- endereço

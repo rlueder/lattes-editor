@@ -155,6 +155,18 @@ export function typedChoices(el: XElement, attr: string): Choice[] | undefined {
   // As opções vêm dos formulários capturados. Parda e as três primeiras
   // categorias foram conferidas em XML público; as demais grafias seguem
   // os mapeamentos já usados pelo conector (seção 23).
+  // As caixas de deficiência do formulário de identificação (prc_ident, lido em
+  // 27/10/2026): com uma marcada, a exportação grava o rótulo dela (seção 25).
+  if (el.name === 'DADOS-GERAIS' && attr === 'PCD') {
+    return asChoices([
+      'Deficiência Auditiva',
+      'Deficiência Física',
+      'Deficiência Intelectual',
+      'Deficiência Visual',
+      'Transtorno do Espectro Autista',
+      'Deficiência Múltipla',
+    ]);
+  }
   if (el.name === 'DADOS-GERAIS' && attr === 'RACA-OU-COR') {
     return asChoices(['Branca', 'Preta', 'Parda', 'Indígena', 'Amarela', 'Não desejo declarar']);
   }

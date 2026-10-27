@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { applyOp } from '../src/bridge/apply.ts';
 import { biographicContract } from '../src/bridge/biographic.ts';
 import { checkContract, type Contract, LATTES_CONTRACT } from '../src/bridge/contract.ts';
+import type { IdentificacaoOp } from '../src/bridge/dados-gerais-edit.ts';
 import { opRows } from '../src/bridge/field-labels.ts';
 import { type BridgeOp, planChanges } from '../src/bridge/plan.ts';
 import { diffDocuments } from '../src/model/changes.ts';
@@ -157,6 +158,16 @@ describe('identificação: plano', () => {
     expect(reasonOf(edit('DADOS-GERAIS', { 'SIGLA-PAIS-NACIONALIDADE': 'XXX' }))).toBe(
       'País de nacionalidade que o Lattes não tem: XXX',
     );
+  });
+
+  it('pessoa com deficiência: um tipo pelo rótulo da caixa, como a exportação de 27/10/2026', () => {
+    const op = onlyOp(edit('DADOS-GERAIS', { PCD: 'Deficiência Visual' })) as IdentificacaoOp;
+    expect(op.pcd).toEqual({ after: ['V'], before: [] });
+    expect(op.set.f_pcd_r).toBe('S');
+    // Mais de um tipo: como a exportação junta não foi visto.
+    expect(
+      reasonOf(edit('DADOS-GERAIS', { PCD: 'Deficiência Visual, Deficiência Auditiva' })),
+    ).toMatch(/com mais de um tipo/);
   });
 
   it('o que o formulário não tem, ou não deixa alterar, fica à mão com o motivo', () => {

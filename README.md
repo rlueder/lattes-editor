@@ -58,7 +58,7 @@ Em pós-doutorado e livre-docência, a instituição também é escolhida pela
 busca do Lattes. Esses formulários não têm curso; a agência aparece só no
 pós-doutorado.
 
-Raça ou cor, tipo de graduação, tipo de licença e categoria da patente têm listas de opções.
+Raça ou cor, pessoa com deficiência, tipo de graduação, tipo de licença e categoria da patente têm listas de opções.
 A disponibilidade de produtos, processos, relatórios de pesquisa e trabalhos
 técnicos também é escolhida por lista, inclusive quando não foi informada.
 
