@@ -185,9 +185,15 @@ await withHeadlessBrowser(
         await evaluate(cdp, 'window.publishRequests[0].declarationText'),
         'Declaração sintética nova, apenas para testar que um texto diferente exige outro aceite.',
       );
+      // Enviado, o andamento toma o painel: a declaração some com o formulário,
+      // e a próxima abertura começa desmarcada (conferido acima).
+      assert.equal(await evaluate(cdp, 'document.querySelector(".publish-agree input")'), null);
       assert.equal(
-        await evaluate(cdp, 'document.querySelector(".publish-agree input").checked'),
-        false,
+        await evaluate(
+          cdp,
+          'document.querySelector(".publish-progress")?.textContent.includes("Enviando ao CNPq")',
+        ),
+        true,
       );
       assert.equal(await evaluate(cdp, 'document.querySelector("button.primary")'), null);
       await evaluate(cdp, 'window.openPublishTest(true)');
