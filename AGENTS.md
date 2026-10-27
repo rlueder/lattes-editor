@@ -97,7 +97,9 @@ Shared with the precisa-saude ecosystem:
   `@precisa-saude/commitlint-config` with this repo's scopes in
   `.commitlintrc.cjs`.
 - Husky: pre-commit runs lint-staged and the tests; pre-push runs format
-  check, lint, typecheck, tests and coverage. Never bypass hooks.
+  check, lint, typecheck, tests and coverage, plus this repo's
+  `test:ci-extra` (headless browser tests and builds CI runs). Never bypass
+  hooks.
 - Vitest with an 80% threshold on all four metrics. When coverage fails,
   add tests; never lower the threshold. React components and the
   IndexedDB store are excluded from unit coverage and belong to the

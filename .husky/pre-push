@@ -46,4 +46,10 @@ else
   pnpm -r test:coverage
 fi
 
+# Só deste repositório (lattes-editor): os passos do CI que o hook
+# compartilhado não roda, os testes no navegador sem janela e as montagens.
+# Com --if-present, o mesmo arquivo copiado para outro repositório não muda nada.
+echo "→ testes no navegador e montagens (só deste repositório)"
+pnpm run --if-present test:ci-extra
+
 echo "✓ pre-push checks passed"

@@ -96,7 +96,10 @@ O Rust do canal Dev passa pelos mesmos comandos com `--features canal-dev`.
 O teste dos controles usa o CSS do app com cabeçalhos fictícios, em três
 larguras e nos dois temas. Não abre currículos nem precisa de servidor local.
 Os hooks do Husky rodam formatação e lint no commit e, no push, o conjunto
-todo com cobertura. Os testes de ponta a ponta do conector sobem o Lattes
+todo com cobertura e, só neste repositório, `pnpm test:ci-extra`: os testes
+de contatos e de publicação no navegador sem janela e as montagens do app,
+da extensão e do censo, que o CI também roda. A extensão Dev fica fora, para
+o push não reescrever a pasta `dist-extension-dev/` carregada no navegador. Os testes de ponta a ponta do conector sobem o Lattes
 simulado dentro do próprio teste (`tests/helpers/lattes-simulado.ts`), com
 as chaves das operações ligadas; os que cobrem o caminho desligado forçam a
 chave ou a opção.
