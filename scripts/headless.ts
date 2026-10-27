@@ -65,8 +65,15 @@ export async function openTab(): Promise<Cdp> {
   return cdp;
 }
 
+/**
+ * Quanto esperar o navegador de teste abrir a depuração: no CI, uma partida
+ * fria passou de 10 s (27/10/2026). Um navegador que encerra antes falha na
+ * hora, sem esperar o prazo.
+ */
+const PORT_WAIT_MS = 30_000;
+
 async function waitForBrowser(): Promise<void> {
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < PORT_WAIT_MS / 200; i++) {
     try {
       await fetch(`http://127.0.0.1:${activePort}/json/version`);
       return;
@@ -170,7 +177,7 @@ function removeProfile(profile: string): void {
 }
 
 async function waitForPrivatePort(profile: string, exited: () => boolean): Promise<number> {
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < PORT_WAIT_MS / 200; i++) {
     if (exited()) throw new Error('O navegador de teste encerrou antes de abrir a depuração.');
     try {
       const [line, browserPath] = readFileSync(join(profile, 'DevToolsActivePort'), 'utf8').split(
