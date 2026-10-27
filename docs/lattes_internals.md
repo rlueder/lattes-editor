@@ -2489,7 +2489,11 @@ privacidade em `f_privacidade`, linha a linha. O sentido de `r` não foi lido.
 (pela busca `prc_inst_form?f_nivel=<nível>`, dispensada nos níveis B, C, 9, D
 e Y), situação (menos na livre-docência) e carga horária numérica, e envia
 para `PKG_FORMACAO_COMPL.FORM2`. O formulário não tem os anos; o que vem
-depois do envio só se vê enviando. **Lacuna.**
+depois do envio só se vê enviando. **Lacuna.** Na edição, o envio devolve o
+segundo passo com os anos, a bolsa e a agência (seção 18, 27/10/2026). O
+conector inclui nos mesmos dois passos (`src/bridge/create-complementar.ts`)
+e aceita o segundo com `f_ctr` I ou U; que a inclusão funcione assim é
+**inferido**, sem envio acompanhado.
 
 **Linha de pesquisa.** A lista ("Atuação profissional - Linhas de pesquisa")
 não tem formulário nem link de inclusão. Que a linha entre pela atividade de

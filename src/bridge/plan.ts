@@ -98,6 +98,8 @@ export interface PlanOptions {
   complLookups?: boolean;
   /** Atividade nova de outra natureza que o ensino, com o órgão (create-cargo.ts). */
   createActivities?: boolean;
+  /** Formação complementar nova, nos dois passos do FORM2 (create-complementar.ts). */
+  createComplementar?: boolean;
   createItems?: boolean;
   /** Projeto novo com o órgão pela lista do Lattes (create-projeto.ts). */
   createProjects?: boolean;

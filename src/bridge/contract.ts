@@ -55,6 +55,7 @@ export interface FormSpec {
 type CreateKind =
   | 'criar-atividade'
   | 'criar-atuacao'
+  | 'criar-complementar'
   | 'criar-dado'
   | 'criar-evento'
   | 'criar-formacao'

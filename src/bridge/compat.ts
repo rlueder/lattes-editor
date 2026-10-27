@@ -17,6 +17,7 @@
 //   conferem essas chaves.
 
 import { CREATE_ACTIVITY_ORGAN_ENABLED } from './create-cargo.ts';
+import { CREATE_COMPL_ENABLED } from './create-complementar.ts';
 import { CREATE_PROJECT_ORGAN_ENABLED } from './create-projeto.ts';
 import { EDIT_PCD_ENABLED } from './dados-gerais-edit.ts';
 import { COMPL_LOOKUPS_ENABLED } from './edit-lists.ts';
@@ -114,6 +115,8 @@ export const BRIDGE_FEATURES = [
   ...(CREATE_PROJECT_ORGAN_ENABLED ? (['projeto-novo-orgao'] as const) : []),
   /** Atividade nova das naturezas com órgão, pela janela de órgãos (create-cargo.ts). */
   ...(CREATE_ACTIVITY_ORGAN_ENABLED ? (['atividade-nova-orgao'] as const) : []),
+  /** Formação complementar nova, com o segundo passo do FORM2 (create-complementar.ts). */
+  ...(CREATE_COMPL_ENABLED ? (['complementar-nova'] as const) : []),
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

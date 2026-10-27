@@ -42,12 +42,12 @@ outro item.
 
 | Caminho hoje | Tipos | Editor cria |
 | ------------ | ----: | ----------: |
-| conector     |    41 |          41 |
+| conector     |    45 |          45 |
 | importar     |    60 |          60 |
-| nenhum       |    13 |          13 |
+| nenhum       |     9 |           9 |
 
-O editor cria todos os tipos. Os 13 sem caminho vão para "A enviar" com a
-rota "à mão", cada um com o motivo: a formação complementar, a licença, as
+O editor cria todos os tipos. Os 9 sem caminho vão para "A enviar" com a
+rota "à mão", cada um com o motivo: a licença, as
 áreas de atuação, a disciplina, o treinamento e a linha de pesquisa numa
 atividade que já existe, o financiador, a produção e a orientação de um
 projeto, e a participação em projeto (que nasce com o projeto). As nove
@@ -86,10 +86,10 @@ e treinamento são só um nome, que fica no texto do elemento.
 | `RESIDENCIA-MEDICA`                               | Residência médica                               |              | sim         | conector     | `formacao-FA-D`         | lido    | observado/inferido  |
 | `LIVRE-DOCENCIA`                                  | Livre-docência                                  |              | sim         | conector     | `formacao-AP-6`         | lido    | observado/inferido  |
 | `POS-DOUTORADO`                                   | Pós-doutorado                                   |              | sim         | conector     | `formacao-AP-5`         | lido    | observado/inferido  |
-| `FORMACAO-COMPLEMENTAR-DE-EXTENSAO-UNIVERSITARIA` | Formação complementar de extensão universitária |              | sim         | nenhum       | `formacao-complementar` | lido    | observado/observado |
-| `MBA`                                             | MBA                                             |              | sim         | nenhum       | `formacao-complementar` | lido    | observado/observado |
-| `FORMACAO-COMPLEMENTAR-CURSO-DE-CURTA-DURACAO`    | Formação complementar curso de curta duração    |              | sim         | nenhum       | `formacao-complementar` | lido    | observado/observado |
-| `OUTROS`                                          | Outros                                          |              | sim         | nenhum       | `formacao-complementar` | lido    | observado/observado |
+| `FORMACAO-COMPLEMENTAR-DE-EXTENSAO-UNIVERSITARIA` | Formação complementar de extensão universitária |              | sim         | conector     | `formacao-complementar` | lido    | observado/observado |
+| `MBA`                                             | MBA                                             |              | sim         | conector     | `formacao-complementar` | lido    | observado/observado |
+| `FORMACAO-COMPLEMENTAR-CURSO-DE-CURTA-DURACAO`    | Formação complementar curso de curta duração    |              | sim         | conector     | `formacao-complementar` | lido    | observado/observado |
+| `OUTROS`                                          | Outros                                          |              | sim         | conector     | `formacao-complementar` | lido    | observado/observado |
 
 ### Dados gerais
 
@@ -275,7 +275,10 @@ escolhido no editor pela janela de órgãos do Lattes, atrás da capacidade
 `f_tipo=AP` (etapa 5). A formação complementar abre com nível, instituição,
 curso, carga horária e situação, sem os anos, e envia para `FORM2`, que
 devolve um segundo passo com os anos, a bolsa e a agência
-(`lattes_internals.md`, seção 18). Atividades de uma atuação usam `pkg_ativ.cargo`, que o lote 3 da recaptura
+(`lattes_internals.md`, seção 18). O conector faz os dois passos
+(`create-complementar.ts`, atrás da capacidade `complementar-nova`), com
+instituição, curso e agência pelas buscas e as grades no segundo passo; que a
+inclusão siga os mesmos dois passos da edição é inferido. Atividades de uma atuação usam `pkg_ativ.cargo`, que o lote 3 da recaptura
 leu nas nove naturezas (censo `censo-2026-10-15c.json`). A de ensino é a única
 sem órgão: tem nível (`f_nivel`, de 401 a 409), curso, período e a grade de
 disciplinas em `f_espec_l`, e vai pelo conector
@@ -308,8 +311,7 @@ só em inglês: com o texto em português, vai à mão.
 
 Ficam à mão, com o motivo de cada um: a licença (o `check()` exige a data de
 nascimento ou adoção, que o XML da licença não guarda), as áreas de atuação
-(a grade `f_area_l` tem a chave `r`, de sentido não lido), a formação
-complementar, as atividades que pedem órgão, a disciplina numa atividade que
+(a grade `f_area_l` tem a chave `r`, de sentido não lido), a disciplina numa atividade que
 já existe, o treinamento, a linha de pesquisa e o financiador, a produção e a
 orientação do projeto (as buscas de onde vêm os valores dessas grades são POST
 e a resposta não foi lida). O que falta ler está no `README.md` de

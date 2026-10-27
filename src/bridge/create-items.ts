@@ -33,6 +33,14 @@ import {
 } from './create-atividade.ts';
 import { cargoItem, planCreateCargo } from './create-cargo.ts';
 import {
+  applyCreateComplementar,
+  complementarFormPath,
+  complementarItem,
+  CREATE_COMPLEMENTAR_SPEC,
+  type CreateComplementarOp,
+  planCreateComplementar,
+} from './create-complementar.ts';
+import {
   applyCreateEvento,
   type CreateEventoOp,
   EVENT_ELEMENTS,
@@ -80,11 +88,13 @@ import { registryInclusion, registryList } from './create-registro-rules.ts';
 import type { SendExtras } from './create-shared.ts';
 import type { Planned } from './create-shared.ts';
 import { EVENTO_SPEC } from './edit-items.ts';
+import { COMPL_LEVELS } from './edit-lists.ts';
 import { findLinks } from './lattes-html.ts';
 import { ACTIVITY_ORGAN_ELEMENTS } from './organ-windows.ts';
 
 export {
   applyCreateAtividade,
+  applyCreateComplementar,
   applyCreateEvento,
   applyCreateFormacao,
   applyCreateGeneral,
@@ -95,6 +105,7 @@ export {
 
 export type CreateItemOp =
   | CreateAtividadeOp
+  | CreateComplementarOp
   | CreateEventoOp
   | CreateFormacaoOp
   | CreateGeneralOp
@@ -125,6 +136,8 @@ export const CONNECTOR_CREATES: ReadonlySet<string> = new Set([
   ...ACTIVITY_ORGAN_ELEMENTS,
   // Eventos: pelo formulário, no lugar do Importar, com a chave ligada (direct-inclusion.ts).
   ...EVENT_ELEMENTS,
+  // Formação complementar: os dois passos do FORM2 (create-complementar.ts).
+  ...Object.keys(COMPL_LEVELS),
 ]);
 
 /**
@@ -147,6 +160,8 @@ export function planCreateItem(
   if (cargo) return planCreateCargo(change, chain, cargo, label);
   const evento = eventItem(el);
   if (evento) return planCreateEvento(change, chain, evento, label);
+  const complementar = complementarItem(chain);
+  if (complementar) return planCreateComplementar(change, complementar, label);
   const general = planCreateGeneral(change, chain, label);
   if (general) return general;
   if (PROJECT_CARRIERS.has(el.name)) return planCreateProjeto(change, chain, label, extras);
@@ -175,6 +190,12 @@ export async function createFormPath(
 ): Promise<{ missing: string } | { path: string }> {
   if (kind === 'criar-dado' || kind === 'criar-vinculo') return generalFormPath(kind, get, menu);
   if (kind === 'criar-atividade') return atividadeFormPath(get, menu);
+  if (kind === 'criar-complementar') {
+    const lista = findLinks(menu, 'pkg_formacao_compl.lista')[0];
+    return lista?.params.f_cod
+      ? { path: complementarFormPath(lista.params.f_cod) }
+      : { missing: 'pkg_formacao_compl.lista' };
+  }
   if (kind === 'criar-evento') {
     const lista = findLinks(menu, 'pkg_evento.lista').find(
       (l) => !l.params.f_sta_divulgacao_cientifica,
@@ -209,6 +230,7 @@ export async function createFormPath(
 export const CREATE_SPECS: Record<'criar-atuacao' | CreateItemOp['kind'], FormSpec> = {
   'criar-atividade': CREATE_ATIVIDADE_SPEC,
   'criar-atuacao': CREATE_ATUACAO_SPEC,
+  'criar-complementar': CREATE_COMPLEMENTAR_SPEC,
   'criar-dado': CREATE_DADO_SPEC,
   'criar-evento': { ...EVENTO_SPEC, mode: 'I', partial: true },
   'criar-formacao': CREATE_FORMACAO_SPEC,

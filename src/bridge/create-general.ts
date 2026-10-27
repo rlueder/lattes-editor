@@ -18,8 +18,8 @@
 //
 // Fica à mão, com o motivo de GENERAL_BY_HAND (recaptura de 15/10/2026,
 // seção 21): licença (o Lattes exige a data de nascimento ou adoção, que o
-// XML não guarda), áreas de atuação (a chave r da grade), formação
-// complementar (o passo depois de FORM2), atividades de uma atuação, disciplina
+// XML não guarda), áreas de atuação (a chave r da grade), atividades de uma
+// atuação (a formação complementar vai por create-complementar.ts), disciplina
 // e treinamento (os formulários de cada natureza ainda não foram lidos), linha
 // de pesquisa (sem inclusão na lista) e financiador, produção e orientação do
 // projeto (janelas não lidas).
@@ -94,8 +94,6 @@ export const GENERAL_BY_HAND: Record<string, string> = {
     'Disciplina numa atividade que já está no Lattes vai à mão: a grade leva também as que já existem, que a página traz só em script (numa atividade de ensino nova, ela vai junto)',
   'FINANCIADOR-DO-PROJETO':
     'Financiador vai à mão: a natureza, a moeda e o valor de cada linha vêm da janela PKG_PROJETO.EDITAR_FINANCIAMENTO, que não foi lida',
-  FORMACAO_COMPLEMENTAR:
-    'Formação complementar vai à mão: o formulário de inclusão não tem os anos, e o passo depois dele só se vê enviando',
   LICENCA:
     'Licença vai à mão: o Lattes exige a data de nascimento ou adoção, que o currículo não guarda',
   'LINHA-DE-PESQUISA':
@@ -111,16 +109,6 @@ export const GENERAL_BY_HAND: Record<string, string> = {
 /** O motivo de ir à mão para um elemento novo, ou undefined quando não é destes. */
 export function byHandReason(name: string): string | undefined {
   if (GENERAL_BY_HAND[name]) return GENERAL_BY_HAND[name];
-  if (
-    [
-      'FORMACAO-COMPLEMENTAR-CURSO-DE-CURTA-DURACAO',
-      'FORMACAO-COMPLEMENTAR-DE-EXTENSAO-UNIVERSITARIA',
-      'MBA',
-      'OUTROS',
-    ].includes(name)
-  ) {
-    return GENERAL_BY_HAND.FORMACAO_COMPLEMENTAR;
-  }
   if (ACTIVITIES.has(name)) return GENERAL_BY_HAND.ATIVIDADE;
   return undefined;
 }

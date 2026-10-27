@@ -6,6 +6,7 @@ import { EDIT_AREAS_ENABLED } from './areas-atuacao.ts';
 import { BIOGRAPHIC_FULL_ENABLED, BIOGRAPHIC_OPS_ENABLED } from './biographic.ts';
 import { CREATE_ITEMS_ENABLED } from './create.ts';
 import { CREATE_ACTIVITY_ORGAN_ENABLED } from './create-cargo.ts';
+import { CREATE_COMPL_ENABLED } from './create-complementar.ts';
 import { CREATE_PROJECT_ORGAN_ENABLED } from './create-projeto.ts';
 import { EDIT_PCD_ENABLED } from './dados-gerais-edit.ts';
 import { DELETE_ITEMS_ENABLED } from './delete.ts';
@@ -97,6 +98,11 @@ export const GATED_EDITS: readonly {
     feature: 'projeto-novo-orgao',
     option: 'createProjects',
   },
+  {
+    enabled: CREATE_COMPL_ENABLED,
+    feature: 'complementar-nova',
+    option: 'createComplementar',
+  },
 ];
 
 /**
@@ -120,6 +126,9 @@ export function partGate(op: BridgeOp, options: PlanOptions): string | undefined
   }
   if (op.kind === 'criar-projeto' && !options.createProjects) {
     return 'Projeto novo pelo conector: desligado nesta montagem';
+  }
+  if (op.kind === 'criar-complementar' && !options.createComplementar) {
+    return 'Formação complementar nova pelo conector: desligado nesta montagem';
   }
   return undefined;
 }

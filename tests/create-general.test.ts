@@ -187,8 +187,6 @@ describe('planejar idioma, prêmio e vínculo', () => {
     for (const [name, pattern] of [
       ['LICENCA', /nascimento ou adoção/],
       ['AREA-DE-ATUACAO', /f_area_l/],
-      ['MBA', /passo depois/],
-      ['OUTROS', /Formação complementar/],
       ['DISCIPLINA', /grade leva também as que já existem/],
       ['TREINAMENTO', /grade leva também os que já existem/],
       ['LINHA-DE-PESQUISA', /grade leva também as que já existem/],
@@ -200,6 +198,7 @@ describe('planejar idioma, prêmio e vínculo', () => {
       expect(byHandReason(name), name).toMatch(pattern);
     }
     expect(byHandReason('IDIOMA')).toBeUndefined();
+    expect(byHandReason('MBA')).toBeUndefined();
   });
 });
 

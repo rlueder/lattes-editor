@@ -16,6 +16,7 @@ import {
 import { applyCreateAtuacao } from './create.ts';
 import {
   applyCreateAtividade,
+  applyCreateComplementar,
   applyCreateEvento,
   applyCreateFormacao,
   applyCreateGeneral,
@@ -107,6 +108,7 @@ type EditOp = Exclude<
       kind:
         | 'criar-atividade'
         | 'criar-atuacao'
+        | 'criar-complementar'
         | 'criar-dado'
         | 'criar-evento'
         | 'criar-formacao'
@@ -214,6 +216,7 @@ async function applyAny(op: BridgeOp, port: LattesPort, gates: ApplyGates): Prom
   if (op.kind === 'criar-dado') return applyCreateGeneral(op, port);
   if (op.kind === 'criar-atividade') return applyCreateAtividade(op, port);
   if (op.kind === 'criar-evento') return applyCreateEvento(op, port);
+  if (op.kind === 'criar-complementar') return applyCreateComplementar(op, port);
   if (isProductionOp(op)) return applyProduction(op, port);
   if (isAreasOp(op)) return applyAreas(op, port);
   if (isAtividadeOp(op)) return applyAtividade(op, port);
