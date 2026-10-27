@@ -128,7 +128,9 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
       version: ownVersion(),
     });
     await replayResults(await readState(), (m) => toEditor(editor, m));
-    await sendSession(editor);
+    // O menu relido pela rede, não o da aba: a aba pode ter carregado antes
+    // de um envio ao CNPq e mostrar a publicação anterior.
+    await sendSession(editor, true);
     return;
   }
   // Parar a rodada, ou seguir com o resto depois da pausa (editor-run.ts).
@@ -152,6 +154,8 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
   if (msg.type === 'pedir-espelho') {
     if (await busy()) return toEditor(editor, { error: BUSY_TEXT, type: 'espelho' });
     await toEditor(editor, { ...(await readEspelho()), type: 'espelho' });
+    // O painel de envio abriu: a última publicação e a pendência de agora.
+    await sendSession(editor, true);
     return;
   }
   // Listas do Lattes: só leituras, e nunca durante uma gravação (lattes-tab.ts).
