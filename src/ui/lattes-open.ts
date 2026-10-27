@@ -14,8 +14,12 @@ export type OpenState =
   | { detail?: string; kind: 'falhou'; lattesId?: string; reason: OpenFailure }
   | { kind: 'parado' };
 
-/** Quanto esperar o ZIP antes de desistir: o Exportar leva menos de um segundo. */
-export const OPEN_TIMEOUT_MS = 30_000;
+/**
+ * Quanto esperar o ZIP antes de desistir. O Exportar leva menos de um segundo,
+ * mas a extensão pode esperar até um minuto por uma tarefa em curso no Lattes
+ * (VERIFY_WAIT_MS, extension/src/editor-run.ts) antes de pedi-lo.
+ */
+export const OPEN_TIMEOUT_MS = 120_000;
 
 /** A extensão ligada sabe exportar (capacidade "curriculo", src/bridge/compat.ts). */
 export function canOpenFromLattes(link: Link): boolean {

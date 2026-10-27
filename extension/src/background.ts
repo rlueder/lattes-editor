@@ -162,6 +162,9 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
   const listReply = await answerListRequest(msg, busy);
   if (listReply) return toEditor(editor, listReply);
   if (msg.type === 'pedir-curriculo') {
+    // Na abertura do editor, a conferência do menu e a releitura da sessão
+    // chegam junto com este pedido: ele espera a vez, até o prazo.
+    await waitWhile(busy);
     if (await busy())
       return toEditor(editor, { detail: BUSY_TEXT, id: msg.id, reason: 'erro', type: 'curriculo' });
     await toEditor(editor, { ...(await readCurriculo()), id: msg.id, type: 'curriculo' });
