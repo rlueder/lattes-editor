@@ -19,6 +19,7 @@ import { DateField } from './DateField.tsx';
 import { displayValue } from './display.ts';
 import { useDraft, usePartKey } from './draft-context.ts';
 import { useEditor } from './editor-context.ts';
+import { followUpOf } from './field-follow-up.tsx';
 import {
   codeAttrFor,
   codeChoices,
@@ -31,7 +32,6 @@ import {
 } from './field-kind.ts';
 import { useFormLacks } from './form-lacks-context.ts';
 import { LockIcon } from './icons.tsx';
-import { InnovationText } from './InnovationText.tsx';
 import { displayLattesDate, isLattesDateAttr, isValidLattesDate } from './lattes-date.ts';
 import { useLattesListsContext } from './lattes-lists-context.ts';
 import { isFourDigitYear, isLattesYearAttr } from './lattes-year.ts';
@@ -342,12 +342,13 @@ export function AttributeField({
     );
   }
 
-  const changeKey = innovationKey(el, name, value, formLacks);
-  if (changeKey) {
+  // O que o envio pede e o XML não guarda (field-follow-up.tsx).
+  const followUp = followUpOf(el, name, value, formLacks);
+  if (followUp) {
     return wrap(
       <>
         {control}
-        <InnovationText changeKey={changeKey} />
+        {followUp}
       </>,
       { textarea },
     );
@@ -403,22 +404,6 @@ export function AttributeField({
       </div>
     );
   }
-}
-
-/** A mudança de um Sim novo do potencial de inovação, que pede o texto que vai só ao Lattes. */
-function innovationKey(
-  el: XElement,
-  name: string,
-  value: string,
-  lacks: ReturnType<typeof useFormLacks>,
-): string | undefined {
-  if (name !== 'FLAG-POTENCIAL-INOVACAO' || value !== 'SIM') return undefined;
-  // No projeto que já está, ao ir para Sim; num projeto ou registro novo,
-  // sempre: a inclusão também pede o texto (create-shared.ts, innovationFields).
-  const asks =
-    (el.name === 'PROJETO-DE-PESQUISA' && lacks?.original?.(el, name) !== 'SIM') ||
-    lacks?.isNew?.(el) === true;
-  return asks ? lacks?.keyOf?.(el) : undefined;
 }
 
 /** A grande área é um valor do XSD (CIENCIAS_EXATAS_E_DA_TERRA): mostrada por extenso. */

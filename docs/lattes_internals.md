@@ -2688,9 +2688,11 @@ O tipo de licença também usa as três opções capturadas (`f_tipo_licenca`):
 Maternidade (M), Paternidade (P) e Adoção (A). `MATERNIDADE` consta no XSD;
 `PATERNIDADE` e `ADOCAO` continuam **inferidos** do rótulo, como no mapeamento
 que o conector já usava. A lista da interface compartilha esses valores com
-o planejador; o tipo vazio é recusado antes do envio. Isso não libera a
-inclusão de licença, que ainda exige uma data de nascimento ou adoção fora
-do XML (seção 21).
+o planejador; o tipo vazio é recusado antes do envio. A inclusão de licença
+exige a data de nascimento ou adoção, que fica fora do XML (seção 21): o
+editor a pede na licença nova e a manda só no envio
+(`src/bridge/create-licenca.ts`), com as regras do `check()` conferidas
+antes. **Inferido**, sem envio acompanhado.
 
 ## 24. Recaptura de 26/10/2026
 

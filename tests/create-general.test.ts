@@ -185,7 +185,6 @@ describe('planejar idioma, prêmio e vínculo', () => {
 
   it('cada tipo à mão tem o seu motivo', () => {
     for (const [name, pattern] of [
-      ['LICENCA', /nascimento ou adoção/],
       ['AREA-DE-ATUACAO', /f_area_l/],
       ['DISCIPLINA', /vai junto com a atividade/],
       ['TREINAMENTO', /vai junto com a atividade/],
@@ -199,6 +198,7 @@ describe('planejar idioma, prêmio e vínculo', () => {
     }
     expect(byHandReason('IDIOMA')).toBeUndefined();
     expect(byHandReason('MBA')).toBeUndefined();
+    expect(byHandReason('LICENCA')).toBeUndefined();
   });
 });
 

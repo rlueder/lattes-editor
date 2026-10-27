@@ -42,18 +42,18 @@ outro item.
 
 | Caminho hoje | Tipos | Editor cria |
 | ------------ | ----: | ----------: |
-| conector     |    45 |          45 |
+| conector     |    46 |          46 |
 | importar     |    60 |          60 |
-| nenhum       |     9 |           9 |
+| nenhum       |     8 |           8 |
 
-O editor cria todos os tipos. Os 9 sem inclusão própria são partes de outro
+O editor cria todos os tipos. Os 8 sem inclusão própria são partes de outro
 item ou uma lista única. A disciplina, o treinamento e a linha de pesquisa
 entram pela grade da atividade: junto com uma atividade nova, ou numa que já
 está no Lattes pela alteração dela (`atividade-grade.ts`, capacidade
 `grade-atividade`), e a linha nova leva os objetivos pelo formulário dela
 (`linha-detalhes.ts`). O financiador e a produção ligada entram pelas grades
 da página do projeto, e as áreas de atuação pela grade única delas. Ficam à
-mão a licença, a orientação antiga sob o projeto e a participação em projeto,
+mão a orientação antiga sob o projeto e a participação em projeto,
 que nasce com o projeto. As nove
 naturezas de atividade vão pelo conector; as que não são o ensino levam o
 órgão escolhido na janela de órgãos da atividade (`create-cargo.ts`, atrás
@@ -101,7 +101,7 @@ e treinamento são só um nome, que fica no texto do elemento.
 | ----------------- | ---------------- | ------------ | ----------- | ------------ | ------------------- | ------- | ------------------- |
 | `AREA-DE-ATUACAO` | Área de atuação  |              | sim         | nenhum       | `areas-de-atuacao`  | lido    | observado/observado |
 | `IDIOMA`          | Idioma           |              | sim         | conector     | `idioma`            | lido    | observado/observado |
-| `LICENCA`         | Licença          |              | sim         | nenhum       | `licenca`           | lido    | observado/inferido  |
+| `LICENCA`         | Licença          |              | sim         | conector     | `licenca`           | lido    | observado/inferido  |
 | `PREMIO-TITULO`   | Prêmio ou título |              | sim         | conector     | `premio`            | lido    | observado/observado |
 
 ### Atuação e projetos
@@ -315,10 +315,11 @@ do censo casou 3 idiomas, 5 prêmios e 8 vínculos) e inferida no pós-doutorado
 e na livre-docência. O vínculo novo não tem "Outras informações" em português,
 só em inglês: com o texto em português, vai à mão.
 
-Ficam à mão, com o motivo de cada um: a licença (o `check()` exige a data de
-nascimento ou adoção, que o XML da licença não guarda), as áreas de atuação
-(a grade `f_area_l` tem a chave `r`, de sentido não lido) e a orientação
-antiga sob o projeto. O que falta ler está no `README.md` de
+A licença vai pelo conector (`create-licenca.ts`) com a data de nascimento
+ou adoção que o `check()` exige e o XML não guarda: o editor a pede embaixo
+do início da licença nova, e ela vai só no envio. As áreas de atuação vão
+pela grade única delas (`areas-atuacao.ts`). Fica à mão a orientação antiga
+sob o projeto. O que falta ler está no `README.md` de
 `lattes-formularios/`.
 
 **Produções, eventos, orientações e bancas.** A captura leu o formulário de

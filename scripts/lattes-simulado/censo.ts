@@ -162,23 +162,6 @@ ${h.formButtons(false)}
   return html(h.page('Formação complementar', body));
 }
 
-/** Licenças (pkg_licenca.form, captura de 13/10/2026): só a inclusão. */
-function licenseForm(state: LattesState): SimResponse {
-  const rows = [
-    row('Tipo de licença', h.select('f_tipo_licenca', h.capturedList('L23'), '')),
-    row('Data de início', h.text('f_dta_inicio', '', { maxLength: 10 })),
-    row('Data de fim', h.text('f_dta_fim', '', { maxLength: 10 })),
-    row('Data de nascimento ou adoção', h.text('f_dta_nasc_adoc', '', { maxLength: 10 })),
-    row('Visibilidade', h.select('f_tipo_privacidade', h.PRIVACY, '1')),
-  ].join('\n');
-  const body = `<form name="GN_LICENCA" method="post" action="PKG_LICENCA.FORM">
-<table>${rows}</table>
-${h.hidden('f_ctr', 'I')}${h.hidden('f_cod', state.code)}
-${h.formButtons(false)}
-</form>`;
-  return html(h.page('Licenças', body));
-}
-
 export const notSimulated = () =>
   html(
     h.page('Não simulado', '<p>O simulado só mostra este formulário; o envio não é simulado.</p>'),
@@ -192,14 +175,6 @@ export function isComplementaryInclusion(req: SimRequest): boolean {
 export { complementaryInclusion };
 
 export const CENSO_ROUTES: Routes = {
-  'pkg_licenca.form': (req, state) => (req.method === 'POST' ? notSimulated() : licenseForm(state)),
-  'pkg_licenca.lista': (_req, state) =>
-    html(
-      h.page(
-        'Licenças',
-        `<p><a href="#" onclick="self.parent.modalCV2.setarUrl('pkg_licenca.form?f_cod=${state.code}',true); return false;">Incluir novo item</a></p>`,
-      ),
-    ),
   'pkg_relatorio.form': (req, state) =>
     req.method === 'POST' ? techWorkPost(req, state) : techWorkForm(req, state),
   'pkg_relatorio.lista': (_req, state) => techWorkList(state),
