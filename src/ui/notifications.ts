@@ -142,16 +142,14 @@ export function connectionText(c: Connection, appVersion: string, devFolder?: st
   }
   switch (c.kind) {
     // A comparação é pelos recursos que cada lado anuncia (compat.ts), não
-    // pelo número: com o mesmo número, uma montagem local mais nova ainda
-    // tem recursos que a outra não conhece.
+    // pelo número: o texto mostra os dois números sem dizer qual é maior. A
+    // extensão Dev se anuncia com o número do manifesto (1.0.0.98) e o editor
+    // com o do app (1.0.0-dev.98), e uma montagem local nova pode ter o mesmo
+    // número de outra.
     case 'app-antigo':
-      return c.version === appVersion
-        ? `A extensão sabe fazer coisas que este editor ainda não usa, embora os dois digam v${appVersion}.`
-        : `A extensão (v${c.version}) é mais nova do que o editor (v${appVersion}).`;
+      return `A extensão (v${c.version}) tem recursos que o editor (v${appVersion}) ainda não usa.`;
     case 'extensao-antiga':
-      return c.version === appVersion
-        ? `O editor usa recursos que esta extensão ainda não tem, embora os dois digam v${appVersion}.`
-        : `A extensão (v${c.version}) é mais antiga do que o editor (v${appVersion}).`;
+      return `O editor (v${appVersion}) usa recursos que a extensão (v${c.version}) ainda não tem.`;
     case 'incompativel':
       return 'A extensão instalada fala outra versão do conector e é ignorada.';
     case 'lendo':

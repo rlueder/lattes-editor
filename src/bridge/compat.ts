@@ -160,13 +160,15 @@ export function versionNotice(
   app: { features?: string[]; version?: string } | undefined,
 ): string | undefined {
   if (!app) return undefined;
+  // Pelos recursos, não pelo número: os dois números aparecem sem dizer qual
+  // é maior (a extensão Dev tem 1.0.0.98 onde o app tem 1.0.0-dev.98).
   const appLabel = app.version ? `O app LattesEditor (v${app.version})` : 'O app LattesEditor';
   const compat = compareFeatures(BRIDGE_FEATURES, app.features);
   if (compat.kind === 'outro-antigo') {
-    return `${appLabel} é mais antigo que esta extensão (v${extensionVersion}) e não usa tudo o que ela faz. Baixe a versão nova do app.`;
+    return `${appLabel} não usa tudo o que esta extensão (v${extensionVersion}) faz. Baixe a versão nova do app.`;
   }
   if (compat.kind === 'este-antigo') {
-    return `Esta extensão (v${extensionVersion}) é mais antiga que o app${app.version ? ` (v${app.version})` : ''}. Atualize a extensão.`;
+    return `${appLabel} usa recursos que esta extensão (v${extensionVersion}) ainda não tem. Atualize a extensão.`;
   }
   return undefined;
 }

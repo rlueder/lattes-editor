@@ -49,16 +49,16 @@ describe('conector: capacidades', () => {
     expect(versionNotice('2.0.0', undefined)).toBeUndefined();
     expect(versionNotice('2.0.0', { features: ALL, version: '2.0.0' })).toBeUndefined();
     expect(versionNotice('2.0.0', {})).toBe(
-      'O app LattesEditor é mais antigo que esta extensão (v2.0.0) e não usa tudo o que ela faz. Baixe a versão nova do app.',
+      'O app LattesEditor não usa tudo o que esta extensão (v2.0.0) faz. Baixe a versão nova do app.',
     );
     expect(versionNotice('2.0.0', { features: [], version: '1.0.0' })).toMatch(
-      /^O app LattesEditor \(v1\.0\.0\) é mais antigo/,
+      /^O app LattesEditor \(v1\.0\.0\) não usa tudo/,
     );
     expect(versionNotice('1.0.0', { features: [...ALL, 'criar'], version: '2.0.0' })).toBe(
-      'Esta extensão (v1.0.0) é mais antiga que o app (v2.0.0). Atualize a extensão.',
+      'O app LattesEditor (v2.0.0) usa recursos que esta extensão (v1.0.0) ainda não tem. Atualize a extensão.',
     );
     expect(versionNotice('1.0.0', { features: [...ALL, 'criar'] })).toBe(
-      'Esta extensão (v1.0.0) é mais antiga que o app. Atualize a extensão.',
+      'O app LattesEditor usa recursos que esta extensão (v1.0.0) ainda não tem. Atualize a extensão.',
     );
   });
 
@@ -181,7 +181,7 @@ describe('notificações: ligação com o Lattes e armazenamento', () => {
         id: 'ligacao',
         level: 'aviso',
         link: { href: EXTENSION_URL, label: 'Atualize a extensão no navegador.' },
-        text: 'A extensão (v0.9.1) é mais antiga do que o editor (v2.0.0).',
+        text: 'O editor (v2.0.0) usa recursos que a extensão (v0.9.1) ainda não tem.',
         title: 'Extensão desatualizada',
       },
     ]);
@@ -223,14 +223,21 @@ describe('notificações: ligação com o Lattes e armazenamento', () => {
     ];
     expect(new Set(all.map(connectionTitle)).size).toBe(all.length);
     for (const c of all) expect(connectionText(c, '2.0.0').length).toBeGreaterThan(20);
-    // Mesmo número dos dois lados: a diferença é de recursos, e o texto não
-    // diz que um número é maior que o outro (27/10/2026).
-    const same = connectionText({ kind: 'app-antigo', version: '1.0.0-dev.93' }, '1.0.0-dev.93');
-    expect(same).toMatch(/embora os dois digam v1\.0\.0-dev\.93/);
-    expect(same).not.toMatch(/mais nova/);
-    expect(
-      connectionText({ kind: 'extensao-antiga', version: '1.0.0-dev.93' }, '1.0.0-dev.93'),
-    ).not.toMatch(/mais antiga/);
+    // A diferença é de recursos: o texto não diz que um número é maior que o
+    // outro, nem com o número do manifesto da extensão Dev (1.0.0.98) contra o
+    // do app (1.0.0-dev.98).
+    for (const [ext, app] of [
+      ['1.0.0-dev.93', '1.0.0-dev.93'],
+      ['1.0.0.98', '1.0.0-dev.98'],
+      ['1.0.0.97', '1.0.0-dev.98'],
+    ] as const) {
+      for (const kind of ['app-antigo', 'extensao-antiga'] as const) {
+        const text = connectionText({ kind, version: ext }, app);
+        expect(text).not.toMatch(/mais (nova|antiga|novo|antigo)/);
+        expect(text).toContain(`v${ext}`);
+        expect(text).toContain(`v${app}`);
+      }
+    }
     // Só o que se resolve atualizando um dos lados leva link.
     expect(all.filter((c) => connectionLink(c)).map((c) => c.kind)).toEqual([
       'app-antigo',
