@@ -18,7 +18,7 @@ import {
 import { isLogonPage } from '../lattes-html.ts';
 import { withChoices } from '../multi-choice.ts';
 import type { FieldValues } from '../plan.ts';
-import { afterWrong, beforeWrong, createdPath } from './apply-checks.ts';
+import { afterWrong, beforeWrong, createdPath, withSentAuthors } from './apply-checks.ts';
 import { doiProblem } from './doi.ts';
 import {
   authorRows,
@@ -309,21 +309,8 @@ export async function applyProduction(
     }
     const afterPairs = successfulPairs(afterControls);
     const virtualAfter = virtualFields.length > 0 ? t.virtual?.read(afterHtml) : {};
-    // Os autores como foram (o nome da linha do menu, quando a pessoa foi achada pela citação).
-    const sentRows = replace.f_autores_l;
-    const sent =
-      op.authors && sentRows
-        ? {
-            ...op,
-            authors: {
-              ...op.authors,
-              after: op.authors.after.map((a, i) => ({
-                ...a,
-                name: String(sentRows[i]?.l ?? a.name),
-              })),
-            },
-          }
-        : op;
+    const owner = (menuAuthors(menu) ?? []).filter((r) => r.c === '');
+    const sent = withSentAuthors(op, replace.f_autores_l, owner);
     const notSaved = afterWrong(sent, afterPairs, afterGrids, seen, virtualFields, virtualAfter);
     // O texto do órgão leva uma quebra de linha, que a página pode devolver como \r\n.
     const loose = (v: string | null | undefined) => folded(v).replace(/\s+/g, ' ');

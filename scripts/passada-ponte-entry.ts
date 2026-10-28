@@ -44,6 +44,7 @@ import { withListValues } from './cobertura-exemplo.ts';
 import { type Fate, snapshot, state, TAG, text } from './passada/aba.ts';
 import { campos, conferir, conferirPaginas } from './passada/conferencia.ts';
 import { exercitar } from './passada/exercitar.ts';
+import { incluir } from './passada/incluir.ts';
 import { importableElements, type Variant, variantsOf } from './passada/variantes.ts';
 
 /** O exemplo sintético, já decodificado do Latin-1 (build-conector-ponte.ts). */
@@ -427,6 +428,7 @@ async function registro() {
   gerar,
   importar,
   importarXml,
+  incluir,
   passo2,
   passo3,
   registro,

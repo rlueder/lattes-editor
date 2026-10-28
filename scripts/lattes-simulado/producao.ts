@@ -182,6 +182,27 @@ function post(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
   return html(back);
 }
 
+/**
+ * Na inclusão, o Lattes põe a própria pessoa à frente dos autores quando o
+ * envio não a leva (observado em 28/10/2026, em mídias sociais de teste).
+ */
+function ownerFirst(state: LattesState, item: XElement, t: ProductionTarget): void {
+  const part = t.authors?.element ?? 'AUTORES';
+  if (!t.grids.includes('f_autores_l') || part !== 'AUTORES') return;
+  const authors = childElements(item, 'AUTORES');
+  if (authors.some((a) => getAttr(a, 'NOME-COMPLETO-DO-AUTOR') === state.personName)) return;
+  const citation =
+    getAttr(state.general, 'NOME-EM-CITACOES-BIBLIOGRAFICAS')?.split(';')[0]?.trim() ?? '';
+  const owner = element('AUTORES', {
+    'NOME-COMPLETO-DO-AUTOR': state.personName,
+    'NOME-PARA-CITACAO': citation,
+    'ORDEM-DE-AUTORIA': '1',
+  });
+  authors.forEach((a, i) => setAttr(a, 'ORDEM-DE-AUTORIA', String(i + 2)));
+  const at = item.children.indexOf(authors[0] ?? item.children.at(-1)!);
+  item.children.splice(authors.length > 0 ? at : item.children.length, 0, owner);
+}
+
 /** A inclusão: o item novo com a sequência seguinte, no lugar que o schema dá ao tipo. */
 function create(req: SimRequest, state: LattesState, t: ProductionTarget, back: string) {
   const seq = lattesSchema.elements[t.element]?.attributes.some(
@@ -195,6 +216,7 @@ function create(req: SimRequest, state: LattesState, t: ProductionTarget, back: 
   if (privacy) state.privacy.set(item, privacy);
   writeLookups(state, item, t, req);
   applyGrids(item, req, t.authors);
+  ownerFirst(state, item, t);
   insertInSchemaOrder(lattesSchema, state.ensurePath(schemaPath(t.element) ?? []), item);
   state.touch();
   return html(back);

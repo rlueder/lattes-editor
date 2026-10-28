@@ -20,7 +20,7 @@ import type { XElement } from '../../src/model/xml.ts';
 import type { Variant } from './variantes.ts';
 
 /** O que aconteceu com cada variante enviada: no passo 3 nova, já existente, ou não listada. */
-export type Fate = 'confirmada' | 'existente' | 'fora-do-passo-3';
+export type Fate = 'confirmada' | 'existente' | 'fora-do-passo-3' | 'formulario';
 
 export interface State {
   base?: ListSnapshot;
@@ -28,6 +28,8 @@ export interface State {
   /** Os tipos que o exercitar já tentou e não conferiram: não se repetem. */
   failedTypes?: string[];
   fates?: Record<string, Fate>;
+  /** As variantes que incluir() já tentou pelo formulário. */
+  formTried?: string[];
   lastSnapshot?: ListSnapshot;
   loaded?: LoadResult;
   seen?: Record<string, string[]>;

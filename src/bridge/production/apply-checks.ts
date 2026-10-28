@@ -6,7 +6,7 @@ import { areaLabel } from '../areas-atuacao.ts';
 import { Stop } from '../create-shared.ts';
 import type { Pairs } from '../form.ts';
 import { differs } from '../multi-choice.ts';
-import { type Grids, keywordLabels, sameWords } from './grids.ts';
+import { type GridRow, type Grids, keywordLabels, sameWords } from './grids.ts';
 import { sameDepositor } from './institution-holder.ts';
 import { gridLabels, sameLabels } from './item-lists.ts';
 import { locate } from './locate.ts';
@@ -98,4 +98,27 @@ export function afterWrong(
     if (folded(virtualAfter?.[f] ?? '') !== folded(op.set[f])) notSaved.push(f);
   }
   return notSaved;
+}
+
+/**
+ * Os autores que a releitura deve trazer: os nomes das linhas que foram (o da
+ * linha do menu, quando a pessoa foi achada pela citação) e, na inclusão, a
+ * própria pessoa à frente, que o Lattes põe mesmo quando o envio não a leva
+ * (observado em 28/10/2026, em mídias sociais de teste; o formulário de
+ * inclusão vem com a grade vazia). A linha dela é a do autorDP sem código.
+ */
+export function withSentAuthors(
+  op: ProductionOp,
+  sentRows: readonly GridRow[] | undefined,
+  owner: readonly { c: string; l: string; t: string }[],
+): ProductionOp {
+  if (!op.authors || !sentRows) return op;
+  const after = op.authors.after.map((a, i) => ({ ...a, name: String(sentRows[i]?.l ?? a.name) }));
+  const names = new Set(after.map((a) => a.name));
+  const prefilled = op.create
+    ? owner
+        .filter((r) => r.l.trim() !== '' && !names.has(r.l))
+        .map((r) => ({ citation: r.t, cnpq: r.c, name: r.l }))
+    : [];
+  return { ...op, authors: { ...op.authors, after: [...prefilled, ...after] } };
 }
