@@ -29,6 +29,15 @@ const elementsOf = (root: XElement) => {
   return elements;
 };
 
+/** Os valores de formato fixo que o texto genérico do gerador não respeita. */
+const FORMATTED: Record<string, { test: RegExp; value: string }> = {
+  'CARGA-HORARIA': { test: /^\d{0,4}$/, value: '40' },
+  // CS mostra os três blocos de orientador, que o exemplo preenche.
+  'TIPO-DOUTORADO': { test: /^(N|S|C|CS)?$/, value: 'CS' },
+  'TIPO-GRADUACAO': { test: /^(N|S)?$/, value: 'N' },
+  'TIPO-MESTRADO': { test: /^(N|S)?$/, value: 'N' },
+};
+
 /** Duas passadas porque a lista de um campo pode depender de outro campo. */
 export function withListValues(raw: string): { rewritten: number; xml: string } {
   const doc = parseXml(raw);
@@ -51,6 +60,11 @@ export function withListValues(raw: string): { rewritten: number; xml: string } 
     // A natureza do livro tem código por tipo (bibliografica-livros.ts): com
     // Coletânea, que os dois tipos têm, a troca do tipo também se mede.
     if (item.name === 'DADOS-BASICOS-DO-LIVRO') setAttr(item, 'NATUREZA', 'COLETANEA');
+    // A licença tem até 180 dias no check() da página (create-licenca.ts).
+    if (item.name === 'LICENCA') {
+      setAttr(item, 'DATA-INICIO-LICENCA', '01032025');
+      setAttr(item, 'DATA-FIM-LICENCA', '30072025');
+    }
     const kind = REGISTRY_KINDS[item.name];
     if (!kind) continue;
     for (const reg of elementsOf(item).filter((e) => e.name === 'REGISTRO-OU-PATENTE')) {
@@ -68,6 +82,11 @@ export function withListValues(raw: string): { rewritten: number; xml: string } 
         if (!choices && a.name.startsWith('FLAG-') && !['', 'SIM', 'NAO'].includes(a.value)) {
           a.value = 'NAO';
         }
+        // Sem lista no XSD, mas o formulário só aceita um formato: a carga
+        // horária em horas, e o tipo da formação pelo código do rádio (N
+        // normal, observado no doutorado em 28/10/2026).
+        const format = FORMATTED[a.name];
+        if (format && !format.test.test(a.value)) a.value = format.value;
         if (!outOfList(el, a.name)) continue;
         const value = derivedValue(el.name, a.name) ?? typedChoices(el, a.name)?.[0]?.value;
         if (value !== undefined) a.value = value;

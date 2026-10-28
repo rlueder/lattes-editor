@@ -2908,3 +2908,18 @@ excluído pelo conector, e a releitura conferiu os dois passos. **Observado**:
   (`f_dados_grid` e `f_dados_grid_contatos`); um envio sem eles para com
   `ORA-19032`. O endereço voltou ao que era por um envio do conector com os
   campos vazios.
+- **Importar com um campo que o formulário não tem.** O arquivo foi a
+  exportação do dia com um texto em jornal de teste a mais, com `DOI` (o
+  formulário de texto em jornal não tem DOI) e a própria pessoa em `AUTORES`.
+  A resposta do passo 1 trouxe dois scripts seguidos, o alerta "O arquivo foi
+  enviado com sucesso!" e o "Não foi possível processar o arquivo enviado
+  (…) DTD", e mesmo assim a solicitação ficou criada: o passo 2, com o módulo
+  5 e o ano, listou o item verde no passo 3, e o Confirmar dele pôs o item na
+  lista e em `cv_espelho`. O DOI não aparece em lugar nenhum da versão de
+  trabalho: o formulário não tem o campo, o `cv_espelho` não mostra DOI (nem
+  de outros itens), e o Exportar entrega a versão publicada. Se o Importar
+  guarda o campo só uma exportação depois de publicar mostra; o item de teste
+  foi excluído antes. O conector, depois desse alerta, relê a tela do passo 1
+  e diz quando há solicitação pendente.
+- **Exportar.** O POST precisa de `f_ctr=G` (sem ele, volta a tela). O ZIP
+  guarda os tamanhos no diretório central, não no cabeçalho local.
