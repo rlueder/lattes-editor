@@ -1,10 +1,12 @@
 // O formulário de um item na lista do Lattes: o único com o título, o ano e
 // a natureza dele (applyProduction, apply.ts).
 
+import { buildPath } from '../../census/run.ts';
+import { CENSUS_TARGETS } from '../../census/targets-production.ts';
 import type { LattesPort } from '../apply.ts';
 import { getChecked, Stop } from '../create-shared.ts';
 import { type FormControl, withScriptValues } from '../form.ts';
-import { findLinks, type LattesLink } from '../lattes-html.ts';
+import { cvCodeFrom, findLinks, type LattesLink } from '../lattes-html.ts';
 import { folded, type ProductionOp } from './plan.ts';
 import type { ProductionTarget } from './types.ts';
 
@@ -110,4 +112,51 @@ export async function locate(
     );
   }
   return found[0]!;
+}
+
+/**
+ * O formulário de inclusão do tipo: o link da lista que não é de linha
+ * ("Incluir novo item"), quando a lista ainda não tem item com o título e o
+ * ano (a inclusão repetida faria um item igual).
+ */
+export async function inclusion(
+  op: Pick<ProductionOp, 'listParams' | 'match'>,
+  t: ProductionTarget,
+  port: LattesPort,
+  menu: string,
+): Promise<{ controls: FormControl[]; html: string; path: string }> {
+  try {
+    await locate(op, t, port, menu);
+    throw new Stop(
+      'divergente',
+      'O Lattes já tem um item com esse título e esse ano; nada foi enviado',
+    );
+  } catch (err) {
+    if (!(err instanceof Stop) || !/não tem um item/.test(err.message)) throw err;
+  }
+  const path = inclusionPath(t, cvCodeFrom(menu) ?? '');
+  if (!path) {
+    throw new Stop('erro', 'O endereço da inclusão deste tipo não é conhecido; nada foi enviado');
+  }
+  const html = await getChecked(port, path);
+  const controls = withScriptValues(html, port.readForm(html, t.form.name));
+  if (!controls) {
+    throw new Stop('erro', 'O formulário de inclusão não pôde ser lido; nada foi enviado');
+  }
+  return { controls, html, path };
+}
+
+/**
+ * O formulário de inclusão do tipo, pelo endereço que o censo leu na lista
+ * (census/targets-production.ts): o "à mão" do artigo, e não a entrada por
+ * DOI ou por periódico que a mesma lista oferece.
+ */
+export function inclusionPath(t: ProductionTarget, code: string): string | undefined {
+  const entry = CENSUS_TARGETS.find(
+    (c) =>
+      c.elements.includes(t.element) &&
+      c.locate.kind === 'fixed' &&
+      c.locate.proc.toLowerCase() === t.list.formProc.toLowerCase(),
+  );
+  return entry?.locate.kind === 'fixed' ? buildPath(code, entry.locate) : undefined;
 }

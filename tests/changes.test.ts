@@ -8,6 +8,7 @@ import {
   revertChange,
   revertField,
 } from '../src/model/changes.ts';
+import { isProductionContainer } from '../src/model/production.ts';
 import { parseXml } from '../src/model/xml.ts';
 
 const doc = (xml: string) => parseXml(xml).root;
@@ -112,6 +113,20 @@ describe('diffDocuments', () => {
       doc('<A><C SEQUENCIA-X="1" V="a"/><C SEQUENCIA-X="1" V="c"/></A>'),
     );
     expect(dup.map((c) => c.key)).toEqual(['A/C[SEQUENCIA-X=1]~1']);
+  });
+});
+
+describe('diffDocuments: contêiner de produção novo', () => {
+  const before = '<CURRICULO-VITAE><DADOS-GERAIS NOME-COMPLETO="A"/></CURRICULO-VITAE>';
+  const after =
+    '<CURRICULO-VITAE><DADOS-GERAIS NOME-COMPLETO="A"/><PRODUCAO-BIBLIOGRAFICA><ARTIGOS-PUBLICADOS><ARTIGO-PUBLICADO SEQUENCIA-PRODUCAO="1"/><ARTIGO-PUBLICADO SEQUENCIA-PRODUCAO="2"/></ARTIGOS-PUBLICADOS></PRODUCAO-BIBLIOGRAFICA></CURRICULO-VITAE>';
+
+  it('com descend, um item por mudança; sem, o contêiner inteiro', () => {
+    const a = parseXml(before).root;
+    const b = parseXml(after).root;
+    const split = diffDocuments(a, b, { descend: (el) => isProductionContainer(el.name) });
+    expect(split.map((c) => c.element)).toEqual(['ARTIGO-PUBLICADO', 'ARTIGO-PUBLICADO']);
+    expect(diffDocuments(a, b).map((c) => c.element)).toEqual(['PRODUCAO-BIBLIOGRAFICA']);
   });
 });
 

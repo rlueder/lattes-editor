@@ -13,9 +13,13 @@ import {
   revertChange,
   revertField,
 } from '../model/changes.ts';
-import { includeCapability, subscribeIncludeCapability } from '../model/direct-inclusion.ts';
+import {
+  directProduction,
+  includeCapability,
+  subscribeIncludeCapability,
+} from '../model/direct-inclusion.ts';
 import { loadedOf } from '../model/form-read.ts';
-import { isPendingImport } from '../model/production.ts';
+import { isPendingImport, isProductionContainer } from '../model/production.ts';
 import { insertInSchemaOrder } from '../model/schema-order.ts';
 import { parseXml, serializeXml, type XElement } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
@@ -52,7 +56,9 @@ export function useChanges(
     const loadedMax = loadedOf(session.meta);
     // Produção nova vai pelo Importar, não por esta lista.
     const skip = (el: XElement) => isPendingImport(el, loadedMax, undefined, session.doc.root);
-    const changes = diffDocuments(original, session.doc.root, { skip });
+    // Com a produção pelo formulário, um contêiner novo vira um item por mudança.
+    const descend = (el: XElement) => directProduction() && isProductionContainer(el.name);
+    const changes = diffDocuments(original, session.doc.root, { descend, skip });
     return groupChanges(changes, original, session.doc.root, sections);
     // O documento é mutado no lugar; `version` avisa a mudança.
     // eslint-disable-next-line react-hooks/exhaustive-deps

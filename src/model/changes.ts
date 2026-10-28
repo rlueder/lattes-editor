@@ -106,6 +106,8 @@ const DESCEND_WHEN_NEW: ReadonlySet<string> = new Set([
 ]);
 
 export interface DiffOptions {
+  /** Contêiner novo que se abre item por item (a produção incluída pelo formulário). */
+  descend?: (el: XElement) => boolean;
   /** Itens que o Importar leva (produção nova): ficam fora desta lista. */
   skip?: (el: XElement) => boolean;
 }
@@ -124,7 +126,8 @@ export function diffDocuments(
     if (kind !== 'alterado' && isBlank(el)) return;
     // Contêiner de eventos novo: cada evento vira uma mudança, para cada um
     // ter o seu caminho (inclusão pelo formulário, ou o Importar pelo skip).
-    if (kind === 'novo' && DESCEND_WHEN_NEW.has(el.name) && el.attrs.every((x) => !x.value)) {
+    const descend = DESCEND_WHEN_NEW.has(el.name) || opts.descend?.(el) === true;
+    if (kind === 'novo' && descend && el.attrs.every((x) => !x.value)) {
       for (const [key, child] of keyed(a!)) visit(undefined, child, [...path, key]);
       return;
     }

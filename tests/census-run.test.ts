@@ -156,10 +156,8 @@ describe('censo contra o Lattes simulado', () => {
         status: 'ok',
       });
       expect(byId(file.entries, 'licenca').status).toBe('ok');
-      expect(byId(file.entries, 'artigo-aceito')).toMatchObject({
-        shape: { form: 0 },
-        status: 'nao-encontrado',
-      });
+      // O simulado abre a inclusão de produção pelo link da lista (producao.ts).
+      expect(byId(file.entries, 'artigo-aceito').status).toBe('ok');
       expect(byId(file.entries, 'patente-janela')).toMatchObject({
         path: 'pkg_patente_registro.informar_dados_patente?ftipo=PP',
         status: 'ok',

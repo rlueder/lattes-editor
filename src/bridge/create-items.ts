@@ -91,6 +91,12 @@ import { EVENTO_SPEC } from './edit-items.ts';
 import { COMPL_LEVELS } from './edit-lists.ts';
 import { findLinks } from './lattes-html.ts';
 import { ACTIVITY_ORGAN_ELEMENTS } from './organ-windows.ts';
+import {
+  creatableTarget,
+  CREATE_PRODUCTION_ENABLED,
+  planCreateProduction,
+} from './production/create.ts';
+import type { ProductionOp } from './production/plan.ts';
 
 export {
   applyCreateAtividade,
@@ -149,9 +155,13 @@ export function planCreateItem(
   chain: XElement[],
   label: string,
   extras: SendExtras = {},
-): Planned<CreateItemOp> | undefined {
+): Planned<CreateItemOp | ProductionOp> | undefined {
   const el = chain.at(-1);
   if (!el) return undefined;
+  // Produção, orientação e banca pelo formulário, no lugar do Importar (production/create.ts).
+  if (CREATE_PRODUCTION_ENABLED && el.name === change.element && creatableTarget(el.name)) {
+    return planCreateProduction(change, el, label, extras);
+  }
   const registro = registryItem(el);
   if (registro) return planCreateRegistro(change, chain, registro, label, extras);
   const ensino = teachingItem(el);

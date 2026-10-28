@@ -147,7 +147,11 @@ que o painel "Enviar ao Lattes" mostra item por item:
   `importable.ts`). "Item novo de produção" é item com `SEQUENCIA-PRODUCAO`
   nova **e** tipo que um módulo do Importar lê (`isPendingImport`, em
   `src/model/production.ts`); a patente usa o contador global, mas não vai
-  pelo Importar.
+  pelo Importar. Com `CREATE_PRODUCTION_ENABLED` (desligada até o teste no
+  Lattes real), produção, orientação e banca novas vão pelo formulário de
+  inclusão do próprio Lattes, no endereço que o censo leu
+  (`src/bridge/production/create.ts`), e só o item que o formulário não leva
+  fica no Importar.
 - **Alteração, inclusão ou exclusão que o conector sabe fazer** vai **pela
   extensão**: `src/bridge/plan.ts` transforma a alteração numa operação de
   formulário e `src/bridge/apply.ts` a aplica na aba do Lattes. Antes de
@@ -226,6 +230,7 @@ própria montagem (`ApplyGates`, em `apply-gates.ts`).
 | `CREATE_PROJECT_ORGAN_ENABLED`   | `projeto-novo-orgao`            | Ligada: projeto novo com o órgão da janela de órgãos; nenhuma inclusão real acompanhada                                                                 |
 | `CREATE_ACTIVITY_ORGAN_ENABLED`  | `atividade-nova-orgao`          | Ligada: atividade nova das naturezas com órgão, pela janela de órgãos da atividade; nenhuma inclusão real acompanhada                                   |
 | `CREATE_COMPL_ENABLED`           | `complementar-nova`             | Ligada: formação complementar nova nos dois passos do `FORM2`; nenhuma inclusão real acompanhada                                                        |
+| `CREATE_PRODUCTION_ENABLED`      | `incluir-itens`                 | Desligada: produção, orientação e banca novas pelo formulário de inclusão, no lugar do Importar; nenhuma inclusão real acompanhada                      |
 | `ACTIVITY_ROWS_ENABLED`          | `grade-atividade`               | Ligada: disciplinas, treinamentos e linhas de pesquisa numa atividade que já existe, e o formulário da linha de pesquisa nova; nenhum envio acompanhado |
 | `DELETE_MORE_ENABLED`            | `excluir-mais`                  | Ligada: exclusão de produções, projetos, eventos, prêmios, formações, atividades e da atuação inteira; observada só no evento                           |
 | `PROJECT_ORGAN_ENABLED`          | `orgao-projeto`                 | Desligada: o Lattes recebe o órgão novo e mantém o antigo, também pela própria página (27/10/2026)                                                      |

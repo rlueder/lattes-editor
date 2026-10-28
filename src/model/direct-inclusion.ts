@@ -10,12 +10,21 @@
 // Importar. E um evento que o formulário de eventos não leva (participantes
 // além da pessoa, campos que o formulário não tem) volta ao Importar quando
 // o Importar o leva, isto é, com a própria pessoa entre os participantes.
+//
+// A produção, as orientações e as bancas entram também com
+// CREATE_PRODUCTION_ENABLED (bridge/production/create.ts), desligada até o
+// teste no Lattes real; o item que o formulário não leva fica no Importar.
 
 import { CREATE_ITEMS_ENABLED } from '../bridge/create.ts';
 import { eventCarriedByImport, eventoProblem } from '../bridge/create-evento.ts';
+import {
+  creatableTargets,
+  CREATE_PRODUCTION_ENABLED,
+  planCreateProduction,
+} from '../bridge/production/create.ts';
 import type { XElement } from './xml.ts';
 
-export const DIRECT_INCLUSION_TYPES: ReadonlySet<string> = new Set([
+const EVENT_TYPES: ReadonlySet<string> = new Set([
   'OUTRAS-PARTICIPACOES-EM-EVENTOS-CONGRESSOS',
   'PARTICIPACAO-EM-CONGRESSO',
   'PARTICIPACAO-EM-ENCONTRO',
@@ -26,6 +35,21 @@ export const DIRECT_INCLUSION_TYPES: ReadonlySet<string> = new Set([
   'PARTICIPACAO-EM-SEMINARIO',
   'PARTICIPACAO-EM-SIMPOSIO',
 ]);
+
+let directTypes: ReadonlySet<string> | undefined;
+
+/** Os tipos que saem do Importar com a inclusão ligada: os eventos e, com a chave, a produção. */
+export function directInclusionTypes(): ReadonlySet<string> {
+  directTypes ??= new Set([
+    ...EVENT_TYPES,
+    ...(CREATE_PRODUCTION_ENABLED ? creatableTargets().map((t) => t.element) : []),
+  ]);
+  return directTypes;
+}
+
+/** A produção vai pelo formulário agora (a chave e a capacidade da extensão)? */
+export const directProduction = (): boolean =>
+  CREATE_PRODUCTION_ENABLED && CREATE_ITEMS_ENABLED && canInclude;
 
 const NONE: ReadonlySet<string> = new Set();
 
@@ -61,7 +85,7 @@ export function subscribeIncludeCapability(listener: () => void): () => void {
 export function directInclusion(
   enabled: boolean = CREATE_ITEMS_ENABLED && canInclude,
 ): ReadonlySet<string> {
-  return enabled ? DIRECT_INCLUSION_TYPES : NONE;
+  return enabled ? directInclusionTypes() : NONE;
 }
 
 /**
@@ -77,5 +101,19 @@ export function goesDirect(
 ): boolean {
   if (!direct.has(el.name)) return false;
   if (!root) return true;
+  if (!EVENT_TYPES.has(el.name)) return productionGoesDirect(el);
   return !eventoProblem(el, root) || !eventCarriedByImport(el, root);
+}
+
+/** O formulário leva o item de produção? Sem isso, ele fica no Importar. */
+function productionGoesDirect(el: XElement): boolean {
+  const change = {
+    element: el.name,
+    fields: [],
+    form: '',
+    key: '',
+    kind: 'novo' as const,
+    path: [],
+  };
+  return !('reason' in planCreateProduction(change, el, ''));
 }

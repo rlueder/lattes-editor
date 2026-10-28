@@ -70,6 +70,8 @@ export interface ProductionOp extends OpBase, ProjectGridEdits {
   areas?: AreaList;
   /** Autores antes e depois, na ordem, quando a mudança é deles. */
   authors?: { after: AuthorSpec[]; before: AuthorSpec[] };
+  /** Inclusão pelo formulário (create.ts): o link "Incluir novo item", sem antes a conferir. */
+  create?: true;
   /**
    * O depositante ou titular pessoa antes e depois (ProductionTarget.holders),
    * quando a mudança é dele: um nome só, ou vazio.

@@ -9,9 +9,13 @@
 // cada formulário está no censo (docs/lattes-formularios/), e os testes de
 // cada família conferem a especificação contra ele.
 
+import { schemaPath } from '../../src/bridge/load/sections/schema-path.ts';
+import { inclusionPath } from '../../src/bridge/production/locate.ts';
 import { PRODUCTION_TARGETS } from '../../src/bridge/production/targets/index.ts';
 import type { ProductionTarget } from '../../src/bridge/production/types.ts';
 import { mapOf, partMaps, partOf, writeFields } from '../../src/bridge/refresh/from-form.ts';
+import { emptyAttrs, newItem } from '../../src/model/production.ts';
+import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import {
   childElements,
   element,
@@ -20,12 +24,13 @@ import {
   walk,
   type XElement,
 } from '../../src/model/xml.ts';
+import { lattesSchema } from '../../src/schema/lattes.ts';
 import { AGENCIES, allCourses, institutionsOf, withLetter } from './buscas.ts';
 import type { LattesState } from './estado.ts';
 import { applyGrids, GRID_HIDDEN, gridScripts } from './grades.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
-import { html, notFound, type Routes, type SimResponse } from './tipos.ts';
+import { html, type Routes, type SimResponse } from './tipos.ts';
 
 /** Os tipos com tela própria no simulado (censo.ts, grades.ts), fora daqui. */
 const CUSTOM = new Set(['projeto', 'trabalho-tecnico']);
@@ -64,10 +69,19 @@ function list(state: LattesState, t: ProductionTarget): string {
     .join('\n');
 }
 
+/** O "Incluir novo item" da lista, no endereço que o censo leu (locate.ts); sem ele, nada. */
+function inclusionLink(state: LattesState, t: ProductionTarget): string {
+  const path = inclusionPath(t, state.code);
+  if (!path) return '';
+  return `<p><a href="#" onclick="self.parent.modalCV2.setarUrl('${path.replace(/&/g, '&amp;')}',true); return false;">Incluir novo item</a></p>`;
+}
+
 function form(req: SimRequest, state: LattesState, t: ProductionTarget): SimResponse {
-  // Sem f_seq é a inclusão, que este arquivo não simula (o censo a lê como ausente).
-  if (!req.get('f_seq')) return notFound(t.list.formProc);
-  const item = itemsOf(state, t).find((i) => seqOf(i) === req.get('f_seq'));
+  // Sem f_seq é a inclusão: o mesmo formulário, vazio, com f_ctr I.
+  const creating = !req.get('f_seq');
+  const item = creating
+    ? element(t.element)
+    : itemsOf(state, t).find((i) => seqOf(i) === req.get('f_seq'));
   if (!item) return html(h.page(t.id, '<p>Registro não encontrado.</p>'));
   const parts = partMaps(t, item);
   const controls = [...Object.entries(t.fields), ...parts.fields].map(([key, m]) => {
@@ -95,7 +109,7 @@ function form(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
   const unique = [...new Set(controls)].join('\n');
   const body = `<form name="${t.form.name}" method="post" action="${t.form.action}">
 ${unique}
-${h.hidden('f_ctr', 'U')}${h.hidden('f_cod', state.code)}${h.hidden('f_seq', req.get('f_seq') ?? '')}${GRID_HIDDEN}
+${h.hidden('f_ctr', creating ? 'I' : 'U')}${h.hidden('f_cod', state.code)}${h.hidden('f_seq', req.get('f_seq') ?? '')}${GRID_HIDDEN}
 ${lookupHidden(state, item, t)}
 ${h.formButtons(true)}
 </form>
@@ -147,6 +161,7 @@ const DOI_ROUTES: Routes = {
 function post(req: SimRequest, state: LattesState, t: ProductionTarget): SimResponse {
   const back = h.savedScript(`${t.list.proc}?f_cod=${state.code}`);
   const ctr = req.get('f_ctr');
+  if (ctr === 'I') return create(req, state, t, back);
   if (ctr !== 'U' && ctr !== 'E') return html(back);
   const item = itemsOf(state, t).find((i) => seqOf(i) === req.get('f_seq'));
   if (!item) return html(h.page(t.id, '<p>Registro não encontrado.</p>'));
@@ -163,6 +178,24 @@ function post(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
   if (privacy) state.privacy.set(item, privacy);
   writeLookups(state, item, t, req);
   applyGrids(item, req, t.authors);
+  state.touch();
+  return html(back);
+}
+
+/** A inclusão: o item novo com a sequência seguinte, no lugar que o schema dá ao tipo. */
+function create(req: SimRequest, state: LattesState, t: ProductionTarget, back: string) {
+  const seq = lattesSchema.elements[t.element]?.attributes.some(
+    (a) => a.name === 'SEQUENCIA-PRODUCAO',
+  );
+  const item = seq
+    ? newItem(lattesSchema, t.element, ++state.nextProduction)
+    : element(t.element, emptyAttrs(lattesSchema, t.element));
+  writeFields(t, item, (field) => req.get(field));
+  const privacy = req.get('f_tipo_privacidade');
+  if (privacy) state.privacy.set(item, privacy);
+  writeLookups(state, item, t, req);
+  applyGrids(item, req, t.authors);
+  insertInSchemaOrder(lattesSchema, state.ensurePath(schemaPath(t.element) ?? []), item);
   state.touch();
   return html(back);
 }
@@ -261,15 +294,20 @@ function buildRoutes(): Routes {
             Object.entries(x.list.params ?? {}).every(([k, v]) => req.get(k) === v),
         );
         const rows = match.map((x) => list(state, x)).join('\n');
-        return html(h.page(t.id, `<table>${rows}</table>`));
+        return html(h.page(t.id, `<table>${rows}</table>${inclusionLink(state, match[0] ?? t)}`));
       };
     }
     // O mesmo formulário pode servir a vários tipos (as orientações): vale o
     // tipo do item do f_seq.
     const formKey = t.list.formProc.toLowerCase();
     const sharing = targets.filter((x) => x.list.formProc.toLowerCase() === formKey);
+    // Na inclusão, sem f_seq, a natureza enviada diz o tipo.
     const targetOf = (req: SimRequest, state: LattesState) =>
-      sharing.find((x) => itemsOf(state, x).some((i) => seqOf(i) === req.get('f_seq'))) ?? t;
+      (req.get('f_seq')
+        ? sharing.find((x) => itemsOf(state, x).some((i) => seqOf(i) === req.get('f_seq')))
+        : sharing.find(
+            (x) => !x.nature || x.nature.values.includes(req.get(x.nature.field) ?? ''),
+          )) ?? t;
     routes[formKey] = (req, state) =>
       req.method === 'POST'
         ? post(req, state, targetOf(req, state))

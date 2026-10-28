@@ -277,6 +277,14 @@ const isImportableName = (name: string): boolean => {
   return importableNames.has(name);
 };
 
+let containers: Set<string> | undefined;
+
+/** Contêiner de produção (PRODUCAO-BIBLIOGRAFICA, ARTIGOS-PUBLICADOS…), pelos caminhos do Importar. */
+export function isProductionContainer(name: string): boolean {
+  containers ??= new Set(importableTypes(lattesSchema).flatMap((t) => t.containerPath));
+  return containers.has(name);
+}
+
 /**
  * O que o Lattes já tem: o maior SEQUENCIA-PRODUCAO da exportação carregada,
  * e os números acima dele dos itens novos lidos dos formulários do Lattes
