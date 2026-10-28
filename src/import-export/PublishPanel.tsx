@@ -459,7 +459,7 @@ function PublishPanelBody(props: Props) {
       }
       label="Enviar ao CNPq"
       open={open}
-      subtitle="Publica no currículo público o que está gravado no Lattes. Só você marca a declaração."
+      subtitle="Publica no currículo público o que está gravado no Lattes, depois que você marcar a declaração."
       title="Enviar ao CNPq"
       onClose={onClose}
     >

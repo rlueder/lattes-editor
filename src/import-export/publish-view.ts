@@ -138,7 +138,9 @@ export function publishStatus(
     busy: true,
     done: false,
     locked: true,
-    text: 'Leva uns 20 segundos. Quando o Lattes responder, o editor confirma que o currículo foi publicado.',
+    // O envio observado levou 18 s em 14/10/2026 e mais de um minuto em
+    // 28/10/2026: o tempo corrido mostra que ainda se espera o Lattes.
+    text: `Esperando o Lattes responder (${Math.max(0, Math.round((now - attempt.at) / 1000))} s). Pode passar de um minuto; o editor confirma a publicação quando a resposta chegar.`,
   };
 }
 

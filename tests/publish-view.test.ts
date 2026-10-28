@@ -60,6 +60,8 @@ describe('painel Enviar ao CNPq (LAT-54)', () => {
     });
     const attempt = { at: 1000, id: 'p1' };
     expect(publishStatus(attempt, undefined, 2000)).toMatchObject({ busy: true, done: false });
+    // O tempo corrido, para quem espera ver que o envio segue.
+    expect(publishStatus(attempt, undefined, attempt.at + 65_000).text).toMatch(/\(65 s\)/);
     const other = { at: 3000, id: 'p0', result: { outcome: 'publicado' as const } };
     expect(publishStatus(attempt, other, 3000).busy).toBe(true);
     const done = { at: 3000, id: 'p1', result: { outcome: 'publicado' as const } };
