@@ -100,8 +100,9 @@ export function goesDirect(
   root?: XElement,
 ): boolean {
   if (!direct.has(el.name)) return false;
-  if (!root) return true;
+  // A produção se decide pelo próprio item, sem a raiz.
   if (!EVENT_TYPES.has(el.name)) return productionGoesDirect(el);
+  if (!root) return true;
   return !eventoProblem(el, root) || !eventCarriedByImport(el, root);
 }
 

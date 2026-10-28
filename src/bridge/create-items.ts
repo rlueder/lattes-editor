@@ -93,6 +93,7 @@ import { findLinks } from './lattes-html.ts';
 import { ACTIVITY_ORGAN_ELEMENTS } from './organ-windows.ts';
 import {
   creatableTarget,
+  creatableTargets,
   CREATE_PRODUCTION_ENABLED,
   planCreateProduction,
 } from './production/create.ts';
@@ -144,6 +145,8 @@ export const CONNECTOR_CREATES: ReadonlySet<string> = new Set([
   ...EVENT_ELEMENTS,
   // Formação complementar: os dois passos do FORM2 (create-complementar.ts).
   ...Object.keys(COMPL_LEVELS),
+  // Produção, orientação e banca pelo formulário de inclusão (production/create.ts).
+  ...(CREATE_PRODUCTION_ENABLED ? creatableTargets().map((t) => t.element) : []),
 ]);
 
 /**

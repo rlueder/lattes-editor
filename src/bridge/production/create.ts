@@ -28,7 +28,7 @@ import type { ProductionTarget } from './types.ts';
  * A inclusão de produção pelo formulário. Desligada até o teste no Lattes
  * real: sem ela, o item novo vai pelo Importar, como sempre.
  */
-export const CREATE_PRODUCTION_ENABLED = false;
+export const CREATE_PRODUCTION_ENABLED = true;
 
 /**
  * Os tipos que a inclusão pelo formulário leva: os do motor de alteração,
@@ -48,7 +48,9 @@ export function creatableTargets(): readonly ProductionTarget[] {
       t.id !== 'linha-de-pesquisa' &&
       !t.holders &&
       !t.organ &&
-      !t.opaqueGrids?.length,
+      !t.opaqueGrids?.length &&
+      // Sem o endereço da inclusão no censo (o livro, outras), segue o Importar.
+      inclusionPath(t, '') !== undefined,
   ));
 }
 

@@ -213,12 +213,15 @@ describe('evento em contêiner novo', () => {
 
 describe('evento: Importar ou formulário', () => {
   it('com a chave desligada, o evento novo segue no arquivo do Importar; ligada, sai dele', () => {
-    expect([...directInclusionTypes()].sort()).toEqual([...EVENT_ELEMENTS].sort());
+    // Os eventos e, com CREATE_PRODUCTION_ENABLED, a produção (production/create.ts).
+    expect([...directInclusionTypes()]).toEqual(expect.arrayContaining([...EVENT_ELEMENTS]));
+    expect(directInclusionTypes().has('TRABALHO-EM-EVENTOS')).toBe(true);
+    expect(directInclusionTypes().has('LIVRO-PUBLICADO-OU-ORGANIZADO')).toBe(false);
     const item = congresso();
     expect(isPendingImport(item, 33)).toBe(true);
     expect(directInclusion()).toEqual(new Set());
     expect(isPendingImport(item, 33, directInclusion(true))).toBe(false);
-    // Um tipo que segue pelo Importar não muda.
+    // O item que o formulário não leva (sem título nem ano) segue pelo Importar.
     const artigo = element('ARTIGO-PUBLICADO', { 'SEQUENCIA-PRODUCAO': '91' });
     expect(isPendingImport(artigo, 33, directInclusion(true))).toBe(true);
     // Fora do Importar, o evento continua "novo" (com o "Editar no formulário"),

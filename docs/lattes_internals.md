@@ -2996,8 +2996,9 @@ Lattes, num item de teste:
   mudança nenhuma, volta com `Erro. ORA-01403: não foram encontrados dados`
   no gatilho `FOMENTO.TRG_ATU_IVIP_PROD_CIENTIFICA`
   (`PKG_MANUTENCAO_PROD_UNIFICADA`), e nada fica gravado. Foi assim nos três
-  trabalhos de teste importados. Se um trabalho incluído pelo formulário
-  grava a divulgação científica não foi testado.
+  trabalhos de teste importados. Um trabalho de teste incluído pelo
+  formulário de inclusão, em seguida, gravou a divulgação científica pelo
+  conector, conferida na releitura.
 - **Acervo:** a gravação passa sem erro, e a página de alteração volta com a
   lista vazia, como sempre vem. O valor gravado só se vê na exportação, que
   ainda não foi conferida.
@@ -3065,9 +3066,10 @@ aspas como `&quot;` dentro do texto, e números internos nas redes sociais.
   nenhuma tela mostra não entra.
 - Altera e exclui pelos formulários, um item por vez, relendo depois de cada
   envio. Um campo que volta diferente na releitura aparece como não gravado.
-- O item novo de produção vai pelo Importar. O editor ainda não confere o
-  item pelo formulário depois do Confirmar: o tipo que o Importar deixou de
-  fora e o valor trocado pelo padrão só aparecem no carregamento seguinte.
+- O item novo de produção vai pelo formulário de inclusão, como no site, e
+  a releitura confere cada campo. Só o que o formulário não leva (o livro,
+  cujo endereço de inclusão não foi lido) vai pelo Importar, e esse item o
+  editor ainda não confere depois do Confirmar.
 - Os campos que só as telas têm (nome social, visibilidade, celular,
   validade do passaporte) ficam na cópia do editor e vão e voltam pelos
   formulários; nenhum arquivo que o editor gera os leva, porque a exportação

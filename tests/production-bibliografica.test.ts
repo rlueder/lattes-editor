@@ -657,6 +657,17 @@ describe('inclusão pelo formulário, no lugar do Importar', () => {
     expect(created).toBeDefined();
   });
 
+  it('a pessoa achada pela citação, com outro nome: confere pelo nome que foi', async () => {
+    const lattes = await lattesFor(false);
+    const { item } = withNewArticle();
+    // No menu, a coautora é "Coautora de Exemplo", com a citação EXEMPLO, C.
+    const author = childElements(item, 'AUTORES')[0]!;
+    setAttr(author, 'NOME-COMPLETO-DO-AUTOR', 'Coautora Exemplo da Silva');
+    setAttr(author, 'NOME-PARA-CITACAO', 'EXEMPLO, C.');
+    const op = planCreateProduction(changeOf(item), item, 'Artigo') as ProductionOp;
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+  });
+
   it('o mesmo título e ano já na lista: nada vai', async () => {
     const lattes = await lattesFor();
     const { item } = withNewArticle();
@@ -672,7 +683,7 @@ describe('inclusão pelo formulário, no lugar do Importar', () => {
     const root = parseXml(xmlFor(false)).root;
     const livro = bySeq(root, '44');
     expect(planCreateProduction(changeOf(livro), livro, 'Livro')).toEqual({
-      reason: 'O endereço do formulário de inclusão deste tipo não é conhecido',
+      reason: 'Este tipo não se inclui pelo formulário do Lattes',
     });
   });
 });

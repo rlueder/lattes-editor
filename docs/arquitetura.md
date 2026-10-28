@@ -147,11 +147,13 @@ que o painel "Enviar ao Lattes" mostra item por item:
   `importable.ts`). "Item novo de produção" é item com `SEQUENCIA-PRODUCAO`
   nova **e** tipo que um módulo do Importar lê (`isPendingImport`, em
   `src/model/production.ts`); a patente usa o contador global, mas não vai
-  pelo Importar. Com `CREATE_PRODUCTION_ENABLED` (desligada até o teste no
-  Lattes real), produção, orientação e banca novas vão pelo formulário de
-  inclusão do próprio Lattes, no endereço que o censo leu
-  (`src/bridge/production/create.ts`), e só o item que o formulário não leva
-  fica no Importar.
+  pelo Importar. Com a extensão que anuncia `incluir-itens`, produção,
+  orientação e banca novas vão pelo formulário de inclusão do próprio Lattes,
+  no endereço que o censo leu (`src/bridge/production/create.ts`,
+  `CREATE_PRODUCTION_ENABLED`), e só o item que o formulário não leva (o
+  livro, que não tem endereço de inclusão lido) fica no Importar. O item que
+  entrou pelo Importar pode não se deixar alterar nem pela página do Lattes
+  (`lattes_internals.md`, seção 28).
 - **Alteração, inclusão ou exclusão que o conector sabe fazer** vai **pela
   extensão**: `src/bridge/plan.ts` transforma a alteração numa operação de
   formulário e `src/bridge/apply.ts` a aplica na aba do Lattes. Antes de
@@ -205,36 +207,36 @@ para uma extensão que anuncia a capacidade; com uma extensão antiga, a
 alteração fica em "Não enviado". A extensão também confere as chaves na
 própria montagem (`ApplyGates`, em `apply-gates.ts`).
 
-| Chave                            | Capacidade                      | Estado                                                                                                                                                  |
-| -------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CREATE_ITEMS_ENABLED`           | `incluir-itens`                 | Ligada                                                                                                                                                  |
-| `DELETE_ITEMS_ENABLED`           | `excluir-itens`                 | Ligada (idioma e vínculo)                                                                                                                               |
-| `BIOGRAPHIC_OPS_ENABLED`         | `alterar-dados-gerais`          | Ligada                                                                                                                                                  |
-| `BIOGRAPHIC_FULL_ENABLED`        | `alterar-dados-gerais-completo` | Ligada                                                                                                                                                  |
-| `EDIT_OUVINTE_ENABLED`           | `alterar-evento`                | Ligada, com envio acompanhado em 14/10/2026                                                                                                             |
-| `EDIT_EVENTO_ENABLED`            | `alterar-evento-completo`       | Ligada                                                                                                                                                  |
-| `EDIT_PREMIO_ENABLED`            | `alterar-premio`                | Ligada                                                                                                                                                  |
-| `EDIT_FORMACAO_COMPL_ENABLED`    | `alterar-formacao-complementar` | Ligada                                                                                                                                                  |
-| `EDIT_PRODUCTION_ENABLED`        | `alterar-producao`              | Ligada                                                                                                                                                  |
-| `PRODUCTION_LOOKUPS_ENABLED`     | `buscas-producao`               | Ligada                                                                                                                                                  |
-| `EDIT_AREAS_ENABLED`             | `alterar-areas-atuacao`         | Ligada                                                                                                                                                  |
-| `EDIT_ATIVIDADES_ENABLED`        | `alterar-atividades`            | Ligada                                                                                                                                                  |
-| `EDIT_CITACOES_ENABLED`          | `alterar-citacoes`              | Ligada                                                                                                                                                  |
-| `IMPORT_ENABLED`                 | `importar`                      | Ligada; conferir o currículo depois de cada importação (`lattes_internals.md`, seção 13)                                                                |
-| `COMPL_LOOKUPS_ENABLED`          | `buscas-complementar`           | Ligada sem envio acompanhado da troca: o curso testado não tinha como ser desfeito (`lattes_internals.md`)                                              |
-| `COMPL_ENDERECO_LOOKUPS_ENABLED` | `buscas-complementar-endereco`  | Ligada: instituição e órgão do endereço profissional gravaram num envio acompanhado (28/10/2026)                                                        |
-| `INSTITUTION_HOLDERS_ENABLED`    | `titular-instituicao`           | Ligada: depositante instituição pela busca; a gravação pela página e a exportação foram vistas (27/10/2026)                                             |
-| `EDIT_PCD_ENABLED`               | `pessoa-com-deficiencia`        | Ligada: um tipo, como a exportação de 27/10/2026                                                                                                        |
-| `EDIT_OTHER_CONTACTS_ENABLED`    | `outra-forma-contato`           | Ligada: só o contato de uma linha que já está                                                                                                           |
-| `EDIT_FUNDERS_ENABLED`           | `financiador-projeto`           | Ligada: instituição pela busca e natureza; a gravação pela linha da grade não foi vista                                                                 |
-| `CREATE_PROJECT_ORGAN_ENABLED`   | `projeto-novo-orgao`            | Ligada: projeto novo com o órgão da janela de órgãos; nenhuma inclusão real acompanhada                                                                 |
-| `CREATE_ACTIVITY_ORGAN_ENABLED`  | `atividade-nova-orgao`          | Ligada: atividade nova das naturezas com órgão, pela janela de órgãos da atividade; nenhuma inclusão real acompanhada                                   |
-| `CREATE_COMPL_ENABLED`           | `complementar-nova`             | Ligada: formação complementar nova nos dois passos do `FORM2`; nenhuma inclusão real acompanhada                                                        |
-| `CREATE_PRODUCTION_ENABLED`      | `incluir-itens`                 | Desligada: produção, orientação e banca novas pelo formulário de inclusão, no lugar do Importar; nenhuma inclusão real acompanhada                      |
-| `ACTIVITY_ROWS_ENABLED`          | `grade-atividade`               | Ligada: disciplinas, treinamentos e linhas de pesquisa numa atividade que já existe, e o formulário da linha de pesquisa nova; nenhum envio acompanhado |
-| `DELETE_MORE_ENABLED`            | `excluir-mais`                  | Ligada: exclusão de produções, projetos, eventos, prêmios, formações, atividades e da atuação inteira; observada só no evento                           |
-| `PROJECT_ORGAN_ENABLED`          | `orgao-projeto`                 | Desligada: o Lattes recebe o órgão novo e mantém o antigo, também pela própria página (27/10/2026)                                                      |
-| `PUBLISH_ENABLED`                | `publicar-cnpq`                 | Ligada com declaração por tentativa; validação acompanhada do app ao CNPq pendente antes do lançamento                                                  |
+| Chave                            | Capacidade                      | Estado                                                                                                                                                                      |
+| -------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CREATE_ITEMS_ENABLED`           | `incluir-itens`                 | Ligada                                                                                                                                                                      |
+| `DELETE_ITEMS_ENABLED`           | `excluir-itens`                 | Ligada (idioma e vínculo)                                                                                                                                                   |
+| `BIOGRAPHIC_OPS_ENABLED`         | `alterar-dados-gerais`          | Ligada                                                                                                                                                                      |
+| `BIOGRAPHIC_FULL_ENABLED`        | `alterar-dados-gerais-completo` | Ligada                                                                                                                                                                      |
+| `EDIT_OUVINTE_ENABLED`           | `alterar-evento`                | Ligada, com envio acompanhado em 14/10/2026                                                                                                                                 |
+| `EDIT_EVENTO_ENABLED`            | `alterar-evento-completo`       | Ligada                                                                                                                                                                      |
+| `EDIT_PREMIO_ENABLED`            | `alterar-premio`                | Ligada                                                                                                                                                                      |
+| `EDIT_FORMACAO_COMPL_ENABLED`    | `alterar-formacao-complementar` | Ligada                                                                                                                                                                      |
+| `EDIT_PRODUCTION_ENABLED`        | `alterar-producao`              | Ligada                                                                                                                                                                      |
+| `PRODUCTION_LOOKUPS_ENABLED`     | `buscas-producao`               | Ligada                                                                                                                                                                      |
+| `EDIT_AREAS_ENABLED`             | `alterar-areas-atuacao`         | Ligada                                                                                                                                                                      |
+| `EDIT_ATIVIDADES_ENABLED`        | `alterar-atividades`            | Ligada                                                                                                                                                                      |
+| `EDIT_CITACOES_ENABLED`          | `alterar-citacoes`              | Ligada                                                                                                                                                                      |
+| `IMPORT_ENABLED`                 | `importar`                      | Ligada; conferir o currículo depois de cada importação (`lattes_internals.md`, seção 13)                                                                                    |
+| `COMPL_LOOKUPS_ENABLED`          | `buscas-complementar`           | Ligada sem envio acompanhado da troca: o curso testado não tinha como ser desfeito (`lattes_internals.md`)                                                                  |
+| `COMPL_ENDERECO_LOOKUPS_ENABLED` | `buscas-complementar-endereco`  | Ligada: instituição e órgão do endereço profissional gravaram num envio acompanhado (28/10/2026)                                                                            |
+| `INSTITUTION_HOLDERS_ENABLED`    | `titular-instituicao`           | Ligada: depositante instituição pela busca; a gravação pela página e a exportação foram vistas (27/10/2026)                                                                 |
+| `EDIT_PCD_ENABLED`               | `pessoa-com-deficiencia`        | Ligada: um tipo, como a exportação de 27/10/2026                                                                                                                            |
+| `EDIT_OTHER_CONTACTS_ENABLED`    | `outra-forma-contato`           | Ligada: só o contato de uma linha que já está                                                                                                                               |
+| `EDIT_FUNDERS_ENABLED`           | `financiador-projeto`           | Ligada: instituição pela busca e natureza; a gravação pela linha da grade não foi vista                                                                                     |
+| `CREATE_PROJECT_ORGAN_ENABLED`   | `projeto-novo-orgao`            | Ligada: projeto novo com o órgão da janela de órgãos; nenhuma inclusão real acompanhada                                                                                     |
+| `CREATE_ACTIVITY_ORGAN_ENABLED`  | `atividade-nova-orgao`          | Ligada: atividade nova das naturezas com órgão, pela janela de órgãos da atividade; nenhuma inclusão real acompanhada                                                       |
+| `CREATE_COMPL_ENABLED`           | `complementar-nova`             | Ligada: formação complementar nova nos dois passos do `FORM2`; nenhuma inclusão real acompanhada                                                                            |
+| `CREATE_PRODUCTION_ENABLED`      | `incluir-itens`                 | Ligada: produção, orientação e banca novas pelo formulário de inclusão; incluído e conferido ao vivo um trabalho em eventos (28/10/2026), os outros tipos sem teste ao vivo |
+| `ACTIVITY_ROWS_ENABLED`          | `grade-atividade`               | Ligada: disciplinas, treinamentos e linhas de pesquisa numa atividade que já existe, e o formulário da linha de pesquisa nova; nenhum envio acompanhado                     |
+| `DELETE_MORE_ENABLED`            | `excluir-mais`                  | Ligada: exclusão de produções, projetos, eventos, prêmios, formações, atividades e da atuação inteira; observada só no evento                                               |
+| `PROJECT_ORGAN_ENABLED`          | `orgao-projeto`                 | Desligada: o Lattes recebe o órgão novo e mantém o antigo, também pela própria página (27/10/2026)                                                                          |
+| `PUBLISH_ENABLED`                | `publicar-cnpq`                 | Ligada com declaração por tentativa; validação acompanhada do app ao CNPq pendente antes do lançamento                                                                      |
 
 Fica à mão, com o motivo na tela (`src/bridge/atuacao-by-hand.ts` e os
 `fieldAbsent` de cada alvo): o que o formulário do Lattes não tem (nome do
