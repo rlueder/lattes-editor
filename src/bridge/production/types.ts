@@ -22,6 +22,12 @@ export interface FieldMap {
   toForm?: (value: string, side?: 'after' | 'before') => string | undefined;
   /** O motivo de ir à mão quando toForm não dá valor; sem ele, o motivo genérico. */
   unmapped?: string;
+  /**
+   * A página de alteração não mostra o valor gravado (vem sempre vazio, como
+   * o acervo da manutenção de obra artística, 28/10/2026): vai sem conferir o
+   * antes nem a releitura, com o aviso de conferir na exportação.
+   */
+  unshown?: true;
 }
 
 /** As grades que o check() de cada página serializa nos ocultos. */

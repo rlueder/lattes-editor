@@ -57,7 +57,7 @@ import { finishSecondStep, secondStepMisses } from './formacao-compl-steps.ts';
 import { formacaoGridSend } from './formacao-grids.ts';
 import { resolveOpLookups } from './formacao-lookups.ts';
 import { identGrids } from './ident-grids.ts';
-import { findLinks, isLogonPage } from './lattes-html.ts';
+import { findLinks, isLogonPage, lattesDbError } from './lattes-html.ts';
 import { pcdChecked, withPcd } from './pcd.ts';
 import type { BridgeOp } from './plan.ts';
 import { applyProduction } from './production/apply.ts';
@@ -197,7 +197,19 @@ export async function applyOp(
   port: LattesPort,
   gates: ApplyGates = BUILD_GATES,
 ): Promise<OpResult> {
-  const result = await applyAny(op, port, gates);
+  // Um POST que volta com erro do banco do Lattes: o motivo vai no resultado.
+  let dbError: string | undefined;
+  const watched: LattesPort = Object.assign(Object.create(port) as LattesPort, {
+    post: async (path: string, body: string) => {
+      const html = await port.post(path, body);
+      dbError = lattesDbError(html) ?? dbError;
+      return html;
+    },
+  });
+  const result = await applyAny(op, watched, gates);
+  if (dbError && result.status !== 'conferido') {
+    return { ...result, detail: `O Lattes recusou a gravação: ${dbError}` };
+  }
   if (result.status !== 'conferido') return result;
   // A inclusão que foi sem os campos que o formulário não tem, e a atuação
   // cujas partes vão no envio seguinte: o aviso fica no resultado.

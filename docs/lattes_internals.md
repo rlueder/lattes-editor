@@ -2983,11 +2983,20 @@ no XML). Três descompassos:
   ações inovadoras do projeto de ensino. O site os mostra; o XML não os
   carrega.
 
-Dois campos que o formulário tem não gravam pelo envio montado do
-formulário: "Divulgação científica" no trabalho em eventos e "Acervo" na
-manutenção de obra artística. O Lattes responde como se gravasse e a
-releitura mostra o valor de antes. **Inferido** que a página os ligue por
-script; o script não foi lido.
+Nenhum script da página mexe em "Divulgação científica" do trabalho em
+eventos nem em "Acervo" da manutenção de obra artística: o navegador manda
+o que o formulário tem (lido em 28/10/2026). Salvos pela própria página do
+Lattes, num item de teste:
+
+- **Trabalho em eventos** que entrou pelo Importar: toda gravação, mesmo sem
+  mudança nenhuma, volta com `Erro. ORA-01403: não foram encontrados dados`
+  no gatilho `FOMENTO.TRG_ATU_IVIP_PROD_CIENTIFICA`
+  (`PKG_MANUTENCAO_PROD_UNIFICADA`), e nada fica gravado. Foi assim nos três
+  trabalhos de teste importados. Se um trabalho incluído pelo formulário
+  grava a divulgação científica não foi testado.
+- **Acervo:** a gravação passa sem erro, e a página de alteração volta com a
+  lista vazia, como sempre vem. O valor gravado só se vê na exportação, que
+  ainda não foi conferida.
 
 **Importar** (arquivo XML, seção 13). O único caminho em lote, e só para
 produções: os 17 módulos do passo 2 (artigos, livros, anais, textos,

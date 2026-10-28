@@ -212,6 +212,9 @@ const MANUTENCAO = demais({
     ACERVO: {
       field: 'f_acervo',
       toForm: byTable({ NAO_INFORMADO: '', PRIVADO: 'Privado', PUBLICO: 'Público' }),
+      // Salvo pela própria página do Lattes em 28/10/2026, sem erro, e a página
+      // de alteração voltou com a lista vazia: o valor só se vê na exportação.
+      unshown: true,
     },
     'ANO-DA-OBRA': 'f_ano_obra',
     'AUTOR-DA-OBRA': 'f_autor_obra',

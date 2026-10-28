@@ -98,3 +98,16 @@ export function lattesIdFrom(html: string): string | undefined {
 export function sameCv(editorId: string | undefined, sessionId: string | undefined): boolean {
   return Boolean(editorId && sessionId && editorId === sessionId);
 }
+
+/**
+ * O erro do banco do Lattes que a resposta de um POST traz no lugar da página
+ * ("Erro. ORA-01403: não foram encontrados dados ORA-06512: na
+ * FOMENTO.PKG_MANUTENCAO_PROD_UNIFICADA…", observado em 28/10/2026 ao salvar
+ * pela própria página um trabalho em eventos que entrou pelo Importar). O
+ * comando todo volta atrás: nada do envio fica gravado. Só o primeiro código e
+ * a mensagem dele.
+ */
+export function lattesDbError(html: string): string | undefined {
+  const m = /Erro\.?\s*(ORA-\d{5}:[^<]*?)(?=\s*ORA-\d{5}|<|$)/i.exec(html);
+  return m?.[1]?.replace(/\s+/g, ' ').trim();
+}
