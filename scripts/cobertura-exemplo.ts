@@ -30,12 +30,24 @@ const elementsOf = (root: XElement) => {
 };
 
 /** Os valores de formato fixo que o texto genérico do gerador não respeita. */
+/** Os valores de formato fixo, por elemento e atributo, que o texto genérico do gerador não respeita. */
+const HOURS = { test: /^\d{0,4}$/, value: '40' };
 const FORMATTED: Record<string, { test: RegExp; value: string }> = {
-  'CARGA-HORARIA': { test: /^\d{0,4}$/, value: '40' },
+  // A carga horária em horas, nos formulários de formação que a têm.
+  ...Object.fromEntries(
+    [
+      'APERFEICOAMENTO',
+      'ESPECIALIZACAO',
+      'FORMACAO-COMPLEMENTAR-CURSO-DE-CURTA-DURACAO',
+      'FORMACAO-COMPLEMENTAR-DE-EXTENSAO-UNIVERSITARIA',
+      'MBA',
+      'OUTROS',
+    ].map((el) => [`${el}@CARGA-HORARIA`, HOURS]),
+  ),
   // CS mostra os três blocos de orientador, que o exemplo preenche.
-  'TIPO-DOUTORADO': { test: /^(N|S|C|CS)?$/, value: 'CS' },
-  'TIPO-GRADUACAO': { test: /^(N|S)?$/, value: 'N' },
-  'TIPO-MESTRADO': { test: /^(N|S)?$/, value: 'N' },
+  'DOUTORADO@TIPO-DOUTORADO': { test: /^(N|S|C|CS)?$/, value: 'CS' },
+  'GRADUACAO@TIPO-GRADUACAO': { test: /^(N|S)?$/, value: 'N' },
+  'MESTRADO@TIPO-MESTRADO': { test: /^(N|S)?$/, value: 'N' },
 };
 
 /** Duas passadas porque a lista de um campo pode depender de outro campo. */
@@ -85,7 +97,7 @@ export function withListValues(raw: string): { rewritten: number; xml: string } 
         // Sem lista no XSD, mas o formulário só aceita um formato: a carga
         // horária em horas, e o tipo da formação pelo código do rádio (N
         // normal, observado no doutorado em 28/10/2026).
-        const format = FORMATTED[a.name];
+        const format = FORMATTED[`${el.name}@${a.name}`];
         if (format && !format.test.test(a.value)) a.value = format.value;
         if (!outOfList(el, a.name)) continue;
         const value = derivedValue(el.name, a.name) ?? typedChoices(el, a.name)?.[0]?.value;

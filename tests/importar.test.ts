@@ -512,6 +512,11 @@ describe('Importar pelo conector contra o Lattes simulado', () => {
     const r = await importItems(port, CODE, REQ, true);
     expect(r.reason).toBe('pendente');
     expect(r.detail).toMatch(/criou uma solicitação, que ficou pendente/);
+    // A releitura que cai ou volta o login não diz que nada foi criado.
+    const logon = await fakeLattes({ s1After: LOGON, s2 });
+    const unsure = await importItems(logon.port, CODE, REQ, true);
+    expect(unsure.reason).toBe('arquivo');
+    expect(unsure.detail).toMatch(/Não deu para conferir/);
   });
 
   it('passo 2 de outro currículo: para e diz qual solicitação ficou pendente', async () => {
