@@ -175,7 +175,7 @@ export async function resolveOpLookups(
       if (r.set.f_curso_old) out.shown.f_curso = r.check.f_curso_old ?? r.set.f_curso_old;
     }
   }
-  if (op.kind === 'endereco' && (op.institution || op.organ)) {
+  if (op.kind === 'endereco' && (op.institution || op.organ || op.clearOrgan)) {
     const r = await resolveEnderecoLookups(op, port, before.pairs, before.controls);
     if ('status' in r) return r;
     Object.assign(out.set, r.set);

@@ -21,6 +21,11 @@
 // mesmos órgãos que a do endereço. Se o seleciona() limpa o órgão não foi
 // visto: a instituição nova com órgão no item só vai com o órgão escolhido de
 // novo. A unidade não tem campo próprio no formulário e fica à mão.
+//
+// Observado em 28/10/2026: ao trocar a instituição com órgão, o testa_inst()
+// da página pergunta "Será necessário alterar o Órgão/Unidade" e limpa
+// f_codorgao, f_codorgao2, f_orgao e f_orgao_old. A instituição nova sem
+// órgão escolhido vai assim, com o órgão vazio.
 
 import type { Change } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
@@ -46,6 +51,8 @@ export interface EnderecoInstitution {
 
 /** O que a mudança no endereço profissional pede às buscas. */
 export interface EnderecoLookups {
+  /** O órgão de antes sai com a instituição nova, como o testa_inst() da página faz. */
+  clearOrgan?: boolean;
   institution?: EnderecoInstitution;
   organ?: OrganChoice;
   rows: LookupRow[];
@@ -81,7 +88,10 @@ export function planEnderecoLookups(
   const was = (attr: string) => field(attr)?.before ?? now(attr);
   const out: EnderecoLookups = { rows: [] };
 
-  if (touched(ORGAN)) {
+  // A instituição nova com o órgão vazio: o que o testa_inst() da página faz.
+  const cleared =
+    Boolean(touched(INSTITUTION)) && [ORGAN.code, ORGAN.name, ...UNIT].every((a) => now(a) === '');
+  if (touched(ORGAN) && !cleared) {
     if (now(ORGAN.code) === was(ORGAN.code)) {
       return { reason: 'Órgão: escolha pela lista do Lattes, que grava o código junto' };
     }
@@ -130,6 +140,10 @@ export function planEnderecoLookups(
       };
     }
     out.institution = { before: was(INSTITUTION.code), code, name };
+    if (cleared && was(ORGAN.name)) {
+      out.clearOrgan = true;
+      out.rows.push({ after: '', before: was(ORGAN.name), label: 'Órgão', name: ORGAN.code });
+    }
     out.rows.unshift({
       after: name,
       before: was(INSTITUTION.name),
@@ -160,7 +174,7 @@ const codeIn = (pairs: Pairs) =>
  * `pairs` e `controls` são o formulário como veio, já conferido.
  */
 export async function resolveEnderecoLookups(
-  op: { institution?: EnderecoInstitution; organ?: OrganChoice },
+  op: { clearOrgan?: boolean; institution?: EnderecoInstitution; organ?: OrganChoice },
   port: LattesPort,
   pairs: Pairs,
   controls: FormControl[],
@@ -210,6 +224,11 @@ export async function resolveEnderecoLookups(
     windowInstitution = `${v ? 'V' : 'D'}${bare}`;
   }
 
+  if (op.clearOrgan) {
+    // f_orgao vem desabilitado: a página não o manda, e a releitura confere o texto.
+    Object.assign(set, { f_codorgao: '', f_codorgao2: '', f_orgao_old: '' });
+    shown.f_orgao = '';
+  }
   if (op.organ) {
     const text = controls.find((c) => c.name === 'f_orgao')?.value ?? '';
     const resolved = await resolveOrgan(op.organ, port, pairs, text, {

@@ -47,6 +47,8 @@ import type { OrganChoice } from './production/organ.ts';
 
 /** Endereço: um formulário só para o profissional (_i) e o residencial (_r). */
 export interface EnderecoOp extends OpBase {
+  /** O órgão de antes sai com a instituição nova, como o testa_inst() da página (endereco-buscas.ts). */
+  clearOrgan?: boolean;
   /** Outra forma de contato: o tipo (name) e o contato (url), antes e depois. */
   contacts?: { after: SocialRow[]; before: SocialRow[] };
   /** A instituição nova do endereço profissional, pela busca do Lattes (endereco-buscas.ts). */
@@ -387,7 +389,12 @@ export function planEnderecoEdit(change: Change, el: XElement, label: string): P
       ...(contacts.contacts ? { contacts: contacts.contacts } : {}),
     };
   }
-  const unit = labelsOf(change, PROFESSIONAL_ABSENT);
+  // A unidade que sai junto com a instituição nova (o testa_inst() da página) vai.
+  const unitCleared = change.fields.every(
+    (f) => !PROFESSIONAL_ABSENT.has(f.attr) || f.after === '',
+  );
+  const newInstitution = change.fields.some((f) => f.attr === 'CODIGO-INSTITUICAO-EMPRESA');
+  const unit = unitCleared && newInstitution ? [] : labelsOf(change, PROFESSIONAL_ABSENT);
   if (unit.length > 0) {
     return {
       reason: `O formulário de endereço do Lattes não tem campo próprio para: ${unit.join(', ')}`,
@@ -403,7 +410,9 @@ export function planEnderecoEdit(change: Change, el: XElement, label: string): P
     change,
     table,
     ENDERECO_SUFFIX[element] ?? '',
-    (a) => isScreenAttr(a) || (lookups !== undefined && ENDERECO_LOOKUP_ATTRS.has(a)),
+    (a) =>
+      isScreenAttr(a) ||
+      (lookups !== undefined && (ENDERECO_LOOKUP_ATTRS.has(a) || PROFESSIONAL_ABSENT.has(a))),
   );
   // Os campos só de tela já trazem o nome inteiro do campo (com _i ou _r).
   const screen = mapTable(change, screenTable(element), '', (a) => !isScreenAttr(a));
@@ -425,6 +434,7 @@ export function planEnderecoEdit(change: Change, el: XElement, label: string): P
     set,
     ...(lookups?.institution ? { institution: lookups.institution } : {}),
     ...(lookups?.organ ? { organ: lookups.organ } : {}),
+    ...(lookups?.clearOrgan ? { clearOrgan: true } : {}),
     ...(lookups ? { lookupRows: lookups.rows } : {}),
   };
 }

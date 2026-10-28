@@ -2174,9 +2174,13 @@ nome em `f_inst`. O órgão vai pela janela das atividades
 das atividades, `src/bridge/production/organ.ts`): o código de antes se
 confere pelo oculto ou pelo texto de `f_orgao`, e a releitura confere o texto
 novo em `f_orgao`. Com a instituição trocada, a janela abre na instituição
-nova, com a letra que a busca deu. Se o `seleciona()` limpa o órgão não foi
-visto: com órgão no item, a instituição nova só vai com o órgão escolhido de
-novo. A unidade não tem campo próprio no formulário: com unidade no item, a
+nova, com a letra que a busca deu. Ao trocar a instituição com órgão, o
+`testa_inst()` da página pergunta "Será necessário alterar o Órgão/Unidade.
+Deseja continuar?" e limpa na tela `f_codorgao`, `f_codorgao2`, `f_orgao` e
+`f_orgao_old` (lido em 28/10/2026). Como `f_orgao` vem desabilitado e os
+ocultos do órgão já vêm vazios, o envio fica igual ao de quem não mexe no
+órgão; se o servidor apaga o órgão de antes não foi visto, e a releitura de
+`f_orgao` mostra. A instituição nova sem órgão escolhido vai assim. A unidade não tem campo próprio no formulário: com unidade no item, a
 troca de órgão fica à mão. **Inferido**: que a página traga os ocultos da
 instituição preenchidos com o valor gravado, que os do órgão venham vazios
 (como na alteração do projeto), que `PRC_ENDERECO` grave os dois, e que a

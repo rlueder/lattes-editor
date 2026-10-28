@@ -420,7 +420,16 @@ function enderecoPost(req: SimRequest, state: LattesState): SimResponse {
     applyFields(addressScreenBindings(state, suffix), el, req);
   }
   const professional = state.find(['DADOS-GERAIS', 'ENDERECO', 'ENDERECO-PROFISSIONAL']);
-  if (professional) applyFields(institutionBindings(state), professional, req);
+  if (professional) {
+    const was = getAttr(professional, 'CODIGO-INSTITUICAO-EMPRESA') ?? '';
+    applyFields(institutionBindings(state), professional, req);
+    // Instituição nova sem órgão escolhido: o órgão de antes sai, como o
+    // testa_inst() da página o limpa na tela (inferido que o servidor faça igual).
+    const now = getAttr(professional, 'CODIGO-INSTITUICAO-EMPRESA') ?? '';
+    if (now !== was && !req.get('f_codorgao') && !req.get('f_codorgao2')) {
+      for (const a of ['CODIGO-ORGAO', 'NOME-ORGAO']) setAttr(professional, a, '');
+    }
+  }
   const corr = state.find(['DADOS-GERAIS', 'ENDERECO']);
   if (corr || req.get('f_end_corr')) {
     applyFields([preference], corr ?? state.ensurePath(['DADOS-GERAIS', 'ENDERECO']), req);
