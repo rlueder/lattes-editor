@@ -62,6 +62,20 @@ o XML traz `NAO`). O editor mostra a marca no sentido da tela e grava o
 inverso, num lugar só: `flagAsShown` em `src/ui/field-kind.ts`
 (`lattes_internals.md`, seção 5).
 
+Alguns campos aparecem nas telas do Lattes e não existem no XSD nem na
+exportação: o nome social, a visibilidade de cada dado da identificação e de
+cada item (`f_priv_*`, `f_tipo_privacidade`), o celular, a validade e o país
+do passaporte. A cópia do editor os guarda como atributos com o prefixo
+`tela:` no elemento a que pertencem (`tela:f_nome_social` em `DADOS-GERAIS`,
+`tela:f_tipo_privacidade` em cada item), com o nome do campo da página. O
+registro deles, com rótulo e opções do censo, está em
+`src/schema/screen-fields.ts`. Carregar do Lattes os lê, o conector os grava
+como qualquer outro campo, e `encodeCv` (`src/model/document.ts`) os tira de
+todo arquivo que sai do editor: o XML salvo, o arquivo do Importar e o
+histórico baixado. Numa cópia que veio de uma exportação eles não existem;
+preencher um cria o atributo, e o envio não confere o valor de antes, que o
+editor não conhece.
+
 ## O que o app guarda
 
 Tudo, menos as cópias de segurança, fica no IndexedDB do WebView

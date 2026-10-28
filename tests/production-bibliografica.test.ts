@@ -414,6 +414,19 @@ const applyEdits = (c: Case) => (root: XElement) => {
 const authorNames = (root: XElement, seq: string) =>
   childElements(bySeq(root, seq), 'AUTORES').map((a) => getAttr(a, 'NOME-COMPLETO-DO-AUTOR'));
 
+describe('visibilidade do item, que a exportação não traz', () => {
+  it('vai no f_tipo_privacidade do formulário do item e o Lattes guarda', async () => {
+    const lattes = await lattesFor();
+    const seq = CASES.find((c) => c.id === 'artigo-publicado')!.seq;
+    const [op] = opsAfter((root) => setAttr(bySeq(root, seq), 'tela:f_tipo_privacidade', '2'));
+    expect(op!.set).toEqual({ f_tipo_privacidade: '2' });
+    // A cópia não tinha o campo: o antes não se confere.
+    expect(op!.expect).toEqual({});
+    expect(await applyOp(op!, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(lattes.state.privacy.get(bySeq(lattes.state.root, seq))).toBe('2');
+  });
+});
+
 describe.each(CASES)('$id no Lattes simulado', (c) => {
   it('campos: cada parte num envio, gravado e conferido', async () => {
     const lattes = await lattesFor();

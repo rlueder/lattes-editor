@@ -12,6 +12,8 @@
 // pelo nome (f_inst e NOME-INSTITUICAO, f_ano e ANO-DA-PREMIACAO); fica
 // marcada como inferida em cada uma.
 
+import { SCREEN_SWITCHES } from '../schema/screen-fields.ts';
+
 export interface FormGroup {
   attrs: string[];
   label: string;
@@ -37,7 +39,14 @@ export function isEnglishAttr(attr: string): boolean {
  */
 const EVENT: FormGroup[] = [
   {
-    attrs: ['FORMA-PARTICIPACAO', 'TIPO-PARTICIPACAO', 'NOME-DO-EVENTO', 'ANO', 'NATUREZA'],
+    attrs: [
+      'FORMA-PARTICIPACAO',
+      'TIPO-PARTICIPACAO',
+      'NOME-DO-EVENTO',
+      'ANO',
+      'tela:f_classif',
+      'NATUREZA',
+    ],
     label: 'Principal',
   },
   { attrs: ['CIDADE-DO-EVENTO', 'PAIS'], label: 'Local' },
@@ -141,7 +150,19 @@ const ADDRESS: FormGroup[] = [
     label: 'Localização',
   },
   {
-    attrs: ['DDD', 'TELEFONE', 'RAMAL', 'FAX', 'CAIXA-POSTAL', 'HOME-PAGE', 'E-MAIL'],
+    attrs: [
+      'DDD',
+      'TELEFONE',
+      'RAMAL',
+      'FAX',
+      'CAIXA-POSTAL',
+      'tela:f_ddd_cel',
+      'tela:f_fone_cel',
+      'HOME-PAGE',
+      'tela:f_priv_profissional',
+      'E-MAIL',
+      'tela:f_priv_email',
+    ],
     label: 'Contato',
   },
 ];
@@ -160,23 +181,54 @@ const ADDRESS_BLOCK: FormGroup[] = [
  */
 const IDENTIFICATION: FormGroup[] = [
   {
-    attrs: ['NOME-COMPLETO', 'NOME-EM-CITACOES-BIBLIOGRAFICAS', 'SEXO', 'RACA-OU-COR'],
+    attrs: [
+      'NOME-COMPLETO',
+      'NOME-EM-CITACOES-BIBLIOGRAFICAS',
+      'tela:f_nome_social_r',
+      'tela:f_nome_social',
+      'tela:f_priv_foto',
+      'SEXO',
+      'RACA-OU-COR',
+      'tela:f_priv_cor',
+    ],
     label: 'Identificação',
   },
   {
-    attrs: ['PAIS-DE-NASCIMENTO', 'UF-NASCIMENTO', 'CIDADE-NASCIMENTO', 'DATA-NASCIMENTO'],
+    attrs: [
+      'PAIS-DE-NASCIMENTO',
+      'UF-NASCIMENTO',
+      'CIDADE-NASCIMENTO',
+      'DATA-NASCIMENTO',
+      'tela:f_priv_nascimento',
+    ],
     label: 'Nascimento',
   },
   {
-    attrs: ['NUMERO-IDENTIDADE', 'ORGAO-EMISSOR', 'UF-ORGAO-EMISSOR', 'DATA-DE-EMISSAO'],
+    attrs: [
+      'NUMERO-IDENTIDADE',
+      'ORGAO-EMISSOR',
+      'UF-ORGAO-EMISSOR',
+      'DATA-DE-EMISSAO',
+      'tela:f_priv_identidade',
+    ],
     label: 'Documentos',
   },
   {
-    attrs: ['NACIONALIDADE', 'PAIS-DE-NACIONALIDADE', 'CPF', 'NUMERO-DO-PASSAPORTE'],
+    attrs: ['NACIONALIDADE', 'PAIS-DE-NACIONALIDADE', 'tela:f_priv_nacionalidade', 'CPF'],
     label: 'Nacionalidade',
   },
+  {
+    attrs: [
+      'NUMERO-DO-PASSAPORTE',
+      'tela:f_dta_emissao_doc',
+      'tela:f_dta_val_passaporte',
+      'tela:fpaispassaporte',
+      'tela:f_priv_passaporte',
+    ],
+    label: 'Passaporte',
+  },
   { attrs: ['NOME-DO-PAI', 'NOME-DA-MAE'], label: 'Filiação' },
-  { attrs: ['PCD'], label: 'Deficiência' },
+  { attrs: ['PCD', 'tela:f_priv_pcd'], label: 'Deficiência' },
 ];
 
 /**
@@ -212,6 +264,16 @@ const PROJECT: FormGroup[] = [
   { attrs: ['NOME-DO-PROJETO', 'DESCRICAO-DO-PROJETO'], label: 'Projeto' },
   { attrs: ['NATUREZA', 'SITUACAO', 'ANO-INICIO', 'ANO-FIM'], label: 'Situação e período' },
   { attrs: ['FLAG-POTENCIAL-INOVACAO'], label: 'Inovação' },
+  {
+    attrs: [
+      'tela:f_tpo_pesq_emp',
+      'tela:f_cnpj_empresa',
+      'tela:f_txt_nme_empresa',
+      'tela:f_txt_email_institucional',
+      'tela:f_txt_setor',
+    ],
+    label: 'Cooperação com empresa',
+  },
   {
     attrs: [
       'NUMERO-GRADUACAO',
@@ -313,6 +375,8 @@ const FORMATION_TYPES = ['TIPO-GRADUACAO', 'TIPO-MESTRADO', 'TIPO-DOUTORADO'];
  * abre].
  */
 export function formSwitches(element: string): [string, string[]][] {
+  const screen = SCREEN_SWITCHES[element];
+  if (screen) return screen;
   if (!FORMATION_LEVELS.test(element)) return [];
   const switched = FORMATION.find((g) => g.label === 'Sanduíche e cotutela')!.attrs;
   return FORMATION_TYPES.map((t) => [t, switched]);

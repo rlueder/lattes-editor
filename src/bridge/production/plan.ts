@@ -7,6 +7,12 @@ import type { Change } from '../../model/changes.ts';
 import { foldText } from '../../model/fold-text.ts';
 import { childElements, element, getAttr, type XElement } from '../../model/xml.ts';
 import { lattesSchema } from '../../schema/lattes.ts';
+import {
+  isScreenAttr,
+  screenField,
+  screenValueLabel,
+  unknownBefore,
+} from '../../schema/screen-fields.ts';
 import { areaLabel, type AreaRow } from '../areas-atuacao.ts';
 import type { BridgeOp, OpBase } from '../plan.ts';
 import { fieldsLeft } from './fields-left.ts';
@@ -419,7 +425,11 @@ export function planProduction(
       rows.push({ ...holder.value, label: f.label, name: holder.grid });
       continue;
     }
-    const m = partMap?.fields[f.attr] ?? target.fields[key];
+    // Os campos só de tela do item (a visibilidade): o mesmo nome em todo tipo.
+    const m =
+      partMap?.fields[f.attr] ??
+      target.fields[key] ??
+      screenField(change.element, f.attr)?.fields[change.element];
     const why = target.manual?.[key];
     if (!m && why) manual.set(why, [...(manual.get(why) ?? []), f.label]);
     if (!m) {
@@ -435,8 +445,11 @@ export function planProduction(
       continue;
     }
     set[field] = after;
-    expect[field] = was;
-    rows.push({ after: shown(f.after), before: shown(f.before), label: f.label, name: field });
+    if (!unknownBefore(f)) expect[field] = was;
+    const read = (v: string) =>
+      isScreenAttr(f.attr) ? screenValueLabel(change.element, f.attr, v) : shown(v);
+    const before = unknownBefore(f) ? '(não lido)' : read(f.before);
+    rows.push({ after: read(f.after), before, label: f.label, name: field });
   }
   const left = fieldsLeft(unknown, manual, unmapped);
   if (left) return left;

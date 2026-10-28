@@ -554,6 +554,33 @@ describe('projeto no Lattes simulado: potencial de inovação', () => {
   });
 });
 
+describe('projeto no Lattes simulado: campos só de tela', () => {
+  it('a cooperação com empresa e a visibilidade vão e o Lattes guarda ao lado do projeto', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp((root) => {
+      setProject('1', 'tela:f_tpo_pesq_emp', 'S')(root);
+      setProject('1', 'tela:f_txt_nme_empresa', 'Empresa de Exemplo')(root);
+      setProject('1', 'tela:f_tipo_privacidade', '2')(root);
+    });
+    expect(op.set).toMatchObject({
+      f_tipo_privacidade: '2',
+      f_tpo_pesq_emp: 'S',
+      f_txt_nme_empresa: 'Empresa de Exemplo',
+    });
+    expect(op.rows?.find((r) => r.name === 'f_tipo_privacidade')).toMatchObject({
+      after: 'Privado',
+      before: '(não lido)',
+    });
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    const p = projectOf(lattes.state.root, '1');
+    expect(lattes.state.formOnly(p)).toMatchObject({
+      f_tpo_pesq_emp: 'S',
+      f_txt_nme_empresa: 'Empresa de Exemplo',
+    });
+    expect(lattes.state.privacy.get(p)).toBe('2');
+  });
+});
+
 describe('projeto no Lattes simulado', () => {
   it('nome e situação: grava, confere e deixa a equipe como estava', async () => {
     const lattes = await lattesFor();

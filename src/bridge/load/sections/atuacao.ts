@@ -17,6 +17,7 @@
 import { emptyAttrs } from '../../../model/production.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../../model/xml.ts';
 import { lattesSchema } from '../../../schema/lattes.ts';
+import { screenTable } from '../../../schema/screen-fields.ts';
 import { VINCULO_TEXT } from '../../create.ts';
 import { ACTIVITY_TYPES, PERIOD } from '../../edit-atividade.ts';
 import { TEACHING_LEVELS } from '../../ensino-curso.ts';
@@ -372,6 +373,7 @@ async function projetos(ctx: LoadContext, byAtiv: Map<string, XElement>): Promis
     const projeto = blank('PROJETO-DE-PESQUISA');
     setAttr(projeto, 'SEQUENCIA-PROJETO', param(link, 'f_seq_proj'));
     applyReading(t, projeto, reading, { fresh: true });
+    readTable(projeto, screenTable(projeto.name), reading.values);
     fillEmptyChoices(t, projeto, reading.values);
     team(projeto, reading.grids?.f_autores_l);
     projectTables(projeto, html);

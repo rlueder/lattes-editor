@@ -19,10 +19,12 @@ import { VINCULO_FIELDS } from '../src/bridge/plan.ts';
 import { PRODUCTION_TARGETS } from '../src/bridge/production/targets/index.ts';
 import { mapOf, partOf } from '../src/bridge/refresh/from-form.ts';
 import { parseSocial } from '../src/model/contacts.ts';
+import { encodeCv } from '../src/model/document.ts';
 import { foldText } from '../src/model/fold-text.ts';
 import { decodeLatin1, encodeLatin1 } from '../src/model/latin1.ts';
 import { getAttr, parseXml, serializeXml, setAttr, walk, type XElement } from '../src/model/xml.ts';
 import { lattesSchema } from '../src/schema/lattes.ts';
+import { isScreenAttr } from '../src/schema/screen-fields.ts';
 import { type LattesSimuladoNoTeste, withLattesSimulado } from './helpers/lattes-simulado.ts';
 
 let open: LattesSimuladoNoTeste | undefined;
@@ -169,7 +171,8 @@ function generalDiffs(state: XElement, loaded: XElement): string[] {
   const diffs: string[] = [];
   const general = (root: XElement) => all(root, 'DADOS-GERAIS')[0];
   const attrs = [
-    ...Object.keys(IDENT_FIELDS),
+    // Os campos só de tela têm teste próprio: o simulado os guarda fora do XML.
+    ...Object.keys(IDENT_FIELDS).filter((a) => !isScreenAttr(a)),
     'NOME-EM-CITACOES-BIBLIOGRAFICAS',
     'NACIONALIDADE',
     'SIGLA-PAIS-NACIONALIDADE',
@@ -304,7 +307,7 @@ function eventDiffs(state: XElement, loaded: XElement): string[] {
       (c): c is XElement => c.kind === 'element',
     ) ?? [];
   const attrs = [
-    ...Object.keys(EVENT_BASICS_FIELDS),
+    ...Object.keys(EVENT_BASICS_FIELDS).filter((a) => !isScreenAttr(a)),
     ...Object.keys(EVENT_DETAIL_FIELDS),
     'NATUREZA',
     'FORMA-PARTICIPACAO',
@@ -453,7 +456,7 @@ describe('Carregar do Lattes pelas listas e pelos formulários', () => {
     open = await withLattesSimulado({ xml: encodeLatin1(full) });
     const result = await loadCvFromLattes(portOf(open));
     const idioma = lattesSchema.elements.IDIOMA!.attributes.map((a) => a.name);
-    const premio = Object.keys(listEditFields('premio'));
+    const premio = Object.keys(listEditFields('premio')).filter((a) => !isScreenAttr(a));
     expect([
       ...itemDiffs(open.state.root, result.doc!.root, 'IDIOMA', idioma),
       ...itemDiffs(open.state.root, result.doc!.root, 'PREMIO-TITULO', premio),
@@ -482,6 +485,79 @@ describe('Carregar do Lattes pelas listas e pelos formulários', () => {
     open = await withLattesSimulado({ xml: encodeLatin1(full) });
     const result = await loadCvFromLattes(portOf(open));
     expect(generalDiffs(open.state.root, result.doc!.root)).toEqual([]);
+  });
+
+  it('os campos só de tela vêm da página e não saem no XML', async () => {
+    const full = realistic(
+      withListValues(decodeLatin1(readFileSync('fixtures/synthetic_full.xml'))).xml,
+    );
+    open = await withLattesSimulado({ xml: encodeLatin1(full) });
+    const general = all(open.state.root, 'DADOS-GERAIS')[0]!;
+    Object.assign(open.state.formOnly(general), {
+      f_dta_val_passaporte: '01/02/2030',
+      f_nome_social: 'Ana Social',
+      f_nome_social_r: 'S',
+      f_priv_cor: '2',
+      fpaispassaporte: 'ARG',
+    });
+    const work = all(open.state.root, 'ENDERECO-PROFISSIONAL')[0]!;
+    Object.assign(open.state.formOnly(work), {
+      f_ddd_cel: '51',
+      f_fone_cel: '999990000',
+      f_priv_profissional: '2',
+    });
+    const result = await loadCvFromLattes(portOf(open));
+    const loaded = all(result.doc!.root, 'DADOS-GERAIS')[0]!;
+    expect(
+      Object.fromEntries(
+        loaded.attrs.filter((a) => isScreenAttr(a.name)).map((a) => [a.name, a.value]),
+      ),
+    ).toEqual({
+      'tela:f_dta_emissao_doc': '',
+      'tela:f_dta_val_passaporte': '01/02/2030',
+      'tela:f_nome_social': 'Ana Social',
+      'tela:f_nome_social_r': 'S',
+      'tela:f_priv_cor': '2',
+      'tela:f_priv_foto': '1',
+      'tela:f_priv_identidade': '1',
+      'tela:f_priv_nacionalidade': '1',
+      'tela:f_priv_nascimento': '1',
+      'tela:f_priv_passaporte': '1',
+      'tela:f_priv_pcd': '1',
+      'tela:fpaispassaporte': 'ARG',
+    });
+    const loadedWork = all(result.doc!.root, 'ENDERECO-PROFISSIONAL')[0]!;
+    expect(getAttr(loadedWork, 'tela:f_fone_cel')).toBe('999990000');
+    expect(getAttr(loadedWork, 'tela:f_ddd_cel')).toBe('51');
+    expect(getAttr(loadedWork, 'tela:f_priv_profissional')).toBe('2');
+    expect(getAttr(loadedWork, 'tela:f_priv_email')).toBe('1');
+    // A visibilidade de cada item, pela lista f_tipo_privacidade do formulário dele.
+    for (const name of ['ARTIGO-PUBLICADO', 'PREMIO-TITULO', 'IDIOMA', 'DOUTORADO']) {
+      const want = all(open.state.root, name)[0]!;
+      open.state.privacy.set(want, '2');
+    }
+    const again = await loadCvFromLattes(portOf(open));
+    for (const name of ['ARTIGO-PUBLICADO', 'PREMIO-TITULO', 'IDIOMA', 'DOUTORADO']) {
+      const items = all(again.doc!.root, name);
+      expect(
+        items.map((i) => getAttr(i, 'tela:f_tipo_privacidade')),
+        name,
+      ).toContain('2');
+      expect(
+        items.every((i) => getAttr(i, 'tela:f_tipo_privacidade') !== undefined),
+        name,
+      ).toBe(true);
+    }
+    // A classificação do evento, que o simulado guarda ao lado do item.
+    const congress = all(open.state.root, 'PARTICIPACAO-EM-CONGRESSO')[0]!;
+    open.state.formOnly(congress).f_classif = 'N';
+    const third = await loadCvFromLattes(portOf(open));
+    const basics = all(third.doc!.root, 'DADOS-BASICOS-DA-PARTICIPACAO-EM-CONGRESSO');
+    expect(basics.map((b) => getAttr(b, 'tela:f_classif'))).toContain('N');
+    // Nenhum arquivo que sai do editor os leva.
+    const bytes = encodeCv(result.doc!, 'ISO-8859-1');
+    expect(decodeLatin1(bytes)).not.toContain('tela:');
+    expect(getAttr(loaded, 'tela:f_nome_social')).toBe('Ana Social');
   });
 
   it('as produções do currículo de demonstração vêm campo a campo', async () => {

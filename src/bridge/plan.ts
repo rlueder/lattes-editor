@@ -5,6 +5,7 @@
 
 import { type Change, resolvePath } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
+import { unknownBefore } from '../schema/screen-fields.ts';
 import { type AreasOp, planAreas } from './areas-atuacao.ts';
 import { planActivityRows } from './atividade-grade.ts';
 import { atuacaoByHand, vinculoByHand } from './atuacao-by-hand.ts';
@@ -193,6 +194,12 @@ function idiomaFields(change: Change): {
   const expect: FieldValues = {};
   const missing: string[] = [];
   for (const f of change.fields) {
+    // A visibilidade do idioma, que a exportação não traz (schema/screen-fields.ts).
+    if (f.attr === 'tela:f_tipo_privacidade') {
+      set.f_tipo_privacidade = f.after;
+      if (!unknownBefore(f)) expect.f_tipo_privacidade = f.before;
+      continue;
+    }
     const skill = IDIOMA_SKILLS[f.attr];
     if (!skill) {
       missing.push(f.label);

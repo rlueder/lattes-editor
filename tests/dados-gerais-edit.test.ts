@@ -191,6 +191,56 @@ describe('identificação: plano', () => {
   });
 });
 
+describe('campos só de tela: plano', () => {
+  it('nome social e visibilidade vão nos campos da identificação', () => {
+    const op = onlyOp(
+      edit('DADOS-GERAIS', {
+        'tela:f_nome_social': 'Ana Social',
+        'tela:f_nome_social_r': 'S',
+        'tela:f_priv_cor': '2',
+      }),
+    );
+    expect(op).toMatchObject({
+      kind: 'identificacao',
+      set: { f_nome_social: 'Ana Social', f_nome_social_r: 'S', f_priv_cor: '2' },
+    });
+    // A cópia não tinha os campos (veio de uma exportação): o antes não se confere.
+    expect(op.expect).not.toHaveProperty('f_nome_social');
+    expect(op.expect).not.toHaveProperty('f_priv_cor');
+  });
+
+  it('com o valor que a cópia já tinha, o antes se confere', () => {
+    const original = parseXml(XML).root;
+    setAttr(byName(original, 'DADOS-GERAIS'), 'tela:f_priv_cor', '1');
+    const working = parseXml(XML).root;
+    setAttr(byName(working, 'DADOS-GERAIS'), 'tela:f_priv_cor', '2');
+    const plan = planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: '' })),
+      working,
+      { biographicFull: true, biographicOps: true },
+    );
+    expect(plan.ops[0]).toMatchObject({ expect: { f_priv_cor: '1' }, set: { f_priv_cor: '2' } });
+  });
+
+  it('celular e visibilidade do endereço, com o sufixo de cada bloco', () => {
+    expect(
+      onlyOp(
+        edit('ENDERECO-PROFISSIONAL', {
+          'tela:f_ddd_cel': '51',
+          'tela:f_fone_cel': '999990000',
+          'tela:f_priv_profissional': '2',
+        }),
+      ),
+    ).toMatchObject({
+      kind: 'endereco',
+      set: { f_ddd_cel_i: '51', f_fone_cel_i: '999990000', f_priv_profissional: '2' },
+    });
+    expect(onlyOp(edit('ENDERECO-RESIDENCIAL', { 'tela:f_fone_cel': '988880000' }))).toMatchObject({
+      set: { f_fone_cel_r: '988880000' },
+    });
+  });
+});
+
 describe('endereço e outras informações: plano', () => {
   it('país dos dois endereços e a preferência de correspondência', () => {
     expect(onlyOp(edit('ENDERECO-PROFISSIONAL', { PAIS: 'Argentina' }))).toMatchObject({
@@ -258,6 +308,43 @@ describe('identificação, endereço e outras informações no Lattes simulado',
     expect(getAttr(el, 'CPF')).toBe('00000000000');
     expect(getAttr(el, 'NOME-DA-MAE')).toBe('Mãe de Teste');
     expect(getAttr(el, 'NACIONALIDADE')).toBe('B');
+  });
+
+  it('identificação: nome social e visibilidade, que a exportação não traz', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp(
+      edit('DADOS-GERAIS', {
+        'tela:f_nome_social': 'Ana Social',
+        'tela:f_nome_social_r': 'S',
+        'tela:f_priv_nascimento': '2',
+      }),
+    );
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    const stored = lattes.state.formOnly(inState(lattes, 'DADOS-GERAIS'));
+    expect(stored).toMatchObject({
+      f_nome_social: 'Ana Social',
+      f_nome_social_r: 'S',
+      f_priv_nascimento: '2',
+    });
+    // O XML do Lattes não ganhou nada.
+    expect(inState(lattes, 'DADOS-GERAIS').attrs.some((a) => a.name.startsWith('tela:'))).toBe(
+      false,
+    );
+  });
+
+  it('endereço: o celular do profissional', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp(
+      edit('ENDERECO-PROFISSIONAL', { 'tela:f_ddd_cel': '51', 'tela:f_fone_cel': '999990000' }),
+    );
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(lattes.state.formOnly(inState(lattes, 'ENDERECO-PROFISSIONAL'))).toMatchObject({
+      f_ddd_cel: '51',
+      f_fone_cel: '999990000',
+    });
+    expect(lattes.state.formOnly(inState(lattes, 'ENDERECO-RESIDENCIAL')).f_fone_cel ?? '').toBe(
+      '',
+    );
   });
 
   it('identificação: país de nacionalidade troca também a nacionalidade', async () => {

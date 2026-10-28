@@ -6,6 +6,7 @@
 import { emptyAttrs } from '../../../model/production.ts';
 import { element, setAttr, type XElement } from '../../../model/xml.ts';
 import { lattesSchema } from '../../../schema/lattes.ts';
+import { screenTable } from '../../../schema/screen-fields.ts';
 import { listEditFields } from '../../edit-lists.ts';
 import { IDIOMA_SKILLS, LEVEL } from '../../idioma-skills.ts';
 import type { FormReading } from '../../refresh/read.ts';
@@ -45,6 +46,8 @@ export async function loadList(ctx: LoadContext, spec: ListSpec): Promise<void> 
     }
     const el = element(spec.element, emptyAttrs(lattesSchema, spec.element));
     spec.fill(el, { ...reading, values: reading.values }, html, ctx);
+    // A visibilidade e os outros campos só de tela (schema/screen-fields.ts).
+    readTable(el, screenTable(el.name), reading.values);
     place(ensurePath(ctx.root, path), el);
   }
 }

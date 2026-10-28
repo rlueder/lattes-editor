@@ -76,6 +76,16 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
     name,
     read: () => '',
   });
+  // Sem atributo no XSD: guardado ao lado do projeto, como o Lattes guarda fora da exportação.
+  const stored = (name: string, kind: Binding['kind'], max?: number): Binding => ({
+    kind,
+    maxLength: max,
+    name,
+    read: (el) => state.formOnly(el)[name] ?? '',
+    write: (el, value) => {
+      state.formOnly(el)[name] = value;
+    },
+  });
   const fromIds = (name: string): Binding => ({
     kind: 'hidden',
     name,
@@ -119,11 +129,11 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
       read: (el) => potencial.get(el) ?? '',
       write: (el, value) => potencial.set(el, value),
     },
-    { ...none('f_tpo_pesq_emp', 'radio'), options: yesNo },
-    none('f_cnpj_empresa', 'text', 18),
-    none('f_txt_nme_empresa', 'text'),
-    none('f_txt_email_institucional', 'text'),
-    none('f_txt_setor', 'text', 400),
+    { ...stored('f_tpo_pesq_emp', 'radio'), options: yesNo },
+    stored('f_cnpj_empresa', 'text', 18),
+    stored('f_txt_nme_empresa', 'text', 400),
+    stored('f_txt_email_institucional', 'text', 400),
+    stored('f_txt_setor', 'text', 400),
     none('f_cod_inst_empresa'),
     { disabled: true, kind: 'text', maxLength: 75, name: 'f_inst', read: () => ids.inst ?? '' },
     // Na alteração, os ocultos da instituição e do vínculo vêm como a escolha

@@ -49,6 +49,7 @@ import type { Change } from '../model/changes.ts';
 import { foldText } from '../model/fold-text.ts';
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
 import listas from '../schema/listas-lattes.json' with { type: 'json' };
+import { unknownBefore } from '../schema/screen-fields.ts';
 import type { FieldSpec, FormSpec } from './contract.ts';
 import { findLinks } from './lattes-html.ts';
 import type { BridgeOp, FieldValues, OpBase } from './plan.ts';
@@ -181,6 +182,9 @@ export const EVENT_BASICS_FIELDS: Record<string, [string, Mapper]> = {
   'FLAG-DIVULGACAO-CIENTIFICA': ['F_STA_DIVULGACAO_CIENTIFICA', yesNo],
   'HOME-PAGE-DO-TRABALHO': ['f_homepage', same],
   PAIS: ['f_pais', country],
+  // Só de tela, guardados na cópia do editor (schema/screen-fields.ts).
+  'tela:f_classif': ['f_classif', same],
+  'tela:f_tipo_privacidade': ['f_tipo_privacidade', same],
   TITULO: ['f_titulo', same],
   'TITULO-INGLES': ['f_titulo_en', same],
 };
@@ -317,7 +321,7 @@ export function planEvento(
       return { reason: `O Lattes não aceita ${f.label.toLowerCase()} vazio` };
     }
     set[field] = after;
-    expect[field] = before;
+    if (!unknownBefore(f)) expect[field] = before;
   }
   if (absent.length > 0) {
     return { reason: `O formulário de eventos do Lattes não tem: ${absent.join(', ')}` };

@@ -198,6 +198,7 @@ describe('ordem do formulário do Lattes', () => {
       'Nascimento',
       'Documentos',
       'Nacionalidade',
+      'Passaporte',
       'Filiação',
       'Deficiência',
       OTHER_DATA,
@@ -215,8 +216,8 @@ describe('ordem do formulário do Lattes', () => {
       'PAIS-DE-NACIONALIDADE',
       'SIGLA-PAIS-NACIONALIDADE',
       'CPF',
-      'NUMERO-DO-PASSAPORTE',
     ]);
+    expect(groups[4]![1]).toEqual(['NUMERO-DO-PASSAPORTE']);
     expect(groups.at(-1)![1]).toContain('PERMISSAO-DE-DIVULGACAO');
   });
 

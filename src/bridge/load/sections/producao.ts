@@ -12,6 +12,7 @@
 import { emptyAttrs, newItem, pruneEmptyExtras } from '../../../model/production.ts';
 import { element, getAttr, setAttr, type XElement } from '../../../model/xml.ts';
 import { lattesSchema } from '../../../schema/lattes.ts';
+import { screenTable } from '../../../schema/screen-fields.ts';
 import { parseAreaTree } from '../../lattes-lists.ts';
 import type { ProductionTarget } from '../../production/types.ts';
 import { applyReading } from '../../refresh/apply-reading.ts';
@@ -22,6 +23,7 @@ import { setItemAreas } from '../areas.ts';
 import { fillEmptyChoices } from '../fill.ts';
 import type { LoadContext, LoadSection } from '../loader.ts';
 import { readHolders, readPatentDates } from '../registry.ts';
+import { readTable } from '../reverse.ts';
 import { ensurePath, formIn, listsOf, place, rowLinks } from './common.ts';
 import { schemaPath } from './schema-path.ts';
 
@@ -89,6 +91,7 @@ async function load(ctx: LoadContext): Promise<void> {
       }
       const item = blank(t, link.params.f_seq ?? '');
       applyReading(t, item, reading, { fresh: true });
+      readTable(item, screenTable(item.name), reading.values);
       fillEmptyChoices(t, item, reading.values);
       yearFromDate(t, item, reading.values);
       // As áreas pela árvore do menu (a leitura da alteração não as refaz).

@@ -8,6 +8,7 @@
 
 import { setAttr, type XElement } from '../../model/xml.ts';
 import { lattesSchema } from '../../schema/lattes.ts';
+import { isScreenAttr } from '../../schema/screen-fields.ts';
 import { countryName } from '../edit-items.ts';
 
 export type ToForm = (xml: string) => string | null | undefined;
@@ -49,9 +50,10 @@ export function readTable(
 ): string[] {
   const unread: string[] = [];
   // Só os atributos do elemento: a tabela pode servir a vários (a formação).
+  // Os campos só de tela (tela:*) não estão no XSD; quem chama passa os do elemento.
   const own = new Set(lattesSchema.elements[el.name]?.attributes.map((a) => a.name));
   for (const [attr, [field, toForm]] of Object.entries(table)) {
-    if (!own.has(attr)) continue;
+    if (!own.has(attr) && !isScreenAttr(attr)) continue;
     const shown = values[`${field}${options.suffix ?? ''}`];
     if (shown === undefined) continue;
     const xml = fromShown(el.name, attr, toForm, shown, options.labels?.[attr]);

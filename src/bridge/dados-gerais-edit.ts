@@ -33,6 +33,7 @@ import type { Change } from '../model/changes.ts';
 import { foldText } from '../model/fold-text.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import listas from '../schema/listas-lattes.json' with { type: 'json' };
+import { isScreenAttr, screenTable, unknownBefore } from '../schema/screen-fields.ts';
 import { countryCode } from './edit-items.ts';
 import {
   ENDERECO_LOOKUP_ATTRS,
@@ -103,8 +104,9 @@ const RACE: Record<string, string> = {
 const race: Mapper = (v) =>
   v === '' ? '' : RACE[foldText(v.replace(/_/g, ' ').trim()).toLowerCase()];
 
-/** Atributo de DADOS-GERAIS → campo de GN_IDENT. */
+/** Atributo de DADOS-GERAIS → campo de GN_IDENT, com os campos só de tela (tela:*). */
 export const IDENT_FIELDS: Record<string, [string, Mapper]> = {
+  ...screenTable('DADOS-GERAIS'),
   'CIDADE-NASCIMENTO': ['f_cidade_nasc', same],
   'DATA-DE-EMISSAO': ['f_dta_rg', date],
   'DATA-NASCIMENTO': ['f_dta_nasc', date],
@@ -138,7 +140,7 @@ const IDENT_HIDDEN = new Set(['CPF', 'NOME-DA-MAE', 'NOME-DO-PAI']);
 const NATIONALITY = ['NACIONALIDADE', 'PAIS-DE-NACIONALIDADE', 'SIGLA-PAIS-NACIONALIDADE'];
 
 /** Os campos com o "antes" vazio como nenhum rádio marcado. */
-const RADIOS = new Set(['f_end_corr', 'f_sexo']);
+const RADIOS = new Set(['f_end_corr', 'f_nome_social_r', 'f_sexo']);
 
 /** Campos simples de uma tabela: set e expect, ou as listas do que não deu. */
 function mapTable(
@@ -171,7 +173,7 @@ function mapTable(
       continue;
     }
     set[field] = after;
-    expect[field] = before;
+    if (!unknownBefore(f)) expect[field] = before;
   }
   return { expect, invalid, missing, set };
 }
@@ -401,8 +403,14 @@ export function planEnderecoEdit(change: Change, el: XElement, label: string): P
     change,
     table,
     ENDERECO_SUFFIX[element] ?? '',
-    (a) => lookups !== undefined && ENDERECO_LOOKUP_ATTRS.has(a),
+    (a) => isScreenAttr(a) || (lookups !== undefined && ENDERECO_LOOKUP_ATTRS.has(a)),
   );
+  // Os campos só de tela já trazem o nome inteiro do campo (com _i ou _r).
+  const screen = mapTable(change, screenTable(element), '', (a) => !isScreenAttr(a));
+  Object.assign(set, screen.set);
+  Object.assign(expect, screen.expect);
+  missing.push(...screen.missing);
+  invalid.push(...screen.invalid);
   if (missing.length) return { reason: `Campos não suportados ainda: ${missing.join(', ')}` };
   if (invalid.length) {
     return {

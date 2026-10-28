@@ -89,6 +89,8 @@ function form(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
   for (const name of t.natureSwap?.clears ?? []) {
     if (!controls.some((c) => c.includes(`name="${name}"`))) controls.push(h.hidden(name, ''));
   }
+  // A visibilidade do item (f_tipo_privacidade), que o XML não traz.
+  controls.push(h.select('f_tipo_privacidade', h.PRIVACY, state.privacy.get(item) ?? '1'));
   // Dois atributos no mesmo campo: o controle sai uma vez só.
   const unique = [...new Set(controls)].join('\n');
   const body = `<form name="${t.form.name}" method="post" action="${t.form.action}">
@@ -157,6 +159,8 @@ function post(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
     return html(back);
   }
   writeFields(t, item, (field) => req.get(field));
+  const privacy = req.get('f_tipo_privacidade');
+  if (privacy) state.privacy.set(item, privacy);
   writeLookups(state, item, t, req);
   applyGrids(item, req, t.authors);
   state.touch();

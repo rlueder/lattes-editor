@@ -5,6 +5,7 @@
 // "Título do trabalho". O XML não tem acentos, então um dicionário de palavras
 // devolve a grafia correta; palavra fora do dicionário sai sem acento.
 
+import { screenLabel, screenReviewLabel } from '../schema/screen-fields.ts';
 import labels from './pt-BR.json' with { type: 'json' };
 
 const ELEMENTS: Record<string, string> = labels.elements;
@@ -230,6 +231,9 @@ export function elementLabel(name: string): string {
 }
 
 export function attributeLabel(name: string): string {
+  // Campo só de tela: o nome com o assunto, fora do formulário (schema/screen-fields.ts).
+  const screen = screenReviewLabel(name);
+  if (screen) return screen;
   // "Flag bolsa" diz menos que "Bolsa"; o campo já aparece como sim/não.
   return ATTRIBUTES[name] ?? humanize(name.replace(/^FLAG-/, ''));
 }
@@ -282,5 +286,6 @@ const IN_ELEMENT: Record<string, string> = {
 };
 
 export function attributeLabelIn(element: string, name: string): string {
-  return IN_ELEMENT[`${element} ${name}`] ?? attributeLabel(name);
+  // No formulário, o campo só de tela tem o rótulo da página do Lattes.
+  return IN_ELEMENT[`${element} ${name}`] ?? screenLabel(name) ?? attributeLabel(name);
 }

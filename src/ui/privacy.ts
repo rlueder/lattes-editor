@@ -27,6 +27,10 @@ const SENSITIVE_PERSONAL = new Set([
   'NACIONALIDADE',
   'PAIS-DE-NACIONALIDADE',
   'SIGLA-PAIS-NACIONALIDADE',
+  // O passaporte, nos campos só de tela (schema/screen-fields.ts).
+  'tela:f_dta_emissao_doc',
+  'tela:f_dta_val_passaporte',
+  'tela:fpaispassaporte',
 ]);
 
 /** O endereço residencial inteiro é sensível; o profissional aparece no currículo público. */

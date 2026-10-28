@@ -1,6 +1,7 @@
 // Nomes dos campos dos formulários do Lattes, como a pessoa os conhece.
 // Compartilhado pelo painel da extensão e pela confirmação do envio no editor.
 
+import { SCREEN_FORM_LABELS, SCREEN_FORM_VALUES } from '../schema/screen-fields.ts';
 import {
   BIOGRAPHIC_FIELD_LABELS,
   BIOGRAPHIC_KIND_FIELD_LABELS,
@@ -11,6 +12,7 @@ import { EDIT_FIELD_LABELS, EDIT_VALUE_LABELS } from './edit-items.ts';
 import { LIST_EDIT_FIELD_LABELS, LIST_EDIT_VALUE_LABELS } from './edit-lists.ts';
 
 export const FIELD_LABELS: Record<string, string> = {
+  ...SCREEN_FORM_LABELS,
   ...BIOGRAPHIC_FIELD_LABELS,
   ...CREATE_FIELD_LABELS,
   ...EDIT_FIELD_LABELS,
@@ -51,6 +53,7 @@ export function fieldLabel(name: string, kind?: string): string {
 
 /** Valores codificados nos formulários, por campo. */
 const VALUE_LABELS: Record<string, Record<string, string>> = {
+  ...SCREEN_FORM_VALUES,
   ...BIOGRAPHIC_VALUE_LABELS,
   ...CREATE_VALUE_LABELS,
   ...EDIT_VALUE_LABELS,
@@ -122,7 +125,11 @@ export function opRows(op: {
       .filter(([name, value]) => !(CARRIED.has(name) && op.expect[name] === value))
       .map(([name, value]) => ({
         after: valueLabel(name, value, op.kind),
-        before: valueLabel(name, op.expect[name], op.kind),
+        // Campo só de tela que a cópia não tinha: o antes não foi lido (screen-fields.ts).
+        before:
+          name in SCREEN_FORM_LABELS && !(name in op.expect)
+            ? '(não lido)'
+            : valueLabel(name, op.expect[name], op.kind),
         label: fieldLabel(name, op.kind),
         name,
       })),

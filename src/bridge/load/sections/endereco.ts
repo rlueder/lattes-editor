@@ -11,6 +11,7 @@
 // de rede da linha.
 
 import { childElements, getAttr, setAttr, type XElement } from '../../../model/xml.ts';
+import { screenTable } from '../../../schema/screen-fields.ts';
 import {
   ENDERECO_FIELDS,
   ENDERECO_STREET,
@@ -46,7 +47,10 @@ function address(holder: XElement, name: string, values: Record<string, string>,
   const filled = Object.values(table).some(([field]) => values[`${field}${suffix}`]?.trim());
   if (!filled) return undefined;
   const el = ensurePath(holder, [name]);
-  const unread = readTable(el, table, values, { suffix });
+  const unread = [
+    ...readTable(el, table, values, { suffix }),
+    ...readTable(el, screenTable(name), values),
+  ];
   // A página mostra o CEP com o traço (99999-999); a exportação o guarda só com
   // os dígitos (observado em 28/10/2026).
   const cep = getAttr(el, 'CEP') ?? '';

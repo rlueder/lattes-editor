@@ -3047,6 +3047,10 @@ aspas como `&quot;` dentro do texto, e números internos nas redes sociais.
 - O item novo de produção vai pelo Importar. O editor ainda não confere o
   item pelo formulário depois do Confirmar: o tipo que o Importar deixou de
   fora e o valor trocado pelo padrão só aparecem no carregamento seguinte.
+- Os campos que só as telas têm (nome social, visibilidade, celular,
+  validade do passaporte) ficam na cópia do editor e vão e voltam pelos
+  formulários; nenhum arquivo que o editor gera os leva, porque a exportação
+  e o Importar não os conhecem.
 - Depois de um envio ao CNPq feito pelo editor, sem pendência de fora dele,
   a cópia de trabalho está em dia com o que ele gravou, mesmo com o Exportar
   ainda antigo.
