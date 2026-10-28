@@ -517,6 +517,11 @@ describe('Importar pelo conector contra o Lattes simulado', () => {
     const unsure = await importItems(logon.port, CODE, REQ, true);
     expect(unsure.reason).toBe('arquivo');
     expect(unsure.detail).toMatch(/Não deu para conferir/);
+    // Uma tela que não é a do passo 1 também não diz que nada ficou.
+    const changed = await fakeLattes({ s1After: '<p>Outra tela</p>', s2 });
+    expect((await importItems(changed.port, CODE, REQ, true)).detail).toMatch(
+      /Não deu para conferir/,
+    );
   });
 
   it('passo 2 de outro currículo: para e diz qual solicitação ficou pendente', async () => {

@@ -29,7 +29,6 @@ const elementsOf = (root: XElement) => {
   return elements;
 };
 
-/** Os valores de formato fixo que o texto genérico do gerador não respeita. */
 /** Os valores de formato fixo, por elemento e atributo, que o texto genérico do gerador não respeita. */
 const HOURS = { test: /^\d{0,4}$/, value: '40' };
 const FORMATTED: Record<string, { test: RegExp; value: string }> = {

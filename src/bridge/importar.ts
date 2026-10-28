@@ -404,7 +404,8 @@ async function uploadAndSelect(
         reason: 'pendente',
       };
     }
-    if (state === 'sessao' || state === 'erro') {
+    // Só a tela do passo 1 limpa diz que nada ficou; qualquer outra, não deu para conferir.
+    if (state !== 'ok') {
       return {
         detail: `${rejected} Não deu para conferir se o Lattes criou uma solicitação: veja no Importar se ficou alguma pendente.`,
         reason: 'arquivo',
