@@ -134,6 +134,8 @@ function formBlock(html: string, name: string): { body: string; tag: string } | 
 }
 
 interface Control {
+  /** O controle desabilitado, que o navegador não envia. */
+  disabled?: boolean;
   name: string;
   /** Opções de um select. */
   options?: string[];
@@ -158,7 +160,8 @@ function controlsIn(body: string): Control[] {
     }
     const kind = m[1].toLowerCase();
     const type = kind === 'input' ? (attrOf(tag, 'type') ?? 'text').toLowerCase() : kind;
-    out.push({ name, type, value: attrOf(tag, 'value') ?? '' });
+    const disabled = /\sdisabled\b/i.test(tag);
+    out.push({ ...(disabled ? { disabled } : {}), name, type, value: attrOf(tag, 'value') ?? '' });
   }
   return out;
 }
@@ -227,7 +230,9 @@ export function readStep2(html: string): Step2Form | { problem: string } {
   if (!/pkg_importa_xml\.mostra_modulos/i.test(attrOf(form.tag, 'action') ?? '')) {
     return { problem: 'O formulário do passo 2 aponta para outro lugar.' };
   }
-  const controls = controlsIn(form.body);
+  // Desabilitados não vão no envio: em 28/10/2026 o passo 2 trouxe caixas f_chk
+  // desabilitadas ("Atuação profissional", "Áreas de atuação"), só para mostrar.
+  const controls = controlsIn(form.body).filter((c) => !c.disabled);
   const extra = [...new Set(controls.map((c) => c.name))].filter((n) => !STEP2_FIELDS.has(n));
   if (extra.length) {
     return { problem: `O passo 2 tem campos que o conector não conhece: ${extra.join(', ')}.` };

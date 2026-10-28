@@ -68,6 +68,19 @@ function modulesOf(root: XElement, items: XElement[]): ImportModule[] {
 }
 
 /** Data e hora de agora na raiz, e a origem, se faltar. */
+/**
+ * Tira o texto só de espaços entre elementos (a indentação de um arquivo
+ * formatado): o Importar do Lattes recusa um arquivo com ele, com o mesmo
+ * alerta do DTD (observado em 28/10/2026; seção 13 de lattes_internals.md).
+ * A exportação do Lattes não tem esse texto. Muda só o arquivo do Importar.
+ */
+export function compact(el: XElement): void {
+  if (el.children.some((c) => c.kind === 'element')) {
+    el.children = el.children.filter((c) => c.kind !== 'text' || c.value.trim() !== '');
+  }
+  for (const c of el.children) if (c.kind === 'element') compact(c);
+}
+
 function stampRoot(root: XElement, now: Date): void {
   if (getAttr(root, 'SISTEMA-ORIGEM-XML') === undefined) {
     setAttr(root, 'SISTEMA-ORIGEM-XML', 'LATTES_OFFLINE');
@@ -87,6 +100,7 @@ export function buildImportFile(
   stampRoot(copy.root, now);
   const pending = pendingItems(copy, loadedMax);
   const id = getAttr(copy.root, 'NUMERO-IDENTIFICADOR');
+  compact(copy.root);
   return {
     bytes: encodeCv(copy, encoding),
     fileName: `${id ?? 'curriculo'}-importacao.xml`,
@@ -177,6 +191,7 @@ export function buildMinimalImportFile(
   const items = pendingItems(minimal, loadedMax);
   const years = items.map(itemYear).filter((y): y is number => y !== undefined);
   const id = getAttr(root, 'NUMERO-IDENTIFICADOR');
+  compact(root);
   return {
     bytes: encodeCv(minimal, encoding),
     fileName: `${id ?? 'curriculo'}-itens-novos.xml`,

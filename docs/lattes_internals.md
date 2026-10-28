@@ -2927,3 +2927,126 @@ excluído pelo conector, e a releitura conferiu os dois passos. **Observado**:
   e diz quando há solicitação pendente.
 - **Exportar.** O POST precisa de `f_ctr=G` (sem ele, volta a tela). O ZIP
   guarda os tamanhos no diretório central, não no cabeçalho local.
+
+## 28. Como os dados circulam no Lattes
+
+Um resumo de como o currículo é guardado, alterado, excluído, importado e
+exportado, e de onde cada caminho difere dos outros. Os detalhes de cada
+caminho estão nas seções 10 (Exportar), 13 (Importar), 15 (exclusão) e 16 e
+17 (formulários). **Observado** em leituras e em itens de teste incluídos,
+alterados e excluídos no currículo do dono, até 28/10/2026, salvo onde o texto
+diz **inferido**.
+
+### Duas versões do currículo
+
+|              | Versão de trabalho                                                                              | Versão publicada                            |
+| ------------ | ----------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| O que muda   | todo envio de formulário, todo Confirmar do Importar, toda exclusão                             | só o "Enviar ao CNPq", com a declaração     |
+| Onde aparece | as listas do menu, o formulário de alteração de cada item, a tela de conferência (`cv_espelho`) | o currículo público e o arquivo do Exportar |
+| Estado       | o que mudou fica pendente até o envio                                                           |                                             |
+
+- O Exportar só entrega a versão publicada, e não entrega nada enquanto há
+  alteração pendente (seção 27). Depois de um envio, ele continua entregando
+  o arquivo anterior por mais de uma hora (seção 10).
+- A exportação pode ter item que nenhuma lista mostra: um item excluído na
+  versão de trabalho continua nela até o envio e a atualização do Exportar.
+- As listas e os formulários mostram a versão de trabalho, com as pendências.
+  É a mesma que a pessoa vê no site.
+
+### Quatro caminhos
+
+**Formulário** (o site e o conector). Um item por formulário, um envio por
+vez. O formulário mostra parte dos atributos do XML, e cada escolha vai como
+um código do formulário, não como o valor do XML (o meio de divulgação é
+`I`, `M`, `D`… no formulário e `IMPRESSO`, `MEIO_MAGNETICO`, `MEIO_DIGITAL`…
+no XML). Três descompassos:
+
+- **Atributo do XML sem campo em formulário nenhum:** os códigos CAPES e de
+  área do curso, o nome do curso em inglês, o fascículo do artigo, a
+  permissão de divulgação, os participantes de um evento, as informações
+  adicionais de instituições e de cursos, o código da instituição de uma
+  atividade (a página traz só um oculto, sem o nome). Só a exportação e o
+  Importar os carregam; ninguém os vê nem os altera no site.
+- **Valor do XML sem opção no formulário:** `WEB` no meio de divulgação,
+  `FEIRA` e `OLIMPIADA` no tipo da organização de evento, e `NAO_INFORMADO`
+  em geral. O formulário mostra a escolha vazia.
+- **Campo do formulário sem atributo no XML:** a visibilidade de cada dado,
+  o nome social, a classificação do evento, a temática, a cooperação e as
+  ações inovadoras do projeto de ensino. O site os mostra; o XML não os
+  carrega.
+
+Dois campos que o formulário tem não gravam pelo envio montado do
+formulário: "Divulgação científica" no trabalho em eventos e "Acervo" na
+manutenção de obra artística. O Lattes responde como se gravasse e a
+releitura mostra o valor de antes. **Inferido** que a página os ligue por
+script; o script não foi lido.
+
+**Importar** (arquivo XML, seção 13). O único caminho em lote, e só para
+produções: os 17 módulos do passo 2 (artigos, livros, anais, textos,
+apresentações, outras bibliográficas, softwares, produtos, processos,
+trabalhos técnicos, outras técnicas, artísticas, orientações, demais
+trabalhos, eventos e bancas). Formação, atuação, projetos, patentes,
+registros e dados gerais não entram por ele.
+
+- **A conferência do arquivo.** Toda recusa vem com o mesmo alerta ("Não foi
+  possível processar o arquivo enviado. Certifique-se que o mesmo esteja de
+  acordo com o DTD"), qualquer que seja a causa. Causas vistas: texto só de
+  espaços entre elementos (um arquivo formatado com recuo; a exportação não
+  tem), um valor maior que o campo do formulário (o volume do artigo), e um
+  `DADOS-GERAIS` sem todos os atributos da exportação (seção 13). Um arquivo
+  com essas três coisas em ordem pode responder com o alerta e mesmo assim
+  criar a solicitação (seção 27).
+- **O passo 2** traz, além das 17 caixas de módulo, caixas `f_chk`
+  desabilitadas ("Atuação profissional", "Áreas de atuação"), só para
+  mostrar: o navegador não as envia.
+- **O passo 3** lista cada item, verde (novo) ou vermelho (já existe, pelo
+  título). O Confirmar com algumas dezenas de linhas grava e encerra a
+  solicitação; com algumas centenas, respondeu sem a mensagem de sucesso,
+  não gravou nada e deixou a solicitação aberta. Cada solicitação aceita um
+  Confirmar: o resto precisa de outro envio do arquivo.
+- **Tipos que o Importar deixa de fora sem aviso**, ausentes do passo 3:
+  artes cênicas, artes visuais, música, mídia social, website ou blog,
+  participação em feira, em exposição e em olimpíada (os tipos mais novos do
+  XSD), e o artigo cuja natureza não é "completo" no módulo de artigos
+  completos. Esses só entram pelo formulário de cada um.
+- **Valores que o Importar não leva ao formulário:** o item entra, e a
+  página de alteração mostra o padrão no lugar do valor do arquivo.
+
+  | Campo                                                       | No arquivo                      | No formulário depois do Importar |
+  | ----------------------------------------------------------- | ------------------------------- | -------------------------------- |
+  | Divulgação científica (livro, capítulo, software e outros)  | `SIM`                           | Não                              |
+  | Natureza do programa de computador e do processo ou técnica | qualquer                        | nenhuma escolhida                |
+  | Natureza do livro                                           | qualquer                        | não informada                    |
+  | Potencial de inovação                                       | `SIM`                           | nenhuma escolhida                |
+  | Disponibilidade do programa, acervo da manutenção de obra   | qualquer                        | não informada                    |
+  | Tipo da orientação e da banca de mestrado                   | acadêmico ou profissionalizante | vazio                            |
+
+- **Os dicionários.** Cada autor dos itens importados entra no dicionário de
+  coautores (`pkg_dic_autor`), e cada palavra-chave no de palavras-chave
+  (`pkg_dic_plv_nv`).
+
+**Exclusão** (seção 15). Pelo formulário de cada item, com o `del()` da
+página. A formação chama antes o `SETA_ULTIMO_PUBLICO` (quando não há outra
+pública); a atuação inteira sai por um GET com `f_ctr=E2`, que leva os
+vínculos, as atividades e os projetos dela; uma entrada do dicionário de
+coautores só sai sem produção ligada a ela. A exclusão fica pendente como
+qualquer alteração.
+
+**Exportar** (seções 10 e 12). A versão publicada em XML, com os atributos
+que nenhuma tela mostra, e com grafias que as telas não usam: o CEP só com
+dígitos (a tela mostra `99999-999`), o tipo de vínculo digitado como `LIVRE`,
+aspas como `&quot;` dentro do texto, e números internos nas redes sociais.
+
+### O que o editor faz com isso
+
+- Carrega pelas listas e pelos formulários (`src/bridge/load/`): o mesmo que
+  o site mostra, com as pendências, sem esperar o Exportar. Atributo que
+  nenhuma tela mostra não entra.
+- Altera e exclui pelos formulários, um item por vez, relendo depois de cada
+  envio. Um campo que volta diferente na releitura aparece como não gravado.
+- O item novo de produção vai pelo Importar. O editor ainda não confere o
+  item pelo formulário depois do Confirmar: o tipo que o Importar deixou de
+  fora e o valor trocado pelo padrão só aparecem no carregamento seguinte.
+- Depois de um envio ao CNPq feito pelo editor, sem pendência de fora dele,
+  a cópia de trabalho está em dia com o que ele gravou, mesmo com o Exportar
+  ainda antigo.
