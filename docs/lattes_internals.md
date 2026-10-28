@@ -1515,9 +1515,13 @@ endereco: "10/03/2005"`), e vão em `f_dados_grid_datas` pelo `array2xml`.
 - Marca e topografia não têm grade de depositantes.
 - O `del()` dos registros exibe a caixa de confirmação e pendura a exclusão
   no botão Confirmar dela (`caixaMsg.btnConfirmar.addEventListener`).
-- O dicionário de coautores (`pkg_dic_autor.lista`) não tem exclusão para
-  uma entrada sem uso; a de palavras-chave (`PKG_DIC_PLV_NV.form`) tem
-  `del()`.
+- O dicionário de coautores (`pkg_dic_autor.lista`) não mostra exclusão na
+  lista, mas o formulário da entrada (`pkg_dic_autor.form?f_seq=…`, aberto
+  por `pp_autor()`) tem Excluir: o `del()` pergunta antes a
+  `pkg_dic_autor.existe_prod_associada` (`f_cod`, `f_seq`) e, com `N`, posta
+  o formulário `GN_AUTOR` com `f_ctr=E`; com `S`, mostra as produções que usam
+  a entrada e não exclui. **Observado** em 28/10/2026, numa entrada de teste
+  sem uso. A de palavras-chave (`PKG_DIC_PLV_NV.form`) também tem `del()`.
 
 ### Patente: exportação, depositante e histórico (lidos em 20/10/2026)
 
