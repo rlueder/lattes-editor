@@ -37,7 +37,6 @@ const SANDUICHE: Record<string, string> = {
   'CODIGO-INSTITUICAO': '000000000002',
   'CODIGO-INSTITUICAO-DOUT': '000000000003',
   'NOME-CURSO': 'Ecologia',
-  'NOME-DO-ORIENTADOR-SANDUICHE': 'Clara Mendes',
   'NOME-INSTITUICAO': 'Universidade de São Paulo',
   'NOME-INSTITUICAO-DOUT': 'Universidade Estadual de Campinas',
   'NOME-ORIENTADOR-DOUT': 'Paulo Reis',
@@ -72,19 +71,21 @@ describe('doutorado sanduíche novo', () => {
     expect(ops[0]).toMatchObject({
       doutInstitution: { code: '000000000003' },
       kind: 'criar-formacao',
-      set: { f_orient_dout: 'Paulo Reis', f_orient_dout_sw: 'Clara Mendes', f_tpo_doutorado: 'S' },
+      set: { f_orient_dout: 'Paulo Reis', f_tpo_doutorado: 'S' },
     });
     const [r] = await applyAll(ops, open.port);
     expect(r).toMatchObject({ status: 'conferido' });
     const saved = find(open.state.root, (e) => e.name === 'DOUTORADO')!;
     expect(getAttr(saved, 'TIPO-DOUTORADO')).toBe('S');
-    expect(getAttr(saved, 'NOME-DO-ORIENTADOR-SANDUICHE')).toBe('Clara Mendes');
+    expect(getAttr(saved, 'NOME-ORIENTADOR-DOUT')).toBe('Paulo Reis');
     expect(getAttr(saved, 'CODIGO-INSTITUICAO-DOUT')).toBe('000000000003');
   });
 
   it('o tipo fora das opções e a instituição sem código ficam com o motivo', async () => {
     const wrong = await plan({ ...SANDUICHE, 'TIPO-DOUTORADO': 'X' });
     expect(wrong.unsupported[0]?.reason).toMatch(/sem correspondência/);
+    const sw = await plan({ ...SANDUICHE, 'NOME-DO-ORIENTADOR-SANDUICHE': 'Clara Mendes' });
+    expect(sw.unsupported[0]?.reason).toMatch(/cotutela com sanduíche/);
     const noCode = await plan({ ...SANDUICHE, 'CODIGO-INSTITUICAO-DOUT': '' });
     expect(noCode.unsupported[0]?.reason).toMatch(/doutorado sem código/);
   });

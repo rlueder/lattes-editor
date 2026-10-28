@@ -409,17 +409,23 @@ describe('incluir o projeto no Lattes falso', () => {
       ),
     ).toEqual([
       {
-        anoFim: '',
-        anoInic: '2019',
-        carga: '40',
         code: 'D1',
-        enqua: 'a',
         name: 'U',
-        regime: '',
-        stavinc: '1',
-        vinc: 'Celetista',
+        vinculo: {
+          F_ANO_FIM: '',
+          F_ANO_INIC: '2019',
+          f_carga: '40',
+          f_enqua: 'a',
+          f_regime: '',
+          f_stavinc: '1',
+          f_vinc: 'Celetista',
+        },
       },
     ]);
+    // A janela de 28/10/2026: as linhas só com seleciona(código, nome, sigla).
+    expect(
+      vinculoChoices("seleciona(vlr,texto) javascript:seleciona('V985600720469','Inst','SIG')"),
+    ).toEqual([{ code: 'V985600720469', name: 'Inst' }]);
   });
 });
 

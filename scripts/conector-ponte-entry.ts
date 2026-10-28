@@ -26,8 +26,24 @@ function controlsOf(form: HTMLFormElement): FormControl[] {
   });
 }
 
+/** As respostas dos POSTs da última operação, para ler o erro que o Lattes deu. */
+let lastPosts: { path: string; text: string }[] = [];
+
+/** O texto visível de cada resposta, sem marcação, para o diagnóstico. */
+function last(): { path: string; text: string }[] {
+  return lastPosts.map(({ path, text }) => ({
+    path,
+    text: new DOMParser()
+      .parseFromString(text, 'text/html')
+      .body.textContent.replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 600),
+  }));
+}
+
 /** Uma tarefa por chamada: o teto de pedidos vale para cada operação. */
 async function apply(op: BridgeOp, gates: Partial<ApplyGates> = {}) {
+  lastPosts = [];
   const traffic = new LattesTransport();
   return traffic.run(() => {
     const request = (path: string, init?: RequestInit) =>
@@ -36,14 +52,17 @@ async function apply(op: BridgeOp, gates: Partial<ApplyGates> = {}) {
     const port: LattesPort = {
       get: async (path) => text(await request(path)),
       menuHtml: () => document.documentElement.outerHTML,
-      post: async (path, body) =>
-        text(
+      post: async (path, body) => {
+        const answer = await text(
           await request(path, {
             body,
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             method: 'POST',
           }),
-        ),
+        );
+        lastPosts.push({ path, text: answer });
+        return answer;
+      },
       readForm(html, formName) {
         const doc = new DOMParser().parseFromString(html, 'text/html');
         const form = doc.querySelector<HTMLFormElement>(`form[name="${formName}"]`);
@@ -54,4 +73,4 @@ async function apply(op: BridgeOp, gates: Partial<ApplyGates> = {}) {
   });
 }
 
-(globalThis as unknown as { __conectorPonte: unknown }).__conectorPonte = { apply };
+(globalThis as unknown as { __conectorPonte: unknown }).__conectorPonte = { apply, last };

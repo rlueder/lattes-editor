@@ -296,6 +296,16 @@ function post(req: SimRequest, state: LattesState): SimResponse {
   const ctr = req.get('f_ctr');
   const tipo = req.get('f_cod_tipo') ?? 'P';
   const back = h.savedScript(`pkg_projeto.lista?f_cod_tipo=${tipo}&f_cod=${state.code}`);
+  // O banco do Lattes lê f_instituicoes como XML (configurarInstituicoes do
+  // check()); vazio, a gravação para com ORA-19032 (observado em 28/10/2026).
+  if ((ctr === 'I' || ctr === 'U') && !(req.get('f_instituicoes') ?? '').startsWith('<root>')) {
+    return html(
+      h.page(
+        'Erro',
+        '<p>Erro. ORA-19032: Era esperado o identificador de XML ,, foi recebido no content</p>',
+      ),
+    );
+  }
   if (ctr === 'I') {
     const code = (req.get('f_cod_inst') || req.get('f_cod_inst2') || '').replace(/^[A-Za-z]/, '');
     const container = state.find(['DADOS-GERAIS', 'ATUACOES-PROFISSIONAIS']);
@@ -392,9 +402,12 @@ function listaInst(req: SimRequest, state: LattesState): SimResponse {
         code,
         name,
       ].map((x) => `'${h.jsString(x)}'`);
-      const call = vinculo ? `preencherOpener(${args.join(',')}); ` : '';
-      // As aspas vão como estão, como nos links seleciona() da busca (seção 18).
-      return `<a href="javascript:${call}seleciona('${code}','${h.jsString(name)}')">${h.esc(name.toUpperCase())}</a><br>`;
+      // Em 28/10/2026 as linhas da janela das atuações chamavam só
+      // seleciona(código, nome, sigla), sem o preencherOpener do vínculo de
+      // 27/10; o simulado mostra a de hoje. As aspas vão como estão (seção 18).
+      void args;
+      const sigla = vinculo ? `,'${h.jsString(name.slice(0, 4).toUpperCase())}'` : '';
+      return `<a href="javascript:seleciona('${code}','${h.jsString(name)}'${sigla})">${h.esc(name.toUpperCase())}</a><br>`;
     })
     .join('\n');
   return html(h.page('Instituições', rows));

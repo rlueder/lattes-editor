@@ -55,7 +55,7 @@ const LINK_COPY =
  * instituições do projeto (titularInstProvider), lido em 18/10/2026: sem ele,
  * o Lattes recusava o envio inteiro (ORA-19032).
  */
-function projectInstitutions(html: string): Record<string, string> | undefined {
+export function projectInstitutions(html: string): Record<string, string> | undefined {
   const rows = readProvider(html, 'titularInstProvider');
   if (!rows) return undefined;
   const items = rows

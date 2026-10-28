@@ -345,10 +345,14 @@ async function confirmNew(
       return maybeCreated(key, mayExist, `a lista mostra ${created.length} itens novos`);
     }
     const saved = await readPairs(port, created[0]!.path, spec.name);
-    const problem = readBackProblem('Criado no Lattes', readBack(saved, set));
+    const lead = spec.feminine ? 'Criada no Lattes' : 'Criado no Lattes';
+    const problem = readBackProblem(lead, readBack(saved, set));
     return problem
       ? result('divergente', problem)
-      : result('conferido', 'Criado e conferido no Lattes');
+      : result(
+          'conferido',
+          `${spec.feminine ? 'Criada e conferida' : 'Criado e conferido'} no Lattes`,
+        );
   } catch (err) {
     const why = err instanceof Error ? err.message : 'falha inesperada';
     return maybeCreated(key, mayExist, `a conferência falhou (${why})`);

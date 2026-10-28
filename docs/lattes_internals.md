@@ -2858,3 +2858,44 @@ fica de fora de `f_inst_l`; a que entra acha a instituição pela busca do
 financiador e vai como `<código com a letra>|;N;|||<letra>|`, com o código
 do projeto e a moeda e o valor vazios (`production/financiador-lista.ts`).
 **Inferido**: só a linha com código do projeto e valor foi vista.
+
+## 27. Envios acompanhados (28/10/2026)
+
+Pela ponte local, com o núcleo do conector na aba do menu
+(`dist-censo/conector-ponte.js`), cada item de teste foi incluído e depois
+excluído pelo conector, e a releitura conferiu os dois passos. **Observado**:
+
+- **Formação complementar.** A inclusão segue os dois passos da edição: o
+  primeiro POST de `PKG_FORMACAO_COMPL.FORM2` não grava e devolve o segundo
+  passo com `f_ctr=I` (na edição, `U`); o segundo grava. A lista de cursos de
+  um nível numa instituição traz só os cursos de cadastro manual já usados ali,
+  e dois cursos com o mesmo nome na mesma instituição, em níveis diferentes,
+  existem: a exclusão acha a linha também pelo nível.
+- **Atividade de pesquisa e desenvolvimento nova** com a linha de pesquisa na
+  grade e, depois, os objetivos e o campo Ativa pelo formulário da linha
+  (`GN_LINHA`), achada na lista pela atividade e pelo título. Numa atividade
+  que já existe, a linha nova entrou pela grade com `c` 0 e a tirada saiu por
+  `f_exc` (`c?`), e a que ficou manteve o número e os objetivos. A página de
+  alteração de uma atividade tem o `del()` com `f_ctr=E`, e a exclusão leva
+  junto as linhas de pesquisa dela.
+- **Licença** incluída com a data de nascimento ou adoção e excluída pelo
+  formulário dela; **prêmio** incluído e excluído.
+- **Projeto.** A janela das atuações (`pp_lista_inst?f_pgm=INSTVINCULO`) não
+  traz mais o `preencherOpener` com o vínculo (seção 17): cada linha chama
+  `seleciona(código, nome, sigla)`, que só grava a instituição. O `check()` do
+  projeto chama antes `configurarInstituicoes()`, que monta `f_instituicoes`
+  como XML (`<root>`, um `<item>` com `<cod>` e `<tipo_inst>` por linha da grade
+  de instituições, `</root>`); com o campo vazio, o banco responde
+  `ORA-19032` e nada grava. Com `<root></root>`, a inclusão gravou o projeto
+  com a própria pessoa como coordenadora, um financiador (natureza Bolsa) e
+  uma produção ligada, e o servidor o pendurou numa atividade de pesquisa e
+  desenvolvimento da atuação. A página de alteração não traz de volta
+  `f_inst_old`. A exclusão do projeto, pelo formulário, conferiu.
+- **Doutorado sanduíche.** Os rótulos dos blocos: o primeiro ("Detalhamento
+  do período sanduíche": `f_orient_dout`, `f_inst_dout`, `f_meses_sw`) é o do
+  tipo S; o bloco `_sw` é o sanduíche da cotutela com sanduíche e o `_ct`, a
+  cotutela. Num tipo S, o `f_orient_dout_sw` enviado voltou vazio. A exclusão
+  da formação, com outras públicas (`contPriv` maior que zero), não chamou o
+  `SETA_ULTIMO_PUBLICO`.
+- **Exportação** com alteração ainda não enviada ao CNPq responde só com um
+  alerta ("Existem alterações realizadas…"), sem o arquivo.

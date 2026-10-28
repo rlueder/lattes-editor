@@ -167,7 +167,13 @@ export function planDeleteItem(
       locator: {
         by: 'lista',
         kind: 'formacao-complementar',
-        match: { f_curso_old: at(item, 'NOME-CURSO'), f_inst_old: at(item, 'NOME-INSTITUICAO') },
+        // O nível junto: dois cursos de cadastro manual com o mesmo nome na
+        // mesma instituição, um em cada nível, foram vistos (27/10/2026).
+        match: {
+          f_curso_old: at(item, 'NOME-CURSO'),
+          f_inst_old: at(item, 'NOME-INSTITUICAO'),
+          f_nivel: at(item, 'NIVEL') || COMPL_LEVELS[item.name]!,
+        },
       },
       seta: 'PKG_FORMACAO_COMPL.SETA_ULTIMO_PUBLICO',
     };

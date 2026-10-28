@@ -47,6 +47,7 @@ import {
   text,
 } from './create-shared.ts';
 import { encodeLatin1Form, type FormControl, type Pairs, pairValue, setPairs } from './form.ts';
+import { planDoutorado } from './formacao-doutorado.ts';
 import { resolveFormacao } from './formacao-lookups.ts';
 import { findLinks, isLogonPage, type LattesLink } from './lattes-html.ts';
 import type { FieldValues } from './plan.ts';
@@ -181,15 +182,6 @@ export function planCreateFormacao(
     return { reason: 'Agência sem código do Lattes: escolha pela lista de agências' };
   }
   if (agencyCode && bolsa !== 'SIM') return { reason: 'Agência informada sem bolsa' };
-  const dout = ['DOUT', 'GRAD']
-    .map((s) => ({
-      code: getAttr(el, `CODIGO-INSTITUICAO-${s}`) ?? '',
-      name: getAttr(el, `NOME-INSTITUICAO-${s}`) ?? '',
-    }))
-    .find((i) => i.code || i.name);
-  if (dout && !dout.code) {
-    return { reason: 'Instituição do doutorado sem código do Lattes: escolha pela busca' };
-  }
   if (bolsa === 'SIM' && !agencyCode) return { reason: 'Bolsa sem a agência do Lattes' };
   const filled = filledChildren(el, [...GRID_PARTS]);
   const grids = newItemGrids(el);
@@ -198,6 +190,8 @@ export function planCreateFormacao(
   const left = [...missing, ...filled.map((c) => labelIn(change, c.name))];
   const reason = reasonFrom(wrong);
   if (reason) return { reason };
+  const dout = planDoutorado(el, set);
+  if ('reason' in dout) return dout;
   // A livre-docência não tem início: tem o ano de obtenção.
   if (level === '6' ? !set.f_ano_obten : !set.f_ano_ini) {
     return {
@@ -211,7 +205,7 @@ export function planCreateFormacao(
   return {
     agencyCode,
     courseCode,
-    ...(dout ? { doutInstitution: dout } : {}),
+    ...(dout.institution ? { doutInstitution: dout.institution } : {}),
     expect: {},
     ...(grids ? { grids } : {}),
     institutionCode,

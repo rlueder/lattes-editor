@@ -25,7 +25,6 @@ import {
   getChecked,
   hidden,
   innovationFields,
-  jsCalls,
   labelIn,
   leftOf,
   mapAttrs,
@@ -53,6 +52,10 @@ import { findLinks, isLogonPage, type LattesLink } from './lattes-html.ts';
 import { organsPath } from './organ-windows.ts';
 import type { FieldValues } from './plan.ts';
 import { ORGAN_PARTS, organLoose, resolveOrgan } from './production/organ.ts';
+import { projectInstitutions } from './production/targets/projetos.ts';
+import { vinculoChoices } from './projeto-atuacoes.ts';
+
+export { vinculoChoices };
 import { PROJETO_TARGETS } from './production/targets/projetos.ts';
 
 export interface CreateProjetoOp extends CreateOpBase {
@@ -331,27 +334,6 @@ export const isInclusion = (l: LattesLink) =>
 const projectRows = (html: string) =>
   findLinks(html, 'PKG_PROJETO.form').filter((l) => !isInclusion(l));
 
-/**
- * As instituições das atuações que a janela pp_lista_inst oferece: cada uma
- * chama preencherOpener(enqua, regime, stavinc, ano_inic, ano_fim, carga,
- * vinc, código, nome), que copia o vínculo para os ocultos (seção 17).
- */
-export function vinculoChoices(html: string) {
-  return jsCalls(html, 'preencherOpener')
-    .filter((a) => a.length === 9)
-    .map(([enqua, regime, stavinc, anoInic, anoFim, carga, vinc, code, name]) => ({
-      anoFim: anoFim!,
-      anoInic: anoInic!,
-      carga: carga!,
-      code: code!,
-      enqua: enqua!,
-      name: name!,
-      regime: regime!,
-      stavinc: stavinc!,
-      vinc: vinc!,
-    }));
-}
-
 export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort): Promise<Result> {
   const result = (status: OpResult['status'], detail: string): Result => ({
     detail,
@@ -379,6 +361,12 @@ export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort):
     }
 
     const form = await readPairs(port, inclusion.path, PROJETO_FORM);
+    // O check() monta f_instituicoes como XML da grade de instituições
+    // (configurarInstituicoes); vazio, o banco do Lattes recusa a inclusão com
+    // ORA-19032 (observado em 28/10/2026). Na inclusão a grade vem vazia.
+    const institutions = projectInstitutions(await getChecked(port, inclusion.path)) ?? {
+      f_instituicoes: '<root></root>',
+    };
     if (
       pairValue(form.pairs, 'f_ctr') !== 'I' ||
       (pairValue(form.pairs, 'f_cod_tipo') ?? '').toUpperCase() !== op.nature
@@ -407,16 +395,11 @@ export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort):
     const v = choices[0]!;
     // Os anos do vínculo que preencherOpener copia ficam por baixo dos do projeto.
     const set: FieldValues = {
-      F_ANO_FIM: v.anoFim,
-      F_ANO_INIC: v.anoInic,
-      f_carga: v.carga,
-      f_enqua: v.enqua,
+      ...v.vinculo,
       f_inst: v.name,
       f_inst_old: v.name,
-      f_regime: v.regime,
-      f_stavinc: v.stavinc,
-      f_vinc: v.vinc,
       [v.code.startsWith('V') ? 'f_cod_inst' : 'f_cod_inst2']: v.code.slice(1),
+      [v.code.startsWith('V') ? 'f_cod_inst2' : 'f_cod_inst']: '',
       ...op.set,
     };
     const limit = overLimit(form.controls, set);
@@ -449,7 +432,9 @@ export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort):
     if ('status' in extras) return result(extras.status, extras.detail);
     const response = await port.post(
       CREATE_PROJETO_SPEC.action,
-      encodeLatin1Form(setPairs(form.pairs, { ...set, ...organ.set, ...extras.set })),
+      encodeLatin1Form(
+        setPairs(form.pairs, { ...set, ...organ.set, ...extras.set, ...institutions }),
+      ),
     );
     if (isLogonPage(response)) return result('sessao', SESSION);
 
@@ -471,7 +456,10 @@ export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort):
       const saved = await readPairs(port, created[0]!.path, PROJETO_FORM);
       // Tudo o que foi enviado, com a instituição e o vínculo da atuação: se o
       // Lattes pendurar o projeto em outra atuação, a releitura acusa.
-      const problem = readBackProblem('Criado no Lattes', readBack(saved, set));
+      // f_inst_old é da janela: a página de alteração não o traz de volta
+      // (observado em 28/10/2026); a instituição se confere pelo código e por f_inst.
+      const { f_inst_old: _old, ...checked } = set;
+      const problem = readBackProblem('Criado no Lattes', readBack(saved, checked));
       if (problem) return { ...result('divergente', problem), assigned };
       // O órgão volta só no texto de f_orgao, desabilitado (18/10/2026).
       const organNow = saved.controls.find((c) => c.name === 'f_orgao')?.value;

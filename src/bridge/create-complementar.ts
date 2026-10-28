@@ -10,10 +10,9 @@
 // agência, a monografia, o orientador e as grades, e só o POST dele grava
 // (seção 18, formacao-compl-steps.ts).
 //
-// Inferido, até o teste acompanhado: que a inclusão siga os mesmos dois passos
-// (o segundo com f_ctr I ou U, os dois aceitos aqui); que as buscas de
-// instituição e curso gravem como na edição; e que as grades do segundo passo
-// gravem como as da formação acadêmica. Depois do envio, a lista tem de ter
+// Observado em 28/10/2026 (seção 27): a inclusão segue os mesmos dois passos,
+// o segundo com f_ctr I, e as buscas de instituição e curso gravam. Inferido:
+// que as grades do segundo passo gravem como as da formação acadêmica. Depois do envio, a lista tem de ter
 // uma linha nova só, e a releitura confere o primeiro passo no formulário da
 // linha e o segundo refazendo o primeiro passo sem gravar.
 
