@@ -1,5 +1,5 @@
-// Formulários do Lattes simulado montados a partir da captura do censo de
-// 15/10/2026 (docs/lattes-formularios/censo-2026-10-15.json, LAT-55): o nome e
+// Formulários do Lattes simulado montados a partir das capturas do censo
+// (docs/lattes-formularios/, LAT-55; a mais recente, de 27/10/2026): o nome e
 // o destino do <form>, os campos na ordem da página com tipo, limite, rótulo e
 // opções, e os nomes dos ocultos saem da captura, e são **observados**. A
 // ligação de cada campo com um atributo do XML é declarada por quem usa o
@@ -13,6 +13,7 @@
 import censo from '../../docs/lattes-formularios/censo-2026-10-15.json' with { type: 'json' };
 import recapturaB from '../../docs/lattes-formularios/censo-2026-10-15b.json' with { type: 'json' };
 import recapturaC from '../../docs/lattes-formularios/censo-2026-10-15c.json' with { type: 'json' };
+import recaptura27 from '../../docs/lattes-formularios/censo-2026-10-27.json' with { type: 'json' };
 import { foldText } from '../../src/model/fold-text.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
@@ -48,7 +49,7 @@ interface CensusJson {
 }
 
 /** As capturas versionadas, da mais recente para a mais antiga (as recapturas trazem só algumas entradas). */
-const CAPTURES = [recapturaC, recapturaB, censo] as unknown as CensusJson[];
+const CAPTURES = [recaptura27, recapturaC, recapturaB, censo] as unknown as CensusJson[];
 
 /** O primeiro formulário que a captura mais recente leu para a entrada do censo. */
 export function capturedForm(entry: string): CapturedForm {

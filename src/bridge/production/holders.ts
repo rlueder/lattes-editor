@@ -124,3 +124,23 @@ export function holderReplace(
     reason: `Depositante que não está na lista de coautores do Lattes: ${built.missing}. Escolha-o no Lattes uma vez; depois o editor consegue mandar`,
   };
 }
+
+/**
+ * A mudança no depositante (target.holders), com a grade e o campo da
+ * operação; undefined quando o atributo não é ele. Pessoa ou instituição, a
+ * exportação põe as duas em NOME-DO-DEPOSITANTE (institution-holder.ts).
+ */
+export function holderField(
+  target: ProductionTarget,
+  key: string,
+  f: { after: string; before: string },
+):
+  | { grid: 'f_depositante_pessoa_l'; op: 'holders'; value: { after: string; before: string } }
+  | { reason: string }
+  | undefined {
+  const spec = target.holders;
+  if (!spec || key !== `${spec.child}@${spec.attr}`) return undefined;
+  const value = planHolder(f);
+  if ('reason' in value) return value;
+  return { grid: 'f_depositante_pessoa_l', op: 'holders', value };
+}

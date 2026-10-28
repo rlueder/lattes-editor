@@ -1,8 +1,8 @@
 // Prévia da tela de envio no `pnpm dev` (?simular-envio): o painel "Enviar ao
 // Lattes" recebe uma tela lida de um HTML com o desenho da tela real
 // (pkg_publicar.mostrar_cv, lida em 21/10/2026), sem extensão nem Lattes. O
-// texto da declaração é de exemplo, não o do CNPq. Com ?publicar, a caixa da
-// declaração aparece, como com o envio ligado.
+// texto da declaração é de exemplo, não o do CNPq. A caixa da declaração usa
+// a mesma chave de ativação do painel normal.
 
 import { readSendScreen } from '../bridge/publish.ts';
 import type { SendScreenReading } from '../ui/use-publish.ts';

@@ -1,9 +1,11 @@
 # Como o editor do Currículo Lattes funciona por dentro
 
 O editor web do Lattes (`wwws.cnpq.br/cvlattesweb`) por dentro, para quem
-mexe no conector. Tudo aqui foi visto numa sessão logada do próprio dono do
-currículo: quase sempre só com leitura (páginas baixadas por GET), e, onde a
-seção diz, com um envio acompanhado num item de teste. Cada seção traz a
+mexe no conector. O reconhecimento foi feito na sessão logada do próprio
+dono do currículo: quase sempre só com leitura (páginas baixadas por GET), e,
+onde a seção diz, com um envio acompanhado num item de teste. A seção 23
+também confere a estrutura de XMLs públicos, sem acessar sessão alguma.
+Cada seção traz a
 data; o primeiro reconhecimento é de 10/10/2026, os formulários de edição
 são de 11/10/2026, e as seções 16 a 22 vão de 14 a 21/10/2026.
 
@@ -408,7 +410,16 @@ A sessão do editor cai em poucos minutos (3 a 12 nos testes de 10/10/2026)
 e passa a responder com a página de `pkg_sec.logon`. Em 11/10/2026, com a
 aba aberta pelo próprio usuário, a sessão aguentou todas as leituras deste
 documento. **Observado.** Abrir um segundo editor do mesmo currículo parece
-derrubar o primeiro. **Inferido.**
+derrubar o primeiro, o que explicaria as quedas rápidas de 10/10; o dono do
+currículo vê a sessão durar horas. **Inferido.** Quanto ela dura parada não
+foi medido.
+
+Para a sessão não cair enquanto o app está aberto, a extensão pede uma
+página pequena a cada 20 minutos (`src/bridge/keepalive.ts`). As menores
+páginas da sessão medidas em 27/10/2026, por GET: `pkg_linhapesq.lista`
+(4.141 bytes), `pkg_demais.lista` (4.149), `pkg_texto.lista` (4.215) e
+`pkg_licenca.lista` (4.282), num currículo sem itens nessas listas; o tamanho
+cresce com os itens. **Observado.**
 
 A aba não percebe que a sessão venceu: o menu já carregado continua na tela, e
 só o próximo pedido mostra que acabou. Com a sessão vencida, cada página do
@@ -436,8 +447,11 @@ outra coisa: um `alert("Problemas na autenticação")` antes de mandar para
 - Se o POST do Exportar funciona sem o GET da tela antes (seção 12).
 - Por que um item confirmado no passo 3 do Importar some (seção 13, item 8),
   e o limite superior de `SEQUENCIA-PRODUCAO`.
-- Como a exportação grava a PCD e duas redes sociais (seção 19), e mais de
-  um depositante numa patente (seção 17).
+- Como a exportação grava a PCD com mais de um tipo marcado, e mais de um
+  depositante numa patente (seção 17). Com um tipo só, a exportação de
+  27/10/2026 trouxe o rótulo da caixa (`PCD="Deficiência Visual"`), e duas
+  redes sociais vieram coladas em `REDE-SOCIAL`, sem separador: o "ID Rede
+  Social" da segunda começa logo depois do endereço da primeira. **Observado.**
 
 ## 9. Vigia: saber quando o CNPq mudou algo
 
@@ -536,6 +550,13 @@ incluída e com itens excluídos antes da publicação. A versão atual
 para acompanhar não foi medido. **Observado.** Para o editor: uma exportação
 logo depois de publicar pode trazer um currículo atrasado.
 
+Em 27/10/2026, com um envio ao CNPq pelo editor por volta das 12h20 (o menu
+passou a mostrar "Última publicação: 27/10/2026"), o Exportar seguiu
+entregando o arquivo com `DATA-ATUALIZACAO="22102026"` em pedidos a cada 5
+minutos, até pelo menos as 13h51. **Observado.** O editor avisa no sino
+quando o arquivo aberto é anterior à última publicação do menu
+(`staleExportNotice`, `src/ui/notifications.ts`).
+
 **Enviar ao CNPq** (14/10/2026, feito pela pessoa, com a página observada só
 lendo). **Observado.**
 
@@ -599,9 +620,10 @@ os vínculos de uma atuação sem página e para lista que a comparação não
 conhece. Extensão anterior a isso só manda a página de conferência, e o
 diagnóstico diz que comparou só produções e eventos.
 
-**No conector** (`src/bridge/publish.ts`, desligado por `PUBLISH_ENABLED`,
-nunca rodou no Lattes real; os testes rodam contra o Lattes simulado), o
-caminho é:
+**No conector** (`src/bridge/publish.ts`, habilitado por `PUBLISH_ENABLED`),
+o caminho abaixo está coberto no Lattes simulado. A integração completa do
+app ao CNPq ainda não foi validada num envio acompanhado; essa validação
+continua pendente antes do lançamento.
 
 1. GET de `pkg_publicar.mostrar_cv`, que o editor mostra antes do envio: o
    texto ao lado da caixa `f_chk` como declaração, o link "Termo de Uso", e os
@@ -612,7 +634,7 @@ caminho é:
    link do Termo de Uso, também não.
 2. A caixa da declaração começa desmarcada a cada abertura do painel, não é
    guardada e só a pessoa a marca. Sem ela marcada, nem o editor, nem a
-   extensão, nem o núcleo na aba fazem pedido algum.
+   extensão, nem o núcleo na aba iniciam a publicação.
 3. Os dois POSTs ajax, na ordem da página. `{"status": false}` na consulta de
    raça ou cor e `"existe": true` na de e-mail param o envio e mandam a pessoa
    à tela do Lattes; o que cada um quer dizer é **inferido** do nome do
@@ -624,6 +646,9 @@ caminho é:
 5. A conferência é pelo menu (`PKG_MENU.menu`), relido até quatro vezes com 3
    segundos entre elas: "Última publicação" de hoje e sem o aviso de
    pendência. O alerta da resposta não conta como prova.
+   Mesmo sem resposta do pedido de envio, o núcleo tenta ler o menu, sem
+   repetir a publicação. Sem confirmação, o botão continua bloqueado até
+   reabrir o painel e conferir o estado no Lattes.
 
 Os links "Ver a versão em português" e "em inglês" do painel abrem a página de
 conferência com `f_idioma=1` e `f_idioma=2` (este **inferido**).
@@ -953,6 +978,14 @@ aceite só `f_ctr`, `f_cod` e `f_seq`, sem os outros campos do formulário.
 | Trabalhos técnicos (`pkg_relatorio.lista`)                                    | formulário `pkg_relatorio.form`                  | POST `PKG_RELATORIO.FORM` (`GN_RELATORIO`)                                                                            | `f_ctr=E`, `f_cod`, `f_seq`                                                               | "Deseja realmente excluir esta produção?"                                                                                                        |
 | Produção técnica, Editoração (`prc_tec_demais_lista`, `f_cod_tipo=2D`)        | formulário `prc_tec_edit`                        | POST `PRC_TEC_EDIT` (`GN_TEC`)                                                                                        | `f_ctr=E`, `f_cod`, `f_seq`                                                               | "Deseja realmente excluir esta produção?"                                                                                                        |
 | Participação em eventos (`pkg_evento.lista`)                                  | formulário `PKG_EVENTO.form`                     | POST `PKG_EVENTO.FORM` (`GN_TEC`)                                                                                     | `f_ctr=E`, `f_cod`, `f_seq`                                                               | "Deseja realmente excluir esta produção?"                                                                                                        |
+
+O conector exclui os tipos da tabela e os outros itens de produção, projeto,
+orientação, banca, licença e linha de pesquisa pelo mesmo caminho
+(`src/bridge/delete-items.ts`): acha o formulário de alteração como na
+alteração, confere que a página tem o `del()` com `f_ctr=E`, faz o ajax de
+`SETA_ULTIMO_PUBLICO` quando a página o faria, envia e relê a lista. A
+atuação inteira vai pelo GET com `E2`, só quando a pessoa tirou a atuação
+inteira no editor. Fora o evento, **inferido** até o teste acompanhado.
 
 Os textos dos `confirm()` estão sem as quebras de linha do original. Vários
 formulários guardam, comentada, uma versão antiga do texto ("Você realmente
@@ -1523,8 +1556,23 @@ O que o conector faz com isso (`src/bridge/production/holders.ts` e
   Nos outros registros com a grade de depositantes (programa de computador,
   cultivares, desenho industrial) a ligação com `NOME-DO-DEPOSITANTE` é
   inferida pela patente.
-- O titular instituição (`NOME-DO-TITULAR`, `titularInstProvider`) fica à
-  mão: sai da busca de instituições do Lattes (`pkg_titular_inst.sele_inst`).
+- O depositante instituição (`titularInstProvider`) vai pela janela de
+  titulares (`src/bridge/production/institution-holder.ts`). Em 27/10/2026,
+  sem enviar: a janela `pkg_titular_inst.sele_inst` busca por nome num POST
+  com `f_cod`, `f_ctr=P` e `f_nome`, e responde com um
+  `seleciona('<letra><código>', '<nome>')` por instituição; o `seleciona()`
+  põe na grade `{l: nome, c: código sem a letra, tipoInst: a letra,
+deletable, editable}`, e o `check()` a serializa como `nome|código|letra`.
+  Uma patente de teste com a UFRGS como titular, gravada pela página e
+  exportada no mesmo dia, veio com `NOME-DO-DEPOSITANTE="Universidade Federal
+do Rio Grande do Sul"` e `NOME-DO-TITULAR` vazio, sem cópia nos `AUTORES`.
+  **Observado.** O XML não diz se o depositante é pessoa ou instituição: o
+  conector acha o nome de antes numa das duas grades da página e põe o nome
+  novo na pessoa do `titularPessoaDP` ou, com a capacidade
+  `titular-instituicao`, na única instituição de mesmo nome na busca (sem
+  acento nem caixa). Mais de uma, ou nenhuma, fica à mão; `NOME-DO-TITULAR`
+  também. **Inferido:** como a exportação junta pessoa e instituição juntas.
+  O `titularInstDP` não existe na janela do menu.
 - A mudança de autores deixa de fora as linhas de `AUTORES` com o nome de um
   depositante, antes e depois, para conferir com o `autorProvider`, que não
   as tem, e para nunca mandar o depositante como autor. A cópia só se
@@ -1541,8 +1589,21 @@ O que o conector faz com isso (`src/bridge/production/holders.ts` e
   histórico que não existe não se cria; sem ela, só o registro muda, e vai.
   As duas mudanças vão ao mesmo campo (a segunda acha o Lattes já com a data
   e não envia nada). Datas que ainda assim discordam (no XML carregado, por
-  exemplo) ficam à mão. Incluir ou tirar uma situação, trocar a descrição ou
-  o status, e as outras situações também.
+  exemplo) ficam à mão. Incluir ou tirar uma situação, e as outras situações
+  também.
+- A situação trocada por outra entre essas quatro (Depósito para Concessão,
+  por exemplo) tira a linha do código de antes e põe a do código novo com a
+  mesma data, num envio só. No editor, a data passa junto do atributo do
+  registro da situação de antes para o da nova. É o que a página faz com a
+  lixeira e o "Incluir nova", que põe a linha no começo da grade só com
+  `id`, `contato` e `endereco` (o combo da própria linha monta as opções de
+  uma chave que não existe, seção 24). **Inferido**: que o Lattes aceite a
+  troca assim, e que a exportação grave a descrição com o rótulo do combo
+  (só "Depósito" foi conferida). A situação repetida em outra linha fica à
+  mão, e a linha com `deletable` "false" (a página esconde a lixeira dela,
+  menos na concessão) não se exclui: o envio para antes do POST.
+- O status da situação não tem controle na página: a grade guarda só a
+  situação e a data. O editor o mostra só para ler.
 
 ### Dicionário de coautores: a edição (lida em 19/10/2026)
 
@@ -1623,6 +1684,15 @@ pesquisa ficou com o título, o objetivo e o `f_seq_linha` de antes.
 renumeração do Lattes poderia descolar o objetivo de uma linha; o conector
 manda a grade como o Salvar da própria página mandaria, então não é pior que
 salvar no Lattes, mas isso não foi visto.
+
+O conector inclui, tira e renomeia linhas dessa grade numa atividade que já
+existe (`src/bridge/atividade-grade.ts`): a linha que fica vai com o `c`
+dela, a nova com `c` 0 e a que sai em `f_exc`, e as mudanças da fila na mesma
+atividade vão num envio só. A linha de pesquisa nova com objetivos segue pelo
+formulário dela, achada na lista `pkg_linhapesq.lista` pela atividade e pelo
+título (`src/bridge/linha-detalhes.ts`). **Inferido**, sem envio acompanhado:
+`f_exc` com mais de uma linha (`c?c?`), e que a linha criada pela grade
+apareça nessa lista com o título enviado.
 
 **O código da instituição no link.** É o do XML com uma letra na frente (`D`
 ou `V`), e o do XML pode começar por letra também: `K4WU00000006` vira
@@ -1861,9 +1931,14 @@ O conector, com isso (`src/bridge/production/nature.ts`):
   vem marcado (**inferido**: não visto num item dessas naturezas).
 - Onde o elemento fixa a natureza, trocá-la é incluir o item de novo no tipo
   certo, como o nível da formação complementar.
-- O tipo do mestrado (acadêmico ou profissional) e o de outra natureza vão em
-  `f_sub_prod`. Pelo `retnivel()`, 30 e 37 são o profissional; o código do
-  acadêmico não foi lido. Fica à mão.
+- O curso da supervisão de pós-doutorado não se informa: a lupa (`curso()`)
+  responde "Não informe o curso para natureza Supervisão de pós-doutorado", e
+  o `testa_nivel()` limpa os códigos do curso. O editor mostra esse curso só
+  para ler.
+- O tipo do mestrado vai em `f_sub_prod` com o rótulo em `f_dsc_outra`
+  (seção 24). Trocar entre acadêmico e profissional com curso no item busca
+  o curso de novo no nível do tipo novo. O tipo de outra natureza é texto
+  livre que a página pede num `prompt()` e fica à mão.
 
 As páginas de edição das bancas não foram lidas. No censo de 15/10/2026, o
 rádio `F_COD_PROD` da banca de trabalho tem A11 Mestrado, A12 Doutorado, A13
@@ -1872,8 +1947,20 @@ A15 Graduação e A16 Exame de qualificação de mestrado, sem opção para as o
 participações; o da banca julgadora tem A21 Professor titular, A22 Concurso
 público, A23 Livre-docência, A24 Avaliação de cursos e A29 Outra. O elemento
 fixa a natureza em todos menos na qualificação, que guarda A13 e A16 no mesmo
-elemento. A troca entre as duas muda a busca de instituição e a de curso, e
-fica à mão até a página ser lida.
+elemento.
+
+Em 27/10/2026, numa página da banca de trabalho carregada sem enviar, um
+script da carga (`$(".cod_proc:eq(2)").append($(".cod_proc:eq(5)"))`) põe a
+qualificação de mestrado logo depois da de doutorado, e a ordem viva dos
+rádios fica A11, A12, A13, A16, A14, A15. O `sele_inst()` e o `curso()` da
+página escolhem o nível pelo índice do rádio, então a busca de instituição sai
+com GM, GD, GD, AP, GG e GE nessa ordem viva (A16 com AP, A14 com GG, A15 com
+GE), e a de curso leva `f_sta_area=N` em A13 e A16; o nível do curso sai do
+valor (`retnivel()`). **Observado**: são os endereços que as duas funções da
+própria página montaram com cada natureza marcada. O `testa_nivel()` da troca
+de tipo limpa só a instituição e o curso, e o conector troca a qualificação
+de mestrado pela de doutorado (e o contrário) escolhendo os dois de novo com
+os níveis da natureza nova. A troca não foi enviada.
 
 ### Órgão e unidade do projeto (lido em 18/10/2026)
 
@@ -1902,8 +1989,21 @@ mostra o órgão gravado. O `seleciona()` da janela de instituições do projeto
 também limpa os quatro. Dois envios de alteração pelo conector, com o código
 e o texto que o `atribuir()` gravaria (uma unidade do mesmo órgão, depois
 outro órgão), voltaram com o órgão de antes, sem erro e sem mexer em mais
-nada. **Observado.** Se a própria página consegue trocar o órgão na
-alteração não foi visto.
+nada. **Observado.** Em 27/10/2026, no projeto de teste, a própria página
+fez a troca: `orgao()`, o `atribuir()` da janela de órgãos e o Salvar
+(`check()`). O POST levou `f_codorgao` e `f_orgao_old` com o órgão novo e
+`f_instold`/`f_inst_old` vazios, os mesmos campos do conector; o Lattes
+respondeu "A operação foi realizada com sucesso" e a releitura voltou com o
+órgão de antes. **Observado**: o Lattes não troca o órgão de um projeto que
+já existe, nem pela própria página. A atuação do projeto não lista a
+participação como atividade, então não há outra tela para isso.
+
+Na inclusão, o `check()` exige o órgão (`f_ctr` I), e o projeto de teste de
+27/10/2026, incluído pela página com um órgão, saiu na exportação com ele
+(seção 25). O conector inclui o projeto com o órgão escolhido no editor:
+`f_codorgao` (ou `f_codorgao2`) e `f_orgao_old` como o `atribuir()` os
+escreve, pela janela da instituição da atuação, e confere o texto de
+`f_orgao` depois de criar. **Inferido** até uma inclusão acompanhada.
 
 Os financiadores, as produções e as orientações ligadas são tabelas
 (`criarGrid`, ids `grid2`, `grid3` e `grid4`) que o servidor escreve com as
@@ -1933,8 +2033,8 @@ como `v0@`. Neste projeto, então, `f_inst_l` vai
 `f_orientacoes_l` vai vazio. Um valor pode ter `|` dentro (`026|10,00`), e
 o `check()` não o escapa. Os ocultos `f_producoes_d` e `f_orientacoes_d`
 ficam dentro do corpo das tabelas, com os códigos ligados unidos por `|`.
-**Observado.** O sentido de cada valor do financiador (`0000;N;`, a moeda e
-o valor) não foi lido, nem o que o servidor faz com os dois ocultos.
+**Observado.** O que o servidor faz com os dois ocultos não foi lido. O
+sentido dos valores do financiador está no parágrafo seguinte.
 
 O conector manda `f_producoes_d` e `f_orientacoes_d` como a página os serve
 e refaz os três ocultos das grades assim a partir da página, com as entidades
@@ -1946,6 +2046,28 @@ enviado. Incluir, tirar ou trocar um financiador, uma produção ou uma
 orientação ligada continua à mão, e com uma dessas mudanças na fila o resto
 do projeto vai à mão junto: o envio levaria de volta as linhas que o Lattes
 tem, e a mudança à mão ficaria para trás com o item conferido.
+
+Lido em 27/10/2026 no Lattes real, sem enviar, num projeto de teste com o
+CNPq como financiador: a linha manda `V002200000000|1234;N;|026|100,00|B|`,
+ou seja, o código da instituição com a letra da busca, o código do projeto
+com `;N;`, a moeda e o valor, e a letra da natureza. A janela
+`PKG_PROJETO.EDITAR_FINANCIAMENTO` (com `P_VALORES` e `P_INDICE` para a
+linha existente) tem `f_cod_proj`, `f_moeda`, `f_valor` e o select
+`f_natureza` com os valores `AAuxílio Financeiro`, `BBolsa`,
+`RRemuneração`, `CCooperação` e `OOutra`; o Confirmar posta em
+`PKG_PROJETO.SELECIONA_LISTA_INST_FINANC`, que não foi lido. A busca de
+instituições é um POST a `PKG_PROJETO.PP_LISTA_INST` com `F_CTR` C, `F_COD`,
+`F_PGM` INSTFINANC, `F_COD_INST` vazio, `F_SEQ_FUNCAO`, `F_SEQ_ATIV`,
+`F_SEQ_PROJ` e `f_nome`; responde com um `seleciona('<letra><código>',
+'<nome>', '<sigla>')` por instituição, e o nome completo, com acentos em
+Latin-1, acha a instituição. A exportação traz o nome (o segundo argumento)
+em `NOME-INSTITUICAO`.
+
+O conector troca a instituição e a natureza de um financiador que já está
+pela primeira e pela quarta célula da linha, achada pelo código da
+instituição de antes; a instituição nova é a única da busca com o mesmo
+nome. **Inferido**: que o Lattes grave a linha assim, sem passar pela janela
+de edição. A releitura confere a grade inteira.
 
 **Inferido**: que a exportação ponha o órgão de cima em
 `PARTICIPACAO-EM-PROJETO@CODIGO-ORGAO`/`NOME-ORGAO` e a unidade em
@@ -1980,7 +2102,38 @@ o curso na lista da instituição. A instituição nova sem curso escolhido de
 novo fica à mão, como na formação. **Inferido**: que o `seleciona()` desta
 janela grave como o da formação (o código com a letra, V em `f_cod_inst`, as
 outras em `f_cod_inst2`), e que `PKG_FORMACAO_COMPL.FORM2` grave os ocultos.
-Nada disso foi enviado a um Lattes real.
+
+Em 20/10/2026, num MBA de teste, o envio com a instituição e o curso como as
+janelas gravariam (instituição com a letra, curso sem ela, os textos em
+`f_inst_old` e `f_curso_old`) foi aceito, e a releitura voltou com os de
+antes. O conector acusou divergente e nada mudou. **Observado.**
+
+A causa apareceu em 27/10/2026, num envio pelo próprio navegador capturado
+pela ponte local: o `FORM2` tem dois passos. O primeiro POST (`f_ctr` vazio)
+não grava nada; devolve outra página `GN_FORMACAO2`, que repete os campos do
+primeiro passo como ocultos e traz `f_ctr=U`, `f_ano_ini`, `f_ano_fim`,
+`f_ano_obten` (desabilitado no tipo Outros), `F_BOLSA` (S ou N),
+`f_nme_agencia` (desabilitado, com o código em `f_agencia` oculto, vindo da
+busca de agências), `f_titulo` e `f_orient` ocultos, `f_tipo_privacidade` e as
+grades `f_plv_l`, `f_setor_l` e `f_area_l`. Só o POST desse segundo passo
+grava, e responde "A operação foi realizada com sucesso". **Observado.** Os
+anos de início, conclusão e obtenção e a bolsa saem desse passo, não do
+primeiro.
+
+O conector faz os dois passos (`src/bridge/formacao-compl-steps.ts`): manda o
+primeiro, lê o segundo, troca os campos que mudaram e confere o texto de
+sucesso; na releitura, refaz o primeiro passo sem gravar para conferir os do
+segundo. Num curso real, a carga horária foi de 36 para 37 e voltou para 36,
+as duas vezes gravada e conferida. **Observado.** A troca de instituição e
+curso pelas buscas (`COMPL_LOOKUPS_ENABLED`, capacidade
+`buscas-complementar`) está ligada sem envio acompanhado: os cursos do
+currículo testado eram de cadastro manual e não havia como desfazer a troca.
+**Inferido** que o segundo passo leve os ocultos da instituição e do curso como
+vieram do primeiro. A lupa da agência no segundo passo (`agencia()`) abre
+`prc_agencia?f_cod=<código do currículo>`, a mesma lista das orientações e
+bancas, e marca a bolsa como sim; o conector faz a mesma escolha em
+`f_agencia` (só o MBA tem agência no XSD). **Observado** o endereço e a
+função, em 27/10/2026, sem enviar; a troca de agência não foi enviada. As buscas do endereço profissional gravaram em 28/10/2026 (seção 27).
 
 ### Endereço profissional (lido em 20/10/2026)
 
@@ -2352,7 +2505,11 @@ privacidade em `f_privacidade`, linha a linha. O sentido de `r` não foi lido.
 (pela busca `prc_inst_form?f_nivel=<nível>`, dispensada nos níveis B, C, 9, D
 e Y), situação (menos na livre-docência) e carga horária numérica, e envia
 para `PKG_FORMACAO_COMPL.FORM2`. O formulário não tem os anos; o que vem
-depois do envio só se vê enviando. **Lacuna.**
+depois do envio só se vê enviando. **Lacuna.** Na edição, o envio devolve o
+segundo passo com os anos, a bolsa e a agência (seção 18, 27/10/2026). O
+conector inclui nos mesmos dois passos (`src/bridge/create-complementar.ts`)
+e aceita o segundo com `f_ctr` I ou U; que a inclusão funcione assim é
+**inferido**, sem envio acompanhado.
 
 **Linha de pesquisa.** A lista ("Atuação profissional - Linhas de pesquisa")
 não tem formulário nem link de inclusão. Que a linha entre pela atividade de
@@ -2470,8 +2627,8 @@ pelo rótulo: o currículo de quem capturou não tem atividade de ensino. Os
 níveis de 401 a 409 seguem os rótulos das opções.
 
 **Titular da patente (lote 5).** `pkg_titular_inst.sele_inst` abre uma busca
-de instituição por nome que envia (POST) para `PRC_INST_FORM`, com `f_ctr` e
-`f_cod` ocultos; a resposta da busca não foi lida, porque é POST.
+de instituição por nome com `f_ctr` e `f_cod` ocultos; a resposta foi lida em
+27/10/2026 (seção 17, "Patente: exportação, depositante e histórico").
 `pkg_titular_inst.sele_inst?f_ctr=O` foi recusado pelo próprio censo, que não abre
 endereço com `f_ctr` preenchido (`isSafeGet`). A sugestão de titular
 pessoa vem de `self.parent.titularPessoaDP`, no menu, cuja forma não foi
@@ -2483,8 +2640,271 @@ inferido (seção 17, "Patente: exportação, depositante e histórico").
 (POST) para `PKG_PROJETO.PP_LISTA_INST`, com `F_CTR`, `F_COD`, `F_PGM`,
 `F_COD_INST`, `F_SEQ_FUNCAO`, `F_SEQ_ATIV` e `F_SEQ_PROJ` ocultos, e um
 segundo formulário para `PKG_PROJETO.EDITAR_FINANCIAMENTO` (`P_COD`,
-`P_COD_INST`, `P_CTR`). A resposta não foi lida. `PKG_PROJETO.pp_lista_prod`
+`P_COD_INST`, `P_CTR`). A resposta está na seção 21 (27/10/2026). `PKG_PROJETO.pp_lista_prod`
 responde 404 sem parâmetros. `PKG_PROJETO.pp_lista_autores` tem um campo de
 busca, a lista de pessoas (cada uma como `p[i]="<código>#<nome>@<citação>"`)
 e o link `pkg_projeto.novo_equipe?f_tipo=A&f_nome=`
 para incluir quem não está na lista.
+
+## 23. Valores em XML público e opções capturadas (26/10/2026)
+
+Conferência estrutural, sem sessão do dono e sem enviar nada ao CNPq. Foram
+lidos em memória os oito XMLs de
+[`RafaelQSantos-RQS/LattesHub`, `database/data/lattes/`](https://github.com/RafaelQSantos-RQS/LattesHub/tree/HEAD/database/data/lattes).
+Nenhum currículo foi copiado para o repositório. **Observado nesses XMLs:**
+
+- `TIPO-GRADUACAO="N"` em duas exportações. A captura `formacao-FA-1`
+  oferece N (normal) e S (sanduíche).
+- `CATEGORIA` da patente como `Produto`, `Processo` e `Produto e Processo`.
+  `Outra` é a quarta opção da captura; sua grafia no XML segue **inferida**,
+  como já era no mapeamento do conector.
+- `DISPONIBILIDADE` de processos como `RESTRITA`, `IRRESTRITA` e
+  `NAO_INFORMADO`. Nos produtos foram encontrados os dois últimos. Os três
+  códigos também constam no enumerado do software no XSD.
+
+Nos XMLs públicos de
+[`LiaCasatiRamaldes/vira-lattes-db`, `cv/`](https://github.com/LiaCasatiRamaldes/vira-lattes-db/tree/a6bddccdbcf10e077f0f8f525f6e0ec2eb1cff69/cv)
+e [`NARizzardi/UFPR`, `1002/lattes/lattes-cvs/`](https://github.com/NARizzardi/UFPR/tree/37a78374e73a533a327f4aa8b79a17c6745d3730/1002/lattes/lattes-cvs),
+também foram encontrados S na graduação, `RESTRITA` e `IRRESTRITA` no
+relatório de pesquisa e os três códigos no trabalho técnico. Esses
+exemplos documentam a grafia; não substituem um teste de gravação atual.
+
+As capturas de produto, processo, relatório de pesquisa e trabalho técnico
+têm o mesmo select `f_disp`: vazio, `Restrita`, `Irrestrita`. A ligação por
+valor de 18/10/2026 confirmou os rótulos sem distinguir caixa. O editor
+oferece os códigos em maiúsculas e o conector os traduz para o select;
+`NAO_INFORMADO` corresponde à opção vazia. Esta última correspondência é
+**inferida**, conferida na releitura do formulário, mas ainda sem teste de
+gravação acompanhado.
+
+O XML de teste público
+[`nsi-iff/lattes_api`, `spec/resources/1234567890123456.xml`](https://github.com/nsi-iff/lattes_api/blob/HEAD/spec/resources/1234567890123456.xml)
+usa `RACA-OU-COR="Parda"`. Isso não comprova uma gravação atual no Lattes.
+A lista do editor vem das seis opções de `fnro_id_raca_cor` já capturadas;
+o conector mantém o mapeamento anterior por rótulo, sem acento nem caixa.
+
+O tipo de licença também usa as três opções capturadas (`f_tipo_licenca`):
+Maternidade (M), Paternidade (P) e Adoção (A). `MATERNIDADE` consta no XSD;
+`PATERNIDADE` e `ADOCAO` continuam **inferidos** do rótulo, como no mapeamento
+que o conector já usava. A lista da interface compartilha esses valores com
+o planejador; o tipo vazio é recusado antes do envio. A inclusão de licença
+exige a data de nascimento ou adoção, que fica fora do XML (seção 21): o
+editor a pede na licença nova e a manda só no envio
+(`src/bridge/create-licenca.ts`), com as regras do `check()` conferidas
+antes. **Inferido**, sem envio acompanhado.
+
+## 24. Recaptura de 26/10/2026
+
+Só leitura, por GET, com o `inspect()` do censo na sessão do dono (a opção
+`editOf` abre a alteração do primeiro item de uma lista). O currículo não
+tinha livros, orientações, bancas, projetos de pesquisa nem patentes: dessas,
+foram lidas as páginas de inclusão, com os scripts. Os arquivos crus não são
+versionados. **Observado**, menos onde está marcado.
+
+- **Natureza do livro** (`PKG_LVR_CAP.FORM_LVR`). O `dominio()` abre um combo
+  com as opções no próprio script, pelo tipo: 131 tem 1 Coletânea, 2 Texto
+  integral, 3 Verbete e 4 Outro; 133 tem 5 Livro, 6 Anais, 7 Catálogo,
+  8 Coletânea, 9 Enciclopédia, 10 Periódico e 11 Outro. O `atribui()` grava
+  em `f_cod_sub_prod` só o primeiro caractere do código (10 e 11 viram 1) e
+  o rótulo em `f_sub_prod`, desabilitado. O `check()` não exige a natureza.
+  O conector manda o código pelo tipo; Periódico e o Outro da organização
+  ficam à mão. **Inferido:** o valor do XML pelo rótulo.
+- **Outra produção bibliográfica** (`prc_bib_outraprod`, `GN_BIB`, lida na
+  inclusão e numa alteração). Natureza em texto livre (`f_natureza`, até
+  100; o `dominio()` só sugere "Trabalho de Conclusão de Curso"), título,
+  ano, país, idioma, meio, home page, `F_RELEV`,
+  `F_STA_DIVULGACAO_CIENTIFICA` (S/N), editora, cidade, páginas, ISSN/ISBN,
+  `f_ref` e os textos em inglês. Não há DOI nem natureza em inglês.
+- **Tipo da orientação** (`pkg_orient.form`). O `dominio()` do mestrado tem
+  29 Acadêmico e 30 Profissional nas concluídas, 36 e 37 nas em andamento; o
+  `atribui()` grava o código em `f_sub_prod` e o rótulo em `f_dsc_outra`. A
+  outra natureza abre "Outro Tipo" e pede o texto num `prompt()`, que vai em
+  `f_dsc_outra`; as outras naturezas não têm tipo. **Inferido:** `ACADEMICO` e
+  `PROFISSIONALIZANTE` pelos rótulos, e que o `TIPO` das outras orientações
+  concluídas seja o texto de `f_dsc_outra`, que o conector manda só na outra
+  natureza (lido de novo em 27/10/2026).
+- **Banca de trabalho** (`PKG_BANCA_TRAB.form`). O `testa_nivel()` da banca
+  limpa só a instituição e o curso (com confirmação); o `check()` aceita
+  `f_sub_prod` só no mestrado. Um script move um dos rádios de natureza na
+  carga da página, e os índices de `sele_inst()` e `curso()` seguem a ordem
+  viva, lida em 27/10/2026 (seção 18).
+- **Patente e registros** (`pkg_patente_registro.form`). O titular instituição
+  sai de uma sugestão sobre o vetor `titularInstDP` do menu, cuja linha vai
+  inteira para a grade, ou da janela `PKG_TITULAR_INST_PATENTE.sele_inst`. O
+  combo da linha da grade de situações monta as opções da chave `contato`,
+  que as entradas não têm (elas têm `situacao`): trocar a situação na linha
+  mandaria o rótulo vazio. O "Incluir nova" usa `unshift` com `id`,
+  `contato` e `endereco`, recusa repetidas menos o licenciamento (7), e a
+  lixeira some na linha com `deletable` "false", menos na concessão (3). O
+  ambiente do programa de computador sai do vetor `programaDP` da página (97
+  entradas, `l`, `n` e `c`, até 3 por item); `f_ambiente` leva os `c`. Como a
+  exportação grava `AMBIENTE` está na seção 25.
+- **Projeto** (`PKG_PROJETO.form`, inclusão). O financiador entra pela
+  busca `pp_lista_inst?f_pgm=INSTFINANC`, cujo `seleciona()` abre
+  `PKG_PROJETO.EDITAR_FINANCIAMENTO` com `P_COD`, `P_COD_INST` e `P_CTR`; a
+  linha existente se edita na mesma página, com `P_VALORES` e `P_INDICE`. A
+  natureza, a moeda e o valor saem dela, que sem uma linha real responde 404. Os rótulos de natureza que a página conhece são Auxílio Financeiro,
+  Bolsa, Remuneração, Cooperação e Outra, com as letras A, B, R, C e O
+  (seção 21). As produções e orientações ligadas saem de
+  `PKG_PROJETO.pp_lista_prod` com `f_tpo=PROD` ou `f_tpo=TESE`, sem o
+  projeto, e cada linha escolhida entra com `importarDados1`; o `check()`
+  manda o primeiro valor de cada linha em `f_producoes_l` e
+  `f_orientacoes_l`. Que esse valor seja a `SEQUENCIA-PRODUCAO` do item não
+  foi conferido. O órgão e a instituição só são exigidos na inclusão
+  (`f_ctr` I), e `f_orgao` vai desabilitado.
+- **Endereço** (`prc_endereco`). Os tipos de outra forma de contato são
+  7 Telegram, 3 MSN e 6 WhatsApp, com a privacidade 1 Público ou 2 Privado;
+  o "Inserir nova" usa `unshift` com `id`, `contato`, `endereco`,
+  `privacidade` e `visibilidade`, recusa o mesmo tipo com o mesmo endereço e
+  aceita até 5. Vai em `f_dados_grid_contatos` pelo mesmo `array2xml` das
+  redes. Como a exportação grava `OUTRA-FORMA-DE-CONTATO` está na seção 25.
+
+## 25. Exportação dos itens de teste (27/10/2026)
+
+Cinco itens de teste criados pela própria página do Lattes, o currículo
+enviado ao CNPq às 12h28 e exportado depois que o Exportar acompanhou (entre
+2h07 e 3h48 depois do envio, seção 10). **Observado**, com valores
+sintéticos:
+
+- **Programa de computador.** `AMBIENTE="Aplicativos|Automação bancária"`:
+  os `c` das linhas de `programaProvider`, unidos por `|`, o mesmo que o
+  `check()` manda em `f_ambiente`.
+- **Música.** Com "Récita Lírica" gravado em `f_tpo_evento` (a página de
+  alteração o mostra marcado), `TIPO-DE-EVENTO="NAO_INFORMADO"`. O tipo de
+  evento gravado não volta na exportação.
+- **Orientação de outra natureza.** `TIPO` é o texto do "Outro Tipo"
+  (`f_dsc_outra`).
+- **Patente com a instituição titular.** `NOME-DO-DEPOSITANTE` traz a
+  instituição, `NOME-DO-TITULAR` vem vazio, e a instituição não vai aos
+  `AUTORES`.
+- **Projeto.** O órgão escolhido vai em `CODIGO-ORGAO`/`NOME-ORGAO` e
+  também em `CODIGO-UNIDADE`/`NOME-UNIDADE`. O financiador traz
+  `CODIGO-INSTITUICAO` sem a letra da busca, `NOME-INSTITUICAO` e
+  `NATUREZA="BOLSA"` (a letra B da linha); o código do projeto, a moeda e o
+  valor não vão ao XML. Cada produção ligada é um `PRODUCAO-CT-DO-PROJETO`
+  com `SEQUENCIA-PRODUCAO-CT` igual à `SEQUENCIA-PRODUCAO` da produção, o
+  título e o tipo pelo rótulo da natureza ("Software", "Interpretação"). A
+  orientação ligada pela grade de orientações também veio aí, como
+  "Orientação de outra natureza", e não em `ORIENTACOES`.
+- **Outra forma de contato.** `OUTRA-FORMA-DE-CONTATO="ID Rede Social:
+7534948, Nome Rede Social: MSN, Endereço: <e-mail>"`, no mesmo formato de
+  `REDE-SOCIAL`. Com dois contatos a junção não foi vista; o conector supõe
+  a das redes, sem separador (inferido). O `ELETRONICO` traz o e-mail alternativo da tela de envio
+  como `R:`, depois de `I:` e um `;`.
+- **Pessoa com deficiência.** Com um tipo marcado, `PCD` é o rótulo da
+  caixa (`"Deficiência Visual"`).
+
+## 26. Recaptura dos formulários (27/10/2026)
+
+Só leitura, por GET, com o `capture()` do censo na sessão do dono
+(`lattes-formularios/censo-2026-10-27.json`): 87 dos 89 formulários lidos.
+Comparado com as capturas de 15/10/2026, nenhum campo saiu. **Observado**:
+
+- `f_ref` ("Informações adicionais", em português) está em 45 formulários de
+  produção, e `f_outras_inf` ("Outras informações") nos de atuação, vínculo e
+  revisor. A captura de 15/10/2026 não os trazia; se o Lattes os acrescentou
+  ou se a captura os perdeu não se sabe. O conector passou a mandar
+  `DESCRICAO-INFORMACOES-ADICIONAIS` em `f_ref` no artigo aceito, no
+  trabalho em eventos, no livro, no texto em jornal, na tradução e na
+  partitura, e `OUTRAS-INFORMACOES` no vínculo novo.
+- Na residência médica, `f_orient` tem o rótulo "Número do registro": é o
+  `NUMERO-DO-REGISTRO`, e não o orientador, que esse nível não tem.
+- Os rádios de cooperação e de potencial de inovação do projeto trocaram o
+  rótulo; os valores são os mesmos.
+
+Os outros menus do Lattes (dicionários de palavras-chave, de áreas, de
+instituições e de autores, identificação de coautor, alteração de periódico)
+renomeiam ou excluem o que os itens já têm, sem acrescentar campo que o
+formulário de algum item não tenha.
+
+Nas exportações públicas da seção 23, lidas de novo em 27/10/2026: os 127
+programas de rádio ou TV trazem `EMISSORA` e nenhum `VEICULO-DE-DIVULGACAO`,
+e os 8 pós-doutorados trazem `STATUS-DO-CURSO` e nenhum `STATUS-DO-ESTAGIO`.
+O conector liga o `f_emissora` (rótulo "Veículo de divulgação") à `EMISSORA`
+e o `F_STATUS` do pós-doutorado ao `STATUS-DO-CURSO`. **Inferido** das
+exportações, sem envio acompanhado.
+
+As atividades das naturezas que não são o ensino têm, na captura de
+27/10/2026, o mesmo formulário: órgão, período e a grade de descrições
+`f_espec_l`. O conector as inclui com a descrição na grade (o atributo da
+natureza numa linha; as linhas de pesquisa e os treinamentos, uma linha
+cada) e o órgão pela janela de órgãos da atividade, com a instituição do
+link. A linha de pesquisa nova leva só o título: o objetivo e o resto vão
+pela tela de linhas de pesquisa depois. **Inferido** até uma inclusão
+acompanhada.
+
+A lista de cursos da atividade de ensino (`prc_curso_form` com
+`f_pgm=ATIV`) é, opção a opção, a mesma da formação (`f_pgm=FORM`), nos
+níveis 1, 2 e 5, lida em 27/10/2026 numa universidade com 171 cursos de
+graduação. O editor oferece essa lista no curso do ensino, com a
+instituição da atuação, e o conector manda o nível e o curso também na
+alteração de uma atividade que já está (`ensino-curso.ts`). **Inferido** que
+a alteração grave o curso como a inclusão; a releitura confere o texto de
+`f_curso`.
+
+No projeto de teste, lido em 27/10/2026 sem enviar: as linhas de `grid3`
+trazem no `<span>` o `SEQUENCIA-PRODUCAO` das produções ligadas (36 o
+programa de computador, 37 a música), e a de `grid4`, o da orientação (38).
+Os ocultos `f_producoes_d` e `f_orientacoes_d` trazem os mesmos códigos
+unidos por `|`. A exportação põe as três em `PRODUCOES-CT-DO-PROJETO`. O
+conector inclui e tira ligações de um projeto que já está pelas duas
+grades, a de cada código pelo tipo do item com esse número no currículo
+(`production/project-links.ts`). **Inferido**: que o servidor grave a
+ligação nova só com o código, sem a janela de produções.
+
+Incluir e tirar financiadores de um projeto que já está: a linha que sai
+fica de fora de `f_inst_l`; a que entra acha a instituição pela busca do
+financiador e vai como `<código com a letra>|;N;|||<letra>|`, com o código
+do projeto e a moeda e o valor vazios (`production/financiador-lista.ts`).
+**Inferido**: só a linha com código do projeto e valor foi vista.
+
+## 27. Envios acompanhados (28/10/2026)
+
+Pela ponte local, com o núcleo do conector na aba do menu
+(`dist-censo/conector-ponte.js`), cada item de teste foi incluído e depois
+excluído pelo conector, e a releitura conferiu os dois passos. **Observado**:
+
+- **Formação complementar.** A inclusão segue os dois passos da edição: o
+  primeiro POST de `PKG_FORMACAO_COMPL.FORM2` não grava e devolve o segundo
+  passo com `f_ctr=I` (na edição, `U`); o segundo grava. A lista de cursos de
+  um nível numa instituição traz só os cursos de cadastro manual já usados ali,
+  e dois cursos com o mesmo nome na mesma instituição, em níveis diferentes,
+  existem: a exclusão acha a linha também pelo nível.
+- **Atividade de pesquisa e desenvolvimento nova** com a linha de pesquisa na
+  grade e, depois, os objetivos e o campo Ativa pelo formulário da linha
+  (`GN_LINHA`), achada na lista pela atividade e pelo título. Numa atividade
+  que já existe, a linha nova entrou pela grade com `c` 0 e a tirada saiu por
+  `f_exc` (`c?`), e a que ficou manteve o número e os objetivos. A página de
+  alteração de uma atividade tem o `del()` com `f_ctr=E`, e a exclusão leva
+  junto as linhas de pesquisa dela.
+- **Licença** incluída com a data de nascimento ou adoção e excluída pelo
+  formulário dela; **prêmio** incluído e excluído.
+- **Projeto.** A janela das atuações (`pp_lista_inst?f_pgm=INSTVINCULO`) não
+  traz mais o `preencherOpener` com o vínculo (seção 17): cada linha chama
+  `seleciona(código, nome, sigla)`, que só grava a instituição. O `check()` do
+  projeto chama antes `configurarInstituicoes()`, que monta `f_instituicoes`
+  como XML (`<root>`, um `<item>` com `<cod>` e `<tipo_inst>` por linha da grade
+  de instituições, `</root>`); com o campo vazio, o banco responde
+  `ORA-19032` e nada grava. Com `<root></root>`, a inclusão gravou o projeto
+  com a própria pessoa como coordenadora, um financiador (natureza Bolsa) e
+  uma produção ligada, e o servidor o pendurou numa atividade de pesquisa e
+  desenvolvimento da atuação. A página de alteração não traz de volta
+  `f_inst_old`. A exclusão do projeto, pelo formulário, conferiu.
+- **Doutorado sanduíche.** Os rótulos dos blocos: o primeiro ("Detalhamento
+  do período sanduíche": `f_orient_dout`, `f_inst_dout`, `f_meses_sw`) é o do
+  tipo S; o bloco `_sw` é o sanduíche da cotutela com sanduíche e o `_ct`, a
+  cotutela. Num tipo S, o `f_orient_dout_sw` enviado voltou vazio. A exclusão
+  da formação, com outras públicas (`contPriv` maior que zero), não chamou o
+  `SETA_ULTIMO_PUBLICO`.
+- **Exportação** com alteração ainda não enviada ao CNPq responde só com um
+  alerta ("Existem alterações realizadas…"), sem o arquivo.
+- **Endereço profissional.** Num endereço profissional vazio (só o e-mail),
+  a instituição pela busca `PRC_INST_ATIV` e o órgão pela janela de órgãos
+  gravaram e voltaram na releitura. Com a instituição, o banco exige o país
+  ("O país deve ser informado") e, no Brasil, a cidade e a UF ("Os campos
+  CIDADE e UF devem ser preenchidos"), pelo gatilho `TRG_RECUP_MUNIC_PAIS`, que
+  preenche o código do município e as cópias `f_munic_i_old`, `f_estado_i_old`
+  e `f_pais_i_old`. O formulário de endereço também monta XML no `check()`
+  (`f_dados_grid` e `f_dados_grid_contatos`); um envio sem eles para com
+  `ORA-19032`. O endereço voltou ao que era por um envio do conector com os
+  campos vazios.

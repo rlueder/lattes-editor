@@ -38,10 +38,16 @@ function arte(
   element: string,
   main: string,
   detail: string,
-  fields: { details: Record<string, FieldMap | string>; extra: Record<string, FieldMap | string> },
+  fields: {
+    details: Record<string, FieldMap | string>;
+    extra: Record<string, FieldMap | string>;
+    /** Atributos do detalhamento que ficam à mão, com o motivo. */
+    manual?: Record<string, string>;
+  },
 ): ProductionTarget {
   return {
     element,
+    ...(fields.manual ? { manual: under(detail, fields.manual) as Record<string, string> } : {}),
     fields: {
       ...under(main, {
         ...basics('TITULO', 'TITULO-INGLES'),
@@ -146,14 +152,6 @@ const MUSICA = arte('MU', 'MUSICA', 'DADOS-BASICOS-DA-MUSICA', 'DETALHAMENTO-DA-
     },
     'FLAG-INEDITISMO-DA-OBRA': { field: 'f_inedito', toForm: checkbox },
     'FORMACAO-INSTRUMENTAL': 'f_form_instr',
-    'TIPO-DE-EVENTO': {
-      field: 'f_tpo_evento',
-      toForm: oneOf(
-        optionsOf(
-          'Concerto|Concurso|Festival|Performance|Récita Lírica|Recital|Registro fonográfico|Show|Temporada|Turnê|Outro',
-        ),
-      ),
-    },
   },
   extra: {
     NATUREZA: nature({
@@ -168,6 +166,13 @@ const MUSICA = arte('MU', 'MUSICA', 'DADOS-BASICOS-DA-MUSICA', 'DETALHAMENTO-DA-
       REGISTRO_FONOGRAFICO: '3B8',
       TRILHA_SONORA: '3B9',
     }),
+  },
+  // Uma música de teste gravada com "Récita Lírica" em f_tpo_evento (a página
+  // de alteração o mostra marcado) veio na exportação de 27/10/2026 com
+  // TIPO-DE-EVENTO="NAO_INFORMADO". O que se grava não volta no XML.
+  manual: {
+    'TIPO-DE-EVENTO':
+      'A exportação do Lattes não traz o tipo de evento da música: gravado no formulário, ele volta como NAO_INFORMADO',
   },
 });
 

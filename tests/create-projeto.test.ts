@@ -15,8 +15,8 @@ import {
 } from '../src/bridge/create-projeto.ts';
 import { planChanges } from '../src/bridge/plan.ts';
 import { sentEntry, undoOp } from '../src/bridge/sent-log.ts';
-import { type Change, diffDocuments, resolvePath } from '../src/model/changes.ts';
-import { parseXml, type XElement } from '../src/model/xml.ts';
+import { type Change, diffDocuments, pathTo, resolvePath } from '../src/model/changes.ts';
+import { parseXml, walk, type XElement } from '../src/model/xml.ts';
 import { CV, fakeProjeto } from './helpers/fake-lattes-create.ts';
 
 const PROJETO =
@@ -46,7 +46,7 @@ const projeto = (
 ) => `<PROJETO-DE-PESQUISA ${attrs}>${children}</PROJETO-DE-PESQUISA>`;
 
 /** Planeja o projeto novo como a lista de alterações o entrega (a participação inteira é nova). */
-function planned(xml: string, inst?: string) {
+function planned(xml: string, inst?: string, text?: string) {
   const after = cv(xml, inst);
   const original = parseXml(
     `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1234567890123456"><DADOS-GERAIS NOME-COMPLETO="Ana Silva"><ATUACOES-PROFISSIONAIS>
@@ -57,7 +57,14 @@ function planned(xml: string, inst?: string) {
   ).root;
   const changes = diffDocuments(original, after).filter((c) => c.kind === 'novo');
   const change = changes[0]!;
-  return projetoOp(change, resolvePath(after, change.path), 'Projeto · Genômica');
+  const chain = resolvePath(after, change.path);
+  // O texto do potencial, escrito no editor para o elemento do projeto (InnovationText.tsx).
+  let key = '';
+  walk(after, (el) => {
+    if (el.name === 'PROJETO-DE-PESQUISA') key = pathTo(after, el)!.join('/');
+  });
+  const extras = text ? { [key]: { f_txt_potencial: text } } : {};
+  return projetoOp(change, chain, 'Projeto · Genômica', extras);
 }
 
 const op = () => planned(projeto()) as CreateProjetoOp;
@@ -120,9 +127,17 @@ describe('planejar a inclusão de um projeto', () => {
     );
     const other =
       '<EQUIPE-DO-PROJETO><INTEGRANTES-DO-PROJETO NOME-COMPLETO="Bruno" ORDEM-DE-INTEGRACAO="1"/></EQUIPE-DO-PROJETO>';
-    expect(reason(projeto(PROJETO, other))).toMatch(/Equipe além de você/);
+    expect(reason(projeto(PROJETO, other))).toMatch(/exige você na equipe/);
+    // Você e outro integrante: a equipe vai, pela lista de autores do menu (create-projeto-extras.ts).
     const two = `<EQUIPE-DO-PROJETO><INTEGRANTES-DO-PROJETO ${OWNER}/><INTEGRANTES-DO-PROJETO NOME-COMPLETO="Bruno"/></EQUIPE-DO-PROJETO>`;
-    expect(reason(projeto(PROJETO, two))).toMatch(/Equipe além de você/);
+    expect(planned(projeto(PROJETO, two))).toMatchObject({
+      extras: {
+        team: expect.arrayContaining([
+          expect.objectContaining({ owner: true }),
+          expect.objectContaining({ name: 'Bruno', owner: false }),
+        ]),
+      },
+    });
     const notOwner = OWNER.replace('1234567890123456', '9999999999999999');
     expect(
       reason(
@@ -131,7 +146,7 @@ describe('planejar a inclusão de um projeto', () => {
           `<EQUIPE-DO-PROJETO><INTEGRANTES-DO-PROJETO ${notOwner}/></EQUIPE-DO-PROJETO>`,
         ),
       ),
-    ).toMatch(/Equipe/);
+    ).toMatch(/exige você na equipe/);
     expect(
       reason(
         projeto(
@@ -139,29 +154,59 @@ describe('planejar a inclusão de um projeto', () => {
           '<FINANCIADORES-DO-PROJETO><FINANCIADOR-DO-PROJETO NOME-INSTITUICAO="CNPq"/></FINANCIADORES-DO-PROJETO>',
         ),
       ),
-    ).toMatch(/Financiadores/);
+    ).toMatch(/natureza que o Lattes não tem/);
+    // Com a natureza, o financiador vai na inclusão, pela busca (create-projeto-extras.ts).
     expect(
-      reason(projeto(PROJETO.replace('IDENTIFICADOR-PROJETO=""', 'IDENTIFICADOR-PROJETO="X1"'))),
-    ).toMatch(/não tem: Identificador projeto|não tem: IDENTIFICADOR-PROJETO|não tem:/);
+      planned(
+        projeto(
+          PROJETO,
+          '<FINANCIADORES-DO-PROJETO><FINANCIADOR-DO-PROJETO NOME-INSTITUICAO="CNPq" NATUREZA="BOLSA"/></FINANCIADORES-DO-PROJETO>',
+        ),
+      ),
+    ).toMatchObject({ extras: { funders: [{ letter: 'B', name: 'CNPq' }] } });
+    // O que o formulário não tem fica fora, à vista, e o projeto vai.
+    expect(
+      planned(projeto(PROJETO.replace('IDENTIFICADOR-PROJETO=""', 'IDENTIFICADOR-PROJETO="X1"'))),
+    ).toMatchObject({ left: [expect.any(String)] });
     expect(
       reason(
         projeto(PROJETO.replace('FLAG-POTENCIAL-INOVACAO="NAO"', 'FLAG-POTENCIAL-INOVACAO="SIM"')),
       ),
-    ).toMatch(/sem correspondência/);
+    ).toMatch(/escreva no editor qual é o potencial/);
+    // Com o texto escrito no editor, o Sim vai com ele.
+    expect(
+      planned(
+        projeto(PROJETO.replace('FLAG-POTENCIAL-INOVACAO="NAO"', 'FLAG-POTENCIAL-INOVACAO="SIM"')),
+        undefined,
+        'Um processo novo',
+      ),
+    ).toMatchObject({ set: { f_sta_inovacao: 'S', f_txt_potencial: 'Um processo novo' } });
     expect(reason(projeto(PROJETO.replace('SITUACAO="EM_ANDAMENTO"', 'SITUACAO=""')))).toMatch(
       /nome, situação e ano/,
     );
   });
 
-  it('órgão, unidade ou meses na participação não somem: o projeto vai à mão', () => {
+  it('o órgão escolhido na lista vai com o projeto; só o nome, ou sem órgão, não', () => {
     const before = cv('');
     const after = cv(projeto());
     const changes = diffDocuments(before, after).filter((c) => c.kind === 'novo');
     const chain = resolvePath(after, changes[0]!.path);
     const part = chain.find((c) => c.name === 'PARTICIPACAO-EM-PROJETO')!;
+    expect(planCreateProjeto(changes[0]!, chain, 'Projeto')).toEqual({ reason: TEAM_BY_HAND });
     part.attrs.push({ name: 'NOME-ORGAO', value: 'Instituto de Biociências' });
     expect(projetoOp(changes[0]!, chain, 'Projeto')).toEqual({
-      reason: expect.stringMatching(/participação no projeto tem campos.*NOME-ORGAO/),
+      reason: expect.stringMatching(/escolha pela lista do Lattes/),
+    });
+    part.attrs.push({ name: 'CODIGO-ORGAO', value: '000000000101' });
+    expect(planCreateProjeto(changes[0]!, chain, 'Projeto')).toMatchObject({
+      organ: { code: '000000000101' },
+    });
+    part.attrs.push(
+      { name: 'CODIGO-UNIDADE', value: '000000000102' },
+      { name: 'NOME-UNIDADE', value: 'Laboratório de Genética' },
+    );
+    expect(projetoOp(changes[0]!, chain, 'Projeto')).toMatchObject({
+      organ: { code: '000000000102', parent: '000000000101' },
     });
   });
 
@@ -182,12 +227,12 @@ describe('planejar a inclusão de um projeto', () => {
     expect(planCreateProjeto(change, chain, 'Projeto')).toEqual({ reason: TEAM_BY_HAND });
     const participacao = chain.at(-1)!.children.find((c): c is XElement => c.kind === 'element')!;
     participacao.attrs.push({ name: 'MES-INICIO', value: '3' });
-    expect(projetoOp(change, chain, 'Projeto')).toEqual({
-      reason: expect.stringMatching(/participação no projeto tem campos.*MES-INICIO/),
+    expect(projetoOp(change, chain, 'Projeto')).toMatchObject({
+      left: [expect.stringMatching(/MES-INICIO|Mês/)],
     });
   });
 
-  it('a atuação nova com projeto não vai pela inclusão de atuação', () => {
+  it('a atuação nova com projeto vai antes; o projeto, no envio seguinte', () => {
     const atuacao = parseXml(
       `<ATUACAO-PROFISSIONAL CODIGO-INSTITUICAO="1" NOME-INSTITUICAO="U">
         <VINCULOS SEQUENCIA-HISTORICO="1" TIPO-DE-VINCULO="CELETISTA" ANO-INICIO="2020"/>
@@ -195,8 +240,9 @@ describe('planejar a inclusão de um projeto', () => {
       </ATUACAO-PROFISSIONAL>`,
     ).root;
     const change = { key: 'k', kind: 'novo' } as Change;
-    expect(planCreateAtuacao(change, atuacao, 'Atuação')).toEqual({
-      reason: expect.stringMatching(/atividades ou projetos/),
+    expect(planCreateAtuacao(change, atuacao, 'Atuação')).toMatchObject({
+      kind: 'criar-atuacao',
+      later: [expect.stringMatching(/projeto/i)],
     });
   });
 });
@@ -231,6 +277,37 @@ describe('incluir o projeto no Lattes falso', () => {
       f_titulo: 'Genômica de palmeiras',
       f_vinc: 'Servidor público',
     });
+  });
+
+  it('o órgão sai da janela de órgãos da instituição e volta no texto de f_orgao', async () => {
+    const fake = fakeProjeto();
+    const withOrgan = { ...op(), organ: { code: '000000000101' } };
+    expect(await applyOp(withOrgan, fake.port)).toMatchObject({ status: 'conferido' });
+    expect(fake.posts[0]!.body).toMatchObject({
+      f_codorgao: '000000000101',
+      f_codorgao2: '',
+      f_orgao_old: 'Instituto de Biociências',
+    });
+    // Uma unidade: o código dela, e o texto com o órgão de cima.
+    const unitFake = fakeProjeto();
+    const unit = { ...op(), organ: { code: '000000000102', parent: '000000000101' } };
+    expect(await applyOp(unit, unitFake.port)).toMatchObject({ status: 'conferido' });
+    expect(unitFake.posts[0]!.body).toMatchObject({
+      f_codorgao: '000000000102',
+      // O envio do formulário leva a quebra de linha como CRLF.
+      f_orgao_old: expect.stringMatching(
+        /^Instituto de Biociências\/\r?\nLaboratório de Genética$/,
+      ),
+    });
+    // Órgão fora da janela: nada vai.
+    const missing = fakeProjeto();
+    expect(await applyOp({ ...op(), organ: { code: '000000000999' } }, missing.port)).toMatchObject(
+      { status: 'erro' },
+    );
+    expect(missing.posts).toEqual([]);
+    // O Lattes mostra outro órgão depois de criar.
+    const other = fakeProjeto({ tamper: { f_orgao: 'Outro órgão' } });
+    expect(await applyOp(withOrgan, other.port)).toMatchObject({ status: 'divergente' });
   });
 
   it('código com V vai em f_cod_inst', async () => {
@@ -332,17 +409,23 @@ describe('incluir o projeto no Lattes falso', () => {
       ),
     ).toEqual([
       {
-        anoFim: '',
-        anoInic: '2019',
-        carga: '40',
         code: 'D1',
-        enqua: 'a',
         name: 'U',
-        regime: '',
-        stavinc: '1',
-        vinc: 'Celetista',
+        vinculo: {
+          F_ANO_FIM: '',
+          F_ANO_INIC: '2019',
+          f_carga: '40',
+          f_enqua: 'a',
+          f_regime: '',
+          f_stavinc: '1',
+          f_vinc: 'Celetista',
+        },
       },
     ]);
+    // A janela de 28/10/2026: as linhas só com seleciona(código, nome, sigla).
+    expect(
+      vinculoChoices("seleciona(vlr,texto) javascript:seleciona('V985600720469','Inst','SIG')"),
+    ).toEqual([{ code: 'V985600720469', name: 'Inst' }]);
   });
 });
 

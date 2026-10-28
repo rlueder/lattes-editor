@@ -29,13 +29,13 @@ reais, os títulos não existem e os DOIs usam o prefixo de teste do Crossref
 
 Prévias no `pnpm dev`, sem Lattes nem extensão:
 
-| Endereço                 | Mostra                                                                                                                      |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `?simular-atualizacao`   | O aviso de versão nova e "Verificar atualizações" no ⚙ (`=nenhuma`, `=falha`)                                               |
-| `?simular-foto`          | O lápis da foto e a troca (`=falha` para o erro)                                                                            |
-| `?primeiro-uso=<estado>` | Um estado fixo da tela de primeiro uso (`src/dev/onboarding-preview.ts`)                                                    |
-| `?simular-envio`         | A janela "Enviar ao Lattes" com uma tela de envio de exemplo (`src/dev/send-screen-preview.ts`); `&publicar` mostra a caixa |
-| `?itens-teste`           | O painel dos itens de teste do censo (`lattes-formularios/itens-de-teste.md`)                                               |
+| Endereço                 | Mostra                                                                                                           |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `?simular-atualizacao`   | O aviso de versão nova e "Verificar atualizações" no ⚙ (`=nenhuma`, `=falha`)                                    |
+| `?simular-foto`          | O lápis da foto e a troca (`=falha` para o erro)                                                                 |
+| `?primeiro-uso=<estado>` | Um estado fixo da tela de primeiro uso (`src/dev/onboarding-preview.ts`)                                         |
+| `?simular-envio`         | A janela "Enviar ao Lattes" com uma tela de envio de exemplo (`src/dev/send-screen-preview.ts`), sem sessão real |
+| `?itens-teste`           | O painel dos itens de teste do censo (`lattes-formularios/itens-de-teste.md`)                                    |
 
 ## Ícones das seções
 
@@ -87,6 +87,8 @@ pnpm typecheck
 pnpm lint
 cd src-tauri && cargo test && cargo clippy -- -D warnings
 pnpm test:censo-isolation # os quadros do censo Dev num Brave sem janela (abaixo)
+pnpm test:contact-controls # e-mails e URLs: edição, validação e Escape, em perfil temporário sem janela
+pnpm test:publish-controls # painel de publicação com declaração e transporte sintéticos, sem sessão real
 pnpm test:modal-controls  # geometria de fechar e expandir, num Brave ou Chrome sem janela
 ```
 
@@ -94,10 +96,20 @@ O Rust do canal Dev passa pelos mesmos comandos com `--features canal-dev`.
 O teste dos controles usa o CSS do app com cabeçalhos fictícios, em três
 larguras e nos dois temas. Não abre currículos nem precisa de servidor local.
 Os hooks do Husky rodam formatação e lint no commit e, no push, o conjunto
-todo com cobertura. Os testes de ponta a ponta do conector sobem o Lattes
+todo com cobertura e, só neste repositório, `pnpm test:ci-extra`: os testes
+de contatos e de publicação no navegador sem janela e as montagens do app,
+da extensão e do censo, que o CI também roda. A extensão Dev fica fora, para
+o push não reescrever a pasta `dist-extension-dev/` carregada no navegador. Os testes de ponta a ponta do conector sobem o Lattes
 simulado dentro do próprio teste (`tests/helpers/lattes-simulado.ts`), com
 as chaves das operações ligadas; os que cobrem o caminho desligado forçam a
 chave ou a opção.
+
+O CI também roda os controles de contatos e publicação num navegador sem
+janela, em perfis temporários e portas de depuração próprios. O teste de publicação usa declaração
+e transporte sintéticos; não acessa uma sessão real nem envia ao CNPq. Esses
+testes recusam `LATTES_PERFIL`, `LATTES_JANELA` e `LATTES_EXTENSAO` para não
+reutilizar a sessão de quem está desenvolvendo.
+As páginas de teste também bloqueiam HTTP e HTTPS.
 
 `pnpm audit` ignora o aviso GHSA-vfj7-8cjw-p6xm (`braces` 3.0.3, esgotamento
 de pilha com padrões aninhados). A lista fica em `pnpm.auditConfig.ignoreGhsas`
@@ -105,6 +117,14 @@ no `package.json`. O pacote chega por `micromatch`, dentro do semantic-release,
 só roda no lançamento e só lê mensagens de commit do próprio repositório; não
 existe versão corrigida. Quando o semantic-release trocar de versão, tirar o
 aviso da lista e conferir se o audit volta a passar.
+
+`node scripts/cobertura-conector.ts --resumo` mede o planejamento de envio
+com o currículo sintético. `--lista=motivo:` lista cada lacuna; `--so=ELEMENTO`
+restringe os elementos avaliados. Os testes em `tests/cobertura-conector.test.ts`
+conferem as opções usadas na medição e impedem arredondar lacunas para 100%.
+`scripts/cobertura-exemplo.ts` prepara apenas `synthetic_full.xml` para essa
+medição, com opções válidas e contatos no formato serializado; um XML passado
+como argumento é avaliado sem esses ajustes.
 
 ## Geradores
 
@@ -283,9 +303,11 @@ preenchimento, os validadores e as confirmações dentro do quadro; a
 comunicação é uma `MessageChannel` privada, aceita uma única vez e só do pai,
 e o pai autoriza um POST por ação de salvar ou excluir, validando campos e
 destino da mesma origem antes de passar ao transporte. As caixas de mensagem
-e os modais conhecidos têm uma adaptação local ao quadro; um formulário que
-dependa de outro acesso ao menu para a tarefa com erro, sem volta ao modo de
-mesma origem. O controlador é montado por `scripts/censo-runtime.ts`, no
+e os modais conhecidos têm uma adaptação local ao quadro, como a ajuda
+`veriHelp()`, os vetores de sugestão das grades, o armazenamento e o cookie,
+que no quadro ficam só na memória. Todo `parent.` e `top.` dos scripts vai a
+essas cópias, e o que elas não têm para a tarefa com o nome pedido, sem volta
+ao modo de mesma origem. Scripts e estilos de outro site saem do quadro. O controlador é montado por `scripts/censo-runtime.ts`, no
 censo avulso e no canal Dev; a extensão publicada não leva esse código.
 
 `pnpm test:censo-isolation` monta a extensão Dev e testa isso num perfil
@@ -296,3 +318,35 @@ forjadas, rede direta, salvar, excluir, formulários em dois passos,
 cancelamento e recusa de envio duplicado. Os validadores de cada formulário
 do CNPq ainda pedem conferência específica, porque a regressão usa páginas
 sintéticas.
+
+### Censo pela ponte local
+
+Para rodar o censo na aba do Lattes em segundo plano, sem colar no console:
+ligue a depuração remota do navegador (`brave://inspect/#remote-debugging`,
+"Allow remote debugging for this browser instance"), monte o censo e suba a
+ponte. Ela só escuta em `127.0.0.1`, com um token na pasta temporária, e o
+navegador pede "Allow" na primeira conexão.
+
+```bash
+pnpm build:censo
+node scripts/censo-ponte.ts servir &        # mantém a conexão
+node scripts/censo-ponte.ts carregar        # põe o censo na aba do menu
+node scripts/censo-ponte.ts chamar '__lattesCensus.ledger()'
+node scripts/censo-ponte.ts reanexar        # depois de entrar de novo no Lattes
+PONTE_ALVO=localhost:5173 node scripts/censo-ponte.ts avaliar '<expr>'  # outra aba
+```
+
+`PONTE_ALVO` escolhe a aba pelo endereço (a do editor em desenvolvimento, por
+exemplo); com `chrome-extension://<id>`, o worker da extensão Dev.
+
+O censo carregado some quando a aba recarrega; `carregar` de novo. Desligue a
+depuração remota ao terminar.
+
+A mesma ponte serve para um envio acompanhado com o núcleo do conector, sem a
+extensão: `node scripts/build-conector-ponte.ts` monta
+`dist-censo/conector-ponte.js`, `carregar dist-censo/conector-ponte.js` o põe
+na aba, e `chamar '__conectorPonte.apply(<operação>)'` roda o mesmo `applyOp`,
+com os tetos de pedidos. `capturas` lista os POSTs que a aba fez desde que a
+ponte subiu, com os textos mascarados e só os nomes e os campos de controle
+(`f_ctr`, os códigos e os `*_old`) à vista: é como se registra o envio feito
+pela própria página para comparar com o do conector.

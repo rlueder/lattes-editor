@@ -33,8 +33,11 @@
     "tauri": "tauri",
     "test": "vitest run",
     "test:censo-isolation": "pnpm build:extension --canal-dev && node scripts/test-censo-isolation.ts",
+    "test:ci-extra": "pnpm test:contact-controls && pnpm test:publish-controls && pnpm build && pnpm build:extension && pnpm build:censo",
+    "test:contact-controls": "node scripts/test-contact-controls.ts",
     "test:coverage": "vitest run --coverage",
     "test:modal-controls": "node scripts/test-modal-controls.ts",
+    "test:publish-controls": "node scripts/test-publish-controls.ts",
     "test:watch": "vitest",
     "typecheck": "tsc",
     "validate:fixtures": "node scripts/validate-fixtures.ts"

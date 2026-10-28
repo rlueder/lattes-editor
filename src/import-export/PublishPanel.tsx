@@ -14,13 +14,15 @@ import { failed } from '../bridge/sent-log.ts';
 import { simulatedSendScreen } from '../dev/send-screen-preview.ts';
 import { parseXml } from '../model/xml.ts';
 import { compareWithLattes } from '../review/lists-diff.ts';
+import { AlertIcon, CheckIcon, SpinnerIcon } from '../ui/icons.tsx';
 import { Modal } from '../ui/Modal.tsx';
 import { unpublishedEntries } from '../ui/status-strip.ts';
 import type { BridgeState } from '../ui/use-bridge.ts';
-import { usePublish } from '../ui/use-publish.ts';
+import { type SendScreenReading, usePublish } from '../ui/use-publish.ts';
 import { loadChoices, saveChoices } from './publish-memory.ts';
 import {
   canReadSendScreen,
+  canSendCv,
   checksLine,
   initialForm,
   type PublishAttempt,
@@ -58,6 +60,74 @@ interface Props {
   onPublished?: () => void;
 }
 
+/** Quantas vezes pedir de novo a tela de envio com a extensão ocupada, e o intervalo. */
+const BUSY_RETRIES = 24;
+const BUSY_RETRY_MS = 5000;
+
+interface PanelStateProps {
+  text: string;
+  title: string;
+  tone: 'busy' | 'check' | 'ok';
+}
+
+/** Um estado que toma o painel: lendo, esperando, enviando ou o resultado. */
+function PanelState({ text, title, tone }: PanelStateProps) {
+  return (
+    <div className={`publish-progress ${tone}`} role="status">
+      <span aria-hidden="true" className="publish-progress-icon">
+        {tone === 'busy' ? <SpinnerIcon /> : tone === 'ok' ? <CheckIcon /> : <AlertIcon />}
+      </span>
+      <h3 className="publish-progress-title">{title}</h3>
+      <p className="publish-progress-text">{text}</p>
+    </div>
+  );
+}
+
+/**
+ * O que toma o painel no lugar do formulário: o envio (andamento ou
+ * resultado), ou a tela de envio sendo lida, a extensão ocupada e a leitura
+ * que falhou, nessa ordem.
+ */
+function panelTakeover(
+  status: ReturnType<typeof publishStatus>,
+  {
+    available,
+    screen,
+    waitingBusy,
+  }: {
+    available: boolean;
+    screen: { problem?: string; waiting: boolean };
+    waitingBusy: boolean;
+  },
+): PanelStateProps | undefined {
+  const sendState: PanelStateProps | undefined =
+    (status.busy || status.locked || status.done) && status.text
+      ? {
+          text: status.text,
+          title: status.busy
+            ? 'Enviando ao CNPq…'
+            : status.done
+              ? 'Enviado ao CNPq'
+              : 'Confira no Lattes',
+          tone: status.busy ? 'busy' : status.done ? 'ok' : 'check',
+        }
+      : undefined;
+  // A tela de envio sendo lida, a extensão ocupada ou a leitura que falhou
+  // também tomam o painel, no mesmo formato do envio.
+  const screenState: PanelStateProps | undefined = waitingBusy
+    ? {
+        text: 'A extensão está terminando outra tarefa no Lattes. O painel segue sozinho.',
+        title: 'Esperando a extensão…',
+        tone: 'busy',
+      }
+    : screen.waiting
+      ? { text: 'Só leitura; nada é enviado ainda.', title: 'Lendo a tela de envio…', tone: 'busy' }
+      : available && screen.problem
+        ? { text: screen.problem, title: 'Não deu para ler a tela de envio', tone: 'check' }
+        : undefined;
+  return sendState ?? screenState;
+}
+
 /** O painel inteiro é remontado a cada abertura: a declaração nunca vem marcada. */
 export function PublishPanel(props: Props) {
   const [opening, setOpening] = useState(0);
@@ -76,8 +146,12 @@ function PublishPanelBody(props: Props) {
   const cnpq = usePublish(lattesId);
   const enabled = publishUiEnabled(location.search, import.meta.env.DEV);
   const [screenRequest, setScreenRequest] = useState<{ at: number; id: string } | undefined>();
-  // A declaração: só o clique da pessoa muda isto, e o painel remontado volta a false.
-  const [declared, setDeclared] = useState(false);
+  // O aceite guarda a leitura e o texto que a pessoa marcou. Outra leitura
+  // já aparece desmarcada no render, sem esperar o efeito de reinicialização.
+  const [acceptedDeclaration, setAcceptedDeclaration] = useState<{
+    reading: SendScreenReading;
+    text: string;
+  }>();
   const [form, setForm] = useState<PublishForm | undefined>();
   /** Os campos que começaram com a escolha da última vez, ditos no painel. */
   const [restored, setRestored] = useState<string[]>([]);
@@ -100,6 +174,11 @@ function PublishPanelBody(props: Props) {
 
   const reading = fake ?? (cnpq.screen?.id === screenRequest?.id ? cnpq.screen : undefined);
   const screen = reading?.screen;
+  const declared =
+    !!screen &&
+    !!acceptedDeclaration &&
+    acceptedDeclaration.reading === reading &&
+    acceptedDeclaration.text === screen.declaration;
   // O formulário começa com o que o Lattes tem, uma vez por leitura; uma
   // leitura nova desmarca a declaração, que valia para o texto de antes.
   useEffect(() => {
@@ -107,7 +186,7 @@ function PublishPanelBody(props: Props) {
     const start = initialForm(reading.screen, loadChoices(lattesId));
     setForm(start);
     setRestored(restoredFields(reading.screen, start));
-    setDeclared(false);
+    setAcceptedDeclaration(undefined);
   }, [reading, lattesId]);
   // As escolhas ficam guardadas para a próxima abertura, um instante depois da
   // última mudança (não a cada tecla); a prévia do dev não grava nada.
@@ -128,6 +207,22 @@ function PublishPanelBody(props: Props) {
     );
     return () => clearTimeout(timer);
   }, [screenStatus.waiting, screenRequest]);
+
+  // A extensão ocupada com outra tarefa no Lattes (a conferência que roda
+  // quando o menu carrega, por exemplo): o painel pede a tela de novo sozinho,
+  // até um limite, em vez de pedir para reabrir.
+  const [busyTries, setBusyTries] = useState(0);
+  const busyNow = reading?.reason === 'ocupado' && busyTries < BUSY_RETRIES;
+  useEffect(() => {
+    if (!busyNow) return;
+    const timer = setTimeout(() => {
+      setBusyTries((n) => n + 1);
+      setScreenRequest({ at: Date.now(), id: cnpq.requestScreen() });
+    }, BUSY_RETRY_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busyNow]);
+  const waitingBusy = busyNow || (busyTries > 0 && screenStatus.waiting);
 
   const status = publishStatus(attempt, cnpq.result, now);
   // Uma vez por envio confirmado: quem abriu o painel pode seguir (a tela inicial
@@ -157,7 +252,15 @@ function PublishPanelBody(props: Props) {
 
   const request = form && screen && publishRequest(form, declared, screen.declaration);
   const problem = request && requestProblem(request, screen);
-  const canSend = enabled && !!request && !problem && !status.locked && blockers.length === 0;
+  const canSend =
+    enabled &&
+    available &&
+    canSendCv(features) &&
+    !fake &&
+    !!request &&
+    !problem &&
+    !status.locked &&
+    blockers.length === 0;
   const set = (patch: Partial<PublishForm>) => setForm((f) => f && { ...f, ...patch });
 
   const send = () => {
@@ -166,12 +269,27 @@ function PublishPanelBody(props: Props) {
     setNow(at);
     setAttempt({ at, id: cnpq.publish(request) });
     // Um envio por declaração: a próxima tentativa pede a marca de novo.
-    setDeclared(false);
+    setAcceptedDeclaration(undefined);
   };
 
   const sendLabel = inline ? 'Publicar no CNPq' : 'Enviar ao CNPq';
-  const body = (
+  // Depois do clique em enviar, o andamento e o resultado tomam o painel: o
+  // formulário já foi, e a declaração vale só para aquela tentativa.
+  const takeover = panelTakeover(status, {
+    available: bridge.available,
+    screen: screenStatus,
+    waitingBusy,
+  });
+  const body = takeover ? (
+    <PanelState {...takeover} />
+  ) : (
     <>
+      {fake && (
+        <p className="muted">Prévia de desenvolvimento: nenhum pedido é enviado ao Lattes.</p>
+      )}
+      {enabled && bridge.available && !fake && !canSendCv(features) && (
+        <p className="export-blocked">Atualize a extensão do conector para publicar pelo app.</p>
+      )}
       {!bridge.available && (
         <p className="export-blocked">
           O envio precisa da extensão e do seu currículo aberto no Lattes, neste navegador.
@@ -194,11 +312,6 @@ function PublishPanelBody(props: Props) {
             </div>
           )}
         </section>
-      )}
-
-      {screenStatus.waiting && <p className="muted">Lendo a tela de envio do Lattes…</p>}
-      {bridge.available && screenStatus.problem && (
-        <p className="export-blocked">{screenStatus.problem}</p>
       )}
 
       {screen && form && (
@@ -275,7 +388,13 @@ function PublishPanelBody(props: Props) {
                   checked={declared}
                   disabled={status.locked}
                   type="checkbox"
-                  onChange={(e) => setDeclared(e.target.checked)}
+                  onChange={(e) =>
+                    setAcceptedDeclaration(
+                      e.target.checked && reading
+                        ? { reading, text: screen.declaration }
+                        : undefined,
+                    )
+                  }
                 />
                 <span>{screen.agree || 'Li e estou de acordo com a declaração acima'}</span>
               </label>
@@ -329,7 +448,7 @@ function PublishPanelBody(props: Props) {
       footer={
         <>
           <button className="ghost" type="button" onClick={onClose}>
-            {status.done || !enabled ? 'Fechar' : 'Cancelar'}
+            {status.done || status.locked || !enabled ? 'Fechar' : 'Cancelar'}
           </button>
           {enabled && !status.locked && (
             <button className="primary" disabled={!canSend} type="button" onClick={send}>
@@ -340,7 +459,7 @@ function PublishPanelBody(props: Props) {
       }
       label="Enviar ao CNPq"
       open={open}
-      subtitle="Publica no currículo público o que está gravado no Lattes. Só você marca a declaração."
+      subtitle="Publica no currículo público o que está gravado no Lattes, depois que você marcar a declaração."
       title="Enviar ao CNPq"
       onClose={onClose}
     >

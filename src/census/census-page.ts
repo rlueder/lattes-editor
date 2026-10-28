@@ -65,6 +65,7 @@ export function isPrivateParam(name: string): boolean {
   const key = name.toLowerCase();
   return (
     key === 'f_cod' ||
+    key === 'p_cod' ||
     // O identificador de 16 dígitos do currículo (pkg_import_cv.form01?…&f_id=, 15/10/2026).
     key === 'f_id' ||
     key.startsWith('f_seq') ||
@@ -178,7 +179,11 @@ const REMOVED_SCRIPT = '[removido]';
 /** E-mails, CPFs e números longos (código ou identificador do currículo, CPF sem pontos). */
 const SCRIPT_PERSONAL = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+|\d{3}\.\d{3}\.\d{3}-\d{2}|\b[A-Z]?\d{6,}\b/g;
 
-const DATA_LINE = /\w*Provider\s*=|=\s*\[\s*\{|\bnew\s+Array\s*\(\s*['"{]/;
+const DATA_LINE = /\w*provider\w*\s*=(?!=)|=\s*\[\s*\{|\bnew\s+Array\s*\(\s*['"{]/i;
+
+/** Quanto a linha abre de lista ou chamada: "[" e "(" menos "]" e ")". */
+const openDepth = (line: string) =>
+  (line.match(/[[(]/g)?.length ?? 0) - (line.match(/[\])]/g)?.length ?? 0);
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -312,11 +317,22 @@ export function pageScripts(html: string, redact: readonly string[] = []): strin
     const body = (m[2] ?? '').trim();
     if (!body) continue;
     let inComment = false;
+    // Uma lista de dados em várias linhas (var provider = [{ ... }]): as
+    // linhas seguintes saem também, até a lista fechar (26/10/2026: as redes
+    // sociais do endereço vinham nas linhas de baixo).
+    let dataDepth = 0;
     const lines: string[] = [];
     for (const raw of body.split('\n')) {
+      if (dataDepth > 0) {
+        lines.push(REMOVED_SCRIPT);
+        dataDepth = Math.max(0, dataDepth + openDepth(raw));
+        inComment = nextCommentState(raw, inComment);
+        continue;
+      }
       const scrubbed = scrubScript(raw, redact, inComment);
       lines.push(scrubbed.line);
       inComment = scrubbed.inComment;
+      if (!scrubbed.inComment && DATA_LINE.test(raw)) dataDepth = Math.max(0, openDepth(raw));
     }
     out.push(lines.join('\n'));
   }

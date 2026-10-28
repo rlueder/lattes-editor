@@ -14,6 +14,7 @@ import { type EspelhoItem, isEspelhoPage, parseEspelho } from '../../src/bridge/
 import { exportCv, type ExportPort, fromBase64, toBase64 } from '../../src/bridge/export.ts';
 import type { FormControl } from '../../src/bridge/form.ts';
 import { importItems, type ImportPort, type ImportResult } from '../../src/bridge/importar.ts';
+import { KEEPALIVE_PAGE } from '../../src/bridge/keepalive.ts';
 import { cvCodeFrom, isLogonPage, lattesIdFrom, sameCv } from '../../src/bridge/lattes-html.ts';
 import {
   type ListsPort,
@@ -359,7 +360,10 @@ const connector = {
       return { detail: 'O pedido de envio chegou ilegível à aba do Lattes.', outcome: 'erro' };
     }
     try {
-      return await publishCv(publishPort, cvCodeFrom(menu), req.request, { today: req.today });
+      return await publishCv(publishPort, cvCodeFrom(menu), req.request, {
+        expectedLattesId: expected,
+        today: req.today,
+      });
     } catch {
       return {
         detail:
@@ -410,5 +414,18 @@ const connector = {
   cancelar: () => traffic.cancel(),
   identity: (fresh = false) =>
     fresh ? withTraffic(() => traffic.run(() => connector.identity(true))) : connector.identity(),
+  /** Um pedido pequeno à sessão (src/bridge/keepalive.ts): viva, caiu, ou sem resposta. */
+  manter: () =>
+    withTraffic(() =>
+      traffic.run(async () => {
+        const code = cvCodeFrom(document.documentElement.outerHTML);
+        const res = await request(`${KEEPALIVE_PAGE}?f_cod=${code}`, { credentials: 'include' });
+        const html = await text(res);
+        // Só a tela de login é sessão caída. Outra falha (um 5xx, o gateway)
+        // fica sem resposta, e o próximo minuto tenta de novo.
+        if (isLogonPage(html, res.url)) return { viva: false };
+        return { viva: res.ok ? true : undefined };
+      }),
+    ),
   respeitarPausa: (until: number) => traffic.respectPause(until),
 };

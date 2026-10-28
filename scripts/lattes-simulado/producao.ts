@@ -13,8 +13,17 @@ import idiomas from '../../src/bridge/production/idiomas-lattes.json' with { typ
 import { country, date, language } from '../../src/bridge/production/mappers.ts';
 import { PRODUCTION_TARGETS } from '../../src/bridge/production/targets/index.ts';
 import type { FieldMap, ProductionTarget } from '../../src/bridge/production/types.ts';
+import type { Change } from '../../src/model/changes.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
-import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
+import {
+  childElements,
+  element,
+  getAttr,
+  setAttr,
+  walk,
+  type XElement,
+} from '../../src/model/xml.ts';
+import { availabilityToForm } from '../../src/schema/availability.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
 import { AGENCIES, allCourses, institutionsOf, withLetter } from './buscas.ts';
 import type { LattesState } from './estado.ts';
@@ -45,9 +54,22 @@ const seqOf = (item: XElement) =>
 
 const partOf = (item: XElement, child: string) => childElements(item, child)[0];
 
-/** O valor do formulário de volta para o XML: o candidato cujo toForm dá o mesmo valor. */
-function fromForm(element: string, attr: string, map: FieldMap, value: string): string | undefined {
+/**
+ * O valor do formulário de volta para o XML: o candidato cujo toForm dá o mesmo
+ * valor. `labels`: os valores de texto livre que o tipo conhece (a NATUREZA da
+ * qualificação, que o XSD não enumera).
+ */
+function fromForm(
+  element: string,
+  attr: string,
+  map: FieldMap,
+  value: string,
+  labels: readonly string[] = [],
+): string | undefined {
   if (!map.toForm) return value;
+  if (map.toForm === availabilityToForm) {
+    return value === '' ? 'NAO_INFORMADO' : value.toUpperCase();
+  }
   if (value === '') return '';
   if (map.toForm === country) return h.countryName(value);
   if (map.toForm === date) return value.replace(/\//g, '');
@@ -57,8 +79,49 @@ function fromForm(element: string, attr: string, map: FieldMap, value: string): 
   const spec = lattesSchema.elements[element]?.attributes.find((a) => a.name === attr);
   // Por último, o próprio valor (lista cujo valor é o rótulo) e a data sem as
   // barras (dd/mm/aaaa do formulário, DDMMAAAA do XML).
-  const candidates = [...(spec?.enum ?? []), 'SIM', 'NAO', value.replace(/\//g, ''), value];
+  const candidates = [
+    ...(spec?.enum ?? []),
+    ...labels,
+    'SIM',
+    'NAO',
+    value.replace(/\//g, ''),
+    value,
+  ];
   return candidates.find((c) => map.toForm!(c) === value);
+}
+
+/**
+ * Os campos dos ganchos de parte (partFields: o tipo do mestrado, a natureza
+ * do livro), com o valor do item como está: chave "FILHO@ATRIBUTO" e os campos
+ * a mais (also) com o valor de agora. Campos virtuais (datas:1) ficam de fora.
+ */
+function partMaps(t: ProductionTarget, item: XElement) {
+  const fields: [string, FieldMap][] = [];
+  const also: [string, string][] = [];
+  for (const [child, hook] of Object.entries(t.partFields ?? {})) {
+    const part = partOf(item, child);
+    if (!part) continue;
+    const change: Change = {
+      element: child,
+      fields: part.attrs.map((a) => ({
+        after: a.value,
+        attr: a.name,
+        before: a.value,
+        label: a.name,
+      })),
+      form: '',
+      key: '',
+      kind: 'alterado',
+      path: [],
+    };
+    const result = hook(change, part, item);
+    if ('reason' in result) continue;
+    for (const [attr, m] of Object.entries(result.fields)) {
+      if (!mapOf(m).field.includes(':')) fields.push([`${child}@${attr}`, mapOf(m)]);
+    }
+    for (const a of result.also ?? []) also.push([a.field, a.after]);
+  }
+  return { also, fields };
 }
 
 function list(state: LattesState, t: ProductionTarget): string {
@@ -78,7 +141,8 @@ function form(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
   if (!req.get('f_seq')) return notFound(t.list.formProc);
   const item = itemsOf(state, t).find((i) => seqOf(i) === req.get('f_seq'));
   if (!item) return html(h.page(t.id, '<p>Registro não encontrado.</p>'));
-  const controls = Object.entries(t.fields).map(([key, m]) => {
+  const parts = partMaps(t, item);
+  const controls = [...Object.entries(t.fields), ...parts.fields].map(([key, m]) => {
     const [child, attr] = key.split('@') as [string, string];
     const { field, toForm } = mapOf(m);
     const raw = getAttr(partOf(item, child) ?? element(''), attr) ?? '';
@@ -88,6 +152,9 @@ function form(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
   // campo de texto com o primeiro valor do tipo, no lugar do rádio).
   if (t.nature && !controls.some((c) => c.includes(`name="${t.nature!.field}"`))) {
     controls.push(h.text(t.nature.field, t.nature.values[0] ?? ''));
+  }
+  for (const [name, value] of parts.also) {
+    if (!controls.some((c) => c.includes(`name="${name}"`))) controls.push(h.hidden(name, value));
   }
   // Os ocultos que a troca da natureza limpa (f_dsc_outra e f_sub_prod da
   // orientação, lidos em 20/10/2026), vazios: o simulado não guarda o subtipo.
@@ -149,9 +216,18 @@ const DOI_ROUTES: Routes = {
 
 function post(req: SimRequest, state: LattesState, t: ProductionTarget): SimResponse {
   const back = h.savedScript(`${t.list.proc}?f_cod=${state.code}`);
-  if (req.get('f_ctr') !== 'U') return html(back);
+  const ctr = req.get('f_ctr');
+  if (ctr !== 'U' && ctr !== 'E') return html(back);
   const item = itemsOf(state, t).find((i) => seqOf(i) === req.get('f_seq'));
   if (!item) return html(h.page(t.id, '<p>Registro não encontrado.</p>'));
+  // O del() da página: o mesmo formulário com f_ctr=E (seção 15).
+  if (ctr === 'E') {
+    walk(state.root, (el) => {
+      if (el.children.includes(item)) state.remove(el, item);
+    });
+    state.touch();
+    return html(back);
+  }
   writeFields(t, item, req);
   writeLookups(state, item, t, req);
   applyGrids(item, req, t.authors);
@@ -275,18 +351,22 @@ function buildRoutes(): Routes {
 
 /** Os campos da especificação, do POST de volta para o XML; o que não chegou fica como está. */
 export function writeFields(t: ProductionTarget, item: XElement, req: SimRequest): void {
-  for (const [key, m] of Object.entries(t.fields)) {
+  const write = ([key, m]: [string, FieldMap | string]) => {
     const [child, attr] = key.split('@') as [string, string];
     const map = mapOf(m);
     const value = req.get(map.field);
-    if (value === null || value === undefined) continue;
-    const saved = fromForm(child, attr, map, value);
-    if (saved === undefined) continue;
+    if (value === null || value === undefined) return;
+    const labels = attr === 'NATUREZA' ? Object.keys(t.lookups?.course?.natures ?? {}) : [];
+    const saved = fromForm(child, attr, map, value, labels);
+    if (saved === undefined) return;
     let part = partOf(item, child);
     if (!part) {
       part = element(child, {});
       insertInSchemaOrder(lattesSchema, item, part);
     }
     setAttr(part, attr, saved);
-  }
+  };
+  Object.entries(t.fields).forEach(write);
+  // Os dos ganchos depois: o código da natureza do livro depende do tipo já gravado.
+  partMaps(t, item).fields.forEach(write);
 }

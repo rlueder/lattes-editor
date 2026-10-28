@@ -130,9 +130,12 @@ describe('atividade de ensino', () => {
     expect(await reason(ensino({ 'CODIGO-CURSO': '' }))).toMatch(/exige o curso/);
     expect(await reason(ensino({ 'TIPO-ENSINO': 'ENSINO-MEDIO' }))).toMatch(/não aceita curso/);
     expect(await reason(ensino({ 'ANO-INICIO': '' }))).toMatch(/ano de início/);
-    expect(await reason(ensino({ 'NOME-CURSO-INGLES': 'Genetics' }))).toMatch(
-      /formulário de atividade não tem: NOME-CURSO-INGLES/,
+    // O que o formulário não tem fica fora, à vista, e a atividade vai.
+    const english = await plan((doc) =>
+      ufrgs(doc.root).children.push(ensino({ 'NOME-CURSO-INGLES': 'Genetics' })),
     );
+    expect(english.unsupported).toEqual([]);
+    expect(english.ops[0]).toMatchObject({ left: [expect.stringMatching(/ingl/i)] });
     // Atuação nova: a atividade vai junto, à mão.
     const nova = await plan((doc) =>
       childElements(doc.root, 'DADOS-GERAIS')[0]!
@@ -173,7 +176,7 @@ describe('incluir atividade de ensino no Lattes simulado', () => {
 
     const posts = lattes.state.log.filter((l) => l.method === 'POST').length;
     expect(await applyOp(ops[0]!, lattes.port)).toMatchObject({
-      detail: 'A atuação já tem essa atividade de ensino (mesmo nível e início)',
+      detail: 'A atuação já tem essa atividade (mesma natureza e início)',
       status: 'divergente',
     });
     expect(lattes.state.log.filter((l) => l.method === 'POST').length).toBe(posts);
@@ -197,7 +200,7 @@ describe('incluir atividade de ensino no Lattes simulado', () => {
     // A linha sem f_natur_ativ no link: a natureza vem do oculto do formulário.
     edit = (html) => html.replace(/f_natur_ativ=4&amp;(f_seq_funcao=)/g, '$1');
     expect(await applyOp(ops[0]!, open.port)).toMatchObject({
-      detail: 'A atuação já tem essa atividade de ensino (mesmo nível e início)',
+      detail: 'A atuação já tem essa atividade (mesma natureza e início)',
       status: 'divergente',
     });
     // Uma atividade num link que o conector não reconhece: nada vai.

@@ -33,6 +33,7 @@ import {
   waitWhile,
 } from './editor-run.ts';
 import { importRunning, runImport } from './import-run.ts';
+import { keepAlive, sessionLoaded } from './keepalive-run.ts';
 import { isLattesMenu, isRealLattesMenu } from './lattes-hosts.ts';
 import {
   answerListRequest,
@@ -48,6 +49,7 @@ import {
   sessionIdentity,
   verifyOn,
 } from './lattes-tab.ts';
+import { registerPanel } from './panel-open.ts';
 import { answerPublishRequest, publishRunning } from './publish-run.ts';
 import { readSession } from './session-reading.ts';
 import { sessionTaskRunning } from './session-task.ts';
@@ -126,7 +128,9 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
       version: ownVersion(),
     });
     await replayResults(await readState(), (m) => toEditor(editor, m));
-    await sendSession(editor);
+    // O menu relido pela rede, não o da aba: a aba pode ter carregado antes
+    // de um envio ao CNPq e mostrar a publicação anterior.
+    await sendSession(editor, true);
     return;
   }
   // Parar a rodada, ou seguir com o resto depois da pausa (editor-run.ts).
@@ -150,12 +154,17 @@ async function onEditor(msg: EditorMessage, editor: EditorEndpoint): Promise<voi
   if (msg.type === 'pedir-espelho') {
     if (await busy()) return toEditor(editor, { error: BUSY_TEXT, type: 'espelho' });
     await toEditor(editor, { ...(await readEspelho()), type: 'espelho' });
+    // O painel de envio abriu: a última publicação e a pendência de agora.
+    await sendSession(editor, true);
     return;
   }
   // Listas do Lattes: só leituras, e nunca durante uma gravação (lattes-tab.ts).
   const listReply = await answerListRequest(msg, busy);
   if (listReply) return toEditor(editor, listReply);
   if (msg.type === 'pedir-curriculo') {
+    // Na abertura do editor, a conferência do menu e a releitura da sessão
+    // chegam junto com este pedido: ele espera a vez, até o prazo.
+    await waitWhile(busy);
     if (await busy())
       return toEditor(editor, { detail: BUSY_TEXT, id: msg.id, reason: 'erro', type: 'curriculo' });
     await toEditor(editor, { ...(await readCurriculo()), id: msg.id, type: 'curriculo' });
@@ -454,6 +463,7 @@ chrome.tabs.onUpdated.addListener((_tabId, info, tab) => {
   if (info.status !== 'complete') return;
   const menu = __CANAL_DEV__ ? isLattesMenu(tab.url, true) : isRealLattesMenu(tab.url);
   if (!menu) return;
+  void sessionLoaded();
   void verify(true);
   if (appConnection.connected) void sendSession('app');
 });
@@ -471,29 +481,15 @@ void readState().then(async (s) => {
 });
 
 void chrome.alarms.create('conector', { periodInMinutes: 1 });
-chrome.alarms.onAlarm.addListener(() => connectApp());
+chrome.alarms.onAlarm.addListener(() => {
+  connectApp();
+  // A sessão do Lattes viva enquanto o app está aberto (keepalive-run.ts).
+  void keepAlive({
+    busy: () => queueActive || verifyInFlight || tabInUse(),
+    connected: () => appConnection.connected,
+    dropped: () => sendSession('app', true),
+  }).catch(() => undefined);
+});
 chrome.runtime.onStartup.addListener(() => connectApp());
 
-chrome.runtime.onInstalled.addListener((details) => {
-  // O aviso de uso abre numa aba (o painel lateral só abre com um clique) na
-  // instalação e na atualização de quem ainda não aceitou esta versão dele.
-  // Falha aqui não pode impedir o painel lateral, configurado logo abaixo.
-  void (async () => {
-    try {
-      const pending =
-        details.reason === 'install' || (details.reason === 'update' && !(await hasConsent()));
-      if (pending) await chrome.tabs.create({ url: chrome.runtime.getURL('panel.html') });
-    } catch {
-      // Sem a aba, o aviso aparece quando o painel for aberto.
-    }
-  })();
-  // Painel lateral onde existir (Chrome, Brave recente); senão o clique abre o painel numa aba.
-  if (chrome.sidePanel?.setPanelBehavior) {
-    void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
-  }
-});
-
-chrome.action.onClicked.addListener(() => {
-  if (!chrome.sidePanel?.setPanelBehavior)
-    void chrome.tabs.create({ url: chrome.runtime.getURL('panel.html') });
-});
+registerPanel();

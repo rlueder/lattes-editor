@@ -6,15 +6,17 @@
 // O que é observado e o que é inferido no formato do XML está em
 // docs/campos_tipados.md ("Listas lidas pelo conector").
 
+import { AP_LEVELS } from '../bridge/create-formacao.ts';
 import { COMPL_LEVELS, isComplementaryItem } from '../bridge/edit-lists.ts';
+import { courseLevelOf } from '../bridge/ensino-curso.ts';
 import type { Agency, AreaNode, Course, Institution, Organ } from '../bridge/lattes-lists.ts';
 import { ACTIVITY_ORGAN_ELEMENTS } from '../bridge/organ-windows.ts';
 import { ORGAN_PARTS } from '../bridge/production/organ.ts';
-import { PRODUCTION_TARGETS } from '../bridge/production/targets/index.ts';
 import { foldText } from '../model/fold-text.ts';
 import type { KnowledgeArea } from '../model/production.ts';
 import { getAttr, setAttr, walk, type XElement } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
+import { productionPairs } from './live-production-pairs.ts';
 
 /** Uma leitura por dia basta: as listas do Lattes mudam raramente. */
 export const LISTS_MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -267,74 +269,6 @@ const FORMATION_PAIRS = (level: string): LivePairs => ({
 const hasInSchema = (element: string, attr: string) =>
   Boolean(lattesSchema.elements[element]?.attributes.some((a) => a.name === attr));
 
-/**
- * Orientação e banca: a especificação do conector. O nível do curso vem da
- * natureza do tipo; num tipo com várias naturezas (outras orientações
- * concluídas, a banca de qualificação), da NATUREZA do item (byNature). O
- * mestrado profissional usa a lista do acadêmico aqui; na hora de gravar, o
- * conector refaz a busca pelo nível da página e recusa curso de outra lista.
- */
-function productionPairs(element: string): LivePairs | undefined {
-  const target = PRODUCTION_TARGETS.find((t) => t.lookups?.child === element);
-  const spec = target?.lookups;
-  if (!spec) return undefined;
-  const natures = target.nature?.values ?? [];
-  const nature = natures.length === 1 ? natures[0]! : undefined;
-  const level = nature ? spec.course?.level[nature] : undefined;
-  const c = spec.course;
-  const byNature =
-    c?.natures && natures.length > 1
-      ? Object.fromEntries(
-          Object.entries(c.natures).flatMap(([xml, code]) =>
-            c.level[code]
-              ? [
-                  [
-                    foldText(xml),
-                    { level: c.level[code], staArea: c.noArea.includes(code) ? 'N' : '' } as const,
-                  ],
-                ]
-              : [],
-          ),
-        )
-      : undefined;
-  return {
-    ...(spec.agency
-      ? {
-          agency: {
-            ...spec.agency,
-            ...(hasInSchema(element, 'FLAG-BOLSA') ? { flag: 'FLAG-BOLSA' } : {}),
-          },
-        }
-      : {}),
-    ...(spec.course && nature && level
-      ? {
-          course: {
-            code: spec.course.code,
-            level,
-            name: spec.course.name,
-            program: 'TESE' as const,
-            staArea: spec.course.noArea.includes(nature) ? ('N' as const) : ('' as const),
-          },
-        }
-      : {}),
-    ...(c && byNature
-      ? {
-          course: {
-            byNature,
-            code: c.code,
-            level: '',
-            name: c.name,
-            program: 'TESE' as const,
-            staArea: '' as const,
-          },
-        }
-      : {}),
-    institution: spec.institution,
-    production: true,
-    searchLevel: (nature && spec.institutionLevel?.[nature]) ?? '',
-  };
-}
-
 /** O código e o nome da instituição do elemento (os da formação, quando ele não diz). */
 export const institutionAttrs = (el: XElement): CodeNameAttrs =>
   livePairs(el.name)?.institution ?? { code: 'CODIGO-INSTITUICAO', name: 'NOME-INSTITUICAO' };
@@ -351,6 +285,18 @@ const ADDRESS_PAIRS: LivePairs = {
 /** Os atributos das escolhas do elemento, ou undefined quando ele não tem escolha pela lista. */
 export function livePairs(element: string): LivePairs | undefined {
   if (element === 'ENDERECO-PROFISSIONAL') return ADDRESS_PAIRS;
+  // A lista AP usa instituição, mas não curso (formacao-edit.ts, LEVEL_FORMS).
+  // Só o pós-doutorado tem os controles de bolsa e agência.
+  const ap = AP_LEVELS[element];
+  if (ap) {
+    const pairs = FORMATION_PAIRS(ap);
+    return {
+      ...(element === 'POS-DOUTORADO' ? { agency: pairs.agency } : {}),
+      institution: pairs.institution,
+      production: false,
+      searchLevel: ap,
+    };
+  }
   // A formação complementar abre as mesmas buscas de instituição e curso da
   // acadêmica (observado em 20/10/2026), com o f_nivel dela (edit-lists.ts).
   const level = formationLevel(element) ?? COMPL_LEVELS[element];
@@ -524,6 +470,13 @@ export interface LiveAvailability {
   areas?: readonly AreaNode[];
   /** O conector lê cursos (extensão com a capacidade 'listas-lattes'). */
   courses: boolean;
+  /**
+   * O elemento do campo não estava na exportação: a participação de um
+   * projeto novo, cujo órgão vai na inclusão.
+   */
+  newItem?: boolean;
+  /** O conector inclui projeto com o órgão da janela de órgãos ('projeto-novo-orgao'). */
+  newProjectOrgans?: boolean;
   /** O conector lê a janela de órgãos do projeto ('orgao-projeto'). */
   organs?: boolean;
   /**
@@ -552,8 +505,17 @@ export function liveKind(el: XElement, attr: string, live: LiveAvailability): Li
     const current = readArea(el);
     return isEmptyArea(current) || findArea(live.areas, current) ? 'area-derivada' : undefined;
   }
+  // O curso do ensino: a lista da instituição da atuação, no nível que o tipo
+  // de ensino dá (ensino-curso.ts); os níveis sem curso ficam com o campo de sempre.
+  if (el.name === 'ENSINO') {
+    const level = courseLevelOf(getAttr(el, 'TIPO-ENSINO') ?? '');
+    return attr === 'NOME-CURSO' && live.courses && level ? 'curso' : undefined;
+  }
   if (el.name === ORGAN_PARTS.holder || ACTIVITY_ORGAN_ELEMENTS.has(el.name)) {
-    if (!(el.name === ORGAN_PARTS.holder ? live.organs : live.activityOrgans)) return undefined;
+    // A participação de um projeto novo: o órgão vai na inclusão, que o
+    // Lattes grava; o de um projeto que já existe, ele não troca (seção 21).
+    const holderOn = live.organs || (live.newProjectOrgans && live.newItem);
+    if (!(el.name === ORGAN_PARTS.holder ? holderOn : live.activityOrgans)) return undefined;
     if (attr === ORGAN_PARTS.organ.name) return 'orgao';
     // A unidade é de um órgão: sem ele escolhido, não há lista.
     if (attr === ORGAN_PARTS.unit.name && getAttr(el, ORGAN_PARTS.organ.code)) return 'unidade';

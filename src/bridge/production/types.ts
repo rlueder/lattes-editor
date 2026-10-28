@@ -7,6 +7,7 @@
 import type { Change } from '../../model/changes.ts';
 import type { XElement } from '../../model/xml.ts';
 import type { DoiSpec } from './doi.ts';
+import type { ProductionLookups } from './lookups.ts';
 import type { LookupSpec } from './lookups.ts';
 
 /** Um campo do formulário que guarda um atributo do XML. */
@@ -192,14 +193,7 @@ export interface ProductionTarget {
    * campos de `fields`, e o gancho só confere (a data do registro da patente
    * contra a do histórico).
    */
-  partFields?: Record<
-    string,
-    (
-      change: Change,
-      el: XElement,
-      item: XElement,
-    ) => { fields: Record<string, FieldMap | string> } | { reason: string }
-  >;
+  partFields?: Record<string, (change: Change, el: XElement, item: XElement) => PartFieldsResult>;
   /**
    * O orientando: com o nome trocado, o envio refaz a validação que o Salvar
    * da página faz (student.ts). idAttr: onde o XML guarda o identificador.
@@ -224,8 +218,14 @@ export interface ProductionTarget {
    * campos reais com os valores novos.
    */
   virtual?: {
-    /** Os campos reais montados com os virtuais trocados; undefined sem o vetor. */
-    build: (html: string, set: Record<string, string>) => Record<string, string> | undefined;
+    /**
+     * Os campos reais montados com os virtuais trocados; undefined sem o vetor,
+     * ou o motivo de não montar (a linha que a página não deixa excluir).
+     */
+    build: (
+      html: string,
+      set: Record<string, string>,
+    ) => Record<string, string> | { reason: string } | undefined;
     /** O valor de cada campo virtual na página; undefined sem o vetor. */
     read: (html: string) => Record<string, string> | undefined;
   };
@@ -243,3 +243,14 @@ export interface ProductionTarget {
     toForm?: (value: string) => string;
   };
 }
+
+/** O que um gancho de partFields devolve: os campos da parte, ou o motivo de ir à mão. */
+export type PartFieldsResult =
+  | {
+      /** Campos do formulário que mudam sem atributo próprio na mudança. */
+      also?: { after: string; before: string; field: string; label: string }[];
+      fields: Record<string, FieldMap | string>;
+      /** Buscas que a troca pede de novo (o curso no nível do tipo novo do mestrado). */
+      lookups?: ProductionLookups;
+    }
+  | { reason: string };

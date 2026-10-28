@@ -143,15 +143,23 @@ que o painel "Enviar ao Lattes" mostra item por item:
 
 Os módulos do conector, por assunto:
 
-| Assunto                                                          | Arquivos em `src/bridge/`                                                                                |
-| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Formação, endereço, identificação, outras informações            | `biographic.ts`, `formacao-edit.ts`, `dados-gerais-edit.ts`, `formacao-lookups.ts`, `endereco-buscas.ts` |
-| Eventos, prêmios, formação complementar                          | `edit-items.ts`, `edit-lists.ts`                                                                         |
-| Produções, orientações, bancas, projetos, patentes e registros   | `production/` (um alvo por tipo em `targets/`, buscas em `lookups.ts`, órgão em `organ.ts`)              |
-| Atividades da atuação, áreas de atuação, dicionário de coautores | `edit-atividade.ts`, `areas-atuacao.ts`, `edit-citacao.ts`                                               |
-| Inclusão                                                         | `create.ts` (atuação), `create-formacao.ts`, `create-projeto.ts`, `create-evento.ts`, `create-items.ts`  |
-| Exclusão (idioma e vínculo)                                      | `delete.ts`, que posta o formulário com `f_ctr=E` e confere relendo a lista                              |
-| Foto, Exportar, Importar, estado do Lattes, Enviar ao CNPq       | `photo.ts`, `export.ts`, `importar.ts`, `lattes-status.ts`, `publish.ts`                                 |
+| Assunto                                                          | Arquivos em `src/bridge/`                                                                                                                                                                                |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Formação, endereço, identificação, outras informações            | `biographic.ts`, `formacao-edit.ts`, `dados-gerais-edit.ts`, `formacao-lookups.ts`, `endereco-buscas.ts`                                                                                                 |
+| Eventos, prêmios, formação complementar                          | `edit-items.ts`, `edit-lists.ts`, `formacao-compl-steps.ts` (o segundo passo do `FORM2`)                                                                                                                 |
+| Produções, orientações, bancas, projetos, patentes e registros   | `production/` (um alvo por tipo em `targets/`, buscas em `lookups.ts`, órgão em `organ.ts`)                                                                                                              |
+| Atividades da atuação, áreas de atuação, dicionário de coautores | `edit-atividade.ts`, `areas-atuacao.ts`, `edit-citacao.ts`                                                                                                                                               |
+| Inclusão                                                         | `create.ts` (atuação), `create-formacao.ts`, `create-projeto.ts`, `create-cargo.ts` e `create-atividade.ts` (atividades), `create-registro.ts`, `create-evento.ts`, `create-items.ts`, `create-grids.ts` |
+| Exclusão (idioma e vínculo)                                      | `delete.ts`, que posta o formulário com `f_ctr=E` e confere relendo a lista                                                                                                                              |
+| Exclusão dos outros tipos                                        | `delete-items.ts`, pelo formulário de alteração de cada um, com o `del()` da página (nas formações, o `SETA_ULTIMO_PUBLICO` antes; na atuação inteira, o GET com `f_ctr=E2`), e a lista relida           |
+| Foto, Exportar, Importar, estado do Lattes, Enviar ao CNPq       | `photo.ts`, `export.ts`, `importar.ts`, `lattes-status.ts`, `publish.ts`                                                                                                                                 |
+
+Na inclusão, um campo que o formulário de inclusão do Lattes não tem não
+segura o item: ele vai com o resto, como iria pela própria página, e o que
+ficou fora aparece na confirmação e no resultado (`left`, em
+`create-shared.ts`). A atuação nova vai com o primeiro vínculo; os outros
+vínculos, as atividades e os projetos dela vão no envio seguinte, já sob o
+número que o Lattes deu (`acceptCreated`, em `src/model/changes.ts`).
 
 Os itens de prêmio e formação complementar não se acham pelo número: o
 conector abre o formulário de cada linha da lista e fica com a única cujos
@@ -169,41 +177,60 @@ e o formulário de produção nova, inclusive o preenchido pelo DOI.
 ### Chaves e capacidades
 
 Cada família de operação tem uma chave no código e uma capacidade que a
-extensão anuncia no aperto de mão (`GATED_EDITS` em `src/bridge/plan.ts`,
+extensão anuncia no aperto de mão (`GATED_EDITS` em `src/bridge/plan-gates.ts`,
 `BRIDGE_FEATURES` em `src/bridge/compat.ts`). O app só planeja a operação
 para uma extensão que anuncia a capacidade; com uma extensão antiga, a
 alteração fica em "Não enviado". A extensão também confere as chaves na
-própria montagem (`ApplyGates`, em `apply.ts`).
+própria montagem (`ApplyGates`, em `apply-gates.ts`).
 
-| Chave                            | Capacidade                      | Estado                                                                                                           |
-| -------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `CREATE_ITEMS_ENABLED`           | `incluir-itens`                 | Ligada                                                                                                           |
-| `DELETE_ITEMS_ENABLED`           | `excluir-itens`                 | Ligada (idioma e vínculo)                                                                                        |
-| `BIOGRAPHIC_OPS_ENABLED`         | `alterar-dados-gerais`          | Ligada                                                                                                           |
-| `BIOGRAPHIC_FULL_ENABLED`        | `alterar-dados-gerais-completo` | Ligada                                                                                                           |
-| `EDIT_OUVINTE_ENABLED`           | `alterar-evento`                | Ligada, com envio acompanhado em 14/10/2026                                                                      |
-| `EDIT_EVENTO_ENABLED`            | `alterar-evento-completo`       | Ligada                                                                                                           |
-| `EDIT_PREMIO_ENABLED`            | `alterar-premio`                | Ligada                                                                                                           |
-| `EDIT_FORMACAO_COMPL_ENABLED`    | `alterar-formacao-complementar` | Ligada                                                                                                           |
-| `EDIT_PRODUCTION_ENABLED`        | `alterar-producao`              | Ligada                                                                                                           |
-| `PRODUCTION_LOOKUPS_ENABLED`     | `buscas-producao`               | Ligada                                                                                                           |
-| `EDIT_AREAS_ENABLED`             | `alterar-areas-atuacao`         | Ligada                                                                                                           |
-| `EDIT_ATIVIDADES_ENABLED`        | `alterar-atividades`            | Ligada                                                                                                           |
-| `EDIT_CITACOES_ENABLED`          | `alterar-citacoes`              | Ligada                                                                                                           |
-| `IMPORT_ENABLED`                 | `importar`                      | Ligada; conferir o currículo depois de cada importação (`lattes_internals.md`, seção 13)                         |
-| `COMPL_ENDERECO_LOOKUPS_ENABLED` | `buscas-complementar-endereco`  | Desligada: as listas de cursos de curta duração vieram vazias nos testes, e o endereço não tinha caso reversível |
-| `PROJECT_ORGAN_ENABLED`          | `orgao-projeto`                 | Desligada: o Lattes recebeu o órgão novo e manteve o antigo (18/10/2026)                                         |
-| `PUBLISH_ENABLED`                | `enviar-cnpq`                   | Desligada até um envio acompanhado                                                                               |
+| Chave                            | Capacidade                      | Estado                                                                                                                                                  |
+| -------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CREATE_ITEMS_ENABLED`           | `incluir-itens`                 | Ligada                                                                                                                                                  |
+| `DELETE_ITEMS_ENABLED`           | `excluir-itens`                 | Ligada (idioma e vínculo)                                                                                                                               |
+| `BIOGRAPHIC_OPS_ENABLED`         | `alterar-dados-gerais`          | Ligada                                                                                                                                                  |
+| `BIOGRAPHIC_FULL_ENABLED`        | `alterar-dados-gerais-completo` | Ligada                                                                                                                                                  |
+| `EDIT_OUVINTE_ENABLED`           | `alterar-evento`                | Ligada, com envio acompanhado em 14/10/2026                                                                                                             |
+| `EDIT_EVENTO_ENABLED`            | `alterar-evento-completo`       | Ligada                                                                                                                                                  |
+| `EDIT_PREMIO_ENABLED`            | `alterar-premio`                | Ligada                                                                                                                                                  |
+| `EDIT_FORMACAO_COMPL_ENABLED`    | `alterar-formacao-complementar` | Ligada                                                                                                                                                  |
+| `EDIT_PRODUCTION_ENABLED`        | `alterar-producao`              | Ligada                                                                                                                                                  |
+| `PRODUCTION_LOOKUPS_ENABLED`     | `buscas-producao`               | Ligada                                                                                                                                                  |
+| `EDIT_AREAS_ENABLED`             | `alterar-areas-atuacao`         | Ligada                                                                                                                                                  |
+| `EDIT_ATIVIDADES_ENABLED`        | `alterar-atividades`            | Ligada                                                                                                                                                  |
+| `EDIT_CITACOES_ENABLED`          | `alterar-citacoes`              | Ligada                                                                                                                                                  |
+| `IMPORT_ENABLED`                 | `importar`                      | Ligada; conferir o currículo depois de cada importação (`lattes_internals.md`, seção 13)                                                                |
+| `COMPL_LOOKUPS_ENABLED`          | `buscas-complementar`           | Ligada sem envio acompanhado da troca: o curso testado não tinha como ser desfeito (`lattes_internals.md`)                                              |
+| `COMPL_ENDERECO_LOOKUPS_ENABLED` | `buscas-complementar-endereco`  | Ligada: instituição e órgão do endereço profissional gravaram num envio acompanhado (28/10/2026)                                                        |
+| `INSTITUTION_HOLDERS_ENABLED`    | `titular-instituicao`           | Ligada: depositante instituição pela busca; a gravação pela página e a exportação foram vistas (27/10/2026)                                             |
+| `EDIT_PCD_ENABLED`               | `pessoa-com-deficiencia`        | Ligada: um tipo, como a exportação de 27/10/2026                                                                                                        |
+| `EDIT_OTHER_CONTACTS_ENABLED`    | `outra-forma-contato`           | Ligada: só o contato de uma linha que já está                                                                                                           |
+| `EDIT_FUNDERS_ENABLED`           | `financiador-projeto`           | Ligada: instituição pela busca e natureza; a gravação pela linha da grade não foi vista                                                                 |
+| `CREATE_PROJECT_ORGAN_ENABLED`   | `projeto-novo-orgao`            | Ligada: projeto novo com o órgão da janela de órgãos; nenhuma inclusão real acompanhada                                                                 |
+| `CREATE_ACTIVITY_ORGAN_ENABLED`  | `atividade-nova-orgao`          | Ligada: atividade nova das naturezas com órgão, pela janela de órgãos da atividade; nenhuma inclusão real acompanhada                                   |
+| `CREATE_COMPL_ENABLED`           | `complementar-nova`             | Ligada: formação complementar nova nos dois passos do `FORM2`; nenhuma inclusão real acompanhada                                                        |
+| `ACTIVITY_ROWS_ENABLED`          | `grade-atividade`               | Ligada: disciplinas, treinamentos e linhas de pesquisa numa atividade que já existe, e o formulário da linha de pesquisa nova; nenhum envio acompanhado |
+| `DELETE_MORE_ENABLED`            | `excluir-mais`                  | Ligada: exclusão de produções, projetos, eventos, prêmios, formações, atividades e da atuação inteira; observada só no evento                           |
+| `PROJECT_ORGAN_ENABLED`          | `orgao-projeto`                 | Desligada: o Lattes recebe o órgão novo e mantém o antigo, também pela própria página (27/10/2026)                                                      |
+| `PUBLISH_ENABLED`                | `publicar-cnpq`                 | Ligada com declaração por tentativa; validação acompanhada do app ao CNPq pendente antes do lançamento                                                  |
 
 Fica à mão, com o motivo na tela (`src/bridge/atuacao-by-hand.ts` e os
 `fieldAbsent` de cada alvo): o que o formulário do Lattes não tem (nome do
 pai e da mãe, tipo do vínculo, a própria citação item a item, nomes em
-inglês de vários formulários); trocar a instituição de uma atuação (a tela
-não a tem: inclui-se outra atuação); o órgão de um projeto; mais de um
-depositante de patente e o titular instituição; incluir, tirar ou trocar
-financiadores, produções ou orientações ligadas a um projeto.
+inglês de vários formulários, e a natureza das orientações e bancas em que
+o elemento do XML é o próprio tipo do item); trocar a instituição de uma atuação (a tela
+não a tem: inclui-se outra atuação); mais de um
+depositante de patente ou mais de uma instituição titular; incluir, tirar ou trocar
+financiadores, produções ou orientações ligadas a um projeto. A instituição
+e a natureza de um financiador que já está vão pela linha dele na grade,
+com a instituição achada pela busca do Lattes
+(`src/bridge/production/financiador.ts`). O título e o tipo de uma produção ligada ficam só para ler: a
+exportação os copia da própria produção. O órgão de um projeto também: o
+próprio Lattes não o troca num projeto que já existe (27/10/2026).
 `node scripts/cobertura-conector.ts` mede quantos campos do editor vão pelo
-conector, com o motivo do que falta.
+conector, com o motivo do que falta. A medição testa o planejamento com dados
+sintéticos, não comprova gravações no Lattes real. As porcentagens são
+truncadas em uma casa decimal para não mostrar 100% onde ainda há lacunas.
+Ela também não esgota todas as opções e combinações de valores de cada campo.
 
 ### Freio de escrita
 
@@ -277,12 +304,18 @@ No `pnpm dev`, sem o app, o editor fala com a extensão pelo
 
 - **Abrir do Lattes** (`src/bridge/export.ts`): pede o ZIP do Exportar na
   sessão da pessoa. O mesmo pedido serve ao "Recarregar do Lattes…"
-  (`src/ui/use-lattes-reload.ts`). Com o Exportar bloqueado por pendência, a
-  tela inicial oferece a última versão guardada
-  (`src/ui/use-stored-version.ts`), com o diagnóstico comparando com a página
-  de conferência.
+  (`src/ui/use-lattes-reload.ts`). Com o Exportar bloqueado por pendência, o
+  passo 3 da tela inicial é o "Enviar ao CNPq…", e o currículo abre depois
+  do envio; a última versão guardada (`src/ui/use-stored-version.ts`) fica
+  como a outra saída, com o diagnóstico comparando com a página de
+  conferência.
 - **Estado do Lattes** (`src/bridge/lattes-status.ts`): lê do menu a data da
   última publicação e se há pendência.
+- **Sessão viva** (`src/bridge/keepalive.ts`, `extension/src/keepalive-run.ts`):
+  com o app ligado, o aviso aceito e a aba do menu aberta, o alarme de cada
+  minuto da extensão pede `pkg_linhapesq.lista` a cada 20 minutos, pelo mesmo
+  transporte das leituras, e nunca com a aba em uso. Se a sessão caiu, para e
+  o app relê a sessão; o menu carregado de novo recomeça a contagem.
 - **Conferência do contrato** (`src/bridge/contract.ts`): só com leituras,
   compara o menu, um exemplar de cada formulário e as listas dos campos
   tipados (`list-watch.ts`) com o que o conector espera. Uma mudança que
@@ -291,13 +324,44 @@ No `pnpm dev`, sem o app, o editor fala com a extensão pelo
 - **Listas** (`src/bridge/lattes-lists.ts`): só com GET. Áreas do conhecimento
   (o vetor `areaDP` do menu, lido como literal) e agências quando a cópia
   passou de um dia; instituições enquanto a pessoa digita; cursos de uma
-  instituição quando ela pede.
+  instituição quando ela pede. Pós-doutorado e livre-docência usam a busca
+  de instituição da lista AP, sem curso; só pós-doutorado oferece agência.
+  `src/ui/live-production-pairs.ts` liga as buscas de orientações e bancas à
+  especificação do conector, conforme a natureza do item.
+  `src/schema/availability.ts` mantém os códigos de disponibilidade e sua
+  conversão para o select dos formulários técnicos, inclusive o vazio.
+  `src/schema/license-types.ts` compartilha os tipos de licença entre a
+  lista da interface e o planejador.
+  `src/model/contact-edit.ts` localiza trechos de e-mail, URL e outra forma
+  de contato em contatos existentes e troca só o valor, sem reconstruir IDs, rótulos ou separadores.
+  `src/ui/ContactFields.tsx` oferece a edição; formatos desconhecidos e redes
+  repetidas ficam somente para leitura. O envio preserva a privacidade da
+  linha existente e recusa uma troca de URL ambígua entre redes repetidas.
+  A releitura compara também os IDs e a privacidade das redes; uma mudança
+  inesperada volta como divergência, mesmo que a URL nova tenha gravado.
+  Numa outra forma de contato só muda o contato: a linha de
+  `f_dados_grid_contatos` mantém id, tipo e privacidade.
 - **Importar** (`src/bridge/importar.ts`): envia um arquivo só com os itens
   novos, marca os módulos e o ano e para na resposta do passo 2.
 - **Enviar ao CNPq** (`src/bridge/publish.ts`, `src/import-export/PublishPanel.tsx`):
-  desligado. O painel mostra o que vai ser publicado e a declaração lida da
-  tela de envio; a caixa começa desmarcada a cada abertura. Em `pnpm dev`,
-  `?publicar` mostra a caixa e o botão, e a extensão continua recusando.
+  o painel mostra o que vai ser publicado e a declaração lida da tela de
+  envio; a caixa começa desmarcada a cada abertura. O pedido exige a mesma
+  declaração que foi marcada; uma nova leitura faz o aceite deixar de valer
+  já na renderização, sem esperar um efeito. O núcleo confere essa mesma
+  declaração na releitura, a sessão do currículo aberto confirmada pelo menu atual e as consultas de
+  raça ou cor e e-mail antes de um único envio. Pedidos malformados são
+  recusados antes de qualquer consulta. A ativação está coberta no simulado;
+  falta a validação acompanhada do app ao CNPq antes do lançamento.
+  `enviar-cnpq` permite ler a tela, inclusive com extensão antiga; o botão
+  exige a capacidade de escrita `publicar-cnpq` e a conexão ativa. Sem ela,
+  o painel pede para atualizar a extensão, sem tentar publicar.
+  A prévia de desenvolvimento não permite enviar, mesmo com a declaração
+  de exemplo marcada.
+  `src/bridge/publish-status.ts` reúne as mensagens, a checagem de ocupação
+  e a data local usada na confirmação da publicação.
+  Se a resposta do pedido de publicação se perde, o núcleo ainda confere o
+  menu. Só repete leituras, nunca o pedido de publicação; sem confirmação,
+  devolve `nao-confirmado` com `sent: true` e mantém o botão bloqueado.
 
 ### O Lattes simulado
 

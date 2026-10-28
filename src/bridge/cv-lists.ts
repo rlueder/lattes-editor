@@ -70,6 +70,7 @@ export async function snapshotCvLists(
   menuHtml: string,
   code: string,
   get: (path: string) => Promise<string>,
+  keep: (url: string) => boolean = () => true,
 ): Promise<ListSnapshot> {
-  return (await readListsPart(cvListQueue(menuHtml), code, get)).lists;
+  return (await readListsPart(cvListQueue(menuHtml).filter(keep), code, get)).lists;
 }

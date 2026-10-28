@@ -99,7 +99,7 @@ describe('Lattes simulado: formações e a visibilidade', () => {
     expect(all(lattes.state.root, 'DOUTORADO')).toHaveLength(0);
   });
 
-  it('formação complementar: nível pelo FORM2 com f_ctr vazio, e exclusão', async () => {
+  it('formação complementar: o FORM2 em dois passos, e exclusão', async () => {
     const lattes = await start();
     const code = lattes.state.code;
     const root = lattes.state.root;
@@ -122,8 +122,20 @@ describe('Lattes simulado: formações e a visibilidade', () => {
     expect(field(form, 'GN_FORMACAO2', 'f_nivel')?.selected).toEqual(['F']);
     expect(form).toContain('PKG_FORMACAO_COMPL.SETA_ULTIMO_PUBLICO');
 
-    await lattes.port.post('PKG_FORMACAO_COMPL.FORM2', `f_ctr=&f_cod=${code}&f_seq=7&f_nivel=E`);
+    // O primeiro passo (f_ctr vazio) só devolve o segundo, sem gravar (27/10/2026).
+    const step2 = await lattes.port.post(
+      'PKG_FORMACAO_COMPL.FORM2',
+      `f_ctr=&f_cod=${code}&f_seq=7&f_nivel=E`,
+    );
+    expect(field(step2, 'GN_FORMACAO2', 'f_ctr')?.value).toBe('U');
+    expect(all(root, 'MBA')).toHaveLength(0);
+    const saved = await lattes.port.post(
+      'PKG_FORMACAO_COMPL.FORM2',
+      `f_ctr=U&f_cod=${code}&f_seq=7&f_nivel=E&f_ano_ini=2018`,
+    );
+    expect(saved).toMatch(/realizada com sucesso/);
     expect(all(root, 'MBA').map((el) => getAttr(el, 'NIVEL'))).toEqual(['E']);
+    expect(getAttr(all(root, 'MBA')[0]!, 'ANO-DE-INICIO')).toBe('2018');
     await lattes.port.post('PKG_FORMACAO_COMPL.FORM2', `f_ctr=E&f_cod=${code}&f_seq=7&f_tipo=`);
     expect(all(root, 'MBA')).toHaveLength(0);
   });
@@ -148,13 +160,17 @@ describe('Lattes simulado: projetos e a busca de órgão', () => {
     expect(field(empty, 'GN_PROJETO', 'f_inst')).toMatchObject({ disabled: true, maxLength: 75 });
 
     const inst = await lattes.port.get(`PKG_PROJETO.pp_lista_inst?f_pgm=INSTVINCULO&f_cod=${code}`);
-    const [args] = jsCalls(inst, 'preencherOpener');
-    expect(args).toHaveLength(9);
-    expect(args!.slice(7)).toEqual(['V000000000001', 'Universidade Federal do Rio Grande do Sul']);
+    // Como a janela de 28/10/2026: seleciona(código, nome, sigla), sem o vínculo.
+    expect(jsCalls(inst, 'preencherOpener')).toEqual([]);
+    const [args] = jsCalls(inst, 'seleciona');
+    expect(args!.slice(0, 2)).toEqual([
+      'V000000000001',
+      'Universidade Federal do Rio Grande do Sul',
+    ]);
 
     await lattes.port.post(
       'PKG_PROJETO.FORM',
-      `f_ctr=I&f_cod=${code}&f_cod_tipo=E&f_cod_inst=000000000001&f_titulo=Extens%E3o+em+escolas&F_TPO_NATUREZA=E&F_TPO_SITUACAO=A&F_ANO_INIC=2026`,
+      `f_ctr=I&f_cod=${code}&f_cod_tipo=E&f_cod_inst=000000000001&f_titulo=Extens%E3o+em+escolas&F_TPO_NATUREZA=E&F_TPO_SITUACAO=A&F_ANO_INIC=2026&f_instituicoes=%3Croot%3E%3C%2Froot%3E`,
     );
     const projetos = all(lattes.state.root, 'PROJETO-DE-PESQUISA');
     expect(projetos.map((p) => getAttr(p, 'NOME-DO-PROJETO'))).toContain('Extensão em escolas');
@@ -170,10 +186,17 @@ describe('Lattes simulado: projetos e a busca de órgão', () => {
     expect(
       all(lattes.state.root, 'PROJETO-DE-PESQUISA').map((p) => getAttr(p, 'SITUACAO')),
     ).toContain('CONCLUIDO');
-    // Sem instituição escolhida, a inclusão é recusada.
+    // Sem instituição escolhida, a inclusão é recusada; sem o XML das
+    // instituições, o banco a recusa antes (ORA-19032, 28/10/2026).
+    expect(
+      await lattes.port.post(
+        'PKG_PROJETO.FORM',
+        `f_ctr=I&f_cod=${code}&f_titulo=X&f_instituicoes=%3Croot%3E%3C%2Froot%3E`,
+      ),
+    ).toContain('Escolha a instituição');
     expect(
       await lattes.port.post('PKG_PROJETO.FORM', `f_ctr=I&f_cod=${code}&f_titulo=X`),
-    ).toContain('Escolha a instituição');
+    ).toContain('ORA-19032');
 
     const orgaos = await lattes.port.get(
       `PKG_PROJETO.pp_orgao_cargo?f_cod=${code}&f_cod_inst=V000000000001`,

@@ -7,6 +7,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { courseLevelOf } from '../bridge/ensino-curso.ts';
 import type { Agency, AreaNode, Course, Organ } from '../bridge/lattes-lists.ts';
 import type { OrganWindowKind } from '../bridge/organ-windows.ts';
 import type { BridgeMessage, EditorMessage } from '../bridge/protocol.ts';
@@ -41,6 +42,8 @@ export function useLattesLists(features: readonly string[]): LattesLists {
   const organs = live && features.includes('orgao-projeto');
   // A janela de órgãos da atividade, para o órgão e a unidade das atividades.
   const activityOrgans = live && features.includes('orgao-atividades');
+  // A janela de órgãos do projeto para a participação de um projeto novo.
+  const newProjectOrgans = live && features.includes('projeto-novo-orgao');
   const [areas, setAreas] = useState<CachedList<AreaNode[]>>();
   const [agencies, setAgencies] = useState<CachedList<Agency[]>>();
   const waiting = useRef(new Map<string, (reply: Reply) => void>());
@@ -156,17 +159,35 @@ export function useLattesLists(features: readonly string[]): LattesLists {
       return found.code;
     };
 
-    const loadCourses = async (el: XElement, nature = '') => {
+    /**
+     * A lista de cursos de um item: a instituição (com a letra), o nível e o
+     * programa da busca. No ensino, a instituição é a da atuação (holder), e o
+     * nível sai do tipo de ensino; a lista da atividade (f_pgm=ATIV) é a mesma
+     * da formação (ensino-curso.ts).
+     */
+    const courseTarget = async (el: XElement, nature: string, holder?: XElement) => {
+      if (el.name === 'ENSINO') {
+        const level = courseLevelOf(getAttr(el, 'TIPO-ENSINO') ?? '');
+        if (!holder) throw new Error('A atividade não está numa atuação');
+        if (!level) throw new Error('Este nível de ensino não tem curso no Lattes');
+        const institution = await fullCodeOf(holder);
+        return { institution, level, program: 'FORM' as const, staArea: '' as const };
+      }
       const pairs = livePairs(el.name);
       const course = pairs?.course;
-      if (!liveRef.current || !course) throw new Error('O conector não está ligado');
+      if (!course) throw new Error('O conector não está ligado');
       const byNature = course.byNature?.[foldText(nature)];
       if (course.byNature && !byNature) {
         throw new Error('Escolha a natureza do item antes: a lista de cursos depende dela');
       }
       const { level, staArea } = byNature ?? course;
-      const { program } = course;
       const institution = await fullCodeOf(el, pairs.searchLevel);
+      return { institution, level, program: course.program, staArea };
+    };
+
+    const loadCourses = async (el: XElement, nature = '', holder?: XElement) => {
+      if (!liveRef.current) throw new Error('O conector não está ligado');
+      const { institution, level, program, staArea } = await courseTarget(el, nature, holder);
       const cacheKey = `${institution}|${level}|${program}|${staArea}`;
       let pending = courseCache.current.get(cacheKey);
       if (!pending) {
@@ -236,10 +257,11 @@ export function useLattesLists(features: readonly string[]): LattesLists {
       agencies: agencies?.items,
       areas: areas?.items,
       courses: live,
+      newProjectOrgans,
       organs,
       production,
       search: live,
     }),
-    [fetchers, live, organs, activityOrgans, production, areas, agencies],
+    [fetchers, live, organs, newProjectOrgans, activityOrgans, production, areas, agencies],
   );
 }

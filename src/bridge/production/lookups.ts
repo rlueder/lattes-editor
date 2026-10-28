@@ -64,6 +64,11 @@ export interface ProductionLookups {
    * o curso são os de antes, escolhidos de novo com o nível dela.
    */
   nature?: string;
+  /**
+   * O tipo novo do mestrado (f_sub_prod), quando a troca muda o nível da busca
+   * de curso (retnivel()): o curso de antes, escolhido de novo com o nível dele.
+   */
+  subProd?: string;
 }
 
 const field = (change: Change, attr: string) => change.fields.find((f) => f.attr === attr);
@@ -166,7 +171,7 @@ async function resolve(
   // Com a natureza trocada, o nível é o dela, e o f_sub_prod vai limpo (nature.ts).
   const renatured = lookups.nature !== undefined;
   const nature = lookups.nature ?? checked(pairs, 'F_COD_PROD');
-  const subProd = renatured ? '' : pairValue(pairs, 'f_sub_prod');
+  const subProd = lookups.subProd ?? (renatured ? '' : pairValue(pairs, 'f_sub_prod'));
   const has = (name: string) => pairs.some(([k]) => k === name);
   const set: FieldValues = {};
   const check: FieldValues = {};

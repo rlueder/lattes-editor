@@ -30,7 +30,6 @@
 //   deixaria o outro mudar ou não na releitura sem que se saiba qual vale.
 
 import type { Change } from '../model/changes.ts';
-import { parseEmails, parseSocial } from '../model/contacts.ts';
 import { foldText } from '../model/fold-text.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import listas from '../schema/listas-lattes.json' with { type: 'json' };
@@ -40,13 +39,15 @@ import {
   type EnderecoInstitution,
   planEnderecoLookups,
 } from './endereco-buscas.ts';
-import { MAX_SOCIAL, type SocialRow } from './endereco-contatos.ts';
+import { planContacts, type SocialRow } from './endereco-contatos.ts';
 import type { LookupRow } from './formacao-edit.ts';
 import type { FieldValues, OpBase } from './plan.ts';
 import type { OrganChoice } from './production/organ.ts';
 
 /** Endereço: um formulário só para o profissional (_i) e o residencial (_r). */
 export interface EnderecoOp extends OpBase {
+  /** Outra forma de contato: o tipo (name) e o contato (url), antes e depois. */
+  contacts?: { after: SocialRow[]; before: SocialRow[] };
   /** A instituição nova do endereço profissional, pela busca do Lattes (endereco-buscas.ts). */
   institution?: EnderecoInstitution;
   kind: 'endereco';
@@ -244,15 +245,15 @@ export function planIdentificacaoEdit(
       reason: `O formulário de identificação do Lattes não tem: ${hidden.join(', ')} (só um campo oculto, que a página não deixa alterar)`,
     };
   }
-  if (change.fields.some((f) => f.attr === 'PCD')) {
-    return {
-      reason:
-        'Pessoa com deficiência: o formulário tem o rádio f_pcd_r e uma caixa f_pcd por tipo (A, F, I, V, E, M), mas como a exportação grava os tipos marcados não foi visto (sem nenhum, PCD vem vazio); altere no Lattes',
-    };
-  }
-  const { expect, invalid, missing, set } = mapTable(change, IDENT_FIELDS, '', (a) =>
-    NATIONALITY.includes(a),
+  const pcd = planPcd(change);
+  if (pcd && 'reason' in pcd) return pcd;
+  const { expect, invalid, missing, set } = mapTable(
+    { ...change, fields: change.fields.filter((f) => f.attr !== 'PCD') },
+    IDENT_FIELDS,
+    '',
+    (a) => NATIONALITY.includes(a),
   );
+  if (pcd) set.f_pcd_r = pcd.after.length > 0 ? 'S' : 'N';
   if (missing.length) return { reason: `Campos não suportados ainda: ${missing.join(', ')}` };
   if (invalid.length) {
     return {
@@ -268,7 +269,51 @@ export function planIdentificacaoEdit(
   }
   const nationality = planNationality(change, el, set, expect);
   if (nationality) return nationality;
-  return { expect, key: change.key, kind: 'identificacao', label, set };
+  return { expect, key: change.key, kind: 'identificacao', label, set, ...(pcd ? { pcd } : {}) };
+}
+
+/**
+ * O rótulo de cada caixa de deficiência (prc_ident, lido em 27/10/2026). Na
+ * exportação de 27/10/2026, com uma caixa marcada, PCD foi o rótulo dela
+ * ("Deficiência Visual"); que os outros tipos sigam o mesmo é inferido.
+ */
+/** A deficiência pelo conector (op.pcd): só a uma extensão com 'pessoa-com-deficiencia'. */
+export const EDIT_PCD_ENABLED = true;
+
+const PCD_LABELS: Record<string, string> = {
+  'deficiencia auditiva': 'A',
+  'deficiencia fisica': 'F',
+  'deficiencia intelectual': 'I',
+  'deficiencia multipla': 'M',
+  'deficiencia visual': 'V',
+  'transtorno do espectro autista': 'E',
+};
+
+/** Os tipos marcados que um PCD do XML quer dizer: nenhum, um só, ou undefined. */
+function pcdTypes(value: string): string[] | undefined {
+  if (!value.trim()) return [];
+  const code = PCD_LABELS[foldText(value.trim()).toLowerCase()];
+  return code ? [code] : undefined;
+}
+
+/**
+ * A troca da deficiência: as caixas de antes e de depois (pcd.ts) e o rádio
+ * f_pcd_r. Como a exportação junta mais de um tipo não foi visto: fica à mão.
+ */
+function planPcd(
+  change: Change,
+): { after: string[]; before: string[] } | { reason: string } | undefined {
+  const f = change.fields.find((x) => x.attr === 'PCD');
+  if (!f) return undefined;
+  const before = pcdTypes(f.before);
+  const after = pcdTypes(f.after);
+  if (!before || !after) {
+    return {
+      reason:
+        'Pessoa com deficiência: com mais de um tipo, como a exportação grava não foi visto; altere no Lattes',
+    };
+  }
+  return { after, before };
 }
 
 // ---------------------------------------------------------------- endereço
@@ -322,62 +367,6 @@ const PREFERENCE: Record<string, [string, Mapper]> = {
 };
 const CONTACTS = new Set(['ELETRONICO', 'OUTRA-FORMA-DE-CONTATO', 'REDE-SOCIAL']);
 
-/**
- * Os contatos do ENDERECO (contacts.ts no editor): e-mails em ELETRONICO
- * ("I: …" para contato, "R: …" alternativo, o R inferido pelo sufixo do
- * campo), redes em REDE-SOCIAL. As outras formas de contato ficam à mão: a
- * exportação nunca foi vista com uma.
- */
-function planContacts(change: Change): {
-  expect: FieldValues;
-  reason?: string;
-  set: FieldValues;
-  social?: EnderecoOp['social'];
-} {
-  const set: FieldValues = {};
-  const expect: FieldValues = {};
-  let social: EnderecoOp['social'];
-  for (const f of change.fields) {
-    if (f.attr === 'OUTRA-FORMA-DE-CONTATO') {
-      return {
-        expect,
-        reason:
-          'Outra forma de contato: a exportação do Lattes nunca foi vista com uma, e o conector não sabe como ela volta; altere no Lattes',
-        set,
-      };
-    }
-    if (f.attr === 'ELETRONICO') {
-      const of = (v: string) => {
-        const all = parseEmails(v);
-        const pick = (a: string) => all.find((e) => e.address === a)?.email ?? '';
-        return { i: pick('E-mail para contato'), n: all.length, r: pick('E-mail alternativo') };
-      };
-      const [was, now] = [of(f.before), of(f.after)];
-      if (now.n !== (now.i ? 1 : 0) + (now.r ? 1 : 0)) {
-        return {
-          expect,
-          reason: 'E-mails: cada um precisa dizer se é para contato (I:) ou alternativo (R:)',
-          set,
-        };
-      }
-      Object.assign(set, { f_email_i: now.i, f_email_r: now.r });
-      Object.assign(expect, { f_email_i: was.i, f_email_r: was.r });
-    }
-    if (f.attr === 'REDE-SOCIAL') {
-      const before = parseSocial(f.before).map((r) => ({ name: r.name, url: r.url }));
-      const after = parseSocial(f.after).map((r) => ({ name: r.name, url: r.url }));
-      if (f.after.trim() && after.length === 0) {
-        return { expect, reason: 'Redes sociais: o texto não está no formato do Lattes', set };
-      }
-      if (after.length > MAX_SOCIAL) {
-        return { expect, reason: `O Lattes aceita até ${MAX_SOCIAL} redes sociais`, set };
-      }
-      social = { after, before };
-    }
-  }
-  return { expect, set, ...(social ? { social } : {}) };
-}
-
 export function planEnderecoEdit(change: Change, el: XElement, label: string): Planned<EnderecoOp> {
   const element = el.name;
   if (element === 'ENDERECO' && change.fields.some((f) => CONTACTS.has(f.attr))) {
@@ -393,6 +382,7 @@ export function planEnderecoEdit(change: Change, el: XElement, label: string): P
       label,
       set: { ...(others?.set ?? {}), ...contacts.set },
       ...(contacts.social ? { social: contacts.social } : {}),
+      ...(contacts.contacts ? { contacts: contacts.contacts } : {}),
     };
   }
   const unit = labelsOf(change, PROFESSIONAL_ABSENT);

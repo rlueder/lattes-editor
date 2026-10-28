@@ -38,6 +38,7 @@ const XML = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS NOME-COMPLE
 <PRODUCAO-TECNICA>
 <PATENTE SEQUENCIA-PRODUCAO="7"><DADOS-BASICOS-DA-PATENTE TITULO="Uma patente" ANO-DESENVOLVIMENTO="2005" PAIS="Brasil"/><DETALHAMENTO-DA-PATENTE FINALIDADE="antes"><REGISTRO-OU-PATENTE TIPO-PATENTE="PRIVILEGIO_DE_INOVACAO_PI" CODIGO-DO-REGISTRO-OU-PATENTE="BR1" DATA-PEDIDO-DE-DEPOSITO="10032005" INSTITUICAO-DEPOSITO-REGISTRO="INPI"/></DETALHAMENTO-DA-PATENTE>${AUTHOR}</PATENTE>
 <DESENHO-INDUSTRIAL SEQUENCIA-PRODUCAO="8"><DADOS-BASICOS-DO-DESENHO-INDUSTRIAL TITULO="Um desenho" ANO-DESENVOLVIMENTO="2005" PAIS="Brasil"/><DETALHAMENTO-DO-DESENHO-INDUSTRIAL FINALIDADE="antes" INSTITUICAO-FINANCIADORA="x"><REGISTRO-OU-PATENTE TIPO-PATENTE="DESENHO_INDUSTRIAL_DI" CODIGO-DO-REGISTRO-OU-PATENTE="DI1" DATA-PEDIDO-DE-DEPOSITO="10012005" INSTITUICAO-DEPOSITO-REGISTRO="INPI"/></DETALHAMENTO-DO-DESENHO-INDUSTRIAL>${AUTHOR}</DESENHO-INDUSTRIAL>
+<SOFTWARE SEQUENCIA-PRODUCAO="10"><DADOS-BASICOS-DO-SOFTWARE NATUREZA="COMPUTACIONAL" TITULO-DO-SOFTWARE="Um programa" ANO="2005" PAIS="Brasil"/><DETALHAMENTO-DO-SOFTWARE FINALIDADE="antes" PLATAFORMA="p" AMBIENTE="Aplicativos" INSTITUICAO-FINANCIADORA="x"/>${AUTHOR}</SOFTWARE>
 <MARCA SEQUENCIA-PRODUCAO="9"><DADOS-BASICOS-DA-MARCA TITULO="Uma marca" ANO-DESENVOLVIMENTO="2005" PAIS="Brasil"/><DETALHAMENTO-DA-MARCA NATUREZA="Figurativa"><REGISTRO-OU-PATENTE TIPO-PATENTE="MARCA_REGISTRADA_DE_PRODUTO_MPD" CODIGO-DO-REGISTRO-OU-PATENTE="MR1" INSTITUICAO-DEPOSITO-REGISTRO="INPI"/></DETALHAMENTO-DA-MARCA>${AUTHOR}</MARCA>
 </PRODUCAO-TECNICA></CURRICULO-VITAE>`;
 
@@ -54,14 +55,14 @@ const HOLDER_XML = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS NOME
 
 const byName = (root: XElement, name: string) => findIn(root, (el) => el.name === name)!;
 
-function planAfter(edit: (root: XElement) => void, xml = XML) {
+function planAfter(edit: (root: XElement) => void, xml = XML, institutionHolders = true) {
   const original = parseXml(xml).root;
   const working = parseXml(xml).root;
   edit(working);
   return planChanges(
     diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Item' })),
     working,
-    { editProduction: true },
+    { editProduction: true, institutionHolders },
   );
 }
 
@@ -80,9 +81,10 @@ afterEach(async () => {
   open = undefined;
 });
 
-async function lattes(xml = XML) {
+async function lattes(xml = XML, options: Parameters<typeof withLattesSimulado>[0] = {}) {
   open = await withLattesSimulado({
     xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${xml}`),
+    ...options,
   });
   return open;
 }
@@ -162,8 +164,10 @@ describe('patente: o depositante pessoa', () => {
     const ops = opsAfter(depositor('Pessoa Fora da Lista'), HOLDER_XML);
     const r = await applyOp(ops[0]!, sim.port);
     expect(r.status).toBe('erro');
-    expect(r.detail).toMatch(/não está na lista de coautores do Lattes: Pessoa Fora da Lista/);
-    expect(postsOf(sim)).toEqual([]);
+    // Sem a pessoa no menu, a busca de instituições também não a acha.
+    expect(r.detail).toMatch(/Pessoa Fora da Lista não está na lista de coautores do Lattes/);
+    // A busca de instituições é um POST só de leitura; a patente não foi enviada.
+    expect(postsOf(sim).filter((p) => /^PKG_PATENTE_REGISTRO/i.test(p.proc))).toEqual([]);
   });
 
   it('o Lattes com outro depositante: divergente, e nada vai', async () => {
@@ -181,6 +185,7 @@ describe('patente: o depositante pessoa', () => {
     expect(ops[0]!.holders).toEqual({
       after: 'SINTÉTICO, Depositante',
       before: 'Depositante Sintético',
+      institutions: true,
     });
   });
 
@@ -196,11 +201,99 @@ describe('patente: o depositante pessoa', () => {
     expect(r.detail).toMatch(/Mais de um depositante/);
     expect(postsOf(sim)).toEqual([]);
   });
+});
 
-  it('o titular instituição fica à mão, pela busca de instituições', () => {
+describe('programa de computador: o ambiente (exportação de 27/10/2026)', () => {
+  const ambiente = (value: string) => (root: XElement) =>
+    setAttr(byName(root, 'DETALHAMENTO-DO-SOFTWARE'), 'AMBIENTE', value);
+
+  it('os tipos do programaDP vão em f_ambiente, unidos por "|", e conferem', async () => {
+    const sim = await lattes();
+    const [op] = opsAfter(ambiente('Aplicativos|Utilitários'));
+    expect(await applyOp(op!, sim.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(sim).at(-1)!.fields.f_ambiente).toBe('Aplicativos|Utilitários');
+    expect(getAttr(byName(sim.state.root, 'DETALHAMENTO-DO-SOFTWARE'), 'AMBIENTE')).toBe(
+      'Aplicativos|Utilitários',
+    );
+  });
+
+  it('tipo fora da lista, nenhum ou mais de três: nada vai', async () => {
+    const sim = await lattes();
+    for (const value of ['Inexistente', '', 'Aplicativos|Utilitários|Automação bancária|Outro']) {
+      const [op] = opsAfter(ambiente(value));
+      expect(await applyOp(op!, sim.port)).toMatchObject({ status: 'erro' });
+    }
+    expect(postsOf(sim).filter((p) => /^PKG_PATENTE_REGISTRO/i.test(p.proc))).toEqual([]);
+  });
+});
+
+describe('patente: depositante instituição (exportação e janela de titulares, 27/10/2026)', () => {
+  const UFRGS = 'Universidade Federal do Rio Grande do Sul';
+  const depositante = (name: string) => (root: XElement) =>
+    setAttr(registry(root), 'NOME-DO-DEPOSITANTE', name);
+
+  it('a troca do depositante pode ir para uma instituição só com a capacidade', () => {
+    const [op] = opsAfter(depositante(UFRGS), HOLDER_XML);
+    expect(op?.holders).toEqual({
+      after: UFRGS,
+      before: 'Depositante Sintético',
+      institutions: true,
+    });
+    const [old] = planAfter(depositante(UFRGS), HOLDER_XML, false).ops as ProductionOp[];
+    expect(old?.holders?.institutions).toBeUndefined();
+    // NOME-DO-TITULAR: a exportação o deixa vazio e põe a instituição no depositante.
     expect(
-      reasonsAfter((root) => setAttr(registry(root), 'NOME-DO-TITULAR', 'Instituição'), HOLDER_XML),
-    ).toEqual([expect.stringMatching(/busca de instituições do Lattes/)]);
+      reasonsAfter((root) => setAttr(registry(root), 'NOME-DO-TITULAR', UFRGS), HOLDER_XML),
+    ).toEqual([expect.stringMatching(/a instituição titular vai em Depositante/)]);
+  });
+
+  it('no Lattes simulado: a pessoa vira a instituição da busca, gravada e conferida', async () => {
+    const sim = await lattes(HOLDER_XML);
+    const [op] = opsAfter(depositante(UFRGS), HOLDER_XML);
+    expect(await applyOp(op!, sim.port)).toMatchObject({ status: 'conferido' });
+    const post = postsOf(sim).at(-1)!.fields;
+    expect(post.f_depositante_inst_l).toBe(`${UFRGS}|000000000001|V`);
+    expect(post.f_depositante_pessoa_l).toBe('');
+    expect(getAttr(registry(sim.state.root), 'NOME-DO-DEPOSITANTE')).toBe(UFRGS);
+    expect(getAttr(registry(sim.state.root), 'NOME-DO-TITULAR')).toBe('');
+    // E tirar o depositante instituição deixa as duas grades vazias.
+    const withUfrgs = HOLDER_XML.replace(
+      'NOME-DO-DEPOSITANTE="Depositante Sintético"',
+      `NOME-DO-DEPOSITANTE="${UFRGS}"`,
+    );
+    const [clear] = opsAfter(depositante(''), withUfrgs);
+    expect(await applyOp(clear!, sim.port)).toMatchObject({ status: 'conferido' });
+    expect(getAttr(registry(sim.state.root), 'NOME-DO-DEPOSITANTE')).toBe('');
+  });
+
+  const saves = (sim: LattesSimuladoNoTeste) =>
+    postsOf(sim).filter((p) => /^PKG_PATENTE_REGISTRO/i.test(p.proc));
+
+  it('sem a capacidade, ou sem uma instituição só com o nome: nada vai', async () => {
+    const sim = await lattes(HOLDER_XML);
+    const [old] = planAfter(depositante(UFRGS), HOLDER_XML, false).ops as ProductionOp[];
+    expect(await applyOp(old!, sim.port)).toMatchObject({
+      detail: expect.stringMatching(/não está na lista de coautores/),
+      status: 'erro',
+    });
+    const [missing] = opsAfter(depositante('Universidade'), HOLDER_XML);
+    expect(await applyOp(missing!, sim.port)).toMatchObject({
+      detail: expect.stringMatching(/0 instituições têm esse nome/),
+      status: 'erro',
+    });
+    expect(saves(sim)).toEqual([]);
+  });
+
+  it('outro depositante no Lattes: divergente, sem busca nem envio', async () => {
+    const sim = await lattes(
+      HOLDER_XML.replace(
+        'NOME-DO-DEPOSITANTE="Depositante Sintético"',
+        'NOME-DO-DEPOSITANTE="Universidade de São Paulo"',
+      ),
+    );
+    const [op] = opsAfter(depositante(UFRGS), HOLDER_XML);
+    expect(await applyOp(op!, sim.port)).toMatchObject({ status: 'divergente' });
+    expect(postsOf(sim)).toEqual([]);
   });
 
   it('um autor novo não leva o depositante copiado nos autores', async () => {
@@ -371,8 +464,9 @@ describe('patente: o histórico de situações', () => {
   const edit =
     (pick: (root: XElement) => XElement, attr: string, value: string) => (root: XElement) => {
       const el = pick(root);
+      const previous = getAttr(el, attr);
       setAttr(el, attr, value);
-      return applyLinkedAttrs(el, attr, root);
+      return applyLinkedAttrs(el, attr, root, previous);
     };
 
   it('o editor leva a data do registro à situação do histórico, e ela vai', async () => {
@@ -447,18 +541,85 @@ describe('patente: o histórico de situações', () => {
     ]);
   });
 
-  it('descrição, status, situação desconhecida, inclusão e exclusão ficam à mão', () => {
+  it('a situação trocada no editor leva a data do registro junto, e a linha muda na grade', async () => {
+    let linked: string[] = [];
+    const ops = opsAfter((root) => {
+      linked = edit(history, 'DESCRICAO-SITUACAO-PATENTE', 'Concessão')(root);
+    }, HOLDER_XML);
+    expect(linked.sort()).toEqual([
+      'REGISTRO-OU-PATENTE@DATA-DE-CONCESSAO',
+      'REGISTRO-OU-PATENTE@DATA-PEDIDO-DE-DEPOSITO',
+    ]);
+    for (const op of ops) {
+      expect(op).toMatchObject({
+        expect: { 'datas:1': '12/03/2007', 'datas:3': '' },
+        set: { 'datas:1': '', 'datas:3': '12/03/2007' },
+      });
+    }
+    const sim = await lattes(HOLDER_XML);
+    for (const op of ops)
+      expect(await applyOp(op, sim.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(sim)).toHaveLength(1);
+    const grid = postsOf(sim)[0]!.fields.f_dados_grid_datas!;
+    expect(grid).toMatch(/<contato>Concessão<\/contato>\r?\n\t<endereco>12\/03\/2007<\/endereco>/);
+    expect(grid).not.toMatch(/<contato>Depósito<\/contato>/);
+  });
+
+  it('a linha que a página não deixa excluir: o envio para, sem POST', async () => {
+    const ops = opsAfter((root) => {
+      edit(history, 'DESCRICAO-SITUACAO-PATENTE', 'Concessão')(root);
+    }, HOLDER_XML);
+    const sim = await lattes(HOLDER_XML, {
+      intercept: async (req, _state, next) => {
+        const out = await next();
+        return /patente_registro\.form/i.test(req.proc) && req.method === 'GET' && 'html' in out
+          ? { ...out, html: out.html.replace('"deletable":"true"', '"deletable":"false"') }
+          : out;
+      },
+    });
+    expect(await applyOp(ops[0]!, sim.port)).toMatchObject({
+      detail: expect.stringMatching(/"Depósito" da patente não pode ser excluída no Lattes/),
+      status: 'erro',
+    });
+    expect(postsOf(sim)).toEqual([]);
+  });
+
+  it('a situação trocada sem o registro acompanhar, repetida ou sem data no registro fica à mão', () => {
+    // Sem o editor (linked-attrs), o registro ainda tem a data no depósito.
     expect(
       reasonsAfter(
         (root) => setAttr(history(root), 'DESCRICAO-SITUACAO-PATENTE', 'Concessão'),
         HOLDER_XML,
       ),
-    ).toEqual([
-      expect.stringMatching(/a descrição e o status de uma situação da patente vão à mão/),
-    ]);
+    ).toEqual([expect.stringMatching(/são o mesmo campo no Lattes/)]);
+    expect(
+      reasonsAfter(
+        (root) => setAttr(history(root), 'DESCRICAO-SITUACAO-PATENTE', 'Licenciamento'),
+        HOLDER_XML,
+      ),
+    ).toEqual([expect.stringMatching(/o conector só troca entre Concessão/)]);
+    expect(
+      reasonsAfter(
+        (root) => setAttr(history(root), 'DESCRICAO-SITUACAO-PATENTE', 'DEPOSITO'),
+        HOLDER_XML,
+      ),
+    ).toEqual([expect.stringMatching(/são a mesma situação no Lattes/)]);
+    const two = HOLDER_XML.replace(
+      '</DETALHAMENTO-DA-PATENTE>',
+      '<HISTORICO-SITUACOES-PATENTE DESCRICAO-SITUACAO-PATENTE="Concessão" DATA-SITUACAO-PATENTE="01012010" STATUS-SITUACAO-PATENTE="SIM"/></DETALHAMENTO-DA-PATENTE>',
+    );
+    expect(
+      reasonsAfter(
+        (root) => setAttr(history(root), 'DESCRICAO-SITUACAO-PATENTE', 'Concessão'),
+        two,
+      ),
+    ).toEqual([expect.stringMatching(/já está em outra linha do histórico/)]);
+  });
+
+  it('status, situação desconhecida, inclusão e exclusão ficam à mão', () => {
     expect(
       reasonsAfter((root) => setAttr(history(root), 'STATUS-SITUACAO-PATENTE', 'NAO'), HOLDER_XML),
-    ).toEqual([expect.stringMatching(/o sentido dele não foi visto/)]);
+    ).toEqual([expect.stringMatching(/^O formulário de patente do Lattes não tem: /)]);
     const unknown = HOLDER_XML.replace(
       'DESCRICAO-SITUACAO-PATENTE="Depósito"',
       'DESCRICAO-SITUACAO-PATENTE="Expiração"',

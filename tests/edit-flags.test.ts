@@ -8,7 +8,14 @@ import { BUILD_GATES } from '../src/bridge/apply.ts';
 import { BRIDGE_FEATURES } from '../src/bridge/compat.ts';
 import { LATTES_CONTRACT } from '../src/bridge/contract.ts';
 import { EDIT_EVENTO_ENABLED } from '../src/bridge/edit-items.ts';
-import { GATED_EDITS, OLD_EXTENSION, planChanges, planOptionsFor } from '../src/bridge/plan.ts';
+import {
+  type BridgeOp,
+  GATED_EDITS,
+  OLD_EXTENSION,
+  planChanges,
+  planOptionsFor,
+} from '../src/bridge/plan.ts';
+import { partGate } from '../src/bridge/plan-gates.ts';
 import { diffDocuments } from '../src/model/changes.ts';
 import { parseXml, setAttr } from '../src/model/xml.ts';
 import { findIn } from './helpers/lattes-simulado.ts';
@@ -52,11 +59,7 @@ describe('chaves do lado da extensão', () => {
     // Para o teste ao vivo: todas as chaves ligadas, com a capacidade
     // anunciada, menos a do órgão do projeto, que o Lattes não gravou no teste
     // de 18/10/2026 (production/plan.ts).
-    // E menos as buscas da formação complementar e do endereço, que o Lattes
-    // também não gravou no teste de 20/10/2026 (edit-lists.ts).
-    const live = GATED_EDITS.filter(
-      (g) => g.feature !== 'orgao-projeto' && g.feature !== 'buscas-complementar-endereco',
-    );
+    const live = GATED_EDITS.filter((g) => g.feature !== 'orgao-projeto');
     expect(live.every((g) => g.enabled)).toBe(true);
     expect(BUILD_GATES.editEvento).toBe(true);
     expect([...BUILD_GATES.lists].sort()).toEqual(['formacao-complementar', 'premio']);
@@ -82,5 +85,38 @@ describe('extensão anterior a uma alteração', () => {
     expect(
       planChanges(entries, working, planOptionsFor([...BRIDGE_FEATURES]), true).ops,
     ).toHaveLength(1);
+  });
+});
+
+describe('partes novas de uma operação', () => {
+  it('a deficiência, outra forma de contato e o financiador só vão com a capacidade', () => {
+    const xml = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS NOME-COMPLETO="P">
+<ENDERECO FLAG-DE-PREFERENCIA="ENDERECO_INSTITUCIONAL" REDE-SOCIAL="" ELETRONICO="" OUTRA-FORMA-DE-CONTATO="ID Rede Social: 1, Nome Rede Social: MSN, Endereço: a@example.org"><ENDERECO-PROFISSIONAL NOME-INSTITUICAO-EMPRESA="U"/></ENDERECO></DADOS-GERAIS></CURRICULO-VITAE>`;
+    const original = parseXml(xml).root;
+    const working = parseXml(xml).root;
+    const endereco = findIn(working, (el) => el.name === 'ENDERECO')!;
+    setAttr(
+      endereco,
+      'OUTRA-FORMA-DE-CONTATO',
+      'ID Rede Social: 1, Nome Rede Social: MSN, Endereço: b@example.org',
+    );
+    const entries = diffDocuments(original, working).map((change) => ({ change, itemTitle: '' }));
+    const without = planOptionsFor([...BRIDGE_FEATURES].filter((f) => f !== 'outra-forma-contato'));
+    expect(planChanges(entries, working, without).unsupported[0]?.reason).toMatch(
+      /Outra forma de contato pelo conector: desligado/,
+    );
+    expect(planChanges(entries, working, without, true).unsupported[0]?.reason).toBe(OLD_EXTENSION);
+    expect(planChanges(entries, working, planOptionsFor([...BRIDGE_FEATURES])).ops).toHaveLength(1);
+  });
+
+  it('cada parte tem o motivo dela', () => {
+    const op = { kind: 'producao' } as unknown as BridgeOp;
+    expect(partGate({ ...op, pcd: { after: [], before: [] } } as BridgeOp, {})).toMatch(
+      /deficiência/,
+    );
+    expect(partGate({ ...op, funder: { code: '1' } } as BridgeOp, {})).toMatch(/Financiador/);
+    expect(partGate({ ...op, funder: { code: '1' } } as BridgeOp, { editFunders: true })).toBe(
+      undefined,
+    );
   });
 });

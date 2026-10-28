@@ -183,20 +183,16 @@ export function cargoForm(req: SimRequest, state: LattesState, atuacao?: XElemen
 /** Grava a atividade de ensino: os campos ligados, o curso pelo código e as disciplinas de f_espec_l. */
 export function cargoPost(req: SimRequest, state: LattesState, atuacao?: XElement): SimResponse {
   if (atuacao && req.get('f_ctr') === 'U') return cargoUpdate(req, state, atuacao);
+  if (atuacao && req.get('f_ctr') === 'I' && req.get('f_natur_ativ') !== '4') {
+    return cargoCreate(req, state, atuacao);
+  }
   if (!atuacao || req.get('f_natur_ativ') !== '4' || req.get('f_ctr') !== 'I')
     return notSimulated();
   const container = state.ensure(atuacao, 'ATIVIDADES-DE-ENSINO');
   const seq = state.nextSeq(atuacao, 'ENSINO', 'SEQUENCIA-FUNCAO-ATIVIDADE');
   const item = element('ENSINO', { 'SEQUENCIA-FUNCAO-ATIVIDADE': seq });
   applyCensusForm({ entry: 'atividade-4', links: LINKS }, item, req, state);
-  const code = req.get('f_cod_curso') || req.get('f_cod_curso2');
-  if (code) {
-    const hit = Object.values(COURSES)
-      .flat()
-      .find(([value]) => value.trim().slice(1) === code);
-    setAttr(item, 'CODIGO-CURSO', code);
-    if (hit) setAttr(item, 'NOME-CURSO', hit[1]);
-  }
+  applyCourse(item, req);
   for (const [, n, name] of (req.get('f_espec_l') ?? '').matchAll(/(\d+)@[^?]*\?([^!]*)!/g)) {
     if (!name) continue;
     item.children.push(
@@ -210,6 +206,17 @@ export function cargoPost(req: SimRequest, state: LattesState, atuacao?: XElemen
       `PKG_ATIV.cargos_vinculos?f_cod=${state.code}&f_seq_ativ=${getAttr(atuacao, 'SEQUENCIA-ATIVIDADE')}`,
     ),
   );
+}
+
+/** O curso escolhido na lista: o código sem a letra e o nome da tabela do simulado. */
+function applyCourse(item: XElement, req: SimRequest): void {
+  const code = req.get('f_cod_curso') || req.get('f_cod_curso2');
+  if (!code) return;
+  const hit = Object.values(COURSES)
+    .flat()
+    .find(([value]) => value.trim().slice(1) === code);
+  setAttr(item, 'CODIGO-CURSO', code);
+  if (hit) setAttr(item, 'NOME-CURSO', hit[1]);
 }
 
 /** As linhas preenchidas de f_espec_l ("n@c?nome!"). */
@@ -232,12 +239,55 @@ function cargoUpdate(req: SimRequest, state: LattesState, atuacao: XElement): Si
     (a) => getAttr(a.el, 'SEQUENCIA-FUNCAO-ATIVIDADE') === req.get('f_seq_funcao'),
   );
   if (!found) return html(h.page('Atividade', '<p>Registro não encontrado.</p>'));
+  return applyCargo(found, req, state, atuacao);
+}
+
+/**
+ * A inclusão de uma atividade de outra natureza que não o ensino: o elemento
+ * da natureza, numa sequência nova, com o mesmo efeito da alteração. Sem
+ * órgão ou sem descrição, nada entra, como o check() da página exige.
+ */
+function cargoCreate(req: SimRequest, state: LattesState, atuacao: XElement): SimResponse {
+  const nature = (req.get('f_natur_ativ') ?? '').toUpperCase();
+  const name = Object.entries(ACTIVITY_TYPES).find(([, t]) => t.natur === nature)?.[0];
+  const container = name && containerOf(name);
+  const first = /^1@[^?]*\?([^!]*)!/.exec(req.get('f_espec_l') ?? '')?.[1] ?? '';
+  const organ = req.get('f_codorgao') || req.get('f_codorgao2');
+  if (!name || !container || !first || !organ) return notSimulated();
+  const seq = state.nextSeq(atuacao, name, 'SEQUENCIA-FUNCAO-ATIVIDADE');
+  const el = element(name, { 'SEQUENCIA-FUNCAO-ATIVIDADE': seq });
+  insertInSchemaOrder(lattesSchema, state.ensure(atuacao, container), el);
+  return applyCargo({ el, natur: nature }, req, state, atuacao);
+}
+
+/** O contêiner de uma atividade no schema (ATIVIDADES-DE-…), filho da atuação. */
+function containerOf(name: string): string | undefined {
+  return Object.entries(lattesSchema.elements).find(
+    ([n, spec]) => n.startsWith('ATIVIDADES-') && spec.children.some((c) => c.name === name),
+  )?.[0];
+}
+
+function applyCargo(
+  found: { el: XElement; natur: string },
+  req: SimRequest,
+  state: LattesState,
+  atuacao: XElement,
+): SimResponse {
   const first = /^1@[^?]*\?([^!]*)!/.exec(req.get('f_espec_l') ?? '')?.[1] ?? '';
   const back = h.savedScript(
     `PKG_ATIV.cargos_vinculos?f_cod=${state.code}&f_seq_ativ=${getAttr(atuacao, 'SEQUENCIA-ATIVIDADE')}`,
   );
   if (!first) return html(back);
-  applyCensusForm({ entry: entryFor(found.natur), links: PERIOD_LINKS }, found.el, req, state);
+  // No ensino, também o nível e o curso pelo código (como na inclusão).
+  const teachingLinks: Record<string, FieldLink> =
+    found.natur === '4' ? { f_nivel: LINKS.f_nivel! } : {};
+  applyCensusForm(
+    { entry: entryFor(found.natur), links: { ...PERIOD_LINKS, ...teachingLinks } },
+    found.el,
+    req,
+    state,
+  );
+  if (found.natur === '4') applyCourse(found.el, req);
   const attr = ACTIVITY_TYPES[found.el.name]?.description;
   if (attr) setAttr(found.el, attr, first);
   // O órgão escolhido na janela: o código em f_codorgao, o texto em f_orgao_old.

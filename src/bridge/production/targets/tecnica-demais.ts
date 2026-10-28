@@ -11,6 +11,7 @@
 // atributo, pelo nome e pelo rótulo do campo. As naturezas e os tipos (rádio
 // F_COD_PROD, lista F_SUB_PROD) se ligam ao enumerado pelo rótulo da opção.
 
+import { availabilityToForm } from '../../../schema/availability.ts';
 import { byTable } from '../mappers.ts';
 import type { FieldMap, ProductionTarget } from '../types.ts';
 import {
@@ -305,14 +306,17 @@ const ORGANIZACAO_EVENTO = demais({
 /**
  * A data de realização (f_data, texto 10) é dd/mm/aaaa. O meio de divulgação
  * tem opções próprias (I, M, W Web, O), ligadas ao enumerado pelo rótulo.
- * Fica à mão o campo f_emissora: pelo nome seria a EMISSORA, pelo rótulo
- * ("Veículo de divulgação") o VEICULO-DE-DIVULGACAO, e o XML tem os dois.
+ * O campo f_emissora tem o rótulo "Veículo de divulgação", mas é a EMISSORA:
+ * nas exportações públicas lidas em 27/10/2026, os 127 programas traziam a
+ * EMISSORA e nenhum o VEICULO-DE-DIVULGACAO (seção 23). Inferido até o teste
+ * acompanhado.
  */
 const RADIO_TV = demais({
   code: '2H',
   details: {
     'DATA-DA-APRESENTACAO': { field: 'f_data', toForm: slashDate },
     'DURACAO-EM-MINUTOS': 'f_duracao',
+    EMISSORA: 'f_emissora',
     TEMA: 'f_tema',
   },
   detailsChild: 'DETALHAMENTO-DO-PROGRAMA-DE-RADIO-OU-TV',
@@ -346,7 +350,7 @@ const RADIO_TV = demais({
 const RELATORIO_PESQUISA = demais({
   code: '2I',
   details: {
-    DISPONIBILIDADE: { field: 'f_disp', toForm: oneOf(['Restrita', 'Irrestrita']) },
+    DISPONIBILIDADE: { field: 'f_disp', toForm: availabilityToForm },
     'INSTITUICAO-FINANCIADORA': 'f_inst',
     'NOME-DO-PROJETO': 'f_projeto',
     'NUMERO-DE-PAGINAS': 'f_paginas',

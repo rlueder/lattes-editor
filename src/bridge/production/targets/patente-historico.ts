@@ -22,6 +22,7 @@ export const HISTORY = 'HISTORICO-SITUACOES-PATENTE';
 const HISTORY_DATE = 'DATA-SITUACAO-PATENTE';
 const DESCRIPTION = 'DESCRICAO-SITUACAO-PATENTE';
 const REG = 'REGISTRO-OU-PATENTE';
+const STATUS = 'STATUS-SITUACAO-PATENTE';
 
 /** O código da data da patente (PATENT_DATE_CODES) pela descrição da situação. */
 const dateCodeOf = (description: string): string | undefined => {
@@ -55,12 +56,14 @@ export function historyFields(
         'Incluir ou tirar uma situação do histórico da patente vai à mão: o conector só troca a data de uma situação que já está no Lattes',
     };
   }
-  const others = change.fields.filter((f) => f.attr !== HISTORY_DATE);
-  if (others.length > 0) {
+  const status = change.fields.filter((f) => f.attr === STATUS);
+  if (status.length > 0) {
     return {
-      reason: `${others.map((f) => f.label).join(', ')}: a descrição e o status de uma situação da patente vão à mão (o status veio SIM na exportação, e o sentido dele não foi visto); troque no Lattes`,
+      reason: `O formulário de patente do Lattes não tem: ${status[0]!.label} (a grade de situações guarda só a situação e a data)`,
     };
   }
+  const swap = change.fields.find((f) => f.attr === DESCRIPTION);
+  if (swap) return situationSwap(change, el, item, swap.before);
   const description = getAttr(el, DESCRIPTION) ?? '';
   const code = dateCodeOf(description);
   if (!code) {
@@ -78,6 +81,81 @@ export function historyFields(
     return { reason: conflict(change.fields[0]!.label, description) };
   }
   return { fields: { [HISTORY_DATE]: { field: dateKey(code), toForm: slashDate } } };
+}
+
+/**
+ * A situação trocada por outra (Depósito → Concessão). Na grade de datas do
+ * Lattes a linha é identificada pelo código da situação, então a troca tira a
+ * linha de antes e põe a nova com a data (PATENT_DATES.build). Só entre as
+ * situações com atributo no registro, e com o registro já acompanhando a troca
+ * (linked-attrs.ts). É a lixeira e o "Incluir nova" da página (seção 24);
+ * inferido: que o Lattes aceite a troca assim.
+ */
+function situationSwap(
+  change: Change,
+  el: XElement,
+  item: XElement,
+  previous: string,
+):
+  | {
+      also: { after: string; before: string; field: string; label: string }[];
+      fields: Record<string, FieldMap>;
+    }
+  | { reason: string } {
+  const description = getAttr(el, DESCRIPTION) ?? '';
+  const from = dateCodeOf(previous);
+  const to = dateCodeOf(description);
+  if (!from || !to) {
+    const known = Object.values(PATENT_DATE_CODES)
+      .map(([, label]) => label)
+      .join(', ');
+    return {
+      reason: `Situação da patente: o conector só troca entre ${known}, que têm data no registro; troque no Lattes`,
+    };
+  }
+  if (from === to) {
+    return {
+      reason: `Situação da patente: "${description}" e "${previous}" são a mesma situação no Lattes, que grava o rótulo dela`,
+    };
+  }
+  const siblings = detailParts(item, HISTORY).filter((h) => h !== el);
+  if (siblings.some((h) => dateCodeOf(getAttr(h, DESCRIPTION) ?? '') === to)) {
+    return {
+      reason: `Situação da patente: "${description}" já está em outra linha do histórico, e o Lattes guarda uma linha por situação`,
+    };
+  }
+  const date = getAttr(el, HISTORY_DATE) ?? '';
+  const oldDate = change.fields.find((f) => f.attr === HISTORY_DATE)?.before ?? date;
+  const fromAttr = patentDateAttrOf(previous)!;
+  const toAttr = patentDateAttrOf(description)!;
+  const registryFollows = detailParts(item, REG).every(
+    (reg) => !getAttr(reg, fromAttr) && sameDate(getAttr(reg, toAttr), date),
+  );
+  if (!registryFollows) return { reason: conflict('Situação da patente', description) };
+  const shown = (v: string) => slashDate(v) ?? v;
+  const dateChanged = change.fields.some((f) => f.attr === HISTORY_DATE);
+  return {
+    // A data na linha nova; sem a data na mudança, ela vai à parte.
+    also: dateChanged
+      ? []
+      : [{ after: shown(date), before: '', field: dateKey(to), label: description }],
+    fields: {
+      // A descrição tira a linha de antes, com a data que ela tinha.
+      [DESCRIPTION]: {
+        field: dateKey(from),
+        toForm: (_v, side) => (side === 'after' ? '' : shown(oldDate)),
+      },
+      ...(dateChanged
+        ? {
+            [HISTORY_DATE]: {
+              field: dateKey(to),
+              toForm: (_v: string, side?: 'after' | 'before') =>
+                side === 'after' ? shown(date) : '',
+            },
+          }
+        : {}),
+    },
+  };
 }
 
 /**

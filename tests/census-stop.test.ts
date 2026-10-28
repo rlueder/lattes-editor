@@ -15,4 +15,6 @@ it('o freio encerra a coleta sem repetir nem abrir o formulário seguinte', asyn
   expect(file.interrupted).toBe(true);
   expect(get).toHaveBeenCalledTimes(1);
   expect(file.entries.map((e) => e.status)).toEqual(['nao-lido', 'nao-lido']);
+  // O motivo fica na entrada em que a coleta parou, e só nela.
+  expect(file.entries.map((e) => e.detail)).toEqual(['HTTP 429', undefined]);
 });

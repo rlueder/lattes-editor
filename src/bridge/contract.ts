@@ -55,6 +55,7 @@ export interface FormSpec {
 type CreateKind =
   | 'criar-atividade'
   | 'criar-atuacao'
+  | 'criar-complementar'
   | 'criar-dado'
   | 'criar-evento'
   | 'criar-formacao'
@@ -70,7 +71,16 @@ type CreateKind =
 // A alteração no lugar de produções, orientações e bancas (production/) não
 // tem formulário aqui: a operação confere o formulário e as grades do próprio
 // item na hora de gravar.
-type OwnCheckKind = 'areas-atuacao' | 'atividade' | 'citacao' | 'evento' | 'producao';
+// A exclusão de delete-items.ts usa o formulário de alteração de cada tipo e
+// confere a página (o del() e o modo) na hora.
+type OwnCheckKind =
+  | 'areas-atuacao'
+  | 'atividade'
+  | 'citacao'
+  | 'evento'
+  | 'excluir-atuacao'
+  | 'excluir-item'
+  | 'producao';
 type GatedKind = CreateKind | OwnCheckKind | BiographicKind | DeleteOp['kind'] | ListEditKind;
 
 export interface Contract {

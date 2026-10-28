@@ -55,11 +55,12 @@ export function connectionOf(link: Link | undefined, read: boolean): Connection 
 export const APP_DOWNLOAD_URL = 'https://github.com/rlueder/lattes-editor/releases/latest';
 
 /**
- * Onde atualizar a extensão. Enquanto ela não tem página na Chrome Web Store
- * (LAT-20), é o zip do último lançamento; com a página publicada, o endereço
- * dela entra aqui.
+ * Onde instalar e atualizar a extensão: a página dela na Chrome Web Store
+ * (o id é o de EXTENSION_IDS em src-tauri/src/conector.rs). O Brave instala
+ * da mesma loja.
  */
-export const EXTENSION_URL = APP_DOWNLOAD_URL;
+export const EXTENSION_URL =
+  'https://chromewebstore.google.com/detail/kdebkpkdhgaeaaobcbgbckinocnlfbgg';
 
 export interface NoticeLink {
   href: string;
@@ -118,6 +119,17 @@ export function connectionTitle(c: Connection): string {
  * O passo a passo para carregar a extensão Dev, uma vez só. Sem a pasta (ainda
  * não lida do app), aponta a página do canal Dev.
  */
+/**
+ * Os passos do passo 1 da tela inicial, mais curtos: a página do canal vem
+ * como link no botão, e não no texto.
+ */
+export function devExtensionSteps(folder: string | undefined): string {
+  const where = folder
+    ? `a pasta ${folder}`
+    : 'a pasta da extensão Dev, baixada da página do canal';
+  return `Em chrome://extensions, ligue o modo do desenvolvedor e use "Carregar sem compactação" com ${where}. É uma vez só; depois ela se atualiza com o app.`;
+}
+
 export function devExtensionHowTo(folder: string | undefined): string {
   const where = folder ? `a pasta ${folder}` : `a pasta da extensão Dev (página ${DEV_PAGE_URL})`;
   return `No Chrome ou no Brave, abra chrome://extensions, ligue o modo do desenvolvedor, clique em "Carregar sem compactação" e escolha ${where}. É uma vez só: depois a extensão se atualiza junto com o app. Ela procura o app a cada minuto, então pode levar até um minuto para aparecer aqui.`;
@@ -129,10 +141,17 @@ export function connectionText(c: Connection, appVersion: string, devFolder?: st
     return `A extensão Dev não respondeu. ${devExtensionHowTo(devFolder)}`;
   }
   switch (c.kind) {
+    // A comparação é pelos recursos que cada lado anuncia (compat.ts), não
+    // pelo número: com o mesmo número, uma montagem local mais nova ainda
+    // tem recursos que a outra não conhece.
     case 'app-antigo':
-      return `A extensão (v${c.version}) é mais nova do que o editor (v${appVersion}).`;
+      return c.version === appVersion
+        ? `A extensão sabe fazer coisas que este editor ainda não usa, embora os dois digam v${appVersion}.`
+        : `A extensão (v${c.version}) é mais nova do que o editor (v${appVersion}).`;
     case 'extensao-antiga':
-      return `A extensão (v${c.version}) é mais antiga do que o editor (v${appVersion}).`;
+      return c.version === appVersion
+        ? `O editor usa recursos que esta extensão ainda não tem, embora os dois digam v${appVersion}.`
+        : `A extensão (v${c.version}) é mais antiga do que o editor (v${appVersion}).`;
     case 'incompativel':
       return 'A extensão instalada fala outra versão do conector e é ignorada.';
     case 'lendo':
@@ -185,12 +204,34 @@ const STORAGE: Record<Exclude<StorageStatus, 'cifrado'>, Omit<Notice, 'id' | 'le
   },
 };
 
+/**
+ * A exportação aberta é anterior à última publicação que o menu do Lattes
+ * mostra: o Exportar leva um tempo para acompanhar um envio ao CNPq (mais de
+ * uma hora em 18/10 e em 27/10/2026, docs/lattes_internals.md, seção 10).
+ * exported em DDMMAAAA (DATA-ATUALIZACAO); published em AAAA-MM-DD.
+ */
+export function staleExportNotice(
+  exported: string | undefined,
+  published: string | undefined,
+): Notice | undefined {
+  const m = /^(\d{2})(\d{2})(\d{4})$/.exec(exported ?? '');
+  if (!m || !published || `${m[3]}-${m[2]}-${m[1]}` >= published) return undefined;
+  const [y, mo, d] = published.split('-');
+  return {
+    id: 'exportacao-atrasada',
+    level: 'aviso',
+    text: `O Lattes publicou em ${d}/${mo}/${y}, mas ainda exporta o arquivo de ${m[1]}/${m[2]}/${m[3]}. Ele leva um tempo para atualizar; use "Recarregar do Lattes" mais tarde.`,
+    title: 'A exportação do Lattes ainda não acompanhou o envio',
+  };
+}
+
 /** As notificações do momento, as que pedem ação primeiro. */
 export function noticesFor({
   appVersion,
   connection,
   devExtensionFolder,
   reload,
+  stale,
   storage,
   unknownPending = false,
   update,
@@ -201,6 +242,8 @@ export function noticesFor({
   devExtensionFolder?: string;
   /** "Recarregar do Lattes" pela extensão que falhou (lattes-reload.ts, reloadNotice). */
   reload?: Notice;
+  /** A exportação aberta é anterior à última publicação (staleExportNotice). */
+  stale?: Notice;
   storage: StorageStatus;
   /** O Lattes tem alterações não enviadas que não passaram por este editor. */
   unknownPending?: boolean;
@@ -218,6 +261,7 @@ export function noticesFor({
     });
   }
   if (reload) notices.push(reload);
+  if (stale) notices.push(stale);
   if (unknownPending) {
     notices.push({
       action: 'diagnostico',

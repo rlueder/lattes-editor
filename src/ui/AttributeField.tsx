@@ -4,7 +4,6 @@
 import { type ReactNode, useEffect, useId, useState } from 'react';
 
 import { attributeLabelIn, elementLabel, enumLabel } from '../labels/labels.ts';
-import { parseEmails, parseSocial } from '../model/contacts.ts';
 import { applyLinkedAttrs, followsCountry, writesOwnCode } from '../model/linked-attrs.ts';
 import { repairMojibake } from '../model/mojibake.ts';
 import { getAttr, setAttr, type XElement } from '../model/xml.ts';
@@ -15,10 +14,12 @@ import {
   typedChoices,
 } from '../schema/typed-choices.ts';
 import type { AttributeSpec } from '../schema/types.ts';
+import { ContactFields } from './ContactFields.tsx';
 import { DateField } from './DateField.tsx';
 import { displayValue } from './display.ts';
 import { useDraft, usePartKey } from './draft-context.ts';
 import { useEditor } from './editor-context.ts';
+import { followUpOf } from './field-follow-up.tsx';
 import {
   codeAttrFor,
   codeChoices,
@@ -27,16 +28,17 @@ import {
   flagToXml,
   isBooleanAttr,
   isSystemAttr,
+  LINKED_IN_LATTES,
 } from './field-kind.ts';
 import { useFormLacks } from './form-lacks-context.ts';
 import { LockIcon } from './icons.tsx';
-import { InnovationText } from './InnovationText.tsx';
 import { displayLattesDate, isLattesDateAttr, isValidLattesDate } from './lattes-date.ts';
 import { useLattesListsContext } from './lattes-lists-context.ts';
 import { isFourDigitYear, isLattesYearAttr } from './lattes-year.ts';
 import { cleanLinkValue, linkError } from './link-fields.ts';
 import { ancestorsOf, type LiveAvailability, liveKind } from './live-lists.ts';
 import { LiveListControl } from './LiveListField.tsx';
+import { LATTES_URL } from './onboarding.ts';
 import { ComboSelect } from './primitives/ComboSelect.tsx';
 import { Switch } from './primitives/Switch.tsx';
 import { Tip } from './primitives/Tip.tsx';
@@ -113,9 +115,10 @@ export function AttributeField({
     // O campo mostra o valor limpo (cleanLinkValue) mesmo quando o gravado já
     // era ele e nada muda no elemento.
     change(next);
-    if (next === (getAttr(el, name) ?? '')) return;
+    const previous = getAttr(el, name) ?? '';
+    if (next === previous) return;
     setAttr(el, name, next);
-    applyLinkedAttrs(el, name, root);
+    applyLinkedAttrs(el, name, root, previous);
     onEdit(`${elementLabel(el.name)} · ${text}`);
   };
   const shownError = error ?? linkError(name, value);
@@ -138,37 +141,11 @@ export function AttributeField({
     );
   }
 
-  if (el.name === 'ENDERECO' && (name === 'ELETRONICO' || name === 'REDE-SOCIAL') && value) {
-    // Serializado pelo Lattes num texto só: mostrado lido, editado no próprio Lattes.
-    const emails = name === 'ELETRONICO' ? parseEmails(value) : [];
-    const social = name === 'REDE-SOCIAL' ? parseSocial(value) : [];
-    if (emails.length > 0 || social.length > 0) {
-      return (
-        <div className="field field-readonly" title="Vem da exportação; edite no Lattes">
-          <span className="field-label">{text}</span>
-          <ul className="contact-list">
-            {emails.map((c) => (
-              <li key={c.email}>
-                <span className="field-copy-row">
-                  <span className="contact-value">{c.email}</span>
-                  {c.address && <span className="muted contact-kind">{c.address}</span>}
-                </span>
-              </li>
-            ))}
-            {social.map((c) => (
-              <li key={c.url}>
-                <span className="field-copy-row">
-                  <a className="contact-value" href={c.url} rel="noreferrer" target="_blank">
-                    {c.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
-                  </a>
-                  <span className="muted contact-kind">{c.name}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      );
-    }
+  if (
+    el.name === 'ENDERECO' &&
+    (name === 'ELETRONICO' || name === 'REDE-SOCIAL' || name === 'OUTRA-FORMA-DE-CONTATO')
+  ) {
+    return <ContactFields attr={name} label={text} raw={value} onCommit={commit} />;
   }
 
   // Item que já está no Lattes, campo que o formulário do Lattes não tem:
@@ -187,7 +164,10 @@ export function AttributeField({
   }
 
   // Listas lidas no Lattes pelo conector (LAT-48): sem elas, o campo de sempre.
-  const live = liveKind(el, name, withParentIn(lists, root, el));
+  const live = liveKind(el, name, {
+    ...withParentIn(lists, root, el),
+    newItem: formLacks?.isNew?.(el) ?? false,
+  });
   if (live === 'area-derivada') {
     const shown = value ? enumLabelOrValue(name, value) : '(vazio)';
     return <LockedField text={text} value={shown} why="Segue a área do conhecimento escolhida" />;
@@ -228,6 +208,8 @@ export function AttributeField({
     name,
     el.attrs.map((a) => a.name),
   );
+
+  if (LINKED_IN_LATTES.has(name)) return <LinkedField text={text} value={value} />;
 
   if (isSystemAttr(el.name, name)) {
     // Código ou sequência gerado pelo Lattes: texto, não campo. O fundo cinza
@@ -360,12 +342,13 @@ export function AttributeField({
     );
   }
 
-  const changeKey = innovationKey(el, name, value, formLacks);
-  if (changeKey) {
+  // O que o envio pede e o XML não guarda (field-follow-up.tsx).
+  const followUp = followUpOf(el, name, value, formLacks);
+  if (followUp) {
     return wrap(
       <>
         {control}
-        <InnovationText changeKey={changeKey} />
+        {followUp}
       </>,
       { textarea },
     );
@@ -423,21 +406,6 @@ export function AttributeField({
   }
 }
 
-/** A mudança de um Sim novo do potencial de inovação, que pede o texto que vai só ao Lattes. */
-function innovationKey(
-  el: XElement,
-  name: string,
-  value: string,
-  lacks: ReturnType<typeof useFormLacks>,
-): string | undefined {
-  const asks =
-    el.name === 'PROJETO-DE-PESQUISA' &&
-    name === 'FLAG-POTENCIAL-INOVACAO' &&
-    value === 'SIM' &&
-    lacks?.original?.(el, name) !== 'SIM';
-  return asks ? lacks?.keyOf?.(el) : undefined;
-}
-
 /** A grande área é um valor do XSD (CIENCIAS_EXATAS_E_DA_TERRA): mostrada por extenso. */
 function enumLabelOrValue(attr: string, value: string): string {
   return attr === 'NOME-GRANDE-AREA-DO-CONHECIMENTO' ? enumLabel(value) : value;
@@ -448,6 +416,31 @@ function enumLabelOrValue(attr: string, value: string): string {
  * não se edita (as duas espécies de campo travado usam o mesmo sinal). O
  * cadeado é um botão sem ação, para a dica valer também no teclado.
  */
+/**
+ * O ORCID: o Lattes só o recebe pela vinculação com o login no ORCID, na
+ * identificação, e não por um campo digitado (o formulário de identificação
+ * não tem o campo, censo de 15/10/2026). Vazio, diz onde vincular.
+ */
+function LinkedField({ text, value }: { text: string; value: string }) {
+  const why = 'Vem da vinculação com o ORCID, feita no Lattes';
+  return (
+    <div className="field field-readonly field-locked">
+      <ReadonlyLabel text={text} why={why} />
+      {value ? (
+        <span className="locked-value">{value}</span>
+      ) : (
+        <span className="field-note">
+          No Lattes, em Dados gerais › Identificação, vincule pelo login no ORCID. Depois de enviar
+          ao CNPq, ele aparece aqui.{' '}
+          <a className="notice-link" href={LATTES_URL} rel="noreferrer" target="_blank">
+            Abrir o Lattes
+          </a>
+        </span>
+      )}
+    </div>
+  );
+}
+
 function ReadonlyLabel({ text, why }: { text: string; why: string }) {
   return (
     <span className="field-label">

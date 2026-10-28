@@ -20,6 +20,7 @@
 // As outras naturezas vão à mão: o check() exige o órgão ou unidade, que
 // entra pela busca prc_orgao_cargo, cuja resposta ainda não foi lida.
 
+import { attributeLabel } from '../labels/labels.ts';
 import type { Change } from '../model/changes.ts';
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
@@ -27,6 +28,7 @@ import { CREATE_FIELD_LABELS } from './create-labels.ts';
 import {
   absentFields,
   getChecked,
+  leftOf,
   maybeCreated,
   overLimit,
   type Planned,
@@ -35,13 +37,16 @@ import {
   readPairs,
   type Result,
   sameCode,
-  selectEntries,
   SESSION,
   Stop,
 } from './create-shared.ts';
+import { COURSE_LEVELS, TEACHING_LEVELS, teachingCourse } from './ensino-curso.ts';
 import { encodeLatin1Form, pairValue, setPairs } from './form.ts';
 import { findLinks, isLogonPage, type LattesLink } from './lattes-html.ts';
+import { fillLinhas, type LinhaDetails } from './linha-detalhes.ts';
+import { activityOrgansPath } from './organ-windows.ts';
 import type { FieldValues } from './plan.ts';
+import { organLoose, resolveOrgan } from './production/organ.ts';
 
 export interface CreateAtividadeOp {
   /** CODIGO-INSTITUICAO da atuação, para conferir que a atuação achada é ela (como no vínculo). */
@@ -52,24 +57,18 @@ export interface CreateAtividadeOp {
   key: string;
   kind: 'criar-atividade';
   label: string;
+  /** Os campos que o formulário de atividade não tem e ficam fora (create-shared.ts). */
+  left?: string[];
+  /** As linhas de pesquisa com objetivos e o resto, pelo formulário delas depois (linha-detalhes.ts). */
+  lines?: LinhaDetails[];
+  /** f_natur_ativ: sem valor, o ensino (4); as outras naturezas em create-cargo.ts. */
+  natur?: string;
+  /** O órgão ou a unidade da janela de órgãos da atividade, com o órgão de cima de uma unidade. */
+  organ?: { code: string; parent?: string };
   /** SEQUENCIA-ATIVIDADE da atuação que recebe a atividade. */
   seqAtiv: string;
   set: FieldValues;
 }
-
-/** TIPO-ENSINO do XML → f_nivel, pelo rótulo da opção (inferido). */
-const TEACHING_LEVELS: Record<string, string> = {
-  APERFEICOAMENTO: '404',
-  'ENSINO-FUNDAMENTAL': '405',
-  'ENSINO-MEDIO': '406',
-  ESPECIALIZACAO: '403',
-  GRADUACAO: '401',
-  OUTRO: '409',
-  'POS-GRADUACAO': '402',
-};
-
-/** O nível do curso na busca, pelo nível da atividade (curso() da página, observado). */
-const COURSE_LEVELS: Record<string, string> = { '401': '1', '402': '5', '403': '2', '404': '2' };
 
 /** A grade das disciplinas como o check() a monta (seção 22). */
 export function specGrid(names: string[]): string {
@@ -117,10 +116,9 @@ export function planCreateAtividade(
   const atuacao = chain.find((c) => c.name === 'ATUACAO-PROFISSIONAL');
   const seqAtiv = atuacao && getAttr(atuacao, 'SEQUENCIA-ATIVIDADE');
   if (!seqAtiv) return { reason: 'A atuação da atividade ainda não está no Lattes' };
-  const extra = item.attrs.filter((a) => a.value.trim() && !OWN.has(a.name)).map((a) => a.name);
-  if (extra.length > 0) {
-    return { reason: `Campos que o formulário de atividade não tem: ${extra.join(', ')}` };
-  }
+  const left = item.attrs
+    .filter((a) => a.value.trim() && !OWN.has(a.name))
+    .map((a) => attributeLabel(a.name));
   const level = TEACHING_LEVELS[getAttr(item, 'TIPO-ENSINO') ?? ''];
   if (!level) return { reason: 'Escolha o tipo de ensino' };
   const courseCode = getAttr(item, 'CODIGO-CURSO') || undefined;
@@ -149,6 +147,7 @@ export function planCreateAtividade(
     key: change.key,
     kind: 'criar-atividade',
     label,
+    ...leftOf(left),
     seqAtiv,
     set: {
       f_ano_fim: end,
@@ -165,18 +164,19 @@ export function planCreateAtividade(
 
 /**
  * Por que a atividade de ensino de graduação, pós-graduação, especialização ou
- * aperfeiçoamento vai à mão quando o item não traz o código do curso: o Lattes
- * exige o curso da lista dele (prc_curso_form com f_pgm=ATIV e a instituição
- * da atuação, endereço lido no lote 3), e o formulário do editor ainda não
- * oferece essa lista. Ligá-la pede um parâmetro novo no pedido de cursos à
- * extensão, que uma extensão antiga ignoraria, devolvendo a lista da formação.
+ * aperfeiçoamento vai à mão sem o código do curso: o Lattes exige o curso da
+ * lista dele (ensino-curso.ts), que o editor oferece no campo Curso.
  */
 export const COURSE_BY_HAND =
-  'Vai à mão: neste nível o Lattes exige o curso da lista de cursos da instituição, que o editor ainda não oferece na atividade de ensino';
+  'O Lattes exige o curso neste nível de ensino: escolha na lista do Lattes, em Curso';
 
 /** Por que a atividade criada fica divergente: as disciplinas não são relidas. */
 export const DISCIPLINES_UNREAD =
   'Criada no Lattes, com os campos conferidos; confira as disciplinas no Lattes, que o conector não relê';
+
+/** O mesmo, nas outras naturezas: a grade das descrições não é relida. */
+export const DESCRIPTION_UNREAD =
+  'Criada no Lattes, com os campos e o órgão conferidos; confira a descrição no Lattes, que o conector não relê';
 
 // Lattes ----------------------------------------------------------------------------
 
@@ -233,26 +233,24 @@ export async function applyCreateAtividade(
         'A tela de cargos e vínculos tem atividades que o conector não reconhece; nada foi enviado',
       );
     }
-    // Duplicata: atividade de ensino da atuação com o mesmo nível e o mesmo início.
+    const natur = op.natur ?? '4';
+    // Duplicata: atividade da mesma natureza com o mesmo início (no ensino, também o nível).
     // A natureza vem do oculto f_natur_ativ de cada formulário (observado), e
     // não do link da linha, cujos parâmetros são inferidos: assim uma linha sem
     // o parâmetro não escapa da conferência.
     for (const row of before) {
       const { pairs } = await readPairs(port, row.path, FORM);
-      if (pairValue(pairs, 'f_natur_ativ') !== '4') continue;
+      if (pairValue(pairs, 'f_natur_ativ') !== natur) continue;
       if (
-        pairValue(pairs, 'f_nivel') === op.set.f_nivel &&
+        (natur !== '4' || pairValue(pairs, 'f_nivel') === op.set.f_nivel) &&
         pairValue(pairs, 'f_ano_ini') === op.set.f_ano_ini
       ) {
-        return result(
-          'divergente',
-          'A atuação já tem essa atividade de ensino (mesmo nível e início)',
-        );
+        return result('divergente', 'A atuação já tem essa atividade (mesma natureza e início)');
       }
     }
-    const form = await readPairs(port, inclusionPath(inclusion, '4'), FORM);
-    if (pairValue(form.pairs, 'f_ctr') !== 'I' || pairValue(form.pairs, 'f_natur_ativ') !== '4') {
-      return result('erro', 'O formulário não é o de inclusão de atividade de ensino');
+    const form = await readPairs(port, inclusionPath(inclusion, natur), FORM);
+    if (pairValue(form.pairs, 'f_ctr') !== 'I' || pairValue(form.pairs, 'f_natur_ativ') !== natur) {
+      return result('erro', 'O formulário não é o de inclusão desta natureza de atividade');
     }
     const { f_espec_l: _grid, ...typed } = op.set;
     const absent = absentFields(form.controls, typed);
@@ -265,27 +263,31 @@ export async function applyCreateAtividade(
     const set: FieldValues = { ...op.set };
     if (op.courseCode) {
       const inst = inclusion.params.f_codinst ?? '';
-      const courses = selectEntries(
-        await getChecked(
-          port,
-          `prc_curso_form?f_cod=${cv}&f_inst=${inst}&f_nivel=${COURSE_LEVELS[op.set.f_nivel ?? '']}&f_pgm=ATIV`,
-        ),
-        'f_curso',
-      ).filter((o) => sameCode(o.value, op.courseCode!));
-      if (courses.length !== 1) {
-        return result(
-          'erro',
-          `Curso não encontrado na lista do Lattes (${courses.length} achados)`,
-        );
-      }
-      const course = courses[0]!;
-      set[course.value.startsWith('V') ? 'f_cod_curso' : 'f_cod_curso2'] = course.value.slice(1);
-      set.f_curso = course.text;
-      set.f_curso_old = course.text;
+      const course = await teachingCourse(port, cv, inst, op.set.f_nivel ?? '', op.courseCode);
+      if ('reason' in course) return result('erro', course.reason);
+      Object.assign(set, course.set);
     }
     const limit = overLimit(form.controls, set);
     if (limit) return result('erro', limit);
-    const response = await port.post('PKG_ATIV.cargo', encodeLatin1Form(setPairs(form.pairs, set)));
+    // O órgão pela janela de órgãos da atividade, com a instituição do link
+    // (f_codinst, com a letra), como na alteração (seção 22). Fica fora da
+    // releitura dos campos: a página de alteração o mostra só em f_orgao.
+    let organ: { set: FieldValues; shown?: string } = { set: {} };
+    if (op.organ) {
+      const resolved = await resolveOrgan(
+        { before: '', beforeText: '', ...op.organ },
+        port,
+        form.pairs,
+        '',
+        { institution: inclusion.params.f_codinst ?? '', path: activityOrgansPath },
+      );
+      if ('status' in resolved) return result(resolved.status, resolved.detail);
+      organ = { set: resolved.set, shown: resolved.shown };
+    }
+    const response = await port.post(
+      'PKG_ATIV.cargo',
+      encodeLatin1Form(setPairs(form.pairs, { ...set, ...organ.set })),
+    );
     if (isLogonPage(response)) return result('sessao', SESSION);
     const mayExist = 'A atividade pode ter sido criada';
     try {
@@ -311,10 +313,19 @@ export async function applyCreateAtividade(
         readBack(saved, checked),
       );
       if (problem) return { ...result('divergente', problem), assigned };
+      const organNow = saved.controls.find((c) => c.name === 'f_orgao')?.value;
+      if (organ.shown !== undefined && organLoose(organNow) !== organLoose(organ.shown)) {
+        return { ...result('divergente', 'Criada no Lattes, mas o órgão não confere'), assigned };
+      }
+      const lines = await linesOf(op, port, seq);
+      if (lines) return { ...lines, assigned };
       // As disciplinas ficam sem reler: o resto conferiu, e o aviso vai no
       // registro do enviado, sem travar a fila nem o envio ao CNPq.
       return {
-        ...result('conferido', `${DISCIPLINES_UNREAD} (atividade ${seq})`),
+        ...result(
+          'conferido',
+          `${natur === '4' ? DISCIPLINES_UNREAD : DESCRIPTION_UNREAD} (atividade ${seq})`,
+        ),
         assigned,
         partial: true,
       };
@@ -325,6 +336,28 @@ export async function applyCreateAtividade(
   } catch (err) {
     if (err instanceof Stop) return result(err.status, err.message);
     return result('erro', err instanceof Error ? err.message : 'Falha inesperada');
+  }
+}
+
+/** O formulário de cada linha de pesquisa nova, depois da atividade criada; undefined se tudo voltou. */
+async function linesOf(
+  op: CreateAtividadeOp,
+  port: LattesPort,
+  seqFuncao: string,
+): Promise<OpResult | undefined> {
+  if (!op.lines?.length) return undefined;
+  const created = `Criada no Lattes (atividade ${seqFuncao})`;
+  try {
+    const problems = await fillLinhas(port, { seqAtiv: op.seqAtiv, seqFuncao }, op.lines);
+    if (problems.length === 0) return undefined;
+    return {
+      detail: `${created}, mas a linha de pesquisa não voltou como foi: ${problems.join(', ')}. Confira no Lattes`,
+      key: op.key,
+      status: 'divergente',
+    };
+  } catch (err) {
+    if (!(err instanceof Stop)) throw err;
+    return { detail: `${created}, mas ${err.message}`, key: op.key, status: err.status };
   }
 }
 

@@ -120,6 +120,15 @@ export function planEnderecoLookups(
           'Com órgão no endereço profissional, a instituição nova pede o órgão dela: escolha o órgão de novo, ou troque os dois no Lattes',
       };
     }
+    // O banco do Lattes exige, com a instituição, o país e, no Brasil, a
+    // cidade e a UF (ORA-20001, observado em 28/10/2026).
+    const brazil = now('PAIS') === 'Brasil';
+    if (!now('PAIS') || (brazil && (!now('CIDADE') || !now('UF')))) {
+      return {
+        reason:
+          'Com instituição, o Lattes exige no endereço profissional o país e, no Brasil, a cidade e a UF',
+      };
+    }
     out.institution = { before: was(INSTITUTION.code), code, name };
     out.rows.unshift({
       after: name,

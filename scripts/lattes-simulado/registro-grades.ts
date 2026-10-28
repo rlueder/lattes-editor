@@ -23,6 +23,7 @@ import { foldText } from '../../src/model/fold-text.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
+import { INSTITUTIONS } from './buscas.ts';
 import { applyGrids, gridScripts } from './grades.ts';
 import type { SimRequest } from './pedido.ts';
 
@@ -58,17 +59,48 @@ const registryOf = (item: XElement): XElement | undefined => {
 function holdersFromXml(item: XElement): Row[] {
   const reg = registryOf(item);
   const name = ((reg && getAttr(reg, 'NOME-DO-DEPOSITANTE')) ?? '').trim();
-  if (!name) return [];
+  // Uma instituição da busca do simulado é titular instituição (institutionsFromXml).
+  if (!name || isInstitution(name)) return [];
   const copy = childElements(item, 'AUTORES').find(
     (a) => foldText(getAttr(a, 'NOME-COMPLETO-DO-AUTOR') ?? '') === foldText(name),
   );
   return [holderRow(name, (copy && getAttr(copy, 'NOME-PARA-CITACAO')) ?? '', '0')];
 }
 
+/**
+ * Uma linha de titular instituição na ordem do seleciona() da janela de
+ * titulares (lido em 27/10/2026): l, c sem a letra, tipoInst a letra.
+ * Inferido: que a edição traga as linhas gravadas na mesma ordem.
+ */
+const institutionRow = (name: string, code: string, letter: string): Row =>
+  Object.fromEntries([
+    ['l', name],
+    ['c', code],
+    ['tipoInst', letter],
+    ['deletable', true],
+    ['editable', false],
+  ]);
+
+const isInstitution = (name: string) =>
+  INSTITUTIONS.some((i) => foldText(i.name) === foldText(name.trim()));
+
+/**
+ * Sem grade guardada, a instituição do NOME-DO-DEPOSITANTE do XML, com o
+ * código da busca do simulado: a exportação de 27/10/2026 pôs a instituição
+ * titular nesse atributo, e não em NOME-DO-TITULAR.
+ */
+function institutionsFromXml(item: XElement): Row[] {
+  const reg = registryOf(item);
+  const name = ((reg && getAttr(reg, 'NOME-DO-DEPOSITANTE')) ?? '').trim();
+  if (!name || !isInstitution(name)) return [];
+  const hit = INSTITUTIONS.find((i) => foldText(i.name) === foldText(name))!;
+  return [institutionRow(hit.name, hit.code.slice(1), hit.code.slice(0, 1))];
+}
+
 const holdersOf = (item: XElement) => {
   let h = holders.get(item);
   if (!h) {
-    h = { inst: [], pessoa: holdersFromXml(item) };
+    h = { inst: institutionsFromXml(item), pessoa: holdersFromXml(item) };
     holders.set(item, h);
   }
   return h;
@@ -150,7 +182,12 @@ const rowsOf = (grid: string) =>
 function writeHolders(item: XElement): void {
   const names = storedHolders(item);
   const reg = registryOf(item);
-  if (reg) setAttr(reg, 'NOME-DO-DEPOSITANTE', names.join('; '));
+  // Pessoas e instituições no mesmo atributo (exportação de 27/10/2026, com
+  // uma instituição só); NOME-DO-TITULAR fica vazio. Como várias se juntam é
+  // inferido.
+  const institutions = holdersOf(item).inst.map((r) => String(r.l));
+  if (reg) setAttr(reg, 'NOME-DO-DEPOSITANTE', [...names, ...institutions].join('; '));
+  if (reg && getAttr(reg, 'NOME-DO-TITULAR') !== undefined) setAttr(reg, 'NOME-DO-TITULAR', '');
   const authors = childElements(item, 'AUTORES');
   item.children = item.children.filter((c) => !authors.includes(c as XElement));
   holdersOf(item).pessoa.forEach((r, i) => {
@@ -194,6 +231,21 @@ function writeHistory(reg: XElement, item: XElement, xml: string): void {
   }
 }
 
+/** Os depositantes ou titulares do POST, pessoas e instituições. */
+export function applyRegistryHolders(item: XElement, req: SimRequest): void {
+  // l|c|t|staValidado: o check() escreve as chaves na ordem da linha do
+  // titularPessoaProvider ({l, c, t, …}); GRID_SPECS lista quais chaves
+  // vão, não a ordem (serializeGrid).
+  holdersOf(item).pessoa = rowsOf(req.get('f_depositante_pessoa_l') ?? '').map(
+    ([l = '', c = '', t = '']) => holderRow(l, t, c),
+  );
+  // l|c|tipoInst, na ordem da linha do seleciona().
+  holdersOf(item).inst = rowsOf(req.get('f_depositante_inst_l') ?? '').map(
+    ([l = '', c = '', letter = '']) => institutionRow(l, c, letter),
+  );
+  writeHolders(item);
+}
+
 /** Grava as grades do POST no item, como chegaram. */
 export function applyRegistryGrids(
   item: XElement,
@@ -201,15 +253,7 @@ export function applyRegistryGrids(
   { dates = false, withHolders = true } = {},
 ): void {
   applyGrids(item, req);
-  if (withHolders) {
-    // l|c|t|staValidado: o check() escreve as chaves na ordem da linha do
-    // titularPessoaProvider ({l, c, t, …}); GRID_SPECS lista quais chaves
-    // vão, não a ordem (serializeGrid).
-    holdersOf(item).pessoa = rowsOf(req.get('f_depositante_pessoa_l') ?? '').map(
-      ([l = '', c = '', t = '']) => holderRow(l, t, c),
-    );
-    writeHolders(item);
-  }
+  if (withHolders) applyRegistryHolders(item, req);
   if (dates) {
     const reg = registryOf(item);
     const xml = req.get('f_dados_grid_datas') ?? '';

@@ -538,7 +538,7 @@ export type SampleLookup = { link: string } | { none: string } | { path: string 
  * (f_sta_divulgacao_cientifica=S); a inteira vem primeiro, e a filtrada só é
  * lida se a inteira não tiver o que se procura.
  */
-async function eventoForms(
+export async function eventoForms(
   menu: string,
   get: Get,
   wanted?: (seq: string) => boolean,

@@ -6,6 +6,7 @@
 // agência são sintéticos, no formato observado. As áreas são só as nove
 // grandes áreas, com os códigos observados.
 
+import { foldText } from '../../src/model/fold-text.ts';
 import type { Institution, LattesState } from './estado.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
@@ -220,8 +221,26 @@ function studentCheck(req: SimRequest): SimResponse {
   return { contentType: 'application/json', html: body, status: 200 };
 }
 
+/**
+ * A busca da janela de titulares instituições (pkg_titular_inst.sele_inst,
+ * POST com f_ctr P e f_nome, lida em 27/10/2026): um seleciona() com o código
+ * com a letra e o nome por instituição que contém o texto.
+ */
+function holderInstitutions(req: SimRequest, state: LattesState): SimResponse {
+  const query = foldText((req.get('f_nome') ?? '').trim());
+  const links = institutionsOf(state)
+    .filter((i) => query.length > 1 && foldText(i.name).includes(query))
+    .map(
+      (i) =>
+        `<a href="#" onclick="seleciona('${i.code}','${h.jsString(i.name)}'); return false;">${h.esc(i.name)}</a><br>`,
+    )
+    .join('\n');
+  return html(h.page('Titular instituição', links));
+}
+
 export const BUSCAS_ROUTES: Routes = {
   'pkg_orient.valida_orientador_ajax': studentCheck,
+  'pkg_titular_inst.sele_inst': holderInstitutions,
   prc_agencia: () => agencies(),
   prc_curso_form: courses,
   prc_inst_ativ: institutions,

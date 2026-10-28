@@ -223,6 +223,14 @@ describe('notificações: ligação com o Lattes e armazenamento', () => {
     ];
     expect(new Set(all.map(connectionTitle)).size).toBe(all.length);
     for (const c of all) expect(connectionText(c, '2.0.0').length).toBeGreaterThan(20);
+    // Mesmo número dos dois lados: a diferença é de recursos, e o texto não
+    // diz que um número é maior que o outro (27/10/2026).
+    const same = connectionText({ kind: 'app-antigo', version: '1.0.0-dev.93' }, '1.0.0-dev.93');
+    expect(same).toMatch(/embora os dois digam v1\.0\.0-dev\.93/);
+    expect(same).not.toMatch(/mais nova/);
+    expect(
+      connectionText({ kind: 'extensao-antiga', version: '1.0.0-dev.93' }, '1.0.0-dev.93'),
+    ).not.toMatch(/mais antiga/);
     // Só o que se resolve atualizando um dos lados leva link.
     expect(all.filter((c) => connectionLink(c)).map((c) => c.kind)).toEqual([
       'app-antigo',

@@ -16,7 +16,15 @@ const BASE = 'lattes-editor:itens-de-teste:base';
 interface StoredBase {
   at: string;
   lists: ListSnapshot;
+  /**
+   * Os pacotes das listas lidas (pkg_orient...), quando a passada é só de
+   * alguns tipos: o registro relê as mesmas, dentro do teto de pedidos.
+   */
+  packages?: string[];
 }
+
+/** O pacote de um caminho do Lattes (pkg_orient.lista → pkg_orient), sem caixa. */
+const packageOf = (path: string) => path.split(/[.?]/)[0]!.toLowerCase();
 
 export function loadBase(): StoredBase | undefined {
   try {
@@ -28,8 +36,11 @@ export function loadBase(): StoredBase | undefined {
 }
 
 /** Sem armazenamento, não há base, e a passada não começa: é melhor que seguir sem ela. */
-export function saveBase(lists: ListSnapshot): void {
-  localStorage.setItem(BASE, JSON.stringify({ at: new Date().toISOString(), lists }));
+export function saveBase(lists: ListSnapshot, packages?: string[]): void {
+  localStorage.setItem(
+    BASE,
+    JSON.stringify({ at: new Date().toISOString(), lists, ...(packages ? { packages } : {}) }),
+  );
 }
 
 export function clearBase(): void {
@@ -41,8 +52,10 @@ export async function snapshotLists(
   menuHtml: string,
   code: string,
   get: (path: string) => Promise<{ html: string }>,
+  packages?: string[],
 ): Promise<ListSnapshot> {
-  return snapshotCvLists(menuHtml, code, async (path) => (await get(path)).html);
+  const keep = packages ? (url: string) => packages.includes(packageOf(url)) : undefined;
+  return snapshotCvLists(menuHtml, code, async (path) => (await get(path)).html, keep);
 }
 
 /** O que mudou em relação à base agora: o registro do que entrou e o que sumiu. */
@@ -53,7 +66,7 @@ export async function ledgerNow(
 ): Promise<{ added: PlacedRow[]; missing: PlacedRow[]; now: ListSnapshot }> {
   const base = loadBase();
   if (!base) throw new Error('Sem a base das listas: rode "Ler formulários" antes de criar.');
-  const now = await snapshotLists(menuHtml, code, get);
+  const now = await snapshotLists(menuHtml, code, get, base.packages);
   return { ...diffSnapshots(base.lists, now), now };
 }
 

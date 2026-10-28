@@ -3,11 +3,12 @@
 // editor (capture-screenshots.ts) e da extensão (capture-store.ts).
 
 import { spawn } from 'node:child_process';
-import { mkdtempSync, rmSync, statSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const PORT = 9333;
+let activePort = PORT;
 
 const BROWSERS = [
   '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
@@ -55,7 +56,7 @@ export class Cdp {
 /** Aba nova em branco, já com Page habilitado. */
 export async function openTab(): Promise<Cdp> {
   const target = (await (
-    await fetch(`http://127.0.0.1:${PORT}/json/new?about:blank`, { method: 'PUT' })
+    await fetch(`http://127.0.0.1:${activePort}/json/new?about:blank`, { method: 'PUT' })
   ).json()) as { webSocketDebuggerUrl: string };
   const ws = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((r) => ws.addEventListener('open', r));
@@ -64,10 +65,17 @@ export async function openTab(): Promise<Cdp> {
   return cdp;
 }
 
+/**
+ * Quanto esperar o navegador de teste abrir a depuração: no CI, uma partida
+ * fria passou de 10 s (27/10/2026). Um navegador que encerra antes falha na
+ * hora, sem esperar o prazo.
+ */
+const PORT_WAIT_MS = 30_000;
+
 async function waitForBrowser(): Promise<void> {
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < PORT_WAIT_MS / 200; i++) {
     try {
-      await fetch(`http://127.0.0.1:${PORT}/json/version`);
+      await fetch(`http://127.0.0.1:${activePort}/json/version`);
       return;
     } catch {
       await sleep(200);
@@ -86,10 +94,24 @@ async function waitForBrowser(): Promise<void> {
  *   apaga: é onde fica o "ok" do aviso de uso da extensão, que o navegador sem
  *   janela não consegue dar (ele não abre as páginas da extensão).
  * - `LATTES_JANELA=1` abre o navegador com janela, para dar esse "ok".
+ * - `isolated: true` exige perfil temporário sem extensão nem janela e usa a
+ *   porta automática informada pelo navegador naquele perfil.
  */
-export async function withHeadlessBrowser(work: () => Promise<void>): Promise<void> {
-  const ownProfile = !process.env.LATTES_PERFIL;
-  const profile = process.env.LATTES_PERFIL ?? mkdtempSync(join(tmpdir(), 'lattes-capturas-'));
+export async function withHeadlessBrowser(
+  work: () => Promise<void>,
+  { isolated = false }: { isolated?: boolean } = {},
+): Promise<void> {
+  if (
+    isolated &&
+    ['LATTES_PERFIL', 'LATTES_JANELA', 'LATTES_EXTENSAO'].some(
+      (name) => process.env[name] !== undefined,
+    )
+  ) {
+    throw new Error('O navegador de teste exige perfil temporário, sem janela e sem extensão.');
+  }
+  const requestedProfile = process.env.LATTES_PERFIL || undefined;
+  const ownProfile = !requestedProfile;
+  const profile = requestedProfile ?? mkdtempSync(join(tmpdir(), 'lattes-capturas-'));
   const extension = process.env.LATTES_EXTENSAO;
   const exe = BROWSERS.find((b) => {
     try {
@@ -103,7 +125,7 @@ export async function withHeadlessBrowser(work: () => Promise<void>): Promise<vo
     exe,
     [
       ...(process.env.LATTES_JANELA ? [] : ['--headless=new']),
-      `--remote-debugging-port=${PORT}`,
+      `--remote-debugging-port=${isolated ? 0 : PORT}`,
       `--user-data-dir=${profile}`,
       '--hide-scrollbars',
       '--no-first-run',
@@ -114,17 +136,67 @@ export async function withHeadlessBrowser(work: () => Promise<void>): Promise<vo
     ],
     { stdio: 'ignore' },
   );
+  const previousPort = activePort;
   try {
+    activePort = PORT;
+    if (isolated) {
+      // A porta vem do arquivo criado no nosso perfil novo, nunca de um
+      // navegador da pessoa que já esteja ouvindo numa porta conhecida.
+      activePort = await waitForPrivatePort(
+        profile,
+        () => browser.exitCode !== null || browser.signalCode !== null,
+      );
+    }
     await waitForBrowser();
     await work();
   } finally {
-    const exited = new Promise((r) => browser.once('exit', r));
-    browser.kill();
-    await exited;
-    if (ownProfile) {
-      rmSync(profile, { force: true, maxRetries: 5, recursive: true, retryDelay: 200 });
+    if (browser.exitCode === null && browser.signalCode === null) {
+      const exited = new Promise((r) => browser.once('exit', r));
+      browser.kill();
+      await exited;
     }
+    activePort = previousPort;
+    if (ownProfile) removeProfile(profile);
   }
+}
+
+/**
+ * Apaga o perfil temporário. Os processos auxiliares do navegador podem
+ * seguir escrevendo nele um instante depois de o principal sair (ENOTEMPTY
+ * no CI, 27/10/2026): mais tentativas, e um perfil que ainda resiste fica
+ * para o sistema limpar, com um aviso, sem derrubar um teste que passou.
+ */
+function removeProfile(profile: string): void {
+  try {
+    rmSync(profile, { force: true, maxRetries: 20, recursive: true, retryDelay: 250 });
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code !== 'ENOTEMPTY' && code !== 'EBUSY') throw err;
+    console.warn(`Perfil temporário não apagado (${code}): ${profile}`);
+  }
+}
+
+async function waitForPrivatePort(profile: string, exited: () => boolean): Promise<number> {
+  for (let i = 0; i < PORT_WAIT_MS / 200; i++) {
+    if (exited()) throw new Error('O navegador de teste encerrou antes de abrir a depuração.');
+    try {
+      const [line, browserPath] = readFileSync(join(profile, 'DevToolsActivePort'), 'utf8').split(
+        '\n',
+      );
+      const port = Number(line);
+      if (
+        browserPath?.startsWith('/devtools/browser/') &&
+        Number.isInteger(port) &&
+        port > 0 &&
+        port <= 65535
+      )
+        return port;
+    } catch {
+      // O arquivo aparece depois que o navegador reserva a porta.
+    }
+    await sleep(200);
+  }
+  throw new Error('O navegador de teste não informou sua porta privada de depuração.');
 }
 
 /**

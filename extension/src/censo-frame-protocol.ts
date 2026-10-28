@@ -48,10 +48,41 @@ export function framePost(raw: unknown, base: string): { url: URL; pairs: [strin
   return { pairs, url };
 }
 
-/** Só os acessos de interface conhecidos ganham uma cópia local, sem acesso ao pai real. */
+/**
+ * Só os acessos de interface conhecidos ganham uma cópia local, sem acesso ao
+ * pai real. veriHelp() roda na carga de quase todo formulário (lido em
+ * 26/10/2026), e os vetores palavraDP, areaDP, setorDP e titularInstDP
+ * alimentam as sugestões das grades.
+ */
 export function localFrameReferences(code: string): string {
+  // Todo acesso ao pai ou ao topo vai às cópias locais: o que elas não têm
+  // para com o nome pedido (censo-frame-runtime.ts), sem tocar o menu real.
+  // Só a cadeia da janela (parent, top, self.parent, window.top.parent...):
+  // depois de outro ponto é propriedade de um objeto da página
+  // (node.parent.children, el.style.top.length) e fica como está.
+  // Um script que declara variável ou parâmetro com esse nome (var parent =
+  // el.parentNode) usa o dele: o parent. ou top. sem self. ou window. fica
+  // como está ali; o com self. ou window. é sempre da janela.
+  const local = new Set(['parent', 'top'].filter((name) => declares(code, name)));
   return code.replace(
-    /\b(?:(?:self|window)\.)?(?:parent|top)\.(caixaMsg|modalCV[1-3]|autorDP|titularPessoaDP|checkPublicacao|fecharModal)\b/g,
-    '__lattesFrameParent.$1',
+    /(?<![.\w$])((?:self|window)\.)?((?:(?:parent|top)\.)+)(?=[A-Za-z_$])/g,
+    // Uma cópia local só, e um .parent por salto a mais: a cópia responde
+    // parent com ela mesma (censo-frame-runtime.ts), e não conhece o próprio nome.
+    (match, prefix: string | undefined, chain: string) =>
+      !prefix && local.has(chain.split('.')[0]!)
+        ? match
+        : `__lattesFrameParent${'.parent'.repeat(chain.split('.').length - 2)}.`,
   );
+}
+
+/** O script declara uma variável, um parâmetro ou um catch com esse nome? */
+function declares(code: string, name: string): boolean {
+  const n = `(?<![\\w$])${name}(?![\\w$])`;
+  return [
+    `\\b(?:var|let|const)\\s+(?:[\\w$]+\\s*(?:=[^,;]*)?,\\s*)*${n}`,
+    `\\bfunction\\b[^(]*\\([^)]*${n}[^)]*\\)`,
+    `\\bcatch\\s*\\(\\s*${n}\\s*\\)`,
+    `${n}\\s*=>`,
+    `\\([^()]*${n}[^()]*\\)\\s*=>`,
+  ].some((re) => new RegExp(re).test(code));
 }

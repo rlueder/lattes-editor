@@ -6,27 +6,27 @@
 // equipe leva a própria pessoa como coordenadora (seção 22).
 
 import type { Change } from '../model/changes.ts';
-import { childElements, firstChild, getAttr, walk, type XElement } from '../model/xml.ts';
+import { getAttr, walk, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
-import {
-  NO_OWNER_NAME,
-  ownerAuthor,
-  ownerGridRow,
-  type OwnerNames,
-  ownerNamesOf,
-  serializeGrid,
-  TEAM_KEYS,
-} from './author-grid.ts';
+import { NO_OWNER_NAME, type OwnerNames, ownerNamesOf } from './author-grid.ts';
 import type { FormSpec } from './contract.ts';
 import { CREATE_FIELD_LABELS } from './create-labels.ts';
+import {
+  planProjetoExtras,
+  PROJECT_EXTRA_PARTS,
+  type ProjetoExtras,
+  projetoExtrasProblems,
+  projetoExtrasSet,
+} from './create-projeto-extras.ts';
 import {
   absentFields,
   type CreateOpBase,
   filledChildren,
   getChecked,
   hidden,
-  jsCalls,
+  innovationFields,
   labelIn,
+  leftOf,
   mapAttrs,
   type Mapper,
   maybeCreated,
@@ -41,6 +41,7 @@ import {
   same,
   sameCode,
   select,
+  type SendExtras,
   SESSION,
   Stop,
   text,
@@ -48,12 +49,26 @@ import {
 import { encodeLatin1Form, pairValue, setPairs } from './form.ts';
 import { foldText } from './html-text.ts';
 import { findLinks, isLogonPage, type LattesLink } from './lattes-html.ts';
+import { organsPath } from './organ-windows.ts';
 import type { FieldValues } from './plan.ts';
+import { ORGAN_PARTS, organLoose, resolveOrgan } from './production/organ.ts';
+import { projectInstitutions } from './production/targets/projetos.ts';
+import { vinculoChoices } from './projeto-atuacoes.ts';
+
+export { vinculoChoices };
+import { PROJETO_TARGETS } from './production/targets/projetos.ts';
 
 export interface CreateProjetoOp extends CreateOpBase {
+  /** A equipe, os financiadores e as ligações (create-projeto-extras.ts). */
+  extras?: ProjetoExtras;
   kind: 'criar-projeto';
   /** f_cod_tipo da lista e do formulário: P pesquisa, D desenvolvimento… */
   nature: string;
+  /**
+   * O órgão ou a unidade escolhidos na janela de órgãos (OrganField no
+   * editor), com o órgão de cima de uma unidade: o check() da inclusão o exige.
+   */
+  organ?: { code: string; parent?: string };
   /** O nome completo e as citações do currículo, para conferir a linha de autor do menu. */
   owner: OwnerNames;
 }
@@ -83,7 +98,8 @@ const PROJECT_FIELDS: Record<string, [string, Mapper]> = {
   'DESCRICAO-DO-PROJETO': ['f_ref', same],
   'DESCRICAO-DO-PROJETO-INGLES': ['f_ref_en', same],
   // Com SIM, o formulário pede o texto do potencial (f_txt_potencial), que o XML não tem.
-  'FLAG-POTENCIAL-INOVACAO': ['f_sta_inovacao', (v) => (v === 'NAO' ? 'N' : undefined)],
+  // Com Sim, o formulário pede o texto do potencial, escrito no editor (innovationFields).
+  'FLAG-POTENCIAL-INOVACAO': ['f_sta_inovacao', (v) => ({ NAO: 'N', SIM: 'S' })[v]],
   NATUREZA: ['F_TPO_NATUREZA', (v) => PROJECT_NATURE[v]],
   'NOME-DO-PROJETO': ['f_titulo', same],
   'NOME-DO-PROJETO-INGLES': ['f_titulo_en', same],
@@ -97,13 +113,24 @@ const PROJECT_FIELDS: Record<string, [string, Mapper]> = {
 
 const PROJECT_HANDLED = new Set(['FORMATO-DATA-CERTIFICACAO', 'SEQUENCIA-PROJETO']);
 
-/** O que o editor põe na participação nova a partir do projeto (src/model/general-items.ts). */
+/**
+ * O que o editor põe na participação nova a partir do projeto
+ * (src/model/general-items.ts), e o órgão e a unidade escolhidos na lista.
+ */
 const PARTICIPATION_FROM_PROJECT = new Set([
   'ANO-FIM',
   'ANO-INICIO',
   'FLAG-PERIODO',
   'SEQUENCIA-FUNCAO-ATIVIDADE',
+  ...Object.values(ORGAN_PARTS.organ),
+  ...Object.values(ORGAN_PARTS.unit),
 ]);
+
+/**
+ * Projeto novo com o órgão pelo conector: só a uma extensão com
+ * 'projeto-novo-orgao'. Uma mais antiga mandaria a inclusão sem ele.
+ */
+export const CREATE_PROJECT_ORGAN_ENABLED = true;
 
 /** Mudanças "novo" que trazem um projeto: o próprio, a participação ou o contêiner dela. */
 export const PROJECT_CARRIERS = new Set([
@@ -112,46 +139,30 @@ export const PROJECT_CARRIERS = new Set([
   'PROJETO-DE-PESQUISA',
 ]);
 
-/** A equipe tem só o dono do currículo (pelo ID Lattes ou, sem ele, pelo nome)? */
-function onlyOwner(projeto: XElement, root: XElement | undefined): boolean {
-  const equipe = firstChild(projeto, 'EQUIPE-DO-PROJETO');
-  const members = equipe ? childElements(equipe, 'INTEGRANTES-DO-PROJETO') : [];
-  if (members.length === 0) return true;
-  if (members.length > 1 || !root) return false;
-  const member = members[0]!;
-  const ownerId = getAttr(root, 'NUMERO-IDENTIFICADOR') ?? '';
-  const memberId = getAttr(member, 'NRO-ID-CNPQ') ?? '';
-  if (ownerId && memberId) return ownerId === memberId;
-  const dg = firstChild(root, 'DADOS-GERAIS');
-  const ownerName = (dg && getAttr(dg, 'NOME-COMPLETO')) ?? '';
-  return (
-    foldText(ownerName) !== '' &&
-    foldText(ownerName) === foldText(getAttr(member, 'NOME-COMPLETO') ?? '')
-  );
-}
-
 /** Por que o projeto criado fica divergente: a equipe não é relida. */
 export const TEAM_UNREAD =
   'Criado no Lattes, com os campos conferidos; confira a equipe no Lattes, que o conector não relê';
 
-/** Por que o projeto vai à mão hoje (seções 21 e 22 de docs/lattes_internals.md). */
+/** Por que o projeto novo vai à mão sem o órgão (seções 21 e 22 de docs/lattes_internals.md). */
 export const TEAM_BY_HAND =
-  'Vai à mão: o Lattes exige o órgão ou unidade na inclusão do projeto, que o editor ainda não pede';
+  'O Lattes exige o órgão ou unidade na inclusão do projeto: escolha na lista do Lattes, em Órgão';
 
 /**
- * Um projeto novo como inclusão; o motivo, quando vai à mão. Por enquanto vai
- * sempre à mão: o check() do formulário exige, na inclusão, o órgão ou unidade
- * (a busca pp_orgao_cargo), e o editor não tem esse campo no projeto. A
- * equipe já tem como ir: projetoOp() põe a própria pessoa como coordenadora,
- * pela linha dela no autorDP do menu (seção 22).
+ * Um projeto novo como inclusão; o motivo, quando vai à mão. O check() do
+ * formulário exige, na inclusão, o órgão ou unidade (a janela
+ * pp_orgao_cargo), escolhido no editor pela lista do Lattes. A equipe leva a
+ * própria pessoa como coordenadora, pela linha dela no autorDP do menu
+ * (seção 22).
  */
 export function planCreateProjeto(
   change: Change,
   chain: XElement[],
   label: string,
+  extras: SendExtras = {},
 ): Planned<CreateProjetoOp> {
-  const op = projetoOp(change, chain, label);
-  return 'reason' in op ? op : { reason: TEAM_BY_HAND };
+  const op = projetoOp(change, chain, label, extras);
+  if ('reason' in op) return op;
+  return op.organ ? op : { reason: TEAM_BY_HAND };
 }
 
 /**
@@ -163,6 +174,7 @@ export function projetoOp(
   change: Change,
   chain: XElement[],
   label: string,
+  sendExtras: SendExtras = {},
 ): Planned<CreateProjetoOp> {
   const el = chain.at(-1)!;
   // Cada projeto com o caminho inteiro desde a raiz: a mudança pode ser o
@@ -183,14 +195,12 @@ export function projetoOp(
   }
   const nature = PROJECT_NATURE[getAttr(projeto, 'NATUREZA') ?? ''];
   if (!nature) return { reason: 'Escolha a natureza do projeto' };
-  if (!onlyOwner(projeto, chain[0])) {
-    return {
-      reason: 'Equipe além de você ainda vai à mão: o conector não monta a grade da equipe',
-    };
-  }
-  if (filledChildren(projeto, ['EQUIPE-DO-PROJETO']).length > 0) {
-    return { reason: 'Financiadores, produções e orientações do projeto ainda vão à mão' };
-  }
+  // A equipe, os financiadores e as ligações (create-projeto-extras.ts).
+  const extras = planProjetoExtras(projeto, chain[0]);
+  if ('reason' in extras) return extras;
+  const otherParts = filledChildren(projeto, PROJECT_EXTRA_PARTS).map((c) =>
+    labelIn(change, c.name),
+  );
   // A participação que embrulha o projeto: o editor só põe nela o número, o
   // período em ano e se é atual, que seguem o projeto. Órgão, unidade e meses
   // não têm lugar no formulário de projeto e não podem sumir sem aviso.
@@ -198,14 +208,12 @@ export function projetoOp(
   const extra = (participacao?.attrs ?? []).filter(
     (a) => a.value.trim() && !PARTICIPATION_FROM_PROJECT.has(a.name),
   );
-  if (extra.length > 0) {
-    return {
-      reason: `A participação no projeto tem campos que o formulário não leva: ${extra.map((a) => labelIn(change, a.name)).join(', ')}`,
-    };
-  }
   const { missing, set, wrong } = mapAttrs(change, projeto, PROJECT_FIELDS, PROJECT_HANDLED);
-  const reason = reasonFrom(missing, wrong);
+  const left = [...missing, ...extra.map((a) => labelIn(change, a.name)), ...otherParts];
+  const reason = reasonFrom(wrong);
   if (reason) return { reason };
+  const innovation = innovationFields(set, chain[0], projeto, sendExtras);
+  if (innovation) return innovation;
   // Sem ano de fim (projeto em andamento), o campo vai vazio: senão ficaria o
   // fim do vínculo, que preencherOpener copia para F_ANO_FIM.
   set.F_ANO_FIM = getAttr(projeto, 'ANO-FIM') ?? '';
@@ -214,18 +222,43 @@ export function projetoOp(
   }
   const owner = ownerNamesOf(chain[0]);
   if (!owner) return { reason: NO_OWNER_NAME };
+  // O órgão, ou a unidade com o órgão de cima, como a lista do editor os grava.
+  const part = (attr: string) => (participacao && getAttr(participacao, attr)?.trim()) ?? '';
+  const organCode = part(ORGAN_PARTS.organ.code);
+  const unitCode = part(ORGAN_PARTS.unit.code);
+  if (!organCode && (part(ORGAN_PARTS.organ.name) || part(ORGAN_PARTS.unit.name))) {
+    return { reason: 'Órgão e unidade: escolha pela lista do Lattes, que grava o código junto' };
+  }
+  const organ = organCode
+    ? unitCode && unitCode !== organCode
+      ? { code: unitCode, parent: organCode }
+      : { code: organCode }
+    : undefined;
   return {
     expect: {},
+    extras,
     institutionCode,
     institutionName,
     key: change.key,
     kind: 'criar-projeto',
     label,
+    ...leftOf(left),
     nature,
+    ...(organ ? { organ } : {}),
     owner,
     set,
   };
 }
+
+/** Sem equipe no XML: a própria pessoa como coordenadora. */
+const EMPTY_EXTRAS: ProjetoExtras = {
+  funders: [],
+  links: { orientacoes: [], producoes: [] },
+  team: [{ citation: '', cnpq: '', lead: true, name: '', owner: true }],
+};
+
+/** As grades de financiadores e de ligações do projeto (production/targets/projetos.ts). */
+const PROJECT_GRIDS = PROJETO_TARGETS[0]!.opaqueGrids ?? [];
 
 /** O formulário de inclusão do projeto (tabela da seção 17). */
 export const CREATE_PROJETO_SPEC: FormSpec & { mode: string; partial: true } = {
@@ -240,6 +273,8 @@ export const CREATE_PROJETO_SPEC: FormSpec & { mode: string; partial: true } = {
     f_cod_inst2: hidden,
     f_cod_tipo: hidden,
     f_codinst: hidden,
+    f_codorgao: hidden,
+    f_codorgao2: hidden,
     f_ctr: hidden,
     f_enqua: hidden,
     f_inst: text(75),
@@ -252,6 +287,7 @@ export const CREATE_PROJETO_SPEC: FormSpec & { mode: string; partial: true } = {
     F_NRO_GRADUACAO: text(2),
     F_NRO_MESTRADO_ACAD: text(2),
     F_NRO_MESTRADO_PROF: text(2),
+    f_orgao_old: hidden,
     f_ref: { maxLength: 3900, type: 'textarea' },
     f_ref_en: { maxLength: 3900, type: 'textarea' },
     f_regime: hidden,
@@ -298,27 +334,6 @@ export const isInclusion = (l: LattesLink) =>
 const projectRows = (html: string) =>
   findLinks(html, 'PKG_PROJETO.form').filter((l) => !isInclusion(l));
 
-/**
- * As instituições das atuações que a janela pp_lista_inst oferece: cada uma
- * chama preencherOpener(enqua, regime, stavinc, ano_inic, ano_fim, carga,
- * vinc, código, nome), que copia o vínculo para os ocultos (seção 17).
- */
-export function vinculoChoices(html: string) {
-  return jsCalls(html, 'preencherOpener')
-    .filter((a) => a.length === 9)
-    .map(([enqua, regime, stavinc, anoInic, anoFim, carga, vinc, code, name]) => ({
-      anoFim: anoFim!,
-      anoInic: anoInic!,
-      carga: carga!,
-      code: code!,
-      enqua: enqua!,
-      name: name!,
-      regime: regime!,
-      stavinc: stavinc!,
-      vinc: vinc!,
-    }));
-}
-
 export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort): Promise<Result> {
   const result = (status: OpResult['status'], detail: string): Result => ({
     detail,
@@ -346,6 +361,12 @@ export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort):
     }
 
     const form = await readPairs(port, inclusion.path, PROJETO_FORM);
+    // O check() monta f_instituicoes como XML da grade de instituições
+    // (configurarInstituicoes); vazio, o banco do Lattes recusa a inclusão com
+    // ORA-19032 (observado em 28/10/2026). Na inclusão a grade vem vazia.
+    const institutions = projectInstitutions(await getChecked(port, inclusion.path)) ?? {
+      f_instituicoes: '<root></root>',
+    };
     if (
       pairValue(form.pairs, 'f_ctr') !== 'I' ||
       (pairValue(form.pairs, 'f_cod_tipo') ?? '').toUpperCase() !== op.nature
@@ -374,28 +395,46 @@ export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort):
     const v = choices[0]!;
     // Os anos do vínculo que preencherOpener copia ficam por baixo dos do projeto.
     const set: FieldValues = {
-      F_ANO_FIM: v.anoFim,
-      F_ANO_INIC: v.anoInic,
-      f_carga: v.carga,
-      f_enqua: v.enqua,
+      ...v.vinculo,
       f_inst: v.name,
       f_inst_old: v.name,
-      f_regime: v.regime,
-      f_stavinc: v.stavinc,
-      f_vinc: v.vinc,
       [v.code.startsWith('V') ? 'f_cod_inst' : 'f_cod_inst2']: v.code.slice(1),
+      [v.code.startsWith('V') ? 'f_cod_inst2' : 'f_cod_inst']: '',
       ...op.set,
     };
     const limit = overLimit(form.controls, set);
     if (limit) return result('erro', limit);
+    // O órgão pela janela de órgãos da instituição escolhida, como o orgao() e
+    // o atribuir() da página (lidos em 27/10/2026): o código em f_codorgao (ou
+    // f_codorgao2) e o texto em f_orgao_old. Fica fora do set: a página de
+    // alteração traz esses ocultos vazios e mostra o órgão só em f_orgao.
+    let organ: { set: FieldValues; shown?: string } = { set: {} };
+    if (op.organ) {
+      const resolved = await resolveOrgan(
+        { before: '', beforeText: '', ...op.organ },
+        port,
+        form.pairs,
+        '',
+        { institution: v.code, path: organsPath },
+      );
+      if ('status' in resolved) return result(resolved.status, resolved.detail);
+      organ = { set: resolved.set, shown: resolved.shown };
+    }
     // A própria pessoa na equipe, como coordenadora (tit "s"): o check() exige
     // a pessoa e um coordenador, e a inclusão abre a grade vazia (seção 22).
-    const owner = ownerAuthor(menu, op.owner);
-    if ('reason' in owner) return result('erro', owner.reason);
-    const team = serializeGrid([ownerGridRow(owner.owner, { tit: 's' })], TEAM_KEYS);
+    const extras = await projetoExtrasSet(
+      op.extras ?? EMPTY_EXTRAS,
+      op.owner,
+      menu,
+      port,
+      inclusion.path,
+    );
+    if ('status' in extras) return result(extras.status, extras.detail);
     const response = await port.post(
       CREATE_PROJETO_SPEC.action,
-      encodeLatin1Form(setPairs(form.pairs, { ...set, f_autores_l: team })),
+      encodeLatin1Form(
+        setPairs(form.pairs, { ...set, ...organ.set, ...extras.set, ...institutions }),
+      ),
     );
     if (isLogonPage(response)) return result('sessao', SESSION);
 
@@ -417,8 +456,25 @@ export async function applyCreateProjeto(op: CreateProjetoOp, port: LattesPort):
       const saved = await readPairs(port, created[0]!.path, PROJETO_FORM);
       // Tudo o que foi enviado, com a instituição e o vínculo da atuação: se o
       // Lattes pendurar o projeto em outra atuação, a releitura acusa.
-      const problem = readBackProblem('Criado no Lattes', readBack(saved, set));
+      // f_inst_old é da janela: a página de alteração não o traz de volta
+      // (observado em 28/10/2026); a instituição se confere pelo código e por f_inst.
+      const { f_inst_old: _old, ...checked } = set;
+      const problem = readBackProblem('Criado no Lattes', readBack(saved, checked));
       if (problem) return { ...result('divergente', problem), assigned };
+      // O órgão volta só no texto de f_orgao, desabilitado (18/10/2026).
+      const organNow = saved.controls.find((c) => c.name === 'f_orgao')?.value;
+      const grids = projetoExtrasProblems(
+        await getChecked(port, created[0]!.path),
+        PROJECT_GRIDS,
+        extras.set,
+      );
+      if (grids.length > 0) {
+        const detail = `Criado no Lattes, mas as grades não conferem: ${grids.join(', ')}`;
+        return { ...result('divergente', detail), assigned };
+      }
+      if (organ.shown !== undefined && organLoose(organNow) !== organLoose(organ.shown)) {
+        return { ...result('divergente', 'Criado no Lattes, mas o órgão não confere'), assigned };
+      }
       // A equipe volta no script da página, não num campo, e fica sem reler: o
       // resto conferiu, e o aviso vai no registro do enviado.
       return { ...result('conferido', TEAM_UNREAD), assigned, partial: true };

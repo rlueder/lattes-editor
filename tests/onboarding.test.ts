@@ -22,7 +22,12 @@ describe('primeiro uso: os três passos', () => {
 
   it('sem extensão: baixar, e o texto cobre o navegador fechado', () => {
     const [ext] = onboardingSteps({ state: { kind: 'sem-extensao' } }, parado);
-    expect(ext?.action).toEqual({ href: EXTENSION_URL, kind: 'link', label: 'Baixar a extensão' });
+    expect(ext?.action).toEqual({
+      href: EXTENSION_URL,
+      kind: 'link',
+      label: 'Instalar da Chrome Web Store',
+    });
+    expect(EXTENSION_URL).toMatch(/^https:\/\/chromewebstore\.google\.com\/detail\//);
     expect(ext?.text).toMatch(/Se já instalou, abra o navegador/);
   });
 
@@ -33,7 +38,7 @@ describe('primeiro uso: os três passos', () => {
     ]) {
       const [ext] = onboardingSteps(link, parado);
       expect(ext).toMatchObject({ status: 'agora', title: 'Atualize a extensão' });
-      expect(ext?.action?.label).toBe('Baixar a versão nova');
+      expect(ext?.action?.label).toBe('Atualizar na Chrome Web Store');
     }
   });
 
@@ -95,17 +100,32 @@ describe('primeiro uso: os três passos', () => {
       expect(onboardingSteps(link, { kind: 'abrindo' })[2]?.busy).toBe(true);
     }
     const link: Link = { features: ALL, state: { kind: 'lido', version: v } };
+    // Com alterações pendentes, o passo 3 é o envio; enviado, o currículo abre sozinho.
     const pending = onboardingSteps(link, { kind: 'falhou', reason: 'pendente' })[2];
     expect(pending?.text).toMatch(/não enviadas ao CNPq/);
-    expect(pending?.text).toMatch(/não guardou nenhuma versão/);
-    expect(pending?.action).toEqual({ kind: 'tentar', label: 'Tentar de novo' });
+    expect(pending?.action).toEqual({ kind: 'enviar', label: 'Enviar ao CNPq…' });
+    // Uma extensão sem o envio: enviar pelo Lattes e tentar de novo.
+    const old: Link = {
+      features: ALL.filter((f) => f !== 'publicar-cnpq'),
+      state: { kind: 'lido', version: v },
+    };
+    const manual = onboardingSteps(old, { kind: 'falhou', reason: 'pendente' })[2];
+    expect(manual?.text).toMatch(/não guardou nenhuma versão/);
+    expect(manual?.action).toEqual({ kind: 'tentar', label: 'Tentar de novo' });
     expect(onboardingSteps(link, parado)[2]?.action?.label).toBe('Abrir do Lattes');
   });
 
   it('Exportar bloqueado por pendência, com uma versão guardada: abrir essa versão (LAT-46)', () => {
-    const link: Link = { features: ALL, state: { kind: 'lido', version: v } };
+    // Sem o envio na extensão, a versão guardada é o passo; com ele, o envio
+    // é o passo e a versão fica como link embaixo (Welcome.tsx).
+    const link: Link = {
+      features: ALL.filter((f) => f !== 'publicar-cnpq'),
+      state: { kind: 'lido', version: v },
+    };
     const stored = { date: '06/10/2026', id: 7 };
     const open: OpenState = { kind: 'falhou', lattesId: '1', reason: 'pendente' };
+    const withSend: Link = { features: ALL, state: { kind: 'lido', version: v } };
+    expect(onboardingSteps(withSend, open, undefined, stored)[2]?.action?.kind).toBe('enviar');
     const step = onboardingSteps(link, open, undefined, stored)[2];
     expect(step?.action).toEqual({ kind: 'versao', label: 'Abrir a versão de 06/10/2026' });
     expect(step?.text).toMatch(/versão publicada de 06\/10\/2026/);

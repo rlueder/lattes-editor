@@ -113,9 +113,12 @@ describe('planejar a inclusão de uma atuação', () => {
     expect(plan(atuacao('NOME-INSTITUICAO="Sem código"', VINCULO))).toEqual({
       reason: expect.stringMatching(/busca de instituições/),
     });
-    expect(plan(atuacao(INST, VINCULO + VINCULO))).toEqual({
-      reason: expect.stringMatching(/um vínculo só/),
+    // Dois vínculos: a atuação vai com o primeiro, e o outro no envio seguinte.
+    expect(plan(atuacao(INST, VINCULO + VINCULO))).toMatchObject({
+      kind: 'criar-atuacao',
+      later: ['Vínculos'],
     });
+    expect(plan(atuacao(INST, ''))).toEqual({ reason: expect.stringMatching(/exige um vínculo/) });
     expect(plan(atuacao(INST, VINCULO.replace('ANO-INICIO="2026"', 'ANO-INICIO=""')))).toEqual({
       reason: expect.stringMatching(/ano de início/),
     });

@@ -596,6 +596,14 @@ describe('dados gerais no Lattes simulado', () => {
         ),
       ),
     ).toEqual(['Instituição sem código do Lattes: escolha pela busca de instituições']);
+    // O banco exige, com a instituição, o país e, no Brasil, a cidade e a UF (28/10/2026).
+    const withoutCity = (root: XElement) => {
+      newInstitution('000000000002', 'Universidade de São Paulo')(root);
+      setAttr(find(root, 'ENDERECO-PROFISSIONAL'), 'CIDADE', '');
+    };
+    expect(reasons(withoutCity)).toEqual([
+      'Com instituição, o Lattes exige no endereço profissional o país e, no Brasil, a cidade e a UF',
+    ]);
     // A extensão sem a capacidade recusa sem enviar.
     const lattes = await lattesFor();
     const op = addressPlan(newInstitution('000000000002', 'Universidade de São Paulo')).ops[0]!;

@@ -38,7 +38,11 @@ import {
   type XElement,
 } from '../src/model/xml.ts';
 import { lattesSchema as schema } from '../src/schema/lattes.ts';
-import { type LattesSimuladoNoTeste, withLattesSimulado } from './helpers/lattes-simulado.ts';
+import {
+  type LattesSimuladoNoTeste,
+  postsOf,
+  withLattesSimulado,
+} from './helpers/lattes-simulado.ts';
 
 const DEMO = new Uint8Array(readFileSync(DEMO_XML));
 /** Os nomes de fixtures/demo.xml, com que o conector confere a linha do autorDP. */
@@ -168,6 +172,19 @@ describe('planejar a inclusão de um registro', () => {
       }),
     );
     expect(patente.planned.unsupported.map((u) => u.reason)).toEqual([PATENT_BY_HAND]);
+    // Com o depositante, a patente vai (create-registro-extras.ts).
+    const comDepositante = await plan((doc) =>
+      addRegistro(doc, 'PATENTE', (item) => {
+        desenho(item);
+        setAttr(registry(item), 'TIPO-PATENTE', 'PRIVILEGIO_DE_INOVACAO_PI');
+        setAttr(registry(item), 'NOME-DO-DEPOSITANTE', 'Coautora de Exemplo');
+      }),
+    );
+    expect(comDepositante.planned.unsupported).toEqual([]);
+    expect(comDepositante.planned.ops[0]).toMatchObject({
+      extras: { depositor: 'Coautora de Exemplo' },
+      tipo: 'PP',
+    });
   });
 
   it('o desenho industrial leva os campos e a data do registro como dd/mm/aaaa', async () => {
@@ -261,12 +278,14 @@ describe('planejar a inclusão de um registro', () => {
       return r.unsupported[0]!;
     };
     // Marca e topografia: nenhum campo de data na tela (seção 21).
+    const left = async (itemName: string, fill: (item: XElement) => void) =>
+      (await plan((doc) => addRegistro(doc, itemName, fill))).planned.ops[0];
     expect(
-      await reason('MARCA', (item) => {
+      await left('MARCA', (item) => {
         marcaFill(item);
         setAttr(registry(item), 'DATA-PEDIDO-DE-DEPOSITO', '01022024');
       }),
-    ).toBe('Campos que o formulário de inclusão não tem: DATA-PEDIDO-DE-DEPOSITO');
+    ).toMatchObject({ left: ['DATA-PEDIDO-DE-DEPOSITO'] });
     expect(
       await reason('DESENHO-INDUSTRIAL', (item) => {
         desenho(item);
@@ -294,17 +313,17 @@ describe('planejar a inclusão de um registro', () => {
     ).toBe('O Lattes exige a natureza');
     // O desenho industrial não tem ano no formulário (o f_ano é oculto).
     expect(
-      await reason('DESENHO-INDUSTRIAL', (item) => {
+      await left('DESENHO-INDUSTRIAL', (item) => {
         desenho(item);
         setAttr(part(item, 'DADOS-BASICOS-'), 'ANO-DESENVOLVIMENTO', '2020');
       }),
-    ).toBe('Campos que o formulário de inclusão não tem: Ano de desenvolvimento');
+    ).toMatchObject({ left: ['Ano de desenvolvimento'] });
     expect(
       await reason('DESENHO-INDUSTRIAL', (item) => {
         desenho(item);
         setAttr(part(item, 'DADOS-BASICOS-'), 'FLAG-POTENCIAL-INOVACAO', 'SIM');
       }),
-    ).toMatch(/Valores sem correspondência no formulário: .*\(SIM\)/);
+    ).toMatch(/escreva no editor qual é o potencial/);
     expect(
       await reason('MARCA', (item) => {
         marcaFill(item);
@@ -312,11 +331,11 @@ describe('planejar a inclusão de um registro', () => {
       }),
     ).toMatch(/MARCA_REGISTRADA_MISTA_MRM/);
     expect(
-      await reason('DESENHO-INDUSTRIAL', (item) => {
+      await left('DESENHO-INDUSTRIAL', (item) => {
         desenho(item);
         setAttr(part(item, 'DADOS-BASICOS-'), 'FLAG-RELEVANCIA', 'SIM');
       }),
-    ).toMatch(/Campos que o formulário de inclusão não tem/);
+    ).toMatchObject({ left: [expect.stringMatching(/Relev/)] });
     expect(
       await reason('DESENHO-INDUSTRIAL', (item) => {
         desenho(item);
@@ -324,13 +343,16 @@ describe('planejar a inclusão de um registro', () => {
         setAttr(autor, 'NOME-COMPLETO-DO-AUTOR', 'Outra Pessoa');
         setAttr(autor, 'NRO-ID-CNPQ', '');
       }),
-    ).toMatch(/Autores além de você/);
-    expect(
-      await reason('DESENHO-INDUSTRIAL', (item) => {
+    ).toMatch(/exige você entre os autores/);
+    // As palavras-chave vão na grade da inclusão (create-registro-extras.ts).
+    const withKeywords = await plan((doc) =>
+      addRegistro(doc, 'DESENHO-INDUSTRIAL', (item) => {
         desenho(item);
         item.children.push(element('PALAVRAS-CHAVE', { 'PALAVRA-CHAVE-1': 'design' }));
       }),
-    ).toMatch(/Palavras-chave/);
+    );
+    expect(withKeywords.unsupported).toEqual([]);
+    expect(withKeywords.ops[0]).toMatchObject({ extras: { grids: { keywords: ['design'] } } });
     expect(
       await reason('TOPOGRAFIA-DE-CIRCUITO-INTEGRADO', (item) =>
         setAttr(part(item, 'DADOS-BASICOS-'), 'TITULO', 'Chip'),
@@ -594,6 +616,55 @@ describe('incluir registros no Lattes simulado', () => {
       /^Criado no Lattes, com os campos conferidos; confira a lista de inventores/,
     );
     expect(findAll(lattes.state.root, 'PATENTE')).toHaveLength(1);
+  });
+
+  it('coautor da lista, informações e palavras-chave vão na inclusão; o depositante, na patente', async () => {
+    const lattes = await start();
+    const coautor = (item: XElement) =>
+      item.children.push(
+        element('AUTORES', {
+          'NOME-COMPLETO-DO-AUTOR': 'Coautora de Exemplo',
+          'NOME-PARA-CITACAO': 'EXEMPLO, C.',
+          'NRO-ID-CNPQ': '',
+          'ORDEM-DE-AUTORIA': '2',
+        }),
+        element('PALAVRAS-CHAVE', { 'PALAVRA-CHAVE-1': 'design' }),
+        element('INFORMACOES-ADICIONAIS', { 'DESCRICAO-INFORMACOES-ADICIONAIS': 'Nota' }),
+      );
+    const { planned } = await plan((doc) =>
+      addRegistro(doc, 'DESENHO-INDUSTRIAL', (item) => {
+        desenho(item);
+        coautor(item);
+      }),
+    );
+    expect(planned.unsupported).toEqual([]);
+    const [r] = await applyAll(planned.ops, lattes.port);
+    expect(r).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes).at(-1)!.fields).toMatchObject({ f_plv_l: 'design|-1', f_ref: 'Nota' });
+    const desenhoNovo = findAll(lattes.state.root, 'DESENHO-INDUSTRIAL').at(-1)!;
+    expect(
+      childElements(desenhoNovo, 'AUTORES').map((a) => getAttr(a, 'NOME-COMPLETO-DO-AUTOR')),
+    ).toEqual(['Ana Beatriz Souza Lima', 'Coautora de Exemplo']);
+    expect(getAttr(childElements(desenhoNovo, 'PALAVRAS-CHAVE')[0]!, 'PALAVRA-CHAVE-1')).toBe(
+      'design',
+    );
+
+    const patente = await plan((doc) =>
+      addRegistro(doc, 'PATENTE', (item) => {
+        desenho(item);
+        setAttr(registry(item), 'TIPO-PATENTE', 'PRIVILEGIO_DE_INOVACAO_PI');
+        setAttr(registry(item), 'NOME-DO-DEPOSITANTE', 'Coautora de Exemplo');
+      }),
+    );
+    const [p] = await applyAll(patente.planned.ops, lattes.port);
+    expect(p).toMatchObject({ status: 'conferido' });
+    const nova = findAll(lattes.state.root, 'PATENTE').at(-1)!;
+    expect(
+      getAttr(
+        firstChild(part(nova, 'DETALHAMENTO-'), 'REGISTRO-OU-PATENTE')!,
+        'NOME-DO-DEPOSITANTE',
+      ),
+    ).toBe('Coautora de Exemplo');
   });
 
   it('a sessão que cai no envio para a fila', async () => {

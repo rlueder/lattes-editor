@@ -49,7 +49,7 @@ function IncomingReviewBody({ diff, fileName, onCancel, onInclude }: Props) {
       }
       label="Itens de outro arquivo"
       open={diff !== undefined}
-      subtitle="Cada item comparado com o seu currículo por título, DOI, autores, ano, tipo e veículo. Nada é mesclado sozinho: só entra o que você marcar."
+      subtitle="Cada item comparado com o seu currículo por título, DOI, autores, ano, tipo e veículo. Entram só os itens que você marcar."
       title="Itens de outro arquivo"
       onClose={onCancel}
     >

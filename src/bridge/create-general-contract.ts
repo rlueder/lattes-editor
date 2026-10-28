@@ -39,6 +39,7 @@ export const CREATE_VINCULO_SPEC: FormSpec & { mode: string; partial: true } = {
     f_enqua_en: text(45),
     f_mes_fim: text(2),
     f_mes_ini: text(2),
+    f_outras_inf: { maxLength: 3950, type: 'textarea' },
     f_outras_inf_en: { maxLength: 2000, type: 'textarea' },
     f_regime: { type: 'checkbox' },
     f_seq_ativ: hiddenField,

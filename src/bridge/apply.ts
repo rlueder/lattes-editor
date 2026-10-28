@@ -8,16 +8,15 @@
 import { changedNames, getChecked, mismatches, readPairs, same, Stop } from './apply-pairs.ts';
 import { applyAreas, type AreasOp, isAreasOp } from './areas-atuacao.ts';
 import {
-  BIOGRAPHIC_FULL_ENABLED,
   BIOGRAPHIC_SPECS,
   type BiographicOp,
   isBiographicOp,
   locateBiographic,
-  needsFullBiographic,
 } from './biographic.ts';
 import { applyCreateAtuacao } from './create.ts';
 import {
   applyCreateAtividade,
+  applyCreateComplementar,
   applyCreateEvento,
   applyCreateFormacao,
   applyCreateGeneral,
@@ -28,21 +27,11 @@ import {
 import { applyDelete, type DeleteOp, isDeleteOp } from './delete.ts';
 import { applyAtividade, type AtividadeOp, isAtividadeOp } from './edit-atividade.ts';
 import { applyCitacao, type CitacaoOp, isCitacaoOp } from './edit-citacao.ts';
+import { EVENTO_SPEC, type EventoOp, isEventoOp, locateEvento } from './edit-items.ts';
 import {
-  EDIT_EVENTO_ENABLED,
-  EVENTO_SPEC,
-  type EventoOp,
-  isEventoOp,
-  isFullEvento,
-  locateEvento,
-} from './edit-items.ts';
-import {
-  COMPL_ENDERECO_LOOKUPS_ENABLED,
   countListEdits,
-  enabledListEdits,
   isListEditOp,
   LIST_EDIT_WATCH,
-  type ListEditKind,
   type ListEditOp,
   listEditSpec,
   locateListEdit,
@@ -51,6 +40,7 @@ import {
   array2xml,
   enderecoGrids,
   readContactGrids,
+  sameSocialPrivacy,
   sameSocialSet,
   socialOf,
   type SocialRow,
@@ -63,6 +53,7 @@ import {
   pairValue,
   setPairs,
 } from './form.ts';
+import { finishSecondStep, secondStepMisses } from './formacao-compl-steps.ts';
 import { formacaoGridSend } from './formacao-grids.ts';
 import { resolveOpLookups } from './formacao-lookups.ts';
 import { identGrids } from './ident-grids.ts';
@@ -117,12 +108,15 @@ type EditOp = Exclude<
       kind:
         | 'criar-atividade'
         | 'criar-atuacao'
+        | 'criar-complementar'
         | 'criar-dado'
         | 'criar-evento'
         | 'criar-formacao'
         | 'criar-projeto'
         | 'criar-registro'
-        | 'criar-vinculo';
+        | 'criar-vinculo'
+        | 'excluir-atuacao'
+        | 'excluir-item';
     }
 >;
 
@@ -192,53 +186,32 @@ async function locate(op: EditOp, port: LattesPort, menu: string): Promise<strin
   return vinculos[0]!.path;
 }
 
-/**
- * As alterações atrás de chave que este lado grava: as que têm o formulário
- * no contrato dele. O app só manda essas operações a uma extensão que anuncia
- * a capacidade (plan.ts, GATED_EDITS), mas a extensão não confia nisso: uma
- * operação de um tipo cuja chave ela tem desligada para sem enviar nada.
- */
-export interface ApplyGates {
-  /** BIOGRAPHIC_FULL_ENABLED; sem valor, desligada. */
-  biographicFull?: boolean;
-  /** COMPL_ENDERECO_LOOKUPS_ENABLED; sem valor, desligada. */
-  complEnderecoLookups?: boolean;
-  editEvento: boolean;
-  lists: ReadonlySet<ListEditKind>;
-}
+import { type ApplyGates, BUILD_GATES, gatedOut } from './apply-gates.ts';
+import { leftNote } from './create-shared.ts';
+import { applyDeleteAtuacao, applyDeleteItem } from './delete-items-apply.ts';
 
-export const BUILD_GATES: ApplyGates = {
-  biographicFull: BIOGRAPHIC_FULL_ENABLED,
-  complEnderecoLookups: COMPL_ENDERECO_LOOKUPS_ENABLED,
-  editEvento: EDIT_EVENTO_ENABLED,
-  lists: enabledListEdits(),
-};
-
-/** Por que esta extensão não grava a operação; undefined quando grava. */
-function gatedOut(op: BridgeOp, gates: ApplyGates): string | undefined {
-  if (isListEditOp(op) && !gates.lists.has(op.kind)) {
-    return 'Esta extensão não tem o formulário deste tipo no contrato; a alteração fica à mão';
-  }
-  if (isBiographicOp(op) && !gates.biographicFull && needsFullBiographic(op)) {
-    return 'Esta extensão não grava instituição, curso e agência pelas buscas, pós-doutorado, livre-docência nem outras informações; a alteração fica à mão';
-  }
-  const lookups =
-    (isListEditOp(op) && op.lookups !== undefined) ||
-    (op.kind === 'endereco' && (op.institution !== undefined || op.organ !== undefined));
-  if (lookups && !gates.complEnderecoLookups) {
-    return 'Esta extensão não grava instituição, curso e órgão pelas buscas neste formulário; a alteração fica à mão';
-  }
-  if (isEventoOp(op) && !gates.editEvento && isFullEvento(op)) {
-    return 'Esta extensão só altera eventos de ouvinte; a alteração fica à mão';
-  }
-  return undefined;
-}
+export { type ApplyGates, BUILD_GATES } from './apply-gates.ts';
 
 export async function applyOp(
   op: BridgeOp,
   port: LattesPort,
   gates: ApplyGates = BUILD_GATES,
 ): Promise<OpResult> {
+  const result = await applyAny(op, port, gates);
+  if (result.status !== 'conferido') return result;
+  // A inclusão que foi sem os campos que o formulário não tem, e a atuação
+  // cujas partes vão no envio seguinte: o aviso fica no resultado.
+  const left = 'left' in op ? op.left : undefined;
+  const later = 'later' in op ? op.later : undefined;
+  const notes = [
+    ...(left?.length ? [leftNote(left)] : []),
+    ...(later?.length ? [`No próximo envio, depois desta: ${later.join(', ')}`] : []),
+  ];
+  if (notes.length === 0) return result;
+  return { ...result, detail: [result.detail, ...notes].join('. '), partial: true };
+}
+
+async function applyAny(op: BridgeOp, port: LattesPort, gates: ApplyGates): Promise<OpResult> {
   if (op.kind === 'criar-atuacao') return applyCreateAtuacao(op, port);
   if (op.kind === 'criar-formacao') return applyCreateFormacao(op, port);
   if (op.kind === 'criar-projeto') return applyCreateProjeto(op, port);
@@ -246,12 +219,15 @@ export async function applyOp(
   if (op.kind === 'criar-dado') return applyCreateGeneral(op, port);
   if (op.kind === 'criar-atividade') return applyCreateAtividade(op, port);
   if (op.kind === 'criar-evento') return applyCreateEvento(op, port);
+  if (op.kind === 'criar-complementar') return applyCreateComplementar(op, port);
   if (isProductionOp(op)) return applyProduction(op, port);
   if (isAreasOp(op)) return applyAreas(op, port);
   if (isAtividadeOp(op)) return applyAtividade(op, port);
   if (isCitacaoOp(op)) return applyCitacao(op, port);
   if (op.kind === 'criar-vinculo') return applyCreateVinculo(op, port);
   if (isDeleteOp(op)) return applyDelete(op, port);
+  if (op.kind === 'excluir-atuacao') return applyDeleteAtuacao(op, port);
+  if (op.kind === 'excluir-item') return applyDeleteItem(op, port);
   const result = (status: ResultStatus, detail: string): OpResult => ({
     detail,
     key: op.key,
@@ -317,12 +293,14 @@ export async function applyOp(
     // (endereco-contatos.ts), nunca os ocultos vazios com que a página carrega.
     let contactGrids: ReturnType<typeof readContactGrids>;
     let socialWanted: SocialRow[] | undefined;
+    let socialExpected: NonNullable<ReturnType<typeof readContactGrids>>['social'] | undefined;
     if (op.kind === 'endereco') {
       const grids = enderecoGrids(op, before.html);
       if ('status' in grids) return result(grids.status, grids.detail);
       set = { ...set, ...grids.set };
       contactGrids = grids.read;
       socialWanted = grids.wanted;
+      socialExpected = grids.socialRows;
     }
     // Identificação: a grade do ORCID e os nomes em citação, como o check() (ident-grids.ts).
     if (op.kind === 'identificacao') {
@@ -370,7 +348,9 @@ export async function applyOp(
       : setPairs(before.pairs, set);
     const response = await port.post(action, encodeLatin1Form(next));
     if (isLogonPage(response)) return result('sessao', 'A sessão do Lattes expirou; entre de novo');
-
+    // Formação complementar: segundo passo e releitura dele (formacao-compl-steps.ts).
+    const stepped = await finishSecondStep(port, response, op);
+    if (!('ok' in stepped)) return result(stepped.status, stepped.detail);
     if (isListEditOp(op) && listed !== undefined) {
       // O f_ctr desses formulários não distingue sempre incluir de alterar (o
       // da formação complementar vem vazio nos dois): a lista não pode ter
@@ -403,10 +383,15 @@ export async function applyOp(
     const notSaved = [
       ...mismatches(after.pairs, Object.fromEntries(compared)),
       ...(formGrids?.(after.html) ?? []),
+      ...(isListEditOp(op) ? await secondStepMisses(port, after.pairs, op.step2) : []),
     ];
     if (contactGrids) {
       const now = readContactGrids(after.html);
-      if (!now || !sameSocialSet(socialOf(now.social), socialWanted ?? [])) {
+      if (
+        !now ||
+        !sameSocialSet(socialOf(now.social), socialWanted ?? []) ||
+        !sameSocialPrivacy(now.social, socialExpected ?? [])
+      ) {
         notSaved.push('f_dados_grid');
       }
       if (!now || array2xml(now.contacts) !== array2xml(contactGrids.contacts)) {
@@ -417,8 +402,13 @@ export async function applyOp(
       return result('divergente', `O Lattes não gravou: ${labels(notSaved)}`);
     }
     // f_vinculo é preenchido no envio (check()); a página sempre o traz vazio.
+    // No endereço, o servidor preenche o código do município e as cópias *_old
+    // da cidade, da UF e do país (observado em 28/10/2026).
+    const serverFilled = (n: string) =>
+      op.kind === 'endereco' &&
+      /^f_(cod_munic|munic_[ir]_old|estado_[ir]_old|pais_[ir]_old)/.test(n);
     const unexpected = changedNames(before.pairs, after.pairs).filter(
-      (n) => !(n in set) && n !== 'f_vinculo',
+      (n) => !(n in set) && n !== 'f_vinculo' && !serverFilled(n),
     );
     // Campos desabilitados não vão nos pares; os que identificam o item
     // (instituição e curso da formação complementar) se conferem à parte.

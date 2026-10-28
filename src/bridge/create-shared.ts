@@ -4,6 +4,7 @@
 // Ver create-items.ts.
 
 import type { Change } from '../model/changes.ts';
+import { pathTo } from '../model/changes.ts';
 import { childElements, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
 import type { FieldSpec } from './contract.ts';
@@ -28,6 +29,8 @@ export interface CreateOpBase {
   institutionName: string;
   key: string;
   label: string;
+  /** Os campos que o formulário de inclusão não tem: o item vai sem eles (leftNote). */
+  left?: string[];
   /** Campos digitados no formulário; instituição, curso e agência saem das buscas. */
   set: FieldValues;
 }
@@ -80,13 +83,50 @@ export function mapAttrs(
   return { missing, set, wrong };
 }
 
-export function reasonFrom(missing: string[], wrong: string[]): string | undefined {
-  if (missing.length > 0) {
-    return `Campos que o formulário de inclusão não tem: ${missing.join(', ')}`;
-  }
+/**
+ * O motivo de a inclusão ir à mão: um valor que o formulário não aceita, que
+ * a pessoa pode corrigir. Os campos que o formulário de inclusão não tem não
+ * seguram o item: ele vai sem eles, como iria pela própria página, e a lista
+ * deles fica à vista antes e depois do envio (leftNote).
+ */
+export function reasonFrom(wrong: string[]): string | undefined {
   if (wrong.length > 0) return `Valores sem correspondência no formulário: ${wrong.join(', ')}`;
   return undefined;
 }
+
+/** Os textos que o envio pede e o XML não guarda, por chave do elemento (send-extras.ts). */
+export type SendExtras = Readonly<Record<string, Readonly<Record<string, string>>>>;
+
+/** O motivo de ir à mão quando o Sim do potencial de inovação vem sem o texto. */
+export const INNOVATION_TEXT =
+  'Potencial de inovação Sim: escreva no editor qual é o potencial (o Lattes pede o texto, e o currículo não o guarda)';
+
+/**
+ * O Sim do potencial de inovação de um item novo: o texto que a pessoa
+ * escreveu no editor para o elemento que tem a marca (InnovationText.tsx),
+ * ou o motivo de ir à mão sem ele. Sem o Sim, nada.
+ */
+export function innovationFields(
+  set: FieldValues,
+  root: XElement | undefined,
+  holder: XElement | undefined,
+  extras: SendExtras,
+): { reason: string } | undefined {
+  if (set.f_sta_inovacao !== 'S') return undefined;
+  const path = root && holder ? pathTo(root, holder) : undefined;
+  const text = (path && extras[path.join('/')]?.f_txt_potencial?.trim()) || '';
+  if (!text) return { reason: INNOVATION_TEXT };
+  set.f_txt_potencial = text;
+  return undefined;
+}
+
+/** O aviso dos campos que ficaram fora da inclusão. */
+export const leftNote = (left: readonly string[]) =>
+  `Ficou fora, porque o formulário de inclusão do Lattes não tem: ${left.join(', ')}`;
+
+/** Só os campos que ficam fora, quando há: para o operador não levar a lista vazia. */
+export const leftOf = (left: readonly string[]): { left?: string[] } =>
+  left.length > 0 ? { left: [...new Set(left)] } : {};
 
 // Campos do contrato ----------------------------------------------------------------
 

@@ -24,6 +24,8 @@ export default [
       'dist-censo/**',
       // Montagens locais do Tauri (pnpm tauri build), com cópias da extensão.
       'src-tauri/target/**',
+      // Worktrees de trabalho paralelo, cada uma com o próprio lint.
+      '.claude/**',
     ],
   },
   {

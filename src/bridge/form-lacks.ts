@@ -13,17 +13,23 @@ import { ALL_ON, isOp, planChange } from './plan.ts';
 /**
  * O motivo é a falta do campo no formulário, e não um valor que o Lattes
  * não aceita ("Valor que o formulário…", "País que o formulário…") nem
- * trabalho que falta no conector.
+ * trabalho que falta no conector. Conta também o campo que repete o tipo do
+ * item: o elemento do XML fixa o valor, e trocá-lo é incluir o item de novo
+ * em outro tipo, não alterar o campo.
  */
 export function fieldAbsent(reason: string): boolean {
+  if (/ é o tipo do item no Lattes; /.test(reason)) return true;
   // O motivo de target.manual vem com o rótulo na frente ("Ano: O formulário…").
-  const tail = /^[^:]{1,60}: (O formulário.*)$/.exec(reason)?.[1];
+  const tail = /^[^:]{1,60}: ((?:O formulário|A exportação do Lattes).*)$/.exec(reason)?.[1];
   return [reason, ...(tail ? [tail] : [])].some(
     (r) =>
       /^O formulário[^:]*? não tem(:| o | a | os | as | campo| palavras)/.test(r) ||
+      /^O formulário[^:]*? não aceita curso /.test(r) ||
       /^A tela d[ae] [^:]* não tem:/.test(r) ||
       /^A grade d[ae] [^:]* do Lattes não tem:/.test(r) ||
       /^Dados que o próprio Lattes gera/.test(r) ||
+      /^A exportação do Lattes não traz /.test(r) ||
+      /^O Lattes não troca /.test(r) ||
       /^O Lattes não tem mais formulário para este tipo/.test(r),
   );
 }

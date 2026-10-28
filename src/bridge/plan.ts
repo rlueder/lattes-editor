@@ -5,46 +5,24 @@
 
 import { type Change, resolvePath } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
-import { type AreasOp, EDIT_AREAS_ENABLED, planAreas } from './areas-atuacao.ts';
+import { type AreasOp, planAreas } from './areas-atuacao.ts';
+import { planActivityRows } from './atividade-grade.ts';
 import { atuacaoByHand, vinculoByHand } from './atuacao-by-hand.ts';
-import {
-  BIOGRAPHIC_FULL_ENABLED,
-  BIOGRAPHIC_OPS_ENABLED,
-  type BiographicOp,
-  planBiographic,
-} from './biographic.ts';
-import { CREATE_ITEMS_ENABLED, type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
+import { type BiographicOp, planBiographic } from './biographic.ts';
+import { type CreateAtuacaoOp, planCreateAtuacao } from './create.ts';
 import { type CreateItemOp, planCreateItem } from './create-items.ts';
-import { DELETE_ITEMS_ENABLED, type DeleteOp, planDelete } from './delete.ts';
-import { type AtividadeOp, EDIT_ATIVIDADES_ENABLED, planAtividade } from './edit-atividade.ts';
-import { type CitacaoOp, EDIT_CITACOES_ENABLED, planCitacao } from './edit-citacao.ts';
-import {
-  EDIT_EVENTO_ENABLED,
-  EDIT_OUVINTE_ENABLED,
-  type EventoOp,
-  planEvento,
-} from './edit-items.ts';
-import {
-  COMPL_ENDERECO_LOOKUPS_ENABLED,
-  EDIT_FORMACAO_COMPL_ENABLED,
-  EDIT_PREMIO_ENABLED,
-  type ListEditKind,
-  type ListEditOp,
-  planListEdit,
-} from './edit-lists.ts';
+import { type DeleteOp, planDelete } from './delete.ts';
+import { type DeleteAtuacaoOp, type DeleteItemOp, planDeleteItem } from './delete-items.ts';
+import { type AtividadeOp, planAtividade } from './edit-atividade.ts';
+import { type CitacaoOp, planCitacao } from './edit-citacao.ts';
+import { type EventoOp, planEvento } from './edit-items.ts';
+import { type ListEditKind, type ListEditOp, planListEdit } from './edit-lists.ts';
 import { planFormacaoGrids } from './formacao-grids.ts';
 import { idiomaHandReason } from './hand-reasons.ts';
 import { IDIOMA_SKILLS, LEVEL } from './idioma-skills.ts';
 import { eventListReason, manualReason } from './production/manual.ts';
 import { isOrganChange } from './production/organ.ts';
-import {
-  EDIT_PRODUCTION_ENABLED,
-  isProductionChange,
-  planProduction,
-  PRODUCTION_LOOKUPS_ENABLED,
-  type ProductionOp,
-  PROJECT_ORGAN_ENABLED,
-} from './production/plan.ts';
+import { isProductionChange, planProduction, type ProductionOp } from './production/plan.ts';
 import { stavincFromFlag } from './vinculo-flag.ts';
 
 /** Valor de campo; null tira o campo do envio (caixa desmarcada). */
@@ -96,6 +74,8 @@ export type BridgeOp =
   | CreateAtuacaoOp
   | CreateItemOp
   | DeleteOp
+  | DeleteAtuacaoOp
+  | DeleteItemOp
   | EventoOp
   | IdiomaOp
   | ProductionOp
@@ -116,13 +96,22 @@ export interface PlanOptions {
    */
   biographicFull?: boolean;
   biographicOps?: boolean;
-  /**
-   * Instituição e curso da formação complementar e a instituição do endereço
-   * profissional pelas buscas (edit-lists.ts, COMPL_ENDERECO_LOOKUPS_ENABLED).
-   */
+  /** A instituição e o órgão do endereço profissional pelas buscas (edit-lists.ts, COMPL_ENDERECO_LOOKUPS_ENABLED). */
   complEnderecoLookups?: boolean;
+  /** Instituição e curso da formação complementar pelas buscas (edit-lists.ts, COMPL_LOOKUPS_ENABLED). */
+  complLookups?: boolean;
+  /** Atividade nova de outra natureza que o ensino, com o órgão (create-cargo.ts). */
+  createActivities?: boolean;
+  /** Formação complementar nova, nos dois passos do FORM2 (create-complementar.ts). */
+  createComplementar?: boolean;
   createItems?: boolean;
+  /** Projeto novo com o órgão pela lista do Lattes (create-projeto.ts). */
+  createProjects?: boolean;
   deleteItems?: boolean;
+  /** A exclusão dos tipos de delete-items.ts (produções, formações, prêmios, eventos…). */
+  deleteMore?: boolean;
+  /** Linhas da grade de uma atividade e o formulário da linha de pesquisa nova (atividade-grade.ts). */
+  editActivityRows?: boolean;
   /** Áreas de atuação (areas-atuacao.ts, EDIT_AREAS_ENABLED). */
   editAreas?: boolean;
   /** Atividades das atuações (edit-atividade.ts, EDIT_ATIVIDADES_ENABLED). */
@@ -136,6 +125,10 @@ export interface PlanOptions {
   editEvento?: boolean;
   /** Formação complementar (edit-lists.ts, EDIT_FORMACAO_COMPL_ENABLED). */
   editFormacaoComplementar?: boolean;
+  /** Instituição e natureza de um financiador do projeto (production/financiador.ts). */
+  editFunders?: boolean;
+  /** Outra forma de contato do endereço (endereco-contatos.ts). */
+  editOtherContacts?: boolean;
   /**
    * Alteração de evento de ouvinte (edit-items.ts). Sem valor, fica
    * desligada: só planOptionsFor liga, com as capacidades da extensão. Assim,
@@ -143,78 +136,27 @@ export interface PlanOptions {
    * extensão que gravaria sem conferir.
    */
   editOuvinte?: boolean;
+  /** Pessoa com deficiência (dados-gerais-edit.ts). */
+  editPcd?: boolean;
   /** Prêmios e títulos (edit-lists.ts, EDIT_PREMIO_ENABLED). */
   editPremio?: boolean;
   /** Alterar no lugar produções, orientações e bancas (production/). */
   editProduction?: boolean;
   /** Textos que o envio pede e o XML não guarda, por Change.key (send-extras.ts no editor). */
   extras?: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  /** Depositante instituição de patentes e registros pela busca de titulares (production/institution-holder.ts). */
+  institutionHolders?: boolean;
+  /** A exportação carregada: a exclusão acha nela o item que a pessoa tirou. */
+  original?: XElement;
   /** Instituição, curso e agência de orientações e bancas pelas buscas (production/lookups.ts). */
   productionLookups?: boolean;
   /** Órgão e unidade do projeto pela janela de órgãos (production/organ.ts). */
   projectOrgan?: boolean;
 }
 
-/**
- * Chaves de inclusão, exclusão e alteração que dependem de uma capacidade da
- * extensão. Cada uma
- * entra em BRIDGE_FEATURES (compat.ts) no mesmo commit em que a chave liga, e
- * só então, e sai no commit em que ela voltar a desligar (a exceção à regra
- * de compat.ts de que capacidade não sai): uma extensão que anunciasse a
- * capacidade com a chave desligada não teria o formulário no contrato. Mesmo
- * assim, applyOp recusa o tipo desligado na montagem dela (apply.ts,
- * ApplyGates). O teste tests/edit-flags.test.ts cobra chave e capacidade
- * juntas.
- */
-export const GATED_EDITS: readonly {
-  enabled: boolean;
-  feature: string;
-  option: keyof PlanOptions;
-}[] = [
-  { enabled: CREATE_ITEMS_ENABLED, feature: 'incluir-itens', option: 'createItems' },
-  { enabled: DELETE_ITEMS_ENABLED, feature: 'excluir-itens', option: 'deleteItems' },
-  { enabled: BIOGRAPHIC_OPS_ENABLED, feature: 'alterar-dados-gerais', option: 'biographicOps' },
-  {
-    enabled: BIOGRAPHIC_FULL_ENABLED,
-    feature: 'alterar-dados-gerais-completo',
-    option: 'biographicFull',
-  },
-  { enabled: EDIT_OUVINTE_ENABLED, feature: 'alterar-evento', option: 'editOuvinte' },
-  { enabled: EDIT_EVENTO_ENABLED, feature: 'alterar-evento-completo', option: 'editEvento' },
-  { enabled: EDIT_PREMIO_ENABLED, feature: 'alterar-premio', option: 'editPremio' },
-  {
-    enabled: EDIT_FORMACAO_COMPL_ENABLED,
-    feature: 'alterar-formacao-complementar',
-    option: 'editFormacaoComplementar',
-  },
-  {
-    enabled: COMPL_ENDERECO_LOOKUPS_ENABLED,
-    feature: 'buscas-complementar-endereco',
-    option: 'complEnderecoLookups',
-  },
-  { enabled: EDIT_PRODUCTION_ENABLED, feature: 'alterar-producao', option: 'editProduction' },
-  {
-    enabled: PRODUCTION_LOOKUPS_ENABLED,
-    feature: 'buscas-producao',
-    option: 'productionLookups',
-  },
-  { enabled: PROJECT_ORGAN_ENABLED, feature: 'orgao-projeto', option: 'projectOrgan' },
-  { enabled: EDIT_AREAS_ENABLED, feature: 'alterar-areas-atuacao', option: 'editAreas' },
-  { enabled: EDIT_ATIVIDADES_ENABLED, feature: 'alterar-atividades', option: 'editAtividades' },
-  { enabled: EDIT_CITACOES_ENABLED, feature: 'alterar-citacoes', option: 'editCitacoes' },
-];
+import { GATED_EDITS, partGate } from './plan-gates.ts';
 
-/**
- * As chaves do plano para a extensão ligada: cada alteração de GATED_EDITS
- * só vai a uma extensão que anuncia a capacidade dela (compat.ts), porque uma
- * mais antiga não tem o formulário no contrato e gravaria sem conferir. Sem
- * ela, essas mudanças ficam à mão.
- */
-export function planOptionsFor(features: readonly string[]): PlanOptions {
-  return Object.fromEntries(
-    GATED_EDITS.map((g) => [g.option, g.enabled && features.includes(g.feature)]),
-  );
-}
+export { GATED_EDITS, planOptionsFor } from './plan-gates.ts';
 
 export interface Unsupported {
   key: string;
@@ -303,12 +245,27 @@ export function planChange(
   change: Change,
   chain: XElement[],
   label: string,
+  options: PlanOptions = {},
+  siblings: readonly Change[] = [],
+): BridgeOp | Unsupported {
+  const planned = planAny(change, chain, label, options, siblings);
+  // A parte nova de uma operação, que uma extensão mais antiga ignoraria.
+  const part = isOp(planned) ? partGate(planned, options) : undefined;
+  return part ? unsupported(change, label, part) : planned;
+}
+
+function planAny(
+  change: Change,
+  chain: XElement[],
+  label: string,
   {
     biographicFull = false,
     biographicOps = false,
     complEnderecoLookups = false,
+    complLookups = false,
     createItems = false,
     deleteItems = false,
+    deleteMore = false,
     editAreas = false,
     editAtividades = false,
     editCitacoes = false,
@@ -318,6 +275,8 @@ export function planChange(
     editPremio = false,
     editProduction = false,
     extras = {},
+    institutionHolders = false,
+    original,
     productionLookups = false,
     projectOrgan = false,
   }: PlanOptions = {},
@@ -341,6 +300,10 @@ export function planChange(
         'Instituição, curso e agência pelas buscas do Lattes: desligado nesta montagem',
       );
     }
+    // O depositante pode ser instituição só numa extensão que sabe buscá-la.
+    if (planned.holders && institutionHolders) {
+      return { ...planned, holders: { ...planned.holders, institutions: true } };
+    }
     return planned;
   }
   // Áreas de atuação: a lista inteira, com as outras mudanças da fila nela.
@@ -355,8 +318,10 @@ export function planChange(
       ? unsupported(change, label, formacaoGrids.reason)
       : formacaoGrids;
   }
-  // Atividades das atuações (edit-atividade.ts).
-  const atividade = editAtividades ? planAtividade(change, chain, label) : undefined;
+  // Atividades das atuações (edit-atividade.ts), e as linhas da grade delas.
+  const atividade = editAtividades
+    ? (planActivityRows(change, chain, label, siblings) ?? planAtividade(change, chain, label))
+    : undefined;
   if (atividade)
     return 'reason' in atividade ? unsupported(change, label, atividade.reason) : atividade;
   // Inclusão: desligada até o teste no Lattes real (create.ts). Só a atuação.
@@ -370,10 +335,17 @@ export function planChange(
   }
   // Formação e projeto (create-items.ts), com a mesma chave.
   const created =
-    change.kind === 'novo' && createItems ? planCreateItem(change, chain, label) : undefined;
+    change.kind === 'novo' && createItems
+      ? planCreateItem(change, chain, label, extras)
+      : undefined;
   if (created) return 'reason' in created ? unsupported(change, label, created.reason) : created;
-  // Exclusão: desligada até o teste no Lattes real (delete.ts).
-  if (change.kind === 'removido') return planDelete(change, chain, label, deleteItems);
+  // Exclusão: o idioma e o vínculo (delete.ts) e, com a capacidade, os
+  // outros tipos, pelo item como estava na exportação (delete-items.ts).
+  if (change.kind === 'removido') {
+    const more = deleteItems && deleteMore && original;
+    const planned = more ? planDeleteItem(change, original, label) : undefined;
+    return planned ?? planDelete(change, chain, label, deleteItems);
+  }
   // Palavras-chave e outras partes novas num evento: o formulário não tem.
   const eventPart =
     change.kind === 'novo' && (editOuvinte || editEvento)
@@ -465,7 +437,7 @@ export function planChange(
   // Prêmios e formação complementar (edit-lists.ts), cada um com a chave própria.
   const lists = new Set<ListEditKind>(editPremio ? ['premio'] : []);
   if (editFormacaoComplementar) lists.add('formacao-complementar');
-  const listEdit = planListEdit(change, chain, label, lists, complEnderecoLookups);
+  const listEdit = planListEdit(change, chain, label, lists, complLookups);
   if (listEdit)
     return 'reason' in listEdit ? unsupported(change, label, listEdit.reason) : listEdit;
 
@@ -523,12 +495,28 @@ export function planChanges(
     const chain = resolvePath(root, change.path);
     const planned = planChange(change, chain, label, options, all);
     if (isOp(planned)) ops.push(planned);
-    else if (fromExtension && isOp(planChange(change, chain, label, ALL_ON, all))) {
+    else if (
+      fromExtension &&
+      isOp(
+        planChange(
+          change,
+          chain,
+          label,
+          { ...ALL_ON, extras: options.extras, original: options.original },
+          all,
+        ),
+      )
+    ) {
       // O editor sabe enviar; quem não sabe é a extensão instalada.
       skipped.push({ ...planned, reason: OLD_EXTENSION });
     } else skipped.push(planned);
   }
-  return { ops, unsupported: skipped };
+  // As exclusões vão antes. Num tipo sem número (o prêmio), tirar o primeiro
+  // item aparece como o primeiro trocado pelos valores do segundo e o segundo
+  // tirado: com a exclusão antes, o Lattes nunca fica com dois iguais, e a
+  // troca acha a linha que sobrou.
+  const first = (op: BridgeOp) => (op.kind.startsWith('excluir-') ? 0 : 1);
+  return { ops: [...ops].sort((a, b) => first(a) - first(b)), unsupported: skipped };
 }
 
 /** Todas as alterações ligadas, como numa extensão em dia. */

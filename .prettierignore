@@ -17,3 +17,6 @@ src-tauri/gen
 
 # Marca: pacote próprio (Python + sharp); os arquivos saem como o gerador escreve.
 brand
+
+# Worktrees de trabalho paralelo, cada uma com o próprio formato.
+.claude/

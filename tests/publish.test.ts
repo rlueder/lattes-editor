@@ -10,10 +10,12 @@ import { answerPublishRequest, publishRunning, runPublish } from '../extension/s
 import { SIMULATED_EMAIL } from '../scripts/lattes-simulado/estado.ts';
 import { SIMULATED_DECLARATION } from '../scripts/lattes-simulado/menu.ts';
 import type { Intercept } from '../scripts/lattes-simulado/servidor.ts';
+import { BRIDGE_FEATURES } from '../src/bridge/compat.ts';
 import { exportCv } from '../src/bridge/export.ts';
 import { cvCodeFrom, lattesIdFrom } from '../src/bridge/lattes-html.ts';
 import type { BridgeMessage } from '../src/bridge/protocol.ts';
 import {
+  isPublishRequest,
   localDay,
   missingControls,
   PUBLISH_ENABLED,
@@ -108,7 +110,13 @@ describe('Enviar ao CNPq pelo conector (LAT-54)', () => {
     expect(before).toMatchObject({ ok: false, reason: 'pendente' });
 
     lattes.state.log.length = 0;
-    const result = await publishCv(lattes.publishPort, await code(lattes), request(), noWait);
+    expect(PUBLISH_ENABLED).toBe(true);
+    expect(BRIDGE_FEATURES).toContain('publicar-cnpq');
+    const result = await publishCv(lattes.publishPort, await code(lattes), request(), {
+      today: TODAY,
+      verifyAttempts: 2,
+      wait: noWait.wait,
+    });
     expect(result).toEqual({ lastPublished: TODAY, outcome: 'publicado', sent: true });
     expect(procs(lattes)).toEqual([
       'GET pkg_menu.menu',
@@ -135,6 +143,78 @@ describe('Enviar ao CNPq pelo conector (LAT-54)', () => {
     expect(after.ok).toBe(true);
   });
 
+  it.each([true, false])(
+    'resposta do envio perdida, recebido pelo CNPq: %s, confere sem reenviar',
+    async (received) => {
+      const lattes = await start();
+      const cod = await code(lattes);
+      let submissions = 0;
+      const port = {
+        ...lattes.publishPort,
+        get: async (path: string) => {
+          if (path.startsWith('pkg_publicar.enviar?')) {
+            submissions++;
+            if (received) await lattes.publishPort.get(path);
+            throw new Error('Resposta perdida');
+          }
+          return lattes.publishPort.get(path);
+        },
+      };
+      const result = await publishCv(port, cod, request(), noWait);
+      expect(result).toMatchObject({
+        outcome: received ? 'publicado' : 'nao-confirmado',
+        sent: true,
+      });
+      expect(submissions).toBe(1);
+    },
+  );
+
+  it.each([false, true])(
+    'falha na leitura do menu depois do envio, persistente: %s, não repete o envio',
+    async (persistent) => {
+      const lattes = await start();
+      const cod = await code(lattes);
+      let submissions = 0;
+      let readFailures = 0;
+      const port = {
+        ...lattes.publishPort,
+        get: async (path: string) => {
+          if (path.startsWith('pkg_publicar.enviar?')) submissions++;
+          if (path === 'PKG_MENU.menu' && submissions && (persistent || !readFailures)) {
+            readFailures++;
+            throw new Error('Menu indisponível');
+          }
+          return lattes.publishPort.get(path);
+        },
+      };
+      const result = await publishCv(port, cod, request(), noWait);
+      expect(result).toMatchObject({
+        outcome: persistent ? 'nao-confirmado' : 'publicado',
+        sent: true,
+      });
+      expect(submissions).toBe(1);
+      expect(readFailures).toBe(persistent ? noWait.verifyAttempts : 1);
+    },
+  );
+
+  it.each([
+    null,
+    {},
+    { declarationAccepted: true },
+    request({ english: 'false' as unknown as boolean }),
+    request({ emailContact: 123 as unknown as string }),
+    request({ declarationText: null as unknown as string }),
+  ])('pedido malformado não causa nenhuma consulta nem envio: %j', async (invalid) => {
+    const lattes = await start();
+    const cod = await code(lattes);
+    lattes.state.log.length = 0;
+    expect(isPublishRequest(invalid)).toBe(false);
+    expect(
+      await publishCv(lattes.publishPort, cod, invalid as PublishRequest, noWait),
+    ).toMatchObject({ outcome: 'erro' });
+    expect(lattes.state.log).toEqual([]);
+  });
+
   it('sem a declaração marcada pela pessoa, não pede nada ao Lattes', async () => {
     const lattes = await start();
     const cod = await code(lattes);
@@ -148,6 +228,68 @@ describe('Enviar ao CNPq pelo conector (LAT-54)', () => {
     expect(result.outcome).toBe('declaracao');
     expect(lattes.state.log).toEqual([]);
     expect(lattes.state.pending).toBe(true);
+  });
+
+  it('o menu relido de outra sessão bloqueia antes de consultar a tela de envio', async () => {
+    const lattes = await start();
+    const cod = await code(lattes);
+    lattes.state.log.length = 0;
+    const port = {
+      ...lattes.publishPort,
+      get: async (path: string) => {
+        const response = await lattes.publishPort.get(path);
+        return path === 'PKG_MENU.menu'
+          ? { ...response, html: response.html.replaceAll(lattes.state.code, 'K000000099') }
+          : response;
+      },
+    };
+    expect(await publishCv(port, cod, request(), noWait)).toMatchObject({ outcome: 'outro-cv' });
+    expect(procs(lattes)).toEqual(['GET pkg_menu.menu']);
+  });
+
+  it('confere o identificador do menu atual mesmo quando o código da sessão é o mesmo', async () => {
+    const lattes = await start();
+    const cod = await code(lattes);
+    lattes.state.log.length = 0;
+    expect(
+      await publishCv(lattes.publishPort, cod, request(), {
+        ...noWait,
+        expectedLattesId: '9999999999999999',
+      }),
+    ).toMatchObject({ outcome: 'outro-cv' });
+    expect(procs(lattes)).toEqual(['GET pkg_menu.menu']);
+  });
+
+  it('com a identidade confirmada, usa o código do menu atual em vez do DOM anterior', async () => {
+    const lattes = await start();
+    const cod = await code(lattes);
+    const current = 'K000000099';
+    const requested: string[] = [];
+    const port = {
+      get: async (path: string) => {
+        requested.push(path);
+        const response = await lattes.publishPort.get(path.replaceAll(current, lattes.state.code));
+        return path === 'PKG_MENU.menu'
+          ? { ...response, html: response.html.replaceAll(lattes.state.code, current) }
+          : response;
+      },
+      post: async (path: string, body: string) => {
+        requested.push(`${path}?${body}`);
+        return lattes.publishPort.post(path, body.replaceAll(current, lattes.state.code));
+      },
+    };
+    expect(
+      await publishCv(port, cod, request(), {
+        ...noWait,
+        expectedLattesId: lattes.state.lattesId,
+      }),
+    ).toMatchObject({ outcome: 'publicado', sent: true });
+    expect(requested.find((path) => path.startsWith('pkg_publicar.mostrar_cv?'))).toContain(
+      `f_cod=${current}`,
+    );
+    expect(requested.find((path) => path.startsWith('pkg_publicar.enviar?'))).toContain(
+      `f_cod=${current}`,
+    );
   });
 
   it('para antes do envio quando a consulta de raça ou cor diz que não', async () => {
@@ -450,6 +592,9 @@ describe('Enviar ao CNPq: leituras e regras', () => {
     expect(requestProblem(r({ language: '2' }), screen)).toMatch(/idioma/);
     expect(requestProblem(r({ english: false }), screen)).toMatch(/versão em inglês/);
     expect(requestProblem(r({ emailContact: ' ' }), screen)).toMatch(/e-mail/);
+    expect(requestProblem(r({ english: 'false' as unknown as boolean }), screen)).toMatch(
+      /inválido/,
+    );
     expect(requestProblem(r(), screen)).toBeUndefined();
   });
 
@@ -549,14 +694,13 @@ describe('Enviar ao CNPq no service worker (extensão)', () => {
   it('desligado: responde "desligado" sem tocar na aba', async () => {
     const exec = stubChrome();
     const reply = vi.fn(async () => undefined);
-    expect(await runPublish(CALL, IDLE, reply)).toBe(false);
+    expect(await runPublish(CALL, IDLE, reply, false)).toBe(false);
     expect(reply).toHaveBeenCalledWith({
       id: 'e1',
       result: expect.objectContaining({ outcome: 'desligado' }),
       type: 'publicacao',
     });
     expect(exec).not.toHaveBeenCalled();
-    expect(PUBLISH_ENABLED).toBe(false);
   });
 
   it('sem a declaração marcada, nem com a chave ligada chega à aba', async () => {
@@ -570,10 +714,21 @@ describe('Enviar ao CNPq no service worker (extensão)', () => {
     expect(exec).not.toHaveBeenCalled();
   });
 
+  it('uma declaração marcada num pedido incompleto também não chega à aba', async () => {
+    const exec = stubChrome();
+    const reply = vi.fn(async () => undefined);
+    const call = { ...CALL, request: { declarationAccepted: true } as PublishRequest };
+    expect(await runPublish(call, IDLE, reply, true)).toBe(false);
+    expect(reply).toHaveBeenCalledWith(
+      expect.objectContaining({ result: expect.objectContaining({ outcome: 'erro' }) }),
+    );
+    expect(exec).not.toHaveBeenCalled();
+  });
+
   it('ligado: roda na aba com o pedido e o currículo do editor; ocupado, recusa', async () => {
     const exec = stubChrome({ result: { lastPublished: '2026-10-15', outcome: 'publicado' } });
     const reply = vi.fn(async () => undefined);
-    expect(await runPublish(CALL, IDLE, reply, true)).toBe(true);
+    expect(await runPublish(CALL, IDLE, reply)).toBe(true);
     expect(reply).toHaveBeenCalledWith({
       id: 'e1',
       result: { lastPublished: '2026-10-15', outcome: 'publicado' },
@@ -694,10 +849,10 @@ describe('Enviar ao CNPq no service worker (extensão)', () => {
   });
 
   it('o envio pelo despacho, e outras mensagens passam adiante', async () => {
-    stubChrome();
+    stubChrome({ result: { outcome: 'publicado' } });
     const sink = io();
     expect(await answerPublishRequest({ ...CALL, type: 'publicar' }, IDLE, sink)).toBe(true);
-    expect(sink.sent[0]).toMatchObject({ result: { outcome: 'desligado' }, type: 'publicacao' });
+    expect(sink.sent[0]).toMatchObject({ result: { outcome: 'publicado' }, type: 'publicacao' });
     expect(await answerPublishRequest({ type: 'parar' }, IDLE, sink)).toBe(false);
   });
 });

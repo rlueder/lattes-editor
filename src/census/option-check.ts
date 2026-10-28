@@ -10,6 +10,7 @@ import { compareList } from '../bridge/list-watch.ts';
 import { INVERTED_FLAGS } from '../bridge/vinculo-flag.ts';
 import { foldText } from '../model/fold-text.ts';
 import { element } from '../model/xml.ts';
+import { hasAvailabilityChoices } from '../schema/availability.ts';
 import { lattesSchema } from '../schema/lattes.ts';
 import { derivedValue, typedChoices } from '../schema/typed-choices.ts';
 import { codeAttrFor, codeChoices, isBooleanAttr, isSystemAttr } from '../ui/field-kind.ts';
@@ -168,7 +169,16 @@ export function checkOptions(
     const choices = typedChoices(element(el), attr) ?? [];
     if (choices.length) {
       const { added, removed } = compareList(
-        choices.map((c) => c.label),
+        choices
+          .filter(
+            (c) =>
+              !(
+                c.value === 'NAO_INFORMADO' &&
+                hasAvailabilityChoices(el, attr) &&
+                options.some((o) => !o.value && !o.label)
+              ),
+          )
+          .map((c) => c.label),
         opts.map((o) => o.label).filter(Boolean),
       );
       if (added.length || removed.length) {

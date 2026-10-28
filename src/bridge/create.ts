@@ -13,6 +13,7 @@
 // Formação acadêmica e projeto estão em create-items.ts (LAT-52), com a mesma
 // chave; a patente continua à mão.
 
+import { elementLabel } from '../labels/labels.ts';
 import type { Change } from '../model/changes.ts';
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
@@ -49,6 +50,8 @@ export interface CreateAtuacaoOp {
   key: string;
   kind: 'criar-atuacao';
   label: string;
+  /** O que a atuação nova tem e vai no envio seguinte, já sob o número do Lattes. */
+  later?: string[];
   set: FieldValues;
 }
 
@@ -68,9 +71,9 @@ type Planned = CreateAtuacaoOp | { reason: string };
 /**
  * Os campos do vínculo no formulário (GN_ATIV na inclusão da atuação,
  * GN_ATIV_VINC na inclusão de um vínculo numa atuação que já existe, LAT-57).
- * O formulário de vínculo novo não tem "Outras informações" em português,
- * só em inglês (censo de 15/10/2026): com `vinculo`, o texto em português vai
- * à mão, e o em inglês e o enquadramento em inglês entram.
+ * O formulário de vínculo novo tem "Outras informações" nos dois idiomas e o
+ * enquadramento em inglês (censo de 27/10/2026; a captura de 15/10/2026 não
+ * trouxe o texto em português).
  */
 export function vinculoFields(
   v: XElement,
@@ -87,11 +90,6 @@ export function vinculoFields(
     !getAttr(v, 'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO')
   ) {
     return { reason: 'Enquadramento da lista do Lattes ainda não mapeado; use o texto livre' };
-  }
-  if (vinculo && getAttr(v, 'OUTRAS-INFORMACOES')?.trim()) {
-    return {
-      reason: 'O formulário de vínculo novo não tem "Outras informações" em português: vai à mão',
-    };
   }
   const anoFim = getAttr(v, 'ANO-FIM') ?? '';
   const set: FieldValues = {
@@ -110,11 +108,10 @@ export function vinculoFields(
     // check() copia o texto de f_vinc para f_vinculo antes do envio.
     f_vinculo: vinc,
   };
+  set.f_outras_inf = getAttr(v, 'OUTRAS-INFORMACOES') ?? '';
   if (vinculo) {
     set.f_enqua_en = getAttr(v, 'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO-INGLES') ?? '';
     set.f_outras_inf_en = getAttr(v, 'OUTRAS-INFORMACOES-INGLES') ?? '';
-  } else {
-    set.f_outras_inf = getAttr(v, 'OUTRAS-INFORMACOES') ?? '';
   }
   return { set };
 }
@@ -131,18 +128,15 @@ export function planCreateAtuacao(change: Change, el: XElement, label: string): 
     return { reason: 'Instituição sem código do Lattes: escolha pela busca de instituições' };
   }
   const vinculos = childElements(el, 'VINCULOS');
-  if (vinculos.length !== 1) {
-    return { reason: 'A inclusão pelo conector cria a atuação com um vínculo só' };
-  }
-  // A inclusão leva só a atuação e o vínculo: atividades e projetos da atuação
-  // nova ficariam para trás sem aviso.
+  if (vinculos.length === 0) return { reason: 'O Lattes exige um vínculo na atuação nova' };
+  // A inclusão leva a atuação e o primeiro vínculo. Os outros vínculos, as
+  // atividades e os projetos ficam para o envio seguinte, quando a atuação já
+  // tem o número do Lattes (acceptCreated, src/model/changes.ts).
   const hasValue = (e: XElement): boolean =>
     e.attrs.some((a) => a.value.trim() !== '') || childElements(e).some(hasValue);
-  if (childElements(el).some((c) => c.name !== 'VINCULOS' && hasValue(c))) {
-    return {
-      reason: 'A atuação nova tem atividades ou projetos: inclua a atuação primeiro, à mão',
-    };
-  }
+  const later = childElements(el)
+    .filter((c) => c !== vinculos[0] && hasValue(c))
+    .map((c) => elementLabel(c.name));
   const fields = vinculoFields(vinculos[0]!, false);
   if ('reason' in fields) return fields;
   const { set } = fields;
@@ -153,6 +147,7 @@ export function planCreateAtuacao(change: Change, el: XElement, label: string): 
     key: change.key,
     kind: 'criar-atuacao',
     label,
+    ...(later.length > 0 ? { later: [...new Set(later)] } : {}),
     set,
   };
 }

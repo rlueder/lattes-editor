@@ -33,7 +33,9 @@ describe('censo: opções do Lattes contra o controle do editor', () => {
     expect(editorControl('MESTRADO', 'STATUS-DO-CURSO')).toBe('enum');
     expect(editorControl('MESTRADO', 'NOME-INSTITUICAO')).toBe('derivado');
     expect(editorControl('DOUTORADO', 'TIPO-DOUTORADO')).toBe('codigo');
-    expect(editorControl('DADOS-GERAIS', 'PCD')).toBe('texto');
+    // A deficiência é a lista dos rótulos das caixas (exportação de 27/10/2026).
+    expect(editorControl('DADOS-GERAIS', 'PCD')).toBe('lista');
+    expect(editorControl('DADOS-GERAIS', 'CIDADE-NASCIMENTO')).toBe('texto');
   });
 
   it('sim/não pelo código, ou pelo rótulo quando o código não diz', () => {
@@ -102,6 +104,15 @@ describe('censo: opções do Lattes contra o controle do editor', () => {
     );
   });
 
+  it('a opção vazia de disponibilidade corresponde a NAO_INFORMADO no XML', () => {
+    const where = 'produto:DETALHAMENTO-DO-PRODUTO-TECNOLOGICO@DISPONIBILIDADE';
+    const field = { name: 'f_disp', type: 'select-one' };
+    const opts = [o(''), o('Restrita', 'Restrita'), o('Irrestrita', 'Irrestrita')];
+    expect(checkOptions(where, field, opts, []).found).toEqual([]);
+    expect(checkOptions(where, field, opts.slice(1), []).found).not.toEqual([]);
+    expect(checkOptions(where, field, [...opts, o('Nova', 'Nova')], []).found).not.toEqual([]);
+  });
+
   it('enumeração do XSD: pelo rótulo, pelo código no fim do valor, ou pelo observado', () => {
     const status = 't:MESTRADO@STATUS-DO-CURSO';
     expect(
@@ -130,8 +141,9 @@ describe('censo: opções do Lattes contra o controle do editor', () => {
     expect(pais.control).toBe('lista');
     expect(pais.found[0]!.detail).toMatch(/novas no Lattes: Atlântida; só no editor: /);
     expect(
-      checkOptions('t:DADOS-GERAIS@PCD', radio('f_pcd'), [o('N', 'não')], []).found[0]!.key,
-    ).toBe('lista-nao-ligada:t:DADOS-GERAIS@PCD:f_pcd');
+      checkOptions('t:DADOS-GERAIS@CIDADE-NASCIMENTO', radio('f_cidade'), [o('N', 'não')], [])
+        .found[0]!.key,
+    ).toBe('lista-nao-ligada:t:DADOS-GERAIS@CIDADE-NASCIMENTO:f_cidade');
     expect(
       checkOptions('t:IDIOMA@IDIOMA', radio('F_COD_IDIOMA'), [o('EN', 'Inglês')], []).found,
     ).toEqual([]);

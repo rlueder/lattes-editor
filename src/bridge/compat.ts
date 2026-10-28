@@ -11,9 +11,22 @@
 // - nenhuma sai, mesmo que deixe de ser usada: um lado mais novo sem ela
 //   pareceria o mais antigo;
 // - a exceção são as capacidades das operações atrás de chave (GATED_EDITS,
-//   em plan.ts): entram quando a chave liga e saem se ela voltar a desligar,
+//   em plan.ts, e PUBLISH_ENABLED): entram quando a chave liga e saem se ela voltar a desligar,
 //   porque anunciá-las com a chave desligada levaria o app a mandar operações
-//   que a extensão não tem no contrato. tests/edit-flags.test.ts cobra isso.
+//   que a extensão não tem no contrato. Os testes edit-flags e compat-publish
+//   conferem essas chaves.
+
+import { ACTIVITY_ROWS_ENABLED } from './atividade-grade.ts';
+import { CREATE_ACTIVITY_ORGAN_ENABLED } from './create-cargo.ts';
+import { CREATE_COMPL_ENABLED } from './create-complementar.ts';
+import { CREATE_PROJECT_ORGAN_ENABLED } from './create-projeto.ts';
+import { EDIT_PCD_ENABLED } from './dados-gerais-edit.ts';
+import { DELETE_MORE_ENABLED } from './delete-items.ts';
+import { COMPL_ENDERECO_LOOKUPS_ENABLED, COMPL_LOOKUPS_ENABLED } from './edit-lists.ts';
+import { EDIT_OTHER_CONTACTS_ENABLED } from './endereco-contatos.ts';
+import { EDIT_FUNDERS_ENABLED } from './production/financiador.ts';
+import { INSTITUTION_HOLDERS_ENABLED } from './production/institution-holder.ts';
+import { PUBLISH_ENABLED } from './publish.ts';
 
 export const BRIDGE_FEATURES = [
   /** Data da última publicação e pendência, lidas do menu do Lattes. */
@@ -52,6 +65,9 @@ export const BRIDGE_FEATURES = [
    * em si só sai com PUBLISH_ENABLED, e sem ela a extensão responde "desligado".
    */
   'enviar-cnpq',
+  // A capacidade antiga também existe em extensões que só leem a tela.
+  // A escrita precisa de anúncio próprio para não oferecer um envio impossível.
+  ...(PUBLISH_ENABLED ? (['publicar-cnpq'] as const) : []),
   /**
    * O editor começa a gravação e segue depois da pausa ("continuar"); o
    * painel da extensão só acompanha. Sem ela, a fila espera o "Aplicar
@@ -82,8 +98,31 @@ export const BRIDGE_FEATURES = [
   'orgao-atividades',
   /** Citação de coautores pelo dicionário de coautores (edit-citacao.ts). */
   'alterar-citacoes',
-  // 'buscas-complementar-endereco' (edit-lists.ts, formacao-lookups.ts) volta
-  // quando COMPL_ENDERECO_LOOKUPS_ENABLED ligar.
+  /** Instituição e curso da formação complementar pelas buscas (edit-lists.ts). */
+  ...(COMPL_LOOKUPS_ENABLED ? (['buscas-complementar'] as const) : []),
+  /** Instituição e órgão do endereço profissional pelas buscas (endereco-buscas.ts). */
+  ...(COMPL_ENDERECO_LOOKUPS_ENABLED ? (['buscas-complementar-endereco'] as const) : []),
+  /** Titular instituição de patentes e registros pela busca de titulares (institution-holder.ts). */
+  ...(INSTITUTION_HOLDERS_ENABLED ? (['titular-instituicao'] as const) : []),
+  /** Pessoa com deficiência, com os f_pcd da página (dados-gerais-edit.ts). */
+  ...(EDIT_PCD_ENABLED ? (['pessoa-com-deficiencia'] as const) : []),
+  /** O contato de outra forma de contato do endereço (endereco-contatos.ts). */
+  ...(EDIT_OTHER_CONTACTS_ENABLED ? (['outra-forma-contato'] as const) : []),
+  /** Instituição e natureza de um financiador do projeto (production/financiador.ts). */
+  ...(EDIT_FUNDERS_ENABLED ? (['financiador-projeto'] as const) : []),
+  /**
+   * Projeto novo com o órgão escolhido na janela de órgãos (create-projeto.ts),
+   * e a lista de órgãos da participação nova no editor.
+   */
+  ...(CREATE_PROJECT_ORGAN_ENABLED ? (['projeto-novo-orgao'] as const) : []),
+  /** Atividade nova das naturezas com órgão, pela janela de órgãos (create-cargo.ts). */
+  ...(CREATE_ACTIVITY_ORGAN_ENABLED ? (['atividade-nova-orgao'] as const) : []),
+  /** Formação complementar nova, com o segundo passo do FORM2 (create-complementar.ts). */
+  ...(CREATE_COMPL_ENABLED ? (['complementar-nova'] as const) : []),
+  /** Linhas da grade de uma atividade e o formulário da linha de pesquisa nova (atividade-grade.ts). */
+  ...(ACTIVITY_ROWS_ENABLED ? (['grade-atividade'] as const) : []),
+  /** A exclusão de produções, formações, prêmios, eventos, atividades e da atuação (delete-items.ts). */
+  ...(DELETE_MORE_ENABLED ? (['excluir-mais'] as const) : []),
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

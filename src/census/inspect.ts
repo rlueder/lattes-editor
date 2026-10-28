@@ -11,7 +11,9 @@ import {
   type CensusOptions,
   type CensusPort,
   CensusReader,
+  listPath,
   pending,
+  publicOf,
   readEntry,
   shareLists,
   shareScripts,
@@ -26,10 +28,49 @@ import type { CensusTarget } from './targets.ts';
  * caminho vai sem f_cod; o código do currículo entra aqui. O arquivo não é um
  * censo versionado: as entradas não estão em targets.ts.
  */
+/**
+ * A página de alteração do primeiro item de uma lista: `list` é o caminho da
+ * lista (com os parâmetros do tipo, achado no menu como no censo), `form` o
+ * procedimento do formulário e `itemKey` o parâmetro do número do item
+ * (f_seq). O número só vive na memória: o arquivo guarda o caminho sem ele.
+ */
+export interface EditOf {
+  form: string;
+  itemKey?: string;
+  list: string;
+}
+
+/** Os parâmetros de uma query, sem decodificar. */
+function queryParams(query: string): Record<string, string> {
+  const params: Record<string, string> = {};
+  for (const part of query.split('&').filter(Boolean)) {
+    const eq = part.indexOf('=');
+    params[eq < 0 ? part : part.slice(0, eq)] = eq < 0 ? '' : part.slice(eq + 1);
+  }
+  return params;
+}
+
+/** O link de alteração do primeiro item da lista, ou undefined sem item. */
+async function firstEdit(
+  reader: CensusReader,
+  code: string,
+  edit: EditOf,
+): Promise<string | undefined> {
+  const [proc, query] = splitAtQuery(edit.list);
+  const params = queryParams(query);
+  const page = (await reader.get(listPath(await reader.menuHtml(), code, { params, proc }))).html;
+  const key = (edit.itemKey ?? 'f_seq').toLowerCase();
+  return findLinks(page, edit.form).find(
+    (l) =>
+      l.proc.toLowerCase() === edit.form.toLowerCase() &&
+      Object.entries(l.params).some(([k, v]) => k.toLowerCase() === key && v !== ''),
+  )?.path;
+}
+
 export async function inspectPages(
   port: CensusPort,
   code: string,
-  paths: (string | { noCode?: boolean; path: string })[],
+  paths: (string | { editOf: EditOf } | { noCode?: boolean; path: string })[],
   options: Pick<CensusOptions, 'collector' | 'delayMs' | 'now' | 'redact'> = {},
 ): Promise<CensusFile> {
   const reader = new CensusReader(port, code, options.delayMs ?? 300);
@@ -38,16 +79,46 @@ export async function inspectPages(
   const entries: (CensusEntry & { scriptText?: string[] })[] = [];
   let interrupted = false;
   for (const [i, item] of paths.entries()) {
-    const { noCode, path } = typeof item === 'string' ? { noCode: false, path: item } : item;
+    let resolved: { noCode?: boolean; path: string } | undefined =
+      typeof item === 'string' ? { path: item } : 'editOf' in item ? undefined : item;
+    if (typeof item !== 'string' && 'editOf' in item && !interrupted) {
+      const label = `${item.editOf.form} (alteração, de ${publicOf(item.editOf.list)})`;
+      try {
+        const link = await firstEdit(reader, code, item.editOf);
+        if (!link) {
+          entries.push({ ...pending(editTarget(i, label)), status: 'sem-link' });
+          continue;
+        }
+        resolved = { path: link };
+      } catch (err) {
+        interrupted = true;
+        entries.push({
+          ...pending(editTarget(i, label)),
+          detail:
+            err instanceof Error ? err.message.replaceAll(code, '[código]') : 'Falha inesperada',
+          status: 'nao-lido',
+        });
+        continue;
+      }
+    }
+    if (!resolved) {
+      const edit = (item as { editOf: EditOf }).editOf;
+      entries.push({ ...pending(editTarget(i, `${edit.form} (alteração)`)), status: 'nao-lido' });
+      continue;
+    }
+    const { noCode, path } = resolved;
     const [proc, query] = splitAtQuery(path);
-    const params: Record<string, string> = {};
-    for (const part of query.split('&').filter(Boolean)) {
-      const eq = part.indexOf('=');
-      params[eq < 0 ? part : part.slice(0, eq)] = eq < 0 ? '' : part.slice(eq + 1);
+    const params = queryParams(query);
+    // As janelas do projeto pedem o código em P_COD (EDITAR_FINANCIAMENTO,
+    // lido em 26/10/2026): vazio no caminho, ele entra aqui, como o f_cod.
+    for (const k of Object.keys(params)) {
+      if (k.toLowerCase() === 'p_cod' && params[k] === '') params[k] = code;
     }
     // Com f_cod no caminho (um link copiado do Lattes), ele não entra de novo:
     // o gateway responde com erro a um parâmetro repetido (15/10/2026).
-    const hasCode = Object.keys(params).some((k) => k.toLowerCase() === 'f_cod');
+    // Com P_COD, o f_cod não entra: o gateway recusa parâmetro que o
+    // procedimento não tem (inferido, como o repetido).
+    const hasCode = Object.keys(params).some((k) => ['f_cod', 'p_cod'].includes(k.toLowerCase()));
     const target: CensusTarget = {
       elements: [],
       elementsProvenance: 'inferido',
@@ -64,9 +135,15 @@ export async function inspectPages(
     }
     try {
       entries.push(await readEntry(reader, target, redact, code, { links: true, scripts: true }));
-    } catch {
+    } catch (err) {
+      // Sessão caída ou tarefa parada: o motivo fica na entrada em que parou.
       interrupted = true;
-      entries.push({ ...pending(target), status: 'nao-lido' });
+      entries.push({
+        ...pending(target),
+        detail:
+          err instanceof Error ? err.message.replaceAll(code, '[código]') : 'Falha inesperada',
+        status: 'nao-lido',
+      });
     }
   }
   const scripts = shareScripts(entries);
@@ -81,6 +158,18 @@ export async function inspectPages(
     ...(scripts ? { scripts } : {}),
   };
 }
+
+/** A entrada de uma página de alteração, antes de saber o caminho. */
+const editTarget = (i: number, label: string): CensusTarget => ({
+  elements: [],
+  elementsProvenance: 'inferido',
+  id: `avulsa-${i + 1}`,
+  itemKey: 'f_seq',
+  label,
+  locate: { kind: 'unknown', note: label },
+  provenance: 'inferido',
+  source: 'recaptura avulsa',
+});
 
 /** As naturezas de selecionarNatureza() (docs/lattes_internals.md, seção 17). */
 export const ACTIVITY_NATURES = ['1', '2', '4', '5', '6', '7', '8', '9', 'B'];

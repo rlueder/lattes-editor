@@ -31,7 +31,7 @@ import { testJobs } from '../../src/census/test-plan.ts';
 import { readZip } from '../../src/import-export/zip.ts';
 import { decodeLatin1, decodeXmlBytes } from '../../src/model/latin1.ts';
 import { censusGet, clearCensusCache, withCensusCache } from './censo-reading.ts';
-import { ensureContext } from './censo-test-donors.ts';
+import { ensureContext, forgetContext, packageOf } from './censo-test-donors.ts';
 import {
   createTestItems,
   live,
@@ -39,7 +39,14 @@ import {
   setLive,
   testProgress,
 } from './censo-test-items.ts';
-import { loadBase, markInCv, saveBase, snapshotLists } from './censo-test-ledger.ts';
+import {
+  clearBase,
+  ledgerNow,
+  loadBase,
+  markInCv,
+  saveBase,
+  snapshotLists,
+} from './censo-test-ledger.ts';
 import { removeTestItems } from './censo-test-removal.ts';
 import { censusTraffic } from './censo-traffic.ts';
 
@@ -243,15 +250,53 @@ function summary(file: CensusFile) {
  * roda, na aba do menu.
  */
 let captured: CensusFile | undefined;
-/** Lê os formulários uma vez (alguns minutos); os lotes seguintes usam a leitura. */
-async function prepareTestItems() {
+
+/**
+ * Com only, os formulários dos tipos e os pacotes das listas deles; o projeto
+ * fica dentro das atuações, então a lista delas entra junto.
+ */
+function wantOf(file: CensusFile, only?: string[]) {
+  if (!only) return undefined;
+  const jobs = testJobs(file);
+  return {
+    forms: new Set(jobs.map((j) => j.form)),
+    packages: new Set([
+      ...jobs.map((j) => packageOf(j.path)),
+      ...(jobs.some((j) => /projeto/i.test(j.path)) ? ['pkg_ativ'] : []),
+    ]),
+    pages: new Set(jobs.map((j) => packageOf(j.path))),
+  };
+}
+/** Os tipos da leitura guardada (only), para não reaproveitar a de outros tipos. */
+let capturedOnly = '';
+/**
+ * Lê os formulários uma vez (alguns minutos); os lotes seguintes usam a
+ * leitura. Com only, só os desses tipos. Cada tarefa tem um teto de pedidos
+ * (src/bridge/transport.ts): a leitura, o contexto e a base vão em chamadas
+ * separadas, e cada uma que leu devolve preparando.
+ */
+async function prepareTestItems(options: { only?: string[] } = {}) {
+  const key = options.only?.join(',') ?? '';
+  let fresh = false;
   // A leitura inclui os seus itens de onde as buscas são copiadas: antes ela
   // ficava para o começo do primeiro lote, que parecia parado sem andamento.
   setLive({ done: 0, last: undefined, phase: 'lendo', total: undefined });
   reading = true;
   try {
-    if (!captured || captured.interrupted) captured = await capture({ download: false });
-    if (!captured.interrupted) await ensureContext(await code(), get);
+    if (!captured || captured.interrupted || capturedOnly !== key) {
+      captured = await capture({ download: false, only: options.only });
+      capturedOnly = key;
+      // O contexto de uma captura só de alguns tipos não serve a uma inteira,
+      // e o lote (sem want) usaria o que estivesse lido.
+      forgetContext();
+      fresh = true;
+    }
+    if (!captured.interrupted) {
+      // Os seus itens de onde as buscas são copiadas: com only, só os dos
+      // pacotes desses tipos.
+      const read = await ensureContext(await code(), get, wantOf(captured, options.only));
+      fresh = fresh || read;
+    }
   } finally {
     reading = false;
     setLive({ phase: 'parado' });
@@ -265,8 +310,26 @@ async function prepareTestItems() {
       `A leitura dos formulários parou (${lost.entries.filter((e) => e.status === 'nao-lido').length} sem ler): a sessão do Lattes pode ter caído. Entre de novo e rode outra vez.`,
     );
   }
+  // A leitura, o contexto e a base vão cada um numa tarefa, com o teto de
+  // pedidos inteiro: a chamada seguinte continua de onde esta parou, e o lote
+  // de itens só sai numa tarefa sem leitura antes.
+  if (fresh) return { ...testProgress(testJobs(captured)), preparando: true };
   // A base das listas (Fase 0), antes do primeiro item: sem ela, a remoção
-  // não teria com o que comparar.
+  // não teria com o que comparar. Uma base tirada para outros tipos (outro
+  // only) não tem as listas destes: com nada criado ainda, tira-se de novo;
+  // com itens criados, para, porque eles ficariam fora do registro.
+  const stored = loadBase();
+  const wanted = wantOf(captured, options.only)?.packages;
+  const uncovered =
+    stored?.packages && (!wanted || [...wanted].some((p) => !stored.packages!.includes(p)));
+  if (uncovered) {
+    if (testProgress().criados > 0) {
+      throw new Error(
+        'A base das listas foi tirada para outros tipos de item, e há itens de teste criados. Remova-os, rode resetTestItems() e comece de novo com estes tipos.',
+      );
+    }
+    clearBase();
+  }
   if (!loadBase()) {
     if (testProgress().criados > 0) {
       throw new Error(
@@ -283,17 +346,21 @@ async function prepareTestItems() {
           `O currículo já tem ${marks} ocorrências da marca dos itens de teste. Remova-as antes de tirar a base.`,
         );
       }
-      saveBase(await snapshotLists(await menuHtml(), await code(), get));
+      const list = wanted && [...wanted];
+      saveBase(await snapshotLists(await menuHtml(), await code(), get, list), list);
     } finally {
       reading = false;
       setLive({ phase: 'parado' });
     }
+    return { ...testProgress(testJobs(captured)), preparando: true };
   }
   return testProgress(testJobs(captured));
 }
 
+/** Um lote; enquanto a preparação anda, a chamada só prepara e devolve preparando. */
 async function testItems(options: Parameters<typeof createTestItems>[3] = {}) {
-  await prepareTestItems();
+  const ready = await prepareTestItems({ only: options.only });
+  if ('preparando' in ready) return ready;
   clearCensusCache();
   return createTestItems(testJobs(captured!), await code(), get, options);
 }
@@ -338,8 +405,18 @@ async function protectedRun<T>(work: () => Promise<T>): Promise<T> {
   download,
   entryOf,
   inspect: (...args: Parameters<typeof inspect>) => protectedRun(() => inspect(...args)),
+  /**
+   * Só leitura: as linhas que as listas têm a mais e a menos que a base,
+   * para conferir um envio incerto (inclusive de tipo sem lugar para a marca).
+   */
+  ledger: () =>
+    protectedRun(async () => {
+      const { added, missing } = await ledgerNow(await menuHtml(), await code(), get);
+      return { added, missing };
+    }),
   link: (...args: Parameters<typeof link>) => protectedRun(() => link(...args)),
-  prepareTestItems: () => protectedRun(prepareTestItems),
+  prepareTestItems: (...args: Parameters<typeof prepareTestItems>) =>
+    protectedRun(() => prepareTestItems(...args)),
   removeTestItems: (...args: Parameters<typeof removeTests>) =>
     protectedRun(() => removeTests(...args)),
   resetTestItems,

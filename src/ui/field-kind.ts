@@ -59,6 +59,9 @@ const CODE_VALUES: Record<string, Record<string, string>> = {
     N: 'Normal',
     S: 'Sanduíche',
   },
+  // N e S aparecem em XML público e nas opções capturadas do formulário de
+  // graduação (seção 23 de docs/lattes_internals.md).
+  'GRADUACAO TIPO-GRADUACAO': { N: 'Normal', S: 'Sanduíche' },
   'MESTRADO TIPO-MESTRADO': { N: 'Normal', S: 'Sanduíche' },
 };
 
@@ -120,6 +123,13 @@ const LEVEL_FROM_TYPE =
  * (docs/lattes_internals.md, seção 17).
  */
 const TYPED_CODES = new Set(['CODIGO-DO-REGISTRO-OU-PATENTE']);
+
+/**
+ * Atributos que só o Lattes preenche, por uma vinculação fora do formulário:
+ * o ORCID entra pelo login no próprio ORCID, na identificação do Lattes. O
+ * editor os mostra sempre, mesmo vazios, com o caminho para preencher lá.
+ */
+export const LINKED_IN_LATTES: ReadonlySet<string> = new Set(['ORCID-ID']);
 
 export function isSystemAttr(element: string, attr: string): boolean {
   if (TYPED_CODES.has(attr)) return false;

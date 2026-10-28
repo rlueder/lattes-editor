@@ -25,7 +25,14 @@ const bibBasics = (child: string) =>
     'TITULO-INGLES': 'f_titulo_en',
   });
 
-const INFO_EN = { 'INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES': 'f_ref_en' };
+/**
+ * As informações adicionais, nos dois idiomas. O f_ref não estava na captura
+ * de 15/10/2026 e está na de 27/10/2026, em todos estes formulários.
+ */
+const INFO_EN = {
+  'INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS': 'f_ref',
+  'INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS-INGLES': 'f_ref_en',
+};
 
 /**
  * Tradução (GN_BIB, POST PRC_BIB_TRADUCAO). Inferido: a natureza pelos
@@ -101,26 +108,27 @@ const PARTITURA: ProductionTarget = {
   year: { attr: 'ANO', child: 'DADOS-BASICOS-DA-PARTITURA' },
 };
 
-const NOT_CAPTURED = 'o formulário de outra produção bibliográfica não foi capturado no censo';
+const NO_FIELD = 'O formulário de outra produção bibliográfica do Lattes não tem campo para';
 
 /**
- * Outra produção bibliográfica (GN_BIB, POST PRC_BIB_OUTRAPROD). Observado em
- * 16/10/2026 no Lattes real, só por GET: a lista prc_bib_demais_lista com
- * f_cod_tipo=1Z, o formulário prc_bib_outraprod com f_seq, f_ctr U e as
- * quatro grades. Os campos não foram capturados.
- *
- * Inferido, todos menos título e ano: os campos são os que a tradução e a
- * partitura (os outros formulários GN_BIB do censo) têm iguais, e os do
- * detalhamento os de mesmo rótulo nelas (editora, cidade da editora, páginas,
- * ISSN/ISBN). Um campo que a página não tiver para o envio antes do POST, sem
- * nada gravado. A natureza, o DOI e a divulgação científica ficam à mão: nas
- * duas irmãs não há campo de DOI nem de divulgação, e a natureza tem códigos
- * próprios de cada tipo.
+ * Outra produção bibliográfica (GN_BIB, POST PRC_BIB_OUTRAPROD), na lista
+ * prc_bib_demais_lista com f_cod_tipo=1Z. O formulário foi lido por GET em
+ * 26/10/2026, na inclusão e numa alteração: título, ano, país, idioma, meio,
+ * home page, relevância (F_RELEV), divulgação científica
+ * (F_STA_DIVULGACAO_CIENTIFICA, S/N), natureza em texto livre (f_natureza; o
+ * dominio() da página só sugere "Trabalho de Conclusão de Curso"), editora,
+ * cidade, páginas, ISSN/ISBN, f_ref e os textos em inglês. Não há campo de
+ * DOI nem de natureza em inglês. Inferido: que a alteração grave os mesmos
+ * campos com f_seq, como nas irmãs.
  */
 const OUTRA_BIBLIOGRAFICA: ProductionTarget = {
   element: 'OUTRA-PRODUCAO-BIBLIOGRAFICA',
   fields: {
     ...bibBasics('DADOS-BASICOS-DE-OUTRA-PRODUCAO'),
+    ...under('DADOS-BASICOS-DE-OUTRA-PRODUCAO', {
+      'FLAG-DIVULGACAO-CIENTIFICA': { field: 'F_STA_DIVULGACAO_CIENTIFICA', toForm: yesNo },
+      NATUREZA: 'f_natureza',
+    }),
     ...under('DETALHAMENTO-DE-OUTRA-PRODUCAO', {
       'CIDADE-DA-EDITORA': 'f_cidade',
       EDITORA: 'f_editora',
@@ -138,10 +146,8 @@ const OUTRA_BIBLIOGRAFICA: ProductionTarget = {
     proc: 'prc_bib_demais_lista',
   },
   manual: under('DADOS-BASICOS-DE-OUTRA-PRODUCAO', {
-    DOI: NOT_CAPTURED,
-    'FLAG-DIVULGACAO-CIENTIFICA': NOT_CAPTURED,
-    NATUREZA: NOT_CAPTURED,
-    'NATUREZA-INGLES': NOT_CAPTURED,
+    DOI: `${NO_FIELD} DOI`,
+    'NATUREZA-INGLES': `${NO_FIELD} a natureza em inglês`,
   }),
   title: { attr: 'TITULO', child: 'DADOS-BASICOS-DE-OUTRA-PRODUCAO' },
   year: { attr: 'ANO', child: 'DADOS-BASICOS-DE-OUTRA-PRODUCAO' },
@@ -198,7 +204,6 @@ const PREFACIO: ProductionTarget = {
       'TITULO-DA-PUBLICACAO': 'f_tit_obra',
       VOLUME: 'f_volume',
     }),
-    'INFORMACOES-ADICIONAIS@DESCRICAO-INFORMACOES-ADICIONAIS': 'f_ref',
     ...INFO_EN,
   },
   form: { action: 'PRC_BIB_PREFACIO', name: 'GN_BIB' },

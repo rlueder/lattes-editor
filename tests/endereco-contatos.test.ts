@@ -4,10 +4,12 @@
 
 import { afterEach, describe, expect, it } from 'vitest';
 
+import type { Intercept } from '../scripts/lattes-simulado/servidor.ts';
 import { applyOp } from '../src/bridge/apply.ts';
-import { array2xml, socialGrid } from '../src/bridge/endereco-contatos.ts';
+import { array2xml, sameSocialPrivacy, socialGrid } from '../src/bridge/endereco-contatos.ts';
 import { type BridgeOp, planChanges } from '../src/bridge/plan.ts';
 import { diffDocuments } from '../src/model/changes.ts';
+import { replaceContactValue } from '../src/model/contact-edit.ts';
 import { encodeLatin1 } from '../src/model/latin1.ts';
 import { getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
 import {
@@ -27,14 +29,14 @@ const XML = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS NOME-COMPLE
 
 const byName = (root: XElement, name: string) => findIn(root, (el) => el.name === name)!;
 
-function plan(edit: (root: XElement) => void) {
-  const original = parseXml(XML).root;
-  const working = parseXml(XML).root;
+function plan(edit: (root: XElement) => void, xml = XML) {
+  const original = parseXml(xml).root;
+  const working = parseXml(xml).root;
   edit(working);
   return planChanges(
     diffDocuments(original, working).map((change) => ({ change, itemTitle: '' })),
     working,
-    { biographicFull: true, biographicOps: true },
+    { biographicFull: true, biographicOps: true, editOtherContacts: true },
   );
 }
 
@@ -53,16 +55,45 @@ afterEach(async () => {
   open = undefined;
 });
 
-async function lattes() {
+async function lattes(intercept?: Intercept, xml = XML) {
   open = await withLattesSimulado({
-    xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${XML}`),
+    intercept,
+    xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${xml}`),
   });
   return open;
 }
 
+const MSN = 'ID Rede Social: 1000001, Nome Rede Social: MSN, Endereço: a@example.org';
+const WHATSAPP = 'ID Rede Social: 1000002, Nome Rede Social: WhatsApp, Endereço: 5551999990000';
+
 const GITHUB = `${LINKEDIN}; ID Rede Social: 1000002, Nome Rede Social: GitHub, Endereço: https://github.com/exemplo`;
 
 describe('contatos do endereço: o plano', () => {
+  it.each([
+    ['ELETRONICO', 'texto que não é um e-mail'],
+    ['ELETRONICO', 'I: novo@example.org; trecho desconhecido'],
+    ['ELETRONICO', 'I: novo@example.org; I: duplicado@example.org'],
+    ['REDE-SOCIAL', `${LINKEDIN}; trecho desconhecido`],
+    ['REDE-SOCIAL', `${LINKEDIN}; ${LINKEDIN}`],
+  ])('não confunde %s parcialmente reconhecido com uma lista vazia ou completa', (attr, value) => {
+    const result = plan(set('ENDERECO', attr!, value!));
+    expect(result.ops).toEqual([]);
+    expect(result.unsupported).toHaveLength(1);
+  });
+
+  it('também recusa um valor anterior não reconhecido, antes de tentar limpar', () => {
+    const unknown = XML.replace('I: pessoa@example.org', 'texto desconhecido');
+    const result = plan(set('ENDERECO', 'ELETRONICO', ''), unknown);
+    expect(result.ops).toEqual([]);
+    expect(result.unsupported).toHaveLength(1);
+  });
+
+  it('vazio explícito continua sendo uma limpeza intencional de contatos reconhecidos', () => {
+    expect(onlyOp(set('ENDERECO', 'ELETRONICO', ''))).toMatchObject({
+      set: { f_email_i: '', f_email_r: '' },
+    });
+    expect(onlyOp(set('ENDERECO', 'REDE-SOCIAL', ''))).toMatchObject({ social: { after: [] } });
+  });
   it('a rede nova vira a lista de redes antes e depois', () => {
     expect(onlyOp(set('ENDERECO', 'REDE-SOCIAL', GITHUB))).toMatchObject({
       kind: 'endereco',
@@ -87,12 +118,40 @@ describe('contatos do endereço: o plano', () => {
       /para contato \(I:\) ou alternativo \(R:\)/,
     );
     expect(plan(set('ENDERECO', 'OUTRA-FORMA-DE-CONTATO', 'x')).unsupported[0]?.reason).toMatch(
-      /nunca foi vista/,
+      /não está no formato do Lattes/,
     );
+  });
+
+  it('outra forma de contato: só o contato de um tipo que já está muda', () => {
+    const xml = XML.replace('OUTRA-FORMA-DE-CONTATO=""', `OUTRA-FORMA-DE-CONTATO="${MSN}"`);
+    expect(
+      plan(
+        set('ENDERECO', 'OUTRA-FORMA-DE-CONTATO', MSN.replace('a@example.org', 'b@example.org')),
+        xml,
+      ).ops[0],
+    ).toMatchObject({
+      contacts: {
+        after: [{ name: 'MSN', url: 'b@example.org' }],
+        before: [{ name: 'MSN', url: 'a@example.org' }],
+      },
+    });
+    for (const value of [`${MSN}${WHATSAPP}`, WHATSAPP, '']) {
+      expect(
+        plan(set('ENDERECO', 'OUTRA-FORMA-DE-CONTATO', value), xml).unsupported[0]?.reason,
+      ).toMatch(/incluir, tirar ou trocar o tipo vai no Lattes/);
+    }
   });
 });
 
 describe('contatos do endereço: as grades como a página as manda', () => {
+  it('compara também IDs e privacidade, mantendo duplicatas e ignorando só a ordem', () => {
+    const first = { endereco: 'u', id: 1, privacidade: '2', redeSocial: 'Linkedin' };
+    const second = { endereco: 'g', id: 2, privacidade: '1', redeSocial: 'GitHub' };
+    expect(sameSocialPrivacy([first, second, {}], [second, first])).toBe(true);
+    expect(sameSocialPrivacy([first], [{ ...first, id: 3 }])).toBe(false);
+    expect(sameSocialPrivacy([first], [{ ...first, privacidade: '1' }])).toBe(false);
+    expect(sameSocialPrivacy([first, first], [first])).toBe(false);
+  });
   it('array2xml como o da página: item por linha, a linha em branco some', () => {
     expect(array2xml([{ id: 2, endereco: 'a<b&c', redeSocial: 'Linkedin' }, {}])).toBe(
       '<root><item>\n\t<id>2</id>\n\t<endereco>a&amp;lt;b&amp;c</endereco>\n\t<redeSocial>Linkedin</redeSocial>\n</item >\n</root >',
@@ -132,9 +191,119 @@ describe('contatos do endereço: as grades como a página as manda', () => {
     ]);
     expect(socialGrid(current, types, [{ name: 'Orkut', url: 'x' }])).toEqual({ unknown: 'Orkut' });
   });
+
+  it('trocar a URL de uma rede privada preserva id, visibilidade e chaves desconhecidas', () => {
+    const existing = {
+      endereco: 'https://example.org/antes',
+      extra: 'preservado',
+      id: 2,
+      privacidade: '2',
+      redeSocial: 'Linkedin',
+      visibilidade: 'Privado',
+    };
+    const out = socialGrid(
+      [existing, { id: '' }],
+      [],
+      [{ name: 'LinkedIn', url: 'https://example.org/depois' }],
+    );
+    expect(out).toEqual({ rows: [{ ...existing, endereco: 'https://example.org/depois' }, {}] });
+    expect(existing.endereco).toBe('https://example.org/antes');
+  });
+
+  it('outro perfil na mesma rede, com o de antes intacto, é uma inclusão', () => {
+    const existing = {
+      endereco: 'https://example.org/a',
+      id: 2,
+      privacidade: '2',
+      redeSocial: 'Linkedin',
+      visibilidade: 'Privado',
+    };
+    const out = socialGrid(
+      [existing, { id: '' }],
+      [{ id: 3, redeSocial: 'Linkedin' }],
+      [
+        { name: 'LinkedIn', url: 'https://example.org/a' },
+        { name: 'LinkedIn', url: 'https://example.org/b' },
+      ],
+    );
+    expect(out).toEqual({
+      rows: [
+        existing,
+        {
+          endereco: 'https://example.org/b',
+          id: '3',
+          privacidade: '1',
+          redeSocial: 'Linkedin',
+          visibilidade: 'Público',
+        },
+        {},
+      ],
+    });
+  });
+
+  it('duas linhas da mesma rede não permitem adivinhar qual privacidade manter', () => {
+    expect(
+      socialGrid(
+        [
+          { endereco: 'a', id: 2, privacidade: '1', redeSocial: 'Linkedin' },
+          { endereco: 'b', id: 2, privacidade: '2', redeSocial: 'Linkedin' },
+        ],
+        [{ id: 2, redeSocial: 'Linkedin' }],
+        [{ name: 'LinkedIn', url: 'c' }],
+      ),
+    ).toEqual({ ambiguous: 'LinkedIn' });
+  });
 });
 
 describe('contatos do endereço: o envio', () => {
+  it.each([false, true])(
+    'a privacidade da rede continua privada depois da troca: %s',
+    async (kept) => {
+      let posted = false;
+      const sim = await lattes(async (req, _state, next) => {
+        if (req.proc.toLowerCase() === 'prc_endereco' && req.method === 'POST') posted = true;
+        const response = await next();
+        if (
+          req.proc.toLowerCase() === 'prc_endereco' &&
+          req.method === 'GET' &&
+          (!posted || kept) &&
+          'html' in response
+        ) {
+          return {
+            ...response,
+            html: response.html.replaceAll('"privacidade":"1"', '"privacidade":"2"'),
+          };
+        }
+        return response;
+      });
+      const edited = replaceContactValue(
+        LINKEDIN,
+        'REDE-SOCIAL',
+        0,
+        'https://example.org/privado',
+      )!;
+      const result = await applyOp(onlyOp(set('ENDERECO', 'REDE-SOCIAL', edited)), sim.port);
+      expect(postsOf(sim)[0]!.fields.f_dados_grid).toContain('<privacidade>2</privacidade>');
+      expect(result.status).toBe(kept ? 'conferido' : 'divergente');
+    },
+  );
+  it.each([
+    ['ELETRONICO', 'novo@example.org'],
+    ['REDE-SOCIAL', 'https://example.org/novo'],
+  ])('a edição de %s pelo controle gera uma operação que volta conferida', async (attr, next) => {
+    const sim = await lattes();
+    const original = getAttr(byName(parseXml(XML).root, 'ENDERECO'), attr!)!;
+    const edited = replaceContactValue(original, attr!, 0, next!)!;
+    const op = onlyOp(set('ENDERECO', attr!, edited));
+    expect(await applyOp(op, sim.port)).toMatchObject({ status: 'conferido' });
+    if (attr === 'ELETRONICO') {
+      expect(postsOf(sim)[0]!.fields.f_email_i).toBe(next);
+      expect(getAttr(byName(sim.state.root, 'ENDERECO-PROFISSIONAL'), 'E-MAIL')).toBe(next);
+    } else {
+      expect(getAttr(byName(sim.state.root, 'ENDERECO'), attr!)).toContain(next);
+    }
+    expect(postsOf(sim)).toHaveLength(1);
+  });
   it('outra troca no endereço manda as redes de volta, sem apagá-las', async () => {
     const sim = await lattes();
     const op = onlyOp(set('ENDERECO-PROFISSIONAL', 'BAIRRO', 'Bom Fim'));
@@ -156,6 +325,36 @@ describe('contatos do endereço: o envio', () => {
     const sim = await lattes();
     setAttr(byName(sim.state.root, 'ENDERECO'), 'REDE-SOCIAL', '');
     const op = onlyOp(set('ENDERECO', 'REDE-SOCIAL', GITHUB));
+    expect(await applyOp(op, sim.port)).toMatchObject({ status: 'divergente' });
+    expect(postsOf(sim)).toEqual([]);
+  });
+
+  it('outra forma de contato: o contato novo vai na grade, com o tipo e a privacidade de antes', async () => {
+    const xml = XML.replace(
+      'OUTRA-FORMA-DE-CONTATO=""',
+      `OUTRA-FORMA-DE-CONTATO="${MSN}${WHATSAPP}"`,
+    );
+    const sim = await lattes(undefined, xml);
+    const original = getAttr(byName(parseXml(xml).root, 'ENDERECO'), 'OUTRA-FORMA-DE-CONTATO')!;
+    const edited = replaceContactValue(original, 'OUTRA-FORMA-DE-CONTATO', 1, '5551988880000')!;
+    const op = plan(set('ENDERECO', 'OUTRA-FORMA-DE-CONTATO', edited), xml).ops[0]!;
+    expect(await applyOp(op, sim.port)).toMatchObject({ status: 'conferido' });
+    const grid = postsOf(sim)[0]!.fields.f_dados_grid_contatos ?? '';
+    expect(grid).toMatch(
+      /<id>6<\/id>\r?\n\t<contato>WhatsApp<\/contato>\r?\n\t<endereco>5551988880000</,
+    );
+    expect(grid).toMatch(/<privacidade>2<\/privacidade>/);
+    expect(getAttr(byName(sim.state.root, 'ENDERECO'), 'OUTRA-FORMA-DE-CONTATO')).toBe(
+      `${MSN}${WHATSAPP.replace('5551999990000', '5551988880000')}`,
+    );
+  });
+
+  it('outra forma de contato: o Lattes com outro contato, nada vai', async () => {
+    const xml = XML.replace('OUTRA-FORMA-DE-CONTATO=""', `OUTRA-FORMA-DE-CONTATO="${MSN}"`);
+    const sim = await lattes(undefined, xml);
+    setAttr(byName(sim.state.root, 'ENDERECO'), 'OUTRA-FORMA-DE-CONTATO', WHATSAPP);
+    const edited = MSN.replace('a@example.org', 'b@example.org');
+    const op = plan(set('ENDERECO', 'OUTRA-FORMA-DE-CONTATO', edited), xml).ops[0]!;
     expect(await applyOp(op, sim.port)).toMatchObject({ status: 'divergente' });
     expect(postsOf(sim)).toEqual([]);
   });

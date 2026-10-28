@@ -21,9 +21,9 @@ export async function lattesTab(): Promise<number | undefined> {
   return tab?.id;
 }
 
-/** Uma chamada à aba que desiste se ela fechar ou não responder (tab-guard.ts). */
 let watchingReloads = false;
-const guarded = <T>(tabId: number, start: () => Promise<T>) => {
+/** Uma chamada à aba que desiste se ela fechar ou não responder (tab-guard.ts). */
+export const guarded = <T>(tabId: number, start: () => Promise<T>) => {
   // A página que recarrega solta a aba travada por uma chamada que passou do
   // prazo (tab-guard.ts). Registrado na primeira chamada, com o chrome à mão.
   if (!watchingReloads) {

@@ -11,6 +11,7 @@
 // instituição escolhida, numa participação em projeto nova) e como o órgão
 // escolhido vira CODIGO-ORGAO e CODIGO-UNIDADE da participação (organOf).
 
+import { foldText } from '../../src/model/fold-text.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import {
   childElements,
@@ -21,7 +22,7 @@ import {
   type XElement,
 } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
-import { ORGANS, withLetter } from './buscas.ts';
+import { institutionsOf, ORGANS, withLetter } from './buscas.ts';
 import { applyFields, attr, type Binding, fixed, mapped, renderFields } from './campos.ts';
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
@@ -30,6 +31,7 @@ import {
   applyProjectLinks,
   applyProjectTeam,
   linkedCodes,
+  orientationLookup,
   projectGridScripts,
 } from './projeto-grades.ts';
 import { html, type Routes, type SimResponse } from './tipos.ts';
@@ -141,7 +143,13 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
       kind: 'hidden',
       name,
       read: (el: XElement | undefined) =>
-        el ? linkedCodes(el, name === 'f_producoes_d' ? 'f_producoes_l' : 'f_orientacoes_l') : '',
+        el
+          ? linkedCodes(
+              el,
+              name === 'f_producoes_d' ? 'f_producoes_l' : 'f_orientacoes_l',
+              orientationLookup(state.root),
+            )
+          : '',
     })),
     {
       kind: 'select',
@@ -271,7 +279,7 @@ ${renderFields(bindings(state, ids), placed?.projeto)}
 <p><a href="#" onclick="self.parent.modalCV3.setarUrl('PKG_PROJETO.pp_lista_inst?f_pgm=INSTVINCULO&amp;f_cod=${state.code}',true); return false;">Instituição</a></p>
 ${h.formButtons(Boolean(placed))}
 </form>
-${placed ? projectGridScripts(placed.projeto) : ''}
+${placed ? projectGridScripts(placed.projeto, orientationLookup(state.root)) : ''}
 ${h.formScripts('GN_PROJETO', placed ? 'Deseja realmente excluir esta produção?' : undefined)}`;
   return html(h.page('Projeto', body));
 }
@@ -288,6 +296,16 @@ function post(req: SimRequest, state: LattesState): SimResponse {
   const ctr = req.get('f_ctr');
   const tipo = req.get('f_cod_tipo') ?? 'P';
   const back = h.savedScript(`pkg_projeto.lista?f_cod_tipo=${tipo}&f_cod=${state.code}`);
+  // O banco do Lattes lê f_instituicoes como XML (configurarInstituicoes do
+  // check()); vazio, a gravação para com ORA-19032 (observado em 28/10/2026).
+  if ((ctr === 'I' || ctr === 'U') && !(req.get('f_instituicoes') ?? '').startsWith('<root>')) {
+    return html(
+      h.page(
+        'Erro',
+        '<p>Erro. ORA-19032: Era esperado o identificador de XML ,, foi recebido no content</p>',
+      ),
+    );
+  }
   if (ctr === 'I') {
     const code = (req.get('f_cod_inst') || req.get('f_cod_inst2') || '').replace(/^[A-Za-z]/, '');
     const container = state.find(['DADOS-GERAIS', 'ATUACOES-PROFISSIONAIS']);
@@ -317,6 +335,15 @@ function post(req: SimRequest, state: LattesState): SimResponse {
     );
     const atividades = state.ensure(atuacao, 'ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO');
     insertInSchemaOrder(lattesSchema, atividades, participacao);
+    // A equipe, os financiadores, as ligações e o órgão, como na alteração (inferido).
+    applyProjectTeam(state, projeto, req);
+    applyProjectLinks(state, projeto, req);
+    const organ = req.get('f_codorgao') || req.get('f_codorgao2') || '';
+    if (organ) {
+      for (const [name, value] of Object.entries(organOf(atuacao, organ))) {
+        setAttr(participacao, name, value);
+      }
+    }
     state.touch();
     return html(back);
   }
@@ -332,7 +359,7 @@ function post(req: SimRequest, state: LattesState): SimResponse {
   } else if (ctr === 'U') {
     applyFields(bindings(state, {}), placed.projeto, req);
     applyProjectTeam(state, placed.projeto, req);
-    applyProjectLinks(placed.projeto, req);
+    applyProjectLinks(state, placed.projeto, req);
     // Código vazio deixa o órgão como está, como na página real.
     const organ = req.get('f_codorgao') || req.get('f_codorgao2') || '';
     if (organ) {
@@ -352,6 +379,9 @@ function post(req: SimRequest, state: LattesState): SimResponse {
  * são inferidos dos nomes dos ocultos que eles preenchem.
  */
 function listaInst(req: SimRequest, state: LattesState): SimResponse {
+  if (req.method === 'POST' && req.get('F_PGM')?.toUpperCase() === 'INSTFINANC') {
+    return funderSearch(req, state);
+  }
   const container = state.find(['DADOS-GERAIS', 'ATUACOES-PROFISSIONAIS']);
   const atuacoes = container ? childElements(container, 'ATUACAO-PROFISSIONAL') : [];
   const vinculo = req.get('f_pgm')?.toUpperCase() === 'INSTVINCULO';
@@ -360,24 +390,31 @@ function listaInst(req: SimRequest, state: LattesState): SimResponse {
     .map((a) => {
       const code = withLetter(state, getAttr(a, 'CODIGO-INSTITUICAO')!);
       const name = getAttr(a, 'NOME-INSTITUICAO') ?? '';
-      const v = vinculoCopy(a);
-      const args = [
-        v.enqua,
-        v.regime,
-        v.stavinc,
-        v.anoInic,
-        v.anoFim,
-        v.carga,
-        v.vinc,
-        code,
-        name,
-      ].map((x) => `'${h.jsString(x)}'`);
-      const call = vinculo ? `preencherOpener(${args.join(',')}); ` : '';
-      // As aspas vão como estão, como nos links seleciona() da busca (seção 18).
-      return `<a href="javascript:${call}seleciona('${code}','${h.jsString(name)}')">${h.esc(name.toUpperCase())}</a><br>`;
+      // Em 28/10/2026 as linhas da janela das atuações chamavam só
+      // seleciona(código, nome, sigla), sem o preencherOpener do vínculo de
+      // 27/10. As aspas vão como estão (seção 18).
+      const sigla = vinculo ? `,'${h.jsString(name.slice(0, 4).toUpperCase())}'` : '';
+      return `<a href="javascript:seleciona('${code}','${h.jsString(name)}'${sigla})">${h.esc(name.toUpperCase())}</a><br>`;
     })
     .join('\n');
   return html(h.page('Instituições', rows));
+}
+
+/**
+ * A busca de instituições do financiador (POST a PKG_PROJETO.PP_LISTA_INST
+ * com F_PGM INSTFINANC e f_nome, lida em 27/10/2026): um seleciona() com o
+ * código com a letra, o nome e a sigla por instituição que contém o texto.
+ */
+function funderSearch(req: SimRequest, state: LattesState): SimResponse {
+  const query = foldText((req.get('f_nome') ?? '').trim());
+  const links = institutionsOf(state)
+    .filter((i) => query.length > 1 && foldText(i.name).includes(query))
+    .map(
+      (i) =>
+        `<a href="#" onclick="seleciona('${i.code}','${h.jsString(i.name)}','${i.uf}'); return false;">${h.esc(i.name)}</a><br>`,
+    )
+    .join('\n');
+  return html(h.page('Instituições', links));
 }
 
 /**

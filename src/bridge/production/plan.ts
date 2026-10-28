@@ -11,7 +11,8 @@ import { areaLabel, type AreaRow } from '../areas-atuacao.ts';
 import type { BridgeOp, OpBase } from '../plan.ts';
 import { fieldsLeft } from './fields-left.ts';
 import { AUTHOR_PART, authorsOf, type AuthorSpec, MAX_KEYWORDS } from './grids.ts';
-import { planHolder, withoutHolderCopies } from './holders.ts';
+import { holderField, withoutHolderCopies } from './holders.ts';
+import { productionIdentity } from './identity.ts';
 import {
   type AreaList,
   isAreaChange,
@@ -24,6 +25,7 @@ import { planMembers } from './members.ts';
 import { planNatureSwap } from './nature.ts';
 import { opaqueReason } from './opaque.ts';
 import { isOrganChange, type OrganChoice, planOrgan } from './organ.ts';
+import { planProjectEdit, type ProjectGridEdits } from './project-links.ts';
 import { PRODUCTION_TARGETS } from './targets/index.ts';
 import type { AuthorPart, FieldMap, ProductionTarget } from './types.ts';
 
@@ -41,8 +43,9 @@ export const PRODUCTION_LOOKUPS_ENABLED = true;
  * Órgão e unidade do projeto pela janela de órgãos do Lattes (organ.ts).
  * Desligada: no teste ao vivo de 18/10/2026 o Lattes recebeu o envio com o
  * código e o texto do órgão novo e continuou mostrando o de antes, tanto
- * para uma unidade quanto para outro órgão. Falta ver se a própria página
- * consegue trocar o órgão na alteração.
+ * para uma unidade quanto para outro órgão. Em 27/10/2026 a própria página
+ * fez a troca no projeto de teste, com os mesmos campos, e o Lattes também
+ * manteve o de antes: ele não troca o órgão de um projeto que já existe.
  */
 export const PROJECT_ORGAN_ENABLED = false;
 
@@ -54,7 +57,8 @@ export interface ProductionRow {
   name: string;
 }
 
-export interface ProductionOp extends OpBase {
+/** A operação; os financiadores e as ligações de um projeto vêm de ProjectGridEdits. */
+export interface ProductionOp extends OpBase, ProjectGridEdits {
   /** Áreas do conhecimento antes e depois, quando a mudança é delas (item-lists.ts). */
   areas?: AreaList;
   /** Autores antes e depois, na ordem, quando a mudança é deles. */
@@ -63,7 +67,15 @@ export interface ProductionOp extends OpBase {
    * O depositante ou titular pessoa antes e depois (ProductionTarget.holders),
    * quando a mudança é dele: um nome só, ou vazio.
    */
-  holders?: { after: string; before: string };
+  holders?: {
+    after: string;
+    before: string;
+    /**
+     * O nome novo pode ser uma instituição, pela busca da janela de titulares
+     * (institution-holder.ts): só para uma extensão com 'titular-instituicao'.
+     */
+    institutions?: boolean;
+  };
   /** Palavras-chave antes e depois, na ordem, quando a mudança é delas. */
   keywords?: { after: string[]; before: string[] };
   kind: 'producao';
@@ -168,51 +180,27 @@ export function planProduction(
   const { item, target } = found;
   const organChange =
     target.organ !== undefined && change.element !== item.name && isOrganChange(change);
-  const byHand = organChange ? undefined : target.byHand?.[change.element];
+  // A natureza de um financiador vai pela linha dele na grade (financiador.ts).
+  const project = planProjectEdit(change, chain, item, target, siblings);
+  if (project && 'reason' in project) return project;
+  const byHand = organChange || project ? undefined : target.byHand?.[change.element];
   if (byHand) return { reason: byHand };
   // O campo que depende da própria parte (a data do histórico da patente).
-  const partMap = organChange ? undefined : target.partFields?.[change.element]?.(change, el, item);
+  const partMap =
+    organChange || project ? undefined : target.partFields?.[change.element]?.(change, el, item);
   if (partMap && 'reason' in partMap) return partMap;
-  // Título e ano do Lattes: os de antes, quando a própria mudança os troca.
-  const before = (child: string, attr: string) => {
-    const f = change.element === child ? change.fields.find((x) => x.attr === attr) : undefined;
-    if (f) return f.before;
-    // O filho pode estar mais fundo (o REGISTRO-OU-PATENTE fica dentro do
-    // detalhamento do software).
-    const find = (el: XElement): XElement | undefined => {
-      for (const c of childElements(el)) {
-        if (c.name === child) return c;
-        const deep = find(c);
-        if (deep) return deep;
-      }
-      return undefined;
-    };
-    const part = child === item.name ? item : find(item);
-    return (part && getAttr(part, attr)) ?? '';
-  };
-  const match = {
-    title: before(target.title.child, target.title.attr).trim(),
-    year: before(target.year.child, target.year.attr).trim(),
-  };
-  if (!match.title || !match.year) {
-    return { reason: 'O item não tem título ou ano para achar a linha no Lattes' };
-  }
+  const located = productionIdentity(change, item, target);
+  if ('reason' in located) return located;
+  const { listParams, match } = located;
   // As grades que o conector não monta (opaque.ts).
   const opaque = opaqueReason(target.opaqueGrids ?? [], item, change, siblings, chain[0]);
   if (opaque) return { reason: opaque };
-  const by = target.list.paramsBy;
-  const byValue = by && before(by.child, by.attr);
-  const listParam =
-    by && (typeof by.values === 'function' ? by.values(byValue ?? '') : by.values[byValue ?? '']);
-  if (by && listParam === undefined) {
-    return { reason: 'O item não diz em que lista do Lattes ele está' };
-  }
   const base = {
     expect: {},
     key: change.key,
     kind: 'producao' as const,
     label,
-    ...(by && listParam !== undefined ? { listParams: { [by.param]: listParam } } : {}),
+    ...(listParams ? { listParams } : {}),
     match,
     set: {},
     target: target.id,
@@ -223,6 +211,7 @@ export function planProduction(
     if ('reason' in planned) return planned;
     return { ...base, organ: planned.choice, rows: planned.rows };
   }
+  if (project) return { ...base, ...project };
 
   // A equipe do projeto: as pessoas num contêiner e com a marca de
   // coordenador, com as outras mudanças da fila na mesma grade (members.ts).
@@ -392,8 +381,7 @@ export function planProduction(
     lookups = planned.lookups;
     rows.push(...planned.rows);
   }
-  let holders: ProductionOp['holders'];
-  const holderKey = target.holders && `${target.holders.child}@${target.holders.attr}`;
+  const people: Partial<Pick<ProductionOp, 'holders'>> = {};
   const unknown: string[] = [];
   const unmapped: string[] = [];
   const manual = new Map<string, string[]>();
@@ -421,14 +409,14 @@ export function planProduction(
       });
       continue;
     }
-    // O depositante pessoa: a grade de depositantes, com um nome só (holders.ts).
-    if (key === holderKey) {
-      const value = planHolder(f);
-      if ('reason' in value) return value;
-      holders = value;
-      set.f_depositante_pessoa_l = value.after;
-      expect.f_depositante_pessoa_l = value.before;
-      rows.push({ ...value, label: f.label, name: 'f_depositante_pessoa_l' });
+    // Os depositantes e titulares: as grades deles (holders.ts, institution-holder.ts).
+    const holder = holderField(target, key, f);
+    if (holder) {
+      if ('reason' in holder) return holder;
+      people[holder.op] = holder.value;
+      set[holder.grid] = holder.value.after;
+      expect[holder.grid] = holder.value.before;
+      rows.push({ ...holder.value, label: f.label, name: holder.grid });
       continue;
     }
     const m = partMap?.fields[f.attr] ?? target.fields[key];
@@ -452,9 +440,18 @@ export function planProduction(
   }
   const left = fieldsLeft(unknown, manual, unmapped);
   if (left) return left;
+  for (const extra of partMap?.also ?? []) {
+    set[extra.field] = extra.after;
+    expect[extra.field] = extra.before;
+    rows.push({ after: extra.after, before: extra.before, label: extra.label, name: extra.field });
+  }
   if (rows.length === 0) return { reason: 'Nada a enviar' };
   // A natureza trocada no lugar: os ocultos limpos e a instituição e o curso
   // escolhidos de novo com o nível dela (nature.ts), que recusa se já há escolhas.
+  if (partMap?.lookups) {
+    if (lookups) return { reason: 'Troque o tipo num envio e a instituição ou o curso em outro' };
+    lookups = partMap.lookups;
+  }
   const swapped = planNatureSwap(target, change, item, set, expect, siblings, lookups);
   if (swapped && 'reason' in swapped) return swapped;
   if (swapped?.lookups) lookups = swapped.lookups;
@@ -463,7 +460,7 @@ export function planProduction(
     const [field, value] = when.split('=') as [string, string];
     if (set[field] === value) Object.assign(set, also);
   }
-  return { ...base, expect, ...(holders && { holders }), ...(lookups && { lookups }), rows, set };
+  return { ...base, expect, ...people, ...(lookups && { lookups }), rows, set };
 }
 
 /** Para conferir sem acento, caixa nem espaço nas pontas. */

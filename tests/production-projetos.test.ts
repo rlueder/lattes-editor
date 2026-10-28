@@ -2,9 +2,10 @@ import { readFileSync } from 'node:fs';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { applyOp } from '../src/bridge/apply.ts';
+import { applyOp, type LattesPort } from '../src/bridge/apply.ts';
 import { atuacaoByHand, vinculoByHand } from '../src/bridge/atuacao-by-hand.ts';
 import { planChanges, type PlanOptions } from '../src/bridge/plan.ts';
+import { type FunderEdit, funderValue } from '../src/bridge/production/financiador.ts';
 import { sameAuthors, withLeads } from '../src/bridge/production/members.ts';
 import { opaqueByHand, readOpaque } from '../src/bridge/production/opaque.ts';
 import type { ProductionOp } from '../src/bridge/production/plan.ts';
@@ -45,9 +46,11 @@ ${project('1', 'PESQUISA', 'Projeto de Exemplo')}
 ${project('2', 'EXTENSAO', 'Projeto de Extensão')}
 ${project('3', 'PESQUISA', 'Projeto Financiado', LINKS)}
 </ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO>
-</ATUACAO-PROFISSIONAL></ATUACOES-PROFISSIONAIS></DADOS-GERAIS></CURRICULO-VITAE>`;
+</ATUACAO-PROFISSIONAL></ATUACOES-PROFISSIONAIS></DADOS-GERAIS>
+<PRODUCAO-TECNICA><SOFTWARE SEQUENCIA-PRODUCAO="39"/><TRABALHO-TECNICO SEQUENCIA-PRODUCAO="34"/><TRABALHO-TECNICO SEQUENCIA-PRODUCAO="40"/></PRODUCAO-TECNICA>
+<OUTRA-PRODUCAO><ORIENTACOES-CONCLUIDAS><OUTRAS-ORIENTACOES-CONCLUIDAS SEQUENCIA-PRODUCAO="41"/></ORIENTACOES-CONCLUIDAS></OUTRA-PRODUCAO></CURRICULO-VITAE>`;
 
-const ON: PlanOptions = { editProduction: true };
+const ON: PlanOptions = { editFunders: true, editProduction: true };
 
 const projectOf = (root: XElement, seq: string) =>
   findIn(
@@ -212,19 +215,13 @@ describe('projeto: plano', () => {
     });
   });
 
-  it('projeto com financiador e produções ligadas vai; o financiador fica à mão', () => {
+  it('projeto com financiador e produções ligadas vai', () => {
     expect(onlyOp(setProject('3', 'NOME-DO-PROJETO', 'Outro'))).toMatchObject({
       set: { f_titulo: 'Outro' },
     });
-    expect(
-      reasonOf((root) => {
-        const f = findIn(root, (el) => el.name === 'FINANCIADOR-DO-PROJETO')!;
-        setAttr(f, 'NOME-INSTITUICAO', 'Outra agência');
-      })[0],
-    ).toMatch(/Financiador vai à mão/);
   });
 
-  it('mexer nas produções ou orientações ligadas fica à mão, e o resto do item junto', () => {
+  it('as ligações vão pela grade; a orientação pelo projeto antigo e o tirar tudo ficam à mão', () => {
     const prods = (root: XElement) =>
       childElements(projectOf(root, '3'), 'PRODUCOES-CT-DO-PROJETO')[0]!;
     const removeOne = (root: XElement) => {
@@ -243,19 +240,50 @@ describe('projeto: plano', () => {
           element('ORIENTACAO', { 'SEQUENCIA-ORIENTACAO': '7', 'TITULO-ORIENTACAO': 'Tese' }),
         ]),
       );
-    for (const edit of [removeOne, removeAll, retitle]) {
-      expect(reasonOf(edit)[0]).toMatch(/Produção do projeto vai à mão/);
-      // Com o título trocado na mesma fila: nada vai, nem o título.
-      expect(
-        reasonOf((root) => {
-          edit(root);
-          setProject('3', 'NOME-DO-PROJETO', 'Outro')(root);
-        }),
-      ).toContain(
-        'O item tem mudança em produções ligadas, que vai à mão, e o envio levaria de volta as do Lattes; alterar este item vai à mão junto',
+    // O título de uma produção ligada é do Lattes: fica só para ler, e não segura o resto.
+    expect(reasonOf(retitle)[0]).toMatch(/^Dados que o próprio Lattes gera: o título/);
+    expect(
+      planAfter((root) => {
+        retitle(root);
+        setProject('3', 'NOME-DO-PROJETO', 'Outro')(root);
+      }).ops,
+    ).toHaveLength(1);
+    // Tirar ou incluir uma ligação vai pela grade (project-links.ts), e não segura o resto.
+    expect(planAfter(removeOne).ops[0]).toMatchObject({
+      links: { producoes: { after: ['39'], before: ['39', '34'] } },
+    });
+    const addTwo = (root: XElement) =>
+      prods(root).children.push(
+        element('PRODUCAO-CT-DO-PROJETO', { 'SEQUENCIA-PRODUCAO-CT': '40' }),
+        element('PRODUCAO-CT-DO-PROJETO', { 'SEQUENCIA-PRODUCAO-CT': '41' }),
       );
-    }
-    expect(reasonOf(addOrientacao)[0]).toMatch(/Orientação do projeto vai à mão/);
+    // Duas na fila viram a mesma operação: produção e orientação, cada uma na sua grade.
+    const both = planAfter(addTwo).ops;
+    expect(both).toHaveLength(2);
+    expect(both[0]).toMatchObject({
+      links: {
+        orientacoes: { after: ['41'], before: [] },
+        producoes: { after: ['34', '39', '40'], before: ['34', '39'] },
+      },
+    });
+    expect((both[1] as ProductionOp).links).toEqual((both[0] as ProductionOp).links);
+    expect(
+      planAfter((root) => {
+        removeOne(root);
+        setProject('3', 'NOME-DO-PROJETO', 'Outro')(root);
+      }).ops,
+    ).toHaveLength(2);
+    expect(reasonOf(removeAll)[0]).toMatch(/tire uma de cada vez/);
+    expect(
+      reasonOf((root) => {
+        prods(root).children.push(
+          element('PRODUCAO-CT-DO-PROJETO', { 'SEQUENCIA-PRODUCAO-CT': '99' }),
+        );
+      })[0],
+    ).toMatch(/item ligado 99 não está no currículo/);
+    expect(reasonOf(addOrientacao)[0]).toMatch(
+      /as orientações ligadas pela página voltam em Produções C&T/,
+    );
     expect(
       reasonOf((root) => {
         addOrientacao(root);
@@ -270,7 +298,7 @@ describe('projeto: plano', () => {
         removeOne(root);
         setProject('1', 'NOME-DO-PROJETO', 'Outro')(root);
       }).ops,
-    ).toHaveLength(1);
+    ).toHaveLength(2);
   });
 
   it('desligada, o projeto fica à mão', () => {
@@ -590,7 +618,7 @@ describe('projeto no Lattes simulado', () => {
     const op = onlyOp(setProject('3', 'NOME-DO-PROJETO', 'Projeto Revisto'));
     expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
     expect(postsOf(lattes)[0]!.fields).toMatchObject({
-      f_inst_l: '000100000001|0000;N;|026|10,00|A|@',
+      f_inst_l: 'V000100000001|0000;N;|026|10,00|A|@',
       f_orientacoes_d: '',
       f_orientacoes_l: '',
       f_producoes_d: '34|39',
@@ -811,5 +839,192 @@ describe('atuação, atividades e áreas: o motivo de ficar à mão', () => {
       /enquadramento da lista/,
     );
     expect(vinculoByHand(change('VINCULOS', ['ANO-FIM']))).toBeUndefined();
+  });
+});
+
+describe('projeto: financiador', () => {
+  const funderOf = (root: XElement) =>
+    findIn(projectOf(root, '3'), (el) => el.name === 'FINANCIADOR-DO-PROJETO')!;
+  const set = (attr: string, value: string) => (root: XElement) =>
+    setAttr(funderOf(root), attr, value);
+  const USP = 'Universidade de São Paulo';
+
+  it('a natureza e a instituição vão pela linha; o código e o vazio ficam à mão', () => {
+    expect(onlyOp(set('NATUREZA', 'REMUNERACAO'))).toMatchObject({
+      funder: { code: '000100000001', nature: { after: 'R', before: 'A' } },
+      rows: [{ after: 'Remuneração', name: 'f_inst_l' }],
+    });
+    expect(onlyOp(set('NOME-INSTITUICAO', USP))).toMatchObject({
+      funder: { institution: { after: USP, before: 'Agência' } },
+      rows: [{ after: USP, before: 'Agência' }],
+    });
+    expect(reasonOf(set('NATUREZA', 'NAO_INFORMADO'))[0]).toMatch(/o Lattes pede Auxílio/);
+    expect(reasonOf(set('NOME-INSTITUICAO', ' '))[0]).toMatch(/pede a instituição/);
+    expect(reasonOf(set('CODIGO-INSTITUICAO', '9'))[0]).toMatch(/sai da busca do Lattes/);
+    // A troca no financiador não segura outra mudança do projeto.
+    expect(
+      planAfter((root) => {
+        set('NATUREZA', 'BOLSA')(root);
+        setProject('3', 'NOME-DO-PROJETO', 'Outro')(root);
+      }).ops,
+    ).toHaveLength(2);
+  });
+
+  it('a linha da página real: o código com a letra, a busca pelo nome', async () => {
+    const html = `<table id="grid2"><tbody> <tr> <td>CNPq<span id="cod_inst_aux">V002200000000</span></td> <td>1234<span>1234;N;</span></td> <td>R$ 100,00<span>026|100,00</span></td> <td>Bolsa<span>B</span></td> <td></td> </tr> </tbody></table>`;
+    const search = `<a onclick="seleciona('V002200000000','Conselho Nacional de Desenvolvimento Científico e Tecnológico','CNPq')"></a><a onclick="seleciona('VK71K00000000','CONSELHO NACIONAL DE DESENVOLVIMENTO CIENTIFICO E TECNOLOGICO-CNPQ','X')"></a><a onclick="seleciona('VJJJ600000008','Fundação de Exemplo','FE')"></a>`;
+    const posts: string[] = [];
+    const port = {
+      post: async (proc: string, body: string) => {
+        posts.push(`${proc} ${body}`);
+        return search;
+      },
+    } as unknown as LattesPort;
+    const path = 'PKG_PROJETO.form?f_cod=K0000000A0&F_SEQ_ATIV=2&F_SEQ_FUNCAO=3&F_SEQ_PROJ=1';
+    const grid = PRODUCTION_TARGETS.find((t) => t.id === 'projeto')!.opaqueGrids!;
+    const value = (edit: FunderEdit, page = html) => funderValue(port, path, page, grid, edit);
+    const code = '002200000000';
+    expect(await value({ code, nature: { after: 'C', before: 'B' } })).toEqual({
+      field: 'f_inst_l',
+      value: 'V002200000000|1234;N;|026|100,00|C|@',
+    });
+    expect(
+      await value({ code, institution: { after: 'Fundação de Exemplo', before: 'CNPq' } }),
+    ).toEqual({ field: 'f_inst_l', value: 'VJJJ600000008|1234;N;|026|100,00|B|@' });
+    expect(posts.at(-1)).toBe(
+      'PKG_PROJETO.PP_LISTA_INST F_CTR=C&F_COD=K0000000A0&F_PGM=INSTFINANC&F_COD_INST=&F_SEQ_FUNCAO=3&F_SEQ_ATIV=2&F_SEQ_PROJ=1&f_nome=Funda%E7%E3o+de+Exemplo',
+    );
+    // A busca sem uma instituição de mesmo nome, ou com duas, não envia.
+    expect(await value({ code, institution: { after: 'Conselho', before: 'CNPq' } })).toMatchObject(
+      { status: 'erro' },
+    );
+    // Já como o editor quer: pelo código novo, numa segunda vez.
+    expect(
+      await value(
+        { code: 'OUTRO', institution: { after: 'Fundação de Exemplo', before: 'x' } },
+        html.replace('V002200000000', 'VJJJ600000008'),
+      ),
+    ).toMatchObject({ status: 'conferido' });
+    expect(await value({ code, nature: { after: 'B', before: 'A' } })).toMatchObject({
+      status: 'conferido',
+    });
+    expect(await value({ code, nature: { after: 'A', before: 'C' } })).toMatchObject({
+      status: 'divergente',
+    });
+    expect(await value({ code: 'OUTRO', nature: { after: 'A', before: 'B' } })).toMatchObject({
+      status: 'divergente',
+    });
+    expect(await value({ code, nature: { after: 'A', before: 'B' } }, '')).toMatchObject({
+      status: 'divergente',
+    });
+  });
+
+  it('no Lattes simulado: a natureza e a instituição vão, e a releitura confere a grade', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp((root) => {
+      set('NATUREZA', 'BOLSA')(root);
+      set('NOME-INSTITUICAO', USP)(root);
+    });
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes).at(-1)!.fields.f_inst_l).toBe('V000000000002|0000;N;|026|10,00|B|@');
+    const saved = funderOf(lattes.state.root);
+    expect(getAttr(saved, 'NATUREZA')).toBe('BOLSA');
+    expect(getAttr(saved, 'NOME-INSTITUICAO')).toBe(USP);
+    expect(getAttr(saved, 'CODIGO-INSTITUICAO')).toBe('000000000002');
+    // De novo: o Lattes já está assim, e nada mais vai ao formulário.
+    const sent = postsOf(lattes).filter((p) => p.proc === 'PKG_PROJETO.FORM').length;
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes).filter((p) => p.proc === 'PKG_PROJETO.FORM')).toHaveLength(sent);
+  });
+
+  it('o Lattes com outra natureza, ou a instituição fora da busca: nada vai', async () => {
+    const lattes = await lattesFor();
+    setAttr(funderOf(lattes.state.root), 'NATUREZA', 'REMUNERACAO');
+    expect(await applyOp(onlyOp(set('NATUREZA', 'BOLSA')), lattes.port)).toMatchObject({
+      status: 'divergente',
+    });
+    expect(
+      await applyOp(onlyOp(set('NOME-INSTITUICAO', 'Instituição Inexistente')), lattes.port),
+    ).toMatchObject({ status: 'erro' });
+    expect(postsOf(lattes).filter((p) => p.proc === 'PKG_PROJETO.FORM')).toEqual([]);
+  });
+});
+
+describe('projeto: produções e orientações ligadas no Lattes simulado', () => {
+  it('tira uma ligação e inclui outra, e a releitura confere as duas grades', async () => {
+    const lattes = await lattesFor();
+    const prods = (root: XElement) =>
+      childElements(projectOf(root, '3'), 'PRODUCOES-CT-DO-PROJETO')[0]!;
+    const plan = planAfter((root) => {
+      const c = prods(root);
+      c.children = childElements(c).slice(1);
+      c.children.push(element('PRODUCAO-CT-DO-PROJETO', { 'SEQUENCIA-PRODUCAO-CT': '41' }));
+    });
+    expect(plan.unsupported).toEqual([]);
+    expect(await applyOp(plan.ops[0]!, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes).at(-1)!.fields).toMatchObject({
+      f_orientacoes_d: '41',
+      f_orientacoes_l: '41@',
+      f_producoes_d: '39',
+      f_producoes_l: '39@',
+    });
+    expect(
+      childElements(prods(lattes.state.root)).map((p) => getAttr(p, 'SEQUENCIA-PRODUCAO-CT')),
+    ).toEqual(['39', '41']);
+    // A segunda operação da mesma fila acha o Lattes já assim.
+    const posts = postsOf(lattes).length;
+    expect(await applyOp(plan.ops[1]!, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes)).toHaveLength(posts);
+  });
+});
+
+describe('projeto: incluir e tirar financiadores', () => {
+  const funders = (root: XElement) =>
+    childElements(projectOf(root, '3'), 'FINANCIADORES-DO-PROJETO')[0]!;
+
+  it('tirar deixa a linha de fora; incluir acha a instituição pela busca', async () => {
+    const lattes = await lattesFor();
+    const add = planAfter((root) =>
+      funders(root).children.push(
+        element('FINANCIADOR-DO-PROJETO', {
+          'CODIGO-INSTITUICAO': '',
+          NATUREZA: 'BOLSA',
+          'NOME-INSTITUICAO': 'Universidade de São Paulo',
+          'SEQUENCIA-FINANCIADOR': '2',
+        }),
+      ),
+    );
+    expect(add.unsupported).toEqual([]);
+    expect(add.ops[0]).toMatchObject({
+      funders: { add: [{ letter: 'B', name: 'Universidade de São Paulo' }], remove: [] },
+    });
+    expect(await applyOp(add.ops[0]!, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes).at(-1)!.fields.f_inst_l).toBe(
+      'V000100000001|0000;N;|026|10,00|A|@V000000000002|;N;|||B|@',
+    );
+    expect(
+      childElements(funders(lattes.state.root)).map((f) => getAttr(f, 'NOME-INSTITUICAO')),
+    ).toEqual(['Agência', 'Universidade de São Paulo']);
+
+    const remove = planAfter((root) => {
+      funders(root).children = [];
+      funders(root).children.push(element('FINANCIADOR-DO-PROJETO', {}));
+    });
+    expect(remove.ops[0]).toMatchObject({ funders: { remove: ['000100000001'] } });
+    expect(await applyOp(remove.ops[0]!, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes).at(-1)!.fields.f_inst_l).toBe('V000000000002|;N;|||B|@');
+  });
+
+  it('natureza fora da lista, sem instituição ou tirar todos: à mão', () => {
+    const reason = (attrs: Record<string, string>) =>
+      reasonOf((root) => funders(root).children.push(element('FINANCIADOR-DO-PROJETO', attrs)))[0];
+    expect(reason({ NATUREZA: 'NAO_INFORMADO', 'NOME-INSTITUICAO': 'X' })).toMatch(/o Lattes pede/);
+    expect(reason({ NATUREZA: 'BOLSA' })).toMatch(/sem a instituição/);
+    expect(
+      reasonOf((root) => {
+        const p = projectOf(root, '3');
+        p.children = p.children.filter((c) => c !== funders(root));
+      })[0],
+    ).toMatch(/um de cada vez/);
   });
 });

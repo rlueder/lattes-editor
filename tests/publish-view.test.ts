@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { PUBLISH_ENABLED } from '../src/bridge/publish.ts';
 import {
   canReadSendScreen,
+  canSendCv,
   checksLine,
   initialForm,
   locksSending,
@@ -59,6 +60,8 @@ describe('painel Enviar ao CNPq (LAT-54)', () => {
     });
     const attempt = { at: 1000, id: 'p1' };
     expect(publishStatus(attempt, undefined, 2000)).toMatchObject({ busy: true, done: false });
+    // O tempo corrido, para quem espera ver que o envio segue.
+    expect(publishStatus(attempt, undefined, attempt.at + 65_000).text).toMatch(/\(65 s\)/);
     const other = { at: 3000, id: 'p0', result: { outcome: 'publicado' as const } };
     expect(publishStatus(attempt, other, 3000).busy).toBe(true);
     const done = { at: 3000, id: 'p1', result: { outcome: 'publicado' as const } };
@@ -129,11 +132,15 @@ describe('painel Enviar ao CNPq (LAT-54)', () => {
     expect(sendScreenProblem({ reason: 'erro' })).toMatch(/não conseguiu/);
   });
 
-  it('o envio pelo editor fica desligado, menos com ?publicar em desenvolvimento', () => {
-    expect(PUBLISH_ENABLED).toBe(false);
-    expect(publishUiEnabled('', true)).toBe(false);
-    expect(publishUiEnabled('?publicar', false)).toBe(false);
+  it('o envio pelo editor está disponível sem parâmetro de desenvolvimento', () => {
+    expect(PUBLISH_ENABLED).toBe(true);
+    expect(publishUiEnabled('', false)).toBe(true);
+    expect(publishUiEnabled('', true)).toBe(true);
+    expect(publishUiEnabled('?publicar', false)).toBe(true);
     expect(publishUiEnabled('?exemplo=demo&publicar', true)).toBe(true);
+    expect(canSendCv(['enviar-cnpq'])).toBe(false);
+    expect(canSendCv(['enviar-cnpq', 'publicar-cnpq'])).toBe(true);
+    expect(canSendCv([])).toBe(false);
   });
 
   it('a linha da conferência', () => {

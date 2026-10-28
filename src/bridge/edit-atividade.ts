@@ -23,7 +23,9 @@ import type { Change } from '../model/changes.ts';
 import { foldText } from '../model/fold-text.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
+import { type ActivityRows, rowsToSend } from './atividade-grade.ts';
 import { getChecked, sameCode, Stop } from './create-shared.ts';
+import { courseLevelOf, TEACHING_LEVELS, teachingCourse } from './ensino-curso.ts';
 import {
   encodeLatin1Form,
   pairValue,
@@ -32,6 +34,7 @@ import {
   withScriptValues,
 } from './form.ts';
 import { findLinks, isLogonPage } from './lattes-html.ts';
+import { fillLinhas, type LinhaDetails } from './linha-detalhes.ts';
 import { ACTIVITY_ORGAN_ELEMENTS, activityOrgansPath } from './organ-windows.ts';
 import type { FieldValues, OpBase } from './plan.ts';
 import { readProvider } from './production/grids.ts';
@@ -75,13 +78,21 @@ export const ACTIVITY_TYPES: Record<
 };
 
 export interface AtividadeOp extends OpBase {
+  /** A grade inteira, com linhas incluídas, tiradas ou renomeadas (atividade-grade.ts). */
+  activityRows?: ActivityRows;
   codInst?: string;
+  /** O curso novo do ensino, pelo código, achado na lista de cursos ao gravar (ensino-curso.ts). */
+  course?: { code: string };
   /** A descrição antes e depois, quando a mudança é dela (uma linha na grade). */
   description?: { after: string; before: string };
   kind: 'atividade';
+  /** As linhas de pesquisa novas com objetivos e o resto, pelo formulário delas depois. */
+  lines?: LinhaDetails[];
   natur: string;
   /** O órgão ou a unidade novos, pela janela de órgãos da atividade (organ.ts). */
   organ?: OrganChoice;
+  /** Como a grade se mostra antes do envio (field-labels.ts). */
+  rows?: { after: string; before: string; label: string; name: string }[];
   seqAtiv: string;
   seqFuncao: string;
 }
@@ -97,6 +108,48 @@ const PERIOD: Record<string, [string, (v: string) => string | undefined]> = {
 };
 
 const ORGAN = new Set(['CODIGO-ORGAO', 'NOME-ORGAO', 'CODIGO-UNIDADE', 'NOME-UNIDADE']);
+
+/** O nível e o curso do ensino, que vão pela lista de cursos (ensino-curso.ts). */
+const TEACHING = new Set(['TIPO-ENSINO', 'CODIGO-CURSO', 'NOME-CURSO']);
+
+/**
+ * O nível (f_nivel) e o curso do ensino: o curso só com o código novo da
+ * lista, e obrigatório nos níveis que têm curso, como o check() da página.
+ */
+function planTeaching(
+  change: Change,
+  el: XElement,
+): { course?: { code: string }; expect: FieldValues; set: FieldValues } | { reason: string } {
+  const field = (attr: string) => change.fields.find((f) => f.attr === attr);
+  const now = (attr: string) => getAttr(el, attr) ?? '';
+  const set: FieldValues = {};
+  const expect: FieldValues = {};
+  const tipo = field('TIPO-ENSINO');
+  if (tipo) {
+    const [after, before] = [TEACHING_LEVELS[tipo.after], TEACHING_LEVELS[tipo.before]];
+    if (!after || !before)
+      return { reason: 'Valor sem correspondência no formulário do Lattes: Tipo de ensino' };
+    set.f_nivel = after;
+    expect.f_nivel = before;
+  }
+  const code = field('CODIGO-CURSO');
+  if (field('NOME-CURSO') && !code) {
+    return { reason: 'Curso: escolha pela lista do Lattes, que grava o código junto' };
+  }
+  const needs = courseLevelOf(now('TIPO-ENSINO')) !== undefined;
+  if (code || tipo) {
+    if (needs && !now('CODIGO-CURSO')) {
+      return { reason: 'O Lattes exige o curso neste nível de ensino: escolha na lista do Lattes' };
+    }
+    if (!needs && now('CODIGO-CURSO')) {
+      return { reason: 'O Lattes não aceita curso neste nível de ensino' };
+    }
+  }
+  if (code) expect.f_curso = field('NOME-CURSO')?.before ?? now('NOME-CURSO');
+  // Com o nível trocado, o curso vai de novo: o da lista do nível novo.
+  const course = (code || tipo) && needs ? { code: now('CODIGO-CURSO') } : undefined;
+  return { ...(course ? { course } : {}), expect, set };
+}
 
 /**
  * O órgão ou a unidade da atividade, que o XML guarda na própria atividade e
@@ -179,6 +232,7 @@ export function planAtividade(
       set[field] = after;
       expect[field] = before;
     } else if (ORGAN.has(f.attr)) continue;
+    else if (type.natur === '4' && TEACHING.has(f.attr)) continue;
     else if (type.description === f.attr) {
       // O check() da página exige ao menos uma descrição.
       if (!f.after.trim()) return { reason: `O Lattes exige a descrição da atividade: ${f.label}` };
@@ -187,6 +241,13 @@ export function planAtividade(
   }
   if (lacks.length > 0) {
     return { reason: `O formulário de atividade do Lattes não tem: ${lacks.join(', ')}` };
+  }
+  // O nível e o curso do ensino (ensino-curso.ts).
+  const teaching = type.natur === '4' ? planTeaching(change, el) : undefined;
+  if (teaching && 'reason' in teaching) return teaching;
+  if (teaching) {
+    Object.assign(set, teaching.set);
+    Object.assign(expect, teaching.expect);
   }
   // O período anterior pede o fim; o atual, nenhum (o check() da página).
   if (set.f_status === 'S') Object.assign(set, { f_ano_fim: '', f_mes_fim: '' });
@@ -199,6 +260,7 @@ export function planAtividade(
     label,
     natur: type.natur,
     ...(organ ? { organ } : {}),
+    ...(teaching?.course ? { course: teaching.course } : {}),
     seqAtiv,
     seqFuncao,
     set,
@@ -227,7 +289,10 @@ export function specFromRows(rows: readonly Row[]): string {
 
 const same = (a: string, b: string) => foldText(a.trim()) === foldText(b.trim());
 
-async function locate(op: AtividadeOp, port: LattesPort): Promise<string> {
+export async function locateAtividade(
+  op: Pick<AtividadeOp, 'codInst' | 'natur' | 'seqAtiv' | 'seqFuncao'>,
+  port: LattesPort,
+): Promise<string> {
   const menu = await port.menuHtml();
   const lista = findLinks(menu, 'pkg_ativ.lista')[0];
   if (!lista) throw new Stop('erro', 'Atuação profissional não encontrada no menu do Lattes');
@@ -265,7 +330,7 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
   });
   let posted = false;
   try {
-    const path = await locate(op, port);
+    const path = await locateAtividade(op, port);
     const html = await getChecked(port, path);
     const controls = withScriptValues(html, port.readForm(html, 'GN_ATIV_CARGO'));
     const rows = rowsOf(html);
@@ -281,6 +346,14 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
     );
     // A descrição: a única linha da grade, no lugar dela, com o mesmo c.
     let wanted = rows;
+    let exc = '';
+    if (op.activityRows) {
+      const grid = rowsToSend(rows, op.activityRows);
+      if (grid === 'divergente') wrong.push(['linhas da atividade', '']);
+      else if (grid === 'feito' && Object.keys(op.set).length === 0) {
+        return await withLines(op, port, result('conferido', 'O Lattes já estava assim'));
+      } else if (grid !== 'feito') ({ exc, wanted } = grid);
+    }
     if (op.description) {
       if (rows.length > 1) {
         return result(
@@ -300,6 +373,17 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
     }
     // O órgão novo, pela janela de órgãos da atividade, só com GET.
     let chosen: FieldValues = {};
+    if (op.course) {
+      const course = await teachingCourse(
+        port,
+        pairValue(pairs, 'f_cod') ?? '',
+        pairValue(pairs, 'f_codinst') ?? '',
+        op.set.f_nivel ?? pairValue(pairs, 'f_nivel') ?? '',
+        op.course.code,
+      );
+      if ('reason' in course) return result('erro', course.reason);
+      chosen = course.set;
+    }
     let organShown: string | undefined;
     let unitName: string | undefined;
     if (op.organ) {
@@ -309,7 +393,7 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
         path: activityOrgansPath,
       });
       if ('status' in resolved) return result(resolved.status, resolved.detail);
-      chosen = resolved.set;
+      chosen = { ...chosen, ...resolved.set };
       organShown = resolved.shown;
       if (op.organ.parent) unitName = resolved.name;
     }
@@ -321,7 +405,7 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
     const response = await port.post(
       action,
       encodeLatin1Form(
-        setPairs(pairs, { ...op.set, ...chosen, f_espec_l: specFromRows(wanted), f_exc: '' }),
+        setPairs(pairs, { ...op.set, ...chosen, f_espec_l: specFromRows(wanted), f_exc: exc }),
       ),
     );
     if (isLogonPage(response)) return result('sessao', 'A sessão do Lattes expirou; entre de novo');
@@ -338,6 +422,10 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
     const notSaved = Object.entries(op.set)
       .filter(([f, v]) => !same(pairValue(afterPairs, f) ?? '', v ?? ''))
       .map(([f]) => f);
+    // O curso: o texto que a página mostra em f_curso.
+    if (op.course && !same(pairValue(afterPairs, 'f_curso') ?? '', chosen.f_curso ?? '')) {
+      notSaved.push('curso');
+    }
     if (afterRows.length !== wanted.length || afterRows.some((r, i) => !same(r.l, wanted[i]!.l))) {
       notSaved.push('descrição');
     }
@@ -361,12 +449,30 @@ export async function applyAtividade(op: AtividadeOp, port: LattesPort): Promise
     if (notSaved.length > 0) {
       return result('divergente', `O Lattes não gravou: ${notSaved.join(', ')}. Confira no Lattes`);
     }
-    return result('conferido', 'Gravado e conferido no Lattes');
+    return await withLines(op, port, result('conferido', 'Gravado e conferido no Lattes'));
   } catch (err) {
     if (err instanceof Stop) return result(err.status, err.message);
     const why = err instanceof Error ? err.message : String(err);
     return posted
       ? result('divergente', `Falha no meio do envio (${why}); confira no Lattes`)
       : result('erro', why);
+  }
+}
+
+/** Depois da grade, o formulário de cada linha de pesquisa nova (linha-detalhes.ts). */
+async function withLines(op: AtividadeOp, port: LattesPort, done: OpResult): Promise<OpResult> {
+  if (!op.lines?.length) return done;
+  try {
+    const problems = await fillLinhas(port, op, op.lines);
+    if (problems.length === 0) return done;
+    return {
+      ...done,
+      detail: `A grade gravou, mas a linha de pesquisa não voltou como foi: ${problems.join(', ')}. Confira no Lattes`,
+      status: 'divergente',
+    };
+  } catch (err) {
+    if (err instanceof Stop)
+      return { ...done, detail: `A grade gravou, mas ${err.message}`, status: err.status };
+    throw err;
   }
 }

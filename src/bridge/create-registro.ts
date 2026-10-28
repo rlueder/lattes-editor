@@ -25,20 +25,18 @@
 
 import type { Change } from '../model/changes.ts';
 import { foldText } from '../model/fold-text.ts';
-import { readAuthors } from '../model/production.ts';
 import { childElements, firstChild, getAttr, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
-import {
-  NO_OWNER_NAME,
-  ownerAuthor,
-  ownerGridRow,
-  type OwnerNames,
-  ownerNamesOf,
-  REGISTRY_AUTHOR_KEYS,
-  serializeGrid,
-} from './author-grid.ts';
+import { NO_OWNER_NAME, type OwnerNames, ownerNamesOf } from './author-grid.ts';
 import type { FormSpec } from './contract.ts';
 import { CREATE_FIELD_LABELS } from './create-labels.ts';
+import {
+  EXTRA_PARTS,
+  planRegistroExtras,
+  registroCheck,
+  type RegistroExtras,
+  registroExtrasSet,
+} from './create-registro-extras.ts';
 import {
   ATTR_LABELS,
   DATE_FIELDS,
@@ -58,18 +56,20 @@ import {
   filledChildren,
   getChecked,
   hidden,
+  innovationFields,
+  leftOf,
   type Mapper,
   maybeCreated,
   overLimit,
   type Planned,
   radio,
-  readBack,
   readBackProblem,
   readPairs,
   reasonFrom,
   type Result,
   same,
   select,
+  type SendExtras,
   SESSION,
   Stop,
   text,
@@ -82,9 +82,13 @@ import type { FieldValues } from './plan.ts';
 export interface CreateRegistroOp {
   /** Nenhum valor anterior: o item não existe no Lattes. */
   expect: FieldValues;
+  /** Autores, informações adicionais, grades e depositante (create-registro-extras.ts). */
+  extras?: RegistroExtras;
   key: string;
   kind: 'criar-registro';
   label: string;
+  /** Os campos que o formulário de inclusão não tem e ficam fora (create-shared.ts). */
+  left?: string[];
   /** O nome completo e as citações do currículo, para conferir a linha de autor do menu. */
   owner: OwnerNames;
   set: FieldValues;
@@ -189,7 +193,8 @@ const BRAND_NATURES = ['Figurativa', 'Nominativa', 'Mista', 'Tridimensional'];
 const brandNature: Mapper = (v) => BRAND_NATURES.find((n) => foldText(n) === foldText(v));
 
 /** Só "não" vai sem texto: com "sim", o formulário pede o potencial, que o XML não tem. */
-const noInnovation: Mapper = (v) => (v === 'NAO' ? 'N' : undefined);
+/** Com Sim, o formulário pede o texto do potencial, escrito no editor (innovationFields). */
+const noInnovation: Mapper = (v) => ({ NAO: 'N', SIM: 'S' })[v];
 
 const country: Mapper = (v) => countryCode(v);
 
@@ -231,16 +236,6 @@ const SYSTEM = new Set(['FORMATO-DATA-DEPOSITO-PCT', 'FORMATO-DATA-PEDIDO']);
 const labelOf = (change: Change, attr: string) =>
   change.fields.find((f) => f.attr === attr)?.label ?? ATTR_LABELS[attr] ?? attr;
 
-/** O dono do currículo, pelo ID Lattes ou, sem ele, pelo nome. */
-function isOwner(author: { lattesId: string; name: string }, root: XElement | undefined) {
-  if (!root) return false;
-  const ownerId = getAttr(root, 'NUMERO-IDENTIFICADOR') ?? '';
-  if (ownerId && author.lattesId) return ownerId === author.lattesId;
-  const dg = firstChild(root, 'DADOS-GERAIS');
-  const ownerName = foldText((dg && getAttr(dg, 'NOME-COMPLETO')) ?? '');
-  return ownerName !== '' && ownerName === foldText(author.name);
-}
-
 /** O registro que a mudança traz: o próprio item, ou o contêiner novo com um só. */
 export function registryItem(el: XElement): XElement | undefined {
   if (REGISTRY_TYPES[el.name]) return el;
@@ -258,19 +253,17 @@ export function registroFields(
   change: Change,
   chain: XElement[],
   item: XElement,
-): { reason: string } | { set: FieldValues; tipo: string } {
+  sendExtras: SendExtras = {},
+):
+  { reason: string } | { extras: RegistroExtras; left?: string[]; set: FieldValues; tipo: string } {
   const type = REGISTRY_TYPES[item.name]!;
   const basics = childElements(item).find((c) => c.name.startsWith('DADOS-BASICOS-'));
   const detail = childElements(item).find((c) => c.name.startsWith('DETALHAMENTO-'));
   const registry = detail && firstChild(detail, 'REGISTRO-OU-PATENTE');
-  const authors = readAuthors(item);
-  if (authors.length > 1 || authors.some((a) => !isOwner(a, chain[0]))) {
-    return { reason: 'Autores além de você ainda vão à mão: o conector não monta a grade' };
-  }
-  const extra = filledChildren(item, [basics?.name ?? '', detail?.name ?? '', 'AUTORES']);
-  if (extra.length > 0) {
-    return { reason: 'Palavras-chave, áreas, setores e informações adicionais ainda vão à mão' };
-  }
+  const extra = filledChildren(item, [basics?.name ?? '', detail?.name ?? '', ...EXTRA_PARTS]);
+  const depositor = (registry && getAttr(registry, 'NOME-DO-DEPOSITANTE')) ?? '';
+  const extras = planRegistroExtras(item, chain[0], depositor);
+  if ('reason' in extras) return extras;
   const set: FieldValues = {};
   const missing: string[] = [];
   const wrong: string[] = [];
@@ -279,6 +272,8 @@ export function registroFields(
   const map = (el: XElement | undefined, table: Record<string, [string, Mapper]>) => {
     for (const { name, value } of el?.attrs ?? []) {
       if (!value.trim() || SYSTEM.has(name)) continue;
+      // O depositante vai pela grade dele (create-registro-extras.ts).
+      if (name === 'NOME-DO-DEPOSITANTE') continue;
       // Relevância "não" é o padrão; "sim" não tem campo no formulário do registro.
       if (name === 'FLAG-RELEVANCIA' && value === 'NAO') continue;
       if (value === 'NAO_INFORMADO') continue;
@@ -315,8 +310,10 @@ export function registroFields(
   map(basics, BASICS);
   map(detail, DETAIL);
   map(registry, REGISTRY);
-  const reason = reasonFrom(missing, wrong);
+  const reason = reasonFrom(wrong);
   if (reason) return { reason };
+  const innovation = innovationFields(set, chain[0], basics, sendExtras);
+  if (innovation) return innovation;
   if (grid.length > 0) set.f_dados_grid_datas = patentDateGrid(grid);
   // check() de todos os tipos: título, número, instituição de registro e país.
   if (!set.f_titulo || !set.f_cod_reg || !set.f_inst || !set.f_pais) {
@@ -329,7 +326,8 @@ export function registroFields(
   if (type.tipo === 'PP' && !grid.some((g) => g.code === '1' || g.code === '2')) {
     return { reason: 'O Lattes exige a data de depósito ou a de depósito PCT' };
   }
-  return { set, tipo: type.tipo };
+  const left = [...missing, ...extra.map((c) => labelOf(change, c.name))];
+  return { extras, ...leftOf(left), set, tipo: type.tipo };
 }
 
 /**
@@ -344,10 +342,12 @@ export function planCreateRegistro(
   chain: XElement[],
   item: XElement,
   label: string,
+  extras: SendExtras = {},
 ): Planned<CreateRegistroOp> {
-  const fields = registroFields(change, chain, item);
+  const fields = registroFields(change, chain, item, extras);
   if ('reason' in fields) return fields;
-  if (fields.tipo === 'PP') return { reason: PATENT_BY_HAND };
+  // O check() da patente exige o depositante ou titular.
+  if (fields.tipo === 'PP' && !fields.extras.depositor) return { reason: PATENT_BY_HAND };
   const owner = ownerNamesOf(chain[0]);
   if (!owner) return { reason: NO_OWNER_NAME };
   return { expect: {}, key: change.key, kind: 'criar-registro', label, owner, ...fields };
@@ -431,11 +431,16 @@ export async function applyCreateRegistro(op: CreateRegistroOp, port: LattesPort
     // A grade de datas da patente vai num oculto, como o check() a monta (seção 21).
     const { f_dados_grid_datas: _grid, ...typed } = op.set;
     const absent = absentFields(form.controls, typed);
-    // A própria pessoa na grade de inventores, pela linha dela no autorDP do menu.
-    // A linha só vale se trouxer o nome completo ou uma citação do currículo.
-    const owner = ownerAuthor(menu, op.owner);
-    if ('reason' in owner) return result('erro', owner.reason);
-    const authors = serializeGrid([ownerGridRow(owner.owner)], REGISTRY_AUTHOR_KEYS);
+    // Os autores (a própria pessoa pela linha dela no autorDP, os outros pela
+    // lista de autores do menu), as informações, as grades e o depositante.
+    const extras = await registroExtrasSet(
+      op.extras ?? { authors: [{ citation: '', cnpq: '', name: '', owner: true }] },
+      op.owner,
+      menu,
+      port,
+      form.pairs,
+    );
+    if ('status' in extras) return result(extras.status, extras.detail);
     if (absent.length > 0) {
       return result(
         'erro',
@@ -446,7 +451,7 @@ export async function applyCreateRegistro(op: CreateRegistroOp, port: LattesPort
     if (limit) return result('erro', limit);
     const response = await port.post(
       CREATE_REGISTRO_SPEC.action,
-      encodeLatin1Form(setPairs(form.pairs, { ...op.set, f_autores_l: authors })),
+      encodeLatin1Form(setPairs(form.pairs, { ...op.set, ...extras.set })),
     );
     if (isLogonPage(response)) return result('sessao', SESSION);
 
@@ -465,10 +470,8 @@ export async function applyCreateRegistro(op: CreateRegistroOp, port: LattesPort
       const seq = created[0]!.params.f_seq!;
       const assigned = { 'SEQUENCIA-PRODUCAO': seq };
       const saved = await readPairs(port, created[0]!.path, REGISTRO_FORM);
-      const problem = readBackProblem(
-        `Criado no Lattes (registro ${seq})`,
-        readBack(saved, op.set),
-      );
+      const check = await registroCheck(port, created[0]!.path, saved, op.set, op.extras);
+      const problem = readBackProblem(`Criado no Lattes (registro ${seq})`, check);
       if (problem) return { ...result('divergente', problem), assigned };
       // A grade de autores volta no script da página, não num campo, e os
       // inventores ficam sem reler: o aviso vai no registro do enviado.

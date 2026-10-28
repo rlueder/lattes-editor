@@ -27,12 +27,15 @@ function menuItems(code: string): [string, string][] {
     ['Pós-doutorado e livre-docência', `pkg_formacao.lista?f_cod=${code}&f_tipo=AP`],
     ['Formação complementar', `pkg_formacao_compl.lista?f_cod=${code}`],
     ['Atuação profissional', `pkg_ativ.lista?f_cod=${code}`],
+    // Observado no menu real (seção 2, e a página do keepalive).
+    ['Linhas de pesquisa', `pkg_linhapesq.lista?f_cod=${code}`],
     ['Projetos de pesquisa', `pkg_projeto.lista?f_cod_tipo=P&f_cod=${code}`],
     ['Projetos de desenvolvimento', `pkg_projeto.lista?f_cod_tipo=D&f_cod=${code}`],
     ['Projetos de extensão', `pkg_projeto.lista?f_cod_tipo=E&f_cod=${code}`],
     ['Projetos de ensino', `pkg_projeto.lista?f_cod_tipo=N&f_cod=${code}`],
     ['Outros projetos', `pkg_projeto.lista?f_cod_tipo=O&f_cod=${code}`],
     ['Prêmios e títulos', `pkg_premio.lista?f_cod=${code}`],
+    ['Licenças', `pkg_licenca.lista?f_cod=${code}`],
     // Observado no menu real em 19/10/2026.
     ['Coautores', `pkg_dic_autor.lista?f_cod=${code}`],
     // Observados no menu real em 16/10/2026.
@@ -105,6 +108,12 @@ function menuItems(code: string): [string, string][] {
       label,
       `PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=${tipo}&f_cod=${code}`,
     ]),
+    // O programa de computador sem registro tem lista própria no menu real
+    // (f_reg=N, lido em 19/10/2026).
+    [
+      'Programa de computador sem registro',
+      `PKG_PATENTE_REGISTRO.LISTA?f_reg=N&f_cod_tipo=PC&f_cod=${code}`,
+    ],
     ['Resumo', `pkg_resume.prc_resume?f_cod=${code}`],
     // Catálogo de menus do reconhecimento de 10/10/2026 e censo de 15/10/2026.
     ['Outras informações relevantes', `prc_outras_inf?f_cod=${code}`],

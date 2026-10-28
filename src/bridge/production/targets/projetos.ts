@@ -43,12 +43,19 @@ const innovation = (v: string, side?: 'after' | 'before'): string | undefined =>
 
 const PROJECT = 'PROJETO-DE-PESQUISA';
 
+const LINK_BY_HAND =
+  'Produção do projeto vai à mão: ela se liga a uma produção do currículo pela janela de produções, que não foi lida';
+
+/** O título e o tipo de uma produção ligada (exportação de 27/10/2026, seção 25). */
+const LINK_COPY =
+  'Dados que o próprio Lattes gera: o título, também o em inglês, e o tipo da produção ligada saem da própria produção; altere-os nela';
+
 /**
  * O f_instituicoes que o configurarInstituicoes() da página monta das
  * instituições do projeto (titularInstProvider), lido em 18/10/2026: sem ele,
  * o Lattes recusava o envio inteiro (ORA-19032).
  */
-function projectInstitutions(html: string): Record<string, string> | undefined {
+export function projectInstitutions(html: string): Record<string, string> | undefined {
   const rows = readProvider(html, 'titularInstProvider');
   if (!rows) return undefined;
   const items = rows
@@ -93,19 +100,20 @@ const PROJETO: ProductionTarget = {
     sent: ['NOME-COMPLETO', 'ORDEM-DE-INTEGRACAO', 'FLAG-RESPONSAVEL'],
   },
   built: projectInstitutions,
+  // A natureza de um financiador que já está vai pela linha dele
+  // (financiador.ts); incluir ou tirar um, não.
   byHand: {
     'FINANCIADOR-DO-PROJETO':
-      'Financiador vai à mão: os valores de cada linha da grade de financiadores vêm de uma janela que não foi lida',
+      'Financiador vai à mão: a natureza, a moeda e o valor de cada linha vêm da janela PKG_PROJETO.EDITAR_FINANCIAMENTO, que não foi lida',
     'FINANCIADORES-DO-PROJETO':
-      'Financiador vai à mão: os valores de cada linha da grade de financiadores vêm de uma janela que não foi lida',
+      'Financiador vai à mão: a natureza, a moeda e o valor de cada linha vêm da janela PKG_PROJETO.EDITAR_FINANCIAMENTO, que não foi lida',
+    // Uma orientação ligada pela página (grade de orientações) voltou na
+    // exportação de 27/10/2026 em PRODUCOES-CT-DO-PROJETO, e não em ORIENTACOES.
     ORIENTACAO:
-      'Orientação do projeto vai à mão: ela se liga a uma orientação do currículo pela janela de orientações, que não foi lida',
+      'O formulário de projeto do Lattes não tem campo para esta lista: as orientações ligadas pela página voltam em Produções C&T do projeto',
     ORIENTACOES:
-      'Orientação do projeto vai à mão: ela se liga a uma orientação do currículo pela janela de orientações, que não foi lida',
-    'PRODUCAO-CT-DO-PROJETO':
-      'Produção do projeto vai à mão: ela se liga a uma produção do currículo pela janela de produções, que não foi lida',
-    'PRODUCOES-CT-DO-PROJETO':
-      'Produção do projeto vai à mão: ela se liga a uma produção do currículo pela janela de produções, que não foi lida',
+      'O formulário de projeto do Lattes não tem campo para esta lista: as orientações ligadas pela página voltam em Produções C&T do projeto',
+    'PRODUCOES-CT-DO-PROJETO': LINK_BY_HAND,
   },
   // O Não do potencial de inovação apaga o texto dele, como a página faz
   // ($("input[name=f_txt_potencial]").val(""), lido em 18/10/2026).
@@ -183,6 +191,13 @@ const PROJETO: ProductionTarget = {
   // O órgão fica na participação, pai do projeto (organ.ts); o período dela
   // não tem campo no formulário.
   organ: { periodReason: PARTICIPATION_PERIOD },
+  // A produção ligada: incluir ou tirar vai à mão; o título e o tipo dela, a
+  // exportação os copia da própria produção (seção 25).
+  partFields: {
+    'PRODUCAO-CT-DO-PROJETO': (change) => ({
+      reason: change.kind === 'alterado' ? LINK_COPY : LINK_BY_HAND,
+    }),
+  },
   title: { attr: 'NOME-DO-PROJETO', child: PROJECT },
   year: { attr: 'ANO-INICIO', child: PROJECT, field: 'F_ANO_INIC' },
 };

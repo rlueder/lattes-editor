@@ -326,3 +326,77 @@ describe('atividade: o envio', () => {
     expect(postsOf(sim)).toEqual([]);
   });
 });
+
+/** Ensino de pós-graduação numa instituição com cursos no simulado (buscas.ts). */
+const TEACH_XML = ENSINO_XML.replace(
+  'CODIGO-INSTITUICAO="000300000995"',
+  'CODIGO-INSTITUICAO="000000000001"',
+).replace(
+  'TIPO-ENSINO="OUTRO"',
+  'TIPO-ENSINO="POS-GRADUACAO" CODIGO-CURSO="00000001" NOME-CURSO="Genética e Biologia Molecular"',
+);
+
+describe('ensino: nível e curso', () => {
+  const ensino = (root: XElement) => findIn(root, (e) => e.name === 'ENSINO')!;
+  const planTeach = (edit: (el: XElement) => void, xml = TEACH_XML) => {
+    const original = parseXml(xml).root;
+    const working = parseXml(xml).root;
+    edit(ensino(working));
+    return planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Atividade' })),
+      working,
+      { editAtividades: true },
+    );
+  };
+
+  it('o curso novo da lista vai pelo código; só o nome, ou o nível sem curso, à mão', () => {
+    const { ops, unsupported } = planTeach((el) => {
+      setAttr(el, 'CODIGO-CURSO', '00000002');
+      setAttr(el, 'NOME-CURSO', 'Botânica');
+    });
+    expect(unsupported).toEqual([]);
+    expect(ops[0]).toMatchObject({
+      course: { code: '00000002' },
+      expect: { f_curso: 'Genética e Biologia Molecular' },
+    });
+    expect(planTeach((el) => setAttr(el, 'NOME-CURSO', 'Outro')).unsupported[0]?.reason).toMatch(
+      /escolha pela lista do Lattes/,
+    );
+    expect(
+      planTeach((el) => setAttr(el, 'TIPO-ENSINO', 'ENSINO-MEDIO')).unsupported[0]?.reason,
+    ).toMatch(/não aceita curso neste nível/);
+    expect(
+      planTeach((el) => setAttr(el, 'TIPO-ENSINO', 'GRADUACAO'), ENSINO_XML).unsupported[0]?.reason,
+    ).toMatch(/exige o curso neste nível/);
+    // Outro nível com curso: o curso vai de novo, pela lista do nível novo.
+    expect(planTeach((el) => setAttr(el, 'TIPO-ENSINO', 'GRADUACAO')).ops[0]).toMatchObject({
+      course: { code: '00000001' },
+      expect: { f_nivel: '402' },
+      set: { f_nivel: '401' },
+    });
+  });
+
+  it('no Lattes simulado: o curso sai da lista, grava e confere pelo texto', async () => {
+    open = await withLattesSimulado({
+      xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${TEACH_XML}`),
+    });
+    // O link da atuação com a letra V, como a busca de cursos do simulado a quer.
+    const atuacao = findIn(open.state.root, (e) => e.name === 'ATUACAO-PROFISSIONAL')!;
+    setAttr(atuacao, 'CODIGO-INSTITUICAO', 'V000000000001');
+    const { ops } = planTeach((el) => {
+      setAttr(el, 'CODIGO-CURSO', '00000002');
+      setAttr(el, 'NOME-CURSO', 'Botânica');
+    });
+    expect(await applyOp(ops[0]!, open.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(open).at(-1)!.fields).toMatchObject({ f_cod_curso: '00000002' });
+    expect(getAttr(ensino(open.state.root), 'NOME-CURSO')).toBe('Botânica');
+    // De novo, com o Lattes já em outro curso que o de antes do editor: nada vai.
+    const missing = planTeach((el) => {
+      setAttr(el, 'CODIGO-CURSO', '99999999');
+      setAttr(el, 'NOME-CURSO', 'Fantasia');
+    }).ops[0]!;
+    const posts = postsOf(open).length;
+    expect(await applyOp(missing, open.port)).toMatchObject({ status: 'divergente' });
+    expect(postsOf(open)).toHaveLength(posts);
+  });
+});

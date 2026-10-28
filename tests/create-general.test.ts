@@ -11,6 +11,7 @@ import { applyAll, applyOp } from '../src/bridge/apply.ts';
 import { checkContract, isBreaking, LATTES_CONTRACT } from '../src/bridge/contract.ts';
 import { byHandReason, type CreateGeneralOp } from '../src/bridge/create-general.ts';
 import { CREATE_SPECS } from '../src/bridge/create-items.ts';
+import { opRows } from '../src/bridge/field-labels.ts';
 import { planChanges } from '../src/bridge/plan.ts';
 import { diffDocuments } from '../src/model/changes.ts';
 import { loadCv } from '../src/model/document.ts';
@@ -140,24 +141,25 @@ describe('planejar idioma, prêmio e vínculo', () => {
         push(doc, 'PREMIOS-TITULOS', element('PREMIO-TITULO', { 'NOME-DO-PREMIO-OU-TITULO': 'X' })),
       ),
     ).toMatch(/nome e do ano/);
-    expect(
-      await reasonOf((doc) =>
-        push(
-          doc,
-          'PREMIOS-TITULOS',
-          element('PREMIO-TITULO', {
-            'ANO-DA-PREMIACAO': '2024',
-            'NOME-DO-PREMIO-OU-TITULO': 'X',
-            'NOME-DO-PREMIO-OU-TITULO-INGLES': 'X',
-          }),
-        ),
+    // O nome em inglês fica fora, à vista, e o prêmio vai.
+    const english = await plan((doc) =>
+      push(
+        doc,
+        'PREMIOS-TITULOS',
+        element('PREMIO-TITULO', {
+          'ANO-DA-PREMIACAO': '2024',
+          'NOME-DO-PREMIO-OU-TITULO': 'X',
+          'NOME-DO-PREMIO-OU-TITULO-INGLES': 'X',
+        }),
       ),
-    ).toMatch(/Nome em inglês/);
-    expect(
-      await reasonOf((doc) =>
-        ufrgs(doc).children.push(element('VINCULOS', { ...VINCULO, 'OUTRAS-INFORMACOES': 'Nota' })),
-      ),
-    ).toMatch(/Outras informações/);
+    );
+    expect(english.ops[0]).toMatchObject({ left: ['Nome em inglês'] });
+    // O vínculo novo leva "Outras informações" em português (censo de 27/10/2026).
+    const withNote = await plan((doc) =>
+      ufrgs(doc).children.push(element('VINCULOS', { ...VINCULO, 'OUTRAS-INFORMACOES': 'Nota' })),
+    );
+    expect(withNote.unsupported).toEqual([]);
+    expect(withNote.ops[0]).toMatchObject({ set: { f_outras_inf: 'Nota' } });
     expect(
       await reasonOf((doc) =>
         push(
@@ -178,19 +180,16 @@ describe('planejar idioma, prêmio e vínculo', () => {
           ]),
         ),
       ),
-    ).toMatch(/Atividade vai à mão/);
+    ).toMatch(/ao menos uma descrição/);
   });
 
   it('cada tipo à mão tem o seu motivo', () => {
     for (const [name, pattern] of [
-      ['LICENCA', /nascimento ou adoção/],
       ['AREA-DE-ATUACAO', /f_area_l/],
-      ['MBA', /passo depois/],
-      ['OUTROS', /Formação complementar/],
-      ['DISCIPLINA', /grade leva também as que já existem/],
-      ['TREINAMENTO', /atividade de treinamento, que exige o órgão/],
-      ['LINHA-DE-PESQUISA', /atividade de pesquisa e desenvolvimento/],
-      ['FINANCIADOR-DO-PROJETO', /janela que não foi lida/],
+      ['DISCIPLINA', /vai junto com a atividade/],
+      ['TREINAMENTO', /vai junto com a atividade/],
+      ['LINHA-DE-PESQUISA', /vai junto com a atividade/],
+      ['FINANCIADOR-DO-PROJETO', /EDITAR_FINANCIAMENTO, que não foi lida/],
       ['PRODUCAO-CT-DO-PROJETO', /janela de produções/],
       ['ORIENTACAO', /janela de orientações/],
       ['CONSELHO-COMISSAO-E-CONSULTORIA', /órgão ou unidade/],
@@ -198,6 +197,8 @@ describe('planejar idioma, prêmio e vínculo', () => {
       expect(byHandReason(name), name).toMatch(pattern);
     }
     expect(byHandReason('IDIOMA')).toBeUndefined();
+    expect(byHandReason('MBA')).toBeUndefined();
+    expect(byHandReason('LICENCA')).toBeUndefined();
   });
 });
 
@@ -315,6 +316,30 @@ describe('incluir no Lattes simulado', () => {
     ).toMatchObject({
       detail: 'Atuação profissional não encontrada no menu do Lattes',
       status: 'erro',
+    });
+  });
+
+  it('o que ficou fora vai no resultado e na linha da confirmação', async () => {
+    const lattes = await start();
+    const premio: CreateGeneralOp = {
+      expect: {},
+      form: 'premio',
+      key: 'k',
+      kind: 'criar-dado',
+      label: 'Prêmio',
+      left: ['Nome em inglês'],
+      set: { f_agencia: 'Sociedade', f_ano: '2024', f_titulo: 'Prêmio de teste' },
+    };
+    const r = await applyOp(premio, lattes.port);
+    expect(r).toMatchObject({ partial: true, status: 'conferido' });
+    expect(r.detail).toMatch(
+      /Ficou fora, porque o formulário de inclusão do Lattes não tem: Nome em inglês$/,
+    );
+    expect(opRows(premio).at(-1)).toEqual({
+      after: 'Nome em inglês',
+      before: '',
+      label: 'Fica fora (o Lattes não tem)',
+      name: '(fora)',
     });
   });
 

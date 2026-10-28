@@ -410,6 +410,15 @@ describe('contatos do endereço', () => {
     expect(
       parseSocial('ID Rede Social: 7, Nome Rede Social: Linkedin, EndereÃ§o: https://x.org/a/'),
     ).toEqual([{ name: 'LinkedIn', url: 'https://x.org/a/' }]);
+    // Como a exportação real junta as entradas: sem separador (27/10/2026).
+    expect(
+      parseSocial(
+        'ID Rede Social: 1, Nome Rede Social: Linkedin, Endereço: https://x.org/in/a/ID Rede Social: 2, Nome Rede Social: GitHub, Endereço: https://x.org/b',
+      ),
+    ).toEqual([
+      { name: 'LinkedIn', url: 'https://x.org/in/a/' },
+      { name: 'GitHub', url: 'https://x.org/b' },
+    ]);
     expect(socialName('minha rede')).toBe('Minha rede');
     expect(parseSocial('qualquer coisa')).toEqual([]);
   });

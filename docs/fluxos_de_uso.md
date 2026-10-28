@@ -79,12 +79,14 @@ Já tem um currículo grande; acrescenta poucas produções e corrige detalhes.
 
 O currículo está desatualizado, e a pessoa não sabe o que ficou pendente.
 
-1. "Abrir do Lattes". Se o Exportar estiver bloqueado, o app abre a última
-   versão publicada que tiver deste currículo e compara com a versão atual
-   do Lattes (`pkg_publicar.cv_espelho`) no diagnóstico. A página de
-   conferência é texto, então ela serve de comparação e não vira o currículo
-   editável. Sem nenhuma versão guardada, a tela inicial pede o envio ao
-   CNPq, que libera o Exportar.
+1. "Abrir do Lattes". Se o Exportar estiver bloqueado por alterações não
+   enviadas, o passo 3 da tela inicial vira "Enviar ao CNPq…": depois do
+   envio, o currículo abre sozinho. A última versão publicada que o app
+   tiver deste currículo fica como a outra saída, embaixo, e o diagnóstico a
+   compara com a versão atual do Lattes (`pkg_publicar.cv_espelho`). A
+   página de conferência é texto, então ela serve de comparação e não vira
+   o currículo editável. Com uma extensão sem o envio, o passo 3 abre a
+   versão guardada, ou pede para enviar pelo Lattes.
 2. O "Diagnóstico do currículo" (no ⚙ e no aviso do sino) confere o
    currículo inteiro (obrigatórios, listas, anos, autores, DOI, a revisão de
    consistência) e, logo abaixo, mostra a data da última publicação, o que

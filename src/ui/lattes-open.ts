@@ -14,8 +14,12 @@ export type OpenState =
   | { detail?: string; kind: 'falhou'; lattesId?: string; reason: OpenFailure }
   | { kind: 'parado' };
 
-/** Quanto esperar o ZIP antes de desistir: o Exportar leva menos de um segundo. */
-export const OPEN_TIMEOUT_MS = 30_000;
+/**
+ * Quanto esperar o ZIP antes de desistir. O Exportar leva menos de um segundo,
+ * mas a extensão pode esperar até um minuto por uma tarefa em curso no Lattes
+ * (VERIFY_WAIT_MS, extension/src/editor-run.ts) antes de pedi-lo.
+ */
+export const OPEN_TIMEOUT_MS = 120_000;
 
 /** A extensão ligada sabe exportar (capacidade "curriculo", src/bridge/compat.ts). */
 export function canOpenFromLattes(link: Link): boolean {
@@ -40,7 +44,7 @@ export function failureText(reason: OpenFailure, detail?: string): string {
     case 'sessao':
       return 'A sessão do Lattes expirou. Entre de novo; o currículo abre em seguida.';
     case 'pendente':
-      return 'O seu Lattes tem alterações ainda não enviadas ao CNPq, e o Lattes só exporta depois do envio. Use "Enviar" no Lattes e tente de novo. O app não guardou nenhuma versão deste currículo para abrir no lugar.';
+      return 'O seu Lattes tem alterações ainda não enviadas ao CNPq, e o Lattes só exporta depois do envio. Envie pelo Lattes e tente de novo. O app não guardou nenhuma versão deste currículo para abrir no lugar.';
     case 'sem-resposta':
       return 'A extensão não respondeu. Tente de novo, ou abra o arquivo exportado.';
     case 'erro':

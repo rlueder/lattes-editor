@@ -10,9 +10,9 @@
 // Fica de fora, à mão:
 // - patente e registros: create-registro.ts (LAT-57);
 // - pós-doutorado e livre-docência, que não estão no combo de níveis;
-// - palavras-chave, áreas e setores (grades serializadas, seção 16), o
-//   sanduíche e a cotutela do doutorado, equipe além do dono, financiadores,
-//   produções e orientações do projeto.
+// - a instituição do sanduíche e a da cotutela, que a exportação guarda só
+//   pelo código, sem o nome que a busca pede (o tipo, os orientadores e a
+//   instituição do doutorado vão, create-formacao.ts).
 //
 // Cada operação confere antes de enviar (lista sem item igual, formulário em
 // modo de inclusão do nível ou da natureza certa, todos os campos presentes),
@@ -31,6 +31,15 @@ import {
   planCreateAtividade,
   teachingItem,
 } from './create-atividade.ts';
+import { cargoItem, planCreateCargo } from './create-cargo.ts';
+import {
+  applyCreateComplementar,
+  complementarFormPath,
+  complementarItem,
+  CREATE_COMPLEMENTAR_SPEC,
+  type CreateComplementarOp,
+  planCreateComplementar,
+} from './create-complementar.ts';
 import {
   applyCreateEvento,
   type CreateEventoOp,
@@ -76,12 +85,16 @@ import {
   registryItem,
 } from './create-registro.ts';
 import { registryInclusion, registryList } from './create-registro-rules.ts';
+import type { SendExtras } from './create-shared.ts';
 import type { Planned } from './create-shared.ts';
 import { EVENTO_SPEC } from './edit-items.ts';
+import { COMPL_LEVELS } from './edit-lists.ts';
 import { findLinks } from './lattes-html.ts';
+import { ACTIVITY_ORGAN_ELEMENTS } from './organ-windows.ts';
 
 export {
   applyCreateAtividade,
+  applyCreateComplementar,
   applyCreateEvento,
   applyCreateFormacao,
   applyCreateGeneral,
@@ -92,6 +105,7 @@ export {
 
 export type CreateItemOp =
   | CreateAtividadeOp
+  | CreateComplementarOp
   | CreateEventoOp
   | CreateFormacaoOp
   | CreateGeneralOp
@@ -109,16 +123,21 @@ export const CONNECTOR_CREATES: ReadonlySet<string> = new Set([
   'ATUACAO-PROFISSIONAL',
   ...Object.keys(FORMATION_LEVELS),
   ...Object.keys(AP_LEVELS),
-  // Registros: a própria pessoa entra na grade de inventores pelo autorDP do
-  // menu (seção 22). A patente e o projeto têm a operação (registroFields,
-  // projetoOp), mas o planejamento os manda à mão: o titular da patente e o
-  // órgão do projeto ainda não têm como ir.
-  ...Object.keys(REGISTRY_TYPES).filter((n) => n !== 'PATENTE'),
+  // Registros e patente: os autores pelo autorDP do menu (seção 22), e o
+  // depositante da patente pelo titularPessoaDP ou pela busca de titulares
+  // instituições (create-registro-extras.ts).
+  ...Object.keys(REGISTRY_TYPES),
+  // O projeto, com o órgão escolhido na lista do Lattes (create-projeto.ts).
+  'PROJETO-DE-PESQUISA',
   ...GENERAL_CREATES,
-  // A atividade de ensino, com as disciplinas (create-atividade.ts).
+  // A atividade de ensino, com as disciplinas (create-atividade.ts), e as
+  // outras naturezas, com o órgão da janela de órgãos (create-cargo.ts).
   'ENSINO',
+  ...ACTIVITY_ORGAN_ELEMENTS,
   // Eventos: pelo formulário, no lugar do Importar, com a chave ligada (direct-inclusion.ts).
   ...EVENT_ELEMENTS,
+  // Formação complementar: os dois passos do FORM2 (create-complementar.ts).
+  ...Object.keys(COMPL_LEVELS),
 ]);
 
 /**
@@ -129,18 +148,23 @@ export function planCreateItem(
   change: Change,
   chain: XElement[],
   label: string,
+  extras: SendExtras = {},
 ): Planned<CreateItemOp> | undefined {
   const el = chain.at(-1);
   if (!el) return undefined;
   const registro = registryItem(el);
-  if (registro) return planCreateRegistro(change, chain, registro, label);
+  if (registro) return planCreateRegistro(change, chain, registro, label, extras);
   const ensino = teachingItem(el);
   if (ensino) return planCreateAtividade(change, chain, ensino, label);
+  const cargo = cargoItem(el);
+  if (cargo) return planCreateCargo(change, chain, cargo, label);
   const evento = eventItem(el);
   if (evento) return planCreateEvento(change, chain, evento, label);
-  const general = planCreateGeneral(change, chain, label);
+  const complementar = complementarItem(chain);
+  if (complementar) return planCreateComplementar(change, complementar, label);
+  const general = planCreateGeneral(change, chain, label, extras);
   if (general) return general;
-  if (PROJECT_CARRIERS.has(el.name)) return planCreateProjeto(change, chain, label);
+  if (PROJECT_CARRIERS.has(el.name)) return planCreateProjeto(change, chain, label, extras);
   if (chain.at(-2)?.name === 'FORMACAO-ACADEMICA-TITULACAO') {
     return planCreateFormacao(change, el, label);
   }
@@ -166,6 +190,12 @@ export async function createFormPath(
 ): Promise<{ missing: string } | { path: string }> {
   if (kind === 'criar-dado' || kind === 'criar-vinculo') return generalFormPath(kind, get, menu);
   if (kind === 'criar-atividade') return atividadeFormPath(get, menu);
+  if (kind === 'criar-complementar') {
+    const lista = findLinks(menu, 'pkg_formacao_compl.lista')[0];
+    return lista?.params.f_cod
+      ? { path: complementarFormPath(lista.params.f_cod) }
+      : { missing: 'pkg_formacao_compl.lista' };
+  }
   if (kind === 'criar-evento') {
     const lista = findLinks(menu, 'pkg_evento.lista').find(
       (l) => !l.params.f_sta_divulgacao_cientifica,
@@ -200,6 +230,7 @@ export async function createFormPath(
 export const CREATE_SPECS: Record<'criar-atuacao' | CreateItemOp['kind'], FormSpec> = {
   'criar-atividade': CREATE_ATIVIDADE_SPEC,
   'criar-atuacao': CREATE_ATUACAO_SPEC,
+  'criar-complementar': CREATE_COMPLEMENTAR_SPEC,
   'criar-dado': CREATE_DADO_SPEC,
   'criar-evento': { ...EVENTO_SPEC, mode: 'I', partial: true },
   'criar-formacao': CREATE_FORMACAO_SPEC,

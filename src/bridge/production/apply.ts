@@ -21,7 +21,6 @@ import { isLogonPage } from '../lattes-html.ts';
 import type { FieldValues } from '../plan.ts';
 import { doiProblem } from './doi.ts';
 import {
-  authorNames,
   authorRows,
   GRID_LABELS,
   GRID_SPECS,
@@ -35,7 +34,8 @@ import {
   sameWords,
   serializeGrid,
 } from './grids.ts';
-import { holderReplace, sameHolder, SEVERAL_HOLDERS } from './holders.ts';
+import { SEVERAL_HOLDERS } from './holders.ts';
+import { depositorReplace, sameDepositor, severalDepositors } from './institution-holder.ts';
 import { areaGridRows, gridLabels, sameLabels, setorGridRows } from './item-lists.ts';
 import { locate } from './locate.ts';
 import { resolveLookups } from './lookups.ts';
@@ -50,6 +50,7 @@ import {
   productionTarget,
   PROJECT_ORGAN_ENABLED,
 } from './plan.ts';
+import { projectGridValues } from './project-links.ts';
 import { resolveStudent } from './student.ts';
 import type { GridField } from './types.ts';
 
@@ -141,8 +142,13 @@ export async function applyProduction(
       );
     }
 
+    // A natureza de um financiador: a linha dele na grade, com a letra nova.
+    const gridEdit = await projectGridValues(port, path, html, t.opaqueGrids ?? [], op);
+    if ('status' in gridEdit) return result(gridEdit.status, gridEdit.detail);
+    Object.assign(opaque.values, gridEdit.values);
+
     // Mais de um depositante na página: como a exportação os junta não foi visto.
-    if (op.holders && authorNames(grids.f_depositante_pessoa_l ?? []).length > 1) {
+    if (op.holders && severalDepositors(grids)) {
       return result('erro', `${SEVERAL_HOLDERS}; nada foi enviado`);
     }
 
@@ -171,8 +177,7 @@ export async function applyProduction(
     if (op.areas && !sameLabels(gridLabels(grids.f_area_l ?? []), op.areas.before.map(areaLabel))) {
       wrong.push('f_area_l');
     }
-    const holderGrid = grids.f_depositante_pessoa_l ?? [];
-    if (op.holders && !sameHolder(holderGrid, op.holders.before))
+    if (op.holders && !sameDepositor(grids, op.holders.before))
       wrong.push('f_depositante_pessoa_l');
     if (op.setores && !sameLabels(gridLabels(grids.f_setor_l ?? []), op.setores.before)) {
       wrong.push('f_setor_l');
@@ -238,9 +243,9 @@ export async function applyProduction(
       replace.f_autores_l = withLeads(rows, op.authors.after);
     }
     if (op.holders) {
-      const built = holderReplace(holderGrid, menu, op.holders.after);
-      if ('reason' in built) return result('erro', built.reason);
-      replace.f_depositante_pessoa_l = built.rows;
+      const built = await depositorReplace(port, pairs, menu, grids, op.holders);
+      if ('status' in built) return result(built.status, built.detail);
+      Object.assign(replace, built.replace);
     }
     const set = Object.fromEntries(fields.map((f) => [f, op.set[f] ?? '']));
     // As escolhas pelas buscas: os ocultos que a página escreveria (lookups.ts).
@@ -285,6 +290,7 @@ export async function applyProduction(
     if (!virtualBuilt) {
       return result('erro', 'A página do Lattes não trouxe o que o envio monta; nada foi enviado');
     }
+    if ('reason' in virtualBuilt) return result('erro', `${virtualBuilt.reason}; nada foi enviado`);
     chosen = { ...built, ...virtualBuilt, ...chosen };
     // A página carrega esses campos vazios: a releitura não os confere.
     for (const k of Object.keys({ ...built, ...virtualBuilt })) chosenCheck[k] = null;
@@ -331,7 +337,7 @@ export async function applyProduction(
     if (op.setores && !sameLabels(gridLabels(afterGrids.f_setor_l ?? []), op.setores.after)) {
       notSaved.push('f_setor_l');
     }
-    if (op.holders && !sameHolder(afterGrids.f_depositante_pessoa_l ?? [], op.holders.after)) {
+    if (op.holders && !sameDepositor(afterGrids, op.holders.after)) {
       notSaved.push('f_depositante_pessoa_l');
     }
     // Os virtuais, lidos de novo do vetor da página.
@@ -366,7 +372,13 @@ export async function applyProduction(
     const others = otherChanges(
       pairs,
       afterPairs,
-      new Set([...fields, ...Object.keys(chosen), ...t.grids, ...opaqueFields]),
+      new Set([
+        ...fields,
+        ...Object.keys(chosen),
+        ...t.grids,
+        ...opaqueFields,
+        ...Object.keys(gridEdit.values),
+      ]),
     );
     // As grades que o conector não monta voltam como foram.
     const opaqueChanged = (t.opaqueGrids ?? []).filter(

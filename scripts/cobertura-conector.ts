@@ -9,12 +9,15 @@
 // O padrão conta campos: cada campo do editor (o caminho do elemento no XML e
 // o atributo) uma vez só, de fixtures/synthetic_full.xml (que tem todos os
 // elementos do schema) ou do arquivo dado. Um campo vai pelo conector quando
-// toda troca nele vira envio. O Lattes não o tem quando nenhuma troca vai e
+// as trocas escolhidas nos exemplos viram envio. A busca de alternativas pode
+// achar uma troca válida, mas não esgota todas as opções ou combinações.
+// O Lattes não o tem quando nenhuma troca vai e
 // todas dão só motivos de campo ausente (o mesmo fieldAbsent que o editor
 // usa): fica só para ler no editor. O resto falta no conector, inclusive o
 // campo em que parte das trocas vai. --resumo mostra só os totais;
 // --lista=MESTRADO lista os campos que faltam num tipo de item, com o motivo,
-// e --lista=motivo:Valor os que faltam por um motivo que começa assim.
+// e --lista=motivo:Valor os que faltam por um motivo que começa assim;
+// --lista=sem-campo, os que ficam só para ler, com o motivo.
 //
 // --por-curriculo é a contagem antiga, por troca de atributo num currículo
 // (fixtures/demo.xml e fixtures/synthetic_full.xml sem arquivo): depende de
@@ -26,16 +29,18 @@
 // nome é o caso que o planejador recusa de propósito.
 
 import { readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 
 import { BRIDGE_FEATURES } from '../src/bridge/compat.ts';
 import { fieldAbsent } from '../src/bridge/form-lacks.ts';
 import { planChanges, planOptionsFor } from '../src/bridge/plan.ts';
 import { diffDocuments } from '../src/model/changes.ts';
+import { editableContacts, replaceContactValue } from '../src/model/contact-edit.ts';
 import { applyLinkedAttrs, followsCountry } from '../src/model/linked-attrs.ts';
-import { getAttr, parseXml, serializeXml, setAttr, type XElement } from '../src/model/xml.ts';
+import { getAttr, parseXml, setAttr, type XElement } from '../src/model/xml.ts';
 import { lattesSchema } from '../src/schema/lattes.ts';
-import { derivedValue, outOfList, typedChoices } from '../src/schema/typed-choices.ts';
-import { isSystemAttr } from '../src/ui/field-kind.ts';
+import { typedChoices } from '../src/schema/typed-choices.ts';
+import { codeChoices, isSystemAttr } from '../src/ui/field-kind.ts';
 import {
   ancestorsOf,
   applyAgency,
@@ -46,6 +51,7 @@ import {
   courseAttrs,
   liveKind,
 } from '../src/ui/live-lists.ts';
+import { REGISTRY_KINDS, withListValues } from './cobertura-exemplo.ts';
 
 const args = process.argv.slice(2);
 const named = args.find((a) => !a.startsWith('--'));
@@ -95,6 +101,21 @@ const LIVE = {
 
 /** A escolha na lista do Lattes, quando o editor oferece uma para o atributo; senão, false. */
 function picked(el: XElement, attr: string, value: string, root: XElement): boolean {
+  if (el.name === 'ENDERECO') {
+    const fields = editableContacts(attr, value);
+    if (fields?.length) {
+      const next = replaceContactValue(
+        value,
+        attr,
+        0,
+        fields[0]!.kind === 'email' ? 'contato-novo@example.org' : 'https://example.org/novo',
+      );
+      if (next !== undefined && next !== value) {
+        setAttr(el, attr, next);
+        return true;
+      }
+    }
+  }
   const parentOf = () => ancestorsOf(root, el).at(-1)?.name;
   switch (liveKind(el, attr, { ...LIVE, parentOf })) {
     case 'instituicao': {
@@ -143,6 +164,17 @@ function swappedLead(work: XElement, member: XElement): boolean | undefined {
   return true;
 }
 
+/**
+ * Campos que o formulário do Lattes só tem com outro atributo do item num
+ * valor: elemento@atributo → [atributo, valor].
+ */
+const DEPENDS: Record<string, [string, string]> = {
+  'DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS@TIPO': [
+    'NATUREZA',
+    'ORIENTACAO-DE-OUTRA-NATUREZA',
+  ],
+};
+
 type Stats = Map<string, { no: number; ok: number; reasons: Map<string, number> }>;
 
 /** Uma troca de teste: o campo (caminho e atributo), se virou envio e os motivos. */
@@ -185,17 +217,21 @@ function cover(raw: string, trials: Trial[] = []): Stats {
        * Planeja a troca do atributo para `value` (sem valor, a troca padrão).
        * Com `from`, o item parte desse valor em vez do que o exemplo tem.
        */
-      const attempt = (value?: string, from?: string) => {
+      const attempt = (value?: string, from?: string, setup?: (el: XElement) => void) => {
         // O ponto de partida é o exemplo; com `from`, uma cópia com o valor
         // novo e o que o editor muda junto (o mesmo applyLinkedAttrs), para
-        // não partir de um item que o editor não teria.
+        // não partir de um item que o editor não teria. `setup` muda outro
+        // atributo do item de partida (DEPENDS).
         let start = base;
-        if (from !== undefined) {
+        if (from !== undefined || setup) {
           start = parseXml(raw).root;
-          setAttr(flatten(start)[index]!, a.name, from);
-          applyLinkedAttrs(flatten(start)[index]!, a.name, start);
+          setup?.(flatten(start)[index]!);
+          if (from !== undefined) {
+            setAttr(flatten(start)[index]!, a.name, from);
+            applyLinkedAttrs(flatten(start)[index]!, a.name, start, a.value);
+          }
         }
-        const work = from === undefined ? parseXml(raw).root : structuredClone(start);
+        const work = from === undefined && !setup ? parseXml(raw).root : structuredClone(start);
         const target = flatten(work)[index]!;
         const attr = target.attrs.find((x) => x.name === a.name)!;
         let choices: string[] | undefined;
@@ -213,11 +249,12 @@ function cover(raw: string, trials: Trial[] = []): Stats {
               : undefined;
           choices =
             kinds ??
-            spec.attributes.find((x) => x.name === a.name)?.enum ??
-            typedChoices(target, a.name)?.map((c) => c.value);
+            codeChoices(target.name, a.name)?.map((c) => c.value) ??
+            typedChoices(target, a.name)?.map((c) => c.value) ??
+            spec.attributes.find((x) => x.name === a.name)?.enum;
           attr.value = value ?? changed(a.name, a.value, choices);
           // O que o editor muda junto ao gravar (AttributeField chama o mesmo).
-          applyLinkedAttrs(target, a.name, work);
+          applyLinkedAttrs(target, a.name, work, from ?? a.value);
         }
         const changes = diffDocuments(start, work);
         // O texto que o editor pede quando o valor novo o exige (o potencial de
@@ -261,6 +298,13 @@ function cover(raw: string, trials: Trial[] = []): Stats {
           const next = attempt('41', '40');
           if (next?.ok) tried = next;
         }
+      }
+      // Um campo que o formulário só tem com outro valor no item (o tipo da
+      // orientação de outra natureza): parte de um item com esse valor.
+      const needs = DEPENDS[`${el.name}@${a.name}`];
+      if (!tried.ok && needs) {
+        const next = attempt(undefined, undefined, (t) => setAttr(t, needs[0], needs[1]));
+        if (next?.ok) tried = next;
       }
       const choices = tried.choices ?? [];
       if (
@@ -312,74 +356,17 @@ const itemOf = (key: string): string => {
   return parts.find((p) => !groups.test(p)) ?? parts.at(-1)!;
 };
 
-/** Os tipos de registro que cada tipo de item aceita (o formulário de cada um). */
-const REGISTRY_KINDS: Record<string, string[]> = {
-  'CULTIVAR-PROTEGIDA': ['CULTIVAR_PROTEGIDA_CTV'],
-  'CULTIVAR-REGISTRADA': ['CULTIVAR_PROTEGIDA_CTV'],
-  'DESENHO-INDUSTRIAL': ['DESENHO_INDUSTRIAL_DI'],
-  MARCA: [
-    'MARCA_REGISTRADA_DE_PRODUTO_MPD',
-    'MARCA_REGISTRADA_DE_SERVICO_MSV',
-    'MARCA_REGISTRADA_COLETIVA_MCL',
-    'MARCA_REGISTRADA_DE_CERTIFICACAO_MCT',
-  ],
-  PATENTE: ['PRIVILEGIO_DE_INOVACAO_PI', 'MODELO_DE_UTILIDADE_MU'],
-  SOFTWARE: ['PROGRAMA_DE_COMPUTADOR_PC'],
-  'TOPOGRAFIA-DE-CIRCUITO-INTEGRADO': ['TOPOGRAFIA_DE_CIRCUITO_INTEGRADO_REGISTRADA_TCI'],
-};
-
 /** O motivo sem o que muda de item para item (o valor, o nome do campo). */
 const reasonKind = (r: string) => r.replace(/:.*$/, '').trim();
-
-/**
- * O synthetic_full tem valores inventados também nos campos de lista (a forma
- * de participação num evento, por exemplo), que nenhuma exportação traria; e
- * com o "antes" fora da lista, toda troca no item fica à mão. Aqui cada um
- * desses vira o valor que o Lattes deriva, ou a primeira opção da lista. Duas
- * passadas, porque uma lista pode depender de outra (o tipo segue a forma).
- * Só para o synthetic_full: um arquivo dado é medido como veio.
- */
-function withListValues(raw: string): { rewritten: number; xml: string } {
-  const doc = parseXml(raw);
-  const was = new Map(flatten(doc.root).flatMap((el) => el.attrs.map((a) => [a, a.value])));
-  // O tipo do registro, que o synthetic_full sorteia entre todos os do XSD: o
-  // de cada tipo de item, como uma exportação traria.
-  for (const item of flatten(doc.root)) {
-    const kind = REGISTRY_KINDS[item.name];
-    if (!kind) continue;
-    for (const reg of flatten(item).filter((e) => e.name === 'REGISTRO-OU-PATENTE')) {
-      setAttr(reg, 'TIPO-PATENTE', kind[0]!);
-    }
-  }
-  for (let pass = 0; pass < 2; pass++) {
-    for (const el of flatten(doc.root)) {
-      for (const a of el.attrs) {
-        // Um valor fora do enumerado do schema (FLAG-BOLSA="Valor de teste"),
-        // que nenhuma exportação traria: a primeira opção dele.
-        const choices = lattesSchema.elements[el.name]?.attributes.find(
-          (x) => x.name === a.name,
-        )?.enum;
-        if (choices?.length && a.value && !choices.includes(a.value)) a.value = choices[0]!;
-        // A nacionalidade do XML é B ou E (linked-attrs.ts).
-        if (a.name === 'NACIONALIDADE' && !['B', 'E', ''].includes(a.value)) a.value = 'B';
-        // FLAG-* sem enumerado guarda SIM ou NAO (field-kind.ts, isBooleanAttr).
-        if (!choices && a.name.startsWith('FLAG-') && !['', 'SIM', 'NAO'].includes(a.value)) {
-          a.value = 'NAO';
-        }
-        if (!outOfList(el, a.name)) continue;
-        const value = derivedValue(el.name, a.name) ?? typedChoices(el, a.name)?.[0]?.value;
-        if (value !== undefined) a.value = value;
-      }
-    }
-  }
-  const rewritten = [...was].filter(([a, v]) => a.value !== v).length;
-  return { rewritten, xml: serializeXml(doc) };
-}
 
 const SYNTHETIC = 'fixtures/synthetic_full.xml';
 
 /** O motivo do campo em que parte das trocas vai e o resto o Lattes não tem. */
 const PARTIAL = 'Vai em parte: nas outras trocas o formulário do Lattes não tem o campo';
+
+/** Trunca em uma casa: uma categoria com lacunas nunca aparece como 100%. */
+export const coveragePercent = (n: number, d: number): string =>
+  d ? `${(Math.floor((n * 1000) / d) / 10).toLocaleString('pt-BR')}%` : '-';
 
 /** Os campos do editor, cada um uma vez: vai, o Lattes não tem, falta no conector. */
 function fieldReport(file: string): void {
@@ -441,6 +428,11 @@ function fieldReport(file: string): void {
   if (dump) {
     for (const [key, ts] of fields) {
       const { kind, reason } = kindOf(ts);
+      // --lista=sem-campo: os que ficam só para ler, com o motivo da primeira troca.
+      if (dump === 'sem-campo' && kind === 'sem-campo') {
+        console.log(`${key}\t${ts.find((t) => !t.ok)?.reasons[0] ?? ''}`);
+        continue;
+      }
       if (
         kind === 'falta' &&
         (itemOf(key) === dump || (dump.startsWith('motivo:') && reason?.startsWith(dump.slice(7))))
@@ -450,7 +442,7 @@ function fieldReport(file: string): void {
     return;
   }
   const editable = count.vai + count.falta;
-  const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 100)}%` : '-');
+  const pct = coveragePercent;
   if (!summaryOnly) {
     console.log('Por seção (campos): vão / faltam no conector / o Lattes não tem');
     for (const [name, r] of [...sections.entries()].sort(([a], [b]) => a.localeCompare(b))) {
@@ -470,18 +462,20 @@ function fieldReport(file: string): void {
     }
   }
   console.log(
-    `\n${count.vai} de ${editable} campos que o Lattes aceita vão pelo conector (${pct(count.vai, editable)}). ` +
+    `\n${count.vai} de ${editable} campos avaliados para envio vão pelo conector (${pct(count.vai, editable)}). ` +
       `Outros ${count['sem-campo']} o formulário do Lattes não tem e ficam só para ler. ` +
       `${fields.size} campos no total.${
         rewritten > 0
-          ? ` No exemplo, ${rewritten} valores fora da lista do Lattes viraram o da lista antes da medição.`
+          ? ` No exemplo, ${rewritten} valores sintéticos foram ajustados ao formato avaliado antes da medição.`
           : ''
       }`,
   );
 }
 
-if (byCv) cvReport();
-else fieldReport(named ?? SYNTHETIC);
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  if (byCv) cvReport();
+  else fieldReport(named ?? SYNTHETIC);
+}
 
 /** A contagem antiga, por troca de atributo em cada currículo. */
 function cvReport(): void {

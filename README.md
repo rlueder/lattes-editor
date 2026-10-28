@@ -54,6 +54,19 @@ de outra exportação ou de outro programa; cada item é comparado com o
 currículo antes de entrar, e o app aponta a duplicata provável e o motivo.
 Use o botão circular × para fechar o histórico ou um formulário.
 
+Em pós-doutorado e livre-docência, a instituição também é escolhida pela
+busca do Lattes. Esses formulários não têm curso; a agência aparece só no
+pós-doutorado.
+
+Raça ou cor, pessoa com deficiência, tipo de graduação, tipo de licença e categoria da patente têm listas de opções.
+A disponibilidade de produtos, processos, relatórios de pesquisa e trabalhos
+técnicos também é escolhida por lista, inclusive quando não foi informada.
+
+Em Endereço, você pode editar e-mails, URLs das redes sociais e outras formas
+de contato (MSN, WhatsApp, Telegram) já cadastradas, quando o formato da
+exportação é reconhecido. Incluir ou remover contatos
+continua no Lattes. A troca de URL mantém a privacidade que a rede já tinha.
+
 O **Diagnóstico do currículo**, no ⚙, confere o currículo inteiro: campos
 obrigatórios, valores fora das listas do Lattes, anos, autores, DOI, ISSN,
 duplicatas e vínculos antigos ainda marcados como atuais. Só aponta; nada muda
@@ -85,14 +98,21 @@ para você olhar o Lattes e só segue com "Continuar" no editor. O histórico no
 fim do painel guarda o valor antigo e o novo de cada gravação e deixa
 desfazer.
 
+Enquanto o app está aberto e ligado à extensão, a extensão abre uma página
+pequena do Lattes a cada 20 minutos, na sua sessão, para ela não cair por
+falta de uso. Com o app fechado, isso para.
+
 <img src="site/img/homepage/enviar.webp" width="1440" alt="O nome de um prêmio é editado; o painel Enviar ao Lattes mostra o antes e o depois na revisão e grava a alteração no Lattes pela extensão." />
 
 O que o conector grava fica pendente no Lattes até "Enviar ao CNPq", e o
 Lattes não mostra nem descarta essas pendências. Por isso o app guarda o
 registro do que gravou. Uma gravação que não voltou conferida bloqueia o
 "Enviar ao CNPq" do editor até você conferir o item no Lattes. O terceiro
-passo mostra o que vai ser publicado e a declaração do CNPq; por enquanto, o
-envio em si é feito no Lattes.
+passo mostra o que vai ser publicado e a declaração lida do CNPq. Confira os
+dados e marque a declaração para publicar pelo app. Ela começa desmarcada a
+cada abertura e não fica guardada. A extensão envia uma vez e confere o menu
+do Lattes; se a confirmação se perder, o app pede para conferir antes de
+tentar novamente.
 
 ## Privacidade
 
@@ -106,18 +126,11 @@ ficam mascarados até você clicar no olho ao lado do título.
 
 ## Extensão do conector
 
-Enquanto a extensão não está na Chrome Web Store:
+1. Instale a extensão pela
+   [Chrome Web Store](https://chromewebstore.google.com/detail/kdebkpkdhgaeaaobcbgbckinocnlfbgg). O Brave instala da mesma loja.
+2. No primeiro uso, o painel mostra o que ela lê e envia e pede um "ok".
 
-1. Baixe `lattes-editor-extensao.zip` da
-   [página do último lançamento](https://github.com/rlueder/lattes-editor/releases/latest)
-   e descompacte.
-2. Em `chrome://extensions` (ou `brave://extensions`), ligue o "Modo do
-   desenvolvedor" e use "Carregar sem compactação" na pasta.
-3. No primeiro uso, o painel mostra o que ela lê e envia e pede um "ok".
-
-Uma extensão carregada assim não se atualiza sozinha: quando o app avisar que
-ela está desatualizada, troque a pasta pela do zip novo e recarregue. O que
-ela lê e envia está na
+A loja atualiza a extensão sozinha. O que ela lê e envia está na
 [política de privacidade](https://rlueder.github.io/lattes-editor/privacidade.html).
 
 ## Documentação

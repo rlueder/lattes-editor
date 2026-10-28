@@ -11,6 +11,7 @@
 // ligação de cada campo do trabalho técnico com o atributo do XML.
 
 import { childElements, getAttr, type XElement } from '../../src/model/xml.ts';
+import { availabilityToForm } from '../../src/schema/availability.ts';
 import type { LattesState } from './estado.ts';
 import { GRID_HIDDEN, gridScripts, techWorkPost } from './grades.ts';
 import * as h from './html.ts';
@@ -87,7 +88,14 @@ function techWorkForm(req: SimRequest, state: LattesState): SimResponse {
     row('Finalidade', h.text('f_finalidade', value(d, 'FINALIDADE'), { maxLength: 255 })),
     row('Duração em meses', h.text('f_duracao', value(d, 'DURACAO-EM-MESES'), { maxLength: 5 })),
     row('Número de páginas', h.text('f_paginas', value(d, 'NUMERO-DE-PAGINAS'), { maxLength: 5 })),
-    row('Disponibilidade', h.select('f_disp', h.capturedList('L3'), value(d, 'DISPONIBILIDADE'))),
+    row(
+      'Disponibilidade',
+      h.select(
+        'f_disp',
+        h.capturedList('L3'),
+        availabilityToForm(value(d, 'DISPONIBILIDADE')) ?? '',
+      ),
+    ),
     row('Cidade', h.text('f_cidade', value(d, 'CIDADE-DO-TRABALHO'), { maxLength: 255 })),
     row(
       'Instituição promotora',
@@ -132,39 +140,26 @@ function techWorkList(state: LattesState): SimResponse {
   return html(h.page('Trabalhos técnicos', `<table>${rows}</table>\n<p>${novo}</p>`));
 }
 
-/** Inclusão da formação complementar: os campos da captura de 13/10/2026. */
+/**
+ * Inclusão da formação complementar: os campos da recaptura de 27/10/2026
+ * (o curso desabilitado, só pela busca, e os ocultos que as buscas escrevem).
+ */
 function complementaryInclusion(state: LattesState): SimResponse {
   const rows = [
     row('Nível', h.select('f_nivel', h.capturedList('L26'), '')),
     row('Instituição', h.text('f_inst', '', { disabled: true, maxLength: 75 })),
-    row('Curso', h.text('f_curso', '', { maxLength: 50 })),
+    row('Curso', h.text('f_curso', '', { disabled: true, maxLength: 50 })),
     row('Carga horária', h.text('f_carga', '', { maxLength: 4 })),
     row('Situação', h.radios('F_STATUS', h.capturedList('L27'), '')),
   ].join('\n');
   // f_tipo=FA vem da URL da captura; o valor do oculto é inferido.
   const body = `<form name="GN_FORMACAO2" method="post" action="PKG_FORMACAO_COMPL.FORM2">
 <table>${rows}</table>
-${h.hidden('f_ctr', '')}${h.hidden('f_cod', state.code)}${h.hidden('f_seq', '')}${h.hidden('f_tipo', 'FA')}
+${h.hidden('f_ctr', '')}${h.hidden('f_cod', state.code)}${h.hidden('f_seq', '')}
+${['f_cod_inst', 'f_cod_curso', 'f_cod_inst2', 'f_cod_curso2', 'f_inst_old', 'f_curso_old'].map((n) => h.hidden(n, '')).join('')}${h.hidden('f_tipo', 'FA')}
 ${h.formButtons(false)}
 </form>`;
   return html(h.page('Formação complementar', body));
-}
-
-/** Licenças (pkg_licenca.form, captura de 13/10/2026): só a inclusão. */
-function licenseForm(state: LattesState): SimResponse {
-  const rows = [
-    row('Tipo de licença', h.select('f_tipo_licenca', h.capturedList('L23'), '')),
-    row('Data de início', h.text('f_dta_inicio', '', { maxLength: 10 })),
-    row('Data de fim', h.text('f_dta_fim', '', { maxLength: 10 })),
-    row('Data de nascimento ou adoção', h.text('f_dta_nasc_adoc', '', { maxLength: 10 })),
-    row('Visibilidade', h.select('f_tipo_privacidade', h.PRIVACY, '1')),
-  ].join('\n');
-  const body = `<form name="GN_LICENCA" method="post" action="PKG_LICENCA.FORM">
-<table>${rows}</table>
-${h.hidden('f_ctr', 'I')}${h.hidden('f_cod', state.code)}
-${h.formButtons(false)}
-</form>`;
-  return html(h.page('Licenças', body));
 }
 
 export const notSimulated = () =>
@@ -180,14 +175,6 @@ export function isComplementaryInclusion(req: SimRequest): boolean {
 export { complementaryInclusion };
 
 export const CENSO_ROUTES: Routes = {
-  'pkg_licenca.form': (req, state) => (req.method === 'POST' ? notSimulated() : licenseForm(state)),
-  'pkg_licenca.lista': (_req, state) =>
-    html(
-      h.page(
-        'Licenças',
-        `<p><a href="#" onclick="self.parent.modalCV2.setarUrl('pkg_licenca.form?f_cod=${state.code}',true); return false;">Incluir novo item</a></p>`,
-      ),
-    ),
   'pkg_relatorio.form': (req, state) =>
     req.method === 'POST' ? techWorkPost(req, state) : techWorkForm(req, state),
   'pkg_relatorio.lista': (_req, state) => techWorkList(state),

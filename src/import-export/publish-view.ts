@@ -138,7 +138,9 @@ export function publishStatus(
     busy: true,
     done: false,
     locked: true,
-    text: 'Enviando ao CNPq. O Lattes leva uns 20 segundos para responder; depois, o editor confere no menu.',
+    // O envio observado levou 18 s em 14/10/2026 e mais de um minuto em
+    // 28/10/2026: o tempo corrido mostra que ainda se espera o Lattes.
+    text: `Esperando o Lattes responder (${Math.max(0, Math.round((now - attempt.at) / 1000))} s). Pode passar de um minuto; o editor confirma a publicação quando a resposta chegar.`,
   };
 }
 
@@ -155,7 +157,7 @@ export function sendScreenProblem(
     case 'sessao':
       return 'A sessão do Lattes caiu. Entre de novo e reabra este painel.';
     case 'ocupado':
-      return 'A extensão está gravando no Lattes. Reabra este painel quando terminar.';
+      return 'A extensão continuou ocupada com outra tarefa no Lattes. Feche e abra este painel daqui a pouco.';
     case 'mudou':
       return `${reading.detail ?? 'A tela de envio do Lattes não está como o editor espera.'} Envie pelo Lattes.`;
     default:
@@ -186,6 +188,10 @@ export const SCREEN_TIMEOUT_MS = 30_000;
 /** A extensão ligada sabe ler a tela de envio (capacidade enviar-cnpq). */
 export const canReadSendScreen = (features: readonly string[]): boolean =>
   features.includes('enviar-cnpq');
+
+/** Extensões antigas anunciam a leitura, mas ainda recusam publicar. */
+export const canSendCv = (features: readonly string[]): boolean =>
+  features.includes('publicar-cnpq');
 
 /**
  * Em que pé está a leitura da tela de envio: esperando, ou o que dizer.

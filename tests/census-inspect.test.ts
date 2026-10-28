@@ -30,6 +30,27 @@ async function simulado(options: ServerOptions = {}) {
 }
 
 describe('scripts da página, sem dado pessoal', () => {
+  it('uma lista de dados em várias linhas sai inteira, até fechar', () => {
+    const html = `<script>
+var redesSociais = [
+  { id: 2, redeSocial: "Linkedin" },{}];
+var provider = [{
+  id: 2,
+  redeSocial: "Linkedin",
+  endereco: "https://example.org/pessoa-sintetica",
+  privacidade: "1"
+}, {
+  id: 15,
+  endereco: "https://example.org/outra"
+}];
+if (provider == null) alerta();
+</script>`;
+    const [script] = pageScripts(html);
+    expect(script).not.toContain('example.org');
+    expect(script).toContain('redeSocial: "Linkedin" },{}];');
+    expect(script).toContain('if (provider == null) alerta();');
+  });
+
   it('tira e-mail, CPF, números longos, textos pedidos e as linhas de dados das grades', () => {
     const html = `<script src="jquery.js"></script>
 <script>
@@ -201,6 +222,24 @@ describe('recaptura avulsa contra o Lattes simulado', () => {
     }
   });
 
+  it('P_COD vazio recebe o código e sai do arquivo', async () => {
+    const { lattes, port } = await simulado();
+    const asked: string[] = [];
+    try {
+      const file = await inspectPages(
+        { ...port, get: (path) => (asked.push(path), port.get(path)) },
+        lattes.state.code,
+        ['PKG_PROJETO.EDITAR_FINANCIAMENTO?P_COD=&P_CTR='],
+        { delayMs: 0 },
+      );
+      expect(asked.some((p) => p.includes(`P_COD=${lattes.state.code}`))).toBe(true);
+      expect(asked.some((p) => /[?&]f_cod=/i.test(p))).toBe(false);
+      expect(JSON.stringify(file)).not.toContain(lattes.state.code);
+    } finally {
+      await lattes.close();
+    }
+  });
+
   it('caminho com f_cod não ganha outro f_cod', async () => {
     const { lattes, port } = await simulado();
     try {
@@ -213,6 +252,28 @@ describe('recaptura avulsa contra o Lattes simulado', () => {
         },
       );
       expect(file.entries[0]).toMatchObject({ path: 'pkg_premio.form', status: 'ok' });
+    } finally {
+      await lattes.close();
+    }
+  });
+
+  it('a página de alteração do primeiro item de uma lista, sem o número dele no arquivo', async () => {
+    const { lattes, port } = await simulado();
+    try {
+      const file = await inspectPages(
+        port,
+        lattes.state.code,
+        [
+          { editOf: { form: 'pkg_orient.form', list: 'pkg_orient.lista?f_tipo=C' } },
+          { editOf: { form: 'pkg_inexistente.form', list: 'pkg_orient.lista?f_tipo=A' } },
+        ],
+        { delayMs: 0 },
+      );
+      expect(file.entries[0]).toMatchObject({ status: 'ok' });
+      expect(file.entries[0]!.path).toMatch(/^pkg_orient\.form/i);
+      expect(file.entries[1]).toMatchObject({ status: 'sem-link' });
+      expect(JSON.stringify(file)).not.toMatch(/f_seq=\d/);
+      expect(JSON.stringify(file)).not.toContain(lattes.state.code);
     } finally {
       await lattes.close();
     }
@@ -268,6 +329,7 @@ describe('recaptura avulsa contra o Lattes simulado', () => {
       );
       expect(file.interrupted).toBe(true);
       expect(file.entries.map((e) => e.status)).toEqual(['nao-lido', 'nao-lido']);
+      expect(file.entries[0]!.detail).toBe('A sessão do Lattes caiu');
       expect(file.scripts).toBeUndefined();
     } finally {
       await lattes.close();

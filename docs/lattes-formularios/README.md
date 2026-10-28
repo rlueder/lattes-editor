@@ -115,16 +115,36 @@ decidido como em `src/ui/AttributeField.tsx`):
 Tudo abaixo só se vê enviando, e por isso espera um teste acompanhado, com um
 item de teste e a base da passada de itens de teste:
 
-- o passo depois do envio da formação complementar (`FORM2`) e o que ele
-  grava com `f_ctr` vazio;
 - o elemento do XML que corpo editorial, revisão e assessoramento gravam
   (`PKG_REVISOR.INCLUI`): o currículo não tem item desses;
 - a primeira inclusão real de cultivar protegida e registrada, desenho
   industrial, marca e topografia;
-- as páginas de edição das bancas, e a janela do subtipo das orientações de
-  outra natureza (`f_sub_prod`);
 - a licença: o Lattes exige a data de nascimento ou adoção, que o XML não
-  guarda, então ela não tem como ir pelo formulário.
+  guarda, então ela não tem como ir pelo formulário;
+- a troca de instituição e curso de uma formação complementar e a do órgão
+  de um projeto feitas pela própria página, com o corpo do POST registrado
+  para comparar com o do conector (os dois envios do conector voltaram com
+  os valores de antes, `lattes_internals.md`, seção 18);
+- a pessoa com deficiência com um ou dois tipos marcados e a "outra forma de
+  contato" incluída, cada uma seguida de uma exportação, para ver como o XML
+  grava `PCD` e `OUTRA-FORMA-DE-CONTATO`.
+
+Estas pedem um item de teste, e por isso também um envio acompanhado:
+
+- uma exportação depois de ligar um financiador, uma produção e uma
+  orientação a um projeto de teste, para ver a linha de
+  `EDITAR_FINANCIAMENTO` e confirmar que a linha de `pp_lista_prod` leva a
+  `SEQUENCIA-PRODUCAO`;
+- o titular instituição de uma patente de teste e os ambientes de um
+  programa de computador de teste, com a exportação de cada um;
+- a natureza de uma banca de qualificação aberta na página carregada: a
+  ordem dos rádios depois dos scripts, que decide o nível das buscas.
+
+Uma leitura sem envio ainda falta: o vetor `programaDP` do formulário do
+programa de computador sem o apagamento de nomes, que hoje leva os rótulos
+`l` e `n` dessa lista fixa junto com os dados pessoais. As músicas de teste de
+18/10/2026 também precisam do valor exportado de `TIPO-DE-EVENTO` ao lado do
+`f_tpo_evento` de cada uma: 3 das 7 não bateram.
 
 Os caminhos inferidos na lista de formulários são os de desenho industrial,
 marca e topografia (o `f_reg` não foi lido) e os que saem de um link da

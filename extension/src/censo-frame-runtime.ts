@@ -23,7 +23,7 @@ const fatalError = (error: unknown) =>
 const fail = (error: unknown) => {
   const text =
     error instanceof Error && error.name === 'SecurityError'
-      ? 'O formulário tentou acessar o menu fora da ponte do quadro isolado'
+      ? `O formulário tentou acessar o menu fora da ponte do quadro isolado (${error.message.slice(0, 160)})`
       : error instanceof Error
         ? error.message
         : String(error);
@@ -87,16 +87,69 @@ const modal = {
       throw new FrameGuardError('Navegação do formulário fora do transporte recusada');
   },
 };
-Object.defineProperty(window, '__lattesFrameParent', {
-  value: {
-    autorDP: [],
-    caixaMsg: box,
-    checkPublicacao: () => undefined,
-    fecharModal: () => undefined,
-    modalCV1: modal,
-    modalCV2: modal,
-    modalCV3: modal,
-    titularPessoaDP: [],
+const stand: Record<string, unknown> = {
+  areaDP: [],
+  autorDP: [],
+  caixaMsg: box,
+  checkPublicacao: () => undefined,
+  fecharModal: () => undefined,
+  modalCV1: modal,
+  modalCV2: modal,
+  modalCV3: modal,
+  palavraDP: [],
+  // Mensagem da página ao menu não sai do quadro: a ponte é a porta privada.
+  postMessage: () => undefined,
+  setorDP: [],
+  titularInstDP: [],
+  titularPessoaDP: [],
+  // A ajuda contextual do menu: no quadro isolado, nada a mostrar.
+  veriHelp: () => undefined,
+};
+/**
+ * O menu como o formulário o vê (parent, também em self.parent.parent): só as
+ * cópias locais acima. Um pedido de outra coisa para com o nome dela, em vez
+ * do SecurityError do navegador, que não diz o que foi pedido.
+ */
+const parentStand: Record<string, unknown> = new Proxy(stand, {
+  get(target, key) {
+    if (typeof key === 'symbol') return undefined;
+    // Quem testa se é uma promessa (await, Promise.resolve) ou o serializa
+    // pergunta then e toJSON: não é pedido ao menu.
+    if (key === 'then' || key === 'toJSON') return undefined;
+    if (key === 'parent') return parentStand;
+    if (key in target) return target[key];
+    throw new FrameGuardError(
+      `O formulário pediu "${key}" ao menu, que o quadro isolado ainda não tem`,
+    );
+  },
+});
+Object.defineProperty(window, '__lattesFrameParent', { value: parentStand });
+// parent é substituível (top não é): o código da página que o lê recebe as
+// cópias locais. A mensagem do pai real já foi guardada em host.
+Object.defineProperty(window, 'parent', { configurable: true, get: () => parentStand });
+
+/** Armazenamento só na memória do quadro: na origem opaca, o do navegador lança SecurityError. */
+function memoryStorage(): Storage {
+  const data = new Map<string, string>();
+  return {
+    clear: () => data.clear(),
+    getItem: (k: string) => data.get(k) ?? null,
+    key: (i: number) => [...data.keys()][i] ?? null,
+    get length() {
+      return data.size;
+    },
+    removeItem: (k: string) => void data.delete(k),
+    setItem: (k: string, v: string) => void data.set(k, String(v)),
+  };
+}
+Object.defineProperty(window, 'localStorage', { configurable: true, value: memoryStorage() });
+Object.defineProperty(window, 'sessionStorage', { configurable: true, value: memoryStorage() });
+// O cookie da sessão nunca entra no quadro: a página lê vazio e o que grava se perde.
+Object.defineProperty(document, 'cookie', {
+  configurable: true,
+  get: () => '',
+  set(_value: string) {
+    // O que a página grava no cookie fica só no quadro, e se perde.
   },
 });
 

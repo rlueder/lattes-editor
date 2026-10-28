@@ -42,19 +42,23 @@ outro item.
 
 | Caminho hoje | Tipos | Editor cria |
 | ------------ | ----: | ----------: |
-| conector     |    31 |          31 |
+| conector     |    46 |          46 |
 | importar     |    60 |          60 |
-| nenhum       |    23 |          23 |
+| nenhum       |     8 |           8 |
 
-O editor cria todos os tipos. Os 23 sem caminho vão para "A enviar" com a
-rota "à mão", cada um com o motivo: a patente (o titular sai de um vetor do
-menu cuja forma ainda não foi lida), o projeto (o Lattes exige o órgão ou
-unidade na inclusão, e o editor não o pede), a formação complementar, a
-licença, as áreas de atuação, oito das nove naturezas de atividade de uma
-atuação (todas menos a de ensino pedem o órgão, que entra por uma busca cuja
-resposta não foi lida), a disciplina numa atividade que já existe, o
-treinamento, a linha de pesquisa, o financiador, a produção e a orientação de
-um projeto, e a participação em projeto (que nasce com o projeto).
+O editor cria todos os tipos. Os 8 sem inclusão própria são partes de outro
+item ou uma lista única. A disciplina, o treinamento e a linha de pesquisa
+entram pela grade da atividade: junto com uma atividade nova, ou numa que já
+está no Lattes pela alteração dela (`atividade-grade.ts`, capacidade
+`grade-atividade`), e a linha nova leva os objetivos pelo formulário dela
+(`linha-detalhes.ts`). O financiador e a produção ligada entram pelas grades
+da página do projeto, e as áreas de atuação pela grade única delas. Ficam à
+mão a orientação antiga sob o projeto e a participação em projeto,
+que nasce com o projeto. As nove
+naturezas de atividade vão pelo conector; as que não são o ensino levam o
+órgão escolhido na janela de órgãos da atividade (`create-cargo.ts`, atrás
+da capacidade `atividade-nova-orgao`). A patente vai com o depositante, pela
+mesma grade da alteração (`create-registro-extras.ts`).
 
 Os outros cinco registros (cultivar protegida, cultivar registrada, desenho
 industrial, marca e topografia de circuito) e a atividade
@@ -86,10 +90,10 @@ e treinamento são só um nome, que fica no texto do elemento.
 | `RESIDENCIA-MEDICA`                               | Residência médica                               |              | sim         | conector     | `formacao-FA-D`         | lido    | observado/inferido  |
 | `LIVRE-DOCENCIA`                                  | Livre-docência                                  |              | sim         | conector     | `formacao-AP-6`         | lido    | observado/inferido  |
 | `POS-DOUTORADO`                                   | Pós-doutorado                                   |              | sim         | conector     | `formacao-AP-5`         | lido    | observado/inferido  |
-| `FORMACAO-COMPLEMENTAR-DE-EXTENSAO-UNIVERSITARIA` | Formação complementar de extensão universitária |              | sim         | nenhum       | `formacao-complementar` | lido    | observado/observado |
-| `MBA`                                             | MBA                                             |              | sim         | nenhum       | `formacao-complementar` | lido    | observado/observado |
-| `FORMACAO-COMPLEMENTAR-CURSO-DE-CURTA-DURACAO`    | Formação complementar curso de curta duração    |              | sim         | nenhum       | `formacao-complementar` | lido    | observado/observado |
-| `OUTROS`                                          | Outros                                          |              | sim         | nenhum       | `formacao-complementar` | lido    | observado/observado |
+| `FORMACAO-COMPLEMENTAR-DE-EXTENSAO-UNIVERSITARIA` | Formação complementar de extensão universitária |              | sim         | conector     | `formacao-complementar` | lido    | observado/observado |
+| `MBA`                                             | MBA                                             |              | sim         | conector     | `formacao-complementar` | lido    | observado/observado |
+| `FORMACAO-COMPLEMENTAR-CURSO-DE-CURTA-DURACAO`    | Formação complementar curso de curta duração    |              | sim         | conector     | `formacao-complementar` | lido    | observado/observado |
+| `OUTROS`                                          | Outros                                          |              | sim         | conector     | `formacao-complementar` | lido    | observado/observado |
 
 ### Dados gerais
 
@@ -97,7 +101,7 @@ e treinamento são só um nome, que fica no texto do elemento.
 | ----------------- | ---------------- | ------------ | ----------- | ------------ | ------------------- | ------- | ------------------- |
 | `AREA-DE-ATUACAO` | Área de atuação  |              | sim         | nenhum       | `areas-de-atuacao`  | lido    | observado/observado |
 | `IDIOMA`          | Idioma           |              | sim         | conector     | `idioma`            | lido    | observado/observado |
-| `LICENCA`         | Licença          |              | sim         | nenhum       | `licenca`           | lido    | observado/inferido  |
+| `LICENCA`         | Licença          |              | sim         | conector     | `licenca`           | lido    | observado/inferido  |
 | `PREMIO-TITULO`   | Prêmio ou título |              | sim         | conector     | `premio`            | lido    | observado/observado |
 
 ### Atuação e projetos
@@ -106,29 +110,29 @@ e treinamento são só um nome, que fica no texto do elemento.
 | ------------------------------------ | ---------------------------------- | ---------------------------- | ----------- | ------------ | --------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `DISCIPLINA`                         | Disciplina                         | `ENSINO`                     | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
 | `LINHA-DE-PESQUISA`                  | Linha de pesquisa                  | `PESQUISA-E-DESENVOLVIMENTO` | sim         | nenhum       | `linha-de-pesquisa`                                             | sem link                     | inferido/inferido                                                                                       |
-| `PROJETO-DE-PESQUISA`                | Projeto                            | `PARTICIPACAO-EM-PROJETO`    | sim         | nenhum       | `projeto-P`, `projeto-D`, `projeto-E`, `projeto-N`, `projeto-O` | lido, lido, lido, lido, lido | observado/observado, observado/observado, observado/observado, observado/observado, observado/observado |
+| `PROJETO-DE-PESQUISA`                | Projeto                            | `PARTICIPACAO-EM-PROJETO`    | sim         | conector     | `projeto-P`, `projeto-D`, `projeto-E`, `projeto-N`, `projeto-O` | lido, lido, lido, lido, lido | observado/observado, observado/observado, observado/observado, observado/observado, observado/observado |
 | `FINANCIADOR-DO-PROJETO`             | Financiador do projeto             | `PROJETO-DE-PESQUISA`        | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
 | `PRODUCAO-CT-DO-PROJETO`             | Produção C&T do projeto            | `PROJETO-DE-PESQUISA`        | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
 | `ORIENTACAO`                         | Orientação                         | `PROJETO-DE-PESQUISA`        | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
 | `TREINAMENTO`                        | Treinamento                        | `TREINAMENTO-MINISTRADO`     | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
 | `ATUACAO-PROFISSIONAL`               | Atuação profissional               |                              | sim         | conector     | `atuacao`                                                       | lido                         | observado/observado                                                                                     |
 | `VINCULOS`                           | Vínculo                            | `ATUACAO-PROFISSIONAL`       | sim         | conector     | `vinculo`                                                       | lido                         | observado/observado                                                                                     |
-| `DIRECAO-E-ADMINISTRACAO`            | Direção e administração            | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | `atividade-1`                                                   | lido                         | observado/inferido                                                                                      |
-| `PESQUISA-E-DESENVOLVIMENTO`         | Pesquisa e desenvolvimento         | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | `atividade-2`                                                   | lido                         | observado/inferido                                                                                      |
+| `DIRECAO-E-ADMINISTRACAO`            | Direção e administração            | `ATUACAO-PROFISSIONAL`       | sim         | conector     | `atividade-1`                                                   | lido                         | observado/inferido                                                                                      |
+| `PESQUISA-E-DESENVOLVIMENTO`         | Pesquisa e desenvolvimento         | `ATUACAO-PROFISSIONAL`       | sim         | conector     | `atividade-2`                                                   | lido                         | observado/inferido                                                                                      |
 | `ENSINO`                             | Ensino                             | `ATUACAO-PROFISSIONAL`       | sim         | conector     | `atividade-4`                                                   | lido                         | observado/inferido                                                                                      |
-| `ESTAGIO`                            | Estágio                            | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | `atividade-5`                                                   | lido                         | observado/inferido                                                                                      |
-| `SERVICO-TECNICO-ESPECIALIZADO`      | Serviço técnico especializado      | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | `atividade-6`                                                   | lido                         | observado/inferido                                                                                      |
-| `EXTENSAO-UNIVERSITARIA`             | Extensão universitária             | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | `atividade-7`                                                   | lido                         | observado/inferido                                                                                      |
-| `TREINAMENTO-MINISTRADO`             | Treinamento ministrado             | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | `atividade-8`                                                   | lido                         | observado/inferido                                                                                      |
-| `OUTRA-ATIVIDADE-TECNICO-CIENTIFICA` | Outra atividade técnico-científica | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | `atividade-9`                                                   | lido                         | observado/inferido                                                                                      |
-| `CONSELHO-COMISSAO-E-CONSULTORIA`    | Conselho, comissão e consultoria   | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | `atividade-B`                                                   | lido                         | observado/inferido                                                                                      |
+| `ESTAGIO`                            | Estágio                            | `ATUACAO-PROFISSIONAL`       | sim         | conector     | `atividade-5`                                                   | lido                         | observado/inferido                                                                                      |
+| `SERVICO-TECNICO-ESPECIALIZADO`      | Serviço técnico especializado      | `ATUACAO-PROFISSIONAL`       | sim         | conector     | `atividade-6`                                                   | lido                         | observado/inferido                                                                                      |
+| `EXTENSAO-UNIVERSITARIA`             | Extensão universitária             | `ATUACAO-PROFISSIONAL`       | sim         | conector     | `atividade-7`                                                   | lido                         | observado/inferido                                                                                      |
+| `TREINAMENTO-MINISTRADO`             | Treinamento ministrado             | `ATUACAO-PROFISSIONAL`       | sim         | conector     | `atividade-8`                                                   | lido                         | observado/inferido                                                                                      |
+| `OUTRA-ATIVIDADE-TECNICO-CIENTIFICA` | Outra atividade técnico-científica | `ATUACAO-PROFISSIONAL`       | sim         | conector     | `atividade-9`                                                   | lido                         | observado/inferido                                                                                      |
+| `CONSELHO-COMISSAO-E-CONSULTORIA`    | Conselho, comissão e consultoria   | `ATUACAO-PROFISSIONAL`       | sim         | conector     | `atividade-B`                                                   | lido                         | observado/inferido                                                                                      |
 | `PARTICIPACAO-EM-PROJETO`            | Participação em projeto            | `ATUACAO-PROFISSIONAL`       | sim         | nenhum       | nenhum                                                          |                              |                                                                                                         |
 
 ### Patentes e registros
 
 | Elemento                           | Item                             | Faz parte de | Editor cria | Caminho hoje | Formulário no censo | Captura | Endereço/ligação    |
 | ---------------------------------- | -------------------------------- | ------------ | ----------- | ------------ | ------------------- | ------- | ------------------- |
-| `PATENTE`                          | Patente                          |              | sim         | nenhum       | `patente`           | lido    | observado/observado |
+| `PATENTE`                          | Patente                          |              | sim         | conector     | `patente`           | lido    | observado/observado |
 | `CULTIVAR-PROTEGIDA`               | Cultivar protegida               |              | sim         | conector     | `registro-CP`       | lido    | observado/inferido  |
 | `CULTIVAR-REGISTRADA`              | Cultivar registrada              |              | sim         | conector     | `registro-CR`       | lido    | observado/inferido  |
 | `DESENHO-INDUSTRIAL`               | Desenho industrial               |              | sim         | conector     | `registro-DI`       | lido    | observado/inferido  |
@@ -189,11 +193,11 @@ e treinamento são só um nome, que fica no texto do elemento.
 | `ARTIGO-PUBLICADO`                                     | Artigo publicado                                     |              | sim         | importar     | `artigo-publicado`             | lido                  | observado/inferido                     |
 | `ARTIGO-ACEITO-PARA-PUBLICACAO`                        | Artigo aceito para publicação                        |              | sim         | importar     | `artigo-aceito`                | lido                  | observado/inferido                     |
 | `LIVRO-PUBLICADO-OU-ORGANIZADO`                        | Livro publicado ou organizado                        |              | sim         | importar     | `livro-capitulo`               | lido                  | inferido/inferido                      |
-| `CAPITULO-DE-LIVRO-PUBLICADO`                          | Capítulo de livro publicado                          |              | sim         | importar     | `livro-capitulo`, `capitulo`   | lido, não lido        | inferido/inferido, observado/inferido  |
+| `CAPITULO-DE-LIVRO-PUBLICADO`                          | Capítulo de livro publicado                          |              | sim         | importar     | `livro-capitulo`, `capitulo`   | lido, lido            | inferido/inferido, observado/inferido  |
 | `TEXTO-EM-JORNAL-OU-REVISTA`                           | Texto em jornal ou revista                           |              | sim         | importar     | `texto-jornal`                 | lido                  | observado/inferido                     |
 | `OUTRA-PRODUCAO-BIBLIOGRAFICA`                         | Outra produção bibliográfica                         |              | sim         | importar     | `prefacio-outras`              | endereço desconhecido | inferido/inferido                      |
 | `PARTITURA-MUSICAL`                                    | Partitura musical                                    |              | sim         | importar     | `partitura`                    | lido                  | observado/inferido                     |
-| `PREFACIO-POSFACIO`                                    | Prefácio, posfácio                                   |              | sim         | importar     | `prefacio`                     | não lido              | observado/inferido                     |
+| `PREFACIO-POSFACIO`                                    | Prefácio, posfácio                                   |              | sim         | importar     | `prefacio`                     | lido                  | observado/inferido                     |
 | `TRADUCAO`                                             | Tradução                                             |              | sim         | importar     | `traducao`                     | lido                  | observado/inferido                     |
 | `SOFTWARE`                                             | Software                                             |              | sim         | importar     | `registro-PC`, `registro-PC-S` | lido, lido            | observado/inferido, observado/inferido |
 | `PRODUTO-TECNOLOGICO`                                  | Produto tecnológico                                  |              | sim         | importar     | `produto`                      | lido                  | observado/inferido                     |
@@ -268,12 +272,17 @@ caminho pelo conector desde a LAT-52, e o aperfeiçoamento, que deu erro na
 captura do censo, foi lido na recaptura. O projeto também tem a operação
 (`projetoOp`), mas a recaptura mostrou que o `check()` do formulário de
 projeto exige a própria pessoa e um coordenador na equipe (que a inclusão
-abre vazia) e, na inclusão, o órgão ou unidade. A operação agora manda a
-equipe com a linha da própria pessoa como coordenadora (seção 22), mas não
-monta o órgão, e o planejamento manda o projeto à mão com esse motivo. Pós-doutorado e livre-docência entram pela lista
+abre vazia) e, na inclusão, o órgão ou unidade. A operação manda a equipe
+com a linha da própria pessoa como coordenadora (seção 22) e o órgão
+escolhido no editor pela janela de órgãos do Lattes, atrás da capacidade
+`projeto-novo-orgao`; sem o órgão, o projeto vai à mão. Pós-doutorado e livre-docência entram pela lista
 `f_tipo=AP` (etapa 5). A formação complementar abre com nível, instituição,
-curso, carga horária e situação, sem os anos, e envia para `FORM2`, cujo passo
-seguinte só se vê enviando. Atividades de uma atuação usam `pkg_ativ.cargo`, que o lote 3 da recaptura
+curso, carga horária e situação, sem os anos, e envia para `FORM2`, que
+devolve um segundo passo com os anos, a bolsa e a agência
+(`lattes_internals.md`, seção 18). O conector faz os dois passos
+(`create-complementar.ts`, atrás da capacidade `complementar-nova`), com
+instituição, curso e agência pelas buscas e as grades no segundo passo; que a
+inclusão siga os mesmos dois passos da edição é inferido. Atividades de uma atuação usam `pkg_ativ.cargo`, que o lote 3 da recaptura
 leu nas nove naturezas (censo `censo-2026-10-15c.json`). A de ensino é a única
 sem órgão: tem nível (`f_nivel`, de 401 a 409), curso, período e a grade de
 disciplinas em `f_espec_l`, e vai pelo conector
@@ -289,7 +298,9 @@ capacidade da inclusão. As outras oito
 pedem o órgão ou unidade por uma busca (`prc_orgao_cargo`) cuja resposta não
 foi lida, e vão à mão. Treinamento e linha de pesquisa entram pela grade da
 atividade de treinamento e da de pesquisa e desenvolvimento, e a lista de
-linhas de pesquisa não tem inclusão própria.
+linhas de pesquisa não tem inclusão própria: o conector inclui a linha pela
+grade e depois abre o formulário dela para os objetivos, o campo Ativa, o
+inglês e as grades.
 
 **Dados gerais.** Idioma, prêmio e licença têm formulário lido, simples, com
 `f_ctr=I`. Áreas de atuação são uma grade única em `prc_area_atuacao`.
@@ -304,13 +315,11 @@ do censo casou 3 idiomas, 5 prêmios e 8 vínculos) e inferida no pós-doutorado
 e na livre-docência. O vínculo novo não tem "Outras informações" em português,
 só em inglês: com o texto em português, vai à mão.
 
-Ficam à mão, com o motivo de cada um: a licença (o `check()` exige a data de
-nascimento ou adoção, que o XML da licença não guarda), as áreas de atuação
-(a grade `f_area_l` tem a chave `r`, de sentido não lido), a formação
-complementar, as atividades que pedem órgão, a disciplina numa atividade que
-já existe, o treinamento, a linha de pesquisa e o financiador, a produção e a
-orientação do projeto (as buscas de onde vêm os valores dessas grades são POST
-e a resposta não foi lida). O que falta ler está no `README.md` de
+A licença vai pelo conector (`create-licenca.ts`) com a data de nascimento
+ou adoção que o `check()` exige e o XML não guarda: o editor a pede embaixo
+do início da licença nova, e ela vai só no envio. As áreas de atuação vão
+pela grade única delas (`areas-atuacao.ts`). Fica à mão a orientação antiga
+sob o projeto. O que falta ler está no `README.md` de
 `lattes-formularios/`.
 
 **Produções, eventos, orientações e bancas.** A captura leu o formulário de

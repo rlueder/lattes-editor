@@ -35,12 +35,33 @@ it.each([
 ])('recusa mensagem inválida ou destino externo (%#)', (message) => {
   expect(() => framePost(message, base)).toThrow();
 });
-it('adapta só acessos de interface conhecidos sem conceder referências ao pai', () => {
+it('todo acesso ao pai vai às cópias locais, sem referência ao menu real', () => {
   expect(
     localFrameReferences(
       "self.parent.caixaMsg.exibir({}); top.modalCV2.getDocument(); window.parent.autorDP; parent.fetch('/x'); parent.document.body;",
     ),
   ).toBe(
-    "__lattesFrameParent.caixaMsg.exibir({}); __lattesFrameParent.modalCV2.getDocument(); __lattesFrameParent.autorDP; parent.fetch('/x'); parent.document.body;",
+    "__lattesFrameParent.caixaMsg.exibir({}); __lattesFrameParent.modalCV2.getDocument(); __lattesFrameParent.autorDP; __lattesFrameParent.fetch('/x'); __lattesFrameParent.document.body;",
   );
+  // A ajuda que quase todo formulário chama na carga e os vetores das sugestões.
+  expect(
+    localFrameReferences(
+      'self.parent.veriHelp("LIVROS"); self.parent.palavraDP; parent.areaDP; top.setorDP; self.parent.titularInstDP; self.parent.parent.modalCV3;',
+    ),
+  ).toBe(
+    '__lattesFrameParent.veriHelp("LIVROS"); __lattesFrameParent.palavraDP; __lattesFrameParent.areaDP; __lattesFrameParent.setorDP; __lattesFrameParent.titularInstDP; __lattesFrameParent.parent.modalCV3;',
+  );
+  // Propriedade de um objeto da página, depois de outro ponto: fica como está.
+  // Cadeias da janela com mais de um salto: um .parent por salto a mais.
+  expect(localFrameReferences('top.parent.x; window.parent.top.y;')).toBe(
+    '__lattesFrameParent.parent.x; __lattesFrameParent.parent.y;',
+  );
+  const own = 'node.parent.children; this.parent.x; el.style.top.length; a.$parent.b; myparent.x;';
+  expect(localFrameReferences(own)).toBe(own); // Um script com variável ou parâmetro desse nome usa o dele; self. e window. seguem da janela.
+  const local = 'var parent = el.parentNode; parent.appendChild(x); self.parent.veriHelp("A");';
+  expect(localFrameReferences(local)).toBe(
+    'var parent = el.parentNode; parent.appendChild(x); __lattesFrameParent.veriHelp("A");',
+  );
+  const param = 'function f(top){ return top.toFixed(1); } (parent) => parent.x;';
+  expect(localFrameReferences(param)).toBe(param);
 });

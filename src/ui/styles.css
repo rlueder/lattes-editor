@@ -160,6 +160,44 @@ code {
   min-height: 100vh;
 }
 
+/* A barra fina de andamento sob o cabeçalho ("Recarregar do Lattes"). */
+.topbar-progress {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  overflow: hidden;
+  background: var(--accent-soft);
+  pointer-events: none;
+}
+
+.topbar-progress span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  background: var(--accent);
+  animation: topbar-progress 1.2s cubic-bezier(0.645, 0.045, 0.355, 1) infinite;
+  will-change: transform;
+}
+
+@keyframes topbar-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar-progress span {
+    width: 100%;
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
 .topbar {
   grid-column: 1 / -1;
   position: sticky;
@@ -5996,8 +6034,11 @@ button.finding-row:focus-visible {
   margin-top: 3px;
 }
 
+/* O texto da declaração destacado do fundo cinza do painel. */
 blockquote.publish-declaration {
   display: block;
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  background: var(--accent-soft);
   color: var(--text);
 }
 
@@ -6018,6 +6059,55 @@ blockquote.publish-declaration {
 .publish-done {
   color: var(--ok);
   font-weight: 500;
+}
+
+/* O envio em andamento, e o resultado dele, no lugar do formulário. */
+.publish-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.publish-progress-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.publish-progress-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.publish-progress.ok .publish-progress-icon {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.publish-progress.check .publish-progress-icon {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+
+.publish-progress-title {
+  margin: 4px 0 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.publish-progress-text {
+  max-width: 44ch;
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 /* Itens de outro arquivo: o resumo da leva e o tipo e o ano de cada item, à

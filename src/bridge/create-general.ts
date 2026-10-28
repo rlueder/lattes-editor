@@ -18,8 +18,8 @@
 //
 // Fica à mão, com o motivo de GENERAL_BY_HAND (recaptura de 15/10/2026,
 // seção 21): licença (o Lattes exige a data de nascimento ou adoção, que o
-// XML não guarda), áreas de atuação (a chave r da grade), formação
-// complementar (o passo depois de FORM2), atividades de uma atuação, disciplina
+// XML não guarda), áreas de atuação (a chave r da grade), atividades de uma
+// atuação (a formação complementar vai por create-complementar.ts), disciplina
 // e treinamento (os formulários de cada natureza ainda não foram lidos), linha
 // de pesquisa (sem inclusão na lista) e financiador, produção e orientação do
 // projeto (janelas não lidas).
@@ -30,9 +30,11 @@ import { getAttr, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
 import { vinculoFields } from './create.ts';
 import { CREATE_FIELD_LABELS } from './create-labels.ts';
+import { planLicenca } from './create-licenca.ts';
 import {
   absentFields,
   getChecked,
+  leftOf,
   maybeCreated,
   overLimit,
   type Planned,
@@ -42,6 +44,7 @@ import {
   type Result,
   sameCode,
   selectEntries,
+  type SendExtras,
   Stop,
 } from './create-shared.ts';
 import {
@@ -56,7 +59,7 @@ import { findLinks, isLogonPage, type LattesLink } from './lattes-html.ts';
 import type { FieldValues } from './plan.ts';
 
 /** Os formulários dos dados gerais que o conector sabe incluir. */
-export type GeneralForm = 'idioma' | 'premio';
+export type GeneralForm = 'idioma' | 'licenca' | 'premio';
 
 export interface CreateGeneralOp {
   expect: FieldValues;
@@ -64,6 +67,8 @@ export interface CreateGeneralOp {
   key: string;
   kind: 'criar-dado';
   label: string;
+  /** Os campos que o formulário de inclusão não tem e ficam fora (create-shared.ts). */
+  left?: string[];
   set: FieldValues;
 }
 
@@ -80,45 +85,30 @@ export interface CreateVinculoOp {
 }
 
 /** Elementos novos que viram inclusão aqui, e os que ficam à mão com o motivo. */
-export const GENERAL_CREATES = new Set(['IDIOMA', 'PREMIO-TITULO', 'VINCULOS']);
+export const GENERAL_CREATES = new Set(['IDIOMA', 'LICENCA', 'PREMIO-TITULO', 'VINCULOS']);
 
 /** Por que cada um vai à mão (seção 21 de docs/lattes_internals.md). */
 export const GENERAL_BY_HAND: Record<string, string> = {
   'AREA-DE-ATUACAO':
     'Área de atuação vai à mão: a grade de áreas (f_area_l) tem a chave r, de sentido não lido',
-  ATIVIDADE:
-    'Atividade vai à mão: o Lattes exige o órgão ou unidade, que entra por uma busca cuja resposta ainda não foi lida (a de ensino já vai)',
+  ATIVIDADE: 'Atividade vai à mão: o Lattes exige o órgão ou unidade, escolhido na lista do Lattes',
   DISCIPLINA:
-    'Disciplina numa atividade que já está no Lattes vai à mão: a grade leva também as que já existem, que a página traz só em script (numa atividade de ensino nova, ela vai junto)',
+    'Disciplina: a atividade de ensino dela ainda não está no Lattes; a disciplina vai junto com a atividade',
   'FINANCIADOR-DO-PROJETO':
-    'Financiador vai à mão: os valores de cada linha da grade de financiadores vêm de uma janela que não foi lida',
-  FORMACAO_COMPLEMENTAR:
-    'Formação complementar vai à mão: o formulário de inclusão não tem os anos, e o passo depois dele só se vê enviando',
-  LICENCA:
-    'Licença vai à mão: o Lattes exige a data de nascimento ou adoção, que o currículo não guarda',
+    'Financiador vai à mão: a natureza, a moeda e o valor de cada linha vêm da janela PKG_PROJETO.EDITAR_FINANCIAMENTO, que não foi lida',
   'LINHA-DE-PESQUISA':
-    'Linha de pesquisa vai à mão: ela entra pela grade da atividade de pesquisa e desenvolvimento, que exige o órgão ou unidade, e a grade só leva o nome',
+    'Linha de pesquisa: a atividade de pesquisa e desenvolvimento dela ainda não está no Lattes; a linha vai junto com a atividade',
   ORIENTACAO:
     'Orientação do projeto vai à mão: ela se liga a uma orientação do currículo pela janela de orientações, que não foi lida',
   'PRODUCAO-CT-DO-PROJETO':
     'Produção do projeto vai à mão: ela se liga a uma produção do currículo pela janela de produções, que não foi lida',
   TREINAMENTO:
-    'Treinamento vai à mão: ele entra pela grade da atividade de treinamento, que exige o órgão ou unidade',
+    'Treinamento: a atividade de treinamento dele ainda não está no Lattes; o treinamento vai junto com a atividade',
 };
 
 /** O motivo de ir à mão para um elemento novo, ou undefined quando não é destes. */
 export function byHandReason(name: string): string | undefined {
   if (GENERAL_BY_HAND[name]) return GENERAL_BY_HAND[name];
-  if (
-    [
-      'FORMACAO-COMPLEMENTAR-CURSO-DE-CURTA-DURACAO',
-      'FORMACAO-COMPLEMENTAR-DE-EXTENSAO-UNIVERSITARIA',
-      'MBA',
-      'OUTROS',
-    ].includes(name)
-  ) {
-    return GENERAL_BY_HAND.FORMACAO_COMPLEMENTAR;
-  }
   if (ACTIVITIES.has(name)) return GENERAL_BY_HAND.ATIVIDADE;
   return undefined;
 }
@@ -157,9 +147,7 @@ function planIdioma(change: Change, el: XElement, label: string): Planned<Create
 
 /** Um prêmio novo: nome, entidade e ano (seção 16); o nome em inglês não tem campo. */
 function planPremio(change: Change, el: XElement, label: string): Planned<CreateGeneralOp> {
-  if (getAttr(el, 'NOME-DO-PREMIO-OU-TITULO-INGLES')?.trim()) {
-    return { reason: 'Campos que o formulário de inclusão não tem: Nome em inglês' };
-  }
+  const left = getAttr(el, 'NOME-DO-PREMIO-OU-TITULO-INGLES')?.trim() ? ['Nome em inglês'] : [];
   const set: FieldValues = {
     f_agencia: getAttr(el, 'NOME-DA-ENTIDADE-PROMOTORA') ?? '',
     f_ano: getAttr(el, 'ANO-DA-PREMIACAO') ?? '',
@@ -167,7 +155,15 @@ function planPremio(change: Change, el: XElement, label: string): Planned<Create
   };
   // check() do formulário exige nome e ano (seção 16).
   if (!set.f_titulo || !set.f_ano) return { reason: 'O prêmio precisa do nome e do ano' };
-  return { expect: {}, form: 'premio', key: change.key, kind: 'criar-dado', label, set };
+  return {
+    expect: {},
+    form: 'premio',
+    key: change.key,
+    kind: 'criar-dado',
+    label,
+    ...leftOf(left),
+    set,
+  };
 }
 
 /** Um vínculo novo numa atuação que já está no Lattes (com SEQUENCIA-ATIVIDADE). */
@@ -200,6 +196,7 @@ export function planCreateGeneral(
   change: Change,
   chain: XElement[],
   label: string,
+  extras: SendExtras = {},
 ): Planned<CreateGeneralOp | CreateVinculoOp> | undefined {
   const el = chain.at(-1);
   if (!el) return undefined;
@@ -209,6 +206,7 @@ export function planCreateGeneral(
   const itemChain = item === el ? chain : [...chain, item];
   if (item.name === 'IDIOMA') return planIdioma(change, item, label);
   if (item.name === 'PREMIO-TITULO') return planPremio(change, item, label);
+  if (item.name === 'LICENCA') return planLicenca(change, item, chain[0], label, extras);
   if (item.name === 'VINCULOS') return planVinculo(change, itemChain, item, label);
   const reason = byHandReason(item.name);
   return reason ? { reason } : undefined;
@@ -227,6 +225,8 @@ interface SimpleForm {
   action: string;
   /** O item já está no Lattes: a linha da lista lida tem o mesmo valor. */
   duplicate: (pairs: [string, string][], set: FieldValues) => boolean;
+  /** O nome é feminino (a licença), para as mensagens. */
+  feminine?: boolean;
   list: string;
   name: string;
   proc: string;
@@ -241,6 +241,18 @@ const SIMPLE: Record<GeneralForm, SimpleForm> = {
     name: 'GN_IDIOMA',
     proc: 'pkg_idioma.form',
     what: 'idioma',
+  },
+  // A licença não tem número na exportação: a duplicata é o mesmo tipo e início.
+  licenca: {
+    action: 'PKG_LICENCA.FORM',
+    duplicate: (pairs, set) =>
+      pairValue(pairs, 'f_tipo_licenca') === set.f_tipo_licenca &&
+      pairValue(pairs, 'f_dta_inicio') === set.f_dta_inicio,
+    feminine: true,
+    list: 'pkg_licenca.lista',
+    name: 'GN_LICENCA',
+    proc: 'pkg_licenca.form',
+    what: 'licença',
   },
   premio: {
     action: 'pkg_premio.form',
@@ -271,7 +283,10 @@ export async function applyCreateGeneral(op: CreateGeneralOp, port: LattesPort):
     for (const row of before) {
       const { pairs } = await readPairs(port, row.path, spec.name);
       if (spec.duplicate(pairs, op.set)) {
-        return result('divergente', `O Lattes já tem esse ${spec.what}`);
+        return result(
+          'divergente',
+          `O Lattes já tem ${spec.feminine ? 'essa' : 'esse'} ${spec.what}`,
+        );
       }
     }
     const inclusion = findLinks(listaHtml, spec.proc).find((l) => !l.params.f_seq);
@@ -318,7 +333,9 @@ async function confirmNew(
   set: FieldValues,
 ): Promise<Result> {
   const result = resultOf(key);
-  const mayExist = `O ${spec.what} pode ter sido criado`;
+  const mayExist = spec.feminine
+    ? `A ${spec.what} pode ter sido criada`
+    : `O ${spec.what} pode ter sido criado`;
   try {
     const known = new Set(before.map((l) => l.params.f_seq));
     const created = rows(await getChecked(port, listPath), spec.proc).filter(
@@ -328,10 +345,14 @@ async function confirmNew(
       return maybeCreated(key, mayExist, `a lista mostra ${created.length} itens novos`);
     }
     const saved = await readPairs(port, created[0]!.path, spec.name);
-    const problem = readBackProblem('Criado no Lattes', readBack(saved, set));
+    const lead = spec.feminine ? 'Criada no Lattes' : 'Criado no Lattes';
+    const problem = readBackProblem(lead, readBack(saved, set));
     return problem
       ? result('divergente', problem)
-      : result('conferido', 'Criado e conferido no Lattes');
+      : result(
+          'conferido',
+          `${spec.feminine ? 'Criada e conferida' : 'Criado e conferido'} no Lattes`,
+        );
   } catch (err) {
     const why = err instanceof Error ? err.message : 'falha inesperada';
     return maybeCreated(key, mayExist, `a conferência falhou (${why})`);

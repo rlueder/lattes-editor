@@ -10,6 +10,13 @@ import { getAttr, type XElement } from '../model/xml.ts';
 import type { LattesPort, OpResult } from './apply.ts';
 import type { FormSpec } from './contract.ts';
 import { institutionResults } from './create.ts';
+import {
+  GRID_PARTS,
+  newGridPairs,
+  newGridProblems,
+  type NewItemGrids,
+  newItemGrids,
+} from './create-grids.ts';
 import { CREATE_FIELD_LABELS } from './create-labels.ts';
 import {
   absentFields,
@@ -18,6 +25,8 @@ import {
   getChecked,
   hidden,
   jsCalls,
+  labelIn,
+  leftOf,
   mapAttrs,
   type Mapper,
   maybeCreated,
@@ -38,6 +47,8 @@ import {
   text,
 } from './create-shared.ts';
 import { encodeLatin1Form, type FormControl, type Pairs, pairValue, setPairs } from './form.ts';
+import { planDoutorado } from './formacao-doutorado.ts';
+import { resolveFormacao } from './formacao-lookups.ts';
 import { findLinks, isLogonPage, type LattesLink } from './lattes-html.ts';
 import type { FieldValues } from './plan.ts';
 
@@ -46,6 +57,10 @@ export interface CreateFormacaoOp extends CreateOpBase {
   agencyCode?: string;
   /** CODIGO-CURSO do XML, nos níveis que têm curso. */
   courseCode?: string;
+  /** A outra instituição do doutorado ou da graduação, pela busca com f_sta_outra=S. */
+  doutInstitution?: { code: string; name: string };
+  /** Palavras-chave, áreas e setores, nas grades do formulário (create-grids.ts). */
+  grids?: NewItemGrids;
   kind: 'criar-formacao';
   /** f_nivel do formulário: 4 doutorado, 3 mestrado… */
   level: string;
@@ -103,8 +118,19 @@ const FORMATION_FIELDS: Record<string, [string, Mapper]> = {
   'NOME-COMPLETO-DO-ORIENTADOR': ['f_orient', same],
   'NOME-DO-CO-ORIENTADOR': ['f_coorient', same],
   'NOME-DO-ORIENTADOR': ['f_orient', same],
+  // Os blocos que o tipo do doutorado e da graduação mostra (formacao-edit.ts).
+  'NOME-DO-ORIENTADOR-CO-TUTELA': ['f_orient_dout_ct', same],
+  'NOME-DO-ORIENTADOR-SANDUICHE': ['f_orient_dout_sw', same],
+  'NOME-ORIENTADOR-DOUT': ['f_orient_dout', same],
+  'NOME-ORIENTADOR-GRAD': ['f_orient_dout', same],
+  // Na residência médica, o f_orient é o "Número do registro" (rótulo no censo
+  // de 15/10/2026); ela não tem orientador.
+  'NUMERO-DO-REGISTRO': ['f_orient', same],
   'STATUS-DO-CURSO': ['F_STATUS', (v) => COURSE_STATUS[v]],
-  // Seção 5: o rádio normal/sanduíche do mestrado é o TIPO-MESTRADO do XML.
+  // Seção 5: o rádio normal/sanduíche do mestrado é o TIPO-MESTRADO do XML; o
+  // do doutorado tem também a cotutela (C e CS, pelas opções, seção 17).
+  'TIPO-DOUTORADO': ['f_tpo_doutorado', (v) => (['C', 'CS', 'N', 'S'].includes(v) ? v : undefined)],
+  'TIPO-GRADUACAO': ['f_tpo_doutorado', (v) => (v === 'N' || v === 'S' ? v : undefined)],
   'TIPO-MESTRADO': ['f_tpo_doutorado', (v) => (v === 'N' || v === 'S' ? v : undefined)],
   'TITULO-DA-DISSERTACAO-TESE': ['f_titulo', same],
   'TITULO-DA-MONOGRAFIA': ['f_titulo', same],
@@ -117,6 +143,10 @@ const FORMATION_FIELDS: Record<string, [string, Mapper]> = {
 /** Do Lattes (número, nível, códigos que acompanham o curso) ou tratados à parte (buscas). */
 const FORMATION_HANDLED = new Set([
   'CODIGO-AGENCIA-FINANCIADORA',
+  'CODIGO-INSTITUICAO-DOUT',
+  'CODIGO-INSTITUICAO-GRAD',
+  'NOME-INSTITUICAO-DOUT',
+  'NOME-INSTITUICAO-GRAD',
   'CODIGO-AREA-CURSO',
   'CODIGO-CURSO',
   'CODIGO-CURSO-CAPES',
@@ -153,13 +183,15 @@ export function planCreateFormacao(
   }
   if (agencyCode && bolsa !== 'SIM') return { reason: 'Agência informada sem bolsa' };
   if (bolsa === 'SIM' && !agencyCode) return { reason: 'Bolsa sem a agência do Lattes' };
-  const filled = filledChildren(el);
-  if (filled.length > 0) {
-    return { reason: 'Palavras-chave, áreas e setores da formação ainda vão à mão' };
-  }
+  const filled = filledChildren(el, [...GRID_PARTS]);
+  const grids = newItemGrids(el);
+  if (grids && 'reason' in grids) return grids;
   const { missing, set, wrong } = mapAttrs(change, el, FORMATION_FIELDS, FORMATION_HANDLED);
-  const reason = reasonFrom(missing, wrong);
+  const left = [...missing, ...filled.map((c) => labelIn(change, c.name))];
+  const reason = reasonFrom(wrong);
   if (reason) return { reason };
+  const dout = planDoutorado(el, set);
+  if ('reason' in dout) return dout;
   // A livre-docência não tem início: tem o ano de obtenção.
   if (level === '6' ? !set.f_ano_obten : !set.f_ano_ini) {
     return {
@@ -173,12 +205,15 @@ export function planCreateFormacao(
   return {
     agencyCode,
     courseCode,
+    ...(dout.institution ? { doutInstitution: dout.institution } : {}),
     expect: {},
+    ...(grids ? { grids } : {}),
     institutionCode,
     institutionName,
     key: change.key,
     kind: 'criar-formacao',
     label,
+    ...leftOf(left),
     level,
     set,
   };
@@ -377,12 +412,25 @@ export async function applyCreateFormacao(op: CreateFormacaoOp, port: LattesPort
       lookups.f_nme_agencia = agencies[0]![1] ?? '';
     }
 
+    // A outra instituição do doutorado: a mesma busca, com f_sta_outra=S.
+    if (op.doutInstitution) {
+      const other = await resolveFormacao(
+        { institutions: [{ before: '', ...op.doutInstitution, slot: 'dout' }] },
+        port,
+        form.pairs,
+      );
+      if ('status' in other) return result(other.status, other.detail);
+      Object.assign(lookups, other.set);
+    }
     const set = { ...typed, ...lookups };
     const limit = overLimit(form.controls, set);
     if (limit) return result('erro', limit);
+    // As grades: as palavras novas e as áreas e setores das listas do menu.
+    const grids = op.grids ? newGridPairs(op.grids, menu) : { set: {} };
+    if ('detail' in grids) return result('erro', grids.detail);
     const response = await port.post(
       CREATE_FORMACAO_SPEC.action,
-      encodeLatin1Form(setPairs(form.pairs, set)),
+      encodeLatin1Form(setPairs(form.pairs, { ...set, ...grids.set })),
     );
     if (isLogonPage(response)) return result('sessao', SESSION);
 
@@ -408,6 +456,9 @@ export async function applyCreateFormacao(op: CreateFormacaoOp, port: LattesPort
       const check = readBack(savedCourseName(saved), withCourseName(set));
       if (!sameCode(formationInstitution(saved.pairs), op.institutionCode)) {
         check.differ.push('Instituição');
+      }
+      if (op.grids) {
+        check.differ.push(...newGridProblems(await getChecked(port, created[0]!.path), op.grids));
       }
       const problem = readBackProblem(`Criada no Lattes (formação ${seq})`, check);
       if (problem) return { ...result('divergente', problem), assigned };

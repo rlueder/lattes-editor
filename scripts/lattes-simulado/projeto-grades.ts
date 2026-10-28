@@ -16,9 +16,18 @@
 // simulado não cria ligação nova: uma linha enviada que não é de nenhuma
 // ligação do projeto não entra.
 
+import { elementLabel } from '../../src/labels/labels.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
-import { childElements, element, getAttr, type XElement } from '../../src/model/xml.ts';
+import {
+  childElements,
+  element,
+  getAttr,
+  setAttr,
+  walk,
+  type XElement,
+} from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
+import { institutionsOf } from './buscas.ts';
 import type { LattesState } from './estado.ts';
 import { esc } from './html.ts';
 import type { SimRequest } from './pedido.ts';
@@ -38,8 +47,35 @@ const team = (projeto: XElement) => {
 const partsOf = (projeto: XElement, container: string) =>
   childElements(projeto, container).flatMap((c) => childElements(c));
 
+/** O código ligado é de uma orientação? (O item com esse SEQUENCIA-PRODUCAO no currículo.) */
+export type IsOrientation = (code: string) => boolean;
+
+/** Pela raiz do currículo: o item com o número é uma orientação. */
+export function orientationLookup(root: XElement): IsOrientation {
+  return (code) => {
+    let name = '';
+    walk(root, (el) => {
+      if (!name && el.name !== LINK && getAttr(el, 'SEQUENCIA-PRODUCAO') === code) name = el.name;
+    });
+    return /ORIENTAC/.test(name);
+  };
+}
+
+const LINK = 'PRODUCAO-CT-DO-PROJETO';
+
+/** As linhas de uma grade: as ligações de produção na grid3, as de orientação na grid4. */
+const rowsFor = (projeto: XElement, grid: LinkGrid, orient: IsOrientation) =>
+  partsOf(projeto, grid.container).filter(
+    (p) =>
+      !grid.orientations ||
+      grid.orientations === (orient(getAttr(p, 'SEQUENCIA-PRODUCAO-CT') ?? '') ? 'sim' : 'nao'),
+  );
+
 /** Os quatro vetores da página de alteração do projeto. */
-export function projectGridScripts(projeto: XElement | undefined): string {
+export function projectGridScripts(
+  projeto: XElement | undefined,
+  orient: IsOrientation = () => false,
+): string {
   const members = projeto
     ? [...team(projeto)]
         .sort(
@@ -62,7 +98,7 @@ export function projectGridScripts(projeto: XElement | undefined): string {
   // com as linhas (grid2, grid3 e grid4 da página real, 18/10/2026).
   const table = (grid: LinkGrid) => {
     const rows = projeto
-      ? partsOf(projeto, grid.container).map(
+      ? rowsFor(projeto, grid, orient).map(
           (p) =>
             `<tr> ${grid
               .cells(p)
@@ -84,14 +120,15 @@ export function projectGridScripts(projeto: XElement | undefined): string {
 const inner = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /**
- * NATUREZA do financiador → a quarta célula. Observado só o Auxílio
- * Financeiro (A, 20/10/2026); as outras letras são inferidas.
+ * NATUREZA do financiador → a quarta célula. As letras e os rótulos são os do
+ * select da janela de edição (lida em 27/10/2026). O simulado repete o
+ * código do projeto, a moeda e o valor de uma linha de teste.
  */
 const FUNDER_NATURE: Record<string, [string, string]> = {
   AUXILIO_FINANCEIRO: ['A', 'Auxílio Financeiro'],
   BOLSA: ['B', 'Bolsa'],
   COOPERACAO: ['C', 'Cooperação'],
-  OUTRO: ['O', 'Outro'],
+  OUTRO: ['O', 'Outra'],
   REMUNERACAO: ['R', 'Remuneração'],
 };
 
@@ -103,16 +140,24 @@ interface LinkGrid {
   end: string;
   field: string;
   id: string;
+  /**
+   * As ligações dividem o mesmo contêiner (PRODUCOES-CT-DO-PROJETO, como a
+   * exportação de 27/10/2026): a grid4 fica com as orientações e a grid3 com o resto.
+   */
+  orientations?: 'nao' | 'sim';
   /** Os valores dos <span>, como o check() os junta. */
   values: (part: XElement) => string[];
 }
 
+/** O código do projeto e a moeda com o valor de cada financiador, como o POST os mandou. */
+const funderCells = new WeakMap<XElement, [string, string]>();
+
 const funderValues = (f: XElement) => [
-  getAttr(f, 'CODIGO-INSTITUICAO') ?? '',
-  // A exportação não traz o valor nem a moeda: o simulado repete os da linha
-  // observada, cujo sentido não foi lido.
-  '0000;N;',
-  '026|10,00',
+  // A célula traz a letra da busca na frente do código (27/10/2026).
+  getAttr(f, 'CODIGO-INSTITUICAO') ? `V${getAttr(f, 'CODIGO-INSTITUICAO')}` : '',
+  // A exportação não traz o valor nem a moeda: o simulado guarda os do envio
+  // ou repete os da linha observada.
+  ...(funderCells.get(f) ?? ['0000;N;', '026|10,00']),
   FUNDER_NATURE[getAttr(f, 'NATUREZA') ?? '']?.[0] ?? '',
 ];
 
@@ -151,46 +196,128 @@ const LINK_GRIDS: LinkGrid[] = [
     container: 'PRODUCOES-CT-DO-PROJETO',
     field: 'f_producoes_l',
     id: 'grid3',
+    orientations: 'nao',
   },
   {
-    ...linked('SEQUENCIA-ORIENTACAO', 'TITULO-ORIENTACAO', 'TIPO-ORIENTACAO'),
-    container: 'ORIENTACOES',
+    ...linked('SEQUENCIA-PRODUCAO-CT', 'TITULO-DA-PRODUCAO-CT', 'TIPO-PRODUCAO-CT'),
+    container: 'PRODUCOES-CT-DO-PROJETO',
     field: 'f_orientacoes_l',
     id: 'grid4',
+    orientations: 'sim',
   },
 ];
 
 /** Os códigos ligados, como o oculto f_producoes_d ou f_orientacoes_d (34|39). */
-export function linkedCodes(projeto: XElement, field: 'f_orientacoes_l' | 'f_producoes_l'): string {
+export function linkedCodes(
+  projeto: XElement,
+  field: 'f_orientacoes_l' | 'f_producoes_l',
+  orient: IsOrientation = () => false,
+): string {
   const grid = LINK_GRIDS.find((g) => g.field === field)!;
-  return partsOf(projeto, grid.container)
+  return rowsFor(projeto, grid, orient)
     .map((p) => grid.values(p)[0] ?? '')
     .join('|');
+}
+
+/** Uma ligação nova ao item do currículo com o número: o título e o tipo saem dele. */
+function newLink(root: XElement, code: string): XElement | undefined {
+  let item: XElement | undefined;
+  walk(root, (el) => {
+    if (!item && el.name !== LINK && getAttr(el, 'SEQUENCIA-PRODUCAO') === code) item = el;
+  });
+  if (!item) return undefined;
+  const basics = childElements(item).find((c) => c.name.startsWith('DADOS-BASICOS')) ?? item;
+  const title = basics.attrs.find((a) => a.name.startsWith('TITULO'))?.value ?? '';
+  return element(LINK, {
+    'SEQUENCIA-PRODUCAO-CT': code,
+    'TIPO-PRODUCAO-CT': elementLabel(item.name),
+    'TITULO-DA-PRODUCAO-CT': title,
+  });
+}
+
+/**
+ * O financiador de uma linha com outra instituição ou outra natureza: o da
+ * mesma posição na grade, com a instituição da busca (pelo código) e a
+ * natureza da letra. Inferido, como o resto da gravação.
+ */
+function renatured(
+  state: LattesState,
+  parts: XElement[],
+  index: number,
+  line: string,
+): XElement | undefined {
+  const cells = line.split('|');
+  const nature = Object.entries(FUNDER_NATURE).find(([, [letter]]) => letter === cells.at(-2));
+  const institution = institutionsOf(state).find((i) => i.code === cells[0]);
+  const funder = parts[index];
+  // Uma linha a mais que as do projeto: um financiador novo, da busca (inferido).
+  if (!funder && nature && institution) {
+    const created = element('FINANCIADOR-DO-PROJETO', {
+      'CODIGO-INSTITUICAO': institution.code.slice(1),
+      NATUREZA: nature[0],
+      'NOME-INSTITUICAO': institution.name,
+    });
+    // As células do meio: o código do projeto e a moeda com o valor ("…|;N;||B|").
+    funderCells.set(created, [cells[1] ?? '', cells.slice(2, -2).join('|')]);
+    return created;
+  }
+  const same = funder && funderValues(funder)[0] === cells[0];
+  if (!funder || !nature || (!same && !institution)) return undefined;
+  setAttr(funder, 'NATUREZA', nature[0]);
+  if (institution) {
+    setAttr(funder, 'CODIGO-INSTITUICAO', institution.code.slice(1));
+    setAttr(funder, 'NOME-INSTITUICAO', institution.name);
+  }
+  return funder;
 }
 
 /**
  * Grava as ligações do POST: ficam, na ordem do envio, as linhas que vieram
  * como a página as serializa; as outras saem. Sem o oculto, nada muda.
  */
-export function applyProjectLinks(projeto: XElement, req: SimRequest): void {
-  for (const grid of LINK_GRIDS) {
+export function applyProjectLinks(state: LattesState, projeto: XElement, req: SimRequest): void {
+  // As produções e as orientações ligadas, no mesmo contêiner: ficam as que
+  // vieram nas duas grades, na ordem; um código novo de um item do currículo
+  // vira uma ligação nova (inferido: a janela de produções não foi lida).
+  const orient = orientationLookup(state.root);
+  const posted = (field: 'f_orientacoes_l' | 'f_producoes_l') => {
+    const raw = req.get(field);
+    return raw === undefined || raw === null
+      ? linkedCodes(projeto, field, orient).split('|').filter(Boolean)
+      : raw.split('@').filter(Boolean);
+  };
+  if (req.get('f_producoes_l') !== undefined || req.get('f_orientacoes_l') !== undefined) {
+    const parts = partsOf(projeto, 'PRODUCOES-CT-DO-PROJETO');
+    const kept = [...posted('f_producoes_l'), ...posted('f_orientacoes_l')]
+      .map(
+        (code) =>
+          parts.find((p) => getAttr(p, 'SEQUENCIA-PRODUCAO-CT') === code) ??
+          newLink(state.root, code),
+      )
+      .filter((p): p is XElement => p !== undefined);
+    const container = childElements(projeto, 'PRODUCOES-CT-DO-PROJETO')[0];
+    if (kept.length === 0) {
+      if (container) projeto.children = projeto.children.filter((c) => c !== container);
+    } else if (container) container.children = kept;
+    else insertInSchemaOrder(lattesSchema, projeto, element('PRODUCOES-CT-DO-PROJETO', {}, kept));
+  }
+  for (const grid of LINK_GRIDS.filter((g) => g.field === 'f_inst_l')) {
     const posted = req.get(grid.field);
     if (posted === undefined || posted === null) continue;
     const parts = partsOf(projeto, grid.container);
     const kept: XElement[] = [];
-    for (const line of posted.split('@').filter(Boolean)) {
-      const part = parts.find(
-        (p) => !kept.includes(p) && grid.values(p).map(inner).join('|') + grid.end === `${line}@`,
-      );
+    for (const [index, line] of posted.split('@').filter(Boolean).entries()) {
+      const part =
+        parts.find(
+          (p) => !kept.includes(p) && grid.values(p).map(inner).join('|') + grid.end === `${line}@`,
+        ) ?? (grid.field === 'f_inst_l' ? renatured(state, parts, index, line) : undefined);
       if (part) kept.push(part);
     }
     const container = childElements(projeto, grid.container)[0];
-    if (!container) continue;
     if (kept.length === 0) {
-      projeto.children = projeto.children.filter((c) => c !== container);
-    } else {
-      container.children = kept;
-    }
+      if (container) projeto.children = projeto.children.filter((c) => c !== container);
+    } else if (container) container.children = kept;
+    else insertInSchemaOrder(lattesSchema, projeto, element(grid.container, {}, kept));
   }
 }
 

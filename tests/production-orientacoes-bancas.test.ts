@@ -34,6 +34,7 @@ const XML = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1"><DADOS-GERAIS NOME-COMPLE
 <OUTRAS-ORIENTACOES-CONCLUIDAS SEQUENCIA-PRODUCAO="47"><DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NATUREZA="TRABALHO_DE_CONCLUSAO_DE_CURSO_GRADUACAO" TITULO="Trabalho de Exemplo" ANO="2020" PAIS="Brasil" IDIOMA="Português" FLAG-RELEVANCIA="NAO"/><DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NOME-DO-ORIENTADO="Formanda de Exemplo" CODIGO-INSTITUICAO="000000000001" NOME-DA-INSTITUICAO="Universidade Federal do Rio Grande do Sul" CODIGO-CURSO="00000001" NOME-DO-CURSO="Genética e Biologia Molecular" FLAG-BOLSA="NAO"/></OUTRAS-ORIENTACOES-CONCLUIDAS>
 <OUTRAS-ORIENTACOES-CONCLUIDAS SEQUENCIA-PRODUCAO="48"><DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NATUREZA="MONOGRAFIA_DE_CONCLUSAO_DE_CURSO_APERFEICOAMENTO_E_ESPECIALIZACAO" TITULO="Monografia de Exemplo" ANO="2020" PAIS="Brasil" IDIOMA="Português" FLAG-RELEVANCIA="NAO"/><DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NOME-DO-ORIENTADO="Especialista de Exemplo" CODIGO-INSTITUICAO="000000000001" NOME-DA-INSTITUICAO="Universidade Federal do Rio Grande do Sul" CODIGO-CURSO="00000005" NOME-DO-CURSO="Especialização em Genética" FLAG-BOLSA="NAO"/></OUTRAS-ORIENTACOES-CONCLUIDAS>
 <OUTRAS-ORIENTACOES-CONCLUIDAS SEQUENCIA-PRODUCAO="49"><DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NATUREZA="TRABALHO_DE_CONCLUSAO_DE_CURSO_GRADUACAO" TITULO="Graduação de Exemplo" ANO="2021" PAIS="Brasil" IDIOMA="Português" FLAG-RELEVANCIA="NAO"/><DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NOME-DO-ORIENTADO="Formando de Exemplo" CODIGO-INSTITUICAO="000000000001" NOME-DA-INSTITUICAO="Universidade Federal do Rio Grande do Sul" CODIGO-CURSO="00000005" NOME-DO-CURSO="Especialização em Genética" FLAG-BOLSA="NAO"/></OUTRAS-ORIENTACOES-CONCLUIDAS>
+<OUTRAS-ORIENTACOES-CONCLUIDAS SEQUENCIA-PRODUCAO="50"><DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NATUREZA="ORIENTACAO-DE-OUTRA-NATUREZA" TIPO="Estágio" TITULO="Estágio de Exemplo" ANO="2022" PAIS="Brasil" IDIOMA="Português" FLAG-RELEVANCIA="NAO"/><DETALHAMENTO-DE-OUTRAS-ORIENTACOES-CONCLUIDAS NOME-DO-ORIENTADO="Estagiária de Exemplo" FLAG-BOLSA="NAO"/></OUTRAS-ORIENTACOES-CONCLUIDAS>
 </ORIENTACOES-CONCLUIDAS></OUTRA-PRODUCAO>
 <DADOS-COMPLEMENTARES>
 <ORIENTACOES-EM-ANDAMENTO><ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO SEQUENCIA-PRODUCAO="43"><DADOS-BASICOS-DA-ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO NATUREZA="Tese de doutorado" TITULO-DO-TRABALHO="Tese de Exemplo" ANO="2022" PAIS="Brasil" IDIOMA="Português"/><DETALHAMENTO-DA-ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO TIPO-DE-ORIENTACAO="ORIENTADOR_PRINCIPAL" NOME-DO-ORIENTANDO="Doutorando de Exemplo" FLAG-BOLSA="NAO"/></ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO></ORIENTACOES-EM-ANDAMENTO>
@@ -208,13 +209,86 @@ describe('orientações: plano', () => {
     expect(reasonOf(set('43', 'DADOS-BASICOS', { NATUREZA: 'Outra' }))).toMatch(
       /^Natureza: Tese de doutorado é o tipo do item no Lattes/,
     );
-    // O tipo do mestrado sai da janela do subtipo, que não foi lida.
-    expect(reasonOf(set('41', 'DADOS-BASICOS', { TIPO: 'PROFISSIONALIZANTE' }))).toMatch(
-      /^Tipo: o tipo sai de uma janela do Lattes/,
-    );
     expect(reasonOf(set('41', 'DADOS-BASICOS', { DOI: '10.1/x' }))).toMatch(
       /O formulário deste tipo no Lattes não tem: DOI/,
     );
+  });
+});
+
+describe('tipo do mestrado (dominio() de pkg_orient.form, lido em 26/10/2026)', () => {
+  it('acadêmico para profissional: o código em f_sub_prod e o rótulo em f_dsc_outra', () => {
+    const op = onlyOp(set('41', 'DADOS-BASICOS', { TIPO: 'PROFISSIONALIZANTE' }));
+    expect(op).toMatchObject({
+      expect: { f_dsc_outra: 'Acadêmico', f_sub_prod: '29' },
+      set: { f_dsc_outra: 'Profissional', f_sub_prod: '30' },
+    });
+    expect(op.lookups).toBeUndefined();
+  });
+
+  it('com curso no item, o curso é buscado de novo no nível do profissional', () => {
+    const withCourse = (root: XElement) => {
+      set('41', 'DETALHAMENTO', { 'CODIGO-CURSO': '00000001' })(root);
+    };
+    const original = parseXml(XML).root;
+    withCourse(original);
+    const working = parseXml(XML).root;
+    withCourse(working);
+    set('41', 'DADOS-BASICOS', { TIPO: 'PROFISSIONALIZANTE' })(working);
+    const plan = planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Item' })),
+      working,
+      { editProduction: true, productionLookups: true },
+    );
+    expect(plan.unsupported).toEqual([]);
+    expect((plan.ops[0] as ProductionOp).lookups).toEqual({
+      course: { before: '00000001', code: '00000001' },
+      subProd: '30',
+    });
+  });
+
+  it('valor fora do formulário fica à mão', () => {
+    expect(reasonOf(set('41', 'DADOS-BASICOS', { TIPO: 'OUTRO' }))).toMatch(
+      /^Tipo: valor que o formulário de orientação do Lattes não tem/,
+    );
+  });
+
+  it('no Lattes simulado: grava e confere', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp(set('41', 'DADOS-BASICOS', { TIPO: 'PROFISSIONALIZANTE' }));
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(postsOf(lattes).at(-1)!.fields).toMatchObject({ f_sub_prod: '30' });
+  });
+});
+
+describe('tipo da orientação de outra natureza (dominio(), lido em 27/10/2026)', () => {
+  const kind = (seq: string, value: string) => set(seq, 'DADOS-BASICOS', { TIPO: value });
+
+  it('vai em f_dsc_outra, como o atribui_ot() grava', () => {
+    expect(onlyOp(kind('50', 'Monitoria'))).toMatchObject({
+      expect: { f_dsc_outra: 'Estágio' },
+      set: { f_dsc_outra: 'Monitoria' },
+    });
+  });
+
+  it('nas outras naturezas, e com a natureza trocada junto, fica à mão', () => {
+    expect(reasonOf(kind('42', 'Monitoria'))).toBe(
+      'Tipo: o Lattes só guarda o tipo na orientação de outra natureza',
+    );
+    expect(
+      reasonOf((root) => {
+        kind('50', 'Monitoria')(root);
+        set('50', 'DADOS-BASICOS', { NATUREZA: 'INICIACAO_CIENTIFICA' })(root);
+      }),
+    ).toContain('Tipo: troque a natureza num envio e o tipo em outro');
+    expect(reasonOf(kind('50', 'x'.repeat(101)))).toBe('Tipo: o Lattes aceita até 100 caracteres');
+  });
+
+  it('no Lattes simulado: grava e confere', async () => {
+    const lattes = await lattesFor();
+    expect(await applyOp(onlyOp(kind('50', 'Monitoria')), lattes.port)).toMatchObject({
+      status: 'conferido',
+    });
+    expect(getAttr(partOf(lattes.state.root, '50', 'DADOS-BASICOS'), 'TIPO')).toBe('Monitoria');
   });
 });
 
@@ -780,7 +854,7 @@ describe('natureza das outras orientações concluídas (testa_nivel, lido em 20
   });
 });
 
-describe('natureza das bancas: sem envio, a página não foi lida', () => {
+describe('natureza das bancas', () => {
   const manualOf = (id: string) =>
     Object.entries(ORIENTACOES_BANCAS_TARGETS.find((t) => t.id === id)!.manual ?? {}).find(
       ([key]) => key.endsWith('@NATUREZA'),
@@ -794,11 +868,67 @@ describe('natureza das bancas: sem envio, a página não foi lida', () => {
     );
   });
 
-  it('a qualificação (A13 e A16) e as outras participações ficam à mão, com o motivo', () => {
-    expect(
-      reasonOf(set('45', 'DADOS-BASICOS', { NATUREZA: 'Exame de qualificação de doutorado' })),
-    ).toMatch(/qualificação de mestrado e de doutorado/);
-    expect(manualOf('banca-trabalho-outra')).toMatch(/não tem opção para outras participações/);
+  it('as outras participações ficam à mão, com o motivo', () => {
+    expect(manualOf('banca-trabalho-outra')).toMatch(/não tem campo para outras participações/);
+  });
+
+  // testa_nivel() de PKG_BANCA_TRAB.form, lido em 27/10/2026 sem enviar.
+  const QUALIFIED = (root: XElement) =>
+    set('45', 'DETALHAMENTO', {
+      'CODIGO-CURSO': '00000001',
+      'CODIGO-INSTITUICAO': '000000000001',
+      'NOME-CURSO': 'Genética e Biologia Molecular',
+      'NOME-INSTITUICAO': 'Universidade Federal do Rio Grande do Sul',
+    })(root);
+  const toDoctorate = set('45', 'DADOS-BASICOS', {
+    NATUREZA: 'Exame de qualificação de doutorado',
+  });
+  const planQualification = (productionLookups = true) => {
+    const original = parseXml(XML).root;
+    QUALIFIED(original);
+    const working = parseXml(XML).root;
+    QUALIFIED(working);
+    toDoctorate(working);
+    return planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Item' })),
+      working,
+      { editProduction: true, productionLookups },
+    );
+  };
+
+  it('qualificação de mestrado para doutorado: o rádio e as escolhas de novo', () => {
+    const p = planQualification();
+    expect(p.unsupported).toEqual([]);
+    expect(p.ops[0]).toMatchObject({
+      expect: { F_COD_PROD: 'A16' },
+      lookups: {
+        course: { before: '00000001', code: '00000001' },
+        institution: { before: '000000000001', code: '000000000001' },
+        nature: 'A13',
+      },
+      set: { F_COD_PROD: 'A13' },
+      target: 'banca-trabalho-qualificacao',
+    });
+    expect(planQualification(false).unsupported[0]?.reason).toMatch(/desligado nesta montagem/);
+  });
+
+  it('qualificação sem a instituição no item: à mão, com o motivo', () => {
+    expect(reasonOf(toDoctorate)).toMatch(/o item não tem o código dela; troque no Lattes$/);
+  });
+
+  it('no Lattes simulado: grava, com as buscas no nível da natureza nova', async () => {
+    const lattes = await lattesFor();
+    QUALIFIED(lattes.state.root);
+    const op = planQualification().ops[0] as ProductionOp;
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    const paths = lattes.state.log.map((l) => l.path);
+    // inst() e curso() da página: GD e nível 4, sem área, para a de doutorado.
+    expect(paths.some((p) => /^PRC_INST_FORM\?.*F_NIVEL=GD/i.test(p))).toBe(true);
+    expect(paths.some((p) => /^prc_curso_form\?.*f_nivel=4&f_sta_area=N/i.test(p))).toBe(true);
+    expect(postsOf(lattes).at(-1)!.fields).toMatchObject({ F_COD_PROD: 'A13' });
+    expect(getAttr(partOf(lattes.state.root, '45', 'DADOS-BASICOS'), 'NATUREZA')).toBe(
+      'Exame de qualificação de doutorado',
+    );
   });
 });
 
