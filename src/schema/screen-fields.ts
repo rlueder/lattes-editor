@@ -86,10 +86,9 @@ const address = (field: string, label: string, extra: Partial<ScreenField> = {})
  * Os itens cujo formulário tem a lista f_tipo_privacidade (público ou
  * privado; o rótulo que o censo leu ao lado dela é a nota "Privado: As
  * informações não serão exibidas na consulta pública."), pelos elementos que
- * o censo ligou a cada formulário (docs/lattes-formularios/). Fora daqui, por
- * enquanto, as partes da atuação (atuação, vínculo, atividades), as
- * participações em eventos, o revisor e a assessoria, que o conector ainda
- * não liga a ela.
+ * o censo ligou a cada formulário (docs/lattes-formularios/). Fora daqui a
+ * própria atuação, que o conector não altera, o revisor e a assessoria. As
+ * participações em eventos ficam nos dados básicos (EVENT_BASICS).
  */
 const PRIVACY_ITEMS = [
   'PREMIO-TITULO',
@@ -166,6 +165,16 @@ const PRIVACY_ITEMS = [
   'ENSINO-MEDIO-SEGUNDO-GRAU',
   'RESIDENCIA-MEDICA',
   'APERFEICOAMENTO',
+  'VINCULOS',
+  'CONSELHO-COMISSAO-E-CONSULTORIA',
+  'DIRECAO-E-ADMINISTRACAO',
+  'ENSINO',
+  'ESTAGIO',
+  'EXTENSAO-UNIVERSITARIA',
+  'OUTRA-ATIVIDADE-TECNICO-CIENTIFICA',
+  'PESQUISA-E-DESENVOLVIMENTO',
+  'SERVICO-TECNICO-ESPECIALIZADO',
+  'TREINAMENTO-MINISTRADO',
 ];
 
 /**

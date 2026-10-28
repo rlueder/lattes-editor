@@ -183,6 +183,8 @@ export const VINCULO_FIELDS: Record<string, [string, Mapper]> = {
   'OUTRAS-INFORMACOES-INGLES': ['f_outras_inf_en', same],
   'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO': ['f_enqua', same],
   'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO-INGLES': ['f_enqua_en', same],
+  // A visibilidade, que a exportação não traz (schema/screen-fields.ts).
+  'tela:f_tipo_privacidade': ['f_tipo_privacidade', same],
 };
 
 function idiomaFields(change: Change): {
@@ -235,7 +237,7 @@ function mapFields(
     }
     const [field, map] = entry;
     set[field] = map(f.after);
-    expect[field] = map(f.before);
+    if (!unknownBefore(f)) expect[field] = map(f.before);
   }
   return { expect, missing, set };
 }
@@ -376,7 +378,7 @@ function planAny(
     if (atuacao?.name !== 'ATUACAO-PROFISSIONAL' || !seqAtiv || !seqHist) {
       return unsupported(change, label, 'Vínculo sem número de sequência');
     }
-    const byHand = vinculoByHand(change);
+    const byHand = vinculoByHand(change, atuacao);
     if (byHand) return unsupported(change, label, byHand);
     const { expect, missing, set } = mapFields(change, VINCULO_FIELDS);
     if (missing.length > 0) {

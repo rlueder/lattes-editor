@@ -348,10 +348,10 @@ function atuacaoDiffs(state: XElement, loaded: XElement): string[] {
       'SEQUENCIA-LINHA',
       'SEQUENCIA-PROJETO',
       'SEQUENCIA-ESPECIFICACAO',
-      ...Object.keys(VINCULO_FIELDS),
+      ...Object.keys(VINCULO_FIELDS).filter((a) => !isScreenAttr(a)),
       'TIPO-DE-VINCULO',
       'OUTRO-VINCULO-INFORMADO',
-      ...Object.keys(PERIOD),
+      ...Object.keys(PERIOD).filter((a) => !isScreenAttr(a)),
       'TIPO-ENSINO',
       'NOME-CURSO',
       'CODIGO-CURSO',
@@ -547,6 +547,16 @@ describe('Carregar do Lattes pelas listas e pelos formulários', () => {
         items.every((i) => getAttr(i, 'tela:f_tipo_privacidade') !== undefined),
         name,
       ).toBe(true);
+    }
+    // A visibilidade de um vínculo e de uma atividade, na leitura da atuação.
+    const bond = all(open.state.root, 'VINCULOS')[0]!;
+    const job = all(open.state.root, 'DIRECAO-E-ADMINISTRACAO')[0]!;
+    open.state.privacy.set(bond, '2');
+    open.state.privacy.set(job, '2');
+    const fourth = await loadCvFromLattes(portOf(open));
+    for (const name of ['VINCULOS', 'DIRECAO-E-ADMINISTRACAO']) {
+      const got = all(fourth.doc!.root, name).map((i) => getAttr(i, 'tela:f_tipo_privacidade'));
+      expect(got, name).toContain('2');
     }
     // A classificação do evento, que o simulado guarda ao lado do item.
     const congress = all(open.state.root, 'PARTICIPACAO-EM-CONGRESSO')[0]!;

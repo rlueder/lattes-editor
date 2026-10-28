@@ -22,6 +22,7 @@
 import type { Change } from '../model/changes.ts';
 import { foldText } from '../model/fold-text.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
+import { unknownBefore } from '../schema/screen-fields.ts';
 import type { LattesPort, OpResult } from './apply.ts';
 import { type ActivityRows, rowsToSend } from './atividade-grade.ts';
 import { getChecked, sameCode, Stop } from './create-shared.ts';
@@ -105,6 +106,8 @@ export const PERIOD: Record<string, [string, (v: string) => string | undefined]>
   'FLAG-PERIODO': ['f_status', (v) => ({ ANTERIOR: 'N', ATUAL: 'S' })[v]],
   'MES-FIM': ['f_mes_fim', (v) => v],
   'MES-INICIO': ['f_mes_ini', (v) => v],
+  // A visibilidade, que a exportação não traz (schema/screen-fields.ts).
+  'tela:f_tipo_privacidade': ['f_tipo_privacidade', (v) => v],
 };
 
 const ORGAN = new Set(['CODIGO-ORGAO', 'NOME-ORGAO', 'CODIGO-UNIDADE', 'NOME-UNIDADE']);
@@ -230,7 +233,7 @@ export function planAtividade(
         return { reason: `Valor sem correspondência no formulário do Lattes: ${f.label}` };
       }
       set[field] = after;
-      expect[field] = before;
+      if (!unknownBefore(f)) expect[field] = before;
     } else if (ORGAN.has(f.attr)) continue;
     else if (type.natur === '4' && TEACHING.has(f.attr)) continue;
     else if (type.description === f.attr) {

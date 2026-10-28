@@ -867,6 +867,17 @@ describe('atuação, atividades e áreas: o motivo de ficar à mão', () => {
     );
     expect(vinculoByHand(change('VINCULOS', ['ANO-FIM']))).toBeUndefined();
   });
+
+  it('o único vínculo da atuação não fica privado, como o verificaPriv() da página', () => {
+    const toPrivate: Change = {
+      ...change('VINCULOS', []),
+      fields: [{ after: '2', attr: 'tela:f_tipo_privacidade', before: '1', label: 'Visibilidade' }],
+    };
+    const one = element('ATUACAO-PROFISSIONAL', {}, [element('VINCULOS')]);
+    const two = element('ATUACAO-PROFISSIONAL', {}, [element('VINCULOS'), element('VINCULOS')]);
+    expect(vinculoByHand(toPrivate, one)).toMatch(/único vínculo/);
+    expect(vinculoByHand(toPrivate, two)).toBeUndefined();
+  });
 });
 
 describe('projeto: financiador', () => {
