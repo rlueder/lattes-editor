@@ -384,6 +384,33 @@ async function uploadAndSelect(
   if (isLogonPage(step2.html, step2.url)) return { reason: 'sessao' };
   const rejected = step1Rejection(step2.html);
   if (rejected) {
+    // Em 28/10/2026 a resposta trouxe, um depois do outro, o alerta de
+    // sucesso e o do DTD, e mesmo assim a solicitação ficou criada e o passo 3
+    // listou o item: a tela do passo 1 diz se há uma pendente.
+    // Antes do envio a tela não tinha pendente (importItems para nesse caso),
+    // então a que aparecer agora é deste envio.
+    let state: ReturnType<typeof step1ScreenState> | 'erro';
+    try {
+      const after = await port.get(`pkg_importa_xml.inicio?f_cod=${code}`);
+      state = isLogonPage(after.html, after.url)
+        ? 'sessao'
+        : step1ScreenState(after.html, after.url);
+    } catch {
+      state = 'erro';
+    }
+    if (state === 'pendente') {
+      return {
+        detail: `${rejected} Mesmo assim, o Lattes criou uma solicitação, que ficou pendente no Importar; confirme ou descarte por lá.`,
+        reason: 'pendente',
+      };
+    }
+    // Só a tela do passo 1 limpa diz que nada ficou; qualquer outra, não deu para conferir.
+    if (state !== 'ok') {
+      return {
+        detail: `${rejected} Não deu para conferir se o Lattes criou uma solicitação: veja no Importar se ficou alguma pendente.`,
+        reason: 'arquivo',
+      };
+    }
     return {
       detail: `${rejected} Nenhuma solicitação foi criada no Lattes.`,
       reason: 'arquivo',

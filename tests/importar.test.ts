@@ -295,9 +295,10 @@ async function step1Page(): Promise<string> {
   return open.port.get(`pkg_importa_xml.inicio?f_cod=${CODE}`);
 }
 
-async function fakeLattes(pages: { s1?: string; s2?: string; s3?: string } = {}) {
+async function fakeLattes(pages: { s1?: string; s1After?: string; s2?: string; s3?: string } = {}) {
   await open?.close();
   const calls: Call[] = [];
+  let uploaded = false;
   open = await withLattesSimulado({
     code: CODE,
     intercept: async (req, state, next) => {
@@ -305,10 +306,15 @@ async function fakeLattes(pages: { s1?: string; s2?: string; s3?: string } = {})
       const proc = req.proc.toLowerCase();
       if (req.method === 'GET') {
         calls.push({ method: 'GET', path });
+        // A tela do passo 1 depois do envio do arquivo (s1After), quando o teste a dá.
+        if (proc === 'pkg_importa_xml.inicio' && uploaded && pages.s1After !== undefined) {
+          return { html: pages.s1After };
+        }
         if (proc === 'pkg_importa_xml.inicio' && pages.s1 !== undefined) return { html: pages.s1 };
         return next();
       }
       if (req.file) {
+        uploaded = true;
         calls.push({
           fields: req.pairs,
           file: { name: req.file.name, type: req.file.type, xml: decodeLatin1(req.file.bytes) },
@@ -486,7 +492,8 @@ describe('Importar pelo conector contra o Lattes simulado', () => {
       expect(r.reason).toBe('arquivo');
       expect(r.request).toBeUndefined();
       expect(r.detail).toContain('Nenhuma solicitação foi criada');
-      expect(calls.map((c) => c.method)).toEqual(['GET', 'MULTIPART']);
+      // Depois do alerta, a tela do passo 1 de novo, para ver se ficou solicitação.
+      expect(calls.map((c) => c.method)).toEqual(['GET', 'MULTIPART', 'GET']);
     }
     expect(step1Rejection(pages[0]!)).toMatch(/^Erro\. Não foi possível processar/);
     expect(step1Rejection(pages[1]!)).toBe(
@@ -496,6 +503,25 @@ describe('Importar pelo conector contra o Lattes simulado', () => {
       'O Lattes recusou o arquivo.',
     );
     expect(step1Rejection(step2())).toBeUndefined();
+  });
+
+  it('o alerta do DTD depois do de sucesso, com a solicitação criada (28/10/2026)', async () => {
+    const s2 =
+      '<script>alert("\\n O arquivo foi enviado com sucesso!");</script><SCRIPT>alert("Erro.\\n Não foi possível processar o arquivo enviado. \\n\\nCertifique-se que o mesmo esteja de acordo com o DTD do Curriculo Lattes.");</SCRIPT>';
+    const { port } = await fakeLattes({ s1After: step2(), s2 });
+    const r = await importItems(port, CODE, REQ, true);
+    expect(r.reason).toBe('pendente');
+    expect(r.detail).toMatch(/criou uma solicitação, que ficou pendente/);
+    // A releitura que cai ou volta o login não diz que nada foi criado.
+    const logon = await fakeLattes({ s1After: LOGON, s2 });
+    const unsure = await importItems(logon.port, CODE, REQ, true);
+    expect(unsure.reason).toBe('arquivo');
+    expect(unsure.detail).toMatch(/Não deu para conferir/);
+    // Uma tela que não é a do passo 1 também não diz que nada ficou.
+    const changed = await fakeLattes({ s1After: '<p>Outra tela</p>', s2 });
+    expect((await importItems(changed.port, CODE, REQ, true)).detail).toMatch(
+      /Não deu para conferir/,
+    );
   });
 
   it('passo 2 de outro currículo: para e diz qual solicitação ficou pendente', async () => {
