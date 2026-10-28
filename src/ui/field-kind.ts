@@ -2,7 +2,7 @@
 
 import { elementLabel } from '../labels/labels.ts';
 import { lattesSchema } from '../schema/lattes.ts';
-import { SCREEN_PREFIX, screenField } from '../schema/screen-fields.ts';
+import { SCREEN_PREFIX, screenField, screenValueLabel } from '../schema/screen-fields.ts';
 import type { AttributeSpec } from '../schema/types.ts';
 import { controllersFirst } from './field-dependencies.ts';
 import { formLayout, formSlot, IN_ENGLISH, isEnglishAttr, OTHER_DATA } from './form-order.ts';
@@ -74,8 +74,7 @@ const COMPLEMENTARY_LEVELS: Record<string, string> = {
 };
 
 export function codeValueLabel(element: string, attr: string, value: string): string {
-  const screen = screenField(element, attr)?.choices?.find((c) => c.value === value);
-  if (screen) return screen.label;
+  if (screenField(element, attr)?.choices) return screenValueLabel(element, attr, value);
   if (attr === 'NIVEL' && COMPLEMENTARY_LEVELS[value]) return COMPLEMENTARY_LEVELS[value];
   // O nível da formação acadêmica é o próprio tipo do item (3 em MESTRADO).
   if (attr === 'NIVEL' && LEVEL_FROM_TYPE.test(element)) return elementLabel(element);

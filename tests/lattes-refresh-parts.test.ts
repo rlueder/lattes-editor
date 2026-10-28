@@ -141,6 +141,19 @@ describe('a leitura na aba', () => {
     });
   });
 
+  it('caixas de mesmo nome: as marcadas juntas, por vírgula, no lugar do oculto X', () => {
+    expect(
+      formValues([
+        control({ name: 'f_tematica', type: 'hidden', value: 'X' }),
+        control({ checked: true, name: 'f_tematica', type: 'checkbox', value: 'EA' }),
+        control({ checked: false, name: 'f_tematica', type: 'checkbox', value: 'PC' }),
+        control({ checked: true, name: 'f_tematica', type: 'checkbox', value: 'AI' }),
+        control({ name: 'f_tpo_cooperacao', type: 'hidden', value: 'X' }),
+        control({ checked: false, name: 'f_tpo_cooperacao', type: 'checkbox', value: 'IE' }),
+      ]),
+    ).toEqual({ f_tematica: 'EA,AI', f_tpo_cooperacao: '' });
+  });
+
   it('o primeiro formulário pedido que a página tem, com as grades dela', () => {
     const page = readFormPage(
       ARTICLE_FORM,

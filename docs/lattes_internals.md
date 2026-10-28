@@ -1750,6 +1750,14 @@ atuação vem da instituição escolhida no formulário. **Observado.**
 | `f_tipo_privacidade`                                                                                       | lista `1`/`2`                                                                                                                                        |                                   |
 | `f_ctr` (`I`), `f_cod`, `f_codinst`, `f_seq_ativ`, `f_seq_funcao`, `f_seq_proj`, `f_cod_tipo` (`P`)        | ocultos; na inclusão, `f_codinst` e as três sequências vêm vazias                                                                                    |                                   |
 
+No projeto de ensino (`f_cod_tipo` `N`, censo de 27/10/2026), os três
+ocultos de valor `X` vêm acompanhados de caixas de mesmo nome:
+`f_tpo_cooperacao` (`IE`, `AF`, `EM`), `f_tpo_acao_inov` (`EF`, `EM`, `GR`,
+`ES`, `GM`, `MP`, `GD`) e `f_tematica` (12 temas, `EA` a `O`); o navegador
+manda o `X` e um par por caixa marcada. Esse formulário não tem os dados da
+empresa. **Observado** no formulário; o envio com caixas marcadas não foi
+testado no Lattes real.
+
 `check()` exige nome, natureza, situação, ano de início (e de fim quando
 concluído), números inteiros nas quantidades de alunos, os dados da empresa
 quando é pesquisa em empresa (com e-mail institucional que não seja de conta

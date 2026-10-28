@@ -7,7 +7,7 @@ import { Fragment, useId, useRef, useState } from 'react';
 import { attributeLabel, elementLabel } from '../labels/labels.ts';
 import { childElements, getAttr, type XAttr, type XElement, type XText } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
-import { screenFieldsOf } from '../schema/screen-fields.ts';
+import { screenApplies, screenFieldsOf } from '../schema/screen-fields.ts';
 import { AttributeField, type EditFn } from './AttributeField.tsx';
 import { groupSummary, switchedOff } from './disclosure.ts';
 import { DisclosureGroup } from './DisclosureGroup.tsx';
@@ -188,7 +188,9 @@ function FieldsBlock({
  */
 function withScreenFields(src: XElement, showEmpty: boolean): XAttr[] {
   if (!showEmpty) return src.attrs;
-  const missing = screenFieldsOf(src.name).filter((f) => getAttr(src, f.attr) === undefined);
+  const missing = screenFieldsOf(src.name).filter(
+    (f) => getAttr(src, f.attr) === undefined && screenApplies(f, src),
+  );
   return [...src.attrs, ...missing.map((f) => ({ name: f.attr, value: '' }))];
 }
 

@@ -13,7 +13,7 @@
 // (as listas de visibilidade ao lado de um dado), vale o texto que a página
 // mostra ao lado delas, "Visibilidade".
 
-import type { XDocument, XElement } from '../model/xml.ts';
+import { getAttr, type XDocument, type XElement } from '../model/xml.ts';
 import listas from './listas-lattes.json' with { type: 'json' };
 import type { Choice } from './typed-choices.ts';
 
@@ -30,6 +30,8 @@ export interface ScreenField {
   /** O rótulo da página do Lattes, no formulário do editor. */
   label: string;
   maxLength?: number;
+  /** Grupo de caixas: os códigos marcados juntos, separados por vírgula (bridge/multi-choice.ts). */
+  multiple?: boolean;
   /** O valor com que a página vem (público, "Não"): na leitura, não aparece. */
   quiet?: string;
   /**
@@ -37,6 +39,8 @@ export interface ScreenField {
    * aparece sem o grupo ao lado ("Visibilidade do nascimento"); sem ele, o rótulo.
    */
   review?: string;
+  /** Só nos itens em que este atributo tem um destes valores (a natureza do projeto). */
+  onlyWhen?: { attr: string; values: readonly string[] };
 }
 
 /** Público ou privado: as listas f_priv_* da identificação e do endereço. */
@@ -57,6 +61,13 @@ const COUNTRIES: readonly Choice[] = Object.entries(listas.codigosDosPaises).map
 
 const IDENT = 'DADOS-GERAIS';
 const PROJECT = 'PROJETO-DE-PESQUISA';
+/**
+ * O projeto de ensino tem as caixas de cooperação, ações inovadoras e
+ * temática; os outros, os dados da empresa (censo de 27/10/2026, projeto-N
+ * contra projeto-P, D, E e O).
+ */
+const TEACHING = { attr: 'NATUREZA', values: ['ENSINO'] };
+const NOT_TEACHING = { attr: 'NATUREZA', values: ['DESENVOLVIMENTO', 'EXTENSAO', 'PESQUISA', 'OUTRA'] };
 const WORK = 'ENDERECO-PROFISSIONAL';
 const HOME = 'ENDERECO-RESIDENCIAL';
 
@@ -277,13 +288,65 @@ export const SCREEN_FIELDS: readonly ScreenField[] = [
     quiet: 'N',
     review: 'Cooperação com empresa',
   }),
-  item(PROJECT, 'f_cnpj_empresa', 'CNPJ da empresa', { maxLength: 18 }),
-  item(PROJECT, 'f_txt_nme_empresa', 'Nome da empresa', { maxLength: 400 }),
+  // As caixas do projeto de ensino (projeto-N no censo de 27/10/2026).
+  item(PROJECT, 'f_tpo_cooperacao', 'É um projeto em cooperação com', {
+    choices: [
+      { label: 'Instituição de ensino', value: 'IE' },
+      { label: 'Agência de fomento', value: 'AF' },
+      { label: 'Empresa', value: 'EM' },
+    ],
+    multiple: true,
+    onlyWhen: TEACHING,
+    review: 'Cooperação com',
+  }),
+  item(PROJECT, 'f_tpo_acao_inov', 'O projeto possui ações inovadoras na', {
+    choices: [
+      { label: 'Ensino Fundamental(1º grau)', value: 'EF' },
+      { label: 'Ensino Médio(2º grau)', value: 'EM' },
+      { label: 'Graduação', value: 'GR' },
+      { label: 'Especialização', value: 'ES' },
+      { label: 'Mestrado', value: 'GM' },
+      { label: 'Mestado Profissional', value: 'MP' },
+      { label: 'Doutorado', value: 'GD' },
+    ],
+    multiple: true,
+    onlyWhen: TEACHING,
+    review: 'Ações inovadoras',
+  }),
+  item(PROJECT, 'f_tematica', 'Em relação a temática', {
+    choices: [
+      { label: 'Ensino e aprendizagem', value: 'EA' },
+      { label: 'Aprendizagem por projetos', value: 'AP' },
+      { label: 'Projetos de curso', value: 'PC' },
+      { label: 'Formação inicial ou continuada de professores', value: 'FI' },
+      { label: 'Inserção de tecnologias no ensino', value: 'IT' },
+      { label: 'Ação inclusiva', value: 'AI' },
+      { label: 'Integração social(escola, família, comunidade)', value: 'IS' },
+      { label: 'Projeto de intervenção', value: 'PI' },
+      { label: 'Mobilidade e internacionalização', value: 'MI' },
+      { label: 'Avaliação', value: 'A' },
+      { label: 'Gestão', value: 'G' },
+      { label: 'Outra', value: 'O' },
+    ],
+    multiple: true,
+    onlyWhen: TEACHING,
+    review: 'Temática',
+  }),
+  item(PROJECT, 'f_cnpj_empresa', 'CNPJ da empresa', { maxLength: 18, onlyWhen: NOT_TEACHING }),
+  item(PROJECT, 'f_txt_nme_empresa', 'Nome da empresa', {
+    maxLength: 400,
+    onlyWhen: NOT_TEACHING,
+  }),
   item(PROJECT, 'f_txt_email_institucional', 'E-mail Institucional', {
     maxLength: 400,
+    onlyWhen: NOT_TEACHING,
     review: 'E-mail institucional da empresa',
   }),
-  item(PROJECT, 'f_txt_setor', 'Setor', { maxLength: 400, review: 'Setor da empresa' }),
+  item(PROJECT, 'f_txt_setor', 'Setor', {
+    maxLength: 400,
+    onlyWhen: NOT_TEACHING,
+    review: 'Setor da empresa',
+  }),
   // Licença (pkg_licenca.form).
   item('LICENCA', 'f_dta_nasc_adoc', 'Data de nascimento/adoção', { maxLength: 10 }),
   // A do residencial é fixa em privado: a página a traz desabilitada.
@@ -301,6 +364,10 @@ const byElement = new Map<string, ScreenField[]>();
 for (const f of SCREEN_FIELDS) {
   for (const el of Object.keys(f.fields)) byElement.set(el, [...(byElement.get(el) ?? []), f]);
 }
+
+/** O campo vale para este elemento (onlyWhen): a natureza do projeto decide. */
+export const screenApplies = (f: ScreenField, el: XElement): boolean =>
+  !f.onlyWhen || f.onlyWhen.values.includes(getAttr(el, f.onlyWhen.attr) ?? '');
 
 /** Os campos só de tela de um elemento, na ordem do registro. */
 export const screenFieldsOf = (element: string): readonly ScreenField[] =>
@@ -331,9 +398,11 @@ export function screenReviewLabel(attr: string): string | undefined {
   return f && (f.review ?? f.label);
 }
 
-/** O valor de um campo só de tela como se lê ("Privado" no lugar de 2). */
+/** O valor de um campo só de tela como se lê ("Privado" no lugar de 2; as caixas, uma a uma). */
 export function screenValueLabel(element: string, attr: string, value: string): string {
-  return screenField(element, attr)?.choices?.find((c) => c.value === value)?.label ?? value;
+  const f = screenField(element, attr);
+  const one = (v: string) => f?.choices?.find((c) => c.value === v)?.label ?? v;
+  return f?.multiple ? value.split(',').filter(Boolean).map(one).join(', ') : one(value);
 }
 
 /** Campo do formulário → nome e opções, para a conferência do envio (field-labels.ts). */
@@ -361,7 +430,7 @@ export function screenTable(element: string): Record<string, [string, (v: string
  */
 export const SCREEN_SWITCHES: Readonly<Record<string, [string, string[]][]>> = {
   [IDENT]: [[`${SCREEN_PREFIX}f_nome_social_r`, [`${SCREEN_PREFIX}f_nome_social`]]],
-  // Os dados da empresa só com a cooperação marcada (inferido pelos rótulos).
+  // Os dados da empresa só com a cooperação marcada (lattes_internals.md, seção 17).
   [PROJECT]: [
     [
       `${SCREEN_PREFIX}f_tpo_pesq_emp`,

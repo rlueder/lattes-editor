@@ -9,6 +9,7 @@ import { childElements, element, getAttr, type XElement } from '../../model/xml.
 import { lattesSchema } from '../../schema/lattes.ts';
 import {
   isScreenAttr,
+  screenApplies,
   screenField,
   screenValueLabel,
   unknownBefore,
@@ -166,6 +167,12 @@ function shown(value: string): string {
     e.attributes.some((a) => a.enum?.includes(value)),
   );
   return isEnum ? enumLabel(value) : value;
+}
+
+/** O campo só de tela do elemento, quando vale para ele (a natureza do projeto decide). */
+function screenMapping(el: XElement, attr: string): string | undefined {
+  const f = screenField(el.name, attr);
+  return f && screenApplies(f, el) ? f.fields[el.name] : undefined;
 }
 
 const KEYWORD_ATTRS = Array.from({ length: MAX_KEYWORDS }, (_, i) => `PALAVRA-CHAVE-${i + 1}`);
@@ -426,10 +433,7 @@ export function planProduction(
       continue;
     }
     // Os campos só de tela do item (a visibilidade): o mesmo nome em todo tipo.
-    const m =
-      partMap?.fields[f.attr] ??
-      target.fields[key] ??
-      screenField(change.element, f.attr)?.fields[change.element];
+    const m = partMap?.fields[f.attr] ?? target.fields[key] ?? screenMapping(el, f.attr);
     const why = target.manual?.[key];
     if (!m && why) manual.set(why, [...(manual.get(why) ?? []), f.label]);
     if (!m) {

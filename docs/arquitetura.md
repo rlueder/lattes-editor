@@ -72,7 +72,9 @@ registro deles, com rótulo e opções do censo, está em
 `src/schema/screen-fields.ts`. Carregar do Lattes os lê, o conector os grava
 como qualquer outro campo, e `encodeCv` (`src/model/document.ts`) os tira de
 todo arquivo que sai do editor: o XML salvo, o arquivo do Importar e o
-histórico baixado. Numa cópia que veio de uma exportação eles não existem;
+histórico baixado. Um grupo de caixas (as do projeto de ensino) guarda os
+códigos marcados separados por vírgula, e `src/bridge/multi-choice.ts` os
+transforma em um par por caixa no envio. Numa cópia que veio de uma exportação eles não existem;
 preencher um cria o atributo, e o envio não confere o valor de antes, que o
 editor não conhece.
 

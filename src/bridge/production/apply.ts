@@ -13,11 +13,11 @@ import {
   encodeLatin1Form,
   type Pairs,
   pairValue,
-  setPairs,
   successfulPairs,
   withScriptValues,
 } from '../form.ts';
 import { isLogonPage } from '../lattes-html.ts';
+import { differs, withChoices } from '../multi-choice.ts';
 import type { FieldValues } from '../plan.ts';
 import { doiProblem } from './doi.ts';
 import {
@@ -165,9 +165,7 @@ export async function applyProduction(
     }
     // Só o que tem um antes conferido: o que a página limpa junto (clears) e o
     // texto pedido fora do XML (asks) vão sem.
-    const wrong = fields.filter(
-      (f) => f in op.expect && folded(pairValue(pairs, f)) !== folded(op.expect[f]),
-    );
+    const wrong = fields.filter((f) => f in op.expect && differs(pairs, f, op.expect[f], folded));
     if (op.keywords && !sameWords(keywordLabels(grids.f_plv_l ?? []), op.keywords.before)) {
       wrong.push('f_plv_l');
     }
@@ -298,7 +296,7 @@ export async function applyProduction(
     const response = await port.post(
       t.form.action,
       encodeLatin1Form(
-        setPairs(pairs, {
+        withChoices(pairs, {
           ...set,
           ...chosen,
           ...gridPairs(grids, replace, t.gridKeys),
@@ -321,7 +319,7 @@ export async function applyProduction(
       );
     }
     const afterPairs = successfulPairs(afterControls);
-    const notSaved = fields.filter((f) => folded(pairValue(afterPairs, f)) !== folded(op.set[f]));
+    const notSaved = fields.filter((f) => differs(afterPairs, f, op.set[f], folded));
     if (op.keywords && !sameWords(keywordLabels(afterGrids.f_plv_l ?? []), op.keywords.after)) {
       notSaved.push('f_plv_l');
     }

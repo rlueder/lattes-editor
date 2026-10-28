@@ -82,6 +82,8 @@ const NEVER = new Set(['button', 'submit', 'reset', 'file', 'image']);
 /** O valor de cada campo como a página mostra, inclusive os desabilitados. */
 export function formValues(controls: FormControl[]): Record<string, string> {
   const out: Record<string, string> = {};
+  const checked = new Set<string>();
+  const boxes = new Set<string>();
   for (const c of controls) {
     if (!c.name || NEVER.has(c.type)) continue;
     if (c.type === 'radio') {
@@ -89,14 +91,19 @@ export function formValues(controls: FormControl[]): Record<string, string> {
       continue;
     }
     if (c.type === 'checkbox') {
-      if (c.checked) out[c.name] = c.value;
+      // Caixas de mesmo nome (multi-choice.ts): os marcados juntos, por vírgula.
+      if (c.checked) out[c.name] = checked.has(c.name) ? `${out[c.name]},${c.value}` : c.value;
       else out[c.name] ??= '';
+      if (c.checked) checked.add(c.name);
+      boxes.add(c.name);
       continue;
     }
     if (c.name in out) continue;
     out[c.name] =
       c.type === 'select' || c.type.startsWith('select-') ? (c.selected?.[0] ?? '') : c.value;
   }
+  // O oculto de mesmo nome (o X do projeto) não é caixa marcada.
+  for (const name of boxes) if (!checked.has(name)) out[name] = '';
   return out;
 }
 

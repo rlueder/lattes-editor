@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { applyOp, type LattesPort } from '../src/bridge/apply.ts';
 import { atuacaoByHand, vinculoByHand } from '../src/bridge/atuacao-by-hand.ts';
+import { fieldValue, withChoices } from '../src/bridge/multi-choice.ts';
 import { planChanges, type PlanOptions } from '../src/bridge/plan.ts';
 import { type FunderEdit, funderValue } from '../src/bridge/production/financiador.ts';
 import { sameAuthors, withLeads } from '../src/bridge/production/members.ts';
@@ -581,6 +582,55 @@ describe('projeto no Lattes simulado: campos só de tela', () => {
   });
 });
 
+describe('projeto de ensino no Lattes simulado: as caixas', () => {
+  it('cooperação e temática vão, uma caixa por código, e voltam sem ordem', async () => {
+    const xml = XML.replace('NATUREZA="EXTENSAO"', 'NATUREZA="ENSINO"');
+    await open?.close();
+    open = await withLattesSimulado({
+      xml: encodeLatin1(`<?xml version="1.0" encoding="ISO-8859-1"?>\n${xml}`),
+    });
+    const original = parseXml(xml).root;
+    const working = parseXml(xml).root;
+    setAttr(projectOf(working, '2'), 'tela:f_tematica', 'EA,AI');
+    setAttr(projectOf(working, '2'), 'tela:f_tpo_cooperacao', 'AF');
+    const plan = planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Item' })),
+      working,
+      ON,
+    );
+    expect(plan.unsupported).toEqual([]);
+    const op = plan.ops[0] as ProductionOp;
+    expect(op.rows.find((r) => r.name === 'f_tematica')?.after).toBe(
+      'Ensino e aprendizagem, Ação inclusiva',
+    );
+    expect(await applyOp(op, open.port)).toMatchObject({ status: 'conferido' });
+    const post = postsOf(open).at(-1)!;
+    // O oculto X da página vai junto, antes das caixas, como o navegador manda.
+    expect(post.pairs!.filter(([k]) => k === 'f_tematica')).toEqual([
+      ['f_tematica', 'X'],
+      ['f_tematica', 'EA'],
+      ['f_tematica', 'AI'],
+    ]);
+    expect(open.state.formOnly(projectOf(open.state.root, '2'))).toMatchObject({
+      f_tematica: 'EA,AI',
+      f_tpo_cooperacao: 'AF',
+    });
+  });
+
+  it('a empresa não vale para o projeto de ensino', () => {
+    const xml = XML.replace('NATUREZA="EXTENSAO"', 'NATUREZA="ENSINO"');
+    const original = parseXml(xml).root;
+    const working = parseXml(xml).root;
+    setAttr(projectOf(working, '2'), 'tela:f_txt_nme_empresa', 'Empresa');
+    const plan = planChanges(
+      diffDocuments(original, working).map((change) => ({ change, itemTitle: 'Item' })),
+      working,
+      ON,
+    );
+    expect(plan.ops).toEqual([]);
+  });
+});
+
 describe('projeto no Lattes simulado', () => {
   it('nome e situação: grava, confere e deixa a equipe como estava', async () => {
     const lattes = await lattesFor();
@@ -1064,5 +1114,25 @@ describe('projeto: incluir e tirar financiadores', () => {
         p.children = p.children.filter((c) => c !== funders(root));
       })[0],
     ).toMatch(/um de cada vez/);
+  });
+});
+
+describe('grupos de caixas no envio', () => {
+  it('fica o oculto X, saem as caixas de antes, entram as novas logo depois dele', () => {
+    const pairs: [string, string][] = [
+      ['f_titulo', 'T'],
+      ['f_tematica', 'X'],
+      ['f_tematica', 'EA'],
+      ['f_ano', '2020'],
+    ];
+    expect(withChoices(pairs, { f_tematica: 'AI,PC', f_titulo: 'U' })).toEqual([
+      ['f_titulo', 'U'],
+      ['f_tematica', 'X'],
+      ['f_tematica', 'AI'],
+      ['f_tematica', 'PC'],
+      ['f_ano', '2020'],
+    ]);
+    expect(fieldValue(pairs, 'f_tematica')).toBe('EA');
+    expect(fieldValue([['f_tematica', 'X']], 'f_tematica')).toBe('');
   });
 });

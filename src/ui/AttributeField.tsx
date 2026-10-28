@@ -7,6 +7,7 @@ import { attributeLabelIn, elementLabel, enumLabel } from '../labels/labels.ts';
 import { applyLinkedAttrs, followsCountry, writesOwnCode } from '../model/linked-attrs.ts';
 import { repairMojibake } from '../model/mojibake.ts';
 import { getAttr, setAttr, type XElement } from '../model/xml.ts';
+import { screenField } from '../schema/screen-fields.ts';
 import {
   canonicalChoice,
   emptyChoicesHint,
@@ -39,6 +40,7 @@ import { cleanLinkValue, linkError } from './link-fields.ts';
 import { ancestorsOf, type LiveAvailability, liveKind } from './live-lists.ts';
 import { LiveListControl } from './LiveListField.tsx';
 import { LATTES_URL } from './onboarding.ts';
+import { CheckGroup } from './primitives/CheckGroup.tsx';
 import { ComboSelect } from './primitives/ComboSelect.tsx';
 import { Switch } from './primitives/Switch.tsx';
 import { Tip } from './primitives/Tip.tsx';
@@ -246,8 +248,21 @@ export function AttributeField({
     !year &&
     !prominent &&
     (multiline || value.length > 90);
+  // Grupo de caixas da página do Lattes (schema/screen-fields.ts).
+  const group = screenField(el.name, name)?.multiple ? choices : undefined;
   let control;
-  if (boolean) {
+  if (group) {
+    control = (
+      <CheckGroup
+        aria-describedby={common['aria-describedby']}
+        id={id}
+        labelledBy={labelId}
+        options={group}
+        value={value}
+        onChange={commit}
+      />
+    );
+  } else if (boolean) {
     control = (
       <span className="switch-row">
         <Switch

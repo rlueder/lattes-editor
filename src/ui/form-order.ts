@@ -275,6 +275,10 @@ const PROJECT: FormGroup[] = [
     label: 'Cooperação com empresa',
   },
   {
+    attrs: ['tela:f_tpo_cooperacao', 'tela:f_tpo_acao_inov', 'tela:f_tematica'],
+    label: 'Projeto de ensino',
+  },
+  {
     attrs: [
       'NUMERO-GRADUACAO',
       'NUMERO-ESPECIALIZACAO',

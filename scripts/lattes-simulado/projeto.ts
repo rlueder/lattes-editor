@@ -34,6 +34,7 @@ import {
   orientationLookup,
   projectGridScripts,
 } from './projeto-grades.ts';
+import { projectScreenBindings } from './projeto-tela.ts';
 import { html, type Routes, type SimResponse } from './tipos.ts';
 
 const NATURE: Record<string, string> = {
@@ -75,16 +76,6 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
     maxLength: max,
     name,
     read: () => '',
-  });
-  // Sem atributo no XSD: guardado ao lado do projeto, como o Lattes guarda fora da exportação.
-  const stored = (name: string, kind: Binding['kind'], max?: number): Binding => ({
-    kind,
-    maxLength: max,
-    name,
-    read: (el) => state.formOnly(el)[name] ?? '',
-    write: (el, value) => {
-      state.formOnly(el)[name] = value;
-    },
   });
   const fromIds = (name: string): Binding => ({
     kind: 'hidden',
@@ -129,11 +120,7 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
       read: (el) => potencial.get(el) ?? '',
       write: (el, value) => potencial.set(el, value),
     },
-    { ...stored('f_tpo_pesq_emp', 'radio'), options: yesNo },
-    stored('f_cnpj_empresa', 'text', 18),
-    stored('f_txt_nme_empresa', 'text', 400),
-    stored('f_txt_email_institucional', 'text', 400),
-    stored('f_txt_setor', 'text', 400),
+    ...projectScreenBindings(state, ids.f_cod_tipo === 'N', yesNo),
     none('f_cod_inst_empresa'),
     { disabled: true, kind: 'text', maxLength: 75, name: 'f_inst', read: () => ids.inst ?? '' },
     // Na alteração, os ocultos da instituição e do vínculo vêm como a escolha
@@ -329,7 +316,7 @@ function post(req: SimRequest, state: LattesState): SimResponse {
     const projeto = element('PROJETO-DE-PESQUISA', {
       'SEQUENCIA-PROJETO': nextAttr(state, 'PROJETO-DE-PESQUISA', 'SEQUENCIA-PROJETO'),
     });
-    applyFields(bindings(state, {}), projeto, req);
+    applyFields(bindings(state, { f_cod_tipo: tipo.toUpperCase() }), projeto, req);
     const participacao = element(
       'PARTICIPACAO-EM-PROJETO',
       {
@@ -367,7 +354,7 @@ function post(req: SimRequest, state: LattesState): SimResponse {
     const atividades = childElements(placed.atuacao, 'ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO')[0]!;
     state.remove(atividades, placed.participacao);
   } else if (ctr === 'U') {
-    applyFields(bindings(state, {}), placed.projeto, req);
+    applyFields(bindings(state, { f_cod_tipo: tipo.toUpperCase() }), placed.projeto, req);
     applyProjectTeam(state, placed.projeto, req);
     applyProjectLinks(state, placed.projeto, req);
     // Código vazio deixa o órgão como está, como na página real.
