@@ -361,3 +361,15 @@ quando o Lattes tem pendência e não exporta) e depois
 elementos e atributos e contagens; `comparar('ELEMENTO@ATRIBUTO')` mostra a
 forma dos valores que diferem (letras viram `a`, dígitos viram `9`), nunca o
 conteúdo.
+
+`dist-censo/passada-ponte.js` é a passada que exercita toda opção dos
+formulários, e grava no currículo: só roda acompanhada, com o "ok" do dono.
+`node scripts/inventario-opcoes.ts` lista, por formulário do censo, os campos
+de escolha, as opções e quais um valor do XML alcança. Na aba,
+`__passada.base()` fotografa as listas, `gerar()` monta itens de teste (título
+com `TEST_MARK`) com uma escolha diferente em cada, `rodada()` os leva pelo
+Importar em levas de 20, `conferirPaginas()` compara cada página de alteração
+com o que o carregamento montou e `exercitar()` grava pelo conector as opções
+que nenhum item mostrou ainda. `registro()` diz o que as listas têm a mais que
+a base, para apagar os itens de teste no fim. O código fica em
+`scripts/passada/`.

@@ -5,15 +5,19 @@
 //   node scripts/build-conector-ponte.ts
 //   node scripts/censo-ponte.ts carregar dist-censo/conector-ponte.js
 
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { build } from 'vite';
+
+import { decodeLatin1 } from '../src/model/latin1.ts';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 
 for (const [entry, file] of [
   ['conector-ponte-entry.ts', 'conector-ponte.js'],
   ['carregar-ponte-entry.ts', 'carregar-ponte.js'],
+  ['passada-ponte-entry.ts', 'passada-ponte.js'],
 ]) {
   await build({
     build: {
@@ -28,6 +32,11 @@ for (const [entry, file] of [
       outDir: `${root}dist-censo`,
     },
     configFile: false,
+    // O exemplo sintético para a passada (passada-ponte-entry.ts), já em texto:
+    // o arquivo é Latin-1, e o ?raw do Vite o leria como UTF-8.
+    define: {
+      __EXEMPLO__: JSON.stringify(decodeLatin1(readFileSync(`${root}fixtures/synthetic_full.xml`))),
+    },
     logLevel: 'warn',
   });
   console.log(`dist-censo/${file}`);
