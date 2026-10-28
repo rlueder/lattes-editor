@@ -20,6 +20,7 @@ import { lattesSchema } from '../../src/schema/lattes.ts';
 import type { LattesState } from './estado.ts';
 import {
   applyCensusForm,
+  byEnum,
   byLabel,
   capturedForm,
   type CensusScreen,
@@ -71,8 +72,7 @@ const brandType: Pick<FieldLink, 'toForm' | 'toXml'> = {
 };
 
 /** As ligações campo ↔ atributo de um tipo (inferidas, pelo rótulo do campo). */
-function links(tipo: string): Record<string, FieldLink> {
-  const entry = `registro-${tipo}`;
+function links(entry: string, tipo: string): Record<string, FieldLink> {
   const cultivar = tipo === 'CP' || tipo === 'CR';
   const software = tipo === 'PC';
   const out: Record<string, FieldLink> = {
@@ -124,6 +124,15 @@ function links(tipo: string): Record<string, FieldLink> {
     out.f_dta_dep = { attr: 'DATA-PEDIDO-DE-DEPOSITO', under: REGISTRY, ...date };
   }
   if (has('f_dta_conc')) out.f_dta_conc = { attr: 'DATA-DE-CONCESSAO', under: REGISTRY, ...date };
+  if (software) {
+    out.F_STA_DIVULGACAO_CIENTIFICA = {
+      attr: 'FLAG-DIVULGACAO-CIENTIFICA',
+      under: BASICS,
+      ...yesNo,
+    };
+    out.F_RELEV = { attr: 'FLAG-RELEVANCIA', under: BASICS, ...yesNo };
+    out.f_natureza = { attr: 'NATUREZA', under: BASICS, ...byEnum(field(entry, 'f_natureza')) };
+  }
   if (tipo === 'MR') {
     out.f_tipo = { attr: 'TIPO-PATENTE', under: REGISTRY, ...brandType };
     out.f_natureza = { attr: 'NATUREZA', under: DETAIL };
@@ -131,7 +140,27 @@ function links(tipo: string): Record<string, FieldLink> {
   return out;
 }
 
-const screen = (tipo: string): CensusScreen => ({ entry: `registro-${tipo}`, links: links(tipo) });
+/**
+ * O programa de computador com registro tem outro formulário (registro-PC-S,
+ * recaptura de 15/10/2026), com o número, a instituição e as datas. Qual
+ * abre: o do item pelo número que ele tem; na inclusão, pela lista (f_reg=N,
+ * sem registro). A escolha pelo número é inferida.
+ */
+function entryOf(tipo: string, registered: boolean): string {
+  return tipo === 'PC' && registered ? 'registro-PC-S' : `registro-${tipo}`;
+}
+
+const screen = (tipo: string, registered = false): CensusScreen => {
+  const entry = entryOf(tipo, registered);
+  return { entry, links: links(entry, tipo) };
+};
+
+const hasCode = (item: XElement) =>
+  Boolean(
+    childElements(item)
+      .flatMap((c) => [c, ...childElements(c)])
+      .find((c) => c.name === 'REGISTRO-OU-PATENTE' && getAttr(c, 'CODIGO-DO-REGISTRO-OU-PATENTE')),
+  );
 
 export function registros(state: LattesState, tipo: string): XElement[] {
   const container = state.find(PATH);
@@ -177,7 +206,9 @@ function writeAuthors(item: XElement, grid: string): void {
 
 export function registroLista(state: LattesState, tipo: string, reg = ''): SimResponse {
   const [, label] = REGISTRY_ITEMS[tipo]!;
+  // O programa de computador: com registro numa lista, sem (f_reg=N) na outra.
   const rows = registros(state, tipo)
+    .filter((r) => tipo !== 'PC' || hasCode(r) === (reg !== 'N'))
     .map(
       (r) =>
         `<tr><td><a href="#" onclick="self.parent.modalCV2.setarUrl('PKG_PATENTE_REGISTRO.form?f_cod=${state.code}&amp;f_cod_tipo=${tipo}&amp;f_seq=${getAttr(r, 'SEQUENCIA-PRODUCAO')}',true); return false;">${h.esc(titleOf(r))}</a></td></tr>`,
@@ -185,7 +216,11 @@ export function registroLista(state: LattesState, tipo: string, reg = ''): SimRe
     .join('\n');
   // O link de inclusão com os parâmetros da seção 17 (f_reg,
   // F_STA_DIVULGACAO_CIENTIFICA, f_cod, f_cod_tipo); a ordem deles é inferida.
-  const novo = `<a href="#" onclick="self.parent.modalCV2.setarUrl('PKG_PATENTE_REGISTRO.form?f_reg=${reg}&amp;F_STA_DIVULGACAO_CIENTIFICA=&amp;f_cod=${state.code}&amp;f_cod_tipo=${tipo}',true); return false;">Incluir novo item</a>`;
+  // O programa com registro: o simulado abre direto o formulário com f_reg=S;
+  // no Lattes real, a janela prévia com ftipo=PC vem antes (recaptura de
+  // 15/10/2026, src/census/targets-production.ts).
+  const f_reg = tipo === 'PC' && reg !== 'N' ? 'S' : reg;
+  const novo = `<a href="#" onclick="self.parent.modalCV2.setarUrl('PKG_PATENTE_REGISTRO.form?f_reg=${f_reg}&amp;F_STA_DIVULGACAO_CIENTIFICA=&amp;f_cod=${state.code}&amp;f_cod_tipo=${tipo}',true); return false;">Incluir novo item</a>`;
   return html(
     h.page(
       label,
@@ -216,7 +251,7 @@ export function registroForm(req: SimRequest, state: LattesState, tipo: string):
   return html(
     h.page(
       label,
-      `${renderCensusForm(screen(tipo), item, hidden, state)}\n${grids}${programs}${derived}`,
+      `${renderCensusForm(screen(tipo, item ? hasCode(item) : req.get('f_reg') === 'S'), item, hidden, state)}\n${grids}${programs}${derived}`,
     ),
   );
 }
@@ -256,7 +291,7 @@ export function registroPost(req: SimRequest, state: LattesState, tipo: string):
     const item = element(REGISTRY_ITEMS[tipo]![0], {
       'SEQUENCIA-PRODUCAO': String(state.nextProduction),
     });
-    applyCensusForm(screen(tipo), item, req, state);
+    applyCensusForm(screen(tipo, req.get('f_cod_reg') !== undefined), item, req, state);
     writeAuthors(item, req.get('f_autores_l') ?? '');
     insertInSchemaOrder(lattesSchema, state.ensurePath(PATH), item);
     // Palavras-chave, áreas, setores e depositantes, como na alteração (inferido).
@@ -273,7 +308,7 @@ export function registroPost(req: SimRequest, state: LattesState, tipo: string):
   else if (ctr === 'U') {
     // Sem o ano que o check() tira da data, o Lattes não grava nada (19/10/2026).
     if (DERIVED_YEAR.has(tipo) && !req.get('f_ano')) return html(back);
-    applyCensusForm(screen(tipo), item, req, state);
+    applyCensusForm(screen(tipo, hasCode(item)), item, req, state);
     applyRegistryGrids(item, req, { withHolders: HOLDER_TYPES.has(tipo) });
     const detail = tipo === 'PC' ? softwareDetail(item) : undefined;
     const ambiente = req.get('f_ambiente');

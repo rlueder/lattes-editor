@@ -19,6 +19,7 @@ import {
   localDay,
   missingControls,
   PUBLISH_ENABLED,
+  PUBLISH_PACE,
   publishBusy,
   publishCv,
   publishedOn,
@@ -29,10 +30,12 @@ import {
   readSendScreen,
   readSendScreenFrom,
   requestProblem,
+  SEND_TIMEOUT_MS,
   sendPairs,
   type SendScreen,
   termsLink,
 } from '../src/bridge/publish.ts';
+import { PUBLISH_REPLY_TIMEOUT_MS, stepsText } from '../src/import-export/publish-view.ts';
 import { type LattesSimuladoNoTeste, withLattesSimulado } from './helpers/lattes-simulado.ts';
 
 /** O chrome.tabs.onRemoved dos stubs: nenhuma aba fecha nestes testes (tab-guard.ts). */
@@ -112,12 +115,28 @@ describe('Enviar ao CNPq pelo conector (LAT-54)', () => {
     lattes.state.log.length = 0;
     expect(PUBLISH_ENABLED).toBe(true);
     expect(BRIDGE_FEATURES).toContain('publicar-cnpq');
+    // Um relógio que anda 100 ms a cada leitura: cada pedido leva 100 ms.
+    let clock = 0;
     const result = await publishCv(lattes.publishPort, await code(lattes), request(), {
+      now: () => (clock += 100),
       today: TODAY,
       verifyAttempts: 2,
       wait: noWait.wait,
     });
-    expect(result).toEqual({ lastPublished: TODAY, outcome: 'publicado', sent: true });
+    // O tempo de cada passo, com os pedidos seguidos do mesmo passo somados.
+    expect(result).toEqual({
+      lastPublished: TODAY,
+      outcome: 'publicado',
+      sent: true,
+      steps: [
+        { ms: 100, step: 'menu' },
+        { ms: 100, step: 'tela' },
+        { ms: 100, step: 'raca-cor' },
+        { ms: 200, step: 'emails' },
+        { ms: 100, step: 'envio' },
+        { ms: 100, step: 'conferencia' },
+      ],
+    });
     expect(procs(lattes)).toEqual([
       'GET pkg_menu.menu',
       'GET pkg_menu.menu',
@@ -854,5 +873,27 @@ describe('Enviar ao CNPq no service worker (extensão)', () => {
     expect(await answerPublishRequest({ ...CALL, type: 'publicar' }, IDLE, sink)).toBe(true);
     expect(sink.sent[0]).toMatchObject({ result: { outcome: 'publicado' }, type: 'publicacao' });
     expect(await answerPublishRequest({ type: 'parar' }, IDLE, sink)).toBe(false);
+  });
+});
+
+describe('o tempo do envio no painel', () => {
+  it('diz onde o tempo foi, passo a passo', () => {
+    expect(stepsText(undefined)).toBe('');
+    expect(
+      stepsText([
+        { ms: 400, step: 'menu' },
+        { ms: 62_300, step: 'envio' },
+        { ms: 3000, step: 'espera' },
+        { ms: 500, step: 'conferencia' },
+      ]),
+    ).toBe(
+      ' Tempo no Lattes: 66,2 s (menu 0,4 s, envio 62,3 s, espera entre as conferências 3,0 s, conferência no menu 0,5 s).',
+    );
+  });
+
+  it('a tarefa de envio espera o envio lento, e o editor espera a tarefa', () => {
+    expect(SEND_TIMEOUT_MS).toBeGreaterThan(60_000);
+    expect(PUBLISH_PACE.deadlineMs).toBeGreaterThan(SEND_TIMEOUT_MS);
+    expect(PUBLISH_REPLY_TIMEOUT_MS).toBeGreaterThan(PUBLISH_PACE.deadlineMs);
   });
 });

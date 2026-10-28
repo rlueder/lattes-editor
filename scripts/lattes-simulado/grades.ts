@@ -13,7 +13,8 @@
 // como chegou no oculto. Um envio que mandasse a grade de autores vazia
 // apagaria os autores, e é isso que o teste do conector precisa ver
 // acontecer quando a operação erra. As áreas e os setores ficam só na
-// memória do simulado (não vão para a exportação).
+// memória do simulado (não vão para a exportação); sem envio, saem do XML do
+// item, pelas tabelas de setores e áreas do simulado.
 
 import { AUTHOR_PART } from '../../src/bridge/production/grids.ts';
 import { PRODUCTION_TARGETS } from '../../src/bridge/production/targets/index.ts';
@@ -22,6 +23,7 @@ import { writeFields } from '../../src/bridge/refresh/from-form.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
+import { AREA_CHILDREN, SECTORS } from './buscas.ts';
 import type { LattesState } from './estado.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
@@ -40,11 +42,52 @@ const extra = new WeakMap<XElement, Grids>();
 const gridsOf = (item: XElement): Grids => {
   let g = extra.get(item);
   if (!g) {
-    g = { areas: [], setores: [] };
+    g = fromXml(item);
     extra.set(item, g);
   }
   return g;
 };
+
+/**
+ * As áreas e os setores que o XML do item já tem, como a página do Lattes os
+ * mostraria: cada um com o código da tabela do simulado (setorDP e areaDP);
+ * o que não está na tabela não aparece, como no Lattes.
+ */
+function fromXml(item: XElement): Grids {
+  const setor = childElements(item, 'SETORES-DE-ATIVIDADE')[0];
+  const setores = ['SETOR-DE-ATIVIDADE-1', 'SETOR-DE-ATIVIDADE-2', 'SETOR-DE-ATIVIDADE-3']
+    .map((a) => (setor && getAttr(setor, a)) || '')
+    .map((l) => SECTORS.find(([, name]) => name === l))
+    .filter((x): x is [string, string] => x !== undefined)
+    .map(([c, l]) => labelRow(l, c));
+  const box = childElements(item, 'AREAS-DO-CONHECIMENTO')[0];
+  const areas = (box ? childElements(box) : [])
+    .map((el) => {
+      const names = [
+        'NOME-DA-AREA-DO-CONHECIMENTO',
+        'NOME-DA-SUB-AREA-DO-CONHECIMENTO',
+        'NOME-DA-ESPECIALIDADE',
+      ].map((a) => getAttr(el, a) ?? '');
+      const code = areaCodeByNames(names.filter(Boolean));
+      const label = names.filter(Boolean).at(-1) ?? '';
+      return code && label ? labelRow(label, code) : undefined;
+    })
+    .filter((r): r is Row => r !== undefined);
+  return { areas, setores };
+}
+
+/** O código da área pelos nomes do caminho, na tabela de áreas do simulado (buscas.ts). */
+function areaCodeByNames(names: string[]): string | undefined {
+  for (const children of Object.values(AREA_CHILDREN)) {
+    for (const [code, name, below] of children) {
+      if (name !== names[0]) continue;
+      if (names.length === 1) return code;
+      const sub = below.find(([, n]) => n === names[1]);
+      if (sub && names.length === 2) return sub[0];
+    }
+  }
+  return undefined;
+}
 
 /** Põe áreas e setores ([rótulo, código]) num item, para um teste ver se o envio os preserva. */
 export function seedGrids(

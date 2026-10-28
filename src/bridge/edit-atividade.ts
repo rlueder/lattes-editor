@@ -99,7 +99,7 @@ export interface AtividadeOp extends OpBase {
 
 export const isAtividadeOp = (op: { kind: string }): op is AtividadeOp => op.kind === 'atividade';
 
-const PERIOD: Record<string, [string, (v: string) => string | undefined]> = {
+export const PERIOD: Record<string, [string, (v: string) => string | undefined]> = {
   'ANO-FIM': ['f_ano_fim', (v) => v],
   'ANO-INICIO': ['f_ano_ini', (v) => v],
   'FLAG-PERIODO': ['f_status', (v) => ({ ANTERIOR: 'N', ATUAL: 'S' })[v]],

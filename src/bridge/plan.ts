@@ -168,7 +168,7 @@ type Mapper = (value: string) => string | null;
 const same: Mapper = (v) => v;
 
 /** Atributo do VINCULOS → campo do formulário GN_ATIV_VINC. */
-const VINCULO_FIELDS: Record<string, [string, Mapper]> = {
+export const VINCULO_FIELDS: Record<string, [string, Mapper]> = {
   'ANO-FIM': ['f_ano_fim', same],
   'ANO-INICIO': ['f_ano_ini', same],
   'CARGA-HORARIA-SEMANAL': ['f_carga', same],

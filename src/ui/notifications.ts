@@ -215,9 +215,12 @@ export function staleExportNotice(
   exported: string | undefined,
   published: string | undefined,
   canRefresh = false,
+  /** O dia em que o editor publicou com a cópia em dia (WorkingCopy.syncedOn). */
+  syncedOn?: string,
 ): Notice | undefined {
   const m = /^(\d{2})(\d{2})(\d{4})$/.exec(exported ?? '');
   if (!m || !published || `${m[3]}-${m[2]}-${m[1]}` >= published) return undefined;
+  if (syncedOn && syncedOn >= published) return undefined;
   const [y, mo, d] = published.split('-');
   const now = canRefresh
     ? ' Clique para ler agora, pelos formulários do Lattes, as produções novas ou com outro título.'
@@ -236,6 +239,7 @@ export function noticesFor({
   appVersion,
   connection,
   devExtensionFolder,
+  load,
   refresh,
   reload,
   stale,
@@ -247,6 +251,8 @@ export function noticesFor({
   connection?: Connection;
   /** No LattesEditor Dev, a pasta da extensão Dev (src/desktop/dev-channel.ts). */
   devExtensionFolder?: string;
+  /** O que não veio dos formulários ao abrir ou recarregar do Lattes (lattes-load.ts). */
+  load?: Notice;
   /** O resultado de "Atualizar do Lattes" que fica no sino (lattes-refresh.ts). */
   refresh?: Notice;
   /** "Recarregar do Lattes" pela extensão que falhou (lattes-reload.ts, reloadNotice). */
@@ -272,6 +278,7 @@ export function noticesFor({
   if (reload) notices.push(reload);
   if (stale) notices.push(stale);
   if (refresh) notices.push(refresh);
+  if (load) notices.push(load);
   if (unknownPending) {
     notices.push({
       action: 'diagnostico',

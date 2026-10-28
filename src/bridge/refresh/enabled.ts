@@ -8,3 +8,11 @@
  * recebe o pedido, e a extensão com ela desligada recusa o pedido.
  */
 export const LATTES_REFRESH_ENABLED = true;
+
+/**
+ * Chave de "Carregar do Lattes" (src/bridge/load/): o currículo montado pelas
+ * listas e pelos formulários, no lugar da exportação, ao abrir e ao recarregar
+ * pela extensão. A capacidade 'carregar-do-lattes' (compat.ts) entra e sai com
+ * ela; sem ela, o editor pede a exportação como antes.
+ */
+export const LATTES_LOAD_ENABLED = true;

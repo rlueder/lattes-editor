@@ -22,9 +22,60 @@ import type { FieldMap, ProductionTarget } from '../production/types.ts';
 
 export const mapOf = (m: FieldMap | string): FieldMap => (typeof m === 'string' ? { field: m } : m);
 
-/** A parte do item (DADOS-BASICOS-…), ou o próprio item quando o atributo é dele. */
-export const partOf = (item: XElement, child: string): XElement | undefined =>
-  child === item.name ? item : childElements(item, child)[0];
+/**
+ * A parte do item (DADOS-BASICOS-…), ou o próprio item quando o atributo é
+ * dele. A parte pode estar mais funda (o REGISTRO-OU-PATENTE fica dentro do
+ * detalhamento): procura por nível, os filhos antes dos netos.
+ */
+export function partOf(item: XElement, child: string): XElement | undefined {
+  if (child === item.name) return item;
+  let level = childElements(item);
+  while (level.length > 0) {
+    const hit = level.find((c) => c.name === child);
+    if (hit) return hit;
+    level = level.flatMap((c) => childElements(c));
+  }
+  return undefined;
+}
+
+/** A parte do item, criada onde o schema a põe (com os contêineres do caminho) quando falta. */
+export function ensurePart(item: XElement, child: string): XElement {
+  const found = partOf(item, child);
+  if (found) return found;
+  const path = schemaPathWithin(item.name, child) ?? [];
+  let parent = item;
+  for (const name of path) {
+    let next = childElements(parent, name)[0];
+    if (!next) {
+      next = element(name, {});
+      insertInSchemaOrder(lattesSchema, parent, next);
+    }
+    parent = next;
+  }
+  const part = element(child, {});
+  insertInSchemaOrder(lattesSchema, parent, part);
+  return part;
+}
+
+/** Os contêineres entre um elemento e um descendente dele, pelo schema (o caminho mais curto). */
+export function schemaPathWithin(from: string, to: string): string[] | undefined {
+  let frontier: string[][] = [[]];
+  const seen = new Set([from]);
+  while (frontier.length > 0) {
+    const next: string[][] = [];
+    for (const path of frontier) {
+      const parent = path.at(-1) ?? from;
+      for (const c of lattesSchema.elements[parent]?.children ?? []) {
+        if (c.name === to) return path;
+        if (seen.has(c.name)) continue;
+        seen.add(c.name);
+        next.push([...path, c.name]);
+      }
+    }
+    frontier = next;
+  }
+  return undefined;
+}
 
 /** Quebras de linha iguais nos dois lados: o formulário manda CRLF. */
 const sameText = (a: string, b: string) =>
@@ -64,7 +115,12 @@ export function fromForm(
     value.replace(/\//g, ''),
     value,
   ];
-  return candidates.find((c) => map.toForm!(c) === value);
+  // O toForm que só dá o Sim do lado de antes (o potencial de inovação, que
+  // pede o texto) também volta pelo que o formulário mostra.
+  return (
+    candidates.find((c) => map.toForm!(c) === value) ??
+    candidates.find((c) => map.toForm!(c, 'before') === value)
+  );
 }
 
 /**
@@ -141,10 +197,7 @@ export function writeFields(
     const saved = fromForm(child, attr, map, value, labels);
     if (saved === undefined) return;
     if (options.keepEquivalent && current !== undefined && sameText(current, saved)) return;
-    if (!part) {
-      part = element(child, {});
-      insertInSchemaOrder(lattesSchema, item, part);
-    }
+    part ??= ensurePart(item, child);
     setAttr(part, attr, saved);
   };
   Object.entries(t.fields).forEach(write);

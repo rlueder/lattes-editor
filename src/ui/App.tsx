@@ -51,9 +51,8 @@ import { useChanges } from './use-changes.ts';
 import { useFocusShell } from './use-focus-mode.ts';
 import { useFormLacksFor } from './use-form-lacks.ts';
 import { useHistoryDialog } from './use-history-dialog.ts';
-import { useLattesOpen } from './use-lattes-open.ts';
 import { useLattesRefresh } from './use-lattes-refresh.ts';
-import { useLattesReload } from './use-lattes-reload.ts';
+import { useLattesSource } from './use-lattes-source.ts';
 import { useFollowHash, useNavigate, useScrollToPendingAnchor } from './use-navigate.ts';
 import { usePaletteShortcut } from './use-palette-shortcut.ts';
 import { usePanoramaShell } from './use-panorama-shell.tsx';
@@ -61,6 +60,7 @@ import { usePhotoChange } from './use-photo-change.tsx';
 import { usePreflight } from './use-preflight.ts';
 import { type ReloadArg, useReload } from './use-reload.ts';
 import { useOpenStoredVersion } from './use-stored-version.ts';
+import { useSyncedOnPublish } from './use-synced-on-publish.ts';
 import { useTopbarHeight } from './use-topbar-height.ts';
 import { useUpdates } from './use-updates.ts';
 import { useVersions } from './use-versions.ts';
@@ -190,10 +190,6 @@ export function App() {
     }
   };
 
-  const lattesOpen = useLattesOpen(Boolean(session), booting, bridge, (file) =>
-    openFile(file, undefined, 'conector'),
-  );
-
   /** Nova exportação do Lattes: itens novos que ainda não foram importados se perdem. */
   const openVersion = useOpenStoredVersion(openFile, bridge, () => setDiagnosisOpen(true));
   const { dialog: reloadDialog, reload } = useReload(
@@ -201,8 +197,13 @@ export function App() {
     { changes: changes.open, pending: production.summaries },
     openFile,
   );
-  const lattesReload = useLattesReload(bridge, cvId(session), (f) => reload(f, 'conector'));
+  // Com a extensão que sabe, o currículo vem dos formulários, e não da exportação.
+  const lattes = useLattesSource(bridge, session, booting, {
+    onOpen: (f) => openFile(f, undefined, 'conector'),
+    onReload: (f) => reload(f, 'conector'),
+  });
   const refresh = useLattesRefresh(bridge.features, session, setSession, onEdit);
+  const onPublished = useSyncedOnPublish(bridge, setSession, onEdit);
 
   const closePalette = useCallback(() => setPaletteOpen(false), []);
   const history = useHistoryDialog(session, (doc, note) => {
@@ -230,7 +231,7 @@ export function App() {
       <>
         <Welcome
           error={error}
-          lattes={lattesOpen}
+          lattes={lattes.open}
           link={bridge.link}
           theme={theme}
           onFile={(file) => void openFile(file, undefined, 'arquivo')}
@@ -241,12 +242,12 @@ export function App() {
         />
         <PublishPanel
           bridge={bridge}
-          lattesId={lattesOpen.state.kind === 'falhou' ? lattesOpen.state.lattesId : undefined}
+          lattesId={lattes.open.state.kind === 'falhou' ? lattes.open.state.lattesId : undefined}
           open={publishOpen}
           onClose={() => setPublishOpen(false)}
           onPublished={() => {
             setPublishOpen(false);
-            lattesOpen.open();
+            lattes.open.open();
           }}
         />
         {storageNotice}
@@ -264,16 +265,18 @@ export function App() {
       {TEST_ITEMS_ON && <TestItemsPanel />}
       <Topbar
         ref={topbarRef}
-        busy={busyLabel(lattesReload.busy, refresh.busy)}
+        busy={busyLabel(lattes.reload.busy, refresh.busy)}
         focus={focusShell.menuItem}
         modified={modified}
         notices={noticesOf(
           bridge,
           update,
           devExtensionFolder,
-          lattesReload.failure,
+          lattes.reload.failure,
           getAttr(session.doc.root, 'DATA-ATUALIZACAO'),
           refresh,
+          lattes.load.notice,
+          session.meta.syncedOn,
         )}
         pendingCount={production.pending.length + changes.open}
         saveState={saveState}
@@ -288,7 +291,7 @@ export function App() {
         onPrint={print.show}
         onRefreshFromLattes={refresh.available ? refresh.start : undefined}
         onReload={(file) => reload(file, 'arquivo')}
-        onReloadFromLattes={lattesReload.available ? lattesReload.start : undefined}
+        onReloadFromLattes={lattes.reload.available ? lattes.reload.start : undefined}
         onSave={() =>
           void saveBytes(encodeCv(session.doc, session.meta.encoding), session.meta.fileName)
         }
@@ -392,6 +395,7 @@ export function App() {
           setExportOpen(false);
           production.openItem(seq);
         }}
+        onPublished={onPublished}
       />
 
       {reloadDialog}
@@ -429,11 +433,6 @@ export function App() {
 /** A barra fina do cabeçalho: recarregando ou atualizando do Lattes. */
 const busyLabel = (reloading: boolean, refreshing: boolean) =>
   reloading ? 'Recarregando do Lattes' : refreshing ? 'Atualizando do Lattes' : undefined;
-
-/** O NUMERO-IDENTIFICADOR do currículo aberto. */
-function cvId(session: Session | null): string | undefined {
-  return session ? getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR') : undefined;
-}
 
 /** Ação "novo:<item>" do ⌘K: abre o formulário daquele tipo de item. */
 function startNewItem(

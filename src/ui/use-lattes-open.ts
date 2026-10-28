@@ -5,11 +5,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { fromBase64 } from '../bridge/export.ts';
 import {
   canOpenFromLattes,
+  type CvSource,
   OPEN_TIMEOUT_MS,
   type OpenState,
   retriesOnReading,
 } from './lattes-open.ts';
-import type { BridgeState } from './use-bridge.ts';
 
 export interface LattesOpen {
   /** A extensão ligada sabe exportar. */
@@ -29,7 +29,7 @@ export interface LattesOpen {
 export function useLattesOpen(
   cvOpen: boolean,
   booting: boolean,
-  bridge: Pick<BridgeState, 'curriculo' | 'link' | 'requestCv'>,
+  bridge: CvSource,
   onFile: (file: File) => unknown,
 ): LattesOpen {
   const active = !cvOpen && !booting;
@@ -44,6 +44,7 @@ export function useLattesOpen(
   const fileRef = useRef(onFile);
   fileRef.current = onFile;
   const available = canOpenFromLattes(bridge.link);
+  const timeoutMs = bridge.timeoutMs ?? OPEN_TIMEOUT_MS;
   /** A leitura do Lattes que valia quando o pedido falhou. */
   const readingAtFailure = useRef(bridge.link.state);
 
@@ -105,9 +106,9 @@ export function useLattesOpen(
     const timer = setTimeout(() => {
       pending.current = undefined;
       setState({ kind: 'falhou', reason: 'sem-resposta' });
-    }, OPEN_TIMEOUT_MS);
+    }, timeoutMs);
     return () => clearTimeout(timer);
-  }, [state]);
+  }, [state, timeoutMs]);
 
   // Falha que se resolve no Lattes: quando chega uma leitura nova do menu
   // (aviso aceito, Lattes aberto, sessão refeita), tenta outra vez. Só uma

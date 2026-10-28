@@ -67,6 +67,8 @@ interface Props {
   onDiscardField: (entry: ChangeEntry, attr: string) => void;
   onDownload: () => void;
   onOpenItem: (sequencia: number) => void;
+  /** O envio ao CNPq foi confirmado pelo menu do Lattes. */
+  onPublished?: () => void;
 }
 
 export function ExportPanel({
@@ -79,6 +81,7 @@ export function ExportPanel({
   onDiscardField,
   onDownload,
   onOpenItem,
+  onPublished,
   open,
   pending,
   publish,
@@ -326,7 +329,10 @@ export function ExportPanel({
           toWrite={toWrite}
           writing={writing}
           onClose={onClose}
-          onPublished={() => setPublishedAt(Date.now())}
+          onPublished={() => {
+            setPublishedAt(Date.now());
+            onPublished?.();
+          }}
         />
       )}
 

@@ -154,6 +154,7 @@ Os módulos do conector, por assunto:
 | Exclusão dos outros tipos                                        | `delete-items.ts`, pelo formulário de alteração de cada um, com o `del()` da página (nas formações, o `SETA_ULTIMO_PUBLICO` antes; na atuação inteira, o GET com `f_ctr=E2`), e a lista relida           |
 | Foto, Exportar, Importar, estado do Lattes, Enviar ao CNPq       | `photo.ts`, `export.ts`, `importar.ts`, `lattes-status.ts`, `publish.ts`                                                                                                                                 |
 | Atualizar do Lattes (leitura pelas listas e pelos formulários)   | `refresh/` (cobertura, leitura na aba, plano, volta do formulário ao XML, entrada no editor)                                                                                                             |
+| Carregar do Lattes (o currículo inteiro pelos formulários)       | `load/` (páginas na aba, porta pela ponte, uma seção por arquivo em `sections/`, as tabelas do conector ao contrário em `reverse.ts`)                                                                    |
 
 Na inclusão, um campo que o formulário de inclusão do Lattes não tem não
 segura o item: ele vai com o resto, como iria pela própria página, e o que
@@ -372,6 +373,51 @@ vez mais. Gravação nunca repete.
   Se a resposta do pedido de publicação se perde, o núcleo ainda confere o
   menu. Só repete leituras, nunca o pedido de publicação; sem confirmação,
   devolve `nao-confirmado` com `sent: true` e mantém o botão bloqueado.
+  O GET de envio tem prazo próprio de 180 s (`SEND_TIMEOUT_MS`): ele levou
+  18 s em 14/10/2026 e mais de um minuto em 28/10/2026, e um corte no meio
+  deixava de conferir o menu. A tarefa na aba roda sem espera entre os
+  pedidos e com 240 s de prazo (`PUBLISH_PACE`, `src/bridge/publish-steps.ts`),
+  e o resultado traz o tempo de cada passo, que o painel mostra.
+  Confirmado o envio, sem pendência no Lattes que não tenha passado pelo
+  editor, a cópia de trabalho fica em dia naquele dia (`WorkingCopy.syncedOn`,
+  `src/ui/use-synced-on-publish.ts`): o conector releu cada item depois de
+  gravar, e o aviso da exportação atrasada não vale para ela.
+
+### Carregar do Lattes pelos formulários
+
+Com a extensão que anuncia `carregar-do-lattes`, abrir e recarregar do Lattes
+não pedem a exportação: o editor monta o currículo pelas telas do Lattes
+(`src/bridge/load/`, `src/ui/use-lattes-load.ts`). A aba só busca páginas, em
+levas abaixo do teto do transporte (`pages.ts`, pelos passos `menu` e
+`paginas` do pedido `ler-lattes`); tudo o mais acontece no editor:
+
+1. **Listas:** as do menu e as de dentro delas (a tela de cada atuação),
+   como na fila de `cv-lists.ts`.
+2. **Seções** (`sections/`, na ordem de `index.ts`): identificação, resumo e
+   outras informações; endereço com as grades de contato; idiomas e prêmios;
+   áreas de atuação; formação acadêmica; formação complementar; eventos;
+   atuação com vínculos, atividades, linhas de pesquisa e projetos; e as
+   produções, orientações, bancas, patentes, registros e licenças pelos alvos
+   de `production/targets/`. Cada linha abre o formulário de alteração, e o
+   valor de cada campo volta ao atributo pelas tabelas e especificações com
+   que o conector grava, ao contrário (`reverse.ts`, `refresh/from-form.ts`).
+3. **Documento:** a raiz com `SISTEMA-ORIGEM-XML="LATTES_FORMULARIOS"`, os
+   itens com o número do servidor (`f_seq`, `f_seq_ativ`…), e o XML entra no
+   editor pelo mesmo caminho do ZIP do Exportar (confirmação, histórico,
+   cópias).
+
+A leitura usa um passo próprio do transporte (`READ_PACE` em
+`src/bridge/transport.ts`): um pedido a cada 320 ms, no máximo 200 por minuto,
+três páginas ao mesmo tempo. No currículo do dono (194 páginas) são uns 70 s.
+As gravações seguem com 750 ms e 80 por minuto.
+
+O que nenhuma tela mostra não entra: o editor mostra o que o Lattes deixa ver
+e alterar. O que uma tela não deixou ler fica em `gaps` e vai para o sino.
+Todo GET passa por `isSafeGet`. A única exceção é o POST de leitura do
+segundo passo da formação complementar (`PKG_FORMACAO_COMPL.FORM2` com o
+`f_ctr` vazio, que não grava; `pages.ts` só deixa passar esse). O teste
+`tests/load-from-forms.test.ts` monta o currículo de exemplo inteiro contra o
+Lattes simulado e compara seção por seção.
 
 ### Atualizar do Lattes pelos formulários
 

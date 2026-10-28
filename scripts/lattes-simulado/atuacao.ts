@@ -99,7 +99,8 @@ function vinculoFields(state: LattesState, disabledVinc: boolean): Binding[] {
       write: (el, value) => {
         if (!value) return;
         const code = VINCULO_CODE[value];
-        setAttr(el, 'TIPO-DE-VINCULO', code ?? 'OUTRO');
+        // O texto livre vai como LIVRE (exportação real de 28/10/2026).
+        setAttr(el, 'TIPO-DE-VINCULO', code ?? 'LIVRE');
         setAttr(el, 'OUTRO-VINCULO-INFORMADO', code ? '' : value);
       },
     },

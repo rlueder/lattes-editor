@@ -350,3 +350,14 @@ com os tetos de pedidos. `capturas` lista os POSTs que a aba fez desde que a
 ponte subiu, com os textos mascarados e só os nomes e os campos de controle
 (`f_ctr`, os códigos e os `*_old`) à vista: é como se registra o envio feito
 pela própria página para comparar com o do conector.
+
+O mesmo script monta `dist-censo/carregar-ponte.js`, para conferir "Carregar
+do Lattes" no currículo real: `chamar '__carregarPonte.carregar()'` lê tudo
+pelos formulários, com o passo de leitura da extensão, e devolve as contagens
+de elementos e o que não foi lido. Para comparar com a exportação,
+`chamar '__carregarPonte.exportar()'` (ou `usarExportacao('<ZIP em base64>')`,
+quando o Lattes tem pendência e não exporta) e depois
+`chamar 'Promise.resolve(__carregarPonte.comparar())'`. Só saem nomes de
+elementos e atributos e contagens; `comparar('ELEMENTO@ATRIBUTO')` mostra a
+forma dos valores que diferem (letras viram `a`, dígitos viram `9`), nunca o
+conteúdo.

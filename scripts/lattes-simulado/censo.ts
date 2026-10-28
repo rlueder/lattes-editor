@@ -67,6 +67,7 @@ function techWorkForm(req: SimRequest, state: LattesState): SimResponse {
   if (seq && !item) return html(h.page('Trabalhos técnicos', '<p>Registro não encontrado.</p>'));
   const b = part(item, 'DADOS-BASICOS-DO-TRABALHO-TECNICO');
   const d = part(item, 'DETALHAMENTO-DO-TRABALHO-TECNICO');
+  const info = part(item, 'INFORMACOES-ADICIONAIS');
   const rows = [
     row(
       'Natureza',
@@ -101,12 +102,20 @@ function techWorkForm(req: SimRequest, state: LattesState): SimResponse {
       'Instituição promotora',
       h.text('f_inst', value(d, 'INSTITUICAO-FINANCIADORA'), { maxLength: 255 }),
     ),
-    row('Informações adicionais', h.textarea('f_ref', '', { maxLength: 3950 })),
+    row(
+      'Informações adicionais',
+      h.textarea('f_ref', value(info, 'DESCRICAO-INFORMACOES-ADICIONAIS'), { maxLength: 3950 }),
+    ),
     row(
       'Título em inglês',
       h.text('f_titulo_en', value(b, 'TITULO-DO-TRABALHO-TECNICO-INGLES'), { maxLength: 400 }),
     ),
-    row('Informações adicionais em inglês', h.textarea('f_ref_en', '', { maxLength: 3800 })),
+    row(
+      'Informações adicionais em inglês',
+      h.textarea('f_ref_en', value(info, 'DESCRICAO-INFORMACOES-ADICIONAIS-INGLES'), {
+        maxLength: 3800,
+      }),
+    ),
     row('Visibilidade', h.select('f_tipo_privacidade', h.PRIVACY, '1')),
   ].join('\n');
   const hidden = [

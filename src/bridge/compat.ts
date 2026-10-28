@@ -28,7 +28,7 @@ import { EDIT_OTHER_CONTACTS_ENABLED } from './endereco-contatos.ts';
 import { EDIT_FUNDERS_ENABLED } from './production/financiador.ts';
 import { INSTITUTION_HOLDERS_ENABLED } from './production/institution-holder.ts';
 import { PUBLISH_ENABLED } from './publish.ts';
-import { LATTES_REFRESH_ENABLED } from './refresh/enabled.ts';
+import { LATTES_LOAD_ENABLED, LATTES_REFRESH_ENABLED } from './refresh/enabled.ts';
 
 export const BRIDGE_FEATURES = [
   /** Data da última publicação e pendência, lidas do menu do Lattes. */
@@ -130,6 +130,11 @@ export const BRIDGE_FEATURES = [
    * com GET (src/bridge/refresh/). Entra e sai com LATTES_REFRESH_ENABLED.
    */
   ...(LATTES_REFRESH_ENABLED ? (['atualizar-do-lattes'] as const) : []),
+  /**
+   * "Carregar do Lattes": o menu e as páginas como vieram, para o editor montar
+   * o currículo pelos formulários (src/bridge/load/). Entra e sai com LATTES_LOAD_ENABLED.
+   */
+  ...(LATTES_LOAD_ENABLED ? (['carregar-do-lattes'] as const) : []),
 ] as const;
 
 export type BridgeFeature = (typeof BRIDGE_FEATURES)[number];

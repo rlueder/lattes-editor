@@ -114,7 +114,7 @@ export function planAreas(
 }
 
 /** A grande área do XML (CIENCIAS_EXATAS_E_DA_TERRA) pelo nome da árvore. */
-const bigKey = (label: string) => {
+export const bigKey = (label: string) => {
   const v = foldText(label)
     .toUpperCase()
     .replace(/[^A-Z0-9]+/g, '_')

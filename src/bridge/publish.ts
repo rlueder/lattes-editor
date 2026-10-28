@@ -38,9 +38,13 @@ import { encodeLatin1Form, type Pairs } from './form.ts';
 import { decodeHtmlEntities, plainText } from './html-text.ts';
 import { cvCodeFrom, isLogonPage, lattesIdFrom, sameCv } from './lattes-html.ts';
 import { lattesStatusFrom } from './lattes-status.ts';
+import { readEmailReply, readRaceReply } from './publish-replies.ts';
+import { type PublishStep, SEND_TIMEOUT_MS, timed } from './publish-steps.ts';
 import { labelsFor, radioIdsOf, squash, termsText } from './send-screen-labels.ts';
 
+export { readEmailReply, readRaceReply } from './publish-replies.ts';
 export { localDay, publishBusy, publishMessage } from './publish-status.ts';
+export { PUBLISH_PACE, type PublishStep, SEND_TIMEOUT_MS } from './publish-steps.ts';
 
 /**
  * O envio exige a declaração marcada nesta tentativa e a releitura da tela.
@@ -52,7 +56,7 @@ export const PUBLISH_ENABLED = true;
 
 export interface PublishPort {
   /** GET de um caminho relativo a /cvlattesweb/; texto decodificado de Latin-1. */
-  get(path: string): Promise<{ html: string; url: string }>;
+  get(path: string, options?: { timeoutMs?: number }): Promise<{ html: string; url: string }>;
   /** POST de formulário (application/x-www-form-urlencoded). */
   post(path: string, body: string): Promise<{ html: string; url: string }>;
 }
@@ -142,6 +146,8 @@ export interface PublishResult {
   outcome: PublishOutcome;
   /** O pedido de envio chegou a sair (o GET de pkg_publicar.enviar). */
   sent?: boolean;
+  /** Quanto levou cada passo, em ms, na ordem: para o painel dizer onde o tempo foi. */
+  steps?: PublishStep[];
 }
 
 /** O texto do alerta da resposta do envio (observado em 14/10/2026). */
@@ -294,30 +300,6 @@ export function requestProblem(req: PublishRequest, screen?: SendScreen): string
   return undefined;
 }
 
-/** {"status": true} da consulta de raça ou cor; undefined se a resposta não é esse JSON. */
-export function readRaceReply(text: string): boolean | undefined {
-  try {
-    const data = JSON.parse(text) as { status?: unknown };
-    return typeof data.status === 'boolean' ? data.status : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-/** {"existe": false, "mensagem": …} da consulta de e-mail. */
-export function readEmailReply(text: string): { exists: boolean; message?: string } | undefined {
-  try {
-    const data = JSON.parse(text) as { existe?: unknown; mensagem?: unknown };
-    if (typeof data.existe !== 'boolean') return undefined;
-    return {
-      exists: data.existe,
-      message: typeof data.mensagem === 'string' ? data.mensagem : undefined,
-    };
-  } catch {
-    return undefined;
-  }
-}
-
 /** Os parâmetros do GET de envio, na ordem observada. */
 export function sendPairs(code: string, req: PublishRequest): Pairs {
   return [
@@ -342,6 +324,8 @@ export interface PublishOptions {
   enabled?: boolean;
   /** Identificador do currículo aberto no editor, conferido no menu atual. */
   expectedLattesId?: string;
+  /** O relógio dos tempos de cada passo (os testes passam outro). */
+  now?: () => number;
   /** AAAA-MM-DD de hoje, no fuso da pessoa (o do Lattes). */
   today: string;
   /** Quantas vezes reler o menu depois do envio, e quanto esperar entre elas. */
@@ -385,6 +369,18 @@ export async function readSendScreenFrom(
  * do envio não conta como prova: o que vale é o menu.
  */
 export async function publishCv(
+  port: PublishPort,
+  code: string | undefined,
+  req: PublishRequest,
+  options: PublishOptions,
+): Promise<PublishResult> {
+  const steps: PublishStep[] = [];
+  const t = timed(port, options.wait ?? sleep, options.now ?? Date.now, steps);
+  const result = await publishSteps(t.port, code, req, { ...options, wait: t.wait });
+  return steps.length > 0 ? { ...result, steps } : result;
+}
+
+async function publishSteps(
   port: PublishPort,
   code: string | undefined,
   req: PublishRequest,
@@ -491,7 +487,9 @@ export async function publishCv(
 
   let answered = false;
   try {
-    const sent = await port.get(`pkg_publicar.enviar?${encodeLatin1Form(sendPairs(cod, req))}`);
+    const sent = await port.get(`pkg_publicar.enviar?${encodeLatin1Form(sendPairs(cod, req))}`, {
+      timeoutMs: SEND_TIMEOUT_MS,
+    });
     answered = sent.html.includes(SENT_ALERT);
   } catch {
     // A resposta perdida não diz se o CNPq recebeu o pedido. Só o menu é

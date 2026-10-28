@@ -62,7 +62,7 @@ function applyAuthors(item: XElement, rows: GridRow[], part: AuthorPart): void {
 const SETOR_ATTRS = ['SETOR-DE-ATIVIDADE-1', 'SETOR-DE-ATIVIDADE-2', 'SETOR-DE-ATIVIDADE-3'];
 
 /** Os setores de atividade pelos rótulos da grade (o XML guarda o rótulo, planSetorList). */
-function applySetores(item: XElement, rows: GridRow[]): void {
+export function applySetores(item: XElement, rows: GridRow[]): void {
   const labels = labeled(rows).map((r) => text(r.l));
   const container = childElements(item, 'SETORES-DE-ATIVIDADE')[0];
   const now = SETOR_ATTRS.map((a) => (container && getAttr(container, a)) ?? '').filter(Boolean);
@@ -121,10 +121,19 @@ function applyLookups(t: ProductionTarget, item: XElement, v: Record<string, str
   }
 }
 
-/** O formulário lido, aplicado ao item (que muda no lugar). */
-export function applyReading(t: ProductionTarget, item: XElement, reading: FormReading): void {
+/**
+ * O formulário lido, aplicado ao item (que muda no lugar). fresh: o item é
+ * novo, montado só pelo formulário ("Carregar do Lattes", src/bridge/load/),
+ * e todo campo que veio é gravado, vazio também.
+ */
+export function applyReading(
+  t: ProductionTarget,
+  item: XElement,
+  reading: FormReading,
+  { fresh = false } = {},
+): void {
   const v = reading.values ?? {};
-  writeFields(t, item, (field) => v[field], { keepEquivalent: true });
+  writeFields(t, item, (field) => v[field], { keepEquivalent: !fresh });
   const grids = reading.grids ?? {};
   if (t.grids.includes('f_autores_l') && grids.f_autores_l && !t.authors?.container) {
     applyAuthors(item, grids.f_autores_l, t.authors ?? AUTHOR_PART);

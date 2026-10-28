@@ -104,7 +104,7 @@ const race: Mapper = (v) =>
   v === '' ? '' : RACE[foldText(v.replace(/_/g, ' ').trim()).toLowerCase()];
 
 /** Atributo de DADOS-GERAIS → campo de GN_IDENT. */
-const IDENT_FIELDS: Record<string, [string, Mapper]> = {
+export const IDENT_FIELDS: Record<string, [string, Mapper]> = {
   'CIDADE-NASCIMENTO': ['f_cidade_nasc', same],
   'DATA-DE-EMISSAO': ['f_dta_rg', date],
   'DATA-NASCIMENTO': ['f_dta_nasc', date],
@@ -280,7 +280,7 @@ export function planIdentificacaoEdit(
 /** A deficiência pelo conector (op.pcd): só a uma extensão com 'pessoa-com-deficiencia'. */
 export const EDIT_PCD_ENABLED = true;
 
-const PCD_LABELS: Record<string, string> = {
+export const PCD_LABELS: Record<string, string> = {
   'deficiencia auditiva': 'A',
   'deficiencia fisica': 'F',
   'deficiencia intelectual': 'I',
@@ -323,7 +323,7 @@ function planPcd(
  * o sufixo. O logradouro tem um nome em cada elemento (XSD) e entra por
  * ENDERECO_STREET, para nenhum dos dois cair no logradouro do outro.
  */
-const ENDERECO_FIELDS: Record<string, [string, Mapper]> = {
+export const ENDERECO_FIELDS: Record<string, [string, Mapper]> = {
   BAIRRO: ['f_bairro', same],
   'CAIXA-POSTAL': ['f_caixa', same],
   CEP: ['f_cep', same],
@@ -343,7 +343,7 @@ export const ENDERECO_SUFFIX: Record<string, string> = {
   'ENDERECO-RESIDENCIAL': '_r',
 };
 
-const ENDERECO_STREET: Record<string, string> = {
+export const ENDERECO_STREET: Record<string, string> = {
   'ENDERECO-PROFISSIONAL': 'LOGRADOURO-COMPLEMENTO',
   'ENDERECO-RESIDENCIAL': 'LOGRADOURO',
 };
@@ -352,7 +352,7 @@ const ENDERECO_STREET: Record<string, string> = {
 const PROFESSIONAL_ABSENT = new Set(['CODIGO-UNIDADE', 'NOME-UNIDADE']);
 
 /** ENDERECO@FLAG-DE-PREFERENCIA → rádio f_end_corr; o resto do ENDERECO vai em grades. */
-const PREFERENCE: Record<string, [string, Mapper]> = {
+export const PREFERENCE: Record<string, [string, Mapper]> = {
   'FLAG-DE-PREFERENCIA': [
     'f_end_corr',
     (v) =>

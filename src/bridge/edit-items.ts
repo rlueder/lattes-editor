@@ -122,7 +122,7 @@ const OUVINTE_XML = 'Ouvinte';
  * Forma no XML → opção de F_FORMA. Ouvinte observado no censo; Convidado e
  * Participante pelo rótulo do rádio, inferidos.
  */
-const FORMA_CODES: Record<string, string> = {
+export const FORMA_CODES: Record<string, string> = {
   Convidado: '38',
   Ouvinte: OUVINTE,
   Participante: '39',
@@ -176,7 +176,7 @@ const yesNo: Mapper = (v) => (v === 'SIM' ? 'S' : v === 'NAO' ? 'N' : undefined)
  * Atributos dos dados básicos → campos do formulário. A correspondência vem
  * da tabela da seção 16 (as linhas sem "inferido").
  */
-const BASICS_FIELDS: Record<string, [string, Mapper]> = {
+export const EVENT_BASICS_FIELDS: Record<string, [string, Mapper]> = {
   ANO: ['f_ano', same],
   'FLAG-DIVULGACAO-CIENTIFICA': ['F_STA_DIVULGACAO_CIENTIFICA', yesNo],
   'HOME-PAGE-DO-TRABALHO': ['f_homepage', same],
@@ -193,7 +193,7 @@ const DETAIL_FIELDS: Record<string, [string, Mapper]> = {
  * O que EDIT_EVENTO_ENABLED acrescenta: a cidade (observada no censo). A
  * forma, o tipo e a natureza têm tratamento próprio em planEvento.
  */
-const DETAIL_FIELDS_FULL: Record<string, [string, Mapper]> = {
+export const EVENT_DETAIL_FIELDS: Record<string, [string, Mapper]> = {
   ...DETAIL_FIELDS,
   'CIDADE-DO-EVENTO': ['f_cidade', same],
 };
@@ -289,7 +289,7 @@ export function planEvento(
     }
   }
 
-  const table = isBasics ? BASICS_FIELDS : full ? DETAIL_FIELDS_FULL : DETAIL_FIELDS;
+  const table = isBasics ? EVENT_BASICS_FIELDS : full ? EVENT_DETAIL_FIELDS : DETAIL_FIELDS;
   const set: FieldValues = {};
   const expect: FieldValues = {};
   const missing: string[] = [];
@@ -463,7 +463,7 @@ export function natureCode(nature: string): string | undefined {
 }
 
 /** Rótulos de F_COD_PROD, lidos no formulário (censo de 15/10/2026). */
-const EVENT_NATURE_LABELS: Record<string, string> = {
+export const EVENT_NATURE_LABELS: Record<string, string> = {
   A31: 'Congresso',
   A32: 'Seminário',
   A33: 'Simpósio',

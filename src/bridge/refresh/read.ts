@@ -10,8 +10,10 @@ import { listKey, type ListSnapshot } from '../../census/test-ledger.ts';
 import { cvListQueue, LISTS_PER_TASK, readListsPart } from '../cv-lists.ts';
 import { type FormControl, withScriptValues } from '../form.ts';
 import { isLogonPage } from '../lattes-html.ts';
+import { type PageRequest, type PagesPart, readPages } from '../load/pages.ts';
 import { GRID_SPECS, type Grids, readGrids } from '../production/grids.ts';
 import type { GridField } from '../production/types.ts';
+import { READ_CONCURRENCY } from '../transport.ts';
 import { readableFormProcs } from './coverage.ts';
 
 /** Formulários por tarefa: abaixo dos 100 pedidos do transporte, com folga. */
@@ -24,7 +26,11 @@ export interface FormRequest {
 }
 
 export type RefreshRequest =
-  { queue?: string[]; step: 'listas' } | { reads: FormRequest[]; step: 'formularios' };
+  | { queue?: string[]; step: 'listas' }
+  | { reads: FormRequest[]; step: 'formularios' }
+  // "Carregar do Lattes" (src/bridge/load/): o menu da aba, e páginas como vieram.
+  | { step: 'menu' }
+  | { paths: PageRequest[]; step: 'paginas' };
 
 /** O formulário de uma linha, como a página o mostra. */
 export interface FormReading {
@@ -58,10 +64,14 @@ export type RefreshPart =
       step: 'listas';
       /** Chaves (listKey) das listas que falharam. */
       unread: string[];
-    };
+    }
+  | { html: string; step: 'menu' }
+  | (PagesPart & { step: 'paginas' });
 
 export interface RefreshPort {
   get(path: string): Promise<string>;
+  /** Só para o POST de leitura de "Carregar do Lattes" (load/pages.ts). */
+  post?(path: string, body: string): Promise<string>;
   readForm(html: string, formName: string): FormControl[] | undefined;
 }
 
@@ -199,7 +209,24 @@ export function readRefreshPart(
   code: string,
   request: RefreshRequest,
 ): Promise<RefreshPart> {
-  return request.step === 'listas'
-    ? readLists(port, menu, code, request.queue)
-    : readForms(port, request.reads);
+  switch (request.step) {
+    case 'listas':
+      return readLists(port, menu, code, request.queue);
+    case 'formularios':
+      return readForms(port, request.reads);
+    case 'menu':
+      return Promise.resolve({ html: menu, step: 'menu' });
+    case 'paginas':
+      return readPages(
+        {
+          get: (path) => port.get(path),
+          post: port.post && ((path, body) => port.post!(path, body)),
+        },
+        request.paths,
+        READ_CONCURRENCY,
+      ).then((part) => ({
+        ...part,
+        step: 'paginas',
+      }));
+  }
 }

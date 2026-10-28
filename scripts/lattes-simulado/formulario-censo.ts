@@ -111,6 +111,19 @@ export function byLabel(field: CapturedField): Pick<FieldLink, 'toForm' | 'toXml
   };
 }
 
+/**
+ * Lista cujo valor é o rótulo (Multimídia) ↔ o valor do enumerado do XSD
+ * (MULTIMIDIA), comparados sem acento, caixa nem separador.
+ */
+export function byEnum(field: CapturedField): Pick<FieldLink, 'toForm' | 'toXml'> {
+  const key = (x: string) => foldText(x).replace(/[^a-z0-9]/g, '');
+  const values = capturedOptions(field).map(([v]) => v);
+  return {
+    toForm: (xml) => values.find((v) => key(v) === key(xml)) ?? '',
+    toXml: (form) => (form ? key(form).toUpperCase() : ''),
+  };
+}
+
 /** Rádio S/N ↔ SIM/NAO. */
 export const yesNo: Pick<FieldLink, 'toForm' | 'toXml'> = {
   toForm: (xml) => ({ NAO: 'N', SIM: 'S' })[xml] ?? '',

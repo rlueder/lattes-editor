@@ -172,7 +172,7 @@ const yesNo: Mapper = (v) => (v === 'SIM' ? 'S' : v === 'NAO' ? 'N' : v ? undefi
 const hours: Mapper = (v) => (/^\d{0,4}$/.test(v.trim()) ? v.trim() : undefined);
 
 /** Atributo → campo do formulário e conversão. */
-const FIELDS: Record<string, [string, Mapper]> = {
+export const FORMACAO_FIELDS: Record<string, [string, Mapper]> = {
   'ANO-DE-CONCLUSAO': ['f_ano_fim', same],
   'ANO-DE-INICIO': ['f_ano_ini', same],
   'ANO-DE-OBTENCAO-DO-TITULO': ['f_ano_obten', same],
@@ -301,7 +301,7 @@ function plainFields(
           'A instituição do sanduíche e a da cotutela só se escolhem pela busca do Lattes, e a exportação traz só o código, sem o nome para buscar',
       };
     }
-    const entry = FIELDS[f.attr];
+    const entry = FORMACAO_FIELDS[f.attr];
     if (NO_FIELD.has(f.attr) || (entry && !level.visible.includes(entry[0]))) {
       absent.push(f.label);
       continue;

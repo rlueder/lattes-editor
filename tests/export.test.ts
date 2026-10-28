@@ -183,7 +183,7 @@ describe('Abrir do Lattes na tela inicial', () => {
       expect(failureText(r).length).toBeGreaterThan(30);
     }
     expect(failureText('erro', 'A tela do Exportar do Lattes mudou.')).toBe(
-      'Não deu para exportar do Lattes (A tela do Exportar do Lattes mudou). Tente de novo, ou abra o arquivo exportado.',
+      'Não deu para ler o currículo no Lattes (A tela do Exportar do Lattes mudou). Tente de novo, ou abra o arquivo exportado.',
     );
   });
 });

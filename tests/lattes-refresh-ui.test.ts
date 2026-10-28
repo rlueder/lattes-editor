@@ -314,4 +314,12 @@ describe('os textos', () => {
     const all = noticesFor({ appVersion: '1', refresh, stale: offer, storage: 'cifrado' });
     expect(all.map((n) => n.id)).toEqual(['exportacao-atrasada', 'atualizar-lattes']);
   });
+
+  it('depois de um envio pelo editor com a cópia em dia, a exportação antiga não acende o aviso', () => {
+    expect(staleExportNotice('22102026', '2026-10-27', true, '2026-10-27')).toBeUndefined();
+    // Um envio de antes não cobre uma publicação mais nova.
+    expect(staleExportNotice('22102026', '2026-10-28', true, '2026-10-27')).toMatchObject({
+      id: 'exportacao-atrasada',
+    });
+  });
 });

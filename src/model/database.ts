@@ -23,6 +23,12 @@ export interface WorkingCopy {
   /** XML como foi carregado, para comparar e para "descartar alterações". */
   originalXml: string;
   savedAt: number;
+  /**
+   * O dia (AAAA-MM-DD) de um envio ao CNPq feito pelo editor sem pendência de
+   * fora dele: o conector releu do Lattes cada item depois de gravar, e a
+   * cópia está em dia com o que foi publicado, mesmo com a exportação antiga.
+   */
+  syncedOn?: string;
   /** XML serializado (string Unicode). */
   xml: string;
 }

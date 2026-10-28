@@ -27,14 +27,19 @@ export function noticesOf(
   exported?: string,
   /** "Atualizar do Lattes": se a extensão sabe, e o resultado que fica no sino. */
   refresh?: { available: boolean; notice?: Notice },
+  /** O que não veio dos formulários na última leitura (lattes-load.ts). */
+  load?: Notice,
+  /** O dia do último envio ao CNPq pelo editor com a cópia em dia (WorkingCopy.syncedOn). */
+  syncedOn?: string,
 ) {
   return noticesFor({
     appVersion: __APP_VERSION__,
     connection: connectionOf(bridge.link, Boolean(bridge.lattes)),
     devExtensionFolder,
+    load,
     refresh: refresh?.notice,
     reload: reloadFailure && reloadNotice(reloadFailure),
-    stale: staleExportNotice(exported, bridge.lattes?.lastPublished, refresh?.available),
+    stale: staleExportNotice(exported, bridge.lattes?.lastPublished, refresh?.available, syncedOn),
     storage: storageStatus().status,
     unknownPending: stripFor(0, bridge).segments.some((x) => x.kind === 'pendencia-desconhecida'),
     update,

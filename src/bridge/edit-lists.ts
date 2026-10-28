@@ -313,6 +313,11 @@ const TARGETS: Record<ListEditKind, Target> = {
   },
 };
 
+/** Os campos de um tipo, os do segundo passo junto (para "Carregar do Lattes", src/bridge/load/). */
+export function listEditFields(kind: ListEditKind): Record<string, [string, Mapper]> {
+  return { ...TARGETS[kind].fields, ...(TARGETS[kind].step2 ?? {}) };
+}
+
 /** O nome do tipo, para os motivos. */
 const NAMES: Record<ListEditKind, string> = {
   'formacao-complementar': 'formação complementar',

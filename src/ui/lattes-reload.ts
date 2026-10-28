@@ -53,7 +53,7 @@ export function reloadFailureText({ detail, reason }: ReloadFailure): string {
     case 'sem-resposta':
       return 'A extensão não respondeu. Tente de novo, ou escolha o arquivo exportado.';
     case 'erro':
-      return `Não deu para exportar do Lattes${detail ? ` (${detail.replace(/\.$/, '')})` : ''}. Tente de novo, ou escolha o arquivo exportado.`;
+      return `Não deu para ler o currículo no Lattes${detail ? ` (${detail.replace(/\.$/, '')})` : ''}. Tente de novo, ou escolha o arquivo exportado.`;
   }
 }
 

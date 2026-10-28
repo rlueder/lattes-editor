@@ -12,7 +12,7 @@ import {
 } from '../../src/bridge/cv-lists.ts';
 import { type EspelhoItem, isEspelhoPage, parseEspelho } from '../../src/bridge/espelho.ts';
 import { exportCv, type ExportPort, fromBase64, toBase64 } from '../../src/bridge/export.ts';
-import type { FormControl } from '../../src/bridge/form.ts';
+import { readFormInPage } from '../../src/bridge/form-dom.ts';
 import { importItems, type ImportPort, type ImportResult } from '../../src/bridge/importar.ts';
 import { KEEPALIVE_PAGE } from '../../src/bridge/keepalive.ts';
 import { cvCodeFrom, isLogonPage, lattesIdFrom, sameCv } from '../../src/bridge/lattes-html.ts';
@@ -29,6 +29,7 @@ import type { BridgeOp } from '../../src/bridge/plan.ts';
 import type { ProductionScans } from '../../src/bridge/production/locate.ts';
 import {
   PUBLISH_ENABLED,
+  PUBLISH_PACE,
   publishCv,
   type PublishPort,
   type PublishRequest,
@@ -37,6 +38,7 @@ import {
   type SendScreen,
 } from '../../src/bridge/publish.ts';
 import { readRefreshPart, type RefreshRequest } from '../../src/bridge/refresh/read.ts';
+import { READ_PACE } from '../../src/bridge/transport.ts';
 import { decodeLatin1 } from '../../src/model/latin1.ts';
 import { pageTraffic, withTraffic } from './page-traffic.ts';
 
@@ -50,22 +52,6 @@ const request = (path: string | URL, init?: RequestInit) =>
 
 async function text(res: Response): Promise<string> {
   return decodeLatin1(await traffic.bytes(res));
-}
-
-function controlsOf(form: HTMLFormElement): FormControl[] {
-  return [...form.elements].map((el) => {
-    const c = el as HTMLInputElement & HTMLSelectElement & HTMLTextAreaElement;
-    const isSelect = c.tagName === 'SELECT';
-    return {
-      checked: c.checked,
-      disabled: c.disabled,
-      maxLength: c.maxLength > 0 ? c.maxLength : undefined,
-      name: c.name,
-      selected: isSelect ? [...c.selectedOptions].map((o) => o.value) : undefined,
-      type: isSelect ? c.type || 'select-one' : (c.type || c.tagName).toLowerCase(),
-      value: c.value,
-    };
-  });
 }
 
 const port: LattesPort = {
@@ -83,11 +69,7 @@ const port: LattesPort = {
     return text(res);
   },
   productionScans: (page.__lattesScans ??= new Map()),
-  readForm(html, formName) {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const form = doc.querySelector<HTMLFormElement>(`form[name="${formName}"]`);
-    return form ? controlsOf(form) : undefined;
-  },
+  readForm: readFormInPage,
 };
 
 const exportPort: ExportPort = {
@@ -169,11 +151,12 @@ interface ImportArgs {
  * GET não usam cache: o menu lido antes e depois do envio tem de ser o de agora.
  */
 const publishPort: PublishPort = {
-  async get(path) {
-    const res = await request(new URL(path, location.href), {
-      cache: 'no-store',
-      credentials: 'include',
-    });
+  async get(path, options) {
+    const res = await traffic.request(
+      new URL(path, location.href),
+      { cache: 'no-store', credentials: 'include' },
+      options,
+    );
     return { html: await text(res), url: res.url };
   },
   post: importPort.post,
@@ -430,6 +413,9 @@ const connector = {
   cancelar: () => traffic.cancel(),
   identity: (fresh = false) =>
     fresh ? withTraffic(() => traffic.run(() => connector.identity(true))) : connector.identity(),
+  // Só leitura: o passo de READ_PACE (transport.ts), mais rápido que o das gravações.
+  lerLattes: (requestJson: string) =>
+    withTraffic(() => traffic.run(() => connector.lerLattes(requestJson), undefined, READ_PACE)),
   /** Um pedido pequeno à sessão (src/bridge/keepalive.ts): viva, caiu, ou sem resposta. */
   manter: () =>
     withTraffic(() =>
@@ -442,6 +428,11 @@ const connector = {
         if (isLogonPage(html, res.url)) return { viva: false };
         return { viva: res.ok ? true : undefined };
       }),
+    ),
+  // O envio ao CNPq com o passo e o prazo dele (PUBLISH_PACE, publish.ts).
+  publicar: (args: string, expected?: string) =>
+    withTraffic(() =>
+      traffic.run(() => connector.publicar(args, expected), undefined, PUBLISH_PACE),
     ),
   respeitarPausa: (until: number) => traffic.respectPause(until),
 };
