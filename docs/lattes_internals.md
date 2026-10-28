@@ -2133,8 +2133,7 @@ vieram do primeiro. A lupa da agência no segundo passo (`agencia()`) abre
 `prc_agencia?f_cod=<código do currículo>`, a mesma lista das orientações e
 bancas, e marca a bolsa como sim; o conector faz a mesma escolha em
 `f_agencia` (só o MBA tem agência no XSD). **Observado** o endereço e a
-função, em 27/10/2026, sem enviar; a troca de agência não foi enviada. As buscas do endereço profissional
-continuam desligadas (`COMPL_ENDERECO_LOOKUPS_ENABLED`), sem caso reversível.
+função, em 27/10/2026, sem enviar; a troca de agência não foi enviada. As buscas do endereço profissional gravaram em 28/10/2026 (seção 27).
 
 ### Endereço profissional (lido em 20/10/2026)
 
@@ -2899,3 +2898,13 @@ excluído pelo conector, e a releitura conferiu os dois passos. **Observado**:
   `SETA_ULTIMO_PUBLICO`.
 - **Exportação** com alteração ainda não enviada ao CNPq responde só com um
   alerta ("Existem alterações realizadas…"), sem o arquivo.
+- **Endereço profissional.** Num endereço profissional vazio (só o e-mail),
+  a instituição pela busca `PRC_INST_ATIV` e o órgão pela janela de órgãos
+  gravaram e voltaram na releitura. Com a instituição, o banco exige o país
+  ("O país deve ser informado") e, no Brasil, a cidade e a UF ("Os campos
+  CIDADE e UF devem ser preenchidos"), pelo gatilho `TRG_RECUP_MUNIC_PAIS`, que
+  preenche o código do município e as cópias `f_munic_i_old`, `f_estado_i_old`
+  e `f_pais_i_old`. O formulário de endereço também monta XML no `check()`
+  (`f_dados_grid` e `f_dados_grid_contatos`); um envio sem eles para com
+  `ORA-19032`. O endereço voltou ao que era por um envio do conector com os
+  campos vazios.

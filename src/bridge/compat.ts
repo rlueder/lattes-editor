@@ -22,7 +22,7 @@ import { CREATE_COMPL_ENABLED } from './create-complementar.ts';
 import { CREATE_PROJECT_ORGAN_ENABLED } from './create-projeto.ts';
 import { EDIT_PCD_ENABLED } from './dados-gerais-edit.ts';
 import { DELETE_MORE_ENABLED } from './delete-items.ts';
-import { COMPL_LOOKUPS_ENABLED } from './edit-lists.ts';
+import { COMPL_ENDERECO_LOOKUPS_ENABLED, COMPL_LOOKUPS_ENABLED } from './edit-lists.ts';
 import { EDIT_OTHER_CONTACTS_ENABLED } from './endereco-contatos.ts';
 import { EDIT_FUNDERS_ENABLED } from './production/financiador.ts';
 import { INSTITUTION_HOLDERS_ENABLED } from './production/institution-holder.ts';
@@ -100,8 +100,8 @@ export const BRIDGE_FEATURES = [
   'alterar-citacoes',
   /** Instituição e curso da formação complementar pelas buscas (edit-lists.ts). */
   ...(COMPL_LOOKUPS_ENABLED ? (['buscas-complementar'] as const) : []),
-  // 'buscas-complementar-endereco' (endereco-buscas.ts) volta quando
-  // COMPL_ENDERECO_LOOKUPS_ENABLED ligar.
+  /** Instituição e órgão do endereço profissional pelas buscas (endereco-buscas.ts). */
+  ...(COMPL_ENDERECO_LOOKUPS_ENABLED ? (['buscas-complementar-endereco'] as const) : []),
   /** Titular instituição de patentes e registros pela busca de titulares (institution-holder.ts). */
   ...(INSTITUTION_HOLDERS_ENABLED ? (['titular-instituicao'] as const) : []),
   /** Pessoa com deficiência, com os f_pcd da página (dados-gerais-edit.ts). */

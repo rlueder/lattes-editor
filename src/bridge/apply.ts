@@ -402,8 +402,13 @@ async function applyAny(op: BridgeOp, port: LattesPort, gates: ApplyGates): Prom
       return result('divergente', `O Lattes não gravou: ${labels(notSaved)}`);
     }
     // f_vinculo é preenchido no envio (check()); a página sempre o traz vazio.
+    // No endereço, o servidor preenche o código do município e as cópias *_old
+    // da cidade, da UF e do país (observado em 28/10/2026).
+    const serverFilled = (n: string) =>
+      op.kind === 'endereco' &&
+      /^f_(cod_munic|munic_[ir]_old|estado_[ir]_old|pais_[ir]_old)/.test(n);
     const unexpected = changedNames(before.pairs, after.pairs).filter(
-      (n) => !(n in set) && n !== 'f_vinculo',
+      (n) => !(n in set) && n !== 'f_vinculo' && !serverFilled(n),
     );
     // Campos desabilitados não vão nos pares; os que identificam o item
     // (instituição e curso da formação complementar) se conferem à parte.
