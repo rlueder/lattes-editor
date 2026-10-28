@@ -390,22 +390,9 @@ function listaInst(req: SimRequest, state: LattesState): SimResponse {
     .map((a) => {
       const code = withLetter(state, getAttr(a, 'CODIGO-INSTITUICAO')!);
       const name = getAttr(a, 'NOME-INSTITUICAO') ?? '';
-      const v = vinculoCopy(a);
-      const args = [
-        v.enqua,
-        v.regime,
-        v.stavinc,
-        v.anoInic,
-        v.anoFim,
-        v.carga,
-        v.vinc,
-        code,
-        name,
-      ].map((x) => `'${h.jsString(x)}'`);
       // Em 28/10/2026 as linhas da janela das atuações chamavam só
       // seleciona(código, nome, sigla), sem o preencherOpener do vínculo de
-      // 27/10; o simulado mostra a de hoje. As aspas vão como estão (seção 18).
-      void args;
+      // 27/10. As aspas vão como estão (seção 18).
       const sigla = vinculo ? `,'${h.jsString(name.slice(0, 4).toUpperCase())}'` : '';
       return `<a href="javascript:seleciona('${code}','${h.jsString(name)}'${sigla})">${h.esc(name.toUpperCase())}</a><br>`;
     })

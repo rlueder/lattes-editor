@@ -113,6 +113,9 @@ const stand: Record<string, unknown> = {
 const parentStand: Record<string, unknown> = new Proxy(stand, {
   get(target, key) {
     if (typeof key === 'symbol') return undefined;
+    // Quem testa se é uma promessa (await, Promise.resolve) ou o serializa
+    // pergunta then e toJSON: não é pedido ao menu.
+    if (key === 'then' || key === 'toJSON') return undefined;
     if (key === 'parent') return parentStand;
     if (key in target) return target[key];
     throw new FrameGuardError(

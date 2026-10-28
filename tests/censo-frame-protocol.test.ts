@@ -57,5 +57,11 @@ it('todo acesso ao pai vai às cópias locais, sem referência ao menu real', ()
     '__lattesFrameParent.parent.x; __lattesFrameParent.parent.y;',
   );
   const own = 'node.parent.children; this.parent.x; el.style.top.length; a.$parent.b; myparent.x;';
-  expect(localFrameReferences(own)).toBe(own);
+  expect(localFrameReferences(own)).toBe(own); // Um script com variável ou parâmetro desse nome usa o dele; self. e window. seguem da janela.
+  const local = 'var parent = el.parentNode; parent.appendChild(x); self.parent.veriHelp("A");';
+  expect(localFrameReferences(local)).toBe(
+    'var parent = el.parentNode; parent.appendChild(x); __lattesFrameParent.veriHelp("A");',
+  );
+  const param = 'function f(top){ return top.toFixed(1); } (parent) => parent.x;';
+  expect(localFrameReferences(param)).toBe(param);
 });

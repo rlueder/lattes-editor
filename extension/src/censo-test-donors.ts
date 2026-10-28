@@ -155,6 +155,11 @@ export async function prepareContext(
 /** Os pacotes do contexto já lido ('' para todos), para não reaproveitar o de outros tipos. */
 let prepared: string | undefined;
 
+/** Uma captura nova invalida o contexto lido para a anterior. */
+export function forgetContext(): void {
+  prepared = undefined;
+}
+
 /**
  * O contexto, lido uma vez por carregamento do censo: sem a marca, uma
  * formação sem instituição e curso fazia o lote reler tudo a cada vez.

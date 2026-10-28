@@ -31,7 +31,7 @@ import { testJobs } from '../../src/census/test-plan.ts';
 import { readZip } from '../../src/import-export/zip.ts';
 import { decodeLatin1, decodeXmlBytes } from '../../src/model/latin1.ts';
 import { censusGet, clearCensusCache, withCensusCache } from './censo-reading.ts';
-import { ensureContext, packageOf } from './censo-test-donors.ts';
+import { ensureContext, forgetContext, packageOf } from './censo-test-donors.ts';
 import {
   createTestItems,
   live,
@@ -286,11 +286,16 @@ async function prepareTestItems(options: { only?: string[] } = {}) {
     if (!captured || captured.interrupted || capturedOnly !== key) {
       captured = await capture({ download: false, only: options.only });
       capturedOnly = key;
+      // O contexto de uma captura só de alguns tipos não serve a uma inteira,
+      // e o lote (sem want) usaria o que estivesse lido.
+      forgetContext();
       fresh = true;
-    } else if (!captured.interrupted) {
+    }
+    if (!captured.interrupted) {
       // Os seus itens de onde as buscas são copiadas: com only, só os dos
       // pacotes desses tipos.
-      fresh = await ensureContext(await code(), get, wantOf(captured, options.only));
+      const read = await ensureContext(await code(), get, wantOf(captured, options.only));
+      fresh = fresh || read;
     }
   } finally {
     reading = false;
