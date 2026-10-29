@@ -49,7 +49,7 @@ export function reading<T>(work: (get: (p: string) => Promise<string>) => Promis
     () =>
       work(async (p) => {
         const res = await traffic.request(new URL(p, location.href), { credentials: 'include' });
-        return text((await traffic.bytes(res)).buffer as ArrayBuffer);
+        return decodeLatin1(await traffic.bytes(res));
       }),
     undefined,
     READ_PACE,

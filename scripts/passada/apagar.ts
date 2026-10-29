@@ -34,11 +34,17 @@ export async function apagar(max = 40, marca = TEST_MARK) {
 }
 
 /**
- * As linhas que as listas de `lista` (pkg_licenca, por exemplo) têm a mais
- * que a base: os itens sem título onde a marca caiba, como a licença. Só as
- * listas pedidas; as outras não são tocadas.
+ * As linhas que a lista `lista` (o procedimento inteiro, como
+ * `pkg_licenca.lista`) tem a mais que a base e cujo texto casa com `marca`:
+ * os itens sem título onde a marca de teste não cabe, como a licença, que a
+ * passada acha pelas datas (`/200[123] `). Sem lista exata ou sem marca, nada
+ * é apagado: um item de verdade incluído depois da base também estaria a mais.
  */
-export async function apagarNovas(lista: string) {
+export async function apagarNovas(lista: string, marca: string) {
+  if (!/^pkg_\w+\.lista$/i.test(lista))
+    return 'lista: o procedimento inteiro, como pkg_licenca.lista';
+  if (!marca) return 'marca: o padrão que só as linhas de teste têm';
+  const test = new RegExp(marca);
   const before =
     state.base ??
     (JSON.parse(sessionStorage.getItem('passada:base') ?? 'null') as ListSnapshot | null);
@@ -46,12 +52,12 @@ export async function apagarNovas(lista: string) {
   const now = await snapshot();
   const extra: { link: string; text: string }[] = [];
   for (const [key, rows] of Object.entries(now)) {
-    if (!key.toLowerCase().includes(lista.toLowerCase())) continue;
+    if (key.split('?')[0]!.toLowerCase() !== lista.toLowerCase()) continue;
     const was = (before[key] ?? []).map((r) => r.text);
     for (const r of rows) {
       const i = was.indexOf(r.text);
       if (i >= 0) was.splice(i, 1);
-      else if (r.link) extra.push(r);
+      else if (r.link && test.test(r.text)) extra.push(r);
     }
   }
   const { problems, sent } = await deleteRows(extra, (_r, i) => `linha nova ${i + 1}`);

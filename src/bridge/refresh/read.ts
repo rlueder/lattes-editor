@@ -32,6 +32,42 @@ export type RefreshRequest =
   | { step: 'menu' }
   | { paths: PageRequest[]; step: 'paginas' };
 
+const isText = (v: unknown): v is string => typeof v === 'string';
+const isTexts = (v: unknown): v is string[] => Array.isArray(v) && v.every(isText);
+
+/**
+ * O pedido que chega à aba tem a forma de um RefreshRequest: o passo
+ * conhecido e as listas com textos. Os caminhos ainda passam por isSafeGet e
+ * isReadPost na leitura; isto só barra o pedido malformado antes.
+ */
+export function isRefreshRequest(v: unknown): v is RefreshRequest {
+  if (typeof v !== 'object' || v === null) return false;
+  const r = v as Record<string, unknown>;
+  switch (r.step) {
+    case 'listas':
+      return r.queue === undefined || isTexts(r.queue);
+    case 'formularios':
+      return (
+        Array.isArray(r.reads) &&
+        r.reads.every(
+          (x) => typeof x === 'object' && x !== null && isText(x.link) && isTexts(x.forms),
+        )
+      );
+    case 'menu':
+      return true;
+    case 'paginas':
+      return (
+        Array.isArray(r.paths) &&
+        r.paths.every(
+          (x) =>
+            isText(x) || (typeof x === 'object' && x !== null && isText(x.path) && isText(x.body)),
+        )
+      );
+    default:
+      return false;
+  }
+}
+
 /** O formulário de uma linha, como a página o mostra. */
 export interface FormReading {
   /** Por que não veio: a página não tinha o formulário, ou o link não é de leitura. */

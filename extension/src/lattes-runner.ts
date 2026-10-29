@@ -37,7 +37,7 @@ import {
   readSendScreenFrom,
   type SendScreen,
 } from '../../src/bridge/publish.ts';
-import { readRefreshPart, type RefreshRequest } from '../../src/bridge/refresh/read.ts';
+import { isRefreshRequest, readRefreshPart } from '../../src/bridge/refresh/read.ts';
 import { READ_PACE } from '../../src/bridge/transport.ts';
 import { decodeLatin1 } from '../../src/model/latin1.ts';
 import { pageTraffic, withTraffic } from './page-traffic.ts';
@@ -308,10 +308,13 @@ const connector = {
     const lattesId = lattesIdFrom(menu);
     const code = cvCodeFrom(menu);
     if (!code) return { error: 'Não achei o código do currículo no menu do Lattes.', lattesId };
-    let request: RefreshRequest;
+    let request: unknown;
     try {
-      request = JSON.parse(requestJson) as RefreshRequest;
+      request = JSON.parse(requestJson);
     } catch {
+      request = undefined;
+    }
+    if (!isRefreshRequest(request)) {
       return { error: 'O pedido de leitura chegou ilegível à aba do Lattes.', lattesId };
     }
     return { lattesId, part: await readRefreshPart(port, menu, code, request) };

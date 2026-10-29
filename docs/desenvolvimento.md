@@ -374,5 +374,6 @@ que nenhum item mostrou ainda. `criarProjetos(financiador)` inclui um projeto
 de cada natureza e uma licença de cada tipo, `telaProjetos()` grava neles os
 campos só de tela e `lerTela()` mostra o que cada página marca. `registro()`
 diz o que as listas têm a mais que a base; `apagar()` tira as linhas com a
-marca e `apagarNovas('pkg_licenca')` as licenças, que não têm título. O
+marca e `apagarNovas('pkg_licenca.lista', '/200[123] ')` as licenças, que não
+têm título: só as linhas a mais naquela lista cujo texto casa com o padrão. O
 código fica em `scripts/passada/`.

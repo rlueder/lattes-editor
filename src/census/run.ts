@@ -108,8 +108,16 @@ export function splitAtQuery(path: string): [string, string] {
 const UNSAFE_PROC =
   /publicar|importa|impcv|upload|logon|logout|sair|enviar|salvar|exclu|seta_ultimo|verifica|_ajax|existe_email/i;
 
-/** Um GET que não grava: procedimento seguro e sem f_ctr de operação (E2 apaga por GET). */
+/**
+ * Um caminho relativo do Lattes, como os links das páginas: o procedimento e
+ * a consulta, sem esquema, host nem barra (a não ser o /cvlattesweb/ do
+ * próprio Lattes). Um endereço absoluto iria a outro site com a aba.
+ */
+const LATTES_PATH = /^(?:\/cvlattesweb\/)?[A-Za-z][\w.]*(?:\?[^#\s]*)?$/;
+
+/** Um GET que não grava: caminho do Lattes, procedimento seguro e sem f_ctr de operação (E2 apaga por GET). */
 export function isSafeGet(path: string): boolean {
+  if (!LATTES_PATH.test(path)) return false;
   const [proc, query] = splitAtQuery(path);
   if (UNSAFE_PROC.test(proc)) return false;
   return !/(^|[&?])f_ctr=[^&?]/i.test(query);
