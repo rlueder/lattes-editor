@@ -42,10 +42,11 @@ import {
 import { lattesSchema } from '../src/schema/lattes.ts';
 import { withListValues } from './cobertura-exemplo.ts';
 import { type Fate, snapshot, state, TAG, text } from './passada/aba.ts';
-import { apagar } from './passada/apagar.ts';
+import { apagar, apagarNovas } from './passada/apagar.ts';
 import { campos, conferir, conferirPaginas } from './passada/conferencia.ts';
 import { exercitar } from './passada/exercitar.ts';
 import { incluir } from './passada/incluir.ts';
+import { criarProjetos, lerTela, telaProjetos } from './passada/projetos.ts';
 import { importableElements, type Variant, variantsOf } from './passada/variantes.ts';
 
 /** O exemplo sintético, já decodificado do Latin-1 (build-conector-ponte.ts). */
@@ -419,11 +420,13 @@ async function registro() {
 
 (globalThis as unknown as { __passada: unknown }).__passada = {
   apagar,
+  apagarNovas,
   arquivo,
   base,
   campos,
   conferir,
   conferirPaginas,
+  criarProjetos,
   descartar,
   destinos,
   exercitar,
@@ -431,9 +434,11 @@ async function registro() {
   importar,
   importarXml,
   incluir,
+  lerTela,
   passo2,
   passo3,
   registro,
   rodada,
+  telaProjetos,
   variante,
 };

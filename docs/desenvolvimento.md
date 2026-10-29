@@ -370,6 +370,9 @@ de escolha, as opções e quais um valor do XML alcança. Na aba,
 com `TEST_MARK`) com uma escolha diferente em cada, `rodada()` os leva pelo
 Importar em levas de 20, `conferirPaginas()` compara cada página de alteração
 com o que o carregamento montou e `exercitar()` grava pelo conector as opções
-que nenhum item mostrou ainda. `registro()` diz o que as listas têm a mais que
-a base, para apagar os itens de teste no fim. O código fica em
-`scripts/passada/`.
+que nenhum item mostrou ainda. `criarProjetos(financiador)` inclui um projeto
+de cada natureza e uma licença de cada tipo, `telaProjetos()` grava neles os
+campos só de tela e `lerTela()` mostra o que cada página marca. `registro()`
+diz o que as listas têm a mais que a base; `apagar()` tira as linhas com a
+marca e `apagarNovas('pkg_licenca')` as licenças, que não têm título. O
+código fica em `scripts/passada/`.
