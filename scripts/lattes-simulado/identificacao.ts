@@ -125,8 +125,8 @@ const PRIVACY = h.PRIVACY;
 /**
  * A deficiência: o rádio f_pcd_r, o oculto f_pcd antes das caixas de mesmo
  * nome (como no Lattes) e uma caixa por tipo, na ordem da página. A
- * exportação guarda os rótulos das marcadas, separados por vírgula e espaço
- * ("Deficiência Auditiva, Deficiência Visual", exportação de 29/10/2026).
+ * exportação guarda os rótulos das marcadas, separados por vírgula e espaço,
+ * na ordem dos códigos (A, E, F, I, M, V; exportação de 29/10/2026).
  */
 const PCD: [string, string][] = [
   ['A', 'Deficiência Auditiva'],
@@ -156,6 +156,7 @@ function pcdBindings(): Binding[] {
           el,
           'PCD',
           PCD.filter(([c]) => on.has(c))
+            .sort(([a], [b]) => a.localeCompare(b))
             .map(([, l]) => l)
             .join(', '),
         );

@@ -2810,9 +2810,12 @@ sintéticos:
 - **Pessoa com deficiência.** Com um tipo marcado, `PCD` é o rótulo da
   caixa (`"Deficiência Visual"`); com dois, os rótulos separados por vírgula
   e espaço (`"Deficiência Auditiva, Deficiência Visual"`, marcados pela
-  própria página e exportados em 29/10/2026). **Observado.** A ordem bate com
-  a das caixas da página e também com a alfabética; com outros tipos, qual
-  das duas vale não foi visto. A visibilidade (`f_priv_pcd`) a página põe por
+  própria página e exportados em 29/10/2026). **Observado.** A ordem é a dos
+  códigos das caixas (A, E, F, I, M, V), e não a da página nem a dos rótulos:
+  com os seis marcados, a exportação de 29/10/2026 trouxe `"Deficiência
+Auditiva, Transtorno do Espectro Autista, Deficiência Física, Deficiência
+Intelectual, Deficiência Múltipla, Deficiência Visual"`. A página manda os
+  `f_pcd` na ordem das caixas (A, F, I, V, E, M), depois do `DUMMY`. A visibilidade (`f_priv_pcd`) a página põe por
   script (`$("[name=f_priv_pcd]").val(…)`); o HTML não marca opção.
 
 ## 26. Recaptura dos formulários (27/10/2026)

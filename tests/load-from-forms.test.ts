@@ -487,16 +487,20 @@ describe('Carregar do Lattes pelas listas e pelos formulários', () => {
     expect(generalDiffs(open.state.root, result.doc!.root)).toEqual([]);
   });
 
-  it('a deficiência com mais de um tipo vem pelos rótulos, por vírgula', async () => {
+  it('a deficiência com mais de um tipo vem pelos rótulos, por vírgula, na ordem dos códigos', async () => {
     const full = realistic(
       withListValues(decodeLatin1(readFileSync('fixtures/synthetic_full.xml'))).xml,
     );
     open = await withLattesSimulado({ xml: encodeLatin1(full) });
     const general = all(open.state.root, 'DADOS-GERAIS')[0]!;
-    setAttr(general, 'PCD', 'Deficiência Auditiva, Deficiência Visual');
+    setAttr(
+      general,
+      'PCD',
+      'Deficiência Auditiva, Transtorno do Espectro Autista, Deficiência Múltipla, Deficiência Visual',
+    );
     const result = await loadCvFromLattes(portOf(open));
     expect(getAttr(all(result.doc!.root, 'DADOS-GERAIS')[0]!, 'PCD')).toBe(
-      'Deficiência Auditiva, Deficiência Visual',
+      'Deficiência Auditiva, Transtorno do Espectro Autista, Deficiência Múltipla, Deficiência Visual',
     );
   });
 

@@ -41,6 +41,13 @@ export const pcdOrder = (codes: readonly string[]): string[] =>
       PCD_TYPES.indexOf(b as (typeof PCD_TYPES)[number]),
   );
 
+/**
+ * Os tipos na ordem da exportação: pelo código (A, E, F, I, M, V), e não na
+ * das caixas nem na dos rótulos. Visto com os seis marcados (exportação de
+ * 29/10/2026; docs/lattes_internals.md, seção 25).
+ */
+export const pcdExportOrder = (codes: readonly string[]): string[] => [...codes].sort();
+
 /** Os mesmos tipos marcados, em qualquer ordem. */
 export const samePcd = (a: readonly string[], b: readonly string[]): boolean =>
   [...a].sort().join() === [...b].sort().join();

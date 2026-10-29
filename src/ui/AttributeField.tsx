@@ -12,6 +12,7 @@ import {
   canonicalChoice,
   emptyChoicesHint,
   matchesDerived,
+  PCD_EXPORT_ORDER,
   typedChoices,
 } from '../schema/typed-choices.ts';
 import type { AttributeSpec } from '../schema/types.ts';
@@ -258,6 +259,7 @@ export function AttributeField({
       <CheckGroup
         aria-describedby={common['aria-describedby']}
         id={id}
+        joinOrder={pcd ? PCD_EXPORT_ORDER : undefined}
         labelledBy={labelId}
         options={group}
         separator={pcd ? ', ' : ','}
