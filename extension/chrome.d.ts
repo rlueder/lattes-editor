@@ -36,8 +36,11 @@ declare namespace chrome {
   namespace tabs {
     interface Tab {
       id?: number;
+      /** "loading" ou "complete". */
+      status?: string;
       url?: string;
     }
+    function get(tabId: number): Promise<Tab>;
     function query(q: { url?: string | string[] }): Promise<Tab[]>;
     function reload(tabId: number): Promise<void>;
     function sendMessage(tabId: number, message: unknown): Promise<unknown>;

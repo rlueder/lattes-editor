@@ -12,7 +12,8 @@ import { hasConsent } from './consent.ts';
 import { LATTES_MENU, lattesMenus } from './lattes-hosts.ts';
 import { readCvLists } from './read-cv-lists.ts';
 import { withSessionTask } from './session-task.ts';
-import { tabReloaded, untilTabCloses } from './tab-guard.ts';
+import { explainTabError, recordTabError, worthRetry } from './tab-errors.ts';
+import { reloadedSince, tabReloaded, tabSettled, untilTabCloses } from './tab-guard.ts';
 import { readTrafficPause } from './traffic-pause.ts';
 
 export async function lattesTab(): Promise<number | undefined> {
@@ -94,6 +95,49 @@ async function runInTab<T>(
 
 type Reply<K extends BridgeMessage['type']> = Omit<Extract<BridgeMessage, { type: K }>, 'type'>;
 
+type TabCall = Parameters<typeof runInTab>[1];
+/** O valor vem com a aba que respondeu: depois de recarregar, pode ser outra. */
+type TabOutcome<T> = { detail: string } | { tabId: number; value: T };
+
+/**
+ * Uma chamada ao núcleo na aba: o valor, ou o motivo de verdade da falha
+ * (tab-errors.ts), que fica entre os últimos erros guardados. Numa leitura
+ * (`retry`), a aba que recarregou no meio ganha uma segunda tentativa, depois
+ * de terminar de carregar: ler de novo não muda nada no Lattes. Gravação
+ * nunca repete.
+ */
+async function callTab<T>(
+  tabId: number,
+  name: TabCall,
+  args: string[],
+  retry: boolean,
+): Promise<TabOutcome<T>> {
+  let tab = tabId;
+  for (let attempt = 0; ; attempt++) {
+    const started = Date.now();
+    let err: unknown;
+    try {
+      const value = await runInTab<T>(tab, name, ...args);
+      if (value !== undefined) return { tabId: tab, value };
+    } catch (e) {
+      err = e;
+    }
+    const detail = explainTabError(err, reloadedSince(tab, started));
+    if (retry && attempt === 0 && worthRetry(detail)) {
+      await tabSettled(tab);
+      const next = await lattesTab();
+      // "Nova tentativa" só quando ela vai mesmo acontecer.
+      if (next !== undefined) {
+        await recordTabError(name, `${detail} Nova tentativa.`);
+        tab = next;
+        continue;
+      }
+    }
+    await recordTabError(name, detail);
+    return { detail };
+  }
+}
+
 /**
  * Abrir do Lattes: o ZIP do Exportar do currículo da sessão (lattes-runner.ts,
  * exportar), ou o motivo de não ter vindo.
@@ -102,12 +146,8 @@ export async function readCurriculo(): Promise<Reply<'curriculo'>> {
   if (!(await hasConsent())) return { reason: 'consentimento' };
   const tabId = await lattesTab();
   if (tabId === undefined) return { reason: 'sem-aba' };
-  const failed: Reply<'curriculo'> = { detail: 'A aba do Lattes não respondeu.', reason: 'erro' };
-  try {
-    return (await runInTab<Reply<'curriculo'>>(tabId, 'exportar')) ?? failed;
-  } catch {
-    return failed;
-  }
+  const r = await callTab<Reply<'curriculo'>>(tabId, 'exportar', [], true);
+  return 'value' in r ? r.value : { detail: r.detail, reason: 'erro' };
 }
 
 /**
@@ -121,14 +161,8 @@ export async function sendPhoto(
   if (!(await hasConsent())) return { ok: false, reason: 'consentimento' };
   const tabId = await lattesTab();
   if (tabId === undefined) return { ok: false, reason: 'sem-aba' };
-  const failed = { detail: 'A aba do Lattes não respondeu.', ok: false, reason: 'erro' } as const;
-  try {
-    return (
-      (await runInTab<Omit<Reply<'foto'>, 'id'>>(tabId, 'foto', jpeg, lattesId ?? '')) ?? failed
-    );
-  } catch {
-    return failed;
-  }
+  const r = await callTab<Omit<Reply<'foto'>, 'id'>>(tabId, 'foto', [jpeg, lattesId ?? ''], false);
+  return 'value' in r ? r.value : { detail: r.detail, ok: false, reason: 'erro' };
 }
 
 /**
@@ -150,22 +184,18 @@ export async function sendImport(
   if (!(await hasConsent())) return { reason: 'consentimento' };
   const tabId = await lattesTab();
   if (tabId === undefined) return { reason: 'sem-aba' };
-  const failed: ImportResult = {
-    detail:
-      'A aba do Lattes não respondeu. Se o arquivo chegou a ser enviado, a solicitação ficou pendente no Importar; confirme ou descarte por lá.',
+  const args = JSON.stringify({
+    file: req.file,
+    fileName: req.fileName,
+    modules: req.modules,
+    oldestYear: req.oldestYear,
+  });
+  const r = await callTab<ImportResult>(tabId, 'importar', [args, lattesId], false);
+  if ('value' in r) return r.value;
+  return {
+    detail: `${r.detail} Se o arquivo chegou a ser enviado, a solicitação ficou pendente no Importar; confirme ou descarte por lá.`,
     reason: 'erro',
   };
-  try {
-    const args = JSON.stringify({
-      file: req.file,
-      fileName: req.fileName,
-      modules: req.modules,
-      oldestYear: req.oldestYear,
-    });
-    return (await runInTab<ImportResult>(tabId, 'importar', args, lattesId)) ?? failed;
-  } catch {
-    return failed;
-  }
 }
 
 /** A tela de envio ao CNPq (lattes-runner.ts, telaEnvio): só lê, e só com o "ok" do aviso. */
@@ -173,12 +203,8 @@ export async function readSendScreenReply(): Promise<Omit<Reply<'tela-envio'>, '
   if (!(await hasConsent())) return { reason: 'consentimento' };
   const tabId = await lattesTab();
   if (tabId === undefined) return { reason: 'sem-aba' };
-  const failed = { detail: 'A aba do Lattes não respondeu.', reason: 'erro' } as const;
-  try {
-    return (await runInTab<Omit<Reply<'tela-envio'>, 'id'>>(tabId, 'telaEnvio')) ?? failed;
-  } catch {
-    return failed;
-  }
+  const r = await callTab<Omit<Reply<'tela-envio'>, 'id'>>(tabId, 'telaEnvio', [], true);
+  return 'value' in r ? r.value : { detail: r.detail, reason: 'erro' };
 }
 
 /**
@@ -198,18 +224,12 @@ export async function sendPublish(
   if (!(await hasConsent())) return { outcome: 'consentimento' };
   const tabId = await lattesTab();
   if (tabId === undefined) return { outcome: 'sem-aba' };
-  const failed: PublishResult = {
-    detail:
-      'A aba do Lattes não respondeu. Confira a "Última publicação" no menu do Lattes antes de tentar de novo.',
+  const r = await callTab<PublishResult>(tabId, 'publicar', [JSON.stringify(req), lattesId], false);
+  if ('value' in r) return r.value;
+  return {
+    detail: `${r.detail} Confira a "Última publicação" no menu do Lattes antes de tentar de novo.`,
     outcome: 'erro',
   };
-  try {
-    return (
-      (await runInTab<PublishResult>(tabId, 'publicar', JSON.stringify(req), lattesId)) ?? failed
-    );
-  } catch {
-    return failed;
-  }
 }
 
 /** A versão atual do Lattes, para o diagnóstico do editor; só lê, e só com o "ok" do aviso. */
@@ -219,12 +239,13 @@ export async function readEspelho(): Promise<Reply<'espelho'>> {
   if (tabId === undefined) {
     return { error: 'Abra o currículo no Lattes (a página do menu) numa aba.' };
   }
-  const failed: Reply<'espelho'> = { error: 'A aba do Lattes não respondeu.' };
-  const page =
-    (await runInTab<Reply<'espelho'>>(tabId, 'espelho').catch(() => undefined)) ?? failed;
+  const r = await callTab<Reply<'espelho'>>(tabId, 'espelho', [], true);
+  if (!('value' in r)) return { error: r.detail };
+  const page = r.value;
   if (!page.items) return page;
-  // Depois da página, as listas, em partes (read-cv-lists.ts).
-  return { ...page, ...(await readCvLists((queue) => runInTab(tabId, 'listasCv', ...queue))) };
+  // Depois da página, as listas, em partes (read-cv-lists.ts), na aba que
+  // respondeu.
+  return { ...page, ...(await readCvLists((queue) => runInTab(r.tabId, 'listasCv', ...queue))) };
 }
 
 /**
@@ -242,12 +263,8 @@ async function readListReply<T extends { error?: string }>(
   if (tabId === undefined) {
     return { error: 'Abra o currículo no Lattes (a página do menu) numa aba.' } as T;
   }
-  const failed = { error: 'A aba do Lattes não respondeu.' } as T;
-  try {
-    return (await runInTab<T>(tabId, name, ...args)) ?? failed;
-  } catch {
-    return failed;
-  }
+  const r = await callTab<T>(tabId, name, args, true);
+  return 'value' in r ? r.value : ({ error: r.detail } as T);
 }
 
 /**

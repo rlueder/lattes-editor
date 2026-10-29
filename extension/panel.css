@@ -513,3 +513,31 @@ button:not(.principal):not(.fantasma):not(.conferido) {
   color: var(--muted);
   font-size: 12px;
 }
+
+/* Os últimos erros com a aba do Lattes (tab-errors.ts), recolhidos no rodapé. */
+.erros {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.erros summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.erros-lista {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.erros-lista li + li {
+  margin-top: 6px;
+}
+
+.erros-quando {
+  color: var(--muted);
+}

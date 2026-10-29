@@ -21,10 +21,18 @@ export const TAB_BUSY =
  */
 const unsettled = new Set<number>();
 
+/** Quando cada aba recarregou ou navegou pela última vez (Date.now()). */
+const reloads = new Map<number, number>();
+
 /** A página da aba recarregou ou navegou: o script de antes morreu com ela. */
-export function tabReloaded(tabId: number): void {
+export function tabReloaded(tabId: number, at = Date.now()): void {
   unsettled.delete(tabId);
+  reloads.set(tabId, at);
 }
+
+/** A aba recarregou ou navegou depois de `since`, no meio de uma chamada. */
+export const reloadedSince = (tabId: number, since: number): boolean =>
+  (reloads.get(tabId) ?? Number.NEGATIVE_INFINITY) >= since;
 
 /** O evento de aba fechada, como chrome.tabs.onRemoved, para os testes trocarem. */
 export interface RemovedEvent {
@@ -77,4 +85,14 @@ export function untilTabCloses<T>(
       },
     );
   });
+}
+
+/** Espera a aba terminar de carregar, até `ms`, depois de recarregar no meio de uma leitura. */
+export async function tabSettled(tabId: number, ms = 30_000): Promise<void> {
+  const until = Date.now() + ms;
+  while (Date.now() < until) {
+    const tab = await chrome.tabs.get(tabId).catch(() => undefined);
+    if (!tab || tab.status === 'complete') return;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
 }
