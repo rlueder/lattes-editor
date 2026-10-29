@@ -69,6 +69,7 @@ pub fn run() {
             chave::storage_key_set,
             copias::backup_folder,
             copias::backup_list,
+            copias::backup_read,
             copias::backup_reveal,
             copias::backup_save_baseline,
             copias::backup_save_restore_point,

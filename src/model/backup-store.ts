@@ -1,10 +1,11 @@
 // Cópias de segurança no navegador (LAT-59). Sem acesso a pastas, o arquivo
 // do Lattes fica no IndexedDB, em claro como o Exportar entrega, num banco à
 // parte do banco cifrado (store.ts): `lattes-editor-copias`. Assim nenhum
-// "Limpar" do app (clearAll, clearVersions, clearSent, o recomeço de
-// resetStorage) alcança as cópias, e perder a chave do chaveiro não leva
-// junto o ponto zero. Aqui só há `add`: nenhuma função apaga ou substitui uma
-// linha. A pessoa leva a cópia para fora com "Baixar", em ⚙ › Versões.
+// "Limpar" do app (clearAll, clearHistory, clearVersions, clearSent, o
+// recomeço de resetStorage) alcança as cópias, e perder a chave do chaveiro
+// não leva junto o ponto zero. Aqui só há `add`: nenhuma função apaga ou
+// substitui uma linha. A pessoa leva a cópia para fora com "Salvar arquivo",
+// no Histórico.
 
 import Dexie, { type Table } from 'dexie';
 
