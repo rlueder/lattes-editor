@@ -3110,7 +3110,9 @@
           "name": "TIPO-LICENCA",
           "required": false,
           "enum": [
-            "MATERNIDADE"
+            "MATERNIDADE",
+            "PATERNIDADE",
+            "ADOCAO"
           ]
         },
         {
@@ -3136,6 +3138,11 @@
         {
           "name": "DATA-FIM-LICENCA",
           "required": false
+        },
+        {
+          "name": "DATA-NASCIMENTO-ADOCAO",
+          "required": false,
+          "patched": true
         }
       ],
       "children": [],

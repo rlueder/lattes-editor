@@ -30,7 +30,7 @@ const project = (seq: string, nature: string, name: string, flag = 'NAO') =>
   `<PARTICIPACAO-EM-PROJETO SEQUENCIA-FUNCAO-ATIVIDADE="${seq}" FLAG-PERIODO="ATUAL" ANO-INICIO="2020" NOME-ORGAO="Instituto"><PROJETO-DE-PESQUISA SEQUENCIA-PROJETO="${seq}" ANO-INICIO="2020" ANO-FIM="" NOME-DO-PROJETO="${name}" SITUACAO="EM_ANDAMENTO" NATUREZA="${nature}" FLAG-POTENCIAL-INOVACAO="${flag}"><EQUIPE-DO-PROJETO><INTEGRANTES-DO-PROJETO NOME-COMPLETO="Pessoa Sintética" NOME-PARA-CITACAO="SINTÉTICA, P." ORDEM-DE-INTEGRACAO="1" FLAG-RESPONSAVEL="SIM" NRO-ID-CNPQ=""/></EQUIPE-DO-PROJETO></PROJETO-DE-PESQUISA></PARTICIPACAO-EM-PROJETO>`;
 
 const licence = (type: string, year: string) =>
-  `<LICENCA TIPO-LICENCA="${type}" FORMATO-DATA-INICIO-LICENCA="DDMMAAAA" DATA-INICIO-LICENCA="1001${year}" FORMATO-DATA-FIM-LICENCA="DDMMAAAA" DATA-FIM-LICENCA="1003${year}"/>`;
+  `<LICENCA TIPO-LICENCA="${type}" FORMATO-DATA-INICIO-LICENCA="DDMMAAAA" DATA-INICIO-LICENCA="1001${year}" FORMATO-DATA-FIM-LICENCA="DDMMAAAA" DATA-FIM-LICENCA="1003${year}" DATA-NASCIMENTO-ADOCAO="0501${year}"/>`;
 
 const XML = `<CURRICULO-VITAE NUMERO-IDENTIFICADOR="1234567890123456"><DADOS-GERAIS NOME-COMPLETO="Pessoa Sintética" NOME-EM-CITACOES-BIBLIOGRAFICAS="SINTÉTICA, P.">
 <ATUACOES-PROFISSIONAIS><ATUACAO-PROFISSIONAL CODIGO-INSTITUICAO="001000000998" NOME-INSTITUICAO="Universidade de Exemplo" SEQUENCIA-ATIVIDADE="1" SEQUENCIA-IMPORTANCIA="1">
@@ -153,14 +153,36 @@ describe('carregar do Lattes simulado: projetos e licenças', () => {
     expect(getAttr(projectOf(loaded, '2'), 'tela:f_tematica')).toBeUndefined();
   });
 
-  it('as licenças voltam com o tipo, também os que o XSD não enumera', async () => {
+  it('as licenças voltam com o tipo e a data de nascimento ou adoção', async () => {
     const sim = await lattes();
     const loaded = (await loadCvFromLattes(loadPort(sim))).doc!.root;
-    expect(all(loaded, 'LICENCA').map((l) => getAttr(l, 'TIPO-LICENCA'))).toEqual([
-      'MATERNIDADE',
-      'PATERNIDADE',
-      'ADOCAO',
+    expect(
+      all(loaded, 'LICENCA').map((l) => [
+        getAttr(l, 'TIPO-LICENCA'),
+        getAttr(l, 'DATA-NASCIMENTO-ADOCAO'),
+      ]),
+    ).toEqual([
+      ['MATERNIDADE', '05012001'],
+      ['PATERNIDADE', '05012002'],
+      ['ADOCAO', '05012003'],
     ]);
+  });
+
+  it('a data de nascimento ou adoção de uma licença que já está vai e confere', async () => {
+    const sim = await lattes();
+    const original = parseXml(XML).root;
+    const working = parseXml(XML).root;
+    setAttr(all(working, 'LICENCA')[1]!, 'DATA-NASCIMENTO-ADOCAO', '06012002');
+    const changes = diffDocuments(original, working);
+    const { ops, unsupported } = planChanges(
+      changes.map((change) => ({ change, itemTitle: 'Item' })),
+      working,
+      ON,
+    );
+    expect(unsupported).toEqual([]);
+    expect((ops[0] as ProductionOp).set).toMatchObject({ f_dta_nasc_adoc: '06/01/2002' });
+    expect(await applyOp(ops[0]!, sim.port)).toMatchObject({ status: 'conferido' });
+    expect(getAttr(all(sim.state.root, 'LICENCA')[1]!, 'DATA-NASCIMENTO-ADOCAO')).toBe('06012002');
   });
 });
 

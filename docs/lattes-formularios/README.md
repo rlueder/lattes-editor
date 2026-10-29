@@ -119,9 +119,6 @@ item de teste e a base da passada de itens de teste:
   (`PKG_REVISOR.INCLUI`): o currículo não tem item desses;
 - a primeira inclusão real de cultivar protegida e registrada, desenho
   industrial, marca e topografia;
-- a licença de paternidade e a de adoção numa exportação: os três tipos
-  foram incluídos pelo formulário (`lattes_internals.md`, seções 27 e 29),
-  mas `PATERNIDADE` e `ADOCAO` no XML seguem inferidos;
 - a troca de instituição e curso de uma formação complementar e a do órgão
   de um projeto feitas pela própria página, com o corpo do POST registrado
   para comparar com o do conector (os dois envios do conector voltaram com

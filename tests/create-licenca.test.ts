@@ -1,6 +1,6 @@
 // Licença nova (create-licenca.ts): a data de nascimento ou adoção vem do
-// pedido do editor, as regras do check() da página e a inclusão no Lattes
-// simulado.
+// DATA-NASCIMENTO-ADOCAO, que a exportação traz (29/10/2026); as regras do
+// check() da página e a inclusão no Lattes simulado.
 
 import { readFileSync } from 'node:fs';
 
@@ -8,9 +8,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { DEMO_XML } from '../scripts/lattes-simulado/estado.ts';
 import { applyAll } from '../src/bridge/apply.ts';
-import { BIRTH_ASK, BIRTH_FIELD } from '../src/bridge/create-licenca.ts';
+import { BIRTH_ASK } from '../src/bridge/create-licenca.ts';
 import { ALL_ON, planChanges } from '../src/bridge/plan.ts';
-import { diffDocuments, pathTo } from '../src/model/changes.ts';
+import { diffDocuments } from '../src/model/changes.ts';
 import { loadCv } from '../src/model/document.ts';
 import { insertInSchemaOrder } from '../src/model/schema-order.ts';
 import { childElements, element, getAttr, type XElement } from '../src/model/xml.ts';
@@ -42,16 +42,17 @@ async function plan(attrs: Record<string, string> = LICENCA, birth?: string) {
     box = element('LICENCAS', {});
     insertInSchemaOrder(lattesSchema, general, box);
   }
-  const lic: XElement = element('LICENCA', attrs);
+  const lic: XElement = element('LICENCA', {
+    ...attrs,
+    ...(birth === undefined ? {} : { 'DATA-NASCIMENTO-ADOCAO': birth.replace(/\//g, '') }),
+  });
   box.children.push(lic);
-  const key = pathTo(working, lic)!.join('/');
-  const extras = birth === undefined ? {} : { [key]: { [BIRTH_FIELD]: birth } };
   const entries = diffDocuments(original, working).map((change) => ({ change, itemTitle: '' }));
-  return planChanges(entries, working, { ...ALL_ON, extras });
+  return planChanges(entries, working, ALL_ON);
 }
 
 describe('licença nova', () => {
-  it('sem a data de nascimento ou adoção, pede no editor', async () => {
+  it('sem a data de nascimento ou adoção, fica à mão', async () => {
     expect((await plan()).unsupported[0]?.reason).toBe(BIRTH_ASK);
   });
 
@@ -62,11 +63,11 @@ describe('licença nova', () => {
     expect(await reason({ ...LICENCA, 'DATA-FIM-LICENCA': '30122025' }, '01/03/2025')).toMatch(
       /até 180 dias/,
     );
-    expect(await reason(LICENCA, '31/02/2025')).toMatch(/dd\/mm\/aaaa/);
+    expect(await reason(LICENCA, '31022025')).toMatch(/dd\/mm\/aaaa/);
     expect(await reason({ ...LICENCA, 'TIPO-LICENCA': '' }, '01/03/2025')).toMatch(/tipo/);
   });
 
-  it('vai pelo formulário com a data pedida e confere', async () => {
+  it('vai pelo formulário com a data do XML, confere e a guarda no XML', async () => {
     open = await withLattesSimulado();
     const { ops, unsupported } = await plan(LICENCA, '28/02/2025');
     expect(unsupported).toEqual([]);
@@ -81,6 +82,7 @@ describe('licença nova', () => {
     const saved = childElements(box, 'LICENCA').at(-1)!;
     expect(getAttr(saved, 'DATA-INICIO-LICENCA')).toBe('01032025');
     expect(getAttr(saved, 'TIPO-LICENCA')).toBe('MATERNIDADE');
+    expect(getAttr(saved, 'DATA-NASCIMENTO-ADOCAO')).toBe('28022025');
     // De novo: o mesmo tipo e início já estão lá.
     const [again] = await applyAll(ops, open.port);
     expect(again).toMatchObject({ status: 'divergente' });

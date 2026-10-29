@@ -124,6 +124,8 @@ export const KNOWN_LINKS: Record<string, KnownLink[]> = {
     doc('F_ESCREVE', 'PROFICIENCIA-DE-ESCRITA'),
     doc('F_COMPR', 'PROFICIENCIA-DE-COMPREENSAO'),
   ],
+  // A data mandada voltou na exportação de 29/10/2026 (seção 29).
+  licenca: [seen('f_dta_nasc_adoc', 'DATA-NASCIMENTO-ADOCAO')],
   projeto: [
     doc('f_titulo', 'PROJETO-DE-PESQUISA@NOME-DO-PROJETO'),
     doc('f_titulo_en', 'PROJETO-DE-PESQUISA@NOME-DO-PROJETO-INGLES'),

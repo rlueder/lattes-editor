@@ -1,9 +1,9 @@
 // As licenças no Lattes simulado: a lista pkg_licenca.lista e o formulário
 // GN_LICENCA, postado para PKG_LICENCA.FORM com f_ctr I, U ou E. Os campos são
 // os da captura de 13/10/2026 (seção 21): o tipo (lista L23), as datas de
-// início e fim e a data de nascimento ou adoção, que o Lattes guarda e a
-// exportação não traz; aqui ela fica fora do XML, como lá. As datas vão em
-// dd/mm/aaaa e o XML as guarda em DDMMAAAA. O f_seq é um id do simulado.
+// início e fim e a data de nascimento ou adoção, que a exportação traz em
+// DATA-NASCIMENTO-ADOCAO (vista em 29/10/2026). As datas vão em dd/mm/aaaa e
+// o XML as guarda em DDMMAAAA. O f_seq é um id do simulado.
 
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../src/model/xml.ts';
@@ -14,7 +14,6 @@ import type { SimRequest } from './pedido.ts';
 import { html, type Routes, type SimResponse } from './tipos.ts';
 
 const TYPES: Record<string, string> = { A: 'ADOCAO', M: 'MATERNIDADE', P: 'PATERNIDADE' };
-const births = new WeakMap<XElement, string>();
 
 const licencas = (state: LattesState) => {
   const box = state.find(['DADOS-GERAIS', 'LICENCAS']);
@@ -48,7 +47,7 @@ function form(req: SimRequest, state: LattesState): SimResponse {
 <p>${h.select('f_tipo_licenca', h.capturedList('L23'), type?.[0] ?? '')}</p>
 <p>${h.text('f_dta_inicio', value('DATA-INICIO-LICENCA'), { maxLength: 10 })}</p>
 <p>${h.text('f_dta_fim', value('DATA-FIM-LICENCA'), { maxLength: 10 })}</p>
-<p>${h.text('f_dta_nasc_adoc', el ? (births.get(el) ?? '') : '', { maxLength: 10 })}</p>
+<p>${h.text('f_dta_nasc_adoc', value('DATA-NASCIMENTO-ADOCAO'), { maxLength: 10 })}</p>
 <p>${h.select('f_tipo_privacidade', h.PRIVACY, '1')}</p>
 ${h.hidden('f_ctr', el ? 'U' : 'I')}${h.hidden('f_cod', state.code)}${h.hidden('f_seq', seq ?? '')}
 ${h.formButtons(Boolean(el))}
@@ -63,7 +62,7 @@ function write(el: XElement, req: SimRequest): void {
   setAttr(el, 'DATA-INICIO-LICENCA', toXml(req.get('f_dta_inicio') ?? ''));
   setAttr(el, 'FORMATO-DATA-FIM-LICENCA', 'DDMMAAAA');
   setAttr(el, 'DATA-FIM-LICENCA', toXml(req.get('f_dta_fim') ?? ''));
-  births.set(el, req.get('f_dta_nasc_adoc') ?? '');
+  setAttr(el, 'DATA-NASCIMENTO-ADOCAO', toXml(req.get('f_dta_nasc_adoc') ?? ''));
 }
 
 function post(req: SimRequest, state: LattesState): SimResponse {

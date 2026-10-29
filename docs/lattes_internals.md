@@ -2510,8 +2510,8 @@ ofereça mais incluir esses dois tipos é **inferido**.
 **Licença.** `f_tipo_licenca` tem `M` maternidade, `P` paternidade e `A`
 adoção; as datas são `dd/mm/aaaa`. O `check()` exige o tipo, o início, o fim e
 a data de nascimento ou adoção (`f_dta_nasc_adoc`), início depois dela e
-período de até 180 dias. O XML da licença não guarda a data de nascimento ou
-adoção, e o XSD só tem `MATERNIDADE`.
+período de até 180 dias. O XSD só tem `MATERNIDADE` e não tem a data de
+nascimento ou adoção; a exportação traz as duas coisas (seção 29).
 
 **Áreas de atuação.** `prc_area_atuacao` serializa a grade em `f_area_l` com
 as chaves `l`, `c`, `r` e `p` (o `r` com a letra "r" na frente) e a
@@ -2702,15 +2702,13 @@ o conector mantém o mapeamento anterior por rótulo, sem acento nem caixa.
 
 O tipo de licença também usa as três opções capturadas (`f_tipo_licenca`):
 Maternidade (M), Paternidade (P) e Adoção (A). `MATERNIDADE` consta no XSD;
-`PATERNIDADE` e `ADOCAO` continuam **inferidos** do rótulo, como no mapeamento
-que o conector já usava. A lista da interface compartilha esses valores com
-o planejador; o tipo vazio é recusado antes do envio. A inclusão de licença
-exige a data de nascimento ou adoção, que fica fora do XML (seção 21): o
-editor a pede na licença nova e a manda só no envio
+`PATERNIDADE` e `ADOCAO` vieram na exportação de 29/10/2026 e entraram em
+`schema/patch.json` (seção 29). A lista da interface compartilha esses
+valores com o planejador; o tipo vazio é recusado antes do envio. A inclusão
+de licença exige a data de nascimento ou adoção, que a exportação guarda em
+`DATA-NASCIMENTO-ADOCAO` (seção 29): o editor a manda pelo formulário
 (`src/bridge/create-licenca.ts`), com as regras do `check()` conferidas
-antes. A inclusão dos três tipos foi acompanhada (seções 27 e 29); os
-valores `PATERNIDADE` e `ADOCAO` do XML seguem **inferidos**, sem exportação
-que os mostre.
+antes. A inclusão dos três tipos foi acompanhada (seções 27 e 29).
 
 ## 24. Recaptura de 26/10/2026
 
@@ -3097,7 +3095,8 @@ Pela ponte local, com a passada (`scripts/passada/projetos.ts`): um projeto
 de teste de cada natureza, numa atuação só, e uma licença de cada tipo,
 incluídos pelo planejador e pelo `applyOp` do editor, alterados depois pelo
 mesmo caminho, lidos página a página e excluídos. As listas voltaram iguais
-à base. Nada foi enviado ao CNPq, e por isso não houve exportação.
+à base. A passada não enviou nada ao CNPq; a exportação das licenças veio
+de um envio feito depois pela pessoa (abaixo).
 **Observado**, com valores sintéticos:
 
 - **Opções do projeto.** As cinco naturezas, as três situações, o potencial
@@ -3110,8 +3109,17 @@ mesmo caminho, lidos página a página e excluídos. As listas voltaram iguais
   duas páginas põem o valor por script
   (`$("[name=f_tipo_privacidade]").val(…)`), e o HTML marca `1`.
 - **Tipo da licença.** A página de alteração põe `f_tipo_licenca` por script
-  (`$("[name=f_tipo_licenca]").val("P")`), com `M`, `P` e `A`. O XML desses
-  dois últimos não foi visto: `PATERNIDADE` e `ADOCAO` são **inferidos**.
+  (`$("[name=f_tipo_licenca]").val("P")`), com `M`, `P` e `A`.
+- **Exportação das licenças.** As três licenças de teste, enviadas ao CNPq
+  pela pessoa em 29/10/2026 e excluídas depois, vieram na exportação das
+  12h20 assim, nesta ordem:
+  `<LICENCA TIPO-LICENCA="MATERNIDADE" DATA-INICIO-LICENCA="10012001" DATA-FIM-LICENCA="10032001" DATA-NASCIMENTO-ADOCAO="05012001"/>`,
+  `<LICENCA TIPO-LICENCA="ADOCAO" … DATA-NASCIMENTO-ADOCAO="05012003"/>` e
+  `<LICENCA TIPO-LICENCA="PATERNIDADE" … DATA-NASCIMENTO-ADOCAO="05012002"/>`.
+  `PATERNIDADE` e `ADOCAO` são os valores de `P` e `A`. A data de nascimento
+  ou adoção vai em `DATA-NASCIMENTO-ADOCAO`, em DDMMAAAA, atributo que o XSD
+  não tem. Nenhum `FORMATO-DATA-*` veio na licença. A ordem da exportação
+  (M, A, P) não foi a da inclusão (M, P, A); que regra a decide não se sabe.
 - **Duas listas.** O projeto com potencial de inovação aparece também em
   `pkg_projeto.lista?f_cod_tipo=<natureza>&f_sta_inovacao=S`, uma lista por
   natureza no menu, e o link da linha leva `F_sta_inovacao=S`. É o mesmo

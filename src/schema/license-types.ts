@@ -1,5 +1,6 @@
 // Opções de f_tipo_licenca no censo de 15/10/2026. MATERNIDADE está no XSD;
-// PATERNIDADE e ADOCAO mantêm os valores inferidos que o conector já usava.
+// PATERNIDADE e ADOCAO vieram na exportação de 29/10/2026 (schema/patch.json,
+// docs/lattes_internals.md, seção 29).
 
 export const licenseChoices = [
   { label: 'Maternidade', value: 'MATERNIDADE' },

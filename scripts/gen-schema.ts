@@ -22,6 +22,8 @@ const TS_PATH = join(ROOT, 'src/schema/lattes.ts');
 
 interface Patch {
   attributes: { element: string; attribute: string }[];
+  /** Valores de enumerados que o XSD não lista e uma exportação real trouxe. */
+  enumValues?: { element: string; attribute: string; values: string[] }[];
 }
 
 function fail(message: string): never {
@@ -95,6 +97,23 @@ function patchXsdText(xsd: string, patch: Patch): string {
       .map(
         (a) =>
           `${indent}  <!-- patch.json: presente em exportações reais, ausente do XSD de 2022 -->${eol}${indent}  <xs:attribute name="${a}"/>${eol}`,
+      )
+      .join('');
+    out = out.slice(0, lineStart) + lines + out.slice(lineStart);
+  }
+  for (const { attribute, element, values } of patch.enumValues ?? []) {
+    const start = out.indexOf(`<xs:element name="${element}">`);
+    if (start < 0) fail(`patch: elemento ${element} não existe no XSD`);
+    const end = out.indexOf('</xs:element>', start);
+    const at = out.indexOf(`<xs:attribute name="${attribute}">`, start);
+    if (at < 0 || at > end) fail(`patch: ${element}/@${attribute} sem enumerado no XSD`);
+    const close = out.indexOf('</xs:restriction>', at);
+    const lineStart = out.lastIndexOf(eol, close) + eol.length;
+    const indent = out.slice(lineStart, close);
+    const lines = values
+      .map(
+        (v) =>
+          `${indent}  <!-- patch.json: visto em exportação real, ausente do XSD de 2022 -->${eol}${indent}  <xs:enumeration value="${v}"/>${eol}`,
       )
       .join('');
     out = out.slice(0, lineStart) + lines + out.slice(lineStart);

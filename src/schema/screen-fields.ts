@@ -347,8 +347,6 @@ export const SCREEN_FIELDS: readonly ScreenField[] = [
     onlyWhen: NOT_TEACHING,
     review: 'Setor da empresa',
   }),
-  // Licença (pkg_licenca.form).
-  item('LICENCA', 'f_dta_nasc_adoc', 'Data de nascimento/adoção', { maxLength: 10 }),
   // A do residencial é fixa em privado: a página a traz desabilitada.
   {
     attr: `${SCREEN_PREFIX}f_priv_profissional`,

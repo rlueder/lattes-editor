@@ -120,7 +120,10 @@ export async function criarProjetos(funderName: string, only?: string[]) {
   }
   if (!organ) return { atuacoes: atuacoes.length, janela: choices.length, semOrgao: tried };
   const original = structuredClone(doc.root);
-  const working = structuredClone(doc.root);
+  // Sem licença no currículo, o LICENCAS vazio vai dos dois lados: senão a
+  // diferença é o container novo, que o planejamento não inclui.
+  childOf(childOf(original, 'DADOS-GERAIS'), 'LICENCAS');
+  const working = structuredClone(original);
   const wAtuacao = atuacoesOf(working)[atuacaoIndex]!;
   const extras: Record<string, Record<string, string>> = {};
   for (const [i, p] of PROJECTS.entries()) {
@@ -168,12 +171,12 @@ export async function criarProjetos(funderName: string, only?: string[]) {
     const lic = el('LICENCA', {
       'DATA-FIM-LICENCA': l.end.replaceAll('/', ''),
       'DATA-INICIO-LICENCA': l.start.replaceAll('/', ''),
+      'DATA-NASCIMENTO-ADOCAO': l.birth.replaceAll('/', ''),
       'FORMATO-DATA-FIM-LICENCA': 'DDMMAAAA',
       'FORMATO-DATA-INICIO-LICENCA': 'DDMMAAAA',
       'TIPO-LICENCA': l.type,
     });
     licencas.children.push(lic);
-    extras[pathTo(working, lic)!.join('/')] = { f_dta_nasc_adoc: l.birth };
   }
   const resultado = await applyAll(working, original, extras);
   return { atuacao: atuacaoIndex, resultado };

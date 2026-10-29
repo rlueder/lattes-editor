@@ -166,7 +166,9 @@ describe('isLattesDateAttr', () => {
       'DETALHAMENTO-DE-ARTES-CENICAS DATA-ENCERRAMENTO',
       'DETALHAMENTO-DE-ARTES-CENICAS DATA-ESTREIA',
     ]);
-    expect(dates).toHaveLength(15);
+    // A data de nascimento ou adoção da licença (schema/patch.json) é uma delas.
+    expect(dates).toContain('LICENCA DATA-NASCIMENTO-ADOCAO');
+    expect(dates).toHaveLength(16);
   });
 });
 

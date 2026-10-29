@@ -175,7 +175,7 @@ export function planCreateItem(
   if (evento) return planCreateEvento(change, chain, evento, label);
   const complementar = complementarItem(chain);
   if (complementar) return planCreateComplementar(change, complementar, label);
-  const general = planCreateGeneral(change, chain, label, extras);
+  const general = planCreateGeneral(change, chain, label);
   if (general) return general;
   if (PROJECT_CARRIERS.has(el.name)) return planCreateProjeto(change, chain, label, extras);
   if (chain.at(-2)?.name === 'FORMACAO-ACADEMICA-TITULACAO') {

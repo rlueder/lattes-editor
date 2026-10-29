@@ -1,11 +1,15 @@
 {
-  "description": "Atributos presentes em exportações reais e ausentes do XSD de 12/09/2022. Observados com xmllint --schema contra uma exportação de 17/08/2026. Só entram aqui atributos vistos numa exportação; ID-OASIS e STATUS-OASISBR provavelmente existem também em DOUTORADO e nos outros níveis, mas ainda não foram observados.",
+  "description": "Atributos presentes em exportações reais e ausentes do XSD de 12/09/2022. Observados com xmllint --schema contra uma exportação de 17/08/2026. Só entram aqui atributos e valores de enumerado vistos numa exportação; os de LICENCA, na exportação de 29/10/2026; ID-OASIS e STATUS-OASISBR provavelmente existem também em DOUTORADO e nos outros níveis, mas ainda não foram observados.",
   "attributes": [
     { "element": "DADOS-GERAIS", "attribute": "PCD" },
     { "element": "ENDERECO", "attribute": "REDE-SOCIAL" },
     { "element": "ENDERECO", "attribute": "ELETRONICO" },
     { "element": "ENDERECO", "attribute": "OUTRA-FORMA-DE-CONTATO" },
     { "element": "MESTRADO", "attribute": "ID-OASIS" },
-    { "element": "MESTRADO", "attribute": "STATUS-OASISBR" }
+    { "element": "MESTRADO", "attribute": "STATUS-OASISBR" },
+    { "element": "LICENCA", "attribute": "DATA-NASCIMENTO-ADOCAO" }
+  ],
+  "enumValues": [
+    { "element": "LICENCA", "attribute": "TIPO-LICENCA", "values": ["PATERNIDADE", "ADOCAO"] }
   ]
 }

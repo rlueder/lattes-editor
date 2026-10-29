@@ -44,7 +44,6 @@ import {
   type Result,
   sameCode,
   selectEntries,
-  type SendExtras,
   Stop,
 } from './create-shared.ts';
 import {
@@ -196,7 +195,6 @@ export function planCreateGeneral(
   change: Change,
   chain: XElement[],
   label: string,
-  extras: SendExtras = {},
 ): Planned<CreateGeneralOp | CreateVinculoOp> | undefined {
   const el = chain.at(-1);
   if (!el) return undefined;
@@ -206,7 +204,7 @@ export function planCreateGeneral(
   const itemChain = item === el ? chain : [...chain, item];
   if (item.name === 'IDIOMA') return planIdioma(change, item, label);
   if (item.name === 'PREMIO-TITULO') return planPremio(change, item, label);
-  if (item.name === 'LICENCA') return planLicenca(change, item, chain[0], label, extras);
+  if (item.name === 'LICENCA') return planLicenca(change, item, label);
   if (item.name === 'VINCULOS') return planVinculo(change, itemChain, item, label);
   const reason = byHandReason(item.name);
   return reason ? { reason } : undefined;
