@@ -118,7 +118,45 @@ button.ghost {
 
 button:disabled {
   opacity: 0.45;
-  cursor: default;
+  cursor: not-allowed;
+}
+
+/* Estados de todo botão: um véu da cor do texto por cima da cor do próprio
+   botão, mais leve ao passar o mouse e mais forte ao apertar. Vale para
+   pílula, círculo, linha de lista ou item selecionado, sem mexer no fundo de
+   cada um. O principal e o de apagar têm cor própria nos dois estados; o
+   link não ganha caixa. :where() deixa qualquer regra de um botão
+   específico ganhar desta. */
+:root {
+  --press-hover: color-mix(in srgb, var(--text) 7%, transparent);
+  --press-active: color-mix(in srgb, var(--text) 14%, transparent);
+}
+
+:where(button:not(:disabled, .primary, .danger-fill, .link-btn)) {
+  transition:
+    box-shadow 200ms ease,
+    color 200ms ease,
+    border-color 200ms ease;
+}
+
+:where(button:not(:disabled, .primary, .danger-fill, .link-btn)):hover {
+  box-shadow: inset 0 0 0 100vmax var(--press-hover);
+}
+
+:where(button:not(:disabled, .primary, .danger-fill, .link-btn)):active {
+  box-shadow: inset 0 0 0 100vmax var(--press-active);
+}
+
+:where(button.primary:not(:disabled)) {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(button) {
+    transition: none;
+  }
 }
 
 :focus-visible {
@@ -8463,4 +8501,35 @@ html {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.5;
+}
+
+/* Apertar o principal e o de apagar: mais escuro que o hover deles. No fim do
+   arquivo e com a mesma força das regras de hover, para ganhar delas. */
+button.primary:active:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent-strong) 80%, black);
+  background: color-mix(in srgb, var(--accent-strong) 80%, black);
+}
+
+/* O de apagar ficava azul no hover: a regra do principal vinha depois e
+   ganhava. Com :not(:disabled), esta tem mais força. */
+button.primary.danger-fill:hover:not(:disabled) {
+  border-color: var(--danger-strong);
+  background: var(--danger-strong);
+  color: #fff;
+  filter: brightness(1.08);
+}
+
+button.primary.danger-fill:active:not(:disabled) {
+  border-color: color-mix(in srgb, var(--danger-strong) 80%, black);
+  background: color-mix(in srgb, var(--danger-strong) 80%, black);
+  filter: none;
+}
+
+/* O link já é sublinhado: no hover o traço engrossa, ao apertar escurece. */
+button.link-btn:hover:not(:disabled) {
+  text-decoration-thickness: 2px;
+}
+
+button.link-btn:active:not(:disabled) {
+  color: var(--accent-strong);
 }
