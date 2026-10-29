@@ -2,7 +2,7 @@
 // oferecer abri-la quando o Exportar do Lattes está bloqueado por pendência.
 // Só lê o índice das exportações; o XML é decifrado só ao abrir.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { getVersion, listVersionInfo } from '../model/store.ts';
 import { versionBytes } from './lattes-reload.ts';
@@ -50,19 +50,21 @@ export function useOpenStoredVersion(
   ready: boolean,
   onOpened: () => void,
 ): (id: number) => void {
-  const opened = useRef(false);
+  // Em estado, e não em ref: marcar depois de abrir faz um render, e o efeito
+  // vê o currículo pronto mesmo quando o render dele veio antes da marca.
+  const [opened, setOpened] = useState(false);
   useEffect(() => {
-    if (!opened.current || !ready) return;
-    opened.current = false;
+    if (!opened || !ready) return;
+    setOpened(false);
     onOpened();
-  });
+  }, [opened, ready, onOpened]);
   return useCallback(
     (id: number) => {
       void getVersion(id)
         .then(async (version) => {
           if (!version) return;
           await openFile(new File([versionBytes(version.xml)], `${version.lattesId}.xml`));
-          opened.current = true;
+          setOpened(true);
         })
         .catch((err: unknown) => console.warn('Exportação guardada não abriu:', err));
     },
