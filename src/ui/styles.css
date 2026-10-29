@@ -6291,14 +6291,20 @@ blockquote.publish-declaration {
   font-size: 12px;
 }
 
+/* O resumo da versão nova vai de uma borda à outra, como o aviso de
+   pendências; com os dois, o de pendências encosta embaixo dele. */
 .version-banner {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 0 0 16px;
-  padding: 8px 8px 8px 16px;
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  margin: -16px -40px 28px;
+  padding: 10px 28px 10px 40px;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
   background: var(--accent-soft);
+}
+
+.version-banner + .pending-banner {
+  margin-top: -28px;
 }
 
 .version-banner-text {
@@ -6310,6 +6316,15 @@ blockquote.publish-declaration {
 }
 
 @media (max-width: 760px) {
+  .version-banner {
+    margin: -16px -16px 20px;
+    padding: 10px 12px 10px 16px;
+  }
+
+  .version-banner + .pending-banner {
+    margin-top: -20px;
+  }
+
   .versions-body {
     grid-template-columns: 1fr;
   }
@@ -7602,6 +7617,7 @@ main.content {
 
 /* O aviso de pendências vai de uma borda à outra, também no modo foco: passa
    por cima da coluna vazia do menu, com o texto no mesmo lugar. */
+.shell.is-focus .version-banner,
 .shell.is-focus .pending-banner {
   /* O 1px é o fio transparente da esquerda do conteúdo. */
   margin-left: calc(-41px - var(--focus-pad));
@@ -7622,6 +7638,7 @@ main.content {
   .shell.is-focus {
     --focus-pad: 0px;
   }
+  .shell.is-focus .version-banner,
   .shell.is-focus .pending-banner {
     margin-right: -16px;
     margin-left: -16px;
