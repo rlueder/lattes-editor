@@ -5,6 +5,8 @@
 // (use-lattes-reload.ts) lê pelos formulários, com a extensão que sabe
 // (use-lattes-load.ts), sem esperar a exportação acompanhar o envio.
 
+import { useMemo } from 'react';
+
 import type { Session } from '../forms/use-production.ts';
 import { getAttr } from '../model/xml.ts';
 import type { BridgeState } from './use-bridge.ts';
@@ -19,7 +21,8 @@ export function useLattesSource(
   handlers: { onOpen: (file: File) => unknown; onReload: (file: File) => void },
 ) {
   const load = useLattesLoad(bridge);
-  const exported = { curriculo: bridge.curriculo, link: bridge.link, requestCv: bridge.requestCv };
+  const { curriculo, link, requestCv } = bridge;
+  const exported = useMemo(() => ({ curriculo, link, requestCv }), [curriculo, link, requestCv]);
   const open = useLattesOpen(Boolean(session), booting, exported, handlers.onOpen);
   const lattesId = session ? getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR') : undefined;
   const reload = useLattesReload(load.source, lattesId, handlers.onReload);
