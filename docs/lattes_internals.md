@@ -3120,6 +3120,12 @@ de um envio feito depois pela pessoa (abaixo).
   ou adoção vai em `DATA-NASCIMENTO-ADOCAO`, em DDMMAAAA, atributo que o XSD
   não tem. Nenhum `FORMATO-DATA-*` veio na licença. A ordem da exportação
   (M, A, P) não foi a da inclusão (M, P, A); que regra a decide não se sabe.
+- **Lista das licenças.** Cada linha de `pkg_licenca.lista` traz o tipo
+  pelo rótulo, as três datas em dd/mm/aaaa (início, fim, nascimento ou
+  adoção) e a duração contando o primeiro e o último dia: `Maternidade
+10/01/2001 10/03/2001 05/01/2001 60 dias`. O editor inclui a licença nova
+  como privada, igual ao formulário, e manda a visibilidade quando ela foi
+  escolhida no editor.
 - **Duas listas.** O projeto com potencial de inovação aparece também em
   `pkg_projeto.lista?f_cod_tipo=<natureza>&f_sta_inovacao=S`, uma lista por
   natureza no menu, e o link da linha leva `F_sta_inovacao=S`. É o mesmo

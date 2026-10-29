@@ -8,6 +8,7 @@
 
 import { getAttr, type XElement } from '../model/xml.ts';
 import { licenseToForm } from '../schema/license-types.ts';
+import { SCREEN_PREFIX } from '../schema/screen-fields.ts';
 import type { CreateGeneralOp } from './create-general.ts';
 import { formDate } from './create-registro-rules.ts';
 import type { Planned } from './create-shared.ts';
@@ -49,12 +50,21 @@ export function planLicenca(
   if (s < b) return { reason: 'O Lattes exige o início da licença depois do nascimento ou adoção' };
   if (e < s) return { reason: 'O fim da licença vem antes do início' };
   if (e - s > MAX_DAYS) return { reason: `O Lattes aceita uma licença de até ${MAX_DAYS} dias` };
+  // A visibilidade escolhida no editor; sem ela, fica a do formulário, que
+  // inclui a licença privada (seção 29).
+  const privacy = getAttr(el, `${SCREEN_PREFIX}f_tipo_privacidade`);
   return {
     expect: {},
     form: 'licenca',
     key: change.key,
     kind: 'criar-dado',
     label,
-    set: { [BIRTH_FIELD]: birth, f_dta_fim: end, f_dta_inicio: start, f_tipo_licenca: type },
+    set: {
+      [BIRTH_FIELD]: birth,
+      f_dta_fim: end,
+      f_dta_inicio: start,
+      f_tipo_licenca: type,
+      ...(privacy === '1' || privacy === '2' ? { f_tipo_privacidade: privacy } : {}),
+    },
   };
 }

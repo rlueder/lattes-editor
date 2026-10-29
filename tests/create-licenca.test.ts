@@ -10,8 +10,10 @@ import { DEMO_XML } from '../scripts/lattes-simulado/estado.ts';
 import { applyAll } from '../src/bridge/apply.ts';
 import { BIRTH_ASK } from '../src/bridge/create-licenca.ts';
 import { ALL_ON, planChanges } from '../src/bridge/plan.ts';
+import { typesFor } from '../src/forms/use-general-item.ts';
 import { diffDocuments } from '../src/model/changes.ts';
 import { loadCv } from '../src/model/document.ts';
+import { newGeneralItem } from '../src/model/general-items.ts';
 import { insertInSchemaOrder } from '../src/model/schema-order.ts';
 import { childElements, element, getAttr, type XElement } from '../src/model/xml.ts';
 import { lattesSchema } from '../src/schema/lattes.ts';
@@ -83,9 +85,30 @@ describe('licença nova', () => {
     expect(getAttr(saved, 'DATA-INICIO-LICENCA')).toBe('01032025');
     expect(getAttr(saved, 'TIPO-LICENCA')).toBe('MATERNIDADE');
     expect(getAttr(saved, 'DATA-NASCIMENTO-ADOCAO')).toBe('28022025');
+    // Como no Lattes: privada sem escolha, sem FORMATO-DATA-* e a linha com os dias.
+    expect(open.state.privacy.get(saved)).toBe('2');
+    expect(saved.attrs.map((a) => a.name)).not.toContain('FORMATO-DATA-INICIO-LICENCA');
+    expect(await open.port.get(`pkg_licenca.lista?f_cod=${open.state.code}`)).toContain(
+      'Maternidade 01/03/2025 30/07/2025 28/02/2025 152 dias',
+    );
     // De novo: o mesmo tipo e início já estão lá.
     const [again] = await applyAll(ops, open.port);
     expect(again).toMatchObject({ status: 'divergente' });
     expect(again!.detail).toMatch(/já tem essa licença/);
+  });
+
+  it('nasce privada no editor, e a visibilidade escolhida vai na inclusão', async () => {
+    const type = typesFor('dados-gerais').find((t) => t.itemName === 'LICENCA')!;
+    expect(getAttr(newGeneralItem(lattesSchema, type), 'tela:f_tipo_privacidade')).toBe('2');
+    open = await withLattesSimulado();
+    const { ops } = await plan({ ...LICENCA, 'tela:f_tipo_privacidade': '1' }, '28/02/2025');
+    expect(ops[0]).toMatchObject({ set: { f_tipo_privacidade: '1' } });
+    expect(await applyAll(ops, open.port)).toMatchObject([{ status: 'conferido' }]);
+    const box = childElements(childElements(open.state.root, 'DADOS-GERAIS')[0]!, 'LICENCAS')[0]!;
+    expect(open.state.privacy.get(childElements(box, 'LICENCA').at(-1)!)).toBe('1');
+    // Sem escolha, o pedido não leva a visibilidade: fica a do formulário.
+    expect((await plan(LICENCA, '28/02/2025')).ops[0]!.set).not.toHaveProperty(
+      'f_tipo_privacidade',
+    );
   });
 });
