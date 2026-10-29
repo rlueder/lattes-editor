@@ -1,6 +1,6 @@
-// A última versão guardada de um currículo (LAT-46), para a tela inicial
+// A última exportação guardada de um currículo (LAT-46), para a tela inicial
 // oferecer abri-la quando o Exportar do Lattes está bloqueado por pendência.
-// Só lê o índice das versões; o XML é decifrado só ao abrir.
+// Só lê o índice das exportações; o XML é decifrado só ao abrir.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -10,8 +10,8 @@ import type { StoredVersion } from './onboarding.ts';
 import { versionDate } from './version-diff.ts';
 
 /**
- * A última versão guardada, 'procurando' enquanto o índice é lido (para a
- * tela não dizer "nenhuma versão" antes de saber), ou undefined sem versão.
+ * A última exportação guardada, 'procurando' enquanto o índice é lido (para
+ * a tela não dizer "nenhuma" antes de saber), ou undefined sem nenhuma.
  */
 export function useStoredVersion(
   lattesId: string | undefined,
@@ -39,23 +39,22 @@ export function useStoredVersion(
 }
 
 /**
- * Abre uma versão guardada como o currículo de trabalho e, com a extensão
- * ligada, abre o diagnóstico já comparando com a versão atual do Lattes
- * (a página de conferência, que tem o que ainda não foi enviado ao CNPq).
- * A página de conferência é texto, não XML: ela não vira currículo editável,
- * só diagnóstico.
+ * Abre a última exportação guardada como o currículo de trabalho e, quando
+ * ele está aberto (`ready`), chama `onOpened`: o App abre o Histórico já
+ * comparando com o Lattes como ele está agora (a página de conferência, que
+ * tem o que ainda não foi enviado ao CNPq). A página de conferência é texto,
+ * não XML: ela não vira currículo editável, só comparação.
  */
 export function useOpenStoredVersion(
   openFile: (file: File) => Promise<void>,
-  bridge: { available: boolean; requestEspelho: () => void },
-  openDiagnosis: () => void,
+  ready: boolean,
+  onOpened: () => void,
 ): (id: number) => void {
-  const compare = useRef(false);
-  const { available, requestEspelho } = bridge;
+  const opened = useRef(false);
   useEffect(() => {
-    if (!compare.current || !available) return;
-    compare.current = false;
-    requestEspelho();
+    if (!opened.current || !ready) return;
+    opened.current = false;
+    onOpened();
   });
   return useCallback(
     (id: number) => {
@@ -63,11 +62,10 @@ export function useOpenStoredVersion(
         .then(async (version) => {
           if (!version) return;
           await openFile(new File([versionBytes(version.xml)], `${version.lattesId}.xml`));
-          compare.current = true;
-          openDiagnosis();
+          opened.current = true;
         })
-        .catch((err: unknown) => console.warn('Versão guardada não abriu:', err));
+        .catch((err: unknown) => console.warn('Exportação guardada não abriu:', err));
     },
-    [openFile, openDiagnosis],
+    [openFile],
   );
 }

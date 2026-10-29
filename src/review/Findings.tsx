@@ -1,4 +1,4 @@
-// Os achados do diagnóstico (LAT-25): uma lista só, com o que o formulário de
+// Os achados da revisão do currículo (LAT-25): uma lista só, com o que o formulário de
 // cada item confere e a revisão de consistência (LAT-29), por seção e com
 // pílulas para filtrar por tipo. Cada linha leva ao grupo do item; o achado é
 // a etiqueta da linha.
@@ -31,7 +31,7 @@ export function Findings({
   onGo,
   validation,
 }: {
-  /** Fecha o diagnóstico e vai ao grupo do item. */
+  /** Fecha a revisão e vai ao grupo do item. */
   onGo: (place: Place) => void;
   validation: CvValidation;
 }) {

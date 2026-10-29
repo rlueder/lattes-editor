@@ -1,56 +1,11 @@
-// Diálogos simples do App: histórico de estados, confirmação de recarga e as
-// confirmações antes de descartar ou remover.
+// Diálogos simples do App: a confirmação de recarga e as confirmações antes
+// de descartar ou remover.
 
 import { type ReactNode, useState } from 'react';
 
 import type { PendingSummary } from '../import-export/ExportPanel.tsx';
-import type { HistoryInfo } from '../model/store.ts';
 import { AlertIcon } from './icons.tsx';
 import { Modal } from './Modal.tsx';
-
-export function HistoryDialog({
-  entries,
-  onClose,
-  onRestore,
-  onSave,
-  open,
-}: {
-  entries: HistoryInfo[];
-  open: boolean;
-  onClose: () => void;
-  onRestore: (entry: HistoryInfo) => void;
-  /** Salva aquele ponto num arquivo XML, sem mudar a cópia de trabalho. */
-  onSave: (entry: HistoryInfo) => void;
-}) {
-  return (
-    <Modal
-      className="history"
-      label="Histórico de alterações"
-      open={open}
-      subtitle="Os últimos 50 estados, guardados no app, inclusive um antes de cada envio ao Lattes. Restaurar volta o currículo àquele ponto; Salvar cópia grava aquele ponto num arquivo."
-      title="Histórico de alterações"
-      onClose={onClose}
-    >
-      <ul className="history-list">
-        {entries.map((h) => (
-          <li key={h.id}>
-            <span>
-              <time>{new Date(h.savedAt).toLocaleString('pt-BR')}</time> {h.note}
-            </span>
-            <span className="history-actions">
-              <button className="ghost" type="button" onClick={() => onSave(h)}>
-                Salvar cópia
-              </button>
-              <button className="ghost" type="button" onClick={() => onRestore(h)}>
-                Restaurar
-              </button>
-            </span>
-          </li>
-        ))}
-      </ul>
-    </Modal>
-  );
-}
 
 /**
  * Recarregar troca a cópia de trabalho pela exportação nova: itens novos e
@@ -112,8 +67,8 @@ export function ReloadConfirm({
       )}
       <p className="muted">
         A nova exportação traz o que está publicado no Lattes. O que só existe aqui sai da cópia de
-        trabalho, mas a cópia de agora fica no Histórico de alterações, marcada para não sair, e dá
-        para restaurá-la ou salvá-la em arquivo.
+        trabalho, mas a cópia de agora fica no Histórico, e dá para restaurá-la ou salvá-la em
+        arquivo.
       </p>
     </Modal>
   );
@@ -159,8 +114,8 @@ export function CloseConfirm({
       onClose={onCancel}
     >
       <p>
-        A cópia de trabalho e o histórico de alterações saem deste navegador. O currículo no Lattes
-        não muda.
+        A cópia de trabalho e os estados guardados no Histórico saem deste navegador. O currículo no
+        Lattes não muda.
       </p>
       {pending > 0 && (
         <p className="confirm-warning">

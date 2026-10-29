@@ -1,31 +1,27 @@
-// Diagnóstico do currículo: primeiro o que vale conferir no currículo inteiro
-// (os achados de validation.ts, em Findings.tsx, LAT-25); depois o que o
-// Lattes diz (publicação e pendência) e o que mudou lá desde a exportação,
+// "No Lattes agora", no alto do Histórico: a data da última publicação, se
+// há algo pendente no Lattes e o que mudou lá desde a exportação aberta,
 // para quem volta ao Lattes depois de muito tempo (docs/fluxos_de_uso.md).
-// Só leitura: cada achado leva ao item no editor.
+// Só leitura: cada item que ainda está no editor leva a ele.
 
 import { useMemo, useRef } from 'react';
 
 import type { LattesStatus } from '../bridge/lattes-status.ts';
 import { parseXml, type XElement } from '../model/xml.ts';
-import { lattesSchema } from '../schema/lattes.ts';
 import type { HashRoute } from '../ui/hash-route.ts';
-import { Modal } from '../ui/Modal.tsx';
 import type { Section } from '../ui/sections.ts';
 import { dateLabel } from '../ui/status-strip.ts';
 import type { EspelhoReading } from '../ui/use-bridge.ts';
 import type { EspelhoDiff } from './espelho-diff.ts';
-import { Findings } from './Findings.tsx';
 import { compareWithLattes } from './lists-diff.ts';
 import { bySequencia, type Place, placeIndex, sequenciaKey } from './locate.ts';
-import { validateCv } from './validation.ts';
 
 interface Props {
+  /** O Histórico está aberto: só então a exportação é lida e comparada. */
+  active: boolean;
   /** A extensão está conectada (sem ela não há leitura do Lattes). */
   available: boolean;
   espelho?: EspelhoReading;
   lattes?: LattesStatus;
-  open: boolean;
   /**
    * A exportação como foi carregada: a comparação com o Lattes usa ela, não
    * o documento editado, para que o que mudou no editor não pareça mudança
@@ -36,7 +32,6 @@ interface Props {
   sections: Section[];
   /** Muda a cada edição; o documento é mutado no lugar. */
   version: number;
-  onClose: () => void;
   onGo: (route: HashRoute) => void;
   onRequestEspelho: () => void;
 }
@@ -47,7 +42,7 @@ function LattesSummary({ available, lattes }: { available: boolean; lattes?: Lat
       <p className="muted">
         {available
           ? 'Abra o seu currículo no Lattes, numa aba deste navegador, para o editor ler a data da última publicação e se há algo pendente.'
-          : 'Sem a extensão, o editor não lê o Lattes: os achados acima valem só para o arquivo aberto.'}
+          : 'Sem a extensão, o editor não lê o Lattes.'}
       </p>
     );
   }
@@ -66,95 +61,66 @@ function LattesSummary({ available, lattes }: { available: boolean; lattes?: Lat
   );
 }
 
-export function DiagnosisPanel(props: Props) {
-  const { available, espelho, lattes, open, originalXml, root, sections, version } = props;
+export function LattesNow(props: Props) {
+  const { active, available, espelho, lattes, originalXml, root, sections, version } = props;
 
   const places = useMemo(
-    () => (open ? placeIndex(sections) : new Map<XElement, Place>()),
+    () => (active ? placeIndex(sections) : new Map<XElement, Place>()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [open, sections, version],
+    [active, sections, version],
   );
-  const validation = useMemo(
-    () => (open ? validateCv(lattesSchema, root, sections) : undefined),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [open, root, sections, version],
-  );
-  // O painel fica montado o tempo todo: a exportação só é lida com ele
+  // O componente fica montado: a exportação só é lida com o Histórico
   // aberto, e fica guardada (por arquivo) para as próximas aberturas.
   const parsed = useRef<{ root: XElement; xml: string } | undefined>(undefined);
   const original = useMemo(() => {
-    if (!open) return undefined;
+    if (!active) return undefined;
     if (parsed.current?.xml !== originalXml) {
       parsed.current = { root: parseXml(originalXml).root, xml: originalXml };
     }
     return parsed.current.root;
-  }, [open, originalXml]);
+  }, [active, originalXml]);
   const diff = useMemo(
-    () => (open && original && espelho ? compareWithLattes(espelho, original) : undefined),
-    [open, espelho, original],
+    () => (active && original && espelho ? compareWithLattes(espelho, original) : undefined),
+    [active, espelho, original],
   );
   // Os itens da exportação original levam ao mesmo item no documento aberto.
   const current = useMemo(
-    () => (open ? bySequencia(root) : new Map<string, XElement>()),
+    () => (active ? bySequencia(root) : new Map<string, XElement>()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [open, root, version],
+    [active, root, version],
   );
   const placeOf = (item: XElement) => {
     const key = sequenciaKey(item);
     return places.get((key && current.get(key)) || item);
   };
-
   const go = (place?: Place) => {
-    if (!place) return;
-    props.onClose();
-    props.onGo({ anchor: place.anchor, sectionId: place.sectionId });
+    if (place) props.onGo({ anchor: place.anchor, sectionId: place.sectionId });
   };
 
   return (
-    <Modal
-      className="export diagnosis"
-      footer={
-        <button className="ghost" type="button" onClick={props.onClose}>
-          Fechar
+    <section aria-labelledby="lattes-now-title" className="panel-section lattes-now">
+      <h3 className="panel-section-head" id="lattes-now-title">
+        No Lattes agora
+      </h3>
+      <LattesSummary available={available} lattes={lattes} />
+      <p className="muted">
+        Comparar procura os itens de todas as seções no Lattes como ele está agora, inclusive o que
+        ainda não foi enviado ao CNPq, pelo nome e pelo ano. Mudanças em outros campos (autores,
+        descrição) não aparecem.
+      </p>
+      <div className="diagnosis-actions">
+        <button
+          disabled={!available}
+          title={available ? undefined : 'Precisa da extensão e do Lattes aberto'}
+          type="button"
+          onClick={props.onRequestEspelho}
+        >
+          {espelho ? 'Comparar de novo' : 'Comparar com o Lattes'}
         </button>
-      }
-      label="Diagnóstico do currículo"
-      open={open}
-      subtitle="O que vale conferir no currículo inteiro e o que o Lattes diz. Nada aqui altera o currículo."
-      title="Diagnóstico do currículo"
-      onClose={props.onClose}
-    >
-      <section className="panel-section">
-        <h3 className="panel-section-head">Vale conferir</h3>
-        {validation && <Findings validation={validation} onGo={go} />}
-      </section>
-
-      <section className="panel-section diagnosis-lattes">
-        <h3 className="panel-section-head">No Lattes</h3>
-        <LattesSummary available={available} lattes={lattes} />
-        <h4 className="panel-section-head diagnosis-subhead">
-          O que mudou no Lattes desde a sua exportação
-        </h4>
-        <p className="muted">
-          Compara os itens de todas as seções com a versão atual do Lattes, inclusive o que ainda
-          não foi enviado ao CNPq: atuação (com vínculos e atividades), formação, eventos, prêmios,
-          idiomas e produção. Cada item é procurado pelo nome e pelo ano; mudanças em outros campos
-          (autores, descrição) não aparecem.
-        </p>
-        <div className="diagnosis-actions">
-          <button
-            disabled={!available}
-            title={available ? undefined : 'Precisa da extensão e do Lattes aberto'}
-            type="button"
-            onClick={props.onRequestEspelho}
-          >
-            {espelho ? 'Comparar de novo' : 'Comparar com o Lattes'}
-          </button>
-        </div>
-        {espelho?.error && <p className="export-blocked">{espelho.error}</p>}
-        {diff && <EspelhoResult diff={diff} placeOf={placeOf} onGo={go} />}
-      </section>
-    </Modal>
+      </div>
+      {espelho?.error && <p className="export-blocked">{espelho.error}</p>}
+      {diff && <EspelhoResult diff={diff} placeOf={placeOf} onGo={go} />}
+    </section>
   );
 }
 

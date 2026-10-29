@@ -12,13 +12,13 @@ import { openStorageNotice } from './storage-notice-open.ts';
 
 export function NotificationsMenu({
   notices,
-  onDiagnosis,
+  onCompareLattes,
   onRefresh,
   onReloadFile,
 }: {
   notices: Notice[];
-  /** Alterações no Lattes que não passaram por aqui: abre o diagnóstico. */
-  onDiagnosis?: () => void;
+  /** Alterações no Lattes que não passaram por aqui: abre o Histórico comparando. */
+  onCompareLattes?: () => void;
   /** A exportação atrasada, ou a leitura que parou: "Atualizar do Lattes". */
   onRefresh?: () => void;
   /** Recarregar pela extensão falhou: escolhe o arquivo exportado. */
@@ -28,7 +28,7 @@ export function NotificationsMenu({
     armazenamento: openStorageNotice,
     atualizacao: () => void installUpdate(),
     'atualizar-lattes': onRefresh,
-    diagnostico: onDiagnosis,
+    'comparar-lattes': onCompareLattes,
     'recarregar-arquivo': onReloadFile,
   };
   const urgent = notices.some((n) => n.level === 'aviso');

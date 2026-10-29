@@ -41,8 +41,8 @@ import { WhatPublishes } from './WhatPublishes.tsx';
 interface Props {
   bridge: BridgeState;
   /**
-   * Os achados do diagnóstico do currículo antes de publicar: quantos são, e
-   * abrir o diagnóstico. Sem currículo aberto (a tela inicial), não há.
+   * Os achados da revisão do currículo antes de publicar: quantos são, e
+   * abrir a revisão. Sem currículo aberto (a tela inicial), não há.
    */
   checks?: { count: number; onOpen: () => void };
   /** Dentro da janela de envio (passo ③), em vez de um modal próprio. */
@@ -307,7 +307,7 @@ function PublishPanelBody(props: Props) {
           {checks.count > 0 && (
             <div className="diagnosis-actions">
               <button type="button" onClick={checks.onOpen}>
-                Abrir o diagnóstico
+                Abrir a revisão
               </button>
             </div>
           )}

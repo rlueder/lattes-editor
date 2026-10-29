@@ -48,7 +48,7 @@ obrigatoriedade, padrão e enum), os filhos na ordem do arquivo e se aceita
 texto. A interface monta os campos a partir dele, o serializador põe cada
 filho novo no lugar certo (`src/model/schema-order.ts`) e a validação confere
 um item antes de ir ao Lattes (`src/model/validate.ts`) e o currículo inteiro
-no diagnóstico (`src/review/validation.ts`).
+na Revisão do currículo (`src/review/validation.ts`).
 
 Por cima do schema ficam as listas que o Lattes oferece nos formulários
 (`src/schema/typed-choices.ts`, `src/schema/listas-lattes.json`, ver
@@ -90,7 +90,7 @@ chaveiro, o app não guarda nada naquela sessão.
 | Tabela         | O que guarda                                                                                                      |
 | -------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `working`      | A cópia de trabalho: o XML atual, o XML como foi carregado (base das diferenças) e o próximo `SEQUENCIA-PRODUCAO` |
-| `history`      | O histórico de alterações, cada ponto com o XML                                                                   |
+| `history`      | Os estados da cópia de trabalho para o Histórico, cada um com o XML                                               |
 | `historyNotes` | As notas dos pontos, separadas para abrir a lista sem decifrar os XMLs                                            |
 | `versions`     | Cada exportação aberta, por currículo (até 24)                                                                    |
 | `sent`         | O registro do que o conector gravou no Lattes, com o antes e o depois de cada campo                               |
@@ -117,7 +117,7 @@ Ficam fora do banco, sem cifra, com os bytes que o Lattes entregou
   `src/ui/use-restore-point.ts`). O editor pede o ZIP à extensão, confere o
   identificador e guarda. Como o Exportar recusa com pendência, a segunda
   rodada antes de "Enviar ao CNPq" não tem ponto novo: o app mostra a cópia
-  mais recente e pede "Gravar sem ponto de restauração", no passo ② da janela
+  mais recente e pede "Gravar sem a cópia de antes", no passo ② da janela
   de envio. Sessão caída, extensão sem resposta ou sessão de outro currículo
   param a rodada sem gravar.
 
@@ -126,9 +126,35 @@ e SHA-256. No desktop a pasta é `<Documentos>/LattesEditor/Cópias de
 segurança/<id>/`, gravada pelo Rust (`src-tauri/src/copias.rs`) sempre com
 `create_new`: nenhum comando apaga, renomeia ou reescreve. No navegador, as
 cópias ficam num banco à parte, `lattes-editor-copias`
-(`src/model/backup-store.ts`), que nenhum "Limpar" do app alcança. "Cópias de
-segurança", em ⚙ › Versões do Lattes (`src/ui/BackupsSection.tsx`), lista os
-arquivos com "Mostrar na pasta" ou "Baixar".
+(`src/model/backup-store.ts`), que nenhum "Limpar" do app alcança. O Rust
+também lê uma cópia pelo nome que a lista deu (`backup_read`), só dentro da
+pasta do currículo, para "Restaurar" o ponto zero.
+
+### Histórico e Revisão
+
+O ⚙ tem o grupo "Currículo" com duas telas
+(`src/ui/use-curriculo-screens.tsx`):
+
+- **Histórico** (`src/ui/HistoryPanel.tsx`, `src/ui/use-history.ts`). No alto,
+  "No Lattes agora" (`src/review/LattesNow.tsx`): a última publicação, a
+  pendência e a comparação da exportação aberta com o Lattes como ele está
+  agora. Embaixo, uma linha por acontecimento, por dia, montada de quatro
+  fontes sem mudar nenhuma (`src/ui/history-timeline.ts`): os estados de
+  `history`, as exportações de `versions`, as cópias de segurança e o
+  registro `sent`. O estado "Lattes antes do envio" e a cópia em arquivo do
+  mesmo envio viram uma linha, com as gravações daquele envio; o estado
+  "Arquivo carregado" e a exportação aberta na mesma hora também. Restaurar
+  troca só a cópia de trabalho; o ponto zero vem do arquivo, e a cópia de
+  agora fica guardada antes. "Limpar o histórico" (`clearHistory`) apaga
+  `history`, `historyNotes` e as exportações do currículo; ficam a cópia de
+  trabalho, o `sent` e as cópias de segurança.
+- **Revisão do currículo** (`src/review/ReviewPanel.tsx`): os achados de
+  `validation.ts`, cada um levando ao item.
+
+O sino e a faixa "Alterações no Lattes que não passaram por aqui" abrem o
+Histórico já comparando; a exportação guardada aberta da tela inicial também.
+Depois de abrir ou recarregar com uma exportação anterior guardada, a faixa
+"Recarregado do Lattes em DD/MM: …" leva ao Histórico.
 
 ### Limites da abertura de ZIP
 
@@ -340,8 +366,8 @@ vez mais. Gravação nunca repete.
   sessão da pessoa. O mesmo pedido serve ao "Recarregar do Lattes…"
   (`src/ui/use-lattes-reload.ts`). Com o Exportar bloqueado por pendência, o
   passo 3 da tela inicial é o "Enviar ao CNPq…", e o currículo abre depois
-  do envio; a última versão guardada (`src/ui/use-stored-version.ts`) fica
-  como a outra saída, com o diagnóstico comparando com a página de
+  do envio; a última exportação guardada (`src/ui/use-stored-version.ts`)
+  fica como a outra saída, com o Histórico comparando com a página de
   conferência.
 - **Estado do Lattes** (`src/bridge/lattes-status.ts`): lê do menu a data da
   última publicação e se há pendência.
@@ -458,7 +484,7 @@ produções sem esperar por ela (`src/bridge/refresh/`,
    menu abre, 60 por tarefa. No currículo do dono são 73, perto de 80 s.
 2. **Plano** (`plan.ts`, no editor): cada linha das listas de produção é
    procurada nos itens do mesmo grupo (`coverage.ts`) pelo título e pelo ano,
-   em palavras inteiras, como no diagnóstico. A linha sem item vai ao
+   em palavras inteiras, como na comparação do Histórico. A linha sem item vai ao
    formulário: é um item novo no Lattes, ou um item cujo título ou ano mudou.
    A linha de um item criado no editor que entrou pelo Importar também vai.
    As linhas mostram título, tipo e ano: a mudança em outro campo de um item
@@ -485,7 +511,7 @@ marcas.
 
 Ficam de fora, com as linhas contadas como "não lido" no resultado: eventos,
 prêmios, formação, atuação e idiomas (contados pela comparação do
-diagnóstico, `src/review/lists-diff.ts`) e, entre as produções, projetos,
+Histórico, `src/review/lists-diff.ts`) e, entre as produções, projetos,
 patentes, registros, licenças e linhas de pesquisa (o motivo de cada um em
 `coverage.ts`). Inferido, sem leitura acompanhada no Lattes real: que o
 formulário de alteração de cada tipo mostre o valor gravado em cada campo com
@@ -510,7 +536,7 @@ veio está em [`../scripts/lattes-simulado/README.md`](../scripts/lattes-simulad
 | `src/forms/`         | Formulários de item novo                                                                           |
 | `src/import-export/` | O painel "Enviar ao Lattes", o arquivo do Importar, o ZIP, o registro do enviado                   |
 | `src/bridge/`        | O núcleo do conector, usado pela extensão e pelo editor: protocolo, plano, aplicação, leituras     |
-| `src/review/`        | Diagnóstico do currículo e o que mudou no Lattes desde a exportação                                |
+| `src/review/`        | A Revisão do currículo e o que mudou no Lattes desde a exportação ("No Lattes agora")              |
 | `src/census/`        | O censo dos formulários e os itens de teste (`docs/lattes-formularios/`)                           |
 | `src/print/`         | Impressão e PDF (NBR 14724), referências na NBR 6023                                               |
 | `src/panorama/`      | Os nove gráficos do currículo                                                                      |

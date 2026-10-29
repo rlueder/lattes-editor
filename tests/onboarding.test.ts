@@ -110,7 +110,7 @@ describe('primeiro uso: os três passos', () => {
       state: { kind: 'lido', version: v },
     };
     const manual = onboardingSteps(old, { kind: 'falhou', reason: 'pendente' })[2];
-    expect(manual?.text).toMatch(/não guardou nenhuma versão/);
+    expect(manual?.text).toMatch(/não guardou nenhuma exportação/);
     expect(manual?.action).toEqual({ kind: 'tentar', label: 'Tentar de novo' });
     expect(onboardingSteps(link, parado)[2]?.action?.label).toBe('Abrir do Lattes');
   });
@@ -127,8 +127,8 @@ describe('primeiro uso: os três passos', () => {
     const withSend: Link = { features: ALL, state: { kind: 'lido', version: v } };
     expect(onboardingSteps(withSend, open, undefined, stored)[2]?.action?.kind).toBe('enviar');
     const step = onboardingSteps(link, open, undefined, stored)[2];
-    expect(step?.action).toEqual({ kind: 'versao', label: 'Abrir a versão de 06/10/2026' });
-    expect(step?.text).toMatch(/versão publicada de 06\/10\/2026/);
+    expect(step?.action).toEqual({ kind: 'versao', label: 'Abrir a exportação de 06/10/2026' });
+    expect(step?.text).toMatch(/exportação de 06\/10\/2026, guardada no app; o Histórico/);
     // Enquanto o índice das versões é lido, a tela não diz que não há versão.
     const looking = onboardingSteps(link, open, undefined, 'procurando')[2];
     expect(looking).toMatchObject({ busy: true, status: 'agora' });

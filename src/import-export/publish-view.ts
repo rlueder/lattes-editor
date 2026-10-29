@@ -199,12 +199,12 @@ export function publishUiEnabled(search: string, dev: boolean): boolean {
   return PUBLISH_ENABLED || (dev && new URLSearchParams(search).has('publicar'));
 }
 
-/** A linha dos achados do diagnóstico do currículo antes de publicar. */
+/** A linha dos achados da revisão do currículo antes de publicar. */
 export function checksLine(count: number): string {
-  if (count === 0) return 'O diagnóstico do currículo não achou nada a conferir.';
+  if (count === 0) return 'A revisão do currículo não achou nada a conferir.';
   return count === 1
-    ? 'O diagnóstico do currículo achou 1 ponto que vale ver antes de publicar.'
-    : `O diagnóstico do currículo achou ${count} pontos que valem ver antes de publicar.`;
+    ? 'A revisão do currículo achou 1 ponto que vale ver antes de publicar.'
+    : `A revisão do currículo achou ${count} pontos que valem ver antes de publicar.`;
 }
 
 /** Quanto esperar a tela de envio: é um GET só. */

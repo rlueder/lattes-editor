@@ -10,9 +10,9 @@ const controls = `<button class="ghost icon-btn modal-close" aria-label="Expandi
   <button class="ghost icon-btn modal-close" aria-label="Fechar">${icon}</button>`;
 const fixtures = [
   {
-    header: `<div class="modal-titles"><h2>Histórico de alterações</h2>
-      <p class="modal-subtitle">Os últimos 50 estados fictícios, incluindo a cópia antes de cada envio.
-      Restaurar volta o currículo ao ponto escolhido. Salvar cópia grava esse ponto num arquivo.</p></div>
+    header: `<div class="modal-titles"><h2>Histórico</h2>
+      <p class="modal-subtitle">Tudo o que aconteceu com este currículo fictício no app, do mais recente
+      ao mais antigo. Restaurar volta a cópia de trabalho àquele momento.</p></div>
       <button class="ghost icon-btn modal-close" aria-label="Fechar">${icon}</button>`,
     name: 'histórico',
   },

@@ -1,89 +1,49 @@
-// Estado da linha do tempo de versões (LAT-12) para o App: guarda cada
-// exportação aberta, monta o resumo do que mudou desde a anterior e abre o
-// diálogo "Versões do Lattes", com as cópias de segurança embaixo (LAT-59).
+// As exportações abertas (LAT-12) para o App: cada uma fica guardada para o
+// Histórico comparar, e, quando há uma anterior, a faixa curta diz o que
+// mudou ("Recarregado do Lattes em 29/10: …") e leva ao Histórico.
 
 import { createElement, useCallback, useState } from 'react';
 
-import {
-  addVersion,
-  clearVersions,
-  getVersion,
-  type LattesVersion,
-  listVersionInfo,
-} from '../model/store.ts';
+import { addVersion, getVersion } from '../model/store.ts';
 import { getAttr, parseXml, type XElement } from '../model/xml.ts';
-import { BackupsSection } from './BackupsSection.tsx';
-import type { HashRoute } from './hash-route.ts';
+import { OpenedBanner } from './HistoryChanges.tsx';
 import { buildSections } from './sections.ts';
-import { diffSummary, diffVersions, exportStamp, versionDate } from './version-diff.ts';
-import { VersionBanner, VersionsDialog } from './VersionsDialog.tsx';
+import { diffVersions, exportStamp, openedSummary } from './version-diff.ts';
 
-/**
- * O currículo das versões vem do documento já aberto (NUMERO-IDENTIFICADOR
- * da raiz), para não reler o XML inteiro só por um atributo.
- */
-export function useVersions(root: XElement | undefined, onGo: (route: HashRoute) => void) {
-  const lattesId = root && getAttr(root, 'NUMERO-IDENTIFICADOR');
-  const [open, setOpen] = useState(false);
-  const [versions, setVersions] = useState<Omit<LattesVersion, 'xml'>[]>([]);
+export function useVersions(onShowHistory: () => void) {
   const [summary, setSummary] = useState<string>();
 
   /**
-   * Exportação recém-aberta (já lida em `root`): vira versão e, se havia
+   * Exportação recém-aberta (já lida em `root`): fica guardada e, se havia
    * anterior, gera o resumo. Só a anterior é decifrada, e só quando gravou.
+   * `reload`: veio de "Recarregar do Lattes".
    */
-  const record = useCallback(async (root: XElement, xml: string) => {
+  const record = useCallback(async (root: XElement, xml: string, reload = false) => {
     // O aviso de antes era de outro arquivo; some já, mesmo se este não gravar.
     setSummary(undefined);
     const id = getAttr(root, 'NUMERO-IDENTIFICADOR');
     if (!id) return;
+    const loadedAt = Date.now();
     const { added, previousId } = await addVersion({
       exportedAt: exportStamp(root),
       lattesId: id,
-      loadedAt: Date.now(),
+      loadedAt,
       xml,
     });
     const previous = added && previousId !== undefined ? await getVersion(previousId) : undefined;
     if (!previous) return;
     const diff = diffVersions(parseXml(previous.xml).root, root, buildSections(root));
-    setSummary(diffSummary(diff, versionDate(previous)));
+    setSummary(openedSummary(diff, reload, loadedAt));
   }, []);
 
-  const show = useCallback(async () => {
-    setVersions(lattesId ? await listVersionInfo(lattesId) : []);
-    setOpen(true);
-  }, [lattesId]);
-
-  const banner = createElement(VersionBanner, {
+  const banner = createElement(OpenedBanner, {
     onClose: () => setSummary(undefined),
     onOpen: () => {
       setSummary(undefined);
-      void show();
+      onShowHistory();
     },
     summary,
   });
 
-  const dialog = createElement(VersionsDialog, {
-    backups: createElement(BackupsSection, { lattesId, open }),
-    onClear: () => {
-      if (!lattesId) return;
-      clearVersions(lattesId).then(
-        () => setVersions([]),
-        // Falhou: a lista volta a mostrar o que de fato ficou guardado.
-        async (err: unknown) => {
-          console.warn('Versões não foram apagadas:', err);
-          setVersions(await listVersionInfo(lattesId));
-        },
-      );
-    },
-    onClose: () => setOpen(false),
-    onGo: (route: HashRoute) => {
-      setOpen(false);
-      onGo(route);
-    },
-    open,
-    versions,
-  });
-
-  return { banner, dialog, record, show };
+  return { banner, record };
 }

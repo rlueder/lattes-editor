@@ -260,9 +260,9 @@ const dateTime = (ms: number) =>
 export function noRestoreText(outcome: Extract<RestoreOutcome, { kind: 'sem-ponto' }>): string {
   switch (outcome.reason) {
     case 'pendente':
-      return 'Não deu para fazer um ponto de restauração: o Lattes já tem alterações não enviadas ao CNPq, e enquanto isso o Exportar não entrega o currículo.';
+      return 'Não deu para guardar a cópia do Lattes antes do envio: o Lattes já tem alterações não enviadas ao CNPq, e enquanto isso o Exportar não entrega o currículo.';
     case 'sem-exportar':
-      return 'Não deu para fazer um ponto de restauração: a extensão instalada não sabe exportar o currículo. Atualize a extensão para ter o ponto antes de cada envio.';
+      return 'Não deu para guardar a cópia do Lattes antes do envio: a extensão instalada não sabe exportar o currículo. Atualize a extensão para ter a cópia antes de cada envio.';
     case 'gravacao':
       return `O Lattes exportou o currículo, mas a cópia não foi guardada${outcome.detail ? ` (${outcome.detail.replace(/\.$/, '')})` : ''}.`;
   }
@@ -271,7 +271,7 @@ export function noRestoreText(outcome: Extract<RestoreOutcome, { kind: 'sem-pont
 /** A cópia mais recente, quando há uma, ou o aviso de que não há nenhuma. */
 export function latestText(latest: BackupFile | undefined): string {
   if (!latest) return 'Ainda não há nenhuma cópia de segurança deste currículo.';
-  const what = latest.kind === 'ponto-zero' ? 'o ponto zero' : 'um ponto de restauração';
+  const what = latest.kind === 'ponto-zero' ? 'o ponto zero' : 'o Lattes antes de um envio';
   return `A cópia mais recente é ${what}, de ${dateTime(latest.savedAt)}: ${latest.name}.`;
 }
 
@@ -280,23 +280,23 @@ export function stopText(outcome: Extract<RestoreOutcome, { kind: 'parar' }>): s
   const detail = outcome.detail ? ` (${outcome.detail.replace(/\.$/, '')})` : '';
   switch (outcome.reason) {
     case 'sessao':
-      return 'Nada foi enviado: a sessão do Lattes expirou antes do ponto de restauração. Entre de novo no Lattes e envie outra vez.';
+      return 'Nada foi enviado: a sessão do Lattes expirou antes de guardar a cópia do Lattes. Entre de novo no Lattes e envie outra vez.';
     case 'sem-aba':
-      return 'Nada foi enviado: não achei o Lattes aberto no navegador para fazer o ponto de restauração.';
+      return 'Nada foi enviado: não achei o Lattes aberto no navegador para guardar a cópia de antes do envio.';
     case 'consentimento':
       return 'Nada foi enviado: aceite o aviso no painel da extensão e envie outra vez.';
     case 'outro-cv':
       return 'Nada foi enviado: a sessão aberta no Lattes é de outro currículo.';
     case 'sem-resposta':
-      return 'Nada foi enviado: a extensão não respondeu ao pedido do ponto de restauração.';
+      return 'Nada foi enviado: a extensão não respondeu ao pedido da cópia do Lattes.';
     case 'erro':
-      return `Nada foi enviado: a exportação para o ponto de restauração falhou${detail}.`;
+      return `Nada foi enviado: a exportação para a cópia do Lattes falhou${detail}.`;
   }
 }
 
 /** O aviso curto depois de um ponto feito. */
 export function doneText(outcome: Extract<RestoreOutcome, { kind: 'feito' }>): string {
   return outcome.where === 'pasta'
-    ? `Ponto de restauração guardado na pasta das cópias: ${outcome.file}.`
-    : `Ponto de restauração guardado neste navegador: ${outcome.file}.`;
+    ? `Lattes antes do envio guardado na pasta das cópias: ${outcome.file}.`
+    : `Lattes antes do envio guardado neste navegador: ${outcome.file}.`;
 }

@@ -9,9 +9,9 @@ alterações e bloqueia o Exportar enquanto há pendência
 ## O caminho de uma alteração
 
 1. **Original.** O currículo como veio da última exportação. Como o Exportar
-   recusa com pendência, toda exportação é uma versão publicada.
+   recusa com pendência, toda exportação traz o que está publicado.
 2. **Alterado no editor.** Só existe no app. Desfaz-se no editor ou
-   restaurando um ponto do histórico.
+   restaurando um momento do Histórico.
 3. **Gravado no Lattes.** O conector gravou e conferiu, e o CNPq ainda não
    publicou. O Lattes não tem como descartar: o único jeito de voltar é
    gravar o valor anterior de novo ("Desfazer no Lattes", no registro do
@@ -25,7 +25,7 @@ numa linha no alto do painel "Enviar ao Lattes" (`3 no Lattes · publicado em
 17/08/2026`), lidos do menu do Lattes pela extensão; a contagem abre o
 registro do enviado. Pendência que o app não gravou (feita direto no Lattes
 ou por outro aparelho) aparece como "pendências que o editor não conhece", na
-mesma linha e no sino, e abre o diagnóstico.
+mesma linha e no sino, e abre o Histórico já comparando com o Lattes.
 
 Sem leitura do Lattes, o sino ao lado do ⚙ diz o motivo (extensão ausente ou
 desatualizada, aviso da extensão não aceito, Lattes fechado ou fora do menu,
@@ -36,16 +36,17 @@ do Lattes termina de carregar, então abrir o Lattes depois do app basta.
 
 Nada disto é pergunta ou chave para a pessoa decidir:
 
-- **Ponto no histórico** antes de cada envio e a cada currículo aberto,
-  cifrado no app. Quem quer um arquivo usa "Salvar cópia" no histórico.
+- **Estado no Histórico** antes de cada envio e a cada currículo aberto,
+  cifrado no app. Quem quer um arquivo usa "Salvar arquivo" no Histórico.
 - **Ponto zero**: a primeira exportação de cada currículo, byte a byte, em
   `Documentos/LattesEditor/Cópias de segurança/<id>/`, sem cifra. Vale a que
   vem pelo conector e o ZIP do Exportar aberto como veio. O app nunca a
   apaga.
-- **Ponto de restauração** antes de cada rodada de escrita: o conector
+- **Lattes antes do envio**, antes de cada rodada de escrita: o conector
   exporta o Lattes como está e guarda o ZIP ao lado do ponto zero. Com
   pendência no Lattes, o Exportar recusa, e o app só grava depois de
-  "Gravar sem ponto de restauração".
+  "Gravar sem a cópia de antes". No Histórico, a cópia aparece na linha do
+  envio.
 - **Registro do enviado**, com o antes e o depois de cada campo e o
   "Desfazer no Lattes".
 - **Leitura do estado do Lattes** ao abrir o app e depois de cada fila.
@@ -68,10 +69,10 @@ produções.
 
 Já tem um currículo grande; acrescenta poucas produções e corrige detalhes.
 
-1. Abre o app, que já tem a versão do mês passado. "Recarregar do Lattes"
-   traz a de agora e diz, numa faixa, quantos itens são novos, alterados e
-   removidos, inclusive o que foi editado direto no Lattes; "Versões do
-   Lattes", no ⚙, mostra o detalhe de cada exportação. Se o Lattes acabou de
+1. Abre o app, que já tem a cópia do mês passado. "Recarregar do Lattes"
+   traz o currículo de agora e diz, numa faixa, quantos itens são novos,
+   alterados e removidos, inclusive o que foi editado direto no Lattes; o
+   Histórico, no ⚙, mostra o detalhe em "Ver o que mudou". Se o Lattes acabou de
    publicar e o Exportar ainda entrega o arquivo antigo, o sino avisa e
    oferece "Atualizar do Lattes", que lê pelos formulários as produções
    novas ou com outro título.
@@ -84,18 +85,18 @@ O currículo está desatualizado, e a pessoa não sabe o que ficou pendente.
 
 1. "Abrir do Lattes". Se o Exportar estiver bloqueado por alterações não
    enviadas, o passo 3 da tela inicial vira "Enviar ao CNPq…": depois do
-   envio, o currículo abre sozinho. A última versão publicada que o app
-   tiver deste currículo fica como a outra saída, embaixo, e o diagnóstico a
-   compara com a versão atual do Lattes (`pkg_publicar.cv_espelho`). A
-   página de conferência é texto, então ela serve de comparação e não vira
+   envio, o currículo abre sozinho. A última exportação que o app tiver
+   deste currículo fica como a outra saída, embaixo, e o Histórico abre
+   comparando-a com o Lattes como ele está agora (`pkg_publicar.cv_espelho`).
+   A página de conferência é texto, então ela serve de comparação e não vira
    o currículo editável. Com uma extensão sem o envio, o passo 3 abre a
-   versão guardada, ou pede para enviar pelo Lattes.
-2. O "Diagnóstico do currículo" (no ⚙ e no aviso do sino) confere o
-   currículo inteiro (obrigatórios, listas, anos, autores, DOI, a revisão de
-   consistência) e, logo abaixo, mostra a data da última publicação, o que
-   está pendente e o que mudou no Lattes desde a exportação. A comparação
-   cobre todas as seções, pelas listas do currículo no Lattes
-   (`src/review/lists-diff.ts`, `lattes_internals.md`, seção 10), e diz
-   quais não conseguiu ler.
+   exportação guardada, ou pede para enviar pelo Lattes.
+2. "No Lattes agora", no alto do Histórico (no ⚙ e no aviso do sino), mostra
+   a data da última publicação, o que está pendente e o que mudou no Lattes
+   desde a exportação. A comparação cobre todas as seções, pelas listas do
+   currículo no Lattes (`src/review/lists-diff.ts`, `lattes_internals.md`,
+   seção 10), e diz quais não conseguiu ler. A "Revisão do currículo", no ⚙,
+   confere o currículo inteiro (obrigatórios, listas, anos, autores, DOI, a
+   revisão de consistência).
 3. A pessoa decide o que mantém e o que desfaz, trabalha em lotes ao longo de
    dias e publica no fim.

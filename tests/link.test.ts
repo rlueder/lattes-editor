@@ -197,10 +197,10 @@ describe('notificações: ligação com o Lattes e armazenamento', () => {
     ).toEqual(['Dados guardados ilegíveis']);
   });
 
-  it('alterações no Lattes que não passaram por aqui: aviso no sino que abre o diagnóstico', () => {
+  it('alterações no Lattes que não passaram por aqui: aviso no sino que abre o Histórico comparando', () => {
     const [n] = noticesFor({ appVersion: '2.0.0', storage: 'cifrado', unknownPending: true });
     expect(n).toMatchObject({
-      action: 'diagnostico',
+      action: 'comparar-lattes',
       id: 'pendencia-desconhecida',
       level: 'aviso',
     });
