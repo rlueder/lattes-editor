@@ -22,7 +22,7 @@ import { REGISTRY_KINDS } from '../cobertura-exemplo.ts';
 
 /** Atributos numéricos: ordem, número, carga horária, duração, quantidade. */
 const NUMERIC =
-  /^(ORDEM-|NUMERO-(DE-|DA-|DO-|GRADUACAO|ESPECIALIZACAO|MESTRADO|DOUTORADO)|CARGA-HORARIA|DURACAO-EM-MESES|QUANTIDADE|NUMERO_)/;
+  /^(ORDEM-|NUMERO-(DE-|DA-|DO-|GRADUACAO|ESPECIALIZACAO|MESTRADO|DOUTORADO)|CARGA-HORARIA|DURACAO|QUANTIDADE|NUMERO_)/;
 
 /** Atributos que não variam: formatos fixos e os que dizem a qual item o item pertence. */
 const FIXED = /^(FORMATO-|SEQUENCIA-|ORDEM-|TIPO-PATENTE$)/;
