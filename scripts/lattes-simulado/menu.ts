@@ -34,6 +34,12 @@ function menuItems(code: string): [string, string][] {
     ['Projetos de extensão', `pkg_projeto.lista?f_cod_tipo=E&f_cod=${code}`],
     ['Projetos de ensino', `pkg_projeto.lista?f_cod_tipo=N&f_cod=${code}`],
     ['Outros projetos', `pkg_projeto.lista?f_cod_tipo=O&f_cod=${code}`],
+    // As listas de inovação de cada natureza, vistas no menu real em
+    // 29/10/2026; o rótulo delas não foi lido (inferido).
+    ...['P', 'D', 'E', 'N', 'O'].map((t): [string, string] => [
+      'Projetos com potencial de inovação',
+      `pkg_projeto.lista?f_cod_tipo=${t}&f_sta_inovacao=S&f_cod=${code}`,
+    ]),
     ['Prêmios e títulos', `pkg_premio.lista?f_cod=${code}`],
     ['Licenças', `pkg_licenca.lista?f_cod=${code}`],
     // Seção 3 de lattes_internals.md.

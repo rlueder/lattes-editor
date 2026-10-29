@@ -6,6 +6,8 @@
 // formulário de alteração, e o que segue marcado "Inferido" precisa ser lido
 // no Lattes real antes de valer.
 
+import type { Change } from '../../../model/changes.ts';
+import { getAttr, type XElement } from '../../../model/xml.ts';
 import { PARTICIPATION_PERIOD } from '../../atuacao-by-hand.ts';
 import { readProvider } from '../grids.ts';
 import { byTable } from '../mappers.ts';
@@ -42,6 +44,30 @@ const innovation = (v: string, side?: 'after' | 'before'): string | undefined =>
   v === 'NAO' ? 'N' : v === 'SIM' && side === 'before' ? 'S' : v ? undefined : '';
 
 const PROJECT = 'PROJETO-DE-PESQUISA';
+
+/** As naturezas cujo formulário tem o texto do potencial de inovação (censo de 27/10/2026). */
+const WITH_POTENTIAL = ['DESENVOLVIMENTO', 'EXTENSAO', 'OUTRA', 'PESQUISA'];
+
+/**
+ * No projeto de ensino, o mesmo rádio pergunta se o projeto possui ações
+ * inovadoras, e as caixas delas só valem com Sim (o check() pede uma marcada).
+ * Mandadas com Não, o Lattes gravou Sim (passada de 29/10/2026): as duas
+ * coisas vão juntas, ou nenhuma vai.
+ */
+export const TEACHING_INNOVATION =
+  'Ações inovadoras marcadas pedem Sim em "O projeto possui ações inovadoras": o Lattes marca Sim quando há uma ação. Marque Sim ou desmarque as ações';
+
+function teachingGuard(item: XElement, change: Change): string | undefined {
+  if (getAttr(item, 'NATUREZA') !== 'ENSINO') return undefined;
+  const actions = 'tela:f_tpo_acao_inov';
+  const touched = change.fields.some(
+    (f) => f.attr === actions || f.attr === 'FLAG-POTENCIAL-INOVACAO',
+  );
+  const marked = (getAttr(item, actions) ?? '').split(',').some((v) => v && v !== 'X');
+  return touched && marked && getAttr(item, 'FLAG-POTENCIAL-INOVACAO') !== 'SIM'
+    ? TEACHING_INNOVATION
+    : undefined;
+}
 
 const LINK_BY_HAND =
   'Produção do projeto vai à mão: ela se liga a uma produção do currículo pela janela de produções, que não foi lida';
@@ -83,6 +109,8 @@ const PROJETO: ProductionTarget = {
       field: 'f_txt_potencial',
       flag: ['f_sta_inovacao', 'S'],
       maxLength: 400,
+      // O projeto de ensino não tem o texto: o Sim dele vai sozinho.
+      onlyWhen: { attr: 'NATUREZA', values: WITH_POTENTIAL },
       reason:
         'Potencial de inovação Sim: escreva no editor qual é o potencial (o Lattes pede o texto, e o currículo não o guarda)',
       when: 'SIM',
@@ -150,6 +178,7 @@ const PROJETO: ProductionTarget = {
   // autorProvider das produções.
   gridKeys: { f_autores_l: ['c', 'l', 't', 'tit', 'add'] },
   grids: ['f_autores_l'],
+  guard: teachingGuard,
   id: 'projeto',
   list: {
     formProc: 'PKG_PROJETO.form',

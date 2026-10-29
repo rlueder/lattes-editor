@@ -19,6 +19,7 @@ import { isLogonPage } from '../lattes-html.ts';
 import { withChoices } from '../multi-choice.ts';
 import type { FieldValues } from '../plan.ts';
 import { afterWrong, beforeWrong, createdPath, withSentAuthors } from './apply-checks.ts';
+import { resolveCompany } from './company.ts';
 import { doiProblem } from './doi.ts';
 import {
   authorRows,
@@ -241,6 +242,13 @@ export async function applyProduction(
       const student = await resolveStudent(set.f_nme_orient ?? '', port, pairs);
       chosen = { ...chosen, ...student.set };
       chosenCheck = { ...chosenCheck, ...student.check };
+    }
+    // A empresa do projeto pelo CNPJ, como o onChange da página (company.ts).
+    if ('f_cnpj_empresa' in set && pairs.some(([k]) => k === 'f_cod_inst_empresa')) {
+      const company = await resolveCompany(set.f_cnpj_empresa ?? '', port);
+      if ('detail' in company) return result('erro', company.detail);
+      chosen = { ...chosen, ...company.set };
+      chosenCheck = { ...chosenCheck, ...company.check };
     }
     let organShown: string | undefined;
     if (op.organ) {

@@ -15,6 +15,7 @@ import { insertInSchemaOrder } from '../../model/schema-order.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../model/xml.ts';
 import { availabilityToForm } from '../../schema/availability.ts';
 import { lattesSchema } from '../../schema/lattes.ts';
+import { LICENSE_TYPES, licenseToForm } from '../../schema/license-types.ts';
 import { countryName } from '../edit-items.ts';
 import idiomas from '../production/idiomas-lattes.json' with { type: 'json' };
 import { country, date, language } from '../production/mappers.ts';
@@ -100,6 +101,11 @@ export function fromForm(
   }
   if (value === '') return '';
   if (map.toForm === country) return countryName(value);
+  // O tipo da licença: o XSD só enumera MATERNIDADE; os outros dois valores
+  // são os inferidos que o envio usa (license-types.ts).
+  if (map.toForm === licenseToForm) {
+    return Object.entries(LICENSE_TYPES).find(([, code]) => code === value)?.[0];
+  }
   if (map.toForm === date) return value.replace(/\//g, '');
   if (map.toForm === language) {
     return Object.entries(idiomas as Record<string, string>).find(([, c]) => c === value)?.[0];

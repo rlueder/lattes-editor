@@ -193,6 +193,8 @@ export function planProduction(
     return { reason: 'O item não existe mais na cópia de trabalho' };
   }
   const { item, target } = found;
+  const guarded = target.guard?.(item, change);
+  if (guarded) return { reason: guarded };
   const organChange =
     target.organ !== undefined && change.element !== item.name && isOrganChange(change);
   // A natureza de um financiador vai pela linha dele na grade (financiador.ts).
@@ -405,8 +407,11 @@ export function planProduction(
     // Um valor que pede texto fora do XML (target.asks): o que a pessoa escreveu.
     const ask = target.asks?.[key];
     if (ask && f.after === ask.when) {
-      const text = extras[change.key]?.[ask.field]?.trim() ?? '';
-      if (!text) return { reason: ask.reason };
+      // Onde o formulário não tem o texto (o projeto de ensino), o Sim vai sem ele.
+      const when = ask.onlyWhen;
+      const asked = !when || when.values.includes(getAttr(el, when.attr) ?? '');
+      const text = asked ? (extras[change.key]?.[ask.field]?.trim() ?? '') : '';
+      if (asked && !text) return { reason: ask.reason };
       if (text.length > ask.maxLength) {
         return { reason: `${f.label}: o texto passa de ${ask.maxLength} caracteres` };
       }
@@ -414,7 +419,7 @@ export function planProduction(
       const map = m ? mapOf(m) : undefined;
       const was = map?.toForm ? map.toForm(f.before, 'before') : f.before;
       set[ask.flag[0]] = ask.flag[1];
-      set[ask.field] = text;
+      if (asked) set[ask.field] = text;
       if (was !== undefined) expect[ask.flag[0]] = was;
       rows.push({
         after: shown(f.after),

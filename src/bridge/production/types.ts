@@ -99,7 +99,15 @@ export interface ProductionTarget {
    */
   asks?: Record<
     string,
-    { field: string; flag: [string, string]; maxLength: number; reason: string; when: string }
+    {
+      field: string;
+      flag: [string, string];
+      maxLength: number;
+      /** Só quando o item tem um destes valores; nos outros, o formulário não tem o texto. */
+      onlyWhen?: { attr: string; values: readonly string[] };
+      reason: string;
+      when: string;
+    }
   >;
   /** O elemento da grade de autores, quando não é AUTORES (grids.ts). */
   authors?: AuthorPart;
@@ -132,6 +140,8 @@ export interface ProductionTarget {
   gridKeys?: Partial<Record<GridField, readonly string[]>>;
   /** As grades que o formulário tem, e que o envio refaz. */
   grids: GridField[];
+  /** O motivo de a mudança ir à mão, pelo item como fica depois dela (o projeto de ensino). */
+  guard?: (item: XElement, change: Change) => string | undefined;
   /**
    * O atributo do XML que guarda os depositantes ou titulares pessoas da
    * grade f_depositante_pessoa_l (NOME-DO-DEPOSITANTE, observado na

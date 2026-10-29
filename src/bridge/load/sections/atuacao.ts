@@ -17,7 +17,7 @@
 import { emptyAttrs } from '../../../model/production.ts';
 import { childElements, element, getAttr, setAttr, type XElement } from '../../../model/xml.ts';
 import { lattesSchema } from '../../../schema/lattes.ts';
-import { screenTable } from '../../../schema/screen-fields.ts';
+import { screenTableFor } from '../../../schema/screen-fields.ts';
 import { VINCULO_TEXT } from '../../create.ts';
 import { ACTIVITY_TYPES, PERIOD } from '../../edit-atividade.ts';
 import { TEACHING_LEVELS } from '../../ensino-curso.ts';
@@ -355,9 +355,17 @@ function projectTables(projeto: XElement, html: string): void {
 /** Os projetos, cada um na participação em projeto da atuação. */
 async function projetos(ctx: LoadContext, byAtiv: Map<string, XElement>): Promise<void> {
   const t = target('projeto');
-  const links = rowLinks(listsOf(ctx, t.list.proc), t.list.formProc, t.list.isRow).filter((l) =>
-    param(l, 'f_seq_proj'),
-  );
+  // O projeto com potencial de inovação está também na lista de inovação
+  // (f_sta_inovacao=S, passada de 29/10/2026): entra uma vez só. O número do
+  // projeto recomeça em cada participação: a chave leva as três sequências.
+  const seen = new Set<string>();
+  const links = rowLinks(listsOf(ctx, t.list.proc), t.list.formProc, t.list.isRow).filter((l) => {
+    const seq = param(l, 'f_seq_proj');
+    const key = ['f_seq_ativ', 'f_seq_funcao', 'f_seq_proj'].map((p) => param(l, p)).join('/');
+    if (!seq || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
   if (links.length === 0) return;
   const pages = await ctx.fetch(links.map((l) => l.path));
   for (const link of links) {
@@ -373,7 +381,7 @@ async function projetos(ctx: LoadContext, byAtiv: Map<string, XElement>): Promis
     const projeto = blank('PROJETO-DE-PESQUISA');
     setAttr(projeto, 'SEQUENCIA-PROJETO', param(link, 'f_seq_proj'));
     applyReading(t, projeto, reading, { fresh: true });
-    readTable(projeto, screenTable(projeto.name), reading.values);
+    readTable(projeto, screenTableFor(projeto), reading.values);
     fillEmptyChoices(t, projeto, reading.values);
     team(projeto, reading.grids?.f_autores_l);
     projectTables(projeto, html);

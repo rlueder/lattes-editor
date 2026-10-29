@@ -143,6 +143,10 @@ export const PROJECT_CARRIERS = new Set([
 export const TEAM_UNREAD =
   'Criado no Lattes, com os campos conferidos; confira a equipe no Lattes, que o conector não relê';
 
+/** Por que o projeto de ensino novo com ações inovadoras vai em dois passos. */
+export const TEACHING_CREATE =
+  'Projeto de ensino com ações inovadoras: inclua com Não e, depois de enviado, marque Sim e as ações';
+
 /** Por que o projeto novo vai à mão sem o órgão (seções 21 e 22 de docs/lattes_internals.md). */
 export const TEAM_BY_HAND =
   'O Lattes exige o órgão ou unidade na inclusão do projeto: escolha na lista do Lattes, em Órgão';
@@ -212,8 +216,14 @@ export function projetoOp(
   const left = [...missing, ...extra.map((a) => labelIn(change, a.name)), ...otherParts];
   const reason = reasonFrom(wrong);
   if (reason) return { reason };
-  const innovation = innovationFields(set, chain[0], projeto, sendExtras);
-  if (innovation) return innovation;
+  // O projeto de ensino não tem o texto do potencial, e o Sim dele pede as
+  // ações inovadoras marcadas, que a inclusão não manda (passada de 29/10/2026).
+  if (nature === 'N') {
+    if (set.f_sta_inovacao === 'S') return { reason: TEACHING_CREATE };
+  } else {
+    const innovation = innovationFields(set, chain[0], projeto, sendExtras);
+    if (innovation) return innovation;
+  }
   // Sem ano de fim (projeto em andamento), o campo vai vazio: senão ficaria o
   // fim do vínculo, que preencherOpener copia para F_ANO_FIM.
   set.F_ANO_FIM = getAttr(projeto, 'ANO-FIM') ?? '';

@@ -9,6 +9,7 @@ import {
   type CreateProjetoOp,
   planCreateProjeto,
   projetoOp,
+  TEACHING_CREATE,
   TEAM_BY_HAND,
   TEAM_UNREAD,
   vinculoChoices,
@@ -446,5 +447,25 @@ describe('inclusão de projeto no contrato e no registro', () => {
 
   it('um projeto criado não se desfaz pelo conector', () => {
     expect(undoOp({ ...sentEntry(op(), '1', 1), id: 1 })).toBeUndefined();
+  });
+});
+
+describe('projeto de ensino novo: o potencial de inovação', () => {
+  const ensino = (flag: string) =>
+    projeto(
+      PROJETO.replace('NATUREZA="PESQUISA"', 'NATUREZA="ENSINO"').replace(
+        'FLAG-POTENCIAL-INOVACAO="NAO"',
+        `FLAG-POTENCIAL-INOVACAO="${flag}"`,
+      ),
+    );
+
+  it('o Sim vai em dois passos: a inclusão não manda as ações inovadoras que ele pede', () => {
+    expect(planned(ensino('SIM'), undefined, 'Um texto')).toEqual({ reason: TEACHING_CREATE });
+  });
+
+  it('o Não vai, sem o texto do potencial, que o formulário de ensino não tem', () => {
+    const planned_ = planned(ensino('NAO')) as CreateProjetoOp;
+    expect(planned_).toMatchObject({ nature: 'N', set: { f_sta_inovacao: 'N' } });
+    expect(planned_.set).not.toHaveProperty('f_txt_potencial');
   });
 });

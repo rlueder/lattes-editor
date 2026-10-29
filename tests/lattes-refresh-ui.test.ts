@@ -101,8 +101,10 @@ describe('as passadas contra o Lattes simulado', () => {
       onStage: (s) => stages.push(stageText(s)),
     });
     expect(out).toMatchObject({ ok: true, summary: { added: [expect.any(String)], left: 0 } });
+    // As listas de inovação dos projetos (uma por natureza) levam a leitura a uma segunda parte.
     expect(stages).toEqual([
       'Lendo as listas do Lattes (parte 1).',
+      'Lendo as listas do Lattes (parte 2).',
       'Lendo os formulários das linhas novas (0 de 1).',
     ]);
     expect(ed.commits).toHaveLength(1);
@@ -127,9 +129,18 @@ describe('as passadas contra o Lattes simulado', () => {
     lattes = await withLattesSimulado();
     const published = serializeXml(lattes.state.published);
     addArticle(lattes, 'Primeiro artigo novo');
-    // Cada lista é um GET; o formulário vem depois de todas elas.
-    const lists = (await asker(lattes))({ step: 'listas' });
-    const count = Object.keys(((await lists).part as { lists: object }).lists).length;
+    // Cada lista é um GET, em uma ou mais partes; o formulário vem depois de todas elas.
+    const ask = await asker(lattes);
+    let count = 0;
+    let queue: string[] | undefined;
+    do {
+      const part = (await ask({ queue, step: 'listas' })).part as {
+        lists: object;
+        queue?: string[];
+      };
+      count += Object.keys(part.lists).length;
+      queue = part.queue;
+    } while (queue?.length);
     await lattes.close();
     lattes = await withLattesSimulado({ intercept: faults.logonAtGet(count + 1) });
     addArticle(lattes, 'Primeiro artigo novo');

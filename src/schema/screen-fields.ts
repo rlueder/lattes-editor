@@ -425,6 +425,23 @@ export function screenTable(element: string): Record<string, [string, (v: string
 }
 
 /**
+ * A tabela de screenTable só com os campos que valem para o elemento já lido
+ * (onlyWhen): o projeto que não é de ensino traz as caixas do de ensino como
+ * um oculto com X, e o de ensino não tem os dados da empresa (passada de
+ * 29/10/2026).
+ */
+export function screenTableFor(el: XElement): Record<string, [string, (v: string) => string]> {
+  const applies = new Set(
+    screenFieldsOf(el.name)
+      .filter((f) => screenApplies(f, el))
+      .map((f) => f.attr),
+  );
+  return Object.fromEntries(
+    Object.entries(screenTable(el.name)).filter(([attr]) => applies.has(attr)),
+  );
+}
+
+/**
  * Campos só de tela que outro campo abre: o nome social só com "Deseja
  * utilizar o nome social?" em Sim, como na página.
  */

@@ -1755,8 +1755,8 @@ ocultos de valor `X` vêm acompanhados de caixas de mesmo nome:
 `f_tpo_cooperacao` (`IE`, `AF`, `EM`), `f_tpo_acao_inov` (`EF`, `EM`, `GR`,
 `ES`, `GM`, `MP`, `GD`) e `f_tematica` (12 temas, `EA` a `O`); o navegador
 manda o `X` e um par por caixa marcada. Esse formulário não tem os dados da
-empresa. **Observado** no formulário; o envio com caixas marcadas não foi
-testado no Lattes real.
+empresa. **Observado** no formulário, e o envio com todas as caixas
+marcadas gravou e voltou na página (seção 29).
 
 `check()` exige nome, natureza, situação, ano de início (e de fim quando
 concluído), números inteiros nas quantidades de alunos, os dados da empresa
@@ -1785,7 +1785,8 @@ Outras janelas do formulário: `PKG_PROJETO.pp_lista_inst?f_pgm=INSTFINANC`
 (financiadores), `PKG_PROJETO.pp_lista_autores` (equipe),
 `PKG_PROJETO.pp_lista_prod` (produções ligadas). O CNPJ da empresa é
 consultado por GET ajax `PKG_PROJETO.PR_RECUPERA_DADOS_INST` com `p_cnpj`,
-resposta JSON com `cod`, `nome` e `email`. `chamaVerificaVinculo()` chama
+resposta JSON com `cod`, `nome` e `email`; o CNPJ só grava com esse `cod` em
+`f_cod_inst_empresa` (seção 29). `chamaVerificaVinculo()` chama
 `pkg_projeto.verifica_vinculo_ajax`, que responde 404: o procedimento não
 existe mais (ou a assinatura mudou). **Observado.**
 
@@ -2707,7 +2708,9 @@ o planejador; o tipo vazio é recusado antes do envio. A inclusão de licença
 exige a data de nascimento ou adoção, que fica fora do XML (seção 21): o
 editor a pede na licença nova e a manda só no envio
 (`src/bridge/create-licenca.ts`), com as regras do `check()` conferidas
-antes. **Inferido**, sem envio acompanhado.
+antes. A inclusão dos três tipos foi acompanhada (seções 27 e 29); os
+valores `PATERNIDADE` e `ADOCAO` do XML seguem **inferidos**, sem exportação
+que os mostre.
 
 ## 24. Recaptura de 26/10/2026
 
@@ -3087,3 +3090,45 @@ aspas como `&quot;` dentro do texto, e números internos nas redes sociais.
 - Depois de um envio ao CNPq feito pelo editor, sem pendência de fora dele,
   a cópia de trabalho está em dia com o que ele gravou, mesmo com o Exportar
   ainda antigo.
+
+## 29. Projetos e licenças pelo conector (29/10/2026)
+
+Pela ponte local, com a passada (`scripts/passada/projetos.ts`): um projeto
+de teste de cada natureza, numa atuação só, e uma licença de cada tipo,
+incluídos pelo planejador e pelo `applyOp` do editor, alterados depois pelo
+mesmo caminho, lidos página a página e excluídos. As listas voltaram iguais
+à base. Nada foi enviado ao CNPq, e por isso não houve exportação.
+**Observado**, com valores sintéticos:
+
+- **Opções do projeto.** As cinco naturezas, as três situações, o potencial
+  de inovação Sim (com o texto) e Não, a cooperação com empresa Sim (CNPJ,
+  nome, e-mail e setor) e Não, as cinco naturezas de financiador (`A`, `B`,
+  `C`, `O`, `R`) e, no projeto de ensino, todas as caixas de cooperação,
+  ações inovadoras e temática gravaram e voltaram na página.
+- **Visibilidade de saída.** O projeto incluído sem `f_tipo_privacidade`
+  ficou Público (`1`); a licença incluída sem ele ficou Privado (`2`). As
+  duas páginas põem o valor por script
+  (`$("[name=f_tipo_privacidade]").val(…)`), e o HTML marca `1`.
+- **Tipo da licença.** A página de alteração põe `f_tipo_licenca` por script
+  (`$("[name=f_tipo_licenca]").val("P")`), com `M`, `P` e `A`. O XML desses
+  dois últimos não foi visto: `PATERNIDADE` e `ADOCAO` são **inferidos**.
+- **Duas listas.** O projeto com potencial de inovação aparece também em
+  `pkg_projeto.lista?f_cod_tipo=<natureza>&f_sta_inovacao=S`, uma lista por
+  natureza no menu, e o link da linha leva `F_sta_inovacao=S`. É o mesmo
+  projeto: o carregamento o lê uma vez só.
+- **Participações por período.** O servidor pendurou os projetos em
+  andamento numa participação (`f_seq_funcao` 3) e os concluídos e
+  desativados em outra (4), na mesma atividade. `f_seq_proj` recomeça em
+  cada participação: só as três sequências juntas identificam o projeto.
+- **CNPJ da empresa.** O `onChange` do CNPJ chama `recuperaDadosInst()`, um
+  GET de `PKG_PROJETO.PR_RECUPERA_DADOS_INST?p_cnpj=<só dígitos>`, que
+  responde `{"cod":"…" ,"nome":"…" ,"email":"…"}` (`text/html`). A página põe
+  o `cod` em `f_cod_inst_empresa`, troca o nome e o e-mail pelos da resposta e
+  limpa o setor; com o nome vazio, avisa "CNPJ inválido.". Mandado sem o
+  código, o CNPJ não gravou. Com o código, gravou como foi digitado, com a
+  máscara, e o nome, o e-mail e o setor enviados ficaram como foram.
+- **Ações inovadoras do projeto de ensino.** No projeto de ensino o rádio
+  `f_sta_inovacao` pergunta se o projeto possui ações inovadoras, e o
+  formulário não tem `f_txt_potencial`. Com as caixas de ações marcadas e o
+  rádio em Não, o Lattes gravou Sim. O editor manda as duas coisas juntas, ou
+  deixa a mudança à mão.
