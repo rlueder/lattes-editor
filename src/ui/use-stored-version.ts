@@ -46,7 +46,8 @@ export function useStoredVersion(
  * não XML: ela não vira currículo editável, só comparação.
  */
 export function useOpenStoredVersion(
-  openFile: (file: File) => Promise<void>,
+  /** true quando o currículo abriu. */
+  openFile: (file: File) => Promise<boolean>,
   ready: boolean,
   onOpened: () => void,
 ): (id: number) => void {
@@ -63,8 +64,12 @@ export function useOpenStoredVersion(
       void getVersion(id)
         .then(async (version) => {
           if (!version) return;
-          await openFile(new File([versionBytes(version.xml)], `${version.lattesId}.xml`));
-          setOpened(true);
+          // Só a abertura que deu certo abre o Histórico; a que falhou não
+          // deixa a marca pendente para a próxima.
+          const ok = await openFile(
+            new File([versionBytes(version.xml)], `${version.lattesId}.xml`),
+          );
+          if (ok) setOpened(true);
         })
         .catch((err: unknown) => console.warn('Exportação guardada não abriu:', err));
     },

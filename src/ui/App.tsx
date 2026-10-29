@@ -164,7 +164,12 @@ export function App() {
    * onde a exportação veio do Lattes (arquivo ou conector): só então ela pode
    * virar o ponto zero (LAT-59).
    */
-  const openFile = async (file: File, reload?: ReloadArg, origin?: BackupSource) => {
+  /** Abre o arquivo como o currículo de trabalho; true quando abriu. */
+  const openFile = async (
+    file: File,
+    reload?: ReloadArg,
+    origin?: BackupSource,
+  ): Promise<boolean> => {
     const previous = reload?.previous;
     setError(null);
     try {
@@ -186,8 +191,10 @@ export function App() {
       setSession({ doc: cv.doc, meta });
       setSectionId('dados-gerais');
       setSaveState('salvo');
+      return true;
     } catch (err) {
       setError((err as Error).message);
+      return false;
     }
   };
 
