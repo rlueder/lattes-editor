@@ -33,7 +33,7 @@ function fakeChrome(
     files?: string[];
     target: { tabId: number };
   }) => Promise<unknown>,
-  tabs: () => number = () => 7,
+  tabs: () => number | undefined = () => 7,
 ) {
   const local: Record<string, unknown> = { [CONSENT_KEY]: consentRecord() };
   const area = (store: Record<string, unknown>) => ({
@@ -50,7 +50,10 @@ function fakeChrome(
       get: () => Promise.resolve({ id: 7, status: 'complete' }),
       onRemoved: { addListener: () => undefined, removeListener: () => undefined },
       onUpdated: { addListener: () => undefined },
-      query: () => Promise.resolve([{ id: tabs() }]),
+      query: () => {
+        const id = tabs();
+        return Promise.resolve(id === undefined ? [] : [{ id }]);
+      },
     },
   });
   return local;
@@ -70,6 +73,19 @@ describe('o motivo de uma falha da aba do Lattes', () => {
         false,
       ),
     ).toBe('O conector está ocupado com outra leitura ou gravação no Lattes.');
+    expect(
+      explainTabError(
+        new Error('O conector está ocupado com outra leitura em https://wwws.cnpq.br/x?f_cod=K1.'),
+        false,
+      ),
+    ).toBe('O conector está ocupado com outra leitura em (endereço).');
+    // Porta fechada também vem da extensão recarregando: não é a aba que recarregou.
+    expect(
+      explainTabError(
+        new Error('Could not establish connection. Receiving end does not exist.'),
+        false,
+      ),
+    ).toBe(`${TAB_SILENT} (Could not establish connection. Receiving end does not exist).`);
     expect(explainTabError(new Error('Frame with ID 0 was removed.'), false)).toBe(
       `${TAB_RELOADED}.`,
     );
@@ -174,6 +190,19 @@ describe('a leitura que pega a aba recarregando', () => {
     );
     expect(await readEspelho()).toMatchObject({ items: [], listsUnread: [] });
     expect(lists).toEqual([8]);
+  });
+
+  it('sem aba do Lattes depois da recarga, o erro não diz que houve nova tentativa', async () => {
+    const ids: (number | undefined)[] = [7, undefined];
+    fakeChrome(
+      (injection) =>
+        injection.files
+          ? Promise.resolve([])
+          : Promise.reject(new Error('Frame with ID 0 was removed.')),
+      () => ids.shift(),
+    );
+    expect(await readCurriculo()).toEqual({ detail: `${TAB_RELOADED}.`, reason: 'erro' });
+    expect((await readTabErrors()).map((e) => e.message)).toEqual([`${TAB_RELOADED}.`]);
   });
 
   it('a gravação nunca tenta de novo: o motivo volta na primeira falha', async () => {

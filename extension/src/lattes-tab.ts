@@ -123,13 +123,18 @@ async function callTab<T>(
       err = e;
     }
     const detail = explainTabError(err, reloadedSince(tab, started));
-    const again = retry && attempt === 0 && worthRetry(detail);
-    await recordTabError(name, again ? `${detail} Nova tentativa.` : detail);
-    if (!again) return { detail };
-    await tabSettled(tab);
-    const next = await lattesTab();
-    if (next === undefined) return { detail };
-    tab = next;
+    if (retry && attempt === 0 && worthRetry(detail)) {
+      await tabSettled(tab);
+      const next = await lattesTab();
+      // "Nova tentativa" só quando ela vai mesmo acontecer.
+      if (next !== undefined) {
+        await recordTabError(name, `${detail} Nova tentativa.`);
+        tab = next;
+        continue;
+      }
+    }
+    await recordTabError(name, detail);
+    return { detail };
   }
 }
 
