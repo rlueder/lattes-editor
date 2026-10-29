@@ -438,9 +438,10 @@ vez mais. Gravação nunca repete.
 A primeira abertura, na tela inicial, é sempre pela exportação: o arquivo
 completo, em segundos, e o que vira o ponto zero (`src/ui/use-lattes-source.ts`).
 Dali em diante a cópia de trabalho segue o Lattes pelo conector, que relê cada
-item gravado. Com a extensão que anuncia `carregar-do-lattes`, o "Recarregar do
-Lattes…" não pede a exportação: o editor monta o currículo pelas telas do
-Lattes (`src/bridge/load/`, `src/ui/use-lattes-load.ts`). A aba só busca páginas, em
+item gravado. Com a extensão que anuncia `carregar-do-lattes`, "O currículo
+inteiro", em "Atualizar do Lattes…", não pede a exportação: o editor monta o
+currículo pelas telas do Lattes (`src/bridge/load/`,
+`src/ui/use-lattes-load.ts`). A aba só busca páginas, em
 levas abaixo do teto do transporte (`pages.ts`, pelos passos `menu` e
 `paginas` do pedido `ler-lattes`); tudo o mais acontece no editor:
 
