@@ -442,7 +442,7 @@ function ImportSteps({ file, minYear }: { file: ImportFile; minYear?: number }) 
         </li>
         <li>Confirme.</li>
         <li>
-          Depois, exporte o currículo de novo no Lattes e use &quot;Recarregar do Lattes&quot; aqui.
+          Depois, exporte o currículo de novo no Lattes e use &quot;Atualizar do Lattes…&quot; aqui.
           Os itens importados deixam de aparecer como novos.
         </li>
       </ol>

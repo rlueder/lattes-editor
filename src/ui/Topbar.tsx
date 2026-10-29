@@ -15,6 +15,7 @@ import { NotificationsMenu } from './NotificationsMenu.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { SettingsMenu } from './SettingsMenu.tsx';
 import type { ThemePref } from './theme.ts';
+import { UpdateFromLattes } from './UpdateFromLattes.tsx';
 import { backShortcutLabel, forwardShortcutLabel, useHistoryNav } from './use-history-nav.ts';
 
 export type SaveState = 'salvo' | 'salvando' | 'erro';
@@ -135,6 +136,7 @@ export function Topbar({
   const reloadInput = useRef<HTMLInputElement>(null);
   const incomingInput = useRef<HTMLInputElement>(null);
   const [closing, setClosing] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const pickReloadFile = () => {
     if (isDesktop()) void pickFileNative().then((file) => file && onReload(file));
     else reloadInput.current?.click();
@@ -231,14 +233,20 @@ export function Topbar({
               else incomingInput.current?.click();
             },
             onPrint,
-            onRefresh: onRefreshFromLattes,
-            onReload: onReloadFromLattes ?? pickReloadFile,
             onReview,
             onSave,
+            onUpdate: () => setUpdating(true),
           }}
           focus={focus}
           theme={theme}
           onTheme={onTheme}
+        />
+        <UpdateFromLattes
+          fromLattes={onReloadFromLattes !== undefined}
+          open={updating}
+          onClose={() => setUpdating(false)}
+          onNew={onRefreshFromLattes}
+          onWhole={onReloadFromLattes ?? pickReloadFile}
         />
         <CloseConfirm
           open={closing}

@@ -258,7 +258,7 @@ describe('o que mudou entre duas exportações', () => {
     expect(novo.route?.anchor).toBeTruthy();
     const at = new Date('2026-10-29T12:00:00').getTime();
     expect(openedSummary(diff, true, at)).toMatch(
-      /^Recarregado do Lattes em 29\/10: 1 item novo, 2 alterados, \d+ removidos?\.$/,
+      /^Atualizado do Lattes em 29\/10: 1 item novo, 2 alterados, \d+ removidos?\.$/,
     );
     expect(openedSummary(diff, false, at)).toMatch(/^Exportação aberta em 29\/10: 1 item novo/);
     expect(changesSummary(diff)).toMatch(/^Em relação à exportação anterior: 1 item novo/);
@@ -343,7 +343,7 @@ describe('o que mudou entre duas exportações', () => {
     expect(changesSummary(diff)).toBe('Nada mudou em relação à exportação anterior.');
     const at = new Date('2026-10-29T12:00:00').getTime();
     expect(openedSummary(diff, true, at)).toBe(
-      'Recarregado do Lattes em 29/10: nada mudou em relação à anterior.',
+      'Atualizado do Lattes em 29/10: nada mudou em relação à anterior.',
     );
   });
 

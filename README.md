@@ -75,14 +75,15 @@ obrigatórios, valores fora das listas do Lattes, anos, autores, DOI, ISSN,
 duplicatas e vínculos antigos ainda marcados como atuais. Só aponta; nada muda
 sem você.
 
-"Recarregar do Lattes…", no ⚙, lê o currículo de novo pelas telas do Lattes,
-uma por uma, só lendo, sem esperar a exportação acompanhar o último envio.
-Como lê as telas, as alterações ainda não enviadas ao CNPq já aparecem. O que
-uma tela não deixou ler (o tipo de participação num evento, que a página monta
-depois de abrir, ou o período da participação num projeto) fica listado no
-sino.
-"Atualizar do Lattes" continua lá para ler só as produções novas ou com outro
-título, sem refazer o currículo.
+"Atualizar do Lattes…", no ⚙, traz o que mudou no Lattes, de um de dois
+jeitos. "Só o que é novo" lê as produções novas ou com outro título, em
+segundos, e as junta à cópia de trabalho. "O currículo inteiro" lê tudo de
+novo pelas telas do Lattes, uma por uma, só lendo, sem esperar a exportação
+acompanhar o último envio, e troca a cópia pelo que veio; a de agora fica no
+Histórico. Como lê as telas, as alterações ainda não enviadas ao CNPq já
+aparecem. O que uma tela não deixou ler (o tipo de participação num evento,
+que a página monta depois de abrir, ou o período da participação num projeto)
+fica listado no sino.
 
 O **Histórico**, no ⚙, mostra tudo o que aconteceu com o currículo no app,
 por dia: cada edição, cada envio ao Lattes, cada recarga e a primeira

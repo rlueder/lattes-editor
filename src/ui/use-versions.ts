@@ -1,6 +1,6 @@
 // As exportações abertas (LAT-12) para o App: cada uma fica guardada para o
 // Histórico comparar, e, quando há uma anterior, a faixa curta diz o que
-// mudou ("Recarregado do Lattes em 29/10: …") e leva ao Histórico.
+// mudou ("Atualizado do Lattes em 29/10: …") e leva ao Histórico.
 
 import { createElement, useCallback, useState } from 'react';
 

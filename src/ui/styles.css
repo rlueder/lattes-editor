@@ -8450,3 +8450,51 @@ html {
   filter: grayscale(1);
   image-rendering: pixelated;
 }
+
+/* "Atualizar do Lattes…": as duas formas, como cartões que se escolhem. */
+.update-options {
+  display: grid;
+  gap: 10px;
+}
+
+button.update-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  height: auto;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-align: left;
+  white-space: normal;
+  transition:
+    border-color 200ms ease,
+    background-color 200ms ease;
+}
+
+button.update-option:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+button.update-option:disabled {
+  opacity: 0.6;
+}
+
+.update-option-title {
+  font-weight: 600;
+}
+
+.update-option-text {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.update-option {
+    transition: none;
+  }
+}

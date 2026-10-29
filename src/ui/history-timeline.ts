@@ -221,7 +221,9 @@ function openings(
     if (prior) {
       // "Restaurar o de antes": a cópia de trabalho de antes da recarga.
       if (prior.id !== undefined) entry.pointId = prior.id;
-      entry.text = date ? `Recarregado do Lattes: exportação de ${date}` : 'Recarregado do Lattes';
+      entry.text = date
+        ? `Atualizado do Lattes, o currículo inteiro: exportação de ${date}`
+        : 'Atualizado do Lattes, o currículo inteiro';
     } else {
       if (point?.id !== undefined) entry.pointId = point.id;
       const what = date ? `exportação de ${date}` : 'currículo do Lattes';

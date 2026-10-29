@@ -228,7 +228,7 @@ describe('o Histórico', () => {
       kind: 'recarga',
       pointId: prior.id,
       previousVersionId: 1,
-      text: 'Recarregado do Lattes',
+      text: 'Atualizado do Lattes, o currículo inteiro',
       versionId: 2,
     });
     expect(entries[1]).toMatchObject({

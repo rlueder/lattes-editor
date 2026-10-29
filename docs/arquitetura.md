@@ -363,8 +363,9 @@ menu se refaz depois do envio ao CNPq) espera a página carregar e tenta uma
 vez mais. Gravação nunca repete.
 
 - **Abrir do Lattes** (`src/bridge/export.ts`): pede o ZIP do Exportar na
-  sessão da pessoa. O mesmo pedido serve ao "Recarregar do Lattes…"
-  (`src/ui/use-lattes-reload.ts`). Com o Exportar bloqueado por pendência, o
+  sessão da pessoa. O mesmo pedido serve a "O currículo inteiro" em
+  "Atualizar do Lattes…" (`src/ui/use-lattes-reload.ts`), quando a extensão
+  não lê os formulários. Com o Exportar bloqueado por pendência, o
   passo 3 da tela inicial é o "Enviar ao CNPq…", e o currículo abre depois
   do envio; a última exportação guardada (`src/ui/use-stored-version.ts`)
   fica como a outra saída, com o Histórico comparando com a página de
@@ -474,9 +475,10 @@ Lattes simulado e compara seção por seção.
 ### Atualizar do Lattes pelos formulários
 
 Depois de um "Enviar ao CNPq", o Exportar segue entregando a versão anterior
-por mais de uma hora (`lattes_internals.md`, seção 10). "Atualizar do Lattes",
-no ⚙ e no aviso do sino da exportação atrasada, traz o que mudou nas
-produções sem esperar por ela (`src/bridge/refresh/`,
+por mais de uma hora (`lattes_internals.md`, seção 10). "Só o que é novo", em
+"Atualizar do Lattes…" no ⚙ (`src/ui/UpdateFromLattes.tsx`, a escolha entre
+isso e o currículo inteiro) e no aviso do sino da exportação atrasada, traz o
+que mudou nas produções sem esperar por ela (`src/bridge/refresh/`,
 `src/ui/use-lattes-refresh.ts`). Só GET, por endereços que passam por
 `isSafeGet` (`src/census/run.ts`), em tarefas abaixo do teto do transporte:
 

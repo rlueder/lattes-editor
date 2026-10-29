@@ -407,7 +407,7 @@ export function App() {
 
 /** A barra fina do cabeçalho: recarregando ou atualizando do Lattes. */
 const busyLabel = (reloading: boolean, refreshing: boolean) =>
-  reloading ? 'Recarregando do Lattes' : refreshing ? 'Atualizando do Lattes' : undefined;
+  reloading ? 'Atualizando o currículo inteiro' : refreshing ? 'Atualizando do Lattes' : undefined;
 
 /** Ação "novo:<item>" do ⌘K: abre o formulário daquele tipo de item. */
 function startNewItem(

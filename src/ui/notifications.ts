@@ -229,7 +229,7 @@ export function staleExportNotice(
     ...(canRefresh ? { action: 'atualizar-lattes' as const } : {}),
     id: 'exportacao-atrasada',
     level: 'aviso',
-    text: `O Lattes publicou em ${d}/${mo}/${y}, mas ainda exporta o arquivo de ${m[1]}/${m[2]}/${m[3]}. Ele leva um tempo para atualizar; use "Recarregar do Lattes" mais tarde.${now}`,
+    text: `O Lattes publicou em ${d}/${mo}/${y}, mas ainda exporta o arquivo de ${m[1]}/${m[2]}/${m[3]}. Ele leva um tempo para atualizar; use "Atualizar do Lattes…" mais tarde.${now}`,
     title: 'A exportação do Lattes ainda não acompanhou o envio',
   };
 }

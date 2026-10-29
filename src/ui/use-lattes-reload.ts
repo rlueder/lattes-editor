@@ -64,7 +64,7 @@ export function useLattesReload(
       ? undefined
       : toasts.add({
           description: 'A extensão está pedindo a exportação ao Lattes.',
-          title: 'Recarregando do Lattes',
+          title: 'Atualizando o currículo inteiro',
         });
     request.current(id);
   }, []);

@@ -69,12 +69,12 @@ produções.
 
 Já tem um currículo grande; acrescenta poucas produções e corrige detalhes.
 
-1. Abre o app, que já tem a cópia do mês passado. "Recarregar do Lattes"
-   traz o currículo de agora e diz, numa faixa, quantos itens são novos,
+1. Abre o app, que já tem a cópia do mês passado. "Atualizar do Lattes…",
+   com "O currículo inteiro", traz o currículo de agora e diz, numa faixa, quantos itens são novos,
    alterados e removidos, inclusive o que foi editado direto no Lattes; o
    Histórico, no ⚙, mostra o detalhe em "Ver o que mudou". Se o Lattes acabou de
    publicar e o Exportar ainda entrega o arquivo antigo, o sino avisa e
-   oferece "Atualizar do Lattes", que lê pelos formulários as produções
+   oferece "Só o que é novo", que lê pelos formulários as produções
    novas ou com outro título.
 2. Acrescenta produções pelo DOI e ajusta o que precisa.
 3. Manda, confere a faixa e publica.

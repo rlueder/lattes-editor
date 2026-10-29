@@ -35,13 +35,13 @@ export function ReloadConfirm({
             Cancelar
           </button>
           <button className="primary" type="button" onClick={() => file && onConfirm(file)}>
-            Recarregar mesmo assim
+            Atualizar mesmo assim
           </button>
         </>
       }
-      label="Recarregar do Lattes"
+      label="Atualizar o currículo inteiro"
       open={file !== null}
-      title="Recarregar do Lattes"
+      title="Atualizar o currículo inteiro"
       onClose={onCancel}
     >
       {pending.length > 0 && (

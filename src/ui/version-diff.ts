@@ -228,12 +228,12 @@ function counts(diff: VersionDiff): string | undefined {
 }
 
 /**
- * A faixa depois de abrir uma exportação que tem anterior: "Recarregado do
+ * A faixa depois de abrir uma exportação que tem anterior: "Atualizado do
  * Lattes em 29/10: 1 item novo, 2 alterados, 0 removidos." `at` é quando abriu.
  */
 export function openedSummary(diff: VersionDiff, reload: boolean, at: number): string {
   const day = new Date(at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-  const what = reload ? `Recarregado do Lattes em ${day}` : `Exportação aberta em ${day}`;
+  const what = reload ? `Atualizado do Lattes em ${day}` : `Exportação aberta em ${day}`;
   const text = counts(diff);
   return text ? `${what}: ${text}.` : `${what}: nada mudou em relação à anterior.`;
 }
