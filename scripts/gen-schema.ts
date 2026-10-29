@@ -20,7 +20,7 @@ const PATCH_PATH = join(ROOT, 'schema/patch.json');
 const JSON_PATH = join(ROOT, 'src/schema/lattes.json');
 const TS_PATH = join(ROOT, 'src/schema/lattes.ts');
 
-interface Patch {
+export interface Patch {
   attributes: { element: string; attribute: string }[];
   /** Valores de enumerados que o XSD não lista e uma exportação real trouxe. */
   enumValues?: { element: string; attribute: string; values: string[] }[];
@@ -80,7 +80,7 @@ function parseElement(node: XElement): ElementSpec {
 }
 
 /** Insere os atributos do patch no texto do XSD, antes do </xs:complexType> de cada elemento. */
-function patchXsdText(xsd: string, patch: Patch): string {
+export function patchXsdText(xsd: string, patch: Patch): string {
   const eol = xsd.includes('\r\n') ? '\r\n' : '\n';
   let out = xsd;
   const byElement = new Map<string, string[]>();
@@ -107,7 +107,13 @@ function patchXsdText(xsd: string, patch: Patch): string {
     const end = out.indexOf('</xs:element>', start);
     const at = out.indexOf(`<xs:attribute name="${attribute}">`, start);
     if (at < 0 || at > end) fail(`patch: ${element}/@${attribute} sem enumerado no XSD`);
+    // A restrição tem de ser a do próprio atributo: sem ela (um tipo por
+    // referência), a próxima seria a de outro atributo ou elemento.
+    const attrEnd = out.indexOf('</xs:attribute>', at);
     const close = out.indexOf('</xs:restriction>', at);
+    if (close < 0 || attrEnd < 0 || close > attrEnd || close > end) {
+      fail(`patch: ${element}/@${attribute} sem xs:restriction própria no XSD`);
+    }
     const lineStart = out.lastIndexOf(eol, close) + eol.length;
     const indent = out.slice(lineStart, close);
     const lines = values
@@ -181,4 +187,4 @@ function main() {
   );
 }
 
-main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) main();

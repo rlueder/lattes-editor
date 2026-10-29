@@ -14,8 +14,12 @@ import { snapshot, state } from './aba.ts';
 /** O del() da página: o mesmo formulário com f_ctr=E. */
 const DEL_TO_E = /f_ctr\.value\s*=\s*["']E["']/;
 
-/** Até `max` linhas de teste excluídas; devolve as que ficaram e por quê. */
+/**
+ * Até `max` linhas de teste excluídas; devolve as que ficaram e por quê. A
+ * marca tem de conter TEST_MARK: vazia, casaria com todo item do currículo.
+ */
 export async function apagar(max = 40, marca = TEST_MARK) {
+  if (!marca.includes(TEST_MARK)) return `marca: precisa conter "${TEST_MARK}"`;
   const lists = await snapshot();
   const rows = Object.values(lists)
     .flat()
