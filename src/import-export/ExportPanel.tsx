@@ -62,7 +62,8 @@ interface Props {
    */
   strip: StripState;
   onClose: () => void;
-  onDiagnosis: () => void;
+  /** Alterações no Lattes que não passaram por aqui: o Histórico, comparando. */
+  onCompareLattes: () => void;
   onDiscard: (entry: ChangeEntry) => void;
   onDiscardField: (entry: ChangeEntry, attr: string) => void;
   onDownload: () => void;
@@ -76,7 +77,7 @@ export function ExportPanel({
   changes,
   file,
   onClose,
-  onDiagnosis,
+  onCompareLattes,
   onDiscard,
   onDiscardField,
   onDownload,
@@ -184,7 +185,9 @@ export function ExportPanel({
           ...strip,
           segments: strip.segments.filter((x) => x.kind !== 'original' && x.kind !== 'alteracoes'),
         }}
-        onOpen={(kind) => (kind === 'pendencia-desconhecida' ? onDiagnosis() : setHistory(true))}
+        onOpen={(kind) =>
+          kind === 'pendencia-desconhecida' ? onCompareLattes() : setHistory(true)
+        }
       />
       {bridge?.available && <StepHeader shown={shown} steps={steps} onSelect={setViewing} />}
 
@@ -342,7 +345,7 @@ export function ExportPanel({
           open={history}
           onToggle={(e) => setHistory(e.currentTarget.open)}
         >
-          <summary>Histórico do que foi enviado{sent > 0 ? ` (${sent})` : ''}</summary>
+          <summary>Já gravado no Lattes{sent > 0 ? ` (${sent})` : ''}</summary>
           <SentList bridge={bridge} onUndo={() => setHistory(false)} />
         </details>
       )}
@@ -439,7 +442,7 @@ function ImportSteps({ file, minYear }: { file: ImportFile; minYear?: number }) 
         </li>
         <li>Confirme.</li>
         <li>
-          Depois, exporte o currículo de novo no Lattes e use &quot;Recarregar do Lattes&quot; aqui.
+          Depois, exporte o currículo de novo no Lattes e use &quot;Atualizar do Lattes…&quot; aqui.
           Os itens importados deixam de aparecer como novos.
         </li>
       </ol>

@@ -20,10 +20,11 @@ import {
 } from '../src/model/xml.ts';
 import { buildSections } from '../src/ui/sections.ts';
 import {
-  diffSummary,
+  changesSummary,
   diffVersions,
   exportDateOf,
   exportStamp,
+  openedSummary,
   versionDate,
 } from '../src/ui/version-diff.ts';
 
@@ -153,6 +154,25 @@ describe('versões do Lattes no banco local', () => {
       expect(await store.listVersions('0000000000000002')).toHaveLength(1);
     });
 
+    it('limpar o histórico leva os estados e as exportações deste currículo, e nada mais', async () => {
+      await store.addVersion(version('<A/>', 1));
+      await store.addVersion(version('<B/>', 2, '0000000000000002'));
+      await store.replaceWorkingCopy(copy('<atual/>'));
+      await store.addHistoryPoint({
+        keep: true,
+        note: 'Lattes antes do envio',
+        savedAt: 3,
+        xml: '<x/>',
+      });
+      await store.clearHistory('0000000000000001');
+      expect(await store.listHistoryInfo()).toEqual([]);
+      expect(await store.listVersions('0000000000000001')).toEqual([]);
+      expect(await store.listVersions('0000000000000002')).toHaveLength(1);
+      expect((await store.loadWorkingCopy())?.xml).toBe('<atual/>');
+      await store.clearHistory(undefined);
+      expect(await store.listVersions('0000000000000002')).toHaveLength(1);
+    });
+
     it('uma versão que não abre fica de fora', async () => {
       await store.addVersion(version('<A/>', 1));
       await store.addVersion(version('<B/>', 2));
@@ -236,9 +256,12 @@ describe('o que mudou entre duas exportações', () => {
     const novo = all.find((c) => c.change.kind === 'novo')!;
     expect(novo.route?.sectionId).toBe('producoes');
     expect(novo.route?.anchor).toBeTruthy();
-    expect(diffSummary(diff, '15/03/2024')).toMatch(
-      /^Desde a versão de 15\/03\/2024: 1 item novo, 2 alterados, \d+ removidos?\.$/,
+    const at = new Date('2026-10-29T12:00:00').getTime();
+    expect(openedSummary(diff, true, at)).toMatch(
+      /^Atualizado do Lattes em 29\/10: 1 item novo, 2 alterados, \d+ removidos?\.$/,
     );
+    expect(openedSummary(diff, false, at)).toMatch(/^Exportação aberta em 29\/10: 1 item novo/);
+    expect(changesSummary(diff)).toMatch(/^Em relação à exportação anterior: 1 item novo/);
   });
 
   it('item apagado e criado de novo no Lattes, com outro número, não aparece como removido e novo', async () => {
@@ -317,7 +340,11 @@ describe('o que mudou entre duas exportações', () => {
     const a = await fixture();
     const diff = diffVersions(a, await fixture(), buildSections(a));
     expect(diff).toMatchObject({ added: 0, changed: 0, removed: 0 });
-    expect(diffSummary(diff, '15/03/2024')).toBe('Nada mudou desde a versão de 15/03/2024.');
+    expect(changesSummary(diff)).toBe('Nada mudou em relação à exportação anterior.');
+    const at = new Date('2026-10-29T12:00:00').getTime();
+    expect(openedSummary(diff, true, at)).toBe(
+      'Atualizado do Lattes em 29/10: nada mudou em relação à anterior.',
+    );
   });
 
   it('data da versão pela exportação, ou pela abertura quando falta', () => {

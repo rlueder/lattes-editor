@@ -126,7 +126,7 @@ export function WriteStep({ bridge }: { bridge: BridgeState }) {
                 Cancelar
               </button>
               <button className="danger" type="button" onClick={() => bridge.answerRestore(true)}>
-                Gravar sem ponto de restauração
+                Gravar sem a cópia de antes
               </button>
             </>
           }

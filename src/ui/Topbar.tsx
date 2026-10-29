@@ -15,6 +15,7 @@ import { NotificationsMenu } from './NotificationsMenu.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { SettingsMenu } from './SettingsMenu.tsx';
 import type { ThemePref } from './theme.ts';
+import { UpdateFromLattes } from './UpdateFromLattes.tsx';
 import { backShortcutLabel, forwardShortcutLabel, useHistoryNav } from './use-history-nav.ts';
 
 export type SaveState = 'salvo' | 'salvando' | 'erro';
@@ -70,8 +71,8 @@ interface Props {
   saveState: SaveState;
   theme: ThemePref;
   onClose: () => void;
-  /** O sino avisa de alterações no Lattes que não passaram por aqui: abre o diagnóstico. */
-  onDiagnosis: () => void;
+  /** O sino avisa de alterações no Lattes que não passaram por aqui: abre o Histórico comparando. */
+  onCompareLattes: () => void;
   onExport: () => void;
   onHistory: () => void;
   /** Um XML de outro programa (ou exportação antiga), para trazer produções dele (LAT-45). */
@@ -90,10 +91,10 @@ interface Props {
    * ponte (use-lattes-reload.ts); sem ela, o menu pede o arquivo.
    */
   onReloadFromLattes?: () => void;
+  /** ⚙ › Revisão do currículo: o que vale conferir no currículo inteiro. */
+  onReview: () => void;
   onSave: () => void;
   onTheme: (theme: ThemePref) => void;
-  /** ⚙ › Versões do Lattes: o que mudou entre as exportações. */
-  onVersions: () => void;
 }
 
 const SAVE_TIP: Record<SaveState, string> = {
@@ -114,7 +115,7 @@ export function Topbar({
   modified,
   notices,
   onClose,
-  onDiagnosis,
+  onCompareLattes,
   onExport,
   onHistory,
   onIncoming,
@@ -124,9 +125,9 @@ export function Topbar({
   onRefreshFromLattes,
   onReload,
   onReloadFromLattes,
+  onReview,
   onSave,
   onTheme,
-  onVersions,
   pendingCount,
   ref,
   saveState,
@@ -135,6 +136,7 @@ export function Topbar({
   const reloadInput = useRef<HTMLInputElement>(null);
   const incomingInput = useRef<HTMLInputElement>(null);
   const [closing, setClosing] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const pickReloadFile = () => {
     if (isDesktop()) void pickFileNative().then((file) => file && onReload(file));
     else reloadInput.current?.click();
@@ -166,9 +168,9 @@ export function Topbar({
         {/* O histórico fica no menu de configurações; aqui só aparece o aviso
             quando a cópia no navegador não salvou. */}
         {saveState === 'erro' && (
-          <Tip label={`${SAVE_TIP.erro}. Histórico de alterações`}>
+          <Tip label={`${SAVE_TIP.erro}. Histórico`}>
             <button
-              aria-label={`${SAVE_LABEL.erro}. Abrir histórico de alterações`}
+              aria-label={`${SAVE_LABEL.erro}. Abrir o histórico`}
               className="ghost icon-btn save-state erro"
               type="button"
               onClick={onHistory}
@@ -215,7 +217,7 @@ export function Topbar({
 
         <NotificationsMenu
           notices={notices}
-          onDiagnosis={onDiagnosis}
+          onCompareLattes={onCompareLattes}
           onRefresh={onRefreshFromLattes}
           onReloadFile={pickReloadFile}
         />
@@ -225,21 +227,26 @@ export function Topbar({
           file={{
             modified,
             onClose: () => setClosing(true),
-            onDiagnosis,
             onHistory,
             onIncoming: () => {
               if (isDesktop()) void pickFileNative().then((file) => file && onIncoming(file));
               else incomingInput.current?.click();
             },
             onPrint,
-            onRefresh: onRefreshFromLattes,
-            onReload: onReloadFromLattes ?? pickReloadFile,
+            onReview,
             onSave,
-            onVersions,
+            onUpdate: () => setUpdating(true),
           }}
           focus={focus}
           theme={theme}
           onTheme={onTheme}
+        />
+        <UpdateFromLattes
+          fromLattes={onReloadFromLattes !== undefined}
+          open={updating}
+          onClose={() => setUpdating(false)}
+          onNew={onRefreshFromLattes}
+          onWhole={onReloadFromLattes ?? pickReloadFile}
         />
         <CloseConfirm
           open={closing}

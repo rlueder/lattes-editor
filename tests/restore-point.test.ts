@@ -178,7 +178,7 @@ describe('textos do ponto de restauração', () => {
     expect(noRestoreText({ kind: 'sem-ponto', reason: 'gravacao' })).toMatch(/não foi guardada\.$/);
     expect(latestText(undefined)).toMatch(/nenhuma cópia/);
     expect(latestText(LATEST)).toMatch(/o ponto zero, de .*ponto-zero-2026-10-01\.zip\.$/);
-    expect(latestText({ ...LATEST, kind: 'restauracao' })).toMatch(/um ponto de restauração/);
+    expect(latestText({ ...LATEST, kind: 'restauracao' })).toMatch(/o Lattes antes de um envio/);
   });
 
   it('dizem por que a rodada parou, sem nada enviado', () => {

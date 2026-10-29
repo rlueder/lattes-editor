@@ -239,15 +239,7 @@ export const FocusIcon = () => (
   </Icon>
 );
 
-/** Versões: duas folhas sobrepostas (o que mudou entre exportações). */
-export const VersionsIcon = () => (
-  <Icon>
-    <rect height="13" rx="1.5" width="11" x="8" y="7" />
-    <path d="M5 16V5.5A1.5 1.5 0 0 1 6.5 4H15" />
-  </Icon>
-);
-
-/** Diagnóstico: prancheta com um visto. */
+/** Revisão do currículo: prancheta com um visto. */
 export const DiagnosisIcon = () => (
   <Icon>
     <path d="M9 4h6v3H9z" />

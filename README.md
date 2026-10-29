@@ -70,24 +70,30 @@ de contato (MSN, WhatsApp, Telegram) já cadastradas, quando o formato da
 exportação é reconhecido. Incluir ou remover contatos
 continua no Lattes. A troca de URL mantém a privacidade que a rede já tinha.
 
-O **Diagnóstico do currículo**, no ⚙, confere o currículo inteiro: campos
+A **Revisão do currículo**, no ⚙, confere o currículo inteiro: campos
 obrigatórios, valores fora das listas do Lattes, anos, autores, DOI, ISSN,
 duplicatas e vínculos antigos ainda marcados como atuais. Só aponta; nada muda
 sem você.
 
-"Recarregar do Lattes…", no ⚙, lê o currículo de novo pelas telas do Lattes,
-uma por uma, só lendo, sem esperar a exportação acompanhar o último envio.
-Como lê as telas, as alterações ainda não enviadas ao CNPq já aparecem. O que
-uma tela não deixou ler (o tipo de participação num evento, que a página monta
-depois de abrir, ou o período da participação num projeto) fica listado no
-sino.
-"Atualizar do Lattes" continua lá para ler só as produções novas ou com outro
-título, sem refazer o currículo.
+"Atualizar do Lattes…", no ⚙, traz o que mudou no Lattes, de um de dois
+jeitos. "Só o que é novo" lê as produções novas ou com outro título, em
+segundos, e as junta à cópia de trabalho. "O currículo inteiro" lê tudo de
+novo pelas telas do Lattes, uma por uma, só lendo, sem esperar a exportação
+acompanhar o último envio, e troca a cópia pelo que veio; a de agora fica no
+Histórico. Como lê as telas, as alterações ainda não enviadas ao CNPq já
+aparecem. O que uma tela não deixou ler (o tipo de participação num evento,
+que a página monta depois de abrir, ou o período da participação num projeto)
+fica listado no sino.
 
-Cada exportação aberta vira uma versão, e o app diz o que mudou desde a
-anterior, inclusive o que foi editado direto no Lattes. A primeira exportação
-de cada currículo e uma cópia antes de cada envio ficam em
-`Documentos/LattesEditor/Cópias de segurança`, e o app nunca as apaga.
+O **Histórico**, no ⚙, mostra tudo o que aconteceu com o currículo no app,
+por dia: cada edição, cada envio ao Lattes, cada recarga e a primeira
+abertura. No alto, "No Lattes agora" diz quando foi a última publicação, se há
+algo pendente e, com "Comparar com o Lattes", o que mudou lá desde a
+exportação, inclusive o que foi feito direto no Lattes. Cada linha pode ser
+restaurada, salva em arquivo ou comparada com a exportação anterior. A
+primeira exportação de cada currículo (o ponto zero) e o Lattes de antes de
+cada envio também ficam em `Documentos/LattesEditor/Cópias de segurança`, e o
+app nunca os apaga, nem com "Limpar o histórico".
 
 Também dá para imprimir ou salvar em PDF nas regras da NBR 14724, com
 referências na NBR 6023, e compartilhar o currículo por um código QR.
@@ -106,9 +112,9 @@ filtrada por tipo, período ou campo que falta.
 
 A extensão grava em segundo plano, confere cada alteração relendo o
 formulário e para no primeiro problema. A cada 20 gravações ela faz uma pausa
-para você olhar o Lattes e só segue com "Continuar" no editor. O histórico no
-fim do painel guarda o valor antigo e o novo de cada gravação e deixa
-desfazer.
+para você olhar o Lattes e só segue com "Continuar" no editor. "Já gravado no
+Lattes", no fim do painel, guarda o valor antigo e o novo de cada gravação e
+deixa desfazer.
 
 Enquanto o app está aberto e ligado à extensão, a extensão abre uma página
 pequena do Lattes a cada 20 minutos, na sua sessão, para ela não cair por

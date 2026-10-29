@@ -23,7 +23,6 @@ import {
   SunIcon,
   UpdateIcon,
   UploadIcon,
-  VersionsIcon,
 } from './icons.tsx';
 import { Tip } from './primitives/Tip.tsx';
 import { setShowCodes, useShowCodes } from './show-codes.ts';
@@ -34,18 +33,16 @@ import { checkUpdatesNow, useManualUpdateCheck } from './use-updates.ts';
 interface FileActions {
   modified: boolean;
   onClose: () => void;
-  /** Diagnóstico do currículo: comparação com o Lattes e revisão de consistência. */
-  onDiagnosis: () => void;
+  /** Histórico: o Lattes agora e tudo o que aconteceu com o currículo no app. */
   onHistory: () => void;
   /** Trazer produções de outro XML, com o pré-diff contra o currículo (LAT-45). */
   onIncoming: () => void;
   onPrint: () => void;
-  /** "Atualizar do Lattes" pelos formulários; ausente sem a extensão que sabe. */
-  onRefresh?: () => void;
-  onReload: () => void;
+  /** Revisão do currículo: o que vale conferir no currículo inteiro. */
+  onReview: () => void;
   onSave: () => void;
-  /** Versões do Lattes: o que mudou entre as exportações guardadas. */
-  onVersions: () => void;
+  /** "Atualizar do Lattes…": a escolha entre só o que é novo e o currículo inteiro. */
+  onUpdate: () => void;
 }
 
 interface Props {
@@ -208,38 +205,24 @@ export function SettingsMenu({ file, focus, onTheme, theme }: Props) {
             <Menu.Separator className="menu-sep" />
 
             <Menu.Group>
-              <Menu.GroupLabel className="menu-heading">Versões</Menu.GroupLabel>
-              <Menu.Item className="menu-item" disabled={!file} onClick={() => file?.onReload()}>
-                <span className="menu-icon">
-                  <RefreshIcon />
-                </span>
-                <span className="menu-label">Recarregar do Lattes…</span>
-              </Menu.Item>
-              {file?.onRefresh && (
-                <Menu.Item className="menu-item" onClick={() => file.onRefresh?.()}>
-                  <span className="menu-icon">
-                    <DownloadIcon />
-                  </span>
-                  <span className="menu-label">Atualizar do Lattes</span>
-                </Menu.Item>
-              )}
+              <Menu.GroupLabel className="menu-heading">Currículo</Menu.GroupLabel>
               <Menu.Item className="menu-item" disabled={!file} onClick={() => file?.onHistory()}>
                 <span className="menu-icon">
                   <HistoryIcon />
                 </span>
-                <span className="menu-label">Histórico de alterações</span>
+                <span className="menu-label">Histórico</span>
               </Menu.Item>
-              <Menu.Item className="menu-item" disabled={!file} onClick={() => file?.onVersions()}>
-                <span className="menu-icon">
-                  <VersionsIcon />
-                </span>
-                <span className="menu-label">Versões do Lattes</span>
-              </Menu.Item>
-              <Menu.Item className="menu-item" disabled={!file} onClick={() => file?.onDiagnosis()}>
+              <Menu.Item className="menu-item" disabled={!file} onClick={() => file?.onReview()}>
                 <span className="menu-icon">
                   <DiagnosisIcon />
                 </span>
-                <span className="menu-label">Diagnóstico do currículo</span>
+                <span className="menu-label">Revisão do currículo</span>
+              </Menu.Item>
+              <Menu.Item className="menu-item" disabled={!file} onClick={() => file?.onUpdate()}>
+                <span className="menu-icon">
+                  <RefreshIcon />
+                </span>
+                <span className="menu-label">Atualizar do Lattes…</span>
               </Menu.Item>
             </Menu.Group>
 

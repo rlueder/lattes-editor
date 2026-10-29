@@ -31,8 +31,14 @@ import * as store from '../src/model/store.ts';
 const invoke = vi.fn();
 vi.mock('@tauri-apps/api/core', () => ({ invoke }));
 
-const { backupStore, folderBackupStore, keepBaseline, keepPristineBaseline, revealBackup } =
-  await import('../src/desktop/backup-folder.ts');
+const {
+  backupStore,
+  folderBackupStore,
+  keepBaseline,
+  keepPristineBaseline,
+  readBackup,
+  revealBackup,
+} = await import('../src/desktop/backup-folder.ts');
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -147,6 +153,7 @@ describe('cópias de segurança no navegador (IndexedDB)', () => {
     await store.openStorage(await importStorageKey(randomKeyBytes()));
     await store.clearAll();
     await store.clearVersions(ID);
+    await store.clearHistory(ID);
     await store.clearSent(ID);
     expect(await backupDb.backups.count()).toBe(before);
     // Algo cifrado com esta chave, para a próxima não abrir o banco.
@@ -221,6 +228,18 @@ describe('cópias de segurança no desktop (pasta)', () => {
       name: 'ponto-zero-2026-10-15.zip',
     });
     expect(invoke).toHaveBeenCalledWith('backup_reveal', { lattesId: '1', name: null });
+  });
+
+  it('lê a cópia pelo nome: da pasta no desktop, do banco no navegador', async () => {
+    invoke.mockResolvedValueOnce(new Uint8Array([80, 75]).buffer);
+    expect([...((await readBackup('1', 'ponto-zero-2026-10-15.zip', true)) ?? [])]).toEqual([
+      80, 75,
+    ]);
+    expect(invoke).toHaveBeenCalledWith('backup_read', {
+      lattesId: '1',
+      name: 'ponto-zero-2026-10-15.zip',
+    });
+    expect(await readBackup('9', 'ponto-zero-1999-01-01.zip', false)).toBeUndefined();
   });
 
   it('o ponto zero nunca atrapalha a abertura do currículo', async () => {

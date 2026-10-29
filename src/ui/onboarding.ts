@@ -160,7 +160,7 @@ function openStep(open: OpenState, link: Link, stored?: StoredVersion | 'procura
         return {
           busy: true,
           status: 'agora',
-          text: 'O seu Lattes tem alterações ainda não enviadas ao CNPq. Procurando uma versão deste currículo guardada no app…',
+          text: 'O seu Lattes tem alterações ainda não enviadas ao CNPq. Procurando uma exportação deste currículo guardada no app…',
           title,
         };
       }
@@ -177,9 +177,9 @@ function openStep(open: OpenState, link: Link, stored?: StoredVersion | 'procura
       }
       if (open.reason === 'pendente' && stored && stored !== 'procurando') {
         return {
-          action: { kind: 'versao', label: `Abrir a versão de ${stored.date}` },
+          action: { kind: 'versao', label: `Abrir a exportação de ${stored.date}` },
           status: 'agora',
-          text: `O seu Lattes tem alterações ainda não enviadas ao CNPq e só exporta depois do envio. Abra a versão publicada de ${stored.date}, guardada no app; o diagnóstico mostra o que mudou no Lattes desde então.`,
+          text: `O seu Lattes tem alterações ainda não enviadas ao CNPq e só exporta depois do envio. Abra a exportação de ${stored.date}, guardada no app; o Histórico mostra o que mudou no Lattes desde então.`,
           title,
         };
       }

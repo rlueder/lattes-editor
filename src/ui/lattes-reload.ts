@@ -43,7 +43,7 @@ export function reloadFailureText({ detail, reason }: ReloadFailure): string {
     case 'outro-cv':
       return 'A sessão aberta no Lattes é de outro currículo. Entre no Lattes com o currículo aberto aqui e tente de novo.';
     case 'pendente':
-      return 'O Lattes tem alterações ainda não enviadas ao CNPq e só exporta depois do envio. Envie ao CNPq e recarregue de novo.';
+      return 'O Lattes tem alterações ainda não enviadas ao CNPq e só exporta depois do envio. Envie ao CNPq e atualize de novo.';
     case 'consentimento':
       return 'Aceite o aviso no painel da extensão e tente de novo.';
     case 'sem-aba':
@@ -64,7 +64,7 @@ export function reloadNotice(failure: ReloadFailure): Notice {
     id: 'recarregar',
     level: 'aviso',
     text: `${reloadFailureText(failure)} Clique para escolher o arquivo.`,
-    title: 'O currículo não foi recarregado',
+    title: 'O currículo não foi atualizado',
   };
 }
 

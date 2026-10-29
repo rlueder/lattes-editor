@@ -58,7 +58,7 @@ interface Props {
   link: Link;
   theme: ThemePref;
   onFile: (file: File) => void;
-  /** Abre uma versão guardada pelo app (Exportar bloqueado por pendência). */
+  /** Abre uma exportação guardada pelo app (Exportar bloqueado por pendência). */
   onOpenVersion: (id: number) => void;
   /** Exportar bloqueado por pendência: abre o "Enviar ao CNPq" (LAT-54). */
   onPublish: () => void;
@@ -145,7 +145,7 @@ export function Welcome({
   const preview = import.meta.env.DEV ? onboardingPreview(location.search) : undefined;
   const devFolder = useDevExtensionFolder();
   const open = preview?.open ?? lattes.state;
-  // Exportar bloqueado por pendência: a última versão deste currículo guardada no app.
+  // Exportar bloqueado por pendência: a última exportação deste currículo guardada no app.
   const saved = useStoredVersion(
     open.kind === 'falhou' && open.reason === 'pendente' ? open.lattesId : undefined,
   );
@@ -244,14 +244,14 @@ export function Welcome({
               ))}
             </ol>
             <div className="onboarding-file">
-              {/* O envio é o botão do passo 3; a versão guardada, a outra saída. */}
+              {/* O envio é o botão do passo 3; a exportação guardada, a outra saída. */}
               {steps[2]?.action?.kind === 'enviar' && stored && stored !== 'procurando' && (
                 <button
                   className="link-button"
                   type="button"
                   onClick={() => onOpenVersion(stored.id)}
                 >
-                  Abrir a versão de {stored.date}, guardada no app
+                  Abrir a exportação de {stored.date}, guardada no app
                 </button>
               )}
               <button className="link-button" type="button" onClick={pick}>

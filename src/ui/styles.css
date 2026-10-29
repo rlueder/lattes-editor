@@ -118,7 +118,45 @@ button.ghost {
 
 button:disabled {
   opacity: 0.45;
-  cursor: default;
+  cursor: not-allowed;
+}
+
+/* Estados de todo botão: um véu da cor do texto por cima da cor do próprio
+   botão, mais leve ao passar o mouse e mais forte ao apertar. Vale para
+   pílula, círculo, linha de lista ou item selecionado, sem mexer no fundo de
+   cada um. O principal e o de apagar têm cor própria nos dois estados; o
+   link não ganha caixa. :where() deixa qualquer regra de um botão
+   específico ganhar desta. */
+:root {
+  --press-hover: color-mix(in srgb, var(--text) 7%, transparent);
+  --press-active: color-mix(in srgb, var(--text) 14%, transparent);
+}
+
+:where(button:not(:disabled, .primary, .danger-fill, .link-btn)) {
+  transition:
+    box-shadow 200ms ease,
+    color 200ms ease,
+    border-color 200ms ease;
+}
+
+:where(button:not(:disabled, .primary, .danger-fill, .link-btn)):hover {
+  box-shadow: inset 0 0 0 100vmax var(--press-hover);
+}
+
+:where(button:not(:disabled, .primary, .danger-fill, .link-btn)):active {
+  box-shadow: inset 0 0 0 100vmax var(--press-active);
+}
+
+:where(button.primary:not(:disabled)) {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(button) {
+    transition: none;
+  }
 }
 
 :focus-visible {
@@ -1976,7 +2014,10 @@ a.menu-item.notice {
 
 /* Histórico e confirmação */
 
-.modal.history,
+.modal.history {
+  width: min(760px, calc(100% - 32px));
+}
+
 .modal.confirm {
   width: min(560px, calc(100% - 32px));
 }
@@ -1999,6 +2040,58 @@ a.menu-item.notice {
 
 .history-list li:last-child {
   border-bottom: 0;
+}
+
+.history-entry {
+  flex-wrap: wrap;
+}
+
+.history-entry.publicacao {
+  color: var(--muted);
+}
+
+.history-day + .history-day {
+  margin-top: 12px;
+}
+
+/* "Ver o que mudou": a comparação ocupa a linha inteira, embaixo do texto,
+   num fundo próprio, e a seta do botão gira ao abrir. */
+.history-changes {
+  flex-basis: 100%;
+  margin: 4px 0 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface-2) 45%, var(--surface));
+}
+
+.history-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.history-toggle svg {
+  transition: transform 200ms var(--ease-out);
+}
+
+.history-toggle[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+.history-current {
+  margin: 0 0 0 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .history-toggle svg {
+    transition: none;
+  }
+}
+
+.history-note {
+  margin-top: 16px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
 
 .confirm-list {
@@ -5956,14 +6049,11 @@ button.finding-row:focus-visible {
   color: var(--warn-text);
 }
 
-.diagnosis-lattes {
-  padding-top: 18px;
-  border-top: 1px solid var(--border);
-}
-
-.diagnosis-subhead {
-  margin-top: 16px;
-  color: var(--muted);
+/* "No Lattes agora", no alto do Histórico (LattesNow.tsx). */
+.lattes-now {
+  margin-bottom: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
 }
 
 @media (max-width: 640px) {
@@ -6217,46 +6307,7 @@ blockquote.publish-declaration {
   }
 }
 
-/* Versões do Lattes (LAT-12): exportações à esquerda, o que mudou à direita. */
-.modal.versions {
-  width: min(880px, calc(100% - 32px));
-}
-
-.versions-body {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 20px;
-  min-height: 280px;
-}
-
-.versions-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border-right: 1px solid var(--border);
-}
-
-.versions-pick {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  width: 100%;
-  height: auto;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: var(--radius);
-  background: none;
-  text-align: left;
-}
-
-.versions-pick .muted {
-  font-size: 12px;
-}
-
-.versions-pick.active {
-  background: var(--accent-soft);
-}
-
+/* O que mudou numa exportação (HistoryChanges.tsx), aberto numa linha do Histórico. */
 .versions-summary {
   margin: 0 0 16px;
   font-weight: 500;
@@ -6338,15 +6389,6 @@ blockquote.publish-declaration {
 
   .version-banner + .pending-banner {
     margin-top: -20px;
-  }
-
-  .versions-body {
-    grid-template-columns: 1fr;
-  }
-
-  .versions-list {
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
   }
 }
 
@@ -8325,68 +8367,6 @@ html {
   min-height: calc(100vh - var(--mac-titlebar-h));
 }
 
-/* Cópias de segurança (LAT-59), embaixo das versões do Lattes. */
-.backups {
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-}
-
-.backups-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.backups-head h3 {
-  margin: 0;
-  font-size: 14px;
-}
-
-.backups-note {
-  margin: 6px 0 12px;
-  font-size: 12px;
-  overflow-wrap: anywhere;
-}
-
-.backups-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.backups-list li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.backups-kind {
-  flex-shrink: 0;
-  min-width: 150px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.backups-name {
-  flex: 1;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-@media (max-width: 760px) {
-  .backups-list li {
-    flex-wrap: wrap;
-  }
-
-  .backups-kind {
-    min-width: 0;
-  }
-}
-
 /* O painel dos itens de teste do censo (só em desenvolvimento, ?itens-teste). */
 .test-items-panel {
   position: fixed;
@@ -8507,4 +8487,49 @@ html {
   height: 100%;
   filter: grayscale(1);
   image-rendering: pixelated;
+}
+
+/* "Atualizar do Lattes…": as duas formas, cada uma com título, texto e o
+   botão dela. */
+.update-option + .update-option {
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.update-option-text {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Apertar o principal e o de apagar: mais escuro que o hover deles. No fim do
+   arquivo e com a mesma força das regras de hover, para ganhar delas. */
+button.primary:active:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent-strong) 80%, black);
+  background: color-mix(in srgb, var(--accent-strong) 80%, black);
+}
+
+/* O de apagar ficava azul no hover: a regra do principal vinha depois e
+   ganhava. Com :not(:disabled), esta tem mais força. */
+button.primary.danger-fill:hover:not(:disabled) {
+  border-color: var(--danger-strong);
+  background: var(--danger-strong);
+  color: #fff;
+  filter: brightness(1.08);
+}
+
+button.primary.danger-fill:active:not(:disabled) {
+  border-color: color-mix(in srgb, var(--danger-strong) 80%, black);
+  background: color-mix(in srgb, var(--danger-strong) 80%, black);
+  filter: none;
+}
+
+/* O link já é sublinhado: no hover o traço engrossa, ao apertar escurece. */
+button.link-btn:hover:not(:disabled) {
+  text-decoration-thickness: 2px;
+}
+
+button.link-btn:active:not(:disabled) {
+  color: var(--accent-strong);
 }

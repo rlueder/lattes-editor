@@ -217,15 +217,31 @@ export function versionDate(version: { exportedAt?: string; loadedAt: number }):
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-/** "Desde a versão de 15/03/2024: 3 itens novos, 1 alterado, nenhum removido." */
-export function diffSummary(diff: VersionDiff, since: string): string {
-  if (diff.added + diff.changed + diff.removed === 0) {
-    return `Nada mudou desde a versão de ${since}.`;
-  }
-  const parts = [
+/** "1 item novo, 2 alterados, 0 removidos", ou undefined sem diferença. */
+function counts(diff: VersionDiff): string | undefined {
+  if (diff.added + diff.changed + diff.removed === 0) return undefined;
+  return [
     plural(diff.added, 'item novo', 'itens novos'),
     plural(diff.changed, 'alterado', 'alterados'),
     plural(diff.removed, 'removido', 'removidos'),
-  ];
-  return `Desde a versão de ${since}: ${parts.join(', ')}.`;
+  ].join(', ');
+}
+
+/**
+ * A faixa depois de abrir uma exportação que tem anterior: "Atualizado do
+ * Lattes em 29/10: 1 item novo, 2 alterados, 0 removidos." `at` é quando abriu.
+ */
+export function openedSummary(diff: VersionDiff, reload: boolean, at: number): string {
+  const day = new Date(at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  const what = reload ? `Atualizado do Lattes em ${day}` : `Exportação aberta em ${day}`;
+  const text = counts(diff);
+  return text ? `${what}: ${text}.` : `${what}: nada mudou em relação à anterior.`;
+}
+
+/** No Histórico, "Ver o que mudou": a exportação comparada com a anterior. */
+export function changesSummary(diff: VersionDiff): string {
+  const text = counts(diff);
+  return text
+    ? `Em relação à exportação anterior: ${text}.`
+    : 'Nada mudou em relação à exportação anterior.';
 }

@@ -70,11 +70,11 @@ export interface NoticeLink {
 export interface Notice {
   /**
    * Abre o aviso do armazenamento, baixa e instala a versão nova do app, abre
-   * o diagnóstico ou, depois de um "Recarregar do Lattes" que falhou, a escolha
-   * do arquivo exportado.
+   * o Histórico comparando com o Lattes ou, depois de um "Recarregar do
+   * Lattes" que falhou, a escolha do arquivo exportado.
    */
   action?:
-    'armazenamento' | 'atualizacao' | 'atualizar-lattes' | 'diagnostico' | 'recarregar-arquivo';
+    'armazenamento' | 'atualizacao' | 'atualizar-lattes' | 'comparar-lattes' | 'recarregar-arquivo';
   id: string;
   /** "aviso" acende o sino; "info" só aparece ao abrir. */
   level: 'aviso' | 'info';
@@ -229,7 +229,7 @@ export function staleExportNotice(
     ...(canRefresh ? { action: 'atualizar-lattes' as const } : {}),
     id: 'exportacao-atrasada',
     level: 'aviso',
-    text: `O Lattes publicou em ${d}/${mo}/${y}, mas ainda exporta o arquivo de ${m[1]}/${m[2]}/${m[3]}. Ele leva um tempo para atualizar; use "Recarregar do Lattes" mais tarde.${now}`,
+    text: `O Lattes publicou em ${d}/${mo}/${y}, mas ainda exporta o arquivo de ${m[1]}/${m[2]}/${m[3]}. Ele leva um tempo para atualizar; use "Atualizar do Lattes…" mais tarde.${now}`,
     title: 'A exportação do Lattes ainda não acompanhou o envio',
   };
 }
@@ -281,10 +281,10 @@ export function noticesFor({
   if (load) notices.push(load);
   if (unknownPending) {
     notices.push({
-      action: 'diagnostico',
+      action: 'comparar-lattes',
       id: 'pendencia-desconhecida',
       level: 'aviso',
-      text: 'Feitas direto no Lattes ou em outro aparelho, e ainda não enviadas ao CNPq. Abre o diagnóstico.',
+      text: 'Feitas direto no Lattes ou em outro aparelho, e ainda não enviadas ao CNPq. Abre o Histórico, comparando com o Lattes.',
       title: 'Alterações no Lattes que não passaram por aqui',
     });
   }

@@ -496,6 +496,20 @@ export async function clearVersions(lattesId: string): Promise<void> {
   await db.versions.where('lattesId').equals(lattesId).delete();
 }
 
+/**
+ * "Limpar o histórico": os estados guardados da cópia de trabalho e as
+ * exportações abertas deste currículo. Ficam a cópia de trabalho, o registro
+ * do que foi gravado no Lattes (é ele que desfaz) e as cópias de segurança,
+ * que o app nunca apaga.
+ */
+export async function clearHistory(lattesId: string | undefined): Promise<void> {
+  await db.transaction('rw', [db.history, db.historyNotes, db.versions], async () => {
+    await db.history.clear();
+    await db.historyNotes.clear();
+    if (lattesId) await db.versions.where('lattesId').equals(lattesId).delete();
+  });
+}
+
 /** Apaga o registro do enviado deste currículo. Não muda nada no Lattes. */
 export async function clearSent(lattesId: string): Promise<void> {
   await db.sent.where('lattesId').equals(lattesId).delete();

@@ -24,11 +24,9 @@ import {
 import { getAttr, serializeXml } from '../model/xml.ts';
 import { PrintDialog } from '../print/PrintDialog.tsx';
 import { usePrint } from '../print/use-print.ts';
-import { DiagnosisPanel } from '../review/DiagnosisPanel.tsx';
 import { lattesSchema } from '../schema/lattes.ts';
 import { noticesOf, stripFor } from './app-notices.ts';
 import { CommandPalette } from './CommandPalette.tsx';
-import { HistoryDialog } from './dialogs.tsx';
 import { EditorContext } from './editor-context.ts';
 import { DEFAULT_SECTION } from './hash-route.ts';
 import type { PaletteEntry } from './palette-search.ts';
@@ -48,9 +46,9 @@ import { useTheme } from './theme.ts';
 import { Topbar } from './Topbar.tsx';
 import { useBridge } from './use-bridge.ts';
 import { useChanges } from './use-changes.ts';
+import { useCurriculoScreens } from './use-curriculo-screens.tsx';
 import { useFocusShell } from './use-focus-mode.ts';
 import { useFormLacksFor } from './use-form-lacks.ts';
-import { useHistoryDialog } from './use-history-dialog.ts';
 import { useLattesRefresh } from './use-lattes-refresh.ts';
 import { useLattesSource } from './use-lattes-source.ts';
 import { useFollowHash, useNavigate, useScrollToPendingAnchor } from './use-navigate.ts';
@@ -85,7 +83,6 @@ export function App() {
   const [picker, setPicker] = useState<{ open: boolean; section?: Section }>({ open: false });
   const openPicker = (section?: Section) => setPicker({ open: true, section });
   const [exportOpen, setExportOpen] = useState(false);
-  const [diagnosisOpen, setDiagnosisOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
   const pendingNotes = useRef<string[]>([]);
   const pendingAnchor = useRef<string | null>(null);
@@ -131,6 +128,8 @@ export function App() {
   const section = sections.find((s) => s.id === sectionId) ?? sections[0];
   const changes = useChanges(session, sections, version, onEdit, setSession);
   const bridge = useBridge(session, changes.groups, changes.accept, changes.reopen);
+  const screens = useCurriculoScreens({ bridge, onEdit, session, setExportOpen, setSession });
+  const { compareLattes, history } = screens;
   const photoChange = usePhotoChange(bridge);
   const devExtensionFolder = useDevExtensionFolder();
 
@@ -142,7 +141,7 @@ export function App() {
   // No modo foco, o painel revelado de onde veio a escolha fecha na hora.
   const navigate = useNavigate(sectionId, setSectionId, pendingAnchor, focusShell.onNavigate);
   const shell = usePanoramaShell({ navigate, sectionId, sections, session, version });
-  const versions = useVersions(session?.doc.root, shell.go);
+  const versions = useVersions(() => history.show());
 
   // Um link "#atuacao/atuacao-profissional/2020", aberto ou editado à mão, leva direto lá.
   useFollowHash(sections, navigate);
@@ -165,7 +164,12 @@ export function App() {
    * onde a exportação veio do Lattes (arquivo ou conector): só então ela pode
    * virar o ponto zero (LAT-59).
    */
-  const openFile = async (file: File, reload?: ReloadArg, origin?: BackupSource) => {
+  /** Abre o arquivo como o currículo de trabalho; true quando abriu. */
+  const openFile = async (
+    file: File,
+    reload?: ReloadArg,
+    origin?: BackupSource,
+  ): Promise<boolean> => {
     const previous = reload?.previous;
     setError(null);
     try {
@@ -180,18 +184,22 @@ export function App() {
       if (previous) await addHistoryPoint({ ...previous, keep: true, savedAt: copy.savedAt - 1 });
       await replaceWorkingCopy(copy, reload !== undefined);
       // A linha do tempo é auxiliar: se não gravar, o currículo abre igual.
-      void versions.record(cv.doc.root, copy.originalXml).catch((e: unknown) => console.warn(e));
+      void versions
+        .record(cv.doc.root, copy.originalXml, reload !== undefined)
+        .catch((e: unknown) => console.warn(e));
       const { savedAt: _savedAt, xml: _xml, ...meta } = copy;
       setSession({ doc: cv.doc, meta });
       setSectionId('dados-gerais');
       setSaveState('salvo');
+      return true;
     } catch (err) {
       setError((err as Error).message);
+      return false;
     }
   };
 
   /** Nova exportação do Lattes: itens novos que ainda não foram importados se perdem. */
-  const openVersion = useOpenStoredVersion(openFile, bridge, () => setDiagnosisOpen(true));
+  const openVersion = useOpenStoredVersion(openFile, session !== null, compareLattes);
   const { dialog: reloadDialog, reload } = useReload(
     session,
     { changes: changes.open, pending: production.summaries },
@@ -206,11 +214,6 @@ export function App() {
   const onPublished = useSyncedOnPublish(bridge, setSession, onEdit);
 
   const closePalette = useCallback(() => setPaletteOpen(false), []);
-  const history = useHistoryDialog(session, (doc, note) => {
-    if (!session) return;
-    setSession({ doc, meta: session.meta });
-    onEdit(note);
-  });
 
   const closeFile = async () => {
     await clearAll();
@@ -219,7 +222,7 @@ export function App() {
   };
 
   const checks = usePreflight(publishOpen, session?.doc.root, sections, version, () =>
-    setDiagnosisOpen(true),
+    screens.openReview(),
   );
 
   if (booting) return null;
@@ -282,9 +285,9 @@ export function App() {
         saveState={saveState}
         theme={theme}
         onClose={closeFile}
-        onDiagnosis={() => setDiagnosisOpen(true)}
+        onCompareLattes={compareLattes}
         onExport={openExport}
-        onHistory={() => void history.show()}
+        onHistory={() => history.show()}
         onIncoming={incoming.pick}
         onNewItem={() => openPicker()}
         onPalette={togglePalette}
@@ -292,11 +295,11 @@ export function App() {
         onRefreshFromLattes={refresh.available ? refresh.start : undefined}
         onReload={(file) => reload(file, 'arquivo')}
         onReloadFromLattes={lattes.reload.available ? lattes.reload.start : undefined}
+        onReview={screens.openReview}
         onSave={() =>
           void saveBytes(encodeCv(session.doc, session.meta.encoding), session.meta.fileName)
         }
         onTheme={setTheme}
-        onVersions={() => void versions.show()}
       />
 
       <Sidebar
@@ -387,7 +390,7 @@ export function App() {
         }}
         strip={stripFor(production.pending.length + changes.open, bridge)}
         onClose={() => setExportOpen(false)}
-        onDiagnosis={() => setDiagnosisOpen(true)}
+        onCompareLattes={compareLattes}
         onDiscard={changes.discard}
         onDiscardField={changes.discardField}
         onDownload={() => exportFile && void saveBytes(exportFile.bytes, exportFile.fileName)}
@@ -400,30 +403,9 @@ export function App() {
 
       {reloadDialog}
 
-      <DiagnosisPanel
-        available={bridge.available}
-        espelho={bridge.espelho}
-        lattes={bridge.lattes}
-        open={diagnosisOpen}
-        originalXml={session.meta.originalXml}
-        root={session.doc.root}
-        sections={sections}
-        version={version}
-        onClose={() => setDiagnosisOpen(false)}
-        onGo={shell.go}
-        onRequestEspelho={bridge.requestEspelho}
-      />
-
       <PrintDialog control={print} doc={session.doc} profile={profile} sections={sections} />
 
-      <HistoryDialog
-        entries={history.entries}
-        open={history.open}
-        onClose={history.close}
-        onRestore={history.restore}
-        onSave={history.saveCopy}
-      />
-      {versions.dialog}
+      {screens.render(shell.go, sections, version)}
       {incoming.dialog}
       {storageNotice}
     </ShellWithLists>
@@ -432,7 +414,7 @@ export function App() {
 
 /** A barra fina do cabeçalho: recarregando ou atualizando do Lattes. */
 const busyLabel = (reloading: boolean, refreshing: boolean) =>
-  reloading ? 'Recarregando do Lattes' : refreshing ? 'Atualizando do Lattes' : undefined;
+  reloading ? 'Atualizando o currículo inteiro' : refreshing ? 'Atualizando do Lattes' : undefined;
 
 /** Ação "novo:<item>" do ⌘K: abre o formulário daquele tipo de item. */
 function startNewItem(

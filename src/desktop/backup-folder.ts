@@ -5,7 +5,7 @@
 
 import type { InvokeArgs, InvokeOptions } from '@tauri-apps/api/core';
 
-import { browserBackupStore } from '../model/backup-store.ts';
+import { browserBackupBytes, browserBackupStore } from '../model/backup-store.ts';
 import {
   type BackupFile,
   type BackupStore,
@@ -98,6 +98,20 @@ export const folderBackupStore: BackupStore = {
 /** As cópias vão para a pasta no desktop e para o IndexedDB no navegador. */
 export function backupStore(desktop = isDesktop()): BackupStore {
   return desktop ? folderBackupStore : browserBackupStore;
+}
+
+/**
+ * Os bytes de uma cópia, pelo nome da lista: da pasta, no desktop (o Rust só
+ * lê nomes de cópia, dentro da pasta deste currículo); do IndexedDB, no
+ * navegador. Serve ao "Restaurar" do ponto zero e ao "Salvar arquivo".
+ */
+export async function readBackup(
+  lattesId: string,
+  name: string,
+  desktop = isDesktop(),
+): Promise<Uint8Array | undefined> {
+  if (!desktop) return browserBackupBytes(lattesId, name);
+  return new Uint8Array(await invoke<ArrayBuffer>('backup_read', { lattesId, name }));
 }
 
 /** "Mostrar na pasta": o arquivo no Finder ou no Explorer; sem nome, a pasta. */

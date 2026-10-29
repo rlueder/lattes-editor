@@ -1,8 +1,8 @@
 // De onde o App tira o currículo do Lattes. A abertura na tela inicial
 // (use-lattes-open.ts) é sempre pela exportação: o arquivo completo, em
 // segundos, e o que vira o ponto zero. Dali em diante a cópia de trabalho
-// segue o Lattes pelo conector, e o "Recarregar do Lattes"
-// (use-lattes-reload.ts) lê pelos formulários, com a extensão que sabe
+// segue o Lattes pelo conector, e "O currículo inteiro", em "Atualizar do
+// Lattes…" (use-lattes-reload.ts), lê pelos formulários, com a extensão que sabe
 // (use-lattes-load.ts), sem esperar a exportação acompanhar o envio.
 
 import { useMemo } from 'react';

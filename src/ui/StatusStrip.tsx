@@ -13,11 +13,11 @@ const TIPS: Partial<Record<StripSegment['kind'], string>> = {
     'Gravadas no Lattes e ainda não publicadas. O Lattes não descarta; para voltar atrás, desfaça antes de "Enviar ao CNPq". Abre o registro do enviado.',
   original: 'O currículo como veio da última exportação do Lattes.',
   'pendencia-desconhecida':
-    'O Lattes tem alterações não enviadas ao CNPq que não passaram por este editor (feitas direto no Lattes ou em outro aparelho). Abre o diagnóstico.',
+    'O Lattes tem alterações não enviadas ao CNPq que não passaram por este editor (feitas direto no Lattes ou em outro aparelho). Abre o Histórico, comparando com o Lattes.',
   publicado: 'Data da última publicação, lida do Lattes aberto no navegador.',
 };
 
-/** As contagens que abrem algo: a lista de alterações, o registro do enviado, o diagnóstico. */
+/** As contagens que abrem algo: a lista de alterações, o registro do enviado, o Histórico. */
 export type StripOpenKind = 'alteracoes' | 'no-lattes' | 'pendencia-desconhecida';
 
 export function StatusStrip({

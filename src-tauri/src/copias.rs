@@ -7,10 +7,10 @@
 //! do conector. Cada arquivo vem com um `.json` ao lado (data, origem e o
 //! SHA-256), montado pelo editor.
 //!
-//! Tudo aqui só cria. Cada arquivo nasce com `create_new`, que falha se o
-//! nome já existe, e nada neste módulo abre um arquivo para escrita sem ele,
+//! Tudo aqui só cria ou lê. Cada arquivo nasce com `create_new`, que falha se
+//! o nome já existe, e nada neste módulo abre um arquivo para escrita sem ele,
 //! renomeia ou apaga. A pasta é da pessoa: o app não tem caminho para mexer
-//! no que já está lá.
+//! no que já está lá. Ler serve ao "Restaurar" do ponto zero no histórico.
 
 use std::fs::{self, OpenOptions};
 use std::io::{self, Write};
@@ -280,6 +280,23 @@ fn entry_path(root: &Path, lattes_id: &str, name: &str) -> Result<PathBuf, Strin
     Ok(cv_dir(root, lattes_id)?.join(name))
 }
 
+/// O maior arquivo que "Restaurar" lê: uma exportação do Lattes tem centenas
+/// de kB; muito mais que isso não é uma cópia que o app guardou.
+const READ_LIMIT: u64 = 64 * 1024 * 1024;
+
+/// Os bytes de uma cópia (não do sidecar), pelo nome que `list` deu.
+pub fn read_entry(root: &Path, lattes_id: &str, name: &str) -> Result<Vec<u8>, String> {
+    if name.ends_with(".json") {
+        return Err("Nome de arquivo inválido.".into());
+    }
+    let path = entry_path(root, lattes_id, name)?;
+    let size = fs::metadata(&path).map_err(|e| io_message(&e))?.len();
+    if size > READ_LIMIT {
+        return Err("A cópia é grande demais para abrir.".into());
+    }
+    fs::read(&path).map_err(|e| io_message(&e))
+}
+
 async fn blocking<T: Send + 'static>(
     work: impl FnOnce() -> Result<T, String> + Send + 'static,
 ) -> Result<T, String> {
@@ -344,6 +361,18 @@ pub fn backup_reveal(
     };
     tauri_plugin_opener::reveal_item_in_dir(path)
         .map_err(|e| format!("Não deu para abrir a pasta: {e}"))
+}
+
+/// Os bytes de uma cópia deste currículo, crus no corpo da resposta.
+#[tauri::command]
+pub async fn backup_read(
+    app: AppHandle,
+    lattes_id: String,
+    name: String,
+) -> Result<tauri::ipc::Response, String> {
+    let root = root(&app)?;
+    let bytes = blocking(move || read_entry(&root, &lattes_id, &name)).await?;
+    Ok(tauri::ipc::Response::new(bytes))
 }
 
 #[cfg(test)]
@@ -449,6 +478,18 @@ mod tests {
         assert!(entry_path(&root, ID, "outro.zip").is_err());
         assert!(entry_path(&root, ID, "ponto-zero-2026-10-15.zip").is_ok());
         assert!(!root.exists());
+    }
+
+    #[test]
+    fn le_so_a_copia_pelo_nome_da_lista() {
+        let root = temp("leitura");
+        write_baseline(&root, ID, "2026-10-15", b"PK", &sidecar()).unwrap();
+        assert_eq!(read_entry(&root, ID, "ponto-zero-2026-10-15.zip").unwrap(), b"PK");
+        assert!(read_entry(&root, ID, "ponto-zero-2026-10-15.json").is_err());
+        assert!(read_entry(&root, ID, "../ponto-zero-2026-10-15.zip").is_err());
+        assert!(read_entry(&root, "../x", "ponto-zero-2026-10-15.zip").is_err());
+        assert!(read_entry(&root, ID, "ponto-zero-1999-01-01.zip").is_err());
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]

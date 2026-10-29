@@ -57,8 +57,8 @@ export function WhatPublishes({
         <Notice ok={unchanged}>
           <p>
             {diff.scope === 'listas'
-              ? 'Comparando todas as seções com a última versão publicada: '
-              : 'Comparando os títulos com a última versão publicada: '}
+              ? 'Comparando todas as seções com o que está publicado: '
+              : 'Comparando os títulos com o que está publicado: '}
             {unchanged
               ? diff.scope === 'listas'
                 ? 'nenhum item entra ou sai.'
