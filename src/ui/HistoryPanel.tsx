@@ -7,6 +7,7 @@ import { type ReactNode, useEffect, useState } from 'react';
 import type { HashRoute } from './hash-route.ts';
 import type { TimelineEntry } from './history-timeline.ts';
 import { ExportChanges } from './HistoryChanges.tsx';
+import { ChevronIcon } from './icons.tsx';
 import { Modal } from './Modal.tsx';
 import type { HistoryState } from './use-history.ts';
 
@@ -30,7 +31,8 @@ function Actions({
 }) {
   const { desktop } = history;
   const zero = entry.backup?.kind === 'ponto-zero';
-  const canRestore = entry.pointId !== undefined || (zero && entry.kind === 'abertura');
+  const canRestore =
+    !entry.current && (entry.pointId !== undefined || (zero && entry.kind === 'abertura'));
   const canSave = entry.pointId !== undefined || (entry.backup !== undefined && !desktop);
   const compare = entry.versionId !== undefined && entry.previousVersionId !== undefined;
   if (entry.kind === 'publicacao') return null;
@@ -42,8 +44,14 @@ function Actions({
         </button>
       )}
       {compare && (
-        <button aria-expanded={showing} className="ghost" type="button" onClick={onToggleChanges}>
+        <button
+          aria-expanded={showing}
+          className="ghost history-toggle"
+          type="button"
+          onClick={onToggleChanges}
+        >
           Ver o que mudou
+          <ChevronIcon />
         </button>
       )}
       {canSave && (
@@ -159,6 +167,9 @@ export function HistoryPanel({
                   <li key={key} className={`history-entry ${entry.kind}`}>
                     <span>
                       <time>{time(entry.at)}</time> {entry.text}
+                      {entry.current && (
+                        <span className="tag ok history-current">Estado atual</span>
+                      )}
                     </span>
                     <Actions
                       entry={entry}

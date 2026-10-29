@@ -194,6 +194,7 @@ describe('o Histórico', () => {
       {
         at: opened.savedAt,
         backup: zero,
+        current: true,
         kind: 'abertura',
         pointId: opened.id,
         text: 'Primeira abertura: exportação de 28/10/2026 (ponto zero)',
@@ -271,6 +272,25 @@ describe('o Histórico', () => {
     expect(flat(buildTimeline({ backups: [], points: [p], sent: [], versions: [] }, NOW))).toEqual([
       { at: p.savedAt, kind: 'edicao', pointId: p.id, text: NOTES.antesDoPontoZero },
     ]);
+  });
+
+  it('o estado atual é o mais recente que não é um "de antes", e só ele', () => {
+    const edit = point('2026-10-29T10:00:00', 'Item editado: A');
+    const later = point('2026-10-29T11:00:00', 'Item editado: B');
+    const beforeSend = point('2026-10-29T12:00:00', NOTES.antesDoEnvio, true);
+    const entries = flat(
+      buildTimeline(
+        { backups: [], points: [edit, later, beforeSend], sent: [], versions: [] },
+        NOW,
+      ),
+    );
+    expect(entries.filter((e) => e.current).map((e) => e.text)).toEqual(['Item editado: B']);
+    expect(entries.find((e) => e.kind === 'envio')?.current).toBeUndefined();
+    // Só estados "de antes": nenhum é o atual.
+    const only = flat(
+      buildTimeline({ backups: [], points: [beforeSend], sent: [], versions: [] }, NOW),
+    );
+    expect(only.some((e) => e.current)).toBe(false);
   });
 
   it('não mexe nas listas recebidas', () => {

@@ -2016,10 +2016,38 @@ a.menu-item.notice {
   margin-top: 12px;
 }
 
-/* "Ver o que mudou": a comparação ocupa a linha inteira, embaixo do texto. */
+/* "Ver o que mudou": a comparação ocupa a linha inteira, embaixo do texto,
+   num fundo próprio, e a seta do botão gira ao abrir. */
 .history-changes {
   flex-basis: 100%;
-  padding: 4px 0 8px;
+  margin: 4px 0 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.history-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.history-toggle svg {
+  transition: transform 200ms var(--ease-out);
+}
+
+.history-toggle[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+.history-current {
+  margin: 0 0 0 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .history-toggle svg {
+    transition: none;
+  }
 }
 
 .history-note {

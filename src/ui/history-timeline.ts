@@ -44,6 +44,8 @@ export interface TimelineEntry {
   at: number;
   /** A cópia em arquivo: o ponto zero, ou o Lattes antes do envio. */
   backup?: BackupFile;
+  /** É o estado da cópia de trabalho agora: restaurar não mudaria nada. */
+  current?: boolean;
   kind: TimelineKind;
   /** O estado guardado que "Restaurar" e "Salvar arquivo" usam. */
   pointId?: number;
@@ -274,6 +276,25 @@ export function buildTimeline(sources: Sources, now: number): TimelineDay[] {
     }
   }
   entries.sort((a, b) => b.at - a.at);
+  // O estado mais recente que é a própria cópia de trabalho (uma edição, uma
+  // abertura ou uma restauração), e não um "de antes", é o atual.
+  const before = new Set<string>([
+    NOTES.antesDeDesfazer,
+    NOTES.antesDeRecarregar,
+    NOTES.antesDoEnvio,
+    NOTES.antesDoPontoZero,
+  ]);
+  const latest = [...sources.points]
+    .filter((p) => !before.has(p.note))
+    .sort((a, b) => b.savedAt - a.savedAt)[0];
+  const current = entries.find(
+    (e) =>
+      latest?.id !== undefined &&
+      e.pointId === latest.id &&
+      e.kind !== 'envio' &&
+      e.kind !== 'recarga',
+  );
+  if (current) current.current = true;
   const days: TimelineDay[] = [];
   for (const entry of entries) {
     const day = dayKey(entry.at);
