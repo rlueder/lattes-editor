@@ -123,6 +123,58 @@ function identBindings(): Binding[] {
 const PRIVACY = h.PRIVACY;
 
 /**
+ * A deficiência: o rádio f_pcd_r, o oculto f_pcd antes das caixas de mesmo
+ * nome (como no Lattes) e uma caixa por tipo, na ordem da página. A
+ * exportação guarda os rótulos das marcadas, separados por vírgula e espaço
+ * ("Deficiência Auditiva, Deficiência Visual", exportação de 29/10/2026).
+ */
+const PCD: [string, string][] = [
+  ['A', 'Deficiência Auditiva'],
+  ['F', 'Deficiência Física'],
+  ['I', 'Deficiência Intelectual'],
+  ['V', 'Deficiência Visual'],
+  ['E', 'Transtorno do Espectro Autista'],
+  ['M', 'Deficiência Múltipla'],
+];
+
+function pcdBindings(): Binding[] {
+  const codes = (el: XElement) =>
+    (getAttr(el, 'PCD') ?? '')
+      .split(',')
+      .map((l) => PCD.find(([, label]) => label === l.trim())?.[0])
+      .filter((c): c is string => Boolean(c));
+  return [
+    fixed('f_pcd', ''),
+    {
+      kind: 'checkboxes',
+      name: 'f_pcd',
+      options: PCD.map(([c]): [string, string] => [c, c]),
+      read: (el) => codes(el).join(','),
+      write: (el, value) => {
+        const on = new Set(value.split(','));
+        setAttr(
+          el,
+          'PCD',
+          PCD.filter(([c]) => on.has(c))
+            .map(([, l]) => l)
+            .join(', '),
+        );
+      },
+    },
+    // Depois das caixas: o "Não" apaga o que elas marcaram.
+    {
+      kind: 'radio',
+      name: 'f_pcd_r',
+      options: optionsOf('f_pcd_r'),
+      read: (el) => (getAttr(el, 'PCD') ? 'S' : 'N'),
+      write: (el, value) => {
+        if (value === 'N') setAttr(el, 'PCD', '');
+      },
+    },
+  ];
+}
+
+/**
  * Os campos da identificação sem atributo no XML (nome social, visibilidade
  * de cada dado, validade e país do passaporte), guardados ao lado de
  * DADOS-GERAIS como o Lattes os guarda fora da exportação. Os valores de
@@ -171,12 +223,8 @@ function screenBindings(state: LattesState): Binding[] {
 
 /**
  * Os outros controles da identificação, como o censo de 15/10/2026 os leu.
- * O oculto f_pcd vem antes da caixa de mesmo nome, como no Lattes.
  */
 const IDENT_EXTRAS = [
-  h.radios('f_pcd_r', optionsOf('f_pcd_r'), 'N'),
-  h.hidden('f_pcd', ''),
-  h.checkbox('f_pcd', 'S', false),
   ...['f_dados_grid', 'fdados_new', 'f_cod', 'f_nme_old'].map((n) => h.hidden(n, '')),
 ].join('\n');
 
@@ -200,7 +248,7 @@ ${JSON.stringify([...names, {}])};
 
 function identForm(_req: SimRequest, state: LattesState): SimResponse {
   const body = `<form name="GN_IDENT" method="post" action="PRC_IDENT">
-${renderFields([...identBindings(), ...screenBindings(state)], state.general)}
+${renderFields([...identBindings(), ...screenBindings(state), ...pcdBindings()], state.general)}
 ${IDENT_EXTRAS}
 ${h.formButtons(false)}
 </form>${identScripts(state.general)}${h.formScripts('GN_IDENT')}`;
@@ -215,7 +263,11 @@ function identPost(req: SimRequest, state: LattesState): SimResponse {
     );
   }
   if (req.get('f_ctr') === 'U') {
-    applyFields([...identBindings(), ...screenBindings(state)], state.general, req);
+    applyFields(
+      [...identBindings(), ...screenBindings(state), ...pcdBindings()],
+      state.general,
+      req,
+    );
     state.touch();
   }
   return html(h.savedScript(`prc_ident?f_cod=${state.code}`));

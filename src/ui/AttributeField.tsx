@@ -248,8 +248,10 @@ export function AttributeField({
     !year &&
     !prominent &&
     (multiline || value.length > 90);
-  // Grupo de caixas da página do Lattes (schema/screen-fields.ts).
-  const group = screenField(el.name, name)?.multiple ? choices : undefined;
+  // Grupo de caixas da página do Lattes (schema/screen-fields.ts), e a
+  // deficiência, que a exportação grava pelos rótulos por vírgula e espaço.
+  const pcd = el.name === 'DADOS-GERAIS' && name === 'PCD';
+  const group = screenField(el.name, name)?.multiple || pcd ? choices : undefined;
   let control;
   if (group) {
     control = (
@@ -258,6 +260,7 @@ export function AttributeField({
         id={id}
         labelledBy={labelId}
         options={group}
+        separator={pcd ? ', ' : ','}
         value={value}
         onChange={commit}
       />

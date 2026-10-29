@@ -447,11 +447,11 @@ outra coisa: um `alert("Problemas na autenticação")` antes de mandar para
 - Se o POST do Exportar funciona sem o GET da tela antes (seção 12).
 - Por que um item confirmado no passo 3 do Importar some (seção 13, item 8),
   e o limite superior de `SEQUENCIA-PRODUCAO`.
-- Como a exportação grava a PCD com mais de um tipo marcado, e mais de um
-  depositante numa patente (seção 17). Com um tipo só, a exportação de
-  27/10/2026 trouxe o rótulo da caixa (`PCD="Deficiência Visual"`), e duas
-  redes sociais vieram coladas em `REDE-SOCIAL`, sem separador: o "ID Rede
-  Social" da segunda começa logo depois do endereço da primeira. **Observado.**
+- Como a exportação grava mais de um depositante numa patente (seção 17).
+  Duas redes sociais vieram coladas em `REDE-SOCIAL`, sem separador: o "ID
+  Rede Social" da segunda começa logo depois do endereço da primeira
+  (exportação de 27/10/2026). **Observado.** A PCD com mais de um tipo está
+  na seção 25.
 
 ## 9. Vigia: saber quando o CNPq mudou algo
 
@@ -2808,7 +2808,12 @@ sintéticos:
   a das redes, sem separador (inferido). O `ELETRONICO` traz o e-mail alternativo da tela de envio
   como `R:`, depois de `I:` e um `;`.
 - **Pessoa com deficiência.** Com um tipo marcado, `PCD` é o rótulo da
-  caixa (`"Deficiência Visual"`).
+  caixa (`"Deficiência Visual"`); com dois, os rótulos separados por vírgula
+  e espaço (`"Deficiência Auditiva, Deficiência Visual"`, marcados pela
+  própria página e exportados em 29/10/2026). **Observado.** A ordem bate com
+  a das caixas da página e também com a alfabética; com outros tipos, qual
+  das duas vale não foi visto. A visibilidade (`f_priv_pcd`) a página põe por
+  script (`$("[name=f_priv_pcd]").val(…)`); o HTML não marca opção.
 
 ## 26. Recaptura dos formulários (27/10/2026)
 

@@ -58,7 +58,7 @@ import { formacaoGridSend } from './formacao-grids.ts';
 import { resolveOpLookups } from './formacao-lookups.ts';
 import { identGrids } from './ident-grids.ts';
 import { findLinks, isLogonPage, lattesDbError } from './lattes-html.ts';
-import { pcdChecked, withPcd } from './pcd.ts';
+import { pcdChecked, samePcd, withPcd } from './pcd.ts';
 import type { BridgeOp } from './plan.ts';
 import { applyProduction } from './production/apply.ts';
 import type { ProductionScans } from './production/locate.ts';
@@ -352,7 +352,7 @@ async function applyAny(op: BridgeOp, port: LattesPort, gates: ApplyGates): Prom
 
     // A deficiência: os f_pcd repetidos vão à parte (pcd.ts).
     const pcd = op.kind === 'identificacao' ? op.pcd : undefined;
-    if (pcd && pcdChecked(before.controls).join() !== pcd.before.join()) {
+    if (pcd && !samePcd(pcdChecked(before.controls), pcd.before)) {
       return result('divergente', 'O Lattes não está como o editor espera: Pessoa com deficiência');
     }
     const next = pcd
@@ -377,7 +377,7 @@ async function applyAny(op: BridgeOp, port: LattesPort, gates: ApplyGates): Prom
     }
 
     const after = await readPairs(port, path, name);
-    if (pcd && pcdChecked(after.controls).join() !== pcd.after.join()) {
+    if (pcd && !samePcd(pcdChecked(after.controls), pcd.after)) {
       return result('divergente', 'O Lattes não gravou: Pessoa com deficiência');
     }
     // As grades de contato voltam como linhas da página, não nos ocultos.

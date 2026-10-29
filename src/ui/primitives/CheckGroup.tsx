@@ -1,6 +1,7 @@
 // Grupo de caixas em que mais de uma pode ficar marcada (a temática do
-// projeto de ensino). O valor são os códigos marcados, na ordem das opções,
-// separados por vírgula, como o editor os guarda (schema/screen-fields.ts).
+// projeto de ensino, a deficiência). O valor são as opções marcadas, na ordem
+// delas, juntas pelo separador: vírgula nos códigos do editor
+// (schema/screen-fields.ts), vírgula e espaço nos rótulos da exportação (PCD).
 
 import { Checkbox } from '@base-ui/react/checkbox';
 
@@ -11,12 +12,26 @@ interface Props {
   id: string;
   labelledBy: string;
   options: readonly { label: string; value: string }[];
+  separator?: string;
   value: string;
   onChange: (next: string) => void;
 }
 
-export function CheckGroup({ id, labelledBy, onChange, options, value, ...rest }: Props) {
-  const on = new Set(value.split(',').filter(Boolean));
+export function CheckGroup({
+  id,
+  labelledBy,
+  onChange,
+  options,
+  separator = ',',
+  value,
+  ...rest
+}: Props) {
+  const on = new Set(
+    value
+      .split(separator.trim() || separator)
+      .map((v) => v.trim())
+      .filter(Boolean),
+  );
   const toggle = (code: string, checked: boolean) => {
     const next = new Set(on);
     if (checked) next.add(code);
@@ -25,7 +40,7 @@ export function CheckGroup({ id, labelledBy, onChange, options, value, ...rest }
       options
         .map((o) => o.value)
         .filter((v) => next.has(v))
-        .join(','),
+        .join(separator),
     );
   };
   return (

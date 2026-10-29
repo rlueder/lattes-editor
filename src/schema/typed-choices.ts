@@ -156,7 +156,8 @@ export function typedChoices(el: XElement, attr: string): Choice[] | undefined {
   // categorias foram conferidas em XML público; as demais grafias seguem
   // os mapeamentos já usados pelo conector (seção 23).
   // As caixas de deficiência do formulário de identificação (prc_ident, lido em
-  // 27/10/2026): com uma marcada, a exportação grava o rótulo dela (seção 25).
+  // 27/10/2026), na ordem da página: a exportação grava o rótulo da marcada e,
+  // com mais de uma, os rótulos por vírgula e espaço (seção 25, 29/10/2026).
   if (el.name === 'DADOS-GERAIS' && attr === 'PCD') {
     return asChoices([
       'Deficiência Auditiva',

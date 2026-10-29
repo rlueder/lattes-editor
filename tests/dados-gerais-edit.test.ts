@@ -164,10 +164,14 @@ describe('identificação: plano', () => {
     const op = onlyOp(edit('DADOS-GERAIS', { PCD: 'Deficiência Visual' })) as IdentificacaoOp;
     expect(op.pcd).toEqual({ after: ['V'], before: [] });
     expect(op.set.f_pcd_r).toBe('S');
-    // Mais de um tipo: como a exportação junta não foi visto.
-    expect(
-      reasonOf(edit('DADOS-GERAIS', { PCD: 'Deficiência Visual, Deficiência Auditiva' })),
-    ).toMatch(/com mais de um tipo/);
+    // Mais de um tipo: os rótulos por vírgula, como a exportação de 29/10/2026.
+    const two = onlyOp(
+      edit('DADOS-GERAIS', { PCD: 'Deficiência Visual, Deficiência Auditiva' }),
+    ) as IdentificacaoOp;
+    expect(two.pcd).toEqual({ after: ['A', 'V'], before: [] });
+    expect(reasonOf(edit('DADOS-GERAIS', { PCD: 'Deficiência Inventada' }))).toMatch(
+      /tipo que o formulário de identificação do Lattes não tem/,
+    );
   });
 
   it('o que o formulário não tem, ou não deixa alterar, fica à mão com o motivo', () => {
@@ -329,6 +333,21 @@ describe('identificação, endereço e outras informações no Lattes simulado',
     // O XML do Lattes não ganhou nada.
     expect(inState(lattes, 'DADOS-GERAIS').attrs.some((a) => a.name.startsWith('tela:'))).toBe(
       false,
+    );
+  });
+
+  it('identificação: dois tipos de deficiência vão nas caixas e voltam pelo rótulo', async () => {
+    const lattes = await lattesFor();
+    const op = onlyOp(edit('DADOS-GERAIS', { PCD: 'Deficiência Visual, Deficiência Auditiva' }));
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    const post = postsOf(lattes).at(-1)!;
+    expect(post.pairs!.filter(([k]) => k === 'f_pcd').map(([, v]) => v)).toEqual([
+      'DUMMY',
+      'A',
+      'V',
+    ]);
+    expect(getAttr(inState(lattes, 'DADOS-GERAIS'), 'PCD')).toBe(
+      'Deficiência Auditiva, Deficiência Visual',
     );
   });
 

@@ -15,6 +15,7 @@ import { lattesSchema } from '../../../schema/lattes.ts';
 import { IDENT_FIELDS } from '../../dados-gerais-edit.ts';
 import { countryName } from '../../edit-items.ts';
 import { findLinks } from '../../lattes-html.ts';
+import { pcdOrder } from '../../pcd.ts';
 import type { LoadContext, LoadSection } from '../loader.ts';
 import { readTable } from '../reverse.ts';
 import { ensurePath, formIn } from './common.ts';
@@ -79,8 +80,12 @@ function identification(el: XElement, values: Record<string, string>, ctx: LoadC
     if (el.attrs.some((a) => a.name === attr && a.value)) setAttr(el, format, 'DDMMAAAA');
   }
   if (values.f_pcd_r === 'S') {
-    const name = PCD_NAMES[values.f_pcd ?? ''];
-    if (name) setAttr(el, 'PCD', name);
+    // As caixas marcadas vêm juntas, por vírgula (refresh/read.ts); a
+    // exportação as junta pelo rótulo, com vírgula e espaço (dados-gerais-edit.ts).
+    const names = pcdOrder((values.f_pcd ?? '').split(',').filter(Boolean)).map(
+      (c) => PCD_NAMES[c],
+    );
+    if (names.length > 0 && names.every(Boolean)) setAttr(el, 'PCD', names.join(', '));
     else ctx.gap(SECTION, 'identificação: a deficiência marcada não foi reconhecida');
   }
 }

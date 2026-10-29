@@ -42,6 +42,7 @@ import {
 } from './endereco-buscas.ts';
 import { planContacts, type SocialRow } from './endereco-contatos.ts';
 import type { LookupRow } from './formacao-edit.ts';
+import { pcdOrder } from './pcd.ts';
 import type { FieldValues, OpBase } from './plan.ts';
 import type { OrganChoice } from './production/organ.ts';
 
@@ -278,8 +279,10 @@ export function planIdentificacaoEdit(
 
 /**
  * O rótulo de cada caixa de deficiência (prc_ident, lido em 27/10/2026). Na
- * exportação de 27/10/2026, com uma caixa marcada, PCD foi o rótulo dela
- * ("Deficiência Visual"); que os outros tipos sigam o mesmo é inferido.
+ * exportação, PCD é o rótulo da caixa marcada ("Deficiência Visual", 27/10/2026)
+ * e, com mais de uma, os rótulos separados por vírgula ("Deficiência
+ * Auditiva, Deficiência Visual", 29/10/2026). Que os outros tipos sigam o
+ * mesmo, e na ordem das caixas da página, é inferido.
  */
 /** A deficiência pelo conector (op.pcd): só a uma extensão com 'pessoa-com-deficiencia'. */
 export const EDIT_PCD_ENABLED = true;
@@ -293,17 +296,17 @@ export const PCD_LABELS: Record<string, string> = {
   'transtorno do espectro autista': 'E',
 };
 
-/** Os tipos marcados que um PCD do XML quer dizer: nenhum, um só, ou undefined. */
-function pcdTypes(value: string): string[] | undefined {
-  if (!value.trim()) return [];
-  const code = PCD_LABELS[foldText(value.trim()).toLowerCase()];
-  return code ? [code] : undefined;
+/** Os tipos marcados que um PCD do XML quer dizer, na ordem das caixas; undefined com rótulo que a página não tem. */
+export function pcdTypes(value: string): string[] | undefined {
+  const labels = value
+    .split(',')
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const codes = labels.map((l) => PCD_LABELS[foldText(l).toLowerCase()]);
+  return codes.every(Boolean) ? pcdOrder(codes as string[]) : undefined;
 }
 
-/**
- * A troca da deficiência: as caixas de antes e de depois (pcd.ts) e o rádio
- * f_pcd_r. Como a exportação junta mais de um tipo não foi visto: fica à mão.
- */
+/** A troca da deficiência: as caixas de antes e de depois (pcd.ts) e o rádio f_pcd_r. */
 function planPcd(
   change: Change,
 ): { after: string[]; before: string[] } | { reason: string } | undefined {
@@ -314,7 +317,7 @@ function planPcd(
   if (!before || !after) {
     return {
       reason:
-        'Pessoa com deficiência: com mais de um tipo, como a exportação grava não foi visto; altere no Lattes',
+        'Pessoa com deficiência: tipo que o formulário de identificação do Lattes não tem; escolha pelos rótulos das caixas',
     };
   }
   return { after, before };
