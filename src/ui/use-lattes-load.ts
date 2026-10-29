@@ -1,7 +1,8 @@
 // O efeito de "Carregar do Lattes" (lattes-load.ts): com a extensão que sabe
-// ('carregar-do-lattes'), o pedido do currículo ao abrir e ao recarregar
-// monta o XML pelas listas e pelos formulários, e a resposta chega no mesmo
-// formato da do Exportar. Sem a capacidade, segue a exportação.
+// ('carregar-do-lattes'), o pedido do currículo ao recarregar monta o XML
+// pelas listas e pelos formulários, e a resposta chega no mesmo formato da do
+// Exportar. Sem a capacidade, segue a exportação. A abertura na tela inicial
+// é sempre pela exportação (use-lattes-source.ts).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -30,7 +31,7 @@ const LOAD_TIMEOUT_MS = 60 * 60_000;
 export interface LattesLoad {
   /** O que não veio na última leitura, para o sino. */
   notice?: Notice;
-  /** A fonte do currículo para abrir e recarregar: os formulários, ou a exportação. */
+  /** A fonte do currículo para recarregar: os formulários, ou a exportação. */
   source: CvSource;
 }
 
