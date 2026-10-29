@@ -94,10 +94,8 @@ export async function runInTab<T>(
   );
 }
 
-export type Reply<K extends BridgeMessage['type']> = Omit<
-  Extract<BridgeMessage, { type: K }>,
-  'type'
->;
+type Kind = BridgeMessage['type'];
+export type Reply<K extends Kind> = Omit<Extract<BridgeMessage, { type: K }>, 'type'>;
 
 type TabCall = Parameters<typeof runInTab>[1];
 /** O valor vem com a aba que respondeu: depois de recarregar, pode ser outra. */
