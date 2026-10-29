@@ -18,6 +18,7 @@ import { giveConsent, hasConsent, PRIVACY_URL } from './consent.ts';
 import { reloadLattesTab } from './lattes-tab.ts';
 import type { AppHello, PanelCommand, QueueState } from './state.ts';
 import { APP_KEY, readState } from './state.ts';
+import { readTabErrors } from './tab-errors.ts';
 import { toolbarTheme } from './toolbar-icon.ts';
 
 const STATUS: Record<OpResult['status'], string> = {
@@ -319,14 +320,53 @@ async function renderVersions(): Promise<void> {
   p.hidden = !notice;
 }
 
+/** As operações do núcleo como quem usa o editor as conhece. */
+const OP_NAMES: Record<string, string> = {
+  cursos: 'Listas do Lattes',
+  espelho: 'Versão atual do Lattes',
+  exportar: 'Abrir do Lattes',
+  foto: 'Foto',
+  importar: 'Importar',
+  instituicoes: 'Listas do Lattes',
+  listas: 'Listas do Lattes',
+  listasCv: 'Versão atual do Lattes',
+  orgaos: 'Listas do Lattes',
+  publicar: 'Enviar ao CNPq',
+  telaEnvio: 'Tela de envio ao CNPq',
+};
+
+/** Os últimos erros com a aba do Lattes, do mais novo ao mais antigo; some quando não há. */
+async function renderErrors(): Promise<void> {
+  const errors = await readTabErrors();
+  const box = document.getElementById('erros')!;
+  box.hidden = errors.length === 0;
+  const when = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'medium' });
+  document
+    .getElementById('erros-lista')!
+    .replaceChildren(
+      ...errors.map((e) =>
+        el('li', {}, [
+          el('span', { className: 'erros-quando' }, [
+            `${when.format(new Date(e.at))} · ${OP_NAMES[e.op] ?? e.op}`,
+          ]),
+          el('br'),
+          e.message,
+        ]),
+      ),
+    );
+}
+
 chrome.storage.onChanged.addListener((_changes, area) => {
-  if (area === 'local') void showConsentOrBridge();
-  else {
+  if (area === 'local') {
+    void showConsentOrBridge();
+    void renderErrors();
+  } else {
     void readState().then(render);
     void renderVersions();
   }
 });
 void showConsentOrBridge();
+void renderErrors();
 void readState().then(render);
 // Painel aberto: confere o Lattes em segundo plano, se estiver aberto e se já
 // passou o intervalo (background.ts, verify).

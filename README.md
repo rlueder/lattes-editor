@@ -130,6 +130,10 @@ ficam mascarados até você clicar no olho ao lado do título.
    [Chrome Web Store](https://chromewebstore.google.com/detail/kdebkpkdhgaeaaobcbgbckinocnlfbgg). O Brave instala da mesma loja.
 2. No primeiro uso, o painel mostra o que ela lê e envia e pede um "ok".
 
+Quando uma leitura ou um envio não dá certo, o rodapé do painel guarda os
+dez últimos erros com a aba do Lattes: a hora, o que estava sendo feito e o
+motivo, sem nada do currículo.
+
 A loja atualiza a extensão sozinha. O que ela lê e envia está na
 [política de privacidade](https://rlueder.github.io/lattes-editor/privacidade.html).
 

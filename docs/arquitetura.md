@@ -302,6 +302,15 @@ No `pnpm dev`, sem o app, o editor fala com a extensão pelo
 
 ### O que a extensão faz sozinha
 
+Toda chamada à aba do Lattes passa por `extension/src/tab-guard.ts`, que
+desiste quando a aba fecha ou passa de três minutos, e por
+`extension/src/tab-errors.ts`, que devolve ao editor o motivo de verdade (a
+aba fechou, recarregou no meio, está ocupada, não respondeu) e guarda os dez
+últimos em `chrome.storage.local`, sem o endereço da aba nem nada do
+currículo; o painel os mostra. Uma leitura que pega a aba recarregando (o
+menu se refaz depois do envio ao CNPq) espera a página carregar e tenta uma
+vez mais. Gravação nunca repete.
+
 - **Abrir do Lattes** (`src/bridge/export.ts`): pede o ZIP do Exportar na
   sessão da pessoa. O mesmo pedido serve ao "Recarregar do Lattes…"
   (`src/ui/use-lattes-reload.ts`). Com o Exportar bloqueado por pendência, o
