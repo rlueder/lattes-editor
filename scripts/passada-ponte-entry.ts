@@ -42,6 +42,7 @@ import {
 import { lattesSchema } from '../src/schema/lattes.ts';
 import { withListValues } from './cobertura-exemplo.ts';
 import { type Fate, snapshot, state, TAG, text } from './passada/aba.ts';
+import { apagar } from './passada/apagar.ts';
 import { campos, conferir, conferirPaginas } from './passada/conferencia.ts';
 import { exercitar } from './passada/exercitar.ts';
 import { incluir } from './passada/incluir.ts';
@@ -417,6 +418,7 @@ async function registro() {
 }
 
 (globalThis as unknown as { __passada: unknown }).__passada = {
+  apagar,
   arquivo,
   base,
   campos,

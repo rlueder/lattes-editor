@@ -2996,9 +2996,11 @@ Lattes, num item de teste:
   mudança nenhuma, volta com `Erro. ORA-01403: não foram encontrados dados`
   no gatilho `FOMENTO.TRG_ATU_IVIP_PROD_CIENTIFICA`
   (`PKG_MANUTENCAO_PROD_UNIFICADA`), e nada fica gravado. Foi assim nos três
-  trabalhos de teste importados. Um trabalho de teste incluído pelo
-  formulário de inclusão, em seguida, gravou a divulgação científica pelo
-  conector, conferida na releitura.
+  trabalhos de teste importados. Os textos em jornal de teste importados e
+  três artigos importados nem abrem: a página de alteração, com o `f_seq`
+  deles, vem vazia e em modo de inclusão (`f_ctr` `I`). Um trabalho de teste
+  incluído pelo formulário de inclusão, em seguida, gravou a divulgação
+  científica pelo conector, conferida na releitura.
 - **Acervo:** a gravação passa sem erro, e a página de alteração volta com a
   lista vazia, como sempre vem. O valor gravado só se vê na exportação, que
   ainda não foi conferida.

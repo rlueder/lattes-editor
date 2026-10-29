@@ -1,0 +1,73 @@
+// A limpeza da passada: cada linha das listas cujo texto traz a marca dos
+// itens de teste (TEST_MARK) sai como o del() da página a tira, pelo mesmo
+// formulário com f_ctr=E (docs/lattes_internals.md, seção 15). Só linhas com
+// a marca; nada mais das listas é tocado.
+
+import { encodeLatin1Form, pairValue, setPairs, successfulPairs } from '../../src/bridge/form.ts';
+import { readFormInPage } from '../../src/bridge/form-dom.ts';
+import { LattesTransport } from '../../src/bridge/transport.ts';
+import { TEST_MARK } from '../../src/census/test-plan.ts';
+import { decodeLatin1 } from '../../src/model/latin1.ts';
+import { snapshot } from './aba.ts';
+
+/** O del() da página: o mesmo formulário com f_ctr=E. */
+const DEL_TO_E = /f_ctr\.value\s*=\s*["']E["']/;
+
+/** Até `max` linhas de teste excluídas; devolve as que ficaram e por quê. */
+export async function apagar(max = 40, marca = TEST_MARK) {
+  const lists = await snapshot();
+  const rows = Object.values(lists)
+    .flat()
+    .filter((r) => r.text.includes(marca) && r.link);
+  const unique = [...new Map(rows.map((r) => [r.link.toLowerCase(), r])).values()];
+  const traffic = new LattesTransport();
+  const problems: Record<string, string> = {};
+  let sent = 0;
+  await traffic.run(async () => {
+    const text = async (res: Response) => decodeLatin1(await traffic.bytes(res));
+    const get = async (p: string) =>
+      text(await traffic.request(new URL(p, location.href), { credentials: 'include' }));
+    for (const row of unique.slice(0, max)) {
+      const label = row.text.slice(row.text.indexOf(marca), row.text.indexOf(marca) + 70);
+      const html = await get(row.link);
+      // O formulário do item: o que tem f_ctr (a página das artes traz outro antes).
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const form = [...doc.querySelectorAll('form')].find((f) => f.elements.namedItem('f_ctr'));
+      const name = form?.getAttribute('name') ?? undefined;
+      const action = form?.getAttribute('action') ?? undefined;
+      const controls = name ? readFormInPage(html, name) : undefined;
+      if (!name || !action || !controls || !DEL_TO_E.test(html)) {
+        problems[label] = 'a página não exclui como o del() espera';
+        continue;
+      }
+      const pairs = successfulPairs(controls);
+      // Um item que entrou pelo Importar pode abrir vazio, em modo de inclusão
+      // (seção 28): o f_seq do formulário é o da linha, e a exclusão vai por ele.
+      const seq = /[?&]f_seq=(\d+)/i.exec(row.link)?.[1];
+      const mode = pairValue(pairs, 'f_ctr');
+      if (mode !== 'U' && !(mode === 'I' && seq && pairValue(pairs, 'f_seq') === seq)) {
+        problems[label] = `formulário em modo ${mode ?? '?'}`;
+        continue;
+      }
+      const answer = await text(
+        await traffic.request(new URL(action, location.href), {
+          body: encodeLatin1Form(setPairs(pairs, { f_ctr: 'E' })),
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          method: 'POST',
+        }),
+      );
+      sent++;
+      const ora = /ORA-\d{5}:[^<]*/.exec(answer)?.[0];
+      if (ora) problems[label] = ora.slice(0, 120);
+    }
+  });
+  const after = new Set(
+    Object.values(await snapshot())
+      .flat()
+
+      .filter((r) => r.text.includes(marca) && r.link)
+      .map((r) => r.link.toLowerCase()),
+  ).size;
+  return { antes: unique.length, enviadas: sent, ficaram: after, problemas: problems };
+}
