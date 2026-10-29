@@ -30,29 +30,32 @@ export function UpdateFromLattes({ fromLattes, onClose, onNew, onWhole, open }: 
       title="Atualizar do Lattes"
       onClose={onClose}
     >
-      <div className="update-options">
-        <button
-          className="update-option"
-          disabled={!onNew}
-          type="button"
-          onClick={onNew && pick(onNew)}
-        >
-          <span className="update-option-title">Só o que é novo</span>
-          <span className="update-option-text">
-            {onNew
-              ? 'As produções novas ou com outro título. Leva segundos e não mexe no resto da cópia de trabalho.'
-              : 'Precisa da extensão do LattesEditor ligada ao Lattes.'}
-          </span>
+      <section aria-labelledby="update-new" className="panel-section update-option">
+        <h3 className="panel-section-head" id="update-new">
+          Só o que é novo
+        </h3>
+        <p className="update-option-text">
+          {onNew
+            ? 'As produções novas ou com outro título. Leva segundos e não mexe no resto da cópia de trabalho.'
+            : 'Precisa da extensão do LattesEditor ligada ao Lattes.'}
+        </p>
+        <button className="ghost" disabled={!onNew} type="button" onClick={onNew && pick(onNew)}>
+          Atualizar o que é novo
         </button>
-        <button className="update-option" type="button" onClick={pick(onWhole)}>
-          <span className="update-option-title">O currículo inteiro</span>
-          <span className="update-option-text">
-            {fromLattes
-              ? 'Lê todas as telas do Lattes, o que leva alguns minutos, e troca a cópia de trabalho pelo que veio. A de agora fica no Histórico.'
-              : 'Escolha a exportação mais recente (CV_<id>.zip) para trocar a cópia de trabalho pelo que veio. A de agora fica no Histórico.'}
-          </span>
+      </section>
+      <section aria-labelledby="update-whole" className="panel-section update-option">
+        <h3 className="panel-section-head" id="update-whole">
+          O currículo inteiro
+        </h3>
+        <p className="update-option-text">
+          {fromLattes
+            ? 'Lê todas as telas do Lattes, o que leva alguns minutos, e troca a cópia de trabalho pelo que veio. A de agora fica no Histórico.'
+            : 'Escolha a exportação mais recente (CV_<id>.zip) para trocar a cópia de trabalho pelo que veio. A de agora fica no Histórico.'}
+        </p>
+        <button className="ghost" type="button" onClick={pick(onWhole)}>
+          {fromLattes ? 'Atualizar tudo' : 'Escolher a exportação'}
         </button>
-      </div>
+      </section>
     </Modal>
   );
 }
