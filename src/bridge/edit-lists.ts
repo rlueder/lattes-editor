@@ -55,6 +55,7 @@
 import type { Change } from '../model/changes.ts';
 import { foldText } from '../model/fold-text.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
+import { isScreenAttr, unknownBefore } from '../schema/screen-fields.ts';
 import type { FieldSpec, FormSpec } from './contract.ts';
 import { type Pairs, pairValue } from './form.ts';
 import { AGENCY_CODE, AGENCY_NAME, planAgency } from './formacao-compl-steps.ts';
@@ -303,6 +304,8 @@ const TARGETS: Record<ListEditKind, Target> = {
       'ANO-DA-PREMIACAO': ['f_ano', same],
       'NOME-DA-ENTIDADE-PROMOTORA': ['f_agencia', same],
       'NOME-DO-PREMIO-OU-TITULO': ['f_titulo', same],
+      // A visibilidade, que a exportação não traz (schema/screen-fields.ts).
+      'tela:f_tipo_privacidade': ['f_tipo_privacidade', same],
     },
     form: 'pkg_premio.form',
     identity: () => ({}),
@@ -312,6 +315,11 @@ const TARGETS: Record<ListEditKind, Target> = {
     spec: PREMIO_SPEC,
   },
 };
+
+/** Os campos de um tipo, os do segundo passo junto (para "Carregar do Lattes", src/bridge/load/). */
+export function listEditFields(kind: ListEditKind): Record<string, [string, Mapper]> {
+  return { ...TARGETS[kind].fields, ...(TARGETS[kind].step2 ?? {}) };
+}
 
 /** O nome do tipo, para os motivos. */
 const NAMES: Record<ListEditKind, string> = {
@@ -386,7 +394,7 @@ export function planListEdit(
       return { reason: `O Lattes exige ${f.label.toLowerCase()} com quatro dígitos` };
     }
     set[field] = after;
-    expect[field] = before;
+    if (!unknownBefore(f)) expect[field] = before;
   }
   if (absent.size > 0) {
     return { reason: `O formulário de ${NAMES[kind]} do Lattes não tem ${[...absent].join(', ')}` };
@@ -437,6 +445,8 @@ export function planListEdit(
   const match: FieldValues = { ...t.identity(before) };
   for (const [attr, [field, map]] of Object.entries(t.fields)) {
     if (field in set) continue;
+    // Campo só de tela que a cópia não tem: não diz qual é a linha.
+    if (isScreenAttr(attr) && getAttr(el, attr) === undefined) continue;
     const value = map(getAttr(el, attr) ?? '');
     if (value !== undefined) match[field] = value;
   }

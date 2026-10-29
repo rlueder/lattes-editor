@@ -2291,6 +2291,21 @@ a.menu-item.notice {
   display: inline-flex;
 }
 
+/* Grupo de caixas (o projeto de ensino): uma opção por linha. */
+
+.check-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.check-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
 /* Dica */
 
 .tip {

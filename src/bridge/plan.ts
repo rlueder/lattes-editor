@@ -5,6 +5,7 @@
 
 import { type Change, resolvePath } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
+import { unknownBefore } from '../schema/screen-fields.ts';
 import { type AreasOp, planAreas } from './areas-atuacao.ts';
 import { planActivityRows } from './atividade-grade.ts';
 import { atuacaoByHand, vinculoByHand } from './atuacao-by-hand.ts';
@@ -168,7 +169,7 @@ type Mapper = (value: string) => string | null;
 const same: Mapper = (v) => v;
 
 /** Atributo do VINCULOS → campo do formulário GN_ATIV_VINC. */
-const VINCULO_FIELDS: Record<string, [string, Mapper]> = {
+export const VINCULO_FIELDS: Record<string, [string, Mapper]> = {
   'ANO-FIM': ['f_ano_fim', same],
   'ANO-INICIO': ['f_ano_ini', same],
   'CARGA-HORARIA-SEMANAL': ['f_carga', same],
@@ -182,6 +183,8 @@ const VINCULO_FIELDS: Record<string, [string, Mapper]> = {
   'OUTRAS-INFORMACOES-INGLES': ['f_outras_inf_en', same],
   'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO': ['f_enqua', same],
   'OUTRO-ENQUADRAMENTO-FUNCIONAL-INFORMADO-INGLES': ['f_enqua_en', same],
+  // A visibilidade, que a exportação não traz (schema/screen-fields.ts).
+  'tela:f_tipo_privacidade': ['f_tipo_privacidade', same],
 };
 
 function idiomaFields(change: Change): {
@@ -193,6 +196,12 @@ function idiomaFields(change: Change): {
   const expect: FieldValues = {};
   const missing: string[] = [];
   for (const f of change.fields) {
+    // A visibilidade do idioma, que a exportação não traz (schema/screen-fields.ts).
+    if (f.attr === 'tela:f_tipo_privacidade') {
+      set.f_tipo_privacidade = f.after;
+      if (!unknownBefore(f)) expect.f_tipo_privacidade = f.before;
+      continue;
+    }
     const skill = IDIOMA_SKILLS[f.attr];
     if (!skill) {
       missing.push(f.label);
@@ -228,7 +237,7 @@ function mapFields(
     }
     const [field, map] = entry;
     set[field] = map(f.after);
-    expect[field] = map(f.before);
+    if (!unknownBefore(f)) expect[field] = map(f.before);
   }
   return { expect, missing, set };
 }
@@ -369,7 +378,7 @@ function planAny(
     if (atuacao?.name !== 'ATUACAO-PROFISSIONAL' || !seqAtiv || !seqHist) {
       return unsupported(change, label, 'Vínculo sem número de sequência');
     }
-    const byHand = vinculoByHand(change);
+    const byHand = vinculoByHand(change, atuacao);
     if (byHand) return unsupported(change, label, byHand);
     const { expect, missing, set } = mapFields(change, VINCULO_FIELDS);
     if (missing.length > 0) {

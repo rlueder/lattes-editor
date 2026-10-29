@@ -73,6 +73,30 @@ function on(
   };
 }
 
+const PATENT_TYPES: Record<string, string> = {
+  MODELO_DE_UTILIDADE_MU: 'MU',
+  PRIVILEGIO_DE_INOVACAO_PI: 'PI',
+};
+
+/** As informações adicionais, num INFORMACOES-ADICIONAIS do próprio item. */
+function info(name: string, attrName: string, maxLength: number): Binding {
+  const of = (item: XElement, create: boolean) => {
+    let el = childElements(item, 'INFORMACOES-ADICIONAIS')[0];
+    if (!el && create) {
+      el = element('INFORMACOES-ADICIONAIS');
+      insertInSchemaOrder(lattesSchema, item, el);
+    }
+    return el;
+  };
+  return {
+    kind: 'textarea',
+    maxLength,
+    name,
+    read: (item) => (of(item, false) && getAttr(of(item, false)!, attrName)) ?? '',
+    write: (item, value) => setAttr(of(item, true)!, attrName, value),
+  };
+}
+
 function patentes(state: LattesState): XElement[] {
   const container = state.find(PATH);
   return container ? childElements(container, 'PATENTE') : [];
@@ -112,6 +136,15 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
         ['PI', 'Patente de Invenção'],
         ['MU', 'Patente de Modelo de Utilidade'],
       ],
+      // No XML, PRIVILEGIO_DE_INOVACAO_PI e MODELO_DE_UTILIDADE_MU (inferido pelo fim do valor).
+      read: (item) =>
+        PATENT_TYPES[getAttr(part(item, 'registro', false), 'TIPO-PATENTE') ?? ''] ?? '',
+      write: (item, value) =>
+        setAttr(
+          part(item, 'registro', true),
+          'TIPO-PATENTE',
+          Object.entries(PATENT_TYPES).find(([, v]) => v === value)?.[0] ?? '',
+        ),
     }),
     on('basics', 'f_titulo', 'TITULO', 'text', { maxLength: 400 }),
     on('registro', 'f_nro_deposito_pct', 'NUMERO-DEPOSITO-PCT', 'text', { maxLength: 16 }),
@@ -132,8 +165,8 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
         ),
     }),
     none('f_txt_potencial', 'text', 400),
-    { ...none('f_ref', 'textarea', 3950) },
-    { ...none('f_ref_en', 'textarea', 3800) },
+    info('f_ref', 'DESCRICAO-INFORMACOES-ADICIONAIS', 3950),
+    info('f_ref_en', 'DESCRICAO-INFORMACOES-ADICIONAIS-INGLES', 3800),
     on('basics', 'f_home_page', 'HOME-PAGE', 'text', { maxLength: 255 }),
     on('detail', 'f_finalidade', 'FINALIDADE', 'text', { maxLength: 255 }),
     on('detail', 'f_inst_financ', 'INSTITUICAO-FINANCIADORA', 'textarea', { maxLength: 380 }),

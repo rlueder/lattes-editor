@@ -7,6 +7,13 @@ import type { Change } from '../../model/changes.ts';
 import { foldText } from '../../model/fold-text.ts';
 import { childElements, element, getAttr, type XElement } from '../../model/xml.ts';
 import { lattesSchema } from '../../schema/lattes.ts';
+import {
+  isScreenAttr,
+  screenApplies,
+  screenField,
+  screenValueLabel,
+  unknownBefore,
+} from '../../schema/screen-fields.ts';
 import { areaLabel, type AreaRow } from '../areas-atuacao.ts';
 import type { BridgeOp, OpBase } from '../plan.ts';
 import { fieldsLeft } from './fields-left.ts';
@@ -63,6 +70,8 @@ export interface ProductionOp extends OpBase, ProjectGridEdits {
   areas?: AreaList;
   /** Autores antes e depois, na ordem, quando a mudança é deles. */
   authors?: { after: AuthorSpec[]; before: AuthorSpec[] };
+  /** Inclusão pelo formulário (create.ts): o link "Incluir novo item", sem antes a conferir. */
+  create?: true;
   /**
    * O depositante ou titular pessoa antes e depois (ProductionTarget.holders),
    * quando a mudança é dele: um nome só, ou vazio.
@@ -162,6 +171,12 @@ function shown(value: string): string {
   return isEnum ? enumLabel(value) : value;
 }
 
+/** O campo só de tela do elemento, quando vale para ele (a natureza do projeto decide). */
+function screenMapping(el: XElement, attr: string): string | undefined {
+  const f = screenField(el.name, attr);
+  return f && screenApplies(f, el) ? f.fields[el.name] : undefined;
+}
+
 const KEYWORD_ATTRS = Array.from({ length: MAX_KEYWORDS }, (_, i) => `PALAVRA-CHAVE-${i + 1}`);
 
 /** A operação, ou o motivo de ficar à mão. */
@@ -178,6 +193,8 @@ export function planProduction(
     return { reason: 'O item não existe mais na cópia de trabalho' };
   }
   const { item, target } = found;
+  const guarded = target.guard?.(item, change);
+  if (guarded) return { reason: guarded };
   const organChange =
     target.organ !== undefined && change.element !== item.name && isOrganChange(change);
   // A natureza de um financiador vai pela linha dele na grade (financiador.ts).
@@ -390,8 +407,11 @@ export function planProduction(
     // Um valor que pede texto fora do XML (target.asks): o que a pessoa escreveu.
     const ask = target.asks?.[key];
     if (ask && f.after === ask.when) {
-      const text = extras[change.key]?.[ask.field]?.trim() ?? '';
-      if (!text) return { reason: ask.reason };
+      // Onde o formulário não tem o texto (o projeto de ensino), o Sim vai sem ele.
+      const when = ask.onlyWhen;
+      const asked = !when || when.values.includes(getAttr(el, when.attr) ?? '');
+      const text = asked ? (extras[change.key]?.[ask.field]?.trim() ?? '') : '';
+      if (asked && !text) return { reason: ask.reason };
       if (text.length > ask.maxLength) {
         return { reason: `${f.label}: o texto passa de ${ask.maxLength} caracteres` };
       }
@@ -399,7 +419,7 @@ export function planProduction(
       const map = m ? mapOf(m) : undefined;
       const was = map?.toForm ? map.toForm(f.before, 'before') : f.before;
       set[ask.flag[0]] = ask.flag[1];
-      set[ask.field] = text;
+      if (asked) set[ask.field] = text;
       if (was !== undefined) expect[ask.flag[0]] = was;
       rows.push({
         after: shown(f.after),
@@ -419,7 +439,8 @@ export function planProduction(
       rows.push({ ...holder.value, label: f.label, name: holder.grid });
       continue;
     }
-    const m = partMap?.fields[f.attr] ?? target.fields[key];
+    // Os campos só de tela do item (a visibilidade): o mesmo nome em todo tipo.
+    const m = partMap?.fields[f.attr] ?? target.fields[key] ?? screenMapping(el, f.attr);
     const why = target.manual?.[key];
     if (!m && why) manual.set(why, [...(manual.get(why) ?? []), f.label]);
     if (!m) {
@@ -435,8 +456,11 @@ export function planProduction(
       continue;
     }
     set[field] = after;
-    expect[field] = was;
-    rows.push({ after: shown(f.after), before: shown(f.before), label: f.label, name: field });
+    if (!unknownBefore(f)) expect[field] = was;
+    const read = (v: string) =>
+      isScreenAttr(f.attr) ? screenValueLabel(change.element, f.attr, v) : shown(v);
+    const before = unknownBefore(f) ? '(não lido)' : read(f.before);
+    rows.push({ after: read(f.after), before, label: f.label, name: field });
   }
   const left = fieldsLeft(unknown, manual, unmapped);
   if (left) return left;

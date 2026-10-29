@@ -47,6 +47,8 @@ const LICENCA: ProductionTarget = {
   fields: under('LICENCA', {
     'DATA-FIM-LICENCA': { field: 'f_dta_fim', toForm: slashDate },
     'DATA-INICIO-LICENCA': { field: 'f_dta_inicio', toForm: slashDate },
+    // Na exportação de 29/10/2026 (lattes_internals.md, seção 29).
+    'DATA-NASCIMENTO-ADOCAO': { field: 'f_dta_nasc_adoc', toForm: slashDate },
     'TIPO-LICENCA': { field: 'f_tipo_licenca', toForm: licenseToForm },
   }),
   form: { action: 'PKG_LICENCA.FORM', name: 'GN_LICENCA' },

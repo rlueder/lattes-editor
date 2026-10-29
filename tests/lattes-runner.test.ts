@@ -12,6 +12,7 @@ import { readHtmlForm } from './helpers/html-form.ts';
 interface Runner {
   apply(op: BridgeOp): Promise<OpResult>;
   exportar(): Promise<unknown>;
+  lerLattes(request: string): Promise<{ error?: string; lattesId?: string; part?: unknown }>;
   verificar(kinds?: BridgeOp['kind'][]): Promise<ContractReport>;
 }
 const runner = () => (globalThis as unknown as { __conector: Runner }).__conector;
@@ -132,5 +133,20 @@ describe('transporte usado pelo núcleo injetado', () => {
     await expect(runner().exportar()).rejects.toThrow('ocupado');
     release(new Response('<form name="RES"></form>'));
     await pending;
+  });
+});
+
+describe('Atualizar do Lattes no núcleo injetado', () => {
+  it('lê uma parte das listas do menu da aba, só com GET', async () => {
+    const reply = await runner().lerLattes(JSON.stringify({ step: 'listas' }));
+    expect(reply.lattesId).toBe(state.lattesId);
+    expect(reply.part).toMatchObject({ step: 'listas', unread: [] });
+    expect(fetchMock.mock.calls.every(([, init]) => (init?.method ?? 'GET') === 'GET')).toBe(true);
+  });
+
+  it('um pedido ilegível volta com o motivo, sem pedir nada ao Lattes', async () => {
+    const reply = await runner().lerLattes('{');
+    expect(reply.error).toMatch(/ilegível/);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

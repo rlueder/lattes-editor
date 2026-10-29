@@ -6,6 +6,37 @@ export const REQUEST_TIMEOUT_MS = 20_000;
 export const REQUESTS_PER_TASK = 100;
 export const REQUESTS_PER_MINUTE = 80;
 export const HTTP_COOLDOWN_MS = 60_000;
+/** O prazo de uma tarefa inteira na aba. */
+export const TASK_DEADLINE_MS = 150_000;
+
+/**
+ * O passo das tarefas que só leem ("Carregar do Lattes", "Atualizar do
+ * Lattes"): menos espera entre pedidos e mais pedidos por minuto que nas
+ * gravações, escolha do dono em 28/10/2026 (com 750 ms e 80 por minuto, um
+ * currículo de 194 páginas levava três minutos). O passo fica abaixo do teto:
+ * passar dele para a tarefa.
+ */
+export const READ_PACE: TaskOptions = { perMinute: 200, spacingMs: 320 };
+
+/**
+ * Quantas páginas a leitura pede ao mesmo tempo. Cada página leva uns 0,6 s no
+ * Lattes (28/10/2026); com uma por vez, o passo não chegava perto do teto. Com
+ * três, o passo de READ_PACE (uma a cada 320 ms, abaixo dos 200 por minuto) é
+ * quem segura o ritmo.
+ */
+export const READ_CONCURRENCY = 3;
+
+/** O que uma tarefa afrouxa da política (o passo, o teto por minuto) e o prazo dela. */
+export interface TaskOptions {
+  deadlineMs?: number;
+  perMinute?: number;
+  spacingMs?: number;
+}
+
+/** O que um pedido troca: o prazo dele (o envio ao CNPq demora no Lattes). */
+export interface RequestOptions {
+  timeoutMs?: number;
+}
 export const MAX_COOLDOWN_MS = 60 * 60_000;
 
 export class TransportStop extends Error {}
@@ -42,6 +73,7 @@ export class LattesTransport {
   private requests: number[] = [];
   private cooldownUntil = 0;
   private policy: Required<TrafficPolicy>;
+  private pace: { perMinute: number; spacingMs: number } = { perMinute: 0, spacingMs: 0 };
 
   constructor(policy: TrafficPolicy = {}) {
     this.policy = {
@@ -60,6 +92,7 @@ export class LattesTransport {
   async run<T>(
     work: () => Promise<T>,
     onFailure?: (error: TransportStop, posted: boolean) => T,
+    options: TaskOptions = {},
   ): Promise<T> {
     if (this.active)
       throw new TransportStop('O conector está ocupado com outra leitura ou gravação no Lattes');
@@ -69,7 +102,13 @@ export class LattesTransport {
     this.posted = false;
     this.failure = undefined;
     this.controller = new AbortController();
-    const deadline = setTimeout(() => this.cancel(), 150_000);
+    // A tarefa só afrouxa o passo da política, nunca aperta (uma política de
+    // teste sem espera continua sem espera).
+    this.pace = {
+      perMinute: Math.max(this.policy.perMinute, options.perMinute ?? 0),
+      spacingMs: Math.min(this.policy.spacingMs, options.spacingMs ?? Infinity),
+    };
+    const deadline = setTimeout(() => this.cancel(), options.deadlineMs ?? TASK_DEADLINE_MS);
     try {
       const result = await work();
       // Um núcleo que captura uma falha de rede não pode dar a tarefa por conferida.
@@ -125,13 +164,22 @@ export class LattesTransport {
       );
   }
 
-  async request(input: string | URL, init: RequestInit = {}): Promise<Response> {
+  async request(
+    input: string | URL,
+    init: RequestInit = {},
+    options: RequestOptions = {},
+  ): Promise<Response> {
     if (!this.active) throw new TransportStop('Pedido ao Lattes fora de uma tarefa');
     if (this.failure) throw this.failure;
     this.checkCooldown();
-    const { budget, now, perMinute, spacingMs, wait } = this.policy;
-    const delay = Math.max(0, this.lastRequest + spacingMs - now());
-    if (delay) await wait(delay);
+    const { budget, now, wait } = this.policy;
+    const { perMinute, spacingMs } = this.pace;
+    // A vez do pedido é reservada antes de esperar: pedidos em paralelo na mesma
+    // tarefa (a leitura de páginas, load/pages.ts) saem um a cada spacingMs.
+    const slot = Math.max(now(), this.lastRequest + spacingMs);
+    this.lastRequest = slot;
+    const delay = slot - now();
+    if (delay > 0) await wait(delay);
     if (this.failure) throw this.failure;
     this.requests = this.requests.filter((at) => now() - at < 60_000);
     if (this.count >= budget || this.requests.length >= perMinute) {
@@ -142,8 +190,7 @@ export class LattesTransport {
       throw this.failure;
     }
     this.count++;
-    this.lastRequest = now();
-    this.requests.push(this.lastRequest);
+    this.requests.push(now());
     let response: Response;
     if ((init.method ?? 'GET').toUpperCase() === 'POST') this.posted = true;
     try {
@@ -151,7 +198,7 @@ export class LattesTransport {
         ...init,
         signal: AbortSignal.any([
           this.controller!.signal,
-          AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+          AbortSignal.timeout(options.timeoutMs ?? REQUEST_TIMEOUT_MS),
           ...(init.signal ? [init.signal] : []),
         ]),
       });

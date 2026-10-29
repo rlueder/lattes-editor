@@ -9,6 +9,7 @@
 // vista, sem grupos fechados.
 
 import { getAttr, type XElement } from '../model/xml.ts';
+import { isScreenAttr } from '../schema/screen-fields.ts';
 import { formSwitches } from './form-order.ts';
 
 /** Até este número de campos o formulário fica inteiro aberto. */
@@ -149,7 +150,8 @@ export function switchedOff(el: XElement, attr: string): boolean {
   if ((getAttr(el, attr) ?? '') !== '') return false;
   const controllers = formSwitches(el.name)
     .filter(([, opened]) => opened.includes(attr))
-    .map(([controller]) => getAttr(el, controller))
+    // O campo só de tela que a cópia não tem conta como vazio (screen-fields.ts).
+    .map(([controller]) => getAttr(el, controller) ?? (isScreenAttr(controller) ? '' : undefined))
     .filter((v): v is string => v !== undefined);
   if (controllers.length === 0) return false;
   return controllers.every((v) => v.trim() === '' || v === 'N');

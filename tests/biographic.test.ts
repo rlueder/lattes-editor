@@ -662,6 +662,27 @@ describe('dados gerais no Lattes simulado', () => {
     expect(getAttr(el, 'NOME-ORGAO')).toBe('Instituto de Informática');
   });
 
+  it('endereço: instituição nova sem órgão escolhido leva o órgão vazio, como o testa_inst()', async () => {
+    const lattes = await lattesWith(ufrgs);
+    const planned = addressPlan((root) => {
+      newInstitution('000000000002', 'Universidade de São Paulo')(root);
+      newOrgan('', '')(root);
+    }, ufrgs);
+    expect(planned.unsupported).toEqual([]);
+    const op = planned.ops[0] as BiographicOp;
+    expect(op).toMatchObject({ clearOrgan: true, kind: 'endereco' });
+    expect(opRows(op).map((r) => [r.label, r.before, r.after])).toContainEqual([
+      'Órgão',
+      'Instituto de Biociências',
+      '(vazio)',
+    ]);
+    expect(await applyOp(op, lattes.port, LOOKUPS_ON)).toMatchObject({ status: 'conferido' });
+    const sent = postsOf(lattes).find((p) => p.proc === 'PRC_ENDERECO')!.fields;
+    expect(sent).toMatchObject({ f_codorgao: '', f_codorgao2: '', f_orgao_old: '' });
+    const el = inState(lattes, 'ENDERECO-PROFISSIONAL');
+    expect(getAttr(el, 'NOME-ORGAO')).toBe('');
+  });
+
   it('endereço: instituição nova com o órgão dela, na janela da instituição nova', async () => {
     const usp = ufrgs
       .replace(

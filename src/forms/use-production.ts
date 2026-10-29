@@ -7,6 +7,7 @@ import type { PendingSummary } from '../import-export/ExportPanel.tsx';
 import { buildImportFile, type ImportFile } from '../import-export/import-file.ts';
 import { applyCrossref, crossrefAuthors, type CrossrefWork } from '../lookups/crossref.ts';
 import { includeCapability, subscribeIncludeCapability } from '../model/direct-inclusion.ts';
+import { type FormReadMark, loadedOf } from '../model/form-read.ts';
 import {
   addProduction,
   authorElementName,
@@ -52,7 +53,17 @@ export function useProduction(
   onEdit: (note: string) => void,
 ) {
   const [form, setForm] = useState<FormState | null>(null);
-  const loadedMax = session?.meta.loadedMaxSequencia ?? Number.POSITIVE_INFINITY;
+  const maxLoaded = session?.meta.loadedMaxSequencia ?? Number.POSITIVE_INFINITY;
+  const marks = session?.meta.lattesForms;
+  // Os itens novos lidos dos formulários do Lattes já estão lá (form-read.ts).
+  const loadedMax = useMemo(
+    () => loadedOf({ lattesForms: marks, loadedMaxSequencia: maxLoaded }),
+    [marks, maxLoaded],
+  );
+  const formRead = useMemo(
+    () => new Map<string, FormReadMark>((marks ?? []).map((m) => [m.seq, m])),
+    [marks],
+  );
 
   // Os eventos saem do Importar quando a extensão anuncia 'incluir-itens'.
   const canInclude = useSyncExternalStore(subscribeIncludeCapability, includeCapability);
@@ -156,6 +167,8 @@ export function useProduction(
     authors,
     buildFile,
     cancel: () => setForm(null),
+    /** O que os itens da lista precisam saber (editor-context.ts), sem a raiz. */
+    editor: { formRead, loadedMax, openItem },
     form,
     /** O item aberto vai por "Enviar ao Lattes" (inclusão pelo conector), e não pelo Importar. */
     formByChanges: Boolean(

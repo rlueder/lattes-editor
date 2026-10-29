@@ -34,6 +34,7 @@ import {
   orientationLookup,
   projectGridScripts,
 } from './projeto-grades.ts';
+import { afterSave, companyLookup, projectScreenBindings } from './projeto-tela.ts';
 import { html, type Routes, type SimResponse } from './tipos.ts';
 
 const NATURE: Record<string, string> = {
@@ -119,12 +120,7 @@ function bindings(state: LattesState, ids: Record<string, string>): Binding[] {
       read: (el) => potencial.get(el) ?? '',
       write: (el, value) => potencial.set(el, value),
     },
-    { ...none('f_tpo_pesq_emp', 'radio'), options: yesNo },
-    none('f_cnpj_empresa', 'text', 18),
-    none('f_txt_nme_empresa', 'text'),
-    none('f_txt_email_institucional', 'text'),
-    none('f_txt_setor', 'text', 400),
-    none('f_cod_inst_empresa'),
+    ...projectScreenBindings(state, ids.f_cod_tipo === 'N', yesNo),
     { disabled: true, kind: 'text', maxLength: 75, name: 'f_inst', read: () => ids.inst ?? '' },
     // Na alteração, os ocultos da instituição e do vínculo vêm como a escolha
     // da lista os deixou (inferido: o servidor os relê da atuação).
@@ -254,11 +250,16 @@ function rowIds(state: LattesState, p: Placed, tipo: string): Record<string, str
 
 function lista(req: SimRequest, state: LattesState): SimResponse {
   const tipo = (req.get('f_cod_tipo') ?? 'P').toUpperCase();
+  // A lista de inovação (f_sta_inovacao=S, vista no menu real em 29/10/2026)
+  // repete os projetos com potencial de inovação, com o link dela.
+  const innovation = req.get('f_sta_inovacao') === 'S';
   const rows = projetos(state)
     .filter((p) => NATURE[getAttr(p.projeto, 'NATUREZA') ?? ''] === tipo)
+    .filter((p) => !innovation || getAttr(p.projeto, 'FLAG-POTENCIAL-INOVACAO') === 'SIM')
     .map((p) => {
       const ids = rowIds(state, p, tipo);
-      const path = `PKG_PROJETO.form?f_cod=${state.code}&amp;f_cod_tipo=${tipo}&amp;f_codinst=${ids.f_codinst}&amp;f_seq_ativ=${ids.f_seq_ativ}&amp;f_seq_funcao=${ids.f_seq_funcao}&amp;f_seq_proj=${ids.f_seq_proj}`;
+      const flag = innovation ? '&amp;F_sta_inovacao=S' : '';
+      const path = `PKG_PROJETO.form?f_cod=${state.code}&amp;f_cod_tipo=${tipo}${flag}&amp;f_codinst=${ids.f_codinst}&amp;f_seq_ativ=${ids.f_seq_ativ}&amp;f_seq_funcao=${ids.f_seq_funcao}&amp;f_seq_proj=${ids.f_seq_proj}`;
       return `<tr><td><a href="#" onclick="self.parent.modalCV2.setarUrl('${path}',true); return false;">${h.esc(getAttr(p.projeto, 'NOME-DO-PROJETO') ?? '')}</a></td></tr>`;
     })
     .join('\n');
@@ -319,7 +320,8 @@ function post(req: SimRequest, state: LattesState): SimResponse {
     const projeto = element('PROJETO-DE-PESQUISA', {
       'SEQUENCIA-PROJETO': nextAttr(state, 'PROJETO-DE-PESQUISA', 'SEQUENCIA-PROJETO'),
     });
-    applyFields(bindings(state, {}), projeto, req);
+    applyFields(bindings(state, { f_cod_tipo: tipo.toUpperCase() }), projeto, req);
+    afterSave(state, projeto, req, '');
     const participacao = element(
       'PARTICIPACAO-EM-PROJETO',
       {
@@ -357,7 +359,9 @@ function post(req: SimRequest, state: LattesState): SimResponse {
     const atividades = childElements(placed.atuacao, 'ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO')[0]!;
     state.remove(atividades, placed.participacao);
   } else if (ctr === 'U') {
-    applyFields(bindings(state, {}), placed.projeto, req);
+    const cnpjBefore = state.formOnly(placed.projeto).f_cnpj_empresa ?? '';
+    applyFields(bindings(state, { f_cod_tipo: tipo.toUpperCase() }), placed.projeto, req);
+    afterSave(state, placed.projeto, req, cnpjBefore);
     applyProjectTeam(state, placed.projeto, req);
     applyProjectLinks(state, placed.projeto, req);
     // Código vazio deixa o órgão como está, como na página real.
@@ -453,6 +457,7 @@ export const PROJETO_ROUTES: Routes = {
   'pkg_projeto.lista': lista,
   'pkg_projeto.pp_lista_inst': listaInst,
   'pkg_projeto.pp_orgao_cargo': organs,
+  'pkg_projeto.pr_recupera_dados_inst': companyLookup,
   // A janela de órgãos das atividades da atuação: as mesmas linhas (lida em 20/10/2026).
   prc_orgao_cargo: organs,
 };

@@ -1338,6 +1338,10 @@
         <xs:simpleType>
           <xs:restriction base="xs:token">
             <xs:enumeration value="MATERNIDADE"/>
+            <!-- patch.json: visto em exportação real, ausente do XSD de 2022 -->
+            <xs:enumeration value="PATERNIDADE"/>
+            <!-- patch.json: visto em exportação real, ausente do XSD de 2022 -->
+            <xs:enumeration value="ADOCAO"/>
           </xs:restriction>
         </xs:simpleType>
       </xs:attribute>
@@ -1357,6 +1361,8 @@
         </xs:simpleType>
       </xs:attribute>
       <xs:attribute name="DATA-FIM-LICENCA"/>
+      <!-- patch.json: presente em exportações reais, ausente do XSD de 2022 -->
+      <xs:attribute name="DATA-NASCIMENTO-ADOCAO"/>
     </xs:complexType>
   </xs:element>
   <xs:element name="ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO">

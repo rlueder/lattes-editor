@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { applyOp } from '../src/bridge/apply.ts';
 import { planChanges } from '../src/bridge/plan.ts';
+import { planCreateProduction } from '../src/bridge/production/create.ts';
 import type { ProductionOp } from '../src/bridge/production/plan.ts';
 import { mediaAmong } from '../src/bridge/production/targets/bibliografica-comum.ts';
 import { PRODUCTION_TARGETS } from '../src/bridge/production/targets/index.ts';
@@ -414,6 +415,19 @@ const applyEdits = (c: Case) => (root: XElement) => {
 const authorNames = (root: XElement, seq: string) =>
   childElements(bySeq(root, seq), 'AUTORES').map((a) => getAttr(a, 'NOME-COMPLETO-DO-AUTOR'));
 
+describe('visibilidade do item, que a exportação não traz', () => {
+  it('vai no f_tipo_privacidade do formulário do item e o Lattes guarda', async () => {
+    const lattes = await lattesFor();
+    const seq = CASES.find((c) => c.id === 'artigo-publicado')!.seq;
+    const [op] = opsAfter((root) => setAttr(bySeq(root, seq), 'tela:f_tipo_privacidade', '2'));
+    expect(op!.set).toEqual({ f_tipo_privacidade: '2' });
+    // A cópia não tinha o campo: o antes não se confere.
+    expect(op!.expect).toEqual({});
+    expect(await applyOp(op!, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(lattes.state.privacy.get(bySeq(lattes.state.root, seq))).toBe('2');
+  });
+});
+
 describe.each(CASES)('$id no Lattes simulado', (c) => {
   it('campos: cada parte num envio, gravado e conferido', async () => {
     const lattes = await lattesFor();
@@ -581,5 +595,95 @@ describe('produções bibliográficas: o que fica à mão', () => {
     );
     expect(await applyOp(op!, lattes.port)).toMatchObject({ status: 'conferido' });
     expect(postsOf(lattes).map((p) => p.proc)).toEqual(['PKG_ARTIGO.FORM']);
+  });
+});
+
+describe('inclusão pelo formulário, no lugar do Importar', () => {
+  /** Um artigo novo, cópia do 41 com outro título, ano e sequência. */
+  const withNewArticle = () => {
+    const root = parseXml(xmlFor(false)).root;
+    const model = bySeq(root, '41');
+    const copy = structuredClone(model);
+    setAttr(copy, 'SEQUENCIA-PRODUCAO', '99');
+    const basics = childElements(copy, 'DADOS-BASICOS-DO-ARTIGO')[0]!;
+    setAttr(basics, 'TITULO-DO-ARTIGO', 'Artigo Incluído');
+    setAttr(basics, 'ANO-DO-ARTIGO', '2024');
+    setAttr(copy, 'tela:f_tipo_privacidade', '2');
+    const container = findIn(root, (el) => el.name === 'ARTIGOS-PUBLICADOS')!;
+    container.children.push(copy);
+    return { item: copy, root };
+  };
+  const changeOf = (item: XElement) => ({
+    element: item.name,
+    fields: [],
+    form: '',
+    key: 'novo',
+    kind: 'novo' as const,
+    path: [],
+  });
+
+  it('planeja todos os campos, a grade de autores e a visibilidade, sem antes', () => {
+    const { item } = withNewArticle();
+    const op = planCreateProduction(changeOf(item), item, 'Artigo');
+    expect('reason' in op).toBe(false);
+    const created = op as ProductionOp;
+    expect(created).toMatchObject({
+      create: true,
+      expect: {},
+      match: { title: 'Artigo Incluído', year: '2024' },
+      target: 'artigo-publicado',
+    });
+    expect(created.set).toMatchObject({ f_tipo_privacidade: '2' });
+    expect(created.authors?.before).toEqual([]);
+    expect(created.authors?.after.map((a) => a.name)).toEqual(['Pessoa Sintética']);
+  });
+
+  it('inclui no Lattes simulado e acha o item novo na lista', async () => {
+    const lattes = await lattesFor();
+    const { item } = withNewArticle();
+    const op = planCreateProduction(changeOf(item), item, 'Artigo') as ProductionOp;
+    expect(await applyOp(op, lattes.port)).toMatchObject({
+      detail: 'Incluído e conferido no Lattes',
+      status: 'conferido',
+    });
+    const post = postsOf(lattes).at(-1)!;
+    expect(post.fields.f_ctr).toBe('I');
+    const created = findIn(
+      lattes.state.root,
+      (el) =>
+        el.name === 'DADOS-BASICOS-DO-ARTIGO' &&
+        getAttr(el, 'TITULO-DO-ARTIGO') === 'Artigo Incluído',
+    );
+    expect(created).toBeDefined();
+  });
+
+  it('a pessoa achada pela citação, com outro nome: confere pelo nome que foi', async () => {
+    const lattes = await lattesFor(false);
+    const { item } = withNewArticle();
+    // No menu, a coautora é "Coautora de Exemplo", com a citação EXEMPLO, C.
+    const author = childElements(item, 'AUTORES')[0]!;
+    setAttr(author, 'NOME-COMPLETO-DO-AUTOR', 'Coautora Exemplo da Silva');
+    setAttr(author, 'NOME-PARA-CITACAO', 'EXEMPLO, C.');
+    const op = planCreateProduction(changeOf(item), item, 'Artigo') as ProductionOp;
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+  });
+
+  it('o mesmo título e ano já na lista: nada vai', async () => {
+    const lattes = await lattesFor();
+    const { item } = withNewArticle();
+    const basics = childElements(item, 'DADOS-BASICOS-DO-ARTIGO')[0]!;
+    setAttr(basics, 'TITULO-DO-ARTIGO', 'Artigo de Exemplo');
+    setAttr(basics, 'ANO-DO-ARTIGO', '2010');
+    const op = planCreateProduction(changeOf(item), item, 'Artigo') as ProductionOp;
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'divergente' });
+    expect(postsOf(lattes)).toEqual([]);
+  });
+
+  it('o tipo sem endereço de inclusão conhecido fica com o motivo', () => {
+    const root = parseXml(xmlFor(false)).root;
+    const livro = bySeq(root, '44');
+    expect(planCreateProduction(changeOf(livro), livro, 'Livro')).toEqual({
+      reason: 'Este tipo não se inclui pelo formulário do Lattes',
+    });
   });
 });

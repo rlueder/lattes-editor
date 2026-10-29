@@ -5,6 +5,18 @@
 
 import type { ExportFailure } from '../bridge/export.ts';
 import type { Link } from '../bridge/link.ts';
+import type { BridgeState } from './use-bridge.ts';
+
+/**
+ * De onde vem o currículo ao abrir e ao recarregar: a exportação pela
+ * extensão, ou as listas e os formulários (use-lattes-load.ts). timeoutMs: a
+ * leitura pelos formulários leva uma página por vez e espera mais; ownProgress:
+ * ela mostra o próprio andamento.
+ */
+export type CvSource = Pick<BridgeState, 'curriculo' | 'link' | 'requestCv'> & {
+  ownProgress?: boolean;
+  timeoutMs?: number;
+};
 
 export type OpenFailure = ExportFailure | 'sem-resposta';
 
@@ -48,6 +60,6 @@ export function failureText(reason: OpenFailure, detail?: string): string {
     case 'sem-resposta':
       return 'A extensão não respondeu. Tente de novo, ou abra o arquivo exportado.';
     case 'erro':
-      return `Não deu para exportar do Lattes${detail ? ` (${detail.replace(/\.$/, '')})` : ''}. Tente de novo, ou abra o arquivo exportado.`;
+      return `Não deu para ler o currículo no Lattes${detail ? ` (${detail.replace(/\.$/, '')})` : ''}. Tente de novo, ou abra o arquivo exportado.`;
   }
 }

@@ -80,7 +80,8 @@
     "NOME-DO-ORIENTADOR-CO-TUTELA": "Orientador na cotutela",
     "NOME-CURSO": "Nome do curso",
     "NOME-INSTITUICAO": "Nome da instituição",
-    "NOME-AGENCIA": "Nome da agência"
+    "NOME-AGENCIA": "Nome da agência",
+    "DATA-NASCIMENTO-ADOCAO": "Data de nascimento/adoção"
   },
   "enums": {
     "SIM": "Sim",

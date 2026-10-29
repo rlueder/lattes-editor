@@ -22,6 +22,12 @@ export interface FieldMap {
   toForm?: (value: string, side?: 'after' | 'before') => string | undefined;
   /** O motivo de ir à mão quando toForm não dá valor; sem ele, o motivo genérico. */
   unmapped?: string;
+  /**
+   * A página de alteração não mostra o valor gravado (vem sempre vazio, como
+   * o acervo da manutenção de obra artística, 28/10/2026): vai sem conferir o
+   * antes nem a releitura, com o aviso de conferir na exportação.
+   */
+  unshown?: true;
 }
 
 /** As grades que o check() de cada página serializa nos ocultos. */
@@ -93,7 +99,15 @@ export interface ProductionTarget {
    */
   asks?: Record<
     string,
-    { field: string; flag: [string, string]; maxLength: number; reason: string; when: string }
+    {
+      field: string;
+      flag: [string, string];
+      maxLength: number;
+      /** Só quando o item tem um destes valores; nos outros, o formulário não tem o texto. */
+      onlyWhen?: { attr: string; values: readonly string[] };
+      reason: string;
+      when: string;
+    }
   >;
   /** O elemento da grade de autores, quando não é AUTORES (grids.ts). */
   authors?: AuthorPart;
@@ -126,6 +140,8 @@ export interface ProductionTarget {
   gridKeys?: Partial<Record<GridField, readonly string[]>>;
   /** As grades que o formulário tem, e que o envio refaz. */
   grids: GridField[];
+  /** O motivo de a mudança ir à mão, pelo item como fica depois dela (o projeto de ensino). */
+  guard?: (item: XElement, change: Change) => string | undefined;
   /**
    * O atributo do XML que guarda os depositantes ou titulares pessoas da
    * grade f_depositante_pessoa_l (NOME-DO-DEPOSITANTE, observado na

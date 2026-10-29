@@ -33,8 +33,10 @@
 
 import type { Change } from '../model/changes.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
+import { unknownBefore } from '../schema/screen-fields.ts';
 import { AP_LEVELS, FORMATION_LEVELS } from './create-formacao.ts';
 import type { FormacaoGrids } from './formacao-grids.ts';
+import { type Level, LEVEL_FORMS, shows } from './formacao-levels.ts';
 import type { FieldValues, OpBase } from './plan.ts';
 
 export type FormationList = 'AP' | 'FA';
@@ -86,69 +88,7 @@ export interface FormacaoOp extends OpBase {
   seq: string;
 }
 
-export interface Level {
-  name: string;
-  /** Opções de f_tpo_doutorado, quando o nível mostra o rádio. */
-  types?: readonly string[];
-  /** Os campos que o formulário do nível mostra (os outros vêm ocultos ou não existem). */
-  visible: readonly string[];
-}
-
-const BASE = ['f_inst', 'F_STATUS', 'f_ano_ini', 'f_ano_fim'];
-const GRANT = ['F_BOLSA', 'f_nme_agencia'];
-/** Os blocos do sanduíche e da cotutela, que f_tpo_doutorado mostra. */
-const DOUT_BLOCK = [
-  'f_orient_dout',
-  'f_inst_dout',
-  'f_meses_sw',
-  'f_orient_dout_sw',
-  'f_inst_dout_sw',
-  'f_meses_sw_aux',
-  'f_orient_dout_ct',
-  'f_inst_dout_ct',
-];
-const MASTER = [
-  'f_tpo_doutorado',
-  'f_curso',
-  ...BASE,
-  'f_mes_obten',
-  'f_ano_obten',
-  ...GRANT,
-  'f_titulo',
-  'f_orient',
-  'f_coorient',
-  ...DOUT_BLOCK,
-];
-const SPECIALIZATION = ['f_curso', 'f_carga', ...BASE, ...GRANT, 'f_titulo', 'f_orient'];
-const SCHOOL = [...BASE];
-
-/** Os campos de cada nível, pelo código de f_nivel (censo de 15/10/2026). */
-export const LEVEL_FORMS: Record<string, Level> = {
-  '1': {
-    name: 'graduação',
-    types: ['N', 'S'],
-    visible: [
-      'f_tpo_doutorado',
-      'f_curso',
-      ...BASE,
-      ...GRANT,
-      'f_titulo',
-      'f_orient',
-      ...DOUT_BLOCK,
-    ],
-  },
-  '2': { name: 'especialização', visible: SPECIALIZATION },
-  '3': { name: 'mestrado', types: ['N', 'S'], visible: MASTER },
-  '4': { name: 'doutorado', types: ['N', 'S', 'C', 'CS'], visible: MASTER },
-  '5': { name: 'pós-doutorado', visible: [...BASE, ...GRANT] },
-  '6': { name: 'livre-docência', visible: ['f_inst', 'f_mes_obten', 'f_ano_obten', 'f_titulo'] },
-  '7': { name: 'ensino técnico', visible: ['f_curso', ...BASE, ...GRANT] },
-  '9': { name: 'mestrado profissional', types: ['N', 'S'], visible: MASTER },
-  B: { name: 'ensino fundamental', visible: SCHOOL },
-  C: { name: 'ensino médio', visible: SCHOOL },
-  D: { name: 'residência médica', visible: [...BASE, ...GRANT, 'f_titulo', 'f_orient'] },
-  X: { name: 'aperfeiçoamento', visible: SPECIALIZATION },
-};
+export { type Level, LEVEL_FORMS } from './formacao-levels.ts';
 
 /** O código de f_nivel e a lista do menu de um elemento de formação. */
 export function formationLevel(element: string): { code: string; list: FormationList } | undefined {
@@ -172,7 +112,7 @@ const yesNo: Mapper = (v) => (v === 'SIM' ? 'S' : v === 'NAO' ? 'N' : v ? undefi
 const hours: Mapper = (v) => (/^\d{0,4}$/.test(v.trim()) ? v.trim() : undefined);
 
 /** Atributo → campo do formulário e conversão. */
-const FIELDS: Record<string, [string, Mapper]> = {
+export const FORMACAO_FIELDS: Record<string, [string, Mapper]> = {
   'ANO-DE-CONCLUSAO': ['f_ano_fim', same],
   'ANO-DE-INICIO': ['f_ano_ini', same],
   'ANO-DE-OBTENCAO-DO-TITULO': ['f_ano_obten', same],
@@ -189,6 +129,7 @@ const FIELDS: Record<string, [string, Mapper]> = {
   // de 15/10/2026); ela não tem orientador.
   'NUMERO-DO-REGISTRO': ['f_orient', same],
   'STATUS-DO-CURSO': ['F_STATUS', status],
+  'tela:f_tipo_privacidade': ['f_tipo_privacidade', same], // só de tela, em todo nível
   'TIPO-DOUTORADO': ['f_tpo_doutorado', same],
   'TIPO-GRADUACAO': ['f_tpo_doutorado', same],
   'TIPO-MESTRADO': ['f_tpo_doutorado', same],
@@ -301,8 +242,8 @@ function plainFields(
           'A instituição do sanduíche e a da cotutela só se escolhem pela busca do Lattes, e a exportação traz só o código, sem o nome para buscar',
       };
     }
-    const entry = FIELDS[f.attr];
-    if (NO_FIELD.has(f.attr) || (entry && !level.visible.includes(entry[0]))) {
+    const entry = FORMACAO_FIELDS[f.attr];
+    if (NO_FIELD.has(f.attr) || (entry && !shows(level, entry[0]))) {
       absent.push(f.label);
       continue;
     }
@@ -325,7 +266,7 @@ function plainFields(
       return { reason: `Tipo que o Lattes não tem para ${level.name}: ${after}` };
     }
     set[field] = RADIOS.has(field) && after === '' ? null : after;
-    expect[field] = before;
+    if (!unknownBefore(f)) expect[field] = before;
   }
   if (absent.length > 0) {
     return { reason: `O formulário de ${level.name} do Lattes não tem: ${absent.join(', ')}` };

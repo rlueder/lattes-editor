@@ -5,8 +5,9 @@
 import { Fragment, useId, useRef, useState } from 'react';
 
 import { attributeLabel, elementLabel } from '../labels/labels.ts';
-import { childElements, getAttr, type XElement, type XText } from '../model/xml.ts';
+import { childElements, getAttr, type XAttr, type XElement, type XText } from '../model/xml.ts';
 import { lattesSchema } from '../schema/lattes.ts';
+import { screenApplies, screenFieldsOf } from '../schema/screen-fields.ts';
 import { AttributeField, type EditFn } from './AttributeField.tsx';
 import { groupSummary, switchedOff } from './disclosure.ts';
 import { DisclosureGroup } from './DisclosureGroup.tsx';
@@ -63,7 +64,7 @@ function FieldsBlock({
     (src) => new Map(lattesSchema.elements[src.name]?.attributes.map((a) => [a.name, a])),
   );
   const entries = sources.flatMap((src, i) =>
-    src.attrs
+    withScreenFields(src, showEmpty)
       // Números de sequência do Lattes identificam a linha por dentro; não se mostram.
       .filter((a) => !a.name.startsWith('SEQUENCIA-'))
       // O formato da data é sempre DDMMAAAA: o campo de data já diz isso.
@@ -178,6 +179,19 @@ function FieldsBlock({
       )}
     </div>
   );
+}
+
+/**
+ * Os atributos do elemento e, com os vazios à mostra, os campos só de tela
+ * que a cópia ainda não tem (vinda de uma exportação, que não os traz):
+ * preenchê-lo cria o atributo.
+ */
+function withScreenFields(src: XElement, showEmpty: boolean): XAttr[] {
+  if (!showEmpty) return src.attrs;
+  const missing = screenFieldsOf(src.name).filter(
+    (f) => getAttr(src, f.attr) === undefined && screenApplies(f, src),
+  );
+  return [...src.attrs, ...missing.map((f) => ({ name: f.attr, value: '' }))];
 }
 
 /** Grupos de campos curtos (datas, local, telefone) cabem em três colunas; o resto em duas. */

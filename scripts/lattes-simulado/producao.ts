@@ -9,11 +9,12 @@
 // cada formulário está no censo (docs/lattes-formularios/), e os testes de
 // cada família conferem a especificação contra ele.
 
-import idiomas from '../../src/bridge/production/idiomas-lattes.json' with { type: 'json' };
-import { country, date, language } from '../../src/bridge/production/mappers.ts';
+import { schemaPath } from '../../src/bridge/load/sections/schema-path.ts';
+import { inclusionPath } from '../../src/bridge/production/locate.ts';
 import { PRODUCTION_TARGETS } from '../../src/bridge/production/targets/index.ts';
-import type { FieldMap, ProductionTarget } from '../../src/bridge/production/types.ts';
-import type { Change } from '../../src/model/changes.ts';
+import type { ProductionTarget } from '../../src/bridge/production/types.ts';
+import { mapOf, partMaps, partOf, writeFields } from '../../src/bridge/refresh/from-form.ts';
+import { emptyAttrs, newItem } from '../../src/model/production.ts';
 import { insertInSchemaOrder } from '../../src/model/schema-order.ts';
 import {
   childElements,
@@ -23,19 +24,16 @@ import {
   walk,
   type XElement,
 } from '../../src/model/xml.ts';
-import { availabilityToForm } from '../../src/schema/availability.ts';
 import { lattesSchema } from '../../src/schema/lattes.ts';
 import { AGENCIES, allCourses, institutionsOf, withLetter } from './buscas.ts';
 import type { LattesState } from './estado.ts';
 import { applyGrids, GRID_HIDDEN, gridScripts } from './grades.ts';
 import * as h from './html.ts';
 import type { SimRequest } from './pedido.ts';
-import { html, notFound, type Routes, type SimResponse } from './tipos.ts';
+import { html, type Routes, type SimResponse } from './tipos.ts';
 
 /** Os tipos com tela própria no simulado (censo.ts, grades.ts), fora daqui. */
 const CUSTOM = new Set(['projeto', 'trabalho-tecnico']);
-
-const mapOf = (m: FieldMap | string): FieldMap => (typeof m === 'string' ? { field: m } : m);
 
 function itemsOf(state: LattesState, t: ProductionTarget): XElement[] {
   const out: XElement[] = [];
@@ -52,94 +50,38 @@ function itemsOf(state: LattesState, t: ProductionTarget): XElement[] {
 const seqOf = (item: XElement) =>
   getAttr(item, 'SEQUENCIA-PRODUCAO') ?? getAttr(item, 'SEQUENCIA-ORIENTACAO') ?? '';
 
-const partOf = (item: XElement, child: string) => childElements(item, child)[0];
-
 /**
- * O valor do formulário de volta para o XML: o candidato cujo toForm dá o mesmo
- * valor. `labels`: os valores de texto livre que o tipo conhece (a NATUREZA da
- * qualificação, que o XSD não enumera).
+ * As linhas da lista: o clique na linha inteira abre o formulário, e o texto
+ * traz o título e o ano, como as listas de produção do Lattes real (lidas em
+ * 21/10/2026, docs/lattes_internals.md, seção 10). O tipo, que a linha real
+ * também mostra, fica de fora (inferido que não muda a leitura).
  */
-function fromForm(
-  element: string,
-  attr: string,
-  map: FieldMap,
-  value: string,
-  labels: readonly string[] = [],
-): string | undefined {
-  if (!map.toForm) return value;
-  if (map.toForm === availabilityToForm) {
-    return value === '' ? 'NAO_INFORMADO' : value.toUpperCase();
-  }
-  if (value === '') return '';
-  if (map.toForm === country) return h.countryName(value);
-  if (map.toForm === date) return value.replace(/\//g, '');
-  if (map.toForm === language) {
-    return Object.entries(idiomas as Record<string, string>).find(([, c]) => c === value)?.[0];
-  }
-  const spec = lattesSchema.elements[element]?.attributes.find((a) => a.name === attr);
-  // Por último, o próprio valor (lista cujo valor é o rótulo) e a data sem as
-  // barras (dd/mm/aaaa do formulário, DDMMAAAA do XML).
-  const candidates = [
-    ...(spec?.enum ?? []),
-    ...labels,
-    'SIM',
-    'NAO',
-    value.replace(/\//g, ''),
-    value,
-  ];
-  return candidates.find((c) => map.toForm!(c) === value);
-}
-
-/**
- * Os campos dos ganchos de parte (partFields: o tipo do mestrado, a natureza
- * do livro), com o valor do item como está: chave "FILHO@ATRIBUTO" e os campos
- * a mais (also) com o valor de agora. Campos virtuais (datas:1) ficam de fora.
- */
-function partMaps(t: ProductionTarget, item: XElement) {
-  const fields: [string, FieldMap][] = [];
-  const also: [string, string][] = [];
-  for (const [child, hook] of Object.entries(t.partFields ?? {})) {
-    const part = partOf(item, child);
-    if (!part) continue;
-    const change: Change = {
-      element: child,
-      fields: part.attrs.map((a) => ({
-        after: a.value,
-        attr: a.name,
-        before: a.value,
-        label: a.name,
-      })),
-      form: '',
-      key: '',
-      kind: 'alterado',
-      path: [],
-    };
-    const result = hook(change, part, item);
-    if ('reason' in result) continue;
-    for (const [attr, m] of Object.entries(result.fields)) {
-      if (!mapOf(m).field.includes(':')) fields.push([`${child}@${attr}`, mapOf(m)]);
-    }
-    for (const a of result.also ?? []) also.push([a.field, a.after]);
-  }
-  return { also, fields };
-}
-
 function list(state: LattesState, t: ProductionTarget): string {
   const extra = Object.entries(t.list.params ?? {})
     .map(([k, v]) => `&amp;${k}=${v}`)
     .join('');
   return itemsOf(state, t)
-    .map((item) => {
+    .map((item, i) => {
       const title = getAttr(partOf(item, t.title.child) ?? element(''), t.title.attr) ?? '';
-      return `<tr><td><a href="#" onclick="self.parent.modalCV2.setarUrl('${t.list.formProc}?f_cod=${state.code}${extra}&amp;f_seq=${seqOf(item)}',true); return false;">${h.esc(title)}</a></td></tr>`;
+      const year = getAttr(partOf(item, t.year.child) ?? element(''), t.year.attr) ?? '';
+      return `<tr onclick="self.parent.modalCV2.setarUrl('${t.list.formProc}?f_cod=${state.code}${extra}&amp;f_seq=${seqOf(item)}',true)"><td>${i + 1}</td><td>${h.esc(title)}</td><td>${h.esc(year)}</td></tr>`;
     })
     .join('\n');
 }
 
+/** O "Incluir novo item" da lista, no endereço que o censo leu (locate.ts); sem ele, nada. */
+function inclusionLink(state: LattesState, t: ProductionTarget): string {
+  const path = inclusionPath(t, state.code);
+  if (!path) return '';
+  return `<p><a href="#" onclick="self.parent.modalCV2.setarUrl('${path.replace(/&/g, '&amp;')}',true); return false;">Incluir novo item</a></p>`;
+}
+
 function form(req: SimRequest, state: LattesState, t: ProductionTarget): SimResponse {
-  // Sem f_seq é a inclusão, que este arquivo não simula (o censo a lê como ausente).
-  if (!req.get('f_seq')) return notFound(t.list.formProc);
-  const item = itemsOf(state, t).find((i) => seqOf(i) === req.get('f_seq'));
+  // Sem f_seq é a inclusão: o mesmo formulário, vazio, com f_ctr I.
+  const creating = !req.get('f_seq');
+  const item = creating
+    ? element(t.element)
+    : itemsOf(state, t).find((i) => seqOf(i) === req.get('f_seq'));
   if (!item) return html(h.page(t.id, '<p>Registro não encontrado.</p>'));
   const parts = partMaps(t, item);
   const controls = [...Object.entries(t.fields), ...parts.fields].map(([key, m]) => {
@@ -161,11 +103,13 @@ function form(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
   for (const name of t.natureSwap?.clears ?? []) {
     if (!controls.some((c) => c.includes(`name="${name}"`))) controls.push(h.hidden(name, ''));
   }
+  // A visibilidade do item (f_tipo_privacidade), que o XML não traz.
+  controls.push(h.select('f_tipo_privacidade', h.PRIVACY, state.privacy.get(item) ?? '1'));
   // Dois atributos no mesmo campo: o controle sai uma vez só.
   const unique = [...new Set(controls)].join('\n');
   const body = `<form name="${t.form.name}" method="post" action="${t.form.action}">
 ${unique}
-${h.hidden('f_ctr', 'U')}${h.hidden('f_cod', state.code)}${h.hidden('f_seq', req.get('f_seq') ?? '')}${GRID_HIDDEN}
+${h.hidden('f_ctr', creating ? 'I' : 'U')}${h.hidden('f_cod', state.code)}${h.hidden('f_seq', req.get('f_seq') ?? '')}${GRID_HIDDEN}
 ${lookupHidden(state, item, t)}
 ${h.formButtons(true)}
 </form>
@@ -217,6 +161,7 @@ const DOI_ROUTES: Routes = {
 function post(req: SimRequest, state: LattesState, t: ProductionTarget): SimResponse {
   const back = h.savedScript(`${t.list.proc}?f_cod=${state.code}`);
   const ctr = req.get('f_ctr');
+  if (ctr === 'I') return create(req, state, t, back);
   if (ctr !== 'U' && ctr !== 'E') return html(back);
   const item = itemsOf(state, t).find((i) => seqOf(i) === req.get('f_seq'));
   if (!item) return html(h.page(t.id, '<p>Registro não encontrado.</p>'));
@@ -228,9 +173,51 @@ function post(req: SimRequest, state: LattesState, t: ProductionTarget): SimResp
     state.touch();
     return html(back);
   }
-  writeFields(t, item, req);
+  writeFields(t, item, (field) => req.get(field));
+  const privacy = req.get('f_tipo_privacidade');
+  if (privacy) state.privacy.set(item, privacy);
   writeLookups(state, item, t, req);
   applyGrids(item, req, t.authors);
+  state.touch();
+  return html(back);
+}
+
+/**
+ * Na inclusão, o Lattes põe a própria pessoa à frente dos autores quando o
+ * envio não a leva (observado em 28/10/2026, em mídias sociais de teste).
+ */
+function ownerFirst(state: LattesState, item: XElement, t: ProductionTarget): void {
+  const part = t.authors?.element ?? 'AUTORES';
+  if (!t.grids.includes('f_autores_l') || part !== 'AUTORES') return;
+  const authors = childElements(item, 'AUTORES');
+  if (authors.some((a) => getAttr(a, 'NOME-COMPLETO-DO-AUTOR') === state.personName)) return;
+  const citation =
+    getAttr(state.general, 'NOME-EM-CITACOES-BIBLIOGRAFICAS')?.split(';')[0]?.trim() ?? '';
+  const owner = element('AUTORES', {
+    'NOME-COMPLETO-DO-AUTOR': state.personName,
+    'NOME-PARA-CITACAO': citation,
+    'ORDEM-DE-AUTORIA': '1',
+  });
+  authors.forEach((a, i) => setAttr(a, 'ORDEM-DE-AUTORIA', String(i + 2)));
+  const at = item.children.indexOf(authors[0] ?? item.children.at(-1)!);
+  item.children.splice(authors.length > 0 ? at : item.children.length, 0, owner);
+}
+
+/** A inclusão: o item novo com a sequência seguinte, no lugar que o schema dá ao tipo. */
+function create(req: SimRequest, state: LattesState, t: ProductionTarget, back: string) {
+  const seq = lattesSchema.elements[t.element]?.attributes.some(
+    (a) => a.name === 'SEQUENCIA-PRODUCAO',
+  );
+  const item = seq
+    ? newItem(lattesSchema, t.element, ++state.nextProduction)
+    : element(t.element, emptyAttrs(lattesSchema, t.element));
+  writeFields(t, item, (field) => req.get(field));
+  const privacy = req.get('f_tipo_privacidade');
+  if (privacy) state.privacy.set(item, privacy);
+  writeLookups(state, item, t, req);
+  applyGrids(item, req, t.authors);
+  ownerFirst(state, item, t);
+  insertInSchemaOrder(lattesSchema, state.ensurePath(schemaPath(t.element) ?? []), item);
   state.touch();
   return html(back);
 }
@@ -329,15 +316,20 @@ function buildRoutes(): Routes {
             Object.entries(x.list.params ?? {}).every(([k, v]) => req.get(k) === v),
         );
         const rows = match.map((x) => list(state, x)).join('\n');
-        return html(h.page(t.id, `<table>${rows}</table>`));
+        return html(h.page(t.id, `<table>${rows}</table>${inclusionLink(state, match[0] ?? t)}`));
       };
     }
     // O mesmo formulário pode servir a vários tipos (as orientações): vale o
     // tipo do item do f_seq.
     const formKey = t.list.formProc.toLowerCase();
     const sharing = targets.filter((x) => x.list.formProc.toLowerCase() === formKey);
+    // Na inclusão, sem f_seq, a natureza enviada diz o tipo.
     const targetOf = (req: SimRequest, state: LattesState) =>
-      sharing.find((x) => itemsOf(state, x).some((i) => seqOf(i) === req.get('f_seq'))) ?? t;
+      (req.get('f_seq')
+        ? sharing.find((x) => itemsOf(state, x).some((i) => seqOf(i) === req.get('f_seq')))
+        : sharing.find(
+            (x) => !x.nature || x.nature.values.includes(req.get(x.nature.field) ?? ''),
+          )) ?? t;
     routes[formKey] = (req, state) =>
       req.method === 'POST'
         ? post(req, state, targetOf(req, state))
@@ -347,26 +339,4 @@ function buildRoutes(): Routes {
     if (action !== formKey) routes[action] = (req, state) => post(req, state, targetOf(req, state));
   }
   return routes;
-}
-
-/** Os campos da especificação, do POST de volta para o XML; o que não chegou fica como está. */
-export function writeFields(t: ProductionTarget, item: XElement, req: SimRequest): void {
-  const write = ([key, m]: [string, FieldMap | string]) => {
-    const [child, attr] = key.split('@') as [string, string];
-    const map = mapOf(m);
-    const value = req.get(map.field);
-    if (value === null || value === undefined) return;
-    const labels = attr === 'NATUREZA' ? Object.keys(t.lookups?.course?.natures ?? {}) : [];
-    const saved = fromForm(child, attr, map, value, labels);
-    if (saved === undefined) return;
-    let part = partOf(item, child);
-    if (!part) {
-      part = element(child, {});
-      insertInSchemaOrder(lattesSchema, item, part);
-    }
-    setAttr(part, attr, saved);
-  };
-  Object.entries(t.fields).forEach(write);
-  // Os dos ganchos depois: o código da natureza do livro depende do tipo já gravado.
-  partMaps(t, item).fields.forEach(write);
 }

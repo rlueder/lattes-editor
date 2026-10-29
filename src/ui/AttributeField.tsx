@@ -7,10 +7,12 @@ import { attributeLabelIn, elementLabel, enumLabel } from '../labels/labels.ts';
 import { applyLinkedAttrs, followsCountry, writesOwnCode } from '../model/linked-attrs.ts';
 import { repairMojibake } from '../model/mojibake.ts';
 import { getAttr, setAttr, type XElement } from '../model/xml.ts';
+import { screenField } from '../schema/screen-fields.ts';
 import {
   canonicalChoice,
   emptyChoicesHint,
   matchesDerived,
+  PCD_EXPORT_ORDER,
   typedChoices,
 } from '../schema/typed-choices.ts';
 import type { AttributeSpec } from '../schema/types.ts';
@@ -39,6 +41,7 @@ import { cleanLinkValue, linkError } from './link-fields.ts';
 import { ancestorsOf, type LiveAvailability, liveKind } from './live-lists.ts';
 import { LiveListControl } from './LiveListField.tsx';
 import { LATTES_URL } from './onboarding.ts';
+import { CheckGroup } from './primitives/CheckGroup.tsx';
 import { ComboSelect } from './primitives/ComboSelect.tsx';
 import { Switch } from './primitives/Switch.tsx';
 import { Tip } from './primitives/Tip.tsx';
@@ -246,8 +249,25 @@ export function AttributeField({
     !year &&
     !prominent &&
     (multiline || value.length > 90);
+  // Grupo de caixas da página do Lattes (schema/screen-fields.ts), e a
+  // deficiência, que a exportação grava pelos rótulos por vírgula e espaço.
+  const pcd = el.name === 'DADOS-GERAIS' && name === 'PCD';
+  const group = screenField(el.name, name)?.multiple || pcd ? choices : undefined;
   let control;
-  if (boolean) {
+  if (group) {
+    control = (
+      <CheckGroup
+        aria-describedby={common['aria-describedby']}
+        id={id}
+        joinOrder={pcd ? PCD_EXPORT_ORDER : undefined}
+        labelledBy={labelId}
+        options={group}
+        separator={pcd ? ', ' : ','}
+        value={value}
+        onChange={commit}
+      />
+    );
+  } else if (boolean) {
     control = (
       <span className="switch-row">
         <Switch

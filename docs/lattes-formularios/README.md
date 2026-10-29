@@ -119,8 +119,6 @@ item de teste e a base da passada de itens de teste:
   (`PKG_REVISOR.INCLUI`): o currículo não tem item desses;
 - a primeira inclusão real de cultivar protegida e registrada, desenho
   industrial, marca e topografia;
-- a licença: o Lattes exige a data de nascimento ou adoção, que o XML não
-  guarda, então ela não tem como ir pelo formulário;
 - a troca de instituição e curso de uma formação complementar e a do órgão
   de um projeto feitas pela própria página, com o corpo do POST registrado
   para comparar com o do conector (os dois envios do conector voltaram com

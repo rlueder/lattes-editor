@@ -427,6 +427,17 @@ describe('alteração de evento: aplicar no Lattes simulado', () => {
     expect(gets(lattes)[0]).toBe(`pkg_evento.lista?f_cod=${lattes.state.code}`);
   });
 
+  it('a classificação e a visibilidade, que a exportação não traz, vão e ficam no Lattes', async () => {
+    const lattes = await lattesFor();
+    const op = opFor((root) => {
+      setAttr(basics(root), 'tela:f_classif', 'I');
+      setAttr(basics(root), 'tela:f_tipo_privacidade', '2');
+    });
+    expect(op.set).toEqual({ f_classif: 'I', f_tipo_privacidade: '2' });
+    expect(await applyOp(op, lattes.port)).toMatchObject({ status: 'conferido' });
+    expect(lattes.state.formOnly(itemIn(lattes, '12')).f_classif).toBe('I');
+  });
+
   it('procura na lista filtrada quando a inteira não tem o evento', async () => {
     // A lista inteira esconde o 12; ele só aparece na filtrada.
     const lattes = await lattesFor({

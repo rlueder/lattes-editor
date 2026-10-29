@@ -73,7 +73,8 @@ export interface Notice {
    * o diagnóstico ou, depois de um "Recarregar do Lattes" que falhou, a escolha
    * do arquivo exportado.
    */
-  action?: 'armazenamento' | 'atualizacao' | 'diagnostico' | 'recarregar-arquivo';
+  action?:
+    'armazenamento' | 'atualizacao' | 'atualizar-lattes' | 'diagnostico' | 'recarregar-arquivo';
   id: string;
   /** "aviso" acende o sino; "info" só aparece ao abrir. */
   level: 'aviso' | 'info';
@@ -206,19 +207,29 @@ const STORAGE: Record<Exclude<StorageStatus, 'cifrado'>, Omit<Notice, 'id' | 'le
  * A exportação aberta é anterior à última publicação que o menu do Lattes
  * mostra: o Exportar leva um tempo para acompanhar um envio ao CNPq (mais de
  * uma hora em 18/10 e em 27/10/2026, docs/lattes_internals.md, seção 10).
- * exported em DDMMAAAA (DATA-ATUALIZACAO); published em AAAA-MM-DD.
+ * exported em DDMMAAAA (DATA-ATUALIZACAO); published em AAAA-MM-DD. Com
+ * canRefresh (a extensão sabe "Atualizar do Lattes"), o clique lê agora,
+ * pelos formulários, as produções que mudaram (src/bridge/refresh/).
  */
 export function staleExportNotice(
   exported: string | undefined,
   published: string | undefined,
+  canRefresh = false,
+  /** O dia em que o editor publicou com a cópia em dia (WorkingCopy.syncedOn). */
+  syncedOn?: string,
 ): Notice | undefined {
   const m = /^(\d{2})(\d{2})(\d{4})$/.exec(exported ?? '');
   if (!m || !published || `${m[3]}-${m[2]}-${m[1]}` >= published) return undefined;
+  if (syncedOn && syncedOn >= published) return undefined;
   const [y, mo, d] = published.split('-');
+  const now = canRefresh
+    ? ' Clique para ler agora, pelos formulários do Lattes, as produções novas ou com outro título.'
+    : '';
   return {
+    ...(canRefresh ? { action: 'atualizar-lattes' as const } : {}),
     id: 'exportacao-atrasada',
     level: 'aviso',
-    text: `O Lattes publicou em ${d}/${mo}/${y}, mas ainda exporta o arquivo de ${m[1]}/${m[2]}/${m[3]}. Ele leva um tempo para atualizar; use "Recarregar do Lattes" mais tarde.`,
+    text: `O Lattes publicou em ${d}/${mo}/${y}, mas ainda exporta o arquivo de ${m[1]}/${m[2]}/${m[3]}. Ele leva um tempo para atualizar; use "Recarregar do Lattes" mais tarde.${now}`,
     title: 'A exportação do Lattes ainda não acompanhou o envio',
   };
 }
@@ -228,6 +239,8 @@ export function noticesFor({
   appVersion,
   connection,
   devExtensionFolder,
+  load,
+  refresh,
   reload,
   stale,
   storage,
@@ -238,6 +251,10 @@ export function noticesFor({
   connection?: Connection;
   /** No LattesEditor Dev, a pasta da extensão Dev (src/desktop/dev-channel.ts). */
   devExtensionFolder?: string;
+  /** O que não veio dos formulários ao abrir ou recarregar do Lattes (lattes-load.ts). */
+  load?: Notice;
+  /** O resultado de "Atualizar do Lattes" que fica no sino (lattes-refresh.ts). */
+  refresh?: Notice;
   /** "Recarregar do Lattes" pela extensão que falhou (lattes-reload.ts, reloadNotice). */
   reload?: Notice;
   /** A exportação aberta é anterior à última publicação (staleExportNotice). */
@@ -260,6 +277,8 @@ export function noticesFor({
   }
   if (reload) notices.push(reload);
   if (stale) notices.push(stale);
+  if (refresh) notices.push(refresh);
+  if (load) notices.push(load);
   if (unknownPending) {
     notices.push({
       action: 'diagnostico',

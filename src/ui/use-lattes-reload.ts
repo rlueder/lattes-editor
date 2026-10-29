@@ -4,10 +4,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { canOpenFromLattes, OPEN_TIMEOUT_MS } from './lattes-open.ts';
+import { canOpenFromLattes, type CvSource, OPEN_TIMEOUT_MS } from './lattes-open.ts';
 import { type ReloadFailure, reloadReply } from './lattes-reload.ts';
 import { toasts } from './toasts.ts';
-import type { BridgeState } from './use-bridge.ts';
 
 /** Quanto a barra de andamento fica visível, no mínimo. */
 const MIN_PROGRESS_MS = 800;
@@ -27,7 +26,7 @@ export interface LattesReload {
  * confirmação quando há itens novos ainda não importados.
  */
 export function useLattesReload(
-  bridge: Pick<BridgeState, 'curriculo' | 'link' | 'requestCv'>,
+  bridge: CvSource,
   lattesId: string | undefined,
   onFile: (file: File) => void,
 ): LattesReload {
@@ -39,6 +38,9 @@ export function useLattesReload(
   const toast = useRef<string | undefined>(undefined);
   const request = useRef(bridge.requestCv);
   request.current = bridge.requestCv;
+  const ownProgress = useRef(bridge.ownProgress);
+  ownProgress.current = bridge.ownProgress;
+  const timeoutMs = bridge.timeoutMs ?? OPEN_TIMEOUT_MS;
   const fileRef = useRef(onFile);
   fileRef.current = onFile;
   const idRef = useRef(lattesId);
@@ -57,10 +59,13 @@ export function useLattesReload(
     setShownUntil(Date.now() + MIN_PROGRESS_MS);
     setFailure(undefined);
     if (toast.current) toasts.close(toast.current);
-    toast.current = toasts.add({
-      description: 'A extensão está pedindo a exportação ao Lattes.',
-      title: 'Recarregando do Lattes',
-    });
+    // A leitura pelos formulários mostra o próprio andamento (use-lattes-load.ts).
+    toast.current = ownProgress.current
+      ? undefined
+      : toasts.add({
+          description: 'A extensão está pedindo a exportação ao Lattes.',
+          title: 'Recarregando do Lattes',
+        });
     request.current(id);
   }, []);
 
@@ -78,9 +83,9 @@ export function useLattesReload(
   // Sem resposta, não fica esperando para sempre.
   useEffect(() => {
     if (!pending) return;
-    const timer = setTimeout(() => finish({ reason: 'sem-resposta' }), OPEN_TIMEOUT_MS);
+    const timer = setTimeout(() => finish({ reason: 'sem-resposta' }), timeoutMs);
     return () => clearTimeout(timer);
-  }, [finish, pending]);
+  }, [finish, pending, timeoutMs]);
 
   // A exportação costuma voltar em menos de um segundo: a barra não pisca.
   const lingering = !pending && shownUntil > Date.now();

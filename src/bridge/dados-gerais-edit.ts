@@ -33,6 +33,7 @@ import type { Change } from '../model/changes.ts';
 import { foldText } from '../model/fold-text.ts';
 import { getAttr, type XElement } from '../model/xml.ts';
 import listas from '../schema/listas-lattes.json' with { type: 'json' };
+import { isScreenAttr, screenTable, unknownBefore } from '../schema/screen-fields.ts';
 import { countryCode } from './edit-items.ts';
 import {
   ENDERECO_LOOKUP_ATTRS,
@@ -41,11 +42,14 @@ import {
 } from './endereco-buscas.ts';
 import { planContacts, type SocialRow } from './endereco-contatos.ts';
 import type { LookupRow } from './formacao-edit.ts';
+import { pcdOrder } from './pcd.ts';
 import type { FieldValues, OpBase } from './plan.ts';
 import type { OrganChoice } from './production/organ.ts';
 
 /** Endereço: um formulário só para o profissional (_i) e o residencial (_r). */
 export interface EnderecoOp extends OpBase {
+  /** O órgão de antes sai com a instituição nova, como o testa_inst() da página (endereco-buscas.ts). */
+  clearOrgan?: boolean;
   /** Outra forma de contato: o tipo (name) e o contato (url), antes e depois. */
   contacts?: { after: SocialRow[]; before: SocialRow[] };
   /** A instituição nova do endereço profissional, pela busca do Lattes (endereco-buscas.ts). */
@@ -103,8 +107,9 @@ const RACE: Record<string, string> = {
 const race: Mapper = (v) =>
   v === '' ? '' : RACE[foldText(v.replace(/_/g, ' ').trim()).toLowerCase()];
 
-/** Atributo de DADOS-GERAIS → campo de GN_IDENT. */
-const IDENT_FIELDS: Record<string, [string, Mapper]> = {
+/** Atributo de DADOS-GERAIS → campo de GN_IDENT, com os campos só de tela (tela:*). */
+export const IDENT_FIELDS: Record<string, [string, Mapper]> = {
+  ...screenTable('DADOS-GERAIS'),
   'CIDADE-NASCIMENTO': ['f_cidade_nasc', same],
   'DATA-DE-EMISSAO': ['f_dta_rg', date],
   'DATA-NASCIMENTO': ['f_dta_nasc', date],
@@ -138,7 +143,7 @@ const IDENT_HIDDEN = new Set(['CPF', 'NOME-DA-MAE', 'NOME-DO-PAI']);
 const NATIONALITY = ['NACIONALIDADE', 'PAIS-DE-NACIONALIDADE', 'SIGLA-PAIS-NACIONALIDADE'];
 
 /** Os campos com o "antes" vazio como nenhum rádio marcado. */
-const RADIOS = new Set(['f_end_corr', 'f_sexo']);
+const RADIOS = new Set(['f_end_corr', 'f_nome_social_r', 'f_sexo']);
 
 /** Campos simples de uma tabela: set e expect, ou as listas do que não deu. */
 function mapTable(
@@ -171,7 +176,7 @@ function mapTable(
       continue;
     }
     set[field] = after;
-    expect[field] = before;
+    if (!unknownBefore(f)) expect[field] = before;
   }
   return { expect, invalid, missing, set };
 }
@@ -274,13 +279,15 @@ export function planIdentificacaoEdit(
 
 /**
  * O rótulo de cada caixa de deficiência (prc_ident, lido em 27/10/2026). Na
- * exportação de 27/10/2026, com uma caixa marcada, PCD foi o rótulo dela
- * ("Deficiência Visual"); que os outros tipos sigam o mesmo é inferido.
+ * exportação, PCD é o rótulo da caixa marcada ("Deficiência Visual", 27/10/2026)
+ * e, com mais de uma, os rótulos separados por vírgula ("Deficiência
+ * Auditiva, Deficiência Visual", 29/10/2026). Que os outros tipos sigam o
+ * mesmo, e na ordem das caixas da página, é inferido.
  */
 /** A deficiência pelo conector (op.pcd): só a uma extensão com 'pessoa-com-deficiencia'. */
 export const EDIT_PCD_ENABLED = true;
 
-const PCD_LABELS: Record<string, string> = {
+export const PCD_LABELS: Record<string, string> = {
   'deficiencia auditiva': 'A',
   'deficiencia fisica': 'F',
   'deficiencia intelectual': 'I',
@@ -289,17 +296,17 @@ const PCD_LABELS: Record<string, string> = {
   'transtorno do espectro autista': 'E',
 };
 
-/** Os tipos marcados que um PCD do XML quer dizer: nenhum, um só, ou undefined. */
-function pcdTypes(value: string): string[] | undefined {
-  if (!value.trim()) return [];
-  const code = PCD_LABELS[foldText(value.trim()).toLowerCase()];
-  return code ? [code] : undefined;
+/** Os tipos marcados que um PCD do XML quer dizer, na ordem das caixas; undefined com rótulo que a página não tem. */
+export function pcdTypes(value: string): string[] | undefined {
+  const labels = value
+    .split(',')
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const codes = labels.map((l) => PCD_LABELS[foldText(l).toLowerCase()]);
+  return codes.every(Boolean) ? pcdOrder(codes as string[]) : undefined;
 }
 
-/**
- * A troca da deficiência: as caixas de antes e de depois (pcd.ts) e o rádio
- * f_pcd_r. Como a exportação junta mais de um tipo não foi visto: fica à mão.
- */
+/** A troca da deficiência: as caixas de antes e de depois (pcd.ts) e o rádio f_pcd_r. */
 function planPcd(
   change: Change,
 ): { after: string[]; before: string[] } | { reason: string } | undefined {
@@ -310,7 +317,7 @@ function planPcd(
   if (!before || !after) {
     return {
       reason:
-        'Pessoa com deficiência: com mais de um tipo, como a exportação grava não foi visto; altere no Lattes',
+        'Pessoa com deficiência: tipo que o formulário de identificação do Lattes não tem; escolha pelos rótulos das caixas',
     };
   }
   return { after, before };
@@ -323,7 +330,7 @@ function planPcd(
  * o sufixo. O logradouro tem um nome em cada elemento (XSD) e entra por
  * ENDERECO_STREET, para nenhum dos dois cair no logradouro do outro.
  */
-const ENDERECO_FIELDS: Record<string, [string, Mapper]> = {
+export const ENDERECO_FIELDS: Record<string, [string, Mapper]> = {
   BAIRRO: ['f_bairro', same],
   'CAIXA-POSTAL': ['f_caixa', same],
   CEP: ['f_cep', same],
@@ -343,7 +350,7 @@ export const ENDERECO_SUFFIX: Record<string, string> = {
   'ENDERECO-RESIDENCIAL': '_r',
 };
 
-const ENDERECO_STREET: Record<string, string> = {
+export const ENDERECO_STREET: Record<string, string> = {
   'ENDERECO-PROFISSIONAL': 'LOGRADOURO-COMPLEMENTO',
   'ENDERECO-RESIDENCIAL': 'LOGRADOURO',
 };
@@ -352,7 +359,7 @@ const ENDERECO_STREET: Record<string, string> = {
 const PROFESSIONAL_ABSENT = new Set(['CODIGO-UNIDADE', 'NOME-UNIDADE']);
 
 /** ENDERECO@FLAG-DE-PREFERENCIA → rádio f_end_corr; o resto do ENDERECO vai em grades. */
-const PREFERENCE: Record<string, [string, Mapper]> = {
+export const PREFERENCE: Record<string, [string, Mapper]> = {
   'FLAG-DE-PREFERENCIA': [
     'f_end_corr',
     (v) =>
@@ -385,7 +392,12 @@ export function planEnderecoEdit(change: Change, el: XElement, label: string): P
       ...(contacts.contacts ? { contacts: contacts.contacts } : {}),
     };
   }
-  const unit = labelsOf(change, PROFESSIONAL_ABSENT);
+  // A unidade que sai junto com a instituição nova (o testa_inst() da página) vai.
+  const unitCleared = change.fields.every(
+    (f) => !PROFESSIONAL_ABSENT.has(f.attr) || f.after === '',
+  );
+  const newInstitution = change.fields.some((f) => f.attr === 'CODIGO-INSTITUICAO-EMPRESA');
+  const unit = unitCleared && newInstitution ? [] : labelsOf(change, PROFESSIONAL_ABSENT);
   if (unit.length > 0) {
     return {
       reason: `O formulário de endereço do Lattes não tem campo próprio para: ${unit.join(', ')}`,
@@ -401,8 +413,16 @@ export function planEnderecoEdit(change: Change, el: XElement, label: string): P
     change,
     table,
     ENDERECO_SUFFIX[element] ?? '',
-    (a) => lookups !== undefined && ENDERECO_LOOKUP_ATTRS.has(a),
+    (a) =>
+      isScreenAttr(a) ||
+      (lookups !== undefined && (ENDERECO_LOOKUP_ATTRS.has(a) || PROFESSIONAL_ABSENT.has(a))),
   );
+  // Os campos só de tela já trazem o nome inteiro do campo (com _i ou _r).
+  const screen = mapTable(change, screenTable(element), '', (a) => !isScreenAttr(a));
+  Object.assign(set, screen.set);
+  Object.assign(expect, screen.expect);
+  missing.push(...screen.missing);
+  invalid.push(...screen.invalid);
   if (missing.length) return { reason: `Campos não suportados ainda: ${missing.join(', ')}` };
   if (invalid.length) {
     return {
@@ -417,6 +437,7 @@ export function planEnderecoEdit(change: Change, el: XElement, label: string): P
     set,
     ...(lookups?.institution ? { institution: lookups.institution } : {}),
     ...(lookups?.organ ? { organ: lookups.organ } : {}),
+    ...(lookups?.clearOrgan ? { clearOrgan: true } : {}),
     ...(lookups ? { lookupRows: lookups.rows } : {}),
   };
 }

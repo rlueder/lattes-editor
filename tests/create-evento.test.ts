@@ -19,8 +19,8 @@ import { CREATE_SPECS } from '../src/bridge/create-items.ts';
 import { planChanges } from '../src/bridge/plan.ts';
 import { diffDocuments } from '../src/model/changes.ts';
 import {
-  DIRECT_INCLUSION_TYPES,
   directInclusion,
+  directInclusionTypes,
   includeCapability,
   setIncludeCapability,
   subscribeIncludeCapability,
@@ -106,7 +106,7 @@ describe('evento: a extensão e o Importar decidem o caminho', () => {
     expect(directInclusion()).toEqual(new Set());
     expect(isPendingImport(item, 33)).toBe(true);
     setIncludeCapability(true);
-    expect(directInclusion()).toEqual(DIRECT_INCLUSION_TYPES);
+    expect(directInclusion()).toEqual(directInclusionTypes());
     expect(isPendingImport(item, 33)).toBe(false);
     // Avisa quem acompanha, uma vez por troca.
     let calls = 0;
@@ -213,12 +213,15 @@ describe('evento em contêiner novo', () => {
 
 describe('evento: Importar ou formulário', () => {
   it('com a chave desligada, o evento novo segue no arquivo do Importar; ligada, sai dele', () => {
-    expect([...DIRECT_INCLUSION_TYPES].sort()).toEqual([...EVENT_ELEMENTS].sort());
+    // Os eventos e, com CREATE_PRODUCTION_ENABLED, a produção (production/create.ts).
+    expect([...directInclusionTypes()]).toEqual(expect.arrayContaining([...EVENT_ELEMENTS]));
+    expect(directInclusionTypes().has('TRABALHO-EM-EVENTOS')).toBe(true);
+    expect(directInclusionTypes().has('LIVRO-PUBLICADO-OU-ORGANIZADO')).toBe(false);
     const item = congresso();
     expect(isPendingImport(item, 33)).toBe(true);
     expect(directInclusion()).toEqual(new Set());
     expect(isPendingImport(item, 33, directInclusion(true))).toBe(false);
-    // Um tipo que segue pelo Importar não muda.
+    // O item que o formulário não leva (sem título nem ano) segue pelo Importar.
     const artigo = element('ARTIGO-PUBLICADO', { 'SEQUENCIA-PRODUCAO': '91' });
     expect(isPendingImport(artigo, 33, directInclusion(true))).toBe(true);
     // Fora do Importar, o evento continua "novo" (com o "Editar no formulário"),

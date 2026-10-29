@@ -447,11 +447,11 @@ outra coisa: um `alert("Problemas na autenticação")` antes de mandar para
 - Se o POST do Exportar funciona sem o GET da tela antes (seção 12).
 - Por que um item confirmado no passo 3 do Importar some (seção 13, item 8),
   e o limite superior de `SEQUENCIA-PRODUCAO`.
-- Como a exportação grava a PCD com mais de um tipo marcado, e mais de um
-  depositante numa patente (seção 17). Com um tipo só, a exportação de
-  27/10/2026 trouxe o rótulo da caixa (`PCD="Deficiência Visual"`), e duas
-  redes sociais vieram coladas em `REDE-SOCIAL`, sem separador: o "ID Rede
-  Social" da segunda começa logo depois do endereço da primeira. **Observado.**
+- Como a exportação grava mais de um depositante numa patente (seção 17).
+  Duas redes sociais vieram coladas em `REDE-SOCIAL`, sem separador: o "ID
+  Rede Social" da segunda começa logo depois do endereço da primeira
+  (exportação de 27/10/2026). **Observado.** A PCD com mais de um tipo está
+  na seção 25.
 
 ## 9. Vigia: saber quando o CNPq mudou algo
 
@@ -1750,6 +1750,14 @@ atuação vem da instituição escolhida no formulário. **Observado.**
 | `f_tipo_privacidade`                                                                                       | lista `1`/`2`                                                                                                                                        |                                   |
 | `f_ctr` (`I`), `f_cod`, `f_codinst`, `f_seq_ativ`, `f_seq_funcao`, `f_seq_proj`, `f_cod_tipo` (`P`)        | ocultos; na inclusão, `f_codinst` e as três sequências vêm vazias                                                                                    |                                   |
 
+No projeto de ensino (`f_cod_tipo` `N`, censo de 27/10/2026), os três
+ocultos de valor `X` vêm acompanhados de caixas de mesmo nome:
+`f_tpo_cooperacao` (`IE`, `AF`, `EM`), `f_tpo_acao_inov` (`EF`, `EM`, `GR`,
+`ES`, `GM`, `MP`, `GD`) e `f_tematica` (12 temas, `EA` a `O`); o navegador
+manda o `X` e um par por caixa marcada. Esse formulário não tem os dados da
+empresa. **Observado** no formulário, e o envio com todas as caixas
+marcadas gravou e voltou na página (seção 29).
+
 `check()` exige nome, natureza, situação, ano de início (e de fim quando
 concluído), números inteiros nas quantidades de alunos, os dados da empresa
 quando é pesquisa em empresa (com e-mail institucional que não seja de conta
@@ -1777,7 +1785,8 @@ Outras janelas do formulário: `PKG_PROJETO.pp_lista_inst?f_pgm=INSTFINANC`
 (financiadores), `PKG_PROJETO.pp_lista_autores` (equipe),
 `PKG_PROJETO.pp_lista_prod` (produções ligadas). O CNPJ da empresa é
 consultado por GET ajax `PKG_PROJETO.PR_RECUPERA_DADOS_INST` com `p_cnpj`,
-resposta JSON com `cod`, `nome` e `email`. `chamaVerificaVinculo()` chama
+resposta JSON com `cod`, `nome` e `email`; o CNPJ só grava com esse `cod` em
+`f_cod_inst_empresa` (seção 29). `chamaVerificaVinculo()` chama
 `pkg_projeto.verifica_vinculo_ajax`, que responde 404: o procedimento não
 existe mais (ou a assinatura mudou). **Observado.**
 
@@ -2166,9 +2175,13 @@ nome em `f_inst`. O órgão vai pela janela das atividades
 das atividades, `src/bridge/production/organ.ts`): o código de antes se
 confere pelo oculto ou pelo texto de `f_orgao`, e a releitura confere o texto
 novo em `f_orgao`. Com a instituição trocada, a janela abre na instituição
-nova, com a letra que a busca deu. Se o `seleciona()` limpa o órgão não foi
-visto: com órgão no item, a instituição nova só vai com o órgão escolhido de
-novo. A unidade não tem campo próprio no formulário: com unidade no item, a
+nova, com a letra que a busca deu. Ao trocar a instituição com órgão, o
+`testa_inst()` da página pergunta "Será necessário alterar o Órgão/Unidade.
+Deseja continuar?" e limpa na tela `f_codorgao`, `f_codorgao2`, `f_orgao` e
+`f_orgao_old` (lido em 28/10/2026). Como `f_orgao` vem desabilitado e os
+ocultos do órgão já vêm vazios, o envio fica igual ao de quem não mexe no
+órgão; se o servidor apaga o órgão de antes não foi visto, e a releitura de
+`f_orgao` mostra. A instituição nova sem órgão escolhido vai assim. A unidade não tem campo próprio no formulário: com unidade no item, a
 troca de órgão fica à mão. **Inferido**: que a página traga os ocultos da
 instituição preenchidos com o valor gravado, que os do órgão venham vazios
 (como na alteração do projeto), que `PRC_ENDERECO` grave os dois, e que a
@@ -2497,8 +2510,8 @@ ofereça mais incluir esses dois tipos é **inferido**.
 **Licença.** `f_tipo_licenca` tem `M` maternidade, `P` paternidade e `A`
 adoção; as datas são `dd/mm/aaaa`. O `check()` exige o tipo, o início, o fim e
 a data de nascimento ou adoção (`f_dta_nasc_adoc`), início depois dela e
-período de até 180 dias. O XML da licença não guarda a data de nascimento ou
-adoção, e o XSD só tem `MATERNIDADE`.
+período de até 180 dias. O XSD só tem `MATERNIDADE` e não tem a data de
+nascimento ou adoção; a exportação traz as duas coisas (seção 29).
 
 **Áreas de atuação.** `prc_area_atuacao` serializa a grade em `f_area_l` com
 as chaves `l`, `c`, `r` e `p` (o `r` com a letra "r" na frente) e a
@@ -2689,13 +2702,13 @@ o conector mantém o mapeamento anterior por rótulo, sem acento nem caixa.
 
 O tipo de licença também usa as três opções capturadas (`f_tipo_licenca`):
 Maternidade (M), Paternidade (P) e Adoção (A). `MATERNIDADE` consta no XSD;
-`PATERNIDADE` e `ADOCAO` continuam **inferidos** do rótulo, como no mapeamento
-que o conector já usava. A lista da interface compartilha esses valores com
-o planejador; o tipo vazio é recusado antes do envio. A inclusão de licença
-exige a data de nascimento ou adoção, que fica fora do XML (seção 21): o
-editor a pede na licença nova e a manda só no envio
+`PATERNIDADE` e `ADOCAO` vieram na exportação de 29/10/2026 e entraram em
+`schema/patch.json` (seção 29). A lista da interface compartilha esses
+valores com o planejador; o tipo vazio é recusado antes do envio. A inclusão
+de licença exige a data de nascimento ou adoção, que a exportação guarda em
+`DATA-NASCIMENTO-ADOCAO` (seção 29): o editor a manda pelo formulário
 (`src/bridge/create-licenca.ts`), com as regras do `check()` conferidas
-antes. **Inferido**, sem envio acompanhado.
+antes. A inclusão dos três tipos foi acompanhada (seções 27 e 29).
 
 ## 24. Recaptura de 26/10/2026
 
@@ -2796,7 +2809,15 @@ sintéticos:
   a das redes, sem separador (inferido). O `ELETRONICO` traz o e-mail alternativo da tela de envio
   como `R:`, depois de `I:` e um `;`.
 - **Pessoa com deficiência.** Com um tipo marcado, `PCD` é o rótulo da
-  caixa (`"Deficiência Visual"`).
+  caixa (`"Deficiência Visual"`); com dois, os rótulos separados por vírgula
+  e espaço (`"Deficiência Auditiva, Deficiência Visual"`, marcados pela
+  própria página e exportados em 29/10/2026). **Observado.** A ordem é a dos
+  códigos das caixas (A, E, F, I, M, V), e não a da página nem a dos rótulos:
+  com os seis marcados, a exportação de 29/10/2026 trouxe `"Deficiência
+Auditiva, Transtorno do Espectro Autista, Deficiência Física, Deficiência
+Intelectual, Deficiência Múltipla, Deficiência Visual"`. A página manda os
+  `f_pcd` na ordem das caixas (A, F, I, V, E, M), depois do `DUMMY`. A visibilidade (`f_priv_pcd`) a página põe por
+  script (`$("[name=f_priv_pcd]").val(…)`); o HTML não marca opção.
 
 ## 26. Recaptura dos formulários (27/10/2026)
 
@@ -2927,3 +2948,201 @@ excluído pelo conector, e a releitura conferiu os dois passos. **Observado**:
   e diz quando há solicitação pendente.
 - **Exportar.** O POST precisa de `f_ctr=G` (sem ele, volta a tela). O ZIP
   guarda os tamanhos no diretório central, não no cabeçalho local.
+
+## 28. Como os dados circulam no Lattes
+
+Um resumo de como o currículo é guardado, alterado, excluído, importado e
+exportado, e de onde cada caminho difere dos outros. Os detalhes de cada
+caminho estão nas seções 10 (Exportar), 13 (Importar), 15 (exclusão) e 16 e
+17 (formulários). **Observado** em leituras e em itens de teste incluídos,
+alterados e excluídos no currículo do dono, até 28/10/2026, salvo onde o texto
+diz **inferido**.
+
+### Duas versões do currículo
+
+|              | Versão de trabalho                                                                              | Versão publicada                            |
+| ------------ | ----------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| O que muda   | todo envio de formulário, todo Confirmar do Importar, toda exclusão                             | só o "Enviar ao CNPq", com a declaração     |
+| Onde aparece | as listas do menu, o formulário de alteração de cada item, a tela de conferência (`cv_espelho`) | o currículo público e o arquivo do Exportar |
+| Estado       | o que mudou fica pendente até o envio                                                           |                                             |
+
+- O Exportar só entrega a versão publicada, e não entrega nada enquanto há
+  alteração pendente (seção 27). Depois de um envio, ele continua entregando
+  o arquivo anterior por mais de uma hora (seção 10).
+- A exportação pode ter item que nenhuma lista mostra: um item excluído na
+  versão de trabalho continua nela até o envio e a atualização do Exportar.
+- As listas e os formulários mostram a versão de trabalho, com as pendências.
+  É a mesma que a pessoa vê no site.
+
+### Quatro caminhos
+
+**Formulário** (o site e o conector). Um item por formulário, um envio por
+vez. O formulário mostra parte dos atributos do XML, e cada escolha vai como
+um código do formulário, não como o valor do XML (o meio de divulgação é
+`I`, `M`, `D`… no formulário e `IMPRESSO`, `MEIO_MAGNETICO`, `MEIO_DIGITAL`…
+no XML). Três descompassos:
+
+- **Atributo do XML sem campo em formulário nenhum:** os códigos CAPES e de
+  área do curso, o nome do curso em inglês, o fascículo do artigo, a
+  permissão de divulgação, os participantes de um evento, as informações
+  adicionais de instituições e de cursos, o código da instituição de uma
+  atividade (a página traz só um oculto, sem o nome). Só a exportação e o
+  Importar os carregam; ninguém os vê nem os altera no site.
+- **Valor do XML sem opção no formulário:** `WEB` no meio de divulgação,
+  `FEIRA` e `OLIMPIADA` no tipo da organização de evento, e `NAO_INFORMADO`
+  em geral. O formulário mostra a escolha vazia.
+- **Campo do formulário sem atributo no XML:** a visibilidade de cada dado,
+  o nome social, a classificação do evento, a temática, a cooperação e as
+  ações inovadoras do projeto de ensino. O site os mostra; o XML não os
+  carrega.
+
+Nenhum script da página mexe em "Divulgação científica" do trabalho em
+eventos nem em "Acervo" da manutenção de obra artística: o navegador manda
+o que o formulário tem (lido em 28/10/2026). Salvos pela própria página do
+Lattes, num item de teste:
+
+- **Trabalho em eventos** que entrou pelo Importar: toda gravação, mesmo sem
+  mudança nenhuma, volta com `Erro. ORA-01403: não foram encontrados dados`
+  no gatilho `FOMENTO.TRG_ATU_IVIP_PROD_CIENTIFICA`
+  (`PKG_MANUTENCAO_PROD_UNIFICADA`), e nada fica gravado. Foi assim nos três
+  trabalhos de teste importados. Os textos em jornal de teste importados e
+  três artigos importados nem abrem: a página de alteração, com o `f_seq`
+  deles, vem vazia e em modo de inclusão (`f_ctr` `I`). Um trabalho de teste
+  incluído pelo formulário de inclusão, em seguida, gravou a divulgação
+  científica pelo conector, conferida na releitura.
+- **Acervo:** a gravação passa sem erro, e a página de alteração volta com a
+  lista vazia, como sempre vem. O valor gravado só se vê na exportação, que
+  ainda não foi conferida.
+
+**Importar** (arquivo XML, seção 13). O único caminho em lote, e só para
+produções: os 17 módulos do passo 2 (artigos, livros, anais, textos,
+apresentações, outras bibliográficas, softwares, produtos, processos,
+trabalhos técnicos, outras técnicas, artísticas, orientações, demais
+trabalhos, eventos e bancas). Formação, atuação, projetos, patentes,
+registros e dados gerais não entram por ele.
+
+- **A conferência do arquivo.** Toda recusa vem com o mesmo alerta ("Não foi
+  possível processar o arquivo enviado. Certifique-se que o mesmo esteja de
+  acordo com o DTD"), qualquer que seja a causa. Causas vistas: texto só de
+  espaços entre elementos (um arquivo formatado com recuo; a exportação não
+  tem), um valor maior que o campo do formulário (o volume do artigo), e um
+  `DADOS-GERAIS` sem todos os atributos da exportação (seção 13). Um arquivo
+  com essas três coisas em ordem pode responder com o alerta e mesmo assim
+  criar a solicitação (seção 27).
+- **O passo 2** traz, além das 17 caixas de módulo, caixas `f_chk`
+  desabilitadas ("Atuação profissional", "Áreas de atuação"), só para
+  mostrar: o navegador não as envia.
+- **O passo 3** lista cada item, verde (novo) ou vermelho (já existe, pelo
+  título). O Confirmar com algumas dezenas de linhas grava e encerra a
+  solicitação; com algumas centenas, respondeu sem a mensagem de sucesso,
+  não gravou nada e deixou a solicitação aberta. Cada solicitação aceita um
+  Confirmar: o resto precisa de outro envio do arquivo.
+- **Tipos que o Importar deixa de fora sem aviso**, ausentes do passo 3:
+  artes cênicas, artes visuais, música, mídia social, website ou blog,
+  participação em feira, em exposição e em olimpíada (os tipos mais novos do
+  XSD), e o artigo cuja natureza não é "completo" no módulo de artigos
+  completos. Esses só entram pelo formulário de cada um.
+- **Valores que o Importar não leva ao formulário:** o item entra, e a
+  página de alteração mostra o padrão no lugar do valor do arquivo.
+
+  | Campo                                                       | No arquivo                      | No formulário depois do Importar |
+  | ----------------------------------------------------------- | ------------------------------- | -------------------------------- |
+  | Divulgação científica (livro, capítulo, software e outros)  | `SIM`                           | Não                              |
+  | Natureza do programa de computador e do processo ou técnica | qualquer                        | nenhuma escolhida                |
+  | Natureza do livro                                           | qualquer                        | não informada                    |
+  | Potencial de inovação                                       | `SIM`                           | nenhuma escolhida                |
+  | Disponibilidade do programa, acervo da manutenção de obra   | qualquer                        | não informada                    |
+  | Tipo da orientação e da banca de mestrado                   | acadêmico ou profissionalizante | vazio                            |
+
+- **Os dicionários.** Cada autor dos itens importados entra no dicionário de
+  coautores (`pkg_dic_autor`), e cada palavra-chave no de palavras-chave
+  (`pkg_dic_plv_nv`).
+
+**Exclusão** (seção 15). Pelo formulário de cada item, com o `del()` da
+página. A formação chama antes o `SETA_ULTIMO_PUBLICO` (quando não há outra
+pública); a atuação inteira sai por um GET com `f_ctr=E2`, que leva os
+vínculos, as atividades e os projetos dela; uma entrada do dicionário de
+coautores só sai sem produção ligada a ela. A exclusão fica pendente como
+qualquer alteração.
+
+**Exportar** (seções 10 e 12). A versão publicada em XML, com os atributos
+que nenhuma tela mostra, e com grafias que as telas não usam: o CEP só com
+dígitos (a tela mostra `99999-999`), o tipo de vínculo digitado como `LIVRE`,
+aspas como `&quot;` dentro do texto, e números internos nas redes sociais.
+
+### O que o editor faz com isso
+
+- Carrega pelas listas e pelos formulários (`src/bridge/load/`): o mesmo que
+  o site mostra, com as pendências, sem esperar o Exportar. Atributo que
+  nenhuma tela mostra não entra.
+- Altera e exclui pelos formulários, um item por vez, relendo depois de cada
+  envio. Um campo que volta diferente na releitura aparece como não gravado.
+- O item novo de produção vai pelo formulário de inclusão, como no site, e
+  a releitura confere cada campo. Só o que o formulário não leva (o livro,
+  cujo endereço de inclusão não foi lido) vai pelo Importar, e esse item o
+  editor ainda não confere depois do Confirmar.
+- Os campos que só as telas têm (nome social, visibilidade, celular,
+  validade do passaporte) ficam na cópia do editor e vão e voltam pelos
+  formulários; nenhum arquivo que o editor gera os leva, porque a exportação
+  e o Importar não os conhecem.
+- Depois de um envio ao CNPq feito pelo editor, sem pendência de fora dele,
+  a cópia de trabalho está em dia com o que ele gravou, mesmo com o Exportar
+  ainda antigo.
+
+## 29. Projetos e licenças pelo conector (29/10/2026)
+
+Pela ponte local, com a passada (`scripts/passada/projetos.ts`): um projeto
+de teste de cada natureza, numa atuação só, e uma licença de cada tipo,
+incluídos pelo planejador e pelo `applyOp` do editor, alterados depois pelo
+mesmo caminho, lidos página a página e excluídos. As listas voltaram iguais
+à base. A passada não enviou nada ao CNPq; a exportação das licenças veio
+de um envio feito depois pela pessoa (abaixo).
+**Observado**, com valores sintéticos:
+
+- **Opções do projeto.** As cinco naturezas, as três situações, o potencial
+  de inovação Sim (com o texto) e Não, a cooperação com empresa Sim (CNPJ,
+  nome, e-mail e setor) e Não, as cinco naturezas de financiador (`A`, `B`,
+  `C`, `O`, `R`) e, no projeto de ensino, todas as caixas de cooperação,
+  ações inovadoras e temática gravaram e voltaram na página.
+- **Visibilidade de saída.** O projeto incluído sem `f_tipo_privacidade`
+  ficou Público (`1`); a licença incluída sem ele ficou Privado (`2`). As
+  duas páginas põem o valor por script
+  (`$("[name=f_tipo_privacidade]").val(…)`), e o HTML marca `1`.
+- **Tipo da licença.** A página de alteração põe `f_tipo_licenca` por script
+  (`$("[name=f_tipo_licenca]").val("P")`), com `M`, `P` e `A`.
+- **Exportação das licenças.** As três licenças de teste, enviadas ao CNPq
+  pela pessoa em 29/10/2026 e excluídas depois, vieram na exportação das
+  12h20 assim, nesta ordem:
+  `<LICENCA TIPO-LICENCA="MATERNIDADE" DATA-INICIO-LICENCA="10012001" DATA-FIM-LICENCA="10032001" DATA-NASCIMENTO-ADOCAO="05012001"/>`,
+  `<LICENCA TIPO-LICENCA="ADOCAO" … DATA-NASCIMENTO-ADOCAO="05012003"/>` e
+  `<LICENCA TIPO-LICENCA="PATERNIDADE" … DATA-NASCIMENTO-ADOCAO="05012002"/>`.
+  `PATERNIDADE` e `ADOCAO` são os valores de `P` e `A`. A data de nascimento
+  ou adoção vai em `DATA-NASCIMENTO-ADOCAO`, em DDMMAAAA, atributo que o XSD
+  não tem. Nenhum `FORMATO-DATA-*` veio na licença. A ordem da exportação
+  (M, A, P) não foi a da inclusão (M, P, A); que regra a decide não se sabe.
+- **Lista das licenças.** Cada linha de `pkg_licenca.lista` traz o tipo
+  pelo rótulo, as três datas em dd/mm/aaaa (início, fim, nascimento ou
+  adoção) e a duração contando o primeiro e o último dia: `Maternidade
+10/01/2001 10/03/2001 05/01/2001 60 dias`. O editor inclui a licença nova
+  como privada, igual ao formulário, e manda a visibilidade quando ela foi
+  escolhida no editor.
+- **Duas listas.** O projeto com potencial de inovação aparece também em
+  `pkg_projeto.lista?f_cod_tipo=<natureza>&f_sta_inovacao=S`, uma lista por
+  natureza no menu, e o link da linha leva `F_sta_inovacao=S`. É o mesmo
+  projeto: o carregamento o lê uma vez só.
+- **Participações por período.** O servidor pendurou os projetos em
+  andamento numa participação (`f_seq_funcao` 3) e os concluídos e
+  desativados em outra (4), na mesma atividade. `f_seq_proj` recomeça em
+  cada participação: só as três sequências juntas identificam o projeto.
+- **CNPJ da empresa.** O `onChange` do CNPJ chama `recuperaDadosInst()`, um
+  GET de `PKG_PROJETO.PR_RECUPERA_DADOS_INST?p_cnpj=<só dígitos>`, que
+  responde `{"cod":"…" ,"nome":"…" ,"email":"…"}` (`text/html`). A página põe
+  o `cod` em `f_cod_inst_empresa`, troca o nome e o e-mail pelos da resposta e
+  limpa o setor; com o nome vazio, avisa "CNPJ inválido.". Mandado sem o
+  código, o CNPJ não gravou. Com o código, gravou como foi digitado, com a
+  máscara, e o nome, o e-mail e o setor enviados ficaram como foram.
+- **Ações inovadoras do projeto de ensino.** No projeto de ensino o rádio
+  `f_sta_inovacao` pergunta se o projeto possui ações inovadoras, e o
+  formulário não tem `f_txt_potencial`. Com as caixas de ações marcadas e o
+  rádio em Não, o Lattes gravou Sim. O editor manda as duas coisas juntas, ou
+  deixa a mudança à mão.

@@ -207,15 +207,46 @@ const PRIVACY: [string, string][] = [
 ];
 
 /**
+ * Os campos de um bloco sem atributo no XML (o celular, a visibilidade do
+ * e-mail e, no profissional, a do endereço), guardados ao lado do elemento
+ * como o Lattes os guarda fora da exportação. Partida como no censo de
+ * 15/10/2026: vazios e públicos.
+ */
+function addressScreenBindings(state: LattesState, suffix: string): Binding[] {
+  const stored = (name: string, initial: string) => ({
+    read: (el: XElement) => state.formOnly(el)[name] ?? initial,
+    write: (el: XElement, value: string) => {
+      state.formOnly(el)[name] = value;
+    },
+  });
+  return [
+    { kind: 'text', maxLength: 5, name: `f_ddd_cel${suffix}`, ...stored('f_ddd_cel', '') },
+    { kind: 'text', maxLength: 10, name: `f_fone_cel${suffix}`, ...stored('f_fone_cel', '') },
+    {
+      kind: 'select',
+      name: `f_priv_email${suffix}`,
+      options: PRIVACY,
+      ...stored('f_priv_email', '1'),
+    },
+    ...(suffix === '_i'
+      ? [
+          {
+            kind: 'select',
+            name: 'f_priv_profissional',
+            options: PRIVACY,
+            ...stored('f_priv_profissional', '1'),
+          } satisfies Binding,
+        ]
+      : []),
+  ];
+}
+
+/**
  * Os controles do formulário que o simulado não liga ao XML, como o censo de
- * 15/10/2026 os leu: o país, o celular, a visibilidade, o endereço de
- * correspondência e os campos de controle da página.
+ * 15/10/2026 os leu: os ocultos de cidade e município e os valores antigos.
  */
 function addressExtras(suffix: string): string {
   return [
-    h.text(`f_ddd_cel${suffix}`, '', { maxLength: 5 }),
-    h.text(`f_fone_cel${suffix}`, '', { maxLength: 10 }),
-    h.select(`f_priv_email${suffix}`, PRIVACY, '1'),
     ...['f_cidade', 'f_cod_munic'].map((n) => h.hidden(`${n}${suffix}`, '')),
     ...['f_munic', 'f_estado', 'f_pais'].map((n) => h.hidden(`${n}${suffix}_old`, '')),
   ].join('\n');
@@ -237,7 +268,6 @@ const preference = mapped(
 
 const FORM_EXTRAS = [
   h.select('f_priv_residencial', PRIVACY, '2', { disabled: true }),
-  h.select('f_priv_profissional', PRIVACY, '1'),
   ...['modal2', 'f_dados_grid', 'f_dados_grid_contatos', 'f_origem', 'f_cod'].map((n) =>
     h.hidden(n, ''),
   ),
@@ -362,7 +392,8 @@ function enderecoForm(_req: SimRequest, state: LattesState): SimResponse {
   const container = state.find(['DADOS-GERAIS', 'ENDERECO']);
   const blocks = ADDRESS.map(([suffix, name]) => {
     const el = container && childElements(container, name)[0];
-    return `<fieldset><legend>${suffix === '_i' ? 'Profissional' : 'Residencial'}</legend>${renderFields(addressBindings(suffix, name), el ?? element(name))}\n${addressExtras(suffix)}</fieldset>`;
+    const shown = el ?? element(name);
+    return `<fieldset><legend>${suffix === '_i' ? 'Profissional' : 'Residencial'}</legend>${renderFields(addressBindings(suffix, name), shown)}\n${renderFields(addressScreenBindings(state, suffix), shown)}\n${addressExtras(suffix)}</fieldset>`;
   }).join('\n');
   const professional = container && childElements(container, 'ENDERECO-PROFISSIONAL')[0];
   const body = `<form name="GN_ENDERECO" method="post" action="PRC_ENDERECO">
@@ -386,9 +417,19 @@ function enderecoPost(req: SimRequest, state: LattesState): SimResponse {
     if (!el && bindings.every((b) => !req.get(b.name))) continue;
     el ??= state.ensure(state.ensurePath(['DADOS-GERAIS', 'ENDERECO']), name);
     applyFields(bindings, el, req);
+    applyFields(addressScreenBindings(state, suffix), el, req);
   }
   const professional = state.find(['DADOS-GERAIS', 'ENDERECO', 'ENDERECO-PROFISSIONAL']);
-  if (professional) applyFields(institutionBindings(state), professional, req);
+  if (professional) {
+    const was = getAttr(professional, 'CODIGO-INSTITUICAO-EMPRESA') ?? '';
+    applyFields(institutionBindings(state), professional, req);
+    // Instituição nova sem órgão escolhido: o órgão de antes sai, como o
+    // testa_inst() da página o limpa na tela (inferido que o servidor faça igual).
+    const now = getAttr(professional, 'CODIGO-INSTITUICAO-EMPRESA') ?? '';
+    if (now !== was && !req.get('f_codorgao') && !req.get('f_codorgao2')) {
+      for (const a of ['CODIGO-ORGAO', 'NOME-ORGAO']) setAttr(professional, a, '');
+    }
+  }
   const corr = state.find(['DADOS-GERAIS', 'ENDERECO']);
   if (corr || req.get('f_end_corr')) {
     applyFields([preference], corr ?? state.ensurePath(['DADOS-GERAIS', 'ENDERECO']), req);

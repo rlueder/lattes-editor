@@ -2,6 +2,7 @@
 
 import { elementLabel } from '../labels/labels.ts';
 import { lattesSchema } from '../schema/lattes.ts';
+import { SCREEN_PREFIX, screenField, screenValueLabel } from '../schema/screen-fields.ts';
 import type { AttributeSpec } from '../schema/types.ts';
 import { controllersFirst } from './field-dependencies.ts';
 import { formLayout, formSlot, IN_ENGLISH, isEnglishAttr, OTHER_DATA } from './form-order.ts';
@@ -73,6 +74,7 @@ const COMPLEMENTARY_LEVELS: Record<string, string> = {
 };
 
 export function codeValueLabel(element: string, attr: string, value: string): string {
+  if (screenField(element, attr)?.choices) return screenValueLabel(element, attr, value);
   if (attr === 'NIVEL' && COMPLEMENTARY_LEVELS[value]) return COMPLEMENTARY_LEVELS[value];
   // O nível da formação acadêmica é o próprio tipo do item (3 em MESTRADO).
   if (attr === 'NIVEL' && LEVEL_FROM_TYPE.test(element)) return elementLabel(element);
@@ -84,6 +86,8 @@ export function codeChoices(
   element: string,
   attr: string,
 ): { label: string; value: string }[] | undefined {
+  const screen = screenField(element, attr)?.choices;
+  if (screen) return [...screen];
   const table = CODE_VALUES[`${element} ${attr}`];
   if (!table || isSystemAttr(element, attr)) return undefined;
   return Object.entries(table).map(([value, label]) => ({ label, value }));
@@ -216,6 +220,10 @@ const GROUPS: { label: string; test: RegExp }[] = [
   { label: 'Palavras-chave e setores', test: /^(PALAVRA-CHAVE|SETOR-DE-ATIVIDADE)/ },
 ];
 
+/** O grupo da visibilidade do item (f_tipo_privacidade), no fim do formulário. */
+const VISIBILITY_GROUP = 'Visibilidade';
+const ITEM_VISIBILITY = `${SCREEN_PREFIX}f_tipo_privacidade`;
+
 /** Um campo de um bloco: o atributo e o elemento onde ele mora. */
 export interface FieldEntry {
   attr: string;
@@ -272,6 +280,7 @@ export function groupFields(
       ...GROUPS.map((g) => g.label),
       'Marcações',
       'Outros',
+      VISIBILITY_GROUP,
       'Códigos do Lattes',
     ]),
   ];
@@ -281,15 +290,18 @@ export function groupFields(
     if (paired.has(entry.key)) continue;
     const label =
       slotOf(entry)?.label ??
-      (isSystemAttr(entry.element, entry.attr)
-        ? 'Códigos do Lattes'
-        : mapped(entry)
-          ? isEnglishAttr(entry.attr)
-            ? IN_ENGLISH
-            : OTHER_DATA
-          : isBoolean(entry)
-            ? 'Marcações'
-            : (GROUPS.find((g) => g.test.test(entry.attr))?.label ?? 'Outros'));
+      // A visibilidade do item fica no fim, como no formulário do Lattes.
+      (entry.attr === ITEM_VISIBILITY
+        ? VISIBILITY_GROUP
+        : isSystemAttr(entry.element, entry.attr)
+          ? 'Códigos do Lattes'
+          : mapped(entry)
+            ? isEnglishAttr(entry.attr)
+              ? IN_ENGLISH
+              : OTHER_DATA
+            : isBoolean(entry)
+              ? 'Marcações'
+              : (GROUPS.find((g) => g.test.test(entry.attr))?.label ?? 'Outros'));
     buckets.set(label, [...(buckets.get(label) ?? []), entry]);
   }
   const groups = order
@@ -354,15 +366,19 @@ function groupByPreview(
     if (paired.has(entry.key)) continue;
     const label =
       previewSlot(entry)?.label ??
-      (isSystemAttr(entry.element, entry.attr) ? 'Códigos do Lattes' : OTHER_DATA);
+      (entry.attr === ITEM_VISIBILITY
+        ? VISIBILITY_GROUP
+        : isSystemAttr(entry.element, entry.attr)
+          ? 'Códigos do Lattes'
+          : OTHER_DATA);
     buckets.set(label, [...(buckets.get(label) ?? []), entry]);
   }
   const first = (label: string) =>
     Math.min(...buckets.get(label)!.map((e) => previewSlot(e)?.rank ?? Infinity));
   const order = [...buckets.keys()]
-    .filter((l) => l !== OTHER_DATA && l !== 'Códigos do Lattes')
+    .filter((l) => l !== OTHER_DATA && l !== VISIBILITY_GROUP && l !== 'Códigos do Lattes')
     .sort((a, b) => first(a) - first(b));
-  return [...order, OTHER_DATA, 'Códigos do Lattes']
+  return [...order, OTHER_DATA, VISIBILITY_GROUP, 'Códigos do Lattes']
     .filter((label) => buckets.has(label))
     .map((label) => ({
       entries: withCodes(

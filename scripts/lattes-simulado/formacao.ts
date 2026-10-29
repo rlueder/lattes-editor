@@ -44,7 +44,8 @@ const TITLES = [
   'TITULO-DA-RESIDENCIA-MEDICA',
   'TITULO-DO-TRABALHO',
 ];
-const ADVISORS = ['NOME-COMPLETO-DO-ORIENTADOR', 'NOME-DO-ORIENTADOR'];
+// Na residência médica, f_orient é o número do registro (formacao-edit.ts).
+const ADVISORS = ['NOME-COMPLETO-DO-ORIENTADOR', 'NOME-DO-ORIENTADOR', 'NUMERO-DO-REGISTRO'];
 /** A instituição do doutorado (ou da graduação) sanduíche, pela busca com f_sta_outra=S. */
 const DOUT_INST = ['CODIGO-INSTITUICAO-DOUT', 'CODIGO-INSTITUICAO-GRAD'];
 const DOUT_INST_NAME = ['NOME-INSTITUICAO-DOUT', 'NOME-INSTITUICAO-GRAD'];

@@ -10,6 +10,7 @@ import {
   type PublishOutcome,
   type PublishRequest,
   type PublishResult,
+  type PublishStep,
   type SendScreen,
 } from '../bridge/publish.ts';
 import type { SentEntry } from '../bridge/sent-log.ts';
@@ -69,7 +70,8 @@ export function publishRequest(
 }
 
 /** Quanto esperar a resposta do envio: o Lattes levou uns 18 s, e o menu é relido depois. */
-export const PUBLISH_REPLY_TIMEOUT_MS = 120_000;
+// Acima do prazo da tarefa de envio na aba (PUBLISH_PACE, publish.ts).
+export const PUBLISH_REPLY_TIMEOUT_MS = 270_000;
 
 export interface PublishAttempt {
   at: number;
@@ -109,6 +111,26 @@ export function locksSending(result: PublishResult): boolean {
 
 const REOPEN = ' Para tentar de novo, feche e abra este painel.';
 
+const STEP_LABELS: Record<PublishStep['step'], string> = {
+  conferencia: 'conferência no menu',
+  emails: 'e-mails',
+  envio: 'envio',
+  espera: 'espera entre as conferências',
+  menu: 'menu',
+  'raca-cor': 'raça ou cor',
+  tela: 'tela de envio',
+};
+
+const seconds = (ms: number) => `${(ms / 1000).toFixed(1).replace('.', ',')} s`;
+
+/** Onde o tempo do envio foi, passo a passo; vazio sem os tempos. */
+export function stepsText(steps: readonly PublishStep[] | undefined): string {
+  if (!steps?.length) return '';
+  const total = steps.reduce((sum, s) => sum + s.ms, 0);
+  const parts = steps.map((s) => `${STEP_LABELS[s.step]} ${seconds(s.ms)}`);
+  return ` Tempo no Lattes: ${seconds(total)} (${parts.join(', ')}).`;
+}
+
 /** Em que pé está o envio pedido, pela resposta com o mesmo id ou pelo prazo. */
 export function publishStatus(
   attempt: PublishAttempt | undefined,
@@ -123,7 +145,10 @@ export function publishStatus(
       busy: false,
       done,
       locked,
-      text: publishMessage(reading.result) + (locked && !done ? REOPEN : ''),
+      text:
+        publishMessage(reading.result) +
+        (locked && !done ? REOPEN : '') +
+        stepsText(reading.result.steps),
     };
   }
   if (now - attempt.at >= PUBLISH_REPLY_TIMEOUT_MS) {

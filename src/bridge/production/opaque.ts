@@ -21,7 +21,7 @@ import type { OpaqueGrid } from './types.ts';
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** O corpo da tabela `id`, ou undefined sem a tabela. */
-function tableBody(html: string, id: string): string | undefined {
+export function tableBody(html: string, id: string): string | undefined {
   const table = new RegExp(
     `<table\\b[^>]*\\bid\\s*=\\s*["']?${escape(id)}["'\\s>][\\s\\S]*?</table>`,
     'i',

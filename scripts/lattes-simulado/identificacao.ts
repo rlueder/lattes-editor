@@ -123,32 +123,111 @@ function identBindings(): Binding[] {
 const PRIVACY = h.PRIVACY;
 
 /**
- * Os outros controles da identificação, como o censo de 15/10/2026 os leu,
- * sem ligação com o XML. O oculto f_pcd vem antes da caixa de mesmo nome,
- * como no Lattes.
+ * A deficiência: o rádio f_pcd_r, o oculto f_pcd antes das caixas de mesmo
+ * nome (como no Lattes) e uma caixa por tipo, na ordem da página. A
+ * exportação guarda os rótulos das marcadas, separados por vírgula e espaço,
+ * na ordem dos códigos (A, E, F, I, M, V; exportação de 29/10/2026).
+ */
+const PCD: [string, string][] = [
+  ['A', 'Deficiência Auditiva'],
+  ['F', 'Deficiência Física'],
+  ['I', 'Deficiência Intelectual'],
+  ['V', 'Deficiência Visual'],
+  ['E', 'Transtorno do Espectro Autista'],
+  ['M', 'Deficiência Múltipla'],
+];
+
+function pcdBindings(): Binding[] {
+  const codes = (el: XElement) =>
+    (getAttr(el, 'PCD') ?? '')
+      .split(',')
+      .map((l) => PCD.find(([, label]) => label === l.trim())?.[0])
+      .filter((c): c is string => Boolean(c));
+  return [
+    fixed('f_pcd', ''),
+    {
+      kind: 'checkboxes',
+      name: 'f_pcd',
+      options: PCD.map(([c]): [string, string] => [c, c]),
+      read: (el) => codes(el).join(','),
+      write: (el, value) => {
+        const on = new Set(value.split(','));
+        setAttr(
+          el,
+          'PCD',
+          PCD.filter(([c]) => on.has(c))
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([, l]) => l)
+            .join(', '),
+        );
+      },
+    },
+    // Depois das caixas: o "Não" apaga o que elas marcaram.
+    {
+      kind: 'radio',
+      name: 'f_pcd_r',
+      options: optionsOf('f_pcd_r'),
+      read: (el) => (getAttr(el, 'PCD') ? 'S' : 'N'),
+      write: (el, value) => {
+        if (value === 'N') setAttr(el, 'PCD', '');
+      },
+    },
+  ];
+}
+
+/**
+ * Os campos da identificação sem atributo no XML (nome social, visibilidade
+ * de cada dado, validade e país do passaporte), guardados ao lado de
+ * DADOS-GERAIS como o Lattes os guarda fora da exportação. Os valores de
+ * partida são os da página no censo de 15/10/2026: público e "Não".
+ */
+function screenBindings(state: LattesState): Binding[] {
+  const stored = (name: string, initial: string) => ({
+    read: (el: XElement) => state.formOnly(el)[name] ?? initial,
+    write: (el: XElement, value: string) => {
+      state.formOnly(el)[name] = value;
+    },
+  });
+  const privacy = (name: string): Binding => ({
+    kind: 'select',
+    name,
+    options: PRIVACY,
+    ...stored(name, '1'),
+  });
+  const text = (name: string): Binding => ({
+    kind: 'text',
+    maxLength: maxOf(name),
+    name,
+    ...stored(name, ''),
+  });
+  return [
+    ...['f_priv_foto', 'f_priv_nacionalidade', 'f_priv_cor', 'f_priv_nascimento'].map(privacy),
+    privacy('f_priv_identidade'),
+    {
+      kind: 'select',
+      name: 'fpaispassaporte',
+      options: optionsOf('fpaispassaporte'),
+      ...stored('fpaispassaporte', ''),
+    },
+    ...['f_priv_passaporte', 'f_priv_pcd'].map(privacy),
+    {
+      kind: 'radio',
+      name: 'f_nome_social_r',
+      options: optionsOf('f_nome_social_r'),
+      ...stored('f_nome_social_r', 'N'),
+    },
+    text('f_nome_social'),
+    text('f_dta_val_passaporte'),
+    text('f_dta_emissao_doc'),
+  ];
+}
+
+/**
+ * Os outros controles da identificação, como o censo de 15/10/2026 os leu.
  */
 const IDENT_EXTRAS = [
-  ...['f_priv_foto', 'f_priv_nacionalidade', 'f_priv_cor', 'f_priv_nascimento'],
-  ...['f_priv_identidade', 'fpaispassaporte', 'f_priv_passaporte', 'f_priv_pcd'],
-]
-  .map((n) =>
-    h.select(
-      n,
-      n === 'fpaispassaporte' ? optionsOf(n) : PRIVACY,
-      n === 'fpaispassaporte' ? '' : '1',
-    ),
-  )
-  .concat(
-    h.radios('f_nome_social_r', optionsOf('f_nome_social_r'), 'N'),
-    h.text('f_nome_social', '', { maxLength: maxOf('f_nome_social') }),
-    h.text('f_dta_val_passaporte', '', { maxLength: maxOf('f_dta_val_passaporte') }),
-    h.text('f_dta_emissao_doc', '', { maxLength: maxOf('f_dta_emissao_doc') }),
-    h.radios('f_pcd_r', optionsOf('f_pcd_r'), 'N'),
-    h.hidden('f_pcd', ''),
-    h.checkbox('f_pcd', 'S', false),
-    ...['f_dados_grid', 'fdados_new', 'f_cod', 'f_nme_old'].map((n) => h.hidden(n, '')),
-  )
-  .join('\n');
+  ...['f_dados_grid', 'fdados_new', 'f_cod', 'f_nme_old'].map((n) => h.hidden(n, '')),
+].join('\n');
 
 /**
  * As grades que o check() da página real serializa (18/10/2026): a do ORCID
@@ -170,7 +249,7 @@ ${JSON.stringify([...names, {}])};
 
 function identForm(_req: SimRequest, state: LattesState): SimResponse {
   const body = `<form name="GN_IDENT" method="post" action="PRC_IDENT">
-${renderFields(identBindings(), state.general)}
+${renderFields([...identBindings(), ...screenBindings(state), ...pcdBindings()], state.general)}
 ${IDENT_EXTRAS}
 ${h.formButtons(false)}
 </form>${identScripts(state.general)}${h.formScripts('GN_IDENT')}`;
@@ -185,7 +264,11 @@ function identPost(req: SimRequest, state: LattesState): SimResponse {
     );
   }
   if (req.get('f_ctr') === 'U') {
-    applyFields(identBindings(), state.general, req);
+    applyFields(
+      [...identBindings(), ...screenBindings(state), ...pcdBindings()],
+      state.general,
+      req,
+    );
     state.touch();
   }
   return html(h.savedScript(`prc_ident?f_cod=${state.code}`));

@@ -8,6 +8,7 @@
 // dele, vazios, e os filhos que o formulário precisa. O número de sequência só
 // é dado ao salvar e nunca reaproveita um que a exportação já usou.
 
+import { SCREEN_PREFIX } from '../schema/screen-fields.ts';
 import type { LattesSchema } from '../schema/types.ts';
 import type { GeneralType } from './general-types.ts';
 import { type Author, emptyAttrs, nextSequencia, readAuthor, SEQ_ATTR } from './production.ts';
@@ -42,7 +43,7 @@ function addPart(schema: LattesSchema, parent: XElement, name: string): XElement
  * um vínculo, como o formulário de inclusão do Lattes (que cria a atuação e o
  * primeiro vínculo juntos); a patente e cada registro com dados básicos,
  * detalhamento, um registro e o dono como primeiro autor; o projeto com o dono na equipe, que o
- * Lattes exige.
+ * Lattes exige; a licença privada, como o Lattes a inclui.
  */
 export function newGeneralItem(schema: LattesSchema, type: GeneralType, owner?: Author): XElement {
   const item = blank(schema, type.itemName);
@@ -60,6 +61,8 @@ export function newGeneralItem(schema: LattesSchema, type: GeneralType, owner?: 
     if (owner) setAuthorsOf(schema, item, 'AUTORES', [owner]);
   }
   if (type.kind === 'projeto' && owner) setTeam(schema, item, [owner]);
+  // A licença nasce privada, como no formulário de inclusão do Lattes (seção 29).
+  if (type.kind === 'licenca') setAttr(item, `${SCREEN_PREFIX}f_tipo_privacidade`, '2');
   return item;
 }
 

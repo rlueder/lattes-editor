@@ -350,3 +350,30 @@ com os tetos de pedidos. `capturas` lista os POSTs que a aba fez desde que a
 ponte subiu, com os textos mascarados e só os nomes e os campos de controle
 (`f_ctr`, os códigos e os `*_old`) à vista: é como se registra o envio feito
 pela própria página para comparar com o do conector.
+
+O mesmo script monta `dist-censo/carregar-ponte.js`, para conferir "Carregar
+do Lattes" no currículo real: `chamar '__carregarPonte.carregar()'` lê tudo
+pelos formulários, com o passo de leitura da extensão, e devolve as contagens
+de elementos e o que não foi lido. Para comparar com a exportação,
+`chamar '__carregarPonte.exportar()'` (ou `usarExportacao('<ZIP em base64>')`,
+quando o Lattes tem pendência e não exporta) e depois
+`chamar 'Promise.resolve(__carregarPonte.comparar())'`. Só saem nomes de
+elementos e atributos e contagens; `comparar('ELEMENTO@ATRIBUTO')` mostra a
+forma dos valores que diferem (letras viram `a`, dígitos viram `9`), nunca o
+conteúdo.
+
+`dist-censo/passada-ponte.js` é a passada que exercita toda opção dos
+formulários, e grava no currículo: só roda acompanhada, com o "ok" do dono.
+`node scripts/inventario-opcoes.ts` lista, por formulário do censo, os campos
+de escolha, as opções e quais um valor do XML alcança. Na aba,
+`__passada.base()` fotografa as listas, `gerar()` monta itens de teste (título
+com `TEST_MARK`) com uma escolha diferente em cada, `rodada()` os leva pelo
+Importar em levas de 20, `conferirPaginas()` compara cada página de alteração
+com o que o carregamento montou e `exercitar()` grava pelo conector as opções
+que nenhum item mostrou ainda. `criarProjetos(financiador)` inclui um projeto
+de cada natureza e uma licença de cada tipo, `telaProjetos()` grava neles os
+campos só de tela e `lerTela()` mostra o que cada página marca. `registro()`
+diz o que as listas têm a mais que a base; `apagar()` tira as linhas com a
+marca e `apagarNovas('pkg_licenca.lista', '/200[123] ')` as licenças, que não
+têm título: só as linhas a mais naquela lista cujo texto casa com o padrão. O
+código fica em `scripts/passada/`.

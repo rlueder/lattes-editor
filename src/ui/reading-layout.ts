@@ -6,6 +6,7 @@
 import { elementLabel, enumLabel } from '../labels/labels.ts';
 import { formatPhone } from '../model/contacts.ts';
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
+import { isQuietScreenValue } from '../schema/screen-fields.ts';
 import { isSystemAttr } from './field-kind.ts';
 import { isRedundantDateFormat } from './lattes-date.ts';
 import { isSensitiveAttr, MASK } from './privacy.ts';
@@ -122,6 +123,8 @@ export function isUsable(el: XElement, attr: string, opts: LayoutOptions): boole
     return false;
   }
   if (isRedundantDateFormat(attr, getAttr(el, attr) ?? '')) return false;
+  // Campo só de tela com o valor de sempre (público): não diz nada na leitura.
+  if (isQuietScreenValue(el.name, attr, getAttr(el, attr) ?? '')) return false;
   return opts.showCodes || !isSystemAttr(el.name, attr);
 }
 

@@ -339,7 +339,17 @@ export function applyInstitution(el: XElement, inst: Institution, attr?: string)
     other && c
       ? Object.fromEntries([c.code, c.name, ...(c.capes ? [c.capes] : [])].map((a) => [a, '']))
       : {};
-  return write(el, { [pair.code]: code, [pair.name]: inst.name, ...course });
+  // No endereço profissional, o testa_inst() da página limpa o órgão quando a
+  // instituição muda (lido em 28/10/2026): o editor faz o mesmo.
+  const organ =
+    other && el.name === 'ENDERECO-PROFISSIONAL'
+      ? Object.fromEntries(
+          ['CODIGO-ORGAO', 'NOME-ORGAO', 'CODIGO-UNIDADE', 'NOME-UNIDADE']
+            .filter((a) => getAttr(el, a) !== undefined)
+            .map((a) => [a, '']),
+        )
+      : {};
+  return write(el, { [pair.code]: code, [pair.name]: inst.name, ...course, ...organ });
 }
 
 /** "Administração(33003025005P3)": o nome do curso e o código CAPES do programa. */

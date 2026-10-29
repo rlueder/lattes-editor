@@ -67,6 +67,7 @@ function techWorkForm(req: SimRequest, state: LattesState): SimResponse {
   if (seq && !item) return html(h.page('Trabalhos técnicos', '<p>Registro não encontrado.</p>'));
   const b = part(item, 'DADOS-BASICOS-DO-TRABALHO-TECNICO');
   const d = part(item, 'DETALHAMENTO-DO-TRABALHO-TECNICO');
+  const info = part(item, 'INFORMACOES-ADICIONAIS');
   const rows = [
     row(
       'Natureza',
@@ -101,12 +102,20 @@ function techWorkForm(req: SimRequest, state: LattesState): SimResponse {
       'Instituição promotora',
       h.text('f_inst', value(d, 'INSTITUICAO-FINANCIADORA'), { maxLength: 255 }),
     ),
-    row('Informações adicionais', h.textarea('f_ref', '', { maxLength: 3950 })),
+    row(
+      'Informações adicionais',
+      h.textarea('f_ref', value(info, 'DESCRICAO-INFORMACOES-ADICIONAIS'), { maxLength: 3950 }),
+    ),
     row(
       'Título em inglês',
       h.text('f_titulo_en', value(b, 'TITULO-DO-TRABALHO-TECNICO-INGLES'), { maxLength: 400 }),
     ),
-    row('Informações adicionais em inglês', h.textarea('f_ref_en', '', { maxLength: 3800 })),
+    row(
+      'Informações adicionais em inglês',
+      h.textarea('f_ref_en', value(info, 'DESCRICAO-INFORMACOES-ADICIONAIS-INGLES'), {
+        maxLength: 3800,
+      }),
+    ),
     row('Visibilidade', h.select('f_tipo_privacidade', h.PRIVACY, '1')),
   ].join('\n');
   const hidden = [
@@ -133,7 +142,9 @@ function techWorkList(state: LattesState): SimResponse {
         part(t, 'DADOS-BASICOS-DO-TRABALHO-TECNICO'),
         'TITULO-DO-TRABALHO-TECNICO',
       );
-      return `<tr><td><a href="#" onclick="self.parent.modalCV2.setarUrl('pkg_relatorio.form?f_cod=${state.code}&amp;f_seq=${seq}',true); return false;">${h.esc(title)}</a></td></tr>`;
+      const year = value(part(t, 'DADOS-BASICOS-DO-TRABALHO-TECNICO'), 'ANO');
+      // A linha inteira abre o formulário, como nas listas reais (producao.ts).
+      return `<tr onclick="self.parent.modalCV2.setarUrl('pkg_relatorio.form?f_cod=${state.code}&amp;f_seq=${seq}',true)"><td>${h.esc(title)}</td><td>${h.esc(year)}</td></tr>`;
     })
     .join('\n');
   const novo = `<a href="#" onclick="self.parent.modalCV2.setarUrl('pkg_relatorio.form?f_cod=${state.code}',true); return false;">Incluir novo item</a>`;

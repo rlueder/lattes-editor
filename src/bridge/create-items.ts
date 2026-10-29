@@ -91,6 +91,13 @@ import { EVENTO_SPEC } from './edit-items.ts';
 import { COMPL_LEVELS } from './edit-lists.ts';
 import { findLinks } from './lattes-html.ts';
 import { ACTIVITY_ORGAN_ELEMENTS } from './organ-windows.ts';
+import {
+  creatableTarget,
+  creatableTargets,
+  CREATE_PRODUCTION_ENABLED,
+  planCreateProduction,
+} from './production/create.ts';
+import type { ProductionOp } from './production/plan.ts';
 
 export {
   applyCreateAtividade,
@@ -138,6 +145,8 @@ export const CONNECTOR_CREATES: ReadonlySet<string> = new Set([
   ...EVENT_ELEMENTS,
   // Formação complementar: os dois passos do FORM2 (create-complementar.ts).
   ...Object.keys(COMPL_LEVELS),
+  // Produção, orientação e banca pelo formulário de inclusão (production/create.ts).
+  ...(CREATE_PRODUCTION_ENABLED ? creatableTargets().map((t) => t.element) : []),
 ]);
 
 /**
@@ -149,9 +158,13 @@ export function planCreateItem(
   chain: XElement[],
   label: string,
   extras: SendExtras = {},
-): Planned<CreateItemOp> | undefined {
+): Planned<CreateItemOp | ProductionOp> | undefined {
   const el = chain.at(-1);
   if (!el) return undefined;
+  // Produção, orientação e banca pelo formulário, no lugar do Importar (production/create.ts).
+  if (CREATE_PRODUCTION_ENABLED && el.name === change.element && creatableTarget(el.name)) {
+    return planCreateProduction(change, el, label, extras);
+  }
   const registro = registryItem(el);
   if (registro) return planCreateRegistro(change, chain, registro, label, extras);
   const ensino = teachingItem(el);
@@ -162,7 +175,7 @@ export function planCreateItem(
   if (evento) return planCreateEvento(change, chain, evento, label);
   const complementar = complementarItem(chain);
   if (complementar) return planCreateComplementar(change, complementar, label);
-  const general = planCreateGeneral(change, chain, label, extras);
+  const general = planCreateGeneral(change, chain, label);
   if (general) return general;
   if (PROJECT_CARRIERS.has(el.name)) return planCreateProjeto(change, chain, label, extras);
   if (chain.at(-2)?.name === 'FORMACAO-ACADEMICA-TITULACAO') {

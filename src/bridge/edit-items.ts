@@ -49,6 +49,7 @@ import type { Change } from '../model/changes.ts';
 import { foldText } from '../model/fold-text.ts';
 import { childElements, getAttr, type XElement } from '../model/xml.ts';
 import listas from '../schema/listas-lattes.json' with { type: 'json' };
+import { unknownBefore } from '../schema/screen-fields.ts';
 import type { FieldSpec, FormSpec } from './contract.ts';
 import { findLinks } from './lattes-html.ts';
 import type { BridgeOp, FieldValues, OpBase } from './plan.ts';
@@ -122,7 +123,7 @@ const OUVINTE_XML = 'Ouvinte';
  * Forma no XML → opção de F_FORMA. Ouvinte observado no censo; Convidado e
  * Participante pelo rótulo do rádio, inferidos.
  */
-const FORMA_CODES: Record<string, string> = {
+export const FORMA_CODES: Record<string, string> = {
   Convidado: '38',
   Ouvinte: OUVINTE,
   Participante: '39',
@@ -176,11 +177,14 @@ const yesNo: Mapper = (v) => (v === 'SIM' ? 'S' : v === 'NAO' ? 'N' : undefined)
  * Atributos dos dados básicos → campos do formulário. A correspondência vem
  * da tabela da seção 16 (as linhas sem "inferido").
  */
-const BASICS_FIELDS: Record<string, [string, Mapper]> = {
+export const EVENT_BASICS_FIELDS: Record<string, [string, Mapper]> = {
   ANO: ['f_ano', same],
   'FLAG-DIVULGACAO-CIENTIFICA': ['F_STA_DIVULGACAO_CIENTIFICA', yesNo],
   'HOME-PAGE-DO-TRABALHO': ['f_homepage', same],
   PAIS: ['f_pais', country],
+  // Só de tela, guardados na cópia do editor (schema/screen-fields.ts).
+  'tela:f_classif': ['f_classif', same],
+  'tela:f_tipo_privacidade': ['f_tipo_privacidade', same],
   TITULO: ['f_titulo', same],
   'TITULO-INGLES': ['f_titulo_en', same],
 };
@@ -193,7 +197,7 @@ const DETAIL_FIELDS: Record<string, [string, Mapper]> = {
  * O que EDIT_EVENTO_ENABLED acrescenta: a cidade (observada no censo). A
  * forma, o tipo e a natureza têm tratamento próprio em planEvento.
  */
-const DETAIL_FIELDS_FULL: Record<string, [string, Mapper]> = {
+export const EVENT_DETAIL_FIELDS: Record<string, [string, Mapper]> = {
   ...DETAIL_FIELDS,
   'CIDADE-DO-EVENTO': ['f_cidade', same],
 };
@@ -289,7 +293,7 @@ export function planEvento(
     }
   }
 
-  const table = isBasics ? BASICS_FIELDS : full ? DETAIL_FIELDS_FULL : DETAIL_FIELDS;
+  const table = isBasics ? EVENT_BASICS_FIELDS : full ? EVENT_DETAIL_FIELDS : DETAIL_FIELDS;
   const set: FieldValues = {};
   const expect: FieldValues = {};
   const missing: string[] = [];
@@ -317,7 +321,7 @@ export function planEvento(
       return { reason: `O Lattes não aceita ${f.label.toLowerCase()} vazio` };
     }
     set[field] = after;
-    expect[field] = before;
+    if (!unknownBefore(f)) expect[field] = before;
   }
   if (absent.length > 0) {
     return { reason: `O formulário de eventos do Lattes não tem: ${absent.join(', ')}` };
@@ -463,7 +467,7 @@ export function natureCode(nature: string): string | undefined {
 }
 
 /** Rótulos de F_COD_PROD, lidos no formulário (censo de 15/10/2026). */
-const EVENT_NATURE_LABELS: Record<string, string> = {
+export const EVENT_NATURE_LABELS: Record<string, string> = {
   A31: 'Congresso',
   A32: 'Seminário',
   A33: 'Simpósio',

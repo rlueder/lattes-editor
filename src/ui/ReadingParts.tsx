@@ -12,9 +12,10 @@ import {
   useState,
 } from 'react';
 
-import { attributeLabelIn } from '../labels/labels.ts';
+import { attributeLabel, attributeLabelIn } from '../labels/labels.ts';
 import { parseEmails, parseSocial } from '../model/contacts.ts';
 import { getAttr } from '../model/xml.ts';
+import { isScreenAttr } from '../schema/screen-fields.ts';
 import { isSystemAttr } from './field-kind.ts';
 import { isEnglishAttr } from './form-order.ts';
 import { isDoiAttr, linkHref, linkPieces, shortUrl } from './link-fields.ts';
@@ -231,7 +232,9 @@ export function LineView({ line }: { line: Line }) {
   );
 }
 
-const labelOf = (p: Part) => attributeLabelIn(p.el.name, p.attr);
+// O campo só de tela leva o assunto no nome ("Visibilidade do nascimento"): a leitura não tem os grupos do formulário.
+const labelOf = (p: Part) =>
+  isScreenAttr(p.attr) ? attributeLabel(p.attr) : attributeLabelIn(p.el.name, p.attr);
 
 /**
  * Rótulo e valor em grade de três colunas (duas em tela estreita), o rótulo

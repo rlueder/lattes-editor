@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { LattesTransport, retryAfterMs } from '../src/bridge/transport.ts';
+import { LattesTransport, READ_PACE, retryAfterMs } from '../src/bridge/transport.ts';
 
 const ok = () => Promise.resolve(new Response('ok'));
 function clock() {
@@ -239,4 +239,69 @@ it('limita Retry-After e pausas antigas a uma hora, inclusive em caso de overflo
   time += MAX_COOLDOWN_MS;
   await traffic.run(() => traffic.request('a'));
   expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+describe('o passo de cada tarefa', () => {
+  it('a leitura afrouxa a espera e o teto por minuto; a tarefa comum fica com a política', async () => {
+    const waits: number[] = [];
+    let now = 0;
+    const t = new LattesTransport({
+      fetch: async () => new Response('ok'),
+      now: () => now,
+      wait: async (ms) => {
+        waits.push(ms);
+        now += ms;
+      },
+    });
+    await t.run(async () => {
+      await t.request('https://x.invalid/a');
+      await t.request('https://x.invalid/b');
+    });
+    await t.run(
+      async () => {
+        await t.request('https://x.invalid/c');
+        await t.request('https://x.invalid/d');
+      },
+      undefined,
+      READ_PACE,
+    );
+    expect(waits).toEqual([750, 320, 320]);
+  });
+
+  it('pedidos em paralelo na mesma tarefa saem um a cada passo', async () => {
+    const waits: number[] = [];
+    const t = new LattesTransport({
+      fetch: async () => new Response('ok'),
+      now: () => 0,
+      wait: async (ms) => {
+        waits.push(ms);
+      },
+    });
+    await t.run(
+      () => Promise.all(['a', 'b', 'c'].map((p) => t.request(`https://x.invalid/${p}`))),
+      undefined,
+      READ_PACE,
+    );
+    expect(waits).toEqual([320, 640]);
+  });
+
+  it('uma política sem espera continua sem espera numa tarefa de leitura', async () => {
+    const waits: number[] = [];
+    const t = new LattesTransport({
+      fetch: async () => new Response('ok'),
+      spacingMs: 0,
+      wait: async (ms) => {
+        waits.push(ms);
+      },
+    });
+    await t.run(
+      async () => {
+        await t.request('https://x.invalid/a');
+        await t.request('https://x.invalid/b');
+      },
+      undefined,
+      READ_PACE,
+    );
+    expect(waits).toEqual([]);
+  });
 });

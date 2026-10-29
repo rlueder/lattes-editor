@@ -34,8 +34,16 @@ function menuItems(code: string): [string, string][] {
     ['Projetos de extensão', `pkg_projeto.lista?f_cod_tipo=E&f_cod=${code}`],
     ['Projetos de ensino', `pkg_projeto.lista?f_cod_tipo=N&f_cod=${code}`],
     ['Outros projetos', `pkg_projeto.lista?f_cod_tipo=O&f_cod=${code}`],
+    // As listas de inovação de cada natureza, vistas no menu real em
+    // 29/10/2026; o rótulo delas não foi lido (inferido).
+    ...['P', 'D', 'E', 'N', 'O'].map((t): [string, string] => [
+      'Projetos com potencial de inovação',
+      `pkg_projeto.lista?f_cod_tipo=${t}&f_sta_inovacao=S&f_cod=${code}`,
+    ]),
     ['Prêmios e títulos', `pkg_premio.lista?f_cod=${code}`],
     ['Licenças', `pkg_licenca.lista?f_cod=${code}`],
+    // Seção 3 de lattes_internals.md.
+    ['Demais trabalhos', `pkg_demais.lista?f_cod=${code}`],
     // Observado no menu real em 19/10/2026.
     ['Coautores', `pkg_dic_autor.lista?f_cod=${code}`],
     // Observados no menu real em 16/10/2026.
@@ -108,8 +116,9 @@ function menuItems(code: string): [string, string][] {
       label,
       `PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=${tipo}&f_cod=${code}`,
     ]),
-    // O programa de computador sem registro tem lista própria no menu real
-    // (f_reg=N, lido em 19/10/2026).
+    // O programa de computador: com registro, a lista sem f_reg; sem registro,
+    // a lista com f_reg=N (lido em 19/10/2026).
+    ['Programa de computador', `PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=PC&f_cod=${code}`],
     [
       'Programa de computador sem registro',
       `PKG_PATENTE_REGISTRO.LISTA?f_reg=N&f_cod_tipo=PC&f_cod=${code}`,

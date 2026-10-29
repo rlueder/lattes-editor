@@ -8,7 +8,7 @@
 // de 15/10/2026 (docs/lattes-formularios/).
 
 import type { Change } from '../model/changes.ts';
-import type { XElement } from '../model/xml.ts';
+import { childElements, type XElement } from '../model/xml.ts';
 
 /** As naturezas de atividade de uma atuação (seção 17). */
 const ACTIVITIES = new Set([
@@ -96,9 +96,17 @@ const VINCULO_BY_HAND: Record<string, string> = {
 };
 
 /** O motivo de uma alteração de vínculo ficar à mão; undefined se todos os campos vão. */
-export function vinculoByHand(change: Change): string | undefined {
+export function vinculoByHand(change: Change, atuacao?: XElement): string | undefined {
   const reasons = [
     ...new Set(change.fields.map((f) => VINCULO_BY_HAND[f.attr]).filter(Boolean)),
   ] as string[];
+  // O verificaPriv() da página deixa público o vínculo único da atuação
+  // (lattes_internals.md, seção 11).
+  const privacy = change.fields.find((f) => f.attr === 'tela:f_tipo_privacidade');
+  if (privacy?.after === '2' && atuacao && childElements(atuacao, 'VINCULOS').length === 1) {
+    reasons.push(
+      'O Lattes deixa público o único vínculo de uma atuação: inclua outro vínculo antes',
+    );
+  }
   return reasons.length > 0 ? reasons.join('; ') : undefined;
 }

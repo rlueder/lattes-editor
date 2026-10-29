@@ -59,7 +59,7 @@ export interface CreateAtuacaoOp {
  * TIPO-DE-VINCULO do XML → texto do combo dominio() do formulário. Inferido
  * dos rótulos do combo (reconhecimento, seção 4.1); sem envio real.
  */
-const VINCULO_TEXT: Record<string, string> = {
+export const VINCULO_TEXT: Record<string, string> = {
   CELETISTA: 'Celetista',
   PROFESSOR_VISITANTE: 'Professor Visitante',
   SERVIDOR_PUBLICO: 'Servidor público',

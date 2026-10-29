@@ -62,6 +62,22 @@ o XML traz `NAO`). O editor mostra a marca no sentido da tela e grava o
 inverso, num lugar só: `flagAsShown` em `src/ui/field-kind.ts`
 (`lattes_internals.md`, seção 5).
 
+Alguns campos aparecem nas telas do Lattes e não existem no XSD nem na
+exportação: o nome social, a visibilidade de cada dado da identificação e de
+cada item (`f_priv_*`, `f_tipo_privacidade`), o celular, a validade e o país
+do passaporte. A cópia do editor os guarda como atributos com o prefixo
+`tela:` no elemento a que pertencem (`tela:f_nome_social` em `DADOS-GERAIS`,
+`tela:f_tipo_privacidade` em cada item), com o nome do campo da página. O
+registro deles, com rótulo e opções do censo, está em
+`src/schema/screen-fields.ts`. Carregar do Lattes os lê, o conector os grava
+como qualquer outro campo, e `encodeCv` (`src/model/document.ts`) os tira de
+todo arquivo que sai do editor: o XML salvo, o arquivo do Importar e o
+histórico baixado. Um grupo de caixas (as do projeto de ensino) guarda os
+códigos marcados separados por vírgula, e `src/bridge/multi-choice.ts` os
+transforma em um par por caixa no envio. Numa cópia que veio de uma exportação eles não existem;
+preencher um cria o atributo, e o envio não confere o valor de antes, que o
+editor não conhece.
+
 ## O que o app guarda
 
 Tudo, menos as cópias de segurança, fica no IndexedDB do WebView
@@ -131,7 +147,13 @@ que o painel "Enviar ao Lattes" mostra item por item:
   `importable.ts`). "Item novo de produção" é item com `SEQUENCIA-PRODUCAO`
   nova **e** tipo que um módulo do Importar lê (`isPendingImport`, em
   `src/model/production.ts`); a patente usa o contador global, mas não vai
-  pelo Importar.
+  pelo Importar. Com a extensão que anuncia `incluir-itens`, produção,
+  orientação e banca novas vão pelo formulário de inclusão do próprio Lattes,
+  no endereço que o censo leu (`src/bridge/production/create.ts`,
+  `CREATE_PRODUCTION_ENABLED`), e só o item que o formulário não leva (o
+  livro, que não tem endereço de inclusão lido) fica no Importar. O item que
+  entrou pelo Importar pode não se deixar alterar nem pela página do Lattes
+  (`lattes_internals.md`, seção 28).
 - **Alteração, inclusão ou exclusão que o conector sabe fazer** vai **pela
   extensão**: `src/bridge/plan.ts` transforma a alteração numa operação de
   formulário e `src/bridge/apply.ts` a aplica na aba do Lattes. Antes de
@@ -147,12 +169,14 @@ Os módulos do conector, por assunto:
 | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Formação, endereço, identificação, outras informações            | `biographic.ts`, `formacao-edit.ts`, `dados-gerais-edit.ts`, `formacao-lookups.ts`, `endereco-buscas.ts`                                                                                                 |
 | Eventos, prêmios, formação complementar                          | `edit-items.ts`, `edit-lists.ts`, `formacao-compl-steps.ts` (o segundo passo do `FORM2`)                                                                                                                 |
-| Produções, orientações, bancas, projetos, patentes e registros   | `production/` (um alvo por tipo em `targets/`, buscas em `lookups.ts`, órgão em `organ.ts`)                                                                                                              |
+| Produções, orientações, bancas, projetos, patentes e registros   | `production/` (um alvo por tipo em `targets/`, buscas em `lookups.ts`, órgão em `organ.ts`, empresa do projeto pelo CNPJ em `company.ts`)                                                                |
 | Atividades da atuação, áreas de atuação, dicionário de coautores | `edit-atividade.ts`, `areas-atuacao.ts`, `edit-citacao.ts`                                                                                                                                               |
 | Inclusão                                                         | `create.ts` (atuação), `create-formacao.ts`, `create-projeto.ts`, `create-cargo.ts` e `create-atividade.ts` (atividades), `create-registro.ts`, `create-evento.ts`, `create-items.ts`, `create-grids.ts` |
 | Exclusão (idioma e vínculo)                                      | `delete.ts`, que posta o formulário com `f_ctr=E` e confere relendo a lista                                                                                                                              |
 | Exclusão dos outros tipos                                        | `delete-items.ts`, pelo formulário de alteração de cada um, com o `del()` da página (nas formações, o `SETA_ULTIMO_PUBLICO` antes; na atuação inteira, o GET com `f_ctr=E2`), e a lista relida           |
 | Foto, Exportar, Importar, estado do Lattes, Enviar ao CNPq       | `photo.ts`, `export.ts`, `importar.ts`, `lattes-status.ts`, `publish.ts`                                                                                                                                 |
+| Atualizar do Lattes (leitura pelas listas e pelos formulários)   | `refresh/` (cobertura, leitura na aba, plano, volta do formulário ao XML, entrada no editor)                                                                                                             |
+| Carregar do Lattes (o currículo inteiro pelos formulários)       | `load/` (páginas na aba, porta pela ponte, uma seção por arquivo em `sections/`, as tabelas do conector ao contrário em `reverse.ts`)                                                                    |
 
 Na inclusão, um campo que o formulário de inclusão do Lattes não tem não
 segura o item: ele vai com o resto, como iria pela própria página, e o que
@@ -183,35 +207,36 @@ para uma extensão que anuncia a capacidade; com uma extensão antiga, a
 alteração fica em "Não enviado". A extensão também confere as chaves na
 própria montagem (`ApplyGates`, em `apply-gates.ts`).
 
-| Chave                            | Capacidade                      | Estado                                                                                                                                                  |
-| -------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CREATE_ITEMS_ENABLED`           | `incluir-itens`                 | Ligada                                                                                                                                                  |
-| `DELETE_ITEMS_ENABLED`           | `excluir-itens`                 | Ligada (idioma e vínculo)                                                                                                                               |
-| `BIOGRAPHIC_OPS_ENABLED`         | `alterar-dados-gerais`          | Ligada                                                                                                                                                  |
-| `BIOGRAPHIC_FULL_ENABLED`        | `alterar-dados-gerais-completo` | Ligada                                                                                                                                                  |
-| `EDIT_OUVINTE_ENABLED`           | `alterar-evento`                | Ligada, com envio acompanhado em 14/10/2026                                                                                                             |
-| `EDIT_EVENTO_ENABLED`            | `alterar-evento-completo`       | Ligada                                                                                                                                                  |
-| `EDIT_PREMIO_ENABLED`            | `alterar-premio`                | Ligada                                                                                                                                                  |
-| `EDIT_FORMACAO_COMPL_ENABLED`    | `alterar-formacao-complementar` | Ligada                                                                                                                                                  |
-| `EDIT_PRODUCTION_ENABLED`        | `alterar-producao`              | Ligada                                                                                                                                                  |
-| `PRODUCTION_LOOKUPS_ENABLED`     | `buscas-producao`               | Ligada                                                                                                                                                  |
-| `EDIT_AREAS_ENABLED`             | `alterar-areas-atuacao`         | Ligada                                                                                                                                                  |
-| `EDIT_ATIVIDADES_ENABLED`        | `alterar-atividades`            | Ligada                                                                                                                                                  |
-| `EDIT_CITACOES_ENABLED`          | `alterar-citacoes`              | Ligada                                                                                                                                                  |
-| `IMPORT_ENABLED`                 | `importar`                      | Ligada; conferir o currículo depois de cada importação (`lattes_internals.md`, seção 13)                                                                |
-| `COMPL_LOOKUPS_ENABLED`          | `buscas-complementar`           | Ligada sem envio acompanhado da troca: o curso testado não tinha como ser desfeito (`lattes_internals.md`)                                              |
-| `COMPL_ENDERECO_LOOKUPS_ENABLED` | `buscas-complementar-endereco`  | Ligada: instituição e órgão do endereço profissional gravaram num envio acompanhado (28/10/2026)                                                        |
-| `INSTITUTION_HOLDERS_ENABLED`    | `titular-instituicao`           | Ligada: depositante instituição pela busca; a gravação pela página e a exportação foram vistas (27/10/2026)                                             |
-| `EDIT_PCD_ENABLED`               | `pessoa-com-deficiencia`        | Ligada: um tipo, como a exportação de 27/10/2026                                                                                                        |
-| `EDIT_OTHER_CONTACTS_ENABLED`    | `outra-forma-contato`           | Ligada: só o contato de uma linha que já está                                                                                                           |
-| `EDIT_FUNDERS_ENABLED`           | `financiador-projeto`           | Ligada: instituição pela busca e natureza; a gravação pela linha da grade não foi vista                                                                 |
-| `CREATE_PROJECT_ORGAN_ENABLED`   | `projeto-novo-orgao`            | Ligada: projeto novo com o órgão da janela de órgãos; nenhuma inclusão real acompanhada                                                                 |
-| `CREATE_ACTIVITY_ORGAN_ENABLED`  | `atividade-nova-orgao`          | Ligada: atividade nova das naturezas com órgão, pela janela de órgãos da atividade; nenhuma inclusão real acompanhada                                   |
-| `CREATE_COMPL_ENABLED`           | `complementar-nova`             | Ligada: formação complementar nova nos dois passos do `FORM2`; nenhuma inclusão real acompanhada                                                        |
-| `ACTIVITY_ROWS_ENABLED`          | `grade-atividade`               | Ligada: disciplinas, treinamentos e linhas de pesquisa numa atividade que já existe, e o formulário da linha de pesquisa nova; nenhum envio acompanhado |
-| `DELETE_MORE_ENABLED`            | `excluir-mais`                  | Ligada: exclusão de produções, projetos, eventos, prêmios, formações, atividades e da atuação inteira; observada só no evento                           |
-| `PROJECT_ORGAN_ENABLED`          | `orgao-projeto`                 | Desligada: o Lattes recebe o órgão novo e mantém o antigo, também pela própria página (27/10/2026)                                                      |
-| `PUBLISH_ENABLED`                | `publicar-cnpq`                 | Ligada com declaração por tentativa; validação acompanhada do app ao CNPq pendente antes do lançamento                                                  |
+| Chave                            | Capacidade                      | Estado                                                                                                                                                                      |
+| -------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CREATE_ITEMS_ENABLED`           | `incluir-itens`                 | Ligada                                                                                                                                                                      |
+| `DELETE_ITEMS_ENABLED`           | `excluir-itens`                 | Ligada (idioma e vínculo)                                                                                                                                                   |
+| `BIOGRAPHIC_OPS_ENABLED`         | `alterar-dados-gerais`          | Ligada                                                                                                                                                                      |
+| `BIOGRAPHIC_FULL_ENABLED`        | `alterar-dados-gerais-completo` | Ligada                                                                                                                                                                      |
+| `EDIT_OUVINTE_ENABLED`           | `alterar-evento`                | Ligada, com envio acompanhado em 14/10/2026                                                                                                                                 |
+| `EDIT_EVENTO_ENABLED`            | `alterar-evento-completo`       | Ligada                                                                                                                                                                      |
+| `EDIT_PREMIO_ENABLED`            | `alterar-premio`                | Ligada                                                                                                                                                                      |
+| `EDIT_FORMACAO_COMPL_ENABLED`    | `alterar-formacao-complementar` | Ligada                                                                                                                                                                      |
+| `EDIT_PRODUCTION_ENABLED`        | `alterar-producao`              | Ligada                                                                                                                                                                      |
+| `PRODUCTION_LOOKUPS_ENABLED`     | `buscas-producao`               | Ligada                                                                                                                                                                      |
+| `EDIT_AREAS_ENABLED`             | `alterar-areas-atuacao`         | Ligada                                                                                                                                                                      |
+| `EDIT_ATIVIDADES_ENABLED`        | `alterar-atividades`            | Ligada                                                                                                                                                                      |
+| `EDIT_CITACOES_ENABLED`          | `alterar-citacoes`              | Ligada                                                                                                                                                                      |
+| `IMPORT_ENABLED`                 | `importar`                      | Ligada; conferir o currículo depois de cada importação (`lattes_internals.md`, seção 13)                                                                                    |
+| `COMPL_LOOKUPS_ENABLED`          | `buscas-complementar`           | Ligada sem envio acompanhado da troca: o curso testado não tinha como ser desfeito (`lattes_internals.md`)                                                                  |
+| `COMPL_ENDERECO_LOOKUPS_ENABLED` | `buscas-complementar-endereco`  | Ligada: instituição e órgão do endereço profissional gravaram num envio acompanhado (28/10/2026)                                                                            |
+| `INSTITUTION_HOLDERS_ENABLED`    | `titular-instituicao`           | Ligada: depositante instituição pela busca; a gravação pela página e a exportação foram vistas (27/10/2026)                                                                 |
+| `EDIT_PCD_ENABLED`               | `pessoa-com-deficiencia`        | Ligada: um tipo, como a exportação de 27/10/2026                                                                                                                            |
+| `EDIT_OTHER_CONTACTS_ENABLED`    | `outra-forma-contato`           | Ligada: só o contato de uma linha que já está                                                                                                                               |
+| `EDIT_FUNDERS_ENABLED`           | `financiador-projeto`           | Ligada: instituição pela busca e natureza; a gravação pela linha da grade não foi vista                                                                                     |
+| `CREATE_PROJECT_ORGAN_ENABLED`   | `projeto-novo-orgao`            | Ligada: projeto novo com o órgão da janela de órgãos; uma inclusão de cada natureza acompanhada (29/10/2026)                                                                |
+| `CREATE_ACTIVITY_ORGAN_ENABLED`  | `atividade-nova-orgao`          | Ligada: atividade nova das naturezas com órgão, pela janela de órgãos da atividade; nenhuma inclusão real acompanhada                                                       |
+| `CREATE_COMPL_ENABLED`           | `complementar-nova`             | Ligada: formação complementar nova nos dois passos do `FORM2`; nenhuma inclusão real acompanhada                                                                            |
+| `CREATE_PRODUCTION_ENABLED`      | `incluir-itens`                 | Ligada: produção, orientação e banca novas pelo formulário de inclusão; incluído e conferido ao vivo um trabalho em eventos (28/10/2026), os outros tipos sem teste ao vivo |
+| `ACTIVITY_ROWS_ENABLED`          | `grade-atividade`               | Ligada: disciplinas, treinamentos e linhas de pesquisa numa atividade que já existe, e o formulário da linha de pesquisa nova; nenhum envio acompanhado                     |
+| `DELETE_MORE_ENABLED`            | `excluir-mais`                  | Ligada: exclusão de produções, projetos, eventos, prêmios, formações, atividades e da atuação inteira; observada só no evento                                               |
+| `PROJECT_ORGAN_ENABLED`          | `orgao-projeto`                 | Desligada: o Lattes recebe o órgão novo e mantém o antigo, também pela própria página (27/10/2026)                                                                          |
+| `PUBLISH_ENABLED`                | `publicar-cnpq`                 | Ligada com declaração por tentativa; validação acompanhada do app ao CNPq pendente antes do lançamento                                                                      |
 
 Fica à mão, com o motivo na tela (`src/bridge/atuacao-by-hand.ts` e os
 `fieldAbsent` de cada alvo): o que o formulário do Lattes não tem (nome do
@@ -371,6 +396,97 @@ vez mais. Gravação nunca repete.
   Se a resposta do pedido de publicação se perde, o núcleo ainda confere o
   menu. Só repete leituras, nunca o pedido de publicação; sem confirmação,
   devolve `nao-confirmado` com `sent: true` e mantém o botão bloqueado.
+  O GET de envio tem prazo próprio de 180 s (`SEND_TIMEOUT_MS`): ele levou
+  18 s em 14/10/2026 e mais de um minuto em 28/10/2026, e um corte no meio
+  deixava de conferir o menu. A tarefa na aba roda sem espera entre os
+  pedidos e com 240 s de prazo (`PUBLISH_PACE`, `src/bridge/publish-steps.ts`),
+  e o resultado traz o tempo de cada passo, que o painel mostra.
+  Confirmado o envio, sem pendência no Lattes que não tenha passado pelo
+  editor, a cópia de trabalho fica em dia naquele dia (`WorkingCopy.syncedOn`,
+  `src/ui/use-synced-on-publish.ts`): o conector releu cada item depois de
+  gravar, e o aviso da exportação atrasada não vale para ela.
+
+### Carregar do Lattes pelos formulários
+
+Com a extensão que anuncia `carregar-do-lattes`, abrir e recarregar do Lattes
+não pedem a exportação: o editor monta o currículo pelas telas do Lattes
+(`src/bridge/load/`, `src/ui/use-lattes-load.ts`). A aba só busca páginas, em
+levas abaixo do teto do transporte (`pages.ts`, pelos passos `menu` e
+`paginas` do pedido `ler-lattes`); tudo o mais acontece no editor:
+
+1. **Listas:** as do menu e as de dentro delas (a tela de cada atuação),
+   como na fila de `cv-lists.ts`.
+2. **Seções** (`sections/`, na ordem de `index.ts`): identificação, resumo e
+   outras informações; endereço com as grades de contato; idiomas e prêmios;
+   áreas de atuação; formação acadêmica; formação complementar; eventos;
+   atuação com vínculos, atividades, linhas de pesquisa e projetos; e as
+   produções, orientações, bancas, patentes, registros e licenças pelos alvos
+   de `production/targets/`. Cada linha abre o formulário de alteração, e o
+   valor de cada campo volta ao atributo pelas tabelas e especificações com
+   que o conector grava, ao contrário (`reverse.ts`, `refresh/from-form.ts`).
+3. **Documento:** a raiz com `SISTEMA-ORIGEM-XML="LATTES_FORMULARIOS"`, os
+   itens com o número do servidor (`f_seq`, `f_seq_ativ`…), e o XML entra no
+   editor pelo mesmo caminho do ZIP do Exportar (confirmação, histórico,
+   cópias).
+
+A leitura usa um passo próprio do transporte (`READ_PACE` em
+`src/bridge/transport.ts`): um pedido a cada 320 ms, no máximo 200 por minuto,
+três páginas ao mesmo tempo. No currículo do dono (194 páginas) são uns 70 s.
+As gravações seguem com 750 ms e 80 por minuto.
+
+O que nenhuma tela mostra não entra: o editor mostra o que o Lattes deixa ver
+e alterar. O que uma tela não deixou ler fica em `gaps` e vai para o sino.
+Todo GET passa por `isSafeGet`. A única exceção é o POST de leitura do
+segundo passo da formação complementar (`PKG_FORMACAO_COMPL.FORM2` com o
+`f_ctr` vazio, que não grava; `pages.ts` só deixa passar esse). O teste
+`tests/load-from-forms.test.ts` monta o currículo de exemplo inteiro contra o
+Lattes simulado e compara seção por seção.
+
+### Atualizar do Lattes pelos formulários
+
+Depois de um "Enviar ao CNPq", o Exportar segue entregando a versão anterior
+por mais de uma hora (`lattes_internals.md`, seção 10). "Atualizar do Lattes",
+no ⚙ e no aviso do sino da exportação atrasada, traz o que mudou nas
+produções sem esperar por ela (`src/bridge/refresh/`,
+`src/ui/use-lattes-refresh.ts`). Só GET, por endereços que passam por
+`isSafeGet` (`src/census/run.ts`), em tarefas abaixo do teto do transporte:
+
+1. **Listas** (`read.ts`, a mesma fila de `cv-lists.ts`): as listas que o
+   menu abre, 60 por tarefa. No currículo do dono são 73, perto de 80 s.
+2. **Plano** (`plan.ts`, no editor): cada linha das listas de produção é
+   procurada nos itens do mesmo grupo (`coverage.ts`) pelo título e pelo ano,
+   em palavras inteiras, como no diagnóstico. A linha sem item vai ao
+   formulário: é um item novo no Lattes, ou um item cujo título ou ano mudou.
+   A linha de um item criado no editor que entrou pelo Importar também vai.
+   As linhas mostram título, tipo e ano: a mudança em outro campo de um item
+   que já estava na exportação não aparece e não é lida.
+3. **Formulários** (`read.ts`), até 80 por tarefa: o valor de cada campo como
+   a página mostra e as grades dos scripts da página.
+4. **Entrada no editor** (`merge.ts`, `apply-reading.ts`): o valor de cada
+   campo volta ao atributo pelo `toForm` da especificação do conector, ao
+   contrário (`from-form.ts`, o mesmo que o Lattes simulado usa para gravar
+   um POST). O valor que o formulário mostra igual ao do XML deixa o
+   atributo como está. O item lido entra na exportação carregada e na cópia
+   de trabalho; onde a pessoa já mudou o mesmo campo no editor, fica o valor
+   dela, que vira alteração a enviar. Item novo ganha `SEQUENCIA-PRODUCAO`
+   acima de todos os do editor e entra na ordem do schema. Cada parte de
+   formulários entra assim que chega, e rodar de novo lê só o que falta.
+
+O item lido fica marcado em `WorkingCopy.lattesForms`
+(`src/model/form-read.ts`), com a etiqueta "lido do Lattes" na lista: faltam
+a ele os atributos que só a exportação traz (códigos, números, marcas
+derivadas, as áreas do conhecimento). A marca também tira o item novo da
+conta do Importar (`Loaded`, em `src/model/production.ts`), porque ele já está
+no Lattes. A próxima exportação carregada substitui a cópia inteira, com as
+marcas.
+
+Ficam de fora, com as linhas contadas como "não lido" no resultado: eventos,
+prêmios, formação, atuação e idiomas (contados pela comparação do
+diagnóstico, `src/review/lists-diff.ts`) e, entre as produções, projetos,
+patentes, registros, licenças e linhas de pesquisa (o motivo de cada um em
+`coverage.ts`). Inferido, sem leitura acompanhada no Lattes real: que o
+formulário de alteração de cada tipo mostre o valor gravado em cada campo com
+os nomes que as especificações usam para gravar.
 
 ### O Lattes simulado
 

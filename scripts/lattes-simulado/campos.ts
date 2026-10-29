@@ -9,7 +9,8 @@ import type { SimRequest } from './pedido.ts';
 
 export interface Binding {
   disabled?: boolean;
-  kind: 'checkbox' | 'hidden' | 'radio' | 'select' | 'text' | 'textarea';
+  /** checkboxes: um grupo de caixas de mesmo nome; o valor, os marcados por vírgula. */
+  kind: 'checkbox' | 'checkboxes' | 'hidden' | 'radio' | 'select' | 'text' | 'textarea';
   maxLength?: number;
   name: string;
   /** Opções [valor, rótulo] de rádio e lista. */
@@ -71,6 +72,10 @@ export function renderFields(bindings: Binding[], el: XElement | undefined): str
       switch (b.kind) {
         case 'checkbox':
           return h.checkbox(b.name, b.value ?? 'on', value !== '');
+        case 'checkboxes': {
+          const on = new Set(value.split(','));
+          return `<p>${(b.options ?? []).map(([v]) => h.checkbox(b.name, v, on.has(v))).join('')}</p>`;
+        }
         case 'hidden':
           return h.hidden(b.name, value);
         case 'radio':
@@ -94,6 +99,18 @@ export function renderFields(bindings: Binding[], el: XElement | undefined): str
 export function applyFields(bindings: Binding[], el: XElement, req: SimRequest): void {
   for (const b of bindings) {
     if (!b.write || b.disabled) continue;
+    if (b.kind === 'checkboxes') {
+      // Só as caixas: o oculto de mesmo nome (o X do projeto) não é opção.
+      const codes = new Set((b.options ?? []).map(([v]) => v));
+      b.write(
+        el,
+        req
+          .getAll(b.name)
+          .filter((v) => codes.has(v))
+          .join(','),
+      );
+      continue;
+    }
     const value = req.get(b.name);
     if (value === undefined && b.kind !== 'checkbox' && b.kind !== 'radio') continue;
     b.write(el, value ?? '');

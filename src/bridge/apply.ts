@@ -57,8 +57,8 @@ import { finishSecondStep, secondStepMisses } from './formacao-compl-steps.ts';
 import { formacaoGridSend } from './formacao-grids.ts';
 import { resolveOpLookups } from './formacao-lookups.ts';
 import { identGrids } from './ident-grids.ts';
-import { findLinks, isLogonPage } from './lattes-html.ts';
-import { pcdChecked, withPcd } from './pcd.ts';
+import { findLinks, isLogonPage, lattesDbError } from './lattes-html.ts';
+import { pcdChecked, samePcd, withPcd } from './pcd.ts';
 import type { BridgeOp } from './plan.ts';
 import { applyProduction } from './production/apply.ts';
 import type { ProductionScans } from './production/locate.ts';
@@ -197,7 +197,19 @@ export async function applyOp(
   port: LattesPort,
   gates: ApplyGates = BUILD_GATES,
 ): Promise<OpResult> {
-  const result = await applyAny(op, port, gates);
+  // Um POST que volta com erro do banco do Lattes: o motivo vai no resultado.
+  let dbError: string | undefined;
+  const watched: LattesPort = Object.assign(Object.create(port) as LattesPort, {
+    post: async (path: string, body: string) => {
+      const html = await port.post(path, body);
+      dbError = lattesDbError(html) ?? dbError;
+      return html;
+    },
+  });
+  const result = await applyAny(op, watched, gates);
+  if (dbError && result.status !== 'conferido') {
+    return { ...result, detail: `O Lattes recusou a gravação: ${dbError}` };
+  }
   if (result.status !== 'conferido') return result;
   // A inclusão que foi sem os campos que o formulário não tem, e a atuação
   // cujas partes vão no envio seguinte: o aviso fica no resultado.
@@ -340,7 +352,7 @@ async function applyAny(op: BridgeOp, port: LattesPort, gates: ApplyGates): Prom
 
     // A deficiência: os f_pcd repetidos vão à parte (pcd.ts).
     const pcd = op.kind === 'identificacao' ? op.pcd : undefined;
-    if (pcd && pcdChecked(before.controls).join() !== pcd.before.join()) {
+    if (pcd && !samePcd(pcdChecked(before.controls), pcd.before)) {
       return result('divergente', 'O Lattes não está como o editor espera: Pessoa com deficiência');
     }
     const next = pcd
@@ -365,7 +377,7 @@ async function applyAny(op: BridgeOp, port: LattesPort, gates: ApplyGates): Prom
     }
 
     const after = await readPairs(port, path, name);
-    if (pcd && pcdChecked(after.controls).join() !== pcd.after.join()) {
+    if (pcd && !samePcd(pcdChecked(after.controls), pcd.after)) {
       return result('divergente', 'O Lattes não gravou: Pessoa com deficiência');
     }
     // As grades de contato voltam como linhas da página, não nos ocultos.

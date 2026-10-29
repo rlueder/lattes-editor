@@ -23,7 +23,7 @@ import {
   step1ScreenState,
   STEP2_MODULE_VALUES,
 } from '../src/bridge/importar.ts';
-import { buildMinimalImportFile, itemYear } from '../src/import-export/import-file.ts';
+import { buildMinimalImportFile, compact, itemYear } from '../src/import-export/import-file.ts';
 import {
   canImportByConnector,
   IMPORT_REPLY_TIMEOUT_MS,
@@ -645,6 +645,17 @@ describe('leituras das telas do Importar', () => {
     ).toMatchObject({ problem: expect.stringMatching(/17 mapeadas/) });
   });
 
+  it('as caixas desabilitadas do passo 2 (28/10/2026) não contam: o navegador não as envia', () => {
+    const shown =
+      '<input TYPE="checkbox" NAME="f_chk" VALUE="1" disabled> Atuação profissional <br>' +
+      '<input TYPE="checkbox" NAME="f_chk" VALUE="2" disabled> Áreas de atuação <br>';
+    expect(readStep2(step2({ extra: shown }))).toMatchObject({ code: CODE, request: '987654' });
+    // Habilitada, é um campo novo, e o conector para.
+    expect(
+      readStep2(step2({ extra: '<input type="checkbox" name="f_chk" value="1">' })),
+    ).toMatchObject({ problem: expect.stringMatching(/f_chk/) });
+  });
+
   it('ano do filtro', () => {
     expect(pickYear([2026, 2024, 2007], 2024)).toBe(2024);
     expect(pickYear([2026, 2024, 2007], 2020)).toBe(2007);
@@ -823,5 +834,13 @@ describe('Importar no service worker (extensão)', () => {
     const failed = await sendImport(CALL, '1');
     expect(failed).toMatchObject({ reason: 'erro' });
     expect(failed.detail).toContain('pendente');
+  });
+});
+
+describe('o arquivo do Importar sem indentação', () => {
+  it('tira o texto só de espaços entre elementos e deixa o texto de verdade', () => {
+    const doc = parseXml('<A>\n  <B x="1">\n    <C>texto</C>\n  </B>\n  <D> </D>\n</A>');
+    compact(doc.root);
+    expect(serializeXml(doc)).toBe('<A><B x="1"><C>texto</C></B><D> </D></A>');
   });
 });

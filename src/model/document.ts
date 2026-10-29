@@ -2,6 +2,7 @@
 // codificação declarada (ISO-8859-1 nas exportações do Lattes).
 
 import { isZip, readZip } from '../import-export/zip.ts';
+import { withoutScreenAttrs } from '../schema/screen-fields.ts';
 import { decodeXmlBytes, encodeLatin1, isLatin1Label } from './latin1.ts';
 import { getAttr, parseXml, serializeXml, walk, type XDocument } from './xml.ts';
 
@@ -58,9 +59,12 @@ export async function loadCv(bytes: Uint8Array, sourceName: string): Promise<Loa
   return { doc, encoding, fileName, originalBytes: xmlBytes };
 }
 
-/** Bytes do documento na codificação que o prólogo declara. */
+/**
+ * Bytes do documento na codificação que o prólogo declara, sem os campos só
+ * de tela (schema/screen-fields.ts): o XSD não os tem e o Lattes não os lê.
+ */
 export function encodeCv(doc: XDocument, encoding: string): Uint8Array {
-  const text = serializeXml(doc);
+  const text = serializeXml(withoutScreenAttrs(doc));
   if (isLatin1Label(encoding)) return encodeLatin1(text);
   return new TextEncoder().encode(text);
 }

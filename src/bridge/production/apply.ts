@@ -6,19 +6,20 @@
 // grades e todos os outros campos.
 
 import type { LattesPort, OpResult } from '../apply.ts';
-import { areaLabel } from '../areas-atuacao.ts';
 import { menuAuthors } from '../author-grid.ts';
 import { getChecked, Stop } from '../create-shared.ts';
 import {
   encodeLatin1Form,
   type Pairs,
   pairValue,
-  setPairs,
   successfulPairs,
   withScriptValues,
 } from '../form.ts';
 import { isLogonPage } from '../lattes-html.ts';
+import { withChoices } from '../multi-choice.ts';
 import type { FieldValues } from '../plan.ts';
+import { afterWrong, beforeWrong, createdPath, withSentAuthors } from './apply-checks.ts';
+import { resolveCompany } from './company.ts';
 import { doiProblem } from './doi.ts';
 import {
   authorRows,
@@ -27,17 +28,15 @@ import {
   gridKeysOf,
   gridPairs,
   type Grids,
-  keywordLabels,
   keywordRows,
   MAX_KEYWORDS,
   readGrids,
-  sameWords,
   serializeGrid,
 } from './grids.ts';
 import { SEVERAL_HOLDERS } from './holders.ts';
-import { depositorReplace, sameDepositor, severalDepositors } from './institution-holder.ts';
-import { areaGridRows, gridLabels, sameLabels, setorGridRows } from './item-lists.ts';
-import { locate } from './locate.ts';
+import { depositorReplace, severalDepositors } from './institution-holder.ts';
+import { areaGridRows, setorGridRows } from './item-lists.ts';
+import { inclusion, locate } from './locate.ts';
 import { resolveLookups } from './lookups.ts';
 import { sameAuthors, withLeads } from './members.ts';
 import { readOpaque } from './opaque.ts';
@@ -97,10 +96,14 @@ export async function applyProduction(
   let posted = false;
   try {
     const menu = await port.menuHtml();
-    const { controls, html, path } = await locate(op, t, port, menu);
+    const found = op.create ? await inclusion(op, t, port, menu) : await locate(op, t, port, menu);
+    const { controls, html } = found;
     const pairs = successfulPairs(controls);
-    if (pairValue(pairs, 'f_ctr') !== 'U') {
-      return result('erro', 'O formulário não está em modo de alteração');
+    if (pairValue(pairs, 'f_ctr') !== (op.create ? 'I' : 'U')) {
+      return result(
+        'erro',
+        `O formulário não está em modo de ${op.create ? 'inclusão' : 'alteração'}`,
+      );
     }
     // Um campo da especificação que a página não tem (ligação inferida que
     // não confere): nada vai, em vez de um POST com um parâmetro a mais.
@@ -143,7 +146,7 @@ export async function applyProduction(
     }
 
     // A natureza de um financiador: a linha dele na grade, com a letra nova.
-    const gridEdit = await projectGridValues(port, path, html, t.opaqueGrids ?? [], op);
+    const gridEdit = await projectGridValues(port, found.path, html, t.opaqueGrids ?? [], op);
     if ('status' in gridEdit) return result(gridEdit.status, gridEdit.detail);
     Object.assign(opaque.values, gridEdit.values);
 
@@ -156,6 +159,7 @@ export async function applyProduction(
     // Duas mudanças na mesma grade viram operações iguais (members.ts): a
     // segunda acha o Lattes já como o editor quer e não envia nada.
     if (
+      !op.create &&
       op.authors &&
       !op.keywords &&
       fields.length === 0 &&
@@ -163,38 +167,14 @@ export async function applyProduction(
     ) {
       return result('conferido', 'O Lattes já estava assim; nada foi enviado');
     }
-    // Só o que tem um antes conferido: o que a página limpa junto (clears) e o
-    // texto pedido fora do XML (asks) vão sem.
-    const wrong = fields.filter(
-      (f) => f in op.expect && folded(pairValue(pairs, f)) !== folded(op.expect[f]),
-    );
-    if (op.keywords && !sameWords(keywordLabels(grids.f_plv_l ?? []), op.keywords.before)) {
-      wrong.push('f_plv_l');
-    }
-    if (op.authors && !sameAuthors(grids.f_autores_l ?? [], op.authors.before)) {
-      wrong.push('f_autores_l');
-    }
-    if (op.areas && !sameLabels(gridLabels(grids.f_area_l ?? []), op.areas.before.map(areaLabel))) {
-      wrong.push('f_area_l');
-    }
-    if (op.holders && !sameDepositor(grids, op.holders.before))
-      wrong.push('f_depositante_pessoa_l');
-    if (op.setores && !sameLabels(gridLabels(grids.f_setor_l ?? []), op.setores.before)) {
-      wrong.push('f_setor_l');
-    }
-    // Um virtual que já tem o valor novo também confere: a data da patente vem
-    // de duas mudanças (a do registro e a do histórico, patente-historico.ts)
-    // para o mesmo campo, e a segunda acha o Lattes como a primeira deixou.
     const virtualDone = (f: string) => folded(virtualNow[f] ?? '') === folded(op.set[f]);
-    for (const f of virtualFields) {
-      if (
-        f in op.expect &&
-        !virtualDone(f) &&
-        folded(virtualNow[f] ?? '') !== folded(op.expect[f])
-      ) {
-        wrong.push(f);
-      }
-    }
+    // Na inclusão não há antes: o formulário vem vazio.
+    // Os campos que a página não mostra depois de gravar (FieldMap.unshown).
+    const blind = new Set(
+      Object.values(t.fields).flatMap((m) => (typeof m !== 'string' && m.unshown ? [m.field] : [])),
+    );
+    const seen = fields.filter((f) => !blind.has(f));
+    const wrong = op.create ? [] : beforeWrong(op, pairs, grids, seen, virtualFields, virtualNow);
     if (wrong.length > 0) {
       return result(
         'divergente',
@@ -263,6 +243,13 @@ export async function applyProduction(
       chosen = { ...chosen, ...student.set };
       chosenCheck = { ...chosenCheck, ...student.check };
     }
+    // A empresa do projeto pelo CNPJ, como o onChange da página (company.ts).
+    if ('f_cnpj_empresa' in set && pairs.some(([k]) => k === 'f_cod_inst_empresa')) {
+      const company = await resolveCompany(set.f_cnpj_empresa ?? '', port);
+      if ('detail' in company) return result('erro', company.detail);
+      chosen = { ...chosen, ...company.set };
+      chosenCheck = { ...chosenCheck, ...company.check };
+    }
     let organShown: string | undefined;
     if (op.organ) {
       const shown = controls.find((c) => c.name === 'f_orgao')?.value ?? '';
@@ -298,7 +285,7 @@ export async function applyProduction(
     const response = await port.post(
       t.form.action,
       encodeLatin1Form(
-        setPairs(pairs, {
+        withChoices(pairs, {
           ...set,
           ...chosen,
           ...gridPairs(grids, replace, t.gridKeys),
@@ -310,6 +297,14 @@ export async function applyProduction(
     if (isLogonPage(response)) return result('sessao', 'A sessão do Lattes expirou; entre de novo');
 
     // Releitura.
+    // Na inclusão, o item novo: o único da lista com o título e o ano enviados.
+    const path = op.create ? await createdPath(op, t, port) : found.path;
+    if (path === undefined) {
+      return result(
+        'divergente',
+        'Enviado, mas o item novo não apareceu na lista do Lattes; confira no Lattes',
+      );
+    }
     const afterHtml = await getChecked(port, path);
     const afterControls = withScriptValues(afterHtml, port.readForm(afterHtml, t.form.name));
     const afterGrids = readGrids(afterHtml, t.grids);
@@ -321,30 +316,10 @@ export async function applyProduction(
       );
     }
     const afterPairs = successfulPairs(afterControls);
-    const notSaved = fields.filter((f) => folded(pairValue(afterPairs, f)) !== folded(op.set[f]));
-    if (op.keywords && !sameWords(keywordLabels(afterGrids.f_plv_l ?? []), op.keywords.after)) {
-      notSaved.push('f_plv_l');
-    }
-    if (op.authors && !sameAuthors(afterGrids.f_autores_l ?? [], op.authors.after)) {
-      notSaved.push('f_autores_l');
-    }
-    if (
-      op.areas &&
-      !sameLabels(gridLabels(afterGrids.f_area_l ?? []), op.areas.after.map(areaLabel))
-    ) {
-      notSaved.push('f_area_l');
-    }
-    if (op.setores && !sameLabels(gridLabels(afterGrids.f_setor_l ?? []), op.setores.after)) {
-      notSaved.push('f_setor_l');
-    }
-    if (op.holders && !sameDepositor(afterGrids, op.holders.after)) {
-      notSaved.push('f_depositante_pessoa_l');
-    }
-    // Os virtuais, lidos de novo do vetor da página.
     const virtualAfter = virtualFields.length > 0 ? t.virtual?.read(afterHtml) : {};
-    for (const f of virtualFields) {
-      if (folded(virtualAfter?.[f] ?? '') !== folded(op.set[f])) notSaved.push(f);
-    }
+    const owner = (menuAuthors(menu) ?? []).filter((r) => r.c === '');
+    const sent = withSentAuthors(op, replace.f_autores_l, owner);
+    const notSaved = afterWrong(sent, afterPairs, afterGrids, seen, virtualFields, virtualAfter);
     // O texto do órgão leva uma quebra de linha, que a página pode devolver como \r\n.
     const loose = (v: string | null | undefined) => folded(v).replace(/\s+/g, ' ');
     for (const [f, v] of Object.entries(chosen)) {
@@ -362,6 +337,12 @@ export async function applyProduction(
         `O Lattes não gravou: ${notSaved.map((f) => labelOf(op, f)).join(', ')}. Confira no Lattes`,
       );
     }
+    // Na inclusão, o formulário de antes vinha vazio: não há o que comparar.
+    const unread = fields.filter((f) => blind.has(f)).map((f) => labelOf(op, f));
+    const blindNote = unread.length
+      ? `. A página do Lattes não mostra ${unread.join(', ')} depois de gravar: confira na exportação`
+      : '';
+    if (op.create) return result('conferido', `Incluído e conferido no Lattes${blindNote}`);
     const untouched = t.grids.filter((g) => !(g in replace));
     const lost = untouched.filter(
       (g: GridField) =>
@@ -395,7 +376,7 @@ export async function applyProduction(
         `Outros campos mudaram no Lattes: ${changed.join(', ')}. Confira no Lattes`,
       );
     }
-    return result('conferido', 'Gravado e conferido no Lattes');
+    return result('conferido', `Gravado e conferido no Lattes${blindNote}`);
   } catch (err) {
     if (err instanceof Stop) return result(err.status, err.message);
     const why = err instanceof Error ? err.message : String(err);

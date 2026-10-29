@@ -149,6 +149,16 @@ export function derivedValue(element: string, attr: string): string | undefined 
  * A lista de um campo tipado, ou undefined para campo livre. `el` é o
  * elemento do campo: o tipo de participação depende da forma escolhida nele.
  */
+/** Os rótulos da deficiência na ordem em que a exportação os junta: a dos códigos A, E, F, I, M, V. */
+export const PCD_EXPORT_ORDER = [
+  'Deficiência Auditiva',
+  'Transtorno do Espectro Autista',
+  'Deficiência Física',
+  'Deficiência Intelectual',
+  'Deficiência Múltipla',
+  'Deficiência Visual',
+] as const;
+
 export function typedChoices(el: XElement, attr: string): Choice[] | undefined {
   if (el.name === 'LICENCA' && attr === 'TIPO-LICENCA') return licenseChoices;
   if (hasAvailabilityChoices(el.name, attr)) return availabilityChoices;
@@ -156,7 +166,9 @@ export function typedChoices(el: XElement, attr: string): Choice[] | undefined {
   // categorias foram conferidas em XML público; as demais grafias seguem
   // os mapeamentos já usados pelo conector (seção 23).
   // As caixas de deficiência do formulário de identificação (prc_ident, lido em
-  // 27/10/2026): com uma marcada, a exportação grava o rótulo dela (seção 25).
+  // 27/10/2026), na ordem da página: a exportação grava o rótulo da marcada e,
+  // com mais de uma, os rótulos por vírgula e espaço na ordem de PCD_EXPORT_ORDER
+  // (seção 25, 29/10/2026).
   if (el.name === 'DADOS-GERAIS' && attr === 'PCD') {
     return asChoices([
       'Deficiência Auditiva',

@@ -37,6 +37,12 @@ da página montada, com `{{f_cod}}` e `{{lattes_id}}` trocados pelos do
 currículo: é por onde pares de pedido e resposta gravados no Lattes de
 verdade podem ser repetidos.
 
+As listas de produção (`producao.ts`, e a de trabalhos técnicos em
+`censo.ts`) seguem o formato das listas reais lidas em 21/10/2026
+(`docs/lattes_internals.md`, seção 10): o clique na linha inteira
+(`<tr onclick=…setarUrl(…)>`) e o título e o ano no texto. O tipo, que a
+linha real também mostra, fica de fora (inferido que não muda a leitura).
+
 ## Como está montado
 
 | Arquivo                      | O que tem                                                                                                                       |

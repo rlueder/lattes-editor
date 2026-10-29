@@ -1,14 +1,12 @@
 // O pedido que aparece embaixo de um campo quando o envio ao Lattes precisa
 // de um valor que o XML não guarda: o texto do potencial de inovação
-// (InnovationText.tsx) e a data de nascimento ou adoção da licença nova
-// (LicenseBirthDate.tsx). Os dois ficam no editor pela chave do elemento.
+// (InnovationText.tsx), que fica no editor pela chave do elemento.
 
 import type { ReactNode } from 'react';
 
 import type { XElement } from '../model/xml.ts';
 import type { FormLacks } from './form-lacks-context.ts';
 import { InnovationText } from './InnovationText.tsx';
-import { LicenseBirthDate } from './LicenseBirthDate.tsx';
 
 type Lacks = FormLacks | undefined;
 
@@ -21,11 +19,6 @@ export function followUpOf(
 ): ReactNode | undefined {
   const innovation = innovationKey(el, name, value, lacks);
   if (innovation) return <InnovationText changeKey={innovation} />;
-  // A licença nova pede a data de nascimento ou adoção (create-licenca.ts).
-  if (el.name === 'LICENCA' && name === 'DATA-INICIO-LICENCA' && lacks?.isNew?.(el)) {
-    const key = lacks.keyOf?.(el);
-    if (key) return <LicenseBirthDate changeKey={key} />;
-  }
   return undefined;
 }
 

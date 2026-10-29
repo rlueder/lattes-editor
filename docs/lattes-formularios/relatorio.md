@@ -11,11 +11,11 @@ Formulários no censo: 89, com captura: 87, sem captura: 2.
 | Grupo              | Atributo por formulário | Atributo distinto |
 | ------------------ | ----------------------: | ----------------: |
 | com opções         |                     352 |               324 |
-| texto livre        |                     804 |               620 |
+| texto livre        |                     805 |               621 |
 | oculto             |                    1349 |               193 |
 | fora do formulário |                     892 |               638 |
 | sem captura        |                      72 |                23 |
-| total              |                    3469 |              1798 |
+| total              |                    3470 |              1799 |
 
 ## Formulários
 
@@ -31,7 +31,7 @@ ligação do formulário com os elementos do XML foi conferida.
 | Áreas de atuação (`areas-de-atuacao`)                                        | link do menu          | observado | observado | 2026-10-27 |      0 |     0 |      0 |    5 |
 | Idiomas (`idioma`)                                                           | endereço conhecido    | observado | observado | 2026-10-27 |      5 |     0 |      0 |    1 |
 | Prêmios e títulos (`premio`)                                                 | endereço conhecido    | observado | observado | 2026-10-27 |      0 |     3 |      0 |    1 |
-| Licenças (`licenca`)                                                         | endereço conhecido    | observado | inferido  | 2026-10-27 |      1 |     0 |      0 |    4 |
+| Licenças (`licenca`)                                                         | endereço conhecido    | observado | inferido  | 2026-10-27 |      1 |     1 |      0 |    4 |
 | Formação acadêmica: doutorado (`formacao-FA-4`)                              | endereço conhecido    | observado | inferido  | 2026-10-27 |      3 |    12 |     28 |   13 |
 | Formação acadêmica: mestrado (`formacao-FA-3`)                               | endereço conhecido    | observado | observado | 2026-10-27 |      3 |    10 |     28 |   11 |
 | Formação acadêmica: mestrado profissional (`formacao-FA-9`)                  | endereço conhecido    | observado | inferido  | 2026-10-27 |      2 |     9 |     27 |    6 |
@@ -306,6 +306,10 @@ Elementos do schema que nenhum formulário do censo cobre: `APRESENTACAO-DE-OBRA
 **com opções**
 
 - `LICENCA@TIPO-LICENCA` ← `f_tipo_licenca` (inferido)
+
+**texto livre**
+
+- `LICENCA@DATA-NASCIMENTO-ADOCAO` ← `f_dta_nasc_adoc` (observado)
 
 **fora do formulário**
 
