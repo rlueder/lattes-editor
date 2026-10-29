@@ -48,8 +48,16 @@ export function explainTabError(err: unknown, reloaded: boolean): string {
 /** Vale tentar de novo: a página recarregou, e a leitura pode repetir sem risco. */
 export const worthRetry = (detail: string): boolean => detail.startsWith(TAB_RELOADED);
 
+/** As gravações da lista, uma de cada vez: duas ao mesmo tempo perderiam uma entrada. */
+let saving: Promise<void> = Promise.resolve();
+
 /** Guarda o erro entre os dez últimos; guardar nunca derruba a chamada. */
-export async function recordTabError(op: string, message: string): Promise<void> {
+export function recordTabError(op: string, message: string): Promise<void> {
+  saving = saving.then(() => saveTabError(op, message));
+  return saving;
+}
+
+async function saveTabError(op: string, message: string): Promise<void> {
   try {
     const stored = await chrome.storage.local.get(ERRORS_KEY);
     const list = (stored[ERRORS_KEY] as TabErrorEntry[] | undefined) ?? [];

@@ -7,7 +7,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { CONSENT_KEY, consentRecord } from '../extension/src/consent.ts';
-import { readCurriculo, sendPhoto } from '../extension/src/lattes-tab.ts';
+import { readCurriculo, readEspelho, sendPhoto } from '../extension/src/lattes-tab.ts';
 import {
   ERRORS_KEY,
   explainTabError,
@@ -27,7 +27,14 @@ import {
 } from '../extension/src/tab-guard.ts';
 
 /** O chrome de mentira: armazenamento em memória, uma aba do Lattes e o executeScript dado. */
-function fakeChrome(execute: (injection: { files?: string[] }) => Promise<unknown>) {
+function fakeChrome(
+  execute: (injection: {
+    args?: unknown[];
+    files?: string[];
+    target: { tabId: number };
+  }) => Promise<unknown>,
+  tabs: () => number = () => 7,
+) {
   const local: Record<string, unknown> = { [CONSENT_KEY]: consentRecord() };
   const area = (store: Record<string, unknown>) => ({
     get: (key: string) => Promise.resolve({ [key]: store[key] }),
@@ -43,7 +50,7 @@ function fakeChrome(execute: (injection: { files?: string[] }) => Promise<unknow
       get: () => Promise.resolve({ id: 7, status: 'complete' }),
       onRemoved: { addListener: () => undefined, removeListener: () => undefined },
       onUpdated: { addListener: () => undefined },
-      query: () => Promise.resolve([{ id: 7 }]),
+      query: () => Promise.resolve([{ id: tabs() }]),
     },
   });
   return local;
@@ -105,6 +112,12 @@ describe('os últimos erros guardados', () => {
     expect(local[ERRORS_KEY]).toEqual(list);
   });
 
+  it('dois erros ao mesmo tempo ficam os dois', async () => {
+    fakeChrome(() => Promise.resolve([]));
+    await Promise.all([recordTabError('exportar', 'um'), recordTabError('listas', 'dois')]);
+    expect((await readTabErrors()).map((e) => e.message)).toEqual(['dois', 'um']);
+  });
+
   it('sem armazenamento, guardar não derruba nada', async () => {
     vi.stubGlobal('chrome', {});
     await expect(recordTabError('exportar', 'x')).resolves.toBeUndefined();
@@ -139,6 +152,28 @@ describe('a leitura que pega a aba recarregando', () => {
       `${TAB_RELOADED}.`,
       `${TAB_RELOADED}. Nova tentativa.`,
     ]);
+  });
+
+  it('depois da segunda tentativa noutra aba, as listas vão à aba que respondeu', async () => {
+    let call = 0;
+    const lists: number[] = [];
+    const ids = [7, 8];
+    fakeChrome(
+      (injection) => {
+        if (injection.files) return Promise.resolve([]);
+        if (injection.args?.[0] === 'listasCv') {
+          lists.push(injection.target.tabId);
+          return Promise.resolve([{ result: { lists: {}, queue: [], unread: [] } }]);
+        }
+        call++;
+        return call === 1
+          ? Promise.reject(new Error('Frame with ID 0 was removed.'))
+          : Promise.resolve([{ result: { items: [] } }]);
+      },
+      () => ids.shift() ?? 8,
+    );
+    expect(await readEspelho()).toMatchObject({ items: [], listsUnread: [] });
+    expect(lists).toEqual([8]);
   });
 
   it('a gravação nunca tenta de novo: o motivo volta na primeira falha', async () => {

@@ -96,7 +96,8 @@ async function runInTab<T>(
 type Reply<K extends BridgeMessage['type']> = Omit<Extract<BridgeMessage, { type: K }>, 'type'>;
 
 type TabCall = Parameters<typeof runInTab>[1];
-type TabOutcome<T> = { detail: string } | { value: T };
+/** O valor vem com a aba que respondeu: depois de recarregar, pode ser outra. */
+type TabOutcome<T> = { detail: string } | { tabId: number; value: T };
 
 /**
  * Uma chamada ao núcleo na aba: o valor, ou o motivo de verdade da falha
@@ -117,7 +118,7 @@ async function callTab<T>(
     let err: unknown;
     try {
       const value = await runInTab<T>(tab, name, ...args);
-      if (value !== undefined) return { value };
+      if (value !== undefined) return { tabId: tab, value };
     } catch (e) {
       err = e;
     }
@@ -237,8 +238,9 @@ export async function readEspelho(): Promise<Reply<'espelho'>> {
   if (!('value' in r)) return { error: r.detail };
   const page = r.value;
   if (!page.items) return page;
-  // Depois da página, as listas, em partes (read-cv-lists.ts).
-  return { ...page, ...(await readCvLists((queue) => runInTab(tabId, 'listasCv', ...queue))) };
+  // Depois da página, as listas, em partes (read-cv-lists.ts), na aba que
+  // respondeu.
+  return { ...page, ...(await readCvLists((queue) => runInTab(r.tabId, 'listasCv', ...queue))) };
 }
 
 /**

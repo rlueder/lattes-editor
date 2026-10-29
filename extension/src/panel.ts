@@ -18,7 +18,7 @@ import { giveConsent, hasConsent, PRIVACY_URL } from './consent.ts';
 import { reloadLattesTab } from './lattes-tab.ts';
 import type { AppHello, PanelCommand, QueueState } from './state.ts';
 import { APP_KEY, readState } from './state.ts';
-import { readTabErrors } from './tab-errors.ts';
+import { ERRORS_KEY, readTabErrors } from './tab-errors.ts';
 import { toolbarTheme } from './toolbar-icon.ts';
 
 const STATUS: Record<OpResult['status'], string> = {
@@ -356,10 +356,11 @@ async function renderErrors(): Promise<void> {
     );
 }
 
-chrome.storage.onChanged.addListener((_changes, area) => {
+chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local') {
-    void showConsentOrBridge();
-    void renderErrors();
+    // Um erro guardado só redesenha a lista; o aviso e a ponte, só o resto.
+    if (ERRORS_KEY in changes) void renderErrors();
+    if (Object.keys(changes).some((k) => k !== ERRORS_KEY)) void showConsentOrBridge();
   } else {
     void readState().then(render);
     void renderVersions();
