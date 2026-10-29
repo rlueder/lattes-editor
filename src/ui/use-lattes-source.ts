@@ -10,7 +10,7 @@ import { useMemo } from 'react';
 import type { Session } from '../forms/use-production.ts';
 import { getAttr } from '../model/xml.ts';
 import type { BridgeState } from './use-bridge.ts';
-import { useLattesLoad } from './use-lattes-load.ts';
+import { exportSource, useLattesLoad } from './use-lattes-load.ts';
 import { useLattesOpen } from './use-lattes-open.ts';
 import { useLattesReload } from './use-lattes-reload.ts';
 
@@ -22,7 +22,10 @@ export function useLattesSource(
 ) {
   const load = useLattesLoad(bridge);
   const { curriculo, link, requestCv } = bridge;
-  const exported = useMemo(() => ({ curriculo, link, requestCv }), [curriculo, link, requestCv]);
+  const exported = useMemo(
+    () => exportSource({ curriculo, link, requestCv }),
+    [curriculo, link, requestCv],
+  );
   const open = useLattesOpen(Boolean(session), booting, exported, handlers.onOpen);
   const lattesId = session ? getAttr(session.doc.root, 'NUMERO-IDENTIFICADOR') : undefined;
   const reload = useLattesReload(load.source, lattesId, handlers.onReload);

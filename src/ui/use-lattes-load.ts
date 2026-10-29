@@ -35,6 +35,13 @@ export interface LattesLoad {
   source: CvSource;
 }
 
+/** A fonte da exportação: o pedido do ZIP do Exportar, sem os formulários. */
+export const exportSource = ({ curriculo, link, requestCv }: CvSource): CvSource => ({
+  curriculo,
+  link,
+  requestCv,
+});
+
 export function useLattesLoad(bridge: CvSource & Pick<BridgeState, 'features'>): LattesLoad {
   const available = LATTES_LOAD_ENABLED && bridge.features.includes(LOAD_FEATURE);
   const [curriculo, setCurriculo] = useState<CurriculoReading | undefined>();
@@ -118,7 +125,11 @@ export function useLattesLoad(bridge: CvSource & Pick<BridgeState, 'features'>):
             requestCv,
             timeoutMs: LOAD_TIMEOUT_MS,
           }
-        : { curriculo: bridge.curriculo, link: bridge.link, requestCv: bridge.requestCv },
+        : exportSource({
+            curriculo: bridge.curriculo,
+            link: bridge.link,
+            requestCv: bridge.requestCv,
+          }),
     [available, bridge.curriculo, bridge.link, bridge.requestCv, curriculo, requestCv],
   );
 
