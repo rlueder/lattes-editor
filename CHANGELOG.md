@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.1.0](https://github.com/rlueder/lattes-editor/compare/v1.0.0...v1.1.0) (2026-10-30)
+
+### Novidades
+
+- **forms:** cobertura dos campos pelo conector e envio ao CNPq pelo editor ([#141](https://github.com/rlueder/lattes-editor/issues/141)) ([a4c6687](https://github.com/rlueder/lattes-editor/commit/a4c6687f2d31240ae8f38496b249f05bfea73dba))
+- **forms:** currículo pelos formulários do Lattes, campos só de tela e inclusão de produção ([#146](https://github.com/rlueder/lattes-editor/issues/146)) ([b2bf5c2](https://github.com/rlueder/lattes-editor/commit/b2bf5c2c7decb976255d6d9a0624bc78bae6d03f)), closes [#144](https://github.com/rlueder/lattes-editor/issues/144)
+- **ui:** Histórico e Revisão do currículo no lugar de Versões e Diagnóstico ([#148](https://github.com/rlueder/lattes-editor/issues/148)) ([be83fac](https://github.com/rlueder/lattes-editor/commit/be83facb3b5dd62c5a408dd45846fc8d2dcf951b)), closes [#147](https://github.com/rlueder/lattes-editor/issues/147) [#147](https://github.com/rlueder/lattes-editor/issues/147)
+- **ui:** primeira abertura pela exportação, recarregar pelos formulários ([#147](https://github.com/rlueder/lattes-editor/issues/147)) ([3d621ee](https://github.com/rlueder/lattes-editor/commit/3d621ee6804891b1abff83eb22cf462c4014fd39))
+
+### Correções
+
+- **import-export:** Importar com solicitação criada apesar do alerta do DTD ([#142](https://github.com/rlueder/lattes-editor/issues/142)) ([f48098a](https://github.com/rlueder/lattes-editor/commit/f48098ab507c7fbb59f128aa4c6c1aff44880ce1))
+- **ui:** aviso de versão da extensão sem dizer qual é mais antiga ([#143](https://github.com/rlueder/lattes-editor/issues/143)) ([1f51668](https://github.com/rlueder/lattes-editor/commit/1f516687f6fac44f3501df3f8850dd38fed70d57))
+- **ui:** mantém circulares os controles dos modais ([#140](https://github.com/rlueder/lattes-editor/issues/140)) ([b6b5b00](https://github.com/rlueder/lattes-editor/commit/b6b5b00503b96091e674627699f3132b30b93faa))
+- **ui:** motivo de verdade quando a aba do Lattes falha, e os últimos erros no painel ([#144](https://github.com/rlueder/lattes-editor/issues/144)) ([358ccbb](https://github.com/rlueder/lattes-editor/commit/358ccbb27d37f74d0a44c3abd2fc73b5c81c7708))
+- **ui:** resumo da versão nova na largura toda, como o aviso de pendências ([#145](https://github.com/rlueder/lattes-editor/issues/145)) ([458f275](https://github.com/rlueder/lattes-editor/commit/458f275b450fabf7da425828ac4c385d1c6c6bd2))
+
 ## [1.0.0](https://github.com/rlueder/lattes-editor/compare/v0.24.1...v1.0.0) (2026-10-26)
 
 ### Novidades
