@@ -17,6 +17,7 @@ import {
   addHistoryPoint,
   clearHistory,
   getHistoryEntry,
+  getVersion,
   listHistoryInfo,
   listSent,
   listVersionInfo,
@@ -25,6 +26,7 @@ import {
 import { getAttr, parseXml, serializeXml, type XDocument } from '../model/xml.ts';
 import { copyFileName } from './copy-name.ts';
 import { buildTimeline, NOTES, type TimelineDay, type TimelineEntry } from './history-timeline.ts';
+import { versionBytes } from './lattes-reload.ts';
 
 const message = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
@@ -104,35 +106,80 @@ export function useHistory({
   const close = useCallback(() => setOpen(false), []);
   const act = (work: Promise<void>) => void work.catch((err: unknown) => setError(message(err)));
 
-  /** Volta a cópia de trabalho ao estado guardado, ou ao ponto zero do arquivo. */
+  /** A exportação guardada no app de uma abertura, se ainda está lá. */
+  const storedExport = async (entry: TimelineEntry) =>
+    entry.versionId !== undefined && entry.kind === 'abertura'
+      ? await getVersion(entry.versionId)
+      : undefined;
+  /** O arquivo do ponto zero, se a linha tem um e ele ainda está guardado. */
+  const zeroFile = async (entry: TimelineEntry) =>
+    entry.backup?.kind === 'ponto-zero' && lattesId
+      ? await readBackup(lattesId, entry.backup.name)
+      : undefined;
+
+  /**
+   * Volta a cópia de trabalho ao estado guardado; sem ele, ao ponto zero do
+   * arquivo, que é o que a linha promete, e só sem o arquivo à exportação
+   * guardada no app. Nesses dois, a cópia de agora fica guardada antes, para
+   * "Restaurar" de volta. O painel só fecha quando a troca aconteceu.
+   */
   const restore = (entry: TimelineEntry) =>
     act(
       (async () => {
         if (!session) return;
         const generation = workingGenerationToken();
+        const replace = async (doc: XDocument, before: string, note: string) => {
+          // A cópia trocou enquanto se lia o arquivo: nada é guardado nem trocado.
+          if (generation !== workingGenerationToken()) return false;
+          await addHistoryPoint({
+            keep: true,
+            note: before,
+            savedAt: Date.now(),
+            xml: serializeXml(session.doc),
+          });
+          if (generation !== workingGenerationToken()) return false;
+          onRestore(doc, note);
+          return true;
+        };
+        let done = false;
         if (entry.pointId !== undefined) {
           const point = await getHistoryEntry(entry.pointId);
           if (!point || generation !== workingGenerationToken()) return;
           onRestore(parseXml(point.xml), `Restaurado: ${when(point.savedAt)}`);
-        } else if (entry.backup?.kind === 'ponto-zero' && lattesId) {
-          const bytes = await readBackup(lattesId, entry.backup.name);
-          if (!bytes) throw new Error('O ponto zero não está mais guardado.');
-          const cv = await loadCv(bytes, entry.backup.name);
-          // A cópia de agora fica guardada antes, para "Restaurar" de volta.
-          await addHistoryPoint({
-            keep: true,
-            note: NOTES.antesDoPontoZero,
-            savedAt: Date.now(),
-            xml: serializeXml(session.doc),
-          });
-          if (generation !== workingGenerationToken()) return;
-          onRestore(cv.doc, `Restaurado: ponto zero de ${when(entry.backup.savedAt)}`);
-        } else return;
-        setOpen(false);
+          done = true;
+        } else {
+          const zero = await zeroFile(entry);
+          if (zero && entry.backup) {
+            const cv = await loadCv(zero, entry.backup.name);
+            done = await replace(
+              cv.doc,
+              NOTES.antesDoPontoZero,
+              `Restaurado: ponto zero de ${when(entry.backup.savedAt)}`,
+            );
+          } else {
+            const version = await storedExport(entry);
+            if (!version) {
+              if (entry.backup || entry.versionId !== undefined) {
+                throw new Error('A exportação não está mais guardada.');
+              }
+              return;
+            }
+            const cv = await loadCv(versionBytes(version.xml), `${version.lattesId}.xml`);
+            done = await replace(
+              cv.doc,
+              NOTES.antesDaExportacao,
+              `Restaurado: exportação aberta em ${when(version.loadedAt)}`,
+            );
+          }
+        }
+        if (done) setOpen(false);
       })(),
     );
 
-  /** O estado guardado como XML, ou o arquivo da cópia como o Lattes entregou. */
+  /**
+   * O estado guardado como XML; sem ele, o arquivo da cópia como o Lattes
+   * entregou e, só sem o arquivo, a exportação guardada no app.
+   */
   const saveFile = (entry: TimelineEntry) =>
     act(
       (async () => {
@@ -145,11 +192,24 @@ export function useHistory({
             encodeCv(parseXml(point.xml), session.meta.encoding),
             copyFileName(session.meta.fileName, new Date(point.savedAt)),
           );
-        } else if (entry.backup && lattesId) {
-          const bytes = await readBackup(lattesId, entry.backup.name);
-          if (!bytes) throw new Error('A cópia não está mais guardada.');
+          return;
+        }
+        const bytes =
+          entry.backup && lattesId ? await readBackup(lattesId, entry.backup.name) : undefined;
+        if (bytes && entry.backup) {
           const zip = entry.backup.name.endsWith('.zip');
           await saveBytes(bytes, entry.backup.name, zip ? 'application/zip' : 'application/xml');
+          return;
+        }
+        const version = await storedExport(entry);
+        if (version) {
+          await saveBytes(
+            versionBytes(version.xml),
+            copyFileName(session.meta.fileName, new Date(version.loadedAt)),
+            'application/xml',
+          );
+        } else if (entry.backup) {
+          throw new Error('A cópia não está mais guardada.');
         }
       })(),
     );

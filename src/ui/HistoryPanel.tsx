@@ -7,8 +7,9 @@ import { type ReactNode, useEffect, useState } from 'react';
 import type { HashRoute } from './hash-route.ts';
 import type { TimelineEntry } from './history-timeline.ts';
 import { ExportChanges } from './HistoryChanges.tsx';
-import { ChevronIcon } from './icons.tsx';
+import { ChevronIcon, DownloadIcon, RestoreIcon } from './icons.tsx';
 import { Modal } from './Modal.tsx';
+import { Tip } from './primitives/Tip.tsx';
 import type { HistoryState } from './use-history.ts';
 
 const time = (ms: number) =>
@@ -31,9 +32,14 @@ function Actions({
 }) {
   const { desktop } = history;
   const zero = entry.backup?.kind === 'ponto-zero';
+  // Uma abertura se restaura pelo estado guardado, pela exportação guardada
+  // no app ou pelo ponto zero; a recarga e o envio, pelo estado de antes.
+  const exported = entry.versionId !== undefined && entry.kind === 'abertura';
   const canRestore =
-    !entry.current && (entry.pointId !== undefined || (zero && entry.kind === 'abertura'));
-  const canSave = entry.pointId !== undefined || (entry.backup !== undefined && !desktop);
+    !entry.current &&
+    (entry.pointId !== undefined || exported || (zero && entry.kind === 'abertura'));
+  const canSave =
+    entry.pointId !== undefined || exported || (entry.backup !== undefined && !desktop);
   const compare = entry.versionId !== undefined && entry.previousVersionId !== undefined;
   if (entry.kind === 'publicacao') return null;
   return (
@@ -46,7 +52,7 @@ function Actions({
       {compare && (
         <button
           aria-expanded={showing}
-          className="ghost history-toggle"
+          className="link-btn history-toggle"
           type="button"
           onClick={onToggleChanges}
         >
@@ -54,20 +60,34 @@ function Actions({
           <ChevronIcon />
         </button>
       )}
-      {canSave && (
-        <button className="ghost" type="button" onClick={() => history.saveFile(entry)}>
-          Salvar arquivo
-        </button>
-      )}
       {entry.backup && desktop && (
         <button className="ghost" type="button" onClick={() => history.reveal(entry)}>
           Mostrar na pasta
         </button>
       )}
+      {canSave && (
+        <Tip label="Salvar arquivo">
+          <button
+            aria-label="Salvar arquivo"
+            className="ghost icon-btn"
+            type="button"
+            onClick={() => history.saveFile(entry)}
+          >
+            <DownloadIcon />
+          </button>
+        </Tip>
+      )}
       {canRestore && (
-        <button className="ghost" type="button" onClick={() => history.restore(entry)}>
-          {restoreLabel(entry)}
-        </button>
+        <Tip label={restoreLabel(entry)}>
+          <button
+            aria-label={restoreLabel(entry)}
+            className="ghost icon-btn"
+            type="button"
+            onClick={() => history.restore(entry)}
+          >
+            <RestoreIcon />
+          </button>
+        </Tip>
       )}
     </span>
   );
@@ -149,7 +169,7 @@ export function HistoryPanel({
       {lattesNow}
       <section aria-labelledby="history-list-title" className="panel-section">
         <h3 className="panel-section-head" id="history-list-title">
-          Neste app
+          No LattesEditor
         </h3>
         {error && <p className="error">{error}</p>}
         {!days && !error && <p className="muted">Lendo o histórico…</p>}
@@ -158,7 +178,7 @@ export function HistoryPanel({
         )}
         {days?.map((day) => (
           <div key={day.day} className="history-day">
-            <h4 className="sent-day-head">{day.label}</h4>
+            <h4 className="sent-day-head history-day-head">{day.label}</h4>
             <ul className="history-list">
               {day.entries.map((entry) => {
                 const key = `${entry.kind}-${entry.at}-${entry.pointId ?? ''}`;
