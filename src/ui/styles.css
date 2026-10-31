@@ -2064,10 +2064,22 @@ a.menu-item.notice {
   background: color-mix(in srgb, var(--surface-2) 45%, var(--surface));
 }
 
+/* "Ver o que mudou" é um link que abre e fecha a comparação, com a seta. */
 .history-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  margin-right: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+/* A data de cada dia, mais forte que o texto das linhas. */
+.history-day-head {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
 }
 
 .history-toggle svg {
