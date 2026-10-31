@@ -44,9 +44,10 @@ detalhes e escolha executar. O app confere se há versão nova ao abrir e a cada
    seção vazia mostra uma ilustração na grade do logo. Cada edição fica
    salva no app.
 4. **Envie ao Lattes.** O painel "Enviar ao Lattes" vai em três passos:
-   revisar, gravar e publicar. Produções novas vão pelo Importar do próprio
-   Lattes, num arquivo que o app gera. O resto vai pela extensão, que grava na
-   sua sessão, lê cada formulário de volta e confere. O que ela ainda não
+   revisar, gravar e publicar. A extensão grava na sua sessão, pelos
+   formulários do Lattes, lê cada formulário de volta e confere, inclusive as
+   produções novas. O livro, que o formulário de inclusão não leva, vai pelo
+   Importar do próprio Lattes, num arquivo que o app gera. O que ela ainda não
    grava fica no painel campo a campo, com o valor antigo ao lado do novo.
 
 <img src="site/img/homepage/busca.webp" width="1440" alt="A busca do ⌘K com o termo artigo, a entrada na seção, a impressão e a troca para o tema escuro." />

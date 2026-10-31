@@ -351,8 +351,10 @@ describe('Enviar ao CNPq pelo conector (LAT-54)', () => {
     const result = await publishCv(lattes.publishPort, await code(lattes), request(), noWait);
     expect(result.outcome).toBe('nao-confirmado');
     expect(result.sent).toBe(true);
-    expect(result.detail).toMatch(/respondeu que o currículo foi enviado, mas o menu ainda mostra/);
-    expect(result.detail).toContain('aviso de alterações não enviadas');
+    expect(result.detail).toMatch(
+      /^O Lattes disse que enviou, mas a última publicação ainda é de /,
+    );
+    expect(result.detail).toContain('com alterações não enviadas');
     expect(procs(lattes).filter((p) => p === 'GET pkg_menu.menu').length).toBeGreaterThanOrEqual(2);
   });
 
@@ -367,7 +369,9 @@ describe('Enviar ao CNPq pelo conector (LAT-54)', () => {
     });
     const result = await publishCv(lattes.publishPort, await code(lattes), request(), noWait);
     expect(result.outcome).toBe('nao-confirmado');
-    expect(result.detail).toMatch(/não respondeu como no envio observado, e o menu não mostrou/);
+    expect(result.detail).toBe(
+      'O Lattes não confirmou o envio: o menu não mostra a data da última publicação. Confira no Lattes antes de enviar de novo.',
+    );
   });
 
   it('sessão caída: antes do envio, na consulta e depois do envio', async () => {

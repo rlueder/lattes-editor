@@ -108,11 +108,14 @@ const SCENES: Scene[] = [
     },
   },
   {
-    // Panorama: o modo troca, e a barra de 2023 abre a seção filtrada.
+    // Panorama: já começa no Panorama (o primeiro quadro difere das outras
+    // abas da página; só hold grava quadros, e o primeiro vem depois do
+    // clique), vai a Produções por ano, e a barra de 2023 abre a seção
+    // filtrada.
     name: 'hero-panorama',
     run: async ({ click, evaluate, hold }) => {
-      await hold(6);
       await click('.mode-switch [role=radio]', 'Panorama');
+      await evaluate(`await settle()`);
       await hold(8);
       await evaluate(`location.hash = 'panorama/producoes-por-ano'; await settle()`);
       await hold(10);
@@ -124,11 +127,14 @@ const SCENES: Scene[] = [
     },
   },
   {
-    // Novo item: o diálogo, o filtro de tipos e o formulário do artigo.
+    // Novo item: já começa com o diálogo aberto (o primeiro quadro difere
+    // das outras abas da página; só hold grava quadros, e o primeiro vem
+    // depois do clique e do wait de HELPERS), filtra os tipos e abre o
+    // formulário.
     name: 'hero-new',
-    run: async ({ click, hold, typeInto }) => {
-      await hold(6);
+    run: async ({ click, evaluate, hold, typeInto }) => {
       await click('[aria-label="Novo item"]');
+      await evaluate(`await wait('.picker-filter input'); await settle()`);
       await hold(10);
       await typeInto('.picker-filter input', 'arti');
       await hold(8);

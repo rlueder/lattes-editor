@@ -346,12 +346,23 @@
                 extensão ou pelo Importar.
               </p>
               <!-- O homepage.js troca pelo instalador do sistema de quem lê, com o ícone. -->
-              <a class="btn" href="#baixar" data-download>
-                <svg class="btn-icon" hidden aria-hidden="true" focusable="false">
-                  <use data-download-icon href="#icone-macos" />
-                </svg>
-                <span data-download-label>Baixar o app</span>
-              </a>
+              <div class="hero-actions">
+                <a class="btn" href="#baixar" data-download>
+                  <svg class="btn-icon" hidden aria-hidden="true" focusable="false">
+                    <use data-download-icon href="#icone-macos" />
+                  </svg>
+                  <span data-download-label>Baixar o app</span>
+                </a>
+                <a
+                  class="btn btn-outline"
+                  href="https://chromewebstore.google.com/detail/kdebkpkdhgaeaaobcbgbckinocnlfbgg"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  ><svg class="btn-icon" aria-hidden="true" focusable="false">
+                    <use href="#icone-extensao" /></svg
+                  >Extensão para Chrome e Brave</a
+                >
+              </div>
             </div>
 
             <!-- Tela do app sobre o fundo geométrico; o clique abre em tela cheia. -->
@@ -437,9 +448,10 @@
                 <span class="num" aria-hidden="true">02</span>
                 <h3 class="card-title">Abra o currículo</h3>
                 <p>
-                  O app pede ao Lattes a mesma exportação do menu Exportar e abre o currículo. Sem a
-                  extensão, exporte no Lattes e solte o ZIP na janela do app. A edição, depois
-                  disso, não precisa de conexão.
+                  O app pede ao Lattes a mesma exportação do menu Exportar e abre o currículo em
+                  segundos. Sem a extensão, exporte no Lattes e solte o ZIP na janela do app.
+                  Depois, Atualizar do Lattes traz o que mudou lá: só o que é novo, ou o currículo
+                  inteiro, lido das telas. A edição não precisa de conexão.
                 </p>
               </div>
               <div class="item span-6">
@@ -455,10 +467,8 @@
                 <span class="num" aria-hidden="true">04</span>
                 <h3 class="card-title">Envie ao Lattes</h3>
                 <p>
-                  O painel Enviar ao Lattes vai em três passos: revisar, gravar e publicar no CNPq.
-                  Produções novas vão pelo Importar do Lattes, num arquivo que o app gera. O resto
-                  vai pela extensão, que grava em segundo plano e confere cada alteração. O que ela
-                  ainda não grava aparece campo a campo, com o valor antigo ao lado do novo.
+                  Revise, grave e publique no CNPq. A extensão grava pelos formulários do Lattes e
+                  confere cada alteração. O que ela não grava fica no painel, para copiar.
                 </p>
               </div>
             </div>
@@ -638,21 +648,23 @@
               </div>
               <div class="item span-6">
                 <span class="num" aria-hidden="true">03</span>
-                <h3 class="card-title">Diagnóstico do currículo</h3>
+                <h3 class="card-title">Revisão do currículo</h3>
                 <p>
                   Passa pelo currículo inteiro e lista campos obrigatórios vazios, valores fora das
                   listas do Lattes, anos e autores inconsistentes, DOI e ISSN inválidos, duplicatas
-                  e vínculos antigos marcados como atuais. O diagnóstico não altera nada.
+                  e vínculos antigos marcados como atuais. Um clique leva ao item. A revisão não
+                  altera nada.
                 </p>
               </div>
               <div class="item span-6">
                 <span class="num" aria-hidden="true">04</span>
-                <h3 class="card-title">Versões e cópias de segurança</h3>
+                <h3 class="card-title">Histórico e cópias de segurança</h3>
                 <p>
-                  Cada exportação aberta vira uma versão, e o app mostra o que mudou desde a
-                  anterior, inclusive edições feitas direto no Lattes. A primeira exportação de cada
-                  currículo e uma cópia antes de cada envio ficam na pasta Documentos. O app não
-                  apaga essas cópias.
+                  O Histórico mostra, por dia, cada edição, cada envio ao Lattes e cada exportação
+                  aberta, com o que mudou desde a anterior, e qualquer um desses momentos volta a
+                  ser a cópia de trabalho. No alto, ele compara o currículo com o Lattes de agora. A
+                  primeira exportação e o Lattes de antes de cada envio ficam também na pasta
+                  Documentos, e o app não apaga essas cópias.
                 </p>
               </div>
               <div class="item span-6">
@@ -686,16 +698,12 @@
                 </p>
                 <h2 class="h2" id="t-enviar">Enviar ao Lattes</h2>
                 <p class="lead" style="margin-top: 1rem">
-                  O painel vai em três passos: revisar, gravar e publicar. A revisão mostra cada
-                  alteração com o caminho dela. Depois a extensão grava na sua sessão do Chrome ou
-                  Brave e lê cada formulário de volta para conferir. A fila para no primeiro
-                  problema, e a cada 20 gravações faz uma pausa para você olhar o Lattes.
+                  Três passos: revisar, gravar e publicar. A extensão grava na sua sessão do Chrome
+                  ou Brave e confere cada alteração no próprio Lattes.
                 </p>
                 <p style="margin-top: 1rem; color: var(--fg-75)">
-                  O histórico no fim do painel guarda o valor antigo e o novo de cada gravação e
-                  deixa desfazer. O terceiro passo mostra o que vai ser publicado e envia ao CNPq,
-                  com a declaração marcada por você. Uma gravação que não voltou conferida bloqueia
-                  esse envio até você conferir o item no Lattes.
+                  O painel lista o que foi gravado, com o valor antigo, e desfaz as alterações de
+                  campo. A publicação no CNPq só sai com a declaração marcada por você.
                 </p>
               </div>
               <figure class="send-figure start-7" data-zoom>
@@ -731,28 +739,27 @@
                 <h3 class="h3">O que a extensão grava</h3>
                 <div class="cols">
                   <div>
-                    <h4 class="cols-title">Pela extensão, na sua sessão</h4>
+                    <h4 class="cols-title">Dados gerais e atuação</h4>
                     <ul>
                       <li>Resumo, idiomas, endereço e identificação</li>
-                      <li>Formação, com instituição, curso e agência pelas buscas do Lattes</li>
-                      <li>Vínculos de atuação, com as atividades e o órgão</li>
-                      <li>Eventos, prêmios e formação complementar</li>
-                      <li>Patentes e registros</li>
-                      <li>DOI, palavras-chave, áreas e setores das produções</li>
-                      <li>Orientações concluídas</li>
+                      <li>
+                        Campos que só as telas do Lattes têm, como nome social, celular e a
+                        visibilidade de cada item
+                      </li>
                       <li>Foto do perfil</li>
-                      <li>Inclusão de itens novos e exclusão de idioma e vínculo</li>
-                      <li>Importar das produções novas</li>
-                      <li>Enviar ao CNPq, com a declaração marcada por você</li>
+                      <li>Formação, com instituição, curso e agência pelas buscas do Lattes</li>
+                      <li>Vínculos de atuação, com as atividades, o órgão e os projetos</li>
+                      <li>Eventos, prêmios e formação complementar</li>
                     </ul>
                   </div>
                   <div>
-                    <h4 class="cols-title">Ainda por você, no Lattes</h4>
+                    <h4 class="cols-title">Produções e envio</h4>
                     <ul>
-                      <li>
-                        Campos que o formulário do Lattes não tem, como o nome do evento em inglês:
-                        ficam no painel, com o valor para copiar
-                      </li>
+                      <li>Produções, com DOI, palavras-chave, áreas e setores</li>
+                      <li>Patentes e registros</li>
+                      <li>Orientações e bancas</li>
+                      <li>Inclusão e exclusão de itens; o livro novo vai pelo Importar</li>
+                      <li>Enviar ao CNPq, com a declaração marcada por você</li>
                     </ul>
                   </div>
                 </div>
@@ -820,6 +827,8 @@
                     Pela
                     <a
                       href="https://chromewebstore.google.com/detail/kdebkpkdhgaeaaobcbgbckinocnlfbgg"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       >Chrome Web Store</a
                     >; o Brave instala da mesma loja. No primeiro uso, o painel mostra o que ela lê
                     e envia e pede um "ok". A loja atualiza a extensão sozinha.
@@ -926,18 +935,16 @@
                 </div>
                 <div class="download-group">
                   <h3 class="h3">A extensão do conector</h3>
-                  <p>
-                    Para Chrome e Brave. Enquanto não está na Chrome Web Store, ela se instala pela
-                    pasta do ZIP, como explica a seção
-                    <a href="#perguntas">Perguntas frequentes</a>.
-                  </p>
+                  <p>Para Chrome e Brave, pela Chrome Web Store, que a atualiza sozinha.</p>
                   <div class="actions">
                     <a
                       class="btn btn-white"
                       href="https://chromewebstore.google.com/detail/kdebkpkdhgaeaaobcbgbckinocnlfbgg"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       ><svg class="btn-icon" aria-hidden="true" focusable="false">
                         <use href="#icone-extensao" /></svg
-                      >Extensão na Chrome Web Store</a
+                      >Chrome Web Store</a
                     >
                   </div>
                 </div>
