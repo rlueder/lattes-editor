@@ -1187,13 +1187,19 @@ a.tag:hover {
 .download-group .btn {
   padding-inline: 1rem;
 }
+/* Um botão sozinho no grupo (a extensão) ocupa as duas colunas. */
+.download-group .actions > .btn:only-child {
+  grid-column: 1 / -1;
+}
 .btn-icon {
   flex: none;
   width: 1.125rem;
   height: 1.125rem;
   fill: currentColor;
 }
-@media (min-width: 768px) {
+/* Três grupos lado a lado só com largura para os rótulos dos botões numa
+   linha; antes disso, um embaixo do outro. */
+@media (min-width: 1180px) {
   .download-groups {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
