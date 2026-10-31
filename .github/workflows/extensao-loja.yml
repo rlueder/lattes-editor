@@ -41,6 +41,10 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # No automático, nem a falha do job inteiro (checkout, prazo, o ambiente
+    # recusado) deixa o PROD 2 vermelho: o lançamento já foi publicado. Os
+    # passos também seguem com aviso, para o resumo dizer o que houve.
+    continue-on-error: ${{ inputs.automatico == true }}
     # Os segredos do ambiente chegam aqui também quando o PROD 2 chama: o
     # environment fica neste job, não no que chama.
     environment: chrome-web-store
