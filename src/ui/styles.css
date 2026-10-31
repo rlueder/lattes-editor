@@ -387,7 +387,8 @@ button.status-seg:hover,
 }
 
 .topbar-actions button.ghost:hover {
-  background: var(--surface-2);
+  background: var(--accent-soft);
+  color: var(--accent-text);
 }
 
 .topbar .search-btn {
@@ -5398,9 +5399,30 @@ button.primary:hover:not(:disabled) {
   border-color: transparent;
 }
 
-.topbar .icon-btn.ghost:hover:not(:disabled),
 .section-panel .icon-btn.ghost:hover:not(:disabled) {
   background: var(--surface-2);
+}
+
+/* Os ícones do cabeçalho e os do Histórico acendem no azul claro do menu, com
+   o ícone em azul; sem o véu cinza dos outros botões. */
+.topbar .icon-btn.ghost:hover:not(:disabled),
+.topbar-actions button.ghost:hover:not(:disabled),
+.history-actions .icon-btn:hover:not(:disabled) {
+  background: var(--accent-soft);
+  box-shadow: none;
+  color: var(--accent-text);
+}
+
+.topbar .icon-btn.ghost:active:not(:disabled),
+.topbar-actions button.ghost:active:not(:disabled),
+.history-actions .icon-btn:active:not(:disabled) {
+  background: var(--accent-soft-strong);
+  box-shadow: none;
+}
+
+/* Os ícones do Histórico sem o contorno do círculo. */
+.history-actions .icon-btn {
+  border-color: transparent;
 }
 
 /* Painel da direita sem caixa: sem recuo, contorno nem fundo; filtro e
