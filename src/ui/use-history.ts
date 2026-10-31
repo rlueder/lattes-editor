@@ -117,6 +117,8 @@ export function useHistory({
         if (!session) return;
         const generation = workingGenerationToken();
         const replace = async (doc: XDocument, before: string, note: string) => {
+          // A cópia trocou enquanto se lia o arquivo: nada é guardado nem trocado.
+          if (generation !== workingGenerationToken()) return;
           await addHistoryPoint({
             keep: true,
             note: before,
@@ -165,7 +167,7 @@ export function useHistory({
             encodeCv(parseXml(point.xml), session.meta.encoding),
             copyFileName(session.meta.fileName, new Date(point.savedAt)),
           );
-        } else if (entry.versionId !== undefined) {
+        } else if (entry.versionId !== undefined && entry.kind === 'abertura') {
           const version = await getVersion(entry.versionId);
           if (!version) throw new Error('A exportação não está mais guardada no app.');
           await saveBytes(
