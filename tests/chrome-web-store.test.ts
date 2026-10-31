@@ -438,7 +438,11 @@ it('mantém o workflow restrito à main e ao ZIP do lançamento publicado', () =
     );
   }
   expect(steps.find((step) => step.id === 'enviar')?.run).toBe('node scripts/publicar-extensao.ts');
-  expect(steps.at(-1)?.if).toMatch(/^inputs\.automatico && /);
+  // O aviso roda mesmo depois de um passo que falhou sem continue-on-error.
+  expect(steps.at(-1)?.if).toMatch(
+    /^\$\{\{ !cancelled\(\) && inputs\.automatico && \(failure\(\) \|\| /,
+  );
+  expect(steps.at(-1)?.if).toContain("steps.checkout.outcome == 'failure'");
   expect(steps.at(-1)?.run).toContain('::warning');
 });
 
