@@ -346,12 +346,23 @@
                 extensão ou pelo Importar.
               </p>
               <!-- O homepage.js troca pelo instalador do sistema de quem lê, com o ícone. -->
-              <a class="btn" href="#baixar" data-download>
-                <svg class="btn-icon" hidden aria-hidden="true" focusable="false">
-                  <use data-download-icon href="#icone-macos" />
-                </svg>
-                <span data-download-label>Baixar o app</span>
-              </a>
+              <div class="hero-actions">
+                <a class="btn" href="#baixar" data-download>
+                  <svg class="btn-icon" hidden aria-hidden="true" focusable="false">
+                    <use data-download-icon href="#icone-macos" />
+                  </svg>
+                  <span data-download-label>Baixar o app</span>
+                </a>
+                <a
+                  class="btn btn-outline"
+                  href="https://chromewebstore.google.com/detail/kdebkpkdhgaeaaobcbgbckinocnlfbgg"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  ><svg class="btn-icon" aria-hidden="true" focusable="false">
+                    <use href="#icone-extensao" /></svg
+                  >Extensão para Chrome e Brave</a
+                >
+              </div>
             </div>
 
             <!-- Tela do app sobre o fundo geométrico; o clique abre em tela cheia. -->
@@ -826,6 +837,8 @@
                     Pela
                     <a
                       href="https://chromewebstore.google.com/detail/kdebkpkdhgaeaaobcbgbckinocnlfbgg"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       >Chrome Web Store</a
                     >; o Brave instala da mesma loja. No primeiro uso, o painel mostra o que ela lê
                     e envia e pede um "ok". A loja atualiza a extensão sozinha.
@@ -937,6 +950,8 @@
                     <a
                       class="btn btn-white"
                       href="https://chromewebstore.google.com/detail/kdebkpkdhgaeaaobcbgbckinocnlfbgg"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       ><svg class="btn-icon" aria-hidden="true" focusable="false">
                         <use href="#icone-extensao" /></svg
                       >Chrome Web Store</a
