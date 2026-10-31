@@ -1095,12 +1095,6 @@ a.tag:hover {
   grid-template-columns: minmax(0, 1fr);
   gap: 1.5rem 3rem;
 }
-.coverage-note {
-  max-width: 70ch;
-  margin: 0.75rem 0 1.5rem;
-  color: var(--fg-75);
-  font-size: 0.9375rem;
-}
 .cols-title {
   margin-bottom: 0.5rem;
   font-size: 0.9375rem;
