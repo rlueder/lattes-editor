@@ -90,10 +90,12 @@ por dia: cada edição, cada envio ao Lattes, cada recarga e a primeira
 abertura. No alto, "No Lattes agora" diz quando foi a última publicação, se há
 algo pendente e, com "Comparar com o Lattes", o que mudou lá desde a
 exportação, inclusive o que foi feito direto no Lattes. Cada linha pode ser
-restaurada, salva em arquivo ou comparada com a exportação anterior. A
-primeira exportação de cada currículo (o ponto zero) e o Lattes de antes de
-cada envio também ficam em `Documentos/LattesEditor/Cópias de segurança`, e o
-app nunca os apaga, nem com "Limpar o histórico".
+restaurada, salva em arquivo ou comparada com a exportação anterior; toda
+exportação aberta que o app ainda guarda (as 24 mais recentes) pode voltar a
+ser a cópia de trabalho, e a de agora fica no Histórico. A primeira
+exportação guardada intacta (o ponto zero) e o Lattes de antes de cada envio
+também ficam em `Documentos/LattesEditor/Cópias de segurança`, e o app nunca
+os apaga, nem com "Limpar o histórico".
 
 Também dá para imprimir ou salvar em PDF nas regras da NBR 14724, com
 referências na NBR 6023, e compartilhar o currículo por um código QR.

@@ -197,7 +197,7 @@ describe('o Histórico', () => {
         current: true,
         kind: 'abertura',
         pointId: opened.id,
-        text: 'Primeira abertura: exportação de 28/10/2026 (ponto zero)',
+        text: 'Primeira abertura: exportação de 28/10/2026 · cópia de segurança (ponto zero)',
         versionId: 3,
       },
     ]);
@@ -272,6 +272,34 @@ describe('o Histórico', () => {
     expect(flat(buildTimeline({ backups: [], points: [p], sent: [], versions: [] }, NOW))).toEqual([
       { at: p.savedAt, kind: 'edicao', pointId: p.id, text: NOTES.antesDoPontoZero },
     ]);
+  });
+
+  it('o estado de antes de restaurar uma exportação é uma edição, e não é o estado atual', () => {
+    const before = point('2026-10-29T09:00:00', NOTES.antesDaExportacao, true);
+    const entries = flat(
+      buildTimeline({ backups: [], points: [before], sent: [], versions: [] }, NOW),
+    );
+    expect(entries).toEqual([
+      { at: before.savedAt, kind: 'edicao', pointId: before.id, text: NOTES.antesDaExportacao },
+    ]);
+  });
+
+  it('uma abertura antiga sem estado guardado ainda traz a exportação, para restaurar e salvar', () => {
+    const old = {
+      exportedAt: '17082026',
+      id: 7,
+      lattesId: '1',
+      loadedAt: at('2026-08-17T11:57:00'),
+    };
+    const [entry] = flat(
+      buildTimeline({ backups: [], points: [], sent: [], versions: [old] }, NOW),
+    );
+    expect(entry).toMatchObject({
+      kind: 'abertura',
+      text: 'Primeira abertura: exportação de 17/08/2026',
+      versionId: 7,
+    });
+    expect(entry?.pointId).toBeUndefined();
   });
 
   it('o estado atual é o mais recente que não é um "de antes", e só ele', () => {

@@ -31,9 +31,14 @@ function Actions({
 }) {
   const { desktop } = history;
   const zero = entry.backup?.kind === 'ponto-zero';
+  // Uma abertura se restaura pelo estado guardado, pela exportação guardada
+  // no app ou pelo ponto zero; a recarga e o envio, pelo estado de antes.
+  const exported = entry.versionId !== undefined && entry.kind === 'abertura';
   const canRestore =
-    !entry.current && (entry.pointId !== undefined || (zero && entry.kind === 'abertura'));
-  const canSave = entry.pointId !== undefined || (entry.backup !== undefined && !desktop);
+    !entry.current &&
+    (entry.pointId !== undefined || exported || (zero && entry.kind === 'abertura'));
+  const canSave =
+    entry.pointId !== undefined || exported || (entry.backup !== undefined && !desktop);
   const compare = entry.versionId !== undefined && entry.previousVersionId !== undefined;
   if (entry.kind === 'publicacao') return null;
   return (

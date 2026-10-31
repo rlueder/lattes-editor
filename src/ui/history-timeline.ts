@@ -21,6 +21,7 @@ import { versionDate } from './version-diff.ts';
 /** As notas que o app grava em estados que não são edição da pessoa. */
 export const NOTES = {
   aberto: 'Arquivo carregado',
+  antesDaExportacao: 'Cópia de trabalho antes de restaurar uma exportação',
   antesDeDesfazer: 'Lattes antes de desfazer',
   antesDeRecarregar: 'Cópia de trabalho antes de recarregar do Lattes',
   antesDoEnvio: 'Lattes antes do envio',
@@ -230,7 +231,9 @@ function openings(
       entry.text = i === 0 ? `Primeira abertura: ${what}` : `Aberto: ${what}`;
       if (zeroLeft && Math.abs(zeroLeft.savedAt - at) <= ZERO_MATCH_MS) {
         entry.backup = zeroLeft;
-        entry.text += ' (ponto zero)';
+        // O ponto zero nem sempre é a primeira abertura: é a primeira
+        // exportação guardada intacta em arquivo.
+        entry.text += ' · cópia de segurança (ponto zero)';
         zeroLeft = undefined;
       }
     }
@@ -271,7 +274,11 @@ export function buildTimeline(sources: Sources, now: number): TimelineDay[] {
   for (const p of points) {
     if (p.note === NOTES.publicado) {
       entries.push({ at: p.savedAt, kind: 'publicacao', text: 'Publicado no CNPq' });
-    } else if (!special.has(p.note) || p.note === NOTES.antesDoPontoZero) {
+    } else if (
+      !special.has(p.note) ||
+      p.note === NOTES.antesDoPontoZero ||
+      p.note === NOTES.antesDaExportacao
+    ) {
       const entry: TimelineEntry = { at: p.savedAt, kind: 'edicao', text: p.note };
       if (p.id !== undefined) entry.pointId = p.id;
       entries.push(entry);
@@ -285,6 +292,7 @@ export function buildTimeline(sources: Sources, now: number): TimelineDay[] {
     NOTES.antesDeRecarregar,
     NOTES.antesDoEnvio,
     NOTES.antesDoPontoZero,
+    NOTES.antesDaExportacao,
   ]);
   const latest = [...sources.points]
     .filter((p) => !before.has(p.note))

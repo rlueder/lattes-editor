@@ -17,6 +17,7 @@ import {
   addHistoryPoint,
   clearHistory,
   getHistoryEntry,
+  getVersion,
   listHistoryInfo,
   listSent,
   listVersionInfo,
@@ -25,6 +26,7 @@ import {
 import { getAttr, parseXml, serializeXml, type XDocument } from '../model/xml.ts';
 import { copyFileName } from './copy-name.ts';
 import { buildTimeline, NOTES, type TimelineDay, type TimelineEntry } from './history-timeline.ts';
+import { versionBytes } from './lattes-reload.ts';
 
 const message = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
@@ -104,29 +106,47 @@ export function useHistory({
   const close = useCallback(() => setOpen(false), []);
   const act = (work: Promise<void>) => void work.catch((err: unknown) => setError(message(err)));
 
-  /** Volta a cópia de trabalho ao estado guardado, ou ao ponto zero do arquivo. */
+  /**
+   * Volta a cópia de trabalho ao estado guardado; sem ele, à exportação
+   * guardada no app ou ao ponto zero do arquivo. Nesses dois, a cópia de
+   * agora fica guardada antes, para "Restaurar" de volta.
+   */
   const restore = (entry: TimelineEntry) =>
     act(
       (async () => {
         if (!session) return;
         const generation = workingGenerationToken();
+        const replace = async (doc: XDocument, before: string, note: string) => {
+          await addHistoryPoint({
+            keep: true,
+            note: before,
+            savedAt: Date.now(),
+            xml: serializeXml(session.doc),
+          });
+          if (generation === workingGenerationToken()) onRestore(doc, note);
+        };
         if (entry.pointId !== undefined) {
           const point = await getHistoryEntry(entry.pointId);
           if (!point || generation !== workingGenerationToken()) return;
           onRestore(parseXml(point.xml), `Restaurado: ${when(point.savedAt)}`);
+        } else if (entry.versionId !== undefined && entry.kind === 'abertura') {
+          const version = await getVersion(entry.versionId);
+          if (!version) throw new Error('A exportação não está mais guardada no app.');
+          const cv = await loadCv(versionBytes(version.xml), `${version.lattesId}.xml`);
+          await replace(
+            cv.doc,
+            NOTES.antesDaExportacao,
+            `Restaurado: exportação aberta em ${when(version.loadedAt)}`,
+          );
         } else if (entry.backup?.kind === 'ponto-zero' && lattesId) {
           const bytes = await readBackup(lattesId, entry.backup.name);
           if (!bytes) throw new Error('O ponto zero não está mais guardado.');
           const cv = await loadCv(bytes, entry.backup.name);
-          // A cópia de agora fica guardada antes, para "Restaurar" de volta.
-          await addHistoryPoint({
-            keep: true,
-            note: NOTES.antesDoPontoZero,
-            savedAt: Date.now(),
-            xml: serializeXml(session.doc),
-          });
-          if (generation !== workingGenerationToken()) return;
-          onRestore(cv.doc, `Restaurado: ponto zero de ${when(entry.backup.savedAt)}`);
+          await replace(
+            cv.doc,
+            NOTES.antesDoPontoZero,
+            `Restaurado: ponto zero de ${when(entry.backup.savedAt)}`,
+          );
         } else return;
         setOpen(false);
       })(),
@@ -144,6 +164,14 @@ export function useHistory({
           await saveBytes(
             encodeCv(parseXml(point.xml), session.meta.encoding),
             copyFileName(session.meta.fileName, new Date(point.savedAt)),
+          );
+        } else if (entry.versionId !== undefined) {
+          const version = await getVersion(entry.versionId);
+          if (!version) throw new Error('A exportação não está mais guardada no app.');
+          await saveBytes(
+            versionBytes(version.xml),
+            copyFileName(session.meta.fileName, new Date(version.loadedAt)),
+            'application/xml',
           );
         } else if (entry.backup && lattesId) {
           const bytes = await readBackup(lattesId, entry.backup.name);
