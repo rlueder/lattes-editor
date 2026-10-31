@@ -1,8 +1,25 @@
 name: 'PROD 3: enviar extensão à Chrome Web Store'
 
-# Só por disparo manual, depois de publicar o app compatível no PROD 2.
-# Reutiliza o ZIP daquele lançamento; não remonta a extensão na main atual.
+# Roda sozinho no fim do "PROD 2: publicar versão" (publicar.yml), com
+# automatico: true, e também à mão. Reutiliza o ZIP do lançamento publicado;
+# não remonta a extensão na main atual.
+#
+# No modo automático, o PROD 2 vale como confirmação. Antes de enviar, consulta
+# a loja e só envia se a extensão mudou em relação à versão que a loja tem
+# (scripts/extensao-mudou.ts). Uma falha aqui vira aviso no resumo e não deixa
+# o lançamento do app vermelho. No modo manual, qualquer falha para o run.
 on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Tag do lançamento já publicado no GitHub, como v1.0.0.
+        required: true
+        type: string
+      automatico:
+        description: Chamado pelo PROD 2; só envia se a extensão mudou.
+        required: false
+        default: false
+        type: boolean
   workflow_dispatch:
     inputs:
       tag:
@@ -15,34 +32,48 @@ on:
         default: false
         type: boolean
 
-concurrency:
-  group: chrome-web-store
-  cancel-in-progress: false
-
 permissions:
   contents: read
 
 jobs:
   enviar:
+    # Chamado por outro workflow, github.ref é o do PROD 2 que chamou.
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # No automático, nem a falha do job inteiro (checkout, prazo, o ambiente
+    # recusado) deixa o PROD 2 vermelho: o lançamento já foi publicado. Os
+    # passos também seguem com aviso, para o resumo dizer o que houve.
+    continue-on-error: ${{ inputs.automatico == true }}
+    # Os segredos do ambiente chegam aqui também quando o PROD 2 chama: o
+    # environment fica neste job, não no que chama.
     environment: chrome-web-store
+    # No job, não no topo: chamado pelo PROD 2, este workflow roda dentro do run
+    # dele, e é aqui que os envios se enfileiram.
+    concurrency:
+      group: chrome-web-store
+      cancel-in-progress: false
+    env:
+      AUTOMATICO: ${{ inputs.automatico == true }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - id: checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - id: node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22
       - name: Conferir e baixar o lançamento publicado
+        id: conferir
+        continue-on-error: ${{ inputs.automatico == true }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ inputs.tag }}
           CONFIRMAR: ${{ inputs.confirmar }}
         run: |
           set -euo pipefail
-          if [ "$CONFIRMAR" != true ] || ! [[ "$TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+          if { [ "$AUTOMATICO" != true ] && [ "$CONFIRMAR" != true ]; } || ! [[ "$TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
             echo '::error::Informe uma tag estável e confirme o envio à revisão.'
             exit 1
           fi
@@ -61,7 +92,78 @@ jobs:
           echo "${digest#sha256:}  pacote-loja/lattes-editor-extensao-loja.zip" | sha256sum --check
           gh api "repos/$GITHUB_REPOSITORY/contents/src-tauri/src/conector.rs?ref=$TAG" \
             --jq .content | base64 --decode > pacote-loja/conector.rs
+      - name: Consultar a versão que a loja tem
+        id: consulta
+        if: inputs.automatico && steps.conferir.outcome == 'success'
+        continue-on-error: true
+        env:
+          CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID || secrets.CWS_PUBLISHER_ID }}
+          CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+        run: node scripts/publicar-extensao.ts --consulta
+      - name: Decidir se a extensão mudou
+        id: decidir
+        if: inputs.automatico && steps.consulta.outcome == 'success'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+          LOJA_VERSAO: ${{ steps.consulta.outputs.versao }}
+          LOJA_PENDENTE: ${{ steps.consulta.outputs.pendente }}
+          LOJA_POLITICA: ${{ steps.consulta.outputs.politica }}
+          LOJA_ESTADO: ${{ steps.consulta.outputs.estado }}
+        run: |
+          set -euo pipefail
+          versao="${TAG#v}"
+          pular() {
+            echo "Extensão $versao não enviada à loja: $1" >> "$GITHUB_STEP_SUMMARY"
+            echo "enviar=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+          if [ "$LOJA_POLITICA" = true ]; then
+            pular 'a loja marca uma pendência de política (item removido ou advertido). Resolva no painel e rode o PROD 3 à mão.'
+          fi
+          if [ "$LOJA_PENDENTE" = true ]; then
+            pular "a loja já tem uma versão em revisão, aprovada à espera de publicação ou com upload em andamento${LOJA_ESTADO:+ (estado $LOJA_ESTADO)}. Quando ela sair, rode o PROD 3 à mão se precisar."
+          fi
+          if [[ "$LOJA_VERSAO" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            if [ "$LOJA_VERSAO" = "$versao" ]; then
+              pular "a loja já tem a versão $versao."
+            fi
+            if [ "$(printf '%s\n%s\n' "$LOJA_VERSAO" "$versao" | sort -V | tail -n 1)" != "$versao" ]; then
+              pular "a loja tem a versão $LOJA_VERSAO, mais nova que esta."
+            fi
+            mkdir -p pacote-anterior
+            if gh release view "v$LOJA_VERSAO" --repo "$GITHUB_REPOSITORY" --json assets > anterior.json \
+              && gh release download "v$LOJA_VERSAO" --repo "$GITHUB_REPOSITORY" \
+                --pattern lattes-editor-extensao-loja.zip --dir pacote-anterior; then
+              digest=$(jq -r '.assets[] | select(.name == "lattes-editor-extensao-loja.zip") | .digest' anterior.json)
+              if [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] \
+                && echo "${digest#sha256:}  pacote-anterior/lattes-editor-extensao-loja.zip" | sha256sum --check --quiet; then
+                node scripts/extensao-mudou.ts pacote-anterior/lattes-editor-extensao-loja.zip \
+                  pacote-loja/lattes-editor-extensao-loja.zip
+                if grep -qx 'mudou=false' "$GITHUB_OUTPUT"; then
+                  pular "o pacote é igual ao da versão $LOJA_VERSAO, que a loja já tem, fora o número da versão."
+                elif ! grep -qx 'mudou=true' "$GITHUB_OUTPUT"; then
+                  echo '::error::A comparação dos pacotes não deu resultado.'
+                  exit 1
+                fi
+                echo "Extensão $versao: mudou desde a $LOJA_VERSAO da loja; enviando à revisão." >> "$GITHUB_STEP_SUMMARY"
+              else
+                echo "Extensão $versao: o pacote da v$LOJA_VERSAO não confere com o SHA-256 publicado; enviando à revisão sem comparar." >> "$GITHUB_STEP_SUMMARY"
+              fi
+            else
+              echo "Extensão $versao: o lançamento v$LOJA_VERSAO não tem o pacote da loja para comparar; enviando à revisão." >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            echo "Extensão $versao: a loja não informou uma versão publicada; enviando à revisão." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "enviar=true" >> "$GITHUB_OUTPUT"
       - name: Enviar à revisão da loja
+        id: enviar
+        if: ${{ !inputs.automatico || steps.decidir.outputs.enviar == 'true' }}
+        continue-on-error: ${{ inputs.automatico == true }}
         env:
           CWS_RELEASE_TAG: ${{ inputs.tag }}
           CWS_ZIP_PATH: pacote-loja/lattes-editor-extensao-loja.zip
@@ -71,3 +173,17 @@ jobs:
           CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
           CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
         run: node scripts/publicar-extensao.ts
+      # Roda mesmo depois de um passo que falhou sem continue-on-error (o
+      # checkout e o setup-node): sem isso, o job seguiria verde e calado.
+      - name: Avisar a falha sem derrubar o lançamento
+        if: >-
+          ${{ !cancelled() && inputs.automatico && (failure() ||
+          steps.checkout.outcome == 'failure' || steps.node.outcome == 'failure' ||
+          steps.conferir.outcome == 'failure' || steps.consulta.outcome == 'failure' ||
+          steps.decidir.outcome == 'failure' || steps.enviar.outcome == 'failure') }}
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          mensagem="O envio da extensão de $TAG à loja não terminou: uma etapa falhou (veja o log deste job). O app foi publicado normalmente. Confira o painel da loja antes de rodar o PROD 3 à mão."
+          echo "::warning title=Chrome Web Store::$mensagem"
+          echo "$mensagem" >> "$GITHUB_STEP_SUMMARY"

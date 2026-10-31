@@ -41,13 +41,17 @@ O e-mail de contato fica em **Publisher → Settings** no menu do painel.
 Salve o endereço e conclua a verificação pelo link enviado por e-mail.
 O endereço da conta Google e a URL de suporte do item não substituem isso.
 
-## Envio manual pelo GitHub Actions
+## Envio pelo GitHub Actions
 
-O workflow **PROD 3: enviar extensão à Chrome Web Store** pede a tag de um
-lançamento estável já publicado no GitHub e a confirmação do envio. Ele usa
-o ZIP daquele lançamento, não o código mais recente da `main`, e só aceita
-um app cujo host nativo já autorize o ID da loja. A primeira publicação e
-mudanças na visibilidade podem exigir envio pelo painel do Google.
+O workflow **PROD 3: enviar extensão à Chrome Web Store** roda sozinho no
+fim do **PROD 2: publicar versão**, com a tag que acabou de ser publicada.
+Nesse caso, ele consulta a loja e só envia se a extensão mudou desde a
+versão que a loja tem; o resumo do run diz por que enviou ou não. Também
+roda à mão: pede a tag de um lançamento estável já publicado no GitHub e a
+confirmação do envio. Nos dois casos, usa o ZIP daquele lançamento, não o
+código mais recente da `main`, e só aceita um app cujo host nativo já
+autorize o ID da loja. A primeira publicação e mudanças na visibilidade
+podem exigir envio pelo painel do Google.
 
 Configuração única:
 
@@ -67,15 +71,19 @@ Configuração única:
    app OAuth externo de **Testing** para **In production**, em **Audience**.
    No modo de teste, o refresh token desse escopo expira após sete dias.
 3. Em **Settings → Environments** do repositório no GitHub, crie
-   `chrome-web-store`, restrito à `main`. Se houver revisão obrigatória
-   disponível no plano, configure quem aprova os envios.
+   `chrome-web-store`, restrito à `main` (regra de branch personalizada).
+   Uma revisão obrigatória no ambiente também seguraria o envio automático
+   até alguém aprovar.
 4. Nesse ambiente, cadastre a variável `CWS_PUBLISHER_ID`, copiada de
    **Publisher → Settings** no painel da loja. O workflow também aceita esse
    ID como segredo; se ambos existirem, usa a variável. Cadastre os segredos
    `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET` e `CWS_REFRESH_TOKEN`.
 
-Em Actions, escolha o PROD 3, selecione a `main`, informe a tag e marque a
-confirmação. Pelo terminal:
+Os segredos ficam no ambiente, e o job do PROD 3 declara esse ambiente: por
+isso chegam a ele também quando o PROD 2 o chama.
+
+Para enviar à mão, em Actions, escolha o PROD 3, selecione a `main`, informe
+a tag e marque a confirmação. Pelo terminal:
 
 ```bash
 gh workflow run extensao-loja.yml --ref main -f tag=v1.0.0 -f confirmar=true

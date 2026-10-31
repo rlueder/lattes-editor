@@ -1,12 +1,18 @@
 import { readFileSync } from 'node:fs';
 
 import { describe, expect, it, vi } from 'vitest';
+import { parse } from 'yaml';
 
 import {
+  compareVersions,
+  queryStore,
   STORE_ITEM_ID,
+  storeOutputs,
   submitStorePackage,
   validateStorePackage,
 } from '../scripts/publicar-extensao.ts';
+
+type Step = { 'continue-on-error'?: unknown; id?: string; if?: string; run?: string };
 
 const nativeHost = readFileSync(new URL('../src-tauri/src/conector.rs', import.meta.url), 'utf8');
 const manifest = { manifest_version: 3, name: 'LattesEditor: Conector', version: '1.2.3' };
@@ -278,18 +284,143 @@ describe('envio à API v2 da loja', () => {
   });
 });
 
-it('mantém o workflow manual, restrito à main e ao ZIP do lançamento publicado', () => {
+describe('consulta à loja, sem envio', () => {
+  const published = (crxVersion: unknown) => ({
+    distributionChannels: [{ crxVersion, deployPercentage: 100 }],
+    state: 'PUBLISHED',
+  });
+
+  it('só pede o token e o fetchStatus, e devolve a versão publicada', async () => {
+    const transport = setup([
+      { access_token: 'acesso' },
+      { ...item, publishedItemRevisionStatus: published('1.0.0') },
+    ]);
+    await expect(queryStore(options, transport)).resolves.toEqual({
+      pending: false,
+      policy: false,
+      submittedState: '',
+      version: '1.0.0',
+    });
+    const calls = transport.fetch.mock.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[0]?.[0]).toBe('https://oauth2.googleapis.com/token');
+    expect(calls[1]?.[0]).toBe(`https://chromewebstore.googleapis.com/v2/${name}:fetchStatus`);
+    expect(calls[1]?.[1]?.method).toBeUndefined();
+    expect(calls[1]?.[1]?.redirect).toBe('error');
+  });
+
+  it.each(['PENDING_REVIEW', 'STAGED'])(
+    'com revisão %s, devolve a versão submetida e marca pendência',
+    async (state) => {
+      const transport = setup([
+        { access_token: 'acesso' },
+        {
+          ...item,
+          publishedItemRevisionStatus: published('1.0.0'),
+          submittedItemRevisionStatus: { distributionChannels: [{ crxVersion: '1.1.0' }], state },
+        },
+      ]);
+      await expect(queryStore(options, transport)).resolves.toEqual({
+        pending: true,
+        policy: false,
+        submittedState: state,
+        version: '1.1.0',
+      });
+    },
+  );
+
+  it('com revisão rejeitada, vale a versão publicada', async () => {
+    const transport = setup([
+      { access_token: 'acesso' },
+      {
+        ...item,
+        publishedItemRevisionStatus: published('1.0.0'),
+        submittedItemRevisionStatus: {
+          distributionChannels: [{ crxVersion: '1.1.0' }],
+          state: 'REJECTED',
+        },
+      },
+    ]);
+    await expect(queryStore(options, transport)).resolves.toMatchObject({
+      pending: false,
+      submittedState: 'REJECTED',
+      version: '1.0.0',
+    });
+  });
+
+  it('num lançamento gradual, fica com a maior versão dos canais', async () => {
+    const transport = setup([
+      { access_token: 'acesso' },
+      {
+        ...item,
+        publishedItemRevisionStatus: {
+          distributionChannels: [
+            { crxVersion: '1.10.0', deployPercentage: 10 },
+            { crxVersion: '1.9.0', deployPercentage: 100 },
+            { crxVersion: 'x' },
+            null,
+          ],
+        },
+      },
+    ]);
+    await expect(queryStore(options, transport)).resolves.toMatchObject({ version: '1.10.0' });
+  });
+
+  it.each([
+    [{ ...item, warned: true }, { policy: true }],
+    [{ ...item, takenDown: true }, { policy: true }],
+    [{ ...item, lastAsyncUploadState: 'IN_PROGRESS' }, { pending: true }],
+    [{ ...item, publishedItemRevisionStatus: { distributionChannels: 'x' } }, { version: '' }],
+    [{ ...item, publishedItemRevisionStatus: published('1.0.0\nmudou=false') }, { version: '' }],
+    [
+      { ...item, submittedItemRevisionStatus: { state: 'estado\ninjetado' } },
+      { submittedState: '' },
+    ],
+    [item, { pending: false, policy: false, version: '' }],
+  ])('lê pendências e descarta valores fora do formato: %j', async (status, expected) => {
+    await expect(
+      queryStore(options, setup([{ access_token: 'acesso' }, status])),
+    ).resolves.toMatchObject(expected);
+  });
+
+  it('recusa a resposta de outro item e credenciais ausentes', async () => {
+    await expect(
+      queryStore(options, setup([{ access_token: 'acesso' }, { ...item, itemId: 'outro' }])),
+    ).rejects.toThrow('extensão esperada');
+    const transport = setup([]);
+    await expect(queryStore({ ...options, clientSecret: '' }, transport)).rejects.toThrow(
+      'segredos',
+    );
+    expect(transport.fetch).not.toHaveBeenCalled();
+  });
+
+  it('grava as saídas do GitHub uma por linha', () => {
+    expect(
+      storeOutputs({ pending: true, policy: false, submittedState: 'STAGED', version: '1.1.0' }),
+    ).toBe('versao=1.1.0\npendente=true\npolitica=false\nestado=STAGED\n');
+  });
+
+  it('ordena versões numericamente', () => {
+    expect(compareVersions('1.10.0', '1.9.0')).toBeGreaterThan(0);
+    expect(compareVersions('1.0', '1.0.0')).toBe(0);
+    expect(compareVersions('1.0.0', '1.0.0.1')).toBeLessThan(0);
+  });
+});
+
+it('mantém o workflow restrito à main e ao ZIP do lançamento publicado', () => {
   const workflow = readFileSync(
     new URL('../.github/workflows/extensao-loja.yml', import.meta.url),
     'utf8',
   );
   expect(workflow).toContain('workflow_dispatch:');
+  expect(workflow).toContain('workflow_call:');
   expect(workflow).not.toMatch(/^ {2}(push|pull_request|release|workflow_run|schedule):/m);
   expect(workflow).toContain("if: github.ref == 'refs/heads/main'");
   expect(workflow).toContain('environment: chrome-web-store');
   expect(workflow).toContain('contents: read');
   expect(workflow).toContain('cancel-in-progress: false');
   expect(workflow).toContain('CONFIRMAR: ${{ inputs.confirmar }}');
+  expect(workflow).toContain('[ "$AUTOMATICO" != true ] && [ "$CONFIRMAR" != true ]');
   expect(workflow).toContain(
     'CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID || secrets.CWS_PUBLISHER_ID }}',
   );
@@ -297,4 +428,35 @@ it('mantém o workflow manual, restrito à main e ao ZIP do lançamento publicad
   expect(workflow).toContain('--pattern lattes-editor-extensao-loja.zip');
   expect(workflow).toContain('sha256sum --check');
   expect(workflow).not.toContain('pnpm build:extension');
+  // Só o modo automático tolera falhas; o manual continua falhando alto.
+  expect(workflow).toContain('node scripts/publicar-extensao.ts --consulta');
+  expect(workflow).toContain('node scripts/extensao-mudou.ts');
+  const steps = (parse(workflow) as { jobs: { enviar: { steps: Step[] } } }).jobs.enviar.steps;
+  for (const id of ['conferir', 'enviar']) {
+    expect(steps.find((step) => step.id === id)?.['continue-on-error']).toBe(
+      '${{ inputs.automatico == true }}',
+    );
+  }
+  expect(steps.find((step) => step.id === 'enviar')?.run).toBe('node scripts/publicar-extensao.ts');
+  // O aviso roda mesmo depois de um passo que falhou sem continue-on-error.
+  expect(steps.at(-1)?.if).toMatch(
+    /^\$\{\{ !cancelled\(\) && inputs\.automatico && \(failure\(\) \|\| /,
+  );
+  expect(steps.at(-1)?.if).toContain("steps.checkout.outcome == 'failure'");
+  expect(steps.at(-1)?.run).toContain('::warning');
+});
+
+it('o PROD 2 chama o envio automático depois de publicar, só com leitura', () => {
+  const workflow = readFileSync(
+    new URL('../.github/workflows/publicar.yml', import.meta.url),
+    'utf8',
+  );
+  expect(workflow).toContain('uses: ./.github/workflows/extensao-loja.yml');
+  expect(workflow).toContain('needs: publicar');
+  expect(workflow).toContain('tag: ${{ needs.publicar.outputs.tag }}');
+  expect(workflow).toContain('automatico: true');
+  expect(workflow).toContain('secrets: inherit');
+  const jobs = (parse(workflow) as { jobs: Record<string, { permissions?: unknown }> }).jobs;
+  expect(jobs.extensao?.permissions).toEqual({ contents: 'read' });
+  expect(jobs.publicar?.permissions).toEqual({ contents: 'write' });
 });

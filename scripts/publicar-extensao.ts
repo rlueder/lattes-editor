@@ -1,4 +1,5 @@
 // Envia o ZIP de um lançamento já publicado à API v2 da Chrome Web Store.
+// Com --consulta, só lê a versão e as pendências do item, sem enviar nada.
 // As credenciais vêm só do ambiente; respostas e tokens não vão ao log.
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, readFileSync } from 'node:fs';
@@ -96,15 +97,22 @@ export function validateStorePackage(manifest: unknown, tag: string, nativeHost:
   return version;
 }
 
-/** Não repete POSTs: depois de uma falha de rede, confira a loja antes de tentar de novo. */
-export async function submitStorePackage(
-  options: Options,
-  transport: Transport = { fetch, pause: setTimeout },
-): Promise<string> {
-  if (options.publisherId.trim() !== options.publisherId || !/^[\w-]+$/.test(options.publisherId)) {
+type Credentials = Pick<Options, 'clientId' | 'clientSecret' | 'publisherId' | 'refreshToken'>;
+type Store = {
+  endpoint: string;
+  headers: Record<string, string>;
+  name: string;
+  request: (url: string, init?: RequestInit) => Promise<Json>;
+  status: Json;
+};
+
+/** Pede o token e o fetchStatus do item; os dois modos partem daqui. */
+async function openStore(credentials: Credentials, transport: Transport): Promise<Store> {
+  const { clientId, clientSecret, publisherId, refreshToken } = credentials;
+  if (publisherId.trim() !== publisherId || !/^[\w-]+$/.test(publisherId)) {
     throw new Error('Publisher ID inválido.');
   }
-  if (!options.clientId || !options.clientSecret || !options.refreshToken) {
+  if (!clientId || !clientSecret || !refreshToken) {
     throw new Error('Faltam os segredos CWS_CLIENT_ID, CWS_CLIENT_SECRET ou CWS_REFRESH_TOKEN.');
   }
   async function request(url: string, init?: RequestInit): Promise<Json> {
@@ -131,26 +139,97 @@ export async function submitStorePackage(
   }
   const token = await request('https://oauth2.googleapis.com/token', {
     body: new URLSearchParams({
-      client_id: options.clientId,
-      client_secret: options.clientSecret,
+      client_id: clientId,
+      client_secret: clientSecret,
       grant_type: 'refresh_token',
-      refresh_token: options.refreshToken,
+      refresh_token: refreshToken,
     }),
     method: 'POST',
   });
   if (typeof token.access_token !== 'string' || !token.access_token) {
     throw new Error('A autorização não devolveu um token de acesso.');
   }
-  const name = `publishers/${options.publisherId}/items/${STORE_ITEM_ID}`;
+  const name = `publishers/${publisherId}/items/${STORE_ITEM_ID}`;
   const endpoint = `https://chromewebstore.googleapis.com/v2/${name}`;
   const headers = { Authorization: `Bearer ${token.access_token}` };
-  function checkItem(data: Json): void {
-    if (data.name !== name || data.itemId !== STORE_ITEM_ID) {
-      throw new Error('A resposta da loja não corresponde à extensão esperada.');
+  const status = await request(`${endpoint}:fetchStatus`, { headers });
+  checkItem(status, name);
+  return { endpoint, headers, name, request, status };
+}
+
+function checkItem(data: Json, name: string): void {
+  if (data.name !== name || data.itemId !== STORE_ITEM_ID) {
+    throw new Error('A resposta da loja não corresponde à extensão esperada.');
+  }
+}
+
+const VERSION = /^\d{1,5}(\.\d{1,5}){0,3}$/;
+
+/** Ordena versões do Chrome (até quatro números); negativo se a vem antes de b. */
+export function compareVersions(a: string, b: string): number {
+  const left = a.split('.').map(Number);
+  const right = b.split('.').map(Number);
+  for (let i = 0; i < 4; i++) {
+    const diff = (left[i] ?? 0) - (right[i] ?? 0);
+    if (diff) return diff;
+  }
+  return 0;
+}
+
+/** A maior versão entre os canais de uma revisão; vazio quando a loja não informa. */
+function revisionVersion(revision: unknown): string {
+  if (!revision || typeof revision !== 'object') return '';
+  const channels = (revision as Json).distributionChannels;
+  if (!Array.isArray(channels)) return '';
+  let best = '';
+  for (const channel of channels) {
+    const version = (channel as Json | null)?.crxVersion;
+    if (typeof version === 'string' && VERSION.test(version)) {
+      if (!best || compareVersions(version, best) > 0) best = version;
     }
   }
-  const status = await request(`${endpoint}:fetchStatus`, { headers });
-  checkItem(status);
+  return best;
+}
+
+export type StoreState = {
+  /** Versão que a loja tem: a submetida, se em revisão ou aprovada, senão a publicada. */
+  version: string;
+  /** Revisão pendente ou aprovada aguardando publicação, ou upload em andamento. */
+  pending: boolean;
+  /** Item removido ou advertido pela loja. */
+  policy: boolean;
+  /** Estado da revisão submetida, como a loja devolve. */
+  submittedState: string;
+};
+
+/** Só lê: token e fetchStatus. Nunca envia pacote nem pede revisão. */
+export async function queryStore(
+  credentials: Credentials,
+  transport: Transport = { fetch, pause: setTimeout },
+): Promise<StoreState> {
+  const { status } = await openStore(credentials, transport);
+  const submitted =
+    status.submittedItemRevisionStatus && typeof status.submittedItemRevisionStatus === 'object'
+      ? (status.submittedItemRevisionStatus as Json)
+      : undefined;
+  const submittedState = typeof submitted?.state === 'string' ? submitted.state : '';
+  const inReview = submittedState === 'PENDING_REVIEW' || submittedState === 'STAGED';
+  return {
+    pending: inReview || status.lastAsyncUploadState === 'IN_PROGRESS',
+    policy: Boolean(status.takenDown || status.warned),
+    submittedState: /^[A-Z_]{1,40}$/.test(submittedState) ? submittedState : '',
+    version: inReview
+      ? revisionVersion(submitted)
+      : revisionVersion(status.publishedItemRevisionStatus),
+  };
+}
+
+/** Não repete POSTs: depois de uma falha de rede, confira a loja antes de tentar de novo. */
+export async function submitStorePackage(
+  options: Options,
+  transport: Transport = { fetch, pause: setTimeout },
+): Promise<string> {
+  const { endpoint, headers, name, request, status } = await openStore(options, transport);
   if (status.takenDown || status.warned) throw new Error('Há uma pendência de política na loja.');
   if (status.lastAsyncUploadState === 'IN_PROGRESS') {
     throw new Error('Já há um upload em andamento. Espere antes de enviar outro.');
@@ -166,7 +245,7 @@ export async function submitStorePackage(
     headers: { ...headers, 'Content-Type': 'application/zip' },
     method: 'POST',
   });
-  checkItem(upload);
+  checkItem(upload, name);
   if (
     (upload.uploadState === 'SUCCEEDED' || Object.hasOwn(upload, 'crxVersion')) &&
     upload.crxVersion !== options.version
@@ -182,7 +261,7 @@ export async function submitStorePackage(
   for (let attempt = 0; state === 'IN_PROGRESS' && attempt < 24; attempt++) {
     await transport.pause(5000);
     upload = await request(`${endpoint}:fetchStatus`, { headers });
-    checkItem(upload);
+    checkItem(upload, name);
     const next = upload.lastAsyncUploadState;
     if (next === 'IN_PROGRESS') observedInProgress = true;
     // SUCCEEDED pode ainda ser do upload anterior. Exige uma transição observada
@@ -203,14 +282,44 @@ export async function submitStorePackage(
     headers: { ...headers, 'Content-Type': 'application/json' },
     method: 'POST',
   });
-  checkItem(submitted);
+  checkItem(submitted, name);
   if (!['PENDING_REVIEW', 'PUBLISHED', 'PUBLISHED_TO_TESTERS'].includes(String(submitted.state))) {
     throw new Error('A loja não confirmou o envio à revisão. Confira o painel antes de repetir.');
   }
   return String(submitted.state);
 }
 
+/** Linhas para o $GITHUB_OUTPUT da consulta; os valores já vêm conferidos, sem quebra de linha. */
+export function storeOutputs(state: StoreState): string {
+  return [
+    `versao=${state.version}`,
+    `pendente=${state.pending}`,
+    `politica=${state.policy}`,
+    `estado=${state.submittedState}`,
+  ]
+    .map((line) => `${line}\n`)
+    .join('');
+}
+
+function credentialsFromEnv(): Credentials {
+  return {
+    clientId: process.env.CWS_CLIENT_ID ?? '',
+    clientSecret: process.env.CWS_CLIENT_SECRET ?? '',
+    publisherId: process.env.CWS_PUBLISHER_ID ?? '',
+    refreshToken: process.env.CWS_REFRESH_TOKEN ?? '',
+  };
+}
+
+/** --consulta: só lê o estado da loja e o grava no $GITHUB_OUTPUT. */
+async function query(): Promise<void> {
+  const state = await queryStore(credentialsFromEnv());
+  const outputs = storeOutputs(state);
+  console.log(outputs.trimEnd());
+  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, outputs);
+}
+
 async function main(): Promise<void> {
+  if (process.argv.includes('--consulta')) return query();
   const tag = process.env.CWS_RELEASE_TAG ?? '';
   const zipPath = process.env.CWS_ZIP_PATH ?? '';
   const nativeHostPath = process.env.CWS_NATIVE_HOST_PATH ?? '';
@@ -225,10 +334,7 @@ async function main(): Promise<void> {
   );
   const version = validateStorePackage(manifest, tag, readFileSync(nativeHostPath, 'utf8'));
   const state = await submitStorePackage({
-    clientId: process.env.CWS_CLIENT_ID ?? '',
-    clientSecret: process.env.CWS_CLIENT_SECRET ?? '',
-    publisherId: process.env.CWS_PUBLISHER_ID ?? '',
-    refreshToken: process.env.CWS_REFRESH_TOKEN ?? '',
+    ...credentialsFromEnv(),
     version,
     zip: readFileSync(zipPath),
   });
@@ -240,7 +346,7 @@ async function main(): Promise<void> {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch((error: unknown) => {
-    console.error(error instanceof Error ? error.message : 'Falha ao enviar a extensão.');
+    console.error(error instanceof Error ? error.message : 'Falha na API da loja.');
     process.exitCode = 1;
   });
 }

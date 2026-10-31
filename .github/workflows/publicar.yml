@@ -14,6 +14,10 @@ name: 'PROD 2: publicar versão (o rascunho vira a mais recente)'
 # a marca de mais recente, para o histórico ficar inteiro. Eles passam pela
 # mesma conferência, e basta um com defeito para nada ser publicado. O
 # escolhido precisa ser mais novo que a versão já publicada.
+#
+# Depois de publicar, chama o "PROD 3" (extensao-loja.yml) com a tag publicada.
+# Ele só envia a extensão à Chrome Web Store se ela mudou em relação à versão
+# que a loja tem, e uma falha lá não marca este lançamento como falho.
 
 on:
   workflow_dispatch:
@@ -27,14 +31,18 @@ concurrency:
   group: release
   cancel-in-progress: false
 
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
   publicar:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.publicar.outputs.tag }}
     steps:
       - name: Conferir e publicar o rascunho
+        id: publicar
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ inputs.tag }}
@@ -135,3 +143,14 @@ jobs:
             echo "Publicado: $tag (mais recente: $latest)"
           done 3< publish.txt
           echo "### Publicado: $target" >> "$GITHUB_STEP_SUMMARY"
+          echo "tag=$target" >> "$GITHUB_OUTPUT"
+
+  extensao:
+    needs: publicar
+    permissions:
+      contents: read
+    uses: ./.github/workflows/extensao-loja.yml
+    with:
+      tag: ${{ needs.publicar.outputs.tag }}
+      automatico: true
+    secrets: inherit

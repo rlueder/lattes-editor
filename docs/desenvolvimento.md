@@ -188,16 +188,16 @@ app, é refeita e a extensão se recarrega sozinha.
 
 ## Lançar uma versão
 
-Merge na `main` não lança nada. Os passos são manuais, em Actions (os
-workflows com prefixo PROD; "CI" e "App de desktop" servem aos dois canais)
-ou pelo `gh`:
+Merge na `main` não lança nada. O PROD 1 e o PROD 2 se disparam à mão, em
+Actions (os workflows com prefixo PROD; "CI" e "App de desktop" servem aos
+dois canais) ou pelo `gh`. O PROD 3 roda no fim do PROD 2 e também à mão:
 
 ```bash
 gh workflow run release.yml               # PROD 1: lançar versão, cria o rascunho
 gh workflow run release.yml -f primeira_estavel=true  # primeira estável: 1.0.0
 gh workflow run publicar.yml              # PROD 2: publicar versão, o rascunho mais recente
 gh workflow run publicar.yml -f tag=v0.23.0
-gh workflow run extensao-loja.yml -f tag=v1.0.0 -f confirmar=true
+gh workflow run extensao-loja.yml -f tag=v1.0.0 -f confirmar=true  # PROD 3 à mão
 ```
 
 1. **"PROD 1: lançar versão"** (`release.yml`) confere que o CI passou no
@@ -219,18 +219,29 @@ gh workflow run extensao-loja.yml -f tag=v1.0.0 -f confirmar=true
 3. **"PROD 2: publicar versão"** (`publicar.yml`) confere que o rascunho tem
    os instaladores, as duas extensões e um `latest.json` da mesma versão, e o
    publica como o mais recente. Só então o app instalado oferece a
-   atualização.
+   atualização. Em seguida, chama o PROD 3 com a tag publicada.
 4. **"PROD 3: enviar extensão à Chrome Web Store"** (`extensao-loja.yml`)
-   pede a tag e a confirmação do envio. Baixa `lattes-editor-extensao-loja.zip`
-   do lançamento já publicado, confere o SHA-256, a versão, a ausência de
-   `key` e o ID da loja no host nativo daquela tag. Não remonta o pacote nem
-   aceita um rascunho ou canal Dev. Depois do upload, espera o processamento
-   e pede revisão pela API v2, sem pular a análise nem ignorar avisos. A loja
-   publica após aprovar, com a visibilidade configurada no painel.
+   baixa `lattes-editor-extensao-loja.zip` do lançamento já publicado e
+   confere o SHA-256, a versão, a ausência de `key` e o ID da loja no host
+   nativo daquela tag. Não remonta o pacote nem aceita um rascunho ou canal
+   Dev. Depois do upload, espera o processamento e pede revisão pela API v2,
+   sem pular a análise nem ignorar avisos. A loja publica após aprovar, com a
+   visibilidade configurada no painel.
 
-O PROD 3 roda só da `main`, com permissão de leitura no GitHub, e serializa
-os envios sem cancelar um que já começou. Uma revisão pendente, publicação
-adiada ou advertência da loja impede um novo envio. Depois de uma falha de
+Chamado pelo PROD 2, o PROD 3 primeiro consulta a loja
+(`scripts/publicar-extensao.ts --consulta`, que só lê). Não envia nada quando
+há revisão pendente, publicação adiada, upload em andamento ou advertência,
+nem quando a loja já tem essa versão ou uma mais nova. Nos outros casos,
+compara o pacote com o do lançamento da versão que a loja tem
+(`scripts/extensao-mudou.ts`, que ignora só `version` e `version_name` do
+manifest) e envia apenas se algo mudou. Se esse lançamento não existe ou não
+tem o pacote, envia. O motivo fica no resumo do run. Uma falha nesse caminho
+vira aviso no resumo e o run do PROD 2 continua verde; nesse caso, rode o
+PROD 3 à mão.
+
+À mão, o PROD 3 pede a tag e a confirmação e envia sem comparar. Qualquer
+erro derruba o run, inclusive uma revisão pendente ou advertência. Roda só da `main`, com permissão de leitura no GitHub, e
+serializa os envios sem cancelar um que já começou. Depois de uma falha de
 rede, confira o painel antes de repetir: um POST pode ter sido recebido.
 As instruções para configurar o ambiente `chrome-web-store` e as credenciais
 estão em [`extensao_chrome_web_store.md`](extensao_chrome_web_store.md).
