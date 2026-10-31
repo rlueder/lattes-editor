@@ -86,7 +86,7 @@ describe('painel Enviar ao CNPq (LAT-54)', () => {
       result: { outcome: 'nao-confirmado' as const, sent: true },
     };
     expect(publishStatus(attempt, unsure, 3000)).toMatchObject({ locked: true });
-    expect(publishStatus(attempt, unsure, 3000).text).toMatch(/feche e abra este painel/);
+    expect(publishStatus(attempt, unsure, 3000).text).toMatch(/reabra este painel/);
   });
 
   it('o que trava o botão: tudo que pode ter saído para o Lattes', () => {

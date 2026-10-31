@@ -3291,8 +3291,11 @@ details > .element {
   color: var(--muted);
 }
 
+/* O desenho da seção vazia é uma marca-d'água: cinza claro, sem as cores da
+   marca, para o texto e a ação ficarem na frente. */
 .empty-art.section-art {
-  color: var(--brand);
+  --section-art-accent: currentColor;
+  color: color-mix(in srgb, var(--muted) 30%, transparent);
 }
 
 .empty-section .empty-title {

@@ -109,7 +109,7 @@ export function locksSending(result: PublishResult): boolean {
   return result.sent === true || !BEFORE_SENDING.has(result.outcome);
 }
 
-const REOPEN = ' Para tentar de novo, feche e abra este painel.';
+const REOPEN = ' Para tentar de novo, reabra este painel.';
 
 const STEP_LABELS: Record<PublishStep['step'], string> = {
   conferencia: 'conferência no menu',

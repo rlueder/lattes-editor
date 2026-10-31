@@ -527,14 +527,13 @@ async function publishSteps(
   }
   const status = lattesStatusFrom(menu);
   return {
+    // Curto: o painel acrescenta como tentar de novo.
     detail: [
-      answered
-        ? 'O Lattes respondeu que o currículo foi enviado'
-        : 'O Lattes não respondeu como no envio observado',
+      answered ? 'O Lattes disse que enviou, mas ' : 'O Lattes não confirmou o envio: ',
       status?.lastPublished
-        ? `, mas o menu ainda mostra a última publicação em ${status.lastPublished.split('-').reverse().join('/')}`
-        : ', e o menu não mostrou a data da última publicação',
-      status?.pending ? ' e o aviso de alterações não enviadas' : '',
+        ? `a última publicação ainda é de ${status.lastPublished.split('-').reverse().join('/')}`
+        : 'o menu não mostra a data da última publicação',
+      status?.pending ? ', com alterações não enviadas' : '',
       '. Confira no Lattes antes de enviar de novo.',
     ].join(''),
     lastPublished: status?.lastPublished,
