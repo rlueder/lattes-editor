@@ -109,7 +109,8 @@ const SCENES: Scene[] = [
   },
   {
     // Panorama: já começa no Panorama (o primeiro quadro difere das outras
-    // abas da página), vai a Produções por ano, e a barra de 2023 abre a seção
+    // abas da página; só hold grava quadros, e o primeiro vem depois do
+    // clique), vai a Produções por ano, e a barra de 2023 abre a seção
     // filtrada.
     name: 'hero-panorama',
     run: async ({ click, evaluate, hold }) => {
@@ -127,7 +128,9 @@ const SCENES: Scene[] = [
   },
   {
     // Novo item: já começa com o diálogo aberto (o primeiro quadro difere
-    // das outras abas da página), filtra os tipos e abre o formulário.
+    // das outras abas da página; só hold grava quadros, e o primeiro vem
+    // depois do clique e do wait de HELPERS), filtra os tipos e abre o
+    // formulário.
     name: 'hero-new',
     run: async ({ click, evaluate, hold, typeInto }) => {
       await click('[aria-label="Novo item"]');

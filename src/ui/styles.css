@@ -3292,10 +3292,12 @@ details > .element {
 }
 
 /* O desenho da seção vazia é uma marca-d'água: cinza claro, sem as cores da
-   marca, para o texto e a ação ficarem na frente. */
+   marca, para o texto e a ação ficarem na frente. A transparência vai no
+   desenho inteiro, e não na cor: as formas sobrepostas não escurecem. */
 .empty-art.section-art {
   --section-art-accent: currentColor;
-  color: color-mix(in srgb, var(--muted) 30%, transparent);
+  color: var(--muted);
+  opacity: 0.3;
 }
 
 .empty-section .empty-title {
