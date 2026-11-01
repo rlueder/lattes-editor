@@ -25,7 +25,8 @@ glibc 2.39 ou mais nova.
 No macOS, o app é assinado e notarizado pela Apple. No Windows, o instalador
 ainda não tem assinatura: o SmartScreen avisa na primeira abertura; abra os
 detalhes e escolha executar. O app confere se há versão nova ao abrir e a cada
-15 minutos, e se atualiza com um clique.
+15 minutos, e se atualiza com um clique. "Sobre o LattesEditor", no ⚙, mostra a
+versão, a licença e o link do código.
 
 ## Como funciona
 

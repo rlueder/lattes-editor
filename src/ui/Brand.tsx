@@ -10,7 +10,8 @@ import { useId } from 'react';
 const VIOLET = 'var(--brand)';
 const MINT = '#9EF2E2';
 
-function Symbol() {
+/** O símbolo sozinho, também no "Sobre o LattesEditor". */
+export function BrandSymbol() {
   // Id próprio do recorte: o cabeçalho e a tela de boas-vindas não colidem.
   const clip = `brand-cut-${useId().replace(/:/g, '')}`;
   return (
@@ -51,7 +52,7 @@ function Symbol() {
 export function Brand() {
   return (
     <span className="topbar-brand">
-      <Symbol />
+      <BrandSymbol />
       <span className="brand brand-name">
         Lattes<span className="brand-accent">Editor</span>
       </span>

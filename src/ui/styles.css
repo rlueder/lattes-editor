@@ -8572,3 +8572,50 @@ button.link-btn:hover:not(:disabled) {
 button.link-btn:active:not(:disabled) {
   color: var(--accent-strong);
 }
+
+/* "Sobre o LattesEditor": o símbolo, o nome e a versão no alto, centrados. */
+.about-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 4px;
+  text-align: center;
+}
+
+.about-body p {
+  max-width: 40ch;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.about-symbol .brand-icon {
+  width: 64px;
+  height: 76px;
+}
+
+.about-name {
+  margin: 4px 0 0;
+  font-size: 22px;
+}
+
+.about-version {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.about-body a {
+  color: var(--accent-text);
+}
+
+.about-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;
+}
+
+.about-note {
+  color: var(--muted);
+  font-size: 12px;
+}
