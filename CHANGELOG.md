@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.2.0](https://github.com/rlueder/lattes-editor/compare/v1.1.0...v1.2.0) (2026-11-01)
+
+### Novidades
+
+- **ci:** PROD 2 envia a extensão à loja quando ela mudou ([#151](https://github.com/rlueder/lattes-editor/issues/151)) ([ab53c08](https://github.com/rlueder/lattes-editor/commit/ab53c08f77dbc3f103109f83259ffb10aa1a5a17))
+- **ui:** restaurar e salvar qualquer exportação guardada no Histórico ([#149](https://github.com/rlueder/lattes-editor/issues/149)) ([b1891cd](https://github.com/rlueder/lattes-editor/commit/b1891cd13464d5f33a8a9cb0e87a5605a64383d6))
+
+### Correções
+
+- **ui:** seção vazia como marca-d'água, aviso de envio curto e página do projeto em dia ([#150](https://github.com/rlueder/lattes-editor/issues/150)) ([7d495bd](https://github.com/rlueder/lattes-editor/commit/7d495bd9f2e8be6774bff26bbdf03d00e4221fb8))
+
 ## [1.1.0](https://github.com/rlueder/lattes-editor/compare/v1.0.0...v1.1.0) (2026-10-30)
 
 ### Novidades
