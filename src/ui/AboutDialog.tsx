@@ -21,9 +21,10 @@ export function AboutDialog({ onClose, open }: { open: boolean; onClose: () => v
         <span className="about-symbol">
           <BrandSymbol />
         </span>
-        <h2 className="brand about-name">
+        {/* O nome é a marca, não um título: o título do diálogo já está no alto. */}
+        <p className="brand about-name">
           Lattes<span className="brand-accent">Editor</span>
-        </h2>
+        </p>
         <p className="about-version">Versão {__APP_VERSION__}</p>
         <p>Um editor para o Currículo Lattes, de código aberto e gratuito, com licença MIT.</p>
         <p className="about-links">
