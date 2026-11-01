@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.1](https://github.com/rlueder/lattes-editor/compare/v1.3.0...v1.3.1) (2026-11-01)
+
+### Correções
+
+- **ui:** título na mesma altura em toda seção, vazia ou não, e no Panorama ([#153](https://github.com/rlueder/lattes-editor/issues/153)) ([dae98c7](https://github.com/rlueder/lattes-editor/commit/dae98c76c7650021d6dfbf5dbac81a37ecd7ebb2))
+
 ## [1.3.0](https://github.com/rlueder/lattes-editor/compare/v1.2.0...v1.3.0) (2026-11-01)
 
 ### Novidades
