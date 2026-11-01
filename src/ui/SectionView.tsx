@@ -206,6 +206,10 @@ function SectionBody({
     // coluna de leitura, e a do painel lateral reservada, mesmo vazia.
     return (
       <div className="section-layout reading">
+        {/* A linha vazia da barra fixa das outras seções: sem ela, o título
+            subiria a distância entre as linhas e mudaria de lugar ao trocar
+            de seção. */}
+        <div aria-hidden="true" className="sticky-title-space" />
         <div className="section-title">{head}</div>
         <div className="section-main section-main-empty">
           <EmptySection

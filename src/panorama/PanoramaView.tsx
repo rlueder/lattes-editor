@@ -135,6 +135,9 @@ export function PanoramaView({ chartId, onOpen, root, sections, version }: Props
   return (
     <ChartContext.Provider value={api}>
       <div className="section-layout reading panorama">
+        {/* A linha vazia da barra fixa das seções do currículo: o título fica
+            na mesma altura ao trocar entre Currículo e Panorama. */}
+        <div aria-hidden="true" className="sticky-title-space" />
         <div className="section-title">
           <div className="section-head">
             <h1 tabIndex={-1}>{chart.label}</h1>
