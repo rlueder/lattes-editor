@@ -247,7 +247,6 @@ export const FocusIcon = () => (
   </Icon>
 );
 
-/** Revisão do currículo: prancheta com um visto. */
 /** Sobre: um "i" dentro de um círculo. */
 export const InfoIcon = () => (
   <Icon>
@@ -256,6 +255,7 @@ export const InfoIcon = () => (
   </Icon>
 );
 
+/** Revisão do currículo: prancheta com um visto. */
 export const DiagnosisIcon = () => (
   <Icon>
     <path d="M9 4h6v3H9z" />
