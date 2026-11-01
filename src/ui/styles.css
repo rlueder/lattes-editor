@@ -3671,6 +3671,13 @@ body {
 /* Barra do título que desliza quando o título da seção sai da tela. Fica
    com altura zero no fluxo e desenha a barra por cima, na largura toda do
    painel de conteúdo. */
+/* A seção vazia não tem a barra fixa, mas guarda a linha dela: o título fica
+   na mesma altura que nas outras seções. */
+.sticky-title-space {
+  grid-column: 1 / -1;
+  height: 0;
+}
+
 .sticky-title {
   position: sticky;
   top: var(--topbar-h);
