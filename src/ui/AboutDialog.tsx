@@ -25,10 +25,7 @@ export function AboutDialog({ onClose, open }: { open: boolean; onClose: () => v
           Lattes<span className="brand-accent">Editor</span>
         </h2>
         <p className="about-version">Versão {__APP_VERSION__}</p>
-        <p>
-          Um editor para o Currículo Lattes, de código aberto e gratuito, com licença MIT. O
-          currículo fica no seu computador.
-        </p>
+        <p>Um editor para o Currículo Lattes, de código aberto e gratuito, com licença MIT.</p>
         <p className="about-links">
           <a href={REPO} rel="noreferrer" target="_blank">
             Código no GitHub
