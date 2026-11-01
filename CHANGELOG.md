@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.0](https://github.com/rlueder/lattes-editor/compare/v1.2.0...v1.3.0) (2026-11-01)
+
+### Novidades
+
+- **ui:** Sobre o LattesEditor no menu de configurações ([#152](https://github.com/rlueder/lattes-editor/issues/152)) ([383b0ab](https://github.com/rlueder/lattes-editor/commit/383b0ab0449cb84362dd37c8af6af8cf066b17ad))
+
 ## [1.2.0](https://github.com/rlueder/lattes-editor/compare/v1.1.0...v1.2.0) (2026-11-01)
 
 ### Novidades
