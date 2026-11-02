@@ -19,144 +19,21 @@ Os instaladores ficam na
 | Linux       | `LattesEditor-Linux.deb` (Debian, Ubuntu, Mint)  |
 | Outro Linux | `LattesEditor-Linux.AppImage`                    |
 
-No Linux, o app pede Ubuntu 24.04, Debian 13, Mint 22 ou outra distribuição com
-glibc 2.39 ou mais nova.
+No Linux, o app pede glibc 2.39 ou mais nova (Ubuntu 24.04, Debian 13, Mint
+22). O instalador do Windows ainda não é assinado: na primeira abertura, o
+SmartScreen avisa; abra os detalhes e escolha executar.
 
-No macOS, o app é assinado e notarizado pela Apple. No Windows, o instalador
-ainda não tem assinatura: o SmartScreen avisa na primeira abertura; abra os
-detalhes e escolha executar. O app confere se há versão nova ao abrir e a cada
-15 minutos, e se atualiza com um clique. "Sobre o LattesEditor", no ⚙, mostra a
-versão, a licença e o link do código.
-
-## Como funciona
-
-1. **Instale a extensão** no Chrome ou no Brave (abaixo) e entre no Lattes
-   como sempre. Nenhuma senha passa por ela nem pelo app.
-2. **Abra o app.** Pela extensão, na sua sessão, ele baixa a exportação do
-   Lattes (o mesmo arquivo de Ferramentas › Exportar) e abre o currículo em
-   segundos. Com alteração ainda não enviada ao CNPq, o Lattes não exporta, e
-   o app pede o envio antes. Sem a extensão, exporte no Lattes e solte o
-   `CV_<id>.zip` na janela. Depois da primeira abertura, o app trabalha
-   sobre essa cópia, e o que ele grava no Lattes é relido na hora.
-3. **Edite.** O menu lateral leva a cada seção; <kbd>⌘K</kbd>
-   (<kbd>Ctrl</kbd>+<kbd>K</kbd> fora do Mac) acha seções, grupos e tipos de
-   item. Os campos que no Lattes são listas (país, idioma, natureza, área do
-   conhecimento, instituição, curso, agência) são listas aqui também. Uma
-   seção vazia mostra uma ilustração na grade do logo. Cada edição fica
-   salva no app.
-4. **Envie ao Lattes.** O painel "Enviar ao Lattes" vai em três passos:
-   revisar, gravar e publicar. A extensão grava na sua sessão, pelos
-   formulários do Lattes, lê cada formulário de volta e confere, inclusive as
-   produções novas. O livro, que o formulário de inclusão não leva, vai pelo
-   Importar do próprio Lattes, num arquivo que o app gera. O que ela ainda não
-   grava fica no painel campo a campo, com o valor antigo ao lado do novo.
-
-<img src="site/img/homepage/busca.webp" width="1440" alt="A busca do ⌘K com o termo artigo, a entrada na seção, a impressão e a troca para o tema escuro." />
-
-Para cadastrar um item, use **+** ao lado da busca. Colar um DOI preenche a
-produção pelo Crossref. "Trazer itens de outro XML…", no ⚙, importa produções
-de outra exportação ou de outro programa; cada item é comparado com o
-currículo antes de entrar, e o app aponta a duplicata provável e o motivo.
-Use o botão circular × para fechar o histórico ou um formulário.
-
-Em pós-doutorado e livre-docência, a instituição também é escolhida pela
-busca do Lattes. Esses formulários não têm curso; a agência aparece só no
-pós-doutorado.
-
-Raça ou cor, pessoa com deficiência, tipo de graduação, tipo de licença e categoria da patente têm listas de opções.
-A disponibilidade de produtos, processos, relatórios de pesquisa e trabalhos
-técnicos também é escolhida por lista, inclusive quando não foi informada.
-
-Em Endereço, você pode editar e-mails, URLs das redes sociais e outras formas
-de contato (MSN, WhatsApp, Telegram) já cadastradas, quando o formato da
-exportação é reconhecido. Incluir ou remover contatos
-continua no Lattes. A troca de URL mantém a privacidade que a rede já tinha.
-
-A **Revisão do currículo**, no ⚙, confere o currículo inteiro: campos
-obrigatórios, valores fora das listas do Lattes, anos, autores, DOI, ISSN,
-duplicatas e vínculos antigos ainda marcados como atuais. Só aponta; nada muda
-sem você.
-
-"Atualizar do Lattes…", no ⚙, traz o que mudou no Lattes, de um de dois
-jeitos. "Só o que é novo" lê as produções novas ou com outro título, em
-segundos, e as junta à cópia de trabalho. "O currículo inteiro" lê tudo de
-novo pelas telas do Lattes, uma por uma, só lendo, sem esperar a exportação
-acompanhar o último envio, e troca a cópia pelo que veio; a de agora fica no
-Histórico. Como lê as telas, as alterações ainda não enviadas ao CNPq já
-aparecem. O que uma tela não deixou ler (o tipo de participação num evento,
-que a página monta depois de abrir, ou o período da participação num projeto)
-fica listado no sino.
-
-O **Histórico**, no ⚙, mostra tudo o que aconteceu com o currículo no app,
-por dia: cada edição, cada envio ao Lattes, cada recarga e a primeira
-abertura. No alto, "No Lattes agora" diz quando foi a última publicação, se há
-algo pendente e, com "Comparar com o Lattes", o que mudou lá desde a
-exportação, inclusive o que foi feito direto no Lattes. Cada linha pode ser
-restaurada, salva em arquivo ou comparada com a exportação anterior; toda
-exportação aberta que o app ainda guarda (as 24 mais recentes) pode voltar a
-ser a cópia de trabalho, e a de agora fica no Histórico. A primeira
-exportação guardada intacta (o ponto zero) e o Lattes de antes de cada envio
-também ficam em `Documentos/LattesEditor/Cópias de segurança`, e o app nunca
-os apaga, nem com "Limpar o histórico".
-
-Também dá para imprimir ou salvar em PDF nas regras da NBR 14724, com
-referências na NBR 6023, e compartilhar o currículo por um código QR.
-
-## Panorama
-
-O currículo em números, calculados só com o XML aberto: produções por ano,
-quadriênios da CAPES (com saída em CSV), linha do tempo da carreira, pessoas
-(coautores, orientandos, orientadores e bancas), posição de autoria, onde
-publica, temas e o que falta preencher. Um clique num número abre a seção já
-filtrada por tipo, período ou campo que falta.
-
-<img src="site/img/homepage/panorama.webp" width="1440" alt="Produções por ano no Panorama: um clique na barra de 2023 abre a seção Produções filtrada para o artigo daquele ano." />
-
-## Enviar ao Lattes
-
-A extensão grava em segundo plano, confere cada alteração relendo o
-formulário e para no primeiro problema. A cada 20 gravações ela faz uma pausa
-para você olhar o Lattes e só segue com "Continuar" no editor. "Já gravado no
-Lattes", no fim do painel, guarda o valor antigo e o novo de cada gravação e
-deixa desfazer.
-
-Enquanto o app está aberto e ligado à extensão, a extensão abre uma página
-pequena do Lattes a cada 20 minutos, na sua sessão, para ela não cair por
-falta de uso. Com o app fechado, isso para.
-
-<img src="site/img/homepage/enviar.webp" width="1440" alt="O nome de um prêmio é editado; o painel Enviar ao Lattes mostra o antes e o depois na revisão e grava a alteração no Lattes pela extensão." />
-
-O que o conector grava fica pendente no Lattes até "Enviar ao CNPq", e o
-Lattes não mostra nem descarta essas pendências. Por isso o app guarda o
-registro do que gravou. Uma gravação que não voltou conferida bloqueia o
-"Enviar ao CNPq" do editor até você conferir o item no Lattes. O terceiro
-passo mostra o que vai ser publicado e a declaração lida do CNPq. Confira os
-dados e marque a declaração para publicar pelo app. Ela começa desmarcada a
-cada abertura e não fica guardada. A extensão envia uma vez e confere o menu
-do Lattes; se a confirmação se perder, o app pede para conferir antes de
-tentar novamente.
+Para ler e gravar no Lattes, instale também a
+[extensão para Chrome e Brave](https://chromewebstore.google.com/detail/kdebkpkdhgaeaaobcbgbckinocnlfbgg).
+Sem ela, exporte o currículo no Lattes e solte o `CV_<id>.zip` na janela do
+app.
 
 ## Privacidade
 
-Não há servidor nem conta. O currículo é lido e guardado no próprio
-computador, cifrado com AES-GCM, com a chave no chaveiro do sistema. Sem
-chaveiro, o app avisa e não guarda nada naquela sessão. Saem do computador só
-o DOI, quando você pede a busca no Crossref, e o código do currículo, para
-buscar a foto no CNPq. O que vai ao Lattes vai pela sua própria sessão, no
-seu navegador. Em Dados gerais, documentos, nascimento, filiação e endereço
-ficam mascarados até você clicar no olho ao lado do título.
-
-## Extensão do conector
-
-1. Instale a extensão pela
-   [Chrome Web Store](https://chromewebstore.google.com/detail/kdebkpkdhgaeaaobcbgbckinocnlfbgg). O Brave instala da mesma loja.
-2. No primeiro uso, o painel mostra o que ela lê e envia e pede um "ok".
-
-Quando uma leitura ou um envio não dá certo, o rodapé do painel guarda os
-dez últimos erros com a aba do Lattes: a hora, o que estava sendo feito e o
-motivo, sem nada do currículo.
-
-A loja atualiza a extensão sozinha. O que ela lê e envia está na
+Não há servidor nem conta. O currículo fica no seu computador, cifrado. Saem
+dele só o DOI, quando você pede a busca no Crossref, e o código do currículo,
+para buscar a foto no CNPq. O que vai ao Lattes vai pela sua sessão, no seu
+navegador. Detalhes na
 [política de privacidade](https://rlueder.github.io/lattes-editor/privacidade.html).
 
 ## Documentação
